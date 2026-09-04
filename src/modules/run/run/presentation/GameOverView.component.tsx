@@ -1,3 +1,4 @@
+import { kbLabel } from "~/shared/lib/storage";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
@@ -7,8 +8,6 @@ import {
 import { GameOverScreen } from "~/ui/terminal-theme/screens/GameOverScreen.ui";
 import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
 import { plural } from "~/ui/terminal-theme/format";
-
-const kb = (value: number) => `${value} KB`;
 
 const earnedSwatches = (view: RunView): readonly TrackSwatch[] =>
 	ALL_SWATCHES.filter((swatch) => swatch.gate < view.gatesCleared).map(
@@ -41,7 +40,7 @@ export const GameOverView = ({ view, won, onNewRun }: GameOverViewProps) => {
 				title: won
 					? "The climb is done"
 					: `Stopped at ${stoppedAt?.gateName ?? `gate ${view.gatesCleared}`}`,
-				subtitle: `${plural(view.gatesCleared, "gate")} of ${view.victoryGate} cleared · ${Math.round(view.coverage * 10) / 10}% coverage · ${kb(view.storage)} left`,
+				subtitle: `${plural(view.gatesCleared, "gate")} of ${view.victoryGate} cleared · ${Math.round(view.coverage * 10) / 10}% coverage · ${kbLabel(view.storage)} left`,
 			}}
 			fell={{
 				swatches: fellSwatches(view),

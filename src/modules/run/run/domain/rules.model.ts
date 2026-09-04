@@ -27,13 +27,13 @@ export type StoragePlan = {
 };
 
 export const STORAGE_PLANS: readonly StoragePlan[] = [
-	{ tier: 0, capKb: 512, perGateKb: 0 },
-	{ tier: 1, capKb: 768, perGateKb: 16 },
-	{ tier: 2, capKb: 1024, perGateKb: 32 },
-	{ tier: 3, capKb: 1536, perGateKb: 64 },
-	{ tier: 4, capKb: 2560, perGateKb: 128 },
-	{ tier: 5, capKb: 5120, perGateKb: 384 },
-	{ tier: 6, capKb: 10240, perGateKb: 768 },
+	{ tier: 0, capKb: 256, perGateKb: 0 },
+	{ tier: 1, capKb: 512, perGateKb: 32 },
+	{ tier: 2, capKb: 1024, perGateKb: 96 },
+	{ tier: 3, capKb: 2048, perGateKb: 224 },
+	{ tier: 4, capKb: 3072, perGateKb: 448 },
+	{ tier: 5, capKb: 5120, perGateKb: 768 },
+	{ tier: 6, capKb: 10240, perGateKb: 1280 },
 ];
 
 export const FREE_PLAN = STORAGE_PLANS[0];

@@ -21,7 +21,6 @@ import {
 import {
 	EXTEND_FROM_GATE,
 	extendCost,
-	LOCK_FROM_GATE,
 	MAX_EXTENSIONS,
 } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -215,18 +214,31 @@ describe("shop controls (DVTD-5lt6)", () => {
 		storage,
 	});
 
+	const withLocker = (state: RunState): RunState => ({
+		...state,
+		build: {
+			...state.build,
+			configs: [...state.build.configs, CONFIGS.yarnLock],
+		},
+	});
+
 	it("hides both new controls in the opening shop", () => {
 		const view = toRunView(shopping(1, 512));
 		expect(view.shopControls.lockAvailable).toBe(false);
 		expect(view.shopControls.extendAvailable).toBe(false);
 	});
 
-	it("stages the lock in a gate before the extension", () => {
+	it("offers the lock only while yarn.lock is in the build", () => {
+		expect(toRunView(shopping(1, 512)).shopControls.lockAvailable).toBe(false);
 		expect(
-			toRunView(shopping(LOCK_FROM_GATE, 512)).shopControls.lockAvailable
+			toRunView(withLocker(shopping(1, 512))).shopControls.lockAvailable
 		).toBe(true);
+	});
+
+	it("stages the extension by gate", () => {
 		expect(
-			toRunView(shopping(LOCK_FROM_GATE, 512)).shopControls.extendAvailable
+			toRunView(shopping(EXTEND_FROM_GATE - 1, 512)).shopControls
+				.extendAvailable
 		).toBe(false);
 		expect(
 			toRunView(shopping(EXTEND_FROM_GATE, 512)).shopControls.extendAvailable
@@ -234,19 +246,19 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 
 	it("keeps showing a control the run cannot afford, unpressable", () => {
-		const view = toRunView(shopping(EXTEND_FROM_GATE, 0));
+		const view = toRunView(withLocker(shopping(EXTEND_FROM_GATE, 0)));
 		expect(view.shopControls.lockAvailable).toBe(true);
 		expect(view.shopControls.canLock).toBe(false);
 		expect(view.shopControls.extendAvailable).toBe(true);
 		expect(view.shopControls.canExtend).toBe(false);
 	});
 
-	it("takes the lock off the table while one is held", () => {
+	it("keeps selling locks while offers are already held", () => {
 		const view = toRunView({
-			...shopping(EXTEND_FROM_GATE, 512),
+			...withLocker(shopping(EXTEND_FROM_GATE, 512)),
 			lockedOfferIds: ["eslint"],
 		});
-		expect(view.shopControls.lockAvailable).toBe(false);
+		expect(view.shopControls.lockAvailable).toBe(true);
 		expect(view.shopControls.lockedOfferIds).toEqual(["eslint"]);
 	});
 
@@ -337,13 +349,13 @@ describe("the storage plan in the shop (ADR-046)", () => {
 	it("draws every plan, the free one included", () => {
 		const { options } = onPlan(0).storagePlan;
 		expect(options.map((plan) => plan.capKb)).toEqual([
-			512, 768, 1024, 1536, 2560, 5120, 10240,
+			256, 512, 1024, 2048, 3072, 5120, 10240,
 		]);
 	});
 
 	it("stands on the free cap before anything is bought", () => {
 		const { capKb, perGateKb, options } = onPlan(0).storagePlan;
-		expect(capKb).toBe(512);
+		expect(capKb).toBe(256);
 		expect(perGateKb).toBe(0);
 		expect(options[0].held).toBe(true);
 	});
@@ -351,13 +363,13 @@ describe("the storage plan in the shop (ADR-046)", () => {
 	it("reads the standing cap and bill off the plan the run is on", () => {
 		const { capKb, perGateKb } = onPlan(2).storagePlan;
 		expect(capKb).toBe(1024);
-		expect(perGateKb).toBe(32);
+		expect(perGateKb).toBe(96);
 	});
 
 	it("warns what a downgrade burns, and nothing on the plans that would hold it", () => {
 		const { options } = onPlan(4, 900).storagePlan;
-		expect(options[0].burnsKb).toBe(900 - 512);
-		expect(options[1].burnsKb).toBe(900 - 768);
+		expect(options[0].burnsKb).toBe(900 - 256);
+		expect(options[1].burnsKb).toBe(900 - 512);
 		expect(options[2].burnsKb).toBe(0);
 	});
 
@@ -366,7 +378,7 @@ describe("the storage plan in the shop (ADR-046)", () => {
 			(entry) => entry.id === "storage-plan"
 		);
 		expect(line?.label).toBe("1024KB storage plan");
-		expect(line?.kb).toBe(32);
+		expect(line?.kb).toBe(96);
 		expect(line?.billedOnMiss).toBe(false);
 	});
 
@@ -629,19 +641,26 @@ describe("the shop's controls answer to the reducer", () => {
 
 	it("offers the lock exactly when the reducer takes one", () => {
 		const onOffer = { ...answering(), draftOptions: [CONFIGS.eslint] };
-		const deep = shopWith({ ...onOffer, gatesCleared: LOCK_FROM_GATE }, 512);
-		const shallow = shopWith({ ...onOffer, gatesCleared: 0 }, 512);
-		const broke = shopWith({ ...onOffer, gatesCleared: LOCK_FROM_GATE }, 0);
+		const holdsLocker = (state: RunState): RunState => ({
+			...state,
+			build: {
+				...state.build,
+				configs: [...state.build.configs, CONFIGS.yarnLock],
+			},
+		});
+		const armed = shopWith(holdsLocker(onOffer), 512);
+		const bare = shopWith(onOffer, 512);
+		const broke = shopWith(holdsLocker(onOffer), 0);
 		const lock = { type: "lock-offer", configId: CONFIGS.eslint.id } as const;
 
 		expect(
-			toRunView(deep).shopControls.lockAvailable &&
-				toRunView(deep).shopControls.canLock
+			toRunView(armed).shopControls.lockAvailable &&
+				toRunView(armed).shopControls.canLock
 		).toBe(true);
-		expect(runReducer(deep, lock).lockedOfferIds).toEqual([CONFIGS.eslint.id]);
+		expect(runReducer(armed, lock).lockedOfferIds).toEqual([CONFIGS.eslint.id]);
 
-		expect(toRunView(shallow).shopControls.lockAvailable).toBe(false);
-		expect(runReducer(shallow, lock).lockedOfferIds).toEqual([]);
+		expect(toRunView(bare).shopControls.lockAvailable).toBe(false);
+		expect(runReducer(bare, lock).lockedOfferIds).toEqual([]);
 
 		expect(toRunView(broke).shopControls.canLock).toBe(false);
 		expect(runReducer(broke, lock).lockedOfferIds).toEqual([]);

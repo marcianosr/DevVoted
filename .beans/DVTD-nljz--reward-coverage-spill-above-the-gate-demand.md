@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-08-24T12:58:24Z
-updated_at: 2026-08-24T12:58:24Z
+updated_at: 2026-09-03T14:46:44Z
 parent: DVTD-kulw
 ---
 
@@ -76,3 +76,31 @@ reversal to make on purpose, in an ADR, not a tuning tweak.
 - [ ] Do A first and see whether it settles the itch
 - [ ] If not, pick B/C/D/E and write the ADR, naming the score-vs-reward reversal if there is one
 - [ ] Settle the word
+
+## Checked 2026-09-03: one of the two consumers is nearly vacuous
+
+The bean credits spill with two consumers (the run score, and Focus upgrade permission). Checked both:
+
+- **The Focus upgrade gate barely binds.** `upgradeCoverageRequired` is `level * 5`, but the per-answer earn scales with `gateBaseMultiplier` (`gatesCleared + 1`). A correct poll in a Focus category pays roughly 4% at gate 3 and 7% at gate 6, so every rung clears on one or two correct polls in that category and then never binds again. With 12 categories and 5 polls a gate, a category draws about 0.4 times per gate: what actually gates the upgrade is the draw, not the overshoot. It is a wait, not a decision.
+- **The island shop does not implement it at all.** Only `modules/run/shop/presentation/ShopScreen.ui.tsx` and `ShopView.component.tsx` enforce or display it. `ui/terminal-theme/screens/ShopScreen.ui.tsx` and the modern-theme one never receive `coverageByCategory`, so on /proto-run the button is not disabled and `upgrade()` silently no-ops. On the screen being playtested, spill has exactly one consumer: the run score.
+
+So option A ("make the existing two visible") is thinner than it looked. It would be dressing up one real consumer and one that resolves itself.
+
+## Direction: option C, spill rolls over (Marciano, 2026-09-03)
+
+A fraction of the overshoot carries into the next gate's window, so a strong gate de-risks the next one.
+
+Why C over D: it keeps the score-versus-reward wall standing (no coverage-to-KB conversion), and it gives the config multiplier stack a reason to exist above the demand line. That is the actual hole. Today, stacking AGENTS.md x2 on Intellisense x1.5 only wins *earlier*, and earlier pays nothing, because `gateClearPayout` keys on `window.correct` and not on coverage.
+
+Open before this can be built:
+
+- The carry fraction and its cap. The bean's own snowball warning applies: an uncapped carry compounds into a run that cannot fail.
+- Whether the ADR reverses ADR-035's per-gate reset, or frames the carry as a starting balance on a still-reset meter. The second is the smaller change and reads better.
+- The word. "Spill" and "overflow" both collide with storage's cap vocabulary, and the standing line is to reuse an existing term rather than coin one.
+
+## Todo (added 2026-09-03)
+
+- [ ] Pick the carry fraction and cap; state the curve at gate 2 versus gate 10
+- [ ] Write the ADR: starting balance versus reversing ADR-035's reset
+- [ ] Decide whether the Focus coverage requirement survives at all; it is the weaker of spill's two consumers
+- [ ] Separately: the island shop screens ignore the Focus requirement, so the rule is unenforced where it is played

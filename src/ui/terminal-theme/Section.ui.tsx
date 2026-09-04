@@ -5,15 +5,16 @@ import { clsx } from "clsx";
 import { Text } from "./Text.ui";
 
 const SUMMARY =
-	"flex cursor-pointer list-none items-center gap-2 py-1.5 select-none [&::-webkit-details-marker]:hidden";
+	"flex cursor-pointer list-none items-center gap-2 py-1.5 select-none [&::-webkit-details-marker]:hidden ";
 const CARET =
 	"inline-block text-zinc-500 transition-transform group-open/section:rotate-90";
-const LABEL = "font-bold tracking-wider uppercase";
+const LABEL = "font-extrabold tracking-wide uppercase";
 const META = "ml-auto shrink-0";
 const DIVIDED = "divide-y divide-edge";
 
 export type SectionProps = {
 	label: string;
+	mark?: ReactNode;
 	meta?: ReactNode;
 	defaultOpen?: boolean;
 	divided?: boolean;
@@ -32,6 +33,7 @@ const metaOf = (meta: ReactNode) =>
 
 export const Section = ({
 	label,
+	mark,
 	meta,
 	defaultOpen = true,
 	divided = false,
@@ -43,6 +45,7 @@ export const Section = ({
 			<span aria-hidden className={CARET}>
 				›
 			</span>
+			{mark}
 			<Text className={LABEL}>{label}</Text>
 			{meta === undefined ? null : <span className={META}>{metaOf(meta)}</span>}
 		</summary>

@@ -277,7 +277,7 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 | Gate | Swatch | Coverage in its window | A clear pays | A miss peels | Audit | Also unlocks |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0 | Pallet | 3% | 32 KB | 20% | (clean) | Shop, **Rebuild** |
-| 1 | Boulder | 10% | 64 KB | 20% | (clean) | **Lock** |
+| 1 | Boulder | 10% | 64 KB | 20% | (clean) | — |
 | 2 | Cascade | 25% | 96 KB | 20% | (clean) | **Extend** |
 | 3 | Thunder | 40% | 128 KB | 25% | 402 Payment Required | — |
 | 4 | Lavender | 60% | 160 KB | 25% | 424 Failed Dependency | — |
@@ -306,7 +306,7 @@ Tests and Moore's Law levels (storage), lint and peek fees (uses), rebuild price
 
 Authoritative over this table: `coverageDemandFor`, `SLOT_PRICES_KB`, `STORAGE_PLANS`,
 `failPeelShareFor` (`rules.model.ts`), `gateClearPayout` (`build.model.ts`),
-`LOCK_FROM_GATE`/`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
+`EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`), `GATE_AUDITS` (`audit.model.ts`).
 
 ---
@@ -349,14 +349,14 @@ no hover to read a price by. Width carries no swatch: badges come from clearing 
 (refunds half the draft cost in KB), **Minify**, or **Upgrade**. Anything can be
 sold except your last config, since a bare build never clears.
 
-**Starting a run.** The **Configuring** screen offers **starter stacks** (ADR-026):
-curated three-config builds picked in one click, the stack's one-liner carrying the
-choice and the picked row expanding into a trimmed preview of each config's payoff.
-Picking is atomic. One config is the only floor — spare slots are a legal
-opening, and only an over-capacity build blocks the start. A
-"Build your own" row opens the bench-drafting screen for self-assembly, which becomes
-the default again once account-level intro flags land. 🟡 A random size-weighted
-starting hand is planned (DVTD-30k6).
+**Starting a run.** The run deals a **hand of five** configs from the starter
+pool — seeded per player per day, always holding at least one focus config —
+with the **recommended three already picked** (ADR-052): a new player opens the
+screen and presses Start, a veteran toggles any of the five. The hand itself
+never changes while configuring, so the deal reads as one checkable list. One
+config is the only floor — spare slots are a legal opening, and only an
+over-capacity build blocks the start. Buying slots from the archive (ADR-049)
+sits below the deal.
 
 ---
 
@@ -412,7 +412,7 @@ what each size costs.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Thirty-one configs, all pure effects.
+**🟢 Shipped.** Thirty-three configs, all pure effects.
 
 | Config | Slots | Effect |
 | --- | --- | --- |
@@ -422,11 +422,13 @@ what each size costs.
 | Moore's Law | 1 | On each gate clear, +2% × level of held storage |
 | ESLint | 1 | Cross out one wrong answer on JS/TS polls, fee doubling from 8 KB per gate |
 | Stylelint | 1 | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate |
+| yarn.lock | 1 | Lock shop offers for 16 KB each ([5.2](#52-the-shop)); a locked offer leads every shop until installed or released, and every lock releases if yarn.lock leaves the build |
 | Cold Start | 2 | First answer of the gate rewards ×2 |
 | Coverage | 2 | Coverage gains ×2 |
 | Code Coverage | 2 | +0.5% flat coverage per correct answer |
 | IndexedDB | 2 | +8 KB storage per correct answer, capped at 320 KB |
 | Telemetry | 2 | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-and-peek)) |
+| A/B Test | 2 | Ships one of two arms, switched free at any time — in the shop or mid-poll, where the switch scores the answer you are about to give (ADR-053): A pays ×1.25 on all coverage, B pays +8 KB per correct answer (sharing the faucet's run cap) |
 | `.length` | 2 | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
 | Intellisense | 4 | All coverage ×1.5 |
 | Deprecated | 4 | All coverage ×3, fading ×0.5 each gate clear; deleted from the build at ×1 |
@@ -493,7 +495,7 @@ plus the runtime family (`Node.js`, `Deno`, `Rails`, `Django`, `Spring`, `Next.j
 `Nuxt`), each pairing a language with General Backend, which finally gives that category
 coverage. Ship `.tsx` and `Node.js` first and pool the rest.
 
-⚪ **Parked**: **yarn.lock** (immunity to requirement raises), **rm -rf** (strip-all with
+⚪ **Parked**: **rm -rf** (strip-all with
 2× refund), **localStorage** (storage burst). Two former configs became gate audits
 instead, since a clock or a mirror is something a gate does to you rather than something
 you buy: **Mirrored Check** is now Marsh's Mirror, **Speed Check** is now Timeout.
@@ -519,8 +521,14 @@ the exception at level 2. Every upgrade costs `32 KB × the level bought`.
   separates them ("based on 127 answers"). The number is withheld server-side, so L1
   blindness survives a devtools tab.
 
-The shop's Upgrade button carries the price and previews the next level on hover;
-while gated, the tooltip names whichever requirement is in the way. The stake receipt
+The shop's Upgrade button carries the price and, while gated, names whichever
+requirement is in the way on hover. Arming an upgrade states the sentence the config
+will read at the next level and shows one `from → to` chip per number that moves
+(ADR-053). A rolled offer is the other way to buy a level: roughly one shop in eight
+puts a version of something you already own on the shelf, at the shelf price, with
+**no coverage requirement** — the bypass is what makes it worth taking. It swaps the
+installed config rather than taking a second slot, and cannot be kept for the next
+shop. The stake receipt
 states what rides on top of the base: the Focus multiplier when the poll matches, and
 the streak step, which every correct answer takes (one correct answer is already a
 streak of one).
@@ -601,23 +609,31 @@ Only empty slots can be cashed, and never below the free four.
 
 | Cap | Per gate |
 | --- | --- |
-| 512 KB | free |
-| 768 KB | 16 KB |
-| 1 MB | 32 KB |
-| 1.5 MB | 64 KB |
-| 2.5 MB | 128 KB |
-| 5 MB | 384 KB |
-| 10 MB | 768 KB |
+| 256 KB | free |
+| 512 KB | 32 KB |
+| 1 MB | 96 KB |
+| 2 MB | 224 KB |
+| 3 MB | 448 KB |
+| 5 MB | 768 KB |
+| 10 MB | 1280 KB |
 
-The free cap holds about one and a third of a perfect gate-12 clear, which makes the
-plan a **prerequisite for the slot ladder**: you cannot save 768 KB for a mid-ladder
-slot without renting a wider cap first. That coupling is the point of having a cap at
-all.
+The free cap holds less than one perfect gate-12 clear, which makes the plan a
+**prerequisite for the slot ladder**: you cannot save 768 KB for a mid-ladder slot
+without renting a wider cap first. That coupling is the point of having a cap at all.
+
+The shop shows the ladder as a rack of cards, one per rung, and **only reveals up to
+one rung above the one you hold** — everything higher reads ???? until you climb to
+the rung below it.
+
+**A rung you cannot pay for is not for sale.** A rung's select press refuses while
+its bill is more than you hold, and says which figure is in the way. Dropping
+to a cheaper rung is always allowed. If a plan you already hold outruns your balance,
+the shop's Continue stays shut until you drop to one you can pay for.
 
 The bill lands **on clear only**, off the balance the clear just paid, and settles
 before the config subscriptions — so a redo is free of every recurring cost. A clear
 that cannot cover the bill pays what it has and **drops to the free plan**, burning
-whatever will not fit under 512 KB. Downgrading by hand burns the same way, and the row
+whatever will not fit under 256 KB. Downgrading by hand burns the same way, and the card
 says how much before you pick it.
 
 **The Subscriptions section** lists every recurring KB cost in one place on the gate
@@ -642,7 +658,7 @@ rather than a verdict.
 | --- | --- | --- |
 | **Draft** | 32 to 512 KB by size | One of 5 offered configs, new ones only. Two taps: the corner badge reads the price, turns green and reads **install**, then settles into **owned**. |
 | **Rebuild** | 4, 8, 16, … 512 KB | Re-rolls the offer, doubling per rebuild within the same shop. |
-| **Lock** | 16 KB flat | Pins one offer so rebuilds skip it and it returns next shop. One at a time, spent by installing. From gate 2; before that the shelf shows no padlock at all, not a placeholder for one. |
+| **Lock** | 16 KB a lock | Requires **yarn.lock** in the build (ADR-054); without it the shelf shows no padlock at all. Pins any number of offers: rebuilds skip them and every later shop leads with them, until each is installed or released. Releasing is free and refunds nothing, and every lock releases if yarn.lock leaves the build. A pinned offer occupies one of the shelf's slots, so locking the whole shelf freezes it. |
 | **Minify** | free | Halves a config's slots and halves what it gives, one way only. The only way to fit a 16 into a build narrower than sixteen. A 1-slot config cannot be minified. |
 | **Extend** | 48, then 96 KB | One more config on the table, in this shop and every shop after. Two per run. From gate 3. |
 | **git tag** | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 | A cross-run checkpoint: after a death, your next run checks out there instead of gate 1. One per run, burnt by the run it rescues. |
@@ -651,7 +667,7 @@ rather than a verdict.
 | **Buy a slot** | 16 KB, doubling up the ladder | One more slot on the build, yours for the run. Up to 24 ([5.1](#51-storage-kb)). Pressed twice on the build track's hatched stub: the first press arms and quotes the deal, the second buys. |
 | **Cash a slot** | refunds that slot's own price | Only an empty one, never below the free four. The ladder does not roll back. Pressed twice on the empty box nearest the hatching, same as buying. |
 | **Open a slot** (start screen) | double the rung, from archived storage | Same ladder, twice the price, paid from the archive rather than the run ([6.1](#61-archived-storage)). Refundable at cost until Start; shut once the run begins. |
-| **Storage plan** | free to 768 KB a gate | Raises the KB cap. Billed at every clear; fall behind and it drops to the free 512 KB ([5.1](#51-storage-kb)). |
+| **Storage plan** | free to 1280 KB a gate | Raises the KB cap. Refused while its bill is more than you hold; billed at every clear, and falling behind drops you to the free 256 KB ([5.1](#51-storage-kb)). |
 
 A tag-rescued run starts at the pinned gate with a 32 KB-per-gate stipend, everything
 else fresh, and its death credit counts only the gates it actually climbed. It opens on
@@ -692,7 +708,8 @@ teaches the config's own mechanic ("Peek the community split 5 times") OR a
 lifetime polls-answered fallback, whichever is met first. Every objective tracks
 automatically (nothing is activated), and the Configdex shows each locked config
 as a checklist card with both paths and live progress; ADR-051 carries the table.
-Starter stacks arrive when every config they contain is granted. Unlocks are
+The starting hand deals from the granted pool once this lands (ADR-052 dropped
+the depth ladder's stacks entirely). Unlocks are
 achievement-only — no currency buys one (the archived-storage pull, DVTD-9d7o,
 is rejected). Today every shipped config is simply available. Also planned:
 bonus awards for re-answering mastered polls correctly.
@@ -933,7 +950,7 @@ The game leans hard into its CI metaphor.
 | **Coverage** | The score: a percentage per category plus a run total (career), and the gate meter (per attempt). In fiction: **knowledge coverage**. |
 | **Storage** | The in-run currency, in KB. The storage plan caps what you can hold. |
 | **Slot ladder** | The rising price of the next slot: 16, 32, 64, 128, 192, 256 KB and on, doubling every second rung to the 24th. |
-| **Storage plan** | The KB cap, rented by the gate: 512 KB free up to 10 MB. Billed at every clear; fall behind and it drops to the free cap, burning the overflow. |
+| **Storage plan** | The KB cap, rented by the gate: 256 KB free up to 10 MB. Billed at every clear; fall behind and it drops to the free cap, burning the overflow. |
 | **Archived storage** | Persistent cross-run storage: the meta-progression currency. |
 | **Faucet** | Any per-correct-answer storage income (for example IndexedDB). |
 | **Draft / Rebuild** | Buying a shop config / re-rolling the offer at a doubling cost. |
@@ -982,7 +999,7 @@ applies. `rules.model.ts` holds most of it.
 | `GATE_REWARD_KB` / `GATE_REWARD_MULTIPLIER_CAP` | 32 KB base / stops scaling past ×12 |
 | `gateClearPayout` | `32 × (gate + 1) × reward mults × (correct ÷ 5)`, plus flat clear payouts |
 | `SLOT_PRICES_KB` | 16 · 32 · 64 · 128 · 192 · 256 · 384 · 512 · 768 · 1024 … doubling every second rung, 20 rungs for slots 5 to 24 |
-| `STORAGE_PLANS` | 512 KB free · 768/16 · 1MB/32 · 1.5MB/64 · 2.5MB/128 · 5MB/384 · 10MB/768, billed a gate on clear |
+| `STORAGE_PLANS` | 256 KB free · 512/32 · 1MB/96 · 2MB/224 · 3MB/448 · 5MB/768 · 10MB/1280, billed a gate on clear; a rung is refused while its bill is more than the balance |
 | `FAUCET_CAP_KB` | 320 per run |
 | Archived-storage credit | 1 / `gates ÷ 13` / 0 for victory / death / abandon |
 
@@ -991,14 +1008,16 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | `BASE_SLOTS` / `MAX_SLOTS` | 4 · 24 — the free width every run opens on, and the last slot the shop sells |
+| `HAND_SIZE` / `RECOMMENDED_SIZE` | 5 dealt at run start (seeded, ≥1 focus config) · 3 preselected (ADR-052) |
 | `slotCashOutKb` | refunds the price of the most expensive slot still held; the purchase index never rolls back |
 | `CONFIG_SIZES` | 1 · 2 · 4 · 8 · 12 · 16 slots, halved by minify (a 1-slot config cannot minify) |
 | `DRAFT_SIZE` / draft cost / sell refund | 5 offers / `32 KB × slots` / `floor(cost ÷ 2)` |
 | Rebuild / `LOCK_COST_KB` / Extend | 4…512 KB doubling / 16 flat / 48 then 96 |
-| Control staging | Lock from gate 2, Extend from gate 3 (`draft.model.ts`) |
+| Control staging | Lock requires yarn.lock in the build (ADR-054); Extend from gate 3 (`draft.model.ts`) |
 | `pinCostFor` | 128 KB at gate 4, +64 per gate, 512 at gate 10; stipend 32 KB × gate |
 | Lint / peek fees | 8…256 KB per poll / 32…512 KB per gate |
 | Max config level / upgrade cost | 5 (Telemetry 2) / `32 KB × (level + 1)` |
+| `UPGRADE_OFFER_ONE_IN` | ~1 shop in 8 rolls an owned config's next version onto the shelf, at shelf price, no coverage gate (ADR-053) |
 
 ---
 

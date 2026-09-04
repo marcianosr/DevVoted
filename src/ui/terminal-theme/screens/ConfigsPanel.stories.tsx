@@ -13,7 +13,7 @@ import { ConfigsPanel, type DexConfig } from "./ConfigsPanel.ui";
 
 /** One account's history against the real roster: a config missing from this
  * table has never been dealt, so the counts under each slot header add up on
- * their own rather than being typed in beside the chips. 22 of 30 seen. */
+ * their own rather than being typed in beside the chips. 23 of 33 seen. */
 const HISTORY: Readonly<
 	Record<string, { best: number; installs: number; firstSeenGate: number }>
 > = {

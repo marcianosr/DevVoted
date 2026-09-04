@@ -35,6 +35,7 @@ export type ButtonProps = {
 	variant?: ButtonVariant;
 	size?: ButtonSize;
 	disabled?: boolean;
+	describedBy?: string;
 	className?: string;
 	onUse?: () => void;
 };
@@ -46,12 +47,14 @@ export const Button = ({
 	variant = "quiet",
 	size = "md",
 	disabled = false,
+	describedBy,
 	className,
 	onUse,
 }: ButtonProps) => (
 	<button
 		type="button"
 		disabled={disabled}
+		aria-describedby={describedBy}
 		onClick={onUse}
 		className={clsx(buttonVariants({ variant, size }), className)}
 	>

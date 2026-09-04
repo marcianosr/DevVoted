@@ -47,6 +47,7 @@ export const RunShop = () => {
 				onDraft={(id) => send({ type: "draft", configId: id })}
 				onRebuild={() => send({ type: "rebuild-draft" })}
 				onLock={(id) => send({ type: "lock-offer", configId: id })}
+				onUnlock={(id) => send({ type: "unlock-offer", configId: id })}
 				onExtend={() => send({ type: "extend-offers" })}
 				onPlantPin={() => send({ type: "plant-pin" })}
 				slots={view.slots}

@@ -28,7 +28,13 @@ describe("GatesView", () => {
 	it("hangs each unlock on the gate whose clear actually opens it", () => {
 		renderLadder(0);
 
-		expect(row("1 Boulder").getByText("lock")).toBeInTheDocument();
+		expect(row("2 Cascade").getByText("extend")).toBeInTheDocument();
+	});
+
+	it("hangs no lock on any gate — that action ships with yarn.lock", () => {
+		renderLadder(12);
+
+		expect(screen.queryByText("lock")).toBeNull();
 	});
 
 	it("says git tag, the word the shop sells a pin under", () => {

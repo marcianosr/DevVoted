@@ -316,6 +316,15 @@ export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
 export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsUpcomingCategories === true);
 
+export const lockerFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.locksOffers === true);
+
+export const locksSurviving = (
+	configs: readonly Config[],
+	lockedOfferIds: readonly string[] | undefined
+): readonly string[] =>
+	lockerFor(configs) === undefined ? [] : (lockedOfferIds ?? []);
+
 export const stripConfig = (
 	build: Build,
 	configId: string

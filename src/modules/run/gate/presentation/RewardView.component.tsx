@@ -1,7 +1,11 @@
+import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import {
+	describeConfig,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -18,16 +22,12 @@ import {
 import type { AuditNote } from "~/ui/terminal-theme/Audits.ui";
 import type { LedgerRow } from "~/ui/terminal-theme/Ledger.ui";
 import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
+import { storageGaugeFor } from "~/modules/run/run/presentation/PollView.component";
 import { plural } from "~/ui/terminal-theme/format";
 
 const round = (value: number) => Math.round(value * 10) / 10;
 
 const signed = (value: number) => (value < 0 ? `${value}` : `+${value}`);
-
-const kb = (value: number) => `${value} KB`;
-
-const signedKb = (value: number) =>
-	value < 0 ? `−${kb(-value)}` : `+${kb(value)}`;
 
 const byCategory = (
 	answered: readonly AnsweredPoll[]
@@ -37,7 +37,7 @@ const byCategory = (
 		return groups.set(poll.category, [...held, poll]);
 	}, new Map<CategoryCode, readonly AnsweredPoll[]>());
 
-const coverageFor = (answered: readonly AnsweredPoll[]) => {
+const coverageFor = (answered: readonly AnsweredPoll[], demand: number) => {
 	const rows: readonly CoverageRow[] = [...byCategory(answered)].map(
 		([category, polls]) => ({
 			category: getCategoryMetadata(category).name,
@@ -52,7 +52,7 @@ const coverageFor = (answered: readonly AnsweredPoll[]) => {
 		answered.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
 	);
 
-	return { rows, total: `${signed(total)}%` };
+	return { rows, total: `${signed(total)}%`, held: total, demand };
 };
 
 const rewardsFor = (view: RunView): readonly LedgerRow[] => {
@@ -76,17 +76,25 @@ const rewardsFor = (view: RunView): readonly LedgerRow[] => {
 	].filter((bill) => bill.charged !== 0);
 
 	return [
-		{ name: "gate cleared", figure: signedKb(baseKb) },
+		{ name: "gate cleared", figure: signedKbLabel(baseKb) },
 		...rows.map((row) => ({
 			name: row.config.label,
-			figure: signedKb(row.kb),
+			figure: signedKbLabel(row.kb),
 		})),
 		...bills.map((bill) => ({
 			name: bill.name,
-			figure: signedKb(-bill.charged),
+			figure: signedKbLabel(-bill.charged),
 			muted: true,
 		})),
-		{ name: "balance", value: kb(view.storage) },
+		{
+			name: "balance",
+			value: kbLabel(view.storage),
+			from:
+				gatePayout.storageBeforeClearKb === null
+					? undefined
+					: kbLabel(gatePayout.storageBeforeClearKb),
+			gauge: storageGaugeFor(view),
+		},
 	];
 };
 
@@ -97,7 +105,7 @@ const changedRow = (
 ): ChangedRow => ({
 	family: config.family,
 	name: config.label,
-	detail: config.description,
+	detail: describeConfig(config),
 	slots: slotsOf(config),
 	badge: { label, tone },
 });
@@ -142,7 +150,10 @@ export const RewardView = ({
 	const cleared = view.gatePayout.clearedGateNumber;
 	const swatch = swatchForGate(cleared);
 	const next = swatchForGate(view.gatesCleared);
-	const coverage = coverageFor(view.answeredThisGate);
+	const coverage = coverageFor(
+		view.answeredThisGate,
+		view.gatePayout.clearedGateDemand
+	);
 	const correct = view.answeredThisGate.filter(
 		(poll) => poll.outcome === "correct"
 	).length;

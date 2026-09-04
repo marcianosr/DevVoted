@@ -152,6 +152,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		planBilledKb: bill.paidKb,
 		planDowngraded: bill.downgraded ? true : undefined,
 		gateRewardKb: reward,
+		storageBeforeClearKb: state.storage,
 		interestThisGateKb: interest,
 		extraPickThisGateKb: extraPickKb,
 		currentIndex: nextIndex,

@@ -4,17 +4,12 @@ import {
 	largestSizeFitting,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import {
-	stackMatching,
-	type StarterStack,
-} from "~/modules/run/config/domain/stack.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	perAnswerPreviewFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
-import { Button } from "~/ui/Button.component";
 import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
 import { Columns } from "~/ui/Columns.ui";
 import type { ScreenAction } from "~/ui/Screen.ui";
@@ -22,26 +17,19 @@ import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
-import { StackPicker } from "~/modules/run/config/presentation/StackPicker.ui";
-import { StackPreviewList } from "~/modules/run/config/presentation/StackPreviewList.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
-import {
-	MAX_SLOTS,
-} from "~/modules/run/run/domain/rules.model";
+import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 
 type ConfiguringScreenProps = {
 	configs: readonly Config[];
 	slots: number;
 	slotsUsed: number;
 	slotsFree: number;
-	overflowSlots: number;
 	stake: GateStake;
 	bench: readonly Config[];
 	onInstall: (configId: string) => void;
 	onUninstall: (configId: string) => void;
-	stacks?: readonly StarterStack[];
-	onPickStack?: (stackId: string) => void;
 	startAction: ScreenAction;
 };
 
@@ -72,46 +60,16 @@ export const ConfiguringScreen = ({
 	slots,
 	slotsUsed,
 	slotsFree,
-	overflowSlots,
 	stake,
 	bench,
 	onInstall,
 	onUninstall,
-	stacks,
-	onPickStack,
 	startAction,
 }: ConfiguringScreenProps) => {
 	const { gateNumber } = stake;
 	const [previewId, setPreviewId] = useState<string | null>(null);
-	const [customBuild, setCustomBuild] = useState(false);
 	const full = slotsFree === 0;
 	const rows = roleRows(configs);
-	const stackMode = stacks !== undefined && onPickStack !== undefined;
-
-	if (stackMode && !customBuild) {
-		return (
-			<div className="grid grid-cols-1 items-start gap-8 md:grid-cols-3">
-				<section className="flex flex-col gap-4 md:col-span-2">
-					<Title>Pick your build</Title>
-					<Paragraph tone="muted">
-						Choose a stack. You can rebuild it later.
-					</Paragraph>
-					<StackPicker
-						stacks={stacks}
-						selectedStackId={stackMatching(configs)?.id}
-						onPick={onPickStack}
-						onCustomBuild={() => setCustomBuild(true)}
-						selectedDetail={<StackPreviewList rows={rows} />}
-					/>
-				</section>
-				<GateStakeReceipt
-					stake={stake}
-					overflowSlots={overflowSlots}
-					action={startAction}
-				/>
-			</div>
-		);
-	}
 
 	const previewConfig = full
 		? undefined
@@ -154,16 +112,6 @@ export const ConfiguringScreen = ({
 								</span>
 							))}
 						</div>
-						{stackMode ? (
-							<Button
-								variant="neutral"
-								size="small"
-								className="self-start"
-								onClick={() => setCustomBuild(false)}
-							>
-								← Back to stacks
-							</Button>
-						) : null}
 					</>
 				}
 				main={

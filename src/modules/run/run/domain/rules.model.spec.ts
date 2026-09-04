@@ -145,8 +145,8 @@ describe("the slot ladder (ADR-046)", () => {
 });
 
 describe("the storage plan (ADR-046)", () => {
-	it("opens on a free 512 KB cap", () => {
-		expect(FREE_PLAN.capKb).toBe(512);
+	it("opens on a free 256 KB cap", () => {
+		expect(FREE_PLAN.capKb).toBe(256);
 		expect(FREE_PLAN.perGateKb).toBe(0);
 	});
 
@@ -179,7 +179,7 @@ describe("the storage plan (ADR-046)", () => {
 
 	describe("the cap itself", () => {
 		it("leaves a balance under the cap alone", () => {
-			expect(cappedStorage(320, 0)).toBe(320);
+			expect(cappedStorage(200, 0)).toBe(200);
 		});
 
 		it("burns everything above the cap", () => {
@@ -187,7 +187,7 @@ describe("the storage plan (ADR-046)", () => {
 		});
 
 		it("holds more once a bigger plan is bought", () => {
-			expect(cappedStorage(900, 1)).toBe(768);
+			expect(cappedStorage(900, 1)).toBe(512);
 			expect(cappedStorage(900, 2)).toBe(900);
 		});
 

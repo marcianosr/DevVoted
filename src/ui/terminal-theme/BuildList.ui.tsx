@@ -13,6 +13,13 @@ const FIGURE = "shrink-0";
 const ACTION_ROW = "flex flex-col gap-0.5 py-0.5";
 const DETAIL = "pl-5";
 const FOCUSED = "-mx-2 rounded-md bg-zinc-100/5 px-2";
+const FOLD = "group/fold";
+const FOLD_SUMMARY =
+	"flex cursor-pointer list-none flex-col gap-1 py-0.5 select-none [&::-webkit-details-marker]:hidden";
+const FOLD_CARET =
+	"inline-block shrink-0 text-zinc-600 transition-transform group-open/fold:rotate-90";
+const FOLD_BODY = "flex flex-col items-start gap-1.5 pt-1 pb-0.5 pl-5";
+const SWAP_ICON = "⇄";
 const SKIPPED = "group/skipped";
 const SKIPPED_SUMMARY =
 	"flex cursor-pointer list-none items-center gap-2 py-0.5 select-none [&::-webkit-details-marker]:hidden";
@@ -35,8 +42,22 @@ export type BuildListRow = {
 		price: string;
 		onUse?: () => void;
 	};
+	swap?: {
+		label: string;
+		onUse?: () => void;
+	};
 	focused?: boolean;
 };
+
+const SwapPress = ({ swap }: { swap: NonNullable<BuildListRow["swap"]> }) => (
+	<IconButton
+		label={swap.label}
+		icon={SWAP_ICON}
+		tone="cerulean"
+		disabled={swap.onUse === undefined}
+		onUse={swap.onUse}
+	/>
+);
 
 export type BuildListProps = {
 	rows: readonly BuildListRow[];
@@ -60,30 +81,41 @@ const ActionRow = ({ row }: { row: BuildListRow }) => (
 			)}
 		</span>
 		<Text tone="muted" size="caption" className={DETAIL}>
-			{row.detail}
+			<Figures text={row.detail} />
 		</Text>
 	</div>
 );
 
 const RunningRow = ({ row }: { row: BuildListRow }) => (
-	<div className={clsx(row.focused === true && FOCUSED)}>
-		<span className={LINE}>
-			<Dot variant={row.dot} />
-			<Text className={NAME}>{row.name}</Text>
-			{row.figure === undefined ? null : (
-				<span className={FIGURE}>
-					{row.dot === "blocked" ? (
-						<Text tone="cinnabar">{row.figure}</Text>
-					) : (
-						<Figures text={row.figure} />
-					)}
+	<details className={clsx(FOLD, row.focused === true && FOCUSED)}>
+		<summary className={FOLD_SUMMARY}>
+			<span className={LINE}>
+				<Dot variant={row.dot} />
+				<Text className={NAME}>{row.name}</Text>
+				{row.figure === undefined ? null : (
+					<span className={FIGURE}>
+						{row.dot === "blocked" ? (
+							<Text tone="cinnabar">{row.figure}</Text>
+						) : (
+							<Figures text={row.figure} />
+						)}
+					</span>
+				)}
+				<span aria-hidden className={FOLD_CARET}>
+					›
 				</span>
+			</span>
+			{row.meterPercent === undefined ? null : (
+				<Meter percent={row.meterPercent} className="ml-5" />
 			)}
-		</span>
-		{row.meterPercent === undefined ? null : (
-			<Meter percent={row.meterPercent} className="mt-1 ml-5" />
-		)}
-	</div>
+		</summary>
+		<div className={FOLD_BODY}>
+			<Text tone="muted" size="caption">
+				<Figures text={row.detail} />
+			</Text>
+			{row.swap === undefined ? null : <SwapPress swap={row.swap} />}
+		</div>
+	</details>
 );
 
 const SkippedFold = ({
@@ -110,8 +142,13 @@ const SkippedFold = ({
 						{row.name}
 					</Text>
 					<Text tone="faint" size="caption">
-						{row.detail}
+						<Figures text={row.detail} />
 					</Text>
+					{row.swap === undefined ? null : (
+						<span className="pt-1">
+							<SwapPress swap={row.swap} />
+						</span>
+					)}
 				</div>
 			))}
 		</div>

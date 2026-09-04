@@ -1,21 +1,29 @@
 import { useState } from "react";
 
+import { kbLabel } from "~/shared/lib/storage";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
+	abArmLabel,
 	type Config,
+	describeConfig,
 	isUpgradable,
+	levelUp,
+	otherArmOf,
 	slotsOf,
 	upgradeCoverageRequired,
+	upgradePreview,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import type {
 	RunView,
 	ShopOffer,
-	SlotDealView,
 	StoragePlanView,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { coverageFor } from "~/modules/run/run/presentation/PollView.component";
+import {
+	coverageFor,
+	storageGaugeFor,
+} from "~/modules/run/run/presentation/PollView.component";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import { offerRefusalText } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import {
@@ -24,11 +32,9 @@ import {
 	type ShopBuildRow,
 	type ShopOfferRow,
 } from "~/ui/terminal-theme/screens/ShopScreen.ui";
+import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
 import type { StoragePlanProps } from "~/ui/terminal-theme/StoragePlan.ui";
-import type { BuyLineProps } from "~/ui/terminal-theme/BuyLine.ui";
 import { plural } from "~/ui/terminal-theme/format";
-
-const kb = (value: number) => `${value} KB`;
 
 const versionOf = (config: Config) => `v${config.level ?? 1}`;
 
@@ -50,7 +56,7 @@ const upgradeShortfalls = (
 	return [
 		...(view.storage >= cost
 			? []
-			: [`Costs ${kb(cost)}, you have ${kb(view.storage)}.`]),
+			: [`Costs ${kbLabel(cost)}, you have ${kbLabel(view.storage)}.`]),
 		...(category === undefined || held >= required
 			? []
 			: [
@@ -69,54 +75,127 @@ const storagePlanProps = (
 		0,
 		plan.options.findIndex((option) => option.held)
 	);
-	const next = plan.options.at(heldIndex + 1);
-	const previous = heldIndex > 0 ? plan.options.at(heldIndex - 1) : undefined;
 
 	return {
-		heldKb,
-		current: { capKb: plan.capKb, rentKb: plan.perGateKb },
-		next:
-			next === undefined
-				? undefined
-				: { capKb: next.capKb, rentKb: next.perGateKb },
-		drop:
-			previous === undefined
-				? undefined
-				: {
-						toKb: previous.capKb,
-						onDrop: locked ? undefined : () => onSetPlan(previous.tier),
-					},
-		moreRungs: Math.max(0, plan.options.length - heldIndex - 2),
-		topCapKb: plan.options.at(-1)?.capKb,
-		onUpgrade:
-			next === undefined || locked ? undefined : () => onSetPlan(next.tier),
+		meter: {
+			heldKb,
+			capKb: plan.capKb,
+			nextCapKb: plan.options.at(heldIndex + 1)?.capKb,
+		},
+		cards: plan.options.map((option) => {
+			const revealed = option.tier <= heldIndex + 1;
+			const selectable =
+				revealed && !option.held && !locked && option.affordable;
+
+			return {
+				capKb: option.capKb,
+				rentKb: option.perGateKb,
+				held: option.held,
+				revealed,
+				burnsKb: option.burnsKb,
+				refusal:
+					revealed && !option.held && !option.affordable
+						? `bills ${kbLabel(option.perGateKb)} a gate, you hold ${kbLabel(heldKb)}`
+						: undefined,
+				onSelect: selectable ? () => onSetPlan(option.tier) : undefined,
+			};
+		}),
 	};
 };
+
+const storageMeta = (view: RunView) =>
+	view.overflowSlots > 0
+		? `${view.slotsUsed} of ${view.slots} · over by ${view.overflowSlots}`
+		: `${view.slotsUsed} of ${view.slots} · ${view.slotsFree} free`;
 
 const offerRefused = (offer: ShopOffer) =>
 	offer.owned || offer.refusal !== null;
 
-const slotLine = (
-	deal: SlotDealView,
-	label: string,
-	onUse: () => void,
-	locked: boolean
-): BuyLineProps | undefined => {
-	if (deal.costKb === undefined) return undefined;
+const swapFor = (
+	config: Config,
+	locked: boolean,
+	onSwitchArm: (configId: string) => void
+): ShopBuildRow["swap"] => {
+	const arm = otherArmOf(config);
+	if (arm === undefined) return undefined;
 	return {
-		label,
-		detail: deal.refusal,
-		price: kb(deal.costKb),
-		onBuy: deal.refusal === undefined && !locked ? onUse : undefined,
+		label: `Ship arm ${abArmLabel(arm)}`,
+		onUse: locked ? undefined : () => onSwitchArm(config.id),
 	};
 };
+
+const slotRows = (
+	view: RunView,
+	locked: boolean,
+	onBuySlot: () => void,
+	onCashSlot: () => void
+): readonly SlotDealRow[] => {
+	const { buy, cash } = view.slotDeals;
+
+	return [
+		...(cash.costKb === undefined
+			? []
+			: [
+					{
+						name: `Slot ${view.slots} · empty`,
+						label: `Cash slot ${view.slots}`,
+						detail: cash.refusal,
+						price: kbLabel(cash.costKb),
+						receives: true,
+						onUse:
+							cash.refusal === undefined && !locked ? onCashSlot : undefined,
+					},
+				]),
+		...(buy.costKb === undefined
+			? []
+			: [
+					{
+						name: `Slot ${view.slots + 1}`,
+						label: `Buy slot ${view.slots + 1}`,
+						detail: buy.refusal,
+						price: kbLabel(buy.costKb),
+						onUse: buy.refusal === undefined && !locked ? onBuySlot : undefined,
+					},
+				]),
+	];
+};
+
+const offerLockFor = (
+	offer: ShopOffer,
+	controls: RunView["shopControls"],
+	locked: boolean,
+	onLock: (configId: string) => void,
+	onUnlock: (configId: string) => void
+): ShopOfferRow["lock"] => {
+	if (!controls.lockAvailable || offer.upgrades) return undefined;
+	const pinned = controls.lockedOfferIds.includes(offer.config.id);
+	if (pinned)
+		return {
+			pinned,
+			label: "Release the lock",
+			onToggle: locked ? undefined : () => onUnlock(offer.config.id),
+		};
+	return {
+		pinned,
+		label: `Lock for ${kbLabel(controls.lockCost)}`,
+		onToggle:
+			controls.canLock && !locked ? () => onLock(offer.config.id) : undefined,
+	};
+};
+
+const planBillLock = (view: RunView): string | undefined =>
+	view.storagePlan.perGateKb > view.storage
+		? `Storage plan bills ${kbLabel(view.storagePlan.perGateKb)} a gate, you hold ${kbLabel(view.storage)}`
+		: undefined;
 
 export type ShopViewProps = {
 	view: RunView;
 	onDraft: (configId: string) => void;
 	onSell: (configId: string) => void;
 	onUpgrade: (configId: string) => void;
+	onSwitchArm: (configId: string) => void;
 	onLock: (configId: string) => void;
+	onUnlock: (configId: string) => void;
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
@@ -131,7 +210,9 @@ export const ShopView = ({
 	onDraft,
 	onSell,
 	onUpgrade,
+	onSwitchArm,
 	onLock,
+	onUnlock,
 	onRebuild,
 	onExtend,
 	onPlantPin,
@@ -161,8 +242,8 @@ export const ShopView = ({
 			cancelLabel: "Cancel",
 			note:
 				confirming === "upgrade"
-					? upgradeShortfalls(view, config).join(" ")
-					: `Refunds ${kb(sellRefundIn(view.configs, config))}`,
+					? describeConfig(levelUp(config))
+					: `Refunds ${kbLabel(sellRefundIn(view.configs, config))}`,
 			onConfirm: () => {
 				disarm();
 				if (confirming === "upgrade") return onUpgrade(config.id);
@@ -179,25 +260,29 @@ export const ShopView = ({
 		return {
 			family: config.family,
 			name: config.label,
-			detail: config.description,
+			detail: describeConfig(config),
 			slots: slotsOf(config),
 			version: versionOf(config),
 			maxed: !isUpgradable(config),
 			upgrade: isUpgradable(config)
 				? {
 						version: `v${level + 1}`,
-						changes: [{ from: `v${level}`, to: `v${level + 1}` }],
-						price: kb(upgradeStorageCost(level)),
+						changes: upgradePreview(config),
+						price: kbLabel(upgradeStorageCost(level)),
 						label: "Upgrade",
+						reason: ready
+							? undefined
+							: upgradeShortfalls(view, config).join(" "),
 						onArm: ready && !locked ? arm(config.id, "upgrade") : undefined,
 					}
 				: undefined,
 			remove: {
 				label: "Uninstall",
-				value: kb(sellRefundIn(view.configs, config)),
+				value: kbLabel(sellRefundIn(view.configs, config)),
 				onArm:
 					view.atMinimumWidth || locked ? undefined : arm(config.id, "remove"),
 			},
+			swap: swapFor(config, locked, onSwitchArm),
 			armed: armedFor(config),
 		};
 	});
@@ -207,26 +292,23 @@ export const ShopView = ({
 		name: offer.config.label,
 		detail:
 			offer.refusal === null
-				? offer.config.description
+				? describeConfig(offer.config)
 				: offerRefusalText(offer.refusal),
 		slots: slotsOf(offer.config),
-		price: kb(offer.priceKb),
-		buyLabel: offer.owned ? "Installed" : "Install",
+		version: versionOf(offer.config),
+		upgrades: offer.upgrades,
+		price: kbLabel(offer.priceKb),
+		buyLabel: offer.owned
+			? "Installed"
+			: offer.upgrades
+				? "Upgrade"
+				: "Install",
 		onBuy:
 			offerRefused(offer) || locked
 				? undefined
 				: () => onDraft(offer.config.id),
 		refused: offerRefused(offer),
-		lock: shopControls.lockAvailable
-			? {
-					pinned: shopControls.lockedOfferIds.includes(offer.config.id),
-					label: "Keep for the next shop",
-					onToggle:
-						shopControls.canLock && !locked
-							? () => onLock(offer.config.id)
-							: undefined,
-				}
-			: undefined,
+		lock: offerLockFor(offer, shopControls, locked, onLock, onUnlock),
 	}));
 
 	return (
@@ -237,8 +319,9 @@ export const ShopView = ({
 				subtitle: `before gate ${nextGate}`,
 				swatch: swatch?.theme,
 				swatchState: "pending",
-				value: kb(view.storage),
+				value: kbLabel(view.storage),
 				caption: "balance",
+				gauge: storageGaugeFor(view),
 				coverage: coverageFor(view),
 			}}
 			notice={
@@ -247,23 +330,13 @@ export const ShopView = ({
 					: undefined
 			}
 			storage={{
-				meta: `${view.slotsUsed} of ${view.slots} · ${view.slots - view.slotsUsed} free`,
+				meta: storageMeta(view),
+				slots: view.slots,
 			}}
 			build={{
 				meta: `${view.configs.length}`,
 				rows: buildRows,
-				buySlot: slotLine(
-					view.slotDeals.buy,
-					`Buy slot ${view.slots + 1}`,
-					onBuySlot,
-					locked
-				),
-				cashSlot: slotLine(
-					view.slotDeals.cash,
-					`Cash slot ${view.slots}`,
-					onCashSlot,
-					locked
-				),
+				slotRows: slotRows(view, locked, onBuySlot, onCashSlot),
 			}}
 			offers={{
 				meta: `${plural(view.offers.length, "offer")}${
@@ -276,14 +349,14 @@ export const ShopView = ({
 					? {
 							note: "one more offer, here and every shop after",
 							label: "Extend",
-							price: kb(shopControls.extendCost),
+							price: kbLabel(shopControls.extendCost),
 							onExtend:
 								shopControls.canExtend && !locked ? onExtend : undefined,
 						}
 					: undefined,
 				rebuild: {
 					label: "Rebuild offers",
-					price: kb(shopControls.rebuildCost),
+					price: kbLabel(shopControls.rebuildCost),
 					onBuy:
 						shopControls.rebuildAvailable && shopControls.canRebuild && !locked
 							? onRebuild
@@ -301,7 +374,7 @@ export const ShopView = ({
 					? {
 							label: "Buy a git tag",
 							detail: `If this run dies, the next one checks out at gate ${nextGate} instead of gate 0. One per run.`,
-							price: kb(shopControls.pinCost),
+							price: kbLabel(shopControls.pinCost),
 							onBuy: shopControls.canPin && !locked ? onPlantPin : undefined,
 						}
 					: undefined
@@ -310,7 +383,7 @@ export const ShopView = ({
 			continueLock={
 				view.overflowSlots > 0
 					? `Over capacity by ${plural(view.overflowSlots, "slot")}`
-					: undefined
+					: planBillLock(view)
 			}
 			onContinue={onContinue}
 		/>

@@ -1,66 +1,52 @@
+import { kbLabel } from "~/shared/lib/storage";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
-import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
-import type { SlotDealView } from "~/modules/run/run/application/runView.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	NewRunScreen,
-	type DealtRow,
-	type NewRunBuildRow,
-	type StartCombo,
+	type DealRow,
 } from "~/ui/terminal-theme/screens/NewRunScreen.ui";
-import type { BuyLineProps } from "~/ui/terminal-theme/BuyLine.ui";
+import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
 import { plural } from "~/ui/terminal-theme/format";
 
-const kb = (value: number) => `${value} KB`;
+const slotRows = (
+	view: RunView,
+	onBuySlot: () => void,
+	onRefundSlot: () => void
+): readonly SlotDealRow[] => {
+	const { buy, cash } = view.startSlotDeals;
 
-const versionOf = (config: Config) => `v${config.level ?? 1}`;
-
-// The deal is the distinct configs the three starter stacks are built from, so
-// a stack can be taken whole or mixed from the same rows.
-const dealtFromStacks = (): readonly Config[] => {
-	const seen = new Set<string>();
-
-	return STARTER_STACKS.flatMap((stack) =>
-		stack.configs.filter((config) => {
-			if (seen.has(config.id)) return false;
-			seen.add(config.id);
-			return true;
-		})
-	);
-};
-
-const combosFor = (
-	onPickStack: (stackId: string) => void
-): readonly StartCombo[] =>
-	STARTER_STACKS.map((stack) => ({
-		id: stack.id,
-		name: stack.name,
-		blurb: stack.blurb,
-		recommended: stack.recommended,
-		takeLabel: "Take this stack",
-		onTake: () => onPickStack(stack.id),
-	}));
-
-const slotLine = (
-	deal: SlotDealView,
-	label: string,
-	onUse: () => void
-): BuyLineProps | undefined => {
-	if (deal.costKb === undefined) return undefined;
-	return {
-		label,
-		detail: deal.refusal,
-		price: kb(deal.costKb),
-		onBuy: deal.refusal === undefined ? onUse : undefined,
-	};
+	return [
+		...(cash.costKb === undefined
+			? []
+			: [
+					{
+						name: `Slot ${view.slots} · empty`,
+						label: `Hand slot ${view.slots} back`,
+						detail: cash.refusal,
+						price: kbLabel(cash.costKb),
+						receives: true,
+						onUse: cash.refusal === undefined ? onRefundSlot : undefined,
+					},
+				]),
+		...(buy.costKb === undefined
+			? []
+			: [
+					{
+						name: `Slot ${view.slots + 1}`,
+						label: `Buy slot ${view.slots + 1}`,
+						detail: buy.refusal,
+						price: kbLabel(buy.costKb),
+						onUse: buy.refusal === undefined ? onBuySlot : undefined,
+					},
+				]),
+	];
 };
 
 export type StartViewProps = {
 	view: RunView;
 	onToggle: (configId: string) => void;
-	onPickStack: (stackId: string) => void;
 	onBuySlot: () => void;
 	onRefundSlot: () => void;
 	onStart: () => void;
@@ -69,7 +55,6 @@ export type StartViewProps = {
 export const StartView = ({
 	view,
 	onToggle,
-	onPickStack,
 	onBuySlot,
 	onRefundSlot,
 	onStart,
@@ -78,28 +63,22 @@ export const StartView = ({
 	const swatch = swatchForGate(gateStake.gateNumber);
 	const installed = new Set(view.configs.map((config) => config.id));
 
-	const buildRows: readonly NewRunBuildRow[] = view.configs.map((config) => ({
-		family: config.family,
-		name: config.label,
-		detail: config.description,
-		slots: slotsOf(config),
-		version: versionOf(config),
-		remove: { label: `Uninstall ${config.label}`, onRemove: () => onToggle(config.id) },
-	}));
-
-	const dealt = dealtFromStacks().filter((config) => !installed.has(config.id));
-	const dealtRows: readonly DealtRow[] = dealt.map((config) => {
+	const dealRow = (config: Config): DealRow => {
+		const selected = installed.has(config.id);
 		const fits = slotsOf(config) <= view.slotsFree;
 		return {
 			family: config.family,
 			name: config.label,
 			detail: config.description,
 			slots: slotsOf(config),
-			deployLabel: `Install ${config.label}`,
-			onDeploy: fits ? () => onToggle(config.id) : undefined,
-			locked: !fits,
+			selected,
+			toggleLabel: selected
+				? `Uninstall ${config.label}`
+				: `Install ${config.label}`,
+			onToggle: selected || fits ? () => onToggle(config.id) : undefined,
+			locked: !selected && !fits,
 		};
-	});
+	};
 
 	return (
 		<NewRunScreen
@@ -109,33 +88,19 @@ export const StartView = ({
 				subtitle: `${swatch?.gateName ?? "First gate"} · ${gateStake.coverageDemand}% coverage · miss removes ${plural(gateStake.peelSlotsOnFailure, "slot")}`,
 				swatch: swatch?.theme,
 				swatchState: "pending",
-				value: kb(startSlotDeals.archiveKb),
+				value: kbLabel(startSlotDeals.archiveKb),
 				caption: "archive",
 			}}
-			combos={{
-				meta: `${STARTER_STACKS.length}`,
-				rows: combosFor(onPickStack),
+			dealt={{
+				meta: `${view.configs.length} of ${view.available.length} picked`,
+				rows: view.available.map(dealRow),
 			}}
 			storage={{
 				meta: `${view.slotsUsed} of ${plural(view.slots, "slot")}`,
 				slots: view.slots,
+				slotRows: slotRows(view, onBuySlot, onRefundSlot),
 			}}
-			build={{
-				meta: `${view.configs.length}`,
-				rows: buildRows,
-				buySlot: slotLine(
-					startSlotDeals.buy,
-					`Buy slot ${view.slots + 1}`,
-					onBuySlot
-				),
-				cashSlot: slotLine(
-					startSlotDeals.cash,
-					`Refund slot ${view.slots}`,
-					onRefundSlot
-				),
-			}}
-			dealt={{ meta: `${dealtRows.length}`, rows: dealtRows }}
-			startLabel={view.canStart ? "Start the run →" : "Fill every slot to start"}
+			startLabel={view.canStart ? "Start the run →" : "Pick a config to start"}
 			onStart={view.canStart ? onStart : undefined}
 		/>
 	);

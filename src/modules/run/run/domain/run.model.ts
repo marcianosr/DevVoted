@@ -63,6 +63,7 @@ export type RunState = {
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
 	readonly gateRewardKb?: number;
+	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly extraPickThisGateKb?: number;
 	readonly slotsBought?: number;
@@ -98,6 +99,20 @@ export const pickBudgetFor = (
 					: correctOptionCount(poll)),
 			0
 		);
+
+export type AnswerTypeSplit = {
+	readonly single: number;
+	readonly multiple: number;
+};
+
+export const answerTypesOf = (polls: readonly RunPoll[]): AnswerTypeSplit =>
+	polls.reduce(
+		(split, poll) => ({
+			single: split.single + (poll.answerType === "single" ? 1 : 0),
+			multiple: split.multiple + (poll.answerType === "multiple" ? 1 : 0),
+		}),
+		{ single: 0, multiple: 0 }
+	);
 
 export const windowStartIndex = (
 	state: Pick<RunState, "currentIndex" | "window">

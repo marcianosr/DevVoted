@@ -2,10 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import {
-	STARTER_STACKS,
-	starterStackFor,
-} from "~/modules/run/config/domain/stack.model";
 import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { ConfiguringScreen } from "~/modules/run/build/presentation/ConfiguringScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
@@ -30,7 +26,6 @@ const base = {
 	slots: 4,
 	slotsUsed: 2,
 	slotsFree: 2,
-	overflowSlots: 0,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
 	onInstall: vi.fn(),
 	onUninstall: vi.fn(),
@@ -280,159 +275,5 @@ describe(ConfiguringScreen, () => {
 
 		expect(screen.queryByText("byte")).not.toBeInTheDocument();
 		expect(screen.queryByText("bit")).not.toBeInTheDocument();
-	});
-});
-
-describe("stack mode (ADR-026)", () => {
-	const stackBase = {
-		...base,
-		configs: [],
-		stacks: STARTER_STACKS,
-		onPickStack: vi.fn(),
-	};
-
-	it("offers one radio row per stack", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getAllByRole("radio")).toHaveLength(STARTER_STACKS.length);
-	});
-
-	it("picks a stack when its row is clicked", () => {
-		const onPickStack = vi.fn();
-		render(<ConfiguringScreen {...stackBase} onPickStack={onPickStack} />);
-		fireEvent.click(screen.getByRole("radio", { name: /Gamble/ }));
-		expect(onPickStack).toHaveBeenCalledWith("ship-it");
-	});
-
-	it("reads the stack the build already holds as the checked one", () => {
-		const shipIt = starterStackFor("ship-it");
-		if (!shipIt) throw new Error("ship-it stack missing");
-		render(<ConfiguringScreen {...stackBase} configs={shipIt.configs} />);
-		expect(screen.getByRole("radio", { name: /Gamble/ })).toBeChecked();
-		expect(screen.getByRole("radio", { name: /Safe start/ })).not.toBeChecked();
-	});
-
-	it("replaces the bench and build with the one stack decision", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText("Pick your build")).toBeInTheDocument();
-		expect(
-			screen.queryByText("Click a config to add it to your build")
-		).not.toBeInTheDocument();
-		expect(screen.queryByText("Your build")).not.toBeInTheDocument();
-	});
-
-	it("shows the same receipt as the classic screen — no separate variant", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.getByText(/5 polls/)).toBeInTheDocument();
-		expect(screen.getByText("Gate cleared")).toBeInTheDocument();
-		expect(
-			screen.getByText(/Miss the target: the gate peels/)
-		).toBeInTheDocument();
-	});
-
-	it("carries the start action inside the build summary, not the screen footer", () => {
-		const onClick = vi.fn();
-		render(
-			<ConfiguringScreen
-				{...stackBase}
-				startAction={{ label: "Start run →", onClick }}
-			/>
-		);
-		const receipt = within(screen.getByTestId("gate-stake-receipt"));
-		fireEvent.click(receipt.getByRole("button", { name: "Start run →" }));
-		expect(onClick).toHaveBeenCalledTimes(1);
-	});
-
-	it("carries no fatal wording — the opening build cannot be emptied by one peel", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(
-			screen.getByText(/Miss the target: the gate peels/)
-		).toBeInTheDocument();
-		expect(screen.queryByText(/ends the run/)).not.toBeInTheDocument();
-	});
-
-	it("stays on the classic bench screen when no stacks are offered", () => {
-		render(<ConfiguringScreen {...base} />);
-		expect(screen.queryByText("Pick your build")).not.toBeInTheDocument();
-		expect(
-			screen.getByText("Click a config to add it to your build")
-		).toBeInTheDocument();
-	});
-
-	it("expands the picked stack into its trimmed preview — payoff and dot", () => {
-		const testEverything = starterStackFor("test-everything");
-		if (!testEverything) throw new Error("test-everything stack missing");
-		render(
-			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
-		);
-		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.textContent === "JavaScript polls reward ×1.25 coverage"
-			)
-		).toBeInTheDocument();
-		expect(screen.queryByText("0/1")).not.toBeInTheDocument();
-		expect(screen.getAllByRole("img").length).toBeGreaterThan(0);
-	});
-
-	it("keeps a linter's fee behind its own details tap — the expanded config's mechanics", () => {
-		const testEverything = starterStackFor("test-everything");
-		if (!testEverything) throw new Error("test-everything stack missing");
-		render(
-			<ConfiguringScreen {...stackBase} configs={testEverything.configs} />
-		);
-		expect(screen.queryByText(CONFIGS.eslint.costs)).not.toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: /more details/ }));
-		expect(screen.getByText(CONFIGS.eslint.costs)).toBeInTheDocument();
-	});
-
-	it("keeps unpicked stacks as plain chips — no build to show yet", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.queryByText("1 correct answer")).not.toBeInTheDocument();
-	});
-
-	it("opens the full bench from the Customize row", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		fireEvent.click(
-			screen.getByRole("button", { name: /Customize all 4 slots/ })
-		);
-		expect(
-			screen.getByText("Click a config to add it to your build")
-		).toBeInTheDocument();
-		expect(screen.queryByText("Pick your build")).not.toBeInTheDocument();
-	});
-
-	it("walks back from the bench to the stacks", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		fireEvent.click(
-			screen.getByRole("button", { name: /Customize all 4 slots/ })
-		);
-		fireEvent.click(screen.getByRole("button", { name: /Back to stacks/ }));
-		expect(screen.getByText("Pick your build")).toBeInTheDocument();
-		expect(screen.getAllByRole("radio")).toHaveLength(STARTER_STACKS.length);
-	});
-
-	it("keeps the bench free of the stacks detour when no stacks were offered", () => {
-		render(<ConfiguringScreen {...base} />);
-		expect(
-			screen.queryByRole("button", { name: /Back to stacks/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("says nothing about width while the build simply has room left", () => {
-		render(<ConfiguringScreen {...stackBase} />);
-		expect(screen.queryByText("To start")).not.toBeInTheDocument();
-	});
-
-	it("names the overflow when a repossessed rung leaves the build too wide", () => {
-		render(<ConfiguringScreen {...stackBase} overflowSlots={3} />);
-		expect(screen.getByText("To start")).toBeInTheDocument();
-		expect(
-			screen.getByText(
-				(_, element) =>
-					element?.tagName === "SPAN" &&
-					element.textContent ===
-						"Over capacity by 3 slots — minify, uninstall, or buy a slot"
-			)
-		).toBeInTheDocument();
 	});
 });

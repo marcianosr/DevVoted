@@ -37,7 +37,7 @@ const secondPoll: PollScreenProps = {
 	},
 	theme: "lavender",
 	build: {
-		meta: "4",
+		running: 1,
 		total: { label: "Total", value: "×1.25" },
 		rows: [
 			{
@@ -140,7 +140,7 @@ export const ToolsUsed: Story = {
 			{
 				letter: "C",
 				label: "last()",
-				state: "dimmed",
+				state: "crossedOut",
 				note: "crossed out",
 			},
 		],
@@ -168,7 +168,7 @@ export const TenConfigBuild: Story = {
 	args: {
 		...secondPoll,
 		build: {
-			meta: "10",
+			running: 7,
 			total: { label: "Total", value: "×3.1" },
 			rows: [
 				{
@@ -282,7 +282,7 @@ export const EliteGate: Story = {
 		},
 		theme: "elite",
 		build: {
-			meta: "10",
+			running: 6,
 			total: { label: "Total", value: "×6.2" },
 			rows: [
 				{

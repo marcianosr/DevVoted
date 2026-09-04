@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -13,11 +14,6 @@ import type { LedgerRow } from "~/ui/terminal-theme/Ledger.ui";
 import { plural } from "~/ui/terminal-theme/format";
 
 const percent = (value: number) => `${value.toFixed(1)}%`;
-
-const kb = (value: number) => `${value} KB`;
-
-const signedKb = (value: number) =>
-	value < 0 ? `−${kb(-value)}` : `+${kb(value)}`;
 
 const auditNote = (audit: AuditView): AuditNote => ({
 	code: `${audit.code}`,
@@ -53,13 +49,13 @@ const storageFor = (view: RunView): readonly LedgerRow[] => {
 		{ name: "gate cleared", value: "not paid", muted: true },
 		...(faucetThisGateKb === 0
 			? []
-			: [{ name: "correct answers", figure: signedKb(faucetThisGateKb) }]),
+			: [{ name: "correct answers", figure: signedKbLabel(faucetThisGateKb) }]),
 		...bills.map((bill) => ({
 			name: bill.name,
-			figure: signedKb(-bill.charged),
+			figure: signedKbLabel(-bill.charged),
 			muted: true,
 		})),
-		{ name: "balance", value: kb(view.storage) },
+		{ name: "balance", value: kbLabel(view.storage) },
 	];
 };
 

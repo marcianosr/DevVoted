@@ -155,6 +155,25 @@ describe("RewardView", () => {
 
 		expect(screen.getByText("240 KB")).toBeInTheDocument();
 	});
+
+	// The clear is the one moment the number moves; showing only where it landed
+	// makes the player do the subtraction the screen already knows.
+	it("names the balance the clear started from", () => {
+		renderCleared(
+			createMockRunView({
+				...cleared,
+				gatePayout: { ...cleared.gatePayout, storageBeforeClearKb: 176 },
+			})
+		);
+
+		expect(screen.getByText("176 KB →")).toBeInTheDocument();
+	});
+
+	it("says nothing about a starting balance the run never recorded", () => {
+		renderCleared();
+
+		expect(screen.queryByText(/KB →$/)).not.toBeInTheDocument();
+	});
 });
 
 describe("RewardView changed configs", () => {

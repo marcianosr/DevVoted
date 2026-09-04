@@ -114,8 +114,8 @@ describe("hydrateRunState — the roster is authoritative", () => {
 	it("passes an unknown config id through untouched instead of crashing the run", () => {
 		const retired = {
 			...CONFIGS.agentsMd,
-			id: "yarn-lock",
-			label: "yarn.lock",
+			id: "team-rocket",
+			label: "Team Rocket",
 		};
 		const state: RunState = {
 			...baseState,

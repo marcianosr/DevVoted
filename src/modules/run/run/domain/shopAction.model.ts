@@ -1,4 +1,5 @@
 import {
+	abArmLabel,
 	canMinify,
 	type Config,
 	isUpgradable,
@@ -6,6 +7,7 @@ import {
 	minify as minified,
 	minifySavingSlots,
 	slotsOf,
+	switchArm,
 	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
@@ -13,6 +15,8 @@ import {
 	freeSlots,
 	hasRoomFor,
 	type Build,
+	lockerFor,
+	locksSurviving,
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
 import {
@@ -20,10 +24,9 @@ import {
 	draftSeed,
 	EXTEND_FROM_GATE,
 	extendCost,
+	isUpgradeOffer,
 	LOCK_COST_KB,
-	LOCK_FROM_GATE,
 	MAX_EXTENSIONS,
-	MAX_LOCKED_OFFERS,
 	offerCount,
 	rebuildCost,
 	rollDraft,
@@ -38,6 +41,7 @@ import {
 	BASE_SLOTS,
 	MAX_SLOTS,
 	nextSlotPriceKb,
+	planBillKb,
 	slotCashOutKb,
 	STORAGE_PLANS,
 	storagePlanFor,
@@ -62,6 +66,26 @@ const stayReward = (
 	log: withLog(state, line),
 });
 
+const draftUpgrade = (
+	state: RunState,
+	offer: Config,
+	cost: number
+): RunState => ({
+	...stayReward(
+		state,
+		withBuild(
+			state.build,
+			state.build.configs.map((config) =>
+				config.id === offer.id ? offer : config
+			)
+		),
+		state.draftOptions.filter((option) => option !== offer),
+		`Drafted ${offer.label} v${offer.level ?? 1} (-${cost}KB).`
+	),
+	storage: state.storage - cost,
+	draftedThisGate: [...state.draftedThisGate, offer.id],
+});
+
 export const draft = (state: RunState, configId: string): RunState => {
 	const chosen = state.draftOptions.find(
 		(candidate) => candidate.id === configId
@@ -71,6 +95,8 @@ export const draft = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	const cost = draftCostIn(state.build.configs, chosen);
+	if (isUpgradeOffer(state.build.configs, chosen))
+		return state.storage < cost ? state : draftUpgrade(state, chosen, cost);
 	if (
 		alreadyOwned ||
 		!hasRoomFor(state.build, slotsOf(chosen)) ||
@@ -170,8 +196,11 @@ export const cashSlot = (state: RunState): RunState => {
 export const canSetStoragePlan = (tier: number): boolean =>
 	tier >= 0 && tier < STORAGE_PLANS.length;
 
+export const canAffordPlan = (state: RunState, tier: number): boolean =>
+	tier <= (state.storagePlan ?? 0) || planBillKb(tier) <= state.storage;
+
 export const setStoragePlan = (state: RunState, tier: number): RunState => {
-	if (!canSetStoragePlan(tier)) return state;
+	if (!canSetStoragePlan(tier) || !canAffordPlan(state, tier)) return state;
 	const plan = storagePlanFor(tier);
 	return {
 		...state,
@@ -202,6 +231,26 @@ export const minifyConfig = (state: RunState, configId: string): RunState => {
 		),
 		state.draftOptions,
 		`Minified ${target.label} — ${freed} slot${freed > 1 ? "s" : ""} freed, half the bonus gone.`
+	);
+};
+
+export const switchAbArm = (state: RunState, configId: string): RunState => {
+	const target = state.build.configs.find(
+		(candidate) => candidate.id === configId
+	);
+	const switched = target === undefined ? undefined : switchArm(target);
+	if (!target || switched === target || switched?.abArm === undefined)
+		return state;
+	return stayReward(
+		state,
+		withBuild(
+			state.build,
+			state.build.configs.map((config) =>
+				config.id === configId ? switched : config
+			)
+		),
+		state.draftOptions,
+		`${target.label} switches to arm ${abArmLabel(switched.abArm)}.`
 	);
 };
 
@@ -260,8 +309,7 @@ export const rebuildAvailable = (state: RunState): boolean =>
 	!shopOffersFullRoster(state.build.configs);
 
 export const lockAvailable = (state: RunState): boolean =>
-	state.gatesCleared >= LOCK_FROM_GATE &&
-	(state.lockedOfferIds ?? []).length < MAX_LOCKED_OFFERS &&
+	lockerFor(state.build.configs) !== undefined &&
 	!shopOffersFullRoster(state.build.configs);
 
 export const canLock = (state: RunState): boolean =>
@@ -301,7 +349,23 @@ export const lockOffer = (state: RunState, configId: string): RunState => {
 		lockedOfferIds: [...locked, configId],
 		log: withLog(
 			state,
-			`Locked ${offer.label} (-${LOCK_COST_KB}KB) — it holds until you install it.`
+			`Locked ${offer.label} (-${LOCK_COST_KB}KB) — it holds until you install or release it.`
+		),
+	};
+};
+
+export const unlockOffer = (state: RunState, configId: string): RunState => {
+	const locked = state.lockedOfferIds ?? [];
+	if (!locked.includes(configId)) return state;
+	const offer = state.draftOptions.find(
+		(candidate) => candidate.id === configId
+	);
+	return {
+		...state,
+		lockedOfferIds: locked.filter((id) => id !== configId),
+		log: withLog(
+			state,
+			`Released ${offer?.label ?? configId} — the next roll may replace it.`
 		),
 	};
 };
@@ -338,10 +402,12 @@ export const sell = (state: RunState, configId: string): RunState => {
 	);
 	if (!target || buildAtMinimumWidth(state)) return state;
 	const refund = sellRefundIn(state.build.configs, target);
+	const build = stripConfig(state.build, configId);
 	return {
 		...state,
-		build: stripConfig(state.build, configId),
+		build,
 		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
+		lockedOfferIds: locksSurviving(build.configs, state.lockedOfferIds),
 		log: withLog(state, `Sold ${target.label} (+${refund}KB).`),
 	};
 };
@@ -351,12 +417,14 @@ export const drop = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!target || buildAtMinimumWidth(state)) return state;
+	const build = withBuild(
+		state.build,
+		state.build.configs.filter((candidate) => candidate.id !== configId)
+	);
 	return {
 		...state,
-		build: withBuild(
-			state.build,
-			state.build.configs.filter((candidate) => candidate.id !== configId)
-		),
+		build,
+		lockedOfferIds: locksSurviving(build.configs, state.lockedOfferIds),
 		log: withLog(state, "Dropped a config to make room."),
 	};
 };

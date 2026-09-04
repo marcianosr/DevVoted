@@ -7,7 +7,6 @@ describe("runActionSchema", () => {
 		const actions = [
 			{ type: "install", configId: "js" },
 			{ type: "uninstall", configId: "js" },
-			{ type: "pick-stack", stackId: "ship-it" },
 			{ type: "start" },
 			{ type: "answer", optionIds: ["64"] },
 			{ type: "lint-poll" },
@@ -55,8 +54,11 @@ describe("runActionSchema", () => {
 		expect(result.success).toBe(false);
 	});
 
-	it("rejects a stack pick without a stackId", () => {
-		const result = runActionSchema.safeParse({ type: "pick-stack" });
+	it("rejects the retired stack pick (ADR-052)", () => {
+		const result = runActionSchema.safeParse({
+			type: "pick-stack",
+			stackId: "ship-it",
+		});
 		expect(result.success).toBe(false);
 	});
 });

@@ -1,5 +1,7 @@
 import { Redacted } from "../Redacted.ui";
-import { kbLabel, RentText, type StorageRung } from "../StoragePlan.ui";
+import { kbLabel } from "~/shared/lib/storage";
+
+import { RentText, type StorageRung } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
 
 const LIST = "flex flex-col divide-y divide-edge py-2";

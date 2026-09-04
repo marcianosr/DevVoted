@@ -1,6 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { NewRunScreen } from "./NewRunScreen.ui";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
+
+import { NewRunScreen, type DealRow } from "./NewRunScreen.ui";
 
 const noop = () => {};
 
@@ -19,7 +24,52 @@ const meta: Meta<typeof NewRunScreen> = {
 export default meta;
 type Story = StoryObj<typeof NewRunScreen>;
 
-export const FreshDeal: Story = {
+const hand: readonly Config[] = [
+	CONFIGS.js,
+	CONFIGS.codeCoverage,
+	CONFIGS.unitTests,
+	CONFIGS.coldStart,
+	CONFIGS.eslint,
+];
+
+const picked = new Set(recommendedPicks(hand, 4).map((config) => config.id));
+
+const slotsUsed = hand
+	.filter((config) => picked.has(config.id))
+	.reduce((total, config) => total + slotsOf(config), 0);
+
+const dealRows: readonly DealRow[] = hand.map((config) => {
+	const selected = picked.has(config.id);
+	const fits = slotsOf(config) <= 4 - slotsUsed;
+	return {
+		family: config.family,
+		name: config.label,
+		detail: config.description,
+		slots: slotsOf(config),
+		selected,
+		toggleLabel: selected
+			? `Uninstall ${config.label}`
+			: `Install ${config.label}`,
+		onToggle: selected || fits ? noop : undefined,
+		locked: !selected && !fits,
+	};
+});
+
+const palletStorage = {
+	meta: `${slotsUsed} of 4 slots`,
+	slots: 4,
+	slotRows: [
+		{
+			name: "Slot 5",
+			label: "Buy slot 5",
+			detail: "The fifth is the last one this plan allows",
+			price: "32 KB",
+			onUse: noop,
+		},
+	],
+};
+
+export const RecommendedDeal: Story = {
 	args: {
 		header: {
 			title: "New run",
@@ -29,81 +79,18 @@ export const FreshDeal: Story = {
 			caption: "archive",
 		},
 		theme: "pallet",
-		storage: { meta: "3 of 4 slots", slots: 4 },
-		build: {
-			meta: "3",
-			buySlot: {
-				label: "Buy slot 5",
-				detail: "The fifth is the last one this plan allows",
-				price: "16 KB",
-				onBuy: noop,
-			},
-			rows: [
-				{
-					family: "focus",
-					name: ".js",
-					detail: "JS polls ×1.25",
-					version: "v1",
-					slots: 1,
-				},
-				{
-					family: "focus",
-					name: ".ts",
-					detail: "TS polls ×1.25",
-					version: "v1",
-					slots: 1,
-				},
-				{
-					family: "defense",
-					name: "ESLint",
-					detail: "Cross out a wrong answer · fee doubles",
-					version: "v1",
-					slots: 1,
-				},
-			],
-		},
 		dealt: {
-			meta: "8 from 30",
-			rows: [
-				{
-					family: "focus",
-					name: ".jsx",
-					slots: 1,
-					detail: "React polls ×1.25",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "risk",
-					name: "Cold Start",
-					slots: 2,
-					detail: "The gate's first answer ×2",
-					locked: true,
-				},
-				{
-					family: "economy",
-					name: "Moore's Law",
-					slots: 1,
-					detail: "+2% of held storage a clear",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "amplify",
-					name: "Overclock",
-					slots: 4,
-					detail: "First answer ×4, every later one ×0.5",
-					locked: true,
-				},
-			],
+			meta: `${picked.size} of ${hand.length} picked`,
+			rows: dealRows,
 		},
-		startLabel: "Start the run · 1 spare →",
+		storage: palletStorage,
+		startLabel: "Start the run →",
 		onStart: noop,
 	},
 };
 
 export const Mobile: Story = {
-	...FreshDeal,
+	...RecommendedDeal,
 	decorators: [
 		(Story) => (
 			<div className="mx-auto w-full max-w-[390px]">
@@ -113,51 +100,28 @@ export const Mobile: Story = {
 	],
 };
 
-const starterStacks = {
-	meta: "3",
-	rows: [
-		{
-			id: "ship-it",
-			name: "Gamble",
-			blurb: "Fast but risky.",
-			takeLabel: "Take this stack",
-			onTake: noop,
+export const NothingPicked: Story = {
+	args: {
+		...RecommendedDeal.args,
+		dealt: {
+			meta: `0 of ${hand.length} picked`,
+			rows: dealRows.map((row) => ({
+				...row,
+				selected: false,
+				toggleLabel: `Install ${row.name}`,
+				onToggle: noop,
+				locked: false,
+			})),
 		},
-		{
-			id: "test-everything",
-			name: "Safe start",
-			blurb: "Safer JS/TS focus.",
-			recommended: true,
-			takeLabel: "Take this stack",
-			onTake: noop,
-		},
-		{
-			id: "full-stack",
-			name: "Category spread",
-			blurb: "Balanced across categories.",
-			takeLabel: "Take this stack",
-			onTake: noop,
-		},
-	],
-} as const;
-
-export const WithStarterStacks: Story = {
-	args: { ...FreshDeal.args, combos: starterStacks },
-};
-
-export const WithStarterStacksMobile: Story = {
-	...WithStarterStacks,
-	decorators: [
-		(Story) => (
-			<div className="mx-auto w-full max-w-[390px]">
-				<Story />
-			</div>
-		),
-	],
+		storage: { ...palletStorage, meta: "0 of 4 slots" },
+		startLabel: "Pick a config to start",
+		onStart: undefined,
+	},
 };
 
 export const TaggedAtSeafoam: Story = {
 	args: {
+		...RecommendedDeal.args,
 		header: {
 			title: "New run",
 			subtitle: "Seafoam gate · git tag checkout · miss removes 2 slots",
@@ -166,129 +130,31 @@ export const TaggedAtSeafoam: Story = {
 			caption: "archive",
 		},
 		theme: "seafoam",
-		storage: { meta: "15 of 16 slots", slots: 16 },
 		gitTag: {
 			title: "Restored from your git tag",
 			detail:
 				"You start at gate 8 with the build you saved, instead of gate 0 with four slots. The tag is spent — save another in a shop to keep this run.",
 		},
-		build: {
-			meta: "7",
-			buySlot: {
-				label: "Buy slot 17",
-				detail: "Every slot after this one costs double",
-				price: "256 KB",
-				onBuy: noop,
-			},
-			rows: [
+		storage: {
+			meta: `${slotsUsed} of 16 slots`,
+			slots: 16,
+			slotRows: [
 				{
-					family: "focus",
-					name: ".js",
-					detail: "JS polls ×1.5",
-					remove: { label: "Uninstall", onRemove: noop },
-					version: "v2",
-					slots: 1,
+					name: "Slot 16 · empty",
+					label: "Hand slot 16 back",
+					price: "192 KB",
+					receives: true,
+					onUse: noop,
 				},
 				{
-					family: "focus",
-					name: ".ts",
-					detail: "TS polls ×1.25",
-					remove: { label: "Uninstall", onRemove: noop },
-					version: "v1",
-					slots: 1,
-				},
-				{
-					family: "defense",
-					name: "ESLint",
-					detail: "Cross out a wrong answer · fee doubles",
-					remove: { label: "Uninstall", onRemove: noop },
-					version: "v1",
-					slots: 1,
-				},
-				{
-					family: "defense",
-					name: "Telemetry",
-					detail: "See the community split · fee doubles",
-					remove: { label: "Uninstall", onRemove: noop },
-					version: "v1",
-					slots: 2,
-				},
-				{
-					family: "risk",
-					name: "Deprecated",
-					detail: "All coverage ×2.5 · gone in 3 clears",
-					remove: { label: "Uninstall", onRemove: noop },
-					slots: 4,
-				},
-				{
-					family: "economy",
-					name: "IndexedDB",
-					detail: "+8 KB an answer · fresh at 0 of 320",
-					remove: { label: "Uninstall", onRemove: noop },
-					slots: 2,
-				},
-				{
-					family: "amplify",
-					name: "Overclock",
-					detail: "First answer ×4, every later one ×0.5",
-					remove: { label: "Uninstall", onRemove: noop },
-					slots: 4,
+					name: "Slot 17",
+					label: "Buy slot 17",
+					detail: "Every slot after this one costs double",
+					price: "256 KB",
+					onUse: noop,
 				},
 			],
 		},
-		dealt: {
-			meta: "12 from 30",
-			rows: [
-				{
-					family: "focus",
-					name: ".jsx",
-					slots: 1,
-					detail: "React polls ×1.25",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "focus",
-					name: ".py",
-					slots: 1,
-					detail: "Python polls ×1.25",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "risk",
-					name: "Cold Start",
-					slots: 2,
-					detail: "The gate's first answer ×2",
-					locked: true,
-				},
-				{
-					family: "economy",
-					name: "Moore's Law",
-					slots: 1,
-					detail: "+2% of held storage a clear",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "economy",
-					name: "Unit Tests",
-					slots: 1,
-					detail: "+32 KB on gate clear",
-					deployLabel: "Deploy",
-					onDeploy: noop,
-				},
-				{
-					family: "economy",
-					name: "Freemium",
-					slots: 8,
-					detail: "Half price configs · bills 8 KB, doubling",
-					locked: true,
-				},
-			],
-		},
-		startLabel: "Start the run · 3 spare →",
-		onStart: noop,
 	},
 };
 

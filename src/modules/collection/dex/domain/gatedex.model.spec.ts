@@ -93,14 +93,17 @@ describe("gatedex", () => {
 
 	it("promises no width, because slots are bought and never handed over", () => {
 		expect(everyUnlockLabel()).toEqual(
-			expect.arrayContaining(["lock", "extend", "pin"])
+			expect.arrayContaining(["extend", "pin"])
 		);
-		expect(everyUnlockLabel()).toHaveLength(3);
+		expect(everyUnlockLabel()).toHaveLength(2);
 	});
 
 	it("hangs a shop action one gate below its gatesCleared floor", () => {
-		expect(unlockLabels(1)).toContain("lock");
 		expect(unlockLabels(2)).toContain("extend");
 		expect(unlockLabels(3)).toContain("pin");
+	});
+
+	it("promises no lock — that action belongs to yarn.lock, not a gate", () => {
+		expect(everyUnlockLabel()).not.toContain("lock");
 	});
 });

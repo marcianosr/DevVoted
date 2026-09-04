@@ -1,11 +1,11 @@
 ---
 # DVTD-tt4y
 title: Config upgrades read as versions, not levels
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-20T11:09:50Z
-updated_at: 2026-08-25T11:50:23Z
+updated_at: 2026-09-03T15:25:39Z
 parent: DVTD-d0fw
 ---
 

@@ -1,6 +1,8 @@
 import {
 	Config,
 	draftCost,
+	isUpgradable,
+	levelUp,
 	sellRefund,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
@@ -14,8 +16,6 @@ export const rebuildCost = (rebuildsUsed: number): number =>
 
 export const LOCK_COST_KB = 16;
 
-export const MAX_LOCKED_OFFERS = 1;
-
 const EXTEND_COST_KB = [48, 96];
 
 export const MAX_EXTENSIONS = EXTEND_COST_KB.length;
@@ -26,7 +26,6 @@ export const extendCost = (extensionsBought: number): number =>
 export const offerCount = (extensionsBought: number): number =>
 	DRAFT_SIZE + Math.min(extensionsBought, MAX_EXTENSIONS);
 
-export const LOCK_FROM_GATE = 2;
 export const EXTEND_FROM_GATE = 3;
 
 export const draftSeed = (
@@ -92,6 +91,32 @@ export const sellRefundIn = (
 	return Math.floor(draftCostIn(configs, config) / 2);
 };
 
+export const UPGRADE_OFFER_ONE_IN = 8;
+
+const UPGRADE_OFFER_SEED = 0x5bf0;
+
+export const upgradeOfferFor = (
+	seed: number,
+	equipped: readonly Config[]
+): Config | undefined => {
+	const upgradable = equipped.filter(isUpgradable);
+	if (upgradable.length === 0) return undefined;
+
+	const nextRandom = randomFrom(seed ^ UPGRADE_OFFER_SEED);
+	if (nextRandom() * UPGRADE_OFFER_ONE_IN >= 1) return undefined;
+
+	const picked = upgradable[Math.floor(nextRandom() * upgradable.length)];
+	return picked === undefined ? undefined : levelUp(picked);
+};
+
+export const isUpgradeOffer = (
+	configs: readonly Config[],
+	offer: Config
+): boolean => {
+	const owned = configs.find((config) => config.id === offer.id);
+	return owned !== undefined && (offer.level ?? 1) > (owned.level ?? 1);
+};
+
 export const rollDraft = (
 	seed: number,
 	equipped: readonly Config[],
@@ -121,5 +146,8 @@ export const rollDraft = (
 		pool[swapWith] = swapped;
 	}
 
-	return [...held, ...pool.slice(0, size)];
+	const rolled = [...held, ...pool.slice(0, size)];
+	const upgrade = size === 0 ? undefined : upgradeOfferFor(seed, equipped);
+	if (upgrade === undefined) return rolled;
+	return [...rolled.slice(0, -1), upgrade];
 };

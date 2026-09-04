@@ -34,6 +34,12 @@ export function formatStorage(bytes: number): string {
 	return `${bytes} B`;
 }
 
+export const kbLabel = (kb: number): string =>
+	formatStorage(kb * STORAGE_UNITS.KB);
+
+export const signedKbLabel = (kb: number): string =>
+	`${kb < 0 ? "−" : "+"}${kbLabel(Math.abs(kb))}`;
+
 export function formatStorageDetailed(bytes: number): string {
 	const primary = formatStorage(bytes);
 

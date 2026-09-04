@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { touchesCoverage } from "~/modules/run/config/domain/effect.model";
 import {
 	HAND_SIZE,
+	RECOMMENDED_SIZE,
+	recommendedPicks,
 	startingHand,
 	STARTER_POOL,
 } from "~/modules/run/config/domain/hand.model";
@@ -118,5 +122,72 @@ describe("STARTER_POOL", () => {
 	// is for.
 	it("hands out nothing the shop prices as a drawback", () => {
 		STARTER_POOL.forEach((config) => expect(config.draftCost).toBeUndefined());
+	});
+});
+
+describe("recommendedPicks", () => {
+	const oneSlotHand: readonly Config[] = [
+		CONFIGS.js,
+		CONFIGS.ts,
+		CONFIGS.unitTests,
+		CONFIGS.eslint,
+		CONFIGS.css,
+	];
+
+	it("picks RECOMMENDED_SIZE configs from the hand when they fit", () => {
+		const picks = recommendedPicks(oneSlotHand, 4);
+		const handIds = new Set(ids(oneSlotHand));
+
+		expect(picks).toHaveLength(RECOMMENDED_SIZE);
+		ids(picks).forEach((id) => expect(handIds.has(id)).toBe(true));
+		expect(new Set(ids(picks)).size).toBe(RECOMMENDED_SIZE);
+	});
+
+	it("keeps the picks inside the slot budget, dropping to fewer when big configs crowd it", () => {
+		const bulky: readonly Config[] = [
+			CONFIGS.agentsMd,
+			CONFIGS.codeCoverage,
+			CONFIGS.indexedDb,
+			CONFIGS.coverageGain,
+			CONFIGS.js,
+		];
+
+		const picks = recommendedPicks(bulky, 4);
+		const occupied = picks.reduce((total, pick) => total + slotsOf(pick), 0);
+
+		expect(occupied).toBeLessThanOrEqual(4);
+		expect(ids(picks)).not.toContain(CONFIGS.agentsMd.id);
+	});
+
+	it("always includes a focus config when the hand holds one that fits", () => {
+		const picks = recommendedPicks(
+			[CONFIGS.unitTests, CONFIGS.eslint, CONFIGS.indexedDb, CONFIGS.js],
+			4
+		);
+
+		expect(hasFocus(picks)).toBe(true);
+	});
+
+	it("includes a coverage earner when the hand holds one", () => {
+		const picks = recommendedPicks(
+			[CONFIGS.unitTests, CONFIGS.eslint, CONFIGS.codeCoverage],
+			4
+		);
+
+		expect(picks.some(touchesCoverage)).toBe(true);
+	});
+
+	it("recommends the same trio for the same hand, so a reload keeps the default", () => {
+		expect(ids(recommendedPicks(oneSlotHand, 4))).toEqual(
+			ids(recommendedPicks(oneSlotHand, 4))
+		);
+	});
+
+	it("recommends nothing from an empty hand", () => {
+		expect(recommendedPicks([], 4)).toEqual([]);
+	});
+
+	it("recommends nothing when no card fits the budget", () => {
+		expect(recommendedPicks([CONFIGS.agentsMd], 4)).toEqual([]);
 	});
 });

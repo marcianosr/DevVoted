@@ -52,31 +52,54 @@ and never below the free four.
 
 ## Decision 3: the KB cap comes back as a seven-rung subscription
 
+**Reladdered 2026-09-03 (playtest, DVTD-jrld).** The rungs below were spaced too
+finely at the bottom and billed too little in the middle: on the old ladder the
+first upgrade cost 16 KB a gate, which no clear ever noticed. The free cap drops
+to 256 KB so it binds from the first shop, the caps double instead of creeping,
+and every rung's bill is two to three times what it was. The bill is also now
+**refused at the counter** when the balance cannot cover it (see the amendment
+below).
+
 | Cap | Per gate |
 | --- | --- |
-| 512 KB | free |
-| 768 KB | 16 KB |
-| 1 MB | 32 KB |
-| 1.5 MB | 64 KB |
-| 2.5 MB | 128 KB |
-| 5 MB | 384 KB |
-| 10 MB | 768 KB |
+| 256 KB | free |
+| 512 KB | 32 KB |
+| 1 MB | 96 KB |
+| 2 MB | 224 KB |
+| 3 MB | 448 KB |
+| 5 MB | 768 KB |
+| 10 MB | 1280 KB |
 
 ADR-045 deleted the cap because 320 KB held against a 1024 KB cap was never binding.
 That was true **at those prices**. A slot now costs up to 768 KB and the free cap holds
-512, so the plan is a prerequisite for the ladder: you cannot save for a mid-ladder
+256, so the plan is a prerequisite for the ladder: you cannot save for a mid-ladder
 slot on the free plan. The cap binds on the first shop, which is what a cap has to do
 to be a decision.
 
 The bill lands **on clear only**, off the rewarded balance, ahead of the config
 subscriptions — ADR-045's ordering survives, and a redo stays free of every recurring
 cost. A clear that cannot cover the bill pays what it has and drops to the free plan,
-and the balance is clamped to 512 KB. Dropping plans by hand burns the same way, and
+and the balance is clamped to the free 256 KB cap. Dropping plans by hand burns the same way, and
 the row says how much before it is picked.
 
 The top two rungs bill more per gate than a perfect gate-12 clear pays. They are
 endless-run rungs, like the top of the slot ladder, and the honest place to watch in
 playtest is whether anything below 2.5 MB ever gets bought.
+
+## Amendment (2026-09-03): a rung you cannot pay for is not for sale
+
+A plan whose bill exceeds the balance was buyable, and the only thing that could
+follow was insolvency one gate later: the plan gone, the overflow burned. That is
+not a decision, it is a delayed refusal, so `canAffordPlan` now rejects an upgrade
+to any rung billing more than the run holds. Dropping to a cheaper rung is always
+allowed, since it is the escape. The shop's Continue is held shut while the plan
+already held bills more than the balance, the same door the over-capacity build
+shuts, with the fix named in the label: drop to a rung you can pay for.
+
+The steeper ladder above changes what compounding needs. Moore's Law at L5 pays
+10% a gate; on the 1 MB rung that only out-earns the 96 KB bill above roughly
+640 KB held. Below that the balance decays instead of compounding, which is the
+intended shape: the cap is a savings instrument you have to be able to afford.
 
 ## Consequences
 

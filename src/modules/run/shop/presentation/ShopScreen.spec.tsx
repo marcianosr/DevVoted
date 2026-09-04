@@ -52,6 +52,7 @@ const storagePlanAt = (tier = 0, storage = 500) => ({
 		perGateKb: plan.perGateKb,
 		held: plan.tier === tier,
 		burnsKb: Math.max(0, storage - plan.capKb),
+		affordable: plan.tier <= tier || plan.perGateKb <= storage,
 	})),
 });
 
@@ -110,6 +111,7 @@ const base = {
 	controls: controls(),
 	onRebuild: vi.fn(),
 	onLock: vi.fn(),
+	onUnlock: vi.fn(),
 	onExtend: vi.fn(),
 	onPlantPin: vi.fn(),
 	slots: 4,
@@ -407,7 +409,8 @@ describe(ShopScreen, () => {
 		);
 	});
 
-	it("marks the held offer and stops offering more locks once one is spent", () => {
+	it("marks the held offer and releases it from its own button", () => {
+		const onUnlock = vi.fn();
 		render(
 			<ShopScreen
 				{...base}
@@ -415,20 +418,34 @@ describe(ShopScreen, () => {
 					createMockShopOffer(CONFIGS.eslint, { locked: true }),
 					createMockShopOffer(CONFIGS.agentsMd),
 				]}
-				controls={controls({ lockAvailable: false })}
+				onUnlock={onUnlock}
 			/>
 		);
 		expect(screen.getByText("Locked")).toBeInTheDocument();
-		fireEvent.click(screen.getByRole("button", { name: "AGENTS.md" }));
-		expect(
-			screen.getByRole("button", { name: /^Install AGENTS/ })
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^Lock / })
-		).not.toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "ESLint" }));
+		fireEvent.click(screen.getByRole("button", { name: "Release ESLint" }));
+		expect(onUnlock).toHaveBeenCalledWith("eslint");
 	});
 
-	it("offers no lock at all before the lock's gate", () => {
+	it("still offers a lock on the other offers while one is held", () => {
+		render(
+			<ShopScreen
+				{...base}
+				offers={[
+					createMockShopOffer(CONFIGS.eslint, { locked: true }),
+					createMockShopOffer(CONFIGS.agentsMd),
+				]}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: "AGENTS.md" }));
+		expect(
+			screen.getByRole("button", {
+				name: `Lock AGENTS.md for ${base.controls.lockCost}KB`,
+			})
+		).toBeInTheDocument();
+	});
+
+	it("offers no lock while yarn.lock is not in the build", () => {
 		render(
 			<ShopScreen {...base} controls={controls({ lockAvailable: false })} />
 		);
@@ -720,7 +737,7 @@ describe(ShopScreen, () => {
 	it("prices the free cap at nothing and every plan by the gate", () => {
 		render(<ShopScreen {...base} />);
 		expect(screen.getByText("free")).toBeInTheDocument();
-		expect(screen.getByText("16KB a gate")).toBeInTheDocument();
+		expect(screen.getByText("32KB a gate")).toBeInTheDocument();
 		expect(screen.getByText("768KB a gate")).toBeInTheDocument();
 	});
 

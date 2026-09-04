@@ -29,9 +29,6 @@ const storagePlanActionSchema = <T extends string>(type: T) =>
 export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("install"),
 	configActionSchema("uninstall"),
-	z
-		.object({ type: z.literal("pick-stack"), stackId: z.string().min(1) })
-		.strict(),
 	bareActionSchema("start"),
 	z
 		.object({
@@ -48,12 +45,14 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("upgrade"),
 	bareActionSchema("rebuild-draft"),
 	configActionSchema("lock-offer"),
+	configActionSchema("unlock-offer"),
 	bareActionSchema("extend-offers"),
 	bareActionSchema("plant-pin"),
 	bareActionSchema("finish-reward"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
 	configActionSchema("minify"),
+	configActionSchema("switch-arm"),
 	bareActionSchema("buy-slot"),
 	bareActionSchema("cash-slot"),
 	storagePlanActionSchema("set-storage-plan"),

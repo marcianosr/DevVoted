@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
 export type BadgeTone =
 	| "neutral"
 	| "muted"
@@ -11,9 +13,13 @@ export type BadgeTone =
 	| "saffron"
 	| "celadon"
 	| "cerulean"
-	| "lavender";
+	| "lavender"
+	| "theme";
 
 export type BadgeSize = "sm" | "md";
+
+export const themeToneFor = (theme: SwatchTheme | undefined): BadgeTone =>
+	theme === undefined || theme === "champion" ? "neutral" : "theme";
 
 const TONE = {
 	neutral: "bg-zinc-100/10 text-zinc-200",
@@ -24,6 +30,7 @@ const TONE = {
 	celadon: "bg-celadon/15 text-celadon",
 	cerulean: "bg-cerulean/15 text-cerulean",
 	lavender: "bg-lavender/15 text-lavender",
+	theme: "bg-theme-soft text-theme",
 } satisfies Record<BadgeTone, string>;
 
 const SIZE = {

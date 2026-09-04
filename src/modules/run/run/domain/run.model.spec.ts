@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
+	answerTypesOf,
 	createRun,
 	pickBudgetFor,
 	type RunState,
@@ -87,5 +88,33 @@ describe(".length's pick budget", () => {
 		expect(state.clearedGate).toBe(0);
 		// The second window is all single-answer, so its budget is one per poll.
 		expect(state.window.budget).toBe(5);
+	});
+});
+
+describe("the window's answer types", () => {
+	const multiPoll = (id: string): RunPoll => ({
+		id,
+		category: "js",
+		question: `Which of ${id} are Kanto towns?`,
+		answerType: "multiple",
+		options: [
+			{ id: `${id}-a`, label: "Pewter", correct: true },
+			{ id: `${id}-b`, label: "Viridian", correct: true },
+			{ id: `${id}-c`, label: "Hyrule", correct: false },
+		],
+	});
+
+	it("splits the polls it is given into single and multiple answers", () => {
+		expect(
+			answerTypesOf([
+				poll("pallet", true),
+				multiPoll("cerulean"),
+				poll("pewter", true),
+			])
+		).toEqual({ single: 2, multiple: 1 });
+	});
+
+	it("counts nothing for a window with no polls left", () => {
+		expect(answerTypesOf([])).toEqual({ single: 0, multiple: 0 });
 	});
 });

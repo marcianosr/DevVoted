@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import type { StoragePlanProps } from "../StoragePlan.ui";
 import {
 	ShopScreen,
 	type ShopBuildRow,
@@ -9,6 +10,31 @@ import {
 } from "./ShopScreen.ui";
 
 const noop = () => {};
+
+const STORY_LADDER = [
+	{ capKb: 512, rentKb: 0 },
+	{ capKb: 768, rentKb: 16 },
+	{ capKb: 1024, rentKb: 32 },
+	{ capKb: 1536, rentKb: 48 },
+	{ capKb: 2560, rentKb: 128 },
+	{ capKb: 5120, rentKb: 384 },
+	{ capKb: 10240, rentKb: 768 },
+];
+
+const storyPlanAt = (held: number, heldKb: number): StoragePlanProps => ({
+	meter: {
+		heldKb,
+		capKb: STORY_LADDER[held].capKb,
+		nextCapKb: STORY_LADDER[held + 1]?.capKb,
+	},
+	cards: STORY_LADDER.map((rung, tier) => ({
+		...rung,
+		held: tier === held,
+		revealed: tier <= held + 1,
+		burnsKb: Math.max(0, heldKb - rung.capKb),
+		onSelect: tier !== held && tier <= held + 1 ? noop : undefined,
+	})),
+});
 
 // "Sell", not "Uninstall": the hint is `${label} for ${price}`, and "Uninstall
 // for 16 KB" reads as a fee when the 16 KB is what you are handed. New Run
@@ -45,9 +71,18 @@ const boulderShop: ShopScreenProps = {
 	theme: "boulder",
 	storage: {
 		meta: "4 of 6 · 2 free",
+		slots: 6,
 	},
 	build: {
 		meta: "3",
+		slotRows: [
+			{
+				name: "Slot 7",
+				label: "Buy slot 7",
+				price: "64 KB",
+				onUse: noop,
+			},
+		],
 		rows: [
 			{
 				family: "focus",
@@ -143,14 +178,7 @@ const boulderShop: ShopScreenProps = {
 			onBuy: noop,
 		},
 	},
-	plan: {
-		heldKb: 96,
-		current: { capKb: 512, rentKb: 0 },
-		next: { capKb: 768, rentKb: 16 },
-		moreRungs: 5,
-		topCapKb: 10240,
-		onUpgrade: noop,
-	},
+	plan: storyPlanAt(0, 96),
 	continueLabel: "Continue →",
 	onContinue: noop,
 };
@@ -166,7 +194,7 @@ export const OffersCanBeKept: Story = {
 				...row,
 				lock: {
 					pinned: index === 0,
-					label: "Keep for next shop",
+					label: index === 0 ? "Release the lock" : "Lock for 16 KB",
 					onToggle: noop,
 				},
 			})),
@@ -185,6 +213,7 @@ export const ShopClosed: Story = {
 export const ExitBlocked: Story = {
 	args: {
 		...boulderShop,
+		storage: { meta: "4 of 2 · over by 2", slots: 2 },
 		continueLock: "Over capacity by 2 slots",
 	},
 };
@@ -202,22 +231,17 @@ export const ThunderShopWithGitTag: Story = {
 		theme: "thunder",
 		build: {
 			...boulderShop.build,
-			buySlot: {
-				label: "Buy slot 7",
-				detail: "The seventh is the last one this plan allows",
-				price: "64 KB",
-				onBuy: noop,
-			},
+			slotRows: [
+				{
+					name: "Slot 7",
+					label: "Buy slot 7",
+					detail: "The seventh is the last one this plan allows",
+					price: "64 KB",
+					onUse: noop,
+				},
+			],
 		},
-		plan: {
-			heldKb: 256,
-			current: { capKb: 768, rentKb: 16 },
-			next: { capKb: 1024, rentKb: 32 },
-			drop: { toKb: 512, onDrop: noop },
-			moreRungs: 4,
-			topCapKb: 10240,
-			onUpgrade: noop,
-		},
+		plan: storyPlanAt(1, 256),
 		gitTag: {
 			label: "Git tag",
 			detail: "A dead run checks out at gate 4 instead of gate 0 · one per run",
@@ -345,15 +369,19 @@ const seafoamShop: ShopScreenProps = {
 	theme: "seafoam",
 	storage: {
 		meta: "16 of 16 · 0 free",
+		slots: 16,
 	},
 	build: {
 		meta: "8",
-		buySlot: {
-			label: "Buy slot 17",
-			detail: "Every slot after this one costs double",
-			price: "256 KB",
-			onBuy: noop,
-		},
+		slotRows: [
+			{
+				name: "Slot 17",
+				label: "Buy slot 17",
+				detail: "Every slot after this one costs double",
+				price: "256 KB",
+				onUse: noop,
+			},
+		],
 		rows: seafoamBuildRows,
 	},
 	offers: {
@@ -420,15 +448,7 @@ const seafoamShop: ShopScreenProps = {
 			onBuy: noop,
 		},
 	},
-	plan: {
-		heldKb: 1946,
-		current: { capKb: 2560, rentKb: 128 },
-		next: { capKb: 5120, rentKb: 384 },
-		drop: { toKb: 1536, onDrop: noop },
-		moreRungs: 1,
-		topCapKb: 10240,
-		onUpgrade: noop,
-	},
+	plan: storyPlanAt(4, 1946),
 	gitTag: {
 		label: "Git tag",
 		detail: "Tagged at gate 8 · a dead run checks out there",
@@ -675,9 +695,18 @@ const earthShop: ShopScreenProps = {
 	theme: "earth",
 	storage: {
 		meta: "18 of 24 · 6 free",
+		slots: 24,
 	},
 	build: {
 		meta: "9",
+		slotRows: [
+			{
+				name: "Slot 25",
+				label: "Buy slot 25",
+				detail: "Nothing above the twenty-fourth is for sale",
+				price: "32768 KB",
+			},
+		],
 		rows: earthBuildRows,
 	},
 	offers: {
@@ -741,14 +770,7 @@ const earthShop: ShopScreenProps = {
 			onBuy: noop,
 		},
 	},
-	plan: {
-		heldKb: 2458,
-		current: { capKb: 5120, rentKb: 384 },
-		next: { capKb: 10240, rentKb: 768 },
-		drop: { toKb: 2560, onDrop: noop },
-		topCapKb: 10240,
-		onUpgrade: noop,
-	},
+	plan: storyPlanAt(5, 2458),
 	continueLabel: "Continue →",
 	onContinue: noop,
 };

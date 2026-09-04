@@ -13,14 +13,11 @@ import {
 	PIN_FROM_GATE,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import {
-	EXTEND_FROM_GATE,
-	LOCK_FROM_GATE,
-} from "~/modules/run/shop/domain/draft.model";
+import { EXTEND_FROM_GATE } from "~/modules/run/shop/domain/draft.model";
 
 export type GatedexState = "cleared" | "next" | "locked";
 
-export type GateAction = "lock" | "extend" | "pin";
+export type GateAction = "extend" | "pin";
 
 export type GateUnlock = {
 	readonly kind: "action";
@@ -43,7 +40,6 @@ const grantedByClearing = (gatesClearedFloor: number): number =>
 	gatesClearedFloor - 1;
 
 const ACTION_UNLOCKS = [
-	{ action: "lock", fromGate: LOCK_FROM_GATE },
 	{ action: "extend", fromGate: EXTEND_FROM_GATE },
 	{ action: "pin", fromGate: PIN_FROM_GATE },
 ] as const satisfies readonly { action: GateAction; fromGate: number }[];

@@ -1,7 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	addStorage,
+	createRun,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
 import {
 	buyStartSlot,
 	refundStartSlot,
@@ -10,6 +14,7 @@ import {
 import {
 	runReducer,
 	RunAction,
+	withRecommendedBuild,
 } from "~/modules/run/run/domain/runAction.model";
 import {
 	type AnsweredPoll,
@@ -29,9 +34,9 @@ import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.m
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import {
-	CONFIG_LIST,
-	CONFIGS,
-} from "~/modules/run/config/domain/configRoster.model";
+	STARTER_POOL,
+	startingHand,
+} from "~/modules/run/config/domain/hand.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
@@ -50,6 +55,7 @@ import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	roundToOneDecimal,
 	SLICE_WINDOW,
+	storageCapFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -415,21 +421,25 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 	return { ...base, id: `${base.id}-${i}` };
 });
 
-const HANDED = [...Object.values(CONFIGS)];
-
-const PROTO_ARCHIVE_KB = 512;
-
-const withFullCatalog = (state: RunState): RunState => {
-	if (state.draftOptions.length === 0) return state;
-	const owned = new Set(state.build.configs.map((config) => config.id));
-	return {
-		...state,
-		draftOptions: CONFIG_LIST.filter((config) => !owned.has(config.id)),
-	};
-};
+const PROTO_ARCHIVE_KB = 8192;
+const PROTO_GRANT_KB = 256;
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
-	const [state, setState] = useState(() => createRun(POOLS, HANDED));
+	const [state, setState] = useState(() => ({
+		...withRecommendedBuild(
+			createRun(POOLS, startingHand(STARTER_POOL, `proto:${Date.now()}`))
+		),
+		storage: storageCapFor(0),
+	}));
+	const grantStorage = () =>
+		setState((current) => ({
+			...current,
+			storage: addStorage(
+				current.storage,
+				PROTO_GRANT_KB,
+				current.storagePlan ?? 0
+			),
+		}));
 	const [archiveKb, setArchiveKb] = useState(PROTO_ARCHIVE_KB);
 	const spendArchive = (
 		spend: (state: RunState, kb: number) => ArchiveSpend
@@ -439,7 +449,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setArchiveKb(settled.archiveKb);
 	};
 	const dispatch = (action: RunAction) =>
-		setState((current) => withFullCatalog(runReducer(current, action)));
+		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	useEffect(() => {
 		setSelected([]);
@@ -486,7 +496,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					optionIds: rigOptionIds(poll, outcome),
 				});
 			}
-			return withFullCatalog(next);
+			return next;
 		});
 	const onSelect = (optionId: string) => {
 		if (view.poll?.answerType === "single") return setSelected([optionId]);
@@ -528,7 +538,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							configId: id,
 						})
 					}
-					onPickStack={(stackId) => dispatch({ type: "pick-stack", stackId })}
 					onStart={() => {
 						setScreenNavDirection("forward");
 						dispatch({ type: "start" });
@@ -561,6 +570,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onSubmit={() => answer(selected)}
 					onLint={() => dispatch({ type: "lint-poll" })}
 					onPeek={() => dispatch({ type: "peek-poll" })}
+					onSwitchArm={(id) => dispatch({ type: "switch-arm", configId: id })}
 				/>
 			)}
 
@@ -588,7 +598,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onDraft={(id) => dispatch({ type: "draft", configId: id })}
 					onSell={(id) => dispatch({ type: "sell", configId: id })}
 					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
+					onSwitchArm={(id) => dispatch({ type: "switch-arm", configId: id })}
 					onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
+					onUnlock={(id) => dispatch({ type: "unlock-offer", configId: id })}
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
@@ -638,15 +650,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onRemove={(configIds) => {
 							setRewardStep("shop");
 							setState((current) =>
-								withFullCatalog(
-									runReducer(
-										configIds.reduce(
-											(next, configId) =>
-												runReducer(next, { type: "strip", configId }),
-											current
-										),
-										{ type: "resume-climb" }
-									)
+								runReducer(
+									configIds.reduce(
+										(next, configId) =>
+											runReducer(next, { type: "strip", configId }),
+										current
+									),
+									{ type: "resume-climb" }
 								)
 							);
 						}}
@@ -671,39 +681,53 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				/>
 			)}
 
-			{!reveal && state.status === "answering" && (
-				<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
-					<span className="font-semibold uppercase tracking-wide">Dev rig</span>
-					<button
-						type="button"
-						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-						onClick={() => answerCurrent("right")}
-					>
-						✓ Answer right
-					</button>
-					<button
-						type="button"
-						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-						onClick={() => answerCurrent("wrong")}
-					>
-						✕ Answer wrong
-					</button>
-					<button
-						type="button"
-						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-						onClick={() => answerRestOfWindow("right")}
-					>
-						⏩ All right → gate
-					</button>
-					<button
-						type="button"
-						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-						onClick={() => answerRestOfWindow("wrong")}
-					>
-						⏩ All wrong → gate
-					</button>
-				</div>
-			)}
+			{!reveal &&
+				(state.status === "answering" || state.status === "rewarding") && (
+					<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
+						<span className="font-semibold uppercase tracking-wide">
+							Dev rig
+						</span>
+						{state.status === "answering" && (
+							<>
+								<button
+									type="button"
+									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+									onClick={() => answerCurrent("right")}
+								>
+									✓ Answer right
+								</button>
+								<button
+									type="button"
+									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+									onClick={() => answerCurrent("wrong")}
+								>
+									✕ Answer wrong
+								</button>
+								<button
+									type="button"
+									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+									onClick={() => answerRestOfWindow("right")}
+								>
+									⏩ All right → gate
+								</button>
+								<button
+									type="button"
+									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+									onClick={() => answerRestOfWindow("wrong")}
+								>
+									⏩ All wrong → gate
+								</button>
+							</>
+						)}
+						<button
+							type="button"
+							className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+							onClick={grantStorage}
+						>
+							💾 +{PROTO_GRANT_KB} KB storage
+						</button>
+					</div>
+				)}
 
 			{state.log.length > 0 && (
 				<div className="mx-auto mt-4 w-full max-w-6xl shrink-0 rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
@@ -719,7 +743,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 function RouteComponent() {
 	const [seed, setSeed] = useState(0);
 	return (
-		<div className="flex flex-1 flex-col text-white [--screen-floor:0px]">
+		<div className="flex flex-1 flex-col text-white [--screen-floor:0px] justify-center -mt-16">
 			<RunGame key={seed} onRestart={() => setSeed((current) => current + 1)} />
 		</div>
 	);

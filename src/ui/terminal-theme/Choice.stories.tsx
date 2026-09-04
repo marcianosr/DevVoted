@@ -49,3 +49,13 @@ export const Expected: Story = {
 export const Dimmed: Story = {
 	args: { letter: "B", label: "pop()", state: "dimmed" },
 };
+
+/** What a linter leaves behind: struck through, and no longer pickable. */
+export const CrossedOut: Story = {
+	args: {
+		letter: "B",
+		label: "pop()",
+		state: "crossedOut",
+		note: "crossed out",
+	},
+};

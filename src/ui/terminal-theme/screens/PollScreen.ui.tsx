@@ -3,11 +3,12 @@ import type { ReactNode } from "react";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Audits, type AuditNote } from "../Audits.ui";
-import { Badge, type BadgeTone } from "../Badge.ui";
+import { Badge, type BadgeTone, themeToneFor } from "../Badge.ui";
 import { BuildList, type BuildListRow } from "../BuildList.ui";
 import { Byline, type BylineProps } from "../Byline.ui";
 import { Button } from "../Button.ui";
 import { Choice, type ChoiceState } from "../Choice.ui";
+import { Dot } from "../Dot.ui";
 import { Legend } from "../Legend.ui";
 import { Panel } from "../Panel.ui";
 import { RunHeader, type RunHeaderProps } from "../RunHeader.ui";
@@ -25,6 +26,7 @@ const FACT = "flex items-center gap-2";
 const SEPARATOR = "text-zinc-600";
 const CODE =
 	"overflow-x-auto rounded-lg border border-edge bg-zinc-900/60 px-3 py-2";
+const BUILD_META = "flex items-center gap-1.5";
 
 export type PollFact = {
 	label?: string;
@@ -44,7 +46,7 @@ export type PollScreenProps = {
 	run: RunHeaderProps;
 	theme?: SwatchTheme;
 	build: {
-		meta: string;
+		running: number;
 		rows: readonly BuildListRow[];
 		total: { label: string; value: string };
 	};
@@ -89,7 +91,7 @@ export const PollScreen = ({
 				<Audits rows={audits} />
 
 				<div className={FACTS}>
-					<Badge tone="lavender">{category}</Badge>
+					<Badge tone={themeToneFor(theme)}>{category}</Badge>
 					{facts.map((fact) => (
 						<span key={`${fact.label}-${fact.value}`} className={FACT}>
 							<span aria-hidden className={SEPARATOR}>
@@ -136,7 +138,7 @@ export const PollScreen = ({
 							selected={choice.selected}
 							note={choice.note}
 							onPick={
-								onToggle === undefined
+								onToggle === undefined || choice.state === "crossedOut"
 									? undefined
 									: () => onToggle(choice.letter)
 							}
@@ -156,9 +158,21 @@ export const PollScreen = ({
 			</div>
 
 			<div className={SIDEBAR}>
-				<Section label="Build" meta={build.meta}>
+				<Section
+					label="Build"
+					meta={
+						<span className={BUILD_META}>
+							<Dot variant="on" />
+							<Text tone="muted" size="caption">
+								{build.running} running
+							</Text>
+						</span>
+					}
+				>
 					<Legend
-						variants={build.rows.map((row) => row.dot)}
+						variants={build.rows
+							.map((row) => row.dot)
+							.filter((dot) => dot !== "on")}
 						className="pb-2"
 					/>
 					<BuildList rows={build.rows} total={build.total} />

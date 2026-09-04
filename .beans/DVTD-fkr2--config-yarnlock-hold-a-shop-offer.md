@@ -1,10 +1,11 @@
 ---
 # DVTD-fkr2
 title: 'Config: yarn.lock, hold a shop offer'
-status: draft
+status: completed
 type: feature
+priority: normal
 created_at: 2026-08-24T15:12:42Z
-updated_at: 2026-08-24T15:12:42Z
+updated_at: 2026-09-03T19:38:10Z
 parent: DVTD-72d9
 ---
 
@@ -54,8 +55,41 @@ small UI change and does not need a config.
 
 ## Todo
 
-- [ ] Decide A, B, or C
-- [ ] If B: pick the upgrade (extra held offers, or the rest-of-run horizon) and its price
-- [ ] Resolve the per-use fee question so the config does not bill on use
-- [ ] Say what the shop shows while WTFPL is installed
-- [ ] Ship the lock glyph either way
+- [x] Decide A, B, or C (C + B hybrid)
+- [x] If B: pick the upgrade (extra held offers, or the rest-of-run horizon) and its price (both: unlimited holds, rest-of-run; config 1 slot / 32 KB)
+- [x] Resolve the per-use fee question so the config does not bill on use (fee stands: ADR-042 Pillar 3 allows fees on chosen presses; recorded in ADR-054)
+- [x] Say what the shop shows while WTFPL is installed (no padlock at all — lockAvailable keeps the shopOffersFullRoster clause)
+- [x] Ship the lock glyph either way (terminal padlock IconButton already shipped; it is a real toggle now)
+
+## Decided (2026-09-03, Marciano)
+
+C + B hybrid: locking moves behind the config AND the horizon is the rest of the run (which the code already did — ADR-029's 'next shop' framing was stale). Parameters:
+- yarn.lock: economy, 1 slot, 32 KB (standard per-slot price), `locksOffers: true`.
+- 16 KB per lock stands. Legal by ADR-042 Pillar 3: a fee on a chosen action (Telemetry/ESLint precedent), never a condition. The bean's per-use-fee objection is answered by that pillar, recorded in the new ADR.
+- Unlimited simultaneous locks (MAX_LOCKED_OFFERS deleted); the shelf bounds it, locking everything freezes your own shop.
+- New free `unlock-offer` action (release), no refund.
+- Locks dissolve when yarn.lock leaves the build (sell/peel), no refund — kills the buy-lock-sell-back trick.
+- LOCK_FROM_GATE deleted; gate 1's dex 'lock' unlock goes with it.
+- WTFPL still retires locking (shopOffersFullRoster guard stays).
+
+- [x] Domain: locksOffers field, roster entry, lockerFor, lockAvailable rewrite, unlockOffer, dissolve-on-leave (sell/drop/strip)
+- [x] Action plumbing: runAction union + SHOP_WRITES + validation schema
+- [x] Dex: remove 'lock' gate action
+- [x] UI: ShopView lock/release toggle, module screen release, wiring (RunShop, proto-run)
+- [x] Specs: shopAction lock describe, viewmodel controls, ShopView, module ShopScreen, gatedex
+- [x] Stories: ConfigsInAction yarn.lock, terminal ShopScreen labels
+- [x] Docs: new ADR, ADR-029 supersede note, README index, wiki (§2.8, §4.3 roster+parked, §5.2, numbers), CHANGELOG
+
+## Summary of Changes
+
+- **Config**: `yarnLock` in the roster (economy, 1 slot, 32 KB, `locksOffers: true`); `lockerFor`/`locksSurviving` beside the other grant lookups in `build.model.ts`; `effect.model.ts` files it under the `inShop` skip reason.
+- **Domain**: `lockAvailable` now requires the locker in the build (WTFPL clause kept); `MAX_LOCKED_OFFERS` and `LOCK_FROM_GATE` deleted; new `unlockOffer` (free, no refund); `sell`/`drop`/`strip` empty `lockedOfferIds` when yarn.lock leaves the build. New `unlock-offer` action in the union, `SHOP_WRITES`, reducer, and `runActionSchema`.
+- **Dex**: `GateAction` lost `lock`; gate 1 promises nothing.
+- **UI**: terminal padlock is a real toggle (`Lock for 16 KB` / `Release the lock` via `offerLockFor`); module screen gained a `Release lock` badge; `onUnlock` wired in RunShop and proto-run.
+- **Specs**: lock describe rewritten around a yarn.lock fixture (12 tests incl. plural locks, release, sell/peel dissolution, WTFPL-with-locker); viewmodel controls tests re-keyed off the build; ShopView + module ShopScreen label/release tests; gatedex/GatesView no-lock assertions; runSnapshot spec's 'unknown config' fixture renamed (yarn-lock is real now).
+- **Stories**: `YarnLockHoldsAnOffer` in ConfigsInAction; OffersCanBeKept labels; ConfigsPanel count comment 23 of 33.
+- **Docs**: ADR-054 (supersedes ADR-029's Lock, records the Pillar-3 fee ruling); ADR-029 ⚠ note; README index; wiki §2.8/§4.3 (+yarn.lock row, parked collision removed)/§5.2/numbers; CHANGELOG entry.
+
+Verification: lint clean (903 modules), `tsc --noEmit` exit 0 (stories checked via scratchpad tsconfig), 2664 tests pass — only the 8 pre-existing failures (hand.model playtest hack, modern RewardScreen) remain.
+
+Note: DVTD-4xjs still holds the OLD yarn.lock concept (requirement-raise immunity) — name now taken; candidate for scrapping.

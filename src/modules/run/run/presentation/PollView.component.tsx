@@ -1,8 +1,12 @@
+import { kbLabel } from "~/shared/lib/storage";
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import {
+	abArmLabel,
 	type Config,
+	describeConfig,
 	headlineFigureOf,
+	otherArmOf,
 	type ConfigFigure,
 } from "~/modules/run/config/domain/config.model";
 import {
@@ -35,8 +39,6 @@ import { plural } from "~/ui/terminal-theme/format";
 const LETTERS = "ABCDEFGH";
 const HIDDEN_CATEGORY = "???";
 
-const kb = (value: number) => `${value} KB`;
-
 export const trailFor = (view: RunView): TrailProps => ({
 	count: view.pollsPerGate,
 	current: view.answeredThisGate.length + 1,
@@ -60,18 +62,28 @@ export const runHeaderFor = (view: RunView): RunHeaderProps => {
 	return {
 		title: `Gate ${gate} · ${swatchForGate(gate)?.gateName ?? ""}`,
 		swatch: view.gateTheme,
-		balance: `${kb(view.storage)} balance`,
+		balance: `${kbLabel(view.storage)} balance`,
+		gauge: storageGaugeFor(view),
 		swatches: swatchTrackFor(view),
 		gateLabel: `gate ${gate} / ${view.victoryGate}`,
 		coverage: coverageFor(view),
 	};
 };
 
+const offlineCue = (view: RunView, audit: AuditView): string | undefined => {
+	const names = view.offlineConfigs
+		.filter((offline) => offline.audit === `${audit.code} ${audit.name}`)
+		.map((offline) => offline.config.label);
+
+	if (names.length === 0) return undefined;
+	return `${names.join(", ")} ${names.length === 1 ? "is" : "are"} offline this gate.`;
+};
+
 export const auditNotes = (view: RunView): readonly AuditNote[] =>
 	view.audits.map((audit: AuditView) => ({
 		code: `${audit.code}`,
 		name: audit.name,
-		cue: audit.answerCue ?? audit.description,
+		cue: offlineCue(view, audit) ?? audit.answerCue ?? audit.description,
 		suppressed: audit.suppressed,
 	}));
 
@@ -99,7 +111,7 @@ const rowFigure = (
 	config: Config,
 	status: ConfigStatus
 ): string | undefined => {
-	if (status.kind === "offline") return `offline · ${status.audit}`;
+	if (status.kind === "offline") return "offline";
 	if (status.kind !== "online") return undefined;
 	return figureLabel(headlineFigureOf(config));
 };
@@ -113,7 +125,7 @@ const dotFor = (status: ConfigStatus, hasTool: boolean): DotVariant => {
 const figureLabel = (figure: ConfigFigure | undefined): string | undefined => {
 	if (figure === undefined) return undefined;
 	if (figure.kind === "multiplier") return `×${figure.value}`;
-	if (figure.kind === "kb") return `+${kb(figure.value)}`;
+	if (figure.kind === "kb") return `+${kbLabel(figure.value)}`;
 	if (figure.kind === "percent") return `+${figure.value}%`;
 	if (figure.kind === "chance") return `1 in ${figure.oneIn}`;
 	return `${figure.value > 0 ? "+" : ""}${figure.value}`;
@@ -174,10 +186,24 @@ const statusContextFor = (
 	faucetRemainingKb: view.faucetRemainingKb,
 });
 
+const swapFor = (
+	config: Config,
+	onSwitchArm: ((configId: string) => void) | undefined
+): BuildListRow["swap"] => {
+	const other = otherArmOf(config);
+	if (other === undefined || onSwitchArm === undefined) return undefined;
+
+	return {
+		label: `Switch to arm ${abArmLabel(other)}`,
+		onUse: () => onSwitchArm(config.id),
+	};
+};
+
 export const buildRows = (
 	view: RunView,
 	poll: PollFacts,
-	tools: readonly Tool[]
+	tools: readonly Tool[],
+	onSwitchArm?: (configId: string) => void
 ): readonly BuildListRow[] =>
 	view.configs.map((config): BuildListRow => {
 		const status = configStatusFor(
@@ -194,8 +220,9 @@ export const buildRows = (
 			name: config.label,
 			detail:
 				note === undefined
-					? config.description
-					: `${config.description} · ${note}`,
+					? describeConfig(config)
+					: `${describeConfig(config)} · ${note}`,
+			swap: swapFor(config, onSwitchArm),
 			dot: dotFor(status, tool !== undefined),
 			figure: rowFigure(config, status),
 			meterPercent:
@@ -207,7 +234,7 @@ export const buildRows = (
 					? undefined
 					: {
 							label: tool.label,
-							price: kb(tool.costKb),
+							price: kbLabel(tool.costKb),
 							onUse: tool.ready ? tool.onUse : undefined,
 						},
 		};
@@ -247,6 +274,14 @@ export const coverageFor = (view: RunView) => {
 	};
 };
 
+export const storageGaugeFor = (view: RunView) => ({
+	label: `${kbLabel(view.storage)} of ${kbLabel(view.storagePlan.capKb)} cap`,
+	percent:
+		view.storagePlan.capKb === 0
+			? 0
+			: Math.round((view.storage / view.storagePlan.capKb) * 100),
+});
+
 export const categoryFor = (category: CategoryCode, hidden = false) =>
 	hidden ? HIDDEN_CATEGORY : getCategoryMetadata(category).name;
 
@@ -284,6 +319,7 @@ const factsFor = (
 							view.correctAnswersThisGate,
 							view.mirroredPolls ? "incorrect answer" : "correct answer"
 						)}`,
+						value: view.correctCountSource ?? undefined,
 					},
 				]),
 		...(wrong === 0
@@ -302,6 +338,7 @@ const factsFor = (
 export type PollTools = {
 	onLint: () => void;
 	onPeek: () => void;
+	onSwitchArm?: (configId: string) => void;
 };
 
 export type PollViewProps = {
@@ -322,6 +359,7 @@ export const PollView = ({
 	onSubmit,
 	onLint,
 	onPeek,
+	onSwitchArm,
 }: PollViewProps) => {
 	const blocked = new Set(view.disabledOptionIds);
 
@@ -335,7 +373,7 @@ export const PollView = ({
 		letter: LETTERS[index] ?? `${index + 1}`,
 		label: option.label,
 		selected: selectedOptionIds.includes(option.id),
-		state: blocked.has(option.id) ? "dimmed" : "idle",
+		state: blocked.has(option.id) ? "crossedOut" : "idle",
 		note: noteFor(option.id),
 	}));
 
@@ -353,7 +391,8 @@ export const PollView = ({
 			answeredBefore: view.answeredThisGate.length,
 			cachedHits: cachedHitsFor(view.allAnswered, poll.category),
 		},
-		toolsFor(view, { onLint, onPeek })
+		toolsFor(view, { onLint, onPeek }),
+		onSwitchArm
 	);
 
 	return (
@@ -368,7 +407,7 @@ export const PollView = ({
 			audits={auditNotes(view)}
 			byline={poll.author === undefined ? undefined : { author: poll.author }}
 			build={{
-				meta: `${view.configs.length}`,
+				running: rows.filter((row) => row.dot === "on").length,
 				rows,
 				total: buildTotalFor(view),
 			}}

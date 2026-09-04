@@ -61,6 +61,7 @@ type ShopScreenProps = {
 	onDraft: (configId: string) => void;
 	onRebuild: () => void;
 	onLock: (configId: string) => void;
+	onUnlock: (configId: string) => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
 	upgradedConfigId?: string;
@@ -190,6 +191,7 @@ export const ShopScreen = ({
 	onDraft,
 	onRebuild,
 	onLock,
+	onUnlock,
 	onExtend,
 	onPlantPin,
 	upgradedConfigId,
@@ -373,6 +375,17 @@ export const ShopScreen = ({
 					Lock config
 				</Badge>
 			) : null;
+		const releaseBtn = offer.locked ? (
+			<Badge
+				tone="neutral"
+				size="corner"
+				onClick={() => onUnlock(config.id)}
+				disabled={locked || busy}
+				ariaLabel={`Release ${config.label}`}
+			>
+				Release lock
+			</Badge>
+		) : null;
 
 		return (
 			<>
@@ -397,6 +410,7 @@ export const ShopScreen = ({
 								{lockBtn}
 							</Tooltip>
 						))}
+					{releaseBtn}
 				</span>
 			</>
 		);

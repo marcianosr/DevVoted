@@ -1,10 +1,7 @@
 import { slotsOf } from "~/modules/run/config/domain/config.model";
-import { starterStackFor } from "~/modules/run/config/domain/stack.model";
+import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
-import {
-	hasRoomFor,
-	occupiedSlots,
-} from "~/modules/run/build/domain/build.model";
+import { hasRoomFor } from "~/modules/run/build/domain/build.model";
 import {
 	spendLint,
 	spendPeek,
@@ -25,7 +22,9 @@ import {
 	extendOffers,
 	finishReward,
 	lockOffer,
+	unlockOffer,
 	minifyConfig,
+	switchAbArm,
 	plantPin,
 	rebuildDraft,
 	sell,
@@ -40,7 +39,6 @@ import {
 export type RunAction =
 	| { readonly type: "install"; readonly configId: string }
 	| { readonly type: "uninstall"; readonly configId: string }
-	| { readonly type: "pick-stack"; readonly stackId: string }
 	| { readonly type: "start" }
 	| {
 			readonly type: "answer";
@@ -55,36 +53,28 @@ export type RunAction =
 	| { readonly type: "upgrade"; readonly configId: string }
 	| { readonly type: "rebuild-draft" }
 	| { readonly type: "lock-offer"; readonly configId: string }
+	| { readonly type: "unlock-offer"; readonly configId: string }
 	| { readonly type: "extend-offers" }
 	| { readonly type: "plant-pin" }
 	| { readonly type: "finish-reward" }
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
+	| { readonly type: "switch-arm"; readonly configId: string }
 	| { readonly type: "buy-slot" }
 	| { readonly type: "cash-slot" }
 	| { readonly type: "set-storage-plan"; readonly tier: number };
 
 const installConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
-	if (!config || !hasRoomFor(state.build, slotsOf(config))) return state;
+	const built = state.build.configs.some(
+		(candidate) => candidate.id === configId
+	);
+	if (!config || built || !hasRoomFor(state.build, slotsOf(config)))
+		return state;
 	return {
 		...state,
-		available: state.available.filter((candidate) => candidate.id !== configId),
 		build: withBuild(state.build, [...state.build.configs, config]),
-	};
-};
-
-const pickStack = (state: RunState, stackId: string): RunState => {
-	const stack = starterStackFor(stackId);
-	if (!stack || occupiedSlots(stack.configs) > state.build.slots) return state;
-	const memberIds = new Set(stack.configs.map((config) => config.id));
-	return {
-		...state,
-		build: withBuild(state.build, [...stack.configs]),
-		available: [...state.build.configs, ...state.available].filter(
-			(config) => !memberIds.has(config.id)
-		),
 	};
 };
 
@@ -95,7 +85,6 @@ const uninstallConfig = (state: RunState, configId: string): RunState => {
 	if (!config) return state;
 	return {
 		...state,
-		available: [...state.available, config],
 		build: withBuild(
 			state.build,
 			state.build.configs.filter((candidate) => candidate.id !== configId)
@@ -108,11 +97,18 @@ const start = (state: RunState): RunState => {
 	return { ...state, status: "answering" };
 };
 
+export const withRecommendedBuild = (state: RunState): RunState =>
+	recommendedPicks(state.available, state.build.slots).reduce(
+		(run, config) => runReducer(run, { type: "install", configId: config.id }),
+		state
+	);
+
 const SHOP_WRITES: readonly RunAction["type"][] = [
 	"draft",
 	"upgrade",
 	"rebuild-draft",
 	"lock-offer",
+	"unlock-offer",
 	"extend-offers",
 	"plant-pin",
 	"buy-slot",
@@ -130,8 +126,6 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return installConfig(state, action.configId);
 	if (action.type === "uninstall" && state.status === "configuring")
 		return uninstallConfig(state, action.configId);
-	if (action.type === "pick-stack" && state.status === "configuring")
-		return pickStack(state, action.stackId);
 	if (action.type === "start" && state.status === "configuring")
 		return start(state);
 	if (action.type === "answer" && state.status === "answering")
@@ -154,6 +148,8 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return rebuildDraft(state);
 	if (action.type === "lock-offer" && state.status === "rewarding")
 		return lockOffer(state, action.configId);
+	if (action.type === "unlock-offer" && state.status === "rewarding")
+		return unlockOffer(state, action.configId);
 	if (action.type === "extend-offers" && state.status === "rewarding")
 		return extendOffers(state);
 	if (action.type === "plant-pin" && state.status === "rewarding")
@@ -170,6 +166,11 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return sell(state, action.configId);
 	if (action.type === "minify" && state.status === "rewarding")
 		return minifyConfig(state, action.configId);
+	if (
+		action.type === "switch-arm" &&
+		(state.status === "rewarding" || state.status === "answering")
+	)
+		return switchAbArm(state, action.configId);
 	if (
 		action.type === "drop" &&
 		(state.status === "rewarding" ||

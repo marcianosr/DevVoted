@@ -17,6 +17,8 @@ import {
 	minify,
 	sellRefund,
 	showsSampleSize,
+	switchArm,
+	upgradePreview,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
@@ -85,6 +87,32 @@ describe("CONFIG_SIZES", () => {
 		expect(DRAFT_COST_PER_SLOT_KB * CONFIG_SIZES[CONFIG_SIZES.length - 1]).toBe(
 			512
 		);
+	});
+});
+
+describe("switchArm", () => {
+	it("ships arm B: the coverage arm unloads and the faucet arm loads", () => {
+		const armed = switchArm(CONFIGS.abTest);
+		expect(armed.abArm).toBe("storage");
+		expect(armed.coverageMultiplier).toBeUndefined();
+		expect(armed.storagePerCorrect).toBe(8);
+	});
+
+	it("rewrites the row copy to name the live arm", () => {
+		expect(switchArm(CONFIGS.abTest).description).toContain("Arm B is live");
+		expect(switchArm(CONFIGS.abTest).gives).toContain("Arm B");
+	});
+
+	it("round-trips back to arm A, copy included", () => {
+		const roundTripped = switchArm(switchArm(CONFIGS.abTest));
+		expect(roundTripped.abArm).toBe("coverage");
+		expect(roundTripped.coverageMultiplier).toBe(1.25);
+		expect(roundTripped.storagePerCorrect).toBeUndefined();
+		expect(roundTripped.description).toBe(CONFIGS.abTest.description);
+	});
+
+	it("leaves a config without arms untouched", () => {
+		expect(switchArm(CONFIGS.js)).toBe(CONFIGS.js);
 	});
 });
 
@@ -285,5 +313,39 @@ describe("headlineFigureOf", () => {
 
 	it("withholds a figure where the config prices in something else", () => {
 		expect(headlineFigureOf(CONFIGS.eslint)).toBeUndefined();
+	});
+});
+
+describe("upgradePreview", () => {
+	it("names the multiplier a focus config moves to", () => {
+		expect(upgradePreview(CONFIGS.js)).toEqual([{ from: "1.25×", to: "1.5×" }]);
+	});
+
+	it("prices a clear payout in the KB it will actually pay", () => {
+		expect(upgradePreview(CONFIGS.unitTests)).toEqual([
+			{ from: "+32KB", to: "+64KB" },
+		]);
+	});
+
+	it("states the interest rate on both sides of the purchase", () => {
+		expect(upgradePreview(CONFIGS.mooresLaw)).toEqual([
+			{ from: "+2%", to: "+4%" },
+		]);
+	});
+
+	it("words the peek upgrade, which buys a fact rather than a number", () => {
+		expect(upgradePreview(CONFIGS.telemetry)).toEqual([
+			{ from: "split only", to: "with sample size" },
+		]);
+	});
+
+	it("reads from the level the config is at, not from level one", () => {
+		expect(upgradePreview({ ...CONFIGS.js, level: 3 })).toEqual([
+			{ from: "1.75×", to: "2×" },
+		]);
+	});
+
+	it("promises nothing for a config with no axis to upgrade", () => {
+		expect(upgradePreview(CONFIGS.eslint)).toEqual([]);
 	});
 });

@@ -643,6 +643,50 @@ describe("Cache", () => {
 	});
 });
 
+describe("A/B Test", () => {
+	const withAbTest = (state: RunState): RunState => ({
+		...state,
+		build: {
+			...state.build,
+			slots: state.build.slots + 2,
+			configs: [...state.build.configs, CONFIGS.abTest],
+		},
+	});
+
+	it("ships arm A by default: coverage multiplied, no faucet", () => {
+		const state = answerWith(withAbTest(started(["js"])), true);
+		expect(state.answeredThisGate[0]?.coverageFactors?.build).toBe(1.25);
+		expect(state.answeredThisGate[0]?.faucetKb).toBeUndefined();
+	});
+
+	it("switches to arm B in the shop: faucet paid, coverage back to ×1", () => {
+		let state = clearGate(withAbTest(started(["js"])));
+		state = runReducer(state, { type: "switch-arm", configId: "ab-test" });
+		state = runReducer(state, { type: "finish-reward" });
+		state = answerWith(state, true);
+		expect(state.answeredThisGate[0]?.coverageFactors?.build).toBe(1);
+		expect(state.answeredThisGate[0]?.faucetKb).toBe(8);
+	});
+
+	it("switches mid-poll, scoring the answer you are about to give", () => {
+		let state = withAbTest(started(["js"]));
+		state = runReducer(state, { type: "switch-arm", configId: "ab-test" });
+		state = answerWith(state, true);
+		expect(state.answeredThisGate[0]?.coverageFactors?.build).toBe(1);
+		expect(state.answeredThisGate[0]?.faucetKb).toBe(8);
+	});
+
+	it("refuses the switch before the run has started", () => {
+		const state: RunState = {
+			...withAbTest(started(["js"])),
+			status: "configuring",
+		};
+		expect(runReducer(state, { type: "switch-arm", configId: "ab-test" })).toBe(
+			state
+		);
+	});
+});
+
 describe("Moore's Law", () => {
 	const held = (state: RunState, storage: number): RunState => ({
 		...state,
@@ -673,7 +717,10 @@ describe("Moore's Law", () => {
 	});
 
 	it("pays five times as much once maxed, on the same balance", () => {
-		const state = answerWholeWindow(maxed(held(started(["moores-law"]), 512)));
+		const state = answerWholeWindow({
+			...maxed(held(started(["moores-law"]), 512)),
+			storagePlan: 2,
+		});
 
 		expect(state.interestThisGateKb).toBe(51);
 	});
@@ -701,17 +748,20 @@ describe("Moore's Law", () => {
 		).toBe(2);
 	});
 
+	// The balance has to out-earn the rent as well as fit under the cap: at
+	// 800 KB the 10% pays 80 against tier 2's 96 a gate, which the gate reward
+	// covers. A smaller principal on the same rung decays instead.
 	it("compounds while the plan is wide enough to hold the balance", () => {
 		const rich: RunState = {
-			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 512)),
-			storagePlan: 3,
+			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 800)),
+			storagePlan: 2,
 		};
 		let state = answerWholeWindow(rich);
 		const first = state.interestThisGateKb ?? 0;
 		state = runReducer(state, { type: "finish-reward" });
 		state = answerWholeWindow(state);
 
-		expect(first).toBe(51);
+		expect(first).toBe(80);
 		expect(state.interestThisGateKb).toBeGreaterThan(first);
 	});
 });

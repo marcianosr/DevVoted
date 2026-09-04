@@ -17,8 +17,9 @@ import {
 	rebuildAvailable,
 } from "~/modules/run/run/domain/shopAction.model";
 
-/** ADR-029's three horizons plus the tag. `*Available` is whether this depth of
- * climb sells it, `can*` whether the run can pay: the shop hides one and disables the other. */
+/** ADR-029's three horizons plus the tag. `*Available` is whether the shop
+ * sells it at all (staged by depth, or for Lock by yarn.lock being in the
+ * build), `can*` whether the run can pay: the shop hides one and disables the other. */
 export type ShopControls = {
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;

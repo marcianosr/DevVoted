@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	type Config,
+	draftCost,
+} from "~/modules/run/config/domain/config.model";
+import {
 	CONFIGS,
 	CONFIG_LIST,
 } from "~/modules/run/config/domain/configRoster.model";
@@ -8,7 +12,6 @@ import {
 	EXTEND_FROM_GATE,
 	extendCost,
 	LOCK_COST_KB,
-	LOCK_FROM_GATE,
 	MAX_EXTENSIONS,
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
@@ -81,6 +84,18 @@ describe("shop controls (DVTD-5lt6)", () => {
 		return { ...state, gatesCleared, storage, streak: 50 };
 	};
 
+	const lockerShopping = (gatesCleared = 3, storage = 512): RunState => {
+		const base = shopping(gatesCleared, storage);
+		return {
+			...base,
+			build: {
+				...base.build,
+				slots: base.build.slots + 1,
+				configs: [...base.build.configs, CONFIGS.yarnLock],
+			},
+		};
+	};
+
 	const offerIds = (state: RunState): string[] =>
 		state.draftOptions.map((config) => config.id);
 
@@ -97,15 +112,30 @@ describe("shop controls (DVTD-5lt6)", () => {
 
 	describe("lock", () => {
 		it("charges the lock and records the held offer", () => {
-			const state = shopping(3, 100);
+			const state = lockerShopping(3, 100);
 			const held = firstOffer(state);
 			const locked = lockFirstOffer(state);
 			expect(locked.lockedOfferIds).toEqual([held]);
 			expect(locked.storage).toBe(100 - LOCK_COST_KB);
 		});
 
+		it("refuses a lock while yarn.lock is not in the build", () => {
+			const bare = shopping();
+			expect(lockFirstOffer(bare)).toBe(bare);
+		});
+
+		it("locks a second offer alongside the first, charging again", () => {
+			const one = lockFirstOffer(lockerShopping(3, 100));
+			const two = runReducer(one, {
+				type: "lock-offer",
+				configId: one.draftOptions[1].id,
+			});
+			expect(two.lockedOfferIds).toHaveLength(2);
+			expect(two.storage).toBe(one.storage - LOCK_COST_KB);
+		});
+
 		it("holds the offer through a rebuild the player pays for", () => {
-			const state = lockFirstOffer(shopping());
+			const state = lockFirstOffer(lockerShopping());
 			const held = state.lockedOfferIds?.[0];
 			const rebuilt = runReducer(state, { type: "rebuild-draft" });
 			expect(offerIds(rebuilt)).toContain(held);
@@ -113,7 +143,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 		});
 
 		it("still offers the held config at the next gate's shop", () => {
-			const state = lockFirstOffer(shopping());
+			const state = lockFirstOffer(lockerShopping());
 			const held = state.lockedOfferIds?.[0];
 			const next = clearNextGate(state);
 			expect(next.status).toBe("rewarding");
@@ -122,7 +152,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 		});
 
 		it("spends the lock when the held config is installed", () => {
-			const shop = lockFirstOffer(shopping());
+			const shop = lockFirstOffer(lockerShopping());
 			const state = {
 				...shop,
 				build: { ...shop.build, slots: shop.build.slots + 1 },
@@ -136,27 +166,53 @@ describe("shop controls (DVTD-5lt6)", () => {
 			expect(installed.lockedOfferIds).toEqual([]);
 		});
 
-		it("refuses a second lock while one is held", () => {
-			const state = lockFirstOffer(shopping());
-			const second = runReducer(state, {
-				type: "lock-offer",
-				configId: state.draftOptions[1].id,
+		it("releases a held offer on demand, refunding nothing", () => {
+			const state = lockFirstOffer(lockerShopping(3, 100));
+			const held = state.lockedOfferIds?.[0] ?? "";
+			const released = runReducer(state, {
+				type: "unlock-offer",
+				configId: held,
 			});
-			expect(second).toBe(state);
+			expect(released.lockedOfferIds).toEqual([]);
+			expect(released.storage).toBe(100 - LOCK_COST_KB);
+		});
+
+		it("ignores a release of an offer that is not held", () => {
+			const state = lockerShopping();
+			expect(
+				runReducer(state, { type: "unlock-offer", configId: firstOffer(state) })
+			).toBe(state);
+		});
+
+		it("releases every lock when yarn.lock is sold", () => {
+			const state = lockFirstOffer(lockerShopping());
+			const sold = runReducer(state, { type: "sell", configId: "yarn-lock" });
+			expect(configIds(sold)).not.toContain("yarn-lock");
+			expect(sold.lockedOfferIds).toEqual([]);
+		});
+
+		it("releases every lock when a gate peel strips yarn.lock", () => {
+			const locked = lockFirstOffer(lockerShopping());
+			const peeling = {
+				...locked,
+				status: "awaiting-strip" as const,
+				peelSlotsRemaining: 1,
+			};
+			const stripped = runReducer(peeling, {
+				type: "strip",
+				configId: "yarn-lock",
+			});
+			expect(configIds(stripped)).not.toContain("yarn-lock");
+			expect(stripped.lockedOfferIds).toEqual([]);
 		});
 
 		it("refuses a lock the run cannot pay for", () => {
-			const broke = shopping(3, LOCK_COST_KB - 1);
+			const broke = lockerShopping(3, LOCK_COST_KB - 1);
 			expect(lockFirstOffer(broke)).toBe(broke);
 		});
 
-		it("is not offered before its gate", () => {
-			const early = shopping(LOCK_FROM_GATE - 1);
-			expect(lockFirstOffer(early)).toBe(early);
-		});
-
 		it("ignores an offer that is not on the table", () => {
-			const state = shopping();
+			const state = lockerShopping();
 			expect(
 				runReducer(state, { type: "lock-offer", configId: "team-rocket" })
 			).toBe(state);
@@ -206,7 +262,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 
 	it("resets rebuilds at the next shop but keeps locks and extensions", () => {
-		let state = lockFirstOffer(shopping());
+		let state = lockFirstOffer(lockerShopping());
 		state = runReducer(state, { type: "extend-offers" });
 		state = runReducer(state, { type: "rebuild-draft" });
 		expect(state.rebuildsUsed).toBe(1);
@@ -423,7 +479,10 @@ describe("economy", () => {
 });
 
 describe("slots in the shop (ADR-046)", () => {
-	const inShop = (): RunState => clearGate(started(["js"], 12 * SLICE_WINDOW));
+	const inShop = (): RunState => ({
+		...clearGate(started(["js"], 12 * SLICE_WINDOW)),
+		storagePlan: 2,
+	});
 
 	it("opens every run on four slots, having bought nothing", () => {
 		const state = createRun(pool(10), handed);
@@ -525,10 +584,10 @@ describe("slots in the shop (ADR-046)", () => {
 describe("the storage plan in the shop (ADR-046)", () => {
 	const inShop = (): RunState => clearGate(started(["js"], 4 * SLICE_WINDOW));
 
-	it("opens every run on the free 512 KB cap", () => {
+	it("opens every run on the free 256 KB cap", () => {
 		const state = createRun(pool(10), handed);
 		expect(state.storagePlan).toBeUndefined();
-		expect(storageCapFor(state.storagePlan ?? 0)).toBe(512);
+		expect(storageCapFor(state.storagePlan ?? 0)).toBe(256);
 	});
 
 	it("switches plan without charging at the counter — the bill lands at the clear", () => {
@@ -543,7 +602,33 @@ describe("the storage plan in the shop (ADR-046)", () => {
 		let state: RunState = { ...inShop(), storagePlan: 3, storage: 1400 };
 		state = runReducer(state, { type: "set-storage-plan", tier: 0 });
 
-		expect(state.storage).toBe(512);
+		expect(state.storage).toBe(256);
+	});
+
+	// Buying a bill you cannot pay only ever ends one way, a gate later, with
+	// the plan gone and the overflow burned. Refuse it at the counter instead.
+	it("refuses a rung whose bill the balance cannot cover", () => {
+		const state = { ...inShop(), storage: 31 };
+
+		expect(runReducer(state, { type: "set-storage-plan", tier: 1 })).toBe(
+			state
+		);
+	});
+
+	it("sells the rung once the bill is covered", () => {
+		const state = { ...inShop(), storage: 32 };
+
+		expect(
+			runReducer(state, { type: "set-storage-plan", tier: 1 }).storagePlan
+		).toBe(1);
+	});
+
+	it("always lets a run drop to a cheaper rung, however broke", () => {
+		const state: RunState = { ...inShop(), storagePlan: 3, storage: 0 };
+
+		expect(
+			runReducer(state, { type: "set-storage-plan", tier: 0 }).storagePlan
+		).toBe(0);
 	});
 
 	it("refuses a tier it does not sell", () => {
@@ -559,13 +644,13 @@ describe("the storage plan in the shop (ADR-046)", () => {
 		state = runReducer(state, { type: "finish-reward" });
 		const cleared = clearGate(state);
 
-		expect(cleared.planBilledKb).toBe(16);
+		expect(cleared.planBilledKb).toBe(32);
 		expect(cleared.storagePlan).toBe(1);
 		expect(cleared.planDowngraded).toBeUndefined();
 	});
 
 	it("drops to the free cap when the clear cannot cover the bill", () => {
-		let state: RunState = { ...inShop(), storage: 0 };
+		let state: RunState = { ...inShop(), storagePlan: 5, storage: 1280 };
 		state = runReducer(state, { type: "set-storage-plan", tier: 6 });
 		state = runReducer(state, { type: "finish-reward" });
 		const cleared = clearGate({ ...state, storage: 0 });
@@ -579,7 +664,7 @@ describe("the storage plan in the shop (ADR-046)", () => {
 		state = runReducer(state, { type: "finish-reward" });
 		const cleared = clearGate(state);
 
-		expect(cleared.storage).toBeLessThanOrEqual(512);
+		expect(cleared.storage).toBeLessThanOrEqual(256);
 	});
 
 	it("keeps every slot it bought through a miss with an empty balance", () => {
@@ -642,5 +727,84 @@ describe("WTFPL's open shop", () => {
 			})
 		).toBe(state);
 		expect(runReducer(state, { type: "extend-offers" })).toBe(state);
+	});
+
+	it("retires locking even while yarn.lock is installed", () => {
+		const base = holding();
+		const state = {
+			...base,
+			build: {
+				...base.build,
+				configs: [...base.build.configs, CONFIGS.yarnLock],
+			},
+		};
+		expect(
+			runReducer(state, {
+				type: "lock-offer",
+				configId: state.draftOptions[0].id,
+			})
+		).toBe(state);
+	});
+});
+
+describe("upgrade offers on the shelf (ADR-053)", () => {
+	const shopWith = (configId: string, storage: number): RunState => {
+		const state = clearGate(started([configId]));
+		return { ...state, storage };
+	};
+
+	const offering = (state: RunState, offer: Config): RunState => ({
+		...state,
+		draftOptions: [offer],
+	});
+
+	const levelOf = (state: RunState, configId: string) =>
+		state.build.configs.find((config) => config.id === configId)?.level;
+
+	it("levels the installed config instead of taking a second slot", () => {
+		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
+
+		const bought = runReducer(state, { type: "draft", configId: "js" });
+
+		expect(bought.build.configs).toHaveLength(state.build.configs.length);
+		expect(levelOf(bought, "js")).toBe(2);
+		expect(occupiedSlots(bought.build.configs)).toBe(
+			occupiedSlots(state.build.configs)
+		);
+	});
+
+	it("charges the shelf price rather than the upgrade ladder's", () => {
+		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
+
+		const bought = runReducer(state, { type: "draft", configId: "js" });
+
+		expect(state.storage - bought.storage).toBe(draftCost(CONFIGS.js));
+	});
+
+	// The shelf is the way past a coverage requirement you have not met — that
+	// is what makes a rare upgrade offer worth taking over the shop's Upgrade.
+	it("asks for no category coverage, unlike the shop's Upgrade press", () => {
+		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
+
+		expect(
+			levelOf(runReducer(state, { type: "upgrade", configId: "js" }), "js")
+		).toBeUndefined();
+		expect(
+			levelOf(runReducer(state, { type: "draft", configId: "js" }), "js")
+		).toBe(2);
+	});
+
+	it("refuses an upgrade the balance cannot cover", () => {
+		const state = offering(shopWith("js", 4), { ...CONFIGS.js, level: 2 });
+
+		expect(runReducer(state, { type: "draft", configId: "js" })).toBe(state);
+	});
+
+	it("takes the bought upgrade off the shelf", () => {
+		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
+
+		const bought = runReducer(state, { type: "draft", configId: "js" });
+
+		expect(bought.draftOptions).toHaveLength(0);
 	});
 });

@@ -28,6 +28,8 @@ const render_ = (overrides: Partial<PrepViewProps> = {}) =>
 		/>
 	);
 
+const rowFor = (label: string) => screen.getByText(label).closest("div");
+
 describe("PrepView", () => {
 	it("wears the gate it is about to run", () => {
 		render_();
@@ -35,16 +37,32 @@ describe("PrepView", () => {
 		expect(screen.getByText("Gate 4 · Lavender")).toBeInTheDocument();
 	});
 
-	it("counts the build in slots against the width the gate grants", () => {
+	it("names both build measurements rather than one ambiguous count", () => {
 		render_();
 
-		expect(screen.getByText("2 of 4 slots")).toBeInTheDocument();
+		expect(rowFor("configs")?.textContent).toBe("configs2");
+		expect(rowFor("slots")?.textContent).toBe("slots2 / 4");
 	});
 
 	it("states what the gate asks of the attempt", () => {
 		render_();
 
-		expect(screen.getByText("earn 60% in this window")).toBeInTheDocument();
+		expect(screen.getByText("0 of 60%")).toBeInTheDocument();
+	});
+
+	it("reads the coverage held against the demand on a bar", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				gateStake: createMockGateStake({
+					gateNumber: 4,
+					coverageDemand: 60,
+					coverageHeld: 74.25,
+				}),
+			}),
+		});
+
+		expect(screen.getByLabelText("74.3% of 60% needed")).toBeInTheDocument();
 	});
 
 	it("lists the bill that waits for the clear", () => {
@@ -138,49 +156,107 @@ describe("PrepView", () => {
 			}),
 		});
 
-		expect(screen.getByText("Request Timeout")).toHaveClass("line-through");
+		expect(screen.getByText("408 Request Timeout")).toHaveClass("line-through");
 		expect(screen.getByText("reported passing")).toBeInTheDocument();
 	});
 
-	it("leaves a suppressed audit out of the running count", () => {
+	it("reads none when the gate runs no audit at all", () => {
 		render_({
 			view: createMockRunView({
 				...view,
-				gateStake: createMockGateStake({
-					gateNumber: 4,
-					audits: [
-						{
-							id: "timeout-4",
-							code: 408,
-							name: "Request Timeout",
-							description: "On the clock.",
-							suppressed: true,
-						},
-					],
-				}),
+				gateStake: createMockGateStake({ gateNumber: 4, audits: [] }),
 			}),
 		});
 
-		expect(screen.getByText("none running")).toBeInTheDocument();
+		expect(screen.getByText("none")).toBeInTheDocument();
 	});
 
-	it("shows no prefetch section when nothing in the build reads the draw", () => {
+	it("counts the window's polls off as they are answered", () => {
+		render_({
+			view: createMockRunView({ ...view, pollsAnswered: 2 }),
+		});
+
+		expect(screen.getByText("2 / 5 answered")).toBeInTheDocument();
+	});
+
+	it("redacts the poll types and the categories nothing in the build reads", () => {
 		render_();
 
-		expect(screen.queryByText("Prefetch")).not.toBeInTheDocument();
+		expect(screen.getAllByText("???")).toHaveLength(2);
 	});
 
-	it("names the categories the draw holds when a config reveals them", () => {
+	it("credits the config that revealed the draw", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js, CONFIGS.prefetch],
+				upcomingCategories: ["js", "js"],
+			}),
+		});
+
+		expect(rowFor("categories")).toHaveTextContent("Prefetch");
+	});
+
+	it("counts the draw by category once a config reveals it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				upcomingCategories: ["js", "ts", "js"],
+				answerTypesThisGate: { single: 4, multiple: 1 },
+			}),
+		});
+
+		const categories = rowFor("categories");
+		expect(categories).toHaveTextContent("javascript2");
+		expect(categories).toHaveTextContent("typescript1");
+		expect(screen.queryByText("???")).not.toBeInTheDocument();
+	});
+
+	it("leads the biggest category of the draw", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				upcomingCategories: ["ts", "js", "js"],
+			}),
+		});
+
+		expect(rowFor("categories")?.textContent).toBe(
+			"categoriesjavascript2·typescript1"
+		);
+	});
+
+	it("reads the poll types out as counts once a config reveals them", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				answerTypesThisGate: { single: 4, multiple: 1 },
+			}),
+		});
+
+		expect(rowFor("type")?.textContent).toBe("type4single·1multiple");
+	});
+
+	it("names only the answer type the window actually holds", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				answerTypesThisGate: { single: 5, multiple: 0 },
+			}),
+		});
+
+		expect(rowFor("type")?.textContent).toBe("type5single");
+	});
+
+	it("counts the next gate's draw on its own line", () => {
 		render_({
 			view: createMockRunView({
 				...view,
 				upcomingCategories: ["ts", "js"],
-				nextGateCategories: ["git"],
+				nextGateCategories: ["git", "git"],
 			}),
 		});
 
-		expect(screen.getByText("TypeScript · JavaScript")).toBeInTheDocument();
-		expect(screen.getByText("Git")).toBeInTheDocument();
+		expect(rowFor("next gate")?.textContent).toBe("next gategit2");
 	});
 
 	it("leaves the gate from the start button and the run from the other two", async () => {
@@ -189,11 +265,10 @@ describe("PrepView", () => {
 		const onCommunity = vi.fn();
 		render_({ onStart, onBackToShop, onCommunity });
 
-		const starts = screen.getAllByRole("button", { name: "Start Lavender →" });
-		await userEvent.click(starts[0]);
 		await userEvent.click(
-			screen.getByRole("button", { name: "← change · 184 KB" })
+			screen.getByRole("button", { name: "Start Lavender →" })
 		);
+		await userEvent.click(screen.getByRole("button", { name: "Back to shop" }));
 		await userEvent.click(screen.getByRole("button", { name: "Community" }));
 
 		expect(onStart).toHaveBeenCalledOnce();
@@ -208,10 +283,9 @@ describe("PrepView", () => {
 			onStart,
 		});
 
-		const locked = screen.getAllByRole("button", {
-			name: "opens with the next window",
-		});
-		await userEvent.click(locked[0]);
+		await userEvent.click(
+			screen.getByRole("button", { name: "opens with the next window" })
+		);
 
 		expect(onStart).not.toHaveBeenCalled();
 	});

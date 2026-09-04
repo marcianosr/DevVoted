@@ -31,7 +31,9 @@ const handlers = {
 	onDraft: () => {},
 	onSell: () => {},
 	onUpgrade: () => {},
+	onSwitchArm: () => {},
 	onLock: () => {},
+	onUnlock: () => {},
 	onRebuild: () => {},
 	onExtend: () => {},
 	onPlantPin: () => {},
@@ -111,12 +113,13 @@ describe("ShopView", () => {
 		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeEnabled();
 	});
 
+	// The door keeps its own label while it is shut: the reason is a fact about
+	// the run, not a name for the button.
 	it("shuts the exit while the build is over capacity, counting the overflow", () => {
 		render_({ view: createMockRunView({ ...view, overflowSlots: 2 }) });
 
-		expect(
-			screen.getByRole("button", { name: "Over capacity by 2 slots" })
-		).toBeDisabled();
+		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeDisabled();
+		expect(screen.getByText("Over capacity by 2 slots")).toBeInTheDocument();
 	});
 });
 
@@ -165,6 +168,31 @@ describe("ShopView build rows", () => {
 		expect(screen.getAllByText("v1").length).toBeGreaterThan(0);
 	});
 
+	it("fires the arm switch in one press, no confirm", async () => {
+		const onSwitchArm = vi.fn();
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js, CONFIGS.abTest],
+			}),
+			onSwitchArm,
+		});
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /^A\/B Test · Ship arm B/ })
+		);
+
+		expect(onSwitchArm).toHaveBeenCalledWith("ab-test");
+	});
+
+	it("offers no arm switch on a config without arms", () => {
+		render_();
+
+		expect(
+			screen.queryByRole("button", { name: /Ship arm/ })
+		).not.toBeInTheDocument();
+	});
+
 	it("arms an upgrade before it fires", async () => {
 		const onUpgrade = vi.fn();
 		render_({
@@ -195,6 +223,54 @@ describe("ShopView build rows", () => {
 			screen.getByRole("button", { name: /^\.js · Upgrade/ })
 		).toBeDisabled();
 	});
+
+	// A disabled press with no reason is the shop's one blind refusal: the
+	// requirement was already computed, it just never reached the player.
+	it("says on the press itself why an upgrade is out of reach", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 4096,
+				coverageByCategory: {},
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", {
+				name: /Unlocks at 5% JavaScript coverage, you have 0%\./,
+			})
+		).toBeDisabled();
+	});
+
+	it("states what the money buys before the upgrade is confirmed", async () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 4096,
+				coverageByCategory: { js: 100, ts: 100 },
+			}),
+		});
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /^\.js · Upgrade/ })
+		);
+
+		expect(screen.getByText(/JavaScript polls earn/)).toBeInTheDocument();
+		expect(screen.getAllByText("1.5×").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("1.25×").length).toBeGreaterThan(0);
+	});
+
+	it("reads an installed config at the version it is actually running", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [{ ...CONFIGS.js, level: 3 }],
+			}),
+		});
+
+		expect(screen.getByText(/JavaScript polls earn/)).toBeInTheDocument();
+		expect(screen.getByText("1.75×")).toBeInTheDocument();
+	});
 });
 
 describe("ShopView offers", () => {
@@ -208,26 +284,80 @@ describe("ShopView offers", () => {
 		},
 	});
 
-	it("offers no lock while the run has not unlocked it", () => {
+	it("puts the next slot on its own row, priced, with the press on the right", () => {
+		render_();
+
+		expect(screen.getByText("Slot 5")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Buy slot 5 · 16 KB/ })
+		).toBeInTheDocument();
+	});
+
+	it("reads a bought slot nothing stands in as empty, with its cash press", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				slots: 5,
+				slotsFree: 2,
+				slotDeals: {
+					...view.slotDeals,
+					buy: { costKb: 32, makes: 6 },
+					cash: { costKb: 16, makes: 4 },
+				},
+			}),
+		});
+
+		expect(screen.getByText("Slot 5 · empty")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Cash slot 5 · 16 KB/ })
+		).toBeInTheDocument();
+	});
+
+	it("names the version an offer would install", () => {
+		render_();
+
+		expect(screen.getAllByText("v1").length).toBeGreaterThan(0);
+	});
+
+	// A version the player already owns is on the shelf as an upgrade, so it
+	// must not read as a second copy they have room for.
+	it("reads a rolled upgrade as an upgrade rather than an install", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.ts],
+				offers: [
+					createMockShopOffer({ ...CONFIGS.js, level: 2 }, { upgrades: true }),
+				],
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", { name: /^\.js · Upgrade/ })
+		).toBeInTheDocument();
+		expect(screen.getByText("v2")).toBeInTheDocument();
+	});
+
+	it("offers no lock while yarn.lock is not in the build", () => {
 		render_();
 
 		expect(
-			screen.queryByRole("button", { name: /Stylelint · Keep/ })
+			screen.queryByRole("button", { name: /Stylelint · Lock/ })
 		).not.toBeInTheDocument();
 	});
 
-	it("holds an offer over for the next shop", async () => {
+	it("locks an offer from its padlock, at the quoted fee", async () => {
 		const onLock = vi.fn();
 		render_({ view: lockable, onLock });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /^Stylelint · Keep/ })
+			screen.getByRole("button", { name: /^Stylelint · Lock for 8 KB/ })
 		);
 
 		expect(onLock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
 	});
 
-	it("marks a kept offer as pressed, and counts it beside the shelf", () => {
+	it("marks a held offer as pressed, and counts it beside the shelf", () => {
 		render_({
 			view: createMockRunView({
 				...lockable,
@@ -239,9 +369,29 @@ describe("ShopView offers", () => {
 		});
 
 		expect(
-			screen.getByRole("button", { name: /^Stylelint · Keep/ })
+			screen.getByRole("button", { name: /^Stylelint · Release/ })
 		).toHaveAttribute("aria-pressed", "true");
 		expect(screen.getByText("2 offers · 1 kept")).toBeInTheDocument();
+	});
+
+	it("releases a held offer from the same padlock", async () => {
+		const onUnlock = vi.fn();
+		render_({
+			view: createMockRunView({
+				...lockable,
+				shopControls: {
+					...lockable.shopControls,
+					lockedOfferIds: [CONFIGS.stylelint.id],
+				},
+			}),
+			onUnlock,
+		});
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /^Stylelint · Release/ })
+		);
+
+		expect(onUnlock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
 	});
 
 	it("rerolls the shelf at the price the run has reached", async () => {
@@ -280,7 +430,7 @@ describe("ShopView offers", () => {
 	});
 });
 
-const planAt = (tier: number) => ({
+const planAt = (tier: number, storage: number, affordable = true) => ({
 	capKb: STORAGE_PLANS[tier].capKb,
 	perGateKb: STORAGE_PLANS[tier].perGateKb,
 	options: STORAGE_PLANS.map((plan) => ({
@@ -288,54 +438,103 @@ const planAt = (tier: number) => ({
 		capKb: plan.capKb,
 		perGateKb: plan.perGateKb,
 		held: plan.tier === tier,
-		burnsKb: 0,
+		burnsKb: Math.max(0, storage - plan.capKb),
+		affordable: plan.tier <= tier || affordable,
 	})),
 });
 
 describe("ShopView storage plan", () => {
+	it("lists all seven rungs and masks everything past the next", () => {
+		render_();
+
+		const track = screen.getByRole("list", { name: "storage plan rungs" });
+		expect(within(track).getAllByRole("listitem")).toHaveLength(7);
+		expect(within(track).getByText("256 KB")).toBeInTheDocument();
+		expect(within(track).getByText("512 KB")).toBeInTheDocument();
+		expect(within(track).queryByText("1 MB")).not.toBeInTheDocument();
+		expect(within(track).getAllByText("????").length).toBeGreaterThan(0);
+		expect(within(track).getAllByRole("button")).toHaveLength(2);
+	});
+
 	it("meters the balance against the held cap and sizes the next rung", () => {
 		render_();
 
 		expect(
 			screen.getByRole("img", {
-				name: "216 KB held · 296 KB headroom to the 512 KB cap · next rung adds 256 KB",
+				name: "216 KB held · 40 KB free · 256 KB cap · +256 KB on 512 KB",
 			})
 		).toBeInTheDocument();
-		expect(screen.getByText("… 5 more rungs to 10 MB")).toBeInTheDocument();
 	});
 
-	it("upgrades to the next rung from its press", async () => {
+	it("keeps the held card selected and dead", () => {
+		render_();
+
+		expect(
+			screen.getByRole("button", { name: "selected 256 KB" })
+		).toBeDisabled();
+	});
+
+	it("selects a revealed rung from its card", async () => {
 		const onSetStoragePlan = vi.fn();
 		render_({ onSetStoragePlan });
 
-		await userEvent.click(screen.getByRole("button", { name: "upgrade" }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "select 512 KB" })
+		);
 
 		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
 	});
 
-	it("offers no drop below the free rung", () => {
-		render_();
+	// A rung you cannot pay for is a downgrade one gate later, so the press
+	// refuses and names the bill rather than selling you the fall.
+	it("refuses a rung whose bill the balance cannot cover, and says so", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 8,
+				storagePlan: planAt(0, 8, false),
+			}),
+		});
 
 		expect(
-			screen.queryByRole("button", { name: /^drop to / })
-		).not.toBeInTheDocument();
+			screen.getByRole("button", { name: "select 512 KB" })
+		).toBeDisabled();
+		expect(
+			screen.getByText(/bills 32 KB a gate, you hold 8 KB/)
+		).toBeInTheDocument();
 	});
 
-	it("drops one rung down and says what the drop burns", async () => {
+	it("holds the shop door shut while the plan outruns the balance", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 8,
+				storagePlan: planAt(2, 8),
+			}),
+		});
+
+		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeDisabled();
+		expect(
+			screen.getByText(/Storage plan bills 96 KB a gate, you hold 8 KB/)
+		).toBeInTheDocument();
+	});
+
+	it("warns what a drop burns on the cheaper card, and drops from it", async () => {
 		const onSetStoragePlan = vi.fn();
 		render_({
 			view: createMockRunView({
 				...view,
-				storagePlan: planAt(2),
+				storagePlan: planAt(2, 812),
 				storage: 812,
 			}),
 			onSetStoragePlan,
 		});
 
-		expect(screen.getByText(/burns 44 KB/)).toBeInTheDocument();
+		expect(screen.getByText("burns 300 KB")).toBeInTheDocument();
+		expect(screen.getByText("burns 556 KB")).toBeInTheDocument();
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "drop to 768 KB" })
+			screen.getByRole("button", { name: "select 512 KB" })
 		);
 
 		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
@@ -371,6 +570,9 @@ describe("ShopView when read-only has closed it", () => {
 		).toBeDisabled();
 		expect(
 			screen.getByRole("button", { name: /Rebuild offers/ })
+		).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: "select 512 KB" })
 		).toBeDisabled();
 	});
 

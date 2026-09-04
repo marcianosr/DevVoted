@@ -38,7 +38,7 @@ export const RightAnswer: Story = {
 		},
 		theme: "lavender",
 		build: {
-			meta: "3",
+			running: 2,
 			total: { label: "Total", value: "×3.1" },
 			rows: [
 				{
@@ -134,7 +134,7 @@ export const EliteReveal: Story = {
 		},
 		theme: "elite",
 		build: {
-			meta: "8",
+			running: 5,
 			total: { label: "Total", value: "×6.2" },
 			rows: [
 				{

@@ -11,10 +11,12 @@ import {
 	draftSeed,
 	extendCost,
 	MAX_EXTENSIONS,
+	isUpgradeOffer,
 	offerCount,
 	rebuildCost,
 	rollDraft,
 	sellRefundIn,
+	upgradeOfferFor,
 } from "~/modules/run/shop/domain/draft.model";
 
 const ids = (configs: readonly Config[]): string[] =>
@@ -228,12 +230,81 @@ describe("draftSeed", () => {
 		expect(rebuilt).not.toEqual(opening);
 	});
 
-	it("never re-offers any owned config — drafts are new configs only", () => {
+	it("never re-offers a config the player cannot version up", () => {
 		expect(seenAcrossSeeds([CONFIGS.eslint])).not.toContain("eslint");
-		expect(seenAcrossSeeds([CONFIGS.js])).not.toContain("js");
+	});
+
+	// An owned config coming back is only ever the next version of it: a plain
+	// re-buy would be a slot the player already paid for.
+	it("re-offers an owned config only as its next version", () => {
+		const reoffered = Array.from({ length: 30 }, (_, seed) =>
+			rollDraft(seed, [CONFIGS.js])
+		)
+			.flat()
+			.filter((config) => config.id === "js");
+
+		expect(reoffered.length).toBeGreaterThan(0);
+		expect(reoffered.every((config) => config.level === 2)).toBe(true);
 	});
 
 	it("offers Unit Tests like any other unowned config", () => {
 		expect(seenAcrossSeeds([])).toContain("unit-tests");
+	});
+});
+
+describe("upgradeOfferFor", () => {
+	const acrossSeeds = (equipped: readonly Config[]) =>
+		Array.from({ length: 80 }, (_, seed) => upgradeOfferFor(seed, equipped));
+
+	it("offers a version of something already installed, never a new config", () => {
+		const offered = acrossSeeds([CONFIGS.js]).filter(
+			(config) => config !== undefined
+		);
+
+		expect(offered.length).toBeGreaterThan(0);
+		expect(offered.every((config) => config.id === "js")).toBe(true);
+		expect(offered.every((config) => config.level === 2)).toBe(true);
+	});
+
+	it("stays rare enough that the shop Upgrade is still the way to level", () => {
+		const offered = acrossSeeds([CONFIGS.js]).filter(
+			(config) => config !== undefined
+		);
+
+		expect(offered.length).toBeLessThan(80 / 4);
+	});
+
+	it("reads the same for the same seed and build", () => {
+		expect(upgradeOfferFor(7, [CONFIGS.js])).toEqual(
+			upgradeOfferFor(7, [CONFIGS.js])
+		);
+	});
+
+	it("withholds an offer when nothing in the build can be upgraded", () => {
+		expect(acrossSeeds([CONFIGS.eslint]).every((c) => c === undefined)).toBe(
+			true
+		);
+	});
+
+	it("withholds an offer from an empty build", () => {
+		expect(acrossSeeds([]).every((config) => config === undefined)).toBe(true);
+	});
+});
+
+describe("isUpgradeOffer", () => {
+	it("reads a higher version of an installed config as an upgrade", () => {
+		expect(isUpgradeOffer([CONFIGS.js], { ...CONFIGS.js, level: 2 })).toBe(
+			true
+		);
+	});
+
+	it("reads an unowned config as a plain offer", () => {
+		expect(isUpgradeOffer([CONFIGS.ts], { ...CONFIGS.js, level: 2 })).toBe(
+			false
+		);
+	});
+
+	it("reads the same version of an installed config as a re-buy", () => {
+		expect(isUpgradeOffer([CONFIGS.js], CONFIGS.js)).toBe(false);
 	});
 });

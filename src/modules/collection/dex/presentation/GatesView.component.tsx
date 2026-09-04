@@ -10,7 +10,6 @@ import {
 } from "~/ui/modern-theme/screens/GatesPanel.ui";
 
 const ACTION_LABEL = {
-	lock: "lock",
 	extend: "extend",
 	pin: "git tag",
 } as const;

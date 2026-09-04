@@ -1,27 +1,41 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
+import { kbLabel } from "~/shared/lib/storage";
 
 import { StoragePlan, type StoragePlanProps } from "./StoragePlan.ui";
 
 const noop = () => {};
 
-const TOP_TIER = STORAGE_PLANS.length - 1;
-const TOP_CAP_KB = STORAGE_PLANS[TOP_TIER].capKb;
+const planOn = (
+	held: number,
+	heldKb: number,
+	opts: { locked?: boolean; broke?: boolean } = {}
+): StoragePlanProps => ({
+	meter: {
+		heldKb,
+		capKb: STORAGE_PLANS[held].capKb,
+		nextCapKb: STORAGE_PLANS[held + 1]?.capKb,
+	},
+	cards: STORAGE_PLANS.map((plan) => {
+		const revealed = plan.tier <= held + 1;
+		const affordable = plan.tier <= held || !opts.broke;
+		const selectable =
+			revealed && plan.tier !== held && !opts.locked && affordable;
 
-const rungAt = (tier: number) => ({
-	capKb: STORAGE_PLANS[tier].capKb,
-	rentKb: STORAGE_PLANS[tier].perGateKb,
-});
-
-const onRung = (tier: number, heldKb: number): StoragePlanProps => ({
-	heldKb,
-	current: rungAt(tier),
-	next: tier === TOP_TIER ? undefined : rungAt(tier + 1),
-	drop: tier === 0 ? undefined : { toKb: rungAt(tier - 1).capKb, onDrop: noop },
-	moreRungs: Math.max(0, TOP_TIER - tier - 1),
-	topCapKb: TOP_CAP_KB,
-	onUpgrade: tier === TOP_TIER ? undefined : noop,
+		return {
+			capKb: plan.capKb,
+			rentKb: plan.perGateKb,
+			held: plan.tier === held,
+			revealed,
+			burnsKb: Math.max(0, heldKb - plan.capKb),
+			refusal:
+				revealed && plan.tier !== held && !affordable
+					? `bills ${kbLabel(plan.perGateKb)} a gate, you hold ${kbLabel(heldKb)}`
+					: undefined,
+			onSelect: selectable ? noop : undefined,
+		};
+	}),
 });
 
 const meta: Meta<typeof StoragePlan> = {
@@ -29,7 +43,7 @@ const meta: Meta<typeof StoragePlan> = {
 	title: "Terminal/StoragePlan",
 	decorators: [
 		(Story) => (
-			<div className="max-w-3xl bg-zinc-900 p-6">
+			<div className="max-w-2xl bg-zinc-900 p-6">
 				<Story />
 			</div>
 		),
@@ -38,21 +52,26 @@ const meta: Meta<typeof StoragePlan> = {
 export default meta;
 type Story = StoryObj<typeof StoragePlan>;
 
-export const OnTheOneMbRung: Story = {
-	args: onRung(2, 668),
+export const FreeTierStart: Story = {
+	args: planOn(0, 142),
 };
 
-export const FreeRung: Story = {
-	args: onRung(0, 142),
+export const MidLadderCentered: Story = {
+	args: planOn(3, 1229),
 };
 
-export const DropWouldBurn: Story = {
-	args: {
-		...onRung(2, 812),
-		drop: { toKb: rungAt(1).capKb, victim: "Telemetry", onDrop: noop },
-	},
+export const UnaffordableNextRung: Story = {
+	args: planOn(0, 8, { broke: true }),
+};
+
+export const DowngradeBurns: Story = {
+	args: planOn(2, 812),
 };
 
 export const AtTheCeiling: Story = {
-	args: onRung(TOP_TIER, 4096),
+	args: planOn(STORAGE_PLANS.length - 1, 4096),
+};
+
+export const ShopLocked: Story = {
+	args: planOn(3, 1229, { locked: true }),
 };

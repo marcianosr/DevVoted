@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted 2026-08-10.
+Accepted 2026-08-10. Decisions 1, 5, 6 and 7 superseded by
+[ADR-052](052-the-run-opens-on-a-dealt-hand.md) (2026-09-03): starter stacks
+are deleted; the run opens on a dealt hand of five with a recommended trio
+preselected.
 
 ## Context
 

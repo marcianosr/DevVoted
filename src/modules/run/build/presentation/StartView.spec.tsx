@@ -3,11 +3,18 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { SLOT_PRICES_KB } from "~/modules/run/run/domain/rules.model";
 import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
 
 import { StartView, type StartViewProps } from "./StartView.component";
+
+const dealt = [
+	CONFIGS.js,
+	CONFIGS.ts,
+	CONFIGS.unitTests,
+	CONFIGS.eslint,
+	CONFIGS.codeCoverage,
+];
 
 const view = createMockRunView({
 	gatesCleared: 0,
@@ -15,7 +22,7 @@ const view = createMockRunView({
 	slots: 4,
 	slotsUsed: 0,
 	slotsFree: 4,
-	available: Object.values(CONFIGS),
+	available: dealt,
 	gateStake: createMockGateStake({ gateNumber: 0, coverageDemand: 3 }),
 });
 
@@ -24,7 +31,6 @@ const render_ = (overrides: Partial<StartViewProps> = {}) =>
 		<StartView
 			view={view}
 			onToggle={() => {}}
-			onPickStack={() => {}}
 			onBuySlot={() => {}}
 			onRefundSlot={() => {}}
 			onStart={() => {}}
@@ -67,39 +73,17 @@ describe("StartView", () => {
 		expect(screen.getByText(/^Pallet · /)).toBeInTheDocument();
 	});
 
-	it("offers every starter stack by name, with its own blurb", () => {
+	it("deals every config as one toggleable row", () => {
 		render_();
 
-		for (const stack of STARTER_STACKS) {
-			expect(screen.getByText(stack.name)).toBeInTheDocument();
-			expect(screen.getByText(stack.blurb)).toBeInTheDocument();
+		for (const config of dealt) {
+			expect(
+				screen.getByRole("button", { name: `Install ${config.label}` })
+			).toHaveAttribute("aria-pressed", "false");
 		}
 	});
 
-	it("flags the one stack a first run should take", () => {
-		render_();
-
-		expect(screen.getAllByText("recommended")).toHaveLength(1);
-	});
-
-	it("takes a whole stack in one press", async () => {
-		const onPickStack = vi.fn();
-		render_({ onPickStack });
-
-		const [first] = screen.getAllByRole("button", { name: "Take this stack" });
-		await userEvent.click(first);
-
-		expect(onPickStack).toHaveBeenCalledWith(STARTER_STACKS[0].id);
-	});
-
-	it("deals the stacks' configs once each", () => {
-		render_();
-
-		expect(screen.getAllByText(".js")).toHaveLength(1);
-		expect(screen.getAllByText(".jsx")).toHaveLength(1);
-	});
-
-	it("lets a config be picked outside any stack", async () => {
+	it("picks a dealt config on press", async () => {
 		const onToggle = vi.fn();
 		render_({ onToggle });
 
@@ -110,9 +94,7 @@ describe("StartView", () => {
 		expect(onToggle).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	// A dealt config already installed is in the build list instead, so offering
-	// it twice would let the same config be installed on top of itself.
-	it("moves an installed config out of the deal and into the build", () => {
+	it("keeps a picked config in the deal, marked as picked", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -127,7 +109,20 @@ describe("StartView", () => {
 		).not.toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Uninstall .js" })
-		).toBeInTheDocument();
+		).toHaveAttribute("aria-pressed", "true");
+	});
+
+	it("counts the picks against the deal", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js, CONFIGS.ts],
+				slotsUsed: 2,
+				slotsFree: 2,
+			}),
+		});
+
+		expect(screen.getByText("2 of 5 picked")).toBeInTheDocument();
 	});
 
 	it("locks a dealt config too big for the room left", () => {
@@ -140,11 +135,26 @@ describe("StartView", () => {
 		).toBeDisabled();
 	});
 
+	it("keeps a picked config unpickable even with no room left", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js],
+				slotsUsed: 4,
+				slotsFree: 0,
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", { name: "Uninstall .js" })
+		).toBeEnabled();
+	});
+
 	it("holds the run shut while the build is bare", () => {
 		render_({ view: createMockRunView({ ...view, canStart: false }) });
 
 		expect(
-			screen.getByRole("button", { name: "Fill every slot to start" })
+			screen.getByRole("button", { name: "Pick a config to start" })
 		).toBeDisabled();
 	});
 
@@ -195,7 +205,7 @@ describe("StartView", () => {
 		render_({ view: withArchive(480, 5, 1), onRefundSlot });
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Refund slot 5/ })
+			screen.getByRole("button", { name: /Hand slot 5 back/ })
 		);
 
 		expect(onRefundSlot).toHaveBeenCalledOnce();

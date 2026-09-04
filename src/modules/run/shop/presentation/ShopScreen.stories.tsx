@@ -54,6 +54,7 @@ const storagePlanOn = (tier = 0, storage = 0) => ({
 		capKb: plan.capKb,
 		perGateKb: plan.perGateKb,
 		held: plan.tier === tier,
+		affordable: true,
 		burnsKb: Math.max(0, storage - plan.capKb),
 	})),
 });
@@ -82,6 +83,7 @@ const meta: Meta<typeof ShopScreen> = {
 		onSetStoragePlan: () => {},
 		controls: controls(),
 		onLock: () => {},
+		onUnlock: () => {},
 		onExtend: () => {},
 	},
 };

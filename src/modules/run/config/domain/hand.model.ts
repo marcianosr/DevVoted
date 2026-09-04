@@ -1,7 +1,9 @@
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { touchesCoverage } from "~/modules/run/config/domain/effect.model";
 
 /**
  * What a run may draw its opening hand from. Deliberately not the whole roster:
@@ -23,11 +25,20 @@ export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.indexedDb,
 	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
+
+	// ...Object.entries(CONFIGS).map(([, config]) => {
+	// 	console.log("config", config);
+	// 	return config;
+	// }),
 ];
 
-/** Twice the three slots a run opens with, so the hand is a choice rather than
- * a formality, and short enough that a first run is not asked to read ten. */
-export const HAND_SIZE = 6;
+/** One more than the four slots a run opens with, so the hand is a choice
+ * rather than a formality, and short enough that a first run reads it whole. */
+export const HAND_SIZE = 5;
+
+/** How many of the hand arrive preselected: a new player can start untouched,
+ * a veteran gets ten possible trios to second-guess (ADR-052). */
+export const RECOMMENDED_SIZE = 3;
 
 const isFocus = (config: Config): boolean => config.focusCategory !== undefined;
 
@@ -54,4 +65,46 @@ export const startingHand = (
 	// than picking a favourite to sacrifice.
 	const focus = shuffled.slice(HAND_SIZE).find(isFocus);
 	return focus ? [...hand.slice(0, HAND_SIZE - 1), focus] : hand;
+};
+
+const occupiedBy = (picks: readonly Config[]): number =>
+	picks.reduce((total, pick) => total + slotsOf(pick), 0);
+
+const fitsWith = (
+	picks: readonly Config[],
+	config: Config,
+	maxSlots: number
+): boolean => occupiedBy(picks) + slotsOf(config) <= maxSlots;
+
+/**
+ * The trio a run preselects from its hand: one config to aim with, one that
+ * earns coverage, and the first remaining card that fits — in hand order, so
+ * the same hand always recommends the same build (ADR-052).
+ */
+export const recommendedPicks = (
+	hand: readonly Config[],
+	maxSlots: number
+): readonly Config[] => {
+	const seeded = [isFocus, touchesCoverage].reduce<readonly Config[]>(
+		(picks, wanted) => {
+			const next = hand.find(
+				(config) =>
+					!picks.includes(config) &&
+					wanted(config) &&
+					fitsWith(picks, config, maxSlots)
+			);
+			return next ? [...picks, next] : picks;
+		},
+		[]
+	);
+
+	return hand.reduce<readonly Config[]>(
+		(picks, config) =>
+			picks.length < RECOMMENDED_SIZE &&
+			!picks.includes(config) &&
+			fitsWith(picks, config, maxSlots)
+				? [...picks, config]
+				: picks,
+		seeded
+	);
 };

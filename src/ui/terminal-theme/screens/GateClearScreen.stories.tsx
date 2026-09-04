@@ -55,6 +55,8 @@ export const LavenderCleared: Story = {
 				{ category: "TypeScript", polls: "1 poll", gain: "+18.6" },
 			],
 			total: "+62.4%",
+			held: 62.4,
+			demand: 60,
 		},
 		changed: {
 			meta: "2 configs",
@@ -146,6 +148,8 @@ export const SeafoamCleared: Story = {
 				{ category: "Java", polls: "1 poll", gain: "+16.2" },
 			],
 			total: "+91.2%",
+			held: 91.2,
+			demand: 75,
 		},
 		changed: {
 			meta: "4 configs",

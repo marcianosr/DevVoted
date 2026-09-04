@@ -3,6 +3,8 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 
 export type ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy";
 
+export type AbArm = "coverage" | "storage";
+
 export type ConfigSize = 1 | 2 | 4 | 8 | 12 | 16;
 
 export type Config = {
@@ -27,12 +29,14 @@ export type Config = {
 	readonly openerCoverageMultiplier?: number;
 	readonly throttleCoverageMultiplier?: number;
 	readonly cacheHitStep?: number;
+	readonly abArm?: AbArm;
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
 	readonly suppressesAudit?: boolean;
 	readonly autoUpgradeOneIn?: number;
 	readonly coverageDecayPerClear?: number;
 	readonly offersFullRoster?: boolean;
+	readonly locksOffers?: boolean;
 	readonly revealsUpcomingCategories?: boolean;
 	readonly revealsCorrectCount?: boolean;
 	readonly draftCostFactor?: number;
@@ -158,6 +162,58 @@ export const describeConfig = (config: Config): string => {
 	return `${name} polls earn ${focusMultiplierOf(config)}× coverage.`;
 };
 
+export type UpgradeChange = {
+	readonly from: string;
+	readonly to: string;
+};
+
+export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
+	const next = levelUp(config);
+
+	return [
+		...(config.autoUpgradeOneIn === undefined
+			? []
+			: [
+					{
+						from: `1 in ${autoUpgradeOneInOf(config)}`,
+						to: `1 in ${autoUpgradeOneInOf(next)}`,
+					},
+				]),
+		...(config.peeksCommunitySplit === true
+			? [
+					{
+						from: showsSampleSize(config) ? "with sample size" : "split only",
+						to: showsSampleSize(next) ? "with sample size" : "split only",
+					},
+				]
+			: []),
+		...(config.storageInterestPct === undefined
+			? []
+			: [
+					{
+						from: `+${interestPctOf(config)}%`,
+						to: `+${interestPctOf(next)}%`,
+					},
+				]),
+		...(config.storageOnClear === undefined
+			? []
+			: [
+					{
+						from: `+${storageOnClearOf(config)}KB`,
+						to: `+${storageOnClearOf(next)}KB`,
+					},
+				]),
+		...(config.focusCategory === undefined
+			? []
+			: [
+					{
+						from: `${focusMultiplierOf(config)}×`,
+						to: `${focusMultiplierOf(next)}×`,
+					},
+				]),
+	].filter((change) => change.from !== change.to);
+};
+
 export type ConfigFigure =
 	| { readonly kind: "multiplier"; readonly value: number }
 	| { readonly kind: "coverage"; readonly value: number }
@@ -221,6 +277,38 @@ export const givesOf = (config: Config): string | undefined => {
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;
+};
+
+const AB_COVERAGE_MULTIPLIER = 1.25;
+const AB_STORAGE_PER_CORRECT = 8;
+
+export const AB_ARMS = {
+	coverage: {
+		coverageMultiplier: AB_COVERAGE_MULTIPLIER,
+		storagePerCorrect: undefined,
+		description: `Arm A is live — all coverage earns ×${AB_COVERAGE_MULTIPLIER}. Arm B holds +${AB_STORAGE_PER_CORRECT}KB per correct answer.`,
+		gives: `Arm A — all coverage earns ×${AB_COVERAGE_MULTIPLIER}`,
+	},
+	storage: {
+		coverageMultiplier: undefined,
+		storagePerCorrect: AB_STORAGE_PER_CORRECT,
+		description: `Arm B is live — +${AB_STORAGE_PER_CORRECT}KB per correct answer. Arm A holds ×${AB_COVERAGE_MULTIPLIER} coverage.`,
+		gives: `Arm B — +${AB_STORAGE_PER_CORRECT}KB per correct answer`,
+	},
+} as const;
+
+export const otherArmOf = (config: Config): AbArm | undefined => {
+	if (config.abArm === undefined) return undefined;
+	return config.abArm === "coverage" ? "storage" : "coverage";
+};
+
+export const abArmLabel = (arm: AbArm): string =>
+	arm === "coverage" ? "A" : "B";
+
+export const switchArm = (config: Config): Config => {
+	const arm = otherArmOf(config);
+	if (arm === undefined) return config;
+	return { ...config, abArm: arm, ...AB_ARMS[arm] };
 };
 
 export const CACHE_HIT_CAP = 4;

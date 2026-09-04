@@ -1,10 +1,11 @@
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Audits, type AuditNote } from "../Audits.ui";
-import { Badge } from "../Badge.ui";
+import { Badge, themeToneFor } from "../Badge.ui";
 import { BuildList, type BuildListRow } from "../BuildList.ui";
 import { Button } from "../Button.ui";
 import { Choice, type ChoiceState } from "../Choice.ui";
+import { Dot } from "../Dot.ui";
 import { Equation, type EquationProps } from "../Equation.ui";
 import { Legend } from "../Legend.ui";
 import { Panel } from "../Panel.ui";
@@ -17,12 +18,13 @@ const COLUMNS =
 const QUESTION_COLUMN = "flex flex-col gap-3 py-1";
 const SIDEBAR =
 	"@container border-l border-edge pl-4 @max-md:border-l-0 @max-md:border-t @max-md:pt-3 @max-md:pl-0";
+const BUILD_META = "flex items-center gap-1.5";
 
 export type RevealScreenProps = {
 	run: RunHeaderProps;
 	theme?: SwatchTheme;
 	build: {
-		meta: string;
+		running: number;
 		rows: readonly BuildListRow[];
 		total: { label: string; value: string };
 	};
@@ -61,7 +63,7 @@ export const RevealScreen = ({
 			<div className={QUESTION_COLUMN}>
 				<Audits rows={audits} />
 
-				<Badge tone="celadon" className="self-start">
+				<Badge tone={themeToneFor(theme)} className="self-start">
 					{category}
 				</Badge>
 
@@ -99,9 +101,21 @@ export const RevealScreen = ({
 			</div>
 
 			<div className={SIDEBAR}>
-				<Section label="Build" meta={build.meta}>
+				<Section
+					label="Build"
+					meta={
+						<span className={BUILD_META}>
+							<Dot variant="on" />
+							<Text tone="muted" size="caption">
+								{build.running} running
+							</Text>
+						</span>
+					}
+				>
 					<Legend
-						variants={build.rows.map((row) => row.dot)}
+						variants={build.rows
+							.map((row) => row.dot)
+							.filter((dot) => dot !== "on")}
 						className="pb-2"
 					/>
 					<BuildList rows={build.rows} total={build.total} />

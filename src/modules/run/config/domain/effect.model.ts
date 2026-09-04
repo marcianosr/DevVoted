@@ -167,7 +167,11 @@ const skipReasonFor = (
 		return { kind: "openerOnly" };
 	if (config.cacheHitStep !== undefined) return { kind: "cacheCold" };
 	if (config.subscriptionKb !== undefined) return { kind: "billsAtGateClear" };
-	if (config.offersFullRoster === true || config.draftCostFactor !== undefined)
+	if (
+		config.offersFullRoster === true ||
+		config.draftCostFactor !== undefined ||
+		config.locksOffers === true
+	)
 		return { kind: "inShop" };
 	if (config.suppressesAudit === true) return { kind: "noAuditToSuppress" };
 	if (

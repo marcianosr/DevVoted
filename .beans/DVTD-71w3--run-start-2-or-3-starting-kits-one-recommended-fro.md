@@ -1,11 +1,11 @@
 ---
 # DVTD-71w3
 title: 'Run start: 2 or 3 starting kits, one recommended from the run''s input'
-status: draft
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-08-24T12:12:16Z
-updated_at: 2026-08-24T12:12:16Z
+updated_at: 2026-09-03T09:16:32Z
 parent: DVTD-kulw
 ---
 
@@ -77,3 +77,7 @@ avoid a fourth noun. Pick one, rename the rest.
 - [ ] Define how a generated kit gets an honest name and a comparable check surface
 - [ ] Record the outcome as an amendment to ADR-026 (its Decisions 1, 5, 6, 7 all move)
 - [ ] Wire it: kit assembly in `config/domain`, recommendation in the view model, badge unchanged
+
+## Reasons for Scrapping
+
+Superseded by ADR-052 (DVTD-ez37, 2026-09-03): the answer to "which inputs drive the kit recommendation" became "no kits". Starter stacks are deleted everywhere; the recommendation survives as recommendedPicks(hand, maxSlots) preselecting 3 of the dealt 5 into the build. The naming collision this bean flagged (StarterStack / StartCombo / kit) died with the code.

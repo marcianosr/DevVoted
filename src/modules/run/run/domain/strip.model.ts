@@ -4,7 +4,11 @@ import {
 	minifySavingSlots,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import { isBare, stripConfig } from "~/modules/run/build/domain/build.model";
+import {
+	isBare,
+	locksSurviving,
+	stripConfig,
+} from "~/modules/run/build/domain/build.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	freshWindow,
@@ -24,6 +28,7 @@ const paid = (
 	return {
 		...state,
 		build,
+		lockedOfferIds: locksSurviving(build.configs, state.lockedOfferIds),
 		peelSlotsRemaining: remaining,
 		log: withLog(
 			state,

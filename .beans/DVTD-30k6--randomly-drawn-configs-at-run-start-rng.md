@@ -1,11 +1,11 @@
 ---
 # DVTD-30k6
 title: Randomly drawn configs at run start (RNG)
-status: draft
+status: completed
 type: feature
 priority: critical
 created_at: 2026-07-16T20:30:06Z
-updated_at: 2026-08-20T09:04:59Z
+updated_at: 2026-09-03T09:16:32Z
 parent: DVTD-kulw
 blocked_by:
     - DVTD-2try
@@ -23,3 +23,7 @@ Open questions:
 - Does the always-slotted starter (`fixed: [CONFIGS.unitTests]` in createSession) stay hardcoded, or does it also roll?
 - Where does the RNG seed come from — a per-run seed (reproducible/shareable runs, daily-challenge-friendly) vs a fresh random source each time? `rollDraft(seed, ...)`'s signature already expects a caller-supplied seed, which argues for a per-run seed threaded through `createSession(polls, handed, fixed)`.
 - Depends on DVTD-2try (config unlocks): only unlocked configs should be eligible to be drawn — until that lands, draw from the full CONFIG_LIST.
+
+## Summary of Changes
+
+Shipped via DVTD-ez37 / ADR-052 (2026-09-03). startingHand already dealt the seeded draw; this change made it the only opening: HAND_SIZE 6 → 5, recommendedPicks preselects 3 through the reducer (withRecommendedBuild), starter stacks deleted. Open questions resolved: hand size 5, seed stays userId:date (proto uses a per-mount seed), no shared weighting with the mid-run draft (uniform, per ADR-050). Pool remains STARTER_POOL until DVTD-p9ah swaps it to granted configs.

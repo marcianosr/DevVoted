@@ -4,6 +4,7 @@ import type { RunState } from "~/modules/run/run/domain/run.model";
 
 export type GatePayout = {
 	readonly gateRewardPaidKb: number;
+	readonly storageBeforeClearKb: number | null;
 	readonly interestThisGateKb: number;
 	readonly extraPickThisGateKb: number;
 	readonly faucetThisGateKb: number;
@@ -21,6 +22,7 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 	const reportedGate = state.clearedGate ?? state.gatesCleared;
 	return {
 		gateRewardPaidKb: state.gateRewardKb ?? 0,
+		storageBeforeClearKb: state.storageBeforeClearKb ?? null,
 		interestThisGateKb: state.interestThisGateKb ?? 0,
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,

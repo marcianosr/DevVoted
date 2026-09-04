@@ -4,6 +4,7 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Audits, type AuditNote } from "../Audits.ui";
 import { Badge, type BadgeTone } from "../Badge.ui";
 import { Button } from "../Button.ui";
+import { CoverageBar } from "../CoverageBar.ui";
 import { Figures } from "../Figures.ui";
 import { Ledger, type LedgerRow } from "../Ledger.ui";
 import { Meter } from "../Meter.ui";
@@ -47,6 +48,8 @@ export type GateClearScreenProps = {
 	coverage: {
 		rows: readonly CoverageRow[];
 		total: string;
+		held: number;
+		demand: number;
 	};
 	changed: {
 		meta: string;
@@ -138,7 +141,12 @@ export const GateClearScreen = ({
 					))}
 					<Row
 						name={<Text tone="muted">total</Text>}
-						trailing={<Figures text={coverage.total} />}
+						trailing={
+							<>
+								<Figures text={coverage.total} />
+								<CoverageBar held={coverage.held} demand={coverage.demand} />
+							</>
+						}
 					/>
 				</div>
 			</Section>

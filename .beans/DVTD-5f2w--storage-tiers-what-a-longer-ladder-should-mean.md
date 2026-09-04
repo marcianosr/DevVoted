@@ -1,11 +1,11 @@
 ---
 # DVTD-5f2w
 title: 'Storage tiers: what a longer ladder should mean'
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-08-22T19:50:00Z
-updated_at: 2026-08-22T19:50:00Z
+updated_at: 2026-09-03T14:38:17Z
 parent: DVTD-kulw
 ---
 

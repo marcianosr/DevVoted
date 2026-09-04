@@ -6,6 +6,12 @@ Accepted (2026-08-11, Marciano; DVTD-5lt6). Extends the shop of
 [ADR-008](008-reward-shop-multibuy-coverage-gated-slots.md); the rebuild control
 it renames was already live.
 
+⚠ **Lock superseded by [ADR-054](054-offer-locks-ship-with-yarnlock.md)**
+(2026-09-03): locking requires the yarn.lock config, holds any number of offers
+for the rest of the run, and gained a free release action. Decision 1's Lock
+bullet, Decision 4's Lock staging and the one-at-a-time cap are dead; Rebuild
+and Extend stand.
+
 ## Context
 
 Rerolling the shop's offers existed as one button ("Rebuild offers") with an

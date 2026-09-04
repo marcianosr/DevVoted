@@ -147,6 +147,19 @@ describe("PollView", () => {
 		expect(screen.getByText("crossed out")).toBeInTheDocument();
 	});
 
+	it("refuses the pick on an option the linter crossed out", () => {
+		render_({
+			view: createMockRunView({ ...view, disabledOptionIds: ["option-2"] }),
+		});
+
+		expect(
+			screen.queryByRole("button", { name: /arr\.splice\(-2\)/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /arr\.at\(-2\)/ })
+		).toBeInTheDocument();
+	});
+
 	it("reads the bought split onto the options it describes", () => {
 		render_({ splitByOptionId: { "option-1": 62, "option-2": 31 } });
 
@@ -204,6 +217,34 @@ describe("PollView audits", () => {
 });
 
 describe("PollView build rail", () => {
+	it("counts only the configs actually running in the build header", () => {
+		render_();
+
+		expect(screen.getByText("1 running")).toBeInTheDocument();
+	});
+
+	it("names the config an outage took offline in the banner", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				audits: [
+					{
+						id: "dependency-outage",
+						code: 424,
+						name: "Failed Dependency",
+						description: "A dependency is down.",
+						suppressed: false,
+					},
+				],
+				offlineConfigs: [
+					{ config: CONFIGS.ts, audit: "424 Failed Dependency" },
+				],
+			}),
+		});
+
+		expect(screen.getByText(".ts is offline this gate.")).toBeInTheDocument();
+	});
+
 	it("keeps an offline config on the rail, named and blamed", () => {
 		render_({
 			view: createMockRunView({
@@ -237,6 +278,41 @@ describe("PollView build rail", () => {
 		expect(screen.getByText(".js")).toBeVisible();
 	});
 
+	// Mid-poll the rail is a status board, not a manual: what each config does
+	// is one tap away rather than three lines of prose per row.
+	it("keeps a running config's effect folded until the row is opened", async () => {
+		render_();
+
+		expect(screen.getByText(/TypeScript polls earn/)).not.toBeVisible();
+
+		await userEvent.click(screen.getByText(".ts"));
+
+		expect(screen.getByText(/TypeScript polls earn/)).toBeVisible();
+	});
+
+	it("switches the A/B arm from an opened row mid-poll", async () => {
+		const onSwitchArm = vi.fn();
+		render_({
+			view: createMockRunView({ ...view, configs: [CONFIGS.abTest] }),
+			onSwitchArm,
+		});
+
+		await userEvent.click(screen.getByText("A/B Test"));
+		await userEvent.click(
+			screen.getByRole("button", { name: /Switch to arm/ })
+		);
+
+		expect(onSwitchArm).toHaveBeenCalledWith("ab-test");
+	});
+
+	it("offers no arm switch on a config that has no second arm", () => {
+		render_({ onSwitchArm: () => {} });
+
+		expect(
+			screen.queryByRole("button", { name: /Switch to arm/ })
+		).not.toBeInTheDocument();
+	});
+
 	it("states the gate's coverage in the header", () => {
 		render_();
 
@@ -251,6 +327,20 @@ describe("PollView build rail", () => {
 		expect(
 			screen.getByText("this gate holds 3 correct answers")
 		).toBeInTheDocument();
+	});
+
+	// A bare count reads as a house rule; naming the config that bought it keeps
+	// the figure attached to the slot the player spent on it.
+	it("credits the config the answer count comes from", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				correctAnswersThisGate: 3,
+				correctCountSource: ".length",
+			}),
+		});
+
+		expect(screen.getByText(".length")).toBeInTheDocument();
 	});
 
 	it("counts the incorrect ones instead where the gate mirrors its polls", () => {

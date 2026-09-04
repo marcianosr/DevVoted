@@ -4,6 +4,18 @@ import { PrepScreen } from "./PrepScreen.ui";
 
 const noop = () => {};
 
+const LAVENDER_WINDOW = {
+	title: "Lavender gate",
+	swatch: "lavender" as const,
+	target: {
+		reading: "18.4 of 60%",
+		held: 18.4,
+		demand: 60,
+	},
+	polls: "0 / 5 answered",
+	audits: [{ label: "402 Payment Required" }],
+};
+
 const meta: Meta<typeof PrepScreen> = {
 	component: PrepScreen,
 	title: "Terminal/Screens/Prep",
@@ -31,13 +43,10 @@ export const BeforeLavender: Story = {
 		theme: "lavender",
 		ready: {
 			note: "today's 5 polls are ready",
-			startLabel: "Start Lavender →",
-			onStart: noop,
 		},
 		build: {
-			meta: "7 of 8 slots",
-			count: "4",
 			slots: 8,
+			slotsUsed: 7,
 			rows: [
 				{
 					family: "focus",
@@ -68,22 +77,7 @@ export const BeforeLavender: Story = {
 				},
 			],
 		},
-		required: {
-			note: "Answer all 5 polls",
-			coverage: {
-				detail: "earn 60% in this window",
-			},
-		},
-		audits: {
-			meta: "1 running",
-			rows: [
-				{
-					code: "402",
-					name: "Payment Required",
-					cue: "paid actions cost double",
-				},
-			],
-		},
+		window: LAVENDER_WINDOW,
 		onClear: {
 			reward: "+160 KB",
 			swatchLabel: "Lavender",
@@ -104,20 +98,15 @@ export const BeforeLavender: Story = {
 export const WithPrefetchAndSuppressedAudit: Story = {
 	args: {
 		...BeforeLavender.args,
-		audits: {
-			meta: "none running",
-			rows: [
-				{
-					code: "402",
-					name: "Payment Required",
-					cue: "paid actions cost double",
-					suppressed: true,
-				},
+		window: {
+			...LAVENDER_WINDOW,
+			audits: [{ label: "402 Payment Required", suppressed: true }],
+			source: "Prefetch",
+			categories: [
+				{ label: "typescript", count: 3 },
+				{ label: "javascript", count: 2 },
 			],
-		},
-		prefetch: {
-			thisGate: ["TypeScript", "JavaScript"],
-			nextGate: ["Git"],
+			nextCategories: [{ label: "git", count: 5 }],
 		},
 	},
 };
@@ -145,13 +134,10 @@ export const BeforeElite: Story = {
 		theme: "elite",
 		ready: {
 			note: "today's 5 polls are ready",
-			startLabel: "Start Elite →",
-			onStart: noop,
 		},
 		build: {
-			meta: "24 of 24 slots",
-			count: "9",
 			slots: 24,
+			slotsUsed: 24,
 			rows: [
 				{
 					family: "focus",
@@ -215,26 +201,33 @@ export const BeforeElite: Story = {
 				},
 			],
 		},
-		required: {
-			note: "Answer all 5 polls",
-			coverage: {
-				detail: "earn 85% in this window",
+		window: {
+			title: "Elite gate",
+			swatch: "elite" as const,
+			target: {
+				reading: "92.5 of 85%",
+				held: 92.5,
+				demand: 85,
 			},
-		},
-		audits: {
-			meta: "3 running",
-			rows: [
-				{
-					code: "408",
-					name: "Request Timeout",
-					cue: "first 5 polls on a 20s clock",
-				},
-				{ code: "410", name: "Gone", cue: "a miss peels 5 configs, not 4" },
-				{
-					code: "413",
-					name: "Payload Too Large",
-					cue: "12 slots over · 96 KB a poll",
-				},
+			polls: "2 / 5 answered",
+			source: "Prefetch",
+			pollTypes: [
+				{ label: "single", count: 1 },
+				{ label: "multiple", count: 4 },
+			],
+			audits: [
+				{ label: "408 Request Timeout" },
+				{ label: "410 Gone" },
+				{ label: "413 Payload Too Large" },
+			],
+			categories: [
+				{ label: "javascript", count: 2 },
+				{ label: "css", count: 2 },
+				{ label: "java", count: 1 },
+			],
+			nextCategories: [
+				{ label: "python", count: 3 },
+				{ label: "vue", count: 2 },
 			],
 		},
 		bills: {

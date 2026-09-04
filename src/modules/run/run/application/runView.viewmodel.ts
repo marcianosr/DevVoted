@@ -26,6 +26,8 @@ import {
 	redactPoll,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import {
+	type AnswerTypeSplit,
+	answerTypesOf,
 	canStart,
 	isAwaitingTomorrow,
 	isRunOver,
@@ -44,7 +46,10 @@ import {
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
-import { draftCostIn } from "~/modules/run/shop/domain/draft.model";
+import {
+	draftCostIn,
+	isUpgradeOffer,
+} from "~/modules/run/shop/domain/draft.model";
 import {
 	failPeelQuotaFor,
 	gateDemandFor,
@@ -84,6 +89,7 @@ import {
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import {
+	canAffordPlan,
 	canBuySlot,
 	canCashSlot,
 	slotCashOutFor,
@@ -121,6 +127,7 @@ export type StoragePlanOption = {
 	readonly perGateKb: number;
 	readonly held: boolean;
 	readonly burnsKb: number;
+	readonly affordable: boolean;
 };
 
 export type StoragePlanView = {
@@ -158,6 +165,7 @@ export type ShopOffer = {
 	readonly priceKb: number;
 	readonly slots: number;
 	readonly owned: boolean;
+	readonly upgrades: boolean;
 	readonly locked: boolean;
 	readonly installable: boolean;
 	readonly refusal: OfferRefusal | null;
@@ -189,8 +197,10 @@ export type RunView = {
 	readonly pollTimeLimitMs: number | null;
 	readonly currentPollPeeked: boolean;
 	readonly correctAnswersThisGate: number | null;
+	readonly correctCountSource: string | null;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
+	readonly answerTypesThisGate: AnswerTypeSplit | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
 	readonly audits: readonly AuditView[];
@@ -223,10 +233,12 @@ export type RunView = {
 const offerRefusal = (
 	state: RunState,
 	config: Config,
-	free: number
+	free: number,
+	upgrades: boolean
 ): OfferRefusal | null => {
 	const slots = slotsOf(config);
-	if (slots > free) return { reason: "no-room", slots, freeSlots: free };
+	if (!upgrades && slots > free)
+		return { reason: "no-room", slots, freeSlots: free };
 	const priceKb = draftCostIn(state.build.configs, config);
 	if (state.storage < priceKb)
 		return { reason: "too-expensive", priceKb, storageKb: state.storage };
@@ -239,14 +251,21 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	const locked = state.lockedOfferIds ?? [];
 
 	return state.draftOptions.map((config) => {
-		const owned = installed.some((slotted) => slotted.id === config.id);
-		const refusal = offerRefusal(state, config, free);
-		const withIt = [...installed, config];
+		const upgrades = isUpgradeOffer(installed, config);
+		const owned =
+			!upgrades && installed.some((slotted) => slotted.id === config.id);
+		const refusal = offerRefusal(state, config, free, upgrades);
+		const withIt = upgrades
+			? installed.map((slotted) =>
+					slotted.id === config.id ? config : slotted
+				)
+			: [...installed, config];
 		return {
 			config,
 			priceKb: draftCostIn(installed, config),
 			slots: slotsOf(config),
 			owned,
+			upgrades,
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
 			refusal,
@@ -345,6 +364,7 @@ const storagePlanViewFor = (state: RunState): StoragePlanView => {
 			perGateKb: plan.perGateKb,
 			held: plan.tier === tier,
 			burnsKb: Math.max(0, state.storage - plan.capKb),
+			affordable: canAffordPlan(state, plan.tier),
 		})),
 	};
 };
@@ -401,6 +421,7 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 			budgeterFor(state.build.configs) === undefined
 				? null
 				: (state.window.budget ?? null),
+		correctCountSource: budgeterFor(state.build.configs)?.label ?? null,
 		upcomingCategories:
 			prefetcherFor(state.build.configs) === undefined
 				? null
@@ -419,6 +440,15 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 							state.currentIndex - state.window.answered + 2 * SLICE_WINDOW
 						)
 						.map((poll) => poll.category),
+		answerTypesThisGate:
+			prefetcherFor(state.build.configs) === undefined
+				? null
+				: answerTypesOf(
+						state.polls.slice(
+							state.currentIndex,
+							state.currentIndex - state.window.answered + SLICE_WINDOW
+						)
+					),
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
 		audits,

@@ -155,7 +155,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 			theme={view.gateTheme}
 			run={runHeaderFor(view)}
 			build={{
-				meta: `${view.configs.length}`,
+				running: rows.filter((row) => row.dot === "on").length,
 				rows,
 				total: buildTotalFor(view),
 			}}

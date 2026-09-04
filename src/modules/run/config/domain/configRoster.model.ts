@@ -1,4 +1,4 @@
-import type { Config } from "~/modules/run/config/domain/config.model";
+import { AB_ARMS, type Config } from "~/modules/run/config/domain/config.model";
 
 export const CONFIGS = {
 	js: {
@@ -201,6 +201,30 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		revealsCorrectCount: true,
 	},
+	abTest: {
+		id: "ab-test",
+		label: "A/B Test",
+		family: "economy",
+		slots: 2,
+		description: AB_ARMS.coverage.description,
+		gives: AB_ARMS.coverage.gives,
+		costs: "Only one arm ships at a time — switch in the shop, free",
+		rewardMultiplier: 1,
+		abArm: "coverage",
+		coverageMultiplier: AB_ARMS.coverage.coverageMultiplier,
+	},
+	yarnLock: {
+		id: "yarn-lock",
+		label: "yarn.lock",
+		family: "economy",
+		slots: 1,
+		description:
+			"Lock a shop offer for 16KB — every reroll and every next shop keeps it until you install or release it.",
+		gives: "Lock shop offers so rerolls and later shops keep them",
+		costs: "16KB a lock — every lock releases if yarn.lock leaves the build",
+		rewardMultiplier: 1,
+		locksOffers: true,
+	},
 	cache: {
 		id: "cache",
 		label: "Cache",
@@ -241,8 +265,9 @@ export const CONFIGS = {
 		family: "defense",
 		slots: 4,
 		description:
-			"Shows the category of every poll left this gate, and all of the next gate's.",
-		gives: "The categories of this gate's remaining polls and the next gate's",
+			"Shows the category of every poll left this gate and how many of them take more than one answer, plus all of the next gate's categories.",
+		gives:
+			"The categories and answer types of this gate's remaining polls, and the next gate's categories",
 		rewardMultiplier: 1,
 		revealsUpcomingCategories: true,
 	},

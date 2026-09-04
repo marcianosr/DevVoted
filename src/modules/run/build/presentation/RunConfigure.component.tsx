@@ -1,4 +1,3 @@
-import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { Screen } from "~/ui/Screen.ui";
 import { setScreenNavDirection } from "~/ui/screenNavDirection";
 
@@ -12,6 +11,8 @@ export const RunConfigure = () => {
 
 	if (!view) return null;
 
+	const installed = new Set(view.configs.map((config) => config.id));
+
 	return (
 		<Screen gateTheme={view.gateTheme}>
 			<ConfiguringScreen
@@ -19,13 +20,10 @@ export const RunConfigure = () => {
 				slots={view.slots}
 				slotsUsed={view.slotsUsed}
 				slotsFree={view.slotsFree}
-				overflowSlots={view.overflowSlots}
 				stake={view.gateStake}
-				bench={view.available}
+				bench={view.available.filter((config) => !installed.has(config.id))}
 				onInstall={(id) => send({ type: "install", configId: id })}
 				onUninstall={(id) => send({ type: "uninstall", configId: id })}
-				stacks={STARTER_STACKS}
-				onPickStack={(stackId) => send({ type: "pick-stack", stackId })}
 				startAction={{
 					label: "Start run →",
 					onClick: () => {
@@ -33,7 +31,7 @@ export const RunConfigure = () => {
 						send({ type: "start" });
 					},
 					disabled: !view.canStart || busy,
-					hint: view.canStart ? undefined : "Pick a stack to start",
+					hint: view.canStart ? undefined : "Pick a config to start",
 				}}
 			/>
 		</Screen>

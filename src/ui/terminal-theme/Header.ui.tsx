@@ -19,6 +19,10 @@ export type HeaderProps = {
 	swatchState?: SwatchState;
 	value?: string;
 	caption?: string;
+	gauge?: {
+		label: string;
+		percent: number;
+	};
 	coverage?: {
 		label: string;
 		reading: string;
@@ -33,6 +37,7 @@ export const Header = ({
 	swatchState = "earned",
 	value,
 	caption,
+	gauge,
 	coverage,
 }: HeaderProps) => (
 	<header className={HEADER}>
@@ -72,6 +77,13 @@ export const Header = ({
 						{value}
 					</Text>
 					{caption === undefined ? null : <Text tone="muted">{caption}</Text>}
+					{gauge === undefined ? null : (
+						<Meter
+							percent={gauge.percent}
+							label={gauge.label}
+							className="w-24"
+						/>
+					)}
 				</div>
 			)}
 		</div>

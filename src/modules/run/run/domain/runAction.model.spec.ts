@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	coverageDemandFor,
@@ -15,6 +16,7 @@ import {
 import {
 	isShopLocked,
 	runReducer,
+	withRecommendedBuild,
 } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -36,49 +38,63 @@ describe("configuring", () => {
 			state = runReducer(state, { type: "install", configId: id });
 		expect(state.build.configs).toHaveLength(3);
 	});
+
+	it("keeps an installed config in the hand, so the deal reads as one list", () => {
+		const state = runReducer(createRun(pool(60), handed), {
+			type: "install",
+			configId: "js",
+		});
+
+		expect(configIds(state)).toEqual(["js"]);
+		expect(state.available.map((config) => config.id)).toContain("js");
+	});
+
+	it("refuses to install the same config twice", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "install", configId: "js" });
+		state = runReducer(state, { type: "install", configId: "js" });
+
+		expect(configIds(state)).toEqual(["js"]);
+	});
+
+	it("uninstalls without duplicating the card back into the hand", () => {
+		let state = runReducer(createRun(pool(60), handed), {
+			type: "install",
+			configId: "js",
+		});
+		state = runReducer(state, { type: "uninstall", configId: "js" });
+
+		expect(configIds(state)).toEqual([]);
+		expect(state.available.filter((config) => config.id === "js")).toHaveLength(
+			1
+		);
+	});
 });
 
-describe("starter stacks (ADR-026)", () => {
-	const pickStack = (state: RunState, stackId: string): RunState =>
-		runReducer(state, { type: "pick-stack", stackId });
+describe("the recommended opening (ADR-052)", () => {
+	it("preselects the recommended picks from the hand into the build", () => {
+		const state = withRecommendedBuild(createRun(pool(60), handed));
 
-	it("fills the whole build with the stack and pulls its members from the pool", () => {
-		const state = pickStack(createRun(pool(60), handed), "test-everything");
-		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
-		const availableIds = state.available.map((config) => config.id);
-		expect(availableIds).not.toContain("js");
-		expect(availableIds).not.toContain("ts");
-		expect(availableIds).not.toContain("eslint");
+		expect(configIds(state)).toEqual(
+			recommendedPicks(handed, state.build.slots).map((config) => config.id)
+		);
+		expect(state.build.configs.length).toBeGreaterThan(0);
 	});
 
-	it("replaces hand-slotted configs instead of stacking on top of them", () => {
-		let state = createRun(pool(60), handed);
-		state = runReducer(state, { type: "install", configId: "css" });
-		state = pickStack(state, "test-everything");
-		expect(configIds(state)).toEqual(["js", "ts", "eslint"]);
-		expect(state.available.map((config) => config.id)).toContain("css");
+	it("leaves the whole hand toggleable after preselection", () => {
+		const state = withRecommendedBuild(createRun(pool(60), handed));
+
+		expect(state.available).toHaveLength(handed.length);
 	});
 
-	it("grants a stack whose members the hand never held", () => {
-		const state = pickStack(createRun(pool(60), handed), "ship-it");
+	it("makes the run startable untouched", () => {
+		const state = runReducer(
+			withRecommendedBuild(createRun(pool(60), handed)),
+			{
+				type: "start",
+			}
+		);
 
-		expect(configIds(state)).toEqual(["js", "jsx", "code-coverage"]);
-		expect(state.available.map((config) => config.id)).not.toContain("jsx");
-	});
-
-	it("ignores an unknown stack id", () => {
-		const before = createRun(pool(60), handed);
-		expect(pickStack(before, "team-rocket")).toBe(before);
-	});
-
-	it("only applies while configuring — a started run keeps its build", () => {
-		const before = started(["js"]);
-		expect(pickStack(before, "test-everything")).toBe(before);
-	});
-
-	it("makes the run startable in one pick", () => {
-		let state = pickStack(createRun(pool(60), handed), "test-everything");
-		state = runReducer(state, { type: "start" });
 		expect(state.status).toBe("answering");
 	});
 });

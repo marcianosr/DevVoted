@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { STARTER_STACKS } from "~/modules/run/config/domain/stack.model";
 import { ConfiguringScreen } from "~/modules/run/build/presentation/ConfiguringScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
 
@@ -22,7 +21,10 @@ const stake = createMockGateStake({
 	},
 	perAnswer: {
 		coveragePerCorrect: 1,
+		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
+		streakStepMultiplier: 1.1,
+		streakCapMultiplier: 2,
 		matchingConfigMultiplier: 1.25,
 	},
 });
@@ -38,21 +40,5 @@ export const Default: Story = {
 		onInstall: () => {},
 		onUninstall: () => {},
 		startAction: { label: "Start run →", onClick: () => {} },
-	},
-};
-
-export const StackMode: Story = {
-	args: {
-		...Default.args,
-		configs: [],
-		stacks: STARTER_STACKS,
-		onPickStack: () => {},
-	},
-};
-
-export const StackModePicked: Story = {
-	args: {
-		...StackMode.args,
-		configs: STARTER_STACKS[0].configs,
 	},
 };

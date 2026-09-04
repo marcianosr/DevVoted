@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 
 import { Text } from "./Text.ui";
 
-export type ChoiceState = "idle" | "expected" | "dimmed";
+export type ChoiceState = "idle" | "expected" | "dimmed" | "crossedOut";
 
 const CHOICE =
 	"flex w-full items-center gap-3 rounded-lg border px-4 py-2 text-left";
@@ -13,7 +13,10 @@ const STATE = {
 	idle: "border-edge-strong",
 	expected: "border-viridian/60",
 	dimmed: "border-edge opacity-50",
+	crossedOut: "border-edge opacity-50",
 } satisfies Record<ChoiceState, string>;
+
+const CROSSED_OUT = "line-through decoration-cinnabar decoration-2";
 
 const SELECTED = "border-theme bg-theme-soft";
 
@@ -55,7 +58,14 @@ export const Choice = ({
 			>
 				{letter}
 			</span>
-			<Text className="min-w-0 truncate">{label}</Text>
+			<Text
+				className={clsx(
+					"min-w-0 truncate",
+					state === "crossedOut" && CROSSED_OUT
+				)}
+			>
+				{label}
+			</Text>
 			{note === undefined ? null : (
 				<span className="ml-auto shrink-0">{note}</span>
 			)}
