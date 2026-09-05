@@ -81,15 +81,15 @@ export const TheShapeLadder: Story = {
 };
 
 const BUILD = [
-	{ name: ".js", version: "v5", family: "focus", slots: 1 },
-	{ name: "ESLint", version: "v3", family: "defense", slots: 1 },
-	{ name: "IndexedDB", version: "v2", family: "economy", slots: 2 },
-	{ name: "Overclock", version: "v4", family: "risk", slots: 4 },
-	{ name: "Telemetry", version: "v1", family: "amplify", slots: 2 },
+	{ name: ".js", version: "v5", slots: 1 },
+	{ name: "ESLint", version: "v3", slots: 1 },
+	{ name: "IndexedDB", version: "v2", slots: 2 },
+	{ name: "Overclock", version: "v4", slots: 4 },
+	{ name: "Telemetry", version: "v1", slots: 2 },
 ] as const;
 
 /** Where it actually lands: beside a config name and its slot mark, which is
- * the only place the badge competes with a family colour. */
+ * the only place the badge competes with a size colour. */
 export const BesideAConfig: Story = {
 	render: () => (
 		<div className="w-full max-w-md divide-y divide-edge">
@@ -100,7 +100,7 @@ export const BesideAConfig: Story = {
 					tag={
 						<>
 							<Version label={config.version} />
-							<Slots family={config.family} slots={config.slots} />
+							<Slots slots={config.slots} />
 						</>
 					}
 					detail="what the config does"

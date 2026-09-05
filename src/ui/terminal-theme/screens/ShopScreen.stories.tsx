@@ -85,7 +85,6 @@ const boulderShop: ShopScreenProps = {
 		],
 		rows: [
 			{
-				family: "focus",
 				name: ".js",
 				slots: 1,
 				detail: "JS polls ×1.25",
@@ -100,7 +99,6 @@ const boulderShop: ShopScreenProps = {
 				remove: sells("16 KB"),
 			},
 			{
-				family: "defense",
 				name: "ESLint",
 				slots: 1,
 				detail: "Cross out a wrong answer",
@@ -115,7 +113,6 @@ const boulderShop: ShopScreenProps = {
 				remove: sells("32 KB"),
 			},
 			{
-				family: "economy",
 				name: "IndexedDB",
 				slots: 2,
 				detail: "+8 KB an answer · 96 of 320",
@@ -127,7 +124,6 @@ const boulderShop: ShopScreenProps = {
 		meta: "5",
 		rows: [
 			{
-				family: "focus",
 				name: ".py",
 				slots: 1,
 				detail: "Python polls ×1.25",
@@ -136,7 +132,6 @@ const boulderShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "economy",
 				name: "Unit Tests",
 				slots: 1,
 				detail: "+32 KB on gate clear",
@@ -145,7 +140,6 @@ const boulderShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "defense",
 				name: "Telemetry",
 				slots: 2,
 				detail: "See the community split · fee doubles",
@@ -154,7 +148,6 @@ const boulderShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "risk",
 				name: "Deprecated",
 				slots: 4,
 				detail: "All coverage ×3, −0.5 each clear, then gone",
@@ -163,7 +156,6 @@ const boulderShop: ShopScreenProps = {
 				refused: true,
 			},
 			{
-				family: "economy",
 				name: "Freemium",
 				slots: 8,
 				detail: "Half price configs · bills 8 KB, doubling",
@@ -264,7 +256,6 @@ export const Mobile: Story = {
 
 const seafoamBuildRows: readonly ShopBuildRow[] = [
 	{
-		family: "focus",
 		name: ".js",
 		slots: 1,
 		detail: "JS polls ×1.5",
@@ -272,7 +263,6 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("32 KB"),
 	},
 	{
-		family: "focus",
 		name: ".ts",
 		slots: 1,
 		detail: "TS polls ×1.25",
@@ -287,7 +277,6 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("16 KB"),
 	},
 	{
-		family: "focus",
 		name: ".py",
 		slots: 1,
 		detail: "Python polls ×1.25",
@@ -302,7 +291,6 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("16 KB"),
 	},
 	{
-		family: "defense",
 		name: "ESLint",
 		slots: 1,
 		detail: "Cross out a wrong answer",
@@ -317,7 +305,6 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("32 KB"),
 	},
 	{
-		family: "defense",
 		name: "Telemetry",
 		slots: 2,
 		detail: "See the community split · fee doubles",
@@ -325,14 +312,12 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("32 KB"),
 	},
 	{
-		family: "risk",
 		name: "Deprecated",
 		slots: 4,
 		detail: "×2.0 left · gone in 2 clears",
 		remove: sells("48 KB"),
 	},
 	{
-		family: "economy",
 		name: "IndexedDB",
 		slots: 2,
 		detail: "+8 KB an answer · 288 of 320",
@@ -350,7 +335,6 @@ const seafoamBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("96 KB"),
 	},
 	{
-		family: "amplify",
 		name: "Overclock",
 		slots: 4,
 		detail: "First answer ×4, every later one ×0.5",
@@ -388,7 +372,6 @@ const seafoamShop: ShopScreenProps = {
 		meta: "6",
 		rows: [
 			{
-				family: "focus",
 				name: ".rs",
 				slots: 1,
 				detail: "Rust polls ×1.25",
@@ -397,7 +380,6 @@ const seafoamShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "amplify",
 				name: "Code Coverage",
 				slots: 2,
 				detail: "×2 while coverage is under the demand",
@@ -406,7 +388,6 @@ const seafoamShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "defense",
 				name: "Prefetch",
 				slots: 4,
 				detail: "See the next poll's category",
@@ -415,7 +396,6 @@ const seafoamShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "defense",
 				name: "Intellisense",
 				slots: 4,
 				detail: "One letter of the right answer",
@@ -424,7 +404,6 @@ const seafoamShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "risk",
 				name: "WTFPL",
 				slots: 8,
 				detail: "Everything pays ×3 · every audit runs",
@@ -433,7 +412,6 @@ const seafoamShop: ShopScreenProps = {
 				refused: true,
 			},
 			{
-				family: "economy",
 				name: "Volkswagen CI",
 				slots: 8,
 				detail: "Coverage counts double at the gate check",
@@ -509,7 +487,6 @@ const upgradedIndexedDb: readonly ShopBuildRow[] = seafoamBuildRows.map(
 	(row) =>
 		row.name === "IndexedDB"
 			? {
-					family: row.family,
 					name: row.name,
 					slots: row.slots,
 					detail: "+16 KB an answer · 288 of 640",
@@ -583,7 +560,6 @@ export const ArmingIsLive: Story = { render: () => <ArmingShelf /> };
 
 const earthBuildRows: readonly ShopBuildRow[] = [
 	{
-		family: "focus",
 		name: ".js",
 		slots: 1,
 		detail: "JS polls ×2.25",
@@ -592,7 +568,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("128 KB"),
 	},
 	{
-		family: "focus",
 		name: ".ts",
 		slots: 1,
 		detail: "TS polls ×1.75",
@@ -607,7 +582,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("96 KB"),
 	},
 	{
-		family: "focus",
 		name: ".jsx",
 		slots: 1,
 		detail: "React polls ×1.5",
@@ -622,7 +596,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("64 KB"),
 	},
 	{
-		family: "defense",
 		name: "ESLint",
 		slots: 1,
 		detail: "Cross out 3 wrong answers",
@@ -637,7 +610,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("112 KB"),
 	},
 	{
-		family: "defense",
 		name: "Telemetry",
 		slots: 2,
 		detail: "See the community split · fee doubles",
@@ -645,7 +617,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("64 KB"),
 	},
 	{
-		family: "amplify",
 		name: "Code Coverage",
 		slots: 2,
 		detail: "×2 while coverage is under the demand",
@@ -660,7 +631,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("64 KB"),
 	},
 	{
-		family: "defense",
 		name: "Prefetch",
 		slots: 4,
 		detail: "See the next poll's category",
@@ -668,7 +638,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("96 KB"),
 	},
 	{
-		family: "economy",
 		name: "IndexedDB",
 		slots: 2,
 		detail: "+16 KB an answer · 512 of 640",
@@ -676,7 +645,6 @@ const earthBuildRows: readonly ShopBuildRow[] = [
 		remove: sells("128 KB"),
 	},
 	{
-		family: "amplify",
 		name: "Overclock",
 		slots: 4,
 		detail: "First answer ×4, every later one ×0.5",
@@ -713,7 +681,6 @@ const earthShop: ShopScreenProps = {
 		meta: "5",
 		rows: [
 			{
-				family: "focus",
 				name: ".rb",
 				slots: 1,
 				detail: "Ruby polls ×1.25",
@@ -722,7 +689,6 @@ const earthShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "economy",
 				name: "Unit Tests",
 				slots: 1,
 				detail: "+32 KB on gate clear",
@@ -731,7 +697,6 @@ const earthShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "economy",
 				name: "Moore's Law",
 				slots: 1,
 				detail: "+2% of held storage a clear",
@@ -740,7 +705,6 @@ const earthShop: ShopScreenProps = {
 				onBuy: noop,
 			},
 			{
-				family: "amplify",
 				name: "Dependabot",
 				slots: 8,
 				detail: "Every config upgrades one rung on a clean gate",
@@ -749,7 +713,6 @@ const earthShop: ShopScreenProps = {
 				refused: true,
 			},
 			{
-				family: "economy",
 				name: "Freemium",
 				slots: 8,
 				detail: "Half price configs · bills 8 KB, doubling",

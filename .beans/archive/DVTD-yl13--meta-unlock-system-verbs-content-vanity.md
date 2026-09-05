@@ -1,11 +1,11 @@
 ---
 # DVTD-yl13
 title: 'Meta unlock system: verbs, content, vanity'
-status: draft
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-08-20T09:38:05Z
-updated_at: 2026-09-03T07:10:53Z
+updated_at: 2026-09-04T18:44:37Z
 parent: DVTD-z2r2
 ---
 
@@ -85,3 +85,23 @@ individual dual-path objectives (thematic objective OR polls-answered fallback,
 auto-tracked). The KB-paid between-run draft stays rejected (achievement-only,
 ADR-050/051). The unlock-notification and unseen-unlock-badge ideas feed
 DVTD-of79.
+
+
+## Reasons for Scrapping
+
+Scrapped 2026-09-04. The bean tried to unify three unlock triggers into one
+system; ADR-051 then decided the trigger for the only kind that matters and left
+this bean holding a contradiction.
+
+- **Content** (its main third): proposed a between-run draft paid in archived KB,
+  3 dealt from a paid band, keep 1, pity on legendary. ADR-051 replaced that
+  outright: 21 individual dual-path objectives, nothing paid, no bands, no pity.
+  Work lives in DVTD-clgs / DVTD-g6k0 / DVTD-p9ah.
+- **Verbs** (shop controls, plan rungs, git tag unlocked by first-need
+  milestones): superseded by the staging already shipped. Controls stage by gate
+  (ADR-029), plan rungs by gate (ADR-030), and slots are bought (ADR-046).
+- **Vanity** (borders bought with archived KB): still unowned, but it belongs with
+  the community screen work, where borders already live. DVTD-wii3 carries the
+  launch need.
+
+DVTD-of79 mines this bean for its notification and badge ideas.

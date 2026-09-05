@@ -54,6 +54,8 @@ const render_ = (overrides: Partial<PollViewProps> = {}) =>
 const optionButton = (label: string) =>
 	screen.getByText(label).closest("button");
 
+const buildTotal = () => screen.getByText("Total").parentElement;
+
 describe("PollView", () => {
 	it("redacts the category under 404 rather than naming it", () => {
 		render_({ view: createMockRunView({ ...view, categoryHidden: true }) });
@@ -278,6 +280,21 @@ describe("PollView build rail", () => {
 		expect(screen.getByText(".js")).toBeVisible();
 	});
 
+	// skipNote is a non-exhaustive if-chain, so an unclassified config silently
+	// reads "not this poll" — which for the collector would hide what it is for.
+	it("says the collector pays on a peel rather than not this poll", async () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.garbageCollection],
+			}),
+		});
+
+		await userEvent.click(screen.getByText("Skipped · 1"));
+
+		expect(screen.getByText(/pays on a peel/)).toBeVisible();
+	});
+
 	// Mid-poll the rail is a status board, not a manual: what each config does
 	// is one tap away rather than three lines of prose per row.
 	it("keeps a running config's effect folded until the row is opened", async () => {
@@ -363,6 +380,33 @@ describe("PollView build rail", () => {
 		expect(screen.queryByText(/this gate holds/)).not.toBeInTheDocument();
 	});
 
+	// The panel's total used to read a context-free forecast, so a config whose
+	// effect is conditional counted for nothing in it while its own row
+	// advertised the multiplier.
+	it("counts an opener config in the total on the gate's first poll", () => {
+		const opener = createMockRunView({
+			...view,
+			gatesCleared: 0,
+			configs: [CONFIGS.coldStart],
+			answeredThisGate: [],
+		});
+		render_({ view: opener });
+
+		expect(buildTotal()).toHaveTextContent("×2");
+	});
+
+	it("drops the opener config from the total once the gate is underway", () => {
+		const later = createMockRunView({
+			...view,
+			gatesCleared: 0,
+			configs: [CONFIGS.coldStart],
+			answeredThisGate: [answer("a", "correct")],
+		});
+		render_({ view: later });
+
+		expect(buildTotal()).toHaveTextContent("×1");
+	});
+
 	// One facts line carries the whole stake, so the cost of a wrong answer and
 	// the cost of missing the gate read together rather than as loose notices.
 	it("prices a wrong answer and a missed gate on the facts line", () => {
@@ -370,7 +414,9 @@ describe("PollView build rail", () => {
 
 		expect(screen.getByText("wrong costs")).toBeInTheDocument();
 		expect(screen.getByText("Gate retry cost:")).toBeInTheDocument();
-		expect(screen.getByText(/^Remove \d+ slots?$/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/^Remove (\d+ configs?|\d+–\d+ configs)$/)
+		).toBeInTheDocument();
 	});
 
 	// Nothing to remove means nothing to say about removing it.

@@ -193,7 +193,7 @@ export const FocusPaysItsCategory: Story = {
 		asPoll(runWith([CONFIGS.js, CONFIGS.ts, CONFIGS.css], MIXED_GATE)),
 };
 
-export const FocusFamilyWaitsItsCategory: Story = {
+export const FocusWaitsItsCategory: Story = {
 	render: () =>
 		asPoll(
 			runWith(
@@ -289,12 +289,7 @@ export const AmplifiersStack: Story = {
 	render: () =>
 		asPoll(
 			runWith(
-				[
-					CONFIGS.intellisense,
-					CONFIGS.agentsMd,
-					CONFIGS.codeCoverage,
-					CONFIGS.coverageGain,
-				],
+				[CONFIGS.intellisense, CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				MIXED_GATE
 			)
 		),
@@ -334,18 +329,35 @@ export const GateClearPaysTheEconomy: Story = {
 };
 
 export const DependabotMergesAnUpgrade: Story = {
-	render: () => {
-		const attempts = Array.from({ length: 24 }, (_, kb) =>
+	render: () =>
+		asReward(
 			afterAnswers(
-				funded(runWith([CONFIGS.dependabot, CONFIGS.js], JS_GATE), kb),
+				runWith([CONFIGS.dependabot, CONFIGS.js], JS_GATE),
 				ALL_RIGHT
 			)
-		);
-		const merged = attempts.find(
-			(state) => state.autoUpgradedConfigId !== undefined
-		);
-		return asReward(merged ?? attempts[0]);
-	},
+		),
+};
+
+export const DependabotCountsDown: Story = {
+	render: () =>
+		asPoll(
+			afterAnswers(runWith([CONFIGS.dependabot, CONFIGS.js], JS_GATE), [
+				true,
+				true,
+				true,
+			])
+		),
+};
+
+export const DependabotResetsOnAWrongAnswer: Story = {
+	render: () =>
+		asPoll(
+			afterAnswers(runWith([CONFIGS.dependabot, CONFIGS.js], JS_GATE), [
+				true,
+				true,
+				false,
+			])
+		),
 };
 
 export const DeprecatedFadesOnClear: Story = {

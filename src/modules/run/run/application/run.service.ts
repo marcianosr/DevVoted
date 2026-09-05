@@ -4,8 +4,8 @@ import {
 } from "~/shared/utils/errorHandling";
 
 import { createRun } from "~/modules/run/run/domain/run.model";
+import { drawAuditSchedule } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
-import { withRecommendedBuild } from "~/modules/run/run/domain/runAction.model";
 import {
 	startingHand,
 	STARTER_POOL,
@@ -109,12 +109,11 @@ export const startRunService = async ({
 		// deal once — it is the persisted hand a reload comes back to.
 		// STARTER_POOL becomes the account's own pool once configs unlock
 		// (DVTD-2try).
-		const state = withRecommendedBuild(
-			createRun(
-				polls,
-				startingHand(STARTER_POOL, `${userId}:${date}`),
-				pinnedGate
-			)
+		const state = createRun(
+			polls,
+			startingHand(STARTER_POOL, `${userId}:${date}`),
+			pinnedGate,
+			drawAuditSchedule(date)
 		);
 		await createSessionRunWithState(userId, date, state);
 		return toRunView(state);

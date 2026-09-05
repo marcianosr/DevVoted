@@ -276,7 +276,11 @@ describe("applyActionToRun", () => {
 	});
 
 	it("records an answer given at a Mirror gate as mirrored", async () => {
-		mock.results.push([stateRow(answeringState({ gatesCleared: 7 }))]);
+		mock.results.push([
+			stateRow(
+				answeringState({ gatesCleared: 7, auditSchedule: { 7: ["mirrored"] } })
+			),
+		]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);

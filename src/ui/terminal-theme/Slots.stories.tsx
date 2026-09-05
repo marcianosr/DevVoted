@@ -17,26 +17,29 @@ const meta: Meta<typeof Slots> = {
 export default meta;
 type Story = StoryObj<typeof Slots>;
 
-export const OneSlot: Story = { args: { family: "focus", slots: 1 } };
+export const OneSlot: Story = { args: { slots: 1 } };
 
-export const TwoSlots: Story = { args: { family: "economy", slots: 2 } };
+export const TwoSlots: Story = { args: { slots: 2 } };
 
-export const EveryFamily: Story = {
+/** Every rung of the ramp, including the two ADR-047 reserved sizes no roster
+ * config uses yet: the only way to check six fills read apart from each other. */
+export const EverySize: Story = {
 	render: () => (
 		<div className="flex flex-col gap-2">
 			{(
 				[
-					{ family: "focus", slots: 1, name: ".js" },
-					{ family: "defense", slots: 1, name: "ESLint" },
-					{ family: "economy", slots: 2, name: "IndexedDB" },
-					{ family: "risk", slots: 4, name: "Deprecated" },
-					{ family: "amplify", slots: 8, name: "Dependabot" },
+					{ slots: 1, name: ".js" },
+					{ slots: 2, name: "IndexedDB" },
+					{ slots: 4, name: "Deprecated" },
+					{ slots: 8, name: "Dependabot" },
+					{ slots: 12, name: "(reserved)" },
+					{ slots: 16, name: "(reserved)" },
 				] as const
 			).map((config) => (
-				<span key={config.name} className="flex items-center gap-3">
-					<Slots family={config.family} slots={config.slots} />
+				<span key={config.slots} className="flex items-center gap-3">
+					<Slots slots={config.slots} />
 					<Text tone="muted" size="caption">
-						{config.name} · {config.slots}
+						{config.slots} · {config.name}
 					</Text>
 				</span>
 			))}

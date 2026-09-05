@@ -23,20 +23,40 @@ type Story = StoryObj<typeof BuildList>;
 const tenConfigRows: readonly BuildListRow[] = [
 	{
 		name: "ESLint",
+		slots: 1,
+		version: 1,
 		detail: "Cross out a wrong answer",
 		dot: "action",
 		use: { label: "use", price: "16 KB", onUse: noop },
 	},
 	{
 		name: "Telemetry",
+		slots: 2,
+		version: 1,
 		detail: "See the community split",
 		dot: "action",
 		use: { label: "use", price: "8 KB", onUse: noop },
 	},
-	{ name: ".js", detail: "JS polls ×1.25", dot: "on", figure: "×1.25" },
-	{ name: ".jsx", detail: "React polls ×1.25", dot: "on", figure: "×1.25" },
+	{
+		name: ".js",
+		slots: 1,
+		version: 1,
+		detail: "JS polls ×1.25",
+		dot: "on",
+		figure: "×1.25",
+	},
+	{
+		name: ".jsx",
+		slots: 1,
+		version: 1,
+		detail: "React polls ×1.25",
+		dot: "on",
+		figure: "×1.25",
+	},
 	{
 		name: "Deprecated",
+		slots: 4,
+		version: 1,
 		detail: "All coverage ×2.5 · gone in 3 clears",
 		dot: "on",
 		figure: "×2.5",
@@ -44,12 +64,16 @@ const tenConfigRows: readonly BuildListRow[] = [
 	},
 	{
 		name: "Overclock",
+		slots: 4,
+		version: 1,
 		detail: "First answer ×4, every later one ×0.5",
 		dot: "on",
 		figure: "×0.5",
 	},
 	{
 		name: "IndexedDB",
+		slots: 2,
+		version: 1,
 		detail: "+8 KB an answer · 288 of 320",
 		dot: "on",
 		figure: "+8 KB",
@@ -57,12 +81,20 @@ const tenConfigRows: readonly BuildListRow[] = [
 	},
 	{
 		name: "Moore's Law",
+		slots: 1,
+		version: 1,
 		detail: "+2% of held storage a clear",
 		dot: "on",
 		figure: "on clear",
 	},
-	{ name: ".ts", detail: "TS polls only", dot: "off" },
-	{ name: "Cold Start", detail: "The gate's first answer ×2", dot: "off" },
+	{ name: ".ts", slots: 1, version: 1, detail: "TS polls only", dot: "off" },
+	{
+		name: "Cold Start",
+		slots: 2,
+		version: 1,
+		detail: "The gate's first answer ×2",
+		dot: "off",
+	},
 ];
 
 const total = { label: "Total", value: "×3.1" };
@@ -103,9 +135,8 @@ export const AnAuditStoppedOne: Story = {
 				rows={tenConfigRows.map((row) =>
 					row.name === "Telemetry"
 						? {
-								name: row.name,
-								detail: row.detail,
-								dot: "blocked",
+								...row,
+								dot: "blocked" as const,
 								figure: "402 stopped it",
 							}
 						: row

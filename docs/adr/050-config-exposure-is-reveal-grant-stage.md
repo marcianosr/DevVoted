@@ -52,7 +52,7 @@ No new storage.
 
 | Trigger | Granted |
 | --- | --- |
-| free at signup | js, ts, css, eslint, unitTests, codeCoverage, indexedDb, coverageGain, coldStart |
+| free at signup | js, ts, css, eslint, unitTests, codeCoverage, indexedDb, coldStart |
 | gate 1 | html, jsx, and the Gamble stack |
 | gate 2 | stylelint, .length |
 | gate 3 | mooresLaw, telemetry |

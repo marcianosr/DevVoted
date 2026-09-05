@@ -89,7 +89,6 @@ export const RemovalView = ({
 	const shortBy = Math.max(0, view.peelSlotsRemaining - chosenSlots);
 
 	const rows: readonly RemoveRow[] = view.configs.map((config) => ({
-		family: config.family,
 		name: config.label,
 		detail: config.description,
 		slots: slotsOf(config),
@@ -115,11 +114,17 @@ export const RemovalView = ({
 			reviewLabel="Review answers"
 			onReview={onReviewAnswers}
 			removeLabel={
-				shortBy === 0
-					? `Remove ${plural(chosen.length, "config")} →`
-					: `Remove ${plural(shortBy, "more slot")}`
+				view.peelSlotsRemaining === 0
+					? "Nothing to remove"
+					: shortBy === 0
+						? `Remove ${plural(chosen.length, "config")} →`
+						: `Remove ${plural(shortBy, "more slot")}`
 			}
-			onRemove={shortBy === 0 ? () => onRemove(selectedIds) : undefined}
+			onRemove={
+				view.peelSlotsRemaining > 0 && shortBy === 0
+					? () => onRemove(selectedIds)
+					: undefined
+			}
 		/>
 	);
 };

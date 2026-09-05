@@ -1,11 +1,11 @@
 ---
 # DVTD-m9kk
 title: 'ESLint research: investigate TS poll linting issue'
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-08-13T10:52:54Z
-updated_at: 2026-08-13T10:52:54Z
+updated_at: 2026-09-04T18:42:48Z
 parent: DVTD-u35m
 ---
 

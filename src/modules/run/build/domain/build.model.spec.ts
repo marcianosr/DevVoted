@@ -92,7 +92,7 @@ describe("rewardMultiplierFor", () => {
 		expect(
 			rewardMultiplierFor([
 				{ ...CONFIGS.unitTests, level: 2 },
-				CONFIGS.coverageGain,
+				CONFIGS.agentsMd,
 				CONFIGS.coldStart,
 				CONFIGS.intellisense,
 			])
@@ -140,7 +140,7 @@ describe("buildModifiersFor", () => {
 
 	it("multiplies coverage mults across the build instead of summing them", () => {
 		expect(
-			buildModifiersFor([CONFIGS.intellisense, CONFIGS.coverageGain], 0)
+			buildModifiersFor([CONFIGS.intellisense, CONFIGS.agentsMd], 0)
 				.coverageMultiplier
 		).toBe(3);
 	});
@@ -307,7 +307,6 @@ describe("storageInterestFor", () => {
 const PER_EXTRA_PICK: Config = {
 	id: "per-extra-pick",
 	label: "Per extra pick",
-	family: "economy",
 	description: "Pays per correct answer beyond one per poll.",
 	rewardMultiplier: 1,
 	storagePerExtraPick: 16,

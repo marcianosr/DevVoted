@@ -1,3 +1,4 @@
+import { DexChip } from "./DexChip.ui";
 import { Figures } from "./Figures.ui";
 import { Meter } from "./Meter.ui";
 import { Row } from "./Row.ui";
@@ -8,6 +9,12 @@ const VALUE_LINE = "flex items-baseline gap-1.5";
 
 export type LedgerRow = {
 	name: string;
+	/** Present when the row's name is a config rather than a pot or a total, so
+	 * the line says which config paid. */
+	chip?: {
+		slots: number;
+		version: number;
+	};
 	figure?: string;
 	value?: string;
 	from?: string;
@@ -56,10 +63,21 @@ const readingOf = (row: LedgerRow) => {
 	);
 };
 
+const nameOf = (row: LedgerRow) => {
+	if (row.chip === undefined) return row.name;
+	return (
+		<DexChip
+			slots={row.chip.slots}
+			label={row.name}
+			version={row.chip.version}
+		/>
+	);
+};
+
 export const Ledger = ({ rows }: LedgerProps) => (
 	<div className="divide-y divide-edge">
 		{rows.map((row) => (
-			<Row key={row.name} name={row.name} trailing={readingOf(row)} />
+			<Row key={row.name} name={nameOf(row)} trailing={readingOf(row)} />
 		))}
 	</div>
 );

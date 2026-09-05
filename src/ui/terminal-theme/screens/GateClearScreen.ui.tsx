@@ -1,17 +1,16 @@
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Audits, type AuditNote } from "../Audits.ui";
-import { Badge, type BadgeTone } from "../Badge.ui";
+import { Badge, badgeNumbers, type BadgeTone } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { CoverageBar } from "../CoverageBar.ui";
+import { DexChip } from "../DexChip.ui";
 import { Figures } from "../Figures.ui";
 import { Ledger, type LedgerRow } from "../Ledger.ui";
 import { Meter } from "../Meter.ui";
 import { Panel } from "../Panel.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
-import { Slots } from "../Slots.ui";
 import { Swatch } from "../Swatch.ui";
 import { SwatchTrack, type TrackSwatch } from "../SwatchTrack.ui";
 import { Text } from "../Text.ui";
@@ -20,10 +19,11 @@ const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
 
 export type ChangedRow = {
-	family: ConfigFamily;
 	name: string;
 	detail: string;
 	slots: number;
+	version: number;
+	by?: string;
 	badge?: {
 		label: string;
 		tone: BadgeTone;
@@ -96,7 +96,12 @@ export const GateClearScreen = ({
 					<Text size="score" tone="theme" className="font-bold">
 						{title}
 					</Text>
-					<Text tone="muted">{subtitle}</Text>
+					<Text
+						tone="muted"
+						className="inline-flex flex-wrap items-center gap-1"
+					>
+						{badgeNumbers(subtitle)}
+					</Text>
 				</div>
 			</div>
 			<Text tone="muted" className="shrink-0">
@@ -156,9 +161,12 @@ export const GateClearScreen = ({
 			{changed.rows.map((row) => (
 				<Row
 					key={row.name}
-					name={row.name}
-					tag={<Slots family={row.family} slots={row.slots} />}
-					detail={row.detail}
+					name={
+						<DexChip slots={row.slots} label={row.name} version={row.version} />
+					}
+					detail={
+						row.by === undefined ? row.detail : `${row.detail} · by ${row.by}`
+					}
 					trailing={changedTrailing(row)}
 				/>
 			))}

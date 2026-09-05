@@ -2,7 +2,6 @@ import { useId } from "react";
 
 import { clsx } from "clsx";
 
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { Button } from "../Button.ui";
@@ -62,7 +61,6 @@ export type ArmedAction = {
 };
 
 export type ShopBuildRow = {
-	family: ConfigFamily;
 	name: string;
 	detail: string;
 	slots: number;
@@ -102,7 +100,6 @@ export type OfferLock = {
 };
 
 export type ShopOfferRow = {
-	family: ConfigFamily;
 	name: string;
 	detail: string;
 	slots: number;
@@ -116,9 +113,8 @@ export type ShopOfferRow = {
 };
 
 const segmentsOf = (
-	rows: readonly { family: ConfigFamily; slots: number }[]
-): readonly SlotSegment[] =>
-	rows.map((row) => ({ family: row.family, slots: row.slots }));
+	rows: readonly { slots: number }[]
+): readonly SlotSegment[] => rows.map((row) => ({ slots: row.slots }));
 
 const versionTag = (row: ShopBuildRow) => {
 	if (row.version === undefined) return null;
@@ -133,14 +129,14 @@ const versionTag = (row: ShopBuildRow) => {
 const buildTag = (row: ShopBuildRow) => (
 	<>
 		{versionTag(row)}
-		<Slots family={row.family} slots={row.slots} />
+		<Slots slots={row.slots} />
 	</>
 );
 
 const offerTag = (row: ShopOfferRow) => (
 	<>
 		{row.version === undefined ? null : <Version label={row.version} />}
-		<Slots family={row.family} slots={row.slots} />
+		<Slots slots={row.slots} />
 	</>
 );
 

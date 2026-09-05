@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	coverageDemandFor,
@@ -16,12 +15,12 @@ import {
 import {
 	isShopLocked,
 	runReducer,
-	withRecommendedBuild,
 } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
 	atGateWithBuild,
+	audited,
 	configIds,
 	failGate,
 	handed,
@@ -30,6 +29,7 @@ import {
 	pool,
 	started,
 } from "~/modules/run/run/domain/run.factory";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 
 describe("configuring", () => {
 	it("refuses to slot beyond the build's slots", () => {
@@ -71,36 +71,27 @@ describe("configuring", () => {
 	});
 });
 
-describe("the recommended opening (ADR-052)", () => {
-	it("preselects the recommended picks from the hand into the build", () => {
-		const state = withRecommendedBuild(createRun(pool(60), handed));
+describe("the opening build (ADR-057)", () => {
+	it("opens empty — the deal decides nothing for the player", () => {
+		const state = createRun(pool(60), handed);
 
-		expect(configIds(state)).toEqual(
-			recommendedPicks(handed, state.build.slots).map((config) => config.id)
-		);
-		expect(state.build.configs.length).toBeGreaterThan(0);
-	});
-
-	it("leaves the whole hand toggleable after preselection", () => {
-		const state = withRecommendedBuild(createRun(pool(60), handed));
-
+		expect(configIds(state)).toEqual([]);
 		expect(state.available).toHaveLength(handed.length);
 	});
 
-	it("makes the run startable untouched", () => {
-		const state = runReducer(
-			withRecommendedBuild(createRun(pool(60), handed)),
-			{
-				type: "start",
-			}
-		);
+	it("refuses to start until one config is picked, then allows it", () => {
+		const dealt = createRun(pool(60), handed);
 
-		expect(state.status).toBe("answering");
+		expect(runReducer(dealt, { type: "start" }).status).toBe("configuring");
+
+		const picked = runReducer(dealt, { type: "install", configId: "js" });
+
+		expect(runReducer(picked, { type: "start" }).status).toBe("answering");
 	});
 });
 
-describe("the gate audits (ADR-035)", () => {
-	const atMarsh = (): RunState => ({ ...started(["js"]), gatesCleared: 7 });
+describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
+	const atMarsh = (): RunState => audited(started(["js"]), 7, "mirrored");
 
 	it("pays the wrong option at the mirror, streak and all", () => {
 		let state = answerWith(atMarsh(), false);
@@ -135,12 +126,15 @@ describe("the gate audits (ADR-035)", () => {
 				{ id: "c", label: "render", correct: false },
 			],
 		};
-		const state: RunState = {
-			...base,
-			gatesCleared: 7,
-			polls: [poll, ...base.polls.slice(1)],
-			currentIndex: 0,
-		};
+		const state: RunState = audited(
+			{
+				...base,
+				polls: [poll, ...base.polls.slice(1)],
+				currentIndex: 0,
+			},
+			7,
+			"mirrored"
+		);
 		const both = runReducer(state, {
 			type: "answer",
 			optionIds: ["b", "c"],
@@ -159,8 +153,8 @@ describe("the gate audits (ADR-035)", () => {
 		expect(answered?.correct).toEqual(["No"]);
 	});
 
-	it("leaks storage every poll at the volcano, more on a miss", () => {
-		let state = { ...started(["js"]), gatesCleared: 9, storage: 100 };
+	it("leaks storage every poll at a 507 gate, more on a miss", () => {
+		let state = audited({ ...started(["js"]), storage: 100 }, 9, "memory-leak");
 		state = answerWith(state, true);
 		expect(state.storage).toBe(84);
 		state = answerWith(state, false);
@@ -168,29 +162,33 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("floors the leak at 0 — insolvency stays non-lethal (ADR-023)", () => {
-		let state = { ...started(["js"]), gatesCleared: 9, storage: 10 };
+		let state = audited({ ...started(["js"]), storage: 10 }, 9, "memory-leak");
 		state = answerWith(state, true);
 		expect(state.storage).toBe(0);
 		expect(state.status).toBe("answering");
 	});
 
 	it("ends an Elite run whose build cannot pay the deepened peel", () => {
-		const state = failGate(atGateWithBuild(11, 1));
+		const state = failGate(atGateWithBuild(11, 1, "strip"));
 		expect(state.status).toBe("dead");
 		expect(state.log.at(-1)).toContain("Run over");
 	});
 
 	it("refuses every shop write at a 405 Method Not Allowed gate, and none elsewhere", () => {
 		const base = started(["js"]);
-		const shopping = (gatesCleared: number): RunState => ({
-			...base,
-			status: "rewarding",
-			gatesCleared,
-			storage: 1000,
-			build: { ...base.build, slots: 4 },
-			draftOptions: [CONFIGS.indexedDb],
-		});
-		const readOnly = shopping(6);
+		const shopping = (gatesCleared: number, ...ids: AuditId[]): RunState =>
+			audited(
+				{
+					...base,
+					status: "rewarding",
+					storage: 1000,
+					build: { ...base.build, slots: 4 },
+					draftOptions: [CONFIGS.indexedDb],
+				},
+				gatesCleared,
+				...ids
+			);
+		const readOnly = shopping(6, "read-only");
 		expect(isShopLocked(readOnly)).toBe(true);
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
@@ -206,11 +204,11 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("lets a Read-only run start its gate and drop a config", () => {
-		const readOnly: RunState = {
-			...started(["js"]),
-			status: "rewarding",
-			gatesCleared: 5,
-		};
+		const readOnly: RunState = audited(
+			{ ...started(["js"]), status: "rewarding" },
+			5,
+			"read-only"
+		);
 		expect(runReducer(readOnly, { type: "finish-reward" }).status).toBe(
 			"answering"
 		);
@@ -220,7 +218,7 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("takes one config offline at a Dependency Outage gate", () => {
-		const outage = { ...started(["js"]), gatesCleared: 4 };
+		const outage = audited(started(["js"]), 4, "dependency-outage");
 		const view = toRunView(outage);
 		expect(view.offlineConfigs).toHaveLength(1);
 		expect(outage.build.configs).toContain(view.offlineConfigs[0].config);
@@ -228,7 +226,7 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("moves the flake from poll to poll at a Flaky Build gate", () => {
-		let state: RunState = { ...started(["js"]), gatesCleared: 8 };
+		let state: RunState = audited(started(["js"]), 8, "flaky-build");
 		const seen = new Set<string>();
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) {
 			seen.add(toRunView(state).offlineConfigs[0]?.config.id ?? "");
@@ -239,16 +237,19 @@ describe("the gate audits (ADR-035)", () => {
 
 	it("switches off the most-upgraded config at a Breaking Change gate", () => {
 		const base = started(["js"]);
-		const levelled: RunState = {
-			...base,
-			gatesCleared: 10,
-			build: {
-				...base.build,
-				configs: base.build.configs.map((config, index) =>
-					index === 1 ? { ...config, level: 4 } : config
-				),
+		const levelled: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: base.build.configs.map((config, index) =>
+						index === 1 ? { ...config, level: 4 } : config
+					),
+				},
 			},
-		};
+			10,
+			"breaking-change"
+		);
 		expect(toRunView(levelled).offlineConfigs[0]?.config.id).toBe(
 			levelled.build.configs[1].id
 		);
@@ -256,19 +257,22 @@ describe("the gate audits (ADR-035)", () => {
 
 	it("keeps an offline config out of the answer it would have scored", () => {
 		const base = started(["js"]);
-		const build: RunState = {
-			...base,
-			gatesCleared: 4,
-			build: {
-				...base.build,
-				slots: 5,
-				configs: [
-					...base.build.configs,
-					CONFIGS.agentsMd,
-					CONFIGS.coverageGain,
-				],
+		const build: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					slots: 5,
+					configs: [
+						...base.build.configs,
+						CONFIGS.agentsMd,
+						CONFIGS.intellisense,
+					],
+				},
 			},
-		};
+			4,
+			"dependency-outage"
+		);
 		const offlineId = toRunView(build).offlineConfigs[0]?.config.id;
 		const bonuses = answerWith(build, true)
 			.answeredThisGate.at(-1)
@@ -279,7 +283,7 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("scores an answer past the clock as a miss, whatever was picked", () => {
-		const timed = { ...started(["js"]), gatesCleared: 8 };
+		const timed = audited(started(["js"]), 8, "timeout");
 		const poll = timed.polls[timed.currentIndex];
 		const rightOption = poll.options.find((option) => option.correct);
 		const late = runReducer(timed, {
@@ -294,7 +298,7 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("leaves an answer inside the clock alone", () => {
-		const timed = { ...started(["js"]), gatesCleared: 8 };
+		const timed = audited(started(["js"]), 8, "timeout");
 		const poll = timed.polls[timed.currentIndex];
 		const rightOption = poll.options.find((option) => option.correct);
 		const inTime = runReducer(timed, {
@@ -307,7 +311,7 @@ describe("the gate audits (ADR-035)", () => {
 	});
 
 	it("frees the polls past the clocked ones", () => {
-		let state: RunState = { ...started(["js"]), gatesCleared: 8 };
+		let state: RunState = audited(started(["js"]), 8, "timeout");
 		for (let i = 0; i < 3; i++) state = answerWith(state, true);
 		expect(toRunView(state).pollTimeLimitMs).toBeNull();
 	});
@@ -342,12 +346,15 @@ describe("the gate audits (ADR-035)", () => {
 		expect(pickBudgetFor(polls, 0, true)).toBe(SLICE_WINDOW * 2);
 
 		const reopened = runReducer(
-			{
-				...base,
-				gatesCleared: 7,
-				status: "awaiting-strip" as const,
-				peelSlotsRemaining: 0,
-			},
+			audited(
+				{
+					...base,
+					status: "awaiting-strip" as const,
+					peelSlotsRemaining: 0,
+				},
+				7,
+				"mirrored"
+			),
 			{ type: "resume-climb" }
 		);
 		expect(toRunView(reopened).correctAnswersThisGate).toBe(SLICE_WINDOW * 2);
@@ -355,14 +362,17 @@ describe("the gate audits (ADR-035)", () => {
 
 	it("Volkswagen CI suppresses the mirror — normal scoring, full demand", () => {
 		const base = started(["js"]);
-		let state: RunState = {
-			...base,
-			gatesCleared: 7,
-			build: {
-				...base.build,
-				configs: [...base.build.configs, CONFIGS.volkswagenCi],
+		let state: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: [...base.build.configs, CONFIGS.volkswagenCi],
+				},
 			},
-		};
+			7,
+			"mirrored"
+		);
 		const view = toRunView(state);
 		expect(view.gateStake.coverageDemand).toBe(coverageDemandFor(7));
 		expect(view.gateStake.audits).toEqual([

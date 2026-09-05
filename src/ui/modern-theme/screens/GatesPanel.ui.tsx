@@ -48,6 +48,8 @@ export type DexGate = {
 	 * and trust the panel to cover it. The row still says how many rules the
 	 * gate carries, which its coverage and peel figures already imply. */
 	auditsHidden?: number;
+	auditDraw?: number;
+	auditPoolSize?: number;
 	unlocks: readonly string[];
 	/** Same, for the width and storage grants. Counted, so a locked gate that
 	 * opens nothing still reads differently from one that opens something you
@@ -104,7 +106,7 @@ const GateRow = ({ gate }: { gate: DexGate }) => (
 			tone={gate.peelsAudited ? "cinnabar" : "muted"}
 			className={FIGURE}
 		>
-			{signed(-gate.peels)}
+			{gate.peels === 0 ? "none" : signed(-gate.peels)}
 		</Text>
 		<span className={TAGS}>
 			{gate.audits.map((audit) => (
@@ -119,6 +121,11 @@ const GateRow = ({ gate }: { gate: DexGate }) => (
 					{REDACTED}
 				</Chip>
 			))}
+			{gate.auditDraw !== undefined && gate.auditDraw > 0 ? (
+				<Chip tone="saffron">
+					draws {gate.auditDraw} of {gate.auditPoolSize}
+				</Chip>
+			) : null}
 			{gate.unlocks.map((unlock) => (
 				<Chip key={unlock} tone="muted">
 					{unlock}

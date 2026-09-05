@@ -51,7 +51,7 @@ On a pass, storage reward = `GATE_REWARD_KB (120) × product(reward multipliers)
 
 ### 5. Config families and effects
 
-> ⚠ **Amended by ADR-016**: the family taxonomy below is presentation-era grouping only. Mechanically every config is now Effect + Check (Copilot excepted); e.g. "Defense" linters carry a lint-correct check and "Economy" IndexedDB carries a 3-correct check. See the wiki roster (§4.3) for the authoritative Effect/Check per config.
+> ⚠ **Amended by ADR-016, superseded by [ADR-055](055-config-hue-is-keyed-to-slot-size.md)**: families are deleted. `ConfigFamily` no longer exists in code, and hue now means slot size. The table below is history: read it for what each config does, never as a live grouping. Mechanically every config is Effect + Check (Copilot excepted); e.g. "Defense" linters carry a lint-correct check and "Economy" IndexedDB carries a 3-correct check. See the wiki roster (§4.3) for the authoritative Effect/Check per config.
 
 | Family | Effect | Notes |
 |---|---|---|

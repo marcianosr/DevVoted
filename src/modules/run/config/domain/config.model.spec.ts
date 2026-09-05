@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	autoUpgradeOneInOf,
+	autoUpgradeAfterCorrectOf,
 	cacheMultiplierFor,
 	describeConfig,
 	draftCost,
@@ -30,13 +30,18 @@ describe("draftCost", () => {
 
 	it("charges the same rate at every size, so price reads straight off the size", () => {
 		expect(draftCost(CONFIGS.js)).toBe(32);
-		expect(draftCost(CONFIGS.coverageGain)).toBe(64);
+		expect(draftCost(CONFIGS.codeCoverage)).toBe(64);
 		expect(draftCost(CONFIGS.intellisense)).toBe(128);
 		expect(draftCost(CONFIGS.agentsMd)).toBe(256);
 	});
 
 	it("refunds half the price on a sell", () => {
 		expect(sellRefund(CONFIGS.agentsMd)).toBe(128);
+	});
+
+	it("prices the two-slot collector at 64KB, refunding 32KB", () => {
+		expect(draftCost(CONFIGS.garbageCollection)).toBe(64);
+		expect(sellRefund(CONFIGS.garbageCollection)).toBe(32);
 	});
 
 	it("prices WTFPL at its own tag rather than its grade", () => {
@@ -57,7 +62,7 @@ describe("baseSlotsOf", () => {
 
 	it("reads an explicit size", () => {
 		expect(baseSlotsOf(CONFIGS.agentsMd)).toBe(8);
-		expect(baseSlotsOf(CONFIGS.coverageGain)).toBe(2);
+		expect(baseSlotsOf(CONFIGS.codeCoverage)).toBe(2);
 	});
 
 	it("sizes every roster config on the ladder, so none is unpriceable", () => {
@@ -149,6 +154,10 @@ describe("focusCoverageMultiplier", () => {
 });
 
 describe("isUpgradable", () => {
+	it("refuses the collector — its payout is what you lost, not a level", () => {
+		expect(isUpgradable(CONFIGS.garbageCollection)).toBe(false);
+	});
+
 	it("allows focus configs", () => {
 		expect(isUpgradable(CONFIGS.js)).toBe(true);
 		expect(isUpgradable(CONFIGS.css)).toBe(true);
@@ -165,7 +174,7 @@ describe("isUpgradable", () => {
 
 	it("refuses configs with nothing that scales per level", () => {
 		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
-		expect(isUpgradable(CONFIGS.coverageGain)).toBe(false);
+		expect(isUpgradable(CONFIGS.codeCoverage)).toBe(false);
 		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
 		expect(isUpgradable(CONFIGS.deprecated)).toBe(false);
 	});
@@ -181,14 +190,22 @@ describe("isUpgradable", () => {
 	});
 });
 
-describe("autoUpgradeOneInOf", () => {
-	it("shortens the odds one step per level: 1-in-3 at L1, 1-in-2 at L2", () => {
-		expect(autoUpgradeOneInOf(CONFIGS.dependabot)).toBe(3);
-		expect(autoUpgradeOneInOf({ ...CONFIGS.dependabot, level: 2 })).toBe(2);
+describe("autoUpgradeAfterCorrectOf", () => {
+	it("asks for five correct in a row at L1 and four at L2", () => {
+		expect(autoUpgradeAfterCorrectOf(CONFIGS.dependabot)).toBe(5);
+		expect(autoUpgradeAfterCorrectOf({ ...CONFIGS.dependabot, level: 2 })).toBe(
+			4
+		);
+	});
+
+	it("never drops below one answer, whatever the level", () => {
+		expect(autoUpgradeAfterCorrectOf({ ...CONFIGS.dependabot, level: 9 })).toBe(
+			1
+		);
 	});
 
 	it("stays undefined for configs without the axis", () => {
-		expect(autoUpgradeOneInOf(CONFIGS.js)).toBeUndefined();
+		expect(autoUpgradeAfterCorrectOf(CONFIGS.js)).toBeUndefined();
 	});
 });
 
@@ -227,12 +244,12 @@ describe("describeConfig", () => {
 		);
 	});
 
-	it("derives Dependabot's odds from its level", () => {
+	it("derives Dependabot's count from its level, and names both resets", () => {
 		expect(describeConfig(CONFIGS.dependabot)).toBe(
-			"1 in 3 gate clears: a random config in your build upgrades, free."
+			"5 correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over."
 		);
 		expect(describeConfig({ ...CONFIGS.dependabot, level: 2 })).toBe(
-			"1 in 2 gate clears: a random config in your build upgrades, free."
+			"4 correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over."
 		);
 	});
 

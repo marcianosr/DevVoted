@@ -59,8 +59,8 @@ describe("GatesView", () => {
 	it("withholds the rules of a gate nobody has stood in front of", () => {
 		renderLadder(0);
 
-		expect(row("4 Lavender").queryByText("424 Failed Dependency")).toBeNull();
-		expect(redactionsIn("4 Lavender")).toHaveLength(1);
+		expect(row("3 Thunder").queryByText("402 Payment Required")).toBeNull();
+		expect(redactionsIn("3 Thunder")).toHaveLength(1);
 	});
 
 	it("counts each withheld chip, so an empty gate still reads as empty", () => {
@@ -70,13 +70,12 @@ describe("GatesView", () => {
 		expect(redactionsIn("3 Thunder")).toHaveLength(1);
 	});
 
-	it("keeps naming an audit already met at an earlier gate", () => {
-		renderLadder(8);
+	it("keeps naming an audit already met in an earlier band", () => {
+		renderLadder(9);
 
 		expect(
 			row("12 Champion").getByText("408 Request Timeout")
 		).toBeInTheDocument();
-		expect(redactionsIn("12 Champion")).toHaveLength(2);
 	});
 
 	it("names everything once the ladder is finished", () => {
@@ -85,13 +84,21 @@ describe("GatesView", () => {
 		expect(screen.queryAllByText("???")).toHaveLength(0);
 	});
 
-	it("names the audits a gate carries", () => {
+	it("names the audits a gate is certain to carry", () => {
 		renderLadder(12);
 
+		expect(row("11 Elite").getByText("410 Gone")).toBeInTheDocument();
 		expect(
-			row("8 Seafoam").getByText("408 Request Timeout")
+			row("12 Champion").getByText("408 Request Timeout")
 		).toBeInTheDocument();
-		expect(row("8 Seafoam").getByText("502 Bad Gateway")).toBeInTheDocument();
+	});
+
+	it("states a drawn gate's shape without naming what it will draw", () => {
+		renderLadder(12);
+
+		expect(row("8 Seafoam").getByText(/draws 2 of/)).toBeInTheDocument();
+		expect(row("4 Lavender").getByText(/draws 1 of/)).toBeInTheDocument();
+		expect(row("12 Champion").queryByText(/draws/)).toBeNull();
 	});
 
 	it("marks the cleared gates and the one in front of them", () => {

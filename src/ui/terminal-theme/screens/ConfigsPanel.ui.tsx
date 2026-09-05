@@ -1,10 +1,6 @@
 import { clsx } from "clsx";
 
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
-
 import { DexChip } from "../DexChip.ui";
-import { FamilyDot } from "../FamilyDot.ui";
-import { FAMILY_ORDER } from "../families";
 import { Figures } from "../Figures.ui";
 import { plural } from "../format";
 import { Slots } from "../Slots.ui";
@@ -42,7 +38,6 @@ const NEVER_INSTALLED = "seen but never installed";
 
 type ConfigIdentity = {
 	id: string;
-	family: ConfigFamily;
 	slots: number;
 };
 
@@ -58,8 +53,8 @@ export type SeenConfig = ConfigIdentity & {
 	effect: string;
 };
 
-/** An unseen config hands over its size and family only: enough to say what
- * shape of thing is missing, never which one. */
+/** An unseen config hands over its size only: enough to say what shape of thing
+ * is missing, never which one. */
 export type UnseenConfig = ConfigIdentity & {
 	seen: false;
 	label?: never;
@@ -105,15 +100,15 @@ const versionLine = (best: number, maxVersion: number) => {
 	return `best v${best} · v${best + 1} is built, never dealt`;
 };
 
-const FamilyKey = () => (
+const SlotKey = ({ configs }: { configs: readonly DexConfig[] }) => (
 	<div className={KEY}>
-		{FAMILY_ORDER.map((family) => (
-			<span key={family} className={KEY_ITEM}>
+		{slotSizes(configs).map((slots) => (
+			<span key={slots} className={KEY_ITEM}>
 				<span aria-hidden>
-					<FamilyDot family={family} />
+					<Slots slots={slots} solid />
 				</span>
 				<Text tone="muted" size="caption">
-					{family}
+					{plural(slots, "slot")}
 				</Text>
 			</span>
 		))}
@@ -129,11 +124,11 @@ const Entry = ({
 	selected: boolean;
 	onSelect: (id: string) => void;
 }) => {
-	if (!isSeen(config)) return <DexChip family={config.family} seen={false} />;
+	if (!isSeen(config)) return <DexChip slots={config.slots} seen={false} />;
 
 	return (
 		<DexChip
-			family={config.family}
+			slots={config.slots}
 			label={config.label}
 			version={config.best}
 			maxVersion={config.maxVersion}
@@ -156,7 +151,9 @@ const Group = ({
 }) => (
 	<div className={GROUP}>
 		<div className={GROUP_HEAD}>
-			<Slots slots={slots} solid />
+			<span aria-hidden>
+				<Slots slots={slots} solid />
+			</span>
 			<Text className="font-bold">{plural(slots, "slot")}</Text>
 			<Text tone="faint" className={COUNT}>
 				{configs.filter(isSeen).length} of {configs.length}
@@ -214,7 +211,7 @@ const InstallRow = ({
 	>
 		{/* Width is the ranking's second reading: a wide bar next to a big install
 		    count is a config people pay four slots for. */}
-		<Slots family={config.family} slots={config.slots} solid className="mr-1" />
+		<Slots slots={config.slots} solid className="mr-1" />
 		<Text className="font-bold">{config.label}</Text>
 		<VersionFigure version={config.best} maxVersion={config.maxVersion} />
 		<Text tone="muted" className={FIGURE}>
@@ -287,7 +284,7 @@ const ByInstalls = ({
 const Detail = ({ config }: { config: SeenConfig }) => (
 	<div className={DETAIL}>
 		<div className={DETAIL_HEAD}>
-			<Slots family={config.family} slots={config.slots} solid />
+			<Slots slots={config.slots} solid />
 			<Text className="font-bold">{config.label}</Text>
 			<Text tone="faint" size="caption" className={DETAIL_META}>
 				first seen gate {config.firstSeenGate} · {installLine(config.installs)}
@@ -332,7 +329,7 @@ export const ConfigsPanel = ({
 				label="how to read the configs"
 				variant="pill"
 			/>
-			<FamilyKey />
+			<SlotKey configs={configs} />
 			{view === "installs" ? (
 				<ByInstalls
 					configs={shown}

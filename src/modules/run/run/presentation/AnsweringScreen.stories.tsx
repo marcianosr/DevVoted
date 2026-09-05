@@ -28,7 +28,7 @@ const poll = (overrides: Partial<PollView> = {}) =>
 
 export const Default: Story = {
 	args: {
-		configs: [CONFIGS.js, CONFIGS.coverageGain],
+		configs: [CONFIGS.js, CONFIGS.codeCoverage],
 		poll: poll(),
 		pollOutcomes: ["correct", "wrong"],
 		pollsPerGate: 5,
@@ -157,6 +157,6 @@ export const RollingOutageGate: Story = {
 				suppressed: false,
 			},
 		],
-		offlineConfigs: [CONFIGS.coverageGain],
+		offlineConfigs: [CONFIGS.codeCoverage],
 	},
 };

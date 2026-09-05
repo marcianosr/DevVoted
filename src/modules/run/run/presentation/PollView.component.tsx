@@ -7,6 +7,7 @@ import {
 	describeConfig,
 	headlineFigureOf,
 	otherArmOf,
+	slotsOf,
 	type ConfigFigure,
 } from "~/modules/run/config/domain/config.model";
 import {
@@ -18,8 +19,10 @@ import {
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import { coverageForAnswer } from "~/modules/run/build/domain/build.model";
 import {
 	FAUCET_CAP_KB,
+	gateBaseMultiplier,
 	pollDifficultyMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 import { cachedHitsFor } from "~/modules/run/run/domain/runPoll.model";
@@ -34,7 +37,7 @@ import type { DotVariant } from "~/ui/terminal-theme/Dot.ui";
 import type { RunHeaderProps } from "~/ui/terminal-theme/RunHeader.ui";
 import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
 import type { TrailProps } from "~/ui/terminal-theme/Trail.ui";
-import { plural } from "~/ui/terminal-theme/format";
+import { countRange, plural } from "~/ui/terminal-theme/format";
 
 const LETTERS = "ABCDEFGH";
 const HIDDEN_CATEGORY = "???";
@@ -79,12 +82,22 @@ const offlineCue = (view: RunView, audit: AuditView): string | undefined => {
 	return `${names.join(", ")} ${names.length === 1 ? "is" : "are"} offline this gate.`;
 };
 
+export const chipOf = (
+	config: Config
+): NonNullable<AuditNote["suppressedBy"]> => ({
+	label: config.label,
+	slots: slotsOf(config),
+	version: config.level ?? 1,
+});
+
 export const auditNotes = (view: RunView): readonly AuditNote[] =>
 	view.audits.map((audit: AuditView) => ({
 		code: `${audit.code}`,
 		name: audit.name,
 		cue: offlineCue(view, audit) ?? audit.answerCue ?? audit.description,
 		suppressed: audit.suppressed,
+		suppressedBy:
+			audit.suppressedBy === undefined ? undefined : chipOf(audit.suppressedBy),
 	}));
 
 const skipNote = (why: SkipReason): string => {
@@ -93,6 +106,7 @@ const skipNote = (why: SkipReason): string => {
 	if (why.kind === "openerOnly") return "fired already";
 	if (why.kind === "cacheCold") return "cache is cold here";
 	if (why.kind === "paysAtGateClear") return "pays on clear";
+	if (why.kind === "paysOnPeel") return "pays on a peel";
 	if (why.kind === "billsAtGateClear") return "bills on clear";
 	if (why.kind === "inShop") return "works in the shop";
 	if (why.kind === "noAuditToSuppress") return "no audit to suppress";
@@ -109,10 +123,13 @@ const statusNote = (status: ConfigStatus): string | undefined => {
 
 const rowFigure = (
 	config: Config,
-	status: ConfigStatus
+	status: ConfigStatus,
+	autoUpgradeRemaining: number | null
 ): string | undefined => {
 	if (status.kind === "offline") return "offline";
 	if (status.kind !== "online") return undefined;
+	if (config.autoUpgradeAfterCorrect !== undefined && autoUpgradeRemaining)
+		return `in ${autoUpgradeRemaining}`;
 	return figureLabel(headlineFigureOf(config));
 };
 
@@ -127,7 +144,6 @@ const figureLabel = (figure: ConfigFigure | undefined): string | undefined => {
 	if (figure.kind === "multiplier") return `×${figure.value}`;
 	if (figure.kind === "kb") return `+${kbLabel(figure.value)}`;
 	if (figure.kind === "percent") return `+${figure.value}%`;
-	if (figure.kind === "chance") return `1 in ${figure.oneIn}`;
 	return `${figure.value > 0 ? "+" : ""}${figure.value}`;
 };
 
@@ -218,13 +234,15 @@ export const buildRows = (
 
 		return {
 			name: config.label,
+			slots: slotsOf(config),
+			version: config.level ?? 1,
 			detail:
 				note === undefined
 					? describeConfig(config)
 					: `${describeConfig(config)} · ${note}`,
 			swap: swapFor(config, onSwitchArm),
 			dot: dotFor(status, tool !== undefined),
-			figure: rowFigure(config, status),
+			figure: rowFigure(config, status, view.autoUpgradeRemaining),
 			meterPercent:
 				config.storagePerCorrect === undefined
 					? undefined
@@ -240,13 +258,28 @@ export const buildRows = (
 		};
 	});
 
-export const buildTotalFor = (view: RunView) => ({
+const liveConfigsIn = (view: RunView): readonly Config[] =>
+	view.configs.filter(
+		(config) =>
+			!view.offlineConfigs.some((offline) => offline.config.id === config.id)
+	);
+
+// Routed through the same function the scorer uses rather than through
+// `perAnswer`, which is a context-free forecast: it reads coverageMultiplier
+// and coverageAdd only, so every conditional config (opener, focus, cache) was
+// invisible to it and the panel could print ×1 above a row reading ×2.
+export const buildTotalFor = (view: RunView, poll: PollFacts) => ({
 	label: "Total",
-	value: `×${Math.round(view.perAnswer.coveragePerCorrect * 10) / 10}`,
+	value: `×${coverageForAnswer(
+		liveConfigsIn(view),
+		poll,
+		gateBaseMultiplier(view.gatesCleared)
+	)}`,
 });
 
 const retryCost = (view: RunView): PollFact | undefined => {
-	const { peelSlotsOnFailure, missIsFatal } = view.gateStake;
+	const { peelSlotsOnFailure, peelConfigsOnFailure, missIsFatal } =
+		view.gateStake;
 	if (missIsFatal)
 		return {
 			label: "Gate retry cost:",
@@ -256,7 +289,12 @@ const retryCost = (view: RunView): PollFact | undefined => {
 	if (peelSlotsOnFailure === 0) return undefined;
 	return {
 		label: "Gate retry cost:",
-		value: `Remove ${plural(peelSlotsOnFailure, "slot")}`,
+		value: `Remove ${countRange(
+			peelConfigsOnFailure.fewest,
+			peelConfigsOnFailure.most,
+			"config"
+		)}`,
+		hint: `${plural(peelSlotsOnFailure, "slot")} of configs — drop them or minify them, your pick`,
 		tone: "cinnabar",
 	};
 };
@@ -384,13 +422,15 @@ export const PollView = ({
 		])
 	);
 
+	const facts: PollFacts = {
+		category: poll.category,
+		answeredBefore: view.answeredThisGate.length,
+		cachedHits: cachedHitsFor(view.allAnswered, poll.category),
+	};
+
 	const rows = buildRows(
 		view,
-		{
-			category: poll.category,
-			answeredBefore: view.answeredThisGate.length,
-			cachedHits: cachedHitsFor(view.allAnswered, poll.category),
-		},
+		facts,
 		toolsFor(view, { onLint, onPeek }),
 		onSwitchArm
 	);
@@ -409,7 +449,7 @@ export const PollView = ({
 			build={{
 				running: rows.filter((row) => row.dot === "on").length,
 				rows,
-				total: buildTotalFor(view),
+				total: buildTotalFor(view, facts),
 			}}
 			choices={choices}
 			onToggle={(letter) => {

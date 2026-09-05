@@ -5,7 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-08-27T10:56:36Z
-updated_at: 2026-08-27T10:56:36Z
+updated_at: 2026-09-04T15:03:54Z
+parent: DVTD-u35m
 ---
 
 A multi-answer over-pick (the whole correct set plus a wrong option) currently returns 'partial' and HOLDS the streak, while one wrong pick on a single-answer poll zeroes it. Sloppiness is protected; a single confident miss is not. Verified at answer.model.spec.ts:377 ('holds the streak (and its bonus) on a partial multi-answer pick') and runPoll.model.ts:110 nextStreak.

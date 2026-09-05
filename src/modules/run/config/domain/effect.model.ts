@@ -109,6 +109,7 @@ export type SkipReason =
 	| { readonly kind: "openerOnly" }
 	| { readonly kind: "cacheCold" }
 	| { readonly kind: "paysAtGateClear" }
+	| { readonly kind: "paysOnPeel" }
 	| { readonly kind: "billsAtGateClear" }
 	| { readonly kind: "inShop" }
 	| { readonly kind: "noAuditToSuppress" }
@@ -145,11 +146,15 @@ const readsAhead = (config: Config): boolean =>
 	config.revealsUpcomingCategories === true ||
 	config.revealsCorrectCount === true;
 
+const countsThisAnswer = (config: Config): boolean =>
+	config.autoUpgradeAfterCorrect !== undefined;
+
 const isOnline = (config: Config, context: PollStatusContext): boolean =>
 	changesCoverage(config, context) ||
 	paysOnThisAnswer(config, context) ||
 	sellsSomethingHere(config, context.category) ||
 	readsAhead(config) ||
+	countsThisAnswer(config) ||
 	(config.suppressesAudit === true && context.suppressingAudit);
 
 const skipReasonFor = (
@@ -173,11 +178,11 @@ const skipReasonFor = (
 		config.locksOffers === true
 	)
 		return { kind: "inShop" };
+	if (config.refundsPeeledConfigs === true) return { kind: "paysOnPeel" };
 	if (config.suppressesAudit === true) return { kind: "noAuditToSuppress" };
 	if (
 		config.storageOnClear !== undefined ||
-		config.storageInterestPct !== undefined ||
-		config.autoUpgradeOneIn !== undefined
+		config.storageInterestPct !== undefined
 	)
 		return { kind: "paysAtGateClear" };
 	if (config.storagePerCorrect !== undefined && context.faucetRemainingKb === 0)

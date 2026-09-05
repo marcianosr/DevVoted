@@ -83,12 +83,23 @@ describe("gatedex", () => {
 		expect(rowFor(3).peelsAudited).toBe(false);
 	});
 
-	it("names the audits a gate carries", () => {
+	it("names only the audits a gate is certain to carry", () => {
 		expect(rowFor(3).audits).toEqual(["402 Payment Required"]);
-		expect(rowFor(8).audits).toEqual([
-			"408 Request Timeout",
-			"502 Bad Gateway",
-		]);
+		expect(rowFor(11).audits).toEqual(["410 Gone"]);
+		expect(rowFor(8).audits).toEqual([]);
+	});
+
+	it("states a drawn gate's shape as a count, since the names are not settled", () => {
+		expect(rowFor(4).auditDraw).toBe(1);
+		expect(rowFor(4).auditPool.length).toBeGreaterThan(1);
+		expect(rowFor(8).auditDraw).toBe(2);
+		expect(rowFor(11).auditDraw).toBe(2);
+	});
+
+	it("draws nothing at the authored gates", () => {
+		expect(rowFor(3).auditDraw).toBe(0);
+		expect(rowFor(12).auditDraw).toBe(0);
+		expect(rowFor(12).audits).toHaveLength(3);
 	});
 
 	it("promises no width, because slots are bought and never handed over", () => {

@@ -46,6 +46,9 @@ export const dexGates: readonly DexGate[] = ALL_SWATCHES.map(
 const meta: Meta<typeof GatesPanel> = {
 	component: GatesPanel,
 	title: "Terminal/Screens/Dex/Gates",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexGates"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

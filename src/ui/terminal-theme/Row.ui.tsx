@@ -15,7 +15,8 @@ const NAME = "flex shrink-0 items-center gap-1.5";
 // mark, since the mark now sits inside this column.
 const NAME_COLUMN = "w-48 @max-3xl:w-auto";
 const NAME_TEXT = "min-w-0 truncate whitespace-nowrap";
-const DETAIL = "min-w-0 flex-1 @max-3xl:order-last @max-3xl:basis-full";
+const DETAIL =
+	"min-w-0 flex-1 font-normal @max-3xl:order-last @max-3xl:basis-full";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const DIMMED = "cursor-not-allowed opacity-50";
 

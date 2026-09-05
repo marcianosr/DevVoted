@@ -15,7 +15,11 @@ import {
 	VICTORY_GATE,
 	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	createRun,
+	type RunState,
+	scheduleOf,
+} from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -211,11 +215,20 @@ describe("the gate's window meter (ADR-035)", () => {
 	});
 
 	it("never advances a build that answers nothing — it peels until the run ends", () => {
-		let state = started(["js"]);
+		let state: RunState = { ...started(["js"]), gatesCleared: 1 };
 		for (let attempt = 0; attempt < 10 && state.status !== "dead"; attempt++)
 			state = runReducer(payPeel(failGate(state)), { type: "finish-reward" });
 		expect(state.status).toBe("dead");
+		expect(state.gatesCleared).toBe(1);
+	});
+
+	it("never ends a run at the Pallet gate — a miss there costs nothing (ADR-057)", () => {
+		let state = started(["js"]);
+		for (let attempt = 0; attempt < 10; attempt++)
+			state = runReducer(payPeel(failGate(state)), { type: "finish-reward" });
+		expect(state.status).not.toBe("dead");
 		expect(state.gatesCleared).toBe(0);
+		expect(state.build.configs).toHaveLength(4);
 	});
 
 	it("grades each attempt against its own gate's row of the demand table", () => {
@@ -257,13 +270,13 @@ describe("the summit", () => {
 				configs: [
 					...base.build.configs,
 					CONFIGS.agentsMd,
-					CONFIGS.coverageGain,
+					CONFIGS.intellisense,
 					CONFIGS.codeCoverage,
 				],
 			},
 		};
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
-			const mirrored = auditsForGate(gate).some(
+			const mirrored = auditsForGate(gate, scheduleOf(state)).some(
 				(audit) => audit.id === "mirrored"
 			);
 			for (let i = 0; i < SLICE_WINDOW; i++)
@@ -274,6 +287,67 @@ describe("the summit", () => {
 		expect(state.status).toBe("won");
 		expect(state.clearedGate).toBe(VICTORY_GATE);
 		expect(state.gatesCleared).toBe(GATE_COUNT);
+	});
+});
+
+describe("Dependabot's counter", () => {
+	const withBot = (): RunState => {
+		const base = started(["js"], GATE_COUNT * SLICE_WINDOW);
+		return {
+			...base,
+			build: {
+				...base.build,
+				slots: 16,
+				configs: [...base.build.configs, CONFIGS.dependabot],
+			},
+		};
+	};
+
+	it("advances one per correct answer and fires on the fifth", () => {
+		let state = withBot();
+		for (let i = 0; i < 4; i++) state = answerWith(state, true);
+		expect(state.autoUpgradeProgress).toBe(4);
+		expect(state.autoUpgradedConfigId).toBeUndefined();
+
+		state = answerWith(state, true);
+		expect(state.autoUpgradeProgress).toBe(0);
+		expect(state.autoUpgradedConfigId).toBeDefined();
+		expect(state.autoUpgradedByConfigId).toBe(CONFIGS.dependabot.id);
+		expect(state.build.configs.some((config) => (config.level ?? 1) > 1)).toBe(
+			true
+		);
+	});
+
+	it("starts the count over on a wrong answer, so four right then one wrong pays nothing", () => {
+		let state = withBot();
+		for (let i = 0; i < 4; i++) state = answerWith(state, true);
+		state = answerWith(state, false);
+
+		expect(state.autoUpgradeProgress).toBe(0);
+		expect(state.autoUpgradedConfigId).toBeUndefined();
+		expect(
+			state.build.configs.every((config) => (config.level ?? 1) === 1)
+		).toBe(true);
+	});
+
+	it("leaves the count at zero for a build with no Dependabot", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < 4; i++) state = answerWith(state, true);
+		expect(state.autoUpgradeProgress).toBe(0);
+	});
+
+	it("starts the count over when a gate fails, even on a correct final answer", () => {
+		const base = withBot();
+		const short: RunState = {
+			...base,
+			autoUpgradeProgress: 3,
+			window: { ...base.window, answered: SLICE_WINDOW - 1, coverageGained: 0 },
+		};
+
+		const failed = answerWith(short, true);
+
+		expect(failed.status).toBe("awaiting-strip");
+		expect(failed.autoUpgradeProgress).toBe(0);
 	});
 });
 

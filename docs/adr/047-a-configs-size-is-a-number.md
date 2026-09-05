@@ -16,6 +16,10 @@ four-word vocabulary to find out how much room a config takes.
 
 ## Decision 1: a config carries a size, and nothing else
 
+> ⚠ **Amended by [ADR-055](055-config-hue-is-keyed-to-slot-size.md)**: the size now
+> carries a hue as well as a number. "No grade colours" still holds, because grades
+> stay deleted; the colour is keyed to the slot count itself.
+
 `Config.slots` is one of **1, 2, 4, 8, 12 or 16**, defaulting to 1. There are no
 grades, no grade colours, no glyph, and no drop weights. A row states its size in
 words — "4 slots" — because a bare number beside a KB figure reads as money.

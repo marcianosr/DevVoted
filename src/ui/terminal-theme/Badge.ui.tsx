@@ -60,3 +60,19 @@ export const Badge = ({
 		{children}
 	</span>
 );
+
+const FACT_NUMBER = /([×+−]?\d[\d.]*(?:\s?(?:%|KB|MB))?×?)/;
+
+export const badgeNumbers = (
+	text: string,
+	tone: BadgeTone = "neutral"
+): ReactNode =>
+	text.split(FACT_NUMBER).map((part, index) =>
+		index % 2 === 1 ? (
+			<Badge key={`${part}-${index}`} tone={tone}>
+				{part}
+			</Badge>
+		) : (
+			part
+		)
+	);

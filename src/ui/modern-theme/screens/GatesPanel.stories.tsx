@@ -1,10 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { GATE_AUDITS } from "~/modules/run/gate/domain/audit.model";
+import {
+	auditExtraPeelShare,
+	auditAt,
+	auditLabelOf,
+} from "~/modules/run/gate/domain/audit.model";
+import {
+	bandForGate,
+	certainAuditsFor,
+} from "~/modules/run/gate/domain/auditSchedule.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import {
 	coverageDemandFor,
-	failStripsFor,
+	failPeelShareFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
@@ -22,51 +30,32 @@ export default meta;
 
 type Story = StoryObj<typeof GatesPanel>;
 
-/** Only the columns the domain does not own. The audits are display labels for
- * now: GATE_AUDITS emits timeout-3/5 and strip-10/15 because the numbers differ
- * per gate, where audits.ts collapses each to the one entry a player sees. The
- * unlocks are wiki §2.8 plus PIN_FROM_GATE, which that table omits. */
-const EXTRAS: Readonly<Record<number, Pick<DexGate, "audits" | "unlocks">>> = {
-	0: { audits: [], unlocks: ["shop", "rebuild", "640 KB plan"] },
-	1: { audits: [], unlocks: ["slot 4"] },
-	2: { audits: [], unlocks: ["lock", "slot 5", "768 KB plan"] },
-	3: { audits: ["402 Payment Required"], unlocks: ["extend", "slot 6"] },
-	4: {
-		audits: ["424 Failed Dependency"],
-		unlocks: ["git tag", "slot 7", "1 MB plan"],
-	},
-	5: { audits: ["404 Not Found"], unlocks: ["slot 8"] },
-	6: { audits: ["405 Method Not Allowed"], unlocks: ["slot 9", "1.5 MB plan"] },
-	7: { audits: ["300 Multiple Choices"], unlocks: ["slot 10"] },
-	8: {
-		audits: ["408 Request Timeout", "502 Bad Gateway"],
-		unlocks: ["slot 11", "2 MB plan"],
-	},
-	9: {
-		audits: ["503 Service Unavailable", "507 Insufficient Storage"],
-		unlocks: ["slot 12"],
-	},
-	10: {
-		audits: ["409 Conflict", "429 Too Many Requests"],
-		unlocks: ["slot 13", "3 MB plan"],
-	},
-	11: {
-		audits: ["410 Gone", "426 Upgrade Required", "403 Forbidden"],
-		unlocks: ["slot 14"],
-	},
-	12: {
-		audits: ["408 Request Timeout", "410 Gone", "413 Payload Too Large"],
-		unlocks: [],
-	},
+/** Only the columns the domain does not own. Audits and peels now read straight
+ * off the roster (ADR-056), so the one hand-written thing left is the unlock
+ * column: wiki §2.8 plus PIN_FROM_GATE, which that table omits. */
+const UNLOCKS: Readonly<Record<number, readonly string[]>> = {
+	0: ["shop", "rebuild", "640 KB plan"],
+	1: ["slot 4"],
+	2: ["lock", "slot 5", "768 KB plan"],
+	3: ["extend", "slot 6"],
+	4: ["git tag", "slot 7", "1 MB plan"],
+	5: ["slot 8"],
+	6: ["slot 9", "1.5 MB plan"],
+	7: ["slot 10"],
+	8: ["slot 11", "2 MB plan"],
+	9: ["slot 12"],
+	10: ["slot 13", "3 MB plan"],
+	11: ["slot 14"],
+	12: [],
 };
 
-/** A Strip audit adds to the gate's own quota rather than replacing it
+const certainAudits = (gate: number) =>
+	certainAuditsFor(gate).map((id) => auditAt(id, gate));
+
+/** A Strip audit adds to the gate's own share rather than replacing it
  * (audit.model.ts), which is why the last two rows read higher than the table. */
-const peelsFor = (gate: number) =>
-	(GATE_AUDITS[gate] ?? []).reduce(
-		(strips, audit) => strips + (audit.stripQuotaOnFail ?? 0),
-		failStripsFor(gate)
-	);
+const peelShareOf = (gate: number) =>
+	failPeelShareFor(gate) + auditExtraPeelShare(certainAudits(gate));
 
 type GateFacts = Omit<DexGate, "state">;
 
@@ -76,10 +65,15 @@ const LADDER: readonly GateFacts[] = ALL_SWATCHES.map((swatch) => ({
 	theme: swatch.theme,
 	finish: swatch.finish,
 	coverage: coverageDemandFor(swatch.gate),
-	peels: peelsFor(swatch.gate),
-	peelsAudited: peelsFor(swatch.gate) > failStripsFor(swatch.gate),
+	peels: Math.round(peelShareOf(swatch.gate) * 100),
+	peelsAudited: auditExtraPeelShare(certainAudits(swatch.gate)) > 0,
+	audits: certainAuditsFor(swatch.gate).map((id) =>
+		auditLabelOf(id, swatch.gate)
+	),
+	auditDraw: bandForGate(swatch.gate)?.perGate ?? 0,
+	auditPoolSize: bandForGate(swatch.gate)?.pool.length ?? 0,
+	unlocks: UNLOCKS[swatch.gate] ?? [],
 	wins: swatch.gate === VICTORY_GATE,
-	...EXTRAS[swatch.gate],
 }));
 
 export const gatesClearedTo = (cleared: number): readonly DexGate[] =>

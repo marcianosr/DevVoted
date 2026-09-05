@@ -3,9 +3,9 @@
 title: Dual-focus configs
 status: todo
 type: feature
+priority: normal
 created_at: 2026-08-13T20:51:48Z
-updated_at: 2026-08-13T20:51:48Z
-parent: DVTD-d0fw
+updated_at: 2026-09-04T18:48:44Z
 ---
 
 One slot focusing two categories, both appearance checks live. Split out of DVTD-72d9 Phase 3 (2026-08-13) so the rest of that roster work can ship without waiting on the model change.

@@ -20,7 +20,11 @@ import {
 	seasonsTable,
 	leaderboardTable,
 } from "@/src/database/schema";
-import { getCategories, CATEGORY_CODES } from "~/shared/lib/categories";
+import {
+	getCategories,
+	CATEGORY_CODES,
+	type CategoryCode,
+} from "~/shared/lib/categories";
 
 const DEV_UID = "f40d940b-9d3b-47f3-a73a-4dfba18b20c2";
 const ADMIN_UID = "65ad226e-e3c1-4e7f-a96d-a84156589733";
@@ -435,6 +439,12 @@ async function seedDatabase() {
 
 			// Generate category-specific data for each user
 			// Each user gets different stats per category to create variety in the leaderboard
+			type CategorySeed = {
+				coverage: number;
+				streak: number;
+				polls: number;
+			};
+
 			const generateCategoryData = (userIndex: number) => {
 				const baseValues = {
 					css: {
@@ -492,7 +502,12 @@ async function seedDatabase() {
 						streak: 4 - userIndex,
 						polls: 10 + userIndex,
 					},
-				};
+					vue: {
+						coverage: 42 + userIndex * 2.5,
+						streak: 4 - userIndex,
+						polls: 11 + userIndex,
+					},
+				} satisfies Record<CategoryCode, CategorySeed>;
 				return baseValues;
 			};
 

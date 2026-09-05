@@ -192,7 +192,11 @@ describe("startRunService", () => {
 		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
 			USER,
 			DATE,
-			expect.objectContaining({ status: "configuring", polls: POLLS })
+			expect.objectContaining({
+				status: "configuring",
+				polls: POLLS,
+				build: expect.objectContaining({ configs: [] }),
+			})
 		);
 	});
 

@@ -61,6 +61,8 @@ const toDexGate = (
 		peelsAudited: entry.peelsAudited,
 		audits: audits.shown,
 		auditsHidden: audits.hidden,
+		auditDraw: entry.auditDraw,
+		auditPoolSize: entry.auditPool.length,
 		unlocks: unlocks.shown,
 		unlocksHidden: unlocks.hidden,
 		wins: entry.winsTheRun,

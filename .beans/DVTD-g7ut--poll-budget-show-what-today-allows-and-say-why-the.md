@@ -8,8 +8,8 @@ tags:
     - ui
     - gameplay
 created_at: 2026-08-22T07:51:30Z
-updated_at: 2026-08-22T07:51:30Z
-parent: DVTD-kulw
+updated_at: 2026-09-04T15:03:59Z
+parent: DVTD-u35m
 ---
 
 A gate closes at exactly 5 answered polls (`SLICE_WINDOW`, `run.model.ts:839`) and a day deals exactly 5 (`SEED_LENGTH = SLICE_WINDOW`). When those two fall out of phase — you enter a window with only 3 of today's polls left — you answer the 3, hit the wall mid-window, and the app moves you to the community page with no explanation at the moment it happens.

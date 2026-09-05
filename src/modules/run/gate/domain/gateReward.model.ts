@@ -93,12 +93,9 @@ const focusRow = (
  * unless the window never woke it (dormant Focus). Focus rows keep their
  * richer per-category copy.
  */
-const rowFor = (
-	config: Config,
-	answered: readonly AnsweredPoll[],
-	faucetThisGateKb?: number,
-	interestThisGateKb?: number
-): GateRewardRow => {
+const rowFor = (config: Config, input: GateRewardInput): GateRewardRow => {
+	const { answered, faucetThisGateKb, interestThisGateKb, peelRefundKb } =
+		input;
 	if (config.focusCategory !== undefined)
 		return focusRow(config, config.focusCategory, answered);
 
@@ -139,6 +136,12 @@ const rowFor = (
 			kind: "storage",
 			value: kb(effectOf(config).storageOnClear ?? 0),
 		};
+	// Skipped rather than kb(0): this row is also drawn on cleared gates, where a
+	// peel never happened and "+0KB" would read as a payout that fired.
+	if (config.refundsPeeledConfigs === true)
+		return (peelRefundKb ?? 0) === 0
+			? { ...base, status: "skipped", kind: "storage", value: nothing }
+			: { ...base, kind: "storage", value: kb(peelRefundKb ?? 0) };
 	return { ...base, kind: "coverage", value: nothing };
 };
 
@@ -154,18 +157,15 @@ type GateRewardInput = {
 	readonly faucetThisGateKb?: number;
 	/** Interest paid this gate — omitted by callers with no balance in hand. */
 	readonly interestThisGateKb?: number;
+	/** What the peel refunded — set only on the strip screen. */
+	readonly peelRefundKb?: number;
 };
 
-export const gateRewardRows = ({
-	answered,
-	configs,
-	faucetThisGateKb,
-	interestThisGateKb,
-}: GateRewardInput): readonly GateRewardRow[] =>
-	configs
-		.map((config) =>
-			rowFor(config, answered, faucetThisGateKb, interestThisGateKb)
-		)
+export const gateRewardRows = (
+	input: GateRewardInput
+): readonly GateRewardRow[] =>
+	input.configs
+		.map((config) => rowFor(config, input))
 		.sort((left, right) => KIND_ORDER[left.kind] - KIND_ORDER[right.kind]);
 
 export type GateStepsSummary = {

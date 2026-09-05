@@ -1,8 +1,13 @@
 import {
+	auditAt,
 	auditExtraPeelShare,
 	auditLabel,
-	auditsForGate,
+	auditLabelOf,
 } from "~/modules/run/gate/domain/audit.model";
+import {
+	bandForGate,
+	certainAuditsFor,
+} from "~/modules/run/gate/domain/auditSchedule.model";
 import {
 	ALL_SWATCHES,
 	type GateSwatch,
@@ -31,6 +36,8 @@ export type GatedexEntry = {
 	readonly peelShare: number;
 	readonly peelsAudited: boolean;
 	readonly audits: readonly string[];
+	readonly auditPool: readonly string[];
+	readonly auditDraw: number;
 	readonly unlocks: readonly GateUnlock[];
 	readonly winsTheRun: boolean;
 	readonly state: GatedexState;
@@ -70,8 +77,10 @@ export const gatedex = (
 	const nextGate = nextGateFor(ownedSwatchIds);
 
 	return ALL_SWATCHES.map((swatch) => {
-		const audits = auditsForGate(swatch.gate);
+		const certain = certainAuditsFor(swatch.gate);
+		const audits = certain.map((id) => auditAt(id, swatch.gate));
 		const extraPeelShare = auditExtraPeelShare(audits);
+		const band = bandForGate(swatch.gate);
 
 		return {
 			gate: swatch.gate,
@@ -80,6 +89,8 @@ export const gatedex = (
 			peelShare: failPeelShareFor(swatch.gate) + extraPeelShare,
 			peelsAudited: extraPeelShare > 0,
 			audits: audits.map(auditLabel),
+			auditPool: (band?.pool ?? []).map((id) => auditLabelOf(id, swatch.gate)),
+			auditDraw: band?.perGate ?? 0,
 			unlocks: unlocksOpenedBy(swatch.gate),
 			winsTheRun: swatch.gate === VICTORY_GATE,
 			state: stateOf(swatch, ownedSwatchIds, nextGate),

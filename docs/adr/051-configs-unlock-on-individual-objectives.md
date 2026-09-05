@@ -28,11 +28,15 @@ The result: players who just play unlock everything through the fallbacks,
 completionists unlock sooner by chasing objectives, and the objectives teach
 mechanics a player might otherwise ignore. KB never buys a config (unchanged).
 
-## Decision 2: the free nine stay
+## Decision 2: the free starter set stays
 
-js, ts, css, eslint, unit-tests, code-coverage, indexed-db, coverage-gain,
-cold-start (by `config.id`). Granted at signup, shown as granted in the Dex with
-no objective rows. `agentsMd` still leaves `STARTER_POOL`.
+js, ts, css, eslint, unit-tests, code-coverage, indexed-db, cold-start (by
+`config.id`). Granted at signup, shown as granted in the Dex with no objective
+rows. `agentsMd` still leaves `STARTER_POOL`.
+
+Amended 2026-09-04: eight, not nine. `coverage-gain` was deleted from the roster
+— it sold AGENTS.md's ×2 coverage for a quarter of the price, so AGENTS.md was
+unbuyable. Whether an eighth-plus-one takes the free slot is open.
 
 ## Decision 3: the objective table
 
@@ -131,7 +135,7 @@ recommendation.
 - The only new `RunState` field is `soldThisShop`; every other predicate reads
   what the seam already sees.
 - No grandfathering and no historical backfill: the game is pre-release, nobody
-  has anything yet. The migration seeds the free nine.
+  has anything yet. The migration seeds the free set.
 - proto-run stays fully unlocked; the shop shelf stays whole; scarcity still has
   no mechanism.
 - Implementation is split across follow-up beans listed in DVTD-2try.

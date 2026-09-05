@@ -7,13 +7,13 @@ describe("toAuditId", () => {
 		expect(toAuditId("cost-overrun")).toBe("cost-overrun");
 	});
 
-	// The model needs the number (timeout-3 and timeout-5 are different clocks);
-	// the player sees one Timeout.
-	it("collapses the per-gate variants onto their one player-facing entry", () => {
-		expect(toAuditId("timeout-3")).toBe("timeout");
-		expect(toAuditId("timeout-5")).toBe("timeout");
-		expect(toAuditId("strip-1")).toBe("strip");
-		expect(toAuditId("strip-2")).toBe("strip");
+	// ADR-056 moved the per-gate dial off the id, so the suffixed forms the model
+	// used to emit are no longer ids at all.
+	it("refuses the suffixed forms the roster no longer emits", () => {
+		expect(toAuditId("timeout-3")).toBeNull();
+		expect(toAuditId("strip-10")).toBeNull();
+		expect(toAuditId("timeout")).toBe("timeout");
+		expect(toAuditId("strip")).toBe("strip");
 	});
 
 	it("refuses an id the kit cannot draw, rather than guessing one", () => {

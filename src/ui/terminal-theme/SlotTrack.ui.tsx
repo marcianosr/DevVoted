@@ -1,17 +1,20 @@
 import { clsx } from "clsx";
 
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
+import { sizeFill } from "~/ui/sizes";
 
-import { FAMILY_SOLID } from "./families";
 import { Text } from "./Text.ui";
 
-const TRACK = "flex gap-1";
+// Bounded, not fluid: the segments only ever say how the width is *divided*,
+// so letting them span a wide panel spends a screenful on a ratio.
+const TRACK = "flex max-w-sm gap-1";
 const SEGMENT = "h-3.5 basis-0 rounded-sm";
 const EMPTY = "border border-dashed border-zinc-700";
 
 export type SlotSegment = {
-	family?: ConfigFamily;
 	slots: number;
+	/** Slots a config holds without running, drawn as the dashed gap a free slot
+	 * gets: the width is spent, the colour is not earned. */
+	open?: boolean;
 };
 
 export type SlotTrackProps = {
@@ -20,8 +23,8 @@ export type SlotTrackProps = {
 	reading?: string;
 };
 
-const fillOf = (family: ConfigFamily | undefined) =>
-	family === undefined ? EMPTY : FAMILY_SOLID[family];
+const fillOf = (segment: SlotSegment) =>
+	segment.open === true ? EMPTY : sizeFill(segment.slots);
 
 const freeSlots = (segments: readonly SlotSegment[], slots: number) =>
 	Math.max(
@@ -34,9 +37,9 @@ export const SlotTrack = ({ segments, slots, reading }: SlotTrackProps) => (
 		<div aria-hidden className={TRACK}>
 			{segments.map((segment, index) => (
 				<span
-					key={`${segment.family ?? "open"}-${index}`}
+					key={index}
 					style={{ flexGrow: segment.slots }}
-					className={clsx(SEGMENT, fillOf(segment.family))}
+					className={clsx(SEGMENT, fillOf(segment))}
 				/>
 			))}
 			{Array.from({ length: freeSlots(segments, slots) }, (_, index) => (

@@ -45,7 +45,6 @@ export const dexConfigs: readonly DexConfig[] = CONFIG_LIST.map(
 	(config): DexConfig => {
 		const identity = {
 			id: config.id,
-			family: config.family,
 			slots: baseSlotsOf(config),
 		};
 		const history = HISTORY[config.id];
@@ -66,6 +65,9 @@ export const dexConfigs: readonly DexConfig[] = CONFIG_LIST.map(
 const meta: Meta<typeof ConfigsPanel> = {
 	component: ConfigsPanel,
 	title: "Terminal/Screens/Dex/Configs",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexConfigs"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

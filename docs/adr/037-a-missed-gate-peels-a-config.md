@@ -28,6 +28,8 @@ A missed gate goes strip → review → shop → prep → the same gate, which i
 
 A failed attempt pays nothing (`gateRewardKb`, interest and extra-pick payouts all reset), so the retry's budget is the storage faucet earned inside the failed window plus whatever was banked. The storage bill still collects on every close, pass or fail.
 
+Amended 2026-09-05 (DVTD-2k9m): the *attempt* still pays nothing, but the *peel* can. **Garbage Collection** refunds a dropped config's sell value (`peelRefundIn`, `strip.model.ts`), priced by the shop's own `sellRefundIn` so a peel is never a better price than a sale. Minifying to settle the same quota pays nothing, which is what makes the two ways of paying a real choice rather than a formality. A fatal miss is untouched: it returns `dead` before `awaiting-strip`, so nothing refunds on the miss that ends the run.
+
 ## Consequences
 
 - The demand table is unchanged, but its difficulty is not: a miss now costs configs, so the rows in `rules.model.ts` are the first thing to loosen if early gates read as punishing.

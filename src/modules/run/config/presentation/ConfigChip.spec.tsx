@@ -56,9 +56,9 @@ describe(ConfigChip, () => {
 	});
 
 	it("exposes its description in a tooltip", () => {
-		render(<ConfigChip config={CONFIGS.coverageGain} />);
+		render(<ConfigChip config={CONFIGS.codeCoverage} />);
 		expect(
-			screen.getByText(CONFIGS.coverageGain.description)
+			screen.getByText(CONFIGS.codeCoverage.description)
 		).toBeInTheDocument();
 	});
 });

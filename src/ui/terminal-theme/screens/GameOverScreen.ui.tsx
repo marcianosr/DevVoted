@@ -1,5 +1,8 @@
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
+import { badgeNumbers } from "../Badge.ui";
+import { Slots } from "../Slots.ui";
+import { Version } from "../Version.ui";
 import { Button } from "../Button.ui";
 import { Panel } from "../Panel.ui";
 import { Row } from "../Row.ui";
@@ -29,7 +32,12 @@ export type GameOverScreenProps = {
 	};
 	finalBuild: {
 		meta: string;
-		rows: readonly { name: string; detail: string }[];
+		rows: readonly {
+			name: string;
+			detail: string;
+			slots: number;
+			version: number;
+		}[];
 		note: string;
 	};
 	shareLabel: string;
@@ -57,7 +65,9 @@ export const GameOverScreen = ({
 				<Text size="score" className="font-bold">
 					{earned.title}
 				</Text>
-				<Text tone="muted">{earned.subtitle}</Text>
+				<Text tone="muted" className="inline-flex flex-wrap items-center gap-1">
+					{badgeNumbers(earned.subtitle)}
+				</Text>
 			</div>
 		</header>
 
@@ -92,7 +102,17 @@ export const GameOverScreen = ({
 
 		<Section label="Final build" meta={finalBuild.meta} divided>
 			{finalBuild.rows.map((row) => (
-				<Row key={row.name} name={row.name} detail={row.detail} />
+				<Row
+					key={row.name}
+					name={row.name}
+					tag={
+						<>
+							<Version label={`v${row.version}`} />
+							<Slots slots={row.slots} />
+						</>
+					}
+					detail={row.detail}
+				/>
 			))}
 			<Text as="p" tone="muted" className="py-2.5">
 				{finalBuild.note}

@@ -242,8 +242,12 @@ describe("pollDifficultyMultiplier", () => {
 });
 
 describe("the peel a missed gate takes (ADR-037/044)", () => {
+	it("waives the peel at the Pallet gate — calibration costs nothing (ADR-057)", () => {
+		expect(failPeelShareFor(0)).toBe(0);
+	});
+
 	it("takes a fifth of the build while the climb is shallow", () => {
-		expect(failPeelShareFor(0)).toBe(0.2);
+		expect(failPeelShareFor(1)).toBe(0.2);
 		expect(failPeelShareFor(2)).toBe(0.2);
 	});
 

@@ -3,9 +3,9 @@
 title: 'it.skip: decline a poll, keep the streak'
 status: todo
 type: feature
-priority: high
+priority: low
 created_at: 2026-08-27T10:56:56Z
-updated_at: 2026-08-27T10:58:17Z
+updated_at: 2026-09-04T15:03:09Z
 blocked_by:
     - DVTD-1wjl
 ---

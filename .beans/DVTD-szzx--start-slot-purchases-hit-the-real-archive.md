@@ -5,7 +5,8 @@ status: todo
 type: task
 priority: high
 created_at: 2026-08-31T09:00:03Z
-updated_at: 2026-08-31T09:00:03Z
+updated_at: 2026-09-04T15:03:48Z
+parent: DVTD-u35m
 ---
 
 `/proto-run` buys start slots against a local 512 KB number (`PROTO_ARCHIVE_KB`). A real run has to read and debit `users.archived_storage`.

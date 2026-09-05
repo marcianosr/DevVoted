@@ -11,6 +11,7 @@ import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
+	audited,
 	failGate,
 	handed,
 	started,
@@ -50,13 +51,13 @@ describe("the lint fee", () => {
 	});
 
 	it("doubles the fee at a Cost Overrun gate (ADR-038)", () => {
-		const overrun: RunState = { ...lintableRun(), gatesCleared: 3 };
+		const overrun: RunState = audited(lintableRun(), 3, "cost-overrun");
 		expect(lintFeeFor(overrun)).toBe(16); // the 8KB rung, doubled
 		expect(runReducer(overrun, { type: "lint-poll" }).storage).toBe(84);
 	});
 
 	it("stops at one paid action a window at a 429 Too Many Requests gate", () => {
-		const limited: RunState = { ...lintableRun(), gatesCleared: 10 };
+		const limited: RunState = audited(lintableRun(), 10, "too-many-requests");
 		expect(lintApplies(limited)).toBe(true);
 
 		const spent = runReducer(limited, { type: "lint-poll" });
@@ -67,15 +68,14 @@ describe("the lint fee", () => {
 
 	it("counts the peek against the same allowance as the linter", () => {
 		const limited: RunState = {
-			...lintableRun(),
-			gatesCleared: 10,
+			...audited(lintableRun(), 10, "too-many-requests"),
 			window: { ...lintableRun().window, peeked: 1 },
 		};
 		expect(lintApplies(limited)).toBe(false);
 	});
 
 	it("takes the action away entirely at a 403 Forbidden gate (ADR-038)", () => {
-		const frozen: RunState = { ...lintableRun(), gatesCleared: 11 };
+		const frozen: RunState = audited(lintableRun(), 11, "feature-freeze");
 		expect(lintApplies(frozen)).toBe(false);
 		expect(runReducer(frozen, { type: "lint-poll" })).toBe(frozen);
 	});

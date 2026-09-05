@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	createRun,
+	type RunState,
+	scheduleOf,
+} from "~/modules/run/run/domain/run.model";
+import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
+import { audited, handed } from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -11,6 +17,7 @@ import {
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	failPeelQuotaFor,
+	peelConfigRangeFor,
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
@@ -29,6 +36,14 @@ import {
 	SLICE_WINDOW,
 	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	hydrateRunState,
+	toRunSnapshot,
+} from "~/modules/run/run/domain/runSnapshot.model";
+import {
+	RECOMMENDED_SIZE,
+	recommendedPicks,
+} from "~/modules/run/config/domain/hand.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	correctOptionIdsFor,
@@ -51,8 +66,11 @@ const answering = () => ({
 	status: "answering" as const,
 });
 
-const answeringWith = (configs: Config[]) => {
-	const created = createRun([poll("q0"), poll("q1")], configs);
+const answeringWith = (
+	configs: Config[],
+	polls: RunPoll[] = [poll("q0"), poll("q1")]
+) => {
+	const created = createRun(polls, configs);
 	let state: RunState = {
 		...created,
 		build: { ...created.build, slots: occupiedSlots(configs) },
@@ -75,12 +93,35 @@ describe("toRunView", () => {
 		expect(toRunView(answering()).poll?.id).toBe("q0");
 	});
 
+	it("hands the strip screen what the peel has recovered, zero before one runs", () => {
+		expect(toRunView(answering()).peelRefundKb).toBe(0);
+		expect(toRunView({ ...answering(), peelRefundKb: 128 }).peelRefundKb).toBe(
+			128
+		);
+	});
+
 	it("reveals the dealt polls' categories only to a build holding Prefetch", () => {
 		expect(toRunView(answering()).upcomingCategories).toBeNull();
 		expect(toRunView(answering()).nextGateCategories).toBeNull();
 		expect(
 			toRunView(answeringWith([CONFIGS.prefetch])).upcomingCategories
 		).toEqual(["react", "react"]);
+	});
+
+	it("counts the remaining polls' options in play order, only for Prefetch", () => {
+		const wide = (id: string): RunPoll => ({
+			...poll(id),
+			options: [
+				...poll(id).options,
+				{ id: `${id}-c`, label: "Maybe", correct: false },
+			],
+		});
+
+		expect(toRunView(answering()).optionCountsThisGate).toBeNull();
+		expect(
+			toRunView(answeringWith([CONFIGS.prefetch], [poll("q0"), wide("q1")]))
+				.optionCountsThisGate
+		).toEqual([2, 3]);
 	});
 
 	it("caps Prefetch's reveal at this window and the next", () => {
@@ -192,12 +233,10 @@ describe("toRunView", () => {
 	});
 
 	it("hides the poll's category at the 404 gate and nowhere else", () => {
-		expect(toRunView({ ...answering(), gatesCleared: 5 }).categoryHidden).toBe(
-			true
-		);
-		expect(toRunView({ ...answering(), gatesCleared: 4 }).categoryHidden).toBe(
-			false
-		);
+		const hidden = audited(answering(), 5, "not-found");
+		const shown = audited(answering(), 4, "dependency-outage");
+		expect(toRunView(hidden).categoryHidden).toBe(true);
+		expect(toRunView(shown).categoryHidden).toBe(false);
 	});
 
 	it("drops the gate theme once the last gate is beaten", () => {
@@ -547,12 +586,25 @@ describe("the gate stake travels as one object", () => {
 			pollsPerGate: SLICE_WINDOW,
 			coverageDemand: coverageDemandFor(4),
 			coverageHeld: state.window.coverageGained,
-			audits: [
-				expect.objectContaining({ id: "dependency-outage", suppressed: false }),
-			],
-			peelSlotsOnFailure: failPeelQuotaFor(state.build.configs, 4),
-			peelShareOnFailure: peelShareFor(state.build.configs, 4),
+			audits: auditsForGate(4, scheduleOf(state)).map((audit) =>
+				expect.objectContaining({ id: audit.id, suppressed: false })
+			),
+			peelSlotsOnFailure: failPeelQuotaFor(
+				state.build.configs,
+				4,
+				scheduleOf(state)
+			),
+			peelConfigsOnFailure: peelConfigRangeFor(
+				state.build.configs,
+				failPeelQuotaFor(state.build.configs, 4, scheduleOf(state))
+			),
+			peelShareOnFailure: peelShareFor(
+				state.build.configs,
+				4,
+				scheduleOf(state)
+			),
 			missIsFatal: false,
+			missIsFree: false,
 			subscriptions: billLedger({
 				configs: state.build.configs,
 				gate: 4,
@@ -612,12 +664,33 @@ describe("the gate stake travels as one object", () => {
 	});
 
 	it("marks the miss fatal once the peel would take the whole build", () => {
-		const lastConfig = answeringWith([CONFIGS.js]);
+		const lastConfig = { ...answeringWith([CONFIGS.js]), gatesCleared: 1 };
 		expect(toRunView(lastConfig).gateStake.missIsFatal).toBe(true);
 		expect(
-			toRunView(answeringWith([CONFIGS.js, CONFIGS.eslint])).gateStake
-				.missIsFatal
+			toRunView({
+				...answeringWith([CONFIGS.js, CONFIGS.eslint]),
+				gatesCleared: 1,
+			}).gateStake.missIsFatal
 		).toBe(false);
+	});
+
+	it("prices the Pallet gate's miss as free, and never fatal (ADR-057)", () => {
+		const stake = toRunView(answeringWith([CONFIGS.js])).gateStake;
+
+		expect(stake.peelSlotsOnFailure).toBe(0);
+		expect(stake.missIsFree).toBe(true);
+		expect(stake.missIsFatal).toBe(false);
+	});
+
+	it("never calls a bare build's miss free — it is still the end of the run", () => {
+		const bare = answeringWith([CONFIGS.js]);
+		const stake = toRunView({
+			...bare,
+			build: { ...bare.build, configs: [] },
+		}).gateStake;
+
+		expect(stake.missIsFree).toBe(false);
+		expect(stake.missIsFatal).toBe(true);
 	});
 });
 
@@ -780,5 +853,54 @@ describe("the view prices the shop's offers", () => {
 		expect(offer.previewPerAnswer).toEqual(
 			perAnswerPreviewFor(withIt, state.gatesCleared)
 		);
+	});
+});
+
+describe("the recommended opening (ADR-057)", () => {
+	const dealt = () =>
+		createRun([poll("q0"), poll("q1")], [], undefined, undefined);
+
+	it("advises without installing — the build opens empty and unstartable", () => {
+		const state = createRun([poll("q0")], handed);
+		const view = toRunView(state);
+
+		expect(view.recommendedConfigIds).toEqual(
+			recommendedPicks(handed, state.build.slots).map((config) => config.id)
+		);
+		expect(view.configs).toEqual([]);
+		expect(view.canStart).toBe(false);
+	});
+
+	it("advises RECOMMENDED_SIZE of the hand", () => {
+		expect(
+			toRunView(createRun([poll("q0")], handed)).recommendedConfigIds
+		).toHaveLength(RECOMMENDED_SIZE);
+	});
+
+	// This is what earns recomputing over persisting: the advice is derived from
+	// `available` and `build.slots`, both of which already survive a snapshot.
+	it("gives the same advice after a reload", () => {
+		const polls = [poll("q0"), poll("q1")];
+		const state = createRun(polls, handed);
+		const before = toRunView(state).recommendedConfigIds;
+
+		const after = toRunView(
+			hydrateRunState(toRunSnapshot(state), polls)
+		).recommendedConfigIds;
+
+		expect(after).toEqual(before);
+	});
+
+	it("keeps advising the same configs after a pick, so the marker holds still", () => {
+		const state = createRun([poll("q0")], handed);
+		const before = toRunView(state).recommendedConfigIds;
+
+		const picked = runReducer(state, { type: "install", configId: "js" });
+
+		expect(toRunView(picked).recommendedConfigIds).toEqual(before);
+	});
+
+	it("advises nothing once the hand is gone", () => {
+		expect(toRunView(dealt()).recommendedConfigIds).toEqual([]);
 	});
 });

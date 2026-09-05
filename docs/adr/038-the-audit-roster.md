@@ -14,11 +14,16 @@ One word. `Audit` keeps its name, the receipt keeps its "Audit" section, and eve
 
 ## Decision 2: the count is the escalation
 
+> ⚠ **The count curve survives; the table below is superseded by [ADR-056](056-audits-are-drawn-not-scheduled.md)**
+> (2026-09-04): gates 4–11 draw their audits from staged pools, seeded on the date.
+> Gate 3 and gate 12 stay fixed as written. A drawn gate's order comes from a roster
+> rank rather than from an authored array, which keeps the Volkswagen CI point below.
+
 Gates 0–2 stay clean for onboarding, one audit runs from gate 3, two from gate 8, three from gate 11. The steps land near the peel curve's (ADR-037), so depth reads as one escalation rather than two.
 
 | Gate | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Audits | Cost Overrun | Outage | Read-only | Freeze | Mirror | Timeout + Flaky | Leak + Rolling | Deprecated + Timeout | Strip + Mirror + Flaky | Leak + Strip + Timeout |
+| Audits | Cost Overrun | Outage | Read-only | Freeze | Mirror | Timeout + Flaky | Leak + Rolling | Breaking Change + Timeout | Strip + Mirror + Flaky | Leak + Strip + Timeout |
 
 Order inside a gate matters: the receipt reads top down, and Volkswagen CI reports the *first* audit as passing, so the entry a player would most want suppressed leads where that choice is the point.
 
@@ -32,11 +37,14 @@ Order inside a gate matters: the receipt reads top down, and Volkswagen CI repor
 | Dependency Outage | `disablesConfig: "one-per-attempt"` | One installed config is offline for the attempt. |
 | Flaky Build | `disablesConfig: "random-per-poll"` | A fresh roll every poll; it can flake the same config twice. |
 | Rolling Outage | `disablesConfig: "rotating-per-poll"` | Steps through the pipeline, a different config down each poll. |
-| Deprecated | `disablesConfig: "highest-level"` | The config you upgraded most, all attempt. No roll — it punishes having a favourite. |
+| Breaking Change | `disablesConfig: "highest-level"` | The config you upgraded most, all attempt. No roll — it punishes having a favourite. |
 | Timeout | `timedPolls` | The window's first N polls carry a clock; an answer over it scores as a miss. |
 | Memory Leak | `burnKb` | −16KB a poll, −32KB on a miss (was the Burn). |
 
 **Read-only sits only on odd gates.** The storage rungs unlock on even ones (ADR-030), and shutting the shop on the gate a rung arrives at would unlock something the player cannot buy until the gate after — which reads as a bug, not a rule.
+
+> ⚠ **Dropped by [ADR-056](056-audits-are-drawn-not-scheduled.md)** (2026-09-04): gate-staged
+> rungs no longer exist, so the parity rule has no reason left. 405 is eligible at any drawn gate.
 
 **The four offline audits are one mechanism with four pickers.** They differ only in which config they choose and how long it stays down, so `offlineConfigsFor` folds them together and `OfflinePick` names the four flavours. Every pick is **derived, never stored**: the seeds are the window's own start index and the poll's place in it, so a pick is stable for exactly as long as it should last, different on the next attempt, and identical after a reload — no migration, and no chance of drifting from a rehydrated window. All four sort by config id first, so they answer to what is installed rather than to purchase order. Three of them are outright random rolls; Deprecated is the one that is not — it takes the config levelled furthest, and rolls only among the ones tied for it. Ties are the common case, since most builds have nothing upgraded, and taking "the first" there would quietly always mean the same config. The defeat device's suppression is decided before all of it: the fraud was filed at the door, so a config going offline inside the window cannot un-suppress what the receipt showed as passing.
 

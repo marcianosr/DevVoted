@@ -5,8 +5,8 @@ status: todo
 type: task
 priority: high
 created_at: 2026-08-24T15:42:38Z
-updated_at: 2026-08-24T15:42:38Z
-parent: DVTD-kulw
+updated_at: 2026-09-04T15:03:50Z
+parent: DVTD-u35m
 ---
 
 Multi-answer polls can be answered partly right. Audit what that does to a build's

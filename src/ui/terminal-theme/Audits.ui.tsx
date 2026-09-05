@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 
+import { DexChip } from "./DexChip.ui";
 import { Text } from "./Text.ui";
 
 const LIST = "flex flex-col gap-2";
@@ -9,6 +10,7 @@ const MARK = "shrink-0 text-saffron";
 const CODE = "shrink-0 font-bold";
 const NAME = "shrink-0";
 const CUE = "min-w-0";
+const BY = "shrink-0 py-0 text-xs";
 const AUDIT_MARK = "⚠";
 
 export type AuditNote = {
@@ -16,11 +18,16 @@ export type AuditNote = {
 	name: string;
 	cue: string;
 	suppressed?: boolean;
+	suppressedBy?: {
+		label: string;
+		slots: number;
+		version: number;
+	};
 };
 
 const SUPPRESSED_LINE = "border-edge bg-transparent";
 const STRUCK = "line-through";
-const SUPPRESSED_CUE = "reported passing";
+export const SUPPRESSED_CUE = "reported passing";
 
 export type AuditsProps = {
 	rows: readonly AuditNote[];
@@ -61,6 +68,14 @@ export const Audits = ({ rows, className }: AuditsProps) => {
 					>
 						{row.suppressed === true ? SUPPRESSED_CUE : row.cue}
 					</Text>
+					{row.suppressedBy === undefined ? null : (
+						<DexChip
+							slots={row.suppressedBy.slots}
+							label={row.suppressedBy.label}
+							version={row.suppressedBy.version}
+							className={BY}
+						/>
+					)}
 				</span>
 			))}
 		</div>

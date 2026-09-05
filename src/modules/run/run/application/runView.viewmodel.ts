@@ -34,6 +34,7 @@ import {
 	offlinePairsOf,
 	type RunState,
 	type RunStatus,
+	scheduleOf,
 } from "~/modules/run/run/domain/run.model";
 import {
 	type AnsweredPoll,
@@ -53,6 +54,7 @@ import {
 import {
 	failPeelQuotaFor,
 	gateDemandFor,
+	peelConfigRangeFor,
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
 import {
@@ -77,6 +79,8 @@ import {
 	perAnswerPreviewFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
+import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
+import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import {
 	atMinimumWidth,
 	faucetRemainingKb,
@@ -182,9 +186,11 @@ export type RunView = {
 	readonly configs: readonly Config[];
 	readonly installed: readonly InstalledConfig[];
 	readonly available: readonly Config[];
+	readonly recommendedConfigIds: readonly string[];
 	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
 	readonly peelSlotsRemaining: number;
+	readonly peelRefundKb: number;
 	readonly poll: PollView | null;
 	readonly awaitingTomorrow: boolean;
 
@@ -201,6 +207,7 @@ export type RunView = {
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly answerTypesThisGate: AnswerTypeSplit | null;
+	readonly optionCountsThisGate: readonly number[] | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
 	readonly audits: readonly AuditView[];
@@ -211,6 +218,7 @@ export type RunView = {
 	readonly canStart: boolean;
 	readonly isOver: boolean;
 	readonly faucetRemainingKb: number;
+	readonly autoUpgradeRemaining: number | null;
 	readonly gatesCleared: number;
 
 	readonly gateTheme?: SwatchTheme;
@@ -376,8 +384,17 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		state.build.configs,
 		state.gatesCleared
 	);
-	const peelSlots = failPeelQuotaFor(state.build.configs, state.gatesCleared);
-	const liveAudits = liveAuditsFor(state.build.configs, state.gatesCleared);
+	const schedule = scheduleOf(state);
+	const peelSlots = failPeelQuotaFor(
+		state.build.configs,
+		state.gatesCleared,
+		schedule
+	);
+	const liveAudits = liveAuditsFor(
+		state.build.configs,
+		state.gatesCleared,
+		schedule
+	);
 	const offline = offlinePairsOf(state).map((pair): OfflineConfig => ({
 		config: pair.config,
 		audit: auditLabel(pair.audit),
@@ -399,9 +416,14 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 			minifySavingSlots: minifySavingSlots(config),
 		})),
 		available: state.available,
+		recommendedConfigIds: recommendedPicks(
+			state.available,
+			state.build.slots
+		).map((config) => config.id),
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
 		peelSlotsRemaining: state.peelSlotsRemaining,
+		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
 			state.status === "answering" && current
 				? redactPoll(mirrored ? mirrorPoll(current) : current)
@@ -449,6 +471,15 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 							state.currentIndex - state.window.answered + SLICE_WINDOW
 						)
 					),
+		optionCountsThisGate:
+			prefetcherFor(state.build.configs) === undefined
+				? null
+				: state.polls
+						.slice(
+							state.currentIndex,
+							state.currentIndex - state.window.answered + SLICE_WINDOW
+						)
+						.map((poll) => poll.options.length),
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
 		audits,
@@ -458,13 +489,25 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
-			coverageDemand: gateDemandFor(state.build.configs, state.gatesCleared),
+			coverageDemand: gateDemandFor(
+				state.build.configs,
+				state.gatesCleared,
+				schedule
+			),
 			coverageHeld: state.window.coverageGained,
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
 			peelSlotsOnFailure: peelSlots,
-			peelShareOnFailure: peelShareFor(state.build.configs, state.gatesCleared),
+			peelConfigsOnFailure: peelConfigRangeFor(state.build.configs, peelSlots),
+			peelShareOnFailure: peelShareFor(
+				state.build.configs,
+				state.gatesCleared,
+				schedule
+			),
 			missIsFatal: isPeelFatal(peelSlots, occupiedSlots(state.build.configs)),
+			missIsFree:
+				peelSlots === 0 &&
+				!isPeelFatal(peelSlots, occupiedSlots(state.build.configs)),
 			subscriptions: billLedger({
 				configs: state.build.configs,
 				gate: state.gatesCleared,
@@ -478,6 +521,11 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		canStart: canStart(state.build),
 		isOver: isRunOver(state.status),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
+		autoUpgradeRemaining:
+			autoUpgradeRemaining(
+				state.build.configs,
+				state.autoUpgradeProgress ?? 0
+			) ?? null,
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		redoingGate: state.redoGate ?? null,

@@ -2,7 +2,7 @@ import {
 	type Config,
 	faucetKbPerCorrect,
 } from "~/modules/run/config/domain/config.model";
-import { autoUpgradeOnClear } from "~/modules/run/config/domain/autoUpgrade.model";
+import { autoUpgradeOnAnswer } from "~/modules/run/config/domain/autoUpgrade.model";
 import { decayOnClear } from "~/modules/run/config/domain/decay.model";
 import { billSubscriptionsOnClear } from "~/modules/run/config/domain/subscription.model";
 import {
@@ -65,6 +65,7 @@ import {
 	freshWindow,
 	liveConfigsOf,
 	type RunState,
+	scheduleOf,
 	shopDraft,
 	withLog,
 	withBuild,
@@ -94,10 +95,16 @@ const settlePlanBill = (state: RunState, balanceKb: number): PlanSettlement => {
 const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
-	if (!gatePassed(state.build, state.window, state.gatesCleared)) {
-		const quota = failPeelQuotaFor(state.build.configs, gateNumber);
+	const schedule = scheduleOf(state);
+
+	if (!gatePassed(state.build, state.window, state.gatesCleared, schedule)) {
+		const quota = failPeelQuotaFor(state.build.configs, gateNumber, schedule);
 		const occupied = occupiedSlots(state.build.configs);
-		const demand = gateDemandFor(state.build.configs, state.gatesCleared);
+		const demand = gateDemandFor(
+			state.build.configs,
+			state.gatesCleared,
+			schedule
+		);
 		const missed = `Gate ${gateNumber} failed: ${state.window.coverageGained}% of ${demand}% this gate.`;
 		if (isPeelFatal(quota, occupied))
 			return {
@@ -113,10 +120,14 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			...state,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
+			autoUpgradeProgress: 0,
+			peelRefundKb: 0,
 			peelSlotsRemaining: quota,
 			log: withLog(
 				state,
-				`${missed} Free up ${quota} slot${quota > 1 ? "s" : ""} and run it again.`
+				quota === 0
+					? `${missed} This gate takes nothing — read it back, then shop and run it again.`
+					: `${missed} Free up ${quota} slot${quota > 1 ? "s" : ""} and run it again.`
 			),
 		};
 	}
@@ -141,7 +152,8 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			state.polls,
 			nextIndex,
 			state.build.configs,
-			state.gatesCleared + 1
+			state.gatesCleared + 1,
+			scheduleOf(state)
 		),
 		manualDisabled: [],
 		gatesCleared: state.gatesCleared + 1,
@@ -165,11 +177,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			log: withLog(state, `${clearLine(gateNumber, reward)} You summited!`),
 		};
 
-	const merged = autoUpgradeOnClear(
-		cleared.build.configs,
-		`dependabot-${gateNumber}-${(state.allAnswered ?? []).length}-${state.storage}`
-	);
-	const settled = decayOnClear(merged.configs);
+	const settled = decayOnClear(cleared.build.configs);
 	const billed = billSubscriptionsOnClear(
 		settled.configs,
 		cleared.storage,
@@ -184,7 +192,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				: withBuild(cleared.build, billed.configs),
 		storage: cleared.storage - billed.paidKb,
 		subscriptionBillKb: billed.paidKb,
-		autoUpgradedConfigId: merged.bumped?.id,
 		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
 		lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
@@ -194,11 +201,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		log: withLog(
 			state,
 			`${clearLine(gateNumber, reward)} Spend it in the shop.`,
-			...(merged.bumped
-				? [
-						`Dependabot bumped ${merged.bumped.label} to L${merged.bumped.level ?? 1} — merged without review.`,
-					]
-				: []),
 			...settled.deleted.map(
 				(config) => `${config.label} faded to ×1 — deleted from the build.`
 			),
@@ -423,6 +425,32 @@ const applyAnswer = (
 	};
 };
 
+const countAutoUpgrade = (
+	applied: RunState,
+	before: RunState,
+	outcome: AnswerOutcome
+): RunState => {
+	const merged = autoUpgradeOnAnswer(
+		applied.build.configs,
+		before.autoUpgradeProgress ?? 0,
+		outcome,
+		`dependabot-${before.gatesCleared}-${(before.allAnswered ?? []).length}`
+	);
+	if (!merged.bumped)
+		return { ...applied, autoUpgradeProgress: merged.progress };
+	return {
+		...applied,
+		build: withBuild(applied.build, merged.configs),
+		autoUpgradeProgress: merged.progress,
+		autoUpgradedConfigId: merged.bumped.id,
+		autoUpgradedByConfigId: merged.by?.id,
+		log: withLog(
+			applied,
+			`Dependabot bumped ${merged.bumped.label} to L${merged.bumped.level ?? 1} — merged without review.`
+		),
+	};
+};
+
 export const answer = (
 	state: RunState,
 	optionIds: readonly string[],
@@ -436,9 +464,10 @@ export const answer = (
 	const ledger = scoreAnswer(state, poll, grade);
 	const answered = answeredPollFrom(poll, optionIds, grade, ledger, elapsedMs);
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
+	const counted = countAutoUpgrade(applied, state, grade.outcome);
 
 	const nextIndex = state.currentIndex + 1;
-	if (applied.window.answered >= SLICE_WINDOW)
-		return closeWindow(applied, nextIndex);
-	return { ...applied, currentIndex: nextIndex, status: "answering" };
+	if (counted.window.answered >= SLICE_WINDOW)
+		return closeWindow(counted, nextIndex);
+	return { ...counted, currentIndex: nextIndex, status: "answering" };
 };

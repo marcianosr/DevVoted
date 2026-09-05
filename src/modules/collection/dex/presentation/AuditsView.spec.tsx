@@ -38,12 +38,10 @@ describe("AuditsView", () => {
 		expect(screen.getAllByText("faced")).toHaveLength(1);
 	});
 
-	it("hands over no name at all for an audit past the next gate", () => {
+	it("hands over no name at all for an audit past the reachable pools", () => {
 		renderRoster(3);
 
-		expect(
-			screen.queryByText("405 Method Not Allowed")
-		).not.toBeInTheDocument();
+		expect(screen.queryByText("403 Forbidden")).not.toBeInTheDocument();
 	});
 
 	it("redacts the whole roster before a single gate has fallen", () => {

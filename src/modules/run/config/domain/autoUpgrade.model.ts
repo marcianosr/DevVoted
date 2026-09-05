@@ -1,61 +1,65 @@
 import { selectSeededRandom } from "~/shared/lib/seededRandom";
 import {
-	autoUpgradeOneInOf,
+	autoUpgradeAfterCorrectOf,
 	type Config,
 	isUpgradable,
 	levelUp,
 } from "~/modules/run/config/domain/config.model";
+import type { AnswerOutcome } from "~/modules/run/run/domain/runPoll.model";
 
-/** A clear's auto-upgrade outcome: the build after it, and the config it
- * bumped (already at its new level) when the roll hit. */
 export type AutoUpgrade = {
 	readonly configs: readonly Config[];
+	readonly progress: number;
 	readonly bumped?: Config;
+	readonly by?: Config;
 };
 
-const unchanged = (configs: readonly Config[]): AutoUpgrade => ({ configs });
+export const autoUpgraderOf = (
+	configs: readonly Config[]
+): Config | undefined =>
+	configs.find((config) => config.autoUpgradeAfterCorrect !== undefined);
 
-/** "1 in N" taken literally: N slots, hit when the seed lands on the first. */
-const rollHits = (oneIn: number, seed: string): boolean =>
-	selectSeededRandom(
-		Array.from({ length: oneIn }, (_, slot) => slot),
-		seed
-	) === 0;
+export const autoUpgradeRemaining = (
+	configs: readonly Config[],
+	progress: number
+): number | undefined => {
+	const bot = autoUpgraderOf(configs);
+	if (!bot) return undefined;
+	const needed = autoUpgradeAfterCorrectOf(bot);
+	return needed === undefined ? undefined : needed - progress;
+};
 
-// Every upgradable config qualifies, Dependabot itself included, and the Focus
-// mastery gate is deliberately ignored (Marciano, 2026-08-20): an auto-merge
-// lands without review, so a bump can hand you a level your coverage never
-// earned. ADR-039's "coverage is permission" still governs the shop — this is
-// the legendary's privilege, not a new shop rule.
 const upgradeCandidates = (configs: readonly Config[]): readonly Config[] =>
 	configs.filter(isUpgradable);
 
-/**
- * Dependabot's clear-time effect: a seeded 1-in-N roll, then a seeded pick
- * among the candidates — sorted by id first (the audits' precedent), so the
- * pick answers to which configs are installed rather than to purchase order.
- * Seeded rather than rolled live for the same reason the shop draft is: the
- * reducer stays pure, so a replayed clear replays its outcome.
- */
-export const autoUpgradeOnClear = (
+export const autoUpgradeOnAnswer = (
 	configs: readonly Config[],
+	progress: number,
+	outcome: AnswerOutcome,
 	seed: string
 ): AutoUpgrade => {
-	const bot = configs.find((config) => config.autoUpgradeOneIn !== undefined);
-	if (!bot) return unchanged(configs);
-	const oneIn = autoUpgradeOneInOf(bot);
-	if (oneIn === undefined || !rollHits(oneIn, `${seed}-roll`))
-		return unchanged(configs);
+	const bot = autoUpgraderOf(configs);
+	if (!bot) return { configs, progress: 0 };
+	if (outcome === "wrong") return { configs, progress: 0 };
+	if (outcome !== "correct") return { configs, progress };
+
+	const needed = autoUpgradeAfterCorrectOf(bot);
+	const counted = progress + 1;
+	if (needed === undefined || counted < needed)
+		return { configs, progress: counted };
+
 	const candidates = [...upgradeCandidates(configs)].sort((left, right) =>
 		left.id.localeCompare(right.id)
 	);
 	const picked = selectSeededRandom(candidates, `${seed}-pick`);
-	if (!picked) return unchanged(configs);
+	if (!picked) return { configs, progress: 0 };
 	const bumped = levelUp(picked);
 	return {
 		configs: configs.map((config) =>
 			config.id === picked.id ? bumped : config
 		),
+		progress: 0,
 		bumped,
+		by: bot,
 	};
 };

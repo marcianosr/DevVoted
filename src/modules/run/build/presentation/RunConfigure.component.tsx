@@ -22,6 +22,7 @@ export const RunConfigure = () => {
 				slotsFree={view.slotsFree}
 				stake={view.gateStake}
 				bench={view.available.filter((config) => !installed.has(config.id))}
+				recommended={view.recommendedConfigIds}
 				onInstall={(id) => send({ type: "install", configId: id })}
 				onUninstall={(id) => send({ type: "uninstall", configId: id })}
 				startAction={{

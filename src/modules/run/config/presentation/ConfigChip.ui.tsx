@@ -3,13 +3,18 @@ import type { ReactNode } from "react";
 import {
 	Config,
 	describeConfig,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { Badge } from "~/ui/Badge.component";
+import { sizeFill } from "~/ui/sizes";
 import { Tooltip } from "~/ui/Tooltip.component";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 const CHIP_SURFACE =
-	"inline-flex shrink-0 items-center rounded-sm align-middle border-1 border-edge-strong bg-surface-raised p-1 text-xs text-zinc-100";
+	"inline-flex shrink-0 items-center gap-1.5 rounded-sm align-middle border-1 border-edge-strong bg-surface-raised p-1 text-xs text-zinc-100";
+
+const MARK = "flex shrink-0 items-center gap-0.5";
+const BAR = "h-3 w-1 rounded-xs";
 
 const TOOLTIP_SURFACE = "bg-surface border-edge-strong";
 
@@ -31,11 +36,25 @@ type ConfigChipProps = {
 	ariaExpanded?: boolean;
 };
 
+const Slots = ({ config }: Pick<ConfigChipProps, "config">) => {
+	const slots = slotsOf(config);
+	const fill = sizeFill(slots);
+
+	return (
+		<span aria-hidden className={MARK}>
+			{Array.from({ length: slots }, (_, index) => (
+				<span key={index} className={clsx(BAR, fill)} />
+			))}
+		</span>
+	);
+};
+
 const ChipLabel = ({
 	config,
 	action,
 }: Pick<ConfigChipProps, "config" | "action">) => (
 	<>
+		<Slots config={config} />
 		{config.label}
 		{action ? <span className="ml-2 opacity-70">{action}</span> : null}
 	</>

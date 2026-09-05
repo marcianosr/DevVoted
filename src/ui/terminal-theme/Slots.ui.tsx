@@ -1,14 +1,13 @@
 import { clsx } from "clsx";
 
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
+import { isBiggestSize, prismaticFill, sizeFill } from "~/ui/sizes";
 
-import { FAMILY_SOLID } from "./families";
 import { plural } from "./format";
 
 const MARK = "flex shrink-0 items-center gap-0.5";
-const BAR = "h-3.5 w-1.5 rounded-sm";
+const BAR = "h-3.5 w-1 rounded-xs";
 const SOLID = "h-3.5 rounded-sm";
-const PLAIN = "bg-zinc-500";
+const PRISMATIC_BAR = "legendary-bar";
 
 const SLOT_REM = 0.375;
 const GAP_REM = 0.125;
@@ -19,10 +18,6 @@ const solidWidth = (slots: number) =>
 	`${slots * SLOT_REM + (slots - 1) * GAP_REM}rem`;
 
 export type SlotsProps = {
-	/** Left out where the mark reads as size alone, which also drops it from the
-	 * accessibility tree: a bar with no family says nothing its own label does
-	 * not already say. */
-	family?: ConfigFamily;
 	slots: number;
 	/** One bar instead of one per slot, for the sizes a catalogue lists rather
 	 * than the slots a build fills. */
@@ -30,16 +25,11 @@ export type SlotsProps = {
 	className?: string;
 };
 
-const label = (family: ConfigFamily | undefined, slots: number) => {
-	const size = plural(slots, "slot");
-	return family === undefined ? size : `${family} · ${size}`;
-};
-
-export const Slots = ({ family, slots, solid, className }: SlotsProps) => {
-	const described =
-		family === undefined
-			? { "aria-hidden": true }
-			: { role: "img", "aria-label": label(family, slots) };
+export const Slots = ({ slots, solid, className }: SlotsProps) => {
+	const prismatic = isBiggestSize(slots);
+	const described = { role: "img", "aria-label": plural(slots, "slot") };
+	const barFill = (index: number) =>
+		prismatic ? prismaticFill(index) : sizeFill(slots);
 
 	if (solid)
 		return (
@@ -49,7 +39,7 @@ export const Slots = ({ family, slots, solid, className }: SlotsProps) => {
 				className={clsx(
 					SOLID,
 					"shrink-0",
-					family === undefined ? PLAIN : FAMILY_SOLID[family],
+					prismatic ? PRISMATIC_BAR : sizeFill(slots),
 					className
 				)}
 			/>
@@ -58,13 +48,7 @@ export const Slots = ({ family, slots, solid, className }: SlotsProps) => {
 	return (
 		<span {...described} className={clsx(MARK, className)}>
 			{Array.from({ length: slots }, (_, index) => (
-				<span
-					key={index}
-					className={clsx(
-						BAR,
-						family === undefined ? PLAIN : FAMILY_SOLID[family]
-					)}
-				/>
+				<span key={index} className={clsx(BAR, barFill(index))} />
 			))}
 		</span>
 	);

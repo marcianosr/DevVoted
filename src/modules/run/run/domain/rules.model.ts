@@ -106,7 +106,7 @@ export const atMinimumWidth = (configCount: number): boolean =>
 	configCount <= 1;
 
 const GATE_FAIL_PEEL_SHARE = [
-	0.2, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.3, 0.3, 0.3, 0.3, 0.35, 0.35,
+	0, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.3, 0.3, 0.3, 0.3, 0.35, 0.35,
 ] as const;
 
 export const failPeelShareFor = (gatesCleared: number): number =>

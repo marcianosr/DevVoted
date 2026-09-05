@@ -24,14 +24,16 @@ export const RunStrip = () => {
 				disabled: !quotaMet,
 				hint: quotaMet
 					? undefined
-					: `Peel ${view.peelSlotsRemaining} more config${view.peelSlotsRemaining === 1 ? "" : "s"} to continue`,
+					: `Free up ${view.peelSlotsRemaining} more slot${view.peelSlotsRemaining === 1 ? "" : "s"} to continue`,
 			}}
 		>
 			<StripScreen
 				peelSlotsRemaining={view.peelSlotsRemaining}
+				peelWaived={view.gateStake.missIsFree}
 				gateNumber={view.gatesCleared}
 				configs={view.configs}
 				answered={view.answeredThisGate}
+				peelRefundKb={view.peelRefundKb}
 				retryStake={view.gateStake}
 				onStrip={(id) => send({ type: "strip", configId: id })}
 			/>

@@ -1,6 +1,6 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { gateDemandFor } from "~/modules/run/gate/domain/gate.model";
-import type { RunState } from "~/modules/run/run/domain/run.model";
+import { type RunState, scheduleOf } from "~/modules/run/run/domain/run.model";
 
 export type GatePayout = {
 	readonly gateRewardPaidKb: number;
@@ -12,6 +12,7 @@ export type GatePayout = {
 	readonly planBilledKb: number;
 	readonly planDowngraded: boolean;
 	readonly autoUpgradedConfig: Config | null;
+	readonly autoUpgradedByConfig: Config | null;
 	readonly deletedConfigs: readonly Config[];
 	readonly lapsedConfigs: readonly Config[];
 	readonly clearedGateNumber: number;
@@ -33,9 +34,17 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 			state.build.configs.find(
 				(config) => config.id === state.autoUpgradedConfigId
 			) ?? null,
+		autoUpgradedByConfig:
+			state.build.configs.find(
+				(config) => config.id === state.autoUpgradedByConfigId
+			) ?? null,
 		deletedConfigs: state.deletedConfigs ?? [],
 		lapsedConfigs: state.lapsedConfigs ?? [],
 		clearedGateNumber: reportedGate,
-		clearedGateDemand: gateDemandFor(state.build.configs, reportedGate),
+		clearedGateDemand: gateDemandFor(
+			state.build.configs,
+			reportedGate,
+			scheduleOf(state)
+		),
 	};
 };

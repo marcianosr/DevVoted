@@ -5,7 +5,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 
-const configs = [CONFIGS.unitTests, CONFIGS.coverageGain];
+const configs = [CONFIGS.unitTests, CONFIGS.codeCoverage];
 
 // The detail cell hides by class rather than unmounting, so "shut" is read off
 // the classes — the same thing the breakpoint default does. Found via the row's
@@ -21,18 +21,20 @@ describe(RoleList, () => {
 	it("leaves every row's fold to the breakpoint by default", () => {
 		render(<RoleList rows={roleRows(configs)} />);
 		expect(detailFor("Unit Tests")).toHaveClass("hidden", "sm:flex");
-		expect(detailFor("Coverage")).toHaveClass("hidden", "sm:flex");
+		expect(detailFor("Code Coverage")).toHaveClass("hidden", "sm:flex");
 	});
 
 	it("shuts every row when idle rows are folded — nothing is live anymore (ADR-035)", () => {
 		render(<RoleList rows={roleRows(configs)} foldIdleRows />);
 		expect(detailFor("Unit Tests")).toHaveClass("hidden");
-		expect(detailFor("Coverage")).toHaveClass("hidden");
+		expect(detailFor("Code Coverage")).toHaveClass("hidden");
 	});
 
 	it("renders each config's gives line in its detail", () => {
-		render(<RoleList rows={roleRows([CONFIGS.coverageGain])} />);
-		expect(detailFor("Coverage").textContent).toContain("Coverage gains earn");
+		render(<RoleList rows={roleRows([CONFIGS.codeCoverage])} />);
+		expect(detailFor("Code Coverage").textContent).toContain(
+			"adds +0.5% coverage"
+		);
 	});
 });
 
@@ -71,7 +73,7 @@ describe("a config an audit has switched off", () => {
 	it("opens the offline row, since the struck-out effect is the point", () => {
 		render(<RoleList rows={roleRows(configs)} foldIdleRows {...offline} />);
 		expect(detailFor("Unit Tests")).not.toHaveClass("hidden");
-		expect(detailFor("Coverage")).toHaveClass("hidden");
+		expect(detailFor("Code Coverage")).toHaveClass("hidden");
 	});
 
 	it("strikes the effect it can no longer deliver", () => {

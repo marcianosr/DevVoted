@@ -14,6 +14,7 @@ import { Panel } from "../Panel.ui";
 import { RunHeader, type RunHeaderProps } from "../RunHeader.ui";
 import { Section } from "../Section.ui";
 import { Text } from "../Text.ui";
+import { Tooltip } from "../Tooltip.ui";
 import { Trail, type TrailProps } from "../Trail.ui";
 
 const COLUMNS =
@@ -31,6 +32,7 @@ const BUILD_META = "flex items-center gap-1.5";
 export type PollFact = {
 	label?: string;
 	value?: string;
+	hint?: string;
 	tone?: BadgeTone;
 };
 
@@ -103,7 +105,9 @@ export const PollScreen = ({
 								</Text>
 							)}
 							{fact.value === undefined ? null : (
-								<Badge tone={fact.tone ?? "neutral"}>{fact.value}</Badge>
+								<Tooltip hint={fact.hint}>
+									<Badge tone={fact.tone ?? "neutral"}>{fact.value}</Badge>
+								</Tooltip>
 							)}
 						</span>
 					))}

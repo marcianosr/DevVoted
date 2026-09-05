@@ -24,7 +24,6 @@ export const Storage: Story = { args: { figure: { kind: "kb", value: 16 } } };
 export const Interest: Story = {
 	args: { figure: { kind: "percent", value: 2 } },
 };
-export const Odds: Story = { args: { figure: { kind: "chance", oneIn: 3 } } };
 
 const SHOWN = [
 	CONFIGS.js,

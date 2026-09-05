@@ -1,11 +1,31 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { failPeelShareFor } from "~/modules/run/run/domain/rules.model";
+import {
+	failPeelShareFor,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 
 const asPercent = (share: number): string => `${Math.round(share * 100)}%`;
 import { selectSeededRandom } from "~/shared/lib/seededRandom";
 
+export type AuditId =
+	| "cost-overrun"
+	| "not-found"
+	| "read-only"
+	| "dependency-outage"
+	| "too-many-requests"
+	| "flaky-build"
+	| "memory-leak"
+	| "rolling-outage"
+	| "breaking-change"
+	| "upgrade-required"
+	| "mirrored"
+	| "timeout"
+	| "payload-too-large"
+	| "feature-freeze"
+	| "strip";
+
 export type Audit = {
-	readonly id: string;
+	readonly id: AuditId;
 	readonly code: number;
 	readonly name: string;
 	readonly description: string;
@@ -127,16 +147,27 @@ const BREAKING_CHANGE: Audit = {
 	disablesConfig: "highest-level",
 };
 
-const timeoutAudit = (count: number, seconds: number): Audit => ({
-	id: `timeout-${count}`,
-	code: 408,
-	name: "Request Timeout",
-	description: `The first ${count} polls are on a ${seconds}s clock — an answer over the limit scores as a miss.`,
-	dexRule:
-		"The window's first polls run on a clock, tighter and longer the deeper the gate. A late answer scores as a miss.",
-	answerCue: `On the clock: ${seconds}s to answer, or it counts as a miss.`,
-	timedPolls: { count, limitMs: seconds * 1000 },
-});
+type TimeoutClock = { readonly count: number; readonly seconds: number };
+
+const timeoutClockFor = (gate: number): TimeoutClock => {
+	if (gate >= VICTORY_GATE) return { count: 5, seconds: 20 };
+	if (gate >= 10) return { count: 3, seconds: 25 };
+	return { count: 3, seconds: 30 };
+};
+
+const timeoutAudit = (gate: number): Audit => {
+	const { count, seconds } = timeoutClockFor(gate);
+	return {
+		id: "timeout",
+		code: 408,
+		name: "Request Timeout",
+		description: `The first ${count} polls are on a ${seconds}s clock — an answer over the limit scores as a miss.`,
+		dexRule:
+			"The window's first polls run on a clock, tighter and longer the deeper the gate. A late answer scores as a miss.",
+		answerCue: `On the clock: ${seconds}s to answer, or it counts as a miss.`,
+		timedPolls: { count, limitMs: seconds * 1000 },
+	};
+};
 
 const NOT_FOUND: Audit = {
 	id: "not-found",
@@ -182,61 +213,74 @@ const PAYLOAD_TOO_LARGE: Audit = {
 	overWidthBurn: { freeSlots: PAYLOAD_FREE_SLOTS, kb: PAYLOAD_KB_PER_SLOT },
 };
 
-const stripAudit = (gate: number, extra: number): Audit => ({
-	id: `strip-${Math.round(extra * 100)}`,
-	code: 410,
-	name: "Gone",
-	description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your build instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
-	dexRule:
-		"Failing this gate peels a bigger share of the build than its own row. A build it can empty ends the run there.",
-	peelShareOnFail: extra,
-});
+const stripExtraFor = (gate: number): number =>
+	gate >= VICTORY_GATE ? 0.15 : 0.1;
 
-export const GATE_AUDITS: Readonly<Record<number, readonly Audit[]>> = {
-	3: [COST_OVERRUN],
-	4: [DEPENDENCY_OUTAGE],
-	5: [NOT_FOUND],
-	6: [READ_ONLY],
-	7: [MIRROR],
-	8: [timeoutAudit(3, 30), FLAKY_BUILD],
-	9: [ROLLING_OUTAGE, MEMORY_LEAK],
-	10: [BREAKING_CHANGE, TOO_MANY_REQUESTS],
-	11: [stripAudit(11, 0.1), UPGRADE_REQUIRED, FEATURE_FREEZE],
-	12: [timeoutAudit(5, 20), stripAudit(12, 0.15), PAYLOAD_TOO_LARGE],
+const stripAudit = (gate: number): Audit => {
+	const extra = stripExtraFor(gate);
+	return {
+		id: "strip",
+		code: 410,
+		name: "Gone",
+		description: `Failing this gate peels ${asPercent(failPeelShareFor(gate) + extra)} of your build instead of ${asPercent(failPeelShareFor(gate))} — a build it can empty ends the run here.`,
+		dexRule:
+			"Failing this gate peels a bigger share of the build than its own row. A build it can empty ends the run there.",
+		peelShareOnFail: extra,
+	};
 };
 
-export const auditsForGate = (gate: number): readonly Audit[] =>
-	GATE_AUDITS[gate] ?? [];
+const AUDIT_ROSTER = {
+	"cost-overrun": () => COST_OVERRUN,
+	"not-found": () => NOT_FOUND,
+	"read-only": () => READ_ONLY,
+	"dependency-outage": () => DEPENDENCY_OUTAGE,
+	"too-many-requests": () => TOO_MANY_REQUESTS,
+	"flaky-build": () => FLAKY_BUILD,
+	"memory-leak": () => MEMORY_LEAK,
+	"rolling-outage": () => ROLLING_OUTAGE,
+	"breaking-change": () => BREAKING_CHANGE,
+	"upgrade-required": () => UPGRADE_REQUIRED,
+	mirrored: () => MIRROR,
+	timeout: timeoutAudit,
+	"payload-too-large": () => PAYLOAD_TOO_LARGE,
+	"feature-freeze": () => FEATURE_FREEZE,
+	strip: stripAudit,
+} as const satisfies Record<AuditId, (gate: number) => Audit>;
+
+export const AUDIT_ROSTER_SIZE = Object.keys(AUDIT_ROSTER).length;
+
+export const auditAt = (id: AuditId, gate: number): Audit =>
+	AUDIT_ROSTER[id](gate);
 
 export const auditLabel = (audit: Audit): string =>
 	`${audit.code} ${audit.name}`;
 
-export const nextAuditedGateFrom = (
-	gate: number
-): { readonly gate: number; readonly audit: Audit } | undefined => {
-	const next = Object.keys(GATE_AUDITS)
-		.map(Number)
-		.filter((auditedGate) => auditedGate >= gate)
-		.sort((a, b) => a - b)[0];
-	const audit = next === undefined ? undefined : GATE_AUDITS[next]?.[0];
-	if (next === undefined || audit === undefined) return undefined;
-	return { gate: next, audit };
-};
+export const auditLabelOf = (id: AuditId, gate = 0): string =>
+	auditLabel(auditAt(id, gate));
 
-const suppressorOf = (configs: readonly Config[]): Config | undefined =>
+export type AuditSchedule = Readonly<Record<number, readonly AuditId[]>>;
+
+export const auditsForGate = (
+	gate: number,
+	schedule: AuditSchedule
+): readonly Audit[] => (schedule[gate] ?? []).map((id) => auditAt(id, gate));
+
+export const suppressorOf = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.suppressesAudit === true);
 
 export const suppressedAuditFor = (
 	configs: readonly Config[],
-	gate: number
+	gate: number,
+	schedule: AuditSchedule
 ): Audit | undefined =>
-	suppressorOf(configs) ? auditsForGate(gate)[0] : undefined;
+	suppressorOf(configs) ? auditsForGate(gate, schedule)[0] : undefined;
 
 export const liveAuditsFor = (
 	configs: readonly Config[],
-	gate: number
+	gate: number,
+	schedule: AuditSchedule
 ): readonly Audit[] => {
-	const audits = auditsForGate(gate);
+	const audits = auditsForGate(gate, schedule);
 	return suppressorOf(configs) ? audits.slice(1) : audits;
 };
 

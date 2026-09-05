@@ -24,8 +24,13 @@ const isHub = (pathname: string) => pathname === RUN_ROUTES.start;
 
 type SyncTargetPath = RunRoutePath | typeof COMMUNITY_ROUTE;
 
+type SyncView = Pick<
+	RunView,
+	"status" | "gatesCleared" | "redoingGate" | "peelSlotsRemaining"
+>;
+
 const routesForStatus = (
-	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate"> | null
+	view: SyncView | null
 ): readonly [RunRoutePath, ...RunRoutePath[]] => {
 	if (!view) return [RUN_ROUTES.start];
 	switch (view.status) {
@@ -49,7 +54,13 @@ const routesForStatus = (
 						RUN_ROUTES.prep,
 					];
 		case "awaiting-strip":
-			return [RUN_ROUTES.strip, RUN_ROUTES.review];
+			// A waived peel (ADR-057) has nothing to repair, so the answers lead and
+			// the repair screen stays reachable but unvisited. A player already on
+			// the strip screen having just paid stays put: syncTarget only moves
+			// someone whose current screen is not in this list.
+			return view.peelSlotsRemaining === 0
+				? [RUN_ROUTES.review, RUN_ROUTES.strip]
+				: [RUN_ROUTES.strip, RUN_ROUTES.review];
 		case "won":
 		case "dead":
 			return [RUN_ROUTES.over];
@@ -61,14 +72,10 @@ export type CommunityReturn = {
 	readonly label: string;
 };
 
-export const resumeTarget = (
-	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate">
-): RunRoutePath =>
+export const resumeTarget = (view: SyncView): RunRoutePath =>
 	view.status === "rewarding" ? RUN_ROUTES.prep : routesForStatus(view)[0];
 
-export const returnFromCommunity = (
-	view: Pick<RunView, "status" | "gatesCleared" | "redoingGate"> | null
-): CommunityReturn => {
+export const returnFromCommunity = (view: SyncView | null): CommunityReturn => {
 	if (!view) return { path: RUN_ROUTES.start, label: "Today’s climb →" };
 
 	return { path: resumeTarget(view), label: "Back to your run →" };
@@ -78,10 +85,7 @@ const RUN_SCREEN_PATHS: readonly string[] = Object.values(RUN_ROUTES);
 
 export const syncTarget = (
 	pathname: string,
-	view: Pick<
-		RunView,
-		"status" | "awaitingTomorrow" | "gatesCleared" | "redoingGate"
-	> | null,
+	view: (SyncView & Pick<RunView, "awaitingTomorrow">) | null,
 	statusUnknown: boolean
 ): SyncTargetPath | null => {
 	if (statusUnknown) return null;

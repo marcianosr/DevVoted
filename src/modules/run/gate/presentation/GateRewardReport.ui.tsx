@@ -14,8 +14,10 @@ import {
 import {
 	formatKbGain,
 	formatPercent,
+	kb,
 	NOTHING_SHOWN,
 } from "~/shared/lib/displayValue";
+import { plural } from "~/ui/modern-theme/format";
 import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
 import { GainBar } from "~/ui/GainBar.ui";
 import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
@@ -57,10 +59,12 @@ const formatValue = (value: GateRewardValue): string => {
 const ReportRow = ({
 	row,
 	removable,
+	removalRefundKb,
 	onRemove,
 }: {
 	row: GateRewardRow;
 	removable?: boolean;
+	removalRefundKb?: number;
 	onRemove?: (configId: string) => void;
 }) => (
 	<BuildReportRow
@@ -72,6 +76,11 @@ const ReportRow = ({
 		value={formatValue(row.value)}
 		valueTone={valueTone(row)}
 		removable={removable}
+		removalPrice={
+			removalRefundKb !== undefined && removalRefundKb > 0
+				? formatKbGain(kb(removalRefundKb))
+				: undefined
+		}
 		onRemove={onRemove}
 	/>
 );
@@ -136,8 +145,11 @@ type GateRewardReportProps = {
 	/** What the coverage number breaks down into — closes the rewards section. */
 	breakdown?: ReactNode;
 	removableConfigIds?: readonly string[];
+	/** What dropping each config pays, keyed by config id — Garbage Collection. */
+	removalRefundKb?: Readonly<Record<string, number>>;
 	onRemoveConfig?: (configId: string) => void;
 	peelSlotsRemaining?: number;
+	peelWaived?: boolean;
 };
 
 /**
@@ -282,8 +294,10 @@ export const GateRewardReport = ({
 	slotRow,
 	breakdown,
 	removableConfigIds = [],
+	removalRefundKb,
 	onRemoveConfig,
 	peelSlotsRemaining,
+	peelWaived,
 }: GateRewardReportProps) => {
 	const storageFigures = meterFigures(
 		storageBar?.toKb,
@@ -315,6 +329,7 @@ export const GateRewardReport = ({
 							key={row.key}
 							row={row}
 							removable={removableConfigIds.includes(row.config.id)}
+							removalRefundKb={removalRefundKb?.[row.config.id]}
 							onRemove={onRemoveConfig}
 						/>
 					))}
@@ -335,12 +350,19 @@ export const GateRewardReport = ({
 				</div>
 			) : null}
 
+			{!cleared && peelWaived === true && (
+				<Paragraph size="sm" tone="muted">
+					This gate takes nothing — read your answers back, then shop and run it
+					again
+				</Paragraph>
+			)}
+
 			{!cleared &&
+				peelWaived !== true &&
 				peelSlotsRemaining !== undefined &&
 				peelSlotsRemaining > 0 && (
 					<Paragraph size="sm" tone="muted">
-						Remove {peelSlotsRemaining} config
-						{peelSlotsRemaining === 1 ? "" : "s"} to continue
+						Free up {plural(peelSlotsRemaining, "slot")} to continue
 					</Paragraph>
 				)}
 

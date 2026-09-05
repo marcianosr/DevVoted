@@ -13,6 +13,9 @@ export const dexStorageRungs: readonly StorageRung[] = STORAGE_PLANS.map(
 const meta: Meta<typeof StoragePanel> = {
 	component: StoragePanel,
 	title: "Terminal/Screens/Dex/Storage",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexStorageRungs"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

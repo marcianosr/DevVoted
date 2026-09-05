@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { nothing } from "~/shared/lib/displayValue";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -146,6 +147,29 @@ describe(gateRewardRows, () => {
 	});
 });
 
+describe("the collector's row (DVTD-2k9m)", () => {
+	const GC = CONFIGS.garbageCollection;
+
+	it("credits the collector with what the peel recovered", () => {
+		const [row] = gateRewardRows({
+			answered,
+			configs: [GC],
+			peelRefundKb: 128,
+		});
+		expect(row.status).toBe("passed");
+		expect(row.kind).toBe("storage");
+		expect(row.value).toEqual({ unit: "kb", amount: 128 });
+	});
+
+	// The same rows are drawn on a cleared gate, where no peel happened. kb(0)
+	// would print "+0KB" there, reading as a payout that fired and paid nothing.
+	it("reports nothing for a collector on a cleared gate", () => {
+		const [row] = gateRewardRows({ answered, configs: [GC] });
+		expect(row.status).toBe("skipped");
+		expect(row.value).toEqual(nothing);
+	});
+});
+
 describe(gateStorageGained, () => {
 	it("adds the clear payout to every per-correct payout", () => {
 		// 120 clear payout + (2 correct × 8KB).
@@ -163,6 +187,16 @@ describe(gateStorageBreakdown, () => {
 		configs: input.configs,
 		gateReward: 120,
 	};
+
+	// A peel refund never lands on a clear, so attributing it here would stop the
+	// ledger's columns adding up to the headline.
+	it("keeps the peel refund out of the clear's storage ledger", () => {
+		const { rows } = gateStorageBreakdown({
+			...breakdownInput,
+			configs: [CONFIGS.garbageCollection],
+		});
+		expect(rows.map((row) => row.key)).not.toContain("garbage-collection");
+	});
 
 	it("gives each paying config a row and leaves the rest out", () => {
 		const { rows } = gateStorageBreakdown(breakdownInput);
@@ -218,7 +252,6 @@ describe(gateStorageBreakdown, () => {
 	const PER_EXTRA_PICK: Config = {
 		id: "per-extra-pick",
 		label: "Per extra pick",
-		family: "economy",
 		description: "Pays per correct answer beyond one per poll.",
 		rewardMultiplier: 1,
 		storagePerExtraPick: 16,

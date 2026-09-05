@@ -27,13 +27,4 @@ describe("Figure", () => {
 
 		expect(screen.getByText("+2%")).toBeInTheDocument();
 	});
-
-	// Nothing is gained or lost, so it wears neither a sign nor a gain colour.
-	it("states odds plainly rather than as a signed gain", () => {
-		render(<Figure figure={{ kind: "chance", oneIn: 3 }} />);
-
-		const odds = screen.getByText("1 in 3");
-		expect(odds).toBeInTheDocument();
-		expect(odds.parentElement).not.toHaveClass("bg-celadon/15");
-	});
 });

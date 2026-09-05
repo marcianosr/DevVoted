@@ -5,7 +5,8 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-08-25T15:19:30Z
-updated_at: 2026-08-25T15:19:30Z
+updated_at: 2026-09-04T15:03:56Z
+parent: DVTD-u35m
 ---
 
 The git tag (ADR-036) works server-side and is invisible to the player. `startRunService` calls `consumePinnedGate(userId)` on every fresh start, so the tag burns silently: the entry screens still read "Start today's climb" and "Start a new run", and nothing tells the player they are about to spend a checkpoint or that they resumed at gate 7 instead of gate 1. A checkpoint the player cannot see is a purchase they cannot reason about.

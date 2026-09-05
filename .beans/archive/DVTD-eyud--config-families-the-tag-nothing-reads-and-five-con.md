@@ -1,11 +1,11 @@
 ---
 # DVTD-eyud
 title: 'Config families: the tag nothing reads, and five configs it gets wrong'
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-08-23T17:23:49Z
-updated_at: 2026-08-23T17:23:49Z
+updated_at: 2026-09-04T08:14:19Z
 ---
 
 `ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy"` is declared in `config.model.ts:4` and set on all 30 configs, but **read by nothing** — grep finds no consumer outside the roster and the type. Surfacing it on the modern start screen (DVTD-7gty) turned up five tags that disagree with the effects they sit on. Intellisense was fixed in that session; these are the rest.
@@ -19,3 +19,11 @@ updated_at: 2026-08-23T17:23:49Z
 Underneath all five is one structural question: **`family` mixes what a config pays with what it costs.** Deprecated (`amplify`), Overclock (`risk`) and Freemium (`economy`) are all "big upside, real cost", but that is a second axis crossing three families — a gamble is a property a payout can have, not a payout of its own. Decide whether `family` stays one tag or splits into payout + a risk flag before renaming anything.
 
 The modern start screen renders the five as CATEGORY / MULTIPLIER / STORAGE / TOOL / GAMBLE with player-facing glosses, so whatever this bean settles has a surface waiting for it (`src/ui/modern-theme/screens/StartScreen.ui.tsx`, local `ConfigFamily` union).
+
+## Reasons for Scrapping
+
+Answered by DVTD-nfnx, which deleted the axis instead of splitting it.
+
+This bean's diagnosis was that five configs carry a family tag that disagrees with their effect, and that family structurally mixes what a config pays with what it costs. Both complaints are now moot: `ConfigFamily` and `Config.family` no longer exist, so there is no tag left to disagree with an effect, and no axis conflating payout with cost. Hue is keyed to slot size instead (ADR-055).
+
+DVTD-nfnx itself predicted this outcome: "If this lands, DVTD-eyud is moot and should be scrapped rather than worked."

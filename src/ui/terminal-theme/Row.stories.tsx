@@ -26,7 +26,7 @@ type Story = StoryObj<typeof Row>;
 
 export const Config: Story = {
 	args: {
-		leading: <Slots family="focus" slots={1} />,
+		leading: <Slots slots={1} />,
 		name: ".js",
 		detail: "JS polls ×1.25",
 		trailing: <Press label="upgrade ↑" onUse={noop} />,
@@ -38,7 +38,7 @@ export const WithStatusDot: Story = {
 		leading: (
 			<>
 				<Dot variant="on" />
-				<Slots family="risk" slots={1} />
+				<Slots slots={4} />
 			</>
 		),
 		name: "Deprecated",
@@ -49,7 +49,7 @@ export const WithStatusDot: Story = {
 
 export const Versioned: Story = {
 	args: {
-		leading: <Slots family="focus" slots={1} />,
+		leading: <Slots slots={1} />,
 		name: ".js",
 		tag: <Badge tone="muted">v2</Badge>,
 		detail: "JS polls ×1.5",
@@ -59,7 +59,7 @@ export const Versioned: Story = {
 
 export const Upgrading: Story = {
 	args: {
-		leading: <Slots family="defense" slots={1} />,
+		leading: <Slots slots={1} />,
 		name: "ESLint",
 		tag: <Change from="v1" to="v2" />,
 		detail: "Cross out a wrong answer",
@@ -69,7 +69,7 @@ export const Upgrading: Story = {
 
 export const Dimmed: Story = {
 	args: {
-		leading: <Slots family="amplify" slots={1} />,
+		leading: <Slots slots={4} />,
 		name: "Overclock",
 		detail: "first answer ×4, every later one ×0.5",
 		dimmed: true,

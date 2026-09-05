@@ -56,7 +56,10 @@ describe("ShopView", () => {
 		render_();
 
 		expect(screen.getByText("Rainbow shop")).toBeInTheDocument();
-		expect(screen.getByText("before gate 5")).toBeInTheDocument();
+		// The subtitle badges its numbers, so the text is split across spans.
+		expect(
+			screen.getByText((_, element) => element?.textContent === "before gate 5")
+		).toBeTruthy();
 	});
 
 	it("counts the shelf and the build separately", () => {

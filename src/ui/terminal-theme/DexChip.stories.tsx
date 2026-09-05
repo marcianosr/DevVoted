@@ -19,20 +19,20 @@ export default meta;
 type Story = StoryObj<typeof DexChip>;
 
 export const Seen: Story = {
-	args: { family: "focus", label: ".js", version: 5, maxVersion: 5 },
+	args: { slots: 1, label: ".js", version: 5, maxVersion: 5 },
 };
 
 export const PartWayUp: Story = {
-	args: { family: "risk", label: "Overclock", version: 4, maxVersion: 5 },
+	args: { slots: 4, label: "Overclock", version: 4, maxVersion: 5 },
 };
 
-/** No name and no version, only the family: enough to say a four-slot gamble is
+/** No name and no version, only the size: enough to say a four-slot config is
  * missing from the shelf, never which one. */
-export const Unseen: Story = { args: { family: "risk", seen: false } };
+export const Unseen: Story = { args: { slots: 4, seen: false } };
 
 export const Selected: Story = {
 	args: {
-		family: "amplify",
+		slots: 4,
 		label: "Intellisense",
 		version: 1,
 		maxVersion: 5,
@@ -41,35 +41,42 @@ export const Selected: Story = {
 	},
 };
 
+/** The three biggest sizes, escalating: 8 takes the drifting ring and a
+ * prismatic mark, 12 adds the wash, 16 runs both at half the period. Keyed to
+ * slots, so no caller can put the ring on a one-slot config. */
+export const BiggestLadder: Story = {
+	render: () => (
+		<div className="flex flex-col items-start gap-3">
+			<DexChip slots={4} label="Prefetch" version={1} />
+			<DexChip slots={8} label="AGENTS.md" version={1} />
+			<DexChip slots={12} label="Twelve slots" version={1} />
+			<DexChip slots={16} label="Sixteen slots" version={1} />
+		</div>
+	),
+};
+
 const ROSTER = [
-	{ id: "js", family: "focus", label: ".js", version: 5, maxVersion: 5 },
-	{
-		id: "eslint",
-		family: "defense",
-		label: "ESLint",
-		version: 3,
-		maxVersion: 5,
-	},
+	{ id: "js", slots: 1, label: ".js", version: 5, maxVersion: 5 },
 	{
 		id: "indexed-db",
-		family: "economy",
+		slots: 2,
 		label: "IndexedDB",
+		version: 2,
+		maxVersion: 4,
+	},
+	{
+		id: "overclock",
+		slots: 4,
+		label: "Overclock",
 		version: 2,
 		maxVersion: 5,
 	},
 	{
-		id: "cold-start",
-		family: "amplify",
-		label: "Cold Start",
+		id: "agents-md",
+		slots: 8,
+		label: "AGENTS.md",
 		version: 1,
-		maxVersion: 5,
-	},
-	{
-		id: "overclock",
-		family: "risk",
-		label: "Overclock",
-		version: 4,
-		maxVersion: 5,
+		maxVersion: 3,
 	},
 ] as const;
 
@@ -81,7 +88,7 @@ const Shelf = () => {
 			{ROSTER.map((config) => (
 				<DexChip
 					key={config.id}
-					family={config.family}
+					slots={config.slots}
 					label={config.label}
 					version={config.version}
 					maxVersion={config.maxVersion}
@@ -89,11 +96,11 @@ const Shelf = () => {
 					onSelect={() => setPicked(config.id)}
 				/>
 			))}
-			<DexChip family="economy" seen={false} />
+			<DexChip slots={2} seen={false} />
 		</div>
 	);
 };
 
-/** All five families side by side, which is the only way to check the legend's
+/** One chip per rung in play, which is the only way to check the legend's
  * colours read apart from each other. */
 export const PickingOne: Story = { render: () => <Shelf /> };

@@ -34,6 +34,20 @@ export const Suppressed: StoryObj<typeof Audits> = {
 };
 type Story = StoryObj<typeof Audits>;
 
+export const SuppressedNamesItsConfig: Story = {
+	args: {
+		rows: [
+			{
+				code: "402",
+				name: "Payment Required",
+				cue: "paid actions cost double",
+				suppressed: true,
+				suppressedBy: { label: "Volkswagen CI", slots: 8, version: 1 },
+			},
+		],
+	},
+};
+
 export const OneAudit: Story = {
 	args: {
 		rows: [

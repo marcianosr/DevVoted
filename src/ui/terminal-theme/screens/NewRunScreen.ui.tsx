@@ -1,11 +1,11 @@
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { clsx } from "clsx";
 
+import { Badge } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { Callout } from "../Callout.ui";
-import { Dot } from "../Dot.ui";
+import { DexChip } from "../DexChip.ui";
 import { GitTagIcon } from "../GitTagIcon.ui";
 import { Header, type HeaderProps } from "../Header.ui";
 import { Panel } from "../Panel.ui";
@@ -13,7 +13,6 @@ import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
 import { SlotDeal, type SlotDealRow } from "../SlotDeal.ui";
 import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
-import { Slots } from "../Slots.ui";
 
 const FOOTER = "flex items-center justify-end border-t border-edge pt-4";
 
@@ -21,20 +20,31 @@ const PICK =
 	"block w-full cursor-pointer text-left transition-colors hover:bg-zinc-800/40";
 const PICK_LOCKED = "block w-full text-left";
 
+const MARK =
+	"inline-flex size-7 shrink-0 items-center justify-center rounded-full border text-xs";
+const MARK_ON = "border-viridian bg-viridian/15 text-viridian";
+const MARK_OFF = "border-zinc-600 text-zinc-500";
+
+const PickMark = ({ selected }: { selected: boolean }) => (
+	<span aria-hidden className={clsx(MARK, selected ? MARK_ON : MARK_OFF)}>
+		{selected ? "✓" : "+"}
+	</span>
+);
+
 const segmentsOf = (
-	rows: readonly { family: ConfigFamily; slots: number }[]
-): readonly SlotSegment[] =>
-	rows.map((row) => ({ family: row.family, slots: row.slots }));
+	rows: readonly { slots: number }[]
+): readonly SlotSegment[] => rows.map((row) => ({ slots: row.slots }));
 
 export type DealRow = {
-	family: ConfigFamily;
 	name: string;
 	detail: string;
 	slots: number;
+	version: number;
 	selected: boolean;
 	toggleLabel: string;
 	onToggle?: () => void;
 	locked?: boolean;
+	recommended?: boolean;
 };
 
 export type NewRunScreenProps = {
@@ -67,11 +77,25 @@ const DealPick = ({ row }: { row: DealRow }) => (
 		className={clsx(row.locked === true ? PICK_LOCKED : PICK)}
 	>
 		<Row
-			leading={<Dot variant={row.selected ? "on" : "off"} />}
-			name={row.name}
-			tag={<Slots family={row.family} slots={row.slots} />}
+			leading={<PickMark selected={row.selected} />}
+			name={
+				<DexChip
+					slots={row.slots}
+					label={row.name}
+					version={row.version}
+					selected={row.selected}
+					className="w-44 overflow-hidden @max-3xl:w-auto"
+				/>
+			}
 			detail={row.detail}
 			dimmed={row.locked}
+			trailing={
+				row.recommended === true ? (
+					<Badge tone="cerulean" size="sm">
+						suggested
+					</Badge>
+				) : undefined
+			}
 		/>
 	</button>
 );

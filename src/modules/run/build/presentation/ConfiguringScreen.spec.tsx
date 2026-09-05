@@ -27,10 +27,28 @@ const base = {
 	slotsUsed: 2,
 	slotsFree: 2,
 	bench: [CONFIGS.eslint, CONFIGS.agentsMd],
+	recommended: [],
 	onInstall: vi.fn(),
 	onUninstall: vi.fn(),
 	startAction: { label: "Start run →", onClick: vi.fn() },
 };
+
+describe("the suggested opening (ADR-057)", () => {
+	it("marks a suggested bench config without picking it", () => {
+		render(
+			<ConfiguringScreen {...base} recommended={[CONFIGS.eslint.id]} />
+		);
+
+		expect(screen.getByText("suggested")).toBeInTheDocument();
+		expect(base.onInstall).not.toHaveBeenCalled();
+	});
+
+	it("marks nothing when the deal suggests nothing", () => {
+		render(<ConfiguringScreen {...base} />);
+
+		expect(screen.queryByText("suggested")).not.toBeInTheDocument();
+	});
+});
 
 describe(ConfiguringScreen, () => {
 	it("names the first gate — no separate prep screen for gate 0", () => {
@@ -85,7 +103,7 @@ describe(ConfiguringScreen, () => {
 	it("renders the bench and build columns side by side", () => {
 		render(<ConfiguringScreen {...base} />);
 		expect(
-			screen.getByText("Click a config to add it to your build")
+			screen.getByText(/Click a config to add it to your build/)
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("heading", { name: "Your build" })

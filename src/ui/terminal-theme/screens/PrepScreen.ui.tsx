@@ -2,12 +2,13 @@ import { Fragment } from "react";
 
 import { clsx } from "clsx";
 
-import type { ConfigFamily } from "~/modules/run/config/domain/config.model";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
+import { type AuditNote, SUPPRESSED_CUE } from "../Audits.ui";
 import { Badge } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { CoverageBar } from "../CoverageBar.ui";
+import { DexChip } from "../DexChip.ui";
 import { Header, type HeaderProps } from "../Header.ui";
 import { Panel } from "../Panel.ui";
 import { PriceTag } from "../PriceTag.ui";
@@ -35,12 +36,10 @@ const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
 
 const segmentsOf = (
-	rows: readonly { family: ConfigFamily; slots: number }[]
-): readonly SlotSegment[] =>
-	rows.map((row) => ({ family: row.family, slots: row.slots }));
+	rows: readonly { slots: number }[]
+): readonly SlotSegment[] => rows.map((row) => ({ slots: row.slots }));
 
 export type PrepBuildRow = {
-	family: ConfigFamily;
 	name: string;
 	detail: string;
 	slots: number;
@@ -55,6 +54,7 @@ export type PrepTally = {
 export type PrepAudit = {
 	label: string;
 	suppressed?: boolean;
+	suppressedBy?: AuditNote["suppressedBy"];
 };
 
 export type BillRow = {
@@ -69,7 +69,11 @@ const BULLET = (
 	</Text>
 );
 
-const Label = ({ text }: { text: string }) => <Text tone="muted">{text}</Text>;
+const Label = ({ text }: { text: string }) => (
+	<Text tone="muted" size="caption">
+		{text}
+	</Text>
+);
 
 const AuditReading = ({ audits }: { audits: readonly PrepAudit[] }) => {
 	if (audits.length === 0)
@@ -92,9 +96,17 @@ const AuditReading = ({ audits }: { audits: readonly PrepAudit[] }) => {
 					</Text>
 					{audit.suppressed === true ? (
 						<Text tone="viridian" size="caption">
-							reported passing
+							{SUPPRESSED_CUE}
 						</Text>
 					) : null}
+					{audit.suppressedBy === undefined ? null : (
+						<DexChip
+							slots={audit.suppressedBy.slots}
+							label={audit.suppressedBy.label}
+							version={audit.suppressedBy.version}
+							className="shrink-0 py-0 text-xs"
+						/>
+					)}
 				</span>
 			))}
 		</span>
@@ -107,6 +119,15 @@ const Count = ({ value }: { value: number }) => (
 	</Text>
 );
 
+const Divider = () => (
+	<Text tone="faint" size="caption" aria-hidden>
+		·
+	</Text>
+);
+
+const Source = ({ label }: { label?: string }) =>
+	label === undefined ? null : <Badge tone="neutral">{label}</Badge>;
+
 const TallyLine = ({
 	items,
 	countFirst = false,
@@ -117,11 +138,7 @@ const TallyLine = ({
 	<span className={TALLY}>
 		{items.map((item, index) => (
 			<Fragment key={item.label}>
-				{index === 0 ? null : (
-					<Text tone="faint" size="caption" aria-hidden>
-						·
-					</Text>
-				)}
+				{index === 0 ? null : <Divider />}
 				<span className={TALLY_ITEM}>
 					{countFirst ? <Count value={item.count} /> : null}
 					<Text tone="muted" size="caption">
@@ -129,6 +146,17 @@ const TallyLine = ({
 					</Text>
 					{countFirst ? null : <Count value={item.count} />}
 				</span>
+			</Fragment>
+		))}
+	</span>
+);
+
+const CountLine = ({ values }: { values: readonly number[] }) => (
+	<span className={TALLY}>
+		{values.map((value, position) => (
+			<Fragment key={`${value}-${position}`}>
+				{position === 0 ? null : <Divider />}
+				<Count value={value} />
 			</Fragment>
 		))}
 	</span>
@@ -148,7 +176,24 @@ const Revealed = ({
 	return (
 		<>
 			<TallyLine items={items} countFirst={countFirst} />
-			{source === undefined ? null : <Badge tone="neutral">{source}</Badge>}
+			<Source label={source} />
+		</>
+	);
+};
+
+const RevealedCounts = ({
+	values,
+	source,
+}: {
+	values?: readonly number[];
+	source?: string;
+}) => {
+	if (values === undefined) return <Redacted />;
+
+	return (
+		<>
+			<CountLine values={values} />
+			<Source label={source} />
 		</>
 	);
 };
@@ -186,6 +231,7 @@ export type PrepScreenProps = {
 		polls: string;
 		source?: string;
 		pollTypes?: readonly PrepTally[];
+		optionCounts?: readonly number[];
 		audits: readonly PrepAudit[];
 		categories?: readonly PrepTally[];
 		nextCategories?: readonly PrepTally[];
@@ -256,7 +302,7 @@ export const PrepScreen = ({
 										{row.version === undefined ? null : (
 											<Version label={row.version} />
 										)}
-										<Slots family={row.family} slots={row.slots} />
+										<Slots slots={row.slots} />
 									</>
 								}
 								detail={row.detail}
@@ -297,6 +343,16 @@ export const PrepScreen = ({
 							<Revealed
 								items={window.pollTypes}
 								countFirst
+								source={window.source}
+							/>
+						}
+					/>
+					<Row
+						className={UNDER}
+						name={<Label text="options" />}
+						trailing={
+							<RevealedCounts
+								values={window.optionCounts}
 								source={window.source}
 							/>
 						}

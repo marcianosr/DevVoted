@@ -8,9 +8,10 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
 const climbing = (
 	status: Pick<RunView, "status" | "gatesCleared"> &
-		Partial<Pick<RunView, "redoingGate">>
+		Partial<Pick<RunView, "redoingGate" | "peelSlotsRemaining">>
 ) => ({
 	redoingGate: null,
+	peelSlotsRemaining: 1,
 	...status,
 	awaitingTomorrow: false,
 });
@@ -127,6 +128,38 @@ describe("syncTarget", () => {
 			syncTarget(
 				"/run/review",
 				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
+				false
+			)
+		).toBeNull();
+	});
+
+	// A waived peel (ADR-057) has nothing to repair, so the answers lead instead
+	// of a repair screen with an empty list.
+	it("sends a waived miss to the answers, not to the repair screen", () => {
+		expect(
+			syncTarget(
+				"/run/answer",
+				climbing({
+					status: "awaiting-strip",
+					gatesCleared: 0,
+					peelSlotsRemaining: 0,
+				}),
+				false
+			)
+		).toBe("/run/review");
+	});
+
+	// Paying the last slot drops the debt to 0 mid-screen; the player must keep
+	// the repair screen and its own press, not be yanked to the answers.
+	it("leaves a player who just paid their peel on the repair screen", () => {
+		expect(
+			syncTarget(
+				"/run/strip",
+				climbing({
+					status: "awaiting-strip",
+					gatesCleared: 1,
+					peelSlotsRemaining: 0,
+				}),
 				false
 			)
 		).toBeNull();
@@ -256,6 +289,7 @@ describe("syncTarget", () => {
 			status: "answering",
 			gatesCleared: 1,
 			redoingGate: null,
+			peelSlotsRemaining: 0,
 			awaitingTomorrow: true,
 		} as const;
 

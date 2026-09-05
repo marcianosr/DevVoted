@@ -20,6 +20,7 @@ import {
 	buildRows,
 	buildTotalFor,
 	categoryFor,
+	type PollFacts,
 	questionFor,
 	runHeaderFor,
 } from "~/modules/run/run/presentation/PollView.component";
@@ -137,15 +138,12 @@ export type RevealViewProps = {
 
 export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 	const faucet = faucetKbByConfig(view, answered);
-	const rows = buildRows(
-		view,
-		{
-			category: answered.category,
-			answeredBefore: view.answeredThisGate.length - 1,
-			cachedHits: cachedHitsBefore(view, answered),
-		},
-		[]
-	).map((row, index) => {
+	const facts: PollFacts = {
+		category: answered.category,
+		answeredBefore: view.answeredThisGate.length - 1,
+		cachedHits: cachedHitsBefore(view, answered),
+	};
+	const rows = buildRows(view, facts, []).map((row, index) => {
 		const paid = faucet.get(view.configs[index]?.id ?? "");
 		return paid === undefined ? row : { ...row, figure: `+${paid} KB` };
 	});
@@ -157,7 +155,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 			build={{
 				running: rows.filter((row) => row.dot === "on").length,
 				rows,
-				total: buildTotalFor(view),
+				total: buildTotalFor(view, facts),
 			}}
 			audits={auditNotes(view)}
 			category={categoryFor(answered.category)}

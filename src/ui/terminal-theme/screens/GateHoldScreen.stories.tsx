@@ -23,27 +23,23 @@ type Story = StoryObj<typeof GateHoldScreen>;
 
 const removeRows: readonly Omit<RemoveRow, "checked" | "onToggle">[] = [
 	{
-		family: "focus",
 		name: ".ts",
 		detail: "Sat out all 5 polls · earned nothing",
 		version: "v1",
 		slots: 1,
 	},
 	{
-		family: "focus",
 		name: ".js",
 		detail: "Paid 3 times · +1.8% total",
 		version: "v1",
 		slots: 1,
 	},
 	{
-		family: "risk",
 		name: "Deprecated",
 		detail: "Paid every poll · +9.2% total",
 		slots: 4,
 	},
 	{
-		family: "defense",
 		name: "ESLint",
 		detail: "Used once · cost 16 KB",
 		slots: 1,
@@ -110,47 +106,40 @@ export const Mobile: Story = {
 
 const eliteRemoveRows: readonly Omit<RemoveRow, "checked" | "onToggle">[] = [
 	{
-		family: "focus",
 		name: ".py",
 		detail: "Sat out all 5 polls · earned nothing",
 		version: "v1",
 		slots: 1,
 	},
 	{
-		family: "focus",
 		name: ".ts",
 		detail: "Paid once · +0.8% total",
 		version: "v1",
 		slots: 1,
 	},
 	{
-		family: "focus",
 		name: ".js",
 		detail: "Paid 4 times · +3.6% total",
 		version: "v2",
 		slots: 1,
 	},
 	{
-		family: "defense",
 		name: "Telemetry",
 		detail: "Used twice · cost 96 KB",
 		version: "v1",
 		slots: 2,
 	},
 	{
-		family: "risk",
 		name: "Deprecated",
 		detail: "Paid every poll · +12.4% total",
 		slots: 4,
 	},
 	{
-		family: "economy",
 		name: "IndexedDB",
 		detail: "+40 KB this gate · 312 of 320",
 		slots: 2,
 	},
 	{
-		family: "amplify",
 		name: "Overclock",
 		detail: "First answer paid ×4 · later ×0.5",
 		slots: 4,

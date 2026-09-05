@@ -8,12 +8,14 @@ import type {
 	PerAnswerPreview,
 	BuildModifiers,
 } from "~/modules/run/build/domain/build.model";
+import type { PeelConfigRange } from "~/modules/run/gate/domain/gate.model";
 import type { BillLedger } from "~/modules/run/config/domain/subscription.model";
 import type {
 	AuditView,
 	GateStake,
 	UpcomingAuditView,
 } from "~/modules/run/run/application/gateStake.viewmodel";
+import { countRange } from "~/ui/modern-theme/format";
 import { Button } from "~/ui/Button.component";
 import { Meter } from "~/ui/Meter.ui";
 import { Popover } from "~/ui/Popover.component";
@@ -123,29 +125,42 @@ const CoverageDemand = ({
 };
 
 const MissCost = ({
-	strips,
+	configs,
 	fatal,
+	free,
 	pollsPerGate,
 }: {
-	strips: number;
+	configs: PeelConfigRange;
 	fatal: boolean;
+	free: boolean;
 	pollsPerGate: number;
-}) => (
-	<div className="flex flex-col gap-0.5">
-		<Paragraph as="span" tone="muted">
-			Miss the target: the gate peels{" "}
-			<Paragraph as="span">
-				{strips} config{strips === 1 ? "" : "s"}
+}) => {
+	if (free)
+		return (
+			<Paragraph as="span" tone="muted">
+				Miss the target: this gate takes{" "}
+				<Paragraph as="span">nothing</Paragraph>. Read your answers back, then
+				shop and run it again on {pollsPerGate} fresh polls
 			</Paragraph>
-			, then you shop and run it again on {pollsPerGate} fresh polls
-		</Paragraph>
-		{fatal ? (
-			<Paragraph as="span" tone="cinnabar" className="font-bold">
-				That peel takes your whole build — a miss here ends the run.
+		);
+
+	return (
+		<div className="flex flex-col gap-0.5">
+			<Paragraph as="span" tone="muted">
+				Miss the target: the gate peels{" "}
+				<Paragraph as="span">
+					{countRange(configs.fewest, configs.most, "config")}
+				</Paragraph>
+				, then you shop and run it again on {pollsPerGate} fresh polls
 			</Paragraph>
-		) : null}
-	</div>
-);
+			{fatal ? (
+				<Paragraph as="span" tone="cinnabar" className="font-bold">
+					That peel takes your whole build — a miss here ends the run.
+				</Paragraph>
+			) : null}
+		</div>
+	);
+};
 
 const AuditRows = ({ audits }: { audits: readonly AuditView[] }) => (
 	<ul className="flex flex-col gap-2">
@@ -406,8 +421,9 @@ export const GateStakeReceipt = ({
 						/>
 					</ul>
 					<MissCost
-						strips={stake.peelSlotsOnFailure}
+						configs={stake.peelConfigsOnFailure}
 						fatal={stake.missIsFatal}
+						free={stake.missIsFree}
 						pollsPerGate={pollsPerGate}
 					/>
 				</div>

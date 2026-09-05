@@ -49,27 +49,23 @@ export const BeforeLavender: Story = {
 			slotsUsed: 7,
 			rows: [
 				{
-					family: "focus",
 					name: ".js",
 					slots: 1,
 					detail: "JS polls ×1.25",
 					version: "v1",
 				},
 				{
-					family: "defense",
 					name: "ESLint",
 					slots: 1,
 					detail: "Cross out a wrong answer · fee doubles",
 					version: "v1",
 				},
 				{
-					family: "risk",
 					name: "Deprecated",
 					slots: 4,
 					detail: "All coverage ×2.5 · gone in 3 clears",
 				},
 				{
-					family: "focus",
 					name: ".ts",
 					slots: 1,
 					detail: "TS polls ×1.25",
@@ -102,6 +98,7 @@ export const WithPrefetchAndSuppressedAudit: Story = {
 			...LAVENDER_WINDOW,
 			audits: [{ label: "402 Payment Required", suppressed: true }],
 			source: "Prefetch",
+			optionCounts: [4, 4, 5, 6, 4],
 			categories: [
 				{ label: "typescript", count: 3 },
 				{ label: "javascript", count: 2 },
@@ -140,61 +137,52 @@ export const BeforeElite: Story = {
 			slotsUsed: 24,
 			rows: [
 				{
-					family: "focus",
 					name: ".js",
 					slots: 1,
 					detail: "JS polls ×1.5",
 					version: "v2",
 				},
 				{
-					family: "focus",
 					name: ".ts",
 					slots: 1,
 					detail: "TS polls ×1.25",
 					version: "v1",
 				},
 				{
-					family: "focus",
 					name: ".py",
 					slots: 1,
 					detail: "Python polls ×1.25",
 					version: "v1",
 				},
 				{
-					family: "defense",
 					name: "ESLint",
 					slots: 1,
 					detail: "Cross out a wrong answer · fee doubles",
 					version: "v1",
 				},
 				{
-					family: "defense",
 					name: "Telemetry",
 					slots: 2,
 					detail: "See the community split · fee doubles",
 					version: "v1",
 				},
 				{
-					family: "risk",
 					name: "Deprecated",
 					slots: 4,
 					detail: "All coverage ×2.5 · gone in 3 clears",
 				},
 				{
-					family: "economy",
 					name: "IndexedDB",
 					slots: 2,
 					detail: "+8 KB an answer · 288 of 320",
 				},
 				{
-					family: "economy",
 					name: "Freemium",
 					slots: 8,
 					detail: "Half price configs · its own bill doubles every gate",
 					version: "v1",
 				},
 				{
-					family: "amplify",
 					name: "Overclock",
 					slots: 4,
 					detail: "First answer ×4, every later one ×0.5",
@@ -215,6 +203,7 @@ export const BeforeElite: Story = {
 				{ label: "single", count: 1 },
 				{ label: "multiple", count: 4 },
 			],
+			optionCounts: [4, 5, 6, 5, 6],
 			audits: [
 				{ label: "408 Request Timeout" },
 				{ label: "410 Gone" },

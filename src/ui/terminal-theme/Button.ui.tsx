@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
+import { Tooltip } from "./Tooltip.ui";
+
 export type ButtonVariant = "primary" | "quiet" | "danger" | "upgrade";
 export type ButtonSize = "sm" | "md";
 
@@ -35,6 +37,7 @@ export type ButtonProps = {
 	variant?: ButtonVariant;
 	size?: ButtonSize;
 	disabled?: boolean;
+	hint?: string;
 	describedBy?: string;
 	className?: string;
 	onUse?: () => void;
@@ -47,19 +50,25 @@ export const Button = ({
 	variant = "quiet",
 	size = "md",
 	disabled = false,
+	hint,
 	describedBy,
 	className,
 	onUse,
 }: ButtonProps) => (
-	<button
-		type="button"
-		disabled={disabled}
-		aria-describedby={describedBy}
-		onClick={onUse}
-		className={clsx(buttonVariants({ variant, size }), className)}
-	>
-		{icon === undefined ? null : <span aria-hidden>{icon}</span>}
-		{label}
-		{price === undefined ? null : <span className={PRICE}>{price}</span>}
-	</button>
+	// The className rides on both: the tooltip's wrapper becomes the flex child
+	// when a hint is present, and the bare button is the child when it is not.
+	<Tooltip hint={hint} className={className}>
+		<button
+			type="button"
+			disabled={disabled}
+			aria-label={hint === undefined ? undefined : `${label}, ${hint}`}
+			aria-describedby={describedBy}
+			onClick={onUse}
+			className={clsx(buttonVariants({ variant, size }), className)}
+		>
+			{icon === undefined ? null : <span aria-hidden>{icon}</span>}
+			{label}
+			{price === undefined ? null : <span className={PRICE}>{price}</span>}
+		</button>
+	</Tooltip>
 );

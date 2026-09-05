@@ -6,7 +6,7 @@ import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
 
 describe(StripScreen, () => {
-	it("tells the player how many configs to peel", () => {
+	it("tells the player how many slots to free — the debt is slots", () => {
 		render(
 			<StripScreen
 				peelSlotsRemaining={2}
@@ -21,9 +21,32 @@ describe(StripScreen, () => {
 			screen.getByRole("heading", { name: /Cascade gate failed!/ })
 		).toBeInTheDocument();
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
+		// The subtitle badges its numbers, so the text is split across spans.
 		expect(
-			screen.getByText("Remove 2 configs to continue")
-		).toBeInTheDocument();
+			screen.getByText(
+				(_, element) => element?.textContent === "Free up 2 slots to continue"
+			)
+		).toBeTruthy();
+	});
+
+	// A waived peel (ADR-057) must say so: hiding the banner leaves the screen
+	// silent about why nothing is removable.
+	it("says the Pallet gate took nothing, rather than showing an empty list", () => {
+		render(
+			<StripScreen
+				peelSlotsRemaining={0}
+				peelWaived
+				gateNumber={0}
+				configs={[CONFIGS.js, CONFIGS.agentsMd]}
+				answered={[]}
+				onStrip={() => {}}
+			/>
+		);
+
+		expect(screen.getByText(/This gate takes nothing/)).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Remove/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("states the redo's demand against the attempt's own meter", () => {
@@ -103,6 +126,47 @@ describe(StripScreen, () => {
 		);
 		fireEvent.click(screen.getByRole("button", { name: "Remove AGENTS.md" }));
 		expect(onStrip).toHaveBeenCalledWith("agents-md");
+	});
+
+	it("quotes what dropping each config pays while a collector is installed", () => {
+		render(
+			<StripScreen
+				peelSlotsRemaining={8}
+				gateNumber={2}
+				configs={[CONFIGS.garbageCollection, CONFIGS.agentsMd, CONFIGS.js]}
+				answered={[]}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.getByText("+128KB")).toBeInTheDocument();
+		expect(screen.getByText("+16KB")).toBeInTheDocument();
+	});
+
+	it("quotes no price on a build with no collector", () => {
+		render(
+			<StripScreen
+				peelSlotsRemaining={8}
+				gateNumber={2}
+				configs={[CONFIGS.agentsMd, CONFIGS.js]}
+				answered={[]}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.queryByText(/^\+\d+KB$/)).not.toBeInTheDocument();
+	});
+
+	it("shows the collector what the peel has recovered so far", () => {
+		render(
+			<StripScreen
+				peelSlotsRemaining={1}
+				gateNumber={2}
+				configs={[CONFIGS.garbageCollection, CONFIGS.js]}
+				answered={[]}
+				peelRefundKb={128}
+				onStrip={() => {}}
+			/>
+		);
+		expect(screen.getByText("+128KB")).toBeInTheDocument();
 	});
 
 	it("offers no removal once the quota is met — rows only expand", () => {

@@ -179,10 +179,10 @@ describe("PrepView", () => {
 		expect(screen.getByText("2 / 5 answered")).toBeInTheDocument();
 	});
 
-	it("redacts the poll types and the categories nothing in the build reads", () => {
+	it("redacts the poll types, option counts and categories nothing in the build reads", () => {
 		render_();
 
-		expect(screen.getAllByText("???")).toHaveLength(2);
+		expect(screen.getAllByText("???")).toHaveLength(3);
 	});
 
 	it("credits the config that revealed the draw", () => {
@@ -203,6 +203,7 @@ describe("PrepView", () => {
 				...view,
 				upcomingCategories: ["js", "ts", "js"],
 				answerTypesThisGate: { single: 4, multiple: 1 },
+				optionCountsThisGate: [4, 4, 5],
 			}),
 		});
 
@@ -234,6 +235,28 @@ describe("PrepView", () => {
 		});
 
 		expect(rowFor("type")?.textContent).toBe("type4single·1multiple");
+	});
+
+	it("lists how many options each remaining poll offers, in play order", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				optionCountsThisGate: [4, 4, 6, 5],
+			}),
+		});
+
+		expect(rowFor("options")?.textContent).toBe("options4·4·6·5");
+	});
+
+	it("redacts the option counts when today's polls are spent", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				optionCountsThisGate: [],
+			}),
+		});
+
+		expect(rowFor("options")?.textContent).toBe("options???");
 	});
 
 	it("names only the answer type the window actually holds", () => {
@@ -293,6 +316,8 @@ describe("PrepView", () => {
 	it("prices what a miss takes", () => {
 		render_();
 
-		expect(screen.getByText(/^remove \d+ slots?$/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/^remove (\d+ configs?|\d+–\d+ configs)$/)
+		).toBeInTheDocument();
 	});
 });

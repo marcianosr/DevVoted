@@ -37,6 +37,15 @@ export const BuySlot: Story = {
 	},
 };
 
+export const RebuildRetired: Story = {
+	args: {
+		label: "Rebuild offers",
+		icon: "↻",
+		price: "16 KB",
+		lock: "Config list exhausted!",
+	},
+};
+
 export const NothingLeftToBuy: Story = {
 	args: {
 		label: "Git tag",

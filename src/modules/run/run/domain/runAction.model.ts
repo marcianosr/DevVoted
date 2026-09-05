@@ -1,5 +1,4 @@
 import { slotsOf } from "~/modules/run/config/domain/config.model";
-import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
 import { hasRoomFor } from "~/modules/run/build/domain/build.model";
 import {
@@ -96,12 +95,6 @@ const start = (state: RunState): RunState => {
 	if (!canStart(state.build)) return state;
 	return { ...state, status: "answering" };
 };
-
-export const withRecommendedBuild = (state: RunState): RunState =>
-	recommendedPicks(state.available, state.build.slots).reduce(
-		(run, config) => runReducer(run, { type: "install", configId: config.id }),
-		state
-	);
 
 const SHOP_WRITES: readonly RunAction["type"][] = [
 	"draft",

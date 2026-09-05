@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { type Config, minify } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import {
 	failPeelShareFor,
 	SLICE_WINDOW,
@@ -19,17 +21,28 @@ import {
 
 describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	it("owes a share of the occupied slots at the gate it missed", () => {
-		const state = failGate(started(["unit-tests"]));
+		const state = failGate({ ...started(["unit-tests"]), gatesCleared: 1 });
 		expect(state.status).toBe("awaiting-strip");
-		expect(state.peelSlotsRemaining).toBe(Math.ceil(4 * failPeelShareFor(0)));
-		expect(state.gatesCleared).toBe(0);
+		expect(state.peelSlotsRemaining).toBe(Math.ceil(4 * failPeelShareFor(1)));
+		expect(state.gatesCleared).toBe(1);
 		expect(state.build.configs).toHaveLength(4);
 	});
 
+	it("owes nothing at the Pallet gate, and keeps the whole build (ADR-057)", () => {
+		const state = failGate(started(["unit-tests"]));
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.gatesCleared).toBe(0);
+		expect(state.build.configs).toHaveLength(4);
+		expect(state.log.at(-1)).toContain("takes nothing");
+	});
+
 	it("sends the paid peel to the shop instead of straight back to the polls", () => {
-		const state = payPeel(failGate(started(["unit-tests"])));
+		const state = payPeel(
+			failGate({ ...started(["unit-tests"]), gatesCleared: 1 })
+		);
 		expect(state.status).toBe("rewarding");
-		expect(state.redoGate).toBe(0);
+		expect(state.redoGate).toBe(1);
 		expect(state.build.configs).toHaveLength(3);
 		expect(state.draftOptions.length).toBeGreaterThan(0);
 	});
@@ -76,6 +89,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		const base = started(["unit-tests", "eslint"]);
 		const state = failGate({
 			...base,
+			gatesCleared: 1,
 			build: {
 				...base.build,
 				configs: base.build.configs.slice(0, 1),
@@ -83,6 +97,16 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		});
 		expect(state.status).toBe("dead");
 		expect(state.log.at(-1)).toContain("the build fills 1");
+	});
+
+	it("spares a one-config build at the Pallet gate (ADR-057)", () => {
+		const base = started(["unit-tests", "eslint"]);
+		const state = failGate({
+			...base,
+			build: { ...base.build, configs: base.build.configs.slice(0, 1) },
+		});
+		expect(state.status).toBe("awaiting-strip");
+		expect(state.build.configs).toHaveLength(1);
 	});
 
 	it("clears the redo flag on the clear that follows", () => {
@@ -93,6 +117,8 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		expect(state.redoGate).toBeUndefined();
 	});
 
+	// Still fatal at the Pallet gate despite the waived peel: isPeelFatal is
+	// `quota >= occupied`, and 0 >= 0. Narrowing it to `>` would strand the run.
 	it("ends the run when a bare build misses — a bare retry would loop forever", () => {
 		let state = started(["js"]);
 		state = { ...state, build: { ...state.build, configs: [] } };
@@ -148,5 +174,146 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 		state = { ...state, build: { ...state.build, configs: [] } };
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("dead");
+	});
+});
+
+describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)", () => {
+	const collecting = (
+		configs: readonly Config[],
+		quota: number,
+		storage = 0
+	): RunState => {
+		const base = started(["unit-tests", "eslint"]);
+		return {
+			...base,
+			build: { ...base.build, slots: occupiedSlots(configs), configs },
+			status: "awaiting-strip",
+			peelSlotsRemaining: quota,
+			storage,
+		};
+	};
+
+	const drop = (state: RunState, configId: string): RunState =>
+		runReducer(state, { type: "strip", configId });
+
+	const GC = CONFIGS.garbageCollection;
+
+	it("pays the dropped config's sell value into storage", () => {
+		const state = drop(collecting([GC, CONFIGS.agentsMd], 8), "agents-md");
+		expect(state.storage).toBe(128);
+		expect(state.peelRefundKb).toBe(128);
+	});
+
+	it("pays nothing when no collector is installed", () => {
+		const state = drop(
+			collecting([CONFIGS.js, CONFIGS.agentsMd], 8),
+			"agents-md"
+		);
+		expect(state.storage).toBe(0);
+		expect(state.peelRefundKb ?? 0).toBe(0);
+	});
+
+	it("pays for its own removal", () => {
+		const state = drop(
+			collecting([GC, CONFIGS.agentsMd], 2),
+			"garbage-collection"
+		);
+		expect(state.storage).toBe(32);
+	});
+
+	it("pays nothing for a config minified instead of dropped", () => {
+		const state = runReducer(collecting([GC, CONFIGS.agentsMd], 4), {
+			type: "minify",
+			configId: "agents-md",
+		});
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.storage).toBe(0);
+		expect(state.peelRefundKb ?? 0).toBe(0);
+	});
+
+	// Sharp because addStorage re-clamps to the plan cap: an unguarded refund of 0
+	// would burn the surplus on an action that never touched money.
+	it("leaves an over-cap balance alone when a minify frees the slots", () => {
+		const state = runReducer(collecting([GC, CONFIGS.agentsMd], 4, 400), {
+			type: "minify",
+			configId: "agents-md",
+		});
+		expect(state.storage).toBe(400);
+	});
+
+	it("halves the payout while it is minified", () => {
+		const state = drop(
+			collecting([minify(GC), CONFIGS.agentsMd], 8),
+			"agents-md"
+		);
+		expect(state.storage).toBe(64);
+	});
+
+	it("pays nothing while WTFPL voids the warranty, its own removal included", () => {
+		const build = [GC, CONFIGS.wtfpl, CONFIGS.agentsMd];
+		expect(drop(collecting(build, 8), "agents-md").storage).toBe(0);
+		expect(drop(collecting(build, 8), "wtfpl").storage).toBe(0);
+	});
+
+	it("pays half of Freemium's discounted price", () => {
+		const state = drop(
+			collecting([GC, CONFIGS.freemium, CONFIGS.agentsMd], 8),
+			"agents-md"
+		);
+		expect(state.storage).toBe(64);
+	});
+
+	it("banks the total across a two-config peel, and clears it when the climb resumes", () => {
+		let state = collecting([GC, CONFIGS.js, CONFIGS.ts, CONFIGS.css], 2);
+		state = drop(state, "js");
+		state = drop(state, "ts");
+		expect(state.peelRefundKb).toBe(32);
+		expect(state.storage).toBe(32);
+		state = runReducer(state, { type: "resume-climb" });
+		expect(state.peelRefundKb).toBe(0);
+		expect(state.storage).toBe(32);
+	});
+
+	it("stops the refund at the storage plan's cap", () => {
+		const state = drop(collecting([GC, CONFIGS.agentsMd], 8, 200), "agents-md");
+		expect(state.storage).toBe(256);
+	});
+
+	it("names the recovered KB in the log", () => {
+		const state = drop(collecting([GC, CONFIGS.agentsMd], 8), "agents-md");
+		expect(state.log.at(-1)).toContain("+128KB collected");
+	});
+
+	it("leaves the log alone when nothing was collected", () => {
+		const state = drop(
+			collecting([CONFIGS.js, CONFIGS.agentsMd], 8),
+			"agents-md"
+		);
+		expect(state.log.at(-1)).not.toContain("collected");
+	});
+
+	// A fatal miss returns "dead" before the awaiting-strip branch, so strip() is
+	// unreachable and no peel refund can run on the miss that ends the run.
+	it("pays nothing on a fatal miss, which never reaches the strip screen", () => {
+		const base = started(["unit-tests", "eslint"]);
+		const state = failGate({
+			...base,
+			gatesCleared: 1,
+			build: { ...base.build, slots: 1, configs: [CONFIGS.js] },
+		});
+		expect(state.status).toBe("dead");
+		expect(state.storage).toBe(0);
+	});
+
+	// isPeelFatal is `ceil(occupied * share) >= occupied` and share tops out at 0.5,
+	// so only a one-slot build is ever fatal — the collector's own two always survive.
+	it("cannot be in the build a peel kills", () => {
+		const base = started(["unit-tests", "eslint"]);
+		const state = failGate({
+			...base,
+			gatesCleared: 12,
+			build: { ...base.build, slots: 2, configs: [GC] },
+		});
+		expect(state.status).toBe("awaiting-strip");
 	});
 });

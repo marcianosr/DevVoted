@@ -1,5 +1,6 @@
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
+import { badgeNumbers } from "./Badge.ui";
 import { Meter } from "./Meter.ui";
 import { Swatch, type SwatchState } from "./Swatch.ui";
 import { Text } from "./Text.ui";
@@ -55,7 +56,14 @@ export const Header = ({
 					<Text size="title" className="font-bold">
 						{title}
 					</Text>
-					{subtitle === undefined ? null : <Text tone="muted">{subtitle}</Text>}
+					{subtitle === undefined ? null : (
+						<Text
+							tone="muted"
+							className="inline-flex flex-wrap items-center gap-1"
+						>
+							{badgeNumbers(subtitle)}
+						</Text>
+					)}
 				</div>
 			</div>
 			{coverage === undefined ? null : (

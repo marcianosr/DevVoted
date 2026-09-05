@@ -1,8 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 
-export type ConfigFamily = "focus" | "defense" | "risk" | "amplify" | "economy";
-
 export type AbArm = "coverage" | "storage";
 
 export type ConfigSize = 1 | 2 | 4 | 8 | 12 | 16;
@@ -10,7 +8,6 @@ export type ConfigSize = 1 | 2 | 4 | 8 | 12 | 16;
 export type Config = {
 	readonly id: string;
 	readonly label: string;
-	readonly family: ConfigFamily;
 	readonly slots?: ConfigSize;
 	readonly description: string;
 	readonly gives?: string;
@@ -33,13 +30,14 @@ export type Config = {
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
 	readonly suppressesAudit?: boolean;
-	readonly autoUpgradeOneIn?: number;
+	readonly autoUpgradeAfterCorrect?: number;
 	readonly coverageDecayPerClear?: number;
 	readonly offersFullRoster?: boolean;
 	readonly locksOffers?: boolean;
 	readonly revealsUpcomingCategories?: boolean;
 	readonly revealsCorrectCount?: boolean;
 	readonly draftCostFactor?: number;
+	readonly refundsPeeledConfigs?: boolean;
 	readonly subscriptionKb?: number;
 	readonly subscriptionGrowthPerGate?: number;
 	readonly draftCost?: number;
@@ -114,7 +112,7 @@ export const isUpgradable = (config: Config): boolean => {
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
 		config.peeksCommunitySplit === true ||
-		config.autoUpgradeOneIn !== undefined;
+		config.autoUpgradeAfterCorrect !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
 
@@ -123,10 +121,12 @@ export const levelUp = (config: Config): Config => ({
 	level: (config.level ?? 1) + 1,
 });
 
-export const autoUpgradeOneInOf = (config: Config): number | undefined =>
-	config.autoUpgradeOneIn === undefined
+export const autoUpgradeAfterCorrectOf = (
+	config: Config
+): number | undefined =>
+	config.autoUpgradeAfterCorrect === undefined
 		? undefined
-		: config.autoUpgradeOneIn - ((config.level ?? 1) - 1);
+		: Math.max(1, config.autoUpgradeAfterCorrect - ((config.level ?? 1) - 1));
 
 const SAMPLE_SIZE_LEVEL = 2;
 
@@ -147,8 +147,8 @@ export const storageOnClearOf = (config: Config): number | undefined =>
 export const describeConfig = (config: Config): string => {
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
-	if (config.autoUpgradeOneIn !== undefined)
-		return `1 in ${autoUpgradeOneInOf(config)} gate clears: a random config in your build upgrades, free.`;
+	if (config.autoUpgradeAfterCorrect !== undefined)
+		return `${autoUpgradeAfterCorrectOf(config)} correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over.`;
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
 			? "Pay a doubling fee to see how the community answered this poll, and how many answered."
@@ -171,12 +171,12 @@ export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
 	const next = levelUp(config);
 
 	return [
-		...(config.autoUpgradeOneIn === undefined
+		...(config.autoUpgradeAfterCorrect === undefined
 			? []
 			: [
 					{
-						from: `1 in ${autoUpgradeOneInOf(config)}`,
-						to: `1 in ${autoUpgradeOneInOf(next)}`,
+						from: `${autoUpgradeAfterCorrectOf(config)} in a row`,
+						to: `${autoUpgradeAfterCorrectOf(next)} in a row`,
 					},
 				]),
 		...(config.peeksCommunitySplit === true
@@ -218,8 +218,7 @@ export type ConfigFigure =
 	| { readonly kind: "multiplier"; readonly value: number }
 	| { readonly kind: "coverage"; readonly value: number }
 	| { readonly kind: "kb"; readonly value: number }
-	| { readonly kind: "percent"; readonly value: number }
-	| { readonly kind: "chance"; readonly oneIn: number };
+	| { readonly kind: "percent"; readonly value: number };
 
 export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 	if (config.focusCategory)
@@ -255,17 +254,14 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 	if (config.storageInterestPct !== undefined)
 		return { kind: "percent", value: interestPctOf(config) };
 
-	const oneIn = autoUpgradeOneInOf(config);
-	if (oneIn !== undefined) return { kind: "chance", oneIn };
-
 	return undefined;
 };
 
 export const givesOf = (config: Config): string | undefined => {
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} per clear`;
-	if (config.autoUpgradeOneIn !== undefined)
-		return `A free random config upgrade on 1 in ${autoUpgradeOneInOf(config)} gate clears`;
+	if (config.autoUpgradeAfterCorrect !== undefined)
+		return `A free random config upgrade every ${autoUpgradeAfterCorrectOf(config)} correct answers in a row`;
 	if (config.peeksCommunitySplit)
 		return showsSampleSize(config)
 			? "See how the community answered, and how many answered"

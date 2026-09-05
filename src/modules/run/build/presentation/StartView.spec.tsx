@@ -219,3 +219,39 @@ describe("StartView", () => {
 		).not.toBeInTheDocument();
 	});
 });
+
+describe("the suggested opening (ADR-057)", () => {
+	it("marks the suggested rows without pressing them", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				recommendedConfigIds: [CONFIGS.js.id, CONFIGS.ts.id],
+			}),
+		});
+
+		expect(screen.getAllByText("suggested")).toHaveLength(2);
+		expect(
+			screen.getByRole("button", { name: "Install .js" })
+		).toHaveAttribute("aria-pressed", "false");
+	});
+
+	it("drops the mark once the row is picked", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				configs: [CONFIGS.js],
+				slotsUsed: 1,
+				slotsFree: 3,
+				recommendedConfigIds: [CONFIGS.js.id, CONFIGS.ts.id],
+			}),
+		});
+
+		expect(screen.getAllByText("suggested")).toHaveLength(1);
+	});
+
+	it("marks nothing when the deal suggests nothing", () => {
+		render_();
+
+		expect(screen.queryByText("suggested")).not.toBeInTheDocument();
+	});
+});

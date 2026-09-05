@@ -36,12 +36,6 @@ describe("effectOf — Focus", () => {
 });
 
 describe("effectOf — coverage amplifiers", () => {
-	it("Coverage doubles gains instead of paying a storage multiplier", () => {
-		const effect = effectOf(CONFIGS.coverageGain);
-		expect(effect.coverage?.(answering("css"))).toEqual({ mult: 2, add: 0 });
-		expect(effect.rewardMultiplier).toBeUndefined();
-	});
-
 	it("Intellisense multiplies ALL coverage instead of storage rewards", () => {
 		const effect = effectOf(CONFIGS.intellisense);
 		expect(effect.coverage?.(answering("java"))).toEqual({ mult: 1.5, add: 0 });
@@ -256,6 +250,13 @@ describe("configStatusFor — online", () => {
 });
 
 describe("configStatusFor — skipped", () => {
+	it("names the peel for the collector, which never fires on a poll", () => {
+		expect(configStatusFor(CONFIGS.garbageCollection, onPoll("js"))).toEqual({
+			kind: "skipped",
+			why: { kind: "paysOnPeel" },
+		});
+	});
+
 	it("names the gate clear for the configs that pay there", () => {
 		expect(configStatusFor(CONFIGS.unitTests, onPoll("js"))).toEqual({
 			kind: "skipped",
@@ -265,9 +266,14 @@ describe("configStatusFor — skipped", () => {
 			kind: "skipped",
 			why: { kind: "paysAtGateClear" },
 		});
+	});
+
+	it("keeps Dependabot online on every poll — the answer counts either way", () => {
 		expect(configStatusFor(CONFIGS.dependabot, onPoll("js"))).toEqual({
-			kind: "skipped",
-			why: { kind: "paysAtGateClear" },
+			kind: "online",
+		});
+		expect(configStatusFor(CONFIGS.dependabot, onPoll("ruby"))).toEqual({
+			kind: "online",
 		});
 	});
 

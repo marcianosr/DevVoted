@@ -53,9 +53,13 @@ export const Stake = ({
 					// than as what this row costs.
 					notes={
 						<>
-							<Chip tone="cinnabar">
-								remove {plural(removeOnMiss, "config")}
-							</Chip>
+							{removeOnMiss === 0 ? (
+								<Chip tone="celadon">costs nothing</Chip>
+							) : (
+								<Chip tone="cinnabar">
+									remove {plural(removeOnMiss, "config")}
+								</Chip>
+							)}
 							{missIsFatal ? (
 								<Text size="meta" tone="cinnabar">
 									your whole build — the run ends here

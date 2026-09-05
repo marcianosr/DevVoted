@@ -4,6 +4,7 @@ const SKIP_COPY = {
 	openerOnly: "the gate's first poll only",
 	cacheCold: "the cache is cold here",
 	paysAtGateClear: "pays at the gate clear",
+	paysOnPeel: "pays at the peel",
 	billsAtGateClear: "bills at the gate clear",
 	inShop: "applies in the shop",
 	noAuditToSuppress: "no audit to suppress here",

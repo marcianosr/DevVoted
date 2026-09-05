@@ -292,6 +292,7 @@ export const finishReward = (state: RunState): RunState => {
 		gateRewardKb: 0,
 		redoGate: undefined,
 		autoUpgradedConfigId: undefined,
+		autoUpgradedByConfigId: undefined,
 		deletedConfigs: undefined,
 		lapsedConfigs: undefined,
 		subscriptionBillKb: 0,

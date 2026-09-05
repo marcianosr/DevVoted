@@ -66,7 +66,7 @@ describe("startingHand", () => {
 			CONFIGS.agentsMd,
 			CONFIGS.codeCoverage,
 			CONFIGS.indexedDb,
-			CONFIGS.coverageGain,
+			CONFIGS.abTest,
 			CONFIGS.coldStart,
 			CONFIGS.mooresLaw,
 			CONFIGS.js,
@@ -85,7 +85,7 @@ describe("startingHand", () => {
 			CONFIGS.agentsMd,
 			CONFIGS.codeCoverage,
 			CONFIGS.indexedDb,
-			CONFIGS.coverageGain,
+			CONFIGS.abTest,
 			CONFIGS.coldStart,
 			CONFIGS.mooresLaw,
 		];
@@ -107,6 +107,15 @@ describe("startingHand", () => {
 		startingHand(pool, "lavender");
 
 		expect(ids(pool)).toEqual(ids(STARTER_POOL));
+	});
+});
+
+describe("RECOMMENDED_SIZE", () => {
+	// Every recommendedPicks spec asserts against the constant, so a slide back
+	// to preselecting three would stay green without this.
+	it("marks two of the five, leaving the opening a decision (ADR-057)", () => {
+		expect(RECOMMENDED_SIZE).toBe(2);
+		expect(HAND_SIZE).toBe(5);
 	});
 });
 
@@ -148,7 +157,7 @@ describe("recommendedPicks", () => {
 			CONFIGS.agentsMd,
 			CONFIGS.codeCoverage,
 			CONFIGS.indexedDb,
-			CONFIGS.coverageGain,
+			CONFIGS.abTest,
 			CONFIGS.js,
 		];
 

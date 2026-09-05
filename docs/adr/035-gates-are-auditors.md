@@ -39,7 +39,7 @@ An audit is a fixed thematic rule a gate carries (`gate/domain/audit.model.ts`).
 | 11 Elite | Strip | failing the gate peels 2 configs |
 | 12 Champion | Burn + Strip | both, stacked |
 
-> ⚠ Extended by [ADR-038](038-the-audit-roster.md) — the roster now covers every gate from 3 and the count escalates; the Burn is renamed Memory Leak, and the Mirror flips the poll rather than the score (so its demand discount is gone).
+> ⚠ Extended by [ADR-038](038-the-audit-roster.md) — the roster now covers every gate from 3 and the count escalates; the Burn is renamed Memory Leak, and the Mirror flips the poll rather than the score (so its demand discount is gone). Narrowed again by [ADR-056](056-audits-are-drawn-not-scheduled.md) — an audit is no longer "a fixed thematic rule a gate carries": gates 4–11 draw from staged pools seeded on the date, and only gates 3 and 12 are authored.
 
 Strips are audit-owned now — the only trigger left. A strip-audit fail routes strip → shop → prep → same gate, and a quota that takes the whole build ends the run: stake-fatal death survives only where a gate explicitly threatens it, named on the stake receipt. (⚠ [ADR-037](037-a-missed-gate-peels-a-config.md): every gate peels on a miss, and a strip audit only deepens the peel. The routing here is what every failed gate now does.) KB insolvency keeps its ADR-023 behavior (plan downgrade, never death). Gates 4–6, 8 and 10 are open content slots (DVTD-6moy).
 

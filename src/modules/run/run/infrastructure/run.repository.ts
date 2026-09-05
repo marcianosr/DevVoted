@@ -12,7 +12,11 @@ import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 
-import { isRunOver, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	isRunOver,
+	type RunState,
+	scheduleOf,
+} from "~/modules/run/run/domain/run.model";
 import {
 	type RunAction,
 	runReducer,
@@ -430,7 +434,13 @@ export const applyActionToRun = async (args: {
 				// Which question was asked, recorded beside the answer: the picks
 				// alone cannot say, and every reader downstream needs to know
 				// (ADR-038).
-				mirrorsPolls(liveAuditsFor(state.build.configs, state.gatesCleared))
+				mirrorsPolls(
+					liveAuditsFor(
+						state.build.configs,
+						state.gatesCleared,
+						scheduleOf(state)
+					)
+				)
 			);
 		}
 

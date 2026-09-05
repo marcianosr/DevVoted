@@ -6,7 +6,6 @@ import { roleOf, roleRows } from "~/modules/run/gate/domain/configRole.model";
 const config = (
 	over: Partial<Config> & Pick<Config, "id" | "label">
 ): Config => ({
-	family: "economy",
 	description: "",
 	rewardMultiplier: 1,
 	...over,
@@ -21,13 +20,11 @@ const unitTests = config({
 const focusTs = config({
 	id: "ts",
 	label: ".ts",
-	family: "focus",
 	focusCategory: "ts",
 });
 const eslint = config({
 	id: "eslint",
 	label: "ESLint",
-	family: "defense",
 	eliminatesWrongOptionsFor: ["js", "ts"],
 	gives: "Cross out a wrong answer on JS/TS polls",
 	costs: "The fee doubles each use",

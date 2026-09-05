@@ -8,7 +8,7 @@ import {
 	type DealRow,
 } from "~/ui/terminal-theme/screens/NewRunScreen.ui";
 import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
-import { plural } from "~/ui/terminal-theme/format";
+import { countRange, plural } from "~/ui/terminal-theme/format";
 
 const slotRows = (
 	view: RunView,
@@ -67,16 +67,17 @@ export const StartView = ({
 		const selected = installed.has(config.id);
 		const fits = slotsOf(config) <= view.slotsFree;
 		return {
-			family: config.family,
 			name: config.label,
 			detail: config.description,
 			slots: slotsOf(config),
+			version: config.level ?? 1,
 			selected,
 			toggleLabel: selected
 				? `Uninstall ${config.label}`
 				: `Install ${config.label}`,
 			onToggle: selected || fits ? () => onToggle(config.id) : undefined,
 			locked: !selected && !fits,
+			recommended: !selected && view.recommendedConfigIds.includes(config.id),
 		};
 	};
 
@@ -85,7 +86,7 @@ export const StartView = ({
 			theme={view.gateTheme}
 			header={{
 				title: "New run",
-				subtitle: `${swatch?.gateName ?? "First gate"} · ${gateStake.coverageDemand}% coverage · miss removes ${plural(gateStake.peelSlotsOnFailure, "slot")}`,
+				subtitle: `${swatch?.gateName ?? "First gate"} · ${gateStake.coverageDemand}% coverage · ${gateStake.missIsFree ? "a miss costs nothing" : `miss removes ${countRange(gateStake.peelConfigsOnFailure.fewest, gateStake.peelConfigsOnFailure.most, "config")}`}`,
 				swatch: swatch?.theme,
 				swatchState: "pending",
 				value: kbLabel(startSlotDeals.archiveKb),

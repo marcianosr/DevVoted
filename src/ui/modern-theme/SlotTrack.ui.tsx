@@ -1,5 +1,7 @@
 import { clsx } from "clsx";
 
+import { sizeTint } from "~/ui/sizes";
+
 import { plural } from "./format";
 import { occupancyOf, type Occupancy } from "./slots";
 import { Text } from "./Text.ui";
@@ -10,8 +12,8 @@ const TRACK = "flex h-7 w-full items-stretch gap-1";
 
 const SEGMENT =
 	"flex min-w-0 items-center justify-center overflow-hidden rounded border px-1";
-const INSTALLED = "border-current bg-zinc-800/80";
-const MINIFIED = "border-dotted border-current bg-zinc-800/40";
+const INSTALLED = "border-current";
+const MINIFIED = "border-dotted border-current";
 const NEUTRAL = "text-zinc-400";
 const FREE = "border-dashed border-zinc-700";
 const FREE_ARMED = "border-dashed border-celadon";
@@ -94,9 +96,17 @@ type Cell = {
 	readonly press?: Press;
 };
 
+// Size owns the fill, install state owns the border and the text: a minified
+// config keeps its dotted edge while dropping a rung in colour, which is the
+// same demotion its width just took.
 const barTone = (config: SlotTrackConfig, isExcess: boolean): string => {
 	if (isExcess) return OVERFLOW;
-	return clsx(config.minified === true ? MINIFIED : INSTALLED, NEUTRAL);
+
+	return clsx(
+		config.minified === true ? MINIFIED : INSTALLED,
+		sizeTint(config.slots),
+		NEUTRAL
+	);
 };
 
 const pressFor = (fallback: string, deal: SlotDeal, cost: string): Press => {

@@ -24,7 +24,8 @@ const auditNamed = (name: string, gate: number) => {
 	return entry;
 };
 
-// 402 sits at gate 3, 429 at gate 10. Gates count from 0, so a climb with
+// Tallies count only where an audit is certain (ADR-056): 402 at gate 3, 410
+// at gates 11-12, and the Champion's three. Gates count from 0, so a climb with
 // gatesCleared 4 beat gate 3 and stopped at gate 4.
 const climb = (gatesCleared: number, finished = true) => ({
 	gatesCleared,
@@ -64,17 +65,25 @@ describe("auditdex tallies", () => {
 	});
 
 	it("never counts a gate the climb never reached", () => {
-		expect(tallyOf("429 Too Many Requests", [climb(4), climb(5)])).toEqual({
+		expect(tallyOf("410 Gone", [climb(4), climb(5)])).toEqual({
 			faced: 0,
 			beaten: 0,
 		});
 	});
 
-	// 408 sits on gates 8 and 12; one climb past gate 8 is one climb, not two.
-	it("counts a climb once for an audit that sits on two gates", () => {
-		expect(tallyOf("408 Request Timeout", [climb(9)])).toEqual({
+	// 410 is certain at gates 11 and 12; one climb past gate 11 is one climb.
+	it("counts a climb once for an audit certain on two gates", () => {
+		expect(tallyOf("410 Gone", [climb(12)])).toEqual({
 			faced: 1,
 			beaten: 1,
+		});
+	});
+
+	// Nothing records what a draw dealt, so a tally would be a guess.
+	it("tallies nothing for a drawn audit, so the panel prints no record", () => {
+		expect(tallyOf("404 Not Found", [climb(9), climb(12)])).toEqual({
+			faced: 0,
+			beaten: 0,
 		});
 	});
 
@@ -93,35 +102,21 @@ describe("auditdex tallies", () => {
 });
 
 describe("auditdex", () => {
-	it("holds fifteen audits, deduped on name rather than on id", () => {
-		// Timeout emits timeout-3/5 and Strip emits strip-10/15; counting ids
-		// would report seventeen.
+	it("holds one row per audit id", () => {
 		expect(auditdex(gatedex([]))).toHaveLength(ROSTER_SIZE);
 	});
 
-	it("gathers every gate an audit sits on into one row", () => {
+	it("names every gate an audit can land on, not where it landed", () => {
 		expect(auditNamed("410 Gone", 12).gates).toEqual([11, 12]);
-		expect(auditNamed("408 Request Timeout", 12).gates).toEqual([8, 12]);
+		expect(auditNamed("404 Not Found", 12).gates).toEqual([
+			4, 5, 6, 7, 8, 9, 10,
+		]);
 	});
 
-	it("orders the roster by the gate each audit is first met at", () => {
-		expect(auditdex(gatedex([])).map((audit) => audit.name)).toEqual([
-			"402 Payment Required",
-			"424 Failed Dependency",
-			"404 Not Found",
-			"405 Method Not Allowed",
-			"300 Multiple Choices",
-			"408 Request Timeout",
-			"502 Bad Gateway",
-			"503 Service Unavailable",
-			"507 Insufficient Storage",
-			"409 Conflict",
-			"429 Too Many Requests",
-			"410 Gone",
-			"426 Upgrade Required",
-			"403 Forbidden",
-			"413 Payload Too Large",
-		]);
+	it("orders the roster by the earliest gate each audit can reach", () => {
+		const firstGates = auditdex(gatedex([])).map((audit) => audit.gates[0]);
+		expect(firstGates).toEqual([...firstGates].sort((a, b) => a - b));
+		expect(auditdex(gatedex([]))[0]?.name).toBe("402 Payment Required");
 	});
 
 	it("calls an audit faced once the gate carrying it is cleared", () => {
@@ -132,8 +127,19 @@ describe("auditdex", () => {
 		expect(auditNamed("424 Failed Dependency", 3).tier).toBe("unlocked");
 	});
 
-	it("leaves everything past the next gate unseen", () => {
-		expect(auditNamed("405 Method Not Allowed", 3).tier).toBe("unseen");
+	it("leaves a pool the climb cannot reach yet unseen", () => {
+		expect(auditNamed("403 Forbidden", 3).tier).toBe("unseen");
+	});
+
+	// Reaching gate 4 puts every pool-A rule on the receipt's shortlist, so the
+	// Dex opens the whole pool rather than one row at a time.
+	it("opens a band's whole pool once its first gate is in front of you", () => {
+		for (const name of [
+			"405 Method Not Allowed",
+			"507 Insufficient Storage",
+			"502 Bad Gateway",
+		])
+			expect(auditNamed(name, 3).tier).toBe("unlocked");
 	});
 
 	it("redacts the whole roster for an account that has cleared nothing", () => {
@@ -142,13 +148,13 @@ describe("auditdex", () => {
 		).toBe(true);
 	});
 
-	it("faces an audit on two gates as soon as the earlier one falls", () => {
-		expect(auditNamed("300 Multiple Choices", 7).tier).toBe("faced");
+	it("faces an audit on two bands as soon as the earlier one falls", () => {
+		expect(auditNamed("300 Multiple Choices", 9).tier).toBe("faced");
 	});
 
 	it("states a varying rule without this gate's own figures", () => {
-		// timeout-3's own description says "the first 3 polls on a 30s clock",
-		// which is a lie on a row that also covers gates 10 and 12.
+		// The clock's own description names one gate's seconds, which is a lie on
+		// a row covering every gate the audit can be drawn at.
 		expect(auditNamed("408 Request Timeout", 12).rule).not.toMatch(/\d/);
 		expect(auditNamed("410 Gone", 12).rule).not.toMatch(/\d/);
 	});
@@ -160,6 +166,10 @@ describe("auditdex", () => {
 
 describe("auditsFacedIn", () => {
 	it("counts only faced rows, which is the tab's numerator", () => {
-		expect(auditsFacedIn(auditdex(clearedUpTo(4)))).toBe(2);
+		const entries = auditdex(clearedUpTo(4));
+		expect(auditsFacedIn(entries)).toBe(
+			entries.filter((entry) => entry.tier === "faced").length
+		);
+		expect(auditsFacedIn(auditdex(gatedex([])))).toBe(0);
 	});
 });

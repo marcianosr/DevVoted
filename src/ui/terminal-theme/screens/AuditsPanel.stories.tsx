@@ -3,10 +3,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Panel } from "../Panel.ui";
 import { AuditsPanel, type DexAuditClass } from "./AuditsPanel.ui";
 
-/** The five gates that carry audits below gate 9, in the order GATE_AUDITS
- * hands them out: 402 at gate 3, 424 at 4, 404 at 5, 405 at 6, 300 at 7, then
- * 408 and 502 together at 8. An account standing at gate 8 has faced exactly
- * these seven, which is why the Audits tab reads 7/15. */
+/** One plausible day's draw below gate 9 (ADR-056): 402 is fixed at gate 3, then
+ * gates 4 to 7 draw one each from pool A and gate 8 draws two from pool B. An
+ * account standing at gate 8 has faced seven, which is why the tab reads 7/15. */
 export const dexAudits: readonly DexAuditClass[] = [
 	{
 		code: "4xx",
@@ -84,6 +83,9 @@ export const dexAudits: readonly DexAuditClass[] = [
 const meta: Meta<typeof AuditsPanel> = {
 	component: AuditsPanel,
 	title: "Terminal/Screens/Dex/Audits",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexAudits"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

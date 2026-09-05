@@ -258,7 +258,6 @@ export const ShopView = ({
 		const ready = upgradeShortfalls(view, config).length === 0;
 
 		return {
-			family: config.family,
 			name: config.label,
 			detail: describeConfig(config),
 			slots: slotsOf(config),
@@ -288,7 +287,6 @@ export const ShopView = ({
 	});
 
 	const offerRows: readonly ShopOfferRow[] = view.offers.map((offer) => ({
-		family: offer.config.family,
 		name: offer.config.label,
 		detail:
 			offer.refusal === null
@@ -357,6 +355,9 @@ export const ShopView = ({
 				rebuild: {
 					label: "Rebuild offers",
 					price: kbLabel(shopControls.rebuildCost),
+					lock: shopControls.rebuildAvailable
+						? undefined
+						: "Config list exhausted!",
 					onBuy:
 						shopControls.rebuildAvailable && shopControls.canRebuild && !locked
 							? onRebuild

@@ -8,7 +8,10 @@ import type { AuditView } from "~/modules/run/run/application/gateStake.viewmode
 import type { AnswerTypeSplit } from "~/modules/run/run/domain/run.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { coverageFor } from "~/modules/run/run/presentation/PollView.component";
+import {
+	chipOf,
+	coverageFor,
+} from "~/modules/run/run/presentation/PollView.component";
 import {
 	PrepScreen,
 	type BillRow,
@@ -16,7 +19,7 @@ import {
 	type PrepBuildRow,
 	type PrepTally,
 } from "~/ui/terminal-theme/screens/PrepScreen.ui";
-import { plural } from "~/ui/terminal-theme/format";
+import { countRange, plural } from "~/ui/terminal-theme/format";
 
 const rounded = (value: number) => Math.round(value * 10) / 10;
 
@@ -24,7 +27,6 @@ const versionOf = (config: Config) => `v${config.level ?? 1}`;
 
 const buildRows = (configs: readonly Config[]): readonly PrepBuildRow[] =>
 	configs.map((config) => ({
-		family: config.family,
 		name: config.label,
 		detail: config.description,
 		slots: slotsOf(config),
@@ -35,6 +37,8 @@ const auditRows = (audits: readonly AuditView[]): readonly PrepAudit[] =>
 	audits.map((audit) => ({
 		label: `${audit.code} ${audit.name}`,
 		suppressed: audit.suppressed,
+		suppressedBy:
+			audit.suppressedBy === undefined ? undefined : chipOf(audit.suppressedBy),
 	}));
 
 const answerTypeTally = (
@@ -46,6 +50,11 @@ const answerTypeTally = (
 				{ label: "single", count: split.single },
 				{ label: "multiple", count: split.multiple },
 			].filter((item) => item.count > 0);
+
+const optionCounts = (
+	counts: readonly number[] | null
+): readonly number[] | undefined =>
+	counts === null || counts.length === 0 ? undefined : counts;
 
 const categoryTally = (
 	codes: readonly CategoryCode[] | null
@@ -90,9 +99,10 @@ const billsFor = (view: RunView) => {
 };
 
 const missPenalty = (view: RunView) => {
-	const { missIsFatal, peelSlotsOnFailure } = view.gateStake;
+	const { missIsFatal, missIsFree, peelConfigsOnFailure } = view.gateStake;
 	if (missIsFatal) return "ends the run";
-	return `remove ${plural(peelSlotsOnFailure, "slot")}`;
+	if (missIsFree) return "costs nothing";
+	return `remove ${countRange(peelConfigsOnFailure.fewest, peelConfigsOnFailure.most, "config")}`;
 };
 
 export type PrepViewProps = {
@@ -153,6 +163,7 @@ export const PrepView = ({
 				polls: `${view.pollsAnswered} / ${gateStake.pollsPerGate} answered`,
 				source: prefetcherFor(view.configs)?.label,
 				pollTypes: answerTypeTally(view.answerTypesThisGate),
+				optionCounts: optionCounts(view.optionCountsThisGate),
 				audits: auditRows(gateStake.audits),
 				categories: categoryTally(view.upcomingCategories),
 				nextCategories: categoryTally(view.nextGateCategories),

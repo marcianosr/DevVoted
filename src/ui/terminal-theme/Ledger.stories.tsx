@@ -21,7 +21,16 @@ export const Cleared: Story = {
 		rows: [
 			{ name: "gate cleared", figure: "+160 KB" },
 			{ name: "4 correct answers", figure: "+32 KB" },
-			{ name: "IndexedDB", figure: "+32 KB" },
+			{
+				name: "IndexedDB",
+				chip: { slots: 2, version: 2 },
+				figure: "+32 KB",
+			},
+			{
+				name: "Unit Tests",
+				chip: { slots: 1, version: 1 },
+				figure: "+32 KB",
+			},
 			{ name: "storage plan · 768 KB", figure: "−16 KB" },
 			{ name: "balance", value: "310 KB" },
 		],

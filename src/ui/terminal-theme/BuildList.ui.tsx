@@ -4,11 +4,15 @@ import { Dot, type DotVariant } from "./Dot.ui";
 import { Figures } from "./Figures.ui";
 import { IconButton } from "./IconButton.ui";
 import { Meter } from "./Meter.ui";
+import { Slots } from "./Slots.ui";
 import { Text } from "./Text.ui";
+import { Version } from "./Version.ui";
 
 const LIST = "flex flex-col gap-3";
 const LINE = "flex items-center gap-2";
 const NAME = "min-w-0 flex-1 truncate";
+const NAME_MARK = "flex min-w-0 flex-1 items-center gap-1.5";
+const NAME_TEXT = "min-w-0 truncate";
 const FIGURE = "shrink-0";
 const ACTION_ROW = "flex flex-col gap-0.5 py-0.5";
 const DETAIL = "pl-5";
@@ -34,6 +38,8 @@ const FOCUS_NOTE =
 export type BuildListRow = {
 	name: string;
 	detail: string;
+	slots: number;
+	version: number;
 	dot: DotVariant;
 	figure?: string;
 	meterPercent?: number;
@@ -48,6 +54,24 @@ export type BuildListRow = {
 	};
 	focused?: boolean;
 };
+
+const ConfigName = ({
+	row,
+	tone,
+	size,
+}: {
+	row: BuildListRow;
+	tone?: "default" | "muted";
+	size?: "caption";
+}) => (
+	<span className={NAME_MARK}>
+		<Text tone={tone} size={size} className={NAME_TEXT}>
+			{row.name}
+		</Text>
+		<Version label={`v${row.version}`} />
+		<Slots slots={row.slots} />
+	</span>
+);
 
 const SwapPress = ({ swap }: { swap: NonNullable<BuildListRow["swap"]> }) => (
 	<IconButton
@@ -70,7 +94,7 @@ const ActionRow = ({ row }: { row: BuildListRow }) => (
 	<div className={clsx(ACTION_ROW, row.focused === true && FOCUSED)}>
 		<span className={LINE}>
 			<Dot variant={row.dot} />
-			<Text className={NAME}>{row.name}</Text>
+			<ConfigName row={row} />
 			{row.use === undefined ? null : (
 				<IconButton
 					label={`${row.use.label} · ${row.use.price}`}
@@ -91,7 +115,7 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 		<summary className={FOLD_SUMMARY}>
 			<span className={LINE}>
 				<Dot variant={row.dot} />
-				<Text className={NAME}>{row.name}</Text>
+				<ConfigName row={row} />
 				{row.figure === undefined ? null : (
 					<span className={FIGURE}>
 						{row.dot === "blocked" ? (
@@ -138,9 +162,7 @@ const SkippedFold = ({
 		<div className={SKIPPED_LIST}>
 			{rows.map((row) => (
 				<div key={row.name} className={SKIPPED_ROW}>
-					<Text tone="muted" size="caption" className={NAME}>
-						{row.name}
-					</Text>
+					<ConfigName row={row} tone="muted" size="caption" />
 					<Text tone="faint" size="caption">
 						<Figures text={row.detail} />
 					</Text>
@@ -184,7 +206,7 @@ export const BuildList = ({
 			)}
 			{focused === undefined ? null : (
 				<div className={FOCUS_NOTE}>
-					<Text tone="default">{focused.name}</Text>
+					<ConfigName row={focused} />
 					<Text tone="muted" size="caption">
 						{focused.detail}
 					</Text>

@@ -19,9 +19,8 @@ type AuditFacts = Omit<
 	"tier"
 >;
 
-/** The fifteen of GATE_AUDITS, in order of the gate each first appears at. Timeout
- * and Strip are one entry apiece even though the model emits several ids for them
- * (timeout-3/5, strip-10/15) — counting ids would say seventeen. */
+/** The fifteen of the roster, in order of the earliest gate each can be drawn at.
+ * One entry per id, since ADR-056 made ids canonical. */
 const ROSTER: readonly AuditFacts[] = [
 	{
 		id: "cost-overrun",

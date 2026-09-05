@@ -3,9 +3,14 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { BASE_SLOTS, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import {
+	createRun,
+	type RunState,
+	scheduleOf,
+} from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 
 export const poll = (
 	id: string,
@@ -33,7 +38,6 @@ export const handed = [
 	CONFIGS.ts,
 	CONFIGS.css,
 	CONFIGS.eslint,
-	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 	CONFIGS.indexedDb,
 	CONFIGS.codeCoverage,
@@ -60,21 +64,35 @@ export const clearGate = (state: RunState): RunState => {
 	return next;
 };
 
+export const audited = (
+	state: RunState,
+	gate: number,
+	...ids: AuditId[]
+): RunState => ({
+	...state,
+	gatesCleared: gate,
+	auditSchedule: { ...scheduleOf(state), [gate]: ids },
+});
+
 export const atGateWithBuild = (
 	gate: number,
-	configCount: number
+	configCount: number,
+	...ids: AuditId[]
 ): RunState => {
 	const base = started(["js"]);
 	const roster = Object.values(CONFIGS).slice(0, configCount);
-	return {
-		...base,
-		gatesCleared: gate,
-		build: {
-			...base.build,
-			slots: occupiedSlots(roster),
-			configs: roster,
+	return audited(
+		{
+			...base,
+			build: {
+				...base.build,
+				slots: occupiedSlots(roster),
+				configs: roster,
+			},
 		},
-	};
+		gate,
+		...(ids.length > 0 ? ids : (scheduleOf(base)[gate] ?? []))
+	);
 };
 
 export const failGate = (state: RunState): RunState => {

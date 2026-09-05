@@ -22,7 +22,10 @@ import {
 import type { AuditNote } from "~/ui/terminal-theme/Audits.ui";
 import type { LedgerRow } from "~/ui/terminal-theme/Ledger.ui";
 import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
-import { storageGaugeFor } from "~/modules/run/run/presentation/PollView.component";
+import {
+	chipOf,
+	storageGaugeFor,
+} from "~/modules/run/run/presentation/PollView.component";
 import { plural } from "~/ui/terminal-theme/format";
 
 const round = (value: number) => Math.round(value * 10) / 10;
@@ -79,6 +82,10 @@ const rewardsFor = (view: RunView): readonly LedgerRow[] => {
 		{ name: "gate cleared", figure: signedKbLabel(baseKb) },
 		...rows.map((row) => ({
 			name: row.config.label,
+			chip: {
+				slots: slotsOf(row.config),
+				version: row.config.level ?? 1,
+			},
 			figure: signedKbLabel(row.kb),
 		})),
 		...bills.map((bill) => ({
@@ -101,14 +108,25 @@ const rewardsFor = (view: RunView): readonly LedgerRow[] => {
 const changedRow = (
 	config: Config,
 	label: string,
-	tone: "saffron" | "cinnabar" | "viridian"
+	tone: "saffron" | "cinnabar" | "viridian",
+	by?: string
 ): ChangedRow => ({
-	family: config.family,
 	name: config.label,
 	detail: describeConfig(config),
 	slots: slotsOf(config),
+	version: config.level ?? 1,
+	by,
 	badge: { label, tone },
 });
+
+// The roll can land on the firing config itself, and "Dependabot · by
+// Dependabot" says nothing, so the cause is named only when it differs.
+const upgradeCause = (view: RunView): string | undefined => {
+	const { autoUpgradedConfig, autoUpgradedByConfig } = view.gatePayout;
+	if (autoUpgradedByConfig === null) return undefined;
+	if (autoUpgradedByConfig.id === autoUpgradedConfig?.id) return undefined;
+	return autoUpgradedByConfig.label;
+};
 
 const changedFor = (view: RunView): readonly ChangedRow[] => {
 	const { autoUpgradedConfig, lapsedConfigs, deletedConfigs } = view.gatePayout;
@@ -116,7 +134,14 @@ const changedFor = (view: RunView): readonly ChangedRow[] => {
 	return [
 		...(autoUpgradedConfig === null
 			? []
-			: [changedRow(autoUpgradedConfig, "upgraded", "viridian")]),
+			: [
+					changedRow(
+						autoUpgradedConfig,
+						"upgraded",
+						"viridian",
+						upgradeCause(view)
+					),
+				]),
 		...lapsedConfigs.map((config) => changedRow(config, "faded", "saffron")),
 		...deletedConfigs.map((config) => changedRow(config, "gone", "cinnabar")),
 	];
@@ -134,6 +159,8 @@ const auditNote = (audit: AuditView): AuditNote => ({
 	name: audit.name,
 	cue: audit.answerCue ?? audit.description,
 	suppressed: audit.suppressed,
+	suppressedBy:
+		audit.suppressedBy === undefined ? undefined : chipOf(audit.suppressedBy),
 });
 
 export type RewardViewProps = {

@@ -54,9 +54,14 @@ describe("GameOverView", () => {
 	it("reports what the run reached, rounded to one place", () => {
 		render_();
 
+		// The facts line badges its numbers, so the text is split across spans.
 		expect(
-			screen.getByText("4 gates of 12 cleared · 38.3% coverage · 96 KB left")
-		).toBeInTheDocument();
+			screen.getByText(
+				(_, element) =>
+					element?.textContent ===
+					"4 gates of 12 cleared · 38.3% coverage · 96 KB left"
+			)
+		).toBeTruthy();
 	});
 
 	it("counts the swatches still out there", () => {

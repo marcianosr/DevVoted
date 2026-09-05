@@ -16,12 +16,14 @@ import {
 import { offerCount, rollDraft } from "~/modules/run/shop/domain/draft.model";
 import {
 	type Audit,
+	type AuditSchedule,
 	liveAuditsFor,
 	mirrorsPolls,
 	offlineConfigsFor,
 	type OfflinePair,
 	offlinePairsFor,
 } from "~/modules/run/gate/domain/audit.model";
+import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
 	BASE_SLOTS,
 	cappedStorage,
@@ -65,6 +67,7 @@ export type RunState = {
 	readonly gateRewardKb?: number;
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
+	readonly peelRefundKb?: number;
 	readonly extraPickThisGateKb?: number;
 	readonly slotsBought?: number;
 	readonly storagePlan?: number;
@@ -72,14 +75,21 @@ export type RunState = {
 	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
 	readonly redoGate?: number;
+	readonly autoUpgradeProgress?: number;
 	readonly autoUpgradedConfigId?: string;
+	readonly autoUpgradedByConfigId?: string;
 	readonly deletedConfigs?: readonly Config[];
 	readonly lapsedConfigs?: readonly Config[];
 	readonly subscriptionBillKb?: number;
 	readonly pinPlantedAtGate?: number;
 	readonly startedAtGate?: number;
+	readonly auditSchedule?: AuditSchedule;
 	readonly log: readonly string[];
 };
+
+export const scheduleOf = (
+	state: Pick<RunState, "auditSchedule">
+): AuditSchedule => state.auditSchedule ?? DEFAULT_AUDIT_SCHEDULE;
 
 const correctOptionCount = (poll: RunPoll): number =>
 	poll.options.filter((option) => option.correct).length;
@@ -122,20 +132,22 @@ export const freshWindow = (
 	polls: readonly RunPoll[],
 	fromIndex: number,
 	configs: readonly Config[],
-	gate: number
+	gate: number,
+	schedule: AuditSchedule
 ): GateWindow => ({
 	...EMPTY_WINDOW,
 	budget: pickBudgetFor(
 		polls,
 		fromIndex,
-		mirrorsPolls(liveAuditsFor(configs, gate))
+		mirrorsPolls(liveAuditsFor(configs, gate, schedule))
 	),
 });
 
 export const createRun = (
 	polls: readonly RunPoll[],
 	handed: readonly Config[],
-	startAtGate = 0
+	startAtGate = 0,
+	auditSchedule: AuditSchedule = DEFAULT_AUDIT_SCHEDULE
 ): RunState => ({
 	status: "configuring",
 	build: {
@@ -154,11 +166,12 @@ export const createRun = (
 	peelSlotsRemaining: 0,
 	polls,
 	currentIndex: 0,
-	window: freshWindow(polls, 0, [], startAtGate),
+	window: freshWindow(polls, 0, [], startAtGate, auditSchedule),
 	manualDisabled: [],
 	peekedPollIds: [],
 	gatesCleared: startAtGate,
 	startedAtGate: startAtGate,
+	auditSchedule,
 	streak: 0,
 	coverage: 0,
 	coverageByCategory: {},
@@ -190,7 +203,7 @@ export const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 	);
 
 export const auditsOf = (state: RunState): readonly Audit[] =>
-	liveAuditsFor(state.build.configs, state.gatesCleared);
+	liveAuditsFor(state.build.configs, state.gatesCleared, scheduleOf(state));
 
 export const offlineConfigsOf = (state: RunState): readonly Config[] =>
 	offlineConfigsFor(

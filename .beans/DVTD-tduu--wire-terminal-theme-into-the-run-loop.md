@@ -5,7 +5,8 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-09-01T20:02:48Z
-updated_at: 2026-09-01T20:02:48Z
+updated_at: 2026-09-04T15:04:12Z
+parent: DVTD-u35m
 ---
 
 Converge /proto-run and /_authed/run/* on one screen set: src/ui/terminal-theme/, behind the shared *View.component.tsx adapter layer. Plan: ~/.claude-work/plans/i-want-to-wire-hazy-cosmos.md

@@ -5,7 +5,8 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-12T19:52:09Z
-updated_at: 2026-08-13T11:18:33Z
+updated_at: 2026-09-04T15:04:02Z
+parent: DVTD-u35m
 ---
 
 Follow-up to DVTD-36ct, which migrated run, collection and shared. What remains is src/domains legacy: polls context (poll reads, answer evaluation, authoring — domains/polls) and account context (auth, profile — domains/users), plus domains/economy and domains/runs which are mostly reachable only via the /old routes that DVTD-7q8l deletes.

@@ -4,7 +4,6 @@ export const CONFIGS = {
 	js: {
 		id: "js",
 		label: ".js",
-		family: "focus",
 		description: "JS polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "js",
@@ -12,7 +11,6 @@ export const CONFIGS = {
 	ts: {
 		id: "ts",
 		label: ".ts",
-		family: "focus",
 		description: "TS polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "ts",
@@ -20,7 +18,6 @@ export const CONFIGS = {
 	css: {
 		id: "css",
 		label: ".css",
-		family: "focus",
 		description: "CSS polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "css",
@@ -28,7 +25,6 @@ export const CONFIGS = {
 	jsx: {
 		id: "jsx",
 		label: ".jsx",
-		family: "focus",
 		description: "React polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "react",
@@ -36,7 +32,6 @@ export const CONFIGS = {
 	git: {
 		id: "git",
 		label: ".git",
-		family: "focus",
 		description: "Git polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "git",
@@ -44,7 +39,6 @@ export const CONFIGS = {
 	rb: {
 		id: "rb",
 		label: ".rb",
-		family: "focus",
 		description: "Ruby polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "ruby",
@@ -52,7 +46,6 @@ export const CONFIGS = {
 	html: {
 		id: "html",
 		label: ".html",
-		family: "focus",
 		description: "HTML polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "html",
@@ -60,7 +53,6 @@ export const CONFIGS = {
 	java: {
 		id: "java",
 		label: ".java",
-		family: "focus",
 		description: "Java polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "java",
@@ -68,7 +60,6 @@ export const CONFIGS = {
 	py: {
 		id: "py",
 		label: ".py",
-		family: "focus",
 		description: "Python polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "python",
@@ -76,7 +67,6 @@ export const CONFIGS = {
 	frontend: {
 		id: "package.json-config",
 		label: "package.json",
-		family: "focus",
 		description: "General Frontend polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "general-frontend",
@@ -84,7 +74,6 @@ export const CONFIGS = {
 	vue: {
 		id: ".vue",
 		label: ".vue",
-		family: "focus",
 		description: "Vue polls pay 1.25× coverage.",
 		rewardMultiplier: 1,
 		focusCategory: "vue",
@@ -93,7 +82,6 @@ export const CONFIGS = {
 	unitTests: {
 		id: "unit-tests",
 		label: "Unit Tests",
-		family: "economy",
 		description: "+32KB storage on gate clear.",
 		rewardMultiplier: 1,
 		storageOnClear: 32,
@@ -101,7 +89,6 @@ export const CONFIGS = {
 	eslint: {
 		id: "eslint",
 		label: "ESLint",
-		family: "defense",
 		description:
 			"Cross out a wrong answer on JS/TS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on JS/TS polls",
@@ -112,7 +99,6 @@ export const CONFIGS = {
 	stylelint: {
 		id: "stylelint",
 		label: "Stylelint",
-		family: "defense",
 		description: "Cross out a wrong answer on CSS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on CSS polls",
 		costs: "The fee doubles each use, and resets each gate",
@@ -122,7 +108,6 @@ export const CONFIGS = {
 	intellisense: {
 		id: "intellisense",
 		label: "Intellisense",
-		family: "amplify",
 		slots: 4,
 		description: "All coverage earns ×1.5.",
 		gives: "All coverage earns ×1.5",
@@ -132,7 +117,6 @@ export const CONFIGS = {
 	agentsMd: {
 		id: "agents-md",
 		label: "AGENTS.md",
-		family: "amplify",
 		slots: 8,
 		description: "All coverage earns ×2.",
 		gives: "All coverage earns ×2",
@@ -142,7 +126,6 @@ export const CONFIGS = {
 	codeCoverage: {
 		id: "code-coverage",
 		label: "Code Coverage",
-		family: "amplify",
 		slots: 2,
 		description: "+0.5% flat coverage per correct answer.",
 		gives: "Every correct answer adds +0.5% coverage",
@@ -152,27 +135,15 @@ export const CONFIGS = {
 	indexedDb: {
 		id: "indexed-db",
 		label: "IndexedDB",
-		family: "economy",
 		slots: 2,
 		description: "+8KB storage per correct answer (up to 320KB a run).",
 		gives: "+8KB per correct answer, up to 320KB a run",
 		rewardMultiplier: 1,
 		storagePerCorrect: 8,
 	},
-	coverageGain: {
-		id: "coverage-gain",
-		label: "Coverage",
-		family: "amplify",
-		slots: 2,
-		description: "Coverage gains earn ×2.",
-		gives: "Coverage gains earn ×2",
-		rewardMultiplier: 1,
-		coverageMultiplier: 2,
-	},
 	mooresLaw: {
 		id: "moores-law",
 		label: "Moore's Law",
-		family: "economy",
 		description: "+2% of held storage on gate clear.",
 		gives: "Every gate clear pays +2% of held storage",
 		rewardMultiplier: 1,
@@ -181,7 +152,6 @@ export const CONFIGS = {
 	telemetry: {
 		id: "telemetry",
 		label: "Telemetry",
-		family: "defense",
 		slots: 2,
 		maxLevel: 2,
 		description:
@@ -194,7 +164,6 @@ export const CONFIGS = {
 	length: {
 		id: "length",
 		label: ".length",
-		family: "defense",
 		slots: 2,
 		description: "Shows how many correct answers this gate holds.",
 		gives: "The count of correct answers waiting in this gate",
@@ -204,7 +173,6 @@ export const CONFIGS = {
 	abTest: {
 		id: "ab-test",
 		label: "A/B Test",
-		family: "economy",
 		slots: 2,
 		description: AB_ARMS.coverage.description,
 		gives: AB_ARMS.coverage.gives,
@@ -216,7 +184,6 @@ export const CONFIGS = {
 	yarnLock: {
 		id: "yarn-lock",
 		label: "yarn.lock",
-		family: "economy",
 		slots: 1,
 		description:
 			"Lock a shop offer for 16KB — every reroll and every next shop keeps it until you install or release it.",
@@ -228,7 +195,6 @@ export const CONFIGS = {
 	cache: {
 		id: "cache",
 		label: "Cache",
-		family: "amplify",
 		slots: 4,
 		description:
 			"Correct answers cache their category — each cached hit pays +25% coverage there, up to ×2. A wrong answer flushes that category.",
@@ -240,7 +206,6 @@ export const CONFIGS = {
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",
-		family: "amplify",
 		slots: 2,
 		description: "Each gate's first answer earns ×2 coverage.",
 		gives: "The gate's first answer earns ×2 coverage",
@@ -250,7 +215,6 @@ export const CONFIGS = {
 	volkswagenCi: {
 		id: "volkswagen-ci",
 		label: "Volkswagen CI",
-		family: "risk",
 		slots: 8,
 		draftCost: 384,
 		description:
@@ -262,19 +226,17 @@ export const CONFIGS = {
 	prefetch: {
 		id: "prefetch",
 		label: "Prefetch",
-		family: "defense",
 		slots: 4,
 		description:
-			"Shows the category of every poll left this gate and how many of them take more than one answer, plus all of the next gate's categories.",
+			"Shows the category and option count of every poll left this gate and how many of them take more than one answer, plus all of the next gate's categories.",
 		gives:
-			"The categories and answer types of this gate's remaining polls, and the next gate's categories",
+			"The categories, option counts and answer types of this gate's remaining polls, and the next gate's categories",
 		rewardMultiplier: 1,
 		revealsUpcomingCategories: true,
 	},
 	wtfpl: {
 		id: "wtfpl",
 		label: "WTFPL",
-		family: "economy",
 		slots: 8,
 		draftCost: 512,
 		description:
@@ -287,7 +249,6 @@ export const CONFIGS = {
 	freemium: {
 		id: "freemium",
 		label: "Freemium",
-		family: "economy",
 		slots: 8,
 		draftCost: 0,
 		description:
@@ -303,7 +264,6 @@ export const CONFIGS = {
 	deprecated: {
 		id: "deprecated",
 		label: "Deprecated",
-		family: "amplify",
 		slots: 4,
 		description:
 			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1.",
@@ -316,7 +276,6 @@ export const CONFIGS = {
 	overclock: {
 		id: "overclock",
 		label: "Overclock",
-		family: "risk",
 		slots: 4,
 		description:
 			"The gate's first answer earns ×4 coverage. Everything after runs hot: ×0.5. Cools off each gate clear.",
@@ -329,14 +288,23 @@ export const CONFIGS = {
 	dependabot: {
 		id: "dependabot",
 		label: "Dependabot",
-		family: "economy",
 		slots: 8,
 		maxLevel: 2,
 		description:
-			"1 in 3 gate clears: a random config in your build upgrades, free.",
-		gives: "A free random config upgrade on 1 in 3 gate clears",
+			"5 correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over.",
+		gives: "A free random config upgrade every 5 correct answers in a row",
 		rewardMultiplier: 1,
-		autoUpgradeOneIn: 3,
+		autoUpgradeAfterCorrect: 5,
+	},
+	garbageCollection: {
+		id: "garbage-collection",
+		label: "Garbage Collection",
+		slots: 2,
+		description: "Every config you drop to pay a peel refunds its sell value.",
+		gives: "Peeled configs refund their sell value",
+		costs: "Only a drop pays — minifying to fit the peel refunds nothing",
+		rewardMultiplier: 1,
+		refundsPeeledConfigs: true,
 	},
 } as const satisfies Record<string, Config>;
 

@@ -71,6 +71,7 @@ type BuildReportRowProps = {
 	chipActions?: readonly ChipAction[];
 	chipBadge?: ReactNode;
 	trailing?: ReactNode;
+	removalPrice?: ReactNode;
 	onRemove?: (configId: string) => void;
 	removable?: boolean;
 	mark?: StatusDotVariant;
@@ -98,6 +99,7 @@ export const BuildReportRow = ({
 	chipActions,
 	chipBadge,
 	trailing,
+	removalPrice,
 	onRemove,
 	removable = false,
 	mark,
@@ -131,14 +133,26 @@ export const BuildReportRow = ({
 				</Paragraph>
 			) : null}
 			{removable && onRemove ? (
-				<button
-					type="button"
-					aria-label={`Remove ${config.label}`}
-					onClick={() => onRemove(config.id)}
-					className="shrink-0 cursor-pointer font-bold text-cinnabar"
-				>
-					✕
-				</button>
+				<>
+					{removalPrice == null ? null : (
+						<Paragraph
+							as="span"
+							size="xs"
+							tone="saffron"
+							className="shrink-0 tabular-nums"
+						>
+							{removalPrice}
+						</Paragraph>
+					)}
+					<button
+						type="button"
+						aria-label={`Remove ${config.label}`}
+						onClick={() => onRemove(config.id)}
+						className="shrink-0 cursor-pointer font-bold text-cinnabar"
+					>
+						✕
+					</button>
+				</>
 			) : trailing ? (
 				<span className="shrink-0">{trailing}</span>
 			) : null}

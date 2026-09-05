@@ -25,9 +25,16 @@ run's hit points, so the dealt configs should be the star of the screen.
    a filler that fits) and `withRecommendedBuild` installs it through the
    reducer at run birth. A new player opens the screen and presses Start; a
    veteran toggles.
+
+   > ⚠ Amended by [ADR-057](057-gate-0-is-the-calibration-gate.md): nothing is
+   > preselected. `RECOMMENDED_SIZE` is 2 and the picks are a marker on the deal;
+   > `withRecommendedBuild` is deleted.
 3. The start rule does not change: one config is the floor, the slots are the
    ceiling. One to four picks are all legal openings; three is only the
    default.
+
+   > Reaffirmed by [ADR-057](057-gate-0-is-the-calibration-gate.md), which makes
+   > the floor the whole rule. It is a floor, never a mandatory config.
 4. Starter stacks are deleted everywhere — `stack.model.ts`, the `pick-stack`
    action and its wire schema, `StackPicker`, `StackPreviewList`, the combo
    cards. The stack idea survives invisibly as the recommendation; the
@@ -45,8 +52,8 @@ run's hit points, so the dealt configs should be the star of the screen.
 | Number | Value |
 | --- | --- |
 | `HAND_SIZE` | 5 |
-| `RECOMMENDED_SIZE` | 3 |
-| Possible trios from a deal | 10 |
+| `RECOMMENDED_SIZE` | 3 → **2, advisory** (ADR-057) |
+| Possible picks from a deal | 10 trios, now 10 pairs |
 | Start floor / ceiling | 1 config / `BASE_SLOTS` (4) |
 
 ## Consequences

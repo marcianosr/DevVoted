@@ -11,6 +11,7 @@ export type BuyLineProps = {
 	detail?: string;
 	icon?: ReactNode;
 	price?: string;
+	lock?: string;
 	onBuy?: () => void;
 };
 
@@ -19,6 +20,7 @@ export const BuyLine = ({
 	detail,
 	icon,
 	price,
+	lock,
 	onBuy,
 }: BuyLineProps) => (
 	<div className={LINE}>
@@ -32,6 +34,7 @@ export const BuyLine = ({
 				label={label}
 				icon={icon}
 				price={price}
+				hint={lock}
 				disabled={onBuy === undefined}
 				className="ml-auto"
 				onUse={onBuy}

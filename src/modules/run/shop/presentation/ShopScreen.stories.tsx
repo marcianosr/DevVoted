@@ -96,7 +96,7 @@ export const Default: Story = {
 		storage: 440,
 		coverageByCategory: { css: 8 },
 		stake,
-		configs: [CONFIGS.js, CONFIGS.coverageGain],
+		configs: [CONFIGS.js, CONFIGS.codeCoverage],
 		newConfigIds: ["coverage-gain"],
 		offers: [CONFIGS.eslint, CONFIGS.agentsMd, CONFIGS.coldStart].map(
 			(config) => createMockShopOffer(config)

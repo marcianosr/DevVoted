@@ -690,6 +690,69 @@ meter::-webkit-meter-optimum-value {
 }
 
 /*
+ * The same ring, drifting. Composes on top of .legendary-ring, which owns the
+ * mask geometry; this only repaints and moves the gradient, so the static ring
+ * above keeps the 2026-08-04 call for every button and swatch that wears it.
+ * Six stops with the first repeated last, so the loop has no seam.
+ */
+.legendary-ring-flow::before {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon),
+		var(--color-saffron)
+	);
+	background-size: 200% 100%;
+	animation: gradient-flow 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.legendary-ring-flow::before {
+		animation: none;
+	}
+}
+
+/*
+ * The solid size mark at the top of the ramp: one wide bar, so the whole ramp
+ * fits inside it and drifts. The segmented mark does not use this — a bar is
+ * 5px wide and a six-stop gradient inside it reads as a smear, so each bar
+ * takes one flat stop instead (Marciano, 2026-09-04).
+ */
+.legendary-bar {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon),
+		var(--color-saffron)
+	);
+	background-size: 200% 100%;
+	animation: gradient-flow 12s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.legendary-bar {
+		animation: none;
+	}
+}
+
+/*
+ * The top rung's extra: the same drift at half the period, on the ring and on
+ * every bar inside it at once, so 16 slots reads livelier than 12 without
+ * introducing a fourth colour treatment.
+ */
+.legendary-quick::before,
+.legendary-quick .legendary-bar,
+.legendary-quick.legendary-shimmer {
+	animation-duration: 6s;
+}
+
+/*
  * The legendary Kanto gradient as a flat fill — .legendary-ring's sibling, for
  * places where a 1px ring would be invisible (the HUD's 1.5px gate segments).
  * Same stops, same source vars.

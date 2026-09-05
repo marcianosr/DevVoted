@@ -14,7 +14,6 @@ import {
 import {
 	runReducer,
 	RunAction,
-	withRecommendedBuild,
 } from "~/modules/run/run/domain/runAction.model";
 import {
 	type AnsweredPoll,
@@ -426,9 +425,7 @@ const PROTO_GRANT_KB = 256;
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, setState] = useState(() => ({
-		...withRecommendedBuild(
-			createRun(POOLS, startingHand(STARTER_POOL, `proto:${Date.now()}`))
-		),
+		...createRun(POOLS, startingHand(STARTER_POOL, `proto:${Date.now()}`)),
 		storage: storageCapFor(0),
 	}));
 	const grantStorage = () =>
@@ -743,7 +740,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 function RouteComponent() {
 	const [seed, setSeed] = useState(0);
 	return (
-		<div className="flex flex-1 flex-col text-white [--screen-floor:0px] justify-center -mt-16">
+		<div className="flex flex-1 flex-col text-white [--screen-floor:0px] justify-center">
 			<RunGame key={seed} onRestart={() => setSeed((current) => current + 1)} />
 		</div>
 	);

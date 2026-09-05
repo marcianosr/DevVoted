@@ -16,6 +16,7 @@ import type { ScreenAction } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 import { Subtitle } from "~/ui/typography/Subtitle.component";
 import { Title } from "~/ui/typography/Title.component";
+import { Badge } from "~/ui/Badge.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
@@ -28,6 +29,7 @@ type ConfiguringScreenProps = {
 	slotsFree: number;
 	stake: GateStake;
 	bench: readonly Config[];
+	recommended: readonly string[];
 	onInstall: (configId: string) => void;
 	onUninstall: (configId: string) => void;
 	startAction: ScreenAction;
@@ -62,6 +64,7 @@ export const ConfiguringScreen = ({
 	slotsFree,
 	stake,
 	bench,
+	recommended,
 	onInstall,
 	onUninstall,
 	startAction,
@@ -92,7 +95,8 @@ export const ConfiguringScreen = ({
 				aside={
 					<>
 						<Paragraph tone="muted">
-							Click a config to add it to your build
+							Click a config to add it to your build. One is enough to start;
+							two are marked as a suggested opening.
 						</Paragraph>
 						<div className="flex flex-wrap gap-2">
 							{benchOrder(bench).map((config) => (
@@ -108,6 +112,13 @@ export const ConfiguringScreen = ({
 										noTooltip
 										disabled={full}
 										onClick={() => commit(config.id)}
+										badge={
+											recommended.includes(config.id) ? (
+												<Badge tone="positive" size="corner">
+													suggested
+												</Badge>
+											) : undefined
+										}
 									/>
 								</span>
 							))}

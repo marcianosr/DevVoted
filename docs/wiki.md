@@ -115,11 +115,18 @@ low-effort attempt rarely meets the meter at all.
 
 ### 2.3 Audits
 
-An audit is a fixed rule a gate carries, stated on the stake receipt before you walk
-in. **The count is the escalation**: gates 0 to 2 are clean, one audit runs from gate
-3, two from gate 8, three from gate 11, the same shape the peel curve has. A clean
+An audit is a rule a gate carries, stated on the stake receipt before you walk in.
+**The count is the escalation**: gates 0 to 2 are clean, one audit runs from gate 3,
+two from gate 8, three from gate 11, the same shape the peel curve has. A clean
 gate's receipt says so instead of going silent: it names the first audit waiting
 ahead, so the system introduces itself before it ever charges.
+
+**Which audits fill those slots is drawn, not fixed.** Gate 3 always opens on 402 and
+gate 12 always closes on its handcrafted three; gates 4 to 11 draw from staged pools,
+seeded on the date, so every player climbing today meets the same gauntlet and
+tomorrow's is different. Nothing is hidden inside a run: the receipt names every audit
+before the gate, and the Dex publishes the pools. A missed gate keeps its audits on
+the retry, though whatever an audit picks (which config goes offline) rolls again.
 
 Every audit is named for the HTTP status it behaves like, and the class carries the
 signal: **4xx means the rules changed on you**, **5xx means your build is down**.
@@ -148,8 +155,16 @@ you levelled furthest and 426 at whatever you levelled least. Whatever is down r
 answer, struck through and blamed on the audit by name, and nowhere else, since shop
 and prep sit before the gate and naming a casualty early would be a spoiler.
 
-Schedule in [2.8](#28-what-unlocks-when), roster in `audit.model.ts`, reasoning in
-ADR-035/038.
+Two audits tighten with depth rather than repeating: **408** clocks 3 polls at 30s
+below gate 10, 3 at 25s at gates 10 and 11, and 5 at 20s at the Champion; **410** adds
+10 points to the peel at Elite and 15 at the Champion.
+
+A gate never draws two audits that do the same job, so 402/403/429 never stack, and no
+two of the five offline rules share a gate. **300 never draws with 408**, since a
+timed-out answer voids the mirror rather than beating it.
+
+Pools in [2.8](#28-what-unlocks-when), roster in `audit.model.ts`, pools and families
+in `auditSchedule.model.ts`, reasoning in ADR-035/038/056.
 
 ### 2.4 Polls and categories
 
@@ -230,8 +245,8 @@ which go, on the strip screen; then the normal post-gate loop runs (review, shop
 
 | Cost | Detail |
 | --- | --- |
-| **Slots** | 20% of the occupied slots at the early gates rising to 35% at the summit, +10% at Elite, +15% at Champion. Paid by dropping configs or minifying them, your pick — so a miss sheds whatever was not earning its room. Before gate 3 the quota never exceeds half the build, which minifying alone can always cover. |
-| **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget. |
+| **Slots** | 20% of the occupied slots at the early gates rising to 35% at the summit, +10% at Elite, +15% at Champion. Paid by dropping configs or minifying them, your pick — so a miss sheds whatever was not earning its room. Before gate 3 the quota never exceeds half the build, which minifying alone can always cover. The forecast on the poll, prep and start screens quotes the quota as a **config count** (a range when the build's sizes make it one, since one 8-slot config settles a 2-slot debt alone); the slot figure and the minify option sit in its hover. |
+| **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget, unless **Garbage Collection** ([4.3](#43-roster)) is installed, in which case every config you **drop** here refunds its sell value. Minifying still pays nothing. |
 | **The recurring bills** | Nothing: the storage plan and subscribed configs bill on clear only, so a redo is free of them. |
 | **The day's polls** | Every attempt burns 5 of the day's finite sequence, so a retry costs real time. |
 | **Audit damage** | Audits charge again: Volcano leaks every attempt, a 408 re-clocks, an outage re-rolls. |
@@ -276,24 +291,43 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 
 | Gate | Swatch | Coverage in its window | A clear pays | A miss peels | Audit | Also unlocks |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 3% | 32 KB | 20% | (clean) | Shop, **Rebuild** |
+| 0 | Pallet | 3% | 32 KB | **nothing** | (clean) | Shop, **Rebuild** |
 | 1 | Boulder | 10% | 64 KB | 20% | (clean) | — |
 | 2 | Cascade | 25% | 96 KB | 20% | (clean) | **Extend** |
 | 3 | Thunder | 40% | 128 KB | 25% | 402 Payment Required | — |
-| 4 | Lavender | 60% | 160 KB | 25% | 424 Failed Dependency | — |
-| 5 | Rainbow | 85% | 192 KB | 25% | 404 Not Found | — |
-| 6 | Soul | 110% | 224 KB | 25% | 405 Method Not Allowed | — |
-| 7 | Marsh | 140% | 256 KB | 30% | 300 Multiple Choices | — |
-| 8 | Seafoam | 175% | 288 KB | 30% | 408 Request Timeout (3 polls, 30 s) + 502 Bad Gateway | — |
-| 9 | Volcano | 210% | 320 KB | 30% | 503 Service Unavailable + 507 Insufficient Storage | — |
-| 10 | Earth | 250% | 352 KB | 30% | 409 Conflict + 429 Too Many Requests | — |
-| 11 | Elite | 290% | 384 KB | **40%** | 410 Gone + 426 Upgrade Required + 403 Forbidden | — |
+| 4 | Lavender | 60% | 160 KB | 25% | 1 of pool A | — |
+| 5 | Rainbow | 85% | 192 KB | 25% | 1 of pool A | — |
+| 6 | Soul | 110% | 224 KB | 25% | 1 of pool A | — |
+| 7 | Marsh | 140% | 256 KB | 30% | 1 of pool A | — |
+| 8 | Seafoam | 175% | 288 KB | 30% | 2 of pool B | — |
+| 9 | Volcano | 210% | 320 KB | 30% | 2 of pool B | — |
+| 10 | Earth | 250% | 352 KB | 30% | 2 of pool B | — |
+| 11 | Elite | 290% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
 | 12 | Champion | 340% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+
+The audit column names what a gate is **certain** to carry; the rest is drawn on the
+day, one audit per family per gate, and never the same audit twice within a band:
+
+| Pool | Drawn at | Holds |
+| --- | --- | --- |
+| **A** | gates 4 to 7, one each | 404, 405, 424, 429, 502, 507 |
+| **B** | gates 8 to 10, two each | pool A + 402, 409, 426, 503, 300, 408, 413 |
+| **C** | gate 11, two beside 410 | 403, 300, 408, 409, 426, 503, 507, 413, 502 |
+
+409 and 426 read a config's level, so they wait for pool B where upgrades exist; 413
+needs a build past 12 slots to bite; 403 is Elite-tier only; 402 is absent from pool A
+so the first five audited gates always teach five distinct rules.
 
 The coverage column is per-gate and fresh: each row is a score to hit inside 5 polls,
 never a running total. The unlock column names no width at all: slots are bought, not
 handed over ([5.1](#51-storage-kb)). The peel column is a share, so it already scales
 with the build it hits.
+
+**Pallet is the calibration gate** (ADR-057). It still asks for its 3%, but a miss there
+peels nothing and cannot end a run, so the first failure teaches the loop for free:
+you read your answers back, shop, and run the same gate again on 5 fresh polls. The only
+death at gate 0 is a build with nothing in it, which could never pass. From **Boulder**
+on, the peel column applies as written.
 
 The payout column is `GATE_REWARD_KB × (gate + 1)` for a **bare build on a perfect
 window**. It scales with correctness, so a 3-of-5 clear pays 60% of the row and a
@@ -307,7 +341,7 @@ Tests and Moore's Law levels (storage), lint and peek fees (uses), rebuild price
 Authoritative over this table: `coverageDemandFor`, `SLOT_PRICES_KB`, `STORAGE_PLANS`,
 `failPeelShareFor` (`rules.model.ts`), `gateClearPayout` (`build.model.ts`),
 `EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
-(`swatch.model.ts`), `GATE_AUDITS` (`audit.model.ts`).
+(`swatch.model.ts`), the audit roster (`audit.model.ts`) and its pools (`auditSchedule.model.ts`).
 
 ---
 
@@ -351,12 +385,12 @@ sold except your last config, since a bare build never clears.
 
 **Starting a run.** The run deals a **hand of five** configs from the starter
 pool — seeded per player per day, always holding at least one focus config —
-with the **recommended three already picked** (ADR-052): a new player opens the
-screen and presses Start, a veteran toggles any of the five. The hand itself
-never changes while configuring, so the deal reads as one checkable list. One
-config is the only floor — spare slots are a legal opening, and only an
-over-capacity build blocks the start. Buying slots from the archive (ADR-049)
-sits below the deal.
+and picks **nothing** for you. **Two** are marked as a suggested opening
+(ADR-057), which is advice and not a selection. The hand itself never changes
+while configuring, so the deal reads as one checkable list. **One config is the
+only floor**: pick one and you can play, spare slots are a legal opening, and
+only an over-capacity build blocks the start. Nothing in a build is ever locked
+or mandatory. Buying slots from the archive (ADR-049) sits below the deal.
 
 ---
 
@@ -424,20 +458,20 @@ what each size costs.
 | Stylelint | 1 | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate |
 | yarn.lock | 1 | Lock shop offers for 16 KB each ([5.2](#52-the-shop)); a locked offer leads every shop until installed or released, and every lock releases if yarn.lock leaves the build |
 | Cold Start | 2 | First answer of the gate rewards ×2 |
-| Coverage | 2 | Coverage gains ×2 |
 | Code Coverage | 2 | +0.5% flat coverage per correct answer |
 | IndexedDB | 2 | +8 KB storage per correct answer, capped at 320 KB |
 | Telemetry | 2 | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-and-peek)) |
 | A/B Test | 2 | Ships one of two arms, switched free at any time — in the shop or mid-poll, where the switch scores the answer you are about to give (ADR-053): A pays ×1.25 on all coverage, B pays +8 KB per correct answer (sharing the faucet's run cap) |
 | `.length` | 2 | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
+| Garbage Collection | 2 | Every config you **drop** to pay a peel refunds its sell value. WTFPL zeroes it, Freemium halves it, and minifying to free the same slots pays nothing, since the config is still installed |
 | Intellisense | 4 | All coverage ×1.5 |
 | Deprecated | 4 | All coverage ×3, fading ×0.5 each gate clear; deleted from the build at ×1 |
 | Cache | 4 | Correct answers warm their category for the rest of the run: each cached hit pays +25% coverage there, capped at ×2 (4 hits). A wrong answer in the category flushes it cold; a partial neither warms nor flushes |
-| Prefetch | 4 | Shows the category of every poll left this gate and all of the next gate's. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — categories only, the questions stay sealed |
+| Prefetch | 4 | Shows, for every poll left this gate, its category, how many options it offers (in play order), and how many of the polls take more than one answer, plus all of the next gate's categories. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — the questions stay sealed |
 | Overclock | 4 | The gate's first answer earns ×4 coverage; every answer after it runs hot at ×0.5, cooling off at the clear. Miss the opener and the gate is nearly dead — the buy is variance, not magnitude (×1.2 average, honestly under Intellisense) |
 | AGENTS.md | 8 | All coverage ×2 |
 | Volkswagen CI | 8 | Reports the gate's first audit as passing; costs 384 KB to draft |
-| Dependabot | 8 | 1 in 3 gate clears (1 in 2 at L2): a random installed config upgrades, free |
+| Dependabot | 8 | Counts correct answers: **5 in a row** (4 at L2) upgrades a random installed config, free, then the count restarts. A wrong answer or a failed gate starts it over, so it pays for a clean streak rather than for time. Its row on the poll screen shows the countdown ("in 3"). The pick ignores the Focus coverage gate the shop enforces, so a merge lands without review |
 | WTFPL | 8 | Every shop offers the entire roster; costs 512 KB, every sell refunds 0 KB while it is installed (its own included), and Rebuild/Lock/Extend retire |
 | Freemium | 8 | **Free to draft.** Every config drafts at half price while it is installed, and refunds drop to half of that discounted price. Each gate cleared bills 8 KB × 2^gate (8, 16, 32, 64, 128, 256…), charged after the clear pays; a bill the balance cannot cover lapses the config and frees its eight slots |
 
@@ -471,7 +505,6 @@ ship; the original check designs stay in the beans.
 | Cold cache | 2 | The gate's first poll pays nothing; every poll after pays ×1.5 |
 | `.tsx` | 2 | TypeScript and React polls reward ×1.25 |
 | git stash | 2 | Once per window, stash the current poll; it returns last |
-| Garbage Collection | 2 | A peeled config pays you its sell value |
 | Watch | 2 | Pick a category at draft: its polls get double draw weight |
 | `--save-exact` | 2 | Every future draft costs 20% less |
 | Overclock | 4 | 4× coverage on one poll, then −128 KB across the next two |
@@ -500,8 +533,7 @@ coverage. Ship `.tsx` and `Node.js` first and pool the rest.
 instead, since a clock or a mirror is something a gate does to you rather than something
 you buy: **Mirrored Check** is now Marsh's Mirror, **Speed Check** is now Timeout.
 
-Open: Coverage collides with coverage-the-score and is slated for a rename; General
-Backend has no Focus config yet.
+Open: General Backend has no Focus config yet.
 
 ### 4.4 Upgrades
 
@@ -940,7 +972,7 @@ The game leans hard into its CI metaphor.
 | **Gate** | A checkpoint auditing a 5-poll window: its coverage demand plus its audits. |
 | **Gate number** | Counts from 0: a run opens on gate 0 and summits on gate 12. |
 | **Gate meter** | The window's net coverage, the only score a gate judges. Resets every attempt. |
-| **Audit** | A gate's fixed rule (a mirror, a leak, a clock, a shut shop, a config knocked offline). Stated on the stake receipt; the count grows with depth. |
+| **Audit** | A rule a gate carries (a mirror, a leak, a clock, a shut shop, a config knocked offline). Drawn from a staged pool on the day, then stated on the stake receipt; the count grows with depth. |
 | **410 Gone** | An audit that deepens the peel: Elite takes 5 configs on a miss, Champion 6. |
 | **Peel** | What a missed gate takes: configs of your choosing, before the same gate runs again. |
 | **Build** | Your active setup: the track of config slots. Shown as **Your Build**. |
@@ -979,8 +1011,9 @@ applies. `rules.model.ts` holds most of it.
 | `VICTORY_GATE` / `GATE_COUNT` | 12 / 13 (gates 0 to 12) |
 | `coverageDemandFor` | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 290 / 340 |
 | `failPeelShareFor` | 20% / 20% / 20% / 25% × 4 / 30% × 4 / 35% × 2 of the occupied slots, plus strip audits; capped at half the build before gate 3 |
-| `GATE_AUDITS` | Fifteen rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
-| Audit dials | 402 ×2 · 507 16/32 KB · 408 30/20 s · 429 1 action · 413 8 KB a slot past 12 |
+| Audit roster | Fifteen rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
+| Audit pools | A 6 (gates 4-7, draw 1) · B 13 (gates 8-10, draw 2) · C 9 (gate 11, draw 2 beside 410) |
+| Audit dials | 402 ×2 · 507 16/32 KB · 408 3×30 s / 3×25 s / 5×20 s · 410 +10/+15 · 429 1 action · 413 8 KB a slot past 12 |
 
 **Scoring**
 
@@ -1008,7 +1041,7 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | `BASE_SLOTS` / `MAX_SLOTS` | 4 · 24 — the free width every run opens on, and the last slot the shop sells |
-| `HAND_SIZE` / `RECOMMENDED_SIZE` | 5 dealt at run start (seeded, ≥1 focus config) · 3 preselected (ADR-052) |
+| `HAND_SIZE` / `RECOMMENDED_SIZE` | 5 dealt at run start (seeded, ≥1 focus config) · 2 marked as advice, none preselected (ADR-052, amended by ADR-057) |
 | `slotCashOutKb` | refunds the price of the most expensive slot still held; the purchase index never rolls back |
 | `CONFIG_SIZES` | 1 · 2 · 4 · 8 · 12 · 16 slots, halved by minify (a 1-slot config cannot minify) |
 | `DRAFT_SIZE` / draft cost / sell refund | 5 offers / `32 KB × slots` / `floor(cost ÷ 2)` |

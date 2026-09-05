@@ -1,11 +1,12 @@
 ---
 # DVTD-ndak
 title: Dex shows the slot ladder, and what you have unlocked
-status: todo
+status: scrapped
 type: feature
 priority: critical
 created_at: 2026-08-25T12:48:33Z
-updated_at: 2026-08-31T09:05:03Z
+updated_at: 2026-09-04T18:31:27Z
+parent: DVTD-u35m
 ---
 
 ADR-041 split slot unlocks over two axes: gates 1/3/6 open slots 4/5/7, lifetime

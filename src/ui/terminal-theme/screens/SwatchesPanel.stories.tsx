@@ -26,6 +26,9 @@ export const dexSwatches: readonly DexSwatch[] = ALL_SWATCHES.map(
 const meta: Meta<typeof SwatchesPanel> = {
 	component: SwatchesPanel,
 	title: "Terminal/Screens/Dex/Swatches",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexSwatches"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

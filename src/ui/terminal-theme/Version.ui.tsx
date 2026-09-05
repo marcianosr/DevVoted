@@ -3,8 +3,8 @@ import { clsx } from "clsx";
 const BASE =
 	"inline-flex shrink-0 items-center px-2 py-0.5 text-xs tabular-nums";
 
-// Monochrome on purpose: hue already means family in this theme, so a green
-// version chip would read as a focus config. The rung is pure value, climbing
+// Monochrome on purpose: hue already means slot size in this theme, so a green
+// version chip would read as a one-slot config. The rung is pure value, climbing
 // out of the page's own zinc up to near-white, and the text flips dark at v4
 // where the fill outruns it.
 const RUNG = [

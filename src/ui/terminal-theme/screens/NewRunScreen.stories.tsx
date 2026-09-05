@@ -32,31 +32,21 @@ const hand: readonly Config[] = [
 	CONFIGS.eslint,
 ];
 
-const picked = new Set(recommendedPicks(hand, 4).map((config) => config.id));
+const suggested = new Set(recommendedPicks(hand, 4).map((config) => config.id));
 
-const slotsUsed = hand
-	.filter((config) => picked.has(config.id))
-	.reduce((total, config) => total + slotsOf(config), 0);
-
-const dealRows: readonly DealRow[] = hand.map((config) => {
-	const selected = picked.has(config.id);
-	const fits = slotsOf(config) <= 4 - slotsUsed;
-	return {
-		family: config.family,
-		name: config.label,
-		detail: config.description,
-		slots: slotsOf(config),
-		selected,
-		toggleLabel: selected
-			? `Uninstall ${config.label}`
-			: `Install ${config.label}`,
-		onToggle: selected || fits ? noop : undefined,
-		locked: !selected && !fits,
-	};
-});
+const dealRows: readonly DealRow[] = hand.map((config) => ({
+	name: config.label,
+	detail: config.description,
+	slots: slotsOf(config),
+	version: 1,
+	selected: false,
+	toggleLabel: `Install ${config.label}`,
+	onToggle: noop,
+	recommended: suggested.has(config.id),
+}));
 
 const palletStorage = {
-	meta: `${slotsUsed} of 4 slots`,
+	meta: "0 of 4 slots",
 	slots: 4,
 	slotRows: [
 		{
@@ -80,10 +70,32 @@ export const RecommendedDeal: Story = {
 		},
 		theme: "pallet",
 		dealt: {
-			meta: `${picked.size} of ${hand.length} picked`,
+			meta: `0 of ${hand.length} picked`,
 			rows: dealRows,
 		},
 		storage: palletStorage,
+		startLabel: "Pick a config to start",
+		onStart: undefined,
+	},
+};
+
+export const OnePicked: Story = {
+	args: {
+		...RecommendedDeal.args,
+		dealt: {
+			meta: `1 of ${hand.length} picked`,
+			rows: dealRows.map((row, index) =>
+				index === 0
+					? {
+							...row,
+							selected: true,
+							toggleLabel: `Uninstall ${row.name}`,
+							recommended: false,
+						}
+					: row
+			),
+		},
+		storage: { ...palletStorage, meta: "1 of 4 slots" },
 		startLabel: "Start the run →",
 		onStart: noop,
 	},
@@ -100,22 +112,13 @@ export const Mobile: Story = {
 	],
 };
 
-export const NothingPicked: Story = {
+export const NothingSuggested: Story = {
 	args: {
 		...RecommendedDeal.args,
 		dealt: {
 			meta: `0 of ${hand.length} picked`,
-			rows: dealRows.map((row) => ({
-				...row,
-				selected: false,
-				toggleLabel: `Install ${row.name}`,
-				onToggle: noop,
-				locked: false,
-			})),
+			rows: dealRows.map((row) => ({ ...row, recommended: false })),
 		},
-		storage: { ...palletStorage, meta: "0 of 4 slots" },
-		startLabel: "Pick a config to start",
-		onStart: undefined,
 	},
 };
 
@@ -136,7 +139,7 @@ export const TaggedAtSeafoam: Story = {
 				"You start at gate 8 with the build you saved, instead of gate 0 with four slots. The tag is spent — save another in a shop to keep this run.",
 		},
 		storage: {
-			meta: `${slotsUsed} of 16 slots`,
+			meta: "15 of 16 slots",
 			slots: 16,
 			slotRows: [
 				{

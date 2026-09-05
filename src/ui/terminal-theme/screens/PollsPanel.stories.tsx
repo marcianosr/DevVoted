@@ -38,6 +38,9 @@ export const dexCategories: readonly DexCategory[] = CATEGORY_CODES.map(
 const meta: Meta<typeof PollsPanel> = {
 	component: PollsPanel,
 	title: "Terminal/Screens/Dex/Polls",
+	// Storybook reads every named export as a story, so the data other story
+	// files import has to be named here or it renders as a story with no args.
+	excludeStories: ["dexCategories"],
 	parameters: { layout: "fullscreen" },
 	decorators: [
 		(Story) => (

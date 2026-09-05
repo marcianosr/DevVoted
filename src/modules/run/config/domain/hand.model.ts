@@ -23,7 +23,6 @@ export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.agentsMd,
 	CONFIGS.codeCoverage,
 	CONFIGS.indexedDb,
-	CONFIGS.coverageGain,
 	CONFIGS.coldStart,
 
 	// ...Object.entries(CONFIGS).map(([, config]) => {
@@ -36,9 +35,10 @@ export const STARTER_POOL: readonly Config[] = [
  * rather than a formality, and short enough that a first run reads it whole. */
 export const HAND_SIZE = 5;
 
-/** How many of the hand arrive preselected: a new player can start untouched,
- * a veteran gets ten possible trios to second-guess (ADR-052). */
-export const RECOMMENDED_SIZE = 3;
+/** How many of the hand the deal marks as its suggested opening. Advice only
+ * — nothing is picked for the player (ADR-057). Two of five leaves ten possible
+ * pairs to second-guess, and leaves the first pick genuinely theirs. */
+export const RECOMMENDED_SIZE = 2;
 
 const isFocus = (config: Config): boolean => config.focusCategory !== undefined;
 
@@ -77,9 +77,9 @@ const fitsWith = (
 ): boolean => occupiedBy(picks) + slotsOf(config) <= maxSlots;
 
 /**
- * The trio a run preselects from its hand: one config to aim with, one that
- * earns coverage, and the first remaining card that fits — in hand order, so
- * the same hand always recommends the same build (ADR-052).
+ * The picks a deal marks as its recommended opening: one config to aim with,
+ * one that earns coverage, then whatever fits — in hand order, so the same hand
+ * always recommends the same configs (ADR-052, amended by ADR-057).
  */
 export const recommendedPicks = (
 	hand: readonly Config[],

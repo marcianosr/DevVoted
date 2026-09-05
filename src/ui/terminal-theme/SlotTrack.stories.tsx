@@ -20,11 +20,7 @@ export const ShopBuild: Story = {
 	args: {
 		reading: "4 of 6 slots",
 		slots: 6,
-		segments: [
-			{ family: "focus", slots: 1 },
-			{ family: "defense", slots: 1 },
-			{ family: "economy", slots: 2 },
-		],
+		segments: [{ slots: 1 }, { slots: 1 }, { slots: 2 }],
 	},
 };
 
@@ -32,10 +28,10 @@ export const SittingOutGap: Story = {
 	args: {
 		slots: 6,
 		segments: [
-			{ family: "focus", slots: 1 },
 			{ slots: 1 },
-			{ family: "risk", slots: 2 },
-			{ family: "defense", slots: 1 },
+			{ slots: 1, open: true },
+			{ slots: 2 },
+			{ slots: 1 },
 		],
 	},
 };

@@ -91,8 +91,10 @@ score for a build failure, and death stops being legible at the gate (ADR-021).
 
 1. Polls run out while camping a gate. Default: the prep countdown (ADR-032)
    holds the replay for tomorrow. Marciano: "not sure" (2026-08-15).
-2. How to retarget `coverageGain`: scale with the gate, or swap the check.
-3. Gate 0: keep the 3%, or exempt the teaching gate.
+2. ~~How to retarget `coverageGain`~~ — moot twice over: ADR-035 took checks
+   off configs, and the config itself was deleted 2026-09-04.
+3. ~~Gate 0: keep the 3%, or exempt the teaching gate.~~ Answered by
+   [ADR-057](057-gate-0-is-the-calibration-gate.md): keep the 3%, waive the peel.
 
 ## Consequences
 
