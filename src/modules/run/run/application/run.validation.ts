@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
+import {
+	SLICE_WINDOW,
+	STORAGE_PLANS,
+} from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
 const configActionSchema = <T extends string>(type: T) =>
@@ -14,6 +17,9 @@ const configActionSchema = <T extends string>(type: T) =>
 const bareActionSchema = <T extends string>(type: T) =>
 	z.object({ type: z.literal(type) }).strict();
 
+const optionActionSchema = <T extends string>(type: T) =>
+	z.object({ type: z.literal(type), optionId: z.string().min(1) }).strict();
+
 const storagePlanActionSchema = <T extends string>(type: T) =>
 	z
 		.object({
@@ -26,10 +32,23 @@ const storagePlanActionSchema = <T extends string>(type: T) =>
 		})
 		.strict();
 
+const gateSlotSchema = z
+	.number()
+	.int()
+	.min(0)
+	.max(SLICE_WINDOW - 1);
+
 export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("install"),
 	configActionSchema("uninstall"),
 	bareActionSchema("start"),
+	z
+		.object({
+			type: z.literal("rebase"),
+			from: gateSlotSchema,
+			to: gateSlotSchema,
+		})
+		.strict(),
 	z
 		.object({
 			type: z.literal("answer"),
@@ -39,6 +58,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
+	optionActionSchema("buy-back-option"),
 	configActionSchema("strip"),
 	bareActionSchema("resume-climb"),
 	configActionSchema("draft"),

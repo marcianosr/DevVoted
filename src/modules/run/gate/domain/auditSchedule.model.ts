@@ -27,6 +27,7 @@ const FAMILY_OF = {
 	"payload-too-large": "storage-burn",
 	mirrored: "poll-reading",
 	"not-found": "poll-reading",
+	"legal-hold": "poll-reading",
 	"read-only": "shop",
 	timeout: "clock",
 	strip: "stake",
@@ -51,6 +52,7 @@ export const AUDIT_RANK: readonly AuditId[] = [
 	"rolling-outage",
 	"flaky-build",
 	"dependency-outage",
+	"legal-hold",
 	"not-found",
 	"too-many-requests",
 	"cost-overrun",
@@ -63,6 +65,7 @@ const POOL_A: readonly AuditId[] = [
 	"too-many-requests",
 	"flaky-build",
 	"memory-leak",
+	"legal-hold",
 ];
 
 const POOL_B: readonly AuditId[] = [
@@ -86,6 +89,7 @@ const POOL_C: readonly AuditId[] = [
 	"memory-leak",
 	"payload-too-large",
 	"flaky-build",
+	"legal-hold",
 ];
 
 export const INTRO_GATE = 3;

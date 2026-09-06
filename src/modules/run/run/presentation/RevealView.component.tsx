@@ -14,15 +14,21 @@ import {
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { RevealScreen } from "~/ui/terminal-theme/screens/RevealScreen.ui";
 import type { ChoiceState } from "~/ui/terminal-theme/Choice.ui";
-import type { EquationFactor } from "~/ui/terminal-theme/Equation.ui";
+import type {
+	EquationFactor,
+	EquationProps,
+} from "~/ui/terminal-theme/Equation.ui";
+import type { TrailProps } from "~/ui/terminal-theme/Trail.ui";
 import {
 	auditNotes,
 	buildRows,
 	buildTotalFor,
 	categoryFor,
+	factsFor,
 	type PollFacts,
 	questionFor,
 	runHeaderFor,
+	trailFor,
 } from "~/modules/run/run/presentation/PollView.component";
 
 const LETTERS = "ABCDEFGH";
@@ -111,6 +117,24 @@ const equationFactors = (
 	];
 };
 
+// A miss has no factor row to close, so the loss reads once, here.
+const totalFor = (
+	answered: AnsweredPoll
+): Pick<EquationProps, "result" | "resultLabel" | "resultTone"> => {
+	if (answered.coverageLost === undefined)
+		return {
+			result: `+${round(answered.coverageEarned ?? 0)}%`,
+			resultLabel: "coverage earned",
+			resultTone: "viridian",
+		};
+
+	return {
+		result: `−${round(answered.coverageLost)}%`,
+		resultLabel: "coverage lost",
+		resultTone: "cinnabar",
+	};
+};
+
 const faucetKbByConfig = (
 	view: RunView,
 	answered: AnsweredPoll
@@ -126,6 +150,20 @@ const faucetKbByConfig = (
 	}
 	return paid;
 };
+
+const revealTrailFor = (view: RunView): TrailProps => ({
+	...trailFor(view),
+	current: view.answeredThisGate.length,
+});
+
+const coverageSettlementFor = (view: RunView, answered: AnsweredPoll) => ({
+	held: view.gateStake.coverageHeld,
+	demand: view.gateStake.coverageDemand,
+	earned:
+		answered.coverageLost === undefined
+			? (answered.coverageEarned ?? 0)
+			: -answered.coverageLost,
+});
 
 const hasPollsLeft = (view: RunView): boolean =>
 	view.pollsPerGate - view.answeredThisGate.length > 0;
@@ -152,23 +190,31 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 		<RevealScreen
 			theme={view.gateTheme}
 			run={runHeaderFor(view)}
+			coverage={coverageSettlementFor(view, answered)}
 			build={{
 				running: rows.filter((row) => row.dot === "on").length,
 				rows,
 				total: buildTotalFor(view, facts),
 			}}
 			audits={auditNotes(view)}
+			trail={revealTrailFor(view)}
+			facts={factsFor(view, {
+				options: optionsOf(answered),
+				answerType: answered.answerType,
+			})}
 			category={categoryFor(answered.category)}
 			question={questionFor(view, answered.question)}
 			choices={settledChoices(answered)}
 			equation={{
 				factors: equationFactors(view, answered),
-				result: `+${round(answered.coverageEarned ?? 0)}%`,
-				resultLabel: "coverage earned",
+				...totalFor(answered),
 			}}
 			explainer={answered.explanation}
 			nextLabel={hasPollsLeft(view) ? "Next poll →" : "Next →"}
 			onNext={onNext}
+			byline={
+				answered.author === undefined ? undefined : { author: answered.author }
+			}
 		/>
 	);
 };

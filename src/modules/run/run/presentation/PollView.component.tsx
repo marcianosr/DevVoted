@@ -6,6 +6,7 @@ import {
 	type Config,
 	describeConfig,
 	headlineFigureOf,
+	maxLevelOf,
 	otherArmOf,
 	slotsOf,
 	type ConfigFigure,
@@ -25,13 +26,17 @@ import {
 	gateBaseMultiplier,
 	pollDifficultyMultiplier,
 } from "~/modules/run/run/domain/rules.model";
-import { cachedHitsFor } from "~/modules/run/run/domain/runPoll.model";
+import {
+	type AnswerType,
+	cachedHitsFor,
+} from "~/modules/run/run/domain/runPoll.model";
 import type {
 	PollChoice,
 	PollFact,
 } from "~/ui/terminal-theme/screens/PollScreen.ui";
 import { PollScreen } from "~/ui/terminal-theme/screens/PollScreen.ui";
 import type { AuditNote } from "~/ui/terminal-theme/Audits.ui";
+import type { ChoiceSeal } from "~/ui/terminal-theme/Choice.ui";
 import type { BuildListRow } from "~/ui/terminal-theme/BuildList.ui";
 import type { DotVariant } from "~/ui/terminal-theme/Dot.ui";
 import type { RunHeaderProps } from "~/ui/terminal-theme/RunHeader.ui";
@@ -88,6 +93,7 @@ export const chipOf = (
 	label: config.label,
 	slots: slotsOf(config),
 	version: config.level ?? 1,
+	maxVersion: maxLevelOf(config),
 });
 
 export const auditNotes = (view: RunView): readonly AuditNote[] =>
@@ -109,6 +115,7 @@ const skipNote = (why: SkipReason): string => {
 	if (why.kind === "paysOnPeel") return "pays on a peel";
 	if (why.kind === "billsAtGateClear") return "bills on clear";
 	if (why.kind === "inShop") return "works in the shop";
+	if (why.kind === "inPrep") return "works before the gate";
 	if (why.kind === "noAuditToSuppress") return "no audit to suppress";
 	if (why.kind === "runCapReached") return "the run's cap is spent";
 	return "not this poll";
@@ -155,7 +162,10 @@ type Tool = {
 	readonly onUse: () => void;
 };
 
-const toolsFor = (view: RunView, handlers: PollTools): readonly Tool[] => [
+const toolsFor = (
+	view: RunView,
+	handlers: Pick<PollTools, "onLint" | "onPeek">
+): readonly Tool[] => [
 	...(view.paidActions.canLint && view.paidActions.linter
 		? [
 				{
@@ -312,6 +322,20 @@ export const coverageFor = (view: RunView) => {
 	};
 };
 
+export const coverageGaugeFor = (
+	view: RunView,
+	poll: PollFacts,
+	difficulty: number
+) => ({
+	held: view.gateStake.coverageHeld,
+	demand: view.gateStake.coverageDemand,
+	perCorrect: coverageForAnswer(
+		liveConfigsIn(view),
+		poll,
+		gateBaseMultiplier(view.gatesCleared) * difficulty
+	),
+});
+
 export const storageGaugeFor = (view: RunView) => ({
 	label: `${kbLabel(view.storage)} of ${kbLabel(view.storagePlan.capKb)} cap`,
 	percent:
@@ -328,9 +352,14 @@ export const questionFor = (view: RunView, question: string): string =>
 		? `Mirrored — pick every INCORRECT option. ${question}`
 		: question;
 
-const factsFor = (
+export type ScoredShape = {
+	readonly options: readonly unknown[];
+	readonly answerType?: AnswerType;
+};
+
+export const factsFor = (
 	view: RunView,
-	poll: NonNullable<RunView["poll"]>
+	poll: ScoredShape
 ): readonly PollFact[] => {
 	const multiplier = pollDifficultyMultiplier(
 		poll.options.length,
@@ -345,7 +374,6 @@ const factsFor = (
 			value: `×${Math.round(multiplier * 100) / 100}`,
 			tone: "celadon",
 		},
-		{ label: plural(poll.options.length, "option") },
 		...(poll.answerType === "multiple"
 			? [{ label: "pick every correct one" }]
 			: []),
@@ -376,6 +404,7 @@ const factsFor = (
 export type PollTools = {
 	onLint: () => void;
 	onPeek: () => void;
+	onBuyBack: (optionId: string) => void;
 	onSwitchArm?: (configId: string) => void;
 };
 
@@ -397,9 +426,11 @@ export const PollView = ({
 	onSubmit,
 	onLint,
 	onPeek,
+	onBuyBack,
 	onSwitchArm,
 }: PollViewProps) => {
 	const blocked = new Set(view.disabledOptionIds);
+	const sealed = new Set(view.hiddenOptionIds);
 
 	const noteFor = (optionId: string) => {
 		if (blocked.has(optionId)) return "crossed out";
@@ -407,12 +438,30 @@ export const PollView = ({
 		return share === undefined ? undefined : `${share}% picked this`;
 	};
 
+	// A sealed answer is unreadable, not ruled out, so it carries the price of
+	// reading it rather than the crossed-out mark, and it stays pickable.
+	const stateFor = (optionId: string) =>
+		blocked.has(optionId) ? ("crossedOut" as const) : ("idle" as const);
+
+	const sealFor = (optionId: string): ChoiceSeal | undefined => {
+		if (!sealed.has(optionId)) return undefined;
+		const price = kbLabel(view.buyBack.costKb);
+		return {
+			price,
+			hint: view.buyBack.ready
+				? `Unseal this answer for ${price}`
+				: `Unseal this answer for ${price} — not enough storage`,
+			onUnseal: view.buyBack.ready ? () => onBuyBack(optionId) : undefined,
+		};
+	};
+
 	const choices: readonly PollChoice[] = poll.options.map((option, index) => ({
 		letter: LETTERS[index] ?? `${index + 1}`,
 		label: option.label,
 		selected: selectedOptionIds.includes(option.id),
-		state: blocked.has(option.id) ? "crossedOut" : "idle",
+		state: stateFor(option.id),
 		note: noteFor(option.id),
+		seal: sealFor(option.id),
 	}));
 
 	const byLetter = new Map(
@@ -439,6 +488,14 @@ export const PollView = ({
 		<PollScreen
 			theme={view.gateTheme}
 			run={runHeaderFor(view)}
+			coverage={coverageGaugeFor(
+				view,
+				facts,
+				pollDifficultyMultiplier(
+					poll.options.length,
+					poll.answerType === "multiple"
+				)
+			)}
 			trail={trailFor(view)}
 			category={categoryFor(poll.category, view.categoryHidden)}
 			question={questionFor(view, poll.question)}

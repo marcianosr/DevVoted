@@ -7,6 +7,7 @@ const SKIP_COPY = {
 	paysOnPeel: "pays at the peel",
 	billsAtGateClear: "bills at the gate clear",
 	inShop: "applies in the shop",
+	inPrep: "applies before the gate starts",
 	noAuditToSuppress: "no audit to suppress here",
 	runCapReached: "the run's storage cap is spent",
 	notThisPoll: "not on this poll",

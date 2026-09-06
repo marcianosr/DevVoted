@@ -3,7 +3,10 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
+import {
+	revealsPlanTier,
+	STORAGE_PLANS,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	createMockGateStake,
 	createMockRunView,
@@ -94,8 +97,32 @@ describe("ShopView", () => {
 
 		expect(screen.getByText("Stylelint")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /^Stylelint · Install/ })
+			screen.getByRole("button", {
+				name: /^Stylelint · Install.*Needs 2 slots — 1 free/,
+			})
 		).toBeDisabled();
+	});
+
+	it("keeps the offer's own description in the row and the refusal on the press", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				offers: [
+					createMockShopOffer(CONFIGS.stylelint, {
+						refusal: { reason: "no-room", slots: 2, freeSlots: 1 },
+					}),
+				],
+			}),
+		});
+
+		expect(
+			screen.queryByText(/Needs 2 slots — 1 free/, {
+				ignore: "[aria-hidden='true']",
+			})
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Needs 2 slots — 1 free/ })
+		).toBeInTheDocument();
 	});
 
 	it("leaves the shop for the gate", async () => {
@@ -168,7 +195,9 @@ describe("ShopView build rows", () => {
 	it("states a bumped config's version", () => {
 		render_();
 
-		expect(screen.getAllByText("v1").length).toBeGreaterThan(0);
+		expect(
+			screen.getAllByRole("img", { name: /^version 1 of/ }).length
+		).toBeGreaterThan(0);
 	});
 
 	it("fires the arm switch in one press, no confirm", async () => {
@@ -316,10 +345,36 @@ describe("ShopView offers", () => {
 		).toBeInTheDocument();
 	});
 
+	it("stops calling the cash row empty once every slot is filled", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				slots: 5,
+				slotsFree: 0,
+				slotDeals: {
+					...view.slotDeals,
+					cash: {
+						costKb: 16,
+						refusal: "Every slot is filled — uninstall or minify first.",
+					},
+				},
+			}),
+		});
+
+		expect(screen.getByText("Slot 5")).toBeInTheDocument();
+		expect(screen.queryByText("Slot 5 · empty")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("Every slot is filled — uninstall or minify first.")
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /Cash slot 5/ })).toBeDisabled();
+	});
+
 	it("names the version an offer would install", () => {
 		render_();
 
-		expect(screen.getAllByText("v1").length).toBeGreaterThan(0);
+		expect(
+			screen.getAllByRole("img", { name: /^version 1 of/ }).length
+		).toBeGreaterThan(0);
 	});
 
 	// A version the player already owns is on the shelf as an upgrade, so it
@@ -338,7 +393,9 @@ describe("ShopView offers", () => {
 		expect(
 			screen.getByRole("button", { name: /^\.js · Upgrade/ })
 		).toBeInTheDocument();
-		expect(screen.getByText("v2")).toBeInTheDocument();
+		expect(
+			screen.getByRole("img", { name: "version 2 of 5" })
+		).toBeInTheDocument();
 	});
 
 	it("offers no lock while yarn.lock is not in the build", () => {
@@ -433,21 +490,33 @@ describe("ShopView offers", () => {
 	});
 });
 
-const planAt = (tier: number, storage: number, affordable = true) => ({
+const planAt = (
+	tier: number,
+	storage: number,
+	affordable = true,
+	peakKb = storage
+) => ({
 	capKb: STORAGE_PLANS[tier].capKb,
 	perGateKb: STORAGE_PLANS[tier].perGateKb,
-	options: STORAGE_PLANS.map((plan) => ({
-		tier: plan.tier,
-		capKb: plan.capKb,
-		perGateKb: plan.perGateKb,
-		held: plan.tier === tier,
-		burnsKb: Math.max(0, storage - plan.capKb),
-		affordable: plan.tier <= tier || affordable,
-	})),
+	peakKb,
+	options: STORAGE_PLANS.map((plan) => {
+		const revealed = revealsPlanTier(plan.tier, peakKb);
+
+		return {
+			tier: plan.tier,
+			capKb: plan.capKb,
+			perGateKb: plan.perGateKb,
+			held: plan.tier === tier,
+			burnsKb: Math.max(0, storage - plan.capKb),
+			affordable: plan.tier <= tier || affordable,
+			revealed,
+			...(revealed ? {} : { opensAtKb: STORAGE_PLANS[plan.tier - 1].capKb }),
+		};
+	}),
 });
 
 describe("ShopView storage plan", () => {
-	it("lists all seven rungs and masks everything past the next", () => {
+	it("lists all seven rungs and masks the ones no run has filled up to", () => {
 		render_();
 
 		const track = screen.getByRole("list", { name: "storage plan rungs" });
@@ -457,6 +526,35 @@ describe("ShopView storage plan", () => {
 		expect(within(track).queryByText("1 MB")).not.toBeInTheDocument();
 		expect(within(track).getAllByText("????").length).toBeGreaterThan(0);
 		expect(within(track).getAllByRole("button")).toHaveLength(2);
+	});
+
+	// The mask is not a dead end: it says what opens it, in the cap the player
+	// is already renting, so the requirement never names the rung it hides.
+	it("names what opens a masked rung, and the best held against it", () => {
+		render_({
+			view: createMockRunView({ ...view, storagePlan: planAt(1, 300, true) }),
+		});
+
+		const track = screen.getByRole("list", { name: "storage plan rungs" });
+		expect(
+			within(track).getByText("opens at 512 KB held · best 300 KB")
+		).toBeInTheDocument();
+	});
+
+	it("opens a rung once a run has filled the cap below it", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				storage: 40,
+				storagePlan: planAt(1, 40, true, 512),
+			}),
+		});
+
+		const track = screen.getByRole("list", { name: "storage plan rungs" });
+		expect(within(track).getByText("1 MB")).toBeInTheDocument();
+		expect(
+			within(track).getByRole("button", { name: "select 1 MB" })
+		).toBeInTheDocument();
 	});
 
 	it("meters the balance against the held cap and sizes the next rung", () => {

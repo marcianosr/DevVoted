@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { auditAt } from "~/modules/run/gate/domain/audit.model";
+import {
+	AUDIT_RANK,
+	appearsAtGates,
+} from "~/modules/run/gate/domain/auditSchedule.model";
+
 import { AuditsPanel, type DexAudit } from "./AuditsPanel.ui";
 
 const meta: Meta<typeof AuditsPanel> = {
@@ -19,67 +25,23 @@ type AuditFacts = Omit<
 	"tier"
 >;
 
-/** The fifteen of the roster, in order of the earliest gate each can be drawn at.
- * One entry per id, since ADR-056 made ids canonical. */
-const ROSTER: readonly AuditFacts[] = [
-	{
-		id: "cost-overrun",
-		gates: [3],
-		rule: "Every paid action costs double, linting and peeking both.",
-	},
-	{
-		id: "dependency-outage",
-		gates: [4],
-		rule: "One config is offline for the whole attempt.",
-	},
-	{
-		id: "read-only",
-		gates: [5],
-		rule: "The shop before this gate is shut. Nothing bought, sold, upgraded or switched.",
-	},
-	{
-		id: "feature-freeze",
-		gates: [6],
-		rule: "No paid actions at all. The linter and the peek are gone.",
-	},
-	{
-		id: "mirrored",
-		gates: [7, 11],
-		rule: "Every poll asks for the incorrect options, and wants all of them.",
-	},
-	{
-		id: "timeout",
-		gates: [8, 10, 12],
-		rule: "The window's first polls run on a clock. A late answer scores as a miss.",
-	},
-	{
-		id: "flaky-build",
-		gates: [8, 11],
-		rule: "One config drops out on every poll, a different one each time.",
-	},
-	{
-		id: "memory-leak",
-		gates: [9, 12],
-		rule: "Storage leaks on every poll: 16 KB, and 32 KB on a miss.",
-	},
-	{
-		id: "rolling-outage",
-		gates: [9],
-		rule: "The outage rolls through your build, a different config down each poll.",
-	},
-	{
-		id: "breaking-change",
-		gates: [10],
-		rule: "Your most-upgraded config takes a breaking change and does nothing.",
-	},
-	{
-		id: "strip",
-		gates: [11, 12],
-		rule: "Failing this gate peels extra configs. A build it can empty ends the run.",
-	},
-];
+/**
+ * Derived from the real roster rather than retyped: a hand-kept copy drifts, and
+ * this one had gone stale at eleven of sixteen. `AUDIT_RANK` is the roster,
+ * `appearsAtGates` the gates, and each audit states its own rule.
+ */
+const ROSTER: readonly AuditFacts[] = AUDIT_RANK.map((id) => {
+	const audit = auditAt(id, appearsAtGates(id)[0] ?? 0);
+	return {
+		id,
+		gates: appearsAtGates(id),
+		rule: audit.dexRule ?? audit.description,
+	};
+})
+	.filter((audit) => audit.gates.length > 0)
+	.sort((a, b) => (a.gates[0] ?? 0) - (b.gates[0] ?? 0));
 
-/** Two counts drive all fifteen rows, so no story can show a rule for an audit it
+/** Two counts drive every row, so no story can show a rule for an audit it
  * also calls unseen. */
 export const auditsSeen = (
 	faced: number,
@@ -95,4 +57,6 @@ export const Fresh: Story = { args: { audits: auditsSeen(0, 1) } };
 
 export const Midway: Story = { args: { audits: auditsSeen(2, 4) } };
 
-export const Complete: Story = { args: { audits: auditsSeen(11, 0) } };
+export const Complete: Story = {
+	args: { audits: auditsSeen(ROSTER.length, 0) },
+};

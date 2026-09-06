@@ -19,7 +19,16 @@ export default meta;
 type Story = StoryObj<typeof Panel>;
 
 export const Plain: Story = {
-	args: { children: <Text>one panel per screen, 800px wide at most</Text> },
+	args: { children: <Text>one panel per screen, 850px wide at most</Text> },
+};
+
+/** The two screens that carry a build sidebar get a wider frame, so the fixed
+    18rem column is not taken out of the reading width. */
+export const WithSidebar: Story = {
+	args: {
+		sidebar: true,
+		children: <Text>1040px, for the poll and reveal screens</Text>,
+	},
 };
 
 export const Themed: Story = {

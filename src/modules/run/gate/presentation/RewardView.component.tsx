@@ -4,6 +4,7 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
 	describeConfig,
+	maxLevelOf,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -85,6 +86,7 @@ const rewardsFor = (view: RunView): readonly LedgerRow[] => {
 			chip: {
 				slots: slotsOf(row.config),
 				version: row.config.level ?? 1,
+				maxVersion: maxLevelOf(row.config),
 			},
 			figure: signedKbLabel(row.kb),
 		})),
@@ -115,6 +117,7 @@ const changedRow = (
 	detail: describeConfig(config),
 	slots: slotsOf(config),
 	version: config.level ?? 1,
+	maxVersion: maxLevelOf(config),
 	by,
 	badge: { label, tone },
 });

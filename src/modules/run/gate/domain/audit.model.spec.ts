@@ -11,6 +11,7 @@ import {
 	auditFeeMultiplier,
 	auditLabel,
 	auditPaidActionLimit,
+	auditRedactionPerPoll,
 	auditsCloseShop,
 	auditsForGate,
 	auditsFreezeManualEffects,
@@ -20,8 +21,10 @@ import {
 	liveAuditsFor,
 	mirrorsPolls,
 	offlineConfigsFor,
+	redactedOptionIdsFor,
 	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	AUDIT_RANK,
 	DEFAULT_AUDIT_SCHEDULE,
@@ -38,9 +41,9 @@ const scheduleWith = (gate: number, ...ids: AuditId[]): AuditSchedule => ({
 describe("the audit roster", () => {
 	const everyAudit = AUDIT_RANK.map((id) => auditAt(id, 11));
 
-	it("holds fifteen rules, each reachable by its own id", () => {
-		expect(AUDIT_RANK).toHaveLength(15);
-		expect(new Set(AUDIT_RANK).size).toBe(15);
+	it("holds sixteen rules, each reachable by its own id", () => {
+		expect(AUDIT_RANK).toHaveLength(16);
+		expect(new Set(AUDIT_RANK).size).toBe(16);
 		for (const id of AUDIT_RANK) expect(auditAt(id, 11).id).toBe(id);
 	});
 
@@ -172,6 +175,80 @@ describe("408 Request Timeout", () => {
 
 	it("leaves an unclocked gate free", () => {
 		expect(auditTimeLimitMs(at(9, "memory-leak"), 0)).toBeUndefined();
+	});
+});
+
+describe("451 Unavailable For Legal Reasons", () => {
+	const optioned = (count: number, id = "q1"): RunPoll => ({
+		id,
+		category: "js",
+		question: "Which one?",
+		answerType: "single",
+		options: Array.from({ length: count }, (_, index) => ({
+			id: `${id}-${index}`,
+			label: `Option ${index}`,
+			correct: index === 0,
+		})),
+	});
+
+	const held = at(8, "legal-hold");
+
+	it("seals the window's first polls and frees the rest", () => {
+		expect(redactedOptionIdsFor(optioned(4), held, 0)).toHaveLength(2);
+		expect(redactedOptionIdsFor(optioned(4), held, 2)).toHaveLength(2);
+		expect(redactedOptionIdsFor(optioned(4), held, 3)).toEqual([]);
+	});
+
+	// The property the whole audit rests on: if redaction tracked correctness,
+	// ????? would tell you the answer instead of hiding it.
+	it("never seals an option because it is wrong", () => {
+		const poll = optioned(4);
+		const flipped: RunPoll = {
+			...poll,
+			options: poll.options.map((option) => ({
+				...option,
+				correct: !option.correct,
+			})),
+		};
+		expect(redactedOptionIdsFor(poll, held, 0)).toEqual(
+			redactedOptionIdsFor(flipped, held, 0)
+		);
+	});
+
+	it("seals the same options when the same poll is read again", () => {
+		expect(redactedOptionIdsFor(optioned(4), held, 0)).toEqual(
+			redactedOptionIdsFor(optioned(4), held, 0)
+		);
+	});
+
+	it("seals a different set on a different poll", () => {
+		expect(redactedOptionIdsFor(optioned(4, "q1"), held, 0)).not.toEqual(
+			redactedOptionIdsFor(optioned(4, "q2"), held, 0).map((id) =>
+				id.replace("q2", "q1")
+			)
+		);
+	});
+
+	it("always leaves two options readable", () => {
+		for (let count = 2; count <= 20; count++)
+			expect(
+				count - redactedOptionIdsFor(optioned(count), held, 0).length
+			).toBeGreaterThanOrEqual(2);
+	});
+
+	it("seals nothing on a two-option poll, which would be a coin flip", () => {
+		expect(redactedOptionIdsFor(optioned(2), held, 0)).toEqual([]);
+	});
+
+	it("seals nothing at a gate that never drew it", () => {
+		expect(redactedOptionIdsFor(optioned(4), at(9, "memory-leak"), 0)).toEqual(
+			[]
+		);
+	});
+
+	it("seals the deeper count when two would stack", () => {
+		const stacked = [...held, ...at(11, "legal-hold")];
+		expect(auditRedactionPerPoll(stacked, 0)).toBe(2);
 	});
 });
 

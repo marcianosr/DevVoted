@@ -23,6 +23,7 @@ export type ChangedRow = {
 	detail: string;
 	slots: number;
 	version: number;
+	maxVersion: number;
 	by?: string;
 	badge?: {
 		label: string;
@@ -130,11 +131,7 @@ export const GateClearScreen = ({
 					{coverage.rows.map((row) => (
 						<Row
 							key={row.category}
-							leading={
-								<Text tone="viridian" aria-hidden>
-									✓
-								</Text>
-							}
+							leading={<Text tone="viridian">✓</Text>}
 							name={row.category}
 							trailing={
 								<>
@@ -162,7 +159,12 @@ export const GateClearScreen = ({
 				<Row
 					key={row.name}
 					name={
-						<DexChip slots={row.slots} label={row.name} version={row.version} />
+						<DexChip
+							slots={row.slots}
+							label={row.name}
+							version={row.version}
+							maxVersion={row.maxVersion}
+						/>
 					}
 					detail={
 						row.by === undefined ? row.detail : `${row.detail} · by ${row.by}`

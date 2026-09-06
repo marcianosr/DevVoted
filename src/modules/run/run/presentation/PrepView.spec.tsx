@@ -24,6 +24,7 @@ const render_ = (overrides: Partial<PrepViewProps> = {}) =>
 			onStart={() => {}}
 			onBackToShop={() => {}}
 			onCommunity={() => {}}
+			onRebase={() => {}}
 			{...overrides}
 		/>
 	);
@@ -63,6 +64,13 @@ describe("PrepView", () => {
 		});
 
 		expect(screen.getByLabelText("74.3% of 60% needed")).toBeInTheDocument();
+	});
+
+	it("reads the coverage once, in the gate window rather than the header", () => {
+		render_();
+
+		expect(screen.queryByText("Coverage")).not.toBeInTheDocument();
+		expect(screen.getByText("target")).toBeInTheDocument();
 	});
 
 	it("lists the bill that waits for the clear", () => {
@@ -179,10 +187,16 @@ describe("PrepView", () => {
 		expect(screen.getByText("2 / 5 answered")).toBeInTheDocument();
 	});
 
-	it("redacts the poll types, option counts and categories nothing in the build reads", () => {
+	it("redacts the poll types and option counts nothing in the build reads", () => {
 		render_();
 
-		expect(screen.getAllByText("???")).toHaveLength(3);
+		expect(screen.getAllByText("???")).toHaveLength(2);
+	});
+
+	it("blanks the hidden categories one per poll in the window", () => {
+		render_();
+
+		expect(screen.getAllByText("?")).toHaveLength(5);
 	});
 
 	it("credits the config that revealed the draw", () => {
@@ -311,6 +325,66 @@ describe("PrepView", () => {
 		);
 
 		expect(onStart).not.toHaveBeenCalled();
+	});
+
+	it("hides the rebase panel when no config reorders the gate", () => {
+		render_();
+
+		expect(screen.queryByText("git rebase -i")).not.toBeInTheDocument();
+	});
+
+	it("lists the gate's polls by category and coverage once git rebase -i is in", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				coverageByCategory: { react: 74.2, java: 8 },
+				rebaseSlots: [
+					{ id: "p1", category: "java" },
+					{ id: "p2", category: "react" },
+				],
+			}),
+		});
+
+		expect(screen.getByText("git rebase -i")).toBeInTheDocument();
+		expect(rowFor("Java")?.textContent).toContain("8% coverage");
+		expect(rowFor("React")?.textContent).toContain("74.2% coverage");
+	});
+
+	it("moves a poll down and reports the swap it wants", async () => {
+		const onRebase = vi.fn();
+		render_({
+			view: createMockRunView({
+				...view,
+				rebaseSlots: [
+					{ id: "p1", category: "java" },
+					{ id: "p2", category: "react" },
+				],
+			}),
+			onRebase,
+		});
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Move Java down" })
+		);
+
+		expect(onRebase).toHaveBeenCalledWith(0, 1);
+	});
+
+	it("pins the ends — the first poll cannot rise and the last cannot fall", () => {
+		render_({
+			view: createMockRunView({
+				...view,
+				rebaseSlots: [
+					{ id: "p1", category: "java" },
+					{ id: "p2", category: "react" },
+				],
+			}),
+		});
+
+		expect(screen.getByRole("button", { name: "Move Java up" })).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: "Move React down" })
+		).toBeDisabled();
 	});
 
 	it("prices what a miss takes", () => {

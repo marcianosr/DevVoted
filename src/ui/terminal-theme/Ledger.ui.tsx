@@ -14,6 +14,7 @@ export type LedgerRow = {
 	chip?: {
 		slots: number;
 		version: number;
+		maxVersion: number;
 	};
 	figure?: string;
 	value?: string;
@@ -70,6 +71,7 @@ const nameOf = (row: LedgerRow) => {
 			slots={row.chip.slots}
 			label={row.name}
 			version={row.chip.version}
+			maxVersion={row.chip.maxVersion}
 		/>
 	);
 };

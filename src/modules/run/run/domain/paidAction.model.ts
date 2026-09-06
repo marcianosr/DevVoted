@@ -3,9 +3,11 @@ import {
 	auditFeeMultiplier,
 	auditPaidActionLimit,
 	auditsFreezeManualEffects,
+	BUY_BACK_KB,
 } from "~/modules/run/gate/domain/audit.model";
 import {
 	auditsOf,
+	hiddenOptionIdsOf,
 	liveConfigsOf,
 	type RunState,
 	withLog,
@@ -21,11 +23,19 @@ const PEEK_COSTS = [32, 64, 128, 256, 512];
 export const peekCost = (usesThisGate: number): number =>
 	PEEK_COSTS[usesThisGate] ?? PEEK_COSTS[PEEK_COSTS.length - 1];
 
+/**
+ * Redacted options are excluded, not merely skipped: `disabledOptionIds` ships
+ * to the client, so crossing one out would state that a sealed option is wrong
+ * — the leak the redaction exists to prevent. It also makes the linter walk the
+ * sealed set for free, since the pick is the first wrong option in poll order.
+ */
 const wrongStillOn = (state: RunState) => {
 	const poll = state.polls[state.currentIndex];
 	const alreadyOff = new Set<string>(state.manualDisabled);
+	const sealed = new Set(hiddenOptionIdsOf(state));
 	return poll.options.filter(
-		(option) => !option.correct && !alreadyOff.has(option.id)
+		(option) =>
+			!option.correct && !alreadyOff.has(option.id) && !sealed.has(option.id)
 	);
 };
 
@@ -89,5 +99,32 @@ export const spendPeek = (state: RunState): RunState => {
 		peekedPollIds: [...(state.peekedPollIds ?? []), poll.id],
 		window: { ...state.window, peeked: (state.window.peeked ?? 0) + 1 },
 		log: withLog(state, `Peeked at the community split (-${cost}KB).`),
+	};
+};
+
+export const buyBackFeeFor = (state: RunState): number =>
+	BUY_BACK_KB * auditFeeMultiplier(auditsOf(state));
+
+/**
+ * Flat, and outside every meter: not the 429 allowance, not the 403 freeze, no
+ * ladder. 451 hands out the problem, so it always hands out the answer — a seal
+ * with no way to read it is a trap rather than a rule, and that has to hold
+ * however the seal arrived. The fee is charged per option, not per gate, so a
+ * ladder would price the escape hatch out of reach.
+ */
+export const buyBackApplies = (state: RunState, optionId: string): boolean =>
+	hiddenOptionIdsOf(state).includes(optionId);
+
+export const canBuyBack = (state: RunState, optionId: string): boolean =>
+	buyBackApplies(state, optionId) && state.storage >= buyBackFeeFor(state);
+
+export const spendBuyBack = (state: RunState, optionId: string): RunState => {
+	if (!canBuyBack(state, optionId)) return state;
+	const cost = buyBackFeeFor(state);
+	return {
+		...state,
+		storage: state.storage - cost,
+		boughtBackOptionIds: [...(state.boughtBackOptionIds ?? []), optionId],
+		log: withLog(state, `Bought back a redacted answer (-${cost}KB).`),
 	};
 };

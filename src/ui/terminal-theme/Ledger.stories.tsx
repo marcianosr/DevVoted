@@ -23,12 +23,12 @@ export const Cleared: Story = {
 			{ name: "4 correct answers", figure: "+32 KB" },
 			{
 				name: "IndexedDB",
-				chip: { slots: 2, version: 2 },
+				chip: { slots: 2, version: 2, maxVersion: 4 },
 				figure: "+32 KB",
 			},
 			{
 				name: "Unit Tests",
-				chip: { slots: 1, version: 1 },
+				chip: { slots: 1, version: 1, maxVersion: 5 },
 				figure: "+32 KB",
 			},
 			{ name: "storage plan · 768 KB", figure: "−16 KB" },

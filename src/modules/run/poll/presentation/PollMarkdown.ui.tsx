@@ -42,32 +42,18 @@ const escapeMarkdownSyntax = (text: string): string =>
 				.replace(/(?<!\\)>/g, "&gt;") // remaining > not at line start
 	);
 
-/**
- * Renders question markdown with language-aware syntax highlighting. Question
- * source is authored markdown, so it is passed through untouched.
- */
 export const QuestionMarkdown = ({ children }: { children: string }) => (
 	<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
 		{children}
 	</ReactMarkdown>
 );
 
-/**
- * Renders free-text markdown (poll options, explanations) where stray markdown
- * and HTML syntax must be escaped so user content renders literally.
- */
 export const MarkdownText = ({ children }: { children: string }) => (
 	<ReactMarkdown rehypePlugins={[rehypeHighlight]}>
 		{escapeMarkdownSyntax(children)}
 	</ReactMarkdown>
 );
 
-/**
- * Renders a poll's `code_block` — a raw source string with no fences or language
- * tag. Wrapping it in a bare fenced block lets it flow through the same
- * language-detecting highlighter as inline question code, so a code example gets
- * the same treatment whether authored inline or stored in its own column.
- */
 export const CodeBlockMarkdown = ({ children }: { children: string }) => (
 	<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
 		{`\`\`\`\n${children}\n\`\`\``}

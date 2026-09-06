@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { maxLevelOf, slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 
@@ -39,6 +39,7 @@ const dealRows: readonly DealRow[] = hand.map((config) => ({
 	detail: config.description,
 	slots: slotsOf(config),
 	version: 1,
+	maxVersion: maxLevelOf(config),
 	selected: false,
 	toggleLabel: `Install ${config.label}`,
 	onToggle: noop,

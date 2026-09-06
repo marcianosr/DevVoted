@@ -51,6 +51,19 @@ export const planBillKb = (tier: number): number =>
 export const cappedStorage = (kb: number, tier: number): number =>
 	Math.min(Math.max(0, kb), storageCapFor(tier));
 
+/** The first paid rung is always on the shelf, so a fresh account never opens
+ * the section on a single free plan and a row of masks. */
+const ALWAYS_REVEALED_TIER = 1;
+
+/**
+ * Whether a rung is on the shelf yet. A rung opens by *filling* the cap below
+ * it, never by renting it: storage is clamped at the cap you rent, so reaching
+ * that cap is the run saying you have outgrown the plan, and the rung above is
+ * what it earns. Reveal only — `canAffordPlan` still decides what sells.
+ */
+export const revealsPlanTier = (tier: number, peakKb: number): boolean =>
+	tier <= ALWAYS_REVEALED_TIER || peakKb >= storageCapFor(tier - 1);
+
 export const FAUCET_CAP_KB = 320;
 
 export const faucetRemainingKb = (earnedKb: number): number =>
@@ -65,7 +78,13 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
-export const WRONG_COVERAGE_LOSS = 0.5;
+export const BASE_WRONG_COVERAGE_LOSS = 0.5;
+
+const WRONG_LOSS_GATE_STEP = 0.03;
+
+export const wrongLossShareFor = (gatesCleared: number): number =>
+	BASE_WRONG_COVERAGE_LOSS +
+	WRONG_LOSS_GATE_STEP * Math.min(Math.max(0, gatesCleared), VICTORY_GATE);
 
 const STREAK_COVERAGE_BONUS = 0.1;
 
@@ -83,7 +102,7 @@ export const gateBaseMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
 
 const COVERAGE_DEMANDS = [
-	3, 10, 25, 40, 60, 85, 110, 140, 175, 210, 250, 290, 340,
+	3, 10, 25, 40, 60, 85, 110, 140, 175, 210, 250, 300, 375,
 ] as const;
 
 export const coverageDemandFor = (gatesCleared: number): number =>

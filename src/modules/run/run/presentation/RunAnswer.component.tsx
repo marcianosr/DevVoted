@@ -16,6 +16,10 @@ import {
 	type RunActionSuccess,
 	useRunActions,
 } from "~/modules/run/run/application/useRunActions.hook";
+import {
+	type PollView,
+	revealedPoll,
+} from "~/modules/run/run/application/pollView.viewmodel";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useUpcomingCategories } from "~/modules/run/run/application/useUpcomingCategories.hook";
 
@@ -23,6 +27,7 @@ type RevealState = {
 	readonly result: RunActionSuccess;
 	readonly correctOptionIds: readonly string[];
 	readonly score: AnswerScore | null;
+	readonly poll: PollView;
 };
 
 export const RunAnswer = () => {
@@ -60,9 +65,17 @@ export const RunAnswer = () => {
 			},
 			(result) => {
 				if (!result.success) return;
+				// Unsealed before the marks are worked out: a redacted poll would
+				// otherwise stay ????? through the reveal, and correctness is
+				// matched by label, so nothing would light up either.
+				const shown = revealedPoll(
+					poll,
+					result.data.answeredThisGate.at(-1)?.options
+				);
 				setReveal({
 					result,
-					correctOptionIds: correctOptionIdsFor(poll, result.data),
+					poll: shown,
+					correctOptionIds: correctOptionIdsFor(shown, result.data),
 					score: latestAnswerScore(result.data),
 				});
 			}
@@ -114,9 +127,15 @@ export const RunAnswer = () => {
 				offlineConfigs={view.offlineConfigs.map((offline) => offline.config)}
 				mirroredPolls={view.mirroredPolls}
 				clock={pollClock}
-				poll={poll}
+				poll={reveal?.poll ?? poll}
 				selectedOptionIds={selected}
 				disabledOptionIds={view.disabledOptionIds}
+				hiddenOptionIds={reveal ? [] : view.hiddenOptionIds}
+				buyBack={{
+					costKb: view.buyBack.costKb,
+					ready: view.buyBack.ready && !busy && reveal === null,
+					onBuyBack: (optionId) => send({ type: "buy-back-option", optionId }),
+				}}
 				pollOutcomes={view.answeredThisGate.map((poll) => poll.outcome)}
 				pollsPerGate={view.pollsPerGate}
 				reveal={answerReveal}

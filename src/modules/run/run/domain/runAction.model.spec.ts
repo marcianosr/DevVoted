@@ -21,6 +21,7 @@ import {
 	answerWith,
 	atGateWithBuild,
 	audited,
+	clearGate,
 	configIds,
 	failGate,
 	handed,
@@ -109,7 +110,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		};
 		state = answerWith(state, true);
 		expect(state.window.coverageGained).toBe(0);
-		expect(state.coverage).toBe(96);
+		expect(state.coverage).toBe(94.3);
 		expect(state.streak).toBe(0);
 	});
 
@@ -476,5 +477,26 @@ describe("the starting build", () => {
 		state = runReducer(state, { type: "install", configId: "unit-tests" });
 		state = runReducer(state, { type: "uninstall", configId: "unit-tests" });
 		expect(configIds(state)).toEqual([]);
+	});
+});
+
+describe("the storage high-water mark", () => {
+	it("records the best KB the run has held", () => {
+		const cleared = clearGate(started(["js"]));
+
+		expect(cleared.storage).toBeGreaterThan(0);
+		expect(cleared.peakStorageKb).toBe(cleared.storage);
+	});
+
+	it("holds the mark once the balance is spent back down", () => {
+		const rich = {
+			...clearGate(started(["js"])),
+			storage: 400,
+			peakStorageKb: 400,
+		};
+		const spent = runReducer(rich, { type: "buy-slot" });
+
+		expect(spent.storage).toBeLessThan(400);
+		expect(spent.peakStorageKb).toBe(400);
 	});
 });

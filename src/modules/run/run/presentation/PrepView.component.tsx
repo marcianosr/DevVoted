@@ -2,35 +2,33 @@ import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { prefetcherFor } from "~/modules/run/build/domain/build.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { maxLevelOf, slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { AnswerTypeSplit } from "~/modules/run/run/domain/run.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import {
-	chipOf,
-	coverageFor,
-} from "~/modules/run/run/presentation/PollView.component";
+import { chipOf } from "~/modules/run/run/presentation/PollView.component";
 import {
 	PrepScreen,
 	type BillRow,
 	type PrepAudit,
 	type PrepBuildRow,
 	type PrepTally,
+	type RebaseSlot,
 } from "~/ui/terminal-theme/screens/PrepScreen.ui";
 import { countRange, plural } from "~/ui/terminal-theme/format";
 
 const rounded = (value: number) => Math.round(value * 10) / 10;
-
-const versionOf = (config: Config) => `v${config.level ?? 1}`;
 
 const buildRows = (configs: readonly Config[]): readonly PrepBuildRow[] =>
 	configs.map((config) => ({
 		name: config.label,
 		detail: config.description,
 		slots: slotsOf(config),
-		version: versionOf(config),
+		version: config.level ?? 1,
+		maxVersion: maxLevelOf(config),
 	}));
 
 const auditRows = (audits: readonly AuditView[]): readonly PrepAudit[] =>
@@ -74,6 +72,26 @@ const categoryTally = (
 		}));
 };
 
+const rebaseFor = (
+	view: RunView,
+	onMove: (from: number, to: number) => void
+) => {
+	if (view.rebaseSlots.length === 0) return undefined;
+
+	const slots: readonly RebaseSlot[] = view.rebaseSlots.map((slot) => ({
+		id: slot.id,
+		category: getCategoryMetadata(slot.category).name,
+		coverage: `${rounded(view.coverageByCategory[slot.category] ?? 0)}%`,
+	}));
+
+	return {
+		label: CONFIGS.gitRebase.label,
+		note: "locks when you answer",
+		slots,
+		onMove,
+	};
+};
+
 const billsFor = (view: RunView) => {
 	const { subscriptions } = view.gateStake;
 	if (subscriptions.lines.length === 0) return undefined;
@@ -110,6 +128,7 @@ export type PrepViewProps = {
 	onStart: () => void;
 	onBackToShop: () => void;
 	onCommunity: () => void;
+	onRebase: (from: number, to: number) => void;
 };
 
 export const PrepView = ({
@@ -117,6 +136,7 @@ export const PrepView = ({
 	onStart,
 	onBackToShop,
 	onCommunity,
+	onRebase,
 }: PrepViewProps) => {
 	const { gateStake } = view;
 	const gate = gateStake.gateNumber;
@@ -140,7 +160,6 @@ export const PrepView = ({
 				swatchState: "pending",
 				value: kbLabel(view.storage),
 				caption: "balance",
-				coverage: coverageFor(view),
 			}}
 			ready={{
 				note: locked
@@ -161,6 +180,7 @@ export const PrepView = ({
 					demand: gateStake.coverageDemand,
 				},
 				polls: `${view.pollsAnswered} / ${gateStake.pollsPerGate} answered`,
+				pollCount: gateStake.pollsPerGate,
 				source: prefetcherFor(view.configs)?.label,
 				pollTypes: answerTypeTally(view.answerTypesThisGate),
 				optionCounts: optionCounts(view.optionCountsThisGate),
@@ -168,6 +188,7 @@ export const PrepView = ({
 				categories: categoryTally(view.upcomingCategories),
 				nextCategories: categoryTally(view.nextGateCategories),
 			}}
+			rebase={rebaseFor(view, onRebase)}
 			bills={billsFor(view)}
 			onClear={{
 				reward: signedKbLabel(gateStake.modifiers.gateReward),

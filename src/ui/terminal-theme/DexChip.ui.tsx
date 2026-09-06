@@ -2,9 +2,8 @@ import { clsx } from "clsx";
 
 import { prismaticStep } from "~/ui/sizes";
 
-import { Slots } from "./Slots.ui";
-import { Version } from "./Version.ui";
-import { VersionFigure } from "./VersionFigure.ui";
+import { VersionDots } from "./VersionDots.ui";
+import { Weight } from "./Weight.ui";
 
 const CHIP =
 	"inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs whitespace-nowrap";
@@ -29,13 +28,6 @@ const DIM = "opacity-40";
 
 export const REDACTED = "???";
 
-/** An unseen config hands over its size and nothing else. The union is the
- * guard: a caller with no name to pass cannot pass one and trust the chip to
- * cover it.
- *
- * `maxVersion` picks the version mark. A catalogue knows the ceiling and shows
- * the fraction; a run screen has no ceiling to compare against and shows the
- * rung the config is standing on. */
 export type DexChipProps = {
 	selected?: boolean;
 	onSelect?: () => void;
@@ -46,7 +38,7 @@ export type DexChipProps = {
 			slots: number;
 			label: string;
 			version: number;
-			maxVersion?: number;
+			maxVersion: number;
 	  }
 	| {
 			seen: false;
@@ -64,18 +56,6 @@ const stateOf = (slots: number, seen: boolean, selected: boolean) => {
 	return selected ? SELECTED : SEEN;
 };
 
-const VersionMark = ({
-	version,
-	maxVersion,
-}: {
-	version?: number;
-	maxVersion?: number;
-}) => {
-	if (version === undefined) return null;
-	if (maxVersion === undefined) return <Version label={`v${version}`} />;
-	return <VersionFigure version={version} maxVersion={maxVersion} />;
-};
-
 export const DexChip = ({
 	slots,
 	label,
@@ -88,9 +68,11 @@ export const DexChip = ({
 }: DexChipProps) => {
 	const body = (
 		<>
-			<Slots slots={slots} className={clsx(!seen && DIM)} />
+			<Weight slots={slots} className={clsx(!seen && DIM)} />
 			<span>{label ?? REDACTED}</span>
-			<VersionMark version={version} maxVersion={maxVersion} />
+			{version === undefined || maxVersion === undefined ? null : (
+				<VersionDots version={version} maxVersion={maxVersion} />
+			)}
 		</>
 	);
 	const style = clsx(CHIP, stateOf(slots, seen, selected), className);

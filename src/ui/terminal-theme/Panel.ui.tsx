@@ -5,7 +5,9 @@ import { clsx } from "clsx";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 
-const FRAME = "@container mx-auto w-full max-w-[850px] py-8";
+const FRAME = "@container mx-auto w-full py-8";
+const READING_WIDTH = "max-w-[850px]";
+const SIDEBAR_WIDTH = "max-w-[1040px]";
 const PANEL =
 	"flex flex-col gap-3 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
 
@@ -15,11 +17,14 @@ const groundOf = (theme: SwatchTheme | undefined) =>
 export type PanelProps = {
 	children: ReactNode;
 	theme?: SwatchTheme;
+	sidebar?: boolean;
 	className?: string;
 };
 
-export const Panel = ({ children, theme, className }: PanelProps) => (
-	<div className={FRAME}>
+export const Panel = ({ children, theme, sidebar, className }: PanelProps) => (
+	<div
+		className={clsx(FRAME, sidebar === true ? SIDEBAR_WIDTH : READING_WIDTH)}
+	>
 		<article
 			{...swatchTheme(theme)}
 			className={clsx(PANEL, groundOf(theme), className)}

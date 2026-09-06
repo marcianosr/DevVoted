@@ -101,7 +101,7 @@ export const storagePlanTerms = (
 
 export const offerRefusalText = (refusal: OfferRefusal): string =>
 	refusal.reason === "no-room"
-		? `Needs ${refusal.slots} slots — ${refusal.freeSlots} free. Minify or uninstall something`
+		? `Needs ${plural(refusal.slots, "slot")} — ${refusal.freeSlots} free. Minify or uninstall something`
 		: `Costs ${refusal.priceKb}KB — you have ${refusal.storageKb}KB`;
 
 const actionTone = ({

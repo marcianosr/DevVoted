@@ -25,13 +25,21 @@ import {
 	loadRunState,
 	findActiveSessionRun,
 	fetchOwnedSwatchIds,
+	fetchStorageWatermark,
 	findSessionRunByDate,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
 
-const viewOfRun = async (run: SessionRunRecord): Promise<RunView> =>
-	toRunView(await loadRunState(run.id));
+// The archive is not wired into the live run yet (only /proto-run spends it),
+// so it stays at its default while the storage watermark rides in beside it.
+const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
+	const [state, peakStorageKb] = await Promise.all([
+		loadRunState(run.id),
+		fetchStorageWatermark(run.user_id),
+	]);
+	return toRunView(state, 0, peakStorageKb);
+};
 
 const continueActiveRun = async (
 	run: SessionRunRecord,
@@ -116,7 +124,7 @@ export const startRunService = async ({
 			drawAuditSchedule(date)
 		);
 		await createSessionRunWithState(userId, date, state);
-		return toRunView(state);
+		return toRunView(state, 0, await fetchStorageWatermark(userId));
 	});
 
 export const abandonRunService = async ({
@@ -151,7 +159,7 @@ export const dispatchRunActionService = async ({
 			today: date,
 			action,
 		});
-		return toRunView(next);
+		return toRunView(next, 0, await fetchStorageWatermark(userId));
 	});
 
 /** The viewer's permanent swatch collection, earned by widening builds. */

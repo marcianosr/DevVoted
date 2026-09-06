@@ -11,6 +11,7 @@ import {
 	cappedStorage,
 	nextSlotPriceKb,
 	planBillKb,
+	revealsPlanTier,
 	slotCashOutKb,
 	storageCapFor,
 	storageCreditRate,
@@ -26,7 +27,8 @@ import {
 	STORAGE_PLANS,
 	TOP_PLAN,
 	VICTORY_GATE,
-	WRONG_COVERAGE_LOSS,
+	BASE_WRONG_COVERAGE_LOSS,
+	wrongLossShareFor,
 } from "~/modules/run/run/domain/rules.model";
 
 describe("the gate's per-window coverage demand (ADR-035)", () => {
@@ -53,8 +55,21 @@ describe("the gate's per-window coverage demand (ADR-035)", () => {
 		);
 	});
 
-	it("prices a miss at one and a half answers", () => {
-		expect(WRONG_COVERAGE_LOSS).toBe(0.5);
+	it("prices a miss at half an answer on the opening gate", () => {
+		expect(wrongLossShareFor(0)).toBe(BASE_WRONG_COVERAGE_LOSS);
+		expect(BASE_WRONG_COVERAGE_LOSS).toBe(0.5);
+	});
+
+	it("steepens the miss by 3 points a gate, up to 0.86 at the summit", () => {
+		expect(wrongLossShareFor(1)).toBeCloseTo(0.53);
+		expect(wrongLossShareFor(6)).toBeCloseTo(0.68);
+		expect(wrongLossShareFor(VICTORY_GATE)).toBeCloseTo(0.86);
+	});
+
+	it("holds the miss share past the summit, as the demand does", () => {
+		expect(wrongLossShareFor(VICTORY_GATE + 5)).toBe(
+			wrongLossShareFor(VICTORY_GATE)
+		);
 	});
 
 	it("stops the streak bonus compounding past ×2", () => {
@@ -304,5 +319,28 @@ describe("isPeelFatal", () => {
 	it("is fatal once the peel takes every occupied slot", () => {
 		expect(isPeelFatal(4, 4)).toBe(true);
 		expect(isPeelFatal(5, 4)).toBe(true);
+	});
+});
+
+describe("revealsPlanTier", () => {
+	it("opens the free rung and the first paid one to an account that has held nothing", () => {
+		expect(revealsPlanTier(0, 0)).toBe(true);
+		expect(revealsPlanTier(1, 0)).toBe(true);
+		expect(revealsPlanTier(2, 0)).toBe(false);
+	});
+
+	it("opens a rung on the cap below it, not a kilobyte sooner", () => {
+		expect(revealsPlanTier(2, 511)).toBe(false);
+		expect(revealsPlanTier(2, 512)).toBe(true);
+		expect(revealsPlanTier(3, 1023)).toBe(false);
+		expect(revealsPlanTier(3, 1024)).toBe(true);
+	});
+
+	it("opens every rung below the peak, so the shelf never has a hole in it", () => {
+		const revealed = STORAGE_PLANS.map((plan) =>
+			revealsPlanTier(plan.tier, 2048)
+		);
+
+		expect(revealed).toEqual([true, true, true, true, true, false, false]);
 	});
 });

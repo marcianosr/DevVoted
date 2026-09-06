@@ -40,6 +40,7 @@ export type DealRow = {
 	detail: string;
 	slots: number;
 	version: number;
+	maxVersion: number;
 	selected: boolean;
 	toggleLabel: string;
 	onToggle?: () => void;
@@ -83,6 +84,7 @@ const DealPick = ({ row }: { row: DealRow }) => (
 					slots={row.slots}
 					label={row.name}
 					version={row.version}
+					maxVersion={row.maxVersion}
 					selected={row.selected}
 					className="w-44 overflow-hidden @max-3xl:w-auto"
 				/>

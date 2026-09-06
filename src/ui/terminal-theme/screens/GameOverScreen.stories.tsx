@@ -59,11 +59,18 @@ export const FellAtLavender: Story = {
 		finalBuild: {
 			meta: "2 of 6 slots",
 			rows: [
-				{ name: ".js", slots: 1, version: 1, detail: "Survived every removal" },
+				{
+					name: ".js",
+					slots: 1,
+					version: 1,
+					maxVersion: 5,
+					detail: "Survived every removal",
+				},
 				{
 					name: "ESLint",
 					slots: 1,
 					version: 1,
+					maxVersion: 5,
 					detail: "Used 4 times · cost 120 KB",
 				},
 			],
@@ -143,30 +150,46 @@ export const FellAtElite: Story = {
 		finalBuild: {
 			meta: "10 of 12 slots",
 			rows: [
-				{ name: ".js", slots: 1, version: 1, detail: "Survived every removal" },
-				{ name: ".ts", slots: 1, version: 1, detail: "Deployed at gate 2" },
+				{
+					name: ".js",
+					slots: 1,
+					version: 1,
+					maxVersion: 5,
+					detail: "Survived every removal",
+				},
+				{
+					name: ".ts",
+					slots: 1,
+					version: 1,
+					maxVersion: 5,
+					detail: "Deployed at gate 2",
+				},
 				{
 					name: "ESLint",
 					slots: 1,
 					version: 1,
+					maxVersion: 5,
 					detail: "Used 9 times · cost 464 KB",
 				},
 				{
 					name: "Telemetry",
 					slots: 2,
 					version: 1,
+					maxVersion: 5,
 					detail: "Used 4 times · cost 192 KB",
 				},
 				{
 					name: "Deprecated",
 					slots: 4,
 					version: 1,
+					maxVersion: 5,
 					detail: "Faded out twice · rebought at Earth",
 				},
 				{
 					name: "IndexedDB",
 					slots: 2,
 					version: 1,
+					maxVersion: 5,
 					detail: "Banked 1.2 MB across the run",
 				},
 			],

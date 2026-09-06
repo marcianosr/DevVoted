@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	switchArm,
@@ -138,6 +139,7 @@ const asPoll = (state: RunState, split?: Readonly<Record<string, number>>) => {
 			onSubmit={noop}
 			onLint={noop}
 			onPeek={noop}
+			onBuyBack={noop}
 		/>
 	);
 };
@@ -419,4 +421,43 @@ export const WtfplVoidsTheWarranty: Story = {
 export const VolkswagenGreensTheAudit: Story = {
 	render: () =>
 		asPoll(runWith([CONFIGS.volkswagenCi, CONFIGS.js], MIXED_GATE, 3)),
+};
+
+const underAudit = (state: RunState, ...ids: AuditId[]): RunState => ({
+	...state,
+	auditSchedule: { ...state.auditSchedule, [state.gatesCleared]: ids },
+});
+
+const heldRun = (configs: readonly Config[] = [CONFIGS.js]): RunState =>
+	funded(underAudit(runWith(configs, MIXED_GATE, 8), "legal-hold"), 128);
+
+/**
+ * The gate seals answers rather than a config doing it. These polls carry three
+ * options, and the readable floor keeps two of them legible, so exactly one is
+ * sealed — the audit never reduces a poll to a coin flip.
+ */
+export const LegalHoldSealsAnAnswer: Story = {
+	render: () => asPoll(heldRun()),
+};
+
+export const LegalHoldSellsTheAnswerBack: Story = {
+	render: () => {
+		const held = heldRun();
+		const [sealed] = toRunView(held, 0).hiddenOptionIds;
+		if (!sealed) return <p>nothing sealed</p>;
+		return asPoll(
+			runReducer(held, { type: "buy-back-option", optionId: sealed })
+		);
+	},
+};
+
+/**
+ * The linter goes quiet. It may not cross out a sealed answer — that would say
+ * the answer is wrong for less than the gate charges to read it — and it never
+ * crosses out the last legible wrong one, so on a three-option poll holding one
+ * seal it has no legal move and stops offering itself. Buy the seal back and it
+ * wakes up.
+ */
+export const LegalHoldSilencesTheLinter: Story = {
+	render: () => asPoll(heldRun([CONFIGS.js, CONFIGS.eslint])),
 };

@@ -6,7 +6,10 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import { isOverCapacity } from "~/modules/run/build/domain/build.model";
+import {
+	coverageLossFor,
+	isOverCapacity,
+} from "~/modules/run/build/domain/build.model";
 import {
 	BASE_SLOTS,
 	FAUCET_CAP_KB,
@@ -464,8 +467,8 @@ describe("gate base multiplier", () => {
 
 	it("scales a wrong answer's loss by the gate too — risk cuts deeper as you climb", () => {
 		expect(baseAt(0, false)).toBe(-0.5);
-		expect(baseAt(1, false)).toBe(-1);
-		expect(baseAt(4, false)).toBe(-2.5);
+		expect(baseAt(1, false)).toBe(-1.1);
+		expect(baseAt(4, false)).toBe(-3.1);
 	});
 });
 
@@ -536,6 +539,24 @@ describe("answer judging", () => {
 		});
 		expect(partial.coverage).toBe(0.8);
 		expect(partial.answeredThisGate[0].coverageEarned).toBe(0.8);
+	});
+
+	it("records what a wrong answer cost, so the reveal can state the loss", () => {
+		const start = answering();
+		const missed = runReducer(start, { type: "answer", optionIds: ["c"] });
+
+		expect(missed.answeredThisGate[0].coverageLost).toBe(
+			coverageLossFor(start.build.configs, start.gatesCleared)
+		);
+	});
+
+	it("charges a partial answer no loss, half the set still being half right", () => {
+		const partial = runReducer(answering(), {
+			type: "answer",
+			optionIds: ["a"],
+		});
+
+		expect(partial.answeredThisGate[0].coverageLost).toBeUndefined();
 	});
 
 	it("pays more coverage for a multiple-choice poll than a single answered fully correct", () => {

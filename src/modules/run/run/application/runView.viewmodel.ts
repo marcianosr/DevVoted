@@ -13,6 +13,8 @@ import {
 import {
 	type PaidActions,
 	paidActionsFor,
+	type BuyBackView,
+	buyBackViewFor,
 } from "~/modules/run/run/application/paidActions.viewmodel";
 
 import {
@@ -30,6 +32,7 @@ import {
 	answerTypesOf,
 	canStart,
 	isAwaitingTomorrow,
+	hiddenOptionIdsOf,
 	isRunOver,
 	offlinePairsOf,
 	type RunState,
@@ -40,6 +43,10 @@ import {
 	type AnsweredPoll,
 	mirrorPoll,
 } from "~/modules/run/run/domain/runPoll.model";
+import {
+	type PollSlot,
+	upcomingSlotsOf,
+} from "~/modules/run/run/domain/rebase.model";
 import {
 	type Config,
 	canMinify,
@@ -87,6 +94,7 @@ import {
 	isPeelFatal,
 	MAX_SLOTS,
 	planBillKb,
+	revealsPlanTier,
 	SLICE_WINDOW,
 	storageCapFor,
 	STORAGE_PLANS,
@@ -132,11 +140,17 @@ export type StoragePlanOption = {
 	readonly held: boolean;
 	readonly burnsKb: number;
 	readonly affordable: boolean;
+	readonly revealed: boolean;
+	/** The cap that opens this rung, which is the rung below it. Present on a
+	 * hidden rung only: it is what the mask can say without naming what it
+	 * hides. */
+	readonly opensAtKb?: number;
 };
 
 export type StoragePlanView = {
 	readonly capKb: number;
 	readonly perGateKb: number;
+	readonly peakKb: number;
 	readonly options: readonly StoragePlanOption[];
 };
 
@@ -196,6 +210,8 @@ export type RunView = {
 
 	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
+	readonly hiddenOptionIds: readonly string[];
+	readonly buyBack: BuyBackView;
 	readonly paidActions: PaidActions;
 	readonly offlineConfigs: readonly OfflineConfig[];
 	readonly mirroredPolls: boolean;
@@ -204,6 +220,7 @@ export type RunView = {
 	readonly currentPollPeeked: boolean;
 	readonly correctAnswersThisGate: number | null;
 	readonly correctCountSource: string | null;
+	readonly rebaseSlots: readonly PollSlot[];
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly answerTypesThisGate: AnswerTypeSplit | null;
@@ -360,24 +377,41 @@ const startSlotsViewFor = (
 	};
 };
 
-const storagePlanViewFor = (state: RunState): StoragePlanView => {
+const storagePlanViewFor = (
+	state: RunState,
+	accountPeakKb: number
+): StoragePlanView => {
 	const tier = state.storagePlan ?? 0;
+	// The account remembers the best any run ever held, and this run may already
+	// have beaten it, so the shelf reads whichever is higher.
+	const peakKb = Math.max(accountPeakKb, state.peakStorageKb ?? state.storage);
 
 	return {
 		capKb: storageCapFor(tier),
 		perGateKb: planBillKb(tier),
-		options: STORAGE_PLANS.map((plan) => ({
-			tier: plan.tier,
-			capKb: plan.capKb,
-			perGateKb: plan.perGateKb,
-			held: plan.tier === tier,
-			burnsKb: Math.max(0, state.storage - plan.capKb),
-			affordable: canAffordPlan(state, plan.tier),
-		})),
+		peakKb,
+		options: STORAGE_PLANS.map((plan) => {
+			const revealed = revealsPlanTier(plan.tier, peakKb);
+
+			return {
+				tier: plan.tier,
+				capKb: plan.capKb,
+				perGateKb: plan.perGateKb,
+				held: plan.tier === tier,
+				burnsKb: Math.max(0, state.storage - plan.capKb),
+				affordable: canAffordPlan(state, plan.tier),
+				revealed,
+				...(revealed ? {} : { opensAtKb: storageCapFor(plan.tier - 1) }),
+			};
+		}),
 	};
 };
 
-export const toRunView = (state: RunState, archiveKb = 0): RunView => {
+export const toRunView = (
+	state: RunState,
+	archiveKb = 0,
+	accountPeakKb = 0
+): RunView => {
 	const current = state.polls[state.currentIndex];
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
 	const perAnswer = perAnswerPreviewFor(
@@ -390,6 +424,7 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		state.gatesCleared,
 		schedule
 	);
+	const hidden = hiddenOptionIdsOf(state);
 	const liveAudits = liveAuditsFor(
 		state.build.configs,
 		state.gatesCleared,
@@ -426,11 +461,13 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
 			state.status === "answering" && current
-				? redactPoll(mirrored ? mirrorPoll(current) : current)
+				? redactPoll(mirrored ? mirrorPoll(current) : current, hidden)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
 		pollsExhausted: state.currentIndex >= state.polls.length,
 		disabledOptionIds: state.manualDisabled,
+		hiddenOptionIds: hidden,
+		buyBack: buyBackViewFor(state),
 		paidActions: paidActionsFor(state),
 		offlineConfigs: offline,
 		mirroredPolls: mirrored,
@@ -444,6 +481,7 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 				? null
 				: (state.window.budget ?? null),
 		correctCountSource: budgeterFor(state.build.configs)?.label ?? null,
+		rebaseSlots: upcomingSlotsOf(state),
 		upcomingCategories:
 			prefetcherFor(state.build.configs) === undefined
 				? null
@@ -538,6 +576,6 @@ export const toRunView = (state: RunState, archiveKb = 0): RunView => {
 		storage: state.storage,
 		slotDeals: slotsViewFor(state),
 		startSlotDeals: startSlotsViewFor(state, archiveKb),
-		storagePlan: storagePlanViewFor(state),
+		storagePlan: storagePlanViewFor(state, accountPeakKb),
 	};
 };

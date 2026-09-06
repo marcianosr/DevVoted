@@ -138,6 +138,23 @@ const awardGateSwatch = async (
 		);
 };
 
+/**
+ * Raises the account's KB high-water mark. `GREATEST` rather than a read and a
+ * write, so two runs settling at once cannot lower it between them.
+ */
+const raiseStorageWatermark = async (
+	tx: Pick<typeof db, "update">,
+	userId: string,
+	peakKb: number
+): Promise<void> => {
+	await tx
+		.update(usersTable)
+		.set({
+			peak_storage_kb: sql`GREATEST(${usersTable.peak_storage_kb}, ${peakKb})`,
+		})
+		.where(eq(usersTable.id, userId));
+};
+
 export const createSessionRunWithState = async (
 	userId: string,
 	seedDate: string,
@@ -360,6 +377,17 @@ export const consumePinnedGate = async (userId: string): Promise<number> =>
 	});
 
 /** Swatch ids the player has earned across every run — the collection surface. */
+export const fetchStorageWatermark = async (
+	userId: string
+): Promise<number> => {
+	const [row] = await db
+		.select({ peakStorageKb: usersTable.peak_storage_kb })
+		.from(usersTable)
+		.where(eq(usersTable.id, userId))
+		.limit(1);
+	return row?.peakStorageKb ?? 0;
+};
+
 export const fetchOwnedSwatchIds = async (
 	userId: string
 ): Promise<readonly string[]> => {
@@ -474,6 +502,12 @@ export const applyActionToRun = async (args: {
 		if (isRunOver(next.status)) {
 			await finishSessionRun(tx, args.runId, args.userId, next);
 		}
+
+		// The account remembers the best KB any run ever held, which is what
+		// opens storage rungs. Every earner counts, not only a clear, and a run
+		// that dies still keeps the mark it reached.
+		if ((next.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
+			await raiseStorageWatermark(tx, args.userId, next.peakStorageKb ?? 0);
 
 		return next;
 	});

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted 2026-07-22. **Amends [ADR-006](006-session-run-mechanics.md) Decision 11**: coverage now scales with the gate number on both the gain and the loss side; ADR-006's "loss is deliberately not gate-scaled" clause is superseded (⚠ marker inline there). Depends on ADR-005/006. Live-tuned numbers live in `src/modules/run/rules.model.ts`; this ADR records the decision and rationale, not the values. **Decision 2's ratio amended by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): the lockstep stands, `WRONG_COVERAGE_LOSS` halves to 0.25.
+Accepted 2026-07-22. **Amends [ADR-006](006-session-run-mechanics.md) Decision 11**: coverage now scales with the gate number on both the gain and the loss side; ADR-006's "loss is deliberately not gate-scaled" clause is superseded (⚠ marker inline there). Depends on ADR-005/006. Live-tuned numbers live in `src/modules/run/rules.model.ts`; this ADR records the decision and rationale, not the values. **Decision 2's ratio amended by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): the lockstep stands, `WRONG_COVERAGE_LOSS` halves to 0.25. **Amended again 2026-09-05**: the ratio is no longer one number — it climbs with the gate (`wrongLossShareFor`, 0.5 + 0.03 a gate), see Decision 2.
 
 > ⚠ Amended by [ADR-035](035-gates-are-auditors.md) (2026-08-17): the gain/loss lockstep stands, but both now score a per-gate window meter — the demand table reprices per gate, not cumulatively.
 
@@ -28,7 +28,18 @@ Playtesting the ported engine surfaced two feel problems:
 > because a miss now also costs progress toward the gate's coverage demand.
 > The lockstep gate-scaling below stands.
 
-A miss bleeds `WRONG_COVERAGE_LOSS × the build's per-correct coverage`. Reward and risk grow in lockstep: a miss costs a fixed fraction of what a hit pays, at every gate and on every build. This **reverses ADR-006 Decision 11's flat-loss rule**.
+A miss bleeds `wrongLossShareFor(gate) × the build's per-correct coverage`. Reward and risk grow in lockstep: a miss costs a fraction of what a hit pays, on every build. This **reverses ADR-006 Decision 11's flat-loss rule**.
+
+> ⚠ Share made gate-scaled 2026-09-05, on playtest feel ("the wrong loss can be
+> steeper"). It was one fixed number at every gate; it is now
+> `0.5 + 0.03 × gate`, clamped at the Champion (0.5 → 0.86). Reason the fixed
+> share stopped working: the demand table grows far faster than the earn does,
+> so a miss shrank from 1 in 6 of the opening gate to 1 in 50 of the Champion.
+> Holding the ratio flat meant deep gates asked only for volume; a climbing
+> share asks for **accuracy** as well (break-even 33% → 46%). Lockstep with the
+> build is untouched: the share still multiplies what your own build earns, so
+> a greedy build still loses more per mistake. Same session:
+> `COVERAGE_DEMANDS` gate 11 → 300 and gate 12 → 375.
 
 > ⚠ Formula corrected 2026-08-24, intent unchanged. The rule read
 > `× rewardMultiplier ×  gateBaseMultiplier`, but `rewardMultiplier` is `1` on

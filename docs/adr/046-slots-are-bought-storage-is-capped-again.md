@@ -101,6 +101,33 @@ The steeper ladder above changes what compounding needs. Moore's Law at L5 pays
 640 KB held. Below that the balance decays instead of compounding, which is the
 intended shape: the cap is a savings instrument you have to be able to afford.
 
+## Amendment (2026-09-05): a rung opens by filling the cap below it
+
+Which rungs the shop *shows* was never decided here, and the shop had quietly settled
+it in Tier 2: `option.tier <= heldIndex + 1`, so renting a rung revealed the next one.
+Buying the ladder was therefore the only way to see the ladder.
+
+A rung is now revealed once a run has held the cap below it (`revealsPlanTier`), off a
+KB high-water mark: `RunState.peakStorageKb`, taken once around the reducer, mirrored
+onto `users.peak_storage_kb` whenever it rises. The free rung and 512 KB are always
+shown, so a fresh account never opens the section on one card and six masks.
+
+Storage is clamped at the cap being rented, so filling it is the run saying it has
+outgrown the plan — the same moment a clear starts burning what will not fit. The
+rung above is what that moment earns.
+
+Reveal only, deliberately. Making a filled cap the *purchase* rule would be roughly 5×
+the current bill-based requirement at every rung (1 MB would ask 512 KB held rather
+than 96), and since the top two rungs already bill more than a perfect gate-12 clear
+pays, requiring a filled 3 MB and 5 MB cap would close them for good. `canAffordPlan`
+stays the only thing that decides what sells.
+
+The mark is account-scoped: a rung opened in one run stays open in the next. In
+ADR-050's vocabulary that is a **Reveal** — account scope, no balance impact — so it
+takes that verb rather than a new one. A masked card carries its requirement as a
+visible caption ("opens at 512 KB held · best 384 KB"), per ADR-051 decision 5: a mask
+that only whispers on hover says nothing on touch.
+
 ## Consequences
 
 Deleted: `SPOT_RUNGS`, `scheduledRung`, `scheduledSpots`, `spotLadderTo`,

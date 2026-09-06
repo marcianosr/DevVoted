@@ -37,3 +37,18 @@ export const Score: Story = {
 export const Toned: Story = {
 	args: { tone: "viridian", children: "+160 KB" },
 };
+
+export const Thin: Story = {
+	args: { tone: "muted", weight: "thin", children: "wrong costs" },
+};
+
+export const Weights: Story = {
+	render: () => (
+		<div className="flex flex-col gap-1">
+			<Text tone="muted">wrong costs 6.7 · 3 options</Text>
+			<Text tone="muted" weight="thin">
+				wrong costs 6.7 · 3 options
+			</Text>
+		</div>
+	),
+};

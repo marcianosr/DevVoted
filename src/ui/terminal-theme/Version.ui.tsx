@@ -1,12 +1,8 @@
 import { clsx } from "clsx";
 
 const BASE =
-	"inline-flex shrink-0 items-center px-2 py-0.5 text-xs tabular-nums";
+	"inline-flex shrink-0 items-center px-2 py-0.5 text-xxs font-normal tabular-nums";
 
-// Monochrome on purpose: hue already means slot size in this theme, so a green
-// version chip would read as a one-slot config. The rung is pure value, climbing
-// out of the page's own zinc up to near-white, and the text flips dark at v4
-// where the fill outruns it.
 const RUNG = [
 	"bg-zinc-800 text-zinc-400",
 	"bg-zinc-700 text-zinc-300",
@@ -20,13 +16,6 @@ const INSET = `calc(100% - ${CUT})`;
 
 type Corner = "tl" | "tr" | "br" | "bl";
 
-/**
- * One more corner milled off per rung, so the badge carries its version in
- * silhouette as well as in value — legible at a glance down a build list, and
- * still legible to anyone the zinc ramp alone does not reach. The cuts fall on
- * a diagonal first, which keeps the middle rungs leaning rather than turning
- * v3 into a symmetrical trapezoid nobody would read as "three".
- */
 const MILLED = [
 	[],
 	["tl"],
@@ -35,8 +24,6 @@ const MILLED = [
 	["tl", "tr", "br", "bl"],
 ] as const satisfies readonly (readonly Corner[])[];
 
-// Walked clockwise from the top-left. A cut corner spends two points where a
-// square one spends one, and the top-left's second point closes the loop.
 const outline = (milled: readonly Corner[]) => {
 	const cut = (corner: Corner) => milled.includes(corner);
 
@@ -66,9 +53,6 @@ export const Version = ({ label, className }: VersionProps) => {
 
 	return (
 		<span
-			// Inline rather than a Tailwind arbitrary value: the path is computed
-			// per rung, and the scanner only ever sees class strings it can read
-			// whole in the source.
 			style={{ clipPath: `polygon(${outline(MILLED[rung])})` }}
 			className={clsx(BASE, RUNG[rung], className)}
 		>

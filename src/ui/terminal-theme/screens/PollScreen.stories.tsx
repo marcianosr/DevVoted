@@ -36,6 +36,7 @@ const secondPoll: PollScreenProps = {
 		coverage: { label: "Coverage", reading: "28 / 60%", percent: 46 },
 	},
 	theme: "lavender",
+	coverage: { held: 28, demand: 60, perCorrect: 4.1 },
 	build: {
 		running: 1,
 		total: { label: "Total", value: "×1.25" },
@@ -80,7 +81,6 @@ const secondPoll: PollScreenProps = {
 	question: "Which method returns the last element of an array?",
 	facts: [
 		{ label: "scores", value: "×1.1", tone: "celadon" },
-		{ label: "3 options" },
 		{ label: "wrong costs", value: "0.3", tone: "cinnabar" },
 		{
 			label: "Gate retry cost:",
@@ -121,7 +121,6 @@ export const MultiplePicked: Story = {
 		question: "Which of these mutate the array they are called on?",
 		facts: [
 			{ label: "scores", value: "×1.4", tone: "celadon" },
-			{ label: "4 options" },
 			{ label: "pick every correct one" },
 		],
 		choices: [
@@ -140,7 +139,6 @@ export const ToolsUsed: Story = {
 		...secondPoll,
 		facts: [
 			{ label: "scores", value: "×1.1", tone: "celadon" },
-			{ label: "3 options" },
 			{ label: "ESLint crossed one out" },
 		],
 		choices: [
@@ -155,6 +153,42 @@ export const ToolsUsed: Story = {
 		],
 		submitLock: undefined,
 		onSubmit: noop,
+	},
+};
+
+/** 451 Unavailable For Legal Reasons: the gate seals answers and sells them
+ * back one at a time. A sealed row keeps its letter and stays pickable. */
+export const SealedAnswers: Story = {
+	args: {
+		...secondPoll,
+		audits: [
+			{
+				code: "451",
+				name: "Unavailable For Legal Reasons",
+				cue: "Redacted: 2 answers are sealed on this poll. 4KB each to unseal.",
+			},
+		],
+		choices: [
+			{ letter: "A", label: "at(−1)" },
+			{
+				letter: "B",
+				label: "?????",
+				seal: {
+					price: "4 KB",
+					hint: "Unseal this answer for 4 KB",
+					onUnseal: noop,
+				},
+			},
+			{
+				letter: "C",
+				label: "?????",
+				seal: {
+					price: "4 KB",
+					hint: "Unseal this answer for 4 KB",
+					onUnseal: noop,
+				},
+			},
+		],
 	},
 };
 
@@ -310,6 +344,7 @@ export const EliteGate: Story = {
 			coverage: { label: "Coverage", reading: "58.2 / 85%", percent: 68 },
 		},
 		theme: "elite",
+		coverage: { held: 58.2, demand: 85, perCorrect: 12.4 },
 		build: {
 			running: 6,
 			total: { label: "Total", value: "×6.2" },

@@ -120,9 +120,11 @@ export type AnsweredPoll = {
 	readonly correct?: readonly string[];
 	readonly codeBlock?: string;
 	readonly explanation?: string;
+	readonly author?: string;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
 	readonly coverageEarned?: number;
+	readonly coverageLost?: number;
 	readonly coverageBreakdown?: CoverageBreakdown;
 	readonly coverageFactors?: CoverageFactors;
 	readonly faucetKb?: number;

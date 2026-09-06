@@ -23,6 +23,7 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	createSessionRunWithState: vi.fn(),
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),
+	fetchStorageWatermark: vi.fn().mockResolvedValue(0),
 	loadRunState: vi.fn(),
 	fetchRunSnapshot: vi.fn(),
 	findActiveSessionRun: vi.fn(),

@@ -35,6 +35,7 @@ export type Config = {
 	readonly offersFullRoster?: boolean;
 	readonly locksOffers?: boolean;
 	readonly revealsUpcomingCategories?: boolean;
+	readonly reordersGatePolls?: boolean;
 	readonly revealsCorrectCount?: boolean;
 	readonly draftCostFactor?: number;
 	readonly refundsPeeledConfigs?: boolean;

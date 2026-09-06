@@ -42,7 +42,12 @@ export const SuppressedNamesItsConfig: Story = {
 				name: "Payment Required",
 				cue: "paid actions cost double",
 				suppressed: true,
-				suppressedBy: { label: "Volkswagen CI", slots: 8, version: 1 },
+				suppressedBy: {
+					label: "Volkswagen CI",
+					slots: 8,
+					version: 1,
+					maxVersion: 5,
+				},
 			},
 		],
 	},

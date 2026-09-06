@@ -18,11 +18,11 @@ import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
-	WRONG_COVERAGE_LOSS,
 	gateBaseMultiplier,
 	roundToOneDecimal,
 	streakCapMultiplier,
 	streakMultiplier,
+	wrongLossShareFor,
 } from "~/modules/run/run/domain/rules.model";
 
 export type Build = {
@@ -171,7 +171,8 @@ export const coverageLossFor = (
 	gatesCleared: number
 ): number =>
 	roundToOneDecimal(
-		WRONG_COVERAGE_LOSS * coveragePerCorrectRaw(configs, gatesCleared)
+		wrongLossShareFor(gatesCleared) *
+			coveragePerCorrectRaw(configs, gatesCleared)
 	);
 
 export const perAnswerPreviewFor = (

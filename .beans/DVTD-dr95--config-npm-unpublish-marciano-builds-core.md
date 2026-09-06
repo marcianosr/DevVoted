@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-26T19:28:46Z
-updated_at: 2026-08-31T10:21:06Z
+updated_at: 2026-09-05T09:10:33Z
 parent: DVTD-72d9
 ---
 
@@ -41,3 +41,10 @@ Marciano asked for the live version: not "sold out tomorrow", but "gone from the
 **Recommendation:** ship the tomorrow-scoped version already scaffolded, and treat "live" as a follow-up that needs the global table plus the fairness call above. If live is what you actually want, decide it before the core logic lands, because the storage location changes (RunState field versus a shared table) and that is the part being hand-written.
 
 - [ ] Decide: tomorrow-scoped (scaffolded) or live for runs in progress (needs a shared table and a fairness ruling)
+
+## Correction 2026-09-05
+
+This bean states the scaffold ships ("Roster entry `npm-unpublish` ships already, legendary,
+256KB") and marks it `[x]`. It does not. `grep -rn "unpublish" src/` returns zero hits: no
+roster entry, no `unpublishedConfigIds` on RunState, no action in shopAction.model.ts. Found
+while planning DVTD-ltqb, which considered riding this bean's plumbing. Nothing here is built.

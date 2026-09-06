@@ -11,6 +11,7 @@ import type { ShopControls } from "~/modules/run/run/application/shopControls.vi
 import {
 	BASE_SLOTS,
 	MAX_SLOTS,
+	revealsPlanTier,
 	SLOT_PRICES_KB,
 	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
@@ -46,6 +47,7 @@ const slotDealsAt = (slots = BASE_SLOTS, { storage = 500 } = {}) => {
 const storagePlanAt = (tier = 0, storage = 500) => ({
 	capKb: STORAGE_PLANS[tier].capKb,
 	perGateKb: STORAGE_PLANS[tier].perGateKb,
+	peakKb: storage,
 	options: STORAGE_PLANS.map((plan) => ({
 		tier: plan.tier,
 		capKb: plan.capKb,
@@ -53,6 +55,7 @@ const storagePlanAt = (tier = 0, storage = 500) => ({
 		held: plan.tier === tier,
 		burnsKb: Math.max(0, storage - plan.capKb),
 		affordable: plan.tier <= tier || plan.perGateKb <= storage,
+		revealed: revealsPlanTier(plan.tier, storage),
 	})),
 });
 
@@ -259,7 +262,7 @@ describe(ShopScreen, () => {
 		const install = screen.getByRole("button", { name: /^Install ESLint/ });
 		expect(install).toHaveAttribute("aria-disabled", "true");
 		expect(refusalOn(install)).toHaveTextContent(
-			"Needs 1 slots — 0 free. Minify or uninstall something"
+			"Needs 1 slot — 0 free. Minify or uninstall something"
 		);
 	});
 

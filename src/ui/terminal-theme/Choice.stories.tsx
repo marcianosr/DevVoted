@@ -59,3 +59,46 @@ export const CrossedOut: Story = {
 		note: "crossed out",
 	},
 };
+
+/** 451 sealed this answer. The text is gone, the row is still pickable, and
+ * the press buys the words back. */
+export const Sealed: Story = {
+	args: {
+		letter: "C",
+		label: "?????",
+		seal: {
+			price: "4 KB",
+			hint: "Unseal this answer for 4 KB",
+			onUnseal: noop,
+		},
+		onPick: noop,
+	},
+};
+
+/** No handler, no press: the balance cannot cover the fee. */
+export const SealedAndUnaffordable: Story = {
+	args: {
+		letter: "C",
+		label: "?????",
+		seal: {
+			price: "4 KB",
+			hint: "Unseal this answer for 4 KB — not enough storage",
+		},
+		onPick: noop,
+	},
+};
+
+/** A sealed answer you gambled on anyway. */
+export const SealedAndPicked: Story = {
+	args: {
+		letter: "C",
+		label: "?????",
+		selected: true,
+		seal: {
+			price: "4 KB",
+			hint: "Unseal this answer for 4 KB",
+			onUnseal: noop,
+		},
+		onPick: noop,
+	},
+};

@@ -4,6 +4,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	BASE_SLOTS,
 	MAX_SLOTS,
+	revealsPlanTier,
 	SLOT_PRICES_KB,
 	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
@@ -49,6 +50,7 @@ const slotDealsOn = (slots = BASE_SLOTS) => {
 const storagePlanOn = (tier = 0, storage = 0) => ({
 	capKb: STORAGE_PLANS[tier].capKb,
 	perGateKb: STORAGE_PLANS[tier].perGateKb,
+	peakKb: STORAGE_PLANS[tier].capKb,
 	options: STORAGE_PLANS.map((plan) => ({
 		tier: plan.tier,
 		capKb: plan.capKb,
@@ -56,6 +58,7 @@ const storagePlanOn = (tier = 0, storage = 0) => ({
 		held: plan.tier === tier,
 		affordable: true,
 		burnsKb: Math.max(0, storage - plan.capKb),
+		revealed: revealsPlanTier(plan.tier, STORAGE_PLANS[tier].capKb),
 	})),
 });
 

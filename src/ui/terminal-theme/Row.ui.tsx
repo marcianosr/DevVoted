@@ -11,12 +11,11 @@ import { Text } from "./Text.ui";
 const ROW =
 	"flex min-h-9 items-center gap-x-3 gap-y-0.5 py-1.5 @max-3xl:flex-wrap";
 const NAME = "flex shrink-0 items-center gap-1.5";
-// Wide enough for the longest name plus its version tag plus an eight-slot
-// mark, since the mark now sits inside this column.
-const NAME_COLUMN = "w-48 @max-3xl:w-auto";
+// Wide enough for the longest name inside a DexChip — chip padding, the weight
+// block and a five-pip version track all sit in this column now.
+const NAME_COLUMN = "w-56 @max-3xl:w-auto";
 const NAME_TEXT = "min-w-0 truncate whitespace-nowrap";
-const DETAIL =
-	"min-w-0 flex-1 font-normal @max-3xl:order-last @max-3xl:basis-full";
+const DETAIL = "min-w-0 flex-1 @max-3xl:order-last @max-3xl:basis-full";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const DIMMED = "cursor-not-allowed opacity-50";
 
@@ -49,7 +48,7 @@ export const Row = ({
 			{tag}
 		</span>
 		{detail === undefined ? null : (
-			<Text tone="muted" size="caption" className={DETAIL}>
+			<Text tone="muted" size="caption" weight="thin" className={DETAIL}>
 				{noteOf(detail)}
 			</Text>
 		)}

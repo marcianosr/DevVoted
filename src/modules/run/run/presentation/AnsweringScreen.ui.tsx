@@ -33,14 +33,8 @@ import {
 	type UpcomingCategoriesProps,
 } from "~/modules/run/run/presentation/UpcomingCategories.ui";
 
-/** Chips begin after the option badges have popped in (~620ms of pops). */
 const REVEAL_SCORE_START_MS = 500;
 
-/**
- * Turns the reveal's coverage breakdown into equation chips: the streak bonus as
- * a plain chip, then each contributing config as its real ConfigChip (resolved
- * from the equipped build). Base and total are handled by ScoreEquationChips.
- */
 const scoreBonusRows = (
 	score: AnswerScore,
 	configs: readonly Config[]
@@ -63,48 +57,31 @@ const scoreBonusRows = (
 
 type AnsweringScreenProps = {
 	configs: readonly Config[];
-	/** The gate's live audits — their cues stay on screen the whole window,
-	 * because a rule like the mirror changes how every poll should be played. */
 	audits?: readonly AuditView[];
-	/** Configs an audit has taken offline for this poll (ADR-038). */
 	offlineConfigs?: readonly Config[];
-	/** The gate mirrors its polls: the card asks for the incorrect options. */
 	mirroredPolls?: boolean;
-	/** A Timeout audit's clock. One object because a rail with no cap cannot be
-	 * drawn, so the pair is all-or-nothing. */
 	clock?: PollClockProps;
-	/** Total build slots — shown in the build header when provided. */
 	slots?: number;
 	poll: PollView;
-	/**
-	 * This gate's answers so far — the poll bar's colours. Required, not optional
-	 * with an empty default: a screen missing them renders five grey dashes, which
-	 * looks like a fresh gate rather than like a bug.
-	 */
 	pollOutcomes: readonly AnswerOutcome[];
 	pollsPerGate: number;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
-	/** Set once the answer is in: the options go inert, and the score reads out
-	 * below them as the chip equation. */
+	hiddenOptionIds?: readonly string[];
+	buyBack?: {
+		readonly costKb: number;
+		readonly ready: boolean;
+		readonly onBuyBack: (optionId: string) => void;
+	};
 	reveal?: AnswerReveal;
-	/** Lint and peek, whole: both hang off the row of the config that sells them. */
 	paidActions?: PaidActions;
-	/** False while the run is mid-request or sitting on the reveal — a paid action
-	 * the engine would refuse must not offer itself. */
 	interactive?: boolean;
-	/** The bought split for this poll — absent until the peek is paid for. */
 	split?: PollSplitView;
-	/** Correct answers this gate's polls hold (.length) — absent when nothing counts. */
 	correctAnswersThisGate?: number;
-	/** Prefetch's reveal; absent when no installed config reads the draw.
-	 * "this gate" includes the poll on screen: it states what is left, not
-	 * what is next. */
 	upcoming?: UpcomingCategoriesProps;
 	canSubmit: boolean;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
-	/** Advances past the reveal to the next poll — the player triggers it, not a timer. */
 	onNext: () => void;
 	onLint?: () => void;
 	onPeek?: () => void;
@@ -122,6 +99,8 @@ export const AnsweringScreen = ({
 	pollsPerGate,
 	selectedOptionIds,
 	disabledOptionIds,
+	hiddenOptionIds,
+	buyBack,
 	reveal,
 	paidActions,
 	interactive = true,
@@ -148,8 +127,6 @@ export const AnsweringScreen = ({
 		return undefined;
 	};
 
-	// A suppressed audit is not in force, so its cue would be a lie the defeat
-	// device already paid to remove.
 	const cues = audits.filter(
 		(audit) => audit.answerCue !== undefined && !audit.suppressed
 	);
@@ -173,9 +150,6 @@ export const AnsweringScreen = ({
 									{audit.answerCue}
 								</Paragraph>
 							))}
-							{/* Named, not just announced: the cue says a dependency is down,
-							    and the only useful next thought is *which* one. Re-read every
-							    poll, since a flake and a rolling outage move. */}
 							{offlineConfigs.length > 0 ? (
 								<Paragraph as="span" size="sm" tone="muted">
 									Offline right now:{" "}
@@ -192,6 +166,8 @@ export const AnsweringScreen = ({
 					poll={poll}
 					selectedOptionIds={selectedOptionIds}
 					disabledOptionIds={disabledOptionIds}
+					hiddenOptionIds={hiddenOptionIds}
+					buyBack={buyBack}
 					reveal={reveal}
 					split={split}
 					correctAnswersThisGate={correctAnswersThisGate}

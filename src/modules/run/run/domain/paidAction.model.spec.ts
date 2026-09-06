@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import {
+	createRun,
+	hiddenOptionIdsOf,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
+import {
+	buyBackFeeFor,
+	canBuyBack,
 	canBuyPeek,
 	lintApplies,
 	lintFeeFor,
 } from "~/modules/run/run/domain/paidAction.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	answerWith,
 	audited,
@@ -204,5 +211,147 @@ describe("Telemetry peeks", () => {
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.peekedPollIds).toContain(peekedId);
 		expect(state.peekedPollIds).toHaveLength(2);
+	});
+});
+
+describe("buying back a redacted answer (451)", () => {
+	const sealedPoll = (id: string): RunPoll => ({
+		id,
+		category: "js",
+		question: `Which ${id}?`,
+		answerType: "single",
+		options: [
+			{ id: `${id}-a`, label: "Alpha", correct: true },
+			{ id: `${id}-b`, label: "Bravo", correct: false },
+			{ id: `${id}-c`, label: "Charlie", correct: false },
+			{ id: `${id}-d`, label: "Delta", correct: false },
+		],
+	});
+
+	const heldRun = (...ids: AuditId[]): RunState => {
+		let state = createRun(
+			Array.from({ length: 10 }, (_, index) => sealedPoll(`sealed-${index}`)),
+			handed,
+			8
+		);
+		for (const configId of ["eslint", "ts", "css"])
+			state = runReducer(state, { type: "install", configId });
+		state = runReducer(state, { type: "start" });
+		return {
+			...audited({ ...state, storage: 500 }, 8, "legal-hold", ...ids),
+		};
+	};
+
+	const sealedOn = (state: RunState): readonly string[] =>
+		hiddenOptionIdsOf(state);
+
+	it("seals two of the four answers", () => {
+		expect(sealedOn(heldRun())).toHaveLength(2);
+	});
+
+	it("charges a flat 4KB and unseals the answer", () => {
+		const state = heldRun();
+		const target = sealedOn(state)[0];
+		const bought = runReducer(state, {
+			type: "buy-back-option",
+			optionId: target,
+		});
+		expect(bought.storage).toBe(496);
+		expect(sealedOn(bought)).not.toContain(target);
+	});
+
+	it("charges the same 4KB the second time — there is no ladder", () => {
+		let state = heldRun();
+		const [first, second] = sealedOn(state);
+		state = runReducer(state, { type: "buy-back-option", optionId: first });
+		state = runReducer(state, { type: "buy-back-option", optionId: second });
+		expect(state.storage).toBe(492);
+		expect(sealedOn(state)).toEqual([]);
+	});
+
+	it("doubles the flat fee at a 402 Payment Required gate", () => {
+		const state = heldRun("cost-overrun");
+		expect(buyBackFeeFor(state)).toBe(8);
+	});
+
+	it("refuses an answer that was never sealed", () => {
+		const state = heldRun();
+		const readable = state.polls[state.currentIndex].options
+			.map((option) => option.id)
+			.find((id) => !sealedOn(state).includes(id));
+		expect(
+			runReducer(state, { type: "buy-back-option", optionId: readable! })
+		).toBe(state);
+	});
+
+	it("refuses a second buy-back of the same answer", () => {
+		const state = heldRun();
+		const target = sealedOn(state)[0];
+		const once = runReducer(state, {
+			type: "buy-back-option",
+			optionId: target,
+		});
+		expect(
+			runReducer(once, { type: "buy-back-option", optionId: target })
+		).toBe(once);
+	});
+
+	it("refuses a buy-back the balance cannot cover", () => {
+		const state = { ...heldRun(), storage: 3 };
+		expect(canBuyBack(state, sealedOn(state)[0])).toBe(false);
+	});
+
+	// 403 freezes the linter and the peek, never this: a seal you are forbidden
+	// to read is a trap rather than a rule, whichever way the seal arrived.
+	it("survives a 403 Forbidden gate, which freezes the other two", () => {
+		const state = heldRun("feature-freeze");
+		expect(canBuyBack(state, sealedOn(state)[0])).toBe(true);
+		expect(lintApplies(state)).toBe(false);
+	});
+
+	// The restorative exemption: 429 caps the window at one paid action, and
+	// metering the audit's own escape hatch against it would strand the window.
+	it("leaves the rate limit alone at a 429 Too Many Requests gate", () => {
+		const state = heldRun("too-many-requests");
+		const [first, second] = sealedOn(state);
+		let bought = runReducer(state, {
+			type: "buy-back-option",
+			optionId: first,
+		});
+		bought = runReducer(bought, { type: "buy-back-option", optionId: second });
+		expect(sealedOn(bought)).toEqual([]);
+	});
+
+	it("keeps a bought-back answer for the whole run, so a reload never re-charges", () => {
+		const state = heldRun();
+		const target = sealedOn(state)[0];
+		const bought = runReducer(state, {
+			type: "buy-back-option",
+			optionId: target,
+		});
+		expect(bought.boughtBackOptionIds).toContain(target);
+	});
+
+	// Crossing out a sealed option would state that it is wrong, which is the
+	// leak the redaction exists to prevent.
+	it("keeps the linter off the sealed answers", () => {
+		const state = heldRun();
+		const sealed = new Set(sealedOn(state));
+		const linted = runReducer(state, { type: "lint-poll" });
+		for (const id of linted.manualDisabled) expect(sealed.has(id)).toBe(false);
+	});
+
+	it("lets the linter cross out an answer once it has been bought back", () => {
+		let state = heldRun();
+		const wrongSealed = sealedOn(state).find((id) =>
+			state.polls[state.currentIndex].options.some(
+				(option) => option.id === id && !option.correct
+			)
+		);
+		state = runReducer(state, {
+			type: "buy-back-option",
+			optionId: wrongSealed!,
+		});
+		expect(lintApplies(state)).toBe(true);
 	});
 });

@@ -1,9 +1,8 @@
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import { badgeNumbers } from "../Badge.ui";
-import { Slots } from "../Slots.ui";
-import { Version } from "../Version.ui";
 import { Button } from "../Button.ui";
+import { DexChip } from "../DexChip.ui";
 import { Panel } from "../Panel.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
@@ -37,6 +36,7 @@ export type GameOverScreenProps = {
 			detail: string;
 			slots: number;
 			version: number;
+			maxVersion: number;
 		}[];
 		note: string;
 	};
@@ -104,12 +104,13 @@ export const GameOverScreen = ({
 			{finalBuild.rows.map((row) => (
 				<Row
 					key={row.name}
-					name={row.name}
-					tag={
-						<>
-							<Version label={`v${row.version}`} />
-							<Slots slots={row.slots} />
-						</>
+					name={
+						<DexChip
+							slots={row.slots}
+							label={row.name}
+							version={row.version}
+							maxVersion={row.maxVersion}
+						/>
 					}
 					detail={row.detail}
 				/>

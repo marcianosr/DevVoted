@@ -5,7 +5,8 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 
 const asPercent = (share: number): string => `${Math.round(share * 100)}%`;
-import { selectSeededRandom } from "~/shared/lib/seededRandom";
+import { selectSeededRandom, shuffleSeeded } from "~/shared/lib/seededRandom";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 
 export type AuditId =
 	| "cost-overrun"
@@ -22,6 +23,7 @@ export type AuditId =
 	| "timeout"
 	| "payload-too-large"
 	| "feature-freeze"
+	| "legal-hold"
 	| "strip";
 
 export type Audit = {
@@ -44,6 +46,10 @@ export type Audit = {
 	readonly overWidthBurn?: { readonly freeSlots: number; readonly kb: number };
 	readonly disablesConfig?: OfflinePick;
 	readonly timedPolls?: { readonly count: number; readonly limitMs: number };
+	readonly redactedPolls?: {
+		readonly count: number;
+		readonly perPoll: number;
+	};
 };
 
 export type OfflinePick =
@@ -95,6 +101,22 @@ const FEATURE_FREEZE: Audit = {
 		"No paid actions at all: the linter and the community peek are frozen.",
 	answerCue: "Paid actions are forbidden — the linter and the peek are out.",
 	freezesManualEffects: true,
+};
+
+const REDACTED_POLL_COUNT = 3;
+const REDACTED_PER_POLL = 2;
+
+// The audit sells its own escape hatch, so it owns the price: no config grants
+// the buy-back, unlike the linter and the peek.
+export const BUY_BACK_KB = 4;
+
+const LEGAL_HOLD: Audit = {
+	id: "legal-hold",
+	code: 451,
+	name: "Unavailable For Legal Reasons",
+	description: `The window's first ${REDACTED_POLL_COUNT} polls arrive with ${REDACTED_PER_POLL} answers redacted. ${BUY_BACK_KB}KB buys one back, and a redacted answer is still pickable.`,
+	answerCue: `Redacted: ${REDACTED_PER_POLL} answers are sealed on this poll. ${BUY_BACK_KB}KB each to unseal.`,
+	redactedPolls: { count: REDACTED_POLL_COUNT, perPoll: REDACTED_PER_POLL },
 };
 
 const READ_ONLY: Audit = {
@@ -244,6 +266,7 @@ const AUDIT_ROSTER = {
 	timeout: timeoutAudit,
 	"payload-too-large": () => PAYLOAD_TOO_LARGE,
 	"feature-freeze": () => FEATURE_FREEZE,
+	"legal-hold": () => LEGAL_HOLD,
 	strip: stripAudit,
 } as const satisfies Record<AuditId, (gate: number) => Audit>;
 
@@ -348,6 +371,38 @@ export const auditTimeLimitMs = (
 		if (!timed || answeredBefore >= timed.count) return limit;
 		return limit === undefined ? timed.limitMs : Math.min(limit, timed.limitMs);
 	}, undefined);
+
+export const auditRedactionPerPoll = (
+	audits: readonly Audit[],
+	answeredBefore: number
+): number =>
+	audits.reduce((perPoll, audit) => {
+		const redacted = audit.redactedPolls;
+		if (!redacted || answeredBefore >= redacted.count) return perPoll;
+		return Math.max(perPoll, redacted.perPoll);
+	}, 0);
+
+// Never leave a poll a coin flip.
+const READABLE_FLOOR = 2;
+
+/**
+ * Which options arrive sealed. Seeded on the poll id — never on the window
+ * position, which would put the redaction in the same option letters all
+ * window, and never on `correct`, which would make ????? a tell.
+ */
+export const redactedOptionIdsFor = (
+	poll: RunPoll,
+	audits: readonly Audit[],
+	answeredBefore: number
+): readonly string[] => {
+	const perPoll = auditRedactionPerPoll(audits, answeredBefore);
+	const hideable = Math.min(perPoll, poll.options.length - READABLE_FLOOR);
+	if (hideable <= 0) return [];
+	return shuffleSeeded(
+		poll.options.map((option) => option.id),
+		`redacted-${poll.id}`
+	).slice(0, hideable);
+};
 
 export const offlineConfigsFor = (
 	configs: readonly Config[],

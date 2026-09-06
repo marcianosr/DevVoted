@@ -10,16 +10,15 @@ import { Button } from "../Button.ui";
 import { CoverageBar } from "../CoverageBar.ui";
 import { DexChip } from "../DexChip.ui";
 import { Header, type HeaderProps } from "../Header.ui";
+import { IconButton } from "../IconButton.ui";
 import { Panel } from "../Panel.ui";
 import { PriceTag } from "../PriceTag.ui";
 import { Redacted } from "../Redacted.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
 import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
-import { Slots } from "../Slots.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
-import { Version } from "../Version.ui";
 
 const COLUMNS =
 	"grid grid-cols-2 items-start gap-x-6 @max-md:grid-cols-1 @max-md:gap-y-2";
@@ -27,11 +26,15 @@ const CALLOUT =
 	"flex items-center justify-between gap-4 rounded-lg border border-edge px-3 py-2 @max-md:flex-col @max-md:items-stretch @max-md:gap-3 @max-md:py-3";
 const BUILD_TRACK = "border-b border-edge py-2";
 const AUDIT_LIST = "flex flex-col items-end gap-0.5";
+const BLANKS = "flex flex-wrap items-center justify-end gap-1";
 const TALLY = "flex flex-wrap items-center justify-end gap-x-2";
 const TALLY_ITEM = "flex items-center gap-1";
 const UNDER = "pl-4";
 const AUDIT_LINE = "flex flex-wrap items-center justify-end gap-x-2";
 const STRUCK = "line-through";
+const PICK = "flex items-center gap-2";
+const MOVES = "flex items-center gap-1";
+
 const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
 
@@ -43,7 +46,8 @@ export type PrepBuildRow = {
 	name: string;
 	detail: string;
 	slots: number;
-	version?: string;
+	version: number;
+	maxVersion: number;
 };
 
 export type PrepTally = {
@@ -55,6 +59,12 @@ export type PrepAudit = {
 	label: string;
 	suppressed?: boolean;
 	suppressedBy?: AuditNote["suppressedBy"];
+};
+
+export type RebaseSlot = {
+	id: string;
+	category: string;
+	coverage: string;
 };
 
 export type BillRow = {
@@ -104,6 +114,7 @@ const AuditReading = ({ audits }: { audits: readonly PrepAudit[] }) => {
 							slots={audit.suppressedBy.slots}
 							label={audit.suppressedBy.label}
 							version={audit.suppressedBy.version}
+							maxVersion={audit.suppressedBy.maxVersion}
 							className="shrink-0 py-0 text-xs"
 						/>
 					)}
@@ -162,16 +173,27 @@ const CountLine = ({ values }: { values: readonly number[] }) => (
 	</span>
 );
 
+const Blanks = ({ count }: { count: number }) => (
+	<span className={BLANKS}>
+		{Array.from({ length: count }, (_, position) => (
+			<Redacted key={position} label="?" />
+		))}
+	</span>
+);
+
 const Revealed = ({
 	items,
 	countFirst = false,
 	source,
+	blanks,
 }: {
 	items?: readonly PrepTally[];
 	countFirst?: boolean;
 	source?: string;
+	blanks?: number;
 }) => {
-	if (items === undefined) return <Redacted />;
+	if (items === undefined)
+		return blanks === undefined ? <Redacted /> : <Blanks count={blanks} />;
 
 	return (
 		<>
@@ -209,6 +231,55 @@ const BillTrailing = ({ row }: { row: BillRow }) => (
 	</>
 );
 
+const RebaseList = ({
+	slots,
+	onMove,
+}: {
+	slots: readonly RebaseSlot[];
+	onMove?: (from: number, to: number) => void;
+}) => (
+	<div className="divide-y divide-edge">
+		{slots.map((slot, index) => (
+			<Row
+				key={slot.id}
+				name={
+					<span className={PICK}>
+						<Text tone="faint" size="caption">
+							pick
+						</Text>
+						<Badge tone="neutral">{slot.category}</Badge>
+						<Text tone="muted" size="caption">
+							{slot.coverage} coverage
+						</Text>
+					</span>
+				}
+				trailing={
+					<span className={MOVES}>
+						<IconButton
+							icon="↑"
+							iconOnly
+							tone="cerulean"
+							label="Move up"
+							hint={`Move ${slot.category} up`}
+							disabled={index === 0}
+							onUse={() => onMove?.(index, index - 1)}
+						/>
+						<IconButton
+							icon="↓"
+							iconOnly
+							tone="cerulean"
+							label="Move down"
+							hint={`Move ${slot.category} down`}
+							disabled={index === slots.length - 1}
+							onUse={() => onMove?.(index, index + 1)}
+						/>
+					</span>
+				}
+			/>
+		))}
+	</div>
+);
+
 export type PrepScreenProps = {
 	header: HeaderProps;
 	theme?: SwatchTheme;
@@ -229,12 +300,19 @@ export type PrepScreenProps = {
 			demand: number;
 		};
 		polls: string;
+		pollCount: number;
 		source?: string;
 		pollTypes?: readonly PrepTally[];
 		optionCounts?: readonly number[];
 		audits: readonly PrepAudit[];
 		categories?: readonly PrepTally[];
 		nextCategories?: readonly PrepTally[];
+	};
+	rebase?: {
+		label: string;
+		note: string;
+		slots: readonly RebaseSlot[];
+		onMove?: (from: number, to: number) => void;
 	};
 	bills?: {
 		meta: string;
@@ -263,6 +341,7 @@ export const PrepScreen = ({
 	ready,
 	build,
 	window,
+	rebase,
 	bills,
 	onClear,
 	footer,
@@ -296,20 +375,25 @@ export const PrepScreen = ({
 						{build.rows.map((row) => (
 							<Row
 								key={row.name}
-								name={row.name}
-								tag={
-									<>
-										{row.version === undefined ? null : (
-											<Version label={row.version} />
-										)}
-										<Slots slots={row.slots} />
-									</>
+								name={
+									<DexChip
+										slots={row.slots}
+										label={row.name}
+										version={row.version}
+										maxVersion={row.maxVersion}
+									/>
 								}
 								detail={row.detail}
 							/>
 						))}
 					</div>
 				</Section>
+
+				{rebase === undefined ? null : (
+					<Section label={rebase.label} meta={rebase.note} divided>
+						<RebaseList slots={rebase.slots} onMove={rebase.onMove} />
+					</Section>
+				)}
 			</div>
 
 			<div className="@container">
@@ -332,50 +416,56 @@ export const PrepScreen = ({
 							</>
 						}
 					/>
-					<Row
-						name={<Label text="polls" />}
-						trailing={<Text>{window.polls}</Text>}
-					/>
-					<Row
-						className={UNDER}
-						name={<Label text="type" />}
-						trailing={
-							<Revealed
-								items={window.pollTypes}
-								countFirst
-								source={window.source}
-							/>
-						}
-					/>
-					<Row
-						className={UNDER}
-						name={<Label text="options" />}
-						trailing={
-							<RevealedCounts
-								values={window.optionCounts}
-								source={window.source}
-							/>
-						}
-					/>
-					<Row
-						className={UNDER}
-						name={<Label text="categories" />}
-						trailing={
-							<Revealed items={window.categories} source={window.source} />
-						}
-					/>
-					{window.nextCategories === undefined ? null : (
+					<div>
+						<Row
+							name={<Label text="polls" />}
+							trailing={<Text>{window.polls}</Text>}
+						/>
 						<Row
 							className={UNDER}
-							name={<Label text="next gate" />}
+							name={<Label text="type" />}
 							trailing={
 								<Revealed
-									items={window.nextCategories}
+									items={window.pollTypes}
+									countFirst
 									source={window.source}
 								/>
 							}
 						/>
-					)}
+						<Row
+							className={UNDER}
+							name={<Label text="options" />}
+							trailing={
+								<RevealedCounts
+									values={window.optionCounts}
+									source={window.source}
+								/>
+							}
+						/>
+						<Row
+							className={UNDER}
+							name={<Label text="categories" />}
+							trailing={
+								<Revealed
+									items={window.categories}
+									source={window.source}
+									blanks={window.pollCount}
+								/>
+							}
+						/>
+						{window.nextCategories === undefined ? null : (
+							<Row
+								className={UNDER}
+								name={<Label text="next gate" />}
+								trailing={
+									<Revealed
+										items={window.nextCategories}
+										source={window.source}
+									/>
+								}
+							/>
+						)}
+					</div>
 					<Row
 						name={<Label text="audits" />}
 						trailing={<AuditReading audits={window.audits} />}

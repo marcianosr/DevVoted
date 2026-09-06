@@ -112,6 +112,7 @@ export type SkipReason =
 	| { readonly kind: "paysOnPeel" }
 	| { readonly kind: "billsAtGateClear" }
 	| { readonly kind: "inShop" }
+	| { readonly kind: "inPrep" }
 	| { readonly kind: "noAuditToSuppress" }
 	| { readonly kind: "runCapReached" }
 	| { readonly kind: "notThisPoll" };
@@ -172,6 +173,7 @@ const skipReasonFor = (
 		return { kind: "openerOnly" };
 	if (config.cacheHitStep !== undefined) return { kind: "cacheCold" };
 	if (config.subscriptionKb !== undefined) return { kind: "billsAtGateClear" };
+	if (config.reordersGatePolls === true) return { kind: "inPrep" };
 	if (
 		config.offersFullRoster === true ||
 		config.draftCostFactor !== undefined ||

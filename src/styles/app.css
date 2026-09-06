@@ -964,3 +964,29 @@ meter::-webkit-meter-optimum-value {
 .score-bump {
 	animation: score-bump 200ms ease-out;
 }
+
+@keyframes gauge-settle {
+	from {
+		transform: scaleY(0);
+	}
+	to {
+		transform: scaleY(1);
+	}
+}
+
+.gauge-earned {
+	transform-origin: bottom;
+	animation: gauge-settle 520ms ease-out both;
+}
+
+.gauge-lost {
+	transform-origin: bottom;
+	animation: gauge-settle 520ms ease-out reverse both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.gauge-earned,
+	.gauge-lost {
+		animation: none;
+	}
+}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { maxLevelOf, slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
@@ -92,6 +92,8 @@ export const RemovalView = ({
 		name: config.label,
 		detail: config.description,
 		slots: slotsOf(config),
+		version: config.level ?? 1,
+		maxVersion: maxLevelOf(config),
 		checked: selectedIds.includes(config.id),
 		onToggle: () => toggle(config.id),
 	}));

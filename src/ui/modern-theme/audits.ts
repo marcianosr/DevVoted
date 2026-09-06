@@ -8,6 +8,7 @@ export type AuditId =
 	| "dependency-outage"
 	| "read-only"
 	| "feature-freeze"
+	| "legal-hold"
 	| "mirrored"
 	| "timeout"
 	| "flaky-build"
@@ -28,6 +29,10 @@ export const AUDIT = {
 	"dependency-outage": { label: "424 Failed Dependency", glyph: "outage" },
 	"read-only": { label: "405 Method Not Allowed", glyph: "readonly" },
 	"feature-freeze": { label: "403 Forbidden", glyph: "freeze" },
+	"legal-hold": {
+		label: "451 Unavailable For Legal Reasons",
+		glyph: "redact",
+	},
 	mirrored: { label: "300 Multiple Choices", glyph: "mirror" },
 	timeout: { label: "408 Request Timeout", glyph: "timeout" },
 	"flaky-build": { label: "502 Bad Gateway", glyph: "flake" },
@@ -57,6 +62,7 @@ export const AUDIT_ORDER = [
 	"strip",
 	"upgrade-required",
 	"feature-freeze",
+	"legal-hold",
 	"payload-too-large",
 ] as const satisfies readonly AuditId[];
 

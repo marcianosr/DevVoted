@@ -234,6 +234,18 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		revealsUpcomingCategories: true,
 	},
+	gitRebase: {
+		id: "git-rebase",
+		label: "git rebase -i",
+		slots: 4,
+		description:
+			"Before a gate starts, shows its polls by category and lets you drag them into any order. The order locks the moment you answer.",
+		gives: "Reorder the gate's polls before it starts",
+		costs:
+			"The order locks when you answer — you commit before you read a question",
+		rewardMultiplier: 1,
+		reordersGatePolls: true,
+	},
 	wtfpl: {
 		id: "wtfpl",
 		label: "WTFPL",

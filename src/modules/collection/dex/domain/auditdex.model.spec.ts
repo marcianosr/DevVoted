@@ -7,7 +7,7 @@ import {
 import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
-const ROSTER_SIZE = 15;
+const ROSTER_SIZE = 16;
 
 const clearedUpTo = (gate: number) =>
 	gatedex(

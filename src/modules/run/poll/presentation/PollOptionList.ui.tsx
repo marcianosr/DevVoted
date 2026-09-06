@@ -8,11 +8,6 @@ export type PollOption = { readonly id: string; readonly label: string };
 type OptionStatus =
 	"correctChosen" | "correctMissed" | "chosenWrong" | "selected" | "neutral";
 
-/**
- * On reveal the badge fill says "you picked this" and the color says right/wrong:
- * a filled green ✓ is a correct pick, a filled red ✕ a wrong pick, and a hollow
- * green ✓ a correct answer you *missed*. Pre-reveal only the live pick highlights.
- */
 const optionStatusOf = (
 	isCorrectOption: boolean,
 	wasChosen: boolean,
@@ -67,11 +62,6 @@ const optionRow = cva(
 	}
 );
 
-/**
- * Single-answer polls badge each option as a radio (circle); multiple-answer polls
- * as a checkbox (rounded square). The shape is the whole poll-type cue — no extra
- * element, no vertical space — so single vs multiple reads before the first pick.
- */
 type ControlShape = "radio" | "checkbox";
 
 const controlShapeOf = (answerType: AnswerType): ControlShape =>
@@ -110,11 +100,6 @@ const optionLabel = cva("font-extrabold text-xs sm:text-sm transition-colors", {
 
 const optionLetter = (index: number) => String.fromCharCode(65 + index);
 
-/**
- * The community's share of this option, drawn in pewter rather than in any
- * meaningful colour: a crowd favourite is not a correct answer, and painting it
- * green or red would hand over the one thing the peek is not allowed to say.
- */
 const SplitBar = ({ percent }: { percent: number }) => (
 	<span className="block h-1 w-full overflow-hidden rounded-full bg-surface-raised">
 		<span
@@ -131,17 +116,16 @@ type PollOptionListProps = {
 	disabledOptionIds?: readonly string[];
 	correctOptionIds?: readonly string[];
 	chosenOptionIds?: readonly string[];
-	/** Community share per option id, 0–100 (Telemetry). Options missing from it
-	 * were picked by nobody, so they draw an empty bar rather than no bar. */
 	splitPercentByOptionId?: Readonly<Record<string, number>>;
+	hiddenOptionIds?: readonly string[];
+	buyBack?: {
+		readonly costKb: number;
+		readonly ready: boolean;
+		readonly onBuyBack: (optionId: string) => void;
+	};
 	onSelect: (optionId: string) => void;
 };
 
-/**
- * The answer overview shared by the live poll (interactive) and the review
- * screen (revealed, read-only). Passing `correctOptionIds` flips it into the
- * reveal state — colored badges, staggered pop — and disables every option.
- */
 export const PollOptionList = ({
 	answerType,
 	options,
@@ -150,12 +134,15 @@ export const PollOptionList = ({
 	correctOptionIds,
 	chosenOptionIds = [],
 	splitPercentByOptionId,
+	hiddenOptionIds = [],
+	buyBack,
 	onSelect,
 }: PollOptionListProps) => {
 	const selected = new Set(selectedOptionIds);
 	const disabled = new Set(disabledOptionIds);
 	const correct = new Set(correctOptionIds ?? []);
 	const chosen = new Set(chosenOptionIds);
+	const sealed = new Set(hiddenOptionIds);
 	const revealed = correctOptionIds !== undefined;
 	const shape = controlShapeOf(answerType);
 
@@ -168,18 +155,23 @@ export const PollOptionList = ({
 				const isSelected = !revealed && selected.has(option.id);
 				const status = optionStatusOf(isCorrectOption, wasChosen, isSelected);
 				const interaction = interactionOf(off, revealed);
+				// A sealed option stays pickable: gambling blind is the point.
+				const isSealed = !revealed && sealed.has(option.id);
 
 				const revealDelay = revealed ? revealDelayMs(index, options.length) : 0;
 				const revealDelayStyle = revealed
 					? { transitionDelay: `${revealDelay}ms` }
 					: undefined;
-				return (
+				const row = (
 					<button
-						key={option.id}
 						type="button"
 						disabled={off || revealed}
 						onClick={() => onSelect(option.id)}
-						className={optionRow({ status, interaction })}
+						className={optionRow({
+							status,
+							interaction,
+							className: isSealed ? "flex-1 border-b-0" : undefined,
+						})}
 						style={revealDelayStyle}
 					>
 						<span
@@ -198,7 +190,12 @@ export const PollOptionList = ({
 						</span>
 						<span className="flex min-w-0 flex-1 flex-col gap-1.5">
 							<span
-								className={optionLabel({ status })}
+								className={optionLabel({
+									status,
+									className: isSealed
+										? "tracking-[0.35em] text-pewter"
+										: undefined,
+								})}
 								style={revealDelayStyle}
 							>
 								{option.label}
@@ -213,6 +210,25 @@ export const PollOptionList = ({
 							</span>
 						) : null}
 					</button>
+				);
+
+				if (!isSealed || !buyBack) return <div key={option.id}>{row}</div>;
+				return (
+					<div
+						key={option.id}
+						className="flex items-center gap-2 border-b border-edge last:border-b-0"
+					>
+						{row}
+						<button
+							type="button"
+							aria-label={`Buy back option ${optionLetter(index)}`}
+							disabled={!buyBack.ready}
+							onClick={() => buyBack.onBuyBack(option.id)}
+							className="shrink-0 cursor-pointer rounded border border-celadon px-2 py-0.5 text-xs font-bold text-celadon transition enabled:hover:bg-celadon enabled:hover:text-black disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							buy back {buyBack.costKb}KB
+						</button>
+					</div>
 				);
 			})}
 		</div>

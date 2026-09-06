@@ -37,6 +37,7 @@ export const RightAnswer: Story = {
 			coverage: { label: "Coverage", reading: "31.1 / 60%", percent: 52 },
 		},
 		theme: "lavender",
+		coverage: { held: 31.1, demand: 60, earned: 4.1 },
 		build: {
 			running: 2,
 			total: { label: "Total", value: "×3.1" },
@@ -67,7 +68,18 @@ export const RightAnswer: Story = {
 				},
 			],
 		},
+		trail: { count: 5, current: 2, verdicts: ["correct", "correct"] },
 		category: "JavaScript",
+		facts: [
+			{ label: "scores", value: "×1.1", tone: "celadon" },
+			{ label: "wrong costs", value: "0.3", tone: "cinnabar" },
+			{
+				label: "Gate retry cost:",
+				value: "Remove 1 config",
+				hint: "1 slot of configs — drop them or minify them, your pick",
+				tone: "cinnabar",
+			},
+		],
 		question: "Which method returns the last element of an array?",
 		choices: [
 			{
@@ -90,6 +102,49 @@ export const RightAnswer: Story = {
 		},
 		nextLabel: "Next poll →",
 		onNext: noop,
+		byline: { author: "@matthijsgroen" },
+	},
+};
+
+// The track stays silent on a miss: configs never touch a loss, so no row says
+// what it paid. The loss reads once, on the total.
+export const WrongAnswer: Story = {
+	args: {
+		...RightAnswer.args,
+		coverage: { held: 29.2, demand: 60, earned: -1.9 },
+		trail: { count: 5, current: 2, verdicts: ["correct", "wrong"] },
+		build: {
+			running: 2,
+			total: { label: "Total", value: "×3.1" },
+			rows: [
+				{
+					name: ".js",
+					slots: 1,
+					version: 1,
+					detail: "JS polls ×1.25",
+					dot: "on",
+				},
+				{ name: ".ts", slots: 1, version: 1, detail: "TS only", dot: "off" },
+				{
+					name: "Deprecated",
+					slots: 4,
+					version: 1,
+					detail: "All coverage ×2.5",
+					dot: "on",
+				},
+			],
+		},
+		choices: [
+			{ letter: "A", label: "at(−1)", state: "expected", note: "expected" },
+			{ letter: "B", label: "pop()", state: "idle", note: "you picked" },
+			{ letter: "C", label: "last()", state: "dimmed" },
+		],
+		equation: {
+			factors: [],
+			result: "−1.9%",
+			resultLabel: "coverage lost",
+			resultTone: "cinnabar",
+		},
 	},
 };
 
@@ -139,6 +194,7 @@ export const EliteReveal: Story = {
 			coverage: { label: "Coverage", reading: "64.4 / 85%", percent: 76 },
 		},
 		theme: "elite",
+		coverage: { held: 64.4, demand: 85, earned: 12.4 },
 		build: {
 			running: 5,
 			total: { label: "Total", value: "×6.2" },
@@ -209,7 +265,21 @@ export const EliteReveal: Story = {
 				},
 			],
 		},
+		trail: {
+			count: 5,
+			current: 4,
+			verdicts: ["correct", "wrong", "correct", "correct"],
+		},
 		category: "CSS",
+		facts: [
+			{ label: "scores", value: "×1.4", tone: "celadon" },
+			{ label: "wrong costs", value: "0.9", tone: "cinnabar" },
+			{
+				label: "Gate retry cost:",
+				value: "The run ends here",
+				tone: "cinnabar",
+			},
+		],
 		question: "Which property creates a new stacking context on its own?",
 		choices: [
 			{

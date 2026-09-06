@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-08-15T13:53:34Z
+updated_at: 2026-09-06T07:18:04Z
 parent: DVTD-d0fw
 ---
 
@@ -352,3 +352,7 @@ Check: Correct in biggest category AND draft at least one config targeting a rev
 Benefit: Starts at ×2 coverage multiplier, loses ×0.25 per gate, deletes itself at ×1.
 Check: (Undecided).
 Rationale: Cheap for its power; the visible countdown is the honest version of a decay mechanic (withhold nothing, falsify nothing).
+
+## Note (2026-09-06): Try/Catch design is obsolete
+
+Phase 2's Try/Catch (survive one failed gate per run) guards a rule that no longer exists: since ADR-037 a missed gate peels configs and reruns, it does not end the run. Re-aim or scrap before building. New Phase-2-era candidates from this session: DVTD-68jr (Planning Poker), DVTD-krh0 (Math.random()).

@@ -7,6 +7,7 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Button } from "../Button.ui";
 import { BuyLine, type BuyLineProps } from "../BuyLine.ui";
 import { Change, type ChangeStep } from "../Change.ui";
+import { DexChip } from "../DexChip.ui";
 import { GitTagIcon } from "../GitTagIcon.ui";
 import { Header, type HeaderProps } from "../Header.ui";
 import { IconButton } from "../IconButton.ui";
@@ -17,10 +18,8 @@ import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
 import { SlotDeal, type SlotDealRow } from "../SlotDeal.ui";
 import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
-import { Slots } from "../Slots.ui";
 import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
-import { Version } from "../Version.ui";
 
 const FOOTER =
 	"flex flex-wrap items-center justify-end gap-3 border-t border-edge pt-4";
@@ -64,7 +63,8 @@ export type ShopBuildRow = {
 	name: string;
 	detail: string;
 	slots: number;
-	version?: string;
+	version: number;
+	maxVersion: number;
 	maxed?: boolean;
 	upgrade?: {
 		version?: string;
@@ -103,12 +103,14 @@ export type ShopOfferRow = {
 	name: string;
 	detail: string;
 	slots: number;
-	version?: string;
+	version: number;
+	maxVersion: number;
 	upgrades?: boolean;
 	price?: string;
 	buyLabel: string;
 	onBuy?: () => void;
 	refused?: boolean;
+	refusal?: string;
 	lock?: OfferLock;
 };
 
@@ -116,28 +118,21 @@ const segmentsOf = (
 	rows: readonly { slots: number }[]
 ): readonly SlotSegment[] => rows.map((row) => ({ slots: row.slots }));
 
-const versionTag = (row: ShopBuildRow) => {
-	if (row.version === undefined) return null;
-	if (row.armed?.action !== "upgrade" || row.upgrade?.version === undefined) {
-		return <Version label={row.version} />;
-	}
-	return <Change from={row.version} to={row.upgrade.version} />;
+// The chip already states the version, so the tag column carries only the bump
+// an armed upgrade is about to make.
+const buildTag = (row: ShopBuildRow) => {
+	if (row.armed?.action !== "upgrade" || row.upgrade?.version === undefined)
+		return null;
+	return <Change from={`v${row.version}`} to={row.upgrade.version} />;
 };
 
-// Version and size sit with the name rather than out on the right rail: both
-// answer "what is this", while the rail is where you act on it.
-const buildTag = (row: ShopBuildRow) => (
-	<>
-		{versionTag(row)}
-		<Slots slots={row.slots} />
-	</>
-);
-
-const offerTag = (row: ShopOfferRow) => (
-	<>
-		{row.version === undefined ? null : <Version label={row.version} />}
-		<Slots slots={row.slots} />
-	</>
+const configChip = (row: ShopBuildRow | ShopOfferRow) => (
+	<DexChip
+		slots={row.slots}
+		label={row.name}
+		version={row.version}
+		maxVersion={row.maxVersion}
+	/>
 );
 
 const actionHint = (...parts: readonly (string | undefined)[]) =>
@@ -153,8 +148,8 @@ const ArmedPrice = ({
 	if (armed.action === "upgrade") {
 		return row.upgrade === undefined ? null : (
 			<span className={ARMED_PRICE}>
-				<Text tone="muted" size="caption">
-					price
+				<Text tone="muted" size="caption" weight="thin">
+					Upgrade price
 				</Text>
 				<PriceTag label={row.upgrade.price} />
 			</span>
@@ -163,8 +158,8 @@ const ArmedPrice = ({
 	if (row.remove.value === undefined) return null;
 	return (
 		<span className={ARMED_PRICE}>
-			<Text tone="muted" size="caption">
-				sell price
+			<Text tone="muted" size="caption" weight="thin">
+				Uninstall price
 			</Text>
 			<PriceTag label={row.remove.value} variant="receive" />
 		</span>
@@ -265,7 +260,7 @@ const BuildTrailing = ({ row }: { row: ShopBuildRow }) => {
 const BuildRow = ({ row }: { row: ShopBuildRow }) => (
 	<div className={clsx(row.armed !== undefined && ARMED_ROW)}>
 		<Row
-			name={row.name}
+			name={configChip(row)}
 			tag={buildTag(row)}
 			detail={row.armed?.note ?? row.detail}
 			trailing={<BuildTrailing row={row} />}
@@ -355,8 +350,7 @@ export const ShopScreen = ({
 						{offers.rows.map((row) => (
 							<Row
 								key={row.name}
-								name={row.name}
-								tag={offerTag(row)}
+								name={configChip(row)}
 								detail={row.detail}
 								dimmed={row.refused}
 								trailing={
@@ -382,7 +376,12 @@ export const ShopScreen = ({
 										<IconButton
 											icon={BUY_ICON}
 											label={row.buyLabel}
-											hint={actionHint(row.name, row.buyLabel, row.price)}
+											hint={actionHint(
+												row.name,
+												row.buyLabel,
+												row.price,
+												row.refusal
+											)}
 											disabled={row.refused === true || row.onBuy === undefined}
 											onUse={row.onBuy}
 										/>

@@ -8,7 +8,7 @@ import { Text } from "./Text.ui";
 // so letting them span a wide panel spends a screenful on a ratio.
 const TRACK = "flex max-w-sm gap-1";
 const SEGMENT = "h-3.5 basis-0 rounded-sm";
-const EMPTY = "border border-dashed border-zinc-700";
+const EMPTY = "border border-dashed border-zinc-500 bg-hatched";
 
 export type SlotSegment = {
 	slots: number;

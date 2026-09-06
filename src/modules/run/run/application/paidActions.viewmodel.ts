@@ -1,6 +1,7 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { linterFor, peekerFor } from "~/modules/run/build/domain/build.model";
 import {
+	buyBackFeeFor,
 	canBuyPeek,
 	canRunLinter,
 	lintApplies,
@@ -8,9 +9,11 @@ import {
 	peekApplies,
 	peekFeeFor,
 } from "~/modules/run/run/domain/paidAction.model";
-import type { RunState } from "~/modules/run/run/domain/run.model";
+import {
+	hiddenOptionIdsOf,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
 
-/** `can*` is whether the action applies at all, `*Ready` whether the run can pay. */
 export type PaidActions = {
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
@@ -20,6 +23,22 @@ export type PaidActions = {
 	readonly peekReady: boolean;
 	readonly peekCost: number;
 	readonly peeker: Config | null;
+};
+
+export type BuyBackView = {
+	readonly costKb: number;
+	readonly ready: boolean;
+	readonly sealedCount: number;
+};
+
+export const buyBackViewFor = (state: RunState): BuyBackView => {
+	const sealed = hiddenOptionIdsOf(state);
+	const costKb = buyBackFeeFor(state);
+	return {
+		costKb,
+		ready: sealed.length > 0 && state.storage >= costKb,
+		sealedCount: sealed.length,
+	};
 };
 
 export const paidActionsFor = (state: RunState): PaidActions => {

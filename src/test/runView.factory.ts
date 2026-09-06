@@ -4,6 +4,7 @@ import {
 	FAUCET_CAP_KB,
 	MAX_SLOTS,
 	pinCostFor,
+	revealsPlanTier,
 	SLOT_PRICES_KB,
 	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
@@ -157,6 +158,8 @@ const createRunView = createMockDataFactory<RunView>({
 	awaitingTomorrow: false,
 	pollsExhausted: false,
 	disabledOptionIds: [],
+	hiddenOptionIds: [],
+	buyBack: { costKb: 4, ready: false, sealedCount: 0 },
 	paidActions: createMockPaidActions(),
 	offlineConfigs: [],
 	mirroredPolls: false,
@@ -165,6 +168,7 @@ const createRunView = createMockDataFactory<RunView>({
 	currentPollPeeked: false,
 	correctAnswersThisGate: null,
 	correctCountSource: null,
+	rebaseSlots: [],
 	upcomingCategories: null,
 	nextGateCategories: null,
 	answerTypesThisGate: null,
@@ -213,6 +217,7 @@ const createRunView = createMockDataFactory<RunView>({
 	storagePlan: {
 		capKb: STORAGE_PLANS[0].capKb,
 		perGateKb: STORAGE_PLANS[0].perGateKb,
+		peakKb: 0,
 		options: STORAGE_PLANS.map((plan) => ({
 			tier: plan.tier,
 			capKb: plan.capKb,
@@ -220,6 +225,7 @@ const createRunView = createMockDataFactory<RunView>({
 			held: plan.tier === 0,
 			burnsKb: 0,
 			affordable: true,
+			revealed: revealsPlanTier(plan.tier, 0),
 		})),
 	},
 });

@@ -567,6 +567,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onSubmit={() => answer(selected)}
 					onLint={() => dispatch({ type: "lint-poll" })}
 					onPeek={() => dispatch({ type: "peek-poll" })}
+					onBuyBack={(optionId) =>
+						dispatch({ type: "buy-back-option", optionId })
+					}
 					onSwitchArm={(id) => dispatch({ type: "switch-arm", configId: id })}
 				/>
 			)}
@@ -616,6 +619,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onStart={() => dispatch({ type: "finish-reward" })}
 					onBackToShop={() => setRewardStep("shop")}
 					onCommunity={() => setRewardStep("community")}
+					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 				/>
 			)}
 

@@ -12,7 +12,11 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { BASE_SLOTS, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import {
+	BASE_SLOTS,
+	VICTORY_GATE,
+	coverageDemandFor,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	type DrizzleMockState,
 	resetDrizzleMock,
@@ -154,7 +158,7 @@ describe("applyActionToRun", () => {
 			window: {
 				correct: 4,
 				answered: 4,
-				coverageGained: 340,
+				coverageGained: coverageDemandFor(VICTORY_GATE),
 				byCategory: { js: { seen: 4, correct: 4 } },
 			},
 		});
@@ -178,7 +182,8 @@ describe("applyActionToRun", () => {
 		});
 		expect(mock.setCalls[2].victory_achieved_at).toBeInstanceOf(Date);
 		expect(mock.setCalls[3]).toHaveProperty("archived_storage");
-		expect(db.update).toHaveBeenCalledTimes(4);
+		expect(mock.setCalls[4]).toHaveProperty("peak_storage_kb");
+		expect(db.update).toHaveBeenCalledTimes(5);
 	});
 
 	it("hands out no swatch at run start — Pallet is gate 0's reward", async () => {
@@ -248,7 +253,36 @@ describe("applyActionToRun", () => {
 
 		expect(next.status).toBe("answering");
 		expect(mock.setCalls[0]).toMatchObject({ engine_status: "answering" });
-		expect(db.update).toHaveBeenCalledTimes(1);
+		// The state row, plus the account's KB mark: a run loaded without one
+		// takes the balance it is already holding as its first mark.
+		expect(db.update).toHaveBeenCalledTimes(2);
+	});
+
+	it("raises the account's KB mark when the run reaches a new best", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 400 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls.at(-1)).toHaveProperty("peak_storage_kb");
+	});
+
+	it("leaves the account's KB mark alone when the balance sets no record", async () => {
+		mock.results.push([
+			stateRow(answeringState({ storage: 100, peakStorageKb: 900 })),
+		]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
 	it("writes the answer as a session polls_responses row with its picked options", async () => {

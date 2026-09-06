@@ -145,6 +145,7 @@ signal: **4xx means the rules changed on you**, **5xx means your build is down**
 | **424 Failed Dependency** | One config is offline for the whole attempt. |
 | **426 Upgrade Required** | Your lowest-level config goes out of date and sits the attempt out. |
 | **429 Too Many Requests** | One paid action for the whole window: the linter or the peek, not both. |
+| **451 Unavailable For Legal Reasons** | The window's first 3 polls arrive with 2 answers redacted as `?????`. A redacted answer is still pickable; 4 KB buys one back. |
 | **502 Bad Gateway** | One config flakes on every poll, rolled fresh each time. |
 | **503 Service Unavailable** | A different config is down for each poll of the window. |
 | **507 Insufficient Storage** | Storage leaks every poll: −16 KB, −32 KB on a miss. |
@@ -160,8 +161,16 @@ below gate 10, 3 at 25s at gates 10 and 11, and 5 at 20s at the Champion; **410*
 10 points to the peel at Elite and 15 at the Champion.
 
 A gate never draws two audits that do the same job, so 402/403/429 never stack, and no
-two of the five offline rules share a gate. **300 never draws with 408**, since a
-timed-out answer voids the mirror rather than beating it.
+two of the five offline rules share a gate. Nor do any two of **300, 404 and 451**, which
+all attack the same reading step. **300 never draws with 408**, since a timed-out answer
+voids the mirror rather than beating it. 451 *can* share a gate with 403: the freeze takes
+the linter and the peek, never the buy-back, because a seal you are forbidden to read is a
+trap rather than a rule.
+
+**451's redaction is blind to correctness**, so `?????` is never a tell: which answers are
+sealed is drawn from the poll's identity, never from which one is right. The linter will
+not touch a sealed answer either — crossing it out would say it is wrong for half the price
+of reading it — so a sealed answer becomes lintable only once it is bought back.
 
 Pools in [2.8](#28-what-unlocks-when), roster in `audit.model.ts`, pools and families
 in `auditSchedule.model.ts`, reasoning in ADR-035/038/056.
@@ -213,11 +222,12 @@ A correct answer earns `share × (1 + adds) × mults × streak × gate × diffic
 0..1, so shotgunning every option earns nothing. Only coverage reads this share;
 streak and storage stay binary on the exact-set rule.
 
-**A wrong answer bleeds** half of what a correct one pays on the same build
-(`0.5 × per-correct coverage`), from the poll's category, the gate meter and the run
-total alike, each floored at 0. Priced off the earn rather than off the gate alone, so
-a miss costs 1.5 answers at every gate and on every build; the old formula read a
-multiplier field that is 1 on every config, which let stacked builds shrug off a miss.
+**A wrong answer bleeds** a share of what a correct one pays on the same build
+(`share × per-correct coverage`), from the poll's category, the gate meter and the run
+total alike, each floored at 0. The share **starts at 0.5 and climbs 0.03 a gate**, so a
+miss costs 1.5 answers at Pallet and 1.86 at the Champion: risk is priced off your own
+earn (a stacked build loses more), and the climb makes accuracy, not just volume, the
+deep-gate requirement. Break-even accuracy runs 33% at gate 0 to 46% at gate 12.
 
 Example, gate 2, a 5-option single-answer CSS poll with `.css` installed and one
 correct answer already banked: `1.0 × 1.25 mults × 1.1 streak × 2 gate × 1.2
@@ -302,8 +312,8 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 | 8 | Seafoam | 175% | 288 KB | 30% | 2 of pool B | — |
 | 9 | Volcano | 210% | 320 KB | 30% | 2 of pool B | — |
 | 10 | Earth | 250% | 352 KB | 30% | 2 of pool B | — |
-| 11 | Elite | 290% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
-| 12 | Champion | 340% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+| 11 | Elite | 300% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
+| 12 | Champion | 375% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
 
 The audit column names what a gate is **certain** to carry; the rest is drawn on the
 day, one audit per family per gate, and never the same audit twice within a band:
@@ -423,8 +433,10 @@ leak and leaves the strip.
 ### 4.2 Size
 
 A config carries one number: the **slots** it fills, one of **1, 2, 4, 8, 12 or 16**
-(ADR-047). There are no grades, no grade colours and no glyph — the row states its size
-in words ("4 slots"), because a bare number beside a KB figure reads as money.
+(ADR-047). There are no grades, no grade colours and no glyph. A chip or build row states
+its size as a figure in a **weight block** — a fixed-width block whose edge carries the
+size hue, so the number cannot be mistaken for the KB figures beside it (ADR-060); lists
+and legends still say it in words ("4 slots").
 
 Its **draft price is 32 KB a slot**, so size names both prices at once:
 
@@ -446,7 +458,7 @@ what each size costs.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Thirty-three configs, all pure effects.
+**🟢 Shipped.** Thirty-four configs, all pure effects.
 
 | Config | Slots | Effect |
 | --- | --- | --- |
@@ -460,7 +472,7 @@ what each size costs.
 | Cold Start | 2 | First answer of the gate rewards ×2 |
 | Code Coverage | 2 | +0.5% flat coverage per correct answer |
 | IndexedDB | 2 | +8 KB storage per correct answer, capped at 320 KB |
-| Telemetry | 2 | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-and-peek)) |
+| Telemetry | 2 | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-peek-and-buy-back)) |
 | A/B Test | 2 | Ships one of two arms, switched free at any time — in the shop or mid-poll, where the switch scores the answer you are about to give (ADR-053): A pays ×1.25 on all coverage, B pays +8 KB per correct answer (sharing the faucet's run cap) |
 | `.length` | 2 | Names how many correct answers the gate's 5 polls hold, and pays +16 KB per correct answer beyond one per poll |
 | Garbage Collection | 2 | Every config you **drop** to pay a peel refunds its sell value. WTFPL zeroes it, Freemium halves it, and minifying to free the same slots pays nothing, since the config is still installed |
@@ -468,6 +480,7 @@ what each size costs.
 | Deprecated | 4 | All coverage ×3, fading ×0.5 each gate clear; deleted from the build at ×1 |
 | Cache | 4 | Correct answers warm their category for the rest of the run: each cached hit pays +25% coverage there, capped at ×2 (4 hits). A wrong answer in the category flushes it cold; a partial neither warms nor flushes |
 | Prefetch | 4 | Shows, for every poll left this gate, its category, how many options it offers (in play order), and how many of the polls take more than one answer, plus all of the next gate's categories. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — the questions stay sealed |
+| git rebase -i | 4 | Before a gate starts, names its 5 polls by **category only** and moves any of them up or down the queue. The order locks the moment the first answer lands. Prefetch stays the richer read (option counts, answer types, next gate); rebase owns the order instead, and it is the only config that touches poll sequence — which is what Cold Start, Overclock, Cache and Dependabot all quietly depend on |
 | Overclock | 4 | The gate's first answer earns ×4 coverage; every answer after it runs hot at ×0.5, cooling off at the clear. Miss the opener and the gate is nearly dead — the buy is variance, not magnitude (×1.2 average, honestly under Intellisense) |
 | AGENTS.md | 8 | All coverage ×2 |
 | Volkswagen CI | 8 | Reports the gate's first audit as passing; costs 384 KB to draft |
@@ -509,16 +522,15 @@ ship; the original check designs stay in the beans.
 | `--save-exact` | 2 | Every future draft costs 20% less |
 | Overclock | 4 | 4× coverage on one poll, then −128 KB across the next two |
 | Snapshot Testing | 4 | Polls you have already seen reward ×2 |
-| Rebase | 4 | See the gate's remaining polls and reorder them |
 | Hotfix | 4 | A failed gate still opens the shop |
 | Replication | 4 | All storage gains ×2, locked to the free plan while installed |
 | Continuous Deployment | 4 | +64 KB every gate clear, but you never enter the shop again |
 
 Bundle Analyzer (see the next gate's category mix in the shop) is gone from this list:
-the shipped **Prefetch** covers it and more. Rebase reveals and reorders inside the
-*gate*, so it informs how you answer; it stays local to your own run, since reordering a
-shared seed would break other players' position-based configs, and the social version
-belongs in [7.4 Interference](#74-interference).
+the shipped **Prefetch** covers it and more. Rebase has shipped as **git rebase -i**
+(4.3); it stays local to your own run, since reordering a shared seed would break other
+players' position-based configs, and the social version belongs in
+[7.4 Interference](#74-interference).
 
 🟡 **Dual-focus configs** replace the old hidden synergy table: one config focusing two
 categories is the themed-build bonus turned into a visible, draftable item, and only
@@ -568,11 +580,12 @@ streak of one).
 ⚠ Unreconciled: the stories also propose archived-storage-funded, 10-level cross-run
 upgrades (DVTD-z94q), so the upgrade currency question is open.
 
-### 4.5 Paid actions: lint and peek
+### 4.5 Paid actions: lint, peek and buy-back
 
 Two configs sell an action rather than a passive, and both meter it with a doubling
 fee. Both hang off the selling config's own build row, so a build's powers read in
-one place.
+one place. The third is sold by a **gate** rather than a config, and sits on the answer
+it unseals.
 
 **Lint.** With a linter covering the poll's category equipped, pay to gray out one
 wrong option: 8, 16, 32, 64, 128, 256 KB. Run it as often as the poll's options allow;
@@ -589,6 +602,19 @@ asked for the incorrect options and would invert the signal you are buying.
 
 Correctness never travels with a peek: the server hands over option ids and
 percentages for polls the run has already paid on, and nothing else.
+
+**Buy-back** (451 Unavailable For Legal Reasons). Pay **4 KB flat** to unseal one redacted
+answer, as often as the poll has sealed answers. It is the one paid action **no config
+sells** — the gate hands out the problem, so the gate hands out the answer, which is why it
+is the only one that costs the same every time: the fee is charged per answer rather than
+per gate, so a ladder would price the audit's own escape hatch out of reach. 402 still
+doubles it. **429 does not meter it**, because rationing the way out of a redaction to one
+press a window would strand you in it, and **403 does not freeze it** either, for the same
+reason: 451 always hands out the answer to the problem it set. What you buy stays bought for
+the rest of the run.
+
+A sealed answer is still pickable. Gambling on `?????` is a legitimate play, and the
+reveal names every answer afterwards whether you paid or not, so a gamble still teaches.
 
 ---
 
@@ -653,9 +679,12 @@ The free cap holds less than one perfect gate-12 clear, which makes the plan a
 **prerequisite for the slot ladder**: you cannot save 768 KB for a mid-ladder slot
 without renting a wider cap first. That coupling is the point of having a cap at all.
 
-The shop shows the ladder as a rack of cards, one per rung, and **only reveals up to
-one rung above the one you hold** — everything higher reads ???? until you climb to
-the rung below it.
+The shop shows the ladder as a rack of cards, one per rung, and **a rung opens once a
+run has filled the cap below it**. The free cap and the 512 KB rung are always on the
+shelf; every rung above reads ???? until some run of yours has actually held its
+predecessor's cap, and the masked card names that requirement ("opens at 512 KB held")
+alongside the best you have held. The mark is the account's, not the run's, so a rung
+opened once stays open. Reveal is all it governs: what sells is still the bill.
 
 **A rung you cannot pay for is not for sale.** A rung's select press refuses while
 its bill is more than you hold, and says which figure is in the way. Dropping
@@ -934,7 +963,7 @@ The game leans hard into its CI metaphor.
   ("coverage · 1.2 / 3%" then the bar); what is being done to this gate lives in
   saffron alert boxes under the build, one per audit; and what the poll pays and
   costs lives on the poll's own facts line, beside the category — "JavaScript · scores
-  ×1 · 3 options · wrong costs 0.5 · Gate retry cost: Remove 1 config". None of the
+  ×1 · wrong costs 0.5 · Gate retry cost: Remove 1 config". None of the
   three folds: a screen you answer on should not be able to hide the terms.
 - **The poll is one column**: header, build, audits, trail, question, options and
   the button that sends them all share one width and one left edge, the button as wide
@@ -1009,7 +1038,7 @@ applies. `rules.model.ts` holds most of it.
 | --- | --- |
 | `SLICE_WINDOW` | 5 polls per gate window, so per day |
 | `VICTORY_GATE` / `GATE_COUNT` | 12 / 13 (gates 0 to 12) |
-| `coverageDemandFor` | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 290 / 340 |
+| `coverageDemandFor` | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 300 / 375 |
 | `failPeelShareFor` | 20% / 20% / 20% / 25% × 4 / 30% × 4 / 35% × 2 of the occupied slots, plus strip audits; capped at half the build before gate 3 |
 | Audit roster | Fifteen rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
 | Audit pools | A 6 (gates 4-7, draw 1) · B 13 (gates 8-10, draw 2) · C 9 (gate 11, draw 2 beside 410) |
@@ -1020,7 +1049,7 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | Gate multiplier | `gatesCleared + 1` (×1 to ×12), frozen while a gate is redone |
-| `WRONG_COVERAGE_LOSS` | 0.5 × the build's per-correct coverage, floored at 0 on every ledger |
+| `wrongLossShareFor` | `0.5 + 0.03 × gate` (0.5 at Pallet, 0.86 at the Champion) × the build's per-correct coverage, floored at 0 on every ledger |
 | `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer, capped at 10 steps (×2) |
 | Difficulty bonus | +0.1 per option beyond 3, +0.5 multi, never below ×1 |
 | Focus payout / upgrade gate | `1 + 0.25 × level` / `5% × level` career coverage |

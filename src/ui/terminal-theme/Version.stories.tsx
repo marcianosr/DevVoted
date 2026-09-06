@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Row } from "./Row.ui";
-import { Slots } from "./Slots.ui";
+import { Weight } from "./Weight.ui";
 import { Text } from "./Text.ui";
 import { Version } from "./Version.ui";
 
@@ -100,7 +100,7 @@ export const BesideAConfig: Story = {
 					tag={
 						<>
 							<Version label={config.version} />
-							<Slots slots={config.slots} />
+							<Weight slots={config.slots} />
 						</>
 					}
 					detail="what the config does"

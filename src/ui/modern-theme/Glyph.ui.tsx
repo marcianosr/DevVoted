@@ -20,6 +20,7 @@ export type GlyphName =
 	| "rolling"
 	| "breaking"
 	| "strip"
+	| "redact"
 	| "notfound"
 	| "ratelimit"
 	| "upgrade"
@@ -87,6 +88,13 @@ const PATHS = {
 		<>
 			<rect x="3" y="6.3" width="8" height="6.2" rx="1.2" />
 			<path d="M5 6.3V4.6a2 2 0 0 1 4 0v1.7" />
+		</>
+	),
+	redact: (
+		<>
+			<path d="M2 3.6h10" />
+			<rect x="2" y="6" width="10" height="2.6" rx="0.6" />
+			<path d="M2 11h5.5" />
 		</>
 	),
 	freeze: (

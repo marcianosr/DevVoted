@@ -45,6 +45,9 @@ export type StoragePlanCard = {
 	rentKb: number;
 	held: boolean;
 	revealed: boolean;
+	/** What opens a hidden rung, as a caption rather than a tooltip: a mask that
+	 * only whispers its requirement on hover says nothing at all on touch. */
+	requirement?: string;
 	burnsKb: number;
 	refusal?: string;
 	onSelect?: () => void;
@@ -163,7 +166,7 @@ const RungCard = ({
 	);
 };
 
-const MaskedCard = () => (
+const MaskedCard = ({ requirement }: { requirement?: string }) => (
 	<>
 		<Redacted label="????" className="self-start" />
 		<span className="flex items-baseline gap-1.5">
@@ -171,7 +174,7 @@ const MaskedCard = () => (
 				·
 			</Text>
 			<Text size="caption" tone="faint">
-				????
+				{requirement ?? "????"}
 			</Text>
 		</span>
 	</>
@@ -248,7 +251,11 @@ export const StoragePlan = ({ cards, meter, className }: StoragePlanProps) => {
 						ref={card.held ? heldCard : undefined}
 						className={clsx(CARD, card.held && CARD_HELD)}
 					>
-						{card.revealed ? <RungCard {...card} /> : <MaskedCard />}
+						{card.revealed ? (
+							<RungCard {...card} />
+						) : (
+							<MaskedCard requirement={card.requirement} />
+						)}
 					</li>
 				))}
 			</ul>

@@ -39,9 +39,9 @@ export const Trail = ({ count, current, verdicts = [], label }: TrailProps) => (
 			{Array.from({ length: count }, (_, index) => index + 1).map((step) => (
 				<span key={step} className="flex items-center gap-2.5">
 					{step > 1 ? (
-						<span aria-hidden className="text-xs text-zinc-600">
+						<Text size="caption" tone="faint" aria-hidden>
 							›
-						</span>
+						</Text>
 					) : null}
 					<span className="flex items-center gap-1.5">
 						<span

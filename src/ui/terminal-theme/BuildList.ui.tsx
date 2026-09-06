@@ -4,7 +4,7 @@ import { Dot, type DotVariant } from "./Dot.ui";
 import { Figures } from "./Figures.ui";
 import { IconButton } from "./IconButton.ui";
 import { Meter } from "./Meter.ui";
-import { Slots } from "./Slots.ui";
+import { Weight } from "./Weight.ui";
 import { Text } from "./Text.ui";
 import { Version } from "./Version.ui";
 
@@ -21,14 +21,14 @@ const FOLD = "group/fold";
 const FOLD_SUMMARY =
 	"flex cursor-pointer list-none flex-col gap-1 py-0.5 select-none [&::-webkit-details-marker]:hidden";
 const FOLD_CARET =
-	"inline-block shrink-0 text-zinc-600 transition-transform group-open/fold:rotate-90";
+	"inline-block shrink-0 transition-transform group-open/fold:rotate-90";
 const FOLD_BODY = "flex flex-col items-start gap-1.5 pt-1 pb-0.5 pl-5";
 const SWAP_ICON = "⇄";
 const SKIPPED = "group/skipped";
 const SKIPPED_SUMMARY =
 	"flex cursor-pointer list-none items-center gap-2 py-0.5 select-none [&::-webkit-details-marker]:hidden";
 const SKIPPED_CARET =
-	"inline-block text-zinc-500 transition-transform group-open/skipped:rotate-90";
+	"inline-block transition-transform group-open/skipped:rotate-90";
 const SKIPPED_LIST = "flex flex-col gap-1.5 pt-1 pl-5";
 const SKIPPED_ROW = "flex flex-col gap-0.5";
 const TOTAL = "flex items-center gap-2 border-t border-edge pt-2";
@@ -69,7 +69,7 @@ const ConfigName = ({
 			{row.name}
 		</Text>
 		<Version label={`v${row.version}`} />
-		<Slots slots={row.slots} />
+		<Weight slots={row.slots} />
 	</span>
 );
 
@@ -125,9 +125,9 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 						)}
 					</span>
 				)}
-				<span aria-hidden className={FOLD_CARET}>
+				<Text tone="faint" className={FOLD_CARET} aria-hidden>
 					›
-				</span>
+				</Text>
 			</span>
 			{row.meterPercent === undefined ? null : (
 				<Meter percent={row.meterPercent} className="ml-5" />
@@ -151,9 +151,9 @@ const SkippedFold = ({
 }) => (
 	<details className={SKIPPED}>
 		<summary className={SKIPPED_SUMMARY}>
-			<span aria-hidden className={SKIPPED_CARET}>
+			<Text tone="faint" className={SKIPPED_CARET} aria-hidden>
 				›
-			</span>
+			</Text>
 			<Dot variant="off" />
 			<Text tone="faint" size="caption" className={NAME}>
 				{label} · {rows.length}

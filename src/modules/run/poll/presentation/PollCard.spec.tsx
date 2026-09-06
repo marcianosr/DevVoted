@@ -261,3 +261,93 @@ describe(PollCard, () => {
 		expect(screen.getByRole("button", { name: /Alpha/ })).toBeDisabled();
 	});
 });
+
+describe("PollCard under 451 Unavailable For Legal Reasons", () => {
+	const sealed = [
+		{ id: "a", label: "?????" },
+		{ id: "b", label: "Beta" },
+		{ id: "c", label: "?????" },
+	];
+
+	const buyBack = { costKb: 4, ready: true, onBuyBack: () => {} };
+
+	it("reads a sealed answer as ????? without naming it", () => {
+		render(
+			<PollCard
+				poll={poll({ options: sealed })}
+				hiddenOptionIds={["a", "c"]}
+				buyBack={buyBack}
+				onSelect={() => {}}
+			/>
+		);
+		expect(screen.getAllByText("?????")).toHaveLength(2);
+		expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+	});
+
+	// Gambling blind is the point: a sealed option is priced, never locked.
+	it("still takes a pick on a sealed answer", () => {
+		const onSelect = vi.fn();
+		render(
+			<PollCard
+				poll={poll({ options: sealed })}
+				hiddenOptionIds={["a", "c"]}
+				buyBack={buyBack}
+				onSelect={onSelect}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: /A\s*\?\?\?\?\?/ }));
+		expect(onSelect).toHaveBeenCalledWith("a");
+	});
+
+	it("prices a buy-back on each sealed answer and none of the readable ones", () => {
+		render(
+			<PollCard
+				poll={poll({ options: sealed })}
+				hiddenOptionIds={["a", "c"]}
+				buyBack={buyBack}
+				onSelect={() => {}}
+			/>
+		);
+		expect(
+			screen.getAllByRole("button", { name: /^Buy back option/ })
+		).toHaveLength(2);
+		expect(
+			screen.queryByRole("button", { name: "Buy back option B" })
+		).not.toBeInTheDocument();
+	});
+
+	it("buys back the answer whose press was hit", () => {
+		const onBuyBack = vi.fn();
+		render(
+			<PollCard
+				poll={poll({ options: sealed })}
+				hiddenOptionIds={["a", "c"]}
+				buyBack={{ ...buyBack, onBuyBack }}
+				onSelect={() => {}}
+			/>
+		);
+		fireEvent.click(screen.getByRole("button", { name: "Buy back option C" }));
+		expect(onBuyBack).toHaveBeenCalledWith("c");
+	});
+
+	it("refuses the press when the balance cannot cover it", () => {
+		render(
+			<PollCard
+				poll={poll({ options: sealed })}
+				hiddenOptionIds={["a", "c"]}
+				buyBack={{ ...buyBack, ready: false }}
+				onSelect={() => {}}
+			/>
+		);
+		expect(
+			screen.getByRole("button", { name: "Buy back option A" })
+		).toBeDisabled();
+	});
+
+	it("offers no buy-back on a poll the gate never sealed", () => {
+		render(<PollCard poll={poll()} buyBack={buyBack} onSelect={() => {}} />);
+		expect(
+			screen.queryByRole("button", { name: /^Buy back option/ })
+		).not.toBeInTheDocument();
+	});
+});

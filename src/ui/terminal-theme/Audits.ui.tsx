@@ -1,17 +1,18 @@
 import { clsx } from "clsx";
 
+import { AuditIcon } from "./AuditIcon.ui";
 import { DexChip } from "./DexChip.ui";
 import { Text } from "./Text.ui";
 
 const LIST = "flex flex-col gap-2";
 const LINE =
 	"flex flex-wrap items-center gap-x-2 rounded-lg border border-saffron/30 bg-saffron/5 px-3 py-1";
-const MARK = "shrink-0 text-saffron";
+const MARK = "text-saffron";
+const MARK_PASSING = "text-viridian";
 const CODE = "shrink-0 font-bold";
-const NAME = "shrink-0";
+const NAME = "shrink-0 font-bold";
 const CUE = "min-w-0";
 const BY = "shrink-0 py-0 text-xs";
-const AUDIT_MARK = "⚠";
 
 export type AuditNote = {
 	code: string;
@@ -22,6 +23,7 @@ export type AuditNote = {
 		label: string;
 		slots: number;
 		version: number;
+		maxVersion: number;
 	};
 };
 
@@ -44,19 +46,18 @@ export const Audits = ({ rows, className }: AuditsProps) => {
 					key={row.code}
 					className={clsx(LINE, row.suppressed === true && SUPPRESSED_LINE)}
 				>
-					<span aria-hidden className={MARK}>
-						{AUDIT_MARK}
-					</span>
+					<AuditIcon
+						passing={row.suppressed === true}
+						className={row.suppressed === true ? MARK_PASSING : MARK}
+					/>
 					<Text
 						tone={row.suppressed === true ? "faint" : "saffron"}
-						size="caption"
 						className={clsx(CODE, row.suppressed === true && STRUCK)}
 					>
 						{row.code}
 					</Text>
 					<Text
 						tone={row.suppressed === true ? "faint" : "saffron"}
-						size="caption"
 						className={clsx(NAME, row.suppressed === true && STRUCK)}
 					>
 						{row.name}
@@ -64,6 +65,7 @@ export const Audits = ({ rows, className }: AuditsProps) => {
 					<Text
 						tone={row.suppressed === true ? "viridian" : "muted"}
 						size="caption"
+						weight="thin"
 						className={CUE}
 					>
 						{row.suppressed === true ? SUPPRESSED_CUE : row.cue}
@@ -73,6 +75,7 @@ export const Audits = ({ rows, className }: AuditsProps) => {
 							slots={row.suppressedBy.slots}
 							label={row.suppressedBy.label}
 							version={row.suppressedBy.version}
+							maxVersion={row.suppressedBy.maxVersion}
 							className={BY}
 						/>
 					)}

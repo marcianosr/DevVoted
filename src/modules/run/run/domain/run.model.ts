@@ -18,6 +18,7 @@ import {
 	type Audit,
 	type AuditSchedule,
 	liveAuditsFor,
+	redactedOptionIdsFor,
 	mirrorsPolls,
 	offlineConfigsFor,
 	type OfflinePair,
@@ -57,11 +58,13 @@ export type RunState = {
 	readonly window: GateWindow;
 	readonly manualDisabled: readonly string[];
 	readonly peekedPollIds?: readonly string[];
+	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
+	readonly peakStorageKb?: number;
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
 	readonly gateRewardKb?: number;
@@ -176,6 +179,7 @@ export const createRun = (
 	coverage: 0,
 	coverageByCategory: {},
 	storage: PIN_START_KB_PER_GATE * startAtGate,
+	peakStorageKb: PIN_START_KB_PER_GATE * startAtGate,
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
 	gateRewardKb: 0,
@@ -186,6 +190,17 @@ export const withLog = (
 	state: RunState,
 	...lines: string[]
 ): readonly string[] => [...state.log, ...lines];
+
+/**
+ * The high-water mark of KB held, which is what opens storage rungs
+ * (`revealsPlanTier`). Applied once around the reducer rather than at each of
+ * the sites that raise storage — a faucet, a clear, a refund — so a new earner
+ * can never forget to record its own peak.
+ */
+export const withPeakStorage = (state: RunState): RunState =>
+	state.storage <= (state.peakStorageKb ?? 0)
+		? state
+		: { ...state, peakStorageKb: state.storage };
 
 export const isAwaitingTomorrow = (state: RunState): boolean =>
 	state.status === "answering" && state.currentIndex >= state.polls.length;
@@ -204,6 +219,22 @@ export const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 
 export const auditsOf = (state: RunState): readonly Audit[] =>
 	liveAuditsFor(state.build.configs, state.gatesCleared, scheduleOf(state));
+
+/**
+ * The options still sealed on the poll in front of the player. Subtracting the
+ * bought-back set here keeps un-redaction in one place, so `redactPoll` never
+ * has to learn the concept.
+ */
+export const hiddenOptionIdsOf = (state: RunState): readonly string[] => {
+	const poll = state.polls[state.currentIndex];
+	if (!poll) return [];
+	const bought = new Set(state.boughtBackOptionIds ?? []);
+	return redactedOptionIdsFor(
+		poll,
+		auditsOf(state),
+		state.window.answered
+	).filter((id) => !bought.has(id));
+};
 
 export const offlineConfigsOf = (state: RunState): readonly Config[] =>
 	offlineConfigsFor(

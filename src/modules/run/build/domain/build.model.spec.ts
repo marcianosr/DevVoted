@@ -6,9 +6,9 @@ import {
 	MAX_SLOTS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
-	WRONG_COVERAGE_LOSS,
 	roundToOneDecimal,
 	streakMultiplier,
+	wrongLossShareFor,
 } from "~/modules/run/run/domain/rules.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -185,7 +185,7 @@ describe("perAnswerPreviewFor", () => {
 		).toBe(3);
 	});
 
-	it("takes a fixed share of what a correct answer pays, on any build", () => {
+	it("takes the gate's share of what a correct answer pays, on any build", () => {
 		for (const configs of [
 			[],
 			[CONFIGS.codeCoverage],
@@ -198,14 +198,15 @@ describe("perAnswerPreviewFor", () => {
 			);
 
 			expect(-coveragePerWrong).toBe(
-				roundToOneDecimal(WRONG_COVERAGE_LOSS * coveragePerCorrect)
+				roundToOneDecimal(wrongLossShareFor(4) * coveragePerCorrect)
 			);
 		}
 	});
 
-	it("scales the bleed with the gate, as the earn does", () => {
+	it("scales the bleed with the gate faster than the earn, so a late miss stings", () => {
 		expect(perAnswerPreviewFor([], 0).coveragePerWrong).toBe(-0.5);
-		expect(perAnswerPreviewFor([], 4).coveragePerWrong).toBe(-2.5);
+		expect(perAnswerPreviewFor([], 4).coveragePerWrong).toBe(-3.1);
+		expect(perAnswerPreviewFor([], VICTORY_GATE).coveragePerWrong).toBe(-11.2);
 	});
 
 	it("follows a config that only adds flat coverage, rather than ignoring it", () => {

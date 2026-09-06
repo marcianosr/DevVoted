@@ -99,6 +99,10 @@ export const usersTable = pgTable("users", {
 	archived_storage: bigint("archived_storage", { mode: "number" })
 		.notNull()
 		.default(0),
+	// High-water mark of KB held in any run, in KB (not bytes, unlike
+	// archived_storage). Only ever raised. Reveals storage plan rungs: a rung
+	// opens once the cap below it has been filled (revealsPlanTier).
+	peak_storage_kb: integer("peak_storage_kb").notNull().default(0),
 	owned_border_ids: text("owned_border_ids")
 		.array()
 		.notNull()

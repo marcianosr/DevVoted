@@ -47,6 +47,7 @@ const render_ = (overrides: Partial<PollViewProps> = {}) =>
 			onSubmit={() => {}}
 			onLint={() => {}}
 			onPeek={() => {}}
+			onBuyBack={() => {}}
 			{...overrides}
 		/>
 	);
@@ -90,8 +91,8 @@ describe("PollView", () => {
 	it("prices the poll by its own difficulty, not the gate's", () => {
 		render_();
 
-		expect(screen.getByText("3 options")).toBeInTheDocument();
 		expect(screen.getByText("scores")).toBeInTheDocument();
+		expect(screen.getByText("×1")).toBeInTheDocument();
 	});
 
 	it("says a multi-answer poll takes more than one pick", () => {
@@ -107,6 +108,15 @@ describe("PollView", () => {
 		render_({ onSelect });
 
 		await userEvent.click(screen.getByText("arr.splice(-2)"));
+
+		expect(onSelect).toHaveBeenCalledWith("option-2");
+	});
+
+	it("takes the pick from the option's own letter key", async () => {
+		const onSelect = vi.fn();
+		render_({ onSelect });
+
+		await userEvent.keyboard("b");
 
 		expect(onSelect).toHaveBeenCalledWith("option-2");
 	});
@@ -184,6 +194,78 @@ describe("PollView", () => {
 		render_({ view: createMockRunView({ ...view, mirroredPolls: true }) });
 
 		expect(screen.getByText(/pick every INCORRECT option/)).toBeInTheDocument();
+	});
+});
+
+describe("PollView seals", () => {
+	const sealedPoll = createMockPollView({
+		...poll,
+		options: [
+			{ id: "option-1", label: "arr.slice(-2)" },
+			{ id: "option-2", label: "?????" },
+			{ id: "option-3", label: "arr.at(-2)" },
+		],
+	});
+
+	const sealed = createMockRunView({
+		...view,
+		poll: sealedPoll,
+		hiddenOptionIds: ["option-2"],
+		buyBack: { costKb: 4, ready: true, sealedCount: 1 },
+	});
+
+	const render_sealed = (overrides: Partial<PollViewProps> = {}) =>
+		render_({ view: sealed, poll: sealedPoll, ...overrides });
+
+	it("prices the seal on the row itself rather than printing the redaction", () => {
+		render_sealed();
+
+		expect(screen.queryByText("?????")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Unseal this answer for 4 KB/ })
+		).toBeEnabled();
+	});
+
+	it("names the option the press buys back", async () => {
+		const onBuyBack = vi.fn();
+		render_sealed({ onBuyBack });
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Unseal this answer for 4 KB/ })
+		);
+
+		expect(onBuyBack).toHaveBeenCalledWith("option-2");
+	});
+
+	it("refuses the press when the balance cannot cover the fee", () => {
+		render_sealed({
+			view: createMockRunView({
+				...sealed,
+				buyBack: { costKb: 4, ready: false, sealedCount: 1 },
+			}),
+		});
+
+		expect(
+			screen.getByRole("button", { name: /not enough storage/ })
+		).toBeDisabled();
+	});
+
+	// ADR-058: gambling blind is the play the audit sells.
+	it("keeps a sealed answer pickable", async () => {
+		const onSelect = vi.fn();
+		render_sealed({ onSelect });
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /B, sealed answer/ })
+		);
+
+		expect(onSelect).toHaveBeenCalledWith("option-2");
+	});
+
+	it("still reads a bought split onto a sealed row", () => {
+		render_sealed({ splitByOptionId: { "option-2": 31 } });
+
+		expect(screen.getByText("31% picked this")).toBeInTheDocument();
 	});
 });
 
@@ -330,10 +412,13 @@ describe("PollView build rail", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("states the gate's coverage in the header", () => {
+	it("states the gate's coverage beside the answers, not twice in the header", () => {
 		render_();
 
-		expect(screen.getAllByText("Coverage").length).toBeGreaterThan(0);
+		expect(screen.queryByText("Coverage")).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("img", { name: /% of .*% needed/ })
+		).toBeInTheDocument();
 	});
 
 	it("states the gate's answer count when a config counts them", () => {

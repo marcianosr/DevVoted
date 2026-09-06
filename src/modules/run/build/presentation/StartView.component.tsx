@@ -1,6 +1,9 @@
 import { kbLabel } from "~/shared/lib/storage";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import {
+	maxLevelOf,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
@@ -71,6 +74,7 @@ export const StartView = ({
 			detail: config.description,
 			slots: slotsOf(config),
 			version: config.level ?? 1,
+			maxVersion: maxLevelOf(config),
 			selected,
 			toggleLabel: selected
 				? `Uninstall ${config.label}`

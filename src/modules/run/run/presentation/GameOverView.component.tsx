@@ -1,5 +1,5 @@
 import { kbLabel } from "~/shared/lib/storage";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { maxLevelOf, slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
@@ -64,6 +64,7 @@ export const GameOverView = ({ view, won, onNewRun }: GameOverViewProps) => {
 					detail: config.description,
 					slots: slotsOf(config),
 					version: config.level ?? 1,
+					maxVersion: maxLevelOf(config),
 				})),
 				note: `${view.slotsUsed} of ${plural(view.slots, "slot")} filled`,
 			}}

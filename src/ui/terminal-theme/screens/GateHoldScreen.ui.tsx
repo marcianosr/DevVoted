@@ -3,15 +3,14 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Audits, type AuditNote } from "../Audits.ui";
 import { Badge, badgeNumbers, type BadgeTone } from "../Badge.ui";
 import { Button } from "../Button.ui";
+import { DexChip } from "../DexChip.ui";
 import { Ledger, type LedgerRow } from "../Ledger.ui";
 import { Panel } from "../Panel.ui";
 import { PickBox } from "../PickBox.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
-import { Slots } from "../Slots.ui";
 import { Swatch } from "../Swatch.ui";
 import { Text } from "../Text.ui";
-import { Version } from "../Version.ui";
 
 const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
@@ -19,7 +18,8 @@ const FOOTER =
 export type RemoveRow = {
 	name: string;
 	detail: string;
-	version?: string;
+	version: number;
+	maxVersion: number;
 	slots: number;
 	checked: boolean;
 	onToggle?: () => void;
@@ -103,14 +103,13 @@ export const GateHoldScreen = ({
 							onToggle={row.onToggle}
 						/>
 					}
-					name={row.name}
-					tag={
-						<>
-							{row.version === undefined ? null : (
-								<Version label={row.version} />
-							)}
-							<Slots slots={row.slots} />
-						</>
+					name={
+						<DexChip
+							slots={row.slots}
+							label={row.name}
+							version={row.version}
+							maxVersion={row.maxVersion}
+						/>
 					}
 					detail={row.detail}
 				/>

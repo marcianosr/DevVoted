@@ -15,34 +15,28 @@ import {
 
 export type { PollOption };
 
-/**
- * A bought community split (Telemetry). `answeredCount` arrives only at level 2,
- * and its absence is load-bearing: without it the bars have no denominator, which
- * is exactly what level 1 sells.
- */
 export type PollSplitView = {
 	readonly percentByOptionId: Readonly<Record<string, number>>;
 	readonly answeredCount?: number;
 };
 
 export type PollCardProps = {
-	/** The redacted poll as the run serves it — no `correct` flags reach here. */
 	poll: PollView;
 	selectedOptionIds?: readonly string[];
 	disabledOptionIds?: readonly string[];
-	/** Set once the answer is in: the options go inert and show ✓/✕. */
 	reveal?: AnswerReveal;
 	split?: PollSplitView;
-	/** Correct answers this gate's polls hold (`.length`'s reveal). Absent when
-	 * no config is counting. */
 	correctAnswersThisGate?: number;
-	/** The Mirror is on (ADR-038): the card asks for the incorrect options, and
-	 * `.length`'s count reads as the picks this gate actually wants. */
+	hiddenOptionIds?: readonly string[];
+	buyBack?: {
+		readonly costKb: number;
+		readonly ready: boolean;
+		readonly onBuyBack: (optionId: string) => void;
+	};
 	mirrored?: boolean;
 	onSelect: (optionId: string) => void;
 };
 
-/** Recap copy for screens that show the answer type as text (e.g. AnswerResults). */
 export const ANSWER_TYPE_HINT: Record<AnswerType, string> = {
 	single: "Select exactly one answer",
 	multiple: "Select all that apply",
@@ -55,6 +49,8 @@ export const PollCard = ({
 	reveal,
 	split,
 	correctAnswersThisGate,
+	hiddenOptionIds,
+	buyBack,
 	mirrored = false,
 	onSelect,
 }: PollCardProps) => {
@@ -78,8 +74,6 @@ export const PollCard = ({
 
 			{codeSandboxUrl ? <PollCodeSandbox url={codeSandboxUrl} /> : null}
 
-			{/* Loud, and directly above the options: the audit's banner explains the
-			    gate, but this is the instruction for the click about to be made. */}
 			{mirrored ? (
 				<Paragraph as="span" tone="cinnabar" className="font-bold">
 					Mirrored — pick every INCORRECT option.
@@ -94,6 +88,8 @@ export const PollCard = ({
 				correctOptionIds={reveal?.correctOptionIds}
 				chosenOptionIds={reveal?.chosenOptionIds ?? []}
 				splitPercentByOptionId={split?.percentByOptionId}
+				hiddenOptionIds={hiddenOptionIds}
+				buyBack={buyBack}
 				onSelect={onSelect}
 			/>
 

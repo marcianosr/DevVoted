@@ -24,7 +24,7 @@ export const Change = ({
 }: ChangeProps) => (
 	<span className={clsx(CHANGE, className)}>
 		<Badge tone="muted">{from}</Badge>
-		<Text tone="faint" size="caption" aria-hidden>
+		<Text tone="faint" size="caption">
 			→
 		</Text>
 		<Badge tone="viridian" className={projected ? PROJECTED : undefined}>

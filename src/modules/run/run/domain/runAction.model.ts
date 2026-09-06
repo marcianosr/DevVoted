@@ -3,6 +3,7 @@ import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
 import { hasRoomFor } from "~/modules/run/build/domain/build.model";
 import {
 	spendLint,
+	spendBuyBack,
 	spendPeek,
 } from "~/modules/run/run/domain/paidAction.model";
 import {
@@ -10,8 +11,10 @@ import {
 	canStart,
 	type RunState,
 	withBuild,
+	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
 import { answer } from "~/modules/run/run/domain/answer.model";
+import { rebase } from "~/modules/run/run/domain/rebase.model";
 import {
 	buySlot,
 	cashSlot,
@@ -39,6 +42,7 @@ export type RunAction =
 	| { readonly type: "install"; readonly configId: string }
 	| { readonly type: "uninstall"; readonly configId: string }
 	| { readonly type: "start" }
+	| { readonly type: "rebase"; readonly from: number; readonly to: number }
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
@@ -46,6 +50,7 @@ export type RunAction =
 	  }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "peek-poll" }
+	| { readonly type: "buy-back-option"; readonly optionId: string }
 	| { readonly type: "strip"; readonly configId: string }
 	| { readonly type: "resume-climb" }
 	| { readonly type: "draft"; readonly configId: string }
@@ -113,7 +118,7 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
 
-export const runReducer = (state: RunState, action: RunAction): RunState => {
+const reduce = (state: RunState, action: RunAction): RunState => {
 	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
 	if (action.type === "install" && state.status === "configuring")
 		return installConfig(state, action.configId);
@@ -121,12 +126,15 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 		return uninstallConfig(state, action.configId);
 	if (action.type === "start" && state.status === "configuring")
 		return start(state);
+	if (action.type === "rebase") return rebase(state, action.from, action.to);
 	if (action.type === "answer" && state.status === "answering")
 		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
 	if (action.type === "peek-poll" && state.status === "answering")
 		return spendPeek(state);
+	if (action.type === "buy-back-option" && state.status === "answering")
+		return spendBuyBack(state, action.optionId);
 	if (action.type === "strip" && state.status === "awaiting-strip")
 		return strip(state, action.configId);
 	if (action.type === "minify" && state.status === "awaiting-strip")
@@ -171,4 +179,11 @@ export const runReducer = (state: RunState, action: RunAction): RunState => {
 	)
 		return drop(state, action.configId);
 	return state;
+};
+
+// A refused action returns the state it was handed, identity included, so the
+// mark is only ever taken off a state something actually happened to.
+export const runReducer = (state: RunState, action: RunAction): RunState => {
+	const next = reduce(state, action);
+	return next === state ? state : withPeakStorage(next);
 };

@@ -7,6 +7,7 @@ import {
 	type Config,
 	describeConfig,
 	isUpgradable,
+	maxLevelOf,
 	levelUp,
 	otherArmOf,
 	slotsOf,
@@ -36,8 +37,6 @@ import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
 import type { StoragePlanProps } from "~/ui/terminal-theme/StoragePlan.ui";
 import { plural } from "~/ui/terminal-theme/format";
 
-const versionOf = (config: Config) => `v${config.level ?? 1}`;
-
 type Armed = {
 	readonly configId: string;
 	readonly action: ArmedAction["action"];
@@ -65,6 +64,13 @@ const upgradeShortfalls = (
 	];
 };
 
+// A hidden rung says what opens it, never what it is: the cap named is the one
+// already on the shelf, so the reading leaks nothing about the rung above.
+const opensAtLabel = (opensAtKb: number, peakKb: number): string =>
+	peakKb === 0
+		? `opens at ${kbLabel(opensAtKb)} held`
+		: `opens at ${kbLabel(opensAtKb)} held · best ${kbLabel(peakKb)}`;
+
 const storagePlanProps = (
 	plan: StoragePlanView,
 	heldKb: number,
@@ -83,18 +89,21 @@ const storagePlanProps = (
 			nextCapKb: plan.options.at(heldIndex + 1)?.capKb,
 		},
 		cards: plan.options.map((option) => {
-			const revealed = option.tier <= heldIndex + 1;
 			const selectable =
-				revealed && !option.held && !locked && option.affordable;
+				option.revealed && !option.held && !locked && option.affordable;
 
 			return {
 				capKb: option.capKb,
 				rentKb: option.perGateKb,
 				held: option.held,
-				revealed,
+				revealed: option.revealed,
+				requirement:
+					option.opensAtKb === undefined
+						? undefined
+						: opensAtLabel(option.opensAtKb, plan.peakKb),
 				burnsKb: option.burnsKb,
 				refusal:
-					revealed && !option.held && !option.affordable
+					option.revealed && !option.held && !option.affordable
 						? `bills ${kbLabel(option.perGateKb)} a gate, you hold ${kbLabel(heldKb)}`
 						: undefined,
 				onSelect: selectable ? () => onSetPlan(option.tier) : undefined,
@@ -137,7 +146,10 @@ const slotRows = (
 			? []
 			: [
 					{
-						name: `Slot ${view.slots} · empty`,
+						name:
+							view.slotsFree > 0
+								? `Slot ${view.slots} · empty`
+								: `Slot ${view.slots}`,
 						label: `Cash slot ${view.slots}`,
 						detail: cash.refusal,
 						price: kbLabel(cash.costKb),
@@ -261,7 +273,8 @@ export const ShopView = ({
 			name: config.label,
 			detail: describeConfig(config),
 			slots: slotsOf(config),
-			version: versionOf(config),
+			version: level,
+			maxVersion: maxLevelOf(config),
 			maxed: !isUpgradable(config),
 			upgrade: isUpgradable(config)
 				? {
@@ -288,12 +301,13 @@ export const ShopView = ({
 
 	const offerRows: readonly ShopOfferRow[] = view.offers.map((offer) => ({
 		name: offer.config.label,
-		detail:
-			offer.refusal === null
-				? describeConfig(offer.config)
-				: offerRefusalText(offer.refusal),
+		detail: describeConfig(offer.config),
+		...(offer.refusal === null
+			? {}
+			: { refusal: offerRefusalText(offer.refusal) }),
 		slots: slotsOf(offer.config),
-		version: versionOf(offer.config),
+		version: offer.config.level ?? 1,
+		maxVersion: maxLevelOf(offer.config),
 		upgrades: offer.upgrades,
 		price: kbLabel(offer.priceKb),
 		buyLabel: offer.owned

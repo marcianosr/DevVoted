@@ -27,11 +27,13 @@ const answered: AnsweredPoll = {
 	explanation: "flat() flattens one level unless told deeper.",
 };
 
+// A miss earns nothing and loses separately: the engine never signs coverageEarned.
 const missed: AnsweredPoll = {
 	...answered,
 	outcome: "wrong",
 	picked: ["arr.smoosh()"],
-	coverageEarned: -0.8,
+	coverageEarned: 0,
+	coverageLost: 0.8,
 	coverageBreakdown: { base: -0.8, streakBonus: 0, configBonuses: [] },
 	coverageFactors: undefined,
 };
@@ -92,9 +94,37 @@ describe("RevealView", () => {
 		const equation = screen.getByText("coverage earned").closest("div");
 		if (!equation) throw new Error("No equation rendered");
 
-		expect(screen.getByText("correct")).toBeInTheDocument();
-		expect(screen.getByText("streak")).toBeInTheDocument();
+		expect(within(equation).getByText("correct")).toBeInTheDocument();
+		expect(within(equation).getByText("streak")).toBeInTheDocument();
 		expect(within(equation).getByText(".js")).toBeInTheDocument();
+	});
+
+	it("keeps the poll's trail and facts on a miss, so the page does not jump", () => {
+		render_(missed);
+
+		expect(screen.getByLabelText("Polls in this gate")).toBeInTheDocument();
+		expect(screen.getByText("scores")).toBeInTheDocument();
+		expect(screen.getByText("wrong costs")).toBeInTheDocument();
+	});
+
+	it("still credits the author the poll screen credited", () => {
+		render_({ ...answered, author: "@matthijsgroen" });
+
+		expect(screen.getByText(/@matthijsgroen/)).toBeInTheDocument();
+	});
+
+	it("marks the revealed poll as the trail's current step, not the next one", () => {
+		render_();
+
+		const steps = within(
+			screen.getByLabelText("Polls in this gate")
+		).getAllByText(/^\d+$/);
+		const current = steps.filter((step) =>
+			step.className.includes("text-zinc-100")
+		);
+
+		expect(current).toHaveLength(1);
+		expect(current[0]?.textContent).toBe("1");
 	});
 
 	it("leaves the streak out when it was not paying", () => {
@@ -118,7 +148,14 @@ describe("RevealView", () => {
 		render_(missed);
 
 		expect(screen.queryByText("streak")).not.toBeInTheDocument();
-		expect(screen.getByText("+-0.8%")).toBeInTheDocument();
+	});
+
+	it("states a miss as the coverage it costs, not as nothing earned", () => {
+		render_(missed);
+
+		expect(screen.getByText("−0.8%")).toBeInTheDocument();
+		expect(screen.getByText("coverage lost")).toBeInTheDocument();
+		expect(screen.queryByText("coverage earned")).not.toBeInTheDocument();
 	});
 
 	it("hands the explanation to the player, the learning half of the beat", () => {

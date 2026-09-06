@@ -24,7 +24,7 @@ export type RunHeaderProps = {
 	};
 	swatches: readonly TrackSwatch[];
 	gateLabel: string;
-	coverage: {
+	coverage?: {
 		label: string;
 		reading: string;
 		percent: number;
@@ -64,15 +64,19 @@ export const RunHeader = ({
 					{gateLabel}
 				</Text>
 			</span>
-			<span className={COVERAGE}>
-				<Text tone="muted">{coverage.label}</Text>
-				<Text className="font-bold whitespace-nowrap">{coverage.reading}</Text>
-				<Meter
-					percent={coverage.percent}
-					label={coverage.label}
-					className="w-28 @max-md:flex-1"
-				/>
-			</span>
+			{coverage === undefined ? null : (
+				<span className={COVERAGE}>
+					<Text tone="muted">{coverage.label}</Text>
+					<Text className="font-bold whitespace-nowrap">
+						{coverage.reading}
+					</Text>
+					<Meter
+						percent={coverage.percent}
+						label={coverage.label}
+						className="w-28 @max-md:flex-1"
+					/>
+				</span>
+			)}
 		</div>
 	</header>
 );

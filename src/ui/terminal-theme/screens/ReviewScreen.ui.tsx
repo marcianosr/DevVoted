@@ -51,9 +51,7 @@ const hasFacts = (row: ReviewRow) =>
 const FailedRow = ({ row }: { row: ReviewRow }) => (
 	<div className="flex flex-col gap-1.5 py-2">
 		<div className={HEAD_LINE}>
-			<Text tone="cinnabar" aria-hidden>
-				×
-			</Text>
+			<Text tone="cinnabar">×</Text>
 			<Badge tone="celadon">{row.category}</Badge>
 			<Text className="min-w-0 flex-1">{row.question}</Text>
 			{row.pollLabel === undefined ? null : (
@@ -110,9 +108,7 @@ const FailedRow = ({ row }: { row: ReviewRow }) => (
 
 const PassedRow = ({ row }: { row: ReviewRow }) => (
 	<div className="flex items-center gap-3 py-2 @max-md:items-start">
-		<Text tone="viridian" aria-hidden>
-			✓
-		</Text>
+		<Text tone="viridian">✓</Text>
 		<Badge tone="celadon">{row.category}</Badge>
 		<Text className="min-w-0 flex-1">{row.question}</Text>
 		{row.gain === undefined ? null : <Figures text={row.gain} />}
