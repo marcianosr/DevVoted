@@ -109,4 +109,34 @@ describe("GameOverView", () => {
 
 		expect(screen.getByRole("button", { name: "Copy result" })).toBeDisabled();
 	});
+
+	it("lists what the run unlocked with its provenance and a new badge", () => {
+		render(
+			<GameOverView
+				view={createMockRunView({
+					...view,
+					unlockedThisRun: [
+						{ configId: "telemetry", viaMetric: "community-peeks" },
+						{ configId: "html", viaMetric: "polls-answered" },
+					],
+				})}
+				won={false}
+				onNewRun={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText("Unlocked this run")).toBeInTheDocument();
+		expect(screen.getByText("Telemetry")).toBeInTheDocument();
+		expect(
+			screen.getByText("Earned: peeked the community split 5 times")
+		).toBeInTheDocument();
+		expect(screen.getByText("Earned: answered 25 polls")).toBeInTheDocument();
+		expect(screen.getAllByText("new")).toHaveLength(2);
+	});
+
+	it("withholds the unlock section when the run earned nothing", () => {
+		render_();
+
+		expect(screen.queryByText("Unlocked this run")).not.toBeInTheDocument();
+	});
 });

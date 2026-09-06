@@ -20,6 +20,7 @@ import {
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import { unlockNotesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import { coverageForAnswer } from "~/modules/run/build/domain/build.model";
 import {
 	FAUCET_CAP_KB,
@@ -53,26 +54,32 @@ export const trailFor = (view: RunView): TrailProps => ({
 	verdicts: view.answeredThisGate.map((poll) => poll.outcome),
 });
 
-export const swatchTrackFor = (view: RunView): readonly TrackSwatch[] =>
+export const swatchTrackFor = (
+	view: RunView,
+	standingAt: number = view.gatesCleared
+): readonly TrackSwatch[] =>
 	Array.from({ length: view.victoryGate + 1 }, (_, gate) => {
-		if (gate < view.gatesCleared) {
+		if (gate < standingAt) {
 			return { theme: swatchForGate(gate)?.theme, state: "earned" as const };
 		}
-		if (gate === view.gatesCleared) {
+		if (gate === standingAt) {
 			return { theme: swatchForGate(gate)?.theme, state: "current" as const };
 		}
 		return { state: "locked" as const };
 	});
 
-export const runHeaderFor = (view: RunView): RunHeaderProps => {
-	const gate = view.gateStake.gateNumber;
+export const runHeaderFor = (
+	view: RunView,
+	standingAt?: number
+): RunHeaderProps => {
+	const gate = standingAt ?? view.gateStake.gateNumber;
 
 	return {
 		title: `Gate ${gate} · ${swatchForGate(gate)?.gateName ?? ""}`,
-		swatch: view.gateTheme,
+		swatch: swatchForGate(gate)?.theme ?? view.gateTheme,
 		balance: `${kbLabel(view.storage)} balance`,
 		gauge: storageGaugeFor(view),
-		swatches: swatchTrackFor(view),
+		swatches: swatchTrackFor(view, gate),
 		gateLabel: `gate ${gate} / ${view.victoryGate}`,
 		coverage: coverageFor(view),
 	};
@@ -252,6 +259,7 @@ export const buildRows = (
 			name: config.label,
 			slots: slotsOf(config),
 			version: config.level ?? 1,
+			maxVersion: maxLevelOf(config),
 			detail:
 				note === undefined
 					? describeConfig(config)
@@ -376,18 +384,18 @@ export const factsFor = (
 
 	return [
 		{
-			label: "scores",
+			label: "Scores",
 			value: `×${Math.round(multiplier * 100) / 100}`,
 			tone: "celadon",
 		},
 		...(poll.answerType === "multiple"
-			? [{ label: "pick every correct one" }]
+			? [{ label: "Pick every correct one" }]
 			: []),
 		...(view.correctAnswersThisGate === null
 			? []
 			: [
 					{
-						label: `this gate holds ${plural(
+						label: `This gate holds ${plural(
 							view.correctAnswersThisGate,
 							view.mirroredPolls ? "incorrect answer" : "correct answer"
 						)}`,
@@ -398,7 +406,7 @@ export const factsFor = (
 			? []
 			: [
 					{
-						label: "wrong costs",
+						label: "Wrong costs",
 						value: `${wrong}`,
 						tone: "cinnabar" as const,
 					},
@@ -508,7 +516,8 @@ export const PollView = ({
 			facts={factsFor(view, poll)}
 			code={poll.codeBlock?.split("\n")}
 			audits={auditNotes(view)}
-			byline={poll.author === undefined ? undefined : { author: poll.author }}
+			unlocks={unlockNotesFor(view)}
+			byline={poll.author}
 			build={{
 				running: rows.filter((row) => row.dot === "on").length,
 				rows,

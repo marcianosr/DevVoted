@@ -71,6 +71,7 @@ export const rebase = (state: RunState, from: number, to: number): RunState => {
 	const moved = movedSlice(slice, from, to);
 	return {
 		...state,
+		rebasedThisGate: true,
 		polls: [
 			...state.polls.slice(0, state.currentIndex),
 			...moved,

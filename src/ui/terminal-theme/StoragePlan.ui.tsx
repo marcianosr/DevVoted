@@ -8,16 +8,14 @@ import { Redacted } from "./Redacted.ui";
 import { Text } from "./Text.ui";
 import { Tooltip } from "./Tooltip.ui";
 
-const BILL_HINT = "Rent this plan charges on every gate clear.";
 const BAR_HINT =
 	"Solid is what you hold, faint is headroom to the cap, dashed is what the next rung would add.";
 
 const HEADER = "flex items-center gap-3";
-const RULE = "min-w-4 flex-1 border-t border-edge";
 const TRACK =
 	"no-scrollbar relative flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1";
 const CARD =
-	"flex w-44 shrink-0 snap-center flex-col gap-2 rounded-lg border border-edge p-3";
+	"flex w-48 shrink-0 snap-center flex-col gap-1 rounded-sm border border-edge px-4 py-8";
 const CARD_HELD = "border-theme-soft bg-theme-soft";
 const BAR = "flex h-3 w-full";
 const HELD = "bg-theme";
@@ -45,8 +43,6 @@ export type StoragePlanCard = {
 	rentKb: number;
 	held: boolean;
 	revealed: boolean;
-	/** What opens a hidden rung, as a caption rather than a tooltip: a mask that
-	 * only whispers its requirement on hover says nothing at all on touch. */
 	requirement?: string;
 	burnsKb: number;
 	refusal?: string;
@@ -69,8 +65,8 @@ export const RentText = ({ rentKb }: { rentKb: number }) =>
 	rentKb === 0 ? (
 		<Text tone="viridian">free</Text>
 	) : (
-		<Text tone="muted">
-			<Text tone="saffron">{kbLabel(rentKb)}</Text> a gate
+		<Text tone="muted" size="base" weight="thin">
+			<Text tone="saffron">{kbLabel(rentKb)}</Text> a gate!
 		</Text>
 	);
 
@@ -102,7 +98,7 @@ const Action = ({
 );
 
 const RentBullet = ({ rentKb }: { rentKb: number }) => (
-	<span className="flex items-baseline gap-1.5">
+	<span className="flex items-baseline gap-1">
 		<Text size="caption" tone="faint">
 			·
 		</Text>
@@ -111,9 +107,9 @@ const RentBullet = ({ rentKb }: { rentKb: number }) => (
 				free
 			</Text>
 		) : (
-			<Text size="caption" tone="muted">
+			<Text className="text-xs" tone="muted" weight="thin">
 				costs{" "}
-				<Text size="caption" tone="saffron">
+				<Text tone="saffron" className="font-extrabold text-xs">
 					{kbLabel(rentKb)}
 				</Text>{" "}
 				a gate
@@ -137,11 +133,11 @@ const RungCard = ({
 	return (
 		<>
 			<span className="flex items-baseline justify-between gap-2">
-				<Text size="score" className="font-bold">
+				<Text size="score" className="font-extrabold">
 					{kbLabel(capKb)}
 				</Text>
 				{held ? (
-					<Text size="caption" tone="theme">
+					<Text tone="theme" className="text-xs font-bold">
 						current
 					</Text>
 				) : null}
@@ -233,14 +229,8 @@ export const StoragePlan = ({ cards, meter, className }: StoragePlanProps) => {
 		<div className={clsx("flex flex-col gap-2", className)}>
 			<header className={HEADER}>
 				<Text className="shrink-0 font-bold">Storage plan</Text>
-				<span aria-hidden className={RULE} />
-				<Tooltip hint={BILL_HINT}>
-					<Text size="caption" tone="muted" className="shrink-0">
-						billed at the gate check
-					</Text>
-				</Tooltip>
 			</header>
-			<Text as="p" size="caption" tone="muted">
+			<Text as="p" size="caption" tone="muted" weight="thin">
 				Rents the ceiling on the KB a run can hold. A clear that pays past it
 				burns the rest.
 			</Text>

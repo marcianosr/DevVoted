@@ -6,14 +6,13 @@ import { Button } from "../Button.ui";
 import type { BylineProps } from "../Byline.ui";
 import type { ChoiceState } from "../Choice.ui";
 import { ChoiceList } from "../ChoiceList.ui";
-import { Equation, type EquationProps } from "../Equation.ui";
+import type { EquationProps } from "../Equation.ui";
 import type { PollFact } from "../PollInfo.ui";
 import { PollLayout, type PollBuild } from "../PollLayout.ui";
+import type { UnlockNote } from "../Unlocks.ui";
 import type { RunHeaderProps } from "../RunHeader.ui";
 import { Text } from "../Text.ui";
 import type { TrailProps } from "../Trail.ui";
-
-const EQUATION = "border-t border-edge pt-4";
 
 export type RevealChoice = {
 	letter: string;
@@ -34,6 +33,7 @@ export type RevealScreenProps = {
 	coverage?: RevealCoverage;
 	build: PollBuild;
 	audits?: readonly AuditNote[];
+	unlocks?: readonly UnlockNote[];
 	trail: TrailProps;
 	category: string;
 	facts?: readonly PollFact[];
@@ -63,6 +63,7 @@ export const RevealScreen = ({
 	coverage,
 	build,
 	audits,
+	unlocks,
 	trail,
 	category,
 	facts,
@@ -80,16 +81,19 @@ export const RevealScreen = ({
 		coverage={coverage}
 		build={build}
 		audits={audits}
+		unlocks={unlocks}
 		trail={trail}
 		category={category}
 		facts={facts}
 		byline={byline}
+		callout={{
+			result: equation.result,
+			resultLabel: equation.resultLabel,
+			factors: equation.factors,
+			tone: equation.resultTone,
+		}}
 		footer={
 			<>
-				<div className={EQUATION}>
-					<Equation {...equation} />
-				</div>
-
 				{explainer === undefined ? null : (
 					<Text as="p" tone="muted" size="caption" className="leading-relaxed">
 						{explainer}

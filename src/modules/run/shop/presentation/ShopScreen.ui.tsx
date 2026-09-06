@@ -148,7 +148,7 @@ const actionButton = ({
 		{price ? (
 			<>
 				{" "}
-				<span className="ml-1 font-bold text-saffron">{price}</span>
+				<span className="ml-1 font-extrabold text-saffron">{price}</span>
 			</>
 		) : null}
 	</button>

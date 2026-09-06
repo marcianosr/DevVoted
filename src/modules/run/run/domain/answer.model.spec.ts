@@ -51,6 +51,20 @@ describe("gates and rewards", () => {
 		expect(state.storage).toBe(64);
 	});
 
+	it("resets the shop's sale tally on a gate clear", () => {
+		let state: RunState = { ...started(["js"]), soldThisShop: 2 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.soldThisShop).toBe(0);
+	});
+
+	it("clears the rebased mark the moment an answer lands", () => {
+		const state = answerWith(
+			{ ...started(["js"]), rebasedThisGate: true },
+			true
+		);
+		expect(state.rebasedThisGate).toBeUndefined();
+	});
+
 	it("pays the cleared gate by its window, not the ceiling", () => {
 		let state = started(["js"]);
 		state = answerWith(state, false);

@@ -363,9 +363,9 @@ a KB figure beside them.
 
 **Where the room comes from.** Every run opens on **4 slots** and buys the rest
 ([5.1](#51-storage-kb)). Gates hand over nothing: the ladder runs from the fifth slot
-to the **24th**, and the whole of it costs more than a perfect climb earns, so 24 is
-somewhere an endless run gets and a twelve-gate run does not. A normal run lands
-between 8 and 13 and spends the difference on configs.
+to the **24th**, and the whole of it costs more than three perfect climbs earn, so 24
+is somewhere an endless run gets and a twelve-gate run does not. A normal run lands in
+the mid-teens and spends the difference on configs.
 
 **A bought slot is yours for the run.** Nothing narrows a build any more — there is no
 rent to fall behind on. An empty slot can be **cashed back** for exactly what that slot
@@ -647,28 +647,28 @@ press at a time, up to **24**. Nothing is handed over by a gate and nothing is r
 
 | Slot | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Price | 16 | 32 | 64 | 128 | 192 | 256 | 384 | 512 | 768 | 1024 |
+| Price | 32 | 40 | 48 | 64 | 80 | 96 | 120 | 160 | 192 | 240 |
 
-The first four rungs double every rung, so the fifth to eighth slot come quickly. After
-128 KB the pace halves to a doubling every *second* rung, and it keeps going: 1536,
-2048, 3072, 4096 and on to the 24th. The whole ladder costs far more than a perfect
-twelve-gate climb earns (~2.8 MB), so a normal run reaches **8 to 13 slots** and 24 is
-endless-run territory. That price curve is the brake on width buying score buying
-width.
+Every rung steps a uniform **×1.25**, opening at 32 KB — the price of the cheapest
+config on the shelf — and climbing to 2304 KB at the 24th: 288, 384, 480, 576, 704,
+896, 1152, 1408, 1792, 2304. Prices are snapped to the 8 KB grid, so a step is between
+×1.2 and ×1.333 in practice. The whole ladder costs 10.8 MB against the ~2.9 MB a
+perfect twelve-gate climb earns, so 24 is still endless-run territory and the price
+curve is still the brake on width buying score buying width. Every rung sits inside the
+largest cap a run can rent, so no slot is priced out of reach.
 
 **Opening wider** (ADR-049). The start screen sells the same ladder from **archived
-storage** at **double the rung** — 32 KB for the fifth slot, 64 for the sixth, 1024 for
+storage** at **double the rung** — 64 KB for the fifth slot, 80 for the sixth, 320 for
 the twelfth — pressed on the same hatched stub, and a start purchase counts on the
 ladder, so the shop's next slot picks up where the archive left off. Nothing caps it
-but the price: eight slots costs 480 KB of archive, twelve costs 3.1 MB, more than a
-perfect climb banks. Until you press Start an empty slot hands back for exactly what it
+but the price: eight slots costs 368 KB of archive and twelve costs 1280 KB. Until you press Start an empty slot hands back for exactly what it
 cost and the ladder rolls back with it; once the run begins the archive is shut out
 both ways.
 
 **Cashing a slot back.** An empty slot refunds **the price of the most expensive slot
-you still hold** — cash your ninth and you get 768 KB. The purchase ladder never rolls
+you still hold** — cash your ninth and you get 160 KB. The purchase ladder never rolls
 back, so the next slot you buy costs the rung above the last one you bought. Buying the
-fifth slot for 16 and cashing it returns exactly 16, which is what stops the loop; late
+fifth slot for 32 and cashing it returns exactly 32, which is what stops the loop; late
 in a run, cashing width you will never fill is a real pivot into a draft or an upgrade.
 Only empty slots can be cashed, and never below the free four.
 
@@ -684,9 +684,10 @@ Only empty slots can be cashed, and never below the free four.
 | 5 MB | 768 KB |
 | 10 MB | 1280 KB |
 
-The free cap holds less than one perfect gate-12 clear, which makes the plan a
-**prerequisite for the slot ladder**: you cannot save 768 KB for a mid-ladder slot
-without renting a wider cap first. That coupling is the point of having a cap at all.
+The free cap holds less than one perfect gate-12 clear, so a late clear burns against
+it. It reaches the ladder's fourteenth slot unaided, so it does not gate the ladder's
+first half — but you cannot save 1152 KB for a rung near the top without renting a wider
+cap first. That coupling is the point of having a cap at all.
 
 The shop shows the ladder as a rack of cards, one per rung, and **a rung opens once a
 run has filled the cap below it**. The free cap and the 512 KB rung are always on the
@@ -734,7 +735,7 @@ rather than a verdict.
 | **git tag** | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 | A cross-run checkpoint: after a death, your next run checks out there instead of gate 1. One per run, burnt by the run it rescues. |
 | **Sell** | refunds half the draft cost | Never your last config. |
 | **Upgrade** | `32 KB × the level bought` | Focus configs also need the coverage ([4.4](#44-upgrades)). |
-| **Buy a slot** | 16 KB, doubling up the ladder | One more slot on the build, yours for the run. Up to 24 ([5.1](#51-storage-kb)). Pressed twice on the build track's hatched stub: the first press arms and quotes the deal, the second buys. |
+| **Buy a slot** | 32 KB, stepping ×1.25 up the ladder | One more slot on the build, yours for the run. Up to 24 ([5.1](#51-storage-kb)). Pressed twice on the build track's hatched stub: the first press arms and quotes the deal, the second buys. |
 | **Cash a slot** | refunds that slot's own price | Only an empty one, never below the free four. The ladder does not roll back. Pressed twice on the empty box nearest the hatching, same as buying. |
 | **Open a slot** (start screen) | double the rung, from archived storage | Same ladder, twice the price, paid from the archive rather than the run ([6.1](#61-archived-storage)). Refundable at cost until Start; shut once the run begins. |
 | **Storage plan** | free to 1280 KB a gate | Raises the KB cap. Refused while its bill is more than you hold; billed at every clear, and falling behind drops you to the free 256 KB ([5.1](#51-storage-kb)). |
@@ -769,29 +770,34 @@ and streak injections (DVTD-xbri).
 
 ### 6.2 Unlocks
 
-🟡 Designed, not yet built (ADR-051, DVTD-2try): configs are exposed on the
-**Reveal / Grant / Stage** model. Grant gates the starting hand only — the shop
-shelf always offers the whole roster, which is also what fills the Configdex in
-(**Reveal**: a config seen on a shelf is "met"). Eight configs are granted at
-signup; the other 27 each unlock **individually**: a thematic objective that
-teaches the config's own mechanic ("Peek the community split 5 times") OR a
-lifetime polls-answered fallback, whichever is met first. Every objective tracks
-automatically (nothing is activated), and the Configdex shows each locked config
-as a checklist card with both paths and live progress; ADR-051 carries the table.
-The starting hand deals from the granted pool once this lands (ADR-052 dropped
-the depth ladder's stacks entirely). Unlocks are
-achievement-only — no currency buys one (the archived-storage pull, DVTD-9d7o,
-is rejected). Today every shipped config is simply available. Also planned:
-bonus awards for re-answering mastered polls correctly.
+Configs are exposed on the **Reveal / Grant / Stage** model (ADR-050/051). Grant
+gates the starting hand only — the shop shelf always offers the whole roster.
+Eight configs are granted at signup (js, ts, css, eslint, unit-tests,
+code-coverage, indexed-db, cold-start); the other 27 each unlock
+**individually**: a thematic objective that teaches the config's own mechanic
+("Peek the community split 5 times") OR a lifetime polls-answered fallback,
+whichever is met first. Every objective tracks automatically from play (nothing
+is activated): counters tick in the same transaction as the run action that
+moved them (`user_objective_progress`), and a crossed target writes a permanent
+grant row with its provenance (`user_config_unlocks.via_metric`, ADR-064).
+Answers in abandoned runs count; mirror-graded corrects count toward their real
+category (ADR-038). `configUnlock.model.ts` is the objective table's source of
+truth (ADR-051's status clause). Unlocks are achievement-only — no currency
+buys one (the archived-storage pull, DVTD-9d7o, is rejected).
+
+A grant announces itself where it fires — a saffron "unlocked" alert line on
+the reveal, poll or shop surface — then again in the gate clear's "What
+changed" rows and in an "Unlocked this run" section on the game-over screen,
+each with its provenance ("Earned: peeked the community split 5 times").
 
 Grant does nothing for a config larger than the opening slot budget: those are
 never dealt, so the shop is their only route and the Dex checkmark is the reward
-(ADR-062, ADR-064). 🟡 A freshly granted config is dealt in until you have
-installed it once, so an objective pays out at the next run rather than whenever
-the draw gets round to it; the seat is dealt first and the focus band counts it.
-The grant announces itself twice: an alert line at the deed and a NEW tag on
-that card, with the Dex row recording which path earned it (ADR-064). All of
-this waits on the unlock ledger.
+(ADR-062, ADR-064). 🟡 Still to land (DVTD-p9ah): the starting hand dealing
+from the granted pool instead of the free eight, with a freshly granted config
+dealt in first until installed once (the NEW-tag seat; the focus band counts
+it). 🟡 Also planned: the shelf-Reveal "met" state in the Configdex (needs a
+seen-on-shelf ledger nothing writes yet), and bonus awards for re-answering
+mastered polls correctly.
 
 ### 6.3 Swatches
 
@@ -826,20 +832,25 @@ mastery, a separate collection that reuses the name deliberately.
 ### 6.4 The Dex
 
 The Pokédex of DevVoted, at `/dex`, with four tabs. **Polls** tracks every poll you
-have seen with lifetime accuracy (unseen polls redact to `???`); **Configs** catalogs
-the roster grouped by size and prints what each size costs (ADR-047); **Audits**
-lists every audit as faced, unlocked or unseen (`???` until met); **Gates** shows
-every gate with its swatch, audits and unlocks, locked gates redacting names to
-`???` counts. 🟡 Planned: upgrade levels, collection stats, per-poll community
-success rates, and the Configs tab's three collection states (`???` / met /
-granted) where every locked row carries its two unlock paths as visible captions
-with live progress: "Answer 10 Java polls correctly · 6/10 / OR / Answer 225
-polls · 43/225" (ADR-051).
+have seen with lifetime accuracy (unseen polls redact to `???`); **Configs** is
+the unlock checklist: the roster grouped by size with each size's cost
+(ADR-047), granted rows reading their provenance ("Starter config" /
+"Earned: …" off `via_metric`) and every locked config redacted to a `???`
+silhouette carrying both unlock paths as visible captions with live progress —
+"Answer 10 Java polls correctly · 6/10 / or / Answer 225 polls · 43/225"
+(ADR-051; one-shot objectives render a checkbox, no count). The tab counts
+granted against the roster. **Audits** lists every audit as faced, unlocked or
+unseen (`???` until met); **Gates** shows every gate with its swatch, audits
+and unlocks, locked gates redacting names to `???` counts. 🟡 Planned: upgrade
+levels, collection stats, per-poll community success rates, and the Configs
+tab's shelf-Reveal "met" state (ADR-050).
 
 ### 6.5 Borders and seasons
 
 Avatar borders are decorative unlockables bought in the border shop and equipped on
-your profile; 🟡 rarity-based border unlocks via meta-progression are planned. Runs and
+your profile. An equipped border is worn wherever the game draws you, including the
+byline crediting a poll you wrote ([8](#8-interface)), which is where other players
+meet it; 🟡 rarity-based border unlocks via meta-progression are planned. Runs and
 leaderboards live inside **seasons** (upcoming, active, finished, archived), the
 temporal container for competitive resets.
 
@@ -1004,6 +1015,15 @@ The game leans hard into its CI metaphor.
   Received wears the outcome, so the two sides share a colour only when you were right.
   Multi-answer polls close with a tally of catches and misses; untouched options fold
   behind "7 other options"; the snippet and explanation sit with the diff.
+- **Answering by keyboard**: each answer row carries a letter, and pressing that letter
+  picks it. **Enter submits**, but only once something is picked, which is the same rule
+  the submit press follows. The tip under the answers names Enter only while Enter will
+  do something, so it never advertises a key that is inert.
+- **The byline**: the line under a poll credits its author with their GitHub photo
+  wearing the avatar border they have equipped ([6.5](#65-borders-and-seasons)), their
+  handle, and their title when they hold one ("@matthijsgroen · Poll editor"). Titles
+  come from the account role: **Poll editor** and **Admin**; an ordinary player has
+  none. With no photo on file the handle's first letter stands in.
 - **Game over**: a gate ladder (one row per gate, pass/fail/skip), your final build, the
   whole-run poll review, and the archived-storage credit bar.
 - 🟡 **Learn Home**: a Duolingo-style path/hub planned as both the start point and the
@@ -1028,7 +1048,7 @@ The game leans hard into its CI metaphor.
 | **Config** | An installable dev-tool item: an effect with a price, demanding nothing. |
 | **Coverage** | The score: a percentage per category plus a run total (career), and the gate meter (per attempt). In fiction: **knowledge coverage**. |
 | **Storage** | The in-run currency, in KB. The storage plan caps what you can hold. |
-| **Slot ladder** | The rising price of the next slot: 16, 32, 64, 128, 192, 256 KB and on, doubling every second rung to the 24th. |
+| **Slot ladder** | The rising price of the next slot: 32, 40, 48, 64, 80, 96 KB and on, stepping ×1.25 a rung to 2304 KB at the 24th. |
 | **Storage plan** | The KB cap, rented by the gate: 256 KB free up to 10 MB. Billed at every clear; fall behind and it drops to the free cap, burning the overflow. |
 | **Archived storage** | Persistent cross-run storage: the meta-progression currency. |
 | **Faucet** | Any per-correct-answer storage income (for example IndexedDB). |
@@ -1078,7 +1098,7 @@ applies. `rules.model.ts` holds most of it.
 | --- | --- |
 | `GATE_REWARD_KB` / `GATE_REWARD_MULTIPLIER_CAP` | 32 KB base / stops scaling past ×12 |
 | `gateClearPayout` | `32 × (gate + 1) × reward mults × (correct ÷ 5)`, plus flat clear payouts |
-| `SLOT_PRICES_KB` | 16 · 32 · 64 · 128 · 192 · 256 · 384 · 512 · 768 · 1024 … doubling every second rung, 20 rungs for slots 5 to 24 |
+| `SLOT_PRICES_KB` | 32 · 40 · 48 · 64 · 80 · 96 · 120 · 160 · 192 · 240 … ×1.25 a rung snapped to the 8 KB grid, 20 rungs for slots 5 to 24, topping at 2304 |
 | `STORAGE_PLANS` | 256 KB free · 512/32 · 1MB/96 · 2MB/224 · 3MB/448 · 5MB/768 · 10MB/1280, billed a gate on clear; a rung is refused while its bill is more than the balance |
 | `FAUCET_CAP_KB` | 320 per run |
 | Archived-storage credit | 1 / `gates ÷ 13` / 0 for victory / death / abandon |

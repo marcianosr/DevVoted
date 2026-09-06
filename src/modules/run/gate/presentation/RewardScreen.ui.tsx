@@ -23,11 +23,17 @@ import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 
+type UnlockedLine = {
+	config: Config;
+	detail: string;
+};
+
 type RewardScreenProps = {
 	payout: GatePayout;
 	answered: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	storage: number;
+	unlocked?: readonly UnlockedLine[];
 	nextStake?: GateStake;
 	onReviewAnswers?: () => void;
 	onContinue?: () => void;
@@ -94,6 +100,7 @@ export const RewardScreen = ({
 	answered,
 	configs,
 	storage,
+	unlocked = [],
 	nextStake,
 	onReviewAnswers,
 	onContinue,
@@ -152,6 +159,18 @@ export const RewardScreen = ({
 					</Badge>
 				</div>
 			) : null}
+
+			{unlocked.map(({ config, detail }) => (
+				<div
+					key={config.id}
+					className="flex flex-wrap items-center justify-center gap-2 rounded-lg border border-saffron/40 px-3 py-2"
+				>
+					<ConfigChip config={config} noTooltip />
+					<Paragraph as="span" size="sm" tone="saffron">
+						config unlocked · {detail}
+					</Paragraph>
+				</div>
+			))}
 
 			{payout.autoUpgradedConfig ? (
 				<div className="flex flex-wrap items-center justify-center gap-2">

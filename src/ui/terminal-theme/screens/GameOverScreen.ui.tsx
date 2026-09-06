@@ -1,6 +1,6 @@
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
-import { badgeNumbers } from "../Badge.ui";
+import { Badge, badgeNumbers } from "../Badge.ui";
 import { Button } from "../Button.ui";
 import { DexChip } from "../DexChip.ui";
 import { Panel } from "../Panel.ui";
@@ -25,6 +25,16 @@ export type GameOverScreenProps = {
 		note: string;
 	};
 	archive?: SplitBarProps & { note: string };
+	unlocked?: {
+		meta: string;
+		rows: readonly {
+			name: string;
+			detail: string;
+			slots: number;
+			version: number;
+			maxVersion: number;
+		}[];
+	};
 	lostBy: {
 		meta: string;
 		rows: readonly { name: string; detail: string; tag?: string }[];
@@ -51,6 +61,7 @@ export const GameOverScreen = ({
 	earned,
 	fell,
 	archive,
+	unlocked,
 	lostBy,
 	finalBuild,
 	shareLabel,
@@ -82,6 +93,30 @@ export const GameOverScreen = ({
 					<SplitBar kept={archive.kept} lost={archive.lost} />
 					<Text tone="muted">{archive.note}</Text>
 				</div>
+			</Section>
+		)}
+
+		{unlocked === undefined ? null : (
+			<Section label="Unlocked this run" meta={unlocked.meta} divided>
+				{unlocked.rows.map((row) => (
+					<Row
+						key={row.name}
+						name={
+							<DexChip
+								slots={row.slots}
+								label={row.name}
+								version={row.version}
+								maxVersion={row.maxVersion}
+							/>
+						}
+						detail={row.detail}
+						trailing={
+							<Badge tone="saffron" size="sm">
+								new
+							</Badge>
+						}
+					/>
+				))}
 			</Section>
 		)}
 

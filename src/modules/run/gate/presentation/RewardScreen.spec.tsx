@@ -272,4 +272,33 @@ describe(RewardScreen, () => {
 		expect(screen.queryByText(/Subscriptions billed/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/Storage plan/)).not.toBeInTheDocument();
 	});
+
+	it("announces the config this clear's play unlocked, since the run log never shows", () => {
+		render(
+			<RewardScreen
+				{...base}
+				unlocked={[
+					{
+						config: CONFIGS.telemetry,
+						detail: "Earned: peeked the community split 5 times",
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getByText("Telemetry")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				(_, node) =>
+					node?.textContent ===
+					"config unlocked · Earned: peeked the community split 5 times"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("keeps the unlock line off a clear without one", () => {
+		render(<RewardScreen {...base} />);
+
+		expect(screen.queryByText(/config unlocked/)).not.toBeInTheDocument();
+	});
 });

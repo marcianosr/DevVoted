@@ -218,6 +218,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
+		soldThisShop: 0,
 		draftedThisGate: [],
 		status: "rewarding",
 		log: withLog(
@@ -425,6 +426,7 @@ const applyAnswer = (
 		...state,
 		window,
 		manualDisabled: [],
+		rebasedThisGate: undefined,
 		streak: grade.streak,
 		storage: cappedStorage(
 			addStorage(state.storage, ledger.faucetKb, state.storagePlan ?? 0) -

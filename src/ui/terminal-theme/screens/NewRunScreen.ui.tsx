@@ -11,8 +11,11 @@ import { Header, type HeaderProps } from "../Header.ui";
 import { Panel } from "../Panel.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
-import { SlotDeal, type SlotDealRow } from "../SlotDeal.ui";
-import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
+import {
+	SlotTrack,
+	type SlotSegment,
+	type SlotTrackDeal,
+} from "../SlotTrack.ui";
 
 const FOOTER = "flex items-center justify-end border-t border-edge pt-4";
 
@@ -62,7 +65,8 @@ export type NewRunScreenProps = {
 	storage: {
 		meta: string;
 		slots: number;
-		slotRows: readonly SlotDealRow[];
+		buy?: SlotTrackDeal;
+		cash?: SlotTrackDeal;
 	};
 	startLabel: string;
 	onStart?: () => void;
@@ -134,12 +138,9 @@ export const NewRunScreen = ({
 			<SlotTrack
 				segments={segmentsOf(dealt.rows.filter((row) => row.selected))}
 				slots={storage.slots}
+				buy={storage.buy}
+				cash={storage.cash}
 			/>
-			<div className="divide-y divide-edge">
-				{storage.slotRows.map((row) => (
-					<SlotDeal key={row.label} row={row} />
-				))}
-			</div>
 		</Section>
 
 		<footer className={FOOTER}>

@@ -2,6 +2,7 @@ import { Screen } from "~/ui/Screen.ui";
 import { Paragraph } from "~/ui/typography/Paragraph.component";
 
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
+import { unlockLinesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -28,6 +29,7 @@ export const RunOver = () => {
 				coverage={view.coverage}
 				storage={view.storage}
 				configs={view.configs}
+				unlocked={unlockLinesFor(view.unlockedThisRun)}
 				answered={view.allAnswered}
 			/>
 			{start.data?.success === false && (

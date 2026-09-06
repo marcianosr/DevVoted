@@ -1,18 +1,18 @@
 import { clsx } from "clsx";
 
+import { DexChip } from "./DexChip.ui";
 import { Dot, type DotVariant } from "./Dot.ui";
 import { Figures } from "./Figures.ui";
 import { IconButton } from "./IconButton.ui";
 import { Meter } from "./Meter.ui";
-import { Weight } from "./Weight.ui";
 import { Text } from "./Text.ui";
-import { Version } from "./Version.ui";
 
 const LIST = "flex flex-col gap-3";
 const LINE = "flex items-center gap-2";
 const NAME = "min-w-0 flex-1 truncate";
 const NAME_MARK = "flex min-w-0 flex-1 items-center gap-1.5";
-const NAME_TEXT = "min-w-0 truncate";
+const NAME_CHIP = "min-w-0 shrink py-0.5";
+const DIMMED = "opacity-60";
 const FIGURE = "shrink-0";
 const ACTION_ROW = "flex flex-col gap-0.5 py-0.5";
 const DETAIL = "pl-5";
@@ -40,6 +40,7 @@ export type BuildListRow = {
 	detail: string;
 	slots: number;
 	version: number;
+	maxVersion: number;
 	dot: DotVariant;
 	figure?: string;
 	meterPercent?: number;
@@ -57,19 +58,19 @@ export type BuildListRow = {
 
 const ConfigName = ({
 	row,
-	tone,
-	size,
+	dimmed,
 }: {
 	row: BuildListRow;
-	tone?: "default" | "muted";
-	size?: "caption";
+	dimmed?: boolean;
 }) => (
 	<span className={NAME_MARK}>
-		<Text tone={tone} size={size} className={NAME_TEXT}>
-			{row.name}
-		</Text>
-		<Version label={`v${row.version}`} />
-		<Weight slots={row.slots} />
+		<DexChip
+			slots={row.slots}
+			label={row.name}
+			version={row.version}
+			maxVersion={row.maxVersion}
+			className={clsx(NAME_CHIP, dimmed === true && DIMMED)}
+		/>
 	</span>
 );
 
@@ -125,7 +126,7 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 						)}
 					</span>
 				)}
-				<Text tone="faint" className={FOLD_CARET} aria-hidden>
+				<Text tone="faint" weight="thin" className={FOLD_CARET} aria-hidden>
 					›
 				</Text>
 			</span>
@@ -162,8 +163,8 @@ const SkippedFold = ({
 		<div className={SKIPPED_LIST}>
 			{rows.map((row) => (
 				<div key={row.name} className={SKIPPED_ROW}>
-					<ConfigName row={row} tone="muted" size="caption" />
-					<Text tone="faint" size="caption">
+					<ConfigName row={row} dimmed />
+					<Text tone="faint" size="caption" weight="thin">
 						<Figures text={row.detail} />
 					</Text>
 					{row.swap === undefined ? null : (
@@ -207,7 +208,7 @@ export const BuildList = ({
 			{focused === undefined ? null : (
 				<div className={FOCUS_NOTE}>
 					<ConfigName row={focused} />
-					<Text tone="muted" size="caption">
+					<Text tone="muted" size="caption" weight="thin">
 						{focused.detail}
 					</Text>
 				</div>

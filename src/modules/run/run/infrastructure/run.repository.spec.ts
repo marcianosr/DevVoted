@@ -5,6 +5,8 @@ import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
 	runPollsTable,
+	userConfigUnlocksTable,
+	userObjectiveProgressTable,
 	usersTable,
 } from "~/database/schema";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
@@ -121,9 +123,10 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 
-		const next = await dispatch({ type: "draft", configId: "agents-md" });
+		const result = await dispatch({ type: "draft", configId: "agents-md" });
 
-		expect(next.status).toBe("answering");
+		expect(result.state.status).toBe("answering");
+		expect(result.unlockedConfigIds).toEqual([]);
 		expect(db.update).not.toHaveBeenCalled();
 	});
 
@@ -132,9 +135,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [correctOptionId(1)],
 		});
@@ -166,9 +170,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [correctOptionId(1)],
 		});
@@ -215,9 +220,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [correctOptionId(1)],
 		});
@@ -232,6 +238,7 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
@@ -244,9 +251,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [correctOptionId(1)],
 		});
@@ -263,6 +271,7 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
@@ -278,6 +287,7 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
@@ -290,12 +300,13 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
 
 		expect(mock.insertTables).toContain(pollResponsesTable);
-		expect(mock.valuesCalls[0]).toMatchObject({
+		expect(mock.valuesCalls[1]).toMatchObject({
 			poll_id: 1,
 			user_id: "red-from-pallet-town",
 			run_id: 64,
@@ -304,7 +315,7 @@ describe("applyActionToRun", () => {
 			mirrored: false,
 		});
 		expect(mock.insertTables).toContain(pollResponseOptionsTable);
-		expect(mock.valuesCalls[1]).toEqual([
+		expect(mock.valuesCalls[2]).toEqual([
 			{ response_id: 900, option_id: Number(correctOptionId(1)) },
 		]);
 	});
@@ -318,11 +329,12 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
 
-		expect(mock.valuesCalls[0]).toMatchObject({ mirrored: true });
+		expect(mock.valuesCalls[1]).toMatchObject({ mirrored: true });
 	});
 
 	it("drops unknown option ids instead of failing the dispatch", async () => {
@@ -330,9 +342,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
 		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: ["missingno"],
 		});
@@ -360,9 +373,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(undefined);
 		mock.results.push([dbPoll(1), dbPoll(2), dbPoll(3)]);
 		mock.results.push([1, 2, 3].flatMap(dbOptions));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [correctOptionId(2)],
 		});
@@ -382,7 +396,7 @@ describe("applyActionToRun", () => {
 				segment_date: TEST_DATES.birthday,
 			},
 		]);
-		expect(mock.valuesCalls[1]).toMatchObject({
+		expect(mock.valuesCalls[2]).toMatchObject({
 			poll_id: 2,
 			answer_date: TEST_DATES.birthday,
 			mode: "session",
@@ -405,11 +419,92 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 
-		const next = await dispatch({ type: "start" });
+		const { state: next } = await dispatch({ type: "start" });
 
 		expect(next.status).toBe("answering");
 		expect(mock.insertTables).not.toContain(pollResponsesTable);
+		expect(mock.insertTables).not.toContain(userObjectiveProgressTable);
 		expect(db.update).toHaveBeenCalled();
+	});
+
+	it("queues an answer's touched metrics in one batched upsert", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.insertTables).toContain(userObjectiveProgressTable);
+		expect(mock.valuesCalls[0]).toEqual([
+			{ user_id: "red-from-pallet-town", metric: "polls-answered", count: 1 },
+			{ user_id: "red-from-pallet-town", metric: "polls-correct", count: 1 },
+			{
+				user_id: "red-from-pallet-town",
+				metric: "category-correct:js",
+				count: 1,
+			},
+		]);
+	});
+
+	const peekReady = () =>
+		answeringState({
+			storage: 100,
+			build: {
+				id: "build",
+				slots: BASE_SLOTS,
+				configs: [CONFIGS.telemetry, CONFIGS.js],
+			},
+		});
+
+	it("grants the config whose target the transaction crossed, with its provenance", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 5 }]);
+		mock.results.push([{ config_id: "telemetry" }]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userConfigUnlocksTable);
+		expect(mock.valuesCalls[1]).toEqual([
+			{
+				user_id: "red-from-pallet-town",
+				config_id: "telemetry",
+				via_metric: "community-peeks",
+			},
+		]);
+		expect(result.unlockedConfigIds).toEqual(["telemetry"]);
+	});
+
+	it("returns no unlock when the grant row already existed", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 6 }]);
+		mock.results.push([]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(result.unlockedConfigIds).toEqual([]);
+	});
+
+	it("writes no unlock row while every touched count sits below its targets", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 2 }]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userObjectiveProgressTable);
+		expect(mock.insertTables).not.toContain(userConfigUnlocksTable);
+		expect(result.unlockedConfigIds).toEqual([]);
 	});
 
 	it("marks a bare-build gate failure as dead without crediting empty storage", async () => {
@@ -428,9 +523,10 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([{ response_id: 900 }]);
 
-		const next = await dispatch({
+		const { state: next } = await dispatch({
 			type: "answer",
 			optionIds: [wrongOptionId(5)],
 		});

@@ -15,6 +15,7 @@ import {
 } from "~/modules/run/run/application/run.service";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
 import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
+import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
@@ -32,6 +33,10 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 
 vi.mock("~/modules/run/run/infrastructure/runPolls.repository", () => ({
 	fetchRunPollsForDate: vi.fn(),
+}));
+
+vi.mock("~/modules/run/config/infrastructure/configUnlock.repository", () => ({
+	fetchUnlocksSince: vi.fn().mockResolvedValue([]),
 }));
 
 const kantoPoll = (index: number): RunPoll => {
@@ -285,8 +290,8 @@ describe("dispatchRunActionService", () => {
 			sessionRunRecord()
 		);
 		vi.mocked(queries.applyActionToRun).mockResolvedValue({
-			...configuringState(),
-			status: "answering",
+			state: { ...configuringState(), status: "answering" },
+			unlockedConfigIds: [],
 		});
 
 		const result = await dispatchRunActionService({
@@ -310,8 +315,8 @@ describe("dispatchRunActionService", () => {
 			sessionRunRecord()
 		);
 		vi.mocked(queries.applyActionToRun).mockResolvedValue({
-			...configuringState(),
-			status: "answering",
+			state: { ...configuringState(), status: "answering" },
+			unlockedConfigIds: [],
 		});
 
 		const result = await dispatchRunActionService({
@@ -324,6 +329,33 @@ describe("dispatchRunActionService", () => {
 		if (result.success) {
 			expect(result.data.poll?.options.length).toBeGreaterThan(0);
 			expect(JSON.stringify(result.data)).not.toContain('"correct":');
+		}
+	});
+
+	it("rides newly granted configs and the run's unlock history on the view", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.applyActionToRun).mockResolvedValue({
+			state: { ...configuringState(), status: "answering" },
+			unlockedConfigIds: ["telemetry"],
+		});
+		vi.mocked(unlockQueries.fetchUnlocksSince).mockResolvedValue([
+			{ configId: "telemetry", viaMetric: "community-peeks" },
+		]);
+
+		const result = await dispatchRunActionService({
+			userId: USER,
+			date: DATE,
+			action: { type: "peek-poll" },
+		});
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.unlockedConfigIds).toEqual(["telemetry"]);
+			expect(result.data.unlockedThisRun).toEqual([
+				{ configId: "telemetry", viaMetric: "community-peeks" },
+			]);
 		}
 	});
 });

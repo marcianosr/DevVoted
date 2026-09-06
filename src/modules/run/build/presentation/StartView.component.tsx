@@ -10,41 +10,37 @@ import {
 	NewRunScreen,
 	type DealRow,
 } from "~/ui/terminal-theme/screens/NewRunScreen.ui";
-import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
+import type { SlotTrackDeal } from "~/ui/terminal-theme/SlotTrack.ui";
 import { countRange, plural } from "~/ui/terminal-theme/format";
 
-const slotRows = (
+const buyDeal = (
 	view: RunView,
-	onBuySlot: () => void,
-	onRefundSlot: () => void
-): readonly SlotDealRow[] => {
-	const { buy, cash } = view.startSlotDeals;
+	onBuySlot: () => void
+): SlotTrackDeal | undefined => {
+	const { buy } = view.startSlotDeals;
+	if (buy.costKb === undefined) return undefined;
 
-	return [
-		...(cash.costKb === undefined
-			? []
-			: [
-					{
-						name: `Slot ${view.slots} · empty`,
-						label: `Hand slot ${view.slots} back`,
-						detail: cash.refusal,
-						price: kbLabel(cash.costKb),
-						receives: true,
-						onUse: cash.refusal === undefined ? onRefundSlot : undefined,
-					},
-				]),
-		...(buy.costKb === undefined
-			? []
-			: [
-					{
-						name: `Slot ${view.slots + 1}`,
-						label: `Buy slot ${view.slots + 1}`,
-						detail: buy.refusal,
-						price: kbLabel(buy.costKb),
-						onUse: buy.refusal === undefined ? onBuySlot : undefined,
-					},
-				]),
-	];
+	return {
+		label: `Buy slot ${view.slots + 1}`,
+		price: kbLabel(buy.costKb),
+		refusal: buy.refusal,
+		onUse: buy.refusal === undefined ? onBuySlot : undefined,
+	};
+};
+
+const cashDeal = (
+	view: RunView,
+	onRefundSlot: () => void
+): SlotTrackDeal | undefined => {
+	const { cash } = view.startSlotDeals;
+	if (cash.costKb === undefined) return undefined;
+
+	return {
+		label: `Hand slot ${view.slots} back`,
+		price: kbLabel(cash.costKb),
+		refusal: cash.refusal,
+		onUse: cash.refusal === undefined ? onRefundSlot : undefined,
+	};
 };
 
 export type StartViewProps = {
@@ -103,7 +99,8 @@ export const StartView = ({
 			storage={{
 				meta: `${view.slotsUsed} of ${plural(view.slots, "slot")}`,
 				slots: view.slots,
-				slotRows: slotRows(view, onBuySlot, onRefundSlot),
+				buy: buyDeal(view, onBuySlot),
+				cash: cashDeal(view, onRefundSlot),
 			}}
 			startLabel={view.canStart ? "Start the run →" : "Pick a config to start"}
 			onStart={view.canStart ? onStart : undefined}

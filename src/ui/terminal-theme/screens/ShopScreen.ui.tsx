@@ -13,11 +13,15 @@ import { Header, type HeaderProps } from "../Header.ui";
 import { IconButton } from "../IconButton.ui";
 import { LockIcon } from "../LockIcon.ui";
 import { Panel } from "../Panel.ui";
+import { Unlocks, type UnlockNote } from "../Unlocks.ui";
 import { PriceTag } from "../PriceTag.ui";
 import { Row } from "../Row.ui";
 import { Section } from "../Section.ui";
-import { SlotDeal, type SlotDealRow } from "../SlotDeal.ui";
-import { SlotTrack, type SlotSegment } from "../SlotTrack.ui";
+import {
+	SlotTrack,
+	type SlotSegment,
+	type SlotTrackDeal,
+} from "../SlotTrack.ui";
 import { StoragePlan, type StoragePlanProps } from "../StoragePlan.ui";
 import { Text } from "../Text.ui";
 
@@ -277,14 +281,16 @@ export type ShopScreenProps = {
 	header: HeaderProps;
 	theme?: SwatchTheme;
 	notice?: string;
+	unlocks?: readonly UnlockNote[];
 	storage: {
 		meta: string;
 		slots: number;
+		buy?: SlotTrackDeal;
+		cash?: SlotTrackDeal;
 	};
 	build: {
 		meta: string;
 		rows: readonly ShopBuildRow[];
-		slotRows: readonly SlotDealRow[];
 	};
 	offers: {
 		meta: string;
@@ -303,6 +309,7 @@ export const ShopScreen = ({
 	header,
 	theme,
 	notice,
+	unlocks = [],
 	storage,
 	build,
 	offers,
@@ -324,6 +331,8 @@ export const ShopScreen = ({
 				</Text>
 			)}
 
+			<Unlocks rows={unlocks} />
+
 			<div className={COLUMNS}>
 				<div className="@container">
 					<Section label="Build" meta={build.meta}>
@@ -332,14 +341,13 @@ export const ShopScreen = ({
 								segments={segmentsOf(build.rows)}
 								slots={storage.slots}
 								reading={storage.meta}
+								buy={storage.buy}
+								cash={storage.cash}
 							/>
 						</div>
 						<div className="divide-y divide-edge">
 							{build.rows.map((row) => (
 								<BuildRow key={row.name} row={row} />
-							))}
-							{build.slotRows.map((row) => (
-								<SlotDeal key={row.label} row={row} />
 							))}
 						</div>
 					</Section>
@@ -411,7 +419,7 @@ export const ShopScreen = ({
 			{/* The plan is the one thing here that outlives the visit, so it gets a
 		    rule between it and the shelves you are picking from now. */}
 			<div className="border-t border-edge pt-4">
-				<StoragePlan {...plan} className="max-w-2xl" />
+				<StoragePlan {...plan} />
 			</div>
 
 			{gitTag === undefined ? null : (

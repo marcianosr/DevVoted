@@ -55,6 +55,15 @@ const render_ = (
 
 const optionRow = (label: string) => screen.getByText(label).closest("div");
 
+const clearedPallet = () =>
+	createMockRunView({
+		status: "rewarding",
+		configs: [CONFIGS.js],
+		answeredThisGate: Array.from({ length: 5 }, () => answered),
+		gatesCleared: 1,
+		clearedGate: 0,
+	});
+
 describe("RevealView", () => {
 	it("keeps the answered poll on screen with its options settled", () => {
 		render_();
@@ -91,26 +100,40 @@ describe("RevealView", () => {
 	it("reads the earn as its factors, every contributing config named", () => {
 		render_();
 
-		const equation = screen.getByText("coverage earned").closest("div");
-		if (!equation) throw new Error("No equation rendered");
+		const callout = screen.getByText("coverage earned").closest("div");
+		if (!callout) throw new Error("No callout rendered");
 
-		expect(within(equation).getByText("correct")).toBeInTheDocument();
-		expect(within(equation).getByText("streak")).toBeInTheDocument();
-		expect(within(equation).getByText(".js")).toBeInTheDocument();
+		expect(within(callout).getByText(/×1\.1 streak/)).toBeInTheDocument();
+		expect(within(callout).getByText(/\.js/)).toBeInTheDocument();
 	});
 
 	it("keeps the poll's trail and facts on a miss, so the page does not jump", () => {
 		render_(missed);
 
 		expect(screen.getByLabelText("Polls in this gate")).toBeInTheDocument();
-		expect(screen.getByText("scores")).toBeInTheDocument();
-		expect(screen.getByText("wrong costs")).toBeInTheDocument();
+		expect(screen.getByText("Scores")).toBeInTheDocument();
+		expect(screen.getByText("Wrong costs")).toBeInTheDocument();
+	});
+
+	it("names the gate the window was won on, not the one the clear advanced to", () => {
+		render(
+			<RevealView view={clearedPallet()} answered={answered} onNext={vi.fn()} />
+		);
+
+		expect(screen.getByText("Gate 0 · Pallet")).toBeInTheDocument();
+		expect(screen.getByText("gate 0 / 12")).toBeInTheDocument();
+		expect(screen.queryByText("Gate 1 · Boulder")).not.toBeInTheDocument();
 	});
 
 	it("still credits the author the poll screen credited", () => {
-		render_({ ...answered, author: "@matthijsgroen" });
+		render_({
+			...answered,
+			author: { handle: "@matthijsgroen", title: "Poll editor" },
+		});
 
-		expect(screen.getByText(/@matthijsgroen/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/@matthijsgroen · Poll editor/)
+		).toBeInTheDocument();
 	});
 
 	it("marks the revealed poll as the trail's current step, not the next one", () => {
@@ -190,5 +213,30 @@ describe("RevealView", () => {
 		if (!rail) throw new Error("No build rail rendered");
 
 		expect(within(rail).getByText("+6 KB")).toBeInTheDocument();
+	});
+
+	it("announces the config this answer unlocked, provenance included", () => {
+		render(
+			<RevealView
+				view={createMockRunView({
+					configs: [CONFIGS.js],
+					answeredThisGate: [answered],
+					unlockedConfigIds: ["html"],
+					unlockedThisRun: [{ configId: "html", viaMetric: "polls-answered" }],
+				})}
+				answered={answered}
+				onNext={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText("unlocked")).toBeInTheDocument();
+		expect(screen.getByText(".html")).toBeInTheDocument();
+		expect(screen.getByText("Earned: answered 25 polls")).toBeInTheDocument();
+	});
+
+	it("announces no unlock on an ordinary reveal", () => {
+		render_();
+
+		expect(screen.queryByText("unlocked")).not.toBeInTheDocument();
 	});
 });

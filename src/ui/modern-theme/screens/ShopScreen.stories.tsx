@@ -325,8 +325,8 @@ const Shelf = (overrides: Partial<ShopScreenProps>) => {
 					slots={6}
 					maxSlots={24}
 					fits={2}
-					buy={{ costKb: 384, makes: 7, onUse: noop }}
-					cash={{ costKb: 256, makes: 5, onUse: noop }}
+					buy={{ costKb: 48, makes: 7, onUse: noop }}
+					cash={{ costKb: 32, makes: 5, onUse: noop }}
 				/>
 			}
 			onContinue={noop}

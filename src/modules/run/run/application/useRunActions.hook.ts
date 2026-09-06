@@ -24,16 +24,18 @@ export const useRunActions = () => {
 	const queryKey = todaysRunQueryKey();
 
 	/**
-	 * The two caches a run action moves without returning them. Both are marked
-	 * stale rather than refetched — neither is mounted while the run is being
+	 * The caches a run action moves without returning them. All are marked
+	 * stale rather than refetched — none is mounted while the run is being
 	 * played, so they reload when the player next opens them. Every action
-	 * invalidates both rather than only the ones that qualify: an answer moves
-	 * the board, a gate clear awards a swatch, and a stale mark is cheaper than
-	 * a rule about which action did what.
+	 * invalidates all three rather than only the ones that qualify: an answer
+	 * moves the board, a gate clear awards a swatch, a crossed objective grants
+	 * a config, and a stale mark is cheaper than a rule about which action did
+	 * what.
 	 */
 	const invalidateSideViews = () => {
 		queryClient.invalidateQueries({ queryKey: runCommunityQueryKey() });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.swatchesAll });
+		queryClient.invalidateQueries({ queryKey: userQueryKeys.unlocksAll });
 	};
 
 	const commit = (result: RunActionSuccess) => {

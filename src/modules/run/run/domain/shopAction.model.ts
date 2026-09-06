@@ -286,6 +286,7 @@ export const finishReward = (state: RunState): RunState => {
 		...state,
 		draftOptions: [],
 		rebuildsUsed: 0,
+		soldThisShop: 0,
 		draftedThisGate: [],
 		answeredThisGate: [],
 		faucetThisGateKb: 0,
@@ -409,6 +410,7 @@ export const sell = (state: RunState, configId: string): RunState => {
 		build,
 		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
 		lockedOfferIds: locksSurviving(build.configs, state.lockedOfferIds),
+		soldThisShop: (state.soldThisShop ?? 0) + 1,
 		log: withLog(state, `Sold ${target.label} (+${refund}KB).`),
 	};
 };

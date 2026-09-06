@@ -5,6 +5,10 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import type { AuditNote } from "./Audits.ui";
 import { BuildList, type BuildListRow } from "./BuildList.ui";
 import { Byline, type BylineProps } from "./Byline.ui";
+import {
+	CoverageCallout,
+	type CoverageCalloutProps,
+} from "./CoverageCallout.ui";
 import { CoverageGauge, type CoverageGaugeProps } from "./CoverageGauge.ui";
 import { Dot } from "./Dot.ui";
 import { Legend } from "./Legend.ui";
@@ -14,15 +18,17 @@ import { RunHeader, type RunHeaderProps } from "./RunHeader.ui";
 import { Section } from "./Section.ui";
 import { Text } from "./Text.ui";
 import type { TrailProps } from "./Trail.ui";
+import type { UnlockNote } from "./Unlocks.ui";
 
 const COLUMNS =
-	"grid grid-cols-[1fr_18rem] items-start gap-6 @max-md:grid-cols-1 @max-md:gap-4";
+	"grid min-h-[32rem] grid-cols-[1fr_20rem] items-start gap-6 @max-md:min-h-0 @max-md:grid-cols-1 @max-md:gap-4";
 const QUESTION_COLUMN = "flex flex-col gap-3 py-1";
-const GAUGED = "flex items-stretch gap-6";
+const GAUGED = "relative flex items-stretch gap-6";
 const ASKED = "flex min-w-0 flex-1 flex-col gap-3";
 const SIDEBAR =
 	"@container border-l border-edge pl-4 @max-md:border-l-0 @max-md:border-t @max-md:pt-3 @max-md:pl-0";
 const BUILD_META = "flex items-center gap-1.5";
+const BUILD_STATUS = "flex flex-wrap items-center gap-x-4 gap-y-1 pb-2";
 
 export type PollBuild = {
 	running: number;
@@ -34,8 +40,10 @@ export type PollLayoutProps = {
 	run: RunHeaderProps;
 	theme?: SwatchTheme;
 	coverage?: Omit<CoverageGaugeProps, "className">;
+	callout?: CoverageCalloutProps;
 	build: PollBuild;
 	audits?: readonly AuditNote[];
+	unlocks?: readonly UnlockNote[];
 	trail: TrailProps;
 	category: string;
 	facts?: readonly PollFact[];
@@ -48,8 +56,10 @@ export const PollLayout = ({
 	run,
 	theme,
 	coverage,
+	callout,
 	build,
 	audits,
+	unlocks,
 	trail,
 	category,
 	facts,
@@ -68,6 +78,7 @@ export const PollLayout = ({
 				<PollInfo
 					trail={trail}
 					audits={audits}
+					unlocks={unlocks}
 					theme={theme}
 					category={category}
 					facts={facts}
@@ -75,6 +86,8 @@ export const PollLayout = ({
 
 				<div className={GAUGED}>
 					{coverage === undefined ? null : <CoverageGauge {...coverage} />}
+
+					{callout === undefined ? null : <CoverageCallout {...callout} />}
 
 					<div className={ASKED}>{children}</div>
 				</div>
@@ -85,23 +98,22 @@ export const PollLayout = ({
 			</div>
 
 			<div className={SIDEBAR}>
-				<Section
-					label="Build"
-					meta={
+				<Section label="Build">
+					<div className={BUILD_STATUS}>
 						<span className={BUILD_META}>
 							<Dot variant="on" />
 							<Text tone="muted" size="caption">
 								{build.running} running
 							</Text>
 						</span>
-					}
-				>
-					<Legend
-						variants={build.rows
-							.map((row) => row.dot)
-							.filter((dot) => dot !== "on")}
-						className="pb-2"
-					/>
+
+						<Legend
+							variants={build.rows
+								.map((row) => row.dot)
+								.filter((dot) => dot !== "on" && dot !== "off")}
+						/>
+					</div>
+
 					<BuildList rows={build.rows} total={build.total} />
 				</Section>
 			</div>

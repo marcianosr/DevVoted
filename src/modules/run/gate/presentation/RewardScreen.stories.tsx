@@ -87,6 +87,18 @@ export const FreemiumLapsed: Story = {
 	},
 };
 
+export const ClearUnlockedAConfig: Story = {
+	args: {
+		...Default.args,
+		unlocked: [
+			{
+				config: CONFIGS.mooresLaw,
+				detail: "Earned: cleared 15 gates",
+			},
+		],
+	},
+};
+
 export const SubscriptionsBilled: Story = {
 	args: {
 		...Default.args,

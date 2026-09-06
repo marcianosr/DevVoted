@@ -28,6 +28,48 @@ describe("answering by keyboard", () => {
 		).toBeInTheDocument();
 	});
 
+	it("submits on Enter, so a fast player never leaves the keyboard", async () => {
+		const onSubmit = vi.fn();
+		render(
+			<ChoiceList choices={ANSWERS} onPick={() => {}} onSubmit={onSubmit} />
+		);
+
+		await userEvent.keyboard("{Enter}");
+
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("says Enter submits, once Enter actually submits", () => {
+		render(
+			<ChoiceList choices={ANSWERS} onPick={() => {}} onSubmit={() => {}} />
+		);
+
+		expect(
+			screen.getByText("Tip: press a letter to answer, Enter to submit")
+		).toBeInTheDocument();
+	});
+
+	it("keeps quiet about Enter while the submit is locked", () => {
+		render(<ChoiceList choices={ANSWERS} onPick={() => {}} />);
+
+		expect(screen.queryByText(/Enter to submit/)).not.toBeInTheDocument();
+	});
+
+	it("leaves Enter to the browser when a button already has focus", async () => {
+		const onSubmit = vi.fn();
+		render(
+			<>
+				<button type="button">Submit answer</button>
+				<ChoiceList choices={ANSWERS} onPick={() => {}} onSubmit={onSubmit} />
+			</>
+		);
+
+		screen.getByRole("button", { name: "Submit answer" }).focus();
+		await userEvent.keyboard("{Enter}");
+
+		expect(onSubmit).not.toHaveBeenCalled();
+	});
+
 	it("leaves a letter the linter crossed out alone", async () => {
 		const onPick = vi.fn();
 		render(

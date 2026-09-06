@@ -100,4 +100,41 @@ describe(RunSummary, () => {
 		expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
 		expect(screen.getByText("Q1?")).toBeInTheDocument();
 	});
+
+	it("lists the run's unlocks with their provenance", () => {
+		render(
+			<RunSummary
+				won={false}
+				gatesCleared={1}
+				victoryGate={VICTORY_GATE}
+				coverage={4}
+				storage={40}
+				unlocked={[
+					{
+						config: CONFIGS.telemetry,
+						detail: "Earned: peeked the community split 5 times",
+					},
+				]}
+			/>
+		);
+		expect(screen.getByText("Configs unlocked")).toBeInTheDocument();
+		expect(screen.getByText("Telemetry")).toBeInTheDocument();
+		expect(
+			screen.getByText("Earned: peeked the community split 5 times")
+		).toBeInTheDocument();
+	});
+
+	it("withholds the unlock section when the run earned nothing", () => {
+		render(
+			<RunSummary
+				won={false}
+				gatesCleared={1}
+				victoryGate={VICTORY_GATE}
+				coverage={4}
+				storage={40}
+				unlocked={[]}
+			/>
+		);
+		expect(screen.queryByText("Configs unlocked")).not.toBeInTheDocument();
+	});
 });

@@ -28,6 +28,7 @@ const CHAIN_METHODS = [
 	"leftJoin",
 	"returning",
 	"onConflictDoNothing",
+	"onConflictDoUpdate",
 	"for",
 ];
 

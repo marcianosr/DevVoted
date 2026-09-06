@@ -8,8 +8,8 @@ export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 export const BASE_SLOTS = 4;
 
 export const SLOT_PRICES_KB: readonly number[] = [
-	16, 32, 64, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144,
-	8192, 12288, 16384, 24576, 32768,
+	32, 40, 48, 64, 80, 96, 120, 160, 192, 240, 288, 384, 480, 576, 704, 896,
+	1152, 1408, 1792, 2304,
 ];
 
 export const MAX_SLOTS = BASE_SLOTS + SLOT_PRICES_KB.length;

@@ -194,10 +194,11 @@ describe("StartView", () => {
 	it("refuses a rung the archive cannot cover, saying what it holds", () => {
 		render_({ view: withArchive(12) });
 
-		expect(screen.getByRole("button", { name: /Buy slot 5/ })).toBeDisabled();
 		expect(
-			screen.getByText("Costs 32 KB of archive, you have 12.")
-		).toBeInTheDocument();
+			screen.getByRole("button", {
+				name: "Buy slot 5 · 64 KB · Costs 64 KB of archive, you have 12.",
+			})
+		).toBeDisabled();
 	});
 
 	it("hands a bought slot back, the run not having started", async () => {

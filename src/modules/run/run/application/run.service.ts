@@ -31,15 +31,23 @@ import {
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
+import { fetchUnlocksSince } from "~/modules/run/config/infrastructure/configUnlock.repository";
+
+// A run's unlock history is the grants stamped since it started — derived from
+// user_config_unlocks rather than stored on the run (ADR-064: the reducer
+// stays pure, and only one session run is ever active at a time).
+const unlocksDuring = (run: SessionRunRecord) =>
+	fetchUnlocksSince(run.user_id, run.started_at ?? new Date(0));
 
 // The archive is not wired into the live run yet (only /proto-run spends it),
 // so it stays at its default while the storage watermark rides in beside it.
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
-	const [state, peakStorageKb] = await Promise.all([
+	const [state, peakStorageKb, unlockedThisRun] = await Promise.all([
 		loadRunState(run.id),
 		fetchStorageWatermark(run.user_id),
+		unlocksDuring(run),
 	]);
-	return toRunView(state, 0, peakStorageKb);
+	return toRunView(state, 0, peakStorageKb, [], unlockedThisRun);
 };
 
 const continueActiveRun = async (
@@ -155,13 +163,23 @@ export const dispatchRunActionService = async ({
 		const run = await findActiveSessionRun(userId);
 		if (!run) throw new Error("No active run");
 
-		const next = await applyActionToRun({
+		const { state: next, unlockedConfigIds } = await applyActionToRun({
 			runId: run.id,
 			userId,
 			today: date,
 			action,
 		});
-		return toRunView(next, 0, await fetchStorageWatermark(userId));
+		const [peakStorageKb, unlockedThisRun] = await Promise.all([
+			fetchStorageWatermark(userId),
+			unlocksDuring(run),
+		]);
+		return toRunView(
+			next,
+			0,
+			peakStorageKb,
+			unlockedConfigIds,
+			unlockedThisRun
+		);
 	});
 
 /** The viewer's permanent swatch collection, earned by widening builds. */

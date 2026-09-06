@@ -2,6 +2,7 @@ import type { CategoryCode } from "~/shared/lib/categories";
 
 import type {
 	AnswerType,
+	PollAuthor,
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 
@@ -15,7 +16,7 @@ export type PollView = {
 	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly PollOptionView[];
-	readonly author?: string;
+	readonly author?: PollAuthor;
 };
 
 export const REDACTED_LABEL = "?????";

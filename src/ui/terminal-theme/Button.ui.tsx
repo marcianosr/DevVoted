@@ -4,6 +4,7 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
 import { Tooltip } from "./Tooltip.ui";
+import { Text } from "./Text.ui";
 
 export type ButtonVariant = "primary" | "quiet" | "danger" | "upgrade";
 export type ButtonSize = "sm" | "md";
@@ -28,7 +29,7 @@ const buttonVariants = cva(
 	{ variants: { variant: VARIANT, size: SIZE } }
 );
 
-const PRICE = "font-bold text-saffron";
+const PRICE = "font-extrabold text-saffron";
 
 export type ButtonProps = {
 	label: string;
@@ -55,8 +56,6 @@ export const Button = ({
 	className,
 	onUse,
 }: ButtonProps) => (
-	// The className rides on both: the tooltip's wrapper becomes the flex child
-	// when a hint is present, and the bare button is the child when it is not.
 	<Tooltip hint={hint} className={className}>
 		<button
 			type="button"
@@ -67,7 +66,9 @@ export const Button = ({
 			className={clsx(buttonVariants({ variant, size }), className)}
 		>
 			{icon === undefined ? null : <span aria-hidden>{icon}</span>}
-			{label}
+			<Text className="text-xs" weight="thin">
+				{label}
+			</Text>
 			{price === undefined ? null : <span className={PRICE}>{price}</span>}
 		</button>
 	</Tooltip>

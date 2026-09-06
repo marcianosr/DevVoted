@@ -23,20 +23,50 @@ player never chose.
 A run opens on **4 slots** and buys the rest, one press at a time, up to **24**. There
 is no schedule and no rent: the price is the whole cost, paid once.
 
-| slots 5–8 | 9–10 | 11–12 | 13–14 | 15–16 | … |
-| --- | --- | --- | --- | --- | --- |
-| 16 · 32 · 64 · 128 | 192 · 256 | 384 · 512 | 768 · 1024 | 1536 · 2048 | doubling every second rung |
+**Reladdered 2026-09-06 (playtest, DVTD-x5y1).** The doubling ladder was too steep to
+climb and its top was not merely expensive but unbuyable. Every rung now steps a uniform
+**×1.25** from a 32 KB floor, which is the price of the cheapest config on the shelf.
 
-The opening four rungs double every rung, which makes the fifth to eighth slot quick to
-reach. After 128 KB the pace halves to a doubling every *second* rung, so the ladder
-climbs without becoming unreadable.
+| slots 5–8 | 9–12 | 13–16 | 17–20 | 21–24 |
+| --- | --- | --- | --- | --- |
+| 32 · 40 · 48 · 64 | 80 · 96 · 120 · 160 | 192 · 240 · 288 · 384 | 480 · 576 · 704 · 896 | 1152 · 1408 · 1792 · 2304 |
 
-The whole ladder costs more than a perfect twelve-gate climb earns, so **24 slots is
-endless-run territory**. A normal run reaches 8 to 13 and spends the difference on
-configs. That is the brake ADR-045 got from the gate schedule, moved into the price.
+Values are snapped to the 8 KB grid so the shop never quotes an arithmetic artefact,
+which puts individual steps between ×1.2 and ×1.333 for a geometric mean of ×1.2524.
+
+The old ladder ran 16 KB to 32768 KB. Its last four rungs cost more than the largest
+storage plan holds (10240 KB), and `canBuySlot` tests the balance against the price while
+`cappedStorage` clamps the balance to the cap — so those rungs could not be bought in a
+run of **any** length. Calling them endless-run territory was wrong: an endless run cannot
+hold the money either. Every rung on the new ladder is at or below the top cap, and
+`rules.model.spec.ts` now asserts that as a law.
+
+The whole ladder still costs more than a perfect twelve-gate climb earns (11056 KB against
+2912 KB), so **24 slots is endless-run territory** and the brake ADR-045 got from the gate
+schedule stays in the price. The margin is 3.8× where it used to be 46×, so the spec
+asserts a floor of three perfect climbs rather than a bare inequality: the size of that
+margin is now the design decision.
 
 This reopens the width-buys-score-buys-width loop ADR-044 closed, deliberately. What
 holds it is the escalating price plus the cap below, not a schedule.
+
+Three brakes soften with the ratio, and all three are accepted rather than compensated for:
+
+- **Cash-and-rebuy.** Decision 2's ratchet costs one rung, which was 100% and is now
+  25–33%. Flexing width between gates is cheap. Still a strict loss, so no arbitrage.
+- **The plan no longer gates the ladder's first half.** The free 256 KB cap bought 6 of 20
+  rungs; it now buys 10 of 20, to 14 slots. Decision 3's "prerequisite for the ladder" is
+  half true — the plan is still needed to hold a late gate's reward without burning it, but
+  no longer to reach the middle of the ladder.
+- **ADR-049's archive brake weakens, and its supporting figure is now wrong.** At the ×2
+  start premium, opening at twelve slots costs 1280 KB rather than 3.1 MB, comfortably
+  under what a perfect climb banks. Since archive accumulates across runs, a banked player
+  can open near-wide every time. Whether `START_SLOT_PREMIUM = 2` is still right is
+  reopened and deliberately not settled here.
+
+The reladder also moves *toward* the coverage demands rather than away: as the consequences
+below note, `COVERAGE_DEMANDS` was tuned when runs reached 24 slots, and a mid-teens run is
+closer to that than 8 to 13 was.
 
 ## Decision 2: an empty slot cashes back at its own price, and the ladder never rolls back
 
@@ -45,9 +75,9 @@ purchase index is a high-water mark, so the next slot bought always costs the ru
 above the last one bought, whatever was cashed in between.
 
 That closes the loop the obvious design leaves open. A flat refund lets a run buy the
-fifth slot for 16 KB, cash it for more, and repeat. Refunding at position means
-buy-at-16 cashes for exactly 16 — no profit — while a run holding nine slots can cash
-one for 768 KB when it decides it will never fill them. Only empty slots can be cashed,
+fifth slot for 32 KB, cash it for more, and repeat. Refunding at position means
+buy-at-32 cashes for exactly 32 — no profit — while a run holding nine slots can cash
+one for 160 KB when it decides it will never fill them. Only empty slots can be cashed,
 and never below the free four.
 
 ## Decision 3: the KB cap comes back as a seven-rung subscription

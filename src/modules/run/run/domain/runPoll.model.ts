@@ -11,6 +11,13 @@ export type RunOption = {
 };
 export type AnswerType = "single" | "multiple";
 
+export type PollAuthor = {
+	readonly handle: string;
+	readonly avatarUrl?: string;
+	readonly borderUrl?: string;
+	readonly title?: string;
+};
+
 export type RunPoll = {
 	readonly id: string;
 	readonly category: CategoryCode;
@@ -20,7 +27,7 @@ export type RunPoll = {
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
 	readonly explanation?: string;
-	readonly author?: string;
+	readonly author?: PollAuthor;
 };
 
 type GradedPoll<Id> = {
@@ -120,7 +127,7 @@ export type AnsweredPoll = {
 	readonly correct?: readonly string[];
 	readonly codeBlock?: string;
 	readonly explanation?: string;
-	readonly author?: string;
+	readonly author?: PollAuthor;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
 	readonly coverageEarned?: number;

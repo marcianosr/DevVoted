@@ -5,6 +5,7 @@ import { Badge, type BadgeTone, themeToneFor } from "./Badge.ui";
 import { Text } from "./Text.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Trail, type TrailProps } from "./Trail.ui";
+import { Unlocks, type UnlockNote } from "./Unlocks.ui";
 
 const FACTS = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
 const FACT = "flex items-center gap-2";
@@ -19,6 +20,7 @@ export type PollFact = {
 export type PollInfoProps = {
 	trail: TrailProps;
 	audits?: readonly AuditNote[];
+	unlocks?: readonly UnlockNote[];
 	theme?: SwatchTheme;
 	category: string;
 	facts?: readonly PollFact[];
@@ -27,6 +29,7 @@ export type PollInfoProps = {
 export const PollInfo = ({
 	trail,
 	audits = [],
+	unlocks = [],
 	theme,
 	category,
 	facts = [],
@@ -35,6 +38,8 @@ export const PollInfo = ({
 		<Trail {...trail} />
 
 		<Audits rows={audits} />
+
+		<Unlocks rows={unlocks} />
 
 		<div className={FACTS}>
 			<Badge tone={themeToneFor(theme)}>{category}</Badge>

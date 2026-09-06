@@ -59,8 +59,16 @@ export const LavenderCleared: Story = {
 			demand: 60,
 		},
 		changed: {
-			meta: "2 configs",
+			meta: "3 configs",
 			rows: [
+				{
+					name: "Telemetry",
+					slots: 2,
+					version: 1,
+					maxVersion: 2,
+					detail: "Earned: peeked the community split 5 times",
+					badge: { label: "unlocked", tone: "saffron" },
+				},
 				{
 					name: "Deprecated",
 					slots: 4,

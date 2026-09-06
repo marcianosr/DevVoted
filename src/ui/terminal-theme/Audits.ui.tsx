@@ -6,9 +6,11 @@ import { Text } from "./Text.ui";
 
 const LIST = "flex flex-col gap-2";
 const LINE =
-	"flex flex-wrap items-center gap-x-2 rounded-lg border border-saffron/30 bg-saffron/5 px-3 py-1";
-const MARK = "text-saffron";
-const MARK_PASSING = "text-viridian";
+	"flex items-start gap-x-2 rounded-lg border border-saffron/30 bg-saffron/5 px-3 py-1.5";
+const MARK = "mt-0.5 text-saffron";
+const MARK_PASSING = "mt-0.5 text-viridian";
+const BODY = "flex min-w-0 flex-1 flex-col gap-y-0.5";
+const TITLE = "flex flex-wrap items-center gap-x-2";
 const CODE = "shrink-0 font-bold";
 const NAME = "shrink-0 font-bold";
 const CUE = "min-w-0";
@@ -50,35 +52,40 @@ export const Audits = ({ rows, className }: AuditsProps) => {
 						passing={row.suppressed === true}
 						className={row.suppressed === true ? MARK_PASSING : MARK}
 					/>
-					<Text
-						tone={row.suppressed === true ? "faint" : "saffron"}
-						className={clsx(CODE, row.suppressed === true && STRUCK)}
-					>
-						{row.code}
-					</Text>
-					<Text
-						tone={row.suppressed === true ? "faint" : "saffron"}
-						className={clsx(NAME, row.suppressed === true && STRUCK)}
-					>
-						{row.name}
-					</Text>
-					<Text
-						tone={row.suppressed === true ? "viridian" : "muted"}
-						size="caption"
-						weight="thin"
-						className={CUE}
-					>
-						{row.suppressed === true ? SUPPRESSED_CUE : row.cue}
-					</Text>
-					{row.suppressedBy === undefined ? null : (
-						<DexChip
-							slots={row.suppressedBy.slots}
-							label={row.suppressedBy.label}
-							version={row.suppressedBy.version}
-							maxVersion={row.suppressedBy.maxVersion}
-							className={BY}
-						/>
-					)}
+					<span className={BODY}>
+						<span className={TITLE}>
+							<Text
+								tone={row.suppressed === true ? "faint" : "saffron"}
+								className={clsx(CODE, row.suppressed === true && STRUCK)}
+							>
+								{row.code}
+							</Text>
+							<Text
+								tone={row.suppressed === true ? "faint" : "saffron"}
+								className={clsx(NAME, row.suppressed === true && STRUCK)}
+							>
+								{row.name}
+							</Text>
+							{row.suppressedBy === undefined ? null : (
+								<DexChip
+									slots={row.suppressedBy.slots}
+									label={row.suppressedBy.label}
+									version={row.suppressedBy.version}
+									maxVersion={row.suppressedBy.maxVersion}
+									className={BY}
+								/>
+							)}
+						</span>
+
+						<Text
+							tone={row.suppressed === true ? "viridian" : "muted"}
+							size="caption"
+							weight="thin"
+							className={CUE}
+						>
+							{row.suppressed === true ? SUPPRESSED_CUE : row.cue}
+						</Text>
+					</span>
 				</span>
 			))}
 		</div>

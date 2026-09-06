@@ -5,7 +5,6 @@ import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
 
 const base: PrepScreenProps = {
 	header: { title: "Gate 1 · Boulder", value: "96 KB", caption: "balance" },
-	ready: { note: "today's 5 polls are ready" },
 	build: { slots: 4, slotsUsed: 1, rows: [] },
 	window: {
 		title: "Boulder gate",

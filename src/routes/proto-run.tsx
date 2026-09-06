@@ -84,7 +84,12 @@ const single = (
 	category,
 	question,
 	answerType: "single",
-	author: "@matthijsgroen",
+	author: {
+		handle: "@matthijsgroen",
+		avatarUrl: "https://github.com/matthijsgroen.png",
+		borderUrl: "/borders/00b9a62e09a1e452d6840170849e8ac06f6d3ef5.png",
+		title: "Poll editor",
+	},
 	options: [
 		{ id: `${id}-r`, label: right, correct: true },
 		...wrongs.map((w, i) => ({ id: `${id}-${i}`, label: w, correct: false })),

@@ -10,6 +10,7 @@ import {
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { justFiredLines } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import { gateStorageBreakdown } from "~/modules/run/gate/domain/gateReward.model";
 import {
 	ALL_SWATCHES,
@@ -132,10 +133,20 @@ const upgradeCause = (view: RunView): string | undefined => {
 	return autoUpgradedByConfig.label;
 };
 
+// Only the grants the clearing dispatch itself fired: mid-gate grants already
+// had their reveal-line beat, and the provenance replaces describeConfig — the
+// row announces the earning, the Dex teaches the effect.
+const unlockedRows = (view: RunView): readonly ChangedRow[] =>
+	justFiredLines(view).map(({ config, detail }) => ({
+		...changedRow(config, "unlocked", "saffron"),
+		detail,
+	}));
+
 const changedFor = (view: RunView): readonly ChangedRow[] => {
 	const { autoUpgradedConfig, lapsedConfigs, deletedConfigs } = view.gatePayout;
 
 	return [
+		...unlockedRows(view),
 		...(autoUpgradedConfig === null
 			? []
 			: [

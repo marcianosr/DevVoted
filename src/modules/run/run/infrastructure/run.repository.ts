@@ -6,11 +6,21 @@ import {
 	pollResponsesTable,
 	runStatesTable,
 	runsTable,
+	userConfigUnlocksTable,
+	userObjectiveProgressTable,
 	usersTable,
 } from "~/database/schema";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
+
+import {
+	configsUnlockedBy,
+	type ObjectiveCount,
+	type ObjectiveMetric,
+	type UnlockGrant,
+} from "~/modules/run/config/domain/configUnlock.model";
+import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
 
 import {
 	isRunOver,
@@ -136,6 +146,69 @@ const awardGateSwatch = async (
 				sql`NOT (${usersTable.owned_swatch_ids} @> ARRAY[${swatch.id}]::text[])`
 			)
 		);
+};
+
+/**
+ * The objective ledger's upsert (ADR-051): every touched metric gains one, and
+ * RETURNING hands back the fresh lifetime counts so the grant check reads what
+ * this very transaction wrote.
+ */
+const recordObjectiveProgress = async (
+	tx: Pick<typeof db, "insert">,
+	userId: string,
+	metrics: readonly ObjectiveMetric[]
+): Promise<readonly ObjectiveCount[]> =>
+	tx
+		.insert(userObjectiveProgressTable)
+		.values(metrics.map((metric) => ({ user_id: userId, metric, count: 1 })))
+		.onConflictDoUpdate({
+			target: [
+				userObjectiveProgressTable.user_id,
+				userObjectiveProgressTable.metric,
+			],
+			set: {
+				count: sql`${userObjectiveProgressTable.count} + 1`,
+				updated_at: new Date(),
+			},
+		})
+		.returning({
+			metric: userObjectiveProgressTable.metric,
+			count: userObjectiveProgressTable.count,
+		});
+
+/**
+ * A grant is a row with its provenance (ADR-064). ON CONFLICT DO NOTHING makes
+ * re-crossing a target idempotent, and RETURNING yields only the rows this
+ * insert actually created — exactly the just-unlocked ids the client announces.
+ */
+const awardConfigUnlocks = async (
+	tx: Pick<typeof db, "insert">,
+	userId: string,
+	grants: readonly UnlockGrant[]
+): Promise<readonly string[]> => {
+	const rows = await tx
+		.insert(userConfigUnlocksTable)
+		.values(
+			grants.map((grant) => ({
+				user_id: userId,
+				config_id: grant.configId,
+				via_metric: grant.viaMetric,
+			}))
+		)
+		.onConflictDoNothing()
+		.returning({ config_id: userConfigUnlocksTable.config_id });
+	return rows.map((row) => row.config_id);
+};
+
+const grantObjectiveUnlocks = async (
+	tx: Pick<typeof db, "insert">,
+	userId: string,
+	metrics: readonly ObjectiveMetric[]
+): Promise<readonly string[]> => {
+	const counts = await recordObjectiveProgress(tx, userId, metrics);
+	const grants = configsUnlockedBy(counts);
+	if (grants.length === 0) return [];
+	return awardConfigUnlocks(tx, userId, grants);
 };
 
 /**
@@ -403,7 +476,8 @@ export const fetchOwnedSwatchIds = async (
  * The dispatch hot path. One transaction: lock the state row (serializes
  * double-submits), rehydrate, run the engine as authority, persist. Returns
  * the next state — identical to the previous state when the action was
- * illegal for the current status (the reducer's no-op contract).
+ * illegal for the current status (the reducer's no-op contract) — plus the
+ * config ids this very action unlocked (ADR-051's grant seam).
  */
 /**
  * A run's hydrated engine state. The snapshot and the day's polls live in
@@ -417,12 +491,17 @@ export const loadRunState = async (runId: number): Promise<RunState> => {
 	return hydrateRunState(snapshot, await fetchRunPollsForRun(runId));
 };
 
+export type RunDispatchResult = {
+	readonly state: RunState;
+	readonly unlockedConfigIds: readonly string[];
+};
+
 export const applyActionToRun = async (args: {
 	runId: number;
 	userId: string;
 	today: string;
 	action: RunAction;
-}): Promise<RunState> => {
+}): Promise<RunDispatchResult> => {
 	// Same ordering as ensureTodaysSegment: today's shared sequence must exist
 	// before the rollover inside the lock goes looking for it, and a missing
 	// seed makes that rollover a silent no-op rather than an error.
@@ -448,7 +527,16 @@ export const applyActionToRun = async (args: {
 		const polls = await fetchRunPollsForRun(args.runId, tx);
 		const state = hydrateRunState(stateRow.state, polls);
 		const next = runReducer(state, args.action);
-		if (next === state) return state;
+		if (next === state) return { state, unlockedConfigIds: [] };
+
+		// The objective ledger ticks at the seam (ADR-051): the reducer stays
+		// pure, the counters live on the account, and a crossed target grants
+		// inside the same transaction as the action that crossed it.
+		const touched = objectiveIncrementsFor(state, next, args.action);
+		const unlockedConfigIds =
+			touched.length === 0
+				? []
+				: await grantObjectiveUnlocks(tx, args.userId, touched);
 
 		if (args.action.type === "answer") {
 			// The answered poll comes from the PRE-action state — the reducer
@@ -509,6 +597,6 @@ export const applyActionToRun = async (args: {
 		if ((next.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
 			await raiseStorageWatermark(tx, args.userId, next.peakStorageKb ?? 0);
 
-		return next;
+		return { state: next, unlockedConfigIds };
 	});
 };

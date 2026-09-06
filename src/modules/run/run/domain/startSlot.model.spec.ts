@@ -129,7 +129,7 @@ describe("once the run is under way", () => {
 		expect(buyStartSlot(started, 4096).state).toBe(started);
 	});
 
-	it("shuts it out of refunding, so a 16 KB shop slot cannot sell back for 32", () => {
+	it("shuts it out of refunding, so a 32 KB shop slot cannot sell back for 64", () => {
 		expect(canRefundStartSlot(started)).toBe(false);
 		expect(refundStartSlot(started, 0).archiveKb).toBe(0);
 	});

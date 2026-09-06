@@ -75,6 +75,22 @@ describe("selling in the shop", () => {
 		expect(configIds(state)).not.toContain("unit-tests");
 		expect(state.storage).toBe(16);
 	});
+
+	it("counts each sale toward the shop's tally", () => {
+		let state = started(["unit-tests", "js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		state = runReducer(state, { type: "sell", configId: "unit-tests" });
+		expect(state.soldThisShop).toBe(1);
+		state = runReducer(state, { type: "sell", configId: "js" });
+		expect(state.soldThisShop).toBe(2);
+	});
+
+	it("resets the sale tally when the shop closes", () => {
+		let state = rewardingWith("eslint");
+		state = runReducer(state, { type: "sell", configId: "eslint" });
+		state = runReducer(state, { type: "finish-reward" });
+		expect(state.soldThisShop).toBe(0);
+	});
 });
 
 describe("shop controls (DVTD-5lt6)", () => {
@@ -500,13 +516,13 @@ describe("slots in the shop (ADR-046)", () => {
 		expect(later.build.slots).toBe(4);
 	});
 
-	it("buys the fifth slot for 16 KB", () => {
+	it("buys the fifth slot for 32 KB", () => {
 		const state = { ...inShop(), storage: 200 };
 		const wider = runReducer(state, { type: "buy-slot" });
 
 		expect(wider.build.slots).toBe(5);
 		expect(wider.slotsBought).toBe(1);
-		expect(wider.storage).toBe(184);
+		expect(wider.storage).toBe(168);
 	});
 
 	it("charges the next rung up for each slot after that", () => {
@@ -516,11 +532,11 @@ describe("slots in the shop (ADR-046)", () => {
 		state = runReducer(state, { type: "buy-slot" });
 
 		expect(state.build.slots).toBe(7);
-		expect(state.storage).toBe(500 - (16 + 32 + 64));
+		expect(state.storage).toBe(500 - (32 + 40 + 48));
 	});
 
 	it("refuses a slot the balance cannot cover", () => {
-		const state = { ...inShop(), storage: 15 };
+		const state = { ...inShop(), storage: 31 };
 		expect(runReducer(state, { type: "buy-slot" })).toEqual(state);
 	});
 
@@ -531,7 +547,7 @@ describe("slots in the shop (ADR-046)", () => {
 		const cashed = runReducer(state, { type: "cash-slot" });
 
 		expect(cashed.build.slots).toBe(5);
-		expect(cashed.storage).toBe(state.storage + 32);
+		expect(cashed.storage).toBe(state.storage + 40);
 	});
 
 	it("closes the buy-low-cash-high loop: a bought slot cashes for exactly its price", () => {
@@ -550,7 +566,7 @@ describe("slots in the shop (ADR-046)", () => {
 		const rebought = runReducer(state, { type: "buy-slot" });
 
 		expect(rebought.slotsBought).toBe(2);
-		expect(state.storage - rebought.storage).toBe(32);
+		expect(state.storage - rebought.storage).toBe(40);
 	});
 
 	it("refuses to cash below the free four", () => {

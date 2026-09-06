@@ -11,7 +11,9 @@ import {
 	type AnsweredPoll,
 	cachedHitsFor,
 } from "~/modules/run/run/domain/runPoll.model";
+import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { unlockNotesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import { RevealScreen } from "~/ui/terminal-theme/screens/RevealScreen.ui";
 import type { ChoiceState } from "~/ui/terminal-theme/Choice.ui";
 import type {
@@ -168,6 +170,11 @@ const coverageSettlementFor = (view: RunView, answered: AnsweredPoll) => ({
 const hasPollsLeft = (view: RunView): boolean =>
 	view.pollsPerGate - view.answeredThisGate.length > 0;
 
+const gateJustCleared = (view: RunView): number | undefined =>
+	view.status === "rewarding" || view.status === "won"
+		? (view.clearedGate ?? undefined)
+		: undefined;
+
 export type RevealViewProps = {
 	view: RunView;
 	answered: AnsweredPoll;
@@ -188,8 +195,8 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 
 	return (
 		<RevealScreen
-			theme={view.gateTheme}
-			run={runHeaderFor(view)}
+			theme={swatchForGate(gateJustCleared(view) ?? view.gatesCleared)?.theme}
+			run={runHeaderFor(view, gateJustCleared(view))}
 			coverage={coverageSettlementFor(view, answered)}
 			build={{
 				running: rows.filter((row) => row.dot === "on").length,
@@ -197,6 +204,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 				total: buildTotalFor(view, facts),
 			}}
 			audits={auditNotes(view)}
+			unlocks={unlockNotesFor(view)}
 			trail={revealTrailFor(view)}
 			facts={factsFor(view, {
 				options: optionsOf(answered),
@@ -212,9 +220,7 @@ export const RevealView = ({ view, answered, onNext }: RevealViewProps) => {
 			explainer={answered.explanation}
 			nextLabel={hasPollsLeft(view) ? "Next poll →" : "Next →"}
 			onNext={onNext}
-			byline={
-				answered.author === undefined ? undefined : { author: answered.author }
-			}
+			byline={answered.author}
 		/>
 	);
 };

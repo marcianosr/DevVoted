@@ -202,4 +202,37 @@ describe("RewardView changed configs", () => {
 
 		expect(screen.getByText("0 configs")).toBeInTheDocument();
 	});
+
+	it("leads with a config this clear unlocked, provenance as the detail", () => {
+		renderCleared(
+			createMockRunView({
+				...cleared,
+				unlockedConfigIds: ["telemetry"],
+				unlockedThisRun: [
+					{ configId: "telemetry", viaMetric: "community-peeks" },
+				],
+			})
+		);
+
+		expect(screen.getByText("unlocked")).toBeInTheDocument();
+		expect(screen.getByText("Telemetry")).toBeInTheDocument();
+		expect(
+			screen.getByText("Earned: peeked the community split 5 times")
+		).toBeInTheDocument();
+		expect(screen.getByText("1 config")).toBeInTheDocument();
+	});
+
+	it("keeps a mid-gate grant out of the clear's changes", () => {
+		renderCleared(
+			createMockRunView({
+				...cleared,
+				unlockedThisRun: [
+					{ configId: "telemetry", viaMetric: "community-peeks" },
+				],
+			})
+		);
+
+		expect(screen.queryByText("unlocked")).not.toBeInTheDocument();
+		expect(screen.getByText("0 configs")).toBeInTheDocument();
+	});
 });

@@ -52,6 +52,10 @@ export const userQueryKeys = {
 	 */
 	swatchesAll: [...USERS, "swatches"] as const,
 	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
+	/** Same prefix-before-user shape as swatches, for the same reason: a run
+	 * action can grant a config unlock, and the run flow holds no userId. */
+	unlocksAll: [...USERS, "unlocks"] as const,
+	unlocks: (userId: string) => [...userQueryKeys.unlocksAll, userId] as const,
 	gateRuns: (userId: string) => [...USERS, userId, "gate-runs"] as const,
 };
 

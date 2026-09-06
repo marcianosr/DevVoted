@@ -125,6 +125,7 @@ export const resumeClimb = (state: RunState): RunState => {
 			draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)
 		),
 		rebuildsUsed: 0,
+		soldThisShop: 0,
 		draftedThisGate: [],
 		redoGate: state.gatesCleared,
 		status: "rewarding",

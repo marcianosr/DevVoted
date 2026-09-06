@@ -47,6 +47,13 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		expect(state.draftOptions.length).toBeGreaterThan(0);
 	});
 
+	it("resets the shop's sale tally for the retry's shop", () => {
+		const state = payPeel(
+			failGate({ ...started(["unit-tests"]), gatesCleared: 1, soldThisShop: 2 })
+		);
+		expect(state.soldThisShop).toBe(0);
+	});
+
 	it("pays nothing for the attempt it failed", () => {
 		const state = payPeel(failGate(started(["indexed-db"])));
 		expect(state.gateRewardKb).toBe(0);

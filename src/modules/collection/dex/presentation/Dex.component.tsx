@@ -7,6 +7,11 @@ import {
 	auditsFacedIn,
 } from "~/modules/collection/dex/domain/auditdex.model";
 import {
+	configdex,
+	type ConfigdexEntry,
+	grantedCountIn,
+} from "~/modules/collection/dex/domain/configdex.model";
+import {
 	gatedex,
 	gatesClearedIn,
 } from "~/modules/collection/dex/domain/gatedex.model";
@@ -14,13 +19,13 @@ import {
 	polldexCoverage,
 	type PolldexEntry,
 } from "~/modules/collection/dex/domain/polldex.model";
+import { getConfigdex } from "~/modules/collection/dex/application/configdex.serverfn";
 import { getGateRuns } from "~/modules/collection/dex/application/runHistory.serverfn";
 import { getPolldex } from "~/modules/collection/dex/application/polldex.serverfn";
 import { AuditsView } from "~/modules/collection/dex/presentation/AuditsView.component";
 import { ConfigdexPanel } from "~/modules/collection/dex/presentation/ConfigdexPanel.ui";
 import { GatesView } from "~/modules/collection/dex/presentation/GatesView.component";
 import { PollsView } from "~/modules/collection/dex/presentation/PollsView.component";
-import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
 import { Text } from "~/ui/modern-theme/Text.ui";
@@ -49,20 +54,43 @@ const PollsTab = ({ pending, entries }: PollsTabProps) => {
 	return <PollsView entries={entries} />;
 };
 
+type ConfigsTabProps = {
+	pending: boolean;
+	entries: readonly ConfigdexEntry[] | null;
+};
+
+const ConfigsTab = ({ pending, entries }: ConfigsTabProps) => {
+	if (pending)
+		return (
+			<Text as="p" size="meta" tone="muted">
+				Loading your collection…
+			</Text>
+		);
+
+	if (!entries)
+		return (
+			<Text as="p" size="meta" tone="cinnabar">
+				Couldn&apos;t load your configs. Try again shortly.
+			</Text>
+		);
+
+	return <ConfigdexPanel entries={entries} />;
+};
+
 type DexProps = {
 	// Only the query-cache discriminator; the server derives auth server-side.
 	userId: string;
 };
 
 /**
- * Tier 2 wiring for the Dex: tab state, the two queries, and the counters.
+ * Tier 2 wiring for the Dex: tab state, the queries, and the counters.
  *
  * Gates and Audits are read off `owned_swatch_ids` alone — a swatch lands
  * exactly when its gate falls, so it already is the account's record of every
  * gate ever cleared, and neither tab needs the poll query. That is why the
- * Polls tab carries its own loading and error state instead of the screen
- * doing it: a slow poll query should not blank a catalogue that is already in
- * hand.
+ * Polls and Configs tabs carry their own loading and error state instead of
+ * the screen doing it: a slow query should not blank a catalogue that is
+ * already in hand.
  */
 export const Dex = ({ userId }: DexProps) => {
 	const [activeId, setActiveId] = useState("polls");
@@ -82,6 +110,11 @@ export const Dex = ({ userId }: DexProps) => {
 		queryFn: () => getGateRuns(),
 	});
 
+	const unlocks = useQuery({
+		queryKey: userQueryKeys.unlocks(userId),
+		queryFn: () => getConfigdex(),
+	});
+
 	const entries = polldex.data?.success ? polldex.data.data.entries : null;
 	const ownedSwatchIds = swatches.data?.success
 		? swatches.data.data.ownedSwatchIds
@@ -92,7 +125,9 @@ export const Dex = ({ userId }: DexProps) => {
 	const gates = gatedex(ownedSwatchIds);
 	const audits = auditdex(gates, runs);
 	const coverage = polldexCoverage(entries ?? []);
-	const configCount = Object.keys(CONFIGS).length;
+	const configEntries = unlocks.data?.success
+		? configdex(unlocks.data.data.unlocks, unlocks.data.data.progress)
+		: null;
 
 	return (
 		<DexScreen
@@ -105,8 +140,9 @@ export const Dex = ({ userId }: DexProps) => {
 				{
 					id: "configs",
 					label: "Configs",
-					// No unlock system yet — owned == total.
-					count: `${configCount}/${configCount}`,
+					count: configEntries
+						? `${grantedCountIn(configEntries)}/${configEntries.length}`
+						: undefined,
 				},
 				{
 					id: "audits",
@@ -126,7 +162,9 @@ export const Dex = ({ userId }: DexProps) => {
 				<GatesView gates={gates} audits={audits} />
 			) : null}
 			{activeId === "audits" ? <AuditsView audits={audits} /> : null}
-			{activeId === "configs" ? <ConfigdexPanel /> : null}
+			{activeId === "configs" ? (
+				<ConfigsTab pending={unlocks.isPending} entries={configEntries} />
+			) : null}
 			{activeId === "polls" ? (
 				<PollsTab pending={polldex.isPending} entries={entries} />
 			) : null}

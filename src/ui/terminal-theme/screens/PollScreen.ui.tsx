@@ -9,6 +9,7 @@ import type { ChoiceSeal, ChoiceState } from "../Choice.ui";
 import { ChoiceList } from "../ChoiceList.ui";
 import type { PollFact } from "../PollInfo.ui";
 import { PollLayout, type PollBuild } from "../PollLayout.ui";
+import type { UnlockNote } from "../Unlocks.ui";
 import type { RunHeaderProps } from "../RunHeader.ui";
 import { Text } from "../Text.ui";
 import type { TrailProps } from "../Trail.ui";
@@ -39,6 +40,7 @@ export type PollScreenProps = {
 	coverage?: PollCoverage;
 	build: PollBuild;
 	audits?: readonly AuditNote[];
+	unlocks?: readonly UnlockNote[];
 	trail: TrailProps;
 	category: string;
 	question: string;
@@ -72,6 +74,7 @@ export const PollScreen = ({
 	coverage,
 	build,
 	audits,
+	unlocks,
 	trail,
 	category,
 	question,
@@ -90,6 +93,7 @@ export const PollScreen = ({
 		coverage={gaugeFor(coverage, choices)}
 		build={build}
 		audits={audits}
+		unlocks={unlocks}
 		trail={trail}
 		category={category}
 		facts={facts}
@@ -123,6 +127,10 @@ export const PollScreen = ({
 			</pre>
 		)}
 
-		<ChoiceList choices={choices} onPick={onToggle} />
+		<ChoiceList
+			choices={choices}
+			onPick={onToggle}
+			onSubmit={submitLock === undefined ? onSubmit : undefined}
+		/>
 	</PollLayout>
 );

@@ -19,17 +19,19 @@ the archive's only sink today is borders.
 
 The start screen sells the same ladder the shop sells, at **twice the price**, paid from
 `users.archived_storage` rather than run storage. A start purchase counts on the ladder:
-buy the fifth slot for 32 KB of archive and the shop's next slot is the sixth at 32 KB
-of run storage, not the fifth at 16.
+buy the fifth slot for 64 KB of archive and the shop's next slot is the sixth at 40 KB
+of run storage, not the fifth at 32.
+
+**Reladdered 2026-09-06 (DVTD-x5y1)**, following ADR-046 Decision 1.
 
 | slot | in-run | at start |
 | --- | --- | --- |
-| 5 | 16 | 32 |
-| 6 | 32 | 64 |
-| 7 | 64 | 128 |
-| 8 | 128 | 256 |
-| 9 | 192 | 384 |
-| 12 | 512 | 1024 |
+| 5 | 32 | 64 |
+| 6 | 40 | 80 |
+| 7 | 48 | 96 |
+| 8 | 64 | 128 |
+| 9 | 80 | 160 |
+| 12 | 160 | 320 |
 
 Double, rather than a flat surcharge, because the premium has to scale with the rung or
 it stops mattering at the top of the ladder.
@@ -37,12 +39,20 @@ it stops mattering at the top of the ladder.
 ## Decision 2: no cap on how wide the archive can open a run
 
 The doubled ladder is the brake, the same argument ADR-046 makes for the in-run ladder.
-Opening at eight slots costs 480 KB, about a sixth of what a perfect gate-12 clear
-banks; opening at twelve costs 3.1 MB, more than that clear pays. So the archive can buy
-a real head start and cannot buy an endless-run build.
 
-The thing to watch in playtest is a returning account opening at eight every single run.
-If that reads as the only sane opening, the premium is too low, not the cap too high.
+**This brake is materially weaker after the 2026-09-06 reladder, and the figures that
+supported it are now wrong.** Opening at eight slots cost 480 KB and now costs 368 KB;
+opening at twelve cost 3.1 MB — more than a perfect gate-12 clear banks, which was the
+whole argument — and now costs 1280 KB, comfortably under the 2912 KB such a clear pays.
+The claim that the archive "cannot buy an endless-run build" no longer follows from the
+price. Since archive accumulates across runs, a banked account can now open near-wide
+every time.
+
+The thing to watch in playtest was already a returning account opening at eight every
+single run, and the reladder makes that likelier, not less likely. The conclusion the
+original argument reached — if that reads as the only sane opening, the premium is too
+low rather than the cap too high — now has a live question attached: whether
+`START_SLOT_PREMIUM = 2` should rise. Deliberately left open rather than guessed at.
 
 ## Decision 3: a slot bought here is refundable until Start, and the ladder rolls back
 

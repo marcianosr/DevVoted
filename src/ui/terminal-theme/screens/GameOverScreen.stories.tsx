@@ -48,6 +48,25 @@ export const FellAtLavender: Story = {
 			lost: { label: "174 KB lost" },
 			note: "4 of 13 gates · you keep 22%",
 		},
+		unlocked: {
+			meta: "2 configs",
+			rows: [
+				{
+					name: "Telemetry",
+					slots: 2,
+					version: 1,
+					maxVersion: 2,
+					detail: "Earned: peeked the community split 5 times",
+				},
+				{
+					name: ".html",
+					slots: 1,
+					version: 1,
+					maxVersion: 5,
+					detail: "Earned: answered 25 polls",
+				},
+			],
+		},
 		lostBy: {
 			meta: "by category",
 			rows: [
@@ -74,7 +93,6 @@ export const FellAtLavender: Story = {
 					detail: "Used 4 times · cost 120 KB",
 				},
 			],
-			note: "removals at gate 3 and gate 4 took the rest",
 		},
 		shareLabel: "Share",
 		onShare: noop,

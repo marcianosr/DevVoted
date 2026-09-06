@@ -157,7 +157,7 @@ export const GateClearScreen = ({
 		<Section label="What changed" meta={changed.meta} divided>
 			{changed.rows.map((row) => (
 				<Row
-					key={row.name}
+					key={`${row.name}·${row.badge?.label ?? ""}`}
 					name={
 						<DexChip
 							slots={row.slots}

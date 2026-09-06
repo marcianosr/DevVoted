@@ -686,7 +686,7 @@ describe(ShopScreen, () => {
 
 		expect(screen.getByText("Slots")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /buy a slot · 16KB/ })
+			screen.getByRole("button", { name: /buy a slot · 32KB/ })
 		).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /nothing to cash/ })

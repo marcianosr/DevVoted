@@ -21,6 +21,7 @@ import type {
 	StoragePlanView,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import { unlockNotesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import {
 	coverageFor,
 	storageGaugeFor,
@@ -33,7 +34,7 @@ import {
 	type ShopBuildRow,
 	type ShopOfferRow,
 } from "~/ui/terminal-theme/screens/ShopScreen.ui";
-import type { SlotDealRow } from "~/ui/terminal-theme/SlotDeal.ui";
+import type { SlotTrackDeal } from "~/ui/terminal-theme/SlotTrack.ui";
 import type { StoragePlanProps } from "~/ui/terminal-theme/StoragePlan.ui";
 import { plural } from "~/ui/terminal-theme/format";
 
@@ -133,43 +134,36 @@ const swapFor = (
 	};
 };
 
-const slotRows = (
+const buyDeal = (
 	view: RunView,
 	locked: boolean,
-	onBuySlot: () => void,
-	onCashSlot: () => void
-): readonly SlotDealRow[] => {
-	const { buy, cash } = view.slotDeals;
+	onBuySlot: () => void
+): SlotTrackDeal | undefined => {
+	const { buy } = view.slotDeals;
+	if (buy.costKb === undefined) return undefined;
 
-	return [
-		...(cash.costKb === undefined
-			? []
-			: [
-					{
-						name:
-							view.slotsFree > 0
-								? `Slot ${view.slots} · empty`
-								: `Slot ${view.slots}`,
-						label: `Cash slot ${view.slots}`,
-						detail: cash.refusal,
-						price: kbLabel(cash.costKb),
-						receives: true,
-						onUse:
-							cash.refusal === undefined && !locked ? onCashSlot : undefined,
-					},
-				]),
-		...(buy.costKb === undefined
-			? []
-			: [
-					{
-						name: `Slot ${view.slots + 1}`,
-						label: `Buy slot ${view.slots + 1}`,
-						detail: buy.refusal,
-						price: kbLabel(buy.costKb),
-						onUse: buy.refusal === undefined && !locked ? onBuySlot : undefined,
-					},
-				]),
-	];
+	return {
+		label: `Buy slot ${view.slots + 1}`,
+		price: kbLabel(buy.costKb),
+		refusal: buy.refusal,
+		onUse: buy.refusal === undefined && !locked ? onBuySlot : undefined,
+	};
+};
+
+const cashDeal = (
+	view: RunView,
+	locked: boolean,
+	onCashSlot: () => void
+): SlotTrackDeal | undefined => {
+	const { cash } = view.slotDeals;
+	if (cash.costKb === undefined) return undefined;
+
+	return {
+		label: `Cash slot ${view.slots}`,
+		price: kbLabel(cash.costKb),
+		refusal: cash.refusal,
+		onUse: cash.refusal === undefined && !locked ? onCashSlot : undefined,
+	};
 };
 
 const offerLockFor = (
@@ -334,21 +328,23 @@ export const ShopView = ({
 				value: kbLabel(view.storage),
 				caption: "balance",
 				gauge: storageGaugeFor(view),
-				coverage: coverageFor(view),
+				// coverage: coverageFor(view),
 			}}
 			notice={
 				locked
 					? `Shop closed. 405 Method Not Allowed audits the build you already have, so nothing can be bought, sold or switched before gate ${nextGate}.`
 					: undefined
 			}
+			unlocks={unlockNotesFor(view)}
 			storage={{
 				meta: storageMeta(view),
 				slots: view.slots,
+				buy: buyDeal(view, locked, onBuySlot),
+				cash: cashDeal(view, locked, onCashSlot),
 			}}
 			build={{
 				meta: `${view.configs.length}`,
 				rows: buildRows,
-				slotRows: slotRows(view, locked, onBuySlot, onCashSlot),
 			}}
 			offers={{
 				meta: `${plural(view.offers.length, "offer")}${

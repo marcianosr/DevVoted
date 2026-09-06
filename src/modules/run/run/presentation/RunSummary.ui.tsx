@@ -18,6 +18,11 @@ import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchChips } from "~/modules/run/gate/presentation/SwatchChips.ui";
 import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";
 
+type UnlockedLine = {
+	config: Config;
+	detail: string;
+};
+
 type RunSummaryProps = {
 	won: boolean;
 	gatesCleared: number;
@@ -26,6 +31,8 @@ type RunSummaryProps = {
 	storage: number;
 	/** Configs the run ended with, shown beside the build ladder. */
 	configs?: readonly Config[];
+	/** Configs the run's play unlocked for the account, with provenance. */
+	unlocked?: readonly UnlockedLine[];
 	/** Every poll answered across the run, for the fold-out review. */
 	answered?: readonly AnsweredPoll[];
 };
@@ -62,6 +69,7 @@ export const RunSummary = ({
 	coverage,
 	storage,
 	configs,
+	unlocked,
 	answered,
 }: RunSummaryProps) => {
 	const ladder = deriveGateLadder(gatesCleared, won, victoryGate);
@@ -135,6 +143,25 @@ export const RunSummary = ({
 						{configs.map((config) => (
 							<li key={config.id}>
 								<ConfigChip config={config} noTooltip />
+							</li>
+						))}
+					</ul>
+				</section>
+			)}
+
+			{unlocked && unlocked.length > 0 && (
+				<section className="flex flex-col gap-2">
+					<Subtitle>Configs unlocked</Subtitle>
+					<Paragraph as="span" size="xs" tone="muted">
+						earned for keeps — they join your collection
+					</Paragraph>
+					<ul className="flex flex-col gap-2">
+						{unlocked.map(({ config, detail }) => (
+							<li key={config.id} className="flex flex-wrap items-center gap-2">
+								<ConfigChip config={config} noTooltip />
+								<Paragraph as="span" size="sm" tone="saffron">
+									{detail}
+								</Paragraph>
 							</li>
 						))}
 					</ul>

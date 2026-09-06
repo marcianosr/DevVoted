@@ -2,6 +2,7 @@ import { kbLabel } from "~/shared/lib/storage";
 import { maxLevelOf, slotsOf } from "~/modules/run/config/domain/config.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { unlockLinesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import {
 	ALL_SWATCHES,
 	swatchForGate,
@@ -32,6 +33,7 @@ export type GameOverViewProps = {
 export const GameOverView = ({ view, won, onNewRun }: GameOverViewProps) => {
 	const stoppedAt = swatchForGate(view.gatesCleared);
 	const misses = missesOf(view.allAnswered);
+	const unlocked = unlockLinesFor(view.unlockedThisRun);
 
 	return (
 		<GameOverScreen
@@ -49,6 +51,20 @@ export const GameOverView = ({ view, won, onNewRun }: GameOverViewProps) => {
 					? "every swatch earned"
 					: `${view.victoryGate - view.gatesCleared} still out there`,
 			}}
+			unlocked={
+				unlocked.length === 0
+					? undefined
+					: {
+							meta: plural(unlocked.length, "config"),
+							rows: unlocked.map(({ config, detail }) => ({
+								name: config.label,
+								detail,
+								slots: slotsOf(config),
+								version: config.level ?? 1,
+								maxVersion: maxLevelOf(config),
+							})),
+						}
+			}
 			lostBy={{
 				meta: plural(misses.length, "missed poll"),
 				rows: misses.slice(0, 5).map((poll) => ({

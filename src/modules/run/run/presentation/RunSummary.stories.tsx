@@ -83,3 +83,16 @@ export const StalledAtFirstGate: Story = {
 		answered: answered.slice(0, 1),
 	},
 };
+
+export const RunUnlockedConfigs: Story = {
+	args: {
+		...RunOver.args,
+		unlocked: [
+			{
+				config: CONFIGS.telemetry,
+				detail: "Earned: peeked the community split 5 times",
+			},
+			{ config: CONFIGS.html, detail: "Earned: answered 25 polls" },
+		],
+	},
+};

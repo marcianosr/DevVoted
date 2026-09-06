@@ -990,3 +990,32 @@ meter::-webkit-meter-optimum-value {
 		animation: none;
 	}
 }
+
+@keyframes coverage-callout {
+	0% {
+		opacity: 0;
+		transform: translateY(0.5rem);
+	}
+	8% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	82% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-0.25rem);
+	}
+}
+
+.coverage-callout {
+	animation: coverage-callout 3200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coverage-callout {
+		animation: none;
+	}
+}

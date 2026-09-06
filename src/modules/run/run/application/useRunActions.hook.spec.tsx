@@ -110,10 +110,11 @@ describe("useRunActions", () => {
 	// DVTD-63ur: both caches used to sit unwritten and unread until their screen
 	// happened to remount, which only worked because the root client leaves
 	// staleTime at 0. A global staleTime would have frozen them silently.
-	it("commit stales the community board and the swatch collection", async () => {
+	it("commit stales the community board, the swatch collection and the unlock ledger", async () => {
 		const { queryClient, result } = setup();
 		queryClient.setQueryData(runCommunityQueryKey(), { success: true });
 		queryClient.setQueryData(userQueryKeys.swatches("red"), { success: true });
+		queryClient.setQueryData(userQueryKeys.unlocks("red"), { success: true });
 
 		act(() =>
 			result.current.commit({
@@ -128,6 +129,9 @@ describe("useRunActions", () => {
 			).toBe(true);
 			expect(
 				queryClient.getQueryState(userQueryKeys.swatches("red"))?.isInvalidated
+			).toBe(true);
+			expect(
+				queryClient.getQueryState(userQueryKeys.unlocks("red"))?.isInvalidated
 			).toBe(true);
 		});
 	});

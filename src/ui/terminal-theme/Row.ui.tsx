@@ -9,7 +9,7 @@ import { Text } from "./Text.ui";
 // puts twelve pixels between a name and the detail directly under it, and a
 // list of those reads as eight blocks rather than eight rows.
 const ROW =
-	"flex min-h-9 items-center gap-x-3 gap-y-0.5 py-1.5 @max-3xl:flex-wrap";
+	"flex min-h-9 items-center gap-x-3 gap-y-2 py-1.5 @max-3xl:flex-wrap";
 const NAME = "flex shrink-0 items-center gap-1.5";
 // Wide enough for the longest name inside a DexChip — chip padding, the weight
 // block and a five-pip version track all sit in this column now.

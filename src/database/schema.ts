@@ -6,6 +6,7 @@ import {
 	json,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	real,
 	serial,
 	text,
@@ -120,6 +121,56 @@ export const usersTable = pgTable("users", {
 	// means no tag is planted.
 	pinned_gate: integer("pinned_gate"),
 });
+
+/**
+ * User Config Unlocks (ADR-051 + ADR-064)
+ *
+ * A row is a grant: the config is the player's for every future run. Provenance
+ * lives on the row — via_metric names the objective path that completed
+ * (null = granted at signup, the free starter set). first_installed_at null
+ * marks the unplayed queue ADR-064's guaranteed seat reads (newest earned
+ * first); it is stamped on the config's first install into a hand.
+ */
+export const userConfigUnlocksTable = pgTable(
+	"user_config_unlocks",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		config_id: varchar("config_id", { length: 64 }).notNull(),
+		via_metric: varchar("via_metric", { length: 64 }),
+		unlocked_at: timestamp("unlocked_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		first_installed_at: timestamp("first_installed_at", {
+			withTimezone: true,
+		}),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.config_id] })]
+);
+
+/**
+ * User Objective Progress (ADR-051)
+ *
+ * Lifetime counters behind the config unlock objectives, one row per touched
+ * metric, upserted in the same transaction as the run action that moved it.
+ * One-shot predicates are stored as target-1 counters on the same ledger.
+ */
+export const userObjectiveProgressTable = pgTable(
+	"user_objective_progress",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		metric: varchar("metric", { length: 64 }).notNull(),
+		count: integer("count").notNull().default(0),
+		updated_at: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.metric] })]
+);
 
 /**
  * Polls Table

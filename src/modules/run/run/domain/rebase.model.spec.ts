@@ -104,6 +104,14 @@ describe("moving a poll", () => {
 		const state = prepping("git-rebase");
 		expect(rebase(state, 2, 2)).toBe(state);
 	});
+
+	it("marks the gate's order as rebased", () => {
+		expect(rebase(prepping("git-rebase"), 3, 0).rebasedThisGate).toBe(true);
+	});
+
+	it("leaves a refused move unmarked", () => {
+		expect(rebase(prepping("js"), 3, 0).rebasedThisGate).toBeUndefined();
+	});
 });
 
 describe("the reducer's prep-only guard", () => {

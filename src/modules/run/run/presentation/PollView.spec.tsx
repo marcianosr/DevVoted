@@ -91,7 +91,7 @@ describe("PollView", () => {
 	it("prices the poll by its own difficulty, not the gate's", () => {
 		render_();
 
-		expect(screen.getByText("scores")).toBeInTheDocument();
+		expect(screen.getByText("Scores")).toBeInTheDocument();
 		expect(screen.getByText("×1")).toBeInTheDocument();
 	});
 
@@ -100,7 +100,7 @@ describe("PollView", () => {
 			poll: createMockPollView({ ...poll, answerType: "multiple" }),
 		});
 
-		expect(screen.getByText("pick every correct one")).toBeInTheDocument();
+		expect(screen.getByText("Pick every correct one")).toBeInTheDocument();
 	});
 
 	it("reports each pick as the player makes it", async () => {
@@ -148,6 +148,24 @@ describe("PollView", () => {
 		);
 
 		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("sends the answer on Enter, so the keyboard alone finishes a poll", async () => {
+		const onSubmit = vi.fn();
+		render_({ selectedOptionIds: ["option-1"], onSubmit });
+
+		await userEvent.keyboard("{Enter}");
+
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("ignores Enter while nothing is picked", async () => {
+		const onSubmit = vi.fn();
+		render_({ onSubmit });
+
+		await userEvent.keyboard("{Enter}");
+
+		expect(onSubmit).not.toHaveBeenCalled();
 	});
 
 	it("crosses an eliminated option out rather than removing it", () => {
@@ -451,7 +469,7 @@ describe("PollView build rail", () => {
 		});
 
 		expect(
-			screen.getByText("this gate holds 3 correct answers")
+			screen.getByText("This gate holds 3 correct answers")
 		).toBeInTheDocument();
 	});
 
@@ -479,14 +497,14 @@ describe("PollView build rail", () => {
 		});
 
 		expect(
-			screen.getByText("this gate holds 3 incorrect answers")
+			screen.getByText("This gate holds 3 incorrect answers")
 		).toBeInTheDocument();
 	});
 
 	it("says nothing about the count when no config is counting", () => {
 		render_();
 
-		expect(screen.queryByText(/this gate holds/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/This gate holds/)).not.toBeInTheDocument();
 	});
 
 	// The panel's total used to read a context-free forecast, so a config whose
@@ -521,7 +539,7 @@ describe("PollView build rail", () => {
 	it("prices a wrong answer and a missed gate on the facts line", () => {
 		render_();
 
-		expect(screen.getByText("wrong costs")).toBeInTheDocument();
+		expect(screen.getByText("Wrong costs")).toBeInTheDocument();
 		expect(screen.getByText("Gate retry cost:")).toBeInTheDocument();
 		expect(
 			screen.getByText(/^Remove (\d+ configs?|\d+–\d+ configs)$/)

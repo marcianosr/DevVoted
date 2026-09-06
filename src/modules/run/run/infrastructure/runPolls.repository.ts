@@ -12,7 +12,11 @@ import {
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
-import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import { findBorderById } from "~/domains/economy/data/borders";
+import type {
+	PollAuthor,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import { rollDailySeedSequence } from "~/modules/run/run/domain/seed.model";
 
 /**
@@ -119,7 +123,10 @@ const ENGINE_POLL_COLUMNS = {
 	answerType: pollsTable.answer_type,
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
-	author: usersTable.github_username,
+	authorHandle: usersTable.github_username,
+	authorPhotoUrl: usersTable.photo_url,
+	authorBorderId: usersTable.equipped_border_id,
+	authorRole: usersTable.role,
 };
 
 type EnginePollRow = {
@@ -130,7 +137,38 @@ type EnginePollRow = {
 	answerType: RunPoll["answerType"];
 	categoryCode: string;
 	explanation: string | null;
-	author: string | null;
+	authorHandle: string | null;
+	authorPhotoUrl: string | null;
+	authorBorderId: string | null;
+	authorRole: AuthorRole | null;
+};
+
+type AuthorRole = (typeof usersTable.$inferSelect)["role"];
+
+const ROLE_TITLES = {
+	user: undefined,
+	"poll-editor": "Poll editor",
+	admin: "Admin",
+} satisfies Record<AuthorRole, string | undefined>;
+
+const titleFor = (role: AuthorRole | null): string | undefined =>
+	role === null ? undefined : ROLE_TITLES[role];
+
+const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
+	if (row.authorHandle === null) return undefined;
+
+	const border =
+		row.authorBorderId === null
+			? undefined
+			: findBorderById(row.authorBorderId);
+	const title = titleFor(row.authorRole);
+
+	return {
+		handle: `@${row.authorHandle}`,
+		...(row.authorPhotoUrl === null ? {} : { avatarUrl: row.authorPhotoUrl }),
+		...(border === undefined ? {} : { borderUrl: border.image }),
+		...(title === undefined ? {} : { title }),
+	};
 };
 
 /**
@@ -166,7 +204,7 @@ const withOptions = async (
 		codeSandboxUrl: poll.codeSandboxUrl ?? undefined,
 		answerType: poll.answerType,
 		explanation: poll.explanation ?? undefined,
-		author: poll.author === null ? undefined : `@${poll.author}`,
+		author: authorOf(poll),
 		options: optionRows
 			.filter((option) => option.poll_id === poll.id)
 			.map((option) => ({

@@ -255,6 +255,7 @@ export type RunView = {
 	readonly gateTheme?: SwatchTheme;
 
 	readonly redoingGate: number | null;
+	readonly clearedGate: number | null;
 	readonly victoryGate: number;
 
 	readonly atMinimumWidth: boolean;
@@ -267,6 +268,20 @@ export type RunView = {
 	readonly slotDeals: SlotsView;
 	readonly startSlotDeals: StartSlotsView;
 	readonly storagePlan: StoragePlanView;
+
+	readonly unlockedConfigIds: readonly string[];
+	readonly unlockedThisRun: readonly RunUnlock[];
+};
+
+/**
+ * A config grant the account earned during this run (ADR-051/064): the id plus
+ * the objective path that completed, read back from user_config_unlocks.
+ * `unlockedConfigIds` names the grants THIS dispatch fired (the immediate
+ * announce beat); `unlockedThisRun` is the run-scoped history game-over reads.
+ */
+export type RunUnlock = {
+	readonly configId: string;
+	readonly viaMetric: string | null;
 };
 
 const estimateControlFor = (state: RunState): EstimateControl | null => {
@@ -434,7 +449,9 @@ const storagePlanViewFor = (
 export const toRunView = (
 	state: RunState,
 	archiveKb = 0,
-	accountPeakKb = 0
+	accountPeakKb = 0,
+	unlockedConfigIds: readonly string[] = [],
+	unlockedThisRun: readonly RunUnlock[] = []
 ): RunView => {
 	const current = state.polls[state.currentIndex];
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
@@ -481,6 +498,8 @@ export const toRunView = (
 		).map((config) => config.id),
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
+		unlockedConfigIds,
+		unlockedThisRun,
 		peelSlotsRemaining: state.peelSlotsRemaining,
 		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
@@ -594,6 +613,7 @@ export const toRunView = (
 		gatesCleared: state.gatesCleared,
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		redoingGate: state.redoGate ?? null,
+		clearedGate: state.clearedGate ?? null,
 		victoryGate: VICTORY_GATE,
 		atMinimumWidth: atMinimumWidth(state.build.configs.length),
 		pollsAnswered: state.window.answered,

@@ -316,16 +316,15 @@ describe("ShopView offers", () => {
 		},
 	});
 
-	it("puts the next slot on its own row, priced, with the press on the right", () => {
+	it("puts the next slot on the storage bar, priced", () => {
 		render_();
 
-		expect(screen.getByText("Slot 5")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /Buy slot 5 · 16 KB/ })
+			screen.getByRole("button", { name: /Buy slot 5 · 32 KB/ })
 		).toBeInTheDocument();
 	});
 
-	it("reads a bought slot nothing stands in as empty, with its cash press", () => {
+	it("puts the cash press for the trailing empty slot on the bar too", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -339,13 +338,12 @@ describe("ShopView offers", () => {
 			}),
 		});
 
-		expect(screen.getByText("Slot 5 · empty")).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /Cash slot 5 · 16 KB/ })
 		).toBeInTheDocument();
 	});
 
-	it("stops calling the cash row empty once every slot is filled", () => {
+	it("disables the cash press and says why once every slot is filled", () => {
 		render_({
 			view: createMockRunView({
 				...view,
@@ -361,10 +359,10 @@ describe("ShopView offers", () => {
 			}),
 		});
 
-		expect(screen.getByText("Slot 5")).toBeInTheDocument();
-		expect(screen.queryByText("Slot 5 · empty")).not.toBeInTheDocument();
 		expect(
-			screen.getByText("Every slot is filled — uninstall or minify first.")
+			screen.getByText(
+				/Cash slot 5 · 16 KB · Every slot is filled — uninstall or minify first\./
+			)
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /Cash slot 5/ })).toBeDisabled();
 	});
@@ -726,8 +724,11 @@ describe("ShopView slots", () => {
 			}),
 		});
 
-		expect(screen.getByRole("button", { name: /Buy slot 5/ })).toBeDisabled();
-		expect(screen.getByText("Costs 512 KB, you have 216.")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", {
+				name: "Buy slot 5 · 512 KB · Costs 512 KB, you have 216.",
+			})
+		).toBeDisabled();
 	});
 });
 

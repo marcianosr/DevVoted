@@ -49,15 +49,7 @@ const dealRows: readonly DealRow[] = hand.map((config) => ({
 const palletStorage = {
 	meta: "0 of 4 slots",
 	slots: 4,
-	slotRows: [
-		{
-			name: "Slot 5",
-			label: "Buy slot 5",
-			detail: "The fifth is the last one this plan allows",
-			price: "32 KB",
-			onUse: noop,
-		},
-	],
+	buy: { label: "Buy slot 5", price: "64 KB", onUse: noop },
 };
 
 export const RecommendedDeal: Story = {
@@ -142,22 +134,8 @@ export const TaggedAtSeafoam: Story = {
 		storage: {
 			meta: "15 of 16 slots",
 			slots: 16,
-			slotRows: [
-				{
-					name: "Slot 16 · empty",
-					label: "Hand slot 16 back",
-					price: "192 KB",
-					receives: true,
-					onUse: noop,
-				},
-				{
-					name: "Slot 17",
-					label: "Buy slot 17",
-					detail: "Every slot after this one costs double",
-					price: "256 KB",
-					onUse: noop,
-				},
-			],
+			cash: { label: "Hand slot 16 back", price: "576 KB", onUse: noop },
+			buy: { label: "Buy slot 17", price: "960 KB", onUse: noop },
 		},
 	},
 };

@@ -333,19 +333,19 @@ describe("the slot deals in the shop (ADR-046)", () => {
 
 	it("quotes the opening slot at the ladder's first rung", () => {
 		const { buy } = shopping(BASE_SLOTS, 500).slotDeals;
-		expect(buy.costKb).toBe(16);
+		expect(buy.costKb).toBe(32);
 		expect(buy.makes).toBe(5);
 		expect(buy.refusal).toBeUndefined();
 	});
 
 	it("quotes the next rung up once a slot is bought", () => {
-		expect(shopping(BASE_SLOTS + 1, 500).slotDeals.buy.costKb).toBe(32);
-		expect(shopping(BASE_SLOTS + 3, 500).slotDeals.buy.costKb).toBe(128);
+		expect(shopping(BASE_SLOTS + 1, 500).slotDeals.buy.costKb).toBe(40);
+		expect(shopping(BASE_SLOTS + 3, 500).slotDeals.buy.costKb).toBe(64);
 	});
 
 	it("names the shortfall rather than the price when the balance is short", () => {
 		const { buy } = shopping(BASE_SLOTS, 10).slotDeals;
-		expect(buy.refusal).toBe("Costs 16 KB, you have 10.");
+		expect(buy.refusal).toBe("Costs 32 KB, you have 10.");
 		expect(buy.makes).toBeUndefined();
 	});
 
@@ -365,7 +365,7 @@ describe("the slot deals in the shop (ADR-046)", () => {
 
 	it("quotes the cash-out at the price of the slot still held", () => {
 		const { cash } = shopping(BASE_SLOTS + 2, 500).slotDeals;
-		expect(cash.costKb).toBe(32);
+		expect(cash.costKb).toBe(40);
 		expect(cash.makes).toBe(5);
 	});
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CHEAPEST_DRAFT_COST_KB } from "~/modules/run/config/domain/config.model";
+
 import {
 	atMinimumWidth,
 	coverageDemandFor,
@@ -21,6 +23,7 @@ import {
 	FREE_PLAN,
 	GATE_COUNT,
 	GATE_REWARD_KB,
+	GATE_REWARD_MULTIPLIER_CAP,
 	MAX_SLOTS,
 	SLICE_WINDOW,
 	SLOT_PRICES_KB,
@@ -104,8 +107,9 @@ describe("the slot ladder (ADR-046)", () => {
 		expect(MAX_SLOTS).toBe(24);
 	});
 
-	it("opens at 16 KB, half the cheapest config on the shelf", () => {
-		expect(nextSlotPriceKb(0)).toBe(16);
+	it("opens at the price of the cheapest config, so a slot costs what filling it costs", () => {
+		expect(nextSlotPriceKb(0)).toBe(32);
+		expect(nextSlotPriceKb(0)).toBe(CHEAPEST_DRAFT_COST_KB);
 	});
 
 	it("never gets cheaper as the ladder climbs", () => {
@@ -115,22 +119,47 @@ describe("the slot ladder (ADR-046)", () => {
 		});
 	});
 
-	it("doubles every rung while slots are cheap, so the fifth to eighth are quick", () => {
-		expect(SLOT_PRICES_KB.slice(0, 4)).toEqual([16, 32, 64, 128]);
-	});
-
-	it("halves the pace to a doubling every second rung once past 128 KB", () => {
+	it("steps between 1.2x and 1.35x on every rung, so no rung is a wall", () => {
 		SLOT_PRICES_KB.forEach((price, rung) => {
-			if (rung < 5) return;
-			expect(price).toBe(SLOT_PRICES_KB[rung - 2] * 2);
+			if (rung === 0) return;
+			const step = price / SLOT_PRICES_KB[rung - 1];
+			expect(step).toBeGreaterThanOrEqual(1.2);
+			expect(step).toBeLessThanOrEqual(1.35);
 		});
 	});
 
-	it("prices the whole ladder past what a perfect climb earns, so 24 is endless-run territory", () => {
-		const perfectRunKb = GATE_REWARD_KB * ((GATE_COUNT * (GATE_COUNT - 1)) / 2);
+	it("averages 1.25x a rung end to end, so rounding never bends the ladder off its rate", () => {
+		const rungs = SLOT_PRICES_KB.length;
+		const averageStep = Math.pow(
+			SLOT_PRICES_KB[rungs - 1] / SLOT_PRICES_KB[0],
+			1 / (rungs - 1)
+		);
+
+		expect(averageStep).toBeCloseTo(1.25, 2);
+	});
+
+	it("snaps every rung to the 8 KB grid, so the shop never quotes an arithmetic artefact", () => {
+		SLOT_PRICES_KB.forEach((price) => {
+			expect(price % 8).toBe(0);
+		});
+	});
+
+	it("prices every rung inside the biggest cap a run can rent, so no slot is out of reach", () => {
+		SLOT_PRICES_KB.forEach((price) => {
+			expect(price).toBeLessThanOrEqual(TOP_PLAN.capKb);
+		});
+	});
+
+	it("prices the whole ladder past three perfect climbs, so 24 stays endless-run territory", () => {
+		const perfectClimbKb = Array.from(
+			{ length: GATE_COUNT },
+			(_, gate) =>
+				GATE_REWARD_KB *
+				Math.min(gateBaseMultiplier(gate), GATE_REWARD_MULTIPLIER_CAP)
+		).reduce((sum, kb) => sum + kb, 0);
 		const wholeLadderKb = SLOT_PRICES_KB.reduce((sum, kb) => sum + kb, 0);
 
-		expect(wholeLadderKb).toBeGreaterThan(perfectRunKb);
+		expect(wholeLadderKb).toBeGreaterThan(perfectClimbKb * 3);
 	});
 
 	it("sells nothing once the ceiling is reached", () => {
@@ -180,7 +209,7 @@ describe("the storage plan (ADR-046)", () => {
 		});
 	});
 
-	it("holds the free cap below the priciest slot, so the plan gates the ladder", () => {
+	it("holds the free cap below the priciest slot, so the ladder's top needs a rented cap", () => {
 		expect(FREE_PLAN.capKb).toBeLessThan(
 			SLOT_PRICES_KB[SLOT_PRICES_KB.length - 1]
 		);

@@ -72,17 +72,11 @@ const boulderShop: ShopScreenProps = {
 	storage: {
 		meta: "4 of 6 · 2 free",
 		slots: 6,
+		buy: { label: "Buy slot 7", price: "48 KB", onUse: noop },
+		cash: { label: "Cash slot 6", price: "32 KB", onUse: noop },
 	},
 	build: {
 		meta: "3",
-		slotRows: [
-			{
-				name: "Slot 7",
-				label: "Buy slot 7",
-				price: "64 KB",
-				onUse: noop,
-			},
-		],
 		rows: [
 			{
 				name: ".js",
@@ -216,6 +210,21 @@ export const ShopClosed: Story = {
 	},
 };
 
+export const SaleUnlockedAConfig: Story = {
+	args: {
+		...boulderShop,
+		unlocks: [
+			{
+				label: "Deprecated",
+				detail: "Earned: sold 10 configs",
+				slots: 4,
+				version: 1,
+				maxVersion: 5,
+			},
+		],
+	},
+};
+
 export const ExitBlocked: Story = {
 	args: {
 		...boulderShop,
@@ -235,18 +244,6 @@ export const ThunderShopWithGitTag: Story = {
 			caption: "balance",
 		},
 		theme: "thunder",
-		build: {
-			...boulderShop.build,
-			slotRows: [
-				{
-					name: "Slot 7",
-					label: "Buy slot 7",
-					detail: "The seventh is the last one this plan allows",
-					price: "64 KB",
-					onUse: noop,
-				},
-			],
-		},
 		plan: storyPlanAt(1, 256),
 		gitTag: {
 			label: "Git tag",
@@ -378,18 +375,10 @@ const seafoamShop: ShopScreenProps = {
 	storage: {
 		meta: "16 of 16 · 0 free",
 		slots: 16,
+		buy: { label: "Buy slot 17", price: "480 KB", onUse: noop },
 	},
 	build: {
 		meta: "8",
-		slotRows: [
-			{
-				name: "Slot 17",
-				label: "Buy slot 17",
-				detail: "Every slot after this one costs double",
-				price: "256 KB",
-				onUse: noop,
-			},
-		],
 		rows: seafoamBuildRows,
 	},
 	offers: {
@@ -711,17 +700,10 @@ const earthShop: ShopScreenProps = {
 	storage: {
 		meta: "18 of 24 · 6 free",
 		slots: 24,
+		cash: { label: "Cash slot 24", price: "1792 KB", onUse: noop },
 	},
 	build: {
 		meta: "9",
-		slotRows: [
-			{
-				name: "Slot 25",
-				label: "Buy slot 25",
-				detail: "Nothing above the twenty-fourth is for sale",
-				price: "32768 KB",
-			},
-		],
 		rows: earthBuildRows,
 	},
 	offers: {

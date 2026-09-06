@@ -7,7 +7,7 @@ import { swatchTheme } from "~/ui/theme/swatchTheme";
 
 const FRAME = "@container mx-auto w-full py-8";
 const READING_WIDTH = "max-w-[850px]";
-const SIDEBAR_WIDTH = "max-w-[1040px]";
+const SIDEBAR_WIDTH = "max-w-[1120px]";
 const PANEL =
 	"flex flex-col gap-6 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
 

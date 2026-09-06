@@ -6,7 +6,10 @@ import {
 	scheduleOf,
 	windowStartIndex,
 } from "~/modules/run/run/domain/run.model";
-import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type {
+	AnsweredPoll,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import {
 	liveAuditsFor,
 	mirrorsPolls,
@@ -44,6 +47,25 @@ const refreshConfigs = (configs: readonly Config[]): readonly Config[] =>
 	configs.map(refreshConfig);
 
 /**
+ * The author is a live profile — avatar, equipped border, title — so a snapshot
+ * that embedded it credits the player as they looked when they answered.
+ * Re-reading it off the day's polls keeps the credit current, the same way the
+ * roster is re-read above. A poll the rollover dropped simply loses its credit.
+ */
+const refreshAuthors = (
+	answered: readonly AnsweredPoll[],
+	polls: readonly RunPoll[]
+): readonly AnsweredPoll[] =>
+	answered.map((entry) => {
+		const author = polls.find((poll) => poll.id === entry.id)?.author;
+		if (author === undefined) {
+			const { author: _dropped, ...rest } = entry;
+			return rest;
+		}
+		return { ...entry, author };
+	});
+
+/**
  * The polls are authoritative on load in the same way the roster is: a day
  * rollover (ADR-011) drops the window's unplayed tail and appends today's
  * segment, so a pick budget stored when the window opened would describe polls
@@ -62,6 +84,10 @@ export const hydrateRunState = (
 	},
 	available: refreshConfigs(snapshot.available),
 	draftOptions: refreshConfigs(snapshot.draftOptions),
+	answeredThisGate: refreshAuthors(snapshot.answeredThisGate, polls),
+	...(snapshot.allAnswered === undefined
+		? {}
+		: { allAnswered: refreshAuthors(snapshot.allAnswered, polls) }),
 	window: {
 		...snapshot.window,
 		budget: pickBudgetFor(

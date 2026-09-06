@@ -8,12 +8,14 @@ import { Text } from "./Text.ui";
 const LIST = "flex flex-col gap-1.5";
 const TIP = "pt-1";
 const KEYS_TIP = "Tip: you can press keyboard letters to answer";
+const KEYS_AND_ENTER_TIP = "Tip: press a letter to answer, Enter to submit";
 
 export type ChoiceListItem = Omit<ChoiceProps, "onPick">;
 
 export type ChoiceListProps = {
 	choices: readonly ChoiceListItem[];
 	onPick?: (letter: string) => void;
+	onSubmit?: () => void;
 	className?: string;
 };
 
@@ -24,7 +26,21 @@ const isTyping = (target: EventTarget | null) =>
 	target instanceof HTMLTextAreaElement ||
 	(target instanceof HTMLElement && target.isContentEditable);
 
-export const ChoiceList = ({ choices, onPick, className }: ChoiceListProps) => {
+// Enter already activates these, so a window listener would fire the submit a
+// second time on top of the browser's own click.
+const ENTER_ACTIVATES = ["BUTTON", "A", "SUMMARY", "SELECT"];
+
+const activatesOnEnter = (target: EventTarget | null) =>
+	target instanceof HTMLElement && ENTER_ACTIVATES.includes(target.tagName);
+
+const tipFor = (submits: boolean) => (submits ? KEYS_AND_ENTER_TIP : KEYS_TIP);
+
+export const ChoiceList = ({
+	choices,
+	onPick,
+	onSubmit,
+	className,
+}: ChoiceListProps) => {
 	// The pickable letters as one string, so the effect re-subscribes when they
 	// change and each index still reads back the letter its row was given.
 	const keys = choices
@@ -36,9 +52,18 @@ export const ChoiceList = ({ choices, onPick, className }: ChoiceListProps) => {
 		if (onPick === undefined) return;
 
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key.length !== 1 || event.repeat) return;
+			if (event.repeat) return;
 			if (event.metaKey || event.ctrlKey || event.altKey) return;
 			if (isTyping(event.target)) return;
+
+			if (event.key === "Enter") {
+				if (onSubmit === undefined || activatesOnEnter(event.target)) return;
+				event.preventDefault();
+				onSubmit();
+				return;
+			}
+
+			if (event.key.length !== 1) return;
 
 			const index = keys.toUpperCase().indexOf(event.key.toUpperCase());
 			const letter = keys[index];
@@ -50,7 +75,7 @@ export const ChoiceList = ({ choices, onPick, className }: ChoiceListProps) => {
 
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [keys, onPick]);
+	}, [keys, onPick, onSubmit]);
 
 	return (
 		<div className={clsx(LIST, className)}>
@@ -67,7 +92,7 @@ export const ChoiceList = ({ choices, onPick, className }: ChoiceListProps) => {
 			))}
 			{onPick === undefined ? null : (
 				<Text tone="faint" size="caption" weight="thin" className={TIP}>
-					{KEYS_TIP}
+					{tipFor(onSubmit !== undefined)}
 				</Text>
 			)}
 		</div>

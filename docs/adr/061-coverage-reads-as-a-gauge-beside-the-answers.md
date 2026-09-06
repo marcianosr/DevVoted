@@ -19,6 +19,14 @@ and a difficulty bonus actually cash out, and nothing there showed the climb.
    is optional, and both screens drop it when they draw a gauge, so no coverage
    number appears twice on one screen.
 
+   Amended 2026-09-06: the reveal's coverage-earned reading is a transient
+   `CoverageCallout` beside the gauge, not the Equation footer, which is deleted.
+   The number is announced where the eye already is and then leaves, rather than
+   sitting under answers the player has stopped reading. It carries the
+   multiplier factors (`×1.1 streak · ×3.1 build`) and keeps "coverage
+   earned"/"coverage lost" as screen-reader text. The rule above is unchanged:
+   the reading still appears exactly once.
+
 2. The gauge's segments are sized against the demand, so the top edge means the
    gate's bar. It wears the gate swatch (`bg-theme`), not a fixed green: the
    gauge belongs to the gate it is measuring.
