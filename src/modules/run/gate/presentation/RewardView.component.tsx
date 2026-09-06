@@ -68,6 +68,7 @@ const rewardsFor = (view: RunView): readonly LedgerRow[] => {
 		faucetThisGateKb: gatePayout.faucetThisGateKb,
 		interestThisGateKb: gatePayout.interestThisGateKb,
 		extraPickThisGateKb: gatePayout.extraPickThisGateKb,
+		estimateThisGateKb: gatePayout.estimateThisGateKb ?? 0,
 	});
 	const bills = [
 		{ name: "subscriptions", charged: gatePayout.subscriptionBillKb },

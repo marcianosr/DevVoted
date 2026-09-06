@@ -16,7 +16,7 @@ const ROW = "flex items-start gap-3 py-3 @max-md:flex-wrap";
 const MARK = "pt-1 text-zinc-500";
 const BODY = "flex min-w-0 flex-1 flex-col gap-1";
 const HEADLINE = "flex items-start gap-3";
-const TITLE = "min-w-0 flex-1 font-bold";
+const TITLE = "min-w-0 flex-1 font-extrabold";
 const FOOTER =
 	"flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-edge pt-3";
 const STAT = "flex flex-col";
@@ -79,7 +79,7 @@ const HomeRow = ({
 				<Text className={TITLE}>{title}</Text>
 				{press}
 			</span>
-			<Text as="p" tone="muted" size="caption">
+			<Text as="p" tone="muted" size="caption" weight="thin">
 				{detail}
 			</Text>
 			{children}

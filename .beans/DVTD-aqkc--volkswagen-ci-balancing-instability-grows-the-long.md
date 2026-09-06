@@ -1,11 +1,11 @@
 ---
 # DVTD-aqkc
 title: 'Volkswagen CI balancing: instability grows the longer you run it'
-status: draft
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-08-20T12:28:02Z
-updated_at: 2026-08-20T12:28:18Z
+updated_at: 2026-09-06T10:09:16Z
 ---
 
 Nerf lever for if/when Volkswagen CI proves too strong, parked until playtesting says so.

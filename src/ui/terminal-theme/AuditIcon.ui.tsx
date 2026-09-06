@@ -18,15 +18,19 @@ export const AuditIcon = ({ passing = false, className }: AuditIconProps) => (
 		strokeLinejoin="round"
 		className={clsx(ICON, className)}
 	>
-		<path d={passing ? "M1.6 7h11.2" : "M1.6 7h6.4"} />
-		<path d={passing ? "M10.8 5.2 12.8 7 10.8 8.8" : "M6 5.2 8 7 6 8.8"} />
 		{passing ? (
 			<>
+				<path d="M1.6 7h11.2" />
+				<path d="M10.8 5.2 12.8 7 10.8 8.8" />
 				<path d="M11.6 2.2v3" />
 				<path d="M11.6 8.8v3" />
 			</>
 		) : (
-			<path d="M11.6 2.2v9.6" />
+			<>
+				<path d="M7 2.2 12.6 11.8H1.4Z" />
+				<path d="M7 6v2.3" />
+				<path d="M7 10.3h.01" />
+			</>
 		)}
 	</svg>
 );

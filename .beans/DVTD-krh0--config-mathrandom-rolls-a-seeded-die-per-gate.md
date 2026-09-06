@@ -3,8 +3,11 @@
 title: 'Config: Math.random() rolls a seeded die per gate'
 status: draft
 type: feature
+priority: normal
+tags:
+    - config
 created_at: 2026-09-06T07:17:54Z
-updated_at: 2026-09-06T07:17:54Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

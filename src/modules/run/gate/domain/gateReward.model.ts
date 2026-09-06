@@ -94,8 +94,13 @@ const focusRow = (
  * richer per-category copy.
  */
 const rowFor = (config: Config, input: GateRewardInput): GateRewardRow => {
-	const { answered, faucetThisGateKb, interestThisGateKb, peelRefundKb } =
-		input;
+	const {
+		answered,
+		faucetThisGateKb,
+		interestThisGateKb,
+		peelRefundKb,
+		estimateThisGateKb,
+	} = input;
 	if (config.focusCategory !== undefined)
 		return focusRow(config, config.focusCategory, answered);
 
@@ -142,6 +147,13 @@ const rowFor = (config: Config, input: GateRewardInput): GateRewardRow => {
 		return (peelRefundKb ?? 0) === 0
 			? { ...base, status: "skipped", kind: "storage", value: nothing }
 			: { ...base, kind: "storage", value: kb(peelRefundKb ?? 0) };
+	if (config.storagePerEstimate !== undefined) {
+		if (estimateThisGateKb === undefined)
+			return { ...base, status: "skipped", kind: "storage", value: nothing };
+		return estimateThisGateKb > 0
+			? { ...base, kind: "storage", value: kb(estimateThisGateKb) }
+			: { ...base, status: "failed", kind: "storage", value: nothing };
+	}
 	return { ...base, kind: "coverage", value: nothing };
 };
 
@@ -159,6 +171,8 @@ type GateRewardInput = {
 	readonly interestThisGateKb?: number;
 	/** What the peel refunded — set only on the strip screen. */
 	readonly peelRefundKb?: number;
+	/** What the estimate paid: undefined when no estimate was committed at all. */
+	readonly estimateThisGateKb?: number;
 };
 
 export const gateRewardRows = (
@@ -211,6 +225,7 @@ type StoragePots = {
 	readonly faucetKb: number;
 	readonly interestKb: number;
 	readonly extraPickKb: number;
+	readonly estimateKb: number;
 };
 
 type ConfigWeight = (config: Config) => number;
@@ -219,6 +234,8 @@ const perCorrectWeight: ConfigWeight = (config) =>
 	config.storagePerCorrect ?? 0;
 const perExtraPickWeight: ConfigWeight = (config) =>
 	config.storagePerExtraPick ?? 0;
+const perEstimateWeight: ConfigWeight = (config) =>
+	config.storagePerEstimate ?? 0;
 
 /**
  * One config's cut of a pot the reducer paid as a lump sum. The pots are capped
@@ -251,7 +268,8 @@ const configStorageKb = (
 	(effectOf(config).storageOnClear ?? 0) +
 	shareOf(config, configs, perCorrectWeight, pots.faucetKb) +
 	shareOf(config, configs, interestPctOf, pots.interestKb) +
-	shareOf(config, configs, perExtraPickWeight, pots.extraPickKb);
+	shareOf(config, configs, perExtraPickWeight, pots.extraPickKb) +
+	shareOf(config, configs, perEstimateWeight, pots.estimateKb);
 
 type StorageBreakdownInput = {
 	readonly configs: readonly Config[];
@@ -260,6 +278,7 @@ type StorageBreakdownInput = {
 	readonly faucetThisGateKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly extraPickThisGateKb?: number;
+	readonly estimateThisGateKb?: number;
 };
 
 /**
@@ -280,6 +299,7 @@ export const gateStorageBreakdown = ({
 	faucetThisGateKb,
 	interestThisGateKb = 0,
 	extraPickThisGateKb = 0,
+	estimateThisGateKb = 0,
 }: StorageBreakdownInput): StorageBreakdown => {
 	const totalKb = gateStorageGained(
 		configs,
@@ -292,6 +312,7 @@ export const gateStorageBreakdown = ({
 			faucetThisGateKb ?? faucetKbPerCorrect(configs) * correctCount(answered),
 		interestKb: interestThisGateKb,
 		extraPickKb: extraPickThisGateKb,
+		estimateKb: estimateThisGateKb,
 	};
 	const rows = configs
 		.map((config) => ({

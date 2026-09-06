@@ -318,6 +318,18 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		refundsPeeledConfigs: true,
 	},
+	planningPoker: {
+		id: "planning-poker",
+		label: "Planning Poker",
+		slots: 1,
+		description:
+			"Before a gate, estimate how many of its 5 polls you will answer correctly. Get the number exactly right and it pays 32KB per poll you estimated.",
+		gives: "32KB per poll estimated, when the estimate is exact",
+		costs:
+			"Any other number pays nothing — and the estimate locks when you answer",
+		rewardMultiplier: 1,
+		storagePerEstimate: 32,
+	},
 } as const satisfies Record<string, Config>;
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);

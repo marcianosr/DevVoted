@@ -184,8 +184,13 @@ const asPrep = (state: RunState) => (
 		onStart={noop}
 		onBackToShop={noop}
 		onCommunity={noop}
+		onRebase={noop}
+		onEstimate={noop}
 	/>
 );
+
+const estimating = (state: RunState, count: number): RunState =>
+	runReducer(state, { type: "estimate", count });
 
 const JS_GATE = ["js", "js", "js", "js", "js"] as const;
 const MIXED_GATE = ["js", "css", "ts", "react", "js"] as const;
@@ -253,6 +258,49 @@ export const PrefetchReadsAhead: Story = {
 				ALL_RIGHT
 			)
 		),
+};
+
+export const PlanningPokerTakesTheBet: Story = {
+	render: () =>
+		asPrep(
+			estimating(
+				afterAnswers(
+					runWith([CONFIGS.planningPoker], [...MIXED_GATE, ...JS_GATE]),
+					ALL_RIGHT
+				),
+				4
+			)
+		),
+};
+
+export const PlanningPokerCarriesTheBetIntoTheGate: Story = {
+	render: () => {
+		const prepped = estimating(
+			afterAnswers(
+				runWith([CONFIGS.planningPoker], [...MIXED_GATE, ...JS_GATE]),
+				ALL_RIGHT
+			),
+			4
+		);
+		return asPoll(
+			afterAnswers(runReducer(prepped, { type: "finish-reward" }), [true, true])
+		);
+	},
+};
+
+export const PlanningPokerPaysTheExactCall: Story = {
+	render: () => {
+		const prepped = estimating(
+			afterAnswers(
+				runWith([CONFIGS.planningPoker], [...MIXED_GATE, ...JS_GATE]),
+				ALL_RIGHT
+			),
+			5
+		);
+		return asReward(
+			afterAnswers(runReducer(prepped, { type: "finish-reward" }), ALL_RIGHT)
+		);
+	},
 };
 
 export const CacheColdOnFirstSight: Story = {

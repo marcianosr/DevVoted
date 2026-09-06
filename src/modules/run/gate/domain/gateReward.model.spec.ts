@@ -6,6 +6,7 @@ import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	gateRewardRows,
+	gateStepsSummary,
 	gateStorageBreakdown,
 	gateStorageGained,
 } from "~/modules/run/gate/domain/gateReward.model";
@@ -167,6 +168,50 @@ describe("the collector's row (DVTD-2k9m)", () => {
 		const [row] = gateRewardRows({ answered, configs: [GC] });
 		expect(row.status).toBe("skipped");
 		expect(row.value).toEqual(nothing);
+	});
+});
+
+describe("the estimator's row (DVTD-68jr)", () => {
+	const PLANNING_POKER = CONFIGS.planningPoker;
+
+	it("passes the estimator that called the window exactly", () => {
+		const [row] = gateRewardRows({
+			answered,
+			configs: [PLANNING_POKER],
+			estimateThisGateKb: 64,
+		});
+		expect(row.status).toBe("passed");
+		expect(row.kind).toBe("storage");
+		expect(row.value).toEqual({ unit: "kb", amount: 64 });
+	});
+
+	it("fails the estimator that called it wrong, which nothing else on the roster can do", () => {
+		const [row] = gateRewardRows({
+			answered,
+			configs: [PLANNING_POKER],
+			estimateThisGateKb: 0,
+		});
+		expect(row.status).toBe("failed");
+		expect(row.value).toEqual(nothing);
+	});
+
+	it("skips an estimator the player never gave a number to", () => {
+		const [row] = gateRewardRows({ answered, configs: [PLANNING_POKER] });
+		expect(row.status).toBe("skipped");
+		expect(row.value).toEqual(nothing);
+	});
+
+	it("counts a wrong call in the steps summary as the failure it is", () => {
+		const rows = gateRewardRows({
+			answered,
+			configs: [PLANNING_POKER],
+			estimateThisGateKb: 0,
+		});
+		expect(gateStepsSummary(rows)).toEqual({
+			passed: 0,
+			failed: 1,
+			skipped: 0,
+		});
 	});
 });
 

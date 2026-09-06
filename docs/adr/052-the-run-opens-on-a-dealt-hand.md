@@ -49,6 +49,12 @@ run's hit points, so the dealt configs should be the star of the screen.
    DVTD-p9ah swaps the pool to the account's granted configs and curation no
    longer holds by construction.
 
+   > ⚠ Answered by [ADR-062](062-the-starting-hand-is-dealt-under-guarantees.md):
+   > the safeguards shipped ahead of the pool swap. Neither anticipated check was
+   > among them — dedupe-by-effect is redundant while focus categories are unique,
+   > and can-trigger-today is ill-defined for a 13-day run. The draw enforces a
+   > slot-budget filter, a pairability floor and a 1–2 focus band instead.
+
 | Number | Value |
 | --- | --- |
 | `HAND_SIZE` | 5 |

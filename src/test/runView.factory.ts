@@ -86,6 +86,7 @@ export const createMockShopControls = createMockDataFactory<ShopControls>({
 });
 
 export const createMockGatePayout = createMockDataFactory<GatePayout>({
+	estimateThisGateKb: null,
 	autoUpgradedConfig: null,
 	autoUpgradedByConfig: null,
 	deletedConfigs: [],
@@ -169,6 +170,9 @@ const createRunView = createMockDataFactory<RunView>({
 	correctAnswersThisGate: null,
 	correctCountSource: null,
 	rebaseSlots: [],
+	estimate: null,
+	estimatedCorrect: null,
+	correctThisGate: 0,
 	upcomingCategories: null,
 	nextGateCategories: null,
 	answerTypesThisGate: null,

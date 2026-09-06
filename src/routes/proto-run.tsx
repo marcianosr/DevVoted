@@ -52,6 +52,7 @@ import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.u
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
+	BASE_SLOTS,
 	roundToOneDecimal,
 	SLICE_WINDOW,
 	storageCapFor,
@@ -425,7 +426,10 @@ const PROTO_GRANT_KB = 256;
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, setState] = useState(() => ({
-		...createRun(POOLS, startingHand(STARTER_POOL, `proto:${Date.now()}`)),
+		...createRun(
+			POOLS,
+			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS)
+		),
 		storage: storageCapFor(0),
 	}));
 	const grantStorage = () =>
@@ -620,6 +624,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onBackToShop={() => setRewardStep("shop")}
 					onCommunity={() => setRewardStep("community")}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
+					onEstimate={(count) => dispatch({ type: "estimate", count })}
 				/>
 			)}
 

@@ -5,10 +5,14 @@ status: todo
 type: feature
 priority: low
 created_at: 2026-09-03T07:10:05Z
-updated_at: 2026-09-03T07:10:05Z
+updated_at: 2026-09-06T09:23:59Z
 parent: DVTD-z2r2
 blocked_by:
     - DVTD-clgs
 ---
 
 The grant seam knows the newly granted config ids; surface the moment through dedicated state plus a badge/screen line, never the run log (it does not render in the live game). Store which path completed so the granted Dex card can print provenance ("Earned: cleared Marsh's Mirror audit without a miss"). DVTD-yl13 carries earlier notification/badge ideas worth mining.
+
+## Decided (ADR-064, 2026-09-06)
+
+Two beats: a saffron alert line on the screen where the grant fires (the audit-alert idiom, never the run log) + a NEW tag on the guaranteed seat's card at the next deal. Provenance reads `user_config_unlocks.via_metric`; rows with `via_metric` null (the free eight) read as starter configs, not earnings.

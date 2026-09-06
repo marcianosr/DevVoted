@@ -9,7 +9,7 @@ const FRAME = "@container mx-auto w-full py-8";
 const READING_WIDTH = "max-w-[850px]";
 const SIDEBAR_WIDTH = "max-w-[1040px]";
 const PANEL =
-	"flex flex-col gap-3 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
+	"flex flex-col gap-6 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
 
 const groundOf = (theme: SwatchTheme | undefined) =>
 	theme === undefined ? "bg-zinc-950" : "bg-theme-faint";

@@ -4,8 +4,10 @@ title: 'Config: git rebase -i reorders the gate''s polls'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-09-05T17:45:50Z
-updated_at: 2026-09-05T18:04:44Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

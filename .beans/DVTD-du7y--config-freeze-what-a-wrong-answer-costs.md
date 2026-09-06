@@ -2,10 +2,12 @@
 # DVTD-du7y
 title: 'Config: freeze what a wrong answer costs'
 status: todo
-type: task
+type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-09-05T09:06:42Z
-updated_at: 2026-09-05T09:06:42Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

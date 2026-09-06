@@ -2,11 +2,12 @@
 # DVTD-5w9g
 title: 'Config: Moment.js → date-fns (EOL lineage)'
 status: todo
-type: task
+type: feature
+priority: normal
 tags:
     - config
 created_at: 2026-08-19T20:36:10Z
-updated_at: 2026-08-19T20:36:10Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

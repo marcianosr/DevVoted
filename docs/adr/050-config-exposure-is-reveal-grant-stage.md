@@ -10,9 +10,11 @@ mark) and ADR-026 (starter stacks).
 
 Partially superseded by ADR-051 (2026-09-03): decision 3 (the depth ladder) is
 deleted and decision 4's six-only scope is generalised to individual dual-path
-objectives for all 21 non-free configs. Decisions 1, 2 and 5 stand. ADR-051's
+objectives for all non-free configs. Decisions 1, 2 and 5 stand. ADR-051's
 objective roster (`configUnlock.model.ts`) replaces the `unlocksAtGate`/
-`unlocksBy` fields this ADR anticipated.
+`unlocksBy` fields this ADR anticipated, and ADR-064's `user_config_unlocks`
+table replaces the `users.unlocked_config_ids` column the consequences below
+mention.
 
 ## Context
 
@@ -38,6 +40,12 @@ and everything can have it. Configs take no Stage: the shelf is never filtered.
 The starting hand draws 6 from the account's granted pool (at least one focus
 config guaranteed, `hand.model.ts`). The shop keeps offering the entire roster at
 every gate, and "met" (Reveal) means seen on a shelf, bought or not.
+
+> ⚠ Amended by [ADR-052](052-the-run-opens-on-a-dealt-hand.md) (the hand is 5, not
+> 6) and [ADR-062](062-the-starting-hand-is-dealt-under-guarantees.md): Grant still
+> gates the hand and never the shelf, but the hand is filtered to what the opening
+> slots can hold, so Grant does nothing for a config larger than `BASE_SLOTS` and
+> the shop is its only route.
 
 Why the shelf stays whole: the draft seed is already depth in disguise (it hashes
 only run counters), so filtering it would re-express the depth ladder with no dial;
@@ -103,7 +111,9 @@ requirement as a visible caption.
   legendaries are late grants, and the current pool predates this decision.
 - Depth grants need no migration; challenge grants add one column,
   `users.unlocked_config_ids`, written with the same idempotence guard as
-  `awardGateSwatch` (run.repository.ts).
+  `awardGateSwatch` (run.repository.ts). ⚠ Superseded by
+  [ADR-064](064-a-grant-is-recorded-with-its-provenance.md): the column became
+  the `user_config_unlocks` table.
 - The only new in-run tracking is WTFPL's sell counter; every other predicate reads
   fields `RunState` already has.
 - proto-run stays fully unlocked (client-only harness, no account to read).

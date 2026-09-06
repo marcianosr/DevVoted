@@ -92,6 +92,19 @@ const rebaseFor = (
 	};
 };
 
+const estimateFor = (view: RunView, onCommit: (count: number) => void) => {
+	if (view.estimate === null) return undefined;
+
+	return {
+		label: view.estimate.configLabel,
+		note: "locks when you answer",
+		choices: view.estimate.choices,
+		committed: view.estimatedCorrect,
+		kbPerPoll: view.estimate.kbPerPoll,
+		onCommit,
+	};
+};
+
 const billsFor = (view: RunView) => {
 	const { subscriptions } = view.gateStake;
 	if (subscriptions.lines.length === 0) return undefined;
@@ -129,6 +142,7 @@ export type PrepViewProps = {
 	onBackToShop: () => void;
 	onCommunity: () => void;
 	onRebase: (from: number, to: number) => void;
+	onEstimate: (count: number) => void;
 };
 
 export const PrepView = ({
@@ -137,6 +151,7 @@ export const PrepView = ({
 	onBackToShop,
 	onCommunity,
 	onRebase,
+	onEstimate,
 }: PrepViewProps) => {
 	const { gateStake } = view;
 	const gate = gateStake.gateNumber;
@@ -189,6 +204,7 @@ export const PrepView = ({
 				nextCategories: categoryTally(view.nextGateCategories),
 			}}
 			rebase={rebaseFor(view, onRebase)}
+			estimate={estimateFor(view, onEstimate)}
 			bills={billsFor(view)}
 			onClear={{
 				reward: signedKbLabel(gateStake.modifiers.gateReward),

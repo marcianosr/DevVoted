@@ -121,6 +121,12 @@ const skipNote = (why: SkipReason): string => {
 	return "not this poll";
 };
 
+const estimateNote = (view: RunView, config: Config): string | undefined => {
+	if (config.storagePerEstimate === undefined) return undefined;
+	if (view.estimatedCorrect === null) return "no estimate — pays nothing";
+	return `estimated ${view.estimatedCorrect} · ${view.correctThisGate} right so far`;
+};
+
 const statusNote = (status: ConfigStatus): string | undefined => {
 	if (status.kind === "online") return undefined;
 	if (status.kind === "unknown") return "category hidden";
@@ -240,7 +246,7 @@ export const buildRows = (
 			status.kind === "offline"
 				? undefined
 				: tools.find((candidate) => candidate.configId === config.id);
-		const note = statusNote(status);
+		const note = estimateNote(view, config) ?? statusNote(status);
 
 		return {
 			name: config.label,

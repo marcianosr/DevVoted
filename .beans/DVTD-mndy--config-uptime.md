@@ -2,11 +2,12 @@
 # DVTD-mndy
 title: 'Config: Uptime'
 status: todo
-type: task
+type: feature
+priority: normal
 tags:
     - config
 created_at: 2026-08-19T20:36:09Z
-updated_at: 2026-08-19T20:36:09Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 ---
 

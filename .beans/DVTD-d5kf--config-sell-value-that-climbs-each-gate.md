@@ -3,8 +3,11 @@
 title: 'Config: sell value that climbs each gate'
 status: draft
 type: feature
+priority: normal
+tags:
+    - config
 created_at: 2026-08-24T15:12:07Z
-updated_at: 2026-08-24T15:12:07Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

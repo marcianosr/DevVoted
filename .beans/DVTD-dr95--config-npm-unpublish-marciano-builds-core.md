@@ -4,8 +4,10 @@ title: 'Config: npm unpublish (Marciano builds core)'
 status: todo
 type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-08-26T19:28:46Z
-updated_at: 2026-09-05T09:10:33Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 ---
 

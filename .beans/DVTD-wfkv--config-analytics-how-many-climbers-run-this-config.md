@@ -4,8 +4,10 @@ title: 'Config: Analytics, how many climbers run this config'
 status: todo
 type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-09-01T20:26:12Z
-updated_at: 2026-09-01T20:26:20Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 blocked_by:
     - DVTD-144r

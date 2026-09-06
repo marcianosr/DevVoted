@@ -3,8 +3,11 @@
 title: 'Configs: Monorepo, Garbage Collector, Legacy System, Cloud Provider'
 status: draft
 type: feature
+priority: normal
+tags:
+    - config
 created_at: 2026-08-30T18:37:27Z
-updated_at: 2026-08-30T18:37:27Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

@@ -29,6 +29,7 @@ export type Config = {
 	readonly abArm?: AbArm;
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
+	readonly storagePerEstimate?: number;
 	readonly suppressesAudit?: boolean;
 	readonly autoUpgradeAfterCorrect?: number;
 	readonly coverageDecayPerClear?: number;

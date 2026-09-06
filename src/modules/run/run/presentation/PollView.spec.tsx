@@ -300,6 +300,30 @@ describe("PollView audits", () => {
 	});
 });
 
+describe("PollView estimate row (DVTD-68jr)", () => {
+	const estimating = (committed: number | null, correct = 0) =>
+		createMockRunView({
+			...view,
+			configs: [CONFIGS.planningPoker],
+			estimatedCorrect: committed,
+			correctThisGate: correct,
+		});
+
+	it("states the standing bet against the answers already banked", () => {
+		render_({ view: estimating(4, 2) });
+
+		expect(
+			screen.getByText(/estimated 4 · 2 right so far/)
+		).toBeInTheDocument();
+	});
+
+	it("says the config is dead weight when no number was committed", () => {
+		render_({ view: estimating(null) });
+
+		expect(screen.getByText(/no estimate — pays nothing/)).toBeInTheDocument();
+	});
+});
+
 describe("PollView build rail", () => {
 	it("counts only the configs actually running in the build header", () => {
 		render_();

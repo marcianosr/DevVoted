@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:21:03Z
-updated_at: 2026-09-05T08:21:03Z
+updated_at: 2026-09-06T10:17:59Z
 parent: DVTD-z2r2
 ---
 
@@ -33,14 +33,13 @@ That last row is why the first star should be worded on polls, not on five: `bud
 
 The git tag half sits at a different scope and needs a decision. ADR-036's tag is `users.pinned_gate`, bought in the shop, consumed at run start, and it hands the new run `PIN_START_KB_PER_GATE (32) × startAtGate` in free storage. It is not an in-gate action at all: it makes the gate you *start at* cheaper, because you arrive holding KB you did not earn. Options: a tagged run forfeits stars everywhere, forfeits on the gate it starts at, or forfeits nothing because the skipped gates were never played. My pick: forfeit on the starting gate only, since that is the one gate the free KB subsidised.
 
-**3. TBD.** Four candidates, with what each needs:
+**3. Margin — cleared with double the demanded coverage.** `window.coverageGained` against `coverageDemandFor(gate) * 2` at the moment of clear. Picked 2026-09-06: no new run state, no gate-shape exception, the number is already on screen during the gate, and it rewards the build rather than the draw. Sibling bean: DVTD-nljz (coverage spill above the demand).
 
-- **Margin** — cleared with double the demanded coverage. Reads off `window.coverageGained` against `coverageDemandFor`, needs nothing new, works identically at every gate, and rewards the build rather than the draw. Sibling bean: DVTD-nljz (coverage spill above the demand).
-- **Audit honesty** — faced the gate's audit without a config suppressing it. Uses the `suppressed` flag that already exists, and it is thematically the best of the four. Problem: gates 0 to 2 are clean, so three gates would need a substitute rule.
+Rejected:
+
+- **Audit honesty** — faced the gate's audit without a config suppressing it. Uses the `suppressed` flag that already exists, and it is thematically the strongest of the three. Problem: gates 0 to 2 are clean, so three gates would need a substitute rule.
 - **Speed** — every poll under N seconds. `elapsedMs` already rides on `AnsweredPoll`, so it is measurable, but the Timeout audits already own time in this game and a second time rule would crowd them.
 - **Bare build** — cleared without buying anything in the shop before it. Very legible, and the hardest way to play.
-
-My pick is **margin**: no new state, no gate-shape exception, and the number is already on screen during the gate.
 
 ## Decisions beyond the third star
 
@@ -56,7 +55,8 @@ Related: DVTD-g8ty (Collect Swatches) is the per-category chip idea and should b
 
 ## Todo
 
-- [ ] Pick the third star, and settle the git tag scope
+- [x] Pick the third star: margin, double the demanded coverage
+- [ ] Settle the git tag scope (pick: forfeit on the starting gate only)
 - [ ] `gateStars(state)` in `src/modules/run/gate/domain/`, pure over `RunState` at clear, with specs per star
 - [ ] Persist best-ever per gate; migration guarded per ADR-012
 - [ ] Gate-clear screen shows the three stars, including the ones missed and why

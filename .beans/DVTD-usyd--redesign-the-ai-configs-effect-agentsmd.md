@@ -1,11 +1,11 @@
 ---
 # DVTD-usyd
 title: Redesign the AI config's effect (AGENTS.md)
-status: draft
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-08-07T15:37:54Z
-updated_at: 2026-08-07T15:37:54Z
+updated_at: 2026-09-06T10:07:51Z
 ---
 
 AGENTS.md (formerly Copilot) is the roster's only legendary and its effect is `All coverage ×2`, which is bland and overlaps two other configs: Intellisense is ×1.5 all coverage and the Coverage config is ×2 on gains.

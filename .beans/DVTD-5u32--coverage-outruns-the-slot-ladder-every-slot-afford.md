@@ -1,10 +1,11 @@
 ---
 # DVTD-5u32
 title: Coverage outruns the slot ladder — every slot affordable by gate 6
-status: todo
+status: scrapped
 type: task
+priority: normal
 created_at: 2026-08-06T15:47:37Z
-updated_at: 2026-08-06T15:47:37Z
+updated_at: 2026-09-06T10:10:16Z
 ---
 
 Measured 2026-08-06 by driving the reducer through a flawless 3-slot run (gates 0-12).

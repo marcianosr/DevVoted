@@ -51,6 +51,12 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 	z
 		.object({
+			type: z.literal("estimate"),
+			count: z.number().int().min(1).max(SLICE_WINDOW),
+		})
+		.strict(),
+	z
+		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1).readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),

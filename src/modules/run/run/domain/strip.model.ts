@@ -118,6 +118,7 @@ export const resumeClimb = (state: RunState): RunState => {
 		gateRewardKb: 0,
 		interestThisGateKb: 0,
 		extraPickThisGateKb: 0,
+		estimateThisGateKb: undefined,
 		peelRefundKb: 0,
 		draftOptions: shopDraft(
 			state,

@@ -1,11 +1,13 @@
 ---
 # DVTD-zd00
 title: 'Config: multiple (single-choice polls price as multiple-choice)'
-status: draft
-type: task
+status: scrapped
+type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-08-27T09:59:01Z
-updated_at: 2026-08-27T09:59:01Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 ---
 

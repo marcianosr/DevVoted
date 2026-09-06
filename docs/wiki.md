@@ -256,7 +256,7 @@ which go, on the strip screen; then the normal post-gate loop runs (review, shop
 | Cost | Detail |
 | --- | --- |
 | **Slots** | 20% of the occupied slots at the early gates rising to 35% at the summit, +10% at Elite, +15% at Champion. Paid by dropping configs or minifying them, your pick — so a miss sheds whatever was not earning its room. Before gate 3 the quota never exceeds half the build, which minifying alone can always cover. The forecast on the poll, prep and start screens quotes the quota as a **config count** (a range when the build's sizes make it one, since one 8-slot config settles a 2-slot debt alone); the slot figure and the minify option sit in its hover. |
-| **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget, unless **Garbage Collection** ([4.3](#43-roster)) is installed, in which case every config you **drop** here refunds its sell value. Minifying still pays nothing. |
+| **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget, unless **Garbage Collection** ([4.3](#43-roster)) is installed, in which case every config you **drop** here refunds its sell value. Minifying still pays nothing. **Planning Poker** is the one config that pays here regardless: it is settling a prediction rather than rewarding a clear, so calling your own 2 of 5 pays exactly what calling a 5 of 5 would. |
 | **The recurring bills** | Nothing: the storage plan and subscribed configs bill on clear only, so a redo is free of them. |
 | **The day's polls** | Every attempt burns 5 of the day's finite sequence, so a retry costs real time. |
 | **Audit damage** | Audits charge again: Volcano leaks every attempt, a 408 re-clocks, an outage re-rolls. |
@@ -394,13 +394,21 @@ no hover to read a price by. Width carries no swatch: badges come from clearing 
 sold except your last config, since a bare build never clears.
 
 **Starting a run.** The run deals a **hand of five** configs from the starter
-pool — seeded per player per day, always holding at least one focus config —
-and picks **nothing** for you. **Two** are marked as a suggested opening
-(ADR-057), which is advice and not a selection. The hand itself never changes
-while configuring, so the deal reads as one checkable list. **One config is the
-only floor**: pick one and you can play, spare slots are a legal opening, and
-only an over-capacity build blocks the start. Nothing in a build is ever locked
-or mandatory. Buying slots from the archive (ADR-049) sits below the deal.
+pool — seeded per player per day — and picks **nothing** for you. **Two** are
+marked as a suggested opening (ADR-057), which is advice and not a selection.
+The hand itself never changes while configuring, so the deal reads as one
+checkable list. **One config is the only floor**: pick one and you can play,
+spare slots are a legal opening, and only an over-capacity build blocks the
+start. Nothing in a build is ever locked or mandatory. Buying slots from the
+archive (ADR-049) sits below the deal.
+
+The deal is shaped, not just shuffled (ADR-062). Three rules hold on every seed:
+nothing larger than your opening slots is dealt (so a card is always installable,
+though one that exactly fills the budget still is), the **smallest three** dealt
+configs fit those slots together (so a three-config build is always reachable),
+and the hand holds **one or two focus configs** with the count varying by seed
+(so it is never five category bets and never none). The starter pool is the eight
+configs an account is granted at signup ([6.2](#62-unlocks)).
 
 ---
 
@@ -458,7 +466,7 @@ what each size costs.
 
 ### 4.3 Roster
 
-**🟢 Shipped.** Thirty-four configs, all pure effects.
+**🟢 Shipped.** Thirty-five configs, all pure effects.
 
 | Config | Slots | Effect |
 | --- | --- | --- |
@@ -469,6 +477,7 @@ what each size costs.
 | ESLint | 1 | Cross out one wrong answer on JS/TS polls, fee doubling from 8 KB per gate |
 | Stylelint | 1 | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate |
 | yarn.lock | 1 | Lock shop offers for 16 KB each ([5.2](#52-the-shop)); a locked offer leads every shop until installed or released, and every lock releases if yarn.lock leaves the build |
+| Planning Poker | 1 | Before a gate, estimate how many of its 5 polls you will answer correctly. Get the number **exactly** right and it pays 32 KB per poll estimated; any other number pays nothing. The estimate is made in prep and locks the moment you answer, and it settles on a missed gate as readily as a cleared one |
 | Cold Start | 2 | First answer of the gate rewards ×2 |
 | Code Coverage | 2 | +0.5% flat coverage per correct answer |
 | IndexedDB | 2 | +8 KB storage per correct answer, capped at 320 KB |
@@ -763,8 +772,8 @@ and streak injections (DVTD-xbri).
 🟡 Designed, not yet built (ADR-051, DVTD-2try): configs are exposed on the
 **Reveal / Grant / Stage** model. Grant gates the starting hand only — the shop
 shelf always offers the whole roster, which is also what fills the Configdex in
-(**Reveal**: a config seen on a shelf is "met"). Nine configs are granted at
-signup; the other 21 each unlock **individually**: a thematic objective that
+(**Reveal**: a config seen on a shelf is "met"). Eight configs are granted at
+signup; the other 27 each unlock **individually**: a thematic objective that
 teaches the config's own mechanic ("Peek the community split 5 times") OR a
 lifetime polls-answered fallback, whichever is met first. Every objective tracks
 automatically (nothing is activated), and the Configdex shows each locked config
@@ -774,6 +783,15 @@ the depth ladder's stacks entirely). Unlocks are
 achievement-only — no currency buys one (the archived-storage pull, DVTD-9d7o,
 is rejected). Today every shipped config is simply available. Also planned:
 bonus awards for re-answering mastered polls correctly.
+
+Grant does nothing for a config larger than the opening slot budget: those are
+never dealt, so the shop is their only route and the Dex checkmark is the reward
+(ADR-062, ADR-064). 🟡 A freshly granted config is dealt in until you have
+installed it once, so an objective pays out at the next run rather than whenever
+the draw gets round to it; the seat is dealt first and the focus band counts it.
+The grant announces itself twice: an alert line at the deed and a NEW tag on
+that card, with the Dex row recording which path earned it (ADR-064). All of
+this waits on the unlock ledger.
 
 ### 6.3 Swatches
 
@@ -1070,7 +1088,9 @@ applies. `rules.model.ts` holds most of it.
 | Constant | Value |
 | --- | --- |
 | `BASE_SLOTS` / `MAX_SLOTS` | 4 · 24 — the free width every run opens on, and the last slot the shop sells |
-| `HAND_SIZE` / `RECOMMENDED_SIZE` | 5 dealt at run start (seeded, ≥1 focus config) · 2 marked as advice, none preselected (ADR-052, amended by ADR-057) |
+| `HAND_SIZE` / `RECOMMENDED_SIZE` | 5 dealt at run start (seeded) · 2 marked as advice, none preselected (ADR-052, amended by ADR-057) |
+| `FOCUS_BAND` / `PAIRABLE_PICKS` | 1–2 focus configs per hand, count varying by seed · the smallest 3 dealt configs must fit `BASE_SLOTS` together; nothing above the budget is dealt (ADR-062) |
+| `STARTER_POOL` | the 8 configs granted at signup, stand-in for the account's pool until DVTD-p9ah |
 | `slotCashOutKb` | refunds the price of the most expensive slot still held; the purchase index never rolls back |
 | `CONFIG_SIZES` | 1 · 2 · 4 · 8 · 12 · 16 slots, halved by minify (a 1-slot config cannot minify) |
 | `DRAFT_SIZE` / draft cost / sell refund | 5 offers / `32 KB × slots` / `floor(cost ÷ 2)` |

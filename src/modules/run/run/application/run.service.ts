@@ -4,6 +4,7 @@ import {
 } from "~/shared/utils/errorHandling";
 
 import { createRun } from "~/modules/run/run/domain/run.model";
+import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { drawAuditSchedule } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import {
@@ -116,10 +117,11 @@ export const startRunService = async ({
 		// is stored in the run, so the seed only has to be stable long enough to
 		// deal once — it is the persisted hand a reload comes back to.
 		// STARTER_POOL becomes the account's own pool once configs unlock
-		// (DVTD-2try).
+		// (DVTD-2try). The budget shapes the deal rather than only pricing it:
+		// a card the opening slots cannot hold is not a choice (ADR-062).
 		const state = createRun(
 			polls,
-			startingHand(STARTER_POOL, `${userId}:${date}`),
+			startingHand(STARTER_POOL, `${userId}:${date}`, BASE_SLOTS),
 			pinnedGate,
 			drawAuditSchedule(date)
 		);

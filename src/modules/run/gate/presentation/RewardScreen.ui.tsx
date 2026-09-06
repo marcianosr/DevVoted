@@ -106,6 +106,7 @@ export const RewardScreen = ({
 		faucetThisGateKb: payout.faucetThisGateKb,
 		interestThisGateKb: payout.interestThisGateKb,
 		extraPickThisGateKb: payout.extraPickThisGateKb,
+		estimateThisGateKb: payout.estimateThisGateKb ?? 0,
 	});
 	const swatch = swatchForGate(clearedGate);
 

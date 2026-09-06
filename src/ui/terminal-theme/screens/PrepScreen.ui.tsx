@@ -34,6 +34,7 @@ const AUDIT_LINE = "flex flex-wrap items-center justify-end gap-x-2";
 const STRUCK = "line-through";
 const PICK = "flex items-center gap-2";
 const MOVES = "flex items-center gap-1";
+const ESTIMATES = "flex flex-wrap items-center justify-end gap-1";
 
 const FOOTER =
 	"flex flex-wrap items-center justify-between gap-3 border-t border-edge pt-4";
@@ -280,6 +281,47 @@ const RebaseList = ({
 	</div>
 );
 
+const EstimateChoices = ({
+	choices,
+	committed,
+	kbPerPoll,
+	onCommit,
+}: {
+	choices: readonly number[];
+	committed: number | null;
+	kbPerPoll: number;
+	onCommit?: (count: number) => void;
+}) => (
+	<Row
+		name={
+			<Text tone="muted" size="caption">
+				how many will you get right?
+			</Text>
+		}
+		detail={
+			committed === null
+				? "No estimate yet — an uncommitted gate pays nothing."
+				: `Estimating ${committed} · pays ${committed * kbPerPoll}KB if exactly ${committed} land, nothing otherwise.`
+		}
+		trailing={
+			<span className={ESTIMATES}>
+				{choices.map((count) => (
+					<IconButton
+						key={count}
+						icon={String(count)}
+						iconOnly
+						tone="cerulean"
+						armed={count === committed}
+						label={`Estimate ${count}`}
+						hint={`Estimate ${count} correct · pays ${count * kbPerPoll}KB if exact`}
+						onUse={() => onCommit?.(count)}
+					/>
+				))}
+			</span>
+		}
+	/>
+);
+
 export type PrepScreenProps = {
 	header: HeaderProps;
 	theme?: SwatchTheme;
@@ -314,6 +356,14 @@ export type PrepScreenProps = {
 		slots: readonly RebaseSlot[];
 		onMove?: (from: number, to: number) => void;
 	};
+	estimate?: {
+		label: string;
+		note: string;
+		choices: readonly number[];
+		committed: number | null;
+		kbPerPoll: number;
+		onCommit?: (count: number) => void;
+	};
 	bills?: {
 		meta: string;
 		rows: readonly BillRow[];
@@ -342,6 +392,7 @@ export const PrepScreen = ({
 	build,
 	window,
 	rebase,
+	estimate,
 	bills,
 	onClear,
 	footer,
@@ -392,6 +443,17 @@ export const PrepScreen = ({
 				{rebase === undefined ? null : (
 					<Section label={rebase.label} meta={rebase.note} divided>
 						<RebaseList slots={rebase.slots} onMove={rebase.onMove} />
+					</Section>
+				)}
+
+				{estimate === undefined ? null : (
+					<Section label={estimate.label} meta={estimate.note} divided>
+						<EstimateChoices
+							choices={estimate.choices}
+							committed={estimate.committed}
+							kbPerPoll={estimate.kbPerPoll}
+							onCommit={estimate.onCommit}
+						/>
 					</Section>
 				)}
 			</div>

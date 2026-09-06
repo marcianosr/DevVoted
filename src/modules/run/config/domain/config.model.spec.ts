@@ -44,6 +44,11 @@ describe("draftCost", () => {
 		expect(sellRefund(CONFIGS.garbageCollection)).toBe(32);
 	});
 
+	it("prices the one-slot estimator at 32KB, refunding 16KB", () => {
+		expect(draftCost(CONFIGS.planningPoker)).toBe(32);
+		expect(sellRefund(CONFIGS.planningPoker)).toBe(16);
+	});
+
 	it("prices WTFPL at its own tag rather than its grade", () => {
 		expect(draftCost(CONFIGS.wtfpl)).toBe(512);
 	});
@@ -156,6 +161,10 @@ describe("focusCoverageMultiplier", () => {
 describe("isUpgradable", () => {
 	it("refuses the collector — its payout is what you lost, not a level", () => {
 		expect(isUpgradable(CONFIGS.garbageCollection)).toBe(false);
+	});
+
+	it("refuses the estimator — a level would only multiply the money", () => {
+		expect(isUpgradable(CONFIGS.planningPoker)).toBe(false);
 	});
 
 	it("allows focus configs", () => {

@@ -3,8 +3,11 @@
 title: '.cache config: freeze a paid-action fee ladder'
 status: draft
 type: feature
+priority: normal
+tags:
+    - config
 created_at: 2026-08-14T13:31:24Z
-updated_at: 2026-08-14T13:31:24Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 ---
 

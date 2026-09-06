@@ -184,7 +184,8 @@ const skipReasonFor = (
 	if (config.suppressesAudit === true) return { kind: "noAuditToSuppress" };
 	if (
 		config.storageOnClear !== undefined ||
-		config.storageInterestPct !== undefined
+		config.storageInterestPct !== undefined ||
+		config.storagePerEstimate !== undefined
 	)
 		return { kind: "paysAtGateClear" };
 	if (config.storagePerCorrect !== undefined && context.faucetRemainingKb === 0)

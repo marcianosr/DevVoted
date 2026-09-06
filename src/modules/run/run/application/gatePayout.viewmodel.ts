@@ -7,6 +7,7 @@ export type GatePayout = {
 	readonly storageBeforeClearKb: number | null;
 	readonly interestThisGateKb: number;
 	readonly extraPickThisGateKb: number;
+	readonly estimateThisGateKb: number | null;
 	readonly faucetThisGateKb: number;
 	readonly subscriptionBillKb: number;
 	readonly planBilledKb: number;
@@ -26,6 +27,7 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		storageBeforeClearKb: state.storageBeforeClearKb ?? null,
 		interestThisGateKb: state.interestThisGateKb ?? 0,
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
+		estimateThisGateKb: state.estimateThisGateKb ?? null,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		subscriptionBillKb: state.subscriptionBillKb ?? 0,
 		planBilledKb: state.planBilledKb ?? 0,

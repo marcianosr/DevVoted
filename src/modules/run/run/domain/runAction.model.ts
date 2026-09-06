@@ -14,6 +14,7 @@ import {
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
 import { answer } from "~/modules/run/run/domain/answer.model";
+import { commitEstimate } from "~/modules/run/run/domain/estimate.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import {
 	buySlot,
@@ -43,6 +44,7 @@ export type RunAction =
 	| { readonly type: "uninstall"; readonly configId: string }
 	| { readonly type: "start" }
 	| { readonly type: "rebase"; readonly from: number; readonly to: number }
+	| { readonly type: "estimate"; readonly count: number }
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
@@ -127,6 +129,7 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 	if (action.type === "start" && state.status === "configuring")
 		return start(state);
 	if (action.type === "rebase") return rebase(state, action.from, action.to);
+	if (action.type === "estimate") return commitEstimate(state, action.count);
 	if (action.type === "answer" && state.status === "answering")
 		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "lint-poll" && state.status === "answering")

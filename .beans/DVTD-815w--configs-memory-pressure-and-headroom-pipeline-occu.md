@@ -4,8 +4,10 @@ title: 'Configs: Memory Pressure and Headroom (pipeline occupancy axis)'
 status: draft
 type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-08-30T07:40:36Z
-updated_at: 2026-08-30T08:40:35Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

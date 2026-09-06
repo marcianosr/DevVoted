@@ -35,6 +35,7 @@ import {
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import { estimatePayoutKb } from "~/modules/run/run/domain/estimate.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	faucetRemainingKb,
@@ -96,8 +97,23 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
 	const schedule = scheduleOf(state);
+	const committed = state.estimatedCorrect;
+	const estimateKb = estimatePayoutKb(
+		state.build.configs,
+		committed,
+		state.window.correct
+	);
+	const settledEstimate = {
+		estimatedCorrect: undefined,
+		estimateThisGateKb: committed === undefined ? undefined : estimateKb,
+	};
 
 	if (!gatePassed(state.build, state.window, state.gatesCleared, schedule)) {
+		const settledStorage = addStorage(
+			state.storage,
+			estimateKb,
+			state.storagePlan ?? 0
+		);
 		const quota = failPeelQuotaFor(state.build.configs, gateNumber, schedule);
 		const occupied = occupiedSlots(state.build.configs);
 		const demand = gateDemandFor(
@@ -109,6 +125,8 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		if (isPeelFatal(quota, occupied))
 			return {
 				...state,
+				...settledEstimate,
+				storage: settledStorage,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(
@@ -118,6 +136,8 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			};
 		return {
 			...state,
+			...settledEstimate,
+			storage: settledStorage,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
 			autoUpgradeProgress: 0,
@@ -142,12 +162,14 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			state.gatesCleared
 		) +
 		interest +
-		extraPickKb;
+		extraPickKb +
+		estimateKb;
 	const planTier = state.storagePlan ?? 0;
 	const rewarded = addStorage(state.storage, reward, planTier);
 	const bill = settlePlanBill(state, rewarded);
 	const cleared: RunState = {
 		...state,
+		...settledEstimate,
 		window: freshWindow(
 			state.polls,
 			nextIndex,

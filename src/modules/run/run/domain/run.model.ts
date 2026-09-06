@@ -72,6 +72,8 @@ export type RunState = {
 	readonly interestThisGateKb?: number;
 	readonly peelRefundKb?: number;
 	readonly extraPickThisGateKb?: number;
+	readonly estimatedCorrect?: number;
+	readonly estimateThisGateKb?: number;
 	readonly slotsBought?: number;
 	readonly storagePlan?: number;
 	readonly planBilledKb?: number;

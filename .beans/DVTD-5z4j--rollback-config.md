@@ -2,10 +2,12 @@
 # DVTD-5z4j
 title: Rollback config
 status: todo
-type: task
+type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-08-16T07:47:20Z
-updated_at: 2026-08-17T09:52:08Z
+updated_at: 2026-09-06T09:57:03Z
 parent: DVTD-72d9
 ---
 

@@ -2,10 +2,12 @@
 # DVTD-7ary
 title: 'Config: flip the shop''s buy and sell prices'
 status: draft
-type: task
+type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-08-29T14:59:10Z
-updated_at: 2026-08-29T14:59:10Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

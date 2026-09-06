@@ -48,6 +48,11 @@ import {
 	upcomingSlotsOf,
 } from "~/modules/run/run/domain/rebase.model";
 import {
+	canEstimate,
+	ESTIMATE_CHOICES,
+	estimatorFor,
+} from "~/modules/run/run/domain/estimate.model";
+import {
 	type Config,
 	canMinify,
 	minifySavingSlots,
@@ -154,6 +159,12 @@ export type StoragePlanView = {
 	readonly options: readonly StoragePlanOption[];
 };
 
+export type EstimateControl = {
+	readonly configLabel: string;
+	readonly choices: readonly number[];
+	readonly kbPerPoll: number;
+};
+
 export type OfflineConfig = {
 	readonly config: Config;
 	readonly audit: string;
@@ -221,6 +232,9 @@ export type RunView = {
 	readonly correctAnswersThisGate: number | null;
 	readonly correctCountSource: string | null;
 	readonly rebaseSlots: readonly PollSlot[];
+	readonly estimate: EstimateControl | null;
+	readonly estimatedCorrect: number | null;
+	readonly correctThisGate: number;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly answerTypesThisGate: AnswerTypeSplit | null;
@@ -253,6 +267,16 @@ export type RunView = {
 	readonly slotDeals: SlotsView;
 	readonly startSlotDeals: StartSlotsView;
 	readonly storagePlan: StoragePlanView;
+};
+
+const estimateControlFor = (state: RunState): EstimateControl | null => {
+	const estimator = estimatorFor(state.build.configs);
+	if (estimator === undefined || !canEstimate(state)) return null;
+	return {
+		configLabel: estimator.label,
+		choices: ESTIMATE_CHOICES,
+		kbPerPoll: estimator.storagePerEstimate ?? 0,
+	};
 };
 
 const offerRefusal = (
@@ -482,6 +506,9 @@ export const toRunView = (
 				: (state.window.budget ?? null),
 		correctCountSource: budgeterFor(state.build.configs)?.label ?? null,
 		rebaseSlots: upcomingSlotsOf(state),
+		estimate: estimateControlFor(state),
+		estimatedCorrect: state.estimatedCorrect ?? null,
+		correctThisGate: state.window.correct,
 		upcomingCategories:
 			prefetcherFor(state.build.configs) === undefined
 				? null

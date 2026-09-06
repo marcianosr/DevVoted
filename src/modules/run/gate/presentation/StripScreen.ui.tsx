@@ -14,6 +14,7 @@ type StripScreenProps = {
 	configs: readonly Config[];
 	answered: readonly AnsweredPoll[];
 	peelRefundKb?: number;
+	estimateThisGateKb?: number;
 	retryStake?: GateStake;
 	onStrip: (configId: string) => void;
 };
@@ -32,6 +33,7 @@ export const StripScreen = ({
 	configs,
 	answered,
 	peelRefundKb,
+	estimateThisGateKb,
 	retryStake,
 	onStrip,
 }: StripScreenProps) => {
@@ -44,7 +46,12 @@ export const StripScreen = ({
 				gateNumber={gateNumber}
 				cleared={false}
 				swatch={swatchForGate(gateNumber)}
-				rows={gateRewardRows({ answered, configs, peelRefundKb })}
+				rows={gateRewardRows({
+					answered,
+					configs,
+					peelRefundKb,
+					estimateThisGateKb,
+				})}
 				removableConfigIds={removableConfigIds}
 				removalRefundKb={refundQuotes(configs)}
 				onRemoveConfig={onStrip}

@@ -8,6 +8,12 @@ and 5 stand, including "Grant gates the hand, never the shelf". The tables below
 are the design of record until `configUnlock.model.ts` exists; from then on the
 code file is the source of truth.
 
+Amended 2026-09-06 (DVTD-0sjo): six configs that shipped without rows
+(yarn.lock, Planning Poker, A/B Test, Garbage Collection, Cache, git rebase -i)
+joined the decision 3 table and five metrics joined decision 4's set. The ledger
+shape in the consequences is superseded by
+[ADR-064](064-a-grant-is-recorded-with-its-provenance.md).
+
 ## Context
 
 The depth ladder hands over configs in per-gate batches, which reads as receiving
@@ -18,7 +24,7 @@ Configdex is the board that fills in.
 
 ## Decision 1: two paths per config, first met grants
 
-Each of the 21 non-free configs carries one thematic objective and one
+Each of the 27 non-free configs carries one thematic objective and one
 participation fallback (lifetime polls answered). Whichever is met first grants
 the config. Every objective tracks automatically from play; nothing is activated,
 so the Configdex can show all 21 without becoming a pre-run decision screen.
@@ -66,6 +72,12 @@ intended earliness.
 | Volkswagen CI | Clear Marsh's Mirror audit without a miss | mirror-clear-no-miss | 475 |
 | Freemium | Reach gate 4 holding under 16 KB | lean-gate-four | 500 |
 | AGENTS.md | Clear a gate with every slot filled | full-build-clear | 525 |
+| yarn.lock | Lock 5 shop offers | offers-locked · 5 | 550 |
+| Planning Poker | Land 3 exact estimates | exact-estimates · 3 | 575 |
+| A/B Test | Switch arms 3 times | arms-switched · 3 | 600 |
+| Garbage Collection | Sell 20 configs | configs-sold · 20 | 625 |
+| Cache | Land 15 cached hits | cache-hits · 15 | 650 |
+| git rebase -i | Reorder 3 gates' polls | gates-reordered · 3 | 675 |
 
 The six ADR-050 challenges survive verbatim as their configs' thematic path.
 Telemetry's objective is earnable before the grant because the shop shelf is
@@ -73,19 +85,31 @@ never filtered: buy it mid-run, use it, carry it in from then on. That loop
 (use the thing to earn carrying it in) is the Melee trick, and it is available
 to any future objective.
 
+The 2026-09-06 rows lean on that loop deliberately: locking, estimating,
+switching arms, caching hits and reordering are all shelf-buyable behaviours, so
+each objective is earnable before its grant. Garbage Collection is the
+exception: its mechanic fires only on a peel, and rewarding peels rewards
+failure (decision 5), so it reuses configs-sold at a higher target than
+Deprecated.
+
 ## Decision 4: the closed metric set
 
 Every objective maps to this set; no config gets one-off tracking. Cumulative
 lifetime counters: polls-answered, polls-correct, category-correct:{code},
 gates-cleared, audited-gates-cleared, rebuilds, perfect-windows, configs-sold,
-community-peeks. One-shot in-run predicates, stored as target-1 counters on the
+community-peeks, offers-locked, exact-estimates, arms-switched, cache-hits,
+gates-reordered. One-shot in-run predicates, stored as target-1 counters on the
 same ledger: perfect-window-deep, full-build-clear, double-v2-clear,
 mirror-clear-no-miss, sold-three-one-shop, lean-gate-four.
 
 rebuilds is unused by the current table; it stays in the set for the roster
 expansion (DVTD-72d9), whose shop-themed configs want it. community-peeks is the
 one metric beyond what DVTD-2try inventoried: the peek is already a run action,
-so it costs one counter row, no new state.
+so it costs one counter row, no new state. The five 2026-09-06 metrics follow
+the same rule: locking, estimating, arm-switching and reordering are existing
+run actions, and a cached hit is computed during answer settlement, so each is
+visible at the seam and costs only its counter row. gates-reordered counts once
+per gate whose order was committed, never per drag.
 
 ## Decision 5: authoring rules
 
@@ -129,9 +153,12 @@ recommendation.
   serialize into every `RunSnapshot`. This replaces ADR-050's anticipated
   `unlocksAtGate`/`unlocksBy` fields.
 - Progress needs a ledger: `user_objective_progress (user_id, metric, count)`
-  plus `users.unlocked_config_ids text[]`, both written in the
-  `applyActionToRun` transaction (the `awardGateSwatch` idempotence pattern).
-  ADR-050's "only new tracking is WTFPL's sell counter" no longer holds.
+  plus the `user_config_unlocks` table
+  ([ADR-064](064-a-grant-is-recorded-with-its-provenance.md), which replaced
+  the `users.unlocked_config_ids text[]` this ADR first anticipated), both
+  written in the `applyActionToRun` transaction (the `awardGateSwatch`
+  idempotence pattern). ADR-050's "only new tracking is WTFPL's sell counter"
+  no longer holds.
 - The only new `RunState` field is `soldThisShop`; every other predicate reads
   what the seam already sees.
 - No grandfathering and no historical backfill: the game is pre-release, nobody

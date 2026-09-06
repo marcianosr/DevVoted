@@ -2,10 +2,12 @@
 # DVTD-zvcv
 title: 'Config: a wrong answer earns coverage instead of losing it'
 status: todo
-type: task
+type: feature
 priority: normal
+tags:
+    - config
 created_at: 2026-09-05T08:45:44Z
-updated_at: 2026-09-05T08:45:50Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 blocked_by:
     - DVTD-w0ul

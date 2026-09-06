@@ -2,11 +2,12 @@
 # DVTD-khf1
 title: 'Config: Peer Dependencies'
 status: todo
-type: task
+type: feature
+priority: normal
 tags:
     - config
 created_at: 2026-08-20T10:00:17Z
-updated_at: 2026-08-20T10:00:17Z
+updated_at: 2026-09-06T09:57:04Z
 parent: DVTD-72d9
 ---
 

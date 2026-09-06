@@ -25,6 +25,7 @@ const render_ = (overrides: Partial<PrepViewProps> = {}) =>
 			onBackToShop={() => {}}
 			onCommunity={() => {}}
 			onRebase={() => {}}
+			onEstimate={() => {}}
 			{...overrides}
 		/>
 	);
@@ -393,5 +394,88 @@ describe("PrepView", () => {
 		expect(
 			screen.getByText(/^remove (\d+ configs?|\d+–\d+ configs)$/)
 		).toBeInTheDocument();
+	});
+
+	describe("the estimate (DVTD-68jr)", () => {
+		const estimating = (committed: number | null = null) =>
+			createMockRunView({
+				...view,
+				estimate: {
+					configLabel: CONFIGS.planningPoker.label,
+					choices: [1, 2, 3, 4, 5],
+					kbPerPoll: 32,
+				},
+				estimatedCorrect: committed,
+			});
+
+		it("offers a press per poll, and no press for a bet on nothing", () => {
+			render_({ view: estimating() });
+
+			expect(
+				screen.getByRole("button", { name: /^Estimate 1 correct/ })
+			).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: /^Estimate 5 correct/ })
+			).toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: /^Estimate 0 correct/ })
+			).not.toBeInTheDocument();
+		});
+
+		it("prices each press before it is taken", () => {
+			render_({ view: estimating() });
+
+			expect(
+				screen.getByRole("button", {
+					name: "Estimate 4 correct · pays 128KB if exact",
+				})
+			).toBeInTheDocument();
+		});
+
+		it("marks the committed number as the one standing", () => {
+			render_({ view: estimating(4) });
+
+			expect(
+				screen.getByRole("button", { name: /^Estimate 4 correct/ })
+			).toHaveAttribute("aria-pressed", "true");
+			expect(
+				screen.getByRole("button", { name: /^Estimate 2 correct/ })
+			).toHaveAttribute("aria-pressed", "false");
+		});
+
+		it("says an uncommitted gate pays nothing rather than staying quiet", () => {
+			render_({ view: estimating() });
+
+			expect(
+				screen.getByText(/an uncommitted gate pays nothing/)
+			).toBeInTheDocument();
+		});
+
+		it("quotes the standing bet and what it pays if it lands", () => {
+			render_({ view: estimating(4) });
+
+			expect(
+				screen.getByText(/Estimating 4 · pays 128KB if exactly 4 land/)
+			).toBeInTheDocument();
+		});
+
+		it("commits the number the player pressed", async () => {
+			const onEstimate = vi.fn();
+			render_({ view: estimating(), onEstimate });
+
+			await userEvent.click(
+				screen.getByRole("button", { name: /^Estimate 3 correct/ })
+			);
+
+			expect(onEstimate).toHaveBeenCalledWith(3);
+		});
+
+		it("shows nothing at all without the config", () => {
+			render_();
+
+			expect(
+				screen.queryByRole("button", { name: /^Estimate 3 correct/ })
+			).not.toBeInTheDocument();
+		});
 	});
 });
