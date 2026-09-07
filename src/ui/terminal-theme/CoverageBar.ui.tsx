@@ -1,7 +1,6 @@
 import { clsx } from "clsx";
 
-const TRACK =
-	"flex h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface-raised";
+const TRACK = "flex h-1.5 w-16 shrink-0 overflow-hidden bg-surface-raised";
 const MET = "bg-viridian";
 const SPILL = "bg-celadon";
 

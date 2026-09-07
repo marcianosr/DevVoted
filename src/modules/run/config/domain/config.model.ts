@@ -72,9 +72,13 @@ export const CONFIG_SIZES = [
 	1, 2, 4, 8, 12, 16,
 ] as const satisfies readonly ConfigSize[];
 
-export const baseSlotsOf = (config: Config): number => config.slots ?? 1;
+export const baseSlotsOf = (
+	config: Partial<Pick<Config, "id" | "slots" | "minified">>
+): number => config.slots ?? 1;
 
-export const slotsOf = (config: Config): number =>
+export const slotsOf = (
+	config: Partial<Pick<Config, "id" | "slots" | "minified">>
+): number =>
 	config.minified === true
 		? Math.floor(baseSlotsOf(config) / 2)
 		: baseSlotsOf(config);

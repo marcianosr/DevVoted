@@ -937,6 +937,44 @@ describe("Deprecated's decay", () => {
 	});
 });
 
+describe("configs lost at the clear (DVTD-wii3: the comeback tally)", () => {
+	const holding = (extra: Config): RunState => {
+		const base = started(["js"]);
+		return {
+			...base,
+			build: {
+				...base.build,
+				slots: base.build.configs.length + 1,
+				configs: [...base.build.configs, extra],
+			},
+		};
+	};
+
+	it("adds a decay deletion to the run's losses", () => {
+		const state = clearGate(
+			holding({ ...CONFIGS.deprecated, coverageMultiplier: 1.5 })
+		);
+		expect(state.deletedConfigs).toHaveLength(1);
+		expect(state.configsLost).toBe(1);
+	});
+
+	it("adds a lapsed plan on top of an earlier tally", () => {
+		const subscribed: RunState = {
+			...holding({ ...CONFIGS.freemium, subscriptionKb: 512 }),
+			storage: 0,
+			configsLost: 2,
+		};
+		const state = clearGate(subscribed);
+		expect(state.lapsedConfigs).toHaveLength(1);
+		expect(state.configsLost).toBe(3);
+	});
+
+	it("reads a legacy snapshot's missing tally as zero at a clean clear", () => {
+		const state = clearGate(started(["js"]));
+		expect(state.configsLost).toBe(0);
+	});
+});
+
 describe("Freemium's subscription", () => {
 	const unaffordablePlan: Config = { ...CONFIGS.freemium, subscriptionKb: 512 };
 

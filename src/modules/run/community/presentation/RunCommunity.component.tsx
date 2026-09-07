@@ -1,19 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
-import { Screen } from "~/ui/Screen.ui";
-import { Stack } from "~/ui/Stack.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
-
 import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
-import { ClimbToday } from "~/modules/run/community/presentation/ClimbToday.ui";
-import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
-import { RunCommunityBoard } from "~/modules/run/community/presentation/RunCommunity.ui";
+import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
+import { CommunityScreen } from "~/ui/terminal-theme/screens/CommunityScreen.ui";
 
-/** Tier 2 wiring for the run community page (DVTD-xrpx). */
+/** Tier 2 wiring for the run community page (DVTD-xrpx, terminal skin DVTD-wii3). */
 export const RunCommunity = () => {
 	const navigate = useNavigate();
 	const { view: run } = useTodaysRun();
@@ -22,85 +16,53 @@ export const RunCommunity = () => {
 
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
-	const back = returnFromCommunity(run ?? null);
-	const climbOn = {
-		label: back.label,
-		onClick: () => navigate({ to: back.path }),
+	const backTarget = returnFromCommunity(run ?? null);
+	const back = {
+		label: backTarget.label,
+		onBack: () => navigate({ to: backTarget.path }),
 		disabled: waitingForTomorrow,
 		hint: waitingForTomorrow
 			? "Today’s polls are spent. Your run picks up when the next segment drops at midnight."
 			: undefined,
 	};
-	const footerNote = countdown.isOpen ? undefined : countdown.label;
+	const timer = countdown.isOpen ? undefined : countdown.label;
 
 	if (community.isPending) {
 		return (
-			<Screen
-				gateTheme={run?.gateTheme}
-				rightAction={climbOn}
-				footerNote={footerNote}
-			>
-				<Paragraph>Loading today’s comparison…</Paragraph>
-			</Screen>
+			<CommunityScreen
+				theme={run?.gateTheme}
+				standouts={[]}
+				pollChips={[]}
+				pollNote="Loading today’s comparison…"
+				countdown={timer}
+				back={back}
+			/>
 		);
 	}
 
-	if (community.errorMessage) {
+	if (community.errorMessage || !community.view) {
 		return (
-			<Screen
-				gateTheme={run?.gateTheme}
-				rightAction={climbOn}
-				footerNote={footerNote}
-			>
-				<Paragraph tone="cinnabar">
-					Couldn’t load today’s comparison. Your run is unaffected — try again
-					shortly.
-				</Paragraph>
-			</Screen>
-		);
-	}
-
-	const { view } = community;
-
-	const climb = view?.climb ? <ClimbToday {...view.climb} /> : null;
-	const standouts = view ? <StandoutsPanel standouts={view.standouts} /> : null;
-
-	if (!view || view.polls.length === 0) {
-		return (
-			<Screen
-				gateTheme={run?.gateTheme}
-				rightAction={climbOn}
-				footerNote={footerNote}
-			>
-				<Stack gap="6" divided>
-					{standouts}
-					{climb}
-					<Stack gap="4">
-						<Title>Today’s polls</Title>
-						<Paragraph>
-							Nothing to see yet — answer some of today’s polls first.
-						</Paragraph>
-					</Stack>
-				</Stack>
-			</Screen>
+			<CommunityScreen
+				theme={run?.gateTheme}
+				standouts={[]}
+				pollChips={[]}
+				pollNote={
+					community.errorMessage
+						? "Couldn’t load today’s comparison. Your run is unaffected — try again shortly."
+						: "Nothing to see yet — answer some of today’s polls first."
+				}
+				countdown={timer}
+				back={back}
+			/>
 		);
 	}
 
 	return (
-		<Screen
-			gateTheme={run?.gateTheme}
-			rightAction={climbOn}
-			footerNote={footerNote}
-		>
-			<Stack gap="6" divided>
-				{standouts}
-				{climb}
-				<RunCommunityBoard
-					totalPlayers={view.totalPlayers}
-					topPercent={view.topPercent}
-					polls={view.polls}
-				/>
-			</Stack>
-		</Screen>
+		<CommunityView
+			view={community.view}
+			theme={run?.gateTheme}
+			countdown={timer}
+			back={back}
+		/>
 	);
 };

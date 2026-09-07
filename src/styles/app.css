@@ -19,6 +19,7 @@
 @layer base {
 	html {
 		color-scheme: dark;
+		font-size: 150%;
 	}
 
 	* {

@@ -42,6 +42,9 @@ export const BeforeLavender: Story = {
 			caption: "balance",
 		},
 		theme: "lavender",
+		ready: {
+			note: "today's 5 polls are ready",
+		},
 		build: {
 			slots: 8,
 			slotsUsed: 7,

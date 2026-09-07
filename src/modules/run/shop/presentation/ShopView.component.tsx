@@ -22,10 +22,7 @@ import type {
 } from "~/modules/run/run/application/runView.viewmodel";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { unlockNotesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
-import {
-	coverageFor,
-	storageGaugeFor,
-} from "~/modules/run/run/presentation/PollView.component";
+import { storageGaugeFor } from "~/modules/run/run/presentation/PollView.component";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import { offerRefusalText } from "~/modules/run/shop/presentation/ShopScreen.ui";
 import {
@@ -328,7 +325,6 @@ export const ShopView = ({
 				value: kbLabel(view.storage),
 				caption: "balance",
 				gauge: storageGaugeFor(view),
-				// coverage: coverageFor(view),
 			}}
 			notice={
 				locked

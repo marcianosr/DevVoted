@@ -184,6 +184,47 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 	});
 });
 
+describe("configs lost (DVTD-wii3: the comeback standout's tally)", () => {
+	const awaitingStrip = (quota: number): RunState => {
+		let state = started(["unit-tests", "eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		return {
+			...state,
+			status: "awaiting-strip",
+			peelSlotsRemaining: quota,
+		};
+	};
+
+	it("counts a peeled config as lost", () => {
+		const state = runReducer(awaitingStrip(1), {
+			type: "strip",
+			configId: "eslint",
+		});
+		expect(state.configsLost).toBe(1);
+	});
+
+	it("accumulates across strips on top of an earlier tally", () => {
+		let state: RunState = { ...awaitingStrip(8), configsLost: 3 };
+		state = runReducer(state, { type: "strip", configId: "eslint" });
+		state = runReducer(state, { type: "strip", configId: "ts" });
+		expect(state.configsLost).toBe(5);
+	});
+
+	it("loses nothing when a config is minified instead of dropped", () => {
+		const base = awaitingStrip(4);
+		const configs = [CONFIGS.garbageCollection, CONFIGS.agentsMd];
+		const state = runReducer(
+			{
+				...base,
+				build: { ...base.build, slots: occupiedSlots(configs), configs },
+			},
+			{ type: "minify", configId: "agents-md" }
+		);
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.configsLost).toBeUndefined();
+	});
+});
+
 describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)", () => {
 	const collecting = (
 		configs: readonly Config[],

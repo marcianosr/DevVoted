@@ -380,10 +380,10 @@ describe("run route sync", () => {
 		);
 		// The way back waits with the run — /run would only bounce here again —
 		// and the countdown stands beside it saying how long that will be.
-		// Exact: the disabled button is wrapped in a Popover whose own trigger
-		// quotes the label back ("Why … is unavailable").
+		// The disabled button's accessible name carries its hint, so the
+		// query matches on the label alone.
 		const back = await screen.findByRole("button", {
-			name: "Back to your run →",
+			name: /Back to your run →/,
 		});
 		expect(back).toBeDisabled();
 		expect(screen.getByText(/New polls in/)).toBeInTheDocument();

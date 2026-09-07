@@ -6,8 +6,8 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 
 const FRAME = "@container mx-auto w-full py-8";
-const READING_WIDTH = "max-w-[850px]";
-const SIDEBAR_WIDTH = "max-w-[1120px]";
+const READING_WIDTH = "max-w-[53.125rem]";
+const SIDEBAR_WIDTH = "max-w-[70rem]";
 const PANEL =
 	"flex flex-col gap-6 rounded-2xl border border-edge px-6 py-5 @max-md:px-4 @max-md:py-4";
 

@@ -216,6 +216,8 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		subscriptionBillKb: billed.paidKb,
 		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
 		lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
+		configsLost:
+			(state.configsLost ?? 0) + settled.deleted.length + billed.lapsed.length,
 		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
 		rebuildsUsed: 0,
 		soldThisShop: 0,

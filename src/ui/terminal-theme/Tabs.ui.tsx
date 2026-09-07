@@ -7,6 +7,7 @@ export type TabItem = {
 	label: string;
 	count?: string;
 	redacted?: boolean;
+	disabled?: boolean;
 };
 
 /** `underline` names a collection, `pill` reorders the one already on screen.
@@ -32,6 +33,11 @@ const ACTIVE = {
 const IDLE = {
 	underline: "border-transparent",
 	pill: "border-zinc-800 text-zinc-500 hover:text-zinc-300",
+} satisfies Record<TabsVariant, string>;
+
+const DISABLED = {
+	underline: "cursor-not-allowed border-transparent text-zinc-700",
+	pill: "cursor-not-allowed border-zinc-800/60 text-zinc-700",
 } satisfies Record<TabsVariant, string>;
 
 export type TabsProps = {
@@ -82,17 +88,16 @@ export const Tabs = ({
 	<nav role="tablist" aria-label={label} className={BAR[variant]}>
 		{items.map((item) => {
 			const active = item.id === activeId;
+			const idle = item.disabled === true ? DISABLED[variant] : IDLE[variant];
 			return (
 				<button
 					key={item.id}
 					type="button"
 					role="tab"
 					aria-selected={active}
+					disabled={item.disabled === true}
 					onClick={onSelect === undefined ? undefined : () => onSelect(item.id)}
-					className={clsx(
-						TAB[variant],
-						active ? ACTIVE[variant] : IDLE[variant]
-					)}
+					className={clsx(TAB[variant], active ? ACTIVE[variant] : idle)}
 				>
 					{variant === "pill" ? (
 						item.label

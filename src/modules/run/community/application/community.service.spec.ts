@@ -11,7 +11,6 @@ import * as queries from "~/modules/run/run/infrastructure/run.repository";
 
 vi.mock("~/modules/run/community/infrastructure/community.repository", () => ({
 	fetchConsumedPollsForDay: vi.fn(),
-	fetchDailySeedCreatedAt: vi.fn(),
 	fetchPollsWithOptions: vi.fn(),
 	fetchRunProgress: vi.fn(),
 	fetchSessionAnswersForDay: vi.fn(),
@@ -76,11 +75,6 @@ const POLLS = [
 	},
 ];
 
-/** Today's seed dropped at 09:00; answer times build on it. */
-const SEED_DROP = new Date(`${TEST_DATES.birthday}T09:00:00Z`);
-const minutesAfterDrop = (minutes: number): Date =>
-	new Date(SEED_DROP.getTime() + minutes * 60_000);
-
 const answerRow = (
 	over: Partial<SessionAnswerRow> &
 		Pick<
@@ -88,24 +82,19 @@ const answerRow = (
 			"responseId" | "pollId" | "userId" | "displayName" | "optionId"
 		>
 ): SessionAnswerRow => ({
-	categoryCode: "ts",
-	answeredAt: minutesAfterDrop(30),
-	answerTimeMs: null,
 	photoUrl: null,
+	borderUrl: null,
 	mirrored: false,
 	...over,
 });
 
 const answerRows = [
-	// Red answered poll 10 first (1m45 after the drop) and fastest (9s).
 	answerRow({
 		responseId: 1,
 		pollId: 10,
 		userId: RED,
 		displayName: "Red",
 		optionId: 101,
-		answeredAt: minutesAfterDrop(1.75),
-		answerTimeMs: 9_000,
 	}),
 	answerRow({
 		responseId: 2,
@@ -113,7 +102,6 @@ const answerRows = [
 		userId: BLUE,
 		displayName: "Blue",
 		optionId: 102,
-		answerTimeMs: 30_000,
 	}),
 	answerRow({
 		responseId: 3,
@@ -168,11 +156,18 @@ const consumedForViewer = [
 /** Climb map fixture: Red (the usual viewer) mid-Soul, Blue ahead, Green well back. */
 const RED_AT = { gate: 6, pollsIntoGate: 3 };
 const CLIMBERS = [
-	{ userId: RED, displayName: "Red", photoUrl: null, ...RED_AT },
+	{
+		userId: RED,
+		displayName: "Red",
+		photoUrl: null,
+		borderUrl: null,
+		...RED_AT,
+	},
 	{
 		userId: BLUE,
 		displayName: "Blue",
 		photoUrl: null,
+		borderUrl: "/borders/x.png",
 		gate: 7,
 		pollsIntoGate: 1,
 	},
@@ -180,6 +175,7 @@ const CLIMBERS = [
 		userId: GREEN,
 		displayName: "Green",
 		photoUrl: null,
+		borderUrl: null,
 		gate: 2,
 		pollsIntoGate: 4,
 	},
@@ -190,6 +186,7 @@ const FALLEN = [
 		userId: "koga",
 		displayName: "Koga",
 		photoUrl: null,
+		borderUrl: null,
 		gate: 3,
 		pollsIntoGate: 2,
 	},
@@ -198,32 +195,47 @@ const FALLEN = [
 		userId: "janine",
 		displayName: null,
 		photoUrl: null,
+		borderUrl: null,
 		gate: 5,
 		pollsIntoGate: 0,
 	},
 ];
 
-/** Live-run standings behind the run-scoped awards. Blue is the deepest and widest. */
+/** Live-run standings behind the run-scoped awards. Blue is the deepest, widest
+ * and freshest sweep; Red carries the comeback. */
 const RUN_STATS = [
 	{
 		userId: RED,
 		displayName: "Red",
 		photoUrl: null,
+		borderUrl: null,
 		gatesCleared: 6,
-		coverage: 12.5,
+		pollsIntoGate: 3,
 		configCount: 3,
+		slotsHeld: 3,
+		configsLost: 2,
+		startedAtGate: 0,
 		outcomes: ["correct", "correct", "wrong"] as const,
-		streak: 0,
 	},
 	{
 		userId: BLUE,
 		displayName: "Blue",
 		photoUrl: null,
+		borderUrl: "/borders/x.png",
 		gatesCleared: 7,
-		coverage: 21.44,
+		pollsIntoGate: 1,
 		configCount: 7,
-		outcomes: ["correct", "correct", "correct", "correct"] as const,
-		streak: 4,
+		slotsHeld: 7,
+		configsLost: 0,
+		startedAtGate: 0,
+		outcomes: [
+			"correct",
+			"correct",
+			"correct",
+			"correct",
+			"correct",
+			"correct",
+		] as const,
 	},
 ];
 
@@ -248,9 +260,6 @@ const arrange = () => {
 	);
 	vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue(
 		answerRows
-	);
-	vi.mocked(communityQueries.fetchDailySeedCreatedAt).mockResolvedValue(
-		SEED_DROP
 	);
 	vi.mocked(communityQueries.fetchPollsWithOptions).mockResolvedValue(POLLS);
 };
@@ -294,8 +303,20 @@ describe("getRunCommunityService", () => {
 				percent: 67,
 				yours: true,
 				voters: [
-					{ id: RED, displayName: "Red", photoUrl: null, you: true },
-					{ id: GREEN, displayName: "Green", photoUrl: null, you: false },
+					{
+						id: RED,
+						displayName: "Red",
+						photoUrl: null,
+						borderUrl: null,
+						you: true,
+					},
+					{
+						id: GREEN,
+						displayName: "Green",
+						photoUrl: null,
+						borderUrl: null,
+						you: false,
+					},
 				],
 			},
 			{
@@ -304,7 +325,15 @@ describe("getRunCommunityService", () => {
 				count: 1,
 				percent: 33,
 				yours: false,
-				voters: [{ id: BLUE, displayName: "Blue", photoUrl: null, you: false }],
+				voters: [
+					{
+						id: BLUE,
+						displayName: "Blue",
+						photoUrl: null,
+						borderUrl: null,
+						you: false,
+					},
+				],
 			},
 			{
 				label: "Guild.at(0)",
@@ -382,7 +411,7 @@ describe("getRunCommunityService", () => {
 		expect(result.data.topPercent).toBe(67);
 	});
 
-	it("crowns the day's awards, today's before the climb's", async () => {
+	it("crowns the six awards in grid order", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
@@ -390,64 +419,29 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.standouts.map((standout) => standout.title)).toEqual([
-			"fastest answer",
-			"first to answer",
-			"first good",
-			"most TypeScript polls",
-			"only one right",
-			"deepest gate",
-			"longest streak",
-			"most coverage",
+			"deepest",
+			"against the room",
+			"clean sweep",
 			"widest build",
+			"travelling light",
+			"comeback",
 		]);
 	});
 
-	it("reads the poll-scoped awards off today's answers", async () => {
+	it("crowns the contrarian off the poll where the room was mostly wrong", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const byTitle = new Map(
-			result.data.standouts.map((standout) => [standout.title, standout])
+		const room = result.data.standouts.find(
+			(standout) => standout.title === "against the room"
 		);
 
-		// 9_000ms, the only sub-30s timing.
-		expect(byTitle.get("fastest answer")).toMatchObject({
-			value: { unit: "duration", ms: 9_000 },
-			voter: { id: RED, you: true },
-		});
-		// Red answered 1.75 minutes after the seed dropped, and got it right.
-		expect(byTitle.get("first to answer")?.value).toEqual({
-			unit: "duration",
-			ms: 105_000,
-		});
-		expect(byTitle.get("first good")).toMatchObject({
-			value: { unit: "duration", ms: 105_000 },
-			voter: { id: RED },
-		});
-		// Blue answered all three ts-coded polls.
-		expect(byTitle.get("most TypeScript polls")?.value).toEqual({
-			unit: "count",
-			amount: 3,
-		});
-	});
-
-	it("names the poll only one player got right, from those the viewer has met", async () => {
-		arrange();
-
-		const result = await getRunCommunityService({ userId: RED, date: DATE });
-
-		expect(result.success).toBe(true);
-		if (!result.success) return;
-		const lone = result.data.standouts.find(
-			(standout) => standout.title === "only one right"
-		);
-
-		// Poll 12: Blue alone got it, and Red has consumed it.
-		expect(lone).toMatchObject({
-			value: { unit: "text", text: "Which town has no gym?" },
+		// Poll 11: only Blue's exact set landed — 1 of 3 answerers.
+		expect(room).toMatchObject({
+			value: { unit: "text", text: "right on poll 2 · 33% were" },
 			voter: { id: BLUE, you: false },
 		});
 	});
@@ -463,22 +457,27 @@ describe("getRunCommunityService", () => {
 			result.data.standouts.map((standout) => [standout.title, standout])
 		);
 
-		expect(byTitle.get("deepest gate")).toMatchObject({
-			value: { unit: "text", text: "Marsh" }, // gate 7
-			voter: { id: BLUE },
+		expect(byTitle.get("deepest")).toMatchObject({
+			value: { unit: "text", text: "gate 7 · poll 1" },
+			voter: { id: BLUE, borderUrl: "/borders/x.png" },
 		});
-		// Red's best was 2 before it broke; Blue ran four clean.
-		expect(byTitle.get("longest streak")?.value).toEqual({
-			unit: "count",
-			amount: 4,
-		});
-		expect(byTitle.get("most coverage")?.value).toEqual({
-			unit: "percent",
-			amount: 21.4,
+		expect(byTitle.get("deepest")?.swatch).toBeDefined();
+		// Blue's last settled window ran five clean, one gate back.
+		expect(byTitle.get("clean sweep")?.value).toEqual({
+			unit: "text",
+			text: "5 of 5 at Soul",
 		});
 		expect(byTitle.get("widest build")?.value).toEqual({
-			unit: "configs",
-			amount: 7,
+			unit: "text",
+			text: "7 slots held",
+		});
+		expect(byTitle.get("travelling light")?.value).toEqual({
+			unit: "text",
+			text: "gate 7 on 7 configs",
+		});
+		expect(byTitle.get("comeback")).toMatchObject({
+			value: { unit: "text", text: "cleared after losing 2 configs" },
+			voter: { id: RED, you: true },
 		});
 	});
 
@@ -493,27 +492,12 @@ describe("getRunCommunityService", () => {
 		expect(result.data.polls).toEqual([]);
 		// Run-scoped awards stand on live runs, not on today's answers.
 		expect(result.data.standouts.map((standout) => standout.title)).toContain(
-			"deepest gate"
+			"deepest"
 		);
 		// But nothing may name a poll the viewer has not reached.
 		expect(
 			result.data.standouts.map((standout) => standout.title)
-		).not.toContain("only one right");
-	});
-
-	it("skips the fastest-answer award when no answer carries a timing", async () => {
-		arrange();
-		vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue(
-			answerRows.map((row) => ({ ...row, answerTimeMs: null }))
-		);
-
-		const result = await getRunCommunityService({ userId: RED, date: DATE });
-
-		expect(result.success).toBe(true);
-		if (!result.success) return;
-		expect(
-			result.data.standouts.map((standout) => standout.title)
-		).not.toContain("fastest answer");
+		).not.toContain("against the room");
 	});
 
 	it("never exposes raw option correct flags in the payload", async () => {
@@ -544,6 +528,7 @@ describe("getRunCommunityService climb map", () => {
 				id: GREEN,
 				displayName: "Green",
 				photoUrl: null,
+				borderUrl: null,
 				gate: 2,
 				pollsIntoGate: 4,
 				you: false,
@@ -552,6 +537,7 @@ describe("getRunCommunityService climb map", () => {
 				id: RED,
 				displayName: "Red",
 				photoUrl: null,
+				borderUrl: null,
 				gate: 6,
 				pollsIntoGate: 3,
 				you: true,
@@ -560,6 +546,7 @@ describe("getRunCommunityService climb map", () => {
 				id: BLUE,
 				displayName: "Blue",
 				photoUrl: null,
+				borderUrl: "/borders/x.png",
 				gate: 7,
 				pollsIntoGate: 1,
 				you: false,
@@ -583,6 +570,7 @@ describe("getRunCommunityService climb map", () => {
 				id: RED,
 				displayName: "you",
 				photoUrl: undefined,
+				borderUrl: undefined,
 				gate: 6,
 				pollsIntoGate: 3,
 				you: true,
@@ -598,6 +586,7 @@ describe("getRunCommunityService climb map", () => {
 				userId: BLUE,
 				displayName: "Blue",
 				photoUrl: null,
+				borderUrl: null,
 				gate: 1,
 				pollsIntoGate: 0,
 			},
@@ -627,6 +616,7 @@ describe("getRunCommunityService climb map", () => {
 				id: "koga",
 				displayName: "Koga",
 				photoUrl: null,
+				borderUrl: null,
 				gate: 3,
 				pollsIntoGate: 2,
 			},
@@ -636,6 +626,7 @@ describe("getRunCommunityService climb map", () => {
 				id: "janine",
 				displayName: "janine",
 				photoUrl: null,
+				borderUrl: null,
 				gate: 5,
 				pollsIntoGate: 0,
 			},

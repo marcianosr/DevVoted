@@ -68,15 +68,18 @@ export const strip = (state: RunState, configId: string): RunState => {
 	if (!target || state.peelSlotsRemaining <= 0) return state;
 	const refund = peelRefundIn(state.build.configs, target);
 	const freed = slotsOf(target);
-	return paid(
-		state,
-		stripConfig(state.build, configId),
-		freed,
-		refund > 0
-			? `Dropped ${target.label}, freeing ${freed} (+${refund}KB collected).`
-			: `Dropped ${target.label}, freeing ${freed}.`,
-		refund
-	);
+	return {
+		...paid(
+			state,
+			stripConfig(state.build, configId),
+			freed,
+			refund > 0
+				? `Dropped ${target.label}, freeing ${freed} (+${refund}KB collected).`
+				: `Dropped ${target.label}, freeing ${freed}.`,
+			refund
+		),
+		configsLost: (state.configsLost ?? 0) + 1,
+	};
 };
 
 export const minifyForPeel = (state: RunState, configId: string): RunState => {

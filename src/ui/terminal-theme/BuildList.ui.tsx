@@ -131,7 +131,7 @@ const RunningRow = ({ row }: { row: BuildListRow }) => (
 				</Text>
 			</span>
 			{row.meterPercent === undefined ? null : (
-				<Meter percent={row.meterPercent} className="ml-5" />
+				<Meter percent={row.meterPercent} className="ml-5 w-24" />
 			)}
 		</summary>
 		<div className={FOLD_BODY}>

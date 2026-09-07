@@ -7,15 +7,36 @@ import {
 	maxLevelOf,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { CONFIG_UNLOCKS } from "~/modules/run/config/domain/configUnlock.model";
+import {
+	fallbackCaptionFor,
+	provenanceOf,
+	thematicCaptionFor,
+} from "~/modules/run/config/domain/unlockCaption.model";
 
 import { Panel } from "../Panel.ui";
-import { ConfigsPanel, type DexConfig } from "./ConfigsPanel.ui";
+import {
+	ConfigsPanel,
+	type DexConfig,
+	type LockedState,
+	type UnlockedState,
+} from "./ConfigsPanel.ui";
 
 /** One account's history against the real roster: a config missing from this
  * table has never been dealt, so the counts under each slot header add up on
- * their own rather than being typed in beside the chips. 23 of 33 seen. */
+ * their own rather than being typed in beside the chips. 22 of 35 seen.
+ * `viaFallback` picks which unlock path paid out, and only makes sense on a
+ * config whose thematic objective this account never met. */
 const HISTORY: Readonly<
-	Record<string, { best: number; installs: number; firstSeenGate: number }>
+	Record<
+		string,
+		{
+			best: number;
+			installs: number;
+			firstSeenGate: number;
+			viaFallback?: true;
+		}
+	>
 > = {
 	js: { best: 5, installs: 41, firstSeenGate: 0 },
 	ts: { best: 3, installs: 17, firstSeenGate: 0 },
@@ -23,14 +44,14 @@ const HISTORY: Readonly<
 	jsx: { best: 1, installs: 15, firstSeenGate: 1 },
 	git: { best: 2, installs: 0, firstSeenGate: 2 },
 	html: { best: 1, installs: 2, firstSeenGate: 5 },
-	java: { best: 1, installs: 0, firstSeenGate: 3 },
-	py: { best: 4, installs: 9, firstSeenGate: 1 },
+	java: { best: 1, installs: 0, firstSeenGate: 3, viaFallback: true },
+	py: { best: 4, installs: 9, firstSeenGate: 1, viaFallback: true },
 	"package.json-config": { best: 2, installs: 7, firstSeenGate: 4 },
-	".vue": { best: 1, installs: 0, firstSeenGate: 6 },
+	".vue": { best: 1, installs: 0, firstSeenGate: 6, viaFallback: true },
 	"unit-tests": { best: 1, installs: 0, firstSeenGate: 2 },
 	eslint: { best: 3, installs: 33, firstSeenGate: 0 },
 	stylelint: { best: 2, installs: 5, firstSeenGate: 4 },
-	"moores-law": { best: 1, installs: 4, firstSeenGate: 5 },
+	"moores-law": { best: 1, installs: 4, firstSeenGate: 5, viaFallback: true },
 	"code-coverage": { best: 2, installs: 0, firstSeenGate: 3 },
 	"indexed-db": { best: 2, installs: 22, firstSeenGate: 2 },
 	telemetry: { best: 2, installs: 12, firstSeenGate: 4 },
@@ -41,6 +62,52 @@ const HISTORY: Readonly<
 	overclock: { best: 4, installs: 28, firstSeenGate: 7 },
 };
 
+/** The same account's objective counters, and the reason the page holds
+ * together: every locked config sits under both its thematic target and its
+ * polls-answered fallback, so nothing here is unlocked by a counter it also
+ * shows as unmet. Metrics absent from this table stand at zero. */
+const PROGRESS: Readonly<Record<string, number>> = {
+	"polls-answered": 412,
+	"category-correct:ruby": 6,
+	"audited-gates-cleared": 3,
+	"configs-sold": 12,
+	"offers-locked": 2,
+	"exact-estimates": 1,
+	"cache-hits": 4,
+};
+
+/** Earned and never dealt: 412 answered polls cleared their fallback long ago,
+ * but the shop has not offered either one yet. */
+const GRANTED_NEVER_DEALT: readonly string[] = ["rb", "prefetch"];
+
+const countOf = (metric: string): number => PROGRESS[metric] ?? 0;
+
+const provenanceFor = (configId: string, viaFallback: boolean): string => {
+	const unlock = CONFIG_UNLOCKS[configId];
+	if (unlock === undefined || unlock.kind === "free")
+		return provenanceOf(configId, null);
+
+	return provenanceOf(
+		configId,
+		viaFallback ? "polls-answered" : unlock.objective.metric
+	);
+};
+
+const unseenUnlock = (configId: string): UnlockedState | LockedState => {
+	const unlock = CONFIG_UNLOCKS[configId];
+	if (unlock === undefined || unlock.kind === "free")
+		return { state: "unlocked", provenance: provenanceOf(configId, null) };
+
+	if (GRANTED_NEVER_DEALT.includes(configId))
+		return { state: "unlocked", provenance: provenanceFor(configId, true) };
+
+	return {
+		state: "locked",
+		thematic: thematicCaptionFor(unlock, countOf(unlock.objective.metric)),
+		fallback: fallbackCaptionFor(unlock, countOf("polls-answered")),
+	};
+};
+
 export const dexConfigs: readonly DexConfig[] = CONFIG_LIST.map(
 	(config): DexConfig => {
 		const identity = {
@@ -48,10 +115,15 @@ export const dexConfigs: readonly DexConfig[] = CONFIG_LIST.map(
 			slots: baseSlotsOf(config),
 		};
 		const history = HISTORY[config.id];
-		if (history === undefined) return { ...identity, seen: false };
+		if (history === undefined)
+			return { ...identity, seen: false, unlock: unseenUnlock(config.id) };
 
 		return {
 			...identity,
+			unlock: {
+				state: "unlocked",
+				provenance: provenanceFor(config.id, history.viaFallback === true),
+			},
 			label: config.label,
 			best: history.best,
 			maxVersion: maxLevelOf(config),

@@ -27,7 +27,6 @@ import {
 	type CommunityPollRecord,
 	type ConsumedRunPoll,
 	fetchConsumedPollsForDay,
-	fetchDailySeedCreatedAt,
 	fetchPollsWithOptions,
 	fetchRunProgress,
 	fetchSessionAnswersForDay,
@@ -89,6 +88,7 @@ export type ClimbClimber = ClimbMarker & {
 	id: string;
 	displayName: string;
 	photoUrl?: string | null;
+	borderUrl?: string | null;
 	/** The viewer's own marker — drawn exactly once, however their run ended. */
 	you: boolean;
 };
@@ -103,6 +103,7 @@ export type ClimbFallen = ClimbMarker & {
 	id: string;
 	displayName: string;
 	photoUrl?: string | null;
+	borderUrl?: string | null;
 };
 
 export type ClimbTodayView = {
@@ -133,11 +134,9 @@ const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
 				id: row.userId,
 				displayName: row.displayName ?? row.userId,
 				photoUrl: row.photoUrl,
+				borderUrl: row.borderUrl,
 			},
 			optionIds: new Set<number>(),
-			categoryCode: row.categoryCode,
-			answeredAt: row.answeredAt,
-			elapsedMs: row.answerTimeMs,
 			mirrored: row.mirrored,
 		};
 		if (row.optionId !== null) answer.optionIds.add(row.optionId);
@@ -249,13 +248,11 @@ const buildStandouts = async ({
 	answers,
 	consumed,
 	pollsById,
-	seedCreatedAt,
 	viewerId,
 }: {
 	answers: CommunityAnswer[];
 	consumed: ConsumedRunPoll[];
 	pollsById: Map<number, CommunityPollRecord>;
-	seedCreatedAt: Date | null;
 	viewerId: string;
 }): Promise<CommunityStandout[]> => {
 	const runStats = await fetchActiveRunStats();
@@ -265,7 +262,7 @@ const buildStandouts = async ({
 		// poll board applies.
 		eligiblePolls: consumed.flatMap((entry) => {
 			const poll = pollsById.get(entry.poll_id);
-			return poll ? [{ id: poll.id, question: poll.question }] : [];
+			return poll ? [{ id: poll.id }] : [];
 		}),
 		isCorrect: (pollId, optionIds, mirrored) => {
 			const poll = pollsById.get(pollId);
@@ -273,18 +270,20 @@ const buildStandouts = async ({
 			const graded = mirrored ? mirrorGrading(poll) : poll;
 			return answerOutcome(graded, optionIds) === "correct";
 		},
-		seedCreatedAt,
 		runStats: runStats.map((row) => ({
 			user: {
 				id: row.userId,
 				displayName: row.displayName ?? row.userId,
 				photoUrl: row.photoUrl,
+				borderUrl: row.borderUrl,
 			},
 			gatesCleared: row.gatesCleared,
-			coverage: row.coverage,
+			pollsIntoGate: row.pollsIntoGate,
 			configCount: row.configCount,
+			slotsHeld: row.slotsHeld,
+			configsLost: row.configsLost,
+			startedAtGate: row.startedAtGate,
 			outcomes: row.outcomes,
-			streak: row.streak,
 		})),
 		viewerId,
 	});
@@ -329,6 +328,7 @@ const buildClimbToday = async ({
 			id: row.userId,
 			displayName: row.displayName ?? row.userId,
 			photoUrl: row.photoUrl,
+			borderUrl: row.borderUrl,
 			gate: row.gate,
 			pollsIntoGate: row.pollsIntoGate,
 			you: false,
@@ -341,6 +341,7 @@ const buildClimbToday = async ({
 		id: userId,
 		displayName: viewerRow?.displayName ?? "you",
 		photoUrl: viewerRow?.photoUrl,
+		borderUrl: viewerRow?.borderUrl,
 		...viewerAt,
 		you: true,
 	};
@@ -352,6 +353,7 @@ const buildClimbToday = async ({
 			id: row.userId,
 			displayName: row.displayName ?? row.userId,
 			photoUrl: row.photoUrl,
+			borderUrl: row.borderUrl,
 			gate: row.gate,
 			pollsIntoGate: row.pollsIntoGate,
 		})),
@@ -384,7 +386,6 @@ export const getRunCommunityService = async ({
 
 		const answerRows = await fetchSessionAnswersForDay(date);
 		const answers = groupAnswers(answerRows);
-		const seedCreatedAt = await fetchDailySeedCreatedAt(date);
 		const dayPollIds = [...new Set(answers.map((answer) => answer.pollId))];
 		const polls = await fetchPollsWithOptions([
 			...new Set([...consumed.map((entry) => entry.poll_id), ...dayPollIds]),
@@ -397,7 +398,6 @@ export const getRunCommunityService = async ({
 			answers,
 			consumed,
 			pollsById,
-			seedCreatedAt,
 			viewerId: userId,
 		});
 		if (consumed.length === 0) return EMPTY_VIEW(date, climb, standouts);

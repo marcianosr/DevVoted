@@ -11,15 +11,14 @@ import {
 
 const RED = "red";
 const BLUE = "blue";
-
-const SEED_DROP = new Date("2026-05-13T09:00:00Z");
-const minutesAfterDrop = (minutes: number): Date =>
-	new Date(SEED_DROP.getTime() + minutes * 60_000);
+const GARY = "gary";
+const MISTY = "misty";
 
 const player = (id: string) => ({
 	id,
 	displayName: id[0].toUpperCase() + id.slice(1),
 	photoUrl: null,
+	borderUrl: null,
 });
 
 const answer = (
@@ -32,9 +31,6 @@ const answer = (
 	return {
 		user: player(userId),
 		optionIds: new Set([1]),
-		categoryCode: "css",
-		answeredAt: minutesAfterDrop(5),
-		elapsedMs: 20_000,
 		mirrored: false,
 		...rest,
 		pollId: over.pollId,
@@ -47,10 +43,12 @@ const runStats = (
 ): ActiveRunStats => ({
 	user: player(userId),
 	gatesCleared: 0,
-	coverage: 0,
+	pollsIntoGate: 0,
 	configCount: 0,
+	slotsHeld: 0,
+	configsLost: 0,
+	startedAtGate: 0,
 	outcomes: [],
-	streak: 0,
 	...over,
 });
 
@@ -59,7 +57,6 @@ const input = (over: Partial<StandoutInput> = {}): StandoutInput => ({
 	answers: [],
 	eligiblePolls: [],
 	isCorrect: () => false,
-	seedCreatedAt: SEED_DROP,
 	runStats: [],
 	viewerId: RED,
 	...over,
@@ -70,6 +67,21 @@ const titles = (result: ReturnType<typeof standoutsFor>) =>
 
 const find = (result: ReturnType<typeof standoutsFor>, title: string) =>
 	result.find((standout) => standout.title === title);
+
+const rightOption = 2;
+const picksRight = (_pollId: number, optionIds: ReadonlySet<number>): boolean =>
+	optionIds.has(rightOption);
+
+const room = (
+	pollId: number,
+	rightIds: readonly string[],
+	wrongIds: readonly string[]
+): CommunityAnswer[] => [
+	...rightIds.map((userId) =>
+		answer({ pollId, userId, optionIds: new Set([rightOption]) })
+	),
+	...wrongIds.map((userId) => answer({ pollId, userId })),
+];
 
 describe("longestCorrectStreak", () => {
 	it("counts nothing for a run that has answered nothing", () => {
@@ -105,259 +117,355 @@ describe("standoutsFor — awards nobody has earned", () => {
 		expect(standoutsFor(input())).toEqual([]);
 	});
 
-	it("skips the timed awards when no answer carries a timing", () => {
-		const result = standoutsFor(
-			input({
-				answers: [answer({ pollId: 1, userId: RED, elapsedMs: null })],
-			})
-		);
-
-		expect(titles(result)).not.toContain("fastest answer");
-	});
-
-	it("skips the first-answer awards when the seed's drop time is unknown", () => {
-		const result = standoutsFor(
-			input({
-				answers: [answer({ pollId: 1, userId: RED })],
-				seedCreatedAt: null,
-				isCorrect: () => true,
-			})
-		);
-
-		expect(titles(result)).not.toContain("first to answer");
-		expect(titles(result)).not.toContain("first good");
-	});
-
-	it("waits for a real lead before awarding a category", () => {
-		const result = standoutsFor(
-			input({ answers: [answer({ pollId: 1, userId: RED })] })
-		);
-
-		expect(titles(result)).not.toContain("most CSS polls");
-	});
-
 	it("skips run awards when every active run is still at zero", () => {
 		const result = standoutsFor(input({ runStats: [runStats(RED)] }));
 
 		expect(result).toEqual([]);
 	});
 
-	it("does not call one correct answer in a row a streak", () => {
-		const result = standoutsFor(
-			input({ runStats: [runStats(RED, { outcomes: ["correct", "wrong"] })] })
-		);
-
-		expect(titles(result)).not.toContain("longest streak");
-	});
-});
-
-describe("standoutsFor — poll-scoped awards", () => {
-	it("crowns the quickest answer of the day", () => {
+	it("waits for the room to be mostly wrong before crowning a contrarian", () => {
 		const result = standoutsFor(
 			input({
-				answers: [
-					answer({ pollId: 1, userId: RED, elapsedMs: 30_000 }),
-					answer({ pollId: 1, userId: BLUE, elapsedMs: 9_000 }),
-				],
+				answers: room(7, [RED, BLUE], []),
+				eligiblePolls: [{ id: 7 }],
+				isCorrect: picksRight,
 			})
 		);
 
-		expect(find(result, "fastest answer")).toMatchObject({
-			value: { unit: "duration", ms: 9_000 },
-			voter: { id: BLUE, you: false },
-		});
-	});
-
-	it("measures first to answer from the seed's drop", () => {
-		const result = standoutsFor(
-			input({
-				answers: [
-					answer({
-						pollId: 1,
-						userId: RED,
-						answeredAt: minutesAfterDrop(1.75),
-					}),
-					answer({ pollId: 1, userId: BLUE, answeredAt: minutesAfterDrop(9) }),
-				],
-			})
-		);
-
-		expect(find(result, "first to answer")).toMatchObject({
-			value: { unit: "duration", ms: 105_000 },
-			voter: { id: RED, you: true },
-		});
-	});
-
-	it("separates first good from first to answer when the quick one missed", () => {
-		const result = standoutsFor(
-			input({
-				answers: [
-					answer({ pollId: 1, userId: RED, answeredAt: minutesAfterDrop(1) }),
-					answer({ pollId: 2, userId: BLUE, answeredAt: minutesAfterDrop(4) }),
-				],
-				// Only Blue's answer landed.
-				isCorrect: (pollId) => pollId === 2,
-			})
-		);
-
-		expect(find(result, "first to answer")?.voter.id).toBe(RED);
-		expect(find(result, "first good")).toMatchObject({
-			value: { unit: "duration", ms: 240_000 },
-			voter: { id: BLUE },
-		});
-	});
-
-	it("skips the award when nobody cracked the poll at all", () => {
-		const result = standoutsFor(
-			input({
-				answers: [
-					answer({ pollId: 7, userId: RED }),
-					answer({ pollId: 7, userId: BLUE }),
-				],
-				eligiblePolls: [{ id: 7, question: "Why do margins collide?" }],
-				isCorrect: (_pollId, optionIds) => optionIds.has(9),
-			})
-		);
-
-		expect(find(result, "only one right")).toBeUndefined();
-	});
-
-	it("awards the lone solver of a poll the viewer has already met", () => {
-		const result = standoutsFor(
-			input({
-				answers: [
-					answer({ pollId: 7, userId: RED, optionIds: new Set([1]) }),
-					answer({ pollId: 7, userId: BLUE, optionIds: new Set([2]) }),
-				],
-				eligiblePolls: [{ id: 7, question: "Why do margins collide?" }],
-				isCorrect: (_pollId, optionIds) => optionIds.has(2),
-			})
-		);
-
-		expect(find(result, "only one right")).toMatchObject({
-			value: { unit: "text", text: "Why do margins collide?" },
-			voter: { id: BLUE },
-		});
+		expect(titles(result)).not.toContain("against the room");
 	});
 
 	it("never names a poll the viewer has not reached", () => {
 		const result = standoutsFor(
 			input({
-				answers: [answer({ pollId: 99, userId: BLUE })],
-				// Poll 99 is ahead of the viewer, so it is not eligible.
+				answers: room(99, [BLUE], [RED, GARY, MISTY]),
 				eligiblePolls: [],
-				isCorrect: () => true,
+				isCorrect: picksRight,
 			})
 		);
 
-		expect(find(result, "only one right")).toBeUndefined();
+		expect(titles(result)).not.toContain("against the room");
 	});
 
-	it("shortens a long question so the value column stays a column", () => {
+	it("ignores losses that never turned into a clear", () => {
+		const result = standoutsFor(
+			input({ runStats: [runStats(RED, { configsLost: 4 })] })
+		);
+
+		expect(titles(result)).not.toContain("comeback");
+	});
+
+	it("waits for two losses before calling it a comeback", () => {
 		const result = standoutsFor(
 			input({
-				answers: [answer({ pollId: 7, userId: BLUE })],
-				eligiblePolls: [
-					{
-						id: 7,
-						question:
-							"When block level margins vertically collide, what explains it?",
-					},
-				],
-				isCorrect: () => true,
+				runStats: [runStats(RED, { gatesCleared: 2, configsLost: 1 })],
 			})
 		);
 
-		const value = find(result, "only one right")?.value;
-		expect(value?.unit).toBe("text");
-		const question = value?.unit === "text" ? value.text : "";
-		expect(question.length).toBeLessThanOrEqual(32);
-		expect(question.endsWith("…")).toBe(true);
+		expect(titles(result)).not.toContain("comeback");
 	});
 });
 
-describe("standoutsFor — run-scoped awards", () => {
-	it("names the deepest gate reached by its badge", () => {
+describe("standoutsFor — deepest", () => {
+	it("ranks by track position, so polls into the gate break a gate tie", () => {
 		const result = standoutsFor(
 			input({
 				runStats: [
-					runStats(RED, { gatesCleared: 2 }),
-					runStats(BLUE, { gatesCleared: 6 }),
+					runStats(RED, { gatesCleared: 3, pollsIntoGate: 4 }),
+					runStats(BLUE, { gatesCleared: 4 }),
 				],
 			})
 		);
 
-		expect(find(result, "deepest gate")).toMatchObject({
-			value: { unit: "text", text: "Soul" },
+		expect(find(result, "deepest")).toMatchObject({
+			value: { unit: "text", text: "gate 4" },
 			voter: { id: BLUE },
 		});
 	});
 
-	it("ranks the longest streak a run managed, not the one it is riding", () => {
+	it("names the poll depth when the leader is mid-gate", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [runStats(RED, { gatesCleared: 10, pollsIntoGate: 2 })],
+			})
+		);
+
+		expect(find(result, "deepest")?.value).toEqual({
+			unit: "text",
+			text: "gate 10 · poll 2",
+		});
+	});
+
+	it("wears the gate's swatch", () => {
+		const result = standoutsFor(
+			input({ runStats: [runStats(RED, { gatesCleared: 6 })] })
+		);
+
+		expect(find(result, "deepest")?.swatch).toBeDefined();
+	});
+});
+
+describe("standoutsFor — against the room", () => {
+	it("crowns a right answer on the poll with the lowest right-share", () => {
+		const result = standoutsFor(
+			input({
+				answers: [
+					...room(1, [RED, BLUE], [GARY, MISTY]),
+					...room(2, [GARY], [RED, BLUE, MISTY]),
+				],
+				eligiblePolls: [{ id: 1 }, { id: 2 }],
+				isCorrect: picksRight,
+			})
+		);
+
+		expect(find(result, "against the room")).toMatchObject({
+			value: { unit: "text", text: "right on poll 2 · 25% were" },
+			voter: { id: GARY },
+		});
+	});
+
+	it("breaks a share tie toward the latest poll in the viewer's sequence", () => {
+		const result = standoutsFor(
+			input({
+				answers: [
+					...room(1, [BLUE], [RED, GARY, MISTY]),
+					...room(2, [MISTY], [RED, BLUE, GARY]),
+				],
+				eligiblePolls: [{ id: 1 }, { id: 2 }],
+				isCorrect: picksRight,
+			})
+		);
+
+		expect(find(result, "against the room")).toMatchObject({
+			value: { unit: "text", text: "right on poll 2 · 25% were" },
+			voter: { id: MISTY },
+		});
+	});
+});
+
+describe("standoutsFor — clean sweep", () => {
+	it("calls a perfect settled window a sweep at its gate", () => {
 		const result = standoutsFor(
 			input({
 				runStats: [
-					runStats(RED, {
-						outcomes: ["correct", "correct", "correct", "wrong"],
+					runStats(BLUE, {
+						gatesCleared: 7,
+						pollsIntoGate: 2,
+						outcomes: [
+							"correct",
+							"correct",
+							"correct",
+							"correct",
+							"correct",
+							"wrong",
+							"correct",
+						],
 					}),
-					runStats(BLUE, { outcomes: ["correct", "correct"] }),
 				],
 			})
 		);
 
-		// Red's live streak is 0, but its best was 3.
-		expect(find(result, "longest streak")).toMatchObject({
-			value: { unit: "count", amount: 3 },
-			voter: { id: RED },
+		expect(find(result, "clean sweep")).toMatchObject({
+			value: { unit: "text", text: "5 of 5 at Soul" },
+			voter: { id: BLUE },
 		});
+		expect(find(result, "clean sweep")?.swatch).toBeDefined();
 	});
 
-	it("falls back to the stored streak for a run with no answer history", () => {
-		const result = standoutsFor(
-			input({ runStats: [runStats(RED, { outcomes: [], streak: 4 })] })
-		);
-
-		expect(find(result, "longest streak")?.value).toEqual({
-			unit: "count",
-			amount: 4,
-		});
-	});
-
-	it("reports coverage as a gain, rounded to one decimal", () => {
-		const result = standoutsFor(
-			input({ runStats: [runStats(RED, { coverage: 21.44 })] })
-		);
-
-		expect(find(result, "most coverage")?.value).toEqual({
-			unit: "percent",
-			amount: 21.4,
-		});
-	});
-
-	it("counts the widest build in configs", () => {
+	it("ignores the unsettled trailing window", () => {
 		const result = standoutsFor(
 			input({
 				runStats: [
-					runStats(RED, { configCount: 3 }),
-					runStats(BLUE, { configCount: 7 }),
+					runStats(RED, {
+						gatesCleared: 1,
+						pollsIntoGate: 4,
+						outcomes: ["correct", "correct", "correct", "correct"],
+					}),
+				],
+			})
+		);
+
+		expect(titles(result)).not.toContain("clean sweep");
+	});
+
+	it("walks past a flawed tail to an earlier sweep", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, {
+						gatesCleared: 4,
+						outcomes: [
+							"correct",
+							"correct",
+							"correct",
+							"correct",
+							"correct",
+							"wrong",
+							"correct",
+							"correct",
+							"correct",
+							"correct",
+						],
+					}),
+				],
+			})
+		);
+
+		expect(find(result, "clean sweep")?.value).toEqual({
+			unit: "text",
+			text: "5 of 5 at Cascade",
+		});
+	});
+
+	it("prefers the deeper sweep between players", () => {
+		const sweep: AnswerOutcome[] = [
+			"correct",
+			"correct",
+			"correct",
+			"correct",
+			"correct",
+		];
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, { gatesCleared: 3, outcomes: sweep }),
+					runStats(BLUE, { gatesCleared: 6, outcomes: sweep }),
+				],
+			})
+		);
+
+		expect(find(result, "clean sweep")).toMatchObject({
+			value: { unit: "text", text: "5 of 5 at Rainbow" },
+			voter: { id: BLUE },
+		});
+	});
+
+	it("counts a sweep of the very first gate", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, {
+						gatesCleared: 1,
+						outcomes: ["correct", "correct", "correct", "correct", "correct"],
+					}),
+				],
+			})
+		);
+
+		expect(find(result, "clean sweep")?.value).toEqual({
+			unit: "text",
+			text: "5 of 5 at Pallet",
+		});
+	});
+
+	it("never sweeps a gate below a pinned start", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, {
+						gatesCleared: 5,
+						startedAtGate: 5,
+						outcomes: ["correct", "correct", "correct", "correct", "correct"],
+					}),
+				],
+			})
+		);
+
+		expect(titles(result)).not.toContain("clean sweep");
+	});
+});
+
+describe("standoutsFor — widest build", () => {
+	it("counts the widest build in slots held", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, { slotsHeld: 3 }),
+					runStats(BLUE, { slotsHeld: 11 }),
 				],
 			})
 		);
 
 		expect(find(result, "widest build")).toMatchObject({
-			value: { unit: "configs", amount: 7 },
+			value: { unit: "text", text: "11 slots held" },
 			voter: { id: BLUE },
+		});
+	});
+
+	it("keeps the slot count singular at one", () => {
+		const result = standoutsFor(
+			input({ runStats: [runStats(RED, { slotsHeld: 1 })] })
+		);
+
+		expect(find(result, "widest build")?.value).toEqual({
+			unit: "text",
+			text: "1 slot held",
+		});
+	});
+});
+
+describe("standoutsFor — travelling light", () => {
+	it("rewards depth first, then the lighter build", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, { gatesCleared: 8, configCount: 3 }),
+					runStats(BLUE, { gatesCleared: 8, configCount: 5 }),
+					runStats(GARY, { gatesCleared: 7, configCount: 1 }),
+				],
+			})
+		);
+
+		expect(find(result, "travelling light")).toMatchObject({
+			value: { unit: "text", text: "gate 8 on 3 configs" },
+			voter: { id: RED },
 		});
 	});
 
 	it("keeps the config count singular at one", () => {
 		const result = standoutsFor(
-			input({ runStats: [runStats(RED, { configCount: 1 })] })
+			input({
+				runStats: [runStats(RED, { gatesCleared: 2, configCount: 1 })],
+			})
 		);
 
-		expect(find(result, "widest build")?.value).toEqual({
-			unit: "configs",
-			amount: 1,
+		expect(find(result, "travelling light")?.value).toEqual({
+			unit: "text",
+			text: "gate 2 on 1 config",
+		});
+	});
+
+	it("does not count a pinned start that has cleared nothing yet", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, {
+						gatesCleared: 5,
+						startedAtGate: 5,
+						configCount: 2,
+					}),
+				],
+			})
+		);
+
+		expect(titles(result)).not.toContain("travelling light");
+	});
+});
+
+describe("standoutsFor — comeback", () => {
+	it("crowns the biggest loss that still cleared a gate", () => {
+		const result = standoutsFor(
+			input({
+				runStats: [
+					runStats(RED, { gatesCleared: 3, configsLost: 4 }),
+					runStats(BLUE, { gatesCleared: 5, configsLost: 2 }),
+				],
+			})
+		);
+
+		expect(find(result, "comeback")).toMatchObject({
+			value: { unit: "text", text: "cleared after losing 4 configs" },
+			voter: { id: RED },
 		});
 	});
 });
@@ -381,22 +489,35 @@ describe("standoutsFor — ordering and ties", () => {
 			})
 		);
 
-		expect(find(first, "deepest gate")?.voter.id).toBe(BLUE);
-		expect(find(reversed, "deepest gate")?.voter.id).toBe(BLUE);
+		expect(find(first, "deepest")?.voter.id).toBe(BLUE);
+		expect(find(reversed, "deepest")?.voter.id).toBe(BLUE);
 	});
 
-	it("lists today's awards before the climb's", () => {
+	it("lists the awards in grid order", () => {
 		const result = standoutsFor(
 			input({
-				answers: [answer({ pollId: 1, userId: RED })],
-				runStats: [runStats(BLUE, { gatesCleared: 4 })],
+				answers: room(1, [GARY], [RED, BLUE, MISTY]),
+				eligiblePolls: [{ id: 1 }],
+				isCorrect: picksRight,
+				runStats: [
+					runStats(BLUE, {
+						gatesCleared: 4,
+						configCount: 2,
+						slotsHeld: 5,
+						configsLost: 2,
+						outcomes: ["correct", "correct", "correct", "correct", "correct"],
+					}),
+				],
 			})
 		);
 
 		expect(titles(result)).toEqual([
-			"fastest answer",
-			"first to answer",
-			"deepest gate",
+			"deepest",
+			"against the room",
+			"clean sweep",
+			"widest build",
+			"travelling light",
+			"comeback",
 		]);
 	});
 
@@ -405,6 +526,16 @@ describe("standoutsFor — ordering and ties", () => {
 			input({ runStats: [runStats(RED, { gatesCleared: 4 })] })
 		);
 
-		expect(find(result, "deepest gate")?.voter.you).toBe(true);
+		expect(find(result, "deepest")?.voter.you).toBe(true);
+	});
+
+	it("carries the equipped border onto the voter chip", () => {
+		const stats = {
+			...runStats(BLUE, { gatesCleared: 2 }),
+			user: { ...player(BLUE), borderUrl: "/borders/x.png" },
+		};
+		const result = standoutsFor(input({ runStats: [stats] }));
+
+		expect(find(result, "deepest")?.voter.borderUrl).toBe("/borders/x.png");
 	});
 });

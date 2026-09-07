@@ -26,6 +26,9 @@ export const TRACK_LENGTH = GATE_COUNT * SLICE_WINDOW;
 export const trackPosition = ({ gate, pollsIntoGate }: ClimbMarker): number =>
 	gate * SLICE_WINDOW + pollsIntoGate;
 
+export const gateOf = (position: number): number =>
+	Math.min(GATE_COUNT - 1, Math.floor(position / SLICE_WINDOW));
+
 /** Where a position sits along the track, as a percentage of the full ladder. */
 export const positionPercent = (position: number): number =>
 	(position / TRACK_LENGTH) * 100;

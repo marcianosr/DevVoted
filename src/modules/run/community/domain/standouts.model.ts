@@ -1,12 +1,4 @@
-import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
-import {
-	count,
-	type Count,
-	duration,
-	type Duration,
-	percent,
-	type Percent,
-} from "~/shared/lib/displayValue";
+import type { Count, Duration, Percent } from "~/shared/lib/displayValue";
 
 import {
 	type AnswerOutcome,
@@ -17,16 +9,18 @@ import {
 	swatchForGate,
 	type SwatchTheme,
 } from "~/modules/run/gate/domain/swatch.model";
-import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { trackPosition } from "~/modules/run/community/domain/climbMap.model";
 
 /**
- * The day's awards (DVTD-wp69). Two kinds, and the difference matters:
+ * The day's awards (DVTD-wp69, reshaped by ADR-065). Two kinds, and the
+ * difference matters:
  *
- * - **Poll-scoped** awards read today's answers — who was quickest, who got the
- *   one nobody else did.
+ * - **Poll-scoped** awards read today's answers — who was right where the room
+ *   was wrong.
  * - **Run-scoped** awards read live run state across *active runs only* — how
- *   deep, how wide, how hot. These rank a standing, not an activity, so a player
- *   who has not answered today still holds the deepest gate.
+ *   deep, how wide, how light. These rank a standing, not an activity, so a
+ *   player who has not answered today still holds the deepest position.
  *
  * Everything here is pure: correctness arrives as a callback and run state as
  * plain numbers, so no award needs a database to be tested.
@@ -37,15 +31,16 @@ export type CommunityVoter = {
 	displayName: string;
 	/** Optional so fixtures stay lean — the handler always sets it. */
 	photoUrl?: string | null;
+	/** The equipped border's art, worn wherever the game draws the player. */
+	borderUrl?: string | null;
 	/** The viewer's own chip — rendered as "you". */
 	you: boolean;
 };
 
 /**
  * What an award is worth. `configs` is this context's own — it carries a plural
- * the shared units have no reason to know about. `text` is for the two awards
- * whose value genuinely is prose (a gate's name, a question snippet), not an
- * escape hatch for numbers that were easier to format here.
+ * the shared units have no reason to know about. The six live awards all speak
+ * prose (`text`); the other variants stay for the fixtures that still emit them.
  */
 export type StandoutValue =
 	| Duration
@@ -67,16 +62,18 @@ export type CommunityStandout = {
 	swatch?: { theme: SwatchTheme; finish: SwatchFinish };
 };
 
-type Player = { id: string; displayName: string; photoUrl: string | null };
+type Player = {
+	id: string;
+	displayName: string;
+	photoUrl: string | null;
+	borderUrl: string | null;
+};
 
 /** One player's answer to one poll, folded from the day's response rows. */
 export type CommunityAnswer = {
 	pollId: number;
 	user: Player;
 	optionIds: Set<number>;
-	categoryCode: string | null;
-	answeredAt: Date | null;
-	elapsedMs: number | null;
 	/** Given at a Mirror gate, so the picks answer the inverted poll (ADR-038).
 	 * Whoever grades this answer has to invert with it. */
 	mirrored: boolean;
@@ -98,19 +95,19 @@ export type CorrectnessCheck = (
 export type ActiveRunStats = {
 	user: Player;
 	gatesCleared: number;
-	coverage: number;
+	pollsIntoGate: number;
 	configCount: number;
+	slotsHeld: number;
+	configsLost: number;
+	startedAtGate: number;
 	outcomes: readonly AnswerOutcome[];
-	/** The engine's *current* streak — the fallback for snapshots predating `outcomes`. */
-	streak: number;
 };
 
 export type StandoutInput = {
 	answers: readonly CommunityAnswer[];
 	/** Polls the viewer is already past — the only ones an award may name. */
-	eligiblePolls: readonly { id: number; question: string }[];
+	eligiblePolls: readonly { id: number }[];
 	isCorrect: CorrectnessCheck;
-	seedCreatedAt: Date | null;
 	runStats: readonly ActiveRunStats[];
 	viewerId: string;
 };
@@ -146,191 +143,24 @@ const award = (
 
 const text = (value: string): StandoutValue => ({ unit: "text", text: value });
 
-// ─── Poll-scoped awards ───────────────────────────────────────────────────────
+const plural = (amount: number, noun: string): string =>
+	`${amount} ${noun}${amount === 1 ? "" : "s"}`;
 
-type TimedAnswer = CommunityAnswer & { elapsedMs: number };
-const isTimed = (answer: CommunityAnswer): answer is TimedAnswer =>
-	answer.elapsedMs !== null;
-
-const fastestAnswer = ({
-	answers,
-	viewerId,
-}: StandoutInput): CommunityStandout | null => {
-	// Negated, because `topBy` ranks high-to-low and quickest wins here.
-	const fastest = topBy(
-		answers.filter(isTimed),
-		(answer) => -answer.elapsedMs,
-		(answer) => answer.user
-	);
-	if (!fastest) return null;
-	return award(
-		fastest.user,
-		viewerId,
-		"fastest answer",
-		duration(fastest.elapsedMs)
-	);
+const withGateSwatch = (
+	standout: CommunityStandout,
+	gate: number
+): CommunityStandout => {
+	const swatch = swatchForGate(gate);
+	if (!swatch) return standout;
+	return {
+		...standout,
+		swatch: { theme: swatch.theme, finish: swatch.finish },
+	};
 };
-
-const sinceDrop = (answeredAt: Date, seedCreatedAt: Date): StandoutValue =>
-	duration(Math.max(0, answeredAt.getTime() - seedCreatedAt.getTime()));
-
-type DatedAnswer = CommunityAnswer & { answeredAt: Date };
-const isDated = (answer: CommunityAnswer): answer is DatedAnswer =>
-	answer.answeredAt !== null;
-
-const earliest = (answers: readonly DatedAnswer[]): DatedAnswer | undefined =>
-	topBy(
-		answers,
-		(answer) => -answer.answeredAt.getTime(),
-		(answer) => answer.user
-	);
-
-const firstToAnswer = ({
-	answers,
-	seedCreatedAt,
-	viewerId,
-}: StandoutInput): CommunityStandout | null => {
-	if (!seedCreatedAt) return null;
-	const first = earliest(answers.filter(isDated));
-	if (!first) return null;
-	return award(
-		first.user,
-		viewerId,
-		"first to answer",
-		sinceDrop(first.answeredAt, seedCreatedAt)
-	);
-};
-
-/**
- * First to get one *right*. Distinct from "first to answer", which rewards being
- * quick off the mark whether or not it landed.
- */
-const firstGood = ({
-	answers,
-	isCorrect,
-	seedCreatedAt,
-	viewerId,
-}: StandoutInput): CommunityStandout | null => {
-	if (!seedCreatedAt) return null;
-	const first = earliest(
-		answers
-			.filter(isDated)
-			.filter((answer) =>
-				isCorrect(answer.pollId, answer.optionIds, answer.mirrored)
-			)
-	);
-	if (!first) return null;
-	return award(
-		first.user,
-		viewerId,
-		"first good",
-		sinceDrop(first.answeredAt, seedCreatedAt)
-	);
-};
-
-const categoryNameOf = (code: string): string =>
-	isCategoryCode(code) ? getCategoryMetadata(code).name : code;
-
-const mostInCategory = ({
-	answers,
-	viewerId,
-}: StandoutInput): CommunityStandout | null => {
-	const tallies = new Map<
-		string,
-		{ user: Player; category: string; count: number }
-	>();
-	for (const answer of answers) {
-		if (!answer.categoryCode) continue;
-		const key = `${answer.user.id}:${answer.categoryCode}`;
-		const tally = tallies.get(key) ?? {
-			user: answer.user,
-			category: answer.categoryCode,
-			count: 0,
-		};
-		tally.count += 1;
-		tallies.set(key, tally);
-	}
-	const top = topBy(
-		[...tallies.values()],
-		(tally) => tally.count,
-		(tally) => tally.user
-	);
-	// A "most" of one is no distinction — the award waits for a real lead.
-	if (!top || top.count < 2) return null;
-	return award(
-		top.user,
-		viewerId,
-		`most ${categoryNameOf(top.category)} polls`,
-		count(top.count)
-	);
-};
-
-const QUESTION_MAX = 32;
-
-const shorten = (question: string): string =>
-	question.length <= QUESTION_MAX
-		? question
-		: `${question.slice(0, QUESTION_MAX - 1).trimEnd()}…`;
-
-/**
- * The poll exactly one player got right — the day's hardest question, named by
- * the one who cracked it.
- *
- * Only polls the viewer has already met are eligible: naming one still ahead of
- * them would spoil the climb, which is the same rule the poll board's redaction
- * follows. Where several qualify, the latest in the viewer's sequence wins —
- * it is the one they most recently struggled with.
- */
-const onlyOneRight = ({
-	answers,
-	eligiblePolls,
-	isCorrect,
-	viewerId,
-}: StandoutInput): CommunityStandout | null => {
-	const lone = eligiblePolls
-		.map((poll) => {
-			const winners = answers.filter(
-				(answer) =>
-					answer.pollId === poll.id &&
-					isCorrect(answer.pollId, answer.optionIds, answer.mirrored)
-			);
-			return winners.length === 1 ? { poll, winner: winners[0] } : null;
-		})
-		.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-
-	const latest = lone.at(-1);
-	if (!latest) return null;
-	return award(
-		latest.winner.user,
-		viewerId,
-		"only one right",
-		text(shorten(latest.poll.question))
-	);
-};
-
-// ─── Run-scoped awards (active runs only) ─────────────────────────────────────
-
-/** The longest run of correct answers, not the streak being ridden now. */
-export const longestCorrectStreak = (
-	outcomes: readonly AnswerOutcome[]
-): number => {
-	let best = 0;
-	let current = 0;
-	for (const outcome of outcomes) {
-		current = nextStreak(current, outcome);
-		best = Math.max(best, current);
-	}
-	return best;
-};
-
-/** Snapshots taken before the run engine kept a history fall back to the live streak. */
-const streakOf = (stats: ActiveRunStats): number =>
-	stats.outcomes.length > 0
-		? longestCorrectStreak(stats.outcomes)
-		: stats.streak;
 
 const runAward = (
-	{ runStats, viewerId }: StandoutInput,
+	runStats: readonly ActiveRunStats[],
+	viewerId: string,
 	title: string,
 	score: (stats: ActiveRunStats) => number,
 	format: (stats: ActiveRunStats) => StandoutValue,
@@ -346,74 +176,197 @@ const justTheAward = (
 	result: ReturnType<typeof runAward>
 ): CommunityStandout | null => result?.standout ?? null;
 
-const deepestGate = (input: StandoutInput): CommunityStandout | null => {
+// ─── The six (ADR-065, grid order) ────────────────────────────────────────────
+
+const deepest = ({
+	runStats,
+	viewerId,
+}: StandoutInput): CommunityStandout | null => {
 	const result = runAward(
-		input,
-		"deepest gate",
-		(stats) => stats.gatesCleared,
-		(stats) => text(swatchForGate(stats.gatesCleared)?.gateName ?? "the climb")
+		runStats,
+		viewerId,
+		"deepest",
+		(stats) =>
+			trackPosition({
+				gate: stats.gatesCleared,
+				pollsIntoGate: stats.pollsIntoGate,
+			}),
+		(stats) =>
+			text(
+				stats.pollsIntoGate === 0
+					? `gate ${stats.gatesCleared}`
+					: `gate ${stats.gatesCleared} · poll ${stats.pollsIntoGate}`
+			)
 	);
 	if (!result) return null;
-	// The badge, not just its name: the gate you are chasing is a colour before
-	// it is a word, everywhere else in the game.
-	const swatch = swatchForGate(result.top.gatesCleared);
-	return swatch
-		? {
-				...result.standout,
-				swatch: { theme: swatch.theme, finish: swatch.finish },
-			}
-		: result.standout;
+	return withGateSwatch(result.standout, result.top.gatesCleared);
 };
 
-const longestStreak = (input: StandoutInput): CommunityStandout | null =>
-	justTheAward(
-		runAward(
-			input,
-			"longest streak",
-			streakOf,
-			(stats) => count(streakOf(stats)),
-			// One correct answer in a row is just an answer.
-			2
-		)
-	);
+export const AGAINST_ROOM_MAX_SHARE = 50;
 
-const mostCoverage = (input: StandoutInput): CommunityStandout | null =>
-	justTheAward(
-		runAward(
-			input,
-			"most coverage",
-			(stats) => stats.coverage,
-			(stats) => percent(roundToOneDecimal(stats.coverage))
-		)
-	);
+type Room = {
+	index: number;
+	right: readonly CommunityAnswer[];
+	share: number;
+};
 
-const widestBuild = (input: StandoutInput): CommunityStandout | null =>
+const againstTheRoom = ({
+	answers,
+	eligiblePolls,
+	isCorrect,
+	viewerId,
+}: StandoutInput): CommunityStandout | null => {
+	const rooms = eligiblePolls
+		.map((poll, index): Room | null => {
+			const pollAnswers = answers.filter((answer) => answer.pollId === poll.id);
+			const right = pollAnswers.filter((answer) =>
+				isCorrect(answer.pollId, answer.optionIds, answer.mirrored)
+			);
+			if (right.length === 0) return null;
+			const share = Math.round((right.length / pollAnswers.length) * 100);
+			if (share > AGAINST_ROOM_MAX_SHARE) return null;
+			return { index, right, share };
+		})
+		.filter((room): room is Room => room !== null);
+
+	const hardest = rooms.reduce<Room | null>(
+		(best, room) => (best === null || room.share <= best.share ? room : best),
+		null
+	);
+	if (!hardest) return null;
+
+	const winner = topBy(
+		hardest.right,
+		() => 0,
+		(answer) => answer.user
+	);
+	if (!winner) return null;
+	return award(
+		winner.user,
+		viewerId,
+		"against the room",
+		text(`right on poll ${hardest.index + 1} · ${hardest.share}% were`)
+	);
+};
+
+const sweepGateOf = (stats: ActiveRunStats): number | null => {
+	const settledCount = stats.outcomes.length - stats.pollsIntoGate;
+	for (let back = 0; (back + 1) * SLICE_WINDOW <= settledCount; back++) {
+		const end = settledCount - back * SLICE_WINDOW;
+		const chunk = stats.outcomes.slice(end - SLICE_WINDOW, end);
+		const gate = stats.gatesCleared - 1 - back;
+		if (gate < 0 || gate < stats.startedAtGate) return null;
+		if (chunk.every((outcome) => outcome === "correct")) return gate;
+	}
+	return null;
+};
+
+const cleanSweep = ({
+	runStats,
+	viewerId,
+}: StandoutInput): CommunityStandout | null => {
+	const sweeps = runStats.flatMap((stats) => {
+		const gate = sweepGateOf(stats);
+		return gate === null ? [] : [{ stats, gate }];
+	});
+	const top = topBy(
+		sweeps,
+		(sweep) => sweep.gate,
+		(sweep) => sweep.stats.user
+	);
+	if (!top) return null;
+	const gateName = swatchForGate(top.gate)?.gateName ?? `gate ${top.gate}`;
+	return withGateSwatch(
+		award(
+			top.stats.user,
+			viewerId,
+			"clean sweep",
+			text(`${SLICE_WINDOW} of ${SLICE_WINDOW} at ${gateName}`)
+		),
+		top.gate
+	);
+};
+
+const widestBuild = ({
+	runStats,
+	viewerId,
+}: StandoutInput): CommunityStandout | null =>
 	justTheAward(
 		runAward(
-			input,
+			runStats,
+			viewerId,
 			"widest build",
-			(stats) => stats.configCount,
-			(stats) => ({ unit: "configs", amount: stats.configCount })
+			(stats) => stats.slotsHeld,
+			(stats) => text(`${plural(stats.slotsHeld, "slot")} held`)
 		)
 	);
+
+export const TRAVELLING_LIGHT_STRIDE = 100;
+
+const travellingLight = ({
+	runStats,
+	viewerId,
+}: StandoutInput): CommunityStandout | null =>
+	justTheAward(
+		runAward(
+			runStats.filter(
+				(stats) =>
+					stats.gatesCleared > stats.startedAtGate && stats.configCount >= 1
+			),
+			viewerId,
+			"travelling light",
+			(stats) =>
+				stats.gatesCleared * TRAVELLING_LIGHT_STRIDE - stats.configCount,
+			(stats) =>
+				text(
+					`gate ${stats.gatesCleared} on ${plural(stats.configCount, "config")}`
+				)
+		)
+	);
+
+export const COMEBACK_MIN_LOSSES = 2;
+
+const comeback = ({
+	runStats,
+	viewerId,
+}: StandoutInput): CommunityStandout | null =>
+	justTheAward(
+		runAward(
+			runStats.filter((stats) => stats.gatesCleared > stats.startedAtGate),
+			viewerId,
+			"comeback",
+			(stats) => stats.configsLost,
+			(stats) =>
+				text(`cleared after losing ${plural(stats.configsLost, "config")}`),
+			COMEBACK_MIN_LOSSES
+		)
+	);
+
+// ─── Kept for proto-run's fixtures ────────────────────────────────────────────
+
+/** The longest run of correct answers, not the streak being ridden now. */
+export const longestCorrectStreak = (
+	outcomes: readonly AnswerOutcome[]
+): number => {
+	let best = 0;
+	let current = 0;
+	for (const outcome of outcomes) {
+		current = nextStreak(current, outcome);
+		best = Math.max(best, current);
+	}
+	return best;
+};
 
 // ─── The panel ────────────────────────────────────────────────────────────────
 
-/**
- * Poll-scoped first, run-scoped second. The panel lays these out in two columns
- * filled top-to-bottom, so the order is also the split: how today went on the
- * left, where the climb stands on the right.
- */
+/** Registry order is the grid order (ADR-065). */
 const AWARDS = [
-	fastestAnswer,
-	firstToAnswer,
-	firstGood,
-	mostInCategory,
-	onlyOneRight,
-	deepestGate,
-	longestStreak,
-	mostCoverage,
+	deepest,
+	againstTheRoom,
+	cleanSweep,
 	widestBuild,
+	travellingLight,
+	comeback,
 ] as const;
 
 export const standoutsFor = (input: StandoutInput): CommunityStandout[] =>

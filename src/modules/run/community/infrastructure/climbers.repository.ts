@@ -2,6 +2,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { runStatesTable, runsTable, usersTable } from "~/database/schema";
+import { findBorderById } from "~/domains/economy/data/borders";
 
 import type {
 	AnsweredPoll,
@@ -11,6 +12,11 @@ import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type { Build } from "~/modules/run/build/domain/build.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	type Config,
+	type ConfigSize,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 
 /**
  * "Who's climbing" reads (DVTD-6l80). These are the queries `run_states`'
@@ -36,6 +42,7 @@ const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
 const windowKey = <K extends keyof GateWindow>(key: K) => sql.raw(`'${key}'`);
 const buildKey = <K extends keyof Build>(key: K) => sql.raw(`'${key}'`);
 const answeredKey = <K extends keyof AnsweredPoll>(key: K) => sql.raw(`${key}`);
+const configKey = <K extends keyof Config>(key: K) => sql.raw(`'${key}'`);
 
 const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
 
@@ -43,10 +50,16 @@ const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->${stateKey(
  *  Mirrors trackPosition; climbMap.model.spec pins the formula. */
 const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} + coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
 
+export const borderUrlOf = (equippedBorderId: string | null): string | null => {
+	if (equippedBorderId === null) return null;
+	return findBorderById(equippedBorderId)?.image ?? null;
+};
+
 export type ClimberRow = {
 	userId: string;
 	displayName: string | null;
 	photoUrl: string | null;
+	borderUrl: string | null;
 	gate: number;
 	pollsIntoGate: number;
 };
@@ -56,12 +69,13 @@ export type ClimberRow = {
  * read-only progress — the same class of data as the community board's voter
  * chips — so it is not scoped to the viewer.
  */
-export const fetchActiveClimbers = async (): Promise<ClimberRow[]> =>
-	db
+export const fetchActiveClimbers = async (): Promise<ClimberRow[]> => {
+	const rows = await db
 		.select({
 			userId: runsTable.user_id,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			gate: runStatesTable.gates_cleared,
 			pollsIntoGate,
 		})
@@ -69,6 +83,11 @@ export const fetchActiveClimbers = async (): Promise<ClimberRow[]> =>
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
 		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
+	return rows.map(({ equippedBorderId, ...row }) => ({
+		...row,
+		borderUrl: borderUrlOf(equippedBorderId),
+	}));
+};
 
 /**
  * One run's place on the climb, whatever its status. The viewer's marker is read
@@ -90,12 +109,33 @@ export type ActiveRunStatsRow = {
 	userId: string;
 	displayName: string | null;
 	photoUrl: string | null;
+	borderUrl: string | null;
 	gatesCleared: number;
-	coverage: number;
+	pollsIntoGate: number;
 	configCount: number;
+	slotsHeld: number;
+	configsLost: number;
+	startedAtGate: number;
 	outcomes: AnswerOutcome[];
-	streak: number;
 };
+
+type ConfigFootprint = {
+	slots: ConfigSize | null;
+	minified: boolean | null;
+};
+
+const slotsHeldIn = (footprints: readonly ConfigFootprint[]): number =>
+	footprints.reduce(
+		(total, footprint) =>
+			total +
+			slotsOf({
+				...(footprint.slots === null ? {} : { slots: footprint.slots }),
+				...(footprint.minified === null
+					? {}
+					: { minified: footprint.minified }),
+			}),
+		0
+	);
 
 /**
  * Every live run's standing, for the run-scoped standouts (DVTD-wp69).
@@ -105,32 +145,49 @@ export type ActiveRunStatsRow = {
  * correctness data into Node just to measure a streak. Postgres unnests the
  * array and hands back the verdicts alone.
  */
-export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> =>
-	db
+export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> => {
+	const rows = await db
 		.select({
 			userId: runsTable.user_id,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			gatesCleared: runStatesTable.gates_cleared,
-			coverage: runStatesTable.coverage,
+			pollsIntoGate,
 			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->${stateKey("build")}->${buildKey("configs")}), 0)`,
+			footprints: sql<ConfigFootprint[]>`coalesce((
+				select json_agg(json_build_object(
+					'slots', cfg->${configKey("slots")},
+					'minified', cfg->${configKey("minified")}
+				))
+				from json_array_elements(${runStatesTable.state}->${stateKey("build")}->${buildKey("configs")})
+					as build(cfg)
+			), '[]'::json)`,
+			configsLost: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("configsLost")})::int, 0)`,
+			startedAtGate: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("startedAtGate")})::int, 0)`,
 			outcomes: sql<AnswerOutcome[]>`coalesce((
 				select json_agg(entry->>'${answeredKey("outcome")}' order by ord)
 				from json_array_elements(${runStatesTable.state}->${stateKey("allAnswered")})
 					with ordinality as history(entry, ord)
 			), '[]'::json)`,
-			streak: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("streak")})::int, 0)`,
 		})
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
 		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
+	return rows.map(({ equippedBorderId, footprints, ...row }) => ({
+		...row,
+		borderUrl: borderUrlOf(equippedBorderId),
+		slotsHeld: slotsHeldIn(footprints),
+	}));
+};
 
 export type FallenRow = {
 	runId: number;
 	userId: string;
 	displayName: string | null;
 	photoUrl: string | null;
+	borderUrl: string | null;
 	gate: number;
 	pollsIntoGate: number;
 };
@@ -163,12 +220,13 @@ export const localDayRange = (date: string): { start: Date; end: Date } => {
 export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 	const { start: dayStart, end: dayEnd } = localDayRange(date);
 
-	return db
+	const rows = await db
 		.select({
 			runId: runsTable.id,
 			userId: runsTable.user_id,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			gate: runStatesTable.gates_cleared,
 			pollsIntoGate,
 		})
@@ -184,6 +242,10 @@ export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 				lt(runsTable.finished_at, dayEnd)
 			)
 		);
+	return rows.map(({ equippedBorderId, ...row }) => ({
+		...row,
+		borderUrl: borderUrlOf(equippedBorderId),
+	}));
 };
 
 /**

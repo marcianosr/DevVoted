@@ -1,5 +1,7 @@
 import { clsx } from "clsx";
 
+import type { UnlockPathCaption } from "~/modules/run/config/domain/unlockCaption.model";
+
 import { DexChip } from "../DexChip.ui";
 import { Figures } from "../Figures.ui";
 import { plural } from "../format";
@@ -18,6 +20,9 @@ const GROUP = "flex flex-col gap-2 py-3";
 const GROUP_HEAD = "flex items-center gap-2";
 const COUNT = "ml-auto shrink-0";
 const CHIPS = "flex flex-wrap gap-2";
+const UNSEEN_ROWS = "flex flex-col gap-1.5";
+const UNSEEN_ROW = "flex flex-wrap items-center gap-x-3 gap-y-1";
+const UNSEEN_PATHS = "flex min-w-0 flex-col";
 
 const TABLE = "flex flex-col divide-y divide-edge";
 const TABLE_HEAD = "flex items-center gap-3 pb-1";
@@ -41,8 +46,20 @@ type ConfigIdentity = {
 	slots: number;
 };
 
+export type UnlockedState = {
+	state: "unlocked";
+	provenance: string;
+};
+
+export type LockedState = {
+	state: "locked";
+	thematic: UnlockPathCaption;
+	fallback: UnlockPathCaption;
+};
+
 export type SeenConfig = ConfigIdentity & {
 	seen?: true;
+	unlock: UnlockedState;
 	label: string;
 	/** Highest version ever dealt. Versions climb one rung at a time, so this
 	 * single figure says which rungs you have held. */
@@ -53,10 +70,11 @@ export type SeenConfig = ConfigIdentity & {
 	effect: string;
 };
 
-/** An unseen config hands over its size only: enough to say what shape of thing
- * is missing, never which one. */
+/** An unseen config hands over its size and how it is come by: enough to say
+ * what shape of thing is missing and what closes the gap, never which one. */
 export type UnseenConfig = ConfigIdentity & {
 	seen: false;
+	unlock: UnlockedState | LockedState;
 	label?: never;
 	best?: never;
 	maxVersion?: never;
@@ -83,6 +101,9 @@ export type ConfigsPanelProps = {
 
 const isSeen = (config: DexConfig): config is SeenConfig =>
 	config.seen !== false;
+
+const isUnseen = (config: DexConfig): config is UnseenConfig =>
+	config.seen === false;
 
 const slotSizes = (configs: readonly DexConfig[]) =>
 	[...new Set(configs.map((config) => config.slots))].sort((a, b) => a - b);
@@ -120,23 +141,55 @@ const Entry = ({
 	selected,
 	onSelect,
 }: {
-	config: DexConfig;
+	config: SeenConfig;
 	selected: boolean;
 	onSelect: (id: string) => void;
-}) => {
-	if (!isSeen(config)) return <DexChip slots={config.slots} seen={false} />;
+}) => (
+	<DexChip
+		slots={config.slots}
+		label={config.label}
+		version={config.best}
+		maxVersion={config.maxVersion}
+		selected={selected}
+		onSelect={() => onSelect(config.id)}
+	/>
+);
 
-	return (
-		<DexChip
-			slots={config.slots}
-			label={config.label}
-			version={config.best}
-			maxVersion={config.maxVersion}
-			selected={selected}
-			onSelect={() => onSelect(config.id)}
-		/>
-	);
-};
+const PathLine = ({
+	path,
+	prefix,
+}: {
+	path: UnlockPathCaption;
+	prefix?: string;
+}) => (
+	<Text tone="faint" size="caption">
+		{prefix === undefined ? "" : `${prefix} `}
+		{path.kind === "counted" ? (
+			`${path.text} · ${path.count}/${path.target}`
+		) : (
+			<>
+				<span aria-hidden>{path.done ? "☑" : "☐"} </span>
+				{path.text}
+			</>
+		)}
+	</Text>
+);
+
+const UnseenRow = ({ config }: { config: UnseenConfig }) => (
+	<li className={UNSEEN_ROW}>
+		<DexChip slots={config.slots} seen={false} />
+		{config.unlock.state === "unlocked" ? (
+			<Text tone="faint" size="caption">
+				{config.unlock.provenance}
+			</Text>
+		) : (
+			<span className={UNSEEN_PATHS}>
+				<PathLine path={config.unlock.thematic} />
+				<PathLine path={config.unlock.fallback} prefix="or" />
+			</span>
+		)}
+	</li>
+);
 
 const Group = ({
 	slots,
@@ -148,29 +201,43 @@ const Group = ({
 	configs: readonly DexConfig[];
 	selectedId?: string;
 	onSelect: (id: string) => void;
-}) => (
-	<div className={GROUP}>
-		<div className={GROUP_HEAD}>
-			<span aria-hidden>
-				<Slots slots={slots} solid />
-			</span>
-			<Text className="font-bold">{plural(slots, "slot")}</Text>
-			<Text tone="faint" className={COUNT}>
-				{configs.filter(isSeen).length} of {configs.length}
-			</Text>
+}) => {
+	const seen = configs.filter(isSeen);
+	const unseen = configs.filter(isUnseen);
+
+	return (
+		<div className={GROUP}>
+			<div className={GROUP_HEAD}>
+				<span aria-hidden>
+					<Slots slots={slots} solid />
+				</span>
+				<Text className="font-bold">{plural(slots, "slot")}</Text>
+				<Text tone="faint" className={COUNT}>
+					{seen.length} of {configs.length}
+				</Text>
+			</div>
+			{seen.length === 0 ? null : (
+				<div className={CHIPS}>
+					{seen.map((config) => (
+						<Entry
+							key={config.id}
+							config={config}
+							selected={config.id === selectedId}
+							onSelect={onSelect}
+						/>
+					))}
+				</div>
+			)}
+			{unseen.length === 0 ? null : (
+				<ul className={UNSEEN_ROWS}>
+					{unseen.map((config) => (
+						<UnseenRow key={config.id} config={config} />
+					))}
+				</ul>
+			)}
 		</div>
-		<div className={CHIPS}>
-			{configs.map((config) => (
-				<Entry
-					key={config.id}
-					config={config}
-					selected={config.id === selectedId}
-					onSelect={onSelect}
-				/>
-			))}
-		</div>
-	</div>
-);
+	);
+};
 
 const Grouped = ({
 	configs,
@@ -299,6 +366,9 @@ const Detail = ({ config }: { config: SeenConfig }) => (
 				{versionLine(config.best, config.maxVersion)}
 			</Text>
 		</div>
+		<Text tone="faint" size="caption">
+			{config.unlock.provenance}
+		</Text>
 	</div>
 );
 
@@ -306,7 +376,7 @@ const viewOf = (
 	view: string,
 	configs: readonly DexConfig[]
 ): readonly DexConfig[] => {
-	if (view === "unseen") return configs.filter((config) => !isSeen(config));
+	if (view === "unseen") return configs.filter(isUnseen);
 	return configs;
 };
 

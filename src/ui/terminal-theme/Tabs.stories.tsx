@@ -32,3 +32,19 @@ export const Dex: Story = {
 		],
 	},
 };
+
+export const PollPicker: Story = {
+	args: {
+		label: "today's polls",
+		variant: "pill",
+		activeId: "2",
+		onSelect: noop,
+		items: [
+			{ id: "1", label: "1" },
+			{ id: "2", label: "2" },
+			{ id: "3", label: "3", disabled: true },
+			{ id: "4", label: "4", disabled: true },
+			{ id: "5", label: "5", disabled: true },
+		],
+	},
+};

@@ -1,8 +1,7 @@
 import { clsx } from "clsx";
 
-const TRACK =
-	"block h-1.5 w-full overflow-hidden rounded-full bg-surface-raised";
-const FILL = "block h-full rounded-full bg-theme";
+const TRACK = "block h-1.5 w-full overflow-hidden bg-surface-raised";
+const FILL = "block h-full bg-theme";
 
 const clamped = (percent: number) => Math.min(100, Math.max(0, percent));
 

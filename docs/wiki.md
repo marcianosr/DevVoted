@@ -865,36 +865,36 @@ polls on the same day.
 
 After every shop visit the climb detours through `/run/community`, and a run locked for
 the day lands here too, with "Back to your run" disabled until local midnight and the
-countdown beside it. The page is one screen: the climb map on top, a hairline rule,
-then the polls, both borrowing the gate review's vocabulary.
+countdown beside it. The page wears the terminal-theme kit (`CommunityScreen.ui.tsx`),
+one panel in three sections: standouts, the climb, then the polls. Every avatar chip
+on the page — standouts, climbers, fallen — wears the player's equipped border over a
+GitHub photo or a two-letter-initials fallback.
 
-**Standouts today** heads the page ([7.3](#73-awards)).
+**Standouts today** heads the page as a grid of six legend-bordered boxes
+([7.3](#73-awards)), each one avatar, name and a muted one-line value.
 
-**The climb today** is a horizontal gate track carrying every live run as an avatar,
-positioned by gate and by how deep into that gate's five polls it stands. Your marker
-is ringed and labelled "you"; shared positions stack behind a `+N` badge. A dashed,
-faded avatar marks the deepest point any of your *finished* runs reached, and
-everything past it sits behind a dashed edge labelled **uncharted**, so a player beyond
-it is visibly ahead of anywhere you have been. Each gate's swatch sits on the track
-itself with its number and name beneath (`6 Soul`): the ladder and the route are one
-thing. Below the line, each run a gate killed today is that player's avatar, dimmed
-where it fell, keyed by run rather than player so two losses in one day both show
-(abandoning is not falling and draws nothing). Desktop shows all 13 gates, no paging;
-below `sm` it narrows to a 3-gate window centred on you, because 13 gates at 28 px each
-survives a swatch but not a gate name. Geometry lives in `climbMap.model.ts`, which
-reduces every marker to one unit: polls, counted `gate * 5 + pollsIntoGate`. 🟡 Builds,
-configs and storage are still not shown.
+**The climb today** is a horizontal track of the 13 numbered gate swatches with each
+live run's avatar chip stacked *beneath* its gate. Your chip is ringed and titled
+"you", and your current gate draws the swatch's ring; crowded gates fold behind a `+N`
+badge (four chips show). A dashed `pb` marker sits at the gate of the deepest point any
+of your *finished* runs reached, and everything past your reach sits behind a dashed
+edge captioned **uncharted**. Beneath a gate's stack, each run the gate killed today is
+that player's chip, dimmed and greyed, keyed by run rather than player so two losses in
+one day both show (abandoning is not falling and draws nothing). The track scrolls
+horizontally on narrow screens and centres itself on your column. Gate/poll arithmetic
+lives in `climbMap.model.ts`, one unit: polls, counted `gate * 5 + pollsIntoGate`.
+🟡 Builds, configs and storage are still not shown.
 
-**Today's polls** are one native `<details>` each. The summary is the question, a faint
-"multi" sub-line on multiple-answer polls, and the share of players who got it right,
-coloured in the test-runner tones (celadon ≥60%, saffron ≥40%, vermillion below).
-Opening a row draws the gate review's split, Expected over Received: the right answer
-and whatever you picked, each one line with mark, option, the avatar chips of who
-picked it (you first) and the count, everything else folded behind `N other options, M
-votes`. A mirrored answer counts as right here when it named every wrong option, since
-it proves the same knowledge. The header counts the day's players and the footer keeps
-the "top X% today" percentile. **Redaction keeps it fair**: polls you have not reached
-never appear, and linted or missed polls stay sealed.
+**Today's polls** is a selector of five numbered chips — one per slot in the day's
+seed — with one poll open at a time. A chip is disabled while its poll is sealed or
+not yet reached. The open poll shows its category badge, the share who got it right
+("22% got it"), the question, and one row per option: letter, label, a distribution
+bar with its percentage, a ✓ on the right answer and a "you" badge on your pick (the
+right answer's bar fills viridian; a wrong pick of yours, vermillion). A mirrored
+answer counts as right when it named every wrong option, since it proves the same
+knowledge. The section header counts the day's players and the screen header keeps the
+"top X% of players today" percentile. **Redaction keeps it fair**: polls you have not
+reached never appear, and linted or missed polls stay sealed behind a disabled chip.
 
 ### 7.2 Leaderboards
 
@@ -904,27 +904,36 @@ per-category coverage, total coverage, and best streak.
 
 ### 7.3 Awards
 
-Community awards in the vein of "top committers", shipped as **standouts today**. Nine
-of them, in two kinds, and the difference is the point.
+Community awards in the vein of "top committers", shipped as **standouts today**.
+Exactly six (ADR-065), in the grid's own order, all shaped like the climb rather than
+the clock:
 
-**Poll-scoped**, read off today's answers: **fastest answer** (timed client-side from
-reveal to submit), **first to answer** (right or wrong), **first good** (the first
-actually correct answer), **most *{category}* polls** (needs a lead of ≥2), and **only
-one right** (the poll exactly one player cracked).
+- **deepest** — the furthest position on the ladder, gate and polls into it
+  ("gate 10 · poll 2"), wearing the gate's swatch.
+- **against the room** — right on the poll the fewest got right, when at most half the
+  room did ("right on poll 2 · 22% were").
+- **clean sweep** — a perfect five-of-five gate window, named by its gate
+  ("5 of 5 at Soul").
+- **widest build** — the most slots held ("11 slots held").
+- **travelling light** — deepest first, then the fewest configs
+  ("gate 8 on 3 configs").
+- **comeback** — the most configs lost to peels, decay or lapsed plans by a run that
+  still cleared a gate ("cleared after losing 4 configs"). The engine counts losses in
+  `RunState.configsLost`, so pre-existing runs start at zero.
 
-**Run-scoped**, read off live `run_states` across **active runs only**, so these rank a
-standing rather than an activity and a player who has not answered today still holds
-the deepest gate: **deepest gate**, **longest streak** (recomputed from answer history
-rather than the live streak, which a wrong answer resets; needs ≥2), **most coverage**,
-and **widest build**.
+Against-the-room reads today's answers; the other five read live `run_states` across
+**active runs only**, so they rank a standing rather than an activity and a player who
+has not answered today still holds deepest. A box is a legend-bordered card: title as
+the legend, avatar chip, name, value line. Unearned awards are dropped rather than
+shown empty, and ties break on player id so a redraw never reshuffles. Logic and every
+threshold live in `standouts.model.ts`, which is pure: correctness arrives as a
+callback and run state as plain numbers.
 
-A row is avatar, title, value, with your haul summarised beside the heading ("you took
-3 of 9"). Two columns from `sm` up, filled top to bottom. Unearned awards are dropped
-rather than shown empty, and ties break on player id so a redraw never reshuffles.
-Logic lives in `standouts.model.ts`, which is pure: correctness arrives as a callback
-and run state as plain numbers.
+Retired with ADR-065: fastest answer, first to answer, first good (reflex, not
+knowledge), most *{category}* polls (farmable), longest streak and most coverage
+(signals the climb already reports). Answer timings are still captured.
 
-🟡 Brainstormed: perfect gate, no linter used, biggest bank, comeback clear.
+🟡 Brainstormed: perfect gate, no linter used, biggest bank.
 
 ### 7.4 Interference
 

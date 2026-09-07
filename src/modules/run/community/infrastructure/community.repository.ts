@@ -2,7 +2,6 @@ import { and, asc, eq, inArray, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
-	dailyRunSeedsTable,
 	pollOptionsTable,
 	pollResponseOptionsTable,
 	pollResponsesTable,
@@ -11,6 +10,7 @@ import {
 	runStatesTable,
 	usersTable,
 } from "~/database/schema";
+import { borderUrlOf } from "~/modules/run/community/infrastructure/climbers.repository";
 
 export type ConsumedRunPoll = {
 	position: number;
@@ -106,10 +106,8 @@ export type SessionAnswerRow = {
 	userId: string | null;
 	displayName: string | null;
 	photoUrl: string | null;
+	borderUrl: string | null;
 	optionId: number | null;
-	categoryCode: string | null;
-	answeredAt: Date | null;
-	answerTimeMs: number | null;
 	/** Answered at a Mirror gate, so the picks are the poll's WRONG options on
 	 * purpose (ADR-038) — the board grades them against that expectation. */
 	mirrored: boolean;
@@ -123,23 +121,20 @@ export type SessionAnswerRow = {
  */
 export const fetchSessionAnswersForDay = async (
 	date: string
-): Promise<SessionAnswerRow[]> =>
-	db
+): Promise<SessionAnswerRow[]> => {
+	const rows = await db
 		.select({
 			responseId: pollResponsesTable.response_id,
 			pollId: pollResponsesTable.poll_id,
 			userId: pollResponsesTable.user_id,
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
+			equippedBorderId: usersTable.equipped_border_id,
 			optionId: pollResponseOptionsTable.option_id,
-			categoryCode: pollsTable.category_code,
-			answeredAt: pollResponsesTable.created_at,
-			answerTimeMs: pollResponsesTable.answer_time_ms,
 			mirrored: pollResponsesTable.mirrored,
 		})
 		.from(pollResponsesTable)
 		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
-		.leftJoin(pollsTable, eq(pollResponsesTable.poll_id, pollsTable.id))
 		.leftJoin(
 			pollResponseOptionsTable,
 			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
@@ -150,6 +145,11 @@ export const fetchSessionAnswersForDay = async (
 				eq(pollResponsesTable.answer_date, date)
 			)
 		);
+	return rows.map(({ equippedBorderId, ...row }) => ({
+		...row,
+		borderUrl: borderUrlOf(equippedBorderId),
+	}));
+};
 
 export type PollSplitRecord = {
 	/** Everyone who has ever answered the poll, both loops. */
@@ -205,16 +205,4 @@ export const fetchPollSplit = async (
 			picks.map((row) => [row.optionId, row.picks])
 		),
 	};
-};
-
-/** When today's seed dropped — the zero point for "first to answer". */
-export const fetchDailySeedCreatedAt = async (
-	date: string
-): Promise<Date | null> => {
-	const [row] = await db
-		.select({ created_at: dailyRunSeedsTable.created_at })
-		.from(dailyRunSeedsTable)
-		.where(eq(dailyRunSeedsTable.date, date))
-		.limit(1);
-	return row?.created_at ?? null;
 };

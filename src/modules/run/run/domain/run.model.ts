@@ -49,6 +49,7 @@ export type RunState = {
 	readonly rebuildsUsed: number;
 	readonly soldThisShop?: number;
 	readonly rebasedThisGate?: true;
+	readonly configsLost?: number;
 	readonly lockedOfferIds?: readonly string[];
 	readonly extensionsBought?: number;
 	readonly draftedThisGate: readonly string[];
