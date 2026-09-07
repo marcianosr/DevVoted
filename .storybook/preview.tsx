@@ -53,6 +53,7 @@ const preview: Preview = {
 	],
 	parameters: {
 		backgrounds: { disable: true },
+		options: { storySort: { order: ["Terminal", "*", "Old"] } },
 	},
 };
 

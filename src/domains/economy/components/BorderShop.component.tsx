@@ -6,7 +6,7 @@ import {
 } from "~/domains/economy/hooks/useArchiveState";
 import type { Border } from "~/domains/economy/models/border.model";
 import { formatStorage } from "~/shared/lib/storage";
-import { Button } from "~/ui/Button.component";
+import { Button } from "~/ui/old-theme/Button.component";
 
 type BorderShopProps = {
 	userId: string;

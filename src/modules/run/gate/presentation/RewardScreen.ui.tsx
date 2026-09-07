@@ -10,12 +10,15 @@ import {
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import { formatKb } from "~/shared/lib/storage";
-import { Badge } from "~/ui/Badge.component";
-import { Button } from "~/ui/Button.component";
-import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
+import { Button } from "~/ui/old-theme/Button.component";
+import {
+	SwatchMark,
+	swatchNameClass,
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchLabel } from "~/modules/run/gate/presentation/SwatchLabel.ui";
 import { GateStakeRewards } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";

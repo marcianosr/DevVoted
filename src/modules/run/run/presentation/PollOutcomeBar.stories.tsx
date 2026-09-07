@@ -8,7 +8,7 @@ import { PollOutcomeBar } from "~/modules/run/run/presentation/PollOutcomeBar.ui
 // "3 / 5" counter read the same whether you were cruising or about to break.
 const meta: Meta<typeof PollOutcomeBar> = {
 	component: PollOutcomeBar,
-	title: "Run/PollOutcomeBar",
+	title: "Old/Run/PollOutcomeBar",
 	args: { pollsPerGate: SLICE_WINDOW },
 };
 export default meta;

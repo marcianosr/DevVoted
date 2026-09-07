@@ -4,7 +4,7 @@ import { StatBadge } from "~/modules/run/run/presentation/StatBadge.ui";
 
 const meta: Meta<typeof StatBadge> = {
 	component: StatBadge,
-	title: "Run/StatBadge",
+	title: "Old/Run/StatBadge",
 };
 export default meta;
 

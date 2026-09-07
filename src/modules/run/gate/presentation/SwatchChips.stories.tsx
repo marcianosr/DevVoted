@@ -9,7 +9,7 @@ import { SwatchChips } from "~/modules/run/gate/presentation/SwatchChips.ui";
 // lit beside the ones still to come is what makes widening feel like progress.
 const meta: Meta<typeof SwatchChips> = {
 	component: SwatchChips,
-	title: "Run/SwatchChips",
+	title: "Old/Run/SwatchChips",
 };
 export default meta;
 

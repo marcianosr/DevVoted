@@ -9,14 +9,14 @@ import type {
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import type { PollClockProps } from "~/modules/run/run/presentation/PollClock.ui";
 import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
-import { Button } from "~/ui/Button.component";
+import { Button } from "~/ui/old-theme/Button.component";
 import {
 	ScoreEquationChips,
 	type ScoreBonusRow,
 } from "~/modules/run/run/presentation/ScoreEquationChips.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import {
 	RoleList,

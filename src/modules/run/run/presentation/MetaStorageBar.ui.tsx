@@ -1,6 +1,6 @@
-import { Meter } from "~/ui/Meter.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Meter } from "~/ui/old-theme/Meter.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
 
 type MetaStorageBarProps = {
 	/** KB banked into the persistent meta archive for the next run. */

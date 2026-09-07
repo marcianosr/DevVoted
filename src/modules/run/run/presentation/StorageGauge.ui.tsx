@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 type StorageGaugeLayout = "compact" | "wide";
 

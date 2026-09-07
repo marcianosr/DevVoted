@@ -1,7 +1,7 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { Badge } from "~/ui/Badge.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 export type UpcomingCategoriesProps = {
 	/** This window's unanswered polls' categories, in play order. */

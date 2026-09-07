@@ -1,5 +1,5 @@
-import { Screen } from "~/ui/Screen.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Screen } from "~/ui/old-theme/Screen.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
 import { unlockLinesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";

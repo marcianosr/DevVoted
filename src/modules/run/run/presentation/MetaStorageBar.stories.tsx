@@ -4,7 +4,7 @@ import { MetaStorageBar } from "./MetaStorageBar.ui";
 
 const meta: Meta<typeof MetaStorageBar> = {
 	component: MetaStorageBar,
-	title: "Runs/MetaStorageBar",
+	title: "Old/Runs/MetaStorageBar",
 };
 export default meta;
 

@@ -4,7 +4,10 @@ import {
 	type GateSwatch,
 	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
-import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import {
+	SwatchMark,
+	swatchNameClass,
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 
 type SwatchLabelProps = {

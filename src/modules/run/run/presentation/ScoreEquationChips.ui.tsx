@@ -2,8 +2,8 @@ import { type CSSProperties, Fragment, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { Tooltip } from "~/ui/Tooltip.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 export type ScoreBonusRow = {
 	label: string;

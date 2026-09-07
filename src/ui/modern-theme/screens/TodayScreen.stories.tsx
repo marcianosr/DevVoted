@@ -7,7 +7,7 @@ import { TodayScreen, type TodayRun } from "./TodayScreen.ui";
 
 const meta: Meta<typeof TodayScreen> = {
 	component: TodayScreen,
-	title: "Modern/Screens/Today",
+	title: "Old/Modern/Screens/Today",
 	parameters: { layout: "fullscreen" },
 	args: {
 		onStart: () => {},

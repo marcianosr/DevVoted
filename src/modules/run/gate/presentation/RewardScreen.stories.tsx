@@ -10,7 +10,7 @@ import {
 
 const meta: Meta<typeof RewardScreen> = {
 	component: RewardScreen,
-	title: "Run/Screens/Reward",
+	title: "Old/Run/Screens/Reward",
 };
 export default meta;
 

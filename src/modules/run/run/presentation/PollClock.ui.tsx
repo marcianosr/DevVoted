@@ -1,5 +1,5 @@
-import { Meter } from "~/ui/Meter.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Meter } from "~/ui/old-theme/Meter.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 export type PollClockProps = {
 	/** Milliseconds left on this poll's clock; 0 once it has run out. */

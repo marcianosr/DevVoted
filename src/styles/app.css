@@ -19,7 +19,7 @@
 @layer base {
 	html {
 		color-scheme: dark;
-		font-size: 150%;
+		font-size: 110%;
 	}
 
 	* {
@@ -429,7 +429,7 @@ body[data-screen-theme] {
    <body> (Storybook has no themed body to inherit from). */
 @utility bg-theme-faint {
 	background-color: oklch(
-		from var(--theme-color) 0.16 calc(c * var(--theme-ground-chroma)) h
+		from var(--theme-color) 0.16 calc(c* var(--theme-ground-chroma)) h
 	);
 }
 /* One rung above bg-theme-soft, for the hover of a surface that already wears

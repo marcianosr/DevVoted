@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { NotFoundUI } from "~/ui/NotFoundUI.component";
+import { NotFoundUI } from "~/ui/old-theme/NotFoundUI.component";
 
 export function NotFound({ children }: { children?: React.ReactNode }) {
 	return (

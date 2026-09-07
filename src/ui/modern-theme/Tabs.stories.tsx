@@ -6,7 +6,7 @@ import { Tabs, type TabItem } from "./Tabs.ui";
 
 const meta: Meta<typeof Tabs> = {
 	component: Tabs,
-	title: "Modern/Tabs",
+	title: "Old/Modern/Tabs",
 	decorators: [
 		(Story) => (
 			<div className="max-w-3xl p-4">

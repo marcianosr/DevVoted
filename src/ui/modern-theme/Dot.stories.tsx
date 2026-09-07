@@ -4,7 +4,7 @@ import { Dot } from "./Dot.ui";
 
 const meta: Meta<typeof Dot> = {
 	component: Dot,
-	title: "Modern/Dot",
+	title: "Old/Modern/Dot",
 };
 export default meta;
 

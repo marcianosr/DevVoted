@@ -10,7 +10,7 @@ import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategory
 import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
 import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
-import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
+import { GameLoopExplainer } from "~/ui/old-theme/GameLoopExplainer.component";
 
 // Demo data for ConfigCards
 const DEMO_CONFIGS: Config[] = [

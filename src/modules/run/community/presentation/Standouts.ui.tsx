@@ -5,11 +5,11 @@ import {
 	formatDuration,
 	formatPercent,
 } from "~/shared/lib/displayValue";
-import { SwatchMark } from "~/ui/SwatchMark.component";
+import { SwatchMark } from "~/ui/old-theme/SwatchMark.component";
 import { themeColorOf } from "~/modules/run/gate/domain/swatch.model";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 import { VoterChip } from "~/modules/run/community/presentation/Voter.ui";
 

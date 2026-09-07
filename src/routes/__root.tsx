@@ -17,16 +17,16 @@ import { useState } from "react";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import Footer from "~/components/Footer.component";
-import { PageLayoutUI } from "~/ui/PageLayoutUI.component";
+import { PageLayoutUI } from "~/ui/old-theme/PageLayoutUI.component";
 import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
 import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
-import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
+import { ConfirmDialog } from "~/ui/old-theme/ConfirmDialog.component";
 import {
 	Dropdown,
 	DropdownDivider,
 	DropdownItem,
-} from "~/ui/Dropdown.component";
+} from "~/ui/old-theme/Dropdown.component";
 
 import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";

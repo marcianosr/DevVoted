@@ -17,14 +17,20 @@ import {
 	kb,
 	NOTHING_SHOWN,
 } from "~/shared/lib/displayValue";
-import { plural } from "~/ui/modern-theme/format";
-import { StatusBadge, type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { GainBar } from "~/ui/GainBar.ui";
-import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import { plural } from "~/ui/terminal-theme/format";
+import {
+	StatusBadge,
+	type StatusBadgeVariant,
+} from "~/ui/old-theme/StatusBadge.ui";
+import { GainBar } from "~/ui/old-theme/GainBar.ui";
+import {
+	SwatchMark,
+	swatchNameClass,
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import {
 	describeRow,
 	BuildReportRow,

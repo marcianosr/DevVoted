@@ -5,7 +5,7 @@ import { ConfigActions } from "~/modules/run/config/presentation/ConfigActions.u
 
 const meta: Meta<typeof ConfigActions> = {
 	component: ConfigActions,
-	title: "Run/ConfigActions",
+	title: "Old/Run/ConfigActions",
 };
 export default meta;
 

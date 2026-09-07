@@ -1,6 +1,6 @@
 import { getCategories } from "~/shared/lib/categories";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
 
 type CoverageByCategoryProps = {
 	coverageByCategory: Readonly<Record<string, number>>;

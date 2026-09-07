@@ -1,8 +1,8 @@
 import { Outlet } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Screen } from "~/ui/old-theme/Screen.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 import { HudBar } from "~/modules/run/run/presentation/HudBar.ui";
 import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";

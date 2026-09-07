@@ -93,7 +93,7 @@ const answered: AnsweredPoll[] = [
 
 const meta: Meta<typeof AnswerResults> = {
 	component: AnswerResults,
-	title: "Run/AnswerResults",
+	title: "Old/Run/AnswerResults",
 };
 export default meta;
 

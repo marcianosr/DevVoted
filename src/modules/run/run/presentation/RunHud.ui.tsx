@@ -1,14 +1,14 @@
 import { clsx } from "clsx";
 
 import { getCategories } from "~/shared/lib/categories";
-import { Popover } from "~/ui/Popover.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Popover } from "~/ui/old-theme/Popover.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 import {
 	ALL_SWATCHES,
 	themeColorOf,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
-import { swatchNameClass } from "~/ui/SwatchMark.component";
+import { swatchNameClass } from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
 import { GateSegmentBar } from "~/modules/run/gate/presentation/GateSegmentBar.ui";
 import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";

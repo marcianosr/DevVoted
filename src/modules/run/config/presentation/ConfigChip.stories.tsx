@@ -5,7 +5,7 @@ import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 
 const meta: Meta<typeof ConfigChip> = {
 	component: ConfigChip,
-	title: "Run/ConfigChip",
+	title: "Old/Run/ConfigChip",
 };
 export default meta;
 

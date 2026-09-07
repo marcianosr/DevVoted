@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
+import { Screen } from "~/ui/old-theme/Screen.ui";
 
 import { RewardScreen } from "~/modules/run/gate/presentation/RewardScreen.ui";
 import { justFiredLines } from "~/modules/run/run/application/unlockNotes.viewmodel";

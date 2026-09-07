@@ -2,9 +2,9 @@ import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/shared/lib/categories";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 export type PracticeBankEntry = {
 	id: string;

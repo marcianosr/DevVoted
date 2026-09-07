@@ -6,7 +6,7 @@ import { createMockGateStake } from "~/test/runView.factory";
 
 const meta: Meta<typeof ConfiguringScreen> = {
 	component: ConfiguringScreen,
-	title: "Run/Screens/Configuring",
+	title: "Old/Run/Screens/Configuring",
 };
 export default meta;
 

@@ -4,7 +4,7 @@ import {
 } from "~/domains/polls/services/pollAnswerEvaluation.service";
 import type { Config } from "~/domains/economy/models/config.model";
 import type { ScoreCalculation } from "~/domains/runs/services/score.service";
-import type { Rarity } from "~/ui/rarityColors";
+import type { Rarity } from "~/ui/old-theme/rarityColors";
 
 // The per-option facts these helpers need. Satisfied by `CommunityOptionBreakdown`.
 type OptionBreakdownLike = {

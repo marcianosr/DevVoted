@@ -4,7 +4,7 @@ import { Swatch } from "./Swatch.ui";
 
 const meta: Meta<typeof Swatch> = {
 	component: Swatch,
-	title: "Modern/Swatch",
+	title: "Old/Modern/Swatch",
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="lavender">

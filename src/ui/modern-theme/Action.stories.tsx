@@ -4,7 +4,7 @@ import { Action } from "./Action.ui";
 
 const meta: Meta<typeof Action> = {
 	component: Action,
-	title: "Modern/Action",
+	title: "Old/Modern/Action",
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="lavender" className="p-4">

@@ -6,8 +6,8 @@ import {
 	correctOptionIdsFor,
 	latestAnswerScore,
 } from "~/modules/run/run/application/answerScore.viewmodel";
-import { ConfirmDialog } from "~/ui/ConfirmDialog.component";
-import { Screen } from "~/ui/Screen.ui";
+import { ConfirmDialog } from "~/ui/old-theme/ConfirmDialog.component";
+import { Screen } from "~/ui/old-theme/Screen.ui";
 
 import { AnsweringScreen } from "~/modules/run/run/presentation/AnsweringScreen.ui";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";

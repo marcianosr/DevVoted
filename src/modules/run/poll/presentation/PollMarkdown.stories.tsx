@@ -5,7 +5,7 @@ import { MarkdownText, QuestionMarkdown } from "./PollMarkdown.ui";
 
 const meta: Meta<typeof QuestionMarkdown> = {
 	component: QuestionMarkdown,
-	title: "Polls/PollMarkdown",
+	title: "Old/Polls/PollMarkdown",
 };
 export default meta;
 

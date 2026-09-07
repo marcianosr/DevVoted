@@ -7,7 +7,7 @@ import { createMockPollView } from "~/test/runView.factory";
 
 const meta: Meta<typeof AnsweringScreen> = {
 	component: AnsweringScreen,
-	title: "Run/Screens/Answering",
+	title: "Old/Run/Screens/Answering",
 };
 export default meta;
 

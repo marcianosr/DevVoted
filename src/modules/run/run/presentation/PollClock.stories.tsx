@@ -4,7 +4,7 @@ import { PollClock } from "~/modules/run/run/presentation/PollClock.ui";
 
 const meta: Meta<typeof PollClock> = {
 	component: PollClock,
-	title: "Run/Poll/Clock",
+	title: "Old/Run/Poll/Clock",
 };
 export default meta;
 

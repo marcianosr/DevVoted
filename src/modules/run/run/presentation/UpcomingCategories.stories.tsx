@@ -4,7 +4,7 @@ import { UpcomingCategories } from "~/modules/run/run/presentation/UpcomingCateg
 
 const meta: Meta<typeof UpcomingCategories> = {
 	component: UpcomingCategories,
-	title: "Run/UpcomingCategories",
+	title: "Old/Run/UpcomingCategories",
 };
 export default meta;
 

@@ -5,7 +5,7 @@ import { CONFIG_SIZES } from "~/modules/run/config/domain/config.model";
 
 const meta: Meta<typeof Chip> = {
 	component: Chip,
-	title: "Modern/Chip",
+	title: "Old/Modern/Chip",
 };
 export default meta;
 

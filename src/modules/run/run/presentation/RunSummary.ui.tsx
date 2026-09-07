@@ -8,12 +8,12 @@ import {
 import { swatchesEarnedAt } from "~/modules/run/gate/domain/swatch.model";
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
-import { StatusLine } from "~/ui/StatusLine.ui";
-import { type StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
+import { StatusLine } from "~/ui/old-theme/StatusLine.ui";
+import { type StatusBadgeVariant } from "~/ui/old-theme/StatusBadge.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { SwatchChips } from "~/modules/run/gate/presentation/SwatchChips.ui";
 import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";

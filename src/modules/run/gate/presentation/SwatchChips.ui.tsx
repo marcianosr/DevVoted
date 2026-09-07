@@ -7,9 +7,9 @@ import {
 	SwatchMark,
 	swatchBorderClass,
 	swatchNameClass,
-} from "~/ui/SwatchMark.component";
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 type SwatchChipProps = {
 	swatch: GateSwatch;

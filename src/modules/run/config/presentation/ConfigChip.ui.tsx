@@ -5,10 +5,10 @@ import {
 	describeConfig,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
-import { Badge } from "~/ui/Badge.component";
-import { sizeFill } from "~/ui/sizes";
-import { Tooltip } from "~/ui/Tooltip.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
+import { sizeFill } from "~/ui/terminal-theme/sizes";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 const CHIP_SURFACE =
 	"inline-flex shrink-0 items-center gap-1.5 rounded-sm align-middle border-1 border-edge-strong bg-surface-raised p-1 text-xs text-zinc-100";

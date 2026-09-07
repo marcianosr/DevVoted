@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { sizeFill } from "~/ui/sizes";
+import { sizeFill } from "./sizes";
 
 import { PriceTag, type PriceTagVariant } from "./PriceTag.ui";
 import { Text } from "./Text.ui";

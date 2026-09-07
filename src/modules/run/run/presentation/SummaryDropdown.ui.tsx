@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
 import { useState, type ReactNode } from "react";
-import { FLOATING_SURFACE } from "~/ui/surfaces";
+import { FLOATING_SURFACE } from "~/ui/old-theme/surfaces";
 
 type SummaryDropdownProps = {
 	trigger: ReactNode;

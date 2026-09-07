@@ -10,7 +10,7 @@ import { AuditsPanel, type DexAudit } from "./AuditsPanel.ui";
 
 const meta: Meta<typeof AuditsPanel> = {
 	component: AuditsPanel,
-	title: "Modern/Screens/AuditsPanel",
+	title: "Old/Modern/Screens/AuditsPanel",
 	// Storybook reads every named export as a story; auditsSeen is a helper
 	// other story files import, not something to render.
 	excludeStories: ["auditsSeen"],

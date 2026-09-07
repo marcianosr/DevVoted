@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
+import { Screen } from "~/ui/old-theme/Screen.ui";
 import { getAllPolls, getPollCreators } from "~/domains/polls/api/polls";
 import PollCategoryCount from "~/domains/polls/components/PollCategoryCount.component";
 import { getAllRunsServerFn } from "~/domains/runs/api/runs";

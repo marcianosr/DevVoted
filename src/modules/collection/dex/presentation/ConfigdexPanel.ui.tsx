@@ -7,10 +7,10 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import type { UnlockPathCaption } from "~/modules/run/config/domain/unlockCaption.model";
-import { plural } from "~/ui/modern-theme/format";
-import { sizeFill } from "~/ui/sizes";
-import { Stack } from "~/ui/Stack.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { plural } from "~/ui/terminal-theme/format";
+import { sizeFill } from "~/ui/terminal-theme/sizes";
+import { Stack } from "~/ui/old-theme/Stack.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 const SIZES_LARGEST_FIRST = [...CONFIG_SIZES].reverse();
 

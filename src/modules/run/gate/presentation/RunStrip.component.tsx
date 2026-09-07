@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
+import { Screen } from "~/ui/old-theme/Screen.ui";
 
 import { StripScreen } from "~/modules/run/gate/presentation/StripScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";

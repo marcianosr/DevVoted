@@ -11,12 +11,12 @@ import {
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
 import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
-import { Columns } from "~/ui/Columns.ui";
-import type { ScreenAction } from "~/ui/Screen.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
-import { Badge } from "~/ui/Badge.component";
+import { Columns } from "~/ui/old-theme/Columns.ui";
+import type { ScreenAction } from "~/ui/old-theme/Screen.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
 import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";

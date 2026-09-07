@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Screen } from "~/ui/old-theme/Screen.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 import { ReviewAnswers } from "~/modules/run/run/presentation/ReviewAnswers.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";

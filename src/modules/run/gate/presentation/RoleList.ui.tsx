@@ -5,10 +5,10 @@ import {
 	givesOf,
 } from "~/modules/run/config/domain/config.model";
 import type { RoleRow } from "~/modules/run/gate/domain/configRole.model";
-import { Badge } from "~/ui/Badge.component";
-import { Tooltip } from "~/ui/Tooltip.component";
-import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
+import type { StatusBadgeVariant } from "~/ui/old-theme/StatusBadge.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 import type { ChipAction } from "~/modules/run/config/presentation/ConfigActions.ui";
 import {
 	describeRow,

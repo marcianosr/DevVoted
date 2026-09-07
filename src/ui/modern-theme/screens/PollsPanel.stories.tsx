@@ -7,7 +7,7 @@ import { PollsPanel, type DexPoll } from "./PollsPanel.ui";
 
 const meta: Meta<typeof PollsPanel> = {
 	component: PollsPanel,
-	title: "Modern/Screens/PollsPanel",
+	title: "Old/Modern/Screens/PollsPanel",
 	// Storybook reads every named export as a story; PollsBrowsing is a helper
 	// other story files import, not something to render.
 	excludeStories: ["PollsBrowsing"],

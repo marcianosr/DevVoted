@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { prismaticStep } from "~/ui/sizes";
+import { prismaticStep } from "./sizes";
 
 import { VersionDots } from "./VersionDots.ui";
 import { Weight } from "./Weight.ui";

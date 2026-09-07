@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 
 import { Avatar } from "~/modules/account/profile/presentation/Avatar.ui";
 import type { CommunityVoter } from "~/modules/run/community/application/community.service";
-import { Tooltip } from "~/ui/Tooltip.component";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
 
 type RingedPlayer = {
 	readonly id: string;

@@ -7,7 +7,7 @@ import { Tooltip } from "./Tooltip.ui";
 
 const meta: Meta<typeof Tooltip> = {
 	component: Tooltip,
-	title: "Modern/Tooltip",
+	title: "Old/Modern/Tooltip",
 	decorators: [
 		(Story) => (
 			<div className="p-4 pb-24">

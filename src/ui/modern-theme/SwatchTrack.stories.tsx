@@ -6,7 +6,7 @@ import { SwatchTrack } from "./SwatchTrack.ui";
 
 const meta: Meta<typeof SwatchTrack> = {
 	component: SwatchTrack,
-	title: "Modern/SwatchTrack",
+	title: "Old/Modern/SwatchTrack",
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="lavender" className="p-4">

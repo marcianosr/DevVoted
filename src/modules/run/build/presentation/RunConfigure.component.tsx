@@ -1,5 +1,5 @@
-import { Screen } from "~/ui/Screen.ui";
-import { setScreenNavDirection } from "~/ui/screenNavDirection";
+import { Screen } from "~/ui/old-theme/Screen.ui";
+import { setScreenNavDirection } from "~/ui/old-theme/screenNavDirection";
 
 import { ConfiguringScreen } from "~/modules/run/build/presentation/ConfiguringScreen.ui";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";

@@ -9,7 +9,7 @@ import { RunCommunityBoard } from "~/modules/run/community/presentation/RunCommu
 
 const meta: Meta<typeof RunCommunityBoard> = {
 	component: RunCommunityBoard,
-	title: "Run/RunCommunityBoard",
+	title: "Old/Run/RunCommunityBoard",
 };
 export default meta;
 

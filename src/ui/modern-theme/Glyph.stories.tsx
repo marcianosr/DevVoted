@@ -4,7 +4,7 @@ import { Glyph, type GlyphName } from "./Glyph.ui";
 
 const meta: Meta<typeof Glyph> = {
 	component: Glyph,
-	title: "Modern/Glyph",
+	title: "Old/Modern/Glyph",
 };
 export default meta;
 

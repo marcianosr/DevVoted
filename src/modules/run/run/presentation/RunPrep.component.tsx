@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/Screen.ui";
+import { Screen } from "~/ui/old-theme/Screen.ui";
 
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
 import { PrepScreen } from "~/modules/run/run/presentation/PrepScreen.ui";

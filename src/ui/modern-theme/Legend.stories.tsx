@@ -5,7 +5,7 @@ import { Legend } from "./Legend.ui";
 
 const meta: Meta<typeof Legend> = {
 	component: Legend,
-	title: "Modern/Legend",
+	title: "Old/Modern/Legend",
 	decorators: [
 		(Story) => (
 			<div className="w-80">

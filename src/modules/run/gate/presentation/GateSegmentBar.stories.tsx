@@ -6,7 +6,7 @@ import { GateSegmentBar } from "~/modules/run/gate/presentation/GateSegmentBar.u
 
 const meta: Meta<typeof GateSegmentBar> = {
 	component: GateSegmentBar,
-	title: "Run/GateSegmentBar",
+	title: "Old/Run/GateSegmentBar",
 	args: { swatches: ALL_SWATCHES, pollsPerGate: 5 },
 	decorators: [
 		(Story) => (

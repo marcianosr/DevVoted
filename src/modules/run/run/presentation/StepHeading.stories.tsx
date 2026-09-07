@@ -4,7 +4,7 @@ import { StepHeading } from "~/modules/run/run/presentation/StepHeading.ui";
 
 const meta: Meta<typeof StepHeading> = {
 	component: StepHeading,
-	title: "Run/Screens/StepHeading",
+	title: "Old/Run/Screens/StepHeading",
 };
 export default meta;
 

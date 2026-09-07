@@ -7,7 +7,7 @@ import {
 	CodeBlockMarkdown,
 	QuestionMarkdown,
 } from "~/modules/run/poll/presentation/PollMarkdown.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 import {
 	PollOption,
 	PollOptionList,

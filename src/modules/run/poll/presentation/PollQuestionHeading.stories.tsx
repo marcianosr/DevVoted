@@ -4,7 +4,7 @@ import { PollQuestionHeading } from "~/modules/run/poll/presentation/PollQuestio
 
 const meta: Meta<typeof PollQuestionHeading> = {
 	component: PollQuestionHeading,
-	title: "Run/PollQuestionHeading",
+	title: "Old/Run/PollQuestionHeading",
 };
 export default meta;
 

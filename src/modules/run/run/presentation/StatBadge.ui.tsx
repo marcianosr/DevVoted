@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
 
 type StatBadgeProps = {
 	label: string;

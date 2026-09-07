@@ -77,7 +77,7 @@ const controls = (overrides: Partial<ShopControls> = {}) =>
 
 const meta: Meta<typeof ShopScreen> = {
 	component: ShopScreen,
-	title: "Run/Screens/Shop",
+	title: "Old/Run/Screens/Shop",
 	args: {
 		slotDeals: slotDealsOn(),
 		storagePlan: storagePlanOn(),

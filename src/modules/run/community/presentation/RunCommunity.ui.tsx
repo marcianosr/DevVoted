@@ -4,11 +4,11 @@ import type {
 	CommunityOptionResult,
 	RunCommunityPoll,
 } from "~/modules/run/community/application/community.service";
-import { Disclosure } from "~/ui/Disclosure.ui";
-import { FoldCaret } from "~/ui/FoldCaret.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
-import { Title } from "~/ui/typography/Title.component";
+import { Disclosure } from "~/ui/old-theme/Disclosure.ui";
+import { FoldCaret } from "~/ui/old-theme/FoldCaret.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 import { VoterChip } from "~/modules/run/community/presentation/Voter.ui";
 

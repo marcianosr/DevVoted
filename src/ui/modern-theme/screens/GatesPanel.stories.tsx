@@ -20,7 +20,7 @@ import { GatesPanel, type DexGate, type DexGateState } from "./GatesPanel.ui";
 
 const meta: Meta<typeof GatesPanel> = {
 	component: GatesPanel,
-	title: "Modern/Screens/GatesPanel",
+	title: "Old/Modern/Screens/GatesPanel",
 	// Storybook reads every named export as a story; gatesClearedTo is a helper
 	// other story files import, not something to render.
 	excludeStories: ["gatesClearedTo"],

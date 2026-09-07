@@ -6,7 +6,7 @@ import { Filter, FilterSelect, type FilterOption } from "./Filter.ui";
 
 const meta: Meta<typeof Filter> = {
 	component: Filter,
-	title: "Modern/Filter",
+	title: "Old/Modern/Filter",
 	decorators: [
 		(Story) => (
 			<div className="max-w-3xl p-4">

@@ -15,15 +15,18 @@ import type {
 	GateStake,
 	UpcomingAuditView,
 } from "~/modules/run/run/application/gateStake.viewmodel";
-import { countRange } from "~/ui/modern-theme/format";
-import { Button } from "~/ui/Button.component";
-import { Meter } from "~/ui/Meter.ui";
-import { Popover } from "~/ui/Popover.component";
-import type { ScreenAction } from "~/ui/Screen.ui";
-import { SwatchMark, swatchNameTone } from "~/ui/SwatchMark.component";
+import { countRange } from "~/ui/terminal-theme/format";
+import { Button } from "~/ui/old-theme/Button.component";
+import { Meter } from "~/ui/old-theme/Meter.ui";
+import { Popover } from "~/ui/old-theme/Popover.component";
+import type { ScreenAction } from "~/ui/old-theme/Screen.ui";
+import {
+	SwatchMark,
+	swatchNameTone,
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";
 
 type GateStakeReceiptProps = {

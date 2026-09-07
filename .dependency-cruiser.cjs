@@ -27,7 +27,8 @@ module.exports = {
 				"each term one owner), but a runtime cycle means neither module can be " +
 				"loaded, read or tested without the other. Exempt: the generated route " +
 				"tree, which TanStack Router pairs with router.tsx by design, and " +
-				"src/domains/, which holds two known cycles awaiting DVTD-wj1t.",
+				"src/domains/, which holds one known cycle awaiting DVTD-wj1t " +
+				"(progress.service ↔ turn.service).",
 			severity: "error",
 			from: { pathNot: `${GENERATED_ROUTER}|${LEGACY_TREE}` },
 			to: {

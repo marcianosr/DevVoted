@@ -3,12 +3,12 @@ import { clsx } from "clsx";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { describeConfig } from "~/modules/run/config/domain/config.model";
 import type { GateRowReason } from "~/modules/run/gate/domain/configRole.model";
-import { FoldableRow, type Fold } from "~/ui/FoldableRow.ui";
-import { StatusLine, type StatusLineSpacing } from "~/ui/StatusLine.ui";
-import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { StatusDot, type StatusDotVariant } from "~/ui/StatusDot.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
+import { FoldableRow, type Fold } from "~/ui/old-theme/FoldableRow.ui";
+import { StatusLine, type StatusLineSpacing } from "~/ui/old-theme/StatusLine.ui";
+import type { StatusBadgeVariant } from "~/ui/old-theme/StatusBadge.ui";
+import { StatusDot, type StatusDotVariant } from "~/ui/old-theme/StatusDot.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
 import {
 	type ChipAction,
 	ConfigActions,

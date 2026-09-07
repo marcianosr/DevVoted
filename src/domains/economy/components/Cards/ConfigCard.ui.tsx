@@ -2,8 +2,8 @@
 // slides deck still renders it via the legacy Cards components below.
 import { clsx } from "clsx";
 
-import { RARITY_COLORS } from "~/ui/rarityColors";
-import type { Rarity } from "~/ui/rarityColors";
+import { RARITY_COLORS } from "~/ui/old-theme/rarityColors";
+import type { Rarity } from "~/ui/old-theme/rarityColors";
 
 type ConfigCardProps = {
 	name: string;

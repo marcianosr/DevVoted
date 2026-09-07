@@ -5,7 +5,7 @@ import { SummaryDropdown } from "~/modules/run/run/presentation/SummaryDropdown.
 
 const meta: Meta<typeof SummaryDropdown> = {
 	component: SummaryDropdown,
-	title: "Run/SummaryDropdown",
+	title: "Old/Run/SummaryDropdown",
 	// The panel opens to the trigger's left edge — give it room in the canvas.
 	decorators: [
 		(Story) => (

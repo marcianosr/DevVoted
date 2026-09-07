@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { configs } from "~/domains/economy/data/configs";
 import { getAllPolls } from "~/domains/polls/api/polls";
 import { getCategories } from "~/shared/lib/categories";
-import { FooterUI } from "~/ui/FooterUI.component";
+import { FooterUI } from "~/ui/old-theme/FooterUI.component";
 
 declare const __LAST_COMMIT_DATE__: string;
 

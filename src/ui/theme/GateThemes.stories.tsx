@@ -41,7 +41,7 @@ const GateThemes = () => (
 
 const meta: Meta<typeof GateThemes> = {
 	component: GateThemes,
-	title: "Design System/Gate Themes",
+	title: "Terminal/Gate Themes",
 };
 export default meta;
 

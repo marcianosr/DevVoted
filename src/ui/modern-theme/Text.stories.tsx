@@ -4,7 +4,7 @@ import { Text } from "./Text.ui";
 
 const meta: Meta<typeof Text> = {
 	component: Text,
-	title: "Modern/Text",
+	title: "Old/Modern/Text",
 	decorators: [
 		(Story) => (
 			<div data-gate-theme="lavender">

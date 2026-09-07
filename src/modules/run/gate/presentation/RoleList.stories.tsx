@@ -6,7 +6,7 @@ import { RoleList } from "~/modules/run/gate/presentation/RoleList.ui";
 
 const meta: Meta<typeof RoleList> = {
 	component: RoleList,
-	title: "Run/RoleList",
+	title: "Old/Run/RoleList",
 };
 export default meta;
 

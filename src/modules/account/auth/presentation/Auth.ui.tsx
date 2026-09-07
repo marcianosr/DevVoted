@@ -1,4 +1,4 @@
-import { Button } from "~/ui/Button.component";
+import { Button } from "~/ui/old-theme/Button.component";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 

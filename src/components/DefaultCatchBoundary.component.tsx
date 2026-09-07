@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { CatchBoundaryUI } from "~/ui/CatchBoundaryUI.component";
+import { CatchBoundaryUI } from "~/ui/old-theme/CatchBoundaryUI.component";
 
 export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 	const router = useRouter();

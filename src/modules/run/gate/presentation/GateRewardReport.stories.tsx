@@ -102,7 +102,7 @@ const failedRows: GateRewardRow[] = [
 
 const meta: Meta<typeof GateRewardReport> = {
 	component: GateRewardReport,
-	title: "Run/GateRewardReport",
+	title: "Old/Run/GateRewardReport",
 	decorators: [
 		(Story) => (
 			<div className="max-w-6xl p-4">

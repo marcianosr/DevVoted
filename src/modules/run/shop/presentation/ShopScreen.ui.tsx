@@ -19,17 +19,20 @@ import type {
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { Badge } from "~/ui/Badge.component";
+import { Badge } from "~/ui/old-theme/Badge.component";
 import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
-import { capLabel, plural } from "~/ui/modern-theme/format";
-import { Columns } from "~/ui/Columns.ui";
-import { RadioDot } from "~/ui/RadioDot.ui";
-import { TerminalPanel, TerminalSection } from "~/ui/TerminalPanel.ui";
-import { Tooltip } from "~/ui/Tooltip.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
+import { capLabel, plural } from "~/ui/terminal-theme/format";
+import { Columns } from "~/ui/old-theme/Columns.ui";
+import { RadioDot } from "~/ui/old-theme/RadioDot.ui";
+import {
+	TerminalPanel,
+	TerminalSection,
+} from "~/ui/old-theme/TerminalPanel.ui";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import { roleRows } from "~/modules/run/gate/domain/configRole.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";

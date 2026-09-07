@@ -4,7 +4,7 @@ import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
 
 const meta: Meta<typeof StorageGauge> = {
 	component: StorageGauge,
-	title: "Run/StorageGauge",
+	title: "Old/Run/StorageGauge",
 };
 export default meta;
 

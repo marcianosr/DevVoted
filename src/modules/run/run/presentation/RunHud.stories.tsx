@@ -4,7 +4,7 @@ import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
 
 const meta: Meta<typeof RunHud> = {
 	component: RunHud,
-	title: "Run/RunHud",
+	title: "Old/Run/RunHud",
 };
 export default meta;
 

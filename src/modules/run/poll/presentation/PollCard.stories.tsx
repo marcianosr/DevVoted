@@ -6,7 +6,7 @@ import { createMockPollView } from "~/test/runView.factory";
 
 const meta: Meta<typeof PollCard> = {
 	component: PollCard,
-	title: "Run/PollCard",
+	title: "Old/Run/PollCard",
 };
 export default meta;
 

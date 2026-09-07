@@ -1,6 +1,6 @@
 import { cva } from "class-variance-authority";
-import { Subtitle } from "~/ui/typography/Subtitle.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Subtitle } from "~/ui/old-theme/typography/Subtitle.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 type StepTone = "cerulean" | "viridian";
 

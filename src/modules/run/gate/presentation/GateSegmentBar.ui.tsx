@@ -9,10 +9,13 @@ import {
 	coverageDemandFor,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
-import { SwatchMark, swatchNameClass } from "~/ui/SwatchMark.component";
+import {
+	SwatchMark,
+	swatchNameClass,
+} from "~/ui/old-theme/SwatchMark.component";
 import { swatchTheme } from "~/ui/theme/swatchTheme";
-import { Tooltip } from "~/ui/Tooltip.component";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
+import { Tooltip } from "~/ui/old-theme/Tooltip.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 type GateSegmentBarProps = {
 	/** One per gate, in climb order — the swatch that gate's clear awards. */

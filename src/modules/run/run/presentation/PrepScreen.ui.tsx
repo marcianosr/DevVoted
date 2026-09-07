@@ -3,10 +3,10 @@ import { useState, type ReactNode } from "react";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import type { GateStake } from "~/modules/run/run/application/gateStake.viewmodel";
-import { Button } from "~/ui/Button.component";
-import type { ScreenAction } from "~/ui/Screen.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Button } from "~/ui/old-theme/Button.component";
+import type { ScreenAction } from "~/ui/old-theme/Screen.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
 import {
 	GateStakeReceipt,

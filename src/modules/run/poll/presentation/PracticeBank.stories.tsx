@@ -7,7 +7,7 @@ import {
 
 const meta: Meta<typeof PracticeBank> = {
 	component: PracticeBank,
-	title: "Run/PracticeBank",
+	title: "Old/Run/PracticeBank",
 };
 export default meta;
 

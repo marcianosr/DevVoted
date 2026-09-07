@@ -1,8 +1,8 @@
 import { type ReactNode, useState } from "react";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { Button } from "~/ui/Button.component";
+import { Button } from "~/ui/old-theme/Button.component";
 import { ConfigChip } from "~/modules/run/config/presentation/ConfigChip.ui";
-import { FLOATING_SURFACE } from "~/ui/surfaces";
+import { FLOATING_SURFACE } from "~/ui/old-theme/surfaces";
 
 export type ChipAction = {
 	label: string;

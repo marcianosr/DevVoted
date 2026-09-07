@@ -4,7 +4,7 @@ import { CoverageByCategory } from "~/modules/run/build/presentation/CoverageByC
 
 const meta: Meta<typeof CoverageByCategory> = {
 	component: CoverageByCategory,
-	title: "Run/CoverageByCategory",
+	title: "Old/Run/CoverageByCategory",
 };
 export default meta;
 

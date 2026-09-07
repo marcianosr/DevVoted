@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { isBiggestSize, prismaticFill, sizeFill } from "~/ui/sizes";
+import { isBiggestSize, prismaticFill, sizeFill } from "./sizes";
 
 import { plural } from "./format";
 

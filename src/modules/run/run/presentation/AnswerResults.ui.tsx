@@ -5,14 +5,14 @@ import type {
 	AnsweredPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 import { correctCount } from "~/modules/run/gate/domain/gateReward.model";
-import { Disclosure } from "~/ui/Disclosure.ui";
-import { FoldCaret } from "~/ui/FoldCaret.ui";
+import { Disclosure } from "~/ui/old-theme/Disclosure.ui";
+import { FoldCaret } from "~/ui/old-theme/FoldCaret.ui";
 import { CodeBlockMarkdown } from "~/modules/run/poll/presentation/PollMarkdown.ui";
-import { StatusLine } from "~/ui/StatusLine.ui";
-import type { StatusBadgeVariant } from "~/ui/StatusBadge.ui";
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import type { TextTone } from "~/ui/typography/textTone";
-import { Title } from "~/ui/typography/Title.component";
+import { StatusLine } from "~/ui/old-theme/StatusLine.ui";
+import type { StatusBadgeVariant } from "~/ui/old-theme/StatusBadge.ui";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import type { TextTone } from "~/ui/old-theme/typography/textTone";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 // The poll outcome maps onto the shared test-runner badge.
 const OUTCOME_VARIANT: Record<AnswerOutcome, StatusBadgeVariant> = {

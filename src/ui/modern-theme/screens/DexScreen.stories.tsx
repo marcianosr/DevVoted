@@ -13,7 +13,7 @@ import { PollsBrowsing } from "./PollsPanel.stories";
 
 const meta: Meta<typeof DexScreen> = {
 	component: DexScreen,
-	title: "Modern/Screens/Dex",
+	title: "Old/Modern/Screens/Dex",
 	parameters: { layout: "fullscreen" },
 };
 export default meta;

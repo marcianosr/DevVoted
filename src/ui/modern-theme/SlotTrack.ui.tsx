@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { sizeTint } from "~/ui/sizes";
+import { sizeTint } from "~/ui/terminal-theme/sizes";
 
 import { plural } from "./format";
 import { occupancyOf, type Occupancy } from "./slots";

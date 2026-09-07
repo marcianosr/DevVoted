@@ -42,7 +42,7 @@ const configs = [CONFIGS.css, CONFIGS.agentsMd, CONFIGS.indexedDb];
 
 const meta: Meta<typeof RunSummary> = {
 	component: RunSummary,
-	title: "Run/RunSummary",
+	title: "Old/Run/RunSummary",
 };
 export default meta;
 

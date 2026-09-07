@@ -1,5 +1,5 @@
-import { Paragraph } from "~/ui/typography/Paragraph.component";
-import { Title } from "~/ui/typography/Title.component";
+import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { Title } from "~/ui/old-theme/typography/Title.component";
 
 /** Enough of a person to credit them; narrower than PublicUser on purpose, so
  * any list of contributors can feed this without carrying account fields. */

@@ -62,9 +62,9 @@ import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/shared/lib/categories";
-import { Screen } from "~/ui/Screen.ui";
-import { setScreenNavDirection } from "~/ui/screenNavDirection";
-import { Stack } from "~/ui/Stack.ui";
+import { Screen } from "~/ui/old-theme/Screen.ui";
+import { setScreenNavDirection } from "~/ui/old-theme/screenNavDirection";
+import { Stack } from "~/ui/old-theme/Stack.ui";
 
 export const Route = createFileRoute("/proto-run")({
 	component: RouteComponent,

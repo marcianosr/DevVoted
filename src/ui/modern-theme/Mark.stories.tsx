@@ -4,7 +4,7 @@ import { Mark } from "./Mark.ui";
 
 const meta: Meta<typeof Mark> = {
 	component: Mark,
-	title: "Modern/Mark",
+	title: "Old/Modern/Mark",
 };
 export default meta;
 

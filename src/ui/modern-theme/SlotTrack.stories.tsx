@@ -24,7 +24,7 @@ const bars = (...keys: readonly ConfigKey[]): SlotTrackConfig[] =>
 
 const meta: Meta<typeof SlotTrack> = {
 	component: SlotTrack,
-	title: "Modern/SlotTrack",
+	title: "Old/Modern/SlotTrack",
 	args: { configs: bars("coldStart", "js"), slots: BASE_SLOTS },
 	decorators: [
 		(Story) => (

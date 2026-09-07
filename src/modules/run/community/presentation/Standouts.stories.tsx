@@ -7,7 +7,7 @@ import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.u
 
 const meta: Meta<typeof StandoutsPanel> = {
 	component: StandoutsPanel,
-	title: "Run/StandoutsPanel",
+	title: "Old/Run/StandoutsPanel",
 };
 export default meta;
 
