@@ -28,8 +28,8 @@ import { GatesView } from "~/modules/collection/dex/presentation/GatesView.compo
 import { PollsView } from "~/modules/collection/dex/presentation/PollsView.component";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
-import { Text } from "~/ui/modern-theme/Text.ui";
-import { DexScreen } from "~/ui/modern-theme/screens/DexScreen.ui";
+import { Text } from "~/ui/old-theme/modern-theme/Text.ui";
+import { DexScreen } from "~/ui/old-theme/modern-theme/screens/DexScreen.ui";
 
 type PollsTabProps = {
 	pending: boolean;

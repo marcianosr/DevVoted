@@ -21,7 +21,7 @@ import type { ShopControls } from "~/modules/run/run/application/shopControls.vi
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { Badge } from "~/ui/old-theme/Badge.component";
 import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
-import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
+import { SlotTrack } from "~/ui/old-theme/modern-theme/SlotTrack.ui";
 import { capLabel, plural } from "~/ui/terminal-theme/format";
 import { Columns } from "~/ui/old-theme/Columns.ui";
 import { RadioDot } from "~/ui/old-theme/RadioDot.ui";

@@ -8,7 +8,7 @@ import {
 	swatchBorderClass,
 	swatchNameClass,
 } from "~/ui/old-theme/SwatchMark.component";
-import { swatchTheme } from "~/ui/theme/swatchTheme";
+import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 
 type SwatchChipProps = {

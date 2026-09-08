@@ -15,7 +15,7 @@ import {
 	TodayScreen,
 	type TodayPolls,
 	type TodayRun,
-} from "~/ui/modern-theme/screens/TodayScreen.ui";
+} from "~/ui/old-theme/modern-theme/screens/TodayScreen.ui";
 
 const LADDER = ALL_SWATCHES.map(({ gate, theme, finish }) => ({
 	gate,

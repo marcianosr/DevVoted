@@ -10,7 +10,7 @@ import {
 	perAnswerPreviewFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
-import { SlotTrack } from "~/ui/modern-theme/SlotTrack.ui";
+import { SlotTrack } from "~/ui/old-theme/modern-theme/SlotTrack.ui";
 import { Columns } from "~/ui/old-theme/Columns.ui";
 import type { ScreenAction } from "~/ui/old-theme/Screen.ui";
 import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";

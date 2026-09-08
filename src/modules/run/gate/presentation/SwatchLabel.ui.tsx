@@ -8,7 +8,7 @@ import {
 	SwatchMark,
 	swatchNameClass,
 } from "~/ui/old-theme/SwatchMark.component";
-import { swatchTheme } from "~/ui/theme/swatchTheme";
+import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 
 type SwatchLabelProps = {
 	swatch: GateSwatch;

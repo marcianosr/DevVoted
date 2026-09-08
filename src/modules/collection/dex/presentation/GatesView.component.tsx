@@ -7,7 +7,7 @@ import type {
 import {
 	GatesPanel,
 	type DexGate,
-} from "~/ui/modern-theme/screens/GatesPanel.ui";
+} from "~/ui/old-theme/modern-theme/screens/GatesPanel.ui";
 
 const ACTION_LABEL = {
 	extend: "extend",

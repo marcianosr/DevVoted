@@ -12,11 +12,11 @@ import {
 	type PolldexFilter,
 } from "~/modules/collection/dex/domain/polldex.model";
 import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
-import type { FilterOption } from "~/ui/modern-theme/Filter.ui";
+import type { FilterOption } from "~/ui/old-theme/modern-theme/Filter.ui";
 import {
 	PollsPanel,
 	type DexPoll,
-} from "~/ui/modern-theme/screens/PollsPanel.ui";
+} from "~/ui/old-theme/modern-theme/screens/PollsPanel.ui";
 
 /** Reading order, not the type's order: the bands a player has something in
  * come first, and the whole roster last. */

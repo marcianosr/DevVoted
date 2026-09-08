@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
-import { swatchTheme } from "~/ui/theme/swatchTheme";
+import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 
 const FRAME = "@container mx-auto w-full py-8";
 const READING_WIDTH = "max-w-[53.125rem]";

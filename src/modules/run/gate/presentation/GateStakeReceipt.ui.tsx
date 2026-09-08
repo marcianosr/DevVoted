@@ -24,7 +24,7 @@ import {
 	SwatchMark,
 	swatchNameTone,
 } from "~/ui/old-theme/SwatchMark.component";
-import { swatchTheme } from "~/ui/theme/swatchTheme";
+import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
 import { Title } from "~/ui/old-theme/typography/Title.component";
 import { SwatchChip } from "~/modules/run/gate/presentation/SwatchChips.ui";

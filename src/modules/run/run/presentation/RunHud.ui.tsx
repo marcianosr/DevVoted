@@ -9,7 +9,7 @@ import {
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import { swatchNameClass } from "~/ui/old-theme/SwatchMark.component";
-import { swatchTheme } from "~/ui/theme/swatchTheme";
+import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 import { GateSegmentBar } from "~/modules/run/gate/presentation/GateSegmentBar.ui";
 import { StorageGauge } from "~/modules/run/run/presentation/StorageGauge.ui";
 import { SummaryDropdown } from "~/modules/run/run/presentation/SummaryDropdown.ui";

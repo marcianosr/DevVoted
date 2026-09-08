@@ -1,9 +1,9 @@
 import type { AuditdexEntry } from "~/modules/collection/dex/domain/auditdex.model";
-import { toAuditId } from "~/ui/modern-theme/audits";
+import { toAuditId } from "~/ui/old-theme/modern-theme/audits";
 import {
 	AuditsPanel,
 	type DexAudit,
-} from "~/ui/modern-theme/screens/AuditsPanel.ui";
+} from "~/ui/old-theme/modern-theme/screens/AuditsPanel.ui";
 
 /**
  * An id the kit has no icon for is redacted rather than dropped: a roster that
