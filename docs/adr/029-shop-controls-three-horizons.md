@@ -104,9 +104,8 @@ Extend), and the design question became what each one's purchase actually buys.
    (`canLock` / `canExtend`) so a broke player still sees the price.
 
 Rejected: **"Widen"** as Extend's name. Width and widening are pipeline-slot
-vocabulary ([ADR-025](025-automatic-width-claiming.md),
-[ADR-027](027-gate-width-demand.md)); reusing them for the offer list would make
-two unrelated numbers share a word.
+vocabulary (ADR-025 and ADR-027, both retired); reusing them for the offer list
+would make two unrelated numbers share a word.
 
 Rejected: **account-level rerolls**. Progression bought outside the run cannot
 trade off against the configs it is competing with.

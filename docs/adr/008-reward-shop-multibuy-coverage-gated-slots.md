@@ -2,51 +2,60 @@
 
 ## Status
 
-Accepted. **Supersedes ADR-006 Decision 7** ("pick exactly one" reward) and **amends ADR-006 Decisions 1 and 10**. Found and decided during playtest DVTD-8eij / bug DVTD-k13o. **Decision 2's coverage ladder superseded by [ADR-034](034-the-gate-is-a-ci-run.md)** (2026-08-15): slots are granted by gate clears; Decisions 1 and 3 stand.
+Accepted (2026-07, playtest DVTD-8eij / bug DVTD-k13o). Supersedes ADR-006
+Decision 7 and amends its Decisions 1 and 10.
+
+**Live:** Decisions 1 and 3. **Dead:** Decision 2's coverage-gated slot ladder;
+ADR-046 owns width, which is bought outright.
 
 ## Context
 
-ADR-006 Decision 7 said a cleared gate grants **exactly one** reward (draft / add-slot / upgrade, plus rebuild and skip). The prototype never enforced this: the `rewarding` status accepted every reward action repeatedly until `finish-reward`. Playtesting exposed the gap — after one gate clear you could add a slot, draft a config, and add another slot in the same round.
+ADR-006 Decision 7 said a cleared gate grants **exactly one** reward. The
+prototype never enforced it: the `rewarding` status accepted every reward action
+repeatedly until `finish-reward`, so after one clear you could add a slot, draft
+a config, and add another slot in the same round.
 
 Two things became clear:
 
-1. **"Pick exactly one" is the wrong model.** The interesting constraint in a Balatro-style shop is the *currency*, not an artificial one-item cap. Storage is already the run currency (ADR-006 Decision 10). Letting the player spend it freely in the reward screen makes storage matter instead of neutering it — which is precisely the complaint the bug raised ("storage can currently buy every reward").
-2. **`add-slot` was free**, so a free-spend shop would let a player spam it to the cap in a single round. It needs its own scarcity that isn't storage.
+1. **"Pick exactly one" is the wrong model.** The interesting constraint in a
+   Balatro-style shop is the *currency*, not an artificial one-item cap. Storage
+   is already the run currency, and the bug report was really a complaint that
+   storage could buy every reward at once.
+2. **`add-slot` was free**, so a free-spend shop would let a player spam it to
+   the cap in a single round. Width needed a scarcity that was not storage.
 
 ## Decision
 
 ### 1. The reward screen is a multi-buy shop, bounded by storage
 
-Clearing a non-final gate opens the shop. The player may take **as many actions as storage affords** — draft configs, upgrade configs, add slots — in any order, then climb on. There is no per-gate reward limit; **storage is the only limiter** for the paid actions.
+Clearing a non-final gate opens the shop. The player takes **as many actions as
+storage affords**, in any order, then climbs on. There is no per-gate reward
+limit; storage is the only limiter.
 
-This is the existing reducer behaviour (multi-action `rewarding` phase), now the *intended* design rather than an unenforced bug.
+This made the existing multi-action reducer behaviour the *intended* design
+rather than an unenforced bug.
 
 ### 2. Slots are gated by total coverage, not bought with storage
 
-> ⚠ **Superseded by [ADR-025](025-automatic-width-claiming.md)** (2026-08-09): `add-slot`
-> is no longer a player-taken action. Width still gates on total coverage exactly as
-> below, but now claims itself the instant a threshold is met, in or out of the shop.
+Dead. Width was free of storage and gated on total run coverage, on the
+principle that breadth earns width and that coverage is a gate rather than a
+currency. The axis has since been deleted twice over: ADR-041 restored it,
+ADR-044 removed it for closing a width-buys-score-buys-width loop, and ADR-046
+settled on slots bought outright on a priced ladder. See
+[rejected.md](rejected.md) for why score may not buy width.
 
-`add-slot` is free of storage but gated on **total run coverage**. Each successive slot requires a higher coverage threshold, so a widening cannot cascade within one round.
+### 3. Drafting a config costs storage
 
-Coverage is a **gate, not a currency** — it is *not* consumed on purchase, mirroring how Focus-config upgrades gate on category coverage (ADR-006 Decision 5). Breadth earns width. The hard cap is `MAX_SLOTS`.
-
-The threshold ladder and cap are **live-tuned in `pipeline.model.ts`** (`SLOT_COVERAGE_GATE` / `coverageToAddSlot` / `canAddSlot`) — that file is the source of truth, not this ADR, since the numbers change with playtesting. The shop surfaces the requirement inline when a slot is locked ("Reach 45% total coverage to widen — you have 32%").
-
-> ⚠ ADR-018 briefly made width gate *depth* too; [ADR-019](019-depth-and-width-are-independent.md) reversed that the next day. This decision stands exactly as written: slots are free, coverage-gated, and optional — they buy room for configs and nothing else. Badges are earned by clearing gates, not by unlocking slots. Reversed in turn by [ADR-034](034-the-gate-is-a-ci-run.md) (2026-08-15): the coverage gate on slots is deleted; clears grant them.
-
-### 3. Drafting a config costs storage by rarity (documented sink)
-
-Drafting spends storage on a **rarity ramp** (`DRAFT_COST` in `config.model.ts`). This was already in the prototype but undocumented in ADR-006's economy section. With multi-buy it is clearly motivated: it is the shop's primary storage sink and gives rarity an economic weight (ADR-006 Decision 9 left rarity cosmetic-only; this is the first place it bites).
-
-## Amendments to ADR-006
-
-- **Decision 1** — the pipeline grows well past 5 (cap `MAX_SLOTS`, currently 12 and live-tuned). The "3 → 5" text was stale.
-- **Decision 7** — superseded by this ADR's Decision 1. No "pick exactly one".
-- **Decision 10** — the sink list gains **draft-config cost (rarity ramp)** alongside draft-rebuild (Fibonacci) and on-demand lint (40KB). Slot width is a **coverage** sink, not a storage one.
+Drafting spends storage, which is the shop's primary sink. This was in the
+prototype but undocumented in ADR-006's economy section; with multi-buy it is
+what bounds the round. The price was a rarity ramp then and is `32 KB × slots`
+now (ADR-047), so a config's size is its price.
 
 ## Consequences
 
-- **Positive**: storage becomes a resource you actively spend down each shop, and the two-axis economy (storage buys power, coverage buys width) gives the reward screen real decisions. Balance numbers now describe the game as played.
-- **Negative**: the coverage ladder is untuned against real polls; `coverageForAnswer` currently yields a ~1%/correct baseline even with no coverage config, so the ladder's reachability moves with any change to that baseline. Tune live.
-- The shop UI must always show *why* a locked action is locked (insufficient storage vs unmet coverage), or a greyed button reads as a bug.
+- Storage became a resource you actively spend down each shop, and the reward
+  screen got real decisions.
+- The shop UI must always show *why* a locked action is locked, or a greyed
+  button reads as a bug. This outlived the coverage ladder: it is why a gated
+  press names its requirement (ADR-053) and a masked plan rung carries its
+  caption (ADR-046).

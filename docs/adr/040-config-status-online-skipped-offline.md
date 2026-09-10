@@ -10,7 +10,7 @@ Accepted — 2026-08-25 (Marciano, DVTD-8pgn). Cleans up presentation left behin
 
 The poll rail marked every config with a pass/fail verdict disc: a green tick normally,
 a red cross when an audit had taken it offline. That vocabulary came from
-[ADR-022](022-every-config-owes-the-gate-a-check.md), where a config carried a check the
+ADR-022, where a config carried a check the
 gate graded. ADR-035 deleted the checks. The domain followed (`configRole.model.ts` says
 "nothing is a requirement anymore"), the rail did not, and four screens ended up using
 the same disc for four different things: installed, owned, new, and live.

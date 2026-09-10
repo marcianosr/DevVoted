@@ -502,8 +502,9 @@ already sell coverage magnitude: it pays most in multi-answer-heavy windows and 
 at all in a window of five single-answer polls, a dead slot stated on the row rather
 than hidden in the rules. **Moore's Law** ramps instead of gating, because 2% of a small
 balance is worthless and the balance is only large late; on the free tier its interest is
-shop budget rather than principal — which since ADR-045 it simply is, because nothing
-clamps a balance.
+shop budget rather than principal, because the 256 KB cap binds from the first shop and
+a balance cannot compound past it (ADR-046). It only becomes principal on a rung whose
+cap leaves room above its own bill.
 
 **Freemium is the roster's one recurring price** — everything else is bought once and
 then free — and it is metered on the run's *depth* rather than on how long it has been
@@ -957,8 +958,9 @@ becomes lootable by players who encounter it. Mechanics undefined.
 The game leans hard into its CI metaphor.
 
 - **Run HUD**: storage as a **balance** — "320 KB" over the word `balance`, and no
-  bar, because ADR-045 left no ceiling to fill and a bar against nothing read as fuel
-  being burned. Then the gate, polls answered, streak, and total coverage. The gate reads
+  bar. The cap is real (ADR-046) but it is a plan the shop prices, not fuel the run
+  burns down, so the ceiling is drawn where it is a decision. A bar in the HUD read as
+  a tank emptying. Then the gate, polls answered, streak, and total coverage. The gate reads
   **"gate 0 / 12"** over a **pip bar** that doubles as the badge collection: one pip per
   gate in that gate's swatch colour, gates behind you solid, the gate underway filling
   with polls answered, the rest dimmed. A pewter rim marks the gate you stand on and

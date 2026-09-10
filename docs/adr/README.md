@@ -1,78 +1,107 @@
 # Architecture Decision Records
 
+An ADR records **why** a decision was made. Current rules live in
+[the wiki](../wiki.md); live-tuned numbers live in their model file. If you want
+to know how the game works today, read the wiki first and come here for the
+reasoning.
+
+[rejected.md](rejected.md) lists directions that were tried and dropped. **Check
+it before proposing one again.**
+
+## Live
+
 | # | Title | Status |
 |---|---|---|
 | [001](001-database-indexing-strategy.md) | Database indexing strategy | Accepted |
-| [002](002-domain-architecture.md) | Domain architecture | Accepted — living document, owns module structure/naming. **Rewritten 2026-08-12** to context/aggregate/four-layer DDD; has the "where does my file go?" decision tree |
-| 003 | Domain restructure | Retired — removed during the run rebuild; ADR-002 owns structure now |
-| 004 | UI styling conventions | Retired — removed during the run rebuild; ADR-007 owns the design system now |
-| [005](005-session-runs.md) | Session runs and the two-loop model | Accepted — cadence questions resolved by 009 |
-| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — Decisions 1/7/10 amended by 008; Decision 11 amended by 013; Decision 10 cap amended by 015; Decisions 3/4/5 amended by 016; Decision 6's death rule superseded by 021 |
+| [002](002-domain-architecture.md) | Domain architecture | Accepted — living document; owns module structure, naming and the dependency rule |
+| [005](005-session-runs.md) | Session runs and the two-loop model | Accepted |
+| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — amended by 008, 013, 035 |
 | [007](007-run-rebuild-conventions.md) | Run rebuild: design system and scope | Accepted |
-| [008](008-reward-shop-multibuy-coverage-gated-slots.md) | Reward shop: multi-buy, coverage-gated slots | Accepted — supersedes 006 Decision 7; Decision 2's slot ladder superseded by 034 |
-| [009](009-session-run-cadence-daily-seeded-shared-run.md) | Session-run cadence: daily-seeded shared run | Accepted — Decision 1 superseded by 011 |
-| [010](010-ui-layer-separation.md) | Two-tier UI separation (presentational vs composition) | Accepted — extracted from CLAUDE.md |
-| [011](011-persistent-runs-daily-segments.md) | Persistent runs with daily shared segments | Accepted — supersedes 009 Decision 1 |
-| [012](012-migration-strategy.md) | One migration pipeline: guarded SQL in supabase/migrations | Accepted — retires drizzle generate/migrate |
-| [013](013-gate-scaled-coverage.md) | Gate-scaled coverage (gain and loss) | Accepted — amends 006 Decision 11; Decision 2's loss ratio amended by 034 |
-| [014](014-daily-gate-lock.md) | Daily gate lock: 5 polls/day, exhaustion is not a terminal | Accepted — amends 011 Decision 2, removes the exhaustion-win; §3's death rule superseded by 021 |
-| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: one-shot grants and a soft over-cap | Accepted — amends 006 Decision 10 cap; records no-selling; Decision 3 (cap-extender as config) superseded 2026-08-06, DVTD-0h4n |
-| [016](016-the-config-rule.md) | The Config Rule: every config is Effect + Check | Superseded by 035 — configs are pure enhancements |
-| [017](017-no-baseline-check.md) | No baseline check: checks come only from configs; payout scales with correctness | Superseded by 035 (checks are gone); Decision 3's bare-pipeline guard survives |
-| [018](018-gate-slot-coupling-and-slot-swatches.md) | Gate–slot coupling: gate N requires slot N; summit at gate 12; slot swatches | **Superseded by 019** (2026-08-06, one day later) |
-| [019](019-depth-and-width-are-independent.md) | Depth and width are independent; swatches are gate badges; summit at gate 12 of 13 | Accepted — supersedes 018; "width never gates the climb" qualified by 027; Decision 2 reversed by 034 (gates grant slots) |
-| [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no color | Accepted — retires the per-category palette (wiki §2.4, DVTD-sthm) |
-| [021](021-death-at-the-gate-that-empties-the-build.md) | A run dies at the gate that empties its build | Superseded by 035 — death narrowed to strip audits (and the bare-legacy guard) |
-| [022](022-every-config-owes-the-gate-a-check.md) | Every config owes the gate a check; the checklist is the whole rulebook | Superseded by 035 — no config owes anything; the friction moved onto the gate |
-| [023](023-storage-capacity-is-a-subscription.md) | Storage capacity is a subscription — the plan ladder | **Superseded by 045** — the subscription, the per-gate bill and the KB cap are all deleted; it superseded the cap-extension voucher (015 Decision 3 via DVTD-0h4n) on the way in (DVTD-rf5c) |
-| 024 | *(reserved: shop-router — one shop per gate, locks the other until the next rung)* | Unwritten — not implemented on the live route |
-| [025](025-automatic-width-claiming.md) | Width claims itself automatically — no more Unlock slot button | Accepted — amends 008 Decision 2; the ladder it claims from replaced by 034 (gate clears) |
-| [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: starter stacks, plain-language receipt, payoff-first gate clear | Accepted, **Decisions 1/5/6/7 superseded by 052** — starter stacks deleted; the receipt and payoff-first decisions stand |
-| [027](027-gate-width-demand.md) | A gate only admits a build that can survive its own stake (width demand) | Superseded by 035 — the width demand is deleted; only the never-go-bare floor remains |
-| [028](028-the-defeat-device.md) | Volkswagen CI: a legendary that reports one failing check as passing | Accepted — amended by 035: the device now reports the gate's first audit as passing |
-| [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons: Rebuild (visit), Lock (next shop), Extend (run) | Accepted — extends 008's shop; rejects account-level rerolls (DVTD-5lt6); **Lock superseded by 054** (yarn.lock owns it) |
-| [030](030-gate-staged-storage-plans.md) | The storage-plan ladder is gate-staged, and climbs to 3MB | Accepted — amends 023 Decision 1 (ladder shape only); wiki §2.8 collects every gate-staged unlock |
-| [031](031-shop-exit-blocks-under-width-builds.md) | The shop exit blocks an under-width build; death is an explicit dead-end click | Superseded by 035 — the exit is always open |
-| [033](033-demand-is-what-you-bought.md) | The correct-answer demand is what you bought | Superseded by 035 — the demand is deleted with every other check |
-| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub — the gate starts from prep, the shop stays open until it does | Accepted — moves finish-reward to prep's start button; community stays the mid-gate wait (DVTD-f7hs) |
-| [034](034-the-gate-is-a-ci-run.md) | The gate is a CI run: passing demands a coverage total | Accepted — reverses 019 Decision 2, supersedes 008's slot ladder, amends 013's loss ratio and 027 Decision 2; records die-by-score as rejected (DVTD-wlte); Decisions 1/3/6 reversed by 035 |
-| [035](035-gates-are-auditors.md) | Gates are auditors: checks off configs, fresh coverage per gate, free redo | Accepted — supersedes 016/017/022/033 (Effect+Check), 021 (death), 027/031 (width demand/exit); reverses 034 Decisions 1/3/6; amends 006 §4, 013, 028; Decision 3 superseded and Decision 4's strip ownership narrowed by 037, Decision 4's "fixed rule a gate carries" narrowed again by 056 (DVTD-zjeq, DVTD-gre4) |
-| [036](036-the-git-tag.md) | The git tag: a shop-bought cross-run checkpoint, burn on use | Accepted — depends on 035's death model; amends the run-end storage-credit rule (DVTD-taxo) |
-| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config and re-runs the loop | Accepted — supersedes 035 Decision 3 (free redo), narrows 035 Decision 4 (strips are every gate's now); amends 021's death rule (DVTD-rxsk, DVTD-rdr5) |
-| [038](038-the-audit-roster.md) | The audit roster: nine rules, staged by count | Accepted — fills out 035 Decision 4 (every gate from 3 carries one, three by the summit); replaces 035's score-inverting Mirror with a poll-inverting one; Decision 2's schedule table and Decision 3's odd-gate rule for Read-only superseded by 056, the count curve and the rest of Decision 3 surviving (DVTD-60he, DVTD-lhao) |
-| [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage, Focus included | Accepted, **amended by 053** (the shelf can also sell a level, and the press now states what it buys) — amends 006's upgrade economy; retires the free coverage-gated Focus upgrade and the no-price-on-the-button convention (DVTD-yx92) |
-| [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline — never passing or failing | Accepted — cleans up presentation left behind by 035 Decision 1; reads 038's offline state (DVTD-8pgn) |
-| [041](041-slots-open-on-gates-coverage-or-either.md) | Slots open on gates, coverage, or either | **Superseded by 044** — slots became spots, and the coverage axis is deleted: score may not buy width |
-| [042](042-design-pillars-and-anti-pillars.md) | Design pillars and anti-pillars | Accepted — adds the tiebreaker lens for every later ADR; deletes wiki §2.1's pay-past-the-daily-lock note (DVTD-4bk5) |
-| [043](043-rarity-is-a-shape-not-a-hue.md) | Rarity is a shape, not a hue | Accepted — supersedes 006 Decision 9; renames the grades to `bit/crumb/nibble/byte`, deletes every rarity hue and legend, splits level onto its own mark; Decision 6's price-is-size doubling reversed by 044 (DVTD-ym11) |
-| [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots, money is KB | Accepted — the grade's bit count is now the pipeline's price; supersedes 041 (the slot ladder), reverses 043 Decision 6, amends 023/030 (the plan rents spots), 025 (a different ladder) and 037 (the peel is a share of spots); records the one-meter model as tried and rejected (DVTD-29cm) |
-| [045](045-spots-come-from-gates-kb-rents-more-on-top.md) | Spots come from gates, KB rents more on top | **Superseded by 046** — the gate schedule and the extra-slot rent are both deleted; it superseded 023 (the plan and the KB cap are both deleted); amends 044 Decision 2 (gates hand width over free, extra spots stack on top) and 030 (still gate-staged); four extra-spot steps, staged by depth and rented per gate (a buy-out was built and pulled), ceiling 28 (DVTD-yu7z, DVTD-lxla) |
-| [046](046-slots-are-bought-storage-is-capped-again.md) | Slots are bought, storage is capped again | Accepted — **supersedes 045**; amends 044 Decision 2 and 030; revives 023's shape (a cap rented by the gate) without the width it sold alongside. 4 free slots, 20 bought on a doubling ladder to 24; an empty slot cashes back at its own price and the ladder never rolls back; seven cap rungs, 512 KB free to 10 MB, billed on clear (DVTD-811d) |
-| [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — **supersedes 043**; amends 044 Decisions 1 and 7. Grades are deleted; a config carries `slots` of 1/2/4/8/12/16 and costs 32 KB a slot (DVTD-811d) |
-| [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build | Accepted — reverses 044's `slots → spots` rename and retires "pipeline" as the container's name. Storage / Build / Slots / Configs, one job each; `slot`/`unslot` actions become `install`/`uninstall` (DVTD-811d) |
-| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | Accepted — amends 046 Decisions 1 and 2. Archived storage buys slots on the start screen at double the rung, uncapped, counting on the same ladder; refundable at cost until Start, and shut off once the run begins (DVTD-dcpq) |
-| [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted, **partially superseded by 051** (the depth ladder is deleted, challenges generalised) — records DVTD-2try's framework: Grant gates the starting hand only (the shelf is never filtered), 9 configs free; rejects the archived-storage pull (DVTD-9d7o); Configdex shows ???/met/granted with every requirement named (DVTD-2try) |
-| [051](051-configs-unlock-on-individual-objectives.md) | Configs unlock on individual objectives | Accepted — supersedes 050 Decision 3 and generalises its Decision 4: each of the 21 non-free configs carries a thematic objective OR a polls-answered fallback, first met grants; auto-tracked against a closed metric set via a `user_objective_progress` ledger; the Configdex becomes the checklist with visible progress (DVTD-2try; the stacks-arrive clause died with 052) |
-| [052](052-the-run-opens-on-a-dealt-hand.md) | The run opens on a dealt hand | Accepted — supersedes 026 Decisions 1/5/6/7, amends 049. Deal 5 from the starter pool (seeded, focus-guaranteed), `recommendedPicks` preselects 3 through the reducer, 1–4 picks start; stacks deleted everywhere, the hand is immutable while configuring, archive slot lines demoted below the deal (DVTD-ez37) |
-| [053](053-upgrades-appear-on-the-shelf-and-arms-switch-mid-poll.md) | Upgrades appear on the shelf, and A/B arms switch mid-poll | Accepted — amends 039, reverses DVTD-p5kx's shop-only arm cadence. `upgradePreview` states what a level buys and a gated press names its requirement; rows read at their live level; ~1 shop in 8 offers a version of an owned config at shelf price with no coverage gate; `switch-arm` works while answering; one MB-aware `kbLabel` (DVTD-tupk) |
-| [054](054-offer-locks-ship-with-yarnlock.md) | Offer locks ship with yarn.lock | Accepted — supersedes 029's Lock (config-gated, plural, rest-of-run, free release, locks dissolve with the config); 16 KB fee legal per 042 Pillar 3 (DVTD-fkr2) |
-| [055](055-config-hue-is-keyed-to-slot-size.md) | Config hue is keyed to slot size | Accepted — amends 047 Decision 1 (the size gains a fill; grades stay dead) and retires 006 §5's family taxonomy. `ConfigFamily` deleted outright; six hue rungs keyed to slots (celadon/saffron/vermilion/lavender/fuchsia/cinnabar), following the minify-halved drawn value; unseen Dex chips give up size instead of family (DVTD-nfnx, answers DVTD-eyud) |
-| [056](056-audits-are-drawn-not-scheduled.md) | Audits are drawn from pools, not scheduled per gate | Accepted — supersedes 038 Decision 2's schedule table and drops its odd-gate rule for Read-only; narrows 035 Decision 4. Gates 4–11 draw from three staged pools seeded on the date, one audit per family per gate, 300 never with 408; gate 3 and gate 12 stay authored and 410 stays pinned to 11. Ids canonical (`timeout`/`strip` dial off the gate); uniqueness band-local until the roster grows (DVTD-qfi1) |
-| [057](057-gate-0-is-the-calibration-gate.md) | Gate 0 is the calibration gate | Accepted — amends 052 Decision 2 (nothing is preselected; `RECOMMENDED_SIZE` 3 → 2 and the picks become a marker, `withRecommendedBuild` deleted) and reaffirms its Decision 3 (one config is the floor, never a mandatory config). Answers 034's open question 3: gate 0 keeps its 3% demand and waives its peel via `GATE_FAIL_PEEL_SHARE[0] = 0`, so death there is impossible except for a bare build. A waived miss routes to the answers, not the repair screen (DVTD-ej8m) |
-| [059](059-text-owns-the-weight-axis.md) | Text owns the weight axis | Accepted — `Text` gains a `weight` axis whose `thin` emits `font-normal`, because only 400/500/700/800 are loaded and `body` is pinned bold, so 400 is what thinning looks like. No default, so the 36 `className="font-bold"` call sites emit unchanged; a future `heavy` would silently beat them. `aria-hidden` is now forwarded (it was dropped at all 8 call sites), and deleted where the glyph carried the only meaning. Every raw muted span routes through `Text` at `faint` (DVTD-ak6k) |
-| [060](060-the-slot-mark-is-a-figure.md) | The slot mark is a figure, and version is a dot track | Accepted — supersedes 055 Decision 2's channel split. One bar per slot becomes one fixed-width block holding the count, so 16 slots costs the width of 1 and DVTD-eul8's cap-and-compress question dies. Hue moves onto the block's 3px edge and nowhere else; a hue-coded chip border was built and rejected on sight (reads as an alert), so the only coloured border still means `legendary-ring` at 8+. `DexChip` always takes `maxVersion` and draws `VersionDots` — one circular pip per version, filled to the version held — retiring the boxed-rung/fraction split. Every `Row`-shaped config list draws the chip too (shop build + offers, prep, game over, gate-hold peel), so their `version` goes from a `"v2"` string to a number plus `maxVersion` and stops being optional; `BuildList` keeps `Version` + `Weight`, being a status line with a dot and inline presses (DVTD-3ib9) |
-| [061](061-coverage-reads-as-a-gauge-beside-the-answers.md) | Coverage reads as a gauge beside the answers | Accepted — amends 035 by giving per-gate coverage a second reading surface, no number changed. A vertical gauge sits in the poll and reveal gutters and `RunHeaderProps.coverage` goes optional so the figure never prints twice on one screen; segments size against the demand and wear the gate swatch. A dashed ghost appears only on a pick, valued through `coverageForAnswer` (the scorer's own function) times the poll difficulty; the reveal animates the settlement from the bottom edge in both directions, silenced under `prefers-reduced-motion`. Past the demand the track opens instead of clamping and marks where the demand fell (DVTD-34r5) |
-| [062](062-the-starting-hand-is-dealt-under-guarantees.md) | The starting hand is dealt under guarantees | Accepted — answers 052 Decision 6 (the deferred safeguards) and amends 050 Decision 2. `STARTER_POOL` becomes ADR-051's free eight, so the deal carries variance for the first time (56 hands, not 1) and `gitRebase` leaves it. Three rules shape the draw: nothing larger than the slot budget (larger-than, not as-large-as, so 4-slot `intellisense` stays dealable), the smallest three fit the budget together (`PAIRABLE_PICKS`), and one or two focus configs varying by seed (`FOCUS_BAND`) — with repair never evicting the last focus config. Coverage-earner rule, dedupe-by-effect, can-trigger-today and rarity weighting all considered and rejected; the draw stays uniform. The new-grant guarantee is decided but waits on DVTD-clgs's ledger (DVTD-b6gx) |
-| [063](063-a-config-can-be-paid-for-a-prediction.md) | A config can be paid for a prediction | Accepted — amends 035 (what a config may ask of the player) and 037 (what a missed gate pays). Planning Poker takes a 1–5 estimate of the window's correct answers in prep and pays `32 KB × estimate` only on an exact call. Scaling by the estimate rather than paying flat per hit is deliberate: it puts the expected value one notch above an honest guess, so the config prices optimism instead of being a quiz with one right answer. It settles on a missed gate too — the third exception to 037's miss-pays-nothing rule, and the one that makes a low estimate worth making. Asking for a number is not an 035 demand (A/B Test's arm and `git rebase -i`'s ordering are the precedents); the lock is `canEstimate` reading run status, exactly as rebase does, but the commitment is a `RunState` field because `hydrateRunState` would discard a `polls` mutation. `estimateThisGateKb` is undefined for no bet and 0 for a lost one, which is what produces `GateRewardStatus`'s first ever `failed` row (DVTD-68jr) |
-| [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted — supersedes 051's ledger shape and the `users.unplayed_config_ids` column 062 anticipated. One table, `user_config_unlocks (user_id, config_id, via_metric, unlocked_at, first_installed_at)`, holds grant, provenance and the unplayed queue: unplayed is `first_installed_at IS NULL`, newest first, and the guarantee reads earned rows only so a new account never walks the free eight through a reserved seat. The unlock lands in two beats — a saffron alert line where the grant fires (the audit idiom, never the run log) and a NEW tag on the guaranteed seat at the next deal — with the Dex row's `via_metric` provenance as the permanent record. The seat is dealt first and the focus band counts it, closing 062's band-breach case; pairability repair never evicts it. For an oversized config the checkmark is the reward: no shop-side compensation, since a discount bends 047's size-is-price and a guaranteed shelf appearance breaks the shared draft seed. Companion amendment to 051's table: six configs that shipped without rows joined it and five seam-visible metrics joined the closed set (DVTD-0sjo) |
-| [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted — reshapes DVTD-wp69's nine standouts into exactly six, in grid order: deepest, against the room, clean sweep, widest build, travelling light, comeback. The timed trio dies (reflex is not a skill axis, per 042's pillar-1 test), most-{category} dies as farmable, longest streak and most coverage die as duplicate signals; `answer_time_ms` capture stays. New `RunState.configsLost` counts involuntary config exits (peel, decay, lapse) for comeback; clean sweep's gate attribution is a settled-window walk-back and approximate across gate replays. Widest build reranks to slots held. Community reads resolve `equipped_border_id` through the border catalog, landing DVTD-95k3's deferred borders-on-chips |
+| [008](008-reward-shop-multibuy-coverage-gated-slots.md) | The reward screen is a multi-buy shop | Accepted — amended by 046 |
+| [009](009-session-run-cadence-daily-seeded-shared-run.md) | Cadence: a daily-seeded, shared run | Accepted — amended by 011, 014 |
+| [010](010-ui-layer-separation.md) | Two-tier UI separation | Accepted |
+| [011](011-persistent-runs-daily-segments.md) | Persistent runs with daily shared segments | Accepted — amended by 014 |
+| [012](012-migration-strategy.md) | One migration pipeline: guarded SQL | Accepted |
+| [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035 |
+| [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 037 |
+| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — amended by 046 |
+| [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046 |
+| [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
+| [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
+| [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
+| [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054 |
+| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted |
+| [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056 |
+| [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
+| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted |
+| [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 |
+| [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage | Accepted — amended by 053 |
+| [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline | Accepted |
+| [042](042-design-pillars-and-anti-pillars.md) | **Design pillars and anti-pillars** — the tiebreaker lens | Accepted |
+| [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots (now slots), money is KB | Accepted — amended by 046, 047 |
+| [046](046-slots-are-bought-storage-is-capped-again.md) | **Slots are bought, storage is capped** | Accepted |
+| [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — amended by 055 |
+| [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build: four nouns, one job each | Accepted |
+| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | Accepted — amended by 046 |
+| [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted — amended by 051, 062, 064 |
+| [051](051-configs-unlock-on-individual-objectives.md) | Configs unlock on individual objectives | Accepted — amended by 064 |
+| [052](052-the-run-opens-on-a-dealt-hand.md) | The run opens on a dealt hand | Accepted — amended by 057, 062 |
+| [053](053-upgrades-appear-on-the-shelf-and-arms-switch-mid-poll.md) | Upgrades on the shelf; arms switch mid-poll | Accepted |
+| [054](054-offer-locks-ship-with-yarnlock.md) | Offer locks ship with yarn.lock | Accepted |
+| [055](055-config-hue-is-keyed-to-slot-size.md) | Config hue is keyed to slot size | Accepted — amended by 060 |
+| [056](056-audits-are-drawn-not-scheduled.md) | Audits are drawn from pools, not scheduled | Accepted |
+| [057](057-gate-0-is-the-calibration-gate.md) | Gate 0 is the calibration gate | Accepted |
+| [058](058-451-redacts-the-answers-and-sells-them-back.md) | 451 redacts the answers and sells them back | Accepted |
+| [059](059-text-owns-the-weight-axis.md) | Text owns the weight axis | Accepted |
+| [060](060-the-slot-mark-is-a-figure.md) | The slot mark is a figure; version is a dot track | Accepted |
+| [061](061-coverage-reads-as-a-gauge-beside-the-answers.md) | Coverage reads as a gauge beside the answers | Accepted |
+| [062](062-the-starting-hand-is-dealt-under-guarantees.md) | The starting hand is dealt under guarantees | Accepted — amended by 064 |
+| [063](063-a-config-can-be-paid-for-a-prediction.md) | A config can be paid for a prediction | Accepted |
+| [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted |
+| [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted |
+
+## Retired
+
+Deleted files. The owner column is where to read instead; git history holds the
+original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
+
+| # | Title | Status |
+|---|---|---|
+| 003 | Domain restructure | Retired — 002 owns structure |
+| 004 | UI styling conventions | Retired — 007 owns the design system |
+| 016 | The Config Rule: every config is Effect + Check | Retired — 035 owns it |
+| 017 | No baseline check | Retired — 035 owns it |
+| 018 | Gate–slot coupling: gate N requires slot N | Retired — 019 owns it |
+| 021 | A run dies at the gate that empties its build | Retired — 037 owns it |
+| 022 | Every config owes the gate a check | Retired — 035 owns it |
+| 023 | Storage capacity is a subscription | Retired — 046 owns it |
+| 024 | *(reserved: shop-router)* | Unwritten — never implemented |
+| 025 | Width claims itself automatically | Retired — 046 owns it |
+| 027 | A gate only admits a build that survives its stake | Retired — 035 owns it |
+| 030 | The storage-plan ladder is gate-staged | Retired — 046 owns it |
+| 031 | The shop exit blocks an under-width build | Retired — 035 owns it |
+| 033 | The correct-answer demand is what you bought | Retired — 035 owns it |
+| 034 | The gate is a CI run | Retired — 035 owns it |
+| 041 | Slots open on gates, coverage, or either | Retired — 046 owns it |
+| 043 | Rarity is a shape, not a hue | Retired — 047 owns it |
+| 045 | Spots come from gates, KB rents more on top | Retired — 046 owns it |
 
 ## Conventions
 
-- Title: `# ADR-NNN: Title`, then a `## Status` section stating acceptance date
-  and any supersession, then `## Context` / `## Decision` / `## Consequences`.
-- Decisions are immutable history. A later ADR changes them **by reference**
-  (like ADR-008's Amendments section); the superseded spot gets an inline
-  `> ⚠ Amended/Superseded by ADR-NNN` marker so no reader acts on stale text.
-- Live-tuned numbers (thresholds, caps, costs) point to their source-of-truth
-  code file instead of being duplicated in the ADR.
+- Title `# ADR-NNN: Title`, then `## Status`, `## Context`, `## Decision`,
+  `## Consequences`. Status states the acceptance date, what is **live**, and
+  what is dead with the ADR that owns it now.
+- **An ADR states what is live.** A decision that dies collapses to a one-line
+  pointer to the ADR that replaced it, not an inline refutation. Keep original
+  decision numbers, since code and beans cite them.
+- **A fully superseded ADR is deleted** and keeps a row in Retired above.
+  Annotating instead of deleting is what turned this directory into 5,700 lines
+  of decision-then-refutation, and it leaves a dead ADR looking like a citable
+  authority — which is how two wiki statements ended up sourced to a superseded
+  one.
+- **Rejected directions go in [rejected.md](rejected.md)**, once, rather than in
+  the ADR that rejected them. Rejections span ADRs and outlive them.
+- **Live-tuned numbers point to their source-of-truth file** instead of being
+  duplicated here. A table copied into an ADR goes stale silently.
+- An ADR keeps its dated vocabulary. ADR-048 renamed spots to slots; earlier
+  ADRs still say spots, because rewriting them would lose why the word changed.

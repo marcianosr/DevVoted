@@ -3,7 +3,7 @@
 ## Status
 
 Accepted (2026-08-30, Marciano, DVTD-811d).
-**Supersedes [ADR-043](043-rarity-is-a-shape-not-a-hue.md)** and amends
+**Supersedes ADR-043** and amends
 [ADR-044](044-capacity-is-spots-money-is-kb.md) Decisions 1 and 7. Sizes and the price
 rate live in `config.model.ts`.
 

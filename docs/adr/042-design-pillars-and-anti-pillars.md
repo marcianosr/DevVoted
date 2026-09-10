@@ -50,7 +50,7 @@ reader knows they are deliberate:
 | Generate polls procedurally. | Pillars 1 and 4 |
 | Offer any path to more than one gate attempt per day. | Pillar 5 |
 | Let competitive ranking drive design. Leaderboards, awards and the Dex report the climb; they never shape it. | Pillar 1 |
-| End a run on an ordinary miss. | Settled already in [ADR-021](021-death-at-the-gate-that-empties-the-build.md) / [ADR-037](037-a-missed-gate-peels-a-config.md) |
+| End a run on an ordinary miss. | Settled already in ADR-021 / [ADR-037](037-a-missed-gate-peels-a-config.md) |
 
 Anti-pillar 4 is a boundary, not a ban: an award for a behaviour teaches players to
 farm that behaviour, so new awards are checked against pillar 1 before they ship.

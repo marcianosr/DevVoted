@@ -5,8 +5,8 @@
 Accepted (2026-09-04, Marciano, DVTD-ej8m).
 Amends [ADR-052](052-the-run-opens-on-a-dealt-hand.md) Decision 2 (the recommended trio
 is no longer installed) and reaffirms its Decision 3. Answers open question 3 of
-[ADR-034](034-the-gate-is-a-ci-run.md). Does not revive the mandatory config
-[ADR-017](017-no-baseline-check.md) deleted.
+ADR-034. Does not revive the mandatory config
+ADR-017 deleted.
 
 ## Context
 
