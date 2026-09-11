@@ -2,6 +2,10 @@
 
 ## Status
 
+Reversed by [ADR-067](067-standouts-are-four-plain-standings.md) (2026-09-11):
+the roster is four standings, and the clock and category awards return. The
+code still computes the six described below.
+
 Accepted (2026-09-06, Marciano, DVTD-wii3). Reshapes the nine-award roster
 from DVTD-wp69 and moves the community board onto the terminal-theme kit.
 Ships the "comeback clear" idea wiki §7.3 had parked.

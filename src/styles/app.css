@@ -19,7 +19,6 @@
 @layer base {
 	html {
 		color-scheme: dark;
-		font-size: 110%;
 	}
 
 	* {
@@ -154,6 +153,13 @@
 	--text-xxs: 0.625rem;
 	--text-xxs--line-height: 0.875rem;
 
+	/* The largest type, off Tailwind's scale on purpose: text-xl (1.25rem) is
+	   short of the 22px a screen title wants and text-2xl (1.5rem) overshoots
+	   it. Carries its own ratio line-height, so a title that wraps does not
+	   inherit body copy's looser 1.5. */
+	--text-display: 1.375rem;
+	--text-display--line-height: 1.35;
+
 	--font-display: "Pixter Display", sans-serif;
 	--font-granular: "Pixter Granular", sans-serif;
 }
@@ -269,6 +275,25 @@
 }
 
 /* Theme color plumbing */
+/* Registered as a theme colour rather than hand-written utilities so Tailwind
+   generates the whole family — bg-theme, text-theme, border-theme, ring-theme —
+   *and* every `/opacity` variant of them via color-mix(). A static `@utility`
+   has no slot for a modifier, so `bg-theme/20` used to emit no rule at all:
+   inert rather than wrong, which is the worst way for a class to fail.
+
+   `inline` is load-bearing. Without it Tailwind pins --color-theme at :root and
+   emits var(--color-theme), so every themed element resolves to the root
+   cerulean and per-screen theming dies. With it the utilities carry
+   var(--theme-color) directly, which resolves against the nearest gate or mood
+   ancestor.
+
+   The -soft / -faint / -muted / -raised rungs stay hand-written below: they
+   rebuild the colour with oklch(from ...), crushing chroma and pinning
+   lightness against the dark ground, which an alpha tint cannot do. */
+@theme inline {
+	--color-theme: var(--theme-color);
+}
+
 /* Default theme color for un-themed screens (pipelines, shop, run screens).
    Gate/mood ancestors below override it; the theme utilities inherit whichever
    value is nearest, so bg-theme/text-theme render everywhere. */
@@ -283,6 +308,13 @@
 	 * two gates sharing a colour cannot sit on different grounds.
 	 */
 	--theme-ground-chroma: 0.25;
+
+	/* A floor, because the factor above has nothing to scale on an achromatic
+	   theme: pewter's chroma is 0.006, so Boulder's ground came out at 0.0015 and
+	   the screen was pure black with no gate colour in it at all. Scaling cannot
+	   fix that — only a minimum can. Set just under the ~0.03 the chromatic gates
+	   land on, so Boulder stays the quietest screen without being unthemed. */
+	--theme-ground-floor: 0.02;
 }
 
 /* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
@@ -381,13 +413,46 @@
 	--theme-ground-chroma: 0.18;
 }
 
-/* Semantic screen mood — pass/fail feedback, not gate identity. Declared after
-   the gate blocks so mood wins if both attributes ever land on one element. */
-[data-screen-theme="cinnabar"] {
-	--theme-color: var(--color-cinnabar);
+[data-screen-theme="pallet"] {
+	--theme-color: var(--color-pallet);
+}
+[data-screen-theme="viridian"] {
+	--theme-color: var(--color-viridian);
+	--theme-ground-chroma: 0.18;
+}
+[data-screen-theme="pewter"] {
+	--theme-color: var(--color-pewter);
+}
+[data-screen-theme="cerulean"] {
+	--theme-color: var(--color-cerulean);
+	--theme-ground-chroma: 0.12;
+}
+[data-screen-theme="vermillion"] {
+	--theme-color: var(--color-vermillion);
+	--theme-ground-chroma: 0.12;
+}
+[data-screen-theme="lavender"] {
+	--theme-color: var(--color-lavender);
+	--theme-ground-chroma: 0.18;
 }
 [data-screen-theme="celadon"] {
 	--theme-color: var(--color-celadon);
+}
+[data-screen-theme="fuchsia"] {
+	--theme-color: var(--color-fuchsia);
+	--theme-ground-chroma: 0.18;
+}
+[data-screen-theme="saffron"] {
+	--theme-color: var(--color-saffron);
+}
+[data-screen-theme="cinnabar"] {
+	--theme-color: var(--color-cinnabar);
+}
+[data-screen-theme="indigo"] {
+	--theme-color: oklch(from var(--color-indigo) 0.7 c h);
+}
+[data-screen-theme="seafoam"] {
+	--theme-color: var(--color-seafoam);
 }
 
 /* Themed screens mirror their gate onto <body> (Screen.ui) — the page then
@@ -414,11 +479,15 @@ body[data-screen-theme] {
 
 /* Registered as @utility (not plain classes) so Tailwind variants — hover:, focus:,
    enabled:hover:, etc — attach to them the same as any built-in utility. */
-@utility text-theme {
-	color: var(--theme-color);
-}
-@utility bg-theme {
-	background-color: var(--theme-color);
+/* The brightest rung: copy that reads as white on its own but is visibly the
+   theme's hue the moment two screens sit side by side. Chroma is fixed rather
+   than the proportional crush bg-theme-faint uses, because at this lightness
+   every theme should carry the same warmth; scaling off c would leave
+   low-chroma pallet pure white and high-chroma cinnabar visibly pink. The fixed
+   figure is what tunes the glow — at 0.014 it was a whisper nobody saw. Costs
+   nothing in legibility: 15.3:1 at worst across the twelve hues. */
+@utility text-theme-faint {
+	color: oklch(from var(--theme-color) 0.92 0.05 h);
 }
 /* Translucent theme fill for selected/hover surfaces. */
 @utility bg-theme-soft {
@@ -429,7 +498,20 @@ body[data-screen-theme] {
    <body> (Storybook has no themed body to inherit from). */
 @utility bg-theme-faint {
 	background-color: oklch(
-		from var(--theme-color) 0.16 calc(c* var(--theme-ground-chroma)) h
+		from var(--theme-color) 0.1
+			max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+	);
+}
+/* A tile sitting ON the faint ground rather than being it — the withheld
+   collectible, whose colour is not its own to show. Pairs with bg-theme-faint
+   and must never share its value: a swatch painted in the ground's own token is
+   invisible, not subtle. `raised` is the same step --color-surface-raised names
+   over --color-surface. Reuses --theme-ground-chroma so the per-hue tuning that
+   keeps a screen ground from washing out applies here too. */
+@utility bg-theme-raised {
+	background-color: oklch(
+		from var(--theme-color) 0.22
+			max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
 	);
 }
 /* One rung above bg-theme-soft, for the hover of a surface that already wears
@@ -437,6 +519,81 @@ body[data-screen-theme] {
    solid. */
 @utility bg-theme-strong {
 	background-color: oklch(from var(--theme-color) l c h / 0.28);
+}
+@utility text-theme-muted {
+	color: oklch(from var(--theme-color) 0.58 calc(c* 0.55) h);
+}
+/* text-theme-muted's background pair, for marks that carry a reading without
+   carrying text — the weight block's pips. Same rung, so a pip and the label
+   beside it read as one quiet line rather than two tones. */
+@utility bg-theme-muted {
+	background-color: oklch(from var(--theme-color) 0.58 calc(c* 0.55) h);
+}
+/* A filled label's ground and ink in one utility, deliberately inseparable: the
+   pair is chosen for its contrast ratio (7.3:1 at worst across the twelve Kanto
+   hues, AAA), so letting a call site take the fill without the ink is the one
+   way to break it. Lightness carries the pair — fill near the dark end, ink near
+   the light one — while chroma stays proportional so each hue keeps its
+   identity instead of every badge trending to the same washed pastel. */
+/* The theme colour lifted to a legible ink on a dark ground: real hue, unlike
+   text-theme-faint's near-white, but bright enough to clear AA everywhere —
+   raw text-theme fails it at 3.9:1 for cinnabar and 2.5:1 for indigo. The
+   middle rung of the text ladder: faint, soft, solid.
+   KEEP THIS IDENTICAL to badge-theme's `color` below; a spec asserts it. */
+@utility text-theme-soft {
+	color: oklch(from var(--theme-color) 0.87 calc(c* 0.7) h);
+}
+@utility badge-theme {
+	background-color: oklch(from var(--theme-color) 0.3 calc(c* 0.3) h);
+	color: oklch(from var(--theme-color) 0.87 calc(c* 0.7) h);
+}
+/* A badge the player can press. Same paired fill-and-ink contract as
+   badge-theme, because a control's legibility must not be separable from its
+   ground, in rungs: idle, armed (a two-state control showing which state is
+   live), and hover.
+
+   The fills sit deliberately close to badge-theme's own — an idle press is
+   1.12:1 against a decorative badge, i.e. indistinguishable by fill alone.
+   That is why ring-theme-soft is the affordance and why it may not be
+   softened.
+
+   Hover is nested rather than shipped as a `hover:` variant class so that
+   source order cannot decide it. `.press-theme:hover:not(:disabled)` outranks
+   the single class `.press-theme-armed`, so hovering an armed control still
+   lights it; a flat set of three utilities would leave that to whichever
+   Tailwind happened to emit last. */
+@utility press-theme {
+	background-color: oklch(from var(--theme-color) 0.27 calc(c* 0.23) h);
+	color: oklch(from var(--theme-color) 0.9 calc(c* 0.27) h);
+
+	/* Ink goes near-white instead of staying on the ladder: the fill climbs far
+	   enough that the quiet ink would drop under AA. */
+	&:hover:not(:disabled) {
+		background-color: oklch(from var(--theme-color) 0.49 calc(c* 0.45) h);
+		color: oklch(from var(--theme-color) 0.97 calc(c* 0.1) h);
+	}
+}
+/* The live arm of a two-state control. Overrides the fill only — keeping
+   press-theme's ink means switching arms re-tints the ground behind the label
+   without the label itself moving or changing colour. */
+@utility press-theme-armed {
+	background-color: oklch(from var(--theme-color) 0.39 calc(c* 0.35) h);
+}
+/* The edge that says "this is pressable". A ring rather than a border so it
+   costs no layout: a bordered badge would stand 2px taller than a decorative
+   one and reflow its chip the moment a badge gained a handler.
+
+   Lightness is 0.56, not the 0.467 the mock measures. That value reads 2.25:1
+   against its own fill, under the 3:1 WCAG asks of a control's boundary, and
+   this ring is the only cue separating a control from a label — so it is held
+   to the floor even where the mock is not. At 0.56 it clears 3.31:1 against
+   the fill and 3.83:1 against the faintest screen ground. */
+@utility ring-theme-soft {
+	--tw-ring-color: oklch(from var(--theme-color) 0.56 calc(c* 0.45) h);
+
+	&:hover:not(:disabled) {
+		--tw-ring-color: oklch(from var(--theme-color) 0.68 calc(c* 0.55) h);
+	}
 }
 /* Two layers because one blur alone reads as a soft edge rather than a glow: a
    tight opaque-ish ring holds the shape, the wide bloom carries the light. */
@@ -452,24 +609,22 @@ body[data-screen-theme] {
 		0 0 0 0.1875rem oklch(from var(--theme-color) l c h / 0.12),
 		0 0 0.875rem 0.1875rem oklch(from var(--theme-color) l c h / 0.22);
 }
-@utility border-theme {
-	border-color: var(--theme-color);
-}
 @utility border-theme-soft {
 	border-color: oklch(from var(--theme-color) l c h / 0.5);
 }
-/* Outline rather than ring for the "you are here" square: outline-offset leaves
-   the gap transparent, so the cue survives any surface it sits on. */
-@utility outline-theme {
-	outline-color: var(--theme-color);
+/* The bottom rung: a hairline that says "this panel has an edge" without the
+   edge being the thing you notice. Alpha rather than the lightness crush
+   bg-theme-faint uses, because a border has to stay readable over any surface,
+   including the crushed ground itself. */
+@utility border-theme-faint {
+	border-color: oklch(from var(--theme-color) l c h / 0.2);
 }
-/* Focus rings follow the gate the screen is themed for, so a ring never has to
-   fall back to a hardcoded zinc. */
-@utility ring-theme {
-	--tw-ring-color: var(--theme-color);
-}
-@utility accent-theme {
-	accent-color: var(--theme-color);
+/* border-theme-faint's ring pair, for a round control whose edge should be as
+   quiet as a panel's. Declared because reaching for `ring-theme-faint` and
+   getting nothing is silent: Tailwind emits no rule, the ring keeps its
+   default currentColor, and the mistake looks plausible on screen. */
+@utility ring-theme-faint {
+	--tw-ring-color: oklch(from var(--theme-color) l c h / 0.2);
 }
 
 @font-face {
@@ -656,6 +811,64 @@ meter::-webkit-meter-optimum-value {
 		135deg,
 		transparent 0 3px,
 		var(--color-edge-strong) 3px 4px
+	);
+}
+
+/*
+ * bg-hatched's themed sibling, under the same law: painted in the theme colour
+ * instead of a fixed zinc, so a hatched stub on a kanto screen belongs to the
+ * gate it is standing in. The -theme suffix means what it means on badge-theme
+ * and border-theme: this one reads the screen.
+ *
+ * Kept separate rather than re-pointing bg-hatched: terminal-theme's and
+ * modern-theme's slot tracks sit on unthemed grounds where --theme-color falls
+ * back to cerulean, and a blue hatch on a zinc track is a regression, not a
+ * theming. bg-hatched's own 1-in-4 geometry stays with it.
+ *
+ * Broad bands, not pinstripes: 12px lit in a 24px period, half and half. The
+ * first cut copied bg-hatched's 1px-in-4 and read as moire at this size — a row
+ * is 40px tall and 600 wide, where bg-hatched's cells are 14px. Measured off
+ * Marciano's reference: 24px perpendicular period, 50% duty.
+ *
+ * Opaque, and built the way bg-theme-faint and bg-theme-raised are built,
+ * rather than an alpha over the theme colour. An alpha makes the stripe's
+ * loudness follow the theme's own lightness: at the /0.05 that matches this
+ * contrast on pewter, viridian's delta is 2.2 and pallet's is 10.5, a five-fold
+ * spread. Reusing --theme-ground-chroma holds every hue between 6.5 and 10.9
+ * instead, and being opaque means the hatch composites the same over any fill.
+ *
+ * L 0.16 is the lightness body[data-gate-theme] already paints at with this
+ * exact chroma clamp, and it sits the hatch midway between the faint ground it
+ * lies on (0.1) and a tile you own (bg-theme-raised, 0.22) — which is the
+ * reading: room that exists and is not yours yet.
+ */
+@utility bg-hatched-theme {
+	background-image: repeating-linear-gradient(
+		135deg,
+		transparent 0 12px,
+		oklch(
+				from var(--theme-color) 0.16
+					max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+			)
+			12px 24px
+	);
+}
+
+/*
+ * The same hatch at a quarter of the period, for the slot track, whose boxes
+ * are 10px tall rather than a 40px row. bg-hatched-theme's 24px shows barely
+ * one band at that height and reads as a flat block. Colour construction and
+ * the half-and-half duty cycle are untouched: only the period scales.
+ */
+@utility bg-hatched-theme-fine {
+	background-image: repeating-linear-gradient(
+		135deg,
+		transparent 0 3px,
+		oklch(
+				from var(--theme-color) 0.16
+					max(c * var(--theme-ground-chroma), var(--theme-ground-floor)) h
+			)
+			3px 6px
 	);
 }
 
@@ -1018,5 +1231,59 @@ meter::-webkit-meter-optimum-value {
 @media (prefers-reduced-motion: reduce) {
 	.coverage-callout {
 		animation: none;
+	}
+}
+
+/* The coverage ring. Arc and digits share one duration, because a number that
+   lands before its arc reads as two readouts rather than one. */
+.coverage-ring {
+	--coverage-duration: 400ms;
+}
+
+/* pathLength="100" renormalises the circle, so the offset is literally percent
+   and the radius can change without desyncing the fill. A transition rather
+   than a keyframe because coverage runs both ways: a wrong answer bleeds the
+   meter back down, and that has to animate the same as a fill. */
+.coverage-arc {
+	transition: stroke-dashoffset var(--coverage-duration) ease-out;
+}
+
+/* A registered property is the only value CSS will interpolate into a counter,
+   which is what lets the digits climb with no rAF loop anywhere in the app.
+   Only the whole part rides it: counter() renders integers, so the tenth sits
+   beside it as static text rather than forcing a second animated counter whose
+   digit would run backwards whenever the whole part ran forwards. */
+@property --coverage-count {
+	syntax: "<integer>";
+	initial-value: 0;
+	inherits: false;
+}
+
+.coverage-count {
+	transition: --coverage-count var(--coverage-duration) ease-out;
+	counter-reset: coverage var(--coverage-count);
+}
+
+.coverage-count::after {
+	content: counter(coverage);
+}
+
+/* @starting-style is what makes the ring animate on arrival as well as on
+   change: without it the first paint already holds the settled value and the
+   player never sees the sweep that tells them the number is live. */
+@starting-style {
+	.coverage-arc {
+		stroke-dashoffset: 100;
+	}
+
+	.coverage-count {
+		--coverage-count: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coverage-arc,
+	.coverage-count {
+		transition: none;
 	}
 }

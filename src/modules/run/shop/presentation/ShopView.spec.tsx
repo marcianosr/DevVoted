@@ -59,13 +59,12 @@ describe("ShopView", () => {
 		render_();
 
 		expect(screen.getByText("Rainbow shop")).toBeInTheDocument();
-		// The subtitle badges its numbers, so the text is split across spans.
 		expect(
 			screen.getByText((_, element) => element?.textContent === "before gate 5")
 		).toBeTruthy();
 	});
 
-	it("counts the shelf and the build separately", () => {
+	it("counts the registry and the build separately", () => {
 		render_();
 
 		expect(screen.getByText("2 offers")).toBeInTheDocument();
@@ -134,7 +133,6 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalledOnce();
 	});
 
-	// ADR-035 deleted the width demand at the shop door; only overflow shuts it.
 	it("lets a build with nothing left to spend leave for the gate anyway", () => {
 		render_({
 			view: createMockRunView({ ...view, storage: 0, canStart: false }),
@@ -143,8 +141,6 @@ describe("ShopView", () => {
 		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeEnabled();
 	});
 
-	// The door keeps its own label while it is shut: the reason is a fact about
-	// the run, not a name for the button.
 	it("shuts the exit while the build is over capacity, counting the overflow", () => {
 		render_({ view: createMockRunView({ ...view, overflowSlots: 2 }) });
 
@@ -256,8 +252,6 @@ describe("ShopView build rows", () => {
 		).toBeDisabled();
 	});
 
-	// A disabled press with no reason is the shop's one blind refusal: the
-	// requirement was already computed, it just never reached the player.
 	it("says on the press itself why an upgrade is out of reach", () => {
 		render_({
 			view: createMockRunView({
@@ -375,8 +369,6 @@ describe("ShopView offers", () => {
 		).toBeGreaterThan(0);
 	});
 
-	// A version the player already owns is on the shelf as an upgrade, so it
-	// must not read as a second copy they have room for.
 	it("reads a rolled upgrade as an upgrade rather than an install", () => {
 		render_({
 			view: createMockRunView({
@@ -415,7 +407,7 @@ describe("ShopView offers", () => {
 		expect(onLock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
 	});
 
-	it("marks a held offer as pressed, and counts it beside the shelf", () => {
+	it("marks a held offer as pressed, and counts it beside the registry", () => {
 		render_({
 			view: createMockRunView({
 				...lockable,
@@ -452,7 +444,7 @@ describe("ShopView offers", () => {
 		expect(onUnlock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
 	});
 
-	it("rerolls the shelf at the price the run has reached", async () => {
+	it("rerolls the registry at the price the run has reached", async () => {
 		const onRebuild = vi.fn();
 		render_({
 			view: createMockRunView({
@@ -526,8 +518,6 @@ describe("ShopView storage plan", () => {
 		expect(within(track).getAllByRole("button")).toHaveLength(2);
 	});
 
-	// The mask is not a dead end: it says what opens it, in the cap the player
-	// is already renting, so the requirement never names the rung it hides.
 	it("names what opens a masked rung, and the best held against it", () => {
 		render_({
 			view: createMockRunView({ ...view, storagePlan: planAt(1, 300, true) }),
@@ -584,8 +574,6 @@ describe("ShopView storage plan", () => {
 		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
 	});
 
-	// A rung you cannot pay for is a downgrade one gate later, so the press
-	// refuses and names the bill rather than selling you the fall.
 	it("refuses a rung whose bill the balance cannot cover, and says so", () => {
 		render_({
 			view: createMockRunView({
@@ -656,8 +644,6 @@ describe("ShopView when read-only has closed it", () => {
 		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
 	});
 
-	// ADR-038: the closure is stated once, not repeated on seven controls, but
-	// every write still has to actually refuse.
 	it("refuses every write while it is shut", () => {
 		render_({ view: closed });
 

@@ -141,6 +141,7 @@ const paysOnThisAnswer = (
 
 const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
 	config.peeksCommunitySplit === true ||
+	config.projectsGateOutcome === true ||
 	effectOf(config).maskWrongOn?.(category) === true;
 
 const readsAhead = (config: Config): boolean =>

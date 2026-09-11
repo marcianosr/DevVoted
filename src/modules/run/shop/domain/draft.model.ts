@@ -50,38 +50,17 @@ const lockedConfigs = (lockedIds: readonly string[]): readonly Config[] =>
 		.map((id) => CONFIG_LIST.find((config) => config.id === id))
 		.filter((config): config is Config => config !== undefined);
 
-/** Whether the build holds the license (WTFPL) that opens every draft to the
- * whole catalog and retires the paid shop controls. */
 export const shopOffersFullRoster = (configs: readonly Config[]): boolean =>
 	configs.some((config) => config.offersFullRoster === true);
 
-/** The discount the build applies to every price on the shelf (Freemium), as a
- * fraction of list. Multiplied rather than picked, so two discounts would
- * compose instead of one silently winning. */
 const draftDiscountIn = (configs: readonly Config[]): number =>
 	configs.reduce((factor, config) => factor * (config.draftCostFactor ?? 1), 1);
 
-/**
- * What drafting `config` costs this build. The price lives here rather than on
- * the config because a discount is a property of the build holding it, the
- * same reason `sellRefundIn` exists — and every surface that quotes a price
- * (the shop, the refusal copy, the reducer's charge) must read the same one.
- */
 export const draftCostIn = (
 	configs: readonly Config[],
 	config: Config
 ): number => Math.floor(draftCost(config) * draftDiscountIn(configs));
 
-/**
- * What selling `config` out of this build refunds. WTFPL's no-warranty clause
- * zeroes every sale while it is installed — its own included, so the license
- * cannot be flipped for half its price after opening the catalog.
- *
- * Otherwise a sale returns half of what the build actually *paid*, not half of
- * list: under Freemium's half-price shelf a list-priced refund would equal the
- * discounted draft, making churn free and build commitment meaningless. No
- * refunds on discounted goods.
- */
 export const sellRefundIn = (
 	configs: readonly Config[],
 	config: Config
@@ -133,8 +112,6 @@ export const rollDraft = (
 			(config) => !owned.has(config.id) && !pinned.has(config.id)
 		),
 	];
-	// The license, honored literally: the whole catalog in roster order — a
-	// rolled subset would be withholding exactly what was paid for.
 	if (shopOffersFullRoster(equipped)) return [...held, ...pool];
 	const nextRandom = randomFrom(seed);
 	const size = Math.min(Math.max(0, offers - held.length), pool.length);

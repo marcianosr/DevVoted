@@ -330,6 +330,16 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		storagePerEstimate: 32,
 	},
+	dryRun: {
+		id: "dry-run",
+		label: "Dry Run",
+		slots: 2,
+		description:
+			"Marks the gate meter with where this answer lands, right or wrong, before you submit it.",
+		gives: "The gate meter shows where a right and a wrong answer land",
+		rewardMultiplier: 1,
+		projectsGateOutcome: true,
+	},
 } as const satisfies Record<string, Config>;
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);

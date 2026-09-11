@@ -58,7 +58,11 @@ it before proposing one again.**
 | [062](062-the-starting-hand-is-dealt-under-guarantees.md) | The starting hand is dealt under guarantees | Accepted — amended by 064 |
 | [063](063-a-config-can-be-paid-for-a-prediction.md) | A config can be paid for a prediction | Accepted |
 | [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted |
-| [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted |
+| [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted — reversed by 067 |
+| [066](066-every-figure-wears-a-badge.md) | Every figure wears a badge | Accepted |
+| [067](067-standouts-are-four-plain-standings.md) | Standouts are four plain standings | Accepted — reverses 065; model not yet rewritten |
+| [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto |
+| [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 
 ## Retired
 

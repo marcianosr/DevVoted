@@ -162,7 +162,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		expect(state.storage).toBe(52);
 	});
 
-	it("floors the leak at 0 — insolvency stays non-lethal (ADR-023)", () => {
+	it("floors the leak at 0 — insolvency stays non-lethal (ADR-046)", () => {
 		let state = audited({ ...started(["js"]), storage: 10 }, 9, "memory-leak");
 		state = answerWith(state, true);
 		expect(state.storage).toBe(0);

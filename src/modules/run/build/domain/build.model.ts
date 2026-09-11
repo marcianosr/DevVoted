@@ -317,6 +317,9 @@ export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
 export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsUpcomingCategories === true);
 
+export const projectorFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.projectsGateOutcome === true);
+
 export const lockerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.locksOffers === true);
 

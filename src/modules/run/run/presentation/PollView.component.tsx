@@ -348,6 +348,7 @@ export const coverageGaugeFor = (
 		poll,
 		gateBaseMultiplier(view.gatesCleared) * difficulty
 	),
+	missAt: view.gateStake.projection?.miss,
 });
 
 export const storageGaugeFor = (view: RunView) => ({

@@ -15,11 +15,6 @@ export type ConfigdexData = {
 	readonly progress: readonly ObjectiveProgressRow[];
 };
 
-/**
- * Flat rows only — the fold against the config roster happens client-side
- * (the roster ships in the bundle, and locked labels are no secret: the shop
- * shelf shows them). The redaction is presentation integrity, not transport.
- */
 export const getConfigdexService = async ({
 	userId,
 }: {

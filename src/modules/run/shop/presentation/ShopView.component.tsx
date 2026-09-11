@@ -62,8 +62,6 @@ const upgradeShortfalls = (
 	];
 };
 
-// A hidden rung says what opens it, never what it is: the cap named is the one
-// already on the shelf, so the reading leaks nothing about the rung above.
 const opensAtLabel = (opensAtKb: number, peakKb: number): string =>
 	peakKb === 0
 		? `opens at ${kbLabel(opensAtKb)} held`

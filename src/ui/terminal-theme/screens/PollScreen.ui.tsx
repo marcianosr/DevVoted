@@ -32,6 +32,7 @@ export type PollCoverage = {
 	held: number;
 	demand: number;
 	perCorrect: number;
+	missAt?: number;
 };
 
 export type PollScreenProps = {
@@ -65,6 +66,9 @@ const gaugeFor = (
 				demand: coverage.demand,
 				pending: choices.some((choice) => choice.selected)
 					? coverage.perCorrect
+					: undefined,
+				missAt: choices.some((choice) => choice.selected)
+					? coverage.missAt
 					: undefined,
 			};
 

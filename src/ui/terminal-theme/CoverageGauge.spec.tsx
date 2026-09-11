@@ -87,3 +87,63 @@ describe("the coverage gauge", () => {
 		).toBeInTheDocument();
 	});
 });
+
+describe("the gauge under Dry Run", () => {
+	it("draws no miss mark until a projection is handed to it", () => {
+		const bare = segmentsFor({ held: 5, demand: 10, pending: 2 });
+		const projected = segmentsFor({
+			held: 5,
+			demand: 10,
+			pending: 2,
+			missAt: 2,
+		});
+
+		expect(bare).toHaveLength(2);
+		expect(projected).toHaveLength(3);
+	});
+
+	it("marks where a wrong answer lands, in the colour of a cost", () => {
+		const segments = segmentsFor({
+			held: 5,
+			demand: 10,
+			pending: 2,
+			missAt: 2,
+		});
+		const mark = segments.at(-1);
+
+		expect(mark?.className).toContain("bg-cinnabar");
+		expect(mark?.className).toContain("absolute");
+		expect(mark?.height).toContain("bottom: 20%");
+	});
+
+	it("positions the mark below the standing fill, since a miss costs", () => {
+		const [, , mark] = segmentsFor({
+			held: 8,
+			demand: 10,
+			pending: 2,
+			missAt: 4,
+		});
+
+		expect(mark?.height).toContain("bottom: 40%");
+	});
+
+	it("reads both outcomes aloud, so the projection is not colour-only", () => {
+		render(<CoverageGauge held={5} demand={10} pending={2} missAt={2} />);
+
+		expect(
+			screen.getByRole("img", {
+				name: "5% of 10% needed, a correct answer adds 2%, a wrong one leaves 2%",
+			})
+		).toBeInTheDocument();
+	});
+
+	it("keeps its plain reading when no projection is offered", () => {
+		render(<CoverageGauge held={5} demand={10} pending={2} />);
+
+		expect(
+			screen.getByRole("img", {
+				name: "5% of 10% needed, a correct answer adds 2%",
+			})
+		).toBeInTheDocument();
+	});
+});

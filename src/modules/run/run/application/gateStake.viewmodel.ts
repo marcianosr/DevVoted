@@ -15,7 +15,10 @@ import {
 	INTRO_GATE,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import type { PeelConfigRange } from "~/modules/run/gate/domain/gate.model";
+import type {
+	GateProjection,
+	PeelConfigRange,
+} from "~/modules/run/gate/domain/gate.model";
 import { type RunState, scheduleOf } from "~/modules/run/run/domain/run.model";
 
 export type AuditView = {
@@ -43,6 +46,7 @@ export type GateStake = {
 	readonly subscriptions: BillLedger;
 	readonly modifiers: BuildModifiers;
 	readonly perAnswer: PerAnswerPreview;
+	readonly projection?: GateProjection;
 };
 
 export type UpcomingAuditView = {

@@ -38,6 +38,7 @@ export type Config = {
 	readonly revealsUpcomingCategories?: boolean;
 	readonly reordersGatePolls?: boolean;
 	readonly revealsCorrectCount?: boolean;
+	readonly projectsGateOutcome?: boolean;
 	readonly draftCostFactor?: number;
 	readonly refundsPeeledConfigs?: boolean;
 	readonly subscriptionKb?: number;

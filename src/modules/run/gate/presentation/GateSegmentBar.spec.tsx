@@ -14,7 +14,6 @@ const fillOf = (gate: number): HTMLElement => {
 	return fill;
 };
 
-// Two gates banked (0 and 1), so gate 2 is the one underway, 3 of its 5 polls in.
 const midClimb = (
 	<GateSegmentBar
 		swatches={ALL_SWATCHES}
@@ -49,7 +48,7 @@ describe(GateSegmentBar, () => {
 
 	it("fills the gate underway by the polls answered into its window", () => {
 		render(midClimb);
-		expect(fillOf(2)).toHaveStyle({ width: "60%" }); // 3 of 5
+		expect(fillOf(2)).toHaveStyle({ width: "60%" });
 	});
 
 	it("leaves gates not yet reached empty", () => {
@@ -59,9 +58,6 @@ describe(GateSegmentBar, () => {
 	});
 
 	it("names the demand but never the run's own coverage — the pip is a ladder, not a meter", () => {
-		// Coverage appears here only as what a gate asks for (ADR-034). How much
-		// the run holds against it is the stake receipt's job, and the bar has no
-		// room to grade thirteen gates at once.
 		render(midClimb);
 		for (const detail of screen.getAllByRole("tooltip")) {
 			expect(detail).not.toHaveTextContent(/Current|you hold/);
@@ -76,8 +72,6 @@ describe(GateSegmentBar, () => {
 		}
 	});
 
-	// The rim used to mark the Elite plate's finish, which read as an active gate
-	// eleven gates before the player could stand on it.
 	it("leaves the Elite pip unrimmed until the climb reaches it", () => {
 		render(midClimb);
 		const elite = pips()[VICTORY_GATE - 1];
@@ -175,8 +169,6 @@ describe(GateSegmentBar, () => {
 		).toBeInTheDocument();
 	});
 
-	// The tap-to-pin behaviour itself lives in Tooltip (and is specced there);
-	// what matters here is that each pip carries its own panel to pin.
 	it("gives every pip its own tappable detail panel", () => {
 		render(midClimb);
 		expect(screen.getAllByRole("tooltip")).toHaveLength(GATE_COUNT);

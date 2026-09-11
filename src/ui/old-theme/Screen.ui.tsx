@@ -23,7 +23,6 @@ export type ScreenAction = {
 	onClick: () => void;
 	disabled?: boolean;
 	hint?: ReactNode;
-	/** The footer button's tone — "danger" marks a click that ends the run (ADR-031). */
 	variant?: ButtonVariant;
 };
 

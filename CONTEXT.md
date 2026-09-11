@@ -146,6 +146,7 @@ meant two things at once.
 | Spot | ADR-044 renamed slots to spots to keep width clear of money; ADR-048 reversed it | **Slot** |
 | Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size | **Slots** (`Config.slots`, one of 1/2/4/8/12/16) |
 | Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
+| Shelf | Renamed 2026-09-10: the offer list is an npm registry, which is what the player downloads and installs from. The **shop** is still the screen | **Registry** (`Registry.ui.tsx`, `RegistryControl.ui.tsx`, `ShopScreenProps.registry`) |
 | Turn | No such symbol in `src/modules/`; `turn.service.ts` is legacy `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
 | Score / ScoreBlock | No score system and no such component; scoring *is* coverage | **Coverage** |
 | Config Trigger | Never built as a distinct concept | **Check** and **Effect** |
@@ -178,3 +179,4 @@ Retired **folder and file** names, per the ADR-002 rewrite of 2026-08-12:
   single layer.
 - Content and identity labels name the real thing (React, TypeScript), not an
   invented punchy phrase.
+

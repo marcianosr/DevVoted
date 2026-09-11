@@ -264,7 +264,7 @@ describe("gateClearPayout", () => {
 		expect(gateClearPayout([], 5, 30)).toBe(416);
 	});
 
-	it("pays a 0/5 clear nothing — a farm build banks no storage (ADR-017)", () => {
+	it("pays a 0/5 clear nothing — a farm build banks no storage", () => {
 		expect(gateClearPayout([], 0, 11)).toBe(0);
 	});
 

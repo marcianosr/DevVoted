@@ -4,11 +4,13 @@ import {
 	Build,
 	isBare,
 	occupiedSlots,
+	type PerAnswerPreview,
 } from "~/modules/run/build/domain/build.model";
 import {
 	coverageDemandFor,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
+	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	auditDemandFactor,
@@ -90,3 +92,32 @@ export const gatePassed = (
 ): boolean =>
 	!isBare(build) &&
 	window.coverageGained >= gateDemandFor(build.configs, gatesCleared, schedule);
+
+export type GateProjection = {
+	readonly held: number;
+	readonly demand: number;
+	readonly pass: number;
+	readonly miss: number;
+	readonly passClears: boolean;
+	readonly missClears: boolean;
+};
+
+export const gateProjectionFor = (
+	held: number,
+	preview: PerAnswerPreview,
+	demand: number
+): GateProjection => {
+	const pass = roundToOneDecimal(
+		Math.max(0, held + preview.coveragePerCorrect)
+	);
+	const miss = roundToOneDecimal(Math.max(0, held + preview.coveragePerWrong));
+
+	return {
+		held,
+		demand,
+		pass,
+		miss,
+		passClears: pass >= demand,
+		missClears: miss >= demand,
+	};
+};

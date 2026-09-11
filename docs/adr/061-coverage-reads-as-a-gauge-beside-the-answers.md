@@ -27,6 +27,11 @@ and a difficulty bonus actually cash out, and nothing there showed the climb.
    earned"/"coverage lost" as screen-reader text. The rule above is unchanged:
    the reading still appears exactly once.
 
+   Replaced 2026-09-11 for the kanto kit by
+   [ADR-068](068-coverage-reads-as-a-ring.md): that poll screen is one column,
+   so there is no gutter to stand a vertical gauge in. The gauge below is
+   `terminal-theme`'s and is live.
+
 2. The gauge's segments are sized against the demand, so the top edge means the
    gate's bar. It wears the gate swatch (`bg-theme`), not a fixed green: the
    gauge belongs to the gate it is measuring.

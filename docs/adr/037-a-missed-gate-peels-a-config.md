@@ -10,17 +10,17 @@ The free redo made a miss weightless: the same gate dealt five fresh polls with 
 
 ## Decision 1: a miss peels configs
 
-Failing a gate takes configs off the pipeline and the player chooses which. The count is a per-gate table (`failStripsFor`, `rules.model.ts`) that escalates with depth, because width does too: a clear grants a slot, so one config is a third of an opening build and a fourteenth of a summit build. The rows hold roughly a quarter of `slotsForGatesCleared` at that depth, which keeps the death clock at three or four misses the whole way up.
+Failing a gate takes configs off the pipeline and the player chooses which. The quota is a **share of the occupied slots** (`failPeelShareFor`, `rules.model.ts`), 20% at the early gates rising to 35% at the summit, turned into a slot figure by `peelQuotaSlotsFor`. A share rather than a count because width escalates too: a flat count is a third of an opening build and a fourteenth of a summit build, while a share holds at roughly a quarter of whatever the build has become, which keeps the death clock at three or four misses the whole way up. The quota is paid in whole configs, so a build whose sizes cannot match it exactly overpays, and the remainder is lost.
 
 | Gate | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Peel | 1 | 1 | 1 | 2 | 2 | 2 | 2 | 3 | 3 | 3 | 3 | 4 | 4 |
 
-Strip audits add on top of the row rather than owning it, so Elite peels 5 and Champion 6 (`stripQuotaOnFail` is an extra; `failStripQuotaFor` in `gate.model.ts` owns the total). Every gate therefore costs a run something, and the death clock is the pipeline itself: keep missing and you keep shrinking.
+Strip audits add on top of the share rather than owning it, +10% at Elite and +15% at Champion (`auditExtraPeelShare`; `failPeelQuotaFor` in `gate.model.ts` owns the total). Every gate therefore costs a run something, and the death clock is the pipeline itself: keep missing and you keep shrinking.
 
 ## Decision 2: the run ends when the peel has nothing left to take
 
-`isStakeFatal(quota, installed)` — a miss holding one config ends the run, and at a strip-audit gate it ends two configs earlier. The old bare-legacy guard folds into the same check. The receipt states both the peel and the fatal case before the player commits, so death is never a surprise; it is the one line on the receipt that shouts.
+`isPeelFatal(quotaSlots, occupiedSlots)` — a miss holding one config ends the run, and at a strip-audit gate it ends two configs earlier. The old bare-legacy guard folds into the same check. The receipt states both the peel and the fatal case before the player commits, so death is never a surprise; it is the one line on the receipt that shouts.
 
 ## Decision 3: a retry runs the whole post-gate loop
 
@@ -28,7 +28,7 @@ A missed gate goes strip → review → shop → prep → the same gate, which i
 
 A failed attempt pays nothing (`gateRewardKb`, interest and extra-pick payouts all reset), so the retry's budget is the storage faucet earned inside the failed window plus whatever was banked. The storage bill still collects on every close, pass or fail.
 
-Amended 2026-09-05 (DVTD-2k9m): the *attempt* still pays nothing, but the *peel* can. **Garbage Collection** refunds a dropped config's sell value (`peelRefundIn`, `strip.model.ts`), priced by the shop's own `sellRefundIn` so a peel is never a better price than a sale. Minifying to settle the same quota pays nothing, which is what makes the two ways of paying a real choice rather than a formality. A fatal miss is untouched: it returns `dead` before `awaiting-strip`, so nothing refunds on the miss that ends the run.
+Amended 2026-09-05 (DVTD-2k9m): the *attempt* still pays nothing, but the *peel* can. **Garbage Collection** refunds a dropped config's sell value (`peelRefundIn`, `strip.model.ts`), priced by the shop's own `sellRefundIn` so a peel is never a better price than a sale. Minifying to settle the same quota pays nothing, since the config stays installed. A fatal miss is untouched: it returns `dead` before `awaiting-strip`, so nothing refunds on the miss that ends the run.
 
 ## Consequences
 

@@ -153,7 +153,7 @@ describe("sellRefundIn", () => {
 		expect(sellRefundIn(build, CONFIGS.wtfpl)).toBe(0);
 	});
 
-	it("refunds half of what Freemium's shelf charged, not half of list", () => {
+	it("refunds half of what Freemium's registry charged, not half of list", () => {
 		const build = [CONFIGS.freemium, CONFIGS.agentsMd];
 		expect(draftCostIn(build, CONFIGS.agentsMd)).toBe(128);
 		expect(sellRefundIn(build, CONFIGS.agentsMd)).toBe(64);
@@ -171,7 +171,7 @@ describe("draftCostIn", () => {
 		expect(draftCostIn([CONFIGS.js], CONFIGS.intellisense)).toBe(128);
 	});
 
-	it("halves every price on the shelf while Freemium is installed", () => {
+	it("halves every price in the registry while Freemium is installed", () => {
 		const build = [CONFIGS.freemium];
 		expect(draftCostIn(build, CONFIGS.agentsMd)).toBe(128);
 		expect(draftCostIn(build, CONFIGS.intellisense)).toBe(64);
@@ -234,8 +234,6 @@ describe("draftSeed", () => {
 		expect(seenAcrossSeeds([CONFIGS.eslint])).not.toContain("eslint");
 	});
 
-	// An owned config coming back is only ever the next version of it: a plain
-	// re-buy would be a slot the player already paid for.
 	it("re-offers an owned config only as its next version", () => {
 		const reoffered = Array.from({ length: 30 }, (_, seed) =>
 			rollDraft(seed, [CONFIGS.js])

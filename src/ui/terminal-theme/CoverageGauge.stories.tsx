@@ -54,3 +54,16 @@ export const Earned: Story = {
 export const Lost: Story = {
 	args: { held: 4.1, demand: 10, earned: -1.9 },
 };
+
+/** Dry Run installed: the red line is where a wrong answer leaves the meter.
+    Here the ghost clears the gate and the miss does not, so the answer is the
+    whole gate. */
+export const DryRun: Story = {
+	args: { held: 8.4, demand: 10, pending: 4.2, missAt: 4.2 },
+};
+
+/** The reading Dry Run is bought for: the miss line sits above the demand, so
+    this answer cannot cost the gate however it goes. */
+export const DryRunMissStillClears: Story = {
+	args: { held: 14, demand: 10, pending: 4, missAt: 11 },
+};

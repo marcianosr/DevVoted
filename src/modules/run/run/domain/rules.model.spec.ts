@@ -365,7 +365,7 @@ describe("revealsPlanTier", () => {
 		expect(revealsPlanTier(3, 1024)).toBe(true);
 	});
 
-	it("opens every rung below the peak, so the shelf never has a hole in it", () => {
+	it("opens every rung below the peak, so the registry never has a hole in it", () => {
 		const revealed = STORAGE_PLANS.map((plan) =>
 			revealsPlanTier(plan.tier, 2048)
 		);

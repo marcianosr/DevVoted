@@ -51,16 +51,8 @@ export const planBillKb = (tier: number): number =>
 export const cappedStorage = (kb: number, tier: number): number =>
 	Math.min(Math.max(0, kb), storageCapFor(tier));
 
-/** The first paid rung is always on the shelf, so a fresh account never opens
- * the section on a single free plan and a row of masks. */
 const ALWAYS_REVEALED_TIER = 1;
 
-/**
- * Whether a rung is on the shelf yet. A rung opens by *filling* the cap below
- * it, never by renting it: storage is clamped at the cap you rent, so reaching
- * that cap is the run saying you have outgrown the plan, and the rung above is
- * what it earns. Reveal only — `canAffordPlan` still decides what sells.
- */
 export const revealsPlanTier = (tier: number, peakKb: number): boolean =>
 	tier <= ALWAYS_REVEALED_TIER || peakKb >= storageCapFor(tier - 1);
 

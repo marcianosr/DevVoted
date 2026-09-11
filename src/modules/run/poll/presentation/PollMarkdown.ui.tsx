@@ -1,25 +1,7 @@
-import css from "highlight.js/lib/languages/css";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import typescript from "highlight.js/lib/languages/typescript";
-import xml from "highlight.js/lib/languages/xml";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
-const highlightOptions = {
-	detect: true,
-	languages: {
-		css,
-		java,
-		javascript,
-		js: javascript,
-		typescript,
-		ts: typescript,
-		html: xml,
-		vue: xml,
-		xml,
-	},
-};
+import { highlightOptions } from "~/shared/lib/syntaxHighlight";
 
 const escapeOutsideCodeSpans = (
 	text: string,
@@ -31,15 +13,13 @@ const escapeOutsideCodeSpans = (
 		.join("");
 
 const escapeMarkdownSyntax = (text: string): string =>
-	escapeOutsideCodeSpans(
-		text,
-		(segment) =>
-			segment
-				.replace(/&/g, "&amp;") // must run first so pre-existing entities (e.g. "&lt;") survive markdown's entity-decoding step
-				.replace(/^>/gm, "\\>") // blockquote
-				.replace(/^([-+*])\s*$/gm, "\\$1") // standalone list markers (no content after)
-				.replace(/</g, "&lt;") // HTML tags
-				.replace(/(?<!\\)>/g, "&gt;") // remaining > not at line start
+	escapeOutsideCodeSpans(text, (segment) =>
+		segment
+			.replace(/&/g, "&amp;")
+			.replace(/^>/gm, "\\>")
+			.replace(/^([-+*])\s*$/gm, "\\$1")
+			.replace(/</g, "&lt;")
+			.replace(/(?<!\\)>/g, "&gt;")
 	);
 
 export const QuestionMarkdown = ({ children }: { children: string }) => (

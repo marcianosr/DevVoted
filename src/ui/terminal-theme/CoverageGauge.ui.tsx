@@ -10,6 +10,7 @@ const EARNED = "gauge-earned w-full shrink-0 bg-theme";
 const LOST = "gauge-lost w-full shrink-0 bg-cinnabar";
 const PENDING = "my-0.5 w-full shrink-0 border border-dashed border-theme";
 const DEMAND_MARK = "absolute inset-x-0 h-0.5 bg-zinc-400";
+const MISS_MARK = "absolute inset-x-0 h-0.5 bg-cinnabar";
 
 const rounded = (value: number) => Math.round(value * 10) / 10;
 
@@ -25,9 +26,11 @@ const readingOf = (held: number, demand: number, offer?: string) => {
 	return offer === undefined ? standing : `${standing}, ${offer}`;
 };
 
-const offerOf = (pending?: number, earned?: number) => {
+const offerOf = (pending?: number, earned?: number, missAt?: number) => {
 	if (pending !== undefined)
-		return `a correct answer adds ${rounded(pending)}%`;
+		return missAt === undefined
+			? `a correct answer adds ${rounded(pending)}%`
+			: `a correct answer adds ${rounded(pending)}%, a wrong one leaves ${rounded(missAt)}%`;
 	if (earned === undefined || earned === 0) return undefined;
 	return earned > 0
 		? `this answer earned ${rounded(earned)}%`
@@ -39,6 +42,7 @@ export type CoverageGaugeProps = {
 	demand: number;
 	pending?: number;
 	earned?: number;
+	missAt?: number;
 	className?: string;
 };
 
@@ -47,6 +51,7 @@ export const CoverageGauge = ({
 	demand,
 	pending,
 	earned,
+	missAt,
 	className,
 }: CoverageGaugeProps) => {
 	const { standing, gained, lost } = settlementOf(held, earned);
@@ -61,7 +66,7 @@ export const CoverageGauge = ({
 			</Text>
 			<span
 				role="img"
-				aria-label={readingOf(held, demand, offerOf(pending, earned))}
+				aria-label={readingOf(held, demand, offerOf(pending, earned, missAt))}
 				className={TRACK}
 			>
 				{pending === undefined ? null : (
@@ -87,6 +92,12 @@ export const CoverageGauge = ({
 					<span
 						className={DEMAND_MARK}
 						style={{ bottom: heightOf(shareOf(demand)) }}
+					/>
+				)}
+				{missAt === undefined ? null : (
+					<span
+						className={MISS_MARK}
+						style={{ bottom: heightOf(shareOf(missAt)) }}
 					/>
 				)}
 			</span>

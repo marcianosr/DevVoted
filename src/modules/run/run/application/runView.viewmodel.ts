@@ -66,6 +66,7 @@ import {
 import {
 	failPeelQuotaFor,
 	gateDemandFor,
+	gateProjectionFor,
 	peelConfigRangeFor,
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
@@ -89,6 +90,7 @@ import {
 	overflowSlots,
 	prefetcherFor,
 	perAnswerPreviewFor,
+	projectorFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
 import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
@@ -146,9 +148,6 @@ export type StoragePlanOption = {
 	readonly burnsKb: number;
 	readonly affordable: boolean;
 	readonly revealed: boolean;
-	/** The cap that opens this rung, which is the rung below it. Present on a
-	 * hidden rung only: it is what the mask can say without naming what it
-	 * hides. */
 	readonly opensAtKb?: number;
 };
 
@@ -273,12 +272,6 @@ export type RunView = {
 	readonly unlockedThisRun: readonly RunUnlock[];
 };
 
-/**
- * A config grant the account earned during this run (ADR-051/064): the id plus
- * the objective path that completed, read back from user_config_unlocks.
- * `unlockedConfigIds` names the grants THIS dispatch fired (the immediate
- * announce beat); `unlockedThisRun` is the run-scoped history game-over reads.
- */
 export type RunUnlock = {
 	readonly configId: string;
 	readonly viaMetric: string | null;
@@ -421,8 +414,6 @@ const storagePlanViewFor = (
 	accountPeakKb: number
 ): StoragePlanView => {
 	const tier = state.storagePlan ?? 0;
-	// The account remembers the best any run ever held, and this run may already
-	// have beaten it, so the shelf reads whichever is higher.
 	const peakKb = Math.max(accountPeakKb, state.peakStorageKb ?? state.storage);
 
 	return {
@@ -461,6 +452,11 @@ export const toRunView = (
 	);
 	const schedule = scheduleOf(state);
 	const peelSlots = failPeelQuotaFor(
+		state.build.configs,
+		state.gatesCleared,
+		schedule
+	);
+	const coverageDemand = gateDemandFor(
 		state.build.configs,
 		state.gatesCleared,
 		schedule
@@ -573,11 +569,7 @@ export const toRunView = (
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
-			coverageDemand: gateDemandFor(
-				state.build.configs,
-				state.gatesCleared,
-				schedule
-			),
+			coverageDemand,
 			coverageHeld: state.window.coverageGained,
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
@@ -601,6 +593,14 @@ export const toRunView = (
 			}),
 			modifiers,
 			perAnswer,
+			projection:
+				projectorFor(state.build.configs) === undefined
+					? undefined
+					: gateProjectionFor(
+							state.window.coverageGained,
+							perAnswer,
+							coverageDemand
+						),
 		},
 		canStart: canStart(state.build),
 		isOver: isRunOver(state.status),

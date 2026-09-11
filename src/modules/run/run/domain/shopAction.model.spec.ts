@@ -621,8 +621,6 @@ describe("the storage plan in the shop (ADR-046)", () => {
 		expect(state.storage).toBe(256);
 	});
 
-	// Buying a bill you cannot pay only ever ends one way, a gate later, with
-	// the plan gone and the overflow burned. Refuse it at the counter instead.
 	it("refuses a rung whose bill the balance cannot cover", () => {
 		const state = { ...inShop(), storage: 31 };
 
@@ -763,7 +761,7 @@ describe("WTFPL's open shop", () => {
 	});
 });
 
-describe("upgrade offers on the shelf (ADR-053)", () => {
+describe("upgrade offers in the registry (ADR-053)", () => {
 	const shopWith = (configId: string, storage: number): RunState => {
 		const state = clearGate(started([configId]));
 		return { ...state, storage };
@@ -789,7 +787,7 @@ describe("upgrade offers on the shelf (ADR-053)", () => {
 		);
 	});
 
-	it("charges the shelf price rather than the upgrade ladder's", () => {
+	it("charges the registry price rather than the upgrade panel's", () => {
 		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
 
 		const bought = runReducer(state, { type: "draft", configId: "js" });
@@ -797,8 +795,6 @@ describe("upgrade offers on the shelf (ADR-053)", () => {
 		expect(state.storage - bought.storage).toBe(draftCost(CONFIGS.js));
 	});
 
-	// The shelf is the way past a coverage requirement you have not met — that
-	// is what makes a rare upgrade offer worth taking over the shop's Upgrade.
 	it("asks for no category coverage, unlike the shop's Upgrade press", () => {
 		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
 
@@ -816,7 +812,7 @@ describe("upgrade offers on the shelf (ADR-053)", () => {
 		expect(runReducer(state, { type: "draft", configId: "js" })).toBe(state);
 	});
 
-	it("takes the bought upgrade off the shelf", () => {
+	it("takes the bought upgrade out of the registry", () => {
 		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 2 });
 
 		const bought = runReducer(state, { type: "draft", configId: "js" });

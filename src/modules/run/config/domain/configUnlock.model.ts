@@ -268,6 +268,13 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"reordered 3 gates' polls",
 		675
 	),
+	"dry-run": earned(
+		"gates-cleared",
+		30,
+		"Clear 30 gates",
+		"cleared 30 gates",
+		700
+	),
 };
 
 export const FREE_CONFIG_IDS: readonly string[] = Object.entries(CONFIG_UNLOCKS)

@@ -224,3 +224,4 @@ Checklist for a new server function:
   one-sentence game-design reason in the PR/commit message. If you're not sure
   it qualifies, ask rather than creating it.
 - If you're about to add new code to a domain that has legacy code sitting in src/domains/, ask whether to migrate that slice now or leave it.
+- NEVER comment the code unless it really needs a why, (never how) it's a temporary workaround or a TODO. If you feel the need to comment, write an ADR instead but check with me. The code should be self-documenting; comments are a smell.

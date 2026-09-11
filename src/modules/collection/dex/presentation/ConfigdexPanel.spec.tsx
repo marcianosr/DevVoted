@@ -21,7 +21,7 @@ const sizeHeading = (size: string): HTMLElement => {
 describe(ConfigdexPanel, () => {
 	it("counts granted against the whole roster, per group and in total", () => {
 		render(<ConfigdexPanel entries={configdex(STARTERS, [])} />);
-		expect(screen.getByText("8/35 collected")).toBeInTheDocument();
+		expect(screen.getByText("8/36 collected")).toBeInTheDocument();
 		expect(sizeHeading("1 slot").closest("header")?.textContent).toContain(
 			"5/17"
 		);
