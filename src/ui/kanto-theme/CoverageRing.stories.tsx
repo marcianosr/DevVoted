@@ -12,6 +12,7 @@ const meta: Meta<typeof CoverageRing> = {
 	argTypes: {
 		held: { control: { type: "range", min: 0, max: 400, step: 0.1 } },
 		demand: { control: { type: "range", min: 0, max: 375 } },
+		ceiling: { control: { type: "range", min: 0, max: 400 } },
 	},
 	args: {
 		held: 148,
@@ -64,6 +65,45 @@ export const LongestReading: Story = {
 		title: "Coverage toward the Champion",
 		note: "The most digits the ring can ever hold.",
 	},
+};
+
+export const PinnedToHundred: Story = {
+	args: {
+		held: 73,
+		demand: 80,
+		ceiling: 100,
+		title: "Coverage toward Vermilion",
+		note: "The dial reads percent of the build, and the tick is the 80% bar.",
+	},
+};
+
+export const RatioLadder: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion" width="narrow">
+			<div className={LADDER}>
+				<CoverageRing
+					held={50}
+					demand={80}
+					ceiling={100}
+					title="Capacity just granted"
+				/>
+				<CoverageRing
+					held={67}
+					demand={80}
+					ceiling={100}
+					title="Two answers in"
+				/>
+				<CoverageRing held={80} demand={80} ceiling={100} title="On the bar" />
+				<CoverageRing
+					held={100}
+					demand={80}
+					ceiling={100}
+					title="Fully covered"
+				/>
+			</div>
+		</Screen>
+	),
 };
 
 export const Ladder: Story = {

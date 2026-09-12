@@ -45,7 +45,15 @@ Note what is *not* rejected here: ADR-044's rule that width needs a brake
 measured in something the score cannot inflate. Upkeep is that brake, charged in
 KB against a build measured in weight.
 
-**Buying past a missed gate with KB** (an ADR-071 draft, deleted the same day)
+**Paying a perfect gate by raising the overshoot cap** (an ADR-075 draft)
+Instead of a bonus, let `payoutRatioFor` run past `PAYOUT_RATIO_CAP` at 100%.
+It pays nothing where it is needed: the cap only binds at the early gates, so at
+gate 12, where the healthy line is 95% and coverage over the line reaches 1.05,
+lifting it is worth a rounding error. Filling the bar is hardest exactly there.
+A multiplier on the payout pays the same share at every gate, which is what the
+flat gain of ADR-073 already assumes.
+
+**Buying past a missed gate with KB** (an ADR-071 draft, deleted the same day; ADR-071 is itself retired, see ADR-076)
 SHAKY could pay a bribe to advance instead of repeating the gate. It answered
 the wrong objection. What makes a retry hollow is re-running the same attempt,
 not getting it for free, and five fresh polls against a locked build is already

@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	kantoHandProps,
+	kantoShopWeight,
 	createKantoBuildProps,
 	kantoRunningConfigs,
 	kantoShopBuild,
@@ -12,6 +14,7 @@ import {
 } from "~/test/kantoPoll.factory";
 
 import { Build } from "./Build.ui";
+import { Hand } from "./Hand.ui";
 import { KANTO_COLORS } from "./colors";
 import type { ConfigChipProps } from "./ConfigChip.ui";
 import { Screen } from "./Screen.ui";
@@ -182,4 +185,77 @@ export const ShopColumnSoldOut: Story = {
 			/>
 		</Screen>
 	),
+};
+
+export const UnderAWeightLadder: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(),
+	},
+};
+
+export const WithNothingAffordable: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(0, 0, 64),
+	},
+};
+
+export const OneRungUp: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(1, 2048, 1024),
+	},
+};
+
+export const UnderAWeightLadderHovered: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(),
+		highlight: "Telemetry",
+	},
+};
+
+export const ReadoutOnly: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(),
+		list: false,
+	},
+};
+
+export const InstallationsOnly: Story = {
+	args: {
+		configs: kantoShopBuild,
+		layout: "column",
+		weight: kantoShopWeight(),
+		heading: false,
+		readout: false,
+	},
+};
+
+export const SplitAcrossColumns: Story = {
+	render: (args) => (
+		<Screen theme="vermillion" width="wide">
+			<div className="grid w-full gap-8 md:grid-cols-2">
+				<div className="flex w-full min-w-0 flex-col gap-6">
+					<Hand {...kantoHandProps()} />
+					<Build {...args} layout="column" list={false} />
+				</div>
+				<div className="flex w-full min-w-0 flex-col gap-6">
+					<Build {...args} layout="column" heading={false} readout={false} />
+				</div>
+			</div>
+		</Screen>
+	),
+	args: {
+		configs: kantoShopBuild,
+		weight: kantoShopWeight(),
+		emptyLabel: "nothing installed yet",
+	},
 };

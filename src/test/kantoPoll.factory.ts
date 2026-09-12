@@ -1,16 +1,11 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
-	gateClearPayout,
 	occupiedSlots,
 	prefetcherFor,
 } from "~/modules/run/build/domain/build.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
 import type { Audit } from "~/modules/run/gate/domain/audit.model";
 import { auditAt, auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import {
-	failPeelQuotaFor,
-	peelConfigRangeFor,
-} from "~/modules/run/gate/domain/gate.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import {
@@ -33,31 +28,34 @@ import {
 	RECOMMENDED_SIZE,
 	recommendedPicks,
 } from "~/modules/run/config/domain/hand.model";
-import {
-	DEFAULT_AUDIT_SCHEDULE,
-	INTRO_GATE,
-} from "~/modules/run/gate/domain/auditSchedule.model";
+import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
 	BASE_SLOTS,
-	GATE_REWARD_KB,
 	MAX_SLOTS,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	SLICE_WINDOW,
-	STORAGE_PLANS,
 	VICTORY_GATE,
 	coverageDemandFor,
-	failPeelShareFor,
 	nextSlotPriceKb,
 	pinCostFor,
-	isPeelFatal,
 	planBillKb,
-	revealsPlanTier,
 	roundToOneDecimal,
 	slotCashOutKb,
 	storageCapFor,
 } from "~/modules/run/run/domain/rules.model";
-import { START_SLOT_PREMIUM } from "~/modules/run/run/domain/startSlot.model";
+import {
+	MULTIPLE_GAIN,
+	SINGLE_GAIN,
+	coverageMultiplierOf,
+	floorAt,
+	gainPerCorrectFor,
+	gainPerMissFor,
+	gatePayoutKb,
+	healthyAt,
+	okAt,
+	rightsToClear,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	EXTEND_FROM_GATE,
 	LOCK_COST_KB,
@@ -68,7 +66,7 @@ import {
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
-import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
+import type { BuildProps, BuildWeight } from "~/ui/kanto-theme/Build.ui";
 import type { BuildFooterProps } from "~/ui/kanto-theme/BuildFooter.ui";
 import type {
 	ConfigChipBadge,
@@ -81,26 +79,33 @@ import type { SlotOfferProps } from "~/ui/kanto-theme/SlotOffer.ui";
 import type { SlotTrackFill } from "~/ui/kanto-theme/SlotTrack.ui";
 import type { ConfirmFigure } from "~/ui/kanto-theme/Confirm.ui";
 import type { PlanChangeProps } from "~/ui/kanto-theme/PlanChange.ui";
-import type { StorageRung } from "~/ui/kanto-theme/StoragePlan.ui";
+import type {
+	UpkeepRung,
+	WeightTrackFill,
+	WeightTrackProps,
+} from "~/ui/kanto-theme/WeightTrack.ui";
+import type { WeightOfferProps } from "~/ui/kanto-theme/WeightOffer.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
-import type { ShopPlan, ShopScreenProps } from "~/ui/kanto-theme/ShopScreen.ui";
+import type { ShopScreenProps } from "~/ui/kanto-theme/ShopScreen.ui";
 import type { UninstallProps } from "~/ui/kanto-theme/Uninstall.ui";
 import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
 import type { VersionState } from "~/ui/kanto-theme/Version.ui";
 import type { HandProps } from "~/ui/kanto-theme/Hand.ui";
 import type { HeaderFunds, HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/Ledger.ui";
+import type {
+	BandOutcome,
+	BandOutcomesProps,
+} from "~/ui/kanto-theme/BandOutcomes.ui";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
-import type {
-	ScreenFooterProps,
-	StakeFigure,
-} from "~/ui/kanto-theme/ScreenFooter.ui";
+import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 import type { PollScreenProps } from "~/ui/kanto-theme/PollScreen.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
+import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { CoverageRingProps } from "~/ui/kanto-theme/CoverageRing.ui";
 import type { TrailProps } from "~/ui/kanto-theme/Trail.ui";
 
@@ -395,13 +400,25 @@ export const createKantoCoverageRingProps =
 		note: "Pick an answer to see where it puts you.",
 	});
 
+const AS_PERCENT = 100;
+
+export const KANTO_COVERAGE_BAR_HELD = 70;
+export const KANTO_COVERAGE_BAR_NOTE =
+	"Coverage starts at zero. Five polls to prove the build again.";
+
+export const createKantoCoverageBarProps =
+	createMockDataFactory<CoverageBarProps>({
+		held: KANTO_COVERAGE_BAR_HELD,
+		floor: floorAt(SAMPLE_GATE) * AS_PERCENT,
+		ok: okAt(SAMPLE_GATE) * AS_PERCENT,
+		healthy: healthyAt(SAMPLE_GATE) * AS_PERCENT,
+		note: KANTO_COVERAGE_BAR_NOTE,
+	});
+
 export const createKantoPollScreenProps =
 	createMockDataFactory<PollScreenProps>({
 		header: createKantoHeaderProps({
-			ring: createKantoCoverageRingProps({
-				title: undefined,
-				note: undefined,
-			}),
+			bar: createKantoCoverageBarProps(),
 		}),
 		buildFooter: createKantoBuildFooterProps(),
 		trail: createKantoTrailProps(),
@@ -499,6 +516,39 @@ export const usedSlotsOf = (configs: readonly ConfigChipProps[]) =>
 export const kantoTrackFills: readonly SlotTrackFill[] = kantoShopBuild.map(
 	({ name, slots }) => ({ name, slots: slots ?? 0 })
 );
+
+export const KANTO_UPKEEP_RUNGS = [
+	{ weight: 4, kb: 0 },
+	{ weight: 6, kb: 16 },
+	{ weight: 8, kb: 32 },
+	{ weight: 12, kb: 64 },
+	{ weight: 16, kb: 128 },
+	{ weight: 24, kb: 256 },
+	{ weight: 32, kb: 512 },
+] as const satisfies readonly UpkeepRung[];
+
+export const KANTO_WEIGHT_AXIS_MAX = 20;
+
+const BASE_FREE_WEIGHT = 4;
+
+export const kantoUpkeepRungs = (
+	freeWeight: number = BASE_FREE_WEIGHT
+): UpkeepRung[] =>
+	KANTO_UPKEEP_RUNGS.map((rung) => ({
+		weight: rung.weight + (freeWeight - BASE_FREE_WEIGHT),
+		kb: rung.kb,
+	}));
+
+export const kantoWeightFills: readonly WeightTrackFill[] = kantoTrackFills;
+
+export const kantoBuildWeight = usedSlotsOf(kantoShopBuild);
+
+export const createKantoWeightTrackProps =
+	createMockDataFactory<WeightTrackProps>({
+		fills: kantoWeightFills,
+		rungs: KANTO_UPKEEP_RUNGS,
+		max: KANTO_WEIGHT_AXIS_MAX,
+	});
 
 export const baseSlots = BASE_SLOTS;
 export const maxSlots = MAX_SLOTS;
@@ -647,111 +697,106 @@ export const createKantoRegistryProps = createMockDataFactory<RegistryProps>({
 	note: LOCK_NOTE,
 });
 
-export const KANTO_PLAN_TIER = 2;
+export const KANTO_PLAN_TIER = 0;
 export const KANTO_PLAN_PEAK_KB = 1024;
 export const KANTO_PLAN_BALANCE_KB = 512;
 
-const planRefusalOf = (tier: number, heldTier: number, balanceKb: number) => {
-	const billKb = planBillKb(tier);
-	if (tier <= heldTier || billKb <= balanceKb) return undefined;
-	return `bills ${kbLabel(billKb)} a gate, you hold ${kbLabel(balanceKb)}`;
-};
+export const KANTO_WEIGHT_PLANS = [
+	{ free: 4, priceKb: 0 },
+	{ free: 8, priceKb: 256 },
+	{ free: 12, priceKb: 768 },
+	{ free: 16, priceKb: 2048 },
+] as const;
 
-const billOf = (tier: number) => {
-	const billKb = planBillKb(tier);
-	return billKb === 0 ? undefined : `${kbLabel(billKb)} a gate`;
-};
+export const storagePlanCount = KANTO_WEIGHT_PLANS.length;
 
-export const kantoStorageRungs = (
+const planRefusalOf = (priceKb: number, balanceKb: number) =>
+	priceKb <= balanceKb ? undefined : shortfallOf(priceKb, balanceKb);
+
+const pursedLabel = (kb: number, purse?: string) =>
+	purse === undefined ? kbLabel(kb) : `${kbLabel(kb)} ${purse}`;
+
+export const freeWeightAt = (heldTier: number = KANTO_PLAN_TIER): number =>
+	KANTO_WEIGHT_PLANS[Math.min(heldTier, storagePlanCount - 1)].free;
+
+export const kantoWeightOffers = (
 	heldTier: number = KANTO_PLAN_TIER,
 	peakKb: number = KANTO_PLAN_PEAK_KB,
-	balanceKb: number = KANTO_PLAN_BALANCE_KB
-): StorageRung[] =>
-	STORAGE_PLANS.map((plan) => {
-		const revealed = revealsPlanTier(plan.tier, peakKb);
-		const refusal = planRefusalOf(plan.tier, heldTier, balanceKb);
+	balanceKb: number = KANTO_PLAN_BALANCE_KB,
+	purse?: string
+): WeightOfferProps[] =>
+	KANTO_WEIGHT_PLANS.slice(heldTier + 1).flatMap(
+		(plan, above): WeightOfferProps[] => {
+			if (peakKb < plan.priceKb)
+				return [
+					{
+						to: plan.free,
+						opensAt: `opens once a run has held ${kbLabel(plan.priceKb)}`,
+					},
+				];
+			if (above > 0) return [];
 
-		return {
-			cap: kbLabel(plan.capKb),
-			bill: billOf(plan.tier),
-			held: plan.tier === heldTier,
-			revealed,
-			refusal,
-			opensAt: revealed
-				? undefined
-				: `opens once a run has held ${kbLabel(storageCapFor(plan.tier - 1))}`,
-			onPress: plan.tier === heldTier ? undefined : noop,
-		};
-	});
+			const refusal = planRefusalOf(plan.priceKb, balanceKb);
+			return [
+				{
+					from: freeWeightAt(heldTier),
+					to: plan.free,
+					price: pursedLabel(plan.priceKb, purse),
+					refusal,
+					onPress: refusal === undefined ? noop : undefined,
+				},
+			];
+		}
+	);
 
-const ZERO_KB = "0 KB";
+const AXIS_HEADROOM = 12;
+
+export const kantoShopWeight = (
+	heldTier: number = KANTO_PLAN_TIER,
+	peakKb: number = KANTO_PLAN_PEAK_KB,
+	balanceKb: number = KANTO_PLAN_BALANCE_KB,
+	purse?: string
+): BuildWeight => ({
+	rungs: kantoUpkeepRungs(freeWeightAt(heldTier)),
+	max: Math.max(KANTO_WEIGHT_AXIS_MAX, freeWeightAt(heldTier) + AXIS_HEADROOM),
+	offers: kantoWeightOffers(heldTier, peakKb, balanceKb, purse),
+});
 
 export const planChangeFor = (
 	fromTier: number,
 	toTier: number,
-	storageKb: number
+	balanceKb: number
 ): PlanChangeProps => {
-	const toCapKb = storageCapFor(toTier);
-	const burnKb = Math.max(0, storageKb - toCapKb);
+	const from = freeWeightAt(fromTier);
+	const to = freeWeightAt(toTier);
+	const priceKb =
+		KANTO_WEIGHT_PLANS[Math.min(toTier, storagePlanCount - 1)].priceKb;
 
 	return {
-		direction: toTier > fromTier ? "upgrade" : "downgrade",
-		cap: kbLabel(toCapKb),
+		weight: String(to),
 		prose:
-			toTier > fromTier
-				? "Renting a wider cap takes effect now. The bill lands on every clear from here."
-				: "Dropping a rung takes effect now. Anything over the new cap is burnt immediately.",
+			"Bought once, and it lasts the run. Every upkeep rung moves up with it, so the weight you already carry gets cheaper.",
 		figures: [
-			{
-				label: "cap",
-				value: `${kbLabel(storageCapFor(fromTier))} → ${kbLabel(toCapKb)}`,
-			},
-			{
-				label: "bill a gate",
-				value: `${kbLabel(planBillKb(fromTier))} → ${kbLabel(planBillKb(toTier))}`,
-			},
-			{
-				label: "burnt now",
-				value: burnKb === 0 ? ZERO_KB : kbLabel(burnKb),
-				...(burnKb === 0 ? {} : { color: "cinnabar" as const }),
-			},
+			{ label: "free weight", value: `${from} → ${to}` },
+			{ label: "costs", value: kbLabel(priceKb), color: "cinnabar" as const },
+			{ label: "you hold", value: kbLabel(balanceKb) },
 		] satisfies ConfirmFigure[],
 		onConfirm: noop,
 		onCancel: noop,
 	};
 };
 
-export const storagePlanCount = STORAGE_PLANS.length;
-
-export const SHOP_PLAN_TIER = 3;
+export const SHOP_PLAN_TIER = 0;
 export const SHOP_PLAN_PEAK_KB = 1024;
-
-export const kantoShopPlan = (
-	heldTier: number = SHOP_PLAN_TIER,
-	peakKb: number = SHOP_PLAN_PEAK_KB,
-	balanceKb: number = SHOP_BALANCE_KB
-): ShopPlan => {
-	const billKb = planBillKb(heldTier);
-
-	return {
-		bill: billKb === 0 ? ZERO_KB : kbLabel(billKb),
-		rungs: kantoStorageRungs(heldTier, peakKb, balanceKb),
-	};
-};
 
 export const createKantoShopScreenProps =
 	createMockDataFactory<ShopScreenProps>({
 		header: kantoShopHeaderAt(),
 		build: {
 			configs: kantoShopBuild,
-			slots: {
-				used: usedSlotsOf(kantoShopBuild),
-				capacity: SHOP_CAPACITY_SLOTS,
-			},
-			...slotDealsAt(),
+			weight: kantoShopWeight(SHOP_PLAN_TIER, SHOP_PLAN_PEAK_KB),
 		},
 		registry: createKantoRegistryProps(),
-		plan: kantoShopPlan(),
 	});
 
 const READ_ONLY = auditAt("read-only", SAMPLE_GATE);
@@ -764,6 +809,9 @@ export const kantoClosedShopAudit = {
 
 const inertBadge = (badge: ConfigChipBadge): ConfigChipBadge =>
 	"onPress" in badge ? { ...badge, disabled: true } : badge;
+
+const inertOffer = (offer: WeightOfferProps): WeightOfferProps =>
+	offer.opensAt === undefined ? { ...offer, onPress: undefined } : offer;
 
 const inertChip = (chip: ConfigChipProps): ConfigChipProps => {
 	const open = openChip(chip);
@@ -779,26 +827,14 @@ const inertChip = (chip: ConfigChipProps): ConfigChipProps => {
 };
 
 export const kantoClosedShopProps = (): ShopScreenProps => {
-	const deals = slotDealsAt();
-	const plan = kantoShopPlan();
+	const weight = kantoShopWeight(SHOP_PLAN_TIER, SHOP_PLAN_PEAK_KB);
 
 	return {
 		header: kantoShopHeaderAt(),
 		audits: [kantoClosedShopAudit],
 		build: {
 			configs: kantoShopBuild.map(inertChip),
-			slots: {
-				used: usedSlotsOf(kantoShopBuild),
-				capacity: SHOP_CAPACITY_SLOTS,
-			},
-			cash:
-				deals.cash === undefined
-					? undefined
-					: { ...deals.cash, onPress: undefined },
-			offer:
-				deals.offer === undefined
-					? undefined
-					: { ...deals.offer, onPress: undefined },
+			weight: { ...weight, offers: (weight.offers ?? []).map(inertOffer) },
 		},
 		registry: {
 			offers: kantoRegistryOffers.map(inertChip),
@@ -809,10 +845,6 @@ export const kantoClosedShopProps = (): ShopScreenProps => {
 			})),
 			note: LOCK_NOTE,
 		},
-		plan: {
-			...plan,
-			rungs: plan.rungs.map((rung) => ({ ...rung, onPress: undefined })),
-		},
 	};
 };
 
@@ -822,8 +854,7 @@ export const kantoFirstShopProps = (): ShopScreenProps => ({
 	header: kantoShopHeaderAt(0, FIRST_SHOP_BALANCE_KB),
 	build: {
 		configs: [],
-		slots: { used: 0, capacity: BASE_SLOTS },
-		...slotDealsAt(BASE_SLOTS, FIRST_SHOP_BALANCE_KB),
+		weight: kantoShopWeight(0, 0, FIRST_SHOP_BALANCE_KB),
 	},
 	registry: {
 		offers: [
@@ -837,7 +868,6 @@ export const kantoFirstShopProps = (): ShopScreenProps => ({
 		controls: kantoShopControlsAt(0, FIRST_SHOP_BALANCE_KB),
 		note: LOCK_NOTE,
 	},
-	plan: kantoShopPlan(0, 0, FIRST_SHOP_BALANCE_KB),
 });
 
 export const TAG_SHOP_BALANCE_KB = 160;
@@ -846,8 +876,7 @@ export const kantoTagShopProps = (): ShopScreenProps => ({
 	header: kantoShopHeaderAt(4, TAG_SHOP_BALANCE_KB),
 	build: {
 		configs: kantoShopBuild,
-		slots: { used: usedSlotsOf(kantoShopBuild), capacity: SHOP_CAPACITY_SLOTS },
-		...slotDealsAt(SHOP_CAPACITY_SLOTS, TAG_SHOP_BALANCE_KB),
+		weight: kantoShopWeight(1, 512, TAG_SHOP_BALANCE_KB),
 	},
 	registry: {
 		offers: offersAt(TAG_SHOP_BALANCE_KB),
@@ -855,21 +884,15 @@ export const kantoTagShopProps = (): ShopScreenProps => ({
 		controls: kantoShopControlsAt(4, TAG_SHOP_BALANCE_KB),
 		note: LOCK_NOTE,
 	},
-	plan: kantoShopPlan(1, 512, TAG_SHOP_BALANCE_KB),
 });
 
 export const LATE_SHOP_BALANCE_KB = 704;
-const LATE_SHOP_CAPACITY_SLOTS = 11;
 
 export const kantoLateShopProps = (): ShopScreenProps => ({
 	header: kantoShopHeaderAt(11, LATE_SHOP_BALANCE_KB),
 	build: {
 		configs: kantoShopBuild,
-		slots: {
-			used: usedSlotsOf(kantoShopBuild),
-			capacity: LATE_SHOP_CAPACITY_SLOTS,
-		},
-		...slotDealsAt(LATE_SHOP_CAPACITY_SLOTS, LATE_SHOP_BALANCE_KB),
+		weight: kantoShopWeight(2, 3072, LATE_SHOP_BALANCE_KB),
 	},
 	registry: {
 		offers: [
@@ -881,7 +904,6 @@ export const kantoLateShopProps = (): ShopScreenProps => ({
 		controls: kantoShopControlsAt(11, LATE_SHOP_BALANCE_KB, MAX_EXTENSIONS),
 		note: LOCK_NOTE,
 	},
-	plan: kantoShopPlan(4, 3072, LATE_SHOP_BALANCE_KB),
 });
 
 export const NEW_RUN_ARCHIVE_KB = 512;
@@ -905,17 +927,12 @@ const capitalised = (word: string) =>
 
 const RUN_SHAPE_NOTE = `${numberWord(RUN_GATE_COUNT)} gates, one a day — today's ${numberWord(SLICE_WINDOW)} polls are waiting`;
 
-export const NEW_RUN_BUILD_NOTE =
-	"Four slots are free. Anything wider is opened from the archive, and hands back in full until you start.";
-
 export const NEW_RUN_HAND_NOTE = `The hand costs no storage, only room. ${capitalised(numberWord(RECOMMENDED_SIZE))} are marked as advice; nothing is required, and the smallest three always fit together.`;
 
 export const NEW_RUN_EMPTY_LABEL = "nothing installed yet";
-export const NEW_RUN_RESTING = "pick one config and you can play";
 export const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
 const ARCHIVE_WORD = "archive";
-const OPEN_VERB = "open";
 
 export const kantoNewRunHeader = (
 	archiveKb: number = NEW_RUN_ARCHIVE_KB
@@ -929,43 +946,6 @@ export const kantoNewRunHeader = (
 	note: RUN_SHAPE_NOTE,
 	noteAt: "track",
 });
-
-const archivePriceKb = (slotsBought: number) => {
-	const rung = nextSlotPriceKb(slotsBought);
-	return rung === undefined ? undefined : rung * START_SLOT_PREMIUM;
-};
-
-const archiveLabel = (kb: number) => `${kbLabel(kb)} ${ARCHIVE_WORD}`;
-
-export const newRunSlotDealsAt = (
-	slotsBought = 0,
-	archiveKb: number = NEW_RUN_ARCHIVE_KB
-): { cash?: SlotCash; offer?: SlotOfferProps } => {
-	const capacity = BASE_SLOTS + slotsBought;
-	const priceKb = archivePriceKb(slotsBought);
-	const refundKb = archivePriceKb(slotsBought - 1);
-	const affordable = priceKb !== undefined && priceKb <= archiveKb;
-
-	return {
-		cash:
-			refundKb === undefined
-				? undefined
-				: {
-						refund: `${signedKbLabel(refundKb)} ${ARCHIVE_WORD}`,
-						onPress: noop,
-					},
-		offer:
-			priceKb === undefined
-				? undefined
-				: {
-						slot: capacity + 1,
-						price: archiveLabel(priceKb),
-						verb: OPEN_VERB,
-						refusal: affordable ? undefined : shortfallOf(priceKb, archiveKb),
-						onPress: affordable ? noop : undefined,
-					},
-	};
-};
 
 const NEW_RUN_HAND: readonly Config[] = [
 	CONFIGS.js,
@@ -1037,97 +1017,39 @@ export const kantoNewRunBuild = (
 		})
 	);
 
-export const kantoGateZeroFooter = (canStart = false): ScreenFooterProps => {
-	const peels = failPeelShareFor(START_GATE) > 0;
-	const audited = START_GATE >= INTRO_GATE;
-
-	return {
-		stakes: [
-			{
-				label: `gate ${START_GATE} asks`,
-				figures: [
-					{ label: `${coverageDemandFor(START_GATE)}% coverage` },
-					{
-						label: `+${kbLabel(GATE_REWARD_KB)} on a clear`,
-						color: "viridian",
-					},
-					{
-						label: `${peels ? "peels" : "no peel"} ${SEPARATOR} ${audited ? "audited" : "no audits"}`,
-					},
-				] satisfies StakeFigure[],
-			},
-		],
-		action: {
-			label: `start gate ${START_GATE}`,
-			icon: "gate",
-			onPress: canStart ? noop : undefined,
-		},
-		refusal: canStart
-			? undefined
-			: "A bare build never clears, so the run will not start until one config is installed.",
-	};
-};
-
-export const createKantoNewRunScreenProps =
-	createMockDataFactory<NewRunScreenProps>({
-		header: kantoNewRunHeader(),
-		build: {
-			configs: [],
-			slots: { used: 0, capacity: BASE_SLOTS },
-			emptyLabel: NEW_RUN_EMPTY_LABEL,
-			resting: NEW_RUN_RESTING,
-			...newRunSlotDealsAt(),
-		},
-		hand: kantoHandProps(),
-		footer: kantoGateZeroFooter(),
-		buildNote: NEW_RUN_BUILD_NOTE,
-	});
-
-export const kantoNewRunAt = (
-	installedIds: readonly string[],
-	slotsBought = 0,
-	archiveKb: number = NEW_RUN_ARCHIVE_KB
-): NewRunScreenProps => {
-	const capacity = BASE_SLOTS + slotsBought;
-	const configs = kantoNewRunBuild(installedIds);
-
-	return {
-		header: kantoNewRunHeader(archiveKb),
-		build: {
-			configs,
-			slots: { used: usedSlotsOf(configs), capacity },
-			emptyLabel: NEW_RUN_EMPTY_LABEL,
-			resting: NEW_RUN_RESTING,
-			...newRunSlotDealsAt(slotsBought, archiveKb),
-		},
-		hand: kantoHandProps(installedIds, capacity),
-		footer: kantoGateZeroFooter(installedIds.length > 0),
-		buildNote: NEW_RUN_BUILD_NOTE,
-	};
-};
+export const kantoGateZeroFooter = (canStart = false): ScreenFooterProps => ({
+	action: {
+		label: `start gate ${START_GATE}`,
+		icon: "gate",
+		onPress: canStart ? noop : undefined,
+	},
+});
 
 const AUDITS_TITLE = "Audits";
-const GATE_TITLE_TRAIL = "gate";
 
-export const PREP_SHOP_LABEL = "change it in the shop";
 const SUMMIT_LINE = "the summit — nothing after this";
-const PEEL_HINT = "Drop configs or minify them — your pick.";
-const FATAL_HINT = "A peel this deep can end the run.";
-const FREE_MISS = "costs nothing";
-const FATAL_MISS = "ends the run";
 const SEALED: LedgerFigure = { locked: true };
 
 export const PREP_COMMUNITY_LABEL = "Community";
 const START_LEAD = "Start";
-const CLEAR_LABEL = "clear";
-const COVERAGE_WORD = "coverage";
-const MISS_LABEL = "miss";
+
+export const PREP_OUTCOMES_TITLE = "Where you finish decides everything";
+export const PREP_TAKES_TITLE = "What it takes";
+export const PREP_POLLS_TITLE = "The five polls";
+const PREP_CAPTION =
+	"Coverage starts at zero. Five polls to prove the build again, and the check fires once when the gate shuts.";
+const PREP_POLLS_NOTE =
+	"Categories matter more than usual now: a matching config pays ×1.25 on top of your build.";
+export const PREP_LOCK_NOTE = "Starting locks this build for the window.";
+const RIGHT_ANSWER_LABEL = "Each right answer";
+const WRONG_ANSWER_LABEL = "Each wrong answer";
+const PAYS_NOTHING = "Nothing";
+const BELOW_FULL = AS_PERCENT - 1;
+const RANGE_DASH = "–";
 const BILL_LEAD = "bills";
 const BILL_TRAIL = "on a clear";
 const NO_AUDITS = "none this gate";
 const AUDIT_COUNT_TRAIL = "this gate";
-
-const coverageFigure = (held: number) => roundToOneDecimal(held).toFixed(1);
 
 const categoryTally = (codes: readonly CategoryCode[]): LedgerFigure[] => {
 	const counts = codes.reduce<Map<CategoryCode, number>>(
@@ -1152,6 +1074,183 @@ const answerTypeFigures = (split: {
 	]
 		.filter((figure) => figure.count > 0)
 		.map(({ label }) => ({ label }));
+
+const percentOf = (ratio: number) => roundToOneDecimal(ratio * AS_PERCENT);
+
+const spanLabel = (low: number, high: number, unit: string) =>
+	`${low} ${RANGE_DASH} ${high}${unit}`;
+
+const signedSpan = (low: number, high: number, sign: string) =>
+	`${sign}${percentOf(low)} ${RANGE_DASH} ${percentOf(high)}%`;
+
+const nextGateLine = (gate: number, gateName: string) =>
+	swatchForGate(gate + 1) === undefined
+		? `The ${gateName} swatch is yours and the run is won.`
+		: `The ${gateName} swatch is yours and gate ${gate + 1} opens tomorrow.`;
+
+const outcomesFor = (
+	gate: number,
+	gateName: string,
+	weight: number,
+	streak: number
+): BandOutcome[] => {
+	const healthy = percentOf(healthyAt(gate));
+	const ok = percentOf(okAt(gate));
+	const floor = percentOf(floorAt(gate));
+	const kb = (held: number) =>
+		gatePayoutKb(held / AS_PERCENT, gate, weight, streak);
+	const pays = (low: number, high: number) =>
+		`${kbLabel(kb(low))} ${RANGE_DASH} ${kbLabel(kb(high))}`;
+
+	return [
+		{
+			band: "perfect",
+			range: `${AS_PERCENT}%`,
+			outcome: `The bar is full. ${nextGateLine(gate, gateName)} The gate pays a bonus on top.`,
+			pays: kbLabel(kb(AS_PERCENT)),
+		},
+		{
+			band: "healthy",
+			range: spanLabel(healthy, BELOW_FULL, "%"),
+			outcome: `Gate cleared. ${nextGateLine(gate, gateName)}`,
+			pays: pays(healthy, BELOW_FULL),
+		},
+		...(ok > healthy - 1
+			? []
+			: [
+					{
+						band: "ok" as const,
+						range: spanLabel(ok, healthy - 1, "%"),
+						outcome: `You survive and get paid, but the gate stays shut. ${gateName} runs again on five fresh polls.`,
+						pays: pays(ok, healthy - 1),
+					},
+				]),
+		...(floor > ok - 1
+			? []
+			: [
+					{
+						band: "shaky" as const,
+						range: spanLabel(floor, ok - 1, "%"),
+						outcome:
+							"Still alive, barely. Same gate again, on a broken streak and a thin balance.",
+						pays: pays(floor, ok - 1),
+					},
+				]),
+		...(floor <= 0
+			? []
+			: [
+					{
+						band: "danger" as const,
+						range: `under ${floor}%`,
+						outcome:
+							"The run ends the moment the gate shuts. No retry, no peel.",
+						pays: PAYS_NOTHING,
+					},
+				]),
+	];
+};
+
+export const NEW_RUN_OUTCOMES_TITLE = "Objectives and rewards";
+const NEW_RUN_PEAK_KB = 512;
+const NEW_RUN_STREAK = 0;
+const UNREACHABLE_NOTE = "No run of five polls reaches the line on this build.";
+
+const newRunPeakKb = (archiveKb: number) =>
+	Math.max(NEW_RUN_PEAK_KB, archiveKb);
+
+export const newRunBuildNote = (heldTier: number = KANTO_PLAN_TIER) =>
+	`The first ${numberWord(freeWeightAt(heldTier))} weight is free. Past that the build bills you at every gate close, and the ${ARCHIVE_WORD} buys the free line up before you start.`;
+
+const installedConfigsIn = (installedIds: readonly string[]): Config[] =>
+	NEW_RUN_HAND.filter((config) => installedIds.includes(config.id));
+
+const reachNoteFor = (configs: readonly Config[]) => {
+	const rights = rightsToClear(START_GATE, SLICE_WINDOW, configs);
+	if (rights === undefined) return UNREACHABLE_NOTE;
+
+	const polls = rights === 1 ? "poll reaches" : "polls reach";
+	return `${capitalised(numberWord(rights))} correct ${polls} the line.`;
+};
+
+export const kantoNewRunOutcomes = (
+	installedIds: readonly string[] = []
+): BandOutcomesProps => {
+	const configs = installedConfigsIn(installedIds);
+	const weight = configs.reduce((total, config) => total + slotsOf(config), 0);
+
+	return {
+		title: NEW_RUN_OUTCOMES_TITLE,
+		bar: {
+			held: 0,
+			floor: percentOf(floorAt(START_GATE)),
+			ok: percentOf(okAt(START_GATE)),
+			healthy: percentOf(healthyAt(START_GATE)),
+			note: reachNoteFor(configs),
+		},
+		outcomes: outcomesFor(
+			START_GATE,
+			gateSwatchAt(START_GATE).gateName,
+			weight,
+			NEW_RUN_STREAK
+		),
+	};
+};
+
+const newRunWeight = (heldTier: number, archiveKb: number) =>
+	kantoShopWeight(heldTier, newRunPeakKb(archiveKb), archiveKb, ARCHIVE_WORD);
+
+export const kantoNewRunAt = (
+	installedIds: readonly string[],
+	heldTier = KANTO_PLAN_TIER,
+	archiveKb: number = NEW_RUN_ARCHIVE_KB
+): NewRunScreenProps => ({
+	header: kantoNewRunHeader(archiveKb),
+	build: {
+		configs: kantoNewRunBuild(installedIds),
+		weight: newRunWeight(heldTier, archiveKb),
+		emptyLabel: NEW_RUN_EMPTY_LABEL,
+	},
+	hand: kantoHandProps(installedIds, freeWeightAt(heldTier)),
+	outcomes: kantoNewRunOutcomes(installedIds),
+	footer: kantoGateZeroFooter(installedIds.length > 0),
+	buildNote: newRunBuildNote(heldTier),
+});
+
+export const createKantoNewRunScreenProps =
+	createMockDataFactory<NewRunScreenProps>(kantoNewRunAt([]));
+
+const takesRowsFor = (
+	gate: number,
+	configs: readonly Config[]
+): LedgerRow[] => [
+	{
+		label: RIGHT_ANSWER_LABEL,
+		tags: [
+			{
+				label: signedSpan(
+					gainPerCorrectFor(configs, undefined, "single"),
+					gainPerCorrectFor(configs, undefined, "multiple"),
+					"+"
+				),
+				color: "viridian",
+			},
+		],
+		detail: `${percentOf(SINGLE_GAIN)}${RANGE_DASH}${percentOf(MULTIPLE_GAIN)} base × ${coverageMultiplierOf(configs)} build`,
+	},
+	{
+		label: WRONG_ANSWER_LABEL,
+		figures: [
+			{
+				label: signedSpan(
+					gainPerMissFor(gate, configs, undefined, "single"),
+					gainPerMissFor(gate, configs, undefined, "multiple"),
+					"−"
+				),
+				color: "cinnabar",
+			},
+		],
+	},
+];
 
 export type PrepWindow = {
 	answerTypes: { single: number; multiple: number };
@@ -1228,73 +1327,31 @@ const auditBillFor = (
 	};
 };
 
-const missFigureFor = (
-	range: { fewest: number; most: number },
-	quota: number,
-	slots: number
-): StakeFigure => {
-	if (quota === 0) return { label: FREE_MISS };
-	if (isPeelFatal(quota, slots))
-		return { label: FATAL_MISS, color: "cinnabar" };
-	if (range.fewest === range.most) {
-		return { label: `peels ${range.fewest} configs`, color: "cinnabar" };
-	}
-	return {
-		label: `peels ${range.fewest} or ${range.most} configs`,
-		color: "cinnabar",
-	};
-};
-
-const missNoteFor = (
-	quota: number,
-	slots: number,
-	audits: readonly Audit[]
-): string | undefined => {
-	if (quota === 0) return undefined;
-
-	const deepener = audits.find((audit) => audit.peelShareOnFail !== undefined);
-	const fatal = isPeelFatal(quota, slots);
-	if (deepener === undefined && !fatal) return undefined;
-
-	const deepened =
-		deepener === undefined
-			? ""
-			: `, deepened by ${deepener.code} ${deepener.name}`;
-	const hint = fatal ? FATAL_HINT : PEEL_HINT;
-
-	return `${quota} of your ${slots} occupied slots${deepened}. ${hint}`;
-};
-
 export type PrepFrame = {
 	gate: number;
 	configs: readonly Config[];
-	chips: readonly ConfigChipProps[];
-	capacity: number;
 	balanceKb: number;
 	coverageHeld: number;
 	planTier: number;
 	window: PrepWindow;
+	streak?: number;
 	answered?: number;
 };
 
 export const kantoPrepAt = ({
 	gate,
 	configs,
-	chips,
-	capacity,
 	balanceKb,
 	coverageHeld,
 	planTier,
 	window,
+	streak = 0,
 	answered = 0,
 }: PrepFrame): PrepScreenProps => {
 	const swatch = gateSwatchAt(gate);
 	const audits = auditsForGate(gate, DEFAULT_AUDIT_SCHEDULE);
-	const slots = occupiedSlots(configs);
-	const quota = failPeelQuotaFor(configs, gate, DEFAULT_AUDIT_SCHEDULE);
-	const range = peelConfigRangeFor(configs, quota);
+	const weight = occupiedSlots(configs);
 	const prefetcher = prefetcherFor(configs);
-	const demand = coverageDemandFor(gate);
 
 	return {
 		header: {
@@ -1312,23 +1369,28 @@ export const kantoPrepAt = ({
 					? `today's ${SLICE_WINDOW} polls are ready`
 					: `${answered} of ${SLICE_WINDOW} answered`,
 			noteAt: "track",
-			coverage: {
-				label: COVERAGE_WORD,
-				held: coverageFigure(coverageHeld),
-				demand: `${demand}%`,
-				meter: { value: coverageHeld, max: demand },
+			bar: {
+				held: coverageHeld,
+				floor: percentOf(floorAt(gate)),
+				ok: percentOf(okAt(gate)),
+				healthy: percentOf(healthyAt(gate)),
+				marks: "bands",
+				note: PREP_CAPTION,
 			},
 		},
-		build: {
-			configs: chips,
-			slots: { used: slots, capacity },
+		outcomes: {
+			title: PREP_OUTCOMES_TITLE,
+			outcomes: outcomesFor(gate, swatch.gateName, weight, streak),
 		},
-		shop: { label: PREP_SHOP_LABEL, icon: "shop", onPress: noop },
+		takes: {
+			title: PREP_TAKES_TITLE,
+			rows: takesRowsFor(gate, configs),
+		},
 		polls: {
-			title: `${swatch.gateName} ${GATE_TITLE_TRAIL}`,
-			heading: "gate",
+			title: PREP_POLLS_TITLE,
 			badge: prefetcher?.label,
 			rows: pollRowsFor(gate, window, prefetcher !== undefined),
+			note: PREP_POLLS_NOTE,
 		},
 		audits: {
 			title: AUDITS_TITLE,
@@ -1342,61 +1404,21 @@ export const kantoPrepAt = ({
 				icon: "community",
 				onPress: noop,
 			},
-			stakes: [
-				{
-					label: CLEAR_LABEL,
-					figures: [
-						{
-							label: signedKbLabel(
-								gateClearPayout(configs, SLICE_WINDOW, gate)
-							),
-							color: "viridian",
-						},
-						{
-							label: `${swatch.gateName} swatch`,
-							swatch: { state: "current", swatch },
-						},
-					],
-				},
-				{ label: MISS_LABEL, figures: [missFigureFor(range, quota, slots)] },
-			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,
 				icon: "gate",
 				onPress: noop,
 			},
-			note: missNoteFor(quota, slots, audits),
+			note: PREP_LOCK_NOTE,
+			noteAt: "row",
 		},
 	};
 };
 
-const prepChip = (config: Config, badge: ConfigChipBadge): ConfigChipProps => ({
-	name: config.label,
-	slots: slotsOf(config),
-	version: config.level,
-	badges: [badge],
-	info: infoFor(config),
-});
-
-const gain = (config: Config): ConfigChipBadge => ({
-	label: figureLabel(config),
-	color: "viridian",
-});
-
-const ability = (label: string): ConfigChipBadge => ({
-	label,
-	color: "pewter",
-});
-
-const reveals = (label: string): ConfigChipBadge => ({
-	label,
-	color: "cerulean",
-});
-
 const LAVENDER_GATE = 4;
 const LAVENDER_BALANCE_KB = 102;
-const LAVENDER_CAPACITY = 8;
 const LAVENDER_PLAN_TIER = 1;
+const LAVENDER_STREAK = 6;
 
 const JS_V2 = { ...CONFIGS.js, level: 2 };
 const TELEMETRY_V2 = { ...CONFIGS.telemetry, level: 2 };
@@ -1406,13 +1428,6 @@ const LAVENDER_CONFIGS: readonly Config[] = [
 	CONFIGS.eslint,
 	CONFIGS.deprecated,
 	CONFIGS.ts,
-];
-
-const LAVENDER_CHIPS: readonly ConfigChipProps[] = [
-	prepChip(JS_V2, gain(JS_V2)),
-	prepChip(CONFIGS.eslint, ability("cross out")),
-	prepChip(CONFIGS.deprecated, gain(CONFIGS.deprecated)),
-	prepChip(CONFIGS.ts, gain(CONFIGS.ts)),
 ];
 
 const LAVENDER_WINDOW: PrepWindow = {
@@ -1426,29 +1441,27 @@ export const kantoPrepSealed = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: LAVENDER_GATE,
 		configs: LAVENDER_CONFIGS,
-		chips: LAVENDER_CHIPS,
-		capacity: LAVENDER_CAPACITY,
 		balanceKb: LAVENDER_BALANCE_KB,
 		coverageHeld: 0,
 		planTier: LAVENDER_PLAN_TIER,
 		window: LAVENDER_WINDOW,
+		streak: LAVENDER_STREAK,
 	});
 
 export const kantoPrepPrefetched = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: LAVENDER_GATE,
 		configs: [...LAVENDER_CONFIGS, CONFIGS.prefetch],
-		chips: [...LAVENDER_CHIPS, prepChip(CONFIGS.prefetch, reveals("reveals"))],
-		capacity: 12,
 		balanceKb: LAVENDER_BALANCE_KB,
 		coverageHeld: 0,
 		planTier: LAVENDER_PLAN_TIER,
 		window: LAVENDER_WINDOW,
+		streak: LAVENDER_STREAK,
 	});
 
 const CHAMPION_BALANCE_KB = 1945;
-const CHAMPION_CAPACITY = 24;
 const CHAMPION_PLAN_TIER = 3;
+const CHAMPION_STREAK = 10;
 
 const CHAMPION_CONFIGS: readonly Config[] = [
 	JS_V2,
@@ -1462,18 +1475,6 @@ const CHAMPION_CONFIGS: readonly Config[] = [
 	CONFIGS.overclock,
 ];
 
-const CHAMPION_CHIPS: readonly ConfigChipProps[] = [
-	prepChip(JS_V2, gain(JS_V2)),
-	prepChip(CONFIGS.ts, gain(CONFIGS.ts)),
-	prepChip(CONFIGS.py, gain(CONFIGS.py)),
-	prepChip(CONFIGS.eslint, ability("cross out")),
-	prepChip(TELEMETRY_V2, ability("peek")),
-	prepChip(CONFIGS.prefetch, reveals("reveals")),
-	prepChip(CONFIGS.indexedDb, gain(CONFIGS.indexedDb)),
-	prepChip(CONFIGS.freemium, ability("half price")),
-	prepChip(CONFIGS.overclock, gain(CONFIGS.overclock)),
-];
-
 const CHAMPION_WINDOW: PrepWindow = {
 	answerTypes: { single: 1, multiple: 4 },
 	optionCounts: [4, 5, 6, 5, 6],
@@ -1485,12 +1486,11 @@ export const kantoPrepChampion = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: VICTORY_GATE,
 		configs: CHAMPION_CONFIGS,
-		chips: CHAMPION_CHIPS,
-		capacity: CHAMPION_CAPACITY,
 		balanceKb: CHAMPION_BALANCE_KB,
 		coverageHeld: 92.5,
 		planTier: CHAMPION_PLAN_TIER,
 		window: CHAMPION_WINDOW,
+		streak: CHAMPION_STREAK,
 		answered: 2,
 	});
 
@@ -1515,11 +1515,6 @@ export const kantoPrepCalibration = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: 0,
 		configs: [CONFIGS.js, CONFIGS.codeCoverage],
-		chips: [
-			prepChip(CONFIGS.js, gain(CONFIGS.js)),
-			prepChip(CONFIGS.codeCoverage, gain(CONFIGS.codeCoverage)),
-		],
-		capacity: BASE_SLOTS,
 		balanceKb: 0,
 		coverageHeld: 0,
 		planTier: 0,
@@ -1530,10 +1525,8 @@ export const kantoPrepFatal = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: VICTORY_GATE,
 		configs: [JS_V2],
-		chips: [prepChip(JS_V2, gain(JS_V2))],
-		capacity: CHAMPION_CAPACITY,
 		balanceKb: CHAMPION_BALANCE_KB,
-		coverageHeld: 210,
+		coverageHeld: 62,
 		planTier: CHAMPION_PLAN_TIER,
 		window: CHAMPION_WINDOW,
 	});

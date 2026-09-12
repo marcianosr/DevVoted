@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	SHOP_BALANCE_KB,
-	SHOP_CAPACITY_SLOTS,
 	SHOP_PLAN_TIER,
 	createKantoShopScreenProps,
 	kantoClosedShopProps,
@@ -12,12 +11,11 @@ import {
 	kantoLateShopProps,
 	kantoLockedRegistryOffers,
 	kantoShopBuild,
-	kantoShopPlan,
+	SHOP_PLAN_PEAK_KB,
+	kantoShopWeight,
 	kantoShopUninstalls,
 	kantoTagShopProps,
 	planChangeFor,
-	slotDealsAt,
-	usedSlotsOf,
 } from "~/test/kantoPoll.factory";
 
 import { Modal } from "./Modal.ui";
@@ -45,11 +43,12 @@ const ShopWithPanels = () => {
 		onUninstall: () => setUninstalling(chip.name),
 	}));
 
-	const plan = kantoShopPlan();
-	const rungs = plan.rungs.map((rung, tier) => ({
-		...rung,
-		onPress: rung.onPress === undefined ? undefined : () => setPlanTier(tier),
-	}));
+	const weight = kantoShopWeight(SHOP_PLAN_TIER, SHOP_PLAN_PEAK_KB);
+	const offers = (weight.offers ?? []).map((offer) =>
+		offer.opensAt === undefined && offer.onPress !== undefined
+			? { ...offer, onPress: () => setPlanTier(SHOP_PLAN_TIER + 1) }
+			: offer
+	);
 
 	const uninstall =
 		uninstalling === undefined ? undefined : kantoShopUninstalls[uninstalling];
@@ -60,20 +59,15 @@ const ShopWithPanels = () => {
 				{...props}
 				build={{
 					configs: chips,
-					slots: {
-						used: usedSlotsOf(kantoShopBuild),
-						capacity: SHOP_CAPACITY_SLOTS,
-					},
-					...slotDealsAt(),
+					weight: { ...weight, offers },
 					openInfo: open,
 					onToggleInfo: toggle,
 				}}
 				registry={{ ...props.registry, openInfo: open, onToggleInfo: toggle }}
-				plan={{ ...plan, rungs }}
 			/>
 
 			{planTier === undefined ? null : (
-				<Modal label="Storage plan" onDismiss={close}>
+				<Modal label="Free weight" onDismiss={close}>
 					<PlanChange
 						{...planChangeFor(SHOP_PLAN_TIER, planTier, SHOP_BALANCE_KB)}
 						onConfirm={close}

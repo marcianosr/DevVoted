@@ -3,6 +3,9 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
+	KANTO_UPKEEP_RUNGS,
+	KANTO_WEIGHT_AXIS_MAX,
+	kantoUpkeepRungs,
 	SHOP_CAPACITY_SLOTS,
 	kantoShopBuild,
 	slotDealsAt,
@@ -521,5 +524,246 @@ describe("Build's slot track", () => {
 		);
 
 		expect(container.querySelectorAll(".badge-theme[style]")).toHaveLength(0);
+	});
+});
+
+describe("the build under a weight ladder", () => {
+	const WEIGHED = [
+		{ name: "Cache", slots: 1, badges: [] },
+		{ name: "Deprecated", slots: 4, badges: [] },
+	] satisfies ConfigChipProps[];
+
+	const weight = {
+		rungs: KANTO_UPKEEP_RUNGS,
+		max: KANTO_WEIGHT_AXIS_MAX,
+	};
+
+	it("counts the build's weight rather than its room, having no capacity", () => {
+		render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(
+			screen.getByText("2 configs · 5 weight · 4 covered · 1 billable")
+		).toBeInTheDocument();
+	});
+
+	it("reads covered and billable off the ladder's own free rung", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				weight={{ ...weight, rungs: kantoUpkeepRungs(8) }}
+			/>
+		);
+
+		expect(
+			screen.getByText("2 configs · 5 weight · 5 covered · 0 billable")
+		).toBeInTheDocument();
+	});
+
+	it("agrees with its own track: nothing billable means nothing billed", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				weight={{ ...weight, rungs: kantoUpkeepRungs(8) }}
+			/>
+		);
+
+		expect(screen.getByText(/^5 weight · free/)).toBeInTheDocument();
+	});
+
+	it("sells the next rung of free weight under the chips", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				weight={{
+					...weight,
+					offers: [{ from: 4, to: 8, price: "256 KB", onPress: () => {} }],
+				}}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /^carry 8 free weight/ })
+		).toBeInTheDocument();
+	});
+
+	it("names the rung above the one on sale without offering it", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				weight={{
+					...weight,
+					offers: [{ to: 12, opensAt: "opens once a run has held 768 KB" }],
+				}}
+			/>
+		);
+
+		expect(screen.getByText(/opens once a run has held/)).toBeInTheDocument();
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("offers nothing when the ladder has nothing left to sell", () => {
+		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(container.querySelectorAll(".bg-hatched-theme")).toHaveLength(0);
+	});
+
+	it("leaves the bill to the track instead of saying it twice", () => {
+		render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(
+			screen.getByText("5 weight · free · 1 to 16 KB")
+		).toBeInTheDocument();
+	});
+
+	it("draws the weight track and not the slot track", () => {
+		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(container.querySelectorAll(".basis-0")).toHaveLength(0);
+		expect(container.querySelectorAll(".text-xxs").length).toBeGreaterThan(0);
+	});
+
+	it("opens no empty slot boxes, because nothing caps the build", () => {
+		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(
+			container.querySelectorAll("[class*='border-dashed'][class*='basis-0']")
+		).toHaveLength(0);
+	});
+
+	it("counts a skipped config's weight, since it is still installed", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				skipped={[{ name: "Stylelint", slots: 2, badges: [], skipped: true }]}
+				weight={weight}
+			/>
+		);
+
+		expect(
+			screen.getByText("3 configs · 7 weight · 4 covered · 3 billable")
+		).toBeInTheDocument();
+	});
+
+	it("lights the hovered config on the weight track", async () => {
+		const onHighlight = vi.fn();
+		render(
+			<Build configs={WEIGHED} weight={weight} onHighlight={onHighlight} />
+		);
+
+		await userEvent.hover(screen.getByText("Deprecated"));
+
+		expect(onHighlight).toHaveBeenCalledWith("Deprecated");
+	});
+
+	it("prices a highlighted config by the bill it would leave behind", () => {
+		render(<Build configs={WEIGHED} weight={weight} highlight="Deprecated" />);
+
+		expect(
+			screen.getByText("Deprecated · 4 weight · without it, free")
+		).toBeInTheDocument();
+	});
+});
+
+describe("the build split across a screen's own columns", () => {
+	const WEIGHED = [
+		{ name: "Cache", slots: 1, badges: [] },
+	] satisfies ConfigChipProps[];
+
+	const weight = {
+		rungs: KANTO_UPKEEP_RUNGS,
+		max: KANTO_WEIGHT_AXIS_MAX,
+		offers: [{ from: 4, to: 8, price: "256 KB", onPress: () => {} }],
+	};
+
+	it("draws every part when it is asked to hold the whole band", () => {
+		render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(screen.getByText("Build")).toBeInTheDocument();
+		expect(screen.getByText("Cache")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^carry 8 free weight/ })
+		).toBeInTheDocument();
+	});
+
+	it("keeps the room for sale with the track, both being the readout", () => {
+		render(<Build configs={WEIGHED} weight={weight} list={false} />);
+
+		expect(screen.getByText("Build")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^carry 8 free weight/ })
+		).toBeInTheDocument();
+		expect(screen.queryByText("Cache")).toBeNull();
+	});
+
+	it("counts the configs it is not drawing, the summary being the build's", () => {
+		render(<Build configs={WEIGHED} weight={weight} list={false} />);
+
+		expect(
+			screen.getByText("1 configs · 1 weight · 1 covered · 0 billable")
+		).toBeInTheDocument();
+	});
+
+	it("draws the installations alone when the readout is held back", () => {
+		render(
+			<Build
+				configs={WEIGHED}
+				weight={weight}
+				heading={false}
+				readout={false}
+			/>
+		);
+
+		expect(screen.getByText("Cache")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /^carry/ })).toBeNull();
+		expect(screen.queryByText("Build")).toBeNull();
+	});
+
+	it("speaks for an empty build from the list, not the readout", () => {
+		render(
+			<Build
+				configs={[]}
+				weight={weight}
+				heading={false}
+				readout={false}
+				emptyLabel="nothing installed yet"
+			/>
+		);
+
+		expect(screen.getByText("nothing installed yet")).toBeInTheDocument();
+	});
+
+	it("withholds the empty label from the half that draws no list", () => {
+		render(
+			<Build
+				configs={[]}
+				weight={weight}
+				list={false}
+				emptyLabel="nothing installed yet"
+			/>
+		);
+
+		expect(screen.queryByText("nothing installed yet")).toBeNull();
+	});
+
+	it("folds the skipped configs with the list they belong to", () => {
+		const { container } = render(
+			<Build configs={WEIGHED} skipped={SKIPPED} weight={weight} list={false} />
+		);
+
+		expect(container.querySelector("details")).toBeNull();
+	});
+
+	it("opens no empty container when it is asked to draw nothing", () => {
+		const { container } = render(
+			<Build
+				configs={WEIGHED}
+				weight={weight}
+				heading={false}
+				readout={false}
+				list={false}
+			/>
+		);
+
+		expect(container.querySelector("section")?.children).toHaveLength(0);
 	});
 });

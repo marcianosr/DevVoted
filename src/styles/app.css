@@ -1264,7 +1264,8 @@ meter::-webkit-meter-optimum-value {
 	counter-reset: coverage var(--coverage-count);
 }
 
-.coverage-count::after {
+.coverage-count::after,
+.coverage-bar-count::after {
 	content: counter(coverage);
 }
 
@@ -1279,11 +1280,61 @@ meter::-webkit-meter-optimum-value {
 	.coverage-count {
 		--coverage-count: 0;
 	}
+
+	.coverage-bar-fill {
+		width: 0;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.coverage-arc,
-	.coverage-count {
+	.coverage-count,
+	.coverage-bar-count,
+	.coverage-bar-fill,
+	.coverage-bar-pin {
 		transition: none;
 	}
+}
+
+/* The banded bar. Its own duration rather than the ring's --coverage-duration:
+   CoverageRing.spec counts that name across the whole sheet to prove the arc
+   and the digits cannot desync, and a third user would break the proof rather
+   than the property. A transition for the same reason the arc has one, since a
+   wrong answer bleeds the fill back down. */
+.coverage-bar {
+	--coverage-bar-duration: 700ms;
+}
+
+.coverage-bar-fill {
+	transition: width var(--coverage-bar-duration) ease-out;
+}
+
+/* The pin rides the fill's leading edge, so its left runs off the fill's own
+   duration: a label that arrives after the edge it points at has stopped
+   moving is pointing at nothing. A closed gate holds its pin up permanently;
+   a running meter shows the same element only while the figure is moving,
+   which is why the fade is a state on the pin rather than a second widget.
+   Appearing and leaving get their own, shorter pair: they are not the same
+   gesture as travelling. */
+.coverage-bar-pin {
+	opacity: 0;
+	transition:
+		opacity 260ms ease-out,
+		left var(--coverage-bar-duration) ease-out;
+}
+
+.coverage-bar-pin[data-shown="true"] {
+	opacity: 1;
+	transition:
+		opacity 140ms ease-out,
+		left var(--coverage-bar-duration) ease-out;
+}
+
+/* The ring's registered property, reused rather than re-registered: it does
+   not inherit and the counter is reset per element, so two bars on one screen
+   each count their own. The duration is the bar's, not the ring's, which is
+   what keeps the digits and the fill from landing apart. */
+.coverage-bar-count {
+	transition: --coverage-count var(--coverage-bar-duration) ease-out;
+	counter-reset: coverage var(--coverage-count);
 }

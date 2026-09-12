@@ -1,12 +1,10 @@
 import { clsx } from "clsx";
 
 import { Audit, type AuditProps } from "./Audit.ui";
-import { Build, type BuildProps } from "./Build.ui";
-import { Button } from "./Button.ui";
+import { BandOutcomes, type BandOutcomesProps } from "./BandOutcomes.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
 import { Header, type HeaderProps } from "./Header.ui";
-import type { IconName } from "./Icon.ui";
 import { Ledger, type LedgerProps } from "./Ledger.ui";
 import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
@@ -22,12 +20,10 @@ const BILL =
 const ROWS = "flex w-full flex-col";
 const ROW = "flex w-full py-2";
 const DIVIDER = "border-t border-theme-faint";
-const SHOP_ROW = "flex w-full";
 
 const NOTE_GAIN: KantoColor = "pewter";
 
 const AUDIT_LAYOUT = "row";
-const SHOP_SIZE = "md";
 
 export type PrepAudits = {
 	title: string;
@@ -35,12 +31,6 @@ export type PrepAudits = {
 	bill?: string;
 	note?: string;
 	alerts: readonly AuditProps[];
-};
-
-export type PrepShopLink = {
-	label: string;
-	icon?: IconName;
-	onPress?: () => void;
 };
 
 const Audits = ({ title, meta, bill, note, alerts }: PrepAudits) => (
@@ -85,8 +75,8 @@ const Audits = ({ title, meta, bill, note, alerts }: PrepAudits) => (
 
 export type PrepScreenProps = {
 	header: HeaderProps;
-	build: BuildProps;
-	shop?: PrepShopLink;
+	outcomes: BandOutcomesProps;
+	takes: LedgerProps;
 	polls: LedgerProps;
 	audits: PrepAudits;
 	footer: ScreenFooterProps;
@@ -95,8 +85,8 @@ export type PrepScreenProps = {
 
 export const PrepScreen = ({
 	header,
-	build,
-	shop,
+	outcomes,
+	takes,
 	polls,
 	audits,
 	footer,
@@ -104,20 +94,12 @@ export const PrepScreen = ({
 }: PrepScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width}>
 		<Header {...header} />
+
+		<BandOutcomes {...outcomes} />
+
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
-				<Build {...build} layout="column" track="occupancy" />
-				{shop === undefined ? null : (
-					<div className={SHOP_ROW}>
-						<Button
-							size={SHOP_SIZE}
-							label={shop.label}
-							icon={shop.icon}
-							onPress={shop.onPress}
-							disabled={shop.onPress === undefined}
-						/>
-					</div>
-				)}
+				<Ledger {...takes} />
 			</div>
 
 			<div className={COLUMN}>
@@ -125,6 +107,7 @@ export const PrepScreen = ({
 				<Audits {...audits} />
 			</div>
 		</div>
+
 		<ScreenFooter {...footer} />
 	</Screen>
 );

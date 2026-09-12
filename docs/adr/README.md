@@ -23,7 +23,7 @@ it before proposing one again.**
 | [011](011-persistent-runs-daily-segments.md) | Persistent runs with daily shared segments | Accepted — amended by 014 |
 | [012](012-migration-strategy.md) | One migration pipeline: guarded SQL | Accepted |
 | [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035; **the gain no longer scales** (073) |
-| [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 071 (a repeat costs a day) |
+| [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 076 (a retry costs a day) |
 | [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap |
 | [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074 |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
@@ -33,7 +33,7 @@ it before proposing one again.**
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — amended by 072 (prep lost its shop link) |
 | [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056 |
 | [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
-| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — **decisions 1 and 2 dead** (071); the peel moved to 074 |
+| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — 076 owns what a miss does; the peel has two triggers (076, 074) |
 | [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage | Accepted — amended by 053 |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline | Accepted |
@@ -64,10 +64,12 @@ it before proposing one again.**
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
-| [071](071-the-closing-band-decides-the-gate.md) | The band a gate closes in decides what the gate does | Accepted — supersedes 037's death clock; stated on screen, **not built** |
 | [072](072-prep-opens-on-the-stakes.md) | Prep opens on the stakes, not on the build | Accepted — amends 032; prep lost its shop link |
 | [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — supersedes 046 and 049; **not built** |
+| [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked) |
+| [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; drawn in the kanto kit, not routed |
+| [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
 
 ## Retired
 
@@ -94,6 +96,7 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 041 | Slots open on gates, coverage, or either | Retired — 046 owns it |
 | 043 | Rarity is a shape, not a hue | Retired — 047 owns it |
 | 045 | Spots come from gates, KB rents more on top | Retired — 046 owns it |
+| 071 | The band a gate closes in decides what the gate does | Retired — 076 owns it; OK clears and the peel came back |
 
 ## Conventions
 

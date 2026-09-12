@@ -10,7 +10,7 @@
 const AGG = "^src/modules/[^/]+/[^/]+";
 const LEGACY_FROM = "^src/domains/[^/]+/";
 /** Dev rigs: they drive the engine directly, so runtime domain imports are expected. */
-const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice)\\.tsx$";
+const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice|coverage)\\.tsx$";
 /** The root route builds the router context in `beforeLoad`, which runs before
  * any component exists — so it cannot reach its data by mounting one. */
 const ROOT_ROUTE = "^src/routes/__root\\.tsx$";

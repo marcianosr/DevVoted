@@ -5,7 +5,7 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 export type SwatchSize = "small" | "large" | "hero";
 
 export type SwatchFill =
-	| { state: "discovered"; swatch: GateSwatch }
+	| { state: "discovered"; swatch: GateSwatch; marked?: boolean }
 	| { state: "current"; swatch: GateSwatch }
 	| { state: "undiscovered" };
 
@@ -26,6 +26,7 @@ const FILL = {
 } satisfies Record<SwatchState, string>;
 
 const PLATE = "ring-1 ring-pewter";
+const MARK = "legendary-ring";
 const PRISMATIC = {
 	discovered: "bg-legendary",
 	current: "legendary-ring",
@@ -51,7 +52,8 @@ export const Swatch = (props: SwatchProps) => {
 				BASE,
 				size,
 				FILL[props.state],
-				props.swatch.finish === "plate" && PLATE
+				props.swatch.finish === "plate" && PLATE,
+				props.state === "discovered" && props.marked === true && MARK
 			)}
 		/>
 	);

@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -14,21 +12,6 @@ import {
 import { PrepScreen } from "./PrepScreen.ui";
 
 const props = kantoPrepSealed();
-
-const PrepWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
-
-	return (
-		<PrepScreen
-			{...props}
-			build={{
-				...props.build,
-				openInfo: open,
-				onToggleInfo: (name) => setOpen(name === open ? undefined : name),
-			}}
-		/>
-	);
-};
 
 const meta: Meta<typeof PrepScreen> = {
 	component: PrepScreen,
@@ -53,12 +36,10 @@ export const CalibrationGate: Story = {
 	render: () => <PrepScreen {...kantoPrepCalibration()} />,
 };
 
-export const FatalMiss: Story = {
+export const UnderTheFloor: Story = {
 	render: () => <PrepScreen {...kantoPrepFatal()} />,
 };
 
 export const PollsSpent: Story = {
 	render: () => <PrepScreen {...kantoPrepSpent()} />,
 };
-
-export const WithPanels: Story = { render: () => <PrepWithPanels /> };

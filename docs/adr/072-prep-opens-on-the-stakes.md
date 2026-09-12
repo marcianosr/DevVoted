@@ -13,7 +13,7 @@ The kanto prep screen showed the build, the window and the gate's audits, then
 asked the player to start. It never said what the gate would do to them. The
 only stake it priced was a clear and a peel, on one line in the footer.
 
-[ADR-071](071-the-closing-band-decides-the-gate.md) made that the wrong shape.
+[ADR-076](076-the-closing-band-decides-what-it-costs.md) made that the wrong shape.
 There are four outcomes now, three of them survivable and only one of them
 advancing, and the difference between them is worth more to a player standing
 in front of the gate than a list of configs they have already bought.
@@ -62,7 +62,7 @@ playtest, because a player who has not seen their build in two screens may not
 know what is being locked.
 
 Nothing enforces the four outcomes yet. `survivesGate` still resolves a gate
-with one boolean, so the screen is currently a promise. ADR-071 owns closing
+with one boolean, so the screen is currently a promise. ADR-076 owns closing
 that gap.
 
 Figures come from the model, not the mock: the ranges from `healthyAt` / `okAt`

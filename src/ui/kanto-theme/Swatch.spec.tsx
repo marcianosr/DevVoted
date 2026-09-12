@@ -92,6 +92,64 @@ describe("Swatch", () => {
 		);
 	});
 
+	describe("the mark a perfect clear leaves", () => {
+		it("keeps the gate's own colour and fill underneath", () => {
+			const { container } = render(
+				<Swatch state="discovered" swatch={PALLET} marked />
+			);
+
+			expect(container.firstChild).toHaveAttribute(
+				"data-swatch-theme",
+				PALLET.theme
+			);
+			expect(container.firstChild).toHaveClass("bg-theme", "legendary-ring");
+		});
+
+		it("stays off a swatch that closed on any other band", () => {
+			const { container } = render(
+				<Swatch state="discovered" swatch={PALLET} />
+			);
+
+			expect(container.firstChild).not.toHaveClass("legendary-ring");
+		});
+
+		it("never trades the fill for the gradient, which has no theme colour", () => {
+			const { container } = render(
+				<Swatch state="discovered" swatch={PALLET} marked />
+			);
+
+			expect(container.firstChild).not.toHaveClass("bg-legendary");
+		});
+
+		it("rings the Elite plate on top of the plate, not instead of it", () => {
+			const { container } = render(
+				<Swatch state="discovered" swatch={ELITE} marked />
+			);
+
+			expect(container.firstChild).toHaveClass(
+				"ring-1",
+				"ring-pewter",
+				"legendary-ring"
+			);
+		});
+
+		it.each(["small", "large", "hero"] as const)(
+			"marks a %s swatch the same way",
+			(size) => {
+				const { container } = render(
+					<Swatch state="discovered" swatch={PALLET} size={size} marked />
+				);
+
+				expect(container.firstChild).toHaveClass("legendary-ring");
+			}
+		);
+
+		it("resolves the mark to a ring app.css composes over a background", () => {
+			expect(appCss).toContain(".legendary-ring::before {");
+			expect(appCss).toContain("mask-composite: exclude;");
+		});
+	});
+
 	it("resolves its gradient and withheld fill to utilities app.css declares", () => {
 		expect(appCss).toContain("@utility bg-theme-raised");
 		expect(appCss).toContain("@utility bg-legendary");

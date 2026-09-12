@@ -37,8 +37,8 @@ const countStyle = (whole: number): CountStyle => ({
 const toTenth = (value: number) =>
 	Math.round(Math.max(0, value) * TENTHS) / TENTHS;
 
-const ceilingOf = (held: number, demand: number) =>
-	Math.max(toTenth(demand), toTenth(held));
+const ceilingOf = (held: number, demand: number, pinned?: number) =>
+	pinned ?? Math.max(toTenth(demand), toTenth(held));
 
 const shareOf = (value: number, ceiling: number) =>
 	ceiling <= 0 ? 0 : Math.max(0, value) / ceiling;
@@ -54,6 +54,7 @@ const readingOf = (held: number, demand: number) =>
 export type CoverageRingProps = {
 	held: number;
 	demand: number;
+	ceiling?: number;
 	title?: string;
 	note?: string;
 };
@@ -61,6 +62,7 @@ export type CoverageRingProps = {
 export const CoverageRing = ({
 	held,
 	demand,
+	ceiling: pinned,
 	title,
 	note,
 }: CoverageRingProps) => {
@@ -68,7 +70,7 @@ export const CoverageRing = ({
 	const whole = Math.trunc(reading);
 	const tenth = Math.round((reading - whole) * TENTHS);
 
-	const ceiling = ceilingOf(held, demand);
+	const ceiling = ceilingOf(held, demand, pinned);
 	const filled = shareOf(held, ceiling);
 	const passed = ceiling > toTenth(demand);
 	const mark = tickAt(shareOf(demand, ceiling), RADIUS);

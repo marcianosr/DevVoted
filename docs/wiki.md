@@ -73,8 +73,8 @@ appended.
 
 Runs persist across days and never expire; a partly answered gate fills up across
 the day boundary, and yesterday's unplayed polls are dropped rather than failed. A
-flawless summit takes 12 calendar days, and every missed gate adds one, because the
-retry waits on tomorrow's polls.
+flawless summit takes 12 calendar days, and every gate held in SHAKY adds one,
+because the retry waits on tomorrow's polls.
 
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
 [community board](#7-community); after a cleared gate it parks on the **prep page**,
@@ -247,38 +247,75 @@ once, on the paid line.
 Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads as
 "L2". Mastery keeps counting instead of capping.
 
-### 2.6 Missing a gate
+### 2.6 How a gate closes
 
-A miss **peels configs** and hands the run back to the same gate (ADR-037). You choose
-which go, on the strip screen; then the normal post-gate loop runs (review, shop, prep,
-5 fresh polls). The meter starts over. Coverage and storage survive.
+A gate resolves on the **band** its coverage meter closes in, not on a single
+threshold (ADR-076). The bands are read off the gate's own healthy line:
+`HEALTHY` is that line, `OK` sits 15 points under it, the survival floor 25
+points under it, and `PERFECT` is a full bar at 100%. Live numbers are in
+`coverageRatio.model.ts`.
 
-| Cost | Detail |
-| --- | --- |
-| **Slots** | 20% of the occupied slots at the early gates rising to 35% at the summit, +10% at Elite, +15% at Champion. Paid by dropping configs you pick, so a miss sheds whatever was not earning its room. Sizes are whole numbers, so a quota the build cannot match exactly is overpaid, and the remainder is simply gone. Before gate 3 the quota never exceeds half the build. The forecast on the poll, prep and start screens quotes the quota as a **config count** (a range when the build's sizes make it one, since one 8-slot config settles a 2-slot debt alone); the slot figure sits in its hover. |
-| **The payout** | Nothing: no gate reward, no interest, no extra-pick KB. The faucet KB earned inside the failed window is the retry's whole budget, unless **Garbage Collection** ([4.3](#43-roster)) is installed, in which case every config you **drop** here refunds its sell value. Minifying still pays nothing. **Planning Poker** is the one config that pays here regardless: it is settling a prediction rather than rewarding a clear, so calling your own 2 of 5 pays exactly what calling a 5 of 5 would. |
-| **The recurring bills** | Nothing: the storage plan and subscribed configs bill on clear only, so a redo is free of them. |
-| **The day's polls** | Every attempt burns 5 of the day's finite sequence, so a retry costs real time. |
-| **Audit damage** | Audits charge again: Volcano leaks every attempt, a 408 re-clocks, an outage re-rolls. |
+| Band | The gate | The swatch | The streak | The payout |
+| --- | --- | --- | --- | --- |
+| **PERFECT** — a full bar | Cleared | Won, and marked | Kept | Full, times `PERFECT_BONUS` |
+| **HEALTHY** — at or over the line | Cleared | Won | Kept | Full |
+| **OK** — within 15 points | Cleared, thin | Won | **Broken** | Cut in proportion |
+| **SHAKY** — within 25 points | **Held**: pay the peel and retry, or refuse the gate | Not won | Broken | Nothing |
+| **DANGER** — under the floor | **The run ends** | Not won | — | Nothing |
 
-The peel escalates with depth because width does: one config is a third of an opening
-build and a fourteenth of a summit build. Each row sits at roughly a quarter of the
-build the gate expects, which keeps a run three or four misses from death the whole
-way up.
+**The OK cut is not a separate penalty.** A gate pays on
+`coverage ÷ the gate's line`, capped, so a run that closes under the line is
+already paid less by the same arithmetic that pays every other band. What OK
+costs on top of that is the streak.
 
-**Death is the peel running out of configs**: a miss whose peel is as big as your
-build ends the run there. Both facts are on the stake receipt before you answer, the
-fatal one in red.
+**A shaky gate is a choice, and both exits are priced on the debrief.**
+
+- **Pay the peel and retry.** The peel is a quota of your occupied slots (20% at
+  the early gates rising to 35% at the summit, +10% at Elite, +15% at Champion,
+  and never more than half the build before gate 3). It is billed in KB at half
+  a slot's draft price, so you can settle it from the archive, or by dropping
+  configs, whichever you have. Sizes are whole numbers, so a bill your build
+  cannot match exactly is overpaid and the remainder is gone. Dropping refunds
+  nothing beyond what it settles, unless **Garbage Collection**
+  ([4.3](#43-roster)) is installed, in which case every dropped config also
+  refunds its sell value. Then the normal post-gate loop runs (review, shop,
+  prep, 5 fresh polls) and the meter starts over. Coverage and storage survive.
+- **Refuse the gate and end the run.** The climb banks as if you had died there:
+  `gatesCleared ÷ 13` of the archive. The run is over and nothing is owed. This
+  is not abandoning, which banks nothing, because the gate has already been
+  answered and failed, so there is no attempt left to duck.
+
+**A held gate pays no gate reward**, no interest and no extra-pick KB. The
+faucet KB earned inside the window is the retry's whole budget. **Planning
+Poker** is the one config that pays regardless, since it settles a prediction
+rather than rewarding a clear, so calling your own 2 of 5 pays what calling a 5
+of 5 would. The recurring bills collect on a clear only, so a retry is free of
+them.
+
+**Every attempt burns 5 of the day's finite sequence**, so a retry costs real
+time, and audits charge again: Volcano leaks every attempt, a 408 re-clocks, an
+outage re-rolls.
+
+**Death is a DANGER close.** The peel no longer runs a build to nothing, because
+refusing the gate is always available to a player who cannot pay. Both the
+survival floor and the healthy line are on the stake receipt before you answer,
+the fatal one in red.
+
+🟡 **Drift:** [2.5](#25-coverage-scoring) still describes the gate-multiplier
+coverage engine. The bands above read `coverageRatio.model.ts`, which is a flat
+per-gate gain (ADR-073). Two engines are live in the code; DVTD-d16l tracks the
+rewrite.
 
 ### 2.7 Victory and run end
 
-Clear all **13** gates (0 through 12) to win. A run ends three ways (ADR-037): the
-summit, a miss whose peel takes the whole build, or abandoning.
+Clear all **13** gates (0 through 12) to win. A run ends four ways (ADR-076): the
+summit, a gate closed in DANGER, refusing a gate held in SHAKY, or abandoning.
 
 Leftover storage is credited to **archived storage** in proportion to the climb:
 victory banks **100%**, death banks **gatesCleared ÷ 13** (die having cleared 6, keep
-46%), abandoning banks **nothing**, so walking away is never a cash-out. A
-tag-rescued run ([5.2](#52-the-shop)) banks only the gates it actually climbed.
+46%), refusing a shaky gate banks the same as death, and abandoning banks
+**nothing**, so walking away mid-gate is never a cash-out. A tag-rescued run
+([5.2](#52-the-shop)) banks only the gates it actually climbed.
 
 🟡 Continue-past-victory is confirmed but unbuilt. The victory *reward* is undecided,
 under one constraint: it must not be claimable by a zero-effort farm run.
@@ -725,9 +762,9 @@ warns that what you cannot pay lapses.
 ### 5.2 The Shop
 
 Clearing a non-final gate opens a Balatro-style **multi-buy shop** bounded by two
-things — the KB you hold and the slots you have free — and so does missing one, once
-the peel is paid: the retry shops with what it
-has, which is the only thing making the second attempt different from the first. Take
+things — the KB you hold and the slots you have free — and so does holding one in
+SHAKY, once the peel is paid: the retry shops with what it has, which is the only
+thing making the second attempt different from the first. Take
 as many actions as you can afford, in any order. The exit leads to the **prep page**
 and the shop stays open behind it until the next gate starts, so shop, prep, community,
 shop is a legal loop while waiting on tomorrow's polls. Nothing grades the exit: it is

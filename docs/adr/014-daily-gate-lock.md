@@ -7,10 +7,10 @@ terminal and amends [ADR-011](011-persistent-runs-daily-segments.md) Decision 2.
 ADR-011's rollover machinery and its Decision 3 survive unchanged.
 
 **Dead:** Decision 3's death rule;
-[ADR-071](071-the-closing-band-decides-the-gate.md) owns failure now, and it
-leans on this ADR harder than ADR-037 did: a gate that closes in OK or SHAKY
-repeats, and the price of repeating is a day, which only means anything because
-a day hands one gate's polls.
+[ADR-076](076-the-closing-band-decides-what-it-costs.md) owns failure now, and it
+leans on this ADR harder than ADR-037 did: a gate that closes in SHAKY is
+retried, and the price of retrying is a day, which only means anything because a
+day hands one gate's polls.
 
 ## Context
 

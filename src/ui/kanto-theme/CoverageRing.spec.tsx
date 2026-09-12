@@ -159,6 +159,45 @@ describe("CoverageRing", () => {
 		});
 	});
 
+	describe("a pinned ceiling", () => {
+		it("fills the arc to the held percentage rather than to the best reading", () => {
+			const { container } = render(
+				<CoverageRing held={73} demand={80} ceiling={100} title={TITLE} />
+			);
+
+			expect(offsetOf(container)).toBeCloseTo(27);
+		});
+
+		it("marks the bar while the build is still short of it", () => {
+			const { container } = render(
+				<CoverageRing held={73} demand={80} ceiling={100} title={TITLE} />
+			);
+
+			expect(tickOf(container)).not.toBeNull();
+		});
+
+		it("leaves the bar where it was once the build clears it", () => {
+			const short = render(
+				<CoverageRing held={73} demand={80} ceiling={100} title={TITLE} />
+			);
+			const cleared = render(
+				<CoverageRing held={85} demand={80} ceiling={100} title={TITLE} />
+			);
+
+			expect(tickOf(cleared.container)?.getAttribute("y1")).toBe(
+				tickOf(short.container)?.getAttribute("y1")
+			);
+		});
+
+		it("floats the ceiling as before when no pin is given", () => {
+			const { container } = render(
+				<CoverageRing held={260} demand={210} title={TITLE} />
+			);
+
+			expect(offsetOf(container)).toBe(0);
+		});
+	});
+
 	it("wears the screen's colour rather than carrying a green of its own", () => {
 		const { container } = render(
 			<CoverageRing held={148} demand={210} title={TITLE} />

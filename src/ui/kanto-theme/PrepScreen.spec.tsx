@@ -3,7 +3,10 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	PREP_COMMUNITY_LABEL,
-	PREP_SHOP_LABEL,
+	PREP_LOCK_NOTE,
+	PREP_OUTCOMES_TITLE,
+	PREP_POLLS_TITLE,
+	PREP_TAKES_TITLE,
 	kantoPrepCalibration,
 	kantoPrepChampion,
 	kantoPrepFatal,
@@ -16,15 +19,22 @@ import { PrepScreen } from "./PrepScreen.ui";
 
 const props = kantoPrepSealed();
 
+const sectionOf = (name: string) =>
+	screen.getByRole("heading", { name }).closest("section") as HTMLElement;
+
+const outcomeRowFor = (band: string) =>
+	within(sectionOf(PREP_OUTCOMES_TITLE))
+		.getByText(band)
+		.closest("div[class*='border-t'], div[class*='py-3']") as HTMLElement;
+
 describe("PrepScreen", () => {
-	it("stands the build beside what the gate will do to it", () => {
+	it("opens on the stakes rather than on the build", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("Build")).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Lavender gate" })
+			screen.getByRole("heading", { name: PREP_OUTCOMES_TITLE })
 		).toBeInTheDocument();
-		expect(screen.getByRole("heading", { name: "Audits" })).toBeInTheDocument();
+		expect(screen.queryByText("Build")).not.toBeInTheDocument();
 	});
 
 	it("reads as the gate about to be run, with what it carries", () => {
@@ -44,121 +54,233 @@ describe("PrepScreen", () => {
 		);
 	});
 
-	it("names the coverage the gate asks and what is held against it", () => {
-		render(<PrepScreen {...props} />);
+	describe("the coverage bar across the top", () => {
+		it("starts empty and says why", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("0.0")).toBeInTheDocument();
-		expect(screen.getByText("60%")).toBeInTheDocument();
+			expect(
+				screen.getByRole("img", { name: /0% of 40% needed/ })
+			).toBeInTheDocument();
+			expect(screen.getByText(/Coverage starts at zero/)).toBeInTheDocument();
+		});
+
+		it("names the bands rather than the boundaries between them", () => {
+			const { container } = render(<PrepScreen {...props} />);
+
+			const marks = container.querySelector(".coverage-bar")?.textContent;
+
+			expect(marks).toContain("SHAKY");
+			expect(marks).not.toContain("survive");
+		});
 	});
 
-	it("draws the build as occupancy, with no config to hover", () => {
-		render(<PrepScreen {...props} />);
+	describe("where you finish", () => {
+		it("lays out all five bands, best outcome first and worst last", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(
-			screen.getByText("4 configs · 7 of 8 slots · 1 free")
-		).toBeInTheDocument();
-		expect(
-			screen.queryByText("hover a config to find its room on the track")
-		).not.toBeInTheDocument();
+			const table = sectionOf(PREP_OUTCOMES_TITLE);
+			const at = (band: string) => table.textContent?.indexOf(band) ?? -1;
+
+			for (const band of ["PERFECT", "HEALTHY", "OK", "SHAKY", "DANGER"]) {
+				expect(within(table).getByText(band)).toBeInTheDocument();
+			}
+
+			expect(at("PERFECT")).toBeLessThan(at("HEALTHY"));
+			expect(at("HEALTHY")).toBeLessThan(at("DANGER"));
+		});
+
+		it("cuts the ranges on the gate's own ladder", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				within(outcomeRowFor("PERFECT")).getByText("100%")
+			).toBeInTheDocument();
+			expect(screen.getByText("40 – 99%")).toBeInTheDocument();
+			expect(screen.getByText("25 – 39%")).toBeInTheDocument();
+			expect(screen.getByText("15 – 24%")).toBeInTheDocument();
+			expect(screen.getByText("under 15%")).toBeInTheDocument();
+		});
+
+		it("says a clear takes the swatch and opens the next gate", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				within(outcomeRowFor("HEALTHY")).getByText(
+					/The Lavender swatch is yours and gate 5 opens/
+				)
+			).toBeInTheDocument();
+		});
+
+		it("says OK gets paid but leaves the gate shut", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				screen.getByText(/You survive and get paid, but the gate stays shut/)
+			).toBeInTheDocument();
+		});
+
+		it("pays every band that survives, and nothing at all below the floor", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				within(outcomeRowFor("DANGER")).getByText("Nothing")
+			).toBeInTheDocument();
+			expect(within(outcomeRowFor("HEALTHY")).getByText(/KB/)).toBeVisible();
+		});
+
+		it("pays a clear more than a scrape", () => {
+			render(<PrepScreen {...props} />);
+
+			const kbOf = (band: string) =>
+				Number(
+					within(outcomeRowFor(band))
+						.getByText(/KB/)
+						.textContent?.match(/(\d+)/)?.[1]
+				);
+
+			expect(kbOf("HEALTHY")).toBeGreaterThan(kbOf("SHAKY"));
+		});
+
+		it("pays a full bar a bonus over the best a clear can do", () => {
+			render(<PrepScreen {...props} />);
+
+			const kbIn = (band: string) =>
+				within(outcomeRowFor(band))
+					.getByText(/KB/)
+					.textContent?.match(/\d+/g)
+					?.map(Number) ?? [];
+
+			expect(Math.min(...kbIn("PERFECT"))).toBeGreaterThan(
+				Math.max(...kbIn("HEALTHY"))
+			);
+		});
+
+		it("names the run's end without a payout to soften it", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				screen.getByText(/The run ends the moment the gate shuts/)
+			).toBeInTheDocument();
+		});
 	});
 
-	it("sends a build the player wants changed back to the shop", () => {
-		render(<PrepScreen {...props} />);
+	describe("what it takes", () => {
+		it("spans the gain, since the answer types are still sealed", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(
-			screen.getByRole("button", { name: PREP_SHOP_LABEL })
-		).toBeInTheDocument();
+			const takes = sectionOf(PREP_TAKES_TITLE);
+
+			expect(within(takes).getByText("Each right answer")).toBeInTheDocument();
+			expect(within(takes).getByText(/^\+\d/)).toBeInTheDocument();
+			expect(within(takes).getByText(/^−\d/)).toBeInTheDocument();
+		});
+
+		it("shows the build multiplying a base it did not choose", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(screen.getByText("5–8 base × 3 build")).toBeInTheDocument();
+		});
+
+		it("no longer counts rights toward a line", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(screen.queryByText(/Rights to survive/)).not.toBeInTheDocument();
+		});
 	});
 
-	it("withholds the window while nothing reveals it", () => {
-		render(<PrepScreen {...props} />);
+	describe("the five polls", () => {
+		it("withholds the window while nothing reveals it", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(screen.getAllByText("???")).toHaveLength(2);
-		expect(screen.getAllByText("?")).toHaveLength(5);
+			expect(screen.getAllByText("???")).toHaveLength(2);
+			expect(screen.getAllByText("?")).toHaveLength(5);
+		});
+
+		it("names no next gate at all while the window is sealed", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(screen.queryByText("next gate")).not.toBeInTheDocument();
+		});
+
+		it("says why the categories matter more than usual", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				screen.getByText(/a matching config pays ×1.25 on top of your build/)
+			).toBeInTheDocument();
+		});
+
+		it("opens the whole window at once when Prefetch is in the build", () => {
+			render(<PrepScreen {...kantoPrepPrefetched()} />);
+
+			const polls = sectionOf(PREP_POLLS_TITLE);
+
+			expect(within(polls).getByText("Prefetch")).toHaveClass("badge-theme");
+			expect(screen.getByText("1 single")).toBeInTheDocument();
+			expect(screen.getByText("4 multiple")).toBeInTheDocument();
+			expect(screen.getByText("typescript 3")).toBeInTheDocument();
+			expect(screen.getByText("git 5")).toBeInTheDocument();
+			expect(screen.queryByText("???")).not.toBeInTheDocument();
+		});
 	});
 
-	it("names no next gate at all while the window is sealed", () => {
-		render(<PrepScreen {...props} />);
+	describe("the audits it deals", () => {
+		it("draws the audit its own gate deals, and counts it", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(screen.queryByText("next gate")).not.toBeInTheDocument();
+			expect(screen.getByText("429")).toBeInTheDocument();
+			expect(screen.getByText("Too Many Requests")).toBeInTheDocument();
+			expect(screen.getByText("1 this gate")).toBeInTheDocument();
+		});
+
+		it("bills the clear on the audits heading", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(screen.getByText("bills")).toBeInTheDocument();
+			expect(screen.getByText("−32 KB")).toBeInTheDocument();
+			expect(screen.getByText("on a clear")).toBeInTheDocument();
+		});
+
+		it("bills nothing at a gate with no plan and no subscription", () => {
+			render(<PrepScreen {...kantoPrepCalibration()} />);
+
+			expect(screen.queryByText("bills")).not.toBeInTheDocument();
+		});
+
+		it("draws no audit panel at a gate that deals none", () => {
+			render(<PrepScreen {...kantoPrepCalibration()} />);
+
+			expect(screen.getByText("none this gate")).toBeInTheDocument();
+			expect(screen.queryByText("audits")).not.toBeInTheDocument();
+		});
 	});
 
-	it("opens the whole window at once when Prefetch is in the build", () => {
-		render(<PrepScreen {...kantoPrepPrefetched()} />);
+	describe("the footer", () => {
+		it("says what starting costs, without pricing a peel", () => {
+			render(<PrepScreen {...props} />);
 
-		const polls = screen
-			.getByRole("heading", { name: "Lavender gate" })
-			.closest("section");
-		expect(within(polls as HTMLElement).getByText("Prefetch")).toHaveClass(
-			"badge-theme"
-		);
-		expect(screen.getByText("1 single")).toBeInTheDocument();
-		expect(screen.getByText("4 multiple")).toBeInTheDocument();
-		expect(screen.getByText("typescript 3")).toBeInTheDocument();
-		expect(screen.getByText("javascript 2")).toBeInTheDocument();
-		expect(screen.getByText("git 5")).toBeInTheDocument();
-		expect(screen.queryByText("???")).not.toBeInTheDocument();
-	});
+			expect(screen.getByText(PREP_LOCK_NOTE)).toBeInTheDocument();
+			expect(screen.queryByText(/peels/)).not.toBeInTheDocument();
+		});
 
-	it("draws the audit its own gate deals, and counts it", () => {
-		render(<PrepScreen {...props} />);
+		it("offers the community board without leaving the gate", () => {
+			render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("429")).toBeInTheDocument();
-		expect(screen.getByText("Too Many Requests")).toBeInTheDocument();
-		expect(screen.getByText("1 this gate")).toBeInTheDocument();
-	});
+			expect(
+				screen.getByRole("button", { name: PREP_COMMUNITY_LABEL })
+			).toBeInTheDocument();
+		});
 
-	it("bills the clear on the audits heading", () => {
-		render(<PrepScreen {...props} />);
+		it("locks the start behind the countdown once today's polls are spent", () => {
+			render(<PrepScreen {...kantoPrepSpent()} />);
 
-		expect(screen.getByText("bills")).toBeInTheDocument();
-		expect(screen.getByText("−32 KB")).toBeInTheDocument();
-		expect(screen.getByText("on a clear")).toBeInTheDocument();
-	});
-
-	it("prices the clear and the miss beside the press that starts the gate", () => {
-		render(<PrepScreen {...props} />);
-
-		expect(screen.getByText("+160 KB")).toBeInTheDocument();
-		expect(screen.getByText("Lavender swatch")).toBeInTheDocument();
-		expect(screen.getByText("peels 1 or 2 configs")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "Start Lavender" })
-		).toBeInTheDocument();
-	});
-
-	it("offers the community board without leaving the gate", () => {
-		render(<PrepScreen {...props} />);
-
-		expect(
-			screen.getByRole("button", { name: PREP_COMMUNITY_LABEL })
-		).toBeInTheDocument();
-	});
-
-	it("keeps the footer to one line while a peel has no news", () => {
-		render(<PrepScreen {...props} />);
-
-		expect(screen.queryByText(/occupied slots/)).not.toBeInTheDocument();
-	});
-
-	it("bills nothing at a gate with no plan and no subscription", () => {
-		render(<PrepScreen {...kantoPrepCalibration()} />);
-
-		expect(screen.queryByText("bills")).not.toBeInTheDocument();
-	});
-
-	it("draws no audit panel at a gate that deals none", () => {
-		render(<PrepScreen {...kantoPrepCalibration()} />);
-
-		expect(screen.getByText("none this gate")).toBeInTheDocument();
-		expect(screen.queryByText("audits")).not.toBeInTheDocument();
-	});
-
-	it("says a miss costs nothing at the calibration gate", () => {
-		render(<PrepScreen {...kantoPrepCalibration()} />);
-
-		expect(screen.getByText("costs nothing")).toBeInTheDocument();
-		expect(screen.queryByText(/occupied slots/)).not.toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: "Start Lavender" })
+			).toBeDisabled();
+			expect(
+				screen.getByText("Tomorrow's polls open in 7h 14m.")
+			).toBeInTheDocument();
+		});
 	});
 
 	describe("at the summit", () => {
@@ -178,11 +300,11 @@ describe("PrepScreen", () => {
 			expect(screen.getByText("1.9 MB")).toBeInTheDocument();
 		});
 
-		it("names no gate after the last one", () => {
+		it("promises the run rather than a gate after the last one", () => {
 			render(<PrepScreen {...champion} />);
 
 			expect(
-				screen.getByText("the summit — nothing after this")
+				within(outcomeRowFor("HEALTHY")).getByText(/the run is won/)
 			).toBeInTheDocument();
 		});
 
@@ -204,35 +326,13 @@ describe("PrepScreen", () => {
 				screen.getByText(/short — what you cannot pay lapses\./)
 			).toBeInTheDocument();
 		});
-
-		it("credits the audit that deepened the peel", () => {
-			render(<PrepScreen {...champion} />);
-
-			expect(screen.getByText(/deepened by 410 Gone/)).toBeInTheDocument();
-			expect(
-				screen.getByText(/12 of your 24 occupied slots/)
-			).toBeInTheDocument();
-		});
 	});
 
-	it("locks the start behind the countdown once today's polls are spent", () => {
-		render(<PrepScreen {...kantoPrepSpent()} />);
-
-		expect(
-			screen.getByRole("button", { name: "Start Lavender" })
-		).toBeDisabled();
-		expect(
-			screen.getByText("Tomorrow's polls open in 7h 14m.")
-		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: PREP_SHOP_LABEL })).toBeEnabled();
-	});
-
-	it("says a peel that empties the build ends the run", () => {
+	it("reads a build already under the floor as the run ending", () => {
 		render(<PrepScreen {...kantoPrepFatal()} />);
 
-		expect(screen.getByText("ends the run")).toBeInTheDocument();
 		expect(
-			screen.getByText(/A peel this deep can end the run\./)
+			screen.getByRole("img", { name: /62% of 95% needed · DANGER/ })
 		).toBeInTheDocument();
 	});
 
@@ -240,11 +340,7 @@ describe("PrepScreen", () => {
 		it("gives every way out of the screen an icon rather than an arrow", () => {
 			render(<PrepScreen {...props} />);
 
-			for (const name of [
-				"Start Lavender",
-				"Community",
-				"change it in the shop",
-			]) {
+			for (const name of ["Start Lavender", PREP_COMMUNITY_LABEL]) {
 				expect(
 					screen.getByRole("button", { name }).querySelector("svg")
 				).not.toBeNull();

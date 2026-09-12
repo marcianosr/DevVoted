@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 import { Badge } from "./Badge.ui";
+import { CoverageBar, type CoverageBarProps } from "./CoverageBar.ui";
 import { CoverageRing, type CoverageRingProps } from "./CoverageRing.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
 import { Swatch, type SwatchFill, type SwatchState } from "./Swatch.ui";
@@ -46,8 +47,9 @@ const PLACEMENT = {
 } satisfies Record<NotePlacement, string | undefined>;
 
 type HeaderReading =
-	| { ring: CoverageRingProps; coverage?: never }
-	| { coverage?: HeaderCoverage; ring?: never };
+	| { ring: CoverageRingProps; bar?: never; coverage?: never }
+	| { bar: CoverageBarProps; ring?: never; coverage?: never }
+	| { coverage?: HeaderCoverage; ring?: never; bar?: never };
 
 export type HeaderProps = {
 	swatch: GateSwatch;
@@ -117,6 +119,14 @@ export const Header = ({
 			<header className={RINGED}>
 				<CoverageRing {...reading.ring} />
 				<div className={ROWS}>{rows}</div>
+			</header>
+		);
+
+	if (reading.bar !== undefined)
+		return (
+			<header className={HEADER}>
+				{rows}
+				<CoverageBar {...reading.bar} />
 			</header>
 		);
 

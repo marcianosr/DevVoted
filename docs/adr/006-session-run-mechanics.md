@@ -11,7 +11,7 @@ code and beans cite these decisions by number.
 **Dead:** the gate-as-composed-checklist model and everything built on it.
 ADR-035 moved the friction onto the gate, ADR-074 owns width and killed the
 storage cap, ADR-047 owns config size, ADR-048 renamed the container, ADR-055
-deleted families, ADR-071 owns what a missed gate does. See the collapsed
+deleted families, ADR-076 owns what a missed gate does. See the collapsed
 decisions below.
 
 ## Context

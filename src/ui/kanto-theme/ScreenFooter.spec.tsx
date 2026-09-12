@@ -2,19 +2,53 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import {
-	kantoGateZeroFooter,
-	kantoPrepChampion,
-	kantoPrepSealed,
-} from "~/test/kantoPoll.factory";
+import { kantoGateZeroFooter } from "~/test/kantoPoll.factory";
+import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
-import { ScreenFooter } from "./ScreenFooter.ui";
+import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const props = kantoGateZeroFooter();
 
+const BARE_BUILD_REFUSAL =
+	"A bare build never clears, so the run will not start until one config is installed.";
+
+const REFUSED: ScreenFooterProps = { ...props, refusal: BARE_BUILD_REFUSAL };
+
+const ONE_STAKE: ScreenFooterProps = {
+	...props,
+	stakes: [
+		{
+			label: "gate 0 asks",
+			figures: [
+				{ label: "3% coverage" },
+				{ label: "+32 KB on a clear", color: "viridian" },
+				{ label: "no peel · no audits" },
+			],
+		},
+	],
+};
+
+const TWO_STAKES: ScreenFooterProps = {
+	stakes: [
+		{
+			label: "clear",
+			figures: [
+				{ label: "+160 KB", color: "viridian" },
+				{
+					label: "Lavender swatch",
+					swatch: { state: "current", swatch: gateSwatchAt(4) },
+				},
+			],
+		},
+		{ label: "miss", figures: [{ label: "peels 1 or 2 configs" }] },
+	],
+	aside: { label: "Community", icon: "community", onPress: () => {} },
+	action: { label: "Start Lavender", icon: "gate", onPress: () => {} },
+};
+
 describe("ScreenFooter", () => {
 	it("names what the gate asks and every figure it asks for", () => {
-		render(<ScreenFooter {...props} />);
+		render(<ScreenFooter {...ONE_STAKE} />);
 
 		expect(screen.getByText("gate 0 asks")).toBeInTheDocument();
 		expect(screen.getByText("3% coverage")).toBeInTheDocument();
@@ -23,13 +57,13 @@ describe("ScreenFooter", () => {
 	});
 
 	it("badges each figure apart from the others", () => {
-		render(<ScreenFooter {...props} />);
+		render(<ScreenFooter {...ONE_STAKE} />);
 
 		expect(screen.getByText("3% coverage")).toHaveClass("badge-theme");
 	});
 
 	it("colours the payout as a gain and leaves the demands plain", () => {
-		render(<ScreenFooter {...props} />);
+		render(<ScreenFooter {...ONE_STAKE} />);
 
 		expect(screen.getByText("+32 KB on a clear")).toHaveAttribute(
 			"data-screen-theme",
@@ -40,18 +74,21 @@ describe("ScreenFooter", () => {
 		);
 	});
 
-	it("refuses the start and says why, while the build is bare", async () => {
-		render(<ScreenFooter {...props} />);
+	it("refuses the start and says why, when a screen hands it a reason", async () => {
+		render(<ScreenFooter {...REFUSED} />);
 
 		const start = screen.getByRole("button", { name: "start gate 0" });
 		await userEvent.click(start);
 
 		expect(start).toBeDisabled();
-		expect(
-			screen.getByText(
-				"A bare build never clears, so the run will not start until one config is installed."
-			)
-		).toBeInTheDocument();
+		expect(screen.getByText(BARE_BUILD_REFUSAL)).toBeInTheDocument();
+	});
+
+	it("says nothing under a refused start that was given no reason", () => {
+		render(<ScreenFooter {...props} />);
+
+		expect(screen.getByRole("button", { name: "start gate 0" })).toBeDisabled();
+		expect(screen.queryByText(BARE_BUILD_REFUSAL)).toBeNull();
 	});
 
 	it("keeps a refused start neutral rather than painting it as unaffordable", () => {
@@ -66,7 +103,7 @@ describe("ScreenFooter", () => {
 		const onPress = vi.fn();
 		render(
 			<ScreenFooter
-				{...props}
+				{...REFUSED}
 				action={{ label: "start gate 0", onPress }}
 				refusal={undefined}
 			/>
@@ -87,6 +124,12 @@ describe("ScreenFooter", () => {
 		).toHaveClass("ml-auto");
 	});
 
+	it("draws no stake row for a screen that states its own stakes", () => {
+		render(<ScreenFooter {...props} />);
+
+		expect(screen.queryByText("gate 0 asks")).toBeNull();
+	});
+
 	it("rules itself off from the screen above", () => {
 		const { container } = render(<ScreenFooter {...props} />);
 
@@ -97,7 +140,7 @@ describe("ScreenFooter", () => {
 	});
 
 	describe("over more than one stake", () => {
-		const prep = kantoPrepSealed().footer;
+		const prep = TWO_STAKES;
 
 		it("labels each stake and keeps its own figures with it", () => {
 			render(<ScreenFooter {...prep} />);
@@ -128,9 +171,13 @@ describe("ScreenFooter", () => {
 		});
 
 		it("spends a second line on a cost with news in it", () => {
-			render(<ScreenFooter {...kantoPrepChampion().footer} />);
+			render(
+				<ScreenFooter {...prep} note="A peel this deep can end the run." />
+			);
 
-			expect(screen.getByText(/deepened by 410 Gone/)).toBeInTheDocument();
+			expect(
+				screen.getByText("A peel this deep can end the run.")
+			).toBeInTheDocument();
 		});
 
 		it("says nothing under the rows while nothing needs saying", () => {

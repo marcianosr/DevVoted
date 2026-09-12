@@ -3,8 +3,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-	baseSlots,
 	createKantoNewRunScreenProps,
+	freeWeightAt,
 	kantoHandProps,
 	kantoNewRunAt,
 } from "~/test/kantoPoll.factory";
@@ -52,7 +52,7 @@ export const BuildFull: Story = {
 };
 
 export const WidenedFromTheArchive: Story = {
-	render: () => <NewRunScreen {...kantoNewRunAt(["js"], 1)} />,
+	render: () => <NewRunScreen {...kantoNewRunAt(["js"], 1, 1024)} />,
 };
 
 export const ArchiveTooThin: Story = {
@@ -61,6 +61,6 @@ export const ArchiveTooThin: Story = {
 
 export const NothingSuggested: Story = {
 	render: () => (
-		<NewRunScreen {...props} hand={kantoHandProps([], baseSlots, false)} />
+		<NewRunScreen {...props} hand={kantoHandProps([], freeWeightAt(), false)} />
 	),
 };

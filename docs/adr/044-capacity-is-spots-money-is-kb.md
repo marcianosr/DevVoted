@@ -54,7 +54,7 @@ pillar 2).
 
 It routes to the peel screen, which became one screen with two entrances, a
 missed gate and an overflow. Both are gone:
-[ADR-071](071-the-closing-band-decides-the-gate.md) took the peel off the miss,
+[ADR-076](076-the-closing-band-decides-what-it-costs.md) keeps the peel on a shaky miss and adds a second trigger,
 and [ADR-074](074-weight-is-what-the-build-costs-to-run.md) removed the ceiling
 an overflow needs. The screen keeps one entrance, an upkeep bill the run cannot
 pay, and the way out is drop or minify.

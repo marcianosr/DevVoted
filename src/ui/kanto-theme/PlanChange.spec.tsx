@@ -5,101 +5,73 @@ import { planChangeFor } from "~/test/kantoPoll.factory";
 
 import { PlanChange } from "./PlanChange.ui";
 
-const FIGURES = [{ label: "cap", value: "2 MB → 1 MB" }] as const;
+const FIGURES = [{ label: "free weight", value: "4 → 8" }] as const;
 
 const props = {
-	cap: "1 MB",
-	prose: "Dropping a rung takes effect now.",
+	weight: "8",
+	prose: "Bought once, and it lasts the run.",
 	figures: FIGURES,
 };
 
 describe("PlanChange", () => {
-	it("names the plan being moved to, not the one being left", () => {
-		render(<PlanChange {...props} direction="downgrade" />);
+	it("names the free weight being moved to, not the one being left", () => {
+		render(<PlanChange {...props} />);
 
 		expect(
-			screen.getByRole("heading", { name: "Storage plan 1 MB" })
+			screen.getByRole("heading", { name: "Free weight 8" })
 		).toBeInTheDocument();
 	});
 
-	it("calls a drop a drop", () => {
-		render(<PlanChange {...props} direction="downgrade" />);
-
-		expect(screen.getByText("downgrade")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "drop to 1 MB" })
-		).toBeInTheDocument();
-	});
-
-	it("rents on the way up rather than buying", () => {
-		render(<PlanChange {...props} direction="upgrade" cap="2 MB" />);
+	it("carries rather than rents, because the purchase is a one-off", () => {
+		render(<PlanChange {...props} />);
 
 		expect(screen.getByText("upgrade")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "rent 2 MB" })
+			screen.getByRole("button", { name: "carry 8 free" })
 		).toBeInTheDocument();
 	});
 
 	it("cannot name one rung in its heading and another on its press", () => {
-		render(<PlanChange {...props} direction="upgrade" cap="10 MB" />);
+		render(<PlanChange {...props} weight="16" />);
 
 		expect(
-			screen.getByRole("heading", { name: "Storage plan 10 MB" })
+			screen.getByRole("heading", { name: "Free weight 16" })
 		).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "rent 10 MB" })
+			screen.getByRole("button", { name: "carry 16 free" })
 		).toBeInTheDocument();
 	});
 });
 
-describe("PlanChange against the engine", () => {
-	it("reproduces the mock's ledger from the ladder", () => {
-		render(<PlanChange {...planChangeFor(3, 2, 0)} />);
+describe("PlanChange against its fixture", () => {
+	it("reads the climb out of the ladder", () => {
+		render(<PlanChange {...planChangeFor(0, 1, 512)} />);
 
-		expect(screen.getByText("downgrade")).toBeInTheDocument();
 		expect(
-			screen.getByRole("heading", { name: "Storage plan 1 MB" })
+			screen.getByRole("heading", { name: "Free weight 8" })
 		).toBeInTheDocument();
-		expect(screen.getByText("2 MB → 1 MB")).toBeInTheDocument();
-		expect(screen.getByText("224 KB → 96 KB")).toBeInTheDocument();
-		expect(screen.getByText("0 KB")).toBeInTheDocument();
+		expect(screen.getByText("4 → 8")).toBeInTheDocument();
 	});
 
-	it("counts nothing burnt in the ledger's own unit", () => {
-		render(<PlanChange {...planChangeFor(3, 2, 0)} />);
+	it("prices the rung and names what the run holds against it", () => {
+		render(<PlanChange {...planChangeFor(0, 1, 512)} />);
 
-		expect(screen.queryByText("0 B")).not.toBeInTheDocument();
-	});
-
-	it("burns whatever will not fit under the new cap", () => {
-		render(<PlanChange {...planChangeFor(3, 2, 1536)} />);
-
+		expect(screen.getByText("256 KB")).toBeInTheDocument();
 		expect(screen.getByText("512 KB")).toBeInTheDocument();
 	});
 
-	it("reddens a burn only when there is one", () => {
-		const { rerender } = render(<PlanChange {...planChangeFor(3, 2, 1536)} />);
-		expect(screen.getByText("512 KB")).toHaveAttribute(
-			"data-screen-theme",
-			"cinnabar"
-		);
+	it("reddens the cost, since it leaves the balance", () => {
+		render(<PlanChange {...planChangeFor(0, 1, 512)} />);
 
-		rerender(<PlanChange {...planChangeFor(3, 2, 0)} />);
-		expect(screen.getByText("0 KB")).not.toHaveAttribute("data-screen-theme");
-	});
-
-	it("reads a climb as an upgrade without being told twice", () => {
-		render(<PlanChange {...planChangeFor(2, 3, 512)} />);
-
-		expect(screen.getByText("upgrade")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "rent 2 MB" })
-		).toBeInTheDocument();
+			screen.getByText("256 KB").closest("[data-screen-theme]")
+		).toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 
-	it("burns nothing on the way up", () => {
-		render(<PlanChange {...planChangeFor(2, 3, 1024)} />);
+	it("climbs two rungs as readily as one, naming both ends", () => {
+		render(<PlanChange {...planChangeFor(0, 2, 1024)} />);
 
-		expect(screen.getByText("0 KB")).toBeInTheDocument();
+		expect(screen.getByText("4 → 12")).toBeInTheDocument();
+		expect(screen.getByText("768 KB")).toBeInTheDocument();
 	});
 });

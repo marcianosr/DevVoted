@@ -23,11 +23,11 @@ describe("ShopScreen", () => {
 		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("counts the slots the build has spent, not what pays a poll", () => {
+	it("names what the build costs to run every gate", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(
-			screen.getByText("5 configs · 7 of 10 slots · 3 free")
+			screen.getByText("7 weight · 16 KB a gate · 1 to 32 KB")
 		).toBeInTheDocument();
 	});
 
@@ -51,7 +51,6 @@ describe("ShopScreen", () => {
 				build={props.build}
 				registry={props.registry}
 				header={header}
-				plan={props.plan}
 			/>
 		);
 
@@ -61,20 +60,23 @@ describe("ShopScreen", () => {
 		expect(root).not.toHaveAttribute("data-screen-theme");
 	});
 
-	it("prices the room the build has not bought under the room it has", () => {
+	it("sells no room, because nothing caps the build any more", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getAllByText("empty slot")).toHaveLength(2);
+		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "buy slot 11 · 120 KB · 24 KB short" })
-		).toBeInTheDocument();
+			screen.queryByRole("button", { name: /^buy slot/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /cash this slot/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("names the balance its offers are priced against", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getByText("96 KB")).toBeInTheDocument();
-		expect(screen.getByText("balance")).toBeInTheDocument();
+		const funds = screen.getByText("balance").parentElement;
+		expect(funds).toHaveTextContent("96 KB");
 	});
 
 	it("reads as the shop of the gate it cleared, facing the gate ahead", () => {
@@ -86,23 +88,40 @@ describe("ShopScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("keeps the plan ladder in the build's own column", () => {
+	it("splits the build's weight into what is covered and what is billed", () => {
 		render(<ShopScreen {...props} />);
 
-		const heading = screen.getByRole("heading", { name: "Storage plan" });
-		expect(heading.closest("div")).toContainElement(
-			screen.getByText("Build").closest("section")
-		);
 		expect(
-			screen.getByRole("list", { name: "storage plan rungs" })
+			screen.getByText("5 configs · 7 weight · 4 covered · 3 billable")
 		).toBeInTheDocument();
 	});
 
-	it("bills the held cap at the next clear", () => {
+	it("sells the next rung of free weight under the build it applies to", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getByText("Your cap")).toBeInTheDocument();
-		expect(screen.getByText("224 KB")).toBeInTheDocument();
+		const offer = screen.getByRole("button", {
+			name: /^carry 8 free weight/,
+		});
+		expect(offer.closest("section")).toContainElement(
+			screen.getByText("Build")
+		);
+	});
+
+	it("names what opens the rung after the one on sale", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.getByText(/opens once a run has held/)).toBeInTheDocument();
+	});
+
+	it("keeps no ladder panel beside the build", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(
+			screen.queryByRole("list", { name: "free weight rungs" })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("heading", { name: "What it costs to run" })
+		).not.toBeInTheDocument();
 	});
 
 	it("footnotes what the hidden padlock needs", () => {

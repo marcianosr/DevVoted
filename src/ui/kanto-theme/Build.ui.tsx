@@ -9,12 +9,13 @@ import { SlotBox, type SlotCash } from "./SlotBox.ui";
 import { SlotOffer, type SlotOfferProps } from "./SlotOffer.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
 import { Typography } from "./Typography.ui";
+import { WeightTrack, freeWeightOf, type UpkeepRung } from "./WeightTrack.ui";
+import { WeightOffer, type WeightOfferProps } from "./WeightOffer.ui";
 
 const BAND = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
 const WRAP_LAYOUT = "flex flex-wrap items-center gap-3";
 const COLUMN_LAYOUT = "flex flex-col gap-3";
-
 export type BuildLayout = "wrap" | "column";
 export type BuildTrack = "configs" | "occupancy";
 
@@ -33,19 +34,38 @@ const FOLD_BODY = "pt-3";
 const CARET_GLYPH = "›";
 const SEPARATOR = "·";
 const TITLE = "Build";
+const WEIGHT_WORD = "weight";
+const COVERED_WORD = "covered";
+const BILLABLE_WORD = "billable";
 
 export type BuildSlots = { used: number; capacity: number };
+
+export type BuildWeight = {
+	rungs: readonly UpkeepRung[];
+	max: number;
+	offers?: readonly WeightOfferProps[];
+};
 
 type BuildCount =
 	| {
 			slots: BuildSlots;
+			weight?: never;
 			cash?: SlotCash;
 			offer?: SlotOfferProps;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
 	| {
+			weight: BuildWeight;
 			slots?: never;
+			cash?: never;
+			offer?: never;
+			highlight?: string;
+			onHighlight?: (name?: string) => void;
+	  }
+	| {
+			slots?: never;
+			weight?: never;
 			cash?: never;
 			offer?: never;
 			highlight?: never;
@@ -57,7 +77,19 @@ const roomOf = ({ used, capacity }: BuildSlots) =>
 
 export const configCountOf = (total: number) => `${total} configs`;
 
-const summaryOf = (total: number, count: BuildCount) => {
+const weightWords = (weight: number) => `${weight} ${WEIGHT_WORD}`;
+
+const summaryOf = (
+	total: number,
+	count: BuildCount,
+	weight: number
+): string => {
+	if (count.weight !== undefined) {
+		const free = freeWeightOf(count.weight.rungs);
+		const covered = Math.min(weight, free);
+		const billable = Math.max(0, weight - free);
+		return `${configCountOf(total)} ${SEPARATOR} ${weightWords(weight)} ${SEPARATOR} ${covered} ${COVERED_WORD} ${SEPARATOR} ${billable} ${BILLABLE_WORD}`;
+	}
 	if (count.slots === undefined) return configCountOf(total);
 
 	const { used, capacity } = count.slots;
@@ -77,6 +109,8 @@ export type BuildProps = {
 	skippedNote?: string;
 	skippedOpen?: boolean;
 	heading?: boolean;
+	readout?: boolean;
+	list?: boolean;
 	emptyLabel?: string;
 	resting?: string;
 	track?: BuildTrack;
@@ -97,6 +131,9 @@ const fillsOf = (
 	configs: readonly ConfigChipProps[],
 	skipped: readonly ConfigChipProps[]
 ) => [...configs, ...skipped].flatMap(fillOf);
+
+const weightOf = (fills: readonly SlotTrackFill[]) =>
+	fills.reduce((total, fill) => total + fill.slots, 0);
 
 const OCCUPANCY_NAME = "build";
 
@@ -165,6 +202,8 @@ export const Build = ({
 	skippedNote,
 	skippedOpen = false,
 	heading = true,
+	readout = true,
+	list = true,
 	emptyLabel,
 	resting,
 	track = "configs",
@@ -172,27 +211,24 @@ export const Build = ({
 	onToggleInfo,
 	...count
 }: BuildProps) => {
-	const width: ChipWidth | undefined = layout === "column" ? "full" : undefined;
+	const width: ChipWidth | undefined = layout === "wrap" ? undefined : "full";
 	const highlight = count.highlight ?? openInfo;
+	const fills = fillsOf(configs, skipped);
 
-	return (
-		<section className={BAND}>
-			{!heading ? null : (
-				<div className={TITLE_ROW}>
-					<Typography variant="title">{TITLE}</Typography>
-					<Typography variant="hint" as="span">
-						{summaryOf(configs.length + skipped.length, count)}
-					</Typography>
-				</div>
+	const reading = (
+		<>
+			{count.weight === undefined ? null : (
+				<WeightTrack
+					fills={fills}
+					rungs={count.weight.rungs}
+					max={count.weight.max}
+					highlight={highlight}
+				/>
 			)}
 
 			{count.slots === undefined ? null : (
 				<SlotTrack
-					fills={
-						track === "occupancy"
-							? occupancyFillOf(count.slots)
-							: fillsOf(configs, skipped)
-					}
+					fills={track === "occupancy" ? occupancyFillOf(count.slots) : fills}
 					capacity={count.slots.capacity}
 					offered={count.offer !== undefined}
 					highlight={highlight}
@@ -200,28 +236,60 @@ export const Build = ({
 					caption={track === "configs"}
 				/>
 			)}
+		</>
+	);
 
-			<div className={LAYOUT[layout]}>
-				{emptyLabel === undefined || configs.length > 0 ? null : (
-					<SlotBox label={emptyLabel} />
-				)}
-				{configs.map((config, index) => (
-					<Chip
-						key={config.name ?? index}
-						config={config}
-						width={width}
-						openInfo={openInfo}
-						onToggleInfo={onToggleInfo}
-						highlight={highlight}
-						onHighlight={count.onHighlight}
-					/>
-				))}
-				{count.slots === undefined ? null : (
-					<Vacancy slots={count.slots} cash={count.cash} offer={count.offer} />
-				)}
-			</div>
+	const installed = (
+		<>
+			{emptyLabel === undefined || configs.length > 0 ? null : (
+				<SlotBox label={emptyLabel} />
+			)}
+			{configs.map((config, index) => (
+				<Chip
+					key={config.name ?? index}
+					config={config}
+					width={width}
+					openInfo={openInfo}
+					onToggleInfo={onToggleInfo}
+					highlight={highlight}
+					onHighlight={count.onHighlight}
+				/>
+			))}
+		</>
+	);
 
-			{skipped.length === 0 ? null : (
+	const offered = (
+		<>
+			{count.slots === undefined ? null : (
+				<Vacancy slots={count.slots} cash={count.cash} offer={count.offer} />
+			)}
+			{(count.weight?.offers ?? []).map((offer) => (
+				<WeightOffer key={offer.to} {...offer} />
+			))}
+		</>
+	);
+
+	return (
+		<section className={BAND}>
+			{!heading ? null : (
+				<div className={TITLE_ROW}>
+					<Typography variant="title">{TITLE}</Typography>
+					<Typography variant="hint" as="span">
+						{summaryOf(configs.length + skipped.length, count, weightOf(fills))}
+					</Typography>
+				</div>
+			)}
+
+			{!readout ? null : reading}
+
+			{!readout && !list ? null : (
+				<div className={LAYOUT[layout]}>
+					{!list ? null : installed}
+					{!readout ? null : offered}
+				</div>
+			)}
+
+			{skipped.length === 0 || !list ? null : (
 				<details open={skippedOpen} className={FOLD}>
 					<summary className={SUMMARY}>
 						<span aria-hidden className={CARET}>

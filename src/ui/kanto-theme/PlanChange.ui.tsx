@@ -1,17 +1,12 @@
 import { Confirm, type ConfirmFigure } from "./Confirm.ui";
 
-const TITLE = "Storage plan";
-
-export type PlanChangeDirection = "upgrade" | "downgrade";
-
-const VERB = {
-	upgrade: "rent",
-	downgrade: "drop to",
-} satisfies Record<PlanChangeDirection, string>;
+const EYEBROW = "upgrade";
+const TITLE = "Free weight";
+const VERB = "carry";
+const FREE_WORD = "free";
 
 export type PlanChangeProps = {
-	direction: PlanChangeDirection;
-	cap: string;
+	weight: string;
 	prose: string;
 	figures: readonly ConfirmFigure[];
 	onConfirm?: () => void;
@@ -19,19 +14,18 @@ export type PlanChangeProps = {
 };
 
 export const PlanChange = ({
-	direction,
-	cap,
+	weight,
 	prose,
 	figures,
 	onConfirm,
 	onCancel,
 }: PlanChangeProps) => (
 	<Confirm
-		eyebrow={direction}
-		title={`${TITLE} ${cap}`}
+		eyebrow={EYEBROW}
+		title={`${TITLE} ${weight}`}
 		prose={prose}
 		figures={figures}
-		confirmLabel={`${VERB[direction]} ${cap}`}
+		confirmLabel={`${VERB} ${weight} ${FREE_WORD}`}
 		onConfirm={onConfirm}
 		onCancel={onCancel}
 	/>
