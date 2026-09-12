@@ -4,10 +4,13 @@
 
 Accepted 2026-07-25. Amends [ADR-006](006-session-run-mechanics.md) Decision 10.
 
-**Live:** Decisions 1 and 2. **Dead:** Decision 3 (the cap-extender config) and
-Decision 4 (no selling) — both reversed, and both in
-[rejected.md](rejected.md). [ADR-046](046-slots-are-bought-storage-is-capped-again.md)
-owns the cap.
+**Live:** nothing. **Dead:** Decision 3 (the cap-extender config) and Decision 4
+(no selling) — both reversed, and both in [rejected.md](rejected.md).
+Decisions 1 and 2 are a policy for what a one-shot grant does when it would
+exceed the storage cap, and
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md) removed the cap. Whether
+a grant needs any clipping rule once nothing clamps a balance is open, and this
+ADR retires when that is answered.
 
 ## Context
 

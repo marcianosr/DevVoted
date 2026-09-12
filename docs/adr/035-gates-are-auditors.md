@@ -76,7 +76,9 @@ routing described here is what *every* failed gate now does.
 
 The roster and the escalation curve are [ADR-038](038-the-audit-roster.md)'s;
 which gate carries which audit is [ADR-056](056-audits-are-drawn-not-scheduled.md)'s,
-and only gates 3 and 12 stay authored. KB insolvency is never fatal (ADR-046).
+and only gates 3 and 12 stay authored. KB insolvency is never fatal
+([ADR-074](074-weight-is-what-the-build-costs-to-run.md) Decision 4: it peels
+the build down to what the bill allows).
 
 ## Decision 5: Volkswagen CI reads the audits
 

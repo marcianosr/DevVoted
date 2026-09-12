@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-03T14:46:32Z
-updated_at: 2026-09-03T14:46:38Z
+updated_at: 2026-09-12T12:58:03Z
 parent: DVTD-u35m
 blocking:
     - DVTD-h9s5
@@ -64,3 +64,16 @@ These are not exclusive. My pick is **B for the meta, E for the run, A alongside
 - [ ] Write the ADR, including the rejection of C
 - [ ] Re-scope DVTD-h9s5, DVTD-4ova, DVTD-g8ty per the outcome
 - [ ] Wiki §2.8 and §4.4 corrected in the same pass
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The question is now urgent rather than open-ended. ADR-073 decision 4 resets
+coverage at every gate, so per-category coverage as a slowly accumulating number
+no longer exists in the model. Anything that reads it (the Focus upgrade gate,
+DVTD-h9s5's upgrade requirement, DVTD-2try's unlock trigger) is reading a value
+that clears every day.
+
+So the answer is not "what should per-category coverage buy" but "does a
+per-category measure survive the reset at all, and if so what is it". If it
+does not, three open beans need a different requirement and the category axis
+collapses to what `focusCategory` already does inside a single gate.

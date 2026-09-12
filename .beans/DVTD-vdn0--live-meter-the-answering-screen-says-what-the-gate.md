@@ -3,8 +3,9 @@
 title: 'Live meter: the answering screen says what the gate still needs'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-08-26T16:02:25Z
-updated_at: 2026-08-26T16:02:25Z
+updated_at: 2026-09-12T12:57:33Z
 ---
 
 The gate verdict lands on the window's 5th poll, but while answering nothing says whether the gate is still reachable. The Build Summary's "To pass" line states the stake before the gate; during the gate the player is doing meter arithmetic in their head. When the last poll decides the gate — the most dramatic moment in the game — the math is invisible.
@@ -28,3 +29,23 @@ Rules:
 - [ ] Tier 2: wire onto the answering screen from run state
 - [ ] Specs: boundaries of met / on-track / needs-perfect / dead, including the floor-at-0 meter and a mid-window bleed
 - [ ] Wiki §8 (Run HUD) line
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+Half built, half re-aimed.
+
+ADR-070 put the banded bar on the poll screen, so the player now sees their
+position against all four lines while answering. That is the placement half of
+this bean.
+
+The arithmetic half is still missing and still worth it: "needs 13% from 3
+polls, a correct pays ~9%" is not derivable from a bar. But it has to read
+against four lines, not one demand. "Reachable" now has to say reachable to
+*what*: still alive (floor), still paid (OK), still advancing (HEALTHY). Those
+are three different answers and the player cares most about the third.
+
+The four states above map onto them, with "dead" meaning below the floor with
+no path back, which is the one that ends the run under ADR-071.
+
+`readCoverage` already returns `healthyOwed` and `survivalOwed`, so most of the
+domain half exists.

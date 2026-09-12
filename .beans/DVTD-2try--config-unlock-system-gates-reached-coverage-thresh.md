@@ -7,7 +7,7 @@ priority: critical
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-09-03T07:11:15Z
+updated_at: 2026-09-12T12:58:03Z
 parent: DVTD-z2r2
 ---
 
@@ -275,3 +275,21 @@ the `awardGateSwatch` idempotence pattern; one-shot challenges are target-1
 counters; the only new RunState field is `soldThisShop`; no grandfathering or
 historical backfill (pre-release, nobody has anything yet). Work split across
 DVTD-clgs / DVTD-g6k0 / DVTD-p9ah / DVTD-b9vi / DVTD-of79.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+One of the three unlock axes no longer exists. "Extra starter config slots"
+cannot be unlocked because ADR-074 deletes slots: capacity is soft, and how much
+build you can carry is set by the storage plan's free weight and the upkeep you
+can afford.
+
+The meta-progression equivalent is free weight, or a permanent discount on the
+upkeep bill. Both are stronger than a starter slot was, since they apply at
+every gate rather than at the deal, so whichever is picked needs pricing against
+the plan ladder it competes with.
+
+Configs and borders are untouched.
+
+Also relevant to the undecided trigger: "hit a coverage threshold in the
+config's own category" now has to survive a per-gate reset (ADR-073 decision 4).
+Same problem as DVTD-h9s5, and it should get the same answer.

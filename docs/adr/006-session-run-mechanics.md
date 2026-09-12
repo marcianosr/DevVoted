@@ -9,9 +9,10 @@ scoring), as amended by ADR-013. Original numbering is kept throughout, since
 code and beans cite these decisions by number.
 
 **Dead:** the gate-as-composed-checklist model and everything built on it.
-ADR-035 moved the friction onto the gate, ADR-046 owns width and the storage
-cap, ADR-047 owns config size, ADR-048 renamed the container, ADR-055 deleted
-families, ADR-037 owns the peel. See the collapsed decisions below.
+ADR-035 moved the friction onto the gate, ADR-074 owns width and killed the
+storage cap, ADR-047 owns config size, ADR-048 renamed the container, ADR-055
+deleted families, ADR-071 owns what a missed gate does. See the collapsed
+decisions below.
 
 ## Context
 
@@ -33,9 +34,9 @@ An earlier iteration tried multiple parallel pipelines; see
 Dead. The player stacked all configs onto a single container of 3 to 5 slots,
 and a gate passed only if every check contributed by those configs passed.
 ADR-035 deleted checks entirely: configs are pure enhancements and the gate
-judges its own coverage demand plus audits. Width is bought outright
-(ADR-046), the container is **Your Build** (ADR-048), and a config's size is a
-number (ADR-047).
+judges its own coverage demand plus audits. Width is not bought but billed every
+gate (ADR-074), the container is **Your Build** (ADR-048), and a config's size is
+a number (ADR-047).
 
 ### 3–5. Baseline escalation, reward multipliers, and config families
 
@@ -65,9 +66,10 @@ repeated linting. The original flat cost survives only in the parked prototype.
 
 ### 9–10. Rarity as a loot glow, and the storage cap
 
-Dead. ADR-047 deleted grades in favour of a plain size; ADR-046 owns the cap as
-a seven-rung plan. The faucet invariant this decision set, that income never
-pushes past the cap, is still how `addStorage` behaves.
+Dead. ADR-047 deleted grades in favour of a plain size; ADR-074 deleted the cap
+outright, so the faucet invariant this decision set — that income never pushes
+past the cap — has nothing left to clamp against. `addStorage` still behaves that
+way, and is the first thing to look at when the cap comes out of the code.
 
 ### 11. Coverage scoring: the floor and the share
 

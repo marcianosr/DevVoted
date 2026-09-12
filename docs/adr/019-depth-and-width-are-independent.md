@@ -8,8 +8,9 @@ Accepted 2026-08-06 (Marciano). Superseded ADR-018 the same day it was accepted.
 roster has the length and order it does.
 
 **Dead:** Decisions 1, 2 and 4. Depth and width were independent here; ADR-034
-then made clears grant slots and ADR-046 made them bought outright. "Depth is
-paid for in checks" died with checks (ADR-035).
+then made clears grant slots, ADR-046 made them bought outright, and
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md) stopped them being a
+thing you hold at all. "Depth is paid for in checks" died with checks (ADR-035).
 
 ## Context
 

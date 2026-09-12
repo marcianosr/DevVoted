@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-08-06T15:30:17Z
-updated_at: 2026-08-12T11:42:32Z
+updated_at: 2026-09-12T12:57:01Z
 blocked_by:
     - DVTD-iq13
 ---
@@ -82,3 +82,21 @@ category never appears in the window skips, and a skip passes. So a build can
 hold eight configs at gate 12 and owe almost nothing on an unlucky draw.
 
 That is `DVTD-ezij`'s subject, not this bean's. Track it there.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The cliff this bean measures is gone. The gate-4 wipe came from `dropCount` and
+the peel quota, and ADR-071 takes the peel off a missed gate entirely: OK and
+SHAKY repeat the gate on five fresh polls, DANGER ends the run, nothing comes
+off the build. Width therefore stops being a hit-point pool, which was the
+tradeoff the ADR-019 decoupling was leaning on.
+
+The original question survives in a simpler form. A narrow build no longer dies
+to a peel; it fails because it cannot reach the HEALTHY line, and ADR-073 makes
+that line the only difficulty dial there is. So "where should a three-slot build
+die" is now a question about `HEALTHY_LADDER`, and the rebase shipped with the
+model moves the bare-build death from gate 6 to gate 7.
+
+ESCALATION_CAP and the strip quota are not the levers any more.
+
+Recommend scrapping in favour of the ladder work in DVTD-gv0v.

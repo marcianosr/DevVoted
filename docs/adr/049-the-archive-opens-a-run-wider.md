@@ -8,6 +8,12 @@ the slot ladder gains a second purse and, on the start screen only, a rollback. 
 live in `SLOT_PRICES_KB` in `rules.model.ts` and `START_SLOT_PREMIUM` in
 `startSlot.model.ts`.
 
+**Superseded 2026-09-12 (DVTD-nd6r)** by
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md). Buying start slots out
+of the archive was this ADR's whole subject, and there are no slots to buy. The
+archive keeps its other jobs and loses this one; what it spends on instead is
+open. The code is still live, alongside ADR-046's, and retires with it.
+
 ## Context
 
 A run opens on four slots however many runs came before it, so the archive — the

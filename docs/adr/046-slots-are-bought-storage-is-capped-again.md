@@ -4,7 +4,16 @@
 
 Accepted 2026-08-30 (Marciano, DVTD-811d), reladdered twice on playtest
 (2026-09-03 DVTD-jrld, 2026-09-06 DVTD-x5y1) and amended twice (2026-09-03,
-2026-09-05). All of it is live and folded into the decisions below.
+2026-09-05).
+
+**Superseded 2026-09-12 (DVTD-nd6r) in all three decisions** by
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md): capacity is soft, so
+there is no slot to buy and no cap to rent, and the storage plan sells free
+build weight instead of held KB. **The code is still this ADR's**, which is why
+the file is here and not in the Retired table: `SLOT_PRICES_KB` and
+`STORAGE_PLANS` in `rules.model.ts` run the shop, the gate and
+`run.validation.ts`. Read it to understand what is running; read 074 for what is
+decided. It retires when the code does.
 
 Supersedes ADR-045 (retired; its reasoning is in
 [rejected.md](rejected.md)) and amends

@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted — 2026-08-17 (Marciano, DVTD-rxsk; Decision 1's flat peel replaced by a per-gate table the same day, DVTD-rdr5, after a playtest reached Rainbow and still only lost one config). Supersedes ADR-035 Decision 3 (the free redo) and narrows its Decision 4 (strips are no longer audit-owned). Amends ADR-021's death rule back toward its original shape: a run still dies when its build empties, but only ever at a gate it missed. ADR-036's git tag keeps its meaning and gains value, since deaths now start early.
+Accepted — 2026-08-17 (Marciano, DVTD-rxsk; Decision 1's flat peel replaced by a per-gate table the same day, DVTD-rdr5, after a playtest reached Rainbow and still only lost one config). Supersedes ADR-035 Decision 3 (the free redo) and narrows its Decision 4 (strips are no longer audit-owned).
+
+**Dead, 2026-09-12 (DVTD-nd6r): Decisions 1 and 2.** A miss no longer peels and no longer kills. [ADR-071](071-the-closing-band-decides-the-gate.md) owns what a gate does: only HEALTHY advances, OK and SHAKY repeat the gate on five fresh polls, DANGER ends the run outright. The peel itself survives with a different trigger, in [ADR-074](074-weight-is-what-the-build-costs-to-run.md) Decision 4: configs come off when the build's upkeep is unaffordable, not when a gate is missed. ADR-021's death rule is not revived by that, since a build peeled to nothing bills nothing and so can always pay.
+
+**Live:** Decision 3, the loop a repeat runs, minus its strip step.
 
 ## Context
 
@@ -10,30 +14,23 @@ The free redo made a miss weightless: the same gate dealt five fresh polls with 
 
 ## Decision 1: a miss peels configs
 
-Failing a gate takes configs off the pipeline and the player chooses which. The quota is a **share of the occupied slots** (`failPeelShareFor`, `rules.model.ts`), 20% at the early gates rising to 35% at the summit, turned into a slot figure by `peelQuotaSlotsFor`. A share rather than a count because width escalates too: a flat count is a third of an opening build and a fourteenth of a summit build, while a share holds at roughly a quarter of whatever the build has become, which keeps the death clock at three or four misses the whole way up. The quota is paid in whole configs, so a build whose sizes cannot match it exactly overpays, and the remainder is lost.
-
-| Gate | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Peel | 1 | 1 | 1 | 2 | 2 | 2 | 2 | 3 | 3 | 3 | 3 | 4 | 4 |
-
-Strip audits add on top of the share rather than owning it, +10% at Elite and +15% at Champion (`auditExtraPeelShare`; `failPeelQuotaFor` in `gate.model.ts` owns the total). Every gate therefore costs a run something, and the death clock is the pipeline itself: keep missing and you keep shrinking.
+Dead. [ADR-071](071-the-closing-band-decides-the-gate.md) owns what a missed gate does. The peel's mechanism — a quota the player pays in whole configs, their choice which — moves to [ADR-074](074-weight-is-what-the-build-costs-to-run.md) Decision 4, where an unpayable upkeep bill fires it.
 
 ## Decision 2: the run ends when the peel has nothing left to take
 
-`isPeelFatal(quotaSlots, occupiedSlots)` — a miss holding one config ends the run, and at a strip-audit gate it ends two configs earlier. The old bare-legacy guard folds into the same check. The receipt states both the peel and the fatal case before the player commits, so death is never a surprise; it is the one line on the receipt that shouts.
+Dead. A run ends by closing a gate in DANGER ([ADR-071](071-the-closing-band-decides-the-gate.md)), not by running out of configs to lose.
 
 ## Decision 3: a retry runs the whole post-gate loop
 
-A missed gate goes strip → review → shop → prep → the same gate, which is the clear's loop minus the payout. Nothing new was built for it: `awaiting-strip` and `resume-climb` already routed that way for the strip audits. What changed is where resuming lands (the shop, not the community detour) and that a retry never reaches `/run/reward` — the reward screen is a "+KB, gate cleared" celebration and the gate it would name is the one just missed, so `routesForStatus` sends a `redoingGate` run to the shop instead. The failed attempt's own report is the strip screen: the pipeline, the bill, the retry's stake.
+A repeated gate goes review → shop → prep → the same gate, which is the clear's loop minus the payout. It went through a strip screen too until the peel moved off the miss; that step is gone, and the attempt's report is the gate-clear debrief with an outcome that is not a clear. Nothing new was built for it: `awaiting-strip` and `resume-climb` already routed that way for the strip audits. What changed is where resuming lands (the shop, not the community detour) and that a retry never reaches `/run/reward` — the reward screen is a "+KB, gate cleared" celebration and the gate it would name is the one just missed, so `routesForStatus` sends a `redoingGate` run to the shop instead.
 
 A failed attempt pays nothing (`gateRewardKb`, interest and extra-pick payouts all reset), so the retry's budget is the storage faucet earned inside the failed window plus whatever was banked. The storage bill still collects on every close, pass or fail.
 
-Amended 2026-09-05 (DVTD-2k9m): the *attempt* still pays nothing, but the *peel* can. **Garbage Collection** refunds a dropped config's sell value (`peelRefundIn`, `strip.model.ts`), priced by the shop's own `sellRefundIn` so a peel is never a better price than a sale. Minifying to settle the same quota pays nothing, since the config stays installed. A fatal miss is untouched: it returns `dead` before `awaiting-strip`, so nothing refunds on the miss that ends the run.
+Amended 2026-09-12 (DVTD-nd6r): OK and SHAKY are paid for the coverage they proved (ADR-071), so "a failed attempt pays nothing" now holds for DANGER alone, and DANGER ends the run. Amended 2026-09-05 (DVTD-2k9m): the *peel* can pay too. **Garbage Collection** refunds a dropped config's sell value (`peelRefundIn`, `strip.model.ts`), priced by the shop's own `sellRefundIn` so a peel is never a better price than a sale. Minifying to settle the same quota pays nothing, since the config stays installed. That refund follows the peel to its new trigger.
 
 ## Consequences
 
-- The demand table is unchanged, but its difficulty is not: a miss now costs configs, so the rows in `rules.model.ts` are the first thing to loosen if early gates read as punishing.
-- A rescued run (ADR-036) is the sharp edge of the escalation: it opens deep, with a deep gate's peel, on a build of three starters plus whatever the stipend bought. The receipt says so in red, and the tag's price already assumes one careful gate; if playtests show the rescue dying on its first miss, the fix is the stipend, not the peel.
-- Volkswagen CI gains an asymmetry worth knowing: it suppresses a gate's *first* audit, so at Elite it cancels the deepened peel, while at Champion it only stops the burn and leaves the strip in force.
-- Beans: DVTD-eguq (debt cards as a strip replacement) and DVTD-ineo (partial reward on failure) stay scrapped — both were argued against the free redo, and neither returns with it gone.
-- Open: whether repeated misses at the *same* gate should deepen the peel further — a spiral on top of the depth curve. Left out until playtests say the curve alone is too soft.
+- Decision 3 is the only part of this ADR still standing, and it is the part nothing was built for: it reused `awaiting-strip` and `resume-climb`. With the strip gone from the miss path, the routing needs rebuilding rather than re-pointing.
+- Volkswagen CI loses the asymmetry this ADR gave it. It suppressed a gate's first audit and so cancelled a deepened peel; with no peel on a miss there is nothing to cancel, and ADR-028's own terms are what is left.
+- Beans: DVTD-eguq (debt cards as a strip replacement) and DVTD-ineo (partial reward on failure) were scrapped as arguments against the free redo. ADR-071's OK band pays for proven coverage, which is what DVTD-ineo asked for, so that one is worth reopening.
+- Open, and inherited by ADR-071: whether repeating the *same* gate twice should cost more the second time. This ADR left the same question open about the peel.

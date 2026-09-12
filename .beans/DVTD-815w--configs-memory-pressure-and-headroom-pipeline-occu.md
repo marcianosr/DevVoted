@@ -7,7 +7,7 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-30T07:40:36Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-12T12:58:03Z
 parent: DVTD-72d9
 ---
 
@@ -93,3 +93,25 @@ a real trade, and it stops scaling with the ladder.
 back as a seven-rung storage plan, so "storage capacity over 75%" has a real
 denominator: `storageCapFor(state.storagePlan)`. The recommended re-key to slot
 occupancy is no longer forced — both readings now exist, and they are different configs.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The axis moved, and it moved somewhere better for this pair.
+
+"While storage capacity is over 75%" has nothing to measure: ADR-074 makes
+capacity soft, so there is no ceiling to be a percentage of. But the same
+occupancy tension now lives in the upkeep bill, which every build carries and
+can read off at any moment:
+
+- **Memory Pressure** keys off a build whose weight costs real KB per gate.
+- **Headroom** keys off a build inside the free weight (4, or whatever the
+  storage plan raises it to).
+
+That is a cleaner pair than the original. The old version keyed off a number the
+player could raise by buying a bigger cap, which made the condition gameable
+from outside the pipeline. Upkeep is the build's own weight, so the only way to
+change it is to change what you installed, which is exactly the live decision
+this pair was for.
+
+The free-weight rung being purchasable does reintroduce a smaller version of the
+same hole for Headroom, and that is worth pricing.

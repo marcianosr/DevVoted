@@ -3,8 +3,9 @@
 title: 'Storage overflow: shop-time clamp + slot-free cap-extension voucher'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-08-06T09:45:39Z
-updated_at: 2026-08-06T09:45:39Z
+updated_at: 2026-09-12T12:56:28Z
 ---
 
 Design decision (2026-08-06): storage overflow above the 512 KB cap is
@@ -40,3 +41,17 @@ spend-it-or-lose-it, not silently discarded on arrival, and the cap-raising
 - [ ] Update specs covering the clamp-timing change (run.model.spec, gate reward
       flow).
 - [ ] Wiki + CHANGELOG once implemented.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+Both halves are moot. ADR-074 removes the storage cap, so there is no overflow
+to clamp at shop time and nothing for a cap-extension voucher to extend.
+
+The reasoning survives and is worth keeping where it can still be read: a
+capacity raise must not take a pipeline slot, or every build runs it and the
+roster collapses. That argument now applies to the storage plan's free-weight
+rungs, which are slot-free and sticky for exactly the reason this bean gives.
+It is already recorded in `rejected.md`.
+
+Recommend scrapping once ADR-074 is built. Kept open until then because the
+cap is still live in code.

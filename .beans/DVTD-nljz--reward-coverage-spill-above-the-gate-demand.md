@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-08-24T12:58:24Z
-updated_at: 2026-09-03T14:46:44Z
+updated_at: 2026-09-12T12:57:33Z
 parent: DVTD-kulw
 ---
 
@@ -104,3 +104,23 @@ Open before this can be built:
 - [ ] Write the ADR: starting balance versus reversing ADR-035's reset
 - [ ] Decide whether the Focus coverage requirement survives at all; it is the weaker of spill's two consumers
 - [ ] Separately: the island shop screens ignore the Focus requirement, so the rule is unenforced where it is played
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+Answered in shape, and two of the three consumers listed above are gone.
+
+ADR-073 decision 4: coverage caps at 100% and the window reopens at 0%, and a
+config that carries coverage across the boundary is the one exception. So spill
+is worth something only if a config buys it, which is the design this bean was
+circling.
+
+What changed under the two existing consumers:
+
+- "It scores." `state.coverage` accumulating run-wide is exactly what the
+  per-gate reset removes. There is no run-wide coverage total to raise.
+- "It buys permission." `coverageByCategory` feeding the Focus upgrade gate has
+  the same problem and needs a measure that survives a reset (see DVTD-h9s5).
+
+The third thing spill can be worth is now first, not third: ADR-070 makes
+reaching 100% the PERFECT band, which clears plus a special bonus. That bonus is
+undesigned and is the natural home for this bean.

@@ -3,8 +3,9 @@
 title: 'Gate bounty: opt-in demand raise for KB, unclaimed bounty feeds ghost loot'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-08-20T10:23:02Z
-updated_at: 2026-08-20T10:23:02Z
+updated_at: 2026-09-12T12:57:33Z
 parent: DVTD-kulw
 ---
 
@@ -27,3 +28,21 @@ Player-declared difficulty on the stake screen: TAKE BOUNTY raises this gate's d
 - [ ] Resolve the bounty name collision with DVTD-w0ul
 - [ ] Decide demand/reward numbers via sim
 - [ ] Decide whether the loot failure clause ships with v1 or waits for loot storage
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The mechanic fits the new model better and its downside clause is wrong.
+
+Better: ADR-073 makes the HEALTHY line the only difficulty dial, so a bounty is
+literally a player-chosen nudge to that one number. Not an inverted audit any
+more, just the dial itself, with a reward attached.
+
+Wrong: "Finishing at 12% is a real miss (peel + re-shop + redo on daily polls)".
+ADR-071 deleted the peel. Falling between the raised line and the original one
+lands in OK, which pays and then re-runs the same gate tomorrow. So the
+bounty's downside is a day, which is a heavier price than the peel was and
+carries the anti-auto-take argument on its own.
+
+There is also a new question the four bands raise: does a bounty move the
+HEALTHY line only, or the whole ladder of four under it? Moving one shifts what
+counts as a clear; moving all four also shifts what kills you.

@@ -5,8 +5,10 @@
 Accepted (2026-07, playtest DVTD-8eij / bug DVTD-k13o). Supersedes ADR-006
 Decision 7 and amends its Decisions 1 and 10.
 
-**Live:** Decisions 1 and 3. **Dead:** Decision 2's coverage-gated slot ladder;
-ADR-046 owns width, which is bought outright.
+**Live:** Decisions 1 and 3. **Dead:** Decision 2's coverage-gated slot ladder.
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md) owns width: it is not
+gated and not bought, it is billed. ADR-046, which owned it in between, is
+superseded.
 
 ## Context
 

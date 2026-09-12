@@ -8,8 +8,16 @@ whose "the loss is deliberately not gate-scaled" clause this reverses.
 **Amended by [ADR-035](035-gates-are-auditors.md)**: the lockstep stands, but
 both sides now score a per-gate window meter rather than a career total.
 
+**Live:** Decisions 2 and 3, the scaled loss and the zero floor under it.
+**Dead:** Decision 1, the gate-scaled gain.
+[ADR-073](073-coverage-is-a-flat-gain-reset-every-gate.md) owns it: a correct
+answer is worth the same at every gate, and the HEALTHY line carries the climb
+on its own.
+
 Decision 2's magnitude was retuned four times between 2026-08-15 and 2026-09-05.
-Only the current shape is recorded below; live values are in `rules.model.ts`.
+Only the current shape is recorded below; live values are in `LOSS_LADDER` in
+`coverageRatio.model.ts` for the rebuilt model and `rules.model.ts` for the old
+run loop.
 
 ## Context
 
@@ -30,11 +38,8 @@ Playtesting the ported engine surfaced two feel problems:
 
 ### 1. The gate number scales the base coverage gain
 
-`gateBaseMultiplier(gatesCleared) = gatesCleared + 1`. It multiplies the
-correctness **share** before config adds/mults and the streak bonus compose on
-top, so the whole earn scales rather than a flat term. Applied at the single
-scoring site in `answer()`, so nothing downstream recomputes it and the reveal
-chip's `base + streak + configs = total` equation reflects it automatically.
+Dead. [ADR-073](073-coverage-is-a-flat-gain-reset-every-gate.md) owns the base
+gain, and it does not scale.
 
 ### 2. The loss scales by the same factor
 
@@ -42,8 +47,9 @@ A miss bleeds `wrongLossShareFor(gate) × the build's per-correct coverage`.
 Reward and risk grow in lockstep: a miss costs a fraction of what a hit pays, on
 every build, so a greedy build loses more per mistake.
 
-**The share itself climbs with the gate** (`0.5 + 0.03 × gate`, clamped at the
-Champion). A fixed share stopped working because the demand table grows far
+**The share itself climbs with the gate** (shape and values in `LOSS_LADDER`;
+the old loop's own curve is `wrongLossShareFor` in `rules.model.ts`, and the two
+do not agree). A fixed share stopped working because the demand table grows far
 faster than the earn does, so a miss shrank from 1 in 6 of the opening gate to 1
 in 50 of the Champion. Holding the ratio flat meant deep gates asked only for
 **volume**; a climbing share asks for **accuracy** as well.
@@ -74,11 +80,10 @@ reach it by construction. That is the only way the lockstep can hold.
 
 ## Consequences
 
-- The climb has a rising-stakes curve on both axes, expressed in one shared
-  binding.
 - Linear scaling is a guess. If late gates ever read as binary (one miss erasing
-  a gate's worth of coverage), a sub-linear loss curve is the first knob; the
-  value is in `rules.model.ts`, but changing the *shape* is a new ADR.
-- Decision 1 is **new**, not a reversal: ADR-006 escalated the *requirement*,
-  never the *reward base*. It is recorded here rather than amended into ADR-006
-  because it belongs with the loss-scaling it is symmetric with.
+  a gate's worth of coverage), a sub-linear loss curve is the first knob;
+  changing the *shape* is a new ADR.
+- The rising-stakes curve this ADR built on two axes now runs on one. With
+  ADR-073 flattening the gain, the loss is the only term the gate still scales,
+  so Decision 2's own warning inverts: the risk is no longer that accuracy stops
+  mattering late, it is that a late miss costs more than a hit can pay back.

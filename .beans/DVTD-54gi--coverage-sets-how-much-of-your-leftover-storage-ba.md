@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-01T15:33:18Z
-updated_at: 2026-09-01T15:33:18Z
+updated_at: 2026-09-12T12:57:01Z
 parent: DVTD-z2r2
 ---
 
@@ -57,3 +57,18 @@ The git tag's anti-cash-out rule falls out for free. ADR-036 has to subtract `st
 - **Early deaths get meaner.** A gate-3 death banks 9% where it banked 23%, and ADR-042 calls retention the top structural risk. The knob is a floor on the rate for shallow deaths, not the denominator.
 - **Hoarding.** A high rate rewards not spending at the last shop. Not new (victory already banks 100%), but a coverage-driven rate makes it visible sooner.
 - Overlaps DVTD-nljz (reward coverage spill above the gate demand): both pay for coverage earned past the demand, and they should not both pay for it.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The denominator does not exist any more. `COVERAGE_DEMANDS` is the old engine's
+point table; the line a gate asks for now is `healthyAt(gate)` in
+`coverageRatio.model.ts`, and it is a percentage of a per-gate window rather
+than a running total.
+
+Worse for this bean: ADR-073 decision 4 makes coverage reset to 0% at every
+gate, so `state.coverage` stops being a run-wide score that a payout can read.
+The problem this bean names is still real and still worth fixing (depth pays,
+playing well does not), but the numerator has to be something that survives the
+reset. Candidates: the bands a run closed its gates in, or the sum of
+`gatePayoutKb` earned, which already prices coverage against each gate's own
+line.

@@ -6,6 +6,12 @@ Accepted — 2026-09-11 (DVTD-chf8, placement revised same day by DVTD-shaa).
 Replaces ADR-061's decision 1 for the kanto kit; the vertical gauge that ADR-061
 describes still ships in `terminal-theme`.
 
+**Amended 2026-09-12 by [ADR-070](070-coverage-reads-as-a-banded-bar.md)**: the
+poll screen takes the banded bar, because a ring draws one number against one
+demand and the gate now asks four. The ring, its stories and `Header`'s support
+for it all stand; decisions 1 (coverage appears once, enforced by the type) and
+4 (the count-up is CSS, no rAF) are what 070 builds on.
+
 ## Context
 
 The kanto poll screen drew no coverage at all. `Header` could carry a readout

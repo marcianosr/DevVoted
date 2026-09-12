@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:21:03Z
-updated_at: 2026-09-06T10:17:59Z
+updated_at: 2026-09-12T12:57:33Z
 parent: DVTD-z2r2
 ---
 
@@ -63,3 +63,16 @@ Related: DVTD-g8ty (Collect Swatches) is the per-category chip idea and should b
 - [ ] Trainer card surface, after the dev card decision above
 - [ ] Dex Gates tab shows stars per gate (folds into DVTD-e15y if that lands first)
 - [ ] Wiki: mastery rules alongside §2.8
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+"A gate is binary today: you cleared it or it peeled you" is no longer true.
+ADR-071 gives a gate four outcomes and ADR-070 draws all four on the bar the
+player answers against, so *how well* is now recorded and visible without any
+new state at all: the band the gate closed in.
+
+That takes most of star 1's job. Worth re-scoping before building: a three-star
+grade sitting on top of a five-band readout is two ways of saying the same
+thing, and the bands are the one the rules already use.
+
+Stars 2 and 3 (clean clears, no paid help) do not overlap and still stand.

@@ -15,34 +15,34 @@ it before proposing one again.**
 | [001](001-database-indexing-strategy.md) | Database indexing strategy | Accepted |
 | [002](002-domain-architecture.md) | Domain architecture | Accepted — living document; owns module structure, naming and the dependency rule |
 | [005](005-session-runs.md) | Session runs and the two-loop model | Accepted |
-| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — amended by 008, 013, 035 |
+| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — amended by 008, 013, 035, 074 |
 | [007](007-run-rebuild-conventions.md) | Run rebuild: design system and scope | Accepted |
-| [008](008-reward-shop-multibuy-coverage-gated-slots.md) | The reward screen is a multi-buy shop | Accepted — amended by 046 |
+| [008](008-reward-shop-multibuy-coverage-gated-slots.md) | The reward screen is a multi-buy shop | Accepted — amended by 046, 074 |
 | [009](009-session-run-cadence-daily-seeded-shared-run.md) | Cadence: a daily-seeded, shared run | Accepted — amended by 011, 014 |
 | [010](010-ui-layer-separation.md) | Two-tier UI separation | Accepted |
 | [011](011-persistent-runs-daily-segments.md) | Persistent runs with daily shared segments | Accepted — amended by 014 |
 | [012](012-migration-strategy.md) | One migration pipeline: guarded SQL | Accepted |
-| [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035 |
-| [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 037 |
-| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — amended by 046 |
-| [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046 |
+| [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035; **the gain no longer scales** (073) |
+| [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 071 (a repeat costs a day) |
+| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap |
+| [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074 |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054 |
-| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted |
+| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — amended by 072 (prep lost its shop link) |
 | [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056 |
 | [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
-| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted |
+| [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — **decisions 1 and 2 dead** (071); the peel moved to 074 |
 | [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage | Accepted — amended by 053 |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline | Accepted |
 | [042](042-design-pillars-and-anti-pillars.md) | **Design pillars and anti-pillars** — the tiebreaker lens | Accepted |
-| [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots (now slots), money is KB | Accepted — amended by 046, 047 |
-| [046](046-slots-are-bought-storage-is-capped-again.md) | **Slots are bought, storage is capped** | Accepted |
+| [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots (now slots), money is KB | Accepted — amended by 046, 047, 074 |
+| [046](046-slots-are-bought-storage-is-capped-again.md) | Slots are bought, storage is capped | **Superseded by 074** — kept while its code runs |
 | [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — amended by 055 |
 | [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build: four nouns, one job each | Accepted |
-| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | Accepted — amended by 046 |
+| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | **Superseded by 074** — kept while its code runs |
 | [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted — amended by 051, 062, 064 |
 | [051](051-configs-unlock-on-individual-objectives.md) | Configs unlock on individual objectives | Accepted — amended by 064 |
 | [052](052-the-run-opens-on-a-dealt-hand.md) | The run opens on a dealt hand | Accepted — amended by 057, 062 |
@@ -61,8 +61,13 @@ it before proposing one again.**
 | [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted — reversed by 067 |
 | [066](066-every-figure-wears-a-badge.md) | Every figure wears a badge | Accepted |
 | [067](067-standouts-are-four-plain-standings.md) | Standouts are four plain standings | Accepted — reverses 065; model not yet rewritten |
-| [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto |
+| [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
+| [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
+| [071](071-the-closing-band-decides-the-gate.md) | The band a gate closes in decides what the gate does | Accepted — supersedes 037's death clock; stated on screen, **not built** |
+| [072](072-prep-opens-on-the-stakes.md) | Prep opens on the stakes, not on the build | Accepted — amends 032; prep lost its shop link |
+| [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; half built |
+| [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — supersedes 046 and 049; **not built** |
 
 ## Retired
 

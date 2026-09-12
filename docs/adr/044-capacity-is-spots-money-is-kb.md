@@ -7,15 +7,17 @@ was renamed back to slots by [ADR-048](048-the-pipeline-is-your-build.md), which
 ruled that accepted ADRs keep their dated text so the reason a word changed is
 not lost.
 
-**Live:** Decisions 4, 5 and 6 (over-capacity is a screen, minify, the peel is a
-share). Decision 1's principle survives in
-[ADR-047](047-a-configs-size-is-a-number.md)'s form: a config's size is what it
-spends, and the size is the price.
+**Live:** Decision 5 (minify), and Decision 4's principle that a build the engine
+cannot fit is a screen and never a silent deletion. Decision 1's principle
+survives in [ADR-047](047-a-configs-size-is-a-number.md)'s form: a config's size
+is what it spends, and the size is the price.
 
 **Dead:** Decisions 2 and 3 and both amendments, which moved width's source three
 times in two days (earned on clears, then sold by the plan, then handed over by a
-gate schedule). [ADR-046](046-slots-are-bought-storage-is-capped-again.md)
-settled it: slots are bought outright.
+gate schedule); ADR-046 settled it as bought outright and
+[ADR-074](074-weight-is-what-the-build-costs-to-run.md) stopped it being bought
+at all. Decision 6's peel share dies with it: the peel is now whatever it takes
+to make the upkeep affordable, not a fraction of the build.
 
 ## Context
 
@@ -41,7 +43,8 @@ number and the draft price is `32 KB` a slot.
 
 ## Decision 2–3: where width comes from
 
-Dead. Read [ADR-046](046-slots-are-bought-storage-is-capped-again.md).
+Dead. Read [ADR-074](074-weight-is-what-the-build-costs-to-run.md): width has no
+source, because it is not held. It is rented by the gate.
 
 ## Decision 4: over-capacity is a screen, not a deletion
 
@@ -49,19 +52,20 @@ A build holding more than it has room for is a **legal, visible state**. The
 engine never resolves it by deleting a config it did not ask about (ADR-042
 pillar 2).
 
-It routes to the peel screen, which becomes one screen with two entrances:
+It routes to the peel screen, which became one screen with two entrances, a
+missed gate and an overflow. Both are gone:
+[ADR-071](071-the-closing-band-decides-the-gate.md) took the peel off the miss,
+and [ADR-074](074-weight-is-what-the-build-costs-to-run.md) removed the ceiling
+an overflow needs. The screen keeps one entrance, an upkeep bill the run cannot
+pay, and the way out is drop or minify.
 
-| Entrance | Free up | Way out |
-| --- | --- | --- |
-| Missed gate | a share of occupied slots | drop, or minify |
-| Over capacity | the overflow | drop, minify, or buy the room back |
+What survives is the rule under the table: buying your way out is allowed when
+the pressure is capacity and refused when it is a penalty. Upkeep is capacity,
+so paying the bill from the balance is always the first option and the peel only
+fires when the balance cannot.
 
-Buying out of an overflow is allowed; buying out of a peel is not, or missing a
-gate would be free for a rich run.
-
-`isOverCapacity` can no longer fire in a live run (ADR-046 removed the only thing
-that narrowed a build). It stays as an invariant, because peel and strip still
-resize builds, and the shop's exit lock still reads it.
+`isOverCapacity` no longer has anything to measure against. It goes with the
+ceiling rather than staying as an invariant.
 
 ## Decision 5: minify squeezes a config into a build that cannot hold it
 
@@ -78,6 +82,11 @@ Two rules make it a trade rather than a trick:
   minifying a buff.
 
 ## Decision 6: the peel is a share of occupied slots
+
+Dead. The peel is sized by the upkeep bill it has to clear
+([ADR-074](074-weight-is-what-the-build-costs-to-run.md) Decision 4), not by a
+fraction of the build. The paragraphs below are why a share beat a count, which
+is the argument to re-read if the bill-sized quota turns out to be unreadable.
 
 A count was meaningless once configs come in several sizes: "one config" took a
 quarter of an opening build or a whole 8-slot config off a summit build, for the

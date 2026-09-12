@@ -6,8 +6,11 @@ Accepted 2026-07-25 (DVTD-go7e). Supersedes the poll-exhaustion-is-a-win
 terminal and amends [ADR-011](011-persistent-runs-daily-segments.md) Decision 2.
 ADR-011's rollover machinery and its Decision 3 survive unchanged.
 
-**Dead:** Decision 3's death rule; [ADR-037](037-a-missed-gate-peels-a-config.md)
-owns failure now.
+**Dead:** Decision 3's death rule;
+[ADR-071](071-the-closing-band-decides-the-gate.md) owns failure now, and it
+leans on this ADR harder than ADR-037 did: a gate that closes in OK or SHAKY
+repeats, and the price of repeating is a day, which only means anything because
+a day hands one gate's polls.
 
 ## Context
 

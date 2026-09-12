@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-24T12:48:34Z
-updated_at: 2026-08-25T11:45:24Z
+updated_at: 2026-09-12T12:57:01Z
 parent: DVTD-kulw
 ---
 
@@ -82,3 +82,18 @@ Not mutually exclusive; the decision is which one is the primary action.
 - [ ] Define the exhausted-window variant so no player ever lands on a raw error string
 - [ ] Decide whether `routesForStatus` should allow more than one route for a finished run
 - [ ] Amend ADR-026 Decision 3 to cover run end, or write the sibling decision
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The end of a run got more abrupt, which raises this bean's stakes.
+
+Under ADR-037 a run died at the end of a peel chain, three or four shrinking
+gates with a receipt warning each time. ADR-071 replaced that: closing a gate in
+DANGER ends the run on the spot, with no warning step in between. The screen
+this bean is about is now the only place the player finds out.
+
+It also has a new sibling state. OK and SHAKY are not clears and not deaths:
+the gate stays shut and runs again tomorrow on five fresh polls. That outcome
+has no screen at all today, and it is going to be the most common one.
+
+- [ ] Design the repeat outcome as well as the death: same gate tomorrow is not game over and must not read like it

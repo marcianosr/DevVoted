@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-08-27T19:17:44Z
-updated_at: 2026-08-27T19:17:44Z
+updated_at: 2026-09-12T12:56:27Z
 ---
 
 Nothing in `## Unreleased` has shipped, so the section will be read as one set of release notes — and it currently contradicts itself. ADR-044's entry says the pipeline holds spots and opens at 4, while six older unreleased entries still describe the retired slot ladder:
@@ -27,3 +27,17 @@ Released sections (1.3.0 and older) must NOT be touched: a changelog records wha
 
 - [ ] Decide per entry: rewrite in spots, or delete as subsumed
 - [ ] Verify the entry count after editing (see changelog-maintenance.md)
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+More entries are stale, not fewer, and the fix changes. ADR-074 retired the
+bought slot ladder that replaced the coverage ladder these entries describe, so
+rewriting them "in spot terms" would document a second retired model. Width is
+not granted, not unlocked and not bought: a build carries weight, and weight
+bills KB at every gate.
+
+L78 ("the next slot shows its unlock price") and L81 ("3 empty slots", "won't
+start until all 3 are filled") are now subsumed rather than rewritable. The
+ADR-044 entry this bean would fold them into is itself superseded.
+
+- [ ] Re-read every unreleased entry against ADR-073 and ADR-074 before editing, not only against ADR-044

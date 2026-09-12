@@ -29,6 +29,29 @@ decision. Note the qualifier, since ADR-046 brought the cap back: it was never
 binding *at those prices*. A slot now costs up to 768 KB against a 256 KB free
 cap, so the same ceiling is a real constraint again.
 
+Deleted a second time by ADR-074, and this time the qualifier does not save it.
+The cap only ever bound because there was an expensive slot ladder to save
+toward. With width billed per gate instead of bought, there is nothing to save
+for, so a ceiling on the balance measures nothing. The subscription survives,
+selling free build weight rather than held KB.
+
+**A bought slot ladder** (was ADR-046 Decisions 1 and 2, deleted by ADR-074)
+Slots bought outright off an escalating price, four free and twenty more for
+sale. A price paid once stops being a decision the moment it is paid: a wide
+build cost nothing to keep, so the only question width ever asked was whether
+you could afford it that one time. Escalating the price delays that without
+fixing it. Replaced by recurring upkeep, which asks the question at every gate.
+Note what is *not* rejected here: ADR-044's rule that width needs a brake
+measured in something the score cannot inflate. Upkeep is that brake, charged in
+KB against a build measured in weight.
+
+**Buying past a missed gate with KB** (an ADR-071 draft, deleted the same day)
+SHAKY could pay a bribe to advance instead of repeating the gate. It answered
+the wrong objection. What makes a retry hollow is re-running the same attempt,
+not getting it for free, and five fresh polls against a locked build is already
+a different attempt. Keeping KB out of it also keeps KB spent on capacity and
+configs, which is where the build decisions live.
+
 **A cap-extension voucher, bought once** (was ADR-015 Decision 3, ADR-023 Context)
 A flat one-time purchase converges every run: "can I afford it" is eventually
 always yes, so every run buys the same thing and runs stop varying.

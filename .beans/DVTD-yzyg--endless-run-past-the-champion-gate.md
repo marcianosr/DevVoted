@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-08-25T10:54:18Z
-updated_at: 2026-08-25T10:54:18Z
+updated_at: 2026-09-12T12:56:28Z
 parent: DVTD-kulw
 ---
 
@@ -73,3 +73,17 @@ no explanation to anyone who has played the games.
 - [ ] Say what happens when the day's polls run out mid-stretch
 - [ ] Pick the name
 - [ ] ADR it: this touches ADR-034's demand curve and ADR-037's peel table
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The endless-run territory this bean inherited is gone. ADR-046 parked the top
+slot rungs and the top plan rungs "past gate 12" because they cost more than a
+perfect climb earns; ADR-074 deletes both ladders, so there is nothing waiting
+up there any more.
+
+The new open end is the upkeep curve. ADR-074 sets five rungs to weight 16 and
+leaves everything above them unspecified, which is exactly the endless stretch's
+problem: what a gate-13 build costs to run, against a payout whose
+`healthyAt` also clamps at 12.
+
+Still the same shape of problem, on a different table.

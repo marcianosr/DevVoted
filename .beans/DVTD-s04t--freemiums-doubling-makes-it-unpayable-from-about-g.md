@@ -5,7 +5,7 @@ status: todo
 type: bug
 priority: normal
 created_at: 2026-09-10T17:40:01Z
-updated_at: 2026-09-10T17:40:01Z
+updated_at: 2026-09-12T12:56:27Z
 ---
 
 `subscriptionBillFor` doubles Freemium's bill every gate: 8 KB at the first clear, 128 KB at gate 4, 2048 KB at gate 8, and **32768 KB (32 MB) at gate 12**. A perfect gate-12 clear pays a few hundred KB and the top storage plan caps at 10 MB, so from roughly gate 8 the config cannot be paid for by any run, and `billSubscriptionsOnClear` lapses it.
@@ -21,3 +21,21 @@ Options, none chosen:
 
 - `subscriptionKb: 8`, `subscriptionGrowthPerGate: 2` in configRoster.model.ts; the arithmetic is `subscriptionBillFor` in subscription.model.ts.
 - Freemium is the roster's only subscription, so this is the whole subscription axis.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+Freemium is a config subscription (`subscriptionBillFor`), not the storage plan,
+so the bug survives ADR-074. Two things in the reasoning above do not:
+
+- "the top storage plan caps at 10 MB" is gone. Nothing caps a balance now, so
+  the argument for why the doubling is unpayable rests on income alone. It still
+  holds: a perfect gate-12 clear pays a few hundred KB against a 32 MB bill.
+- Every build now also pays a weight upkeep bill at every gate close (ADR-074
+  decision 1). A doubling config bill and a recurring build bill compete for the
+  same balance, so the gate at which Freemium becomes unpayable moves earlier,
+  not later.
+
+New question for the options list: ADR-074 decision 4 peels the build when its
+upkeep is unaffordable. Decide whether an unpayable config subscription still
+lapses quietly or joins that peel, because two insolvency rules with different
+outcomes is the kind of thing that reads as a bug.

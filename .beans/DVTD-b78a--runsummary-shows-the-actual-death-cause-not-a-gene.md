@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-12T13:36:36Z
-updated_at: 2026-08-12T13:36:36Z
+updated_at: 2026-09-12T12:57:01Z
 parent: DVTD-kulw
 ---
 
@@ -35,3 +35,20 @@ src/routes/_authed/game-over.tsx) that no longer exist, and is out of scope here
 - [ ] Wire the cause through RunView -> RunSummary props
 - [ ] Replace the hardcoded death subtitle with cause-specific copy
 - [ ] Cover both death paths (stripped-bare fail, stuck-width end-run) with a spec
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+Both death paths above are dead, which makes this bean smaller and clearer
+rather than moot.
+
+- ADR-021's strip-bare death: gone. ADR-071 took the peel off a missed gate, and
+  ADR-074 made an unpayable upkeep bill peel instead, which is never fatal (a
+  build peeled to nothing bills nothing).
+- ADR-031's blocked shop exit: retired long before this, ADR-035 owns it.
+
+There is exactly one death now: closing a gate with coverage in DANGER, below
+`floorAt(gate)`. So the summary does not need to distinguish causes, it needs to
+state the one cause properly: the band the gate closed in, the line that was
+missed, and by how much. All three are already on `readCoverage`.
+
+The generic string is still wrong, just wrong about a single case instead of two.
