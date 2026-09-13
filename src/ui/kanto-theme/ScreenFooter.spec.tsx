@@ -77,7 +77,7 @@ describe("ScreenFooter", () => {
 	it("refuses the start and says why, when a screen hands it a reason", async () => {
 		render(<ScreenFooter {...REFUSED} />);
 
-		const start = screen.getByRole("button", { name: "start gate 0" });
+		const start = screen.getByRole("button", { name: /Pallet gate prep/ });
 		await userEvent.click(start);
 
 		expect(start).toBeDisabled();
@@ -87,7 +87,9 @@ describe("ScreenFooter", () => {
 	it("says nothing under a refused start that was given no reason", () => {
 		render(<ScreenFooter {...props} />);
 
-		expect(screen.getByRole("button", { name: "start gate 0" })).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toBeDisabled();
 		expect(screen.queryByText(BARE_BUILD_REFUSAL)).toBeNull();
 	});
 
@@ -95,7 +97,7 @@ describe("ScreenFooter", () => {
 		render(<ScreenFooter {...props} />);
 
 		expect(
-			screen.getByRole("button", { name: "start gate 0" })
+			screen.getByRole("button", { name: /Pallet gate prep/ })
 		).not.toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 
@@ -104,12 +106,12 @@ describe("ScreenFooter", () => {
 		render(
 			<ScreenFooter
 				{...REFUSED}
-				action={{ label: "start gate 0", onPress }}
+				action={{ label: "Pallet gate prep", onPress }}
 				refusal={undefined}
 			/>
 		);
 
-		const start = screen.getByRole("button", { name: "start gate 0" });
+		const start = screen.getByRole("button", { name: /Pallet gate prep/ });
 		await userEvent.click(start);
 
 		expect(onPress).toHaveBeenCalledOnce();
@@ -120,7 +122,7 @@ describe("ScreenFooter", () => {
 		render(<ScreenFooter {...props} />);
 
 		expect(
-			screen.getByRole("button", { name: "start gate 0" }).parentElement
+			screen.getByRole("button", { name: /Pallet gate prep/ }).parentElement
 		).toHaveClass("ml-auto");
 	});
 

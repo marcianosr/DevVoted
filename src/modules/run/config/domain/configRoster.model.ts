@@ -127,10 +127,10 @@ export const CONFIGS = {
 		id: "code-coverage",
 		label: "Code Coverage",
 		slots: 2,
-		description: "+0.5% flat coverage per correct answer.",
-		gives: "Every correct answer adds +0.5% coverage",
+		description: "Every correct answer is worth 10% more coverage.",
+		gives: "Correct answers pay +10% coverage",
 		rewardMultiplier: 1,
-		coverageAdd: 0.5,
+		coverageAdd: 0.1,
 	},
 	indexedDb: {
 		id: "indexed-db",

@@ -3,7 +3,6 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	NEW_RUN_EMPTY_LABEL,
-	NEW_RUN_OUTCOMES_TITLE,
 	createKantoNewRunScreenProps,
 	kantoNewRunAt,
 	newRunBuildNote,
@@ -13,11 +12,6 @@ import { NewRunScreen } from "./NewRunScreen.ui";
 
 const props = createKantoNewRunScreenProps();
 
-const objectives = () =>
-	screen
-		.getByRole("heading", { name: NEW_RUN_OUTCOMES_TITLE })
-		.closest("section") as HTMLElement;
-
 describe("NewRunScreen", () => {
 	it("stands the build beside the hand it is dealt from", () => {
 		render(<NewRunScreen {...props} />);
@@ -26,7 +20,7 @@ describe("NewRunScreen", () => {
 		expect(screen.getByText("Dealt")).toBeInTheDocument();
 	});
 
-	it("deals the hand and the readout down one column, never full width", () => {
+	it("deals the hand down one column and the build down the other", () => {
 		const { container } = render(<NewRunScreen {...props} />);
 
 		const [dealing, holding] = [
@@ -34,12 +28,12 @@ describe("NewRunScreen", () => {
 		] as HTMLElement[];
 
 		expect(within(dealing).getByText("Dealt")).toBeInTheDocument();
-		expect(within(dealing).getByText("Build")).toBeInTheDocument();
+		expect(within(dealing).queryByText("Build")).toBeNull();
+		expect(within(holding).getByText("Build")).toBeInTheDocument();
 		expect(within(holding).getByText(NEW_RUN_EMPTY_LABEL)).toBeInTheDocument();
-		expect(within(holding).queryByText("Dealt")).toBeNull();
 	});
 
-	it("deals the hand above the weight it would cost to hold it", () => {
+	it("deals the hand before the weight it would cost to hold it", () => {
 		render(<NewRunScreen {...props} />);
 
 		const dealt = screen.getByText("Dealt");
@@ -67,8 +61,14 @@ describe("NewRunScreen", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(
-			screen.getByText("0 configs · 0 weight · 0 covered · 0 billable")
+			screen.getByText("0 weight · 0 covered · 0 billable")
 		).toBeInTheDocument();
+	});
+
+	it("counts the room it has left without re-counting the chips beside it", () => {
+		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
+
+		expect(screen.queryByText(/^1 configs/)).toBeNull();
 	});
 
 	it("speaks for the empty list without pretending a slot stands open", () => {
@@ -107,14 +107,10 @@ describe("NewRunScreen", () => {
 		expect(screen.getByText("gate 0 · Pallet")).toBeInTheDocument();
 	});
 
-	it("names the shape of the climb beside the swatch track", () => {
+	it("leaves the swatch track to state the shape of the climb", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(
-			screen.getByText(
-				"thirteen gates, one a day — today's five polls are waiting"
-			)
-		).toBeInTheDocument();
+		expect(screen.queryByText(/gates, one a day/)).toBeNull();
 	});
 
 	it("wears the gate it is about to run", () => {
@@ -139,7 +135,7 @@ describe("NewRunScreen", () => {
 		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
 		expect(
-			screen.getByText("1 configs · 1 weight · 1 covered · 0 billable")
+			screen.getByText("1 weight · 1 covered · 0 billable")
 		).toBeInTheDocument();
 		expect(screen.getByText("4 left in the hand")).toBeInTheDocument();
 		expect(screen.queryByText(NEW_RUN_EMPTY_LABEL)).not.toBeInTheDocument();
@@ -163,96 +159,35 @@ describe("NewRunScreen", () => {
 	});
 });
 
-describe("what the new run is climbing towards", () => {
-	it("holds the objectives beside the build rather than under everything", () => {
-		const { container } = render(<NewRunScreen {...props} />);
-
-		const holding = container.querySelector("div.grid")
-			?.lastElementChild as HTMLElement;
-
-		expect(
-			within(holding).getByRole("heading", {
-				name: NEW_RUN_OUTCOMES_TITLE,
-			})
-		).toBeInTheDocument();
-	});
-
-	it("stacks the outcome rows, the column being too narrow to line them up", () => {
+describe("what it leaves to prep", () => {
+	it("prices no band at all, the stakes being prep's screen", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(
-			within(objectives()).getByText(
-				"Gate cleared. The Pallet swatch is yours and gate 1 opens tomorrow."
-			)
-		).not.toHaveClass("flex-1");
+			screen.queryByRole("heading", { name: "Objectives and rewards" })
+		).toBeNull();
+		for (const band of ["PERFECT", "HEALTHY", "SHAKY", "DANGER"]) {
+			expect(screen.queryByText(band)).toBeNull();
+		}
 	});
 
-	it("reads the objectives after what is installed, the build coming first", () => {
+	it("sends you on to prep by the press alone, with no line about it", () => {
 		render(<NewRunScreen {...props} />);
 
-		const empty = screen.getByText(NEW_RUN_EMPTY_LABEL);
-		const table = screen.getByRole("heading", {
-			name: NEW_RUN_OUTCOMES_TITLE,
-		});
-
-		expect(
-			empty.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
-	});
-
-	it("cuts the opening gate's bands, dropping the ones with no room", () => {
-		render(<NewRunScreen {...props} />);
-
-		const table = objectives();
-
-		expect(within(table).getByText("PERFECT")).toBeInTheDocument();
-		expect(within(table).getByText("HEALTHY")).toBeInTheDocument();
-		expect(within(table).getByText("OK")).toBeInTheDocument();
-		expect(within(table).queryByText("SHAKY")).toBeNull();
-		expect(within(table).queryByText("DANGER")).toBeNull();
-	});
-
-	it("reads the gate's own line on the bar above the table", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(
-			within(objectives()).getByRole("img", { name: /0% of 5% needed/ })
-		).toBeInTheDocument();
-	});
-
-	it("counts the right answers that reach the line, off the build it has", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(
-			screen.getByText("One correct poll reaches the line.")
-		).toBeInTheDocument();
+		expect(screen.queryByText(/^Prep shows what/)).toBeNull();
 	});
 
 	it("refuses the start while nothing is picked", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getByRole("button", { name: "start gate 0" })).toBeDisabled();
-	});
-
-	it("states the gate's demand once, in the table rather than the footer", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(screen.queryByText("gate 0 asks")).toBeNull();
-		expect(screen.queryByText(/on a clear/)).toBeNull();
-		expect(within(objectives()).getByText("5 – 99%")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toBeDisabled();
 	});
 
 	it("lets the refused start speak for itself, without a scolding line", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(screen.queryByText(/bare build/i)).toBeNull();
-	});
-
-	it("arms the start as soon as the build holds anything", () => {
-		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
-
-		expect(
-			screen.getByRole("button", { name: "start gate 0" })
-		).not.toBeDisabled();
 	});
 });

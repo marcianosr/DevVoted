@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { GateSegmentBar } from "~/modules/run/gate/presentation/GateSegmentBar.ui";
@@ -127,10 +132,10 @@ describe(GateSegmentBar, () => {
 	it("names what each gate ahead demands, so the ladder is readable from gate 0", () => {
 		render(midClimb);
 		expect(screen.getAllByRole("tooltip")[4]).toHaveTextContent(
-			"Needs 60% coverage in its window"
+			`Needs ${percentOf(healthyAt(4))}% coverage to clear`
 		);
 		expect(screen.getAllByRole("tooltip")[2]).toHaveTextContent(
-			"Needs 25% coverage in its window"
+			`Needs ${percentOf(healthyAt(2))}% coverage to clear`
 		);
 	});
 
@@ -150,7 +155,9 @@ describe(GateSegmentBar, () => {
 			/>
 		);
 		const detail = screen.getAllByRole("tooltip")[0];
-		expect(detail).toHaveTextContent("Needs 3% coverage in its window");
+		expect(detail).toHaveTextContent(
+			`Needs ${percentOf(healthyAt(0))}% coverage to clear`
+		);
 		expect(detail).not.toHaveTextContent(/config/);
 	});
 

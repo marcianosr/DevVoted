@@ -9,6 +9,7 @@ import {
 	fundsOf,
 	createKantoBuildFooterProps,
 	createKantoBuildProps,
+	createKantoCoverageBarProps,
 	createKantoHeaderProps,
 	createKantoPollScreenProps,
 	createKantoQuestionProps,
@@ -21,6 +22,12 @@ import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 import type { AuditProps } from "./Audit.ui";
 import { PollScreen } from "./PollScreen.ui";
 import type { QuestionOption } from "./Question.ui";
+
+const SUBMIT_LABEL = "Submit answer";
+const NEXT_LABEL = "Next poll";
+const ANSWERED_HELD = 62;
+
+const noop = () => {};
 
 const LATE_GATE = 11;
 const FIRST_GATE = 1;
@@ -73,6 +80,12 @@ const SHORT_ANSWERS = [
 	{ id: "option-4", letter: "D", label: "filter" },
 ] satisfies QuestionOption[];
 
+const MULTIPLE_ANSWERS = [
+	{ id: "option-1", letter: "A", label: "Partial" },
+	{ id: "option-2", letter: "B", label: "Pick" },
+	{ id: "option-3", letter: "C", label: "Banjo" },
+] satisfies QuestionOption[];
+
 const SEALED_ANSWERS = [
 	{ id: "option-1", letter: "A", label: "Partial<T>" },
 	{ id: "option-2", letter: "B", seal: { price: "4 KB" } },
@@ -83,7 +96,7 @@ const meta: Meta<typeof PollScreen> = {
 	component: PollScreen,
 	title: "Kanto/Screens/PollScreen",
 	argTypes: {
-		width: { control: "inline-radio", options: ["narrow", "default", "wide"] },
+		width: { control: "inline-radio", options: ["narrow", "default"] },
 	},
 	args: createKantoPollScreenProps(),
 	render: (args) => <PollScreen {...args} />,
@@ -169,7 +182,7 @@ export const FirstGate: Story = {
 				skipped: [],
 				skippedNote: undefined,
 			}),
-			counts: { usable: 0, running: 2, offline: 0, changing: 0 },
+			counts: { ready: 0, applies: 2, offline: 0, changing: 0 },
 		}),
 		trail: createKantoTrailProps({ current: 1, verdicts: [] }),
 		audits: [],
@@ -193,6 +206,54 @@ export const LateRun: Story = {
 };
 
 export const NoHint: Story = { args: { hint: undefined } };
+
+export const MultipleAnswers: Story = {
+	args: {
+		question: createKantoQuestionProps({
+			question: "Which of these are TypeScript utility types?",
+			answerType: "multiple",
+			options: MULTIPLE_ANSWERS,
+			pickedIds: ["option-1", "option-2"],
+			wrongCost: undefined,
+		}),
+		hint: "pick every answer that fits, then submit",
+		footer: { action: { label: SUBMIT_LABEL, onPress: noop } },
+	},
+};
+
+export const NothingPicked: Story = {
+	args: {
+		question: createKantoQuestionProps({
+			question: "Which of these are TypeScript utility types?",
+			answerType: "multiple",
+			options: MULTIPLE_ANSWERS,
+			pickedIds: [],
+			wrongCost: undefined,
+		}),
+		footer: {
+			action: { label: SUBMIT_LABEL },
+			refusal: "pick an answer first",
+		},
+	},
+};
+
+export const Answered: Story = {
+	args: {
+		header: createKantoHeaderProps({
+			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD, pin: true }),
+		}),
+		trail: createKantoTrailProps({
+			current: 4,
+			verdicts: ["correct", "wrong", "correct", "correct"],
+		}),
+		question: createKantoQuestionProps({
+			pickedIds: ["option-1"],
+			wrongCost: undefined,
+		}),
+		hint: undefined,
+		footer: { action: { label: NEXT_LABEL, icon: "gate", onPress: noop } },
+	},
+};
 
 export const Credited: Story = {
 	args: { author: { handle: "marcianoschildmeijer", title: "Poll Author" } },

@@ -539,8 +539,8 @@ export const applyActionToRun = async (args: {
 				: await grantObjectiveUnlocks(tx, args.userId, touched);
 
 		if (args.action.type === "answer") {
-			// The answered poll comes from the PRE-action state — the reducer
-			// has already advanced currentIndex past it in `next`.
+			// The answered poll comes from the PRE-action state: `next` has either
+			// advanced currentIndex past it, or held it for the gate's close.
 			await recordSessionAnswer(
 				tx,
 				args,

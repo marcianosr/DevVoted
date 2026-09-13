@@ -8,78 +8,99 @@ import {
 	type CoverageBandId,
 	type CoverageBarProps,
 } from "./CoverageBar.ui";
+import type { KantoColor } from "./colors";
 import { Panel } from "./Panel.ui";
+import {
+	PanelTable,
+	TABLE_DIVIDER,
+	TABLE_ROW,
+	type PanelTableColumn,
+} from "./PanelTable.ui";
 import { Typography } from "./Typography.ui";
 
 const SECTION = "flex w-full flex-col gap-3";
-const ROWS = "flex w-full flex-col";
-const ROW = "flex w-full items-baseline gap-4 py-3";
-const DIVIDER = "border-t border-theme-faint";
+const ROW = `${TABLE_ROW} items-baseline gap-4`;
+const FATAL = "border-l-2 border-theme";
 
-const BAND = "flex w-28 shrink-0 justify-center self-center";
-const RANGE = "w-24 shrink-0 text-sm tabular-nums text-theme-muted";
-const OUTCOME = "min-w-0 flex-1 text-sm text-theme-soft";
-const PAYS = "ml-auto shrink-0 self-center";
+const LEAD_FIGURE_COLOR: KantoColor = "pewter";
 
-const STACKED_ROW = "flex w-full flex-col gap-1.5 py-3";
-const STACKED_HEAD = "flex w-full items-center gap-3";
-const STACKED_RANGE = "shrink-0 text-sm tabular-nums text-theme-muted";
-const STACKED_PAYS = "ml-auto shrink-0";
-const STACKED_OUTCOME = "text-sm text-theme-soft";
+const COLUMNS = [
+	{ label: "band", width: "w-28 shrink-0" },
+	{ label: "coverage", width: "min-w-0 flex-1" },
+	{ label: "pays", width: "ml-auto shrink-0" },
+] as const satisfies readonly PanelTableColumn[];
 
-export type BandOutcomesLayout = "row" | "stacked";
+const [BAND_COLUMN, RANGE_COLUMN, PAYS_COLUMN] = COLUMNS;
+
+const BAND = `flex self-center ${BAND_COLUMN.width}`;
+const RANGE = `text-xs tabular-nums text-theme-muted ${RANGE_COLUMN.width}`;
+const PAYS = `self-center ${PAYS_COLUMN.width}`;
 
 const FATAL_BAND: CoverageBandId = "danger";
+
+export type LeadBand = { band: CoverageBandId; figure?: never };
+export type LeadFigure = { figure: string; band?: never };
+export type LeadPart = string | LeadBand | LeadFigure;
 
 export type BandOutcome = {
 	band: CoverageBandId;
 	range: string;
-	outcome: string;
 	pays: string;
 };
 
 export type BandOutcomesProps = {
 	title: string;
 	outcomes: readonly BandOutcome[];
+	lead?: readonly LeadPart[];
+	note?: string;
 	bar?: CoverageBarProps;
-	layout?: BandOutcomesLayout;
 };
+
+const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
+	if (part.band === undefined) {
+		return <Badge color={LEAD_FIGURE_COLOR}>{part.figure}</Badge>;
+	}
+
+	return (
+		<Badge color={COVERAGE_BAND_COLOR[part.band]}>
+			{COVERAGE_BAND_WORD[part.band]}
+		</Badge>
+	);
+};
+
+const Lead = ({ parts }: { parts: readonly LeadPart[] }) => (
+	<Typography variant="hint">
+		{parts.map((part, index) =>
+			typeof part === "string" ? (
+				<span key={`${part}-${index}`}>{part}</span>
+			) : (
+				<Mark key={`${part.band ?? part.figure}-${index}`} part={part} />
+			)
+		)}
+	</Typography>
+);
 
 type OutcomeProps = {
 	outcome: BandOutcome;
 	first: boolean;
-	layout: BandOutcomesLayout;
 };
 
-const Outcome = ({ outcome, first, layout }: OutcomeProps) => {
+const Outcome = ({ outcome, first }: OutcomeProps) => {
 	const color = COVERAGE_BAND_COLOR[outcome.band];
 	const fatal = outcome.band === FATAL_BAND;
-	const band = <Badge color={color}>{COVERAGE_BAND_WORD[outcome.band]}</Badge>;
-	const pays = <Badge color={color}>{outcome.pays}</Badge>;
-	const theme = fatal ? color : undefined;
-
-	if (layout === "stacked")
-		return (
-			<div className={clsx(STACKED_ROW, !first && DIVIDER)}>
-				<span className={STACKED_HEAD}>
-					{band}
-					<span className={STACKED_RANGE}>{outcome.range}</span>
-					<span className={STACKED_PAYS}>{pays}</span>
-				</span>
-				<span data-screen-theme={theme} className={STACKED_OUTCOME}>
-					{outcome.outcome}
-				</span>
-			</div>
-		);
 
 	return (
-		<div className={clsx(ROW, !first && DIVIDER)}>
-			<span className={BAND}>{band}</span>
-			<span className={RANGE}>{outcome.range}</span>
-			<span data-screen-theme={theme} className={OUTCOME}>
-				{outcome.outcome}
+		<div
+			data-screen-theme={fatal ? color : undefined}
+			className={clsx(ROW, !first && TABLE_DIVIDER, fatal && FATAL)}
+		>
+			<span className={BAND}>
+				<Badge color={color}>{COVERAGE_BAND_WORD[outcome.band]}</Badge>
 			</span>
-			<span className={PAYS}>{pays}</span>
+			<span className={RANGE}>{outcome.range}</span>
+			<span className={PAYS}>
+				<Badge color={color}>{outcome.pays}</Badge>
+			</span>
 		</div>
 	);
 };
@@ -87,25 +108,23 @@ const Outcome = ({ outcome, first, layout }: OutcomeProps) => {
 export const BandOutcomes = ({
 	title,
 	outcomes,
+	lead,
+	note,
 	bar,
-	layout = "row",
 }: BandOutcomesProps) => (
 	<section className={SECTION}>
 		<Typography variant="title" as="h3">
 			{title}
 		</Typography>
+		{lead === undefined ? null : <Lead parts={lead} />}
 		{bar === undefined ? null : <CoverageBar {...bar} />}
 		<Panel>
-			<div className={ROWS}>
+			<PanelTable columns={COLUMNS}>
 				{outcomes.map((outcome, index) => (
-					<Outcome
-						key={outcome.band}
-						outcome={outcome}
-						first={index === 0}
-						layout={layout}
-					/>
+					<Outcome key={outcome.band} outcome={outcome} first={index === 0} />
 				))}
-			</div>
+			</PanelTable>
 		</Panel>
+		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
 	</section>
 );

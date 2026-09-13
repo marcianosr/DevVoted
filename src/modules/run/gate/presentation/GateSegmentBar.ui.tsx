@@ -5,10 +5,7 @@ import {
 	hasThemeColor,
 	themeColorOf,
 } from "~/modules/run/gate/domain/swatch.model";
-import {
-	coverageDemandFor,
-	roundToOneDecimal,
-} from "~/modules/run/run/domain/rules.model";
+import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import {
 	SwatchMark,
 	swatchNameClass,
@@ -16,6 +13,10 @@ import {
 import { swatchTheme } from "~/ui/old-theme/theme/swatchTheme";
 import { Tooltip } from "~/ui/old-theme/Tooltip.component";
 import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 type GateSegmentBarProps = {
 	/** One per gate, in climb order — the swatch that gate's clear awards. */
@@ -53,7 +54,7 @@ const spokenName = (swatch: GateSwatch, standing: PipStanding): string =>
  * stake to hand it.
  */
 const gateDemand = (gate: number): string =>
-	`Needs ${coverageDemandFor(gate)}% coverage in its window`;
+	`Needs ${percentOf(healthyAt(gate))}% coverage to clear`;
 
 const PipDetail = ({
 	swatch,

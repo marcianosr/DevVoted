@@ -18,7 +18,7 @@ export type CategoryTally = {
 export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
-	readonly coverageGained: number;
+	readonly unitsEarned: number;
 	readonly byCategory: Readonly<Record<string, CategoryTally>>;
 	readonly peeked?: number;
 	readonly linted?: number;
@@ -28,7 +28,7 @@ export type GateWindow = {
 export const EMPTY_WINDOW: GateWindow = {
 	correct: 0,
 	answered: 0,
-	coverageGained: 0,
+	unitsEarned: 0,
 	byCategory: {},
 	peeked: 0,
 	linted: 0,

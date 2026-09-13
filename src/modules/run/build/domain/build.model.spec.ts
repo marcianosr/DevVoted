@@ -6,10 +6,12 @@ import {
 	MAX_SLOTS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
-	roundToOneDecimal,
+	roundToTwoDecimals,
 	streakMultiplier,
-	wrongLossShareFor,
 } from "~/modules/run/run/domain/rules.model";
+import { BASE_UNIT } from "~/modules/run/build/domain/coverageRatio.model";
+
+const BASE = BASE_UNIT;
 import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { AnswerContext } from "~/modules/run/config/domain/effect.model";
@@ -147,10 +149,10 @@ describe("buildModifiersFor", () => {
 });
 
 describe("perAnswerPreviewFor", () => {
-	it("prices a bare build at gate 0: 1 coverage, no storage, no matching-config bonus", () => {
-		expect(perAnswerPreviewFor([], 0)).toEqual({
-			coveragePerCorrect: 1,
-			coveragePerWrong: -0.5,
+	it("prices a bare build at gate 0: the flat base, no storage, no matching-config bonus", () => {
+		expect(perAnswerPreviewFor([])).toEqual({
+			coveragePerCorrect: BASE,
+			coveragePerWrong: 0,
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
 			streakStepMultiplier: streakMultiplier(1),
@@ -160,90 +162,76 @@ describe("perAnswerPreviewFor", () => {
 
 	it("caps the streak at the base ten steps on a build that sells no headroom", () => {
 		expect(streakCapStepsFor([])).toBe(BASE_STREAK_STEPS);
-		expect(perAnswerPreviewFor([], 0).streakCapMultiplier).toBe(2);
+		expect(perAnswerPreviewFor([]).streakCapMultiplier).toBe(2);
 	});
 
 	it("adds a headroom config's steps to the cap, so the ceiling moves with the build", () => {
 		const headroom = { ...CONFIGS.js, id: "flow", streakCapSteps: 5 };
 
 		expect(streakCapStepsFor([headroom])).toBe(BASE_STREAK_STEPS + 5);
-		expect(perAnswerPreviewFor([headroom], 0).streakCapMultiplier).toBe(2.5);
+		expect(perAnswerPreviewFor([headroom]).streakCapMultiplier).toBe(2.5);
 	});
 
 	it("carries the streak step, since even the first correct answer rides one", () => {
-		expect(perAnswerPreviewFor([], 0).streakStepMultiplier).toBe(1.1);
+		expect(perAnswerPreviewFor([]).streakStepMultiplier).toBe(1.1);
 	});
 
-	it("scales coverage with gate depth, riding the same curve as gateClearPayout", () => {
-		expect(perAnswerPreviewFor([], 4).coveragePerCorrect).toBe(5);
+	it("pays the same for a correct answer at every gate", () => {
+		expect(perAnswerPreviewFor([]).coveragePerCorrect).toBe(BASE);
 	});
 
 	it("folds in build-wide coverage mults/adds, excluding Focus bonuses", () => {
 		expect(
-			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage], 0)
+			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage])
 				.coveragePerCorrect
-		).toBe(3);
+		).toBeCloseTo(BASE * 2.2);
 	});
 
-	it("takes the gate's share of what a correct answer pays, on any build", () => {
+	it("costs nothing to miss on any build: the slot is the cost, not a bleed", () => {
 		for (const configs of [
 			[],
 			[CONFIGS.codeCoverage],
 			[CONFIGS.agentsMd],
 			[CONFIGS.agentsMd, CONFIGS.codeCoverage],
-		]) {
-			const { coveragePerCorrect, coveragePerWrong } = perAnswerPreviewFor(
-				configs,
-				4
-			);
-
-			expect(-coveragePerWrong).toBe(
-				roundToOneDecimal(wrongLossShareFor(4) * coveragePerCorrect)
-			);
-		}
-	});
-
-	it("scales the bleed with the gate faster than the earn, so a late miss stings", () => {
-		expect(perAnswerPreviewFor([], 0).coveragePerWrong).toBe(-0.5);
-		expect(perAnswerPreviewFor([], 4).coveragePerWrong).toBe(-3.1);
-		expect(perAnswerPreviewFor([], VICTORY_GATE).coveragePerWrong).toBe(-11.2);
+		])
+			expect(perAnswerPreviewFor(configs).coveragePerWrong).toBe(0);
 	});
 
 	it("follows a config that only adds flat coverage, rather than ignoring it", () => {
 		expect(
-			perAnswerPreviewFor([CONFIGS.codeCoverage], 0).coveragePerWrong
-		).toBe(-0.8);
+			perAnswerPreviewFor([CONFIGS.codeCoverage]).coveragePerCorrect
+		).toBeGreaterThan(BASE);
 	});
 
 	it("sums storagePerCorrect across the build", () => {
 		expect(
-			perAnswerPreviewFor([CONFIGS.indexedDb], 0).storageKbPerCorrect
+			perAnswerPreviewFor([CONFIGS.indexedDb]).storageKbPerCorrect
 		).toBe(8);
-		expect(perAnswerPreviewFor([], 0).storageKbPerCorrect).toBe(0);
+		expect(perAnswerPreviewFor([]).storageKbPerCorrect).toBe(0);
 	});
 
 	it("surfaces the highest Focus bonus as the matching-config multiplier", () => {
-		expect(perAnswerPreviewFor([CONFIGS.js], 0).matchingConfigMultiplier).toBe(
+		expect(perAnswerPreviewFor([CONFIGS.js]).matchingConfigMultiplier).toBe(
 			1.25
 		);
 		expect(
-			perAnswerPreviewFor([CONFIGS.js, { ...CONFIGS.ts, level: 3 }], 0)
+			perAnswerPreviewFor([CONFIGS.js, { ...CONFIGS.ts, level: 3 }])
 				.matchingConfigMultiplier
 		).toBe(1.75);
 	});
 
 	it("omits the matching-config multiplier with no Focus config equipped", () => {
 		expect(
-			perAnswerPreviewFor([CONFIGS.agentsMd], 0).matchingConfigMultiplier
+			perAnswerPreviewFor([CONFIGS.agentsMd]).matchingConfigMultiplier
 		).toBeUndefined();
 	});
 
 	it("folds Overclock's throttle into the floor — the opener bonus stays out", () => {
-		expect(perAnswerPreviewFor([CONFIGS.overclock], 0).coveragePerCorrect).toBe(
-			0.5
+		expect(perAnswerPreviewFor([CONFIGS.overclock]).coveragePerCorrect).toBe(
+			BASE * 0.5
 		);
-		expect(perAnswerPreviewFor([CONFIGS.coldStart], 0).coveragePerCorrect).toBe(
-			1
+		expect(perAnswerPreviewFor([CONFIGS.coldStart]).coveragePerCorrect).toBe(
+			BASE
 		);
 	});
 });
@@ -335,142 +323,152 @@ describe("extraPickPayoutFor", () => {
 });
 
 describe("coverageForAnswer", () => {
-	it("pays 1.25x in a Focus category (1.3 rounded), 1x outside it", () => {
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(1.3);
-		expect(coverageForAnswer([CONFIGS.js], at("css"), 1)).toBe(1);
+	const pays = (multiplier: number) => roundToTwoDecimals(BASE * multiplier);
+
+	it("pays one unit times the build, whatever the poll type", () => {
+		expect(coverageForAnswer([], at("js"), 1)).toBe(BASE);
+	});
+
+	it("adds the streak step after the multipliers, never inside them", () => {
+		expect(coverageForAnswer([], at("js"), 1, 1)).toBeCloseTo(BASE + 0.1);
+		expect(coverageForAnswer([CONFIGS.agentsMd], at("js"), 1, 1)).toBeCloseTo(
+			BASE * 2 + 0.1
+		);
+	});
+
+	it("pays no streak step on the window's opening answer", () => {
+		expect(coverageForAnswer([], at("js"), 1, 0)).toBe(BASE);
+	});
+
+	it("pays 1.25x in a Focus category, 1x outside it", () => {
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(pays(1.25));
+		expect(coverageForAnswer([CONFIGS.js], at("css"), 1)).toBe(pays(1));
 	});
 
 	it("stacks Focus and Amplify across the whole build", () => {
 		expect(coverageForAnswer([CONFIGS.js, CONFIGS.agentsMd], at("js"), 1)).toBe(
-			2.5
+			pays(2.5)
 		);
 	});
 
 	it("scales Focus with level and pays nothing for a wrong answer", () => {
 		expect(coverageForAnswer([{ ...CONFIGS.js, level: 2 }], at("js"), 1)).toBe(
-			1.5
+			pays(1.5)
 		);
 		expect(coverageForAnswer([CONFIGS.js], at("js"), 0)).toBe(0);
 	});
 
 	it("pays a partial share proportionally, configs included", () => {
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(0.6);
-	});
-
-	it("applies the streak factor last, over base × configs", () => {
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1.3)).toBe(1.6);
-		expect(coverageForAnswer([CONFIGS.js], at("js"), 1, 1)).toBe(1.3);
+		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(pays(0.625));
 	});
 
 	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
 		expect(
 			coverageForAnswer([CONFIGS.agentsMd, CONFIGS.codeCoverage], at("js"), 1)
-		).toBe(3);
+		).toBe(pays(2.2));
 	});
 
 	it("doubles the window's opening answer with Cold Start, and only that one", () => {
-		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(2);
-		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(1);
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(pays(2));
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(pays(1));
 	});
 
 	it("front-loads the window with Overclock: ×4 opener, ×0.5 for the rest", () => {
-		expect(coverageForAnswer([CONFIGS.overclock], at("js", 0), 1)).toBe(4);
-		expect(coverageForAnswer([CONFIGS.overclock], at("js", 1), 1)).toBe(0.5);
-		expect(coverageForAnswer([CONFIGS.overclock], at("js", 4), 1)).toBe(0.5);
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 0), 1)).toBe(pays(4));
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 1), 1)).toBe(
+			pays(0.5)
+		);
+		expect(coverageForAnswer([CONFIGS.overclock], at("js", 4), 1)).toBe(
+			pays(0.5)
+		);
 	});
 
 	it("stacks Overclock and Cold Start multiplicatively on the opener", () => {
 		const build = [CONFIGS.overclock, CONFIGS.coldStart];
-		expect(coverageForAnswer(build, at("js", 0), 1)).toBe(8);
-		expect(coverageForAnswer(build, at("js", 1), 1)).toBe(0.5);
+		expect(coverageForAnswer(build, at("js", 0), 1)).toBe(pays(8));
+		expect(coverageForAnswer(build, at("js", 1), 1)).toBe(pays(0.5));
 	});
 });
 
 describe("coverageBreakdownForAnswer", () => {
-	it("gives a bare correct answer a base of 1 with no bonuses", () => {
-		expect(coverageBreakdownForAnswer([], at("js"), 1, 1, 0)).toEqual({
-			base: 1,
+	it("gives a bare correct answer the flat base with no bonuses", () => {
+		expect(coverageBreakdownForAnswer([], at("js"), 1, 0)).toEqual({
+			base: BASE,
 			streakBonus: 0,
 			configBonuses: [],
 		});
 	});
 
 	it("splits an Amplify multiplier into its own config chip", () => {
-		expect(
-			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 1, 1, 0)
-		).toEqual({
-			base: 1,
-			streakBonus: 0,
-			configBonuses: [{ configId: "agents-md", value: 1 }],
-		});
+		expect(coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 1, 0)).toEqual(
+			{
+				base: BASE,
+				streakBonus: 0,
+				configBonuses: [{ configId: "agents-md", value: BASE }],
+			}
+		);
 	});
 
 	it("splits a flat coverage add into its own config chip", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.codeCoverage], at("js"), 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.codeCoverage], at("js"), 1, 0)
 		).toEqual({
-			base: 1,
+			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "code-coverage", value: 0.5 }],
+			configBonuses: [{ configId: "code-coverage", value: BASE * 0.1 }],
 		});
 	});
 
 	it("chips Cold Start on the opener and hides it afterwards", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 0), 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 0), 1, 0)
 		).toEqual({
-			base: 1,
+			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "cold-start", value: 1 }],
+			configBonuses: [{ configId: "cold-start", value: BASE }],
 		});
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 1, 0)
-		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 0)
+		).toEqual({ base: BASE, streakBonus: 0, configBonuses: [] });
 	});
 
 	it("chips Overclock's throttle as a negative bonus off the opener", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 0), 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 0), 1, 0)
 		).toEqual({
-			base: 1,
+			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "overclock", value: 3 }],
+			configBonuses: [{ configId: "overclock", value: BASE * 3 }],
 		});
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 1), 1, 1, 0)
+			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 1), 1, 0)
 		).toEqual({
-			base: 1,
+			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "overclock", value: -0.5 }],
+			configBonuses: [{ configId: "overclock", value: -BASE * 0.5 }],
 		});
 	});
 
-	it("pulls the streak factor into its own bonus over base + configs", () => {
-		expect(
-			coverageBreakdownForAnswer([CONFIGS.js], at("js"), 1, 1.3, 0)
-		).toEqual({
-			base: 1,
-			streakBonus: 0.3,
-			configBonuses: [{ configId: "js", value: 0.3 }],
+	it("names the streak step in the equation once one is running", () => {
+		expect(coverageBreakdownForAnswer([CONFIGS.js], at("js"), 1, 0)).toEqual({
+			base: BASE,
+			streakBonus: 0,
+			configBonuses: [
+				{ configId: "js", value: roundToTwoDecimals(BASE * 0.25) },
+			],
 		});
 	});
 
 	it("excludes configs with no coverage effect on the category", () => {
 		expect(
-			coverageBreakdownForAnswer(
-				[CONFIGS.eslint, CONFIGS.js],
-				at("css"),
-				1,
-				1,
-				0
-			)
-		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+			coverageBreakdownForAnswer([CONFIGS.eslint, CONFIGS.js], at("css"), 1, 0)
+		).toEqual({ base: BASE, streakBonus: 0, configBonuses: [] });
 	});
 
-	it("carries a miss as a negative base with no bonuses", () => {
+	it("carries a miss as a flat nothing: the slot is the cost, not a bleed", () => {
 		expect(
-			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 0, 1, 0.5)
-		).toEqual({ base: -0.5, streakBonus: 0, configBonuses: [] });
+			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 0, 3)
+		).toEqual({ base: 0, streakBonus: 0, configBonuses: [] });
 	});
 
 	it("credits the multiplier chip when a ×mult amplifies a flat add, listing the mult last", () => {
@@ -479,15 +477,14 @@ describe("coverageBreakdownForAnswer", () => {
 				[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				at("js"),
 				1,
-				1,
 				0
 			)
 		).toEqual({
-			base: 1,
+			base: BASE,
 			streakBonus: 0,
 			configBonuses: [
-				{ configId: "code-coverage", value: 0.5 },
-				{ configId: "agents-md", value: 1.5 },
+				{ configId: "code-coverage", value: BASE * 0.1 },
+				{ configId: "agents-md", value: BASE * 1.1 },
 			],
 		});
 	});
@@ -497,7 +494,6 @@ describe("coverageBreakdownForAnswer", () => {
 			[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 			at("js"),
 			1,
-			1,
 			0
 		).configBonuses.map((bonus) => bonus.configId);
 		expect(order).toEqual(["code-coverage", "agents-md"]);
@@ -505,13 +501,13 @@ describe("coverageBreakdownForAnswer", () => {
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
 		const configs = [CONFIGS.agentsMd, CONFIGS.codeCoverage];
-		const breakdown = coverageBreakdownForAnswer(configs, at("js"), 1, 1.3, 0);
+		const breakdown = coverageBreakdownForAnswer(configs, at("js"), 1, 0);
 		const sum =
 			breakdown.base +
 			breakdown.streakBonus +
 			breakdown.configBonuses.reduce((total, bonus) => total + bonus.value, 0);
-		expect(Math.round(sum * 10) / 10).toBe(
-			coverageForAnswer(configs, at("js"), 1, 1.3)
+		expect(roundToTwoDecimals(sum)).toBe(
+			coverageForAnswer(configs, at("js"), 1)
 		);
 	});
 });
@@ -538,36 +534,31 @@ describe("stripConfig and isBare", () => {
 });
 
 describe("coverageFactorsForAnswer", () => {
-	it("hands back the share, the build's combined factor, and the streak", () => {
-		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 1, 1.1)).toEqual({
+	it("hands back the share and the build's combined factor", () => {
+		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 1)).toEqual({
 			correct: 1,
 			build: 1.25,
-			streak: 1.1,
 		});
 	});
 
 	it("folds adds and multipliers into one build factor, adds first", () => {
 		expect(
 			coverageFactorsForAnswer(
-				[CONFIGS.codeCoverage, CONFIGS.agentsMd],
+				[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				at("js"),
-				1,
 				1
 			)
-		).toEqual({ correct: 1, build: 3, streak: 1 });
+		).toEqual({ correct: 1, build: 2.2 });
 	});
 
 	it("reads a bare build as ×1 rather than pretending it contributed", () => {
-		expect(coverageFactorsForAnswer([], at("js"), 2, 1)).toEqual({
+		expect(coverageFactorsForAnswer([], at("js"), 2)).toEqual({
 			correct: 2,
 			build: 1,
-			streak: 1,
 		});
 	});
 
-	it("has no factors for a miss — nothing multiplied", () => {
-		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 0, 1)).toBe(
-			undefined
-		);
+	it("hands back nothing at all for a wrong answer", () => {
+		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 0)).toBe(undefined);
 	});
 });

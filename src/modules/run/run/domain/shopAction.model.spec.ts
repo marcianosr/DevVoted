@@ -24,6 +24,7 @@ import {
 	SLICE_WINDOW,
 	pinCostFor,
 	planBillKb,
+	streakMultiplier,
 	storageCapFor,
 } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -406,6 +407,9 @@ describe("the git tag (ADR-036)", () => {
 	});
 });
 
+/** A flawless window fills the bar and its four streak steps spill into storage. */
+const FLAWLESS_OVERFLOW_KB = 13;
+
 describe("economy", () => {
 	it("earns storage from the IndexedDB faucet on correct answers only", () => {
 		let state = started(["indexed-db"]);
@@ -426,7 +430,12 @@ describe("economy", () => {
 		let state: RunState = { ...started(["js"]), storagePlan: 4, storage: 2000 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 
-		expect(state.storage).toBe(2000 + 32 - planBillKb(4));
+		expect(state.storage).toBe(
+			2000 +
+				32 * streakMultiplier(SLICE_WINDOW) +
+				FLAWLESS_OVERFLOW_KB -
+				planBillKb(4)
+		);
 		expect(state.storage).toBeGreaterThan(storageCapFor(0));
 	});
 

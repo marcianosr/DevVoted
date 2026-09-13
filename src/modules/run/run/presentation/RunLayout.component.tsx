@@ -43,7 +43,7 @@ export const RunLayout = () => {
 						pollsAnswered={view.pollsAnswered}
 						pollsPerGate={view.pollsPerGate}
 						gateCoverage={view.gateStake.coverageHeld}
-						gateCoverageDemand={view.gateStake.coverageDemand}
+						gateCoverageDemand={view.gateStake.coverageLadder.healthy}
 						coverageByCategory={view.coverageByCategory}
 					/>
 				</HudBar>

@@ -4,10 +4,12 @@ import userEvent from "@testing-library/user-event";
 
 import {
 	GATE_REVIEW_LABEL,
+	GATE_SHOP_LABEL,
 	NEW_RUN_LABEL,
 	PEEL_REFUSAL,
 	SHAKY_ANSWERS,
 	kantoGateDanger,
+	kantoGateWon,
 	kantoGateHealthy,
 	kantoGateOk,
 	kantoGateOutcomeAt,
@@ -18,6 +20,7 @@ import {
 	kantoGateShakyFunded,
 	kantoGateShakyPicking,
 	kantoGateZero,
+	kantoGateHealthyLine,
 } from "~/test/kantoGate.factory";
 
 import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
@@ -72,7 +75,9 @@ describe("GateOutcomeScreen", () => {
 
 			expect(within(header).queryByText(/needed/)).not.toBeInTheDocument();
 			expect(
-				screen.getByRole("img", { name: "72% of 40% needed · HEALTHY" })
+				screen.getByRole("img", {
+					name: `72% of ${kantoGateHealthyLine(4)}% needed · HEALTHY`,
+				})
 			).toBeInTheDocument();
 		});
 
@@ -317,6 +322,36 @@ describe("GateOutcomeScreen", () => {
 		});
 	});
 
+	describe("a won run", () => {
+		it("closes the climb instead of pointing at a gate that never comes", () => {
+			render(<GateOutcomeScreen {...kantoGateWon()} />);
+
+			expect(headingOf("The climb is done")).toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: /^Retry gate/ })
+			).not.toBeInTheDocument();
+		});
+
+		it("keeps the summit's own colour, since the run was not lost", () => {
+			const { container } = render(<GateOutcomeScreen {...kantoGateWon()} />);
+
+			expect(container.firstElementChild).toHaveAttribute("data-gate-theme");
+			expect(container.firstElementChild).not.toHaveAttribute(
+				"data-screen-theme",
+				COVERAGE_BAND_COLOR.danger
+			);
+		});
+
+		it("offers a new run rather than a shop that has nothing left to sell", () => {
+			render(<GateOutcomeScreen {...kantoGateWon()} />);
+
+			expect(screen.getByRole("button", { name: NEW_RUN_LABEL })).toBeEnabled();
+			expect(
+				screen.queryByRole("button", { name: GATE_SHOP_LABEL })
+			).not.toBeInTheDocument();
+		});
+	});
+
 	describe("a danger close", () => {
 		it("ends the run instead of naming a gate that was earned", () => {
 			render(<GateOutcomeScreen {...kantoGateDanger()} />);
@@ -329,7 +364,7 @@ describe("GateOutcomeScreen", () => {
 		it("leads with the coverage it reached, not with a payout it never got", () => {
 			render(<GateOutcomeScreen {...kantoGateDanger()} />);
 
-			expect(figureOf()).toHaveTextContent("14.2%");
+			expect(figureOf()).toHaveTextContent("20%");
 		});
 
 		it("wears the ending's colour rather than the gate's, since no gate follows", () => {
@@ -376,7 +411,9 @@ describe("GateOutcomeScreen", () => {
 			render(<GateOutcomeScreen {...kantoGateZero()} />);
 
 			expect(screen.queryByText("survive")).not.toBeInTheDocument();
-			expect(screen.getByText("HEALTHY 5%")).toBeInTheDocument();
+			expect(
+				screen.getByText(`HEALTHY ${kantoGateHealthyLine(0)}%`)
+			).toBeInTheDocument();
 		});
 
 		it("still reads perfect at a full bar", () => {

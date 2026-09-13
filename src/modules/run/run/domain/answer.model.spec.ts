@@ -6,18 +6,26 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import {
-	coverageLossFor,
-	isOverCapacity,
-} from "~/modules/run/build/domain/build.model";
+import { gateLadderFor } from "~/modules/run/gate/domain/gate.model";
+import { isOverCapacity } from "~/modules/run/build/domain/build.model";
 import {
 	BASE_SLOTS,
 	FAUCET_CAP_KB,
 	GATE_COUNT,
 	SLICE_WINDOW,
+	STREAK_UNIT_STEP,
 	VICTORY_GATE,
-	coverageDemandFor,
+	roundToOneDecimal,
+	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	BASE_UNIT,
+	healthyAt,
+	percentOf,
+	runCoverageOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+
+const BASE_GAIN = BASE_UNIT;
 import {
 	createRun,
 	type RunState,
@@ -36,19 +44,97 @@ import {
 	started,
 } from "~/modules/run/run/domain/run.factory";
 
+/** A flawless window fills the bar and its four streak steps spill into storage. */
+const FLAWLESS_OVERFLOW_KB = 13;
+
+describe("what one answer is worth at the opening gate", () => {
+	it("moves the meter by the flat base, not by a fraction of the gate", () => {
+		const state = answerWith(started([]), true);
+
+		expect(state.window.unitsEarned).toBe(BASE_UNIT);
+	});
+
+	it("asks exactly what one answer pays, so the calibration gate clears on one", () => {
+		const state = started([]);
+		const ladder = gateLadderFor(state.build.configs, 0, scheduleOf(state));
+
+		expect(ladder.healthy).toBe(percentOf(healthyAt(0)));
+		expect(ladder.ok).toBe(ladder.healthy);
+		expect(ladder.floor).toBe(0);
+	});
+});
+
+describe("the gate holds until its last answer has been read", () => {
+	const scoreOnly = (state: RunState, correct: boolean): RunState => {
+		const current = state.polls[state.currentIndex];
+		const option = current.options.find(
+			(candidate) => candidate.correct === correct
+		);
+		if (!option) throw new Error("no matching option");
+		return runReducer(state, { type: "answer", optionIds: [option.id] });
+	};
+
+	/** Four right and one wrong, which a bare build pays 4.2 units for. */
+	const filledWindow = (): RunState =>
+		[true, true, false, true, true].reduce(scoreOnly, started([]));
+
+	const heldPercent = (state: RunState): number =>
+		roundToOneDecimal(
+			percentOf(
+				runCoverageOf(
+					state.bankedUnits + state.window.unitsEarned,
+					state.gatesCleared
+				)
+			)
+		);
+
+	it("stays in the gate that asked the fifth poll", () => {
+		const state = filledWindow();
+
+		expect(state.gatesCleared).toBe(0);
+		expect(state.status).toBe("answering");
+	});
+
+	it("reads the last answer against the slots of the gate that asked it", () => {
+		expect(heldPercent(filledWindow())).toBe(84);
+	});
+
+	it("rebases the same units onto the next gate only once the gate closes", () => {
+		const closed = runReducer(filledWindow(), { type: "close-gate" });
+
+		expect(closed.gatesCleared).toBe(1);
+		expect(closed.bankedUnits).toBe(4.2);
+		expect(heldPercent(closed)).toBe(42);
+	});
+
+	it("refuses a sixth answer into a window that is already full", () => {
+		const full = filledWindow();
+
+		expect(scoreOnly(full, true)).toBe(full);
+	});
+
+	it("closes nothing while the gate still has polls left", () => {
+		const opening = scoreOnly(started([]), true);
+
+		expect(runReducer(opening, { type: "close-gate" })).toBe(opening);
+	});
+});
+
 describe("gates and rewards", () => {
 	it("clears a gate into the reward screen and grants storage", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(32);
+		expect(state.storage).toBe(
+			32 * streakMultiplier(SLICE_WINDOW) + FLAWLESS_OVERFLOW_KB
+		);
 	});
 
 	it("pays the flat Unit Tests payout on top of the gate reward", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.storage).toBe(64);
+		expect(state.storage).toBe(93);
 	});
 
 	it("resets the shop's sale tally on a gate clear", () => {
@@ -70,8 +156,8 @@ describe("gates and rewards", () => {
 		state = answerWith(state, false);
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.gateRewardKb).toBe(26);
-		expect(state.storage).toBe(26);
+		expect(state.gateRewardKb).toBe(36);
+		expect(state.storage).toBe(36);
 	});
 
 	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
@@ -106,7 +192,7 @@ describe("gates and rewards", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(32);
+		expect(state.storage).toBe(61);
 
 		state = runReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.build.configs[0].level ?? 1).toBe(1);
@@ -126,12 +212,12 @@ describe("gates and rewards", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(64);
+		expect(state.storage).toBe(93);
 
 		state = runReducer(state, { type: "upgrade", configId: "unit-tests" });
 		const unit = state.build.configs.find((c) => c.id === "unit-tests")!;
 		expect(unit.level).toBe(2);
-		expect(state.storage).toBe(0);
+		expect(state.storage).toBe(29);
 
 		const broke = runReducer(state, {
 			type: "upgrade",
@@ -198,19 +284,19 @@ describe("the gate's window meter (ADR-035)", () => {
 	it("fails a perfect window whose meter sits under the gate's own demand", () => {
 		const state = clearGate({
 			...started(["js"]),
-			gatesCleared: 2,
+			gatesCleared: 6,
 			coverage: 500,
 		});
 		expect(state.status).toBe("awaiting-strip");
-		expect(state.gatesCleared).toBe(2);
-		expect(state.log.at(-1)).toContain("Gate 2 failed");
+		expect(state.gatesCleared).toBe(6);
+		expect(state.log.at(-1)).toContain("Gate 6 failed");
 	});
 
 	it("resets the meter for the retry, keeping its answers for the review", () => {
 		let state = clearGate({ ...started(["js"]), gatesCleared: 2 });
 		expect(state.answeredThisGate).toHaveLength(SLICE_WINDOW);
 		state = payPeel(state);
-		expect(state.window.coverageGained).toBe(0);
+		expect(state.window.unitsEarned).toBe(0);
 		expect(state.window.answered).toBe(0);
 		state = runReducer(state, { type: "finish-reward" });
 		expect(state.answeredThisGate).toEqual([]);
@@ -222,13 +308,24 @@ describe("the gate's window meter (ADR-035)", () => {
 		expect(state.coverage).toBeGreaterThan(0);
 	});
 
-	it("bleeds the meter on a wrong answer but floors it at 0", () => {
-		let state = started(["js"]);
-		state = answerWith(state, false);
-		expect(state.window.coverageGained).toBe(0);
-		state = answerWith(state, true);
-		state = answerWith(state, false);
-		expect(state.window.coverageGained).toBeCloseTo(0.6);
+	it("costs nothing to miss at any gate: the slot is the cost, not a bleed", () => {
+		let opening = started(["js"]);
+		opening = answerWith(opening, true);
+		const held = opening.window.unitsEarned;
+		opening = answerWith(opening, false);
+		expect(opening.window.unitsEarned).toBe(held);
+
+		let late: RunState = { ...started(["js"]), gatesCleared: 3 };
+		late = answerWith(late, true);
+		const earned = late.window.unitsEarned;
+		late = answerWith(late, false);
+		expect(late.window.unitsEarned).toBe(earned);
+	});
+
+	it("floors the meter at zero however many misses land on it", () => {
+		let state: RunState = { ...started(["js"]), gatesCleared: 3 };
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		expect(state.window.unitsEarned).toBe(0);
 	});
 
 	it("never advances a build that answers nothing — it peels until the run ends", () => {
@@ -248,21 +345,22 @@ describe("the gate's window meter (ADR-035)", () => {
 		expect(state.build.configs).toHaveLength(4);
 	});
 
-	it("grades each attempt against its own gate's row of the demand table", () => {
+	it("grades each attempt against its own gate's rung of the ladder", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-		expect(coverageDemandFor(0)).toBe(3);
+		expect(percentOf(healthyAt(0))).toBe(20);
 	});
 });
 
 describe("enhancement configs on one build", () => {
 	it("doubles the opening answer's coverage with Cold Start", () => {
+		const doubled = BASE_UNIT * 2;
 		let state = started(["cold-start"]);
 		state = answerWith(state, true);
-		expect(state.coverage).toBe(2.2);
+		expect(state.coverage).toBe(doubled);
 		state = answerWith(state, true);
-		expect(state.coverage).toBe(3.4);
+		expect(state.coverage).toBeCloseTo(doubled + BASE_UNIT + STREAK_UNIT_STEP);
 	});
 
 	it("stops the IndexedDB faucet at the per-run cap", () => {
@@ -278,16 +376,17 @@ describe("enhancement configs on one build", () => {
 
 describe("the summit", () => {
 	it("wins by clearing every gate — playing the mirror wrong on purpose", () => {
-		const base = started(["js"], GATE_COUNT * SLICE_WINDOW);
+		const base = started(["jsx"], GATE_COUNT * SLICE_WINDOW);
 		let state: RunState = {
 			...base,
 			build: {
 				...base.build,
-				slots: 6,
+				slots: 24,
 				configs: [
 					...base.build.configs,
 					CONFIGS.agentsMd,
 					CONFIGS.intellisense,
+					CONFIGS.abTest,
 					CONFIGS.codeCoverage,
 				],
 			},
@@ -354,11 +453,12 @@ describe("Dependabot's counter", () => {
 	});
 
 	it("starts the count over when a gate fails, even on a correct final answer", () => {
-		const base = withBot();
+		const base = { ...withBot(), gatesCleared: 8 };
 		const short: RunState = {
 			...base,
 			autoUpgradeProgress: 3,
-			window: { ...base.window, answered: SLICE_WINDOW - 1, coverageGained: 0 },
+			bankedUnits: 27.5,
+			window: { ...base.window, answered: SLICE_WINDOW - 1, unitsEarned: 0 },
 		};
 
 		const failed = answerWith(short, true);
@@ -375,7 +475,7 @@ describe("depth and width are independent (ADR-019)", () => {
 		expect(state.status).toBe("rewarding");
 		expect(state.gatesCleared).toBe(1);
 		expect(state.clearedGate).toBe(0);
-		expect(state.storage).toBe(32);
+		expect(state.storage).toBe(61);
 	});
 
 	it("names the badge the clear earned in the log", () => {
@@ -416,21 +516,23 @@ describe("streak", () => {
 		expect(state.streak).toBe(0);
 	});
 
-	it("survives a gate clear — it tracks the run, not the window", () => {
+	it("resets on a gate clear — it tracks the window, not the run", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 		expect(state.window.answered).toBe(0);
-		expect(state.streak).toBe(SLICE_WINDOW);
+		expect(state.streak).toBe(0);
 	});
 
-	it("scales each correct answer's coverage by the streak, applied last", () => {
+	it("pays a flat step to every correct answer after the window's first", () => {
 		let state = started([]);
 		state = answerWith(state, true);
-		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(1.1);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(BASE_GAIN);
 		state = answerWith(state, true);
-		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(1.2);
-		expect(state.coverage).toBe(2.3);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBeCloseTo(
+			BASE_GAIN + STREAK_UNIT_STEP
+		);
+		expect(state.coverage).toBeCloseTo(BASE_GAIN * 2 + STREAK_UNIT_STEP);
 	});
 
 	it("holds the streak (and its bonus) on a partial multi-answer pick", () => {
@@ -454,7 +556,9 @@ describe("streak", () => {
 		state = runReducer(state, { type: "answer", optionIds: ["m-a"] });
 		expect(state.answeredThisGate.at(-1)?.outcome).toBe("partial");
 		expect(state.streak).toBe(2);
-		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBe(0.9);
+		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBeCloseTo(
+			BASE_UNIT * 0.5 + STREAK_UNIT_STEP
+		);
 	});
 
 	it("earns no coverage and zeroes the streak on a wrong answer", () => {
@@ -466,23 +570,21 @@ describe("streak", () => {
 	});
 });
 
-describe("gate base multiplier", () => {
+describe("the gate's grip on an answer", () => {
 	const baseAt = (gatesCleared: number, correct: boolean): number | undefined =>
 		answerWith(
 			{ ...started([]), gatesCleared, streak: 0 },
 			correct
 		).answeredThisGate.at(-1)?.coverageBreakdown?.base;
 
-	it("scales the correctness base by the gate number (gate 1 ×1, gate 2 ×2, …)", () => {
-		expect(baseAt(0, true)).toBe(1);
-		expect(baseAt(1, true)).toBe(2);
-		expect(baseAt(2, true)).toBe(3);
+	it("pays the same base at every gate", () => {
+		for (const gate of [0, 1, 2, VICTORY_GATE])
+			expect(baseAt(gate, true)).toBe(BASE_GAIN);
 	});
 
-	it("scales a wrong answer's loss by the gate too — risk cuts deeper as you climb", () => {
-		expect(baseAt(0, false)).toBe(-0.5);
-		expect(baseAt(1, false)).toBe(-1.1);
-		expect(baseAt(4, false)).toBe(-3.1);
+	it("pays a miss nothing at every gate: the slot is the cost", () => {
+		for (const gate of [0, 2, 3, 4, VICTORY_GATE])
+			expect(baseAt(gate, false)).toBe(0);
 	});
 });
 
@@ -551,17 +653,16 @@ describe("answer judging", () => {
 			type: "answer",
 			optionIds: ["a"],
 		});
-		expect(partial.coverage).toBe(0.8);
-		expect(partial.answeredThisGate[0].coverageEarned).toBe(0.8);
+		const half = BASE_UNIT * 0.5;
+		expect(partial.coverage).toBe(half);
+		expect(partial.answeredThisGate[0].coverageEarned).toBe(half);
 	});
 
-	it("records what a wrong answer cost, so the reveal can state the loss", () => {
-		const start = answering();
+	it("records a wrong answer as costing nothing, the slot being the cost", () => {
+		const start = { ...answering(), gatesCleared: 4 };
 		const missed = runReducer(start, { type: "answer", optionIds: ["c"] });
 
-		expect(missed.answeredThisGate[0].coverageLost).toBe(
-			coverageLossFor(start.build.configs, start.gatesCleared)
-		);
+		expect(missed.answeredThisGate[0].coverageLost).toBeUndefined();
 	});
 
 	it("charges a partial answer no loss, half the set still being half right", () => {
@@ -573,7 +674,7 @@ describe("answer judging", () => {
 		expect(partial.answeredThisGate[0].coverageLost).toBeUndefined();
 	});
 
-	it("pays more coverage for a multiple-choice poll than a single answered fully correct", () => {
+	it("pays a multiple-choice poll exactly what a single pays: one unit, fully answered", () => {
 		const singlePoll: RunPoll = {
 			id: "s",
 			category: "ts",
@@ -593,7 +694,7 @@ describe("answer judging", () => {
 			type: "answer",
 			optionIds: ["a", "b"],
 		});
-		expect(multiple.answeredThisGate[0].coverageEarned ?? 0).toBeGreaterThan(
+		expect(multiple.answeredThisGate[0].coverageEarned ?? 0).toBe(
 			single.answeredThisGate[0].coverageEarned ?? 0
 		);
 	});
@@ -667,10 +768,13 @@ describe("answer judging", () => {
 });
 
 describe("coverage scoring", () => {
-	it("bleeds coverage on a wrong answer, at half of what a right one pays", () => {
-		const afterOneCorrect = answerWith(started(["js"]), true);
-		expect(afterOneCorrect.coverage).toBe(1.1);
-		expect(answerWith(afterOneCorrect, false).coverage).toBe(0.6);
+	it("holds career coverage flat on a wrong answer at every gate", () => {
+		const opening = answerWith(started(["js"]), true);
+		expect(opening.coverage).toBe(BASE_GAIN);
+		expect(answerWith(opening, false).coverage).toBe(BASE_GAIN);
+
+		const late = answerWith({ ...started(["js"]), gatesCleared: 4 }, true);
+		expect(answerWith(late, false).coverage).toBe(late.coverage);
 	});
 
 	it("never drags coverage below zero", () => {
@@ -702,11 +806,14 @@ describe("coverage scoring", () => {
 		);
 	});
 
-	it("bleeds the gate meter and the career total in step (ADR-035)", () => {
-		const afterOneCorrect = answerWith(started(["js"]), true);
+	it("moves the gate meter and the career total in step (ADR-035)", () => {
+		const afterOneCorrect = answerWith(
+			{ ...started(["js"]), gatesCleared: 4 },
+			true
+		);
 		const thenWrong = answerWith(afterOneCorrect, false);
-		expect(thenWrong.window.coverageGained).toBe(0.6);
-		expect(thenWrong.coverage).toBe(0.6);
+		expect(thenWrong.window.unitsEarned).toBe(thenWrong.coverage);
+		expect(thenWrong.coverage).toBe(afterOneCorrect.coverage);
 	});
 });
 
@@ -821,8 +928,8 @@ describe("Moore's Law", () => {
 
 		expect(state.status).toBe("rewarding");
 		expect(state.interestThisGateKb).toBe(2);
-		expect(state.gateRewardKb).toBe(32 + 2);
-		expect(state.storage).toBe(128 + 34);
+		expect(state.gateRewardKb).toBe(48 + FLAWLESS_OVERFLOW_KB + 2);
+		expect(state.storage).toBe(128 + 63);
 	});
 
 	it("pays five times as much once maxed, on the same balance", () => {

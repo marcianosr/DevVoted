@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
-import {
-	coverageDemandFor,
-	SLICE_WINDOW,
-} from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	createRun,
 	isAwaitingTomorrow,
@@ -31,6 +28,11 @@ import {
 	started,
 } from "~/modules/run/run/domain/run.factory";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import {
+	BASE_UNIT,
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 describe("configuring", () => {
 	it("refuses to slot beyond the build's slots", () => {
@@ -96,7 +98,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 
 	it("pays the wrong option at the mirror, streak and all", () => {
 		let state = answerWith(atMarsh(), false);
-		expect(state.window.coverageGained).toBe(8.8);
+		expect(state.window.unitsEarned).toBe(BASE_UNIT);
 		expect(state.streak).toBe(1);
 		state = answerWith(state, false);
 		expect(state.streak).toBe(2);
@@ -109,8 +111,8 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 			coverageByCategory: { react: 100 },
 		};
 		state = answerWith(state, true);
-		expect(state.window.coverageGained).toBe(0);
-		expect(state.coverage).toBe(94.3);
+		expect(state.window.unitsEarned).toBe(0);
+		expect(state.coverage).toBe(100);
 		expect(state.streak).toBe(0);
 	});
 
@@ -143,9 +145,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		const half = runReducer(state, { type: "answer", optionIds: ["b"] });
 		expect(both.answeredThisGate.at(-1)?.outcome).toBe("correct");
 		expect(half.answeredThisGate.at(-1)?.outcome).toBe("partial");
-		expect(both.window.coverageGained).toBeGreaterThan(
-			half.window.coverageGained
-		);
+		expect(both.window.unitsEarned).toBeGreaterThan(half.window.unitsEarned);
 	});
 
 	it("marks the mirrored expectation as the answer to beat", () => {
@@ -292,7 +292,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 			optionIds: [rightOption?.id ?? ""],
 			elapsedMs: 31_000,
 		});
-		expect(late.window.coverageGained).toBe(0);
+		expect(late.window.unitsEarned).toBe(0);
 		expect(late.window.correct).toBe(0);
 		expect(late.streak).toBe(0);
 		expect(late.answeredThisGate.at(-1)?.timedOut).toBe(true);
@@ -307,7 +307,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 			optionIds: [rightOption?.id ?? ""],
 			elapsedMs: 29_000,
 		});
-		expect(inTime.window.coverageGained).toBeGreaterThan(0);
+		expect(inTime.window.unitsEarned).toBeGreaterThan(0);
 		expect(inTime.answeredThisGate.at(-1)?.timedOut).toBeUndefined();
 	});
 
@@ -318,8 +318,8 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 	});
 
 	it("charges Marsh its full demand — the mirror no longer discounts it", () => {
-		expect(toRunView(atMarsh()).gateStake.coverageDemand).toBe(
-			coverageDemandFor(7)
+		expect(toRunView(atMarsh()).gateStake.coverageLadder.healthy).toBe(
+			percentOf(healthyAt(7))
 		);
 	});
 
@@ -375,12 +375,12 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 			"mirrored"
 		);
 		const view = toRunView(state);
-		expect(view.gateStake.coverageDemand).toBe(coverageDemandFor(7));
+		expect(view.gateStake.coverageLadder.healthy).toBe(percentOf(healthyAt(7)));
 		expect(view.gateStake.audits).toEqual([
 			expect.objectContaining({ id: "mirrored", suppressed: true }),
 		]);
 		state = answerWith(state, true);
-		expect(state.window.coverageGained).toBeGreaterThan(0);
+		expect(state.window.unitsEarned).toBeGreaterThan(0);
 	});
 });
 

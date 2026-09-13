@@ -8,11 +8,11 @@ start-gate button.** [ADR-014](014-daily-gate-lock.md)'s community board
 stays the *mid-gate* awaiting-tomorrow beat; the *post-shop* wait now parks
 on prep. (DVTD-f7hs)
 
-**Amended 2026-09-12 by [ADR-072](072-prep-opens-on-the-stakes.md)**: prep is
-still the hub and still fires `finish-reward`, but the kanto screen dropped the
-"← Back to shop" exit that Decision 2 rests on, which makes the shop a one-way
-door in that kit. **Unresolved** in 072, and unresolved here: either the link
-comes back or this ADR's flow changes.
+**Amended 2026-09-13 by [ADR-078](078-prep-reads-in-two-columns.md)**: prep is
+still the hub and still fires `finish-reward`, and the exit Decision 2 rests on
+is back. The kanto screen names it for wherever the player came from — the build
+before the first gate, the shop after every later one — so the shop is no longer
+a one-way door. The gap ADR-072 opened and left unresolved is closed.
 
 ## Context
 

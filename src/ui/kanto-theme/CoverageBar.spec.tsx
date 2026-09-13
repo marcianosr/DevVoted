@@ -27,8 +27,11 @@ const basisOf = (zone: Element) =>
 const themeOf = (node: Element | null) =>
 	node?.getAttribute("data-screen-theme");
 
-const widthOf = (node: Element | null) =>
-	node?.getAttribute("style")?.match(/width:\s*([\d.]+)%/)?.[1];
+const heldOf = (container: HTMLElement) =>
+	container
+		.querySelector(".coverage-bar")
+		?.getAttribute("style")
+		?.match(/--coverage-held:\s*([\d.]+)%/)?.[1];
 
 describe("CoverageBar", () => {
 	it("cuts the track into the four rungs the gate asks for", () => {
@@ -51,19 +54,19 @@ describe("CoverageBar", () => {
 	it("fills to the share of the build that is covered", () => {
 		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
 
-		expect(widthOf(fillOf(container))).toBe("70");
+		expect(heldOf(container)).toBe("70");
 	});
 
 	it("keeps the fill on the track when the reading runs past full", () => {
 		const { container } = render(<CoverageBar {...VOLCANO} held={140} />);
 
-		expect(widthOf(fillOf(container))).toBe("100");
+		expect(heldOf(container)).toBe("100");
 	});
 
 	it("empties the fill rather than running it backwards off the track", () => {
 		const { container } = render(<CoverageBar {...VOLCANO} held={-20} />);
 
-		expect(widthOf(fillOf(container))).toBe("0");
+		expect(heldOf(container)).toBe("0");
 	});
 
 	describe("the band the fill wears", () => {
@@ -173,10 +176,19 @@ describe("CoverageBar", () => {
 		expect(appCss).toContain("--coverage-bar-duration");
 	});
 
-	it("animates on arrival, so the first paint is not already settled", () => {
-		const starting = appCss.slice(appCss.indexOf("@starting-style {"));
+	it("leaves the fill's width to the sheet, so a starting style can outrank it", () => {
+		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
 
-		expect(starting).toContain(".coverage-bar-fill");
+		expect(fillOf(container)).not.toHaveAttribute("style");
+		expect(appCss).toContain("width: var(--coverage-held");
+	});
+
+	it("animates on arrival, so the first paint is not already settled", () => {
+		const rule = appCss.indexOf("width: var(--coverage-held");
+		const starting = appCss.indexOf("@starting-style {", rule);
+
+		expect(appCss.slice(starting)).toContain(".coverage-bar-fill");
+		expect(starting).toBeGreaterThan(rule);
 	});
 
 	it("stops for a player who asked for less motion", () => {
@@ -300,7 +312,7 @@ describe("CoverageBar", () => {
 			rerender(<CoverageBar {...VOLCANO} held={47} />);
 
 			expect(pinOf(container)).toHaveStyle({ left: "47%" });
-			expect(widthOf(fillOf(container))).toBe("47");
+			expect(heldOf(container)).toBe("47");
 		});
 
 		it("counts a miss down as readily as it counts a correct answer up", () => {

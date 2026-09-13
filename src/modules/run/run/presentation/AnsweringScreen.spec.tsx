@@ -1,3 +1,4 @@
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
@@ -265,10 +266,10 @@ describe(AnsweringScreen, () => {
 // played, so every audit that changes the next click has to reach it.
 describe("the audit banner", () => {
 	const audit = (
-		id: string,
+		id: AuditId,
 		answerCue: string
 	): {
-		id: string;
+		id: AuditId;
 		code: number;
 		name: string;
 		description: string;
@@ -339,7 +340,7 @@ describe("the audit banner", () => {
 		render(
 			<AnsweringScreen
 				{...base}
-				audits={[audit("timeout-3", "On the clock: 30s.")]}
+				audits={[audit("timeout", "On the clock: 30s.")]}
 				clock={{ limitMs: 30_000, remainingMs: 12_400 }}
 			/>
 		);
@@ -351,7 +352,7 @@ describe("the audit banner", () => {
 		render(
 			<AnsweringScreen
 				{...base}
-				audits={[audit("timeout-3", "On the clock: 30s.")]}
+				audits={[audit("timeout", "On the clock: 30s.")]}
 				clock={{ limitMs: 30_000, remainingMs: 0 }}
 			/>
 		);

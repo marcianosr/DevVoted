@@ -2,9 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { GateStakeReceipt } from "~/modules/run/gate/presentation/GateStakeReceipt.ui";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import { createMockGateStake } from "~/test/runView.factory";
 
-const COST_OVERRUN_VIEW = {
+const COST_OVERRUN_VIEW: AuditView = {
 	id: "cost-overrun",
 	code: 402,
 	name: "Cost Overrun",

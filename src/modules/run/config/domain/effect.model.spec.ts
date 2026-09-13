@@ -45,7 +45,7 @@ describe("effectOf — coverage amplifiers", () => {
 	it("Code Coverage keeps its flat add", () => {
 		expect(effectOf(CONFIGS.codeCoverage).coverage?.(answering("js"))).toEqual({
 			mult: 1,
-			add: 0.5,
+			add: 0.1,
 		});
 	});
 

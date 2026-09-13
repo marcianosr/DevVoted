@@ -319,7 +319,7 @@ describe("headlineFigureOf", () => {
 	it("reads a flat coverage adder as coverage, not as a multiplier", () => {
 		expect(headlineFigureOf(CONFIGS.codeCoverage)).toEqual({
 			kind: "coverage",
-			value: 0.5,
+			value: 0.1,
 		});
 	});
 

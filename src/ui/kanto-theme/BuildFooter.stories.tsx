@@ -11,7 +11,7 @@ import { Question } from "./Question.ui";
 import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 
-const BARE_COUNTS = { usable: 0, running: 0, offline: 0, changing: 0 };
+const BARE_COUNTS = { ready: 0, applies: 0, offline: 0, changing: 0 };
 
 const meta: Meta<typeof BuildFooter> = {
 	component: BuildFooter,
@@ -37,7 +37,7 @@ export const Unfolded: Story = { args: { open: true } };
 export const NothingChanging: Story = {
 	args: {
 		open: false,
-		counts: { usable: 2, running: 9, offline: 0, changing: 0 },
+		counts: { ready: 2, applies: 9, offline: 0, changing: 0 },
 	},
 };
 

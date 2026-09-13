@@ -3,45 +3,90 @@ import {
 	focusMultiplierOf,
 } from "~/modules/run/config/domain/config.model";
 import {
+	SLICE_WINDOW,
+	VICTORY_GATE,
 	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
-import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
-export const SINGLE_GAIN = 0.05;
-export const MULTIPLE_GAIN = 0.08;
+export const BASE_UNIT = 1;
 export const KB_PER_PROVEN_SLOT = 32;
 export const PAYOUT_RATIO_CAP = 1.5;
 export const PERFECT_BONUS = 1.5;
 
 const FLOAT_TOLERANCE = 1e-9;
 
+export const AS_PERCENT = 100;
+
+export const percentOf = (ratio: number): number => ratio * AS_PERCENT;
+
+export const ratioOf = (percent: number): number => percent / AS_PERCENT;
+
 export const HEALTHY_LADDER: readonly number[] = [
-	0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
+	0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
 ];
 
-export const LOSS_LADDER: readonly number[] = [
-	0, 0, 0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.5,
-];
-
-export const OK_DROP = 0.15;
-export const SHAKY_DROP = 0.25;
+export const OK_DROP_UNITS = 2;
+export const SHAKY_DROP_UNITS = 4;
 
 const atGate = (ladder: readonly number[], gate: number): number =>
 	ladder[Math.min(Math.max(0, gate), ladder.length - 1)];
 
 const asRatio = (value: number): number => Math.min(1, Math.max(0, value));
 
-export const healthyAt = (gate: number): number =>
-	atGate(HEALTHY_LADDER, gate);
+export const scoringSlotsAt = (gate: number): number =>
+	SLICE_WINDOW * (Math.max(0, gate) + 1);
 
-export const okAt = (gate: number): number =>
-	Math.max(0, healthyAt(gate) - OK_DROP);
+export const unitsToRatio = (units: number, gate: number): number =>
+	units / scoringSlotsAt(gate);
+
+export const runCoverageOf = (units: number, gate: number): number =>
+	asRatio(unitsToRatio(units, gate));
+
+export const bankableUnits = (units: number, gate: number): number =>
+	Math.min(Math.max(0, units), scoringSlotsAt(gate));
+
+export const surplusUnits = (units: number, gate: number): number =>
+	Math.max(0, units - scoringSlotsAt(gate));
+
+export const surplusPayoutKb = (units: number, gate: number): number =>
+	Math.round(surplusUnits(units, gate) * KB_PER_PROVEN_SLOT);
+
+export const healthyAt = (gate: number): number => atGate(HEALTHY_LADDER, gate);
+
+/**
+ * The opening gates have no room for their lower bands: two units is 40 points
+ * at gate 0 against a 20 point line. The two degenerate cases resolve opposite
+ * ways on purpose. A gate with no room for an OK band must not hand out thin
+ * clears, so OK collapses up onto the healthy line. A gate with no room for a
+ * DANGER band must not end the run, so the floor clamps down to zero (ADR-057:
+ * the calibration gate can hold a run, never kill it).
+ */
+export const okAt = (gate: number): number => {
+	const dropped = healthyAt(gate) - unitsToRatio(OK_DROP_UNITS, gate);
+
+	return dropped > 0 ? dropped : healthyAt(gate);
+};
 
 export const floorAt = (gate: number): number =>
-	Math.max(0, healthyAt(gate) - SHAKY_DROP);
+	Math.max(0, healthyAt(gate) - unitsToRatio(SHAKY_DROP_UNITS, gate));
 
-export const lossShareAt = (gate: number): number => atGate(LOSS_LADDER, gate);
+export type CoverageConfigBonus = {
+	readonly configId: string;
+	readonly value: number;
+};
+
+/** What one answer paid, split so the reveal can name each contributor. */
+export type CoverageBreakdown = {
+	readonly base: number;
+	readonly streakBonus: number;
+	readonly configBonuses: readonly CoverageConfigBonus[];
+};
+
+export type CoverageFactors = {
+	readonly correct: number;
+	readonly build: number;
+};
 
 export type CoverageBandId = "perfect" | "healthy" | "ok" | "shaky" | "danger";
 
@@ -58,6 +103,8 @@ const BAND = {
 
 export type CoverageBand = (typeof BAND)[CoverageBandId];
 
+export const bandOf = (id: CoverageBandId): CoverageBand => BAND[id];
+
 const isPerfect = (ratio: number): boolean => ratio + FLOAT_TOLERANCE >= 1;
 
 export const perfectBonusFor = (ratio: number): number =>
@@ -71,8 +118,26 @@ export const bandFor = (ratio: number, gate: number): CoverageBand => {
 	return BAND.danger;
 };
 
-const focusesOn = (config: Config, category: CategoryCode | undefined): boolean =>
-	category !== undefined && config.focusCategory === category;
+const BAND_ORDER: readonly CoverageBandId[] = [
+	"danger",
+	"shaky",
+	"ok",
+	"healthy",
+	"perfect",
+];
+
+export const atLeastBand = (
+	band: CoverageBand,
+	least: CoverageBandId
+): CoverageBand =>
+	BAND_ORDER.indexOf(band.id) >= BAND_ORDER.indexOf(least)
+		? band
+		: BAND[least];
+
+const focusesOn = (
+	config: Config,
+	category: CategoryCode | undefined
+): boolean => category !== undefined && config.focusCategory === category;
 
 export const coverageMultiplierFor = (
 	configs: readonly Config[],
@@ -95,80 +160,46 @@ export const focusBonusFor = (
 ): number =>
 	coverageMultiplierFor(configs, category) / coverageMultiplierFor(configs);
 
-export const baseGainFor = (answerType: AnswerType = "single"): number =>
-	answerType === "multiple" ? MULTIPLE_GAIN : SINGLE_GAIN;
-
 export const gainPerCorrectFor = (
 	configs: readonly Config[],
-	category?: CategoryCode,
-	answerType: AnswerType = "single"
-): number => baseGainFor(answerType) * coverageMultiplierFor(configs, category);
-
-export const gainPerMissFor = (
-	gate: number,
-	configs: readonly Config[],
-	category?: CategoryCode,
-	answerType: AnswerType = "single"
-): number =>
-	gainPerCorrectFor(configs, category, answerType) * lossShareAt(gate);
-
-export const coverageDeltaFor = (
-	share: number,
-	gate: number,
-	configs: readonly Config[],
-	category?: CategoryCode,
-	answerType: AnswerType = "single"
-): number => {
-	const earned = asRatio(share);
-
-	return (
-		gainPerCorrectFor(configs, category, answerType) *
-		(earned - (1 - earned) * lossShareAt(gate))
-	);
-};
-
-export const netAnswersFor = (
-	rights: number,
-	wrongs: number,
-	gate: number
-): number => rights - wrongs * lossShareAt(gate);
+	category?: CategoryCode
+): number => BASE_UNIT * coverageMultiplierFor(configs, category);
 
 export const coverageAfter = (
 	rights: number,
-	wrongs: number,
 	gate: number,
 	configs: readonly Config[],
+	banked = 0,
 	category?: CategoryCode
 ): number =>
-	asRatio(
-		netAnswersFor(rights, wrongs, gate) * gainPerCorrectFor(configs, category)
-	);
+	runCoverageOf(banked + rights * gainPerCorrectFor(configs, category), gate);
 
 const multiplierToReach = (
 	line: number,
 	gate: number,
 	rights: number,
-	polls: number
+	banked: number
 ): number | undefined => {
-	const net = netAnswersFor(rights, polls - rights, gate);
+	const owed = line * scoringSlotsAt(gate) - banked;
 
-	if (line <= 0) return 0;
-	if (net <= 0) return undefined;
+	if (owed <= 0) return 0;
+	if (rights <= 0) return undefined;
 
-	return line / (net * SINGLE_GAIN);
+	return owed / (rights * BASE_UNIT);
 };
 
 export const multiplierToSurvive = (
 	gate: number,
 	rights: number,
-	polls: number
-): number | undefined => multiplierToReach(floorAt(gate), gate, rights, polls);
+	banked = 0
+): number | undefined => multiplierToReach(floorAt(gate), gate, rights, banked);
 
 export const multiplierToClear = (
 	gate: number,
 	rights: number,
-	polls: number
-): number | undefined => multiplierToReach(healthyAt(gate), gate, rights, polls);
+	banked = 0
+): number | undefined =>
+	multiplierToReach(healthyAt(gate), gate, rights, banked);
 
 export const coveredSlotsOf = (ratio: number, weight: number): number =>
 	asRatio(ratio) * weight;
@@ -196,34 +227,63 @@ export const gatePayoutKb = (
 			streakMultiplier(streak)
 	);
 
+/**
+ * The best run coverage still reachable if every remaining poll lands. A run
+ * whose ceiling sits under the summit's floor is over, and the model says so
+ * rather than letting the player walk out three more days.
+ */
+export const maxReachableFrom = (
+	banked: number,
+	gate: number,
+	unitsPerCorrect: number
+): number => {
+	const gatesLeft = Math.max(0, VICTORY_GATE - gate + 1);
+
+	return runCoverageOf(
+		banked + gatesLeft * SLICE_WINDOW * unitsPerCorrect,
+		VICTORY_GATE
+	);
+};
+
+export const isRunUnwinnable = (
+	banked: number,
+	gate: number,
+	unitsPerCorrect: number
+): boolean =>
+	maxReachableFrom(banked, gate, unitsPerCorrect) + FLOAT_TOLERANCE <
+	floorAt(VICTORY_GATE);
+
 const rightsUpTo = (polls: number): readonly number[] =>
 	Array.from({ length: polls + 1 }, (_, rights) => rights);
 
 export const rightsToFill = (
 	gate: number,
 	polls: number,
-	configs: readonly Config[]
+	configs: readonly Config[],
+	banked = 0
 ): number | undefined =>
 	rightsUpTo(polls).find(
-		(rights) => coverageAfter(rights, polls - rights, gate, configs) >= 1
+		(rights) => coverageAfter(rights, gate, configs, banked) >= 1
 	);
 
 export const rightsToSurvive = (
 	gate: number,
 	polls: number,
-	configs: readonly Config[]
+	configs: readonly Config[],
+	banked = 0
 ): number | undefined =>
 	rightsUpTo(polls).find((rights) =>
-		survivesGate(coverageAfter(rights, polls - rights, gate, configs), gate)
+		survivesGate(coverageAfter(rights, gate, configs, banked), gate)
 	);
 
 export const rightsToClear = (
 	gate: number,
 	polls: number,
-	configs: readonly Config[]
+	configs: readonly Config[],
+	banked = 0
 ): number | undefined =>
 	rightsUpTo(polls).find((rights) =>
-		clearsBar(coverageAfter(rights, polls - rights, gate, configs), gate)
+		clearsBar(coverageAfter(rights, gate, configs, banked), gate)
 	);
 
 export type CoveragePeril = "fatal" | "safe";

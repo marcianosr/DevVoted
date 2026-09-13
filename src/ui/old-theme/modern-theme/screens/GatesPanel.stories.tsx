@@ -11,12 +11,15 @@ import {
 } from "~/modules/run/gate/domain/auditSchedule.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import {
-	coverageDemandFor,
 	failPeelShareFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
 import { GatesPanel, type DexGate, type DexGateState } from "./GatesPanel.ui";
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 const meta: Meta<typeof GatesPanel> = {
 	component: GatesPanel,
@@ -64,7 +67,7 @@ const LADDER: readonly GateFacts[] = ALL_SWATCHES.map((swatch) => ({
 	name: swatch.gateName,
 	theme: swatch.theme,
 	finish: swatch.finish,
-	coverage: coverageDemandFor(swatch.gate),
+	coverage: percentOf(healthyAt(swatch.gate)),
 	peels: Math.round(peelShareOf(swatch.gate) * 100),
 	peelsAudited: auditExtraPeelShare(certainAudits(swatch.gate)) > 0,
 	audits: certainAuditsFor(swatch.gate).map((id) =>

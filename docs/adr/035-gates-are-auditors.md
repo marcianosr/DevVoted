@@ -42,14 +42,13 @@ Unit Tests pays its flat clear payout unconditionally.
 
 `GateWindow.coverageGained` is the gate's score meter: net of wrong-answer
 losses, floored at 0, **reset with every attempt**. The gate passes when the
-meter meets its row of `COVERAGE_DEMANDS`; the run's career total never counts.
+meter meets the gate's HEALTHY line; the run's career total never counts.
 `RunState.coverage` and `coverageByCategory` stay as career accumulators for the
 leaderboard and Focus upgrades.
 
-Per-answer earn scales with `gatesCleared + 1`, so the ratio of demand to base
-pace is the real ramp and the tuning knob. Tune the rows first, then the wrong
-loss share; never `gateBaseMultiplier`, which reprices every config. Rows live
-in `rules.model.ts`.
+The per-answer earn is flat ([ADR-073](073-coverage-is-a-flat-gain-reset-every-gate.md)),
+so the line itself is the whole ramp and the only tuning knob. Tune
+`HEALTHY_LADDER` first, then `LOSS_LADDER`; both live in `coverageRatio.model.ts`.
 
 The laps display (Line/Branch/Mutation/Fuzz) went with the career total it read.
 

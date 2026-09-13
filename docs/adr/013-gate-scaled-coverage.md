@@ -43,13 +43,12 @@ gain, and it does not scale.
 
 ### 2. The loss scales by the same factor
 
-A miss bleeds `wrongLossShareFor(gate) × the build's per-correct coverage`.
+A miss bleeds `lossShareAt(gate) × the build's per-correct coverage`.
 Reward and risk grow in lockstep: a miss costs a fraction of what a hit pays, on
 every build, so a greedy build loses more per mistake.
 
-**The share itself climbs with the gate** (shape and values in `LOSS_LADDER`;
-the old loop's own curve is `wrongLossShareFor` in `rules.model.ts`, and the two
-do not agree). A fixed share stopped working because the demand table grows far
+**The share itself climbs with the gate** (shape and values in `LOSS_LADDER`,
+`coverageRatio.model.ts`, the one curve since ADR-073 was built). A fixed share stopped working because the demand table grows far
 faster than the earn does, so a miss shrank from 1 in 6 of the opening gate to 1
 in 50 of the Champion. Holding the ratio flat meant deep gates asked only for
 **volume**; a climbing share asks for **accuracy** as well.

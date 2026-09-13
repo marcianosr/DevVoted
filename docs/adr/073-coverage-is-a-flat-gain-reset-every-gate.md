@@ -6,9 +6,9 @@ Accepted 2026-09-12 (Marciano, DVTD-nd6r). Supersedes
 [ADR-013](013-gate-scaled-coverage.md) Decision 1, the gate-scaled reward base.
 ADR-013 Decisions 2 and 3 stand.
 
-**Half built.** `coverageRatio.model.ts` already works this way and owns the
-live numbers. The old run loop does not: `gateBaseMultiplier` is still wired
-into `answer.model.ts`, `build.model.ts` and `PollView.component.tsx`.
+Built 2026-09-13 (DVTD-1zzz). `coverageRatio.model.ts` owns the numbers and the
+run loop reads them. `COVERAGE_DEMANDS`, `gateBaseMultiplier`,
+`pollDifficultyMultiplier` and `wrongLossShareFor` are deleted.
 
 ## Context
 
@@ -73,10 +73,16 @@ coverage becomes a career total again and a good early run coasts.
   answer at gate 12 while a hit still pays 5% can make deep gates read as
   binary. `LOSS_LADDER` is the first knob if it does.
 
-- **The game has two answers to "what is a correct answer worth".** The proto
-  route reads the flat model; the old run loop still multiplies by the gate.
-  Until `gateBaseMultiplier` comes out, any number quoted to a player depends
-  on which screen they are standing on.
+- **The streak moved from coverage to KB.** It multiplied every correct answer's
+  coverage; the ratio model has no term for it, and `gatePayoutKb` multiplies the
+  gate payout instead. `gateClearPayout` follows suit, so a perfect window pays
+  1.5x and a held ten-streak 2x. That is a permanent buff to the economy rather
+  than a wash, and it is the first dial to turn if payouts read loose.
+
+- **`gateBaseMultiplier` survives as `gateRewardMultiplier`, with one caller.**
+  This ADR kills the gate scaling on the coverage gain. It says nothing about the
+  KB reward, which is ADR-013's other half and still wanted, so `gateClearPayout`
+  keeps paying deeper gates more.
 
 - **Difficulty tuning is now a single-file job.** Making gate 7 harder means
   moving one entry in `HEALTHY_LADDER` rather than reasoning about a demand and

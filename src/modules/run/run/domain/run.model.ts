@@ -64,6 +64,10 @@ export type RunState = {
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
+	/** Units banked by cleared gates. Run coverage is derived from it, never stored. */
+	readonly bankedUnits: number;
+	/** Attempts already spent on the gate in front. Each one prices the next peel higher. */
+	readonly gateAttempts?: number;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
@@ -181,6 +185,7 @@ export const createRun = (
 	startedAtGate: startAtGate,
 	auditSchedule,
 	streak: 0,
+	bankedUnits: 0,
 	coverage: 0,
 	coverageByCategory: {},
 	storage: PIN_START_KB_PER_GATE * startAtGate,

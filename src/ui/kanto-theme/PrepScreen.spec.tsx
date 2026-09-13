@@ -2,14 +2,17 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import {
+	BAND_OUTCOMES_NOTE,
+	BAND_OUTCOMES_TITLE,
 	PREP_COMMUNITY_LABEL,
 	PREP_LOCK_NOTE,
-	PREP_OUTCOMES_TITLE,
 	PREP_POLLS_TITLE,
-	PREP_TAKES_TITLE,
+	KANTO_PREP_GATE,
+	KANTO_PREP_SUMMIT_GATE,
 	kantoPrepCalibration,
 	kantoPrepChampion,
 	kantoPrepFatal,
+	kantoPrepLadder,
 	kantoPrepPrefetched,
 	kantoPrepSealed,
 	kantoPrepSpent,
@@ -18,21 +21,27 @@ import {
 import { PrepScreen } from "./PrepScreen.ui";
 
 const props = kantoPrepSealed();
+const ladder = kantoPrepLadder(KANTO_PREP_GATE);
 
 const sectionOf = (name: string) =>
 	screen.getByRole("heading", { name }).closest("section") as HTMLElement;
 
+const BAND_BADGE = ".badge-theme";
+
+const bandBadgeFor = (band: string) =>
+	within(sectionOf(BAND_OUTCOMES_TITLE)).getByText(band, {
+		selector: BAND_BADGE,
+	});
+
 const outcomeRowFor = (band: string) =>
-	within(sectionOf(PREP_OUTCOMES_TITLE))
-		.getByText(band)
-		.closest("div[class*='border-t'], div[class*='py-3']") as HTMLElement;
+	bandBadgeFor(band).closest("div") as HTMLElement;
 
 describe("PrepScreen", () => {
 	it("opens on the stakes rather than on the build", () => {
 		render(<PrepScreen {...props} />);
 
 		expect(
-			screen.getByRole("heading", { name: PREP_OUTCOMES_TITLE })
+			screen.getByRole("heading", { name: BAND_OUTCOMES_TITLE })
 		).toBeInTheDocument();
 		expect(screen.queryByText("Build")).not.toBeInTheDocument();
 	});
@@ -54,22 +63,53 @@ describe("PrepScreen", () => {
 		);
 	});
 
-	describe("the coverage bar across the top", () => {
-		it("starts empty and says why", () => {
+	it("reads as two columns, the outcomes beside the window they price", () => {
+		const { container } = render(<PrepScreen {...props} />);
+
+		const columns = container.querySelector(".md\\:grid-cols-2") as HTMLElement;
+		const [left, right] = [...columns.children];
+
+		expect(left).toContainElement(sectionOf(BAND_OUTCOMES_TITLE));
+		expect(right).toContainElement(sectionOf(PREP_POLLS_TITLE));
+		expect(right).toContainElement(sectionOf("Audits"));
+	});
+
+	it("no longer prices a single answer, the table pricing the landing", () => {
+		render(<PrepScreen {...props} />);
+
+		expect(screen.queryByText("What it takes")).not.toBeInTheDocument();
+		expect(screen.queryByText("Each right answer")).not.toBeInTheDocument();
+	});
+
+	describe("the coverage bar over the outcomes", () => {
+		it("starts empty on the gate's own line", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				screen.getByRole("img", { name: /0% of 40% needed/ })
+				screen.getByRole("img", {
+					name: new RegExp(`0% of ${ladder.healthy}% needed`),
+				})
 			).toBeInTheDocument();
-			expect(screen.getByText(/Coverage starts at zero/)).toBeInTheDocument();
 		});
 
-		it("names the bands rather than the boundaries between them", () => {
+		it("stands inside the outcomes panel rather than across the header", () => {
+			const { container } = render(<PrepScreen {...props} />);
+
+			const bar = container.querySelector(".coverage-bar") as HTMLElement;
+
+			expect(sectionOf(BAND_OUTCOMES_TITLE)).toContainElement(bar);
+			expect(container.querySelector("header")).not.toContainElement(bar);
+		});
+
+		it("numbers the rungs rather than naming the bands", () => {
 			const { container } = render(<PrepScreen {...props} />);
 
 			const marks = container.querySelector(".coverage-bar")?.textContent;
 
-			expect(marks).toContain("SHAKY");
+			for (const rung of [0, ladder.floor, ladder.ok, ladder.healthy, 100]) {
+				expect(marks).toContain(`${rung}`);
+			}
+			expect(marks).not.toContain("SHAKY");
 			expect(marks).not.toContain("survive");
 		});
 	});
@@ -78,15 +118,20 @@ describe("PrepScreen", () => {
 		it("lays out all five bands, best outcome first and worst last", () => {
 			render(<PrepScreen {...props} />);
 
-			const table = sectionOf(PREP_OUTCOMES_TITLE);
-			const at = (band: string) => table.textContent?.indexOf(band) ?? -1;
+			const badges = ["PERFECT", "HEALTHY", "OK", "SHAKY", "DANGER"].map(
+				bandBadgeFor
+			);
 
-			for (const band of ["PERFECT", "HEALTHY", "OK", "SHAKY", "DANGER"]) {
-				expect(within(table).getByText(band)).toBeInTheDocument();
+			for (const badge of badges) {
+				expect(badge).toBeInTheDocument();
 			}
 
-			expect(at("PERFECT")).toBeLessThan(at("HEALTHY"));
-			expect(at("HEALTHY")).toBeLessThan(at("DANGER"));
+			for (const [index, badge] of badges.slice(1).entries()) {
+				expect(
+					badges[index].compareDocumentPosition(badge) &
+						Node.DOCUMENT_POSITION_FOLLOWING
+				).toBeTruthy();
+			}
 		});
 
 		it("cuts the ranges on the gate's own ladder", () => {
@@ -95,40 +140,61 @@ describe("PrepScreen", () => {
 			expect(
 				within(outcomeRowFor("PERFECT")).getByText("100%")
 			).toBeInTheDocument();
-			expect(screen.getByText("40 – 99%")).toBeInTheDocument();
-			expect(screen.getByText("25 – 39%")).toBeInTheDocument();
-			expect(screen.getByText("15 – 24%")).toBeInTheDocument();
-			expect(screen.getByText("under 15%")).toBeInTheDocument();
+			expect(screen.getByText(`${ladder.healthy} – 99%`)).toBeInTheDocument();
+			expect(
+				screen.getByText(`${ladder.ok} – ${ladder.healthy - 1}%`)
+			).toBeInTheDocument();
+			expect(
+				screen.getByText(`${ladder.floor} – ${ladder.ok - 1}%`)
+			).toBeInTheDocument();
+			expect(screen.getByText(`under ${ladder.floor}%`)).toBeInTheDocument();
 		});
 
-		it("says a clear takes the swatch and opens the next gate", () => {
+		it("leaves the table three columns, the prose having come out of it", () => {
+			render(<PrepScreen {...props} />);
+
+			const table = sectionOf(BAND_OUTCOMES_TITLE);
+
+			for (const heading of ["band", "coverage", "pays"]) {
+				expect(within(table).getByText(heading)).toBeInTheDocument();
+			}
+			expect(within(table).queryByText("outcome")).not.toBeInTheDocument();
+		});
+
+		it("says in one line which bands win the swatch and which cost", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(outcomeRowFor("HEALTHY")).getByText(
-					/The Lavender swatch is yours and gate 5 opens/
-				)
+				screen.getByText(/Finish at OK or better and Lavender is yours/)
+			).toBeInTheDocument();
+			expect(
+				screen.getByText(/The two bands under it cost instead of paying/)
 			).toBeInTheDocument();
 		});
 
-		it("says OK gets paid but leaves the gate shut", () => {
+		it("footnotes where a pay lands and what a peel is settled in", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(screen.getByText(BAND_OUTCOMES_NOTE)).toBeInTheDocument();
+		});
+
+		it("bills the holding band a peel instead of paying it", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				screen.getByText(/You survive and get paid, but the gate stays shut/)
-			).toBeInTheDocument();
+				within(outcomeRowFor("SHAKY")).getByText(/peel$/)
+			).toHaveTextContent(/^−\d/);
 		});
 
-		it("pays every band that survives, and nothing at all below the floor", () => {
+		it("ends the run under the floor rather than quoting a figure", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(outcomeRowFor("DANGER")).getByText("Nothing")
+				within(outcomeRowFor("DANGER")).getByText("the run ends")
 			).toBeInTheDocument();
-			expect(within(outcomeRowFor("HEALTHY")).getByText(/KB/)).toBeVisible();
 		});
 
-		it("pays a clear more than a scrape", () => {
+		it("never pays a lower landing more than a higher one", () => {
 			render(<PrepScreen {...props} />);
 
 			const kbOf = (band: string) =>
@@ -138,53 +204,9 @@ describe("PrepScreen", () => {
 						.textContent?.match(/(\d+)/)?.[1]
 				);
 
-			expect(kbOf("HEALTHY")).toBeGreaterThan(kbOf("SHAKY"));
-		});
-
-		it("pays a full bar a bonus over the best a clear can do", () => {
-			render(<PrepScreen {...props} />);
-
-			const kbIn = (band: string) =>
-				within(outcomeRowFor(band))
-					.getByText(/KB/)
-					.textContent?.match(/\d+/g)
-					?.map(Number) ?? [];
-
-			expect(Math.min(...kbIn("PERFECT"))).toBeGreaterThan(
-				Math.max(...kbIn("HEALTHY"))
-			);
-		});
-
-		it("names the run's end without a payout to soften it", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(
-				screen.getByText(/The run ends the moment the gate shuts/)
-			).toBeInTheDocument();
-		});
-	});
-
-	describe("what it takes", () => {
-		it("spans the gain, since the answer types are still sealed", () => {
-			render(<PrepScreen {...props} />);
-
-			const takes = sectionOf(PREP_TAKES_TITLE);
-
-			expect(within(takes).getByText("Each right answer")).toBeInTheDocument();
-			expect(within(takes).getByText(/^\+\d/)).toBeInTheDocument();
-			expect(within(takes).getByText(/^−\d/)).toBeInTheDocument();
-		});
-
-		it("shows the build multiplying a base it did not choose", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(screen.getByText("5–8 base × 3 build")).toBeInTheDocument();
-		});
-
-		it("no longer counts rights toward a line", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(screen.queryByText(/Rights to survive/)).not.toBeInTheDocument();
+			expect(kbOf("PERFECT")).toBeGreaterThanOrEqual(kbOf("HEALTHY"));
+			expect(kbOf("HEALTHY")).toBeGreaterThanOrEqual(kbOf("OK"));
+			expect(kbOf("PERFECT")).toBeGreaterThan(kbOf("OK"));
 		});
 	});
 
@@ -202,12 +224,10 @@ describe("PrepScreen", () => {
 			expect(screen.queryByText("next gate")).not.toBeInTheDocument();
 		});
 
-		it("says why the categories matter more than usual", () => {
+		it("lists the window without a line explaining what it is worth", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(
-				screen.getByText(/a matching config pays ×1.25 on top of your build/)
-			).toBeInTheDocument();
+			expect(screen.queryByText(/a matching config pays/)).toBeNull();
 		});
 
 		it("opens the whole window at once when Prefetch is in the build", () => {
@@ -300,14 +320,6 @@ describe("PrepScreen", () => {
 			expect(screen.getByText("1.9 MB")).toBeInTheDocument();
 		});
 
-		it("promises the run rather than a gate after the last one", () => {
-			render(<PrepScreen {...champion} />);
-
-			expect(
-				within(outcomeRowFor("HEALTHY")).getByText(/the run is won/)
-			).toBeInTheDocument();
-		});
-
 		it("keeps the per-poll leak out of the bill and on its audit", () => {
 			render(<PrepScreen {...champion} />);
 
@@ -332,7 +344,11 @@ describe("PrepScreen", () => {
 		render(<PrepScreen {...kantoPrepFatal()} />);
 
 		expect(
-			screen.getByRole("img", { name: /62% of 95% needed · DANGER/ })
+			screen.getByRole("img", {
+				name: new RegExp(
+					`62% of ${kantoPrepLadder(KANTO_PREP_SUMMIT_GATE).healthy}% needed · DANGER`
+				),
+			})
 		).toBeInTheDocument();
 	});
 

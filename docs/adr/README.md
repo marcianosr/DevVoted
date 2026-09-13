@@ -30,7 +30,7 @@ it before proposing one again.**
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054 |
-| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — amended by 072 (prep lost its shop link) |
+| [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — whole again under 078 (the shop link is back) |
 | [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056 |
 | [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
 | [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — 076 owns what a miss does; the peel has two triggers (076, 074) |
@@ -64,12 +64,12 @@ it before proposing one again.**
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
-| [072](072-prep-opens-on-the-stakes.md) | Prep opens on the stakes, not on the build | Accepted — amends 032; prep lost its shop link |
 | [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — supersedes 046 and 049; **not built** |
 | [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked) |
 | [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; drawn in the kanto kit, not routed |
 | [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
+| [078](078-prep-reads-in-two-columns.md) | **Prep and New run read in two columns, and the band table drops its prose** | Accepted — supersedes 072; restores 032's shop link |
 
 ## Retired
 
@@ -93,6 +93,7 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 031 | The shop exit blocks an under-width build | Retired — 035 owns it |
 | 033 | The correct-answer demand is what you bought | Retired — 035 owns it |
 | 034 | The gate is a CI run | Retired — 035 owns it |
+| 072 | Prep opens on the stakes, not on the build | Retired — 078 owns it |
 | 041 | Slots open on gates, coverage, or either | Retired — 046 owns it |
 | 043 | Rarity is a shape, not a hue | Retired — 047 owns it |
 | 045 | Spots come from gates, KB rents more on top | Retired — 046 owns it |

@@ -12,7 +12,7 @@ import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
-const COLUMN = "flex w-full flex-col gap-6";
+const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const SECTION = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
 const BILL =
@@ -24,6 +24,7 @@ const DIVIDER = "border-t border-theme-faint";
 const NOTE_GAIN: KantoColor = "pewter";
 
 const AUDIT_LAYOUT = "row";
+const SCREEN_WIDTH: ScreenWidth = "medium";
 
 export type PrepAudits = {
 	title: string;
@@ -39,17 +40,14 @@ const Audits = ({ title, meta, bill, note, alerts }: PrepAudits) => (
 			<Typography variant="title" as="h3">
 				{title}
 			</Typography>
-			{meta === undefined ? null : (
-				<Typography variant="hint" as="span">
-					{meta}
-				</Typography>
-			)}
 			{bill === undefined ? null : (
 				<span className={BILL}>
 					<Figures text={bill} />
 				</span>
 			)}
 		</div>
+
+		{meta === undefined ? null : <Typography variant="hint">{meta}</Typography>}
 
 		{alerts.length === 0 ? null : (
 			<Panel>
@@ -76,7 +74,6 @@ const Audits = ({ title, meta, bill, note, alerts }: PrepAudits) => (
 export type PrepScreenProps = {
 	header: HeaderProps;
 	outcomes: BandOutcomesProps;
-	takes: LedgerProps;
 	polls: LedgerProps;
 	audits: PrepAudits;
 	footer: ScreenFooterProps;
@@ -86,20 +83,17 @@ export type PrepScreenProps = {
 export const PrepScreen = ({
 	header,
 	outcomes,
-	takes,
 	polls,
 	audits,
 	footer,
-	width = "wide",
+	width = SCREEN_WIDTH,
 }: PrepScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width}>
 		<Header {...header} />
 
-		<BandOutcomes {...outcomes} />
-
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
-				<Ledger {...takes} />
+				<BandOutcomes {...outcomes} />
 			</div>
 
 			<div className={COLUMN}>

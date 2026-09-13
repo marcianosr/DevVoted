@@ -8,6 +8,7 @@ import {
 } from "./LedgerRows.ui";
 import type { MeterProps } from "./Meter.ui";
 import { Panel } from "./Panel.ui";
+import { PanelTable } from "./PanelTable.ui";
 import { Typography } from "./Typography.ui";
 
 const SECTION = "flex w-full flex-col gap-3";
@@ -57,10 +58,10 @@ export const Ledger = ({
 		</div>
 
 		<Panel>
-			<LedgerRows rows={rows} meter={meter} />
-			{note === undefined ? null : (
-				<Typography variant="hint">{note}</Typography>
-			)}
+			<PanelTable>
+				<LedgerRows rows={rows} meter={meter} tabled />
+			</PanelTable>
 		</Panel>
+		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
 	</section>
 );

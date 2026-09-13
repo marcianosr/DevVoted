@@ -52,6 +52,7 @@ type BuildCount =
 			weight?: never;
 			cash?: SlotCash;
 			offer?: SlotOfferProps;
+			nextSlot?: SlotOfferProps;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
@@ -60,6 +61,7 @@ type BuildCount =
 			slots?: never;
 			cash?: never;
 			offer?: never;
+			nextSlot?: never;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
@@ -68,6 +70,7 @@ type BuildCount =
 			weight?: never;
 			cash?: never;
 			offer?: never;
+			nextSlot?: never;
 			highlight?: never;
 			onHighlight?: never;
 	  };
@@ -79,22 +82,34 @@ export const configCountOf = (total: number) => `${total} configs`;
 
 const weightWords = (weight: number) => `${weight} ${WEIGHT_WORD}`;
 
+const led = (total: number, counted: boolean) =>
+	counted ? [configCountOf(total)] : [];
+
 const summaryOf = (
 	total: number,
 	count: BuildCount,
-	weight: number
+	weight: number,
+	counted: boolean
 ): string => {
 	if (count.weight !== undefined) {
 		const free = freeWeightOf(count.weight.rungs);
 		const covered = Math.min(weight, free);
 		const billable = Math.max(0, weight - free);
-		return `${configCountOf(total)} ${SEPARATOR} ${weightWords(weight)} ${SEPARATOR} ${covered} ${COVERED_WORD} ${SEPARATOR} ${billable} ${BILLABLE_WORD}`;
+		return [
+			...led(total, counted),
+			weightWords(weight),
+			`${covered} ${COVERED_WORD}`,
+			`${billable} ${BILLABLE_WORD}`,
+		].join(` ${SEPARATOR} `);
 	}
 	if (count.slots === undefined) return configCountOf(total);
 
 	const { used, capacity } = count.slots;
-	const room = roomOf(count.slots);
-	return `${configCountOf(total)} ${SEPARATOR} ${used} of ${capacity} slots ${SEPARATOR} ${room}`;
+	return [
+		...led(total, counted),
+		`${used} of ${capacity} slots`,
+		roomOf(count.slots),
+	].join(` ${SEPARATOR} `);
 };
 
 const skippedSummaryOf = (count: number, note?: string) => {
@@ -111,9 +126,13 @@ export type BuildProps = {
 	heading?: boolean;
 	readout?: boolean;
 	list?: boolean;
+	configCount?: boolean;
+	emptySlots?: boolean;
 	emptyLabel?: string;
 	resting?: string;
 	track?: BuildTrack;
+	caption?: boolean;
+	offeredSlot?: boolean;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
 } & BuildCount;
@@ -144,19 +163,25 @@ const Vacancy = ({
 	slots,
 	cash,
 	offer,
+	nextSlot,
+	boxed,
 }: {
 	slots: BuildSlots;
 	cash?: SlotCash;
 	offer?: SlotOfferProps;
+	nextSlot?: SlotOfferProps;
+	boxed: boolean;
 }) => {
 	const vacant = vacantSlotsOf(slots);
+	const drawn = boxed ? vacant : Math.min(vacant, cash === undefined ? 0 : 1);
 
 	return (
 		<>
-			{Array.from({ length: vacant }, (_, index) => (
-				<SlotBox key={index} cash={index === vacant - 1 ? cash : undefined} />
+			{Array.from({ length: drawn }, (_, index) => (
+				<SlotBox key={index} cash={index === drawn - 1 ? cash : undefined} />
 			))}
 			{offer === undefined ? null : <SlotOffer {...offer} />}
+			{nextSlot === undefined ? null : <SlotOffer {...nextSlot} />}
 		</>
 	);
 };
@@ -204,9 +229,13 @@ export const Build = ({
 	heading = true,
 	readout = true,
 	list = true,
+	configCount = true,
+	emptySlots = true,
 	emptyLabel,
 	resting,
 	track = "configs",
+	caption = track === "configs",
+	offeredSlot = true,
 	openInfo,
 	onToggleInfo,
 	...count
@@ -230,10 +259,10 @@ export const Build = ({
 				<SlotTrack
 					fills={track === "occupancy" ? occupancyFillOf(count.slots) : fills}
 					capacity={count.slots.capacity}
-					offered={count.offer !== undefined}
+					offered={offeredSlot && count.offer !== undefined}
 					highlight={highlight}
 					resting={resting}
-					caption={track === "configs"}
+					caption={caption}
 				/>
 			)}
 		</>
@@ -261,7 +290,13 @@ export const Build = ({
 	const offered = (
 		<>
 			{count.slots === undefined ? null : (
-				<Vacancy slots={count.slots} cash={count.cash} offer={count.offer} />
+				<Vacancy
+					slots={count.slots}
+					cash={count.cash}
+					offer={count.offer}
+					nextSlot={count.nextSlot}
+					boxed={emptySlots}
+				/>
 			)}
 			{(count.weight?.offers ?? []).map((offer) => (
 				<WeightOffer key={offer.to} {...offer} />
@@ -275,7 +310,12 @@ export const Build = ({
 				<div className={TITLE_ROW}>
 					<Typography variant="title">{TITLE}</Typography>
 					<Typography variant="hint" as="span">
-						{summaryOf(configs.length + skipped.length, count, weightOf(fills))}
+						{summaryOf(
+							configs.length + skipped.length,
+							count,
+							weightOf(fills),
+							configCount
+						)}
 					</Typography>
 				</div>
 			)}

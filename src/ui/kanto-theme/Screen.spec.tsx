@@ -45,7 +45,7 @@ describe("Screen", () => {
 	it("caps its width by default, rather than running the full page", () => {
 		const { container } = render(<Screen theme="pallet">body</Screen>);
 
-		expect(container.firstChild).toHaveClass("max-w-4xl", "mx-auto");
+		expect(container.firstChild).toHaveClass("max-w-[1150px]", "mx-auto");
 	});
 
 	it("takes a narrower cap for a screen that reads as one column", () => {
@@ -56,7 +56,18 @@ describe("Screen", () => {
 		);
 
 		expect(container.firstChild).toHaveClass("max-w-2xl");
-		expect(container.firstChild).not.toHaveClass("max-w-4xl");
+		expect(container.firstChild).not.toHaveClass("max-w-[1150px]");
+	});
+
+	it("takes a middle cap for a screen that reads as two columns", () => {
+		const { container } = render(
+			<Screen theme="pallet" width="medium">
+				body
+			</Screen>
+		);
+
+		expect(container.firstChild).toHaveClass("max-w-[900px]");
+		expect(container.firstChild).not.toHaveClass("max-w-[1150px]");
 	});
 
 	it("wears a gate's own theme when given a gate rather than a colour", () => {

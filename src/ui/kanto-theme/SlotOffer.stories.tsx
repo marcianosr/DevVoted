@@ -64,6 +64,22 @@ export const HighRung: Story = {
 	args: offerAt(20),
 };
 
+export const NextRungLocked: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => {
+		const offer = offerAt(10, RICH);
+
+		return (
+			<Screen theme="pewter" width="narrow">
+				<div className={COLUMN}>
+					{offer === undefined ? null : <SlotOffer {...offer} />}
+					<SlotOffer slot={12} price="160 KB" locked />
+				</div>
+			</Screen>
+		);
+	},
+};
+
 export const AcrossThemes: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (

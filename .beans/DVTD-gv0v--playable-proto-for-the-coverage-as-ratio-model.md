@@ -632,8 +632,8 @@ the rig needs it to show the repeat at all.
 
 ## Todo: the rebase and the upkeep curve
 
-- [ ] `coverageRatio.model.ts` -- rebase `HEALTHY_LADDER`, `OK_DROP` 0.10, `SHAKY_DROP` 0.20
-- [ ] `coverageRatio.model.spec.ts` -- six pins move (bare survival at gates 5-6, `multiplierToSurvive` at 8 and 12, the three-gate `bandFor` ruler) plus the seeded sim
+- [x] `coverageRatio.model.ts` -- rebase `HEALTHY_LADDER`, `OK_DROP` 0.10, `SHAKY_DROP` 0.20 (DVTD-1zzz, 2026-09-13)
+- [x] `coverageRatio.model.spec.ts` -- pins moved; the seeded sim needed no change, its assertions are properties (DVTD-1zzz, 2026-09-13)
 - [ ] `coverageRatio.model.ts` -- add the weight upkeep curve; decide interpolate or step between the given rungs
 - [ ] `proto-coverage.tsx` -- drop the capacity purchase and the does-it-fit install block; charge upkeep at every gate close
 - [ ] `proto-coverage.tsx` -- peel configs when the upkeep is unpayable (ADR-074 decision 4)

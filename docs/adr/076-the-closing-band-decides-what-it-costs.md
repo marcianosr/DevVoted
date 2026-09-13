@@ -93,7 +93,8 @@ and leaves the fill alone. Scope is the hero swatch on the debrief; whether the
 strip and the collection surface carry the mark is still open (DVTD-dr5y).
 
 **One screen draws all five.** `GateClearScreen` and `GateHoldScreen` are
-deleted from the kanto kit. They were near-duplicates that shared no code, and a
+deleted — from the kanto kit first, and from `terminal-theme/screens/` when
+`/proto-run` moved onto the kanto set. They were near-duplicates that shared no code, and a
 band that decides the outcome is a poor fit for a file that has to be chosen
 before the outcome is known. `GateOutcomeScreen` derives its band from the
 coverage bar's own numbers rather than taking it as a prop, on ADR-070 Decision
@@ -101,9 +102,10 @@ coverage bar's own numbers rather than taking it as a prop, on ADR-070 Decision
 disagree with the bar they sit under.
 
 **The kanto fixtures moved onto `coverageRatio.model.ts`.** They read
-`coverageDemandFor`, the legacy ladder that runs to 375%, which cannot be drawn
-on a banded bar. Gate 4 now asks 40% rather than 60%. The two engines still
-coexist in the code, and the terminal-theme screens still run the old one.
+`coverageDemandFor`, the legacy ladder that ran to 375%, which cannot be drawn on
+a banded bar. The bridge that normalised it, `gateBand.viewmodel.ts`, went when
+ADR-073 landed on 2026-09-13 and the real ladder started feeding the bar. Gate 4
+asks 25% under the rebased ladder.
 
 **The payouts the new engine quotes are large.** A 12-slot build closing gate 4
 healthy on a streak of 3 is paid over 700 KB, against config prices in the low

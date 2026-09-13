@@ -209,3 +209,34 @@ describe("SlotOffer", () => {
 		expect(screen.getByText(/buy slot/)).toBeInTheDocument();
 	});
 });
+
+describe("the rung after the one on offer", () => {
+	const LOCKED = { slot: 6, price: "80 KB", locked: true } as const;
+
+	it("names the slot and its price without offering to buy it", () => {
+		render(<SlotOffer {...LOCKED} />);
+
+		expect(screen.getByText(/slot/)).toBeInTheDocument();
+		expect(screen.getByText("80 KB")).toBeInTheDocument();
+		expect(screen.queryByText(/buy slot/)).not.toBeInTheDocument();
+	});
+
+	it("is nothing to press, a price being all it states", () => {
+		render(<SlotOffer {...LOCKED} />);
+
+		expect(screen.queryByRole("button")).toBeNull();
+		expect(screen.getByLabelText(/^slot 6 ·/)).toBeInTheDocument();
+	});
+
+	it("drops the hatching, which marks room that is actually for sale", () => {
+		const { container } = render(<SlotOffer {...LOCKED} />);
+
+		expect(container.firstElementChild).not.toHaveClass("bg-hatched-theme");
+	});
+
+	it("leaves the price unpainted, neither affordable nor refused", () => {
+		render(<SlotOffer {...LOCKED} />);
+
+		expect(screen.getByText("80 KB")).not.toHaveAttribute("data-screen-theme");
+	});
+});

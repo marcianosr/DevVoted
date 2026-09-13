@@ -10,15 +10,15 @@ const TITLE = "Build";
 const DESKTOP = "(min-width: 640px)";
 
 export type BuildCounts = {
-	usable: number;
-	running: number;
+	applies: number;
+	ready: number;
 	offline: number;
 	changing: number;
 };
 
 const READINGS = [
-	{ key: "usable", word: "usable", color: "cerulean" },
-	{ key: "running", word: "running", color: "viridian" },
+	{ key: "ready", word: "ready", color: "cerulean" },
+	{ key: "applies", word: "applies", color: "viridian" },
 	{ key: "offline", word: "offline", color: "cinnabar" },
 	{ key: "changing", word: "changing", color: "vermillion" },
 ] as const satisfies readonly {

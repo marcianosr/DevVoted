@@ -37,12 +37,22 @@ import {
 	offlinePairsOf,
 	type RunState,
 	type RunStatus,
+	liveConfigsOf,
 	scheduleOf,
 } from "~/modules/run/run/domain/run.model";
 import {
 	type AnsweredPoll,
 	mirrorPoll,
+	type RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
+import {
+	answerContextFor,
+	gateWindowComplete,
+} from "~/modules/run/run/domain/answer.model";
+import {
+	type ConfigStatus,
+	configStatusFor,
+} from "~/modules/run/config/domain/effect.model";
 import {
 	type PollSlot,
 	upcomingSlotsOf,
@@ -65,17 +75,19 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	failPeelQuotaFor,
-	gateDemandFor,
+	gateLadderFor,
 	gateProjectionFor,
 	peelConfigRangeFor,
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
 import {
+	type Audit,
 	auditLabel,
 	auditsHideCategory,
 	auditTimeLimitMs,
 	liveAuditsFor,
 	mirrorsPolls,
+	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
 import {
 	swatchForGate,
@@ -93,6 +105,10 @@ import {
 	projectorFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
+import {
+	percentOf,
+	runCoverageOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
 import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import {
@@ -102,6 +118,7 @@ import {
 	MAX_SLOTS,
 	planBillKb,
 	revealsPlanTier,
+	roundToOneDecimal,
 	SLICE_WINDOW,
 	storageCapFor,
 	STORAGE_PLANS,
@@ -117,6 +134,7 @@ import {
 import {
 	canBuyStartSlot,
 	canRefundStartSlot,
+	startSlotNextPriceKb,
 	startSlotPriceKb,
 	startSlotRefundKb,
 } from "~/modules/run/run/domain/startSlot.model";
@@ -138,6 +156,7 @@ export type StartSlotsView = {
 	readonly archiveKb: number;
 	readonly buy: SlotDealView;
 	readonly cash: SlotDealView;
+	readonly next: SlotDealView;
 };
 
 export type StoragePlanOption = {
@@ -224,6 +243,7 @@ export type RunView = {
 	readonly buyBack: BuyBackView;
 	readonly paidActions: PaidActions;
 	readonly offlineConfigs: readonly OfflineConfig[];
+	readonly configStatuses: Readonly<Record<string, ConfigStatus>>;
 	readonly mirroredPolls: boolean;
 	readonly categoryHidden: boolean;
 	readonly pollTimeLimitMs: number | null;
@@ -250,6 +270,8 @@ export type RunView = {
 	readonly faucetRemainingKb: number;
 	readonly autoUpgradeRemaining: number | null;
 	readonly gatesCleared: number;
+	/** The gate's five results are in and it owes a close. */
+	readonly gateComplete: boolean;
 
 	readonly gateTheme?: SwatchTheme;
 
@@ -327,7 +349,7 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 			installable: !owned && refusal === null,
 			refusal,
 			preview: buildModifiersFor(withIt, state.gatesCleared),
-			previewPerAnswer: perAnswerPreviewFor(withIt, state.gatesCleared),
+			previewPerAnswer: perAnswerPreviewFor(withIt),
 		};
 	});
 };
@@ -391,6 +413,7 @@ const startSlotsViewFor = (
 ): StartSlotsView => {
 	const price = startSlotPriceKb(state);
 	const refund = startSlotRefundKb(state);
+	const nextPrice = startSlotNextPriceKb(state);
 	const refusal = startBuyRefusalFor(state, archiveKb);
 
 	return {
@@ -406,6 +429,10 @@ const startSlotsViewFor = (
 			refund === undefined || !canRefundStartSlot(state)
 				? {}
 				: { costKb: refund, makes: state.build.slots - 1 },
+		next:
+			nextPrice === undefined
+				? {}
+				: { costKb: nextPrice, makes: state.build.slots + 2 },
 	};
 };
 
@@ -437,6 +464,38 @@ const storagePlanViewFor = (
 	};
 };
 
+const configStatusesFor = (
+	state: RunState,
+	poll: RunPoll | undefined,
+	offline: readonly OfflineConfig[],
+	liveAudits: readonly Audit[]
+): Readonly<Record<string, ConfigStatus>> => {
+	if (poll === undefined) return {};
+
+	const schedule = scheduleOf(state);
+	const auditHolding = new Map(
+		offline.map((entry) => [entry.config.id, entry.audit])
+	);
+	const context = {
+		...answerContextFor(state, poll),
+		suppressingAudit:
+			suppressedAuditFor(state.build.configs, state.gatesCleared, schedule) !==
+			undefined,
+		categoryHidden: auditsHideCategory(liveAudits),
+		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
+	};
+
+	return Object.fromEntries(
+		state.build.configs.map((config) => [
+			config.id,
+			configStatusFor(config, {
+				...context,
+				offlineAudit: auditHolding.get(config.id),
+			}),
+		])
+	);
+};
+
 export const toRunView = (
 	state: RunState,
 	archiveKb = 0,
@@ -446,17 +505,15 @@ export const toRunView = (
 ): RunView => {
 	const current = state.polls[state.currentIndex];
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
-	const perAnswer = perAnswerPreviewFor(
-		state.build.configs,
-		state.gatesCleared
-	);
+	const perAnswer = perAnswerPreviewFor(state.build.configs);
+	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
 	const schedule = scheduleOf(state);
 	const peelSlots = failPeelQuotaFor(
 		state.build.configs,
 		state.gatesCleared,
 		schedule
 	);
-	const coverageDemand = gateDemandFor(
+	const coverageLadder = gateLadderFor(
 		state.build.configs,
 		state.gatesCleared,
 		schedule
@@ -473,6 +530,8 @@ export const toRunView = (
 	}));
 	const mirrored = mirrorsPolls(liveAudits);
 	const audits = auditViewsFor(state);
+	const configStatuses = configStatusesFor(state, current, offline, liveAudits);
+	const liveConfigs = liveConfigsOf(state);
 
 	return {
 		status: state.status,
@@ -509,6 +568,7 @@ export const toRunView = (
 		buyBack: buyBackViewFor(state),
 		paidActions: paidActionsFor(state),
 		offlineConfigs: offline,
+		configStatuses,
 		mirroredPolls: mirrored,
 		categoryHidden: auditsHideCategory(liveAudits),
 		pollTimeLimitMs:
@@ -516,16 +576,16 @@ export const toRunView = (
 		currentPollPeeked:
 			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
 		correctAnswersThisGate:
-			budgeterFor(state.build.configs) === undefined
+			budgeterFor(liveConfigs) === undefined
 				? null
 				: (state.window.budget ?? null),
-		correctCountSource: budgeterFor(state.build.configs)?.label ?? null,
+		correctCountSource: budgeterFor(liveConfigs)?.label ?? null,
 		rebaseSlots: upcomingSlotsOf(state),
 		estimate: estimateControlFor(state),
 		estimatedCorrect: state.estimatedCorrect ?? null,
 		correctThisGate: state.window.correct,
 		upcomingCategories:
-			prefetcherFor(state.build.configs) === undefined
+			prefetcherFor(liveConfigs) === undefined
 				? null
 				: state.polls
 						.slice(
@@ -534,7 +594,7 @@ export const toRunView = (
 						)
 						.map((poll) => poll.category),
 		nextGateCategories:
-			prefetcherFor(state.build.configs) === undefined
+			prefetcherFor(liveConfigs) === undefined
 				? null
 				: state.polls
 						.slice(
@@ -543,7 +603,7 @@ export const toRunView = (
 						)
 						.map((poll) => poll.category),
 		answerTypesThisGate:
-			prefetcherFor(state.build.configs) === undefined
+			prefetcherFor(liveConfigs) === undefined
 				? null
 				: answerTypesOf(
 						state.polls.slice(
@@ -552,7 +612,7 @@ export const toRunView = (
 						)
 					),
 		optionCountsThisGate:
-			prefetcherFor(state.build.configs) === undefined
+			prefetcherFor(liveConfigs) === undefined
 				? null
 				: state.polls
 						.slice(
@@ -569,8 +629,10 @@ export const toRunView = (
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,
-			coverageDemand,
-			coverageHeld: state.window.coverageGained,
+			coverageLadder,
+			coverageHeld: roundToOneDecimal(
+				percentOf(runCoverageOf(carriedUnits, state.gatesCleared))
+			),
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
 			peelSlotsOnFailure: peelSlots,
@@ -597,9 +659,10 @@ export const toRunView = (
 				projectorFor(state.build.configs) === undefined
 					? undefined
 					: gateProjectionFor(
-							state.window.coverageGained,
+							carriedUnits,
 							perAnswer,
-							coverageDemand
+							state.gatesCleared,
+							coverageLadder.healthy
 						),
 		},
 		canStart: canStart(state.build),
@@ -611,6 +674,7 @@ export const toRunView = (
 				state.autoUpgradeProgress ?? 0
 			) ?? null,
 		gatesCleared: state.gatesCleared,
+		gateComplete: gateWindowComplete(state),
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		redoingGate: state.redoGate ?? null,
 		clearedGate: state.clearedGate ?? null,

@@ -1,5 +1,5 @@
 import { Badge } from "./Badge.ui";
-import { Button, type ButtonTone } from "./Button.ui";
+import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import type { IconName } from "./Icon.ui";
 import type { SwatchFill } from "./Swatch.ui";
@@ -33,6 +33,7 @@ export type FooterAction = {
 	label: string;
 	onPress?: () => void;
 	icon?: IconName;
+	iconAt?: IconPlacement;
 };
 
 export type NotePlacement = "below" | "row";
@@ -92,6 +93,7 @@ export const ScreenFooter = ({
 						tone={ASIDE_TONE}
 						label={aside.label}
 						icon={aside.icon}
+						iconAt={aside.iconAt}
 						disabled={aside.onPress === undefined}
 						onPress={aside.onPress}
 					/>
@@ -112,6 +114,7 @@ export const ScreenFooter = ({
 					tone={action.onPress === undefined ? REFUSED_TONE : LIVE_TONE}
 					label={action.label}
 					icon={action.icon}
+					iconAt={action.iconAt}
 					disabled={action.onPress === undefined}
 					onPress={action.onPress}
 				/>

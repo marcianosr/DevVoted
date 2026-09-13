@@ -58,7 +58,7 @@ describe(StripScreen, () => {
 				answered={[]}
 				retryStake={createMockGateStake({
 					gateNumber: 2,
-					coverageDemand: 25,
+					coverageLadder: { floor: 0, ok: 0, healthy: 25 },
 					coverageHeld: 20,
 				})}
 				onStrip={() => {}}

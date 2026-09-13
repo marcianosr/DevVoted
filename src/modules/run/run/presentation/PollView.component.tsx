@@ -1,537 +1,237 @@
-import { kbLabel } from "~/shared/lib/storage";
-import type { CategoryCode } from "~/shared/lib/categories";
-import { getCategoryMetadata } from "~/shared/lib/categories";
+import { useState } from "react";
+
 import {
-	abArmLabel,
-	type Config,
-	describeConfig,
-	headlineFigureOf,
-	maxLevelOf,
-	otherArmOf,
-	slotsOf,
-	type ConfigFigure,
-} from "~/modules/run/config/domain/config.model";
-import {
-	configStatusFor,
-	type ConfigStatus,
-	type PollStatusContext,
-	type SkipReason,
-} from "~/modules/run/config/domain/effect.model";
-import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+	auditPropsOf,
+	buildCountsOf,
+	categoryNameOf,
+	type PressAction,
+	letterAt,
+	pollBarFor,
+	pollBuildFor,
+	gateLabelFor,
+	pollHeaderFor,
+	trailFor,
+} from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { unlockNotesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
-import { coverageForAnswer } from "~/modules/run/build/domain/build.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import { kbLabel } from "~/shared/lib/storage";
 import {
-	FAUCET_CAP_KB,
-	gateBaseMultiplier,
-	pollDifficultyMultiplier,
-} from "~/modules/run/run/domain/rules.model";
-import {
-	type AnswerType,
-	cachedHitsFor,
-} from "~/modules/run/run/domain/runPoll.model";
+	PollScreen,
+	type PollScreenProps,
+} from "~/ui/kanto-theme/PollScreen.ui";
+import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
 import type {
-	PollChoice,
-	PollFact,
-} from "~/ui/terminal-theme/screens/PollScreen.ui";
-import { PollScreen } from "~/ui/terminal-theme/screens/PollScreen.ui";
-import type { AuditNote } from "~/ui/terminal-theme/Audits.ui";
-import type { ChoiceSeal } from "~/ui/terminal-theme/Choice.ui";
-import type { BuildListRow } from "~/ui/terminal-theme/BuildList.ui";
-import type { DotVariant } from "~/ui/terminal-theme/Dot.ui";
-import type { RunHeaderProps } from "~/ui/terminal-theme/RunHeader.ui";
-import type { TrackSwatch } from "~/ui/terminal-theme/SwatchTrack.ui";
-import type { TrailProps } from "~/ui/terminal-theme/Trail.ui";
-import { countRange, plural } from "~/ui/terminal-theme/format";
-
-const LETTERS = "ABCDEFGH";
-const HIDDEN_CATEGORY = "???";
-
-export const trailFor = (view: RunView): TrailProps => ({
-	count: view.pollsPerGate,
-	current: view.answeredThisGate.length + 1,
-	verdicts: view.answeredThisGate.map((poll) => poll.outcome),
-});
-
-export const swatchTrackFor = (
-	view: RunView,
-	standingAt: number = view.gatesCleared
-): readonly TrackSwatch[] =>
-	Array.from({ length: view.victoryGate + 1 }, (_, gate) => {
-		if (gate < standingAt) {
-			return { theme: swatchForGate(gate)?.theme, state: "earned" as const };
-		}
-		if (gate === standingAt) {
-			return { theme: swatchForGate(gate)?.theme, state: "current" as const };
-		}
-		return { state: "locked" as const };
-	});
-
-export const runHeaderFor = (
-	view: RunView,
-	standingAt?: number
-): RunHeaderProps => {
-	const gate = standingAt ?? view.gateStake.gateNumber;
-
-	return {
-		title: `Gate ${gate} · ${swatchForGate(gate)?.gateName ?? ""}`,
-		swatch: swatchForGate(gate)?.theme ?? view.gateTheme,
-		balance: `${kbLabel(view.storage)} balance`,
-		gauge: storageGaugeFor(view),
-		swatches: swatchTrackFor(view, gate),
-		gateLabel: `gate ${gate} / ${view.victoryGate}`,
-		coverage: coverageFor(view),
-	};
-};
-
-const offlineCue = (view: RunView, audit: AuditView): string | undefined => {
-	const names = view.offlineConfigs
-		.filter((offline) => offline.audit === `${audit.code} ${audit.name}`)
-		.map((offline) => offline.config.label);
-
-	if (names.length === 0) return undefined;
-	return `${names.join(", ")} ${names.length === 1 ? "is" : "are"} offline this gate.`;
-};
-
-export const chipOf = (
-	config: Config
-): NonNullable<AuditNote["suppressedBy"]> => ({
-	label: config.label,
-	slots: slotsOf(config),
-	version: config.level ?? 1,
-	maxVersion: maxLevelOf(config),
-});
-
-export const auditNotes = (view: RunView): readonly AuditNote[] =>
-	view.audits.map((audit: AuditView) => ({
-		code: `${audit.code}`,
-		name: audit.name,
-		cue: offlineCue(view, audit) ?? audit.answerCue ?? audit.description,
-		suppressed: audit.suppressed,
-		suppressedBy:
-			audit.suppressedBy === undefined ? undefined : chipOf(audit.suppressedBy),
-	}));
-
-const skipNote = (why: SkipReason): string => {
-	if (why.kind === "otherCategories")
-		return `waits for ${why.categories.map((code) => getCategoryMetadata(code).name).join(", ")}`;
-	if (why.kind === "openerOnly") return "fired already";
-	if (why.kind === "cacheCold") return "cache is cold here";
-	if (why.kind === "paysAtGateClear") return "pays on clear";
-	if (why.kind === "paysOnPeel") return "pays on a peel";
-	if (why.kind === "billsAtGateClear") return "bills on clear";
-	if (why.kind === "inShop") return "works in the shop";
-	if (why.kind === "inPrep") return "works before the gate";
-	if (why.kind === "noAuditToSuppress") return "no audit to suppress";
-	if (why.kind === "runCapReached") return "the run's cap is spent";
-	return "not this poll";
-};
-
-const estimateNote = (view: RunView, config: Config): string | undefined => {
-	if (config.storagePerEstimate === undefined) return undefined;
-	if (view.estimatedCorrect === null) return "no estimate — pays nothing";
-	return `estimated ${view.estimatedCorrect} · ${view.correctThisGate} right so far`;
-};
-
-const statusNote = (status: ConfigStatus): string | undefined => {
-	if (status.kind === "online") return undefined;
-	if (status.kind === "unknown") return "category hidden";
-	if (status.kind === "offline") return `offline · ${status.audit}`;
-	return skipNote(status.why);
-};
-
-const rowFigure = (
-	config: Config,
-	status: ConfigStatus,
-	autoUpgradeRemaining: number | null
-): string | undefined => {
-	if (status.kind === "offline") return "offline";
-	if (status.kind !== "online") return undefined;
-	if (config.autoUpgradeAfterCorrect !== undefined && autoUpgradeRemaining)
-		return `in ${autoUpgradeRemaining}`;
-	return figureLabel(headlineFigureOf(config));
-};
-
-const dotFor = (status: ConfigStatus, hasTool: boolean): DotVariant => {
-	if (status.kind === "offline") return "blocked";
-	if (hasTool) return "action";
-	return status.kind === "online" ? "on" : "off";
-};
-
-const figureLabel = (figure: ConfigFigure | undefined): string | undefined => {
-	if (figure === undefined) return undefined;
-	if (figure.kind === "multiplier") return `×${figure.value}`;
-	if (figure.kind === "kb") return `+${kbLabel(figure.value)}`;
-	if (figure.kind === "percent") return `+${figure.value}%`;
-	return `${figure.value > 0 ? "+" : ""}${figure.value}`;
-};
-
-type Tool = {
-	readonly configId: string;
-	readonly label: string;
-	readonly costKb: number;
-	readonly ready: boolean;
-	readonly onUse: () => void;
-};
-
-const toolsFor = (
-	view: RunView,
-	handlers: Pick<PollTools, "onLint" | "onPeek">
-): readonly Tool[] => [
-	...(view.paidActions.canLint && view.paidActions.linter
-		? [
-				{
-					configId: view.paidActions.linter.id,
-					label: "cross out",
-					costKb: view.paidActions.lintCost,
-					ready: view.paidActions.lintReady,
-					onUse: handlers.onLint,
-				},
-			]
-		: []),
-	...(view.paidActions.canPeek && view.paidActions.peeker
-		? [
-				{
-					configId: view.paidActions.peeker.id,
-					label: "peek",
-					costKb: view.paidActions.peekCost,
-					ready: view.paidActions.peekReady,
-					onUse: handlers.onPeek,
-				},
-			]
-		: []),
-];
-
-export type PollFacts = {
-	readonly category: CategoryCode;
-	readonly answeredBefore: number;
-	readonly cachedHits: number;
-};
-
-const statusContextFor = (
-	view: RunView,
-	poll: PollFacts,
-	config: Config
-): PollStatusContext => ({
-	category: poll.category,
-	answeredBefore: poll.answeredBefore,
-	cachedHits: poll.cachedHits,
-	suppressingAudit: view.audits.some((audit) => audit.suppressed),
-	categoryHidden: view.categoryHidden,
-	offlineAudit: view.offlineConfigs.find(
-		(offline) => offline.config.id === config.id
-	)?.audit,
-	faucetRemainingKb: view.faucetRemainingKb,
-});
-
-const swapFor = (
-	config: Config,
-	onSwitchArm: ((configId: string) => void) | undefined
-): BuildListRow["swap"] => {
-	const other = otherArmOf(config);
-	if (other === undefined || onSwitchArm === undefined) return undefined;
-
-	return {
-		label: `Switch to arm ${abArmLabel(other)}`,
-		onUse: () => onSwitchArm(config.id),
-	};
-};
-
-export const buildRows = (
-	view: RunView,
-	poll: PollFacts,
-	tools: readonly Tool[],
-	onSwitchArm?: (configId: string) => void
-): readonly BuildListRow[] =>
-	view.configs.map((config): BuildListRow => {
-		const status = configStatusFor(
-			config,
-			statusContextFor(view, poll, config)
-		);
-		const tool =
-			status.kind === "offline"
-				? undefined
-				: tools.find((candidate) => candidate.configId === config.id);
-		const note = estimateNote(view, config) ?? statusNote(status);
-
-		return {
-			name: config.label,
-			slots: slotsOf(config),
-			version: config.level ?? 1,
-			maxVersion: maxLevelOf(config),
-			detail:
-				note === undefined
-					? describeConfig(config)
-					: `${describeConfig(config)} · ${note}`,
-			swap: swapFor(config, onSwitchArm),
-			dot: dotFor(status, tool !== undefined),
-			figure: rowFigure(config, status, view.autoUpgradeRemaining),
-			meterPercent:
-				config.storagePerCorrect === undefined
-					? undefined
-					: Math.round((view.faucetRemainingKb / FAUCET_CAP_KB) * 100),
-			use:
-				tool === undefined
-					? undefined
-					: {
-							label: tool.label,
-							price: kbLabel(tool.costKb),
-							onUse: tool.ready ? tool.onUse : undefined,
-						},
-		};
-	});
-
-const liveConfigsIn = (view: RunView): readonly Config[] =>
-	view.configs.filter(
-		(config) =>
-			!view.offlineConfigs.some((offline) => offline.config.id === config.id)
-	);
-
-// Routed through the same function the scorer uses rather than through
-// `perAnswer`, which is a context-free forecast: it reads coverageMultiplier
-// and coverageAdd only, so every conditional config (opener, focus, cache) was
-// invisible to it and the panel could print ×1 above a row reading ×2.
-export const buildTotalFor = (view: RunView, poll: PollFacts) => ({
-	label: "Total",
-	value: `×${coverageForAnswer(
-		liveConfigsIn(view),
-		poll,
-		gateBaseMultiplier(view.gatesCleared)
-	)}`,
-});
-
-const retryCost = (view: RunView): PollFact | undefined => {
-	const { peelSlotsOnFailure, peelConfigsOnFailure, missIsFatal } =
-		view.gateStake;
-	if (missIsFatal)
-		return {
-			label: "Gate retry cost:",
-			value: "The run ends here",
-			tone: "cinnabar",
-		};
-	if (peelSlotsOnFailure === 0) return undefined;
-	return {
-		label: "Gate retry cost:",
-		value: `Remove ${countRange(
-			peelConfigsOnFailure.fewest,
-			peelConfigsOnFailure.most,
-			"config"
-		)}`,
-		hint: `${plural(peelSlotsOnFailure, "slot")} of configs — drop them or minify them, your pick`,
-		tone: "cinnabar",
-	};
-};
-
-export const coverageFor = (view: RunView) => {
-	const { coverageHeld, coverageDemand } = view.gateStake;
-
-	return {
-		label: "Coverage",
-		reading: `${Math.round(coverageHeld * 10) / 10} / ${coverageDemand}%`,
-		percent:
-			coverageDemand === 0
-				? 0
-				: Math.min(100, Math.round((coverageHeld / coverageDemand) * 100)),
-	};
-};
-
-export const coverageGaugeFor = (
-	view: RunView,
-	poll: PollFacts,
-	difficulty: number
-) => ({
-	held: view.gateStake.coverageHeld,
-	demand: view.gateStake.coverageDemand,
-	perCorrect: coverageForAnswer(
-		liveConfigsIn(view),
-		poll,
-		gateBaseMultiplier(view.gatesCleared) * difficulty
-	),
-	missAt: view.gateStake.projection?.miss,
-});
-
-export const storageGaugeFor = (view: RunView) => ({
-	label: `${kbLabel(view.storage)} of ${kbLabel(view.storagePlan.capKb)} cap`,
-	percent:
-		view.storagePlan.capKb === 0
-			? 0
-			: Math.round((view.storage / view.storagePlan.capKb) * 100),
-});
-
-export const categoryFor = (category: CategoryCode, hidden = false) =>
-	hidden ? HIDDEN_CATEGORY : getCategoryMetadata(category).name;
-
-export const questionFor = (view: RunView, question: string): string =>
-	view.mirroredPolls
-		? `Mirrored — pick every INCORRECT option. ${question}`
-		: question;
-
-export type ScoredShape = {
-	readonly options: readonly unknown[];
-	readonly answerType?: AnswerType;
-};
-
-export const factsFor = (
-	view: RunView,
-	poll: ScoredShape
-): readonly PollFact[] => {
-	const multiplier = pollDifficultyMultiplier(
-		poll.options.length,
-		poll.answerType === "multiple"
-	);
-	const wrong = Math.abs(view.gateStake.perAnswer.coveragePerWrong);
-	const retry = retryCost(view);
-
-	return [
-		{
-			label: "Scores",
-			value: `×${Math.round(multiplier * 100) / 100}`,
-			tone: "celadon",
-		},
-		...(poll.answerType === "multiple"
-			? [{ label: "Pick every correct one" }]
-			: []),
-		...(view.correctAnswersThisGate === null
-			? []
-			: [
-					{
-						label: `This gate holds ${plural(
-							view.correctAnswersThisGate,
-							view.mirroredPolls ? "incorrect answer" : "correct answer"
-						)}`,
-						value: view.correctCountSource ?? undefined,
-					},
-				]),
-		...(wrong === 0
-			? []
-			: [
-					{
-						label: "Wrong costs",
-						value: `${wrong}`,
-						tone: "cinnabar" as const,
-					},
-				]),
-		...(retry === undefined ? [] : [retry]),
-	];
-};
-
-export type PollTools = {
-	onLint: () => void;
-	onPeek: () => void;
-	onBuyBack: (optionId: string) => void;
-	onSwitchArm?: (configId: string) => void;
-};
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
+import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
+import type { TrailProps } from "~/ui/kanto-theme/Trail.ui";
 
 export type PollViewProps = {
 	view: RunView;
-	poll: NonNullable<RunView["poll"]>;
+	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
-	splitByOptionId?: Readonly<Record<string, number>>;
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
-} & PollTools;
+	onNext: () => void;
+	onPress?: (action: PressAction, configId: string) => void;
+	onUnseal?: (optionId: string) => void;
+};
+
+type LivePoll = NonNullable<RunView["poll"]>;
+
+const SUBMIT_LABEL = "Submit answer";
+const NEXT_LABEL = "Next poll";
+const PICK_FIRST = "pick an answer first";
+const SINGLE_HINT = "tap an answer to lock it in";
+const MULTIPLE_HINT = "pick every answer that fits, then submit";
+
+const wrongCostOf = (view: RunView): string | undefined => {
+	const cost = view.gateStake.perAnswer.coveragePerWrong;
+	return cost === 0 ? undefined : `${Math.abs(cost).toFixed(1)}`;
+};
+
+const optionsOf = (
+	poll: LivePoll,
+	hiddenOptionIds: readonly string[],
+	buyBack: RunView["buyBack"],
+	onUnseal: ((optionId: string) => void) | undefined
+): readonly QuestionOption[] =>
+	poll.options.map((option, index) =>
+		hiddenOptionIds.includes(option.id)
+			? {
+					id: option.id,
+					letter: letterAt(index),
+					seal: {
+						price: kbLabel(buyBack.costKb),
+						onUnseal:
+							onUnseal === undefined || !buyBack.ready
+								? undefined
+								: () => onUnseal(option.id),
+					},
+				}
+			: { id: option.id, letter: letterAt(index), label: option.label }
+	);
+
+const answeredOptionsOf = (
+	answered: AnsweredPoll
+): readonly QuestionOption[] => {
+	const labels = answered.options ?? [
+		...new Set([...answered.picked, ...(answered.correct ?? [])]),
+	];
+
+	return labels.map((label, index) => ({
+		id: label,
+		letter: letterAt(index),
+		label,
+	}));
+};
+
+const liveQuestionFor = (
+	view: RunView,
+	poll: LivePoll,
+	selectedOptionIds: readonly string[],
+	onSelect: (optionId: string) => void,
+	onUnseal: ((optionId: string) => void) | undefined
+): QuestionProps => ({
+	category: categoryNameOf(view, poll.category),
+	answerType: poll.answerType,
+	question: poll.question,
+	options: optionsOf(poll, view.hiddenOptionIds, view.buyBack, onUnseal),
+	codeBlock: poll.codeBlock,
+	pickedIds: selectedOptionIds,
+	onPick: onSelect,
+	wrongCost: wrongCostOf(view),
+});
+
+const answeredQuestionFor = (
+	view: RunView,
+	answered: AnsweredPoll
+): QuestionProps => ({
+	category: categoryNameOf(view, answered.category),
+	answerType: answered.answerType ?? "single",
+	question: answered.question,
+	options: answeredOptionsOf(answered),
+	codeBlock: answered.codeBlock,
+	pickedIds: answered.picked,
+});
+
+const authorOf = (poll: LivePoll): AuthorProps | undefined =>
+	poll.author === undefined
+		? undefined
+		: {
+				handle: poll.author.handle,
+				title: poll.author.title,
+				borderUrl: poll.author.borderUrl,
+			};
+
+const submitFooterFor = (
+	picked: boolean,
+	onSubmit: () => void
+): ScreenFooterProps => ({
+	action: { label: SUBMIT_LABEL, onPress: picked ? onSubmit : undefined },
+	refusal: picked ? undefined : PICK_FIRST,
+});
+
+const liveFooterFor = (
+	poll: LivePoll,
+	picked: boolean,
+	onSubmit: () => void
+): ScreenFooterProps | undefined =>
+	poll.answerType === "multiple"
+		? submitFooterFor(picked, onSubmit)
+		: undefined;
+
+const answeredTrailFor = (view: RunView): TrailProps => ({
+	...trailFor(view),
+	current: view.answeredThisGate.length,
+});
+
+const liveHintFor = (poll: LivePoll) =>
+	poll.answerType === "multiple" ? MULTIPLE_HINT : SINGLE_HINT;
+
+type PollMood = Pick<
+	PollScreenProps,
+	"question" | "trail" | "hint" | "author" | "footer"
+>;
+
+const answeredMoodFor = (
+	view: RunView,
+	answered: AnsweredPoll,
+	onNext: () => void
+): PollMood => ({
+	question: answeredQuestionFor(view, answered),
+	trail: answeredTrailFor(view),
+	hint: answered.explanation,
+	footer: {
+		action: {
+			label: view.gateComplete
+				? gateLabelFor(view.gateStake.gateNumber)
+				: NEXT_LABEL,
+			icon: "gate",
+			onPress: onNext,
+		},
+	},
+});
+
+const liveMoodFor = (
+	view: RunView,
+	poll: LivePoll,
+	selectedOptionIds: readonly string[],
+	onSelect: (optionId: string) => void,
+	onSubmit: () => void,
+	onUnseal: ((optionId: string) => void) | undefined
+): PollMood => ({
+	question: liveQuestionFor(view, poll, selectedOptionIds, onSelect, onUnseal),
+	trail: trailFor(view),
+	hint: liveHintFor(poll),
+	author: authorOf(poll),
+	footer: liveFooterFor(poll, selectedOptionIds.length > 0, onSubmit),
+});
 
 export const PollView = ({
 	view,
-	poll,
+	answered,
 	selectedOptionIds,
-	splitByOptionId,
 	onSelect,
 	onSubmit,
-	onLint,
-	onPeek,
-	onBuyBack,
-	onSwitchArm,
+	onNext,
+	onPress,
+	onUnseal,
 }: PollViewProps) => {
-	const blocked = new Set(view.disabledOptionIds);
-	const sealed = new Set(view.hiddenOptionIds);
+	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
 
-	const noteFor = (optionId: string) => {
-		if (blocked.has(optionId)) return "crossed out";
-		const share = splitByOptionId?.[optionId];
-		return share === undefined ? undefined : `${share}% picked this`;
-	};
+	const live = view.poll ?? undefined;
+	const mood =
+		answered !== undefined
+			? answeredMoodFor(view, answered, onNext)
+			: live === undefined
+				? undefined
+				: liveMoodFor(
+						view,
+						live,
+						selectedOptionIds,
+						onSelect,
+						onSubmit,
+						onUnseal
+					);
 
-	// A sealed answer is unreadable, not ruled out, so it carries the price of
-	// reading it rather than the crossed-out mark, and it stays pickable.
-	const stateFor = (optionId: string) =>
-		blocked.has(optionId) ? ("crossedOut" as const) : ("idle" as const);
-
-	const sealFor = (optionId: string): ChoiceSeal | undefined => {
-		if (!sealed.has(optionId)) return undefined;
-		const price = kbLabel(view.buyBack.costKb);
-		return {
-			price,
-			hint: view.buyBack.ready
-				? `Unseal this answer for ${price}`
-				: `Unseal this answer for ${price} — not enough storage`,
-			onUnseal: view.buyBack.ready ? () => onBuyBack(optionId) : undefined,
-		};
-	};
-
-	const choices: readonly PollChoice[] = poll.options.map((option, index) => ({
-		letter: LETTERS[index] ?? `${index + 1}`,
-		label: option.label,
-		selected: selectedOptionIds.includes(option.id),
-		state: stateFor(option.id),
-		note: noteFor(option.id),
-		seal: sealFor(option.id),
-	}));
-
-	const byLetter = new Map(
-		poll.options.map((option, index) => [
-			LETTERS[index] ?? `${index + 1}`,
-			option.id,
-		])
-	);
-
-	const facts: PollFacts = {
-		category: poll.category,
-		answeredBefore: view.answeredThisGate.length,
-		cachedHits: cachedHitsFor(view.allAnswered, poll.category),
-	};
-
-	const rows = buildRows(
-		view,
-		facts,
-		toolsFor(view, { onLint, onPeek }),
-		onSwitchArm
-	);
+	if (mood === undefined) return null;
 
 	return (
 		<PollScreen
-			theme={view.gateTheme}
-			run={runHeaderFor(view)}
-			coverage={coverageGaugeFor(
-				view,
-				facts,
-				pollDifficultyMultiplier(
-					poll.options.length,
-					poll.answerType === "multiple"
-				)
-			)}
-			trail={trailFor(view)}
-			category={categoryFor(poll.category, view.categoryHidden)}
-			question={questionFor(view, poll.question)}
-			facts={factsFor(view, poll)}
-			code={poll.codeBlock?.split("\n")}
-			audits={auditNotes(view)}
-			unlocks={unlockNotesFor(view)}
-			byline={poll.author}
-			build={{
-				running: rows.filter((row) => row.dot === "on").length,
-				rows,
-				total: buildTotalFor(view, facts),
+			{...mood}
+			header={pollHeaderFor(view, pollBarFor(view, answered !== undefined))}
+			audits={auditPropsOf(view.audits)}
+			buildFooter={{
+				build: pollBuildFor(view, {
+					openInfo,
+					onToggleInfo: (name) =>
+						setOpenInfo(name === openInfo ? undefined : name),
+					onPress,
+				}),
+				counts: buildCountsOf(view),
 			}}
-			choices={choices}
-			onToggle={(letter) => {
-				const optionId = byLetter.get(letter);
-				if (optionId !== undefined) onSelect(optionId);
-			}}
-			submitLabel="Submit answer"
-			submitLock={selectedOptionIds.length === 0 ? "Pick an answer" : undefined}
-			onSubmit={onSubmit}
 		/>
 	);
 };

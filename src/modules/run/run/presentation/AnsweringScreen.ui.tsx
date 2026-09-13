@@ -182,7 +182,6 @@ export const AnsweringScreen = ({
 							baseCoverage={reveal.score.baseCoverage}
 							bonuses={scoreBonusRows(reveal.score, configs)}
 							earnedCoverage={reveal.score.earnedCoverage}
-							difficulty={reveal.score.difficulty}
 							animated
 							startDelayMs={REVEAL_SCORE_START_MS}
 						/>

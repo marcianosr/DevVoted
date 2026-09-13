@@ -34,14 +34,13 @@ four figures.
 
 | Reading | Means | Colour |
 |---|---|---|
-| usable | a paid press is ready on this poll | cerulean |
-| running | online, in effect on this poll | viridian |
+| ready | a paid press is ready on this poll | cerulean |
+| applies | online, in effect on this poll | viridian |
 | offline | an audit is holding it down | cinnabar |
 | changing | its figure moves on this answer | vermillion |
 
 The first three partition the chip field, and a config that sells a press counts
-as usable rather than running, following the same precedence `dotFor` already
-uses on the terminal rail. `changing` is an overlay on top of that partition,
+as ready rather than applies. `changing` is an overlay on that partition,
 not a fourth bucket: a config being online and its figure moving are independent
 facts, and forcing them into one axis would hide one of them. A zero count draws
 no badge. `skipped` is not counted here, because `Build`'s own inner fold
@@ -90,3 +89,19 @@ also shoved to the right edge. Every other `Fold` had the same latent overflow.
   says a config's figure moves on the next answer. Wiring it means deriving it
   from `autoUpgradeRemaining`, a paid action's doubling fee, and the faucet
   approaching `FAUCET_CAP_KB`.
+
+## Amendment: the words are `ready` and `applies`
+
+The first build of this row shipped the readings as `usable` and `running`, and
+counted `usable` as "not offline, and the focus category matches", which is
+what `applies` means here, not what a press means. A five-config build on a poll
+none of them could be pressed on still read "4 usable", so the word promised an
+action the screen did not offer. `usable` also reads as a property of the config
+rather than of this moment.
+
+`ready` and `applies` split that: `ready` is something you can do now, `applies`
+is something already happening to you. The partition and the `changing` overlay
+are unchanged.
+
+Both readings and the chip badges now derive from one function, `pollPressesOf`,
+so a count can no longer promise a press the screen does not draw.

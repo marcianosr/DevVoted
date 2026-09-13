@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 const PANEL_COLUMN = "flex flex-col gap-4";
 
 export const PANEL_CHROME =
-	"rounded-2xl border border-theme-faint bg-theme-faint p-2 px-4";
+	"rounded-2xl border border-theme-faint bg-theme-faint py-4 px-4";
 
 export const PANEL_SURFACE = `${PANEL_COLUMN} ${PANEL_CHROME}`;
 

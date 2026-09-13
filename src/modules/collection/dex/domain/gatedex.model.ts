@@ -13,12 +13,15 @@ import {
 	type GateSwatch,
 } from "~/modules/run/gate/domain/swatch.model";
 import {
-	coverageDemandFor,
 	failPeelShareFor,
 	PIN_FROM_GATE,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import { EXTEND_FROM_GATE } from "~/modules/run/shop/domain/draft.model";
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 export type GatedexState = "cleared" | "next" | "locked";
 
@@ -85,7 +88,7 @@ export const gatedex = (
 		return {
 			gate: swatch.gate,
 			swatch,
-			coverageDemand: coverageDemandFor(swatch.gate),
+			coverageDemand: percentOf(healthyAt(swatch.gate)),
 			peelShare: failPeelShareFor(swatch.gate) + extraPeelShare,
 			peelsAudited: extraPeelShare > 0,
 			audits: audits.map(auditLabel),

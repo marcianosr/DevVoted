@@ -70,14 +70,6 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
-export const BASE_WRONG_COVERAGE_LOSS = 0.5;
-
-const WRONG_LOSS_GATE_STEP = 0.03;
-
-export const wrongLossShareFor = (gatesCleared: number): number =>
-	BASE_WRONG_COVERAGE_LOSS +
-	WRONG_LOSS_GATE_STEP * Math.min(Math.max(0, gatesCleared), VICTORY_GATE);
-
 const STREAK_COVERAGE_BONUS = 0.1;
 
 export const BASE_STREAK_STEPS = 10;
@@ -90,28 +82,25 @@ export const streakMultiplier = (
 export const streakCapMultiplier = (capSteps: number): number =>
 	1 + STREAK_COVERAGE_BONUS * capSteps;
 
-export const gateBaseMultiplier = (gatesCleared: number): number =>
+export const STREAK_UNIT_STEP = 0.1;
+
+/**
+ * Every consecutive correct answer after the first pays a flat step, so a
+ * flawless window is worth four steps. It is added after the multipliers and
+ * never multiplied by them: inside the stack a x6 build would turn the step
+ * into +0.6 and the streak would stop rewarding accuracy.
+ */
+export const streakUnitBonus = (streakBefore: number): number =>
+	streakBefore >= 1 ? STREAK_UNIT_STEP : 0;
+
+/** Correct answers a gate demands whatever the run score says, counted before multipliers. */
+export const FLOOR_CORRECT = 2;
+
+export const meetsGateFloor = (correct: number): boolean =>
+	correct >= FLOOR_CORRECT;
+
+export const gateRewardMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
-
-const COVERAGE_DEMANDS = [
-	3, 10, 25, 40, 60, 85, 110, 140, 175, 210, 250, 300, 375,
-] as const;
-
-export const coverageDemandFor = (gatesCleared: number): number =>
-	COVERAGE_DEMANDS[Math.min(gatesCleared, COVERAGE_DEMANDS.length - 1)];
-
-const OPTION_COVERAGE_STEP = 0.1;
-const MULTIPLE_CHOICE_COVERAGE_BONUS = 0.5;
-const DIFFICULTY_BASELINE_OPTIONS = 3;
-
-export const pollDifficultyMultiplier = (
-	optionCount: number,
-	isMultiple: boolean
-): number =>
-	1 +
-	OPTION_COVERAGE_STEP *
-		Math.max(0, optionCount - DIFFICULTY_BASELINE_OPTIONS) +
-	(isMultiple ? MULTIPLE_CHOICE_COVERAGE_BONUS : 0);
 
 export const atMinimumWidth = (configCount: number): boolean =>
 	configCount <= 1;
@@ -125,21 +114,33 @@ export const failPeelShareFor = (gatesCleared: number): number =>
 
 const EARLY_PEEL_GATES = 3;
 const EARLY_PEEL_MAX_SHARE = 0.5;
+const RETRY_PEEL_ESCALATION = 0.5;
+
+export const escalatedPeelShare = (share: number, attempts: number): number =>
+	share * (1 + RETRY_PEEL_ESCALATION * Math.max(0, attempts));
 
 export const peelQuotaSlotsFor = (
 	occupiedSlots: number,
 	share: number,
-	gatesCleared: number
-): number =>
-	Math.ceil(
+	gatesCleared: number,
+	attempts = 0
+): number => {
+	const escalated = escalatedPeelShare(share, attempts);
+
+	return Math.ceil(
 		occupiedSlots *
 			(gatesCleared < EARLY_PEEL_GATES
-				? Math.min(share, EARLY_PEEL_MAX_SHARE)
-				: share)
+				? Math.min(escalated, EARLY_PEEL_MAX_SHARE)
+				: escalated)
 	);
+};
 
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
+
+/** Units carry a second decimal: a 1.25x focus on a 1.25x cache is 1.56, not 1.6. */
+export const roundToTwoDecimals = (value: number): number =>
+	Math.round(value * 100) / 100;
 
 export const isPeelFatal = (
 	quotaSlots: number,

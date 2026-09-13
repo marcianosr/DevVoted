@@ -63,7 +63,7 @@ multiplies the money changes no decision.
 
 ## Consequences
 
-The config ships in the terminal-theme prep screen that `/proto-run` mounts, alongside
+The config ships in the kanto prep screen that `/proto-run` mounts, alongside
 `git rebase -i`, which is the only other pre-gate control and is likewise unwired in
 the authed `/run/*` stack. Wiring prep-time commitments through `RunPrep` remains
 undone for both.

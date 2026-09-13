@@ -1280,10 +1280,6 @@ meter::-webkit-meter-optimum-value {
 	.coverage-count {
 		--coverage-count: 0;
 	}
-
-	.coverage-bar-fill {
-		width: 0;
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1305,8 +1301,22 @@ meter::-webkit-meter-optimum-value {
 	--coverage-bar-duration: 700ms;
 }
 
+/* The reading rides an inherited custom property set on the bar root rather
+   than an inline width on the fill itself. An inline declaration outranks
+   @starting-style, so a fill that carried its own width would arrive already
+   drawn and only ever animate on the second reading. */
 .coverage-bar-fill {
+	width: var(--coverage-held, 0%);
 	transition: width var(--coverage-bar-duration) ease-out;
+}
+
+/* After the rule it overrides, not before: @starting-style carries the
+   specificity of its own selector, so an earlier block would lose to the
+   width above. */
+@starting-style {
+	.coverage-bar-fill {
+		width: 0;
+	}
 }
 
 /* The pin rides the fill's leading edge, so its left runs off the fill's own

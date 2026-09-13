@@ -84,6 +84,7 @@ export const RunAnswer = () => {
 	const advanceFromReveal = () => {
 		if (!reveal) return;
 		commit(reveal.result);
+		if (reveal.result.data.gateComplete) send({ type: "close-gate" });
 		setReveal(null);
 	};
 

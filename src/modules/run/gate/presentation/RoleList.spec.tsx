@@ -33,7 +33,7 @@ describe(RoleList, () => {
 	it("renders each config's gives line in its detail", () => {
 		render(<RoleList rows={roleRows([CONFIGS.codeCoverage])} />);
 		expect(detailFor("Code Coverage").textContent).toContain(
-			"adds +0.5% coverage"
+			"Correct answers pay +10% coverage"
 		);
 	});
 });

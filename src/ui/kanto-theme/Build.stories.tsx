@@ -241,7 +241,7 @@ export const InstallationsOnly: Story = {
 
 export const SplitAcrossColumns: Story = {
 	render: (args) => (
-		<Screen theme="vermillion" width="wide">
+		<Screen theme="vermillion">
 			<div className="grid w-full gap-8 md:grid-cols-2">
 				<div className="flex w-full min-w-0 flex-col gap-6">
 					<Hand {...kantoHandProps()} />

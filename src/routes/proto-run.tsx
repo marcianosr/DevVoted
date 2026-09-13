@@ -19,52 +19,37 @@ import {
 	type AnsweredPoll,
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
-import type {
-	CommunityOptionResult,
-	CommunityStandout,
-	CommunityVoter,
-	RunCommunityPoll,
-} from "~/modules/run/community/application/community.service";
-import {
-	RunCommunityBoard,
-	type RunCommunityBoardProps,
-} from "~/modules/run/community/presentation/RunCommunity.ui";
-import { longestCorrectStreak } from "~/modules/run/community/domain/standouts.model";
-import type { Config } from "~/modules/run/config/domain/config.model";
-import { showsSampleSize } from "~/modules/run/config/domain/config.model";
 import {
 	STARTER_POOL,
 	startingHand,
 } from "~/modules/run/config/domain/hand.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
-import type { PollSplitView } from "~/modules/run/poll/presentation/PollCard.ui";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
-import { RevealView } from "~/modules/run/run/presentation/RevealView.component";
 import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
-import { RemovalView } from "~/modules/run/gate/presentation/RemovalView.component";
-import { RewardView } from "~/modules/run/gate/presentation/RewardView.component";
+import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
-import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
-import { GameOverView } from "~/modules/run/run/presentation/GameOverView.component";
-import { StandoutsPanel } from "~/modules/run/community/presentation/Standouts.ui";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	BASE_SLOTS,
-	roundToOneDecimal,
 	SLICE_WINDOW,
 	storageCapFor,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import {
+	CommunityScreen,
+	type CommunityScreenProps,
+} from "~/ui/kanto-theme/CommunityScreen.ui";
+import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
+import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 import {
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/shared/lib/categories";
-import { Screen } from "~/ui/old-theme/Screen.ui";
-import { setScreenNavDirection } from "~/ui/old-theme/screenNavDirection";
-import { Stack } from "~/ui/old-theme/Stack.ui";
+import { kbLabel } from "~/shared/lib/storage";
 
 export const Route = createFileRoute("/proto-run")({
 	component: RouteComponent,
@@ -171,6 +156,15 @@ const rigOptionIds = (
 	return wrong ? [wrong.id] : [];
 };
 
+const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
+const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
+	const base = BASE_POLLS[i % BASE_POLLS.length];
+	return { ...base, id: `${base.id}-${i}` };
+});
+
+const PROTO_ARCHIVE_KB = 8192;
+const PROTO_GRANT_KB = 256;
+
 type SimTrainer = { id: string; displayName: string; accuracy: number };
 
 const TRAINERS: readonly SimTrainer[] = [
@@ -182,6 +176,8 @@ const TRAINERS: readonly SimTrainer[] = [
 	{ id: "brock", displayName: "Brock", accuracy: 0.45 },
 	{ id: "ash", displayName: "Ash Ketchum", accuracy: 0.35 },
 ];
+
+const YOU: ClimberProps = { name: "You", you: true };
 
 const hashOf = (text: string): number =>
 	[...text].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) % 9973, 7);
@@ -200,40 +196,27 @@ const simulatedPickLabels = (poll: RunPoll, trainer: SimTrainer): string[] => {
 const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
 	a.length === b.length && a.every((label) => b.includes(label));
 
-const simulatePollSplit = (poll: RunPoll, peeker: Config): PollSplitView => {
-	const percentByOptionId = Object.fromEntries(
-		poll.options.map((option) => [
-			option.id,
-			Math.round(
-				(TRAINERS.filter((trainer) =>
-					simulatedPickLabels(poll, trainer).includes(option.label)
-				).length /
-					TRAINERS.length) *
-					100
-			),
-		])
-	);
-	return {
-		percentByOptionId,
-		...(showsSampleSize(peeker) ? { answeredCount: TRAINERS.length } : {}),
-	};
-};
+const climberOf = (trainer: SimTrainer): ClimberProps => ({
+	name: trainer.displayName,
+});
 
-const YOU: CommunityVoter = { id: "you", displayName: "You", you: true };
+const COMMUNITY_COUNTDOWN = "6h 12m";
+const COMMUNITY_COUNTDOWN_HINT = "until the next five polls are dealt";
+const CLIMB_MAP_TITLE = "Where everyone is";
+const CLIMB_MAP_SUMMARY = "the climb map lands here";
 
-type SimulatedCommunity = RunCommunityBoardProps & {
-	standouts: CommunityStandout[];
-};
-
-const simulateCommunityBoard = (
-	answered: readonly AnsweredPoll[],
+const simulateCommunityScreen = (
+	view: RunView,
 	polls: readonly RunPoll[],
-	run: { gatesCleared: number; coverage: number; configCount: number }
-): SimulatedCommunity => {
+	press: { onShop: () => void; onPrep: () => void }
+): CommunityScreenProps => {
 	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
-	const answeredCount = TRAINERS.length + 1;
+	const answered = view.answeredThisGate;
+	const climbers = TRAINERS.length + 1;
+	const gate = view.gatePayout.clearedGateNumber;
+	const swatch = gateSwatchAt(gate);
 
-	const trainerRightsOn = (poll: RunPoll): SimTrainer[] => {
+	const rightsOn = (poll: RunPoll): SimTrainer[] => {
 		const rightLabels = poll.options
 			.filter((option) => option.correct)
 			.map((option) => option.label);
@@ -242,49 +225,41 @@ const simulateCommunityBoard = (
 		);
 	};
 
-	const boardPolls = answered.flatMap((entry, index): RunCommunityPoll[] => {
+	const results = answered.flatMap((entry, index): PollResultProps[] => {
 		const poll = pollsById.get(entry.id);
-		if (!poll) return [];
-		const gotItRightCount =
-			trainerRightsOn(poll).length + (entry.outcome === "correct" ? 1 : 0);
+		if (poll === undefined) return [];
 
-		const options = poll.options.map((option): CommunityOptionResult => {
+		const options = poll.options.map((option, position) => {
 			const yours = entry.picked.includes(option.label);
 			const pickers = TRAINERS.filter((trainer) =>
 				simulatedPickLabels(poll, trainer).includes(option.label)
 			);
-			const count = pickers.length + (yours ? 1 : 0);
+			const votes = pickers.length + (yours ? 1 : 0);
+
 			return {
+				letter: String.fromCharCode(65 + position),
 				label: option.label,
+				percent: Math.round((votes / climbers) * 100),
+				votes,
 				isRight: option.correct,
-				count,
-				percent: Math.round((count / answeredCount) * 100),
 				yours,
-				voters: [
-					...(yours ? [YOU] : []),
-					...pickers.map((trainer) => ({
-						id: trainer.id,
-						displayName: trainer.displayName,
-						you: false,
-					})),
-				],
+				voters: [...(yours ? [YOU] : []), ...pickers.map(climberOf)],
 			};
 		});
 
 		return [
 			{
-				pollId: index,
-				index,
+				state: "revealed",
+				index: index + 1,
 				question: poll.question,
-				category: poll.category,
+				category: getCategoryMetadata(poll.category).name,
 				outcome: entry.outcome,
-				detail: {
-					answerType: poll.answerType,
-					answeredCount,
-					gotItRightCount,
-					youGotItRight: entry.outcome === "correct",
-					options,
-				},
+				rightShare: Math.round(
+					((rightsOn(poll).length + (entry.outcome === "correct" ? 1 : 0)) /
+						climbers) *
+						100
+				),
+				options,
 			},
 		];
 	});
@@ -292,142 +267,147 @@ const simulateCommunityBoard = (
 	const yourRights = answered.filter(
 		(entry) => entry.outcome === "correct"
 	).length;
-	const rightsPerTrainer = TRAINERS.map(
-		(trainer) =>
-			answered.filter((entry) => {
-				const poll = pollsById.get(entry.id);
-				return poll && trainerRightsOn(poll).includes(trainer);
-			}).length
-	);
-	const better = rightsPerTrainer.filter((count) => count > yourRights).length;
-	const topPercent = Math.max(
-		1,
-		Math.ceil(((better + 1) / answeredCount) * 100)
-	);
+	const rightsPerTrainer = TRAINERS.map((trainer) => ({
+		trainer,
+		rights: answered.filter((entry) => {
+			const poll = pollsById.get(entry.id);
+			return poll !== undefined && rightsOn(poll).includes(trainer);
+		}).length,
+	}));
+	const bandOf = (low: number, high: number) =>
+		rightsPerTrainer
+			.filter(({ rights }) => rights >= low && rights <= high)
+			.map(({ trainer }) => climberOf(trainer));
 
-	const trainerVoter = (trainer: SimTrainer): CommunityVoter => ({
-		id: trainer.id,
-		displayName: trainer.displayName,
-		you: false,
-	});
-	const trainerBy = (seedText: string): SimTrainer =>
-		TRAINERS[hashOf(seedText) % TRAINERS.length];
-	const categoryCounts = new Map<CategoryCode, number>();
-	for (const entry of answered)
-		categoryCounts.set(
-			entry.category,
-			(categoryCounts.get(entry.category) ?? 0) + 1
-		);
-	const topCategory = [...categoryCounts.entries()].sort(
-		(a, b) => b[1] - a[1]
-	)[0];
-	const gateKey = answered[0]?.id ?? "";
-	const streak = longestCorrectStreak(answered.map((entry) => entry.outcome));
-	const deepest = swatchForGate(run.gatesCleared);
-	const hardest = answered.find((entry) => entry.outcome !== "correct");
-	const standouts: CommunityStandout[] =
-		answered.length === 0 || !topCategory
-			? []
-			: [
-					{
-						voter: trainerVoter(trainerBy(`fastest:${gateKey}`)),
-						title: "fastest answer",
-						value: {
-							unit: "duration",
-							ms: (4 + (hashOf(`fastms:${gateKey}`) % 51)) * 1_000,
-						},
-					},
-					{
-						voter: trainerVoter(trainerBy(`first:${gateKey}`)),
-						title: "first to answer",
-						value: {
-							unit: "duration",
-							ms: (60 + (hashOf(`firsts:${gateKey}`) % 60)) * 1_000,
-						},
-					},
-					{
-						voter: trainerVoter(trainerBy(`good:${gateKey}`)),
-						title: "first good",
-						value: {
-							unit: "duration",
-							ms: (90 + (hashOf(`goods:${gateKey}`) % 90)) * 1_000,
-						},
-					},
-					...(topCategory[1] >= 2
-						? [
-								{
-									voter: trainerVoter(trainerBy(`most:${topCategory[0]}`)),
-									title: `most ${getCategoryMetadata(topCategory[0]).name} polls`,
-									value: { unit: "count" as const, amount: topCategory[1] },
-								},
-							]
-						: []),
-					...(hardest
-						? [
-								{
-									voter: trainerVoter(trainerBy(`lone:${hardest.id}`)),
-									title: "only one right",
-									value: {
-										unit: "text" as const,
-										text:
-											hardest.question.length > 32
-												? `${hardest.question.slice(0, 31).trimEnd()}…`
-												: hardest.question,
-									},
-								},
-							]
-						: []),
-					{
-						voter: trainerVoter(trainerBy(`gate:${gateKey}`)),
-						title: "deepest gate",
-						value: {
-							unit: "text" as const,
-							text: deepest?.gateName ?? "the climb",
-						},
-						...(deepest
-							? { swatch: { theme: deepest.theme, finish: deepest.finish } }
-							: {}),
-					},
-					...(streak >= 2
-						? [
-								{
-									voter: trainerVoter(trainerBy(`streak:${gateKey}`)),
-									title: "longest streak",
-									value: { unit: "count" as const, amount: streak },
-								},
-							]
-						: []),
-					{
-						voter: trainerVoter(trainerBy(`cov:${gateKey}`)),
-						title: "most coverage",
-						value: {
-							unit: "percent" as const,
-							amount: roundToOneDecimal(run.coverage),
-						},
-					},
-					{
-						voter: trainerVoter(trainerBy(`wide:${gateKey}`)),
-						title: "widest build",
-						value: { unit: "configs" as const, amount: run.configCount },
-					},
-				];
+	const window = view.pollsPerGate;
+	const clean = bandOf(window, window);
+	const middling = bandOf(Math.ceil(window / 2), window - 1);
+	const struggling = bandOf(0, Math.ceil(window / 2) - 1);
+	const yourBand =
+		yourRights === window
+			? clean
+			: yourRights >= window / 2
+				? middling
+				: struggling;
+
+	const trainerBy = (seed: string) =>
+		climberOf(TRAINERS[hashOf(seed) % TRAINERS.length]);
+	const best = [...rightsPerTrainer].sort((a, b) => b.rights - a.rights)[0];
 
 	return {
-		totalPlayers: answeredCount,
-		topPercent,
-		standouts,
-		polls: boardPolls,
+		header: {
+			swatch,
+			title: `${swatch.gateName} · the day's climb`,
+			subtitle: `seed #proto · ${window} polls`,
+			countdown: COMMUNITY_COUNTDOWN,
+			countdownHint: COMMUNITY_COUNTDOWN_HINT,
+			stats: [
+				{
+					icon: "community",
+					label: `${climbers} climbers`,
+					hint: "answered today",
+				},
+				{
+					icon: "gate",
+					label: `gate ${gate} of ${view.victoryGate}`,
+					hint: "deepest today",
+				},
+				{
+					icon: "storage",
+					label: kbLabel(view.storage),
+					hint: "your balance",
+				},
+			],
+			shop: { label: "Back to the shop", onPress: press.onShop },
+			prep: { label: "On to prep", onPress: press.onPrep },
+		},
+		climb: {
+			swatch,
+			title: "Your climb",
+			standing: `gate ${gate} of ${view.victoryGate} · ${view.configs.length} configs`,
+			badge: `${yourRights} of ${window}`,
+			reading: `${view.gateStake.coverageHeld.toFixed(1)}% held against ${view.gateStake.coverageLadder.healthy}% asked`,
+		},
+		turnout: {
+			title: "Who cleared what",
+			when: "today",
+			bands: [
+				{
+					label: `all ${window} right`,
+					count: `${clean.length + (yourRights === window ? 1 : 0)}`,
+					color: "viridian",
+					climbers: yourBand === clean ? [YOU, ...clean] : clean,
+				},
+				{
+					label: "most right",
+					count: `${middling.length + (yourBand === middling ? 1 : 0)}`,
+					color: "saffron",
+					climbers: yourBand === middling ? [YOU, ...middling] : middling,
+				},
+				{
+					label: "held back",
+					count: `${struggling.length + (yourBand === struggling ? 1 : 0)}`,
+					color: "cinnabar",
+					climbers: yourBand === struggling ? [YOU, ...struggling] : struggling,
+				},
+			],
+		},
+		map: { title: CLIMB_MAP_TITLE, summary: CLIMB_MAP_SUMMARY },
+		standouts: {
+			title: "Standouts",
+			awards: [
+				{
+					title: "fastest answer",
+					climber: trainerBy(`fastest:${gate}`),
+					value: `${4 + (hashOf(`fastms:${gate}`) % 51)}s`,
+				},
+				{
+					title: "first to answer",
+					climber: trainerBy(`first:${gate}`),
+					value: `${1 + (hashOf(`firsts:${gate}`) % 59)}m after the deal`,
+				},
+				{
+					title: "most right",
+					climber: best === undefined ? YOU : climberOf(best.trainer),
+					value: `${best?.rights ?? yourRights} of ${window}`,
+					tag: "today",
+					tagColor: "viridian",
+				},
+				{
+					title: "deepest gate",
+					climber: trainerBy(`gate:${gate}`),
+					value: swatch.gateName,
+				},
+			],
+		},
+		polls: {
+			title: "The day's polls",
+			summary: `${results.length} answered`,
+			polls: results,
+		},
+		conversation: {
+			title: "What people said",
+			entries: [
+				{
+					climber: trainerBy(`say:${gate}`),
+					at: "12m ago",
+					said: "That multiple-choice one cost me the gate. Read it twice.",
+					gate: { swatch, label: swatch.gateName },
+				},
+				{
+					climber: trainerBy(`say2:${gate}`),
+					at: "40m ago",
+					said: "Bought the cache before gate 4 and it paid for itself.",
+				},
+			],
+		},
 	};
 };
 
-const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
-const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
-	const base = BASE_POLLS[i % BASE_POLLS.length];
-	return { ...base, id: `${base.id}-${i}` };
-});
+type RewardStep = "summary" | "review" | "shop" | "prep" | "community";
+type StartStep = "build" | "prep";
 
-const PROTO_ARCHIVE_KB = 8192;
-const PROTO_GRANT_KB = 256;
+const BACK_TO_BUILD = "Back to the build";
 
 const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const [state, setState] = useState(() => ({
@@ -460,32 +440,31 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setSelected([]);
 	}, [state.currentIndex]);
-	const [revealing, setRevealing] = useState(false);
-	const [rewardStep, setRewardStep] = useState<
-		"summary" | "review" | "shop" | "prep" | "community"
-	>("summary");
+	const [pinned, setPinned] = useState(false);
+	const [rewardStep, setRewardStep] = useState<RewardStep>("summary");
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
+	const [startStep, setStartStep] = useState<StartStep>("build");
+	useEffect(() => {
+		setStartStep("build");
+	}, [state.status]);
 	const [stripStep, setStripStep] = useState<"removal" | "review">("removal");
 	useEffect(() => {
 		setStripStep("removal");
 	}, [state.status]);
 
 	const view = toRunView(state, archiveKb);
-	const reveal = revealing ? view.answeredThisGate.at(-1) : undefined;
+	const settled: AnsweredPoll | undefined = pinned
+		? view.answeredThisGate.at(-1)
+		: undefined;
 	const pollClock = usePollClock(
-		reveal ? null : (view.poll?.id ?? null),
+		settled ? null : (view.poll?.id ?? null),
 		view.pollTimeLimitMs
 	);
-	const community = simulateCommunityBoard(view.answeredThisGate, state.polls, {
-		gatesCleared: view.gatesCleared,
-		coverage: view.coverage,
-		configCount: view.configs.length,
-	});
 	const answer = (optionIds: readonly string[]) => {
 		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
-		setRevealing(true);
+		setPinned(true);
 	};
 	const answerCurrent = (outcome: RigOutcome) => {
 		const poll = state.polls[state.currentIndex];
@@ -501,37 +480,35 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					type: "answer",
 					optionIds: rigOptionIds(poll, outcome),
 				});
+				next = runReducer(next, { type: "close-gate" });
 			}
 			return next;
 		});
 	const onSelect = (optionId: string) => {
-		if (view.poll?.answerType === "single") return setSelected([optionId]);
-		setSelected((current) =>
-			current.includes(optionId)
-				? current.filter((id) => id !== optionId)
-				: [...current, optionId]
+		if (view.poll?.answerType === "multiple")
+			return setSelected((current) =>
+				current.includes(optionId)
+					? current.filter((id) => id !== optionId)
+					: [...current, optionId]
+			);
+		answer([optionId]);
+	};
+	const payPeel = (configIds: readonly string[]) => {
+		setRewardStep("shop");
+		setState((current) =>
+			runReducer(
+				configIds.reduce(
+					(next, configId) => runReducer(next, { type: "strip", configId }),
+					current
+				),
+				{ type: "resume-climb" }
+			)
 		);
 	};
 
-	const showsHud = state.status === "rewarding" && rewardStep === "community";
-
 	return (
 		<>
-			{showsHud ? (
-				<div className="mx-auto w-full max-w-6xl p-2">
-					<RunHud
-						storage={view.storage}
-						gatesCleared={view.gatesCleared}
-						victoryGate={view.victoryGate}
-						pollsAnswered={view.pollsAnswered}
-						pollsPerGate={view.pollsPerGate}
-						gateCoverage={view.gateStake.coverageHeld}
-						gateCoverageDemand={view.gateStake.coverageDemand}
-						coverageByCategory={view.coverageByCategory}
-					/>
-				</div>
-			) : null}
-			{state.status === "configuring" && (
+			{state.status === "configuring" && startStep === "build" && (
 				<StartView
 					view={view}
 					onBuySlot={() => spendArchive(buyStartSlot)}
@@ -544,50 +521,50 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							configId: id,
 						})
 					}
-					onStart={() => {
-						setScreenNavDirection("forward");
-						dispatch({ type: "start" });
-					}}
+					onStart={() => setStartStep("prep")}
 				/>
 			)}
 
-			{reveal && (
-				<RevealView
+			{state.status === "configuring" && startStep === "prep" && (
+				<PrepView
 					view={view}
-					answered={reveal}
-					onNext={() => setRevealing(false)}
+					backLabel={BACK_TO_BUILD}
+					onStart={() => dispatch({ type: "start" })}
+					onBackToShop={() => setStartStep("build")}
 				/>
 			)}
 
-			{!reveal && state.status === "answering" && view.poll && (
+			{(settled || (state.status === "answering" && view.poll)) && (
 				<PollView
 					view={view}
-					poll={view.poll}
+					answered={settled}
 					selectedOptionIds={selected}
-					splitByOptionId={
-						view.currentPollPeeked && view.paidActions.peeker
-							? simulatePollSplit(
-									state.polls[state.currentIndex],
-									view.paidActions.peeker
-								).percentByOptionId
-							: undefined
-					}
 					onSelect={onSelect}
 					onSubmit={() => answer(selected)}
-					onLint={() => dispatch({ type: "lint-poll" })}
-					onPeek={() => dispatch({ type: "peek-poll" })}
-					onBuyBack={(optionId) =>
+					onNext={() => {
+						dispatch({ type: "close-gate" });
+						setPinned(false);
+					}}
+					onPress={(action, configId) =>
+						dispatch(
+							action === "switch-arm"
+								? { type: "switch-arm", configId }
+								: { type: action === "lint" ? "lint-poll" : "peek-poll" }
+						)
+					}
+					onUnseal={(optionId) =>
 						dispatch({ type: "buy-back-option", optionId })
 					}
-					onSwitchArm={(id) => dispatch({ type: "switch-arm", configId: id })}
 				/>
 			)}
 
-			{!reveal && state.status === "rewarding" && rewardStep === "summary" && (
-				<RewardView
+			{!settled && state.status === "rewarding" && rewardStep === "summary" && (
+				<GateOutcomeView
 					view={view}
-					onReviewAnswers={() => setRewardStep("review")}
-					onContinue={() => setRewardStep("shop")}
+					verdict="cleared"
+					onReview={() => setRewardStep("review")}
+					onCommunity={() => setRewardStep("community")}
+					onNext={() => setRewardStep("shop")}
 				/>
 			)}
 
@@ -595,7 +572,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<ReviewView
 					view={view}
 					back={{
-						label: "\u2190 Back to rewards",
+						label: "Back to the gate",
 						onUse: () => setRewardStep("summary"),
 					}}
 				/>
@@ -607,9 +584,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onDraft={(id) => dispatch({ type: "draft", configId: id })}
 					onSell={(id) => dispatch({ type: "sell", configId: id })}
 					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
-					onSwitchArm={(id) => dispatch({ type: "switch-arm", configId: id })}
-					onLock={(id) => dispatch({ type: "lock-offer", configId: id })}
-					onUnlock={(id) => dispatch({ type: "unlock-offer", configId: id })}
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
@@ -627,50 +601,27 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					view={view}
 					onStart={() => dispatch({ type: "finish-reward" })}
 					onBackToShop={() => setRewardStep("shop")}
-					onCommunity={() => setRewardStep("community")}
-					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
-					onEstimate={(count) => dispatch({ type: "estimate", count })}
 				/>
 			)}
 
 			{state.status === "rewarding" && rewardStep === "community" && (
-				<Screen
-					gateTheme={view.gateTheme}
-					leftAction={{
-						label: "← Back to prep",
-						onClick: () => setRewardStep("prep"),
-					}}
-				>
-					<Stack gap="6" divided>
-						<StandoutsPanel standouts={community.standouts} />
-						<RunCommunityBoard
-							totalPlayers={community.totalPlayers}
-							topPercent={community.topPercent}
-							polls={community.polls}
-						/>
-					</Stack>
-				</Screen>
+				<CommunityScreen
+					{...simulateCommunityScreen(view, state.polls, {
+						onShop: () => setRewardStep("shop"),
+						onPrep: () => setRewardStep("prep"),
+					})}
+				/>
 			)}
 
-			{!reveal &&
+			{!settled &&
 				state.status === "awaiting-strip" &&
 				stripStep === "removal" && (
-					<RemovalView
+					<GateOutcomeView
 						view={view}
-						onReviewAnswers={() => setStripStep("review")}
-						onRemove={(configIds) => {
-							setRewardStep("shop");
-							setState((current) =>
-								runReducer(
-									configIds.reduce(
-										(next, configId) =>
-											runReducer(next, { type: "strip", configId }),
-										current
-									),
-									{ type: "resume-climb" }
-								)
-							);
-						}}
+						verdict="held"
+						onReview={() => setStripStep("review")}
+						onNext={() => setStripStep("review")}
+						onRemove={payPeel}
 					/>
 				)}
 
@@ -678,21 +629,22 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				<ReviewView
 					view={view}
 					back={{
-						label: "\u2190 Back to the gate",
+						label: "Back to the gate",
 						onUse: () => setStripStep("removal"),
 					}}
 				/>
 			)}
 
-			{!reveal && (state.status === "won" || state.status === "dead") && (
-				<GameOverView
+			{!settled && (state.status === "won" || state.status === "dead") && (
+				<GateOutcomeView
 					view={view}
-					won={state.status === "won"}
-					onNewRun={onRestart}
+					verdict={state.status === "won" ? "won" : "fatal"}
+					onReview={() => {}}
+					onNext={onRestart}
 				/>
 			)}
 
-			{!reveal &&
+			{!settled &&
 				(state.status === "answering" || state.status === "rewarding") && (
 					<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 						<span className="font-semibold uppercase tracking-wide">
@@ -739,14 +691,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						</button>
 					</div>
 				)}
-
-			{state.log.length > 0 && (
-				<div className="mx-auto mt-4 w-full max-w-6xl shrink-0 rounded-lg bg-zinc-900 p-4 text-xs text-pewter">
-					{state.log.slice(-4).map((line, index) => (
-						<p key={index}>▸ {line}</p>
-					))}
-				</div>
-			)}
 		</>
 	);
 };

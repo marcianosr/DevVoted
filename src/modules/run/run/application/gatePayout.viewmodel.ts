@@ -1,5 +1,8 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { gateDemandFor } from "~/modules/run/gate/domain/gate.model";
+import {
+	type GateLadder,
+	gateLadderFor,
+} from "~/modules/run/gate/domain/gate.model";
 import { type RunState, scheduleOf } from "~/modules/run/run/domain/run.model";
 
 export type GatePayout = {
@@ -17,7 +20,7 @@ export type GatePayout = {
 	readonly deletedConfigs: readonly Config[];
 	readonly lapsedConfigs: readonly Config[];
 	readonly clearedGateNumber: number;
-	readonly clearedGateDemand: number;
+	readonly clearedGateLadder: GateLadder;
 };
 
 export const gatePayoutFor = (state: RunState): GatePayout => {
@@ -43,7 +46,7 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		deletedConfigs: state.deletedConfigs ?? [],
 		lapsedConfigs: state.lapsedConfigs ?? [],
 		clearedGateNumber: reportedGate,
-		clearedGateDemand: gateDemandFor(
+		clearedGateLadder: gateLadderFor(
 			state.build.configs,
 			reportedGate,
 			scheduleOf(state)

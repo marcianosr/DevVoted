@@ -18,12 +18,17 @@ import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
-	gateBaseMultiplier,
-	roundToOneDecimal,
+	gateRewardMultiplier,
+	roundToTwoDecimals,
 	streakCapMultiplier,
 	streakMultiplier,
-	wrongLossShareFor,
+	streakUnitBonus,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	BASE_UNIT,
+	type CoverageBreakdown,
+	type CoverageFactors,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 export type Build = {
 	readonly id: string;
@@ -147,46 +152,31 @@ const throttleFor = (configs: readonly Config[]): number =>
 export const gateClearPayout = (
 	configs: readonly Config[],
 	correct: number,
-	gatesCleared: number
+	gatesCleared: number,
+	streak = 0
 ): number =>
 	Math.round(
 		GATE_REWARD_KB *
-			Math.min(gateBaseMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
+			Math.min(gateRewardMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
 			rewardMultiplierFor(configs) *
+			streakMultiplier(streak, streakCapStepsFor(configs)) *
 			(correct / SLICE_WINDOW)
 	) + storageOnClearFor(configs);
 
-const coveragePerCorrectRaw = (
-	configs: readonly Config[],
-	gatesCleared: number
-): number => {
+const coveragePerCorrectRaw = (configs: readonly Config[]): number => {
 	const { mult, add } = coverageProfileFor(configs);
-	return (
-		gateBaseMultiplier(gatesCleared) * (1 + add) * mult * throttleFor(configs)
-	);
+	return BASE_UNIT * (1 + add) * mult * throttleFor(configs);
 };
 
-export const coverageLossFor = (
-	configs: readonly Config[],
-	gatesCleared: number
-): number =>
-	roundToOneDecimal(
-		wrongLossShareFor(gatesCleared) *
-			coveragePerCorrectRaw(configs, gatesCleared)
-	);
-
 export const perAnswerPreviewFor = (
-	configs: readonly Config[],
-	gatesCleared: number
+	configs: readonly Config[]
 ): PerAnswerPreview => {
 	const focusMultipliers = configs
 		.filter((config) => config.focusCategory !== undefined)
 		.map(focusMultiplierOf);
 	return {
-		coveragePerCorrect: roundToOneDecimal(
-			coveragePerCorrectRaw(configs, gatesCleared)
-		),
-		coveragePerWrong: -coverageLossFor(configs, gatesCleared),
+		coveragePerCorrect: roundToTwoDecimals(coveragePerCorrectRaw(configs)),
+		coveragePerWrong: 0,
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
@@ -195,71 +185,56 @@ export const perAnswerPreviewFor = (
 	};
 };
 
+const coversFor = (
+	configs: readonly Config[],
+	context: AnswerContext
+): readonly Coverage[] =>
+	configs
+		.map((config) => effectOf(config).coverage?.(context))
+		.filter((cover): cover is Coverage => cover !== undefined);
+
+const buildMultiplierOf = (covers: readonly Coverage[]): number =>
+	covers.reduce((product, cover) => product * cover.mult, 1) *
+	(1 + covers.reduce((sum, cover) => sum + cover.add, 0));
+
 export const coverageForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
 	share: number,
-	streakFactor = 1
+	streakBefore = 0
 ): number => {
 	if (share <= 0) return 0;
-	const covers = configs
-		.map((config) => effectOf(config).coverage?.(context))
-		.filter((cover): cover is Coverage => cover !== undefined);
-	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
-	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
-	return roundToOneDecimal(share * (1 + add) * mult * streakFactor);
-};
-
-export type CoverageConfigBonus = {
-	readonly configId: string;
-	readonly value: number;
-};
-
-export type CoverageFactors = {
-	readonly correct: number;
-	readonly build: number;
-	readonly streak: number;
+	return roundToTwoDecimals(
+		BASE_UNIT * share * buildMultiplierOf(coversFor(configs, context)) +
+			streakUnitBonus(streakBefore)
+	);
 };
 
 export const coverageFactorsForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
-	share: number,
-	streakFactor = 1
+	share: number
 ): CoverageFactors | undefined => {
 	if (share <= 0) return undefined;
-	const covers = configs
-		.map((config) => effectOf(config).coverage?.(context))
-		.filter((cover): cover is Coverage => cover !== undefined);
-	const mult = covers.reduce((product, cover) => product * cover.mult, 1);
-	const add = covers.reduce((sum, cover) => sum + cover.add, 0);
-	return { correct: share, build: (1 + add) * mult, streak: streakFactor };
-};
-
-export type CoverageBreakdown = {
-	readonly base: number;
-	readonly streakBonus: number;
-	readonly configBonuses: readonly CoverageConfigBonus[];
+	return {
+		correct: share,
+		build: buildMultiplierOf(coversFor(configs, context)),
+	};
 };
 
 export const coverageBreakdownForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
 	share: number,
-	streakFactor: number,
-	coverageLoss: number
+	streakBefore = 0
 ): CoverageBreakdown => {
 	if (share <= 0) {
-		return {
-			base: roundToOneDecimal(-coverageLoss),
-			streakBonus: 0,
-			configBonuses: [],
-		};
+		return { base: 0, streakBonus: 0, configBonuses: [] };
 	}
 
-	const earned = coverageForAnswer(configs, context, share, streakFactor);
-	const earnedBeforeStreak = coverageForAnswer(configs, context, share, 1);
-	const streakBonus = roundToOneDecimal(earned - earnedBeforeStreak);
+	const streakBonus = streakUnitBonus(streakBefore);
+	const earned = coverageForAnswer(configs, context, share, streakBefore);
+	const gain = BASE_UNIT * share;
 
 	const covered = configs
 		.map((config) => ({
@@ -276,23 +251,23 @@ export const coverageBreakdownForAnswer = (
 		...covered.filter((entry) => entry.cover.mult === 1),
 		...covered.filter((entry) => entry.cover.mult !== 1),
 	];
-	let subtotal = share * (1 + totalAdd);
+	let subtotal = gain * (1 + totalAdd);
 	const configBonuses = orderedCovered
 		.map(({ config, cover }) => {
 			if (cover.mult !== 1) {
-				const value = roundToOneDecimal(subtotal * (cover.mult - 1));
+				const value = roundToTwoDecimals(subtotal * (cover.mult - 1));
 				subtotal *= cover.mult;
 				return { configId: config.id, value };
 			}
 			return {
 				configId: config.id,
-				value: roundToOneDecimal(share * cover.add),
+				value: roundToTwoDecimals(gain * cover.add),
 			};
 		})
 		.filter((bonus) => bonus.value !== 0);
 
 	const bonusTotal = configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
-	const base = roundToOneDecimal(earned - streakBonus - bonusTotal);
+	const base = roundToTwoDecimals(earned - bonusTotal - streakBonus);
 
 	return { base, streakBonus, configBonuses };
 };

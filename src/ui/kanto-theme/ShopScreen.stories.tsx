@@ -98,6 +98,33 @@ export const UnderAGate: Story = { render: () => <ShopScreen {...props} /> };
 
 export const WithPanels: Story = { render: () => <ShopWithPanels /> };
 
+export const WithFooter: Story = {
+	render: () => (
+		<ShopScreen
+			{...props}
+			footer={{
+				action: {
+					label: "To gate 10 prep",
+					icon: "gate",
+					onPress: () => {},
+				},
+			}}
+		/>
+	),
+};
+
+export const ExitLocked: Story = {
+	render: () => (
+		<ShopScreen
+			{...props}
+			footer={{
+				action: { label: "To gate 10 prep" },
+				refusal: "the build is over capacity by 1 slot",
+			}}
+		/>
+	),
+};
+
 export const FirstShop: Story = {
 	render: () => <ShopScreen {...kantoFirstShopProps()} />,
 };

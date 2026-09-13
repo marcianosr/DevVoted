@@ -1,7 +1,7 @@
 import type {
 	CoverageBreakdown,
 	CoverageFactors,
-} from "~/modules/run/build/domain/build.model";
+} from "~/modules/run/build/domain/coverageRatio.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 export type RunOption = {

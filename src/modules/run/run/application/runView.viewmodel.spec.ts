@@ -34,7 +34,6 @@ import {
 	BASE_SLOTS,
 	MAX_SLOTS,
 	SLICE_WINDOW,
-	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	hydrateRunState,
@@ -49,6 +48,15 @@ import {
 	correctOptionIdsFor,
 	latestAnswerScore,
 } from "~/modules/run/run/application/answerScore.viewmodel";
+import {
+	BASE_UNIT,
+	floorAt,
+	healthyAt,
+	okAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+
+const BASE_GAIN = BASE_UNIT;
 
 const poll = (id: string): RunPoll => ({
 	id,
@@ -246,6 +254,48 @@ describe("toRunView", () => {
 	});
 });
 
+describe("gateComplete", () => {
+	const answerOne = (state: RunState): RunState => {
+		const current = state.polls[state.currentIndex];
+
+		return runReducer(state, {
+			type: "answer",
+			optionIds: [current.options[0].id],
+		});
+	};
+
+	const opening = (): RunState =>
+		answeringWith(
+			[CONFIGS.js],
+			Array.from({ length: 12 }, (_, index) => poll(`q${index}`))
+		);
+
+	it("stays false while the gate still has polls to ask", () => {
+		let state = opening();
+		for (let index = 0; index < SLICE_WINDOW - 1; index++)
+			state = answerOne(state);
+
+		expect(toRunView(state).gateComplete).toBe(false);
+	});
+
+	it("turns true on the answer that fills the window", () => {
+		let state = opening();
+		for (let index = 0; index < SLICE_WINDOW; index++) state = answerOne(state);
+
+		expect(toRunView(state).gateComplete).toBe(true);
+		expect(toRunView(state).gateStake.gateNumber).toBe(0);
+	});
+
+	it("falls back to false once the gate has closed", () => {
+		let state = opening();
+		for (let index = 0; index < SLICE_WINDOW; index++) state = answerOne(state);
+		const closed = runReducer(state, { type: "close-gate" });
+
+		expect(toRunView(closed).gateComplete).toBe(false);
+		expect(toRunView(closed).gateStake.gateNumber).toBe(1);
+	});
+});
+
 describe("shop controls (DVTD-5lt6)", () => {
 	const shopping = (gatesCleared: number, storage: number) => ({
 		...answering(),
@@ -433,17 +483,17 @@ describe("latestAnswerScore", () => {
 		expect(latestAnswerScore(toRunView(answering()))).toBeNull();
 	});
 
-	it("breaks a correct answer into base, streak, and total", () => {
+	it("breaks a correct answer into base, configs and total", () => {
 		const state = runReducer(answering(), {
 			type: "answer",
 			optionIds: ["q0-a"],
 		});
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: true,
-			baseCoverage: 1,
-			streakBonus: 0.1,
+			baseCoverage: BASE_GAIN,
+			streakBonus: 0,
 			configBonuses: [],
-			earnedCoverage: 1.1,
+			earnedCoverage: BASE_GAIN,
 		});
 	});
 
@@ -454,58 +504,24 @@ describe("latestAnswerScore", () => {
 		});
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: true,
-			baseCoverage: 1,
-			streakBonus: 0.2,
-			configBonuses: [{ configId: "agents-md", value: 1 }],
-			earnedCoverage: 2.2,
+			baseCoverage: BASE_GAIN,
+			streakBonus: 0,
+			configBonuses: [{ configId: "agents-md", value: BASE_GAIN }],
+			earnedCoverage: BASE_GAIN * 2,
 		});
 	});
 
-	it("reads a miss as a negative base and no bonuses", () => {
+	it("reads a miss as nothing earned and no bonuses", () => {
 		const state = runReducer(answering(), {
 			type: "answer",
 			optionIds: ["q0-b"],
 		});
 		expect(latestAnswerScore(toRunView(state))).toEqual({
 			isCorrect: false,
-			baseCoverage: -0.5,
+			baseCoverage: 0,
 			streakBonus: 0,
 			configBonuses: [],
-			earnedCoverage: -0.5,
-		});
-	});
-
-	it("omits the difficulty boost for a baseline single-choice poll", () => {
-		const state = runReducer(answering(), {
-			type: "answer",
-			optionIds: ["q0-a"],
-		});
-		expect(latestAnswerScore(toRunView(state))?.difficulty).toBeUndefined();
-	});
-
-	it("surfaces the difficulty boost for a multiple-choice poll", () => {
-		const multiPoll: RunPoll = {
-			id: "q0",
-			category: "react",
-			question: "Pick both?",
-			answerType: "multiple",
-			options: [
-				{ id: "q0-a", label: "A", correct: true },
-				{ id: "q0-b", label: "B", correct: true },
-				{ id: "q0-c", label: "C", correct: false },
-			],
-		};
-		const state = runReducer(
-			{
-				...createRun([multiPoll, poll("q1")], [CONFIGS.js]),
-				status: "answering" as const,
-			},
-			{ type: "answer", optionIds: ["q0-a", "q0-b"] }
-		);
-		expect(latestAnswerScore(toRunView(state))?.difficulty).toEqual({
-			multiplier: 1.5,
-			optionCount: 3,
-			isMultiple: true,
+			earnedCoverage: 0,
 		});
 	});
 });
@@ -568,7 +584,7 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	it("prices one answer so screens do not call the domain themselves", () => {
 		const state = answeringWith([CONFIGS.js]);
 		expect(toRunView(state).perAnswer).toEqual(
-			perAnswerPreviewFor(state.build.configs, state.gatesCleared)
+			perAnswerPreviewFor(state.build.configs)
 		);
 	});
 });
@@ -584,8 +600,12 @@ describe("the gate stake travels as one object", () => {
 		expect(view.gateStake).toEqual({
 			gateNumber: 4,
 			pollsPerGate: SLICE_WINDOW,
-			coverageDemand: coverageDemandFor(4),
-			coverageHeld: state.window.coverageGained,
+			coverageLadder: {
+				floor: percentOf(floorAt(4)),
+				ok: percentOf(okAt(4)),
+				healthy: percentOf(healthyAt(4)),
+			},
+			coverageHeld: state.window.unitsEarned,
 			audits: auditsForGate(4, scheduleOf(state)).map((audit) =>
 				expect.objectContaining({ id: audit.id, suppressed: false })
 			),
@@ -611,7 +631,7 @@ describe("the gate stake travels as one object", () => {
 				storageKb: state.storage,
 			}),
 			modifiers: buildModifiersFor(state.build.configs, 4),
-			perAnswer: perAnswerPreviewFor(state.build.configs, 4),
+			perAnswer: perAnswerPreviewFor(state.build.configs),
 		});
 	});
 
@@ -642,16 +662,17 @@ describe("the gate stake travels as one object", () => {
 		expect(view.gateStake.gateNumber).toBe(view.gatesCleared);
 	});
 
-	it("reads the window meter, not the career total, as coverageHeld (ADR-035)", () => {
+	it("reads the run's own units, never the career total, as coverageHeld", () => {
 		const state = {
 			...answeringWith([CONFIGS.js]),
+			gatesCleared: 2,
 			coverage: 300,
 			window: {
 				...answeringWith([CONFIGS.js]).window,
-				coverageGained: 7.5,
+				unitsEarned: 7.5,
 			},
 		};
-		expect(toRunView(state).gateStake.coverageHeld).toBe(7.5);
+		expect(toRunView(state).gateStake.coverageHeld).toBe(50);
 	});
 
 	it("prices the peel deeper at a strip-audit gate", () => {
@@ -850,9 +871,7 @@ describe("the view prices the shop's offers", () => {
 		const offer = only(state);
 		const withIt = [...state.build.configs, CONFIGS.eslint];
 		expect(offer.preview).toEqual(buildModifiersFor(withIt, 0));
-		expect(offer.previewPerAnswer).toEqual(
-			perAnswerPreviewFor(withIt, state.gatesCleared)
-		);
+		expect(offer.previewPerAnswer).toEqual(perAnswerPreviewFor(withIt));
 	});
 });
 

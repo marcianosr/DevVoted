@@ -84,7 +84,7 @@ describe("ShopScreen", () => {
 
 		expect(screen.getByText("Shop · cleared Volcano")).toBeInTheDocument();
 		expect(
-			screen.getByText("next gate 10 · Earth · to pass 250%")
+			screen.getByText("next gate 10 · Earth · to pass 80%")
 		).toBeInTheDocument();
 	});
 
@@ -156,5 +156,45 @@ describe("ShopScreen", () => {
 		expect(
 			screen.getByRole("button", { name: /Install IndexedDB/ })
 		).toBeDisabled();
+	});
+
+	it("leaves the shop without an exit until the run gives it one", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /prep/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("closes on the footer the run hands it", () => {
+		render(
+			<ShopScreen
+				{...props}
+				footer={{ action: { label: "To gate 10 prep", onPress: () => {} } }}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /To gate 10 prep/ })
+		).toBeEnabled();
+	});
+
+	it("refuses the exit while the build is over capacity", () => {
+		render(
+			<ShopScreen
+				{...props}
+				footer={{
+					action: { label: "To gate 10 prep" },
+					refusal: "the build is over capacity by 1 slot",
+				}}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /To gate 10 prep/ })
+		).toBeDisabled();
+		expect(
+			screen.getByText("the build is over capacity by 1 slot")
+		).toBeInTheDocument();
 	});
 });

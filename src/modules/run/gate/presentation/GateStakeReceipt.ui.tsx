@@ -373,7 +373,8 @@ export const GateStakeReceipt = ({
 	action,
 	shopAction,
 }: GateStakeReceiptProps) => {
-	const { gateNumber, pollsPerGate, coverageDemand, coverageHeld } = stake;
+	const { gateNumber, pollsPerGate, coverageLadder, coverageHeld } = stake;
+	const coverageDemand = coverageLadder.healthy;
 	const isOverCapacity = overflowSlots !== undefined && overflowSlots > 0;
 	return (
 		<section className="rounded-lg border border-edge-strong p-4">

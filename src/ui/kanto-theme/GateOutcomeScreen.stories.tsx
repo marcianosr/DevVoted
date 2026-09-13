@@ -15,6 +15,7 @@ import {
 	kantoGateShakyFunded,
 	kantoGateShakyPicking,
 	kantoGateSummit,
+	kantoGateWon,
 	kantoGateZero,
 	SHAKY_ANSWERS,
 } from "~/test/kantoGate.factory";
@@ -26,7 +27,7 @@ const meta: Meta<typeof GateOutcomeScreen> = {
 	title: "Kanto/Screens/GateOutcomeScreen",
 	parameters: { controls: { disable: true } },
 	argTypes: {
-		width: { control: "inline-radio", options: ["narrow", "default", "wide"] },
+		width: { control: "inline-radio", options: ["narrow", "default"] },
 	},
 	args: kantoGateHealthy(),
 	render: (args) => <GateOutcomeScreen {...args} />,
@@ -54,6 +55,8 @@ export const Danger: Story = { args: kantoGateDanger() };
 export const GateZero: Story = { args: kantoGateZero() };
 
 export const Summit: Story = { args: kantoGateSummit() };
+
+export const Won: Story = { args: kantoGateWon() };
 
 export const AllOpen: Story = { args: kantoGateOutcomeOpen() };
 

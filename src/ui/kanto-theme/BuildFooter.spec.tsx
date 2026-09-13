@@ -30,8 +30,8 @@ describe("BuildFooter", () => {
 	it("reads every state the build is in", () => {
 		render(<BuildFooter {...props} />);
 
-		expect(screen.getByText("2 usable")).toBeInTheDocument();
-		expect(screen.getByText("7 running")).toBeInTheDocument();
+		expect(screen.getByText("2 ready")).toBeInTheDocument();
+		expect(screen.getByText("7 applies")).toBeInTheDocument();
 		expect(screen.getByText("1 offline")).toBeInTheDocument();
 		expect(screen.getByText("2 changing")).toBeInTheDocument();
 	});
@@ -39,11 +39,11 @@ describe("BuildFooter", () => {
 	it("colours each state so the row scans without reading it", () => {
 		render(<BuildFooter {...props} />);
 
-		expect(screen.getByText("2 usable")).toHaveAttribute(
+		expect(screen.getByText("2 ready")).toHaveAttribute(
 			"data-screen-theme",
 			"cerulean"
 		);
-		expect(screen.getByText("7 running")).toHaveAttribute(
+		expect(screen.getByText("7 applies")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);
@@ -61,12 +61,12 @@ describe("BuildFooter", () => {
 		render(
 			<BuildFooter
 				{...props}
-				counts={{ usable: 0, running: 7, offline: 0, changing: 0 }}
+				counts={{ ready: 0, applies: 7, offline: 0, changing: 0 }}
 			/>
 		);
 
-		expect(screen.getByText("7 running")).toBeInTheDocument();
-		expect(screen.queryByText("0 usable")).not.toBeInTheDocument();
+		expect(screen.getByText("7 applies")).toBeInTheDocument();
+		expect(screen.queryByText("0 ready")).not.toBeInTheDocument();
 		expect(screen.queryByText("0 offline")).not.toBeInTheDocument();
 		expect(screen.queryByText("0 changing")).not.toBeInTheDocument();
 	});
@@ -75,7 +75,7 @@ describe("BuildFooter", () => {
 		render(
 			<BuildFooter
 				build={createKantoBuildProps({ configs: [], skipped: [] })}
-				counts={{ usable: 0, running: 0, offline: 0, changing: 0 }}
+				counts={{ ready: 0, applies: 0, offline: 0, changing: 0 }}
 			/>
 		);
 

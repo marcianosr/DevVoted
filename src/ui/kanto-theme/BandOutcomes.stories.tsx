@@ -1,69 +1,36 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { BandOutcomes, type BandOutcome } from "./BandOutcomes.ui";
+import {
+	BandOutcomes,
+	type BandOutcome,
+	type LeadPart,
+} from "./BandOutcomes.ui";
 import { Screen } from "./Screen.ui";
 
-const TITLE = "Where you finish decides everything";
+const TITLE = "Objectives and rewards";
+const NOTE =
+	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
+
+const LEAD: readonly LeadPart[] = [
+	"Clear at ",
+	{ band: "ok" },
+	" or better and earn the rewards shown below across a window of ",
+	{ figure: "5" },
+	" polls.",
+];
 
 const SEAFOAM: readonly BandOutcome[] = [
-	{
-		band: "perfect",
-		range: "100%",
-		outcome:
-			"The bar is full. The Seafoam swatch is yours and gate 9 opens tomorrow. The gate pays a bonus on top.",
-		pays: "1305 KB",
-	},
-	{
-		band: "healthy",
-		range: "75 – 99%",
-		outcome:
-			"Gate cleared. The Seafoam swatch is yours and gate 9 opens tomorrow.",
-		pays: "653 KB – 870 KB",
-	},
-	{
-		band: "ok",
-		range: "60 – 74%",
-		outcome:
-			"You survive and get paid, but the gate stays shut. Seafoam runs again on five fresh polls.",
-		pays: "522 KB – 644 KB",
-	},
-	{
-		band: "shaky",
-		range: "50 – 59%",
-		outcome:
-			"Still alive, barely. Same gate again, on a broken streak and a thin balance.",
-		pays: "435 KB – 513 KB",
-	},
-	{
-		band: "danger",
-		range: "under 50%",
-		outcome: "The run ends the moment the gate shuts. No retry, no peel.",
-		pays: "Nothing",
-	},
+	{ band: "perfect", range: "100%", pays: "+1305 KB" },
+	{ band: "healthy", range: "75 – 99%", pays: "+870 KB" },
+	{ band: "ok", range: "60 – 74%", pays: "+522 KB" },
+	{ band: "shaky", range: "50 – 59%", pays: "−192 KB peel" },
+	{ band: "danger", range: "under 50%", pays: "the run ends" },
 ];
 
 const PALLET: readonly BandOutcome[] = [
-	{
-		band: "perfect",
-		range: "100%",
-		outcome:
-			"The bar is full. The Pallet swatch is yours and gate 1 opens tomorrow. The gate pays a bonus on top.",
-		pays: "288 KB",
-	},
-	{
-		band: "healthy",
-		range: "5 – 99%",
-		outcome:
-			"Gate cleared. The Pallet swatch is yours and gate 1 opens tomorrow.",
-		pays: "128 KB – 192 KB",
-	},
-	{
-		band: "ok",
-		range: "0 – 4%",
-		outcome:
-			"You survive and get paid, but the gate stays shut. Pallet runs again on five fresh polls.",
-		pays: "0 KB – 102 KB",
-	},
+	{ band: "perfect", range: "100%", pays: "+288 KB" },
+	{ band: "healthy", range: "5 – 99%", pays: "+128 KB" },
+	{ band: "ok", range: "0 – 4%", pays: "+32 KB" },
 ];
 
 const meta: Meta<typeof BandOutcomes> = {
@@ -71,11 +38,16 @@ const meta: Meta<typeof BandOutcomes> = {
 	title: "Kanto/BandOutcomes",
 	parameters: { controls: { disable: true } },
 	render: (args) => (
-		<Screen theme="seafoam" width="wide">
+		<Screen theme="seafoam">
 			<BandOutcomes {...args} />
 		</Screen>
 	),
-	args: { title: TITLE, outcomes: SEAFOAM },
+	args: {
+		title: TITLE,
+		outcomes: SEAFOAM,
+		lead: LEAD,
+		note: NOTE,
+	},
 };
 export default meta;
 
@@ -84,16 +56,21 @@ type Story = StoryObj<typeof BandOutcomes>;
 export const AtAMidGate: Story = {};
 
 export const NoFloorToFallThrough: Story = {
-	args: { title: TITLE, outcomes: PALLET },
+	args: { outcomes: PALLET, lead: LEAD },
 };
 
-export const StackedInAColumn: Story = {
-	args: { title: TITLE, outcomes: SEAFOAM, layout: "stacked" },
+export const BareTable: Story = {
+	args: { lead: undefined, note: undefined },
+};
+
+export const InHalfAScreen: Story = {
 	render: (args) => (
-		<Screen theme="seafoam" width="wide">
+		<Screen theme="seafoam">
 			<div className="grid w-full gap-8 md:grid-cols-2">
+				<div className="flex w-full min-w-0 flex-col gap-6">
+					<BandOutcomes {...args} />
+				</div>
 				<div />
-				<BandOutcomes {...args} />
 			</div>
 		</Screen>
 	),
@@ -101,29 +78,13 @@ export const StackedInAColumn: Story = {
 
 export const OverItsOwnLadder: Story = {
 	args: {
-		title: TITLE,
-		outcomes: SEAFOAM,
 		bar: {
 			held: 0,
 			floor: 50,
 			ok: 60,
 			healthy: 75,
+			marks: "boundaries",
 			note: "four correct polls reaches the line",
 		},
-	},
-};
-
-export const LongestOutcome: Story = {
-	args: {
-		title: TITLE,
-		outcomes: SEAFOAM.map((outcome) =>
-			outcome.band === "shaky"
-				? {
-						...outcome,
-						outcome:
-							"Still alive, barely. The same gate runs again tomorrow on five fresh polls, your streak is back to nothing, and the balance will not cover a second slip.",
-					}
-				: outcome
-		),
 	},
 };

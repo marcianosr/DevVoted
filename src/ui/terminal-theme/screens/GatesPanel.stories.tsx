@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import { coverageDemandFor } from "~/modules/run/run/domain/rules.model";
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 import { Panel } from "../Panel.ui";
 import { GatesPanel, type DexGate } from "./GatesPanel.ui";
@@ -27,7 +30,7 @@ export const dexGates: readonly DexGate[] = ALL_SWATCHES.map(
 	(swatch): DexGate => {
 		// A gate's demand is the coverage asked of someone who has cleared every
 		// gate below it, so the gate number is the argument.
-		const demand = coverageDemandFor(swatch.gate);
+		const demand = percentOf(healthyAt(swatch.gate));
 		const best = BEST[swatch.gate];
 		if (best === undefined) return { gate: swatch.gate, demand, locked: true };
 
@@ -73,7 +76,7 @@ export const FirstRun: Story = {
 			swatch.gate === 0
 				? {
 						gate: 0,
-						demand: coverageDemandFor(0),
+						demand: percentOf(healthyAt(0)),
 						name: swatch.gateName,
 						theme: swatch.theme,
 						finish: swatch.finish,
@@ -82,7 +85,7 @@ export const FirstRun: Story = {
 					}
 				: {
 						gate: swatch.gate,
-						demand: coverageDemandFor(swatch.gate),
+						demand: percentOf(healthyAt(swatch.gate)),
 						locked: true,
 					}
 		),
@@ -95,11 +98,11 @@ export const EveryGateCleared: Story = {
 	args: {
 		gates: ALL_SWATCHES.map((swatch): DexGate => ({
 			gate: swatch.gate,
-			demand: coverageDemandFor(swatch.gate),
+			demand: percentOf(healthyAt(swatch.gate)),
 			name: swatch.gateName,
 			theme: swatch.theme,
 			finish: swatch.finish,
-			best: coverageDemandFor(swatch.gate) + 12,
+			best: percentOf(healthyAt(swatch.gate)) + 12,
 			cleared: true,
 		})),
 	},

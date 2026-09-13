@@ -10,12 +10,12 @@ const SCREEN =
 	"flex min-h-[var(--screen-floor,80vh)] w-full flex-col items-center bg-theme-faint mx-auto rounded-lg border-theme-faint border-1";
 const BODY = "flex w-full flex-1 flex-col gap-6 px-4 py-4";
 
-export type ScreenWidth = "narrow" | "default" | "wide";
+export type ScreenWidth = "narrow" | "medium" | "default";
 
 const WIDTH = {
 	narrow: "max-w-2xl",
-	default: "max-w-4xl",
-	wide: "max-w-6xl",
+	medium: "max-w-[900px]",
+	default: "max-w-[1150px]",
 } satisfies Record<ScreenWidth, string>;
 
 export type ScreenProps = { children: ReactNode; width?: ScreenWidth } & (

@@ -79,7 +79,10 @@ type Plain = {
 	detail?: never;
 	detailOn?: never;
 	icon?: IconName;
+	iconAt?: IconPlacement;
 };
+
+export type IconPlacement = "lead" | "trail";
 
 export type ButtonProps = {
 	label: string;
@@ -142,6 +145,9 @@ export const Button = ({
 				{shape.cap}
 			</span>
 		)}
+		{shape.icon === undefined || shape.iconAt !== "lead" ? null : (
+			<Icon name={shape.icon} className={ICON_SIZE[size]} />
+		)}
 		{shape.glyph === undefined ? (
 			<span>
 				{label}
@@ -155,7 +161,7 @@ export const Button = ({
 		) : (
 			<span aria-hidden>{shape.glyph}</span>
 		)}
-		{shape.icon === undefined ? null : (
+		{shape.icon === undefined || shape.iconAt === "lead" ? null : (
 			<Icon name={shape.icon} className={ICON_SIZE[size]} />
 		)}
 	</button>

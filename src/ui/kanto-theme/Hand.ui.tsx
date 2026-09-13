@@ -54,6 +54,7 @@ export const Hand = ({
 				{summaryOf(left)}
 			</Typography>
 		</div>
+		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
 
 		<div className={LIST}>
 			{cards.map((card, index) => (
@@ -65,7 +66,5 @@ export const Hand = ({
 				/>
 			))}
 		</div>
-
-		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
 	</section>
 );

@@ -70,6 +70,13 @@ gate's colour; this one carries five fixed hues, because a danger band that
 turns green on a viridian gate is worse than an inconsistent one. `AcrossThemes`
 exists to prove it.
 
-Nothing yet guarantees the numbers handed to the bar are the gate's real
-thresholds. The kanto poll screen has no route, so the binding to `floorAt` /
-`okAt` / `healthyAt` happens when one is wired.
+The bar takes the gate's real thresholds as of 2026-09-13 (DVTD-1zzz).
+`gateLadderFor` in `gate/domain/gate.model.ts` returns `floorAt` / `okAt` /
+`healthyAt` in percent, scaled by any audit on the gate, and the four consumers
+pass it straight through. `gateBand.viewmodel.ts`, which faked one geometry for
+every gate, is deleted.
+
+One clamp survives it, in `gateOutcome.viewmodel.ts`. `gatePassed` refuses a bare
+build however much it covered, so a closed gate's reading and its verdict can
+disagree; `closedBarFor` holds the reading to the band the verdict reached, since
+decision 4 derives the screen's band from the bar.

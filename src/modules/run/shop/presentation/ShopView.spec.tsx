@@ -1,780 +1,108 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	revealsPlanTier,
-	STORAGE_PLANS,
-} from "~/modules/run/run/domain/rules.model";
-import {
-	createMockGateStake,
+	createMockGatePayout,
 	createMockRunView,
+	createMockShopControls,
 	createMockShopOffer,
 } from "~/test/runView.factory";
 
-import { ShopView, type ShopViewProps } from "./ShopView.component";
+import { ShopView } from "./ShopView.component";
 
-const view = createMockRunView({
-	gatesCleared: 4,
-	configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.eslint],
-	slots: 4,
-	slotsUsed: 3,
-	slotsFree: 1,
-	storage: 216,
-	offers: [
-		createMockShopOffer(CONFIGS.stylelint),
-		createMockShopOffer(CONFIGS.unitTests),
-	],
-	canStart: true,
-	gateStake: createMockGateStake({ gateNumber: 5 }),
-});
+const noop = () => {};
 
 const handlers = {
-	onDraft: () => {},
-	onSell: () => {},
-	onUpgrade: () => {},
-	onSwitchArm: () => {},
-	onLock: () => {},
-	onUnlock: () => {},
-	onRebuild: () => {},
-	onExtend: () => {},
-	onPlantPin: () => {},
-	onBuySlot: () => {},
-	onCashSlot: () => {},
-	onSetStoragePlan: () => {},
-	onContinue: () => {},
+	onDraft: noop,
+	onSell: noop,
+	onUpgrade: noop,
+	onRebuild: noop,
+	onExtend: noop,
+	onPlantPin: noop,
+	onBuySlot: noop,
+	onCashSlot: noop,
+	onSetStoragePlan: noop,
+	onContinue: noop,
 };
 
-const render_ = (overrides: Partial<ShopViewProps> = {}) =>
-	render(<ShopView view={view} {...handlers} {...overrides} />);
-
-const closed = createMockRunView({
-	...view,
-	shopControls: { ...view.shopControls, shopLocked: true },
-});
-
-describe("ShopView", () => {
-	it("names the shop for the gate it sells into", () => {
-		render_();
-
-		expect(screen.getByText("Rainbow shop")).toBeInTheDocument();
-		expect(
-			screen.getByText((_, element) => element?.textContent === "before gate 5")
-		).toBeTruthy();
-	});
-
-	it("counts the registry and the build separately", () => {
-		render_();
-
-		expect(screen.getByText("2 offers")).toBeInTheDocument();
-		expect(screen.getByText("3 of 4 · 1 free")).toBeInTheDocument();
-	});
-
-	it("buys an offer at its own price", async () => {
-		const onDraft = vi.fn();
-		render_({ onDraft });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^Stylelint · Install/ })
-		);
-
-		expect(onDraft).toHaveBeenCalledWith(CONFIGS.stylelint.id);
-	});
-
-	it("says why an offer cannot be installed instead of hiding it", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				offers: [
-					createMockShopOffer(CONFIGS.stylelint, {
-						refusal: { reason: "no-room", slots: 2, freeSlots: 1 },
-					}),
-				],
-			}),
-		});
-
-		expect(screen.getByText("Stylelint")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", {
-				name: /^Stylelint · Install.*Needs 2 slots — 1 free/,
-			})
-		).toBeDisabled();
-	});
-
-	it("keeps the offer's own description in the row and the refusal on the press", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				offers: [
-					createMockShopOffer(CONFIGS.stylelint, {
-						refusal: { reason: "no-room", slots: 2, freeSlots: 1 },
-					}),
-				],
-			}),
-		});
-
-		expect(
-			screen.queryByText(/Needs 2 slots — 1 free/, {
-				ignore: "[aria-hidden='true']",
-			})
-		).not.toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: /Needs 2 slots — 1 free/ })
-		).toBeInTheDocument();
-	});
-
-	it("leaves the shop for the gate", async () => {
-		const onContinue = vi.fn();
-		render_({ onContinue });
-
-		await userEvent.click(screen.getByRole("button", { name: /^To Rainbow/ }));
-
-		expect(onContinue).toHaveBeenCalledOnce();
-	});
-
-	it("lets a build with nothing left to spend leave for the gate anyway", () => {
-		render_({
-			view: createMockRunView({ ...view, storage: 0, canStart: false }),
-		});
-
-		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeEnabled();
-	});
-
-	it("shuts the exit while the build is over capacity, counting the overflow", () => {
-		render_({ view: createMockRunView({ ...view, overflowSlots: 2 }) });
-
-		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeDisabled();
-		expect(screen.getByText("Over capacity by 2 slots")).toBeInTheDocument();
-	});
-});
-
-describe("ShopView build rows", () => {
-	it("arms an uninstall before it happens, quoting the refund", async () => {
-		const onSell = vi.fn();
-		render_({ onSell });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Uninstall/ })
-		);
-		expect(onSell).not.toHaveBeenCalled();
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Confirm uninstall/ })
-		);
-		expect(onSell).toHaveBeenCalledWith(CONFIGS.js.id);
-	});
-
-	it("backs out of an armed uninstall without selling", async () => {
-		const onSell = vi.fn();
-		render_({ onSell });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Uninstall/ })
-		);
-		await userEvent.click(screen.getByRole("button", { name: /· Cancel$/ }));
-
-		expect(onSell).not.toHaveBeenCalled();
-		expect(
-			screen.queryByRole("button", { name: /^\.js · Confirm uninstall/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("refuses every uninstall on a build at its width floor", () => {
-		render_({ view: createMockRunView({ ...view, atMinimumWidth: true }) });
-
-		expect(
-			screen.getByRole("button", { name: /^\.js · Uninstall/ })
-		).toBeDisabled();
-	});
-
-	it("states a bumped config's version", () => {
-		render_();
-
-		expect(
-			screen.getAllByRole("img", { name: /^version 1 of/ }).length
-		).toBeGreaterThan(0);
-	});
-
-	it("fires the arm switch in one press, no confirm", async () => {
-		const onSwitchArm = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js, CONFIGS.abTest],
-			}),
-			onSwitchArm,
-		});
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^A\/B Test · Ship arm B/ })
-		);
-
-		expect(onSwitchArm).toHaveBeenCalledWith("ab-test");
-	});
-
-	it("offers no arm switch on a config without arms", () => {
-		render_();
-
-		expect(
-			screen.queryByRole("button", { name: /Ship arm/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("arms an upgrade before it fires", async () => {
-		const onUpgrade = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 4096,
-				coverageByCategory: { js: 100, ts: 100 },
-			}),
-			onUpgrade,
-		});
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Upgrade/ })
-		);
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Confirm upgrade/ })
-		);
-
-		expect(onUpgrade).toHaveBeenCalledWith(CONFIGS.js.id);
-	});
-
-	it("refuses the upgrade press while a gate is unmet", () => {
-		render_({
-			view: createMockRunView({ ...view, storage: 0 }),
-		});
-
-		expect(
-			screen.getByRole("button", { name: /^\.js · Upgrade/ })
-		).toBeDisabled();
-	});
-
-	it("says on the press itself why an upgrade is out of reach", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 4096,
-				coverageByCategory: {},
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", {
-				name: /Unlocks at 5% JavaScript coverage, you have 0%\./,
-			})
-		).toBeDisabled();
-	});
-
-	it("states what the money buys before the upgrade is confirmed", async () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 4096,
-				coverageByCategory: { js: 100, ts: 100 },
-			}),
-		});
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^\.js · Upgrade/ })
-		);
-
-		expect(screen.getByText(/JavaScript polls earn/)).toBeInTheDocument();
-		expect(screen.getAllByText("1.5×").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("1.25×").length).toBeGreaterThan(0);
-	});
-
-	it("reads an installed config at the version it is actually running", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [{ ...CONFIGS.js, level: 3 }],
-			}),
-		});
-
-		expect(screen.getByText(/JavaScript polls earn/)).toBeInTheDocument();
-		expect(screen.getByText("1.75×")).toBeInTheDocument();
-	});
-});
-
-describe("ShopView offers", () => {
-	const lockable = createMockRunView({
-		...view,
-		shopControls: {
-			...view.shopControls,
-			lockAvailable: true,
-			canLock: true,
-			lockCost: 8,
-		},
-	});
-
-	it("puts the next slot on the storage bar, priced", () => {
-		render_();
-
-		expect(
-			screen.getByRole("button", { name: /Buy slot 5 · 32 KB/ })
-		).toBeInTheDocument();
-	});
-
-	it("puts the cash press for the trailing empty slot on the bar too", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				slots: 5,
-				slotsFree: 2,
-				slotDeals: {
-					...view.slotDeals,
-					buy: { costKb: 32, makes: 6 },
-					cash: { costKb: 16, makes: 4 },
-				},
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", { name: /Cash slot 5 · 16 KB/ })
-		).toBeInTheDocument();
-	});
-
-	it("disables the cash press and says why once every slot is filled", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				slots: 5,
-				slotsFree: 0,
-				slotDeals: {
-					...view.slotDeals,
-					cash: {
-						costKb: 16,
-						refusal: "Every slot is filled — uninstall or minify first.",
-					},
-				},
-			}),
-		});
-
-		expect(
-			screen.getByText(
-				/Cash slot 5 · 16 KB · Every slot is filled — uninstall or minify first\./
-			)
-		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /Cash slot 5/ })).toBeDisabled();
-	});
-
-	it("names the version an offer would install", () => {
-		render_();
-
-		expect(
-			screen.getAllByRole("img", { name: /^version 1 of/ }).length
-		).toBeGreaterThan(0);
-	});
-
-	it("reads a rolled upgrade as an upgrade rather than an install", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.ts],
-				offers: [
-					createMockShopOffer({ ...CONFIGS.js, level: 2 }, { upgrades: true }),
-				],
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", { name: /^\.js · Upgrade/ })
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("img", { name: "version 2 of 5" })
-		).toBeInTheDocument();
-	});
-
-	it("offers no lock while yarn.lock is not in the build", () => {
-		render_();
-
-		expect(
-			screen.queryByRole("button", { name: /Stylelint · Lock/ })
-		).not.toBeInTheDocument();
-	});
-
-	it("locks an offer from its padlock, at the quoted fee", async () => {
-		const onLock = vi.fn();
-		render_({ view: lockable, onLock });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^Stylelint · Lock for 8 KB/ })
-		);
-
-		expect(onLock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
-	});
-
-	it("marks a held offer as pressed, and counts it beside the registry", () => {
-		render_({
-			view: createMockRunView({
-				...lockable,
-				shopControls: {
-					...lockable.shopControls,
-					lockedOfferIds: [CONFIGS.stylelint.id],
-				},
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", { name: /^Stylelint · Release/ })
-		).toHaveAttribute("aria-pressed", "true");
-		expect(screen.getByText("2 offers · 1 kept")).toBeInTheDocument();
-	});
-
-	it("releases a held offer from the same padlock", async () => {
-		const onUnlock = vi.fn();
-		render_({
-			view: createMockRunView({
-				...lockable,
-				shopControls: {
-					...lockable.shopControls,
-					lockedOfferIds: [CONFIGS.stylelint.id],
-				},
-			}),
-			onUnlock,
-		});
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^Stylelint · Release/ })
-		);
-
-		expect(onUnlock).toHaveBeenCalledWith(CONFIGS.stylelint.id);
-	});
-
-	it("rerolls the registry at the price the run has reached", async () => {
-		const onRebuild = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				shopControls: {
-					...view.shopControls,
-					rebuildAvailable: true,
-					canRebuild: true,
-					rebuildCost: 4,
-				},
-			}),
-			onRebuild,
-		});
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /Rebuild offers/ })
-		);
-
-		expect(onRebuild).toHaveBeenCalledOnce();
-	});
-
-	it("refuses the reroll when a rebuild would sell nothing", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				shopControls: { ...view.shopControls, rebuildAvailable: false },
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", { name: /Rebuild offers/ })
-		).toBeDisabled();
-	});
-});
-
-const planAt = (
-	tier: number,
-	storage: number,
-	affordable = true,
-	peakKb = storage
-) => ({
-	capKb: STORAGE_PLANS[tier].capKb,
-	perGateKb: STORAGE_PLANS[tier].perGateKb,
-	peakKb,
-	options: STORAGE_PLANS.map((plan) => {
-		const revealed = revealsPlanTier(plan.tier, peakKb);
-
-		return {
-			tier: plan.tier,
-			capKb: plan.capKb,
-			perGateKb: plan.perGateKb,
-			held: plan.tier === tier,
-			burnsKb: Math.max(0, storage - plan.capKb),
-			affordable: plan.tier <= tier || affordable,
-			revealed,
-			...(revealed ? {} : { opensAtKb: STORAGE_PLANS[plan.tier - 1].capKb }),
-		};
+const view = createMockRunView({
+	configs: [CONFIGS.js],
+	storage: 512,
+	slots: 6,
+	slotsUsed: 2,
+	offers: [
+		createMockShopOffer(CONFIGS.eslint, { priceKb: 64, installable: true }),
+		createMockShopOffer(CONFIGS.ts, { priceKb: 4096, installable: false }),
+	],
+	gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
+	shopControls: createMockShopControls({
+		rebuildAvailable: true,
+		canRebuild: true,
+		rebuildCost: 32,
 	}),
 });
 
-describe("ShopView storage plan", () => {
-	it("lists all seven rungs and masks the ones no run has filled up to", () => {
-		render_();
+describe("ShopView", () => {
+	it("stands the build beside the registry", () => {
+		render(<ShopView view={view} {...handlers} />);
 
-		const track = screen.getByRole("list", { name: "storage plan rungs" });
-		expect(within(track).getAllByRole("listitem")).toHaveLength(7);
-		expect(within(track).getByText("256 KB")).toBeInTheDocument();
-		expect(within(track).getByText("512 KB")).toBeInTheDocument();
-		expect(within(track).queryByText("1 MB")).not.toBeInTheDocument();
-		expect(within(track).getAllByText("????").length).toBeGreaterThan(0);
-		expect(within(track).getAllByRole("button")).toHaveLength(2);
+		expect(screen.getByText("Build")).toBeInTheDocument();
+		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("names what opens a masked rung, and the best held against it", () => {
-		render_({
-			view: createMockRunView({ ...view, storagePlan: planAt(1, 300, true) }),
-		});
+	it("names the gate the shop opened on", () => {
+		render(<ShopView view={view} {...handlers} />);
 
-		const track = screen.getByRole("list", { name: "storage plan rungs" });
-		expect(
-			within(track).getByText("opens at 512 KB held · best 300 KB")
-		).toBeInTheDocument();
+		expect(screen.getByText(/^Shop/)).toBeInTheDocument();
 	});
 
-	it("opens a rung once a run has filled the cap below it", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 40,
-				storagePlan: planAt(1, 40, true, 512),
-			}),
-		});
-
-		const track = screen.getByRole("list", { name: "storage plan rungs" });
-		expect(within(track).getByText("1 MB")).toBeInTheDocument();
-		expect(
-			within(track).getByRole("button", { name: "select 1 MB" })
-		).toBeInTheDocument();
-	});
-
-	it("meters the balance against the held cap and sizes the next rung", () => {
-		render_();
-
-		expect(
-			screen.getByRole("img", {
-				name: "216 KB held · 40 KB free · 256 KB cap · +256 KB on 512 KB",
-			})
-		).toBeInTheDocument();
-	});
-
-	it("keeps the held card selected and dead", () => {
-		render_();
-
-		expect(
-			screen.getByRole("button", { name: "selected 256 KB" })
-		).toBeDisabled();
-	});
-
-	it("selects a revealed rung from its card", async () => {
-		const onSetStoragePlan = vi.fn();
-		render_({ onSetStoragePlan });
+	it("installs an offer the run can afford", async () => {
+		const onDraft = vi.fn();
+		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "select 512 KB" })
+			screen.getByRole("button", { name: /Install ESLint/ })
 		);
-
-		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
+		expect(onDraft).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	it("refuses a rung whose bill the balance cannot cover, and says so", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 8,
-				storagePlan: planAt(0, 8, false),
-			}),
-		});
+	it("shows an unaffordable offer without a press", () => {
+		render(<ShopView view={view} {...handlers} />);
 
 		expect(
-			screen.getByRole("button", { name: "select 512 KB" })
-		).toBeDisabled();
-		expect(
-			screen.getByText(/bills 32 KB a gate, you hold 8 KB/)
-		).toBeInTheDocument();
-	});
-
-	it("holds the shop door shut while the plan outruns the balance", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				storage: 8,
-				storagePlan: planAt(2, 8),
-			}),
-		});
-
-		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeDisabled();
-		expect(
-			screen.getByText(/Storage plan bills 96 KB a gate, you hold 8 KB/)
-		).toBeInTheDocument();
-	});
-
-	it("warns what a drop burns on the cheaper card, and drops from it", async () => {
-		const onSetStoragePlan = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				storagePlan: planAt(2, 812),
-				storage: 812,
-			}),
-			onSetStoragePlan,
-		});
-
-		expect(screen.getByText("burns 300 KB")).toBeInTheDocument();
-		expect(screen.getByText("burns 556 KB")).toBeInTheDocument();
-
-		await userEvent.click(
-			screen.getByRole("button", { name: "select 512 KB" })
-		);
-
-		expect(onSetStoragePlan).toHaveBeenCalledWith(1);
-	});
-});
-
-describe("ShopView when read-only has closed it", () => {
-	it("leads with the shop being closed, naming the audit and the gate", () => {
-		render_({ view: closed });
-
-		expect(
-			screen.getByText(/Shop closed\. 405 Method Not Allowed/)
-		).toBeInTheDocument();
-		expect(screen.getByText(/before gate 5\.$/)).toBeInTheDocument();
-	});
-
-	it("says nothing about a closure at an open shop", () => {
-		render_();
-
-		expect(screen.queryByText(/Shop closed/)).not.toBeInTheDocument();
-	});
-
-	it("refuses every write while it is shut", () => {
-		render_({ view: closed });
-
-		expect(
-			screen.getByRole("button", { name: /^Stylelint · Install/ })
-		).toBeDisabled();
-		expect(
-			screen.getByRole("button", { name: /^\.js · Uninstall/ })
-		).toBeDisabled();
-		expect(
-			screen.getByRole("button", { name: /Rebuild offers/ })
-		).toBeDisabled();
-		expect(
-			screen.getByRole("button", { name: "select 512 KB" })
-		).toBeDisabled();
-	});
-
-	it("still lets the run walk to the gate", () => {
-		render_({ view: closed });
-
-		expect(screen.getByRole("button", { name: /^To Rainbow/ })).toBeEnabled();
-	});
-});
-
-describe("ShopView slots", () => {
-	it("sells the next slot beside the build", async () => {
-		const onBuySlot = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				slotDeals: { ...view.slotDeals, buy: { costKb: 32, makes: 5 } },
-			}),
-			onBuySlot,
-		});
-
-		await userEvent.click(screen.getByRole("button", { name: /Buy slot 5/ }));
-
-		expect(onBuySlot).toHaveBeenCalledOnce();
-	});
-
-	it("cashes a slot back once the run holds more than the free four", async () => {
-		const onCashSlot = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				slotDeals: { ...view.slotDeals, cash: { costKb: 32, makes: 3 } },
-			}),
-			onCashSlot,
-		});
-
-		await userEvent.click(screen.getByRole("button", { name: /Cash slot 4/ }));
-
-		expect(onCashSlot).toHaveBeenCalledOnce();
-	});
-
-	it("refuses a slot the balance cannot cover, saying so", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				slotDeals: {
-					...view.slotDeals,
-					buy: { costKb: 512, refusal: "Costs 512 KB, you have 216." },
-				},
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", {
-				name: "Buy slot 5 · 512 KB · Costs 512 KB, you have 216.",
-			})
-		).toBeDisabled();
-	});
-});
-
-describe("ShopView git tag", () => {
-	const taggable = createMockRunView({
-		...view,
-		shopControls: {
-			...view.shopControls,
-			pinAvailable: true,
-			canPin: true,
-			pinCost: 64,
-		},
-	});
-
-	it("sells the tag, naming the gate the next run would start at", async () => {
-		const onPlantPin = vi.fn();
-		render_({ view: taggable, onPlantPin });
-
-		expect(
-			screen.getByText(/checks out at gate 5 instead of gate 0/)
-		).toBeInTheDocument();
-		await userEvent.click(
-			screen.getByRole("button", { name: /Buy a git tag/ })
-		);
-
-		expect(onPlantPin).toHaveBeenCalledOnce();
-	});
-
-	it("offers no tag while the run has not unlocked it", () => {
-		render_();
-
-		expect(
-			screen.queryByRole("button", { name: /git tag/ })
+			screen.queryByRole("button", { name: /Install TypeScript/ })
 		).not.toBeInTheDocument();
 	});
-});
 
-describe("ShopView extend", () => {
-	it("sells one more offer for every shop after this one", async () => {
-		const onExtend = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				shopControls: {
-					...view.shopControls,
-					extendAvailable: true,
-					canExtend: true,
-					extendCost: 48,
-				},
-			}),
-			onExtend,
-		});
+	it("rebuilds the registry from its control", async () => {
+		const onRebuild = vi.fn();
+		render(<ShopView view={view} {...handlers} onRebuild={onRebuild} />);
 
-		const extend = screen.getByText(
-			"one more offer, here and every shop after"
-		).parentElement;
-		if (!extend) throw new Error("No extend row rendered");
+		await userEvent.click(
+			screen.getByRole("button", { name: /Rebuild the registry/ })
+		);
+		expect(onRebuild).toHaveBeenCalled();
+	});
 
-		await userEvent.click(within(extend).getByRole("button"));
+	it("leaves for prep from the footer", async () => {
+		const onContinue = vi.fn();
+		render(<ShopView view={view} {...handlers} onContinue={onContinue} />);
 
-		expect(onExtend).toHaveBeenCalledOnce();
+		await userEvent.click(screen.getByRole("button", { name: /To prep/ }));
+		expect(onContinue).toHaveBeenCalled();
+	});
+
+	it("shuts the exit while the build is over capacity", () => {
+		render(
+			<ShopView
+				view={createMockRunView({ ...view, overflowSlots: 2 })}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: /To prep/ })).toBeDisabled();
+		expect(screen.getByText(/over capacity by 2/)).toBeInTheDocument();
 	});
 });

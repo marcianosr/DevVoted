@@ -100,16 +100,18 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
-	clearedGateDemand: 3,
+	clearedGateLadder: { floor: 0, ok: 0, healthy: 5 },
 });
 
 export const createMockPaidActions = createMockDataFactory<PaidActions>({
 	canLint: false,
 	lintReady: false,
+	lintRefusal: undefined,
 	lintCost: 0,
 	linter: null,
 	canPeek: false,
 	peekReady: false,
+	peekRefusal: undefined,
 	peekCost: 32,
 	peeker: null,
 });
@@ -117,7 +119,7 @@ export const createMockPaidActions = createMockDataFactory<PaidActions>({
 export const createMockGateStake = createMockDataFactory<GateStake>({
 	gateNumber: 0,
 	pollsPerGate: 5,
-	coverageDemand: 3,
+	coverageLadder: { floor: 0, ok: 0, healthy: 5 },
 	coverageHeld: 0,
 	audits: [],
 	peelSlotsOnFailure: 1,
@@ -165,6 +167,7 @@ const createRunView = createMockDataFactory<RunView>({
 	buyBack: { costKb: 4, ready: false, sealedCount: 0 },
 	paidActions: createMockPaidActions(),
 	offlineConfigs: [],
+	configStatuses: {},
 	mirroredPolls: false,
 	categoryHidden: false,
 	pollTimeLimitMs: null,
@@ -197,6 +200,7 @@ const createRunView = createMockDataFactory<RunView>({
 	faucetRemainingKb: FAUCET_CAP_KB,
 	autoUpgradeRemaining: null,
 	gatesCleared: 0,
+	gateComplete: false,
 	gateTheme: "pallet",
 	redoingGate: null,
 	clearedGate: null,
@@ -220,6 +224,7 @@ const createRunView = createMockDataFactory<RunView>({
 			refusal: `Costs ${SLOT_PRICES_KB[0] * 2} KB of archive, you have 0.`,
 		},
 		cash: {},
+		next: { costKb: SLOT_PRICES_KB[1] * 2, makes: BASE_SLOTS + 2 },
 	},
 	storagePlan: {
 		capKb: STORAGE_PLANS[0].capKb,

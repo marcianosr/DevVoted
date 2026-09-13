@@ -6,6 +6,7 @@ import { Badge } from "./Badge.ui";
 import { Choice, type ChoiceSeal } from "./Choice.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import type { KantoColor } from "./colors";
+import { Trail, type TrailProps } from "./Trail.ui";
 import { Typography } from "./Typography.ui";
 
 const BLOCK = "flex w-full flex-col gap-3";
@@ -42,6 +43,7 @@ export type QuestionProps = {
 	onPick?: (id: string) => void;
 	categoryColor?: KantoColor;
 	wrongCost?: string;
+	trail?: TrailProps;
 };
 
 export const Question = ({
@@ -54,9 +56,11 @@ export const Question = ({
 	onPick,
 	categoryColor,
 	wrongCost,
+	trail,
 }: QuestionProps) => (
 	<section className={BLOCK}>
 		<div className={FACTS_ROW}>
+			{trail === undefined ? null : <Trail {...trail} />}
 			<Badge color={categoryColor}>{category}</Badge>
 			<Typography variant="hint" as="span">
 				{factsOf(options.length, answerType)}

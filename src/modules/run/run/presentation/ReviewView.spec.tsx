@@ -3,148 +3,101 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import { createMockRunView } from "~/test/runView.factory";
+import {
+	createMockGatePayout,
+	createMockRunView,
+} from "~/test/runView.factory";
 
 import { ReviewView } from "./ReviewView.component";
 
-const answered: AnsweredPoll = {
-	id: "poll-1",
-	question: "Which method copies without mutating?",
-	category: "js",
-	outcome: "partial",
-	options: ["slice", "splice", "at"],
-	picked: ["slice", "splice"],
-	correct: ["slice", "at"],
-	coverageEarned: 4.2,
-	explanation: "splice mutates in place.",
-};
+const answered: readonly AnsweredPoll[] = [
+	{
+		id: "a",
+		category: "js",
+		question: "Which method returns the last element?",
+		outcome: "correct",
+		picked: ["at(-1)"],
+		correct: ["at(-1)"],
+		options: ["at(-1)", "pop()"],
+		coverageEarned: 12,
+	},
+	{
+		id: "b",
+		category: "ts",
+		question: "Which type makes every property optional?",
+		outcome: "wrong",
+		picked: ["Readonly<T>"],
+		correct: ["Partial<T>"],
+		options: ["Partial<T>", "Readonly<T>"],
+		coverageLost: 4,
+	},
+];
 
-const correct: AnsweredPoll = {
-	...answered,
-	id: "poll-2",
-	outcome: "correct",
-	picked: ["slice", "at"],
-	coverageEarned: 6.5,
-};
+const view = createMockRunView({
+	answeredThisGate: answered,
+	status: "rewarding",
+	gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
+});
 
-const wrong: AnsweredPoll = {
-	...answered,
-	id: "poll-3",
-	outcome: "wrong",
-	picked: ["splice"],
-	coverageEarned: 0,
-};
-
-const back = { label: "← Back", onUse: () => {} };
+const back = { label: "Back to the gate", onUse: () => {} };
 
 describe("ReviewView", () => {
-	it("names the gate the answers were given at, not the run's start", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({
-					gatesCleared: 4,
-					answeredThisGate: [answered],
-				})}
-				back={back}
-			/>
-		);
-
-		expect(screen.getByText("Review · Lavender")).toBeInTheDocument();
-	});
-
-	it("sorts a correct answer into passed and everything else into failed", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({
-					answeredThisGate: [answered, correct, wrong],
-				})}
-				back={back}
-			/>
-		);
+	it("lists every answer of the gate with its question", () => {
+		render(<ReviewView view={view} back={back} />);
 
 		expect(
-			screen.getByText("1 passed · 2 failed · 3 polls")
+			screen.getByText("Which method returns the last element?")
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Which type makes every property optional?")
 		).toBeInTheDocument();
 	});
 
-	it("shows what was expected against what was picked on a miss", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({ answeredThisGate: [answered] })}
-				back={back}
-			/>
-		);
+	it("names the gate that was reviewed", () => {
+		render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText("slice, at")).toBeInTheDocument();
-		expect(screen.getByText("slice, splice")).toBeInTheDocument();
+		expect(screen.getByText(/gate 4/)).toBeInTheDocument();
 	});
 
-	// A partial earns coverage even though it did not pass. Reporting only the
-	// miss would tell the player they got nothing for it.
-	it("banks the coverage a partial answer still earned", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({ answeredThisGate: [answered] })}
-				back={back}
-			/>
-		);
+	it("costs a wrong answer coverage rather than crediting it", () => {
+		render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText("banked")).toBeInTheDocument();
-		expect(screen.getByText("+4.2%")).toBeInTheDocument();
+		expect(screen.getByText("-4")).toBeInTheDocument();
 	});
 
-	it("quotes the coverage a wrong answer cost, not a zero earn", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({ answeredThisGate: [wrong] })}
-				back={back}
-			/>
-		);
+	it("leaves a passed answer folded away until asked to open it", async () => {
+		const { container } = render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText("cost")).toBeInTheDocument();
-		expect(screen.queryByText("banked")).not.toBeInTheDocument();
-	});
-
-	it("carries the explanation through so a miss teaches something", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({ answeredThisGate: [answered] })}
-				back={back}
-			/>
-		);
-
-		expect(screen.getByText("splice mutates in place.")).toBeInTheDocument();
-	});
-
-	// The pool cycles, so poll-1 can be answered at gate 0 and again at gate 4.
-	it("keys repeated polls apart rather than collapsing them", () => {
-		render(
-			<ReviewView
-				view={createMockRunView({
-					answeredThisGate: [answered, { ...answered }],
-				})}
-				back={back}
-			/>
-		);
+		const foldOf = (question: string) =>
+			[...container.querySelectorAll("details")].find((fold) =>
+				fold.querySelector("summary")?.textContent?.includes(question)
+			);
 
 		expect(
-			screen.getAllByText("Which method copies without mutating?")
-		).toHaveLength(2);
-	});
-
-	it("goes back from the footer", async () => {
-		const onUse = vi.fn();
-		render(
-			<ReviewView
-				view={createMockRunView({ answeredThisGate: [answered] })}
-				back={{ label: "← Back to rewards", onUse }}
-			/>
+			foldOf("Which method returns the last element?")
+		).not.toHaveAttribute("open");
+		expect(foldOf("Which type makes every property optional?")).toHaveAttribute(
+			"open"
 		);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "← Back to rewards" })
+			screen.getByRole("button", { name: /open everything/ })
 		);
 
-		expect(onUse).toHaveBeenCalledOnce();
+		expect(foldOf("Which method returns the last element?")).toHaveAttribute(
+			"open"
+		);
+	});
+
+	it("goes back where it came from", async () => {
+		const onUse = vi.fn();
+		render(
+			<ReviewView view={view} back={{ label: "Back to the gate", onUse }} />
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Back to the gate" })
+		);
+		expect(onUse).toHaveBeenCalled();
 	});
 });

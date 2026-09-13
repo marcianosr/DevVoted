@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import {
 	createKantoBuildFooterProps,
 	createKantoBuildProps,
+	createKantoCoverageBarProps,
 	createKantoHeaderProps,
 	createKantoPollScreenProps,
 	createKantoQuestionProps,
@@ -182,5 +183,86 @@ describe("PollScreen", () => {
 		render(<PollScreen {...props} />);
 
 		expect(screen.getAllByRole("img", { name: /needed/ })).toHaveLength(1);
+	});
+
+	it("carries no footer action until the poll asks for one", () => {
+		render(<PollScreen {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /Submit/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("submits a multi-answer poll from the footer once a pick exists", () => {
+		render(
+			<PollScreen
+				{...props}
+				question={createKantoQuestionProps({
+					answerType: "multiple",
+					pickedIds: ["option-1"],
+				})}
+				footer={{ action: { label: "Submit answer", onPress: () => {} } }}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: /Submit answer/ })).toBeEnabled();
+	});
+
+	it("refuses the submit while nothing is picked", () => {
+		render(
+			<PollScreen
+				{...props}
+				question={createKantoQuestionProps({
+					answerType: "multiple",
+					pickedIds: [],
+				})}
+				footer={{
+					action: { label: "Submit answer" },
+					refusal: "pick an answer first",
+				}}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Submit answer/ })
+		).toBeDisabled();
+		expect(screen.getByText("pick an answer first")).toBeInTheDocument();
+	});
+
+	it("stands the footer above the build, under the poll", () => {
+		const { container } = render(
+			<PollScreen
+				{...props}
+				footer={{ action: { label: "Next poll", onPress: () => {} } }}
+			/>
+		);
+
+		const body = container.querySelector("section > div");
+		const order = Array.from(body?.children ?? []).map((child) =>
+			child.tagName.toLowerCase()
+		);
+
+		expect(order).toEqual([
+			"header",
+			"div",
+			"nav",
+			"section",
+			"p",
+			"footer",
+			"footer",
+		]);
+	});
+
+	it("pins the coverage bar where the answer landed", () => {
+		const { container } = render(
+			<PollScreen
+				{...props}
+				header={createKantoHeaderProps({
+					bar: createKantoCoverageBarProps({ pin: true }),
+				})}
+			/>
+		);
+
+		expect(container.querySelector(".coverage-bar-pin")).toBeInTheDocument();
 	});
 });

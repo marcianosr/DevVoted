@@ -62,6 +62,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
+	bareActionSchema("close-gate"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
 	optionActionSchema("buy-back-option"),

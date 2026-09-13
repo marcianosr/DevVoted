@@ -10,22 +10,27 @@ import {
 	type GateWindow,
 } from "~/modules/run/config/domain/effect.model";
 import {
-	type CoverageBreakdown,
-	type CoverageFactors,
 	coverageBreakdownForAnswer,
 	coverageFactorsForAnswer,
 	coverageForAnswer,
-	coverageLossFor,
 	extraPickPayoutFor,
 	gateClearPayout,
 	occupiedSlots,
-	streakCapStepsFor,
 	storageInterestFor,
 } from "~/modules/run/build/domain/build.model";
 import {
+	type CoverageBreakdown,
+	type CoverageFactors,
+	bankableUnits,
+	percentOf,
+	surplusPayoutKb,
+} from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	type GateClose,
 	failPeelQuotaFor,
+	gateClosingFor,
 	gateDemandFor,
-	gatePassed,
+	runCoverageAtClose,
 } from "~/modules/run/gate/domain/gate.model";
 import {
 	type Audit,
@@ -39,15 +44,13 @@ import { estimatePayoutKb } from "~/modules/run/run/domain/estimate.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	faucetRemainingKb,
-	gateBaseMultiplier,
 	isPeelFatal,
-	pollDifficultyMultiplier,
 	cappedStorage,
 	FREE_PLAN,
 	planBillKb,
 	roundToOneDecimal,
+	roundToTwoDecimals,
 	SLICE_WINDOW,
-	streakMultiplier,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -93,6 +96,10 @@ const settlePlanBill = (state: RunState, balanceKb: number): PlanSettlement => {
 	return { paidKb: owed, tier, downgraded: false };
 };
 
+/** The gate's five results are in. It owes a close, not another answer. */
+export const gateWindowComplete = (state: RunState): boolean =>
+	state.window.answered >= SLICE_WINDOW;
+
 const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const gateNumber = state.gatesCleared;
 
@@ -108,20 +115,49 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		estimateThisGateKb: committed === undefined ? undefined : estimateKb,
 	};
 
-	if (!gatePassed(state.build, state.window, state.gatesCleared, schedule)) {
+	const close: GateClose = {
+		build: state.build,
+		bankedUnits: state.bankedUnits,
+		unitsThisGate: state.window.unitsEarned,
+		correctThisGate: state.window.correct,
+		gatesCleared: state.gatesCleared,
+		schedule,
+	};
+	const closing = gateClosingFor(close);
+	const heldCoverage = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
+
+	if (closing !== "cleared") {
 		const settledStorage = addStorage(
 			state.storage,
 			estimateKb,
 			state.storagePlan ?? 0
 		);
-		const quota = failPeelQuotaFor(state.build.configs, gateNumber, schedule);
+		const attempts = state.gateAttempts ?? 0;
+		const quota = failPeelQuotaFor(
+			state.build.configs,
+			gateNumber,
+			schedule,
+			attempts
+		);
 		const occupied = occupiedSlots(state.build.configs);
 		const demand = gateDemandFor(
 			state.build.configs,
 			state.gatesCleared,
 			schedule
 		);
-		const missed = `Gate ${gateNumber} failed: ${state.window.coverageGained}% of ${demand}% this gate.`;
+		const missed = `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
+
+		// DANGER shuts the gate for good: no retry, no peel, no choice (ADR-076).
+		if (closing === "fatal")
+			return {
+				...state,
+				...settledEstimate,
+				storage: settledStorage,
+				currentIndex: nextIndex,
+				status: "dead",
+				log: withLog(state, `${missed} The gate shut on it. Run over.`),
+			};
+
 		if (isPeelFatal(quota, occupied))
 			return {
 				...state,
@@ -141,6 +177,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
 			autoUpgradeProgress: 0,
+			gateAttempts: attempts + 1,
 			peelRefundKb: 0,
 			peelSlotsRemaining: quota,
 			log: withLog(
@@ -155,14 +192,21 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const interest = storageInterestFor(state.build.configs, state.storage);
 	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
 	const extraPickKb = extraPickPayoutFor(state.build.configs, extraPicks);
+	const totalUnits = state.bankedUnits + state.window.unitsEarned;
+	const banked = roundToTwoDecimals(
+		bankableUnits(totalUnits, state.gatesCleared)
+	);
+	const overflowKb = surplusPayoutKb(totalUnits, state.gatesCleared);
 	const reward =
 		gateClearPayout(
 			state.build.configs,
 			state.window.correct,
-			state.gatesCleared
+			state.gatesCleared,
+			state.streak
 		) +
 		interest +
 		extraPickKb +
+		overflowKb +
 		estimateKb;
 	const planTier = state.storagePlan ?? 0;
 	const rewarded = addStorage(state.storage, reward, planTier);
@@ -178,6 +222,9 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			scheduleOf(state)
 		),
 		manualDisabled: [],
+		bankedUnits: banked,
+		streak: 0,
+		gateAttempts: 0,
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
@@ -250,7 +297,6 @@ type AnswerGrade = {
 	readonly outcome: AnswerOutcome;
 	readonly timedOut: boolean;
 	readonly auditedShare: number;
-	readonly scoredShare: number;
 	readonly streak: number;
 };
 
@@ -271,11 +317,6 @@ const gradeAnswer = (
 	const auditedShare = timedOut
 		? 0
 		: auditScoreShare(audits, coverageShare(graded, optionIds));
-	const gateMultiplier = gateBaseMultiplier(state.gatesCleared);
-	const difficultyMultiplier = pollDifficultyMultiplier(
-		graded.options.length,
-		graded.answerType === "multiple"
-	);
 	return {
 		audits,
 		configs,
@@ -283,7 +324,6 @@ const gradeAnswer = (
 		outcome,
 		timedOut,
 		auditedShare,
-		scoredShare: auditedShare * gateMultiplier * difficultyMultiplier,
 		streak: nextStreak(state.streak, outcome),
 	};
 };
@@ -297,23 +337,22 @@ type AnswerLedger = {
 	readonly burnKb: number;
 };
 
+export const answerContextFor = (
+	state: RunState,
+	poll: RunPoll
+): AnswerContext => ({
+	category: poll.category,
+	answeredBefore: state.window.answered,
+	cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
+});
+
 const scoreAnswer = (
 	state: RunState,
 	poll: RunPoll,
 	grade: AnswerGrade
 ): AnswerLedger => {
-	const { audits, configs, auditedShare, scoredShare } = grade;
-	const answerContext: AnswerContext = {
-		category: poll.category,
-		answeredBefore: state.window.answered,
-		cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
-	};
-	const streakBonus = streakMultiplier(
-		grade.streak,
-		streakCapStepsFor(configs)
-	);
-	const coverageLoss =
-		auditedShare > 0 ? 0 : coverageLossFor(configs, state.gatesCleared);
+	const { audits, configs, auditedShare } = grade;
+	const answerContext = answerContextFor(state, poll);
 	const rawFaucet =
 		grade.outcome === "correct" ? faucetKbPerCorrect(configs) : 0;
 	const faucetKb = Math.min(
@@ -324,23 +363,17 @@ const scoreAnswer = (
 		earnedCoverage: coverageForAnswer(
 			configs,
 			answerContext,
-			scoredShare,
-			streakBonus
+			auditedShare,
+			state.streak
 		),
-		coverageLoss,
+		coverageLoss: 0,
 		breakdown: coverageBreakdownForAnswer(
 			configs,
 			answerContext,
-			scoredShare,
-			streakBonus,
-			coverageLoss
+			auditedShare,
+			state.streak
 		),
-		factors: coverageFactorsForAnswer(
-			configs,
-			answerContext,
-			scoredShare,
-			streakBonus
-		),
+		factors: coverageFactorsForAnswer(configs, answerContext, auditedShare),
 		faucetKb,
 		burnKb: Math.min(
 			auditBurnKb(
@@ -404,13 +437,8 @@ const applyAnswer = (
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
-		coverageGained: roundToOneDecimal(
-			Math.max(
-				0,
-				state.window.coverageGained +
-					ledger.earnedCoverage -
-					ledger.coverageLoss
-			)
+		unitsEarned: roundToTwoDecimals(
+			Math.max(0, state.window.unitsEarned + ledger.earnedCoverage)
 		),
 		byCategory: {
 			...state.window.byCategory,
@@ -485,6 +513,7 @@ export const answer = (
 	elapsedMs?: number
 ): RunState => {
 	if (optionIds.length === 0) return state;
+	if (gateWindowComplete(state)) return state;
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return state;
 
@@ -494,8 +523,17 @@ export const answer = (
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
 	const counted = countAutoUpgrade(applied, state, grade.outcome);
 
-	const nextIndex = state.currentIndex + 1;
-	if (counted.window.answered >= SLICE_WINDOW)
-		return closeWindow(counted, nextIndex);
-	return { ...counted, currentIndex: nextIndex, status: "answering" };
+	// The answer that fills the window leaves `currentIndex` on its own poll, so
+	// the reveal the player is reading still belongs to the gate that asked it.
+	if (gateWindowComplete(counted)) return counted;
+	return {
+		...counted,
+		currentIndex: state.currentIndex + 1,
+		status: "answering",
+	};
 };
+
+export const closeGate = (state: RunState): RunState =>
+	gateWindowComplete(state)
+		? closeWindow(state, state.currentIndex + 1)
+		: state;

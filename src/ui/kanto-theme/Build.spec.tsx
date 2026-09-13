@@ -201,6 +201,29 @@ describe("Build", () => {
 	});
 });
 
+describe("Build's readout leader", () => {
+	it("counts the configs it holds by default", () => {
+		render(<Build configs={RUNNING} slots={{ used: 7, capacity: 10 }} />);
+
+		expect(
+			screen.getByText(/^2 configs · 7 of 10 slots · 3 free$/)
+		).toBeInTheDocument();
+	});
+
+	it("drops the count where the chips are listed right underneath", () => {
+		render(
+			<Build
+				configs={RUNNING}
+				slots={{ used: 7, capacity: 10 }}
+				configCount={false}
+			/>
+		);
+
+		expect(screen.getByText(/^7 of 10 slots · 3 free$/)).toBeInTheDocument();
+		expect(screen.queryByText(/configs ·/)).toBeNull();
+	});
+});
+
 describe("Build's vacancy", () => {
 	const FULL = { used: 10, capacity: 10 } as const;
 	const ROOMY = { used: 7, capacity: 10 } as const;
@@ -250,6 +273,46 @@ describe("Build's vacancy", () => {
 		const box = screen.getAllByText("empty slot")[0].parentElement;
 
 		expect(box?.parentElement).toBe(chip?.parentElement);
+	});
+
+	it("draws no box for a merely empty slot when the screen says not to", () => {
+		render(<Build configs={RUNNING} slots={ROOMY} emptySlots={false} />);
+
+		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+	});
+
+	it("keeps the one box the refund is pressed on, which the track cannot carry", () => {
+		render(
+			<Build
+				configs={RUNNING}
+				slots={ROOMY}
+				emptySlots={false}
+				{...slotDealsAt()}
+			/>
+		);
+
+		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+		expect(
+			screen.getAllByRole("button", { name: /cash this slot back/ })
+		).toHaveLength(1);
+	});
+
+	it("stands the rung after the offer last, quoted but not for sale", () => {
+		render(
+			<Build
+				configs={RUNNING}
+				slots={ROOMY}
+				{...slotDealsAt()}
+				nextSlot={{ slot: 12, price: "160 KB", locked: true }}
+			/>
+		);
+
+		const offer = screen.getByRole("button", { name: /buy slot/ });
+		const rung = screen.getByLabelText(/^slot 12 ·/);
+
+		expect(
+			offer.compareDocumentPosition(rung) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
 	});
 
 	it("leaves the poll band no vacancy to draw", () => {

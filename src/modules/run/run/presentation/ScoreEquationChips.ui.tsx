@@ -13,9 +13,8 @@ export type ScoreBonusRow = {
 
 /** Why the base ("correct") chip was boosted — surfaced as its hover tooltip. */
 export type DifficultyBonus = {
-	multiplier: number;
-	optionCount: number;
-	isMultiple: boolean;
+	gain: number;
+	base: number;
 };
 
 type ScoreEquationChipsProps = {
@@ -53,14 +52,8 @@ const valueTone = (value: number): string => {
 // numbers carry the colour. Previously "+" was white and "=" gray, in one line.
 const OPERATOR_TONE = "text-pewter";
 
-const difficultyReason = ({
-	optionCount,
-	isMultiple,
-	multiplier,
-}: DifficultyBonus): string =>
-	`Harder polls pay more coverage — ${optionCount} options${
-		isMultiple ? ", multiple-choice" : ""
-	} (×${multiplier}).`;
+const difficultyReason = ({ gain, base }: DifficultyBonus): string =>
+	`Multiple-choice polls pay ${gain}% coverage where a single pays ${base}%.`;
 
 type ChipPop = { className: string; style: CSSProperties | undefined };
 

@@ -159,10 +159,10 @@ only whispers on hover says nothing on touch.
   strip still resize builds, and the shop's exit lock keeps its copy.
 - A git-tag rescue starts on the free four rather than the width its depth used
   to owe. Its stipend buys back roughly what it lost, but it is a real nerf.
-- **Watch in playtest:** `COVERAGE_DEMANDS` was tuned when every run reached 24
-  slots by gate 10. A run now realistically holds 8 to 13, so gates 9 to 12 may
-  be unclearable. Deliberately not pre-tuned, because the measured result is that
-  width self-cancels and **aim** is what swings the win rate, so the demands may
-  already be right.
+- **Watch in playtest:** the demand table this warned about was tuned when every
+  run reached 24 slots by gate 10, and a run now realistically holds 8 to 13.
+  `HEALTHY_LADDER` replaced it ([ADR-073](073-coverage-is-a-flat-gain-reset-every-gate.md)),
+  so gates 9 to 12 are worth rewatching against the new line. The measured result
+  still stands: width self-cancels and **aim** is what swings the win rate.
 - The honest thing to watch on the plan is whether anything below the middle
   rungs ever gets bought.

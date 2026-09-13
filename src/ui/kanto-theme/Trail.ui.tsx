@@ -5,7 +5,8 @@ import { VERDICT_COLOR, type VerdictOutcome } from "./Verdict.ui";
 
 export type TrailVerdict = VerdictOutcome;
 
-const TRAIL = "flex w-fit items-center gap-2.5 text-xs";
+const ROW = "flex w-fit flex-wrap items-center gap-x-4 gap-y-2";
+const STEPS = "flex w-fit items-center gap-2.5 text-xs";
 const ACTIVE = "flex items-center gap-2";
 const CHEVRON = "text-theme-soft";
 const CURRENT_STEP = "text-theme-faint";
@@ -51,6 +52,7 @@ export type TrailProps = {
 	current: number;
 	verdicts?: readonly TrailVerdict[];
 	label?: string;
+	holds?: string;
 };
 
 const stepsOf = (count: number) =>
@@ -61,17 +63,27 @@ const separates = (step: number, verdicts: readonly TrailVerdict[]) =>
 	verdicts[step - 1] === undefined &&
 	verdicts[step - 2] === undefined;
 
-export const Trail = ({ count, current, verdicts = [], label }: TrailProps) => (
-	<nav aria-label={label ?? DEFAULT_LABEL} className={TRAIL}>
-		{stepsOf(count).map((step) => (
-			<Fragment key={step}>
-				{separates(step, verdicts) ? (
-					<span aria-hidden className={SEPARATOR}>
-						{SEPARATOR_GLYPH}
-					</span>
-				) : null}
-				<Step step={step} current={current} verdict={verdicts[step - 1]} />
-			</Fragment>
-		))}
+export const Trail = ({
+	count,
+	current,
+	verdicts = [],
+	label,
+	holds,
+}: TrailProps) => (
+	<nav aria-label={label ?? DEFAULT_LABEL} className={ROW}>
+		<div className={STEPS}>
+			{stepsOf(count).map((step) => (
+				<Fragment key={step}>
+					{separates(step, verdicts) ? (
+						<span aria-hidden className={SEPARATOR}>
+							{SEPARATOR_GLYPH}
+						</span>
+					) : null}
+					<Step step={step} current={current} verdict={verdicts[step - 1]} />
+				</Fragment>
+			))}
+		</div>
+
+		{holds === undefined ? null : <Badge color="cerulean">{holds}</Badge>}
 	</nav>
 );

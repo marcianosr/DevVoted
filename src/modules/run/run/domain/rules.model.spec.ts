@@ -4,12 +4,10 @@ import { CHEAPEST_DRAFT_COST_KB } from "~/modules/run/config/domain/config.model
 
 import {
 	atMinimumWidth,
-	coverageDemandFor,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
-	gateBaseMultiplier,
+	gateRewardMultiplier,
 	isPeelFatal,
-	pollDifficultyMultiplier,
 	cappedStorage,
 	nextSlotPriceKb,
 	planBillKb,
@@ -25,56 +23,13 @@ import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	MAX_SLOTS,
-	SLICE_WINDOW,
 	SLOT_PRICES_KB,
 	STORAGE_PLANS,
 	TOP_PLAN,
 	VICTORY_GATE,
-	BASE_WRONG_COVERAGE_LOSS,
-	wrongLossShareFor,
 } from "~/modules/run/run/domain/rules.model";
 
-describe("the gate's per-window coverage demand (ADR-035)", () => {
-	it("anchors the opening gates at 3, 10 and 25", () => {
-		expect(coverageDemandFor(0)).toBe(3);
-		expect(coverageDemandFor(1)).toBe(10);
-		expect(coverageDemandFor(2)).toBe(25);
-	});
-
-	it("ramps the demand-to-base-pace ratio — the (g+1) earn scaling is free, the ratio is the difficulty", () => {
-		const ratioAt = (gate: number): number =>
-			coverageDemandFor(gate) / (SLICE_WINDOW * gateBaseMultiplier(gate));
-		for (let gate = 1; gate < VICTORY_GATE; gate++)
-			expect(ratioAt(gate + 1)).toBeGreaterThan(ratioAt(gate));
-	});
-
-	it("rises with every gate and holds past the summit", () => {
-		for (let gate = 1; gate <= VICTORY_GATE; gate++)
-			expect(coverageDemandFor(gate)).toBeGreaterThan(
-				coverageDemandFor(gate - 1)
-			);
-		expect(coverageDemandFor(VICTORY_GATE + 5)).toBe(
-			coverageDemandFor(VICTORY_GATE)
-		);
-	});
-
-	it("prices a miss at half an answer on the opening gate", () => {
-		expect(wrongLossShareFor(0)).toBe(BASE_WRONG_COVERAGE_LOSS);
-		expect(BASE_WRONG_COVERAGE_LOSS).toBe(0.5);
-	});
-
-	it("steepens the miss by 3 points a gate, up to 0.86 at the summit", () => {
-		expect(wrongLossShareFor(1)).toBeCloseTo(0.53);
-		expect(wrongLossShareFor(6)).toBeCloseTo(0.68);
-		expect(wrongLossShareFor(VICTORY_GATE)).toBeCloseTo(0.86);
-	});
-
-	it("holds the miss share past the summit, as the demand does", () => {
-		expect(wrongLossShareFor(VICTORY_GATE + 5)).toBe(
-			wrongLossShareFor(VICTORY_GATE)
-		);
-	});
-
+describe("the streak bonus", () => {
 	it("stops the streak bonus compounding past ×2", () => {
 		expect(streakMultiplier(5)).toBe(1.5);
 		expect(streakMultiplier(10)).toBe(2);
@@ -155,7 +110,7 @@ describe("the slot ladder (ADR-046)", () => {
 			{ length: GATE_COUNT },
 			(_, gate) =>
 				GATE_REWARD_KB *
-				Math.min(gateBaseMultiplier(gate), GATE_REWARD_MULTIPLIER_CAP)
+				Math.min(gateRewardMultiplier(gate), GATE_REWARD_MULTIPLIER_CAP)
 		).reduce((sum, kb) => sum + kb, 0);
 		const wholeLadderKb = SLOT_PRICES_KB.reduce((sum, kb) => sum + kb, 0);
 
@@ -261,27 +216,6 @@ describe("storageCreditRate", () => {
 
 	it("never pays more than the full leftovers", () => {
 		expect(storageCreditRate("dead", VICTORY_GATE + 3)).toBe(1);
-	});
-});
-
-describe("pollDifficultyMultiplier", () => {
-	it("pays the baseline ×1.0 for a 3-option single-choice poll", () => {
-		expect(pollDifficultyMultiplier(3, false)).toBe(1);
-	});
-
-	it("never dips below ×1.0 for fewer-than-baseline options", () => {
-		expect(pollDifficultyMultiplier(2, false)).toBe(1);
-	});
-
-	it("adds a step of coverage per option beyond the baseline", () => {
-		expect(pollDifficultyMultiplier(5, false)).toBeCloseTo(1.2);
-		expect(pollDifficultyMultiplier(8, false)).toBeCloseTo(1.5);
-	});
-
-	it("adds a flat bonus for multiple-choice on top of the option steps", () => {
-		expect(pollDifficultyMultiplier(3, true)).toBeCloseTo(1.5);
-		expect(pollDifficultyMultiplier(6, true)).toBeCloseTo(1.8);
-		expect(pollDifficultyMultiplier(8, true)).toBeCloseTo(2);
 	});
 });
 

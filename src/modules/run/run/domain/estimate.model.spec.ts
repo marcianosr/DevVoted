@@ -9,6 +9,10 @@ import {
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	floorAt,
+	scoringSlotsAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { answerWith, handed, pool } from "~/modules/run/run/domain/run.factory";
@@ -151,7 +155,14 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("pays a missed gate too, which is the only thing a low estimate is for", () => {
-		const start = answering(1);
+		// Banked exactly on the floor, so the one right answer still falls short
+		// of OK while staying out of DANGER, which would end the run (ADR-076).
+		const MISSED_GATE = 4;
+		const start: RunState = {
+			...answering(1),
+			gatesCleared: MISSED_GATE,
+			bankedUnits: floorAt(MISSED_GATE) * scoringSlotsAt(MISSED_GATE),
+		};
 		const settled = answerGate(start, 1);
 		expect(settled.status).toBe("awaiting-strip");
 		expect(settled.estimateThisGateKb).toBe(32);

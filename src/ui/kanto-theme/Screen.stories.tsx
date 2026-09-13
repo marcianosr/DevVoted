@@ -17,7 +17,7 @@ const meta: Meta<typeof Screen> = {
 	title: "Kanto/Screen",
 	argTypes: {
 		theme: { control: "select", options: KANTO_COLORS },
-		width: { control: "inline-radio", options: ["narrow", "default", "wide"] },
+		width: { control: "inline-radio", options: ["narrow", "default"] },
 	},
 	args: { theme: "vermillion" },
 	render: ({ theme, gate, ...rest }) => {
@@ -37,8 +37,6 @@ type Story = StoryObj<typeof Screen>;
 export const Default: Story = {};
 
 export const Narrow: Story = { args: { width: "narrow" } };
-
-export const Wide: Story = { args: { width: "wide" } };
 
 export const Palette: Story = {
 	parameters: { controls: { disable: true } },

@@ -44,7 +44,7 @@ export const InAFixedColumn: Story = {
 
 export const SideBySide: Story = {
 	render: () => (
-		<Screen theme="viridian" width="wide">
+		<Screen theme="viridian">
 			<div className="grid w-full gap-8 md:grid-cols-2">
 				<Panel>
 					<Body />

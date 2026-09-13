@@ -25,6 +25,21 @@ const incrementsOf = (
 ): readonly ObjectiveMetric[] =>
 	objectiveIncrementsFor(state, runReducer(state, action), action);
 
+const CLOSE: RunAction = { type: "close-gate" };
+
+/** The answer and the close that follows it, which is how a gate actually settles. */
+const settledIncrementsOf = (
+	state: RunState,
+	action: RunAction
+): readonly ObjectiveMetric[] => {
+	const answered = runReducer(state, action);
+
+	return [
+		...objectiveIncrementsFor(state, answered, action),
+		...objectiveIncrementsFor(answered, runReducer(answered, CLOSE), CLOSE),
+	];
+};
+
 const answerAction = (state: RunState, correct: boolean): RunAction => {
 	const current = state.polls[state.currentIndex];
 	const option = current.options.find(
@@ -40,9 +55,10 @@ const answered = (state: RunState, count: number, correct = true): RunState => {
 	return next;
 };
 
+/** Enters the gate carrying a full bar, so the close turns on this gate's five. */
 const demandMet = (state: RunState): RunState => ({
 	...state,
-	window: { ...state.window, coverageGained: 100 },
+	bankedUnits: SLICE_WINDOW * state.gatesCleared,
 });
 
 const prepped = (extras: readonly Config[], installIds: string[]): RunState => {
@@ -127,7 +143,7 @@ describe("windows", () => {
 	it("loses the perfect window to a single miss", () => {
 		let state = answerWith(started(["js"]), false);
 		state = answered(state, SLICE_WINDOW - 2);
-		const metrics = incrementsOf(state, answerAction(state, true));
+		const metrics = settledIncrementsOf(state, answerAction(state, true));
 		expect(metrics).not.toContain("perfect-windows");
 		expect(metrics).toContain("gates-cleared");
 	});
@@ -158,12 +174,12 @@ describe("estimates", () => {
 		);
 	});
 
-	it("pays the exact estimate even when the gate fails", () => {
+	it("pays the exact estimate even when the gate ends the run", () => {
 		let state = answerWith(audited(estimating(1), 6), true);
 		state = answered(state, SLICE_WINDOW - 2, false);
-		const closing = runReducer(state, answerAction(state, false));
-		expect(closing.status).toBe("awaiting-strip");
-		const metrics = incrementsOf(state, answerAction(state, false));
+		const answeredOut = runReducer(state, answerAction(state, false));
+		expect(runReducer(answeredOut, CLOSE).status).toBe("dead");
+		const metrics = settledIncrementsOf(state, answerAction(state, false));
 		expect(metrics).toContain("exact-estimates");
 		expect(metrics).not.toContain("gates-cleared");
 	});
@@ -175,7 +191,7 @@ describe("gate clears", () => {
 			demandMet(audited(started(["js"]), 4, "memory-leak")),
 			SLICE_WINDOW - 1
 		);
-		const metrics = incrementsOf(closing, answerAction(closing, true));
+		const metrics = settledIncrementsOf(closing, answerAction(closing, true));
 		expect(metrics).toContain("gates-cleared");
 		expect(metrics).toContain("audited-gates-cleared");
 		expect(metrics).toContain("full-build-clear");
@@ -183,14 +199,14 @@ describe("gate clears", () => {
 
 	it("counts no audit on an unaudited clear", () => {
 		const closing = answered(started(["js"]), SLICE_WINDOW - 1);
-		const metrics = incrementsOf(closing, answerAction(closing, true));
+		const metrics = settledIncrementsOf(closing, answerAction(closing, true));
 		expect(metrics).toContain("gates-cleared");
 		expect(metrics).not.toContain("audited-gates-cleared");
 	});
 
 	it("counts nothing gate-shaped on a failed close", () => {
 		const state = answered(started(["js"]), SLICE_WINDOW - 1, false);
-		const metrics = incrementsOf(state, answerAction(state, false));
+		const metrics = settledIncrementsOf(state, answerAction(state, false));
 		expect(metrics).toEqual(["polls-answered"]);
 	});
 
@@ -200,7 +216,7 @@ describe("gate clears", () => {
 			SLICE_WINDOW - 1,
 			false
 		);
-		const metrics = incrementsOf(closing, answerAction(closing, false));
+		const metrics = settledIncrementsOf(closing, answerAction(closing, false));
 		expect(metrics).toContain("mirror-clear-no-miss");
 		expect(new Set(metrics).size).toBe(metrics.length);
 	});
@@ -211,7 +227,7 @@ describe("gate clears", () => {
 			true
 		);
 		state = answered(state, SLICE_WINDOW - 2, false);
-		const metrics = incrementsOf(state, answerAction(state, false));
+		const metrics = settledIncrementsOf(state, answerAction(state, false));
 		expect(metrics).toContain("gates-cleared");
 		expect(metrics).not.toContain("mirror-clear-no-miss");
 	});
@@ -223,9 +239,9 @@ describe("gate clears", () => {
 			build: { ...state.build, slots: state.build.slots + 1 },
 		};
 		const closing = answered(roomy, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).not.toContain(
-			"full-build-clear"
-		);
+		expect(
+			settledIncrementsOf(closing, answerAction(closing, true))
+		).not.toContain("full-build-clear");
 	});
 
 	it("counts a clear holding two upgraded configs", () => {
@@ -240,7 +256,7 @@ describe("gate clears", () => {
 			},
 		};
 		const closing = answered(upgraded, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).toContain(
+		expect(settledIncrementsOf(closing, answerAction(closing, true))).toContain(
 			"double-v2-clear"
 		);
 	});
@@ -257,9 +273,9 @@ describe("gate clears", () => {
 			},
 		};
 		const closing = answered(single, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).not.toContain(
-			"double-v2-clear"
-		);
+		expect(
+			settledIncrementsOf(closing, answerAction(closing, true))
+		).not.toContain("double-v2-clear");
 	});
 
 	it("counts a lean arrival at gate four", () => {
@@ -268,7 +284,7 @@ describe("gate clears", () => {
 			storage: 0,
 		};
 		const closing = answered(state, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).toContain(
+		expect(settledIncrementsOf(closing, answerAction(closing, true))).toContain(
 			"lean-gate-four"
 		);
 	});
@@ -279,9 +295,9 @@ describe("gate clears", () => {
 			storage: 100,
 		};
 		const closing = answered(state, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).not.toContain(
-			"lean-gate-four"
-		);
+		expect(
+			settledIncrementsOf(closing, answerAction(closing, true))
+		).not.toContain("lean-gate-four");
 	});
 
 	it("skips the lean badge at any other gate", () => {
@@ -290,9 +306,9 @@ describe("gate clears", () => {
 			storage: 0,
 		};
 		const closing = answered(state, SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).not.toContain(
-			"lean-gate-four"
-		);
+		expect(
+			settledIncrementsOf(closing, answerAction(closing, true))
+		).not.toContain("lean-gate-four");
 	});
 });
 
@@ -302,7 +318,7 @@ describe("run actions", () => {
 			...started(["telemetry", "js"]),
 			storage: 512,
 		};
-		expect(incrementsOf(state, { type: "peek-poll" })).toEqual([
+		expect(settledIncrementsOf(state, { type: "peek-poll" })).toEqual([
 			"community-peeks",
 		]);
 	});
@@ -347,27 +363,29 @@ describe("run actions", () => {
 
 	it("counts a rebuilt draft", () => {
 		const shopping: RunState = { ...clearGate(started(["js"])), storage: 512 };
-		expect(incrementsOf(shopping, { type: "rebuild-draft" })).toEqual([
+		expect(settledIncrementsOf(shopping, { type: "rebuild-draft" })).toEqual([
 			"rebuilds",
 		]);
 	});
 
 	it("counts a committed reorder when the answer lands", () => {
 		const state: RunState = { ...started(["js"]), rebasedThisGate: true };
-		expect(incrementsOf(state, answerAction(state, true))).toContain(
+		expect(settledIncrementsOf(state, answerAction(state, true))).toContain(
 			"gates-reordered"
 		);
 	});
 
 	it("counts no reorder without the rebase mark", () => {
 		const state = started(["js"]);
-		expect(incrementsOf(state, answerAction(state, true))).not.toContain(
+		expect(settledIncrementsOf(state, answerAction(state, true))).not.toContain(
 			"gates-reordered"
 		);
 	});
 
 	it("returns nothing for a refused action", () => {
 		const answering = started(["js"]);
-		expect(incrementsOf(answering, { type: "finish-reward" })).toEqual([]);
+		expect(settledIncrementsOf(answering, { type: "finish-reward" })).toEqual(
+			[]
+		);
 	});
 });

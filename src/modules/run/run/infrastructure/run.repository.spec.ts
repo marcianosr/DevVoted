@@ -16,8 +16,8 @@ import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	BASE_SLOTS,
+	SLICE_WINDOW,
 	VICTORY_GATE,
-	coverageDemandFor,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type DrizzleMockState,
@@ -59,12 +59,6 @@ const dbOptions = (pollId: number) =>
 	}));
 const correctOptionId = (pollId: number) =>
 	String(pollId * 10 + quiz.options.indexOf(quiz.correctAnswer));
-const wrongOptionId = (pollId: number) =>
-	String(
-		pollId * 10 +
-			quiz.options.findIndex((label) => label !== quiz.correctAnswer)
-	);
-
 const answeringState = (overrides: Partial<RunState>): RunState => ({
 	...createRun([], [CONFIGS.js]),
 	status: "answering",
@@ -159,11 +153,12 @@ describe("applyActionToRun", () => {
 			coverage: 400,
 			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
+			bankedUnits: SLICE_WINDOW * VICTORY_GATE,
 			window: {
-				correct: 4,
-				answered: 4,
-				coverageGained: coverageDemandFor(VICTORY_GATE),
-				byCategory: { js: { seen: 4, correct: 4 } },
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
 		mock.results.push([stateRow(summitReady)]);
@@ -171,12 +166,8 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
-		mock.results.push([{ response_id: 900 }]);
 
-		const { state: next } = await dispatch({
-			type: "answer",
-			optionIds: [correctOptionId(1)],
-		});
+		const { state: next } = await dispatch({ type: "close-gate" });
 
 		expect(next.status).toBe("won");
 		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
@@ -210,10 +201,10 @@ describe("applyActionToRun", () => {
 			coverage: 10,
 			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
 			window: {
-				correct: 4,
-				answered: 4,
-				coverageGained: 4,
-				byCategory: { js: { seen: 4, correct: 4 } },
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
 		mock.results.push([stateRow(closing)]);
@@ -221,12 +212,8 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
-		mock.results.push([{ response_id: 900 }]);
 
-		const { state: next } = await dispatch({
-			type: "answer",
-			optionIds: [correctOptionId(1)],
-		});
+		const { state: next } = await dispatch({ type: "close-gate" });
 
 		expect(next.gatesCleared).toBe(1);
 		expect(mock.updateTables[0]).toBe(usersTable);
@@ -361,7 +348,7 @@ describe("applyActionToRun", () => {
 			window: {
 				correct: 1,
 				answered: 1,
-				coverageGained: 0,
+				unitsEarned: 0,
 				byCategory: { js: { seen: 1, correct: 1 } },
 			},
 		});
@@ -514,9 +501,9 @@ describe("applyActionToRun", () => {
 			currentIndex: 4,
 			window: {
 				correct: 0,
-				answered: 4,
-				coverageGained: 0,
-				byCategory: { js: { seen: 4, correct: 0 } },
+				answered: SLICE_WINDOW,
+				unitsEarned: 0,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: 0 } },
 			},
 		};
 		mock.results.push([stateRow(bare)]);
@@ -524,12 +511,8 @@ describe("applyActionToRun", () => {
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
-		mock.results.push([{ response_id: 900 }]);
 
-		const { state: next } = await dispatch({
-			type: "answer",
-			optionIds: [wrongOptionId(5)],
-		});
+		const { state: next } = await dispatch({ type: "close-gate" });
 
 		expect(next.status).toBe("dead");
 		expect(mock.setCalls[1]).toMatchObject({

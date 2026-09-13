@@ -11,6 +11,11 @@ import {
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import { gateLadderFor } from "~/modules/run/gate/domain/gate.model";
+import {
+	ratioOf,
+	scoringSlotsAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 export const poll = (
 	id: string,
@@ -52,10 +57,11 @@ export const answerWith = (state: RunState, correct: boolean): RunState => {
 		(candidate) => candidate.correct === correct
 	);
 	if (!option) throw new Error("no matching option");
-	return runReducer(state, {
+	const answered = runReducer(state, {
 		type: "answer",
 		optionIds: [option.id],
 	});
+	return runReducer(answered, { type: "close-gate" });
 };
 
 export const clearGate = (state: RunState): RunState => {
@@ -95,8 +101,23 @@ export const atGateWithBuild = (
 	);
 };
 
+/**
+ * Misses the whole window, carrying just enough history to land between the
+ * gate's floor and its OK line. Zero units alone is DANGER at any gate with a
+ * floor, and DANGER ends the run (ADR-076) — which would exercise the wrong
+ * exit for every spec that means "the gate held and owes a peel".
+ */
 export const failGate = (state: RunState): RunState => {
-	let next = state;
+	const ladder = gateLadderFor(
+		state.build.configs,
+		state.gatesCleared,
+		scheduleOf(state)
+	);
+	const held = ratioOf((ladder.floor + ladder.ok) / 2);
+	let next: RunState = {
+		...state,
+		bankedUnits: held * scoringSlotsAt(state.gatesCleared),
+	};
 	for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, false);
 	return next;
 };

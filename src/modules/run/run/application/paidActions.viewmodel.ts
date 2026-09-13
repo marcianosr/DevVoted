@@ -6,8 +6,11 @@ import {
 	canRunLinter,
 	lintApplies,
 	lintFeeFor,
+	lintRefusalOf,
+	type PaidRefusal,
 	peekApplies,
 	peekFeeFor,
+	peekRefusalOf,
 } from "~/modules/run/run/domain/paidAction.model";
 import {
 	hiddenOptionIdsOf,
@@ -18,10 +21,12 @@ export type PaidActions = {
 	readonly canLint: boolean;
 	readonly lintReady: boolean;
 	readonly lintCost: number;
+	readonly lintRefusal: PaidRefusal | undefined;
 	readonly linter: Config | null;
 	readonly canPeek: boolean;
 	readonly peekReady: boolean;
 	readonly peekCost: number;
+	readonly peekRefusal: PaidRefusal | undefined;
 	readonly peeker: Config | null;
 };
 
@@ -47,6 +52,7 @@ export const paidActionsFor = (state: RunState): PaidActions => {
 		canLint: lintApplies(state),
 		lintReady: canRunLinter(state),
 		lintCost: lintFeeFor(state),
+		lintRefusal: lintRefusalOf(state),
 		linter:
 			current === undefined
 				? null
@@ -54,6 +60,7 @@ export const paidActionsFor = (state: RunState): PaidActions => {
 		canPeek: peekApplies(state),
 		peekReady: canBuyPeek(state),
 		peekCost: peekFeeFor(state),
+		peekRefusal: peekRefusalOf(state),
 		peeker: peekerFor(state.build.configs) ?? null,
 	};
 };

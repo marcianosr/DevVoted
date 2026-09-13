@@ -6,9 +6,9 @@ import { Typography } from "./Typography.ui";
 const LAYOUT = "coverage-bar flex w-full flex-col gap-1.5";
 const TRACK =
 	"relative flex h-6 w-full overflow-hidden rounded-md bg-theme-raised";
-const ZONE = "coverage-bar-zone h-full bg-theme/15";
+const ZONE = "coverage-bar-zone h-full bg-theme/25";
 const FILL =
-	"coverage-bar-fill absolute inset-y-0 left-0 min-w-0.5 bg-theme/35";
+	"coverage-bar-fill absolute inset-y-0 left-0 min-w-0.5 bg-white/10";
 const EDGE = "absolute inset-y-0 right-0 w-0.5 bg-theme";
 const MARKS = "relative h-3 w-full";
 const MARK =
@@ -62,6 +62,12 @@ type CountStyle = CSSProperties & Record<"--coverage-count", number>;
 
 const countStyle = (whole: number): CountStyle => ({
 	"--coverage-count": whole,
+});
+
+type HeldStyle = CSSProperties & Record<"--coverage-held", string>;
+
+const heldStyle = (percent: number): HeldStyle => ({
+	"--coverage-held": `${percent}${PERCENT}`,
 });
 
 export type CoverageLadder = { floor: number; ok: number; healthy: number };
@@ -118,13 +124,24 @@ const bandMarksOf = (ladder: CoverageLadder) => {
 		.filter((mark) => mark.width > 0);
 };
 
+const rungMarksOf = ({ floor, ok, healthy }: CoverageLadder) =>
+	[...new Set([0, floor, ok, healthy, FULL])]
+		.sort((one, other) => one - other)
+		.map((at) => ({ at, label: `${toTenth(at)}` }));
+
+const MARKS_OF = {
+	bands: bandMarksOf,
+	boundaries: boundaryMarksOf,
+	rungs: rungMarksOf,
+} satisfies Record<CoverageMarks, (ladder: CoverageLadder) => unknown>;
+
 const marksOf = (ladder: CoverageLadder, marks: CoverageMarks) =>
-	marks === "bands" ? bandMarksOf(ladder) : boundaryMarksOf(ladder);
+	MARKS_OF[marks](ladder);
 
 const readingOf = (held: number, healthy: number, band: CoverageBandId) =>
 	`${toTenth(held)}${PERCENT} ${OF} ${toTenth(healthy)}${PERCENT} ${READING_SUFFIX} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
 
-export type CoverageMarks = "boundaries" | "bands";
+export type CoverageMarks = "boundaries" | "bands" | "rungs";
 
 export type CoverageBarProps = {
 	held: number;
@@ -167,7 +184,7 @@ export const CoverageBar = ({
 	const shown = pin || moved;
 
 	return (
-		<div className={LAYOUT}>
+		<div style={heldStyle(reading)} className={LAYOUT}>
 			{note === undefined ? null : (
 				<Typography variant="hint">{note}</Typography>
 			)}
@@ -211,11 +228,7 @@ export const CoverageBar = ({
 						className={ZONE}
 					/>
 				))}
-				<span
-					data-screen-theme={COVERAGE_BAND_COLOR[band]}
-					style={{ width: `${reading}${PERCENT}` }}
-					className={FILL}
-				>
+				<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={FILL}>
 					<span className={EDGE} />
 				</span>
 			</span>

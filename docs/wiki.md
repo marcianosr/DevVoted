@@ -79,7 +79,8 @@ because the retry waits on tomorrow's polls.
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
 [community board](#7-community); after a cleared gate it parks on the **prep page**,
 with the shop a click away and the start-gate button wearing the countdown to
-midnight.
+midnight. A new run reaches prep too, between the build it was dealt and its first
+five polls, so no gate is entered without its stakes stated (ADR-078).
 
 You can **abandon** a run and start fresh the same day. The new run serves only polls
 you have not answered yet, and abandoning banks nothing.
@@ -207,16 +208,20 @@ totals** (a percentage per category plus a run total). The career totals feed th
 leaderboard and Focus upgrades
 ([3](#3-your-build)) — they gate no gate.
 
-A correct answer earns `share × (1 + adds) × mults × streak × gate × difficulty`:
+A correct answer earns `base × share × (1 + adds) × mults`:
 
 | Term | Value |
 | --- | --- |
-| `share` | The poll's coverage weight. 1 for a single-answer poll answered correctly. |
-| `adds` | Flat additions (Code Coverage: +0.5% per correct). |
-| `mults` | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1). |
-| `streak` | `1 + 0.1 × streak` of consecutive correct answers, capped at ×2 (10 steps, `streakCapStepsFor`, and a config's `streakCapSteps` adds to it; the run-start gate panel states the ceiling). The streak survives a gate clear, so uncapped it reached ×7.5 on a flawless run and both starting stacks won all 13 gates without buying a config. Capped, never reset: perfect play keeps the bonus, it just stops compounding. |
-| `gate` | `gatesCleared + 1`. Gate 1 pays ×1, gate 5 pays ×5. |
-| `difficulty` | `1 + 0.1 × (options − 3)`, plus `0.5` if multiple-choice. Never below ×1. |
+| `base` | **5%** for a single-answer poll, **8%** for a multiple. Flat: the gate number and the option count do not touch it (ADR-073). |
+| `share` | The fraction of the answer key that landed. 1 for a single-answer poll answered correctly. |
+| `adds` | Flat additions (Code Coverage: +0.5 of the base per correct). |
+| `mults` | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1), plus the opener, cache and throttle terms a config carries. |
+
+**The streak does not touch coverage.** It multiplies the gate's KB payout
+instead: `1 + 0.1 × streak` consecutive correct answers, capped at ×2 (10 steps,
+`streakCapStepsFor`, and a config's `streakCapSteps` adds to it; the run-start
+gate panel states the ceiling). It survives a gate clear and is never reset by
+one, so perfect play keeps the bonus, it just stops compounding.
 
 **Multi-answer share** is `(correct picks − wrong picks) ÷ total correct`, clamped to
 0..1, so shotgunning every option earns nothing. Only coverage reads this share;
@@ -224,14 +229,13 @@ streak and storage stay binary on the exact-set rule.
 
 **A wrong answer bleeds** a share of what a correct one pays on the same build
 (`share × per-correct coverage`), from the poll's category, the gate meter and the run
-total alike, each floored at 0. The share **starts at 0.5 and climbs 0.03 a gate**, so a
-miss costs 1.5 answers at Pallet and 1.86 at the Champion: risk is priced off your own
-earn (a stacked build loses more), and the climb makes accuracy, not just volume, the
-deep-gate requirement. Break-even accuracy runs 33% at gate 0 to 46% at gate 12.
+total alike, each floored at 0. The share is the gate's own rung of `LOSS_LADDER`:
+**zero through gate 2**, then 0.1 at gate 3 climbing to 0.5 at the Champion. Risk is
+priced off your own earn (a stacked build loses more), it costs nothing while the
+opening gates teach the loop, and it is the only gate-scaled term left in the model.
 
-Example, gate 2, a 5-option single-answer CSS poll with `.css` installed and one
-correct answer already banked: `1.0 × 1.25 mults × 1.1 streak × 2 gate × 1.2
-difficulty` = **+3.3% CSS coverage**. The post-answer **equation reveal** states that
+Example, gate 2, a single-answer CSS poll with `.css` installed:
+`5% base × 1.0 share × 1.25 mults` = **+6.3% CSS coverage**. The post-answer **equation reveal** states that
 as the arithmetic it is — `(correct + flat adds) × streak × <each multiplying config>`,
 each term a large figure over the muted name it belongs to, every flat add quoting the
 coverage it contributed rather than the factor it works out to, and the total closing
@@ -251,16 +255,18 @@ Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads
 
 A gate resolves on the **band** its coverage meter closes in, not on a single
 threshold (ADR-076). The bands are read off the gate's own healthy line:
-`HEALTHY` is that line, `OK` sits 15 points under it, the survival floor 25
-points under it, and `PERFECT` is a full bar at 100%. Live numbers are in
-`coverageRatio.model.ts`.
+`HEALTHY` is that line, `OK` sits 10 points under it, the survival floor 20
+points under it, and `PERFECT` is a full bar at 100%. At 5% a correct answer
+every band is exactly two answers wide. Both drops clamp at zero, which is what
+leaves gates 0-1 with no SHAKY band and gates 0-3 with no DANGER band. Live
+numbers are in `coverageRatio.model.ts`.
 
 | Band | The gate | The swatch | The streak | The payout |
 | --- | --- | --- | --- | --- |
 | **PERFECT** — a full bar | Cleared | Won, and marked | Kept | Full, times `PERFECT_BONUS` |
 | **HEALTHY** — at or over the line | Cleared | Won | Kept | Full |
-| **OK** — within 15 points | Cleared, thin | Won | **Broken** | Cut in proportion |
-| **SHAKY** — within 25 points | **Held**: pay the peel and retry, or refuse the gate | Not won | Broken | Nothing |
+| **OK** — within 10 points | Cleared, thin | Won | **Broken** | Cut in proportion |
+| **SHAKY** — within 20 points | **Held**: pay the peel and retry, or refuse the gate | Not won | Broken | Nothing |
 | **DANGER** — under the floor | **The run ends** | Not won | — | Nothing |
 
 **The OK cut is not a separate penalty.** A gate pays on
@@ -320,11 +326,12 @@ victory banks **100%**, death banks **gatesCleared ÷ 13** (die having cleared 6
 🟡 Continue-past-victory is confirmed but unbuilt. The victory *reward* is undecided,
 under one constraint: it must not be claimable by a zero-effort farm run.
 
-**Balance baseline.** A solid player (4 of 5 correct, plain 3-option polls, a lean
-build with no coverage configs) lands around `4.4 × gate multiplier` per window: that
-clears gate 0's 3%, just misses gate 1's 10%, and misses from gate 2 on. Coverage
-configs are homework from gate 2 upward. These demands were priced when a miss was
-free, so they are the first dial to loosen if early gates read as punishing.
+**Balance baseline.** A bare build earns at most **25%** in a five-poll gate, the
+same at gate 0 as at the Champion, so the HEALTHY ladder outruns it by design: it
+meets the line through gate 4 and survives through gate 6, and nothing beyond that
+without multipliers. Coverage configs are homework from gate 3 upward. The
+HEALTHY line is the only difficulty dial (ADR-073), so it is the one number to
+move when a gate reads wrong.
 
 ### 2.8 What unlocks when
 
@@ -338,19 +345,24 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 
 | Gate | Swatch | Coverage in its window | A clear pays | A miss peels | Audit | Also unlocks |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 3% | 32 KB | **nothing** | (clean) | Shop, **Rebuild** |
+| 0 | Pallet | 5% | 32 KB | **nothing** | (clean) | Shop, **Rebuild** |
 | 1 | Boulder | 10% | 64 KB | 20% | (clean) | — |
-| 2 | Cascade | 25% | 96 KB | 20% | (clean) | **Extend** |
-| 3 | Thunder | 40% | 128 KB | 25% | 402 Payment Required | — |
-| 4 | Lavender | 60% | 160 KB | 25% | 1 of pool A | — |
-| 5 | Rainbow | 85% | 192 KB | 25% | 1 of pool A | — |
-| 6 | Soul | 110% | 224 KB | 25% | 1 of pool A | — |
-| 7 | Marsh | 140% | 256 KB | 30% | 1 of pool A | — |
-| 8 | Seafoam | 175% | 288 KB | 30% | 2 of pool B | — |
-| 9 | Volcano | 210% | 320 KB | 30% | 2 of pool B | — |
-| 10 | Earth | 250% | 352 KB | 30% | 2 of pool B | — |
-| 11 | Elite | 300% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
-| 12 | Champion | 375% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+| 2 | Cascade | 15% | 96 KB | 20% | (clean) | **Extend** |
+| 3 | Thunder | 20% | 128 KB | 25% | 402 Payment Required | — |
+| 4 | Lavender | 25% | 160 KB | 25% | 1 of pool A | — |
+| 5 | Rainbow | 30% | 192 KB | 25% | 1 of pool A | — |
+| 6 | Soul | 40% | 224 KB | 25% | 1 of pool A | — |
+| 7 | Marsh | 50% | 256 KB | 30% | 1 of pool A | — |
+| 8 | Seafoam | 60% | 288 KB | 30% | 2 of pool B | — |
+| 9 | Volcano | 70% | 320 KB | 30% | 2 of pool B | — |
+| 10 | Earth | 80% | 352 KB | 30% | 2 of pool B | — |
+| 11 | Elite | 90% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
+| 12 | Champion | 95% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+
+The coverage column is the gate's HEALTHY line, straight off `HEALTHY_LADDER`. A
+bare build earns at most 25% in a five-poll gate at every gate alike, so the
+ladder outruns it by design and multipliers stop being optional around gate 3
+(ADR-073). A clear pays the KB in this column times the streak multiplier.
 
 The audit column names what a gate is **certain** to carry; the rest is drawn on the
 day, one audit per family per gate, and never the same audit twice within a band:
@@ -370,7 +382,7 @@ never a running total. The unlock column names no width at all: slots are bought
 handed over ([5.1](#51-storage-kb)). The peel column is a share, so it already scales
 with the build it hits.
 
-**Pallet is the calibration gate** (ADR-057). It still asks for its 3%, but a miss there
+**Pallet is the calibration gate** (ADR-057). It asks 5%, which is one correct answer, but a miss there
 peels nothing and cannot end a run, so the first failure teaches the loop for free:
 you read your answers back, shop, and run the same gate again on 5 fresh polls. The only
 death at gate 0 is a build with nothing in it, which could never pass. From **Boulder**
@@ -385,7 +397,8 @@ Deliberately **not** on this axis: Focus levels (staged by category coverage), U
 Tests and Moore's Law levels (storage), lint and peek fees (uses), rebuild price
 (rebuilds this shop), and everything account-level (swatches, Dex, borders).
 
-Authoritative over this table: `coverageDemandFor`, `SLOT_PRICES_KB`, `STORAGE_PLANS`,
+Authoritative over this table: `HEALTHY_LADDER` (`coverageRatio.model.ts`),
+`SLOT_PRICES_KB`, `STORAGE_PLANS`,
 `failPeelShareFor` (`rules.model.ts`), `gateClearPayout` (`build.model.ts`),
 `EXTEND_FROM_GATE` (`draft.model.ts`), `GATE_SWATCHES`
 (`swatch.model.ts`), the audit roster (`audit.model.ts`) and its pools (`auditSchedule.model.ts`).
@@ -767,7 +780,7 @@ SHAKY, once the peel is paid: the retry shops with what it has, which is the onl
 thing making the second attempt different from the first. Take
 as many actions as you can afford, in any order. The exit leads to the **prep page**
 and the shop stays open behind it until the next gate starts, so shop, prep, community,
-shop is a legal loop while waiting on tomorrow's polls. Nothing grades the exit: it is
+shop is a legal loop while waiting on tomorrow's polls; prep carries the way back. Nothing grades the exit: it is
 shut only while the build sits over capacity ([3](#3-your-build)), which is a state
 rather than a verdict.
 
@@ -1021,6 +1034,20 @@ The game leans hard into its CI metaphor.
   nothing else. Every pip is a control: hover or tap it to name that gate's badge and
   standing ("clear gate 7 to earn it"). It carries no coverage; the total is the gate's
   own stake, on the Build Summary's "To pass" line.
+- **New run page**: where a run is opened. Two columns: the hand you were dealt on
+  the left, the build on the right — its readout, the slot track, the configs
+  installed, the room for sale and the rung after it, quoted but not yet on offer.
+  It prices no band: the footer says prep states what the gate asks (ADR-078).
+- **Prep page**: the last screen before a gate opens, and the first screen of a new
+  run after the build is dealt. Two columns. On the left, **Objectives and rewards**:
+  the empty coverage bar with its rungs numbered (0, the floor, the OK line, the line
+  the gate asks, 100), then a row per band reading band, coverage and what it pays —
+  one figure each, a negative for SHAKY's peel, `the run ends` for DANGER. A line
+  above names which landings win the gate; a line below says where a payout lands. On
+  the right, **the five polls** (sealed unless a prefetcher is installed) and the
+  gate's **audits** with the bill a clear will settle. The build is not on it
+  (ADR-078). The footer leaves for the community board or back where you came from,
+  and starts the gate.
 - **Size**: the slots a config fills, written in words ("4 slots") ahead of the
   config's name on every surface that lists configs, and in the row's last figures
   column where there is room. Fixed-width, so the name column stays flush. There is no
@@ -1037,8 +1064,10 @@ The game leans hard into its CI metaphor.
   indented under the row it belongs to. The grade is not among them: the row's own
   cluster states it. A config with no upgrade path states no level; the deal states no
   refund, since nothing has been bought yet.
-- **Build rail**: on shop and prep, configs hang off a rail, carrying each config's
+- **Build rail**: in the shop, configs hang off a rail, carrying each config's
   paid actions. They list with no status, since a status needs a poll to be true of.
+  Prep does not draw the build at all: it was reviewed a screen earlier and locks the
+  moment the gate starts (ADR-078).
   Free room and the room still for sale are the track's job, not the list's: neither
   ever costs a row. There is no unlock button anywhere.
 - **Build track**: in a gate the build turns sideways instead, one band across
@@ -1156,7 +1185,8 @@ applies. `rules.model.ts` holds most of it.
 | --- | --- |
 | `SLICE_WINDOW` | 5 polls per gate window, so per day |
 | `VICTORY_GATE` / `GATE_COUNT` | 12 / 13 (gates 0 to 12) |
-| `coverageDemandFor` | 3 / 10 / 25 / 40 / 60 / 85 / 110 / 140 / 175 / 210 / 250 / 300 / 375 |
+| `HEALTHY_LADDER` | 5 / 10 / 15 / 20 / 25 / 30 / 40 / 50 / 60 / 70 / 80 / 90 / 95 % (`coverageRatio.model.ts`) |
+| `OK_DROP` / `SHAKY_DROP` | 10 / 20 points under the gate's healthy line, both clamped at 0 |
 | `failPeelShareFor` | 20% / 20% / 20% / 25% × 4 / 30% × 4 / 35% × 2 of the occupied slots, plus strip audits; capped at half the build before gate 3 |
 | Audit roster | Fifteen rules: 1 audit from gate 3, 2 from gate 8, 3 from gate 11 |
 | Audit pools | A 6 (gates 4-7, draw 1) · B 13 (gates 8-10, draw 2) · C 9 (gate 11, draw 2 beside 410) |
@@ -1166,10 +1196,10 @@ applies. `rules.model.ts` holds most of it.
 
 | Constant | Value |
 | --- | --- |
-| Gate multiplier | `gatesCleared + 1` (×1 to ×12), frozen while a gate is redone |
-| `wrongLossShareFor` | `0.5 + 0.03 × gate` (0.5 at Pallet, 0.86 at the Champion) × the build's per-correct coverage, floored at 0 on every ledger |
-| `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer, capped at 10 steps (×2) |
-| Difficulty bonus | +0.1 per option beyond 3, +0.5 multi, never below ×1 |
+| `SINGLE_GAIN` / `MULTIPLE_GAIN` | 5% / 8% a correct answer, flat at every gate (ADR-073) |
+| `LOSS_LADDER` | 0 / 0 / 0 / .1 / .15 / .2 / .25 / .3 / .35 / .4 / .45 / .5 / .5 of the build's per-correct coverage, floored at 0 on every ledger |
+| `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer, capped at 10 steps (×2). Multiplies the gate's KB payout, never coverage |
+| `gateRewardMultiplier` | `gatesCleared + 1` (×1 to ×12) on the KB reward only, frozen while a gate is redone |
 | Focus payout / upgrade gate | `1 + 0.25 × level` / `5% × level` career coverage |
 
 **Storage**

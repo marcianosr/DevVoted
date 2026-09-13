@@ -5,34 +5,32 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	SLICE_WINDOW,
 	VICTORY_GATE,
+	meetsGateFloor,
 } from "~/modules/run/run/domain/rules.model";
 import {
+	BASE_UNIT,
+	HEALTHY_LADDER,
 	KB_PER_PROVEN_SLOT,
-	MULTIPLE_GAIN,
+	OK_DROP_UNITS,
 	PAYOUT_RATIO_CAP,
 	PERFECT_BONUS,
-	SINGLE_GAIN,
-	HEALTHY_LADDER,
-	LOSS_LADDER,
-	OK_DROP,
-	SHAKY_DROP,
+	SHAKY_DROP_UNITS,
+	atLeastBand,
 	bandFor,
-	gatePayoutKb,
+	bankableUnits,
 	clearsBar,
 	coverageAfter,
-	coverageDeltaFor,
 	coverageMultiplierFor,
 	coverageMultiplierOf,
-	coveredSlotsOf,
 	floorAt,
 	focusBonusFor,
 	gainPerCorrectFor,
-	gainPerMissFor,
+	gatePayoutKb,
 	healthyAt,
-	lossShareAt,
+	isRunUnwinnable,
+	maxReachableFrom,
 	multiplierToClear,
 	multiplierToSurvive,
-	netAnswersFor,
 	okAt,
 	payoutRatioFor,
 	perfectBonusFor,
@@ -40,7 +38,12 @@ import {
 	rightsToClear,
 	rightsToFill,
 	rightsToSurvive,
+	runCoverageOf,
+	scoringSlotsAt,
+	surplusPayoutKb,
+	surplusUnits,
 	survivesGate,
+	unitsToRatio,
 } from "./coverageRatio.model";
 
 const EARLY = 2;
@@ -52,363 +55,262 @@ const DOUBLER = [CONFIGS.agentsMd];
 const TRIPLER = [CONFIGS.agentsMd, CONFIGS.intellisense];
 const STACKED = [CONFIGS.agentsMd, CONFIGS.intellisense, CONFIGS.deprecated];
 
+describe("the scoring slots", () => {
+	it("opens on five and ends the run on sixty-five", () => {
+		expect(scoringSlotsAt(0)).toBe(SLICE_WINDOW);
+		expect(scoringSlotsAt(VICTORY_GATE)).toBe(65);
+	});
+
+	it("counts every gate so far, not just the one in front", () => {
+		expect(scoringSlotsAt(4)).toBe(25);
+		expect(scoringSlotsAt(9)).toBe(50);
+	});
+});
+
 describe("the sliding ruler", () => {
-	it("carries one healthy line and one loss share per gate", () => {
+	it("carries one healthy line per gate", () => {
 		expect(HEALTHY_LADDER).toHaveLength(VICTORY_GATE + 1);
-		expect(LOSS_LADDER).toHaveLength(VICTORY_GATE + 1);
 	});
 
-	it("opens gently and closes just short of perfect", () => {
-		expect(healthyAt(0)).toBeCloseTo(0.05);
-		expect(healthyAt(LATE)).toBeCloseTo(0.95);
+	it("climbs from the calibration gate to the champion", () => {
+		expect(healthyAt(0)).toBeCloseTo(0.2);
+		expect(healthyAt(VICTORY_GATE)).toBeCloseTo(0.9);
 	});
 
-	it("hangs ok and the floor at fixed drops below healthy", () => {
-		expect(okAt(LATE)).toBeCloseTo(healthyAt(LATE) - OK_DROP);
-		expect(floorAt(LATE)).toBeCloseTo(healthyAt(LATE) - SHAKY_DROP);
+	it("never falls back a step", () => {
+		const falling = HEALTHY_LADDER.filter(
+			(line, gate) => gate > 0 && line < HEALTHY_LADDER[gate - 1]
+		);
+
+		expect(falling).toHaveLength(0);
+	});
+});
+
+describe("the bands are measured in answers, not points", () => {
+	it("drops two units to OK and four to the floor", () => {
+		expect(healthyAt(4) - okAt(4)).toBeCloseTo(
+			unitsToRatio(OK_DROP_UNITS, 4)
+		);
+		expect(healthyAt(4) - floorAt(4)).toBeCloseTo(
+			unitsToRatio(SHAKY_DROP_UNITS, 4)
+		);
 	});
 
-	it("cannot put the floor below zero on the opening gates", () => {
+	it("narrows as the run lengthens, because a gate moves the score less", () => {
+		const early = healthyAt(2) - okAt(2);
+		const late = healthyAt(LATE) - okAt(LATE);
+
+		expect(late).toBeLessThan(early);
+	});
+
+	/**
+	 * The reason the bands cannot be fixed percentage points. A whole gate moves
+	 * the run score 5/65 at the champion; a fixed ten-point band would be wider
+	 * than that, so the last gates could not change a run's standing at all.
+	 */
+	it("keeps a single gate able to cross a band at the champion", () => {
+		const gateSwing = unitsToRatio(SLICE_WINDOW, LATE);
+		const bandWidth = healthyAt(LATE) - okAt(LATE);
+
+		expect(gateSwing).toBeGreaterThan(bandWidth);
+	});
+
+	it("resolves the opening gate's two degenerate bands opposite ways", () => {
+		expect(okAt(0)).toBe(healthyAt(0));
 		expect(floorAt(0)).toBe(0);
-		expect(floorAt(EARLY)).toBe(0);
-	});
-
-	it("charges nothing for a miss until the floor exists, and half an answer at most", () => {
-		expect(lossShareAt(EARLY)).toBe(0);
-		expect(lossShareAt(LATE)).toBeCloseTo(0.5);
-		expect(LOSS_LADDER.filter((share) => share > 1)).toHaveLength(0);
 	});
 });
 
-describe("what a correct answer covers", () => {
-	it("covers a twentieth of the build for one single-choice answer", () => {
-		expect(SINGLE_GAIN).toBe(0.05);
-		expect(gainPerCorrectFor(BARE)).toBeCloseTo(SINGLE_GAIN);
-		expect(gainPerCorrectFor(BARE, undefined, "single")).toBeCloseTo(
-			SINGLE_GAIN
-		);
+describe("run coverage", () => {
+	it("is the units banked over the slots played", () => {
+		expect(runCoverageOf(6.8, 4)).toBeCloseTo(0.272);
+		expect(runCoverageOf(11.8, 4)).toBeCloseTo(0.472);
 	});
 
-	it("pays a multiple-choice poll more for the extra ways it can go wrong", () => {
-		expect(MULTIPLE_GAIN).toBe(0.08);
-		expect(gainPerCorrectFor(BARE, undefined, "multiple")).toBeCloseTo(
-			MULTIPLE_GAIN
-		);
-		expect(gainPerCorrectFor(BARE, undefined, "multiple")).toBeGreaterThan(
-			gainPerCorrectFor(BARE, undefined, "single")
-		);
+	it("caps at one however many units a build earns", () => {
+		expect(runCoverageOf(40, 4)).toBe(1);
 	});
 
-	it("multiplies the poll's own base, rather than replacing it", () => {
-		expect(gainPerCorrectFor(DOUBLER)).toBeCloseTo(SINGLE_GAIN * 2);
-		expect(gainPerCorrectFor(DOUBLER, undefined, "multiple")).toBeCloseTo(
-			MULTIPLE_GAIN * 2
-		);
+	it("adds a flat unit per correct answer on a bare build", () => {
+		expect(gainPerCorrectFor(BARE)).toBe(BASE_UNIT);
 	});
 
-	it("asks nothing at all about how heavy the build is", () => {
-		expect(coverageAfter(PACE, 1, 6, DOUBLER)).toBeCloseTo(
-			coverageAfter(PACE, 1, 6, DOUBLER)
-		);
+	it("pays the build multiplier on every answer alike", () => {
+		expect(gainPerCorrectFor(DOUBLER)).toBeCloseTo(2);
+		expect(gainPerCorrectFor(TRIPLER)).toBeCloseTo(3);
 	});
+});
 
-	it("multiplies through every config that touches coverage", () => {
-		expect(coverageMultiplierOf(BARE)).toBe(1);
-		expect(coverageMultiplierOf(DOUBLER)).toBe(2);
-		expect(coverageMultiplierOf(TRIPLER)).toBe(3);
-	});
+describe("the headroom a single gate has", () => {
+	/**
+	 * The law the whole model turns on: entering gate g on coverage c, a gate
+	 * earning M units an answer moves the score (M - c) / (g + 1). It decays,
+	 * which is why the bands have to decay with it.
+	 */
+	const headroom = (
+		banked: number,
+		gate: number,
+		configs: readonly Config[]
+	): number =>
+		coverageAfter(SLICE_WINDOW, gate, configs, banked) -
+		runCoverageOf(banked, gate);
 
-	it("ignores configs that never touched coverage", () => {
+	it("matches (M - c) / (g + 1) on a bare build", () => {
+		const gate = 4;
+		const banked = 6.8;
+		const entering = banked / (SLICE_WINDOW * gate);
+
+		expect(entering).toBeCloseTo(0.34);
 		expect(
-			coverageMultiplierOf([CONFIGS.yarnLock, CONFIGS.indexedDb])
-		).toBe(1);
+			coverageAfter(SLICE_WINDOW, gate, BARE, banked) - entering
+		).toBeCloseTo((BASE_UNIT - entering) / (gate + 1));
 	});
 
-	it("pays the same at every gate, so the rising bar is the whole difficulty", () => {
-		expect(gainPerCorrectFor(DOUBLER)).toBeCloseTo(gainPerCorrectFor(DOUBLER));
-		expect(coverageAfter(5, 0, 0, DOUBLER)).toBeCloseTo(
-			coverageAfter(5, 0, LATE, DOUBLER)
-		);
+	it("shrinks as the run lengthens", () => {
+		expect(headroom(2, 1, BARE)).toBeGreaterThan(headroom(20, 9, BARE));
 	});
 
-	it("costs nothing for a miss while the gate has no floor", () => {
-		expect(gainPerMissFor(EARLY, DOUBLER)).toBe(0);
-		expect(coverageAfter(0, SLICE_WINDOW, EARLY, DOUBLER)).toBe(0);
-	});
-
-	it("counts a miss as a fraction of an answer taken back", () => {
-		expect(netAnswersFor(4, 1, LATE)).toBeCloseTo(3.5);
-		expect(netAnswersFor(0, SLICE_WINDOW, LATE)).toBeCloseTo(-2.5);
-	});
-
-	it("caps at a fully covered build however hard the multipliers stack", () => {
-		expect(coverageAfter(SLICE_WINDOW, 0, 0, STACKED)).toBe(1);
-	});
-
-	it("floors at nothing when the misses outweigh the hits", () => {
-		expect(coverageAfter(0, SLICE_WINDOW, LATE, TRIPLER)).toBe(0);
-	});
-});
-
-describe("a part-right answer on a multiple-choice poll", () => {
-	const share = (value: number) =>
-		coverageDeltaFor(value, LATE, BARE, undefined, "multiple");
-
-	it("pays the whole poll for the whole answer key", () => {
-		expect(share(1)).toBeCloseTo(MULTIPLE_GAIN);
-	});
-
-	it("charges the full miss for an answer with nothing right in it", () => {
-		expect(share(0)).toBeCloseTo(-MULTIPLE_GAIN * lossShareAt(LATE));
-	});
-
-	it("splits the gain and the miss by the share of the key that landed", () => {
-		expect(share(0.5)).toBeCloseTo(
-			MULTIPLE_GAIN * (0.5 - 0.5 * lossShareAt(LATE))
-		);
-	});
-
-	it("reads the same as the all-or-nothing rule at either extreme", () => {
-		expect(coverageDeltaFor(1, LATE, DOUBLER)).toBeCloseTo(
-			gainPerCorrectFor(DOUBLER)
-		);
-		expect(coverageDeltaFor(0, LATE, DOUBLER)).toBeCloseTo(
-			-gainPerMissFor(LATE, DOUBLER)
-		);
-	});
-
-	it("costs nothing for any share while the gate has no floor", () => {
-		expect(coverageDeltaFor(0, EARLY, BARE, undefined, "multiple")).toBe(0);
-		expect(coverageDeltaFor(0.5, EARLY, BARE, undefined, "multiple")).toBeCloseTo(
-			MULTIPLE_GAIN * 0.5
+	it("is what a multiplier buys: the same five answers move it further", () => {
+		expect(headroom(6.8, 4, DOUBLER)).toBeGreaterThan(
+			headroom(6.8, 4, BARE)
 		);
 	});
 });
 
-describe("a config focused on the category you were asked", () => {
-	const FOCUSED = [CONFIGS.js];
-
-	it("pays the focus multiplier its own description promises", () => {
-		expect(gainPerCorrectFor(FOCUSED, "js")).toBeCloseTo(SINGLE_GAIN * 1.25);
+describe("banking at the gate boundary", () => {
+	it("clamps the ledger to the slots played", () => {
+		expect(bankableUnits(40, 4)).toBe(scoringSlotsAt(4));
+		expect(bankableUnits(11.8, 4)).toBeCloseTo(11.8);
 	});
 
-	it("pays nothing extra on a poll it does not cover", () => {
-		expect(gainPerCorrectFor(FOCUSED, "git")).toBeCloseTo(SINGLE_GAIN);
-		expect(gainPerCorrectFor(FOCUSED)).toBeCloseTo(SINGLE_GAIN);
+	it("never banks a negative", () => {
+		expect(bankableUnits(-3, 4)).toBe(0);
 	});
 
-	it("names the bonus a matching poll is worth", () => {
-		expect(focusBonusFor(FOCUSED, "js")).toBeCloseTo(1.25);
-		expect(focusBonusFor(FOCUSED, "git")).toBe(1);
-	});
-
-	it("compounds into a flat coverage multiplier rather than replacing it", () => {
-		expect(coverageMultiplierFor([CONFIGS.js, CONFIGS.agentsMd], "js")).toBeCloseTo(
-			2.5
-		);
-		expect(coverageMultiplierFor([CONFIGS.js, CONFIGS.agentsMd], "git")).toBe(2);
-	});
-
-	it("stacks only the focus that matches, not every focus held", () => {
-		expect(coverageMultiplierFor([CONFIGS.js, CONFIGS.ts], "js")).toBeCloseTo(
-			1.25
+	it("pays the overshoot in storage instead of coverage", () => {
+		expect(surplusUnits(27.9, 4)).toBeCloseTo(2.9);
+		expect(surplusPayoutKb(27.9, 4)).toBe(
+			Math.round(2.9 * KB_PER_PROVEN_SLOT)
 		);
 	});
 
-	it("moves a whole gate, not just one answer", () => {
-		expect(coverageAfter(PACE, 1, 8, FOCUSED, "js")).toBeGreaterThan(
-			coverageAfter(PACE, 1, 8, FOCUSED, "git")
-		);
-	});
-
-	it("leaves the unmatched reading as the baseline the gate maths uses", () => {
-		expect(coverageMultiplierOf(FOCUSED)).toBe(1);
+	it("pays nothing for an unfilled bar", () => {
+		expect(surplusUnits(11.8, 4)).toBe(0);
+		expect(surplusPayoutKb(11.8, 4)).toBe(0);
 	});
 });
 
-describe("the wall an unaided build runs into", () => {
-	it("carries the opening three gates on base rules alone", () => {
-		expect(rightsToSurvive(EARLY, SLICE_WINDOW, BARE)).toBe(0);
-		expect(rightsToSurvive(3, SLICE_WINDOW, BARE)).toBeLessThan(PACE);
+describe("the bands a run lands in", () => {
+	it("names a full bar PERFECT", () => {
+		expect(bandFor(1, EARLY).id).toBe("perfect");
 	});
 
-	it("demands a perfect gate by gate five, and then cannot be done at all", () => {
-		expect(rightsToSurvive(5, SLICE_WINDOW, BARE)).toBe(SLICE_WINDOW);
-		expect(rightsToSurvive(6, SLICE_WINDOW, BARE)).toBeUndefined();
-		expect(rightsToSurvive(LATE, SLICE_WINDOW, BARE)).toBeUndefined();
+	it("names the line HEALTHY and the step under it OK", () => {
+		expect(bandFor(healthyAt(4), 4).id).toBe("healthy");
+		expect(bandFor(okAt(4), 4).id).toBe("ok");
 	});
 
-	it("cannot fill a build until the multipliers stack several deep", () => {
-		expect(rightsToFill(0, SLICE_WINDOW, BARE)).toBeUndefined();
-		expect(rightsToFill(0, SLICE_WINDOW, DOUBLER)).toBeUndefined();
-		expect(rightsToFill(0, SLICE_WINDOW, STACKED)).toBeLessThan(PACE);
+	it("names the floor SHAKY and anything under it DANGER", () => {
+		expect(bandFor(floorAt(4), 4).id).toBe("shaky");
+		expect(bandFor(floorAt(4) - 0.01, 4).id).toBe("danger");
 	});
 
-	it("clears the opening gate on a single right, where surviving it asks nothing", () => {
-		expect(rightsToSurvive(0, SLICE_WINDOW, BARE)).toBe(0);
-		expect(rightsToClear(0, SLICE_WINDOW, BARE)).toBe(1);
-	});
-
-	it("asks more than surviving the gate and less than filling the bar", () => {
-		const survive = rightsToSurvive(0, SLICE_WINDOW, STACKED) ?? 0;
-		const clear = rightsToClear(0, SLICE_WINDOW, STACKED) ?? 0;
-		const fill = rightsToFill(0, SLICE_WINDOW, STACKED) ?? 0;
-
-		expect(clear).toBeGreaterThanOrEqual(survive);
-		expect(clear).toBeLessThanOrEqual(fill);
-	});
-
-	it("goes out of reach for a bare build once the line outruns a full sheet", () => {
-		expect(rightsToClear(6, SLICE_WINDOW, BARE)).toBeUndefined();
-		expect(rightsToClear(LATE, SLICE_WINDOW, BARE)).toBeUndefined();
-	});
-
-	it("names the multiplier each gate demands, free until gate two", () => {
-		expect(multiplierToSurvive(EARLY, PACE, SLICE_WINDOW)).toBe(0);
-		expect(multiplierToSurvive(3, PACE, SLICE_WINDOW) ?? 0).toBeLessThan(1);
-		expect(multiplierToSurvive(8, PACE, SLICE_WINDOW)).toBeCloseTo(2.74, 2);
-		expect(multiplierToSurvive(LATE, PACE, SLICE_WINDOW)).toBeCloseTo(4, 2);
-	});
-
-	it("asks more to clear the bar than merely to survive", () => {
-		expect(multiplierToClear(LATE, PACE, SLICE_WINDOW) ?? 0).toBeGreaterThan(
-			multiplierToSurvive(LATE, PACE, SLICE_WINDOW) ?? 0
-		);
-	});
-
-	it("asks nothing of a gate with no floor", () => {
-		expect(multiplierToSurvive(EARLY, PACE, SLICE_WINDOW)).toBe(0);
-	});
-
-	it("admits that no multiplier saves a gate you answered into the ground", () => {
-		expect(multiplierToSurvive(LATE, 0, SLICE_WINDOW)).toBeUndefined();
-	});
-
-	it("reopens the late run only once the stack passes a doubler", () => {
-		expect(rightsToSurvive(LATE, SLICE_WINDOW, BARE)).toBeUndefined();
-		expect(rightsToSurvive(LATE, SLICE_WINDOW, DOUBLER)).toBeUndefined();
-		expect(rightsToSurvive(LATE, SLICE_WINDOW, TRIPLER)).toBe(SLICE_WINDOW);
-		expect(rightsToSurvive(LATE, SLICE_WINDOW, STACKED)).toBeLessThan(PACE);
+	it("lifts a band to a floor without ever lowering one", () => {
+		expect(atLeastBand(bandFor(0, 4), "shaky").id).toBe("shaky");
+		expect(atLeastBand(bandFor(1, 4), "shaky").id).toBe("perfect");
 	});
 });
 
-describe("what a cleared gate pays", () => {
-	const GATES = HEALTHY_LADDER.map((_, gate) => gate);
-	const JUST_UNDER_FULL = 0.99;
-
-	it("pays a slot the same KB at every gate, since each asks its own line", () => {
-		const met = GATES.map((gate) => gatePayoutKb(healthyAt(gate), gate, 12, 0));
-
-		expect(new Set(met)).toEqual(new Set([12 * KB_PER_PROVEN_SLOT]));
+describe("what a run still has in front of it", () => {
+	it("counts every remaining poll at the build's rate", () => {
+		expect(maxReachableFrom(60, VICTORY_GATE, BASE_UNIT)).toBeCloseTo(1);
 	});
 
-	it("pays a bigger build more for meeting the same line", () => {
-		expect(gatePayoutKb(healthyAt(6), 6, 24, 0)).toBeGreaterThan(
-			gatePayoutKb(healthyAt(6), 6, 12, 0)
-		);
+	it("calls a late run dead when its ceiling sits under the summit floor", () => {
+		expect(isRunUnwinnable(30, 11, BASE_UNIT)).toBe(true);
 	});
 
-	it("pays less for surviving a gate than for meeting it", () => {
-		expect(gatePayoutKb(floorAt(LATE), LATE, 12, 0)).toBeLessThan(
-			gatePayoutKb(healthyAt(LATE), LATE, 12, 0)
-		);
-	});
-
-	it("stops rewarding overshoot at half again, so the opening gates cannot print", () => {
-		expect(payoutRatioFor(healthyAt(0), 0)).toBeCloseTo(1);
-		expect(payoutRatioFor(1, 0)).toBe(PAYOUT_RATIO_CAP);
-		expect(gatePayoutKb(0.5, 0, 12, 0)).toBe(
-			PAYOUT_RATIO_CAP * 12 * KB_PER_PROVEN_SLOT
-		);
-	});
-
-	it("pays a full bar half again over the cap, so the top of the scale can be felt", () => {
-		expect(gatePayoutKb(1, 6, 12, 0)).toBe(
-			gatePayoutKb(JUST_UNDER_FULL, 6, 12, 0) * PERFECT_BONUS
-		);
-	});
-
-	it("turns the bonus on exactly where the bar turns PERFECT, first gate and last", () => {
-		for (const gate of [0, LATE]) {
-			expect(bandFor(1, gate).id).toBe("perfect");
-			expect(bandFor(JUST_UNDER_FULL, gate).id).not.toBe("perfect");
-		}
-
-		expect(perfectBonusFor(1)).toBe(PERFECT_BONUS);
-		expect(perfectBonusFor(JUST_UNDER_FULL)).toBe(1);
-	});
-
-	it("multiplies a full bar's streak rather than replacing it", () => {
-		expect(gatePayoutKb(1, 6, 8, 10)).toBe(gatePayoutKb(1, 6, 8, 0) * 2);
-	});
-
-	it("pays nothing for capacity it never covered", () => {
-		expect(gatePayoutKb(0, 6, 24, 10)).toBe(0);
-		expect(coveredSlotsOf(0.5, 12)).toBeCloseTo(6);
-	});
-
-	it("doubles on a capped streak and never more", () => {
-		expect(gatePayoutKb(healthyAt(6), 6, 8, 10)).toBe(
-			gatePayoutKb(healthyAt(6), 6, 8, 0) * 2
-		);
-		expect(gatePayoutKb(healthyAt(6), 6, 8, 40)).toBe(
-			gatePayoutKb(healthyAt(6), 6, 8, 10)
-		);
-	});
-
-	it("pays in whole KB, since KB is spent in whole units", () => {
-		expect(Number.isInteger(gatePayoutKb(0.37, 9, 13, 3))).toBe(true);
+	it("spares the same run once a multiplier is on it", () => {
+		expect(isRunUnwinnable(30, 11, 4)).toBe(false);
 	});
 });
 
-describe("reading a gate at its close", () => {
-	it("moves the whole ruler, not just the death line", () => {
-		expect(bandFor(0.5, EARLY).id).toBe("healthy");
-		expect(bandFor(0.5, 6).id).toBe("ok");
-		expect(bandFor(0.5, 8).id).toBe("shaky");
-		expect(bandFor(0.5, 9).id).toBe("danger");
-	});
-
-	it("meets the gate's own healthy line, not a fixed bar", () => {
-		expect(clearsBar(0.7, EARLY)).toBe(true);
-		expect(clearsBar(0.7, LATE)).toBe(false);
-	});
-
+describe("reading a gate", () => {
 	it("cannot close on anyone while the floor is zero", () => {
-		expect(survivesGate(0, EARLY)).toBe(true);
-	});
-
-	it("closes the champion on a bare build and spares a stacked one", () => {
-		const bare = readCoverage(12, coverageAfter(PACE, 1, LATE, BARE), LATE);
-		const stacked = readCoverage(
-			12,
-			coverageAfter(PACE, 1, LATE, STACKED),
-			LATE
-		);
-
-		expect(bare.survives).toBe(false);
-		expect(bare.peril).toBe("fatal");
-		expect(stacked.survives).toBe(true);
-		expect(stacked.peril).toBe("safe");
+		expect(survivesGate(0, 0)).toBe(true);
 	});
 
 	it("carries the slots it proved alongside the percentage", () => {
-		const check = readCoverage(12, 0.5, 6);
+		const check = readCoverage(12, 0.5, 8);
 
 		expect(check.coveredSlots).toBeCloseTo(6);
-		expect(check.healthyOwed).toBeCloseTo(0.1);
+		expect(check.healthyOwed).toBeCloseTo(healthyAt(8) - 0.5);
+	});
+
+	it("clears on the line and survives on the floor", () => {
+		expect(clearsBar(healthyAt(6), 6)).toBe(true);
+		expect(survivesGate(floorAt(6), 6)).toBe(true);
+		expect(clearsBar(okAt(6), 6)).toBe(false);
+	});
+});
+
+describe("what the gate pays", () => {
+	it("pays the proven slots at the going rate", () => {
+		expect(gatePayoutKb(healthyAt(4), 4, 12, 0)).toBe(
+			Math.round(12 * KB_PER_PROVEN_SLOT)
+		);
+	});
+
+	it("caps the overshoot so the opening gates cannot print", () => {
+		expect(payoutRatioFor(1, 0)).toBe(PAYOUT_RATIO_CAP);
+	});
+
+	it("pays a full bar a bonus on top of the cap", () => {
+		expect(perfectBonusFor(1)).toBe(PERFECT_BONUS);
+		expect(perfectBonusFor(0.99)).toBe(1);
+	});
+});
+
+describe("the solvers the prep screen quotes", () => {
+	it("says how many right answers clear a gate from where the run stands", () => {
+		expect(rightsToClear(4, SLICE_WINDOW, BARE, 6.8)).toBeUndefined();
+		expect(rightsToClear(4, SLICE_WINDOW, DOUBLER, 6.8)).toBe(3);
+	});
+
+	it("says how many keep it alive", () => {
+		expect(rightsToSurvive(4, SLICE_WINDOW, BARE, 6.8)).toBe(2);
+	});
+
+	it("says when the bar can still be filled", () => {
+		expect(rightsToFill(0, SLICE_WINDOW, BARE, 0)).toBe(SLICE_WINDOW);
+		expect(rightsToFill(4, SLICE_WINDOW, BARE, 6.8)).toBeUndefined();
+	});
+
+	it("says what multiplier the gate in front is asking for", () => {
+		expect(multiplierToSurvive(4, PACE, 6.8)).toBeCloseTo(0.425);
+		expect(multiplierToClear(9, PACE, 20)).toBeCloseTo(4.375);
+	});
+
+	it("gives up when no multiplier can carry a gate with no right answers", () => {
+		expect(multiplierToClear(LATE, 0, 0)).toBeUndefined();
+	});
+});
+
+describe("focus", () => {
+	it("pays its quarter only on its own category", () => {
+		expect(coverageMultiplierFor([CONFIGS.js], "js")).toBeCloseTo(1.25);
+		expect(coverageMultiplierFor([CONFIGS.js], "css")).toBeCloseTo(1);
+	});
+
+	it("reads as a bonus over whatever the build already pays", () => {
+		expect(focusBonusFor([CONFIGS.js, CONFIGS.agentsMd], "js")).toBeCloseTo(
+			1.25
+		);
 	});
 });
 
 describe("the balance this model exists to hold", () => {
 	const TRIALS = 2000;
-	const LOADOUTS = [
-		{ label: "bare", configs: BARE },
-		{ label: "doubled", configs: DOUBLER },
-		{ label: "tripled", configs: TRIPLER },
-		{ label: "stacked", configs: STACKED },
-	] as const;
-
 	const seededRolls = (seed: number) => {
 		let state = seed;
 
@@ -418,6 +320,10 @@ describe("the balance this model exists to hold", () => {
 		};
 	};
 
+	/**
+	 * Carries the ledger across gates, which is the whole point of the model:
+	 * a gate is judged on the run behind it, not on its own five answers.
+	 */
 	const simulate = (configs: readonly Config[], accuracy: number) => {
 		const roll = seededRolls(
 			Math.round(coverageMultiplierOf(configs) * 7919 + accuracy * 100)
@@ -427,6 +333,7 @@ describe("the balance this model exists to hold", () => {
 
 		for (let trial = 0; trial < TRIALS; trial++) {
 			let gate = 0;
+			let banked = 0;
 			let alive = true;
 
 			while (alive && gate <= VICTORY_GATE) {
@@ -434,14 +341,17 @@ describe("the balance this model exists to hold", () => {
 				for (let poll = 0; poll < SLICE_WINDOW; poll++)
 					if (roll() < accuracy) rights++;
 
+				const carried = banked + rights * gainPerCorrectFor(configs);
+
 				if (
-					!survivesGate(
-						coverageAfter(rights, SLICE_WINDOW - rights, gate, configs),
-						gate
-					)
-				)
+					!meetsGateFloor(rights) ||
+					!survivesGate(runCoverageOf(carried, gate), gate)
+				) {
 					alive = false;
-				else gate++;
+				} else {
+					banked = bankableUnits(carried, gate);
+					gate++;
+				}
 			}
 
 			deepest += gate;
@@ -451,17 +361,37 @@ describe("the balance this model exists to hold", () => {
 		return { winRate: wins / TRIALS, averageGate: deepest / TRIALS };
 	};
 
-	it("walls a bare build well short of the champion", () => {
-		expect(simulate(BARE, 0.9).winRate).toBe(0);
+	it("walls a bare build at poor accuracy", () => {
+		expect(simulate(BARE, 0.6).winRate).toBe(0);
 	});
 
-	it("lets multipliers, and only multipliers, open the late run", () => {
-		const skilled = LOADOUTS.map((l) => simulate(l.configs, 0.9).averageGate);
-		const stalling = skilled.filter(
-			(gate, step) => step > 0 && gate <= skilled[step - 1]
-		);
+	/**
+	 * The reversal ADR-073 Decision 3 chose against. A run-wide score cannot wall
+	 * a bare build, because a player answering everything correctly earns one
+	 * unit a slot and one unit a slot is 100%. Skill now substitutes for a build.
+	 */
+	it("lets skill alone summit, which the per-gate meter never did", () => {
+		expect(simulate(BARE, 0.9).winRate).toBeGreaterThan(0.9);
+	});
 
-		expect(stalling).toHaveLength(0);
+	it("opens the run for the average player who buys a multiplier", () => {
+		expect(simulate(DOUBLER, 0.7).winRate).toBeGreaterThan(
+			simulate(BARE, 0.7).winRate * 10
+		);
+	});
+
+	/**
+	 * The cap's bill. Coverage tops out at 100%, so the ladder can never ask for
+	 * more than line / accuracy, which is about 1.4x at 70%. Every multiplier
+	 * past that buys nothing, and x2, x3 and x6 land within noise of each other.
+	 * This is the shape the memo calls "a percentage bar cannot be the
+	 * difficulty dial", and it is asserted here so it cannot change in silence.
+	 */
+	it("stops paying for multiplier once the cap binds", () => {
+		const doubled = simulate(DOUBLER, 0.7).winRate;
+		const stacked = simulate(STACKED, 0.7).winRate;
+
+		expect(Math.abs(stacked - doubled)).toBeLessThan(0.05);
 	});
 
 	it("still asks for accuracy once the multipliers are there", () => {

@@ -3,256 +3,116 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { SLOT_PRICES_KB } from "~/modules/run/run/domain/rules.model";
-import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
+import { NEW_RUN_BUILD_NOTE } from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { createMockRunView } from "~/test/runView.factory";
 
-import { StartView, type StartViewProps } from "./StartView.component";
+import { StartView } from "./StartView.component";
 
-const dealt = [
-	CONFIGS.js,
-	CONFIGS.ts,
-	CONFIGS.unitTests,
-	CONFIGS.eslint,
-	CONFIGS.codeCoverage,
-];
+const noop = () => {};
+
+const handlers = {
+	onToggle: noop,
+	onBuySlot: noop,
+	onRefundSlot: noop,
+	onStart: noop,
+};
 
 const view = createMockRunView({
-	gatesCleared: 0,
-	configs: [],
+	status: "configuring",
+	configs: [CONFIGS.js],
+	available: [CONFIGS.js, CONFIGS.eslint, CONFIGS.unitTests],
+	recommendedConfigIds: [CONFIGS.unitTests.id],
 	slots: 4,
-	slotsUsed: 0,
-	slotsFree: 4,
-	available: dealt,
-	gateStake: createMockGateStake({ gateNumber: 0, coverageDemand: 3 }),
+	canStart: true,
 });
-
-const render_ = (overrides: Partial<StartViewProps> = {}) =>
-	render(
-		<StartView
-			view={view}
-			onToggle={() => {}}
-			onBuySlot={() => {}}
-			onRefundSlot={() => {}}
-			onStart={() => {}}
-			{...overrides}
-		/>
-	);
-
-const withArchive = (archiveKb: number, slots = 4, slotsBought = 0) =>
-	createMockRunView({
-		...view,
-		slots,
-		slotsFree: slots,
-		startSlotDeals: {
-			archiveKb,
-			buy:
-				archiveKb >= SLOT_PRICES_KB[slotsBought] * 2
-					? {
-							costKb: SLOT_PRICES_KB[slotsBought] * 2,
-							makes: slots + 1,
-						}
-					: {
-							costKb: SLOT_PRICES_KB[slotsBought] * 2,
-							refusal: `Costs ${SLOT_PRICES_KB[slotsBought] * 2} KB of archive, you have ${archiveKb}.`,
-						},
-			cash:
-				slotsBought === 0
-					? {}
-					: {
-							costKb: SLOT_PRICES_KB[slotsBought - 1] * 2,
-							makes: slots - 1,
-						},
-		},
-	});
 
 describe("StartView", () => {
-	it("opens on the first gate, named", () => {
-		render_();
+	it("opens the run on gate 0 rather than on a gate already climbed", () => {
+		render(<StartView view={view} {...handlers} />);
 
 		expect(screen.getByText("New run")).toBeInTheDocument();
-		expect(screen.getByText(/^Pallet · /)).toBeInTheDocument();
+		expect(screen.getAllByText(/gate 0/).length).toBeGreaterThan(0);
 	});
 
-	it("deals every config as one toggleable row", () => {
-		render_();
+	it("deals the hand it was given", () => {
+		render(<StartView view={view} {...handlers} />);
 
-		for (const config of dealt) {
-			expect(
-				screen.getByRole("button", { name: `Install ${config.label}` })
-			).toHaveAttribute("aria-pressed", "false");
-		}
+		expect(screen.getAllByText(CONFIGS.eslint.label).length).toBeGreaterThan(0);
+		expect(
+			screen.getAllByText(CONFIGS.unitTests.label).length
+		).toBeGreaterThan(0);
 	});
 
-	it("picks a dealt config on press", async () => {
+	it("stands an installed config in the build as well as the hand", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		expect(screen.getAllByText(CONFIGS.js.label).length).toBeGreaterThan(1);
+	});
+
+	it("says a slot is paid for out of the archive, not the run", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		expect(screen.getByText(NEW_RUN_BUILD_NOTE)).toBeInTheDocument();
+	});
+
+	it("marks the hand's advice without requiring it", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		expect(screen.getByText("suggested")).toBeInTheDocument();
+	});
+
+	it("installs a config from the hand", async () => {
 		const onToggle = vi.fn();
-		render_({ onToggle });
+		render(<StartView view={view} {...handlers} onToggle={onToggle} />);
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "Install ESLint" })
-		);
-
-		expect(onToggle).toHaveBeenCalledWith(CONFIGS.eslint.id);
+		const install = screen.getAllByRole("button", { name: /install/i })[0];
+		await userEvent.click(install);
+		expect(onToggle).toHaveBeenCalled();
 	});
 
-	it("keeps a picked config in the deal, marked as picked", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js],
-				slotsUsed: 1,
-				slotsFree: 3,
-			}),
-		});
+	it("prices no band, leaving the stakes to the prep screen it leads to", () => {
+		render(<StartView view={view} {...handlers} />);
 
 		expect(
-			screen.queryByRole("button", { name: "Install .js" })
-		).not.toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "Uninstall .js" })
-		).toHaveAttribute("aria-pressed", "true");
+			screen.queryByRole("heading", { name: "Objectives and rewards" })
+		).toBeNull();
 	});
 
-	it("counts the picks against the deal", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js, CONFIGS.ts],
-				slotsUsed: 2,
-				slotsFree: 2,
-			}),
-		});
+	it("quotes the rung after the one it is selling, without offering it", () => {
+		render(<StartView view={view} {...handlers} />);
 
-		expect(screen.getByText("2 of 5 picked")).toBeInTheDocument();
+		const rung = screen.getByLabelText(/^slot 6 ·/);
+
+		expect(rung).toBeInTheDocument();
+		expect(rung.tagName).not.toBe("BUTTON");
 	});
 
-	it("locks a dealt config too big for the room left", () => {
-		render_({
-			view: createMockRunView({ ...view, slotsFree: 0 }),
-		});
+	it("draws no row for a slot that is merely empty", () => {
+		render(<StartView view={view} {...handlers} />);
 
-		expect(
-			screen.getByRole("button", { name: "Install ESLint" })
-		).toBeDisabled();
+		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
 
-	it("keeps a picked config unpickable even with no room left", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js],
-				slotsUsed: 4,
-				slotsFree: 0,
-			}),
-		});
-
-		expect(
-			screen.getByRole("button", { name: "Uninstall .js" })
-		).toBeEnabled();
-	});
-
-	it("holds the run shut while the build is bare", () => {
-		render_({ view: createMockRunView({ ...view, canStart: false }) });
-
-		expect(
-			screen.getByRole("button", { name: "Pick a config to start" })
-		).toBeDisabled();
-	});
-
-	it("starts once the engine says it can", async () => {
+	it("leads to the gate's prep from the footer", async () => {
 		const onStart = vi.fn();
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js, CONFIGS.ts],
-				canStart: true,
-			}),
-			onStart,
-		});
+		render(<StartView view={view} {...handlers} onStart={onStart} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Start the run →" })
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		);
+		expect(onStart).toHaveBeenCalled();
+	});
+
+	it("refuses the start while the build cannot run", () => {
+		render(
+			<StartView
+				view={createMockRunView({ ...view, canStart: false })}
+				{...handlers}
+			/>
 		);
 
-		expect(onStart).toHaveBeenCalledOnce();
-	});
-
-	it("says what the archive holds, the run having no storage of its own yet", () => {
-		render_({ view: withArchive(512) });
-
-		expect(screen.getByText("512 KB")).toBeInTheDocument();
-	});
-
-	it("sells width off the archive at the doubled rung", async () => {
-		const onBuySlot = vi.fn();
-		render_({ view: withArchive(512), onBuySlot });
-
-		await userEvent.click(screen.getByRole("button", { name: /Buy slot 5/ }));
-
-		expect(onBuySlot).toHaveBeenCalledOnce();
-	});
-
-	it("refuses a rung the archive cannot cover, saying what it holds", () => {
-		render_({ view: withArchive(12) });
-
 		expect(
-			screen.getByRole("button", {
-				name: "Buy slot 5 · 64 KB · Costs 64 KB of archive, you have 12.",
-			})
+			screen.getByRole("button", { name: /Pallet gate prep/ })
 		).toBeDisabled();
-	});
-
-	it("hands a bought slot back, the run not having started", async () => {
-		const onRefundSlot = vi.fn();
-		render_({ view: withArchive(480, 5, 1), onRefundSlot });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /Hand slot 5 back/ })
-		);
-
-		expect(onRefundSlot).toHaveBeenCalledOnce();
-	});
-
-	it("offers no refund before the archive has bought anything", () => {
-		render_({ view: withArchive(512) });
-
-		expect(
-			screen.queryByRole("button", { name: /Refund slot/ })
-		).not.toBeInTheDocument();
-	});
-});
-
-describe("the suggested opening (ADR-057)", () => {
-	it("marks the suggested rows without pressing them", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				recommendedConfigIds: [CONFIGS.js.id, CONFIGS.ts.id],
-			}),
-		});
-
-		expect(screen.getAllByText("suggested")).toHaveLength(2);
-		expect(
-			screen.getByRole("button", { name: "Install .js" })
-		).toHaveAttribute("aria-pressed", "false");
-	});
-
-	it("drops the mark once the row is picked", () => {
-		render_({
-			view: createMockRunView({
-				...view,
-				configs: [CONFIGS.js],
-				slotsUsed: 1,
-				slotsFree: 3,
-				recommendedConfigIds: [CONFIGS.js.id, CONFIGS.ts.id],
-			}),
-		});
-
-		expect(screen.getAllByText("suggested")).toHaveLength(1);
-	});
-
-	it("marks nothing when the deal suggests nothing", () => {
-		render_();
-
-		expect(screen.queryByText("suggested")).not.toBeInTheDocument();
 	});
 });

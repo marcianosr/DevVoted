@@ -69,7 +69,6 @@ export const ConfiguringScreen = ({
 	onUninstall,
 	startAction,
 }: ConfiguringScreenProps) => {
-	const { gateNumber } = stake;
 	const [previewId, setPreviewId] = useState<string | null>(null);
 	const full = slotsFree === 0;
 	const rows = roleRows(configs);
@@ -81,7 +80,7 @@ export const ConfiguringScreen = ({
 		? buildModifiersFor([...configs, previewConfig], stake.gateNumber)
 		: undefined;
 	const nextPerAnswer = previewConfig
-		? perAnswerPreviewFor([...configs, previewConfig], gateNumber)
+		? perAnswerPreviewFor([...configs, previewConfig])
 		: undefined;
 
 	const commit = (configId: string) => {

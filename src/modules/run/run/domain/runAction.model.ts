@@ -13,7 +13,7 @@ import {
 	withBuild,
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
-import { answer } from "~/modules/run/run/domain/answer.model";
+import { answer, closeGate } from "~/modules/run/run/domain/answer.model";
 import { commitEstimate } from "~/modules/run/run/domain/estimate.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import {
@@ -50,6 +50,7 @@ export type RunAction =
 			readonly optionIds: readonly string[];
 			readonly elapsedMs?: number;
 	  }
+	| { readonly type: "close-gate" }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "peek-poll" }
 	| { readonly type: "buy-back-option"; readonly optionId: string }
@@ -132,6 +133,8 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 	if (action.type === "estimate") return commitEstimate(state, action.count);
 	if (action.type === "answer" && state.status === "answering")
 		return answer(state, action.optionIds, action.elapsedMs);
+	if (action.type === "close-gate" && state.status === "answering")
+		return closeGate(state);
 	if (action.type === "lint-poll" && state.status === "answering")
 		return spendLint(state);
 	if (action.type === "peek-poll" && state.status === "answering")

@@ -98,14 +98,17 @@ describe(PrepScreen, () => {
 		render(<PrepScreen {...base} stake={stakeWith({ pollsPerGate: 5 })} />);
 		const requirements = screen.getAllByRole("listitem");
 		expect(requirements[0]).toHaveTextContent("Answer all 5 polls");
-		expect(requirements[1]).toHaveTextContent("Earn 3% coverage this gate");
+		expect(requirements[1]).toHaveTextContent("Earn 5% coverage this gate");
 	});
 
 	it("grades the demand against the attempt's own meter", () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ coverageDemand: 12, coverageHeld: 4 })}
+				stake={stakeWith({
+					coverageLadder: { floor: 0, ok: 0, healthy: 12 },
+					coverageHeld: 4,
+				})}
 			/>
 		);
 		expect(screen.getByText("12% coverage this gate")).toBeInTheDocument();
@@ -118,7 +121,7 @@ describe(PrepScreen, () => {
 				{...base}
 				stake={stakeWith({
 					gateNumber: 1,
-					coverageDemand: 12,
+					coverageLadder: { floor: 0, ok: 0, healthy: 12 },
 					coverageHeld: 6,
 				})}
 			/>
@@ -134,7 +137,10 @@ describe(PrepScreen, () => {
 		render(
 			<PrepScreen
 				{...base}
-				stake={stakeWith({ coverageDemand: 12, coverageHeld: 12 })}
+				stake={stakeWith({
+					coverageLadder: { floor: 0, ok: 0, healthy: 12 },
+					coverageHeld: 12,
+				})}
 			/>
 		);
 		expect(screen.getByText("12% / 12%")).toHaveClass("text-viridian");

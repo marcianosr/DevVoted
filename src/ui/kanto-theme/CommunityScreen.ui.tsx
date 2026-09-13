@@ -406,7 +406,7 @@ export const CommunityScreen = ({
 	standouts,
 	polls,
 	conversation,
-	width = "wide",
+	width,
 }: CommunityScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width}>
 		<CommunityHeading {...header} />

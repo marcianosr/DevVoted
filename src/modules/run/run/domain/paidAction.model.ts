@@ -65,6 +65,38 @@ export const lintApplies = (state: RunState): boolean => {
 export const canRunLinter = (state: RunState): boolean =>
 	lintApplies(state) && state.storage >= lintFeeFor(state);
 
+export type PaidRefusal =
+	| "offline"
+	| "otherCategory"
+	| "frozen"
+	| "rateLimited"
+	| "lastWrongStanding"
+	| "alreadyPeeked"
+	| "cannotAfford";
+
+export const lintRefusalOf = (state: RunState): PaidRefusal | undefined => {
+	const poll = state.polls[state.currentIndex];
+	if (!poll) return "otherCategory";
+	if (!canLint(state.build.configs, poll.category)) return "otherCategory";
+	if (!canLint(liveConfigsOf(state), poll.category)) return "offline";
+	if (auditsFreezeManualEffects(auditsOf(state))) return "frozen";
+	if (rateLimited(state)) return "rateLimited";
+	if (wrongStillOn(state).length <= 1) return "lastWrongStanding";
+	if (state.storage < lintFeeFor(state)) return "cannotAfford";
+	return undefined;
+};
+
+export const peekRefusalOf = (state: RunState): PaidRefusal | undefined => {
+	const poll = state.polls[state.currentIndex];
+	if (!poll) return "alreadyPeeked";
+	if (!peekerFor(liveConfigsOf(state))) return "offline";
+	if (auditsFreezeManualEffects(auditsOf(state))) return "frozen";
+	if (rateLimited(state)) return "rateLimited";
+	if ((state.peekedPollIds ?? []).includes(poll.id)) return "alreadyPeeked";
+	if (state.storage < peekFeeFor(state)) return "cannotAfford";
+	return undefined;
+};
+
 export const spendLint = (state: RunState): RunState => {
 	if (!canRunLinter(state)) return state;
 	const cost = lintFeeFor(state);

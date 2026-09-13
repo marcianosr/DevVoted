@@ -1,47 +1,17 @@
-import { kbLabel } from "~/shared/lib/storage";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import { useState } from "react";
+
 import {
-	maxLevelOf,
-	slotsOf,
-} from "~/modules/run/config/domain/config.model";
+	handCardFor,
+	NEW_RUN_BUILD_NOTE,
+	newRunBuildFor,
+	newRunDealsFor,
+	newRunFooterFor,
+	newRunHeaderFor,
+} from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import {
-	NewRunScreen,
-	type DealRow,
-} from "~/ui/terminal-theme/screens/NewRunScreen.ui";
-import type { SlotTrackDeal } from "~/ui/terminal-theme/SlotTrack.ui";
-import { countRange, plural } from "~/ui/terminal-theme/format";
-
-const buyDeal = (
-	view: RunView,
-	onBuySlot: () => void
-): SlotTrackDeal | undefined => {
-	const { buy } = view.startSlotDeals;
-	if (buy.costKb === undefined) return undefined;
-
-	return {
-		label: `Buy slot ${view.slots + 1}`,
-		price: kbLabel(buy.costKb),
-		refusal: buy.refusal,
-		onUse: buy.refusal === undefined ? onBuySlot : undefined,
-	};
-};
-
-const cashDeal = (
-	view: RunView,
-	onRefundSlot: () => void
-): SlotTrackDeal | undefined => {
-	const { cash } = view.startSlotDeals;
-	if (cash.costKb === undefined) return undefined;
-
-	return {
-		label: `Hand slot ${view.slots} back`,
-		price: kbLabel(cash.costKb),
-		refusal: cash.refusal,
-		onUse: cash.refusal === undefined ? onRefundSlot : undefined,
-	};
-};
+import { NewRunScreen } from "~/ui/kanto-theme/NewRunScreen.ui";
 
 export type StartViewProps = {
 	view: RunView;
@@ -51,6 +21,9 @@ export type StartViewProps = {
 	onStart: () => void;
 };
 
+const HAND_NOTE =
+	"The hand costs no storage, only room. Nothing is required, and the smallest three always fit together.";
+
 export const StartView = ({
 	view,
 	onToggle,
@@ -58,52 +31,48 @@ export const StartView = ({
 	onRefundSlot,
 	onStart,
 }: StartViewProps) => {
-	const { gateStake, startSlotDeals } = view;
-	const swatch = swatchForGate(gateStake.gateNumber);
-	const installed = new Set(view.configs.map((config) => config.id));
+	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
 
-	const dealRow = (config: Config): DealRow => {
-		const selected = installed.has(config.id);
-		const fits = slotsOf(config) <= view.slotsFree;
-		return {
-			name: config.label,
-			detail: config.description,
-			slots: slotsOf(config),
-			version: config.level ?? 1,
-			maxVersion: maxLevelOf(config),
-			selected,
-			toggleLabel: selected
-				? `Uninstall ${config.label}`
-				: `Install ${config.label}`,
-			onToggle: selected || fits ? () => onToggle(config.id) : undefined,
-			locked: !selected && !fits,
-			recommended: !selected && view.recommendedConfigIds.includes(config.id),
-		};
-	};
+	const toggleInfo = (name: string) =>
+		setOpenInfo(name === openInfo ? undefined : name);
+
+	const held = new Set(view.configs.map((config) => config.id));
+	const free = view.slots - occupiedSlots(view.configs);
+	const suggested = new Set(view.recommendedConfigIds);
+
+	const cards = view.available.map((config) =>
+		handCardFor({
+			config,
+			held: held.has(config.id),
+			suggested: !held.has(config.id) && suggested.has(config.id),
+			fits: slotsOf(config) <= free,
+			onPress: () => onToggle(config.id),
+		})
+	);
 
 	return (
 		<NewRunScreen
-			theme={view.gateTheme}
-			header={{
-				title: "New run",
-				subtitle: `${swatch?.gateName ?? "First gate"} · ${gateStake.coverageDemand}% coverage · ${gateStake.missIsFree ? "a miss costs nothing" : `miss removes ${countRange(gateStake.peelConfigsOnFailure.fewest, gateStake.peelConfigsOnFailure.most, "config")}`}`,
-				swatch: swatch?.theme,
-				swatchState: "pending",
-				value: kbLabel(startSlotDeals.archiveKb),
-				caption: "archive",
+			header={newRunHeaderFor(view.startSlotDeals.archiveKb)}
+			build={newRunBuildFor(
+				view.configs,
+				view.slots,
+				onToggle,
+				newRunDealsFor(
+					{ capacity: view.slots, ...view.startSlotDeals },
+					onBuySlot,
+					onRefundSlot
+				),
+				{ openInfo, onToggleInfo: toggleInfo }
+			)}
+			hand={{
+				cards,
+				left: cards.filter((card) => card.install?.disabled === false).length,
+				note: HAND_NOTE,
+				openInfo,
+				onToggleInfo: toggleInfo,
 			}}
-			dealt={{
-				meta: `${view.configs.length} of ${view.available.length} picked`,
-				rows: view.available.map(dealRow),
-			}}
-			storage={{
-				meta: `${view.slotsUsed} of ${plural(view.slots, "slot")}`,
-				slots: view.slots,
-				buy: buyDeal(view, onBuySlot),
-				cash: cashDeal(view, onRefundSlot),
-			}}
-			startLabel={view.canStart ? "Start the run →" : "Pick a config to start"}
-			onStart={view.canStart ? onStart : undefined}
+			buildNote={NEW_RUN_BUILD_NOTE}
+			footer={newRunFooterFor(view.canStart ? onStart : undefined)}
 		/>
 	);
 };
