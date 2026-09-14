@@ -19,10 +19,16 @@ import {
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderFunds } from "~/ui/kanto-theme/Header.ui";
 import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
+import type {
+	PollScoreRow,
+	PollScoresProps,
+} from "~/ui/kanto-theme/PollScores.ui";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 
 const RUN_GATE_COUNT = VICTORY_GATE + 1;
@@ -44,12 +50,43 @@ export const PREP_COMMUNITY_LABEL = "Community";
 const START_LEAD = "Start";
 
 export const PREP_POLLS_TITLE = "The five polls";
-export const PREP_LOCK_NOTE = "Starting locks this build for the window.";
 const BILL_LEAD = "bills";
 const BILL_TRAIL = "on a clear";
 const NO_AUDITS = "none this gate";
 const AUDIT_COUNT_TRAIL = "this gate";
 const RUNG_MARKS = "rungs";
+const CORRECT_OUTCOME = "correct";
+
+/**
+ * Every gate asks exactly SLICE_WINDOW polls, so the append-only record needs no
+ * gate of its own: position divides into one.
+ */
+const rightAnswersIn = (answered: readonly AnsweredPoll[]): number =>
+	answered.filter((poll) => poll.outcome === CORRECT_OUTCOME).length;
+
+const rightAnswersPerGate = (
+	answered: readonly AnsweredPoll[],
+	gate: number
+): number[] =>
+	Array.from({ length: gate + 1 }, (_, index) =>
+		answered
+			.slice(index * SLICE_WINDOW, (index + 1) * SLICE_WINDOW)
+			.filter((poll) => poll.outcome === CORRECT_OUTCOME)
+	).map((polls) => polls.length);
+
+export const pollScoresFor = (
+	gate: number,
+	answered: readonly AnsweredPoll[]
+): PollScoresProps => ({
+	rows: rightAnswersPerGate(answered, gate).map(
+		(correct, index): PollScoreRow => ({
+			swatch: gateSwatchAt(index),
+			correct,
+			polls: SLICE_WINDOW,
+			...(index === gate ? { current: true } : {}),
+		})
+	),
+});
 
 const categoryTally = (codes: readonly CategoryCode[]): LedgerFigure[] => {
 	const counts = codes.reduce<Map<CategoryCode, number>>(
@@ -152,29 +189,40 @@ const auditBillFor = (
 
 export type PrepFrame = {
 	gate: number;
+	answeredPolls: readonly AnsweredPoll[];
+	/**
+	 * This window's answers, in order. Not a slice of `answeredPolls`: that record
+	 * is append-only across attempts, so a retried gate leaves it holding ten
+	 * entries where the position arithmetic expects five.
+	 */
+	answeredThisGate?: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	balanceKb: number;
 	planTier: number;
 	window: PrepWindow;
 	bar: CoverageBarProps;
+	/** Where the run stood when this window opened. Defaults to the live reading. */
+	openingHeld?: number;
 	coverageGainPercent: number;
 	peelKb: number;
 	payout: (correct: number) => number;
-	answered?: number;
 };
 
 export const prepPropsFor = ({
 	gate,
+	answeredPolls,
+	answeredThisGate = [],
 	configs,
 	balanceKb,
 	planTier,
 	window,
 	bar,
+	openingHeld = bar.held,
 	coverageGainPercent,
 	peelKb,
 	payout,
-	answered = 0,
 }: PrepFrame): PrepScreenProps => {
+	const answered = answeredThisGate.length;
 	const swatch = gateSwatchAt(gate);
 	const audits = auditsForGate(gate, DEFAULT_AUDIT_SCHEDULE);
 	const prefetcher = prefetcherFor(configs);
@@ -199,6 +247,10 @@ export const prepPropsFor = ({
 		outcomes: bandOutcomesPropsFor(
 			{
 				gateName: swatch.gateName,
+				gate,
+				correctThisGate: rightAnswersIn(answeredThisGate),
+				held: bar.held,
+				openingHeld,
 				ladder: bar,
 				coverageGainPercent,
 				peelKb,
@@ -206,6 +258,7 @@ export const prepPropsFor = ({
 			},
 			{ ...bar, marks: RUNG_MARKS }
 		),
+		scores: pollScoresFor(gate, answeredPolls),
 		polls: {
 			title: PREP_POLLS_TITLE,
 			badge: prefetcher?.label,
@@ -218,18 +271,14 @@ export const prepPropsFor = ({
 			alerts: audits.map(auditPropsFor),
 		},
 		footer: {
-			aside: {
-				label: PREP_COMMUNITY_LABEL,
-				icon: "community",
-				onPress: noop,
-			},
+			asides: [
+				{ label: PREP_COMMUNITY_LABEL, icon: "community", onPress: noop },
+			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,
 				icon: "chevron",
 				onPress: noop,
 			},
-			note: PREP_LOCK_NOTE,
-			noteAt: "row",
 		},
 	};
 };

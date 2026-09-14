@@ -28,7 +28,9 @@ import {
 	BASE_UNIT,
 	type CoverageBreakdown,
 	type CoverageFactors,
+	creditFor,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 export type Build = {
 	readonly id: string;
@@ -163,19 +165,25 @@ export const gateClearPayout = (
 			(correct / SLICE_WINDOW)
 	) + storageOnClearFor(configs);
 
-const coveragePerCorrectRaw = (configs: readonly Config[]): number => {
+const coveragePerCorrectRaw = (
+	configs: readonly Config[],
+	answerType: AnswerType
+): number => {
 	const { mult, add } = coverageProfileFor(configs);
-	return BASE_UNIT * (1 + add) * mult * throttleFor(configs);
+	return BASE_UNIT * creditFor(answerType) * (1 + add) * mult * throttleFor(configs);
 };
 
 export const perAnswerPreviewFor = (
-	configs: readonly Config[]
+	configs: readonly Config[],
+	answerType: AnswerType = "single"
 ): PerAnswerPreview => {
 	const focusMultipliers = configs
 		.filter((config) => config.focusCategory !== undefined)
 		.map(focusMultiplierOf);
 	return {
-		coveragePerCorrect: roundToTwoDecimals(coveragePerCorrectRaw(configs)),
+		coveragePerCorrect: roundToTwoDecimals(
+			coveragePerCorrectRaw(configs, answerType)
+		),
 		coveragePerWrong: 0,
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
@@ -205,7 +213,10 @@ export const coverageForAnswer = (
 ): number => {
 	if (share <= 0) return 0;
 	return roundToTwoDecimals(
-		BASE_UNIT * share * buildMultiplierOf(coversFor(configs, context)) +
+		BASE_UNIT *
+			share *
+			creditFor(context.answerType) *
+			buildMultiplierOf(coversFor(configs, context)) +
 			streakUnitBonus(streakBefore)
 	);
 };
@@ -234,7 +245,7 @@ export const coverageBreakdownForAnswer = (
 
 	const streakBonus = streakUnitBonus(streakBefore);
 	const earned = coverageForAnswer(configs, context, share, streakBefore);
-	const gain = BASE_UNIT * share;
+	const gain = BASE_UNIT * share * creditFor(context.answerType);
 
 	const covered = configs
 		.map((config) => ({

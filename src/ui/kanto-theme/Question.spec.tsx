@@ -11,7 +11,6 @@ const OPTIONS = [
 ] satisfies QuestionOption[];
 
 const props = {
-	category: "TypeScript",
 	answerType: "single",
 	question: "Which utility type makes every property optional?",
 	options: OPTIONS,
@@ -24,58 +23,6 @@ describe("Question", () => {
 		expect(screen.getByRole("heading", { name: props.question })).toHaveClass(
 			"text-display"
 		);
-	});
-
-	it("badges the category the poll was drawn from", () => {
-		render(<Question {...props} />);
-
-		expect(screen.getByText("TypeScript")).toHaveClass("badge-theme");
-	});
-
-	it("lets the category badge follow the screen unless given a colour", () => {
-		render(<Question {...props} />);
-
-		expect(screen.getByText("TypeScript")).not.toHaveAttribute(
-			"data-screen-theme"
-		);
-	});
-
-	it("counts the options and names a single-answer poll", () => {
-		render(<Question {...props} />);
-
-		expect(screen.getByText("3 options · single answer")).toBeInTheDocument();
-	});
-
-	it("names a multiple-answer poll in the plural", () => {
-		render(<Question {...props} answerType="multiple" />);
-
-		expect(
-			screen.getByText("3 options · multiple answers")
-		).toBeInTheDocument();
-	});
-
-	it("prices a wrong answer beside the poll's own facts", () => {
-		render(<Question {...props} wrongCost="0.77" />);
-
-		expect(screen.getByText("wrong costs")).toBeInTheDocument();
-		expect(screen.getByText("0.77")).toHaveAttribute(
-			"data-screen-theme",
-			"cinnabar"
-		);
-	});
-
-	it("says nothing about the cost of a miss when there is none to name", () => {
-		render(<Question {...props} />);
-
-		expect(screen.queryByText("wrong costs")).not.toBeInTheDocument();
-	});
-
-	it("keeps the price on the facts row rather than above the question", () => {
-		render(<Question {...props} wrongCost="0.77" />);
-
-		const facts = screen.getByText("wrong costs").closest("div");
-		expect(facts).toHaveTextContent("TypeScript");
-		expect(facts).toHaveTextContent("3 options");
 	});
 
 	it("lists one choice per option, lettered", () => {
@@ -137,5 +84,32 @@ describe("Question", () => {
 
 		expect(screen.getByText("4 KB")).toBeInTheDocument();
 		expect(screen.queryByText("Optional<T>")).not.toBeInTheDocument();
+	});
+
+	it("squares every keycap on a multi-answer poll, not just the sealed ones", () => {
+		render(
+			<Question
+				{...props}
+				answerType="multiple"
+				options={[
+					{ id: "option-1", letter: "A", label: "Partial<T>" },
+					{ id: "option-2", letter: "B", seal: { price: "4 KB" } },
+				]}
+			/>
+		);
+
+		expect(screen.getByText("A")).toHaveClass("rounded-md");
+		expect(screen.getByText("B")).toHaveClass("rounded-md");
+	});
+
+	it("rounds every keycap on a single-answer poll, one pick standing in for a radio", () => {
+		render(
+			<Question
+				{...props}
+				options={[{ id: "option-1", letter: "A", label: "Partial<T>" }]}
+			/>
+		);
+
+		expect(screen.getByText("A")).toHaveClass("rounded-full");
 	});
 });

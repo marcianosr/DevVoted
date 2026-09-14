@@ -23,11 +23,6 @@ export const startSlotPriceKb = (state: RunState): number | undefined =>
 export const startSlotRefundKb = (state: RunState): number | undefined =>
 	atPremium(nextSlotPriceKb(bought(state) - 1));
 
-export const startSlotNextPriceKb = (state: RunState): number | undefined =>
-	state.build.slots + 1 >= MAX_SLOTS
-		? undefined
-		: atPremium(nextSlotPriceKb(bought(state) + 1));
-
 export const canBuyStartSlot = (
 	state: RunState,
 	archiveKb: number

@@ -1,5 +1,3 @@
-import { clsx } from "clsx";
-
 import { Badge } from "./Badge.ui";
 import {
 	CoverageBar,
@@ -9,26 +7,21 @@ import {
 	type CoverageBarProps,
 } from "./CoverageBar.ui";
 import type { KantoColor } from "./colors";
-import { Panel } from "./Panel.ui";
-import {
-	PanelTable,
-	TABLE_DIVIDER,
-	TABLE_ROW,
-	type PanelTableColumn,
-} from "./PanelTable.ui";
+import { Objectives, type ObjectivesProps } from "./Objectives.ui";
+import { PanelV2, type PanelV2Column } from "./PanelV2.ui";
+
 import { Typography } from "./Typography.ui";
 
-const SECTION = "flex w-full flex-col gap-3";
-const ROW = `${TABLE_ROW} items-baseline gap-4`;
 const FATAL = "border-l-2 border-theme";
 
 const LEAD_FIGURE_COLOR: KantoColor = "pewter";
+const LEAD_GAIN_COLOR: KantoColor = "viridian";
 
 const COLUMNS = [
 	{ label: "band", width: "w-28 shrink-0" },
 	{ label: "coverage", width: "min-w-0 flex-1" },
 	{ label: "pays", width: "ml-auto shrink-0" },
-] as const satisfies readonly PanelTableColumn[];
+] as const satisfies readonly PanelV2Column[];
 
 const [BAND_COLUMN, RANGE_COLUMN, PAYS_COLUMN] = COLUMNS;
 
@@ -39,8 +32,9 @@ const PAYS = `self-center ${PAYS_COLUMN.width}`;
 const FATAL_BAND: CoverageBandId = "danger";
 
 export type LeadBand = { band: CoverageBandId; figure?: never };
-export type LeadFigure = { figure: string; band?: never };
+export type LeadFigure = { figure: string; gain?: boolean; band?: never };
 export type LeadPart = string | LeadBand | LeadFigure;
+export type LeadLine = readonly LeadPart[];
 
 export type BandOutcome = {
 	band: CoverageBandId;
@@ -51,14 +45,16 @@ export type BandOutcome = {
 export type BandOutcomesProps = {
 	title: string;
 	outcomes: readonly BandOutcome[];
-	lead?: readonly LeadPart[];
+	lead?: readonly LeadLine[];
+	objectives?: ObjectivesProps;
 	note?: string;
 	bar?: CoverageBarProps;
 };
 
 const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
 	if (part.band === undefined) {
-		return <Badge color={LEAD_FIGURE_COLOR}>{part.figure}</Badge>;
+		const color = part.gain === true ? LEAD_GAIN_COLOR : LEAD_FIGURE_COLOR;
+		return <Badge color={color}>{part.figure}</Badge>;
 	}
 
 	return (
@@ -68,9 +64,9 @@ const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
 	);
 };
 
-const Lead = ({ parts }: { parts: readonly LeadPart[] }) => (
+const Lead = ({ line }: { line: LeadLine }) => (
 	<Typography variant="hint">
-		{parts.map((part, index) =>
+		{line.map((part, index) =>
 			typeof part === "string" ? (
 				<span key={`${part}-${index}`}>{part}</span>
 			) : (
@@ -82,17 +78,16 @@ const Lead = ({ parts }: { parts: readonly LeadPart[] }) => (
 
 type OutcomeProps = {
 	outcome: BandOutcome;
-	first: boolean;
 };
 
-const Outcome = ({ outcome, first }: OutcomeProps) => {
+const Outcome = ({ outcome }: OutcomeProps) => {
 	const color = COVERAGE_BAND_COLOR[outcome.band];
 	const fatal = outcome.band === FATAL_BAND;
 
 	return (
-		<div
-			data-screen-theme={fatal ? color : undefined}
-			className={clsx(ROW, !first && TABLE_DIVIDER, fatal && FATAL)}
+		<PanelV2.Row
+			theme={fatal ? color : undefined}
+			className={fatal ? FATAL : undefined}
 		>
 			<span className={BAND}>
 				<Badge color={color}>{COVERAGE_BAND_WORD[outcome.band]}</Badge>
@@ -101,30 +96,43 @@ const Outcome = ({ outcome, first }: OutcomeProps) => {
 			<span className={PAYS}>
 				<Badge color={color}>{outcome.pays}</Badge>
 			</span>
-		</div>
+		</PanelV2.Row>
 	);
 };
 
 export const BandOutcomes = ({
 	title,
 	outcomes,
-	lead,
+	lead = [],
+	objectives,
 	note,
 	bar,
 }: BandOutcomesProps) => (
-	<section className={SECTION}>
-		<Typography variant="title" as="h3">
-			{title}
-		</Typography>
-		{lead === undefined ? null : <Lead parts={lead} />}
-		{bar === undefined ? null : <CoverageBar {...bar} />}
-		<Panel>
-			<PanelTable columns={COLUMNS}>
-				{outcomes.map((outcome, index) => (
-					<Outcome key={outcome.band} outcome={outcome} first={index === 0} />
+	<PanelV2>
+		<PanelV2.Header label={title} />
+		{lead.length === 0 ? null : (
+			<PanelV2.Body>
+				{lead.map((line, index) => (
+					<Lead key={index} line={line} />
 				))}
-			</PanelTable>
-		</Panel>
-		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
-	</section>
+			</PanelV2.Body>
+		)}
+		{objectives === undefined ? null : <Objectives {...objectives} />}
+		{bar === undefined ? null : (
+			<PanelV2.Body>
+				<CoverageBar {...bar} />
+			</PanelV2.Body>
+		)}
+		<PanelV2.Columns columns={COLUMNS} />
+		<PanelV2.Rows>
+			{outcomes.map((outcome) => (
+				<Outcome key={outcome.band} outcome={outcome} />
+			))}
+		</PanelV2.Rows>
+		{note === undefined ? null : (
+			<PanelV2.Footer>
+				<Typography variant="hint">{note}</Typography>
+			</PanelV2.Footer>
+		)}
+	</PanelV2>
 );

@@ -34,6 +34,7 @@ import {
 	BASE_SLOTS,
 	MAX_SLOTS,
 	SLICE_WINDOW,
+	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	hydrateRunState,
@@ -54,6 +55,7 @@ import {
 	healthyAt,
 	okAt,
 	percentOf,
+	runCoverageOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 const BASE_GAIN = BASE_UNIT;
@@ -606,6 +608,10 @@ describe("the gate stake travels as one object", () => {
 				healthy: percentOf(healthyAt(4)),
 			},
 			coverageHeld: state.window.unitsEarned,
+			coverageAtOpen: roundToOneDecimal(
+				percentOf(runCoverageOf(state.bankedUnits, 4))
+			),
+			unitsHeld: state.bankedUnits + state.window.unitsEarned,
 			audits: auditsForGate(4, scheduleOf(state)).map((audit) =>
 				expect.objectContaining({ id: audit.id, suppressed: false })
 			),

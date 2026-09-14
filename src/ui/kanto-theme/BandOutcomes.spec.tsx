@@ -4,13 +4,13 @@ import { render, screen, within } from "@testing-library/react";
 import {
 	BandOutcomes,
 	type BandOutcome,
-	type LeadPart,
+	type LeadLine,
 } from "./BandOutcomes.ui";
 import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
 
 const TITLE = "Objectives and rewards";
 const LEAD_TEXT = "Clear at ";
-const LEAD: readonly LeadPart[] = [LEAD_TEXT, { band: "ok" }, " or better."];
+const LEAD: readonly LeadLine[] = [[LEAD_TEXT, { band: "ok" }, " or better."]];
 const NOTE =
 	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
 
@@ -115,9 +115,10 @@ describe("BandOutcomes", () => {
 	it("rules between the outcomes but not above the first", () => {
 		const { container } = draw();
 
-		expect(container.querySelectorAll(".border-t")).toHaveLength(
-			OUTCOMES.length - 1
-		);
+		const ruled = [...container.querySelectorAll(".border-t")];
+
+		expect(ruled).toHaveLength(OUTCOMES.length);
+		expect(ruled[0]).toHaveClass("first:border-t-0");
 	});
 
 	it("heads the table so the screen says what the rows are for", () => {
@@ -140,10 +141,11 @@ describe("the prose around the table", () => {
 			<BandOutcomes title={TITLE} outcomes={OUTCOMES} lead={LEAD} />
 		);
 
-		const section = container.querySelector("section") as HTMLElement;
-		const [heading, lead] = [...section.children];
+		const [lead] = [
+			...(container.querySelector("header + div")?.children ?? []),
+		];
 
-		expect(heading).toHaveRole("heading");
+		expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
 		expect(lead).toHaveTextContent("Clear at OK or better.");
 	});
 
@@ -173,10 +175,11 @@ describe("the ladder the outcomes are cut from", () => {
 			<BandOutcomes title={TITLE} outcomes={OUTCOMES} bar={LADDER} />
 		);
 
-		const section = container.querySelector("section") as HTMLElement;
-		const [heading, bar] = [...section.children];
+		const [bar] = [
+			...(container.querySelector("header + div")?.children ?? []),
+		];
 
-		expect(heading).toHaveRole("heading");
+		expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
 		expect(bar).toHaveClass("coverage-bar");
 	});
 

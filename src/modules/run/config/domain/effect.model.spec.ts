@@ -13,7 +13,12 @@ import {
 const answering = (
 	category: AnswerContext["category"],
 	answeredBefore = 1
-): AnswerContext => ({ category, answeredBefore, cachedHits: 0 });
+): AnswerContext => ({
+	category,
+	answerType: "single",
+	answeredBefore,
+	cachedHits: 0,
+});
 
 describe("effectOf — Focus", () => {
 	it("pays its multiplier in-category and 1× outside it", () => {
@@ -149,6 +154,7 @@ const onPoll = (
 	extras: Partial<PollStatusContext> = {}
 ): PollStatusContext => ({
 	category,
+	answerType: "single",
 	answeredBefore,
 	cachedHits: 0,
 	suppressingAudit: false,

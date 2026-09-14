@@ -3,10 +3,12 @@ import { useState } from "react";
 import {
 	handCardFor,
 	NEW_RUN_BUILD_NOTE,
+	NEW_RUN_REGISTRY_NOTE,
 	newRunBuildFor,
 	newRunDealsFor,
 	newRunFooterFor,
 	newRunHeaderFor,
+	newRunRegistryFor,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
@@ -20,9 +22,6 @@ export type StartViewProps = {
 	onRefundSlot: () => void;
 	onStart: () => void;
 };
-
-const HAND_NOTE =
-	"The hand costs no storage, only room. Nothing is required, and the smallest three always fit together.";
 
 export const StartView = ({
 	view,
@@ -40,7 +39,7 @@ export const StartView = ({
 	const free = view.slots - occupiedSlots(view.configs);
 	const suggested = new Set(view.recommendedConfigIds);
 
-	const cards = view.available.map((config) =>
+	const offers = view.available.map((config) =>
 		handCardFor({
 			config,
 			held: held.has(config.id),
@@ -64,14 +63,12 @@ export const StartView = ({
 				),
 				{ openInfo, onToggleInfo: toggleInfo }
 			)}
-			hand={{
-				cards,
-				left: cards.filter((card) => card.install?.disabled === false).length,
-				note: HAND_NOTE,
+			registry={newRunRegistryFor(offers, {
 				openInfo,
 				onToggleInfo: toggleInfo,
-			}}
+			})}
 			buildNote={NEW_RUN_BUILD_NOTE}
+			registryNote={NEW_RUN_REGISTRY_NOTE}
 			footer={newRunFooterFor(view.canStart ? onStart : undefined)}
 		/>
 	);

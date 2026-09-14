@@ -15,12 +15,29 @@ const VERDICT_WORD = {
 	wrong: "FAIL",
 } satisfies Record<VerdictOutcome, string>;
 
-const COLUMN = "flex w-20 shrink-0 justify-start";
+const RUNG_FIGURE = new Map([
+	[0.25, "¼"],
+	[0.5, "½"],
+	[0.75, "¾"],
+]);
 
-export type VerdictProps = { outcome: VerdictOutcome };
+const COLUMN = "flex w-24 shrink-0 justify-start";
 
-export const Verdict = ({ outcome }: VerdictProps) => (
-	<span className={COLUMN}>
-		<Badge color={VERDICT_COLOR[outcome]}>{VERDICT_WORD[outcome]}</Badge>
-	</span>
-);
+const rungFigureFor = (share: number | undefined): string | undefined =>
+	share === undefined ? undefined : RUNG_FIGURE.get(share);
+
+export type VerdictProps = { outcome: VerdictOutcome; share?: number };
+
+export const Verdict = ({ outcome, share }: VerdictProps) => {
+	const rung = outcome === "partial" ? rungFigureFor(share) : undefined;
+
+	return (
+		<span className={COLUMN}>
+			<Badge color={VERDICT_COLOR[outcome]}>
+				{rung === undefined
+					? VERDICT_WORD[outcome]
+					: `${VERDICT_WORD[outcome]} ${rung}`}
+			</Badge>
+		</span>
+	);
+};

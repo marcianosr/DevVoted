@@ -1,0 +1,18 @@
+---
+# DVTD-5121
+title: GateStakeReceipt prints the per-answer gain as a raw unit count
+status: todo
+type: bug
+priority: normal
+created_at: 2026-09-14T13:49:37Z
+updated_at: 2026-09-14T13:49:37Z
+---
+
+`GateStakeReceipt.ui.tsx:297` renders `+${perAnswer.coveragePerCorrect}% coverage`.
+`coveragePerCorrect` is in **units**, not a share of the bar, so the figure is
+`scoringSlotsAt(gate)` times too high — at gate 4 a x3 build reads "+3%" where the
+honest number is 12%, and at gate 0 "+1%" where it is 20%.
+
+The same mistake was fixed on the prep frame in DVTD-xj95 by
+`coverageGainPercentFor(units, gate)` in `coverageRatio.model.ts`; the receipt just
+needs the same call.

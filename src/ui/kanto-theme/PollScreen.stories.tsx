@@ -13,7 +13,6 @@ import {
 	createKantoHeaderProps,
 	createKantoPollScreenProps,
 	createKantoQuestionProps,
-	createKantoTrailProps,
 	kantoAudits,
 	kantoRunningConfigs,
 } from "~/test/kantoPoll.factory";
@@ -21,6 +20,7 @@ import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
 import type { AuditProps } from "./Audit.ui";
 import { PollScreen } from "./PollScreen.ui";
+import { REDACTED } from "./Redaction.ui";
 import type { QuestionOption } from "./Question.ui";
 
 const SUBMIT_LABEL = "Submit answer";
@@ -184,9 +184,8 @@ export const FirstGate: Story = {
 			}),
 			counts: { ready: 0, applies: 2, offline: 0, changing: 0 },
 		}),
-		trail: createKantoTrailProps({ current: 1, verdicts: [] }),
 		audits: [],
-		question: createKantoQuestionProps({ wrongCost: undefined }),
+		wrongCost: undefined,
 	},
 };
 
@@ -197,11 +196,7 @@ export const LateRun: Story = {
 			swatches: trackTo(LATE_GATE),
 			funds: fundsOf(12_408, BALANCE_WORD),
 		}),
-		trail: createKantoTrailProps({
-			current: 5,
-			verdicts: ["correct", "correct", "wrong", "correct"],
-		}),
-		question: createKantoQuestionProps({ wrongCost: "2.40" }),
+		wrongCost: "2.40",
 	},
 };
 
@@ -214,9 +209,8 @@ export const MultipleAnswers: Story = {
 			answerType: "multiple",
 			options: MULTIPLE_ANSWERS,
 			pickedIds: ["option-1", "option-2"],
-			wrongCost: undefined,
 		}),
-		hint: "pick every answer that fits, then submit",
+		wrongCost: undefined,
 		footer: { action: { label: SUBMIT_LABEL, onPress: noop } },
 	},
 };
@@ -228,8 +222,8 @@ export const NothingPicked: Story = {
 			answerType: "multiple",
 			options: MULTIPLE_ANSWERS,
 			pickedIds: [],
-			wrongCost: undefined,
 		}),
+		wrongCost: undefined,
 		footer: {
 			action: { label: SUBMIT_LABEL },
 			refusal: "pick an answer first",
@@ -239,20 +233,19 @@ export const NothingPicked: Story = {
 
 export const Answered: Story = {
 	args: {
-		header: createKantoHeaderProps({
+		coverage: {
 			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD, pin: true }),
-		}),
-		trail: createKantoTrailProps({
-			current: 4,
-			verdicts: ["correct", "wrong", "correct", "correct"],
-		}),
-		question: createKantoQuestionProps({
-			pickedIds: ["option-1"],
-			wrongCost: undefined,
-		}),
+			correct: "38/55 correct",
+		},
+		question: createKantoQuestionProps({ pickedIds: ["option-1"] }),
+		wrongCost: undefined,
 		hint: undefined,
 		footer: { action: { label: NEXT_LABEL, icon: "gate", onPress: noop } },
 	},
+};
+
+export const HiddenCategory: Story = {
+	args: { category: REDACTED, categoryColor: "pewter" },
 };
 
 export const Credited: Story = {

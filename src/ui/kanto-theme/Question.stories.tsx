@@ -4,7 +4,6 @@ import { createKantoQuestionProps } from "~/test/kantoPoll.factory";
 
 import { KANTO_COLORS } from "./colors";
 import { Question, type QuestionOption } from "./Question.ui";
-import { REDACTED } from "./Redaction.ui";
 import { Screen } from "./Screen.ui";
 
 const CODE = `type Settings = {
@@ -59,7 +58,6 @@ const meta: Meta<typeof Question> = {
 	title: "Kanto/Question",
 	argTypes: {
 		answerType: { control: "inline-radio", options: ["single", "multiple"] },
-		categoryColor: { control: "select", options: KANTO_COLORS },
 		options: { control: "object" },
 	},
 	args: createKantoQuestionProps(),
@@ -76,8 +74,6 @@ type Story = StoryObj<typeof Question>;
 export const Unpicked: Story = {};
 
 export const Picked: Story = { args: { pickedIds: ["option-1"] } };
-
-export const NoWrongCost: Story = { args: { wrongCost: undefined } };
 
 export const MultipleAnswer: Story = {
 	args: {
@@ -122,10 +118,6 @@ export const Sealed: Story = {
 		question: "Which utility type makes every property optional?",
 		options: SEALED_ANSWERS,
 	},
-};
-
-export const HiddenCategory: Story = {
-	args: { category: REDACTED, categoryColor: "pewter" },
 };
 
 export const AcrossThemes: Story = {

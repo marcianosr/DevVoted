@@ -1,3 +1,4 @@
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
@@ -38,6 +39,7 @@ export type Coverage = { readonly mult: number; readonly add: number };
 
 export type AnswerContext = {
 	readonly category: CategoryCode;
+	readonly answerType: AnswerType;
 	readonly answeredBefore: number;
 	readonly cachedHits: number;
 };

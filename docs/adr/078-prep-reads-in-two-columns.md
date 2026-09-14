@@ -60,10 +60,17 @@ to get there.
    its footer names where the stakes are read: *Prep shows what Pallet asks
    before anything is locked.*
 
-7. **New run is the same two columns: the hand left, the build right.** It drew
-   the build twice, once as a readout without its list and once as a list without
-   its readout, which is what put an empty box column under one and a bare
-   "nothing installed yet" under the other.
+7. **New run is the same two columns, in the shop's order: the build left, the
+   deal right.** It drew the build twice, once as a readout without its list and
+   once as a list without its readout, which is what put an empty box column under
+   one and a bare "nothing installed yet" under the other.
+
+   The deal is listed by the shop's `Registry`, titled **Registry**, and `Hand` is
+   deleted. The two sections had one job — offer configs you can install — in two
+   components with mirrored column positions, so a player crossing from New run to
+   the shop had to relearn where the offers live. The registry prices New run's
+   deal *free*, because the hand costs room and not storage; the shop's own
+   per-slot price is unchanged.
 
 8. **A slot that is merely empty gets no row.** The track already draws free room
    as dashed segments, so a stack of `empty slot` boxes says the same thing

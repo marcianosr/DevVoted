@@ -5,6 +5,7 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	buildChipFor,
 	controlRowFor,
+	nextGateFor,
 	offerChipFor,
 	shopHeaderFor,
 	slotDealsFor,
@@ -42,8 +43,6 @@ const EXTEND = {
 const PIN = { glyph: "⚑", detail: "if this run dies, the next resumes here" };
 const PLAN = { glyph: "☁", detail: "raises the cap the run can hold" };
 
-const LOCK_NOTE = "locking offers needs yarn.lock in the build";
-const SHOP_CLOSED_NOTE = "an audit has the shop read-only this gate";
 const TO_PREP = "To prep";
 const OVER_CAPACITY = "the build is over capacity";
 const SEPARATOR = "·";
@@ -150,6 +149,16 @@ export const ShopView = ({
 	return (
 		<ShopScreen
 			header={shopHeaderFor(view.gatePayout.clearedGateNumber, view.storage)}
+			nextGate={nextGateFor(
+				view.gatePayout.clearedGateNumber,
+				view.gateStake.unitsHeld
+			)}
+			controls={controlsOf(view, {
+				onRebuild,
+				onExtend,
+				onPlantPin,
+				onSetStoragePlan,
+			})}
 			build={{
 				configs: view.configs.map((config) =>
 					buildChipFor(config, () => onSell(config.id))
@@ -169,17 +178,6 @@ export const ShopView = ({
 			registry={{
 				offers: offersOf(view, onDraft, onUpgrade),
 				slotPrice: `${kbLabel(DRAFT_COST_PER_SLOT_KB)} a slot`,
-				controls: controlsOf(view, {
-					onRebuild,
-					onExtend,
-					onPlantPin,
-					onSetStoragePlan,
-				}),
-				note: view.shopControls.shopLocked
-					? SHOP_CLOSED_NOTE
-					: view.shopControls.lockAvailable
-						? undefined
-						: LOCK_NOTE,
 				openInfo,
 				onToggleInfo: toggleInfo,
 			}}

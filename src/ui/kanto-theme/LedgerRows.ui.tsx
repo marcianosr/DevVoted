@@ -44,6 +44,7 @@ export type LedgerTag = { label: string; color?: KantoColor };
 export type LedgerRow = {
 	label?: string;
 	verdict?: VerdictOutcome;
+	share?: number;
 	tags?: readonly LedgerTag[];
 	detail?: string;
 	figures?: readonly LedgerFigure[];
@@ -92,7 +93,9 @@ const Row = ({
 
 	return (
 		<div className={clsx(tabled ? TABLED_ROW : ROW, !first && TABLE_DIVIDER)}>
-			{row.verdict === undefined ? null : <Verdict outcome={row.verdict} />}
+			{row.verdict === undefined ? null : (
+				<Verdict outcome={row.verdict} share={row.share} />
+			)}
 			<span className={IDENTITY}>
 				{row.label === undefined ? null : (
 					<span className={row.total === true ? LABEL_TOTAL : LABEL}>

@@ -4,8 +4,10 @@
 
 Accepted 2026-08-06 (Marciano). Superseded ADR-018 the same day it was accepted.
 
-**Live:** Decision 3, the swatch model, plus the two dated notes below on why the
-roster has the length and order it does.
+**Live:** Decision 3's swatch model, plus the two dated notes below on why the
+roster has the length and order it does. **Its award rule is dead**: a swatch is
+won by a flawless window, not by the clear
+([ADR-080](080-the-swatch-is-won-by-the-window.md)).
 
 **Dead:** Decisions 1, 2 and 4. Depth and width were independent here; ADR-034
 then made clears grant slots, ADR-046 made them bought outright, and
@@ -19,8 +21,10 @@ climb. Marciano rejected it a day later; see [rejected.md](rejected.md).
 
 ## Decision: swatches are gate badges
 
-A swatch is keyed to a **gate** and awarded server-side on the clear. You beat
-the leader, you get the badge; backpack space earns nothing. `VICTORY_GATE`
+A swatch is keyed to a **gate** and awarded server-side. You beat the leader, you
+get the badge; backpack space earns nothing. (What counts as beating the leader
+moved to ADR-080: the clear was the test here, a flawless window is the test
+now.) `VICTORY_GATE`
 becomes a content decision (12, so 13 gates and 13 badges), and the roster ends
 **Elite** (gate 11) then **Champion** (gate 12).
 

@@ -3,6 +3,7 @@ export const VICTORY_GATE = 12;
 
 export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
+
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 
 export const BASE_SLOTS = 4;
@@ -141,6 +142,19 @@ export const roundToOneDecimal = (value: number): number =>
 /** Units carry a second decimal: a 1.25x focus on a 1.25x cache is 1.56, not 1.6. */
 export const roundToTwoDecimals = (value: number): number =>
 	Math.round(value * 100) / 100;
+
+export const SHARE_STEP = 0.25;
+export const MIN_PARTIAL_SHARE = SHARE_STEP;
+export const MAX_PARTIAL_SHARE = SHARE_STEP * 3;
+
+export const roundToQuarter = (ratio: number): number =>
+	Math.round(ratio / SHARE_STEP) * SHARE_STEP;
+
+export const partialShareFor = (ratio: number): number =>
+	Math.min(
+		MAX_PARTIAL_SHARE,
+		Math.max(MIN_PARTIAL_SHARE, roundToQuarter(ratio))
+	);
 
 export const isPeelFatal = (
 	quotaSlots: number,

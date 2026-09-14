@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { GateLadder } from "~/modules/run/gate/domain/gate.model";
@@ -34,13 +35,15 @@ const coverageOf = (answer: AnsweredPoll): number =>
 	answer.coverageEarned ?? -(answer.coverageLost ?? 0);
 
 export const gateAnswersOf = (
-	answered: readonly AnsweredPoll[]
+	answered: readonly AnsweredPoll[],
+	gate: number
 ): readonly GateAnswer[] =>
 	answered.map((answer) => ({
 		category: answer.category,
 		question: answer.question,
 		outcome: answer.outcome,
-		coverage: coverageOf(answer),
+		share: answer.coverageFactors?.correct,
+		coverage: coverageGainPercentFor(coverageOf(answer), gate),
 		answerType: answer.answerType ?? "single",
 		options: answer.options ?? [...answer.picked, ...(answer.correct ?? [])],
 		picked: answer.picked,
@@ -62,10 +65,7 @@ const ladderFor = (view: RunView, verdict: GateVerdict): GateLadder =>
 const heldFor = (view: RunView, verdict: GateVerdict): number =>
 	verdict === "held" || verdict === "fatal"
 		? view.gateStake.coverageHeld
-		: gateAnswersOf(view.answeredThisGate).reduce(
-				(sum, answer) => sum + Math.max(0, answer.coverage),
-				0
-			);
+		: view.gatePayout.clearedCoverageHeld;
 
 const paidRowsFor = (view: RunView) =>
 	view.gatePayout.autoUpgradedConfig === null
@@ -89,7 +89,7 @@ export const gateOutcomeFrameOf = (
 
 	return {
 		gate,
-		answers: gateAnswersOf(view.answeredThisGate),
+		answers: gateAnswersOf(view.answeredThisGate, gate),
 		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
 		configs: view.configs,
 		planTier: view.storagePlan.options.find((option) => option.held)?.tier ?? 0,
@@ -157,15 +157,10 @@ export const GateOutcomeView = ({
 						? { onPress: commits ? () => onRemove(chosen) : undefined }
 						: { onPress: onNext }),
 				},
-				...(props.footer.aside === undefined
-					? {}
-					: {
-							aside: {
-								...props.footer.aside,
-								onPress:
-									props.footer.aside.icon === "review" ? onReview : onCommunity,
-							},
-						}),
+				asides: (props.footer.asides ?? []).map((aside) => ({
+					...aside,
+					onPress: aside.icon === "review" ? onReview : onCommunity,
+				})),
 			}}
 		/>
 	);

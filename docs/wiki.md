@@ -96,16 +96,16 @@ attempt, and the run's career total never counts.
 Configs demand nothing ([4.1](#41-what-a-config-is)): all friction lives on the gate.
 A bare build never clears, which is why sell and drop refuse your last config.
 
-**Gates count from 0.** A run opens on gate 0 and summits at gate 12. Four of the
-every clear awards
-that gate's **swatch** ([6.3](#63-swatches)).
+**Gates count from 0.** A run opens on gate 0 and summits at gate 12. Clearing a
+gate moves the run on; a window answered 5 of 5 awards that gate's **swatch**
+([6.3](#63-swatches)), whether or not the gate cleared.
 
 Exactly one of two things happens when the window's 5th poll is answered; nothing is
 decided before that:
 
 | | Condition | Outcome |
 | --- | --- | --- |
-| **Advance** | the meter meets the demand | paid, swatch earned, `gatesCleared + 1`, shop opens |
+| **Advance** | the meter meets the demand | paid, `gatesCleared + 1`, shop opens |
 | **Miss** | the meter fell short | the gate **peels configs** (you pick), then the same gate runs again: strip, review, shop, prep, 5 fresh polls |
 
 **Farming is priced out, not forbidden.** The payout scales with window correctness
@@ -208,12 +208,13 @@ totals** (a percentage per category plus a run total). The career totals feed th
 leaderboard and Focus upgrades
 ([3](#3-your-build)) — they gate no gate.
 
-A correct answer earns `base × share × (1 + adds) × mults`:
+A correct answer earns `base × share × credit × (1 + adds) × mults`:
 
 | Term | Value |
 | --- | --- |
-| `base` | **5%** for a single-answer poll, **8%** for a multiple. Flat: the gate number and the option count do not touch it (ADR-073). |
-| `share` | The fraction of the answer key that landed. 1 for a single-answer poll answered correctly. |
+| `base` | **One unit**. Flat: the gate number and the option count do not touch it (ADR-073). What a unit is worth as a percentage depends on the gate; the arithmetic is in `coverageRatio.model.ts`. |
+| `share` | The fraction of the answer key that landed. 1 for a single-answer poll answered correctly, and one of three rungs for a partial (ADR-079). |
+| `credit` | **×2 on a multiple-choice poll**, ×1 on a single (ADR-081). The one term the poll type sets. |
 | `adds` | Flat additions (Code Coverage: +0.5 of the base per correct). |
 | `mults` | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1), plus the opener, cache and throttle terms a config carries. |
 
@@ -223,9 +224,26 @@ instead: `1 + 0.1 × streak` consecutive correct answers, capped at ×2 (10 step
 gate panel states the ceiling). It survives a gate clear and is never reset by
 one, so perfect play keeps the bonus, it just stops compounding.
 
-**Multi-answer share** is `(correct picks − wrong picks) ÷ total correct`, clamped to
-0..1, so shotgunning every option earns nothing. Only coverage reads this share;
-streak and storage stay binary on the exact-set rule.
+**Multi-answer share** lands on one of three rungs: **1/4, 1/2 or 3/4** (ADR-079).
+It starts as `(correct picks − wrong picks) ÷ total correct`, then rounds to the
+nearest quarter and clamps into that range, so "most of it" reads the same on
+every poll whatever its key size. Only an exact set pays a full unit, which is
+what keeps 7 of 8 caught from rounding into a clean pass.
+
+Every wrong pick cancels a right one, so shotgunning every option earns nothing.
+An answer whose wrong picks cancel its right ones is a **miss**, not a partial:
+it pays nothing, resets the streak and flushes Cache. `PART` always means the
+answer was paid something, and the badge carries the rung it earned (`PART ¾`).
+
+**A multiple-choice answer pays double** (ADR-081), and the doubling runs down
+the ladder with it, so the five outcomes are **0, 0.5, 1, 1.5 and 2 units**.
+Catching half a key is worth a whole clean single: the poll was harder, and half
+of it is real work. The `PART` badge still names the fraction caught, not what it
+paid, so `PART ¾` on a multiple earns 1.5 units.
+
+Only coverage reads the share and the credit. The streak, storage, the gate's
+correct-answer tally and the clear payout all stay binary on the exact-set rule,
+so a full select-all proves one slot like anything else.
 
 **A wrong answer bleeds** a share of what a correct one pays on the same build
 (`share × per-correct coverage`), from the poll's category, the gate meter and the run
@@ -235,7 +253,8 @@ priced off your own earn (a stacked build loses more), it costs nothing while th
 opening gates teach the loop, and it is the only gate-scaled term left in the model.
 
 Example, gate 2, a single-answer CSS poll with `.css` installed:
-`5% base × 1.0 share × 1.25 mults` = **+6.3% CSS coverage**. The post-answer **equation reveal** states that
+`1 unit base × 1.0 share × ×1 credit × 1.25 mults` = **1.25 units of CSS coverage**.
+The same poll as a select-all, fully answered, pays 2.5. The post-answer **equation reveal** states that
 as the arithmetic it is — `(correct + flat adds) × streak × <each multiplying config>`,
 each term a large figure over the muted name it belongs to, every flat add quoting the
 coverage it contributed rather than the factor it works out to, and the total closing
@@ -255,19 +274,26 @@ Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads
 
 A gate resolves on the **band** its coverage meter closes in, not on a single
 threshold (ADR-076). The bands are read off the gate's own healthy line:
-`HEALTHY` is that line, `OK` sits 10 points under it, the survival floor 20
-points under it, and `PERFECT` is a full bar at 100%. At 5% a correct answer
-every band is exactly two answers wide. Both drops clamp at zero, which is what
+`HEALTHY` is that line, `OK` sits two answers under it, the survival floor four
+answers under it, and `PERFECT` is a full bar at 100%. The drops are stated in
+units, so every band is the same ruler at every gate even though it covers 40
+points at gate 0 and 8 at gate 4. Both drops clamp at zero, which is what
 leaves gates 0-1 with no SHAKY band and gates 0-3 with no DANGER band. Live
 numbers are in `coverageRatio.model.ts`.
 
 | Band | The gate | The swatch | The streak | The payout |
 | --- | --- | --- | --- | --- |
-| **PERFECT** — a full bar | Cleared | Won, and marked | Kept | Full, times `PERFECT_BONUS` |
-| **HEALTHY** — at or over the line | Cleared | Won | Kept | Full |
-| **OK** — within 10 points | Cleared, thin | Won | **Broken** | Cut in proportion |
-| **SHAKY** — within 20 points | **Held**: pay the peel and retry, or refuse the gate | Not won | Broken | Nothing |
+| **PERFECT** — a full bar | Cleared | Only if 5 of 5 | Kept | Full, times `PERFECT_BONUS` |
+| **HEALTHY** — at or over the line | Cleared | Only if 5 of 5 | Kept | Full |
+| **OK** — within 10 points | Cleared, thin | Only if 5 of 5 | **Broken** | Cut in proportion |
+| **SHAKY** — within 20 points | **Held**: pay the peel and retry, or refuse the gate | Only if 5 of 5 | Broken | Nothing |
 | **DANGER** — under the floor | **The run ends** | Not won | — | Nothing |
+
+**The swatch column reads the window, not the band** (ADR-080). Clearing and
+earning the badge are two prizes on one window and either can land without the
+other: a flawless window can still close SHAKY on a bad history, and a
+comfortable clear can carry a miss. DANGER is the one row that can never pay it,
+because zero misses cannot land under the floor.
 
 **The OK cut is not a separate penalty.** A gate pays on
 `coverage ÷ the gate's line`, capped, so a run that closes under the line is
@@ -345,19 +371,22 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 
 | Gate | Swatch | Coverage in its window | A clear pays | A miss peels | Audit | Also unlocks |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0 | Pallet | 5% | 32 KB | **nothing** | (clean) | Shop, **Rebuild** |
-| 1 | Boulder | 10% | 64 KB | 20% | (clean) | — |
-| 2 | Cascade | 15% | 96 KB | 20% | (clean) | **Extend** |
-| 3 | Thunder | 20% | 128 KB | 25% | 402 Payment Required | — |
-| 4 | Lavender | 25% | 160 KB | 25% | 1 of pool A | — |
-| 5 | Rainbow | 30% | 192 KB | 25% | 1 of pool A | — |
-| 6 | Soul | 40% | 224 KB | 25% | 1 of pool A | — |
-| 7 | Marsh | 50% | 256 KB | 30% | 1 of pool A | — |
-| 8 | Seafoam | 60% | 288 KB | 30% | 2 of pool B | — |
-| 9 | Volcano | 70% | 320 KB | 30% | 2 of pool B | — |
+| 0 | Pallet | 20% | 32 KB | **nothing** | (clean) | Shop, **Rebuild** |
+| 1 | Boulder | 30% | 64 KB | 20% | (clean) | — |
+| 2 | Cascade | 40% | 96 KB | 20% | (clean) | **Extend** |
+| 3 | Thunder | 45% | 128 KB | 25% | 402 Payment Required | — |
+| 4 | Lavender | 50% | 160 KB | 25% | 1 of pool A | — |
+| 5 | Rainbow | 55% | 192 KB | 25% | 1 of pool A | — |
+| 6 | Soul | 60% | 224 KB | 25% | 1 of pool A | — |
+| 7 | Marsh | 65% | 256 KB | 30% | 1 of pool A | — |
+| 8 | Seafoam | 70% | 288 KB | 30% | 2 of pool B | — |
+| 9 | Volcano | 75% | 320 KB | 30% | 2 of pool B | — |
 | 10 | Earth | 80% | 352 KB | 30% | 2 of pool B | — |
-| 11 | Elite | 90% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
-| 12 | Champion | 95% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+| 11 | Elite | 85% | 384 KB | **45%** | 410 Gone + 2 of pool C | — |
+| 12 | Champion | 90% | 416 KB | **50%** | 408 Request Timeout (5 polls, 20 s) + 410 Gone + 413 Payload Too Large | Clearing it wins the run |
+
+The clear column is what a flawless window pays before build multipliers and before
+the streak.
 
 The coverage column is the gate's HEALTHY line, straight off `HEALTHY_LADDER`. A
 bare build earns at most 25% in a five-poll gate at every gate alike, so the
@@ -382,7 +411,7 @@ never a running total. The unlock column names no width at all: slots are bought
 handed over ([5.1](#51-storage-kb)). The peel column is a share, so it already scales
 with the build it hits.
 
-**Pallet is the calibration gate** (ADR-057). It asks 5%, which is one correct answer, but a miss there
+**Pallet is the calibration gate** (ADR-057). It asks 20%, which is one correct answer, but a miss there
 peels nothing and cannot end a run, so the first failure teaches the loop for free:
 you read your answers back, shop, and run the same gate again on 5 fresh polls. The only
 death at gate 0 is a build with nothing in it, which could never pass. From **Boulder**
@@ -444,7 +473,7 @@ The room count itself sits in the section's own heading — "5 configs · 7 of 1
 3 free", reading "over by 2" instead when a build sits over its cap — so the totals are
 readable with no pointer at all. On a phone, where there is no hover, a config's own
 chip stands in for it: opening a chip's panel lights its box on the track and prices it
-on the line. Width carries no swatch: badges come from clearing gates.
+on the line. Width carries no swatch: badges come from flawless windows.
 
 **Managing configs.** Click any config chip for its popover: **Install**, **Sell**
 (refunds half the draft cost in KB), **Minify**, or **Upgrade**. Anything can be
@@ -835,8 +864,8 @@ and streak injections (DVTD-xbri).
 ### 6.2 Unlocks
 
 Configs are exposed on the **Reveal / Grant / Stage** model (ADR-050/051). Grant
-gates the starting hand only — the registry always offers the whole roster.
-Eight configs are granted at signup (js, ts, css, eslint, unit-tests,
+gates the starting hand only — the shop's registry always offers the whole
+roster. Eight configs are granted at signup (js, ts, css, eslint, unit-tests,
 code-coverage, indexed-db, cold-start); the other 27 each unlock
 **individually**: a thematic objective that teaches the config's own mechanic
 ("Peek the community split 5 times") OR a lifetime polls-answered fallback,
@@ -865,16 +894,18 @@ mastered polls correctly.
 
 ### 6.3 Swatches
 
-**Gate swatches** are thirteen badges, one per gate, earned by **clearing** it: you beat
-the leader, you get the badge. The ladder reads Pallet, Boulder, Cascade, Thunder,
+**Gate swatches** are thirteen badges, one per gate, earned by answering all **5 of
+its 5 polls** right (ADR-080): you beat the leader clean, you get the badge.
+Clearing the gate moves the run on and pays it; only a flawless window takes the
+badge home. The ladder reads Pallet, Boulder, Cascade, Thunder,
 Lavender, Rainbow, Soul, Marsh, Seafoam, Volcano, Earth, Elite, Champion: gate 0 is
 **Pallet** where every journey starts, the eight gen-1 gym badges run in strict
 trainer-card order, the two Kanto landmarks that never had a gym sit where the games
 actually walk you through them (**Lavender** out of Rock Tunnel, **Seafoam** on Route
 20), and the summit pair close it at Indigo Plateau.
 
-Clearing a gate in any run earns its swatch **permanently and account-wide**; a
-re-clear is a no-op, so the collection only grows. Colours come from each name's home
+A flawless window in any run earns that gate's swatch **permanently and
+account-wide**; earning it again is a no-op, so the collection only grows. Colours come from each name's home
 location in the Kanto palette and live in `app.css` under `[data-swatch-theme]`, never
 duplicated in TypeScript. The palette runs out at 13 gates against 12 colours, one of
 them the app background, so the summit pair are drawn apart: **Elite** keeps indigo
@@ -1034,20 +1065,26 @@ The game leans hard into its CI metaphor.
   nothing else. Every pip is a control: hover or tap it to name that gate's badge and
   standing ("clear gate 7 to earn it"). It carries no coverage; the total is the gate's
   own stake, on the Build Summary's "To pass" line.
-- **New run page**: where a run is opened. Two columns: the hand you were dealt on
-  the left, the build on the right — its readout, the slot track, the configs
-  installed, the room for sale and the rung after it, quoted but not yet on offer.
-  It prices no band: the footer says prep states what the gate asks (ADR-078).
+- **New run page**: where a run is opened. Two columns in the shop's order: the
+  build on the left — its readout, the slot track, the configs installed, the room
+  for sale and the rung after it, quoted but not yet on offer — and the **registry**
+  on the right, listing the hand you were dealt. The registry prices the deal
+  *free*: a starting config costs room, never storage. It prices no band: the
+  footer says prep states what the gate asks (ADR-078).
 - **Prep page**: the last screen before a gate opens, and the first screen of a new
   run after the build is dealt. Two columns. On the left, **Objectives and rewards**:
-  the empty coverage bar with its rungs numbered (0, the floor, the OK line, the line
-  the gate asks, 100), then a row per band reading band, coverage and what it pays —
-  one figure each, a negative for SHAKY's peel, `the run ends` for DANGER. A line
-  above names which landings win the gate; a line below says where a payout lands. On
-  the right, **the five polls** (sealed unless a prefetcher is installed) and the
-  gate's **audits** with the bill a clear will settle. The build is not on it
-  (ADR-078). The footer leaves for the community board or back where you came from,
-  and starts the gate.
+  two rows saying what today is worth — **clear the gate** (the lowest band that
+  clears, badged, plus the answers it still costs from where the run stands) and
+  **earn the swatch** (answer 5 of 5, kept for good). Each row ticks the moment it is
+  in hand. Under them the
+  coverage bar with its rungs numbered (0, the floor, the clearing line, the line the
+  gate asks, 100), then a row per band reading band, coverage and what it pays — one
+  figure each, a negative for SHAKY's peel, `the run ends` for DANGER. The band badged
+  on the clear row is always one the table below it draws: at gate 0 that is HEALTHY,
+  OK having collapsed onto it. On the right, **the five polls** (sealed unless a
+  prefetcher is installed) and the gate's **audits** with the bill a clear will settle.
+  The build is not on it (ADR-078). The footer leaves for the community board or back
+  where you came from, and starts the gate.
 - **Size**: the slots a config fills, written in words ("4 slots") ahead of the
   config's name on every surface that lists configs, and in the row's last figures
   column where there is room. Fixed-width, so the name column stays flush. There is no
@@ -1082,18 +1119,20 @@ The game leans hard into its CI metaphor.
   when nothing is. Narrow screens stack the same boxes into rows behind a caret,
   folded on arrival, since the question is what the screen is for.
 - **A gate's three standing facts**: a poll screen has no sidebar. What the run is
-  scored on is a ring under the trail — the coverage held at its centre, the gate's
-  demand under it, both arc and figure animating as coverage moves either way, and
-  a tick where the demand fell once the run is past it (ADR-068). It is stated once
-  per screen, so the header stays quiet here; what is being done to this gate lives in
-  saffron alert boxes under the build, one per audit; and what the poll pays and
-  costs lives on the poll's own facts line, beside the category — "JavaScript · scores
-  ×1 · wrong costs 0.5 · Gate retry cost: Remove 1 config". None of the
-  three folds: a screen you answer on should not be able to hide the terms.
-- **The poll is one column**: header, build, audits, trail, question, options and
-  the button that sends them all share one width and one left edge, the button as wide
-  as the options it commits to. Nothing on the screen is wider than the question. The
-  trail states no count of its own: the crumbs are the count.
+  scored on is a banded bar in a coverage panel of its own (ADR-070), headed by the
+  reading it draws — "62% SHAKY · 34/55 correct", where the second figure counts
+  what the run has proved out of what it has been asked, and carries a hover panel
+  explaining that a single-answer poll is worth 1 and a multiple-answer poll up to 2.
+  It is stated once per screen, so the header stays quiet here; what is being done to
+  this gate lives in its own audits panel, one alert per audit; and what the poll pays
+  and costs lives in the poll panel's own head, beside the category badge — "3 options
+  · multiple answers · wrong costs 0.5". None of the three folds: a screen you answer
+  on should not be able to hide the terms.
+- **The poll is one column of panels**: the gate header, then a coverage panel, an
+  audits panel, the poll panel and the build, all sharing one width and one left edge,
+  the button as wide as the options it commits to. Nothing on the screen is wider than
+  the question. The poll panel's head names the step out loud — "Poll 4 out of 5" —
+  rather than drawing a row of crumbs for it.
 - **Every figure wears a badge** (ADR-066): a KB amount, a coverage percentage, a
   price or a multiplier is always boxed, never drawn as bare text, so a price can never
   be read as a prize. The words around it stay muted; a sign earns the colour (green
@@ -1167,7 +1206,7 @@ The game leans hard into its CI metaphor.
 | **git tag** | A shop-bought cross-run checkpoint, priced by the gate it marks, burnt by the run it rescues. |
 | **Seed** | The shared per-day poll sequence every player climbs. |
 | **Segment** | One day's 5-poll chunk appended to a persistent run. |
-| **Swatch** | A gate's collectible badge (Pallet to Champion), earned by clearing it and kept across runs. Its colour themes the app while that gate is played. |
+| **Swatch** | A gate's collectible badge (Pallet to Champion), earned by answering its 5 polls right and kept across runs. Its colour themes the app while that gate is played. |
 | **Kanto colours** | The palette, keyed to gates via their swatches, never to categories. |
 | **The Dex** | The collection screen (Polls, Configs, Swatches). |
 | **Water-cooler moment** | The design north star: same polls, same day, compare answers. |
@@ -1196,7 +1235,8 @@ applies. `rules.model.ts` holds most of it.
 
 | Constant | Value |
 | --- | --- |
-| `SINGLE_GAIN` / `MULTIPLE_GAIN` | 5% / 8% a correct answer, flat at every gate (ADR-073) |
+| `BASE_UNIT` | 1 unit a correct answer, flat at every gate (ADR-073) |
+| `SINGLE_CREDIT` / `MULTIPLE_CREDIT` | ×1 / ×2 by poll type, on coverage only (ADR-081) |
 | `LOSS_LADDER` | 0 / 0 / 0 / .1 / .15 / .2 / .25 / .3 / .35 / .4 / .45 / .5 / .5 of the build's per-correct coverage, floored at 0 on every ledger |
 | `STREAK_COVERAGE_BONUS` | 0.1 per consecutive correct answer, capped at 10 steps (×2). Multiplies the gate's KB payout, never coverage |
 | `gateRewardMultiplier` | `gatesCleared + 1` (×1 to ×12) on the KB reward only, frozen while a gate is redone |

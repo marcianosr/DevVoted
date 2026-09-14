@@ -4,7 +4,8 @@ import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
-import { Screen, type ScreenWidth } from "./Screen.ui";
+import { PanelV2 } from "./PanelV2.ui";
+import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
@@ -25,6 +26,7 @@ const EXPAND_SIZE = "md";
 
 export type ReviewRow = {
 	verdict: VerdictOutcome;
+	share?: number;
 	question: string;
 	category: string;
 	coverage: string;
@@ -53,6 +55,7 @@ export type ReviewScreenProps = {
 	rows: readonly ReviewRow[];
 	footer: ScreenFooterProps;
 	width?: ScreenWidth;
+	ground?: ScreenGround;
 };
 
 const opensOnArrival = (row: ReviewRow) =>
@@ -88,6 +91,7 @@ const Row = ({ row }: { row: ReviewRow }) => {
 		<div className={open ? undefined : PASSED}>
 			<Fold
 				lead={row.verdict}
+				leadShare={row.share}
 				heading="row"
 				title={row.question}
 				badges={[
@@ -121,8 +125,9 @@ export const ReviewScreen = ({
 	rows,
 	footer,
 	width = "default",
+	ground = "bare",
 }: ReviewScreenProps) => (
-	<Screen gate={header.swatch.theme} width={width}>
+	<Screen gate={header.swatch.theme} width={width} ground={ground}>
 		<ReviewHeading {...header} />
 
 		<div className={CONTROL_ROW}>
@@ -145,6 +150,10 @@ export const ReviewScreen = ({
 			))}
 		</div>
 
-		<ScreenFooter {...footer} />
+		<PanelV2>
+			<PanelV2.Body>
+				<ScreenFooter {...footer} rule={false} />
+			</PanelV2.Body>
+		</PanelV2>
 	</Screen>
 );

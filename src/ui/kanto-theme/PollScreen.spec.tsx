@@ -105,14 +105,67 @@ describe("PollScreen", () => {
 	});
 
 	it("says nothing about the cost of a miss when there is none to name", () => {
+		render(<PollScreen {...props} wrongCost={undefined} />);
+
+		expect(screen.queryByText("wrong costs")).not.toBeInTheDocument();
+	});
+
+	it("badges the category the poll was drawn from, up in the panel head", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("TypeScript")).toHaveClass("badge-theme");
+	});
+
+	it("lets the category badge take a colour of its own", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("TypeScript")).toHaveAttribute(
+			"data-screen-theme",
+			"cinnabar"
+		);
+	});
+
+	it("counts the options and names a single-answer poll", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("3 options · single answer")).toBeInTheDocument();
+	});
+
+	it("names a multiple-answer poll in the plural", () => {
 		render(
 			<PollScreen
 				{...props}
-				question={createKantoQuestionProps({ wrongCost: undefined })}
+				question={createKantoQuestionProps({ answerType: "multiple" })}
 			/>
 		);
 
-		expect(screen.queryByText("wrong costs")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("3 options · multiple answers")
+		).toBeInTheDocument();
+	});
+
+	it("prices a wrong answer beside the poll's own facts", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("wrong costs")).toBeInTheDocument();
+		expect(screen.getByText("0.77")).toHaveAttribute(
+			"data-screen-theme",
+			"cinnabar"
+		);
+	});
+
+	it("names the poll by its step through the gate", () => {
+		render(<PollScreen {...props} />);
+
+		expect(
+			screen.getByRole("heading", { name: "Poll 4 out of 5" })
+		).toBeInTheDocument();
+	});
+
+	it("counts the audits that are firing", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("2 firing")).toBeInTheDocument();
 	});
 
 	it("asks the poll's question and offers its answers", () => {
@@ -148,7 +201,7 @@ describe("PollScreen", () => {
 		expect(screen.getByText(/Created by @marciano/)).toBeInTheDocument();
 	});
 
-	it("runs the screen as one column: header, audits, trail, poll, build", () => {
+	it("runs the screen as one column: header, coverage, audits, poll, build", () => {
 		const { container } = render(<PollScreen {...props} />);
 
 		const body = container.querySelector("section > div");
@@ -156,27 +209,36 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual(["header", "div", "nav", "section", "p", "footer"]);
+		expect(order).toEqual([
+			"header",
+			"section",
+			"section",
+			"section",
+			"footer",
+		]);
 	});
 
-	it("reads coverage from inside the header, not from a row of its own", () => {
+	it("reads coverage in a panel of its own rather than inside the header", () => {
 		const { container } = render(<PollScreen {...props} />);
 
-		const ring = screen.getByRole("img", { name: /needed/ });
-		expect(container.querySelector("header")).toContainElement(ring);
+		const bar = screen.getByRole("img", { name: /needed/ });
+
+		expect(container.querySelector("header")).not.toContainElement(bar);
+		expect(bar.closest("section")).toHaveTextContent("Coverage");
 	});
 
-	it("drops the ring when the header carries no coverage", () => {
-		render(
-			<PollScreen
-				{...props}
-				header={createKantoHeaderProps({ ring: undefined })}
-			/>
-		);
+	it("heads the coverage panel with the band it is standing in", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("70% SHAKY")).toBeInTheDocument();
+	});
+
+	it("explains what a correct answer is worth, for a reader and on hover", () => {
+		render(<PollScreen {...props} />);
 
 		expect(
-			screen.queryByRole("img", { name: /needed/ })
-		).not.toBeInTheDocument();
+			screen.getByRole("button", { name: "How a correct answer is counted" })
+		).toHaveTextContent("34/55 correct");
 	});
 
 	it("states coverage exactly once, so no row says it again", () => {
@@ -244,11 +306,10 @@ describe("PollScreen", () => {
 
 		expect(order).toEqual([
 			"header",
-			"div",
-			"nav",
 			"section",
-			"p",
-			"footer",
+			"section",
+			"section",
+			"section",
 			"footer",
 		]);
 	});

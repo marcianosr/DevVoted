@@ -86,8 +86,9 @@ const buildWith = (configs: Config[]): Build => ({
 
 const at = (
 	category: AnswerContext["category"],
-	answeredBefore = 1
-): AnswerContext => ({ category, answeredBefore, cachedHits: 0 });
+	answeredBefore = 1,
+	answerType: AnswerContext["answerType"] = "single"
+): AnswerContext => ({ category, answerType, answeredBefore, cachedHits: 0 });
 
 describe("rewardMultiplierFor", () => {
 	it("is 1 across the whole shipped roster — configs pay in coverage or KB, never in a storage multiplier", () => {
@@ -178,6 +179,16 @@ describe("perAnswerPreviewFor", () => {
 
 	it("pays the same for a correct answer at every gate", () => {
 		expect(perAnswerPreviewFor([]).coveragePerCorrect).toBe(BASE);
+	});
+
+	it("previews a multiple-choice poll at double, and folds the build in after", () => {
+		expect(perAnswerPreviewFor([], "multiple").coveragePerCorrect).toBe(
+			BASE * 2
+		);
+		expect(
+			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage], "multiple")
+				.coveragePerCorrect
+		).toBeCloseTo(BASE * 2.2 * 2);
 	});
 
 	it("folds in build-wide coverage mults/adds, excluding Focus bonuses", () => {
@@ -325,8 +336,29 @@ describe("extraPickPayoutFor", () => {
 describe("coverageForAnswer", () => {
 	const pays = (multiplier: number) => roundToTwoDecimals(BASE * multiplier);
 
-	it("pays one unit times the build, whatever the poll type", () => {
+	it("pays one unit times the build on a single-answer poll", () => {
 		expect(coverageForAnswer([], at("js"), 1)).toBe(BASE);
+	});
+
+	it("pays double on a fully answered multiple-choice poll", () => {
+		expect(coverageForAnswer([], at("js", 1, "multiple"), 1)).toBe(BASE * 2);
+	});
+
+	it.each([
+		[0.25, 0.5],
+		[0.5, 1],
+		[0.75, 1.5],
+	])("pays a %s multiple-choice rung %s units", (share, units) => {
+		expect(coverageForAnswer([], at("js", 1, "multiple"), share)).toBe(units);
+	});
+
+	it("doubles before the build multiplies, and before the streak adds", () => {
+		expect(
+			coverageForAnswer([CONFIGS.agentsMd], at("js", 1, "multiple"), 1)
+		).toBe(pays(4));
+		expect(coverageForAnswer([], at("js", 1, "multiple"), 1, 1)).toBeCloseTo(
+			BASE * 2 + 0.1
+		);
 	});
 
 	it("adds the streak step after the multipliers, never inside them", () => {
@@ -394,6 +426,16 @@ describe("coverageBreakdownForAnswer", () => {
 	it("gives a bare correct answer the flat base with no bonuses", () => {
 		expect(coverageBreakdownForAnswer([], at("js"), 1, 0)).toEqual({
 			base: BASE,
+			streakBonus: 0,
+			configBonuses: [],
+		});
+	});
+
+	it("states the doubled figure as the base on a multiple-choice poll", () => {
+		expect(
+			coverageBreakdownForAnswer([], at("js", 1, "multiple"), 1, 0)
+		).toEqual({
+			base: BASE * 2,
 			streakBonus: 0,
 			configBonuses: [],
 		});

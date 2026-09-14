@@ -49,6 +49,31 @@ describe("Verdict", () => {
 	it("holds every outcome in the same width so a column of them lines up", () => {
 		const { container } = render(<Verdict outcome="partial" />);
 
-		expect(container.firstElementChild).toHaveClass("w-20", "shrink-0");
+		expect(container.firstElementChild).toHaveClass("w-24", "shrink-0");
 	});
+
+	it.each([
+		[0.25, "PART ¼"],
+		[0.5, "PART ½"],
+		[0.75, "PART ¾"],
+	])("names the rung a %f share earned as %s", (share, word) => {
+		render(<Verdict outcome="partial" share={share} />);
+
+		expect(screen.getByText(word)).toBeInTheDocument();
+	});
+
+	it("states a partial without its share as the bare word", () => {
+		render(<Verdict outcome="partial" />);
+
+		expect(screen.getByText("PART")).toBeInTheDocument();
+	});
+
+	it.each(["correct", "wrong"] as const)(
+		"leaves a %s answer unqualified, a share being a partial's alone",
+		(outcome) => {
+			render(<Verdict outcome={outcome} share={0.5} />);
+
+			expect(screen.getByText(WORD[outcome])).toBeInTheDocument();
+		}
+	);
 });

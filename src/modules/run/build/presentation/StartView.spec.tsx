@@ -3,7 +3,10 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { NEW_RUN_BUILD_NOTE } from "~/modules/run/build/application/newRunScreen.viewmodel";
+import {
+	NEW_RUN_BUILD_NOTE,
+	NEW_RUN_REGISTRY_NOTE,
+} from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { createMockRunView } from "~/test/runView.factory";
 
 import { StartView } from "./StartView.component";
@@ -43,7 +46,14 @@ describe("StartView", () => {
 		).toBeGreaterThan(0);
 	});
 
-	it("stands an installed config in the build as well as the hand", () => {
+	it("lists the deal as the registry, under the name the shop uses", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		expect(screen.getByText("Registry")).toBeInTheDocument();
+		expect(screen.getByText(NEW_RUN_REGISTRY_NOTE)).toBeInTheDocument();
+	});
+
+	it("stands an installed config in the build as well as the registry", () => {
 		render(<StartView view={view} {...handlers} />);
 
 		expect(screen.getAllByText(CONFIGS.js.label).length).toBeGreaterThan(1);
@@ -78,13 +88,13 @@ describe("StartView", () => {
 		).toBeNull();
 	});
 
-	it("quotes the rung after the one it is selling, without offering it", () => {
+	it("sells the next slot and quotes nothing beyond it", () => {
 		render(<StartView view={view} {...handlers} />);
 
-		const rung = screen.getByLabelText(/^slot 6 ·/);
-
-		expect(rung).toBeInTheDocument();
-		expect(rung.tagName).not.toBe("BUTTON");
+		expect(
+			screen.getByRole("button", { name: /^buy slot 5/ })
+		).toBeInTheDocument();
+		expect(screen.queryByLabelText(/^slot 6 ·/)).toBeNull();
 	});
 
 	it("draws no row for a slot that is merely empty", () => {

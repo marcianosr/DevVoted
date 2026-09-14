@@ -3,20 +3,37 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	BandOutcomes,
 	type BandOutcome,
-	type LeadPart,
+	type LeadLine,
 } from "./BandOutcomes.ui";
+import type { Objective } from "./Objectives.ui";
 import { Screen } from "./Screen.ui";
 
 const TITLE = "Objectives and rewards";
 const NOTE =
 	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
 
-const LEAD: readonly LeadPart[] = [
-	"Clear at ",
-	{ band: "ok" },
-	" or better and earn the rewards shown below across a window of ",
-	{ figure: "5" },
-	" polls.",
+const LEAD: readonly LeadLine[] = [
+	["Two things are on the table today, and they are won separately."],
+];
+
+const OBJECTIVES: readonly Objective[] = [
+	{
+		name: "Clear the gate",
+		detail: "gate 9 opens tomorrow",
+		met: true,
+		requirement: {
+			lead: "reach",
+			figure: "OK",
+			color: "saffron",
+			trail: "or better",
+		},
+	},
+	{
+		name: "Earn the Seafoam swatch",
+		detail: "kept for good",
+		met: false,
+		requirement: { lead: "answer", figure: "5 of 5" },
+	},
 ];
 
 const SEAFOAM: readonly BandOutcome[] = [
@@ -46,6 +63,7 @@ const meta: Meta<typeof BandOutcomes> = {
 		title: TITLE,
 		outcomes: SEAFOAM,
 		lead: LEAD,
+		objectives: OBJECTIVES,
 		note: NOTE,
 	},
 };
@@ -60,7 +78,7 @@ export const NoFloorToFallThrough: Story = {
 };
 
 export const BareTable: Story = {
-	args: { lead: undefined, note: undefined },
+	args: { lead: undefined, objectives: undefined, note: undefined },
 };
 
 export const InHalfAScreen: Story = {

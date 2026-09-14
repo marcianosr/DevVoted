@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:21:03Z
-updated_at: 2026-09-12T12:57:33Z
+updated_at: 2026-09-14T13:50:01Z
 parent: DVTD-z2r2
 ---
 
@@ -76,3 +76,16 @@ grade sitting on top of a five-band readout is two ways of saying the same
 thing, and the bands are the one the rules already use.
 
 Stars 2 and 3 (clean clears, no paid help) do not overlap and still stand.
+
+## Overlap with ADR-082 (2026-09-14)
+
+Gate objectives landed (DVTD-xj95), which takes more of this bean than the
+2026-09-12 note already did. Star 1 (Flawless) is the swatch rule since ADR-080 and
+star 3 (Margin) is the band readout. Star 2 (Unaided) is now ruled out by this
+bean's **own** Decision 3, because ADR-082's objective pays: no row may pay for
+abstaining from something the shop sells, or the linter and the peek become traps.
+
+What survives is the trainer card, which is a surface rather than a mechanic. It can
+read swatches plus a count of gate objectives met, with no new badge shelf.
+Marciano's call at planning time was to leave this bean alone and note the overlap
+rather than scrap it, so that is all this is.

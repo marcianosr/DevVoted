@@ -1,11 +1,11 @@
 ---
 # DVTD-2ooc
 title: 'Audit: what partial multiple-choice answers do to configs'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-08-24T15:42:38Z
-updated_at: 2026-09-04T15:03:50Z
+updated_at: 2026-09-13T18:32:02Z
 parent: DVTD-u35m
 ---
 
@@ -58,7 +58,53 @@ poll where at least one correct option was caught but not the whole set. Its val
 
 ## Todo
 
-- [ ] Confirm the trace above against the specs, then decide asymmetry: intended or not
-- [ ] Fix or justify the zero-share partial so outcome and scoring agree
-- [ ] If partials start paying storage, re-check the faucet cap and the per-answer preview
-- [ ] Write the rule into the ADR that owns grading, and into the config copy if it changes
+- [x] Confirm the trace above against the specs, then decide asymmetry: intended or not
+- [x] Fix or justify the zero-share partial so outcome and scoring agree
+- [x] If partials start paying storage, re-check the faucet cap and the per-answer preview
+- [x] Write the rule into the ADR that owns grading, and into the config copy if it changes
+
+## Summary of Changes
+
+Ruled by Marciano on 2026-09-13, written up as ADR-079.
+
+**1. The asymmetry is intended.** Only coverage reads the multi-answer share.
+Storage, the streak step, `window.correct` and the gate clear payout all stay
+binary on the exact-set rule, so ADR-006 §11 holds on that half. Coverage is the
+score and storage is the reward; a partial has not proven a slot. No faucet
+change, so the faucet cap and the per-answer preview were untouched.
+
+**2. The zero-share partial is fixed by making it a miss.** `answerOutcome` now
+returns `wrong` when a multiple poll's wrong picks cancel its right ones
+(net <= 0). The streak resets, Cache flushes and Dependabot restarts, exactly as
+any other miss. `PART` now always means the answer was paid something, so the
+badge and the coverage figure can be read together.
+
+**3. The share lands on a fixed quarter ladder.** `coverageShare` rounds the raw
+proportion to the nearest quarter and clamps it to 1/4..3/4, so partial credit
+reads the same on every poll whatever its key size, and only an exact set pays a
+full unit (7 of 8 caught can no longer round into a pass). The rung is on screen:
+the `PART` badge carries its figure (`PART ¾`) on the reveal, the gate debrief's
+answers panel and the poll review, read from the share already persisted as
+`coverageFactors.correct`.
+
+**4. One grader, where there were two.** `coverageShare` and `answerOutcome` each
+re-derived the answer key and re-ran the exact-set check, which is how they came
+to disagree about a cancelled answer. Both now read one private helper, and
+`coverageShare` became generic over the option id so the community board and the
+engine grade through the same code.
+
+No config copy changed: no per-correct config's rule moved, because partials
+still pay no storage.
+
+### Follow-ups found, not done here
+
+- `auditScoreShare` lets an audit rewrite the share after grading, which would
+  land it between rungs and make the badge lie. No audit defines `scoreShare`
+  today; the first one that does must re-quantise.
+- Nothing simulates a multi-answer-heavy window. The balance sim in
+  `coverageRatio.model.spec.ts` models integer correct answers only.
+- `docs/wiki.md` §2.5 still documents a wrong-answer coverage bleed
+  (`LOSS_LADDER`) and says the streak does not touch coverage. The engine
+  hardcodes `coverageLoss: 0` and `streakUnitBonus` adds a flat step to coverage.
+  Both are stale and were left alone: correcting them is a design ruling, not a
+  doc typo.

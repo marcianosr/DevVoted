@@ -173,6 +173,26 @@ describe("ReviewScreen", () => {
 		expect(screen.getByText(REVIEW_DEX_NOTE)).toBeInTheDocument();
 	});
 
+	it("stands its folds on the page, shedding the screen's own frame", () => {
+		const { container } = render(<ReviewScreen {...props} />);
+
+		expect(container.firstElementChild).not.toHaveClass("bg-theme-faint");
+		expect(container.firstElementChild).not.toHaveClass("rounded-3xl");
+	});
+
+	it("closes on a panel of its own, rather than a rule across the page", () => {
+		render(<ReviewScreen {...props} />);
+
+		const exit = screen
+			.getByRole("button", { name: "To the shop" })
+			.closest("section");
+
+		expect(exit).toHaveClass("border-theme-faint");
+		expect(
+			within(exit ?? document.body).getByText(REVIEW_DEX_NOTE)
+		).toBeInTheDocument();
+	});
+
 	it("folds the whole screen away on a flawless gate", () => {
 		const { container } = render(<ReviewScreen {...kantoReviewFlawless()} />);
 

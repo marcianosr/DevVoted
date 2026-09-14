@@ -42,7 +42,7 @@ const TWO_STAKES: ScreenFooterProps = {
 		},
 		{ label: "miss", figures: [{ label: "peels 1 or 2 configs" }] },
 	],
-	aside: { label: "Community", icon: "community", onPress: () => {} },
+	asides: [{ label: "Community", icon: "community", onPress: () => {} }],
 	action: { label: "Start Lavender", icon: "gate", onPress: () => {} },
 };
 
@@ -204,11 +204,13 @@ describe("ScreenFooter", () => {
 				icon: "shop" as const,
 				onPress: () => {},
 			},
-			aside: {
-				label: "Community",
-				icon: "community" as const,
-				onPress: () => {},
-			},
+			asides: [
+				{
+					label: "Community",
+					icon: "community" as const,
+					onPress: () => {},
+				},
+			],
 			note: "the shop stays open until Vermilion starts",
 		};
 

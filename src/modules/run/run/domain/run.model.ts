@@ -75,6 +75,7 @@ export type RunState = {
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
 	readonly gateRewardKb?: number;
+	/** What the gate's own objective added to the clear, zero where it was missed. */
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly peelRefundKb?: number;
@@ -86,6 +87,8 @@ export type RunState = {
 	readonly planBilledKb?: number;
 	readonly planDowngraded?: boolean;
 	readonly clearedGate?: number;
+	/** Gates whose swatch this run has earned, in the order the windows landed. */
+	readonly swatchGatesEarned?: readonly number[];
 	readonly redoGate?: number;
 	readonly autoUpgradeProgress?: number;
 	readonly autoUpgradedConfigId?: string;

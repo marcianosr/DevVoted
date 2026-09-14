@@ -47,6 +47,7 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerContextFor,
+	gradedPollFor,
 	gateWindowComplete,
 } from "~/modules/run/run/domain/answer.model";
 import {
@@ -134,7 +135,6 @@ import {
 import {
 	canBuyStartSlot,
 	canRefundStartSlot,
-	startSlotNextPriceKb,
 	startSlotPriceKb,
 	startSlotRefundKb,
 } from "~/modules/run/run/domain/startSlot.model";
@@ -156,7 +156,6 @@ export type StartSlotsView = {
 	readonly archiveKb: number;
 	readonly buy: SlotDealView;
 	readonly cash: SlotDealView;
-	readonly next: SlotDealView;
 };
 
 export type StoragePlanOption = {
@@ -277,6 +276,8 @@ export type RunView = {
 
 	readonly redoingGate: number | null;
 	readonly clearedGate: number | null;
+	/** Gates this run played flawlessly, each one a swatch kept for good. */
+	readonly swatchGates: readonly number[];
 	readonly victoryGate: number;
 
 	readonly atMinimumWidth: boolean;
@@ -413,7 +414,6 @@ const startSlotsViewFor = (
 ): StartSlotsView => {
 	const price = startSlotPriceKb(state);
 	const refund = startSlotRefundKb(state);
-	const nextPrice = startSlotNextPriceKb(state);
 	const refusal = startBuyRefusalFor(state, archiveKb);
 
 	return {
@@ -429,10 +429,6 @@ const startSlotsViewFor = (
 			refund === undefined || !canRefundStartSlot(state)
 				? {}
 				: { costKb: refund, makes: state.build.slots - 1 },
-		next:
-			nextPrice === undefined
-				? {}
-				: { costKb: nextPrice, makes: state.build.slots + 2 },
 	};
 };
 
@@ -477,7 +473,7 @@ const configStatusesFor = (
 		offline.map((entry) => [entry.config.id, entry.audit])
 	);
 	const context = {
-		...answerContextFor(state, poll),
+		...answerContextFor(state, gradedPollFor(state, poll)),
 		suppressingAudit:
 			suppressedAuditFor(state.build.configs, state.gatesCleared, schedule) !==
 			undefined,
@@ -505,7 +501,10 @@ export const toRunView = (
 ): RunView => {
 	const current = state.polls[state.currentIndex];
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
-	const perAnswer = perAnswerPreviewFor(state.build.configs);
+	const perAnswer = perAnswerPreviewFor(
+		state.build.configs,
+		current === undefined ? undefined : gradedPollFor(state, current).answerType
+	);
 	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
 	const schedule = scheduleOf(state);
 	const peelSlots = failPeelQuotaFor(
@@ -633,6 +632,10 @@ export const toRunView = (
 			coverageHeld: roundToOneDecimal(
 				percentOf(runCoverageOf(carriedUnits, state.gatesCleared))
 			),
+			coverageAtOpen: roundToOneDecimal(
+				percentOf(runCoverageOf(state.bankedUnits, state.gatesCleared))
+			),
+			unitsHeld: carriedUnits,
 			audits,
 			upcomingAudit: upcomingAuditFor(state.gatesCleared),
 			peelSlotsOnFailure: peelSlots,
@@ -678,6 +681,7 @@ export const toRunView = (
 		gateTheme: swatchForGate(state.gatesCleared)?.theme,
 		redoingGate: state.redoGate ?? null,
 		clearedGate: state.clearedGate ?? null,
+		swatchGates: state.swatchGatesEarned ?? [],
 		victoryGate: VICTORY_GATE,
 		atMinimumWidth: atMinimumWidth(state.build.configs.length),
 		pollsAnswered: state.window.answered,

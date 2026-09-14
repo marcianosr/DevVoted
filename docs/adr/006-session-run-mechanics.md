@@ -86,6 +86,10 @@ two of the rules have the shape they do.
   stay binary on the exact-set rule, so partial credit softens the score
   without softening the pass. Every wrong pick cancels a right one, which is
   what stops shotgunning paying (`coverageShare` in `runPoll.model.ts`).
+  [ADR-079](079-a-partial-answer-pays-a-quarter-at-a-time.md) keeps this half
+  and settles the rest: the share now lands on a fixed quarter ladder, and an
+  answer whose wrong picks cancel its right ones is a miss rather than a
+  zero-paying partial.
 
 Clause 2 of the original decision, "config effects amplify gains, never
 losses", was **superseded by ADR-013** on 2026-08-24: the loss is a share of

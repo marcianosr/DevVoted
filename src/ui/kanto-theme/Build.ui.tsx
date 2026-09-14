@@ -9,7 +9,12 @@ import { SlotBox, type SlotCash } from "./SlotBox.ui";
 import { SlotOffer, type SlotOfferProps } from "./SlotOffer.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
 import { Typography } from "./Typography.ui";
-import { WeightTrack, freeWeightOf, type UpkeepRung } from "./WeightTrack.ui";
+import {
+	WeightTrack,
+	freeWeightOf,
+	upkeepAt,
+	type UpkeepRung,
+} from "./WeightTrack.ui";
 import { WeightOffer, type WeightOfferProps } from "./WeightOffer.ui";
 
 const BAND = "flex w-full flex-col gap-3";
@@ -52,7 +57,6 @@ type BuildCount =
 			weight?: never;
 			cash?: SlotCash;
 			offer?: SlotOfferProps;
-			nextSlot?: SlotOfferProps;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
@@ -61,7 +65,6 @@ type BuildCount =
 			slots?: never;
 			cash?: never;
 			offer?: never;
-			nextSlot?: never;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
@@ -70,7 +73,6 @@ type BuildCount =
 			weight?: never;
 			cash?: never;
 			offer?: never;
-			nextSlot?: never;
 			highlight?: never;
 			onHighlight?: never;
 	  };
@@ -133,9 +135,40 @@ export type BuildProps = {
 	track?: BuildTrack;
 	caption?: boolean;
 	offeredSlot?: boolean;
+	weightOffers?: boolean;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
 } & BuildCount;
+
+export const buildSummaryOf = (props: BuildProps): string => {
+	const { configs, skipped = [], configCount = true } = props;
+
+	return summaryOf(
+		configs.length + skipped.length,
+		props,
+		weightOf(fillsOf(configs, skipped)),
+		configCount
+	);
+};
+
+export const buildHeadOf = (props: BuildProps): string => {
+	if (props.weight === undefined) return buildSummaryOf(props);
+
+	const { configs, skipped = [], configCount = true } = props;
+
+	return [
+		...led(configs.length + skipped.length, configCount),
+		weightWords(weightOf(fillsOf(configs, skipped))),
+	].join(` ${SEPARATOR} `);
+};
+
+export const buildUpkeepOf = (props: BuildProps): number | undefined => {
+	if (props.weight === undefined) return undefined;
+
+	const { configs, skipped = [] } = props;
+
+	return upkeepAt(props.weight.rungs, weightOf(fillsOf(configs, skipped)));
+};
 
 const vacantSlotsOf = ({ used, capacity }: BuildSlots) =>
 	Math.max(0, capacity - used);
@@ -163,13 +196,11 @@ const Vacancy = ({
 	slots,
 	cash,
 	offer,
-	nextSlot,
 	boxed,
 }: {
 	slots: BuildSlots;
 	cash?: SlotCash;
 	offer?: SlotOfferProps;
-	nextSlot?: SlotOfferProps;
 	boxed: boolean;
 }) => {
 	const vacant = vacantSlotsOf(slots);
@@ -181,7 +212,6 @@ const Vacancy = ({
 				<SlotBox key={index} cash={index === drawn - 1 ? cash : undefined} />
 			))}
 			{offer === undefined ? null : <SlotOffer {...offer} />}
-			{nextSlot === undefined ? null : <SlotOffer {...nextSlot} />}
 		</>
 	);
 };
@@ -236,6 +266,7 @@ export const Build = ({
 	track = "configs",
 	caption = track === "configs",
 	offeredSlot = true,
+	weightOffers = true,
 	openInfo,
 	onToggleInfo,
 	...count
@@ -294,11 +325,10 @@ export const Build = ({
 					slots={count.slots}
 					cash={count.cash}
 					offer={count.offer}
-					nextSlot={count.nextSlot}
 					boxed={emptySlots}
 				/>
 			)}
-			{(count.weight?.offers ?? []).map((offer) => (
+			{(weightOffers ? (count.weight?.offers ?? []) : []).map((offer) => (
 				<WeightOffer key={offer.to} {...offer} />
 			))}
 		</>

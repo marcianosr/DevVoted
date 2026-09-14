@@ -19,8 +19,15 @@ import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 const choiceIn = (props: { tail?: { choice?: GateChoiceProps } }) =>
 	props.tail!.choice!;
 
-const armOf = (title: string) =>
-	screen.getByRole("heading", { name: title }).closest("div")!.parentElement!;
+const armOf = (title: string): HTMLElement => {
+	const arm = screen
+		.getByRole("heading", { name: title })
+		.closest<HTMLElement>("section");
+
+	if (arm === null) throw new Error(`"${title}" heads no arm`);
+
+	return arm;
+};
 
 describe("GateChoice", () => {
 	it("names both exits under one heading, so neither reads as the only move", () => {

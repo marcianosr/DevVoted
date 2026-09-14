@@ -5,7 +5,7 @@ import {
 	type GateOutcome,
 	type GateOutcomeStatus,
 } from "~/modules/run/gate/domain/gateLadder.model";
-import { swatchesEarnedAt } from "~/modules/run/gate/domain/swatch.model";
+import { swatchesEarnedFrom } from "~/modules/run/gate/domain/swatch.model";
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 import { MetaStorageBar } from "~/modules/run/run/presentation/MetaStorageBar.ui";
 import { StatusLine } from "~/ui/old-theme/StatusLine.ui";
@@ -35,6 +35,8 @@ type RunSummaryProps = {
 	unlocked?: readonly UnlockedLine[];
 	/** Every poll answered across the run, for the fold-out review. */
 	answered?: readonly AnsweredPoll[];
+	/** Gates the run played flawlessly — the swatches it keeps. */
+	swatchGates?: readonly number[];
 };
 
 const STATUS_BADGE: Record<GateOutcomeStatus, StatusBadgeVariant> = {
@@ -71,9 +73,10 @@ export const RunSummary = ({
 	configs,
 	unlocked,
 	answered,
+	swatchGates = [],
 }: RunSummaryProps) => {
 	const ladder = deriveGateLadder(gatesCleared, won, victoryGate);
-	const earnedSwatches = swatchesEarnedAt(gatesCleared);
+	const earnedSwatches = swatchesEarnedFrom(swatchGates);
 	const creditRate = storageCreditRate(won ? "victory" : "dead", gatesCleared);
 	const carriedKb = storage * creditRate;
 	const bankedPct = Math.round(creditRate * 100);

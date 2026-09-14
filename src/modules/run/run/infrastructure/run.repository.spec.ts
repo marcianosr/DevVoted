@@ -196,7 +196,7 @@ describe("applyActionToRun", () => {
 		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
-	it("earns the cleared gate's swatch, written before the state row", async () => {
+	it("earns the swatch of a flawless window, written before the state row", async () => {
 		const closing = answeringState({
 			coverage: 10,
 			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
@@ -220,7 +220,7 @@ describe("applyActionToRun", () => {
 		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
 	});
 
-	it("earns no swatch when the action clears no gate", async () => {
+	it("earns no swatch when the action shuts no window", async () => {
 		mock.results.push([stateRow(answeringState({}))]);
 		mock.results.push(segmentRow());
 		mock.results.push([dbPoll(1), dbPoll(2)]);
@@ -231,6 +231,33 @@ describe("applyActionToRun", () => {
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
 
 		expect(mock.updateTables).not.toContain(usersTable);
+	});
+
+	it("earns no swatch for a clear that carried a miss (ADR-080)", async () => {
+		const closing = answeringState({
+			coverage: 10,
+			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			window: {
+				correct: SLICE_WINDOW - 1,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW - 1,
+				byCategory: {
+					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
+				},
+			},
+		});
+		mock.results.push([stateRow(closing)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.gatesCleared).toBe(1);
+		expect(mock.setCalls.some((call) => "owned_swatch_ids" in call)).toBe(
+			false
+		);
 	});
 
 	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {

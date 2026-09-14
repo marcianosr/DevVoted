@@ -13,7 +13,10 @@ import {
 	gateSwatchAt,
 	swatchTrackTo,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import {
+	VICTORY_GATE,
+	roundToOneDecimal,
+} from "~/modules/run/run/domain/rules.model";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import type {
@@ -21,12 +24,16 @@ import type {
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import type { NextGateProps } from "~/ui/kanto-theme/NextGate.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
 import type { SlotCash } from "~/ui/kanto-theme/SlotBox.ui";
 import type { SlotOfferProps } from "~/ui/kanto-theme/SlotOffer.ui";
 import {
+	bandFor,
 	healthyAt,
 	percentOf,
+	runCoverageOf,
+	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 const SEPARATOR = "·";
@@ -34,6 +41,10 @@ const GATE_COUNT = VICTORY_GATE;
 const UNAFFORDABLE_COLOR = "pewter" as const;
 const INSTALL_LEAD = "Install";
 const SHORT_TRAIL = "short";
+const CLEARED_TRAIL = "cleared";
+const SLOTS_TRAIL = "slots after it closes";
+const OPENS_AT = "tomorrow";
+const PERCENT = "%";
 
 export const shortfallOf = (priceKb: number, balanceKb: number): string =>
 	`${kbLabel(priceKb - balanceKb)} ${SHORT_TRAIL}`;
@@ -149,19 +160,30 @@ export const controlRowFor = (
 export const shopHeaderFor = (
 	cleared: number,
 	balanceKb: number
-): HeaderProps => {
+): HeaderProps => ({
+	swatch: gateSwatchAt(cleared),
+	gateCount: GATE_COUNT,
+	swatches: swatchTrackTo(cleared + 1),
+	funds: fundsOf(balanceKb, BALANCE_WORD),
+	title: `Shop ${SEPARATOR} cleared ${gateSwatchAt(cleared).gateName}`,
+	note: `gate ${cleared} ${CLEARED_TRAIL}`,
+});
+
+export const nextGateFor = (
+	cleared: number,
+	unitsHeld: number
+): NextGateProps | undefined => {
 	const next = gateSwatchAt(cleared + 1);
+	if (next === undefined) return undefined;
+
+	const held = runCoverageOf(unitsHeld, next.gate);
 
 	return {
-		swatch: gateSwatchAt(cleared),
-		gateCount: GATE_COUNT,
-		swatches: swatchTrackTo(cleared + 1),
-		funds: fundsOf(balanceKb, BALANCE_WORD),
-		title: `Shop ${SEPARATOR} cleared ${gateSwatchAt(cleared).gateName}`,
-		...(next === undefined
-			? {}
-			: {
-					note: `next gate ${next.gate} ${SEPARATOR} ${next.gateName} ${SEPARATOR} to pass ${percentOf(healthyAt(next.gate))}%`,
-				}),
+		swatch: next,
+		slots: `${scoringSlotsAt(next.gate)} ${SLOTS_TRAIL}`,
+		demand: `${percentOf(healthyAt(next.gate))}${PERCENT}`,
+		held: `${roundToOneDecimal(percentOf(held))}${PERCENT}`,
+		heldBand: bandFor(held, next.gate).id,
+		opensAt: OPENS_AT,
 	};
 };

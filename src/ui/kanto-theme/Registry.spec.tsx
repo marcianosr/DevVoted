@@ -3,9 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
-	LOCK_NOTE,
 	createKantoRegistryProps,
-	kantoRegistryControls,
 	kantoRegistryOffers,
 } from "~/test/kantoPoll.factory";
 
@@ -74,32 +72,10 @@ describe("Registry", () => {
 		expect(container.querySelector(".group-hover\\/press\\:inline")).toBeNull();
 	});
 
-	it("offers to rebuild and to extend, beneath the offers themselves", () => {
+	it("lists offers alone, the controls being the screen's to place", () => {
 		render(<Registry {...props} />);
-
-		for (const control of kantoRegistryControls) {
-			expect(screen.getByText(control.title)).toBeInTheDocument();
-		}
-	});
-
-	it("titles the controls apart from the offers they sit under", () => {
-		render(<Registry {...props} />);
-
-		const title = screen.getByRole("heading", { name: "Registry control" });
-
-		expect(title.nodeName).toBe("H3");
-		expect(title).toHaveClass("text-base", "font-extrabold");
-	});
-
-	it("drops the controls entirely when there are none", () => {
-		render(<Registry {...props} controls={[]} />);
 
 		expect(screen.queryByText("Rebuild the registry")).not.toBeInTheDocument();
-	});
-
-	it("drops their title too, so no heading names an empty group", () => {
-		render(<Registry {...props} controls={[]} />);
-
 		expect(
 			screen.queryByRole("heading", { name: "Registry control" })
 		).not.toBeInTheDocument();
@@ -114,17 +90,5 @@ describe("Registry", () => {
 		);
 
 		expect(onToggleInfo).toHaveBeenCalledWith("IndexedDB");
-	});
-
-	it("footnotes what a hidden control would need", () => {
-		render(<Registry {...props} />);
-
-		expect(screen.getByText(LOCK_NOTE)).toBeInTheDocument();
-	});
-
-	it("drops the footnote when there is nothing left to explain", () => {
-		render(<Registry {...props} note={undefined} />);
-
-		expect(screen.queryByText(LOCK_NOTE)).not.toBeInTheDocument();
 	});
 });

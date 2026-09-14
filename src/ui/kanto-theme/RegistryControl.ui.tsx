@@ -3,8 +3,8 @@ import { clsx } from "clsx";
 import { Badge } from "./Badge.ui";
 import { Typography } from "./Typography.ui";
 
-const ROW =
-	"flex w-full items-center gap-4 rounded-lg border border-theme-faint bg-theme-raised p-3 text-left";
+const ROW = "flex w-full items-center gap-4 text-left";
+const BOX = "rounded-lg border border-theme-faint bg-theme-raised p-3";
 const PRESSABLE =
 	"cursor-pointer enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 const CAP =
@@ -14,7 +14,10 @@ const PRICE = "ml-auto shrink-0";
 
 const REFUSAL_COLOR = "cinnabar";
 
+export type RegistryControlLayout = "box" | "row";
+
 export type RegistryControlProps = {
+	layout?: RegistryControlLayout;
 	glyph: string;
 	title: string;
 	detail: string;
@@ -57,9 +60,11 @@ const hintOf = ({ title, price, refusal }: RegistryControlProps) =>
 	[title, price, refusal].filter((part) => part !== undefined).join(" · ");
 
 export const RegistryControl = (props: RegistryControlProps) => {
+	const boxed = (props.layout ?? "box") === "box";
+
 	if (props.onPress === undefined) {
 		return (
-			<div className={ROW}>
+			<div className={clsx(ROW, boxed && BOX)}>
 				<Body {...props} />
 			</div>
 		);
@@ -71,7 +76,7 @@ export const RegistryControl = (props: RegistryControlProps) => {
 			aria-label={hintOf(props)}
 			disabled={props.disabled === true || props.refusal !== undefined}
 			onClick={props.onPress}
-			className={clsx(ROW, PRESSABLE)}
+			className={clsx(ROW, boxed && BOX, PRESSABLE)}
 		>
 			<Body {...props} />
 		</button>

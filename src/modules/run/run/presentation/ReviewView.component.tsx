@@ -18,9 +18,10 @@ const gateOf = (view: RunView): number =>
 export const ReviewView = ({ view, back }: ReviewViewProps) => {
 	const [open, setOpen] = useState(false);
 
+	const gate = gateOf(view);
 	const props = reviewPropsFor({
-		gate: gateOf(view),
-		answers: gateAnswersOf(view.answeredThisGate),
+		gate,
+		answers: gateAnswersOf(view.answeredThisGate, gate),
 		open: open ? true : undefined,
 	});
 

@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	createKantoNewRunScreenProps,
 	freeWeightAt,
-	kantoHandProps,
+	kantoNewRunRegistry,
 	kantoNewRunAt,
 } from "~/test/kantoPoll.factory";
 
@@ -21,7 +21,7 @@ const NewRunWithPanels = () => {
 		<NewRunScreen
 			{...props}
 			build={{ ...props.build, openInfo: open, onToggleInfo: toggle }}
-			hand={{ ...props.hand, openInfo: open, onToggleInfo: toggle }}
+			registry={{ ...props.registry, openInfo: open, onToggleInfo: toggle }}
 		/>
 	);
 };
@@ -61,6 +61,13 @@ export const ArchiveTooThin: Story = {
 
 export const NothingSuggested: Story = {
 	render: () => (
-		<NewRunScreen {...props} hand={kantoHandProps([], freeWeightAt(), false)} />
+		<NewRunScreen
+			{...props}
+			registry={kantoNewRunRegistry([], freeWeightAt(), false)}
+		/>
 	),
+};
+
+export const Framed: Story = {
+	render: () => <NewRunScreen {...props} ground="framed" />,
 };

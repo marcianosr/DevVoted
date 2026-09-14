@@ -28,8 +28,11 @@ pulling the same rope, and the one the player could see was the demand.
 
 ### 1. A correct answer is worth the same at every gate
 
-The base gain is fixed: 5% for a single-answer poll, 8% for a multiple, in
-`coverageRatio.model.ts`. Nothing about the gate number touches it.
+The base gain is fixed: **one unit** for a single-answer poll, two for a
+multiple (ADR-081), in `coverageRatio.model.ts`. Nothing about the gate number
+touches it. What a unit is *worth as a percentage* does depend on the gate
+(`unitsToRatio` divides by every slot the run has opened), but that is the
+denominator moving, not the earn.
 
 ### 2. The HEALTHY line is the only difficulty dial
 
@@ -37,17 +40,19 @@ Each gate raises the percentage a run has to reach, and that is where the whole
 climb lives. It is the one number to tune when a gate should be harder.
 
 The ladder was rebased the same day so that its slope arrives late rather than
-early (flat steps to gate 5, then a steeper climb to the Champion). At a 5%
-base a 10-point band is exactly two right answers, so uniform bands make every
-rung the same ruler. Values in `coverageRatio.model.ts`.
+early (flat steps to gate 5, then a steeper climb to the Champion). The band
+drops are stated in units (`OK_DROP_UNITS`, `SHAKY_DROP_UNITS`), so every rung
+is the same ruler, two answers and four answers, whatever percentage that works
+out to at the gate. Values in `coverageRatio.model.ts`.
 
 ### 3. Configs are the only thing that beats the rising line
 
-A bare build earns at most 25% in a five-poll gate, at gate 0 and at gate 12
-alike, so the demand curve outruns it by design and multipliers stop being
-optional somewhere around gate 3. Category multipliers, global multipliers,
-opener bonuses, streak and cache effects, spillover and audit protection are
-what close the gap.
+A bare build earns at most five units in a five-poll gate, at gate 0 and at
+gate 12 alike. Against a denominator that grows every gate that is a full
+window at gate 0 and a fifth of one at gate 12, so the demand curve outruns it
+by design and multipliers stop being optional somewhere around gate 3. Category
+multipliers, global multipliers, opener bonuses, streak and cache effects,
+spillover and audit protection are what close the gap.
 
 This is deliberate, and it is the Balatro shape: the base score is
 near-irrelevant, and the engine you assemble on top of it is the game.

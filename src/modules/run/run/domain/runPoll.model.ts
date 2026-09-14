@@ -3,6 +3,10 @@ import type {
 	CoverageFactors,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import type { CategoryCode } from "~/shared/lib/categories";
+import { partialShareFor } from "~/modules/run/run/domain/rules.model";
+
+const FULL_SHARE = 1;
+const NO_SHARE = 0;
 
 export type RunOption = {
 	readonly id: string;
@@ -35,53 +39,55 @@ type GradedPoll<Id> = {
 	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
 };
 
-const isCorrect = <Id>(
+type PollGrade = {
+	readonly keySize: number;
+	readonly net: number;
+	readonly exact: boolean;
+};
+
+const gradeOf = <Id>(
 	poll: GradedPoll<Id>,
 	picked: ReadonlySet<Id>
-): boolean => {
+): PollGrade => {
 	const correctIds = poll.options
 		.filter((option) => option.correct)
 		.map((option) => option.id);
-	if (poll.answerType === "single")
-		return picked.size === 1 && correctIds.some((id) => picked.has(id));
-	return (
-		correctIds.length === picked.size &&
-		correctIds.every((id) => picked.has(id))
-	);
+	const caught = correctIds.filter((id) => picked.has(id)).length;
+	const exact =
+		poll.answerType === "single"
+			? picked.size === 1 && caught === 1
+			: correctIds.length === picked.size && caught === correctIds.length;
+
+	return {
+		keySize: correctIds.length,
+		net: caught - (picked.size - caught),
+		exact,
+	};
 };
 
 export type AnswerOutcome = "correct" | "partial" | "wrong";
 
-export const coverageShare = (
-	poll: RunPoll,
-	optionIds: readonly string[]
+export const coverageShare = <Id>(
+	poll: GradedPoll<Id>,
+	optionIds: Iterable<Id>
 ): number => {
-	const picked = new Set(optionIds);
-	if (isCorrect(poll, picked)) return 1;
-	if (poll.answerType === "single") return 0;
-	const correctIds = poll.options
-		.filter((option) => option.correct)
-		.map((option) => option.id);
-	if (correctIds.length === 0) return 0;
-	const correctPicked = correctIds.filter((id) => picked.has(id)).length;
-	const wrongPicked = picked.size - correctPicked;
-	return Math.max(
-		0,
-		Math.min(1, (correctPicked - wrongPicked) / correctIds.length)
-	);
+	const grade = gradeOf(poll, new Set(optionIds));
+	if (grade.exact) return FULL_SHARE;
+	if (poll.answerType === "single" || grade.keySize === 0) return NO_SHARE;
+	if (grade.net <= 0) return NO_SHARE;
+
+	return partialShareFor(grade.net / grade.keySize);
 };
 
 export const answerOutcome = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): AnswerOutcome => {
-	const picked = new Set(optionIds);
-	if (isCorrect(poll, picked)) return "correct";
+	const grade = gradeOf(poll, new Set(optionIds));
+	if (grade.exact) return "correct";
 	if (poll.answerType === "single") return "wrong";
-	const pickedACorrectOption = poll.options.some(
-		(option) => option.correct && picked.has(option.id)
-	);
-	return pickedACorrectOption ? "partial" : "wrong";
+
+	return grade.net > 0 ? "partial" : "wrong";
 };
 
 export const mirrorPoll = (poll: RunPoll): RunPoll => {

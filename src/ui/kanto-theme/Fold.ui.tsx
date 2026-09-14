@@ -4,17 +4,17 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
-import { PANEL_CHROME } from "./Panel.ui";
+import { PANEL_V2_SURFACE } from "./PanelV2.ui";
 import { Typography, type TypographyVariant } from "./Typography.ui";
 import { Verdict, type VerdictOutcome } from "./Verdict.ui";
 
 const FOLD = "group/fold w-full";
 const SUMMARY =
-	"flex cursor-pointer list-none flex-wrap items-center gap-3 py-1 select-none [&::-webkit-details-marker]:hidden";
+	"flex cursor-pointer list-none flex-wrap items-center gap-3 border-theme-faint px-4 py-3 select-none group-open/fold:border-b [&::-webkit-details-marker]:hidden";
 const CARET =
 	"inline-block shrink-0 text-theme-muted transition-transform group-open/fold:rotate-90";
 const META = "flex flex-wrap items-center gap-2 sm:ml-auto";
-const BODY = "mt-3 flex w-full flex-col gap-4 border-t border-theme-faint pt-3";
+const BODY = "flex w-full flex-col gap-4 px-4 py-4";
 
 const CARET_GLYPH = "›";
 
@@ -30,6 +30,7 @@ const HEADING = {
 export type FoldProps = {
 	title: string;
 	lead?: VerdictOutcome;
+	leadShare?: number;
 	heading?: FoldHeading;
 	summary?: string;
 	badges?: readonly FoldBadge[];
@@ -40,18 +41,19 @@ export type FoldProps = {
 export const Fold = ({
 	title,
 	lead,
+	leadShare,
 	heading = "section",
 	summary,
 	badges = [],
 	open = false,
 	children,
 }: FoldProps) => (
-	<details open={open} className={clsx(PANEL_CHROME, FOLD)}>
+	<details open={open} className={clsx(PANEL_V2_SURFACE, FOLD)}>
 		<summary className={SUMMARY}>
 			<span aria-hidden className={CARET}>
 				{CARET_GLYPH}
 			</span>
-			{lead === undefined ? null : <Verdict outcome={lead} />}
+			{lead === undefined ? null : <Verdict outcome={lead} share={leadShare} />}
 			<Typography variant={HEADING[heading]} as="h3">
 				{title}
 			</Typography>

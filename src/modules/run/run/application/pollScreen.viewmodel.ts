@@ -15,7 +15,11 @@ import {
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	roundToOneDecimal,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel } from "~/shared/lib/storage";
 
@@ -25,7 +29,6 @@ import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
-import type { TrailProps } from "~/ui/kanto-theme/Trail.ui";
 
 const OPTION_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const OFFLINE_NOTE = "an audit has these offline this gate";
@@ -62,10 +65,7 @@ export const gateLabelFor = (gate: number): string => {
 	return `Gate ${swatch.gate} ${GATE_SEPARATOR} ${swatch.gateName}`;
 };
 
-export const pollHeaderFor = (
-	view: RunView,
-	bar: CoverageBarProps
-): HeaderProps => {
+export const pollHeaderFor = (view: RunView): HeaderProps => {
 	const gate = view.gateStake.gateNumber;
 
 	return {
@@ -75,28 +75,45 @@ export const pollHeaderFor = (
 		swatches: swatchTrackTo(gate),
 		funds: fundsOf(view.storage, BALANCE_WORD),
 		swatchState: "current",
-		bar,
 	};
+};
+
+const POLL_WORD = "Poll";
+const OUT_OF = "out of";
+const CORRECT_WORD = "correct";
+
+/** What `.length` buys: the gate's running tally, or nothing without it. */
+export const pollHoldsFor = (view: RunView): string | undefined => {
+	const count = view.correctAnswersThisGate;
+	if (count === null) return undefined;
+	const word = view.mirroredPolls ? "incorrect" : "correct";
+
+	return `${count} ${word} ${count === 1 ? "answer" : "answers"} in this gate`;
+};
+
+export const pollLabelFor = (view: RunView): string => {
+	const answered = view.answeredThisGate.length;
+	const step = Math.min(answered + 1, view.pollsPerGate);
+
+	return `${POLL_WORD} ${step} ${OUT_OF} ${view.pollsPerGate}`;
+};
+
+/**
+ * Units, not answers: a multiple-answer poll pays double, so this reads higher
+ * than the number of polls the player got right. The tooltip beside it is what
+ * makes that legible.
+ */
+export const pollCorrectFor = (view: RunView): string => {
+	const held = roundToOneDecimal(view.gateStake.unitsHeld);
+	const scored = scoringSlotsAt(view.gateStake.gateNumber);
+
+	return `${held}/${scored} ${CORRECT_WORD}`;
 };
 
 export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
 	...view.gateStake.coverageLadder,
 	held: view.gateStake.coverageHeld,
 	pin,
-});
-
-const holdsFor = (view: RunView): string | undefined => {
-	const count = view.correctAnswersThisGate;
-	if (count === null) return undefined;
-	const word = view.mirroredPolls ? "incorrect" : "correct";
-	return `${count} ${word} ${count === 1 ? "answer" : "answers"} in this gate`;
-};
-
-export const trailFor = (view: RunView): TrailProps => ({
-	count: view.pollsPerGate,
-	current: Math.min(view.answeredThisGate.length + 1, view.pollsPerGate),
-	verdicts: view.answeredThisGate.map((answer) => answer.outcome),
-	holds: holdsFor(view),
 });
 
 const offlineIdsOf = (view: RunView): ReadonlySet<string> =>

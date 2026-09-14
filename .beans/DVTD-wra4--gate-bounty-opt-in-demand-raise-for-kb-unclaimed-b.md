@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-08-20T10:23:02Z
-updated_at: 2026-09-12T12:57:33Z
+updated_at: 2026-09-14T13:49:51Z
 parent: DVTD-kulw
 ---
 
@@ -46,3 +46,14 @@ carries the anti-auto-take argument on its own.
 There is also a new question the four bands raise: does a bounty move the
 HEALTHY line only, or the whole ladder of four under it? Moving one shifts what
 counts as a clear; moving all four also shifts what kills you.
+
+## Overlap with ADR-082 (2026-09-14)
+
+Every gate now carries one authored objective on the prep panel (DVTD-xj95), so the
+third row this bounty wanted is taken. More to the point, a player-declared demand
+raise **is** a variable clear requirement by consent, which is the thing ADR-035
+Decision 4 replaced and ADR-082 deliberately stayed on the right side of.
+
+If it comes back, it should come back as a dial on ADR-082's `OBJECTIVE_BONUS`
+multiplier — raising what the gate's own objective pays — rather than as a second
+bonus system with a worse property.

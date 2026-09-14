@@ -8,7 +8,14 @@ const SHEET = "flex flex-wrap items-center gap-8";
 const ENTRY = "flex flex-col items-center gap-2 text-xs text-theme-muted";
 const ROW = "flex flex-wrap items-center gap-3";
 
-const NAMES = ["shop", "community", "gate", "review", "chevron"] as const;
+const NAMES = [
+	"shop",
+	"community",
+	"gate",
+	"review",
+	"chevron",
+	"tick",
+] as const;
 
 const meta: Meta<typeof Icon> = {
 	component: Icon,

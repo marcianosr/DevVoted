@@ -7,10 +7,12 @@ import {
 	type PressAction,
 	letterAt,
 	pollBarFor,
+	pollCorrectFor,
+	pollHoldsFor,
+	pollLabelFor,
 	pollBuildFor,
 	gateLabelFor,
 	pollHeaderFor,
-	trailFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -25,7 +27,6 @@ import type {
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
 import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
-import type { TrailProps } from "~/ui/kanto-theme/Trail.ui";
 
 export type PollViewProps = {
 	view: RunView;
@@ -43,8 +44,6 @@ type LivePoll = NonNullable<RunView["poll"]>;
 const SUBMIT_LABEL = "Submit answer";
 const NEXT_LABEL = "Next poll";
 const PICK_FIRST = "pick an answer first";
-const SINGLE_HINT = "tap an answer to lock it in";
-const MULTIPLE_HINT = "pick every answer that fits, then submit";
 
 const wrongCostOf = (view: RunView): string | undefined => {
 	const cost = view.gateStake.perAnswer.coveragePerWrong;
@@ -94,21 +93,15 @@ const liveQuestionFor = (
 	onSelect: (optionId: string) => void,
 	onUnseal: ((optionId: string) => void) | undefined
 ): QuestionProps => ({
-	category: categoryNameOf(view, poll.category),
 	answerType: poll.answerType,
 	question: poll.question,
 	options: optionsOf(poll, view.hiddenOptionIds, view.buyBack, onUnseal),
 	codeBlock: poll.codeBlock,
 	pickedIds: selectedOptionIds,
 	onPick: onSelect,
-	wrongCost: wrongCostOf(view),
 });
 
-const answeredQuestionFor = (
-	view: RunView,
-	answered: AnsweredPoll
-): QuestionProps => ({
-	category: categoryNameOf(view, answered.category),
+const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
 	answerType: answered.answerType ?? "single",
 	question: answered.question,
 	options: answeredOptionsOf(answered),
@@ -142,17 +135,15 @@ const liveFooterFor = (
 		? submitFooterFor(picked, onSubmit)
 		: undefined;
 
-const answeredTrailFor = (view: RunView): TrailProps => ({
-	...trailFor(view),
-	current: view.answeredThisGate.length,
-});
-
-const liveHintFor = (poll: LivePoll) =>
-	poll.answerType === "multiple" ? MULTIPLE_HINT : SINGLE_HINT;
-
 type PollMood = Pick<
 	PollScreenProps,
-	"question" | "trail" | "hint" | "author" | "footer"
+	| "question"
+	| "category"
+	| "categoryColor"
+	| "wrongCost"
+	| "hint"
+	| "author"
+	| "footer"
 >;
 
 const answeredMoodFor = (
@@ -160,8 +151,8 @@ const answeredMoodFor = (
 	answered: AnsweredPoll,
 	onNext: () => void
 ): PollMood => ({
-	question: answeredQuestionFor(view, answered),
-	trail: answeredTrailFor(view),
+	question: answeredQuestionFor(answered),
+	category: categoryNameOf(view, answered.category),
 	hint: answered.explanation,
 	footer: {
 		action: {
@@ -183,8 +174,8 @@ const liveMoodFor = (
 	onUnseal: ((optionId: string) => void) | undefined
 ): PollMood => ({
 	question: liveQuestionFor(view, poll, selectedOptionIds, onSelect, onUnseal),
-	trail: trailFor(view),
-	hint: liveHintFor(poll),
+	category: categoryNameOf(view, poll.category),
+	wrongCost: wrongCostOf(view),
 	author: authorOf(poll),
 	footer: liveFooterFor(poll, selectedOptionIds.length > 0, onSubmit),
 });
@@ -221,7 +212,13 @@ export const PollView = ({
 	return (
 		<PollScreen
 			{...mood}
-			header={pollHeaderFor(view, pollBarFor(view, answered !== undefined))}
+			header={pollHeaderFor(view)}
+			coverage={{
+				bar: pollBarFor(view, answered !== undefined),
+				correct: pollCorrectFor(view),
+			}}
+			pollLabel={pollLabelFor(view)}
+			holds={pollHoldsFor(view)}
 			audits={auditPropsOf(view.audits)}
 			buildFooter={{
 				build: pollBuildFor(view, {

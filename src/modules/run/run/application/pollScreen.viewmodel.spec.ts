@@ -7,7 +7,6 @@ import {
 	buildCountsOf,
 	pollBuildFor,
 	pollPressesOf,
-	trailFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -153,21 +152,5 @@ describe("pollBuildFor", () => {
 		expect((build.configs[0].badges ?? [])[0]).toMatchObject({
 			disabled: false,
 		});
-	});
-});
-
-describe("trailFor", () => {
-	it("reads the gate's correct count once .length is installed", () => {
-		const view = viewOf([CONFIGS.length], JS_GATE);
-
-		expect(trailFor(view).holds).toBe(
-			`${view.correctAnswersThisGate} correct answers in this gate`
-		);
-	});
-
-	it("stays quiet without a config that counts", () => {
-		expect(
-			trailFor(viewOf([CONFIGS.intellisense], JS_GATE)).holds
-		).toBeUndefined();
 	});
 });

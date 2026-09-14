@@ -35,6 +35,29 @@ describe("Screen", () => {
 		expect(document.body).not.toHaveAttribute("data-screen-theme");
 	});
 
+	it("sheds ground, edge and rounding together when asked to go bare", () => {
+		const { container } = render(
+			<Screen theme="cinnabar" ground="bare">
+				body
+			</Screen>
+		);
+
+		expect(container.firstChild).not.toHaveClass("bg-theme-faint");
+		expect(container.firstChild).not.toHaveClass("border-theme-faint");
+		expect(container.firstChild).not.toHaveClass("rounded-3xl");
+	});
+
+	it("keeps its width and its frame padding when bare, being still a screen", () => {
+		const { container } = render(
+			<Screen theme="cinnabar" ground="bare">
+				body
+			</Screen>
+		);
+
+		expect(container.firstChild).toHaveClass("max-w-[900px]", "mx-auto");
+		expect(container.firstChild?.firstChild).toHaveClass("p-4", "sm:p-8");
+	});
+
 	it("edges itself with the faintest theme rung app.css defines", () => {
 		const { container } = render(<Screen theme="cinnabar">body</Screen>);
 
@@ -42,10 +65,16 @@ describe("Screen", () => {
 		expect(appCss).toContain("@utility border-theme-faint");
 	});
 
+	it("frames its body, widening the frame once there is room for it", () => {
+		const { container } = render(<Screen theme="pallet">body</Screen>);
+
+		expect(container.firstChild?.firstChild).toHaveClass("p-4", "sm:p-8");
+	});
+
 	it("caps its width by default, rather than running the full page", () => {
 		const { container } = render(<Screen theme="pallet">body</Screen>);
 
-		expect(container.firstChild).toHaveClass("max-w-[1150px]", "mx-auto");
+		expect(container.firstChild).toHaveClass("max-w-[900px]", "mx-auto");
 	});
 
 	it("takes a narrower cap for a screen that reads as one column", () => {
@@ -56,18 +85,7 @@ describe("Screen", () => {
 		);
 
 		expect(container.firstChild).toHaveClass("max-w-2xl");
-		expect(container.firstChild).not.toHaveClass("max-w-[1150px]");
-	});
-
-	it("takes a middle cap for a screen that reads as two columns", () => {
-		const { container } = render(
-			<Screen theme="pallet" width="medium">
-				body
-			</Screen>
-		);
-
-		expect(container.firstChild).toHaveClass("max-w-[900px]");
-		expect(container.firstChild).not.toHaveClass("max-w-[1150px]");
+		expect(container.firstChild).not.toHaveClass("max-w-[900px]");
 	});
 
 	it("wears a gate's own theme when given a gate rather than a colour", () => {

@@ -11,6 +11,7 @@ const ROW =
 	"flex w-full items-center gap-5 rounded-lg py-2.5 text-left transition-colors";
 const PICKABLE = "cursor-pointer hover:bg-theme-raised";
 const PICKED = "bg-theme-soft";
+const RULED_OUT = "cursor-not-allowed opacity-50";
 const PICK_AREA = "flex min-w-0 flex-1 items-center gap-5 self-stretch";
 
 const CAP =
@@ -27,8 +28,12 @@ const SEAL_BAR = "block h-5 rounded-md bg-theme-raised";
 const UNSEAL =
 	"cursor-pointer rounded-full border border-theme-faint px-2 py-1 text-xs text-theme-soft enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 
+const CROSSED_OUT = "line-through decoration-cinnabar decoration-2";
+const READER_ONLY = "sr-only";
+
 const UNSEAL_LABEL = "unseal";
 const SEALED_NAME = "sealed answer";
+const RULED_OUT_NAME = "ruled out";
 const PRICE_COLOR = "viridian";
 
 const SEAL_WIDTHS = ["w-16", "w-28", "w-20", "w-24"] as const;
@@ -47,7 +52,8 @@ export type ChoiceProps = {
 	picked?: boolean;
 	onPick?: () => void;
 } & (
-	{ children: ReactNode; seal?: never } | { children?: never; seal: ChoiceSeal }
+	| { children: ReactNode; crossedOut?: boolean; seal?: never }
+	| { children?: never; crossedOut?: never; seal: ChoiceSeal }
 );
 
 export const Choice = ({
@@ -56,6 +62,7 @@ export const Choice = ({
 	picked = false,
 	onPick,
 	children,
+	crossedOut = false,
 	seal,
 }: ChoiceProps) => {
 	const cap = (
@@ -71,25 +78,45 @@ export const Choice = ({
 	);
 
 	if (seal === undefined) {
+		const text = (
+			<Typography variant="paragraph" as="span">
+				{children}
+			</Typography>
+		);
+
 		const body = (
 			<>
 				{cap}
-				<Typography variant="paragraph" as="span">
-					{children}
-				</Typography>
+				{crossedOut ? (
+					<span className={CROSSED_OUT}>
+						{text}
+						<span className={READER_ONLY}>{RULED_OUT_NAME}</span>
+					</span>
+				) : (
+					text
+				)}
 			</>
 		);
 
 		if (onPick === undefined) {
-			return <div className={clsx(ROW, picked && PICKED)}>{body}</div>;
+			return (
+				<div className={clsx(ROW, picked && PICKED, crossedOut && RULED_OUT)}>
+					{body}
+				</div>
+			);
 		}
 
 		return (
 			<button
 				type="button"
 				aria-pressed={picked}
+				disabled={crossedOut}
 				onClick={onPick}
-				className={clsx(ROW, picked && PICKED, PICKABLE)}
+				className={clsx(
+					ROW,
+					picked && PICKED,
+					crossedOut ? RULED_OUT : PICKABLE
+				)}
 			>
 				{body}
 			</button>

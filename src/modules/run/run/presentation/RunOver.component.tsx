@@ -31,6 +31,7 @@ export const RunOver = () => {
 				configs={view.configs}
 				unlocked={unlockLinesFor(view.unlockedThisRun)}
 				answered={view.allAnswered}
+				swatchGates={view.swatchGates}
 			/>
 			{start.data?.success === false && (
 				<Paragraph>{start.data.error}</Paragraph>

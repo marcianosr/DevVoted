@@ -10,10 +10,12 @@ const Poll = ({
 	question,
 	answers,
 	picked,
+	struck,
 }: {
 	question: string;
 	answers: string[];
 	picked?: number;
+	struck?: number;
 }) => (
 	<Screen theme="cerulean" width="narrow">
 		<Typography variant="headline">{question}</Typography>
@@ -23,6 +25,7 @@ const Poll = ({
 					key={answer}
 					letter={LETTERS[index] ?? "?"}
 					picked={index === picked}
+					crossedOut={index === struck}
 				>
 					{answer}
 				</Choice>
@@ -34,7 +37,10 @@ const Poll = ({
 const meta: Meta<typeof Choice> = {
 	component: Choice,
 	title: "Kanto/Choice",
-	argTypes: { picked: { control: "boolean" } },
+	argTypes: {
+		picked: { control: "boolean" },
+		crossedOut: { control: "boolean" },
+	},
 	args: { letter: "A", children: "at(-1)" },
 	render: (args) => (
 		<Screen theme="cerulean" width="narrow">
@@ -49,6 +55,21 @@ type Story = StoryObj<typeof Choice>;
 export const Default: Story = {};
 
 export const Picked: Story = { args: { picked: true } };
+
+export const CrossedOut: Story = {
+	args: { children: "party.pop()", crossedOut: true, onPick: () => {} },
+};
+
+export const Linted: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Poll
+			question="Which reads the last Pokémon in the party?"
+			answers={["party.at(-1)", "party.slice(-1)", "party.pop()", "party[-1]"]}
+			struck={2}
+		/>
+	),
+};
 
 export const ShortCode: Story = {
 	parameters: { controls: { disable: true } },

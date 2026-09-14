@@ -111,7 +111,8 @@ describe("Fold", () => {
 		);
 
 		expect(container.querySelector("details")).not.toHaveClass("gap-4");
-		expect(container.querySelector("details")).not.toHaveClass("flex");
+		expect(container.querySelector("details")).not.toHaveClass("gap-3");
+		expect(container.querySelector("summary")).not.toHaveClass("border-b");
 	});
 
 	it("hides the browser's own marker and turns its caret on open", () => {

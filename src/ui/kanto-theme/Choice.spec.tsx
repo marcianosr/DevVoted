@@ -169,6 +169,51 @@ describe("Choice", () => {
 		}
 	);
 
+	it("strikes a ruled-out answer through with a red line", () => {
+		render(
+			<Choice letter="C" crossedOut>
+				party.pop()
+			</Choice>
+		);
+
+		expect(screen.getByText("party.pop()").parentElement).toHaveClass(
+			"line-through",
+			"decoration-cinnabar"
+		);
+	});
+
+	it("leaves an answer that is still in play unstruck", () => {
+		render(<Choice letter="C">party.pop()</Choice>);
+
+		expect(screen.getByText("party.pop()").parentElement).not.toHaveClass(
+			"line-through"
+		);
+	});
+
+	it("refuses the press once the linter has ruled the answer out", async () => {
+		const onPick = vi.fn();
+		render(
+			<Choice letter="C" crossedOut onPick={onPick}>
+				party.pop()
+			</Choice>
+		);
+
+		await userEvent.click(screen.getByRole("button"));
+
+		expect(screen.getByRole("button")).toBeDisabled();
+		expect(onPick).not.toHaveBeenCalled();
+	});
+
+	it("tells a screen reader the answer is out, rather than only drawing it", () => {
+		render(
+			<Choice letter="C" crossedOut>
+				party.pop()
+			</Choice>
+		);
+
+		expect(screen.getByText("ruled out")).toHaveClass("sr-only");
+	});
+
 	it("reads as a radio until it is told the poll takes several", () => {
 		render(<Choice letter="A">justify-content</Choice>);
 

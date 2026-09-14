@@ -65,11 +65,11 @@ export const freeWeightOf = (rungs: readonly UpkeepRung[]): number => {
 const nextRungOf = (rungs: readonly UpkeepRung[], weight: number) =>
 	byWeight(rungs).find((rung) => rung.kb > upkeepAt(rungs, weight));
 
-const billWords = (kb: number) =>
+export const upkeepLabelOf = (kb: number) =>
 	kb === NO_UPKEEP ? FREE_WORD : `${kbLabel(kb)} ${A_GATE}`;
 
 const restingLine = (rungs: readonly UpkeepRung[], weight: number) => {
-	const held = `${weight} ${WEIGHT_WORD} ${SEPARATOR} ${billWords(upkeepAt(rungs, weight))}`;
+	const held = `${weight} ${WEIGHT_WORD} ${SEPARATOR} ${upkeepLabelOf(upkeepAt(rungs, weight))}`;
 	const next = nextRungOf(rungs, weight);
 	if (next === undefined) return held;
 
@@ -81,7 +81,7 @@ const costLine = (
 	weight: number,
 	fill: WeightTrackFill
 ) =>
-	`${fill.name} ${SEPARATOR} ${fill.slots} ${WEIGHT_WORD} ${SEPARATOR} ${WITHOUT_IT} ${billWords(
+	`${fill.name} ${SEPARATOR} ${fill.slots} ${WEIGHT_WORD} ${SEPARATOR} ${WITHOUT_IT} ${upkeepLabelOf(
 		upkeepAt(rungs, weight - fill.slots)
 	)}`;
 

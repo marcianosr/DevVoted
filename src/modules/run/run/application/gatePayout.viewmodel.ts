@@ -1,9 +1,14 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
+	percentOf,
+	runCoverageOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+import {
 	type GateLadder,
 	gateLadderFor,
 } from "~/modules/run/gate/domain/gate.model";
 import { type RunState, scheduleOf } from "~/modules/run/run/domain/run.model";
+import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 
 export type GatePayout = {
 	readonly gateRewardPaidKb: number;
@@ -21,6 +26,7 @@ export type GatePayout = {
 	readonly lapsedConfigs: readonly Config[];
 	readonly clearedGateNumber: number;
 	readonly clearedGateLadder: GateLadder;
+	readonly clearedCoverageHeld: number;
 };
 
 export const gatePayoutFor = (state: RunState): GatePayout => {
@@ -50,6 +56,9 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 			state.build.configs,
 			reportedGate,
 			scheduleOf(state)
+		),
+		clearedCoverageHeld: roundToOneDecimal(
+			percentOf(runCoverageOf(state.bankedUnits, reportedGate))
 		),
 	};
 };

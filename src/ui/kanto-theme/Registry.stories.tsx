@@ -41,8 +41,6 @@ type Story = StoryObj<typeof Registry>;
 
 export const Default: Story = {};
 
-export const NoControls: Story = { args: { controls: [] } };
-
 export const AllAffordable: Story = {
 	args: { offers: kantoRegistryOffers.slice(1, 4) },
 };

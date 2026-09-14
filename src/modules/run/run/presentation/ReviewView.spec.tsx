@@ -19,7 +19,7 @@ const answered: readonly AnsweredPoll[] = [
 		picked: ["at(-1)"],
 		correct: ["at(-1)"],
 		options: ["at(-1)", "pop()"],
-		coverageEarned: 12,
+		coverageEarned: 1,
 	},
 	{
 		id: "b",
@@ -29,7 +29,7 @@ const answered: readonly AnsweredPoll[] = [
 		picked: ["Readonly<T>"],
 		correct: ["Partial<T>"],
 		options: ["Partial<T>", "Readonly<T>"],
-		coverageLost: 4,
+		coverageLost: 1,
 	},
 ];
 
@@ -63,6 +63,13 @@ describe("ReviewView", () => {
 		render(<ReviewView view={view} back={back} />);
 
 		expect(screen.getByText("-4")).toBeInTheDocument();
+	});
+
+	it("states an answer's earn as a share of the gate, not as the raw unit", () => {
+		render(<ReviewView view={view} back={back} />);
+
+		expect(screen.getByText("+4")).toBeInTheDocument();
+		expect(screen.queryByText("+1")).not.toBeInTheDocument();
 	});
 
 	it("leaves a passed answer folded away until asked to open it", async () => {

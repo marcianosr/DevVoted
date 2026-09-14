@@ -15,7 +15,7 @@ it before proposing one again.**
 | [001](001-database-indexing-strategy.md) | Database indexing strategy | Accepted |
 | [002](002-domain-architecture.md) | Domain architecture | Accepted — living document; owns module structure, naming and the dependency rule |
 | [005](005-session-runs.md) | Session runs and the two-loop model | Accepted |
-| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — amended by 008, 013, 035, 074 |
+| [006](006-session-run-mechanics.md) | Session-run mechanics | Accepted — amended by 008, 013, 035, 074, 079 |
 | [007](007-run-rebuild-conventions.md) | Run rebuild: design system and scope | Accepted |
 | [008](008-reward-shop-multibuy-coverage-gated-slots.md) | The reward screen is a multi-buy shop | Accepted — amended by 046, 074 |
 | [009](009-session-run-cadence-daily-seeded-shared-run.md) | Cadence: a daily-seeded, shared run | Accepted — amended by 011, 014 |
@@ -25,7 +25,7 @@ it before proposing one again.**
 | [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035; **the gain no longer scales** (073) |
 | [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 076 (a retry costs a day) |
 | [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap |
-| [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074 |
+| [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074; **the clear no longer awards one** (080) |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
@@ -64,12 +64,15 @@ it before proposing one again.**
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
-| [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; half built |
+| [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; amended by 081; half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — supersedes 046 and 049; **not built** |
 | [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked) |
 | [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; drawn in the kanto kit, not routed |
 | [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
 | [078](078-prep-reads-in-two-columns.md) | **Prep and New run read in two columns, and the band table drops its prose** | Accepted — supersedes 072; restores 032's shop link |
+| [079](079-a-partial-answer-pays-a-quarter-at-a-time.md) | **A partial answer pays a quarter at a time** | Accepted — amends 006 §11; the ladder 081 doubles |
+| [080](080-the-swatch-is-won-by-the-window.md) | **The swatch is won by the window, not by the clear** | Accepted — reverses 019's award rule |
+| [081](081-a-multiple-choice-answer-pays-double.md) | **A multiple-choice answer pays double** | Accepted — amends 073's decision 1; credit is a term beside 079's share |
 
 ## Retired
 

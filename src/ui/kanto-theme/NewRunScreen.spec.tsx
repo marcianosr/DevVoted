@@ -3,43 +3,58 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	NEW_RUN_EMPTY_LABEL,
+	SUGGESTED_LABEL,
 	createKantoNewRunScreenProps,
+	kantoHandCards,
 	kantoNewRunAt,
+	kantoNewRunRegistry,
 	newRunBuildNote,
+	newRunRegistryNote,
 } from "~/test/kantoPoll.factory";
 
 import { NewRunScreen } from "./NewRunScreen.ui";
 
 const props = createKantoNewRunScreenProps();
 
+const COLUMN_SELECTOR = "div.grid > div";
+
+const columns = (root: ParentNode): HTMLElement[] => [
+	...root.querySelectorAll<HTMLElement>(COLUMN_SELECTOR),
+];
+
+const dealt = () => columns(document.body)[1];
+
+const offerOf = (name: string) =>
+	within(dealt())
+		.getByRole("button", { name: `About ${name}` })
+		.closest<HTMLElement>(".rounded-lg");
+
 describe("NewRunScreen", () => {
-	it("stands the build beside the hand it is dealt from", () => {
+	it("stands the build beside the registry it is dealt from", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(screen.getByText("Build")).toBeInTheDocument();
-		expect(screen.getByText("Dealt")).toBeInTheDocument();
+		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("deals the hand down one column and the build down the other", () => {
+	it("holds the build down one column and the deal down the other", () => {
 		const { container } = render(<NewRunScreen {...props} />);
 
-		const [dealing, holding] = [
-			...(container.querySelector("div.grid")?.children ?? []),
-		] as HTMLElement[];
+		const [holding, dealing] = columns(container);
 
-		expect(within(dealing).getByText("Dealt")).toBeInTheDocument();
-		expect(within(dealing).queryByText("Build")).toBeNull();
 		expect(within(holding).getByText("Build")).toBeInTheDocument();
 		expect(within(holding).getByText(NEW_RUN_EMPTY_LABEL)).toBeInTheDocument();
+		expect(within(dealing).getByText("Registry")).toBeInTheDocument();
+		expect(within(dealing).queryByText("Build")).toBeNull();
 	});
 
-	it("deals the hand before the weight it would cost to hold it", () => {
+	it("reads the build before the registry, as the shop screen does", () => {
 		render(<NewRunScreen {...props} />);
 
-		const dealt = screen.getByText("Dealt");
-
 		expect(
-			dealt.compareDocumentPosition(screen.getByText("Build")) &
+			screen
+				.getByText("Build")
+				.compareDocumentPosition(screen.getByText("Registry")) &
 				Node.DOCUMENT_POSITION_FOLLOWING
 		).toBeTruthy();
 	});
@@ -113,6 +128,13 @@ describe("NewRunScreen", () => {
 		expect(screen.queryByText(/gates, one a day/)).toBeNull();
 	});
 
+	it("stands its panels on the page, shedding the screen's own frame", () => {
+		const { container } = render(<NewRunScreen {...props} />);
+
+		expect(container.firstElementChild).not.toHaveClass("bg-theme-faint");
+		expect(container.firstElementChild).not.toHaveClass("rounded-3xl");
+	});
+
 	it("wears the gate it is about to run", () => {
 		const { container } = render(<NewRunScreen {...props} />);
 
@@ -131,13 +153,13 @@ describe("NewRunScreen", () => {
 		expect(screen.getByText(newRunBuildNote())).toBeInTheDocument();
 	});
 
-	it("opens the run on one pick, in the build and in the hand alike", () => {
+	it("opens the run on one pick, in the build and in the registry alike", () => {
 		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
 		expect(
 			screen.getByText("1 weight · 1 covered · 0 billable")
 		).toBeInTheDocument();
-		expect(screen.getByText("4 left in the hand")).toBeInTheDocument();
+		expect(offerOf(".js")).toHaveClass("opacity-60");
 		expect(screen.queryByText(NEW_RUN_EMPTY_LABEL)).not.toBeInTheDocument();
 	});
 
@@ -156,6 +178,64 @@ describe("NewRunScreen", () => {
 
 		expect(stub).toBeDisabled();
 		expect(screen.getByText("224 KB short")).toBeInTheDocument();
+	});
+});
+
+describe("the deal the registry lists", () => {
+	it("prices the deal in room rather than in storage", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(dealt()).toHaveTextContent(
+			`${kantoHandCards().length} offers · free a slot`
+		);
+		expect(screen.getByText(newRunRegistryNote)).toBeInTheDocument();
+	});
+
+	it("lists every card the run was dealt", () => {
+		render(<NewRunScreen {...props} />);
+
+		for (const card of kantoHandCards()) {
+			expect(offerOf(card.name ?? "")).not.toBeNull();
+		}
+	});
+
+	it("marks the advice recommendedPicks names, and drops it once taken", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(screen.getAllByText(SUGGESTED_LABEL)).toHaveLength(2);
+		expect(offerOf(".js")).toContainElement(
+			screen.getAllByText(SUGGESTED_LABEL)[0]
+		);
+	});
+
+	it("deals no advice when nothing is recommended", () => {
+		render(
+			<NewRunScreen {...props} registry={kantoNewRunRegistry([], 4, false)} />
+		);
+
+		expect(screen.queryByText(SUGGESTED_LABEL)).not.toBeInTheDocument();
+	});
+
+	it("dims a card too wide for the room left and refuses its press", () => {
+		render(
+			<NewRunScreen
+				{...props}
+				registry={kantoNewRunRegistry(["js", "code-coverage", "unit-tests"])}
+			/>
+		);
+
+		expect(offerOf("Cold Start")).toHaveClass("opacity-60");
+		expect(
+			screen.getByRole("button", { name: "Install Cold Start" })
+		).toBeDisabled();
+	});
+
+	it("takes a card with a verb rather than a price", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(
+			screen.getByRole("button", { name: "Install .js" })
+		).toBeInTheDocument();
 	});
 });
 

@@ -21,6 +21,7 @@ import {
 	clearsBar,
 	coverageAfter,
 	coverageMultiplierFor,
+	coverageGainPercentFor,
 	coverageMultiplierOf,
 	floorAt,
 	focusBonusFor,
@@ -138,6 +139,25 @@ describe("run coverage", () => {
 	it("pays the build multiplier on every answer alike", () => {
 		expect(gainPerCorrectFor(DOUBLER)).toBeCloseTo(2);
 		expect(gainPerCorrectFor(TRIPLER)).toBeCloseTo(3);
+	});
+});
+
+describe("what a unit moves the bar by", () => {
+	it("is a fifth of the bar at the calibration gate, where five slots are open", () => {
+		expect(coverageGainPercentFor(BASE_UNIT, 0)).toBeCloseTo(20);
+	});
+
+	it("shrinks as the climb opens slots, the unit itself never changing", () => {
+		expect(coverageGainPercentFor(BASE_UNIT, 4)).toBeCloseTo(4);
+		expect(coverageGainPercentFor(BASE_UNIT, 12)).toBeCloseTo(1.538);
+	});
+
+	it("scales with the build, so a tripler moves the bar three times as far", () => {
+		expect(coverageGainPercentFor(gainPerCorrectFor(TRIPLER), 4)).toBeCloseTo(12);
+	});
+
+	it("is not the unit count itself, which reads a hundred times too high", () => {
+		expect(coverageGainPercentFor(3, 4)).not.toBeCloseTo(300);
 	});
 });
 
@@ -324,9 +344,17 @@ describe("the balance this model exists to hold", () => {
 	 * Carries the ledger across gates, which is the whole point of the model:
 	 * a gate is judged on the run behind it, not on its own five answers.
 	 */
-	const simulate = (configs: readonly Config[], accuracy: number) => {
+	const simulate = (
+		configs: readonly Config[],
+		accuracy: number,
+		multiShare = 0
+	) => {
 		const roll = seededRolls(
-			Math.round(coverageMultiplierOf(configs) * 7919 + accuracy * 100)
+			Math.round(
+				coverageMultiplierOf(configs) * 7919 +
+					accuracy * 100 +
+					multiShare * 31
+			)
 		);
 		let wins = 0;
 		let deepest = 0;
@@ -338,10 +366,21 @@ describe("the balance this model exists to hold", () => {
 
 			while (alive && gate <= VICTORY_GATE) {
 				let rights = 0;
-				for (let poll = 0; poll < SLICE_WINDOW; poll++)
-					if (roll() < accuracy) rights++;
+				let units = 0;
 
-				const carried = banked + rights * gainPerCorrectFor(configs);
+				for (let poll = 0; poll < SLICE_WINDOW; poll++) {
+					if (roll() >= accuracy) continue;
+					rights++;
+					// Short-circuits at multiShare 0 so an all-singles run keeps its roll stream.
+					const multiple = multiShare > 0 && roll() < multiShare;
+					units += gainPerCorrectFor(
+						configs,
+						undefined,
+						multiple ? "multiple" : "single"
+					);
+				}
+
+				const carried = banked + units;
 
 				if (
 					!meetsGateFloor(rights) ||
@@ -402,5 +441,28 @@ describe("the balance this model exists to hold", () => {
 
 	it("cannot be brute forced by stacking alone at poor accuracy", () => {
 		expect(simulate(STACKED, 0.6).winRate).toBeLessThan(0.5);
+	});
+
+	/**
+	 * The multiple-choice bonus is the largest difficulty dial in the model and
+	 * the player does not hold it: the seed deals the mix. A bare build at 70%
+	 * summits under 1% of all-singles runs and better than a third of runs once
+	 * a quarter of the window asks for a set. Recorded so it cannot widen unseen.
+	 */
+	it("swings a near-walled bare build to winnable on the poll mix alone", () => {
+		expect(simulate(BARE, 0.7).winRate).toBeLessThan(0.02);
+		expect(simulate(BARE, 0.7, 0.25).winRate).toBeGreaterThan(0.3);
+	});
+
+	/**
+	 * The same 100% cap that flattens the multiplier ladder flattens this one:
+	 * past roughly half the window, the extra credit overflows into KB instead
+	 * of coverage, so an all-multiple run is no safer than a half-multiple one.
+	 */
+	it("stops paying for poll mix once the cap binds", () => {
+		const half = simulate(BARE, 0.75, 0.5).winRate;
+		const every = simulate(BARE, 0.75, 1).winRate;
+
+		expect(Math.abs(every - half)).toBeLessThan(0.1);
 	});
 });

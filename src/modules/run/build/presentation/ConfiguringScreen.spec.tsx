@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
+import {
+	GATE_REWARD_KB,
+	MAX_SLOTS,
+} from "~/modules/run/run/domain/rules.model";
 import { ConfiguringScreen } from "~/modules/run/build/presentation/ConfiguringScreen.ui";
 import { createMockGateStake } from "~/test/runView.factory";
 
@@ -89,7 +92,7 @@ describe(ConfiguringScreen, () => {
 				{...base}
 				configs={[CONFIGS.js]}
 				stake={createMockGateStake({
-					modifiers: { ...base.stake.modifiers, gateReward: 32 },
+					modifiers: { ...base.stake.modifiers, gateReward: GATE_REWARD_KB },
 				})}
 				bench={[CONFIGS.unitTests]}
 			/>

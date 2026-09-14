@@ -20,6 +20,7 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import {
 	BASE_UNIT,
+	MULTIPLE_CREDIT,
 	healthyAt,
 	percentOf,
 	runCoverageOf,
@@ -374,6 +375,27 @@ describe("enhancement configs on one build", () => {
 	});
 });
 
+describe("the swatch rides the window, not the clear (ADR-080)", () => {
+	it("stamps the gate whose five polls all landed", () => {
+		expect(clearGate(started(["js"])).swatchGatesEarned).toEqual([0]);
+	});
+
+	it("stamps nothing for a gate that cleared carrying a miss", () => {
+		let state = answerWith(started(["js"]), false);
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
+
+		expect(state.status).toBe("rewarding");
+		expect(state.swatchGatesEarned).toEqual([]);
+	});
+
+	it("collects a stamp per flawless gate, and keeps the earlier ones", () => {
+		const first = clearGate(started(["js"], SLICE_WINDOW * 2));
+		const second = clearGate(runReducer(first, { type: "finish-reward" }));
+
+		expect(second.swatchGatesEarned).toEqual([0, 1]);
+	});
+});
+
 describe("the summit", () => {
 	it("wins by clearing every gate — playing the mirror wrong on purpose", () => {
 		const base = started(["jsx"], GATE_COUNT * SLICE_WINDOW);
@@ -557,7 +579,7 @@ describe("streak", () => {
 		expect(state.answeredThisGate.at(-1)?.outcome).toBe("partial");
 		expect(state.streak).toBe(2);
 		expect(state.answeredThisGate.at(-1)?.coverageEarned).toBeCloseTo(
-			BASE_UNIT * 0.5 + STREAK_UNIT_STEP
+			BASE_UNIT * 0.5 * MULTIPLE_CREDIT + STREAK_UNIT_STEP
 		);
 	});
 
@@ -648,14 +670,14 @@ describe("answer judging", () => {
 		expect(outcomeOf(["c"])).toBe("wrong");
 	});
 
-	it("earns half the coverage for demonstrating half the correct set", () => {
+	it("pays half a multiple-choice set a whole unit: half a share at double credit", () => {
 		const partial = runReducer(answering(), {
 			type: "answer",
 			optionIds: ["a"],
 		});
-		const half = BASE_UNIT * 0.5;
-		expect(partial.coverage).toBe(half);
-		expect(partial.answeredThisGate[0].coverageEarned).toBe(half);
+		const halfAtDouble = BASE_UNIT * 0.5 * MULTIPLE_CREDIT;
+		expect(partial.coverage).toBe(halfAtDouble);
+		expect(partial.answeredThisGate[0].coverageEarned).toBe(halfAtDouble);
 	});
 
 	it("records a wrong answer as costing nothing, the slot being the cost", () => {
@@ -674,7 +696,7 @@ describe("answer judging", () => {
 		expect(partial.answeredThisGate[0].coverageLost).toBeUndefined();
 	});
 
-	it("pays a multiple-choice poll exactly what a single pays: one unit, fully answered", () => {
+	it("pays a fully answered multiple-choice poll double what a single pays", () => {
 		const singlePoll: RunPoll = {
 			id: "s",
 			category: "ts",
@@ -695,17 +717,67 @@ describe("answer judging", () => {
 			optionIds: ["a", "b"],
 		});
 		expect(multiple.answeredThisGate[0].coverageEarned ?? 0).toBe(
-			single.answeredThisGate[0].coverageEarned ?? 0
+			(single.answeredThisGate[0].coverageEarned ?? 0) * MULTIPLE_CREDIT
 		);
 	});
 
-	it("cancels a correct pick with a wrong one — nothing earned, loss applied", () => {
+	const fourKeyPoll = (): RunPoll => ({
+		id: "four",
+		category: "react",
+		question: "Pick every hook",
+		answerType: "multiple",
+		options: [
+			{ id: "k1", label: "useState", correct: true },
+			{ id: "k2", label: "useEffect", correct: true },
+			{ id: "k3", label: "useMemo", correct: true },
+			{ id: "k4", label: "useRef", correct: true },
+			{ id: "x1", label: "useBanjo", correct: false },
+		],
+	});
+
+	const CREDIT_LADDER: readonly {
+		readonly caught: string;
+		readonly optionIds: string[];
+		readonly units: number;
+	}[] = [
+		{ caught: "none of the key", optionIds: ["x1"], units: 0 },
+		{ caught: "a quarter of the key", optionIds: ["k1"], units: 0.5 },
+		{ caught: "half the key", optionIds: ["k1", "k2"], units: 1 },
+		{
+			caught: "three quarters of the key",
+			optionIds: ["k1", "k2", "k3"],
+			units: 1.5,
+		},
+		{
+			caught: "the exact key",
+			optionIds: ["k1", "k2", "k3", "k4"],
+			units: 2,
+		},
+	];
+
+	it.each(CREDIT_LADDER)(
+		"pays $units units for catching $caught",
+		({ optionIds, units }) => {
+			const answered = runReducer(
+				{
+					...createRun([fourKeyPoll(), ...pool(5)], handed),
+					status: "answering",
+				},
+				{ type: "answer", optionIds }
+			);
+
+			expect(answered.answeredThisGate[0].coverageEarned ?? 0).toBe(units);
+		}
+	);
+
+	it("cancels a correct pick with a wrong one — nothing earned, and it reads as a miss", () => {
 		const cancelled = runReducer(answering(), {
 			type: "answer",
 			optionIds: ["a", "c"],
 		});
 		expect(cancelled.coverage).toBe(0);
 		expect(cancelled.answeredThisGate[0].coverageEarned).toBe(0);
+		expect(cancelled.answeredThisGate[0].outcome).toBe("wrong");
 	});
 
 	const shapedPoll = (
@@ -739,11 +811,11 @@ describe("answer judging", () => {
 		expect(answerShaped("single", ["a", "b"], ["b"]).window.correct).toBe(1);
 	});
 
-	it("demands the exact single option on a one-correct multiple poll — over-picking is partial", () => {
+	it("demands the exact single option on a one-correct multiple poll — a wrong pick cancels the right one", () => {
 		expect(answerShaped("multiple", ["a"], ["a"]).window.correct).toBe(1);
 		const overPicked = answerShaped("multiple", ["a"], ["a", "b"]);
 		expect(overPicked.window.correct).toBe(0);
-		expect(overPicked.answeredThisGate[0].outcome).toBe("partial");
+		expect(overPicked.answeredThisGate[0].outcome).toBe("wrong");
 	});
 
 	it("can never be answered correctly when a poll has zero correct options", () => {

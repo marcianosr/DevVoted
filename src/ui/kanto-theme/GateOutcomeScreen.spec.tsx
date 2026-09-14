@@ -81,14 +81,46 @@ describe("GateOutcomeScreen", () => {
 			).toBeInTheDocument();
 		});
 
-		it("opens with every fold shut, so the strips carry the reading", () => {
+		it("opens on coverage alone, the rest of the strips carrying the reading", () => {
 			const { container } = render(
 				<GateOutcomeScreen {...kantoGateHealthy()} />
 			);
 
-			for (const fold of container.querySelectorAll("details")) {
+			const [coverage, ...rest] = [...container.querySelectorAll("details")];
+
+			expect(coverage).toHaveTextContent("Coverage");
+			expect(coverage).toHaveAttribute("open");
+			for (const fold of rest) {
 				expect(fold).not.toHaveAttribute("open");
 			}
+		});
+
+		it("stands the score beside the takings, the answers across the foot", () => {
+			const { container } = render(
+				<GateOutcomeScreen {...kantoGateHealthy()} />
+			);
+
+			const [score, takings] = [
+				...container.querySelectorAll<HTMLElement>("div.grid > div"),
+			];
+
+			expect(within(score).getByText("Coverage")).toBeInTheDocument();
+			expect(within(score).getByText("By category")).toBeInTheDocument();
+			expect(within(takings).getByText("Payout")).toBeInTheDocument();
+			expect(within(takings).getByText("Build changes")).toBeInTheDocument();
+			expect(within(score).queryByText("The five answers")).toBeNull();
+			expect(within(takings).queryByText("The five answers")).toBeNull();
+		});
+
+		it("leaves the answers the full width their questions need", () => {
+			const { container } = render(
+				<GateOutcomeScreen {...kantoGateHealthy()} />
+			);
+
+			const answers = screen.getByText("The five answers").closest("details");
+
+			expect(answers?.closest("div.grid")).toBeNull();
+			expect(container.querySelector("div.grid")).not.toBeNull();
 		});
 
 		it("opens every fold when the frame asks for it", () => {
@@ -132,13 +164,13 @@ describe("GateOutcomeScreen", () => {
 			);
 		});
 
-		it("leads the folds with the bonus, and prices it", () => {
+		it("leads with coverage, and prices the perfect bonus inside it", () => {
 			const { container } = render(
 				<GateOutcomeScreen {...kantoGatePerfect()} />
 			);
 			const folds = [...container.querySelectorAll("details")];
 
-			expect(folds[0]).toHaveTextContent("Perfect bonus");
+			expect(folds[0]).toHaveTextContent("Coverage");
 			expect(within(folds[0]!).getByText("the bar filled")).toBeInTheDocument();
 		});
 

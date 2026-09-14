@@ -115,6 +115,17 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		estimateThisGateKb: committed === undefined ? undefined : estimateKb,
 	};
 
+	// The swatch is the window's own prize, not the clear's: a flawless window
+	// earns it even where cumulative coverage lands the gate short (ADR-080).
+	// A retried gate can come up flawless twice, so the gate is stamped once.
+	const swatchGates = state.swatchGatesEarned ?? [];
+	const settledSwatch = {
+		swatchGatesEarned:
+			state.window.correct >= SLICE_WINDOW && !swatchGates.includes(gateNumber)
+				? [...swatchGates, gateNumber]
+				: swatchGates,
+	};
+
 	const close: GateClose = {
 		build: state.build,
 		bankedUnits: state.bankedUnits,
@@ -152,6 +163,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			return {
 				...state,
 				...settledEstimate,
+				...settledSwatch,
 				storage: settledStorage,
 				currentIndex: nextIndex,
 				status: "dead",
@@ -162,6 +174,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			return {
 				...state,
 				...settledEstimate,
+				...settledSwatch,
 				storage: settledStorage,
 				currentIndex: nextIndex,
 				status: "dead",
@@ -173,6 +186,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		return {
 			...state,
 			...settledEstimate,
+			...settledSwatch,
 			storage: settledStorage,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
@@ -197,23 +211,20 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		bankableUnits(totalUnits, state.gatesCleared)
 	);
 	const overflowKb = surplusPayoutKb(totalUnits, state.gatesCleared);
-	const reward =
-		gateClearPayout(
-			state.build.configs,
-			state.window.correct,
-			state.gatesCleared,
-			state.streak
-		) +
-		interest +
-		extraPickKb +
-		overflowKb +
-		estimateKb;
+	const clearKb = gateClearPayout(
+		state.build.configs,
+		state.window.correct,
+		state.gatesCleared,
+		state.streak
+	);
+	const reward = clearKb + interest + extraPickKb + overflowKb + estimateKb;
 	const planTier = state.storagePlan ?? 0;
 	const rewarded = addStorage(state.storage, reward, planTier);
 	const bill = settlePlanBill(state, rewarded);
 	const cleared: RunState = {
 		...state,
 		...settledEstimate,
+		...settledSwatch,
 		window: freshWindow(
 			state.polls,
 			nextIndex,
@@ -300,6 +311,9 @@ type AnswerGrade = {
 	readonly streak: number;
 };
 
+export const gradedPollFor = (state: RunState, poll: RunPoll): RunPoll =>
+	mirrorsPolls(auditsOf(state)) ? mirrorPoll(poll) : poll;
+
 const gradeAnswer = (
 	state: RunState,
 	poll: RunPoll,
@@ -308,7 +322,7 @@ const gradeAnswer = (
 ): AnswerGrade => {
 	const audits = auditsOf(state);
 	const configs = liveConfigsOf(state);
-	const graded = mirrorsPolls(audits) ? mirrorPoll(poll) : poll;
+	const graded = gradedPollFor(state, poll);
 	const answeredOutcome = answerOutcome(graded, optionIds);
 	const limitMs = auditTimeLimitMs(audits, state.window.answered);
 	const timedOut =
@@ -342,17 +356,14 @@ export const answerContextFor = (
 	poll: RunPoll
 ): AnswerContext => ({
 	category: poll.category,
+	answerType: poll.answerType,
 	answeredBefore: state.window.answered,
 	cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
 });
 
-const scoreAnswer = (
-	state: RunState,
-	poll: RunPoll,
-	grade: AnswerGrade
-): AnswerLedger => {
+const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 	const { audits, configs, auditedShare } = grade;
-	const answerContext = answerContextFor(state, poll);
+	const answerContext = answerContextFor(state, grade.graded);
 	const rawFaucet =
 		grade.outcome === "correct" ? faucetKbPerCorrect(configs) : 0;
 	const faucetKb = Math.min(
@@ -518,7 +529,7 @@ export const answer = (
 	if (!poll) return state;
 
 	const grade = gradeAnswer(state, poll, optionIds, elapsedMs);
-	const ledger = scoreAnswer(state, poll, grade);
+	const ledger = scoreAnswer(state, grade);
 	const answered = answeredPollFrom(poll, optionIds, grade, ledger, elapsedMs);
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
 	const counted = countAutoUpgrade(applied, state, grade.outcome);

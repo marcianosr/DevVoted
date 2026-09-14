@@ -1,3 +1,5 @@
+import { clsx } from "clsx";
+
 import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
@@ -6,7 +8,8 @@ import type { SwatchFill } from "./Swatch.ui";
 import { SwatchChip } from "./SwatchChip.ui";
 import { Typography } from "./Typography.ui";
 
-const FOOTER = "flex w-full flex-col gap-3 border-t border-theme-faint pt-4";
+const FOOTER = "flex w-full flex-col gap-3";
+const FOOTER_RULE = "border-t border-theme-faint pt-4";
 const STAKE_ROW = "flex w-full flex-wrap items-center justify-end gap-4";
 const ACTION_ROW = "flex w-full flex-wrap items-center gap-3";
 const STAKE = "flex flex-wrap items-center gap-2";
@@ -41,10 +44,12 @@ export type NotePlacement = "below" | "row";
 export type ScreenFooterProps = {
 	stakes?: readonly Stake[];
 	action: FooterAction;
-	aside?: FooterAction;
+	/** Secondary exits, left of the action. Prep offers two: the shop and the board. */
+	asides?: readonly FooterAction[];
 	refusal?: string;
 	note?: string;
 	noteAt?: NotePlacement;
+	rule?: boolean;
 };
 
 const Figure = ({ figure }: { figure: StakeFigure }) => {
@@ -71,12 +76,13 @@ const StakeReading = ({ stake }: { stake: Stake }) => (
 export const ScreenFooter = ({
 	stakes = [],
 	action,
-	aside,
+	asides = [],
 	refusal,
 	note,
 	noteAt = "below",
+	rule = true,
 }: ScreenFooterProps) => (
-	<footer className={FOOTER}>
+	<footer className={clsx(FOOTER, rule && FOOTER_RULE)}>
 		{stakes.length === 0 ? null : (
 			<div className={STAKE_ROW}>
 				{stakes.map((stake) => (
@@ -86,8 +92,8 @@ export const ScreenFooter = ({
 		)}
 
 		<div className={ACTION_ROW}>
-			{aside === undefined ? null : (
-				<span className={ASIDE}>
+			{asides.map((aside) => (
+				<span key={aside.label} className={ASIDE}>
 					<Button
 						size={ACTION_SIZE}
 						tone={ASIDE_TONE}
@@ -98,7 +104,7 @@ export const ScreenFooter = ({
 						onPress={aside.onPress}
 					/>
 				</span>
-			)}
+			))}
 
 			{note === undefined || noteAt === "below" ? null : (
 				<span className={ROW_NOTE}>

@@ -38,6 +38,14 @@ export type GateStake = {
 	readonly pollsPerGate: number;
 	readonly coverageLadder: GateLadder;
 	readonly coverageHeld: number;
+	/**
+	 * The same reading with this window's own units taken back out: what the run
+	 * held when the gate opened. Fixed for the whole window, including a retry,
+	 * so a price quoted against it cannot move while the window is played.
+	 */
+	readonly coverageAtOpen: number;
+	/** The same reading in units, so a screen can say "12 of 15" rather than a percentage. */
+	readonly unitsHeld: number;
 	readonly audits: readonly AuditView[];
 	readonly upcomingAudit?: UpcomingAuditView;
 	readonly peelSlotsOnFailure: number;

@@ -63,6 +63,7 @@ const PATHS = {
 		</>
 	),
 	chevron: <path d="M5.5 3.5 9 7l-3.5 3.5" />,
+	tick: <path d="m3.2 7.3 2.6 2.6 5-5.8" />,
 	back: (
 		<>
 			<path d="M11.5 7h-8" />

@@ -17,6 +17,10 @@ const ROW = "flex w-full flex-wrap items-baseline gap-3";
 const ROW_CODE =
 	"shrink-0 rounded-md bg-theme-raised px-2 py-0.5 text-sm font-bold text-theme-soft";
 
+const FIRING_WORD = "firing";
+
+export const auditsFiringOf = (count: number) => `${count} ${FIRING_WORD}`;
+
 export type AuditLayout = "fit" | "full" | "row";
 
 const CARD_WIDTH = {

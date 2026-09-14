@@ -5,7 +5,7 @@ import {
 	ALL_SWATCHES,
 	GATE_SWATCHES,
 	hasThemeColor,
-	swatchesEarnedAt,
+	swatchesEarnedFrom,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 
@@ -106,23 +106,33 @@ describe("GATE_SWATCHES", () => {
 	});
 });
 
-describe("swatchesEarnedAt", () => {
-	it("gives a fresh run nothing — Pallet is gate 0's reward, not a gift", () => {
-		expect(swatchesEarnedAt(0)).toEqual([]);
+describe("swatchesEarnedFrom", () => {
+	it("gives a run that played no gate clean nothing at all", () => {
+		expect(swatchesEarnedFrom([])).toEqual([]);
 	});
 
-	it("awards a gate's swatch once that gate is behind you", () => {
-		expect(swatchesEarnedAt(1).map(({ name }) => name)).toEqual([
+	it("names the swatch of every gate the run answered flawlessly", () => {
+		expect(swatchesEarnedFrom([0]).map((swatch) => swatch.name)).toEqual([
 			"Pallet Swatch",
 		]);
-		expect(swatchesEarnedAt(3).map(({ theme }) => theme)).toEqual([
+	});
+
+	it("returns them in climb order, not in the order the windows landed", () => {
+		expect(swatchesEarnedFrom([2, 0, 1]).map((swatch) => swatch.theme)).toEqual(
+			["pallet", "boulder", "cascade"]
+		);
+	});
+
+	it("skips a cleared gate that dropped a poll", () => {
+		expect(swatchesEarnedFrom([0, 2]).map((swatch) => swatch.theme)).toEqual([
 			"pallet",
-			"boulder",
 			"cascade",
 		]);
 	});
 
-	it("hands over the whole roster to a run that summited", () => {
-		expect(swatchesEarnedAt(GATE_COUNT)).toHaveLength(GATE_COUNT);
+	it("hands over the whole roster to a run that played every gate clean", () => {
+		const everyGate = ALL_SWATCHES.map((swatch) => swatch.gate);
+
+		expect(swatchesEarnedFrom(everyGate)).toHaveLength(GATE_COUNT);
 	});
 });

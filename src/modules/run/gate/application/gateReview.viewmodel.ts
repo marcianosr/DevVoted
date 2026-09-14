@@ -59,6 +59,7 @@ const diffFor = (answer: GateAnswer): AnswerDiffProps => {
 
 const reviewRowFor = (answer: GateAnswer, open?: boolean): ReviewRow => ({
 	verdict: answer.outcome,
+	share: answer.share,
 	question: answer.question,
 	category: categoryName(answer.category),
 	coverage: signedPercent(answer.coverage),

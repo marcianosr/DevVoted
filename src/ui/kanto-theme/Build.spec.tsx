@@ -297,22 +297,11 @@ describe("Build's vacancy", () => {
 		).toHaveLength(1);
 	});
 
-	it("stands the rung after the offer last, quoted but not for sale", () => {
-		render(
-			<Build
-				configs={RUNNING}
-				slots={ROOMY}
-				{...slotDealsAt()}
-				nextSlot={{ slot: 12, price: "160 KB", locked: true }}
-			/>
-		);
+	it("offers the next slot alone, never quoting the one after it", () => {
+		render(<Build configs={RUNNING} slots={ROOMY} {...slotDealsAt()} />);
 
-		const offer = screen.getByRole("button", { name: /buy slot/ });
-		const rung = screen.getByLabelText(/^slot 12 ·/);
-
-		expect(
-			offer.compareDocumentPosition(rung) & Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
+		expect(screen.getAllByRole("button", { name: /buy slot/ })).toHaveLength(1);
+		expect(screen.queryByLabelText(/after this one/)).toBeNull();
 	});
 
 	it("leaves the poll band no vacancy to draw", () => {

@@ -7,14 +7,20 @@ import {
 	VICTORY_GATE,
 	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 export const BASE_UNIT = 1;
+export const SINGLE_CREDIT = 1;
+export const MULTIPLE_CREDIT = 2;
 export const KB_PER_PROVEN_SLOT = 32;
 export const PAYOUT_RATIO_CAP = 1.5;
 export const PERFECT_BONUS = 1.5;
 
 const FLOAT_TOLERANCE = 1e-9;
+
+export const creditFor = (answerType: AnswerType): number =>
+	answerType === "multiple" ? MULTIPLE_CREDIT : SINGLE_CREDIT;
 
 export const AS_PERCENT = 100;
 
@@ -42,6 +48,15 @@ export const unitsToRatio = (units: number, gate: number): number =>
 
 export const runCoverageOf = (units: number, gate: number): number =>
 	asRatio(unitsToRatio(units, gate));
+
+/**
+ * What units move the run-coverage bar by, at this gate. Units are flat, the bar
+ * is a share of every slot the run has opened, so the same right answer is worth
+ * less the deeper the climb goes. Reading `percentOf` off the units directly
+ * reports a hundred times the truth at gate 0 and sixty-five at the summit.
+ */
+export const coverageGainPercentFor = (units: number, gate: number): number =>
+	percentOf(unitsToRatio(units, gate));
 
 export const bankableUnits = (units: number, gate: number): number =>
 	Math.min(Math.max(0, units), scoringSlotsAt(gate));
@@ -162,8 +177,10 @@ export const focusBonusFor = (
 
 export const gainPerCorrectFor = (
 	configs: readonly Config[],
-	category?: CategoryCode
-): number => BASE_UNIT * coverageMultiplierFor(configs, category);
+	category?: CategoryCode,
+	answerType: AnswerType = "single"
+): number =>
+	BASE_UNIT * creditFor(answerType) * coverageMultiplierFor(configs, category);
 
 export const coverageAfter = (
 	rights: number,

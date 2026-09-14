@@ -254,6 +254,7 @@ const simulateCommunityScreen = (
 				question: poll.question,
 				category: getCategoryMetadata(poll.category).name,
 				outcome: entry.outcome,
+				share: entry.coverageFactors?.correct,
 				rightShare: Math.round(
 					((rightsOn(poll).length + (entry.outcome === "correct" ? 1 : 0)) /
 						climbers) *

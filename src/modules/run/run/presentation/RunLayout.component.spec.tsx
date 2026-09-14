@@ -127,7 +127,7 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
-		expect(await screen.findByText("Boulder gate")).toBeVisible();
+		expect(await screen.findByText("Gate 1 · Boulder")).toBeVisible();
 	});
 
 	it("sends a day without a run to the start screen", async () => {
@@ -303,7 +303,7 @@ describe("run route sync", () => {
 
 		const router = renderRunRoutes("/run/prep");
 		await user.click(
-			await screen.findByRole("button", { name: "Start Boulder gate →" })
+			await screen.findByRole("button", { name: /Start Boulder/ })
 		);
 
 		await waitFor(() =>
@@ -345,9 +345,7 @@ describe("run route sync", () => {
 		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
 
 		renderRunRoutes("/run/prep");
-		await user.click(
-			await screen.findByRole("button", { name: /Start .* gate →/ })
-		);
+		await user.click(await screen.findByRole("button", { name: /^Start / }));
 
 		expect(await screen.findByText(view.poll?.question ?? "")).toBeVisible();
 	});

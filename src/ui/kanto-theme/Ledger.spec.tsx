@@ -251,7 +251,7 @@ describe("Ledger", () => {
 	it("draws no bar and no note when it was given neither", () => {
 		const { container } = render(<Ledger title="What it asks" rows={ROWS} />);
 
-		expect(container.querySelector("[aria-hidden]")).toBeNull();
+		expect(container.querySelector("[aria-hidden] > span")).toBeNull();
 	});
 
 	it("closes on the note it was given", () => {
@@ -261,29 +261,14 @@ describe("Ledger", () => {
 
 		expect(screen.getByText("Drop configs or minify.")).toBeInTheDocument();
 	});
-	describe("titled as a gate", () => {
-		it("sets the gate's name in caps without shouting it at a reader", () => {
-			render(<Ledger title="Lavender gate" heading="gate" rows={ROWS} />);
+	it("heads itself with the panel glyph, the title reading as it was given", () => {
+		const { container } = render(<Ledger title="What it asks" rows={ROWS} />);
 
-			const title = screen.getByRole("heading", { name: "Lavender gate" });
-			expect(title.firstElementChild).toHaveClass("uppercase");
-		});
-
-		it("marks the gate as one the run has not cleared", () => {
-			const { container } = render(
-				<Ledger title="Lavender gate" heading="gate" rows={ROWS} />
-			);
-
-			const mark = container.querySelector("[aria-hidden]");
-			expect(mark).toHaveClass("border-2", "border-dashed", "border-theme");
-		});
-
-		it("leaves a section heading unmarked and in its own case", () => {
-			const { container } = render(<Ledger title="What it asks" rows={ROWS} />);
-
-			const title = screen.getByRole("heading", { name: "What it asks" });
-			expect(title.firstElementChild).toBeNull();
-			expect(container.querySelector("[aria-hidden]")).toBeNull();
-		});
+		expect(
+			screen.getByRole("heading", { name: "What it asks" })
+		).toBeInTheDocument();
+		expect(container.querySelector("header [aria-hidden]")).toHaveClass(
+			"bg-theme-muted"
+		);
 	});
 });

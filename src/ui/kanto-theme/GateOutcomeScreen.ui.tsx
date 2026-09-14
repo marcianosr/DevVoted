@@ -4,6 +4,7 @@ import type { KantoColor } from "./colors";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import {
 	COVERAGE_BAND_COLOR,
+	COVERAGE_BAND_WORD,
 	CoverageBar,
 	type CoverageBandId,
 	type CoverageBarProps,
@@ -15,7 +16,7 @@ import { Fold, type FoldBadge } from "./Fold.ui";
 import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 import type { IconName } from "./Icon.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
-import { Panel } from "./Panel.ui";
+import { PanelV2 } from "./PanelV2.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill, type SwatchState } from "./Swatch.ui";
@@ -31,9 +32,9 @@ const FIGURE_AMOUNT = "text-2xl font-extrabold tabular-nums text-theme";
 const FIGURE_NOTE = "text-xs text-theme-muted";
 const CHIPS = "flex w-full flex-wrap items-center gap-2";
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
-const PANELS = "flex w-full flex-col gap-4";
+const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
+const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const REVIEW_ROW = "flex w-full justify-end";
-const ENDING = "flex w-full flex-col gap-2";
 
 const SWATCH_SIZE = "hero";
 const TRACK_SIZE = "small";
@@ -157,11 +158,30 @@ const GateOutcomeHeading = ({
 	</header>
 );
 
-const BonusPanel = ({ detail, ...panel }: GateOutcomeBonusPanel) => (
-	<Fold {...panel}>
-		<Typography variant="paragraph">
-			<Figures text={detail} />
-		</Typography>
+const COVERAGE_TITLE = "Coverage";
+
+type CoveragePanelProps = {
+	bar: CoverageBarProps;
+	band: CoverageBandId;
+	bonus?: GateOutcomeBonusPanel;
+};
+
+const CoveragePanel = ({ bar, band, bonus }: CoveragePanelProps) => (
+	<Fold
+		title={COVERAGE_TITLE}
+		summary={bonus?.summary}
+		badges={[
+			...(bonus?.badges ?? []),
+			{ label: COVERAGE_BAND_WORD[band], color: COVERAGE_BAND_COLOR[band] },
+		]}
+		open
+	>
+		{bonus === undefined ? null : (
+			<Typography variant="paragraph">
+				<Figures text={bonus.detail} />
+			</Typography>
+		)}
+		<CoverageBar {...bar} pin />
 	</Fold>
 );
 
@@ -198,14 +218,14 @@ const AnswersPanel = ({ rows, review, ...panel }: GateOutcomeAnswersPanel) => (
 );
 
 const EndingPanel = ({ title, detail }: GateEnding) => (
-	<Panel className={ENDING}>
-		<Typography variant="title" as="h2">
-			{title}
-		</Typography>
-		<Typography variant="paragraph">
-			<Figures text={detail} />
-		</Typography>
-	</Panel>
+	<PanelV2>
+		<PanelV2.Header label={title} />
+		<PanelV2.Body>
+			<Typography variant="paragraph">
+				<Figures text={detail} />
+			</Typography>
+		</PanelV2.Body>
+	</PanelV2>
 );
 
 export const GateOutcomeScreen = ({
@@ -235,33 +255,41 @@ export const GateOutcomeScreen = ({
 				</div>
 			)}
 
-			<CoverageBar {...bar} pin />
+			<div className={COLUMNS}>
+				<div className={COLUMN}>
+					<CoveragePanel bar={bar} band={band} bonus={bonus} />
+					<LedgerPanel {...coverage} />
+				</div>
 
-			<div className={PANELS}>
-				{bonus === undefined ? null : <BonusPanel {...bonus} />}
-				<LedgerPanel {...coverage} />
-				<LedgerPanel {...storage} />
-				{changes === undefined ? null : <ChangesPanel {...changes} />}
-				<AnswersPanel {...answers} />
+				<div className={COLUMN}>
+					<LedgerPanel {...storage} />
+					{changes === undefined ? null : <ChangesPanel {...changes} />}
+				</div>
 			</div>
+
+			<AnswersPanel {...answers} />
 
 			{tail?.choice === undefined ? null : <GateChoice {...tail.choice} />}
 			{tail?.ending === undefined ? null : <EndingPanel {...tail.ending} />}
 
-			<ScreenFooter {...footer} />
+			<PanelV2>
+				<PanelV2.Body>
+					<ScreenFooter {...footer} rule={false} />
+				</PanelV2.Body>
+			</PanelV2>
 		</>
 	);
 
 	if (band === RUN_OVER_BAND) {
 		return (
-			<Screen theme={RUN_OVER_COLOR} width={width}>
+			<Screen theme={RUN_OVER_COLOR} width={width} ground="bare">
 				{body}
 			</Screen>
 		);
 	}
 
 	return (
-		<Screen gate={header.swatch.theme} width={width}>
+		<Screen gate={header.swatch.theme} width={width} ground="bare">
 			{body}
 		</Screen>
 	);

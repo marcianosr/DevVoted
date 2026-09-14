@@ -82,6 +82,7 @@ type Revealed = {
 	category: string;
 	categoryColor?: KantoColor;
 	outcome: VerdictOutcome;
+	share?: number;
 	rightShare: number;
 	options: readonly PollResultOption[];
 	open?: boolean;
@@ -145,6 +146,7 @@ export const PollResult = (props: PollResultProps) => {
 		categoryColor,
 		outcome,
 		rightShare,
+		share,
 		options,
 		open = false,
 	} = props;
@@ -155,7 +157,7 @@ export const PollResult = (props: PollResultProps) => {
 				<span aria-hidden className={CARET}>
 					{CARET_GLYPH}
 				</span>
-				<Verdict outcome={outcome} />
+				<Verdict outcome={outcome} share={share} />
 				<Badge color={categoryColor}>{category}</Badge>
 				<span className={QUESTION}>
 					<Typography variant="paragraph" as="span">

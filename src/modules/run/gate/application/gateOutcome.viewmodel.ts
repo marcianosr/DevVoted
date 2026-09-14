@@ -54,8 +54,8 @@ export const GATE_REVIEW_LABEL = "Review answers";
 export const GATE_SHOP_LABEL = "To the shop";
 export const GATE_COMMUNITY_LABEL = "Community";
 
-const COVERAGE_TITLE = "Coverage by category";
-const STORAGE_TITLE = "Storage bonus";
+const COVERAGE_TITLE = "By category";
+const STORAGE_TITLE = "Payout";
 const CHANGES_TITLE = "Build changes";
 const ANSWERS_TITLE = "The five answers";
 
@@ -148,6 +148,7 @@ export type GateAnswer = {
 	category: CategoryCode;
 	question: string;
 	outcome: VerdictOutcome;
+	share?: number;
 	coverage: number;
 	answerType: AnswerType;
 	options: readonly string[];
@@ -262,7 +263,7 @@ export const PEEL_KB_PER_SLOT = DRAFT_COST_PER_SLOT_KB / 2;
 const bandOf = (frame: GateOutcomeFrame): CoverageBandId =>
 	coverageBandOf(frame.bar.held, frame.bar);
 
-const CLEARING_BANDS = {
+export const CLEARING_BANDS = {
 	perfect: true,
 	healthy: true,
 	ok: true,
@@ -506,6 +507,7 @@ const paidChip = (
 const answerRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 	answers.map((answer) => ({
 		verdict: answer.outcome,
+		share: answer.share,
 		tags: [{ label: categoryName(answer.category) }],
 		detail: answer.question,
 		figures: [
@@ -617,11 +619,9 @@ const footerOf = (
 ): GateOutcomeScreenProps["footer"] => {
 	if (band === RUN_OVER_BAND || frame.won === true)
 		return {
-			aside: {
-				label: GATE_COMMUNITY_LABEL,
-				icon: "community",
-				onPress: noop,
-			},
+			asides: [
+				{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop },
+			],
 			note: ARCHIVE_EMPTIES,
 			noteAt: "row",
 			action: { label: NEW_RUN_LABEL, onPress: noop },
@@ -634,7 +634,7 @@ const footerOf = (
 		);
 
 		return {
-			aside: { label: GATE_REVIEW_LABEL, icon: "review", onPress: noop },
+			asides: [{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop }],
 			note: owed > 0 ? PEEL_REFUSAL : PEEL_PAID,
 			noteAt: "row",
 			action: retryActionOf(frame.gate, owed),
@@ -642,7 +642,7 @@ const footerOf = (
 	}
 
 	return {
-		aside: { label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop },
+		asides: [{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop }],
 		note:
 			nextName === undefined
 				? CLIMB_DONE
@@ -768,7 +768,12 @@ export const gateOutcomePropsFor = (
 				"categories"
 			),
 			badges: cleared
-				? [{ label: `${signedPercent(held)}%`, color: GAIN_COLOR }]
+				? [
+						{
+							label: `${signedPercent(totalCoverage(answers))}%`,
+							color: GAIN_COLOR,
+						},
+					]
 				: [{ label: `short by ${shortBy}%`, color: LOSS_COLOR }],
 			open: frame.open,
 			rows: coverageRows(answers, demand),

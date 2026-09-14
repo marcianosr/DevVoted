@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-	kantoHandProps,
+	kantoNewRunRegistry,
 	kantoShopWeight,
 	createKantoBuildProps,
 	kantoRunningConfigs,
@@ -14,7 +14,7 @@ import {
 } from "~/test/kantoPoll.factory";
 
 import { Build } from "./Build.ui";
-import { Hand } from "./Hand.ui";
+import { Registry } from "./Registry.ui";
 import { KANTO_COLORS } from "./colors";
 import type { ConfigChipProps } from "./ConfigChip.ui";
 import { Screen } from "./Screen.ui";
@@ -244,7 +244,7 @@ export const SplitAcrossColumns: Story = {
 		<Screen theme="vermillion">
 			<div className="grid w-full gap-8 md:grid-cols-2">
 				<div className="flex w-full min-w-0 flex-col gap-6">
-					<Hand {...kantoHandProps()} />
+					<Registry {...kantoNewRunRegistry()} />
 					<Build {...args} layout="column" list={false} />
 				</div>
 				<div className="flex w-full min-w-0 flex-col gap-6">

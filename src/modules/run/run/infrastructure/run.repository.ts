@@ -123,17 +123,25 @@ export const fetchRunSnapshot = async (
 	return row?.state ?? null;
 };
 
+const gatesNewlyEarned = (
+	before: Pick<RunState, "swatchGatesEarned">,
+	after: Pick<RunState, "swatchGatesEarned">
+): readonly number[] => {
+	const held = before.swatchGatesEarned ?? [];
+	return (after.swatchGatesEarned ?? []).filter((gate) => !held.includes(gate));
+};
+
 /**
- * Clearing a gate earns that gate's swatch permanently, account-wide (ADR-019).
- * The guard makes it idempotent: re-clearing gate 1 on a later run matches no
- * row, so the array never collects duplicates.
+ * A flawless window earns that gate's swatch permanently, account-wide
+ * (ADR-080). The guard makes it idempotent: earning Boulder again on a later
+ * run matches no row, so the array never collects duplicates.
  */
 const awardGateSwatch = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
-	clearedGate: number
+	gate: number
 ): Promise<void> => {
-	const swatch = swatchForGate(clearedGate);
+	const swatch = swatchForGate(gate);
 	if (!swatch) return;
 	await tx
 		.update(usersTable)
@@ -560,13 +568,10 @@ export const applyActionToRun = async (args: {
 			);
 		}
 
-		// A clear advances gatesCleared by one, and `clearedGate` names the gate it
-		// beat — the badge that clear awarded (ADR-019).
-		if (
-			next.gatesCleared > state.gatesCleared &&
-			next.clearedGate !== undefined
-		)
-			await awardGateSwatch(tx, args.userId, next.clearedGate);
+		// The swatch rides the window, not the clear: the close stamps the gate
+		// whose five polls all landed, and only a fresh stamp pays out (ADR-080).
+		for (const gate of gatesNewlyEarned(state, next))
+			await awardGateSwatch(tx, args.userId, gate);
 
 		// A freshly planted tag mirrors onto the account, where it outlives the
 		// run (ADR-036).

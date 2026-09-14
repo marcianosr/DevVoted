@@ -89,6 +89,10 @@ const bandOf = (
 	return "danger";
 };
 
+/** The visible twin of the aria reading: what a panel header says out loud. */
+export const coverageReadingOf = (ladder: CoverageLadder & { held: number }) =>
+	`${toTenth(ladder.held)}${PERCENT} ${COVERAGE_BAND_WORD[coverageBandOf(ladder.held, ladder)]}`;
+
 export const coverageBandOf = (
 	held: number,
 	ladder: CoverageLadder

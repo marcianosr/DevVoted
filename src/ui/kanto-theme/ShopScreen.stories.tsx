@@ -144,7 +144,6 @@ export const LockedOffers: Story = {
 			registry={{
 				...props.registry,
 				offers: kantoLockedRegistryOffers,
-				note: undefined,
 			}}
 		/>
 	),

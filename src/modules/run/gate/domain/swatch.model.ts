@@ -1,8 +1,8 @@
 /**
- * Gate swatches: one collectible colour chip per gate, earned by clearing it
- * (ADR-019). Beating the gate is what awards the badge — width is bought
- * separately with coverage and never grants one, the same way a gym badge comes
- * from the leader and not from a bigger bag.
+ * Gate swatches: one collectible colour chip per gate, earned by answering all
+ * five of its polls right (ADR-080, reversing ADR-019). Clearing the gate moves
+ * the run on; only a flawless window takes the badge, the same way a gym badge
+ * comes from the leader and not from a bigger bag.
  *
  * Gate 0 is **Pallet**, where every journey starts, and the climb ends the way
  * the games do: the **Elite** gate at Indigo Plateau, then the **Champion**
@@ -54,7 +54,7 @@ export type SwatchFinish = "flat" | "plate" | "fill";
 export type GateSwatch = {
 	/** Stable id persisted in users.owned_swatch_ids — never rename. */
 	readonly id: string;
-	/** The gate whose clear awards it. */
+	/** The gate whose flawless window awards it. */
 	readonly gate: number;
 	/**
 	 * The name the gate and its badge share: "Pallet" is both the Pallet gate and
@@ -127,9 +127,11 @@ export const ALL_SWATCHES: readonly GateSwatch[] = Object.values(
 ).sort((a, b) => a.gate - b.gate);
 
 /**
- * The swatches a run has earned: `gatesCleared` counts the gates already beaten,
- * and gates count from 0, so it is exactly the swatches below that number. A
- * fresh run holds none — Pallet is the reward for clearing gate 0.
+ * The swatches a run has earned, in climb order rather than the order the
+ * flawless windows landed. A fresh run holds none, and a run that cleared every
+ * gate holds only the ones it played clean.
  */
-export const swatchesEarnedAt = (gatesCleared: number): readonly GateSwatch[] =>
-	ALL_SWATCHES.filter((swatch) => swatch.gate < gatesCleared);
+export const swatchesEarnedFrom = (
+	gates: readonly number[]
+): readonly GateSwatch[] =>
+	ALL_SWATCHES.filter((swatch) => gates.includes(swatch.gate));

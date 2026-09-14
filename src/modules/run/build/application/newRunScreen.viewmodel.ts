@@ -15,12 +15,11 @@ import {
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { slotDealsFor, type SlotDeal } from "~/modules/run/shop/application/shopScreen.viewmodel";
-import { kbLabel } from "~/shared/lib/storage";
 
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
-import type { HandProps } from "~/ui/kanto-theme/Hand.ui";
+import type { RegistryProps } from "~/ui/kanto-theme/Registry.ui";
 import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
 import type { SlotCash } from "~/ui/kanto-theme/SlotBox.ui";
 import type { SlotOfferProps } from "~/ui/kanto-theme/SlotOffer.ui";
@@ -32,6 +31,7 @@ const SEPARATOR = "·";
 const ARCHIVE_WORD = "archive";
 
 const NEW_RUN_TITLE = "New run";
+const FREE_PRICE = "free";
 const EMPTY_LABEL = "nothing installed yet";
 const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
@@ -39,6 +39,8 @@ const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
 const ARCHIVE_SOURCE = `from ${ARCHIVE_WORD} storage`;
 export const NEW_RUN_BUILD_NOTE =
 	"A slot is bought with archived storage, not the run's balance, and is refundable at cost until the run starts.";
+export const NEW_RUN_REGISTRY_NOTE =
+	"The hand costs no storage, only room. Nothing is required, and the smallest three always fit together.";
 
 export const newRunHeaderFor = (archiveKb: number): HeaderProps => ({
 	swatch: gateSwatchAt(START_GATE),
@@ -75,7 +77,6 @@ export const handCardFor = ({
 export type BuildDeals = {
 	cash?: SlotCash;
 	offer?: SlotOfferProps;
-	nextSlot?: SlotOfferProps;
 };
 
 export const newRunBuildFor = (
@@ -97,24 +98,15 @@ export const newRunBuildFor = (
 	...panels,
 });
 
-const nextSlotFor = (
-	capacity: number,
-	costKb?: number
-): SlotOfferProps | undefined =>
-	costKb === undefined
-		? undefined
-		: { slot: capacity + 2, price: kbLabel(costKb), locked: true };
-
 export type NewRunSlots = {
 	capacity: number;
 	archiveKb: number;
 	buy: SlotDeal;
 	cash: SlotDeal;
-	next: SlotDeal;
 };
 
 export const newRunDealsFor = (
-	{ capacity, archiveKb, buy, cash, next }: NewRunSlots,
+	{ capacity, archiveKb, buy, cash }: NewRunSlots,
 	onBuy: () => void,
 	onCash: () => void
 ): BuildDeals => {
@@ -126,13 +118,21 @@ export const newRunDealsFor = (
 			deals.offer === undefined || deals.offer.locked !== undefined
 				? deals.offer
 				: { ...deals.offer, from: ARCHIVE_SOURCE },
-		nextSlot: nextSlotFor(capacity, next.costKb),
 	};
 };
+
+export const newRunRegistryFor = (
+	offers: readonly ConfigChipProps[],
+	panels: Pick<RegistryProps, "openInfo" | "onToggleInfo"> = {}
+): RegistryProps => ({
+	offers,
+	slotPrice: FREE_PRICE,
+	...panels,
+});
 
 export const newRunFooterFor = (onStart?: () => void): ScreenFooterProps => ({
 	action: { label: START_LABEL, icon: "chevron", onPress: onStart },
 });
 
 export const NEW_RUN_BALANCE_WORD = BALANCE_WORD;
-export type { NewRunScreenProps, HandProps };
+export type { NewRunScreenProps, RegistryProps };

@@ -11,6 +11,9 @@ import {
 } from "~/test/runView.factory";
 import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
 
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import { clearGate, started } from "~/modules/run/run/domain/run.factory";
+
 import { GateOutcomeView, type GateVerdict } from "./GateOutcomeView.component";
 
 const answer = (
@@ -21,7 +24,7 @@ const answer = (
 	picked: ["A"],
 	correct: ["A"],
 	options: ["A", "B"],
-	coverageEarned: 12,
+	coverageEarned: 1,
 	...overrides,
 });
 
@@ -50,6 +53,7 @@ const viewAt = (
 		gatePayout: createMockGatePayout({
 			clearedGateNumber: 4,
 			clearedGateLadder: GATE_4_LADDER,
+			clearedCoverageHeld: 30,
 			gateRewardPaidKb: 256,
 			storageBeforeClearKb: 384,
 		}),
@@ -125,10 +129,10 @@ describe("GateOutcomeView", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
-					gateStake: createMockGateStake({
-						gateNumber: 4,
-						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
-						coverageHeld: 200,
+					gatePayout: createMockGatePayout({
+						clearedGateNumber: 4,
+						clearedGateLadder: { floor: 0, ok: 0, healthy: 60 },
+						clearedCoverageHeld: 200,
 					}),
 				})}
 				verdict="cleared"
@@ -139,6 +143,60 @@ describe("GateOutcomeView", () => {
 
 		expect(
 			screen.queryByRole("heading", { name: "Perfect bonus" })
+		).not.toBeInTheDocument();
+	});
+
+	it("reads a cleared gate off the settled run coverage, not a sum of units", () => {
+		renderAt("cleared");
+
+		expect(
+			screen.getByLabelText("30% of 25% needed \u00b7 HEALTHY")
+		).toBeInTheDocument();
+	});
+
+	it("bands a flawless opening gate PERFECT rather than on its healthy line", () => {
+		render(
+			<GateOutcomeView
+				view={viewAt("cleared", {
+					gatePayout: createMockGatePayout({
+						clearedGateNumber: 0,
+						clearedGateLadder: { floor: 0, ok: 20, healthy: 20 },
+						clearedCoverageHeld: 100,
+					}),
+				})}
+				verdict="cleared"
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(
+			screen.getByLabelText("100% of 20% needed \u00b7 PERFECT")
+		).toBeInTheDocument();
+	});
+
+	it("states the gate's earn as a share of the window, not as raw units", () => {
+		renderAt("cleared");
+
+		expect(screen.getAllByText("+8%").length).toBeGreaterThan(0);
+		expect(screen.queryByText("+2%")).not.toBeInTheDocument();
+	});
+
+	it("renders a real flawless opening gate as a full window", () => {
+		render(
+			<GateOutcomeView
+				view={toRunView(clearGate(started([])))}
+				verdict="cleared"
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(
+			screen.getByLabelText("100% of 20% needed \u00b7 PERFECT")
+		).toBeInTheDocument();
+		expect(
+			screen.queryByLabelText(/^20% of 20% needed/)
 		).not.toBeInTheDocument();
 	});
 
