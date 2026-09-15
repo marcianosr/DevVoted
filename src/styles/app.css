@@ -494,56 +494,87 @@ meter::-webkit-meter-optimum-value {
 	--theme-color: var(--muisje-pink);
 }
 
-/* Girl / boy variants: one hue leads, the other stays as an accent. */
+/* Girl / boy variants: one hue leads, the other becomes a lighter shade of
+   the same, so both the palette and the sprinkles follow along. */
 [data-skin="muisjes-pink"] {
+	--muisje-blue: oklch(89% 0.06 350);
 	--color-cerulean: oklch(86% 0.07 350);
 	--theme-color: var(--muisje-pink);
 }
 
 [data-skin="muisjes-blue"] {
+	--muisje-pink: oklch(89% 0.05 230);
 	--color-vermillion: oklch(86% 0.07 230);
 	--theme-color: var(--muisje-blue);
 }
 
-/* Warm the page ground from flat black to baked-rusk brown. */
-[data-skin^="muisjes"] body {
-	background-color: oklch(24% 0.02 60);
+/* The sprinkles: five dot grids on coprime spacings, so the repeats never line
+   up and the muisjes read as a scattered carpet instead of a pattern. */
+[data-skin^="muisjes"] {
+	--muisjes-carpet:
+		radial-gradient(circle, var(--muisje-pink) 3px, transparent 3.6px),
+		radial-gradient(circle, var(--muisje-blue) 3px, transparent 3.6px),
+		radial-gradient(circle, var(--muisje-white) 2.6px, transparent 3.2px),
+		radial-gradient(circle, var(--muisje-pink) 2.2px, transparent 2.8px),
+		radial-gradient(circle, var(--muisje-blue) 2.2px, transparent 2.8px);
+	--muisjes-carpet-size: 29px 29px, 31px 31px, 23px 23px, 37px 43px, 43px 37px;
+	--muisjes-carpet-position: 0 0, 11px 7px, 5px 13px, 17px 23px, 23px 5px;
+
+	/* Same muisjes, spread thin — for surfaces that carry text. */
+	--muisjes-scatter:
+		radial-gradient(circle, var(--muisje-pink) 3px, transparent 3.6px),
+		radial-gradient(circle, var(--muisje-blue) 3px, transparent 3.6px),
+		radial-gradient(circle, var(--muisje-white) 2.4px, transparent 3px);
+	--muisjes-scatter-size: 97px 89px, 113px 101px, 79px 83px;
+	--muisjes-scatter-position: 0 0, 41px 29px, 17px 61px;
 }
 
-/* The sprinkles themselves: three offset dot grids scattered over the page.
-   They sit above the content — muisjes land on top of the beschuit — and are
-   click-through, so nothing behind them changes behaviour. */
+/* Warm the page ground from flat black to baked rusk, then bed it with a thick
+   layer of muisjes. `isolation` makes <body> a stacking context so the z-index
+   -1 layer lands above its own background instead of underneath it. */
+[data-skin^="muisjes"] body {
+	isolation: isolate;
+	background-color: oklch(34% 0.035 60);
+}
+
 [data-skin^="muisjes"] body::before {
 	content: "";
 	position: fixed;
 	inset: 0;
-	z-index: 9999;
+	z-index: -1;
 	pointer-events: none;
-	opacity: 0.3;
-	background-image:
-		radial-gradient(circle, var(--muisje-pink) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-blue) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-white) 1.5px, transparent 2px);
-	background-size:
-		130px 130px,
-		150px 150px,
-		90px 90px;
-	background-position:
-		0 0,
-		65px 45px,
-		30px 85px;
+	opacity: 1;
+	background-image: var(--muisjes-carpet);
+	background-size: var(--muisjes-carpet-size);
+	background-position: var(--muisjes-carpet-position);
 }
 
-[data-skin="muisjes-pink"] body::before {
-	background-image:
-		radial-gradient(circle, var(--muisje-pink) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-pink) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-white) 1.5px, transparent 2px);
+/* Every screen is a beschuit laid on that bed: an opaque rusk plate so text
+   keeps its contrast, with a few muisjes sprinkled over the top (click-through,
+   so nothing behind them changes behaviour). */
+[data-skin^="muisjes"] [data-screen-transition] {
+	position: relative;
+	background-color: oklch(19% 0.018 60);
+	box-shadow: 0 0 0 1px oklch(from var(--beschuit-crust) l c h / 0.35);
 }
 
-[data-skin="muisjes-blue"] body::before {
-	background-image:
-		radial-gradient(circle, var(--muisje-blue) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-blue) 2.5px, transparent 3px),
-		radial-gradient(circle, var(--muisje-white) 1.5px, transparent 2px);
+/* A screen nested in a screen is one beschuit, not two stacked plates. */
+[data-skin^="muisjes"] [data-screen-transition] [data-screen-transition] {
+	background-color: transparent;
+	box-shadow: none;
+}
+
+[data-skin^="muisjes"] [data-screen-transition] [data-screen-transition]::before {
+	display: none;
+}
+
+[data-skin^="muisjes"] [data-screen-transition]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0.4;
+	background-image: var(--muisjes-scatter);
+	background-size: var(--muisjes-scatter-size);
+	background-position: var(--muisjes-scatter-position);
 }
