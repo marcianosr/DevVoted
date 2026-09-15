@@ -18,6 +18,7 @@ import { useState } from "react";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import PageLayout from "~/components/PageLayout.component";
+import { ACTIVE_SKIN } from "~/config/skin";
 import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
 import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { ensureUserExists } from "~/domains/users/services/userSync.service";
@@ -353,7 +354,7 @@ function Navigation() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html className="dark">
+		<html className="dark" data-skin={ACTIVE_SKIN}>
 			<head>
 				<HeadContent />
 			</head>
