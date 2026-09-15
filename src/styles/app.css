@@ -469,13 +469,16 @@ meter::-webkit-meter-optimum-value {
    Activated by `data-skin="muisjes*"` on <html> (see src/config/skin.ts).
    Re-maps the named colour palette to rusk + aniseed-sprinkle tones, so every
    `text-vermillion` / `bg-saffron` / category theme in the app follows along,
-   and scatters muisjes over the page background. */
+   and beds the page on a carpet of muisjes. The carpet is a seamless SVG tile
+   per variant in /public/skins: baked in dark tones so it stays texture and
+   never competes with the text laid over it. */
 [data-skin^="muisjes"] {
 	--muisje-pink: oklch(82% 0.11 0);
 	--muisje-blue: oklch(82% 0.1 250);
 	--muisje-white: oklch(97% 0.008 90);
 	--beschuit: oklch(86% 0.06 75); /* rusk crumb */
 	--beschuit-crust: oklch(70% 0.1 60); /* baked edge */
+	--muisjes-tile: url("/skins/muisjes.svg");
 
 	/* Kanto palette → nursery palette. Same slots, sweeter hues. */
 	--color-pallet: var(--muisje-white);
@@ -494,47 +497,24 @@ meter::-webkit-meter-optimum-value {
 	--theme-color: var(--muisje-pink);
 }
 
-/* Girl / boy variants: one hue leads, the other becomes a lighter shade of
-   the same, so both the palette and the sprinkles follow along. */
+/* Girl / boy variants: one hue leads, and the carpet follows. */
 [data-skin="muisjes-pink"] {
-	--muisje-blue: oklch(89% 0.06 350);
 	--color-cerulean: oklch(86% 0.07 350);
+	--muisjes-tile: url("/skins/muisjes-pink.svg");
 	--theme-color: var(--muisje-pink);
 }
 
 [data-skin="muisjes-blue"] {
-	--muisje-pink: oklch(89% 0.05 230);
 	--color-vermillion: oklch(86% 0.07 230);
+	--muisjes-tile: url("/skins/muisjes-blue.svg");
 	--theme-color: var(--muisje-blue);
 }
 
-/* The sprinkles: five dot grids on coprime spacings, so the repeats never line
-   up and the muisjes read as a scattered carpet instead of a pattern. */
-[data-skin^="muisjes"] {
-	--muisjes-carpet:
-		radial-gradient(circle, var(--muisje-pink) 3px, transparent 3.6px),
-		radial-gradient(circle, var(--muisje-blue) 3px, transparent 3.6px),
-		radial-gradient(circle, var(--muisje-white) 2.6px, transparent 3.2px),
-		radial-gradient(circle, var(--muisje-pink) 2.2px, transparent 2.8px),
-		radial-gradient(circle, var(--muisje-blue) 2.2px, transparent 2.8px);
-	--muisjes-carpet-size: 29px 29px, 31px 31px, 23px 23px, 37px 43px, 43px 37px;
-	--muisjes-carpet-position: 0 0, 11px 7px, 5px 13px, 17px 23px, 23px 5px;
-
-	/* Same muisjes, spread thin — for surfaces that carry text. */
-	--muisjes-scatter:
-		radial-gradient(circle, var(--muisje-pink) 3px, transparent 3.6px),
-		radial-gradient(circle, var(--muisje-blue) 3px, transparent 3.6px),
-		radial-gradient(circle, var(--muisje-white) 2.4px, transparent 3px);
-	--muisjes-scatter-size: 97px 89px, 113px 101px, 79px 83px;
-	--muisjes-scatter-position: 0 0, 41px 29px, 17px 61px;
-}
-
-/* Warm the page ground from flat black to baked rusk, then bed it with a thick
-   layer of muisjes. `isolation` makes <body> a stacking context so the z-index
-   -1 layer lands above its own background instead of underneath it. */
+/* The carpet sits behind everything, so text keeps its own contrast.
+   `isolation` makes <body> a stacking context, otherwise the z-index -1 layer
+   would land underneath the body background instead of on top of it. */
 [data-skin^="muisjes"] body {
 	isolation: isolate;
-	background-color: oklch(34% 0.035 60);
 }
 
 [data-skin^="muisjes"] body::before {
@@ -543,38 +523,16 @@ meter::-webkit-meter-optimum-value {
 	inset: 0;
 	z-index: -1;
 	pointer-events: none;
-	opacity: 1;
-	background-image: var(--muisjes-carpet);
-	background-size: var(--muisjes-carpet-size);
-	background-position: var(--muisjes-carpet-position);
+	background-image: var(--muisjes-tile);
+	background-size: 180px 180px;
 }
 
-/* Every screen is a beschuit laid on that bed: an opaque rusk plate so text
-   keeps its contrast, with a few muisjes sprinkled over the top (click-through,
-   so nothing behind them changes behaviour). */
+/* Screens get a wash of rusk over the carpet: the muisjes stay visible through
+   it, but calm down behind the text. Nested screens share the one wash. */
 [data-skin^="muisjes"] [data-screen-transition] {
-	position: relative;
-	background-color: oklch(19% 0.018 60);
-	box-shadow: 0 0 0 1px oklch(from var(--beschuit-crust) l c h / 0.35);
+	background-color: color-mix(in oklab, #221a14 78%, transparent);
 }
 
-/* A screen nested in a screen is one beschuit, not two stacked plates. */
 [data-skin^="muisjes"] [data-screen-transition] [data-screen-transition] {
 	background-color: transparent;
-	box-shadow: none;
-}
-
-[data-skin^="muisjes"] [data-screen-transition] [data-screen-transition]::before {
-	display: none;
-}
-
-[data-skin^="muisjes"] [data-screen-transition]::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	pointer-events: none;
-	opacity: 0.4;
-	background-image: var(--muisjes-scatter);
-	background-size: var(--muisjes-scatter-size);
-	background-position: var(--muisjes-scatter-position);
 }
