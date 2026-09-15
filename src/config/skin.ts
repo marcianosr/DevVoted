@@ -8,9 +8,11 @@
  *   - "muisjes"      pink + blue (before the announcement, or twins)
  *   - "muisjes-pink" a girl
  *   - "muisjes-blue" a boy
+ *
+ * Set to `undefined` for the plain DevVoted look.
  */
 export type Skin = "muisjes" | "muisjes-pink" | "muisjes-blue";
 
 // ponytail: one const, no picker UI — there is one skin family and it is a
 // one-off celebration. Add a user setting when a second family shows up.
-export const ACTIVE_SKIN: Skin | undefined = undefined;
+export const ACTIVE_SKIN: Skin | undefined = "muisjes";
