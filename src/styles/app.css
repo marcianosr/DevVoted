@@ -505,20 +505,21 @@ meter::-webkit-meter-optimum-value {
 	--theme-color: var(--muisje-blue);
 }
 
-/* The sprinkles themselves: three offset dot grids behind the whole page.
-   `isolation` makes <body> a stacking context so the z-index:-1 layer lands
-   above its own background instead of underneath it. */
+/* Warm the page ground from flat black to baked-rusk brown. */
 [data-skin^="muisjes"] body {
-	isolation: isolate;
+	background-color: oklch(24% 0.02 60);
 }
 
+/* The sprinkles themselves: three offset dot grids scattered over the page.
+   They sit above the content — muisjes land on top of the beschuit — and are
+   click-through, so nothing behind them changes behaviour. */
 [data-skin^="muisjes"] body::before {
 	content: "";
 	position: fixed;
 	inset: 0;
-	z-index: -1;
+	z-index: 9999;
 	pointer-events: none;
-	opacity: 0.22;
+	opacity: 0.3;
 	background-image:
 		radial-gradient(circle, var(--muisje-pink) 2.5px, transparent 3px),
 		radial-gradient(circle, var(--muisje-blue) 2.5px, transparent 3px),
