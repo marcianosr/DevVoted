@@ -464,3 +464,75 @@ meter::-webkit-meter-optimum-value {
 		transition: none;
 	}
 }
+
+/* ─── Skin: beschuit met muisjes ───────────────────────────────────────────────
+   Activated by `data-skin="muisjes*"` on <html> (see src/config/skin.ts).
+   Re-maps the named colour palette to rusk + aniseed-sprinkle tones, so every
+   `text-vermillion` / `bg-saffron` / category theme in the app follows along,
+   and beds the page on a carpet of muisjes. The carpet is a seamless SVG tile
+   per variant in /public/skins: baked in dark tones so it stays texture and
+   never competes with the text laid over it. */
+[data-skin^="muisjes"] {
+	--muisje-pink: oklch(82% 0.11 0);
+	--muisje-blue: oklch(82% 0.1 250);
+	--muisje-white: oklch(97% 0.008 90);
+	--beschuit: oklch(86% 0.06 75); /* rusk crumb */
+	--beschuit-crust: oklch(70% 0.1 60); /* baked edge */
+	--muisjes-tile: url("/skins/muisjes.svg");
+
+	/* Kanto palette → nursery palette. Same slots, sweeter hues. */
+	--color-pallet: var(--muisje-white);
+	--color-viridian: var(--beschuit);
+	--color-pewter: oklch(80% 0.02 300);
+	--color-cerulean: var(--muisje-blue);
+	--color-vermillion: var(--muisje-pink);
+	--color-lavender: oklch(80% 0.09 300);
+	--color-celadon: oklch(88% 0.07 160);
+	--color-fuchsia: oklch(78% 0.13 350);
+	--color-saffron: var(--beschuit-crust);
+	--color-cinnabar: oklch(75% 0.12 20);
+	--color-indigo: oklch(68% 0.12 265);
+	--color-seafoam: oklch(88% 0.07 200);
+
+	--theme-color: var(--muisje-pink);
+}
+
+/* Girl / boy variants: one hue leads, and the carpet follows. */
+[data-skin="muisjes-pink"] {
+	--color-cerulean: oklch(86% 0.07 350);
+	--muisjes-tile: url("/skins/muisjes-pink.svg");
+	--theme-color: var(--muisje-pink);
+}
+
+[data-skin="muisjes-blue"] {
+	--color-vermillion: oklch(86% 0.07 230);
+	--muisjes-tile: url("/skins/muisjes-blue.svg");
+	--theme-color: var(--muisje-blue);
+}
+
+/* The carpet sits behind everything, so text keeps its own contrast.
+   `isolation` makes <body> a stacking context, otherwise the z-index -1 layer
+   would land underneath the body background instead of on top of it. */
+[data-skin^="muisjes"] body {
+	isolation: isolate;
+}
+
+[data-skin^="muisjes"] body::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	background-image: var(--muisjes-tile);
+	background-size: 180px 180px;
+}
+
+/* Screens get a wash of rusk over the carpet: the muisjes stay visible through
+   it, but calm down behind the text. Nested screens share the one wash. */
+[data-skin^="muisjes"] [data-screen-transition] {
+	background-color: color-mix(in oklab, #221a14 78%, transparent);
+}
+
+[data-skin^="muisjes"] [data-screen-transition] [data-screen-transition] {
+	background-color: transparent;
+}

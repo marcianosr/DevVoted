@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Ruby configs
 - Improve gate pathing visualizations
 - Installed configs in the shop now show what they do, what they cost, and what you get back when you deinstall them
+- A festive "beschuit met muisjes" skin can dress the whole game in pink-and-blue aniseed sprinkles to celebrate a newborn
 
 ## 1.3.0 - 2026-07-06
 ### Added
