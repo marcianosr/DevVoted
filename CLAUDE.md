@@ -43,7 +43,7 @@ Older but still useful documentation can be found here:
 - **Framework**: TanStack Start (React-based full-stack framework)
 - **Routing**: TanStack Router (file-based routing)
 - **Data Fetching**: TanStack Query
-- **Forms**: TanStack React Form
+- **Forms**: controlled components with `useState`; Zod for validation schemas
 - **Database**: PostgreSQL with Drizzle ORM
 - **Authentication**: Supabase Auth
 - **Testing**: Vitest with Testing Library

@@ -1,9 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { IconButton } from "./IconButton.ui";
 import { Tooltip } from "./Tooltip.ui";
-
-const noop = () => {};
 
 const meta: Meta<typeof Tooltip> = {
 	component: Tooltip,
@@ -24,20 +21,6 @@ export const OnHover: Story = {
 		hint: "Upgrade .js for 64 KB",
 		children: <span className="text-sm text-zinc-200">hover me</span>,
 	},
-};
-
-// The kit's own tooltip replaced the browser's `title`, which drew a slow,
-// unstyled bubble in the OS font.
-export const OnAnIconButton: Story = {
-	render: () => (
-		<IconButton
-			icon="↑"
-			label="Upgrade .js"
-			hint="Upgrade .js for 64 KB"
-			tone="legendary"
-			onUse={noop}
-		/>
-	),
 };
 
 export const WithoutAHint: Story = {

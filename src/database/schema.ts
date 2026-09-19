@@ -204,6 +204,10 @@ export const pollsTable = pgTable("polls", {
 });
 
 /**
+ * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
+ * Replaced by `daily_run_seeds` + `daily_run_polls`. Blocked on
+ * `src/domains/polls/api/dailyPoll.queries.ts` and `/admin`. See DVTD-lzds.
+ *
  * Daily Polls Table
  * Scheduling layer for daily poll selection - provides O(1) lookup by date
  * - One poll per day (enforced by unique constraint on date)
@@ -549,6 +553,10 @@ export const runPollsTable = pgTable(
 );
 
 /**
+ * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
+ * Replaced by `run_states.state.coverageByCategory`. Blocked on
+ * `src/domains/runs/api/{coverage,ranking,run,shop}.queries.ts`. See DVTD-lzds.
+ *
  * Run Category Coverage Table
  * Tracks coverage score earned in each category during a specific run
  * - Each run starts with 0% coverage in all categories
@@ -588,6 +596,10 @@ export const runCategoryCoverageTable = pgTable(
 	}
 );
 /**
+ * @deprecated Fully orphaned — zero references outside this file. Only
+ * `runs.season_id` still points at it, so this one is unblocked today.
+ * See DVTD-lzds.
+ *
  * Seasons Table
  * Manages game seasons for temporal organization and progression tracking
  * - Provides context for runs, leaderboards, and events
@@ -609,6 +621,10 @@ export const seasonsTable = pgTable("seasons", {
 
 /**
  *  This is a read optimization pattern - leaderboards are read thousands of times but written once per run. The duplication is intentional and beneficial. No expensive JOINs needed when displaying leaderboards.
+ * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
+ * The new game ranks via community standouts computed from `run_states`.
+ * Blocked on `src/domains/runs/api/ranking.queries.ts`. See DVTD-lzds.
+ *
  * Leaderboard Table
  * Pre-computed leaderboard entries for completed runs
  * - Created when a run finishes to enable fast leaderboard queries
@@ -638,6 +654,11 @@ export const leaderboardTable = pgTable("leaderboard", {
 });
 
 /**
+ * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
+ * The new shop rolls offers in the engine (`shopDraft` → `RunState.draftOptions`),
+ * never in the DB. Blocked on `src/domains/economy/api/shopOfferings.queries.ts`.
+ * See DVTD-lzds.
+ *
  * Run Shop Offerings Table
  * Stores randomly generated shop configs per run per day
  * - Replaces seed-based deterministic generation with persisted random selection
@@ -667,6 +688,9 @@ export const runShopOfferingsTable = pgTable(
 );
 
 /**
+ * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
+ * Blocked on `src/domains/economy/api/shopOfferings.queries.ts`. See DVTD-lzds.
+ *
  * Daily Exposed Deck Table
  * Stores the randomly selected player's deck exposed to public-config holders each day
  * - One row per day (enforced by unique date)

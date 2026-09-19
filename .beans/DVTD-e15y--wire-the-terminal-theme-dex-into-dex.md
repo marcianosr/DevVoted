@@ -1,11 +1,11 @@
 ---
 # DVTD-e15y
 title: Wire the terminal-theme Dex into /dex
-status: todo
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-09-03T07:54:50Z
-updated_at: 2026-09-07T14:39:31Z
+updated_at: 2026-09-19T16:04:49Z
 parent: DVTD-tduu
 ---
 
@@ -62,3 +62,14 @@ The terminal Configs panel now carries the unlock axis, so `ConfigdexPanel.stori
 The blocker for this migration is data, not UI: the terminal panel's `installs`, `best` and `firstSeenGate` have no table in `schema.ts`, and its "most installed" view has nothing to rank without them.
 
 Note (2026-09-07, DVTD-u6g9): modern-theme is down to 61 files after the dead-file sweep; everything left is blocked by /dex (DexScreen/panels/audits/Filter/Tabs/Mark/Legend + shared Text/tones/Chip/Dot leaves) or the run loop (TodayScreen, SlotTrack/slots, Screen, Action, Swatch(Track), Glyph, Tooltip, format). This bean's delete checklist covers the /dex share.
+
+## Reasons for Scrapping
+
+Reversed by events. `/dex` is already fully on the kanto kit
+(`routes/_authed/dex.tsx` → `modules/collection/dex/presentation/Dex.component.tsx`
+→ 29 kanto files), so there is no terminal-theme Dex left to wire in.
+
+`terminal-theme/screens/DexScreen.ui.tsx` and its five panels
+(`AuditsPanel`, `ConfigsPanel`, `GatesPanel`, `PollsPanel`, `StoragePanel`,
+`SwatchesPanel`) were unreachable from any route and were deleted in the
+2026-09-19 dead-code sweep under DVTD-7tof.

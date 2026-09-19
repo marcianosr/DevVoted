@@ -1,11 +1,11 @@
 ---
 # DVTD-7tof
 title: Clean up storybook and old code
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-21T19:56:09Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-09-19T16:04:32Z
 parent: DVTD-82c4
 ---
 
@@ -37,3 +37,41 @@ When src/routes/old/ is deleted, drop the old game's tables in the SAME migratio
 - [ ] Legacy COLUMNS on live tables: `users`/`runs` carry old-game fields (`active_config_ids`, `pipeline_slots`, `pipeline_slot_snapshots`, `pending_upgrade_cards`, `shop_skipped_date`, `shop_interacted_date`, …) — audit schema.ts for old-flow-only columns and drop with the tables.
 
 Shared tables that STAY (both games use them): `polls`, `polls_options`, `polls_categories`, `polls_responses`, `polls_response_options`, `runs`, `users`.
+
+## Progress 2026-09-19 — UI kit sweep landed
+
+128 dead UI files deleted (`src/ui/`), verified by import-graph reachability from
+`src/routes/**`, not grep.
+
+- **`terminal-theme/`: 75 of 108 files deleted.** The 33 survivors are the community
+  screen and its primitives, kept alive by exactly one route
+  (`/run/community` → `RunCommunity.component.tsx`).
+- **`old-theme/` + `modern-theme/`: 53 files deleted.** Survivors are the app shell
+  (`__root.tsx`, the three `src/components/*UI` twins, `/stats`, auth/profile
+  typography) and the single `modern-theme` thread from `RunStart.component.tsx`.
+
+**Three straddler stories edited rather than deleted** — each tested a live
+component *and* a dead one, so deleting would have dropped live coverage:
+`terminal-theme/Tooltip.stories.tsx` (dropped `IconButton`),
+`terminal-theme/Section.stories.tsx` (dropped `Row`),
+`old-theme/modern-theme/Tooltip.stories.tsx` (dropped `Mark`).
+
+**Gotcha worth keeping:** `terminal-theme/stories.smoke.spec.tsx` renders every
+story in its folder via `import.meta.glob`. It is the only glob-based spec in the
+repo and it is why dead stories kept passing. It survives and still smoke-tests the
+remaining stories. Also: `tsconfig.json` excludes `**/*.stories.tsx`, so a story
+carried a broken import (`~/ui/theme/swatchTheme`, moved under `old-theme/` by the
+quarantine rename) past both tsc and oxlint — it died with the sweep.
+
+## Held back — needs your call
+
+The kanto `Modal` / `Confirm` / `Uninstall` cluster (11 files) is unreachable but is
+**designed, working UI**, not rot: `uninstallFor` computes a real refund, slots
+freed and balance, and `ShopScreen.stories.tsx` demos the whole flow. Deleting it
+would silently remove the uninstall affordance from the kit. Left in place pending
+review, alongside the parked gate models.
+
+## Stale note cleared
+
+The 2026-07-25 note above refers to `src/routes/old/` — that folder is gone. Its
+leftover `.oxlintrc.json` override was removed under DVTD-4jbz.

@@ -140,12 +140,6 @@
 	},
 	"overrides": [
 		{
-			"files": ["src/routes/old/**"],
-			"rules": {
-				"@typescript-eslint/ban-ts-comment": "off"
-			}
-		},
-		{
 			"files": ["**/*.ts", "**/*.tsx"],
 			"rules": {
 				"constructor-super": "off",

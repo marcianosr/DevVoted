@@ -3,7 +3,7 @@
 ## Status
 
 Accepted, 2026-09-16 (Marciano, DVTD-1gic). Reverses
-[ADR-073](073-coverage-is-a-flat-unit-over-a-growing-denominator.md)'s "a wrong
+[ADR-073](073-coverage-is-a-flat-gain-reset-every-gate.md)'s "a wrong
 answer subtracts nothing", scoped to one config: the meter still has no loss
 term of its own, and only an armed wager can move it down. Sits beside
 [ADR-085](085-a-prep-time-bet-pays-coverage-on-a-floor.md) as the second wager

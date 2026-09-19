@@ -1,11 +1,11 @@
 ---
 # DVTD-17b3
 title: 'Audit: what in src/domains is still reachable, and what modules/run already replaces'
-status: todo
+status: completed
 type: task
 priority: high
 created_at: 2026-08-13T11:18:05Z
-updated_at: 2026-08-13T11:18:05Z
+updated_at: 2026-09-19T16:04:49Z
 parent: DVTD-82c4
 ---
 
@@ -36,3 +36,34 @@ A file-level table: reachable-from-live-route / reachable-only-from-proto-route 
 - [ ] Cross-reference each against its modules/run replacement
 - [ ] Answer the four questions above
 - [ ] Produce the delete list, the keep list, and the genuinely-unclear list
+
+## Summary of Changes (2026-09-19)
+
+The audit this bean asked for was done by import-graph reachability from
+`src/routes/**` + `scripts/**` + the db entrypoints. Results, and the deletions
+they justified, are recorded on DVTD-9qyd (domains) and DVTD-7tof (UI kits).
+
+**What is still reachable in `src/domains/`, and from where:**
+
+| Subfolder | Reached from |
+|---|---|
+| `economy/components` | `/profile/$userId`, `/presentation` |
+| `economy/data` | `/admin`, `Footer`, 3× `src/modules/` |
+| `economy/hooks`, `economy/models` | `/profile/$userId`, `/admin`, `/dex` |
+| `economy/api`, `economy/services` | only via the above (no external importer) |
+| `polls/api`, `polls/components`, `polls/models` | the four poll routes, `/stats`, `Footer`, 2 scripts |
+| `polls/services` | `modules/collection/dex`, `scripts/test-weights.ts` |
+| `runs/api`, `runs/utils` | `__root.tsx` (`getActiveRun`, `deriveNavRunState`) |
+| `runs/data`, `runs/models`, `runs/services` | `database/seed/`, `database/schema.ts`, `/presentation` |
+| `runs/components` | `/presentation` only |
+
+**The finding that matters most:** `__root.tsx` runs the *legacy* run engine
+(`runs/api/runs.ts::getActiveRun` + `runs/utils/deriveNavRunState`) while every
+`/run/*` route runs the new `modules/run` engine. Two engines, one app.
+
+Also: 4 `src/modules/` specs still import the legacy fixture
+`domains/runs/models/run.mock.ts` — a migration blocker for DVTD-wj1t.
+
+16 distinct domains↔modules concept duplications remain (two config rosters, two
+`createRun`, two run repositories, pipeline vs gate, score vs coverage). Those are
+migration work, not cleanup.

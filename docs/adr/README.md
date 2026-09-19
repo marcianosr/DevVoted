@@ -24,7 +24,6 @@ it before proposing one again.**
 | [012](012-migration-strategy.md) | One migration pipeline: guarded SQL | Accepted |
 | [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035; **the gain no longer scales** (073) |
 | [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 076 (a retry costs a day) |
-| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap, 082 deleted it |
 | [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074; **the clear no longer awards one** (080) |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
@@ -94,6 +93,7 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 018 | Gate–slot coupling: gate N requires slot N | Retired — 019 owns it |
 | 021 | A run dies at the gate that empties its build | Retired — 037 owns it |
 | 022 | Every config owes the gate a check | Retired — 035 owns it |
+| 015 | Storage-cap policy: grants clip at the cap | Retired — 074 removed the cap, 082 deleted it |
 | 023 | Storage capacity is a subscription | Retired — 046 owned it, 082 deleted it |
 | 046 | Slots are bought, storage is capped | Retired — 082 deleted the ladder and the cap |
 | 049 | The archive opens a run wider | Retired — 082 deleted the start-slot ladder |
@@ -109,6 +109,7 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 043 | Rarity is a shape, not a hue | Retired — 047 owns it |
 | 045 | Spots come from gates, KB rents more on top | Retired — 046 owns it |
 | 071 | The band a gate closes in decides what the gate does | Retired — 076 owns it; OK clears and the peel came back |
+| 063 | Planning Poker pays on an exact match | Retired — 085 owns it |
 
 ## Conventions
 

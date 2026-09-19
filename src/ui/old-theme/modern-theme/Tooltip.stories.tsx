@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Action } from "./Action.ui";
-import { Mark } from "./Mark.ui";
 import { Text } from "./Text.ui";
 import { Tooltip } from "./Tooltip.ui";
 
@@ -68,18 +67,6 @@ export const OpeningEitherWay: Story = {
 			>
 				<Text size="meta">above</Text>
 			</Tooltip>
-		</div>
-	),
-};
-
-export const OnEveryMark: Story = {
-	render: () => (
-		<div className="flex gap-6">
-			<Mark variant="pass" hint="This ran and paid out in full" />
-			<Mark variant="warn" hint="This ran, but paid out in part" />
-			<Mark variant="fail" hint="This ran and paid out nothing" />
-			<Mark variant="idle" hint="This has not run yet" />
-			<Mark variant="blank" shape="box" hint="This didn't run" />
 		</div>
 	),
 };

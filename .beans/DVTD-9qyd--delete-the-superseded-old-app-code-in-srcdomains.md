@@ -1,11 +1,11 @@
 ---
 # DVTD-9qyd
 title: Delete the superseded old-app code in src/domains
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-13T11:18:20Z
-updated_at: 2026-08-13T11:18:20Z
+updated_at: 2026-09-19T16:04:32Z
 parent: DVTD-82c4
 blocked_by:
     - DVTD-17b3
@@ -29,3 +29,44 @@ Also in scope: `routes/proto-session-slice.tsx` and `routes/proto-run.tsx` are t
 - [ ] Retire the legacy-* arch rules that no longer have anything to guard
 - [ ] Drop the src/domains exemption from no-circular-runtime once the tree is clean
 - [ ] Re-scope DVTD-wj1t to whatever genuinely remains
+
+## Progress 2026-09-19 — dead-code sweep landed
+
+Method: rebuilt the import graph from `src/routes/**` + `scripts/**` + the db
+entrypoints rather than grepping. Grep lies here — orphaned files import each other.
+
+**Deleted from `src/domains/` (17 files):**
+`economy/api/{configs,handlers,queries,shopOfferings}.ts`,
+`polls/api/communityStats.ts`, `polls/hooks/useCountdownToNextPoll.ts`,
+`polls/models/pollResponses.model.ts`, `runs/api/reroll.ts`,
+`runs/hooks/{useApplyPipelineUpgrade,useLootFallenRun}.ts`,
+`runs/utils/{formatPipelineRequirement,parseCompletionReason}.ts`, and the whole
+`runs/prototype/` (5 files).
+
+**Dev rig decided:** `routes/proto-session-slice.tsx` deleted (750 lines, its own
+header called it THROWAWAY). It was the sole importer of `runs/prototype/`, whose
+engine duplicated eight identifiers now owned by `modules/run` (`SLICE_WINDOW`,
+`VICTORY_GATE`, `gatePassed`, `coverageForAnswer`, `isBare`, …).
+`routes/proto-run.tsx` **stays** — it is the reference rig for the kanto kit and
+already redirects in PROD.
+
+Also removed outside `domains/`: `shared/utils/sentry.ts` (3-line re-export, zero
+importers — everything imports `@sentry/react` directly),
+`modules/account/profile/presentation/UserTitle.ui.tsx`,
+`modules/run/community/application/usePollSplit.hook.ts`,
+`modules/run/run/application/useUpcomingCategories.hook.ts`.
+
+**A correction to the earlier audit assumption:** `src/database/seed.ts` no longer
+exists — it is now `src/database/seed/index.ts` (`db:seed` points there). Any
+reachability script that hardcodes the old filename will report the entire seed
+directory as dead. It is not.
+
+## Still open on this bean
+
+- [ ] Retire the `legacy-*` dependency-cruiser rules — NOT done. `src/domains/` is
+      still largely live (the shell, poll authoring, /admin, /stats, /profile), so
+      the rules still guard something. Revisit after `DVTD-wj1t`.
+- [ ] Drop the `src/domains` exemption in `no-circular-runtime` — NOT done, same reason.
+      The `progress.service ↔ turn.service` cycle it hides is still there.
+- [ ] `economy/data/configs.ts` (1134 lines) is still live via `/admin`, `Footer` and
+      three `src/modules/` files — it cannot be deleted without migrating those.

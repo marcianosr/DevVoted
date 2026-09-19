@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as ProtoSessionSliceRouteImport } from './routes/proto-session-slice'
 import { Route as ProtoRunRouteImport } from './routes/proto-run'
 import { Route as PresentationRouteImport } from './routes/presentation'
 import { Route as LogoutRouteImport } from './routes/logout'
@@ -46,11 +45,6 @@ const StatsRoute = StatsRouteImport.update({
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtoSessionSliceRoute = ProtoSessionSliceRouteImport.update({
-  id: '/proto-session-slice',
-  path: '/proto-session-slice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtoRunRoute = ProtoRunRouteImport.update({
@@ -184,7 +178,6 @@ export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
-  '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/stats': typeof StatsRoute
   '/run': typeof AuthedRunRouteRouteWithChildren
@@ -213,7 +206,6 @@ export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
-  '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
@@ -243,7 +235,6 @@ export interface FileRoutesById {
   '/logout': typeof LogoutRoute
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
-  '/proto-session-slice': typeof ProtoSessionSliceRoute
   '/sign-up': typeof SignUpRoute
   '/stats': typeof StatsRoute
   '/_authed/run': typeof AuthedRunRouteRouteWithChildren
@@ -274,7 +265,6 @@ export interface FileRouteTypes {
     | '/logout'
     | '/presentation'
     | '/proto-run'
-    | '/proto-session-slice'
     | '/sign-up'
     | '/stats'
     | '/run'
@@ -303,7 +293,6 @@ export interface FileRouteTypes {
     | '/logout'
     | '/presentation'
     | '/proto-run'
-    | '/proto-session-slice'
     | '/sign-up'
     | '/stats'
     | '/admin'
@@ -332,7 +321,6 @@ export interface FileRouteTypes {
     | '/logout'
     | '/presentation'
     | '/proto-run'
-    | '/proto-session-slice'
     | '/sign-up'
     | '/stats'
     | '/_authed/run'
@@ -363,7 +351,6 @@ export interface RootRouteChildren {
   LogoutRoute: typeof LogoutRoute
   PresentationRoute: typeof PresentationRoute
   ProtoRunRoute: typeof ProtoRunRoute
-  ProtoSessionSliceRoute: typeof ProtoSessionSliceRoute
   SignUpRoute: typeof SignUpRoute
   StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -383,13 +370,6 @@ declare module '@tanstack/react-router' {
       path: '/sign-up'
       fullPath: '/sign-up'
       preLoaderRoute: typeof SignUpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/proto-session-slice': {
-      id: '/proto-session-slice'
-      path: '/proto-session-slice'
-      fullPath: '/proto-session-slice'
-      preLoaderRoute: typeof ProtoSessionSliceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/proto-run': {
@@ -632,7 +612,6 @@ const rootRouteChildren: RootRouteChildren = {
   LogoutRoute: LogoutRoute,
   PresentationRoute: PresentationRoute,
   ProtoRunRoute: ProtoRunRoute,
-  ProtoSessionSliceRoute: ProtoSessionSliceRoute,
   SignUpRoute: SignUpRoute,
   StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,

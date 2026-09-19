@@ -50,7 +50,7 @@ Which configs are changing is answered on unfolding rather than in the shut row:
 a changing config wears a vermillion badge on its chip.
 
 The words are the ones already in the codebase. `consumable` was not coined
-([ADR-015](015-storage-cap-policy-grant-and-cap-extender-configs.md): "No
+(ADR-015, retired: "No
 consumable or item class"), and `passive` was left alone because
 `gate/domain/configRole.model.ts` already spends it on the
 conditional-versus-always-on axis.

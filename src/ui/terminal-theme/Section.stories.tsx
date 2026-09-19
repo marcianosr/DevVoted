@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Row } from "./Row.ui";
 import { Section } from "./Section.ui";
 
 const meta: Meta<typeof Section> = {
@@ -23,8 +22,8 @@ export const Open: Story = {
 		divided: true,
 		children: (
 			<>
-				<Row name="live runs" detail="8 climbing right now" />
-				<Row name="standouts" detail="you hold 2 of 9" />
+				<div className="px-3 py-2 text-sm text-zinc-200">live runs</div>
+				<div className="px-3 py-2 text-sm text-zinc-200">standouts</div>
 			</>
 		),
 	},
@@ -34,7 +33,7 @@ export const WithMeta: Story = {
 	args: {
 		label: "Build",
 		meta: "4 of 6 slots",
-		children: <Row name=".js" detail="JS polls ×1.25" />,
+		children: <div className="px-3 py-2 text-sm text-zinc-200">.js</div>,
 	},
 };
 
@@ -43,6 +42,6 @@ export const Shut: Story = {
 		label: "Storage plan",
 		meta: "512 KB cap · free",
 		defaultOpen: false,
-		children: <Row name="768 KB" detail="16 KB a gate" />,
+		children: <div className="px-3 py-2 text-sm text-zinc-200">768 KB</div>,
 	},
 };

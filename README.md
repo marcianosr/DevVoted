@@ -45,6 +45,7 @@ create the login accounts, and refuses to run without it.
 ### Local Development
 
 1. Make schema changes in `src/database/schema.ts`
-2. Generate migration: `npm run db:generate`
-3. Apply migration: `npm run db:push`
+2. Apply them locally: `npm run db:push` (prototyping only)
+3. Add a guarded SQL file under `supabase/migrations/` — CI applies it to
+   production on merge. See [ADR-012](docs/adr/012-migration-strategy.md).
 
