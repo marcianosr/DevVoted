@@ -70,16 +70,16 @@ type BillLedgerInput = {
 	readonly configs: readonly Config[];
 	readonly gate: number;
 	readonly storageKb: number;
-	readonly planCapKb?: number;
-	readonly planBillKb?: number;
+	readonly spaceWeight?: number;
+	readonly spaceBillKb?: number;
 };
 
 export const billLedger = ({
 	configs,
 	gate,
 	storageKb,
-	planCapKb = 0,
-	planBillKb = 0,
+	spaceWeight = 0,
+	spaceBillKb = 0,
 }: BillLedgerInput): BillLedger => {
 	const lines = [
 		...configs.filter(isSubscription).map((config) => ({
@@ -88,12 +88,12 @@ export const billLedger = ({
 			kb: subscriptionBillFor(config, gate),
 			billedOnMiss: false,
 		})),
-		...(planBillKb > 0
+		...(spaceBillKb > 0
 			? [
 					{
-						id: "storage-plan",
-						label: `${planCapKb}KB storage plan`,
-						kb: planBillKb,
+						id: "build-space",
+						label: `${spaceWeight} weight build space`,
+						kb: spaceBillKb,
 						billedOnMiss: false,
 					},
 				]

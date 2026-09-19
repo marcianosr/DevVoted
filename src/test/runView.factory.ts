@@ -1,12 +1,9 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
 	BASE_SLOTS,
+	BUILD_SPACE_RUNGS,
 	FAUCET_CAP_KB,
-	MAX_SLOTS,
 	pinCostFor,
-	revealsPlanTier,
-	SLOT_PRICES_KB,
-	STORAGE_PLANS,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type Config,
@@ -86,14 +83,14 @@ export const createMockShopControls = createMockDataFactory<ShopControls>({
 });
 
 export const createMockGatePayout = createMockDataFactory<GatePayout>({
-	estimateThisGateKb: null,
+	estimateThisGateUnits: null,
 	autoUpgradedConfig: null,
 	autoUpgradedByConfig: null,
 	deletedConfigs: [],
 	lapsedConfigs: [],
 	subscriptionBillKb: 0,
-	planBilledKb: 0,
-	planDowngraded: false,
+	upkeepBilledKb: 0,
+	spaceDroppedTo: null,
 	gateRewardPaidKb: 0,
 	storageBeforeClearKb: null,
 	faucetThisGateKb: 0,
@@ -115,6 +112,10 @@ export const createMockPaidActions = createMockDataFactory<PaidActions>({
 	peekRefusal: undefined,
 	peekCost: 32,
 	peeker: null,
+	canWager: false,
+	wagerArmed: false,
+	wagerStake: 0,
+	wagerer: null,
 });
 
 export const createMockGateStake = createMockDataFactory<GateStake>({
@@ -158,6 +159,7 @@ const createRunView = createMockDataFactory<RunView>({
 	recommendedConfigIds: [],
 	offers: [],
 	newConfigIds: [],
+	archiveAfterKb: null,
 	unlockedConfigIds: [],
 	unlockedThisRun: [],
 	peelSlotsRemaining: 0,
@@ -215,34 +217,21 @@ const createRunView = createMockDataFactory<RunView>({
 	coverage: 0,
 	coverageByCategory: {},
 	storage: 64,
-	slotDeals: {
-		slots: BASE_SLOTS,
-		maxSlots: MAX_SLOTS,
-		buy: { costKb: SLOT_PRICES_KB[0], makes: BASE_SLOTS + 1 },
-		cash: { refusal: "Nothing to cash — the first four slots are free." },
-	},
-	startSlotDeals: {
-		archiveKb: 0,
-		buy: {
-			costKb: SLOT_PRICES_KB[0] * 2,
-			refusal: `Costs ${SLOT_PRICES_KB[0] * 2} KB of archive, you have 0.`,
-		},
-		cash: {},
-	},
-	storagePlan: {
-		capKb: STORAGE_PLANS[0].capKb,
-		perGateKb: STORAGE_PLANS[0].perGateKb,
-		peakKb: 0,
-		options: STORAGE_PLANS.map((plan) => ({
-			tier: plan.tier,
-			capKb: plan.capKb,
-			perGateKb: plan.perGateKb,
-			held: plan.tier === 0,
-			burnsKb: 0,
-			affordable: true,
-			revealed: revealsPlanTier(plan.tier, 0),
+	upkeepPaidKb: 0,
+	buildSpace: {
+		space: BASE_SLOTS,
+		weight: 0,
+		perGateKb: 0,
+		offered: false,
+		rungs: BUILD_SPACE_RUNGS.map((rung, index) => ({
+			rung: index,
+			weight: rung.weight,
+			perGateKb: rung.kb,
+			held: rung.weight === BASE_SLOTS,
+			pickable: false,
 		})),
 	},
+	vendorLock: { offered: false },
 });
 
 export const createMockRunView = (

@@ -12,6 +12,7 @@ import {
 	HAND_SIZE,
 	PAIRABLE_PICKS,
 	RECOMMENDED_SIZE,
+	poolFor,
 	recommendedPicks,
 	startingHand,
 	STARTER_POOL,
@@ -259,6 +260,32 @@ describe("RECOMMENDED_SIZE", () => {
 	it("marks two of the five, leaving the opening a decision (ADR-057)", () => {
 		expect(RECOMMENDED_SIZE).toBe(2);
 		expect(HAND_SIZE).toBe(5);
+	});
+});
+
+describe("poolFor (DVTD-amtz: an unlock has to reach the table)", () => {
+	it("deals from the account's own unlocked configs", () => {
+		const pool = poolFor(["agents-md", "garbage-collection"]);
+		expect(pool.map((config) => config.id)).toEqual([
+			"agents-md",
+			"garbage-collection",
+		]);
+	});
+
+	// A pre-seed account has no rows at all, and an account whose every unlock
+	// left the roster reads the same way. Both must still get a playable hand.
+	it("falls back to the starter set for an empty ledger", () => {
+		expect(poolFor([])).toBe(STARTER_POOL);
+		expect(poolFor(["a-config-that-was-deleted"])).toBe(STARTER_POOL);
+	});
+
+	it("drops ids the roster no longer carries rather than faking them", () => {
+		expect(poolFor(["agents-md", "a-config-that-was-deleted"])).toHaveLength(1);
+	});
+
+	it("can deal an unlocked config into a starting hand", () => {
+		const hand = startingHand(poolFor(["agents-md"]), "pallet-town", 16);
+		expect(hand.map((config) => config.id)).toContain("agents-md");
 	});
 });
 

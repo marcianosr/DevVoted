@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Objectives, type Objective } from "./Objectives.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
 
 const CLEAR: Objective = {
@@ -27,9 +27,9 @@ const meta: Meta<typeof Objectives> = {
 	parameters: { controls: { disable: true } },
 	render: (args) => (
 		<Screen theme="pallet" width="narrow">
-			<PanelV2>
+			<Panel>
 				<Objectives {...args} />
-			</PanelV2>
+			</Panel>
 		</Screen>
 	),
 	args: { objectives: [CLEAR, SWATCH] },
@@ -51,9 +51,9 @@ export const BothWon: Story = {
 export const AtTheSummit: Story = {
 	render: (args) => (
 		<Screen theme="indigo" width="narrow">
-			<PanelV2>
+			<Panel>
 				<Objectives {...args} />
-			</PanelV2>
+			</Panel>
 		</Screen>
 	),
 	args: {

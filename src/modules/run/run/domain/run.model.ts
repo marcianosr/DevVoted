@@ -6,6 +6,7 @@ import {
 import {
 	isBare,
 	isOverCapacity,
+	withVendorLockSurviving,
 	Build,
 } from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
@@ -27,16 +28,12 @@ import {
 import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
 	BASE_SLOTS,
-	cappedStorage,
 	PIN_START_KB_PER_GATE,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 
-export const addStorage = (
-	current: number,
-	income: number,
-	planTier: number
-): number => cappedStorage(current + income, planTier);
+export const addStorage = (current: number, income: number): number =>
+	Math.max(0, current + income);
 
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
@@ -60,6 +57,7 @@ export type RunState = {
 	readonly currentIndex: number;
 	readonly window: GateWindow;
 	readonly manualDisabled: readonly string[];
+	readonly strictArmed?: boolean;
 	readonly peekedPollIds?: readonly string[];
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
@@ -81,11 +79,12 @@ export type RunState = {
 	readonly peelRefundKb?: number;
 	readonly extraPickThisGateKb?: number;
 	readonly estimatedCorrect?: number;
-	readonly estimateThisGateKb?: number;
-	readonly slotsBought?: number;
-	readonly storagePlan?: number;
-	readonly planBilledKb?: number;
-	readonly planDowngraded?: boolean;
+	readonly estimateThisGateUnits?: number;
+	readonly upkeepBilledKb?: number;
+	/** Build-space upkeep billed across the whole run, for the run-over report. */
+	readonly upkeepPaidKb?: number;
+	/** The space the run was forced down to when it could not pay for the one it held. */
+	readonly spaceDroppedTo?: number;
 	readonly clearedGate?: number;
 	/** Gates whose swatch this run has earned, in the order the windows landed. */
 	readonly swatchGatesEarned?: readonly number[];
@@ -195,6 +194,7 @@ export const createRun = (
 	peakStorageKb: PIN_START_KB_PER_GATE * startAtGate,
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
+	upkeepPaidKb: 0,
 	gateRewardKb: 0,
 	log: [],
 });
@@ -217,10 +217,11 @@ export const withPeakStorage = (state: RunState): RunState =>
 
 export const isAwaitingTomorrow = (state: RunState): boolean =>
 	state.status === "answering" && state.currentIndex >= state.polls.length;
-export const withBuild = (build: Build, configs: readonly Config[]): Build => ({
-	...build,
-	configs,
-});
+export const withBuild = (build: Build, configs: readonly Config[]): Build =>
+	withVendorLockSurviving({
+		...build,
+		configs,
+	});
 
 export const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 	rollDraft(

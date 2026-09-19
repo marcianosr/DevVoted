@@ -3,10 +3,14 @@ import {
 	type Config,
 	otherArmOf,
 } from "~/modules/run/config/domain/config.model";
-import { chipFor } from "~/modules/run/config/application/configChip.viewmodel";
+import {
+	categoriesWord,
+	chipFor,
+	pollNoteFor,
+} from "~/modules/run/config/application/configChip.viewmodel";
 import {
 	gateSwatchAt,
-	swatchTrackTo,
+	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
@@ -15,12 +19,18 @@ import {
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
+import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
 import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
+	answersPerGate,
+	type AnsweredPoll,
+	type AnswerOutcome,
+} from "~/modules/run/run/domain/runPoll.model";
+import {
 	roundToOneDecimal,
-	VICTORY_GATE,
+	roundToTwoDecimals,
 } from "~/modules/run/run/domain/rules.model";
-import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
+import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -29,6 +39,13 @@ import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { FigureTone, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
+import type {
+	PollPaid,
+	PollScoreRow,
+	PollScoresProps,
+} from "~/ui/kanto-theme/PollScores.ui";
 
 const OPTION_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const OFFLINE_NOTE = "an audit has these offline this gate";
@@ -71,8 +88,7 @@ export const pollHeaderFor = (view: RunView): HeaderProps => {
 	return {
 		swatch: gateSwatchAt(gate),
 		title: gateLabelFor(gate),
-		gateCount: VICTORY_GATE,
-		swatches: swatchTrackTo(gate),
+		swatches: swatchTrackFor(view.swatchGates, gate),
 		funds: fundsOf(view.storage, BALANCE_WORD),
 		swatchState: "current",
 	};
@@ -80,7 +96,18 @@ export const pollHeaderFor = (view: RunView): HeaderProps => {
 
 const POLL_WORD = "Poll";
 const OUT_OF = "out of";
-const CORRECT_WORD = "correct";
+const CORRECT_OUTCOME = "correct";
+const SCORED_LEAD = "You have scored ";
+const SCORED_JOIN = " units across ";
+const SCORED_JOIN_ONE = " unit across ";
+const SCORED_TRAIL = " slots, which is ";
+const SCORED_CLOSE = " coverage.";
+
+const PAID_COLOR = {
+	correct: "viridian",
+	partial: "saffron",
+	wrong: "cinnabar",
+} as const;
 
 /** What `.length` buys: the gate's running tally, or nothing without it. */
 export const pollHoldsFor = (view: RunView): string | undefined => {
@@ -98,16 +125,72 @@ export const pollLabelFor = (view: RunView): string => {
 	return `${POLL_WORD} ${step} ${OUT_OF} ${view.pollsPerGate}`;
 };
 
-/**
- * Units, not answers: a multiple-answer poll pays double, so this reads higher
- * than the number of polls the player got right. The tooltip beside it is what
- * makes that legible.
- */
-export const pollCorrectFor = (view: RunView): string => {
-	const held = roundToOneDecimal(view.gateStake.unitsHeld);
-	const scored = scoringSlotsAt(view.gateStake.gateNumber);
+/** Percentages keep one decimal, so the badge reads as the panel meta does. */
+const coveragePercent = (held: number): string =>
+	`${roundToOneDecimal(held).toFixed(1)}%`;
 
-	return `${held}/${scored} ${CORRECT_WORD}`;
+export const coverageLeadFor = (view: RunView): LeadLine => {
+	const units = roundToTwoDecimals(view.gateStake.unitsHeld);
+
+	return [
+		SCORED_LEAD,
+		{ figure: `${units}`, gain: true },
+		units === 1 ? SCORED_JOIN_ONE : SCORED_JOIN,
+		{ figure: `${scoringSlotsAt(view.gateStake.gateNumber)}` },
+		SCORED_TRAIL,
+		{ figure: coveragePercent(view.gateStake.coverageHeld), gain: true },
+		SCORED_CLOSE,
+	];
+};
+
+const paidOf = (poll: AnsweredPoll): PollPaid => ({
+	figure: `${roundToTwoDecimals(poll.coverageEarned ?? 0)}`,
+	color: PAID_COLOR[poll.outcome],
+});
+
+const payoutRowFor = (
+	answers: readonly AnsweredPoll[],
+	gate: number,
+	current: boolean,
+	polls: number
+): PollScoreRow => ({
+	swatch: gateSwatchAt(gate),
+	correct: answers.filter((poll) => poll.outcome === CORRECT_OUTCOME).length,
+	polls,
+	payouts: {
+		slots: Array.from({ length: polls }, (_, position) => {
+			const poll = answers[position];
+			return poll === undefined ? undefined : paidOf(poll);
+		}),
+		total: `${roundToTwoDecimals(
+			answers.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
+		)}`,
+	},
+	...(current ? { current: true } : {}),
+});
+
+/** Every gate the run has opened. The debrief's view, where history is the point. */
+export const runPaidFor = (view: RunView): PollScoresProps => {
+	const gate = view.gateStake.gateNumber;
+
+	return {
+		rows: answersPerGate(view.allAnswered, gate).map((answers, index) =>
+			payoutRowFor(answers, index, index === gate, view.pollsPerGate)
+		),
+	};
+};
+
+/**
+ * The gate in hand only. The run's whole payout history is the debrief's job:
+ * on the screen you answer on, every earlier gate is a row you cannot act on.
+ */
+export const pollPaidFor = (view: RunView): PollScoresProps => {
+	const gate = view.gateStake.gateNumber;
+	const answers = answersPerGate(view.allAnswered, gate)[gate] ?? [];
+
+	return {
+		rows: [payoutRowFor(answers, gate, true, view.pollsPerGate)],
+	};
 };
 
 export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
@@ -119,7 +202,7 @@ export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
 const offlineIdsOf = (view: RunView): ReadonlySet<string> =>
 	new Set(view.offlineConfigs.map((offline) => offline.config.id));
 
-export type PressAction = "lint" | "peek" | "switch-arm";
+export type PressAction = "lint" | "peek" | "switch-arm" | "arm-strict";
 
 export type PollPress = {
 	readonly configId: string;
@@ -127,7 +210,15 @@ export type PollPress = {
 	readonly label: string;
 	readonly ready: boolean;
 	readonly refusal: string | undefined;
+	/** Only a toggle carries this: a one-shot press has no pressed state to state. */
+	readonly armed?: boolean;
 };
+
+const ARM_WORD = "arm";
+const ARMED_WORD = "armed";
+const WAGER_SETTLED = "wagered on this answer";
+const WAGER_LOST_LABEL = "wager lost";
+const WAGER_LOST_DETAIL = "an armed wager pays only an exact answer";
 
 const REFUSAL_COPY: Record<PaidRefusal, string> = {
 	offline: "offline",
@@ -138,9 +229,6 @@ const REFUSAL_COPY: Record<PaidRefusal, string> = {
 	alreadyPeeked: "already read",
 	cannotAfford: "cannot afford",
 };
-
-const categoriesWord = (categories: readonly CategoryCode[]): string =>
-	categories.map((code) => code.toUpperCase()).join(" or ");
 
 const lintRefusalCopy = (
 	config: Config,
@@ -181,6 +269,20 @@ const pressesOf = (view: RunView): readonly PollPress[] => {
 						peekRefusal === undefined ? undefined : REFUSAL_COPY[peekRefusal],
 				},
 			];
+
+		if (config.wagersAnswer !== undefined) {
+			const { wagerArmed, wagerStake, canWager } = view.paidActions;
+			return [
+				{
+					configId: config.id,
+					action: "arm-strict",
+					label: `${wagerArmed ? ARMED_WORD : ARM_WORD} ±${wagerStake}`,
+					armed: wagerArmed,
+					ready: canWager,
+					refusal: canWager ? undefined : REFUSAL_COPY.offline,
+				},
+			];
+		}
 
 		const arm = otherArmOf(config);
 		if (arm !== undefined)
@@ -239,33 +341,59 @@ export type PressHandlers = {
  */
 const badgesFor = (
 	press: PollPress | undefined,
-	onPress: PressHandlers["onPress"]
+	onPress: PressHandlers["onPress"],
+	revealed = false
 ): ConfigChipBadge[] => {
 	if (press === undefined || onPress === undefined) return [];
 
+	const settled = revealed && press.action === "arm-strict";
+	const ready = press.ready && !settled;
+	const refusal = settled ? WAGER_SETTLED : press.refusal;
+
 	return [
 		{
-			label: press.ready ? press.label : (press.refusal ?? press.label),
+			label: ready ? press.label : (refusal ?? press.label),
 			onPress: () => onPress(press.action, press.configId),
-			disabled: !press.ready,
+			...(press.armed === undefined ? {} : { armed: press.armed }),
+			disabled: !ready,
 		},
 	];
 };
 
+const creditedIdsOf = (
+	answered: AnsweredPoll | undefined
+): ReadonlySet<string> =>
+	new Set(
+		(answered?.coverageBreakdown?.configBonuses ?? []).map(
+			(bonus) => bonus.configId
+		)
+	);
+
 export const pollBuildFor = (
 	view: RunView,
-	panels: Pick<BuildProps, "openInfo" | "onToggleInfo"> & PressHandlers = {}
+	panels: Pick<BuildProps, "openInfo" | "onToggleInfo"> & PressHandlers = {},
+	answered?: AnsweredPoll
 ): BuildProps => {
 	const { onPress, ...rest } = panels;
 	const offline = offlineIdsOf(view);
+	const credited = creditedIdsOf(answered);
 	const presses = new Map(
 		pollPressesOf(view).map((press) => [press.configId, press])
 	);
-	const chip = (config: Config, note?: string) => ({
-		name: config.label,
-		badges: badgesFor(presses.get(config.id), onPress),
-		...chipFor(config, note),
-	});
+	const chip = (config: Config, note?: string) => {
+		const { badge, detail } = pollNoteFor(view.configStatuses[config.id]);
+
+		return {
+			name: config.label,
+			badges: [
+				...(badge === undefined ? [] : [badge]),
+				...badgesFor(presses.get(config.id), onPress, answered !== undefined),
+			],
+			...(detail === undefined ? {} : { detail }),
+			...(credited.has(config.id) ? { credited: true } : {}),
+			...chipFor(config, note),
+		};
+	};
 
 	return {
 		configs: view.configs
@@ -277,4 +405,87 @@ export const pollBuildFor = (
 		skippedNote: view.offlineConfigs.length === 0 ? undefined : OFFLINE_NOTE,
 		...rest,
 	};
+};
+
+const BASE_LABEL = {
+	correct: "right answer",
+	partial: "partial answer",
+	wrong: "wrong answer",
+} as const satisfies Record<AnswerOutcome, string>;
+
+const BASE_DETAIL = "base";
+const STREAK_LABEL = "streak";
+const PAID_LABEL = "paid";
+const MATCHES = "matches";
+const QUIET: FigureTone = "quiet";
+
+const unitsWord = (value: number): string => `${roundToTwoDecimals(value)}`;
+
+const bonusFigure = ({ value, factor }: CoverageConfigBonus): string =>
+	factor === undefined
+		? `${value > 0 ? "+" : ""}${unitsWord(value)}`
+		: `×${unitsWord(factor)}`;
+
+const quietRow = (
+	label: string,
+	figure: string,
+	detail?: string
+): LedgerRow => ({
+	label,
+	...(detail === undefined ? {} : { detail }),
+	figures: [{ label: figure, tone: QUIET }],
+});
+
+const bonusRowFor = (
+	view: RunView,
+	answered: AnsweredPoll,
+	bonus: CoverageConfigBonus
+): LedgerRow => {
+	const config = view.configs.find((held) => held.id === bonus.configId);
+	const matched =
+		config?.focusCategory === answered.category
+			? `${MATCHES} ${categoryNameOf(view, answered.category)}`
+			: undefined;
+
+	return quietRow(config?.label ?? bonus.configId, bonusFigure(bonus), matched);
+};
+
+/**
+ * The answer's receipt: where the figure in the payout badge came from. One row
+ * per contributor, each in the form the config itself is sold in — a multiplier
+ * states its factor, an adder states its units (ADR-083).
+ */
+export const pollBreakdownFor = (
+	view: RunView,
+	answered: AnsweredPoll
+): readonly LedgerRow[] => {
+	const breakdown = answered.coverageBreakdown;
+	if (breakdown === undefined) return [];
+
+	const { base, streakBonus, configBonuses } = breakdown;
+	const lost = answered.coverageLost ?? 0;
+	const paid = roundToTwoDecimals(
+		base +
+			streakBonus +
+			configBonuses.reduce((sum, bonus) => sum + bonus.value, 0) -
+			lost
+	);
+
+	return [
+		quietRow(BASE_LABEL[answered.outcome], unitsWord(base), BASE_DETAIL),
+		...configBonuses.map((bonus) => bonusRowFor(view, answered, bonus)),
+		...(streakBonus === 0
+			? []
+			: [quietRow(STREAK_LABEL, `+${unitsWord(streakBonus)}`)]),
+		...(lost === 0
+			? []
+			: [quietRow(WAGER_LOST_LABEL, `-${unitsWord(lost)}`, WAGER_LOST_DETAIL)]),
+		{
+			label: PAID_LABEL,
+			figures: [
+				{ label: unitsWord(paid), color: PAID_COLOR[answered.outcome] },
+			],
+			total: true,
+		},
+	];
 };

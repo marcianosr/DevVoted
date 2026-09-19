@@ -547,6 +547,21 @@ body[data-screen-theme] {
 	background-color: oklch(from var(--theme-color) 0.3 calc(c* 0.3) h);
 	color: oklch(from var(--theme-color) 0.87 calc(c* 0.7) h);
 }
+/* badge-theme inverted, for a bar segment that has to carry a label on a bright
+   ground: fill near the light end, ink near the dark one. Same inseparable
+   fill-and-ink contract and the same reason for it.
+
+   Both lightnesses are fixed while chroma stays proportional, so a row of
+   segments reads as one bar rather than twelve differently-lit plates, and each
+   hue still keeps its identity. The mock is built the same way -- its fills all
+   measure L 0.764 and its ink L 0.386 whatever the hue -- but that pair lands at
+   4.29:1 on cerulean, under the 4.5:1 AA asks of body text. The ink is held to
+   0.3 instead, which clears 5.89:1 at the worst hue (cinnabar). Same call as
+   ring-theme-soft below: the floor wins where the mock is under it. */
+@utility segment-theme {
+	background-color: oklch(from var(--theme-color) 0.78 calc(c* 0.65) h);
+	color: oklch(from var(--theme-color) 0.3 calc(c* 0.6) h);
+}
 /* A badge the player can press. Same paired fill-and-ink contract as
    badge-theme, because a control's legibility must not be separable from its
    ground, in rungs: idle, armed (a two-state control showing which state is
@@ -1347,4 +1362,39 @@ meter::-webkit-meter-optimum-value {
 .coverage-bar-count {
 	transition: --coverage-count var(--coverage-bar-duration) ease-out;
 	counter-reset: coverage var(--coverage-count);
+}
+
+/* The credited flash: which config just paid into the answer. It hangs off the
+   footer rather than the chip because the fold may be shut when an answer
+   lands, and a <details> body the player closed is display:none, so the chips
+   are not there to light. The shut panel takes the same flash, which is why the
+   attribute sits on the footer and the sheet picks whichever target is visible.
+   A transition rather than a keyframe for ADR-077's reason: the chips keep
+   their instance across the answer beat, so a keyframe would never replay.
+   Its own duration, never the ring's --coverage-duration, which the coverage
+   specs count across the whole sheet. */
+.build-footer {
+	--build-flash-duration: 500ms;
+}
+
+.build-footer [data-credited="true"],
+.build-footer details:not([open]) {
+	transition: box-shadow var(--build-flash-duration) ease-out;
+}
+
+/* Fast in, slow out: the flash has to land with the figure it explains, then
+   get out of the way of reading the receipt. */
+.build-footer[data-flash="true"] [data-credited="true"],
+.build-footer[data-flash="true"] details:not([open]) {
+	box-shadow:
+		0 0 0 0.125rem oklch(from var(--theme-color) l c h / 0.9),
+		0 0 1.25rem 0.125rem oklch(from var(--theme-color) l c h / 0.3);
+	transition: box-shadow 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.build-footer [data-credited="true"],
+	.build-footer details:not([open]) {
+		transition: none;
+	}
 }

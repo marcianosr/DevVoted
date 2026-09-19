@@ -269,7 +269,6 @@ describe("capacity is bought, never handed over (ADR-046)", () => {
 		const broke: RunState = {
 			...started(["js"], 6 * SLICE_WINDOW),
 			gatesCleared: 1,
-			slotsBought: 1,
 			storage: 0,
 			build: { ...started(["js"], 6 * SLICE_WINDOW).build, slots: 5 },
 		};
@@ -889,6 +888,82 @@ describe("coverage scoring", () => {
 	});
 });
 
+describe(".prettierrc", () => {
+	const fourKeyPoll = (): RunPoll => ({
+		id: "m4",
+		category: "ts",
+		question: "Which are TS utility types?",
+		answerType: "multiple",
+		options: [
+			{ id: "a", label: "Partial", correct: true },
+			{ id: "b", label: "Pick", correct: true },
+			{ id: "c", label: "Omit", correct: true },
+			{ id: "d", label: "Readonly", correct: true },
+			{ id: "e", label: "Banjo", correct: false },
+			{ id: "f", label: "Kazooie", correct: false },
+		],
+	});
+
+	const formatting = (): RunState => {
+		const base = createRun([fourKeyPoll(), ...pool(5)], handed);
+		return {
+			...base,
+			status: "answering",
+			build: {
+				...base.build,
+				slots: base.build.slots + 2,
+				configs: [CONFIGS.prettierrc],
+			},
+		};
+	};
+
+	const paidFor = (optionIds: string[]): number | undefined =>
+		runReducer(formatting(), { type: "answer", optionIds }).answeredThisGate[0]
+			?.coverageEarned;
+
+	it("pays a quarter-caught set a whole unit instead of half of one", () => {
+		expect(paidFor(["a"])).toBe(1);
+	});
+
+	it("pays a three-quarter catch two units instead of one and a half", () => {
+		expect(paidFor(["a", "b", "c"])).toBe(2);
+	});
+
+	it("leaves a half catch alone, one unit being whole already", () => {
+		expect(paidFor(["a", "b"])).toBe(1);
+	});
+
+	it("pays a full set the same two units it always paid", () => {
+		expect(paidFor(["a", "b", "c", "d"])).toBe(2);
+	});
+
+	it("pays a cancelled-out answer nothing, a miss being a miss", () => {
+		expect(paidFor(["a", "e"])).toBe(0);
+	});
+
+	it("names itself on the receipt rather than inflating the base", () => {
+		const breakdown = runReducer(formatting(), {
+			type: "answer",
+			optionIds: ["a"],
+		}).answeredThisGate[0]?.coverageBreakdown;
+
+		expect(breakdown?.base).toBe(0.5);
+		expect(breakdown?.configBonuses).toEqual([
+			{ configId: "prettierrc", value: 0.5 },
+		]);
+	});
+
+	it("keeps the verdict badge on the fraction caught, not on what it paid", () => {
+		const landed = runReducer(formatting(), {
+			type: "answer",
+			optionIds: ["a"],
+		}).answeredThisGate[0];
+
+		expect(landed?.outcome).toBe("partial");
+		expect(landed?.coverageFactors?.correct).toBe(0.25);
+	});
+});
+
 describe("Cache", () => {
 	const withCache = (state: RunState): RunState => ({
 		...state,
@@ -899,17 +974,17 @@ describe("Cache", () => {
 		},
 	});
 
-	const buildFactorOf = (state: RunState, index: number): number | undefined =>
-		state.answeredThisGate[index]?.coverageFactors?.build;
+	const earnedOf = (state: RunState, index: number): number | undefined =>
+		state.answeredThisGate[index]?.coverageEarned;
 
-	it("pays ×1 on a cold category and one step more per cached hit", () => {
+	it("pays nothing on a cold category and a quarter unit more per cached hit", () => {
 		let state = withCache(started(["js"]));
 		state = answerWith(state, true);
 		state = answerWith(state, true);
 		state = answerWith(state, true);
-		expect(buildFactorOf(state, 0)).toBe(1);
-		expect(buildFactorOf(state, 1)).toBe(1.25);
-		expect(buildFactorOf(state, 2)).toBe(1.5);
+		expect(earnedOf(state, 0)).toBe(BASE_GAIN);
+		expect(earnedOf(state, 1)).toBe(BASE_GAIN + 0.25 + STREAK_UNIT_STEP);
+		expect(earnedOf(state, 2)).toBe(BASE_GAIN + 0.5 + STREAK_UNIT_STEP);
 	});
 
 	it("flushes the category on a wrong answer and rebuilds from cold", () => {
@@ -918,16 +993,16 @@ describe("Cache", () => {
 		state = answerWith(state, false);
 		state = answerWith(state, true);
 		state = answerWith(state, true);
-		expect(buildFactorOf(state, 2)).toBe(1);
-		expect(buildFactorOf(state, 3)).toBe(1.25);
+		expect(earnedOf(state, 2)).toBe(BASE_GAIN);
+		expect(earnedOf(state, 3)).toBe(BASE_GAIN + 0.25 + STREAK_UNIT_STEP);
 	});
 
-	it("keeps a category warm across a gate clear, capped at ×2", () => {
+	it("keeps a category warm across a gate clear, capped at one unit", () => {
 		let state = withCache(started(["js"]));
 		state = clearGate(state);
 		state = runReducer(state, { type: "finish-reward" });
 		state = answerWith(state, true);
-		expect(buildFactorOf(state, 0)).toBe(2);
+		expect(earnedOf(state, 0)).toBe(BASE_GAIN + 1);
 	});
 });
 
@@ -1007,7 +1082,6 @@ describe("Moore's Law", () => {
 	it("pays five times as much once maxed, on the same balance", () => {
 		const state = answerWholeWindow({
 			...maxed(held(started(["moores-law"]), 512)),
-			storagePlan: 2,
 		});
 
 		expect(state.interestThisGateKb).toBe(51);
@@ -1042,7 +1116,6 @@ describe("Moore's Law", () => {
 	it("compounds while the plan is wide enough to hold the balance", () => {
 		const rich: RunState = {
 			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 800)),
-			storagePlan: 2,
 		};
 		let state = answerWholeWindow(rich);
 		const first = state.interestThisGateKb ?? 0;
@@ -1223,5 +1296,87 @@ describe("Freemium's subscription", () => {
 			configId: "agents-md",
 		});
 		expect(drafted.storage).toBe(shopping.storage - 128);
+	});
+});
+
+describe("an armed strict wager", () => {
+	const wagering = (): RunState => {
+		const base = started([]);
+		return { ...base, build: { ...base.build, configs: [CONFIGS.strict] } };
+	};
+
+	const arm = (state: RunState): RunState =>
+		runReducer(state, { type: "arm-strict" });
+
+	it("pays half a unit on top of an exact answer", () => {
+		const state = answerWith(arm(wagering()), true);
+
+		expect(state.window.unitsEarned).toBe(BASE_UNIT + 0.5);
+	});
+
+	it("takes half a unit off the window a miss would have left alone", () => {
+		const earned = answerWith(wagering(), true);
+
+		expect(answerWith(arm(earned), false).window.unitsEarned).toBe(
+			BASE_UNIT - 0.5
+		);
+	});
+
+	it("takes half a unit off a partial, since strict means exact or nothing", () => {
+		const base = started([]);
+		const selectAll: RunPoll = {
+			id: "select-all",
+			category: "react",
+			question: "Which of these beat Banjo?",
+			answerType: "multiple",
+			options: [
+				{ id: "a", label: "Kazooie", correct: true },
+				{ id: "b", label: "Mumbo", correct: true },
+				{ id: "c", label: "Gruntilda", correct: false },
+				{ id: "d", label: "Klungo", correct: false },
+			],
+		};
+		const state = arm({
+			...base,
+			build: { ...base.build, configs: [CONFIGS.strict] },
+			polls: [selectAll, ...base.polls.slice(1)],
+		});
+		const partial = runReducer(state, { type: "answer", optionIds: ["a"] });
+
+		expect(partial.answeredThisGate[0].outcome).toBe("partial");
+		expect(partial.answeredThisGate[0].coverageLost).toBe(0.5);
+	});
+
+	it("leaves the window at zero rather than owing units it cannot take", () => {
+		expect(answerWith(arm(wagering()), false).window.unitsEarned).toBe(0);
+	});
+
+	it("settles nothing on an answer given without arming", () => {
+		expect(answerWith(wagering(), false).window.unitsEarned).toBe(0);
+		expect(answerWith(wagering(), true).window.unitsEarned).toBe(BASE_UNIT);
+	});
+
+	it("disarms after the answer, so every poll is wagered on its own", () => {
+		expect(arm(wagering()).strictArmed).toBe(true);
+		expect(answerWith(arm(wagering()), true).strictArmed).toBeUndefined();
+	});
+
+	it("keeps the payout flat, so a multiplying build cannot amplify the wager", () => {
+		const base = started([]);
+		const doubled = arm({
+			...base,
+			build: {
+				...base.build,
+				configs: [CONFIGS.strict, CONFIGS.agentsMd],
+			},
+		});
+		const plain = {
+			...base,
+			build: { ...base.build, configs: [CONFIGS.agentsMd] },
+		};
+
+		expect(answerWith(doubled, true).window.unitsEarned).toBe(
+			answerWith(plain, true).window.unitsEarned + 0.5
+		);
 	});
 });

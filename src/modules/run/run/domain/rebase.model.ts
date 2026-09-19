@@ -1,13 +1,21 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	showsAnswerTypes,
+} from "~/modules/run/config/domain/config.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { RunState } from "~/modules/run/run/domain/run.model";
-import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type {
+	AnswerType,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 
 export type PollSlot = {
 	readonly id: string;
 	readonly category: CategoryCode;
+	/** v2 only. At v1 a row is a subject line, the way `rebase -i` lists one. */
+	readonly answerType?: AnswerType;
 };
 
 export const rebaserFor = (configs: readonly Config[]): Config | undefined =>
@@ -34,13 +42,17 @@ export const gateSliceOf = (
 
 export const upcomingSlotsOf = (
 	state: Pick<RunState, "polls" | "currentIndex" | "build" | "status">
-): readonly PollSlot[] =>
-	!canRebase(state) || rebaserFor(state.build.configs) === undefined
-		? []
-		: gateSliceOf(state).map((poll) => ({
-				id: poll.id,
-				category: poll.category,
-			}));
+): readonly PollSlot[] => {
+	const rebaser = rebaserFor(state.build.configs);
+	if (!canRebase(state) || rebaser === undefined) return [];
+
+	const typed = showsAnswerTypes(rebaser);
+	return gateSliceOf(state).map((poll) => ({
+		id: poll.id,
+		category: poll.category,
+		...(typed ? { answerType: poll.answerType } : {}),
+	}));
+};
 
 /**
  * Moves one poll within the gate slice. `from` and `to` are offsets into that

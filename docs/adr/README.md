@@ -24,7 +24,7 @@ it before proposing one again.**
 | [012](012-migration-strategy.md) | One migration pipeline: guarded SQL | Accepted |
 | [013](013-gate-scaled-coverage.md) | Gate-scaled coverage, gain and loss | Accepted — amended by 035; **the gain no longer scales** (073) |
 | [014](014-daily-gate-lock.md) | Daily gate lock: the day hands one gate's polls | Accepted — amended by 076 (a retry costs a day) |
-| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap |
+| [015](015-storage-cap-policy-grant-and-cap-extender-configs.md) | Storage-cap policy: grants clip at the cap | Accepted — **nothing live**; 074 removed the cap, 082 deleted it |
 | [019](019-depth-and-width-are-independent.md) | Swatches are gate badges | Accepted — amended by 046, 074; **the clear no longer awards one** (080) |
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
@@ -39,10 +39,8 @@ it before proposing one again.**
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline | Accepted |
 | [042](042-design-pillars-and-anti-pillars.md) | **Design pillars and anti-pillars** — the tiebreaker lens | Accepted |
 | [044](044-capacity-is-spots-money-is-kb.md) | Capacity is spots (now slots), money is KB | Accepted — amended by 046, 047, 074 |
-| [046](046-slots-are-bought-storage-is-capped-again.md) | Slots are bought, storage is capped | **Superseded by 074** — kept while its code runs |
 | [047](047-a-configs-size-is-a-number.md) | A config's size is a number | Accepted — amended by 055 |
 | [048](048-the-pipeline-is-your-build.md) | The pipeline is Your Build: four nouns, one job each | Accepted |
-| [049](049-the-archive-opens-a-run-wider.md) | The archive opens a run wider | **Superseded by 074** — kept while its code runs |
 | [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted — amended by 051, 062, 064 |
 | [051](051-configs-unlock-on-individual-objectives.md) | Configs unlock on individual objectives | Accepted — amended by 064 |
 | [052](052-the-run-opens-on-a-dealt-hand.md) | The run opens on a dealt hand | Accepted — amended by 057, 062 |
@@ -56,7 +54,6 @@ it before proposing one again.**
 | [060](060-the-slot-mark-is-a-figure.md) | The slot mark is a figure; version is a dot track | Accepted |
 | [061](061-coverage-reads-as-a-gauge-beside-the-answers.md) | Coverage reads as a gauge beside the answers | Accepted |
 | [062](062-the-starting-hand-is-dealt-under-guarantees.md) | The starting hand is dealt under guarantees | Accepted — amended by 064 |
-| [063](063-a-config-can-be-paid-for-a-prediction.md) | A config can be paid for a prediction | Accepted |
 | [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted |
 | [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted — reversed by 067 |
 | [066](066-every-figure-wears-a-badge.md) | Every figure wears a badge | Accepted |
@@ -65,7 +62,7 @@ it before proposing one again.**
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
 | [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; amended by 081; half built |
-| [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — supersedes 046 and 049; **not built** |
+| [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — built by 082, which amends decisions 2, 3 and 4 |
 | [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked) |
 | [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; drawn in the kanto kit, not routed |
 | [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
@@ -73,6 +70,15 @@ it before proposing one again.**
 | [079](079-a-partial-answer-pays-a-quarter-at-a-time.md) | **A partial answer pays a quarter at a time** | Accepted — amends 006 §11; the ladder 081 doubles |
 | [080](080-the-swatch-is-won-by-the-window.md) | **The swatch is won by the window, not by the clear** | Accepted — reverses 019's award rule |
 | [081](081-a-multiple-choice-answer-pays-double.md) | **A multiple-choice answer pays double** | Accepted — amends 073's decision 1; credit is a term beside 079's share |
+| [082](082-build-space-is-rented-by-the-gate.md) | **Build space is rented by the gate** | Accepted — builds 074, amends its decisions 2, 3 and 4; retires 046 and 049 |
+| [083](083-a-coverage-config-multiplies-or-adds-units.md) | **A coverage config either multiplies the answer or adds flat units** | Accepted — amends the earn formula in 073's decision 1 and 081's decision 1; leaves 079 whole |
+| [084](084-the-answer-shows-its-own-receipt.md) | **An answer shows its own receipt, and the build flashes what paid** | Accepted — builds on 083; amends 069 by giving the footer the flash |
+| [085](085-a-prep-time-bet-pays-coverage-on-a-floor.md) | A prep-time bet pays coverage on a floor | Accepted |
+| [086](086-a-config-can-round-a-partial-up.md) | **A config can round a partial up to a whole unit** | Accepted — amends 079's decision 2; sits inside 083 as an add; leaves 081 whole |
+| [087](087-a-config-can-be-exempt-from-the-space-it-fills.md) | **A config can be exempt from the space it fills** | Accepted — splits carried weight from billable weight; scraps DVTD-kf93 |
+| [088](088-the-run-has-no-id-in-its-url.md) | **The run has no id in its URL** — the status owns the screen | Accepted |
+| [089](089-an-armed-wager-pays-or-bills-one-answer.md) | **An armed wager pays or bills one answer** | Accepted — reverses 073's no-loss rule for one config; second wager beside 085; an add under 083 |
+| [090](090-a-config-can-replace-the-streaks-unit-step.md) | **A config can replace the streak's unit step with a growing one** | Accepted — amends 083; the step climbs with the streak, clamped to the window |
 
 ## Retired
 
@@ -88,7 +94,9 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 018 | Gate–slot coupling: gate N requires slot N | Retired — 019 owns it |
 | 021 | A run dies at the gate that empties its build | Retired — 037 owns it |
 | 022 | Every config owes the gate a check | Retired — 035 owns it |
-| 023 | Storage capacity is a subscription | Retired — 046 owns it |
+| 023 | Storage capacity is a subscription | Retired — 046 owned it, 082 deleted it |
+| 046 | Slots are bought, storage is capped | Retired — 082 deleted the ladder and the cap |
+| 049 | The archive opens a run wider | Retired — 082 deleted the start-slot ladder |
 | 024 | *(reserved: shop-router)* | Unwritten — never implemented |
 | 025 | Width claims itself automatically | Retired — 046 owns it |
 | 027 | A gate only admits a build that survives its stake | Retired — 035 owns it |

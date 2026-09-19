@@ -4,7 +4,7 @@ import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Figures } from "./Figures.ui";
 import type { IconName } from "./Icon.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
 const CHOICE = "flex w-full flex-col gap-3";
@@ -61,10 +61,10 @@ export type GateChoiceProps = {
 };
 
 const PeelArm = ({ title, owed, meter, note, bribe, drop }: GatePeelArm) => (
-	<PanelV2>
-		<PanelV2.Header label={title} badge={{ label: owed, color: OWED_COLOR }} />
+	<Panel>
+		<Panel.Header label={title} badge={{ label: owed, color: OWED_COLOR }} />
 
-		<PanelV2.Body>
+		<Panel.Body>
 			<Meter {...meter} />
 			<Typography variant="hint">{note}</Typography>
 
@@ -94,15 +94,15 @@ const PeelArm = ({ title, owed, meter, note, bribe, drop }: GatePeelArm) => (
 					<ConfigChip key={index} {...config} />
 				))}
 			</div>
-		</PanelV2.Body>
-	</PanelV2>
+		</Panel.Body>
+	</Panel>
 );
 
 const RefusalArm = ({ title, price, note, action }: GateRefusalArm) => (
-	<PanelV2>
-		<PanelV2.Header label={title} meta={<Figures text={price} />} />
+	<Panel>
+		<Panel.Header label={title} meta={<Figures text={price} />} />
 
-		<PanelV2.Body>
+		<Panel.Body>
 			<Typography variant="hint">{note}</Typography>
 
 			<div className={ARM_ACTION}>
@@ -115,8 +115,8 @@ const RefusalArm = ({ title, price, note, action }: GateRefusalArm) => (
 					onPress={action.onPress}
 				/>
 			</div>
-		</PanelV2.Body>
-	</PanelV2>
+		</Panel.Body>
+	</Panel>
 );
 
 export const GateChoice = ({ title, peel, refusal }: GateChoiceProps) => (

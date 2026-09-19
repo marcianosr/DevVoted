@@ -56,7 +56,7 @@ const LOCKED_LABEL = "Locked config";
 const INFO_GLYPH = "i";
 const UNINSTALL_GLYPH = "×";
 const UPGRADE_GLYPH = "↑";
-const INSTALL_LABEL = "install";
+const INSTALL_LABEL = "Install";
 const HINT_SEPARATOR = " · ";
 
 export type ConfigChipBadge =
@@ -70,7 +70,8 @@ export type ConfigChipBadge =
 	  };
 
 export type ChipInstall = {
-	onPress: () => void;
+	onPress?: () => void;
+	price?: string;
 	disabled?: boolean;
 	hint?: string;
 };
@@ -92,8 +93,9 @@ export type ConfigChipProps = Redactable<{
 	upgrades?: UpgradesProps;
 	upgradesOpen?: boolean;
 	onToggleUpgrades?: () => void;
-	upgradePriceOn?: DetailReveal;
+	priceOn?: DetailReveal;
 	highlighted?: boolean;
+	credited?: boolean;
 	onHover?: () => void;
 	onLeave?: () => void;
 }>;
@@ -112,6 +114,11 @@ const lastColorOf = (badges: ConfigChipBadge[]) => {
 
 const upgradeHintOf = (name: string, { version, price }: UpgradeRung) => {
 	const names = `Upgrade ${name} to v${version}`;
+	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
+};
+
+const installHintOf = (name: string, price?: string) => {
+	const names = `${INSTALL_LABEL} ${name}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
@@ -160,8 +167,9 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		upgrades,
 		upgradesOpen = false,
 		onToggleUpgrades,
-		upgradePriceOn,
+		priceOn,
 		highlighted = false,
+		credited = false,
 		onHover,
 		onLeave,
 	} = props;
@@ -180,6 +188,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 
 	const chip = (
 		<span
+			data-credited={credited ? "true" : undefined}
 			onMouseEnter={onHover}
 			onMouseLeave={onLeave}
 			className={clsx(
@@ -210,7 +219,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 						cap={UPGRADE_GLYPH}
 						label={`v${offered.version}`}
 						detail={offered.price}
-						detailOn={upgradePriceOn}
+						detailOn={priceOn}
 						hint={upgradeHintOf(name, offered)}
 						expanded={upgradesOpen}
 						onPress={onToggleUpgrades}
@@ -220,8 +229,10 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					<Button
 						tone={INSTALL_TONE}
 						label={INSTALL_LABEL}
-						hint={install.hint ?? `Install ${name}`}
-						disabled={install.disabled}
+						detail={install.price}
+						detailOn={priceOn}
+						hint={install.hint ?? installHintOf(name, install.price)}
+						disabled={install.disabled ?? install.onPress === undefined}
 						onPress={install.onPress}
 					/>
 				)}

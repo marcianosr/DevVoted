@@ -1,4 +1,4 @@
-# ADR-073: Coverage is a flat gain, reset every gate
+# ADR-073: Coverage is a flat gain over every slot the run has opened
 
 ## Status
 
@@ -9,6 +9,11 @@ ADR-013 Decisions 2 and 3 stand.
 Built 2026-09-13 (DVTD-1zzz). `coverageRatio.model.ts` owns the numbers and the
 run loop reads them. `COVERAGE_DEMANDS`, `gateBaseMultiplier`,
 `pollDifficultyMultiplier` and `wrongLossShareFor` are deleted.
+
+Decision 4 rewritten 2026-09-14 (DVTD-65yi). It was carried over from ADR-035's
+per-gate meter and described the opposite of what shipped, which is where the
+"my score halved" confusion came from. The file keeps its number; the title lost
+"reset every gate" for the same reason.
 
 ## Context
 
@@ -51,38 +56,51 @@ A bare build earns at most five units in a five-poll gate, at gate 0 and at
 gate 12 alike. Against a denominator that grows every gate that is a full
 window at gate 0 and a fifth of one at gate 12, so the demand curve outruns it
 by design and multipliers stop being optional somewhere around gate 3. Category
-multipliers, global multipliers, opener bonuses, streak and cache effects,
-spillover and audit protection are what close the gap.
+multipliers, global multipliers, opener bonuses, cache effects and audit
+protection are what close the gap.
 
 This is deliberate, and it is the Balatro shape: the base score is
 near-irrelevant, and the engine you assemble on top of it is the game.
 
-### 4. The window closes at 100% and reopens at 0%
+### 4. The denominator is every slot the run has opened
 
-ADR-035 made coverage a per-gate meter. This states the two ends of it: gains
-clamp at 100%, and the next gate starts from nothing. A config that carries
-coverage across the boundary (spillover) is the only exception, and it is an
-exception a config has to buy.
+Coverage is `bankedUnits / scoringSlotsAt(gate)`, and `scoringSlotsAt(gate)` is
+`5 x (gate + 1)`: five slots at Pallet, ten at Boulder, sixty-five at the
+Champion. Units carry across the boundary; the denominator grows with it.
 
-Both halves are load-bearing. Without the cap, a stacked build banks one gate's
-surplus into the next and the demand table never catches it. Without the reset,
-coverage becomes a career total again and a good early run coasts.
+So the meter is a career total, deliberately. A gate is judged on the whole run
+rather than on its own five polls, which is what lets a strong opening protect a
+bad window later and what makes a collapse something to climb out of.
+
+The cost is a discontinuity the player feels: clearing a gate opens the next
+gate's five slots, so the same score is divided by a larger number the moment
+the gate shuts. Pallet at 42% reads 21% at Boulder having lost nothing. The
+screens have to say so (`NextGate`'s note prices the next gate in answers, the
+debrief names the slots ahead); the model does not bend to hide it.
+
+Gains still clamp at 100%. Past a full bar `bankableUnits` stops banking and
+`surplusPayoutKb` pays the overshoot at 32 KB a unit, so a stacked build
+converts surplus into storage rather than into a lead the demand table cannot
+catch. There is no spillover config, and nothing in `src` carries coverage
+across a boundary by any other route.
 
 ## Consequences
 
-- **The loss is now the only gate-scaled term in the model.** ADR-013's
-  symmetry is gone in one direction: the gain is flat and the miss cost still
-  climbs (`LOSS_LADDER`). ADR-013 Decision 2 warned that scaling the gain but
-  not the loss makes accuracy matter less as you get stronger. This is the
-  mirror of that, and it needs the same watching: a miss that costs half an
-  answer at gate 12 while a hit still pays 5% can make deep gates read as
-  binary. `LOSS_LADDER` is the first knob if it does.
+- **The miss cost went to zero, and the denominator carries it instead.** This
+  ADR planned to keep ADR-013's scaled loss (`LOSS_LADDER`). What shipped has no
+  loss term at all: `applyAnswer` never subtracts from `window.unitsEarned`, and
+  no `LOSS_LADDER` exists in `src`. A miss is priced by the slot it spends, since
+  the denominator counts every slot the gate opened whether it was answered well
+  or not. That is a real cost and it grows with the demand ladder, but it is
+  invisible on the meter, which never runs backwards.
 
 - **The streak moved from coverage to KB.** It multiplied every correct answer's
-  coverage; the ratio model has no term for it, and `gatePayoutKb` multiplies the
-  gate payout instead. `gateClearPayout` follows suit, so a perfect window pays
-  1.5x and a held ten-streak 2x. That is a permanent buff to the economy rather
-  than a wash, and it is the first dial to turn if payouts read loose.
+  coverage; the ratio model has no term for it, and `gateClearPayout` multiplies
+  the gate payout instead, so a held ten-streak pays 2x. That is a permanent buff
+  to the economy rather than a wash, and it is the first dial to turn if payouts
+  read loose. The perfect window's 1.5x is stated but not routed: `PERFECT_BONUS`
+  has no caller, `gatePayoutKb` has no production caller, and the gate outcome
+  screen hardcodes its bonus to zero (ADR-075 says the same of itself).
 
 - **`gateBaseMultiplier` survives as `gateRewardMultiplier`, with one caller.**
   This ADR kills the gate scaling on the coverage gain. It says nothing about the

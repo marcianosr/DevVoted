@@ -16,7 +16,6 @@ const meta: Meta<typeof Header> = {
 	title: "Kanto/Header",
 	args: {
 		swatch: GATE_SWATCHES[9],
-		gateCount: VICTORY_GATE,
 		swatches: trackTo(9),
 	},
 	render: (args) => (
@@ -83,11 +82,7 @@ export const EveryGate: Story = {
 		<div className="[--screen-floor:11rem]">
 			{ALL_SWATCHES.map((swatch) => (
 				<Screen key={swatch.id} theme="pewter" width="narrow">
-					<Header
-						swatch={swatch}
-						gateCount={VICTORY_GATE}
-						swatches={trackTo(swatch.gate)}
-					/>
+					<Header swatch={swatch} swatches={trackTo(swatch.gate)} />
 				</Screen>
 			))}
 		</div>

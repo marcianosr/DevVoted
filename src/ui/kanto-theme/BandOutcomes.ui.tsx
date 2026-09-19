@@ -6,22 +6,25 @@ import {
 	type CoverageBandId,
 	type CoverageBarProps,
 } from "./CoverageBar.ui";
-import type { KantoColor } from "./colors";
+import {
+	Lead,
+	type LeadBand,
+	type LeadFigure,
+	type LeadLine,
+	type LeadPart,
+} from "./Lead.ui";
 import { Objectives, type ObjectivesProps } from "./Objectives.ui";
-import { PanelV2, type PanelV2Column } from "./PanelV2.ui";
+import { Panel, type PanelColumn } from "./Panel.ui";
 
 import { Typography } from "./Typography.ui";
 
 const FATAL = "border-l-2 border-theme";
 
-const LEAD_FIGURE_COLOR: KantoColor = "pewter";
-const LEAD_GAIN_COLOR: KantoColor = "viridian";
-
 const COLUMNS = [
 	{ label: "band", width: "w-28 shrink-0" },
 	{ label: "coverage", width: "min-w-0 flex-1" },
 	{ label: "pays", width: "ml-auto shrink-0" },
-] as const satisfies readonly PanelV2Column[];
+] as const satisfies readonly PanelColumn[];
 
 const [BAND_COLUMN, RANGE_COLUMN, PAYS_COLUMN] = COLUMNS;
 
@@ -31,10 +34,7 @@ const PAYS = `self-center ${PAYS_COLUMN.width}`;
 
 const FATAL_BAND: CoverageBandId = "danger";
 
-export type LeadBand = { band: CoverageBandId; figure?: never };
-export type LeadFigure = { figure: string; gain?: boolean; band?: never };
-export type LeadPart = string | LeadBand | LeadFigure;
-export type LeadLine = readonly LeadPart[];
+export type { LeadBand, LeadFigure, LeadLine, LeadPart };
 
 export type BandOutcome = {
 	band: CoverageBandId;
@@ -51,31 +51,6 @@ export type BandOutcomesProps = {
 	bar?: CoverageBarProps;
 };
 
-const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
-	if (part.band === undefined) {
-		const color = part.gain === true ? LEAD_GAIN_COLOR : LEAD_FIGURE_COLOR;
-		return <Badge color={color}>{part.figure}</Badge>;
-	}
-
-	return (
-		<Badge color={COVERAGE_BAND_COLOR[part.band]}>
-			{COVERAGE_BAND_WORD[part.band]}
-		</Badge>
-	);
-};
-
-const Lead = ({ line }: { line: LeadLine }) => (
-	<Typography variant="hint">
-		{line.map((part, index) =>
-			typeof part === "string" ? (
-				<span key={`${part}-${index}`}>{part}</span>
-			) : (
-				<Mark key={`${part.band ?? part.figure}-${index}`} part={part} />
-			)
-		)}
-	</Typography>
-);
-
 type OutcomeProps = {
 	outcome: BandOutcome;
 };
@@ -85,7 +60,7 @@ const Outcome = ({ outcome }: OutcomeProps) => {
 	const fatal = outcome.band === FATAL_BAND;
 
 	return (
-		<PanelV2.Row
+		<Panel.Row
 			theme={fatal ? color : undefined}
 			className={fatal ? FATAL : undefined}
 		>
@@ -96,7 +71,7 @@ const Outcome = ({ outcome }: OutcomeProps) => {
 			<span className={PAYS}>
 				<Badge color={color}>{outcome.pays}</Badge>
 			</span>
-		</PanelV2.Row>
+		</Panel.Row>
 	);
 };
 
@@ -108,31 +83,31 @@ export const BandOutcomes = ({
 	note,
 	bar,
 }: BandOutcomesProps) => (
-	<PanelV2>
-		<PanelV2.Header label={title} />
+	<Panel>
+		<Panel.Header label={title} />
 		{lead.length === 0 ? null : (
-			<PanelV2.Body>
+			<Panel.Body>
 				{lead.map((line, index) => (
 					<Lead key={index} line={line} />
 				))}
-			</PanelV2.Body>
+			</Panel.Body>
 		)}
 		{objectives === undefined ? null : <Objectives {...objectives} />}
 		{bar === undefined ? null : (
-			<PanelV2.Body>
+			<Panel.Body>
 				<CoverageBar {...bar} />
-			</PanelV2.Body>
+			</Panel.Body>
 		)}
-		<PanelV2.Columns columns={COLUMNS} />
-		<PanelV2.Rows>
+		<Panel.Columns columns={COLUMNS} />
+		<Panel.Rows>
 			{outcomes.map((outcome) => (
 				<Outcome key={outcome.band} outcome={outcome} />
 			))}
-		</PanelV2.Rows>
+		</Panel.Rows>
 		{note === undefined ? null : (
-			<PanelV2.Footer>
+			<Panel.Footer>
 				<Typography variant="hint">{note}</Typography>
-			</PanelV2.Footer>
+			</Panel.Footer>
 		)}
-	</PanelV2>
+	</Panel>
 );

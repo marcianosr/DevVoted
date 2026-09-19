@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-09-08T14:12:46Z
-updated_at: 2026-09-08T14:13:02Z
+updated_at: 2026-09-15T12:25:48Z
 parent: DVTD-72d9
 ---
 
@@ -119,3 +119,18 @@ since the hand is now the interesting state.
    1/2/3/5/8 from v1 with 8 unreachable until the window grows.
 
 Blocked-by nothing. The circular unlock is split out into its own bug.
+
+## 2026-09-15 update (DVTD-7g3w)
+
+The FLOOR semantics this bean argued for shipped, along with depth scaling and a
+currency change this bean did not ask for: the payout is COVERAGE units, not KB.
+`estimatePayoutUnits` = `k * (gatesCleared + 1) * 0.25` when `correct >= k`, a
+constant 5% of the gate's line per point. Both faults this bean named are fixed.
+
+What is still on the shelf here: the DEALT DECK. The bet is a free pick of 1..5
+every gate, no cards, nothing spent. The opportunity-cost decision that makes the
+1 interesting late is still unbuilt. Nothing in the shipped work blocks it - it
+would add a spent-card set to RunState on top of ADR-085.
+
+The v2/v3 ladder in this bean is also unbuilt; Planning Poker stays non-upgradable.
+(git rebase -i did get maxLevel 2, for information rather than power.)

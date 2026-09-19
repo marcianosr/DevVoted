@@ -34,7 +34,7 @@ export const TheBetIsPlaced: Story = {
 	render: () => asPrep(dispatching(atPrep(), { type: "estimate", count: 4 })),
 };
 
-export const PaysTheExactCall: Story = {
+export const PaysTheCallItMet: Story = {
 	render: () =>
 		asGateOutcome(
 			afterAnswers(

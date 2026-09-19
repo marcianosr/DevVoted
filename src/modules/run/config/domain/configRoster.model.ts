@@ -132,6 +132,18 @@ export const CONFIGS = {
 		rewardMultiplier: 1,
 		coverageAdd: 0.1,
 	},
+	reduce: {
+		id: "reduce",
+		label: ".reduce()",
+		slots: 2,
+		description:
+			"Answer correctly in a row and the streak step climbs: +0.25, +0.50, +0.75, +1.00. A miss restarts it.",
+		gives: "Each correct answer in a row pays +0.25 more than the last",
+		costs:
+			"Replaces the flat +0.1 streak step, and one miss restarts the climb",
+		rewardMultiplier: 1,
+		streakStepGrowth: 0.25,
+	},
 	indexedDb: {
 		id: "indexed-db",
 		label: "IndexedDB",
@@ -238,9 +250,10 @@ export const CONFIGS = {
 		id: "git-rebase",
 		label: "git rebase -i",
 		slots: 4,
+		maxLevel: 2,
 		description:
-			"Before a gate starts, shows its polls by category and lets you drag them into any order. The order locks the moment you answer.",
-		gives: "Reorder the gate's polls before it starts",
+			"Before a gate starts, lists its polls by category and lets you reorder them. v2 names which of them take more than one answer. The order locks the moment you answer.",
+		gives: "Reorder the gate's polls before it starts, with answer types at v2",
 		costs:
 			"The order locks when you answer — you commit before you read a question",
 		rewardMultiplier: 1,
@@ -323,12 +336,44 @@ export const CONFIGS = {
 		label: "Planning Poker",
 		slots: 1,
 		description:
-			"Before a gate, estimate how many of its 5 polls you will answer correctly. Get the number exactly right and it pays 32KB per poll you estimated.",
-		gives: "32KB per poll estimated, when the estimate is exact",
+			"Before a gate, bet on how many of its 5 polls you will answer correctly. Answer at least that many and it pays coverage — a bolder bet pays more, and so does a deeper gate.",
+		gives: "Coverage when you answer at least as many as you bet",
 		costs:
-			"Any other number pays nothing — and the estimate locks when you answer",
+			"Fall one short and it pays nothing — and the bet locks when you answer",
 		rewardMultiplier: 1,
-		storagePerEstimate: 32,
+		coveragePerEstimate: 0.25,
+	},
+	strict: {
+		id: "strict",
+		label: "strict: true",
+		slots: 1,
+		description:
+			"Toggle it before you answer. An exact answer pays half a unit more; anything less takes half a unit off the gate.",
+		gives: "+0.5 units on an exact answer",
+		costs: "0.5 units on a partial, a miss or a timeout",
+		rewardMultiplier: 1,
+		wagersAnswer: 0.5,
+	},
+	prettierrc: {
+		id: "prettierrc",
+		label: ".prettierrc",
+		slots: 2,
+		description:
+			"A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1, three quarters pays 2. The top-up is flat, so no multiplier amplifies it.",
+		gives: "Partial select-all answers top up to a whole unit",
+		rewardMultiplier: 1,
+		roundsPartialUnitsUp: true,
+	},
+	vendorLockIn: {
+		id: "vendor-lock-in",
+		label: "vendor lock-in",
+		slots: 4,
+		description:
+			"Names one config in your build as your vendor. Its weight stops counting against the space you rent, and you cannot sell or drop it for the rest of the run.",
+		gives: "One config stops counting against your build space",
+		costs: "That config cannot be sold or dropped for the rest of the run",
+		rewardMultiplier: 1,
+		vendorLocks: true,
 	},
 	dryRun: {
 		id: "dry-run",

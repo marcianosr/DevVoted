@@ -41,7 +41,7 @@ const objectiveRowFor = (name: string) =>
 	screen.getByText(name).closest("div") as HTMLElement;
 
 const CLEAR_LEAD = "to clear the gate";
-const OPTIONAL_LEAD = "also on the table, not required";
+const OPTIONAL_LEAD = "Extra objectives";
 
 const requiredBlock = () =>
 	screen.getByText(CLEAR_LEAD).closest("div") as HTMLElement;
@@ -290,13 +290,11 @@ describe("PrepScreen", () => {
 			).toBeTruthy();
 		});
 
-		it("marks the gate being prepped as the one still open", () => {
+		it("marks the gate being prepped by its swatch, not by a word", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(screen.getByText("this gate")).toBeInTheDocument();
-			expect(screen.getByLabelText(/^Lavender —/)).toHaveTextContent(
-				"this gate"
-			);
+			expect(screen.queryByText("this gate")).toBeNull();
+			expect(screen.getByLabelText(/^Lavender —/)).toBeInTheDocument();
 		});
 
 		it("no longer quotes a base poll score or a coverage standing", () => {

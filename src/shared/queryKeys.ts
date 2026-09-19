@@ -22,6 +22,9 @@ export const sessionRunQueryKeys = {
 	 * for as long as that poll is on screen. */
 	pollSplit: (pollId: number) =>
 		[...sessionRunQueryKeys.all, "split", pollId] as const,
+	/** A finished run's permalink: immutable, so it is keyed by id alone. */
+	recap: (runId: number) =>
+		[...sessionRunQueryKeys.all, "recap", runId] as const,
 	/** Keyed by date: "tomorrow" is a different day once the day rolls over. */
 	upcomingCategories: (date: string) =>
 		[...sessionRunQueryKeys.all, "upcoming", date] as const,

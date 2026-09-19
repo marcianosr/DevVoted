@@ -1,31 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { CHEAPEST_DRAFT_COST_KB } from "~/modules/run/config/domain/config.model";
-
 import {
 	atMinimumWidth,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
-	gateRewardMultiplier,
 	isPeelFatal,
-	cappedStorage,
-	nextSlotPriceKb,
-	planBillKb,
-	revealsPlanTier,
-	slotCashOutKb,
-	storageCapFor,
 	storageCreditRate,
+	buildSpaceFor,
+	highestAffordableSpace,
+	rungIndexForSpace,
+	upkeepForSpace,
+	BUILD_SPACE_RUNGS,
+	FREE_BUILD_SPACE_RUNG,
 	streakCapMultiplier,
 	streakMultiplier,
-	BASE_SLOTS,
-	FREE_PLAN,
+	streakUnitBonus,
+	STREAK_UNIT_STEP,
+	MAX_STREAK_UNIT_STEPS,
 	GATE_COUNT,
-	GATE_REWARD_KB,
-	GATE_REWARD_MULTIPLIER_CAP,
-	MAX_SLOTS,
-	SLOT_PRICES_KB,
-	STORAGE_PLANS,
-	TOP_PLAN,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
@@ -52,147 +44,44 @@ describe("the streak bonus", () => {
 	});
 });
 
-describe("the slot ladder (ADR-046)", () => {
-	it("gives every run four slots before it buys anything", () => {
-		expect(BASE_SLOTS).toBe(4);
+describe("the streak unit step", () => {
+	it("pays nothing on the window's opening answer, whatever the build bought", () => {
+		expect(streakUnitBonus(0)).toBe(0);
+		expect(streakUnitBonus(0, 0.25)).toBe(0);
 	});
 
-	it("sells one rung per slot up to the 24-slot ceiling", () => {
-		expect(SLOT_PRICES_KB).toHaveLength(MAX_SLOTS - BASE_SLOTS);
-		expect(MAX_SLOTS).toBe(24);
+	it("stays flat at every streak length without a growth", () => {
+		expect(streakUnitBonus(1)).toBe(STREAK_UNIT_STEP);
+		expect(streakUnitBonus(4)).toBe(STREAK_UNIT_STEP);
+		expect(streakUnitBonus(40)).toBe(STREAK_UNIT_STEP);
 	});
 
-	it("opens at the price of the cheapest config, so a slot costs what filling it costs", () => {
-		expect(nextSlotPriceKb(0)).toBe(32);
-		expect(nextSlotPriceKb(0)).toBe(CHEAPEST_DRAFT_COST_KB);
+	it("climbs by the growth on each further answer in a row", () => {
+		expect(streakUnitBonus(1, 0.25)).toBeCloseTo(0.25);
+		expect(streakUnitBonus(2, 0.25)).toBeCloseTo(0.5);
+		expect(streakUnitBonus(3, 0.25)).toBeCloseTo(0.75);
+		expect(streakUnitBonus(4, 0.25)).toBeCloseTo(1);
 	});
 
-	it("never gets cheaper as the ladder climbs", () => {
-		SLOT_PRICES_KB.forEach((price, rung) => {
-			if (rung === 0) return;
-			expect(price).toBeGreaterThan(SLOT_PRICES_KB[rung - 1]);
-		});
-	});
-
-	it("steps between 1.2x and 1.35x on every rung, so no rung is a wall", () => {
-		SLOT_PRICES_KB.forEach((price, rung) => {
-			if (rung === 0) return;
-			const step = price / SLOT_PRICES_KB[rung - 1];
-			expect(step).toBeGreaterThanOrEqual(1.2);
-			expect(step).toBeLessThanOrEqual(1.35);
-		});
-	});
-
-	it("averages 1.25x a rung end to end, so rounding never bends the ladder off its rate", () => {
-		const rungs = SLOT_PRICES_KB.length;
-		const averageStep = Math.pow(
-			SLOT_PRICES_KB[rungs - 1] / SLOT_PRICES_KB[0],
-			1 / (rungs - 1)
+	it("pays a clean window 2.5 units of step against the flat 0.4", () => {
+		const window = [0, 1, 2, 3, 4];
+		const flat = window.reduce(
+			(sum, before) => sum + streakUnitBonus(before),
+			0
+		);
+		const grown = window.reduce(
+			(sum, before) => sum + streakUnitBonus(before, 0.25),
+			0
 		);
 
-		expect(averageStep).toBeCloseTo(1.25, 2);
+		expect(flat).toBeCloseTo(0.4);
+		expect(grown).toBeCloseTo(2.5);
 	});
 
-	it("snaps every rung to the 8 KB grid, so the shop never quotes an arithmetic artefact", () => {
-		SLOT_PRICES_KB.forEach((price) => {
-			expect(price % 8).toBe(0);
-		});
-	});
-
-	it("prices every rung inside the biggest cap a run can rent, so no slot is out of reach", () => {
-		SLOT_PRICES_KB.forEach((price) => {
-			expect(price).toBeLessThanOrEqual(TOP_PLAN.capKb);
-		});
-	});
-
-	it("prices the whole ladder past three perfect climbs, so 24 stays endless-run territory", () => {
-		const perfectClimbKb = Array.from(
-			{ length: GATE_COUNT },
-			(_, gate) =>
-				GATE_REWARD_KB *
-				Math.min(gateRewardMultiplier(gate), GATE_REWARD_MULTIPLIER_CAP)
-		).reduce((sum, kb) => sum + kb, 0);
-		const wholeLadderKb = SLOT_PRICES_KB.reduce((sum, kb) => sum + kb, 0);
-
-		expect(wholeLadderKb).toBeGreaterThan(perfectClimbKb * 3);
-	});
-
-	it("sells nothing once the ceiling is reached", () => {
-		expect(nextSlotPriceKb(SLOT_PRICES_KB.length)).toBeUndefined();
-	});
-
-	describe("cashing a slot out", () => {
-		it("refunds what the most expensive slot still held cost", () => {
-			expect(slotCashOutKb(BASE_SLOTS + 1)).toBe(SLOT_PRICES_KB[0]);
-			expect(slotCashOutKb(BASE_SLOTS + 5)).toBe(SLOT_PRICES_KB[4]);
-		});
-
-		it("refuses to cash the free four", () => {
-			expect(slotCashOutKb(BASE_SLOTS)).toBeUndefined();
-		});
-
-		it("never pays out more than buying the same slot back costs", () => {
-			SLOT_PRICES_KB.forEach((_, rung) => {
-				const slots = BASE_SLOTS + rung + 1;
-				const refund = slotCashOutKb(slots) ?? 0;
-				const rebuy = nextSlotPriceKb(rung + 1);
-				if (rebuy === undefined) return;
-				expect(refund).toBeLessThan(rebuy);
-			});
-		});
-	});
-});
-
-describe("the storage plan (ADR-046)", () => {
-	it("opens on a free 256 KB cap", () => {
-		expect(FREE_PLAN.capKb).toBe(256);
-		expect(FREE_PLAN.perGateKb).toBe(0);
-	});
-
-	it("climbs to 10 MB, and only the free rung bills nothing", () => {
-		expect(TOP_PLAN.capKb).toBe(10240);
-		expect(STORAGE_PLANS.filter((plan) => plan.perGateKb === 0)).toHaveLength(
-			1
-		);
-	});
-
-	it("raises both the cap and the bill on every rung", () => {
-		STORAGE_PLANS.forEach((plan, tier) => {
-			if (tier === 0) return;
-			expect(plan.capKb).toBeGreaterThan(STORAGE_PLANS[tier - 1].capKb);
-			expect(plan.perGateKb).toBeGreaterThan(STORAGE_PLANS[tier - 1].perGateKb);
-		});
-	});
-
-	it("holds the free cap below the priciest slot, so the ladder's top needs a rented cap", () => {
-		expect(FREE_PLAN.capKb).toBeLessThan(
-			SLOT_PRICES_KB[SLOT_PRICES_KB.length - 1]
-		);
-	});
-
-	it("reads an out-of-range tier as the nearest one it sells", () => {
-		expect(storageCapFor(-1)).toBe(FREE_PLAN.capKb);
-		expect(storageCapFor(STORAGE_PLANS.length)).toBe(TOP_PLAN.capKb);
-		expect(planBillKb(-1)).toBe(0);
-	});
-
-	describe("the cap itself", () => {
-		it("leaves a balance under the cap alone", () => {
-			expect(cappedStorage(200, 0)).toBe(200);
-		});
-
-		it("burns everything above the cap", () => {
-			expect(cappedStorage(900, 0)).toBe(FREE_PLAN.capKb);
-		});
-
-		it("holds more once a bigger plan is bought", () => {
-			expect(cappedStorage(900, 1)).toBe(512);
-			expect(cappedStorage(900, 2)).toBe(900);
-		});
-
-		it("never reads a balance below zero", () => {
-			expect(cappedStorage(-40, 0)).toBe(0);
-		});
+	it("clamps a streak carried in from a failed gate to a clean window's climb", () => {
+		expect(MAX_STREAK_UNIT_STEPS).toBe(4);
+		expect(streakUnitBonus(5, 0.25)).toBeCloseTo(1);
+		expect(streakUnitBonus(9, 0.25)).toBeCloseTo(1);
 	});
 });
 
@@ -285,25 +174,56 @@ describe("isPeelFatal", () => {
 	});
 });
 
-describe("revealsPlanTier", () => {
-	it("opens the free rung and the first paid one to an account that has held nothing", () => {
-		expect(revealsPlanTier(0, 0)).toBe(true);
-		expect(revealsPlanTier(1, 0)).toBe(true);
-		expect(revealsPlanTier(2, 0)).toBe(false);
+describe("the build space ladder (ADR-074)", () => {
+	it("opens every run on four weight of free room", () => {
+		expect(buildSpaceFor(FREE_BUILD_SPACE_RUNG)).toBe(4);
+		expect(upkeepForSpace(4)).toBe(0);
 	});
 
-	it("opens a rung on the cap below it, not a kilobyte sooner", () => {
-		expect(revealsPlanTier(2, 511)).toBe(false);
-		expect(revealsPlanTier(2, 512)).toBe(true);
-		expect(revealsPlanTier(3, 1023)).toBe(false);
-		expect(revealsPlanTier(3, 1024)).toBe(true);
+	it("bills the rung the space sits on, not the weight in use", () => {
+		expect(upkeepForSpace(8)).toBe(32);
 	});
 
-	it("opens every rung below the peak, so the registry never has a hole in it", () => {
-		const revealed = STORAGE_PLANS.map((plan) =>
-			revealsPlanTier(plan.tier, 2048)
-		);
+	it("steps to the highest rung at or below the space rather than interpolating", () => {
+		expect(upkeepForSpace(9)).toBe(32);
+		expect(upkeepForSpace(11)).toBe(32);
+		expect(upkeepForSpace(12)).toBe(64);
+	});
 
-		expect(revealed).toEqual([true, true, true, true, true, false, false]);
+	it("reads a legacy save whose bought slot count is not a rung weight", () => {
+		expect(rungIndexForSpace(7)).toBe(1);
+		expect(upkeepForSpace(7)).toBe(16);
+	});
+
+	it("charges nothing below the first rung", () => {
+		expect(upkeepForSpace(0)).toBe(0);
+		expect(upkeepForSpace(3)).toBe(0);
+	});
+
+	it("holds the top rung for a space heavier than the ladder", () => {
+		expect(upkeepForSpace(64)).toBe(512);
+	});
+
+	it("clamps a rung index to the ladder at both ends", () => {
+		expect(buildSpaceFor(-3)).toBe(4);
+		expect(buildSpaceFor(99)).toBe(32);
+	});
+
+	it("doubles the bill at every billed rung, so room is never cheap twice", () => {
+		const billed = BUILD_SPACE_RUNGS.filter((rung) => rung.kb > 0);
+
+		billed.slice(1).forEach((rung, index) => {
+			expect(rung.kb).toBe(billed[index].kb * 2);
+		});
+	});
+
+	it("drops to the widest rung the balance covers when the bill outruns it", () => {
+		expect(highestAffordableSpace(512)).toBe(32);
+		expect(highestAffordableSpace(100)).toBe(12);
+		expect(highestAffordableSpace(0)).toBe(4);
+	});
+
+	it("never falls below the free rung, so a spent run still carries a build", () => {
+		expect(highestAffordableSpace(-50)).toBe(4);
 	});
 });

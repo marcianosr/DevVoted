@@ -120,9 +120,9 @@ before the first gate, the shop after every later one.
 
 **A new run walks through prep.** `/proto-run` holds a `startStep` of its own
 and shows prep between the build and the first five polls, which is what lets
-the New run footer read `Pallet gate prep`. The legacy `/run/*` routes are
-untouched: `runRoutes.viewmodel.ts` still sends gate 0 straight to the poll,
-because the configure screen is that gate's prep there and a spec pins it.
+the New run footer read `Pallet gate prep`. ADR-088 gave the routed flow the
+same beat: `configuring` allows `/run/new` and `/run/prep`, so gate 0 states
+its terms on the screen every later gate uses.
 
 **The outcomes presenter is nobody's screen.** `bandOutcomesFor` used to live in
 `prepScreen.viewmodel.ts` while `newRunScreen.viewmodel.ts` imported it across

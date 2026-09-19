@@ -15,11 +15,11 @@ import {
 } from "~/modules/run/run/domain/run.model";
 import { answer, closeGate } from "~/modules/run/run/domain/answer.model";
 import { commitEstimate } from "~/modules/run/run/domain/estimate.model";
+import { commitVendorLock } from "~/modules/run/build/domain/vendorLock.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
+import { armStrict } from "~/modules/run/run/domain/strict.model";
 import {
-	buySlot,
-	cashSlot,
-	setStoragePlan,
+	setBuildSpace,
 	draft,
 	drop,
 	extendOffers,
@@ -35,6 +35,7 @@ import {
 } from "~/modules/run/run/domain/shopAction.model";
 import {
 	minifyForPeel,
+	refuseGate,
 	resumeClimb,
 	strip,
 } from "~/modules/run/run/domain/strip.model";
@@ -53,8 +54,10 @@ export type RunAction =
 	| { readonly type: "close-gate" }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "peek-poll" }
+	| { readonly type: "arm-strict" }
 	| { readonly type: "buy-back-option"; readonly optionId: string }
-	| { readonly type: "strip"; readonly configId: string }
+	| { readonly type: "strip"; readonly configIds: readonly string[] }
+	| { readonly type: "refuse-gate" }
 	| { readonly type: "resume-climb" }
 	| { readonly type: "draft"; readonly configId: string }
 	| { readonly type: "upgrade"; readonly configId: string }
@@ -68,9 +71,8 @@ export type RunAction =
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
 	| { readonly type: "switch-arm"; readonly configId: string }
-	| { readonly type: "buy-slot" }
-	| { readonly type: "cash-slot" }
-	| { readonly type: "set-storage-plan"; readonly tier: number };
+	| { readonly type: "vendor-lock"; readonly configId: string }
+	| { readonly type: "set-build-space"; readonly rung: number };
 
 const installConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
@@ -112,10 +114,9 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"unlock-offer",
 	"extend-offers",
 	"plant-pin",
-	"buy-slot",
-	"cash-slot",
-	"set-storage-plan",
+	"set-build-space",
 	"sell",
+	"vendor-lock",
 ];
 
 export const isShopLocked = (state: RunState): boolean =>
@@ -139,12 +140,16 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 		return spendLint(state);
 	if (action.type === "peek-poll" && state.status === "answering")
 		return spendPeek(state);
+	if (action.type === "arm-strict" && state.status === "answering")
+		return armStrict(state);
 	if (action.type === "buy-back-option" && state.status === "answering")
 		return spendBuyBack(state, action.optionId);
 	if (action.type === "strip" && state.status === "awaiting-strip")
-		return strip(state, action.configId);
+		return strip(state, action.configIds);
 	if (action.type === "minify" && state.status === "awaiting-strip")
 		return minifyForPeel(state, action.configId);
+	if (action.type === "refuse-gate" && state.status === "awaiting-strip")
+		return refuseGate(state);
 	if (action.type === "resume-climb" && state.status === "awaiting-strip")
 		return resumeClimb(state);
 	if (action.type === "draft" && state.status === "rewarding")
@@ -163,14 +168,12 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 		return plantPin(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
-	if (action.type === "buy-slot" && state.status === "rewarding")
-		return buySlot(state);
-	if (action.type === "cash-slot" && state.status === "rewarding")
-		return cashSlot(state);
-	if (action.type === "set-storage-plan" && state.status === "rewarding")
-		return setStoragePlan(state, action.tier);
+	if (action.type === "set-build-space" && state.status === "rewarding")
+		return setBuildSpace(state, action.rung);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
+	if (action.type === "vendor-lock" && state.status === "rewarding")
+		return commitVendorLock(state, action.configId);
 	if (action.type === "minify" && state.status === "rewarding")
 		return minifyConfig(state, action.configId);
 	if (

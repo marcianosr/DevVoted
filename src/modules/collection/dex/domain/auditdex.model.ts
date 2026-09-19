@@ -29,6 +29,11 @@ export type AuditdexTier = "faced" | "unlocked" | "unseen";
 
 export type AuditdexEntry = {
 	readonly id: AuditId;
+	/** The HTTP status the rule is named for, kept apart from the label so a
+	 * row can seat it in its own cell. */
+	readonly code: number;
+	/** The rule's name without its code, for the same reason. */
+	readonly title: string;
 	readonly name: string;
 	readonly rule: string;
 	readonly gates: readonly number[];
@@ -50,6 +55,8 @@ const factsOf = (id: AuditId): AuditFacts => {
 	const audit = auditAt(id, gates[0]);
 	return {
 		id,
+		code: audit.code,
+		title: audit.name,
 		name: auditLabel(audit),
 		rule: audit.dexRule ?? audit.description,
 		gates,

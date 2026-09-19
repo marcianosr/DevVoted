@@ -224,8 +224,11 @@ Full reasoning sits with the decision it explains.
 - **The full pipeline report on the gate payoff**, ADR-026: per-config statuses,
   roles, checks. The storage breakdown stayed; the rest was a second screen's
   worth of reading.
-- **A flat per-hit payout for Planning Poker**, ADR-063: it makes the optimal
+- **A flat per-hit payout for Planning Poker**, ADR-085: it makes the optimal
   play "predict your own floor".
+- **An exact-match payout for Planning Poker**, ADR-085 (shipped by 063, reversed):
+  a bullseye rule makes a low card a prediction that you will bomb, so caution and
+  a low card become opposite gestures and no cautious bet exists.
 - **Coverage-earner, dedupe-by-effect, can-trigger-today and rarity weighting on
   the starting deal**, ADR-062: the draw stays uniform; the guarantees constrain
   shape, never the probability of power.

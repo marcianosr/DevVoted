@@ -37,11 +37,11 @@ community page, or start the next gate when it's ready.
    the start button locks behind the countdown (`useNextPollsCountdown`)
    until local midnight flips it open.
 3. **The community board's "back to your run" returns to prep while
-   rewarding** — bare `/run` would land the detour on the reward summary.
+   rewarding** — bare `/run` would land the detour on the gate's payout.
 4. **Proto-run mirrors the routed flow**: summary → review → shop → prep,
    community as a side trip off prep. The old answering-phase prep beat is
    gone — prep lives in the reward phase now; gate 0 is unchanged (Configure
-   already shows the stake, the gate-0 exception of runRoutes stands).
+   already shows the stake; ADR-088 later gave gate 0 the prep route too).
 5. **The width-demand door (ADR-031) moves with `finish-reward`** and keeps
    guarding it in the reducer, but the *shop exit* enforces it in the UI —
    an under-width build never reaches prep in the first place.

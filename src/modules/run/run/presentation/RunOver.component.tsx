@@ -1,8 +1,6 @@
-import { Screen } from "~/ui/old-theme/Screen.ui";
-import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
+import { useNavigate } from "@tanstack/react-router";
 
-import { RunSummary } from "~/modules/run/run/presentation/RunSummary.ui";
-import { unlockLinesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
+import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -10,32 +8,19 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 export const RunOver = () => {
 	const { view } = useTodaysRun();
 	const { start } = useRunActions();
+	const navigate = useNavigate();
 
 	if (!view) return null;
 
 	return (
-		<Screen
-			width="narrow"
-			rightAction={{
-				label: "Start a new run →",
-				onClick: () => start.mutate(),
-				disabled: start.isPending,
+		<RunOverView
+			view={view}
+			archiveAfterKb={view.archiveAfterKb ?? undefined}
+			onNewRun={() => {
+				if (start.isPending) return;
+				start.mutate();
 			}}
-		>
-			<RunSummary
-				won={view.status === "won"}
-				gatesCleared={view.gatesCleared}
-				victoryGate={view.victoryGate}
-				coverage={view.coverage}
-				storage={view.storage}
-				configs={view.configs}
-				unlocked={unlockLinesFor(view.unlockedThisRun)}
-				answered={view.allAnswered}
-				swatchGates={view.swatchGates}
-			/>
-			{start.data?.success === false && (
-				<Paragraph>{start.data.error}</Paragraph>
-			)}
-		</Screen>
+			onCommunity={() => navigate({ to: "/run/community" })}
+		/>
 	);
 };

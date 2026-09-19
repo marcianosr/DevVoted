@@ -104,6 +104,14 @@ describe("GateOutcomeView", () => {
 		expect(onRemove).toHaveBeenCalled();
 	});
 
+	it("ends the run from the refusal arm of a held gate", async () => {
+		const onRefuse = vi.fn();
+		renderAt("held", { onRemove: () => {}, onRefuse });
+
+		await userEvent.click(screen.getByRole("button", { name: "End the run" }));
+		expect(onRefuse).toHaveBeenCalled();
+	});
+
 	it("ends the run on a fatal miss and wears the danger colour", () => {
 		const { container } = renderAt("fatal");
 
@@ -198,6 +206,33 @@ describe("GateOutcomeView", () => {
 		expect(
 			screen.queryByLabelText(/^20% of 20% needed/)
 		).not.toBeInTheDocument();
+	});
+
+	it("names the slots the next gate scores out of, so the re-base is no surprise", () => {
+		render(
+			<GateOutcomeView
+				view={toRunView(clearGate(started([])))}
+				verdict="cleared"
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(
+			screen.getByText("Boulder scores out of 10 slots.")
+		).toBeInTheDocument();
+	});
+
+	it("points at no gate beyond the summit", () => {
+		renderAt("won");
+
+		expect(screen.queryByText(/scores out of/)).not.toBeInTheDocument();
+	});
+
+	it("keeps quiet about the next gate on a gate that did not clear", () => {
+		renderAt("held", { onRemove: () => {} });
+
+		expect(screen.queryByText(/scores out of/)).not.toBeInTheDocument();
 	});
 
 	it("opens the answer review from the panel", async () => {

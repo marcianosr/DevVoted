@@ -40,6 +40,20 @@ describe("CoverageBar", () => {
 		expect(zonesOf(container).map(basisOf)).toEqual(["55", "10", "15", "20"]);
 	});
 
+	/**
+	 * DVTD-znsu. The bar settles its reading during render, and NaN never equals
+	 * itself, so a non-finite `held` used to re-render until React gave up with
+	 * "Too many re-renders" — a blank screen, not a wrong number.
+	 */
+	it.each([NaN, Infinity, -Infinity])(
+		"reads a non-finite %s as nothing rather than looping",
+		(held) => {
+			const { container } = render(<CoverageBar {...PALLET} held={held} />);
+
+			expect(heldOf(container)).toBe("0");
+		}
+	);
+
 	it("paints each rung the colour its band answers to", () => {
 		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
 

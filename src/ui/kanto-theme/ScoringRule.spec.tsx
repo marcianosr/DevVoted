@@ -6,11 +6,16 @@ import { SCORING } from "~/test/kantoPoll.factory";
 import { ScoringRule } from "./ScoringRule.ui";
 
 const [QUARTER, HALF, THREE_QUARTERS] = SCORING.partialRungs;
+const MISS = 0;
 
-const figures = () =>
-	screen
-		.getAllByText(/^\d+(\.\d+)?$/)
-		.map((badge) => Number(badge.textContent));
+const badges = () => screen.getAllByText(/^\d+(\.\d+)?$/);
+
+const figures = () => badges().map((badge) => Number(badge.textContent));
+
+const distinct = () => [...new Set(figures())].sort((a, b) => a - b);
+
+const badgeFor = (figure: string) =>
+	badges().filter((badge) => badge.textContent === figure);
 
 describe("ScoringRule", () => {
 	it("prices each answer type at the credit the engine pays it", () => {
@@ -28,10 +33,23 @@ describe("ScoringRule", () => {
 		}
 	});
 
-	it("shows the quarter rung, the cheapest a part can pay", () => {
+	it("opens both ladders on a miss, so nothing is worth guessing at", () => {
 		render(<ScoringRule />);
 
-		expect(Math.min(...figures())).toBe(QUARTER * SCORING.multiple);
+		expect(distinct()[0]).toBe(MISS);
+		expect(badgeFor(String(MISS))).toHaveLength(2);
+	});
+
+	it("draws every rung an answer can land on and none it cannot", () => {
+		render(<ScoringRule />);
+
+		expect(distinct()).toEqual([
+			MISS,
+			QUARTER * SCORING.multiple,
+			HALF * SCORING.multiple,
+			THREE_QUARTERS * SCORING.multiple,
+			SCORING.multiple,
+		]);
 	});
 
 	it("never offers a part the full credit, which only an exact set earns", () => {
@@ -40,17 +58,37 @@ describe("ScoringRule", () => {
 		expect(THREE_QUARTERS * SCORING.multiple).toBeLessThan(SCORING.multiple);
 	});
 
-	it("says a cancelled-out answer is a miss rather than a part", () => {
+	it("greens what an answer pays in full, reddens what a miss pays", () => {
 		render(<ScoringRule />);
 
-		expect(screen.getByText(/is a miss, not a part/)).toBeInTheDocument();
+		const [single] = badgeFor(String(SCORING.single));
+		const [exact] = badgeFor(String(SCORING.multiple));
+		const [miss] = badgeFor(String(MISS));
+
+		expect(single).toHaveAttribute("data-screen-theme", "viridian");
+		expect(exact).toHaveAttribute("data-screen-theme", "viridian");
+		expect(miss).toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 
-	it("says a part moves coverage but not the correct tally the swatch reads", () => {
+	it("ambers a part, because it is worth something short of the answer", () => {
+		render(<ScoringRule />);
+
+		const [part] = badgeFor(String(QUARTER * SCORING.multiple));
+
+		expect(part).toHaveAttribute("data-screen-theme", "saffron");
+	});
+
+	it("says these figures come before the build, not after it", () => {
 		render(<ScoringRule />);
 
 		expect(
-			screen.getByText(/never counts toward the correct tally/)
+			screen.getByText("before the build multiplies it")
 		).toBeInTheDocument();
+	});
+
+	it("nests nothing but spans, so it can sit inside a tooltip", () => {
+		const { container } = render(<ScoringRule />);
+
+		expect(container.querySelectorAll("div, p")).toHaveLength(0);
 	});
 });

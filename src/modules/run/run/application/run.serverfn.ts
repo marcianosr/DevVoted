@@ -10,6 +10,7 @@ import {
 	abandonRunService,
 	dispatchRunActionService,
 	getOwnedSwatchesService,
+	getRunRecapService,
 	getTodaysRunService,
 	startRunService,
 } from "~/modules/run/run/application/run.service";
@@ -47,6 +48,18 @@ export const dispatchRunAction = createServerFn({ method: "POST" })
 				date: getTodayDateString(),
 				action: data.action,
 			})
+		)
+	);
+
+/**
+ * A finished run's summary, by id. The id is client-supplied — the only run
+ * URL that is — so the service matches it against the session before reading.
+ */
+export const getRunRecap = createServerFn({ method: "GET" })
+	.validator(z.object({ runId: z.number().int().positive() }).strict())
+	.handler(async ({ data }) =>
+		withAuthenticatedUser((userId) =>
+			getRunRecapService({ userId, runId: data.runId })
 		)
 	);
 

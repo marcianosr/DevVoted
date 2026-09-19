@@ -174,22 +174,22 @@ describe("the collector's row (DVTD-2k9m)", () => {
 describe("the estimator's row (DVTD-68jr)", () => {
 	const PLANNING_POKER = CONFIGS.planningPoker;
 
-	it("passes the estimator that called the window exactly", () => {
+	it("passes the estimator whose window met its call, in coverage", () => {
 		const [row] = gateRewardRows({
 			answered,
 			configs: [PLANNING_POKER],
-			estimateThisGateKb: 64,
+			estimateThisGateUnits: 1.25,
 		});
 		expect(row.status).toBe("passed");
-		expect(row.kind).toBe("storage");
-		expect(row.value).toEqual({ unit: "kb", amount: 64 });
+		expect(row.kind).toBe("coverage");
+		expect(row.value).toEqual({ unit: "percent", amount: 1.25 });
 	});
 
-	it("fails the estimator that called it wrong, which nothing else on the roster can do", () => {
+	it("fails the estimator whose window fell short, which nothing else on the roster can do", () => {
 		const [row] = gateRewardRows({
 			answered,
 			configs: [PLANNING_POKER],
-			estimateThisGateKb: 0,
+			estimateThisGateUnits: 0,
 		});
 		expect(row.status).toBe("failed");
 		expect(row.value).toEqual(nothing);
@@ -205,7 +205,7 @@ describe("the estimator's row (DVTD-68jr)", () => {
 		const rows = gateRewardRows({
 			answered,
 			configs: [PLANNING_POKER],
-			estimateThisGateKb: 0,
+			estimateThisGateUnits: 0,
 		});
 		expect(gateStepsSummary(rows)).toEqual({
 			passed: 0,

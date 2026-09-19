@@ -2,15 +2,20 @@
 
 ## Status
 
-Accepted 2026-09-12 (Marciano, DVTD-nd6r). Supersedes
-[ADR-046](046-slots-are-bought-storage-is-capped-again.md) in all three
-decisions and [ADR-049](049-the-archive-opens-a-run-wider.md) entirely. Takes
-over the peel from [ADR-037](037-a-missed-gate-peels-a-config.md) Decision 1 and
-gives it a different trigger.
+Accepted 2026-09-12 (Marciano, DVTD-nd6r). Supersedes ADR-046 (retired) in all
+three decisions and ADR-049 (retired) entirely.
 
-**Nothing is built.** `SLOT_PRICES_KB` and `STORAGE_PLANS` in `rules.model.ts`
-still run the old rules, and the shop, the gate and `run.validation.ts` all read
-them. Both ADRs stay in place until that code goes.
+**Built 2026-09-14 by [ADR-082](082-build-space-is-rented-by-the-gate.md)**,
+which amends three of the four decisions below. Read 082 for what runs:
+
+- Decision 1's ladder is live, but the bill is read off the rung the player
+  holds, not the weight in use.
+- Decision 2 is reversed. Capacity is hard again, enforced at the shop door.
+- Decision 3's subscription is gone. The rung ladder *is* the capacity decision.
+- Decision 4's peel is gone. An unpayable bill drops the rung instead, and the
+  door takes it from there. The peel survives only as
+  [ADR-037](037-a-missed-gate-peels-a-config.md)'s miss penalty, narrowed to
+  SHAKY by [ADR-076](076-the-closing-band-decides-what-it-costs.md).
 
 ## Context
 

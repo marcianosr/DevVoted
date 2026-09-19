@@ -88,6 +88,14 @@ describe("ConfigInfo", () => {
 		);
 	});
 
+	it("counts one slot as a slot, not as slots", () => {
+		render(<ConfigInfo {...props} slots={1} />);
+
+		expect(screen.getByText("weight").parentElement?.textContent).toBe(
+			"weight1slot"
+		);
+	});
+
 	it("prices what selling it back would return", () => {
 		render(<ConfigInfo {...props} />);
 

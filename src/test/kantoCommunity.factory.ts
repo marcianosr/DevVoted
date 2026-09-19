@@ -1,6 +1,5 @@
 import type {
 	CommunityScreenProps,
-	ConversationEntry,
 	Standout,
 	TurnoutBand,
 } from "~/ui/kanto-theme/CommunityScreen.ui";
@@ -18,8 +17,6 @@ export const COMMUNITY_CLIMB_TITLE = "Lavender cleared";
 
 const CLEARED_GATE = 4;
 const NEXT_GATE = 5;
-const MARSH_GATE = 7;
-const SOUL_GATE = 6;
 
 const BORDER = {
 	js: "/borders/border-js-saffron.svg",
@@ -266,46 +263,6 @@ const polls = (): PollResultProps[] => [
 	},
 ];
 
-const conversation = (): ConversationEntry[] => [
-	{
-		climber: sabrina,
-		at: "12:41",
-		said: "Cleared it on a four of five. Deepest run today.",
-		gate: { swatch: gateSwatchAt(MARSH_GATE), label: "Marsh" },
-		badge: "+256 KB",
-		badgeColor: "viridian",
-	},
-	{
-		climber: blaine,
-		at: "12:38",
-		said: "Ran out of configs. The run is closed.",
-		gate: { swatch: gateSwatchAt(SOUL_GATE), label: "Soul" },
-		badge: "Closed",
-		badgeColor: "cinnabar",
-	},
-	{
-		climber: koga,
-		at: "12:20",
-		said: "Took poll 2 where 78% of the room did not.",
-		badge: "22%",
-		badgeColor: "cerulean",
-	},
-	{
-		climber: surge,
-		at: "11:55",
-		said: "Unlocked Volkswagen CI.",
-		badge: "New",
-		badgeColor: "saffron",
-	},
-	{
-		climber: erika,
-		at: "10:58",
-		said: "Cleared it carrying only three configs.",
-		gate: { swatch: gateSwatchAt(SOUL_GATE), label: "Soul" },
-		badge: "Light",
-	},
-];
-
 export const kantoCommunity = (): CommunityScreenProps => ({
 	header: {
 		swatch: gateSwatchAt(CLEARED_GATE),
@@ -322,7 +279,6 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },
 	},
 	climb: {
-		swatch: gateSwatchAt(CLEARED_GATE),
 		title: COMMUNITY_CLIMB_TITLE,
 		standing: "Gate 4 of 12 · 310 KB · four configs",
 		badge: "4 of 5",
@@ -342,11 +298,6 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		title: "The five polls",
 		summary: "Percentage is how much of the room got it right",
 		polls: polls(),
-	},
-	conversation: {
-		title: "Conversation",
-		summary: "Since you left",
-		entries: conversation(),
 	},
 });
 
@@ -376,6 +327,5 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 	return {
 		...base,
 		standouts: { ...base.standouts, summary: undefined, awards: [] },
-		conversation: { ...base.conversation, entries: [] },
 	};
 };

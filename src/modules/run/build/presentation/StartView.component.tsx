@@ -5,7 +5,6 @@ import {
 	NEW_RUN_BUILD_NOTE,
 	NEW_RUN_REGISTRY_NOTE,
 	newRunBuildFor,
-	newRunDealsFor,
 	newRunFooterFor,
 	newRunHeaderFor,
 	newRunRegistryFor,
@@ -18,16 +17,12 @@ import { NewRunScreen } from "~/ui/kanto-theme/NewRunScreen.ui";
 export type StartViewProps = {
 	view: RunView;
 	onToggle: (configId: string) => void;
-	onBuySlot: () => void;
-	onRefundSlot: () => void;
 	onStart: () => void;
 };
 
 export const StartView = ({
 	view,
 	onToggle,
-	onBuySlot,
-	onRefundSlot,
 	onStart,
 }: StartViewProps) => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
@@ -51,18 +46,11 @@ export const StartView = ({
 
 	return (
 		<NewRunScreen
-			header={newRunHeaderFor(view.startSlotDeals.archiveKb)}
-			build={newRunBuildFor(
-				view.configs,
-				view.slots,
-				onToggle,
-				newRunDealsFor(
-					{ capacity: view.slots, ...view.startSlotDeals },
-					onBuySlot,
-					onRefundSlot
-				),
-				{ openInfo, onToggleInfo: toggleInfo }
-			)}
+			header={newRunHeaderFor(view.storage)}
+			build={newRunBuildFor(view.configs, view.slots, onToggle, {
+				openInfo,
+				onToggleInfo: toggleInfo,
+			})}
 			registry={newRunRegistryFor(offers, {
 				openInfo,
 				onToggleInfo: toggleInfo,

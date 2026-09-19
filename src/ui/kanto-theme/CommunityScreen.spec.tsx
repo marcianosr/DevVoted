@@ -16,6 +16,14 @@ import { CommunityScreen } from "./CommunityScreen.ui";
 
 const props = kantoCommunity();
 
+const STANDOUT_TITLES = [
+	"Most active",
+	"Most knowledgeable",
+	"Fastest",
+	"Biggest bank",
+];
+const CLIMBER_NAMED = /\w/;
+
 const sectionOf = (title: string): HTMLElement => {
 	const section = screen
 		.getByRole("heading", { name: title })
@@ -70,12 +78,12 @@ describe("CommunityScreen", () => {
 		expect(screen.queryByText(/climbers reviewing ·/)).toBeNull();
 	});
 
-	it("prepends the cleared gate's swatch to its own name", () => {
-		const { container } = render(<CommunityScreen {...props} />);
-		const chip = screen.getByText(COMMUNITY_CLIMB_TITLE).closest("span");
+	it("heads the climb panel with the gate the viewer just cleared", () => {
+		render(<CommunityScreen {...props} />);
 
-		expect(chip?.querySelector("[data-swatch-theme='lavender']")).toBeTruthy();
-		expect(container).toBeTruthy();
+		expect(
+			screen.getByRole("heading", { name: COMMUNITY_CLIMB_TITLE })
+		).toBeInTheDocument();
 	});
 
 	it("counts the room it cannot draw rather than drawing a thousand chips", () => {
@@ -92,13 +100,11 @@ describe("CommunityScreen", () => {
 		expect(screen.getByText(COMMUNITY_MAP_PLACEHOLDER)).toBeInTheDocument();
 	});
 
-	it("awards four standouts, none of them claiming a share of climbers ever", () => {
+	it("lines one standout up per climber, never claiming a share of climbers ever", () => {
 		render(<CommunityScreen {...props} />);
 		const standouts = sectionOf("Standing out");
 
-		expect(
-			within(standouts).getAllByRole("heading", { level: 3 })
-		).toHaveLength(4);
+		expect(within(standouts).getAllByTitle(CLIMBER_NAMED)).toHaveLength(4);
 		expect(screen.queryByText(/of climbers, ever/)).toBeNull();
 	});
 
@@ -106,15 +112,8 @@ describe("CommunityScreen", () => {
 		render(<CommunityScreen {...props} />);
 		const standouts = sectionOf("Standing out");
 
-		for (const award of [
-			"Most active",
-			"Most knowledgeable",
-			"Fastest",
-			"Biggest bank",
-		]) {
-			expect(
-				within(standouts).getByRole("heading", { name: award })
-			).toBeInTheDocument();
+		for (const award of STANDOUT_TITLES) {
+			expect(within(standouts).getByText(award)).toBeInTheDocument();
 		}
 	});
 
@@ -139,14 +138,6 @@ describe("CommunityScreen", () => {
 		);
 
 		expect(open).toHaveLength(1);
-	});
-
-	it("prepends a swatch to the gate a conversation line names", () => {
-		render(<CommunityScreen {...props} />);
-		const talk = sectionOf("Conversation");
-
-		expect(within(talk).getAllByText("Marsh")).not.toHaveLength(0);
-		expect(within(talk).getAllByText("Soul")).not.toHaveLength(0);
 	});
 });
 
@@ -178,19 +169,11 @@ describe("CommunityScreen, before the day's polls", () => {
 });
 
 describe("CommunityScreen, a first climb", () => {
-	it("draws no standout cards when nobody has been ranked", () => {
+	it("draws no standout rows when nobody has been ranked", () => {
 		render(<CommunityScreen {...kantoCommunityFirstClimb()} />);
 
 		expect(
-			within(sectionOf("Standing out")).queryAllByRole("heading", { level: 3 })
-		).toHaveLength(0);
-	});
-
-	it("draws an empty conversation rather than inventing one", () => {
-		render(<CommunityScreen {...kantoCommunityFirstClimb()} />);
-
-		expect(
-			within(sectionOf("Conversation")).queryAllByRole("heading", { level: 3 })
+			within(sectionOf("Standing out")).queryAllByTitle(CLIMBER_NAMED)
 		).toHaveLength(0);
 	});
 });

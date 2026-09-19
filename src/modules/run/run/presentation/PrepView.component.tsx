@@ -19,10 +19,13 @@ export type PrepViewProps = {
 	backLabel?: string;
 	/** Why the gate cannot start, when it cannot: the wait for tomorrow's polls. */
 	startRefusal?: string;
+	/** Planning Poker. Absent leaves the cards unpressable rather than hidden. */
+	onEstimate?: (count: number) => void;
+	/** git rebase -i. Absent leaves the rows in place with no move presses. */
+	onRebase?: (from: number, to: number) => void;
 };
 
-export const planTierOf = (view: RunView): number =>
-	view.storagePlan.options.find((option) => option.held)?.tier ?? 0;
+export const buildSpaceOf = (view: RunView): number => view.buildSpace.space;
 
 const windowOf = (view: RunView): PrepWindow => ({
 	answerTypes: view.answerTypesThisGate ?? { single: 0, multiple: 0 },
@@ -57,14 +60,14 @@ const asidesFor = (
 ];
 
 export const PrepView = (props: PrepViewProps) => {
-	const { view, onStart, startRefusal } = props;
+	const { view, onStart, startRefusal, onEstimate, onRebase } = props;
 	const { gateStake } = view;
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
 		answeredPolls: view.allAnswered,
 		configs: view.configs,
 		balanceKb: view.storage,
-		planTier: planTierOf(view),
+		buildSpace: buildSpaceOf(view),
 		window: windowOf(view),
 		answeredThisGate: view.answeredThisGate,
 		bar: { ...gateStake.coverageLadder, held: gateStake.coverageHeld },
@@ -76,11 +79,25 @@ export const PrepView = (props: PrepViewProps) => {
 		peelKb: gateStake.peelSlotsOnFailure * PEEL_KB_PER_SLOT,
 		payout: (correct) =>
 			gateClearPayout(view.configs, correct, gateStake.gateNumber),
+		estimate: view.estimate,
+		estimatedCorrect: view.estimatedCorrect,
+		rebaseSlots: view.rebaseSlots,
+		swatchGates: view.swatchGates,
 	});
 
 	return (
 		<PrepScreen
 			{...screen}
+			estimate={
+				screen.estimate === undefined
+					? undefined
+					: { ...screen.estimate, onPick: onEstimate }
+			}
+			rebase={
+				screen.rebase === undefined
+					? undefined
+					: { ...screen.rebase, onMove: onRebase }
+			}
 			footer={{
 				...screen.footer,
 				action: {

@@ -59,25 +59,10 @@ describe("NewRunScreen", () => {
 		).toBeTruthy();
 	});
 
-	it("leaves the room for sale under the readout it would widen", () => {
-		render(<NewRunScreen {...props} />);
-
-		const offer = screen.getByRole("button", {
-			name: /^carry 8 free weight/,
-		});
-
-		expect(
-			screen.getByText("Build").compareDocumentPosition(offer) &
-				Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
-	});
-
 	it("opens on a build that weighs nothing and bills nothing", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(
-			screen.getByText("0 weight · 0 covered · 0 billable")
-		).toBeInTheDocument();
+		expect(screen.getByText("0 of 4 weight · 4 free")).toBeInTheDocument();
 	});
 
 	it("counts the room it has left without re-counting the chips beside it", () => {
@@ -91,21 +76,6 @@ describe("NewRunScreen", () => {
 
 		expect(screen.getByText(NEW_RUN_EMPTY_LABEL)).toBeInTheDocument();
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
-	});
-
-	it("sells free weight rather than a numbered slot", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(
-			screen.getByRole("button", { name: /^carry 8 free weight/ })
-		).toBeInTheDocument();
-		expect(screen.queryByRole("button", { name: /^open slot/ })).toBeNull();
-	});
-
-	it("prices the offer in the purse the header names, there being two", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(screen.getByText("256 KB archive")).toBeInTheDocument();
 	});
 
 	it("reads the archive as the purse the header holds", () => {
@@ -156,28 +126,16 @@ describe("NewRunScreen", () => {
 	it("opens the run on one pick, in the build and in the registry alike", () => {
 		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
-		expect(
-			screen.getByText("1 weight · 1 covered · 0 billable")
-		).toBeInTheDocument();
+		expect(screen.getByText("1 of 4 weight · 3 free")).toBeInTheDocument();
 		expect(offerOf(".js")).toHaveClass("opacity-60");
 		expect(screen.queryByText(NEW_RUN_EMPTY_LABEL)).not.toBeInTheDocument();
 	});
 
-	it("opens the free line higher once the archive has bought one", () => {
-		render(<NewRunScreen {...kantoNewRunAt(["js"], 1, 1024)} />);
+	it("sells no room before the run starts — every run opens on the free four", () => {
+		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
-		expect(
-			screen.getByRole("button", { name: /^carry 12 free weight/ })
-		).toBeInTheDocument();
-	});
-
-	it("refuses an offer the archive cannot pay for, with the shortfall", () => {
-		render(<NewRunScreen {...kantoNewRunAt([], 0, 32)} />);
-
-		const stub = screen.getByRole("button", { name: /^carry 8 free weight/ });
-
-		expect(stub).toBeDisabled();
-		expect(screen.getByText("224 KB short")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /free weight/ })).toBeNull();
+		expect(screen.queryByRole("button", { name: /buy slot/ })).toBeNull();
 	});
 });
 
@@ -235,7 +193,7 @@ describe("the deal the registry lists", () => {
 
 		expect(
 			screen.getByRole("button", { name: "Install .js" })
-		).toBeInTheDocument();
+		).toHaveTextContent("Install");
 	});
 });
 

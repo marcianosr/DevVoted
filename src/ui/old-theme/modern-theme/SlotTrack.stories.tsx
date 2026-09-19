@@ -11,7 +11,11 @@ import {
 	type SlotTrackConfig,
 	type SlotTrackProps,
 } from "./SlotTrack.ui";
-import { BASE_SLOTS, MAX_SLOTS } from "~/modules/run/run/domain/rules.model";
+import {
+	BASE_SLOTS,
+	TOP_BUILD_SPACE_RUNG,
+	buildSpaceFor,
+} from "~/modules/run/run/domain/rules.model";
 
 type ConfigKey = keyof typeof CONFIGS;
 
@@ -50,7 +54,7 @@ export const PastTheFreeFour: Story = {
 	args: {
 		configs: bars("coldStart", "js", "ts"),
 		slots: 8,
-		maxSlots: MAX_SLOTS,
+		maxSlots: buildSpaceFor(TOP_BUILD_SPACE_RUNG),
 		fits: largestSizeFitting(4),
 	},
 };
@@ -59,7 +63,7 @@ export const RoomFreeAndRoomUnrented: Story = {
 	args: {
 		configs: bars("js", "jsx"),
 		slots: BASE_SLOTS,
-		maxSlots: MAX_SLOTS,
+		maxSlots: buildSpaceFor(TOP_BUILD_SPACE_RUNG),
 		fits: largestSizeFitting(2),
 	},
 };
@@ -92,7 +96,7 @@ export const EightBits: Story = {
 export const OnTheTopRung: Story = {
 	args: {
 		configs: bars("freemium", "wtfpl", "coldStart"),
-		slots: MAX_SLOTS,
+		slots: buildSpaceFor(TOP_BUILD_SPACE_RUNG),
 		fits: largestSizeFitting(6),
 	},
 };
@@ -107,7 +111,7 @@ export const OverCapacity: Story = {
 const SELLING = {
 	configs: bars("js", "jsx"),
 	slots: 5,
-	maxSlots: MAX_SLOTS,
+	maxSlots: buildSpaceFor(TOP_BUILD_SPACE_RUNG),
 	fits: largestSizeFitting(3),
 	buy: { costKb: 32, makes: 6, onUse: () => {} },
 	cash: { costKb: 16, makes: 4, onUse: () => {} },

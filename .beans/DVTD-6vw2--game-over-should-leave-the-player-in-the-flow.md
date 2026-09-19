@@ -1,11 +1,11 @@
 ---
 # DVTD-6vw2
 title: Game over should leave the player in the flow
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-08-24T12:48:34Z
-updated_at: 2026-09-12T12:57:01Z
+updated_at: 2026-09-16T18:58:03Z
 parent: DVTD-kulw
 ---
 
@@ -74,14 +74,18 @@ Not mutually exclusive; the decision is which one is the primary action.
 - Whatever is offered must be true when polls are exhausted. That state is the common
   case for a second run in one day, not an edge case.
 
-## Todo
+## Todo (historical — the live list is **Still open** at the foot)
 
-- [x] Pick the primary next action: the community page
-- [ ] Build the missing modern-theme run-over screen as part of the redesign
-- [ ] Decide whether a won run exits the same way a dead one does
-- [ ] Define the exhausted-window variant so no player ever lands on a raw error string
-- [ ] Decide whether `routesForStatus` should allow more than one route for a finished run
-- [ ] Amend ADR-026 Decision 3 to cover run end, or write the sibling decision
+- [x] Pick the primary next action: ~~the community page~~ **start a new run**, community beside it (see Reversal below)
+- [x] Build the missing run-over screen as part of the redesign (kanto, not modern-theme)
+- [x] Decide whether a won run exits the same way a dead one does: yes, one screen, won copy
+- [x] ~~Decide whether `routesForStatus` should allow more than one route~~ — the
+      shipped design needs no second route: `/run/community` is deliberately
+      outside the policed set (`runRoutes.viewmodel.ts:16`), so the aside works
+      without one. Only owes a sentence; folded into the ADR item below.
+
+The exhausted-window variant and the ADR-026 amendment moved to **Still open**
+rather than being repeated here.
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 
@@ -96,4 +100,52 @@ It also has a new sibling state. OK and SHAKY are not clears and not deaths:
 the gate stays shut and runs again tomorrow on five fresh polls. That outcome
 has no screen at all today, and it is going to be the most common one.
 
-- [ ] Design the repeat outcome as well as the death: same gate tomorrow is not game over and must not read like it
+- [x] ~~Design the repeat outcome as well as the death~~ — **obsolete**. ADR-071
+      was deleted and ADR-076 supersedes it: OK now *clears, thin*, and SHAKY
+      holds the gate and owes a peel, both drawn on the gate outcome screen
+      (`gateOutcome.viewmodel.ts:297`). The repeat is not game over and correctly
+      does not live here. ADR-076's own open end, that `survivesGate` is one
+      boolean so nothing routes on it, is DVTD-7uil.
+
+## Reversal 2026-09-15 (Marciano)
+
+The 2026-08-25 decision above said game over routes to the community page. Working
+from the run-over mockup, that is reversed: **Start new run** is the primary action and
+**Community** is an ambient aside beside it. The bean's actual goal was "do not dead-end",
+and an aside satisfies it without making the player take a detour to start again.
+
+## What shipped
+
+A dedicated kanto run-over screen reporting the whole climb, not the last gate.
+
+- `src/ui/kanto-theme/RunOverScreen.ui.tsx` (+ story, spec) — header, coverage, gate by
+  gate, by category, the build at the end, storage, unlocked, footer.
+- `src/modules/run/run/application/runOverScreen.viewmodel.ts` (+ spec) — frame in,
+  props out, mirroring `gateOutcomePropsFor`. Owns every string.
+- `src/modules/run/run/presentation/RunOverView.component.tsx` (+ spec) — Tier 2.
+- `src/test/kantoRunOver.factory.ts` — fixtures for the story and both specs.
+- `PollScoreRow` gained optional `label` and `tag`, so `runPaidFor` rows can name their
+  gate instead of counting answers, and the best gate can be flagged.
+- `RunState.upkeepPaidKb` — a run-wide upkeep tally; only the last gate's bill survived.
+- Adopted on the real `/run/over` route (`src/routes/_authed/run/over.tsx` →
+  `RunOver.component`). The old-theme `RunSummary` was deleted in `1cbe58ee`;
+  `archiveAfterKb` is populated server-side at `run.service.ts:44`.
+
+## Still open (audited 2026-09-16)
+
+This section used to repeat the `## Todo` list verbatim, which made the bean read
+3/12 when it was 3 of 8. Two items are genuinely open:
+
+- [ ] **The exhausted-window variant on `/run/over`.** The raw error string is
+      gone, but nothing replaced it: `pollsExhausted` is modelled in
+      `runView.viewmodel.ts` and the prep/start components and appears nowhere in
+      `RunOver.component.tsx`. A player with no polls left presses **Start new
+      run** and the mutation fails silently. The failure moved from ugly to
+      invisible.
+- [ ] **Amend ADR-026 Decision 3, or write the sibling ADR.** Its only amendment
+      (`:69`) covers the gate-clear ledger; Decision 3 never mentions run end.
+      Fold in the one-sentence `routesForStatus` note while writing it.
+
+The other three are resolved above: the screen is adopted on `/run/over`, the
+repeat outcome moved to the gate screen under ADR-076, and `routesForStatus`
+needs no second route.

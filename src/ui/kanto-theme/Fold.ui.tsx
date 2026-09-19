@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
-import { PANEL_V2_SURFACE } from "./PanelV2.ui";
+import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography, type TypographyVariant } from "./Typography.ui";
 import { Verdict, type VerdictOutcome } from "./Verdict.ui";
 
@@ -48,7 +48,7 @@ export const Fold = ({
 	open = false,
 	children,
 }: FoldProps) => (
-	<details open={open} className={clsx(PANEL_V2_SURFACE, FOLD)}>
+	<details open={open} className={clsx(PANEL_SURFACE, FOLD)}>
 		<summary className={SUMMARY}>
 			<span aria-hidden className={CARET}>
 				{CARET_GLYPH}

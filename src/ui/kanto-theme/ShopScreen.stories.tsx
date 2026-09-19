@@ -3,23 +3,19 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-	SHOP_BALANCE_KB,
-	SHOP_PLAN_TIER,
 	createKantoShopScreenProps,
+	kantoBuildSpace,
 	kantoClosedShopProps,
 	kantoFirstShopProps,
 	kantoLateShopProps,
 	kantoLockedRegistryOffers,
 	kantoShopBuild,
-	SHOP_PLAN_PEAK_KB,
 	kantoShopWeight,
 	kantoShopUninstalls,
 	kantoTagShopProps,
-	planChangeFor,
 } from "~/test/kantoPoll.factory";
 
 import { Modal } from "./Modal.ui";
-import { PlanChange } from "./PlanChange.ui";
 import { ShopScreen } from "./ShopScreen.ui";
 import { Uninstall } from "./Uninstall.ui";
 
@@ -30,25 +26,17 @@ const ShopWithPanels = () => {
 	const [uninstalling, setUninstalling] = useState<string | undefined>(
 		undefined
 	);
-	const [planTier, setPlanTier] = useState<number | undefined>(undefined);
+	const [held, setHeld] = useState(8);
 
 	const toggle = (name: string) => setOpen(name === open ? undefined : name);
-	const close = () => {
-		setUninstalling(undefined);
-		setPlanTier(undefined);
-	};
+	const close = () => setUninstalling(undefined);
 
 	const chips = kantoShopBuild.map((chip) => ({
 		...chip,
 		onUninstall: () => setUninstalling(chip.name),
 	}));
 
-	const weight = kantoShopWeight(SHOP_PLAN_TIER, SHOP_PLAN_PEAK_KB);
-	const offers = (weight.offers ?? []).map((offer) =>
-		offer.opensAt === undefined && offer.onPress !== undefined
-			? { ...offer, onPress: () => setPlanTier(SHOP_PLAN_TIER + 1) }
-			: offer
-	);
+	const space = kantoBuildSpace(held);
 
 	const uninstall =
 		uninstalling === undefined ? undefined : kantoShopUninstalls[uninstalling];
@@ -59,22 +47,20 @@ const ShopWithPanels = () => {
 				{...props}
 				build={{
 					configs: chips,
-					weight: { ...weight, offers },
+					weight: kantoShopWeight(),
 					openInfo: open,
 					onToggleInfo: toggle,
 				}}
+				buildSpace={{
+					...space,
+					rungs: space.rungs.map((rung) => ({
+						...rung,
+						onPick:
+							rung.weight === held ? undefined : () => setHeld(rung.weight),
+					})),
+				}}
 				registry={{ ...props.registry, openInfo: open, onToggleInfo: toggle }}
 			/>
-
-			{planTier === undefined ? null : (
-				<Modal label="Free weight" onDismiss={close}>
-					<PlanChange
-						{...planChangeFor(SHOP_PLAN_TIER, planTier, SHOP_BALANCE_KB)}
-						onConfirm={close}
-						onCancel={close}
-					/>
-				</Modal>
-			)}
 
 			{uninstall === undefined ? null : (
 				<Modal label="Uninstall" onDismiss={close}>

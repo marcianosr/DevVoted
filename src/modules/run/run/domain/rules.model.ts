@@ -6,56 +6,56 @@ export const GATE_REWARD_KB = 32;
 
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 
-export const BASE_SLOTS = 4;
-
-export const SLOT_PRICES_KB: readonly number[] = [
-	32, 40, 48, 64, 80, 96, 120, 160, 192, 240, 288, 384, 480, 576, 704, 896,
-	1152, 1408, 1792, 2304,
-];
-
-export const MAX_SLOTS = BASE_SLOTS + SLOT_PRICES_KB.length;
-
-export const nextSlotPriceKb = (slotsBought: number): number | undefined =>
-	SLOT_PRICES_KB[slotsBought];
-
-export const slotCashOutKb = (slots: number): number | undefined =>
-	SLOT_PRICES_KB[slots - BASE_SLOTS - 1];
-
-export type StoragePlan = {
-	readonly tier: number;
-	readonly capKb: number;
-	readonly perGateKb: number;
+export type BuildSpaceRung = {
+	readonly weight: number;
+	readonly kb: number;
 };
 
-export const STORAGE_PLANS: readonly StoragePlan[] = [
-	{ tier: 0, capKb: 256, perGateKb: 0 },
-	{ tier: 1, capKb: 512, perGateKb: 32 },
-	{ tier: 2, capKb: 1024, perGateKb: 96 },
-	{ tier: 3, capKb: 2048, perGateKb: 224 },
-	{ tier: 4, capKb: 3072, perGateKb: 448 },
-	{ tier: 5, capKb: 5120, perGateKb: 768 },
-	{ tier: 6, capKb: 10240, perGateKb: 1280 },
+export const BUILD_SPACE_RUNGS: readonly BuildSpaceRung[] = [
+	{ weight: 4, kb: 0 },
+	{ weight: 6, kb: 16 },
+	{ weight: 8, kb: 32 },
+	{ weight: 12, kb: 64 },
+	{ weight: 16, kb: 128 },
+	{ weight: 24, kb: 256 },
+	{ weight: 32, kb: 512 },
 ];
 
-export const FREE_PLAN = STORAGE_PLANS[0];
-export const TOP_PLAN = STORAGE_PLANS[STORAGE_PLANS.length - 1];
+export const FREE_BUILD_SPACE_RUNG = 0;
+export const TOP_BUILD_SPACE_RUNG = BUILD_SPACE_RUNGS.length - 1;
+export const BUILD_SPACE_FROM_GATE = 2;
 
-export const storagePlanFor = (tier: number): StoragePlan =>
-	STORAGE_PLANS[Math.min(Math.max(0, tier), STORAGE_PLANS.length - 1)];
+export const buildSpaceRungAt = (index: number): BuildSpaceRung =>
+	BUILD_SPACE_RUNGS[
+		Math.min(Math.max(FREE_BUILD_SPACE_RUNG, index), TOP_BUILD_SPACE_RUNG)
+	];
 
-export const storageCapFor = (tier: number): number =>
-	storagePlanFor(tier).capKb;
+export const buildSpaceFor = (index: number): number =>
+	buildSpaceRungAt(index).weight;
 
-export const planBillKb = (tier: number): number =>
-	storagePlanFor(tier).perGateKb;
+export const rungIndexForSpace = (space: number): number => {
+	const passed = BUILD_SPACE_RUNGS.filter((rung) => rung.weight <= space);
+	return passed.length === 0 ? FREE_BUILD_SPACE_RUNG : passed.length - 1;
+};
 
-export const cappedStorage = (kb: number, tier: number): number =>
-	Math.min(Math.max(0, kb), storageCapFor(tier));
+export const spaceRungFor = (space: number): BuildSpaceRung =>
+	buildSpaceRungAt(rungIndexForSpace(space));
 
-const ALWAYS_REVEALED_TIER = 1;
+export const upkeepForSpace = (space: number): number => spaceRungFor(space).kb;
 
-export const revealsPlanTier = (tier: number, peakKb: number): boolean =>
-	tier <= ALWAYS_REVEALED_TIER || peakKb >= storageCapFor(tier - 1);
+export const affordableRungIndex = (balanceKb: number): number => {
+	const affordable = BUILD_SPACE_RUNGS.filter(
+		(rung) => rung.kb <= Math.max(0, balanceKb)
+	);
+	return affordable.length === 0
+		? FREE_BUILD_SPACE_RUNG
+		: affordable.length - 1;
+};
+
+export const highestAffordableSpace = (balanceKb: number): number =>
+	buildSpaceFor(affordableRungIndex(balanceKb));
+
+export const BASE_SLOTS = buildSpaceFor(FREE_BUILD_SPACE_RUNG);
 
 export const FAUCET_CAP_KB = 320;
 
@@ -85,14 +85,27 @@ export const streakCapMultiplier = (capSteps: number): number =>
 
 export const STREAK_UNIT_STEP = 0.1;
 
+export const MAX_STREAK_UNIT_STEPS = SLICE_WINDOW - 1;
+
 /**
- * Every consecutive correct answer after the first pays a flat step, so a
- * flawless window is worth four steps. It is added after the multipliers and
- * never multiplied by them: inside the stack a x6 build would turn the step
- * into +0.6 and the streak would stop rewarding accuracy.
+ * Every consecutive correct answer after the first pays a step, so a flawless
+ * window is worth four of them. The step is added after the multipliers and
+ * never multiplied by them: inside the stack a x6 build would turn it into
+ * +0.6 and the streak would stop rewarding accuracy.
+ *
+ * A config can buy a `growth` that makes the step climb with the streak instead
+ * of staying flat (ADR-090). It is clamped to a clean window's worth of steps
+ * because a failed gate does not reset the streak, so a retry would otherwise
+ * open on a step no window could have earned.
  */
-export const streakUnitBonus = (streakBefore: number): number =>
-	streakBefore >= 1 ? STREAK_UNIT_STEP : 0;
+export const streakUnitBonus = (
+	streakBefore: number,
+	growth?: number
+): number => {
+	if (streakBefore < 1) return 0;
+	if (growth === undefined) return STREAK_UNIT_STEP;
+	return growth * Math.min(streakBefore, MAX_STREAK_UNIT_STEPS);
+};
 
 /** Correct answers a gate demands whatever the run score says, counted before multipliers. */
 export const FLOOR_CORRECT = 2;

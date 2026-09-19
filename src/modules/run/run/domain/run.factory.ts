@@ -127,7 +127,7 @@ export const payPeel = (state: RunState): RunState => {
 	while (next.peelSlotsRemaining > 0 && next.build.configs.length > 0)
 		next = runReducer(next, {
 			type: "strip",
-			configId: next.build.configs[0].id,
+			configIds: [next.build.configs[0].id],
 		});
 	return runReducer(next, { type: "resume-climb" });
 };

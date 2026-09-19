@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-08-27T19:17:44Z
-updated_at: 2026-09-12T12:56:27Z
+updated_at: 2026-09-14T17:08:51Z
 ---
 
 Nothing in `## Unreleased` has shipped, so the section will be read as one set of release notes — and it currently contradicts itself. ADR-044's entry says the pipeline holds spots and opens at 4, while six older unreleased entries still describe the retired slot ladder:
@@ -41,3 +41,18 @@ start until all 3 are filled") are now subsumed rather than rewritable. The
 ADR-044 entry this bean would fold them into is itself superseded.
 
 - [ ] Re-read every unreleased entry against ADR-073 and ADR-074 before editing, not only against ADR-044
+
+## Progress 2026-09-14 (ADR-082 / DVTD-uhub)
+
+A new Unreleased entry leads the section: **"You now rent your build space by the
+gate, and slots are gone."** It states the ladder, the pay-for-reserved-room rule,
+the shop-door lock, the non-fatal drop, and the three things that go with the slot
+ladder (the storage plan, the KB cap, archive start slots).
+
+That makes this bean MORE urgent, not less: several older unreleased entries now
+describe two retired models rather than one. Known offenders still to re-read —
+"Slots are bought, and storage has a ceiling again", the spots/rent entry, the plan
+reprice entries, and the shop-panels entry whose "free weight on sale sits below a
+line at the bottom" describes a WeightOffer row that no longer exists.
+
+Released sections (1.3.0 and older) must still NOT be touched.

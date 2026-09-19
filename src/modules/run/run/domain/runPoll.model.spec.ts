@@ -4,6 +4,7 @@ import {
 	type AnsweredPoll,
 	type AnswerOutcome,
 	answerOutcome,
+	answersPerGate,
 	cachedHitsFor,
 	coverageShare,
 } from "~/modules/run/run/domain/runPoll.model";
@@ -203,5 +204,60 @@ describe("coverageShare lands every partial on a quarter", () => {
 		};
 		expect(coverageShare(single, ["a"])).toBe(1);
 		expect(coverageShare(single, ["b"])).toBe(0);
+	});
+});
+
+describe("answersPerGate splits the run's record into the gates that own it", () => {
+	const answer = (id: string, gate?: number): AnsweredPoll => ({
+		id,
+		question: id,
+		category: "js",
+		outcome: "correct",
+		picked: [],
+		...(gate === undefined ? {} : { gate }),
+	});
+
+	const window = (gate: number, from: number): AnsweredPoll[] =>
+		Array.from({ length: 5 }, (_, index) =>
+			answer(`g${gate}p${from + index}`, gate)
+		);
+
+	const idsIn = (rows: readonly (readonly AnsweredPoll[])[]): string[][] =>
+		rows.map((row) => row.map((poll) => poll.id));
+
+	it("gives one row per gate played, in climb order", () => {
+		const rows = answersPerGate([...window(0, 0), ...window(1, 0)], 1);
+
+		expect(rows).toHaveLength(2);
+		expect(idsIn(rows)[0]).toEqual(["g0p0", "g0p1", "g0p2", "g0p3", "g0p4"]);
+	});
+
+	it("keeps only the attempt that counted, because a held gate banks nothing", () => {
+		const rows = answersPerGate([...window(0, 0), ...window(0, 5)], 0);
+
+		expect(idsIn(rows)[0]).toEqual(["g0p5", "g0p6", "g0p7", "g0p8", "g0p9"]);
+	});
+
+	it("shows the retry in progress rather than the tail of the attempt it replaces", () => {
+		const partial = [answer("retry-1", 0), answer("retry-2", 0)];
+		const rows = answersPerGate([...window(0, 0), ...partial], 0);
+
+		expect(idsIn(rows)[0]).toEqual(["retry-1", "retry-2"]);
+	});
+
+	it("gives an unreached gate an empty row rather than dropping it", () => {
+		const rows = answersPerGate(window(0, 0), 2);
+
+		expect(rows).toHaveLength(3);
+		expect(rows[1]).toEqual([]);
+		expect(rows[2]).toEqual([]);
+	});
+
+	it("falls back to position for a record written before answers carried a gate", () => {
+		const legacy = Array.from({ length: 7 }, (_, index) => answer(`p${index}`));
+		const rows = answersPerGate(legacy, 1);
+
+		expect(idsIn(rows)[0]).toEqual(["p0", "p1", "p2", "p3", "p4"]);
+		expect(idsIn(rows)[1]).toEqual(["p5", "p6"]);
 	});
 });

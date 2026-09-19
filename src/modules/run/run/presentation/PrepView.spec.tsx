@@ -60,6 +60,57 @@ describe("PrepView", () => {
 		});
 	});
 
+	// DVTD-ooii: the reducer and RunView carried both of these for months while
+	// PrepViewProps quietly dropped them, so prep drew no control at all.
+	describe("the two configs that act in prep", () => {
+		it("draws no picker and no list while neither config is installed", () => {
+			render(<PrepView {...props} />);
+
+			expect(screen.queryByText(/at least 3 of 5/)).toBeNull();
+			expect(screen.queryByText("pick")).toBeNull();
+		});
+
+		it("offers Planning Poker's cards and sends the one pressed", async () => {
+			const onEstimate = vi.fn();
+			const betting = createMockRunView({
+				...view,
+				estimate: {
+					configLabel: "Planning Poker",
+					choices: [1, 2, 3, 4, 5].map((count) => ({
+						count,
+						units: count * 1.25,
+					})),
+				},
+			});
+			render(<PrepView {...props} view={betting} onEstimate={onEstimate} />);
+
+			expect(screen.getByText("at least 3 of 5")).toBeInTheDocument();
+			await userEvent.click(screen.getByRole("button", { name: "3" }));
+
+			expect(onEstimate).toHaveBeenCalledWith(3);
+		});
+
+		it("lists the gate for git rebase -i and sends the move pressed", async () => {
+			const onRebase = vi.fn();
+			const reordering = createMockRunView({
+				...view,
+				configs: [CONFIGS.gitRebase],
+				rebaseSlots: [
+					{ id: "poll-0", category: "ts" },
+					{ id: "poll-1", category: "css" },
+				],
+			});
+			render(<PrepView {...props} view={reordering} onRebase={onRebase} />);
+
+			expect(screen.getAllByText("pick")).toHaveLength(2);
+			await userEvent.click(
+				screen.getByRole("button", { name: "Move CSS earlier" })
+			);
+
+			expect(onRebase).toHaveBeenCalledWith(1, 0);
+		});
+	});
+
 	it("seals the poll details while no prefetcher is installed", () => {
 		render(<PrepView {...props} />);
 

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import { PANEL_SURFACE } from "./Panel.ui";
+import { Panel, PANEL_SURFACE } from "./Panel.ui";
 
 const WRAP = "fixed inset-0 z-50 flex items-center justify-center p-4";
 const SCRIM = "absolute inset-0 cursor-default bg-black/70";
@@ -30,7 +30,7 @@ export const Modal = ({ label, children, onDismiss }: ModalProps) => (
 			aria-label={label}
 			className={clsx(PANEL_SURFACE, DIALOG)}
 		>
-			{children}
+			<Panel.Body>{children}</Panel.Body>
 		</div>
 	</div>
 );

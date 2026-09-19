@@ -106,6 +106,26 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		expect(state.log.at(-1)).toContain("the build fills 1");
 	});
 
+	it("ends the run when the gate is refused instead of peeled (ADR-076)", () => {
+		const held = failGate({ ...started(["unit-tests"]), gatesCleared: 1 });
+		const refused = runReducer(held, { type: "refuse-gate" });
+
+		expect(refused.status).toBe("dead");
+		expect(refused.peelSlotsRemaining).toBe(0);
+		expect(refused.build.configs).toHaveLength(4);
+		expect(refused.log.at(-1)).toContain("Refused the gate");
+	});
+
+	it("keeps the gates it already cleared, so the archive banks at the death rate", () => {
+		const held = failGate({ ...started(["unit-tests"]), gatesCleared: 3 });
+		expect(runReducer(held, { type: "refuse-gate" }).gatesCleared).toBe(3);
+	});
+
+	it("refuses a gate nobody is standing at", () => {
+		const climbing = started(["unit-tests"]);
+		expect(runReducer(climbing, { type: "refuse-gate" })).toBe(climbing);
+	});
+
 	it("spares a one-config build at the Pallet gate (ADR-057)", () => {
 		const base = started(["unit-tests", "eslint"]);
 		const state = failGate({
@@ -158,7 +178,7 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 	it("routes the peeled build through the shop before the replay", () => {
 		let state = awaitingStrip(1);
-		state = runReducer(state, { type: "strip", configId: "eslint" });
+		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
 		expect(state.peelSlotsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("rewarding");
@@ -171,9 +191,20 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 	it("ignores a strip once the quota is met", () => {
 		let state = awaitingStrip(1);
-		state = runReducer(state, { type: "strip", configId: "eslint" });
-		const afterQuota = runReducer(state, { type: "strip", configId: "ts" });
+		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
+		const afterQuota = runReducer(state, { type: "strip", configIds: ["ts"] });
 		expect(afterQuota).toBe(state);
+	});
+
+	it("keeps the surplus config when one press overshoots the quota", () => {
+		const state = runReducer(awaitingStrip(1), {
+			type: "strip",
+			configIds: ["eslint", "unit-tests"],
+		});
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(configIds(state)).not.toContain("eslint");
+		expect(configIds(state)).toContain("unit-tests");
+		expect(state.configsLost).toBe(1);
 	});
 
 	it("ends the run when a peel emptied the build instead of climbing on", () => {
@@ -198,15 +229,15 @@ describe("configs lost (DVTD-wii3: the comeback standout's tally)", () => {
 	it("counts a peeled config as lost", () => {
 		const state = runReducer(awaitingStrip(1), {
 			type: "strip",
-			configId: "eslint",
+			configIds: ["eslint"],
 		});
 		expect(state.configsLost).toBe(1);
 	});
 
 	it("accumulates across strips on top of an earlier tally", () => {
 		let state: RunState = { ...awaitingStrip(8), configsLost: 3 };
-		state = runReducer(state, { type: "strip", configId: "eslint" });
-		state = runReducer(state, { type: "strip", configId: "ts" });
+		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
+		state = runReducer(state, { type: "strip", configIds: ["ts"] });
 		expect(state.configsLost).toBe(5);
 	});
 
@@ -242,7 +273,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 	};
 
 	const drop = (state: RunState, configId: string): RunState =>
-		runReducer(state, { type: "strip", configId });
+		runReducer(state, { type: "strip", configIds: [configId] });
 
 	const GC = CONFIGS.garbageCollection;
 
@@ -250,6 +281,22 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		const state = drop(collecting([GC, CONFIGS.agentsMd], 8), "agents-md");
 		expect(state.storage).toBe(128);
 		expect(state.peelRefundKb).toBe(128);
+	});
+
+	// The peel is one request now (DVTD-3hcg). A refund is priced against the
+	// build it leaves behind, so the fold must stay sequential: settling both at
+	// once off the opening build would pay the wrong number.
+	it("settles a two-config press exactly as two presses would", () => {
+		const start = collecting([GC, CONFIGS.agentsMd, CONFIGS.js], 64);
+		const onePress = runReducer(start, {
+			type: "strip",
+			configIds: ["agents-md", "js"],
+		});
+		expect(onePress).toEqual(drop(drop(start, "agents-md"), "js"));
+		expect(onePress.configsLost).toBe(2);
+		expect(onePress.peelRefundKb).toBeGreaterThan(
+			drop(start, "agents-md").peelRefundKb!
+		);
 	});
 
 	it("pays nothing when no collector is installed", () => {
@@ -322,9 +369,9 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		expect(state.storage).toBe(32);
 	});
 
-	it("stops the refund at the storage plan's cap", () => {
+	it("pays the whole refund, because nothing caps a balance (ADR-074)", () => {
 		const state = drop(collecting([GC, CONFIGS.agentsMd], 8, 200), "agents-md");
-		expect(state.storage).toBe(256);
+		expect(state.storage).toBe(328);
 	});
 
 	it("names the recovered KB in the log", () => {

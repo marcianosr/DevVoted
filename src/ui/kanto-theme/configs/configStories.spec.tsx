@@ -22,9 +22,13 @@ import * as MooresLaw from "./MooresLaw.stories";
 import * as Overclock from "./Overclock.stories";
 import * as PlanningPoker from "./PlanningPoker.stories";
 import * as Prefetch from "./Prefetch.stories";
+import * as Prettierrc from "./Prettierrc.stories";
+import * as Reduce from "./Reduce.stories";
+import * as Strict from "./Strict.stories";
 import * as Stylelint from "./Stylelint.stories";
 import * as Telemetry from "./Telemetry.stories";
 import * as UnitTests from "./UnitTests.stories";
+import * as VendorLockIn from "./VendorLockIn.stories";
 import * as VolkswagenCi from "./VolkswagenCi.stories";
 import * as Wtfpl from "./Wtfpl.stories";
 import * as YarnLock from "./YarnLock.stories";
@@ -50,9 +54,13 @@ const PAGES = {
 	Overclock,
 	PlanningPoker,
 	Prefetch,
+	Prettierrc,
+	Reduce,
+	Strict,
 	Stylelint,
 	Telemetry,
 	UnitTests,
+	VendorLockIn,
 	VolkswagenCi,
 	Wtfpl,
 	YarnLock,
@@ -109,6 +117,23 @@ describe("config story pages", () => {
 			Length.NothingCountsWithoutIt.render?.({}, {} as never)
 		);
 		expect(quiet.container.textContent).not.toMatch(/in this gate/);
+	});
+
+	it("counts Dependabot down to the merge and back up after a miss", () => {
+		const counting = render(Dependabot.CountingUp.render?.({}, {} as never));
+		expect(counting.container.textContent).toContain("bump in 3");
+		cleanup();
+
+		const nearly = render(
+			Dependabot.OneAnswerFromAnUpgrade.render?.({}, {} as never)
+		);
+		expect(nearly.container.textContent).toContain("bump in 1");
+		cleanup();
+
+		const reset = render(
+			Dependabot.AWrongAnswerStartsOver.render?.({}, {} as never)
+		);
+		expect(reset.container.textContent).toContain("bump in 5");
 	});
 
 	it("counts what it can press, never what it cannot", () => {

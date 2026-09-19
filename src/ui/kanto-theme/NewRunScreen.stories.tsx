@@ -2,9 +2,10 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
+
 import {
 	createKantoNewRunScreenProps,
-	freeWeightAt,
 	kantoNewRunRegistry,
 	kantoNewRunAt,
 } from "~/test/kantoPoll.factory";
@@ -51,19 +52,11 @@ export const BuildFull: Story = {
 	),
 };
 
-export const WidenedFromTheArchive: Story = {
-	render: () => <NewRunScreen {...kantoNewRunAt(["js"], 1, 1024)} />,
-};
-
-export const ArchiveTooThin: Story = {
-	render: () => <NewRunScreen {...kantoNewRunAt([], 0, 32)} />,
-};
-
 export const NothingSuggested: Story = {
 	render: () => (
 		<NewRunScreen
 			{...props}
-			registry={kantoNewRunRegistry([], freeWeightAt(), false)}
+			registry={kantoNewRunRegistry([], BASE_SLOTS, false)}
 		/>
 	),
 };

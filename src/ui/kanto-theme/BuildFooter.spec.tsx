@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 
 import {
 	createKantoBuildFooterProps,
@@ -8,7 +8,7 @@ import {
 	kantoSkippedConfigs,
 } from "~/test/kantoPoll.factory";
 
-import { BuildFooter } from "./BuildFooter.ui";
+import { BuildFooter, BUILD_FLASH_HOLD_MS } from "./BuildFooter.ui";
 
 const props = createKantoBuildFooterProps();
 
@@ -123,5 +123,65 @@ describe("BuildFooter", () => {
 		const { container } = render(<BuildFooter {...props} />);
 
 		expect(container.firstChild).toHaveClass("bg-theme-faint");
+	});
+});
+
+describe("BuildFooter's flash", () => {
+	const flashing = (flash?: string) => (
+		<BuildFooter {...props} open={false} flash={flash} />
+	);
+
+	it("sits quiet while no answer has landed", () => {
+		const { container } = render(flashing());
+
+		expect(container.firstChild).not.toHaveAttribute("data-flash");
+	});
+
+	it("raises the flash when an answer credits the build", () => {
+		const { container, rerender } = render(flashing());
+
+		rerender(flashing("q1"));
+
+		expect(container.firstChild).toHaveAttribute("data-flash", "true");
+	});
+
+	it("drops the flash again once the hold is spent", () => {
+		vi.useFakeTimers();
+		try {
+			const { container, rerender } = render(flashing());
+
+			rerender(flashing("q1"));
+			act(() => {
+				vi.advanceTimersByTime(BUILD_FLASH_HOLD_MS);
+			});
+
+			expect(container.firstChild).not.toHaveAttribute("data-flash");
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("flashes again for the next answer, not only the first", () => {
+		vi.useFakeTimers();
+		try {
+			const { container, rerender } = render(flashing());
+
+			rerender(flashing("q1"));
+			act(() => {
+				vi.advanceTimersByTime(BUILD_FLASH_HOLD_MS);
+			});
+			rerender(flashing(undefined));
+			rerender(flashing("q2"));
+
+			expect(container.firstChild).toHaveAttribute("data-flash", "true");
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("carries the class the sheet hangs the flash on", () => {
+		const { container } = render(flashing());
+
+		expect(container.firstChild).toHaveClass("build-footer");
 	});
 });

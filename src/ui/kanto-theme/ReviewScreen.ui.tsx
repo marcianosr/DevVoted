@@ -4,7 +4,7 @@ import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch } from "./Swatch.ui";
@@ -150,10 +150,10 @@ export const ReviewScreen = ({
 			))}
 		</div>
 
-		<PanelV2>
-			<PanelV2.Body>
+		<Panel>
+			<Panel.Body>
 				<ScreenFooter {...footer} rule={false} />
-			</PanelV2.Body>
-		</PanelV2>
+			</Panel.Body>
+		</Panel>
 	</Screen>
 );

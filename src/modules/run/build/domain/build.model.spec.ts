@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
 	BASE_SLOTS,
 	BASE_STREAK_STEPS,
-	MAX_SLOTS,
+	TOP_BUILD_SPACE_RUNG,
+	buildSpaceFor,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 	roundToTwoDecimals,
@@ -37,13 +38,13 @@ import {
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
 
-describe("capacity is slots, and slots are bought (ADR-046)", () => {
-	it("opens every run on four, whatever it is holding or spending", () => {
+describe("capacity is the build space the run holds (ADR-074)", () => {
+	it("opens every run on the free four", () => {
 		expect(BASE_SLOTS).toBe(4);
 	});
 
-	it("tops out at 24, the last slot the shop sells", () => {
-		expect(MAX_SLOTS).toBe(24);
+	it("tops out at 32, the widest rung the shop rents", () => {
+		expect(buildSpaceFor(TOP_BUILD_SPACE_RUNG)).toBe(32);
 	});
 });
 
@@ -181,21 +182,21 @@ describe("perAnswerPreviewFor", () => {
 		expect(perAnswerPreviewFor([]).coveragePerCorrect).toBe(BASE);
 	});
 
-	it("previews a multiple-choice poll at double, and folds the build in after", () => {
+	it("previews a multiple-choice poll at double, multiplied by the build before the flat add", () => {
 		expect(perAnswerPreviewFor([], "multiple").coveragePerCorrect).toBe(
 			BASE * 2
 		);
 		expect(
 			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage], "multiple")
 				.coveragePerCorrect
-		).toBeCloseTo(BASE * 2.2 * 2);
+		).toBeCloseTo(BASE * 2 * 2 + 0.1);
 	});
 
-	it("folds in build-wide coverage mults/adds, excluding Focus bonuses", () => {
+	it("multiplies by build-wide mults and adds flat units on top, excluding Focus bonuses", () => {
 		expect(
 			perAnswerPreviewFor([CONFIGS.agentsMd, CONFIGS.codeCoverage])
 				.coveragePerCorrect
-		).toBeCloseTo(BASE * 2.2);
+		).toBeCloseTo(BASE * 2 + 0.1);
 	});
 
 	it("costs nothing to miss on any build: the slot is the cost, not a bleed", () => {
@@ -206,6 +207,16 @@ describe("perAnswerPreviewFor", () => {
 			[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 		])
 			expect(perAnswerPreviewFor(configs).coveragePerWrong).toBe(0);
+	});
+
+	it("prices the miss once a wager is armed, since only a wager bleeds", () => {
+		expect(
+			perAnswerPreviewFor([CONFIGS.strict], "single", 0.5).coveragePerWrong
+		).toBe(-0.5);
+	});
+
+	it("leaves the miss free while the wager sits unarmed", () => {
+		expect(perAnswerPreviewFor([CONFIGS.strict]).coveragePerWrong).toBe(0);
 	});
 
 	it("follows a config that only adds flat coverage, rather than ignoring it", () => {
@@ -372,6 +383,35 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer([], at("js"), 1, 0)).toBe(BASE);
 	});
 
+	it("grows the streak step each answer in a row while .reduce() is installed", () => {
+		const build = [CONFIGS.reduce];
+		expect(coverageForAnswer(build, at("js"), 1, 0)).toBe(BASE);
+		expect(coverageForAnswer(build, at("js"), 1, 1)).toBeCloseTo(BASE + 0.25);
+		expect(coverageForAnswer(build, at("js"), 1, 2)).toBeCloseTo(BASE + 0.5);
+		expect(coverageForAnswer(build, at("js"), 1, 3)).toBeCloseTo(BASE + 0.75);
+		expect(coverageForAnswer(build, at("js"), 1, 4)).toBeCloseTo(BASE + 1);
+	});
+
+	it("keeps .reduce() outside the multipliers, so a fat build cannot amplify it", () => {
+		expect(
+			coverageForAnswer([CONFIGS.reduce, CONFIGS.agentsMd], at("js"), 1, 4)
+		).toBeCloseTo(BASE * 2 + 1);
+	});
+
+	it("steepens the climb a level at a time, never lengthening it", () => {
+		const levelled = { ...CONFIGS.reduce, level: 5 };
+		expect(coverageForAnswer([levelled], at("js"), 1, 1)).toBeCloseTo(BASE + 0.45);
+		expect(coverageForAnswer([levelled], at("js"), 1, 4)).toBeCloseTo(BASE + 1.8);
+		expect(coverageForAnswer([levelled], at("js"), 1, 9)).toBeCloseTo(BASE + 1.8);
+	});
+
+	it("clamps a streak carried in from a failed gate to a clean window's climb", () => {
+		const build = [CONFIGS.reduce];
+		expect(coverageForAnswer(build, at("js"), 1, 9)).toBeCloseTo(
+			coverageForAnswer(build, at("js"), 1, 4)
+		);
+	});
+
 	it("pays 1.25x in a Focus category, 1x outside it", () => {
 		expect(coverageForAnswer([CONFIGS.js], at("js"), 1)).toBe(pays(1.25));
 		expect(coverageForAnswer([CONFIGS.js], at("css"), 1)).toBe(pays(1));
@@ -394,10 +434,40 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer([CONFIGS.js], at("js"), 0.5)).toBe(pays(0.625));
 	});
 
-	it("applies multipliers last, so a ×mult amplifies flat adds too", () => {
+	it("keeps a flat add outside the multipliers, so a ×mult cannot amplify it", () => {
 		expect(
 			coverageForAnswer([CONFIGS.agentsMd, CONFIGS.codeCoverage], at("js"), 1)
-		).toBe(pays(2.2));
+		).toBe(roundToTwoDecimals(pays(2) + 0.1));
+	});
+
+	it.each([
+		[0.25, 1],
+		[0.5, 1],
+		[0.75, 2],
+	])(
+		"rounds a %s multiple-choice rung up to %s whole units with .prettierrc",
+		(share, units) => {
+			expect(
+				coverageForAnswer([CONFIGS.prettierrc], at("js", 1, "multiple"), share)
+			).toBe(units);
+		}
+	);
+
+	it("leaves a full multiple-choice answer alone: two units is already whole", () => {
+		expect(
+			coverageForAnswer([CONFIGS.prettierrc], at("js", 1, "multiple"), 1)
+		).toBe(BASE * 2);
+	});
+
+	it("never fires on a single-answer poll, where a share is already binary", () => {
+		expect(coverageForAnswer([CONFIGS.prettierrc], at("js"), 1)).toBe(BASE);
+		expect(coverageForAnswer([CONFIGS.prettierrc], at("js"), 0)).toBe(0);
+	});
+
+	it("keeps the top-up outside the multipliers, so a near-miss still trails a full answer", () => {
+		const build = [CONFIGS.prettierrc, CONFIGS.agentsMd];
+		expect(coverageForAnswer(build, at("js", 1, "multiple"), 0.75)).toBe(3.5);
+		expect(coverageForAnswer(build, at("js", 1, "multiple"), 1)).toBe(4);
 	});
 
 	it("doubles the window's opening answer with Cold Start, and only that one", () => {
@@ -446,9 +516,30 @@ describe("coverageBreakdownForAnswer", () => {
 			{
 				base: BASE,
 				streakBonus: 0,
-				configBonuses: [{ configId: "agents-md", value: BASE }],
+				configBonuses: [{ configId: "agents-md", value: BASE, factor: 2 }],
 			}
 		);
+	});
+
+	it("reads .reduce()'s climb on the streak row, not as a config chip", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.reduce], at("js"), 1, 3)
+		).toEqual({
+			base: BASE,
+			streakBonus: 0.75,
+			configBonuses: [],
+		});
+	});
+
+	it("keeps the rows summing to the paid total once .reduce() is running", () => {
+		const build = [CONFIGS.reduce, CONFIGS.agentsMd];
+		const breakdown = coverageBreakdownForAnswer(build, at("js"), 1, 3);
+		const rows =
+			breakdown.base +
+			breakdown.streakBonus +
+			breakdown.configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
+
+		expect(rows).toBeCloseTo(coverageForAnswer(build, at("js"), 1, 3));
 	});
 
 	it("splits a flat coverage add into its own config chip", () => {
@@ -467,7 +558,7 @@ describe("coverageBreakdownForAnswer", () => {
 		).toEqual({
 			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "cold-start", value: BASE }],
+			configBonuses: [{ configId: "cold-start", value: BASE, factor: 2 }],
 		});
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 0)
@@ -480,14 +571,14 @@ describe("coverageBreakdownForAnswer", () => {
 		).toEqual({
 			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "overclock", value: BASE * 3 }],
+			configBonuses: [{ configId: "overclock", value: BASE * 3, factor: 4 }],
 		});
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 1), 1, 0)
 		).toEqual({
 			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "overclock", value: -BASE * 0.5 }],
+			configBonuses: [{ configId: "overclock", value: -BASE * 0.5, factor: 0.5 }],
 		});
 	});
 
@@ -496,7 +587,7 @@ describe("coverageBreakdownForAnswer", () => {
 			base: BASE,
 			streakBonus: 0,
 			configBonuses: [
-				{ configId: "js", value: roundToTwoDecimals(BASE * 0.25) },
+				{ configId: "js", value: roundToTwoDecimals(BASE * 0.25), factor: 1.25 },
 			],
 		});
 	});
@@ -507,13 +598,58 @@ describe("coverageBreakdownForAnswer", () => {
 		).toEqual({ base: BASE, streakBonus: 0, configBonuses: [] });
 	});
 
+	it("chips .prettierrc's top-up as its own row, so the base stays the answer's own figure", () => {
+		expect(
+			coverageBreakdownForAnswer(
+				[CONFIGS.prettierrc],
+				at("js", 1, "multiple"),
+				0.25,
+				0
+			)
+		).toEqual({
+			base: 0.5,
+			streakBonus: 0,
+			configBonuses: [{ configId: "prettierrc", value: 0.5 }],
+		});
+	});
+
+	it("hides .prettierrc on a half catch, which was already a whole unit", () => {
+		expect(
+			coverageBreakdownForAnswer(
+				[CONFIGS.prettierrc],
+				at("js", 1, "multiple"),
+				0.5,
+				0
+			)
+		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+	});
+
+	it("sums .prettierrc's row with a multiplier's to the figure that was paid", () => {
+		const build = [CONFIGS.prettierrc, CONFIGS.agentsMd];
+		const context = at("js", 1, "multiple");
+		const breakdown = coverageBreakdownForAnswer(build, context, 0.25, 0);
+
+		expect(breakdown).toEqual({
+			base: 0.5,
+			streakBonus: 0,
+			configBonuses: [
+				{ configId: "prettierrc", value: 0.5 },
+				{ configId: "agents-md", value: 0.5, factor: 2 },
+			],
+		});
+		expect(
+			breakdown.base +
+				breakdown.configBonuses.reduce((sum, bonus) => sum + bonus.value, 0)
+		).toBe(coverageForAnswer(build, context, 0.25, 0));
+	});
+
 	it("carries a miss as a flat nothing: the slot is the cost, not a bleed", () => {
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.agentsMd], at("js"), 0, 3)
 		).toEqual({ base: 0, streakBonus: 0, configBonuses: [] });
 	});
 
-	it("credits the multiplier chip when a ×mult amplifies a flat add, listing the mult last", () => {
+	it("credits a flat add at face value and the ×mult on the base alone, listing the mult last", () => {
 		expect(
 			coverageBreakdownForAnswer(
 				[CONFIGS.agentsMd, CONFIGS.codeCoverage],
@@ -525,8 +661,8 @@ describe("coverageBreakdownForAnswer", () => {
 			base: BASE,
 			streakBonus: 0,
 			configBonuses: [
-				{ configId: "code-coverage", value: BASE * 0.1 },
-				{ configId: "agents-md", value: BASE * 1.1 },
+				{ configId: "code-coverage", value: 0.1 },
+				{ configId: "agents-md", value: BASE, factor: 2 },
 			],
 		});
 	});
@@ -539,6 +675,31 @@ describe("coverageBreakdownForAnswer", () => {
 			0
 		).configBonuses.map((bonus) => bonus.configId);
 		expect(order).toEqual(["code-coverage", "agents-md"]);
+	});
+
+	it("carries the factor on a multiplier bonus so a row can read ×1.25", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.js], at("js"), 1, 0).configBonuses
+		).toEqual([
+			{ configId: "js", value: roundToTwoDecimals(BASE * 0.25), factor: 1.25 },
+		]);
+	});
+
+	it("leaves a flat adder without a factor, since it never multiplied", () => {
+		const [bonus] = coverageBreakdownForAnswer(
+			[CONFIGS.codeCoverage],
+			at("js"),
+			1,
+			0
+		).configBonuses;
+		expect(bonus).not.toHaveProperty("factor");
+	});
+
+	it("carries the throttled factor once the opener is spent", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.overclock], at("js", 1), 1, 0)
+				.configBonuses
+		).toEqual([{ configId: "overclock", value: -BASE * 0.5, factor: 0.5 }]);
 	});
 
 	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
@@ -583,14 +744,14 @@ describe("coverageFactorsForAnswer", () => {
 		});
 	});
 
-	it("folds adds and multipliers into one build factor, adds first", () => {
+	it("reports the multiplier product as the build factor, leaving flat adds out of it", () => {
 		expect(
 			coverageFactorsForAnswer(
 				[CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				at("js"),
 				1
 			)
-		).toEqual({ correct: 1, build: 2.2 });
+		).toEqual({ correct: 1, build: 2 });
 	});
 
 	it("reads a bare build as ×1 rather than pretending it contributed", () => {
@@ -602,5 +763,50 @@ describe("coverageFactorsForAnswer", () => {
 
 	it("hands back nothing at all for a wrong answer", () => {
 		expect(coverageFactorsForAnswer([CONFIGS.js], at("js"), 0)).toBe(undefined);
+	});
+});
+
+describe("the receipt for an armed wager", () => {
+	const context = {
+		category: "react",
+		answerType: "single",
+		answeredBefore: 0,
+		cachedHits: 0,
+	} as const;
+
+	it("names the wager as its own row, so the chip that paid lights up", () => {
+		const breakdown = coverageBreakdownForAnswer(
+			[CONFIGS.strict],
+			context,
+			1,
+			0,
+			0.5
+		);
+
+		expect(breakdown.configBonuses).toEqual([
+			{ configId: "strict", value: 0.5 },
+		]);
+	});
+
+	it("keeps the base honest, so the rows still sum to what was paid", () => {
+		const breakdown = coverageBreakdownForAnswer(
+			[CONFIGS.strict, CONFIGS.agentsMd],
+			context,
+			1,
+			0,
+			0.5
+		);
+		const rows =
+			breakdown.base +
+			breakdown.streakBonus +
+			breakdown.configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
+
+		expect(rows).toBe(2.5);
+	});
+
+	it("writes no wager row when nothing was armed", () => {
+		expect(
+			coverageBreakdownForAnswer([CONFIGS.strict], context, 1).configBonuses
+		).toEqual([]);
 	});
 });

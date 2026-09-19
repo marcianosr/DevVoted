@@ -27,6 +27,7 @@ export type QuestionOption = {
 	letter: string;
 	label?: ReactNode;
 	seal?: ChoiceSeal;
+	crossedOut?: boolean;
 };
 
 export type QuestionProps = {
@@ -75,6 +76,7 @@ export const Question = ({
 						letter={option.letter}
 						answerType={answerType}
 						picked={picked}
+						crossedOut={option.crossedOut}
 						onPick={pick}
 					>
 						{option.label}

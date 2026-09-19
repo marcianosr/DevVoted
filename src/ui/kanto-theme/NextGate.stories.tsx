@@ -38,3 +38,5 @@ export const AlreadyClearing: Story = { args: propsAt(9, 45) };
 export const TheFirstGate: Story = { args: propsAt(0, 0) };
 
 export const TheSummit: Story = { args: propsAt(11, 58) };
+
+export const BeyondAFlawlessWindow: Story = { args: propsAt(8, 0) };

@@ -15,11 +15,11 @@ export type GatePayout = {
 	readonly storageBeforeClearKb: number | null;
 	readonly interestThisGateKb: number;
 	readonly extraPickThisGateKb: number;
-	readonly estimateThisGateKb: number | null;
+	readonly estimateThisGateUnits: number | null;
 	readonly faucetThisGateKb: number;
 	readonly subscriptionBillKb: number;
-	readonly planBilledKb: number;
-	readonly planDowngraded: boolean;
+	readonly upkeepBilledKb: number;
+	readonly spaceDroppedTo: number | null;
 	readonly autoUpgradedConfig: Config | null;
 	readonly autoUpgradedByConfig: Config | null;
 	readonly deletedConfigs: readonly Config[];
@@ -36,11 +36,11 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		storageBeforeClearKb: state.storageBeforeClearKb ?? null,
 		interestThisGateKb: state.interestThisGateKb ?? 0,
 		extraPickThisGateKb: state.extraPickThisGateKb ?? 0,
-		estimateThisGateKb: state.estimateThisGateKb ?? null,
+		estimateThisGateUnits: state.estimateThisGateUnits ?? null,
 		faucetThisGateKb: state.faucetThisGateKb ?? 0,
 		subscriptionBillKb: state.subscriptionBillKb ?? 0,
-		planBilledKb: state.planBilledKb ?? 0,
-		planDowngraded: state.planDowngraded ?? false,
+		upkeepBilledKb: state.upkeepBilledKb ?? 0,
+		spaceDroppedTo: state.spaceDroppedTo ?? null,
 		autoUpgradedConfig:
 			state.build.configs.find(
 				(config) => config.id === state.autoUpgradedConfigId

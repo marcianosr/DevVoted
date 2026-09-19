@@ -9,8 +9,6 @@ import {
 	kantoRunningConfigs,
 	kantoShopBuild,
 	kantoSkippedConfigs,
-	maxSlots,
-	slotDealsAt,
 } from "~/test/kantoPoll.factory";
 
 import { Build } from "./Build.ui";
@@ -153,7 +151,6 @@ export const ShopColumnWithRoom: Story = {
 				configs={kantoShopBuild}
 				layout="column"
 				slots={{ used: 7, capacity: 10 }}
-				{...slotDealsAt()}
 			/>
 		</Screen>
 	),
@@ -167,21 +164,6 @@ export const ShopColumnFull: Story = {
 				configs={kantoShopBuild}
 				layout="column"
 				slots={{ used: 10, capacity: 10 }}
-				{...slotDealsAt()}
-			/>
-		</Screen>
-	),
-};
-
-export const ShopColumnSoldOut: Story = {
-	parameters: { controls: { disable: true } },
-	render: () => (
-		<Screen theme="pewter" width="narrow">
-			<Build
-				configs={kantoShopBuild}
-				layout="column"
-				slots={{ used: 7, capacity: maxSlots }}
-				{...slotDealsAt(maxSlots)}
 			/>
 		</Screen>
 	),
@@ -192,22 +174,6 @@ export const UnderAWeightLadder: Story = {
 		configs: kantoShopBuild,
 		layout: "column",
 		weight: kantoShopWeight(),
-	},
-};
-
-export const WithNothingAffordable: Story = {
-	args: {
-		configs: kantoShopBuild,
-		layout: "column",
-		weight: kantoShopWeight(0, 0, 64),
-	},
-};
-
-export const OneRungUp: Story = {
-	args: {
-		configs: kantoShopBuild,
-		layout: "column",
-		weight: kantoShopWeight(1, 2048, 1024),
 	},
 };
 

@@ -32,7 +32,8 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	BASE_SLOTS,
-	MAX_SLOTS,
+	BUILD_SPACE_FROM_GATE,
+	spaceRungFor,
 	SLICE_WINDOW,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
@@ -370,113 +371,66 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 });
 
-describe("the slot deals in the shop (ADR-046)", () => {
-	const shopping = (
-		slots = BASE_SLOTS,
-		storage = 0,
-		slotsBought = slots - BASE_SLOTS
-	) =>
+describe("the build space in the shop (ADR-074)", () => {
+	const holding = (space = BASE_SLOTS, gatesCleared = 0) =>
 		toRunView({
 			...answering(),
-			storage,
-			slotsBought,
-			build: { ...answering().build, slots },
+			gatesCleared,
+			build: { ...answering().build, slots: space },
 		});
 
-	it("quotes the opening slot at the ladder's first rung", () => {
-		const { buy } = shopping(BASE_SLOTS, 500).slotDeals;
-		expect(buy.costKb).toBe(32);
-		expect(buy.makes).toBe(5);
-		expect(buy.refusal).toBeUndefined();
-	});
-
-	it("quotes the next rung up once a slot is bought", () => {
-		expect(shopping(BASE_SLOTS + 1, 500).slotDeals.buy.costKb).toBe(40);
-		expect(shopping(BASE_SLOTS + 3, 500).slotDeals.buy.costKb).toBe(64);
-	});
-
-	it("names the shortfall rather than the price when the balance is short", () => {
-		const { buy } = shopping(BASE_SLOTS, 10).slotDeals;
-		expect(buy.refusal).toBe("Costs 32 KB, you have 10.");
-		expect(buy.makes).toBeUndefined();
-	});
-
-	it("says the ladder is spent at the ceiling", () => {
-		const { buy } = shopping(MAX_SLOTS, 100_000).slotDeals;
-		expect(buy.costKb).toBeUndefined();
-		expect(buy.refusal).toBe("Sold out — 24 slots is the ceiling.");
-	});
-
-	it("refuses to cash while the run is on the free four", () => {
-		const { cash } = shopping(BASE_SLOTS, 500).slotDeals;
-		expect(cash.costKb).toBeUndefined();
-		expect(cash.refusal).toBe(
-			"Nothing to cash — the first four slots are free."
-		);
-	});
-
-	it("quotes the cash-out at the price of the slot still held", () => {
-		const { cash } = shopping(BASE_SLOTS + 2, 500).slotDeals;
-		expect(cash.costKb).toBe(40);
-		expect(cash.makes).toBe(5);
-	});
-
-	it("refuses to cash a slot a config is standing in", () => {
-		const packed = answeringWith([CONFIGS.agentsMd]);
-		const view = toRunView({ ...packed, slotsBought: 4, storage: 500 });
-
-		expect(view.slots).toBe(8);
-		expect(view.slotsFree).toBe(0);
-		expect(view.slotDeals.cash.refusal).toBe(
-			"Every slot is filled — uninstall or minify first."
-		);
-	});
-});
-
-describe("the storage plan in the shop (ADR-046)", () => {
-	const onPlan = (storagePlan: number, storage = 0) =>
-		toRunView({ ...answering(), storagePlan, storage });
-
-	it("draws every plan, the free one included", () => {
-		const { options } = onPlan(0).storagePlan;
-		expect(options.map((plan) => plan.capKb)).toEqual([
-			256, 512, 1024, 2048, 3072, 5120, 10240,
+	it("draws every rung of the ladder, the free one included", () => {
+		expect(holding().buildSpace.rungs.map((rung) => rung.weight)).toEqual([
+			4, 6, 8, 12, 16, 24, 32,
 		]);
 	});
 
-	it("stands on the free cap before anything is bought", () => {
-		const { capKb, perGateKb, options } = onPlan(0).storagePlan;
-		expect(capKb).toBe(256);
-		expect(perGateKb).toBe(0);
-		expect(options[0].held).toBe(true);
+	it("marks the rung the build stands on and no other", () => {
+		const { rungs } = holding(8).buildSpace;
+
+		expect(
+			rungs.filter((rung) => rung.held).map((rung) => rung.weight)
+		).toEqual([8]);
 	});
 
-	it("reads the standing cap and bill off the plan the run is on", () => {
-		const { capKb, perGateKb } = onPlan(2).storagePlan;
-		expect(capKb).toBe(1024);
-		expect(perGateKb).toBe(96);
+	it("reads the bill off the rung held, not the weight in use", () => {
+		expect(holding(8).buildSpace.perGateKb).toBe(32);
+		expect(holding(BASE_SLOTS).buildSpace.perGateKb).toBe(0);
 	});
 
-	it("warns what a downgrade burns, and nothing on the plans that would hold it", () => {
-		const { options } = onPlan(4, 900).storagePlan;
-		expect(options[0].burnsKb).toBe(900 - 256);
-		expect(options[1].burnsKb).toBe(900 - 512);
-		expect(options[2].burnsKb).toBe(0);
+	it("offers nothing before the run is stocking gate 2", () => {
+		const { offered, rungs } = holding(BASE_SLOTS, 1).buildSpace;
+
+		expect(offered).toBe(false);
+		expect(rungs.some((rung) => rung.pickable)).toBe(false);
 	});
 
-	it("puts the plan on the recurring bill", () => {
-		const line = onPlan(2, 500).gateStake.subscriptions.lines.find(
-			(entry) => entry.id === "storage-plan"
+	it("opens every rung but the held one once the shop stocks gate 2", () => {
+		const { offered, rungs } = holding(
+			BASE_SLOTS,
+			BUILD_SPACE_FROM_GATE
+		).buildSpace;
+
+		expect(offered).toBe(true);
+		expect(rungs.filter((rung) => rung.pickable)).toHaveLength(
+			rungs.length - 1
 		);
-		expect(line?.label).toBe("1024KB storage plan");
-		expect(line?.kb).toBe(96);
+	});
+
+	it("puts the space it holds on the recurring bill", () => {
+		const line = holding(8).gateStake.subscriptions.lines.find(
+			(entry) => entry.id === "build-space"
+		);
+
+		expect(line?.label).toBe("8 weight build space");
+		expect(line?.kb).toBe(32);
 		expect(line?.billedOnMiss).toBe(false);
 	});
 
-	it("keeps the free plan off the bill entirely", () => {
+	it("keeps the free rung off the bill entirely", () => {
 		expect(
-			onPlan(0, 500).gateStake.subscriptions.lines.map((entry) => entry.id)
-		).not.toContain("storage-plan");
+			holding(BASE_SLOTS).gateStake.subscriptions.lines.map((entry) => entry.id)
+		).not.toContain("build-space");
 	});
 });
 
@@ -508,7 +462,7 @@ describe("latestAnswerScore", () => {
 			isCorrect: true,
 			baseCoverage: BASE_GAIN,
 			streakBonus: 0,
-			configBonuses: [{ configId: "agents-md", value: BASE_GAIN }],
+			configBonuses: [{ configId: "agents-md", value: BASE_GAIN, factor: 2 }],
 			earnedCoverage: BASE_GAIN * 2,
 		});
 	});
@@ -635,6 +589,8 @@ describe("the gate stake travels as one object", () => {
 				configs: state.build.configs,
 				gate: 4,
 				storageKb: state.storage,
+				spaceWeight: spaceRungFor(state.build.slots).weight,
+				spaceBillKb: spaceRungFor(state.build.slots).kb,
 			}),
 			modifiers: buildModifiersFor(state.build.configs, 4),
 			perAnswer: perAnswerPreviewFor(state.build.configs),
@@ -650,15 +606,16 @@ describe("the gate stake travels as one object", () => {
 		});
 	});
 
-	it("bills every subscribed config into one ledger, and no plan", () => {
+	it("bills every subscribed config and the build space into one ledger", () => {
 		const state = {
 			...answeringWith([CONFIGS.js, CONFIGS.freemium]),
 			gatesCleared: 2,
 		};
 		const { subscriptions } = toRunView(state).gateStake;
 
-		expect(subscriptions.lines.map((line) => [line.id, line.kb])).toEqual([
-			["freemium", 32],
+		expect(subscriptions.lines.map((line) => line.id)).toEqual([
+			"freemium",
+			"build-space",
 		]);
 		expect(subscriptions.onMissKb).toBe(0);
 	});

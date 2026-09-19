@@ -74,6 +74,29 @@ describe("Tooltip", () => {
 		expect(container.querySelector(".absolute")).toHaveClass("right-0");
 	});
 
+	it("widens on demand, so a table of rungs keeps each row on one line", () => {
+		const { container, rerender } = render(
+			<Tooltip label="How a correct answer is counted" hint="Single is 1.">
+				34/55 correct
+			</Tooltip>
+		);
+
+		expect(container.querySelector(".absolute")).toHaveClass("w-72");
+		expect(container.querySelector(".absolute")).not.toHaveClass("sm:w-112");
+
+		rerender(
+			<Tooltip
+				label="How a correct answer is counted"
+				hint="Single is 1."
+				width="wide"
+			>
+				34/55 correct
+			</Tooltip>
+		);
+
+		expect(container.querySelector(".absolute")).toHaveClass("sm:w-112");
+	});
+
 	it("hands back a bare reading when there is no rule to explain", () => {
 		const { container } = render(
 			<Tooltip label="How a correct answer is counted">34/55 correct</Tooltip>

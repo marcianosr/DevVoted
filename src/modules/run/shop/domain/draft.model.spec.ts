@@ -21,10 +21,13 @@ import {
 
 const ids = (configs: readonly Config[]): string[] =>
 	configs.map((config) => config.id);
+/** Enough rolls to reach a pool this size, so a new config cannot starve the sample. */
+const SEEDS_PER_CONFIG = 3;
+
 const seenAcrossSeeds = (equipped: readonly Config[]): string[] =>
-	Array.from({ length: 30 }, (_, seed) => rollDraft(seed, equipped)).flatMap(
-		ids
-	);
+	Array.from({ length: CONFIG_LIST.length * SEEDS_PER_CONFIG }, (_, seed) =>
+		rollDraft(seed, equipped)
+	).flatMap(ids);
 
 describe("rebuildCost", () => {
 	it("doubles each rebuild in KB (powers of 2)", () => {

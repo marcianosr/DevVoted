@@ -5,8 +5,10 @@ import {
 	faucetKbPerCorrect,
 	focusMultiplierOf,
 	minifiedAmount,
+	minifiedUnits,
 	minifiedMultiplier,
 	slotsOf,
+	streakStepOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	AnswerContext,
@@ -36,19 +38,31 @@ export type Build = {
 	readonly id: string;
 	readonly slots: number;
 	readonly configs: readonly Config[];
+	readonly vendorLockedConfigId?: string;
 };
 
 export const occupiedSlots = (configs: readonly Config[]): number =>
 	configs.reduce((total, config) => total + slotsOf(config), 0);
 
+/**
+ * What the rented space is measured against (ADR-087). The weight a build
+ * carries and the weight it is held to are no longer the same number: a
+ * vendor-locked config still occupies the build, and still counts toward the
+ * peel quota and the over-width burn, but the rung it is held to ignores it.
+ */
+export const billableSlotsOf = (build: Build): number =>
+	occupiedSlots(
+		build.configs.filter((config) => config.id !== build.vendorLockedConfigId)
+	);
+
 export const freeSlots = (build: Build): number =>
-	Math.max(0, build.slots - occupiedSlots(build.configs));
+	Math.max(0, build.slots - billableSlotsOf(build));
 
 export const hasRoomFor = (build: Build, slots: number): boolean =>
-	occupiedSlots(build.configs) + slots <= build.slots;
+	billableSlotsOf(build) + slots <= build.slots;
 
 export const overflowSlots = (build: Build): number =>
-	Math.max(0, occupiedSlots(build.configs) - build.slots);
+	Math.max(0, billableSlotsOf(build) - build.slots);
 
 export const isOverCapacity = (build: Build): boolean =>
 	overflowSlots(build) > 0;
@@ -103,7 +117,7 @@ const coverageProfileFor = (
 			mult:
 				profile.mult *
 				minifiedMultiplier(config, config.coverageMultiplier ?? 1),
-			add: profile.add + minifiedAmount(config, config.coverageAdd ?? 0),
+			add: profile.add + minifiedUnits(config, config.coverageAdd ?? 0),
 		}),
 		{ mult: 1, add: 0 }
 	);
@@ -170,12 +184,13 @@ const coveragePerCorrectRaw = (
 	answerType: AnswerType
 ): number => {
 	const { mult, add } = coverageProfileFor(configs);
-	return BASE_UNIT * creditFor(answerType) * (1 + add) * mult * throttleFor(configs);
+	return BASE_UNIT * creditFor(answerType) * mult * throttleFor(configs) + add;
 };
 
 export const perAnswerPreviewFor = (
 	configs: readonly Config[],
-	answerType: AnswerType = "single"
+	answerType: AnswerType = "single",
+	wagerUnits = 0
 ): PerAnswerPreview => {
 	const focusMultipliers = configs
 		.filter((config) => config.focusCategory !== undefined)
@@ -184,7 +199,7 @@ export const perAnswerPreviewFor = (
 		coveragePerCorrect: roundToTwoDecimals(
 			coveragePerCorrectRaw(configs, answerType)
 		),
-		coveragePerWrong: 0,
+		coveragePerWrong: wagerUnits === 0 ? 0 : -wagerUnits,
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
@@ -193,17 +208,33 @@ export const perAnswerPreviewFor = (
 	};
 };
 
+const creditedUnitsFor = (context: AnswerContext, share: number): number =>
+	BASE_UNIT * share * creditFor(context.answerType);
+
 const coversFor = (
 	configs: readonly Config[],
-	context: AnswerContext
+	context: AnswerContext,
+	creditedUnits: number
 ): readonly Coverage[] =>
 	configs
-		.map((config) => effectOf(config).coverage?.(context))
+		.map((config) => effectOf(config).coverage?.(context, creditedUnits))
 		.filter((cover): cover is Coverage => cover !== undefined);
 
 const buildMultiplierOf = (covers: readonly Coverage[]): number =>
-	covers.reduce((product, cover) => product * cover.mult, 1) *
-	(1 + covers.reduce((sum, cover) => sum + cover.add, 0));
+	covers.reduce((product, cover) => product * cover.mult, 1);
+
+const flatUnitsOf = (covers: readonly Coverage[]): number =>
+	covers.reduce((sum, cover) => sum + cover.add, 0);
+
+export const streakStepperFor = (
+	configs: readonly Config[]
+): Config | undefined =>
+	configs.find((config) => config.streakStepGrowth !== undefined);
+
+const streakGrowthOf = (configs: readonly Config[]): number | undefined => {
+	const stepper = streakStepperFor(configs);
+	return stepper === undefined ? undefined : streakStepOf(stepper);
+};
 
 export const coverageForAnswer = (
 	configs: readonly Config[],
@@ -212,12 +243,12 @@ export const coverageForAnswer = (
 	streakBefore = 0
 ): number => {
 	if (share <= 0) return 0;
+	const credited = creditedUnitsFor(context, share);
+	const covers = coversFor(configs, context, credited);
 	return roundToTwoDecimals(
-		BASE_UNIT *
-			share *
-			creditFor(context.answerType) *
-			buildMultiplierOf(coversFor(configs, context)) +
-			streakUnitBonus(streakBefore)
+		credited * buildMultiplierOf(covers) +
+			flatUnitsOf(covers) +
+			streakUnitBonus(streakBefore, streakGrowthOf(configs))
 	);
 };
 
@@ -229,53 +260,67 @@ export const coverageFactorsForAnswer = (
 	if (share <= 0) return undefined;
 	return {
 		correct: share,
-		build: buildMultiplierOf(coversFor(configs, context)),
+		build: buildMultiplierOf(
+			coversFor(configs, context, creditedUnitsFor(context, share))
+		),
 	};
 };
+
+export const wagererFor = (
+	configs: readonly Config[]
+): Config | undefined =>
+	configs.find((config) => config.wagersAnswer !== undefined);
 
 export const coverageBreakdownForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
 	share: number,
-	streakBefore = 0
+	streakBefore = 0,
+	wagerUnits = 0
 ): CoverageBreakdown => {
 	if (share <= 0) {
 		return { base: 0, streakBonus: 0, configBonuses: [] };
 	}
 
-	const streakBonus = streakUnitBonus(streakBefore);
-	const earned = coverageForAnswer(configs, context, share, streakBefore);
-	const gain = BASE_UNIT * share * creditFor(context.answerType);
+	const streakBonus = streakUnitBonus(streakBefore, streakGrowthOf(configs));
+	const earned =
+		coverageForAnswer(configs, context, share, streakBefore) + wagerUnits;
+	const gain = creditedUnitsFor(context, share);
 
 	const covered = configs
 		.map((config) => ({
 			config,
-			cover: effectOf(config).coverage?.(context),
+			cover: effectOf(config).coverage?.(context, gain),
 		}))
 		.filter(
 			(entry): entry is { config: Config; cover: Coverage } =>
 				entry.cover !== undefined
 		);
 
-	const totalAdd = covered.reduce((sum, entry) => sum + entry.cover.add, 0);
 	const orderedCovered = [
 		...covered.filter((entry) => entry.cover.mult === 1),
 		...covered.filter((entry) => entry.cover.mult !== 1),
 	];
-	let subtotal = gain * (1 + totalAdd);
+	let subtotal = gain;
+	const wagerer = wagerUnits === 0 ? undefined : wagererFor(configs);
 	const configBonuses = orderedCovered
 		.map(({ config, cover }) => {
 			if (cover.mult !== 1) {
 				const value = roundToTwoDecimals(subtotal * (cover.mult - 1));
 				subtotal *= cover.mult;
-				return { configId: config.id, value };
+				return { configId: config.id, value, factor: cover.mult };
 			}
 			return {
 				configId: config.id,
-				value: roundToTwoDecimals(gain * cover.add),
+				value: roundToTwoDecimals(cover.add),
 			};
 		})
-		.filter((bonus) => bonus.value !== 0);
+		.filter((bonus) => bonus.value !== 0)
+		.concat(
+			wagerer === undefined
+				? []
+				: [{ configId: wagerer.id, value: wagerUnits }]
+		);
 
 	const bonusTotal = configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
 	const base = roundToTwoDecimals(earned - bonusTotal - streakBonus);
@@ -315,10 +360,30 @@ export const locksSurviving = (
 ): readonly string[] =>
 	lockerFor(configs) === undefined ? [] : (lockedOfferIds ?? []);
 
-export const stripConfig = (
-	build: Build,
-	configId: string
-): Build => ({
-	...build,
-	configs: build.configs.filter((config) => config.id !== configId),
-});
+export const vendorLockerFor = (
+	configs: readonly Config[]
+): Config | undefined => configs.find((config) => config.vendorLocks === true);
+
+/**
+ * The lock dies with the config it names or with the one that granted it, so
+ * the id can never dangle past either. Every build rewrite goes through here
+ * rather than through a prune at each call site, which is what keeps the
+ * engine's own removals (a decayed config, a lapsed subscription) honest
+ * without each of them having to know the lock exists.
+ */
+export const withVendorLockSurviving = (build: Build): Build => {
+	const locked = build.vendorLockedConfigId;
+	if (locked === undefined) return build;
+	const survives =
+		vendorLockerFor(build.configs) !== undefined &&
+		build.configs.some((config) => config.id === locked);
+	if (survives) return build;
+	const { vendorLockedConfigId: _cleared, ...rest } = build;
+	return rest;
+};
+
+export const stripConfig = (build: Build, configId: string): Build =>
+	withVendorLockSurviving({
+		...build,
+		configs: build.configs.filter((config) => config.id !== configId),
+	});

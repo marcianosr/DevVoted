@@ -1,14 +1,29 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-	revealsPlanTier,
-	STORAGE_PLANS,
-} from "~/modules/run/run/domain/rules.model";
 import { kbLabel } from "~/shared/lib/storage";
 
 import { StoragePlan, type StoragePlanProps } from "./StoragePlan.ui";
 
 const noop = () => {};
+
+/**
+ * The retired storage-plan ladder (ADR-046), kept here as a story fixture only.
+ * ADR-074 replaced it with build space, so no domain table backs this any more.
+ */
+const STORAGE_PLANS = [
+	{ tier: 0, capKb: 256, perGateKb: 0 },
+	{ tier: 1, capKb: 512, perGateKb: 32 },
+	{ tier: 2, capKb: 1024, perGateKb: 96 },
+	{ tier: 3, capKb: 2048, perGateKb: 224 },
+	{ tier: 4, capKb: 3072, perGateKb: 448 },
+	{ tier: 5, capKb: 5120, perGateKb: 768 },
+	{ tier: 6, capKb: 10240, perGateKb: 1280 },
+] as const;
+
+const ALWAYS_REVEALED_TIER = 1;
+
+const revealsPlanTier = (tier: number, peakKb: number): boolean =>
+	tier <= ALWAYS_REVEALED_TIER || peakKb >= STORAGE_PLANS[tier - 1].capKb;
 
 const planOn = (
 	held: number,

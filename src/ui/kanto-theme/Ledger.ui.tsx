@@ -7,7 +7,7 @@ import {
 	type LedgerTag,
 } from "./LedgerRows.ui";
 import type { MeterProps } from "./Meter.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { PanelTable } from "./PanelTable.ui";
 import { Typography } from "./Typography.ui";
 
@@ -22,20 +22,20 @@ export type LedgerProps = {
 };
 
 export const Ledger = ({ title, badge, rows, meter, note }: LedgerProps) => (
-	<PanelV2>
-		<PanelV2.Header
+	<Panel>
+		<Panel.Header
 			label={title}
 			meta={badge === undefined ? undefined : <Badge>{badge}</Badge>}
 		/>
-		<PanelV2.Body>
+		<Panel.Body>
 			<PanelTable>
 				<LedgerRows rows={rows} meter={meter} tabled />
 			</PanelTable>
-		</PanelV2.Body>
+		</Panel.Body>
 		{note === undefined ? null : (
-			<PanelV2.Footer>
+			<Panel.Footer>
 				<Typography variant="hint">{note}</Typography>
-			</PanelV2.Footer>
+			</Panel.Footer>
 		)}
-	</PanelV2>
+	</Panel>
 );

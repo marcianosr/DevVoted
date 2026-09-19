@@ -56,7 +56,13 @@ export const COVERAGE_BAND_WORD = {
 const toTenth = (value: number) =>
 	Math.round(Math.max(0, value) * TENTHS) / TENTHS;
 
-const clamped = (value: number) => Math.min(FULL, Math.max(0, value));
+/**
+ * Non-finite in means 0 out, not NaN out. The bar settles its reading during
+ * render, and NaN never equals itself, so letting one through turns the
+ * comparison below into an infinite re-render instead of a wrong number.
+ */
+const clamped = (value: number) =>
+	Number.isFinite(value) ? Math.min(FULL, Math.max(0, value)) : 0;
 
 type CountStyle = CSSProperties & Record<"--coverage-count", number>;
 

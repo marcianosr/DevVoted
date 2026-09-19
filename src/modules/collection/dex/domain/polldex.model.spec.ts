@@ -23,6 +23,7 @@ const entry = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
 	question: "What does the box model describe?",
 	timesSeen: 3,
 	answeredCount: 2,
+	correctCount: 2,
 	accuracy: 100,
 	...overrides,
 });

@@ -15,27 +15,34 @@ import {
 	MAX_EXTENSIONS,
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import {
+	occupiedSlots,
+	overflowSlots,
+} from "~/modules/run/build/domain/build.model";
 import {
 	BASE_SLOTS,
+	BUILD_SPACE_FROM_GATE,
+	BUILD_SPACE_RUNGS,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
-	MAX_SLOTS,
 	SLICE_WINDOW,
 	pinCostFor,
-	planBillKb,
 	streakMultiplier,
-	storageCapFor,
+	upkeepForSpace,
 } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
-import { pinAvailable } from "~/modules/run/run/domain/shopAction.model";
+import {
+	canPickBuildSpace,
+	pinAvailable,
+	setBuildSpace,
+} from "~/modules/run/run/domain/shopAction.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
 	clearGate,
+	atGateWithBuild,
 	configIds,
-	failGate,
 	handed,
 	pool,
 	started,
@@ -217,7 +224,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 			};
 			const stripped = runReducer(peeling, {
 				type: "strip",
-				configId: "yarn-lock",
+				configIds: ["yarn-lock"],
 			});
 			expect(configIds(stripped)).not.toContain("yarn-lock");
 			expect(stripped.lockedOfferIds).toEqual([]);
@@ -419,24 +426,13 @@ describe("economy", () => {
 		expect(state.storage).toBe(8);
 	});
 
-	it("burns what a clear pays above the plan's cap (ADR-046)", () => {
+	it("keeps the whole clear, because nothing caps a balance any more", () => {
 		let state = { ...started(["js"]), storage: 2000 };
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 
-		expect(state.storage).toBe(storageCapFor(0));
-	});
-
-	it("holds the whole clear once a wide enough plan is bought, less that plan's bill", () => {
-		let state: RunState = { ...started(["js"]), storagePlan: 4, storage: 2000 };
-		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-
 		expect(state.storage).toBe(
-			2000 +
-				32 * streakMultiplier(SLICE_WINDOW) +
-				FLAWLESS_OVERFLOW_KB -
-				planBillKb(4)
+			2000 + 32 * streakMultiplier(SLICE_WINDOW) + FLAWLESS_OVERFLOW_KB
 		);
-		expect(state.storage).toBeGreaterThan(storageCapFor(0));
 	});
 
 	it("gates the lint action behind a linter config", () => {
@@ -503,201 +499,88 @@ describe("economy", () => {
 	});
 });
 
-describe("slots in the shop (ADR-046)", () => {
-	const inShop = (): RunState => ({
-		...clearGate(started(["js"], 12 * SLICE_WINDOW)),
-		storagePlan: 2,
-	});
+describe("build space in the shop (ADR-074)", () => {
+	const shopAfter = (gates: number): RunState => {
+		let state: RunState = started(["js"], 12 * SLICE_WINDOW);
+		for (let gate = 0; gate < gates; gate += 1) {
+			state = clearGate(state);
+			if (gate < gates - 1)
+				state = runReducer(state, { type: "finish-reward" });
+		}
+		return state;
+	};
 
-	it("opens every run on four slots, having bought nothing", () => {
+	it("opens every run on four weight of free room", () => {
 		const state = createRun(pool(10), handed);
-		expect(state.build.slots).toBe(4);
-		expect(state.slotsBought).toBeUndefined();
+
+		expect(state.build.slots).toBe(BASE_SLOTS);
+		expect(upkeepForSpace(state.build.slots)).toBe(0);
 	});
 
-	it("stays four wide through a clear, because gates hand over no width", () => {
-		const state = clearGate(started(["js"], 4 * SLICE_WINDOW));
+	it("offers no room in the shop that stocks gate 1", () => {
+		const state = shopAfter(1);
+
 		expect(state.gatesCleared).toBe(1);
-		expect(state.build.slots).toBe(4);
-
-		const later = clearGate(runReducer(state, { type: "finish-reward" }));
-		expect(later.gatesCleared).toBe(2);
-		expect(later.build.slots).toBe(4);
+		expect(canPickBuildSpace(state)).toBe(false);
+		expect(setBuildSpace(state, 2)).toBe(state);
 	});
 
-	it("buys the fifth slot for 32 KB", () => {
-		const state = { ...inShop(), storage: 200 };
-		const wider = runReducer(state, { type: "buy-slot" });
+	it("opens the picker in the shop that stocks gate 2", () => {
+		const state = shopAfter(2);
 
-		expect(wider.build.slots).toBe(5);
-		expect(wider.slotsBought).toBe(1);
-		expect(wider.storage).toBe(168);
+		expect(state.gatesCleared).toBe(BUILD_SPACE_FROM_GATE);
+		expect(canPickBuildSpace(state)).toBe(true);
 	});
 
-	it("charges the next rung up for each slot after that", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "buy-slot" });
-		state = runReducer(state, { type: "buy-slot" });
-		state = runReducer(state, { type: "buy-slot" });
+	it("widens the build to the rung it is handed, charging nothing at the counter", () => {
+		const state = { ...shopAfter(2), storage: 300 };
+		const wider = setBuildSpace(state, 2);
 
-		expect(state.build.slots).toBe(7);
-		expect(state.storage).toBe(500 - (32 + 40 + 48));
+		expect(wider.build.slots).toBe(8);
+		expect(wider.storage).toBe(300);
 	});
 
-	it("refuses a slot the balance cannot cover", () => {
-		const state = { ...inShop(), storage: 31 };
-		expect(runReducer(state, { type: "buy-slot" })).toEqual(state);
+	it("bills the rung it holds at the close, whatever the build weighs", () => {
+		const held = { ...shopAfter(2), storage: 500 };
+		const wide = runReducer(held, { type: "set-build-space", rung: 2 });
+		const climbed = runReducer(wide, { type: "finish-reward" });
+		const cleared = clearGate(climbed);
+
+		expect(cleared.upkeepBilledKb).toBe(32);
 	});
 
-	it("cashes an empty slot back for what that slot cost", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "buy-slot" });
-		state = runReducer(state, { type: "buy-slot" });
-		const cashed = runReducer(state, { type: "cash-slot" });
+	it("tallies every gate's upkeep, not just the one it last paid", () => {
+		const held = { ...shopAfter(2), storage: 500 };
+		const wide = runReducer(held, { type: "set-build-space", rung: 2 });
+		const first = clearGate(runReducer(wide, { type: "finish-reward" }));
+		const second = clearGate(runReducer(first, { type: "finish-reward" }));
 
-		expect(cashed.build.slots).toBe(5);
-		expect(cashed.storage).toBe(state.storage + 40);
+		expect(first.upkeepPaidKb).toBe(32);
+		expect(second.upkeepPaidKb).toBe(64);
 	});
 
-	it("closes the buy-low-cash-high loop: a bought slot cashes for exactly its price", () => {
-		const opened: RunState = { ...inShop(), storage: 500 };
-		const bought = runReducer(opened, { type: "buy-slot" });
-		const cashed = runReducer(bought, { type: "cash-slot" });
+	it("leaves the build over its space rather than refusing the step down", () => {
+		const heavy = atGateWithBuild(BUILD_SPACE_FROM_GATE, 6);
+		const narrowed = setBuildSpace(heavy, 0);
 
-		expect(cashed.storage).toBe(opened.storage);
-		expect(cashed.build.slots).toBe(opened.build.slots);
+		expect(narrowed.build.slots).toBe(BASE_SLOTS);
+		expect(overflowSlots(narrowed.build)).toBeGreaterThan(0);
 	});
 
-	it("never rolls the ladder back, so re-buying a cashed slot costs the rung above", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "buy-slot" });
-		state = runReducer(state, { type: "cash-slot" });
-		const rebought = runReducer(state, { type: "buy-slot" });
+	it("refuses a rung off either end of the ladder", () => {
+		const state = shopAfter(2);
 
-		expect(rebought.slotsBought).toBe(2);
-		expect(state.storage - rebought.storage).toBe(40);
+		expect(setBuildSpace(state, -1)).toBe(state);
+		expect(setBuildSpace(state, BUILD_SPACE_RUNGS.length)).toBe(state);
 	});
 
-	it("refuses to cash below the free four", () => {
-		const state = { ...inShop(), storage: 500 };
-		expect(runReducer(state, { type: "cash-slot" })).toEqual(state);
-	});
+	it("drops to the widest rung the balance covers when the bill outruns it", () => {
+		const wide = setBuildSpace(shopAfter(2), BUILD_SPACE_RUNGS.length - 1);
+		const climbed = runReducer(wide, { type: "finish-reward" });
+		const cleared = clearGate({ ...climbed, storage: 0 });
 
-	it("refuses to cash a slot a config is standing in", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "buy-slot" });
-		const filled: RunState = {
-			...state,
-			build: { ...state.build, slots: occupiedSlots(state.build.configs) },
-		};
-
-		expect(runReducer(filled, { type: "cash-slot" })).toEqual(filled);
-	});
-
-	it("sells no slot past the 24th", () => {
-		const state: RunState = {
-			...inShop(),
-			storage: 1_000_000,
-			slotsBought: MAX_SLOTS - BASE_SLOTS,
-			build: { ...inShop().build, slots: MAX_SLOTS },
-		};
-
-		expect(runReducer(state, { type: "buy-slot" })).toEqual(state);
-	});
-});
-
-describe("the storage plan in the shop (ADR-046)", () => {
-	const inShop = (): RunState => clearGate(started(["js"], 4 * SLICE_WINDOW));
-
-	it("opens every run on the free 256 KB cap", () => {
-		const state = createRun(pool(10), handed);
-		expect(state.storagePlan).toBeUndefined();
-		expect(storageCapFor(state.storagePlan ?? 0)).toBe(256);
-	});
-
-	it("switches plan without charging at the counter — the bill lands at the clear", () => {
-		const state = { ...inShop(), storage: 300 };
-		const upgraded = runReducer(state, { type: "set-storage-plan", tier: 2 });
-
-		expect(upgraded.storagePlan).toBe(2);
-		expect(upgraded.storage).toBe(300);
-	});
-
-	it("burns what will not fit when the plan is dropped", () => {
-		let state: RunState = { ...inShop(), storagePlan: 3, storage: 1400 };
-		state = runReducer(state, { type: "set-storage-plan", tier: 0 });
-
-		expect(state.storage).toBe(256);
-	});
-
-	it("refuses a rung whose bill the balance cannot cover", () => {
-		const state = { ...inShop(), storage: 31 };
-
-		expect(runReducer(state, { type: "set-storage-plan", tier: 1 })).toBe(
-			state
-		);
-	});
-
-	it("sells the rung once the bill is covered", () => {
-		const state = { ...inShop(), storage: 32 };
-
-		expect(
-			runReducer(state, { type: "set-storage-plan", tier: 1 }).storagePlan
-		).toBe(1);
-	});
-
-	it("always lets a run drop to a cheaper rung, however broke", () => {
-		const state: RunState = { ...inShop(), storagePlan: 3, storage: 0 };
-
-		expect(
-			runReducer(state, { type: "set-storage-plan", tier: 0 }).storagePlan
-		).toBe(0);
-	});
-
-	it("refuses a tier it does not sell", () => {
-		const state = inShop();
-		expect(runReducer(state, { type: "set-storage-plan", tier: 99 })).toEqual(
-			state
-		);
-	});
-
-	it("bills the plan at the clear, off the rewarded balance", () => {
-		let state: RunState = { ...inShop(), storage: 300 };
-		state = runReducer(state, { type: "set-storage-plan", tier: 1 });
-		state = runReducer(state, { type: "finish-reward" });
-		const cleared = clearGate(state);
-
-		expect(cleared.planBilledKb).toBe(32);
-		expect(cleared.storagePlan).toBe(1);
-		expect(cleared.planDowngraded).toBeUndefined();
-	});
-
-	it("drops to the free cap when the clear cannot cover the bill", () => {
-		let state: RunState = { ...inShop(), storagePlan: 5, storage: 1280 };
-		state = runReducer(state, { type: "set-storage-plan", tier: 6 });
-		state = runReducer(state, { type: "finish-reward" });
-		const cleared = clearGate({ ...state, storage: 0 });
-
-		expect(cleared.planDowngraded).toBe(true);
-		expect(cleared.storagePlan).toBe(0);
-	});
-
-	it("clamps a clear that would earn past the cap", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "finish-reward" });
-		const cleared = clearGate(state);
-
-		expect(cleared.storage).toBeLessThanOrEqual(256);
-	});
-
-	it("keeps every slot it bought through a miss with an empty balance", () => {
-		let state: RunState = { ...inShop(), storage: 500 };
-		state = runReducer(state, { type: "buy-slot" });
-		state = runReducer(state, { type: "finish-reward" });
-		state = failGate({ ...state, storage: 0 });
-
-		expect(state.build.slots).toBe(5);
-		expect(state.storage).toBe(0);
+		expect(cleared.spaceDroppedTo).toBe(cleared.build.slots);
+		expect(cleared.build.slots).toBeLessThan(32);
 	});
 });
 

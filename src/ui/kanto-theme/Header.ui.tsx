@@ -53,7 +53,6 @@ type HeaderReading =
 
 export type HeaderProps = {
 	swatch: GateSwatch;
-	gateCount: number;
 	swatches: readonly SwatchFill[];
 	funds?: HeaderFunds;
 	title?: string;
@@ -66,7 +65,6 @@ export type HeaderProps = {
 
 export const Header = ({
 	swatch,
-	gateCount,
 	swatches,
 	funds,
 	title,
@@ -99,9 +97,9 @@ export const Header = ({
 			</div>
 			<div className={TRACK_ROW}>
 				<SwatchTrack swatches={swatches} size={SWATCH_SIZE} />
-				<span className={clsx(NOTE, PLACEMENT[noteAt])}>
-					{note ?? `gate ${swatch.gate} / ${gateCount}`}
-				</span>
+				{note === undefined ? null : (
+					<span className={clsx(NOTE, PLACEMENT[noteAt])}>{note}</span>
+				)}
 				{reading.coverage === undefined ? null : (
 					<span className={COVERAGE}>
 						<span className={COVERAGE_LABEL}>{reading.coverage.label}</span>

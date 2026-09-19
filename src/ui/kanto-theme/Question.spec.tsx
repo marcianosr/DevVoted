@@ -113,3 +113,21 @@ describe("Question", () => {
 		expect(screen.getByText("A")).toHaveClass("rounded-full");
 	});
 });
+
+describe("Question's crossed-out options", () => {
+	it("rules out an option a linter has crossed off", () => {
+		render(
+			<Question
+				{...props}
+				onPick={vi.fn()}
+				options={[
+					{ id: "a", letter: "A", label: "at(-1)" },
+					{ id: "b", letter: "B", label: "pop()", crossedOut: true },
+				]}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: /pop\(\)/ })).toBeDisabled();
+		expect(screen.getByRole("button", { name: /at\(-1\)/ })).toBeEnabled();
+	});
+});

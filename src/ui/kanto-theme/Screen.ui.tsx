@@ -11,12 +11,15 @@ const SCREEN =
 const FRAME = "bg-theme-faint rounded-3xl border-theme-faint border-1";
 const BODY = "flex w-full flex-1 flex-col gap-6 p-4 sm:p-8";
 
-export type ScreenWidth = "narrow" | "default";
+export type ScreenWidth = "narrow" | "default" | "wide";
 export type ScreenGround = "framed" | "bare";
 
 const WIDTH = {
 	narrow: "max-w-2xl",
 	default: "max-w-[900px]",
+	// A collection screen lists rather than decides: it needs room the run
+	// screens, which ask one question at a time, deliberately refuse.
+	wide: "max-w-6xl",
 } satisfies Record<ScreenWidth, string>;
 
 export type ScreenProps = {

@@ -6,6 +6,7 @@ import {
 	scheduleOf,
 	windowStartIndex,
 } from "~/modules/run/run/domain/run.model";
+import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type {
 	AnsweredPoll,
 	RunPoll,
@@ -23,6 +24,20 @@ import {
  * per run.
  */
 export type RunSnapshot = Omit<RunState, "polls">;
+
+/**
+ * What a persisted row may actually hold. We always WRITE a `RunSnapshot`, but
+ * we READ whatever the engine version that wrote it produced, and older ones
+ * predate the units rename. Every `RunSnapshot` is assignable to this, so the
+ * looser type costs callers nothing and stops the reader pretending fields are
+ * there.
+ */
+export type StoredSnapshot = Omit<RunSnapshot, "bankedUnits" | "window"> & {
+	readonly bankedUnits?: number;
+	readonly window: Omit<GateWindow, "unitsEarned"> & {
+		readonly unitsEarned?: number;
+	};
+};
 
 export const toRunSnapshot = (state: RunState): RunSnapshot => {
 	const { polls: _polls, ...snapshot } = state;
@@ -66,6 +81,46 @@ const refreshAuthors = (
 	});
 
 /**
+ * Snapshots written before the units rename carry `coverageGained` on the window
+ * and no `bankedUnits` at all. Both reach the coverage bar as raw numbers, so a
+ * missing one arrives as NaN — and NaN never equals itself, which turns the
+ * bar's render-phase comparison into an infinite loop rather than a wrong
+ * figure. Healed here for the same reason the roster and the pick budget are.
+ */
+const legacyUnitsOf = (
+	window: StoredSnapshot["window"]
+): number | undefined => {
+	const renamed: unknown = Reflect.get(window, "coverageGained");
+	return typeof renamed === "number" ? renamed : undefined;
+};
+
+const finite = (value: number, fallback: number): number =>
+	Number.isFinite(value) ? value : fallback;
+
+const unitsEarnedOf = (window: StoredSnapshot["window"]): number => {
+	const stored = window.unitsEarned;
+	if (stored !== undefined && Number.isFinite(stored)) return stored;
+
+	return legacyUnitsOf(window) ?? 0;
+};
+
+/**
+ * `coverage` has always been the run's running unit total, so the units the
+ * cleared gates banked are that total minus the open window's share. A
+ * reconstruction, not a default: zeroing it would silently wipe the score of
+ * every run already in flight.
+ */
+const bankedUnitsOf = (
+	snapshot: StoredSnapshot,
+	unitsEarned: number
+): number => {
+	const stored = snapshot.bankedUnits;
+	if (stored !== undefined && Number.isFinite(stored)) return stored;
+
+	return Math.max(0, finite(snapshot.coverage, 0) - unitsEarned);
+};
+
+/**
  * The polls are authoritative on load in the same way the roster is: a day
  * rollover (ADR-011) drops the window's unplayed tail and appends today's
  * segment, so a pick budget stored when the window opened would describe polls
@@ -74,33 +129,46 @@ const refreshAuthors = (
  * never needs a round trip to learn its own budget.
  */
 export const hydrateRunState = (
-	snapshot: RunSnapshot,
+	snapshot: StoredSnapshot,
 	polls: readonly RunPoll[]
-): RunState => ({
-	...snapshot,
-	build: {
-		...snapshot.build,
-		configs: refreshConfigs(snapshot.build.configs),
-	},
-	available: refreshConfigs(snapshot.available),
-	draftOptions: refreshConfigs(snapshot.draftOptions),
-	answeredThisGate: refreshAuthors(snapshot.answeredThisGate, polls),
-	...(snapshot.allAnswered === undefined
-		? {}
-		: { allAnswered: refreshAuthors(snapshot.allAnswered, polls) }),
-	window: {
-		...snapshot.window,
-		budget: pickBudgetFor(
-			polls,
-			windowStartIndex(snapshot),
-			mirrorsPolls(
-				liveAuditsFor(
-					snapshot.build.configs,
-					snapshot.gatesCleared,
-					scheduleOf(snapshot)
+): RunState => {
+	const unitsEarned = unitsEarnedOf(snapshot.window);
+	// Healed first, so everything downstream reads one shape: `windowStartIndex`
+	// and the audit lens both take a snapshot, and neither should learn that an
+	// older engine wrote fewer fields.
+	const healed: RunSnapshot = {
+		...snapshot,
+		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
+		coverage: finite(snapshot.coverage, 0),
+		window: { ...snapshot.window, unitsEarned },
+	};
+
+	return {
+		...healed,
+		build: {
+			...healed.build,
+			configs: refreshConfigs(healed.build.configs),
+		},
+		available: refreshConfigs(healed.available),
+		draftOptions: refreshConfigs(healed.draftOptions),
+		answeredThisGate: refreshAuthors(healed.answeredThisGate, polls),
+		...(healed.allAnswered === undefined
+			? {}
+			: { allAnswered: refreshAuthors(healed.allAnswered, polls) }),
+		window: {
+			...healed.window,
+			budget: pickBudgetFor(
+				polls,
+				windowStartIndex(healed),
+				mirrorsPolls(
+					liveAuditsFor(
+						healed.build.configs,
+						healed.gatesCleared,
+						scheduleOf(healed)
+					)
 				)
-			)
-		),
-	},
-	polls,
-});
+			),
+		},
+		polls,
+	};
+};

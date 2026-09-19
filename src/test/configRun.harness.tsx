@@ -46,11 +46,50 @@ const QUESTION_BANK = {
 	Record<CategoryCode, { question: string; right: string; wrongs: string[] }>
 >;
 
+const SELECT_ALL_BANK = {
+	js: {
+		question: "Which array methods mutate the array in place?",
+		rights: ["sort()", "reverse()", "splice()", "push()"],
+		wrongs: ["map()", "slice()"],
+	},
+	ts: {
+		question: "Which of these are TypeScript utility types?",
+		rights: ["Partial<T>", "Pick<T, K>", "Omit<T, K>", "Readonly<T>"],
+		wrongs: ["Maybe<T>", "Optional<T>"],
+	},
+	css: {
+		question: "Which properties take a length?",
+		rights: ["margin", "padding", "gap", "border-width"],
+		wrongs: ["display", "position"],
+	},
+	react: {
+		question: "Which hooks ship with React itself?",
+		rights: ["useState", "useEffect", "useMemo", "useRef"],
+		wrongs: ["useFetch", "useStore"],
+	},
+} satisfies Record<
+	keyof typeof QUESTION_BANK,
+	{ question: string; rights: string[]; wrongs: string[] }
+>;
+
 export type BankCategory = keyof typeof QUESTION_BANK;
+
+export type GateEntry =
+	BankCategory | { readonly category: BankCategory; readonly selectAll: true };
+
+export const selectAll = (category: BankCategory) =>
+	({ category, selectAll: true }) as const;
 
 export const JS_GATE = ["js", "js", "js", "js", "js"] as const;
 export const MIXED_GATE = ["js", "css", "ts", "react", "js"] as const;
 export const CSS_GATE = ["css", "css", "css", "css", "css"] as const;
+export const SELECT_ALL_GATE = [
+	selectAll("js"),
+	selectAll("ts"),
+	selectAll("css"),
+	selectAll("react"),
+	selectAll("js"),
+] as const;
 export const ALL_RIGHT = [true, true, true, true, true];
 
 const single = (id: string, category: BankCategory): RunPoll => {
@@ -71,8 +110,34 @@ const single = (id: string, category: BankCategory): RunPoll => {
 	};
 };
 
-const pollsOf = (categories: readonly BankCategory[]): RunPoll[] =>
-	categories.map((category, index) => single(`${category}-${index}`, category));
+const selectAllPoll = (id: string, category: BankCategory): RunPoll => {
+	const bank = SELECT_ALL_BANK[category];
+	return {
+		id,
+		category,
+		question: bank.question,
+		answerType: "multiple",
+		options: [
+			...bank.rights.map((label, index) => ({
+				id: `${id}-r${index}`,
+				label,
+				correct: true,
+			})),
+			...bank.wrongs.map((label, index) => ({
+				id: `${id}-w${index}`,
+				label,
+				correct: false,
+			})),
+		],
+	};
+};
+
+const pollsOf = (entries: readonly GateEntry[]): RunPoll[] =>
+	entries.map((entry, index) =>
+		typeof entry === "string"
+			? single(`${entry}-${index}`, entry)
+			: selectAllPoll(`${entry.category}-${index}`, entry.category)
+	);
 
 /**
  * Sets `build.configs` directly so a story can show a build the shop's install
@@ -80,10 +145,10 @@ const pollsOf = (categories: readonly BankCategory[]): RunPoll[] =>
  */
 export const runWith = (
 	configs: readonly Config[],
-	categories: readonly BankCategory[],
+	entries: readonly GateEntry[],
 	startAtGate = 0
 ): RunState => {
-	const base = createRun(pollsOf(categories), [...configs], startAtGate);
+	const base = createRun(pollsOf(entries), [...configs], startAtGate);
 	return runReducer(
 		{
 			...base,
@@ -112,25 +177,41 @@ export const dispatching = (
 	...actions: readonly RunAction[]
 ): RunState => actions.reduce(runReducer, state);
 
-export const answerNext = (state: RunState, correct: boolean): RunState => {
+/** A number is how much of the key to catch, so a story can land a partial rung. */
+export type AnswerOutcome = boolean | number;
+
+const pickedFor = (poll: RunPoll, outcome: AnswerOutcome): string[] => {
+	const rights = poll.options
+		.filter((option) => option.correct)
+		.map((option) => option.id);
+	if (outcome === true) return rights;
+	if (outcome === false)
+		return poll.options
+			.filter((option) => !option.correct)
+			.slice(0, 1)
+			.map((option) => option.id);
+	return rights.slice(0, outcome);
+};
+
+export const answerNext = (
+	state: RunState,
+	outcome: AnswerOutcome
+): RunState => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return state;
-	const picked = correct
-		? poll.options.filter((option) => option.correct).map((option) => option.id)
-		: poll.options
-				.filter((option) => !option.correct)
-				.slice(0, 1)
-				.map((option) => option.id);
-	return runReducer(state, { type: "answer", optionIds: picked });
+	return runReducer(state, {
+		type: "answer",
+		optionIds: pickedFor(poll, outcome),
+	});
 };
 
 export const afterAnswers = (
 	state: RunState,
-	outcomes: readonly boolean[]
+	outcomes: readonly AnswerOutcome[]
 ): RunState => outcomes.reduce(answerNext, state);
 
 export const asPoll = (state: RunState) => {
-	const view = toRunView(state, 0);
+	const view = toRunView(state);
 	if (!view.poll) return <p>no poll to show</p>;
 	return (
 		<PollView
@@ -146,7 +227,7 @@ export const asPoll = (state: RunState) => {
 };
 
 export const asAnswered = (state: RunState) => {
-	const view = toRunView(state, 0);
+	const view = toRunView(state);
 	const answered = view.answeredThisGate.at(-1);
 	if (!answered) return <p>nothing answered yet</p>;
 	return (
@@ -162,21 +243,26 @@ export const asAnswered = (state: RunState) => {
 };
 
 export const asPrep = (state: RunState) => (
-	<PrepView view={toRunView(state, 0)} onStart={noop} onBackToShop={noop} />
+	<PrepView
+		view={toRunView(state)}
+		onStart={noop}
+		onBackToShop={noop}
+		onEstimate={noop}
+		onRebase={noop}
+	/>
 );
 
 export const asShop = (state: RunState) => (
 	<ShopView
-		view={toRunView(state, 0)}
+		view={toRunView(state)}
 		onDraft={noop}
 		onSell={noop}
 		onUpgrade={noop}
 		onRebuild={noop}
 		onExtend={noop}
 		onPlantPin={noop}
-		onBuySlot={noop}
-		onCashSlot={noop}
-		onSetStoragePlan={noop}
+		onSetBuildSpace={noop}
+		onVendorLock={noop}
 		onContinue={noop}
 	/>
 );
@@ -186,7 +272,7 @@ export const asGateOutcome = (
 	verdict: GateVerdict = "cleared"
 ) => (
 	<GateOutcomeView
-		view={toRunView(state, 0)}
+		view={toRunView(state)}
 		verdict={verdict}
 		onReview={noop}
 		onNext={noop}
@@ -195,17 +281,11 @@ export const asGateOutcome = (
 
 export const asReview = (state: RunState) => (
 	<ReviewView
-		view={toRunView(state, 0)}
+		view={toRunView(state)}
 		back={{ label: "Back to the gate", onUse: noop }}
 	/>
 );
 
 export const asStart = (state: RunState) => (
-	<StartView
-		view={toRunView(state, 0)}
-		onToggle={noop}
-		onBuySlot={noop}
-		onRefundSlot={noop}
-		onStart={noop}
-	/>
+	<StartView view={toRunView(state)} onToggle={noop} onStart={noop} />
 );

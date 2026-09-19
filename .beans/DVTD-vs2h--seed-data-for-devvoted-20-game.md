@@ -1,11 +1,11 @@
 ---
 # DVTD-vs2h
 title: Seed data for DevVoted 2.0 game
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-07-24T15:27:12Z
-updated_at: 2026-07-27T14:17:00Z
+updated_at: 2026-09-16T19:05:18Z
 parent: DVTD-82c4
 ---
 

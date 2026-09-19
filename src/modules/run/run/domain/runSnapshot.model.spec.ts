@@ -126,6 +126,58 @@ describe("hydrateRunState — the roster is authoritative", () => {
 	});
 });
 
+describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
+	/**
+	 * Every run persisted before the units rename stores `coverageGained` on the
+	 * window and no `bankedUnits`. Read straight back, both arrive as undefined
+	 * and the coverage bar receives NaN — which does not render wrong, it
+	 * re-renders forever.
+	 */
+	const preRenameSnapshot = (coverage: number, windowUnits: number) => {
+		const snapshot = toRunSnapshot({
+			...baseState,
+			gatesCleared: 4,
+			coverage,
+		});
+		const { unitsEarned: _renamed, ...window } = snapshot.window;
+		const { bankedUnits: _absent, ...rest } = snapshot;
+
+		return {
+			...rest,
+			window: { ...window, coverageGained: windowUnits },
+		};
+	};
+
+	it("reads the window's units off the name they were stored under", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(9.4, 2), POLLS);
+		expect(hydrated.window.unitsEarned).toBe(2);
+	});
+
+	it("reconstructs the banked units rather than zeroing the run", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(9.4, 2), POLLS);
+		expect(hydrated.bankedUnits).toBeCloseTo(7.4);
+	});
+
+	it("never hands the coverage bar a figure it cannot settle", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(0, 0), POLLS);
+		expect(Number.isFinite(hydrated.bankedUnits)).toBe(true);
+		expect(Number.isFinite(hydrated.window.unitsEarned)).toBe(true);
+		expect(Number.isFinite(hydrated.coverage)).toBe(true);
+	});
+
+	it("leaves a current snapshot exactly as it found it", () => {
+		const current = toRunSnapshot({
+			...baseState,
+			bankedUnits: 12,
+			coverage: 13.5,
+			window: { ...baseState.window, unitsEarned: 1.5 },
+		});
+		const hydrated = hydrateRunState(current, POLLS);
+		expect(hydrated.bankedUnits).toBe(12);
+		expect(hydrated.window.unitsEarned).toBe(1.5);
+	});
+});
+
 describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	const multiPoll = (id: string, correctCount: number): RunPoll => ({
 		id,

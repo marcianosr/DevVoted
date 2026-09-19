@@ -68,16 +68,16 @@ describe("effectOf — Cache", () => {
 		cachedHits,
 	});
 
-	it("pays ×1 cold and one step more per cached hit", () => {
+	it("pays nothing cold and a quarter unit more per cached hit", () => {
 		const effect = effectOf(CONFIGS.cache);
 		expect(effect.coverage?.(warm("js", 0))).toEqual({ mult: 1, add: 0 });
-		expect(effect.coverage?.(warm("js", 2))).toEqual({ mult: 1.5, add: 0 });
+		expect(effect.coverage?.(warm("js", 2))).toEqual({ mult: 1, add: 0.5 });
 	});
 
-	it("tops out at ×2 however warm the category runs", () => {
+	it("tops out at one unit however warm the category runs", () => {
 		expect(effectOf(CONFIGS.cache).coverage?.(warm("js", 9))).toEqual({
-			mult: 2,
-			add: 0,
+			mult: 1,
+			add: 1,
 		});
 	});
 
@@ -85,6 +85,39 @@ describe("effectOf — Cache", () => {
 		const effect = effectOf(CONFIGS.cache);
 		expect(effect.rewardMultiplier).toBeUndefined();
 		expect(effect.storageOnClear).toBeUndefined();
+	});
+});
+
+describe("effectOf — .prettierrc", () => {
+	const onMultiple = (): AnswerContext => ({
+		...answering("js"),
+		answerType: "multiple",
+	});
+
+	it("adds the fraction a half unit needs to reach a whole one", () => {
+		expect(effectOf(CONFIGS.prettierrc).coverage?.(onMultiple(), 0.5)).toEqual({
+			mult: 1,
+			add: 0.5,
+		});
+	});
+
+	it("adds nothing to a figure that is already whole", () => {
+		const effect = effectOf(CONFIGS.prettierrc);
+		expect(effect.coverage?.(onMultiple(), 1)).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(onMultiple(), 2)).toEqual({ mult: 1, add: 0 });
+	});
+
+	it("adds nothing when no answer has been scored yet", () => {
+		expect(effectOf(CONFIGS.prettierrc).coverage?.(onMultiple())).toEqual({
+			mult: 1,
+			add: 0,
+		});
+	});
+
+	it("never multiplies, so the top-up cannot be amplified", () => {
+		expect(
+			effectOf(CONFIGS.prettierrc).coverage?.(onMultiple(), 0.5)?.mult
+		).toBe(1);
 	});
 });
 
@@ -159,6 +192,7 @@ const onPoll = (
 	cachedHits: 0,
 	suppressingAudit: false,
 	faucetRemainingKb: FAUCET_CAP_KB,
+	autoUpgradeProgress: 0,
 	...extras,
 });
 
@@ -173,11 +207,31 @@ describe("configStatusFor — offline", () => {
 	});
 });
 
-describe("configStatusFor — online", () => {
-	it("puts a Focus config online only on its own category", () => {
+describe("configStatusFor — coverage on the online arm", () => {
+	it("carries the multiplier a Focus config is applying to this poll", () => {
 		expect(configStatusFor(CONFIGS.js, onPoll("js"))).toEqual({
 			kind: "online",
+			coverage: { mult: 1.25, add: 0 },
 		});
+	});
+
+	it("carries the units a flat adder is contributing", () => {
+		expect(configStatusFor(CONFIGS.codeCoverage, onPoll("css"))).toEqual({
+			kind: "online",
+			coverage: { mult: 1, add: 0.1 },
+		});
+	});
+
+	it("leaves the coverage off a config online for some other reason", () => {
+		expect(configStatusFor(CONFIGS.eslint, onPoll("ts"))).toEqual({
+			kind: "online",
+		});
+	});
+});
+
+describe("configStatusFor — online", () => {
+	it("puts a Focus config online only on its own category", () => {
+		expect(configStatusFor(CONFIGS.js, onPoll("js")).kind).toBe("online");
 		expect(configStatusFor(CONFIGS.js, onPoll("css"))).toEqual({
 			kind: "skipped",
 			why: { kind: "otherCategories", categories: ["js"] },
@@ -186,8 +240,8 @@ describe("configStatusFor — online", () => {
 
 	it("puts Cache online once the category is warm and skips it cold", () => {
 		expect(
-			configStatusFor(CONFIGS.cache, onPoll("js", 1, { cachedHits: 1 }))
-		).toEqual({ kind: "online" });
+			configStatusFor(CONFIGS.cache, onPoll("js", 1, { cachedHits: 1 })).kind
+		).toBe("online");
 		expect(configStatusFor(CONFIGS.cache, onPoll("js"))).toEqual({
 			kind: "skipped",
 			why: { kind: "cacheCold" },
@@ -195,12 +249,12 @@ describe("configStatusFor — online", () => {
 	});
 
 	it("keeps a flat coverage multiplier online on every poll", () => {
-		expect(configStatusFor(CONFIGS.intellisense, onPoll("css"))).toEqual({
-			kind: "online",
-		});
-		expect(configStatusFor(CONFIGS.codeCoverage, onPoll("css"))).toEqual({
-			kind: "online",
-		});
+		expect(configStatusFor(CONFIGS.intellisense, onPoll("css")).kind).toBe(
+			"online"
+		);
+		expect(configStatusFor(CONFIGS.codeCoverage, onPoll("css")).kind).toBe(
+			"online"
+		);
 	});
 
 	it("puts a linter online on the categories it can cross out in", () => {
@@ -223,18 +277,18 @@ describe("configStatusFor — online", () => {
 	});
 
 	it("throttles Overclock online after the opener, because ×0.5 is still a change", () => {
-		expect(configStatusFor(CONFIGS.overclock, onPoll("js", 0))).toEqual({
-			kind: "online",
-		});
-		expect(configStatusFor(CONFIGS.overclock, onPoll("js", 3))).toEqual({
-			kind: "online",
-		});
+		expect(configStatusFor(CONFIGS.overclock, onPoll("js", 0)).kind).toBe(
+			"online"
+		);
+		expect(configStatusFor(CONFIGS.overclock, onPoll("js", 3)).kind).toBe(
+			"online"
+		);
 	});
 
 	it("holds Cold Start to the opener, where its multiplier is the whole effect", () => {
-		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 0))).toEqual({
-			kind: "online",
-		});
+		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 0)).kind).toBe(
+			"online"
+		);
 		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 2))).toEqual({
 			kind: "skipped",
 			why: { kind: "openerOnly" },
@@ -274,13 +328,55 @@ describe("configStatusFor — skipped", () => {
 		});
 	});
 
+	it("tells .prettierrc it is waiting for a select-all on a single-answer poll", () => {
+		expect(configStatusFor(CONFIGS.prettierrc, onPoll("js"))).toEqual({
+			kind: "skipped",
+			why: { kind: "selectAllOnly" },
+		});
+	});
+
+	it("tells .prettierrc the answer decides on a select-all poll", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.prettierrc,
+				onPoll("js", 1, { answerType: "multiple" })
+			)
+		).toEqual({ kind: "skipped", why: { kind: "paysOnPartial" } });
+	});
+
 	it("keeps Dependabot online on every poll — the answer counts either way", () => {
 		expect(configStatusFor(CONFIGS.dependabot, onPoll("js"))).toEqual({
 			kind: "online",
+			bumpIn: 5,
 		});
 		expect(configStatusFor(CONFIGS.dependabot, onPoll("ruby"))).toEqual({
 			kind: "online",
+			bumpIn: 5,
 		});
+	});
+
+	it("counts Dependabot's streak down towards the free upgrade", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.dependabot,
+				onPoll("js", 1, { autoUpgradeProgress: 4 })
+			)
+		).toEqual({ kind: "online", bumpIn: 1 });
+	});
+
+	it("shortens the count at v2, where four in a row already pay", () => {
+		expect(
+			configStatusFor(
+				{ ...CONFIGS.dependabot, level: 2 },
+				onPoll("js", 1, { autoUpgradeProgress: 2 })
+			)
+		).toEqual({ kind: "online", bumpIn: 2 });
+	});
+
+	it("leaves a config that bumps nothing without a count", () => {
+		expect(
+			configStatusFor(CONFIGS.js, onPoll("js", 1, { autoUpgradeProgress: 3 }))
+		).toEqual({ kind: "online", coverage: { mult: 1.25, add: 0 } });
 	});
 
 	it("leads with Freemium's bill rather than its shop discount", () => {

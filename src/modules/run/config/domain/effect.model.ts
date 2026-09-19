@@ -3,13 +3,16 @@ import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
 	Config,
-	cacheMultiplierFor,
+	cacheUnitsFor,
 	focusMultiplierOf,
 	interestPctOf,
 	minifiedAmount,
 	minifiedMultiplier,
+	minifiedUnits,
 	storageOnClearOf,
+	topUpUnitsFor,
 } from "~/modules/run/config/domain/config.model";
+import { bumpInFor } from "~/modules/run/config/domain/autoUpgrade.model";
 
 export type CategoryTally = {
 	readonly seen: number;
@@ -49,7 +52,7 @@ export type Effect = {
 	streakCapSteps?: number;
 	storageOnClear?: number;
 	storageInterestPct?: number;
-	coverage?: (context: AnswerContext) => Coverage;
+	coverage?: (context: AnswerContext, creditedUnits?: number) => Coverage;
 	maskWrongOn?: (category: CategoryCode) => boolean;
 };
 
@@ -59,19 +62,22 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.coverageAdd !== undefined ||
 	config.openerCoverageMultiplier !== undefined ||
 	config.throttleCoverageMultiplier !== undefined ||
-	config.cacheHitStep !== undefined;
+	config.cacheHitStep !== undefined ||
+	config.roundsPartialUnitsUp !== undefined;
 
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
-	return ({ category, answeredBefore, cachedHits }) => ({
+	return ({ category, answeredBefore, cachedHits }, creditedUnits = 0) => ({
 		mult:
 			(config.focusCategory === category ? focusMultiplierOf(config) : 1) *
 			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
-			cacheMultiplierFor(config, cachedHits) *
 			(answeredBefore === 0
 				? minifiedMultiplier(config, config.openerCoverageMultiplier ?? 1)
 				: (config.throttleCoverageMultiplier ?? 1)),
-		add: minifiedAmount(config, config.coverageAdd ?? 0),
+		add:
+			minifiedUnits(config, config.coverageAdd ?? 0) +
+			cacheUnitsFor(config, cachedHits) +
+			topUpUnitsFor(config, creditedUnits),
 	});
 };
 
@@ -98,7 +104,11 @@ export const effectOf = (config: Config): Effect => ({
 });
 
 export type ConfigStatus =
-	| { readonly kind: "online" }
+	| {
+			readonly kind: "online";
+			readonly coverage?: Coverage;
+			readonly bumpIn?: number;
+	  }
 	| { readonly kind: "unknown" }
 	| { readonly kind: "skipped"; readonly why: SkipReason }
 	| { readonly kind: "offline"; readonly audit: string };
@@ -117,6 +127,8 @@ export type SkipReason =
 	| { readonly kind: "inPrep" }
 	| { readonly kind: "noAuditToSuppress" }
 	| { readonly kind: "runCapReached" }
+	| { readonly kind: "selectAllOnly" }
+	| { readonly kind: "paysOnPartial" }
 	| { readonly kind: "notThisPoll" };
 
 export type PollStatusContext = AnswerContext & {
@@ -124,14 +136,16 @@ export type PollStatusContext = AnswerContext & {
 	readonly categoryHidden?: boolean;
 	readonly offlineAudit?: string;
 	readonly faucetRemainingKb: number;
+	readonly autoUpgradeProgress: number;
 };
 
-const changesCoverage = (
+const coverageOnPoll = (
 	config: Config,
 	context: PollStatusContext
-): boolean => {
+): Coverage | undefined => {
 	const coverage = effectOf(config).coverage?.(context);
-	return coverage !== undefined && (coverage.mult !== 1 || coverage.add !== 0);
+	if (coverage === undefined) return undefined;
+	return coverage.mult === 1 && coverage.add === 0 ? undefined : coverage;
 };
 
 const paysOnThisAnswer = (
@@ -151,14 +165,23 @@ const readsAhead = (config: Config): boolean =>
 	config.revealsCorrectCount === true;
 
 const countsThisAnswer = (config: Config): boolean =>
-	config.autoUpgradeAfterCorrect !== undefined;
+	config.autoUpgradeAfterCorrect !== undefined ||
+	config.streakStepGrowth !== undefined;
 
-const isOnline = (config: Config, context: PollStatusContext): boolean =>
-	changesCoverage(config, context) ||
+const wagersThisAnswer = (config: Config): boolean =>
+	config.wagersAnswer !== undefined;
+
+const isOnline = (
+	config: Config,
+	context: PollStatusContext,
+	coverage: Coverage | undefined
+): boolean =>
+	coverage !== undefined ||
 	paysOnThisAnswer(config, context) ||
 	sellsSomethingHere(config, context.category) ||
 	readsAhead(config) ||
 	countsThisAnswer(config) ||
+	wagersThisAnswer(config) ||
 	(config.suppressesAudit === true && context.suppressingAudit);
 
 const skipReasonFor = (
@@ -188,11 +211,15 @@ const skipReasonFor = (
 	if (
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
-		config.storagePerEstimate !== undefined
+		config.coveragePerEstimate !== undefined
 	)
 		return { kind: "paysAtGateClear" };
 	if (config.storagePerCorrect !== undefined && context.faucetRemainingKb === 0)
 		return { kind: "runCapReached" };
+	if (config.roundsPartialUnitsUp === true)
+		return context.answerType === "multiple"
+			? { kind: "paysOnPartial" }
+			: { kind: "selectAllOnly" };
 	return { kind: "notThisPoll" };
 };
 
@@ -203,6 +230,16 @@ export const configStatusFor = (
 	if (context.offlineAudit !== undefined)
 		return { kind: "offline", audit: context.offlineAudit };
 	if (context.categoryHidden === true) return { kind: "unknown" };
-	if (isOnline(config, context)) return { kind: "online" };
-	return { kind: "skipped", why: skipReasonFor(config, context) };
+
+	const coverage = coverageOnPoll(config, context);
+	if (!isOnline(config, context, coverage))
+		return { kind: "skipped", why: skipReasonFor(config, context) };
+
+	const bumpIn = bumpInFor(config, context.autoUpgradeProgress);
+
+	return {
+		kind: "online",
+		...(coverage === undefined ? {} : { coverage }),
+		...(bumpIn === undefined ? {} : { bumpIn }),
+	};
 };

@@ -1,54 +1,36 @@
 import { Outlet } from "@tanstack/react-router";
 
-import { Screen } from "~/ui/old-theme/Screen.ui";
-import { Paragraph } from "~/ui/old-theme/typography/Paragraph.component";
-import { Title } from "~/ui/old-theme/typography/Title.component";
+import { Screen } from "~/ui/kanto-theme/Screen.ui";
+import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
-import { HudBar } from "~/modules/run/run/presentation/HudBar.ui";
-import { RunHud } from "~/modules/run/run/presentation/RunHud.ui";
 import { useRunRouteSync } from "~/modules/run/run/application/useRunRouteSync.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
+/**
+ * No HUD: every kanto screen carries its own header, coverage bar and build
+ * footer, so a layout-level bar would state the same numbers twice. The layout
+ * is now only the route sync plus the two states no screen can draw itself.
+ */
 export const RunLayout = () => {
 	useRunRouteSync();
-	const { view, isPending, errorMessage } = useTodaysRun();
+	const { isPending, errorMessage } = useTodaysRun();
 
 	if (isPending) {
 		return (
-			<Screen width="narrow">
-				<Paragraph>Loading today’s climb…</Paragraph>
+			<Screen theme="pewter" width="narrow">
+				<Typography variant="paragraph">Loading today’s climb…</Typography>
 			</Screen>
 		);
 	}
 
 	if (errorMessage) {
 		return (
-			<Screen width="narrow">
-				<Title>Something broke</Title>
-				<Paragraph>{errorMessage}</Paragraph>
+			<Screen theme="cinnabar" width="narrow">
+				<Typography variant="title">Something broke</Typography>
+				<Typography variant="paragraph">{errorMessage}</Typography>
 			</Screen>
 		);
 	}
 
-	const runOver = view?.isOver ?? false;
-
-	return (
-		<>
-			{view && !runOver && (
-				<HudBar>
-					<RunHud
-						storage={view.storage}
-						gatesCleared={view.gatesCleared}
-						victoryGate={view.victoryGate}
-						pollsAnswered={view.pollsAnswered}
-						pollsPerGate={view.pollsPerGate}
-						gateCoverage={view.gateStake.coverageHeld}
-						gateCoverageDemand={view.gateStake.coverageLadder.healthy}
-						coverageByCategory={view.coverageByCategory}
-					/>
-				</HudBar>
-			)}
-			<Outlet />
-		</>
-	);
+	return <Outlet />;
 };

@@ -69,6 +69,41 @@ describe("NextGate", () => {
 		expect(swatch).toHaveAttribute("data-swatch-theme", props.swatch.theme);
 	});
 
+	it("prices the gate ahead in answers, which no denominator can re-base", () => {
+		render(<NextGate {...props} />);
+
+		expect(screen.getByText("4 of the 5 right clears it.")).toBeInTheDocument();
+	});
+
+	it("says so plainly when the run already carries the line in", () => {
+		render(<NextGate {...propsAt(9, 45)} />);
+
+		expect(
+			screen.getByText("The run already holds this line.")
+		).toBeInTheDocument();
+	});
+
+	it("warns when a flawless window still would not reach the line", () => {
+		render(<NextGate {...propsAt(8, 0)} />);
+
+		expect(
+			screen.getByText("5 of the 5 right will not reach it.")
+		).toBeInTheDocument();
+	});
+
+	it("rounds the demand, so gate 5 reads 55% rather than a float", () => {
+		render(<NextGate {...propsAt(4, 0)} />);
+
+		expect(screen.getByText("55%")).toBeInTheDocument();
+		expect(screen.queryByText(/55\.0+1/)).not.toBeInTheDocument();
+	});
+
+	it("stays quiet when nothing is owed to say", () => {
+		render(<NextGate {...props} note={undefined} />);
+
+		expect(screen.queryByText(/right clears it/)).not.toBeInTheDocument();
+	});
+
 	it("says when the gate opens, and stays quiet when nothing says", () => {
 		const { rerender } = render(<NextGate {...props} />);
 

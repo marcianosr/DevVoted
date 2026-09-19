@@ -76,8 +76,8 @@ type Capped = {
 type Plain = {
 	glyph?: never;
 	cap?: never;
-	detail?: never;
-	detailOn?: never;
+	detail?: string;
+	detailOn?: DetailReveal;
 	icon?: IconName;
 	iconAt?: IconPlacement;
 };

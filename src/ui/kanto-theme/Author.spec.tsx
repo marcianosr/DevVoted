@@ -92,4 +92,24 @@ describe("Author", () => {
 
 		expect(container.firstChild).toHaveClass("border-t", "border-edge", "pt-3");
 	});
+
+	it("drops its own rule for a host that already rules, such as a panel footer", () => {
+		const { container } = render(
+			<Author handle="matthijsgroen" rule={false} />
+		);
+
+		expect(container.firstChild).not.toHaveClass("border-t", "pt-3");
+	});
+
+	it("shrinks the avatar to sit on one line with footer text", () => {
+		const { container } = render(<Author handle="matthijsgroen" size="sm" />);
+
+		expect(container.querySelector("span")).toHaveClass("size-5");
+	});
+
+	it("stands the avatar full size when nothing asks it to shrink", () => {
+		const { container } = render(<Author handle="matthijsgroen" />);
+
+		expect(container.querySelector("span")).toHaveClass("size-8");
+	});
 });

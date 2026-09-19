@@ -25,7 +25,9 @@ export type CumulativeMetric =
 	| "exact-estimates"
 	| "arms-switched"
 	| "cache-hits"
-	| "gates-reordered";
+	| "gates-reordered"
+	| "partials-paid"
+	| "configs-vendor-locked";
 
 export type ObjectiveMetric = CumulativeMetric | OneShotMetric;
 
@@ -113,6 +115,13 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Close 3 perfect windows",
 		"closed 3 perfect windows",
 		125
+	),
+	reduce: earned(
+		"perfect-windows",
+		6,
+		"Close 6 perfect windows",
+		"closed 6 perfect windows",
+		250
 	),
 	git: earned(
 		"category-correct:git",
@@ -236,9 +245,16 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 	"planning-poker": earned(
 		"exact-estimates",
 		3,
-		"Land 3 exact estimates",
-		"landed 3 exact estimates",
+		"Meet 3 estimates",
+		"met 3 estimates",
 		575
+	),
+	strict: earned(
+		"polls-correct",
+		50,
+		"Answer 50 polls correctly",
+		"answered 50 polls correctly",
+		200
 	),
 	"ab-test": earned(
 		"arms-switched",
@@ -274,6 +290,20 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Clear 30 gates",
 		"cleared 30 gates",
 		700
+	),
+	prettierrc: earned(
+		"partials-paid",
+		10,
+		"Be paid for 10 partial answers",
+		"was paid for 10 partial answers",
+		725
+	),
+	"vendor-lock-in": earned(
+		"configs-vendor-locked",
+		3,
+		"Lock 3 configs in",
+		"locked 3 configs in",
+		750
 	),
 };
 

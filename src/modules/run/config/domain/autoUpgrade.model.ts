@@ -19,14 +19,20 @@ export const autoUpgraderOf = (
 ): Config | undefined =>
 	configs.find((config) => config.autoUpgradeAfterCorrect !== undefined);
 
+export const bumpInFor = (
+	config: Config,
+	progress: number
+): number | undefined => {
+	const needed = autoUpgradeAfterCorrectOf(config);
+	return needed === undefined ? undefined : Math.max(1, needed - progress);
+};
+
 export const autoUpgradeRemaining = (
 	configs: readonly Config[],
 	progress: number
 ): number | undefined => {
 	const bot = autoUpgraderOf(configs);
-	if (!bot) return undefined;
-	const needed = autoUpgradeAfterCorrectOf(bot);
-	return needed === undefined ? undefined : needed - progress;
+	return bot === undefined ? undefined : bumpInFor(bot, progress);
 };
 
 const upgradeCandidates = (configs: readonly Config[]): readonly Config[] =>

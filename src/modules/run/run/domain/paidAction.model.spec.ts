@@ -124,7 +124,7 @@ describe("the lint fee", () => {
 			state = runReducer(state, {
 				type: "strip",
 				// Never the linter: peeling it would answer a different question.
-				configId: state.build.configs[state.build.configs.length - 1].id,
+				configIds: [state.build.configs[state.build.configs.length - 1].id],
 			});
 		state = runReducer(
 			{ ...state, window: { ...state.window, linted: 3 } },

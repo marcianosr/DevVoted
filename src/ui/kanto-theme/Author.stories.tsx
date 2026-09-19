@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Author } from "./Author.ui";
+import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
+import { Typography } from "./Typography.ui";
 
 const BORDER = "/borders/border-grass.png";
 
@@ -31,4 +33,29 @@ export const AvatarFallback: Story = {
 
 export const LongTitle: Story = {
 	args: { title: "Poll editor and Kanto Pokédex maintainer" },
+};
+
+export const InAPanelFooter: Story = {
+	args: { size: "sm", rule: false },
+	render: (args) => (
+		<Screen theme="viridian" width="narrow">
+			<Panel>
+				<Panel.Header label="poll 2 of 5" badge={{ label: "JavaScript" }} />
+				<Panel.Body>
+					<Typography variant="title">
+						Which method returns the last element of an array?
+					</Typography>
+				</Panel.Body>
+				<Panel.Footer
+					trailing={
+						<Typography variant="hint" as="span">
+							press A, B or C to lock in
+						</Typography>
+					}
+				>
+					<Author {...args} />
+				</Panel.Footer>
+			</Panel>
+		</Screen>
+	),
 };

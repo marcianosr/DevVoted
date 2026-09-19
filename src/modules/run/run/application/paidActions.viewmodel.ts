@@ -1,5 +1,9 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { linterFor, peekerFor } from "~/modules/run/build/domain/build.model";
+import {
+	linterFor,
+	peekerFor,
+	wagererFor,
+} from "~/modules/run/build/domain/build.model";
 import {
 	buyBackFeeFor,
 	canBuyPeek,
@@ -14,8 +18,13 @@ import {
 } from "~/modules/run/run/domain/paidAction.model";
 import {
 	hiddenOptionIdsOf,
+	liveConfigsOf,
 	type RunState,
 } from "~/modules/run/run/domain/run.model";
+import {
+	canArmStrict,
+	strictStakeOf,
+} from "~/modules/run/run/domain/strict.model";
 
 export type PaidActions = {
 	readonly canLint: boolean;
@@ -28,6 +37,10 @@ export type PaidActions = {
 	readonly peekCost: number;
 	readonly peekRefusal: PaidRefusal | undefined;
 	readonly peeker: Config | null;
+	readonly canWager: boolean;
+	readonly wagerArmed: boolean;
+	readonly wagerStake: number;
+	readonly wagerer: Config | null;
 };
 
 export type BuyBackView = {
@@ -62,5 +75,9 @@ export const paidActionsFor = (state: RunState): PaidActions => {
 		peekCost: peekFeeFor(state),
 		peekRefusal: peekRefusalOf(state),
 		peeker: peekerFor(state.build.configs) ?? null,
+		canWager: canArmStrict(state),
+		wagerArmed: state.strictArmed === true,
+		wagerStake: strictStakeOf(liveConfigsOf(state)) ?? 0,
+		wagerer: wagererFor(state.build.configs) ?? null,
 	};
 };

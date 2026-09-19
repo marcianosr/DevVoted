@@ -16,8 +16,10 @@ export type CodeBlockProps = {
 
 export const CodeBlock = ({ children }: CodeBlockProps) => (
 	<Panel className={CODE}>
-		<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
-			{`${FENCE}\n${children}\n${FENCE}`}
-		</ReactMarkdown>
+		<Panel.Body>
+			<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
+				{`${FENCE}\n${children}\n${FENCE}`}
+			</ReactMarkdown>
+		</Panel.Body>
 	</Panel>
 );

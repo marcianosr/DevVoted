@@ -88,20 +88,32 @@ describe("PollView", () => {
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 	});
 
-	it("answers a single-answer poll on the pick itself", async () => {
+	it("reports the pick on a single-answer poll rather than answering it", async () => {
 		const onSelect = vi.fn();
-		render(<PollView {...props} onSelect={onSelect} />);
+		const onSubmit = vi.fn();
+		render(<PollView {...props} onSelect={onSelect} onSubmit={onSubmit} />);
 
 		await userEvent.click(screen.getByText("at(-1)"));
 		expect(onSelect).toHaveBeenCalledWith("a");
+		expect(onSubmit).not.toHaveBeenCalled();
 	});
 
-	it("carries no submit press on a single-answer poll", () => {
-		render(<PollView {...props} />);
+	it("submits a single-answer poll only once something is picked", async () => {
+		const onSubmit = vi.fn();
+		const { rerender } = render(<PollView {...props} onSubmit={onSubmit} />);
 
 		expect(
-			screen.queryByRole("button", { name: /Submit answer/ })
-		).not.toBeInTheDocument();
+			screen.getByRole("button", { name: /Submit answer/ })
+		).toBeDisabled();
+
+		rerender(
+			<PollView {...props} selectedOptionIds={["a"]} onSubmit={onSubmit} />
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Submit answer/ })
+		);
+		expect(onSubmit).toHaveBeenCalled();
 	});
 
 	it("submits a multi-answer poll only once something is picked", async () => {
@@ -217,7 +229,9 @@ describe("PollView once the answer has landed", () => {
 			/>
 		);
 
-		expect(screen.getByText("gate 4 / 12")).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Gate 4 · Lavender" })
+		).toBeInTheDocument();
 	});
 
 	it("keeps the bar it was already drawing, so the fill travels rather than restarting", () => {
@@ -227,5 +241,22 @@ describe("PollView once the answer has landed", () => {
 		rerender(<PollView {...settled} />);
 
 		expect(container.querySelector(".coverage-bar-fill")).toBe(fill);
+	});
+});
+
+describe("PollView once a linter has crossed an answer off", () => {
+	const linted = createMockRunView({ ...view, disabledOptionIds: ["b"] });
+
+	it("rules out the option the linter paid to remove", () => {
+		render(<PollView {...props} view={linted} />);
+
+		expect(screen.getByRole("button", { name: /pop\(\)/ })).toBeDisabled();
+	});
+
+	it("leaves every other option pickable", () => {
+		render(<PollView {...props} view={linted} />);
+
+		expect(screen.getByRole("button", { name: /at\(-1\)/ })).toBeEnabled();
+		expect(screen.getByRole("button", { name: /last\(\)/ })).toBeEnabled();
 	});
 });

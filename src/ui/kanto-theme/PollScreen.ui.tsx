@@ -1,12 +1,16 @@
 import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
-import { Author, type AuthorProps } from "./Author.ui";
+import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
 import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
 import type { KantoColor } from "./colors";
 import { CoverageBar, coverageReadingOf } from "./CoverageBar.ui";
 import type { CoverageBarProps } from "./CoverageBar.ui";
 import { Header, type HeaderProps } from "./Header.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Lead, type LeadLine } from "./Lead.ui";
+import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
+import { Panel } from "./Panel.ui";
+import { PanelTable } from "./PanelTable.ui";
+import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Question, questionFactsOf, type QuestionProps } from "./Question.ui";
 import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
@@ -16,15 +20,25 @@ import { Typography } from "./Typography.ui";
 
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
+const PAID = "border-t border-theme-faint";
 const SEPARATOR = "·";
 
 const COVERAGE_TITLE = "Coverage";
+const PAID_TITLE = "what each poll paid";
+const BREAKDOWN_TITLE = "what this answer paid";
+const RULE_WORDS = "what a poll pays";
 const AUDITS_TITLE = "Audits";
 const WRONG_COST_WORDS = "wrong costs";
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const HOLDS_COLOR: KantoColor = "cerulean";
+const CREDIT_SIZE: AuthorSize = "sm";
 
-export type PollCoverage = { bar: CoverageBarProps; correct?: string };
+export type PollCoverage = {
+	bar: CoverageBarProps;
+	lead?: LeadLine;
+	paid?: PollScoresProps;
+	breakdown?: readonly LedgerRow[];
+};
 
 export type PollScreenProps = {
 	header: HeaderProps;
@@ -42,6 +56,28 @@ export type PollScreenProps = {
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
+};
+
+type PollCreditProps = Pick<PollScreenProps, "hint" | "author">;
+
+const PollCredit = ({ hint, author }: PollCreditProps) => {
+	if (hint === undefined && author === undefined) return null;
+
+	return (
+		<Panel.Footer
+			trailing={
+				hint === undefined ? undefined : (
+					<Typography variant="hint" as="span">
+						{hint}
+					</Typography>
+				)
+			}
+		>
+			{author === undefined ? null : (
+				<Author {...author} size={CREDIT_SIZE} rule={false} />
+			)}
+		</Panel.Footer>
+	);
 };
 
 export const PollScreen = ({
@@ -64,50 +100,64 @@ export const PollScreen = ({
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
 		<Header {...header} />
 
-		<PanelV2>
-			<PanelV2.Header
+		<Panel>
+			<Panel.Header
 				label={COVERAGE_TITLE}
 				meta={
 					<>
 						<span>{coverageReadingOf(coverage.bar)}</span>
-						{coverage.correct === undefined ? null : (
-							<>
-								<span aria-hidden>{SEPARATOR}</span>
-								<Tooltip
-									label={SCORING_RULE_LABEL}
-									hint={<ScoringRule />}
-									align="end"
-								>
-									{coverage.correct}
-								</Tooltip>
-							</>
-						)}
+						<span aria-hidden>{SEPARATOR}</span>
+						<Tooltip
+							label={SCORING_RULE_LABEL}
+							hint={<ScoringRule />}
+							align="end"
+							width="wide"
+						>
+							{RULE_WORDS}
+						</Tooltip>
 					</>
 				}
 			/>
-			<PanelV2.Body>
+			<Panel.Body>
 				<CoverageBar {...coverage.bar} />
-			</PanelV2.Body>
-		</PanelV2>
+				{coverage.lead === undefined ? null : (
+					<Lead line={coverage.lead} variant="paragraph" />
+				)}
+			</Panel.Body>
+			{coverage.paid === undefined ? null : (
+				<Panel.Body className={PAID}>
+					<Typography variant="hint">{PAID_TITLE}</Typography>
+					<PollScores {...coverage.paid} />
+				</Panel.Body>
+			)}
+			{coverage.breakdown === undefined ? null : (
+				<Panel.Body className={PAID}>
+					<Typography variant="hint">{BREAKDOWN_TITLE}</Typography>
+					<PanelTable>
+						<LedgerRows rows={coverage.breakdown} tabled />
+					</PanelTable>
+				</Panel.Body>
+			)}
+		</Panel>
 
 		{audits.length === 0 ? null : (
-			<PanelV2>
-				<PanelV2.Header
+			<Panel>
+				<Panel.Header
 					label={AUDITS_TITLE}
 					meta={auditsFiringOf(audits.length)}
 				/>
-				<PanelV2.Body>
+				<Panel.Body>
 					<div className={AUDITS}>
 						{audits.map((audit, index) => (
 							<Audit key={audit.code ?? index} {...audit} />
 						))}
 					</div>
-				</PanelV2.Body>
-			</PanelV2>
+				</Panel.Body>
+			</Panel>
 		)}
 
-		<PanelV2>
-			<PanelV2.Header
+		<Panel>
+			<Panel.Header
 				label={pollLabel}
 				badge={{ label: category, color: categoryColor }}
 				meta={
@@ -126,24 +176,18 @@ export const PollScreen = ({
 					</>
 				}
 			/>
-			<PanelV2.Body>
+			<Panel.Body>
 				<Question {...question} />
-			</PanelV2.Body>
-			{hint === undefined ? null : (
-				<PanelV2.Footer>
-					<Typography variant="hint">{hint}</Typography>
-				</PanelV2.Footer>
-			)}
-		</PanelV2>
-
-		{author === undefined ? null : <Author {...author} />}
+			</Panel.Body>
+			<PollCredit hint={hint} author={author} />
+		</Panel>
 
 		{footer === undefined ? null : (
-			<PanelV2>
-				<PanelV2.Body>
+			<Panel>
+				<Panel.Body>
 					<ScreenFooter {...footer} rule={false} />
-				</PanelV2.Body>
-			</PanelV2>
+				</Panel.Body>
+			</Panel>
 		)}
 
 		<BuildFooter {...buildFooter} />

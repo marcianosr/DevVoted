@@ -30,3 +30,15 @@ export const fetchUnlocksSince = async (
 		viaMetric: row.via_metric,
 	}));
 };
+
+/** Every config this account has unlocked — the pool a new run deals from. */
+export const fetchUnlockedConfigIds = async (
+	userId: string
+): Promise<readonly string[]> => {
+	const rows = await db
+		.select({ config_id: userConfigUnlocksTable.config_id })
+		.from(userConfigUnlocksTable)
+		.where(eq(userConfigUnlocksTable.user_id, userId));
+
+	return rows.map((row) => row.config_id);
+};

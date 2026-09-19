@@ -6,8 +6,6 @@ import {
 	SHOP_CAPACITY_SLOTS,
 	kantoShopBuild,
 	kantoTrackFills,
-	maxSlots,
-	slotDealsAt,
 	usedSlotsOf,
 } from "~/test/kantoPoll.factory";
 
@@ -33,7 +31,6 @@ const HoveredBuild = () => {
 			configs={kantoShopBuild}
 			layout="column"
 			slots={{ used: USED, capacity: SHOP_CAPACITY_SLOTS }}
-			{...slotDealsAt()}
 			highlight={highlight}
 			onHighlight={setHighlight}
 		/>
@@ -73,7 +70,7 @@ export const Full: Story = {
 };
 
 export const SoldOut: Story = {
-	args: { capacity: maxSlots, offered: false },
+	args: { capacity: 32, offered: false },
 };
 
 export const OverCapacity: Story = {

@@ -1,5 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
+import { MAX_STREAK_UNIT_STEPS } from "~/modules/run/run/domain/rules.model";
 
 export type AbArm = "coverage" | "storage";
 
@@ -17,7 +18,9 @@ export type Config = {
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
+	readonly roundsPartialUnitsUp?: boolean;
 	readonly streakCapSteps?: number;
+	readonly streakStepGrowth?: number;
 	readonly level?: number;
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
@@ -29,7 +32,8 @@ export type Config = {
 	readonly abArm?: AbArm;
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
-	readonly storagePerEstimate?: number;
+	readonly coveragePerEstimate?: number;
+	readonly wagersAnswer?: number;
 	readonly suppressesAudit?: boolean;
 	readonly autoUpgradeAfterCorrect?: number;
 	readonly coverageDecayPerClear?: number;
@@ -45,6 +49,7 @@ export type Config = {
 	readonly subscriptionGrowthPerGate?: number;
 	readonly draftCost?: number;
 	readonly minified?: boolean;
+	readonly vendorLocks?: boolean;
 };
 
 export const minifiedMultiplier = (
@@ -55,11 +60,31 @@ export const minifiedMultiplier = (
 export const minifiedAmount = (config: Config, amount: number): number =>
 	config.minified === true ? Math.floor(amount / 2) : amount;
 
+/** KB stays whole, so `minifiedAmount` floors. Coverage units are fractional by design. */
+export const minifiedUnits = (config: Config, units: number): number =>
+	config.minified === true ? units / 2 : units;
+
 export const focusCoverageMultiplier = (level: number): number =>
 	1 + 0.25 * level;
 
 export const focusMultiplierOf = (config: Config): number =>
 	minifiedMultiplier(config, focusCoverageMultiplier(config.level ?? 1));
+
+const STREAK_STEP_LEVEL_BONUS = 0.05;
+
+/**
+ * The streak's unit step, for a config that buys a growing one (ADR-090). A
+ * level buys a slightly steeper climb rather than a longer one, so the window
+ * stays the ceiling.
+ */
+export const streakStepOf = (config: Config): number | undefined => {
+	if (config.streakStepGrowth === undefined) return undefined;
+	return minifiedUnits(
+		config,
+		config.streakStepGrowth +
+			STREAK_STEP_LEVEL_BONUS * ((config.level ?? 1) - 1)
+	);
+};
 
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
@@ -119,7 +144,9 @@ export const isUpgradable = (config: Config): boolean => {
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
 		config.peeksCommunitySplit === true ||
-		config.autoUpgradeAfterCorrect !== undefined;
+		config.reordersGatePolls === true ||
+		config.autoUpgradeAfterCorrect !== undefined ||
+		config.streakStepGrowth !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
 
@@ -140,6 +167,16 @@ const SAMPLE_SIZE_LEVEL = 2;
 export const showsSampleSize = (config: Config): boolean =>
 	(config.level ?? 1) >= SAMPLE_SIZE_LEVEL;
 
+const ANSWER_TYPE_LEVEL = 2;
+
+/**
+ * Which polls take more than one answer is Prefetch's headline reveal, and
+ * multiple choice pays double, so handing it over at v1 would make a 4-slot
+ * config redundant. The upgrade is what buys the overlap.
+ */
+export const showsAnswerTypes = (config: Config): boolean =>
+	(config.level ?? 1) >= ANSWER_TYPE_LEVEL;
+
 export const interestPctOf = (config: Config): number =>
 	minifiedAmount(
 		config,
@@ -152,6 +189,11 @@ export const storageOnClearOf = (config: Config): number | undefined =>
 		: minifiedAmount(config, config.storageOnClear * (config.level ?? 1));
 
 export const describeConfig = (config: Config): string => {
+	const streakStep = streakStepOf(config);
+	if (streakStep !== undefined)
+		return `Every correct answer in a row pays +${streakStep} more coverage than the one before it, up to ${MAX_STREAK_UNIT_STEPS} steps. A miss restarts the climb.`;
+	if (config.wagersAnswer !== undefined)
+		return `Arm it before you answer. An exact answer earns +${config.wagersAnswer} units; a partial, a miss or a timeout takes ${config.wagersAnswer} units off the gate. It disarms after every answer.`;
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
 	if (config.autoUpgradeAfterCorrect !== undefined)
@@ -194,6 +236,14 @@ export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
 					},
 				]
 			: []),
+		...(config.reordersGatePolls === true
+			? [
+					{
+						from: showsAnswerTypes(config) ? "with answer types" : "categories",
+						to: showsAnswerTypes(next) ? "with answer types" : "categories",
+					},
+				]
+			: []),
 		...(config.storageInterestPct === undefined
 			? []
 			: [
@@ -228,6 +278,10 @@ export type ConfigFigure =
 	| { readonly kind: "percent"; readonly value: number };
 
 export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
+	const streakStep = streakStepOf(config);
+	if (streakStep !== undefined) return { kind: "coverage", value: streakStep };
+	if (config.wagersAnswer !== undefined)
+		return { kind: "coverage", value: config.wagersAnswer };
 	if (config.focusCategory)
 		return { kind: "multiplier", value: focusMultiplierOf(config) };
 	if (config.coverageMultiplier !== undefined)
@@ -238,7 +292,7 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 	if (config.coverageAdd !== undefined)
 		return {
 			kind: "coverage",
-			value: minifiedAmount(config, config.coverageAdd),
+			value: minifiedUnits(config, config.coverageAdd),
 		};
 	if (config.storagePerCorrect !== undefined)
 		return {
@@ -265,6 +319,11 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
+	const streakStep = streakStepOf(config);
+	if (streakStep !== undefined)
+		return `Each correct answer in a row pays +${streakStep} more than the last`;
+	if (config.wagersAnswer !== undefined)
+		return `+${config.wagersAnswer} units on an exact answer, when armed`;
 	if (config.coverageDecayPerClear !== undefined)
 		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} per clear`;
 	if (config.autoUpgradeAfterCorrect !== undefined)
@@ -316,19 +375,18 @@ export const switchArm = (config: Config): Config => {
 
 export const CACHE_HIT_CAP = 4;
 
-export const cacheHitMultiplier = (step: number, hits: number): number =>
-	1 + step * Math.min(hits, CACHE_HIT_CAP);
-
-export const cacheMultiplierFor = (
-	config: Config,
-	cachedHits: number
-): number =>
+export const cacheUnitsFor = (config: Config, cachedHits: number): number =>
 	config.cacheHitStep === undefined || cachedHits <= 0
-		? 1
-		: minifiedMultiplier(
+		? 0
+		: minifiedUnits(
 				config,
-				cacheHitMultiplier(config.cacheHitStep, cachedHits)
+				config.cacheHitStep * Math.min(cachedHits, CACHE_HIT_CAP)
 			);
+
+export const topUpUnitsFor = (config: Config, creditedUnits: number): number =>
+	config.roundsPartialUnitsUp === true
+		? minifiedUnits(config, Math.ceil(creditedUnits) - creditedUnits)
+		: 0;
 
 export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
 	configs.reduce(

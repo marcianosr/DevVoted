@@ -15,7 +15,8 @@ import {
 	VICTORY_GATE,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
-	planBillKb,
+	upkeepForSpace,
+	BASE_SLOTS,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -70,6 +71,8 @@ export {
 	REVIEW_EXPAND_LABEL,
 	REVIEW_HINT,
 } from "~/modules/run/gate/application/gateReview.viewmodel";
+import { KANTO_RUN_PAYOUTS } from "~/test/kantoPoll.factory";
+import { pollPayoutRows } from "~/test/swatchTrack.factory";
 
 const CLEARING_BANDS = {
 	perfect: true,
@@ -81,7 +84,7 @@ const CLEARING_BANDS = {
 
 export type GateOutcomeFixture = Omit<
 	GateOutcomeFrame,
-	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb"
+	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb" | "swatchGates"
 >;
 
 const heldRatioOf = (answers: readonly GateAnswer[]) =>
@@ -114,11 +117,12 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 
 	return {
 		...fixture,
+		swatchGates: correct >= SLICE_WINDOW ? [fixture.gate] : [],
 		bar: ladderBarFor(fixture),
 		payoutKb,
 		bonusKb: payoutKb - Math.round(payoutKb / PERFECT_BONUS),
 		faucetKb: faucetKbPerCorrect(fixture.configs) * correct,
-		billKb: clears ? planBillKb(fixture.planTier ?? 0) : 0,
+		billKb: clears ? upkeepForSpace(fixture.buildSpace ?? BASE_SLOTS) : 0,
 	};
 };
 
@@ -283,7 +287,7 @@ const outcomeFrame = (
 	gate: OUTCOME_GATE,
 	answers: HEALTHY_ANSWERS,
 	balanceBeforeKb: 102,
-	planTier: 1,
+	buildSpace: 1,
 	configs: LAVENDER_BUILD,
 	streak: 3,
 	auditIds: ["cost-overrun"],
@@ -300,6 +304,9 @@ const outcomeFrame = (
 		},
 	],
 	paid: [{ config: CONFIGS.indexedDb, detail: "4 correct answers", kb: 32 }],
+	payouts: {
+		rows: pollPayoutRows(KANTO_RUN_PAYOUTS.slice(0, OUTCOME_GATE + 1)),
+	},
 	...frame,
 });
 
@@ -364,7 +371,7 @@ export const kantoGateZero = (): GateOutcomeScreenProps =>
 			gate: 0,
 			answers: PERFECT_ANSWERS,
 			balanceBeforeKb: 0,
-			planTier: 0,
+			buildSpace: 0,
 			configs: [CONFIGS.js, CONFIGS.unitTests],
 			streak: 5,
 			auditIds: [],
@@ -380,7 +387,7 @@ export const kantoGateWon = (): GateOutcomeScreenProps =>
 			gate: VICTORY_GATE,
 			answers: PERFECT_ANSWERS,
 			balanceBeforeKb: 4096,
-			planTier: 3,
+			buildSpace: 3,
 			configs: CONFIG_LIST.slice(0, 4),
 			streak: 12,
 			auditIds: [],
@@ -393,7 +400,7 @@ export const kantoGateSummit = (): GateOutcomeScreenProps =>
 		outcomeFrame({
 			gate: VICTORY_GATE,
 			balanceBeforeKb: 1024,
-			planTier: 3,
+			buildSpace: 3,
 			configs: CONFIG_LIST.slice(0, 4),
 			streak: 9,
 			auditIds: ["timeout"],

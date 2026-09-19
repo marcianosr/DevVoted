@@ -15,6 +15,9 @@ export type PolldexEntry = {
 	question: string | null;
 	timesSeen: number;
 	answeredCount: number;
+	/** Fully-correct answers, kept alongside `accuracy` because a dex row reads
+	 * "3/4" and rounding a percent back into a count disagrees with itself. */
+	correctCount: number;
 	accuracy: number | null;
 };
 
@@ -32,10 +35,8 @@ export type PolldexCategoryFilter = CategoryCode | "all";
 export type PolldexFilter = "all" | "seen" | "mastered" | "fumbled";
 
 /**
- * Where an accuracy stops being a fumble and starts being mastery. The same two
- * numbers colour the accuracy column in the kit, which cannot import them: a
- * band a player can filter on and a band they can see must agree, so changing
- * one here means changing `accuracyTone` in `PollsPanel.ui.tsx` too.
+ * Where an accuracy stops being a fumble and starts being mastery, for the
+ * `mastered` and `fumbled` filters below.
  */
 export const MASTERED_ACCURACY = 70;
 export const FUMBLED_ACCURACY = 40;

@@ -71,7 +71,7 @@ describe("GateOutcomeScreen", () => {
 		it("drops the chip that only repeats what the bar already reads", () => {
 			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
 
-			const header = headingOf("Lavender earned").closest("header")!;
+			const header = headingOf("Lavender cleared").closest("header")!;
 
 			expect(within(header).queryByText(/needed/)).not.toBeInTheDocument();
 			expect(
@@ -164,6 +164,13 @@ describe("GateOutcomeScreen", () => {
 			);
 		});
 
+		it("names the swatch on a chip, since the title only reports the clear", () => {
+			render(<GateOutcomeScreen {...kantoGatePerfect()} />);
+
+			expect(screen.getByText("swatch earned")).toBeInTheDocument();
+			expect(screen.getByText("5 of 5 right")).toBeInTheDocument();
+		});
+
 		it("leads with coverage, and prices the perfect bonus inside it", () => {
 			const { container } = render(
 				<GateOutcomeScreen {...kantoGatePerfect()} />
@@ -184,14 +191,21 @@ describe("GateOutcomeScreen", () => {
 	});
 
 	describe("a healthy close", () => {
-		it("takes the swatch and points at the next gate", () => {
+		it("clears the gate and points at the next one", () => {
+			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
+
+			expect(headingOf("Lavender cleared")).toBeInTheDocument();
+			expect(screen.getByText(/next up Rainbow/)).toBeInTheDocument();
+		});
+
+		it("leaves the swatch behind, since a partial broke the window", () => {
 			const { container } = render(
 				<GateOutcomeScreen {...kantoGateHealthy()} />
 			);
 
-			expect(headingOf("Lavender earned")).toBeInTheDocument();
-			expect(heroOf(container)).toHaveClass("bg-theme");
-			expect(heroOf(container)).not.toHaveClass("border-dashed");
+			expect(heroOf(container)).toHaveClass("border-dashed");
+			expect(heroOf(container)).not.toHaveClass("bg-theme");
+			expect(screen.queryByText("swatch earned")).not.toBeInTheDocument();
 		});
 
 		it("keeps the streak it arrived with", () => {
@@ -227,16 +241,17 @@ describe("GateOutcomeScreen", () => {
 		it("clears the gate on its own band and says the payout was cut", () => {
 			render(<GateOutcomeScreen {...kantoGateOk()} />);
 
-			expect(headingOf("Lavender earned, thin")).toBeInTheDocument();
+			expect(headingOf("Lavender cleared, thin")).toBeInTheDocument();
 			expect(
 				screen.getByText(/cleared on the OK band · the payout is cut/)
 			).toBeInTheDocument();
 		});
 
-		it("takes the swatch, since it cleared", () => {
+		it("keeps the swatch out of reach, since the clear is not the prize", () => {
 			const { container } = render(<GateOutcomeScreen {...kantoGateOk()} />);
 
-			expect(heroOf(container)).toHaveClass("bg-theme");
+			expect(heroOf(container)).toHaveClass("border-dashed");
+			expect(screen.queryByText("swatch earned")).not.toBeInTheDocument();
 		});
 
 		it("breaks the streak, which is what separates it from healthy", () => {
@@ -453,5 +468,29 @@ describe("GateOutcomeScreen", () => {
 
 			expect(headingOf("Pallet perfect")).toBeInTheDocument();
 		});
+
+		it("answers for an unmoved build instead of opening on a blank fold", () => {
+			render(<GateOutcomeScreen {...kantoGateZero()} />);
+
+			const changes = foldOf("Build changes");
+
+			expect(changes).not.toBeNull();
+			expect(within(changes!).getByText("none")).toBeInTheDocument();
+		});
+	});
+});
+
+describe("GateOutcomeScreen's payout history", () => {
+	it("lists what every gate the run has opened paid, inside Coverage", () => {
+		render(<GateOutcomeScreen {...kantoGatePerfect()} />);
+
+		expect(screen.getByText("what each poll paid")).toBeInTheDocument();
+		expect(screen.getByLabelText(/^Pallet/)).toBeInTheDocument();
+	});
+
+	it("leaves the table out for a call site that passes no history", () => {
+		render(<GateOutcomeScreen {...kantoGatePerfect()} payouts={undefined} />);
+
+		expect(screen.queryByText("what each poll paid")).toBeNull();
 	});
 });

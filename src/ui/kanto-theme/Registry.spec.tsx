@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
@@ -29,6 +29,15 @@ describe("Registry", () => {
 		).toBeInTheDocument();
 	});
 
+	it("badges the slot price whether or not it reads as a figure", () => {
+		const { unmount } = render(<Registry {...props} slotPrice="12 MB" />);
+		expect(screen.getByText("12 MB")).toHaveClass("badge-theme");
+		unmount();
+
+		render(<Registry {...props} slotPrice="free" />);
+		expect(screen.getByText("free")).toHaveClass("badge-theme");
+	});
+
 	it.each(["Intellisense", "IndexedDB", ".ts", "Planning Poker", "Prefetch"])(
 		"shows the %s offer it was dealt",
 		(name) => {
@@ -46,17 +55,15 @@ describe("Registry", () => {
 		).toBeInTheDocument();
 	});
 
-	it("leaves an unaffordable offer with a price but no press", () => {
+	it("refuses an unaffordable offer while still naming its price", () => {
 		render(<Registry {...props} />);
 
-		const row = rowOf("Intellisense");
-		expect(row).not.toBeNull();
-		if (row === null) return;
+		const install = screen.getByRole("button", {
+			name: "Install Intellisense \u00b7 128 KB",
+		});
 
-		expect(
-			screen.queryByRole("button", { name: /Install Intellisense/ })
-		).not.toBeInTheDocument();
-		expect(within(row).getByText("128 KB")).toBeInTheDocument();
+		expect(install).toBeDisabled();
+		expect(install).toHaveTextContent("Install \u00b7 128 KB");
 	});
 
 	it("dims the row of an offer that cannot be taken", () => {

@@ -11,7 +11,7 @@ import type { GateLadder } from "~/modules/run/gate/domain/gate.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	gateSwatchAt,
-	swatchTrackTo,
+	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	GATE_COUNT,
@@ -26,7 +26,10 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
-import { PERFECT_BONUS } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	PERFECT_BONUS,
+	scoringSlotsAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import {
@@ -40,6 +43,7 @@ import type {
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { FoldBadge } from "~/ui/kanto-theme/Fold.ui";
 import type { GateChoiceProps } from "~/ui/kanto-theme/GateChoice.ui";
+import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
 import type {
 	GateOutcomeChip,
 	GateOutcomeScreenProps,
@@ -79,6 +83,7 @@ const PEEL_ROW = "peel refund";
 const UNLOCKED = "unlocked";
 const FADED = "faded";
 const NOTHING_MOVED = "nothing moved";
+const NOTHING_CHANGED = "none";
 const NOT_PAID = "not paid";
 const NOTHING_PAID = "nothing paid";
 const STREAK_BROKEN = "streak broken";
@@ -162,9 +167,11 @@ export type GateAnswer = {
 export type GateOutcomeFrame = {
 	gate: number;
 	answers: readonly GateAnswer[];
+	/** Gates this run played flawlessly, so the screen never infers a swatch. */
+	swatchGates: readonly number[];
 	balanceBeforeKb: number;
 	configs: readonly Config[];
-	planTier?: number;
+	buildSpace?: number;
 	streak?: number;
 	unlocked?: readonly { config: Config; detail: string }[];
 	faded?: readonly { config: Config; detail: string }[];
@@ -175,6 +182,7 @@ export type GateOutcomeFrame = {
 	won?: boolean;
 	open?: boolean;
 	bar: CoverageBarProps;
+	payouts?: PollScoresProps;
 	payoutKb: number;
 	bonusKb: number;
 	faucetKb: number;
@@ -263,6 +271,9 @@ export const PEEL_KB_PER_SLOT = DRAFT_COST_PER_SLOT_KB / 2;
 const bandOf = (frame: GateOutcomeFrame): CoverageBandId =>
 	coverageBandOf(frame.bar.held, frame.bar);
 
+const swatchEarnedIn = (frame: GateOutcomeFrame): boolean =>
+	frame.swatchGates.includes(frame.gate);
+
 export const CLEARING_BANDS = {
 	perfect: true,
 	healthy: true,
@@ -279,13 +290,22 @@ const STREAK_HOLDS = {
 	danger: false,
 } satisfies Record<CoverageBandId, boolean>;
 
+/**
+ * The headline reports the clear and nothing else (ADR-080). The swatch is the
+ * window's own prize and rides a chip, so no band may imply it was won.
+ */
 const OUTCOME_SUFFIX = {
 	perfect: "perfect",
-	healthy: "earned",
-	ok: "earned, thin",
+	healthy: "cleared",
+	ok: "cleared, thin",
 	shaky: "holds",
 	danger: "",
 } satisfies Record<CoverageBandId, string>;
+
+const SWATCH_EARNED = "swatch earned";
+
+const SCORES_OUT_OF = "scores out of";
+const SLOTS_WORD = "slots";
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const PERFECT_BAND: CoverageBandId = "perfect";
@@ -376,6 +396,9 @@ const outcomeChips = (
 	{
 		label: `${correctCount(frame.answers)} of ${frame.answers.length} right`,
 	},
+	...(swatchEarnedIn(frame)
+		? [{ label: SWATCH_EARNED, color: GAIN_COLOR }]
+		: []),
 	...(band === RUN_OVER_BAND
 		? [{ label: `${frame.gate} gates held` }]
 		: streakChipOf(frame.streak, band)),
@@ -672,6 +695,7 @@ const changesPanelOf = (frame: GateOutcomeFrame) => {
 	return {
 		title: CHANGES_TITLE,
 		summary: changed === 0 ? NOTHING_MOVED : undefined,
+		emptyLabel: NOTHING_CHANGED,
 		badges: [
 			...(unlocked.length === 0
 				? []
@@ -746,17 +770,26 @@ export const gateOutcomePropsFor = (
 	const held = roundToOneDecimal(frame.bar.held);
 	const shortBy = roundToOneDecimal(Math.max(0, demand - held));
 	const cleared = CLEARING_BANDS[band];
+	const bar =
+		cleared && !frame.won && next !== undefined
+			? {
+					...frame.bar,
+					note: `${next.gateName} ${SCORES_OUT_OF} ${scoringSlotsAt(next.gate)} ${SLOTS_WORD}.`,
+				}
+			: frame.bar;
 
 	return {
 		header: {
 			swatch,
-			swatches: swatchTrackTo(cleared ? gate + 1 : gate),
+			earned: swatchEarnedIn(frame),
+			swatches: swatchTrackFor(frame.swatchGates, cleared ? gate + 1 : gate),
 			title: titleOf(band, swatch.gateName),
 			subtitle: subtitleOf(band, gate, next?.gateName),
 			figure: figureOf(frame, band),
 			chips: outcomeChips(frame, band),
 		},
-		bar: frame.bar,
+		bar,
+		...(frame.payouts === undefined ? {} : { payouts: frame.payouts }),
 		audits: auditsOf(frame),
 		...(band === PERFECT_BAND && frame.bonusKb > 0
 			? { bonus: bonusPanelOf(frame, swatch.gateName) }

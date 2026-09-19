@@ -10,7 +10,7 @@ describe("runActionSchema", () => {
 			{ type: "start" },
 			{ type: "answer", optionIds: ["64"] },
 			{ type: "lint-poll" },
-			{ type: "strip", configId: "eslint" },
+			{ type: "strip", configIds: ["eslint"] },
 			{ type: "resume-climb" },
 			{ type: "draft", configId: "agents-md" },
 			{ type: "upgrade", configId: "js" },

@@ -40,14 +40,14 @@ import {
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { estimatePayoutKb } from "~/modules/run/run/domain/estimate.model";
+import { estimatePayoutUnits } from "~/modules/run/run/domain/estimate.model";
+import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
 	faucetRemainingKb,
+	highestAffordableSpace,
 	isPeelFatal,
-	cappedStorage,
-	FREE_PLAN,
-	planBillKb,
+	upkeepForSpace,
 	roundToOneDecimal,
 	roundToTwoDecimals,
 	SLICE_WINDOW,
@@ -81,19 +81,22 @@ const clearLine = (gateNumber: number, reward: number): string => {
 	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
 };
 
-type PlanSettlement = {
+type UpkeepSettlement = {
 	readonly paidKb: number;
-	readonly tier: number;
-	readonly downgraded: boolean;
+	readonly space: number;
+	readonly droppedTo?: number;
 };
 
-const settlePlanBill = (state: RunState, balanceKb: number): PlanSettlement => {
-	const tier = state.storagePlan ?? 0;
-	const owed = planBillKb(tier);
-	if (owed === 0) return { paidKb: 0, tier, downgraded: false };
-	if (balanceKb < owed)
-		return { paidKb: balanceKb, tier: FREE_PLAN.tier, downgraded: true };
-	return { paidKb: owed, tier, downgraded: false };
+const settleUpkeep = (space: number, balanceKb: number): UpkeepSettlement => {
+	const owed = upkeepForSpace(space);
+	if (owed <= balanceKb) return { paidKb: owed, space };
+
+	const affordable = highestAffordableSpace(balanceKb);
+	return {
+		paidKb: upkeepForSpace(affordable),
+		space: affordable,
+		droppedTo: affordable,
+	};
 };
 
 /** The gate's five results are in. It owes a close, not another answer. */
@@ -105,15 +108,21 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 
 	const schedule = scheduleOf(state);
 	const committed = state.estimatedCorrect;
-	const estimateKb = estimatePayoutKb(
+	const estimateUnits = estimatePayoutUnits(
 		state.build.configs,
 		committed,
-		state.window.correct
+		state.window.correct,
+		state.gatesCleared
 	);
 	const settledEstimate = {
 		estimatedCorrect: undefined,
-		estimateThisGateKb: committed === undefined ? undefined : estimateKb,
+		estimateThisGateUnits: committed === undefined ? undefined : estimateUnits,
 	};
+
+	// The bet settles INSIDE the window rather than beside it: a won bet has to
+	// be able to lift a gate over its own line, and it cannot once the band has
+	// already been read off the window.
+	const unitsThisGate = state.window.unitsEarned + estimateUnits;
 
 	// The swatch is the window's own prize, not the clear's: a flawless window
 	// earns it even where cumulative coverage lands the gate short (ADR-080).
@@ -129,7 +138,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const close: GateClose = {
 		build: state.build,
 		bankedUnits: state.bankedUnits,
-		unitsThisGate: state.window.unitsEarned,
+		unitsThisGate,
 		correctThisGate: state.window.correct,
 		gatesCleared: state.gatesCleared,
 		schedule,
@@ -138,11 +147,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const heldCoverage = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
 
 	if (closing !== "cleared") {
-		const settledStorage = addStorage(
-			state.storage,
-			estimateKb,
-			state.storagePlan ?? 0
-		);
 		const attempts = state.gateAttempts ?? 0;
 		const quota = failPeelQuotaFor(
 			state.build.configs,
@@ -164,7 +168,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				...state,
 				...settledEstimate,
 				...settledSwatch,
-				storage: settledStorage,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(state, `${missed} The gate shut on it. Run over.`),
@@ -175,7 +178,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				...state,
 				...settledEstimate,
 				...settledSwatch,
-				storage: settledStorage,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(
@@ -187,7 +189,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			...state,
 			...settledEstimate,
 			...settledSwatch,
-			storage: settledStorage,
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
 			autoUpgradeProgress: 0,
@@ -206,7 +207,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const interest = storageInterestFor(state.build.configs, state.storage);
 	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
 	const extraPickKb = extraPickPayoutFor(state.build.configs, extraPicks);
-	const totalUnits = state.bankedUnits + state.window.unitsEarned;
+	const totalUnits = state.bankedUnits + unitsThisGate;
 	const banked = roundToTwoDecimals(
 		bankableUnits(totalUnits, state.gatesCleared)
 	);
@@ -217,10 +218,9 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		state.gatesCleared,
 		state.streak
 	);
-	const reward = clearKb + interest + extraPickKb + overflowKb + estimateKb;
-	const planTier = state.storagePlan ?? 0;
-	const rewarded = addStorage(state.storage, reward, planTier);
-	const bill = settlePlanBill(state, rewarded);
+	const reward = clearKb + interest + extraPickKb + overflowKb;
+	const rewarded = addStorage(state.storage, reward);
+	const bill = settleUpkeep(state.build.slots, rewarded);
 	const cleared: RunState = {
 		...state,
 		...settledEstimate,
@@ -239,10 +239,11 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
-		storage: cappedStorage(rewarded - bill.paidKb, bill.tier),
-		storagePlan: bill.tier,
-		planBilledKb: bill.paidKb,
-		planDowngraded: bill.downgraded ? true : undefined,
+		storage: Math.max(0, rewarded - bill.paidKb),
+		build: { ...state.build, slots: bill.space },
+		upkeepBilledKb: bill.paidKb,
+		upkeepPaidKb: (state.upkeepPaidKb ?? 0) + bill.paidKb,
+		spaceDroppedTo: bill.droppedTo,
 		gateRewardKb: reward,
 		storageBeforeClearKb: state.storage,
 		interestThisGateKb: interest,
@@ -287,10 +288,12 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			...settled.deleted.map(
 				(config) => `${config.label} faded to ×1 — deleted from the build.`
 			),
-			...(bill.paidKb > 0 ? [`Storage plan billed (-${bill.paidKb}KB).`] : []),
-			...(bill.downgraded
-				? ["The plan went unpaid — dropped to the free cap."]
-				: []),
+			...(bill.paidKb > 0 ? [`Build space billed (-${bill.paidKb}KB).`] : []),
+			...(bill.droppedTo === undefined
+				? []
+				: [
+						`The space went unpaid — dropped to ${bill.droppedTo}. Trim the build in the shop.`,
+					]),
 			...(billed.paidKb > 0
 				? [`Subscriptions billed (-${billed.paidKb}KB).`]
 				: []),
@@ -364,6 +367,11 @@ export const answerContextFor = (
 const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 	const { audits, configs, auditedShare } = grade;
 	const answerContext = answerContextFor(state, grade.graded);
+	const wager = strictSettlementFor(
+		configs,
+		state.strictArmed === true,
+		grade.outcome
+	);
 	const rawFaucet =
 		grade.outcome === "correct" ? faucetKbPerCorrect(configs) : 0;
 	const faucetKb = Math.min(
@@ -371,18 +379,17 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		faucetRemainingKb(state.faucetEarnedKb ?? 0)
 	);
 	return {
-		earnedCoverage: coverageForAnswer(
-			configs,
-			answerContext,
-			auditedShare,
-			state.streak
+		earnedCoverage: roundToTwoDecimals(
+			coverageForAnswer(configs, answerContext, auditedShare, state.streak) +
+				wager.bonus
 		),
-		coverageLoss: 0,
+		coverageLoss: wager.loss,
 		breakdown: coverageBreakdownForAnswer(
 			configs,
 			answerContext,
 			auditedShare,
-			state.streak
+			state.streak,
+			wager.bonus
 		),
 		factors: coverageFactorsForAnswer(configs, answerContext, auditedShare),
 		faucetKb,
@@ -402,6 +409,7 @@ const answeredPollFrom = (
 	optionIds: readonly string[],
 	grade: AnswerGrade,
 	ledger: AnswerLedger,
+	gate: number,
 	elapsedMs?: number
 ): AnsweredPoll => ({
 	id: poll.id,
@@ -419,6 +427,7 @@ const answeredPollFrom = (
 	author: poll.author,
 	options: poll.options.map((option) => option.label),
 	answerType: grade.graded.answerType,
+	gate,
 	coverageEarned: ledger.earnedCoverage,
 	coverageLost: ledger.coverageLoss > 0 ? ledger.coverageLoss : undefined,
 	coverageBreakdown: ledger.breakdown,
@@ -449,7 +458,10 @@ const applyAnswer = (
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
 		unitsEarned: roundToTwoDecimals(
-			Math.max(0, state.window.unitsEarned + ledger.earnedCoverage)
+			Math.max(
+				0,
+				state.window.unitsEarned + ledger.earnedCoverage - ledger.coverageLoss
+			)
 		),
 		byCategory: {
 			...state.window.byCategory,
@@ -467,13 +479,10 @@ const applyAnswer = (
 		...state,
 		window,
 		manualDisabled: [],
+		strictArmed: undefined,
 		rebasedThisGate: undefined,
 		streak: grade.streak,
-		storage: cappedStorage(
-			addStorage(state.storage, ledger.faucetKb, state.storagePlan ?? 0) -
-				ledger.burnKb,
-			state.storagePlan ?? 0
-		),
+		storage: addStorage(state.storage, ledger.faucetKb - ledger.burnKb),
 		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + ledger.faucetKb,
 		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + ledger.faucetKb,
 		coverage: roundToOneDecimal(
@@ -530,7 +539,14 @@ export const answer = (
 
 	const grade = gradeAnswer(state, poll, optionIds, elapsedMs);
 	const ledger = scoreAnswer(state, grade);
-	const answered = answeredPollFrom(poll, optionIds, grade, ledger, elapsedMs);
+	const answered = answeredPollFrom(
+		poll,
+		optionIds,
+		grade,
+		ledger,
+		state.gatesCleared,
+		elapsedMs
+	);
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
 	const counted = countAutoUpgrade(applied, state, grade.outcome);
 

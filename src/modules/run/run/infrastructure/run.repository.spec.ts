@@ -124,6 +124,43 @@ describe("applyActionToRun", () => {
 		expect(db.update).not.toHaveBeenCalled();
 	});
 
+	// DVTD-mkhg: `rebase` writes only `RunState.polls`, the one field the
+	// snapshot drops, so without a write to `run_polls` the reorder was served
+	// back in its original order on the very next dispatch.
+	it("writes a rebased gate slice back to the run's poll sequence", async () => {
+		const base = createRun([], [CONFIGS.gitRebase]);
+		const prepping: RunState = {
+			...base,
+			status: "configuring",
+			build: { ...base.build, configs: [CONFIGS.gitRebase] },
+		};
+		const ids = [1, 2, 3, 4, 5];
+		mock.results.push([stateRow(prepping)]);
+		mock.results.push(segmentRow());
+		mock.results.push(ids.map(dbPoll));
+		mock.results.push(ids.flatMap(dbOptions));
+
+		await dispatch({ type: "rebase", from: 0, to: 2 });
+
+		expect(mock.updateTables).toContain(runPollsTable);
+		expect(mock.setCalls.slice(0, SLICE_WINDOW)).toEqual(
+			[2, 3, 1, 4, 5].map((poll_id) => ({ poll_id }))
+		);
+	});
+
+	it("leaves the poll sequence alone for every action that is not a rebase", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(runPollsTable);
+	});
+
 	it("persists the reducer output with denormalized columns", async () => {
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
 		mock.results.push(segmentRow());

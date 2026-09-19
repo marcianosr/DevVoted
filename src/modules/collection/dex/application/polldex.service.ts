@@ -97,6 +97,7 @@ export const getPolldexService = async ({ userId }: { userId: string }) =>
 					question: seen ? poll.question : null,
 					timesSeen,
 					answeredCount,
+					correctCount: answered?.fullyCorrect ?? 0,
 					accuracy:
 						answered && answeredCount > 0
 							? Math.round((answered.fullyCorrect / answeredCount) * 100)

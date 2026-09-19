@@ -39,7 +39,6 @@ describe("PollScreen", () => {
 		render(<PollScreen {...props} />);
 
 		expect(screen.getByText("Gate 9 · Volcano")).toBeInTheDocument();
-		expect(screen.getByText("gate 9 / 12")).toBeInTheDocument();
 		expect(screen.getByText("1.8 MB")).toBeInTheDocument();
 	});
 
@@ -201,6 +200,17 @@ describe("PollScreen", () => {
 		expect(screen.getByText(/Created by @marciano/)).toBeInTheDocument();
 	});
 
+	it("closes the poll panel on one footer: the credit beside the hint", () => {
+		render(<PollScreen {...props} author={{ handle: "marciano" }} />);
+
+		const footer = screen.getByText(/Created by @marciano/).closest("footer");
+
+		expect(footer).toHaveTextContent("press A, B or C to answer");
+		expect(footer?.closest("section")).toHaveTextContent(
+			"Which utility type makes every property optional?"
+		);
+	});
+
 	it("runs the screen as one column: header, coverage, audits, poll, build", () => {
 		const { container } = render(<PollScreen {...props} />);
 
@@ -238,7 +248,68 @@ describe("PollScreen", () => {
 
 		expect(
 			screen.getByRole("button", { name: "How a correct answer is counted" })
-		).toHaveTextContent("34/55 correct");
+		).toHaveTextContent("what a poll pays");
+	});
+
+	it("says what the run has scored and what the gate scores it out of", () => {
+		render(<PollScreen {...props} />);
+
+		expect(
+			screen.getByText(
+				(_, node) =>
+					node?.textContent ===
+					"You have scored 35 units across 50 slots, which is 70.0% coverage."
+			)
+		).toBeInTheDocument();
+	});
+
+	it("shows what this gate's polls paid, and no earlier gate's", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("what each poll paid")).toBeInTheDocument();
+		expect(screen.queryByLabelText(/^Pallet/)).toBeNull();
+	});
+
+	it("leaves the explainer out when a call site has nothing to explain", () => {
+		render(<PollScreen {...props} coverage={{ bar: props.coverage.bar }} />);
+
+		expect(screen.queryByText("what each poll paid")).toBeNull();
+		expect(screen.queryByText(/You have scored/)).toBeNull();
+	});
+
+	it("accounts for the answer just submitted, row by row", () => {
+		render(
+			<PollScreen
+				{...props}
+				coverage={{
+					...props.coverage,
+					breakdown: [
+						{
+							label: "right answer",
+							detail: "base",
+							figures: [{ label: "1" }],
+						},
+						{
+							label: ".js",
+							detail: "matches JavaScript",
+							figures: [{ label: "×1.25" }],
+						},
+						{ label: "paid", figures: [{ label: "1.25" }], total: true },
+					],
+				}}
+			/>
+		);
+
+		expect(screen.getByText("what this answer paid")).toBeInTheDocument();
+		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
+		expect(screen.getByText("right answer")).toBeInTheDocument();
+		expect(screen.getByText("paid")).toBeInTheDocument();
+	});
+
+	it("keeps the receipt off the screen until an answer has landed", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.queryByText("what this answer paid")).toBeNull();
 	});
 
 	it("states coverage exactly once, so no row says it again", () => {

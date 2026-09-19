@@ -18,7 +18,6 @@ const COVERAGE = {
 
 const props = {
 	swatch: VOLCANO,
-	gateCount: 12,
 	swatches: trackTo(9),
 } as const;
 
@@ -56,12 +55,6 @@ describe("Header", () => {
 		expect(screen.getByText("Gate 9 · Volcano")).toBeInTheDocument();
 	});
 
-	it("counts the gate against the run's length", () => {
-		render(<Header {...props} />);
-
-		expect(screen.getByText("gate 9 / 12")).toBeInTheDocument();
-	});
-
 	it("leads with a swatch already filled in the gate's own colour", () => {
 		const { container } = render(<Header {...props} />);
 
@@ -78,16 +71,16 @@ describe("Header", () => {
 		expect(container.querySelector("span.size-7")).toBeNull();
 	});
 
-	it("quiets the counter below the title", () => {
-		render(<Header {...props} />);
+	it("quiets its note below the title", () => {
+		render(<Header {...props} note="next gate 10" />);
 
-		expect(screen.getByText("gate 9 / 12")).toHaveClass("opacity-60");
+		expect(screen.getByText("next gate 10")).toHaveClass("opacity-60");
 	});
 
-	it("pushes the counter to the far end of the track row", () => {
-		render(<Header {...props} />);
+	it("pushes its note to the far end of the track row", () => {
+		render(<Header {...props} note="next gate 10" />);
 
-		expect(screen.getByText("gate 9 / 12")).toHaveClass("ml-auto");
+		expect(screen.getByText("next gate 10")).toHaveClass("ml-auto");
 	});
 
 	it("carries the swatch track, one swatch per gate in the run", () => {
@@ -106,10 +99,10 @@ describe("Header", () => {
 		expect(title).not.toHaveClass("mb-5");
 	});
 
-	it("sets the counter at 12px, below every Typography variant", () => {
-		render(<Header {...props} />);
+	it("sets its note at 12px, below every Typography variant", () => {
+		render(<Header {...props} note="next gate 10" />);
 
-		expect(screen.getByText("gate 9 / 12")).toHaveClass("text-xs");
+		expect(screen.getByText("next gate 10")).toHaveClass("text-xs");
 	});
 
 	it("stacks the two rows tighter than the screen's own gap", () => {
@@ -159,10 +152,15 @@ describe("Header", () => {
 		expect(screen.queryByText("Gate 9 · Volcano")).not.toBeInTheDocument();
 	});
 
-	it("lets a screen replace the counter with its own note", () => {
+	it("says nothing beside the track unless the screen gives it a note", () => {
+		const { container } = render(<Header {...props} />);
+
+		expect(container.querySelector(".ml-auto")).toBeNull();
+	});
+
+	it("carries the note a screen hands it, and only that", () => {
 		render(<Header {...props} note="next gate 10 · Earth · to pass 250%" />);
 
-		expect(screen.queryByText("gate 9 / 12")).not.toBeInTheDocument();
 		expect(screen.getByText("next gate 10 · Earth · to pass 250%")).toHaveClass(
 			"opacity-60",
 			"ml-auto"

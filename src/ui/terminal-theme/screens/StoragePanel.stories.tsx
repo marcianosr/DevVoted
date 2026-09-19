@@ -1,14 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { STORAGE_PLANS } from "~/modules/run/run/domain/rules.model";
-
 import { Panel } from "../Panel.ui";
 import type { StorageRung } from "../StoragePlan.ui";
 import { StoragePanel } from "./StoragePanel.ui";
 
-export const dexStorageRungs: readonly StorageRung[] = STORAGE_PLANS.map(
-	(plan) => ({ capKb: plan.capKb, rentKb: plan.perGateKb })
-);
+export const dexStorageRungs: readonly StorageRung[] = [
+	{ capKb: 256, rentKb: 0 },
+	{ capKb: 512, rentKb: 32 },
+	{ capKb: 1024, rentKb: 96 },
+	{ capKb: 2048, rentKb: 224 },
+	{ capKb: 3072, rentKb: 448 },
+	{ capKb: 5120, rentKb: 768 },
+	{ capKb: 10240, rentKb: 1280 },
+];
 
 const meta: Meta<typeof StoragePanel> = {
 	component: StoragePanel,

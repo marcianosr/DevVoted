@@ -128,39 +128,41 @@ export const Upgrades = ({
 
 	return (
 		<Panel className={WIDTH}>
-			<Typography variant="title">{name}</Typography>
-			<Typography variant="caption" as="p">
-				{description}
-			</Typography>
+			<Panel.Body>
+				<Typography variant="title">{name}</Typography>
+				<Typography variant="caption" as="p">
+					{description}
+				</Typography>
 
-			<div className={PAIR}>
-				{held === undefined ? null : (
-					<div className={clsx(CARD, HELD_CARD)}>
-						<CardBody label={HELD_LABEL} rung={held} />
-					</div>
-				)}
-				{offered === undefined ? (
-					<Typography variant="hint" as="span">
-						{noOfferLabelOf(rungs)}
-					</Typography>
-				) : (
+				<div className={PAIR}>
+					{held === undefined ? null : (
+						<div className={clsx(CARD, HELD_CARD)}>
+							<CardBody label={HELD_LABEL} rung={held} />
+						</div>
+					)}
+					{offered === undefined ? (
+						<Typography variant="hint" as="span">
+							{noOfferLabelOf(rungs)}
+						</Typography>
+					) : (
+						<>
+							<span aria-hidden className={ARROW}>
+								{ARROW_GLYPH}
+							</span>
+							<Offer rung={offered} onBuy={onBuy} />
+						</>
+					)}
+				</div>
+
+				{toMax === undefined ? null : (
 					<>
-						<span aria-hidden className={ARROW}>
-							{ARROW_GLYPH}
-						</span>
-						<Offer rung={offered} onBuy={onBuy} />
+						<div className={DIVIDER} />
+						<Typography variant="hint">
+							<Figures text={footerOf(rungs, toMax)} gain={HINT_GAIN} />
+						</Typography>
 					</>
 				)}
-			</div>
-
-			{toMax === undefined ? null : (
-				<>
-					<div className={DIVIDER} />
-					<Typography variant="hint">
-						<Figures text={footerOf(rungs, toMax)} gain={HINT_GAIN} />
-					</Typography>
-				</>
-			)}
+			</Panel.Body>
 		</Panel>
 	);
 };

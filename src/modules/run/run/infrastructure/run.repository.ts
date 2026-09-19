@@ -21,6 +21,7 @@ import {
 	type UnlockGrant,
 } from "~/modules/run/config/domain/configUnlock.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
+import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
 
 import {
 	isRunOver,
@@ -46,6 +47,7 @@ import {
 	fetchRunPollsForRun,
 	getOrCreateDailyRunSeed,
 	insertRunPolls,
+	rewriteRunPollOrder,
 	rollSegmentForward,
 } from "~/modules/run/run/infrastructure/runPolls.repository";
 
@@ -86,6 +88,22 @@ export const findSessionRunByDate = async (
 			)
 		)
 		.orderBy(desc(runsTable.id))
+		.limit(1);
+	return run ?? null;
+};
+
+/**
+ * One run by id, whoever owns it. The caller checks ownership — a permalink
+ * takes its id from the URL, so the row has to come back before it can be
+ * judged against the session.
+ */
+export const findSessionRunById = async (
+	runId: number
+): Promise<SessionRunRecord | null> => {
+	const [run] = await db
+		.select()
+		.from(runsTable)
+		.where(and(eq(runsTable.id, runId), eq(runsTable.mode, "session")))
 		.limit(1);
 	return run ?? null;
 };
@@ -381,6 +399,23 @@ const finishSessionRun = async (
 };
 
 /**
+ * The account archive, in KB. The finish credit is applied inside the same
+ * transaction that ends a run, so by the time the run-over screen asks, this
+ * already reads as the balance *after* the run banked.
+ */
+export const fetchArchivedStorageKb = async (
+	userId: string
+): Promise<number> => {
+	const [row] = await db
+		.select({ bytes: usersTable.archived_storage })
+		.from(usersTable)
+		.where(eq(usersTable.id, userId))
+		.limit(1);
+
+	return Math.round((row?.bytes ?? 0) / STORAGE_UNITS.KB);
+};
+
+/**
  * Walking away: the run finishes as "abandoned" and its leftover storage is
  * banked at STORAGE_CREDIT_RATE.abandoned (currently nothing — abandoning is
  * not a cash-out). Locks the state row like dispatch does, so an in-flight
@@ -545,6 +580,18 @@ export const applyActionToRun = async (args: {
 			touched.length === 0
 				? []
 				: await grantObjectiveUnlocks(tx, args.userId, touched);
+
+		// `rebase` rewrites only `RunState.polls`, which the snapshot drops, so
+		// the new order has to reach `run_polls` or it dies with this request
+		// (DVTD-mkhg). `state.currentIndex` because a rebase never moves the
+		// cursor, matching how the answer branch below sources its poll.
+		if (args.action.type === "rebase")
+			await rewriteRunPollOrder(
+				tx,
+				args.runId,
+				state.currentIndex,
+				gateSliceOf(next)
+			);
 
 		if (args.action.type === "answer") {
 			// The answered poll comes from the PRE-action state: `next` has either

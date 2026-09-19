@@ -24,15 +24,15 @@ import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
 import { Route as AuthedRunIndexRouteImport } from './routes/_authed/run/index'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
+import { Route as AuthedRunsRunIdRouteImport } from './routes/_authed/runs.$runId'
 import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
-import { Route as AuthedRunStripRouteImport } from './routes/_authed/run/strip'
 import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
-import { Route as AuthedRunRewardRouteImport } from './routes/_authed/run/reward'
 import { Route as AuthedRunReviewRouteImport } from './routes/_authed/run/review'
 import { Route as AuthedRunPrepRouteImport } from './routes/_authed/run/prep'
+import { Route as AuthedRunPollRouteImport } from './routes/_authed/run/poll'
 import { Route as AuthedRunOverRouteImport } from './routes/_authed/run/over'
-import { Route as AuthedRunConfigureRouteImport } from './routes/_authed/run/configure'
-import { Route as AuthedRunAnswerRouteImport } from './routes/_authed/run/answer'
+import { Route as AuthedRunNewRouteImport } from './routes/_authed/run/new'
+import { Route as AuthedRunGateRouteImport } from './routes/_authed/run/gate'
 import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
 import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
@@ -112,24 +112,19 @@ const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   path: '/polls/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedRunsRunIdRoute = AuthedRunsRunIdRouteImport.update({
+  id: '/runs/$runId',
+  path: '/runs/$runId',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
   id: '/run_/community',
   path: '/run/community',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedRunStripRoute = AuthedRunStripRouteImport.update({
-  id: '/strip',
-  path: '/strip',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
 const AuthedRunShopRoute = AuthedRunShopRouteImport.update({
   id: '/shop',
   path: '/shop',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunRewardRoute = AuthedRunRewardRouteImport.update({
-  id: '/reward',
-  path: '/reward',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
 const AuthedRunReviewRoute = AuthedRunReviewRouteImport.update({
@@ -142,19 +137,24 @@ const AuthedRunPrepRoute = AuthedRunPrepRouteImport.update({
   path: '/prep',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
+const AuthedRunPollRoute = AuthedRunPollRouteImport.update({
+  id: '/poll',
+  path: '/poll',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
 const AuthedRunOverRoute = AuthedRunOverRouteImport.update({
   id: '/over',
   path: '/over',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
-const AuthedRunConfigureRoute = AuthedRunConfigureRouteImport.update({
-  id: '/configure',
-  path: '/configure',
+const AuthedRunNewRoute = AuthedRunNewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
-const AuthedRunAnswerRoute = AuthedRunAnswerRouteImport.update({
-  id: '/answer',
-  path: '/answer',
+const AuthedRunGateRoute = AuthedRunGateRouteImport.update({
+  id: '/gate',
+  path: '/gate',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
 const AuthedProfileUserIdRoute = AuthedProfileUserIdRouteImport.update({
@@ -193,15 +193,15 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
-  '/run/answer': typeof AuthedRunAnswerRoute
-  '/run/configure': typeof AuthedRunConfigureRoute
+  '/run/gate': typeof AuthedRunGateRoute
+  '/run/new': typeof AuthedRunNewRoute
   '/run/over': typeof AuthedRunOverRoute
+  '/run/poll': typeof AuthedRunPollRoute
   '/run/prep': typeof AuthedRunPrepRoute
   '/run/review': typeof AuthedRunReviewRoute
-  '/run/reward': typeof AuthedRunRewardRoute
   '/run/shop': typeof AuthedRunShopRoute
-  '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
+  '/runs/$runId': typeof AuthedRunsRunIdRoute
   '/polls/': typeof AuthedPollsIndexRoute
   '/run/': typeof AuthedRunIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -221,15 +221,15 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
-  '/run/answer': typeof AuthedRunAnswerRoute
-  '/run/configure': typeof AuthedRunConfigureRoute
+  '/run/gate': typeof AuthedRunGateRoute
+  '/run/new': typeof AuthedRunNewRoute
   '/run/over': typeof AuthedRunOverRoute
+  '/run/poll': typeof AuthedRunPollRoute
   '/run/prep': typeof AuthedRunPrepRoute
   '/run/review': typeof AuthedRunReviewRoute
-  '/run/reward': typeof AuthedRunRewardRoute
   '/run/shop': typeof AuthedRunShopRoute
-  '/run/strip': typeof AuthedRunStripRoute
   '/run/community': typeof AuthedRunCommunityRoute
+  '/runs/$runId': typeof AuthedRunsRunIdRoute
   '/polls': typeof AuthedPollsIndexRoute
   '/run': typeof AuthedRunIndexRoute
   '/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -252,15 +252,15 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
-  '/_authed/run/answer': typeof AuthedRunAnswerRoute
-  '/_authed/run/configure': typeof AuthedRunConfigureRoute
+  '/_authed/run/gate': typeof AuthedRunGateRoute
+  '/_authed/run/new': typeof AuthedRunNewRoute
   '/_authed/run/over': typeof AuthedRunOverRoute
+  '/_authed/run/poll': typeof AuthedRunPollRoute
   '/_authed/run/prep': typeof AuthedRunPrepRoute
   '/_authed/run/review': typeof AuthedRunReviewRoute
-  '/_authed/run/reward': typeof AuthedRunRewardRoute
   '/_authed/run/shop': typeof AuthedRunShopRoute
-  '/_authed/run/strip': typeof AuthedRunStripRoute
   '/_authed/run_/community': typeof AuthedRunCommunityRoute
+  '/_authed/runs/$runId': typeof AuthedRunsRunIdRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
   '/_authed/run/': typeof AuthedRunIndexRoute
   '/_authed/polls/$pollId/edit': typeof AuthedPollsPollIdEditRoute
@@ -283,15 +283,15 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
-    | '/run/answer'
-    | '/run/configure'
+    | '/run/gate'
+    | '/run/new'
     | '/run/over'
+    | '/run/poll'
     | '/run/prep'
     | '/run/review'
-    | '/run/reward'
     | '/run/shop'
-    | '/run/strip'
     | '/run/community'
+    | '/runs/$runId'
     | '/polls/'
     | '/run/'
     | '/polls/$pollId/edit'
@@ -311,15 +311,15 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/polls/new'
     | '/profile/$userId'
-    | '/run/answer'
-    | '/run/configure'
+    | '/run/gate'
+    | '/run/new'
     | '/run/over'
+    | '/run/poll'
     | '/run/prep'
     | '/run/review'
-    | '/run/reward'
     | '/run/shop'
-    | '/run/strip'
     | '/run/community'
+    | '/runs/$runId'
     | '/polls'
     | '/run'
     | '/polls/$pollId/edit'
@@ -341,15 +341,15 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
-    | '/_authed/run/answer'
-    | '/_authed/run/configure'
+    | '/_authed/run/gate'
+    | '/_authed/run/new'
     | '/_authed/run/over'
+    | '/_authed/run/poll'
     | '/_authed/run/prep'
     | '/_authed/run/review'
-    | '/_authed/run/reward'
     | '/_authed/run/shop'
-    | '/_authed/run/strip'
     | '/_authed/run_/community'
+    | '/_authed/runs/$runId'
     | '/_authed/polls/'
     | '/_authed/run/'
     | '/_authed/polls/$pollId/edit'
@@ -476,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/runs/$runId': {
+      id: '/_authed/runs/$runId'
+      path: '/runs/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof AuthedRunsRunIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/run_/community': {
       id: '/_authed/run_/community'
       path: '/run/community'
@@ -483,25 +490,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunCommunityRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/run/strip': {
-      id: '/_authed/run/strip'
-      path: '/strip'
-      fullPath: '/run/strip'
-      preLoaderRoute: typeof AuthedRunStripRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
     '/_authed/run/shop': {
       id: '/_authed/run/shop'
       path: '/shop'
       fullPath: '/run/shop'
       preLoaderRoute: typeof AuthedRunShopRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/reward': {
-      id: '/_authed/run/reward'
-      path: '/reward'
-      fullPath: '/run/reward'
-      preLoaderRoute: typeof AuthedRunRewardRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
     '/_authed/run/review': {
@@ -518,6 +511,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunPrepRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
+    '/_authed/run/poll': {
+      id: '/_authed/run/poll'
+      path: '/poll'
+      fullPath: '/run/poll'
+      preLoaderRoute: typeof AuthedRunPollRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
     '/_authed/run/over': {
       id: '/_authed/run/over'
       path: '/over'
@@ -525,18 +525,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunOverRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
-    '/_authed/run/configure': {
-      id: '/_authed/run/configure'
-      path: '/configure'
-      fullPath: '/run/configure'
-      preLoaderRoute: typeof AuthedRunConfigureRouteImport
+    '/_authed/run/new': {
+      id: '/_authed/run/new'
+      path: '/new'
+      fullPath: '/run/new'
+      preLoaderRoute: typeof AuthedRunNewRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
-    '/_authed/run/answer': {
-      id: '/_authed/run/answer'
-      path: '/answer'
-      fullPath: '/run/answer'
-      preLoaderRoute: typeof AuthedRunAnswerRouteImport
+    '/_authed/run/gate': {
+      id: '/_authed/run/gate'
+      path: '/gate'
+      fullPath: '/run/gate'
+      preLoaderRoute: typeof AuthedRunGateRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
     '/_authed/profile/$userId': {
@@ -571,26 +571,24 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRunRouteRouteChildren {
-  AuthedRunAnswerRoute: typeof AuthedRunAnswerRoute
-  AuthedRunConfigureRoute: typeof AuthedRunConfigureRoute
+  AuthedRunGateRoute: typeof AuthedRunGateRoute
+  AuthedRunNewRoute: typeof AuthedRunNewRoute
   AuthedRunOverRoute: typeof AuthedRunOverRoute
+  AuthedRunPollRoute: typeof AuthedRunPollRoute
   AuthedRunPrepRoute: typeof AuthedRunPrepRoute
   AuthedRunReviewRoute: typeof AuthedRunReviewRoute
-  AuthedRunRewardRoute: typeof AuthedRunRewardRoute
   AuthedRunShopRoute: typeof AuthedRunShopRoute
-  AuthedRunStripRoute: typeof AuthedRunStripRoute
   AuthedRunIndexRoute: typeof AuthedRunIndexRoute
 }
 
 const AuthedRunRouteRouteChildren: AuthedRunRouteRouteChildren = {
-  AuthedRunAnswerRoute: AuthedRunAnswerRoute,
-  AuthedRunConfigureRoute: AuthedRunConfigureRoute,
+  AuthedRunGateRoute: AuthedRunGateRoute,
+  AuthedRunNewRoute: AuthedRunNewRoute,
   AuthedRunOverRoute: AuthedRunOverRoute,
+  AuthedRunPollRoute: AuthedRunPollRoute,
   AuthedRunPrepRoute: AuthedRunPrepRoute,
   AuthedRunReviewRoute: AuthedRunReviewRoute,
-  AuthedRunRewardRoute: AuthedRunRewardRoute,
   AuthedRunShopRoute: AuthedRunShopRoute,
-  AuthedRunStripRoute: AuthedRunStripRoute,
   AuthedRunIndexRoute: AuthedRunIndexRoute,
 }
 
@@ -605,6 +603,7 @@ interface AuthedRouteChildren {
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedRunCommunityRoute: typeof AuthedRunCommunityRoute
+  AuthedRunsRunIdRoute: typeof AuthedRunsRunIdRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
   AuthedPollsPollIdEditRoute: typeof AuthedPollsPollIdEditRoute
   AuthedPollsPollIdIndexRoute: typeof AuthedPollsPollIdIndexRoute
@@ -617,6 +616,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedRunCommunityRoute: AuthedRunCommunityRoute,
+  AuthedRunsRunIdRoute: AuthedRunsRunIdRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,
   AuthedPollsPollIdEditRoute: AuthedPollsPollIdEditRoute,
   AuthedPollsPollIdIndexRoute: AuthedPollsPollIdIndexRoute,

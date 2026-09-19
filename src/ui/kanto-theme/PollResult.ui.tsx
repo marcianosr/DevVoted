@@ -5,11 +5,11 @@ import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import type { KantoColor } from "./colors";
 import { Icon } from "./Icon.ui";
 import { Meter } from "./Meter.ui";
-import { PANEL_CHROME } from "./Panel.ui";
+import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 import { Verdict, type VerdictOutcome } from "./Verdict.ui";
 
-const FOLD = "group/poll w-full";
+const FOLD = "group/poll w-full px-4 py-4";
 const SUMMARY =
 	"flex cursor-pointer list-none items-center gap-3 py-1 select-none [&::-webkit-details-marker]:hidden";
 const SEALED_SUMMARY = "flex items-center gap-3 py-1";
@@ -122,7 +122,7 @@ const OptionRow = ({ option }: { option: PollResultOption }) => (
 );
 
 const SealedPoll = ({ index, question }: Sealed) => (
-	<div className={clsx(PANEL_CHROME, FOLD)}>
+	<div className={clsx(PANEL_SURFACE, FOLD)}>
 		<div className={SEALED_SUMMARY}>
 			<span className={QUESTION}>
 				<Typography variant="paragraph" as="span">
@@ -152,7 +152,7 @@ export const PollResult = (props: PollResultProps) => {
 	} = props;
 
 	return (
-		<details open={open} className={clsx(PANEL_CHROME, FOLD)}>
+		<details open={open} className={clsx(PANEL_SURFACE, FOLD)}>
 			<summary className={SUMMARY}>
 				<span aria-hidden className={CARET}>
 					{CARET_GLYPH}

@@ -3,7 +3,10 @@ import type {
 	CoverageFactors,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import type { CategoryCode } from "~/shared/lib/categories";
-import { partialShareFor } from "~/modules/run/run/domain/rules.model";
+import {
+	partialShareFor,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 
 const FULL_SHARE = 1;
 const NO_SHARE = 0;
@@ -136,6 +139,7 @@ export type AnsweredPoll = {
 	readonly author?: PollAuthor;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
+	readonly gate?: number;
 	readonly coverageEarned?: number;
 	readonly coverageLost?: number;
 	readonly coverageBreakdown?: CoverageBreakdown;
@@ -143,6 +147,34 @@ export type AnsweredPoll = {
 	readonly faucetKb?: number;
 	readonly elapsedMs?: number;
 	readonly timedOut?: boolean;
+};
+
+const gateOfAnswer = (poll: AnsweredPoll, index: number): number =>
+	poll.gate ?? Math.floor(index / SLICE_WINDOW);
+
+const latestAttemptIn = (
+	answers: readonly AnsweredPoll[]
+): readonly AnsweredPoll[] => {
+	if (answers.length === 0) return answers;
+
+	const attempt = Math.floor((answers.length - 1) / SLICE_WINDOW);
+	return answers.slice(attempt * SLICE_WINDOW);
+};
+
+export const answersPerGate = (
+	answered: readonly AnsweredPoll[],
+	gate: number
+): readonly (readonly AnsweredPoll[])[] => {
+	const placed = answered.map((poll, index) => ({
+		poll,
+		gate: gateOfAnswer(poll, index),
+	}));
+
+	return Array.from({ length: Math.max(0, gate) + 1 }, (_, index) =>
+		latestAttemptIn(
+			placed.filter((entry) => entry.gate === index).map((entry) => entry.poll)
+		)
+	);
 };
 
 export const cachedHitsFor = (

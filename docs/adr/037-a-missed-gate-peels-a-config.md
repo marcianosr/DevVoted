@@ -22,7 +22,7 @@ Dead. A run ends by closing a gate in DANGER, or by the player refusing a SHAKY 
 
 ## Decision 3: a retry runs the whole post-gate loop
 
-A repeated gate goes review → shop → prep → the same gate, which is the clear's loop minus the payout. It went through a strip screen too until the peel moved off the miss; that step is gone, and the attempt's report is the gate-clear debrief with an outcome that is not a clear. Nothing new was built for it: `awaiting-strip` and `resume-climb` already routed that way for the strip audits. What changed is where resuming lands (the shop, not the community detour) and that a retry never reaches `/run/reward` — the reward screen is a "+KB, gate cleared" celebration and the gate it would name is the one just missed, so `routesForStatus` sends a `redoingGate` run to the shop instead.
+A repeated gate goes review → shop → prep → the same gate, which is the clear's loop minus the payout. It went through a strip screen too until the peel moved off the miss; that step is gone, and the attempt's report is the gate-clear debrief with an outcome that is not a clear. Nothing new was built for it: `awaiting-strip` and `resume-climb` already routed that way for the strip audits. What changed is where resuming lands (the shop, not the community detour) and that a retry never reaches `/run/gate` — the cleared verdict is a "+KB, gate cleared" celebration and the gate it would name is the one just missed, so `routesForStatus` sends a `redoingGate` run to the shop instead.
 
 A failed attempt pays nothing (`gateRewardKb`, interest and extra-pick payouts all reset), so the retry's budget is the storage faucet earned inside the failed window plus whatever was banked. The storage bill still collects on every close, pass or fail.
 

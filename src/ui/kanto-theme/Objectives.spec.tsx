@@ -37,7 +37,7 @@ const SMOKE: Objective = {
 
 const OUT_OF_REACH: Objective = { ...SMOKE, lost: true };
 
-const OPTIONAL_LEAD = "also on the table, not required";
+const OPTIONAL_LEAD = "Extra objectives";
 
 const draw = (props: Partial<ObjectivesProps> = {}) =>
 	render(

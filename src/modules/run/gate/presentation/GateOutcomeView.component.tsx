@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
+import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { GateLadder } from "~/modules/run/gate/domain/gate.model";
@@ -11,7 +12,10 @@ import {
 	type GateOutcomeFrame,
 	gateOutcomePropsFor,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
-import { GateOutcomeScreen } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
+import {
+	GateOutcomeScreen,
+	type GateOutcomeTail,
+} from "~/ui/kanto-theme/GateOutcomeScreen.ui";
 
 export type GateVerdict = "cleared" | "held" | "fatal" | "won";
 
@@ -22,6 +26,7 @@ export type GateOutcomeViewProps = {
 	onNext: () => void;
 	onCommunity?: () => void;
 	onRemove?: (configIds: readonly string[]) => void;
+	onRefuse?: () => void;
 };
 
 const CLOSING_OF = {
@@ -90,15 +95,17 @@ export const gateOutcomeFrameOf = (
 	return {
 		gate,
 		answers: gateAnswersOf(view.answeredThisGate, gate),
+		swatchGates: view.swatchGates,
 		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
 		configs: view.configs,
-		planTier: view.storagePlan.options.find((option) => option.held)?.tier ?? 0,
+		buildSpace: view.buildSpace.space,
 		streak: view.gatesCleared,
 		faded: view.gatePayout.lapsedConfigs.map((config) => ({
 			config,
 			detail: "lapsed on this gate",
 		})),
 		paid: paidRowsFor(view),
+		payouts: runPaidFor(view),
 		auditIds: view.gateStake.audits.map((audit) => audit.id),
 		chosen,
 		onToggle,
@@ -111,7 +118,28 @@ export const gateOutcomeFrameOf = (
 		payoutKb: cleared ? view.gatePayout.gateRewardPaidKb : 0,
 		bonusKb: 0,
 		faucetKb: view.gatePayout.faucetThisGateKb,
-		billKb: view.gatePayout.subscriptionBillKb + view.gatePayout.planBilledKb,
+		billKb: view.gatePayout.subscriptionBillKb + view.gatePayout.upkeepBilledKb,
+	};
+};
+
+/**
+ * ADR-076 Decision 4's exit. The viewmodel can only offer the arm; the run it
+ * ends lives out here, so without this the button was drawn and did nothing.
+ */
+const refusing = (
+	tail: GateOutcomeTail | undefined,
+	onRefuse: (() => void) | undefined
+): GateOutcomeTail | undefined => {
+	if (tail?.choice === undefined || onRefuse === undefined) return tail;
+
+	return {
+		choice: {
+			...tail.choice,
+			refusal: {
+				...tail.choice.refusal,
+				action: { ...tail.choice.refusal.action, onPress: onRefuse },
+			},
+		},
 	};
 };
 
@@ -122,6 +150,7 @@ export const GateOutcomeView = ({
 	onNext,
 	onCommunity,
 	onRemove,
+	onRefuse,
 }: GateOutcomeViewProps) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
 
@@ -141,6 +170,7 @@ export const GateOutcomeView = ({
 	return (
 		<GateOutcomeScreen
 			{...props}
+			tail={refusing(props.tail, onRefuse)}
 			answers={{
 				...props.answers,
 				...(props.answers.review === undefined

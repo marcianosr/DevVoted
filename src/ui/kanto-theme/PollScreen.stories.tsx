@@ -19,6 +19,7 @@ import {
 import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
 import type { AuditProps } from "./Audit.ui";
+import type { FigureTone, LedgerRow } from "./LedgerRows.ui";
 import { PollScreen } from "./PollScreen.ui";
 import { REDACTED } from "./Redaction.ui";
 import type { QuestionOption } from "./Question.ui";
@@ -26,6 +27,8 @@ import type { QuestionOption } from "./Question.ui";
 const SUBMIT_LABEL = "Submit answer";
 const NEXT_LABEL = "Next poll";
 const ANSWERED_HELD = 62;
+const QUIET: FigureTone = "quiet";
+const GAIN = "viridian" as const;
 
 const noop = () => {};
 
@@ -231,16 +234,55 @@ export const NothingPicked: Story = {
 	},
 };
 
+const ANSWER_RECEIPT = [
+	{
+		label: "right answer",
+		detail: "base",
+		figures: [{ label: "1", tone: QUIET }],
+	},
+	{
+		label: ".ts",
+		detail: "matches TypeScript",
+		figures: [{ label: "×1.25", tone: QUIET }],
+	},
+	{
+		label: "Code Coverage",
+		figures: [{ label: "+0.1", tone: QUIET }],
+	},
+	{
+		label: "paid",
+		figures: [{ label: "1.35", color: GAIN }],
+		total: true,
+	},
+] as const satisfies readonly LedgerRow[];
+
 export const Answered: Story = {
 	args: {
 		coverage: {
+			...createKantoPollScreenProps().coverage,
 			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD, pin: true }),
-			correct: "38/55 correct",
+			breakdown: ANSWER_RECEIPT,
 		},
 		question: createKantoQuestionProps({ pickedIds: ["option-1"] }),
 		wrongCost: undefined,
 		hint: undefined,
 		footer: { action: { label: NEXT_LABEL, icon: "gate", onPress: noop } },
+	},
+};
+
+export const AnsweredWithTheBuildFlashing: Story = {
+	args: {
+		...Answered.args,
+		buildFooter: {
+			...createKantoBuildFooterProps({ open: true }),
+			flash: "answer-1",
+			build: {
+				...createKantoBuildProps(),
+				configs: createKantoBuildProps().configs.map((config, index) =>
+					index < 2 ? { ...config, credited: true } : config
+				),
+			},
+		},
 	},
 };
 

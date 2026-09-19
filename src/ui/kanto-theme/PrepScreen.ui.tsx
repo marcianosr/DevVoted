@@ -1,11 +1,13 @@
 import { Audit, type AuditProps } from "./Audit.ui";
 import { BandOutcomes, type BandOutcomesProps } from "./BandOutcomes.ui";
+import { EstimatePicker, type EstimatePickerProps } from "./EstimatePicker.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Ledger, type LedgerProps } from "./Ledger.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
+import { RebaseList, type RebaseListProps } from "./RebaseList.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
@@ -26,36 +28,36 @@ export type PrepAudits = {
 };
 
 const Audits = ({ title, meta, bill, note, alerts }: PrepAudits) => (
-	<PanelV2>
-		<PanelV2.Header
+	<Panel>
+		<Panel.Header
 			label={title}
 			meta={bill === undefined ? undefined : <Figures text={bill} />}
 		/>
 
 		{meta === undefined ? null : (
-			<PanelV2.Body>
+			<Panel.Body>
 				<Typography variant="hint">{meta}</Typography>
-			</PanelV2.Body>
+			</Panel.Body>
 		)}
 
 		{alerts.length === 0 ? null : (
-			<PanelV2.Rows>
+			<Panel.Rows>
 				{alerts.map((alert, index) => (
-					<PanelV2.Row key={alert.code ?? index}>
+					<Panel.Row key={alert.code ?? index}>
 						<Audit {...alert} layout={AUDIT_LAYOUT} />
-					</PanelV2.Row>
+					</Panel.Row>
 				))}
-			</PanelV2.Rows>
+			</Panel.Rows>
 		)}
 
 		{note === undefined ? null : (
-			<PanelV2.Footer>
+			<Panel.Footer>
 				<Typography variant="hint">
 					<Figures text={note} gain={NOTE_GAIN} />
 				</Typography>
-			</PanelV2.Footer>
+			</Panel.Footer>
 		)}
-	</PanelV2>
+	</Panel>
 );
 
 export type PrepScreenProps = {
@@ -64,6 +66,9 @@ export type PrepScreenProps = {
 	scores: PollScoresProps;
 	polls: LedgerProps;
 	audits: PrepAudits;
+	/** Both are bets on this gate, so they sit with the band table, not the Ledger. */
+	estimate?: EstimatePickerProps;
+	rebase?: RebaseListProps;
 	footer: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -75,6 +80,8 @@ export const PrepScreen = ({
 	scores,
 	polls,
 	audits,
+	estimate,
+	rebase,
 	footer,
 	width,
 	ground = "bare",
@@ -85,11 +92,13 @@ export const PrepScreen = ({
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
 				<BandOutcomes {...outcomes} />
-				<PanelV2>
-					<PanelV2.Body>
+				{rebase === undefined ? null : <RebaseList {...rebase} />}
+				{estimate === undefined ? null : <EstimatePicker {...estimate} />}
+				<Panel>
+					<Panel.Body>
 						<PollScores {...scores} />
-					</PanelV2.Body>
-				</PanelV2>
+					</Panel.Body>
+				</Panel>
 			</div>
 
 			<div className={COLUMN}>
@@ -98,10 +107,10 @@ export const PrepScreen = ({
 			</div>
 		</div>
 
-		<PanelV2>
-			<PanelV2.Body>
+		<Panel>
+			<Panel.Body>
 				<ScreenFooter {...footer} rule={false} />
-			</PanelV2.Body>
-		</PanelV2>
+			</Panel.Body>
+		</Panel>
 	</Screen>
 );

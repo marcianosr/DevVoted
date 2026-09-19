@@ -194,7 +194,9 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
 		).toBe(readOnly);
-		expect(runReducer(readOnly, { type: "buy-slot" })).toBe(readOnly);
+		expect(runReducer(readOnly, { type: "set-build-space", rung: 1 })).toBe(
+			readOnly
+		);
 		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
 
 		const open = shopping(4);
@@ -494,7 +496,7 @@ describe("the storage high-water mark", () => {
 			storage: 400,
 			peakStorageKb: 400,
 		};
-		const spent = runReducer(rich, { type: "buy-slot" });
+		const spent = runReducer(rich, { type: "rebuild-draft" });
 
 		expect(spent.storage).toBeLessThan(400);
 		expect(spent.peakStorageKb).toBe(400);

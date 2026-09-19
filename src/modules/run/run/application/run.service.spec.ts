@@ -10,6 +10,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	abandonRunService,
 	dispatchRunActionService,
+	getRunRecapService,
 	getTodaysRunService,
 	startRunService,
 } from "~/modules/run/run/application/run.service";
@@ -24,11 +25,13 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	createSessionRunWithState: vi.fn(),
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),
+	fetchArchivedStorageKb: vi.fn().mockResolvedValue(0),
 	fetchStorageWatermark: vi.fn().mockResolvedValue(0),
 	loadRunState: vi.fn(),
 	fetchRunSnapshot: vi.fn(),
 	findActiveSessionRun: vi.fn(),
 	findSessionRunByDate: vi.fn(),
+	findSessionRunById: vi.fn(),
 }));
 
 vi.mock("~/modules/run/run/infrastructure/runPolls.repository", () => ({
@@ -37,6 +40,7 @@ vi.mock("~/modules/run/run/infrastructure/runPolls.repository", () => ({
 
 vi.mock("~/modules/run/config/infrastructure/configUnlock.repository", () => ({
 	fetchUnlocksSince: vi.fn().mockResolvedValue([]),
+	fetchUnlockedConfigIds: vi.fn().mockResolvedValue([]),
 }));
 
 const kantoPoll = (index: number): RunPoll => {
@@ -70,6 +74,52 @@ const sessionRunRecord = (
 
 const configuringState = (): RunState =>
 	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint]);
+
+describe("getRunRecapService (DVTD-t3lt: the archive's one id-bearing URL)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("reads a run this account owns", async () => {
+		vi.mocked(queries.findSessionRunById).mockResolvedValue(
+			sessionRunRecord({ user_id: USER })
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
+
+		const result = await getRunRecapService({ userId: USER, runId: 64 });
+
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.status).toBe("configuring");
+	});
+
+	// The id comes from the URL, so this is the whole guard. Refusing without
+	// saying the run exists keeps a stranger's archive unenumerable.
+	it("refuses a run belonging to someone else, and never reads its state", async () => {
+		vi.mocked(queries.findSessionRunById).mockResolvedValue(
+			sessionRunRecord({ user_id: "blue-from-pallet-town" })
+		);
+
+		const result = await getRunRecapService({ userId: USER, runId: 64 });
+
+		expect(result.success).toBe(false);
+		expect(vi.mocked(queries.loadRunState)).not.toHaveBeenCalled();
+	});
+
+	it("refuses a run that does not exist, in the same words", async () => {
+		vi.mocked(queries.findSessionRunById).mockResolvedValue(null);
+
+		const missing = await getRunRecapService({ userId: USER, runId: 999 });
+		vi.mocked(queries.findSessionRunById).mockResolvedValue(
+			sessionRunRecord({ user_id: "blue-from-pallet-town" })
+		);
+		const theirs = await getRunRecapService({ userId: USER, runId: 64 });
+
+		expect(missing.success).toBe(false);
+		expect(theirs.success).toBe(false);
+		if (!missing.success && !theirs.success)
+			expect(missing.error).toBe(theirs.error);
+	});
+});
 
 describe("getTodaysRunService", () => {
 	beforeEach(() => {

@@ -4,7 +4,7 @@
 
 Accepted 2026-09-03. Supersedes [ADR-026](026-staged-onboarding-starter-stacks.md)
 Decisions 1, 5, 6 and 7 (starter stacks). Amends
-[ADR-049](049-the-archive-opens-a-run-wider.md): the archive slot lines stay on
+ADR-049 (retired): the archive slot lines stay on
 the start screen, demoted below the deal.
 
 Decisions 2 and 6 were answered by

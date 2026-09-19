@@ -89,6 +89,8 @@ export const floorAt = (gate: number): number =>
 export type CoverageConfigBonus = {
 	readonly configId: string;
 	readonly value: number;
+	/** Present only when the config multiplied, so a row can pick its native form. */
+	readonly factor?: number;
 };
 
 /** What one answer paid, split so the reveal can name each contributor. */

@@ -5,17 +5,14 @@ import {
 	type ChipWidth,
 	type ConfigChipProps,
 } from "./ConfigChip.ui";
-import { SlotBox, type SlotCash } from "./SlotBox.ui";
-import { SlotOffer, type SlotOfferProps } from "./SlotOffer.ui";
+import { SlotBox } from "./SlotBox.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
 import { Typography } from "./Typography.ui";
 import {
 	WeightTrack,
-	freeWeightOf,
-	upkeepAt,
-	type UpkeepRung,
+	roomLineOf,
+	type WeightTrackFill,
 } from "./WeightTrack.ui";
-import { WeightOffer, type WeightOfferProps } from "./WeightOffer.ui";
 
 const BAND = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
@@ -39,40 +36,30 @@ const FOLD_BODY = "pt-3";
 const CARET_GLYPH = "›";
 const SEPARATOR = "·";
 const TITLE = "Build";
-const WEIGHT_WORD = "weight";
-const COVERED_WORD = "covered";
-const BILLABLE_WORD = "billable";
 
 export type BuildSlots = { used: number; capacity: number };
 
 export type BuildWeight = {
-	rungs: readonly UpkeepRung[];
-	max: number;
-	offers?: readonly WeightOfferProps[];
+	/** The build space the run rents (ADR-082). What it bills is the shop's to say. */
+	held: number;
 };
 
 type BuildCount =
 	| {
 			slots: BuildSlots;
 			weight?: never;
-			cash?: SlotCash;
-			offer?: SlotOfferProps;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
 	| {
 			weight: BuildWeight;
 			slots?: never;
-			cash?: never;
-			offer?: never;
 			highlight?: string;
 			onHighlight?: (name?: string) => void;
 	  }
 	| {
 			slots?: never;
 			weight?: never;
-			cash?: never;
-			offer?: never;
 			highlight?: never;
 			onHighlight?: never;
 	  };
@@ -81,8 +68,6 @@ const roomOf = ({ used, capacity }: BuildSlots) =>
 	used > capacity ? `over by ${used - capacity}` : `${capacity - used} free`;
 
 export const configCountOf = (total: number) => `${total} configs`;
-
-const weightWords = (weight: number) => `${weight} ${WEIGHT_WORD}`;
 
 const led = (total: number, counted: boolean) =>
 	counted ? [configCountOf(total)] : [];
@@ -93,17 +78,10 @@ const summaryOf = (
 	weight: number,
 	counted: boolean
 ): string => {
-	if (count.weight !== undefined) {
-		const free = freeWeightOf(count.weight.rungs);
-		const covered = Math.min(weight, free);
-		const billable = Math.max(0, weight - free);
-		return [
-			...led(total, counted),
-			weightWords(weight),
-			`${covered} ${COVERED_WORD}`,
-			`${billable} ${BILLABLE_WORD}`,
-		].join(` ${SEPARATOR} `);
-	}
+	if (count.weight !== undefined)
+		return [...led(total, counted), roomLineOf(weight, count.weight.held)].join(
+			` ${SEPARATOR} `
+		);
 	if (count.slots === undefined) return configCountOf(total);
 
 	const { used, capacity } = count.slots;
@@ -134,8 +112,6 @@ export type BuildProps = {
 	resting?: string;
 	track?: BuildTrack;
 	caption?: boolean;
-	offeredSlot?: boolean;
-	weightOffers?: boolean;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
 } & BuildCount;
@@ -158,25 +134,17 @@ export const buildHeadOf = (props: BuildProps): string => {
 
 	return [
 		...led(configs.length + skipped.length, configCount),
-		weightWords(weightOf(fillsOf(configs, skipped))),
+		roomLineOf(weightOf(fillsOf(configs, skipped)), props.weight.held),
 	].join(` ${SEPARATOR} `);
-};
-
-export const buildUpkeepOf = (props: BuildProps): number | undefined => {
-	if (props.weight === undefined) return undefined;
-
-	const { configs, skipped = [] } = props;
-
-	return upkeepAt(props.weight.rungs, weightOf(fillsOf(configs, skipped)));
 };
 
 const vacantSlotsOf = ({ used, capacity }: BuildSlots) =>
 	Math.max(0, capacity - used);
 
-const fillOf = (config: ConfigChipProps): SlotTrackFill[] => {
+const fillOf = (config: ConfigChipProps): WeightTrackFill[] => {
 	if (config.locked === true) return [];
 	if (config.slots === undefined) return [];
-	return [{ name: config.name, slots: config.slots }];
+	return [{ name: config.name, slots: config.slots, info: config.info }];
 };
 
 const fillsOf = (
@@ -184,7 +152,7 @@ const fillsOf = (
 	skipped: readonly ConfigChipProps[]
 ) => [...configs, ...skipped].flatMap(fillOf);
 
-const weightOf = (fills: readonly SlotTrackFill[]) =>
+const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
 const OCCUPANCY_NAME = "build";
@@ -192,29 +160,13 @@ const OCCUPANCY_NAME = "build";
 const occupancyFillOf = ({ used }: BuildSlots): SlotTrackFill[] =>
 	used < 1 ? [] : [{ name: OCCUPANCY_NAME, slots: used }];
 
-const Vacancy = ({
-	slots,
-	cash,
-	offer,
-	boxed,
-}: {
-	slots: BuildSlots;
-	cash?: SlotCash;
-	offer?: SlotOfferProps;
-	boxed: boolean;
-}) => {
-	const vacant = vacantSlotsOf(slots);
-	const drawn = boxed ? vacant : Math.min(vacant, cash === undefined ? 0 : 1);
-
-	return (
-		<>
-			{Array.from({ length: drawn }, (_, index) => (
-				<SlotBox key={index} cash={index === drawn - 1 ? cash : undefined} />
-			))}
-			{offer === undefined ? null : <SlotOffer {...offer} />}
-		</>
-	);
-};
+const Vacancy = ({ slots }: { slots: BuildSlots }) => (
+	<>
+		{Array.from({ length: vacantSlotsOf(slots) }, (_, index) => (
+			<SlotBox key={index} />
+		))}
+	</>
+);
 
 const Chip = ({
 	config,
@@ -265,8 +217,6 @@ export const Build = ({
 	resting,
 	track = "configs",
 	caption = track === "configs",
-	offeredSlot = true,
-	weightOffers = true,
 	openInfo,
 	onToggleInfo,
 	...count
@@ -280,9 +230,9 @@ export const Build = ({
 			{count.weight === undefined ? null : (
 				<WeightTrack
 					fills={fills}
-					rungs={count.weight.rungs}
-					max={count.weight.max}
+					held={count.weight.held}
 					highlight={highlight}
+					caption={caption}
 				/>
 			)}
 
@@ -290,7 +240,6 @@ export const Build = ({
 				<SlotTrack
 					fills={track === "occupancy" ? occupancyFillOf(count.slots) : fills}
 					capacity={count.slots.capacity}
-					offered={offeredSlot && count.offer !== undefined}
 					highlight={highlight}
 					resting={resting}
 					caption={caption}
@@ -320,17 +269,9 @@ export const Build = ({
 
 	const offered = (
 		<>
-			{count.slots === undefined ? null : (
-				<Vacancy
-					slots={count.slots}
-					cash={count.cash}
-					offer={count.offer}
-					boxed={emptySlots}
-				/>
+			{count.slots === undefined || !emptySlots ? null : (
+				<Vacancy slots={count.slots} />
 			)}
-			{(weightOffers ? (count.weight?.offers ?? []) : []).map((offer) => (
-				<WeightOffer key={offer.to} {...offer} />
-			))}
 		</>
 	);
 

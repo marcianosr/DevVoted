@@ -2,98 +2,52 @@ import { useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
-import {
-	auditdex,
-	auditsFacedIn,
-} from "~/modules/collection/dex/domain/auditdex.model";
-import {
-	configdex,
-	type ConfigdexEntry,
-	grantedCountIn,
-} from "~/modules/collection/dex/domain/configdex.model";
-import {
-	gatedex,
-	gatesClearedIn,
-} from "~/modules/collection/dex/domain/gatedex.model";
-import {
-	polldexCoverage,
-	type PolldexEntry,
-} from "~/modules/collection/dex/domain/polldex.model";
+import { auditdex } from "~/modules/collection/dex/domain/auditdex.model";
+import { configdex } from "~/modules/collection/dex/domain/configdex.model";
+import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
 import { getConfigdex } from "~/modules/collection/dex/application/configdex.serverfn";
 import { getGateRuns } from "~/modules/collection/dex/application/runHistory.serverfn";
 import { getPolldex } from "~/modules/collection/dex/application/polldex.serverfn";
-import { AuditsView } from "~/modules/collection/dex/presentation/AuditsView.component";
-import { ConfigdexPanel } from "~/modules/collection/dex/presentation/ConfigdexPanel.ui";
-import { GatesView } from "~/modules/collection/dex/presentation/GatesView.component";
-import { PollsView } from "~/modules/collection/dex/presentation/PollsView.component";
+import {
+	DEX_TABS,
+	dexAuditsFor,
+	dexConfigsFor,
+	dexPollsFor,
+	dexRunsFor,
+	dexSwatchesFor,
+	dexThemeOf,
+	isDexTabId,
+	type DexTabId,
+} from "~/modules/collection/dex/application/dexScreen.viewmodel";
+import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
+import { formatStorage } from "~/shared/lib/storage";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
-import { Text } from "~/ui/old-theme/modern-theme/Text.ui";
-import { DexScreen } from "~/ui/old-theme/modern-theme/screens/DexScreen.ui";
-
-type PollsTabProps = {
-	pending: boolean;
-	entries: PolldexEntry[] | null;
-};
-
-const PollsTab = ({ pending, entries }: PollsTabProps) => {
-	if (pending)
-		return (
-			<Text as="p" size="meta" tone="muted">
-				Loading your collection…
-			</Text>
-		);
-
-	if (!entries)
-		return (
-			<Text as="p" size="meta" tone="cinnabar">
-				Couldn&apos;t load your polls. Try again shortly.
-			</Text>
-		);
-
-	return <PollsView entries={entries} />;
-};
-
-type ConfigsTabProps = {
-	pending: boolean;
-	entries: readonly ConfigdexEntry[] | null;
-};
-
-const ConfigsTab = ({ pending, entries }: ConfigsTabProps) => {
-	if (pending)
-		return (
-			<Text as="p" size="meta" tone="muted">
-				Loading your collection…
-			</Text>
-		);
-
-	if (!entries)
-		return (
-			<Text as="p" size="meta" tone="cinnabar">
-				Couldn&apos;t load your configs. Try again shortly.
-			</Text>
-		);
-
-	return <ConfigdexPanel entries={entries} />;
-};
+import { DexAudits } from "~/ui/kanto-theme/DexAudits.ui";
+import { DexConfigs } from "~/ui/kanto-theme/DexConfigs.ui";
+import { DexPolls } from "~/ui/kanto-theme/DexPolls.ui";
+import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
+import { DexScreen } from "~/ui/kanto-theme/DexScreen.ui";
+import { DexSwatches } from "~/ui/kanto-theme/DexSwatches.ui";
 
 type DexProps = {
 	// Only the query-cache discriminator; the server derives auth server-side.
 	userId: string;
 };
 
+const FIRST_TAB: DexTabId = "polls";
+const ARCHIVE_SUFFIX = "archive";
+
 /**
- * Tier 2 wiring for the Dex: tab state, the queries, and the counters.
+ * Tier 2 wiring for the Dex: tab state, the queries, and the presenters.
  *
- * Gates and Audits are read off `owned_swatch_ids` alone — a swatch lands
+ * Swatches and Audits are read off `owned_swatch_ids` alone — a swatch lands
  * exactly when its gate falls, so it already is the account's record of every
- * gate ever cleared, and neither tab needs the poll query. That is why the
- * Polls and Configs tabs carry their own loading and error state instead of
- * the screen doing it: a slow query should not blank a catalogue that is
- * already in hand.
+ * gate ever cleared, and neither tab needs the poll query.
  */
 export const Dex = ({ userId }: DexProps) => {
-	const [activeId, setActiveId] = useState("polls");
+	const [activeId, setActiveId] = useState<DexTabId>(FIRST_TAB);
+	const [versions, setVersions] = useState<Record<string, number>>({});
 
 	const polldex = useQuery({
 		queryKey: pollQueryKeys.polldex(userId),
@@ -115,59 +69,50 @@ export const Dex = ({ userId }: DexProps) => {
 		queryFn: () => getConfigdex(),
 	});
 
-	const entries = polldex.data?.success ? polldex.data.data.entries : null;
+	const entries = polldex.data?.success ? polldex.data.data.entries : [];
 	const ownedSwatchIds = swatches.data?.success
 		? swatches.data.data.ownedSwatchIds
 		: [];
-
 	const runs = gateRuns.data?.success ? gateRuns.data.data.runs : [];
-
-	const gates = gatedex(ownedSwatchIds);
-	const audits = auditdex(gates, runs);
-	const coverage = polldexCoverage(entries ?? []);
+	const history = gateRuns.data?.success ? gateRuns.data.data.history : [];
 	const configEntries = unlocks.data?.success
 		? configdex(unlocks.data.data.unlocks, unlocks.data.data.progress)
-		: null;
+		: [];
+
+	const archive = useArchiveState(userId);
+
+	const gates = gatedex(ownedSwatchIds);
+
+	const selectTab = (id: string) => {
+		if (isDexTabId(id)) setActiveId(id);
+	};
+
+	const readVersion = (configId: string, version: number) =>
+		setVersions((held) => ({ ...held, [configId]: version }));
 
 	return (
 		<DexScreen
-			tabs={[
-				{
-					id: "polls",
-					label: "Polls",
-					count: entries ? `${coverage.seen}/${coverage.total}` : undefined,
-				},
-				{
-					id: "configs",
-					label: "Configs",
-					count: configEntries
-						? `${grantedCountIn(configEntries)}/${configEntries.length}`
-						: undefined,
-				},
-				{
-					id: "audits",
-					label: "Audits",
-					count: `${auditsFacedIn(audits)}/${audits.length}`,
-				},
-				{
-					id: "gates",
-					label: "Gates",
-					count: `${gatesClearedIn(gates)}/${gates.length}`,
-				},
-			]}
+			tabs={DEX_TABS}
 			activeId={activeId}
-			onSelect={setActiveId}
+			onSelect={selectTab}
+			theme={dexThemeOf(activeId)}
+			archive={`${formatStorage(archive.data?.archivedStorage ?? 0)} ${ARCHIVE_SUFFIX}`}
 		>
-			{activeId === "gates" ? (
-				<GatesView gates={gates} audits={audits} />
-			) : null}
-			{activeId === "audits" ? <AuditsView audits={audits} /> : null}
+			{activeId === "polls" ? <DexPolls {...dexPollsFor(entries)} /> : null}
 			{activeId === "configs" ? (
-				<ConfigsTab pending={unlocks.isPending} entries={configEntries} />
+				<DexConfigs
+					{...dexConfigsFor(configEntries)}
+					selected={versions}
+					onVersion={readVersion}
+				/>
 			) : null}
-			{activeId === "polls" ? (
-				<PollsTab pending={polldex.isPending} entries={entries} />
+			{activeId === "audits" ? (
+				<DexAudits {...dexAuditsFor(auditdex(gates, runs))} />
 			) : null}
+			{activeId === "swatches" ? (
+				<DexSwatches {...dexSwatchesFor(gates)} />
+			) : null}
+			{activeId === "runs" ? <DexRuns {...dexRunsFor(history)} /> : null}
 		</DexScreen>
 	);
 };

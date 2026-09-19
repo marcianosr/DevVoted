@@ -1,9 +1,7 @@
 import { Build, buildSummaryOf, type BuildProps } from "./Build.ui";
-import { Figures } from "./Figures.ui";
 import { Header, type HeaderProps } from "./Header.ui";
-import type { KantoColor } from "./colors";
-import { PanelV2 } from "./PanelV2.ui";
-import { Registry, registrySummaryOf, type RegistryProps } from "./Registry.ui";
+import { Panel } from "./Panel.ui";
+import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
@@ -13,7 +11,6 @@ const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const BUILD_LAYOUT = "column";
 const BUILD_TITLE = "Build";
 const REGISTRY_TITLE = "Registry";
-const HINT_GAIN: KantoColor = "pewter";
 
 export type NewRunScreenProps = {
 	header: HeaderProps;
@@ -42,7 +39,6 @@ export const NewRunScreen = ({
 		heading: false,
 		configCount: false,
 		emptySlots: false,
-		offeredSlot: false,
 		caption: false,
 	};
 
@@ -52,50 +48,47 @@ export const NewRunScreen = ({
 
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
-					<PanelV2>
-						<PanelV2.Header label={BUILD_TITLE} meta={buildSummaryOf(dealt)} />
-						<PanelV2.Body>
+					<Panel>
+						<Panel.Header label={BUILD_TITLE} meta={buildSummaryOf(dealt)} />
+						<Panel.Body>
 							<Build {...dealt} />
-						</PanelV2.Body>
+						</Panel.Body>
 						{buildNote === undefined ? null : (
-							<PanelV2.Footer>
+							<Panel.Footer>
 								<Typography variant="hint">{buildNote}</Typography>
-							</PanelV2.Footer>
+							</Panel.Footer>
 						)}
-					</PanelV2>
+					</Panel>
 				</div>
 
 				<div className={COLUMN}>
-					<PanelV2>
-						<PanelV2.Header
+					<Panel>
+						<Panel.Header
 							label={REGISTRY_TITLE}
 							meta={
-								<Figures
-									text={registrySummaryOf(
-										registry.offers.length,
-										registry.slotPrice
-									)}
-									gain={HINT_GAIN}
+								<RegistrySummary
+									offers={registry.offers.length}
+									slotPrice={registry.slotPrice}
 								/>
 							}
 						/>
-						<PanelV2.Body>
+						<Panel.Body>
 							<Registry {...registry} heading={false} />
-						</PanelV2.Body>
+						</Panel.Body>
 						{registryNote === undefined ? null : (
-							<PanelV2.Footer>
+							<Panel.Footer>
 								<Typography variant="hint">{registryNote}</Typography>
-							</PanelV2.Footer>
+							</Panel.Footer>
 						)}
-					</PanelV2>
+					</Panel>
 				</div>
 			</div>
 
-			<PanelV2>
-				<PanelV2.Body>
+			<Panel>
+				<Panel.Body>
 					<ScreenFooter {...footer} rule={false} />
-				</PanelV2.Body>
-			</PanelV2>
+				</Panel.Body>
+			</Panel>
 		</Screen>
 	);
 };

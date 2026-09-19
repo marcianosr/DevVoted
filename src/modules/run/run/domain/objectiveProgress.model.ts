@@ -30,9 +30,9 @@ const cachePays = (state: RunState, category: CategoryCode): boolean =>
 	cachedHitsFor(state.allAnswered ?? [], category) > 0 &&
 	liveConfigsOf(state).some((config) => config.cacheHitStep !== undefined);
 
-const exactEstimate = (state: RunState, correct: boolean): boolean =>
+const metEstimate = (state: RunState, correct: boolean): boolean =>
 	state.estimatedCorrect !== undefined &&
-	state.estimatedCorrect === windowCorrectAfter(state, correct);
+	windowCorrectAfter(state, correct) >= state.estimatedCorrect;
 
 const holdsTwoUpgraded = (state: RunState): boolean =>
 	state.build.configs.filter((config) => (config.level ?? 1) >= 2).length >= 2;
@@ -52,6 +52,7 @@ const answerMetrics = (
 		...(correct
 			? (["polls-correct", `category-correct:${landed.category}`] as const)
 			: []),
+		...(landed.outcome === "partial" ? (["partials-paid"] as const) : []),
 		...(correct && cachePays(state, landed.category)
 			? (["cache-hits"] as const)
 			: []),
@@ -59,7 +60,7 @@ const answerMetrics = (
 		...(perfect && state.gatesCleared >= 3
 			? (["perfect-window-deep"] as const)
 			: []),
-		...(settled && exactEstimate(state, correct)
+		...(settled && metEstimate(state, correct)
 			? (["exact-estimates"] as const)
 			: []),
 		...(state.rebasedThisGate === true ? (["gates-reordered"] as const) : []),
@@ -101,6 +102,7 @@ const actionMetrics = (
 			: [];
 	}
 	if (action.type === "lock-offer") return ["offers-locked"];
+	if (action.type === "vendor-lock") return ["configs-vendor-locked"];
 	if (action.type === "switch-arm") return ["arms-switched"];
 	if (action.type === "sell") {
 		return (next.soldThisShop ?? 0) === 3

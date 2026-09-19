@@ -2,13 +2,12 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 
 const RUN_ROUTES = {
 	start: "/run",
-	configure: "/run/configure",
+	new: "/run/new",
 	prep: "/run/prep",
-	answer: "/run/answer",
-	reward: "/run/reward",
+	poll: "/run/poll",
+	gate: "/run/gate",
 	review: "/run/review",
 	shop: "/run/shop",
-	strip: "/run/strip",
 	over: "/run/over",
 } as const;
 
@@ -35,20 +34,24 @@ const routesForStatus = (
 	if (!view) return [RUN_ROUTES.start];
 	switch (view.status) {
 		case "configuring":
-			return [RUN_ROUTES.configure];
+			// Prep is legal before the run starts: gate 0 states its terms on the
+			// same screen every later gate does, so the opening build and the
+			// opening stake are two page turns rather than one flag.
+			return [RUN_ROUTES.new, RUN_ROUTES.prep];
 		case "answering":
 			return view.gatesCleared > 0
-				? [RUN_ROUTES.prep, RUN_ROUTES.answer]
-				: [RUN_ROUTES.answer];
+				? [RUN_ROUTES.prep, RUN_ROUTES.poll]
+				: [RUN_ROUTES.poll];
 		case "rewarding":
-			// A retry shares the clear's status but not its payout screen: the
-			// reward screen is a "+KB, gate cleared" celebration, and the gate it
-			// would name is the one just missed (ADR-037). The failure's own report
-			// was the strip screen; from here the loop is shop, prep, same gate.
+			// A retry shares the clear's status but not its outcome screen: that
+			// screen is a "+KB, gate cleared" celebration, and the gate it would
+			// name is the one just missed (ADR-037). The failure's own report was
+			// the same screen wearing its held verdict; from here the loop is
+			// shop, prep, same gate.
 			return view.redoingGate !== null
 				? [RUN_ROUTES.shop, RUN_ROUTES.prep, RUN_ROUTES.review]
 				: [
-						RUN_ROUTES.reward,
+						RUN_ROUTES.gate,
 						RUN_ROUTES.review,
 						RUN_ROUTES.shop,
 						RUN_ROUTES.prep,
@@ -56,11 +59,11 @@ const routesForStatus = (
 		case "awaiting-strip":
 			// A waived peel (ADR-057) has nothing to repair, so the answers lead and
 			// the repair screen stays reachable but unvisited. A player already on
-			// the strip screen having just paid stays put: syncTarget only moves
+			// the gate screen having just paid stays put: syncTarget only moves
 			// someone whose current screen is not in this list.
 			return view.peelSlotsRemaining === 0
-				? [RUN_ROUTES.review, RUN_ROUTES.strip]
-				: [RUN_ROUTES.strip, RUN_ROUTES.review];
+				? [RUN_ROUTES.review, RUN_ROUTES.gate]
+				: [RUN_ROUTES.gate, RUN_ROUTES.review];
 		case "won":
 		case "dead":
 			return [RUN_ROUTES.over];

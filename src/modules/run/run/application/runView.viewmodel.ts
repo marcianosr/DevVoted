@@ -40,6 +40,7 @@ import {
 	liveConfigsOf,
 	scheduleOf,
 } from "~/modules/run/run/domain/run.model";
+import { strictStakeOf } from "~/modules/run/run/domain/strict.model";
 import {
 	type AnsweredPoll,
 	mirrorPoll,
@@ -61,6 +62,7 @@ import {
 import {
 	canEstimate,
 	ESTIMATE_CHOICES,
+	estimatePayoutUnits,
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
 import {
@@ -106,6 +108,7 @@ import {
 	projectorFor,
 	buildModifiersFor,
 } from "~/modules/run/build/domain/build.model";
+import { canVendorLock } from "~/modules/run/build/domain/vendorLock.model";
 import {
 	percentOf,
 	runCoverageOf,
@@ -116,70 +119,47 @@ import {
 	atMinimumWidth,
 	faucetRemainingKb,
 	isPeelFatal,
-	MAX_SLOTS,
-	planBillKb,
-	revealsPlanTier,
+	rungIndexForSpace,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	storageCapFor,
-	STORAGE_PLANS,
+	spaceRungFor,
+	upkeepForSpace,
+	BUILD_SPACE_RUNGS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import {
-	canAffordPlan,
-	canBuySlot,
-	canCashSlot,
-	slotCashOutFor,
-	slotPriceFor,
-} from "~/modules/run/run/domain/shopAction.model";
-import {
-	canBuyStartSlot,
-	canRefundStartSlot,
-	startSlotPriceKb,
-	startSlotRefundKb,
-} from "~/modules/run/run/domain/startSlot.model";
+import { canPickBuildSpace } from "~/modules/run/run/domain/shopAction.model";
 
-export type SlotDealView = {
-	readonly costKb?: number;
-	readonly makes?: number;
-	readonly refusal?: string;
-};
-
-export type SlotsView = {
-	readonly slots: number;
-	readonly maxSlots: number;
-	readonly buy: SlotDealView;
-	readonly cash: SlotDealView;
-};
-
-export type StartSlotsView = {
-	readonly archiveKb: number;
-	readonly buy: SlotDealView;
-	readonly cash: SlotDealView;
-};
-
-export type StoragePlanOption = {
-	readonly tier: number;
-	readonly capKb: number;
+export type BuildSpaceRungView = {
+	readonly rung: number;
+	readonly weight: number;
 	readonly perGateKb: number;
 	readonly held: boolean;
-	readonly burnsKb: number;
-	readonly affordable: boolean;
-	readonly revealed: boolean;
-	readonly opensAtKb?: number;
+	readonly pickable: boolean;
 };
 
-export type StoragePlanView = {
-	readonly capKb: number;
+export type BuildSpaceView = {
+	readonly space: number;
+	readonly weight: number;
 	readonly perGateKb: number;
-	readonly peakKb: number;
-	readonly options: readonly StoragePlanOption[];
+	readonly offered: boolean;
+	readonly rungs: readonly BuildSpaceRungView[];
+};
+
+export type VendorLockView = {
+	/** The build holds the vendor and has not named one yet, so a pick is live. */
+	readonly offered: boolean;
+	readonly lockedConfigId?: string;
+};
+
+export type EstimateChoice = {
+	readonly count: number;
+	/** What this card pays if the window meets it, already resolved by the engine. */
+	readonly units: number;
 };
 
 export type EstimateControl = {
 	readonly configLabel: string;
-	readonly choices: readonly number[];
-	readonly kbPerPoll: number;
+	readonly choices: readonly EstimateChoice[];
 };
 
 export type OfflineConfig = {
@@ -287,10 +267,16 @@ export type RunView = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
-	readonly slotDeals: SlotsView;
-	readonly startSlotDeals: StartSlotsView;
-	readonly storagePlan: StoragePlanView;
+	/** Build-space upkeep the whole run paid, for the run-over report. */
+	readonly upkeepPaidKb: number;
+	readonly buildSpace: BuildSpaceView;
+	readonly vendorLock: VendorLockView;
 
+	/**
+	 * The account archive, in KB. Not run state — the service fills it from the
+	 * users row, because a run knows nothing about the account it banks into.
+	 */
+	readonly archiveAfterKb: number | null;
 	readonly unlockedConfigIds: readonly string[];
 	readonly unlockedThisRun: readonly RunUnlock[];
 };
@@ -305,8 +291,15 @@ const estimateControlFor = (state: RunState): EstimateControl | null => {
 	if (estimator === undefined || !canEstimate(state)) return null;
 	return {
 		configLabel: estimator.label,
-		choices: ESTIMATE_CHOICES,
-		kbPerPoll: estimator.storagePerEstimate ?? 0,
+		choices: ESTIMATE_CHOICES.map((count) => ({
+			count,
+			units: estimatePayoutUnits(
+				state.build.configs,
+				count,
+				count,
+				state.gatesCleared
+			),
+		})),
 	};
 };
 
@@ -355,108 +348,22 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	});
 };
 
-const buyRefusalFor = (state: RunState): string | undefined => {
-	const price = slotPriceFor(state);
-	if (price === undefined || state.build.slots >= MAX_SLOTS)
-		return `Sold out — ${MAX_SLOTS} slots is the ceiling.`;
-	if (state.storage < price)
-		return `Costs ${price} KB, you have ${state.storage}.`;
-	return undefined;
-};
-
-const cashRefusalFor = (state: RunState): string | undefined => {
-	if (slotCashOutFor(state) === undefined)
-		return "Nothing to cash — the first four slots are free.";
-	if (freeSlots(state.build) === 0)
-		return "Every slot is filled — uninstall or minify first.";
-	return undefined;
-};
-
-const slotsViewFor = (state: RunState): SlotsView => {
-	const price = slotPriceFor(state);
-	const refund = slotCashOutFor(state);
+const buildSpaceViewFor = (state: RunState): BuildSpaceView => {
+	const held = rungIndexForSpace(state.build.slots);
+	const offered = canPickBuildSpace(state);
 
 	return {
-		slots: state.build.slots,
-		maxSlots: MAX_SLOTS,
-		buy: {
-			...(price === undefined ? {} : { costKb: price }),
-			...(canBuySlot(state) ? { makes: state.build.slots + 1 } : {}),
-			...(buyRefusalFor(state) === undefined
-				? {}
-				: { refusal: buyRefusalFor(state) }),
-		},
-		cash: {
-			...(refund === undefined ? {} : { costKb: refund }),
-			...(canCashSlot(state) ? { makes: state.build.slots - 1 } : {}),
-			...(cashRefusalFor(state) === undefined
-				? {}
-				: { refusal: cashRefusalFor(state) }),
-		},
-	};
-};
-
-const startBuyRefusalFor = (
-	state: RunState,
-	archiveKb: number
-): string | undefined => {
-	const price = startSlotPriceKb(state);
-	if (price === undefined)
-		return `Sold out — ${MAX_SLOTS} slots is the ceiling.`;
-	if (archiveKb < price)
-		return `Costs ${price} KB of archive, you have ${archiveKb}.`;
-	return undefined;
-};
-
-const startSlotsViewFor = (
-	state: RunState,
-	archiveKb: number
-): StartSlotsView => {
-	const price = startSlotPriceKb(state);
-	const refund = startSlotRefundKb(state);
-	const refusal = startBuyRefusalFor(state, archiveKb);
-
-	return {
-		archiveKb,
-		buy: {
-			...(price === undefined ? {} : { costKb: price }),
-			...(canBuyStartSlot(state, archiveKb)
-				? { makes: state.build.slots + 1 }
-				: {}),
-			...(refusal === undefined ? {} : { refusal }),
-		},
-		cash:
-			refund === undefined || !canRefundStartSlot(state)
-				? {}
-				: { costKb: refund, makes: state.build.slots - 1 },
-	};
-};
-
-const storagePlanViewFor = (
-	state: RunState,
-	accountPeakKb: number
-): StoragePlanView => {
-	const tier = state.storagePlan ?? 0;
-	const peakKb = Math.max(accountPeakKb, state.peakStorageKb ?? state.storage);
-
-	return {
-		capKb: storageCapFor(tier),
-		perGateKb: planBillKb(tier),
-		peakKb,
-		options: STORAGE_PLANS.map((plan) => {
-			const revealed = revealsPlanTier(plan.tier, peakKb);
-
-			return {
-				tier: plan.tier,
-				capKb: plan.capKb,
-				perGateKb: plan.perGateKb,
-				held: plan.tier === tier,
-				burnsKb: Math.max(0, state.storage - plan.capKb),
-				affordable: canAffordPlan(state, plan.tier),
-				revealed,
-				...(revealed ? {} : { opensAtKb: storageCapFor(plan.tier - 1) }),
-			};
-		}),
+		space: state.build.slots,
+		weight: occupiedSlots(state.build.configs),
+		perGateKb: upkeepForSpace(state.build.slots),
+		offered,
+		rungs: BUILD_SPACE_RUNGS.map((rung, index) => ({
+			rung: index,
+			weight: rung.weight,
+			perGateKb: rung.kb,
+			held: index === held,
+			pickable: offered && index !== held,
+		})),
 	};
 };
 
@@ -479,6 +386,7 @@ const configStatusesFor = (
 			undefined,
 		categoryHidden: auditsHideCategory(liveAudits),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
+		autoUpgradeProgress: state.autoUpgradeProgress ?? 0,
 	};
 
 	return Object.fromEntries(
@@ -494,8 +402,6 @@ const configStatusesFor = (
 
 export const toRunView = (
 	state: RunState,
-	archiveKb = 0,
-	accountPeakKb = 0,
 	unlockedConfigIds: readonly string[] = [],
 	unlockedThisRun: readonly RunUnlock[] = []
 ): RunView => {
@@ -503,7 +409,10 @@ export const toRunView = (
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
 	const perAnswer = perAnswerPreviewFor(
 		state.build.configs,
-		current === undefined ? undefined : gradedPollFor(state, current).answerType
+		current === undefined
+			? undefined
+			: gradedPollFor(state, current).answerType,
+		state.strictArmed === true ? (strictStakeOf(liveConfigsOf(state)) ?? 0) : 0
 	);
 	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
 	const schedule = scheduleOf(state);
@@ -552,6 +461,7 @@ export const toRunView = (
 		).map((config) => config.id),
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
+		archiveAfterKb: null,
 		unlockedConfigIds,
 		unlockedThisRun,
 		peelSlotsRemaining: state.peelSlotsRemaining,
@@ -653,8 +563,8 @@ export const toRunView = (
 				configs: state.build.configs,
 				gate: state.gatesCleared,
 				storageKb: state.storage,
-				planCapKb: storageCapFor(state.storagePlan ?? 0),
-				planBillKb: planBillKb(state.storagePlan ?? 0),
+				spaceWeight: spaceRungFor(state.build.slots).weight,
+				spaceBillKb: spaceRungFor(state.build.slots).kb,
 			}),
 			modifiers,
 			perAnswer,
@@ -689,8 +599,11 @@ export const toRunView = (
 		coverage: state.coverage,
 		coverageByCategory: state.coverageByCategory,
 		storage: state.storage,
-		slotDeals: slotsViewFor(state),
-		startSlotDeals: startSlotsViewFor(state, archiveKb),
-		storagePlan: storagePlanViewFor(state, accountPeakKb),
+		upkeepPaidKb: state.upkeepPaidKb ?? 0,
+		buildSpace: buildSpaceViewFor(state),
+		vendorLock: {
+			offered: canVendorLock(state),
+			lockedConfigId: state.build.vendorLockedConfigId,
+		},
 	};
 };

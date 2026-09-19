@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Icon } from "./Icon.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
 const SECTION = "flex w-full flex-col gap-2";
@@ -145,12 +145,12 @@ export const Objectives = ({
 	optionalLead,
 }: ObjectivesProps) => (
 	<>
-		<PanelV2.Body>
+		<Panel.Body>
 			<Required {...required} />
-		</PanelV2.Body>
+		</Panel.Body>
 
 		{optional.length === 0 ? null : (
-			<PanelV2.Body className={RULED}>
+			<Panel.Body className={RULED}>
 				<div className={SECTION}>
 					<Typography variant="hint">{optionalLead}</Typography>
 
@@ -160,7 +160,7 @@ export const Objectives = ({
 						))}
 					</div>
 				</div>
-			</PanelV2.Body>
+			</Panel.Body>
 		)}
 	</>
 );

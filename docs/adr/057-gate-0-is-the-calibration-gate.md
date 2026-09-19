@@ -84,9 +84,10 @@ their own button.
 
 - Repeated gate-0 misses cost only the day's polls. ADR-037's open question, whether
   repeated misses at the same gate should deepen the peel, is where this would bite.
-- `status: "awaiting-strip"` and the route `/run/strip` are now sometimes named after a
-  debt that does not exist. Not renamed: `RunStatus` is persisted in `run_states.state`
-  for in-flight runs, and the route is in the generated tree.
+- `status: "awaiting-strip"` is now sometimes named after a debt that does not
+  exist. Not renamed: `RunStatus` is persisted in `run_states.state` for
+  in-flight runs. The route it used to name is gone — ADR-088 merged
+  `/run/strip` into `/run/gate`, which reads its verdict off the status.
 - `gateStake.missIsFree` is derived from the quota rather than the share, so it stays
   audit-aware and build-aware, and excludes the bare build where a zero quota means
   death.

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { planChangeFor, uninstallFor } from "~/test/kantoPoll.factory";
+import { uninstallFor } from "~/test/kantoPoll.factory";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 import { Confirm } from "./Confirm.ui";
@@ -11,24 +11,33 @@ import { Weight } from "./Weight.ui";
 
 const noop = () => {};
 
-const PLAN = planChangeFor(3, 2, 1536);
+const SPACE = {
+	prose:
+		"Stepping down to 8 weight saves 32 KB a gate, but the build has to fit it before the shop lets you leave.",
+	figures: [
+		{ label: "a gate", value: "−32 KB", color: "viridian" as const },
+		{ label: "room", value: "8 weight" },
+	],
+};
 
 const meta: Meta<typeof Confirm> = {
 	component: Confirm,
 	title: "Kanto/Confirm",
 	args: {
 		eyebrow: "downgrade",
-		title: "Storage plan 1 MB",
-		prose: PLAN.prose,
-		figures: PLAN.figures,
-		confirmLabel: "drop to 1 MB",
+		title: "Build space 8 weight",
+		prose: SPACE.prose,
+		figures: SPACE.figures,
+		confirmLabel: "drop to 8 weight",
 		onConfirm: noop,
 		onCancel: noop,
 	},
 	render: (args) => (
 		<Screen theme="cinnabar" width="narrow">
 			<Panel>
-				<Confirm {...args} />
+				<Panel.Body>
+					<Confirm {...args} />
+				</Panel.Body>
 			</Panel>
 		</Screen>
 	),
@@ -53,22 +62,26 @@ export const BothCallers: Story = {
 	render: () => (
 		<Screen theme="cinnabar" width="narrow">
 			<Panel>
-				<Confirm
-					eyebrow="downgrade"
-					title="Storage plan 1 MB"
-					prose={PLAN.prose}
-					figures={PLAN.figures}
-					confirmLabel="drop to 1 MB"
-					onConfirm={noop}
-					onCancel={noop}
-				/>
+				<Panel.Body>
+					<Confirm
+						eyebrow="downgrade"
+						title="Build space 8 weight"
+						prose={SPACE.prose}
+						figures={SPACE.figures}
+						confirmLabel="drop to 8 weight"
+						onConfirm={noop}
+						onCancel={noop}
+					/>
+				</Panel.Body>
 			</Panel>
 			<Panel>
-				<Uninstall
-					{...uninstallFor(CONFIGS.mooresLaw)}
-					onConfirm={noop}
-					onCancel={noop}
-				/>
+				<Panel.Body>
+					<Uninstall
+						{...uninstallFor(CONFIGS.mooresLaw)}
+						onConfirm={noop}
+						onCancel={noop}
+					/>
+				</Panel.Body>
 			</Panel>
 		</Screen>
 	),

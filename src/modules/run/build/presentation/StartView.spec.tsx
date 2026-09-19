@@ -15,8 +15,6 @@ const noop = () => {};
 
 const handlers = {
 	onToggle: noop,
-	onBuySlot: noop,
-	onRefundSlot: noop,
 	onStart: noop,
 };
 
@@ -88,13 +86,10 @@ describe("StartView", () => {
 		).toBeNull();
 	});
 
-	it("sells the next slot and quotes nothing beyond it", () => {
+	it("sells no room at all, because every run opens on the free four (ADR-074)", () => {
 		render(<StartView view={view} {...handlers} />);
 
-		expect(
-			screen.getByRole("button", { name: /^buy slot 5/ })
-		).toBeInTheDocument();
-		expect(screen.queryByLabelText(/^slot 6 ·/)).toBeNull();
+		expect(screen.queryByRole("button", { name: /^buy slot/ })).toBeNull();
 	});
 
 	it("draws no row for a slot that is merely empty", () => {

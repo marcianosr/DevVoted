@@ -79,6 +79,46 @@ describe("landed answers", () => {
 		expect(metrics).toContain("category-correct:react");
 	});
 
+	const multiAnswerRun = (): RunState => ({
+		...createRun(
+			[
+				{
+					id: "m",
+					category: "ts",
+					question: "Which are TS utility types?",
+					answerType: "multiple",
+					options: [
+						{ id: "a", label: "Partial", correct: true },
+						{ id: "b", label: "Pick", correct: true },
+						{ id: "c", label: "Banjo", correct: false },
+					],
+				},
+				...pool(5),
+			],
+			handed
+		),
+		status: "answering",
+	});
+
+	it("counts a paid partial toward the formatter's objective", () => {
+		expect(
+			incrementsOf(multiAnswerRun(), { type: "answer", optionIds: ["a"] })
+		).toContain("partials-paid");
+	});
+
+	it("counts a cancelled-out answer as landed only, a miss paying nothing", () => {
+		expect(
+			incrementsOf(multiAnswerRun(), { type: "answer", optionIds: ["a", "c"] })
+		).toEqual(["polls-answered"]);
+	});
+
+	it("counts a correct answer as no partial, the two being exclusive", () => {
+		const state = started(["js"]);
+		expect(incrementsOf(state, answerAction(state, true))).not.toContain(
+			"partials-paid"
+		);
+	});
+
 	it("counts a wrong answer as landed only", () => {
 		const state = started(["js"]);
 		expect(incrementsOf(state, answerAction(state, false))).toEqual([
@@ -160,21 +200,28 @@ describe("estimates", () => {
 		return runReducer(committed, { type: "start" });
 	};
 
-	it("counts an exact estimate when the window settles", () => {
+	it("counts an estimate the window met when it settles", () => {
 		const closing = answered(estimating(SLICE_WINDOW), SLICE_WINDOW - 1);
 		expect(incrementsOf(closing, answerAction(closing, true))).toContain(
 			"exact-estimates"
 		);
 	});
 
-	it("ignores an estimate the window missed", () => {
+	it("counts an estimate the window beat, because the number is a floor", () => {
 		const closing = answered(estimating(SLICE_WINDOW - 1), SLICE_WINDOW - 1);
-		expect(incrementsOf(closing, answerAction(closing, true))).not.toContain(
+		expect(incrementsOf(closing, answerAction(closing, true))).toContain(
 			"exact-estimates"
 		);
 	});
 
-	it("pays the exact estimate even when the gate ends the run", () => {
+	it("ignores an estimate the window fell short of", () => {
+		const closing = answered(estimating(SLICE_WINDOW), SLICE_WINDOW - 1);
+		expect(incrementsOf(closing, answerAction(closing, false))).not.toContain(
+			"exact-estimates"
+		);
+	});
+
+	it("pays the met estimate even when the gate ends the run", () => {
 		let state = answerWith(audited(estimating(1), 6), true);
 		state = answered(state, SLICE_WINDOW - 2, false);
 		const answeredOut = runReducer(state, answerAction(state, false));

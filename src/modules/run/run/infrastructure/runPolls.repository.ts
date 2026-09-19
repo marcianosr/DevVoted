@@ -299,6 +299,34 @@ export const insertRunPolls = async (
 };
 
 /**
+ * Writes a reordered gate slice back to the run's sequence (git rebase -i).
+ * Without this the reorder lives only on `RunState.polls`, which is the one
+ * field `toRunSnapshot` drops, so the next dispatch rehydrates the original
+ * order and the drag is cosmetic for exactly one request (DVTD-mkhg).
+ *
+ * `run_polls` is unique on (run_id, position), so positions are held fixed and
+ * the poll sitting at each one is reassigned instead. Moving rows to new
+ * positions would collide with the constraint partway through the sweep.
+ */
+export const rewriteRunPollOrder = async (
+	tx: Pick<typeof db, "update">,
+	runId: number,
+	startPosition: number,
+	polls: readonly RunPoll[]
+): Promise<void> => {
+	for (const [offset, poll] of polls.entries())
+		await tx
+			.update(runPollsTable)
+			.set({ poll_id: Number(poll.id) })
+			.where(
+				and(
+					eq(runPollsTable.run_id, runId),
+					eq(runPollsTable.position, startPosition + offset)
+				)
+			);
+};
+
+/**
  * Day rollover (ADR-011 Decision 2). If the run's newest segment predates
  * `today`: drop the unplayed tail (positions >= currentIndex), then append
  * today's shared sequence minus polls already answered in this run. Same-day

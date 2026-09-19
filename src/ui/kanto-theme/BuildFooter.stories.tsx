@@ -64,3 +64,22 @@ export const StickingUnderAScrollingPoll: Story = {
 		</div>
 	),
 };
+
+const creditedBuild = () => {
+	const build = createKantoBuildProps();
+
+	return {
+		...build,
+		configs: build.configs.map((config, index) =>
+			index < 2 ? { ...config, credited: true } : config
+		),
+	};
+};
+
+export const FlashingTheConfigsThatPaid: Story = {
+	args: { open: true, flash: "answer-1", build: creditedBuild() },
+};
+
+export const FlashingWhileFolded: Story = {
+	args: { open: false, flash: "answer-1", build: creditedBuild() },
+};

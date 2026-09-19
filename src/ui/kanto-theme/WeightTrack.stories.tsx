@@ -2,46 +2,76 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-	KANTO_UPKEEP_RUNGS,
-	KANTO_WEIGHT_AXIS_MAX,
-	kantoShopBuild,
-	kantoWeightFills,
-} from "~/test/kantoPoll.factory";
+import { KANTO_BUILD_SPACE, kantoWeightFills } from "~/test/kantoPoll.factory";
 
 import { Build } from "./Build.ui";
 import { KANTO_COLORS } from "./colors";
+import type { ConfigInfoProps } from "./ConfigInfo.ui";
 import { Screen } from "./Screen.ui";
 import { WeightTrack, type WeightTrackFill } from "./WeightTrack.ui";
 
 const COLUMN = "flex w-full flex-col gap-3";
 
-const UNDER_THE_FIRST_RUNG: readonly WeightTrackFill[] = [
-	{ name: ".ts", slots: 1 },
-	{ name: "Code Coverage", slots: 2 },
-];
+const HELD = 8;
 
-const HEAVY: readonly WeightTrackFill[] = [
-	...kantoWeightFills,
-	{ name: "IndexedDB", slots: 8 },
-	{ name: "Prefetch", slots: 4 },
-	{ name: "Intellisense", slots: 8 },
-	{ name: "Planning Poker", slots: 8 },
+const NEARLY_EMPTY: readonly WeightTrackFill[] = [{ name: ".ts", slots: 1 }];
+
+const OVER: readonly WeightTrackFill[] = [
+	{ name: "Freemium", slots: 8 },
+	{ name: ".ts", slots: 2 },
 ];
 
 const WITH_A_MINIFIED: readonly WeightTrackFill[] = [
-	...kantoWeightFills,
-	{ name: "Dependabot", slots: 0 },
+	{ name: "Deprecated", slots: 0 },
+	{ name: "Cache", slots: 4 },
 ];
 
-const WeighedBuild = () => {
+const WITH_A_SLIVER: readonly WeightTrackFill[] = [
+	{ name: "Freemium", slots: 16 },
+	{ name: "Code Coverage", slots: 1 },
+	{ name: "Telemetry", slots: 0.5 },
+];
+
+const LONG_NAMES: readonly WeightTrackFill[] = [
+	{ name: "Continuous Integration", slots: 4 },
+	{ name: "Code Coverage", slots: 2 },
+	{ name: "Unit Tests", slots: 2 },
+];
+
+const WRAPS_THE_RAMP: readonly WeightTrackFill[] = KANTO_COLORS.map(
+	(color) => ({
+		name: color,
+		slots: 1,
+	})
+);
+
+const infoFor = (name: string, slots: number): ConfigInfoProps => ({
+	name,
+	description: `${name} pulls its weight on every poll it touches.`,
+	slots,
+	sellPrice: `${slots * 16} KB`,
+	version: 2,
+	maxVersion: 5,
+});
+
+const WITH_INFO: readonly WeightTrackFill[] = kantoWeightFills.map((fill) => ({
+	...fill,
+	info: infoFor(fill.name, fill.slots),
+}));
+
+const HoveredBuild = () => {
 	const [highlight, setHighlight] = useState<string | undefined>();
 
 	return (
 		<Build
-			configs={kantoShopBuild}
+			configs={kantoWeightFills.map((fill) => ({
+				name: fill.name,
+				slots: fill.slots,
+				badges: [],
+				info: infoFor(fill.name, fill.slots),
+			}))}
 			layout="column"
-			weight={{ rungs: KANTO_UPKEEP_RUNGS, max: KANTO_WEIGHT_AXIS_MAX }}
+			weight={{ held: KANTO_BUILD_SPACE }}
 			highlight={highlight}
 			onHighlight={setHighlight}
 		/>
@@ -51,60 +81,60 @@ const WeighedBuild = () => {
 const meta: Meta<typeof WeightTrack> = {
 	component: WeightTrack,
 	title: "Kanto/WeightTrack",
-	args: {
-		fills: kantoWeightFills,
-		rungs: KANTO_UPKEEP_RUNGS,
-		max: KANTO_WEIGHT_AXIS_MAX,
-	},
+	args: { fills: kantoWeightFills, held: HELD },
 	render: (args) => (
 		<Screen theme="vermillion" width="narrow">
 			<WeightTrack {...args} />
 		</Screen>
 	),
 };
-export default meta;
 
+export default meta;
 type Story = StoryObj<typeof WeightTrack>;
 
-export const Paying: Story = {};
+export const RoomToSpare: Story = {};
 
-export const UnderTheFirstRung: Story = {
-	args: { fills: UNDER_THE_FIRST_RUNG },
+export const NearlyEmpty: Story = { args: { fills: NEARLY_EMPTY } };
+
+export const FullToTheMark: Story = {
+	args: { fills: [{ name: "Freemium", slots: 8 }] },
 };
 
-export const OnARung: Story = {
-	args: { fills: [...kantoWeightFills, { name: "Prefetch", slots: 1 }] },
+export const HeavierThanTheSpaceItRents: Story = { args: { fills: OVER } };
+
+export const WithAMinifiedConfigDrawingNothing: Story = {
+	args: { fills: WITH_A_MINIFIED },
 };
 
-export const Hovered: Story = {
+export const ASliverTooThinToName: Story = { args: { fills: WITH_A_SLIVER } };
+
+export const NamesTooLongForTheirSegments: Story = {
+	args: { fills: LONG_NAMES },
+};
+
+export const TwelveConfigsWrapTheRamp: Story = {
+	args: { fills: WRAPS_THE_RAMP, held: WRAPS_THE_RAMP.length },
+};
+
+export const HoveredOnAConfig: Story = {
 	args: { highlight: "Telemetry" },
 };
 
-export const HoveredOnAConfigThatClearsTheBill: Story = {
-	args: { highlight: "Code Coverage" },
+export const BarAlone: Story = { args: { caption: false } };
+
+export const HoverOpensTheConfig: Story = {
+	args: { fills: WITH_INFO },
 };
 
-export const HeavierThanTheLadder: Story = {
-	args: { fills: HEAVY },
+export const HoverOpensTheConfigOnTheRight: Story = {
+	args: { fills: WITH_INFO, highlight: "Telemetry" },
 };
 
-export const CrowdedRungs: Story = {
-	args: { max: 32 },
-};
-
-export const WithAMinifiedConfig: Story = {
-	args: { fills: WITH_A_MINIFIED, highlight: "Dependabot" },
-};
-
-export const BarAlone: Story = {
-	args: { caption: false },
-};
-
-export const UnderTheBuildItDraws: Story = {
+export const HoveredInsideABuild: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
-			<WeighedBuild />
+			<HoveredBuild />
 		</Screen>
 	),
 };
@@ -118,8 +148,7 @@ export const AcrossThemes: Story = {
 					<div className={COLUMN}>
 						<WeightTrack
 							fills={kantoWeightFills}
-							rungs={KANTO_UPKEEP_RUNGS}
-							max={KANTO_WEIGHT_AXIS_MAX}
+							held={HELD}
 							highlight="Telemetry"
 						/>
 					</div>

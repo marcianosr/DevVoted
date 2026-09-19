@@ -189,7 +189,7 @@ describe("what a gate offers but does not ask for", () => {
 	it("keeps the swatch off the required line", () => {
 		const { optional, optionalLead } = objectivesFor(frameFor({ gate: 0 }));
 
-		expect(optionalLead).toBe("also on the table, not required");
+		expect(optionalLead).toBe("Extra objectives");
 		expect(optional.map((prize) => prize.name)).toEqual([
 			"Earn the Lavender swatch",
 		]);

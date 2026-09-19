@@ -7,9 +7,11 @@ import {
 	type PressAction,
 	letterAt,
 	pollBarFor,
-	pollCorrectFor,
+	coverageLeadFor,
 	pollHoldsFor,
+	pollBreakdownFor,
 	pollLabelFor,
+	pollPaidFor,
 	pollBuildFor,
 	gateLabelFor,
 	pollHeaderFor,
@@ -52,24 +54,28 @@ const wrongCostOf = (view: RunView): string | undefined => {
 
 const optionsOf = (
 	poll: LivePoll,
-	hiddenOptionIds: readonly string[],
-	buyBack: RunView["buyBack"],
+	view: RunView,
 	onUnseal: ((optionId: string) => void) | undefined
 ): readonly QuestionOption[] =>
 	poll.options.map((option, index) =>
-		hiddenOptionIds.includes(option.id)
+		view.hiddenOptionIds.includes(option.id)
 			? {
 					id: option.id,
 					letter: letterAt(index),
 					seal: {
-						price: kbLabel(buyBack.costKb),
+						price: kbLabel(view.buyBack.costKb),
 						onUnseal:
-							onUnseal === undefined || !buyBack.ready
+							onUnseal === undefined || !view.buyBack.ready
 								? undefined
 								: () => onUnseal(option.id),
 					},
 				}
-			: { id: option.id, letter: letterAt(index), label: option.label }
+			: {
+					id: option.id,
+					letter: letterAt(index),
+					label: option.label,
+					crossedOut: view.disabledOptionIds.includes(option.id),
+				}
 	);
 
 const answeredOptionsOf = (
@@ -95,7 +101,7 @@ const liveQuestionFor = (
 ): QuestionProps => ({
 	answerType: poll.answerType,
 	question: poll.question,
-	options: optionsOf(poll, view.hiddenOptionIds, view.buyBack, onUnseal),
+	options: optionsOf(poll, view, onUnseal),
 	codeBlock: poll.codeBlock,
 	pickedIds: selectedOptionIds,
 	onPick: onSelect,
@@ -125,15 +131,6 @@ const submitFooterFor = (
 	action: { label: SUBMIT_LABEL, onPress: picked ? onSubmit : undefined },
 	refusal: picked ? undefined : PICK_FIRST,
 });
-
-const liveFooterFor = (
-	poll: LivePoll,
-	picked: boolean,
-	onSubmit: () => void
-): ScreenFooterProps | undefined =>
-	poll.answerType === "multiple"
-		? submitFooterFor(picked, onSubmit)
-		: undefined;
 
 type PollMood = Pick<
 	PollScreenProps,
@@ -177,7 +174,7 @@ const liveMoodFor = (
 	category: categoryNameOf(view, poll.category),
 	wrongCost: wrongCostOf(view),
 	author: authorOf(poll),
-	footer: liveFooterFor(poll, selectedOptionIds.length > 0, onSubmit),
+	footer: submitFooterFor(selectedOptionIds.length > 0, onSubmit),
 });
 
 export const PollView = ({
@@ -215,19 +212,28 @@ export const PollView = ({
 			header={pollHeaderFor(view)}
 			coverage={{
 				bar: pollBarFor(view, answered !== undefined),
-				correct: pollCorrectFor(view),
+				lead: coverageLeadFor(view),
+				paid: pollPaidFor(view),
+				...(answered === undefined
+					? {}
+					: { breakdown: pollBreakdownFor(view, answered) }),
 			}}
 			pollLabel={pollLabelFor(view)}
 			holds={pollHoldsFor(view)}
 			audits={auditPropsOf(view.audits)}
 			buildFooter={{
-				build: pollBuildFor(view, {
-					openInfo,
-					onToggleInfo: (name) =>
-						setOpenInfo(name === openInfo ? undefined : name),
-					onPress,
-				}),
+				build: pollBuildFor(
+					view,
+					{
+						openInfo,
+						onToggleInfo: (name) =>
+							setOpenInfo(name === openInfo ? undefined : name),
+						onPress,
+					},
+					answered
+				),
 				counts: buildCountsOf(view),
+				flash: answered?.id,
 			}}
 		/>
 	);

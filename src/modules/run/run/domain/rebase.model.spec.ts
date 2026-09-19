@@ -54,6 +54,28 @@ describe("what the config reveals", () => {
 		]);
 	});
 
+	it("withholds answer types at v1, which are Prefetch's to sell", () => {
+		expect(
+			upcomingSlotsOf(prepping("git-rebase")).every(
+				(slot) => slot.answerType === undefined
+			)
+		).toBe(true);
+	});
+
+	it("names which polls take more than one answer once upgraded to v2", () => {
+		const upgraded = prepping();
+		const state: RunState = {
+			...upgraded,
+			build: {
+				...upgraded.build,
+				configs: [{ ...CONFIGS.gitRebase, level: 2 }],
+			},
+		};
+		expect(upcomingSlotsOf(state).map((slot) => slot.answerType)).toEqual(
+			gateSliceOf(state).map((entry) => entry.answerType)
+		);
+	});
+
 	it("reveals nothing without the config", () => {
 		expect(upcomingSlotsOf(prepping("js"))).toEqual([]);
 	});

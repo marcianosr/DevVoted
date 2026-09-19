@@ -6,7 +6,7 @@ import {
 	COVERAGE_BAND_WORD,
 	type CoverageBandId,
 } from "./CoverageBar.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 
@@ -33,6 +33,7 @@ export type NextGateProps = {
 	held: string;
 	heldBand?: CoverageBandId;
 	opensAt?: string;
+	note?: string;
 };
 
 export const NextGate = ({
@@ -42,11 +43,12 @@ export const NextGate = ({
 	held,
 	heldBand,
 	opensAt,
+	note,
 }: NextGateProps) => (
-	<PanelV2>
-		<PanelV2.Header label={TITLE} meta={opensAt} />
+	<Panel>
+		<Panel.Header label={TITLE} meta={opensAt} />
 
-		<PanelV2.Body>
+		<Panel.Body>
 			<div className={ROW}>
 				<Swatch state={SWATCH_STATE} swatch={swatch} size={SWATCH_SIZE} />
 
@@ -77,6 +79,14 @@ export const NextGate = ({
 					</Badge>
 				</span>
 			</div>
-		</PanelV2.Body>
-	</PanelV2>
+		</Panel.Body>
+
+		{note === undefined ? null : (
+			<Panel.Footer>
+				<Typography variant="hint" as="span">
+					{note}
+				</Typography>
+			</Panel.Footer>
+		)}
+	</Panel>
 );

@@ -12,13 +12,13 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import {
-	freeSlots,
 	hasRoomFor,
 	type Build,
 	lockerFor,
 	locksSurviving,
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
+import { isVendorLocked } from "~/modules/run/build/domain/vendorLock.model";
 import {
 	draftCostIn,
 	draftSeed,
@@ -38,13 +38,11 @@ import {
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
-	BASE_SLOTS,
-	MAX_SLOTS,
-	nextSlotPriceKb,
-	planBillKb,
-	slotCashOutKb,
-	STORAGE_PLANS,
-	storagePlanFor,
+	buildSpaceFor,
+	rungIndexForSpace,
+	upkeepForSpace,
+	BUILD_SPACE_FROM_GATE,
+	BUILD_SPACE_RUNGS,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	addStorage,
@@ -150,67 +148,32 @@ export const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-export const slotPriceFor = (state: RunState): number | undefined =>
-	nextSlotPriceKb(state.slotsBought ?? 0);
+export const canPickBuildSpace = (state: RunState): boolean =>
+	state.gatesCleared >= BUILD_SPACE_FROM_GATE;
 
-export const canBuySlot = (state: RunState): boolean => {
-	const price = slotPriceFor(state);
-	return (
-		price !== undefined &&
-		state.build.slots < MAX_SLOTS &&
-		state.storage >= price
-	);
-};
+export const buildSpaceRungOf = (state: RunState): number =>
+	rungIndexForSpace(state.build.slots);
 
-export const buySlot = (state: RunState): RunState => {
-	const price = slotPriceFor(state);
-	if (price === undefined || !canBuySlot(state)) return state;
-	const slots = state.build.slots + 1;
+export const canSetBuildSpace = (state: RunState, rung: number): boolean =>
+	canPickBuildSpace(state) &&
+	rung >= 0 &&
+	rung < BUILD_SPACE_RUNGS.length &&
+	buildSpaceFor(rung) !== state.build.slots;
+
+export const setBuildSpace = (state: RunState, rung: number): RunState => {
+	if (!canSetBuildSpace(state, rung)) return state;
+
+	const slots = buildSpaceFor(rung);
+	const billKb = upkeepForSpace(slots);
+
 	return {
 		...state,
-		slotsBought: (state.slotsBought ?? 0) + 1,
-		storage: state.storage - price,
 		build: { ...state.build, slots },
-		log: withLog(state, `Bought a slot for ${price}KB — ${slots} wide.`),
-	};
-};
-
-export const slotCashOutFor = (state: RunState): number | undefined =>
-	state.build.slots > BASE_SLOTS ? slotCashOutKb(state.build.slots) : undefined;
-
-export const canCashSlot = (state: RunState): boolean =>
-	slotCashOutFor(state) !== undefined && freeSlots(state.build) > 0;
-
-export const cashSlot = (state: RunState): RunState => {
-	const refund = slotCashOutFor(state);
-	if (refund === undefined || !canCashSlot(state)) return state;
-	const slots = state.build.slots - 1;
-	return {
-		...state,
-		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
-		build: { ...state.build, slots },
-		log: withLog(state, `Cashed a slot for ${refund}KB — ${slots} wide.`),
-	};
-};
-
-export const canSetStoragePlan = (tier: number): boolean =>
-	tier >= 0 && tier < STORAGE_PLANS.length;
-
-export const canAffordPlan = (state: RunState, tier: number): boolean =>
-	tier <= (state.storagePlan ?? 0) || planBillKb(tier) <= state.storage;
-
-export const setStoragePlan = (state: RunState, tier: number): RunState => {
-	if (!canSetStoragePlan(tier) || !canAffordPlan(state, tier)) return state;
-	const plan = storagePlanFor(tier);
-	return {
-		...state,
-		storagePlan: tier,
-		storage: Math.min(state.storage, plan.capKb),
 		log: withLog(
 			state,
-			plan.perGateKb === 0
-				? `Back on the free plan — ${plan.capKb}KB cap.`
-				: `On the ${plan.capKb}KB plan — ${plan.perGateKb}KB a gate.`
+			billKb === 0
+				? `Build space at ${slots} — free to run.`
+				: `Build space at ${slots} — ${billKb}KB a gate.`
 		),
 	};
 };
@@ -297,8 +260,8 @@ export const finishReward = (state: RunState): RunState => {
 		deletedConfigs: undefined,
 		lapsedConfigs: undefined,
 		subscriptionBillKb: 0,
-		planBilledKb: 0,
-		planDowngraded: undefined,
+		upkeepBilledKb: 0,
+		spaceDroppedTo: undefined,
 		status: "answering",
 		log: withLog(state, "Climbing on."),
 	};
@@ -403,12 +366,13 @@ export const sell = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!target || buildAtMinimumWidth(state)) return state;
+	if (isVendorLocked(state, configId)) return state;
 	const refund = sellRefundIn(state.build.configs, target);
 	const build = stripConfig(state.build, configId);
 	return {
 		...state,
 		build,
-		storage: addStorage(state.storage, refund, state.storagePlan ?? 0),
+		storage: addStorage(state.storage, refund),
 		lockedOfferIds: locksSurviving(build.configs, state.lockedOfferIds),
 		soldThisShop: (state.soldThisShop ?? 0) + 1,
 		log: withLog(state, `Sold ${target.label} (+${refund}KB).`),
@@ -420,6 +384,7 @@ export const drop = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!target || buildAtMinimumWidth(state)) return state;
+	if (isVendorLocked(state, configId)) return state;
 	const build = withBuild(
 		state.build,
 		state.build.configs.filter((candidate) => candidate.id !== configId)

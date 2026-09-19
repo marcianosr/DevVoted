@@ -5,10 +5,10 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	buildChipFor,
 	controlRowFor,
+	buildSpacePropsFor,
 	nextGateFor,
 	offerChipFor,
 	shopHeaderFor,
-	slotDealsFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { kbLabel } from "~/shared/lib/storage";
@@ -24,9 +24,8 @@ export type ShopViewProps = {
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
-	onBuySlot: () => void;
-	onCashSlot: () => void;
-	onSetStoragePlan: (tier: number) => void;
+	onSetBuildSpace: (rung: number) => void;
+	onVendorLock: (configId: string) => void;
 	onContinue: () => void;
 };
 
@@ -41,10 +40,11 @@ const EXTEND = {
 	detail: "one more offer, now and every shop after",
 };
 const PIN = { glyph: "⚑", detail: "if this run dies, the next resumes here" };
-const PLAN = { glyph: "☁", detail: "raises the cap the run can hold" };
 
 const TO_PREP = "To prep";
-const OVER_CAPACITY = "the build is over capacity";
+const WEIGHT_WORD = "weight";
+const OVER_MARK = "over the";
+const OVER_REMEDY = "drop it, or take more room";
 const SEPARATOR = "·";
 
 const offersOf = (
@@ -64,10 +64,7 @@ const offersOf = (
 
 const controlsOf = (
 	view: RunView,
-	handlers: Pick<
-		ShopViewProps,
-		"onRebuild" | "onExtend" | "onPlantPin" | "onSetStoragePlan"
-	>
+	handlers: Pick<ShopViewProps, "onRebuild" | "onExtend" | "onPlantPin">
 ): readonly RegistryControlProps[] => {
 	const { shopControls, storage } = view;
 	const cleared = view.gatePayout.clearedGateNumber;
@@ -109,20 +106,6 @@ const controlsOf = (
 					),
 				]
 			: []),
-		...view.storagePlan.options
-			.filter((option) => option.revealed && !option.held)
-			.map((option) =>
-				controlRowFor(
-					PLAN.glyph,
-					`storage plan ${option.tier} ${SEPARATOR} cap ${kbLabel(option.capKb)}`,
-					`${PLAN.detail} ${SEPARATOR} bills ${kbLabel(option.perGateKb)} a gate`,
-					option.burnsKb,
-					storage,
-					option.affordable
-						? () => handlers.onSetStoragePlan(option.tier)
-						: undefined
-				)
-			),
 	];
 };
 
@@ -134,9 +117,8 @@ export const ShopView = ({
 	onRebuild,
 	onExtend,
 	onPlantPin,
-	onBuySlot,
-	onCashSlot,
-	onSetStoragePlan,
+	onSetBuildSpace,
+	onVendorLock,
 	onContinue,
 }: ShopViewProps) => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
@@ -144,40 +126,39 @@ export const ShopView = ({
 	const toggleInfo = (name: string) =>
 		setOpenInfo(name === openInfo ? undefined : name);
 
-	const overCapacity = view.overflowSlots > 0;
+	const overSpace = view.overflowSlots > 0;
 
 	return (
 		<ShopScreen
-			header={shopHeaderFor(view.gatePayout.clearedGateNumber, view.storage)}
+			header={shopHeaderFor(
+				view.gatePayout.clearedGateNumber,
+				view.storage,
+				view.swatchGates
+			)}
 			nextGate={nextGateFor(
 				view.gatePayout.clearedGateNumber,
-				view.gateStake.unitsHeld
+				view.gateStake.unitsHeld,
+				view.gateStake.perAnswer.coveragePerCorrect
 			)}
-			controls={controlsOf(view, {
-				onRebuild,
-				onExtend,
-				onPlantPin,
-				onSetStoragePlan,
-			})}
+			controls={controlsOf(view, { onRebuild, onExtend, onPlantPin })}
 			build={{
 				configs: view.configs.map((config) =>
-					buildChipFor(config, () => onSell(config.id))
+					buildChipFor(config, () => onSell(config.id), {
+						locked: view.vendorLock.lockedConfigId === config.id,
+						onLock:
+							view.vendorLock.offered && config.vendorLocks !== true
+								? () => onVendorLock(config.id)
+								: undefined,
+					})
 				),
-				slots: { used: view.slotsUsed, capacity: view.slots },
-				...slotDealsFor(
-					view.slots,
-					view.storage,
-					view.slotDeals.buy,
-					view.slotDeals.cash,
-					onBuySlot,
-					onCashSlot
-				),
+				weight: { held: view.buildSpace.space },
 				openInfo,
 				onToggleInfo: toggleInfo,
 			}}
+			buildSpace={buildSpacePropsFor(view.buildSpace, onSetBuildSpace)}
 			registry={{
 				offers: offersOf(view, onDraft, onUpgrade),
-				slotPrice: `${kbLabel(DRAFT_COST_PER_SLOT_KB)} a slot`,
+				slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
 				openInfo,
 				onToggleInfo: toggleInfo,
 			}}
@@ -185,10 +166,10 @@ export const ShopView = ({
 				action: {
 					label: TO_PREP,
 					icon: "gate",
-					onPress: overCapacity ? undefined : onContinue,
+					onPress: overSpace ? undefined : onContinue,
 				},
-				refusal: overCapacity
-					? `${OVER_CAPACITY} by ${view.overflowSlots}`
+				refusal: overSpace
+					? `${view.overflowSlots} ${WEIGHT_WORD} ${OVER_MARK} ${view.buildSpace.space} mark ${SEPARATOR} ${OVER_REMEDY}`
 					: undefined,
 			}}
 		/>

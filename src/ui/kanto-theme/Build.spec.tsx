@@ -3,17 +3,22 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
-	KANTO_UPKEEP_RUNGS,
-	KANTO_WEIGHT_AXIS_MAX,
-	kantoUpkeepRungs,
 	SHOP_CAPACITY_SLOTS,
 	kantoShopBuild,
-	slotDealsAt,
 	usedSlotsOf,
 } from "~/test/kantoPoll.factory";
 
 import { Build } from "./Build.ui";
 import type { ConfigChipProps } from "./ConfigChip.ui";
+
+const chipNamed = (name: string) => {
+	const onTheChip = screen
+		.getAllByText(name)
+		.find((node) => node.closest("li.segment-theme") === null);
+
+	if (onTheChip === undefined) throw new Error(`no chip named ${name}`);
+	return onTheChip;
+};
 
 const RUNNING = [
 	{ name: "Cache", badges: [{ label: "×1.75", color: "viridian" }] },
@@ -246,24 +251,11 @@ describe("Build's vacancy", () => {
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
 
-	it("hangs the refund on the box nearest the hatching, not on every one", () => {
-		render(<Build configs={RUNNING} slots={ROOMY} {...slotDealsAt()} />);
+	it("draws one box per empty slot and sells none of them (ADR-074)", () => {
+		render(<Build configs={RUNNING} slots={ROOMY} />);
 
-		expect(screen.getAllByText("empty slot")).toHaveLength(2);
-		expect(
-			screen.getAllByRole("button", { name: /cash this slot back/ })
-		).toHaveLength(1);
-	});
-
-	it("stands the room for sale after the room still to fill", () => {
-		render(<Build configs={RUNNING} slots={ROOMY} {...slotDealsAt()} />);
-
-		const offer = screen.getByRole("button", { name: /buy slot/ });
-		const cash = screen.getByRole("button", { name: /cash this slot back/ });
-
-		expect(
-			cash.compareDocumentPosition(offer) & Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
+		expect(screen.getAllByText("empty slot")).toHaveLength(3);
+		expect(screen.queryByRole("button", { name: /slot/ })).toBeNull();
 	});
 
 	it("keeps the vacancy inside the chip column, so it lines up with it", () => {
@@ -279,29 +271,6 @@ describe("Build's vacancy", () => {
 		render(<Build configs={RUNNING} slots={ROOMY} emptySlots={false} />);
 
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
-	});
-
-	it("keeps the one box the refund is pressed on, which the track cannot carry", () => {
-		render(
-			<Build
-				configs={RUNNING}
-				slots={ROOMY}
-				emptySlots={false}
-				{...slotDealsAt()}
-			/>
-		);
-
-		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
-		expect(
-			screen.getAllByRole("button", { name: /cash this slot back/ })
-		).toHaveLength(1);
-	});
-
-	it("offers the next slot alone, never quoting the one after it", () => {
-		render(<Build configs={RUNNING} slots={ROOMY} {...slotDealsAt()} />);
-
-		expect(screen.getAllByRole("button", { name: /buy slot/ })).toHaveLength(1);
-		expect(screen.queryByLabelText(/after this one/)).toBeNull();
 	});
 
 	it("leaves the poll band no vacancy to draw", () => {
@@ -585,93 +554,57 @@ describe("the build under a weight ladder", () => {
 		{ name: "Deprecated", slots: 4, badges: [] },
 	] satisfies ConfigChipProps[];
 
-	const weight = {
-		rungs: KANTO_UPKEEP_RUNGS,
-		max: KANTO_WEIGHT_AXIS_MAX,
-	};
+	const weight = { held: 8 };
 
-	it("counts the build's weight rather than its room, having no capacity", () => {
+	it("counts the build's weight against the space it rents", () => {
 		render(<Build configs={WEIGHED} weight={weight} />);
 
 		expect(
-			screen.getByText("2 configs · 5 weight · 4 covered · 1 billable")
+			screen.getByText("2 configs · 5 of 8 weight · 3 free")
 		).toBeInTheDocument();
 	});
 
-	it("reads covered and billable off the ladder's own free rung", () => {
-		render(
-			<Build
-				configs={WEIGHED}
-				weight={{ ...weight, rungs: kantoUpkeepRungs(8) }}
-			/>
-		);
+	it("names the overshoot when the build outweighs the space it holds", () => {
+		render(<Build configs={WEIGHED} weight={{ held: 4 }} />);
 
 		expect(
-			screen.getByText("2 configs · 5 weight · 5 covered · 0 billable")
+			screen.getByText("2 configs · 5 of 4 weight · over by 1")
 		).toBeInTheDocument();
 	});
 
-	it("agrees with its own track: nothing billable means nothing billed", () => {
-		render(
-			<Build
-				configs={WEIGHED}
-				weight={{ ...weight, rungs: kantoUpkeepRungs(8) }}
-			/>
-		);
+	it("quotes no bill at all — the shop's build space panel owns that (ADR-082)", () => {
+		render(<Build configs={WEIGHED} weight={weight} />);
 
-		expect(screen.getByText(/^5 weight · free/)).toBeInTheDocument();
+		expect(screen.queryByText(/a gate/)).toBeNull();
+		expect(screen.queryByText(/KB/)).toBeNull();
 	});
 
-	it("sells the next rung of free weight under the chips", () => {
-		render(
-			<Build
-				configs={WEIGHED}
-				weight={{
-					...weight,
-					offers: [{ from: 4, to: 8, price: "256 KB", onPress: () => {} }],
-				}}
-			/>
-		);
-
-		expect(
-			screen.getByRole("button", { name: /^carry 8 free weight/ })
-		).toBeInTheDocument();
-	});
-
-	it("names the rung above the one on sale without offering it", () => {
-		render(
-			<Build
-				configs={WEIGHED}
-				weight={{
-					...weight,
-					offers: [{ to: 12, opensAt: "opens once a run has held 768 KB" }],
-				}}
-			/>
-		);
-
-		expect(screen.getByText(/opens once a run has held/)).toBeInTheDocument();
-		expect(screen.queryByRole("button")).not.toBeInTheDocument();
-	});
-
-	it("offers nothing when the ladder has nothing left to sell", () => {
+	it("sells no room of its own — the shop's build space panel owns that", () => {
 		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
 
 		expect(container.querySelectorAll(".bg-hatched-theme")).toHaveLength(0);
+		expect(screen.queryByRole("button", { name: /weight/ })).toBeNull();
 	});
 
-	it("leaves the bill to the track instead of saying it twice", () => {
+	it("says the same room on the head and on the track", () => {
 		render(<Build configs={WEIGHED} weight={weight} />);
 
-		expect(
-			screen.getByText("5 weight · free · 1 to 16 KB")
-		).toBeInTheDocument();
+		expect(screen.getAllByText("5 of 8 weight · 3 free")).toHaveLength(1);
 	});
 
 	it("draws the weight track and not the slot track", () => {
 		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
 
-		expect(container.querySelectorAll(".basis-0")).toHaveLength(0);
-		expect(container.querySelectorAll(".text-xxs").length).toBeGreaterThan(0);
+		expect(
+			container.querySelectorAll("li.segment-theme").length
+		).toBeGreaterThan(0);
+		expect(container.querySelectorAll(".rounded-\\[3px\\]")).toHaveLength(0);
+	});
+
+	it("ticks no billing thresholds, there being none to cross (ADR-082)", () => {
+		const { container } = render(<Build configs={WEIGHED} weight={weight} />);
+
+		expect(container.querySelectorAll(".text-xxs")).toHaveLength(0);
 	});
 
 	it("opens no empty slot boxes, because nothing caps the build", () => {
@@ -692,7 +625,7 @@ describe("the build under a weight ladder", () => {
 		);
 
 		expect(
-			screen.getByText("3 configs · 7 weight · 4 covered · 3 billable")
+			screen.getByText("3 configs · 7 of 8 weight · 1 free")
 		).toBeInTheDocument();
 	});
 
@@ -702,17 +635,20 @@ describe("the build under a weight ladder", () => {
 			<Build configs={WEIGHED} weight={weight} onHighlight={onHighlight} />
 		);
 
-		await userEvent.hover(screen.getByText("Deprecated"));
+		await userEvent.hover(chipNamed("Deprecated"));
 
 		expect(onHighlight).toHaveBeenCalledWith("Deprecated");
 	});
 
-	it("prices a highlighted config by the bill it would leave behind", () => {
-		render(<Build configs={WEIGHED} weight={weight} highlight="Deprecated" />);
+	it("names a highlighted config's room, not a bill it cannot change", () => {
+		const { container } = render(
+			<Build configs={WEIGHED} weight={weight} highlight="Deprecated" />
+		);
 
-		expect(
-			screen.getByText("Deprecated · 4 weight · without it, free")
-		).toBeInTheDocument();
+		expect(container.querySelector("p")?.textContent).toBe(
+			"Deprecated · 4 weight"
+		);
+		expect(screen.queryByText(/without it/)).toBeNull();
 	});
 });
 
@@ -721,37 +657,13 @@ describe("the build split across a screen's own columns", () => {
 		{ name: "Cache", slots: 1, badges: [] },
 	] satisfies ConfigChipProps[];
 
-	const weight = {
-		rungs: KANTO_UPKEEP_RUNGS,
-		max: KANTO_WEIGHT_AXIS_MAX,
-		offers: [{ from: 4, to: 8, price: "256 KB", onPress: () => {} }],
-	};
-
-	it("draws every part when it is asked to hold the whole band", () => {
-		render(<Build configs={WEIGHED} weight={weight} />);
-
-		expect(screen.getByText("Build")).toBeInTheDocument();
-		expect(screen.getByText("Cache")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: /^carry 8 free weight/ })
-		).toBeInTheDocument();
-	});
-
-	it("keeps the room for sale with the track, both being the readout", () => {
-		render(<Build configs={WEIGHED} weight={weight} list={false} />);
-
-		expect(screen.getByText("Build")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: /^carry 8 free weight/ })
-		).toBeInTheDocument();
-		expect(screen.queryByText("Cache")).toBeNull();
-	});
+	const weight = { held: 8 };
 
 	it("counts the configs it is not drawing, the summary being the build's", () => {
 		render(<Build configs={WEIGHED} weight={weight} list={false} />);
 
 		expect(
-			screen.getByText("1 configs · 1 weight · 1 covered · 0 billable")
+			screen.getByText("1 configs · 1 of 8 weight · 7 free")
 		).toBeInTheDocument();
 	});
 

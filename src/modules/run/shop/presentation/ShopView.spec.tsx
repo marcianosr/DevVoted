@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import { answerWith, started } from "~/modules/run/run/domain/run.factory";
 import {
 	createMockGatePayout,
 	createMockRunView,
@@ -21,9 +23,8 @@ const handlers = {
 	onRebuild: noop,
 	onExtend: noop,
 	onPlantPin: noop,
-	onBuySlot: noop,
-	onCashSlot: noop,
-	onSetStoragePlan: noop,
+	onSetBuildSpace: noop,
+	onVendorLock: noop,
 	onContinue: noop,
 };
 
@@ -45,6 +46,18 @@ const view = createMockRunView({
 });
 
 describe("ShopView", () => {
+	it("prices the gate ahead in answers, so a re-based percentage still reads", () => {
+		const cleared = [true, true, false, false, false].reduce(
+			answerWith,
+			started([])
+		);
+
+		render(<ShopView view={toRunView(cleared)} {...handlers} />);
+
+		expect(screen.getByText("21%")).toBeInTheDocument();
+		expect(screen.getByText("1 of the 5 right clears it.")).toBeInTheDocument();
+	});
+
 	it("stands the build beside the registry", () => {
 		render(<ShopView view={view} {...handlers} />);
 
@@ -68,12 +81,20 @@ describe("ShopView", () => {
 		expect(onDraft).toHaveBeenCalledWith(CONFIGS.eslint.id);
 	});
 
-	it("shows an unaffordable offer without a press", () => {
+	it("prices the install on the button rather than in a badge beside it", () => {
 		render(<ShopView view={view} {...handlers} />);
 
 		expect(
-			screen.queryByRole("button", { name: /Install TypeScript/ })
-		).not.toBeInTheDocument();
+			screen.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
+		).toHaveTextContent("Install \u00b7 64 KB");
+	});
+
+	it("refuses the install of an offer the run cannot afford", () => {
+		render(<ShopView view={view} {...handlers} />);
+
+		expect(
+			screen.getByRole("button", { name: /^Install \.ts/ })
+		).toBeDisabled();
 	});
 
 	it("rebuilds the registry from its control", async () => {
@@ -94,7 +115,7 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalled();
 	});
 
-	it("shuts the exit while the build is over capacity", () => {
+	it("shuts the exit while the build outweighs the space it holds", () => {
 		render(
 			<ShopView
 				view={createMockRunView({ ...view, overflowSlots: 2 })}
@@ -103,6 +124,108 @@ describe("ShopView", () => {
 		);
 
 		expect(screen.getByRole("button", { name: /To prep/ })).toBeDisabled();
-		expect(screen.getByText(/over capacity by 2/)).toBeInTheDocument();
+		expect(screen.getByText(/2 weight over the 4 mark/)).toBeInTheDocument();
+	});
+
+	it("offers no build space before the run has cleared its first gate", () => {
+		render(<ShopView view={createMockRunView(view)} {...handlers} />);
+
+		expect(screen.queryByText("build space")).not.toBeInTheDocument();
+	});
+
+	it("picks a rung once the shop is stocking gate 2", async () => {
+		const onSetBuildSpace = vi.fn();
+		render(
+			<ShopView
+				view={createMockRunView({
+					...view,
+					buildSpace: {
+						...view.buildSpace,
+						offered: true,
+						rungs: view.buildSpace.rungs.map((rung) => ({
+							...rung,
+							pickable: !rung.held,
+						})),
+					},
+				})}
+				{...handlers}
+				onSetBuildSpace={onSetBuildSpace}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "8 weight · 32 KB" })
+		);
+
+		expect(onSetBuildSpace).toHaveBeenCalledWith(2);
+	});
+});
+
+describe("ShopView vendor lock-in", () => {
+	const holding = createMockRunView({
+		configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+		vendorLock: { offered: true },
+	});
+
+	it("offers the lock on every config except the vendor itself", () => {
+		render(<ShopView view={holding} {...handlers} />);
+
+		expect(screen.getAllByRole("button", { name: "lock in" })).toHaveLength(1);
+	});
+
+	it("names the config the player pressed", async () => {
+		const onVendorLock = vi.fn();
+		render(
+			<ShopView view={holding} {...handlers} onVendorLock={onVendorLock} />
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: "lock in" }));
+
+		expect(onVendorLock).toHaveBeenCalledWith("agents-md");
+	});
+
+	it("offers no lock at all before the vendor is installed", () => {
+		render(
+			<ShopView
+				view={createMockRunView({ configs: [CONFIGS.agentsMd] })}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.queryByRole("button", { name: "lock in" })).toBeNull();
+	});
+
+	it("marks the locked config and stops offering a second lock", () => {
+		render(
+			<ShopView
+				view={createMockRunView({
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: false, lockedConfigId: "agents-md" },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByText("locked in")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "lock in" })).toBeNull();
+	});
+
+	it("takes the uninstall press off the config it locked in", () => {
+		render(
+			<ShopView
+				view={createMockRunView({
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: false, lockedConfigId: "agents-md" },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(
+			screen.queryByRole("button", { name: "Uninstall AGENTS.md" })
+		).toBeNull();
+		expect(
+			screen.getByRole("button", { name: "Uninstall vendor lock-in" })
+		).toBeInTheDocument();
 	});
 });

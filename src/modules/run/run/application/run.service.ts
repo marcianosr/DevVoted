@@ -7,10 +7,7 @@ import { createRun } from "~/modules/run/run/domain/run.model";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { drawAuditSchedule } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
-import {
-	startingHand,
-	STARTER_POOL,
-} from "~/modules/run/config/domain/hand.model";
+import { poolFor, startingHand } from "~/modules/run/config/domain/hand.model";
 import {
 	type RunView,
 	toRunView,
@@ -22,16 +19,20 @@ import {
 	createSessionRunWithState,
 	ensureTodaysSegment,
 	fetchAnsweredPollIdsForDay,
+	fetchArchivedStorageKb,
 	fetchRunSnapshot,
 	loadRunState,
 	findActiveSessionRun,
+	findSessionRunById,
 	fetchOwnedSwatchIds,
-	fetchStorageWatermark,
 	findSessionRunByDate,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
-import { fetchUnlocksSince } from "~/modules/run/config/infrastructure/configUnlock.repository";
+import {
+	fetchUnlockedConfigIds,
+	fetchUnlocksSince,
+} from "~/modules/run/config/infrastructure/configUnlock.repository";
 
 // A run's unlock history is the grants stamped since it started — derived from
 // user_config_unlocks rather than stored on the run (ADR-064: the reducer
@@ -39,15 +40,13 @@ import { fetchUnlocksSince } from "~/modules/run/config/infrastructure/configUnl
 const unlocksDuring = (run: SessionRunRecord) =>
 	fetchUnlocksSince(run.user_id, run.started_at ?? new Date(0));
 
-// The archive is not wired into the live run yet (only /proto-run spends it),
-// so it stays at its default while the storage watermark rides in beside it.
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
-	const [state, peakStorageKb, unlockedThisRun] = await Promise.all([
+	const [state, unlockedThisRun, archiveAfterKb] = await Promise.all([
 		loadRunState(run.id),
-		fetchStorageWatermark(run.user_id),
 		unlocksDuring(run),
+		fetchArchivedStorageKb(run.user_id),
 	]);
-	return toRunView(state, 0, peakStorageKb, [], unlockedThisRun);
+	return { ...toRunView(state, [], unlockedThisRun), archiveAfterKb };
 };
 
 const continueActiveRun = async (
@@ -119,22 +118,46 @@ export const startRunService = async ({
 		// A planted git tag rescues this run (ADR-036): it starts at the pinned
 		// gate and the tag burns on use — consuming before creating means a
 		// crash between the two costs the tag, never duplicates it.
-		const pinnedGate = await consumePinnedGate(userId);
+		const [pinnedGate, unlockedConfigIds] = await Promise.all([
+			consumePinnedGate(userId),
+			fetchUnlockedConfigIds(userId),
+		]);
 		// Per player and per day: the poll sequence is the thing everyone shares
 		// (ADR-009), while the hand is what you personally opened with. The draw
 		// is stored in the run, so the seed only has to be stable long enough to
 		// deal once — it is the persisted hand a reload comes back to.
-		// STARTER_POOL becomes the account's own pool once configs unlock
-		// (DVTD-2try). The budget shapes the deal rather than only pricing it:
-		// a card the opening slots cannot hold is not a choice (ADR-062).
+		// The pool is the account's own unlocked set (DVTD-amtz), falling back to
+		// the starter set for an empty ledger. The budget shapes the deal rather
+		// than only pricing it: a card the opening slots cannot hold is not a
+		// choice (ADR-062).
 		const state = createRun(
 			polls,
-			startingHand(STARTER_POOL, `${userId}:${date}`, BASE_SLOTS),
+			startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
 			pinnedGate,
 			drawAuditSchedule(date)
 		);
 		await createSessionRunWithState(userId, date, state);
-		return toRunView(state, 0, await fetchStorageWatermark(userId));
+		return toRunView(state);
+	});
+
+/**
+ * A finished run by permalink. The live run needs no id — the session resolves
+ * it — but the archive holds many, so these are the one run URLs that carry
+ * one. The id arrives from the URL, so ownership is checked here and a run
+ * belonging to someone else is refused without saying it exists.
+ */
+export const getRunRecapService = async ({
+	userId,
+	runId,
+}: {
+	userId: string;
+	runId: number;
+}): Promise<ApiResponse<RunView>> =>
+	handleApiOperation(async () => {
+		const run = await findSessionRunById(runId);
+		if (!run || run.user_id !== userId) throw new Error("Run not found");
+
+		return viewOfRun(run);
 	});
 
 export const abandonRunService = async ({
@@ -169,17 +192,17 @@ export const dispatchRunActionService = async ({
 			today: date,
 			action,
 		});
-		const [peakStorageKb, unlockedThisRun] = await Promise.all([
-			fetchStorageWatermark(userId),
+		// Read after the dispatch: the action that ends a run banks its storage in
+		// the same transaction, so the archive is already the "after" figure the
+		// run-over screen prints.
+		const [unlockedThisRun, archiveAfterKb] = await Promise.all([
 			unlocksDuring(run),
+			fetchArchivedStorageKb(userId),
 		]);
-		return toRunView(
-			next,
-			0,
-			peakStorageKb,
-			unlockedConfigIds,
-			unlockedThisRun
-		);
+		return {
+			...toRunView(next, unlockedConfigIds, unlockedThisRun),
+			archiveAfterKb,
+		};
 	});
 
 /** The viewer's permanent swatch collection, earned by widening builds. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	autoUpgradeAfterCorrectOf,
-	cacheMultiplierFor,
+	cacheUnitsFor,
 	describeConfig,
 	draftCost,
 	focusCoverageMultiplier,
@@ -15,9 +15,11 @@ import {
 	DRAFT_COST_PER_SLOT_KB,
 	largestSizeFitting,
 	minify,
+	minifiedUnits,
 	sellRefund,
 	showsSampleSize,
 	switchArm,
+	topUpUnitsFor,
 	upgradePreview,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -126,27 +128,62 @@ describe("switchArm", () => {
 	});
 });
 
-describe("cacheMultiplierFor", () => {
-	it("pays ×1 while the cache is cold", () => {
-		expect(cacheMultiplierFor(CONFIGS.cache, 0)).toBe(1);
+describe("minifiedUnits", () => {
+	it("halves a fractional coverage add rather than flooring it away", () => {
+		expect(minifiedUnits(minify(CONFIGS.codeCoverage), 0.1)).toBe(0.05);
 	});
 
-	it("adds one step per cached hit", () => {
-		expect(cacheMultiplierFor(CONFIGS.cache, 1)).toBe(1.25);
-		expect(cacheMultiplierFor(CONFIGS.cache, 3)).toBe(1.75);
+	it("leaves an unminified config untouched", () => {
+		expect(minifiedUnits(CONFIGS.codeCoverage, 0.1)).toBe(0.1);
+	});
+});
+
+describe("cacheUnitsFor", () => {
+	it("pays nothing while the cache is cold", () => {
+		expect(cacheUnitsFor(CONFIGS.cache, 0)).toBe(0);
 	});
 
-	it("tops out at the cap, so a deep run cannot snowball past ×2", () => {
-		expect(cacheMultiplierFor(CONFIGS.cache, CACHE_HIT_CAP)).toBe(2);
-		expect(cacheMultiplierFor(CONFIGS.cache, CACHE_HIT_CAP + 5)).toBe(2);
+	it("adds a quarter unit per cached hit", () => {
+		expect(cacheUnitsFor(CONFIGS.cache, 1)).toBe(0.25);
+		expect(cacheUnitsFor(CONFIGS.cache, 3)).toBe(0.75);
+	});
+
+	it("tops out at the cap, so a deep run cannot snowball past one unit", () => {
+		expect(cacheUnitsFor(CONFIGS.cache, CACHE_HIT_CAP)).toBe(1);
+		expect(cacheUnitsFor(CONFIGS.cache, CACHE_HIT_CAP + 5)).toBe(1);
 	});
 
 	it("halves the bonus when minified", () => {
-		expect(cacheMultiplierFor(minify(CONFIGS.cache), CACHE_HIT_CAP)).toBe(1.5);
+		expect(cacheUnitsFor(minify(CONFIGS.cache), CACHE_HIT_CAP)).toBe(0.5);
 	});
 
-	it("pays ×1 on a config without a cache step", () => {
-		expect(cacheMultiplierFor(CONFIGS.intellisense, 3)).toBe(1);
+	it("pays nothing on a config without a cache step", () => {
+		expect(cacheUnitsFor(CONFIGS.intellisense, 3)).toBe(0);
+	});
+});
+
+describe("topUpUnitsFor", () => {
+	it("tops a quarter-caught multiple up from half a unit to a whole one", () => {
+		expect(topUpUnitsFor(CONFIGS.prettierrc, 0.5)).toBe(0.5);
+	});
+
+	it("tops a three-quarter catch up from one and a half to two", () => {
+		expect(topUpUnitsFor(CONFIGS.prettierrc, 1.5)).toBe(0.5);
+	});
+
+	it.each([0, 1, 2])(
+		"adds nothing to %f units, which is already whole",
+		(credited) => {
+			expect(topUpUnitsFor(CONFIGS.prettierrc, credited)).toBe(0);
+		}
+	);
+
+	it("halves the top-up when minified, so a formatter at half size rounds halfway", () => {
+		expect(topUpUnitsFor(minify(CONFIGS.prettierrc), 0.5)).toBe(0.25);
+	});
+
+	it("pays nothing on a config that does not round", () => {
+		expect(topUpUnitsFor(CONFIGS.codeCoverage, 0.5)).toBe(0);
 	});
 });
 

@@ -8,18 +8,26 @@ import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { bandOutcomesPropsFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 import {
 	gateSwatchAt,
-	swatchTrackTo,
+	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
+	roundToOneDecimal,
 	SLICE_WINDOW,
-	VICTORY_GATE,
-	planBillKb,
-	storageCapFor,
+	spaceRungFor,
 } from "~/modules/run/run/domain/rules.model";
+import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	rebaserFor,
+	type PollSlot,
+} from "~/modules/run/run/domain/rebase.model";
+import type { EstimateControl } from "~/modules/run/run/application/runView.viewmodel";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
-import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import {
+	answersPerGate,
+	type AnsweredPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
@@ -30,8 +38,9 @@ import type {
 	PollScoresProps,
 } from "~/ui/kanto-theme/PollScores.ui";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
+import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
+import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
 
-const RUN_GATE_COUNT = VICTORY_GATE + 1;
 export const BALANCE_WORD = "balance";
 
 const noop = () => {};
@@ -57,22 +66,64 @@ const AUDIT_COUNT_TRAIL = "this gate";
 const RUNG_MARKS = "rungs";
 const CORRECT_OUTCOME = "correct";
 
-/**
- * Every gate asks exactly SLICE_WINDOW polls, so the append-only record needs no
- * gate of its own: position divides into one.
- */
+const ESTIMATE_HINT =
+	"Call how many of the five you will get right. Meet the number and it pays; fall short and it pays nothing.";
+const REBASE_HINT =
+	"Put the categories you are surest of first — a streak pays, and the opener counts twice for some builds.";
+const MULTIPLE_LABEL = "two answers";
+const SINGLE_LABEL = "one answer";
+
+const estimatePickerFor = (
+	gate: number,
+	estimate: EstimateControl | null,
+	committed: number | null
+): EstimatePickerProps | undefined => {
+	if (estimate === null) return undefined;
+
+	return {
+		label: estimate.configLabel,
+		hint: ESTIMATE_HINT,
+		committed,
+		cards: estimate.choices.map((choice) => ({
+			count: choice.count,
+			floor: `at least ${choice.count} of ${SLICE_WINDOW}`,
+			payout: `+${roundToOneDecimal(coverageGainPercentFor(choice.units, gate))}%`,
+		})),
+	};
+};
+
+const answerTypeLabel = (
+	answerType: string | undefined
+): string | undefined => {
+	if (answerType === undefined) return undefined;
+	return answerType === "multiple" ? MULTIPLE_LABEL : SINGLE_LABEL;
+};
+
+const rebaseListFor = (
+	configs: readonly Config[],
+	slots: readonly PollSlot[]
+): RebaseListProps | undefined => {
+	const rebaser = rebaserFor(configs);
+	if (rebaser === undefined || slots.length === 0) return undefined;
+
+	return {
+		label: rebaser.label,
+		hint: REBASE_HINT,
+		rows: slots.map((slot) => ({
+			id: slot.id,
+			category: CATEGORY_METADATA[slot.category].name,
+			answerType: answerTypeLabel(slot.answerType),
+		})),
+	};
+};
+
 const rightAnswersIn = (answered: readonly AnsweredPoll[]): number =>
 	answered.filter((poll) => poll.outcome === CORRECT_OUTCOME).length;
 
 const rightAnswersPerGate = (
 	answered: readonly AnsweredPoll[],
 	gate: number
-): number[] =>
-	Array.from({ length: gate + 1 }, (_, index) =>
-		answered
-			.slice(index * SLICE_WINDOW, (index + 1) * SLICE_WINDOW)
-			.filter((poll) => poll.outcome === CORRECT_OUTCOME)
-	).map((polls) => polls.length);
+): number[] => answersPerGate(answered, gate).map(rightAnswersIn);
 
 export const pollScoresFor = (
 	gate: number,
@@ -166,14 +217,14 @@ const auditBillFor = (
 	configs: readonly Config[],
 	gate: number,
 	storageKb: number,
-	planTier: number
+	space: number
 ): { bill?: string; note?: string } => {
 	const ledger = billLedger({
 		configs,
 		gate,
 		storageKb,
-		planCapKb: storageCapFor(planTier),
-		planBillKb: planBillKb(planTier),
+		spaceWeight: spaceRungFor(space).weight,
+		spaceBillKb: spaceRungFor(space).kb,
 	});
 
 	if (ledger.totalKb === 0) return {};
@@ -198,7 +249,7 @@ export type PrepFrame = {
 	answeredThisGate?: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	balanceKb: number;
-	planTier: number;
+	buildSpace: number;
 	window: PrepWindow;
 	bar: CoverageBarProps;
 	/** Where the run stood when this window opened. Defaults to the live reading. */
@@ -206,6 +257,13 @@ export type PrepFrame = {
 	coverageGainPercent: number;
 	peelKb: number;
 	payout: (correct: number) => number;
+	/** Planning Poker's control. Null whenever the bet cannot be placed. */
+	estimate?: EstimateControl | null;
+	estimatedCorrect?: number | null;
+	/** git rebase -i's rows. Empty whenever the order cannot be changed. */
+	rebaseSlots?: readonly PollSlot[];
+	/** Gates this run played flawlessly. Only these fill on the track. */
+	swatchGates?: readonly number[];
 };
 
 export const prepPropsFor = ({
@@ -214,13 +272,17 @@ export const prepPropsFor = ({
 	answeredThisGate = [],
 	configs,
 	balanceKb,
-	planTier,
+	buildSpace,
 	window,
 	bar,
 	openingHeld = bar.held,
 	coverageGainPercent,
 	peelKb,
 	payout,
+	estimate = null,
+	estimatedCorrect = null,
+	rebaseSlots = [],
+	swatchGates = [],
 }: PrepFrame): PrepScreenProps => {
 	const answered = answeredThisGate.length;
 	const swatch = gateSwatchAt(gate);
@@ -230,8 +292,7 @@ export const prepPropsFor = ({
 	return {
 		header: {
 			swatch,
-			gateCount: RUN_GATE_COUNT,
-			swatches: swatchTrackTo(gate),
+			swatches: swatchTrackFor(swatchGates, gate),
 			funds: fundsOf(balanceKb, BALANCE_WORD),
 			swatchState: "current",
 			badge:
@@ -258,6 +319,8 @@ export const prepPropsFor = ({
 			},
 			{ ...bar, marks: RUNG_MARKS }
 		),
+		estimate: estimatePickerFor(gate, estimate, estimatedCorrect),
+		rebase: rebaseListFor(configs, rebaseSlots),
 		scores: pollScoresFor(gate, answeredPolls),
 		polls: {
 			title: PREP_POLLS_TITLE,
@@ -267,7 +330,7 @@ export const prepPropsFor = ({
 		audits: {
 			title: AUDITS_TITLE,
 			meta: auditsMetaOf(audits.length),
-			...auditBillFor(configs, gate, balanceKb, planTier),
+			...auditBillFor(configs, gate, balanceKb, buildSpace),
 			alerts: audits.map(auditPropsFor),
 		},
 		footer: {

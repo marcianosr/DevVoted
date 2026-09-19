@@ -20,15 +20,14 @@ import { RunCommunity } from "~/modules/run/community/presentation/RunCommunity.
 import { TEST_DATES } from "~/test/kanto";
 import { createMockRunView } from "~/test/runView.factory";
 
-import { RunAnswer } from "~/modules/run/run/presentation/RunAnswer.component";
-import { RunConfigure } from "~/modules/run/build/presentation/RunConfigure.component";
+import { RunPoll } from "~/modules/run/run/presentation/RunPoll.component";
+import { RunNew } from "~/modules/run/build/presentation/RunNew.component";
 import { RunLayout } from "~/modules/run/run/presentation/RunLayout.component";
 import { RunOver } from "~/modules/run/run/presentation/RunOver.component";
 import { RunPrep } from "~/modules/run/run/presentation/RunPrep.component";
-import { RunReward } from "~/modules/run/gate/presentation/RunReward.component";
+import { RunGate } from "~/modules/run/gate/presentation/RunGate.component";
 import { RunShop } from "~/modules/run/shop/presentation/RunShop.component";
 import { RunStart } from "~/modules/run/run/presentation/RunStart.component";
-import { RunStrip } from "~/modules/run/gate/presentation/RunStrip.component";
 
 vi.mock("~/modules/run/run/application/run.serverfn", () => ({
 	getTodaysRun: vi.fn(),
@@ -41,8 +40,7 @@ vi.mock("~/modules/run/community/application/community.serverfn", () => ({
 	getRunCommunity: vi.fn(),
 }));
 
-// jsdom does not implement HTMLDialogElement.showModal / close (RunAnswer
-// mounts a ConfirmDialog).
+// jsdom does not implement HTMLDialogElement.showModal / close.
 beforeAll(() => {
 	HTMLDialogElement.prototype.showModal = vi.fn(function (
 		this: HTMLDialogElement
@@ -82,12 +80,11 @@ const renderRunRoutes = (initialPath: string) => {
 		routeTree: rootRoute.addChildren([
 			runRoute.addChildren([
 				leaf("/", RunStart),
-				leaf("configure", RunConfigure),
+				leaf("new", RunNew),
 				leaf("prep", RunPrep),
-				leaf("answer", RunAnswer),
-				leaf("reward", RunReward),
+				leaf("poll", RunPoll),
+				leaf("gate", RunGate),
 				leaf("shop", RunShop),
-				leaf("strip", RunStrip),
 				leaf("over", RunOver),
 			]),
 			communityRoute,
@@ -113,7 +110,7 @@ describe("run route sync", () => {
 		const router = renderRunRoutes("/run/shop");
 
 		await waitFor(() =>
-			expect(router.state.location.pathname).toBe("/run/answer")
+			expect(router.state.location.pathname).toBe("/run/poll")
 		);
 		expect(await screen.findByText(view.poll?.question ?? "")).toBeVisible();
 	});
@@ -133,7 +130,7 @@ describe("run route sync", () => {
 	it("sends a day without a run to the start screen", async () => {
 		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: null });
 
-		const router = renderRunRoutes("/run/configure");
+		const router = renderRunRoutes("/run/new");
 
 		await waitFor(() => expect(router.state.location.pathname).toBe("/run"));
 		expect(await screen.findByText("Today’s climb")).toBeVisible();
@@ -145,10 +142,10 @@ describe("run route sync", () => {
 	it("keeps a player whose run could not be read where they are, and says why", async () => {
 		vi.mocked(getTodaysRun).mockRejectedValue(new Error("Not authenticated"));
 
-		const router = renderRunRoutes("/run/configure");
+		const router = renderRunRoutes("/run/new");
 
 		expect(await screen.findByText("Not authenticated")).toBeVisible();
-		expect(router.state.location.pathname).toBe("/run/configure");
+		expect(router.state.location.pathname).toBe("/run/new");
 		expect(screen.queryByText("Today’s climb")).not.toBeInTheDocument();
 	});
 
@@ -158,10 +155,10 @@ describe("run route sync", () => {
 			error: "Run state not found",
 		});
 
-		const router = renderRunRoutes("/run/configure");
+		const router = renderRunRoutes("/run/new");
 
 		expect(await screen.findByText("Run state not found")).toBeVisible();
-		expect(router.state.location.pathname).toBe("/run/configure");
+		expect(router.state.location.pathname).toBe("/run/new");
 	});
 
 	it("the shop exit continues to the prep hub without closing the shop", async () => {
@@ -176,9 +173,7 @@ describe("run route sync", () => {
 		});
 
 		const router = renderRunRoutes("/run/shop");
-		await user.click(
-			await screen.findByRole("button", { name: "Continue to gate 1 →" })
-		);
+		await user.click(await screen.findByRole("button", { name: /To prep/ }));
 
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
@@ -278,7 +273,7 @@ describe("run route sync", () => {
 		);
 
 		await waitFor(() =>
-			expect(router.state.location.pathname).toBe("/run/answer")
+			expect(router.state.location.pathname).toBe("/run/poll")
 		);
 	});
 
@@ -312,7 +307,7 @@ describe("run route sync", () => {
 			})
 		);
 		await waitFor(() =>
-			expect(router.state.location.pathname).toBe("/run/answer")
+			expect(router.state.location.pathname).toBe("/run/poll")
 		);
 	});
 
@@ -330,13 +325,33 @@ describe("run route sync", () => {
 		}));
 
 		const router = renderRunRoutes("/run/shop");
-		await user.click(
-			await screen.findByRole("button", { name: "Continue to gate 4 →" })
-		);
+		await user.click(await screen.findByRole("button", { name: /To prep/ }));
 
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
+	});
+
+	// DVTD-inrq: the opening build now turns the page to prep instead of
+	// dispatching `start`, so gate 0 states its terms like every later gate.
+	it("the opening build turns the page to gate-0 prep", async () => {
+		const user = userEvent.setup();
+		const view = createMockRunView({
+			status: "configuring",
+			gatesCleared: 0,
+			poll: null,
+			configs: [CONFIGS.js],
+			canStart: true,
+		});
+		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
+
+		const router = renderRunRoutes("/run/new");
+		await user.click(await screen.findByRole("button", { name: /gate prep/ }));
+
+		await waitFor(() =>
+			expect(router.state.location.pathname).toBe("/run/prep")
+		);
+		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
 	});
 
 	it("starting the gate from prep reaches the first poll", async () => {
@@ -371,7 +386,7 @@ describe("run route sync", () => {
 			},
 		});
 
-		const router = renderRunRoutes("/run/answer");
+		const router = renderRunRoutes("/run/poll");
 
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/community")
@@ -393,7 +408,7 @@ describe("run route sync", () => {
 			data: createMockRunView({ status: "dead", poll: null }),
 		});
 
-		const router = renderRunRoutes("/run/answer");
+		const router = renderRunRoutes("/run/poll");
 
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/over")

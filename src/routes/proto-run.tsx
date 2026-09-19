@@ -4,13 +4,8 @@ import { useEffect, useState } from "react";
 import {
 	addStorage,
 	createRun,
-	type RunState,
+	withBuild,
 } from "~/modules/run/run/domain/run.model";
-import {
-	buyStartSlot,
-	refundStartSlot,
-	type ArchiveSpend,
-} from "~/modules/run/run/domain/startSlot.model";
 import {
 	runReducer,
 	RunAction,
@@ -23,19 +18,25 @@ import {
 	STARTER_POOL,
 	startingHand,
 } from "~/modules/run/config/domain/hand.model";
+import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
 import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView.component";
+import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	BASE_SLOTS,
+	BUILD_SPACE_RUNGS,
 	SLICE_WINDOW,
-	storageCapFor,
+	TOP_BUILD_SPACE_RUNG,
 	VICTORY_GATE,
+	buildSpaceFor,
 } from "~/modules/run/run/domain/rules.model";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -162,8 +163,12 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 	return { ...base, id: `${base.id}-${i}` };
 });
 
-const PROTO_ARCHIVE_KB = 8192;
+const PROTO_START_KB = 256;
 const PROTO_GRANT_KB = 256;
+
+const smallestRungHolding = (occupied: number): number =>
+	BUILD_SPACE_RUNGS.find((rung) => rung.weight >= occupied)?.weight ??
+	buildSpaceFor(TOP_BUILD_SPACE_RUNG);
 
 type SimTrainer = { id: string; displayName: string; accuracy: number };
 
@@ -323,7 +328,6 @@ const simulateCommunityScreen = (
 			prep: { label: "On to prep", onPress: press.onPrep },
 		},
 		climb: {
-			swatch,
 			title: "Your climb",
 			standing: `gate ${gate} of ${view.victoryGate} · ${view.configs.length} configs`,
 			badge: `${yourRights} of ${window}`,
@@ -386,26 +390,11 @@ const simulateCommunityScreen = (
 			summary: `${results.length} answered`,
 			polls: results,
 		},
-		conversation: {
-			title: "What people said",
-			entries: [
-				{
-					climber: trainerBy(`say:${gate}`),
-					at: "12m ago",
-					said: "That multiple-choice one cost me the gate. Read it twice.",
-					gate: { swatch, label: swatch.gateName },
-				},
-				{
-					climber: trainerBy(`say2:${gate}`),
-					at: "40m ago",
-					said: "Bought the cache before gate 4 and it paid for itself.",
-				},
-			],
-		},
 	};
 };
 
 type RewardStep = "summary" | "review" | "shop" | "prep" | "community";
+type OverStep = "summary" | "community";
 type StartStep = "build" | "prep";
 
 const BACK_TO_BUILD = "Back to the build";
@@ -416,25 +405,37 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			POOLS,
 			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS)
 		),
-		storage: storageCapFor(0),
+		storage: PROTO_START_KB,
 	}));
 	const grantStorage = () =>
 		setState((current) => ({
 			...current,
-			storage: addStorage(
-				current.storage,
-				PROTO_GRANT_KB,
-				current.storagePlan ?? 0
-			),
+			storage: addStorage(current.storage, PROTO_GRANT_KB),
 		}));
-	const [archiveKb, setArchiveKb] = useState(PROTO_ARCHIVE_KB);
-	const spendArchive = (
-		spend: (state: RunState, kb: number) => ArchiveSpend
-	) => {
-		const settled = spend(state, archiveKb);
-		setState(settled.state);
-		setArchiveKb(settled.archiveKb);
-	};
+	const toggleDevConfig = (config: Config) =>
+		setState((current) => {
+			const held = current.build.configs.some(
+				(candidate) => candidate.id === config.id
+			);
+			const configs = held
+				? current.build.configs.filter(
+						(candidate) => candidate.id !== config.id
+					)
+				: [...current.build.configs, config];
+
+			return {
+				...current,
+				available: current.available.some(
+					(candidate) => candidate.id === config.id
+				)
+					? current.available
+					: [...current.available, config],
+				build: {
+					...withBuild(current.build, configs),
+					slots: smallestRungHolding(occupiedSlots(configs)),
+				},
+			};
+		});
 	const dispatch = (action: RunAction) =>
 		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
@@ -454,8 +455,12 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	useEffect(() => {
 		setStripStep("removal");
 	}, [state.status]);
+	const [overStep, setOverStep] = useState<OverStep>("summary");
+	useEffect(() => {
+		setOverStep("summary");
+	}, [state.status]);
 
-	const view = toRunView(state, archiveKb);
+	const view = toRunView(state);
 	const settled: AnsweredPoll | undefined = pinned
 		? view.answeredThisGate.at(-1)
 		: undefined;
@@ -486,24 +491,20 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			return next;
 		});
 	const onSelect = (optionId: string) => {
-		if (view.poll?.answerType === "multiple")
-			return setSelected((current) =>
-				current.includes(optionId)
-					? current.filter((id) => id !== optionId)
-					: [...current, optionId]
-			);
-		answer([optionId]);
+		if (view.poll?.answerType !== "multiple") return setSelected([optionId]);
+
+		setSelected((current) =>
+			current.includes(optionId)
+				? current.filter((id) => id !== optionId)
+				: [...current, optionId]
+		);
 	};
 	const payPeel = (configIds: readonly string[]) => {
 		setRewardStep("shop");
 		setState((current) =>
-			runReducer(
-				configIds.reduce(
-					(next, configId) => runReducer(next, { type: "strip", configId }),
-					current
-				),
-				{ type: "resume-climb" }
-			)
+			runReducer(runReducer(current, { type: "strip", configIds }), {
+				type: "resume-climb",
+			})
 		);
 	};
 
@@ -512,8 +513,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			{state.status === "configuring" && startStep === "build" && (
 				<StartView
 					view={view}
-					onBuySlot={() => spendArchive(buyStartSlot)}
-					onRefundSlot={() => spendArchive(refundStartSlot)}
 					onToggle={(id) =>
 						dispatch({
 							type: view.configs.some((config) => config.id === id)
@@ -532,6 +531,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					backLabel={BACK_TO_BUILD}
 					onStart={() => dispatch({ type: "start" })}
 					onBackToShop={() => setStartStep("build")}
+					onEstimate={(count) => dispatch({ type: "estimate", count })}
+					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 				/>
 			)}
 
@@ -588,11 +589,10 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
-					onBuySlot={() => dispatch({ type: "buy-slot" })}
-					onCashSlot={() => dispatch({ type: "cash-slot" })}
-					onSetStoragePlan={(tier) =>
-						dispatch({ type: "set-storage-plan", tier })
+					onSetBuildSpace={(rung) =>
+						dispatch({ type: "set-build-space", rung })
 					}
+					onVendorLock={(id) => dispatch({ type: "vendor-lock", configId: id })}
 					onContinue={() => setRewardStep("prep")}
 				/>
 			)}
@@ -602,6 +602,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					view={view}
 					onStart={() => dispatch({ type: "finish-reward" })}
 					onBackToShop={() => setRewardStep("shop")}
+					onEstimate={(count) => dispatch({ type: "estimate", count })}
+					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 				/>
 			)}
 
@@ -623,6 +625,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onReview={() => setStripStep("review")}
 						onNext={() => setStripStep("review")}
 						onRemove={payPeel}
+						onRefuse={() => dispatch({ type: "refuse-gate" })}
 					/>
 				)}
 
@@ -636,62 +639,94 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				/>
 			)}
 
-			{!settled && (state.status === "won" || state.status === "dead") && (
-				<GateOutcomeView
-					view={view}
-					verdict={state.status === "won" ? "won" : "fatal"}
-					onReview={() => {}}
-					onNext={onRestart}
-				/>
-			)}
+			{!settled &&
+				(state.status === "won" || state.status === "dead") &&
+				overStep === "summary" && (
+					<RunOverView
+						view={view}
+						onNewRun={onRestart}
+						onCommunity={() => setOverStep("community")}
+					/>
+				)}
 
 			{!settled &&
-				(state.status === "answering" || state.status === "rewarding") && (
-					<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
-						<span className="font-semibold uppercase tracking-wide">
-							Dev rig
-						</span>
-						{state.status === "answering" && (
-							<>
-								<button
-									type="button"
-									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-									onClick={() => answerCurrent("right")}
-								>
-									✓ Answer right
-								</button>
-								<button
-									type="button"
-									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-									onClick={() => answerCurrent("wrong")}
-								>
-									✕ Answer wrong
-								</button>
-								<button
-									type="button"
-									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-									onClick={() => answerRestOfWindow("right")}
-								>
-									⏩ All right → gate
-								</button>
-								<button
-									type="button"
-									className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-									onClick={() => answerRestOfWindow("wrong")}
-								>
-									⏩ All wrong → gate
-								</button>
-							</>
-						)}
+				(state.status === "won" || state.status === "dead") &&
+				overStep === "community" && (
+					<CommunityScreen
+						{...simulateCommunityScreen(view, state.polls, {
+							onShop: () => setOverStep("summary"),
+							onPrep: () => setOverStep("summary"),
+						})}
+					/>
+				)}
+
+			<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
+				<span className="font-semibold uppercase tracking-wide">Dev rig</span>
+				{!settled && state.status === "answering" && (
+					<>
 						<button
 							type="button"
 							className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
-							onClick={grantStorage}
+							onClick={() => answerCurrent("right")}
 						>
-							💾 +{PROTO_GRANT_KB} KB storage
+							✓ Answer right
 						</button>
-					</div>
+						<button
+							type="button"
+							className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+							onClick={() => answerCurrent("wrong")}
+						>
+							✕ Answer wrong
+						</button>
+						<button
+							type="button"
+							className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+							onClick={() => answerRestOfWindow("right")}
+						>
+							⏩ All right → gate
+						</button>
+						<button
+							type="button"
+							className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+							onClick={() => answerRestOfWindow("wrong")}
+						>
+							⏩ All wrong → gate
+						</button>
+					</>
 				)}
+				<button
+					type="button"
+					className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+					onClick={grantStorage}
+				>
+					💾 +{PROTO_GRANT_KB} KB storage
+				</button>
+				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
+					<span className="mr-1 font-semibold uppercase tracking-wide">
+						Configs {occupiedSlots(state.build.configs)}/{state.build.slots}
+					</span>
+					{CONFIG_LIST.map((config) => {
+						const held = state.build.configs.some(
+							(candidate) => candidate.id === config.id
+						);
+						return (
+							<button
+								key={config.id}
+								type="button"
+								title={`${slotsOf(config)} slots · ${config.description}`}
+								className={
+									held
+										? "rounded bg-viridian px-1.5 py-0.5 text-white"
+										: "rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700"
+								}
+								onClick={() => toggleDevConfig(config)}
+							>
+								{config.label}
+							</button>
+						);
+					})}
+				</div>
+			</div>
 		</>
 	);
 };

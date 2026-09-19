@@ -31,8 +31,8 @@ describe("syncTarget", () => {
 	// A null view means "no run today, go start one" — but only once the read
 	// resolved. While it is unknown the same null must move nobody (DVTD-cmqj).
 	it("holds position when the run could not be read, though null alone sends home", () => {
-		expect(syncTarget("/run/configure", null, true)).toBeNull();
-		expect(syncTarget("/run/configure", null, false)).toBe("/run");
+		expect(syncTarget("/run/new", null, true)).toBeNull();
+		expect(syncTarget("/run/new", null, false)).toBe("/run");
 	});
 
 	it("stays put on the allowed screen for the current status", () => {
@@ -45,7 +45,7 @@ describe("syncTarget", () => {
 		).toBeNull();
 		expect(
 			syncTarget(
-				"/run/answer",
+				"/run/poll",
 				climbing({ status: "answering", gatesCleared: 1 }),
 				false
 			)
@@ -72,7 +72,7 @@ describe("syncTarget", () => {
 		).toBeNull();
 		expect(
 			syncTarget(
-				"/run/reward",
+				"/run/gate",
 				climbing({ status: "rewarding", gatesCleared: 0 }),
 				false
 			)
@@ -104,7 +104,7 @@ describe("syncTarget", () => {
 		});
 
 		it("sends the reward page to the shop", () => {
-			expect(syncTarget("/run/reward", redoing, false)).toBe("/run/shop");
+			expect(syncTarget("/run/gate", redoing, false)).toBe("/run/shop");
 		});
 
 		it("stays put on the shop, the prep hub and the review", () => {
@@ -119,7 +119,7 @@ describe("syncTarget", () => {
 	it("stays put on the strip and review pages while a strip is owed", () => {
 		expect(
 			syncTarget(
-				"/run/strip",
+				"/run/gate",
 				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
 				false
 			)
@@ -138,7 +138,7 @@ describe("syncTarget", () => {
 	it("sends a waived miss to the answers, not to the repair screen", () => {
 		expect(
 			syncTarget(
-				"/run/answer",
+				"/run/poll",
 				climbing({
 					status: "awaiting-strip",
 					gatesCleared: 0,
@@ -154,7 +154,7 @@ describe("syncTarget", () => {
 	it("leaves a player who just paid their peel on the repair screen", () => {
 		expect(
 			syncTarget(
-				"/run/strip",
+				"/run/gate",
 				climbing({
 					status: "awaiting-strip",
 					gatesCleared: 1,
@@ -169,11 +169,11 @@ describe("syncTarget", () => {
 	it("redirects a stale screen to the strip page while a strip is owed", () => {
 		expect(
 			syncTarget(
-				"/run/answer",
+				"/run/poll",
 				climbing({ status: "awaiting-strip", gatesCleared: 1 }),
 				false
 			)
-		).toBe("/run/strip");
+		).toBe("/run/gate");
 	});
 
 	// The review is only ever this gate's answers, so it has no meaning once the
@@ -191,11 +191,11 @@ describe("syncTarget", () => {
 	it("redirects a stale screen to the canonical route for the status", () => {
 		expect(
 			syncTarget(
-				"/run/answer",
+				"/run/poll",
 				climbing({ status: "rewarding", gatesCleared: 0 }),
 				false
 			)
-		).toBe("/run/reward");
+		).toBe("/run/gate");
 		expect(
 			syncTarget(
 				"/run/shop",
@@ -221,8 +221,8 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// Gate 0 has no prep route at all (Configure already covers it), so a deep
-	// link there goes straight to the poll, not through a redirect to prep.
+	// Prep is legal before the run starts, but not after gate 0 opened: once you
+	// are answering it, its stake is behind you, so a deep link goes to the poll.
 	it("sends a stale screen on gate 0 straight to the poll, never to prep", () => {
 		expect(
 			syncTarget(
@@ -230,20 +230,48 @@ describe("syncTarget", () => {
 				climbing({ status: "answering", gatesCleared: 0 }),
 				false
 			)
-		).toBe("/run/answer");
+		).toBe("/run/poll");
 		expect(
 			syncTarget(
 				"/run/prep",
 				climbing({ status: "answering", gatesCleared: 0 }),
 				false
 			)
-		).toBe("/run/answer");
+		).toBe("/run/poll");
+	});
+
+	// DVTD-inrq: gate 0 states its terms on the same screen every later gate
+	// does, so the opening build and the opening stake are two page turns.
+	it("keeps the build and its prep both legal before the run starts", () => {
+		const opening = climbing({ status: "configuring", gatesCleared: 0 });
+		expect(syncTarget("/run/new", opening, false)).toBeNull();
+		expect(syncTarget("/run/prep", opening, false)).toBeNull();
+		expect(syncTarget("/run/shop", opening, false)).toBe("/run/new");
+	});
+
+	// One screen, two verdicts (ADR-076), so one route — and the status is what
+	// says which verdict it wears.
+	it("serves both ends of a gate from the one gate route", () => {
+		expect(
+			syncTarget(
+				"/run/gate",
+				climbing({ status: "rewarding", gatesCleared: 2 }),
+				false
+			)
+		).toBeNull();
+		expect(
+			syncTarget(
+				"/run/gate",
+				climbing({ status: "awaiting-strip", gatesCleared: 2 }),
+				false
+			)
+		).toBeNull();
 	});
 
 	it("routes a finished run to the run-over screen, won or dead", () => {
 		expect(
 			syncTarget(
-				"/run/answer",
+				"/run/poll",
 				climbing({ status: "won", gatesCleared: 12 }),
 				false
 			)
@@ -261,7 +289,7 @@ describe("syncTarget", () => {
 	// nowhere else to go gets sent: the exemption is about the path you are ON,
 	// never about the target.
 	it("sends a day without a run back to the hub", () => {
-		expect(syncTarget("/run/configure", null, false)).toBe("/run");
+		expect(syncTarget("/run/new", null, false)).toBe("/run");
 	});
 
 	it("stands down on paths that are not run screens", () => {
@@ -294,7 +322,7 @@ describe("syncTarget", () => {
 		} as const;
 
 		it("sends the answer screen to the community board", () => {
-			expect(syncTarget("/run/answer", locked, false)).toBe("/run/community");
+			expect(syncTarget("/run/poll", locked, false)).toBe("/run/community");
 		});
 
 		it("sends every other run screen to the community board too", () => {
@@ -314,7 +342,7 @@ describe("syncTarget", () => {
 		});
 
 		it("holds position while the run is still loading", () => {
-			expect(syncTarget("/run/answer", locked, true)).toBeNull();
+			expect(syncTarget("/run/poll", locked, true)).toBeNull();
 		});
 	});
 });
@@ -331,7 +359,7 @@ describe("returnFromCommunity", () => {
 		expect(
 			returnFromCommunity(climbing({ status: "answering", gatesCleared: 0 }))
 				.path
-		).toBe("/run/answer");
+		).toBe("/run/poll");
 		expect(
 			returnFromCommunity(climbing({ status: "answering", gatesCleared: 2 }))
 				.path

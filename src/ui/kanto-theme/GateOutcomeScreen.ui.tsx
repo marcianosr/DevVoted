@@ -13,13 +13,14 @@ import {
 import { Audit, type AuditProps } from "./Audit.ui";
 import { Figures } from "./Figures.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
+import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 import type { IconName } from "./Icon.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
-import { PanelV2 } from "./PanelV2.ui";
+import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
-import { Swatch, type SwatchFill, type SwatchState } from "./Swatch.ui";
+import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
@@ -44,20 +45,14 @@ const RUN_OVER_BAND: CoverageBandId = "danger";
 const RUN_OVER_COLOR: KantoColor = "cinnabar";
 const MARKED_BAND: CoverageBandId = "perfect";
 
-const SWATCH_STATE = {
-	perfect: "discovered",
-	healthy: "discovered",
-	ok: "discovered",
-	shaky: "current",
-	danger: "current",
-} satisfies Record<CoverageBandId, SwatchState>;
-
 export type GateOutcomeFigure = { amount: string; note: string };
 
 export type GateOutcomeChip = { label: string; color?: KantoColor };
 
 export type GateOutcomeHeader = {
 	swatch: GateSwatch;
+	/** The window came up flawless, so this gate's swatch is the run's to keep. */
+	earned: boolean;
 	swatches: readonly SwatchFill[];
 	title: string;
 	subtitle: string;
@@ -81,6 +76,7 @@ export type GateOutcomeBonusPanel = GateOutcomePanel & { detail: string };
 export type GateOutcomeBuildPanel = GateOutcomePanel & {
 	changes: readonly ConfigChipProps[];
 	note?: string;
+	emptyLabel?: string;
 };
 
 export type GateOutcomeReview = {
@@ -103,6 +99,7 @@ export type GateOutcomeScreenProps = {
 	header: GateOutcomeHeader;
 	bar: CoverageBarProps;
 	bonus?: GateOutcomeBonusPanel;
+	payouts?: PollScoresProps;
 	coverage: GateOutcomeLedgerPanel;
 	storage: GateOutcomeLedgerPanel;
 	changes?: GateOutcomeBuildPanel;
@@ -116,6 +113,7 @@ export type GateOutcomeScreenProps = {
 const GateOutcomeHeading = ({
 	band,
 	swatch,
+	earned,
 	swatches,
 	title,
 	subtitle,
@@ -124,12 +122,16 @@ const GateOutcomeHeading = ({
 }: GateOutcomeHeader & { band: CoverageBandId }) => (
 	<header className={HEADER}>
 		<div className={TITLE_ROW}>
-			<Swatch
-				state={SWATCH_STATE[band]}
-				swatch={swatch}
-				marked={band === MARKED_BAND}
-				size={SWATCH_SIZE}
-			/>
+			{earned ? (
+				<Swatch
+					state="discovered"
+					swatch={swatch}
+					marked={band === MARKED_BAND}
+					size={SWATCH_SIZE}
+				/>
+			) : (
+				<Swatch state="current" swatch={swatch} size={SWATCH_SIZE} />
+			)}
 			<span className={NAMING}>
 				<Typography variant="headline" as="h1">
 					{title}
@@ -159,14 +161,16 @@ const GateOutcomeHeading = ({
 );
 
 const COVERAGE_TITLE = "Coverage";
+const PAID_TITLE = "what each poll paid";
 
 type CoveragePanelProps = {
 	bar: CoverageBarProps;
 	band: CoverageBandId;
 	bonus?: GateOutcomeBonusPanel;
+	payouts?: PollScoresProps;
 };
 
-const CoveragePanel = ({ bar, band, bonus }: CoveragePanelProps) => (
+const CoveragePanel = ({ bar, band, bonus, payouts }: CoveragePanelProps) => (
 	<Fold
 		title={COVERAGE_TITLE}
 		summary={bonus?.summary}
@@ -182,6 +186,12 @@ const CoveragePanel = ({ bar, band, bonus }: CoveragePanelProps) => (
 			</Typography>
 		)}
 		<CoverageBar {...bar} pin />
+		{payouts === undefined ? null : (
+			<>
+				<Typography variant="hint">{PAID_TITLE}</Typography>
+				<PollScores {...payouts} />
+			</>
+		)}
 	</Fold>
 );
 
@@ -191,8 +201,16 @@ const LedgerPanel = ({ rows, ...panel }: GateOutcomeLedgerPanel) => (
 	</Fold>
 );
 
-const ChangesPanel = ({ changes, note, ...panel }: GateOutcomeBuildPanel) => (
+const ChangesPanel = ({
+	changes,
+	note,
+	emptyLabel,
+	...panel
+}: GateOutcomeBuildPanel) => (
 	<Fold {...panel}>
+		{changes.length > 0 || emptyLabel === undefined ? null : (
+			<Typography variant="hint">{emptyLabel}</Typography>
+		)}
 		{changes.map((change, index) => (
 			<ConfigChip key={index} {...change} />
 		))}
@@ -218,20 +236,21 @@ const AnswersPanel = ({ rows, review, ...panel }: GateOutcomeAnswersPanel) => (
 );
 
 const EndingPanel = ({ title, detail }: GateEnding) => (
-	<PanelV2>
-		<PanelV2.Header label={title} />
-		<PanelV2.Body>
+	<Panel>
+		<Panel.Header label={title} />
+		<Panel.Body>
 			<Typography variant="paragraph">
 				<Figures text={detail} />
 			</Typography>
-		</PanelV2.Body>
-	</PanelV2>
+		</Panel.Body>
+	</Panel>
 );
 
 export const GateOutcomeScreen = ({
 	header,
 	bar,
 	bonus,
+	payouts,
 	coverage,
 	storage,
 	changes,
@@ -257,7 +276,12 @@ export const GateOutcomeScreen = ({
 
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
-					<CoveragePanel bar={bar} band={band} bonus={bonus} />
+					<CoveragePanel
+						bar={bar}
+						band={band}
+						bonus={bonus}
+						payouts={payouts}
+					/>
 					<LedgerPanel {...coverage} />
 				</div>
 
@@ -272,11 +296,11 @@ export const GateOutcomeScreen = ({
 			{tail?.choice === undefined ? null : <GateChoice {...tail.choice} />}
 			{tail?.ending === undefined ? null : <EndingPanel {...tail.ending} />}
 
-			<PanelV2>
-				<PanelV2.Body>
+			<Panel>
+				<Panel.Body>
 					<ScreenFooter {...footer} rule={false} />
-				</PanelV2.Body>
-			</PanelV2>
+				</Panel.Body>
+			</Panel>
 		</>
 	);
 

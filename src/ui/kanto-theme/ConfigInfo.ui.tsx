@@ -24,9 +24,14 @@ const WEIGHT = "flex shrink-0 items-center gap-1.5";
 const NO_UPGRADES_LABEL = "no upgrades";
 const SELL_LABEL = "sells for";
 const WEIGHT_LABEL = "weight";
-const SLOTS_LABEL = "slots";
+const SLOT_WORD = "slot";
 const SINGLE_VERSION = 1;
+const SINGLE_SLOT = 1;
 const NOTE_GAIN: KantoColor = "saffron";
+
+/** The count beside this word is the Weight bar, not text, so only the noun bends. */
+const slotWordOf = (slots: number) =>
+	slots === SINGLE_SLOT ? SLOT_WORD : `${SLOT_WORD}s`;
 
 export type ConfigInfoProps = {
 	name: string;
@@ -51,39 +56,41 @@ export const ConfigInfo = ({
 
 	return (
 		<Panel className={WIDTH}>
-			<div className={TITLE_ROW}>
-				<span className={NAME}>{name}</span>
-				{version === undefined ? null : <Version version={version} />}
-				{rungs <= SINGLE_VERSION ? (
-					<span className={TRAILING}>
-						<span className={NO_UPGRADES}>{NO_UPGRADES_LABEL}</span>
-					</span>
-				) : null}
-			</div>
+			<Panel.Body>
+				<div className={TITLE_ROW}>
+					<span className={NAME}>{name}</span>
+					{version === undefined ? null : <Version version={version} />}
+					{rungs <= SINGLE_VERSION ? (
+						<span className={TRAILING}>
+							<span className={NO_UPGRADES}>{NO_UPGRADES_LABEL}</span>
+						</span>
+					) : null}
+				</div>
 
-			<p className={PROSE}>
-				<Figures text={description} />
-			</p>
-
-			{note === undefined ? null : (
-				<p className={NOTE}>
-					<Figures text={note} gain={NOTE_GAIN} />
+				<p className={PROSE}>
+					<Figures text={description} />
 				</p>
-			)}
 
-			<div className={DIVIDER} />
+				{note === undefined ? null : (
+					<p className={NOTE}>
+						<Figures text={note} gain={NOTE_GAIN} />
+					</p>
+				)}
 
-			<div className={FOOTER}>
-				<span className={WEIGHT}>
-					<span>{WEIGHT_LABEL}</span>
-					<Weight slots={slots} />
-					<span>{SLOTS_LABEL}</span>
-				</span>
-				<span className={SELL}>
-					<span>{SELL_LABEL}</span>
-					<Badge>{sellPrice}</Badge>
-				</span>
-			</div>
+				<div className={DIVIDER} />
+
+				<div className={FOOTER}>
+					<span className={WEIGHT}>
+						<span>{WEIGHT_LABEL}</span>
+						<Weight slots={slots} />
+						<span>{slotWordOf(slots)}</span>
+					</span>
+					<span className={SELL}>
+						<span>{SELL_LABEL}</span>
+						<Badge>{sellPrice}</Badge>
+					</span>
+				</div>
+			</Panel.Body>
 		</Panel>
 	);
 };

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import {
 	SLICE_WINDOW,
-	STORAGE_PLANS,
+	BUILD_SPACE_RUNGS,
 } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
@@ -20,15 +20,15 @@ const bareActionSchema = <T extends string>(type: T) =>
 const optionActionSchema = <T extends string>(type: T) =>
 	z.object({ type: z.literal(type), optionId: z.string().min(1) }).strict();
 
-const storagePlanActionSchema = <T extends string>(type: T) =>
+const buildSpaceActionSchema = <T extends string>(type: T) =>
 	z
 		.object({
 			type: z.literal(type),
-			tier: z
+			rung: z
 				.number()
 				.int()
 				.min(0)
-				.max(STORAGE_PLANS.length - 1),
+				.max(BUILD_SPACE_RUNGS.length - 1),
 		})
 		.strict();
 
@@ -65,8 +65,15 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("close-gate"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
+	bareActionSchema("arm-strict"),
 	optionActionSchema("buy-back-option"),
-	configActionSchema("strip"),
+	z
+		.object({
+			type: z.literal("strip"),
+			configIds: z.array(z.string().min(1)).min(1).readonly(),
+		})
+		.strict(),
+	bareActionSchema("refuse-gate"),
 	bareActionSchema("resume-climb"),
 	configActionSchema("draft"),
 	configActionSchema("upgrade"),
@@ -80,9 +87,8 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("drop"),
 	configActionSchema("minify"),
 	configActionSchema("switch-arm"),
-	bareActionSchema("buy-slot"),
-	bareActionSchema("cash-slot"),
-	storagePlanActionSchema("set-storage-plan"),
+	configActionSchema("vendor-lock"),
+	buildSpaceActionSchema("set-build-space"),
 ]);
 
 type SchemaAction = z.infer<typeof runActionSchema>;

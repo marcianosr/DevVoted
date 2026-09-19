@@ -1,4 +1,11 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
+import type {
+	ConfigStatus,
+	Coverage,
+	SkipReason,
+} from "~/modules/run/config/domain/effect.model";
+import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
+import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	describeConfig,
 	headlineFigureOf,
@@ -9,6 +16,8 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { kbLabel } from "~/shared/lib/storage";
 
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { ConfigInfoProps } from "~/ui/kanto-theme/ConfigInfo.ui";
 import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
 import type { VersionState } from "~/ui/kanto-theme/Version.ui";
@@ -20,6 +29,7 @@ export const figureLabel = (config: Config): string => {
 	if (figure === undefined) return "";
 	if (figure.kind === "percent") return `+${figure.value}%`;
 	if (figure.kind === "multiplier") return `×${figure.value}`;
+	if (figure.kind === "coverage") return `+${figure.value} units`;
 	return `+${figure.value} KB`;
 };
 
@@ -76,3 +86,71 @@ export const chipFor = (config: Config, note?: string) => ({
 	version: config.level,
 	info: infoFor(config, note),
 });
+
+const HERE = "here";
+const IDLE = "idle this poll";
+const ONLY = "only";
+const GAIN_COLOR: KantoColor = "viridian";
+const LOSS_COLOR: KantoColor = "cinnabar";
+const BUMP_COLOR: KantoColor = "vermillion";
+const BUMP_WORD = "bump in";
+
+const SKIP_WORDS = {
+	openerOnly: "opener only",
+	cacheCold: "cache is cold",
+	paysAtGateClear: "pays at the clear",
+	paysOnPeel: "pays on a peel",
+	billsAtGateClear: "bills at the clear",
+	inShop: "works in the shop",
+	inPrep: "works in prep",
+	noAuditToSuppress: "no audit to suppress",
+	runCapReached: "run cap reached",
+	selectAllOnly: `select-all ${ONLY}`,
+	paysOnPartial: "pays on a partial",
+	notThisPoll: IDLE,
+} satisfies Record<Exclude<SkipReason["kind"], "otherCategories">, string>;
+
+export const categoriesWord = (categories: readonly CategoryCode[]): string =>
+	categories.map((code) => code.toUpperCase()).join(" or ");
+
+const figureOf = (value: number): string => `${roundToTwoDecimals(value)}`;
+
+const coverageWords = ({ mult, add }: Coverage): string =>
+	[
+		...(mult === 1 ? [] : [`×${figureOf(mult)}`]),
+		...(add === 0 ? [] : [`${add > 0 ? "+" : ""}${figureOf(add)}`]),
+	].join(" ");
+
+const skipWords = (why: SkipReason): string =>
+	why.kind !== "otherCategories"
+		? SKIP_WORDS[why.kind]
+		: why.categories.length === 0
+			? IDLE
+			: `${categoriesWord(why.categories)} ${ONLY}`;
+
+export type PollNote = { badge?: ConfigChipBadge; detail?: string };
+
+/**
+ * What a config is worth on the poll in front of you. A build that never states
+ * this leaves the payout unattributable, which is the whole of DVTD-zr20.
+ */
+export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
+	if (status === undefined) return {};
+	if (status.kind === "skipped") return { detail: skipWords(status.why) };
+	if (status.kind !== "online") return {};
+
+	if (status.coverage !== undefined)
+		return {
+			badge: {
+				label: `${coverageWords(status.coverage)} ${HERE}`,
+				color: status.coverage.mult < 1 ? LOSS_COLOR : GAIN_COLOR,
+			},
+		};
+
+	if (status.bumpIn !== undefined)
+		return {
+			badge: { label: `${BUMP_WORD} ${status.bumpIn}`, color: BUMP_COLOR },
+		};
+
+	return {};
+};

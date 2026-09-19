@@ -2,7 +2,10 @@ import { selectSeededRandom, shuffleSeeded } from "~/shared/lib/seededRandom";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
-import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	CONFIGS,
+	CONFIG_LIST,
+} from "~/modules/run/config/domain/configRoster.model";
 import { touchesCoverage } from "~/modules/run/config/domain/effect.model";
 
 export const STARTER_POOL: readonly Config[] = [
@@ -15,6 +18,21 @@ export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.indexedDb,
 	CONFIGS.coldStart,
 ];
+
+/**
+ * The pool a run deals from. An account plays its own unlocked configs, and
+ * falls back to the starter set when its ledger is empty — pre-seed accounts
+ * and anyone whose unlocks all left the roster still get a playable hand.
+ * Ids no longer in CONFIG_LIST are dropped rather than faked (DVTD-amtz).
+ */
+export const poolFor = (
+	unlockedConfigIds: readonly string[]
+): readonly Config[] => {
+	const unlocked = new Set(unlockedConfigIds);
+	const owned = CONFIG_LIST.filter((config) => unlocked.has(config.id));
+
+	return owned.length === 0 ? STARTER_POOL : owned;
+};
 
 export const HAND_SIZE = 5;
 

@@ -76,6 +76,7 @@ describe("getPolldexService", () => {
 			question: null,
 			timesSeen: 0,
 			answeredCount: 0,
+			correctCount: 0,
 			accuracy: null,
 		});
 	});
@@ -100,6 +101,24 @@ describe("getPolldexService", () => {
 		expect(entry.answeredCount).toBe(3);
 		expect(entry.accuracy).toBe(67); // 2 of 3 fully correct
 		expect(entry.question).toBe("Box model?");
+	});
+
+	it("keeps the fully-correct count, which a rounded accuracy cannot recover", async () => {
+		mockQueries({
+			polls: [
+				{ id: 7, pollNumber: 7, question: "Box model?", categoryCode: "css" },
+			],
+			correctness: [
+				...response(1, 7, { correct: true }),
+				...response(2, 7, { correct: true }),
+				...response(3, 7, { correct: false }),
+			],
+		});
+
+		const [entry] = await unwrap();
+
+		expect(entry.correctCount).toBe(2);
+		expect(entry.answeredCount).toBe(3);
 	});
 
 	it("marks a poll seen via views alone, with null accuracy when never answered", async () => {

@@ -1,44 +1,67 @@
-import { kbLabel } from "~/shared/lib/storage";
+import { clsx } from "clsx";
 
+import type { KantoColor } from "./colors";
+import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMN = "flex w-full flex-col gap-1.5";
-const TRACK = "relative h-5.5 w-full";
-const BLOCK = "absolute inset-y-0 rounded-[3px]";
-const ROOM =
-	"absolute inset-y-0 right-0 rounded-[3px] border border-dashed border-theme-faint";
-const TICK = "absolute -inset-y-1 w-px bg-theme/50";
-const MARKS = "relative h-3 w-full";
-const MARK =
-	"absolute -translate-x-1/2 text-xxs whitespace-nowrap text-theme-muted";
+const TRACK = "flex h-7.5 w-full";
+const SEGMENT =
+	"group/info relative flex min-w-0 basis-0 items-center justify-center gap-1.5 first:rounded-l-md last:rounded-r-md";
+const PADDED = "px-1.5";
+const DIMMED = "opacity-35";
+const ROOM = "rounded-r-md border border-dashed border-theme-faint";
 
-const FILLED = "badge-theme";
-const LIT = "bg-theme";
+const NAME = "truncate text-xs font-bold";
+const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
 
-const BLOCK_GAP_PX = 3;
-const MIN_DRAWN_SLOTS = 1;
+const PANEL = "absolute top-full z-30 mt-2 transition-opacity";
+const PANEL_SHUT =
+	"pointer-events-none invisible opacity-0 group-hover/info:visible group-hover/info:opacity-100 group-has-[:focus-visible]/info:visible group-has-[:focus-visible]/info:opacity-100";
+
+const ALIGN_START = "left-0";
+const ALIGN_END = "right-0";
+
+const NAME_SHARE = 0.12;
+const FIGURE_SHARE = 0.05;
+const PAST_THE_MIDDLE = 0.5;
 const MIN_AXIS = 1;
-const MIN_LABEL_GAP = 0.08;
-const FULL = 100;
-const PERCENT = "%";
+const NO_WEIGHT = 0;
 
-const NO_UPKEEP = 0;
-const NO_FREE_WEIGHT = 0;
-const FREE_WORD = "free";
-const A_GATE = "a gate";
 const WEIGHT_WORD = "weight";
 const SEPARATOR = "·";
-const TO_WORD = "to";
-const WITHOUT_IT = "without it,";
+const OF_WORD = "of";
+const FREE_WORD = "free";
+const OVER_BY = "over by";
 
-export type WeightTrackFill = { name: string; slots: number };
+const SEGMENT_RAMP = [
+	"pewter",
+	"lavender",
+	"seafoam",
+	"saffron",
+	"cerulean",
+	"fuchsia",
+	"vermillion",
+	"viridian",
+	"cinnabar",
+	"celadon",
+	"pallet",
+	"indigo",
+] as const satisfies readonly KantoColor[];
 
-export type UpkeepRung = { weight: number; kb: number };
+export const segmentColorOf = (index: number): KantoColor =>
+	SEGMENT_RAMP[index % SEGMENT_RAMP.length];
+
+export type WeightTrackFill = {
+	name: string;
+	slots: number;
+	info?: ConfigInfoProps;
+};
 
 export type WeightTrackProps = {
 	fills: readonly WeightTrackFill[];
-	rungs: readonly UpkeepRung[];
-	max: number;
+	/** The build space the run rents. A hard cap, and what it pays for (ADR-082). */
+	held: number;
 	highlight?: string;
 	caption?: boolean;
 };
@@ -46,148 +69,118 @@ export type WeightTrackProps = {
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
-const byWeight = (rungs: readonly UpkeepRung[]) =>
-	[...rungs].sort((one, other) => one.weight - other.weight);
+export const roomLineOf = (weight: number, held: number): string => {
+	const room =
+		weight > held
+			? `${OVER_BY} ${weight - held}`
+			: `${held - weight} ${FREE_WORD}`;
 
-export const upkeepAt = (
-	rungs: readonly UpkeepRung[],
-	weight: number
-): number => {
-	const passed = byWeight(rungs).filter((rung) => rung.weight <= weight);
-	return passed[passed.length - 1]?.kb ?? NO_UPKEEP;
+	return `${weight} ${OF_WORD} ${held} ${WEIGHT_WORD} ${SEPARATOR} ${room}`;
 };
 
-export const freeWeightOf = (rungs: readonly UpkeepRung[]): number => {
-	const free = byWeight(rungs).filter((rung) => rung.kb === NO_UPKEEP);
-	return free[free.length - 1]?.weight ?? NO_FREE_WEIGHT;
-};
+const fillLineOf = ({ name, slots }: WeightTrackFill) =>
+	`${name} ${SEPARATOR} ${slots} ${WEIGHT_WORD}`;
 
-const nextRungOf = (rungs: readonly UpkeepRung[], weight: number) =>
-	byWeight(rungs).find((rung) => rung.kb > upkeepAt(rungs, weight));
-
-export const upkeepLabelOf = (kb: number) =>
-	kb === NO_UPKEEP ? FREE_WORD : `${kbLabel(kb)} ${A_GATE}`;
-
-const restingLine = (rungs: readonly UpkeepRung[], weight: number) => {
-	const held = `${weight} ${WEIGHT_WORD} ${SEPARATOR} ${upkeepLabelOf(upkeepAt(rungs, weight))}`;
-	const next = nextRungOf(rungs, weight);
-	if (next === undefined) return held;
-
-	return `${held} ${SEPARATOR} ${next.weight - weight} ${TO_WORD} ${kbLabel(next.kb)}`;
-};
-
-const costLine = (
-	rungs: readonly UpkeepRung[],
-	weight: number,
-	fill: WeightTrackFill
-) =>
-	`${fill.name} ${SEPARATOR} ${fill.slots} ${WEIGHT_WORD} ${SEPARATOR} ${WITHOUT_IT} ${upkeepLabelOf(
-		upkeepAt(rungs, weight - fill.slots)
-	)}`;
-
-const labelledRungsOf = (rungs: readonly UpkeepRung[], axis: number) => {
-	let last: number | undefined;
-
-	return byWeight(rungs).filter((rung) => {
-		if (rung.kb === NO_UPKEEP) return false;
-		if (last !== undefined && (rung.weight - last) / axis < MIN_LABEL_GAP)
-			return false;
-
-		last = rung.weight;
-		return true;
-	});
-};
-
-const Block = ({
+const Segment = ({
 	fill,
+	share,
 	start,
-	axis,
-	lit,
+	color,
+	dimmed,
 }: {
 	fill: WeightTrackFill;
+	share: number;
 	start: number;
-	axis: number;
-	lit: boolean;
-}) => (
-	<span
-		style={{
-			left: `${(start / axis) * FULL}${PERCENT}`,
-			width: `calc(${(fill.slots / axis) * FULL}${PERCENT} - ${BLOCK_GAP_PX}px)`,
-		}}
-		className={`${BLOCK} ${lit ? LIT : FILLED}`}
-	/>
-);
+	color: KantoColor;
+	dimmed: boolean;
+}) => {
+	const figure = share >= FIGURE_SHARE;
+	const named = share >= NAME_SHARE;
+
+	return (
+		<li
+			style={{ flexGrow: fill.slots }}
+			data-screen-theme={color}
+			className={clsx(
+				SEGMENT,
+				"segment-theme",
+				figure && PADDED,
+				dimmed && DIMMED
+			)}
+		>
+			<span className="sr-only">{fillLineOf(fill)}</span>
+			{!named ? null : (
+				<span aria-hidden className={NAME}>
+					{fill.name}
+				</span>
+			)}
+			{!figure ? null : (
+				<span aria-hidden className={FIGURE}>
+					{fill.slots}
+				</span>
+			)}
+
+			{fill.info === undefined ? null : (
+				<span
+					aria-hidden
+					className={clsx(
+						PANEL,
+						PANEL_SHUT,
+						start > PAST_THE_MIDDLE ? ALIGN_END : ALIGN_START
+					)}
+				>
+					<ConfigInfo {...fill.info} />
+				</span>
+			)}
+		</li>
+	);
+};
 
 export const WeightTrack = ({
 	fills,
-	rungs,
-	max,
+	held,
 	highlight,
 	caption = true,
 }: WeightTrackProps) => {
 	const weight = weightOf(fills);
-	const axis = Math.max(max, weight, MIN_AXIS);
+	const axis = Math.max(held, weight, MIN_AXIS);
 	const highlighted = fills.find((fill) => fill.name === highlight);
 
-	let start = 0;
-	const blocks = fills.map((fill) => {
-		const placed = { fill, start };
-		start += fill.slots;
-		return placed;
+	let taken = NO_WEIGHT;
+	const placed = fills.map((fill) => {
+		const start = taken / axis;
+		taken += fill.slots;
+		return { fill, start };
 	});
 
 	return (
 		<div className={COLUMN}>
-			<div aria-hidden className={TRACK}>
-				{blocks
-					.filter(({ fill }) => fill.slots >= MIN_DRAWN_SLOTS)
-					.map((placed) => (
-						<Block
-							key={placed.fill.name}
-							fill={placed.fill}
-							start={placed.start}
-							axis={axis}
-							lit={placed.fill.name === highlight}
-						/>
-					))}
+			<ul className={TRACK}>
+				{placed.map(({ fill, start }, index) => (
+					<Segment
+						key={fill.name}
+						fill={fill}
+						share={fill.slots / axis}
+						start={start}
+						color={segmentColorOf(index)}
+						dimmed={highlighted !== undefined && fill.name !== highlight}
+					/>
+				))}
 
 				{weight >= axis ? null : (
-					<span
-						style={{ left: `${(weight / axis) * FULL}${PERCENT}` }}
+					<li
+						aria-hidden
+						style={{ flexGrow: axis - weight }}
 						className={ROOM}
 					/>
 				)}
-
-				{byWeight(rungs)
-					.filter((rung) => rung.weight <= axis)
-					.map((rung) => (
-						<span
-							key={rung.weight}
-							style={{ left: `${(rung.weight / axis) * FULL}${PERCENT}` }}
-							className={TICK}
-						/>
-					))}
-			</div>
-
-			<span aria-hidden className={MARKS}>
-				{labelledRungsOf(rungs, axis)
-					.filter((rung) => rung.weight <= axis)
-					.map((rung) => (
-						<span
-							key={rung.weight}
-							style={{ left: `${(rung.weight / axis) * FULL}${PERCENT}` }}
-							className={MARK}
-						>
-							{kbLabel(rung.kb)}
-						</span>
-					))}
-			</span>
+			</ul>
 
 			{caption ? (
 				<Typography variant="hint">
 					{highlighted === undefined
-						? restingLine(rungs, weight)
-						: costLine(rungs, weight, highlighted)}
+						? roomLineOf(weight, held)
+						: fillLineOf(highlighted)}
 				</Typography>
 			) : null}
 		</div>

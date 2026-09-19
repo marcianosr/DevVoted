@@ -807,6 +807,32 @@ describe("ConfigChip when locked withholds the new affordances", () => {
 	});
 });
 
+describe("ConfigChip's credit", () => {
+	const CHIP = { name: "Cache", slots: 4, badges: [...BADGES] };
+
+	it("marks a chip that paid into the answer just submitted", () => {
+		const { container } = render(<ConfigChip {...CHIP} credited />);
+
+		expect(container.firstChild).toHaveAttribute("data-credited", "true");
+	});
+
+	it("leaves the attribute off entirely when the chip paid nothing", () => {
+		const { container } = render(<ConfigChip {...CHIP} />);
+
+		expect(container.firstChild).not.toHaveAttribute("data-credited");
+	});
+
+	it("carries the credit as an attribute, so no class changes and nothing reflows", () => {
+		const { container: paid } = render(<ConfigChip {...CHIP} credited />);
+		const { container: unpaid } = render(<ConfigChip {...CHIP} />);
+
+		const classesOf = (node: ChildNode | null) =>
+			Array.from((node as HTMLElement).classList).sort();
+
+		expect(classesOf(paid.firstChild)).toEqual(classesOf(unpaid.firstChild));
+	});
+});
+
 describe("ConfigChip's highlight", () => {
 	const CHIP = { name: "Cache", slots: 4, badges: [...BADGES] };
 
