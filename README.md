@@ -12,6 +12,26 @@ A developer quiz game combining trivia with roguelike mechanics. Test your knowl
 
 Visit http://localhost:3005 to play!
 
+### Seeded accounts
+
+`npm run db:seed` creates five Kanto logins, all with the password `kanto123`.
+They differ only in their unlocked configs, so each opens on a different kind of
+build:
+
+| Login | Configs | Build |
+|---|---|---|
+| `lt.surge@kanto.dev` | all 40 | everything unlocked |
+| `koga@kanto.dev` | 23 | coverage multipliers and focus categories |
+| `blaine@kanto.dev` | 13 | wagers, streak growth, audit suppression |
+| `sabrina@kanto.dev` | 12 | storage, interest, subscriptions |
+| `erika@kanto.dev` | 8 | the free starter set — a fresh account |
+
+The seed also writes the whole 96-poll bank into today's sequence, so a full
+13-gate run is playable in one sitting rather than over 13 days. It is
+idempotent — re-run it any time, and re-run it the next day to refresh the date.
+It needs `SUPABASE_SERVICE_ROLE_KEY` in `.env` (from `npx supabase status`) to
+create the login accounts, and refuses to run without it.
+
 ## Tech Stack
 
 - TanStack Start (React-based full-stack framework)

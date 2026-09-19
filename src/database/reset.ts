@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "@/src/database/db";
+import { db } from "~/database/db";
 
 async function resetDatabase() {
 	console.log("🗑️  Dropping all tables...");
@@ -24,6 +24,8 @@ async function resetDatabase() {
             DROP TABLE IF EXISTS leaderboard CASCADE;
             DROP TABLE IF EXISTS daily_exposed_deck CASCADE;
             DROP TABLE IF EXISTS daily_polls CASCADE;
+            DROP TABLE IF EXISTS user_config_unlocks CASCADE;
+            DROP TABLE IF EXISTS user_objective_progress CASCADE;
             DROP TABLE IF EXISTS users CASCADE;
             DROP TABLE IF EXISTS __drizzle_migrations CASCADE;
         `);
