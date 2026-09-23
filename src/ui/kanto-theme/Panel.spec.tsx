@@ -137,6 +137,36 @@ describe("Panel", () => {
 		).toHaveClass("ml-auto");
 	});
 
+	it("makes the whole row the link when it is given a destination", () => {
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row href="/runs/7" trailing={<span>56%</span>}>
+						Unit Tests
+					</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		const row = screen.getByRole("link", { name: /Unit Tests/ });
+
+		expect(row).toHaveAttribute("href", "/runs/7");
+		expect(row).toHaveClass("px-4", "py-2");
+		expect(row).toHaveTextContent("56%");
+	});
+
+	it("stays a plain row when no destination is given", () => {
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row>Unit Tests</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		expect(screen.queryByRole("link")).not.toBeInTheDocument();
+	});
+
 	it("sets a badge with the label, not out with the meta", () => {
 		const { container } = render(
 			<Panel>

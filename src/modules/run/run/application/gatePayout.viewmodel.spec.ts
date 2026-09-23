@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { gatePayoutFor } from "~/modules/run/run/application/gatePayout.viewmodel";
-import { clearGate, started } from "~/modules/run/run/domain/run.factory";
+import {
+	clearGate,
+	failGate,
+	started,
+} from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 
 describe("gatePayoutFor", () => {
@@ -19,5 +23,27 @@ describe("gatePayoutFor", () => {
 
 		expect(gatePayoutFor(second).clearedGateNumber).toBe(1);
 		expect(gatePayoutFor(second).clearedCoverageHeld).toBe(100);
+	});
+
+	it("hands over the parts a clear was paid in, and they sum to the reward", () => {
+		const payout = gatePayoutFor(clearGate(started([])));
+		const parts =
+			payout.clearThisGateKb +
+			payout.overflowThisGateKb +
+			payout.interestThisGateKb +
+			payout.extraPickThisGateKb +
+			payout.escrowCommittedKb +
+			payout.slaUpliftKb +
+			payout.incidentSurvivalKb;
+
+		expect(parts).toBe(payout.gateRewardPaidKb);
+		expect(payout.streakAtClose).not.toBeNull();
+	});
+
+	it("hands over why the gate held, and nothing on a clear", () => {
+		const held = failGate({ ...started(["js"]), gatesCleared: 4 });
+
+		expect(gatePayoutFor(held).heldBy).toBe("floor");
+		expect(gatePayoutFor(clearGate(started([]))).heldBy).toBeNull();
 	});
 });

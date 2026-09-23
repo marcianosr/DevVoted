@@ -6,12 +6,19 @@ import {
 	okAt,
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	FLOOR_CORRECT,
+	GATE_COUNT,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
 
 import {
 	answersOwedFor,
 	bandOutcomesFor,
+	bandOutcomesPropsFor,
+	BAND_OUTCOMES_NOTE,
+	ESCROW_NOTE,
 	clearingRungFor,
 	coverageRungsFor,
 	objectivesFor,
@@ -54,16 +61,15 @@ const swatchRowOf = (frame: BandOutcomesFrame) =>
 	objectivesFor(frame).optional[0];
 
 describe("the rungs a gate's ladder has room for", () => {
-	it("drops OK at the calibration gate, where it collapsed onto the healthy line", () => {
-		expect(bandsOf(CALIBRATION)).toEqual(["perfect", "healthy", "shaky"]);
+	it("draws four rungs at the calibration gate, which has no floor to fall under", () => {
+		expect(bandsOf(CALIBRATION)).toEqual(["perfect", "healthy", "ok", "shaky"]);
 	});
 
-	it("keeps OK wherever the ladder leaves it a point to sit on", () => {
-		expect(bandsOf(SECOND)).toContain("ok");
-	});
-
-	it("drops DANGER while the floor is still clamped to zero", () => {
-		expect(bandsOf(SECOND)).not.toContain("danger");
+	it("draws all five at every gate after it", () => {
+		for (let gate = 1; gate < GATE_COUNT; gate++) {
+			expect(bandsOf(ladderAt(gate))).toHaveLength(5);
+		}
+		expect(bandsOf(SECOND)).toContain("danger");
 	});
 
 	it("draws all five once the ladder has room for every one", () => {
@@ -91,8 +97,8 @@ describe("the lowest landing that still clears", () => {
 		expect(clearingRungFor(MID).band).toBe("ok");
 	});
 
-	it("is HEALTHY at the calibration gate, which draws no OK", () => {
-		expect(clearingRungFor(CALIBRATION).band).toBe("healthy");
+	it("is OK at the calibration gate too, since ADR-094 gave it room", () => {
+		expect(clearingRungFor(CALIBRATION).band).toBe("ok");
 	});
 
 	it("promotes to HEALTHY when an audit squeezes OK out", () => {
@@ -132,7 +138,10 @@ describe("the one thing a gate requires", () => {
 	it("badges the band the gate actually draws, not a fixed OK", () => {
 		expect(
 			clearOf(frameFor({ gate: 0, ladder: CALIBRATION })).statement.figure
-		).toBe("HEALTHY");
+		).toBe("OK");
+		expect(clearOf(frameFor({ ladder: SQUEEZED })).statement.figure).toBe(
+			"HEALTHY"
+		);
 	});
 
 	it("states the line rather than listing it beside the optional prizes", () => {
@@ -146,21 +155,49 @@ describe("the one thing a gate requires", () => {
 	});
 
 	it("prices itself in the answers the window still owes", () => {
-		expect(clearOf(frameFor({ held: 34, openingHeld: 34 })).explain).toContain(
-			`or 2 of the ${SLICE_WINDOW} right`
-		);
+		expect(
+			clearOf(frameFor({ held: MID.ok - 8, openingHeld: MID.ok - 8 })).explain
+		).toContain(`or 2 of the ${SLICE_WINDOW} right`);
 	});
 
-	it("drops the price once the line is already in hand", () => {
-		const required = clearOf(frameFor({ held: 50, openingHeld: 50 }));
+	it("drops the price once the line is already in hand, but still asks the day for two", () => {
+		const required = clearOf(
+			frameFor({ held: MID.ok + 4, openingHeld: MID.ok + 4 })
+		);
 
-		expect(required.met).toBe(true);
 		expect(required.explain).toContain("already holds");
+		expect(required.explain).toContain(
+			`the day still owes ${FLOOR_CORRECT} right answers`
+		);
+		expect(required.explain).not.toContain("of the 5 right");
+	});
+
+	it("never quotes fewer answers than the floor rule asks of the day", () => {
+		expect(
+			clearOf(frameFor({ held: MID.ok - 4, openingHeld: MID.ok - 4 })).explain
+		).toContain(`or ${FLOOR_CORRECT} of the ${SLICE_WINDOW} right`);
+	});
+
+	it("is not met on the line alone until two of the day are right (ADR-094)", () => {
+		const onTheLine = { held: MID.ok + 4, openingHeld: MID.ok + 4 };
+
+		expect(clearOf(frameFor(onTheLine)).met).toBe(false);
+		expect(
+			clearOf(frameFor({ ...onTheLine, correctThisGate: FLOOR_CORRECT - 1 }))
+				.met
+		).toBe(false);
+		expect(
+			clearOf(frameFor({ ...onTheLine, correctThisGate: FLOOR_CORRECT })).met
+		).toBe(true);
 	});
 
 	it("quotes the window's own price, not what is left of it part way through", () => {
-		const opening = clearOf(frameFor({ held: 34, openingHeld: 34 }));
-		const midway = clearOf(frameFor({ held: 38, openingHeld: 34 }));
+		const opening = clearOf(
+			frameFor({ held: MID.ok - 8, openingHeld: MID.ok - 8 })
+		);
+		const midway = clearOf(
+			frameFor({ held: MID.ok - 4, openingHeld: MID.ok - 8 })
+		);
 
 		expect(midway.explain).toBe(opening.explain);
 	});
@@ -172,7 +209,15 @@ describe("the one thing a gate requires", () => {
 	});
 
 	it("ticks off the same rounded rung the table cuts its ranges on", () => {
-		expect(clearOf(frameFor({ held: 42, openingHeld: 42 })).met).toBe(true);
+		expect(
+			clearOf(
+				frameFor({
+					held: MID.ok,
+					openingHeld: MID.ok,
+					correctThisGate: FLOOR_CORRECT,
+				})
+			).met
+		).toBe(true);
 	});
 
 	it("names what staying under the line shuts, and the summit's lack of one", () => {
@@ -218,7 +263,7 @@ describe("the band table", () => {
 	 * clearing bands quoted the same KB.
 	 */
 	it("never pays a thin clear what it pays a healthy one", () => {
-		const paid = bandOutcomesFor(frameFor({ coverageGainPercent: 12 }));
+		const paid = bandOutcomesFor(frameFor({ coverageGainPercent: 15 }));
 		const kbOf = (band: string) =>
 			Number(paid.find((row) => row.band === band)?.pays.match(/(\d+)/)?.[1]);
 
@@ -229,5 +274,37 @@ describe("the band table", () => {
 
 	it("ends the run under the floor rather than quoting it a figure", () => {
 		expect(bandOutcomesFor(frameFor()).at(-1)?.pays).toBe("the run ends");
+	});
+});
+
+describe("the prep table warns before the window, not after it", () => {
+	it("names the rollback while the build holds an escrowing config", () => {
+		const props = bandOutcomesPropsFor(frameFor({ escrows: true }), {
+			...MID,
+			held: 0,
+		});
+
+		expect(props.note).toContain(ESCROW_NOTE);
+	});
+
+	it("says nothing about transactions a build cannot open", () => {
+		const props = bandOutcomesPropsFor(frameFor(), { ...MID, held: 0 });
+
+		expect(props.note).toBe(BAND_OUTCOMES_NOTE);
+	});
+});
+
+describe("the DANGER row reads the catch standing behind it", () => {
+	const dangerRow = (frame: BandOutcomesFrame) =>
+		bandOutcomesFor(frame).find((row) => row.band === "danger");
+
+	it("says the run ends when nothing stands between it and the floor", () => {
+		expect(dangerRow(frameFor())?.pays).toBe("the run ends");
+	});
+
+	it("says the gate is caught and owes a peel while Try/Catch is held", () => {
+		expect(dangerRow(frameFor({ catchesFatal: true }))?.pays).toBe(
+			"caught · peel instead"
+		);
 	});
 });

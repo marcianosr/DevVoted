@@ -8,10 +8,13 @@ import {
 	estimatePayoutUnits,
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	FLOOR_CORRECT,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	floorAt,
-	healthyAt,
+	okAt,
 	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -168,13 +171,14 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("banks the won bet as coverage where the gate has room for it", () => {
-		// Banked on the healthy line so BOTH runs clear and the gap between them
-		// is the bet alone, and under the line's 25 slots so neither is clamped.
+		// Banked on the floor: a flawless window carries BOTH runs over the line,
+		// the gap between them is the bet alone, and the sum stays under the
+		// gate's 25 slots so neither is clamped.
 		const GATE = 4;
 		const bet = {
 			...answering(5),
 			gatesCleared: GATE,
-			bankedUnits: healthyAt(GATE) * scoringSlotsAt(GATE),
+			bankedUnits: floorAt(GATE) * scoringSlotsAt(GATE),
 		};
 		const withBet = answerGate(bet, SLICE_WINDOW);
 		const noBet = answerGate(
@@ -214,16 +218,19 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("lets a won bet lift a gate over its own line, which is what settling it inside the window is for", () => {
+		// Two right answers meet the floor rule on their own and land a unit
+		// under the OK line; only the won bet carries the gate over it.
 		const GATE = 4;
-		const onTheFloor: RunState = {
-			...answering(1),
+		const SHORT_OF_OK = 3;
+		const underTheLine: RunState = {
+			...answering(FLOOR_CORRECT),
 			gatesCleared: GATE,
-			bankedUnits: floorAt(GATE) * scoringSlotsAt(GATE),
+			bankedUnits: okAt(GATE) * scoringSlotsAt(GATE) - SHORT_OF_OK,
 		};
-		const withBet = answerGate(onTheFloor, 1);
+		const withBet = answerGate(underTheLine, FLOOR_CORRECT);
 		const withoutBet = answerGate(
-			{ ...onTheFloor, estimatedCorrect: undefined },
-			1
+			{ ...underTheLine, estimatedCorrect: undefined },
+			FLOOR_CORRECT
 		);
 
 		expect(withBet.status).toBe("rewarding");

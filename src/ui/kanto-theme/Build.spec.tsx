@@ -554,7 +554,7 @@ describe("the build under a weight ladder", () => {
 		{ name: "Deprecated", slots: 4, badges: [] },
 	] satisfies ConfigChipProps[];
 
-	const weight = { held: 8 };
+	const weight = { held: 8, perGateKb: 32 };
 
 	it("counts the build's weight against the space it rents", () => {
 		render(<Build configs={WEIGHED} weight={weight} />);
@@ -565,7 +565,7 @@ describe("the build under a weight ladder", () => {
 	});
 
 	it("names the overshoot when the build outweighs the space it holds", () => {
-		render(<Build configs={WEIGHED} weight={{ held: 4 }} />);
+		render(<Build configs={WEIGHED} weight={{ held: 4, perGateKb: 0 }} />);
 
 		expect(
 			screen.getByText("2 configs · 5 of 4 weight · over by 1")
@@ -657,7 +657,7 @@ describe("the build split across a screen's own columns", () => {
 		{ name: "Cache", slots: 1, badges: [] },
 	] satisfies ConfigChipProps[];
 
-	const weight = { held: 8 };
+	const weight = { held: 8, perGateKb: 32 };
 
 	it("counts the configs it is not drawing, the summary being the build's", () => {
 		render(<Build configs={WEIGHED} weight={weight} list={false} />);

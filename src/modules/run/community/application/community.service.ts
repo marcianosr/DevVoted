@@ -6,6 +6,8 @@ import {
 
 import type { CategoryCode } from "~/shared/lib/categories";
 
+import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+
 import {
 	type ClimbMarker,
 	trackPosition,
@@ -91,6 +93,8 @@ export type ClimbClimber = ClimbMarker & {
 	borderUrl?: string | null;
 	/** The viewer's own marker — drawn exactly once, however their run ended. */
 	you: boolean;
+	/** Absent only for a viewer whose run has ended: their build then sits on their fallen chip. */
+	build?: PublicBuild;
 };
 
 /**
@@ -104,6 +108,7 @@ export type ClimbFallen = ClimbMarker & {
 	displayName: string;
 	photoUrl?: string | null;
 	borderUrl?: string | null;
+	build: PublicBuild;
 };
 
 export type ClimbTodayView = {
@@ -332,6 +337,7 @@ const buildClimbToday = async ({
 			gate: row.gate,
 			pollsIntoGate: row.pollsIntoGate,
 			you: false,
+			build: row.build,
 		}));
 
 	// The viewer's marker comes from their own run, not the active-climber list:
@@ -344,6 +350,7 @@ const buildClimbToday = async ({
 		borderUrl: viewerRow?.borderUrl,
 		...viewerAt,
 		you: true,
+		...(viewerRow === undefined ? {} : { build: viewerRow.build }),
 	};
 
 	return {
@@ -356,6 +363,7 @@ const buildClimbToday = async ({
 			borderUrl: row.borderUrl,
 			gate: row.gate,
 			pollsIntoGate: row.pollsIntoGate,
+			build: row.build,
 		})),
 		bestPosition,
 	};

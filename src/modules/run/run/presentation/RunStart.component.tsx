@@ -63,8 +63,15 @@ export const RunStart = () => {
 
 	// Today's questions are answered inside the run — there is no standalone
 	// screen for them, so "Answer it" leads where playing them leads.
+	const startAndEnter = () =>
+		start.mutate(undefined, {
+			onSuccess: (result) => {
+				if (result.success) navigate({ to: resumeTarget(result.data) });
+			},
+		});
+
 	const answerToday = () => {
-		if (!view) return start.mutate();
+		if (!view) return startAndEnter();
 		navigate({ to: resumeTarget(view) });
 	};
 
@@ -72,7 +79,7 @@ export const RunStart = () => {
 		<TodayScreen
 			run={view ? runRowFor(view) : null}
 			polls={polls}
-			onStart={() => start.mutate()}
+			onStart={startAndEnter}
 			onResume={() => view && navigate({ to: resumeTarget(view) })}
 			dailyPoll={{
 				questions: SLICE_WINDOW,

@@ -227,7 +227,7 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 - [] Several configs broken:
-  - [] yarn.lock - nogt sure, but doesnt lock when installing
+  - [] `.lock` - nogt sure, but doesnt lock when installing
   - [] Prefetch - doesn't work
 - [] Linkify explanations
 - [] Poll difficulty? Possible with amount of answers it has?

@@ -15,7 +15,6 @@ import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	BASE_SLOTS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -161,6 +160,41 @@ describe("applyActionToRun", () => {
 		expect(mock.updateTables).not.toContain(runPollsTable);
 	});
 
+	it("persists what the settlement hands back, not the bare reducer output", async () => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+		const settle = vi.fn(
+			async (_tx: unknown, _before: RunState, after: RunState) => ({
+				...after,
+				log: [...after.log, "settled"],
+			})
+		);
+
+		const { state } = await applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action: { type: "answer", optionIds: [correctOptionId(1)] },
+			settle,
+		});
+
+		expect(settle).toHaveBeenCalledWith(
+			db,
+			expect.objectContaining({ storage: 100 }),
+			expect.objectContaining({ currentIndex: 1 })
+		);
+		expect(state.log).toContain("settled");
+		const persisted = mock.setCalls.find((call) => "engine_status" in call);
+		expect(persisted?.state).toMatchObject({
+			log: expect.arrayContaining(["settled"]),
+		});
+	});
+
 	it("persists the reducer output with denormalized columns", async () => {
 		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
 		mock.results.push(segmentRow());
@@ -188,7 +222,7 @@ describe("applyActionToRun", () => {
 		const summitReady = answeringState({
 			storage: 100,
 			coverage: 400,
-			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			build: { id: "build", configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
 			bankedUnits: SLICE_WINDOW * VICTORY_GATE,
 			window: {
@@ -236,7 +270,7 @@ describe("applyActionToRun", () => {
 	it("earns the swatch of a flawless window, written before the state row", async () => {
 		const closing = answeringState({
 			coverage: 10,
-			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			build: { id: "build", configs: [CONFIGS.js] },
 			window: {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
@@ -273,7 +307,7 @@ describe("applyActionToRun", () => {
 	it("earns no swatch for a clear that carried a miss (ADR-080)", async () => {
 		const closing = answeringState({
 			coverage: 10,
-			build: { id: "build", slots: BASE_SLOTS, configs: [CONFIGS.js] },
+			build: { id: "build", configs: [CONFIGS.js] },
 			window: {
 				correct: SLICE_WINDOW - 1,
 				answered: SLICE_WINDOW,
@@ -505,7 +539,6 @@ describe("applyActionToRun", () => {
 			storage: 100,
 			build: {
 				id: "build",
-				slots: BASE_SLOTS,
 				configs: [CONFIGS.telemetry, CONFIGS.js],
 			},
 		});

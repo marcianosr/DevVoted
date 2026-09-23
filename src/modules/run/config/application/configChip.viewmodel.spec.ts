@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { pollNoteFor } from "~/modules/run/config/application/configChip.viewmodel";
+import {
+	pollNoteFor,
+	registryUpgradesFor,
+	rollOddsLabel,
+} from "~/modules/run/config/application/configChip.viewmodel";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { SkipReason } from "~/modules/run/config/domain/effect.model";
 
 const skipped = (why: SkipReason) => pollNoteFor({ kind: "skipped", why });
@@ -99,5 +104,72 @@ describe("pollNoteFor — states with their own treatment", () => {
 
 	it("says nothing when the poll has no status for the config", () => {
 		expect(pollNoteFor(undefined)).toEqual({});
+	});
+});
+
+describe("rollOddsLabel", () => {
+	it("reads a share as one in so many rolls", () => {
+		expect(rollOddsLabel(1 / 2)).toBe("1 in 2 rolls");
+		expect(rollOddsLabel(1 / 8)).toBe("1 in 8 rolls");
+	});
+
+	it("calls a certainty every roll rather than one in one", () => {
+		expect(rollOddsLabel(1)).toBe("every roll");
+	});
+});
+
+describe("registryUpgradesFor (ADR-097)", () => {
+	const deal = { price: "32 KB", affordable: true };
+	const jump = registryUpgradesFor({ ...CONFIGS.js, level: 3 }, 1, deal);
+	const stateOf = (version: number) =>
+		jump.rungs.find((rung) => rung.version === version)?.state;
+
+	it("marks the held rung, skips the rungs the roll leapt, and offers the landed one", () => {
+		expect(jump.rungs.find((rung) => rung.held)?.version).toBe(1);
+		expect(stateOf(1)).toBe("owned");
+		expect(stateOf(2)).toBe("future");
+		expect(stateOf(3)).toBe("offered");
+		expect(stateOf(4)).toBe("future");
+	});
+
+	it("prices only the offered rung, at the registry price", () => {
+		expect(jump.rungs.map((rung) => rung.price)).toEqual([
+			undefined,
+			undefined,
+			"32 KB",
+			undefined,
+			undefined,
+		]);
+	});
+
+	it("totals no press ladder, since the registry sells one rung and nothing after", () => {
+		expect(jump.toMax).toBeUndefined();
+	});
+
+	it("disables the offer the balance cannot cover and nothing else", () => {
+		const broke = registryUpgradesFor({ ...CONFIGS.js, level: 3 }, 1, {
+			...deal,
+			affordable: false,
+		});
+
+		expect(broke.rungs.map((rung) => rung.disabled)).toEqual([
+			undefined,
+			undefined,
+			true,
+			undefined,
+			undefined,
+		]);
+	});
+
+	it("routes the buy press to the deal", () => {
+		const onBuy = vi.fn();
+		const offered = registryUpgradesFor({ ...CONFIGS.js, level: 2 }, 1, {
+			...deal,
+			onBuy,
+		});
+
+		offered.onBuy?.(2);
+
+		expect(onBuy).toHaveBeenCalledTimes(1);
 	});
 });

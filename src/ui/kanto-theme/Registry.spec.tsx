@@ -79,6 +79,20 @@ describe("Registry", () => {
 		expect(container.querySelector(".group-hover\\/press\\:inline")).toBeNull();
 	});
 
+	it("names a rolled upgrade's press by the version on offer and the registry price", () => {
+		render(<Registry {...props} />);
+
+		expect(
+			screen.getByRole("button", { name: "Upgrade .ts to v3 \u00b7 32 KB" })
+		).toBeInTheDocument();
+	});
+
+	it("states the odds the roll landed on beside the version, at rest", () => {
+		render(<Registry {...props} />);
+
+		expect(rowOf(".ts")).toHaveTextContent("1 in 4 rolls");
+	});
+
 	it("lists offers alone, the controls being the screen's to place", () => {
 		render(<Registry {...props} />);
 

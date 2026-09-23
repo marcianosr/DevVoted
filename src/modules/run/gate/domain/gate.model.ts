@@ -1,6 +1,7 @@
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import {
 	Build,
+	catcherFor,
 	isBare,
 	occupiedSlots,
 	type PerAnswerPreview,
@@ -124,6 +125,19 @@ export const peelConfigRangeFor = (
 export type GateClosing = "cleared" | "held" | "fatal";
 
 /**
+ * Why a held gate held. A bare build never clears; the floor is the day's own
+ * count of right answers; the band is the meter. The debrief needs the
+ * distinction because a floor hold can sit on a HEALTHY meter, and the bar
+ * must not be clamped down to make the two agree (ADR-094).
+ */
+export type GateHoldReason = "bare" | "floor" | "band" | "catch";
+
+export type GateRuling =
+	| { readonly closing: "cleared" }
+	| { readonly closing: "fatal" }
+	| { readonly closing: "held"; readonly heldBy: GateHoldReason };
+
+/**
  * Everything the close needs. `correctThisGate` is counted before multipliers
  * on purpose: a floor a x2 build clears with one right answer exempts exactly
  * the builds the floor exists to catch.
@@ -166,26 +180,38 @@ export const bandAtClose = (close: GateClose): CoverageBand => {
 	return bandOf("danger");
 };
 
-export const gateClosingFor = (close: GateClose): GateClosing => {
-	// A bare build never clears: a free redo would soft-lock the run forever.
-	if (isBare(close.build)) return "held";
-
-	// TODO(marciano): the floor rule goes here, and it has to sit above the band.
-	// A run that answered fewer than FLOOR_CORRECT of its five correctly holds
-	// the gate whatever its run score says. `clearsGateFloor(close)` is the
-	// check. Without it a capped x2 build coasts through four dead gates on a
-	// score its history earned, which is the one thing a sticky average cannot
-	// otherwise punish.
-
-	// A flawless gate may hold and owe a peel. It must never be fatal.
-	const band = isFlawlessGate(close)
+// A flawless gate may hold and owe a peel. It must never be fatal.
+const closingBandFor = (close: GateClose): CoverageBand =>
+	isFlawlessGate(close)
 		? atLeastBand(bandAtClose(close), "shaky")
 		: bandAtClose(close);
 
-	if (band.id === "danger") return "fatal";
-	if (band.id === "shaky") return "held";
-	return "cleared";
+/**
+ * The verdict, in order: a bare build never clears (a free redo would soft-lock
+ * the run forever); DANGER ends the run whatever the day counted, unless a catch
+ * is installed to take it; then the
+ * day's own five must carry FLOOR_CORRECT right answers, or the gate holds
+ * however good the run reads, because a cushion banked yesterday is the one
+ * thing a cumulative meter cannot otherwise make a player earn again.
+ */
+export const gateRulingFor = (close: GateClose): GateRuling => {
+	if (isBare(close.build)) return { closing: "held", heldBy: "bare" };
+
+	const band = closingBandFor(close);
+
+	// Try/Catch handles the fatal exception in flight: the gate still shuts and
+	// still owes its peel, it just stops being the end of the run (ADR-096).
+	if (band.id === "danger")
+		return catcherFor(close.build.configs) === undefined
+			? { closing: "fatal" }
+			: { closing: "held", heldBy: "catch" };
+	if (!clearsGateFloor(close)) return { closing: "held", heldBy: "floor" };
+	if (band.id === "shaky") return { closing: "held", heldBy: "band" };
+	return { closing: "cleared" };
 };
+
+export const gateClosingFor = (close: GateClose): GateClosing =>
+	gateRulingFor(close).closing;
 
 export const gatePassed = (close: GateClose): boolean =>
 	gateClosingFor(close) === "cleared";

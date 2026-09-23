@@ -225,3 +225,24 @@ export const AtAFixedWidth: Story = {
 		</Screen>
 	),
 };
+
+export const LinkedRows: Story = {
+	render: () => (
+		<Screen theme="lavender">
+			<Panel className="w-96">
+				<Panel.Header label="run history" />
+				<Panel.Rows>
+					<Panel.Row href="/runs/3" trailing={<Badge>56%</Badge>}>
+						11 Sep · Lavender held
+					</Panel.Row>
+					<Panel.Row href="/runs/2" trailing={<Badge>34%</Badge>}>
+						28 Aug · Thunder held
+					</Panel.Row>
+					<Panel.Row trailing={<Badge>—</Badge>}>
+						22 Jul · run in progress
+					</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		</Screen>
+	),
+};

@@ -5,6 +5,7 @@ import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -17,6 +18,8 @@ import {
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
 import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
 import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
+import * as recordQueries from "~/modules/run/run/infrastructure/categoryRecord.repository";
+import * as statsQueries from "~/modules/run/run/infrastructure/pollStats.repository";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
@@ -37,6 +40,30 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 vi.mock("~/modules/run/run/infrastructure/runPolls.repository", () => ({
 	fetchRunPollsForDate: vi.fn(),
 }));
+
+vi.mock("~/modules/run/run/infrastructure/pollStats.repository", () => ({
+	fetchPollStats: vi.fn().mockResolvedValue({
+		firstAttempts: 0,
+		firstAttemptsRight: 0,
+		attempts: 0,
+		misses: 0,
+	}),
+}));
+
+vi.mock("~/modules/run/run/infrastructure/categoryRecord.repository", () => ({
+	fetchCategoryRecord: vi
+		.fn()
+		.mockResolvedValue({ category: "js", yourBest: 0 }),
+}));
+
+vi.mock("~/modules/run/incident/infrastructure/incident.repository", () => ({
+	endIncidentsForRun: vi.fn(),
+}));
+
+vi.mock(
+	"~/modules/run/incident/application/incidentSettlement.service",
+	() => ({ settleIncidents: vi.fn(() => vi.fn()) })
+);
 
 vi.mock("~/modules/run/config/infrastructure/configUnlock.repository", () => ({
 	fetchUnlocksSince: vi.fn().mockResolvedValue([]),
@@ -74,6 +101,18 @@ const sessionRunRecord = (
 
 const configuringState = (): RunState =>
 	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint]);
+
+// `start` is refused on a bare build, so the hand has to be installed first.
+const answeringState = (): RunState => {
+	const configs = [CONFIGS.js, CONFIGS.eslint];
+	const installed = configs.reduce(
+		(state, config) =>
+			runReducer(state, { type: "install", configId: config.id }),
+		createRun(POLLS, configs)
+	);
+
+	return runReducer(installed, { type: "start" });
+};
 
 describe("getRunRecapService (DVTD-t3lt: the archive's one id-bearing URL)", () => {
 	beforeEach(() => {
@@ -357,6 +396,7 @@ describe("dispatchRunActionService", () => {
 			userId: USER,
 			today: DATE,
 			action: { type: "start" },
+			settle: expect.any(Function),
 		});
 	});
 
@@ -407,5 +447,72 @@ describe("dispatchRunActionService", () => {
 				{ configId: "telemetry", viaMetric: "community-peeks" },
 			]);
 		}
+	});
+});
+
+describe("the poll's own history on the view (ADR-093)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("reads the room's and the account's figures for the poll on screen", async () => {
+		vi.mocked(statsQueries.fetchPollStats).mockResolvedValue({
+			firstAttempts: 90,
+			firstAttemptsRight: 28,
+			attempts: 2,
+			misses: 2,
+			lastAnsweredAt: "2026-08-04T09:00:00.000Z",
+		});
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue(answeringState());
+
+		const result = await getTodaysRunService({ userId: USER, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data?.poll?.stats).toMatchObject({
+				firstAttempts: 90,
+				firstAttemptsRight: 28,
+				attempts: 2,
+				misses: 2,
+			});
+		}
+	});
+
+	it("reads the record for the poll's own category (ADR-100)", async () => {
+		vi.mocked(recordQueries.fetchCategoryRecord).mockResolvedValue({
+			category: "js",
+			holder: { handle: "@sabrina", streak: 17, you: false },
+			yourBest: 4,
+		});
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue(answeringState());
+
+		const result = await getTodaysRunService({ userId: USER, date: DATE });
+
+		expect(
+			vi.mocked(recordQueries.fetchCategoryRecord).mock.calls[0]?.[0]
+		).toBe("js");
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data?.poll?.record?.holder?.streak).toBe(17);
+			expect(result.data?.poll?.record?.yourBest).toBe(4);
+		}
+	});
+
+	it("asks for nothing while no poll is on screen", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue(configuringState());
+
+		await getTodaysRunService({ userId: USER, date: DATE });
+
+		expect(vi.mocked(statsQueries.fetchPollStats)).not.toHaveBeenCalled();
+		expect(vi.mocked(recordQueries.fetchCategoryRecord)).not.toHaveBeenCalled();
 	});
 });

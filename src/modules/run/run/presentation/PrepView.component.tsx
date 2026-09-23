@@ -1,10 +1,14 @@
 import { gateClearPayout } from "~/modules/run/build/domain/build.model";
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
 import { PEEL_KB_PER_SLOT } from "~/modules/run/gate/application/gateOutcome.viewmodel";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
+	PREP_COMMUNITY_LABEL,
+	PREP_INCIDENTS_LABEL,
 	type PrepWindow,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
+import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { PrepScreen } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
@@ -21,8 +25,14 @@ export type PrepViewProps = {
 	startRefusal?: string;
 	/** Planning Poker. Absent leaves the cards unpressable rather than hidden. */
 	onEstimate?: (count: number) => void;
+	onCommitBand?: (band: string) => void;
 	/** git rebase -i. Absent leaves the rows in place with no move presses. */
 	onRebase?: (from: number, to: number) => void;
+	/** The attack in hand and its rivals (ADR-099). Absent on a screen that has not dealt them. */
+	attack?: AttackPanelProps;
+	onFire?: (targetRunId: number, auditId: AuditId) => void;
+	/** The day's incident log, the footer's second aside. */
+	onIncidents?: () => void;
 };
 
 export const buildSpaceOf = (view: RunView): number => view.buildSpace.space;
@@ -40,32 +50,66 @@ const BACK_TO_SHOP = "Back to the shop";
  * still open, and on to the community board. The board's own label and icon come
  * from the screen's own footer, so only the handler is wired here.
  */
+const asideHandlerFor = (
+	{ onCommunity, onIncidents }: PrepViewProps,
+	label: string
+): (() => void) | undefined => {
+	if (label === PREP_COMMUNITY_LABEL) return onCommunity;
+	if (label === PREP_INCIDENTS_LABEL) return onIncidents;
+	return undefined;
+};
+
 const asidesFor = (
-	{ onBackToShop, onCommunity, backLabel = BACK_TO_SHOP }: PrepViewProps,
+	props: PrepViewProps,
 	offered: readonly FooterAction[]
 ): readonly FooterAction[] => [
-	...(onBackToShop === undefined
+	...(props.onBackToShop === undefined
 		? []
 		: [
 				{
-					label: backLabel,
+					label: props.backLabel ?? BACK_TO_SHOP,
 					icon: "back" as const,
 					iconAt: "lead" as const,
-					onPress: onBackToShop,
+					onPress: props.onBackToShop,
 				},
 			]),
-	...(onCommunity === undefined
-		? []
-		: offered.map((exit) => ({ ...exit, onPress: onCommunity }))),
+	...offered.flatMap((exit) => {
+		const onPress = asideHandlerFor(props, exit.label);
+		return onPress === undefined ? [] : [{ ...exit, onPress }];
+	}),
 ];
 
+/** Each press fires its own pair; the panel itself only knows labels. */
+const armedFor = ({
+	attack,
+	onFire,
+}: PrepViewProps): AttackPanelProps | undefined =>
+	attack === undefined
+		? undefined
+		: {
+				...attack,
+				rivals: attack.rivals.map((rival) => ({
+					...rival,
+					payloads: rival.payloads.map((payload) => ({
+						...payload,
+						onPress:
+							onFire === undefined
+								? undefined
+								: () => onFire(rival.targetRunId, payload.auditId),
+					})),
+				})),
+			};
+
 export const PrepView = (props: PrepViewProps) => {
-	const { view, onStart, startRefusal, onEstimate, onRebase } = props;
+	const { view, onStart, startRefusal, onEstimate, onCommitBand, onRebase } =
+		props;
 	const { gateStake } = view;
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
 		answeredPolls: view.allAnswered,
 		configs: view.configs,
+		audits: gateStake.audits,
+		attack: armedFor(props),
 		balanceKb: view.storage,
 		buildSpace: buildSpaceOf(view),
 		window: windowOf(view),
@@ -81,6 +125,8 @@ export const PrepView = (props: PrepViewProps) => {
 			gateClearPayout(view.configs, correct, gateStake.gateNumber),
 		estimate: view.estimate,
 		estimatedCorrect: view.estimatedCorrect,
+		sla: view.sla,
+		slaBand: view.slaBand,
 		rebaseSlots: view.rebaseSlots,
 		swatchGates: view.swatchGates,
 	});
@@ -88,6 +134,11 @@ export const PrepView = (props: PrepViewProps) => {
 	return (
 		<PrepScreen
 			{...screen}
+			sla={
+				screen.sla === undefined
+					? undefined
+					: { ...screen.sla, onPick: onCommitBand }
+			}
 			estimate={
 				screen.estimate === undefined
 					? undefined

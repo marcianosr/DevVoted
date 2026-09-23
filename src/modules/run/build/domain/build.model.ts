@@ -16,15 +16,18 @@ import {
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
 import {
-	BASE_STREAK_STEPS,
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
+	TOP_BUILD_SPACE_RUNG,
+	buildSpaceFor,
 	gateRewardMultiplier,
+	rungAfterFitting,
 	roundToTwoDecimals,
-	streakCapMultiplier,
+	spaceFitting,
 	streakMultiplier,
 	streakUnitBonus,
+	upkeepFitting,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	BASE_UNIT,
@@ -36,7 +39,6 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 export type Build = {
 	readonly id: string;
-	readonly slots: number;
 	readonly configs: readonly Config[];
 	readonly vendorLockedConfigId?: string;
 };
@@ -55,14 +57,37 @@ export const billableSlotsOf = (build: Build): number =>
 		build.configs.filter((config) => config.id !== build.vendorLockedConfigId)
 	);
 
+/**
+ * The space the build rents (ADR-098). Derived, never stored: the rung follows
+ * the build, so there is no held value that can drift from what is installed.
+ * Reading `billableSlotsOf` is what keeps vendor lock-in's exemption (ADR-087)
+ * working here for free.
+ */
+export const spaceForBuild = (build: Build): number =>
+	spaceFitting(billableSlotsOf(build));
+
+export const upkeepForBuild = (build: Build): number =>
+	upkeepFitting(billableSlotsOf(build));
+
+/** What crossing into the next rung would cost, or undefined at the top of the ladder. */
+export const rungAfterBuild = (build: Build) =>
+	rungAfterFitting(billableSlotsOf(build));
+
 export const freeSlots = (build: Build): number =>
-	Math.max(0, build.slots - billableSlotsOf(build));
+	Math.max(0, spaceForBuild(build) - billableSlotsOf(build));
+
+/**
+ * The top rung is the only hard cap left. Everything below it the build simply
+ * grows into and is billed for, so room can no longer refuse an offer that the
+ * balance could pay for.
+ */
+export const MAX_BUILD_WEIGHT = buildSpaceFor(TOP_BUILD_SPACE_RUNG);
 
 export const hasRoomFor = (build: Build, slots: number): boolean =>
-	billableSlotsOf(build) + slots <= build.slots;
+	billableSlotsOf(build) + slots <= MAX_BUILD_WEIGHT;
 
 export const overflowSlots = (build: Build): number =>
-	Math.max(0, billableSlotsOf(build) - build.slots);
+	Math.max(0, billableSlotsOf(build) - MAX_BUILD_WEIGHT);
 
 export const isOverCapacity = (build: Build): boolean =>
 	overflowSlots(build) > 0;
@@ -78,11 +103,17 @@ export const rewardMultiplierFor = (configs: readonly Config[]): number =>
 		1
 	);
 
-const storageOnClearFor = (configs: readonly Config[]): number =>
-	effects(configs).reduce(
-		(total, effect) => total + (effect.storageOnClear ?? 0),
-		0
-	);
+export type FlatClearPayout = { readonly config: Config; readonly kb: number };
+
+export const flatClearPayoutsOf = (
+	configs: readonly Config[]
+): readonly FlatClearPayout[] =>
+	configs
+		.map((config) => ({ config, kb: effectOf(config).storageOnClear ?? 0 }))
+		.filter((payout) => payout.kb > 0);
+
+export const storageOnClearFor = (configs: readonly Config[]): number =>
+	flatClearPayoutsOf(configs).reduce((total, payout) => total + payout.kb, 0);
 
 export const storageInterestFor = (
 	configs: readonly Config[],
@@ -149,15 +180,7 @@ export type PerAnswerPreview = {
 	readonly storageKbPerCorrect: number;
 	readonly matchingConfigMultiplier?: number;
 	readonly streakStepMultiplier: number;
-	readonly streakCapMultiplier: number;
 };
-
-export const streakCapStepsFor = (configs: readonly Config[]): number =>
-	BASE_STREAK_STEPS +
-	effects(configs).reduce(
-		(steps, effect) => steps + (effect.streakCapSteps ?? 0),
-		0
-	);
 
 const throttleFor = (configs: readonly Config[]): number =>
 	configs.reduce(
@@ -175,7 +198,7 @@ export const gateClearPayout = (
 		GATE_REWARD_KB *
 			Math.min(gateRewardMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
 			rewardMultiplierFor(configs) *
-			streakMultiplier(streak, streakCapStepsFor(configs)) *
+			streakMultiplier(streak) *
 			(correct / SLICE_WINDOW)
 	) + storageOnClearFor(configs);
 
@@ -204,7 +227,6 @@ export const perAnswerPreviewFor = (
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
 		streakStepMultiplier: streakMultiplier(1),
-		streakCapMultiplier: streakCapMultiplier(streakCapStepsFor(configs)),
 	};
 };
 
@@ -363,6 +385,9 @@ export const locksSurviving = (
 export const vendorLockerFor = (
 	configs: readonly Config[]
 ): Config | undefined => configs.find((config) => config.vendorLocks === true);
+
+export const catcherFor = (configs: readonly Config[]): Config | undefined =>
+	configs.find((config) => config.catchesFatal === true);
 
 /**
  * The lock dies with the config it names or with the one that granted it, so

@@ -13,20 +13,21 @@ export type Config = {
 	readonly description: string;
 	readonly gives?: string;
 	readonly costs?: string;
-	readonly rewardMultiplier: number;
+	readonly rewardMultiplier?: number;
 	readonly focusCategory?: CategoryCode;
 	readonly eliminatesWrongOptionsFor?: readonly CategoryCode[];
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
 	readonly roundsPartialUnitsUp?: boolean;
-	readonly streakCapSteps?: number;
 	readonly streakStepGrowth?: number;
 	readonly level?: number;
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
+	readonly escrowPerCorrect?: number;
 	readonly storageOnClear?: number;
 	readonly storageInterestPct?: number;
 	readonly openerCoverageMultiplier?: number;
+	readonly missedPollMultiplier?: number;
 	readonly throttleCoverageMultiplier?: number;
 	readonly cacheHitStep?: number;
 	readonly abArm?: AbArm;
@@ -50,6 +51,8 @@ export type Config = {
 	readonly draftCost?: number;
 	readonly minified?: boolean;
 	readonly vendorLocks?: boolean;
+	readonly catchesFatal?: boolean;
+	readonly commitsBand?: boolean;
 };
 
 export const minifiedMultiplier = (
@@ -392,5 +395,11 @@ export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
 	configs.reduce(
 		(sum, config) =>
 			sum + minifiedAmount(config, config.storagePerCorrect ?? 0),
+		0
+	);
+
+export const escrowKbPerCorrect = (configs: readonly Config[]): number =>
+	configs.reduce(
+		(sum, config) => sum + minifiedAmount(config, config.escrowPerCorrect ?? 0),
 		0
 	);

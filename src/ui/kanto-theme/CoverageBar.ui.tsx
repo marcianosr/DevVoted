@@ -1,5 +1,7 @@
 import { type CSSProperties, useEffect, useState } from "react";
 
+import { clsx } from "clsx";
+
 import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
@@ -11,8 +13,7 @@ const FILL =
 	"coverage-bar-fill absolute inset-y-0 left-0 min-w-0.5 bg-white/10";
 const EDGE = "absolute inset-y-0 right-0 w-0.5 bg-theme";
 const MARKS = "relative h-3 w-full";
-const MARK =
-	"absolute -translate-x-1/2 text-xxs whitespace-nowrap text-theme-muted";
+const MARK = "absolute text-xxs whitespace-nowrap text-theme-muted";
 const PINS = "relative h-5 w-full";
 const PIN =
 	"coverage-bar-pin absolute bottom-0 flex -translate-x-1/2 flex-col items-center gap-0.5";
@@ -26,6 +27,16 @@ const FULL = 100;
 const TENTHS = 10;
 
 export const COVERAGE_PIN_HOLD_MS = 1800;
+
+type MarkAnchor = "start" | "center" | "end";
+
+const ANCHOR_CLASS = {
+	start: "",
+	center: "-translate-x-1/2",
+	end: "-translate-x-full",
+} satisfies Record<MarkAnchor, string>;
+
+type Mark = { at: number; label: string; anchor?: MarkAnchor };
 
 const SURVIVE = "survive";
 const OK_WORD = "OK";
@@ -112,14 +123,32 @@ const zonesOf = ({ floor, ok, healthy }: CoverageLadder) =>
 		{ band: "healthy", width: FULL - healthy },
 	] satisfies readonly { band: CoverageBandId; width: number }[];
 
-const boundaryMarksOf = ({ floor, ok, healthy }: CoverageLadder) =>
-	[
-		{ at: floor, label: SURVIVE },
-		{ at: ok, label: OK_WORD },
-		{ at: healthy, label: `${HEALTHY_WORD} ${toTenth(healthy)}${PERCENT}` },
-	].filter((mark) => mark.at > 0);
+/**
+ * Each boundary label grows away from its neighbours: "survive" ends on its
+ * line, OK sits on its own, the gate's line starts on its line. A band with no
+ * room has no edge to name, so its label goes with it.
+ */
+const boundaryMarksOf = ({
+	floor,
+	ok,
+	healthy,
+}: CoverageLadder): readonly Mark[] =>
+	(
+		[
+			{ at: floor, label: SURVIVE, anchor: "end", room: ok - floor },
+			{ at: ok, label: OK_WORD, anchor: "center", room: healthy - ok },
+			{
+				at: healthy,
+				label: `${HEALTHY_WORD} ${toTenth(healthy)}${PERCENT}`,
+				anchor: "start",
+				room: FULL - healthy,
+			},
+		] satisfies readonly (Mark & { room: number })[]
+	)
+		.filter((mark) => mark.at > 0 && mark.room > 0)
+		.map(({ room: _room, ...mark }) => mark);
 
-const bandMarksOf = (ladder: CoverageLadder) => {
+const bandMarksOf = (ladder: CoverageLadder): readonly Mark[] => {
 	let start = 0;
 
 	return zonesOf(ladder)
@@ -134,7 +163,7 @@ const bandMarksOf = (ladder: CoverageLadder) => {
 		.filter((mark) => mark.width > 0);
 };
 
-const rungMarksOf = ({ floor, ok, healthy }: CoverageLadder) =>
+const rungMarksOf = ({ floor, ok, healthy }: CoverageLadder): readonly Mark[] =>
 	[...new Set([0, floor, ok, healthy, FULL])]
 		.sort((one, other) => one - other)
 		.map((at) => ({ at, label: `${toTenth(at)}` }));
@@ -143,7 +172,7 @@ const MARKS_OF = {
 	bands: bandMarksOf,
 	boundaries: boundaryMarksOf,
 	rungs: rungMarksOf,
-} satisfies Record<CoverageMarks, (ladder: CoverageLadder) => unknown>;
+} satisfies Record<CoverageMarks, (ladder: CoverageLadder) => readonly Mark[]>;
 
 const marksOf = (ladder: CoverageLadder, marks: CoverageMarks) =>
 	MARKS_OF[marks](ladder);
@@ -247,7 +276,7 @@ export const CoverageBar = ({
 					<span
 						key={mark.label}
 						style={{ left: `${mark.at}${PERCENT}` }}
-						className={MARK}
+						className={clsx(MARK, ANCHOR_CLASS[mark.anchor ?? "center"])}
 					>
 						{mark.label}
 					</span>

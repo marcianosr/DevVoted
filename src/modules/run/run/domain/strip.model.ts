@@ -123,6 +123,7 @@ export const refuseGate = (state: RunState): RunState => ({
 
 export const resumeClimb = (state: RunState): RunState => {
 	if (state.peelSlotsRemaining > 0) return state;
+
 	if (isBare(state.build))
 		return {
 			...state,
@@ -143,7 +144,10 @@ export const resumeClimb = (state: RunState): RunState => {
 		interestThisGateKb: 0,
 		extraPickThisGateKb: 0,
 		estimateThisGateUnits: undefined,
+		caughtFatalBy: undefined,
+		slaUpliftKb: undefined,
 		peelRefundKb: 0,
+		heldBy: undefined,
 		draftOptions: shopDraft(
 			state,
 			draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)

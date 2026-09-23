@@ -160,6 +160,25 @@ describe("dexConfigsFor", () => {
 		expect(js?.state === "granted" && js.versions?.[1].price).toBe("64 KB");
 	});
 
+	it("states each rung's odds of being rolled from a fresh install, none for v1 (ADR-097)", () => {
+		const js = props.rows.find(
+			(row) => row.state === "granted" && row.name === ".js"
+		);
+		const versions = js?.state === "granted" ? js.versions : undefined;
+
+		expect(versions?.map((rung) => rung.odds)).toEqual([
+			null,
+			"1 in 2 rolls",
+			"1 in 4 rolls",
+			"1 in 8 rolls",
+			"1 in 8 rolls",
+		]);
+	});
+
+	it("tells the reader how the registry rolls a version", () => {
+		expect(props.note).toContain("coin flip");
+	});
+
 	it("leaves a config with no ladder unmarked rather than giving it one rung", () => {
 		const flat = props.rows.find(
 			(row) => row.state === "granted" && row.name === "Code Coverage"
@@ -203,8 +222,8 @@ describe("dexConfigsFor", () => {
 });
 
 describe("dexAuditsFor", () => {
-	// Gate 3 carries the one certain intro audit, so clearing through it is the
-	// smallest roster that has both a met audit and unmet ones.
+	// Clearing through gate 3 opens pool A and nothing deeper, so it is the
+	// smallest roster that has both met audits and unmet ones.
 	const CLIMBED = [
 		"swatch-pallet",
 		"swatch-boulder",
@@ -216,7 +235,7 @@ describe("dexAuditsFor", () => {
 	it("splits the code off the label so a row can seat it apart", () => {
 		const met = props.rows.find((row) => !row.locked);
 
-		expect(met?.code).toBeGreaterThanOrEqual(300);
+		expect(met?.code).toBeGreaterThanOrEqual(200);
 		expect(met?.name).not.toMatch(/^\d/);
 	});
 
@@ -256,6 +275,12 @@ describe("dexRunsFor", () => {
 		const [row] = dexRunsFor(runHistory([climb()])).rows;
 
 		expect(row.coverage).toBe("56%");
+	});
+
+	it("points each row at that run's own permalink in the archive", () => {
+		const [row] = dexRunsFor(runHistory([climb({ runId: 42 })])).rows;
+
+		expect(row.href).toBe("/runs/42");
 	});
 
 	it("names the gate that held the run", () => {

@@ -1,7 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { BASE_SLOTS, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	createRun,
@@ -92,12 +91,11 @@ export const atGateWithBuild = (
 			...base,
 			build: {
 				...base.build,
-				slots: occupiedSlots(roster),
 				configs: roster,
 			},
 		},
 		gate,
-		...(ids.length > 0 ? ids : (scheduleOf(base)[gate] ?? []))
+		...ids
 	);
 };
 

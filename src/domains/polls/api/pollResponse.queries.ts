@@ -23,7 +23,20 @@ type CreatePollResponse = {
 	selectedOptionIds: number[];
 	coverageDelta: number;
 	scoreBreakdown: ScoreCalculation;
+	outcome: PollAnswerOutcome;
 };
+
+/**
+ * The stored column speaks the engine's vocabulary (ADR-005's run loop), which
+ * calls a whole-key answer `correct` where this loop calls it `full`. Both
+ * loops write the same column so the room's difficulty reading counts every
+ * answer a poll has ever had, not just the session ones.
+ */
+const STORED_OUTCOME = {
+	full: "correct",
+	partial: "partial",
+	wrong: "wrong",
+} as const satisfies Record<PollAnswerOutcome, string>;
 
 export const createPollResponse = async ({
 	pollId,
@@ -33,6 +46,7 @@ export const createPollResponse = async ({
 	selectedOptionIds,
 	coverageDelta,
 	scoreBreakdown,
+	outcome,
 }: CreatePollResponse) => {
 	await db.transaction(async (tx) => {
 		const [pollResponseRecord] = await tx
@@ -44,6 +58,7 @@ export const createPollResponse = async ({
 				answer_date: answerDate,
 				coverage_delta: coverageDelta,
 				score_breakdown: scoreBreakdown,
+				outcome: STORED_OUTCOME[outcome],
 			})
 			.returning();
 

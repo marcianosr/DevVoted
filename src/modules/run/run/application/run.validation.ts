@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import {
-	SLICE_WINDOW,
-	BUILD_SPACE_RUNGS,
-} from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
 const configActionSchema = <T extends string>(type: T) =>
@@ -19,18 +16,6 @@ const bareActionSchema = <T extends string>(type: T) =>
 
 const optionActionSchema = <T extends string>(type: T) =>
 	z.object({ type: z.literal(type), optionId: z.string().min(1) }).strict();
-
-const buildSpaceActionSchema = <T extends string>(type: T) =>
-	z
-		.object({
-			type: z.literal(type),
-			rung: z
-				.number()
-				.int()
-				.min(0)
-				.max(BUILD_SPACE_RUNGS.length - 1),
-		})
-		.strict();
 
 const gateSlotSchema = z
 	.number()
@@ -57,11 +42,18 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 	z
 		.object({
+			type: z.literal("commit-band"),
+			band: z.string(),
+		})
+		.strict(),
+	z
+		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1).readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
+	bareActionSchema("fire-audit"),
 	bareActionSchema("close-gate"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
@@ -88,7 +80,6 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("minify"),
 	configActionSchema("switch-arm"),
 	configActionSchema("vendor-lock"),
-	buildSpaceActionSchema("set-build-space"),
 ]);
 
 type SchemaAction = z.infer<typeof runActionSchema>;

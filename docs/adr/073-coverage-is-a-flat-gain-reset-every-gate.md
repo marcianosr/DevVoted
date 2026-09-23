@@ -4,7 +4,8 @@
 
 Accepted 2026-09-12 (Marciano, DVTD-nd6r). Supersedes
 [ADR-013](013-gate-scaled-coverage.md) Decision 1, the gate-scaled reward base.
-ADR-013 Decisions 2 and 3 stand.
+ADR-013 Decisions 2 and 3 stand. Decision 2 amended by
+[ADR-094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md).
 
 Built 2026-09-13 (DVTD-1zzz). `coverageRatio.model.ts` owns the numbers and the
 run loop reads them. `COVERAGE_DEMANDS`, `gateBaseMultiplier`,
@@ -46,9 +47,11 @@ climb lives. It is the one number to tune when a gate should be harder.
 
 The ladder was rebased the same day so that its slope arrives late rather than
 early (flat steps to gate 5, then a steeper climb to the Champion). The band
-drops are stated in units (`OK_DROP_UNITS`, `SHAKY_DROP_UNITS`), so every rung
-is the same ruler, two answers and four answers, whatever percentage that works
-out to at the gate. Values in `coverageRatio.model.ts`.
+drops are stated in units, so a rung is always a count of answers whatever
+percentage that works out to at the gate. *Amended by
+[ADR-094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md): the
+drops are per gate and widen with the climb, and the floor is the previous
+gate's HEALTHY line.* Values in `coverageRatio.model.ts` (`GATE_RUNGS`).
 
 ### 3. Configs are the only thing that beats the rising line
 

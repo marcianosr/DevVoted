@@ -1,11 +1,11 @@
 ---
 # DVTD-6vw2
 title: Game over should leave the player in the flow
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-08-24T12:48:34Z
-updated_at: 2026-09-16T18:58:03Z
+updated_at: 2026-09-22T18:50:32Z
 parent: DVTD-kulw
 ---
 
@@ -136,16 +136,36 @@ A dedicated kanto run-over screen reporting the whole climb, not the last gate.
 This section used to repeat the `## Todo` list verbatim, which made the bean read
 3/12 when it was 3 of 8. Two items are genuinely open:
 
-- [ ] **The exhausted-window variant on `/run/over`.** The raw error string is
+- [x] **The exhausted-window variant on `/run/over`.** Split out as **DVTD-3q07**. The raw error string is
       gone, but nothing replaced it: `pollsExhausted` is modelled in
       `runView.viewmodel.ts` and the prep/start components and appears nowhere in
       `RunOver.component.tsx`. A player with no polls left presses **Start new
       run** and the mutation fails silently. The failure moved from ugly to
       invisible.
-- [ ] **Amend ADR-026 Decision 3, or write the sibling ADR.** Its only amendment
+- [x] **Amend ADR-026 Decision 3, or write the sibling ADR.** Split out as **DVTD-dl2n**. Its only amendment
       (`:69`) covers the gate-clear ledger; Decision 3 never mentions run end.
       Fold in the one-sentence `routesForStatus` note while writing it.
 
 The other three are resolved above: the screen is adopted on `/run/over`, the
 repeat outcome moved to the gate screen under ADR-076, and `routesForStatus`
 needs no second route.
+
+## Closed 2026-09-22
+
+The feature this bean names shipped: a dedicated kanto run-over screen, adopted on the
+real `/run/over` route. Verified present today — `RunOverScreen.ui.tsx` (+ story, spec),
+`runOverScreen.viewmodel.ts` (405 lines, + spec), `RunOverView.component.tsx` (+ spec),
+`kantoRunOver.factory.ts`, and the route `src/routes/_authed/run/over.tsx`.
+
+Both remaining items were re-verified as genuinely open, and both were split out rather
+than carried here — neither is about the screen this bean asked for:
+
+- **DVTD-3q07** — Start new run fails silently when the day is spent. `pollsExhausted`
+  appears in 7 places, none on the RunOver path. Filed as a bug under DVTD-0x5c and
+  marked as blocking DVTD-ecjo, which is the same gap at the other entry point.
+- **DVTD-dl2n** — ADR-026 Decision 3 never mentions run end. Confirmed by grep: zero
+  matches for `run end|run over|end the run|game over|final|last poll|exhaust` across the
+  whole 115-line file.
+
+The bean's actual goal — "do not dead-end" — is met: **Start new run** is the primary
+action with **Community** as an ambient aside, per the 2026-09-15 reversal.

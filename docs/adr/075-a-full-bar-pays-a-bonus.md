@@ -20,9 +20,10 @@ calls it "the existing PERFECT band at 100%" and paints the bar blue there, and
 and nothing paid for it.
 
 Nothing paid for it because `payoutRatioFor` caps the overshoot. At gate 0 the
-healthy line is 5%, so the cap binds at 7.5% coverage: filling the bar to 100%
-pays exactly what 7.5% pays. At gate 12 the line is 95%, so the ratio only ever
-reaches 1.05 and perfect is worth a rounding error over merely healthy. At both
+healthy line was 5% when this was written (60% since ADR-094), so the cap bound
+at 7.5% coverage: filling the bar to 100% paid exactly what 7.5% paid. At gate
+12 the line was 95% (90% now), so the ratio only ever reached 1.05 and perfect
+was worth a rounding error over merely healthy. At both
 ends of the run the top of the scale is invisible, which is the same mistake
 ADR-076 names: a rung the player can see but cannot feel teaches them to ignore
 it.

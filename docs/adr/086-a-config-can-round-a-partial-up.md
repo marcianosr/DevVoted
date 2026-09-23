@@ -119,3 +119,15 @@ A second config wanting to round would collide, since two `roundsPartialUnitsUp`
 configs would each compute the same top-up and `flatUnitsOf` would sum both.
 Nothing on the roster does, and the field is a boolean rather than a number
 precisely so the answer is "there is one formatter".
+
+## Amendment — 2026-09-19: the config is renamed `Math.ceil()`
+
+The mechanic is unchanged; only the label moves. `.prettierrc` was chosen here
+as an analogy — ragged input, clean output — and the analogy is good, but
+`topUpUnitsFor` is literally `Math.ceil(credited) - credited`, and ADR-042
+pillar 4 asks for the real dev term over the apt one. The roster already runs a
+method family (`.reduce()`, `.length`) that this joins.
+
+The paragraph above still reads correctly if "formatter" is read as "the one
+config that rounds": the field stays a boolean, and there is still exactly one.
+`.prettierrc` is now free for a config that actually formats something.

@@ -4,21 +4,21 @@
 
 Accepted — 2026-09-04 (Marciano, DVTD-qfi1). Supersedes [ADR-038](038-the-audit-roster.md) Decision 2's schedule table and narrows [ADR-035](035-gates-are-auditors.md) Decision 4's "fixed thematic rule a gate carries". ADR-038's count curve, its Decision 3 mechanics and its derived-never-stored principle for offline picks all survive unchanged.
 
+**Amended by [ADR-099](099-audits-are-fired-by-rivals.md)** (2026-09-22): Decisions 1, 2 and 4 are superseded — nothing is drawn any more, the count is a capacity and every audit is one a rival fired. What is live here is Decision 3 (the family rule and deny pair), Decision 5 (rank order) and Decision 6 (canonical ids), which now govern what a rival's audit may lock beside.
+
+**Pool membership has moved on.** Decision 4's table below is the membership as drawn in September 2026 and is kept as the record of this decision, not as the live roster. [ADR-058](058-451-redacts-the-answers-and-sells-them-back.md) added 451 to pools A and C, and [ADR-092](092-207-multi-status-hides-the-answer-type.md) added 207 to the same two. `auditSchedule.model.ts` is the source of truth; `docs/wiki.md` §2.8 tracks it.
+
 ## Context
 
 `GATE_AUDITS` was an object literal, so gate 7 was always the mirror and gate 9 always the leak. Once a player had seen gate 9 they had seen every gate 9 there would ever be, and the roster's fifteen rules were spent on a seventeen-slot schedule that repeated three of them rather than on combinations.
 
 ## Decision 1: the count stays, the identity is drawn
 
-Gates 0 to 2 stay clean, one audit runs from gate 3, two from gate 8, three from gate 11. That curve is ADR-038's and it does not move; only *which* audits fill the slots at gates 4 to 11 becomes a seeded draw. Gate 3 keeps one fixed introduction (402 Payment Required) and gate 12 keeps its handcrafted Champion combination, so a climb still opens and closes on authored content.
+Superseded by [ADR-099](099-audits-are-fired-by-rivals.md) Decisions 1 and 2: nothing is dealt, the curve is the gate's capacity for rivals' incidents.
 
 ## Decision 2: the seed is the date
 
-Everyone climbing on a given day faces the same gauntlet, which is the same choice ADR-009 made for the poll sequence. A posted result is comparable because the rules were the same for everyone who played that day, and "today was brutal" becomes a shared fact rather than a private one. A same-day restart repeats the audits, exactly as it repeats the polls.
-
-The drawn ids are stored on `RunState.auditSchedule`, not re-derived per read. `RunSnapshot` is `Omit<RunState, "polls">` serialized whole, so this needs no migration, and a stored schedule cannot be rewritten under a player mid-climb while the pools are still being tuned. `scheduleOf` is the one place that falls back to a default, and `auditsOf` is the one funnel every engine read passes through.
-
-A missed gate keeps its audits on the retry for free: `gatesCleared` does not advance on a miss, and the schedule is keyed by gate. What still re-rolls is the *victim* inside an audit, because those picks are seeded on the window's start index (ADR-038 Decision 3), which has moved on.
+Superseded by [ADR-099](099-audits-are-fired-by-rivals.md): the gauntlet is personal, filled by what rivals fired. `RunState.auditSchedule` is still the one funnel; it starts empty and locks gate by gate.
 
 ## Decision 3: compatibility is a family rule, not a case list
 
@@ -42,19 +42,7 @@ One pair is denied on top of families: **300 Multiple Choices never draws with 4
 
 ## Decision 4: three pools, staged by what a rule can honestly mean
 
-| Gate(s) | Draw | Pool |
-| --- | --- | --- |
-| 3 | fixed | 402 |
-| 4 to 7 | 1 each, distinct in band | **A (6)**: 404, 405, 424, 429, 502, 507 |
-| 8 to 10 | 2 each, distinct in band | **B (13)**: pool A + 402, 409, 426, 503, 300, 408, 413 |
-| 11 | 410 pinned + 2 drawn | **C (9)**: 403, 300, 408, 409, 426, 503, 507, 413, 502 |
-| 12 | fixed, handcrafted | 408, 410, 413 |
-
-409 Conflict and 426 Upgrade Required are pool B and later because both pick by config level, and at gate 4 nothing is upgraded: they would roll among ties while their copy claims to punish having a favourite. 413 Payload Too Large is inert below twelve slots, so it starts where builds get that wide. 403 Forbidden is pool C only, being the Elite-tier version of 402 and 429. 402 itself is absent from pool A so the first five audited gates always teach five distinct rules.
-
-410 Gone stays pinned to gate 11 so Elite's peel share remains a number the wiki can state rather than a per-run variable.
-
-Uniqueness is **band-local**, and that is a roster limit rather than a preference. A run draws twelve times; the roster holds fifteen, of which 410 is pinned and 402 is the introduction, leaving thirteen candidates. Run-wide uniqueness would put twelve of thirteen audits into every climb, which is the same cast daily in different seating, and it would strand gate 11, whose pool has a single exclusive member. `UNIQUE_WITHIN` names the scope in one place: authoring roughly six more audits and flipping it to `"run"` is the second step.
+Superseded by [ADR-099](099-audits-are-fired-by-rivals.md) Decision 2: the pools survive as `AUDIT_TIERS`, the payload a rival's shot is drawn from (A at gates 3–7, B at 8–10, C at 11–12, with 410 unpinned and in pool C). Nothing is drawn per gate any more, so band-local uniqueness and `UNIQUE_WITHIN` are gone.
 
 ## Decision 5: a drawn gate is ordered by roster rank
 

@@ -183,7 +183,6 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 					...base,
 					status: "rewarding",
 					storage: 1000,
-					build: { ...base.build, slots: 4 },
 					draftOptions: [CONFIGS.indexedDb],
 				},
 				gatesCleared,
@@ -194,16 +193,13 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		expect(
 			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
 		).toBe(readOnly);
-		expect(runReducer(readOnly, { type: "set-build-space", rung: 1 })).toBe(
-			readOnly
-		);
 		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
 
 		const open = shopping(4);
 		expect(isShopLocked(open)).toBe(false);
 		expect(
 			runReducer(open, { type: "draft", configId: "indexed-db" }).build.configs
-		).toHaveLength(4);
+		).toHaveLength(base.build.configs.length + 1);
 	});
 
 	it("lets a Read-only run start its gate and drop a config", () => {
@@ -265,7 +261,6 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 				...base,
 				build: {
 					...base.build,
-					slots: 5,
 					configs: [
 						...base.build.configs,
 						CONFIGS.agentsMd,
@@ -500,5 +495,21 @@ describe("the storage high-water mark", () => {
 
 		expect(spent.storage).toBeLessThan(400);
 		expect(spent.peakStorageKb).toBe(400);
+	});
+});
+
+describe("fire-audit (ADR-099)", () => {
+	it("spends the armed attack from the debrief", () => {
+		const armed = clearGate(started(["js"]));
+		expect(armed.attack).toBeDefined();
+		expect(runReducer(armed, { type: "fire-audit" }).attack).toBeUndefined();
+	});
+
+	it("is refused mid-window, where no picker is offered", () => {
+		const answering = {
+			...started(["js"]),
+			attack: { band: "healthy" as const },
+		};
+		expect(runReducer(answering, { type: "fire-audit" })).toBe(answering);
 	});
 });

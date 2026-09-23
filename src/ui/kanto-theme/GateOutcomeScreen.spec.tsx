@@ -21,6 +21,7 @@ import {
 	kantoGateShakyPicking,
 	kantoGateZero,
 	kantoGateHealthyLine,
+	kantoGateHeldByFloor,
 } from "~/test/kantoGate.factory";
 
 import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
@@ -269,6 +270,17 @@ describe("GateOutcomeScreen", () => {
 	});
 
 	describe("a shaky close", () => {
+		it("holds on the day's own count while the bar still reads HEALTHY (ADR-094)", () => {
+			render(<GateOutcomeScreen {...kantoGateHeldByFloor()} />);
+
+			expect(headingOf("Lavender holds")).toBeInTheDocument();
+			expect(
+				screen.getByLabelText("70% of 62% needed \u00b7 HEALTHY")
+			).toBeInTheDocument();
+			expect(screen.getByText(/1 of 5 right, 2 needed/)).toBeInTheDocument();
+			expect(headingOf("Retry gate 4")).toBeInTheDocument();
+		});
+
 		it("holds the gate rather than earning it", () => {
 			const { container } = render(<GateOutcomeScreen {...kantoGateShaky()} />);
 

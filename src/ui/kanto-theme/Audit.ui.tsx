@@ -12,6 +12,9 @@ const CODE =
 const BODY = "flex min-w-0 flex-col gap-0.5 px-3 py-2";
 const NAME = "text-sm font-bold text-theme-soft";
 const CUE = "text-xs text-theme-faint opacity-60";
+const SENDER = "text-xs text-theme-muted";
+
+const FROM_WORD = "from";
 
 const ROW = "flex w-full flex-wrap items-baseline gap-3";
 const ROW_CODE =
@@ -32,12 +35,22 @@ export type AuditProps = Redactable<{
 	code: number;
 	name: string;
 	cue: string;
-}> & { layout?: AuditLayout };
+}> & {
+	layout?: AuditLayout;
+	/** The rival who fired it, where the audit is one a rival locked in (ADR-099). */
+	sender?: string;
+};
 
-export const Audit = ({ layout = "fit", ...props }: AuditProps) => {
+export const Audit = ({ layout = "fit", sender, ...props }: AuditProps) => {
 	const code = props.locked ? <Redaction label={LOCKED_LABEL} /> : props.code;
 	const name = props.locked ? <Redaction /> : props.name;
 	const cue = props.locked ? <Redaction /> : props.cue;
+	const from =
+		sender === undefined || props.locked ? null : (
+			<span className={SENDER}>
+				{FROM_WORD} {sender}
+			</span>
+		);
 
 	if (layout === "row") {
 		return (
@@ -45,6 +58,7 @@ export const Audit = ({ layout = "fit", ...props }: AuditProps) => {
 				<span className={ROW_CODE}>{code}</span>
 				<span className={NAME}>{name}</span>
 				<span className={CUE}>{cue}</span>
+				{from}
 			</div>
 		);
 	}
@@ -58,6 +72,7 @@ export const Audit = ({ layout = "fit", ...props }: AuditProps) => {
 			<span className={BODY}>
 				<span className={NAME}>{name}</span>
 				<span className={CUE}>{cue}</span>
+				{from}
 			</span>
 		</div>
 	);

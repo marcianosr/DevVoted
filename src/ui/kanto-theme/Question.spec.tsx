@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import type { ChoiceVerdict } from "./Choice.ui";
 import { Question, type QuestionOption } from "./Question.ui";
 
 const OPTIONS = [
@@ -129,5 +130,43 @@ describe("Question's crossed-out options", () => {
 
 		expect(screen.getByRole("button", { name: /pop\(\)/ })).toBeDisabled();
 		expect(screen.getByRole("button", { name: /at\(-1\)/ })).toBeEnabled();
+	});
+});
+
+const VERDICT_BY_ID: Record<string, ChoiceVerdict> = {
+	"option-1": "wrong",
+	"option-2": "missed",
+};
+
+describe("Question after the reveal", () => {
+	it("hands each option's verdict to its choice", () => {
+		render(
+			<Question
+				{...props}
+				pickedIds={["option-1"]}
+				options={OPTIONS.map((option) => ({
+					...option,
+					verdict: VERDICT_BY_ID[option.id],
+				}))}
+			/>
+		);
+
+		expect(screen.getByText("wrong")).toBeInTheDocument();
+		expect(screen.getByText("the answer")).toBeInTheDocument();
+		expect(
+			screen.getByText("Maybe<T>").closest("[data-screen-theme]")
+		).toBeNull();
+	});
+});
+
+describe("the answer list's frame", () => {
+	it("gathers the rows into one bordered box rather than gapping them", () => {
+		render(<Question {...props} />);
+
+		const row = screen.getByText(OPTIONS[0].label).closest("div,button");
+		const list = row?.parentElement;
+
+		expect(list).toHaveClass("rounded-lg", "border", "border-theme-faint");
+		expect(list?.className).not.toMatch(/\bgap-/);
 	});
 });

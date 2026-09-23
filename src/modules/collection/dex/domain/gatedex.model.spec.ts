@@ -5,7 +5,10 @@ import {
 	gatesClearedIn,
 } from "~/modules/collection/dex/domain/gatedex.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import {
+	failPeelShareFor,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 
 const swatchIdsUpTo = (gate: number): readonly string[] =>
 	ALL_SWATCHES.filter((swatch) => swatch.gate <= gate).map(
@@ -74,32 +77,23 @@ describe("gatedex", () => {
 		expect(rowFor(VICTORY_GATE).winsTheRun).toBe(true);
 	});
 
-	it("adds an audit's extra peels to the gate's own row and says so", () => {
-		expect(rowFor(11).peelsAudited).toBe(true);
-		expect(rowFor(11).peelShare).toBeGreaterThan(rowFor(10).peelShare);
+	it("states the gate's own peel share, since no audit is certain any more", () => {
+		expect(rowFor(11).peelShare).toBe(failPeelShareFor(11));
+		expect(rowFor(12).peelShare).toBeGreaterThan(rowFor(10).peelShare);
 	});
 
-	it("leaves peelsAudited false where the gate's own row is the whole story", () => {
-		expect(rowFor(3).peelsAudited).toBe(false);
+	it("states a gate's audit shape as a capacity, since rivals fill it", () => {
+		expect(rowFor(3).auditCapacity).toBe(1);
+		expect(rowFor(3).auditPool.length).toBeGreaterThan(1);
+		expect(rowFor(8).auditCapacity).toBe(2);
+		expect(rowFor(12).auditCapacity).toBe(3);
 	});
 
-	it("names only the audits a gate is certain to carry", () => {
-		expect(rowFor(3).audits).toEqual(["402 Payment Required"]);
-		expect(rowFor(11).audits).toEqual(["410 Gone"]);
-		expect(rowFor(8).audits).toEqual([]);
-	});
-
-	it("states a drawn gate's shape as a count, since the names are not settled", () => {
-		expect(rowFor(4).auditDraw).toBe(1);
-		expect(rowFor(4).auditPool.length).toBeGreaterThan(1);
-		expect(rowFor(8).auditDraw).toBe(2);
-		expect(rowFor(11).auditDraw).toBe(2);
-	});
-
-	it("draws nothing at the authored gates", () => {
-		expect(rowFor(3).auditDraw).toBe(0);
-		expect(rowFor(12).auditDraw).toBe(0);
-		expect(rowFor(12).audits).toHaveLength(3);
+	it("gives the clean gates no pool and no capacity", () => {
+		for (const gate of [0, 1, 2]) {
+			expect(rowFor(gate).auditCapacity).toBe(0);
+			expect(rowFor(gate).auditPool).toEqual([]);
+		}
 	});
 
 	it("promises no width, because slots are bought and never handed over", () => {
@@ -114,7 +108,7 @@ describe("gatedex", () => {
 		expect(unlockLabels(3)).toContain("pin");
 	});
 
-	it("promises no lock — that action belongs to yarn.lock, not a gate", () => {
+	it("promises no lock — that action belongs to .lock, not a gate", () => {
 		expect(everyUnlockLabel()).not.toContain("lock");
 	});
 });

@@ -19,11 +19,9 @@ const noop = () => {};
 const handlers = {
 	onDraft: noop,
 	onSell: noop,
-	onUpgrade: noop,
 	onRebuild: noop,
 	onExtend: noop,
 	onPlantPin: noop,
-	onSetBuildSpace: noop,
 	onVendorLock: noop,
 	onContinue: noop,
 };
@@ -55,7 +53,7 @@ describe("ShopView", () => {
 		render(<ShopView view={toRunView(cleared)} {...handlers} />);
 
 		expect(screen.getByText("21%")).toBeInTheDocument();
-		expect(screen.getByText("1 of the 5 right clears it.")).toBeInTheDocument();
+		expect(screen.getByText("4 of the 5 right clears it.")).toBeInTheDocument();
 	});
 
 	it("stands the build beside the registry", () => {
@@ -115,49 +113,102 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalled();
 	});
 
-	it("shuts the exit while the build outweighs the space it holds", () => {
+	/**
+	 * The only lock left on the door, and only ever after a bill the balance
+	 * could not cover: the run is held to the space it actually paid for.
+	 */
+	it("shuts the exit while the build outweighs the space its bill covered", () => {
 		render(
 			<ShopView
-				view={createMockRunView({ ...view, overflowSlots: 2 })}
+				view={createMockRunView({
+					...view,
+					overflowSlots: 2,
+					buildSpace: { ...view.buildSpace, coveredSpace: 8 },
+				})}
 				{...handlers}
 			/>
 		);
 
 		expect(screen.getByRole("button", { name: /To prep/ })).toBeDisabled();
-		expect(screen.getByText(/2 weight over the 4 mark/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/2 weight over the 8 the bill covered/)
+		).toBeInTheDocument();
 	});
 
-	it("offers no build space before the run has cleared its first gate", () => {
+	it("sells no build space, because the rung follows the build", () => {
 		render(<ShopView view={createMockRunView(view)} {...handlers} />);
 
 		expect(screen.queryByText("build space")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /^8 weight/ })).toBeNull();
 	});
 
-	it("picks a rung once the shop is stocking gate 2", async () => {
-		const onSetBuildSpace = vi.fn();
-		render(
-			<ShopView
-				view={createMockRunView({
-					...view,
-					buildSpace: {
-						...view.buildSpace,
-						offered: true,
-						rungs: view.buildSpace.rungs.map((rung) => ({
-							...rung,
-							pickable: !rung.held,
-						})),
-					},
-				})}
-				{...handlers}
-				onSetBuildSpace={onSetBuildSpace}
-			/>
-		);
+	it("installs an offer that stays inside the rung on a single press", async () => {
+		const onDraft = vi.fn();
+		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "8 weight · 32 KB" })
+			screen.getByRole("button", { name: /Install ESLint/ })
 		);
 
-		expect(onSetBuildSpace).toHaveBeenCalledWith(2);
+		expect(onDraft).toHaveBeenCalledWith("eslint");
+	});
+
+	it("arms an install that crosses a rung, and commits it on the second press", async () => {
+		const onDraft = vi.fn();
+		const crossing = createMockRunView({
+			...view,
+			offers: [
+				createMockShopOffer(CONFIGS.eslint, {
+					priceKb: 64,
+					installable: true,
+					scale: { from: 4, to: 6, perGateKb: 16 },
+				}),
+			],
+		});
+		render(<ShopView view={crossing} {...handlers} onDraft={onDraft} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Install ESLint/ })
+		);
+		expect(onDraft).not.toHaveBeenCalled();
+		expect(screen.getByText("Build space scales 4 → 6")).toBeInTheDocument();
+
+		// The press renames itself, so the second press is a different affordance
+		// rather than the same one pressed twice.
+		const confirm = screen.getByRole("button", {
+			name: /Confirm installing ESLint/,
+		});
+		expect(confirm).toHaveTextContent("Confirm");
+		expect(confirm).toHaveAttribute("data-screen-theme", "saffron");
+
+		await userEvent.click(confirm);
+		expect(onDraft).toHaveBeenCalledWith("eslint");
+	});
+
+	it("says what the crossing costs every gate, not only what it costs once", async () => {
+		const crossing = createMockRunView({
+			...view,
+			offers: [
+				createMockShopOffer(CONFIGS.eslint, {
+					priceKb: 64,
+					installable: true,
+					scale: { from: 4, to: 6, perGateKb: 16 },
+				}),
+			],
+		});
+		render(<ShopView view={crossing} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Install ESLint/ })
+		);
+
+		expect(
+			screen.getByText(
+				(_, element) =>
+					element?.textContent === "Upkeep becomes 16 KB a gate" &&
+					element.tagName.toLowerCase() === "p"
+			)
+		).toBeInTheDocument();
 	});
 });
 
@@ -227,5 +278,45 @@ describe("ShopView vendor lock-in", () => {
 		expect(
 			screen.getByRole("button", { name: "Uninstall vendor lock-in" })
 		).toBeInTheDocument();
+	});
+
+	it("shuts the exit while the vendor names nobody", () => {
+		render(<ShopView view={holding} {...handlers} />);
+
+		expect(screen.getByRole("button", { name: /To prep/ })).toBeDisabled();
+		expect(screen.getByText(/pick the config it exempts/)).toBeInTheDocument();
+	});
+
+	it("opens the exit once a vendor is named", () => {
+		render(
+			<ShopView
+				view={createMockRunView({
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: false, lockedConfigId: "agents-md" },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: /To prep/ })).toBeEnabled();
+	});
+
+	it("states the over-capacity refusal first, as the harder block of the two", () => {
+		render(
+			<ShopView
+				view={createMockRunView({
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: true },
+					overflowSlots: 2,
+					buildSpace: { ...holding.buildSpace, coveredSpace: 8 },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(
+			screen.getByText(/2 weight over the 8 the bill covered/)
+		).toBeInTheDocument();
+		expect(screen.queryByText(/pick the config it exempts/)).toBeNull();
 	});
 });

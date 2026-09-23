@@ -18,6 +18,8 @@ describe("runActionSchema", () => {
 			{ type: "finish-reward" },
 			{ type: "sell", configId: "agents-md" },
 			{ type: "drop", configId: "agents-md" },
+			{ type: "commit-band", band: "healthy" },
+			{ type: "fire-audit" },
 		];
 		actions.forEach((action) => {
 			expect(runActionSchema.safeParse(action).success).toBe(true);
@@ -60,5 +62,28 @@ describe("runActionSchema", () => {
 			stackId: "ship-it",
 		});
 		expect(result.success).toBe(false);
+	});
+});
+
+describe("the band a promise names", () => {
+	it("takes a band off the wire as a plain string", () => {
+		expect(
+			runActionSchema.safeParse({ type: "commit-band", band: "perfect" })
+				.success
+		).toBe(true);
+	});
+
+	it("leaves the engine to refuse a band nobody can promise", () => {
+		// The schema guards the shape; `commitBand` owns which bands are legal,
+		// so an unknown one is a refused action rather than a rejected request.
+		expect(
+			runActionSchema.safeParse({ type: "commit-band", band: "danger" }).success
+		).toBe(true);
+	});
+
+	it("rejects a promise carrying no band at all", () => {
+		expect(runActionSchema.safeParse({ type: "commit-band" }).success).toBe(
+			false
+		);
 	});
 });

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -8,14 +7,19 @@ import {
 	coverageLeadFor,
 	pollBreakdownFor,
 	pollBuildFor,
+	pollDifficultyFor,
+	pollFactsFor,
+	pollHistoryFor,
 	pollPaidFor,
 	pollPressesOf,
+	hallOfFameFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import { BASE_SLOTS, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { createMockPollView, createMockRunView } from "~/test/runView.factory";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 const THREE_OPTIONS = (id: string, category: CategoryCode): RunPoll => ({
@@ -46,7 +50,6 @@ const runWith = (
 				...base,
 				build: {
 					...base.build,
-					slots: Math.max(BASE_SLOTS, occupiedSlots(configs)),
 					configs: [...configs],
 				},
 			},
@@ -227,8 +230,28 @@ describe("pollPaidFor", () => {
 	it("pays every answer what it earned, and a miss nothing", () => {
 		const [row] = pollPaidFor(toRunView(playing(JS_GATE, [true, false]))).rows;
 
-		expect(row.payouts?.slots[0]).toEqual({ figure: "1", color: "viridian" });
-		expect(row.payouts?.slots[1]).toEqual({ figure: "0", color: "cinnabar" });
+		expect(row.payouts?.slots[0]).toMatchObject({
+			figure: "1",
+			color: "viridian",
+		});
+		expect(row.payouts?.slots[1]).toMatchObject({
+			figure: "0",
+			color: "cinnabar",
+		});
+	});
+
+	it("hands every chip the receipt for its own poll, not just the last one", () => {
+		const [row] = pollPaidFor(
+			toRunView(playing(JS_GATE, [true, false], JS_BUILD))
+		).rows;
+
+		expect(row.payouts?.slots[0]?.receipt?.at(-1)).toMatchObject({
+			label: "paid",
+			total: true,
+		});
+		expect(row.payouts?.slots[1]?.receipt?.at(-1)?.figures?.[0]).toMatchObject({
+			label: "0",
+		});
 	});
 
 	it("leaves a slot still to come empty rather than paying it zero", () => {
@@ -314,10 +337,10 @@ describe("pollBreakdownFor", () => {
 		const [base] = pollBreakdownFor(toRunView(run), answeredIn(run));
 
 		expect(base).toMatchObject({ label: "right answer", detail: "base" });
-		expect(base.figures?.[0]).toMatchObject({ label: "1" });
+		expect(base.figures?.[0]).toMatchObject({ label: "1.00" });
 	});
 
-	it("gives the multiplier its own row, in the factor the config states", () => {
+	it("states a multiplier as the units it added, so the column can sum", () => {
 		const run = playing(JS_GATE, [true], JS_BUILD);
 		const [, lift] = pollBreakdownFor(toRunView(run), answeredIn(run));
 
@@ -325,7 +348,14 @@ describe("pollBreakdownFor", () => {
 			label: CONFIGS.js.label,
 			detail: "matches JavaScript",
 		});
-		expect(lift.figures?.[0]).toMatchObject({ label: "\u00d71.25" });
+		expect(lift.figures?.[0]).toMatchObject({ label: "+0.25" });
+	});
+
+	it("keeps the factor the config was sold in as a tag beside its name", () => {
+		const run = playing(JS_GATE, [true], JS_BUILD);
+		const [, lift] = pollBreakdownFor(toRunView(run), answeredIn(run));
+
+		expect(lift.tags).toEqual([{ label: "\u00d71.25" }]);
 	});
 
 	it("closes on the figure the payout badges show", () => {
@@ -342,11 +372,12 @@ describe("pollBreakdownFor", () => {
 		);
 	});
 
-	it("states a flat adder in units rather than as a factor", () => {
+	it("states a flat adder in units, with no tag repeating them", () => {
 		const run = playing(JS_GATE, [true], [CONFIGS.codeCoverage]);
 		const [, add] = pollBreakdownFor(toRunView(run), answeredIn(run));
 
-		expect(add.figures?.[0]).toMatchObject({ label: "+0.1" });
+		expect(add.figures?.[0]).toMatchObject({ label: "+0.10" });
+		expect(add.tags).toBeUndefined();
 	});
 
 	it("reads a miss as a wrong answer that paid nothing", () => {
@@ -360,8 +391,15 @@ describe("pollBreakdownFor", () => {
 	it("keeps the rows summing to the figure it closes on", () => {
 		const run = playing(JS_GATE, [true], [CONFIGS.js, CONFIGS.codeCoverage]);
 		const rows = pollBreakdownFor(toRunView(run), answeredIn(run));
+		const contributions = rows
+			.slice(0, -1)
+			.map((row) => Number(row.figures?.[0]?.label));
 
 		expect(rows).toHaveLength(4);
+		expect(contributions).toEqual(expect.arrayContaining([1, 0.25, 0.1]));
+		expect(contributions.reduce((sum, units) => sum + units, 0)).toBeCloseTo(
+			1.35
+		);
 		expect(rows.at(-1)?.figures?.[0]).toMatchObject({ label: "1.35" });
 	});
 });
@@ -443,5 +481,182 @@ describe("the receipt for a lost wager", () => {
 			total: true,
 			figures: [expect.objectContaining({ label: "-0.5" })],
 		});
+	});
+});
+
+describe("pollDifficultyFor", () => {
+	const roomOf = (firstAttempts: number, firstAttemptsRight: number) => ({
+		firstAttempts,
+		firstAttemptsRight,
+		attempts: 0,
+		misses: 0,
+	});
+
+	it("states the room's first-attempt rate under the band that names it", () => {
+		expect(pollDifficultyFor(roomOf(90, 28))).toEqual({
+			badge: "brutal",
+			tone: "cinnabar",
+			figure: "31%",
+			text: "got it right first time",
+		});
+	});
+
+	it("withholds the percentage when too few players have tried it", () => {
+		expect(pollDifficultyFor(roomOf(3, 0))).toEqual({
+			badge: "untested",
+			tone: "pewter",
+			text: "too few first tries to say",
+		});
+	});
+
+	it("tones an easy poll green and a hard one amber", () => {
+		expect(pollDifficultyFor(roomOf(100, 92)).tone).toBe("viridian");
+		expect(pollDifficultyFor(roomOf(100, 44)).tone).toBe("saffron");
+	});
+});
+
+describe("pollHistoryFor", () => {
+	const mineOf = (attempts: number, misses: number, last?: string) => ({
+		firstAttempts: 100,
+		firstAttemptsRight: 50,
+		attempts,
+		misses,
+		lastAnsweredAt: last,
+	});
+
+	it("says nothing about a poll this account has never answered", () => {
+		expect(pollHistoryFor(mineOf(0, 0))).toBeUndefined();
+	});
+
+	it("counts two misses out of two as both times", () => {
+		expect(pollHistoryFor(mineOf(2, 2, "2026-08-04T09:00:00.000Z"))?.text).toBe(
+			"answered twice · you missed it both times, last on 4 Aug"
+		);
+	});
+
+	it("counts three misses out of three as all three", () => {
+		expect(pollHistoryFor(mineOf(3, 3, "2026-08-04T09:00:00.000Z"))?.text).toBe(
+			"answered 3 times · you missed it all 3 times, last on 4 Aug"
+		);
+	});
+
+	it("names only the misses when some answers landed", () => {
+		expect(pollHistoryFor(mineOf(3, 1, "2026-08-04T09:00:00.000Z"))?.text).toBe(
+			"answered 3 times · you missed it once, last on 4 Aug"
+		);
+	});
+
+	it("says so plainly when the one answer was right", () => {
+		expect(pollHistoryFor(mineOf(1, 0, "2026-08-04T09:00:00.000Z"))?.text).toBe(
+			"answered once · you got it right, last on 4 Aug"
+		);
+	});
+
+	it("drops the date clause rather than inventing one", () => {
+		expect(pollHistoryFor(mineOf(1, 1))?.text).toBe(
+			"answered once · you missed it"
+		);
+	});
+});
+
+describe("pollFactsFor", () => {
+	it("gives the band nothing to draw when the poll carries no stats", () => {
+		expect(
+			pollFactsFor(createMockPollView({ stats: undefined }))
+		).toBeUndefined();
+	});
+
+	it("gives the band nothing to draw while an answer is on screen", () => {
+		expect(pollFactsFor(undefined)).toBeUndefined();
+	});
+
+	it("carries both rows for a poll the account has fumbled before", () => {
+		const facts = pollFactsFor(createMockPollView());
+
+		expect(facts?.difficulty.badge).toBe("brutal");
+		expect(facts?.history?.badge).toBe("seen before");
+	});
+});
+
+describe("hallOfFameFor", () => {
+	const view = createMockRunView();
+	const jsPoll = createMockPollView({
+		category: "js",
+		record: {
+			category: "js",
+			holder: {
+				handle: "@sabrina",
+				githubLogin: "sabrina",
+				streak: 17,
+				you: false,
+			},
+			yourBest: 4,
+		},
+	});
+
+	it("names the category the record was set in", () => {
+		expect(hallOfFameFor(view, jsPoll)?.caption).toBe(
+			"the longest run of correct JavaScript answers"
+		);
+	});
+
+	it("titles the holder after the category they maintain", () => {
+		expect(hallOfFameFor(view, jsPoll)?.holder?.title).toBe(
+			"JavaScript Maintainer"
+		);
+	});
+
+	it("states the record as a run rather than a bare count", () => {
+		expect(hallOfFameFor(view, jsPoll)?.holder?.figure).toBe("17 in a row");
+	});
+
+	it("states how far this account has ever got", () => {
+		expect(hallOfFameFor(view, jsPoll)?.yourBest).toBe("your best 4");
+	});
+
+	it("leaves the record unclaimed when nobody holds it", () => {
+		const poll = createMockPollView({
+			record: { category: "js", yourBest: 2 },
+		});
+
+		expect(hallOfFameFor(view, poll)?.holder).toBeUndefined();
+		expect(hallOfFameFor(view, poll)?.yourBest).toBe("your best 2");
+	});
+
+	it("says nothing about an account that has never strung two together", () => {
+		const poll = createMockPollView({
+			record: { category: "js", yourBest: 0 },
+		});
+
+		expect(hallOfFameFor(view, poll)?.yourBest).toBeUndefined();
+	});
+
+	it("does not restate the record as your best when you are the holder", () => {
+		const poll = createMockPollView({
+			record: {
+				category: "js",
+				holder: { handle: "@sabrina", streak: 17, you: true },
+				yourBest: 17,
+			},
+		});
+
+		expect(hallOfFameFor(view, poll)?.holder?.you).toBe(true);
+		expect(hallOfFameFor(view, poll)?.yourBest).toBeUndefined();
+	});
+
+	it("withholds the record while the category is hidden, caption and all", () => {
+		const hidden = createMockRunView({ categoryHidden: true });
+
+		expect(hallOfFameFor(hidden, jsPoll)).toBeUndefined();
+	});
+
+	it("draws nothing while an answer is on screen", () => {
+		expect(hallOfFameFor(view, undefined)).toBeUndefined();
+	});
+
+	it("draws nothing for a poll the record was never read for", () => {
+		expect(
+			hallOfFameFor(view, createMockPollView({ record: undefined }))
+		).toBeUndefined();
 	});
 });

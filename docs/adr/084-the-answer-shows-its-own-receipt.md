@@ -34,18 +34,14 @@ badges were the one place that rule was broken, and breaking it is what turned
 
 ## Decision
 
-1. **The explanation lands after the answer, not before it.** The Coverage panel
-   grows a third region, `what this answer paid`: one row per contributor,
-   closing on a `paid` total. There is no pre-answer prediction, no "right pays"
-   badge in the poll header. A figure you can check against what actually
-   happened teaches more than a figure you are asked to trust.
+1. **The explanation lands after the answer, not before it.** A figure you can
+   check against what actually happened teaches more than a figure you are asked
+   to trust; there is no pre-answer prediction and no "right pays" badge in the
+   poll header. Where the explanation is drawn now belongs to
+   [ADR-095](095-a-score-chip-carries-its-own-receipt.md).
 
-2. **A row reads in the form its config is sold in.** A multiplier states its
-   factor (`x1.25`), an adder states its units (`+0.1`). `CoverageConfigBonus`
-   gains an optional `factor`, set from `cover.mult` where the breakdown already
-   has it. Rows therefore do not visibly sum to the total, which is the price of
-   ADR-083's split: one presentation cannot be honest about both kinds at once,
-   and the form the shop sold you wins.
+2. Superseded by [ADR-095](095-a-score-chip-carries-its-own-receipt.md): a row
+   states the units it added, and the form its config was sold in is a tag.
 
 3. **Payout figures carry two decimals.** `paidOf` and the row total move to
    `roundToTwoDecimals`. Without this the receipt reads `1.0 x1.25 = 1.3` and
@@ -90,9 +86,8 @@ its multiplier in the receipt, because `coverageBreakdownForAnswer` still
 branches on `mult !== 1`. ADR-083 filed this as latent; it is now visible in two
 places instead of one. DVTD-yddr owns it.
 
-The receipt is rendered from `LedgerRows` inside the Coverage panel rather than
-from `Ledger`, which brings its own `Panel`. The rows are a third region of an
-existing panel, not a fourth panel.
+The receipt is rendered from `LedgerRows` rather than from `Ledger`, which brings
+its own `Panel`.
 
 `--build-flash-duration` is its own custom property. `--coverage-duration` is
 counted across the whole sheet by two specs, which prove the arc and the digits

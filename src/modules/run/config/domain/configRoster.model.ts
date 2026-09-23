@@ -5,85 +5,73 @@ export const CONFIGS = {
 		id: "js",
 		label: ".js",
 		description: "JS polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "js",
 	},
 	ts: {
 		id: "ts",
 		label: ".ts",
 		description: "TS polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "ts",
 	},
 	css: {
 		id: "css",
 		label: ".css",
 		description: "CSS polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "css",
 	},
 	jsx: {
 		id: "jsx",
 		label: ".jsx",
 		description: "React polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "react",
 	},
 	git: {
 		id: "git",
 		label: ".git",
 		description: "Git polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "git",
 	},
 	rb: {
 		id: "rb",
 		label: ".rb",
 		description: "Ruby polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "ruby",
 	},
 	html: {
 		id: "html",
 		label: ".html",
 		description: "HTML polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "html",
 	},
 	java: {
 		id: "java",
 		label: ".java",
 		description: "Java polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "java",
 	},
 	py: {
 		id: "py",
 		label: ".py",
 		description: "Python polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "python",
 	},
 	frontend: {
 		id: "package.json-config",
 		label: "package.json",
 		description: "General Frontend polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "general-frontend",
 	},
 	vue: {
 		id: ".vue",
 		label: ".vue",
 		description: "Vue polls pay 1.25× coverage.",
-		rewardMultiplier: 1,
 		focusCategory: "vue",
 	},
 
 	unitTests: {
 		id: "unit-tests",
-		label: "Unit Tests",
+		label: "Build Artifacts",
 		description: "+32KB storage on gate clear.",
-		rewardMultiplier: 1,
 		storageOnClear: 32,
 	},
 	eslint: {
@@ -93,7 +81,6 @@ export const CONFIGS = {
 			"Cross out a wrong answer on JS/TS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on JS/TS polls",
 		costs: "The fee doubles each use, and resets each gate",
-		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["js", "ts"],
 	},
 	stylelint: {
@@ -102,7 +89,6 @@ export const CONFIGS = {
 		description: "Cross out a wrong answer on CSS polls for an escalating fee.",
 		gives: "Cross out a wrong answer on CSS polls",
 		costs: "The fee doubles each use, and resets each gate",
-		rewardMultiplier: 1,
 		eliminatesWrongOptionsFor: ["css"],
 	},
 	intellisense: {
@@ -111,7 +97,6 @@ export const CONFIGS = {
 		slots: 4,
 		description: "All coverage earns ×1.5.",
 		gives: "All coverage earns ×1.5",
-		rewardMultiplier: 1,
 		coverageMultiplier: 1.5,
 	},
 	agentsMd: {
@@ -120,7 +105,6 @@ export const CONFIGS = {
 		slots: 8,
 		description: "All coverage earns ×2.",
 		gives: "All coverage earns ×2",
-		rewardMultiplier: 1,
 		coverageMultiplier: 2,
 	},
 	codeCoverage: {
@@ -129,7 +113,6 @@ export const CONFIGS = {
 		slots: 2,
 		description: "Every correct answer is worth 10% more coverage.",
 		gives: "Correct answers pay +10% coverage",
-		rewardMultiplier: 1,
 		coverageAdd: 0.1,
 	},
 	reduce: {
@@ -141,7 +124,6 @@ export const CONFIGS = {
 		gives: "Each correct answer in a row pays +0.25 more than the last",
 		costs:
 			"Replaces the flat +0.1 streak step, and one miss restarts the climb",
-		rewardMultiplier: 1,
 		streakStepGrowth: 0.25,
 	},
 	indexedDb: {
@@ -150,15 +132,23 @@ export const CONFIGS = {
 		slots: 2,
 		description: "+8KB storage per correct answer (up to 320KB a run).",
 		gives: "+8KB per correct answer, up to 320KB a run",
-		rewardMultiplier: 1,
 		storagePerCorrect: 8,
+	},
+	database: {
+		id: "database",
+		label: "Database",
+		slots: 2,
+		description:
+			"Each exact answer opens an 8KB transaction. Clearing the gate commits it at ×2; a gate that holds or ends the run rolls it back. Shares IndexedDB's 320KB run cap.",
+		gives: "+16KB per exact answer, paid when the gate clears",
+		costs: "A gate that does not clear rolls back every KB it was holding",
+		escrowPerCorrect: 8,
 	},
 	mooresLaw: {
 		id: "moores-law",
 		label: "Moore's Law",
 		description: "+2% of held storage on gate clear.",
 		gives: "Every gate clear pays +2% of held storage",
-		rewardMultiplier: 1,
 		storageInterestPct: 2,
 	},
 	telemetry: {
@@ -170,7 +160,6 @@ export const CONFIGS = {
 			"Pay a doubling fee to see how the community answered this poll.",
 		gives: "See how the community answered this poll",
 		costs: "The fee doubles each use, and resets each gate",
-		rewardMultiplier: 1,
 		peeksCommunitySplit: true,
 	},
 	length: {
@@ -179,7 +168,6 @@ export const CONFIGS = {
 		slots: 2,
 		description: "Shows how many correct answers this gate holds.",
 		gives: "The count of correct answers waiting in this gate",
-		rewardMultiplier: 1,
 		revealsCorrectCount: true,
 	},
 	abTest: {
@@ -189,19 +177,17 @@ export const CONFIGS = {
 		description: AB_ARMS.coverage.description,
 		gives: AB_ARMS.coverage.gives,
 		costs: "Only one arm ships at a time — switch in the shop, free",
-		rewardMultiplier: 1,
 		abArm: "coverage",
 		coverageMultiplier: AB_ARMS.coverage.coverageMultiplier,
 	},
 	yarnLock: {
 		id: "yarn-lock",
-		label: "yarn.lock",
+		label: ".lock",
 		slots: 1,
 		description:
 			"Lock a shop offer for 16KB — every reroll and every next shop keeps it until you install or release it.",
 		gives: "Lock shop offers so rerolls and later shops keep them",
-		costs: "16KB a lock — every lock releases if yarn.lock leaves the build",
-		rewardMultiplier: 1,
+		costs: "16KB a lock — every lock releases if .lock leaves the build",
 		locksOffers: true,
 	},
 	cache: {
@@ -209,20 +195,31 @@ export const CONFIGS = {
 		label: "Cache",
 		slots: 4,
 		description:
-			"Correct answers cache their category — each cached hit pays +25% coverage there, up to ×2. A wrong answer flushes that category.",
-		gives: "+25% coverage per cached hit in a category, up to ×2",
+			"Correct answers cache their category — each cached hit pays +0.25 units of coverage there, up to +1. A wrong answer flushes that category.",
+		gives: "+0.25 units per cached hit in a category, up to +1",
 		costs: "A wrong answer flushes that category's cache",
-		rewardMultiplier: 1,
 		cacheHitStep: 0.25,
+	},
+	regressionTest: {
+		id: "regression-test",
+		label: "Regression Test",
+		slots: 2,
+		description:
+			"A poll you have answered wrong before pays ×2 coverage. Getting it right retires the test.",
+		gives: "Polls you have previously missed pay ×2 coverage",
+		costs: "The set shrinks as you learn — a poll pays once and never again",
+		missedPollMultiplier: 2,
 	},
 	coldStart: {
 		id: "cold-start",
 		label: "Cold Start",
 		slots: 2,
-		description: "Each gate's first answer earns ×2 coverage.",
-		gives: "The gate's first answer earns ×2 coverage",
-		rewardMultiplier: 1,
-		openerCoverageMultiplier: 2,
+		description:
+			"The gate's first answer earns nothing. Every answer after it earns ×1.5.",
+		gives: "Every answer after the gate's first earns ×1.5",
+		costs: "The gate's opening answer pays no coverage",
+		openerCoverageMultiplier: 0,
+		throttleCoverageMultiplier: 1.5,
 	},
 	volkswagenCi: {
 		id: "volkswagen-ci",
@@ -232,7 +229,6 @@ export const CONFIGS = {
 		description:
 			"Reports the gate's first audit as passing — the auditor reads whatever the device wants it to read.",
 		gives: "The gate's first audit reports passing",
-		rewardMultiplier: 1,
 		suppressesAudit: true,
 	},
 	prefetch: {
@@ -243,7 +239,6 @@ export const CONFIGS = {
 			"Shows the category and option count of every poll left this gate and how many of them take more than one answer, plus all of the next gate's categories.",
 		gives:
 			"The categories, option counts and answer types of this gate's remaining polls, and the next gate's categories",
-		rewardMultiplier: 1,
 		revealsUpcomingCategories: true,
 	},
 	gitRebase: {
@@ -256,7 +251,6 @@ export const CONFIGS = {
 		gives: "Reorder the gate's polls before it starts, with answer types at v2",
 		costs:
 			"The order locks when you answer — you commit before you read a question",
-		rewardMultiplier: 1,
 		reordersGatePolls: true,
 	},
 	wtfpl: {
@@ -268,7 +262,6 @@ export const CONFIGS = {
 			"Every shop offers the entire roster. No warranty: while installed, nothing sells back for anything.",
 		gives: "Every shop offers the entire roster",
 		costs: "No warranty — every config sells for 0KB while it's installed",
-		rewardMultiplier: 1,
 		offersFullRoster: true,
 	},
 	freemium: {
@@ -281,7 +274,6 @@ export const CONFIGS = {
 		gives: "Every config drafts at half price",
 		costs:
 			"Bills 8KB at your first clear, doubling every gate — it lapses when you cannot pay",
-		rewardMultiplier: 1,
 		draftCostFactor: 0.5,
 		subscriptionKb: 8,
 		subscriptionGrowthPerGate: 2,
@@ -294,7 +286,6 @@ export const CONFIGS = {
 			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1.",
 		gives: "All coverage earns ×3, fading ×0.5 per clear",
 		costs: "Deleted when it fades to ×1",
-		rewardMultiplier: 1,
 		coverageMultiplier: 3,
 		coverageDecayPerClear: 0.5,
 	},
@@ -303,10 +294,9 @@ export const CONFIGS = {
 		label: "Overclock",
 		slots: 4,
 		description:
-			"The gate's first answer earns ×4 coverage. Everything after runs hot: ×0.5. Cools off each gate clear.",
+			"The gate's first answer earns ×4 coverage. Everything after runs hot: ×0.5. The ×4 returns at the next gate.",
 		gives: "The gate's first answer earns ×4 coverage",
-		costs: "Every later answer runs hot at ×0.5 until the clear",
-		rewardMultiplier: 1,
+		costs: "Every later answer runs hot at ×0.5 until the gate clears",
 		openerCoverageMultiplier: 4,
 		throttleCoverageMultiplier: 0.5,
 	},
@@ -318,7 +308,6 @@ export const CONFIGS = {
 		description:
 			"5 correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over.",
 		gives: "A free random config upgrade every 5 correct answers in a row",
-		rewardMultiplier: 1,
 		autoUpgradeAfterCorrect: 5,
 	},
 	garbageCollection: {
@@ -328,7 +317,6 @@ export const CONFIGS = {
 		description: "Every config you drop to pay a peel refunds its sell value.",
 		gives: "Peeled configs refund their sell value",
 		costs: "Only a drop pays — minifying to fit the peel refunds nothing",
-		rewardMultiplier: 1,
 		refundsPeeledConfigs: true,
 	},
 	planningPoker: {
@@ -340,7 +328,6 @@ export const CONFIGS = {
 		gives: "Coverage when you answer at least as many as you bet",
 		costs:
 			"Fall one short and it pays nothing — and the bet locks when you answer",
-		rewardMultiplier: 1,
 		coveragePerEstimate: 0.25,
 	},
 	strict: {
@@ -351,18 +338,36 @@ export const CONFIGS = {
 			"Toggle it before you answer. An exact answer pays half a unit more; anything less takes half a unit off the gate.",
 		gives: "+0.5 units on an exact answer",
 		costs: "0.5 units on a partial, a miss or a timeout",
-		rewardMultiplier: 1,
 		wagersAnswer: 0.5,
 	},
 	prettierrc: {
 		id: "prettierrc",
-		label: ".prettierrc",
+		label: "Math.ceil()",
 		slots: 2,
 		description:
 			"A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1, three quarters pays 2. The top-up is flat, so no multiplier amplifies it.",
 		gives: "Partial select-all answers top up to a whole unit",
-		rewardMultiplier: 1,
 		roundsPartialUnitsUp: true,
+	},
+	sla: {
+		id: "sla",
+		label: "SLA",
+		slots: 2,
+		description:
+			"Name OK, HEALTHY or PERFECT before the gate. Close in that band or better and the gate's payout rises 10%, 25% or 50%. Fall short of your own promise and it pays nothing.",
+		gives: "The band you promise pays +10%, +25% or +50% on the clear",
+		costs: "A band you promise and miss pays nothing at all",
+		commitsBand: true,
+	},
+	tryCatch: {
+		id: "try-catch",
+		label: "Try/Catch",
+		slots: 4,
+		description:
+			"A gate that would end the run holds instead, owing its peel. The catch is spent doing it and deletes itself, paying its own weight into that peel.",
+		gives: "The gate that would end your run holds instead",
+		costs: "Deleted the moment it fires, and it only fires once",
+		catchesFatal: true,
 	},
 	vendorLockIn: {
 		id: "vendor-lock-in",
@@ -372,7 +377,6 @@ export const CONFIGS = {
 			"Names one config in your build as your vendor. Its weight stops counting against the space you rent, and you cannot sell or drop it for the rest of the run.",
 		gives: "One config stops counting against your build space",
 		costs: "That config cannot be sold or dropped for the rest of the run",
-		rewardMultiplier: 1,
 		vendorLocks: true,
 	},
 	dryRun: {
@@ -382,9 +386,25 @@ export const CONFIGS = {
 		description:
 			"Marks the gate meter with where this answer lands, right or wrong, before you submit it.",
 		gives: "The gate meter shows where a right and a wrong answer land",
-		rewardMultiplier: 1,
 		projectsGateOutcome: true,
 	},
 } as const satisfies Record<string, Config>;
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);
+
+/**
+ * Whether a build wants each poll's miss history attached when the sequence is
+ * read — one extra query on the dispatch path, so it is asked before it is
+ * paid for. Resolved against the roster rather than the embedded config,
+ * because a snapshot carries the shape the config had when it was drafted
+ * (`refreshConfig`).
+ */
+export const readsMissedHistory = (
+	configs: readonly { readonly id: string }[]
+): boolean =>
+	configs.some((config) =>
+		CONFIG_LIST.some(
+			(entry) =>
+				entry.id === config.id && entry.missedPollMultiplier !== undefined
+		)
+	);

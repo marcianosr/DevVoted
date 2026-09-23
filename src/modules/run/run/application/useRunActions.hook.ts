@@ -9,6 +9,8 @@ import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import { userQueryKeys } from "~/shared/queryKeys";
 
 import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
+import { attackTargetsQueryKey } from "~/modules/run/incident/application/useAttackTargets.hook";
+import { incidentsFeedQueryKey } from "~/modules/run/incident/application/useIncidentsFeed.hook";
 import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
 
 export type RunActionResult = Awaited<ReturnType<typeof dispatchRunAction>>;
@@ -36,6 +38,8 @@ export const useRunActions = () => {
 		queryClient.invalidateQueries({ queryKey: runCommunityQueryKey() });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.swatchesAll });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.unlocksAll });
+		queryClient.invalidateQueries({ queryKey: attackTargetsQueryKey() });
+		queryClient.invalidateQueries({ queryKey: incidentsFeedQueryKey() });
 	};
 
 	const commit = (result: RunActionSuccess) => {

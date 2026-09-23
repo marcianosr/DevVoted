@@ -1,7 +1,4 @@
-import {
-	type AuditId,
-	type AuditSchedule,
-} from "~/modules/run/gate/domain/audit.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
@@ -26,6 +23,7 @@ const FAMILY_OF = {
 	"memory-leak": "storage-burn",
 	"payload-too-large": "storage-burn",
 	mirrored: "poll-reading",
+	"multi-status": "poll-reading",
 	"not-found": "poll-reading",
 	"legal-hold": "poll-reading",
 	"read-only": "shop",
@@ -42,6 +40,7 @@ const DENY_PAIRS: readonly (readonly [AuditId, AuditId])[] = [
 export const AUDIT_RANK: readonly AuditId[] = [
 	"strip",
 	"mirrored",
+	"multi-status",
 	"timeout",
 	"feature-freeze",
 	"read-only",
@@ -60,6 +59,7 @@ export const AUDIT_RANK: readonly AuditId[] = [
 
 const POOL_A: readonly AuditId[] = [
 	"not-found",
+	"multi-status",
 	"read-only",
 	"dependency-outage",
 	"too-many-requests",
@@ -82,6 +82,7 @@ const POOL_B: readonly AuditId[] = [
 const POOL_C: readonly AuditId[] = [
 	"feature-freeze",
 	"mirrored",
+	"multi-status",
 	"timeout",
 	"breaking-change",
 	"upgrade-required",
@@ -90,56 +91,39 @@ const POOL_C: readonly AuditId[] = [
 	"payload-too-large",
 	"flaky-build",
 	"legal-hold",
-];
-
-export const INTRO_GATE = 3;
-export const INTRO_AUDITS: readonly AuditId[] = ["cost-overrun"];
-
-const CHAMPION_AUDITS: readonly AuditId[] = [
-	"timeout",
 	"strip",
-	"payload-too-large",
 ];
 
-export type AuditBand = {
-	readonly name: string;
+export type AuditTier = {
 	readonly gates: readonly number[];
-	readonly perGate: number;
+	readonly capacity: number;
 	readonly pool: readonly AuditId[];
-	readonly pinned: readonly AuditId[];
 };
 
-export const AUDIT_BANDS: readonly AuditBand[] = [
-	{ name: "a", gates: [4, 5, 6, 7], perGate: 1, pool: POOL_A, pinned: [] },
-	{ name: "b", gates: [8, 9, 10], perGate: 2, pool: POOL_B, pinned: [] },
-	{ name: "c", gates: [11], perGate: 2, pool: POOL_C, pinned: ["strip"] },
+/**
+ * The ADR-038 count curve read as a ceiling (ADR-099): how many incidents a
+ * rival can land on a gate, and which rules the payload is drawn from. Nothing
+ * here is dealt; a gate nobody attacked is clean.
+ */
+export const AUDIT_TIERS: readonly AuditTier[] = [
+	{ gates: [3, 4, 5, 6, 7], capacity: 1, pool: POOL_A },
+	{ gates: [8, 9, 10], capacity: 2, pool: POOL_B },
+	{ gates: [11, VICTORY_GATE], capacity: 3, pool: POOL_C },
 ];
 
-const UNIQUE_WITHIN: "band" | "run" = "band";
+export const tierForGate = (gate: number): AuditTier | undefined =>
+	AUDIT_TIERS.find((tier) => tier.gates.includes(gate));
 
-export const bandForGate = (gate: number): AuditBand | undefined =>
-	AUDIT_BANDS.find((band) => band.gates.includes(gate));
+export const auditCapacityFor = (gate: number): number =>
+	tierForGate(gate)?.capacity ?? 0;
 
-export const certainAuditsFor = (gate: number): readonly AuditId[] => {
-	if (gate === INTRO_GATE) return INTRO_AUDITS;
-	if (gate === VICTORY_GATE) return CHAMPION_AUDITS;
-	return bandForGate(gate)?.pinned ?? [];
-};
+export const poolForGate = (gate: number): readonly AuditId[] =>
+	tierForGate(gate)?.pool ?? [];
 
-export const certainGatesOf = (id: AuditId): readonly number[] =>
-	[INTRO_GATE, ...AUDIT_BANDS.flatMap((band) => band.gates), VICTORY_GATE]
-		.filter((gate) => certainAuditsFor(gate).includes(id))
+export const appearsAtGates = (id: AuditId): readonly number[] =>
+	AUDIT_TIERS.filter((tier) => tier.pool.includes(id))
+		.flatMap((tier) => tier.gates)
 		.sort((a, b) => a - b);
-
-export const appearsAtGates = (id: AuditId): readonly number[] => {
-	const fixed = [INTRO_GATE, VICTORY_GATE].filter((gate) =>
-		certainAuditsFor(gate).includes(id)
-	);
-	const drawable = AUDIT_BANDS.filter(
-		(band) => band.pool.includes(id) || band.pinned.includes(id)
-	).flatMap((band) => band.gates);
-	return [...new Set([...fixed, ...drawable])].sort((a, b) => a - b);
-};
 
 const deniedWith = (id: AuditId, taken: readonly AuditId[]): boolean =>
 	DENY_PAIRS.some(
@@ -148,64 +132,31 @@ const deniedWith = (id: AuditId, taken: readonly AuditId[]): boolean =>
 			(id === other && taken.includes(one))
 	);
 
-const eligibleFor = (
+export const eligibleFor = (
 	pool: readonly AuditId[],
-	used: ReadonlySet<AuditId>,
 	taken: readonly AuditId[]
 ): readonly AuditId[] => {
 	const families = new Set(taken.map(familyOf));
 	return pool.filter(
 		(id) =>
-			!used.has(id) && !families.has(familyOf(id)) && !deniedWith(id, taken)
+			!taken.includes(id) &&
+			!families.has(familyOf(id)) &&
+			!deniedWith(id, taken)
 	);
 };
 
-const byRank = (ids: readonly AuditId[]): readonly AuditId[] =>
+export const rankAudits = (ids: readonly AuditId[]): readonly AuditId[] =>
 	[...ids].sort((a, b) => AUDIT_RANK.indexOf(a) - AUDIT_RANK.indexOf(b));
 
-const fillGate = (
-	band: AuditBand,
-	gate: number,
-	used: Set<AuditId>,
-	seed: string
-): readonly AuditId[] => {
-	const taken = [...band.pinned];
-	band.pinned.forEach((id) => used.add(id));
-
-	for (let pick = 0; pick < band.perGate; pick++) {
-		const eligible = eligibleFor(band.pool, used, taken);
-		const drawn = shuffleSeeded(eligible, `${seed}:${gate}:${pick}`)[0];
-		if (drawn === undefined) break;
-		taken.push(drawn);
-		used.add(drawn);
-	}
-
-	return byRank(taken);
-};
-
-export const drawAuditSchedule = (seed: string): AuditSchedule => {
-	const runUsed = new Set<AuditId>();
-
-	const drawn = AUDIT_BANDS.reduce<Record<number, readonly AuditId[]>>(
-		(schedule, band) => {
-			const used = UNIQUE_WITHIN === "band" ? new Set(runUsed) : runUsed;
-			const filled = band.gates.reduce<Record<number, readonly AuditId[]>>(
-				(gates, gate) => ({
-					...gates,
-					[gate]: fillGate(band, gate, used, `${seed}:${band.name}`),
-				}),
-				{}
-			);
-			return { ...schedule, ...filled };
-		},
-		{}
-	);
-
-	return {
-		...drawn,
-		[INTRO_GATE]: INTRO_AUDITS,
-		[VICTORY_GATE]: CHAMPION_AUDITS,
-	};
-};
-
-export const DEFAULT_AUDIT_SCHEDULE = drawAuditSchedule("");
+/**
+ * The alternatives a rival may fire at a gate: distinct, each one compatible
+ * with what the gate already carries, and fixed by the seed so a refresh never
+ * re-rolls them.
+ */
+export const drawPayloads = (
+	pool: readonly AuditId[],
+	taken: readonly AuditId[],
+	seed: string,
+	count: number
+): readonly AuditId[] =>
+	shuffleSeeded(eligibleFor(pool, taken), seed).slice(0, count);

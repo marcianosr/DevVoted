@@ -55,3 +55,19 @@ a config, at the rest-of-run horizon the code already implemented (ADR-029's
 - The padlock press is a true toggle for the first time — pinned state was
   unreachable in production while `MAX_LOCKED_OFFERS` hid the affordance at 1.
 - Wiki §2.8 loses gate 1's unlock; §5.2's Lock row now names yarn.lock.
+
+## Amendment — 2026-09-20: the config is renamed `.lock`
+
+The mechanic is unchanged; only the label moves, and `yarn-lock` stays the id,
+so nothing persisted has to migrate. This ADR's title and body keep the old
+name as history.
+
+`yarn.lock` was named for the file the mechanic is about, but it named one
+ecosystem's copy of it. `Cargo.lock`, `composer.lock`, `Gemfile.lock` and
+`poetry.lock` are the same artefact under the same extension, so `.lock` is the
+term every reader already holds — which is what the naming rule in
+[ADR-028](028-the-defeat-device.md) asks for, and that rule listed `yarn.lock`
+as an exception it no longer needs.
+
+It also closes a gap the prose kept tripping on: the config that grants the
+**Lock** control is now spelled like the control it grants.

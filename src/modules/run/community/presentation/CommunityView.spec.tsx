@@ -122,10 +122,17 @@ describe("pollDetailFor", () => {
 });
 
 describe("ladderFor", () => {
+	const BLUE_BUILD = {
+		configs: [
+			{ id: "ts", label: ".ts", slots: 1, level: 4 },
+			{ id: "cache", label: "Cache", slots: 4 },
+		],
+		vendorLockedConfigId: "cache",
+	};
 	const climb = {
 		climbers: [
 			climber("red", 1, 2, true),
-			climber("blue", 1, 4),
+			{ ...climber("blue", 1, 4), build: BLUE_BUILD },
 			climber("green", 3, 0),
 		],
 		fallen: [
@@ -137,6 +144,7 @@ describe("ladderFor", () => {
 				borderUrl: null,
 				gate: 2,
 				pollsIntoGate: 1,
+				build: { configs: [] },
 			},
 		],
 		bestPosition: 16,
@@ -166,9 +174,27 @@ describe("ladderFor", () => {
 				photoUrl: undefined,
 				borderUrl: undefined,
 				you: false,
+				build: [],
 				runKey: "11",
 			},
 		]);
+	});
+
+	it("hands a chip its build as plain names, versions and weights, flagging the vendor lock", () => {
+		const gates = ladderFor(climb);
+
+		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
+		expect(blue?.build).toEqual([
+			{ name: ".ts", slots: 1, version: 4 },
+			{ name: "Cache", slots: 4, locked: true },
+		]);
+	});
+
+	it("leaves a chip plain when the map knows no build for it", () => {
+		const gates = ladderFor(climb);
+
+		const red = gates[1].climbers.find((entry) => entry.id === "red");
+		expect(red).not.toHaveProperty("build");
 	});
 
 	it("charts up to the best position and leaves the rest uncharted", () => {

@@ -413,3 +413,48 @@ export const EveryWeight: Story = {
 		</Screen>
 	),
 };
+
+const CROSSING = { from: 6, to: 8, perGateKb: 32 };
+
+/** An install that stays inside the rung already rented: one press, no panel. */
+export const OfferedInsideTheRung: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion" width="narrow">
+			<ConfigChip
+				name=".js"
+				slots={1}
+				badges={[]}
+				width="fixed"
+				priceOn="always"
+				install={{ price: "32 KB", onPress: noop }}
+			/>
+		</Screen>
+	),
+};
+
+/**
+ * The same offer once it has been pressed: the press renames itself, takes the
+ * colour the kit gives a standing bill, and states what it is about to commit to
+ * (ADR-098).
+ */
+export const ArmedBecauseItCrossesARung: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion" width="narrow">
+			<ConfigChip
+				name=".js"
+				slots={1}
+				badges={[]}
+				width="fixed"
+				priceOn="always"
+				install={{
+					price: "32 KB",
+					onPress: noop,
+					scale: CROSSING,
+					armed: true,
+				}}
+			/>
+		</Screen>
+	),
+};

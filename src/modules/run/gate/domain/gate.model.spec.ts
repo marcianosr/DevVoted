@@ -20,18 +20,18 @@ import {
 	FLOOR_CORRECT,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
-import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
+import { EMPTY_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/audit.model";
 import {
 	type GateClose,
 	gateClosingFor,
 	gatePassed,
+	gateRulingFor,
 	gateProjectionFor,
 	peelConfigRangeFor,
 } from "~/modules/run/gate/domain/gate.model";
 
 const buildWith = (configs: Config[]): Build => ({
 	id: "build",
-	slots: 5,
 	configs,
 });
 /** Units that land the run exactly on `ratio` when this gate shuts. */
@@ -44,7 +44,7 @@ const closing = (partial: Partial<GateClose>): GateClose => ({
 	unitsThisGate: 0,
 	correctThisGate: SLICE_WINDOW,
 	gatesCleared: 0,
-	schedule: DEFAULT_AUDIT_SCHEDULE,
+	schedule: EMPTY_AUDIT_SCHEDULE,
 	...partial,
 });
 
@@ -184,6 +184,59 @@ describe("the floor rule", () => {
 			)
 		).toBe("held");
 	});
+
+	it("names the floor as the reason, so the debrief can say it", () => {
+		expect(
+			gateRulingFor(
+				closing({
+					gatesCleared: 5,
+					bankedUnits: unitsFor(1, 4),
+					unitsThisGate: 0,
+					correctThisGate: 0,
+				})
+			)
+		).toEqual({ closing: "held", heldBy: "floor" });
+	});
+
+	it("names the band when the meter itself fell short", () => {
+		expect(
+			gateRulingFor(
+				closing({
+					gatesCleared: 4,
+					unitsThisGate: unitsFor(floorAt(4), 4),
+					correctThisGate: 4,
+				})
+			)
+		).toEqual({ closing: "held", heldBy: "band" });
+	});
+
+	it("names a bare build, which never clears", () => {
+		expect(
+			gateRulingFor(
+				closing({ build: buildWith([]), unitsThisGate: unitsFor(1, 0) })
+			)
+		).toEqual({ closing: "held", heldBy: "bare" });
+	});
+
+	it("never saves a DANGER close: under the floor with too few right is still fatal", () => {
+		expect(
+			gateRulingFor(
+				closing({
+					gatesCleared: 4,
+					unitsThisGate: unitsFor(floorAt(4), 4) - 1,
+					correctThisGate: 0,
+				})
+			)
+		).toEqual({ closing: "fatal" });
+	});
+
+	it("carries a clear with nothing more to say", () => {
+		expect(
+			gateRulingFor(
+				closing({ gatesCleared: 4, unitsThisGate: unitsFor(healthyAt(4), 4) })
+			)
+		).toEqual({ closing: "cleared" });
+	});
 });
 
 describe("the roster owes the gate nothing (ADR-035 inverts ADR-022)", () => {
@@ -241,7 +294,6 @@ const previewOf = (
 	coveragePerWrong: -6,
 	storageKbPerCorrect: 0,
 	streakStepMultiplier: 1,
-	streakCapMultiplier: 1,
 	...partial,
 });
 
@@ -323,7 +375,6 @@ describe("Dry Run in the roster", () => {
 	});
 
 	it("sells information rather than coverage, so it stacks with anything", () => {
-		expect(CONFIGS.dryRun.rewardMultiplier).toBe(1);
 		expect(touchesCoverage(CONFIGS.dryRun)).toBe(false);
 	});
 });

@@ -6,7 +6,6 @@ import {
 import {
 	AUDIT_RANK,
 	appearsAtGates,
-	certainGatesOf,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 
 import type {
@@ -15,8 +14,8 @@ import type {
 } from "~/modules/collection/dex/domain/gatedex.model";
 
 /**
- * The audit roster read as a collection: fifteen rules, each with the gates it
- * sits on and how much of it the player has earned the right to read.
+ * The audit roster read as a collection: one row per rule, each with the gates
+ * it sits on and how much of it the player has earned the right to read.
  *
  * One row per audit id (ADR-056 made ids canonical, so there is nothing to
  * dedupe). `gates` names where an audit *can* land, not where it did: the
@@ -38,17 +37,9 @@ export type AuditdexEntry = {
 	readonly rule: string;
 	readonly gates: readonly number[];
 	readonly tier: AuditdexTier;
-	readonly runsFaced: number;
-	readonly runsBeaten: number;
 };
 
-/** One climb, as far as this tally needs to read it. */
-export type AuditdexRun = {
-	readonly gatesCleared: number;
-	readonly finished: boolean;
-};
-
-type AuditFacts = Omit<AuditdexEntry, "tier" | "runsFaced" | "runsBeaten">;
+type AuditFacts = Omit<AuditdexEntry, "tier">;
 
 const factsOf = (id: AuditId): AuditFacts => {
 	const gates = appearsAtGates(id);
@@ -88,35 +79,15 @@ const tierFor = (
 		: "unseen";
 };
 
-/**
- * Gates below this number were played in that climb. A finished climb played
- * the gate it stopped at; a live one is still in front of it.
- */
-const facedThrough = (run: AuditdexRun): number =>
-	run.finished ? run.gatesCleared + 1 : run.gatesCleared;
-
-const countRuns = (
-	runs: readonly AuditdexRun[],
-	reached: (run: AuditdexRun) => number,
-	gates: readonly number[]
-): number =>
-	runs.filter((run) => gates.some((gate) => gate < reached(run))).length;
-
 export const auditdex = (
-	gates: readonly GatedexEntry[],
-	runs: readonly AuditdexRun[] = []
+	gates: readonly GatedexEntry[]
 ): readonly AuditdexEntry[] => {
 	const stateByGate = new Map(gates.map((entry) => [entry.gate, entry.state]));
 
-	return ROSTER.map((facts) => {
-		const certain = certainGatesOf(facts.id);
-		return {
-			...facts,
-			tier: tierFor(facts.gates, stateByGate),
-			runsFaced: countRuns(runs, facedThrough, certain),
-			runsBeaten: countRuns(runs, (run) => run.gatesCleared, certain),
-		};
-	});
+	return ROSTER.map((facts) => ({
+		...facts,
+		tier: tierFor(facts.gates, stateByGate),
+	}));
 };
 
 export const auditsFacedIn = (entries: readonly AuditdexEntry[]): number =>

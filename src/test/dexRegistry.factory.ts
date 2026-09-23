@@ -68,16 +68,19 @@ export const dexConfigRows: readonly DexConfigRow[] = [
 				version: 1,
 				effect: "JavaScript polls reward ×1.25 coverage",
 				price: null,
+				odds: null,
 			},
 			{
 				version: 2,
 				effect: "JavaScript polls reward ×1.5 coverage",
 				price: "64 KB",
+				odds: "1 in 2 rolls",
 			},
 			{
 				version: 3,
 				effect: "JavaScript polls reward ×1.75 coverage",
 				price: "96 KB",
+				odds: "1 in 4 rolls",
 			},
 		],
 	},
@@ -180,6 +183,7 @@ const runTrack = (earned: readonly number[]): readonly SwatchFill[] =>
 export const dexRunRows: readonly DexRunRow[] = [
 	{
 		runId: 1,
+		href: "/runs/1",
 		date: "11 Sep",
 		swatches: runTrack([0, 1, 2, 3]),
 		outcome: "Lavender held",
@@ -188,6 +192,7 @@ export const dexRunRows: readonly DexRunRow[] = [
 	},
 	{
 		runId: 2,
+		href: "/runs/2",
 		date: "28 Aug",
 		swatches: runTrack([0, 1, 2]),
 		outcome: "Thunder held",
@@ -196,6 +201,7 @@ export const dexRunRows: readonly DexRunRow[] = [
 	},
 	{
 		runId: 3,
+		href: "/runs/3",
 		date: "22 Jul",
 		swatches: runTrack([0]),
 		outcome: "Boulder held",

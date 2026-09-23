@@ -1,9 +1,12 @@
-import type { Config } from "~/modules/run/config/domain/config.model";
-import { prefetcherFor } from "~/modules/run/build/domain/build.model";
+import {
+	type Config,
+	escrowKbPerCorrect,
+} from "~/modules/run/config/domain/config.model";
+import {
+	catcherFor,
+	prefetcherFor,
+} from "~/modules/run/build/domain/build.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
-import type { Audit } from "~/modules/run/gate/domain/audit.model";
-import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { bandOutcomesPropsFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 import {
@@ -15,12 +18,19 @@ import {
 	SLICE_WINDOW,
 	spaceRungFor,
 } from "~/modules/run/run/domain/rules.model";
-import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	type CommittableBand,
+	coverageGainPercentFor,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	rebaserFor,
 	type PollSlot,
 } from "~/modules/run/run/domain/rebase.model";
-import type { EstimateControl } from "~/modules/run/run/application/runView.viewmodel";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+import type {
+	EstimateControl,
+	SlaControl,
+} from "~/modules/run/run/application/runView.viewmodel";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
@@ -29,6 +39,7 @@ import {
 	type AnsweredPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 
+import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderFunds } from "~/ui/kanto-theme/Header.ui";
@@ -39,6 +50,7 @@ import type {
 } from "~/ui/kanto-theme/PollScores.ui";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
+import type { SlaPickerProps } from "~/ui/kanto-theme/SlaPicker.ui";
 import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
 
 export const BALANCE_WORD = "balance";
@@ -56,6 +68,7 @@ const SUMMIT_LINE = "the summit — nothing after this";
 const SEALED: LedgerFigure = { locked: true };
 
 export const PREP_COMMUNITY_LABEL = "Community";
+export const PREP_INCIDENTS_LABEL = "Incidents";
 const START_LEAD = "Start";
 
 export const PREP_POLLS_TITLE = "The five polls";
@@ -68,10 +81,31 @@ const CORRECT_OUTCOME = "correct";
 
 const ESTIMATE_HINT =
 	"Call how many of the five you will get right. Meet the number and it pays; fall short and it pays nothing.";
+const SLA_HINT =
+	"Promise a band before you answer. Close there or better and the gate pays more; miss your own promise and it pays nothing extra.";
 const REBASE_HINT =
 	"Put the categories you are surest of first — a streak pays, and the opener counts twice for some builds.";
 const MULTIPLE_LABEL = "two answers";
 const SINGLE_LABEL = "one answer";
+
+const slaPickerFor = (
+	sla: SlaControl | null,
+	committed: CommittableBand | null
+): SlaPickerProps | undefined => {
+	if (sla === null) return undefined;
+
+	return {
+		label: sla.configLabel,
+		hint: SLA_HINT,
+		committed,
+		cards: sla.choices.map((choice) => ({
+			band: choice.band,
+			label: choice.label,
+			terms: `close at ${choice.label} or better`,
+			uplift: `+${Math.round(choice.uplift * 100)}%`,
+		})),
+	};
+};
 
 const estimatePickerFor = (
 	gate: number,
@@ -204,10 +238,11 @@ const pollRowsFor = (
 	];
 };
 
-const auditPropsFor = (audit: Audit): AuditProps => ({
+const auditPropsFor = (audit: AuditView): AuditProps => ({
 	code: audit.code,
 	name: audit.name,
 	cue: audit.answerCue ?? audit.description,
+	sender: audit.sentBy,
 });
 
 const auditsMetaOf = (count: number) =>
@@ -248,6 +283,10 @@ export type PrepFrame = {
 	 */
 	answeredThisGate?: readonly AnsweredPoll[];
 	configs: readonly Config[];
+	/** What rivals locked onto this gate, as the stake receipt states it. */
+	audits?: readonly AuditView[];
+	/** The attack this run holds and who it may be aimed at. Absent on fixtures that predate it. */
+	attack?: AttackPanelProps;
 	balanceKb: number;
 	buildSpace: number;
 	window: PrepWindow;
@@ -260,6 +299,9 @@ export type PrepFrame = {
 	/** Planning Poker's control. Null whenever the bet cannot be placed. */
 	estimate?: EstimateControl | null;
 	estimatedCorrect?: number | null;
+	/** SLA's control. Null whenever no band can be promised. */
+	sla?: SlaControl | null;
+	slaBand?: CommittableBand | null;
 	/** git rebase -i's rows. Empty whenever the order cannot be changed. */
 	rebaseSlots?: readonly PollSlot[];
 	/** Gates this run played flawlessly. Only these fill on the track. */
@@ -271,6 +313,8 @@ export const prepPropsFor = ({
 	answeredPolls,
 	answeredThisGate = [],
 	configs,
+	audits = [],
+	attack,
 	balanceKb,
 	buildSpace,
 	window,
@@ -281,12 +325,13 @@ export const prepPropsFor = ({
 	payout,
 	estimate = null,
 	estimatedCorrect = null,
+	sla = null,
+	slaBand = null,
 	rebaseSlots = [],
 	swatchGates = [],
 }: PrepFrame): PrepScreenProps => {
 	const answered = answeredThisGate.length;
 	const swatch = gateSwatchAt(gate);
-	const audits = auditsForGate(gate, DEFAULT_AUDIT_SCHEDULE);
 	const prefetcher = prefetcherFor(configs);
 
 	return {
@@ -315,11 +360,14 @@ export const prepPropsFor = ({
 				ladder: bar,
 				coverageGainPercent,
 				peelKb,
+				escrows: escrowKbPerCorrect(configs) > 0,
+				catchesFatal: catcherFor(configs) !== undefined,
 				payout,
 			},
 			{ ...bar, marks: RUNG_MARKS }
 		),
 		estimate: estimatePickerFor(gate, estimate, estimatedCorrect),
+		sla: slaPickerFor(sla, slaBand),
 		rebase: rebaseListFor(configs, rebaseSlots),
 		scores: pollScoresFor(gate, answeredPolls),
 		polls: {
@@ -333,9 +381,11 @@ export const prepPropsFor = ({
 			...auditBillFor(configs, gate, balanceKb, buildSpace),
 			alerts: audits.map(auditPropsFor),
 		},
+		attack,
 		footer: {
 			asides: [
 				{ label: PREP_COMMUNITY_LABEL, icon: "community", onPress: noop },
+				{ label: PREP_INCIDENTS_LABEL, icon: "gate", onPress: noop },
 			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,

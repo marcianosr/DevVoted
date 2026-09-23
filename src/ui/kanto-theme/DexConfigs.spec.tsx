@@ -106,6 +106,18 @@ describe("DexConfigs", () => {
 		expect(screen.queryByText("on install")).not.toBeInTheDocument();
 	});
 
+	it("states how often the registry rolls the rung being read", () => {
+		render(<DexConfigs {...dexConfigsProps({ selected: { js: 3 } })} />);
+
+		expect(screen.getByText("1 in 4 rolls")).toBeVisible();
+	});
+
+	it("quotes no odds for v1, which is never rolled", () => {
+		render(<DexConfigs {...dexConfigsProps()} />);
+
+		expect(screen.queryByText(/rolls/)).not.toBeInTheDocument();
+	});
+
 	it("marks only the rung being read, so the ladder reads as one choice", () => {
 		render(<DexConfigs {...dexConfigsProps({ selected: { js: 3 } })} />);
 

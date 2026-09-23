@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
 	BASE_SLOTS,
-	BASE_STREAK_STEPS,
 	TOP_BUILD_SPACE_RUNG,
 	buildSpaceFor,
 	SLICE_WINDOW,
@@ -29,22 +28,48 @@ import {
 	isBare,
 	isOverCapacity,
 	occupiedSlots,
+	rungAfterBuild,
+	spaceForBuild,
+	upkeepForBuild,
 	overflowSlots,
 	perAnswerPreviewFor,
 	buildModifiersFor,
 	rewardMultiplierFor,
-	streakCapStepsFor,
 	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
 
-describe("capacity is the build space the run holds (ADR-074)", () => {
+const buildOf = (configs: Config[]): Build => ({
+	id: "hyrule-ci",
+	configs,
+});
+
+describe("the build space the run rents (ADR-098)", () => {
 	it("opens every run on the free four", () => {
 		expect(BASE_SLOTS).toBe(4);
 	});
 
-	it("tops out at 32, the widest rung the shop rents", () => {
+	it("tops out at 32, the widest rung on the ladder", () => {
 		expect(buildSpaceFor(TOP_BUILD_SPACE_RUNG)).toBe(32);
+	});
+
+	it("rents the smallest rung the build fits in", () => {
+		expect(spaceForBuild(buildOf([CONFIGS.js]))).toBe(4);
+		expect(spaceForBuild(buildOf([CONFIGS.wtfpl]))).toBe(8);
+		expect(spaceForBuild(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(12);
+	});
+
+	it("bills a weight one over a rung for the whole rung above it", () => {
+		expect(upkeepForBuild(buildOf([CONFIGS.js]))).toBe(0);
+		expect(upkeepForBuild(buildOf([CONFIGS.wtfpl]))).toBe(32);
+		expect(upkeepForBuild(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(64);
+	});
+
+	it("names the rung ahead, and nothing once the ladder runs out", () => {
+		expect(rungAfterBuild(buildOf([CONFIGS.js]))?.weight).toBe(6);
+		expect(
+			rungAfterBuild(buildOf(Array.from({ length: 4 }, () => CONFIGS.wtfpl)))
+		).toBeUndefined();
 	});
 });
 
@@ -56,40 +81,44 @@ describe("what fills the build (ADR-044)", () => {
 		expect(occupiedSlots([CONFIGS.js, CONFIGS.indexedDb])).toBe(3);
 	});
 
-	it("refuses a config that does not fit, and admits a smaller one", () => {
-		const narrow: Build = {
-			id: "hyrule-ci",
-			slots: 4,
-			configs: [CONFIGS.indexedDb],
-		};
-		expect(freeSlots(narrow)).toBe(2);
-		expect(hasRoomFor(narrow, 2)).toBe(true);
-		expect(hasRoomFor(narrow, 4)).toBe(false);
+	it("leaves free only the room inside the rung it rents", () => {
+		expect(freeSlots(buildOf([CONFIGS.indexedDb]))).toBe(2);
+		expect(freeSlots(buildOf([CONFIGS.wtfpl]))).toBe(0);
 	});
 
-	it("reports an overflow rather than pretending the build shrank", () => {
-		const repossessed: Build = {
-			id: "hyrule-ci",
-			slots: 4,
-			configs: [CONFIGS.wtfpl],
-		};
-		expect(isOverCapacity(repossessed)).toBe(true);
-		expect(overflowSlots(repossessed)).toBe(4);
-		expect(freeSlots(repossessed)).toBe(0);
+	/**
+	 * Room stopped being a reason to refuse an offer at every rung but the last
+	 * (ADR-098): a build grows into the rung above rather than being held out of
+	 * it, so only the top of the ladder can still say no.
+	 */
+	it("refuses only what the top rung cannot hold", () => {
+		expect(hasRoomFor(buildOf([CONFIGS.indexedDb]), 16)).toBe(true);
+
+		const brimming = buildOf(Array.from({ length: 4 }, () => CONFIGS.wtfpl));
+		expect(hasRoomFor(brimming, 1)).toBe(false);
+	});
+
+	it("reports an overflow only past the top of the ladder", () => {
+		const over = buildOf(Array.from({ length: 5 }, () => CONFIGS.wtfpl));
+
+		expect(isOverCapacity(over)).toBe(true);
+		expect(overflowSlots(over)).toBe(8);
 	});
 });
 
-const buildWith = (configs: Config[]): Build => ({
-	id: "hyrule-ci",
-	slots: BASE_SLOTS,
-	configs,
-});
+const buildWith = buildOf;
 
 const at = (
 	category: AnswerContext["category"],
 	answeredBefore = 1,
 	answerType: AnswerContext["answerType"] = "single"
-): AnswerContext => ({ category, answerType, answeredBefore, cachedHits: 0 });
+): AnswerContext => ({
+	category,
+	answerType,
+	answeredBefore,
+	cachedHits: 0,
+	previouslyMissed: false,
+});
 
 describe("rewardMultiplierFor", () => {
 	it("is 1 across the whole shipped roster — configs pay in coverage or KB, never in a storage multiplier", () => {
@@ -158,20 +187,7 @@ describe("perAnswerPreviewFor", () => {
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
 			streakStepMultiplier: streakMultiplier(1),
-			streakCapMultiplier: 2,
 		});
-	});
-
-	it("caps the streak at the base ten steps on a build that sells no headroom", () => {
-		expect(streakCapStepsFor([])).toBe(BASE_STREAK_STEPS);
-		expect(perAnswerPreviewFor([]).streakCapMultiplier).toBe(2);
-	});
-
-	it("adds a headroom config's steps to the cap, so the ceiling moves with the build", () => {
-		const headroom = { ...CONFIGS.js, id: "flow", streakCapSteps: 5 };
-
-		expect(streakCapStepsFor([headroom])).toBe(BASE_STREAK_STEPS + 5);
-		expect(perAnswerPreviewFor([headroom]).streakCapMultiplier).toBe(2.5);
 	});
 
 	it("carries the streak step, since even the first correct answer rides one", () => {
@@ -248,12 +264,12 @@ describe("perAnswerPreviewFor", () => {
 		).toBeUndefined();
 	});
 
-	it("folds Overclock's throttle into the floor — the opener bonus stays out", () => {
+	it("folds both throttles into the floor, and leaves either opener out of it", () => {
 		expect(perAnswerPreviewFor([CONFIGS.overclock]).coveragePerCorrect).toBe(
 			BASE * 0.5
 		);
 		expect(perAnswerPreviewFor([CONFIGS.coldStart]).coveragePerCorrect).toBe(
-			BASE
+			BASE * 1.5
 		);
 	});
 });
@@ -470,9 +486,14 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer(build, at("js", 1, "multiple"), 1)).toBe(4);
 	});
 
-	it("doubles the window's opening answer with Cold Start, and only that one", () => {
-		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(pays(2));
-		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(pays(1));
+	it("pays nothing for Cold Start's opener and ×1.5 for every answer after it", () => {
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 0), 1)).toBe(pays(0));
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 1), 1)).toBe(
+			pays(1.5)
+		);
+		expect(coverageForAnswer([CONFIGS.coldStart], at("js", 4), 1)).toBe(
+			pays(1.5)
+		);
 	});
 
 	it("front-loads the window with Overclock: ×4 opener, ×0.5 for the rest", () => {
@@ -485,10 +506,10 @@ describe("coverageForAnswer", () => {
 		);
 	});
 
-	it("stacks Overclock and Cold Start multiplicatively on the opener", () => {
+	it("lets Cold Start's dead opener cancel Overclock's, and compounds them after", () => {
 		const build = [CONFIGS.overclock, CONFIGS.coldStart];
-		expect(coverageForAnswer(build, at("js", 0), 1)).toBe(pays(8));
-		expect(coverageForAnswer(build, at("js", 1), 1)).toBe(pays(0.5));
+		expect(coverageForAnswer(build, at("js", 0), 1)).toBe(pays(0));
+		expect(coverageForAnswer(build, at("js", 1), 1)).toBe(pays(0.75));
 	});
 });
 
@@ -552,17 +573,21 @@ describe("coverageBreakdownForAnswer", () => {
 		});
 	});
 
-	it("chips Cold Start on the opener and hides it afterwards", () => {
+	it("chips Cold Start's dead opener as a loss and its throttle as a gain", () => {
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 0), 1, 0)
 		).toEqual({
 			base: BASE,
 			streakBonus: 0,
-			configBonuses: [{ configId: "cold-start", value: BASE, factor: 2 }],
+			configBonuses: [{ configId: "cold-start", value: -BASE, factor: 0 }],
 		});
 		expect(
 			coverageBreakdownForAnswer([CONFIGS.coldStart], at("js", 1), 1, 0)
-		).toEqual({ base: BASE, streakBonus: 0, configBonuses: [] });
+		).toEqual({
+			base: BASE,
+			streakBonus: 0,
+			configBonuses: [{ configId: "cold-start", value: BASE * 0.5, factor: 1.5 }],
+		});
 	});
 
 	it("chips Overclock's throttle as a negative bonus off the opener", () => {
@@ -772,6 +797,7 @@ describe("the receipt for an armed wager", () => {
 		answerType: "single",
 		answeredBefore: 0,
 		cachedHits: 0,
+		previouslyMissed: false,
 	} as const;
 
 	it("names the wager as its own row, so the chip that paid lights up", () => {

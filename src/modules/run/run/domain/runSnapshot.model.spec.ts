@@ -178,6 +178,25 @@ describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
 	});
 });
 
+describe("hydrateRunState — a snapshot written before Database", () => {
+	const preEscrowSnapshot = () => {
+		const { pendingKb: _absent, ...rest } = toRunSnapshot({
+			...baseState,
+			gatesCleared: 2,
+		});
+		return rest;
+	};
+
+	it("opens an empty transaction rather than an undefined one", () => {
+		expect(hydrateRunState(preEscrowSnapshot(), POLLS).pendingKb).toBe(0);
+	});
+
+	it("keeps an open transaction a current snapshot was holding", () => {
+		const current = toRunSnapshot({ ...baseState, pendingKb: 24 });
+		expect(hydrateRunState(current, POLLS).pendingKb).toBe(24);
+	});
+});
+
 describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	const multiPoll = (id: string, correctCount: number): RunPoll => ({
 		id,

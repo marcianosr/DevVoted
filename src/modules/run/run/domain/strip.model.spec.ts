@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { type Config, minify } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import {
 	failPeelShareFor,
 	SLICE_WINDOW,
@@ -78,7 +77,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("peels deeper at a strip-audit gate", () => {
-		const audited = failGate(atGateWithBuild(11, 8));
+		const audited = failGate(atGateWithBuild(11, 8, "strip"));
 		const clean = failGate(atGateWithBuild(10, 8));
 		expect(audited.status).toBe("awaiting-strip");
 		expect(audited.peelSlotsRemaining).toBeGreaterThan(
@@ -247,7 +246,7 @@ describe("configs lost (DVTD-wii3: the comeback standout's tally)", () => {
 		const state = runReducer(
 			{
 				...base,
-				build: { ...base.build, slots: occupiedSlots(configs), configs },
+				build: { ...base.build, configs },
 			},
 			{ type: "minify", configId: "agents-md" }
 		);
@@ -265,7 +264,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		const base = started(["unit-tests", "eslint"]);
 		return {
 			...base,
-			build: { ...base.build, slots: occupiedSlots(configs), configs },
+			build: { ...base.build, configs },
 			status: "awaiting-strip",
 			peelSlotsRemaining: quota,
 			storage,
@@ -394,7 +393,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		const state = failGate({
 			...base,
 			gatesCleared: 1,
-			build: { ...base.build, slots: 1, configs: [CONFIGS.js] },
+			build: { ...base.build, configs: [CONFIGS.js] },
 		});
 		expect(state.status).toBe("dead");
 		expect(state.storage).toBe(0);
@@ -407,7 +406,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		const state = failGate({
 			...base,
 			gatesCleared: 12,
-			build: { ...base.build, slots: 2, configs: [GC] },
+			build: { ...base.build, configs: [GC] },
 		});
 		expect(state.status).toBe("awaiting-strip");
 	});

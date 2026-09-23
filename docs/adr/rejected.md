@@ -232,5 +232,7 @@ Full reasoning sits with the decision it explains.
 - **Coverage-earner, dedupe-by-effect, can-trigger-today and rarity weighting on
   the starting deal**, ADR-062: the draw stays uniform; the guarantees constrain
   shape, never the probability of power.
+- **A drawn-audit floor under rivals' incidents** (the count minus one, or the old count with attacks replacing draws), ADR-099: either keeps the date dealing audits, and the second gives an attack no teeth.
+- **Keeping gates 3 and 12 authored under player-fired audits**, ADR-099: the Champion's reliable challenge is its 90% line, and an introduction nobody fires is not one.
 - **Skipping straight to the shop after a gate**, ADR-057.
 - **The archived-storage random config pull**, ADR-050.

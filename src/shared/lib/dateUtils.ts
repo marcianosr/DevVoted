@@ -6,6 +6,17 @@ export const getTomorrowDateString = () =>
 	format(addDays(new Date(), 1), "yyyy-MM-dd");
 
 /**
+ * The local calendar day a "YYYY-MM-DD" string names, as a half-open range.
+ * Local rather than UTC because every date in the app is the player's own day.
+ */
+export const localDayRange = (date: string): { start: Date; end: Date } => {
+	const start = new Date(`${date}T00:00:00`);
+	const end = new Date(start);
+	end.setDate(end.getDate() + 1);
+	return { start, end };
+};
+
+/**
  * Milliseconds from `now` until the next daily poll opens.
  *
  * The daily poll is keyed on the local calendar date (see getTodayDateString),

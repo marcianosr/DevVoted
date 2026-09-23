@@ -12,6 +12,17 @@ import {
 	type StandoutEntry,
 } from "./CommunityScreen.ui";
 
+/** Owen vendor-locked his Cache; Pete fell carrying a maxed .ts. */
+const OWEN_BUILD = [
+	{ name: ".ts", slots: 1, version: 2 },
+	{ name: "Cache", slots: 4, locked: true },
+	{ name: "Telemetry", slots: 2 },
+];
+const PETE_BUILD = [
+	{ name: ".ts", slots: 1, version: 5 },
+	{ name: "ESLint", slots: 1 },
+];
+
 const climber = (
 	name: string,
 	over: Partial<TrackClimber> = {}
@@ -147,7 +158,15 @@ const pollsById = new Map<string, CommunityPollDetail>([
 const climbGates = gates(
 	new Map([
 		[1, { climbers: [climber("Sam Peeters")] }],
-		[2, { climbers: [climber("Owen Vink"), climber("Lisa Boekesteijn")] }],
+		[
+			2,
+			{
+				climbers: [
+					climber("Owen Vink", { build: OWEN_BUILD }),
+					climber("Lisa Boekesteijn", { build: [] }),
+				],
+			},
+		],
 		[
 			3,
 			{
@@ -160,7 +179,17 @@ const climbGates = gates(
 				],
 			},
 		],
-		[4, { fallen: [{ ...climber("Pete Vries"), runKey: "run-31" }] }],
+		[
+			4,
+			{
+				fallen: [
+					{
+						...climber("Pete Vries", { build: PETE_BUILD }),
+						runKey: "run-31",
+					},
+				],
+			},
+		],
 		[6, { current: true, climbers: [climber("you", { you: true })] }],
 		[8, { best: true }],
 		[9, { uncharted: true }],

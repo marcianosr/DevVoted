@@ -2,20 +2,27 @@ import type { ReactNode } from "react";
 
 const WRAP = "group/tip relative inline-flex";
 const TRIGGER = "cursor-help underline decoration-dotted underline-offset-4";
-const PANEL =
-	"pointer-events-none absolute top-full z-30 mt-2 transition-opacity";
+const TRIGGER_BARE = "cursor-help";
+const PANEL = "pointer-events-none absolute z-30 transition-opacity";
 const PANEL_SHUT =
 	"invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-has-[:focus-visible]/tip:visible group-has-[:focus-visible]/tip:opacity-100";
 const BODY =
 	"flex w-full flex-col gap-2 rounded-2xl border border-theme-faint bg-theme-raised px-4 py-3 text-xs text-theme-soft";
 
-export type TooltipAlign = "start" | "end";
+export type TooltipAlign = "start" | "center" | "end";
+export type TooltipSide = "top" | "bottom";
 export type TooltipWidth = "default" | "wide";
 
 const ALIGN = {
 	start: "left-0",
+	center: "left-1/2 -translate-x-1/2",
 	end: "right-0",
 } satisfies Record<TooltipAlign, string>;
+
+const SIDE = {
+	top: "bottom-full mb-2",
+	bottom: "top-full mt-2",
+} satisfies Record<TooltipSide, string>;
 
 const WIDTH = {
 	default: "w-72",
@@ -26,7 +33,10 @@ export type TooltipProps = {
 	hint?: ReactNode;
 	label: string;
 	align?: TooltipAlign;
+	side?: TooltipSide;
 	width?: TooltipWidth;
+	/** A trigger that already reads as one — a badge — wants no dotted underline. */
+	bare?: boolean;
 	children: ReactNode;
 };
 
@@ -34,19 +44,25 @@ export const Tooltip = ({
 	hint,
 	label,
 	align = "start",
+	side = "bottom",
 	width = "default",
+	bare = false,
 	children,
 }: TooltipProps) => {
 	if (hint === undefined) return <>{children}</>;
 
 	return (
 		<span className={WRAP}>
-			<button type="button" aria-label={label} className={TRIGGER}>
+			<button
+				type="button"
+				aria-label={label}
+				className={bare ? TRIGGER_BARE : TRIGGER}
+			>
 				{children}
 			</button>
 			<span
 				aria-hidden
-				className={`${PANEL} ${WIDTH[width]} ${ALIGN[align]} ${PANEL_SHUT}`}
+				className={`${PANEL} ${SIDE[side]} ${WIDTH[width]} ${ALIGN[align]} ${PANEL_SHUT}`}
 			>
 				<span className={BODY}>{hint}</span>
 			</span>

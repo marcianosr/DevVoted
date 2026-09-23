@@ -58,12 +58,19 @@ This is the same principle as ADR-006's live checklist and ADR-038's
 
 ### Naming
 
-The roster is deliberately vendor-neutral (see the AGENTS.md comment in
-`configRoster.model.ts`). This config breaks that rule on Marciano's explicit
-call: the defeat device *is* the mechanic, "Volkswagen CI" is already what
-developers call a pipeline that is green by fraud, and DevVoted is partly about
-memeing. `|| true` and `continue-on-error: true` were the vendor-neutral
-alternatives, rejected as less funny.
+The roster prefers the generic term over the vendor's where both read (the rule
+used to live as a comment in `configRoster.model.ts`; the roster carries no
+comments, so it is written down here instead). It is a preference rather than a
+law — Dependabot, Intellisense and IndexedDB all ship under product names,
+because in each case the product name *is* what developers call the thing.
+`yarn.lock` sat on that list until DVTD-nacu renamed it `.lock`: every ecosystem
+writes a lockfile and most of them end in that extension, so the generic term
+reads where the vendor's was only one dialect of it. This config breaks the
+preference further, on Marciano's explicit call: the defeat device *is* the
+mechanic, "Volkswagen CI" is already what developers call a pipeline that is
+green by fraud, and DevVoted is partly about memeing. `|| true` and
+`continue-on-error: true` were the vendor-neutral alternatives, rejected as less
+funny.
 
 ## Consequences
 

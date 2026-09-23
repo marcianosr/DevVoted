@@ -3,6 +3,8 @@ export const VICTORY_GATE = 12;
 
 export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
+/** Paid per rival-fired audit a cleared gate carried (ADR-099). */
+export const INCIDENT_SURVIVAL_KB = 32;
 
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 
@@ -23,7 +25,6 @@ export const BUILD_SPACE_RUNGS: readonly BuildSpaceRung[] = [
 
 export const FREE_BUILD_SPACE_RUNG = 0;
 export const TOP_BUILD_SPACE_RUNG = BUILD_SPACE_RUNGS.length - 1;
-export const BUILD_SPACE_FROM_GATE = 2;
 
 export const buildSpaceRungAt = (index: number): BuildSpaceRung =>
 	BUILD_SPACE_RUNGS[
@@ -42,6 +43,26 @@ export const spaceRungFor = (space: number): BuildSpaceRung =>
 	buildSpaceRungAt(rungIndexForSpace(space));
 
 export const upkeepForSpace = (space: number): number => spaceRungFor(space).kb;
+
+/**
+ * The rung a weight is billed at (ADR-098), which is the smallest one it fits
+ * in — the mirror of `rungIndexForSpace`, which resolves downward because it
+ * answers a different question: what a *held* space was paying for.
+ */
+export const rungIndexFitting = (weight: number): number => {
+	const index = BUILD_SPACE_RUNGS.findIndex((rung) => rung.weight >= weight);
+	return index === -1 ? TOP_BUILD_SPACE_RUNG : index;
+};
+
+export const spaceFitting = (weight: number): number =>
+	buildSpaceFor(rungIndexFitting(weight));
+
+export const upkeepFitting = (weight: number): number =>
+	buildSpaceRungAt(rungIndexFitting(weight)).kb;
+
+/** The rung above the one this weight sits in, or undefined at the top. */
+export const rungAfterFitting = (weight: number): BuildSpaceRung | undefined =>
+	BUILD_SPACE_RUNGS[rungIndexFitting(weight) + 1];
 
 export const affordableRungIndex = (balanceKb: number): number => {
 	const affordable = BUILD_SPACE_RUNGS.filter(
@@ -62,6 +83,16 @@ export const FAUCET_CAP_KB = 320;
 export const faucetRemainingKb = (earnedKb: number): number =>
 	Math.max(0, FAUCET_CAP_KB - earnedKb);
 
+/**
+ * What a committed transaction pays against what it held. The cap meters the
+ * commit rather than the pledge, so a rolled-back transaction costs no cap
+ * room — which is the only reading of "rolled back" that leaves no trace.
+ */
+export const ESCROW_COMMIT_MULTIPLIER = 2;
+
+export const escrowCommitKb = (pendingKb: number, earnedKb: number): number =>
+	Math.min(pendingKb * ESCROW_COMMIT_MULTIPLIER, faucetRemainingKb(earnedKb));
+
 export const storageCreditRate = (
 	reason: "victory" | "dead" | "abandoned",
 	gatesCleared: number
@@ -75,13 +106,8 @@ const STREAK_COVERAGE_BONUS = 0.1;
 
 export const BASE_STREAK_STEPS = 10;
 
-export const streakMultiplier = (
-	streak: number,
-	capSteps: number = BASE_STREAK_STEPS
-): number => 1 + STREAK_COVERAGE_BONUS * Math.min(streak, capSteps);
-
-export const streakCapMultiplier = (capSteps: number): number =>
-	1 + STREAK_COVERAGE_BONUS * capSteps;
+export const streakMultiplier = (streak: number): number =>
+	1 + STREAK_COVERAGE_BONUS * Math.min(streak, BASE_STREAK_STEPS);
 
 export const STREAK_UNIT_STEP = 0.1;
 

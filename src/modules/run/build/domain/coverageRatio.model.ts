@@ -28,15 +28,48 @@ export const percentOf = (ratio: number): number => ratio * AS_PERCENT;
 
 export const ratioOf = (percent: number): number => percent / AS_PERCENT;
 
-export const HEALTHY_LADDER: readonly number[] = [
-	0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
+export type GateRung = {
+	/** Units the run must hold at this close to read HEALTHY. */
+	readonly healthy: number;
+	/** Answers under the line where OK ends. */
+	readonly okDrop: number;
+};
+
+/**
+ * One row per gate, in answers. The step between rows is what a run sitting
+ * on yesterday's line must earn today, and it grows with the climb; OK widens
+ * from one answer under the line to three (ADR-094). Percent is derived.
+ */
+export const GATE_RUNGS: readonly GateRung[] = [
+	{ healthy: 3, okDrop: 1 },
+	{ healthy: 6, okDrop: 1 },
+	{ healthy: 9, okDrop: 1 },
+	{ healthy: 12, okDrop: 1.5 },
+	{ healthy: 15.5, okDrop: 1.5 },
+	{ healthy: 19.5, okDrop: 2 },
+	{ healthy: 24, okDrop: 2 },
+	{ healthy: 29, okDrop: 2 },
+	{ healthy: 34.5, okDrop: 2.5 },
+	{ healthy: 40, okDrop: 2.5 },
+	{ healthy: 46, okDrop: 3 },
+	{ healthy: 52, okDrop: 3 },
+	{ healthy: 58.5, okDrop: 3 },
 ];
 
-export const OK_DROP_UNITS = 2;
-export const SHAKY_DROP_UNITS = 4;
+export const rungAt = (gate: number): GateRung =>
+	GATE_RUNGS[Math.min(Math.max(0, gate), GATE_RUNGS.length - 1)];
 
-const atGate = (ladder: readonly number[], gate: number): number =>
-	ladder[Math.min(Math.max(0, gate), ladder.length - 1)];
+export const healthyUnitsAt = (gate: number): number => rungAt(gate).healthy;
+
+export const okDropAt = (gate: number): number => rungAt(gate).okDrop;
+
+/**
+ * The floor is where HEALTHY stood the day before, so a run that closed
+ * HEALTHY never opens the next gate in DANGER, and Pallet has no floor at all
+ * (ADR-057: the calibration gate can hold a run, never kill it).
+ */
+export const floorUnitsAt = (gate: number): number =>
+	gate <= 0 ? 0 : healthyUnitsAt(gate - 1);
 
 const asRatio = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -67,24 +100,14 @@ export const surplusUnits = (units: number, gate: number): number =>
 export const surplusPayoutKb = (units: number, gate: number): number =>
 	Math.round(surplusUnits(units, gate) * KB_PER_PROVEN_SLOT);
 
-export const healthyAt = (gate: number): number => atGate(HEALTHY_LADDER, gate);
+export const healthyAt = (gate: number): number =>
+	unitsToRatio(healthyUnitsAt(gate), gate);
 
-/**
- * The opening gates have no room for their lower bands: two units is 40 points
- * at gate 0 against a 20 point line. The two degenerate cases resolve opposite
- * ways on purpose. A gate with no room for an OK band must not hand out thin
- * clears, so OK collapses up onto the healthy line. A gate with no room for a
- * DANGER band must not end the run, so the floor clamps down to zero (ADR-057:
- * the calibration gate can hold a run, never kill it).
- */
-export const okAt = (gate: number): number => {
-	const dropped = healthyAt(gate) - unitsToRatio(OK_DROP_UNITS, gate);
-
-	return dropped > 0 ? dropped : healthyAt(gate);
-};
+export const okAt = (gate: number): number =>
+	unitsToRatio(healthyUnitsAt(gate) - okDropAt(gate), gate);
 
 export const floorAt = (gate: number): number =>
-	Math.max(0, healthyAt(gate) - unitsToRatio(SHAKY_DROP_UNITS, gate));
+	unitsToRatio(floorUnitsAt(gate), gate);
 
 export type CoverageConfigBonus = {
 	readonly configId: string;
@@ -143,13 +166,32 @@ const BAND_ORDER: readonly CoverageBandId[] = [
 	"perfect",
 ];
 
+/** The bands a player may promise. Holding to SHAKY or DANGER is not a promise. */
+export type CommittableBand = Extract<
+	CoverageBandId,
+	"ok" | "healthy" | "perfect"
+>;
+
+/**
+ * What SLA pays for holding to the band it promised. Read off the band the
+ * player COMMITTED to, never the one they landed in: paying for the landing
+ * would make the promise free and every promise would be OK.
+ */
+export const SLA_UPLIFT: Readonly<Record<CommittableBand, number>> = {
+	ok: 0.1,
+	healthy: 0.25,
+	perfect: 0.5,
+};
+
+export const meetsBand = (
+	band: CoverageBand,
+	least: CoverageBandId
+): boolean => BAND_ORDER.indexOf(band.id) >= BAND_ORDER.indexOf(least);
+
 export const atLeastBand = (
 	band: CoverageBand,
 	least: CoverageBandId
-): CoverageBand =>
-	BAND_ORDER.indexOf(band.id) >= BAND_ORDER.indexOf(least)
-		? band
-		: BAND[least];
+): CoverageBand => (meetsBand(band, least) ? band : BAND[least]);
 
 const focusesOn = (
 	config: Config,

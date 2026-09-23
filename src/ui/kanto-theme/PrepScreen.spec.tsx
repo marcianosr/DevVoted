@@ -227,14 +227,12 @@ describe("PrepScreen", () => {
 				).toBeNull();
 			});
 
-			it("badges the band the calibration gate draws, OK having collapsed", () => {
+			it("badges OK at the calibration gate and draws it no DANGER row", () => {
 				render(<PrepScreen {...kantoPrepCalibration()} />);
 
+				expect(within(requiredBlock()).getByText("OK")).toBeInTheDocument();
 				expect(
-					within(requiredBlock()).getByText("HEALTHY")
-				).toBeInTheDocument();
-				expect(
-					within(outcomeTable()).queryByText("OK", { selector: BAND_BADGE })
+					within(outcomeTable()).queryByText("DANGER", { selector: BAND_BADGE })
 				).not.toBeInTheDocument();
 			});
 
@@ -245,6 +243,9 @@ describe("PrepScreen", () => {
 
 				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 				expect(block.getByText(/already holds/)).toBeInTheDocument();
+				expect(
+					block.getByText(/the day still owes 2 right answers/)
+				).toBeInTheDocument();
 			});
 
 			it("ticks the clear where the run already stands above the line", () => {
@@ -376,12 +377,12 @@ describe("PrepScreen", () => {
 		});
 	});
 
-	describe("the audits it deals", () => {
-		it("draws the audit its own gate deals, and counts it", () => {
+	describe("the incidents locked onto it", () => {
+		it("names the incident a rival locked onto this gate, and counts it", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(screen.getByText("429")).toBeInTheDocument();
-			expect(screen.getByText("Too Many Requests")).toBeInTheDocument();
+			expect(screen.getByText("404")).toBeInTheDocument();
+			expect(screen.getByText("Not Found")).toBeInTheDocument();
 			expect(screen.getByText("1 this gate")).toBeInTheDocument();
 		});
 
@@ -437,7 +438,7 @@ describe("PrepScreen", () => {
 	describe("at the summit", () => {
 		const champion = kantoPrepChampion();
 
-		it("draws all three audits gate 12 always deals", () => {
+		it("names every incident rivals locked onto the summit", () => {
 			render(<PrepScreen {...champion} />);
 
 			for (const code of ["408", "410", "413"]) {

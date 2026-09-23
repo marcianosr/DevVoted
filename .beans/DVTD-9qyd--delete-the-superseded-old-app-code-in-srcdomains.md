@@ -5,10 +5,8 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-08-13T11:18:20Z
-updated_at: 2026-09-19T16:04:32Z
+updated_at: 2026-09-22T18:48:25Z
 parent: DVTD-82c4
-blocked_by:
-    - DVTD-17b3
 ---
 
 Act on the audit: delete what the new engine replaced, rather than restructuring it into `src/modules/`.
@@ -70,3 +68,31 @@ directory as dead. It is not.
       The `progress.service ↔ turn.service` cycle it hides is still there.
 - [ ] `economy/data/configs.ts` (1134 lines) is still live via `/admin`, `Footer` and
       three `src/modules/` files — it cannot be deleted without migrating those.
+
+## Blocker corrected 2026-09-22
+
+This bean was still marked `blocked_by: DVTD-17b3`. **DVTD-17b3 is completed and
+archived** — the gate had been open for some time and nothing said so. Link removed.
+
+The real blocker is narrower and worth stating precisely, because it is what the three
+remaining items all wait on:
+
+`src/domains/economy/data/configs.ts` (1134 lines) has **13 import sites across 11
+files**, and two of them are live production code, not legacy:
+
+- `src/routes/_authed/admin.tsx:8` — a live route
+- `src/components/Footer.component.tsx:5`
+
+plus `configManager.service`, `shopOfferings.service`, `configSelection`,
+`turn.service`, `progress.service`, `runs/api/runs.ts`, `categoryWeight.service`, and
+two specs.
+
+So the order is forced: **migrate `/admin` and `Footer` off the legacy config data
+first**, then the file can go, and only then do the last two items become possible:
+
+- the three `legacy-*` rules in `.dependency-cruiser.cjs:150,160,173` still guard live
+  code, so they cannot retire yet
+- the `src/domains` exemption in `no-circular-runtime` still hides
+  `progress.service ↔ turn.service`
+
+Remaining under `src/domains/` as of today: polls **35**, runs **42**, economy **28**.

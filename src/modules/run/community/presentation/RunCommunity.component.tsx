@@ -7,6 +7,8 @@ import { CommunityView } from "~/modules/run/community/presentation/CommunityVie
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
 import { CommunityScreen } from "~/ui/terminal-theme/screens/CommunityScreen.ui";
 
+const INCIDENTS_ASIDE = "Incidents →";
+
 /** Tier 2 wiring for the run community page (DVTD-xrpx, terminal skin DVTD-wii3). */
 export const RunCommunity = () => {
 	const navigate = useNavigate();
@@ -26,6 +28,10 @@ export const RunCommunity = () => {
 			: undefined,
 	};
 	const timer = countdown.isOpen ? undefined : countdown.label;
+	const aside = {
+		label: INCIDENTS_ASIDE,
+		onUse: () => navigate({ to: "/run/incidents" }),
+	};
 
 	if (community.isPending) {
 		return (
@@ -36,6 +42,7 @@ export const RunCommunity = () => {
 				pollNote="Loading today’s comparison…"
 				countdown={timer}
 				back={back}
+				aside={aside}
 			/>
 		);
 	}
@@ -53,6 +60,7 @@ export const RunCommunity = () => {
 				}
 				countdown={timer}
 				back={back}
+				aside={aside}
 			/>
 		);
 	}
@@ -63,6 +71,7 @@ export const RunCommunity = () => {
 			theme={run?.gateTheme}
 			countdown={timer}
 			back={back}
+			aside={aside}
 		/>
 	);
 };

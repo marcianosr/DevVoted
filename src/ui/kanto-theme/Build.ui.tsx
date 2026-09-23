@@ -1,5 +1,8 @@
 import { clsx } from "clsx";
+import type { ReactNode } from "react";
 
+import { Badge } from "./Badge.ui";
+import type { KantoColor } from "./colors";
 import {
 	ConfigChip,
 	type ChipWidth,
@@ -8,9 +11,12 @@ import {
 import { SlotBox } from "./SlotBox.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
 import { Typography } from "./Typography.ui";
+import { RECURRING_GLYPH, upkeepLabelOf } from "./upkeep";
 import {
 	WeightTrack,
 	roomLineOf,
+	type NextRung,
+	type WeightPreview,
 	type WeightTrackFill,
 } from "./WeightTrack.ui";
 
@@ -37,11 +43,22 @@ const CARET_GLYPH = "›";
 const SEPARATOR = "·";
 const TITLE = "Build";
 
+const NO_UPKEEP = 0;
+const BILLED_COLOR: KantoColor = "saffron";
+const FREE_COLOR: KantoColor = "viridian";
+
 export type BuildSlots = { used: number; capacity: number };
 
 export type BuildWeight = {
-	/** The build space the run rents (ADR-082). What it bills is the shop's to say. */
+	/**
+	 * The build space the run rents, derived from the build itself (ADR-098).
+	 * The bill comes with it: since the ladder stopped being a panel of its own,
+	 * this is the one surface that owns the recurring figure.
+	 */
 	held: number;
+	perGateKb: number;
+	next?: NextRung;
+	preview?: WeightPreview;
 };
 
 type BuildCount =
@@ -79,9 +96,10 @@ const summaryOf = (
 	counted: boolean
 ): string => {
 	if (count.weight !== undefined)
-		return [...led(total, counted), roomLineOf(weight, count.weight.held)].join(
-			` ${SEPARATOR} `
-		);
+		return [
+			...led(total, counted),
+			roomLineOf(weight, count.weight.held, count.weight.next),
+		].join(` ${SEPARATOR} `);
 	if (count.slots === undefined) return configCountOf(total);
 
 	const { used, capacity } = count.slots;
@@ -127,15 +145,33 @@ export const buildSummaryOf = (props: BuildProps): string => {
 	);
 };
 
-export const buildHeadOf = (props: BuildProps): string => {
+export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
+	<Badge color={perGateKb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR}>
+		{RECURRING_GLYPH} {upkeepLabelOf(perGateKb)}
+	</Badge>
+);
+
+/**
+ * The room line plus the bill it implies. A node rather than a string because
+ * the recurring figure wears a badge like every other figure in the kit
+ * (ADR-066), and `Figures` cannot find it: a bare weight is not a figure it
+ * parses, so badging at the call site is the only way to keep the pair honest.
+ */
+export const buildHeadOf = (props: BuildProps): ReactNode => {
 	if (props.weight === undefined) return buildSummaryOf(props);
 
-	const { configs, skipped = [], configCount = true } = props;
-
-	return [
+	const { configs, skipped = [], configCount = true, weight } = props;
+	const line = [
 		...led(configs.length + skipped.length, configCount),
-		roomLineOf(weightOf(fillsOf(configs, skipped)), props.weight.held),
+		roomLineOf(weightOf(fillsOf(configs, skipped)), weight.held, weight.next),
 	].join(` ${SEPARATOR} `);
+
+	return (
+		<>
+			<span>{`${line} ${SEPARATOR} `}</span>
+			<UpkeepBadge perGateKb={weight.perGateKb} />
+		</>
+	);
 };
 
 const vacantSlotsOf = ({ used, capacity }: BuildSlots) =>
@@ -231,6 +267,9 @@ export const Build = ({
 				<WeightTrack
 					fills={fills}
 					held={count.weight.held}
+					next={count.weight.next}
+					preview={count.weight.preview}
+					perGateKb={count.weight.perGateKb}
 					highlight={highlight}
 					caption={caption}
 				/>

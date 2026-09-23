@@ -54,6 +54,35 @@ It satisfies pillar 2 by wearing the consequence: the pick states what it costs
 before it commits, the locked chip carries a visible `locked in` badge for the
 rest of the run, and its uninstall press is gone rather than silently inert.
 
+### Amendment (2026-09-22, DVTD-hs04): "at install" is enforced, not assumed
+
+The first build shipped the pick as an optional press that existed only while
+`status === "rewarding"`. Naming was therefore skippable and, in the opening
+build, impossible — a player could pay 4 weight and exempt nothing for a whole
+run without the screen ever saying so. An affordance withheld in silence reads
+as a mechanic that does not exist, which is the opposite of pillar 2.
+
+Three things close it:
+
+- `canVendorLock` reads `isPrepPhase`, so the pick is legal wherever a config
+  can join the build — the opening build and the shop alike.
+- Both prep screens hold their exit press while the vendor names nobody, and
+  state the bargain in the footer's refusal rather than grey out in silence.
+  `start` refuses the same condition, so the engine holds even if a screen
+  forgets to.
+- `uninstallConfig` gains the guard `sell` and `drop` already had. It was
+  unreachable while naming was shop-only; it is not any more.
+
+The hold needs one carve-out. A build holding nothing but the locker has no
+legal target, because Decision 4 forbids self-targeting — so `canVendorLock`
+also asks whether any other config is present. Without that clause the exit is
+held on a pick that cannot be made, and the player is stranded. The offer
+returns the moment a second config joins.
+
+Escaping an unwanted vendor is still the existing door: sell it in the shop, or
+uninstall it in the opening build. Neither is guarded, and both release the lock
+through `withVendorLockSurviving`.
+
 ## Decision 3: no cap, because its own weight is the cap
 
 `vendor-lock-in` is 4 weight at the standard price. Its own weight sets the

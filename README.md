@@ -20,11 +20,14 @@ build:
 
 | Login | Configs | Build |
 |---|---|---|
-| `lt.surge@kanto.dev` | all 40 | everything unlocked |
-| `koga@kanto.dev` | 23 | coverage multipliers and focus categories |
-| `blaine@kanto.dev` | 13 | wagers, streak growth, audit suppression |
-| `sabrina@kanto.dev` | 12 | storage, interest, subscriptions |
-| `erika@kanto.dev` | 8 | the free starter set — a fresh account |
+| `lance@kanto.dev` | all 40 | everything unlocked |
+| `lorelei@kanto.dev` | 23 | coverage multipliers and focus categories |
+| `agatha@kanto.dev` | 13 | wagers, streak growth, audit suppression |
+| `bruno@kanto.dev` | 12 | storage, interest, subscriptions |
+| `blue@kanto.dev` | 8 | the free starter set — a fresh account |
+
+The eight Kanto gym leaders author the polls and populate the community board.
+They have no login: they exist to give every poll a byline and a face.
 
 The seed also writes the whole 96-poll bank into today's sequence, so a full
 13-gate run is playable in one sitting rather than over 13 days. It is

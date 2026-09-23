@@ -4,7 +4,10 @@ import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio
 import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import type { GateLadder } from "~/modules/run/gate/domain/gate.model";
+import type {
+	GateHoldReason,
+	GateLadder,
+} from "~/modules/run/gate/domain/gate.model";
 import {
 	closedBarFor,
 	type GateAnswer,
@@ -49,6 +52,7 @@ export const gateAnswersOf = (
 		outcome: answer.outcome,
 		share: answer.coverageFactors?.correct,
 		coverage: coverageGainPercentFor(coverageOf(answer), gate),
+		units: coverageOf(answer),
 		answerType: answer.answerType ?? "single",
 		options: answer.options ?? [...answer.picked, ...(answer.correct ?? [])],
 		picked: answer.picked,
@@ -66,6 +70,12 @@ const ladderFor = (view: RunView, verdict: GateVerdict): GateLadder =>
 	verdict === "held" || verdict === "fatal"
 		? view.gateStake.coverageLadder
 		: view.gatePayout.clearedGateLadder;
+
+const heldByFor = (
+	view: RunView,
+	verdict: GateVerdict
+): GateHoldReason | undefined =>
+	verdict === "held" ? (view.gatePayout.heldBy ?? undefined) : undefined;
 
 const heldFor = (view: RunView, verdict: GateVerdict): number =>
 	verdict === "held" || verdict === "fatal"
@@ -99,7 +109,7 @@ export const gateOutcomeFrameOf = (
 		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
 		configs: view.configs,
 		buildSpace: view.buildSpace.space,
-		streak: view.gatesCleared,
+		streak: view.gatePayout.streakAtClose ?? undefined,
 		faded: view.gatePayout.lapsedConfigs.map((config) => ({
 			config,
 			detail: "lapsed on this gate",
@@ -110,14 +120,26 @@ export const gateOutcomeFrameOf = (
 		chosen,
 		onToggle,
 		won: verdict === "won",
+		heldBy: heldByFor(view, verdict),
+		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
+		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
+		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
+		attackEarned: cleared && view.gatePayout.attackEarned,
 		bar: closedBarFor(
 			CLOSING_OF[verdict],
 			ladderFor(view, verdict),
-			heldFor(view, verdict)
+			heldFor(view, verdict),
+			heldByFor(view, verdict)
 		),
 		payoutKb: cleared ? view.gatePayout.gateRewardPaidKb : 0,
+		clearKb: cleared ? view.gatePayout.clearThisGateKb : 0,
+		overflowKb: cleared ? view.gatePayout.overflowThisGateKb : 0,
+		interestKb: cleared ? view.gatePayout.interestThisGateKb : 0,
+		extraPickKb: cleared ? view.gatePayout.extraPickThisGateKb : 0,
 		bonusKb: 0,
 		faucetKb: view.gatePayout.faucetThisGateKb,
+		escrowCommittedKb: cleared ? view.gatePayout.escrowCommittedKb : 0,
+		escrowRolledBackKb: cleared ? 0 : view.gatePayout.escrowRolledBackKb,
 		billKb: view.gatePayout.subscriptionBillKb + view.gatePayout.upkeepBilledKb,
 	};
 };

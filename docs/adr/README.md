@@ -30,10 +30,10 @@ it before proposing one again.**
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054 |
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — whole again under 078 (the shop link is back) |
-| [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056 |
+| [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056, 099 |
 | [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
 | [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — 076 owns what a miss does; the peel has two triggers (076, 074) |
-| [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 |
+| [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 and 099 (the count is a capacity) |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage | Accepted — amended by 053 |
 | [040](040-config-status-online-skipped-offline.md) | A config is online, skipped or offline | Accepted |
 | [042](042-design-pillars-and-anti-pillars.md) | **Design pillars and anti-pillars** — the tiebreaker lens | Accepted |
@@ -43,11 +43,11 @@ it before proposing one again.**
 | [050](050-config-exposure-is-reveal-grant-stage.md) | Config exposure is Reveal / Grant / Stage | Accepted — amended by 051, 062, 064 |
 | [051](051-configs-unlock-on-individual-objectives.md) | Configs unlock on individual objectives | Accepted — amended by 064 |
 | [052](052-the-run-opens-on-a-dealt-hand.md) | The run opens on a dealt hand | Accepted — amended by 057, 062 |
-| [053](053-upgrades-appear-on-the-shelf-and-arms-switch-mid-poll.md) | Upgrades on the shelf; arms switch mid-poll | Accepted |
+| [053](053-upgrades-appear-on-the-shelf-and-arms-switch-mid-poll.md) | Upgrades on the shelf; arms switch mid-poll | Accepted — D4 amended by 097 (the offer climbs) |
 | [054](054-offer-locks-ship-with-yarnlock.md) | Offer locks ship with yarn.lock | Accepted |
 | [055](055-config-hue-is-keyed-to-slot-size.md) | Config hue is keyed to slot size | Accepted — amended by 060 |
-| [056](056-audits-are-drawn-not-scheduled.md) | Audits are drawn from pools, not scheduled | Accepted |
-| [057](057-gate-0-is-the-calibration-gate.md) | Gate 0 is the calibration gate | Accepted |
+| [056](056-audits-are-drawn-not-scheduled.md) | Audits are drawn from pools, not scheduled | Accepted — D1, D2, D4 superseded by 099; the family rule, rank order and canonical ids stand |
+| [057](057-gate-0-is-the-calibration-gate.md) | Gate 0 is the calibration gate | Accepted — amended by 094 (Pallet asks 3 of 5) |
 | [058](058-451-redacts-the-answers-and-sells-them-back.md) | 451 redacts the answers and sells them back | Accepted |
 | [059](059-text-owns-the-weight-axis.md) | Text owns the weight axis | Accepted |
 | [060](060-the-slot-mark-is-a-figure.md) | The slot mark is a figure; version is a dot track | Accepted |
@@ -60,24 +60,35 @@ it before proposing one again.**
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
-| [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain, reset every gate** | Accepted — supersedes 013's decision 1; amended by 081; half built |
+| [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain over every slot the run has opened** | Accepted — supersedes 013's decision 1; amended by 081 and 094 (D2); half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — built by 082, which amends decisions 2, 3 and 4 |
-| [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked) |
-| [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; drawn in the kanto kit, not routed |
+| [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked); context figures superseded by 094 |
+| [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; routed by `gateRulingFor`; amended by 094 (a hold names its reason) |
 | [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
 | [078](078-prep-reads-in-two-columns.md) | **Prep and New run read in two columns, and the band table drops its prose** | Accepted — supersedes 072; restores 032's shop link |
 | [079](079-a-partial-answer-pays-a-quarter-at-a-time.md) | **A partial answer pays a quarter at a time** | Accepted — amends 006 §11; the ladder 081 doubles |
 | [080](080-the-swatch-is-won-by-the-window.md) | **The swatch is won by the window, not by the clear** | Accepted — reverses 019's award rule |
 | [081](081-a-multiple-choice-answer-pays-double.md) | **A multiple-choice answer pays double** | Accepted — amends 073's decision 1; credit is a term beside 079's share |
-| [082](082-build-space-is-rented-by-the-gate.md) | **Build space is rented by the gate** | Accepted — builds 074, amends its decisions 2, 3 and 4; retires 046 and 049 |
+| [082](082-build-space-is-rented-by-the-gate.md) | **Build space is rented by the gate** | Accepted — builds 074, amends its decisions 2, 3 and 4; retires 046 and 049; **D1, D2, D3 and D5 superseded by 098** (the rung is derived, not picked) |
 | [083](083-a-coverage-config-multiplies-or-adds-units.md) | **A coverage config either multiplies the answer or adds flat units** | Accepted — amends the earn formula in 073's decision 1 and 081's decision 1; leaves 079 whole |
-| [084](084-the-answer-shows-its-own-receipt.md) | **An answer shows its own receipt, and the build flashes what paid** | Accepted — builds on 083; amends 069 by giving the footer the flash |
+| [084](084-the-answer-shows-its-own-receipt.md) | **An answer shows its own receipt, and the build flashes what paid** | Accepted — builds on 083; amends 069 by giving the footer the flash; D1 and D2 amended by 095 |
 | [085](085-a-prep-time-bet-pays-coverage-on-a-floor.md) | A prep-time bet pays coverage on a floor | Accepted |
 | [086](086-a-config-can-round-a-partial-up.md) | **A config can round a partial up to a whole unit** | Accepted — amends 079's decision 2; sits inside 083 as an add; leaves 081 whole |
 | [087](087-a-config-can-be-exempt-from-the-space-it-fills.md) | **A config can be exempt from the space it fills** | Accepted — splits carried weight from billable weight; scraps DVTD-kf93 |
 | [088](088-the-run-has-no-id-in-its-url.md) | **The run has no id in its URL** — the status owns the screen | Accepted |
 | [089](089-an-armed-wager-pays-or-bills-one-answer.md) | **An armed wager pays or bills one answer** | Accepted — reverses 073's no-loss rule for one config; second wager beside 085; an add under 083 |
 | [090](090-a-config-can-replace-the-streaks-unit-step.md) | **A config can replace the streak's unit step with a growing one** | Accepted — amends 083; the step climbs with the streak, clamped to the window |
+| [091](091-a-config-can-put-its-earnings-at-risk.md) | **A config can put its earnings at risk** | Accepted — Database escrows per exact answer; a clear commits at ×2, SHAKY or DANGER rolls it back |
+| [092](092-207-multi-status-hides-the-answer-type.md) | **207 Multi-Status hides the answer type and flattens the credit** | Accepted — seventeenth audit; resolves 081 D6; `poll-reading` family keeps it off a 300 gate |
+| [093](093-a-poll-states-how-the-room-did.md) | A poll states how the room did on it | Accepted |
+| [094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md) | **The bands are cut in answers per gate and widen with the climb, and a gate asks two of its own five** | Accepted — amends 073 D2, 057, 076; wires `FLOOR_CORRECT`; the floor is yesterday's HEALTHY line |
+| [095](095-a-score-chip-carries-its-own-receipt.md) | **A score chip carries its own receipt, stated in units that sum** | Accepted — amends 084 D1 and D2; every paid chip opens its own breakdown, the column adds up |
+| [096](096-a-config-can-promise-a-band-or-catch-one.md) | **A config can promise a band, or catch one** | Accepted — SLA is the first band→KB slope; Try/Catch turns one DANGER close into a hold and is spent doing it |
+| [097](097-a-rolled-upgrade-climbs-on-a-coin-flip.md) | **A rolled upgrade climbs on a coin flip** | Accepted — amends 053 D4; one rung up then 1-in-2 per further rung to the cap; odds read as `1 in N rolls`; the registry offer sells through `draft` |
+| [098](098-build-space-scales-with-the-build.md) | **Build space scales with the build, and the install press states the bill** | Accepted — supersedes 082 D1, D2, D3 and D5 and restates its D4; the rung is derived from `billableSlotsOf`, never picked; crossing one arms the install press; ladder and prices unchanged |
+| [099](099-audits-are-fired-by-rivals.md) | **Audits are fired by rivals, and the gate's count is its capacity** | Accepted — supersedes 056 D1, D2, D4 and 038 D2; no floor, no authored gate, one run-long attack per HEALTHY-or-better clear, lock-time capacity is the law |
+| [100](100-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
+| [100](100-a-category-has-a-living-record.md) | **A category has a living record**, and holding it makes you its maintainer | Accepted — uses ADR-093's `PollView` seam; first slice of DVTD-vje6's per-category records |
 
 ## Retired
 

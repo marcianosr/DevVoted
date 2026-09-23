@@ -15,6 +15,7 @@ const noop = () => {};
 
 const handlers = {
 	onToggle: noop,
+	onVendorLock: noop,
 	onStart: noop,
 };
 
@@ -119,5 +120,62 @@ describe("StartView", () => {
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ })
 		).toBeDisabled();
+	});
+	it("holds the start while vendor lock-in names nobody", () => {
+		render(
+			<StartView
+				view={createMockRunView({
+					...view,
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: true },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toBeDisabled();
+		expect(screen.getByText(/pick the config it exempts/)).toBeInTheDocument();
+	});
+
+	it("offers the pick on every config but the vendor itself", async () => {
+		const onVendorLock = vi.fn();
+		render(
+			<StartView
+				view={createMockRunView({
+					...view,
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: true },
+				})}
+				{...handlers}
+				onVendorLock={onVendorLock}
+			/>
+		);
+
+		expect(screen.getAllByText("lock in")).toHaveLength(1);
+
+		await userEvent.click(screen.getByText("lock in"));
+		expect(onVendorLock).toHaveBeenCalledWith(CONFIGS.agentsMd.id);
+	});
+
+	it("takes the uninstall press off the config it locked in", () => {
+		render(
+			<StartView
+				view={createMockRunView({
+					...view,
+					configs: [CONFIGS.vendorLockIn, CONFIGS.agentsMd],
+					vendorLock: { offered: false, lockedConfigId: CONFIGS.agentsMd.id },
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByText("locked in")).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", {
+				name: `Uninstall ${CONFIGS.agentsMd.label}`,
+			})
+		).not.toBeInTheDocument();
 	});
 });

@@ -1,6 +1,8 @@
+import { AttackPanel, type AttackPanelProps } from "./AttackPanel.ui";
 import { Audit, type AuditProps } from "./Audit.ui";
 import { BandOutcomes, type BandOutcomesProps } from "./BandOutcomes.ui";
 import { EstimatePicker, type EstimatePickerProps } from "./EstimatePicker.ui";
+import { SlaPicker, type SlaPickerProps } from "./SlaPicker.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
 import { Header, type HeaderProps } from "./Header.ui";
@@ -66,8 +68,11 @@ export type PrepScreenProps = {
 	scores: PollScoresProps;
 	polls: LedgerProps;
 	audits: PrepAudits;
+	/** The attack this run holds and who it may be aimed at (ADR-099). */
+	attack?: AttackPanelProps;
 	/** Both are bets on this gate, so they sit with the band table, not the Ledger. */
 	estimate?: EstimatePickerProps;
+	sla?: SlaPickerProps;
 	rebase?: RebaseListProps;
 	footer: ScreenFooterProps;
 	width?: ScreenWidth;
@@ -80,7 +85,9 @@ export const PrepScreen = ({
 	scores,
 	polls,
 	audits,
+	attack,
 	estimate,
+	sla,
 	rebase,
 	footer,
 	width,
@@ -94,6 +101,7 @@ export const PrepScreen = ({
 				<BandOutcomes {...outcomes} />
 				{rebase === undefined ? null : <RebaseList {...rebase} />}
 				{estimate === undefined ? null : <EstimatePicker {...estimate} />}
+				{sla === undefined ? null : <SlaPicker {...sla} />}
 				<Panel>
 					<Panel.Body>
 						<PollScores {...scores} />
@@ -104,6 +112,7 @@ export const PrepScreen = ({
 			<div className={COLUMN}>
 				<Ledger {...polls} />
 				<Audits {...audits} />
+				{attack === undefined ? null : <AttackPanel {...attack} />}
 			</div>
 		</div>
 

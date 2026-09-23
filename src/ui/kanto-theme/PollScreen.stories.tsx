@@ -13,13 +13,16 @@ import {
 	createKantoHeaderProps,
 	createKantoPollScreenProps,
 	createKantoQuestionProps,
+	kantoPollOptions,
 	kantoAudits,
 	kantoRunningConfigs,
 } from "~/test/kantoPoll.factory";
 import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
 import type { AuditProps } from "./Audit.ui";
+import type { ChoiceVerdict } from "./Choice.ui";
 import type { FigureTone, LedgerRow } from "./LedgerRows.ui";
+import type { PollScoresProps } from "./PollScores.ui";
 import { PollScreen } from "./PollScreen.ui";
 import { REDACTED } from "./Redaction.ui";
 import type { QuestionOption } from "./Question.ui";
@@ -203,6 +206,22 @@ export const LateRun: Story = {
 	},
 };
 
+/** What a new player sees most: a poll nobody has measured and they have never met. */
+export const FreshPoll: Story = {
+	args: {
+		facts: {
+			difficulty: {
+				badge: "untested",
+				tone: "pewter",
+				text: "too few first tries to say",
+			},
+		},
+	},
+};
+
+/** A config or an audit withheld the band; the option count falls back to the header. */
+export const FactsWithheld: Story = { args: { facts: undefined } };
+
 export const NoHint: Story = { args: { hint: undefined } };
 
 export const MultipleAnswers: Story = {
@@ -238,16 +257,17 @@ const ANSWER_RECEIPT = [
 	{
 		label: "right answer",
 		detail: "base",
-		figures: [{ label: "1", tone: QUIET }],
+		figures: [{ label: "1.00", tone: QUIET }],
 	},
 	{
 		label: ".ts",
+		tags: [{ label: "×1.25" }],
 		detail: "matches TypeScript",
-		figures: [{ label: "×1.25", tone: QUIET }],
+		figures: [{ label: "+0.25", tone: QUIET }],
 	},
 	{
 		label: "Code Coverage",
-		figures: [{ label: "+0.1", tone: QUIET }],
+		figures: [{ label: "+0.10", tone: QUIET }],
 	},
 	{
 		label: "paid",
@@ -256,17 +276,60 @@ const ANSWER_RECEIPT = [
 	},
 ] as const satisfies readonly LedgerRow[];
 
+/** The answer that just landed, on the chip that paid it. */
+const answeredPaidFor = (): PollScoresProps => {
+	const { paid } = createKantoPollScreenProps().coverage;
+	const [row] = paid?.rows ?? [];
+
+	return {
+		rows: [
+			{
+				...row,
+				payouts: {
+					total: "4.85",
+					slots:
+						row.payouts?.slots.map((slot, position) =>
+							position === 3
+								? {
+										figure: "1.35",
+										color: GAIN,
+										receipt: ANSWER_RECEIPT,
+									}
+								: slot
+						) ?? [],
+				},
+			},
+		],
+	};
+};
+
+const ANSWERED_VERDICTS: Record<string, ChoiceVerdict> = {
+	"option-1": "right",
+	"option-2": "wrong",
+	"option-3": "missed",
+};
+
 export const Answered: Story = {
 	args: {
 		coverage: {
 			...createKantoPollScreenProps().coverage,
 			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD, pin: true }),
-			breakdown: ANSWER_RECEIPT,
+			paid: answeredPaidFor(),
 		},
-		question: createKantoQuestionProps({ pickedIds: ["option-1"] }),
+		question: createKantoQuestionProps({
+			answerType: "multiple",
+			pickedIds: ["option-1", "option-2"],
+			options: kantoPollOptions.map((option) => ({
+				...option,
+				verdict: ANSWERED_VERDICTS[option.id],
+			})),
+		}),
 		wrongCost: undefined,
-		hint: undefined,
-		footer: { action: { label: NEXT_LABEL, icon: "gate", onPress: noop } },
+		hint: "Partial<T> and Maybe<T> were the key; Optional<T> is not a built-in.",
+		footer: {
+			action: { label: NEXT_LABEL, icon: "gate", onPress: noop },
+			note: "Enter continues",
+		},
 	},
 };
 
@@ -291,7 +354,13 @@ export const HiddenCategory: Story = {
 };
 
 export const Credited: Story = {
-	args: { author: { handle: "marcianoschildmeijer", title: "Poll Author" } },
+	args: {
+		author: {
+			handle: "marcianoschildmeijer",
+			title: "Poll Author",
+			photoUrl: "/editors/misty.png",
+		},
+	},
 };
 
 export const EveryGate: Story = {

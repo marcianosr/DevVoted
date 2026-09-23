@@ -3,7 +3,7 @@ import {
 	minifiedUnits,
 } from "~/modules/run/config/domain/config.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
-import type { RunState } from "~/modules/run/run/domain/run.model";
+import { type RunState, isPrepPhase } from "~/modules/run/run/domain/run.model";
 
 export const ESTIMATE_CHOICES: readonly number[] = Array.from(
 	{ length: SLICE_WINDOW },
@@ -14,7 +14,7 @@ export const estimatorFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.coveragePerEstimate !== undefined);
 
 export const canEstimate = (state: Pick<RunState, "status">): boolean =>
-	state.status === "configuring" || state.status === "rewarding";
+	isPrepPhase(state);
 
 const isWholeWindowCount = (count: number): boolean =>
 	Number.isInteger(count) && count >= 1 && count <= SLICE_WINDOW;

@@ -197,18 +197,53 @@ describe("PollScreen", () => {
 		expect(screen.queryByText(/Created by/)).not.toBeInTheDocument();
 
 		rerender(<PollScreen {...props} author={{ handle: "marciano" }} />);
-		expect(screen.getByText(/Created by @marciano/)).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "@marciano" })).toBeInTheDocument();
 	});
 
 	it("closes the poll panel on one footer: the credit beside the hint", () => {
 		render(<PollScreen {...props} author={{ handle: "marciano" }} />);
 
-		const footer = screen.getByText(/Created by @marciano/).closest("footer");
+		const footer = screen
+			.getByRole("link", { name: "@marciano" })
+			.closest("footer");
 
 		expect(footer).toHaveTextContent("press A, B or C to answer");
 		expect(footer?.closest("section")).toHaveTextContent(
 			"Which utility type makes every property optional?"
 		);
+	});
+
+	it("stands the category's record under the credit rather than inside it", () => {
+		render(
+			<PollScreen
+				{...props}
+				author={{ handle: "marciano" }}
+				record={{
+					caption: "the longest run of correct TypeScript answers",
+					holder: {
+						handle: "@sabrina",
+						githubLogin: "sabrina",
+						title: "TypeScript Maintainer",
+						figure: "17 in a row",
+					},
+					yourBest: "your best 4",
+				}}
+			/>
+		);
+
+		const footer = screen
+			.getByRole("link", { name: "@marciano" })
+			.closest("footer");
+
+		expect(footer).toHaveTextContent("press A, B or C to answer");
+		expect(footer).not.toHaveTextContent("Record holder");
+		expect(screen.getByText("17 in a row")).toBeInTheDocument();
+	});
+
+	it("leaves the record out when the category has none to state", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.queryByText("Record holder")).not.toBeInTheDocument();
 	});
 
 	it("runs the screen as one column: header, coverage, audits, poll, build", () => {
@@ -277,39 +312,53 @@ describe("PollScreen", () => {
 		expect(screen.queryByText(/You have scored/)).toBeNull();
 	});
 
-	it("accounts for the answer just submitted, row by row", () => {
+	it("accounts for an answer on the chip that paid it, not in a region of its own", () => {
 		render(
 			<PollScreen
 				{...props}
 				coverage={{
 					...props.coverage,
-					breakdown: [
-						{
-							label: "right answer",
-							detail: "base",
-							figures: [{ label: "1" }],
-						},
-						{
-							label: ".js",
-							detail: "matches JavaScript",
-							figures: [{ label: "×1.25" }],
-						},
-						{ label: "paid", figures: [{ label: "1.25" }], total: true },
-					],
+					paid: {
+						rows: [
+							{
+								swatch: gateSwatchAt(0),
+								correct: 1,
+								polls: 5,
+								current: true,
+								payouts: {
+									total: "1.25",
+									slots: [
+										{
+											figure: "1.25",
+											color: "viridian",
+											receipt: [
+												{
+													label: ".js",
+													tags: [{ label: "×1.25" }],
+													detail: "matches JavaScript",
+													figures: [{ label: "+0.25" }],
+												},
+												{
+													label: "paid",
+													figures: [{ label: "1.25" }],
+													total: true,
+												},
+											],
+										},
+									],
+								},
+							},
+						],
+					},
 				}}
 			/>
 		);
 
-		expect(screen.getByText("what this answer paid")).toBeInTheDocument();
-		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
-		expect(screen.getByText("right answer")).toBeInTheDocument();
-		expect(screen.getByText("paid")).toBeInTheDocument();
-	});
-
-	it("keeps the receipt off the screen until an answer has landed", () => {
-		render(<PollScreen {...props} />);
-
 		expect(screen.queryByText("what this answer paid")).toBeNull();
+		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "poll 1 — paid 1.25" })
+		).toBeInTheDocument();
 	});
 
 	it("states coverage exactly once, so no row says it again", () => {
@@ -396,5 +445,31 @@ describe("PollScreen", () => {
 		);
 
 		expect(container.querySelector(".coverage-bar-pin")).toBeInTheDocument();
+	});
+});
+
+describe("PollScreen's fact band", () => {
+	it("states how the room did and what this account did, above the question", () => {
+		render(<PollScreen {...createKantoPollScreenProps()} />);
+
+		expect(screen.getByText("brutal")).toBeInTheDocument();
+		expect(screen.getByText("seen before")).toBeInTheDocument();
+	});
+
+	it("moves the option count out of the header and onto the band", () => {
+		render(<PollScreen {...createKantoPollScreenProps()} />);
+
+		const facts = screen.getByText("3 options · single answer");
+
+		expect(facts.closest("div")).toContainElement(screen.getByText("brutal"));
+	});
+
+	it("leaves the option count in the header when the band is withheld", () => {
+		render(
+			<PollScreen {...createKantoPollScreenProps({ facts: undefined })} />
+		);
+
+		expect(screen.getByText("3 options · single answer")).toBeInTheDocument();
+		expect(screen.queryByText("brutal")).not.toBeInTheDocument();
 	});
 });

@@ -9,12 +9,10 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import {
 	BASE_UNIT,
-	HEALTHY_LADDER,
+	GATE_RUNGS,
 	KB_PER_PROVEN_SLOT,
-	OK_DROP_UNITS,
 	PAYOUT_RATIO_CAP,
 	PERFECT_BONUS,
-	SHAKY_DROP_UNITS,
 	atLeastBand,
 	bandFor,
 	bankableUnits,
@@ -24,16 +22,21 @@ import {
 	coverageGainPercentFor,
 	coverageMultiplierOf,
 	floorAt,
+	floorUnitsAt,
 	focusBonusFor,
 	gainPerCorrectFor,
 	gatePayoutKb,
 	healthyAt,
+	healthyUnitsAt,
 	isRunUnwinnable,
 	maxReachableFrom,
 	multiplierToClear,
 	multiplierToSurvive,
 	okAt,
+	okDropAt,
 	payoutRatioFor,
+	meetsBand,
+	bandOf,
 	perfectBonusFor,
 	readCoverage,
 	rightsToClear,
@@ -51,6 +54,7 @@ const EARLY = 2;
 const LATE = VICTORY_GATE;
 const BARE: readonly never[] = [];
 const PACE = 4;
+const GATES = Array.from({ length: VICTORY_GATE + 1 }, (_, gate) => gate);
 
 const DOUBLER = [CONFIGS.agentsMd];
 const TRIPLER = [CONFIGS.agentsMd, CONFIGS.intellisense];
@@ -69,56 +73,84 @@ describe("the scoring slots", () => {
 });
 
 describe("the sliding ruler", () => {
-	it("carries one healthy line per gate", () => {
-		expect(HEALTHY_LADDER).toHaveLength(VICTORY_GATE + 1);
+	it("carries one rung per gate", () => {
+		expect(GATE_RUNGS).toHaveLength(VICTORY_GATE + 1);
 	});
 
-	it("climbs from the calibration gate to the champion", () => {
-		expect(healthyAt(0)).toBeCloseTo(0.2);
+	it("asks three of five at Pallet and nine in ten at the champion", () => {
+		expect(healthyAt(0)).toBeCloseTo(0.6);
+		expect(okAt(0)).toBeCloseTo(0.4);
+		expect(floorAt(0)).toBe(0);
 		expect(healthyAt(VICTORY_GATE)).toBeCloseTo(0.9);
 	});
 
 	it("never falls back a step", () => {
-		const falling = HEALTHY_LADDER.filter(
-			(line, gate) => gate > 0 && line < HEALTHY_LADDER[gate - 1]
+		const falling = GATES.filter(
+			(gate) => gate > 0 && healthyAt(gate) < healthyAt(gate - 1)
 		);
 
 		expect(falling).toHaveLength(0);
 	});
+
+	it("never asks less of a day than it asked of the day before", () => {
+		const stepAt = (gate: number) =>
+			healthyUnitsAt(gate) - healthyUnitsAt(gate - 1);
+		const shrinking = GATES.filter(
+			(gate) => gate > 1 && stepAt(gate) < stepAt(gate - 1)
+		);
+
+		expect(shrinking).toHaveLength(0);
+	});
 });
 
-describe("the bands are measured in answers, not points", () => {
-	it("drops two units to OK and four to the floor", () => {
-		expect(healthyAt(4) - okAt(4)).toBeCloseTo(
-			unitsToRatio(OK_DROP_UNITS, 4)
-		);
-		expect(healthyAt(4) - floorAt(4)).toBeCloseTo(
-			unitsToRatio(SHAKY_DROP_UNITS, 4)
-		);
+describe("the bands are cut in answers, not points", () => {
+	it("puts OK the gate's own drop under the line", () => {
+		expect(healthyAt(4) - okAt(4)).toBeCloseTo(unitsToRatio(okDropAt(4), 4));
 	});
 
-	it("narrows as the run lengthens, because a gate moves the score less", () => {
-		const early = healthyAt(2) - okAt(2);
-		const late = healthyAt(LATE) - okAt(LATE);
+	it("sets the floor where HEALTHY stood the day before", () => {
+		const off = GATES.filter(
+			(gate) => gate > 0 && floorUnitsAt(gate) !== healthyUnitsAt(gate - 1)
+		);
 
-		expect(late).toBeLessThan(early);
+		expect(off).toHaveLength(0);
+		expect(floorAt(4)).toBeCloseTo(unitsToRatio(healthyUnitsAt(3), 4));
+	});
+
+	it("widens OK as the climb goes on, never narrowing it", () => {
+		const narrowing = GATES.filter(
+			(gate) => gate > 0 && okDropAt(gate) < okDropAt(gate - 1)
+		);
+
+		expect(narrowing).toHaveLength(0);
+		expect(okDropAt(VICTORY_GATE)).toBeGreaterThan(okDropAt(0));
 	});
 
 	/**
-	 * The reason the bands cannot be fixed percentage points. A whole gate moves
-	 * the run score 5/65 at the champion; a fixed ten-point band would be wider
-	 * than that, so the last gates could not change a run's standing at all.
+	 * The reason the bands cannot be fixed percentage points. A whole day moves
+	 * the run score 5/65 at the champion; a band wider than five answers could
+	 * not be crossed in a day, so the last gates could not change a run's
+	 * standing at all.
 	 */
-	it("keeps a single gate able to cross a band at the champion", () => {
-		const gateSwing = unitsToRatio(SLICE_WINDOW, LATE);
-		const bandWidth = healthyAt(LATE) - okAt(LATE);
+	it("keeps a single day able to cross OK at every gate", () => {
+		const walled = GATES.filter((gate) => okDropAt(gate) >= SLICE_WINDOW);
 
-		expect(gateSwing).toBeGreaterThan(bandWidth);
+		expect(walled).toHaveLength(0);
 	});
 
-	it("resolves the opening gate's two degenerate bands opposite ways", () => {
-		expect(okAt(0)).toBe(healthyAt(0));
+	it("draws no DANGER band at Pallet and one at every gate after", () => {
+		const floorless = GATES.filter((gate) => gate > 0 && floorAt(gate) <= 0);
+
 		expect(floorAt(0)).toBe(0);
+		expect(floorless).toHaveLength(0);
+	});
+
+	it("never lets the lines cross", () => {
+		const crossed = GATES.filter(
+			(gate) => !(floorAt(gate) < okAt(gate) && okAt(gate) < healthyAt(gate))
+		);
+
+		expect(crossed).toHaveLength(0);
 	});
 });
 
@@ -293,12 +325,12 @@ describe("what the gate pays", () => {
 
 describe("the solvers the prep screen quotes", () => {
 	it("says how many right answers clear a gate from where the run stands", () => {
-		expect(rightsToClear(4, SLICE_WINDOW, BARE, 6.8)).toBeUndefined();
-		expect(rightsToClear(4, SLICE_WINDOW, DOUBLER, 6.8)).toBe(3);
+		expect(rightsToClear(4, SLICE_WINDOW, BARE, 10)).toBeUndefined();
+		expect(rightsToClear(4, SLICE_WINDOW, DOUBLER, 10)).toBe(3);
 	});
 
 	it("says how many keep it alive", () => {
-		expect(rightsToSurvive(4, SLICE_WINDOW, BARE, 6.8)).toBe(2);
+		expect(rightsToSurvive(4, SLICE_WINDOW, BARE, 10)).toBe(2);
 	});
 
 	it("says when the bar can still be filled", () => {
@@ -307,8 +339,8 @@ describe("the solvers the prep screen quotes", () => {
 	});
 
 	it("says what multiplier the gate in front is asking for", () => {
-		expect(multiplierToSurvive(4, PACE, 6.8)).toBeCloseTo(0.425);
-		expect(multiplierToClear(9, PACE, 20)).toBeCloseTo(4.375);
+		expect(multiplierToSurvive(4, PACE, 10)).toBeCloseTo(0.5);
+		expect(multiplierToClear(9, PACE, 20)).toBeCloseTo(5);
 	});
 
 	it("gives up when no multiplier can carry a gate with no right answers", () => {
@@ -400,8 +432,12 @@ describe("the balance this model exists to hold", () => {
 		return { winRate: wins / TRIALS, averageGate: deepest / TRIALS };
 	};
 
+	/**
+	 * Not quite zero since ADR-094 eased the late floor to yesterday's line:
+	 * about one run in a thousand squeaks through on the poll order alone.
+	 */
 	it("walls a bare build at poor accuracy", () => {
-		expect(simulate(BARE, 0.6).winRate).toBe(0);
+		expect(simulate(BARE, 0.6).winRate).toBeLessThan(0.01);
 	});
 
 	/**
@@ -446,11 +482,11 @@ describe("the balance this model exists to hold", () => {
 	/**
 	 * The multiple-choice bonus is the largest difficulty dial in the model and
 	 * the player does not hold it: the seed deals the mix. A bare build at 70%
-	 * summits under 1% of all-singles runs and better than a third of runs once
+	 * summits about 4% of all-singles runs and better than a third of runs once
 	 * a quarter of the window asks for a set. Recorded so it cannot widen unseen.
 	 */
 	it("swings a near-walled bare build to winnable on the poll mix alone", () => {
-		expect(simulate(BARE, 0.7).winRate).toBeLessThan(0.02);
+		expect(simulate(BARE, 0.7).winRate).toBeLessThan(0.05);
 		expect(simulate(BARE, 0.7, 0.25).winRate).toBeGreaterThan(0.3);
 	});
 
@@ -464,5 +500,25 @@ describe("the balance this model exists to hold", () => {
 		const every = simulate(BARE, 0.75, 1).winRate;
 
 		expect(Math.abs(every - half)).toBeLessThan(0.1);
+	});
+});
+
+describe(meetsBand, () => {
+	it("holds a band against itself", () => {
+		expect(meetsBand(bandOf("healthy"), "healthy")).toBe(true);
+	});
+
+	it("holds a better band against a lesser promise", () => {
+		expect(meetsBand(bandOf("perfect"), "ok")).toBe(true);
+	});
+
+	it("refuses a band under the one promised", () => {
+		expect(meetsBand(bandOf("ok"), "healthy")).toBe(false);
+		expect(meetsBand(bandOf("shaky"), "ok")).toBe(false);
+	});
+
+	it("is the predicate the clamp is built on", () => {
+		expect(atLeastBand(bandOf("danger"), "shaky")).toEqual(bandOf("shaky"));
+		expect(atLeastBand(bandOf("perfect"), "shaky")).toEqual(bandOf("perfect"));
 	});
 });

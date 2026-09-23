@@ -6,11 +6,17 @@ import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 
 const BORDER = "/borders/border-grass.png";
+const PORTRAIT = "/editors/brock.png";
 
 const meta: Meta<typeof Author> = {
 	component: Author,
 	title: "Kanto/Author",
-	args: { handle: "matthijsgroen", title: "Poll editor", borderUrl: BORDER },
+	args: {
+		handle: "matthijsgroen",
+		title: "Poll editor",
+		photoUrl: PORTRAIT,
+		borderUrl: BORDER,
+	},
 	render: (args) => (
 		<Screen theme="viridian" width="narrow">
 			<Author {...args} />
@@ -27,9 +33,7 @@ export const NoBorderEquipped: Story = { args: { borderUrl: undefined } };
 
 export const NoTitle: Story = { args: { title: undefined } };
 
-export const AvatarFallback: Story = {
-	args: { handle: "not-a-real-github-account-xyzzy" },
-};
+export const AvatarFallback: Story = { args: { photoUrl: undefined } };
 
 export const LongTitle: Story = {
 	args: { title: "Poll editor and Kanto Pokédex maintainer" },

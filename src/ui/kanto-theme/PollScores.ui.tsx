@@ -2,7 +2,9 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
+import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMN = "flex w-full flex-col gap-2";
@@ -18,10 +20,13 @@ const SWATCH_SIZE = "small";
 const CORRECT_WORD = "correct";
 const PAID_WORD = "paid";
 const OUT_OF = "out of";
+const POLL_WORD = "poll";
 
 export type PollPaid = {
 	figure: string;
 	color: KantoColor;
+	/** What the figure is made of, shown on hovering the chip that states it. */
+	receipt?: readonly LedgerRow[];
 };
 
 export type PollPayouts = {
@@ -89,6 +94,37 @@ const fillsFor = ({
 const markFor = ({ swatch, current = false }: PollScoreRow): SwatchFill =>
 	current ? { state: "current", swatch } : { state: "discovered", swatch };
 
+const receiptLabelOf = (paid: PollPaid, position: number): string =>
+	`${POLL_WORD} ${position + 1} — ${PAID_WORD} ${paid.figure}`;
+
+/**
+ * A track whose chips carry receipts holds real buttons, so it may not be
+ * hidden from assistive tech the way a purely decorative track is.
+ */
+const tracksReceipts = ({ payouts }: PollScoreRow): boolean =>
+	payouts !== undefined &&
+	payouts.slots.some(
+		(paid) => paid !== undefined && paid.receipt !== undefined
+	);
+
+const PaidChip = ({ paid, position }: { paid: PollPaid; position: number }) => {
+	const chip = <Badge color={paid.color}>{paid.figure}</Badge>;
+
+	if (paid.receipt === undefined || paid.receipt.length === 0) return chip;
+
+	return (
+		<Tooltip
+			label={receiptLabelOf(paid, position)}
+			hint={<LedgerRows rows={paid.receipt} rules="total" />}
+			align="center"
+			side="top"
+			bare
+		>
+			{chip}
+		</Tooltip>
+	);
+};
+
 const Track = ({ row }: { row: PollScoreRow }) => {
 	if (row.payouts === undefined)
 		return (
@@ -107,9 +143,7 @@ const Track = ({ row }: { row: PollScoreRow }) => {
 						{position + 1}
 					</span>
 				) : (
-					<Badge key={position} color={paid.color}>
-						{paid.figure}
-					</Badge>
+					<PaidChip key={position} paid={paid} position={position} />
 				)
 			)}
 		</>
@@ -128,7 +162,10 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 			<Typography variant="caption">{labelOf(row)}</Typography>
 		</span>
 
-		<span aria-hidden className={TRACK}>
+		<span
+			aria-hidden={tracksReceipts(row) ? undefined : true}
+			className={TRACK}
+		>
 			<Track row={row} />
 		</span>
 

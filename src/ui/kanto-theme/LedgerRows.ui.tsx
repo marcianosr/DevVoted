@@ -23,7 +23,7 @@ const FIGURES =
 	"ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2";
 const SEALED =
 	"inline-flex items-center rounded-md border border-dashed border-theme-faint px-2 py-0.5 text-xs";
-const QUIET = "text-sm text-theme-muted";
+const QUIET = "text-sm tabular-nums text-theme-muted";
 const HEADLINE = "text-lg font-bold tabular-nums text-theme-faint";
 
 const SEALED_LABEL = "Withheld until something reveals it";
@@ -80,11 +80,11 @@ const Figure = ({
 
 const Row = ({
 	row,
-	first,
+	ruled,
 	tabled,
 }: {
 	row: LedgerRow;
-	first: boolean;
+	ruled: boolean;
 	tabled: boolean;
 }) => {
 	const figures = row.figures ?? [];
@@ -92,7 +92,7 @@ const Row = ({
 	const tags = row.tags ?? [];
 
 	return (
-		<div className={clsx(tabled ? TABLED_ROW : ROW, !first && TABLE_DIVIDER)}>
+		<div className={clsx(tabled ? TABLED_ROW : ROW, ruled && TABLE_DIVIDER)}>
 			{row.verdict === undefined ? null : (
 				<Verdict outcome={row.verdict} share={row.share} />
 			)}
@@ -130,20 +130,30 @@ const Row = ({
 	);
 };
 
+/** Where the hairlines fall: between every row, or only above the total. */
+export type LedgerRules = "each" | "total";
+
 export type LedgerRowsProps = {
 	rows: readonly LedgerRow[];
 	meter?: MeterProps;
 	tabled?: boolean;
+	rules?: LedgerRules;
 };
 
 export const LedgerRows = ({
 	rows,
 	meter,
 	tabled = false,
+	rules = "each",
 }: LedgerRowsProps) => (
 	<div className={ROWS}>
 		{rows.map((row, index) => (
-			<Row key={index} row={row} first={index === 0} tabled={tabled} />
+			<Row
+				key={index}
+				row={row}
+				ruled={index > 0 && (rules === "each" || row.total === true)}
+				tabled={tabled}
+			/>
 		))}
 		{meter === undefined ? null : (
 			<div className={tabled ? TABLED_METER_ROW : METER_ROW}>

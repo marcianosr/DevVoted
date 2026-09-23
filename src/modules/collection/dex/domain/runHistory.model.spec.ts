@@ -40,9 +40,9 @@ describe("runHistory", () => {
 	});
 
 	it("bands the reading, so units are never mistaken for a percentage", () => {
-		// The guard: 14 units at gate 4 is 56%, over the 50% healthy line. Read
-		// as a bare percentage it would be 14% and band DANGER instead.
-		const [entry] = runHistory([row({ coverage: 14, gatesCleared: 4 })]);
+		// The guard: 16 units at gate 4 is 64%, over the 62% healthy line. Read
+		// as a bare percentage it would be 16% and band DANGER instead.
+		const [entry] = runHistory([row({ coverage: 16, gatesCleared: 4 })]);
 
 		expect(entry.band).toBe("healthy");
 	});

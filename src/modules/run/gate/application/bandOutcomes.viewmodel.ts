@@ -3,6 +3,7 @@ import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	SLICE_WINDOW,
 	roundToOneDecimal,
+	FLOOR_CORRECT,
 } from "~/modules/run/run/domain/rules.model";
 import { signedKbLabel } from "~/shared/lib/storage";
 
@@ -28,7 +29,10 @@ const RANGE_DASH = "–";
 
 export const BAND_OUTCOMES_TITLE = "Objectives and rewards";
 export const BAND_OUTCOMES_NOTE =
-	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
+	"Pays land in the run balance when the gate shuts, quoted at the fewest right answers that land the band and before the streak or any surplus. A peel is paid in KB or in configs.";
+
+export const ESCROW_NOTE =
+	"An open transaction only pays on a clear: SHAKY or DANGER rolls back every KB this window held.";
 
 const CLEAR_SECTION = "to clear the gate";
 const CLEAR_LEAD = "Finish at";
@@ -39,6 +43,9 @@ const ANSWER_LEAD = "answer";
 const SWATCH_KEPT = "kept for good";
 
 const ENDS_THE_RUN = "the run ends";
+const CAUGHT_INSTEAD = "caught · peel instead";
+const DAY_STILL_OWES = "the day still owes";
+const RIGHT_ANSWERS = "right answers";
 const PEEL_TRAIL = "peel";
 
 const spanLabel = (low: number, high: number) =>
@@ -129,14 +136,23 @@ export type BandOutcomesFrame = {
 	ladder: CoverageLadder;
 	coverageGainPercent: number;
 	peelKb: number;
+	/** True while the build holds a config that escrows its earnings (Database). */
+	escrows?: boolean;
+	/** True while a catch stands between a DANGER close and the end of the run. */
+	catchesFatal?: boolean;
 	payout: (correct: number) => number;
 };
 
+/**
+ * The line is priced in answers, and the day owes at least FLOOR_CORRECT of
+ * them whatever the meter reads (ADR-094), so the quote never dips under it.
+ */
 const owedClause = (owed: number | undefined): string => {
 	if (owed === undefined)
 		return `, which ${outOf(SLICE_WINDOW)} right no longer reaches`;
-	if (owed === 0) return ", which the run already holds";
-	return `, or ${owed} of the ${SLICE_WINDOW} right`;
+	if (owed === 0)
+		return `, which the run already holds; ${DAY_STILL_OWES} ${FLOOR_CORRECT} ${RIGHT_ANSWERS}`;
+	return `, or ${Math.max(owed, FLOOR_CORRECT)} of the ${SLICE_WINDOW} right`;
 };
 
 const shutClause = (gate: number): string => {
@@ -186,7 +202,9 @@ const requiredObjectiveFor = (
  */
 export const objectivesFor = (frame: BandOutcomesFrame): ObjectivesProps => {
 	const rung = clearingRungFor(frame.ladder);
-	const met = roundToOneDecimal(frame.held) >= rung.from;
+	const met =
+		roundToOneDecimal(frame.held) >= rung.from &&
+		frame.correctThisGate >= FLOOR_CORRECT;
 
 	return {
 		required: requiredObjectiveFor(rung, met, frame),
@@ -212,7 +230,8 @@ const paysOf = (rung: CoverageRung, frame: BandOutcomesFrame) => {
 	if (rung.band === "perfect") return signedKbLabel(frame.payout(SLICE_WINDOW));
 	if (rung.band === "shaky")
 		return `${signedKbLabel(-frame.peelKb)} ${PEEL_TRAIL}`;
-	if (rung.band === "danger") return ENDS_THE_RUN;
+	if (rung.band === "danger")
+		return frame.catchesFatal === true ? CAUGHT_INSTEAD : ENDS_THE_RUN;
 
 	return signedKbLabel(
 		frame.payout(answersToLand(rung.from, frame.coverageGainPercent))
@@ -232,7 +251,10 @@ export const bandOutcomesPropsFor = (
 ): BandOutcomesProps => ({
 	title: BAND_OUTCOMES_TITLE,
 	objectives: objectivesFor(frame),
-	note: BAND_OUTCOMES_NOTE,
+	note:
+		frame.escrows === true
+			? `${BAND_OUTCOMES_NOTE} ${ESCROW_NOTE}`
+			: BAND_OUTCOMES_NOTE,
 	outcomes: bandOutcomesFor(frame),
 	bar,
 });

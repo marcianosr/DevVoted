@@ -8,6 +8,7 @@ import {
 	pollResponsesTable,
 	pollsTable,
 	runPollsTable,
+	runsTable,
 	usersTable,
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
@@ -264,12 +265,46 @@ export const fetchSeedCategoriesForDate = async (
 };
 
 /**
+ * Poll ids this run's own account has answered before without getting fully
+ * right — Regression Test's trigger. Scoped to the polls this run holds, so the
+ * scan is bounded by the run rather than by the account's whole history, and
+ * derived from the account that owns the run so no caller has to pass a userId.
+ *
+ * Mirrored answers count here, which predates the stored grade and is left
+ * alone deliberately: changing it would move a config's trigger.
+ */
+const fetchMissedPollIds = async (
+	runId: number,
+	pollIds: readonly number[],
+	reader: DbReader
+): Promise<ReadonlySet<string>> => {
+	if (pollIds.length === 0) return new Set();
+
+	const rows = await reader
+		.select({ pollId: pollResponsesTable.poll_id })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(
+					pollResponsesTable.user_id,
+					sql`(SELECT ${runsTable.user_id} FROM ${runsTable} WHERE ${runsTable.id} = ${runId})`
+				),
+				inArray(pollResponsesTable.poll_id, pollIds),
+				sql`${pollResponsesTable.outcome} is distinct from 'correct'`
+			)
+		);
+
+	return new Set(rows.map((row) => String(row.pollId)));
+};
+
+/**
  * The run's own materialized sequence (ADR-011) — the engine's poll list.
  * Ordered by position; may span multiple daily segments.
  */
 export const fetchRunPollsForRun = async (
 	runId: number,
-	reader: DbReader = db
+	reader: DbReader = db,
+	withMissedHistory = false
 ): Promise<RunPoll[]> => {
 	const pollRows = await reader
 		.select(ENGINE_POLL_COLUMNS)
@@ -278,7 +313,19 @@ export const fetchRunPollsForRun = async (
 		.leftJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
 		.where(eq(runPollsTable.run_id, runId))
 		.orderBy(asc(runPollsTable.position));
-	return withOptions(reader, pollRows);
+
+	const polls = await withOptions(reader, pollRows);
+	if (!withMissedHistory) return polls;
+
+	const missed = await fetchMissedPollIds(
+		runId,
+		pollRows.map((row) => row.id),
+		reader
+	);
+
+	return polls.map((poll) =>
+		missed.has(poll.id) ? { ...poll, missedBefore: true } : poll
+	);
 };
 
 /** A new run's opening segment, copied from the day it started on. */

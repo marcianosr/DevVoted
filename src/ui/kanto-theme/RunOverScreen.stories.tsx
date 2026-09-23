@@ -30,7 +30,7 @@ export const FirstGate: Story = {
 		gate: 0,
 		answers: [],
 		payouts: { rows: [] },
-		bar: { floor: 0, ok: 20, healthy: 20, held: 8 },
+		bar: { floor: 0, ok: 40, healthy: 60, held: 8 },
 		unitsHeld: 1.6,
 		swatchGates: [],
 		configs: [],

@@ -5,7 +5,7 @@ import { kantoNextGateAt } from "~/test/kantoPoll.factory";
 
 import { NextGate, type NextGateProps } from "./NextGate.ui";
 
-const propsAt = (cleared = 9, unitsHeld = 41): NextGateProps => {
+const propsAt = (cleared = 9, unitsHeld = 42): NextGateProps => {
 	const next = kantoNextGateAt(cleared, unitsHeld);
 
 	if (next === undefined)
@@ -36,7 +36,7 @@ describe("NextGate", () => {
 		render(<NextGate {...props} />);
 
 		expect(screen.getByText("HEALTHY")).toBeInTheDocument();
-		expect(screen.getByText("80%")).toHaveAttribute(
+		expect(screen.getByText("83.6%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);
@@ -45,16 +45,16 @@ describe("NextGate", () => {
 	it("colours the coverage carried in by the band it lands in", () => {
 		render(<NextGate {...props} />);
 
-		expect(screen.getByText("74.5%")).toHaveAttribute(
+		expect(screen.getByText("76.4%")).toHaveAttribute(
 			"data-screen-theme",
 			"vermillion"
 		);
 	});
 
 	it("wears the healthy colour once the run is already clearing", () => {
-		render(<NextGate {...propsAt(9, 45)} />);
+		render(<NextGate {...propsAt(9, 47)} />);
 
-		expect(screen.getByText("81.8%")).toHaveAttribute(
+		expect(screen.getByText("85.5%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);
@@ -76,7 +76,7 @@ describe("NextGate", () => {
 	});
 
 	it("says so plainly when the run already carries the line in", () => {
-		render(<NextGate {...propsAt(9, 45)} />);
+		render(<NextGate {...propsAt(9, 47)} />);
 
 		expect(
 			screen.getByText("The run already holds this line.")
@@ -91,11 +91,11 @@ describe("NextGate", () => {
 		).toBeInTheDocument();
 	});
 
-	it("rounds the demand, so gate 5 reads 55% rather than a float", () => {
+	it("rounds the demand, so gate 5 reads 65% rather than a float", () => {
 		render(<NextGate {...propsAt(4, 0)} />);
 
-		expect(screen.getByText("55%")).toBeInTheDocument();
-		expect(screen.queryByText(/55\.0+1/)).not.toBeInTheDocument();
+		expect(screen.getByText("65%")).toBeInTheDocument();
+		expect(screen.queryByText(/65\.0+1/)).not.toBeInTheDocument();
 	});
 
 	it("stays quiet when nothing is owed to say", () => {

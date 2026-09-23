@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Config } from "~/modules/run/config/domain/config.model";
+import { Config, maxLevelOf } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIGS,
 	CONFIG_LIST,
@@ -13,10 +13,12 @@ import {
 	MAX_EXTENSIONS,
 	isUpgradeOffer,
 	offerCount,
+	offerOddsOf,
 	rebuildCost,
 	rollDraft,
 	sellRefundIn,
 	upgradeOfferFor,
+	versionOddsFor,
 } from "~/modules/run/shop/domain/draft.model";
 
 const ids = (configs: readonly Config[]): string[] =>
@@ -237,7 +239,7 @@ describe("draftSeed", () => {
 		expect(seenAcrossSeeds([CONFIGS.eslint])).not.toContain("eslint");
 	});
 
-	it("re-offers an owned config only as its next version", () => {
+	it("re-offers an owned config only above the version held, never past its cap", () => {
 		const reoffered = Array.from({ length: 30 }, (_, seed) =>
 			rollDraft(seed, [CONFIGS.js])
 		)
@@ -245,7 +247,10 @@ describe("draftSeed", () => {
 			.filter((config) => config.id === "js");
 
 		expect(reoffered.length).toBeGreaterThan(0);
-		expect(reoffered.every((config) => config.level === 2)).toBe(true);
+		expect(reoffered.every((config) => (config.level ?? 1) > 1)).toBe(true);
+		expect(
+			reoffered.every((config) => (config.level ?? 1) <= maxLevelOf(config))
+		).toBe(true);
 	});
 
 	it("offers Unit Tests like any other unowned config", () => {
@@ -264,7 +269,59 @@ describe("upgradeOfferFor", () => {
 
 		expect(offered.length).toBeGreaterThan(0);
 		expect(offered.every((config) => config.id === "js")).toBe(true);
-		expect(offered.every((config) => config.level === 2)).toBe(true);
+		expect(offered.every((config) => (config.level ?? 1) > 1)).toBe(true);
+	});
+
+	describe("the climb (ADR-097)", () => {
+		const CLIMB_SEEDS = 4000;
+		const levelsOffered = (equipped: readonly Config[]): number[] =>
+			Array.from({ length: CLIMB_SEEDS }, (_, seed) =>
+				upgradeOfferFor(seed, equipped)
+			)
+				.filter((config) => config !== undefined)
+				.map((config) => config.level ?? 1);
+		const shareAt = (levels: readonly number[], level: number): number =>
+			levels.filter((offered) => offered === level).length / levels.length;
+
+		it("lands one rung up about half the time, and halves per rung after that", () => {
+			const levels = levelsOffered([CONFIGS.js]);
+
+			expect(levels.length).toBeGreaterThan(CLIMB_SEEDS / 16);
+			expect(shareAt(levels, 2)).toBeGreaterThan(0.4);
+			expect(shareAt(levels, 2)).toBeLessThan(0.6);
+			expect(shareAt(levels, 3)).toBeGreaterThan(0.15);
+			expect(shareAt(levels, 3)).toBeLessThan(0.35);
+			expect(shareAt(levels, 4)).toBeGreaterThan(0);
+			expect(shareAt(levels, 5)).toBeGreaterThan(0);
+		});
+
+		it("never climbs past the ladder's cap", () => {
+			expect(
+				levelsOffered([CONFIGS.js]).every(
+					(level) => level <= maxLevelOf(CONFIGS.js)
+				)
+			).toBe(true);
+		});
+
+		it("always hands a two-rung config its second rung", () => {
+			const levels = levelsOffered([CONFIGS.telemetry]);
+
+			expect(levels.length).toBeGreaterThan(0);
+			expect(levels.every((level) => level === 2)).toBe(true);
+		});
+
+		it("always hands a config one rung short of its cap that cap", () => {
+			const levels = levelsOffered([{ ...CONFIGS.js, level: 4 }]);
+
+			expect(levels.length).toBeGreaterThan(0);
+			expect(levels.every((level) => level === 5)).toBe(true);
+		});
+
+		it("climbs from the rung held, not from v1", () => {
+			expect(
+				levelsOffered([{ ...CONFIGS.js, level: 3 }]).every((level) => level > 3)
+			).toBe(true);
+		});
 	});
 
 	it("stays rare enough that the shop Upgrade is still the way to level", () => {
@@ -289,6 +346,53 @@ describe("upgradeOfferFor", () => {
 
 	it("withholds an offer from an empty build", () => {
 		expect(acrossSeeds([]).every((config) => config === undefined)).toBe(true);
+	});
+});
+
+describe("versionOddsFor", () => {
+	const shares = (held: number, maxLevel: number) =>
+		versionOddsFor(held, maxLevel).map(({ version, share }) => [
+			version,
+			share,
+		]);
+
+	it("halves per rung and hands the cap the flips it cannot take", () => {
+		expect(shares(1, 5)).toEqual([
+			[2, 1 / 2],
+			[3, 1 / 4],
+			[4, 1 / 8],
+			[5, 1 / 8],
+		]);
+	});
+
+	it("makes a two-rung ladder's second rung a certainty", () => {
+		expect(shares(1, 2)).toEqual([[2, 1]]);
+	});
+
+	it("reads from the rung held, so a v3 sees only v4 and v5", () => {
+		expect(shares(3, 5)).toEqual([
+			[4, 1 / 2],
+			[5, 1 / 2],
+		]);
+	});
+
+	it("sums to one however tall the ladder", () => {
+		for (const maxLevel of [2, 3, 5, 8]) {
+			const total = versionOddsFor(1, maxLevel).reduce(
+				(sum, { share }) => sum + share,
+				0
+			);
+			expect(total).toBeCloseTo(1);
+		}
+	});
+
+	it("has nothing to say for a config at its cap", () => {
+		expect(versionOddsFor(5, 5)).toEqual([]);
+	});
+
+	it("states the share of the rung a rolled offer landed on", () => {
+		expect(offerOddsOf(1, { ...CONFIGS.js, level: 3 })).toBe(1 / 4);
+		expect(offerOddsOf(1, { ...CONFIGS.telemetry, level: 2 })).toBe(1);
 	});
 });
 

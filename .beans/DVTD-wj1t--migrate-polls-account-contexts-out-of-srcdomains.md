@@ -1,11 +1,11 @@
 ---
 # DVTD-wj1t
 title: Migrate polls + account contexts out of src/domains
-status: in-progress
+status: todo
 type: task
 priority: normal
 created_at: 2026-08-12T19:52:09Z
-updated_at: 2026-09-04T15:04:02Z
+updated_at: 2026-09-22T18:51:56Z
 parent: DVTD-u35m
 ---
 
@@ -17,7 +17,7 @@ Order matters: let 7q8l delete the /old surface first, then migrate what is stil
 - [x] After 7q8l: inventory what in src/domains is still imported by live routes
 - [x] account: domains/users -> modules/account/{auth,profile}
 - [ ] ~~polls: domains/polls -> modules/polls/{poll,authoring}~~ — parked pending DVTD-17b3 audit
-- [ ] Retire the legacy-* dependency-cruiser rules as each slice lands
+- [~] ~~Retire the legacy-* dependency-cruiser rules as each slice lands~~ — duplicate, owned by **DVTD-9qyd**
 
 ## Account slice landed (2026-08-13)
 
@@ -96,7 +96,7 @@ tsc clean · lint clean, 0 violations across 536 modules · 1475 tests passing.
 
 ### Still open
 
-`polls` (40 files), `runs` (52) and `economy` (37) remain. `runs` and `economy`
+`polls` (35 files), `runs` (42) and `economy` (28) remain — recounted 2026-09-22. `runs` and `economy`
 are the larger pair and are still reached from `__root.tsx`, `stats.tsx`,
 `seed.ts` and the componentRegistry.
 
@@ -109,3 +109,26 @@ Evidence gathered on the spot: `runs/prototype/` is reachable only from a dev ri
 The account slice above stands — auth is the app's front door, nothing in `modules/` was replacing it, and it retired a cycle plus DVTD-iide. But it was picked by working down the board rather than by asking what the code is *for*.
 
 **The remaining todos (`polls`, and the legacy-rule retirement) are parked** pending DVTD-17b3 (audit) and DVTD-9qyd (delete). Re-scope this bean to whatever genuinely survives.
+
+## Re-scoped to todo (2026-09-22)
+
+Moved off `in-progress`. The bean's own "Direction changed 2026-08-13" section already
+says the remaining work is **parked**, and a parked bean is not in progress — it was
+reading as active work that nobody was doing.
+
+What is genuinely settled: **the account slice is done.** Verified today —
+`src/domains/account/` no longer exists, and `src/modules/account/` holds `auth/` and
+`profile/`, each with `application/`, `infrastructure/` and `presentation/`. That slice
+also retired DVTD-iide and one unconditional dependency-cruiser escape hatch.
+
+Two corrections to the body above:
+
+- **The counts drifted.** `src/domains/` today is polls **35**, runs **42**, economy **28**
+  (105 files), not the 40/52/37 recorded when this was written.
+- **"Retire the legacy-* rules" is a duplicate.** DVTD-9qyd carries the same item and is
+  the bean actually positioned to do it, so it is struck here. One owner per item.
+
+DVTD-17b3 (the audit this waited on) is completed and archived. The real blocker is now
+named on DVTD-9qyd: `src/domains/economy/data/configs.ts` has 13 import sites including
+the live `/admin` route and `Footer.component.tsx`, so nothing further can move until
+those two migrate.

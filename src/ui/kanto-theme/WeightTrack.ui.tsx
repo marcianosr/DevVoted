@@ -1,8 +1,11 @@
 import { clsx } from "clsx";
 
+import { kbLabel } from "~/shared/lib/storage";
+
 import type { KantoColor } from "./colors";
 import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
 import { Typography } from "./Typography.ui";
+import { upkeepLabelOf } from "./upkeep";
 
 const COLUMN = "flex w-full flex-col gap-1.5";
 const TRACK = "flex h-7.5 w-full";
@@ -11,6 +14,12 @@ const SEGMENT =
 const PADDED = "px-1.5";
 const DIMMED = "opacity-35";
 const ROOM = "rounded-r-md border border-dashed border-theme-faint";
+/**
+ * Room the build would grow into, not room it holds. Hatched rather than dashed
+ * under the app.css law: dashed is space you can fill at a price already paid,
+ * and this is space that costs more the moment it is filled.
+ */
+const PREVIEW_ROOM = "rounded-r-md border border-theme-soft bg-hatched-theme";
 
 const NAME = "truncate text-xs font-bold";
 const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
@@ -27,12 +36,17 @@ const FIGURE_SHARE = 0.05;
 const PAST_THE_MIDDLE = 0.5;
 const MIN_AXIS = 1;
 const NO_WEIGHT = 0;
+const NO_UPKEEP = 0;
+const PREVIEW_LINE = "block tabular-nums";
 
 const WEIGHT_WORD = "weight";
 const SEPARATOR = "·";
 const OF_WORD = "of";
 const FREE_WORD = "free";
 const OVER_BY = "over by";
+const BEFORE_BILL = "free before the bill becomes";
+const CURRENT_LABEL = "Current:";
+const AFTER_LABEL = "After install:";
 
 const SEGMENT_RAMP = [
 	"pewter",
@@ -58,10 +72,23 @@ export type WeightTrackFill = {
 	info?: ConfigInfoProps;
 };
 
+/** The rung the build would cross into next, and what it would then bill. */
+export type NextRung = { weight: number; kb: number };
+
+/** What an offer under consideration would do to the track (ADR-098). */
+export type WeightPreview = {
+	weight: number;
+	held: number;
+	perGateKb: number;
+};
+
 export type WeightTrackProps = {
 	fills: readonly WeightTrackFill[];
-	/** The build space the run rents. A hard cap, and what it pays for (ADR-082). */
+	/** The build space the run rents — derived from the build it draws (ADR-098). */
 	held: number;
+	next?: NextRung;
+	preview?: WeightPreview;
+	perGateKb?: number;
 	highlight?: string;
 	caption?: boolean;
 };
@@ -69,14 +96,36 @@ export type WeightTrackProps = {
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
-export const roomLineOf = (weight: number, held: number): string => {
+export const roomLineOf = (
+	weight: number,
+	held: number,
+	next?: NextRung
+): string => {
+	if (weight > held)
+		return `${weight} ${OF_WORD} ${held} ${WEIGHT_WORD} ${SEPARATOR} ${OVER_BY} ${weight - held}`;
+
 	const room =
-		weight > held
-			? `${OVER_BY} ${weight - held}`
-			: `${held - weight} ${FREE_WORD}`;
+		next === undefined
+			? `${held - weight} ${FREE_WORD}`
+			: `${held - weight} ${BEFORE_BILL} ${kbLabel(next.kb)}`;
 
 	return `${weight} ${OF_WORD} ${held} ${WEIGHT_WORD} ${SEPARATOR} ${room}`;
 };
+
+/**
+ * The two lines an armed offer draws. Stated as a before and an after rather
+ * than a delta: the standing bill is the number the player has to weigh, and a
+ * "+16 KB" makes them do the addition to find it.
+ */
+export const previewLinesOf = (
+	weight: number,
+	held: number,
+	perGateKb: number,
+	preview: WeightPreview
+): readonly string[] => [
+	`${CURRENT_LABEL} ${weight} ${OF_WORD} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
+	`${AFTER_LABEL} ${preview.weight} ${OF_WORD} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
+];
 
 const fillLineOf = ({ name, slots }: WeightTrackFill) =>
 	`${name} ${SEPARATOR} ${slots} ${WEIGHT_WORD}`;
@@ -139,11 +188,14 @@ const Segment = ({
 export const WeightTrack = ({
 	fills,
 	held,
+	next,
+	preview,
+	perGateKb = NO_UPKEEP,
 	highlight,
 	caption = true,
 }: WeightTrackProps) => {
 	const weight = weightOf(fills);
-	const axis = Math.max(held, weight, MIN_AXIS);
+	const axis = Math.max(held, weight, preview?.held ?? MIN_AXIS, MIN_AXIS);
 	const highlighted = fills.find((fill) => fill.name === highlight);
 
 	let taken = NO_WEIGHT;
@@ -167,22 +219,38 @@ export const WeightTrack = ({
 					/>
 				))}
 
-				{weight >= axis ? null : (
+				{weight >= held ? null : (
 					<li
 						aria-hidden
-						style={{ flexGrow: axis - weight }}
+						style={{ flexGrow: held - weight }}
 						className={ROOM}
+					/>
+				)}
+
+				{preview === undefined || axis <= held ? null : (
+					<li
+						aria-hidden
+						style={{ flexGrow: axis - Math.max(weight, held) }}
+						className={PREVIEW_ROOM}
 					/>
 				)}
 			</ul>
 
-			{caption ? (
+			{!caption ? null : preview !== undefined ? (
+				<Typography variant="hint">
+					{previewLinesOf(weight, held, perGateKb, preview).map((line) => (
+						<span key={line} className={PREVIEW_LINE}>
+							{line}
+						</span>
+					))}
+				</Typography>
+			) : (
 				<Typography variant="hint">
 					{highlighted === undefined
-						? roomLineOf(weight, held)
+						? roomLineOf(weight, held, next)
 						: fillLineOf(highlighted)}
 				</Typography>
-			) : null}
+			)}
 		</div>
 	);
 };

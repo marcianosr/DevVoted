@@ -116,6 +116,9 @@ const seedClimbers = async (): Promise<number> => {
 			display_name: climber.displayName,
 			email: climber.email,
 			github_username: climber.githubUsername,
+			photo_url: climber.photoUrl,
+			owned_border_ids: [climber.borderId],
+			equipped_border_id: climber.borderId,
 			role: "poll-editor" as const,
 		}))
 	);
@@ -242,6 +245,7 @@ const seedCommunityAnswers = async (
 					answer_date: today,
 					answer_time_ms: 2000 + (hashOf(`${climber.id}:${pollId}`) % 18000),
 					mirrored: false,
+					outcome: answersCorrectly ? "correct" : "wrong",
 				})
 				.returning({ id: pollResponsesTable.response_id });
 
@@ -256,6 +260,163 @@ const seedCommunityAnswers = async (
 	}
 
 	return written;
+};
+
+/**
+ * Every seeded account's answer history across the **whole** pool, backdated.
+ *
+ * Three things the community pass above cannot give, and why they need their
+ * own rows rather than a wider slice of that one:
+ *
+ * - **Every category.** The pool is eight questions per category laid out in
+ *   category order, so slicing the opening gates hands the first two categories
+ *   everything and the other ten nothing. A record is per category, and ten
+ *   empty ones read as a broken feature rather than an open invitation.
+ * - **The accounts you log in as.** `SEED_PLAYERS` had no responses at all, so
+ *   every record stood at "unclaimed for you" however well the room was doing.
+ * - **`mode: "calendar"`.** Session rows dated today are what
+ *   `fetchAnsweredPollIdsForDay` reads to decide what this account has already
+ *   answered *in today's run* — seeding the pool that way would open every run
+ *   with its whole sequence spent. Backdated calendar rows are exactly what the
+ *   legacy loop wrote, and every all-time reader (`fetchPollStats`,
+ *   `fetchPollSplit`, `fetchCategoryRecord`) counts both loops.
+ *
+ * `created_at` is set rather than defaulted because a streak is an ordering:
+ * one batch insert would stamp every row with the same transaction clock and
+ * leave the runs to be cut by whatever order the rows came back in.
+ */
+const HISTORY_DAYS = 56;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const HISTORY_ANSWER_MS = 3000;
+/**
+ * Two sittings through the pool, not one.
+ *
+ * The pool is eight questions per category, so a single pass caps every record
+ * at eight and an accurate account sweeps the category outright — nine of the
+ * twelve records came back at a flat 8, decided by the tie-break rather than by
+ * anyone's play. Doubling the ceiling makes a clean sweep rare enough that the
+ * records differ from one another, which is the whole point of stating one.
+ */
+const HISTORY_PASSES = 2;
+
+type SeedAnswerer = {
+	readonly id: string;
+	readonly displayName: string;
+	readonly accuracy: number;
+};
+
+/**
+ * Two hashes mixed rather than one.
+ *
+ * `hashOf` is a linear `hash * 31 + char` fold, so keys ending in consecutive
+ * poll ids land on a short cycle: the roll steps by a fixed amount each poll
+ * and an 88%-accurate account walks the whole category without once landing
+ * above its threshold. Records then came back at the category ceiling six
+ * times in twelve — a flat number decided by nothing. Folding a second hash
+ * over a differently-shaped key breaks the walk; the seed stays reproducible
+ * because both halves are still pure.
+ */
+const rollFor = (
+	answerer: SeedAnswerer,
+	pass: number,
+	pollId: number
+): number =>
+	(hashOf(`${pollId * 37 + pass}:${answerer.displayName}`) * 31 +
+		hashOf(`${answerer.id}:${pollId}:${pass}`)) %
+	100;
+
+const seedAnswerHistory = async (
+	pollIds: readonly number[]
+): Promise<number> => {
+	const answerers: readonly SeedAnswerer[] = [
+		...SEED_CLIMBERS,
+		...SEED_PLAYERS,
+	];
+	const options = await db
+		.select({
+			id: pollOptionsTable.id,
+			poll_id: pollOptionsTable.poll_id,
+			correct: pollOptionsTable.correct,
+		})
+		.from(pollOptionsTable);
+
+	const optionsByPoll = new Map<number, typeof options>();
+	for (const option of options) {
+		optionsByPoll.set(option.poll_id, [
+			...(optionsByPoll.get(option.poll_id) ?? []),
+			option,
+		]);
+	}
+
+	const sittings = Array.from({ length: HISTORY_PASSES }, (_, pass) => pass);
+	const answerCount = HISTORY_PASSES * pollIds.length;
+
+	const answeredAt = (position: number): Date =>
+		new Date(
+			Date.now() -
+				HISTORY_DAYS * MS_PER_DAY +
+				Math.round((position / answerCount) * HISTORY_DAYS * MS_PER_DAY)
+		);
+
+	const answerOf = (
+		answerer: SeedAnswerer,
+		pass: number,
+		pollId: number,
+		position: number
+	) => {
+		const pollOptions = optionsByPoll.get(pollId) ?? [];
+		if (pollOptions.length === 0) return [];
+
+		const correct = rollFor(answerer, pass, pollId) < answerer.accuracy * 100;
+		const picked = correct
+			? pollOptions.filter((option) => option.correct)
+			: pollOptions.filter((option) => !option.correct).slice(0, 1);
+		if (picked.length === 0) return [];
+
+		const when = answeredAt(position);
+		return [
+			{
+				picked,
+				row: {
+					poll_id: pollId,
+					user_id: answerer.id,
+					mode: "calendar" as const,
+					answer_date: when.toISOString().slice(0, 10),
+					answer_time_ms:
+						HISTORY_ANSWER_MS + (hashOf(`${answerer.id}:${pollId}`) % 18000),
+					mirrored: false,
+					outcome: correct ? ("correct" as const) : ("wrong" as const),
+					created_at: when,
+				},
+			},
+		];
+	};
+
+	const answers = answerers.flatMap((answerer) =>
+		sittings.flatMap((pass) =>
+			pollIds.flatMap((pollId, index) =>
+				answerOf(answerer, pass, pollId, pass * pollIds.length + index)
+			)
+		)
+	);
+
+	if (answers.length === 0) return 0;
+
+	const written = await db
+		.insert(pollResponsesTable)
+		.values(answers.map((answer) => answer.row))
+		.returning({ id: pollResponsesTable.response_id });
+
+	await db.insert(pollResponseOptionsTable).values(
+		answers.flatMap((answer, index) =>
+			answer.picked.map((option) => ({
+				response_id: written[index].id,
+				option_id: option.id,
+			}))
+		)
+	);
+
+	return written.length;
 };
 
 const seedObjectiveProgress = async (): Promise<void> => {
@@ -298,6 +459,9 @@ const seedDatabase = async (): Promise<void> => {
 	console.info(
 		`📦 ${archived} archived runs for ${SEED_PLAYERS[0].displayName}`
 	);
+
+	const history = await seedAnswerHistory(pollIds);
+	console.info(`📜 ${history} backdated answers across every category`);
 
 	const answers = await seedCommunityAnswers(today, pollIds);
 	console.info(`💬 ${answers} community answers`);

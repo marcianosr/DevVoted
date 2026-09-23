@@ -73,9 +73,9 @@ it on the stake receipt. ADR-037 changed that: every gate peels on a miss and a
 strip audit only deepens the peel, so the strip → shop → prep → same-gate
 routing described here is what *every* failed gate now does.
 
-The roster and the escalation curve are [ADR-038](038-the-audit-roster.md)'s;
-which gate carries which audit is [ADR-056](056-audits-are-drawn-not-scheduled.md)'s,
-and only gates 3 and 12 stay authored. KB insolvency is never fatal
+The roster is [ADR-038](038-the-audit-roster.md)'s, and its curve is now a
+capacity: which audits a gate carries is whatever rivals fired at it
+([ADR-099](099-audits-are-fired-by-rivals.md)); no gate is authored. KB insolvency is never fatal
 ([ADR-074](074-weight-is-what-the-build-costs-to-run.md) Decision 4: it peels
 the build down to what the bill allows).
 

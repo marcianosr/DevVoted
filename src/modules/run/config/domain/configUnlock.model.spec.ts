@@ -42,7 +42,7 @@ describe("CONFIG_UNLOCKS", () => {
 		const earnedUnlocks = Object.values(CONFIG_UNLOCKS).filter(
 			(unlock) => unlock.kind === "earned"
 		);
-		expect(earnedUnlocks.length).toBe(32);
+		expect(earnedUnlocks.length).toBe(36);
 		for (const unlock of earnedUnlocks) {
 			expect(unlock.objective.target).toBeGreaterThan(0);
 			expect(unlock.fallbackPollsAnswered).toBeGreaterThan(0);

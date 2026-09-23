@@ -4,6 +4,7 @@ import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone, type DetailReveal } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
+import { InstallScale, type InstallScaleProps } from "./InstallScale.ui";
 import { Redaction, type Redactable } from "./Redaction.ui";
 import {
 	Upgrades,
@@ -50,6 +51,7 @@ const PANEL_OPEN = "pointer-events-auto visible opacity-100";
 const INFO_TONE: ButtonTone = "ambient";
 const UPGRADE_TONE: ButtonTone = "action";
 const INSTALL_TONE: ButtonTone = "action";
+const CONFIRM_TONE: ButtonTone = "commit";
 const UNINSTALL_TONE: ButtonTone = "danger";
 
 const LOCKED_LABEL = "Locked config";
@@ -57,6 +59,7 @@ const INFO_GLYPH = "i";
 const UNINSTALL_GLYPH = "×";
 const UPGRADE_GLYPH = "↑";
 const INSTALL_LABEL = "Install";
+const CONFIRM_LABEL = "Confirm";
 const HINT_SEPARATOR = " · ";
 
 export type ConfigChipBadge =
@@ -74,6 +77,13 @@ export type ChipInstall = {
 	price?: string;
 	disabled?: boolean;
 	hint?: string;
+	/**
+	 * What this install would do to the standing bill, when it crosses a rung
+	 * (ADR-098). Its presence is what makes the press arm: an install inside the
+	 * rung already rented stays a single press.
+	 */
+	scale?: InstallScaleProps;
+	armed?: boolean;
 };
 
 export type ConfigChipProps = Redactable<{
@@ -119,6 +129,11 @@ const upgradeHintOf = (name: string, { version, price }: UpgradeRung) => {
 
 const installHintOf = (name: string, price?: string) => {
 	const names = `${INSTALL_LABEL} ${name}`;
+	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
+};
+
+const confirmHintOf = (name: string, price?: string) => {
+	const names = `${CONFIRM_LABEL} installing ${name}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
@@ -178,13 +193,19 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	const offered =
 		upgrades === undefined ? undefined : offeredRungOf(upgrades.rungs);
 
+	// An armed install outranks both: it is the only panel the player is mid-way
+	// through answering, and it goes away the moment they answer it.
+	const arming = install?.armed === true ? install.scale : undefined;
 	const upgrading = upgradesOpen && upgrades !== undefined;
-	const panel = upgrading ? (
-		<Upgrades {...upgrades} />
-	) : info === undefined ? null : (
-		<ConfigInfo {...info} />
-	);
-	const pinned = upgrading || infoOpen;
+	const panel =
+		arming !== undefined ? (
+			<InstallScale {...arming} />
+		) : upgrading ? (
+			<Upgrades {...upgrades} />
+		) : info === undefined ? null : (
+			<ConfigInfo {...info} />
+		);
+	const pinned = arming !== undefined || upgrading || infoOpen;
 
 	const chip = (
 		<span
@@ -227,12 +248,17 @@ export const ConfigChip = (props: ConfigChipProps) => {
 				)}
 				{install === undefined ? null : (
 					<Button
-						tone={INSTALL_TONE}
-						label={INSTALL_LABEL}
+						tone={arming === undefined ? INSTALL_TONE : CONFIRM_TONE}
+						label={arming === undefined ? INSTALL_LABEL : CONFIRM_LABEL}
 						detail={install.price}
 						detailOn={priceOn}
-						hint={install.hint ?? installHintOf(name, install.price)}
+						hint={
+							arming === undefined
+								? (install.hint ?? installHintOf(name, install.price))
+								: confirmHintOf(name, install.price)
+						}
 						disabled={install.disabled ?? install.onPress === undefined}
+						pressed={arming !== undefined}
 						onPress={install.onPress}
 					/>
 				)}

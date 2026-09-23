@@ -73,7 +73,6 @@ export const Dex = ({ userId }: DexProps) => {
 	const ownedSwatchIds = swatches.data?.success
 		? swatches.data.data.ownedSwatchIds
 		: [];
-	const runs = gateRuns.data?.success ? gateRuns.data.data.runs : [];
 	const history = gateRuns.data?.success ? gateRuns.data.data.history : [];
 	const configEntries = unlocks.data?.success
 		? configdex(unlocks.data.data.unlocks, unlocks.data.data.progress)
@@ -107,7 +106,7 @@ export const Dex = ({ userId }: DexProps) => {
 				/>
 			) : null}
 			{activeId === "audits" ? (
-				<DexAudits {...dexAuditsFor(auditdex(gates, runs))} />
+				<DexAudits {...dexAuditsFor(auditdex(gates))} />
 			) : null}
 			{activeId === "swatches" ? (
 				<DexSwatches {...dexSwatchesFor(gates)} />

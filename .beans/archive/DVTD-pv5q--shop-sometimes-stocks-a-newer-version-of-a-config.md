@@ -1,11 +1,11 @@
 ---
 # DVTD-pv5q
 title: Shop sometimes stocks a newer version of a config
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-09-01T14:15:54Z
-updated_at: 2026-09-01T14:15:54Z
+updated_at: 2026-09-22T11:19:25Z
 parent: DVTD-d0fw
 ---
 
@@ -47,3 +47,7 @@ A 1-slot Focus v2: 32 + 1.5 x 64 = 128 KB, against 96 KB and 5% coverage earned 
 
 - Does a versioned offer read as a reward or as a tax? At 128 KB it competes with two v1 drafts, so it should feel like a choice, not an obvious buy. Watch it in a live run.
 - Copy should say v2, which lands better once DVTD-tt4y (versions, not levels) is in.
+
+## Reasons for Scrapping
+
+Superseded. ADR-053 built the versioned offer this bean asked for, with a different answer to its permission question (the registry price *is* the premium; the coverage gate is bypassed on purpose), and ADR-097 (DVTD-5ljh) answered "which version" with a coin-flip climb rather than a depth ceiling. The price-by-skipped-steps formula and the gate-4/7/10 ceilings are the two ideas that died; both are recorded in ADR-097's consequences.

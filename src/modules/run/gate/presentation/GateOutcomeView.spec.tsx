@@ -72,6 +72,38 @@ const renderAt = (verdict: GateVerdict, props = {}) =>
 	);
 
 describe("GateOutcomeView", () => {
+	it("keeps a floor-held gate's HEALTHY reading and says why it held", () => {
+		render(
+			<GateOutcomeView
+				view={viewAt("held", {
+					answeredThisGate: [
+						answer({ id: "a", category: "js" }),
+						answer({ id: "b", category: "ts", outcome: "wrong" }),
+						answer({ id: "c", category: "css", outcome: "wrong" }),
+					],
+					gateStake: createMockGateStake({
+						gateNumber: 4,
+						coverageLadder: GATE_4_LADDER,
+						coverageHeld: 30,
+					}),
+					gatePayout: createMockGatePayout({ heldBy: "floor" }),
+				})}
+				verdict="held"
+				onReview={() => {}}
+				onNext={() => {}}
+				onRemove={() => {}}
+			/>
+		);
+
+		expect(
+			screen.getByRole("heading", { name: "Lavender holds" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByLabelText("30% of 25% needed \u00b7 HEALTHY")
+		).toBeInTheDocument();
+		expect(screen.getByText(/1 of 5 right, 2 needed/)).toBeInTheDocument();
+	});
+
 	it("reports a cleared gate as cleared, not as a hold", () => {
 		renderAt("cleared");
 
@@ -168,7 +200,7 @@ describe("GateOutcomeView", () => {
 				view={viewAt("cleared", {
 					gatePayout: createMockGatePayout({
 						clearedGateNumber: 0,
-						clearedGateLadder: { floor: 0, ok: 20, healthy: 20 },
+						clearedGateLadder: { floor: 0, ok: 40, healthy: 60 },
 						clearedCoverageHeld: 100,
 					}),
 				})}
@@ -179,7 +211,7 @@ describe("GateOutcomeView", () => {
 		);
 
 		expect(
-			screen.getByLabelText("100% of 20% needed \u00b7 PERFECT")
+			screen.getByLabelText("100% of 60% needed \u00b7 PERFECT")
 		).toBeInTheDocument();
 	});
 
@@ -201,10 +233,10 @@ describe("GateOutcomeView", () => {
 		);
 
 		expect(
-			screen.getByLabelText("100% of 20% needed \u00b7 PERFECT")
+			screen.getByLabelText("100% of 60% needed \u00b7 PERFECT")
 		).toBeInTheDocument();
 		expect(
-			screen.queryByLabelText(/^20% of 20% needed/)
+			screen.queryByLabelText(/^60% of 60% needed/)
 		).not.toBeInTheDocument();
 	});
 
@@ -251,5 +283,32 @@ describe("GateOutcomeView", () => {
 
 		await userEvent.click(screen.getByRole("button", { name: /To the shop/ }));
 		expect(onNext).toHaveBeenCalled();
+	});
+});
+
+describe("rivals' audits at the close (ADR-099)", () => {
+	it("itemises what surviving them paid and chips the attack the clear armed", () => {
+		render(
+			<GateOutcomeView
+				view={viewAt("cleared", {
+					gatePayout: createMockGatePayout({
+						clearedGateNumber: 4,
+						clearedGateLadder: GATE_4_LADDER,
+						clearedCoverageHeld: 30,
+						gateRewardPaidKb: 256,
+						storageBeforeClearKb: 384,
+						clearThisGateKb: 192,
+						incidentSurvivalKb: 64,
+						attackEarned: true,
+					}),
+				})}
+				verdict="cleared"
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(screen.getByText("audits survived")).toBeInTheDocument();
+		expect(screen.getByText("attack earned")).toBeInTheDocument();
 	});
 });

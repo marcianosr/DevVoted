@@ -20,6 +20,7 @@ const COLUMNS =
 const ROWS = "flex w-full flex-col";
 const ROW =
 	"flex w-full items-center gap-3 border-t border-theme-faint px-4 py-2 first:border-t-0";
+const ROW_LINK = "transition-colors hover:bg-theme-raised";
 const FOOTER = "flex items-center gap-3 border-t border-theme-faint px-4 py-3";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 
@@ -91,16 +92,47 @@ export type PanelRowProps = {
 	trailing?: ReactNode;
 	theme?: KantoColor;
 	className?: string;
+	/**
+	 * Makes the whole row the link rather than seeding one inside it: a row is
+	 * a single thing, so a reader should not have to find the one word in it
+	 * that navigates. Kept a plain string, so the kit never learns the router.
+	 */
+	href?: string;
 };
 
-const PanelRow = ({ children, trailing, theme, className }: PanelRowProps) => (
-	<div data-screen-theme={theme} className={clsx(ROW, className)}>
-		{children}
-		{trailing === undefined ? null : (
-			<span className={TRAILING}>{trailing}</span>
-		)}
-	</div>
-);
+const PanelRow = ({
+	children,
+	trailing,
+	theme,
+	className,
+	href,
+}: PanelRowProps) => {
+	const content = (
+		<>
+			{children}
+			{trailing === undefined ? null : (
+				<span className={TRAILING}>{trailing}</span>
+			)}
+		</>
+	);
+
+	if (href === undefined)
+		return (
+			<div data-screen-theme={theme} className={clsx(ROW, className)}>
+				{content}
+			</div>
+		);
+
+	return (
+		<a
+			href={href}
+			data-screen-theme={theme}
+			className={clsx(ROW, ROW_LINK, className)}
+		>
+			{content}
+		</a>
+	);
+};
 
 export type PanelFooterProps = {
 	children: ReactNode;

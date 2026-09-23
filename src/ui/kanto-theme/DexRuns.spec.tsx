@@ -44,6 +44,14 @@ describe("DexRuns", () => {
 		);
 	});
 
+	it("opens each run's permalink from the row itself", () => {
+		render(<DexRuns {...dexRunsProps()} />);
+
+		expect(
+			screen.getAllByRole("link").map((link) => link.getAttribute("href"))
+		).toEqual(["/runs/1", "/runs/2", "/runs/3"]);
+	});
+
 	it("draws every run against the full gate ladder", () => {
 		render(<DexRuns {...dexRunsProps()} />);
 

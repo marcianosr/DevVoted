@@ -8,8 +8,11 @@ audits and left gates 3–6, 8 and 10 as open content slots.
 
 **Amended by [ADR-056](056-audits-are-drawn-not-scheduled.md)** (2026-09-04):
 Decision 2's per-gate schedule table is superseded by staged draw pools, and
-Decision 3's odd-gate rule for Read-only is dropped. The count curve and
-everything else here stand.
+Decision 3's odd-gate rule for Read-only is dropped.
+
+**Amended by [ADR-099](099-audits-are-fired-by-rivals.md)** (2026-09-22):
+Decision 2's count curve is now a **capacity** for rivals' incidents, never a
+dealt count. Decision 3's mechanics and everything else here stand.
 
 ## Context
 
@@ -29,17 +32,14 @@ Burn" named a vibe.
 
 ## Decision 2: the count is the escalation
 
-Gates 0–2 stay clean for onboarding, one audit runs from gate 3, two from gate
-8, three from gate 11. The steps land near the peel curve's (ADR-037), so depth
-reads as one escalation rather than two.
+Superseded by [ADR-099](099-audits-are-fired-by-rivals.md) Decision 2: the same
+curve (0 at gates 0–2, 1 from gate 3, 2 from gate 8, 3 from gate 11) is the
+gate's **capacity** for what rivals fire at it, and a gate nobody attacked is
+clean.
 
 **Order inside a gate matters**, because the receipt reads top down and
-Volkswagen CI reports the *first* audit as passing (ADR-028). The authored
-gates order deliberately; a drawn gate takes a roster rank, which is how ADR-056
-kept this property without an authored array.
-
-Which audit sits on which gate is ADR-056's: gates 4–11 draw from staged pools
-seeded on the date, and only gates 3 and 12 stay fixed.
+Volkswagen CI reports the *first* audit as passing (ADR-028). A locked gate is
+sorted by roster rank (ADR-056 Decision 5), which keeps this property.
 
 ## Decision 3: what each rule does to the engine
 

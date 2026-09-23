@@ -4,6 +4,54 @@ import { render, screen } from "@testing-library/react";
 import { LedgerRows } from "./LedgerRows.ui";
 
 describe("LedgerRows", () => {
+	it("states the units a row added and tags the form it was sold in", () => {
+		render(
+			<LedgerRows
+				rows={[
+					{
+						label: ".js",
+						tags: [{ label: "×1.25" }],
+						detail: "matches JavaScript",
+						figures: [{ label: "+0.25", tone: "quiet" }],
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getByText("+0.25")).toBeInTheDocument();
+		expect(screen.getByText("×1.25")).toBeInTheDocument();
+		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
+	});
+
+	it("rules between every row by default, so a ledger reads as a list", () => {
+		const { container } = render(
+			<LedgerRows
+				rows={[
+					{ label: "right answer", figures: [{ label: "1.00" }] },
+					{ label: ".js", figures: [{ label: "+0.25" }] },
+					{ label: "paid", figures: [{ label: "1.25" }], total: true },
+				]}
+			/>
+		);
+
+		expect(container.querySelectorAll(".border-t")).toHaveLength(2);
+	});
+
+	it("rules only above the total when asked, so a receipt reads as a sum", () => {
+		const { container } = render(
+			<LedgerRows
+				rules="total"
+				rows={[
+					{ label: "right answer", figures: [{ label: "1.00" }] },
+					{ label: ".js", figures: [{ label: "+0.25" }] },
+					{ label: "paid", figures: [{ label: "1.25" }], total: true },
+				]}
+			/>
+		);
+
+		expect(container.querySelectorAll(".border-t")).toHaveLength(1);
+	});
+
 	it("states a row's verdict beside what it paid", () => {
 		render(
 			<LedgerRows

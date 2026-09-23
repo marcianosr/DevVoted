@@ -5,11 +5,11 @@ import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
 import type { KantoColor } from "./colors";
 import { CoverageBar, coverageReadingOf } from "./CoverageBar.ui";
 import type { CoverageBarProps } from "./CoverageBar.ui";
+import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Lead, type LeadLine } from "./Lead.ui";
-import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Panel } from "./Panel.ui";
-import { PanelTable } from "./PanelTable.ui";
+import { PollFacts, type PollFactsProps } from "./PollFacts.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Question, questionFactsOf, type QuestionProps } from "./Question.ui";
 import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
@@ -25,7 +25,6 @@ const SEPARATOR = "·";
 
 const COVERAGE_TITLE = "Coverage";
 const PAID_TITLE = "what each poll paid";
-const BREAKDOWN_TITLE = "what this answer paid";
 const RULE_WORDS = "what a poll pays";
 const AUDITS_TITLE = "Audits";
 const WRONG_COST_WORDS = "wrong costs";
@@ -37,7 +36,6 @@ export type PollCoverage = {
 	bar: CoverageBarProps;
 	lead?: LeadLine;
 	paid?: PollScoresProps;
-	breakdown?: readonly LedgerRow[];
 };
 
 export type PollScreenProps = {
@@ -50,9 +48,12 @@ export type PollScreenProps = {
 	categoryColor?: KantoColor;
 	wrongCost?: string;
 	holds?: string;
+
+	facts?: Omit<PollFactsProps, "trailing">;
 	audits?: readonly AuditProps[];
 	hint?: string;
 	author?: AuthorProps;
+	record?: HallOfFameProps;
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -90,9 +91,11 @@ export const PollScreen = ({
 	categoryColor,
 	wrongCost,
 	holds,
+	facts,
 	audits = [],
 	hint,
 	author,
+	record,
 	footer,
 	width,
 	ground = "bare",
@@ -130,14 +133,6 @@ export const PollScreen = ({
 					<PollScores {...coverage.paid} />
 				</Panel.Body>
 			)}
-			{coverage.breakdown === undefined ? null : (
-				<Panel.Body className={PAID}>
-					<Typography variant="hint">{BREAKDOWN_TITLE}</Typography>
-					<PanelTable>
-						<LedgerRows rows={coverage.breakdown} tabled />
-					</PanelTable>
-				</Panel.Body>
-			)}
 		</Panel>
 
 		{audits.length === 0 ? null : (
@@ -165,7 +160,9 @@ export const PollScreen = ({
 						{holds === undefined ? null : (
 							<Badge color={HOLDS_COLOR}>{holds}</Badge>
 						)}
-						<span>{questionFactsOf(question)}</span>
+						{facts === undefined ? (
+							<span>{questionFactsOf(question)}</span>
+						) : null}
 						{wrongCost === undefined ? null : (
 							<span className={META_ROW}>
 								<span aria-hidden>{SEPARATOR}</span>
@@ -176,10 +173,14 @@ export const PollScreen = ({
 					</>
 				}
 			/>
-			<Panel.Body>
+			{facts === undefined ? null : (
+				<PollFacts {...facts} trailing={questionFactsOf(question)} />
+			)}
+			<Panel.Body className={facts === undefined ? undefined : PAID}>
 				<Question {...question} />
 			</Panel.Body>
 			<PollCredit hint={hint} author={author} />
+			{record === undefined ? null : <HallOfFame {...record} />}
 		</Panel>
 
 		{footer === undefined ? null : (

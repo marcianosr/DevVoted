@@ -1,6 +1,8 @@
 import {
 	type Config,
+	escrowKbPerCorrect,
 	faucetKbPerCorrect,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { autoUpgradeOnAnswer } from "~/modules/run/config/domain/autoUpgrade.model";
 import { decayOnClear } from "~/modules/run/config/domain/decay.model";
@@ -10,13 +12,18 @@ import {
 	type GateWindow,
 } from "~/modules/run/config/domain/effect.model";
 import {
+	type Build,
+	billableSlotsOf,
+	catcherFor,
 	coverageBreakdownForAnswer,
 	coverageFactorsForAnswer,
 	coverageForAnswer,
 	extraPickPayoutFor,
 	gateClearPayout,
 	occupiedSlots,
+	upkeepForBuild,
 	storageInterestFor,
+	stripConfig,
 } from "~/modules/run/build/domain/build.model";
 import {
 	type CoverageBreakdown,
@@ -27,8 +34,10 @@ import {
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	type GateClose,
+	bandAtClose,
 	failPeelQuotaFor,
-	gateClosingFor,
+	type GateRuling,
+	gateRulingFor,
 	gateDemandFor,
 	runCoverageAtClose,
 } from "~/modules/run/gate/domain/gate.model";
@@ -36,14 +45,18 @@ import {
 	type Audit,
 	auditBurnKb,
 	auditScoreShare,
+	auditsHideAnswerType,
 	auditTimeLimitMs,
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { estimatePayoutUnits } from "~/modules/run/run/domain/estimate.model";
+import { slaUpliftKb } from "~/modules/run/run/domain/sla.model";
+import { armAttack } from "~/modules/run/run/domain/attack.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
+	escrowCommitKb,
 	faucetRemainingKb,
 	highestAffordableSpace,
 	isPeelFatal,
@@ -52,10 +65,13 @@ import {
 	roundToTwoDecimals,
 	SLICE_WINDOW,
 	VICTORY_GATE,
+	FLOOR_CORRECT,
+	INCIDENT_SURVIVAL_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type AnsweredPoll,
 	type AnswerOutcome,
+	type AnswerType,
 	type RunPoll,
 	answerOutcome,
 	cachedHitsFor,
@@ -67,6 +83,7 @@ import {
 	addStorage,
 	auditsOf,
 	freshWindow,
+	incidentsAt,
 	liveConfigsOf,
 	type RunState,
 	scheduleOf,
@@ -83,21 +100,33 @@ const clearLine = (gateNumber: number, reward: number): string => {
 
 type UpkeepSettlement = {
 	readonly paidKb: number;
-	readonly space: number;
+	/**
+	 * Set only when the balance fell short: the space the payment actually
+	 * bought. The build cannot be dropped to fit it — the rung follows the build
+	 * (ADR-098) — so it becomes a cap the shop door holds the run to until the
+	 * build fits, which is ADR-082 Decision 4's remedy with the rung derived.
+	 */
 	readonly droppedTo?: number;
 };
 
-const settleUpkeep = (space: number, balanceKb: number): UpkeepSettlement => {
-	const owed = upkeepForSpace(space);
-	if (owed <= balanceKb) return { paidKb: owed, space };
+const settleUpkeep = (build: Build, balanceKb: number): UpkeepSettlement => {
+	const owed = upkeepForBuild(build);
+	if (owed <= balanceKb) return { paidKb: owed };
 
 	const affordable = highestAffordableSpace(balanceKb);
-	return {
-		paidKb: upkeepForSpace(affordable),
-		space: affordable,
-		droppedTo: affordable,
-	};
+	return { paidKb: upkeepForSpace(affordable), droppedTo: affordable };
 };
+
+const missedLineFor = (
+	ruling: GateRuling,
+	gateNumber: number,
+	correct: number,
+	heldCoverage: number,
+	demand: number
+): string =>
+	ruling.closing === "held" && ruling.heldBy === "floor"
+		? `Gate ${gateNumber} failed: ${correct} of ${SLICE_WINDOW} right, ${FLOOR_CORRECT} needed.`
+		: `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
 
 /** The gate's five results are in. It owes a close, not another answer. */
 export const gateWindowComplete = (state: RunState): boolean =>
@@ -119,6 +148,12 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		estimateThisGateUnits: committed === undefined ? undefined : estimateUnits,
 	};
 
+	// SLA cannot settle here the way the estimate does: it is a function OF the
+	// band, so it has to wait until the close has read one. Only the clearing
+	// path can pay it, and every other path drops the promise unpaid.
+	const promised = state.slaBand;
+	const droppedSla = { slaBand: undefined, slaUpliftKb: undefined };
+
 	// The bet settles INSIDE the window rather than beside it: a won bet has to
 	// be able to lift a gate over its own line, and it cannot once the band has
 	// already been read off the window.
@@ -135,6 +170,16 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				: swatchGates,
 	};
 
+	// Database's open transaction. Only a cleared gate turns it into storage;
+	// every other close rolls it back, and no cap room is spent either way until
+	// the commit lands.
+	const pending = state.pendingKb ?? 0;
+	const rolledBackEscrow = {
+		pendingKb: 0,
+		escrowCommittedKb: 0,
+		escrowRolledBackKb: pending,
+	};
+
 	const close: GateClose = {
 		build: state.build,
 		bankedUnits: state.bankedUnits,
@@ -143,11 +188,22 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		gatesCleared: state.gatesCleared,
 		schedule,
 	};
-	const closing = gateClosingFor(close);
+	const ruling = gateRulingFor(close);
+	const closingBand = bandAtClose(close);
+	const recordedClose = {
+		lastClose: {
+			gate: gateNumber,
+			band: closingBand.id,
+			cleared: ruling.closing === "cleared",
+		},
+	};
 	const heldCoverage = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
 
-	if (closing !== "cleared") {
+	if (ruling.closing !== "cleared") {
 		const attempts = state.gateAttempts ?? 0;
+		// Drawn on the build that closed the gate, the catcher included: it is the
+		// first thing the peel takes, and its own weight settles that much of the
+		// debt (ADR-096).
 		const quota = failPeelQuotaFor(
 			state.build.configs,
 			gateNumber,
@@ -155,29 +211,56 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			attempts
 		);
 		const occupied = occupiedSlots(state.build.configs);
+		const caughtBy =
+			ruling.closing === "held" && ruling.heldBy === "catch"
+				? catcherFor(state.build.configs)
+				: undefined;
+		const caught =
+			caughtBy === undefined
+				? undefined
+				: {
+						build: stripConfig(state.build, caughtBy.id),
+						owed: Math.max(0, quota - slotsOf(caughtBy)),
+						deletedConfigs: [caughtBy],
+						caughtFatalBy: caughtBy.label,
+					};
 		const demand = gateDemandFor(
 			state.build.configs,
 			state.gatesCleared,
 			schedule
 		);
-		const missed = `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
+		const missed = missedLineFor(
+			ruling,
+			gateNumber,
+			state.window.correct,
+			heldCoverage,
+			demand
+		);
 
 		// DANGER shuts the gate for good: no retry, no peel, no choice (ADR-076).
-		if (closing === "fatal")
+		if (ruling.closing === "fatal")
 			return {
 				...state,
 				...settledEstimate,
 				...settledSwatch,
+				...rolledBackEscrow,
+				...droppedSla,
+				...recordedClose,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(state, `${missed} The gate shut on it. Run over.`),
 			};
 
-		if (isPeelFatal(quota, occupied))
+		// A catch that still let the build be emptied would die in exactly the
+		// thin, deep build it was bought for.
+		if (caught === undefined && isPeelFatal(quota, occupied))
 			return {
 				...state,
 				...settledEstimate,
 				...settledSwatch,
+				...rolledBackEscrow,
+				...droppedSla,
+				...recordedClose,
 				currentIndex: nextIndex,
 				status: "dead",
 				log: withLog(
@@ -185,21 +268,38 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 					`${missed} It peels ${quota} — the build fills ${occupied}. Run over.`
 				),
 			};
+		const owed = caught?.owed ?? quota;
 		return {
 			...state,
 			...settledEstimate,
 			...settledSwatch,
+			...rolledBackEscrow,
+			...droppedSla,
+			...recordedClose,
+			...(caught === undefined
+				? {}
+				: {
+						build: caught.build,
+						deletedConfigs: caught.deletedConfigs,
+						caughtFatalBy: caught.caughtFatalBy,
+					}),
 			currentIndex: nextIndex,
 			status: "awaiting-strip",
 			autoUpgradeProgress: 0,
 			gateAttempts: attempts + 1,
+			heldBy: ruling.heldBy,
 			peelRefundKb: 0,
-			peelSlotsRemaining: quota,
+			peelSlotsRemaining: owed,
 			log: withLog(
 				state,
-				quota === 0
+				...(caught === undefined
+					? []
+					: [
+							`${caught.caughtFatalBy} caught it — the gate holds instead of ending the run, and the catch is spent.`,
+						]),
+				owed === 0
 					? `${missed} This gate takes nothing — read it back, then shop and run it again.`
-					: `${missed} Free up ${quota} slot${quota > 1 ? "s" : ""} and run it again.`
+					: `${missed} Free up ${owed} slot${owed > 1 ? "s" : ""} and run it again.`
 			),
 		};
 	}
@@ -218,13 +318,36 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		state.gatesCleared,
 		state.streak
 	);
-	const reward = clearKb + interest + extraPickKb + overflowKb;
+	// The commit is clamped here rather than at the answer, so the run cap
+	// meters what a transaction paid and never what it merely held.
+	const committedKb = escrowCommitKb(pending, state.faucetEarnedKb ?? 0);
+	// A percentage of the gate's own prize, which is the figure prep already
+	// printed against each band — never of the interest or the faucet, which the
+	// promise said nothing about.
+	const upliftKb = slaUpliftKb(
+		state.build.configs,
+		promised,
+		closingBand,
+		clearKb
+	);
+	const survivalKb =
+		INCIDENT_SURVIVAL_KB * incidentsAt(state, gateNumber).length;
+	const armed = armAttack(state.attack, closingBand.id);
+	const reward =
+		clearKb +
+		interest +
+		extraPickKb +
+		overflowKb +
+		committedKb +
+		upliftKb +
+		survivalKb;
 	const rewarded = addStorage(state.storage, reward);
-	const bill = settleUpkeep(state.build.slots, rewarded);
+	const bill = settleUpkeep(state.build, rewarded);
 	const cleared: RunState = {
 		...state,
 		...settledEstimate,
 		...settledSwatch,
+		...recordedClose,
 		window: freshWindow(
 			state.polls,
 			nextIndex,
@@ -236,18 +359,30 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		bankedUnits: banked,
 		streak: 0,
 		gateAttempts: 0,
+		heldBy: undefined,
 		gatesCleared: state.gatesCleared + 1,
 		clearedGate: gateNumber,
 		redoGate: undefined,
 		storage: Math.max(0, rewarded - bill.paidKb),
-		build: { ...state.build, slots: bill.space },
 		upkeepBilledKb: bill.paidKb,
 		upkeepPaidKb: (state.upkeepPaidKb ?? 0) + bill.paidKb,
-		spaceDroppedTo: bill.droppedTo,
 		gateRewardKb: reward,
+		clearThisGateKb: clearKb,
+		overflowThisGateKb: overflowKb,
+		streakAtClose: state.streak,
 		storageBeforeClearKb: state.storage,
 		interestThisGateKb: interest,
 		extraPickThisGateKb: extraPickKb,
+		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + committedKb,
+		pendingKb: 0,
+		escrowCommittedKb: committedKb,
+		escrowRolledBackKb: 0,
+		slaBand: undefined,
+		slaUpliftKb: promised === undefined ? undefined : upliftKb,
+		incidentSurvivalKb: survivalKb,
+		attack: armed,
+		attackEarnedAtGate:
+			armed === state.attack ? state.attackEarnedAtGate : gateNumber,
 		currentIndex: nextIndex,
 	};
 
@@ -264,13 +399,24 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		cleared.storage,
 		gateNumber
 	);
+	const finalBuild =
+		billed.configs === cleared.build.configs
+			? cleared.build
+			: withBuild(cleared.build, billed.configs);
+
+	/**
+	 * Read after the subscriptions settle, because a lapse sheds weight too: a
+	 * build the lapse already shrank into the space the bill covered is not over
+	 * it, and carrying the cap would shut the door on a run that already fits.
+	 */
+	const overCovered =
+		bill.droppedTo !== undefined &&
+		billableSlotsOf(finalBuild) > bill.droppedTo;
 
 	return {
 		...cleared,
-		build:
-			billed.configs === cleared.build.configs
-				? cleared.build
-				: withBuild(cleared.build, billed.configs),
+		build: finalBuild,
+		spaceDroppedTo: overCovered ? bill.droppedTo : undefined,
 		storage: cleared.storage - billed.paidKb,
 		subscriptionBillKb: billed.paidKb,
 		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
@@ -289,11 +435,11 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				(config) => `${config.label} faded to ×1 — deleted from the build.`
 			),
 			...(bill.paidKb > 0 ? [`Build space billed (-${bill.paidKb}KB).`] : []),
-			...(bill.droppedTo === undefined
-				? []
-				: [
-						`The space went unpaid — dropped to ${bill.droppedTo}. Trim the build in the shop.`,
-					]),
+			...(overCovered
+				? [
+						`The space went unpaid — the bill covered ${bill.droppedTo}. Sell or drop to fit it before the shop lets you out.`,
+					]
+				: []),
 			...(billed.paidKb > 0
 				? [`Subscriptions billed (-${billed.paidKb}KB).`]
 				: []),
@@ -316,6 +462,17 @@ type AnswerGrade = {
 
 export const gradedPollFor = (state: RunState, poll: RunPoll): RunPoll =>
 	mirrorsPolls(auditsOf(state)) ? mirrorPoll(poll) : poll;
+
+/**
+ * What the answer is PRICED as, which 207 Multi-Status flattens to a single.
+ * The poll keeps its own type for grading; only the credit reads this, so a
+ * select-all still has to be named in full to pay anything at all.
+ */
+export const creditedAnswerTypeFor = (
+	state: RunState,
+	poll: RunPoll
+): AnswerType =>
+	auditsHideAnswerType(auditsOf(state)) ? "single" : poll.answerType;
 
 const gradeAnswer = (
 	state: RunState,
@@ -351,6 +508,8 @@ type AnswerLedger = {
 	readonly breakdown: CoverageBreakdown;
 	readonly factors?: CoverageFactors;
 	readonly faucetKb: number;
+	/** Pledged into the open transaction, not paid. Never reaches `storage` here. */
+	readonly escrowKb: number;
 	readonly burnKb: number;
 };
 
@@ -359,9 +518,10 @@ export const answerContextFor = (
 	poll: RunPoll
 ): AnswerContext => ({
 	category: poll.category,
-	answerType: poll.answerType,
+	answerType: creditedAnswerTypeFor(state, poll),
 	answeredBefore: state.window.answered,
 	cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
+	previouslyMissed: poll.missedBefore === true,
 });
 
 const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
@@ -393,6 +553,9 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		),
 		factors: coverageFactorsForAnswer(configs, answerContext, auditedShare),
 		faucetKb,
+		// Unclamped on purpose: the cap meters the commit, so a transaction that
+		// rolls back must leave the run's cap room exactly as it found it.
+		escrowKb: grade.outcome === "correct" ? escrowKbPerCorrect(configs) : 0,
 		burnKb: Math.min(
 			auditBurnKb(
 				audits,
@@ -485,6 +648,7 @@ const applyAnswer = (
 		storage: addStorage(state.storage, ledger.faucetKb - ledger.burnKb),
 		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + ledger.faucetKb,
 		faucetThisGateKb: (state.faucetThisGateKb ?? 0) + ledger.faucetKb,
+		pendingKb: (state.pendingKb ?? 0) + ledger.escrowKb,
 		coverage: roundToOneDecimal(
 			Math.max(0, state.coverage + categoryAfter - categoryBefore)
 		),

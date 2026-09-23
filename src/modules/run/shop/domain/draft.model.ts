@@ -2,7 +2,7 @@ import {
 	Config,
 	draftCost,
 	isUpgradable,
-	levelUp,
+	maxLevelOf,
 	sellRefund,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
@@ -72,7 +72,21 @@ export const sellRefundIn = (
 
 export const UPGRADE_OFFER_ONE_IN = 8;
 
+export const CLIMB_ONE_IN = 2;
+
 const UPGRADE_OFFER_SEED = 0x5bf0;
+
+const FIRST_VERSION = 1;
+
+const climbFrom = (
+	nextRandom: () => number,
+	held: number,
+	maxLevel: number
+): number => {
+	let level = held + 1;
+	while (level < maxLevel && nextRandom() * CLIMB_ONE_IN < 1) level += 1;
+	return level;
+};
 
 export const upgradeOfferFor = (
 	seed: number,
@@ -85,8 +99,46 @@ export const upgradeOfferFor = (
 	if (nextRandom() * UPGRADE_OFFER_ONE_IN >= 1) return undefined;
 
 	const picked = upgradable[Math.floor(nextRandom() * upgradable.length)];
-	return picked === undefined ? undefined : levelUp(picked);
+	if (picked === undefined) return undefined;
+	return {
+		...picked,
+		level: climbFrom(
+			nextRandom,
+			picked.level ?? FIRST_VERSION,
+			maxLevelOf(picked)
+		),
+	};
 };
+
+export type VersionOdds = {
+	readonly version: number;
+	readonly share: number;
+};
+
+/**
+ * The share of rolled upgrades that land on each rung above the one held, as
+ * `climbFrom` deals them. The cap ends the climb, so it keeps the flips it
+ * cannot take.
+ */
+export const versionOddsFor = (
+	held: number,
+	maxLevel: number
+): readonly VersionOdds[] => {
+	const rungs = maxLevel - held;
+	if (rungs <= 0) return [];
+
+	const flipsTo = (rung: number) => (rung === rungs ? rungs - 1 : rung);
+
+	return Array.from({ length: rungs }, (_, index) => ({
+		version: held + index + 1,
+		share: 1 / CLIMB_ONE_IN ** flipsTo(index + 1),
+	}));
+};
+
+export const offerOddsOf = (held: number, offer: Config): number | undefined =>
+	versionOddsFor(held, maxLevelOf(offer)).find(
+		(odds) => odds.version === (offer.level ?? FIRST_VERSION)
+	)?.share;
 
 export const isUpgradeOffer = (
 	configs: readonly Config[],

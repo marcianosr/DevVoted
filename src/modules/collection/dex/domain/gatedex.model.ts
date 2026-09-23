@@ -1,12 +1,7 @@
+import { auditLabelOf } from "~/modules/run/gate/domain/audit.model";
 import {
-	auditAt,
-	auditExtraPeelShare,
-	auditLabel,
-	auditLabelOf,
-} from "~/modules/run/gate/domain/audit.model";
-import {
-	bandForGate,
-	certainAuditsFor,
+	auditCapacityFor,
+	poolForGate,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
 	ALL_SWATCHES,
@@ -37,10 +32,9 @@ export type GatedexEntry = {
 	readonly swatch: GateSwatch;
 	readonly coverageDemand: number;
 	readonly peelShare: number;
-	readonly peelsAudited: boolean;
-	readonly audits: readonly string[];
+	/** What a rival can throw at this gate, and how many at most (ADR-099). */
 	readonly auditPool: readonly string[];
-	readonly auditDraw: number;
+	readonly auditCapacity: number;
 	readonly unlocks: readonly GateUnlock[];
 	readonly winsTheRun: boolean;
 	readonly state: GatedexState;
@@ -79,26 +73,19 @@ export const gatedex = (
 ): readonly GatedexEntry[] => {
 	const nextGate = nextGateFor(ownedSwatchIds);
 
-	return ALL_SWATCHES.map((swatch) => {
-		const certain = certainAuditsFor(swatch.gate);
-		const audits = certain.map((id) => auditAt(id, swatch.gate));
-		const extraPeelShare = auditExtraPeelShare(audits);
-		const band = bandForGate(swatch.gate);
-
-		return {
-			gate: swatch.gate,
-			swatch,
-			coverageDemand: percentOf(healthyAt(swatch.gate)),
-			peelShare: failPeelShareFor(swatch.gate) + extraPeelShare,
-			peelsAudited: extraPeelShare > 0,
-			audits: audits.map(auditLabel),
-			auditPool: (band?.pool ?? []).map((id) => auditLabelOf(id, swatch.gate)),
-			auditDraw: band?.perGate ?? 0,
-			unlocks: unlocksOpenedBy(swatch.gate),
-			winsTheRun: swatch.gate === VICTORY_GATE,
-			state: stateOf(swatch, ownedSwatchIds, nextGate),
-		};
-	});
+	return ALL_SWATCHES.map((swatch) => ({
+		gate: swatch.gate,
+		swatch,
+		coverageDemand: percentOf(healthyAt(swatch.gate)),
+		peelShare: failPeelShareFor(swatch.gate),
+		auditPool: poolForGate(swatch.gate).map((id) =>
+			auditLabelOf(id, swatch.gate)
+		),
+		auditCapacity: auditCapacityFor(swatch.gate),
+		unlocks: unlocksOpenedBy(swatch.gate),
+		winsTheRun: swatch.gate === VICTORY_GATE,
+		state: stateOf(swatch, ownedSwatchIds, nextGate),
+	}));
 };
 
 export const gatesClearedIn = (entries: readonly GatedexEntry[]): number =>

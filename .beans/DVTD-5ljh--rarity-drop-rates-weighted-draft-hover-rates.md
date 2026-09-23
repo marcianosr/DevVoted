@@ -1,11 +1,11 @@
 ---
 # DVTD-5ljh
 title: 'Version rarity: weight which version the shelf offers, and show the rates'
-status: todo
+status: completed
 type: feature
 priority: critical
 created_at: 2026-07-13T08:23:53Z
-updated_at: 2026-09-04T18:44:10Z
+updated_at: 2026-09-22T18:43:52Z
 parent: DVTD-u35m
 ---
 
@@ -50,10 +50,49 @@ deleted grades, DVTD-nfnx keyed hue to slot size). It is a property of a
 
 ## Todos
 
-- [ ] ADR: rarity is a version property; offer-weighted or jump-weighted; how it
+- [x] ADR-097: rarity is a version property; offer-weighted or jump-weighted; how it
       composes with the cost ladder and with the free auto-upgrade
-- [ ] Weighted roll in `draft.model.ts`, seeded off `draftSeed` so the shelf stays
+- [x] Weighted roll (coin-flip climb) in `draft.model.ts`, seeded off `draftSeed` so the shelf stays
       shared and recomputable
-- [ ] Rates surface on the version badge, visible and not tooltip-only
-- [ ] Spec: distribution across many seeds, `maxLevel: 2` configs still reach their
+- [x] Rates surface beside the version pennant (registry row `detail`) and on every Dex rung, visible and not tooltip-only
+- [x] Spec: distribution across many seeds, `maxLevel: 2` configs still reach their
       cap, free auto-upgrade path asserted either way
+
+## Decisions taken (2026-09-22, ADR-097)
+
+1. Jump-weighted, coin-flip climb: one rung up, then 1 in 2 per further rung until the ladder ends. The cap keeps the flips it cannot take (v4 and v5 both ⅛ from v1); a `maxLevel: 2` config is always offered its v2. This dissolves "absolute vs rungs remaining".
+2. A jump costs the registry price, flat. Rarity guards the bypass.
+3. Odds only, `1 in N rolls`; no tier words, `Rarity` stays retired.
+4. Dependabot (not Overclock — the bean had that wrong) stays one rung, uniform, free.
+
+Corrections: the five-rung zinc-ramp `Version.ui` this bean describes was deleted in `eddae5f5`; the live kanto `Version` is a notched pennant spec-locked to `v3`, so the odds sit beside it in `ConfigChip.detail`. "Shelf" is retired; the list is the Registry.
+
+Found and fixed en route: the kanto registry's upgrade offer fed the *offered* config to `upgradesFor` (so a v2 offer showed `↑ v3 · 96 KB`) and dispatched the coverage-gated `upgrade` action instead of `draft`. ADR-053's bypass was unreachable from the screen.
+
+- [x] `versionOddsFor` body — landed 2026-09-22, all 8 specs green
+
+## Summary of Changes
+
+`versionOddsFor` (`src/modules/run/shop/domain/draft.model.ts:123`) now derives the
+distribution `climbFrom` deals, closing the last open item on this bean.
+
+One entry per rung from `held + 1` to `maxLevel`. Each rung costs one coin flip per step
+above the one held — except the last, which costs one fewer, because the cap keeps the
+flips it cannot take. That single off-by-one is the whole rule: it is why a two-rung
+ladder's v2 is a certainty (zero flips) and why v4 and v5 tie at 1/8 on a five-rung
+ladder rather than summing to 0.9375.
+
+Derived, not enumerated, so `sums to one however tall the ladder` holds for maxLevel 2,
+3, 5 and 8 from one expression.
+
+### Verification
+
+- `npm test`: **226 files, 4076 passed, 0 failed** (6 skipped, 2 todo). The 8 specs this
+  bean was waiting on are green: 5 in `draft.model.spec.ts`, plus `dexScreen.viewmodel`,
+  `shopScreen.viewmodel` and `Registry.spec.tsx`.
+- `npx tsc --noEmit`: clean.
+- `npm run lint`: 0 violations, depcruise 0 across 818 modules.
+
+Note for the record: the red baseline run reported 217 test files, the green one 226 — the
+red run had silently dropped 9 files (the known stray-vitest symptom), so the green run is
+a superset, not a different suite.

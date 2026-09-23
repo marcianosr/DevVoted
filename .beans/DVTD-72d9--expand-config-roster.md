@@ -1,11 +1,11 @@
 ---
 # DVTD-72d9
 title: Expand config roster
-status: in-progress
+status: todo
 type: epic
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-09-06T07:18:04Z
+updated_at: 2026-09-22T18:51:24Z
 parent: DVTD-d0fw
 ---
 
@@ -24,8 +24,8 @@ cost, cheapest first.
 
 ### .includes / .length (uncommon)
 
-- [ ] `.includes` gives: on multiple-choice polls, tells you whether at least one of your picks is correct.
-- [ ] `.length` gives: on multiple-choice polls, shows how many correct answers exist.
+- `.includes` gives: on multiple-choice polls, tells you whether at least one of your picks is correct.
+- `.length` gives: on multiple-choice polls, shows how many correct answers exist.
 - Both need: assisted multiple-choice polls must be answered correctly.
 - Engine: fires only when `poll.answerType === "multiple"` (field already exists).
   One new `CheckKind` serves both, same self-binding shape as `lint-correct` but
@@ -36,8 +36,8 @@ cost, cheapest first.
 
 ### Tree Shaking (uncommon)
 
-- [ ] gives: selling a config refunds its full draft price instead of half.
-- [ ] needs: enter each gate carrying no more configs than it admits.
+- gives: selling a config refunds its full draft price instead of half.
+- needs: enter each gate carrying no more configs than it admits.
 - Engine: `sellRefund` in `config.model.ts` (today `floor(draftCost / 2)`), plus a
   new exact-width check at gate start; shop shows the boosted sell prices.
 - Answer first: can an over-width build even exist after ADR-027? Only
@@ -46,8 +46,8 @@ cost, cheapest first.
 
 ### Try/Catch (rare)
 
-- [ ] gives: survive one failed gate per run.
-- [ ] needs: the next gate must clear, or the error rethrows and the run ends (uncatchable).
+- gives: survive one failed gate per run.
+- needs: the next gate must clear, or the error rethrows and the run ends (uncatchable).
 - Engine: gate resolution in `rules.model` / `run.model`, where failure currently
   ends the run. A caught gate pays nothing (no `storageOnClear`, no bank event,
   since it is not a loss). Needs a `caught` flag on run state, a prep warning
@@ -60,8 +60,8 @@ cost, cheapest first.
 
 ### Telemetry (rare)
 
-- [ ] gives: see one other player's answer before committing.
-- [ ] needs: beat that player's window coverage at the gate.
+- gives: see one other player's answer before committing.
+- needs: beat that player's window coverage at the gate.
 - Engine: pair against a *completed* run at the same gate number from the daily
   pool (a ghost, so no live sync). Per-poll chip marks the ghost's picked option.
   The check computes at the gate receipt, where window coverage already lives
@@ -97,17 +97,17 @@ cost, cheapest first.
 
 Keepers, roughly by ship order:
 
-- [ ] Hotfix (rare): failed gate still opens the shop. Check: gate after an emergency shop must clear. **Corrected 2026-08-14**: the peel refund does NOT belong here — the agreed roster below gives it to **Garbage Collection** (a peeled config pays its sell value), which is strictly better since it scales with what you lost. My skip-based "Garbage Collector" died (no skip mechanic exists, which also makes Cold cache's check vacuous today); the name survives on Marciano's version.
-- [ ] git stash (uncommon): stash the current poll to the window's end. Check: stashed poll must be correct. Converges on Rebase (stash makes a poll last and binds it) — likely ships as the affordable version, Rebase becomes its upgrade or dies.
+- Hotfix (rare): failed gate still opens the shop. Check: gate after an emergency shop must clear. **Corrected 2026-08-14**: the peel refund does NOT belong here — the agreed roster below gives it to **Garbage Collection** (a peeled config pays its sell value), which is strictly better since it scales with what you lost. My skip-based "Garbage Collector" died (no skip mechanic exists, which also makes Cold cache's check vacuous today); the name survives on Marciano's version.
+- git stash (uncommon): stash the current poll to the window's end. Check: stashed poll must be correct. Converges on Rebase (stash makes a poll last and binds it) — likely ships as the affordable version, Rebase becomes its upgrade or dies.
 - [x] **Telemetry** — BUILT 2026-08-14 (DVTD-fpf9). Fee ladder 32/64/128, resets per gate. Check: each peeked poll must be correct. Two changes from this line: the pool is **all-time, both loops** (not today's session answers, which leave early climbers with nothing), and there is **no quorum gate** — L1 sells percentages with no sample size, so a 2-answer 100% and a 127-answer 100% draw the same bar. That blindness is the L1 product; L2 (64KB, maxLevel 2) adds the sample size. Phase 2's ghost-duel version renamed **Benchmark**.
 - Dual-focus family: split out to its own bean, **DVTD-9hm8** (it needs a plural `focusCategory`, so it does not belong in this one).
-- [ ] Watch (uncommon): pick a category at draft, double draw weight from the daily pool. Check: every appearance must be correct. Sim first — this is the aim lever measured at 5×.
-- [ ] `--save-exact` (uncommon): drafts 20% cheaper, configs can never be sold (peel unaffected). Dial collision: Dependabot's "may not sell" — only one ships as-is.
-- [ ] Weekend Project (common): weekend gates pay +50% storage, demand +1. Fair by construction: gates are shared calendar days, so it's a global event.
-- [ ] Continuous Deployment (rare): +64 KB per clear, never enter the shop again. Self-locking (selling happens in the shop). Decide: does prep (ADR-032) stay reachable?
-- [ ] Replication (rare): all storage gains ×2. Check: locked to the free 512 KB plan (ADR-023 ladder). Economy sim first.
+- Watch (uncommon): pick a category at draft, double draw weight from the daily pool. Check: every appearance must be correct. Sim first — this is the aim lever measured at 5×.
+- `--save-exact` (uncommon): drafts 20% cheaper, configs can never be sold (peel unaffected). Dial collision: Dependabot's "may not sell" — only one ships as-is.
+- Weekend Project (common): weekend gates pay +50% storage, demand +1. Fair by construction: gates are shared calendar days, so it's a global event.
+- Continuous Deployment (rare): +64 KB per clear, never enter the shop again. Self-locking (selling happens in the shop). Decide: does prep (ADR-032) stay reachable?
+- Replication (rare): all storage gains ×2. Check: locked to the free 512 KB plan (ADR-023 ladder). Economy sim first.
 - [x] **Moore's Law** — BUILT 2026-08-13 (common, upgradable). L1: +2% of held storage on clear, floor 32KB. L5: +10%, floor 160KB. Name briefly went to Redis and was reverted 2026-08-14; see the section below.
-- [ ] WTFPL (legendary): draft anything from the full roster; no warranty — sell refund 0 on everything. Open: still owes an authored check (ADR-022); the no-warranty clause is a cost, not a check.
+- WTFPL (legendary): draft anything from the full roster; no warranty — sell refund 0 on everything. Open: still owes an authored check (ADR-022); the no-warranty clause is a cost, not a check.
 
 Principle established this round: **fees price actions, checks price passives** (wiki §4.1). Lint and Telemetry meter chosen actions; passives are priced by checks only.
 
@@ -356,3 +356,15 @@ Rationale: Cheap for its power; the visible countdown is the honest version of a
 ## Note (2026-09-06): Try/Catch design is obsolete
 
 Phase 2's Try/Catch (survive one failed gate per run) guards a rule that no longer exists: since ADR-037 a missed gate peels configs and reruns, it does not end the run. Re-aim or scrap before building. New Phase-2-era candidates from this session: DVTD-68jr (Planning Poker), DVTD-krh0 (Math.random()).
+
+## The children are the record (2026-09-22)
+
+This epic has **92 child beans**; the Phase 2+ notes below are design rationale, kept
+deliberately, but they are no longer a todo list. Their checkboxes had drifted out of
+sync with the code — `.length` (`configRoster.model.ts:166`), `try-catch` (`:363`) and
+`wtfpl` (`:257`) are all **built** while still reading as unchecked — so the checkbox
+form was removed. A config's status lives on its own bean, never here.
+
+Moved to `todo`: an epic is a container, not a thing worked directly. Config content is
+permanent work, so this will never "finish"; 29 children are completed, 8 scrapped and
+55 remain open.

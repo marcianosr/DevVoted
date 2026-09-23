@@ -39,25 +39,36 @@ const ACTIVE = "bg-theme text-theme-faint ring-theme";
 
 const SEPARATOR = " · ";
 
-export type ButtonTone = "ambient" | "action" | "danger";
+export type ButtonTone = "ambient" | "action" | "danger" | "commit";
 export type ButtonSize = "sm" | "md";
 
 const TONE = {
 	ambient: AMBIENT,
 	action: ACTION,
 	danger: DANGER,
+	commit: ACTION,
 } satisfies Record<ButtonTone, string>;
 
 const REFUSED_COLOR: KantoColor = "cinnabar";
 
+/**
+ * `commit` is an action wearing the colour the kit already gives a standing
+ * bill, so a press that is about to create one reads as that rather than as a
+ * second ordinary install. Saffron, not cinnabar: this commits to a cost, it
+ * does not destroy anything.
+ */
 const TONE_THEME = {
 	ambient: undefined,
 	action: undefined,
 	danger: "cinnabar",
+	commit: "saffron",
 } satisfies Record<ButtonTone, KantoColor | undefined>;
 
+const isRefusable = (tone: ButtonTone) =>
+	tone === "action" || tone === "commit";
+
 const toneThemeOf = (tone: ButtonTone, disabled: boolean) =>
-	tone === "action" && disabled ? REFUSED_COLOR : TONE_THEME[tone];
+	isRefusable(tone) && disabled ? REFUSED_COLOR : TONE_THEME[tone];
 
 type Glyph = {
 	glyph: string;

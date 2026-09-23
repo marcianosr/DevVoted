@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted (2026-09-04, Marciano, DVTD-ej8m).
+Accepted (2026-09-04, Marciano, DVTD-ej8m). Amended by
+[ADR-094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md):
+Pallet's line is 3 of 5 (60%), OK is 2, and its floor is 0 by the table's own
+definition rather than a clamp.
 Amends [ADR-052](052-the-run-opens-on-a-dealt-hand.md) Decision 2 (the recommended trio
 is no longer installed) and reaffirms its Decision 3. Answers open question 3 of
 ADR-034. Does not revive the mandatory config
@@ -47,8 +50,8 @@ the quota — any lower branch would leave the Dex publishing a 20% peel the eng
 takes. Audits still compose on top (`failPeelShareFor + auditExtraPeelShare`), so a strip
 audit reaching gate 0 would peel again, correctly.
 
-Gate 0 keeps its 3% demand. A calibration gate should still measure you; the free miss is
-what removes the punishment.
+Gate 0 keeps a demand (3 of 5 since ADR-094). A calibration gate should still measure
+you; the free miss is what removes the punishment.
 
 Death at gate 0 is now impossible except for a bare build. `isPeelFatal` is
 `quota >= occupied`, so `0 >= 0` still ends a bare run — narrowing it to `>` would strand
@@ -77,7 +80,7 @@ their own button.
 | `RECOMMENDED_SIZE` | 2, advisory |
 | Start floor / ceiling | 1 config / `BASE_SLOTS` |
 | Gate 0 peel share | 0 |
-| Gate 0 coverage demand | 3% |
+| Gate 0 coverage demand | 3 of 5 right, 60% (ADR-094; was 3%) |
 | Gate 1+ peel share | unchanged (0.2 to 0.35) |
 
 ## Consequences

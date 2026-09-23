@@ -21,16 +21,18 @@ import {
 	type AuditView,
 	auditViewsFor,
 	type GateStake,
-	upcomingAuditFor,
 } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	type PollView,
 	redactPoll,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import {
+	type Attack,
 	type AnswerTypeSplit,
 	answerTypesOf,
 	canStart,
+	overflowWeightOf,
+	roomToCapOf,
 	isAwaitingTomorrow,
 	hiddenOptionIdsOf,
 	isRunOver,
@@ -48,6 +50,7 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerContextFor,
+	creditedAnswerTypeFor,
 	gradedPollFor,
 	gateWindowComplete,
 } from "~/modules/run/run/domain/answer.model";
@@ -65,6 +68,11 @@ import {
 	estimatePayoutUnits,
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
+import {
+	SLA_BANDS,
+	canCommitBand,
+	committerFor,
+} from "~/modules/run/run/domain/sla.model";
 import {
 	type Config,
 	canMinify,
@@ -86,6 +94,7 @@ import {
 import {
 	type Audit,
 	auditLabel,
+	auditsHideAnswerType,
 	auditsHideCategory,
 	auditTimeLimitMs,
 	liveAuditsFor,
@@ -100,18 +109,22 @@ import {
 	type PerAnswerPreview,
 	type BuildModifiers,
 	budgeterFor,
-	freeSlots,
 	occupiedSlots,
-	overflowSlots,
 	prefetcherFor,
 	perAnswerPreviewFor,
 	projectorFor,
 	buildModifiersFor,
+	rungAfterBuild,
+	spaceForBuild,
+	upkeepForBuild,
 } from "~/modules/run/build/domain/build.model";
 import { canVendorLock } from "~/modules/run/build/domain/vendorLock.model";
 import {
 	percentOf,
 	runCoverageOf,
+	type CommittableBand,
+	SLA_UPLIFT,
+	bandOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
 import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
@@ -119,36 +132,44 @@ import {
 	atMinimumWidth,
 	faucetRemainingKb,
 	isPeelFatal,
-	rungIndexForSpace,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	spaceRungFor,
 	upkeepForSpace,
-	BUILD_SPACE_RUNGS,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import { canPickBuildSpace } from "~/modules/run/run/domain/shopAction.model";
-
-export type BuildSpaceRungView = {
-	readonly rung: number;
-	readonly weight: number;
-	readonly perGateKb: number;
-	readonly held: boolean;
-	readonly pickable: boolean;
-};
 
 export type BuildSpaceView = {
 	readonly space: number;
 	readonly weight: number;
 	readonly perGateKb: number;
-	readonly offered: boolean;
-	readonly rungs: readonly BuildSpaceRungView[];
+	/** The rung the build would cross into next, absent at the top of the ladder. */
+	readonly nextWeight?: number;
+	readonly nextPerGateKb?: number;
+	/**
+	 * The space a short bill actually covered, and so the weight the shop door
+	 * holds the run to. Null whenever the bill was paid in full, which is every
+	 * gate the run could afford.
+	 */
+	readonly coveredSpace: number | null;
 };
 
 export type VendorLockView = {
 	/** The build holds the vendor and has not named one yet, so a pick is live. */
 	readonly offered: boolean;
 	readonly lockedConfigId?: string;
+};
+
+export type SlaChoice = {
+	readonly band: CommittableBand;
+	/** The band as the ladder spells it, so the screen never re-spells it. */
+	readonly label: string;
+	/** The uplift as a share, e.g. 0.25. The screen owns the percent sign. */
+	readonly uplift: number;
+};
+
+export type SlaControl = {
+	readonly configLabel: string;
+	readonly choices: readonly SlaChoice[];
 };
 
 export type EstimateChoice = {
@@ -186,12 +207,26 @@ export type InstalledConfig = {
 	readonly minifySavingSlots: number;
 };
 
+/**
+ * What installing an offer does to the standing bill (ADR-098). Null when the
+ * install lands inside the rung already rented, which is the signal the shop
+ * reads to decide whether the press needs arming.
+ */
+export type InstallScale = {
+	readonly from: number;
+	readonly to: number;
+	readonly perGateKb: number;
+};
+
 export type ShopOffer = {
 	readonly config: Config;
 	readonly priceKb: number;
 	readonly slots: number;
+	readonly scale: InstallScale | null;
 	readonly owned: boolean;
 	readonly upgrades: boolean;
+	/** The version installed when this offer upgrades it; null for a new config. */
+	readonly heldLevel: number | null;
 	readonly locked: boolean;
 	readonly installable: boolean;
 	readonly refusal: OfferRefusal | null;
@@ -232,6 +267,8 @@ export type RunView = {
 	readonly rebaseSlots: readonly PollSlot[];
 	readonly estimate: EstimateControl | null;
 	readonly estimatedCorrect: number | null;
+	readonly sla: SlaControl | null;
+	readonly slaBand: CommittableBand | null;
 	readonly correctThisGate: number;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
@@ -239,6 +276,8 @@ export type RunView = {
 	readonly optionCountsThisGate: readonly number[] | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
+	/** The attack a HEALTHY-or-better clear armed, until it is fired (ADR-099). */
+	readonly attack: Attack | null;
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
@@ -286,6 +325,19 @@ export type RunUnlock = {
 	readonly viaMetric: string | null;
 };
 
+const slaControlFor = (state: RunState): SlaControl | null => {
+	const committer = committerFor(state.build.configs);
+	if (committer === undefined || !canCommitBand(state)) return null;
+	return {
+		configLabel: committer.label,
+		choices: SLA_BANDS.map((band) => ({
+			band,
+			label: bandOf(band).label,
+			uplift: SLA_UPLIFT[band],
+		})),
+	};
+};
+
 const estimateControlFor = (state: RunState): EstimateControl | null => {
 	const estimator = estimatorFor(state.build.configs);
 	if (estimator === undefined || !canEstimate(state)) return null;
@@ -318,15 +370,28 @@ const offerRefusal = (
 	return null;
 };
 
+const scaleFor = (
+	state: RunState,
+	withIt: readonly Config[]
+): InstallScale | null => {
+	const from = spaceForBuild(state.build);
+	const to = spaceForBuild({ ...state.build, configs: withIt });
+	if (to === from) return null;
+
+	return { from, to, perGateKb: upkeepForSpace(to) };
+};
+
 const offersFor = (state: RunState): readonly ShopOffer[] => {
 	const installed = state.build.configs;
-	const free = freeSlots(state.build);
+	// Room is measured to the cap, never to the rung: crossing a rung is what
+	// the install press warns about, not something the registry may refuse.
+	const free = roomToCapOf(state);
 	const locked = state.lockedOfferIds ?? [];
 
 	return state.draftOptions.map((config) => {
 		const upgrades = isUpgradeOffer(installed, config);
-		const owned =
-			!upgrades && installed.some((slotted) => slotted.id === config.id);
+		const held = installed.find((slotted) => slotted.id === config.id);
+		const owned = !upgrades && held !== undefined;
 		const refusal = offerRefusal(state, config, free, upgrades);
 		const withIt = upgrades
 			? installed.map((slotted) =>
@@ -337,8 +402,10 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 			config,
 			priceKb: draftCostIn(installed, config),
 			slots: slotsOf(config),
+			scale: scaleFor(state, withIt),
 			owned,
 			upgrades,
+			heldLevel: upgrades ? (held?.level ?? 1) : null,
 			locked: locked.includes(config.id),
 			installable: !owned && refusal === null,
 			refusal,
@@ -349,21 +416,15 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 };
 
 const buildSpaceViewFor = (state: RunState): BuildSpaceView => {
-	const held = rungIndexForSpace(state.build.slots);
-	const offered = canPickBuildSpace(state);
+	const next = rungAfterBuild(state.build);
 
 	return {
-		space: state.build.slots,
+		space: spaceForBuild(state.build),
 		weight: occupiedSlots(state.build.configs),
-		perGateKb: upkeepForSpace(state.build.slots),
-		offered,
-		rungs: BUILD_SPACE_RUNGS.map((rung, index) => ({
-			rung: index,
-			weight: rung.weight,
-			perGateKb: rung.kb,
-			held: index === held,
-			pickable: offered && index !== held,
-		})),
+		perGateKb: upkeepForBuild(state.build),
+		nextWeight: next?.weight,
+		nextPerGateKb: next?.kb,
+		coveredSpace: state.spaceDroppedTo ?? null,
 	};
 };
 
@@ -385,8 +446,10 @@ const configStatusesFor = (
 			suppressedAuditFor(state.build.configs, state.gatesCleared, schedule) !==
 			undefined,
 		categoryHidden: auditsHideCategory(liveAudits),
+		answerTypeHidden: auditsHideAnswerType(liveAudits),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
 		autoUpgradeProgress: state.autoUpgradeProgress ?? 0,
+		pendingKb: state.pendingKb ?? 0,
 	};
 
 	return Object.fromEntries(
@@ -411,7 +474,7 @@ export const toRunView = (
 		state.build.configs,
 		current === undefined
 			? undefined
-			: gradedPollFor(state, current).answerType,
+			: creditedAnswerTypeFor(state, gradedPollFor(state, current)),
 		state.strictArmed === true ? (strictStakeOf(liveConfigsOf(state)) ?? 0) : 0
 	);
 	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
@@ -437,16 +500,17 @@ export const toRunView = (
 		audit: auditLabel(pair.audit),
 	}));
 	const mirrored = mirrorsPolls(liveAudits);
+	const answerTypeHidden = auditsHideAnswerType(liveAudits);
 	const audits = auditViewsFor(state);
 	const configStatuses = configStatusesFor(state, current, offline, liveAudits);
 	const liveConfigs = liveConfigsOf(state);
 
 	return {
 		status: state.status,
-		slots: state.build.slots,
+		slots: spaceForBuild(state.build),
 		slotsUsed: occupiedSlots(state.build.configs),
-		slotsFree: freeSlots(state.build),
-		overflowSlots: overflowSlots(state.build),
+		slotsFree: roomToCapOf(state),
+		overflowSlots: overflowWeightOf(state),
 		configs: state.build.configs,
 		installed: state.build.configs.map((config) => ({
 			config,
@@ -457,7 +521,7 @@ export const toRunView = (
 		available: state.available,
 		recommendedConfigIds: recommendedPicks(
 			state.available,
-			state.build.slots
+			spaceForBuild(state.build)
 		).map((config) => config.id),
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
@@ -468,7 +532,11 @@ export const toRunView = (
 		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
 			state.status === "answering" && current
-				? redactPoll(mirrored ? mirrorPoll(current) : current, hidden)
+				? redactPoll(
+						mirrored ? mirrorPoll(current) : current,
+						hidden,
+						answerTypeHidden
+					)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
 		pollsExhausted: state.currentIndex >= state.polls.length,
@@ -492,6 +560,8 @@ export const toRunView = (
 		rebaseSlots: upcomingSlotsOf(state),
 		estimate: estimateControlFor(state),
 		estimatedCorrect: state.estimatedCorrect ?? null,
+		sla: slaControlFor(state),
+		slaBand: state.slaBand ?? null,
 		correctThisGate: state.window.correct,
 		upcomingCategories:
 			prefetcherFor(liveConfigs) === undefined
@@ -531,6 +601,7 @@ export const toRunView = (
 						.map((poll) => poll.options.length),
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
+		attack: state.attack ?? null,
 		audits,
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
@@ -547,7 +618,6 @@ export const toRunView = (
 			),
 			unitsHeld: carriedUnits,
 			audits,
-			upcomingAudit: upcomingAuditFor(state.gatesCleared),
 			peelSlotsOnFailure: peelSlots,
 			peelConfigsOnFailure: peelConfigRangeFor(state.build.configs, peelSlots),
 			peelShareOnFailure: peelShareFor(
@@ -563,8 +633,8 @@ export const toRunView = (
 				configs: state.build.configs,
 				gate: state.gatesCleared,
 				storageKb: state.storage,
-				spaceWeight: spaceRungFor(state.build.slots).weight,
-				spaceBillKb: spaceRungFor(state.build.slots).kb,
+				spaceWeight: spaceForBuild(state.build),
+				spaceBillKb: upkeepForBuild(state.build),
 			}),
 			modifiers,
 			perAnswer,

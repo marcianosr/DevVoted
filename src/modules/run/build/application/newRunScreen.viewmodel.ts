@@ -12,6 +12,11 @@ import {
 	BALANCE_WORD,
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
+import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
+import {
+	type VendorLockChip,
+	vendorChipFor,
+} from "~/modules/run/build/application/vendorChip.viewmodel";
 
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
@@ -21,6 +26,8 @@ import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
 import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 
 const START_GATE = 0;
+/** The opening build is the free rung by construction, so it never bills. */
+const FREE_UPKEEP = 0;
 const SEPARATOR = "·";
 
 const NEW_RUN_TITLE = "New run";
@@ -29,8 +36,7 @@ const EMPTY_LABEL = "nothing installed yet";
 const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
 const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
-export const NEW_RUN_BUILD_NOTE =
-	"Every run opens on four weight of free build space. The shop rents more from the Cascade gate on.";
+export const NEW_RUN_BUILD_NOTE = `The first ${BASE_SLOTS} weight is free. Past that the build rents the space it grows into, and bills for it at every gate you clear.`;
 export const NEW_RUN_REGISTRY_NOTE =
 	"The hand costs no storage, only room. Nothing is required, and the smallest three always fit together.";
 
@@ -69,15 +75,16 @@ export const newRunBuildFor = (
 	configs: readonly Config[],
 	held: number,
 	onUninstall: (configId: string) => void,
+	vendorLockFor: (configId: string) => VendorLockChip | undefined = () =>
+		undefined,
 	panels: Pick<BuildProps, "openInfo" | "onToggleInfo"> = {}
 ): BuildProps => ({
 	configs: configs.map((config) => ({
 		name: config.label,
-		badges: [],
 		...chipFor(config),
-		onUninstall: () => onUninstall(config.id),
+		...vendorChipFor(vendorLockFor(config.id), () => onUninstall(config.id)),
 	})),
-	weight: { held },
+	weight: { held, perGateKb: FREE_UPKEEP },
 	emptyLabel: EMPTY_LABEL,
 	...panels,
 });
@@ -91,8 +98,12 @@ export const newRunRegistryFor = (
 	...panels,
 });
 
-export const newRunFooterFor = (onStart?: () => void): ScreenFooterProps => ({
+export const newRunFooterFor = (
+	onStart?: () => void,
+	refusal?: string
+): ScreenFooterProps => ({
 	action: { label: START_LABEL, icon: "chevron", onPress: onStart },
+	...(refusal === undefined ? {} : { refusal }),
 });
 
 export const NEW_RUN_BALANCE_WORD = BALANCE_WORD;

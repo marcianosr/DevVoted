@@ -33,10 +33,62 @@ export const figureLabel = (config: Config): string => {
 	return `+${figure.value} KB`;
 };
 
-const rungStateFor = (version: number, held: number): VersionState => {
+const rungStateFor = (
+	version: number,
+	held: number,
+	offered: number
+): VersionState => {
 	if (version <= held) return "owned";
-	if (version === held + 1) return "offered";
+	if (version === offered) return "offered";
 	return "future";
+};
+
+const ROLLS_WORD = "rolls";
+const EVERY_ROLL = "every roll";
+
+export const rollOddsLabel = (share: number): string =>
+	share >= 1 ? EVERY_ROLL : `1 in ${Math.round(1 / share)} ${ROLLS_WORD}`;
+
+export type RegistryDeal = {
+	price: string;
+	affordable: boolean;
+	onBuy?: () => void;
+};
+
+/**
+ * The registry's rolled upgrade, as opposed to the shop's Upgrade press: the
+ * offered rung can sit more than one above the held one, it sells at the
+ * registry price, and there is no press ladder to total in a footer.
+ */
+export const registryUpgradesFor = (
+	offer: Config,
+	heldLevel: number,
+	{ price, affordable, onBuy }: RegistryDeal
+): UpgradesProps => {
+	const offered = offer.level ?? FIRST_VERSION;
+
+	const rungs: UpgradeRung[] = Array.from(
+		{ length: maxLevelOf(offer) },
+		(_, index) => {
+			const version = index + 1;
+			const isOffered = version === offered;
+			return {
+				version,
+				effect: figureLabel({ ...offer, level: version }),
+				state: rungStateFor(version, heldLevel, offered),
+				price: isOffered ? price : undefined,
+				held: version === heldLevel,
+				disabled: isOffered && !affordable ? true : undefined,
+			};
+		}
+	);
+
+	return {
+		name: offer.label,
+		description: describeConfig(offer),
+		rungs,
+		onBuy: onBuy === undefined ? undefined : () => onBuy(),
+	};
 };
 
 export const upgradesFor = (config: Config): UpgradesProps => {
@@ -48,7 +100,7 @@ export const upgradesFor = (config: Config): UpgradesProps => {
 		return {
 			version,
 			effect: figureLabel({ ...config, level: version }),
-			state: rungStateFor(version, held),
+			state: rungStateFor(version, held, held + 1),
 			price:
 				version <= held ? undefined : kbLabel(upgradeStorageCost(version - 1)),
 			held: version === held,
@@ -60,12 +112,12 @@ export const upgradesFor = (config: Config): UpgradesProps => {
 		.reduce((total, rung) => total + upgradeStorageCost(rung.version - 1), 0);
 
 	if (toMaxKb === 0) {
-		return { name: config.label, description: config.description, rungs };
+		return { name: config.label, description: describeConfig(config), rungs };
 	}
 
 	return {
 		name: config.label,
-		description: config.description,
+		description: describeConfig(config),
 		rungs,
 		toMax: { version: max, price: kbLabel(toMaxKb) },
 	};
@@ -95,8 +147,13 @@ const LOSS_COLOR: KantoColor = "cinnabar";
 const BUMP_COLOR: KantoColor = "vermillion";
 const BUMP_WORD = "bump in";
 
+const HOLDING_COLOR: KantoColor = "saffron";
+const HOLDING_WORD = "holding";
+const AT_RISK = "paid on a clear, rolled back otherwise";
+
 const SKIP_WORDS = {
 	openerOnly: "opener only",
+	missedOnly: "polls you have missed",
 	cacheCold: "cache is cold",
 	paysAtGateClear: "pays at the clear",
 	paysOnPeel: "pays on a peel",
@@ -104,6 +161,7 @@ const SKIP_WORDS = {
 	inShop: "works in the shop",
 	inPrep: "works in prep",
 	noAuditToSuppress: "no audit to suppress",
+	armedForFatal: "armed for a fatal close",
 	runCapReached: "run cap reached",
 	selectAllOnly: `select-all ${ONLY}`,
 	paysOnPartial: "pays on a partial",
@@ -150,6 +208,17 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 	if (status.bumpIn !== undefined)
 		return {
 			badge: { label: `${BUMP_WORD} ${status.bumpIn}`, color: BUMP_COLOR },
+		};
+
+	// Saffron, not viridian: the figure is held rather than earned, and the
+	// colour is the only thing on the chip that says which.
+	if (status.holdingKb !== undefined)
+		return {
+			badge: {
+				label: `${HOLDING_WORD} ${kbLabel(status.holdingKb)}`,
+				color: HOLDING_COLOR,
+			},
+			detail: AT_RISK,
 		};
 
 	return {};

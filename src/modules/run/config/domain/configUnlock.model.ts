@@ -27,7 +27,8 @@ export type CumulativeMetric =
 	| "cache-hits"
 	| "gates-reordered"
 	| "partials-paid"
-	| "configs-vendor-locked";
+	| "configs-vendor-locked"
+	| "slas-met";
 
 export type ObjectiveMetric = CumulativeMetric | OneShotMetric;
 
@@ -284,6 +285,13 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"reordered 3 gates' polls",
 		675
 	),
+	"regression-test": earned(
+		"polls-correct",
+		25,
+		"Answer 25 polls correctly",
+		"answered 25 polls correctly",
+		150
+	),
 	"dry-run": earned(
 		"gates-cleared",
 		30,
@@ -304,6 +312,27 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Lock 3 configs in",
 		"locked 3 configs in",
 		750
+	),
+	sla: earned(
+		"perfect-windows",
+		10,
+		"Close 10 perfect windows",
+		"closed 10 perfect windows",
+		825
+	),
+	"try-catch": earned(
+		"gates-cleared",
+		40,
+		"Clear 40 gates",
+		"cleared 40 gates",
+		800
+	),
+	database: earned(
+		"polls-correct",
+		200,
+		"Answer 200 polls correctly",
+		"answered 200 polls correctly",
+		775
 	),
 };
 

@@ -8,6 +8,11 @@ Accepted — 2026-09-12 (Marciano, DVTD-zu24). Supersedes
 reverses [ADR-075](075-a-full-bar-pays-a-bonus.md)'s last consequence.
 
 Built in the kanto kit: `GateOutcomeScreen.ui.tsx` draws all five bands.
+Routed by `gateRulingFor` since
+[ADR-094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md), which
+also amends this ADR: a hold names its reason, and the clamp that holds the
+debrief's bar inside the verdict's band is skipped for a floor hold so the
+meter is never laundered.
 `survivesGate` is still one boolean, so nothing routes on it yet.
 
 ## Context
@@ -36,11 +41,17 @@ tomorrow, worse off" is a loading screen, not a decision.
 
 2. **HEALTHY clears.** Swatch won, next gate tomorrow, streak kept.
 
-3. **OK clears, thin.** The swatch is won and the climb continues, but the
-   payout is cut and the streak breaks. The cut needs no rule of its own:
-   `payoutRatioFor` is `ratio / healthyAt(gate)`, so closing at 30% against a 40%
-   line already pays 0.75x. OK is priced by the same engine that pays every
-   other band.
+3. **OK clears, thin.** The swatch is won and the climb continues, and the streak
+   breaks.
+
+   This decision also said the payout is cut, on the grounds that `payoutRatioFor`
+   already pays `ratio / healthyAt(gate)` and so needs no rule of its own.
+   **That cut was never wired** (found 2026-09-22, DVTD-tjc7): `gateClearPayout`
+   scales by the raw count of right answers and never reads a band, and
+   `payoutRatioFor` is reachable only from a test factory. OK, HEALTHY and PERFECT
+   pay the same KB. What OK costs today is the streak, and nothing else.
+   [ADR-096](096-a-config-can-promise-a-band-or-catch-one.md)'s SLA is the first
+   thing in the game that makes a better clearing band pay more.
 
 4. **SHAKY holds the gate and owes a peel.** The swatch is not won. The player
    picks one of two exits, and both are priced on the screen:

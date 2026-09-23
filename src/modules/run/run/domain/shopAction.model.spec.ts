@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	type Config,
 	draftCost,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIGS,
@@ -16,32 +17,30 @@ import {
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
 import {
+	hasRoomFor,
 	occupiedSlots,
-	overflowSlots,
+	spaceForBuild,
+	upkeepForBuild,
 } from "~/modules/run/build/domain/build.model";
 import {
 	BASE_SLOTS,
-	BUILD_SPACE_FROM_GATE,
-	BUILD_SPACE_RUNGS,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	SLICE_WINDOW,
 	pinCostFor,
 	streakMultiplier,
-	upkeepForSpace,
 } from "~/modules/run/run/domain/rules.model";
-import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import {
-	canPickBuildSpace,
-	pinAvailable,
-	setBuildSpace,
-} from "~/modules/run/run/domain/shopAction.model";
+	createRun,
+	overflowWeightOf,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
+import { pinAvailable } from "~/modules/run/run/domain/shopAction.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
 	clearGate,
-	atGateWithBuild,
 	configIds,
 	handed,
 	pool,
@@ -114,7 +113,6 @@ describe("shop controls (DVTD-5lt6)", () => {
 			...base,
 			build: {
 				...base.build,
-				slots: base.build.slots + 1,
 				configs: [...base.build.configs, CONFIGS.yarnLock],
 			},
 		};
@@ -124,6 +122,23 @@ describe("shop controls (DVTD-5lt6)", () => {
 		state.draftOptions.map((config) => config.id);
 
 	const firstOffer = (state: RunState): string => state.draftOptions[0].id;
+
+	/**
+	 * The offer this build can actually take. Picking `draftOptions[0]` breaks
+	 * every time the roster grows and reshuffles the seeded roll onto something
+	 * too heavy or too dear for the fixture.
+	 */
+	const draftableOffer = (state: RunState): string =>
+		[...state.draftOptions]
+			.sort(
+				(left, right) =>
+					slotsOf(left) - slotsOf(right) || draftCost(left) - draftCost(right)
+			)
+			.find(
+				(config) =>
+					draftCost(config) <= state.storage &&
+					hasRoomFor(state.build, slotsOf(config))
+			)?.id ?? firstOffer(state);
 
 	const lockFirstOffer = (state: RunState): RunState =>
 		runReducer(state, { type: "lock-offer", configId: firstOffer(state) });
@@ -143,7 +158,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 			expect(locked.storage).toBe(100 - LOCK_COST_KB);
 		});
 
-		it("refuses a lock while yarn.lock is not in the build", () => {
+		it("refuses a lock while .lock is not in the build", () => {
 			const bare = shopping();
 			expect(lockFirstOffer(bare)).toBe(bare);
 		});
@@ -176,11 +191,11 @@ describe("shop controls (DVTD-5lt6)", () => {
 		});
 
 		it("spends the lock when the held config is installed", () => {
-			const shop = lockFirstOffer(lockerShopping());
-			const state = {
-				...shop,
-				build: { ...shop.build, slots: shop.build.slots + 1 },
-			};
+			const roomy = lockerShopping();
+			const state = runReducer(roomy, {
+				type: "lock-offer",
+				configId: draftableOffer(roomy),
+			});
 			const held = state.lockedOfferIds?.[0] ?? "";
 			const installed = runReducer(state, {
 				type: "draft",
@@ -208,14 +223,14 @@ describe("shop controls (DVTD-5lt6)", () => {
 			).toBe(state);
 		});
 
-		it("releases every lock when yarn.lock is sold", () => {
+		it("releases every lock when .lock is sold", () => {
 			const state = lockFirstOffer(lockerShopping());
 			const sold = runReducer(state, { type: "sell", configId: "yarn-lock" });
 			expect(configIds(sold)).not.toContain("yarn-lock");
 			expect(sold.lockedOfferIds).toEqual([]);
 		});
 
-		it("releases every lock when a gate peel strips yarn.lock", () => {
+		it("releases every lock when a gate peel strips .lock", () => {
 			const locked = lockFirstOffer(lockerShopping());
 			const peeling = {
 				...locked,
@@ -379,7 +394,7 @@ describe("the git tag (ADR-036)", () => {
 		const state = createRun(pool(20), handed, 7);
 		expect(state.gatesCleared).toBe(7);
 		expect(state.startedAtGate).toBe(7);
-		expect(state.build.slots).toBe(BASE_SLOTS);
+		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
 		expect(state.storage).toBe(32 * 7);
 		expect(state.coverage).toBe(0);
 	});
@@ -410,7 +425,7 @@ describe("the git tag (ADR-036)", () => {
 		expect(state.gatesCleared).toBe(0);
 		expect(state.startedAtGate).toBe(0);
 		expect(state.storage).toBe(0);
-		expect(state.build.slots).toBe(BASE_SLOTS);
+		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
 	});
 });
 
@@ -452,7 +467,7 @@ describe("economy", () => {
 			...createRun([triPoll], handed),
 			status: "answering",
 			storage: 100,
-			build: { id: "build", slots: 3, configs: [CONFIGS.eslint] },
+			build: { id: "build", configs: [CONFIGS.eslint] },
 		};
 		const linted = runReducer(withLinter, { type: "lint-poll" });
 		expect(linted.storage).toBe(92);
@@ -462,7 +477,7 @@ describe("economy", () => {
 			...createRun([triPoll], handed),
 			status: "answering",
 			storage: 100,
-			build: { id: "build", slots: 3, configs: [CONFIGS.js] },
+			build: { id: "build", configs: [CONFIGS.js] },
 		};
 		const unchanged = runReducer(noLinter, { type: "lint-poll" });
 		expect(unchanged.storage).toBe(100);
@@ -485,7 +500,7 @@ describe("economy", () => {
 			...createRun([quadPoll], handed),
 			status: "answering",
 			storage: 100,
-			build: { id: "build", slots: 3, configs: [CONFIGS.eslint] },
+			build: { id: "build", configs: [CONFIGS.eslint] },
 		};
 
 		const once = runReducer(state, { type: "lint-poll" });
@@ -499,7 +514,7 @@ describe("economy", () => {
 	});
 });
 
-describe("build space in the shop (ADR-074)", () => {
+describe("build space follows the build (ADR-098)", () => {
 	const shopAfter = (gates: number): RunState => {
 		let state: RunState = started(["js"], 12 * SLICE_WINDOW);
 		for (let gate = 0; gate < gates; gate += 1) {
@@ -513,74 +528,86 @@ describe("build space in the shop (ADR-074)", () => {
 	it("opens every run on four weight of free room", () => {
 		const state = createRun(pool(10), handed);
 
-		expect(state.build.slots).toBe(BASE_SLOTS);
-		expect(upkeepForSpace(state.build.slots)).toBe(0);
+		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
+		expect(upkeepForBuild(state.build)).toBe(0);
 	});
 
-	it("offers no room in the shop that stocks gate 1", () => {
-		const state = shopAfter(1);
-
-		expect(state.gatesCleared).toBe(1);
-		expect(canPickBuildSpace(state)).toBe(false);
-		expect(setBuildSpace(state, 2)).toBe(state);
+	const grownBy = (state: RunState, ...configs: Config[]): RunState => ({
+		...state,
+		build: { ...state.build, configs: [...state.build.configs, ...configs] },
 	});
 
-	it("opens the picker in the shop that stocks gate 2", () => {
-		const state = shopAfter(2);
+	it("rents the next rung the moment the build grows past the free four", () => {
+		const free = shopAfter(1);
+		const grown = grownBy(free, CONFIGS.strict);
 
-		expect(state.gatesCleared).toBe(BUILD_SPACE_FROM_GATE);
-		expect(canPickBuildSpace(state)).toBe(true);
+		expect(spaceForBuild(free.build)).toBe(BASE_SLOTS);
+		expect(upkeepForBuild(free.build)).toBe(0);
+		expect(spaceForBuild(grown.build)).toBe(6);
+		expect(upkeepForBuild(grown.build)).toBe(16);
 	});
 
-	it("widens the build to the rung it is handed, charging nothing at the counter", () => {
-		const state = { ...shopAfter(2), storage: 300 };
-		const wider = setBuildSpace(state, 2);
+	it("gives the room back when the build sheds the weight it rented for", () => {
+		const grown = grownBy(shopAfter(1), CONFIGS.strict);
+		const sold = runReducer(grown, { type: "sell", configId: "strict" });
 
-		expect(wider.build.slots).toBe(8);
-		expect(wider.storage).toBe(300);
+		expect(spaceForBuild(grown.build)).toBe(6);
+		expect(spaceForBuild(sold.build)).toBe(BASE_SLOTS);
+		expect(upkeepForBuild(sold.build)).toBe(0);
 	});
 
-	it("bills the rung it holds at the close, whatever the build weighs", () => {
-		const held = { ...shopAfter(2), storage: 500 };
-		const wide = runReducer(held, { type: "set-build-space", rung: 2 });
-		const climbed = runReducer(wide, { type: "finish-reward" });
-		const cleared = clearGate(climbed);
+	it("charges nothing at the counter — the standing bill is the whole price", () => {
+		const grown = grownBy({ ...shopAfter(2), storage: 300 }, CONFIGS.strict);
 
-		expect(cleared.upkeepBilledKb).toBe(32);
+		expect(grown.storage).toBe(300);
+		expect(upkeepForBuild(grown.build)).toBe(16);
+	});
+
+	it("bills the rung the build sits in at the close", () => {
+		const held = grownBy({ ...shopAfter(2), storage: 500 }, CONFIGS.strict);
+		const cleared = clearGate(runReducer(held, { type: "finish-reward" }));
+
+		expect(cleared.upkeepBilledKb).toBe(16);
 	});
 
 	it("tallies every gate's upkeep, not just the one it last paid", () => {
-		const held = { ...shopAfter(2), storage: 500 };
-		const wide = runReducer(held, { type: "set-build-space", rung: 2 });
-		const first = clearGate(runReducer(wide, { type: "finish-reward" }));
+		const held = grownBy({ ...shopAfter(2), storage: 500 }, CONFIGS.strict);
+		const first = clearGate(runReducer(held, { type: "finish-reward" }));
 		const second = clearGate(runReducer(first, { type: "finish-reward" }));
 
-		expect(first.upkeepPaidKb).toBe(32);
-		expect(second.upkeepPaidKb).toBe(64);
+		expect(first.upkeepPaidKb).toBe(16);
+		expect(second.upkeepPaidKb).toBe(32);
 	});
 
-	it("leaves the build over its space rather than refusing the step down", () => {
-		const heavy = atGateWithBuild(BUILD_SPACE_FROM_GATE, 6);
-		const narrowed = setBuildSpace(heavy, 0);
+	/**
+	 * ADR-082 Decision 4's remedy with the rung derived: the run cannot be
+	 * dropped to a cheaper rung, because the rung is its build — so the space the
+	 * bill did cover becomes a cap, and the shop door holds it there.
+	 */
+	it("holds the run to the space its balance covered when the bill outruns it", () => {
+		const heavy = grownBy(
+			shopAfter(1),
+			CONFIGS.agentsMd,
+			CONFIGS.wtfpl,
+			CONFIGS.dependabot
+		);
+		const cleared = clearGate({
+			...runReducer(heavy, { type: "finish-reward" }),
+			storage: 0,
+		});
 
-		expect(narrowed.build.slots).toBe(BASE_SLOTS);
-		expect(overflowSlots(narrowed.build)).toBeGreaterThan(0);
+		expect(upkeepForBuild(heavy.build)).toBe(512);
+		expect(cleared.upkeepBilledKb).toBe(256);
+		expect(cleared.spaceDroppedTo).toBe(24);
+		expect(overflowWeightOf(cleared)).toBe(4);
 	});
 
-	it("refuses a rung off either end of the ladder", () => {
-		const state = shopAfter(2);
+	it("leaves no cap behind when the bill was paid in full", () => {
+		const held = grownBy({ ...shopAfter(2), storage: 500 }, CONFIGS.strict);
+		const cleared = clearGate(runReducer(held, { type: "finish-reward" }));
 
-		expect(setBuildSpace(state, -1)).toBe(state);
-		expect(setBuildSpace(state, BUILD_SPACE_RUNGS.length)).toBe(state);
-	});
-
-	it("drops to the widest rung the balance covers when the bill outruns it", () => {
-		const wide = setBuildSpace(shopAfter(2), BUILD_SPACE_RUNGS.length - 1);
-		const climbed = runReducer(wide, { type: "finish-reward" });
-		const cleared = clearGate({ ...climbed, storage: 0 });
-
-		expect(cleared.spaceDroppedTo).toBe(cleared.build.slots);
-		expect(cleared.build.slots).toBeLessThan(32);
+		expect(cleared.spaceDroppedTo).toBeUndefined();
+		expect(overflowWeightOf(cleared)).toBe(0);
 	});
 });
 
@@ -592,10 +619,6 @@ describe("WTFPL's open shop", () => {
 			...state,
 			gatesCleared: 4,
 			storage: 600,
-			build: {
-				...state.build,
-				slots: occupiedSlots(state.build.configs) + 8,
-			},
 			draftOptions: [CONFIGS.wtfpl, ...state.draftOptions],
 		};
 	};
@@ -635,7 +658,7 @@ describe("WTFPL's open shop", () => {
 		expect(runReducer(state, { type: "extend-offers" })).toBe(state);
 	});
 
-	it("retires locking even while yarn.lock is installed", () => {
+	it("retires locking even while .lock is installed", () => {
 		const base = holding();
 		const state = {
 			...base,
@@ -685,6 +708,16 @@ describe("upgrade offers in the registry (ADR-053)", () => {
 		const bought = runReducer(state, { type: "draft", configId: "js" });
 
 		expect(state.storage - bought.storage).toBe(draftCost(CONFIGS.js));
+	});
+
+	it("swaps in a rolled jump of two rungs at the same registry price (ADR-097)", () => {
+		const state = offering(shopWith("js", 256), { ...CONFIGS.js, level: 3 });
+
+		const bought = runReducer(state, { type: "draft", configId: "js" });
+
+		expect(levelOf(bought, "js")).toBe(3);
+		expect(state.storage - bought.storage).toBe(draftCost(CONFIGS.js));
+		expect(bought.build.configs).toHaveLength(state.build.configs.length);
 	});
 
 	it("asks for no category coverage, unlike the shop's Upgrade press", () => {

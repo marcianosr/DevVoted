@@ -155,6 +155,17 @@ const consumedForViewer = [
 
 /** Climb map fixture: Red (the usual viewer) mid-Soul, Blue ahead, Green well back. */
 const RED_AT = { gate: 6, pollsIntoGate: 3 };
+const RED_BUILD = {
+	configs: [{ id: "ts", label: ".ts", slots: 1, level: 3 }],
+	vendorLockedConfigId: "ts",
+};
+const BLUE_BUILD = {
+	configs: [
+		{ id: "cache", label: "Cache", slots: 4 },
+		{ id: "eslint", label: "ESLint", slots: 1, level: 2 },
+	],
+};
+const BARE_BUILD = { configs: [] };
 const CLIMBERS = [
 	{
 		userId: RED,
@@ -162,6 +173,7 @@ const CLIMBERS = [
 		photoUrl: null,
 		borderUrl: null,
 		...RED_AT,
+		build: RED_BUILD,
 	},
 	{
 		userId: BLUE,
@@ -170,6 +182,7 @@ const CLIMBERS = [
 		borderUrl: "/borders/x.png",
 		gate: 7,
 		pollsIntoGate: 1,
+		build: BLUE_BUILD,
 	},
 	{
 		userId: GREEN,
@@ -178,6 +191,7 @@ const CLIMBERS = [
 		borderUrl: null,
 		gate: 2,
 		pollsIntoGate: 4,
+		build: BARE_BUILD,
 	},
 ];
 const FALLEN = [
@@ -189,15 +203,17 @@ const FALLEN = [
 		borderUrl: null,
 		gate: 3,
 		pollsIntoGate: 2,
+		build: BLUE_BUILD,
 	},
 	{
 		runId: 12,
-		userId: "janine",
+		userId: "misty",
 		displayName: null,
 		photoUrl: null,
 		borderUrl: null,
 		gate: 5,
 		pollsIntoGate: 0,
+		build: BARE_BUILD,
 	},
 ];
 
@@ -508,6 +524,7 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(JSON.stringify(result.data)).not.toContain('"correct":');
+		expect(JSON.stringify(result.data)).not.toContain('"description":');
 	});
 });
 
@@ -532,6 +549,7 @@ describe("getRunCommunityService climb map", () => {
 				gate: 2,
 				pollsIntoGate: 4,
 				you: false,
+				build: BARE_BUILD,
 			},
 			{
 				id: RED,
@@ -541,6 +559,7 @@ describe("getRunCommunityService climb map", () => {
 				gate: 6,
 				pollsIntoGate: 3,
 				you: true,
+				build: RED_BUILD,
 			},
 			{
 				id: BLUE,
@@ -550,8 +569,23 @@ describe("getRunCommunityService climb map", () => {
 				gate: 7,
 				pollsIntoGate: 1,
 				you: false,
+				build: BLUE_BUILD,
 			},
 		]);
+	});
+
+	it("keeps a viewer whose run has ended off the build list, their build now on the fallen chip", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(
+			CLIMBERS.filter((climber) => climber.userId !== RED)
+		);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const you = result.data.climb?.climbers.find((climber) => climber.you);
+		expect(you).not.toHaveProperty("build");
 	});
 
 	it("keeps the viewer on the map after their own run has died", async () => {
@@ -589,6 +623,7 @@ describe("getRunCommunityService climb map", () => {
 				borderUrl: null,
 				gate: 1,
 				pollsIntoGate: 0,
+				build: BARE_BUILD,
 			},
 		]);
 
@@ -619,16 +654,18 @@ describe("getRunCommunityService climb map", () => {
 				borderUrl: null,
 				gate: 3,
 				pollsIntoGate: 2,
+				build: BLUE_BUILD,
 			},
 			// A nameless account falls back to its id, so the avatar still draws.
 			{
 				runId: 12,
-				id: "janine",
-				displayName: "janine",
+				id: "misty",
+				displayName: "misty",
 				photoUrl: null,
 				borderUrl: null,
 				gate: 5,
 				pollsIntoGate: 0,
+				build: BARE_BUILD,
 			},
 		]);
 	});

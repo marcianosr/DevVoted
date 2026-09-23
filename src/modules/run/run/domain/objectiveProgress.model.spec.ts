@@ -281,9 +281,16 @@ describe("gate clears", () => {
 
 	it("skips the full-build badge while a slot sits open", () => {
 		const state = started(["js"]);
+		// Four 1-weight configs sit exactly on the free rung, so the open slot has
+		// to come from a build that does NOT land on a rung: a fifth weight rents
+		// the 6 and leaves one spare (ADR-098). Holding a wider rung is no longer
+		// expressible — the rung follows the build.
 		const roomy: RunState = {
 			...state,
-			build: { ...state.build, slots: state.build.slots + 1 },
+			build: {
+				...state.build,
+				configs: [...state.build.configs, CONFIGS.strict],
+			},
 		};
 		const closing = answered(roomy, SLICE_WINDOW - 1);
 		expect(

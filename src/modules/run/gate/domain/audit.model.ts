@@ -8,23 +8,27 @@ const asPercent = (share: number): string => `${Math.round(share * 100)}%`;
 import { selectSeededRandom, shuffleSeeded } from "~/shared/lib/seededRandom";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 
-export type AuditId =
-	| "cost-overrun"
-	| "not-found"
-	| "read-only"
-	| "dependency-outage"
-	| "too-many-requests"
-	| "flaky-build"
-	| "memory-leak"
-	| "rolling-outage"
-	| "breaking-change"
-	| "upgrade-required"
-	| "mirrored"
-	| "timeout"
-	| "payload-too-large"
-	| "feature-freeze"
-	| "legal-hold"
-	| "strip";
+export const AUDIT_IDS = [
+	"cost-overrun",
+	"not-found",
+	"read-only",
+	"dependency-outage",
+	"too-many-requests",
+	"flaky-build",
+	"memory-leak",
+	"rolling-outage",
+	"breaking-change",
+	"upgrade-required",
+	"mirrored",
+	"multi-status",
+	"timeout",
+	"payload-too-large",
+	"feature-freeze",
+	"legal-hold",
+	"strip",
+] as const;
+
+export type AuditId = (typeof AUDIT_IDS)[number];
 
 export type Audit = {
 	readonly id: AuditId;
@@ -43,6 +47,7 @@ export type Audit = {
 	readonly paidActionLimit?: number;
 	readonly closesShop?: boolean;
 	readonly hidesCategory?: boolean;
+	readonly hidesAnswerType?: boolean;
 	readonly overWidthBurn?: { readonly freeSlots: number; readonly kb: number };
 	readonly disablesConfig?: OfflinePick;
 	readonly timedPolls?: { readonly count: number; readonly limitMs: number };
@@ -68,6 +73,17 @@ const MIRROR: Audit = {
 	answerCue:
 		"Mirrored: pick every WRONG option. A single-answer poll usually has several.",
 	mirrorsPolls: true,
+};
+
+const MULTI_STATUS: Audit = {
+	id: "multi-status",
+	code: 207,
+	name: "Multi-Status",
+	description:
+		"Every poll arrives as a select-all, so whether it really takes one answer or several is yours to work out. Every answer pays flat.",
+	answerCue:
+		"Multi-status: every poll is a select-all. An extra pick cancels a right one, and nothing pays double.",
+	hidesAnswerType: true,
 };
 
 const LEAK_BASE_KB = 16;
@@ -263,6 +279,7 @@ const AUDIT_ROSTER = {
 	"breaking-change": () => BREAKING_CHANGE,
 	"upgrade-required": () => UPGRADE_REQUIRED,
 	mirrored: () => MIRROR,
+	"multi-status": () => MULTI_STATUS,
 	timeout: timeoutAudit,
 	"payload-too-large": () => PAYLOAD_TOO_LARGE,
 	"feature-freeze": () => FEATURE_FREEZE,
@@ -282,6 +299,9 @@ export const auditLabelOf = (id: AuditId, gate = 0): string =>
 	auditLabel(auditAt(id, gate));
 
 export type AuditSchedule = Readonly<Record<number, readonly AuditId[]>>;
+
+/** No gate carries anything until a rival's incident locks into it (ADR-099). */
+export const EMPTY_AUDIT_SCHEDULE: AuditSchedule = {};
 
 export const auditsForGate = (
 	gate: number,
@@ -336,6 +356,9 @@ export const auditBurnKb = (
 
 export const auditsHideCategory = (audits: readonly Audit[]): boolean =>
 	audits.some((audit) => audit.hidesCategory === true);
+
+export const auditsHideAnswerType = (audits: readonly Audit[]): boolean =>
+	audits.some((audit) => audit.hidesAnswerType === true);
 
 export const auditPaidActionLimit = (
 	audits: readonly Audit[]

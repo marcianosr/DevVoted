@@ -7,7 +7,7 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-30T18:37:27Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-22T11:23:25Z
 parent: DVTD-72d9
 ---
 
@@ -150,3 +150,10 @@ only drawback.
 - [ ] Roster entries with `gives`/`costs` lines
 - [ ] Wiki: Legacy System's negative-storage rule is a new rule and needs a line; the
       other three are roster rows only
+
+## Monorepo superseded 2026-09-22
+
+Config 1 above (the category-bonus passive) is replaced by **DVTD-jgpo**:
+Monorepo becomes a **transformation** beside Minify, merging two installed
+1-weight Focus configs into one 1-weight combined config. Same name, unrelated
+mechanic. The three other configs in this bean are unaffected.

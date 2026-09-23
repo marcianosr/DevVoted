@@ -9,17 +9,23 @@ import {
 import {
 	auditsOf,
 	canStart,
+	isPrepPhase,
 	type RunState,
 	withBuild,
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
 import { answer, closeGate } from "~/modules/run/run/domain/answer.model";
 import { commitEstimate } from "~/modules/run/run/domain/estimate.model";
-import { commitVendorLock } from "~/modules/run/build/domain/vendorLock.model";
+import { commitBand } from "~/modules/run/run/domain/sla.model";
+import {
+	canVendorLock,
+	commitVendorLock,
+	isVendorLocked,
+} from "~/modules/run/build/domain/vendorLock.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import { armStrict } from "~/modules/run/run/domain/strict.model";
+import { fireAudit } from "~/modules/run/run/domain/attack.model";
 import {
-	setBuildSpace,
 	draft,
 	drop,
 	extendOffers,
@@ -46,6 +52,8 @@ export type RunAction =
 	| { readonly type: "start" }
 	| { readonly type: "rebase"; readonly from: number; readonly to: number }
 	| { readonly type: "estimate"; readonly count: number }
+	| { readonly type: "commit-band"; readonly band: string }
+	| { readonly type: "fire-audit" }
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
@@ -71,8 +79,7 @@ export type RunAction =
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
 	| { readonly type: "switch-arm"; readonly configId: string }
-	| { readonly type: "vendor-lock"; readonly configId: string }
-	| { readonly type: "set-build-space"; readonly rung: number };
+	| { readonly type: "vendor-lock"; readonly configId: string };
 
 const installConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
@@ -92,6 +99,7 @@ const uninstallConfig = (state: RunState, configId: string): RunState => {
 		(candidate) => candidate.id === configId
 	);
 	if (!config) return state;
+	if (isVendorLocked(state, configId)) return state;
 	return {
 		...state,
 		build: withBuild(
@@ -103,6 +111,7 @@ const uninstallConfig = (state: RunState, configId: string): RunState => {
 
 const start = (state: RunState): RunState => {
 	if (!canStart(state.build)) return state;
+	if (canVendorLock(state)) return state;
 	return { ...state, status: "answering" };
 };
 
@@ -114,7 +123,6 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"unlock-offer",
 	"extend-offers",
 	"plant-pin",
-	"set-build-space",
 	"sell",
 	"vendor-lock",
 ];
@@ -132,6 +140,8 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 		return start(state);
 	if (action.type === "rebase") return rebase(state, action.from, action.to);
 	if (action.type === "estimate") return commitEstimate(state, action.count);
+	if (action.type === "commit-band") return commitBand(state, action.band);
+	if (action.type === "fire-audit") return fireAudit(state);
 	if (action.type === "answer" && state.status === "answering")
 		return answer(state, action.optionIds, action.elapsedMs);
 	if (action.type === "close-gate" && state.status === "answering")
@@ -168,11 +178,9 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 		return plantPin(state);
 	if (action.type === "finish-reward" && state.status === "rewarding")
 		return finishReward(state);
-	if (action.type === "set-build-space" && state.status === "rewarding")
-		return setBuildSpace(state, action.rung);
 	if (action.type === "sell" && state.status === "rewarding")
 		return sell(state, action.configId);
-	if (action.type === "vendor-lock" && state.status === "rewarding")
+	if (action.type === "vendor-lock" && isPrepPhase(state))
 		return commitVendorLock(state, action.configId);
 	if (action.type === "minify" && state.status === "rewarding")
 		return minifyConfig(state, action.configId);

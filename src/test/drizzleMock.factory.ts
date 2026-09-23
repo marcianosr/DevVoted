@@ -20,9 +20,11 @@ export type DrizzleMockState = {
 };
 
 const CHAIN_METHODS = [
+	"as",
 	"from",
 	"where",
 	"orderBy",
+	"groupBy",
 	"limit",
 	"innerJoin",
 	"leftJoin",

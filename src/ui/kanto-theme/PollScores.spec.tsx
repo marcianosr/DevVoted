@@ -7,14 +7,65 @@ import {
 	pollScoreRows,
 } from "~/test/swatchTrack.factory";
 
-import { PollScores } from "./PollScores.ui";
+import { PollScores, type PollScoreRow } from "./PollScores.ui";
+
+const RECEIPT = [
+	{
+		label: "right answer",
+		detail: "base",
+		figures: [{ label: "1.00", tone: "quiet" as const }],
+	},
+	{
+		label: ".js",
+		tags: [{ label: "×1.25" }],
+		detail: "matches JavaScript",
+		figures: [{ label: "+0.25", tone: "quiet" as const }],
+	},
+	{
+		label: "paid",
+		figures: [{ label: "1.25", color: "viridian" as const }],
+		total: true,
+	},
+];
 
 const ROWS = pollScoreRows([3, 2, 0]);
+
+const paidWithReceipt = (): PollScoreRow => {
+	const [row] = pollPayoutRows([[1.25, 1, undefined, undefined, undefined]]);
+	const [first, ...rest] = row.payouts?.slots ?? [];
+
+	return {
+		...row,
+		payouts: {
+			total: "2.25",
+			slots: [
+				{ ...first, figure: "1.25", color: "viridian", receipt: RECEIPT },
+				...rest,
+			],
+		},
+	};
+};
 
 const rowFor = (gateName: string) =>
 	screen.getByLabelText(new RegExp(`^${gateName}`));
 
 describe("PollScores", () => {
+	it("opens a paid chip's own receipt, so any poll explains its figure", () => {
+		render(<PollScores rows={[paidWithReceipt()]} />);
+
+		expect(
+			screen.getByRole("button", { name: "poll 1 — paid 1.25" })
+		).toBeInTheDocument();
+		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
+		expect(screen.getByText("+0.25")).toBeInTheDocument();
+	});
+
+	it("leaves a chip with no receipt as a plain figure, not a control", () => {
+		render(<PollScores rows={pollPayoutRows([[1.25]])} />);
+
+		expect(screen.queryByRole("button")).toBeNull();
+	});
+
 	it("names every gate the run has reached, in the order it climbed them", () => {
 		render(<PollScores rows={ROWS} />);
 

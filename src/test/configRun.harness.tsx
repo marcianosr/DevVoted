@@ -1,12 +1,10 @@
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
@@ -154,7 +152,6 @@ export const runWith = (
 			...base,
 			build: {
 				...base.build,
-				slots: Math.max(BASE_SLOTS, occupiedSlots(configs)),
 				configs: [...configs],
 			},
 		},
@@ -257,11 +254,9 @@ export const asShop = (state: RunState) => (
 		view={toRunView(state)}
 		onDraft={noop}
 		onSell={noop}
-		onUpgrade={noop}
 		onRebuild={noop}
 		onExtend={noop}
 		onPlantPin={noop}
-		onSetBuildSpace={noop}
 		onVendorLock={noop}
 		onContinue={noop}
 	/>
@@ -287,5 +282,10 @@ export const asReview = (state: RunState) => (
 );
 
 export const asStart = (state: RunState) => (
-	<StartView view={toRunView(state)} onToggle={noop} onStart={noop} />
+	<StartView
+		view={toRunView(state)}
+		onToggle={noop}
+		onVendorLock={noop}
+		onStart={noop}
+	/>
 );

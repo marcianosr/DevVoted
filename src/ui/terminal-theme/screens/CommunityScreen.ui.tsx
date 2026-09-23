@@ -64,6 +64,8 @@ export type CommunityScreenProps = {
 		hint?: string;
 		onBack?: () => void;
 	};
+	/** A second exit beside the back press: the day's incident log (ADR-099). */
+	aside?: { label: string; onUse?: () => void };
 };
 
 const StandoutBox = ({ entry }: { entry: StandoutEntry }) => (
@@ -125,6 +127,7 @@ export const CommunityScreen = ({
 	topPercent,
 	countdown,
 	back,
+	aside,
 }: CommunityScreenProps) => (
 	<Panel theme={theme} sidebar>
 		<header className={HEADER}>
@@ -186,6 +189,9 @@ export const CommunityScreen = ({
 
 		<footer className={FOOTER}>
 			<Text tone="muted">{countdown ?? ""}</Text>
+			{aside === undefined ? null : (
+				<Button label={aside.label} variant="quiet" onUse={aside.onUse} />
+			)}
 			<Button
 				label={back.label}
 				variant="primary"

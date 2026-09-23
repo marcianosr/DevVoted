@@ -1,6 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
+import { attackPanelFor } from "~/modules/run/incident/application/incident.viewmodel";
+import { useAttackTargets } from "~/modules/run/incident/application/useAttackTargets.hook";
+import { useFireAudit } from "~/modules/run/incident/application/useFireAudit.hook";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
@@ -19,8 +22,13 @@ export const RunPrep = () => {
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
+	const targets = useAttackTargets((view?.attack ?? null) !== null);
+	const fire = useFireAudit();
 
 	if (!view) return null;
+
+	const fireRefusal =
+		fire.data?.success === false ? fire.data.error : undefined;
 
 	const parkedInShopPhase = view.status === SHOP_PHASE;
 	const beforeFirstGate = view.status === OPENING_PHASE;
@@ -59,7 +67,18 @@ export const RunPrep = () => {
 				view.pollsExhausted && !countdown.isOpen ? countdown.label : undefined
 			}
 			onEstimate={(count) => send({ type: "estimate", count })}
+			onCommitBand={(band) => send({ type: "commit-band", band })}
 			onRebase={(from, to) => send({ type: "rebase", from, to })}
+			attack={attackPanelFor(
+				view.attack,
+				targets.view?.offers ?? null,
+				targets.errorMessage,
+				fireRefusal
+			)}
+			onFire={(targetRunId, auditId) => {
+				if (!fire.isPending) fire.mutate({ targetRunId, auditId });
+			}}
+			onIncidents={() => navigate({ to: "/run/incidents" })}
 		/>
 	);
 };

@@ -4,6 +4,7 @@ import {
 	boolean,
 	integer,
 	json,
+	index,
 	pgEnum,
 	pgTable,
 	primaryKey,
@@ -75,6 +76,18 @@ export const seasonStatus = pgEnum("season_status", [
 export const pollAnswerType = pgEnum("answer_type", [
 	"single",
 	"multiple",
+] as const);
+
+/**
+ * How an answer graded, in the engine's own vocabulary (`AnswerOutcome`).
+ * Stored rather than re-derived: the room's difficulty reading is a grouped
+ * count over every player's first attempt, and folding option rows to get there
+ * would fan out to (players × options) rows on every poll load.
+ */
+export const pollAnswerOutcome = pgEnum("answer_outcome", [
+	"correct",
+	"partial",
+	"wrong",
 ] as const);
 
 // === TABLES ===
@@ -345,6 +358,12 @@ export const pollResponsesTable = pgTable(
 		// board grades them against the mirrored expectation (they still prove
 		// knowledge).
 		mirrored: boolean("mirrored").notNull().default(false),
+		// How this answer graded, written by the grader at answer time. Nullable
+		// only because it was added to a populated table; the migration backfills
+		// every existing row. Mirrored rows carry the grade of what the player
+		// actually did, so a reader asking about the real question must exclude them
+		// the way the community split does.
+		outcome: pollAnswerOutcome("outcome"),
 		score_breakdown:
 			json("score_breakdown").$type<
 				import("~/domains/runs/services/score.service").ScoreCalculation
@@ -487,6 +506,56 @@ export const runStatesTable = pgTable("run_states", {
 		.defaultNow()
 		.$onUpdate(() => new Date()),
 });
+
+/**
+ * Audit Incidents Table (ADR-099)
+ * A rival's attack aimed at a run's NEXT gate. `queued` until the target clears
+ * the gate before it, then `locked` into that gate's audit slots (up to the
+ * gate's capacity); `survived` when the target clears under it, `failed` when
+ * the run ends under it, `lapsed` when it can never land (past the summit, or
+ * the run ended before it locked). Bound to the target's run: nothing carries
+ * into a fresh climb. The lock step is the one writer of a gate's audits.
+ */
+export const auditIncidentStatus = pgEnum("audit_incident_status", [
+	"queued",
+	"locked",
+	"survived",
+	"failed",
+	"lapsed",
+]);
+
+export const auditIncidentsTable = pgTable(
+	"audit_incidents",
+	{
+		id: serial("id").primaryKey(),
+		sent_by_user_id: uuid("sent_by_user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_user_id: uuid("target_user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_run_id: integer("target_run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_gate: integer("target_gate").notNull(),
+		audit_id: varchar("audit_id", { length: 32 })
+			.notNull()
+			.$type<import("~/modules/run/gate/domain/audit.model").AuditId>(),
+		status: auditIncidentStatus("status").notNull().default("queued"),
+		created_at: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		locked_at: timestamp("locked_at", { withTimezone: true }),
+	},
+	(table) => [
+		index("audit_incidents_target_queue_idx").on(
+			table.target_run_id,
+			table.target_gate,
+			table.status
+		),
+		index("audit_incidents_created_idx").on(table.created_at),
+	]
+);
 
 /**
  * Daily Run Seeds Table (new game flow, ADR-009)

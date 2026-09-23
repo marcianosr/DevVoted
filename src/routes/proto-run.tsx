@@ -4,8 +4,25 @@ import { useEffect, useState } from "react";
 import {
 	addStorage,
 	createRun,
+	type LastClose,
 	withBuild,
 } from "~/modules/run/run/domain/run.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import {
+	type Attacker,
+	eligibleRivals,
+	offersFor,
+	queuedByRun,
+	type RivalCandidate,
+} from "~/modules/run/incident/domain/incident.model";
+import {
+	attackOfferViewFor,
+	attackPanelFor,
+	type IncidentFeedRowView,
+	incidentsScreenPropsFor,
+} from "~/modules/run/incident/application/incident.viewmodel";
+import { IncidentsScreen } from "~/ui/kanto-theme/IncidentsScreen.ui";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
 import {
 	runReducer,
 	RunAction,
@@ -20,7 +37,10 @@ import {
 } from "~/modules/run/config/domain/hand.model";
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import {
+	occupiedSlots,
+	spaceForBuild,
+} from "~/modules/run/build/domain/build.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
@@ -32,11 +52,8 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	BASE_SLOTS,
-	BUILD_SPACE_RUNGS,
 	SLICE_WINDOW,
-	TOP_BUILD_SPACE_RUNG,
 	VICTORY_GATE,
-	buildSpaceFor,
 } from "~/modules/run/run/domain/rules.model";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -166,9 +183,94 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 const PROTO_START_KB = 256;
 const PROTO_GRANT_KB = 256;
 
-const smallestRungHolding = (occupied: number): number =>
-	BUILD_SPACE_RUNGS.find((rung) => rung.weight >= occupied)?.weight ??
-	buildSpaceFor(TOP_BUILD_SPACE_RUNG);
+const PROTO_RUN_ID = 0;
+const PROTO_USER_ID = "you";
+const PROTO_YOU = "You";
+const BACK_TO_PREP = "Back to prep →";
+
+const strongCloseAt = (gate: number): LastClose => ({
+	gate,
+	band: "healthy",
+	cleared: true,
+});
+
+/**
+ * A field of rivals around the player's gate, so the attack panel can be seen
+ * without a second account. Two are deliberately out of range so the real
+ * eligibility filter is exercised: Koga is behind, Sabrina last closed thin.
+ */
+const RIVAL_BUILDS = {
+	misty: {
+		configs: [
+			{ id: "ts", label: ".ts", slots: 1, level: 3 },
+			{ id: "cache", label: "Cache", slots: 4 },
+		],
+		vendorLockedConfigId: "cache",
+	},
+	brock: {
+		configs: [
+			{ id: "eslint", label: "ESLint", slots: 1, level: 2 },
+			{ id: "telemetry", label: "Telemetry", slots: 2 },
+		],
+	},
+	erika: { configs: [{ id: "prefetch", label: "Prefetch", slots: 4 }] },
+	bare: { configs: [] },
+};
+
+const simulatedRivals = (gatesCleared: number): readonly RivalCandidate[] => {
+	const ahead = (by: number) => Math.min(gatesCleared + by, VICTORY_GATE - 1);
+	return [
+		{
+			runId: 101,
+			userId: "misty",
+			name: "Misty",
+			gatesCleared: ahead(0),
+			lastClose: strongCloseAt(ahead(0) - 1),
+			build: RIVAL_BUILDS.misty,
+		},
+		{
+			runId: 102,
+			userId: "brock",
+			name: "Brock",
+			gatesCleared: ahead(1),
+			lastClose: strongCloseAt(ahead(1) - 1),
+			build: RIVAL_BUILDS.brock,
+		},
+		{
+			runId: 103,
+			userId: "erika",
+			name: "Erika",
+			gatesCleared: ahead(2),
+			lastClose: strongCloseAt(ahead(2) - 1),
+			build: RIVAL_BUILDS.erika,
+		},
+		{
+			runId: 104,
+			userId: "koga",
+			name: "Koga",
+			gatesCleared: Math.max(0, gatesCleared - 1),
+			lastClose: strongCloseAt(Math.max(0, gatesCleared - 2)),
+			build: RIVAL_BUILDS.bare,
+		},
+		{
+			runId: 105,
+			userId: "sabrina",
+			name: "Sabrina",
+			gatesCleared: ahead(1),
+			lastClose: { gate: ahead(1) - 1, band: "ok", cleared: true },
+			build: RIVAL_BUILDS.bare,
+		},
+	];
+};
+
+/** What the simulator filed, kept as the feed row plus what the queue fold needs. */
+type FiledIncident = {
+	readonly targetRunId: number;
+	readonly targetUserId: string;
+	readonly targetGate: number;
+	readonly auditId: AuditId;
+	readonly row: IncidentFeedRowView;
+};
 
 type SimTrainer = { id: string; displayName: string; accuracy: number };
 
@@ -430,10 +532,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				)
 					? current.available
 					: [...current.available, config],
-				build: {
-					...withBuild(current.build, configs),
-					slots: smallestRungHolding(occupiedSlots(configs)),
-				},
+				build: withBuild(current.build, configs),
 			};
 		});
 	const dispatch = (action: RunAction) =>
@@ -508,6 +607,89 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		);
 	};
 
+	const [filed, setFiled] = useState<readonly FiledIncident[]>([]);
+	const [incidentsOpen, setIncidentsOpen] = useState(false);
+	const rivals = simulatedRivals(state.gatesCleared);
+	const queued = queuedByRun(
+		filed.map((incident) => ({
+			runId: incident.targetRunId,
+			gate: incident.targetGate,
+			auditId: incident.auditId,
+		}))
+	);
+	const attacker: Attacker | null =
+		state.attack === undefined
+			? null
+			: {
+					runId: PROTO_RUN_ID,
+					userId: PROTO_USER_ID,
+					gatesCleared: state.gatesCleared,
+					band: state.attack.band,
+				};
+	const offers =
+		attacker === null
+			? []
+			: offersFor(
+					attacker,
+					eligibleRivals(
+						attacker,
+						rivals,
+						queued,
+						filed[0]?.targetUserId ?? null
+					),
+					queued,
+					getTodayDateString()
+				).map(attackOfferViewFor);
+	const fire = (targetRunId: number, auditId: AuditId) => {
+		const offer = offers.find((entry) => entry.targetRunId === targetRunId);
+		const payload = offer?.payloads.find((entry) => entry.auditId === auditId);
+		const rival = rivals.find((entry) => entry.runId === targetRunId);
+		if (offer === undefined || payload === undefined || rival === undefined)
+			return;
+
+		dispatch({ type: "fire-audit" });
+		setFiled((current) => [
+			{
+				targetRunId,
+				targetUserId: rival.userId,
+				targetGate: offer.gate,
+				auditId,
+				row: {
+					id: current.length + 1,
+					sentBy: PROTO_YOU,
+					target: offer.name,
+					code: payload.code,
+					name: payload.name,
+					gate: offer.gate,
+					gateName: offer.gateName,
+					status: "queued",
+					own: true,
+				},
+			},
+			...current,
+		]);
+	};
+	const latest = filed[0];
+	const attack = attackPanelFor(
+		view.attack,
+		offers,
+		null,
+		latest === undefined
+			? undefined
+			: `filed ${latest.row.code} against ${latest.row.target} · ${latest.row.gateName}`
+	);
+	const openIncidents = () => setIncidentsOpen(true);
+
+	if (incidentsOpen)
+		return (
+			<IncidentsScreen
+				{...incidentsScreenPropsFor(
+					filed.map((incident) => incident.row),
+					{ label: BACK_TO_PREP, onPress: () => setIncidentsOpen(false) }
+				)}
+			/>
+		);
+
 	return (
 		<>
 			{state.status === "configuring" && startStep === "build" && (
@@ -521,6 +703,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							configId: id,
 						})
 					}
+					onVendorLock={(id) => dispatch({ type: "vendor-lock", configId: id })}
 					onStart={() => setStartStep("prep")}
 				/>
 			)}
@@ -533,6 +716,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onBackToShop={() => setStartStep("build")}
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
+					attack={attack}
+					onFire={fire}
+					onIncidents={openIncidents}
 				/>
 			)}
 
@@ -585,13 +771,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					view={view}
 					onDraft={(id) => dispatch({ type: "draft", configId: id })}
 					onSell={(id) => dispatch({ type: "sell", configId: id })}
-					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
-					onSetBuildSpace={(rung) =>
-						dispatch({ type: "set-build-space", rung })
-					}
 					onVendorLock={(id) => dispatch({ type: "vendor-lock", configId: id })}
 					onContinue={() => setRewardStep("prep")}
 				/>
@@ -604,6 +786,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onBackToShop={() => setRewardStep("shop")}
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
+					attack={attack}
+					onFire={fire}
+					onIncidents={openIncidents}
 				/>
 			)}
 
@@ -703,7 +888,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				</button>
 				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
 					<span className="mr-1 font-semibold uppercase tracking-wide">
-						Configs {occupiedSlots(state.build.configs)}/{state.build.slots}
+						Configs {occupiedSlots(state.build.configs)}/
+						{spaceForBuild(state.build)}
 					</span>
 					{CONFIG_LIST.map((config) => {
 						const held = state.build.configs.some(

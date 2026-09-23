@@ -1,11 +1,11 @@
 ---
 # DVTD-7tof
 title: Clean up storybook and old code
-status: in-progress
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-07-21T19:56:09Z
-updated_at: 2026-09-19T16:04:32Z
+updated_at: 2026-09-22T18:50:48Z
 parent: DVTD-82c4
 ---
 
@@ -75,3 +75,43 @@ review, alongside the parked gate models.
 
 The 2026-07-25 note above refers to `src/routes/old/` — that folder is gone. Its
 leftover `.oxlintrc.json` override was removed under DVTD-4jbz.
+
+## Reasons for Scrapping
+
+Scrapped 2026-09-22 after auditing every box against the code. This bean is a 2026-07
+generic cleanup list that reality overtook: its 13 boxes were all still unchecked while
+most of the work had already landed under other beans, so it read as 0% done when it was
+nearly finished.
+
+**Its first six boxes are generic and now belong elsewhere.** "Audit and remove unused
+Storybook stories", "Remove dead code and unused utilities", "Clean up old domains/ code"
+and so on were done, or are owned, by:
+
+- **DVTD-4jbz** (completed) — unused deps, stale configs, the ADR bookkeeping.
+- **DVTD-9qyd** (in progress) — the `src/domains/` deletions, and the three items that
+  genuinely remain there.
+- This bean's own 2026-09-19 sweep — 128 dead UI files deleted from `src/ui/`, verified by
+  import-graph reachability rather than grep.
+
+**Its 2026-07-25 note is fully stale.** `src/routes/old/` no longer exists (deleted in
+`1cbe58ee`), and its leftover `.oxlintrc.json` override went under DVTD-4jbz.
+
+**The two things that genuinely survived are now named beans**, with the evidence
+attached rather than a checkbox:
+
+- **DVTD-929w** — the 7 legacy tables are all still in `schema.ts` (`daily_polls:230`,
+  `polls_history:248`, `run_category_coverage:584`, `seasons:627`, `leaderboard:652`,
+  `run_shop_offerings:686`, `daily_exposed_deck:718`) plus the legacy columns on
+  `users`/`runs`. It is a guarded ADR-012 migration, not a cleanup chore.
+- **DVTD-ea7h** — the kanto Modal/Confirm/Uninstall cluster. Decided: **wire it into the
+  shop** rather than delete it. Confirmed unreachable from `src/routes/**`; production
+  `ShopScreen.ui.tsx` has no `onUninstall` prop, so the flow exists only inside
+  `ShopScreen.stories.tsx:28-82`. The bean also records the refund discrepancy to settle
+  first — the factory uses `sellRefund`, the shop prices everything else via
+  `sellRefundIn`.
+
+**One gotcha worth not losing**, recorded here and still true:
+`terminal-theme/stories.smoke.spec.tsx` renders every story in its folder via
+`import.meta.glob`. It is the only glob-based spec in the repo and it is why dead stories
+kept passing. Related: `tsconfig.json` excludes `**/*.stories.tsx`, so a story can carry a
+broken import past both `tsc` and oxlint.

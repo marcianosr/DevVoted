@@ -10,7 +10,6 @@ import {
 } from "./RegistryControl.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
-import { BuildSpace, type BuildSpaceProps } from "./BuildSpace.ui";
 
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
@@ -24,7 +23,6 @@ const CONTROLS_TITLE = "Registry control";
 
 export type ShopScreenProps = {
 	build: BuildProps;
-	buildSpace?: BuildSpaceProps;
 	registry: RegistryProps;
 	header: HeaderProps;
 	nextGate?: NextGateProps;
@@ -37,7 +35,6 @@ export type ShopScreenProps = {
 
 export const ShopScreen = ({
 	build,
-	buildSpace,
 	registry,
 	header,
 	nextGate,
@@ -69,8 +66,6 @@ export const ShopScreen = ({
 							<Build {...build} layout={BUILD_LAYOUT} heading={false} />
 						</Panel.Body>
 					</Panel>
-
-					{buildSpace === undefined ? null : <BuildSpace {...buildSpace} />}
 				</div>
 
 				<div className={COLUMN}>

@@ -5,10 +5,15 @@ import { clsx } from "clsx";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 import { Badge } from "./Badge.ui";
+import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
+// Rows rule against each other inside `Question`'s frame rather than carrying
+// their own box, so the list reads as one thing. The corners are rounded on the
+// end rows instead of on every row, which is what keeps the picked and hover
+// fills inside the frame — the same trick `Panel` plays with its own regions.
 const ROW =
-	"flex w-full items-center gap-5 rounded-lg py-2.5 text-left transition-colors";
+	"flex w-full items-center gap-5 border-t border-theme-faint px-4 py-2.5 text-left transition-colors first:rounded-t-lg first:border-t-0 last:rounded-b-lg";
 const PICKABLE = "cursor-pointer hover:bg-theme-raised";
 const PICKED = "bg-theme-soft";
 const RULED_OUT = "cursor-not-allowed opacity-50";
@@ -38,6 +43,37 @@ const PRICE_COLOR = "viridian";
 
 const SEAL_WIDTHS = ["w-16", "w-28", "w-20", "w-24"] as const;
 
+export type ChoiceVerdict = "right" | "wrong" | "missed";
+
+const VERDICT_COLOR = {
+	right: "viridian",
+	wrong: "cinnabar",
+	missed: "celadon",
+} satisfies Record<ChoiceVerdict, KantoColor>;
+
+const VERDICT_GLYPH = {
+	right: "✓",
+	wrong: "✗",
+	missed: "✓",
+} satisfies Record<ChoiceVerdict, string>;
+
+const VERDICT_NAME = {
+	right: "right",
+	wrong: "wrong",
+	missed: "the answer",
+} satisfies Record<ChoiceVerdict, string>;
+
+const VERDICT_MARK = "text-theme-soft";
+
+const VerdictMark = ({ verdict }: { verdict: ChoiceVerdict }) => (
+	<span className={TRAILING}>
+		<span aria-hidden className={VERDICT_MARK}>
+			{VERDICT_GLYPH[verdict]}
+		</span>
+		<span className={READER_ONLY}>{VERDICT_NAME[verdict]}</span>
+	</span>
+);
+
 const sealWidthFor = (letter: string) =>
 	SEAL_WIDTHS[letter.charCodeAt(0) % SEAL_WIDTHS.length] ?? SEAL_WIDTHS[0];
 
@@ -50,6 +86,8 @@ export type ChoiceProps = {
 	letter: string;
 	answerType?: AnswerType;
 	picked?: boolean;
+	/** The reveal's reading of this row: only set once the poll is answered. */
+	verdict?: ChoiceVerdict;
 	onPick?: () => void;
 } & (
 	| { children: ReactNode; crossedOut?: boolean; seal?: never }
@@ -60,17 +98,20 @@ export const Choice = ({
 	letter,
 	answerType = "single",
 	picked = false,
+	verdict,
 	onPick,
 	children,
 	crossedOut = false,
 	seal,
 }: ChoiceProps) => {
+	const theme = verdict === undefined ? undefined : VERDICT_COLOR[verdict];
+	const capLit = picked || verdict === "missed";
 	const cap = (
 		<span
 			className={clsx(
 				CAP,
 				CAP_SHAPE[answerType],
-				picked ? CAP_PICKED : CAP_IDLE
+				capLit ? CAP_PICKED : CAP_IDLE
 			)}
 		>
 			{letter}
@@ -95,12 +136,16 @@ export const Choice = ({
 				) : (
 					text
 				)}
+				{verdict === undefined ? null : <VerdictMark verdict={verdict} />}
 			</>
 		);
 
 		if (onPick === undefined) {
 			return (
-				<div className={clsx(ROW, picked && PICKED, crossedOut && RULED_OUT)}>
+				<div
+					data-screen-theme={theme}
+					className={clsx(ROW, picked && PICKED, crossedOut && RULED_OUT)}
+				>
 					{body}
 				</div>
 			);
@@ -111,6 +156,7 @@ export const Choice = ({
 				type="button"
 				aria-pressed={picked}
 				disabled={crossedOut}
+				data-screen-theme={theme}
 				onClick={onPick}
 				className={clsx(
 					ROW,

@@ -18,7 +18,7 @@ const TAG = "ml-auto shrink-0 text-xs text-theme-muted";
 
 const LADDER = "flex flex-wrap items-center gap-1.5";
 const EFFECT = "text-sm text-theme-soft";
-const PRICE = "text-xs text-theme-muted";
+const PRICE = "flex items-center gap-1.5 text-xs text-theme-muted";
 
 const PATHS = "flex flex-col gap-1.5 text-xs text-theme-muted";
 const PATH = "flex flex-wrap items-center gap-1.5";
@@ -36,12 +36,13 @@ const SEPARATOR = "·";
 const STARTER_TAG = "starter";
 const EARNED_TAG = "earned";
 
-/** One rung of a config's in-run version ladder. `price` is null for v1, which
- * is what installing it already gives you. */
+/** One rung of a config's in-run version ladder. `price` and `odds` are null
+ * for v1, which is what installing it already gives you. */
 export type DexVersionRung = {
 	version: number;
 	effect: string;
 	price: string | null;
+	odds: string | null;
 };
 
 export type UnlockProgress = { count: number; target: number };
@@ -108,6 +109,22 @@ const rungFor = (
 const effectOf = (row: GrantedRow, rung?: DexVersionRung): string =>
 	rung === undefined || rung.effect === "" ? row.effect : rung.effect;
 
+const RungPrice = ({ rung }: { rung: DexVersionRung }) => {
+	if (rung.price === null) return <span className={PRICE}>{BASE_RUNG}</span>;
+
+	return (
+		<span className={PRICE}>
+			<Badge>{rung.price}</Badge>
+			{rung.odds === null ? null : (
+				<>
+					<span aria-hidden>{SEPARATOR}</span>
+					<span>{rung.odds}</span>
+				</>
+			)}
+		</span>
+	);
+};
+
 const Provenance = ({ row }: { row: GrantedRow }) => (
 	<span className={TAG}>
 		<Tooltip label={`${row.name} provenance`} hint={row.provenance} align="end">
@@ -171,11 +188,7 @@ const GrantedCard = ({
 			<p className={EFFECT}>
 				<Figures text={effectOf(row, rung)} />
 			</p>
-			{rung === undefined ? null : (
-				<span className={PRICE}>
-					{rung.price === null ? BASE_RUNG : <Badge>{rung.price}</Badge>}
-				</span>
-			)}
+			{rung === undefined ? null : <RungPrice rung={rung} />}
 		</div>
 	);
 };

@@ -62,6 +62,7 @@ intended earliness.
 | .java | Answer 10 Java polls correctly | category-correct:java · 10 | 225 |
 | .py | Answer 10 Python polls correctly | category-correct:python · 10 | 250 |
 | .rb | Answer 10 Ruby polls correctly | category-correct:ruby · 10 | 275 |
+| Regression Test | Answer 25 polls correctly | polls-correct · 25 | 150 |
 | Prefetch | Clear 5 audited gates | audited-gates-cleared · 5 | 300 |
 | Intellisense | Answer 75 polls correctly | polls-correct · 75 | 325 |
 | Moore's Law | Clear 15 gates | gates-cleared · 15 | 350 |

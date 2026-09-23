@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { clsx } from "clsx";
 
@@ -11,6 +11,7 @@ import { AvatarChip } from "./AvatarChip.ui";
 import { Badge } from "./Badge.ui";
 import { Swatch } from "./Swatch.ui";
 import { Text } from "./Text.ui";
+import { Tooltip } from "./Tooltip.ui";
 
 const STACK_MAX = 4;
 
@@ -25,6 +26,21 @@ const FALLEN_LANE =
 	"flex flex-wrap items-center justify-center gap-1 border-t border-edge pt-1.5";
 const BEST =
 	"flex size-6 items-center justify-center rounded-sm border border-dashed border-zinc-500 text-[10px] text-zinc-500";
+const CHIP_PRESS =
+	"inline-flex cursor-pointer rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300";
+const BUILD = "flex flex-wrap items-center gap-1";
+
+const YOU_NAME = "you";
+const NOTHING_INSTALLED = "nothing installed";
+const WEIGHT_WORD = "weight";
+const SEPARATOR = " · ";
+
+export type TrackConfig = {
+	name: string;
+	slots: number;
+	version?: number;
+	locked?: boolean;
+};
 
 export type TrackClimber = {
 	id: string;
@@ -32,6 +48,8 @@ export type TrackClimber = {
 	photoUrl?: string;
 	borderUrl?: string;
 	you: boolean;
+	/** Their build as anyone may read it (ADR-100); a chip with none stays a plain chip. */
+	build?: readonly TrackConfig[];
 };
 
 export type TrackGate = {
@@ -51,19 +69,105 @@ export type ClimbTrackProps = {
 	className?: string;
 };
 
-const Stack = ({ climbers }: { climbers: readonly TrackClimber[] }) => {
+const configWord = ({ name, version }: TrackConfig): string =>
+	version === undefined ? name : `${name} v${version}`;
+
+const weightOf = (build: readonly TrackConfig[]): number =>
+	build.reduce((total, config) => total + config.slots, 0);
+
+const weightWord = (build: readonly TrackConfig[]): string =>
+	`${weightOf(build)} ${WEIGHT_WORD}`;
+
+export const buildWords = (
+	name: string,
+	build: readonly TrackConfig[]
+): string =>
+	build.length === 0
+		? [name, NOTHING_INSTALLED].join(SEPARATOR)
+		: [name, build.map(configWord).join(", "), weightWord(build)].join(
+				SEPARATOR
+			);
+
+const BuildHint = ({ build }: { build: readonly TrackConfig[] }) => {
+	if (build.length === 0) return <>{NOTHING_INSTALLED}</>;
+
+	return (
+		<span className={BUILD}>
+			{build.map((config) => (
+				<Badge
+					key={config.name}
+					tone={config.locked === true ? "saffron" : "neutral"}
+				>
+					{configWord(config)}
+				</Badge>
+			))}
+			<Badge tone="muted">{weightWord(build)}</Badge>
+		</span>
+	);
+};
+
+type Reveal = {
+	open: string | null;
+	onToggle: (key: string) => void;
+};
+
+const Chip = ({
+	climber,
+	revealKey,
+	dimmed = false,
+	reveal,
+}: {
+	climber: TrackClimber;
+	revealKey: string;
+	dimmed?: boolean;
+	reveal: Reveal;
+}) => {
+	const name = climber.you ? YOU_NAME : climber.name;
+	const chip = (
+		<AvatarChip
+			size="sm"
+			name={name}
+			photoUrl={climber.photoUrl}
+			borderUrl={climber.borderUrl}
+			you={climber.you}
+			dimmed={dimmed}
+		/>
+	);
+	if (climber.build === undefined) return chip;
+
+	const open = reveal.open === revealKey;
+	return (
+		<Tooltip hint={<BuildHint build={climber.build} />} open={open}>
+			<button
+				type="button"
+				className={CHIP_PRESS}
+				aria-expanded={open}
+				aria-label={buildWords(name, climber.build)}
+				onClick={() => reveal.onToggle(revealKey)}
+			>
+				{chip}
+			</button>
+		</Tooltip>
+	);
+};
+
+const Stack = ({
+	climbers,
+	reveal,
+}: {
+	climbers: readonly TrackClimber[];
+	reveal: Reveal;
+}) => {
 	const shown = climbers.slice(0, STACK_MAX);
 	const overflow = climbers.length - shown.length;
 	return (
 		<span className={STACK}>
 			{shown.map((climber) => (
-				<AvatarChip
+				<Chip
 					key={climber.id}
-					size="sm"
-					name={climber.you ? "you" : climber.name}
-					photoUrl={climber.photoUrl}
-					borderUrl={climber.borderUrl}
-					you={climber.you}
+					climber={climber}
+					revealKey={climber.id}
+					reveal={reveal}
 				/>
 			))}
 			{overflow > 0 ? <Badge tone="muted">+{overflow}</Badge> : null}
@@ -75,6 +179,11 @@ export const ClimbTrack = ({ gates, className }: ClimbTrackProps) => {
 	const scroller = useRef<HTMLUListElement>(null);
 	const currentColumn = useRef<HTMLLIElement>(null);
 	const currentGate = gates.find((gate) => gate.current)?.gate;
+	const [open, setOpen] = useState<string | null>(null);
+	const reveal: Reveal = {
+		open,
+		onToggle: (key) => setOpen((current) => (current === key ? null : key)),
+	};
 
 	useEffect(() => {
 		const track = scroller.current;
@@ -124,7 +233,9 @@ export const ClimbTrack = ({ gates, className }: ClimbTrackProps) => {
 							uncharted
 						</Text>
 					) : null}
-					{gate.climbers.length > 0 ? <Stack climbers={gate.climbers} /> : null}
+					{gate.climbers.length > 0 ? (
+						<Stack climbers={gate.climbers} reveal={reveal} />
+					) : null}
 					{gate.best ? (
 						<span title="your best" className={BEST}>
 							pb
@@ -133,13 +244,12 @@ export const ClimbTrack = ({ gates, className }: ClimbTrackProps) => {
 					{gate.fallen.length > 0 ? (
 						<span className={FALLEN_LANE}>
 							{gate.fallen.map((fallen) => (
-								<AvatarChip
+								<Chip
 									key={fallen.runKey}
-									size="sm"
-									name={fallen.name}
-									photoUrl={fallen.photoUrl}
-									borderUrl={fallen.borderUrl}
+									climber={fallen}
+									revealKey={fallen.runKey}
 									dimmed
+									reveal={reveal}
 								/>
 							))}
 						</span>

@@ -6,7 +6,6 @@ import {
 	cacheUnitsFor,
 	focusMultiplierOf,
 	interestPctOf,
-	minifiedAmount,
 	minifiedMultiplier,
 	minifiedUnits,
 	storageOnClearOf,
@@ -45,11 +44,11 @@ export type AnswerContext = {
 	readonly answerType: AnswerType;
 	readonly answeredBefore: number;
 	readonly cachedHits: number;
+	readonly previouslyMissed: boolean;
 };
 
 export type Effect = {
 	rewardMultiplier?: number;
-	streakCapSteps?: number;
 	storageOnClear?: number;
 	storageInterestPct?: number;
 	coverage?: (context: AnswerContext, creditedUnits?: number) => Coverage;
@@ -58,6 +57,7 @@ export type Effect = {
 
 export const touchesCoverage = (config: Config): boolean =>
 	config.focusCategory !== undefined ||
+	config.missedPollMultiplier !== undefined ||
 	config.coverageMultiplier !== undefined ||
 	config.coverageAdd !== undefined ||
 	config.openerCoverageMultiplier !== undefined ||
@@ -65,15 +65,30 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.cacheHitStep !== undefined ||
 	config.roundsPartialUnitsUp !== undefined;
 
+/**
+ * ADR-044 D5: a config's costs are never halved, so minifying may only soften a
+ * factor that pays. Which of the opener and the throttle is the cost differs by
+ * config — Overclock front-loads, Cold Start back-loads — so the side of 1 the
+ * factor falls on decides, not which field carries it.
+ */
+const minifiedFactor = (config: Config, factor: number): number =>
+	factor >= 1 ? minifiedMultiplier(config, factor) : factor;
+
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
-	return ({ category, answeredBefore, cachedHits }, creditedUnits = 0) => ({
+	return (
+		{ category, answeredBefore, cachedHits, previouslyMissed },
+		creditedUnits = 0
+	) => ({
 		mult:
 			(config.focusCategory === category ? focusMultiplierOf(config) : 1) *
 			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
+			(previouslyMissed
+				? minifiedFactor(config, config.missedPollMultiplier ?? 1)
+				: 1) *
 			(answeredBefore === 0
-				? minifiedMultiplier(config, config.openerCoverageMultiplier ?? 1)
-				: (config.throttleCoverageMultiplier ?? 1)),
+				? minifiedFactor(config, config.openerCoverageMultiplier ?? 1)
+				: minifiedFactor(config, config.throttleCoverageMultiplier ?? 1)),
 		add:
 			minifiedUnits(config, config.coverageAdd ?? 0) +
 			cacheUnitsFor(config, cachedHits) +
@@ -94,13 +109,9 @@ export const effectOf = (config: Config): Effect => ({
 	storageInterestPct:
 		config.storageInterestPct === undefined ? undefined : interestPctOf(config),
 	rewardMultiplier:
-		config.rewardMultiplier === 1
+		config.rewardMultiplier === undefined || config.rewardMultiplier === 1
 			? undefined
 			: minifiedMultiplier(config, config.rewardMultiplier),
-	streakCapSteps:
-		config.streakCapSteps === undefined
-			? undefined
-			: minifiedAmount(config, config.streakCapSteps),
 });
 
 export type ConfigStatus =
@@ -108,6 +119,8 @@ export type ConfigStatus =
 			readonly kind: "online";
 			readonly coverage?: Coverage;
 			readonly bumpIn?: number;
+			/** KB this config's open transaction is holding, unpaid and at risk. */
+			readonly holdingKb?: number;
 	  }
 	| { readonly kind: "unknown" }
 	| { readonly kind: "skipped"; readonly why: SkipReason }
@@ -119,6 +132,7 @@ export type SkipReason =
 			readonly categories: readonly CategoryCode[];
 	  }
 	| { readonly kind: "openerOnly" }
+	| { readonly kind: "missedOnly" }
 	| { readonly kind: "cacheCold" }
 	| { readonly kind: "paysAtGateClear" }
 	| { readonly kind: "paysOnPeel" }
@@ -126,6 +140,7 @@ export type SkipReason =
 	| { readonly kind: "inShop" }
 	| { readonly kind: "inPrep" }
 	| { readonly kind: "noAuditToSuppress" }
+	| { readonly kind: "armedForFatal" }
 	| { readonly kind: "runCapReached" }
 	| { readonly kind: "selectAllOnly" }
 	| { readonly kind: "paysOnPartial" }
@@ -134,9 +149,11 @@ export type SkipReason =
 export type PollStatusContext = AnswerContext & {
 	readonly suppressingAudit: boolean;
 	readonly categoryHidden?: boolean;
+	readonly answerTypeHidden?: boolean;
 	readonly offlineAudit?: string;
 	readonly faucetRemainingKb: number;
 	readonly autoUpgradeProgress: number;
+	readonly pendingKb: number;
 };
 
 const coverageOnPoll = (
@@ -153,12 +170,16 @@ const paysOnThisAnswer = (
 	context: PollStatusContext
 ): boolean =>
 	(config.storagePerCorrect !== undefined && context.faucetRemainingKb > 0) ||
+	(config.escrowPerCorrect !== undefined && context.faucetRemainingKb > 0) ||
 	config.storagePerExtraPick !== undefined;
 
 const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
 	config.peeksCommunitySplit === true ||
 	config.projectsGateOutcome === true ||
 	effectOf(config).maskWrongOn?.(category) === true;
+
+const readsAnswerType = (config: Config): boolean =>
+	config.roundsPartialUnitsUp === true;
 
 const readsAhead = (config: Config): boolean =>
 	config.revealsUpcomingCategories === true ||
@@ -195,6 +216,7 @@ const skipReasonFor = (
 		};
 	if (config.focusCategory)
 		return { kind: "otherCategories", categories: [config.focusCategory] };
+	if (config.missedPollMultiplier !== undefined) return { kind: "missedOnly" };
 	if (config.openerCoverageMultiplier !== undefined)
 		return { kind: "openerOnly" };
 	if (config.cacheHitStep !== undefined) return { kind: "cacheCold" };
@@ -208,13 +230,18 @@ const skipReasonFor = (
 		return { kind: "inShop" };
 	if (config.refundsPeeledConfigs === true) return { kind: "paysOnPeel" };
 	if (config.suppressesAudit === true) return { kind: "noAuditToSuppress" };
+	if (config.catchesFatal === true) return { kind: "armedForFatal" };
 	if (
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
 		config.coveragePerEstimate !== undefined
 	)
 		return { kind: "paysAtGateClear" };
-	if (config.storagePerCorrect !== undefined && context.faucetRemainingKb === 0)
+	if (
+		(config.storagePerCorrect !== undefined ||
+			config.escrowPerCorrect !== undefined) &&
+		context.faucetRemainingKb === 0
+	)
 		return { kind: "runCapReached" };
 	if (config.roundsPartialUnitsUp === true)
 		return context.answerType === "multiple"
@@ -230,16 +257,25 @@ export const configStatusFor = (
 	if (context.offlineAudit !== undefined)
 		return { kind: "offline", audit: context.offlineAudit };
 	if (context.categoryHidden === true) return { kind: "unknown" };
+	if (context.answerTypeHidden === true && readsAnswerType(config))
+		return { kind: "unknown" };
 
 	const coverage = coverageOnPoll(config, context);
 	if (!isOnline(config, context, coverage))
 		return { kind: "skipped", why: skipReasonFor(config, context) };
 
 	const bumpIn = bumpInFor(config, context.autoUpgradeProgress);
+	// Only the config that escrows claims the figure, so a build holding two
+	// faucets never shows the same KB twice.
+	const holdingKb =
+		config.escrowPerCorrect !== undefined && context.pendingKb > 0
+			? context.pendingKb
+			: undefined;
 
 	return {
 		kind: "online",
 		...(coverage === undefined ? {} : { coverage }),
 		...(bumpIn === undefined ? {} : { bumpIn }),
+		...(holdingKb === undefined ? {} : { holdingKb }),
 	};
 };

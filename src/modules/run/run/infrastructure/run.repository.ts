@@ -32,7 +32,10 @@ import {
 	type RunAction,
 	runReducer,
 } from "~/modules/run/run/domain/runAction.model";
-import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import {
+	answerOutcome,
+	type RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import {
 	hydrateRunState,
 	type RunSnapshot,
@@ -284,7 +287,19 @@ export const createSessionRunWithState = async (
 		return { runId: run.id };
 	});
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type RunTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type Tx = RunTx;
+
+/**
+ * The one seam after the reducer and before the write. Whatever it returns is
+ * what persists, so a rival's incident can lock into the snapshot without a
+ * second write path (ADR-099).
+ */
+export type RunSettlement = (
+	tx: RunTx,
+	before: RunState,
+	after: RunState
+) => Promise<RunState>;
 
 /** Standalone rollover for read paths (getTodaysRun). Dispatch rolls over inside its own transaction. */
 export const ensureTodaysSegment = async (
@@ -343,6 +358,7 @@ const recordSessionAnswer = async (
 			answer_date: args.today,
 			answer_time_ms: elapsedMs ?? null,
 			mirrored,
+			outcome: answerOutcome(poll, optionIds),
 		})
 		.returning({ response_id: pollResponsesTable.response_id });
 
@@ -531,7 +547,8 @@ export const fetchOwnedSwatchIds = async (
 export const loadRunState = async (runId: number): Promise<RunState> => {
 	const snapshot = await fetchRunSnapshot(runId);
 	if (!snapshot) throw new Error("Run state not found");
-	return hydrateRunState(snapshot, await fetchRunPollsForRun(runId));
+	const polls = await fetchRunPollsForRun(runId);
+	return hydrateRunState(snapshot, polls);
 };
 
 export type RunDispatchResult = {
@@ -544,6 +561,7 @@ export const applyActionToRun = async (args: {
 	userId: string;
 	today: string;
 	action: RunAction;
+	settle?: RunSettlement;
 }): Promise<RunDispatchResult> => {
 	// Same ordering as ensureTodaysSegment: today's shared sequence must exist
 	// before the rollover inside the lock goes looking for it, and a missing
@@ -628,27 +646,30 @@ export const applyActionToRun = async (args: {
 		)
 			await persistPinnedGate(tx, args.userId, next.pinPlantedAtGate);
 
+		const settled =
+			args.settle === undefined ? next : await args.settle(tx, state, next);
+
 		await tx
 			.update(runStatesTable)
 			.set({
-				state: toRunSnapshot(next),
-				engine_status: next.status,
-				gates_cleared: next.gatesCleared,
-				coverage: next.coverage,
-				polls_answered: next.currentIndex,
+				state: toRunSnapshot(settled),
+				engine_status: settled.status,
+				gates_cleared: settled.gatesCleared,
+				coverage: settled.coverage,
+				polls_answered: settled.currentIndex,
 			})
 			.where(eq(runStatesTable.run_id, args.runId));
 
-		if (isRunOver(next.status)) {
-			await finishSessionRun(tx, args.runId, args.userId, next);
+		if (isRunOver(settled.status)) {
+			await finishSessionRun(tx, args.runId, args.userId, settled);
 		}
 
 		// The account remembers the best KB any run ever held, which is what
 		// opens storage rungs. Every earner counts, not only a clear, and a run
 		// that dies still keeps the mark it reached.
-		if ((next.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
-			await raiseStorageWatermark(tx, args.userId, next.peakStorageKb ?? 0);
+		if ((settled.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
+			await raiseStorageWatermark(tx, args.userId, settled.peakStorageKb ?? 0);
 
-		return { state: next, unlockedConfigIds };
+		return { state: settled, unlockedConfigIds };
 	});
 };

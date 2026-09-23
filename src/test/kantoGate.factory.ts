@@ -85,24 +85,34 @@ const CLEARING_BANDS = {
 export type GateOutcomeFixture = Omit<
 	GateOutcomeFrame,
 	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb" | "swatchGates"
->;
+> & {
+	/** Coverage the run carried into the gate, in percent, on top of the day's answers. */
+	openingHeld?: number;
+};
 
-const heldRatioOf = (answers: readonly GateAnswer[]) =>
-	Math.min(1, Math.max(0, ratioOf(totalCoverage(answers))));
+const heldPercentOf = (fixture: GateOutcomeFixture) =>
+	roundToOneDecimal(
+		Math.min(
+			percentOf(1),
+			Math.max(0, (fixture.openingHeld ?? 0) + totalCoverage(fixture.answers))
+		)
+	);
+
+const heldRatioOf = (fixture: GateOutcomeFixture) =>
+	ratioOf(heldPercentOf(fixture));
 
 const ladderBarFor = (fixture: GateOutcomeFixture) => ({
 	floor: roundToOneDecimal(percentOf(floorAt(fixture.gate))),
 	ok: roundToOneDecimal(percentOf(okAt(fixture.gate))),
 	healthy: roundToOneDecimal(percentOf(healthyAt(fixture.gate))),
-	held: roundToOneDecimal(
-		Math.min(percentOf(1), Math.max(0, totalCoverage(fixture.answers)))
-	),
+	held: heldPercentOf(fixture),
 });
 
 const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
-	const ratio = heldRatioOf(fixture.answers);
+	const { openingHeld: _openingHeld, ...frame } = fixture;
+	const ratio = heldRatioOf(fixture);
 	const band = bandFor(ratio, fixture.gate).id;
-	const clears = CLEARING_BANDS[band];
+	const clears = CLEARING_BANDS[band] && fixture.heldBy !== "floor";
 	const payoutKb = clears
 		? gatePayoutKb(
 				ratio,
@@ -116,7 +126,7 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 	).length;
 
 	return {
-		...fixture,
+		...frame,
 		swatchGates: correct >= SLICE_WINDOW ? [fixture.gate] : [],
 		bar: ladderBarFor(fixture),
 		payoutKb,
@@ -136,6 +146,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		question: "Which method returns the last element of an array?",
 		outcome: "correct",
 		coverage: 12.3,
+		units: 3.08,
 		answerType: "single",
 		options: ["at(-1)", "pop()", "slice(-1)", "last()"],
 		picked: ["at(-1)"],
@@ -148,6 +159,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		question: "What does a rebase rewrite?",
 		outcome: "correct",
 		coverage: 19.2,
+		units: 4.8,
 		answerType: "single",
 		options: ["the commits", "the working tree", "the remote", "the index"],
 		picked: ["the commits"],
@@ -160,6 +172,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		question: "Which property centres a flex child along the main axis?",
 		outcome: "wrong",
 		coverage: -4.4,
+		units: -1.1,
 		answerType: "single",
 		options: ["justify-content", "align-items", "text-align", "place-items"],
 		picked: ["align-items"],
@@ -175,6 +188,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		question: "Which of these are built-in utility types?",
 		outcome: "partial",
 		coverage: 11.2,
+		units: 2.8,
 		answerType: "multiple",
 		options: [
 			"Partial<T>",
@@ -193,6 +207,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		question: "What does Promise.all reject with?",
 		outcome: "correct",
 		coverage: 12.3,
+		units: 3.08,
 		answerType: "single",
 		options: [
 			"the first rejection",
@@ -268,12 +283,18 @@ export const HEALTHY_ANSWERS = outcomesAt(
 
 export const OK_ANSWERS = outcomesAt(
 	["correct", "correct", "wrong", "partial", "correct"],
-	46
+	58
 );
 
 export const SHAKY_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "partial", "correct"],
-	38
+	52
+);
+
+/** One right answer on a day the run carried in HEALTHY: the floor rule holds it. */
+export const FLOOR_HELD_ANSWERS = outcomesAt(
+	["correct", "wrong", "wrong", "wrong", "wrong"],
+	12
 );
 
 export const DANGER_ANSWERS = outcomesAt(
@@ -322,6 +343,16 @@ export const kantoGateOk = (): GateOutcomeScreenProps =>
 export const kantoGateShaky = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
 		outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 12 })
+	);
+
+export const kantoGateHeldByFloor = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		outcomeFrame({
+			answers: FLOOR_HELD_ANSWERS,
+			openingHeld: 58,
+			heldBy: "floor",
+			balanceBeforeKb: 12,
+		})
 	);
 
 export const kantoGateShakyPicking = (): GateOutcomeScreenProps =>

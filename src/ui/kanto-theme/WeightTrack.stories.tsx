@@ -4,6 +4,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { KANTO_BUILD_SPACE, kantoWeightFills } from "~/test/kantoPoll.factory";
 
+/** What the 8 rung bills, stated here so the story never imports the domain. */
+const KANTO_BUILD_SPACE_KB = 32;
+
 import { Build } from "./Build.ui";
 import { KANTO_COLORS } from "./colors";
 import type { ConfigInfoProps } from "./ConfigInfo.ui";
@@ -71,7 +74,7 @@ const HoveredBuild = () => {
 				info: infoFor(fill.name, fill.slots),
 			}))}
 			layout="column"
-			weight={{ held: KANTO_BUILD_SPACE }}
+			weight={{ held: KANTO_BUILD_SPACE, perGateKb: KANTO_BUILD_SPACE_KB }}
 			highlight={highlight}
 			onHighlight={setHighlight}
 		/>
@@ -95,6 +98,19 @@ type Story = StoryObj<typeof WeightTrack>;
 export const RoomToSpare: Story = {};
 
 export const NearlyEmpty: Story = { args: { fills: NEARLY_EMPTY } };
+
+/** What the track says while an offer that crosses a rung sits armed (ADR-098). */
+export const PreviewingAnInstallThatCrossesARung: Story = {
+	args: {
+		held: 8,
+		perGateKb: 32,
+		preview: { weight: 10, held: 12, perGateKb: 64 },
+	},
+};
+
+export const NamesWhatTheNextRungWouldCost: Story = {
+	args: { held: 8, perGateKb: 32, next: { weight: 12, kb: 64 } },
+};
 
 export const FullToTheMark: Story = {
 	args: { fills: [{ name: "Freemium", slots: 8 }] },

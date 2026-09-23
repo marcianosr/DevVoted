@@ -20,6 +20,8 @@ export const heldOutcomeOf = (gateName: string): string => `${gateName} held`;
 
 export type DexRunRow = {
 	runId: number;
+	/** The run's permalink in the archive. Built by the viewmodel: a URL is data. */
+	href: string;
 	date: string;
 	swatches: readonly SwatchFill[];
 	outcome: string;
@@ -41,6 +43,7 @@ export const DexRuns = ({ rows, count, meta, note }: DexRunsProps) => (
 			{rows.map((row) => (
 				<Panel.Row
 					key={row.runId}
+					href={row.href}
 					trailing={
 						<>
 							<span className={COVERAGE}>{row.coverage}</span>

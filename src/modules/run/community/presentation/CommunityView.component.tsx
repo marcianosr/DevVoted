@@ -14,6 +14,7 @@ import type {
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
 import type { CommunityStandout } from "~/modules/run/community/domain/standouts.model";
+import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
 import {
 	gateOf,
 	trackPosition,
@@ -31,6 +32,7 @@ import {
 } from "~/ui/terminal-theme/screens/CommunityScreen.ui";
 import type {
 	TrackClimber,
+	TrackConfig,
 	TrackGate,
 } from "~/ui/terminal-theme/ClimbTrack.ui";
 
@@ -100,6 +102,14 @@ const byDepthThenId = (
 	b: { pollsIntoGate: number; id: string }
 ): number => b.pollsIntoGate - a.pollsIntoGate || a.id.localeCompare(b.id);
 
+export const trackBuildFor = (build: PublicBuild): TrackConfig[] =>
+	build.configs.map((config) => ({
+		name: config.label,
+		slots: config.slots,
+		...(config.level === undefined ? {} : { version: config.level }),
+		...(config.id === build.vendorLockedConfigId ? { locked: true } : {}),
+	}));
+
 export const ladderFor = (climb: ClimbTodayView): TrackGate[] => {
 	const you = climb.climbers.find((climber) => climber.you);
 	const chartedTo = Math.max(
@@ -126,6 +136,9 @@ export const ladderFor = (climb: ClimbTodayView): TrackGate[] => {
 				photoUrl: climber.photoUrl ?? undefined,
 				borderUrl: climber.borderUrl ?? undefined,
 				you: climber.you,
+				...(climber.build === undefined
+					? {}
+					: { build: trackBuildFor(climber.build) }),
 			})),
 		fallen: [...climb.fallen]
 			.filter((fallen) => fallen.gate === swatch.gate)
@@ -136,6 +149,7 @@ export const ladderFor = (climb: ClimbTodayView): TrackGate[] => {
 				photoUrl: fallen.photoUrl ?? undefined,
 				borderUrl: fallen.borderUrl ?? undefined,
 				you: false,
+				build: trackBuildFor(fallen.build),
 				runKey: String(fallen.runId),
 			})),
 	}));
@@ -161,6 +175,7 @@ export type CommunityViewProps = {
 		hint?: string;
 		onBack: () => void;
 	};
+	aside?: { label: string; onUse?: () => void };
 };
 
 export const CommunityView = ({
@@ -168,6 +183,7 @@ export const CommunityView = ({
 	theme,
 	countdown,
 	back,
+	aside,
 }: CommunityViewProps) => {
 	const [chosen, setChosen] = useState<string | null>(null);
 	const selected = chosen ?? defaultChipId(view.polls);
@@ -191,6 +207,7 @@ export const CommunityView = ({
 			topPercent={view.topPercent ?? undefined}
 			countdown={countdown}
 			back={back}
+			aside={aside}
 		/>
 	);
 };

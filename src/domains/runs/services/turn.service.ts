@@ -139,6 +139,7 @@ const commitAnswerProgress = async ({
 		selectedOptionIds,
 		coverageDelta: breakdown.delta,
 		scoreBreakdown: scoreCalculation,
+		outcome,
 	});
 
 	return { breakdown, newTotalCoverage };

@@ -1,11 +1,17 @@
-import type { BuildSpaceView } from "~/modules/run/run/application/runView.viewmodel";
+import type { InstallScale } from "~/modules/run/run/application/runView.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import {
 	chipFor,
 	infoFor,
-	upgradesFor,
+	registryUpgradesFor,
+	rollOddsLabel,
 } from "~/modules/run/config/application/configChip.viewmodel";
+import { offerOddsOf } from "~/modules/run/shop/domain/draft.model";
+import {
+	type VendorLockChip,
+	vendorChipFor,
+} from "~/modules/run/build/application/vendorChip.viewmodel";
 import {
 	fundsOf,
 	BALANCE_WORD,
@@ -22,13 +28,11 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import type {
 	ChipInstall,
-	ConfigChipBadge,
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { NextGateProps } from "~/ui/kanto-theme/NextGate.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
-import type { BuildSpaceProps } from "~/ui/kanto-theme/BuildSpace.ui";
 import {
 	bandFor,
 	coverageGainPercentFor,
@@ -44,8 +48,6 @@ const SHORT_TRAIL = "short";
 const CLEARED_TRAIL = "cleared";
 const SLOTS_TRAIL = "slots after it closes";
 const ALREADY_HELD_NOTE = "The run already holds this line.";
-const LOCK_IN = "lock in";
-const LOCKED_IN = "locked in";
 const OUT_OF_REACH_NOTE = `${SLICE_WINDOW} of the ${SLICE_WINDOW} right will not reach it.`;
 const CLEARS_TRAIL = `of the ${SLICE_WINDOW} right clears it.`;
 const OPENS_AT = "tomorrow";
@@ -58,64 +60,70 @@ export type OfferDeal = {
 	priceKb: number;
 	affordable: boolean;
 	onInstall?: () => void;
+	/** Present only when this install would cross a rung (ADR-098). */
+	scale?: InstallScale | null;
+	armed?: boolean;
 };
 
 /**
  * The price rides the Install button rather than a badge beside it, so the one
  * install affordance reads the same here as it does on the new-run hand.
+ *
+ * An install that changes the standing bill arms first: the price on the press
+ * is what the config costs once, and the rung it rents is what it costs every
+ * gate after. Only the first of those fits on a button.
  */
-const offerInstallFor = (
-	priceKb: number,
-	affordable: boolean,
-	onInstall?: () => void
-): ChipInstall => ({
+const offerInstallFor = ({
+	priceKb,
+	affordable,
+	onInstall,
+	scale,
+	armed,
+}: OfferDeal): ChipInstall => ({
 	price: kbLabel(priceKb),
 	disabled: !affordable,
 	onPress: onInstall,
+	...(scale === null || scale === undefined ? {} : { scale, armed }),
 });
 
 export const offerChipFor = (
 	config: Config,
-	{ priceKb, affordable, onInstall }: OfferDeal
+	deal: OfferDeal
 ): ConfigChipProps => ({
 	name: config.label,
 	slots: slotsOf(config),
 	badges: [],
-	skipped: !affordable,
-	install: offerInstallFor(priceKb, affordable, onInstall),
+	skipped: !deal.affordable,
+	install: offerInstallFor(deal),
 	info: infoFor(config),
 });
-
-export const upgradeChipFor = (
-	config: Config,
-	onBuy?: () => void
-): ConfigChipProps => ({
-	name: config.label,
-	slots: slotsOf(config),
-	version: config.level,
-	badges: [],
-	upgrades: { ...upgradesFor(config), onBuy },
-	info: infoFor(config),
-});
-
-export type VendorLockChip = {
-	readonly locked: boolean;
-	readonly onLock?: () => void;
-};
 
 /**
- * A locked config loses its uninstall press outright rather than wearing a
- * disabled one, and the badge left behind is what states why. The kit's `hint`
- * reaches the DOM only as an aria-label, so a refusal carried there is a
- * refusal nobody can see.
+ * A rolled upgrade sells through the same `draft` press as any offer, so the
+ * deal is the install deal; the odds beside the pennant say how lucky the roll
+ * was, at rest, because the kit's hints are aria-labels nobody can see.
  */
-const vendorBadgesFor = (
-	vendorLock: VendorLockChip | undefined
-): ConfigChipBadge[] => {
-	if (vendorLock === undefined) return [];
-	if (vendorLock.locked) return [{ label: LOCKED_IN, color: "saffron" }];
-	if (vendorLock.onLock === undefined) return [];
-	return [{ label: LOCK_IN, onPress: vendorLock.onLock }];
+export const upgradeChipFor = (
+	offer: Config,
+	heldLevel: number,
+	{ priceKb, affordable, onInstall }: OfferDeal
+): ConfigChipProps => {
+	const share = offerOddsOf(heldLevel, offer);
+
+	return {
+		name: offer.label,
+		slots: slotsOf(offer),
+		version: offer.level,
+		detail: share === undefined ? undefined : rollOddsLabel(share),
+		badges: [],
+		skipped: !affordable,
+		upgrades: registryUpgradesFor(offer, heldLevel, {
+			price: kbLabel(priceKb),
+			affordable,
+			onBuy: onInstall,
+		}),
+		info: infoFor(offer),
+	};
 };
 
 export const buildChipFor = (
@@ -125,26 +133,8 @@ export const buildChipFor = (
 ): ConfigChipProps => ({
 	name: config.label,
 	...chipFor(config),
-	badges: vendorBadgesFor(vendorLock),
-	onUninstall: vendorLock?.locked === true ? undefined : onUninstall,
+	...vendorChipFor(vendorLock, onUninstall),
 });
-
-export const buildSpacePropsFor = (
-	space: BuildSpaceView,
-	onPick: (rung: number) => void
-): BuildSpaceProps | undefined => {
-	if (!space.offered) return undefined;
-
-	return {
-		held: space.space,
-		weight: space.weight,
-		rungs: space.rungs.map((rung) => ({
-			weight: rung.weight,
-			kb: rung.perGateKb,
-			onPick: rung.pickable ? () => onPick(rung.rung) : undefined,
-		})),
-	};
-};
 
 export const controlRowFor = (
 	glyph: string,

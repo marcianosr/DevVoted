@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
-import { Choice, type ChoiceSeal } from "./Choice.ui";
+import { Choice, type ChoiceSeal, type ChoiceVerdict } from "./Choice.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Typography } from "./Typography.ui";
 
 const BLOCK = "flex w-full flex-col gap-3";
-const CHOICES = "flex w-full flex-col gap-2";
+const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
 
 const SEPARATOR = "·";
 
@@ -28,6 +28,7 @@ export type QuestionOption = {
 	label?: ReactNode;
 	seal?: ChoiceSeal;
 	crossedOut?: boolean;
+	verdict?: ChoiceVerdict;
 };
 
 export type QuestionProps = {
@@ -77,6 +78,7 @@ export const Question = ({
 						answerType={answerType}
 						picked={picked}
 						crossedOut={option.crossedOut}
+						verdict={option.verdict}
 						onPick={pick}
 					>
 						{option.label}

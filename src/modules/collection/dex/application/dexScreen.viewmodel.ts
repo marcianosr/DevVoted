@@ -20,7 +20,11 @@ import {
 	upgradeStorageCost,
 	type Config,
 } from "~/modules/run/config/domain/config.model";
-import { figureLabel } from "~/modules/run/config/application/configChip.viewmodel";
+import {
+	figureLabel,
+	rollOddsLabel,
+} from "~/modules/run/config/application/configChip.viewmodel";
+import { versionOddsFor } from "~/modules/run/shop/domain/draft.model";
 import { kbLabel } from "~/shared/lib/storage";
 import type { UnlockPathCaption } from "~/modules/run/config/domain/unlockCaption.model";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
@@ -126,7 +130,7 @@ export const dexPollsFor = (
 /* -------------------------------------------------------------- configs -- */
 
 const CONFIGS_NOTE =
-	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends. Locked ones name their condition.";
+	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends. About one shop in eight the registry rolls a newer version of one installed config at its registry price: one rung up, then a coin flip per further rung until the ladder ends. Odds read from a fresh install. Locked ones name their condition.";
 const CONFIGS_META = "by weight";
 
 const pathFor = (caption: UnlockPathCaption): DexUnlockPath => ({
@@ -152,6 +156,11 @@ const FIRST_VERSION = 1;
  */
 const versionsOf = (config: Config): readonly DexVersionRung[] | undefined => {
 	if (!isUpgradable(config)) return undefined;
+	const odds = versionOddsFor(FIRST_VERSION, maxLevelOf(config));
+	const oddsAt = (version: number): string | null => {
+		const share = odds.find((rung) => rung.version === version)?.share;
+		return share === undefined ? null : rollOddsLabel(share);
+	};
 
 	return Array.from({ length: maxLevelOf(config) }, (_, index) => {
 		const version = index + FIRST_VERSION;
@@ -163,6 +172,7 @@ const versionsOf = (config: Config): readonly DexVersionRung[] | undefined => {
 				version === FIRST_VERSION
 					? null
 					: kbLabel(upgradeStorageCost(version - 1)),
+			odds: version === FIRST_VERSION ? null : oddsAt(version),
 		};
 	});
 };
@@ -303,8 +313,11 @@ const runTrackFor = (earned: readonly number[]): readonly SwatchFill[] =>
 			: { state: "undiscovered" }
 	);
 
+const archiveHrefFor = (runId: number): string => `/runs/${runId}`;
+
 const runRowFor = (entry: RunHistoryEntry): DexRunRow => ({
 	runId: entry.runId,
+	href: archiveHrefFor(entry.runId),
 	date: dateOf(entry.endedAt),
 	swatches: runTrackFor(entry.swatchGates),
 	outcome: entry.won

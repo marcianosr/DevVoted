@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
 	billableSlotsOf,
 	occupiedSlots,
-	overflowSlots,
+	spaceForBuild,
 	stripConfig,
+	upkeepForBuild,
 } from "~/modules/run/build/domain/build.model";
 import {
 	canVendorLock,
@@ -25,11 +26,13 @@ const inShopHolding = (...ids: string[]): RunState => {
 		if (!found) throw new Error(`no config ${id}`);
 		return found;
 	});
-	return {
-		...base,
-		build: { ...base.build, slots: 32, configs },
-	};
+	return { ...base, build: { ...base.build, configs } };
 };
+
+const inOpeningBuildHolding = (...ids: string[]): RunState => ({
+	...inShopHolding(...ids),
+	status: "configuring",
+});
 
 const locked = (state: RunState, configId: string): RunState =>
 	runReducer(state, { type: "vendor-lock", configId });
@@ -54,17 +57,14 @@ describe("vendor-lock-in", () => {
 		);
 	});
 
-	it("frees a build that its rung had over capacity", () => {
-		const cramped = {
-			...inShopHolding("vendor-lock-in", "agents-md"),
-			build: {
-				...inShopHolding("vendor-lock-in", "agents-md").build,
-				slots: 8,
-			},
-		};
-		expect(overflowSlots(cramped.build)).toBe(4);
+	it("drops the run to the rung the exempt build fits, and the bill with it", () => {
+		const state = inShopHolding("vendor-lock-in", "agents-md");
+		expect(spaceForBuild(state.build)).toBe(12);
+		expect(upkeepForBuild(state.build)).toBe(64);
 
-		expect(overflowSlots(locked(cramped, "agents-md").build)).toBe(0);
+		const after = locked(state, "agents-md").build;
+		expect(spaceForBuild(after)).toBe(VENDOR_LOCK_WEIGHT);
+		expect(upkeepForBuild(after)).toBe(0);
 	});
 
 	it("refuses to lock the vendor to itself", () => {
@@ -164,5 +164,66 @@ describe("vendor-lock-in", () => {
 		);
 
 		expect(next.build.vendorLockedConfigId).toBe("agents-md");
+	});
+	it("names a vendor in the opening build, before gate 0 has opened", () => {
+		const state = inOpeningBuildHolding("vendor-lock-in", "agents-md");
+
+		expect(canVendorLock(state)).toBe(true);
+		expect(locked(state, "agents-md").build.vendorLockedConfigId).toBe(
+			"agents-md"
+		);
+	});
+
+	it("offers no pick while the vendor is the only config it could name", () => {
+		const state = inOpeningBuildHolding("vendor-lock-in");
+
+		expect(canVendorLock(state)).toBe(false);
+	});
+
+	it("offers the pick again once a second config joins the build", () => {
+		const alone = inOpeningBuildHolding("vendor-lock-in");
+		const joined = {
+			...alone,
+			build: {
+				...alone.build,
+				configs: [...alone.build.configs, CONFIGS.agentsMd],
+			},
+		};
+
+		expect(canVendorLock(joined)).toBe(true);
+	});
+
+	it("refuses to uninstall the config it locked in", () => {
+		const state = locked(
+			inOpeningBuildHolding("vendor-lock-in", "agents-md"),
+			"agents-md"
+		);
+
+		expect(
+			runReducer(state, { type: "uninstall", configId: "agents-md" })
+		).toBe(state);
+	});
+
+	it("still uninstalls the vendor itself, which is the way out", () => {
+		const state = locked(
+			inOpeningBuildHolding("vendor-lock-in", "agents-md"),
+			"agents-md"
+		);
+		const out = runReducer(state, {
+			type: "uninstall",
+			configId: "vendor-lock-in",
+		});
+
+		expect(out.build.vendorLockedConfigId).toBeUndefined();
+		expect(billableSlotsOf(out.build)).toBe(AGENTS_MD_WEIGHT);
+	});
+
+	it("holds the run shut while the vendor names nobody", () => {
+		const unnamed = inOpeningBuildHolding("vendor-lock-in", "agents-md");
+
+		expect(runReducer(unnamed, { type: "start" })).toBe(unnamed);
+		expect(
+			runReducer(locked(unnamed, "agents-md"), { type: "start" }).status
+		).toBe("answering");
 	});
 });

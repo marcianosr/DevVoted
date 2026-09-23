@@ -15,20 +15,19 @@ import {
 	auditsCloseShop,
 	auditsForGate,
 	auditsFreezeManualEffects,
+	auditsHideAnswerType,
 	auditsHideCategory,
 	auditScoreShare,
 	auditTimeLimitMs,
 	liveAuditsFor,
 	mirrorsPolls,
 	offlineConfigsFor,
+	EMPTY_AUDIT_SCHEDULE,
 	redactedOptionIdsFor,
 	suppressedAuditFor,
 } from "~/modules/run/gate/domain/audit.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import {
-	AUDIT_RANK,
-	DEFAULT_AUDIT_SCHEDULE,
-} from "~/modules/run/gate/domain/auditSchedule.model";
+import { AUDIT_RANK } from "~/modules/run/gate/domain/auditSchedule.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 
 const at = (gate: number, ...ids: AuditId[]): readonly Audit[] =>
@@ -41,9 +40,9 @@ const scheduleWith = (gate: number, ...ids: AuditId[]): AuditSchedule => ({
 describe("the audit roster", () => {
 	const everyAudit = AUDIT_RANK.map((id) => auditAt(id, 11));
 
-	it("holds sixteen rules, each reachable by its own id", () => {
-		expect(AUDIT_RANK).toHaveLength(16);
-		expect(new Set(AUDIT_RANK).size).toBe(16);
+	it("holds seventeen rules, each reachable by its own id", () => {
+		expect(AUDIT_RANK).toHaveLength(17);
+		expect(new Set(AUDIT_RANK).size).toBe(17);
 		for (const id of AUDIT_RANK) expect(auditAt(id, 11).id).toBe(id);
 	});
 
@@ -96,7 +95,7 @@ describe("auditsForGate", () => {
 	});
 
 	it("leaves a gate the schedule says nothing about clean", () => {
-		expect(auditsForGate(0, DEFAULT_AUDIT_SCHEDULE)).toEqual([]);
+		expect(auditsForGate(0, EMPTY_AUDIT_SCHEDULE)).toEqual([]);
 	});
 });
 
@@ -408,6 +407,21 @@ describe("404 Not Found", () => {
 	});
 });
 
+describe("207 Multi-Status", () => {
+	it("hides the answer type where it lands and nowhere else", () => {
+		expect(auditsHideAnswerType(at(5, "multi-status"))).toBe(true);
+		expect(auditsHideAnswerType(at(7, "mirrored"))).toBe(false);
+		expect(auditsHideAnswerType(at(5, "not-found"))).toBe(false);
+	});
+
+	it("withholds the answer type without touching the category or the poll", () => {
+		const audits = at(5, "multi-status");
+		expect(auditsHideCategory(audits)).toBe(false);
+		expect(mirrorsPolls(audits)).toBe(false);
+		expect(auditScoreShare(audits, 0.75)).toBe(0.75);
+	});
+});
+
 describe("429 Too Many Requests", () => {
 	it("allows one paid action for the window", () => {
 		expect(auditPaidActionLimit(at(10, "too-many-requests"))).toBe(1);
@@ -467,9 +481,11 @@ describe("the defeat device (ADR-028, repurposed)", () => {
 
 	it("leaves the Champion's later audits in force", () => {
 		expect(
-			liveAuditsFor(device, VICTORY_GATE, DEFAULT_AUDIT_SCHEDULE).map(
-				(audit) => audit.id
-			)
+			liveAuditsFor(
+				device,
+				VICTORY_GATE,
+				scheduleWith(VICTORY_GATE, "timeout", "strip", "payload-too-large")
+			).map((audit) => audit.id)
 		).toEqual(["strip", "payload-too-large"]);
 	});
 

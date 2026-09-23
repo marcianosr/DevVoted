@@ -7,6 +7,7 @@ import * as AgentsMd from "./AgentsMd.stories";
 import * as Cache from "./Cache.stories";
 import * as CodeCoverage from "./CodeCoverage.stories";
 import * as ColdStart from "./ColdStart.stories";
+import * as Database from "./Database.stories";
 import * as Dependabot from "./Dependabot.stories";
 import * as Deprecated from "./Deprecated.stories";
 import * as DryRun from "./DryRun.stories";
@@ -24,9 +25,11 @@ import * as PlanningPoker from "./PlanningPoker.stories";
 import * as Prefetch from "./Prefetch.stories";
 import * as Prettierrc from "./Prettierrc.stories";
 import * as Reduce from "./Reduce.stories";
+import * as Sla from "./Sla.stories";
 import * as Strict from "./Strict.stories";
 import * as Stylelint from "./Stylelint.stories";
 import * as Telemetry from "./Telemetry.stories";
+import * as TryCatch from "./TryCatch.stories";
 import * as UnitTests from "./UnitTests.stories";
 import * as VendorLockIn from "./VendorLockIn.stories";
 import * as VolkswagenCi from "./VolkswagenCi.stories";
@@ -39,6 +42,7 @@ const PAGES = {
 	Cache,
 	CodeCoverage,
 	ColdStart,
+	Database,
 	Dependabot,
 	Deprecated,
 	DryRun,
@@ -56,9 +60,11 @@ const PAGES = {
 	Prefetch,
 	Prettierrc,
 	Reduce,
+	Sla,
 	Strict,
 	Stylelint,
 	Telemetry,
+	TryCatch,
 	UnitTests,
 	VendorLockIn,
 	VolkswagenCi,

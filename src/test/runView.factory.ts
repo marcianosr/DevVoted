@@ -34,6 +34,29 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		id: `option-${index + 1}`,
 		label,
 	})),
+	// The live sequence read always attaches these, so the default carries them
+	// too: a poll 31% of the room cracked first time, missed twice by this
+	// account. Override with `stats: undefined` for the withheld case.
+	stats: {
+		firstAttempts: 90,
+		firstAttemptsRight: 28,
+		attempts: 2,
+		misses: 2,
+		lastAnsweredAt: "2026-08-04T09:00:00.000Z",
+	},
+	// Attached by the same read (ADR-100): the category's record stands at 17,
+	// this account has never got past 4. Override with `record: undefined` for
+	// the withheld case.
+	record: {
+		category: CATEGORY_CODES[0],
+		holder: {
+			handle: "@sabrina",
+			githubLogin: "sabrina",
+			streak: 17,
+			you: false,
+		},
+		yourBest: 4,
+	},
 });
 
 export const createMockShopOffer = (
@@ -43,8 +66,10 @@ export const createMockShopOffer = (
 	config,
 	priceKb: draftCost(config),
 	slots: slotsOf(config),
+	scale: null,
 	owned: false,
 	upgrades: false,
+	heldLevel: null,
 	locked: false,
 	installable: true,
 	refusal: null,
@@ -59,7 +84,6 @@ export const createMockShopOffer = (
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
-		streakCapMultiplier: 2,
 	},
 	...overrides,
 });
@@ -92,8 +116,18 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	upkeepBilledKb: 0,
 	spaceDroppedTo: null,
 	gateRewardPaidKb: 0,
+	clearThisGateKb: 0,
+	overflowThisGateKb: 0,
+	streakAtClose: null,
 	storageBeforeClearKb: null,
 	faucetThisGateKb: 0,
+	escrowCommittedKb: 0,
+	escrowRolledBackKb: 0,
+	heldBy: null,
+	caughtFatalBy: null,
+	slaUpliftKb: 0,
+	incidentSurvivalKb: 0,
+	attackEarned: false,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
@@ -143,7 +177,6 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
-		streakCapMultiplier: 2,
 	},
 });
 
@@ -182,6 +215,8 @@ const createRunView = createMockDataFactory<RunView>({
 	rebaseSlots: [],
 	estimate: null,
 	estimatedCorrect: null,
+	sla: null,
+	slaBand: null,
 	correctThisGate: 0,
 	upcomingCategories: null,
 	nextGateCategories: null,
@@ -189,6 +224,7 @@ const createRunView = createMockDataFactory<RunView>({
 	optionCountsThisGate: null,
 	shopControls: createMockShopControls(),
 	gatePayout: createMockGatePayout(),
+	attack: null,
 	audits: [],
 	answeredThisGate: [],
 	allAnswered: [],
@@ -197,7 +233,6 @@ const createRunView = createMockDataFactory<RunView>({
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
 		streakStepMultiplier: 1.1,
-		streakCapMultiplier: 2,
 	},
 	gateStake: createMockGateStake(),
 	canStart: false,
@@ -222,14 +257,9 @@ const createRunView = createMockDataFactory<RunView>({
 		space: BASE_SLOTS,
 		weight: 0,
 		perGateKb: 0,
-		offered: false,
-		rungs: BUILD_SPACE_RUNGS.map((rung, index) => ({
-			rung: index,
-			weight: rung.weight,
-			perGateKb: rung.kb,
-			held: rung.weight === BASE_SLOTS,
-			pickable: false,
-		})),
+		nextWeight: BUILD_SPACE_RUNGS[1].weight,
+		nextPerGateKb: BUILD_SPACE_RUNGS[1].kb,
+		coveredSpace: null,
 	},
 	vendorLock: { offered: false },
 });

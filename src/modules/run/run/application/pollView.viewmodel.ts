@@ -1,5 +1,7 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
+import type { CategoryRecord } from "~/modules/run/run/domain/categoryRecord.model";
+import type { PollStats } from "~/modules/run/run/domain/pollStats.model";
 import type {
 	AnswerType,
 	PollAuthor,
@@ -17,20 +19,46 @@ export type PollView = {
 	readonly answerType: AnswerType;
 	readonly options: readonly PollOptionView[];
 	readonly author?: PollAuthor;
+	/**
+	 * How the room and this account have done with this poll. Filled by the
+	 * service after the view is built, never by the engine: the reducer has no
+	 * business knowing how hard other people found a question, and these numbers
+	 * move while the run is open.
+	 *
+	 * Optional on purpose. The band is free today, and a config that reveals the
+	 * room's accuracy — or an audit that blinds you to it — withholds it by
+	 * leaving this undefined.
+	 */
+	readonly stats?: PollStats;
+	/**
+	 * The category's living record, filled by the service alongside `stats` and
+	 * for the same reason: it is read, not derived, and it moves while the run
+	 * is open. Optional on the same seam — an audit that blinds the category
+	 * withholds the record with it, or the whole caption would name the topic
+	 * the audit just hid.
+	 */
+	readonly record?: CategoryRecord;
 };
 
 export const REDACTED_LABEL = "?????";
 
+/**
+ * The presented `answerType` is a lie under 207 Multi-Status, and deliberately
+ * only here: grading reads the poll itself, so a single still needs exactly its
+ * one answer. One value drives the cap shape, the meta line and the selection
+ * toggle, which is why the disguise costs nothing downstream.
+ */
 export const redactPoll = (
 	poll: RunPoll,
-	hiddenOptionIds: readonly string[] = []
+	hiddenOptionIds: readonly string[] = [],
+	answerTypeHidden = false
 ): PollView => ({
 	id: poll.id,
 	category: poll.category,
 	question: poll.question,
 	codeBlock: poll.codeBlock,
 	codeSandboxUrl: poll.codeSandboxUrl,
-	answerType: poll.answerType,
+	answerType: answerTypeHidden ? "multiple" : poll.answerType,
 	author: poll.author,
 	options: poll.options.map((option) => ({
 		id: option.id,

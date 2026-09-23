@@ -83,12 +83,26 @@ describe("Choice", () => {
 		expect(screen.getByText("A")).not.toHaveClass("border-theme");
 	});
 
-	it("pads the row vertically only, so a column aligns on the caps", () => {
+	it("pads itself on all four sides, so its rule reaches the frame's edges", () => {
 		render(<Choice letter="A">at(-1)</Choice>);
 
 		const row = screen.getByText("at(-1)").parentElement;
-		expect(row).toHaveClass("py-2.5");
-		expect(row?.className).not.toMatch(/\bpx-/);
+		expect(row).toHaveClass("py-2.5", "px-4");
+	});
+
+	it("rules against the row above it, and never above the first row", () => {
+		render(<Choice letter="A">at(-1)</Choice>);
+
+		const row = screen.getByText("at(-1)").parentElement;
+		expect(row).toHaveClass("border-t", "first:border-t-0");
+	});
+
+	it("rounds only its end corners, so a fill stays inside the frame", () => {
+		render(<Choice letter="A">at(-1)</Choice>);
+
+		const row = screen.getByText("at(-1)").parentElement;
+		expect(row).toHaveClass("first:rounded-t-lg", "last:rounded-b-lg");
+		expect(row?.className).not.toMatch(/(?<![-:])\brounded-lg\b/);
 	});
 
 	it("covers a sealed answer with a bar instead of its text", () => {
@@ -218,5 +232,59 @@ describe("Choice", () => {
 		render(<Choice letter="A">justify-content</Choice>);
 
 		expect(screen.getByText("A")).toHaveClass("rounded-full");
+	});
+});
+
+describe("Choice with a verdict", () => {
+	it("colours a right pick green and names it for a reader", () => {
+		render(
+			<Choice letter="A" picked verdict="right">
+				at(-1)
+			</Choice>
+		);
+
+		expect(
+			screen.getByText("at(-1)").closest("[data-screen-theme]")
+		).toHaveAttribute("data-screen-theme", "viridian");
+		expect(screen.getByText("right")).toBeInTheDocument();
+	});
+
+	it("colours a wrong pick red", () => {
+		render(
+			<Choice letter="B" picked verdict="wrong">
+				pop()
+			</Choice>
+		);
+
+		expect(
+			screen.getByText("pop()").closest("[data-screen-theme]")
+		).toHaveAttribute("data-screen-theme", "cinnabar");
+		expect(screen.getByText("wrong")).toBeInTheDocument();
+	});
+
+	it("lights the cap of the answer that was missed without filling its row", () => {
+		render(
+			<Choice letter="C" verdict="missed">
+				slice(-1)
+			</Choice>
+		);
+		const row = screen.getByText("slice(-1)").closest("[data-screen-theme]");
+
+		expect(row).toHaveAttribute("data-screen-theme", "celadon");
+		expect(row).not.toHaveClass("bg-theme-soft");
+		expect(screen.getByText("C")).toHaveClass("border-theme");
+		expect(screen.getByText("the answer")).toBeInTheDocument();
+	});
+
+	it("wears no theme at all before the poll is answered", () => {
+		render(
+			<Choice letter="A" picked>
+				at(-1)
+			</Choice>
+		);
+
+		expect(
+			screen.getByText("at(-1)").closest("[data-screen-theme]")
+		).toBeNull();
 	});
 });

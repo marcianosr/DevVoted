@@ -1,11 +1,11 @@
 ---
 # DVTD-4jbz
 title: 'Repo hygiene: unused deps, dead Sonar stack, stale configs and docs'
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-09-19T15:53:12Z
-updated_at: 2026-09-19T17:42:22Z
+updated_at: 2026-09-22T18:50:04Z
 ---
 
 Phase 3 of the 2026-09-19 cleanup pass. Mechanical removals, no src/ behaviour change.
@@ -33,7 +33,7 @@ Do NOT remove (load-bearing despite grepping clean): react-dom, @types/react*, @
 - [x] ADR-063 missing its Retired row (085 supersedes it); ADR-015 marked 'nothing live'
 
 ## Local secrets hygiene (never committed, history verified clean)
-- [ ] prod.md and scripts/polls-d8b3d-firebase-adminsdk-*.json hold live secrets at repo root
+- [x] prod.md and scripts/polls-d8b3d-firebase-adminsdk-*.json hold live secrets at repo root — split out as **DVTD-vrpg**
 
 ## Summary of Changes (2026-09-19)
 
@@ -106,3 +106,21 @@ listed `src/database/seed.ts`, which no longer exists — the seeder became
 exclusion keeps its original intent; otherwise the next scan analyses 1,926 lines
 of seed data (incl. a 30 KB `questions.ts`) as production source.
 `src/test/utils.tsx` is also excluded and also does not exist — harmless, left alone.
+
+## Closed 2026-09-22
+
+Re-verified every claim in the body above before closing:
+
+- `tailwind.config.mjs` — gone.
+- The `src/routes/old/**` override — gone from `.oxlintrc.json`; the only `overrides`
+  entry left is `files: ["**/*.ts", "**/*.tsx"]` (`:141-143`). `src/routes/old` itself no
+  longer exists.
+- The 7 packages — none of `@tanstack/react-form`, `@tanstack/react-table`, `type-fest`,
+  `autoprefixer`, `postcss`, `@fontsource/fira-code` appear in `package.json`.
+  (`@fontsource/jetbrains-mono` and `@fontsource/space-mono` remain, correctly.)
+- The Sonar / `docs/old-beans/` / `scripts/` revert you asked for — applied.
+
+The one remaining item was never code work: `prod.md` and the Firebase service-account
+key sit at the repo root holding live credentials. Both are gitignored and `git log --all`
+on both paths is empty, so they were **never committed** — local hygiene, not a leak.
+Moved to **DVTD-vrpg** so a finished pass could stop reading as active.

@@ -36,6 +36,7 @@ const COVERAGE_POOL = poolWhere([
 	"coverageAdd",
 	"focusCategory",
 	"coveragePerEstimate",
+	"commitsBand",
 	"openerCoverageMultiplier",
 	"throttleCoverageMultiplier",
 	"roundsPartialUnitsUp",
@@ -43,6 +44,7 @@ const COVERAGE_POOL = poolWhere([
 
 const ECONOMY_POOL = poolWhere([
 	"storagePerCorrect",
+	"escrowPerCorrect",
 	"storageOnClear",
 	"storageInterestPct",
 	"storagePerExtraPick",
@@ -55,10 +57,12 @@ const RISK_POOL = poolWhere([
 	"wagersAnswer",
 	"abArm",
 	"suppressesAudit",
+	"catchesFatal",
 	"streakStepGrowth",
-	"streakCapSteps",
 	"coverageDecayPerClear",
 ]);
+
+const portraitOf = (slug: string): string => `/editors/${slug}.png`;
 
 /** A playable account: a real auth login, an unlock ledger, and a build style. */
 export type SeedPlayer = {
@@ -67,6 +71,8 @@ export type SeedPlayer = {
 	readonly email: string;
 	readonly githubUsername: string;
 	readonly role: "user" | "poll-editor" | "admin";
+	/** Shapes their seeded answer history, so category records differ per account. */
+	readonly accuracy: number;
 	readonly buildStyle: string;
 	readonly unlockedConfigIds: readonly string[];
 	readonly pinnedGate?: number;
@@ -75,12 +81,17 @@ export type SeedPlayer = {
 	readonly archivedStorage?: number;
 };
 
+/**
+ * The Elite Four and the rival, never a gym leader: a leader authors polls, and
+ * a name that sat in both lists would climb the community board against itself.
+ */
 export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	{
 		id: playerUUID(1),
-		displayName: "Lt. Surge",
-		email: "lt.surge@kanto.dev",
-		githubUsername: "ltsurge",
+		displayName: "Lance",
+		email: "lance@kanto.dev",
+		githubUsername: "lance",
+		accuracy: 0.88,
 		role: "admin",
 		buildStyle: "everything unlocked — widest possible deal",
 		unlockedConfigIds: EVERY_CONFIG_ID,
@@ -90,9 +101,10 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	},
 	{
 		id: playerUUID(2),
-		displayName: "Blaine",
-		email: "blaine@kanto.dev",
-		githubUsername: "blaine",
+		displayName: "Agatha",
+		email: "agatha@kanto.dev",
+		githubUsername: "agatha",
+		accuracy: 0.72,
 		role: "user",
 		buildStyle: "risk — wagers, streak growth, audit suppression",
 		unlockedConfigIds: RISK_POOL,
@@ -101,9 +113,10 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	},
 	{
 		id: playerUUID(3),
-		displayName: "Koga",
-		email: "koga@kanto.dev",
-		githubUsername: "koga",
+		displayName: "Lorelei",
+		email: "lorelei@kanto.dev",
+		githubUsername: "lorelei",
+		accuracy: 0.8,
 		role: "user",
 		buildStyle: "coverage — multipliers and focus categories",
 		unlockedConfigIds: COVERAGE_POOL,
@@ -112,9 +125,10 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	},
 	{
 		id: playerUUID(4),
-		displayName: "Sabrina",
-		email: "sabrina@kanto.dev",
-		githubUsername: "sabrina",
+		displayName: "Bruno",
+		email: "bruno@kanto.dev",
+		githubUsername: "bruno",
+		accuracy: 0.65,
 		role: "poll-editor",
 		buildStyle: "economy — storage, interest, subscriptions",
 		unlockedConfigIds: ECONOMY_POOL,
@@ -123,9 +137,10 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	},
 	{
 		id: playerUUID(5),
-		displayName: "Erika",
-		email: "erika@kanto.dev",
-		githubUsername: "erika",
+		displayName: "Blue",
+		email: "blue@kanto.dev",
+		githubUsername: "blueoak",
+		accuracy: 0.76,
 		role: "user",
 		buildStyle: "the free eight — a genuinely fresh account",
 		unlockedConfigIds: FREE_CONFIG_IDS,
@@ -142,6 +157,9 @@ export type SeedClimber = {
 	readonly displayName: string;
 	readonly email: string;
 	readonly githubUsername: string;
+	readonly photoUrl: string;
+	/** Equipped, and the only border owned — a leader wears one badge, not a shelf. */
+	readonly borderId: string;
 	readonly accuracy: number;
 	readonly climb: {
 		readonly gatesCleared: number;
@@ -154,20 +172,33 @@ export type SeedClimber = {
 	};
 };
 
+/**
+ * The eight Kanto gym leaders, listed in reverse badge order so the community
+ * ladder reads as the badge ladder: Giovanni sits at the top, Brock at the foot.
+ *
+ * Each wears the border whose colour is their own city's — Brock pewter, Misty
+ * cerulean, Erika celadon — which is why the border ids look arbitrary here but
+ * are not. Giovanni takes the leftover lavender; Viridian has no border of its
+ * own.
+ */
 export const SEED_CLIMBERS: readonly SeedClimber[] = [
 	{
 		id: climberUUID(1),
-		displayName: "Lance",
-		email: "lance@kanto.dev",
-		githubUsername: "lance",
+		displayName: "Giovanni",
+		email: "giovanni@kanto.dev",
+		githubUsername: "giovanni",
+		photoUrl: portraitOf("giovanni"),
+		borderId: "border-ts",
 		accuracy: 0.9,
 		climb: { gatesCleared: 9, pollsIntoGate: 2, configs: 8, coverageUnits: 46 },
 	},
 	{
 		id: climberUUID(2),
-		displayName: "Agatha",
-		email: "agatha@kanto.dev",
-		githubUsername: "agatha",
+		displayName: "Blaine",
+		email: "blaine@kanto.dev",
+		githubUsername: "blaine",
+		photoUrl: portraitOf("blaine"),
+		borderId: "border-ruby",
 		accuracy: 0.84,
 		climb: {
 			gatesCleared: 8,
@@ -179,17 +210,21 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 	},
 	{
 		id: climberUUID(3),
-		displayName: "Lorelei",
-		email: "lorelei@kanto.dev",
-		githubUsername: "lorelei",
+		displayName: "Sabrina",
+		email: "sabrina@kanto.dev",
+		githubUsername: "sabrina",
+		photoUrl: portraitOf("sabrina"),
+		borderId: "border-js",
 		accuracy: 0.78,
 		climb: { gatesCleared: 7, pollsIntoGate: 1, configs: 7, coverageUnits: 33 },
 	},
 	{
 		id: climberUUID(4),
-		displayName: "Bruno",
-		email: "bruno@kanto.dev",
-		githubUsername: "bruno",
+		displayName: "Koga",
+		email: "koga@kanto.dev",
+		githubUsername: "koga",
+		photoUrl: portraitOf("koga"),
+		borderId: "border-frontend",
 		accuracy: 0.7,
 		climb: {
 			gatesCleared: 6,
@@ -201,42 +236,22 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 	},
 	{
 		id: climberUUID(5),
-		displayName: "Giovanni",
-		email: "giovanni@kanto.dev",
-		githubUsername: "giovanni",
+		displayName: "Erika",
+		email: "erika@kanto.dev",
+		githubUsername: "erika",
+		photoUrl: portraitOf("erika"),
+		borderId: "border-react",
 		accuracy: 0.66,
 		climb: { gatesCleared: 5, pollsIntoGate: 0, configs: 6, coverageUnits: 22 },
 	},
 	{
 		id: climberUUID(6),
-		displayName: "Janine",
-		email: "janine@kanto.dev",
-		githubUsername: "janine",
+		displayName: "Lt. Surge",
+		email: "lt.surge@kanto.dev",
+		githubUsername: "ltsurge",
+		photoUrl: portraitOf("ltsurge"),
+		borderId: "border-html",
 		accuracy: 0.6,
-		climb: { gatesCleared: 4, pollsIntoGate: 2, configs: 3, coverageUnits: 18 },
-	},
-	{
-		id: climberUUID(7),
-		displayName: "Bill",
-		email: "bill@kanto.dev",
-		githubUsername: "bill",
-		accuracy: 0.55,
-		climb: { gatesCleared: 3, pollsIntoGate: 4, configs: 5, coverageUnits: 14 },
-	},
-	{
-		id: climberUUID(8),
-		displayName: "Daisy Oak",
-		email: "daisy@kanto.dev",
-		githubUsername: "daisyoak",
-		accuracy: 0.5,
-		climb: { gatesCleared: 2, pollsIntoGate: 1, configs: 2, coverageUnits: 9 },
-	},
-	{
-		id: climberUUID(9),
-		displayName: "Blue",
-		email: "blue@kanto.dev",
-		githubUsername: "blueoak",
-		accuracy: 0.45,
 		climb: {
 			gatesCleared: 6,
 			pollsIntoGate: 3,
@@ -247,11 +262,23 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 		},
 	},
 	{
-		id: climberUUID(10),
-		displayName: "Prof. Oak",
-		email: "prof.oak@kanto.dev",
-		githubUsername: "profoak",
-		accuracy: 0.38,
+		id: climberUUID(7),
+		displayName: "Misty",
+		email: "misty@kanto.dev",
+		githubUsername: "misty",
+		photoUrl: portraitOf("misty"),
+		borderId: "border-css",
+		accuracy: 0.55,
+		climb: { gatesCleared: 3, pollsIntoGate: 4, configs: 5, coverageUnits: 14 },
+	},
+	{
+		id: climberUUID(8),
+		displayName: "Brock",
+		email: "brock@kanto.dev",
+		githubUsername: "brock",
+		photoUrl: portraitOf("brock"),
+		borderId: "border-git",
+		accuracy: 0.5,
 		climb: {
 			gatesCleared: 3,
 			pollsIntoGate: 2,

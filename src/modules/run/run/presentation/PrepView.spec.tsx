@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { kantoAttackPanel } from "~/test/kantoIncidents.factory";
 import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
 
 import { PrepView } from "./PrepView.component";
@@ -145,5 +146,62 @@ describe("PrepView", () => {
 			screen.getByRole("button", { name: /Back to the shop/ })
 		);
 		expect(onBackToShop).toHaveBeenCalled();
+	});
+});
+
+describe("rivals' audits and the attack in hand (ADR-099)", () => {
+	it("names the rival who fired an incoming audit", () => {
+		render(
+			<PrepView
+				{...props}
+				view={createMockRunView({
+					...view,
+					gateStake: createMockGateStake({
+						gateNumber: 4,
+						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
+						audits: [
+							{
+								id: "not-found",
+								code: 404,
+								name: "Not Found",
+								description: "No poll names its category.",
+								suppressed: false,
+								sentBy: "Misty",
+							},
+						],
+					}),
+				})}
+			/>
+		);
+
+		expect(screen.getByText("from Misty")).toBeInTheDocument();
+	});
+
+	it("fires the pressed payload at the pressed rival", async () => {
+		const onFire = vi.fn();
+		render(<PrepView {...props} attack={kantoAttackPanel()} onFire={onFire} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Fire 404 at Misty" })
+		);
+
+		expect(onFire).toHaveBeenCalledWith(2, "not-found");
+	});
+
+	it("opens the day's incident log from the footer aside", async () => {
+		const onIncidents = vi.fn();
+		render(<PrepView {...props} onIncidents={onIncidents} />);
+
+		await userEvent.click(screen.getByRole("button", { name: /Incidents/ }));
+
+		expect(onIncidents).toHaveBeenCalled();
+	});
+
+	it("offers no incident aside without a handler for it", () => {
+		render(<PrepView {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /Incidents/ })
+		).not.toBeInTheDocument();
 	});
 });

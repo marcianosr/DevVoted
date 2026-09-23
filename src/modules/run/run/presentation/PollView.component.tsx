@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import {
+	answeredOptionsFor,
 	auditPropsOf,
 	buildCountsOf,
 	categoryNameOf,
@@ -8,14 +9,17 @@ import {
 	letterAt,
 	pollBarFor,
 	coverageLeadFor,
+	pollFactsFor,
+	hallOfFameFor,
 	pollHoldsFor,
-	pollBreakdownFor,
 	pollLabelFor,
 	pollPaidFor,
 	pollBuildFor,
 	gateLabelFor,
 	pollHeaderFor,
+	pollKeysFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
+import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { kbLabel } from "~/shared/lib/storage";
@@ -46,6 +50,8 @@ type LivePoll = NonNullable<RunView["poll"]>;
 const SUBMIT_LABEL = "Submit answer";
 const NEXT_LABEL = "Next poll";
 const PICK_FIRST = "pick an answer first";
+const ENTER_SUBMITS = "Enter submits";
+const ENTER_CONTINUES = "Enter continues";
 
 const wrongCostOf = (view: RunView): string | undefined => {
 	const cost = view.gateStake.perAnswer.coveragePerWrong;
@@ -78,20 +84,6 @@ const optionsOf = (
 				}
 	);
 
-const answeredOptionsOf = (
-	answered: AnsweredPoll
-): readonly QuestionOption[] => {
-	const labels = answered.options ?? [
-		...new Set([...answered.picked, ...(answered.correct ?? [])]),
-	];
-
-	return labels.map((label, index) => ({
-		id: label,
-		letter: letterAt(index),
-		label,
-	}));
-};
-
 const liveQuestionFor = (
 	view: RunView,
 	poll: LivePoll,
@@ -110,7 +102,7 @@ const liveQuestionFor = (
 const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
 	answerType: answered.answerType ?? "single",
 	question: answered.question,
-	options: answeredOptionsOf(answered),
+	options: answeredOptionsFor(answered),
 	codeBlock: answered.codeBlock,
 	pickedIds: answered.picked,
 });
@@ -121,6 +113,7 @@ const authorOf = (poll: LivePoll): AuthorProps | undefined =>
 		: {
 				handle: poll.author.handle,
 				title: poll.author.title,
+				photoUrl: poll.author.avatarUrl,
 				borderUrl: poll.author.borderUrl,
 			};
 
@@ -130,7 +123,18 @@ const submitFooterFor = (
 ): ScreenFooterProps => ({
 	action: { label: SUBMIT_LABEL, onPress: picked ? onSubmit : undefined },
 	refusal: picked ? undefined : PICK_FIRST,
+	note: picked ? ENTER_SUBMITS : undefined,
 });
+
+const enterActionFor = (
+	revealing: boolean,
+	picked: boolean,
+	onSubmit: () => void,
+	onNext: () => void
+): (() => void) | undefined => {
+	if (revealing) return onNext;
+	return picked ? onSubmit : undefined;
+};
 
 type PollMood = Pick<
 	PollScreenProps,
@@ -140,6 +144,7 @@ type PollMood = Pick<
 	| "wrongCost"
 	| "hint"
 	| "author"
+	| "record"
 	| "footer"
 >;
 
@@ -159,6 +164,7 @@ const answeredMoodFor = (
 			icon: "gate",
 			onPress: onNext,
 		},
+		note: ENTER_CONTINUES,
 	},
 });
 
@@ -174,6 +180,7 @@ const liveMoodFor = (
 	category: categoryNameOf(view, poll.category),
 	wrongCost: wrongCostOf(view),
 	author: authorOf(poll),
+	record: hallOfFameFor(view, poll),
 	footer: submitFooterFor(selectedOptionIds.length > 0, onSubmit),
 });
 
@@ -188,6 +195,18 @@ export const PollView = ({
 	onUnseal,
 }: PollViewProps) => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const revealing = answered !== undefined;
+
+	usePollKeyboard({
+		keys: revealing ? [] : pollKeysFor(view),
+		onPick: revealing ? undefined : onSelect,
+		onEnter: enterActionFor(
+			revealing,
+			selectedOptionIds.length > 0,
+			onSubmit,
+			onNext
+		),
+	});
 
 	const live = view.poll ?? undefined;
 	const mood =
@@ -214,12 +233,10 @@ export const PollView = ({
 				bar: pollBarFor(view, answered !== undefined),
 				lead: coverageLeadFor(view),
 				paid: pollPaidFor(view),
-				...(answered === undefined
-					? {}
-					: { breakdown: pollBreakdownFor(view, answered) }),
 			}}
-			pollLabel={pollLabelFor(view)}
+			pollLabel={pollLabelFor(view, revealing)}
 			holds={pollHoldsFor(view)}
+			facts={pollFactsFor(live)}
 			audits={auditPropsOf(view.audits)}
 			buildFooter={{
 				build: pollBuildFor(

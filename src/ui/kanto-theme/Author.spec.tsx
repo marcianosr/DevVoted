@@ -1,42 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { Author, githubAvatarUrl } from "./Author.ui";
+import { Author } from "./Author.ui";
 
 const BORDER = "/borders/grass.png";
+const PHOTO = "/editors/brock.png";
 
-describe("githubAvatarUrl", () => {
-	it("builds the avatar URL from the handle alone", () => {
-		expect(githubAvatarUrl("matthijsgroen")).toBe(
-			"https://github.com/matthijsgroen.png"
-		);
-	});
-
-	it("tolerates a handle written with its at sign", () => {
-		expect(githubAvatarUrl("@matthijsgroen")).toBe(
-			"https://github.com/matthijsgroen.png"
-		);
-	});
-});
+// The handle is a link now, so the credit spans several elements.
+const creditIs = (whole: string) => (_: string, element: Element | null) =>
+	element?.textContent === whole &&
+	!Array.from(element.children).some((child) => child.textContent === whole);
 
 describe("Author", () => {
 	it("credits the handle, with its at sign", () => {
 		render(<Author handle="matthijsgroen" />);
 
-		expect(screen.getByText("Created by @matthijsgroen")).toBeInTheDocument();
+		expect(
+			screen.getByText(creditIs("Created by @matthijsgroen"))
+		).toBeInTheDocument();
 	});
 
 	it("does not double the at sign on a handle that already has one", () => {
 		render(<Author handle="@matthijsgroen" />);
 
-		expect(screen.getByText("Created by @matthijsgroen")).toBeInTheDocument();
+		expect(
+			screen.getByText(creditIs("Created by @matthijsgroen"))
+		).toBeInTheDocument();
 	});
 
 	it("appends the author's title after a separator", () => {
 		render(<Author handle="matthijsgroen" title="Poll editor" />);
 
 		expect(
-			screen.getByText("Created by @matthijsgroen · Poll editor")
+			screen.getByText(creditIs("Created by @matthijsgroen · Poll editor"))
 		).toBeInTheDocument();
 	});
 
@@ -46,19 +42,24 @@ describe("Author", () => {
 		expect(screen.queryByText(/·/)).not.toBeInTheDocument();
 	});
 
-	it("pulls the avatar from GitHub off the handle", () => {
+	it("draws the photo it is handed rather than deriving one from the handle", () => {
+		const { container } = render(
+			<Author handle="matthijsgroen" photoUrl={PHOTO} />
+		);
+
+		expect(container.querySelector("img")).toHaveAttribute("src", PHOTO);
+	});
+
+	it("leaves the initial bare for an author with no photo", () => {
 		const { container } = render(<Author handle="matthijsgroen" />);
 
-		const photo = container.querySelector("img");
-		expect(photo).toHaveAttribute(
-			"src",
-			"https://github.com/matthijsgroen.png"
-		);
+		expect(container.querySelectorAll("img")).toHaveLength(0);
+		expect(screen.getByText("M")).toBeInTheDocument();
 	});
 
 	it("lays the equipped border over the avatar when the user has one", () => {
 		const { container } = render(
-			<Author handle="matthijsgroen" borderUrl={BORDER} />
+			<Author handle="matthijsgroen" photoUrl={PHOTO} borderUrl={BORDER} />
 		);
 
 		const images = Array.from(container.querySelectorAll("img"));
@@ -68,7 +69,9 @@ describe("Author", () => {
 	});
 
 	it("draws no frame for a user with nothing equipped", () => {
-		const { container } = render(<Author handle="matthijsgroen" />);
+		const { container } = render(
+			<Author handle="matthijsgroen" photoUrl={PHOTO} />
+		);
 
 		expect(container.querySelectorAll("img")).toHaveLength(1);
 	});
@@ -82,7 +85,7 @@ describe("Author", () => {
 	});
 
 	it("sits the handle's initial behind the photo as a fallback", () => {
-		render(<Author handle="matthijsgroen" />);
+		render(<Author handle="matthijsgroen" photoUrl={PHOTO} />);
 
 		expect(screen.getByText("M")).toBeInTheDocument();
 	});
@@ -104,12 +107,31 @@ describe("Author", () => {
 	it("shrinks the avatar to sit on one line with footer text", () => {
 		const { container } = render(<Author handle="matthijsgroen" size="sm" />);
 
-		expect(container.querySelector("span")).toHaveClass("size-5");
+		expect(container.querySelector("span")).toHaveClass("size-9");
 	});
 
 	it("stands the avatar full size when nothing asks it to shrink", () => {
 		const { container } = render(<Author handle="matthijsgroen" />);
 
-		expect(container.querySelector("span")).toHaveClass("size-8");
+		expect(container.querySelector("span")).toHaveClass("size-12");
+	});
+
+	it("points the handle at the author's GitHub, opened away from the run", () => {
+		render(<Author handle="@matthijsgroen" />);
+
+		const link = screen.getByRole("link", { name: "@matthijsgroen" });
+
+		expect(link).toHaveAttribute("href", "https://github.com/matthijsgroen");
+		expect(link).toHaveAttribute("target", "_blank");
+		expect(link).toHaveAttribute("rel", "noreferrer");
+	});
+
+	it("leaves the link at full strength while the credit around it stays quiet", () => {
+		render(<Author handle="matthijsgroen" title="Poll editor" />);
+
+		const link = screen.getByRole("link", { name: "@matthijsgroen" });
+
+		expect(link.className).not.toMatch(/opacity-/);
+		expect(screen.getByText("Created by")).toHaveClass("opacity-60");
 	});
 });

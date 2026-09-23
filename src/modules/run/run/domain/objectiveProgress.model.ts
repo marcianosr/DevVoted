@@ -87,6 +87,9 @@ const clearMetrics = (
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)
 			: []),
+		// Only a clear can honour a promise, so this counter can only live here:
+		// the band SLA was measured against does not exist until the close.
+		...((next.slaUpliftKb ?? 0) > 0 ? (["slas-met"] as const) : []),
 	];
 };
 

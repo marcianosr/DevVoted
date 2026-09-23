@@ -41,10 +41,12 @@ describe("ShopScreen", () => {
 		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("counts the room the build space it rents still has open", () => {
+	it("counts the room left and names what crossing it would cost", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getByText("7 of 8 weight · 1 free")).toBeInTheDocument();
+		expect(
+			screen.getByText("7 of 8 weight · 1 free before the bill becomes 64 KB")
+		).toBeInTheDocument();
 	});
 
 	it("prices a slot in the registry's own header", () => {
@@ -117,44 +119,24 @@ describe("ShopScreen", () => {
 		);
 	});
 
-	it("quotes the bill once, in the build space panel that owns it (ADR-082)", () => {
+	it("quotes the bill once, in the Build panel that now owns it (ADR-098)", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(headOf("Build")).not.toHaveTextContent("a gate");
+		expect(within(headOf("Build")).getByText("↻ 32 KB a gate")).toBeVisible();
 		expect(screen.getAllByText(/32 KB a gate/)).toHaveLength(1);
 	});
 
-	it("rents build space in a panel of its own, under the build it sizes", () => {
+	/**
+	 * The rung is no longer a thing the shop sells, so there is no panel and no
+	 * press for it (ADR-098) — it is stated on the build it follows.
+	 */
+	it("sells no build space at all, in a panel or on a press", () => {
 		render(<ShopScreen {...props} />);
 
-		const panel = screen.getByText("build space").closest("section");
-		expect(panel).toBeInTheDocument();
-		expect(panel).not.toContainElement(screen.getByText("Registry"));
-	});
-
-	it("names the bill the space it holds runs at", () => {
-		render(<ShopScreen {...props} />);
-
-		const panel = screen.getByText("build space").closest("section");
-		if (!panel) throw new Error("No build space panel rendered");
-
-		expect(within(panel).getByText("↻ 32 KB a gate")).toBeInTheDocument();
-	});
-
-	it("offers every rung but the one it stands on", () => {
-		render(<ShopScreen {...props} />);
-
+		expect(screen.queryByText("build space")).not.toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "12 weight · 64 KB" })
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /^8 weight/ })
+			screen.queryByRole("button", { name: /weight · \d+ KB/ })
 		).not.toBeInTheDocument();
-	});
-
-	it("sells no free-weight rung any more (ADR-074)", () => {
-		render(<ShopScreen {...props} />);
-
 		expect(
 			screen.queryByRole("button", { name: /free weight/ })
 		).not.toBeInTheDocument();
@@ -277,7 +259,7 @@ describe("the gate the shop is stocking for", () => {
 		const panel = panelOf("Next gate");
 
 		expect(within(panel).getByText("HEALTHY")).toBeInTheDocument();
-		expect(within(panel).getByText("80%")).toHaveAttribute(
+		expect(within(panel).getByText("83.6%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);

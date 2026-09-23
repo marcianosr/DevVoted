@@ -5,7 +5,6 @@ import {
 
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
-import { drawAuditSchedule } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import { poolFor, startingHand } from "~/modules/run/config/domain/hand.model";
 import {
@@ -15,6 +14,7 @@ import {
 import {
 	abandonSessionRun,
 	applyActionToRun,
+	type RunSettlement,
 	consumePinnedGate,
 	createSessionRunWithState,
 	ensureTodaysSegment,
@@ -28,6 +28,10 @@ import {
 	findSessionRunByDate,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
+import { fetchCategoryRecord } from "~/modules/run/run/infrastructure/categoryRecord.repository";
+import { fetchPollStats } from "~/modules/run/run/infrastructure/pollStats.repository";
+import { settleIncidents } from "~/modules/run/incident/application/incidentSettlement.service";
+import { endIncidentsForRun } from "~/modules/run/incident/infrastructure/incident.repository";
 import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
 import {
 	fetchUnlockedConfigIds,
@@ -40,13 +44,37 @@ import {
 const unlocksDuring = (run: SessionRunRecord) =>
 	fetchUnlocksSince(run.user_id, run.started_at ?? new Date(0));
 
+/**
+ * The poll on screen states how the room did on it and what this account did
+ * last time (ADR-093), plus its category's living record (ADR-100). Attached
+ * here rather than in `toRunView` because these are the parts of the view that
+ * are read rather than derived — and because leaving them off is how a config
+ * or an audit withholds them.
+ */
+const withPollReads = async (
+	view: RunView,
+	userId: string
+): Promise<RunView> => {
+	if (!view.poll) return view;
+
+	const [stats, record] = await Promise.all([
+		fetchPollStats(Number(view.poll.id), userId),
+		fetchCategoryRecord(view.poll.category, userId),
+	]);
+
+	return { ...view, poll: { ...view.poll, stats, record } };
+};
+
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
 	const [state, unlockedThisRun, archiveAfterKb] = await Promise.all([
 		loadRunState(run.id),
 		unlocksDuring(run),
 		fetchArchivedStorageKb(run.user_id),
 	]);
-	return { ...toRunView(state, [], unlockedThisRun), archiveAfterKb };
+	return withPollReads(
+		{ ...toRunView(state, [], unlockedThisRun), archiveAfterKb },
+		run.user_id
+	);
 };
 
 const continueActiveRun = async (
@@ -71,6 +99,7 @@ const findResumableRun = async (
 	if (snapshot) return active;
 
 	await abandonSessionRun(active.id, userId);
+	await endIncidentsForRun(active.id);
 	return null;
 };
 
@@ -133,11 +162,10 @@ export const startRunService = async ({
 		const state = createRun(
 			polls,
 			startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
-			pinnedGate,
-			drawAuditSchedule(date)
+			pinnedGate
 		);
 		await createSessionRunWithState(userId, date, state);
-		return toRunView(state);
+		return withPollReads(toRunView(state), userId);
 	});
 
 /**
@@ -170,17 +198,24 @@ export const abandonRunService = async ({
 		if (!run) throw new Error("No active run");
 
 		await abandonSessionRun(run.id, userId);
+		await endIncidentsForRun(run.id);
 		return { abandoned: true as const };
 	});
 
+/**
+ * `settle` defaults to locking rivals' incidents; a caller that has more to
+ * settle in the same transaction (firing one, ADR-099) composes its own.
+ */
 export const dispatchRunActionService = async ({
 	userId,
 	date,
 	action,
+	settle,
 }: {
 	userId: string;
 	date: string;
 	action: RunAction;
+	settle?: (runId: number) => RunSettlement;
 }): Promise<ApiResponse<RunView>> =>
 	handleApiOperation(async () => {
 		const run = await findActiveSessionRun(userId);
@@ -191,6 +226,7 @@ export const dispatchRunActionService = async ({
 			userId,
 			today: date,
 			action,
+			settle: (settle ?? settleIncidents)(run.id),
 		});
 		// Read after the dispatch: the action that ends a run banks its storage in
 		// the same transaction, so the archive is already the "after" figure the
@@ -199,10 +235,13 @@ export const dispatchRunActionService = async ({
 			unlocksDuring(run),
 			fetchArchivedStorageKb(userId),
 		]);
-		return {
-			...toRunView(next, unlockedConfigIds, unlockedThisRun),
-			archiveAfterKb,
-		};
+		return withPollReads(
+			{
+				...toRunView(next, unlockedConfigIds, unlockedThisRun),
+				archiveAfterKb,
+			},
+			userId
+		);
 	});
 
 /** The viewer's permanent swatch collection, earned by widening builds. */

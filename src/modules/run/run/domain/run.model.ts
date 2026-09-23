@@ -5,18 +5,26 @@ import {
 
 import {
 	isBare,
+	MAX_BUILD_WEIGHT,
+	billableSlotsOf,
 	isOverCapacity,
 	withVendorLockSurviving,
 	Build,
 } from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
+import type {
+	CommittableBand,
+	CoverageBandId,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	EMPTY_WINDOW,
 	GateWindow,
 } from "~/modules/run/config/domain/effect.model";
 import { offerCount, rollDraft } from "~/modules/run/shop/domain/draft.model";
 import {
+	EMPTY_AUDIT_SCHEDULE,
 	type Audit,
+	type AuditId,
 	type AuditSchedule,
 	liveAuditsFor,
 	redactedOptionIdsFor,
@@ -25,9 +33,8 @@ import {
 	type OfflinePair,
 	offlinePairsFor,
 } from "~/modules/run/gate/domain/audit.model";
-import { DEFAULT_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/auditSchedule.model";
+import type { GateHoldReason } from "~/modules/run/gate/domain/gate.model";
 import {
-	BASE_SLOTS,
 	PIN_START_KB_PER_GATE,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
@@ -37,6 +44,33 @@ export const addStorage = (current: number, income: number): number =>
 
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
+
+export type AttackBand = "healthy" | "perfect";
+
+/** One attack a HEALTHY-or-better clear armed, held until fired (ADR-099). */
+export type Attack = {
+	readonly band: AttackBand;
+};
+
+/** How the last gate closed, read by rivals deciding whether this run is fair game. */
+export type LastClose = {
+	readonly gate: number;
+	readonly band: CoverageBandId;
+	readonly cleared: boolean;
+};
+
+export type IncidentSender = {
+	readonly id: string;
+	readonly name: string;
+};
+
+/** A rival's audit once it has locked into one of this run's gates (ADR-099). */
+export type LockedIncident = {
+	readonly id: number;
+	readonly auditId: AuditId;
+	readonly gate: number;
+	readonly sentBy: IncidentSender;
+};
 
 export type RunState = {
 	readonly status: RunStatus;
@@ -66,13 +100,28 @@ export type RunState = {
 	readonly bankedUnits: number;
 	/** Attempts already spent on the gate in front. Each one prices the next peel higher. */
 	readonly gateAttempts?: number;
+	/** Why the gate in front held, while it is held. Cleared on the clear and on the retry. */
+	readonly heldBy?: GateHoldReason;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
 	readonly peakStorageKb?: number;
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
+	/**
+	 * The open transaction: KB held by Database's exact answers and not yet
+	 * paid. Only a cleared gate turns it into storage, so unlike every other
+	 * faucet it can be taken back.
+	 */
+	readonly pendingKb?: number;
+	readonly escrowCommittedKb?: number;
+	readonly escrowRolledBackKb?: number;
 	readonly gateRewardKb?: number;
+	/** The parts of the last clear's reward, so the debrief can itemise it. */
+	readonly clearThisGateKb?: number;
+	readonly overflowThisGateKb?: number;
+	/** The streak the clear paid on, kept because the clear resets the live one. */
+	readonly streakAtClose?: number;
 	/** What the gate's own objective added to the clear, zero where it was missed. */
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
@@ -80,6 +129,9 @@ export type RunState = {
 	readonly extraPickThisGateKb?: number;
 	readonly estimatedCorrect?: number;
 	readonly estimateThisGateUnits?: number;
+	/** The band SLA promised this gate, and what holding to it paid. */
+	readonly slaBand?: CommittableBand;
+	readonly slaUpliftKb?: number;
 	readonly upkeepBilledKb?: number;
 	/** Build-space upkeep billed across the whole run, for the run-over report. */
 	readonly upkeepPaidKb?: number;
@@ -93,17 +145,29 @@ export type RunState = {
 	readonly autoUpgradedConfigId?: string;
 	readonly autoUpgradedByConfigId?: string;
 	readonly deletedConfigs?: readonly Config[];
+	/** The config that turned a fatal close into a held one, spent doing it. */
+	readonly caughtFatalBy?: string;
 	readonly lapsedConfigs?: readonly Config[];
 	readonly subscriptionBillKb?: number;
 	readonly pinPlantedAtGate?: number;
 	readonly startedAtGate?: number;
 	readonly auditSchedule?: AuditSchedule;
+	/** The attack a HEALTHY-or-better clear armed, held until fired (ADR-099). */
+	readonly attack?: Attack;
+	/** The gate whose clear last armed or upgraded the attack, for the debrief chip. */
+	readonly attackEarnedAtGate?: number;
+	/** How the last gate closed, read by rivals deciding whether this run is fair game. */
+	readonly lastClose?: LastClose;
+	/** Rivals' audits locked onto this run's gates, with who sent each. */
+	readonly incidents?: readonly LockedIncident[];
+	/** What surviving this gate's incidents paid, inside gateRewardKb. */
+	readonly incidentSurvivalKb?: number;
 	readonly log: readonly string[];
 };
 
 export const scheduleOf = (
 	state: Pick<RunState, "auditSchedule">
-): AuditSchedule => state.auditSchedule ?? DEFAULT_AUDIT_SCHEDULE;
+): AuditSchedule => state.auditSchedule ?? EMPTY_AUDIT_SCHEDULE;
 
 const correctOptionCount = (poll: RunPoll): number =>
 	poll.options.filter((option) => option.correct).length;
@@ -161,12 +225,11 @@ export const createRun = (
 	polls: readonly RunPoll[],
 	handed: readonly Config[],
 	startAtGate = 0,
-	auditSchedule: AuditSchedule = DEFAULT_AUDIT_SCHEDULE
+	auditSchedule: AuditSchedule = EMPTY_AUDIT_SCHEDULE
 ): RunState => ({
 	status: "configuring",
 	build: {
 		id: "build",
-		slots: BASE_SLOTS,
 		configs: [],
 	},
 	available: handed,
@@ -194,10 +257,57 @@ export const createRun = (
 	peakStorageKb: PIN_START_KB_PER_GATE * startAtGate,
 	faucetEarnedKb: 0,
 	faucetThisGateKb: 0,
+	pendingKb: 0,
 	upkeepPaidKb: 0,
 	gateRewardKb: 0,
 	log: [],
 });
+
+/**
+ * The beat between gates, where a config may ask the player for something:
+ * before gate 0 opens, and in the shop/prep beat after every later clear.
+ */
+export const isPrepPhase = (state: Pick<RunState, "status">): boolean =>
+	state.status === "configuring" || state.status === "rewarding";
+
+export const incidentsAt = (
+	state: Pick<RunState, "incidents">,
+	gate: number
+): readonly LockedIncident[] =>
+	(state.incidents ?? []).filter((incident) => incident.gate === gate);
+
+/**
+ * A gate's audits are exactly the incidents that locked into it. Locking the
+ * gate in front re-reads the pick budget, because the window opened before the
+ * lock and a mirror changes how many picks a poll asks for.
+ */
+export const withLockedGate = (
+	state: RunState,
+	gate: number,
+	locked: readonly LockedIncident[]
+): RunState => {
+	const auditSchedule = {
+		...scheduleOf(state),
+		[gate]: locked.map((incident) => incident.auditId),
+	};
+	const next = {
+		...state,
+		auditSchedule,
+		incidents: [...(state.incidents ?? []), ...locked],
+	};
+	if (gate !== state.gatesCleared) return next;
+	return {
+		...next,
+		window: {
+			...state.window,
+			budget: pickBudgetFor(
+				state.polls,
+				windowStartIndex(state),
+				mirrorsPolls(liveAuditsFor(state.build.configs, gate, auditSchedule))
+			),
+		},
+	};
+};
 
 export const withLog = (
 	state: RunState,
@@ -276,6 +386,22 @@ export const liveConfigsOf = (state: RunState): readonly Config[] => {
 
 export const canStart = (build: Build): boolean =>
 	!isBare(build) && !isOverCapacity(build);
+
+/**
+ * The weight the run is held to. Normally the top of the ladder — the rung
+ * follows the build, so nothing narrower can bind (ADR-098) — but a clear whose
+ * balance could not cover its bill only rented the space it could afford, and
+ * the build is held to that until it fits. `finishReward` clears the figure, so
+ * the lock lasts exactly the one shop visit it was imposed in.
+ */
+export const spaceCapOf = (state: RunState): number =>
+	state.spaceDroppedTo ?? MAX_BUILD_WEIGHT;
+
+export const overflowWeightOf = (state: RunState): number =>
+	Math.max(0, billableSlotsOf(state.build) - spaceCapOf(state));
+
+export const roomToCapOf = (state: RunState): number =>
+	Math.max(0, spaceCapOf(state) - billableSlotsOf(state.build));
 
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";

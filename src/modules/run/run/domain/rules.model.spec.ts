@@ -12,7 +12,6 @@ import {
 	upkeepForSpace,
 	BUILD_SPACE_RUNGS,
 	FREE_BUILD_SPACE_RUNG,
-	streakCapMultiplier,
 	streakMultiplier,
 	streakUnitBonus,
 	STREAK_UNIT_STEP,
@@ -27,12 +26,6 @@ describe("the streak bonus", () => {
 		expect(streakMultiplier(10)).toBe(2);
 		expect(streakMultiplier(11)).toBe(2);
 		expect(streakMultiplier(65)).toBe(2);
-	});
-
-	it("lifts the ceiling when the build is paid for more steps", () => {
-		expect(streakMultiplier(15, 20)).toBe(2.5);
-		expect(streakMultiplier(25, 20)).toBe(3);
-		expect(streakCapMultiplier(20)).toBe(3);
 	});
 
 	it("never takes the bonus back once it is earned", () => {

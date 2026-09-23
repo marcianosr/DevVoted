@@ -18,6 +18,12 @@ export const sessionRunQueryKeys = {
 	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
+	/** Keyed by date: offers are dealt per attacker per day (ADR-099). */
+	attackTargets: (date: string) =>
+		[...sessionRunQueryKeys.all, "attack-targets", date] as const,
+	/** Everyone's incidents filed on that day. */
+	incidents: (date: string) =>
+		[...sessionRunQueryKeys.all, "incidents", date] as const,
 	/** Keyed by poll rather than by date: a peek is bought once and stays bought
 	 * for as long as that poll is on screen. */
 	pollSplit: (pollId: number) =>

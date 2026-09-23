@@ -18,7 +18,7 @@ import {
 } from "~/modules/run/run/domain/shopAction.model";
 
 /** ADR-029's three horizons plus the tag. `*Available` is whether the shop
- * sells it at all (staged by depth, or for Lock by yarn.lock being in the
+ * sells it at all (staged by depth, or for Lock by .lock being in the
  * build), `can*` whether the run can pay: the shop hides one and disables the other. */
 export type ShopControls = {
 	readonly rebuildCost: number;

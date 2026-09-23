@@ -41,7 +41,7 @@ boundary, so this table is the map an architecture review reads first.
 | Run poll / Grading | `run/domain` | `RunPoll`, `RunOption`, `AnswerType`, `AnswerOutcome`, `AnsweredPoll`, `answerOutcome`, `coverageShare`, `mirrorPoll`, `mirrorGrading`, `nextStreak` (`runPoll.model.ts`); the run's own projection of a poll plus the one grading rule, shared with the community board. The authored `Poll` stays with the `polls` context (ADR-002 §2) |
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
 | Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `BASE_SLOTS`, `failPeelShareFor`, `peelQuotaSlotsFor`, `isPeelFatal`, `atMinimumWidth` (`rules.model.ts`) |
-| Build space | `run/domain` | `BUILD_SPACE_RUNGS`, `buildSpaceFor`, `rungIndexForSpace`, `spaceRungFor`, `upkeepForSpace`, `highestAffordableSpace`, `BUILD_SPACE_FROM_GATE` (`rules.model.ts`) — the rung a run rents, and what it bills every gate (ADR-082) |
+| Build space | `run/domain` | `BUILD_SPACE_RUNGS`, `buildSpaceFor`, `rungIndexFitting`, `spaceFitting`, `upkeepFitting`, `rungAfterFitting`, `upkeepForSpace`, `highestAffordableSpace` (`rules.model.ts`) — the ladder. The rung a build occupies is derived in `build/domain` (`spaceForBuild`, `upkeepForBuild`), never stored or picked (ADR-098) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
 | Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads, composed from the slices below. Also the trust boundary (DVTD-ay5e): the client receives this and never `RunState` |
 | Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
@@ -54,8 +54,9 @@ boundary, so this table is the map an architecture review reads first.
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
 | Run screens | `run/presentation` | `RunLayout` plus one Tier-2 component per route (`RunNew`, `RunPrep`, `RunPoll`, `RunGate`, `RunReview`, `RunShop`, `RunOver`, `RunStart`, `RunRecap`) and the kanto adapters they mount (`StartView`, `PrepView`, `PollView`, `GateOutcomeView`, `ReviewView`, `ShopView`, `RunOverView`). No HUD: each kanto screen carries its own header and footer (ADR-088) |
-| Build | `build/domain` | `Build` = `{ id, slots, configs }` (`build.model.ts`) |
-| Slot | `build/domain` | `occupiedSlots`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity` (`build.model.ts`); `Build.slots` is the **space the run rents**, always a rung weight, and the ladder lives in `run/domain/rules.model.ts`; `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
+| Build | `build/domain` | `Build` = `{ id, configs, vendorLockedConfigId? }` (`build.model.ts`); carries no space of its own — `spaceForBuild` derives it (ADR-098) |
+| Public build | `build/domain` | `PublicBuild`, `publicBuildOf`, `publicWeightOf` (`publicBuild.model.ts`); a build as any other player may read it — configs, versions, weight, the vendor lock — refreshed from the roster (ADR-100). Display only: no check reads it |
+| Slot | `build/domain` | `occupiedSlots`, `billableSlotsOf`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity`, `MAX_BUILD_WEIGHT` (`build.model.ts`); the space a run rents is **derived** from its weight (`spaceForBuild`), and the ladder lives in `run/domain/rules.model.ts`. `hasRoomFor` measures against the top rung only (ADR-098); `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
 | Coverage | `build/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `build/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
 | Build screen | `build/presentation` | `RunNew`, `StartView` |
@@ -65,20 +66,24 @@ boundary, so this table is the map an architecture review reads first.
 | Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
 | Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
 | Gate screens | `gate/presentation` | `RunGate`, `GateOutcomeView`; one screen, two verdicts (ADR-076), so one route (ADR-088) |
-| Config | `config/domain` | `Config`, `ConfigFamily`, `ConfigSize`, `CONFIG_SIZES` (`config.model.ts`) |
-| Config roster | `config/domain` | `CONFIG_ROSTER` (`configRoster.model.ts`); the content catalogue |
+| Config | `config/domain` | `Config`, `ConfigSize`, `CONFIG_SIZES` (`config.model.ts`) |
+| Config roster | `config/domain` | `CONFIGS`, `CONFIG_LIST` (`configRoster.model.ts`); the content catalogue |
 | Effect | `config/domain` | `Effect`, `effectOf` (`effect.model.ts`); the benefit half of a config |
 | Config status | `config/domain` | `ConfigStatus`, `SkipReason`, `configStatusFor` (`effect.model.ts`); online / skipped / offline on the poll on deck (ADR-040) |
 | Gate window | `config/domain` | `GateWindow`, `EMPTY_WINDOW` (`effect.model.ts`); the 5-answer tally a gate judges |
 | Stack | `config/domain` | `STARTER_STACKS`, `starterStackFor` (`stack.model.ts`); the staged opening loadouts |
 | Config visuals | `src/ui/kanto-theme` | `ConfigChip` and friends; the module's own `presentation/` folder is gone with old-theme |
-| Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount` (`draft.model.ts`) |
+| Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount`, and the rolled upgrade's climb `upgradeOfferFor` / `CLIMB_ONE_IN` / `versionOddsFor` (`draft.model.ts`) |
 | Shop screen | `shop/presentation` | `RunShop`, `ShopView`; the Registry is a panel on it, and on New run |
 | Standouts / Awards | `community/domain` | `standoutsFor` (`standouts.model.ts`) |
 | Climb map | `community/domain` | `ClimbMarker`, `trackPosition` (`climbMap.model.ts`); the shared per-day position track, read only by the community board |
 | Community board | `community/application` | `getRunCommunityService` and its view types (`community.service.ts`), `community.serverfn.ts` |
 | Community reads | `community/infrastructure` | `community.repository.ts`, `climbers.repository.ts` |
-| Community screen | `community/presentation` | `RunCommunity`, `Standouts`, `Voter`, `ClimbToday`, `useNextPollsCountdown` |
+| Community screen | `community/presentation` | `RunCommunity`, `CommunityView`, `useNextPollsCountdown` |
+| Incident / Attack | `incident/domain` | `RivalCandidate`, `AttackOffer`, `QueuedIncident`, `eligibleRivals`, `offersFor`, `lockIncidents` (`incident.model.ts`); the run-side vocabulary `Attack`, `LastClose`, `LockedIncident` lives on `RunState` (`run.model.ts`) with `armAttack` / `fireAudit` in `attack.model.ts`, so nothing in `run/domain` imports the aggregate |
+| Incident settlement | `incident/application` | `settleIncidents` (`incidentSettlement.service.ts`), the one writer of a gate's audits, handed to `applyActionToRun` as its `settle` seam; `attackTargets.service.ts`, `fireAudit.service.ts`, `incidentsFeed.service.ts`, `incident.serverfn.ts`, `incident.viewmodel.ts`, the three hooks |
+| Incident queue | `incident/infrastructure` | `incident.repository.ts` owns every statement against `audit_incidents` |
+| Incidents screen | `incident/presentation` | `RunIncidents`; the kit's `AttackPanel` and `IncidentsScreen` live in `src/ui/kanto-theme` |
 | Poll answering visuals | `poll/presentation` | `PollMarkdown`, `PollQuestionHeading`; the rest moved into the kanto `PollScreen` |
 
 A screen belongs to the aggregate whose concept it is about, which is why
@@ -130,7 +135,8 @@ Where the two differ, use the code name in code and the player name in copy.
 | Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
 | Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
 | Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` — a rung rents the KB cap and nothing else (ADR-046) |
-| Build space ladder | `BUILD_SPACE_RUNGS`, `buildSpaceFor`, `upkeepForSpace`, `Build.slots` — room is rented by the gate, never bought outright (ADR-082) |
+| Build space ladder | `BUILD_SPACE_RUNGS`, `spaceForBuild`, `upkeepForBuild` — room is rented by the gate and the rung follows the build, never picked (ADR-098) |
+| Version | `Config.level`, `maxLevelOf`, `levelUp`, `ShopOffer.heldLevel`; the kit says version (`Version.ui`, `VersionState`, `version` props). An unreconciled pair, recorded here rather than renamed (ADR-060, ADR-097) |
 
 ---
 
@@ -144,7 +150,7 @@ meant two things at once.
 | Pipeline | Retired as the container word (ADR-048): it read as the thing judging you, which is the gate | **Build** for the player's setup; **Gate** for the judgement |
 | Board | Never the container word | **Build** |
 | Spot | ADR-044 renamed slots to spots to keep width clear of money; ADR-048 reversed it | **Slot** |
-| Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size | **Slots** (`Config.slots`, one of 1/2/4/8/12/16) |
+| Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size. A version's odds of being rolled read as `1 in N rolls`, never as a tier word (ADR-097) | **Slots** (`Config.slots`, one of 1/2/4/8/12/16); **odds** for a version |
 | Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
 | Shelf | Renamed 2026-09-10: the offer list is an npm registry, which is what the player downloads and installs from. The **shop** is still the screen | **Registry** (`Registry.ui.tsx`, `RegistryControl.ui.tsx`, `ShopScreenProps.registry`) |
 | Turn | No such symbol in `src/modules/`; `turn.service.ts` is legacy `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |

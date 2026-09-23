@@ -4,16 +4,10 @@ import type {
 	BuildModifiers,
 } from "~/modules/run/build/domain/build.model";
 import {
-	auditAt,
-	auditLabel,
 	auditsForGate,
 	suppressedAuditFor,
 	suppressorOf,
 } from "~/modules/run/gate/domain/audit.model";
-import {
-	INTRO_AUDITS,
-	INTRO_GATE,
-} from "~/modules/run/gate/domain/auditSchedule.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import type {
@@ -21,7 +15,11 @@ import type {
 	GateProjection,
 	PeelConfigRange,
 } from "~/modules/run/gate/domain/gate.model";
-import { type RunState, scheduleOf } from "~/modules/run/run/domain/run.model";
+import {
+	incidentsAt,
+	type RunState,
+	scheduleOf,
+} from "~/modules/run/run/domain/run.model";
 
 export type AuditView = {
 	readonly id: AuditId;
@@ -31,6 +29,8 @@ export type AuditView = {
 	readonly answerCue?: string;
 	readonly suppressed: boolean;
 	readonly suppressedBy?: Config;
+	/** The rival who fired it, where the audit is one a rival locked in (ADR-099). */
+	readonly sentBy?: string;
 };
 
 export type GateStake = {
@@ -47,7 +47,6 @@ export type GateStake = {
 	/** The same reading in units, so a screen can say "12 of 15" rather than a percentage. */
 	readonly unitsHeld: number;
 	readonly audits: readonly AuditView[];
-	readonly upcomingAudit?: UpcomingAuditView;
 	readonly peelSlotsOnFailure: number;
 	readonly peelConfigsOnFailure: PeelConfigRange;
 	readonly peelShareOnFailure: number;
@@ -59,25 +58,6 @@ export type GateStake = {
 	readonly projection?: GateProjection;
 };
 
-export type UpcomingAuditView = {
-	readonly gateNumber: number;
-	readonly name: string;
-	readonly description: string;
-};
-
-export const upcomingAuditFor = (
-	gate: number
-): UpcomingAuditView | undefined => {
-	const introId = INTRO_AUDITS[0];
-	if (gate >= INTRO_GATE || introId === undefined) return undefined;
-	const audit = auditAt(introId, INTRO_GATE);
-	return {
-		gateNumber: INTRO_GATE,
-		name: auditLabel(audit),
-		description: audit.description,
-	};
-};
-
 export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 	const schedule = scheduleOf(state);
 	const suppressed = suppressedAuditFor(
@@ -86,6 +66,7 @@ export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 		schedule
 	);
 	const suppressor = suppressorOf(state.build.configs);
+	const incidents = incidentsAt(state, state.gatesCleared);
 	return auditsForGate(state.gatesCleared, schedule).map((audit) => ({
 		id: audit.id,
 		code: audit.code,
@@ -94,5 +75,7 @@ export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 		answerCue: audit.answerCue,
 		suppressed: audit.id === suppressed?.id,
 		suppressedBy: audit.id === suppressed?.id ? suppressor : undefined,
+		sentBy: incidents.find((incident) => incident.auditId === audit.id)?.sentBy
+			.name,
 	}));
 };

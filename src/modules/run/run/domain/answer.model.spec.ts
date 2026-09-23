@@ -2,14 +2,27 @@ import { describe, expect, it } from "vitest";
 
 import {
 	type Config,
+	draftCost,
+	slotsOf,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import { gateLadderFor } from "~/modules/run/gate/domain/gate.model";
-import { isOverCapacity } from "~/modules/run/build/domain/build.model";
+import {
+	type AuditId,
+	auditsForGate,
+} from "~/modules/run/gate/domain/audit.model";
+import {
+	failPeelQuotaFor,
+	gateLadderFor,
+} from "~/modules/run/gate/domain/gate.model";
+import { commitBand } from "~/modules/run/run/domain/sla.model";
+import {
+	hasRoomFor,
+	spaceForBuild,
+} from "~/modules/run/build/domain/build.model";
 import {
 	BASE_SLOTS,
+	ESCROW_COMMIT_MULTIPLIER,
 	FAUCET_CAP_KB,
 	GATE_COUNT,
 	SLICE_WINDOW,
@@ -17,6 +30,7 @@ import {
 	VICTORY_GATE,
 	roundToOneDecimal,
 	streakMultiplier,
+	INCIDENT_SURVIVAL_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	BASE_UNIT,
@@ -30,12 +44,15 @@ const BASE_GAIN = BASE_UNIT;
 import {
 	createRun,
 	type RunState,
+	type LockedIncident,
 	scheduleOf,
+	withLockedGate,
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
+	audited,
 	clearGate,
 	failGate,
 	handed,
@@ -55,12 +72,13 @@ describe("what one answer is worth at the opening gate", () => {
 		expect(state.window.unitsEarned).toBe(BASE_UNIT);
 	});
 
-	it("asks exactly what one answer pays, so the calibration gate clears on one", () => {
+	it("asks three of five at the calibration gate, and two clears it thin", () => {
 		const state = started([]);
 		const ladder = gateLadderFor(state.build.configs, 0, scheduleOf(state));
 
 		expect(ladder.healthy).toBe(percentOf(healthyAt(0)));
-		expect(ladder.ok).toBe(ladder.healthy);
+		expect(ladder.healthy).toBe(60);
+		expect(ladder.ok).toBe(40);
 		expect(ladder.floor).toBe(0);
 	});
 });
@@ -176,10 +194,6 @@ describe("gates and rewards", () => {
 		expect(state.build.configs[0].level).toBe(2);
 		expect(state.status).toBe("rewarding");
 
-		state = { ...state, build: { ...state.build, slots: 16 } };
-		expect(state.build.slots).toBe(16);
-		expect(state.status).toBe("rewarding");
-
 		const pick = state.draftOptions.find((config) => config.id !== "js")!;
 		state = runReducer(state, { type: "draft", configId: pick.id });
 		expect(state.build.configs.map((config) => config.id)).toContain(pick.id);
@@ -234,10 +248,18 @@ describe("gates and rewards", () => {
 			...state,
 			storage: 500,
 			coverage: 100,
-			build: { ...state.build, slots: state.build.slots + 1 },
 		};
 
-		const pick = state.draftOptions[0];
+		// Not `draftOptions[0]`: the seeded roll reshuffles every time the roster
+		// grows, and the first offer is regularly too heavy or too dear to draft.
+		const pick = [...state.draftOptions]
+			.sort((left, right) => slotsOf(left) - slotsOf(right))
+			.find(
+				(config) =>
+					draftCost(config) <= state.storage &&
+					hasRoomFor(state.build, slotsOf(config))
+			);
+		if (pick === undefined) throw new Error("no draftable offer");
 		state = runReducer(state, { type: "draft", configId: pick.id });
 		expect(state.draftedThisGate).toEqual([pick.id]);
 
@@ -246,11 +268,16 @@ describe("gates and rewards", () => {
 	});
 });
 
-describe("capacity is bought, never handed over (ADR-046)", () => {
+/**
+ * ADR-046's rule survives ADR-098's rewrite of where room comes from: the run
+ * still never gets room for free. It just comes from installing rather than
+ * buying, and the price is the standing bill rather than a counter charge.
+ */
+describe("room comes from the build, never from the climb (ADR-098)", () => {
 	it("widens on no answer, however much coverage it earns", () => {
 		let state = { ...started(["js"]), coverage: 1000 };
 		state = answerWith(state, true);
-		expect(state.build.slots).toBe(BASE_SLOTS);
+		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
 	});
 
 	it("stays the width it opened on however many gates it clears", () => {
@@ -258,25 +285,70 @@ describe("capacity is bought, never handed over (ADR-046)", () => {
 		const widthAfterEachClear: number[] = [];
 		for (let gate = 0; gate < 4; gate++) {
 			state = clearGate(state);
-			widthAfterEachClear.push(state.build.slots);
+			widthAfterEachClear.push(spaceForBuild(state.build));
 			state = runReducer(state, { type: "finish-reward" });
 		}
 
 		expect(widthAfterEachClear).toEqual([4, 4, 4, 4]);
 	});
 
-	it("keeps a bought slot through a clear on an empty balance", () => {
+	it("keeps the rung a fifth weight rented through a clear on an empty balance", () => {
+		const base = started(["js"], 6 * SLICE_WINDOW);
 		const broke: RunState = {
-			...started(["js"], 6 * SLICE_WINDOW),
+			...base,
 			gatesCleared: 1,
 			storage: 0,
-			build: { ...started(["js"], 6 * SLICE_WINDOW).build, slots: 5 },
+			build: {
+				...base.build,
+				configs: [...base.build.configs, CONFIGS.strict],
+			},
 		};
 		const state = clearGate(broke);
 
-		expect(state.build.slots).toBe(5);
+		expect(spaceForBuild(state.build)).toBe(6);
+		expect(state.upkeepBilledKb).toBe(16);
 		expect(state.storage).toBeGreaterThan(0);
-		expect(isOverCapacity(state.build)).toBe(false);
+		expect(state.spaceDroppedTo).toBeUndefined();
+	});
+});
+
+describe("the floor rule at the close (ADR-094)", () => {
+	const healthyHistory = (): RunState => ({
+		...started(["js"]),
+		gatesCleared: 4,
+		bankedUnits: 20,
+	});
+	const oneRightOfFive = (state: RunState): RunState =>
+		[true, false, false, false, false].reduce(answerWith, state);
+
+	it("holds a gate that carried a HEALTHY meter in on one right answer, and says why", () => {
+		const held = oneRightOfFive(healthyHistory());
+
+		expect(held.status).toBe("awaiting-strip");
+		expect(held.heldBy).toBe("floor");
+		expect(held.log.at(-1)).toContain("Gate 4 failed: 1 of 5 right, 2 needed");
+	});
+
+	it("names the floor for a blank window and the band when the meter itself fell short", () => {
+		expect(failGate({ ...started(["js"]), gatesCleared: 4 }).heldBy).toBe(
+			"floor"
+		);
+		expect(
+			[true, true, false, false, false].reduce(answerWith, {
+				...started(["js"]),
+				gatesCleared: 4,
+				bankedUnits: 11,
+			}).heldBy
+		).toBe("band");
+	});
+
+	it("forgets the reason on the clear that follows", () => {
+		const retried = runReducer(payPeel(oneRightOfFive(healthyHistory())), {
+			type: "finish-reward",
+		});
+
+		expect(retried.heldBy).toBeUndefined();
+		expect(clearGate({ ...retried, heldBy: "floor" }).heldBy).toBeUndefined();
 	});
 });
 
@@ -349,18 +421,41 @@ describe("the gate's window meter (ADR-035)", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-		expect(percentOf(healthyAt(0))).toBe(20);
+		expect(percentOf(healthyAt(0))).toBe(60);
 	});
 });
 
 describe("enhancement configs on one build", () => {
-	it("doubles the opening answer's coverage with Cold Start", () => {
-		const doubled = BASE_UNIT * 2;
+	it("pays nothing for the opening answer with Cold Start, then ×1.5", () => {
 		let state = started(["cold-start"]);
 		state = answerWith(state, true);
-		expect(state.coverage).toBe(doubled);
+		expect(state.coverage).toBe(0);
 		state = answerWith(state, true);
-		expect(state.coverage).toBeCloseTo(doubled + BASE_UNIT + STREAK_UNIT_STEP);
+		expect(state.coverage).toBeCloseTo(BASE_UNIT * 1.5 + STREAK_UNIT_STEP);
+	});
+
+	// Regression Test is not in `handed`, and that fixture's order is indexed
+	// into elsewhere, so the build is set directly rather than installed.
+	const regressionBuild = (missedBefore: boolean): RunState => {
+		const base = started([]);
+		const [first, ...rest] = base.polls;
+		return {
+			...base,
+			build: { ...base.build, configs: [CONFIGS.regressionTest] },
+			// The flag rides the poll, attached when the sequence is read, so the
+			// engine never learns how the miss was recorded.
+			polls: [{ ...first, missedBefore }, ...rest],
+		};
+	};
+
+	it("doubles a poll the account has missed before with Regression Test", () => {
+		expect(answerWith(regressionBuild(true), true).coverage).toBe(
+			BASE_UNIT * 2
+		);
+	});
+
+	it("pays a poll the account has never missed at the ordinary rate", () => {
+		expect(answerWith(regressionBuild(false), true).coverage).toBe(BASE_UNIT);
 	});
 
 	it("stops the IndexedDB faucet at the per-run cap", () => {
@@ -402,7 +497,6 @@ describe("the summit", () => {
 			...base,
 			build: {
 				...base.build,
-				slots: 24,
 				configs: [
 					...base.build.configs,
 					CONFIGS.agentsMd,
@@ -434,7 +528,6 @@ describe("Dependabot's counter", () => {
 			...base,
 			build: {
 				...base.build,
-				slots: 16,
 				configs: [...base.build.configs, CONFIGS.dependabot],
 			},
 		};
@@ -478,7 +571,7 @@ describe("Dependabot's counter", () => {
 		const short: RunState = {
 			...base,
 			autoUpgradeProgress: 3,
-			bankedUnits: 27.5,
+			bankedUnits: 30,
 			window: { ...base.window, answered: SLICE_WINDOW - 1, unitsEarned: 0 },
 		};
 
@@ -514,7 +607,7 @@ describe("depth and width are independent (ADR-019)", () => {
 		}
 
 		expect(state.gatesCleared).toBe(3);
-		expect(state.build.slots).toBeGreaterThanOrEqual(BASE_SLOTS);
+		expect(spaceForBuild(state.build)).toBeGreaterThanOrEqual(BASE_SLOTS);
 	});
 
 	it("pays a deeper gate more, so replaying shallow ones is never the ramp", () => {
@@ -911,7 +1004,6 @@ describe(".prettierrc", () => {
 			status: "answering",
 			build: {
 				...base.build,
-				slots: base.build.slots + 2,
 				configs: [CONFIGS.prettierrc],
 			},
 		};
@@ -969,7 +1061,6 @@ describe("Cache", () => {
 		...state,
 		build: {
 			...state.build,
-			slots: state.build.slots + 4,
 			configs: [...state.build.configs, CONFIGS.cache],
 		},
 	});
@@ -1011,7 +1102,6 @@ describe("A/B Test", () => {
 		...state,
 		build: {
 			...state.build,
-			slots: state.build.slots + 2,
 			configs: [...state.build.configs, CONFIGS.abTest],
 		},
 	});
@@ -1150,7 +1240,6 @@ describe("Deprecated's decay", () => {
 			...base,
 			build: {
 				...base.build,
-				slots: base.build.configs.length + 1,
 				configs: [
 					...base.build.configs,
 					{ ...CONFIGS.deprecated, coverageMultiplier: multiplier },
@@ -1196,7 +1285,6 @@ describe("configs lost at the clear (DVTD-wii3: the comeback tally)", () => {
 			...base,
 			build: {
 				...base.build,
-				slots: base.build.configs.length + 1,
 				configs: [...base.build.configs, extra],
 			},
 		};
@@ -1240,7 +1328,6 @@ describe("Freemium's subscription", () => {
 			storage,
 			build: {
 				...base.build,
-				slots: base.build.configs.length + 1,
 				configs: [...base.build.configs, plan],
 			},
 		};
@@ -1289,7 +1376,6 @@ describe("Freemium's subscription", () => {
 		const shopping: RunState = {
 			...cleared,
 			draftOptions: [CONFIGS.agentsMd],
-			build: { ...cleared.build, slots: 24 },
 		};
 		const drafted = runReducer(shopping, {
 			type: "draft",
@@ -1378,5 +1464,445 @@ describe("an armed strict wager", () => {
 		expect(answerWith(doubled, true).window.unitsEarned).toBe(
 			answerWith(plain, true).window.unitsEarned + 0.5
 		);
+	});
+});
+
+describe("Database holds its earnings until the gate closes", () => {
+	// Database is not in the dealt-hand fixture, so the build is set directly
+	// rather than installed — the same dodge Regression Test uses above.
+	const withDatabase = (extra: Partial<RunState> = {}): RunState => {
+		const base = started([]);
+		return {
+			...base,
+			build: { ...base.build, configs: [CONFIGS.database] },
+			...extra,
+		};
+	};
+
+	const PLEDGE = CONFIGS.database.escrowPerCorrect ?? 0;
+	const WINDOW_PLEDGE = PLEDGE * SLICE_WINDOW;
+
+	it("holds an exact answer's KB rather than paying it into the balance", () => {
+		const state = answerWith(withDatabase(), true);
+		expect(state.pendingKb).toBe(PLEDGE);
+		expect(state.storage).toBe(0);
+	});
+
+	it("holds nothing for a miss", () => {
+		expect(answerWith(withDatabase(), false).pendingKb).toBe(0);
+	});
+
+	it("leaves the run cap alone while the transaction is still open", () => {
+		expect(answerWith(withDatabase(), true).faucetEarnedKb).toBe(0);
+	});
+
+	it("commits the transaction at ×2 when the gate clears", () => {
+		const cleared = clearGate(withDatabase());
+		expect(cleared.status).toBe("rewarding");
+		expect(cleared.escrowCommittedKb).toBe(
+			WINDOW_PLEDGE * ESCROW_COMMIT_MULTIPLIER
+		);
+		expect(cleared.pendingKb).toBe(0);
+	});
+
+	it("spends run cap on the commit, not on the pledge", () => {
+		expect(clearGate(withDatabase()).faucetEarnedKb).toBe(
+			WINDOW_PLEDGE * ESCROW_COMMIT_MULTIPLIER
+		);
+	});
+
+	it("rolls the transaction back on a gate held in SHAKY", () => {
+		const held = failGate(withDatabase({ pendingKb: WINDOW_PLEDGE }));
+		expect(held.status).toBe("awaiting-strip");
+		expect(held.pendingKb).toBe(0);
+		expect(held.escrowRolledBackKb).toBe(WINDOW_PLEDGE);
+	});
+
+	it("costs no run cap when it rolls back, so the loss leaves no trace", () => {
+		expect(
+			failGate(withDatabase({ pendingKb: WINDOW_PLEDGE })).faucetEarnedKb
+		).toBe(0);
+	});
+
+	it("rolls the transaction back on a gate that ends the run", () => {
+		let state = withDatabase({
+			gatesCleared: 6,
+			bankedUnits: 0,
+			pendingKb: WINDOW_PLEDGE,
+		});
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+
+		expect(state.status).toBe("dead");
+		expect(state.pendingKb).toBe(0);
+		expect(state.escrowRolledBackKb).toBe(WINDOW_PLEDGE);
+	});
+
+	it("clamps the commit at whatever run cap is left", () => {
+		const cleared = clearGate(
+			withDatabase({ faucetEarnedKb: FAUCET_CAP_KB - 10 })
+		);
+		expect(cleared.escrowCommittedKb).toBe(10);
+		expect(cleared.faucetEarnedKb).toBe(FAUCET_CAP_KB);
+	});
+});
+
+describe("207 Multi-Status", () => {
+	const multiPoll = (): RunPoll => ({
+		id: "m",
+		category: "ts",
+		question: "Which are TS utility types?",
+		answerType: "multiple",
+		options: [
+			{ id: "a", label: "Partial", correct: true },
+			{ id: "b", label: "Pick", correct: true },
+			{ id: "c", label: "Banjo", correct: false },
+		],
+	});
+
+	const singlePoll = (): RunPoll => ({
+		id: "s",
+		category: "ts",
+		question: "Which is a TS utility type?",
+		answerType: "single",
+		options: [
+			{ id: "s-a", label: "Partial", correct: true },
+			{ id: "s-b", label: "Banjo", correct: false },
+			{ id: "s-c", label: "Kazooie", correct: false },
+		],
+	});
+
+	const answeringOn = (first: RunPoll, ...ids: AuditId[]): RunState =>
+		audited(
+			{ ...createRun([first, ...pool(5)], handed), status: "answering" },
+			0,
+			...ids
+		);
+
+	const earnedOn = (
+		first: RunPoll,
+		optionIds: string[],
+		...ids: AuditId[]
+	): number =>
+		runReducer(answeringOn(first, ...ids), { type: "answer", optionIds })
+			.answeredThisGate[0].coverageEarned ?? 0;
+
+	const outcomeOn = (
+		first: RunPoll,
+		optionIds: string[],
+		...ids: AuditId[]
+	): string =>
+		runReducer(answeringOn(first, ...ids), { type: "answer", optionIds })
+			.answeredThisGate[0].outcome;
+
+	it("pays an exact multiple-choice set one unit, where an unaudited gate pays two", () => {
+		expect(earnedOn(multiPoll(), ["a", "b"])).toBe(BASE_UNIT * MULTIPLE_CREDIT);
+		expect(earnedOn(multiPoll(), ["a", "b"], "multi-status")).toBe(BASE_UNIT);
+	});
+
+	it("runs the flat credit down the partial ladder, so half a set pays half a unit", () => {
+		expect(earnedOn(multiPoll(), ["a"], "multi-status")).toBe(BASE_UNIT * 0.5);
+	});
+
+	it("leaves the partial verdict alone: only the credit is flattened", () => {
+		expect(outcomeOn(multiPoll(), ["a"], "multi-status")).toBe("partial");
+		expect(
+			runReducer(answeringOn(multiPoll(), "multi-status"), {
+				type: "answer",
+				optionIds: ["a"],
+			}).answeredThisGate[0].coverageFactors?.correct
+		).toBe(0.5);
+	});
+
+	it("still asks a true single for exactly its one answer", () => {
+		expect(outcomeOn(singlePoll(), ["s-a"], "multi-status")).toBe("correct");
+		expect(earnedOn(singlePoll(), ["s-a"], "multi-status")).toBe(BASE_UNIT);
+	});
+
+	it("cancels a right pick on a true single when a second option is picked", () => {
+		expect(outcomeOn(singlePoll(), ["s-a", "s-b"], "multi-status")).toBe(
+			"wrong"
+		);
+		expect(earnedOn(singlePoll(), ["s-a", "s-b"], "multi-status")).toBe(0);
+	});
+
+	it("records the poll's true answer type, so the review says what it really was", () => {
+		const answered = runReducer(answeringOn(singlePoll(), "multi-status"), {
+			type: "answer",
+			optionIds: ["s-a"],
+		});
+		expect(answered.answeredThisGate[0].answerType).toBe("single");
+	});
+});
+
+describe("the clear's receipt", () => {
+	it("records the parts the reward was paid in and the streak it paid on", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		const parts =
+			(state.clearThisGateKb ?? 0) +
+			(state.overflowThisGateKb ?? 0) +
+			(state.interestThisGateKb ?? 0) +
+			(state.extraPickThisGateKb ?? 0) +
+			(state.escrowCommittedKb ?? 0);
+
+		expect(state.status).toBe("rewarding");
+		expect(state.streakAtClose).toBe(SLICE_WINDOW);
+		expect(parts).toBe(state.gateRewardKb);
+	});
+});
+
+describe("Try/Catch turns a fatal close into a held one (ADR-096)", () => {
+	// Try/Catch is not in the dealt-hand fixture, so the build is set directly.
+	const holding = (
+		configs: readonly Config[],
+		extra: Partial<RunState> = {}
+	): RunState => {
+		const base = started([]);
+		return {
+			...base,
+			build: { ...base.build, configs },
+			gatesCleared: 6,
+			bankedUnits: 0,
+			...extra,
+		};
+	};
+
+	const withCatcher = (
+		extra: Partial<RunState> = {},
+		alongside: readonly Config[] = [CONFIGS.intellisense]
+	): RunState => holding([CONFIGS.tryCatch, ...alongside], extra);
+
+	const closedOnDanger = (state: RunState): RunState => {
+		let next = state;
+		for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, false);
+		return next;
+	};
+
+	it("ends the run when no catch is installed", () => {
+		expect(closedOnDanger(holding([CONFIGS.intellisense])).status).toBe("dead");
+	});
+
+	it("holds the gate instead of ending the run", () => {
+		const held = closedOnDanger(withCatcher());
+		expect(held.status).toBe("awaiting-strip");
+		expect(held.heldBy).toBe("catch");
+	});
+
+	it("spends the catch, so a second fatal close is not caught", () => {
+		const held = closedOnDanger(withCatcher());
+		expect(held.build.configs.map((config) => config.id)).not.toContain(
+			CONFIGS.tryCatch.id
+		);
+		expect(held.deletedConfigs).toEqual([CONFIGS.tryCatch]);
+	});
+
+	it("names what caught it, so the hold is never unexplained", () => {
+		expect(closedOnDanger(withCatcher()).caughtFatalBy).toBe(
+			CONFIGS.tryCatch.label
+		);
+	});
+
+	it("pays its own weight into the peel it just created", () => {
+		const state = withCatcher();
+		const quota = failPeelQuotaFor(
+			state.build.configs,
+			state.gatesCleared,
+			scheduleOf(state)
+		);
+		const held = closedOnDanger(state);
+
+		expect(held.peelSlotsRemaining).toBe(
+			Math.max(0, quota - slotsOf(CONFIGS.tryCatch))
+		);
+	});
+
+	it("settles the whole peel when its weight covers the quota", () => {
+		const held = closedOnDanger(withCatcher({}, [CONFIGS.js]));
+		expect(held.peelSlotsRemaining).toBe(0);
+	});
+
+	it("never lets the peel it created empty the build and kill the run", () => {
+		const held = closedOnDanger(withCatcher({ gatesCleared: 12 }));
+		expect(held.status).toBe("awaiting-strip");
+	});
+
+	it("still rolls back an open transaction, as any held gate does", () => {
+		const held = closedOnDanger(
+			withCatcher({ pendingKb: 40 }, [CONFIGS.database])
+		);
+		expect(held.pendingKb).toBe(0);
+		expect(held.escrowRolledBackKb).toBe(40);
+	});
+});
+
+describe("SLA pays for holding to the band it promised (ADR-096)", () => {
+	// The build stays on the free rung: a wider one bills every clear, and a
+	// bigger reward then buys a bigger bill, which hides the uplift in storage.
+	const promising = (band: string, extra: Partial<RunState> = {}): RunState => {
+		const base = started([]);
+		const prep: RunState = {
+			...base,
+			status: "rewarding",
+			build: { ...base.build, configs: [CONFIGS.sla] },
+		};
+		return {
+			...prep,
+			status: base.status,
+			...extra,
+			slaBand: commitBand(prep, band).slaBand,
+		};
+	};
+
+	const upliftOn = (state: RunState): number =>
+		clearGate(state).slaUpliftKb ?? 0;
+
+	it("adds its share of the gate's own payout when the band holds", () => {
+		const cleared = clearGate(promising("ok"));
+		expect(cleared.status).toBe("rewarding");
+		expect(cleared.slaUpliftKb).toBeGreaterThan(0);
+	});
+
+	it("pays more for a bolder promise the gate still meets", () => {
+		expect(upliftOn(promising("perfect"))).toBeGreaterThan(
+			upliftOn(promising("ok"))
+		);
+	});
+
+	it("pays nothing on a gate that cleared but fell short of its promise", () => {
+		// Deep enough that five right answers clear the gate without filling the
+		// bar, which is the only place a promise can be missed on a clear.
+		const short = clearGate(
+			promising("perfect", { gatesCleared: 4, bankedUnits: 12 })
+		);
+
+		expect(short.status).toBe("rewarding");
+		expect(short.slaUpliftKb).toBe(0);
+	});
+
+	it("carries the uplift into the gate's reward, not beside it", () => {
+		const promised = clearGate(promising("ok"));
+		const bare = clearGate({ ...promising("ok"), slaBand: undefined });
+
+		expect(promised.gateRewardKb).toBeGreaterThan(bare.gateRewardKb ?? 0);
+		expect(promised.storage).toBeGreaterThan(bare.storage);
+	});
+
+	it("drops the promise unpaid when the gate holds instead of clearing", () => {
+		const held = failGate(promising("ok"));
+		expect(held.status).toBe("awaiting-strip");
+		expect(held.slaBand).toBeUndefined();
+		expect(held.slaUpliftKb).toBeUndefined();
+	});
+
+	it("never carries a promise into the next gate", () => {
+		expect(clearGate(promising("ok")).slaBand).toBeUndefined();
+	});
+});
+
+describe("a clear arms an attack, and every close leaves a record (ADR-099)", () => {
+	// Deep enough that five right answers clear the gate without filling the bar.
+	const deepHealthy = { ...started(["js"]), gatesCleared: 4, bankedUnits: 12 };
+
+	it("arms a two-payload attack on a PERFECT clear and stamps the gate", () => {
+		const cleared = clearGate(started(["js"]));
+		expect(cleared.attack).toEqual({ band: "perfect" });
+		expect(cleared.attackEarnedAtGate).toBe(0);
+	});
+
+	it("arms a single-payload attack on a HEALTHY clear", () => {
+		expect(clearGate(deepHealthy).attack).toEqual({ band: "healthy" });
+	});
+
+	it("keeps a held PERFECT through a later HEALTHY clear, stamp untouched", () => {
+		const held = clearGate({
+			...deepHealthy,
+			attack: { band: "perfect" },
+			attackEarnedAtGate: 2,
+		});
+		expect(held.attack).toEqual({ band: "perfect" });
+		expect(held.attackEarnedAtGate).toBe(2);
+	});
+
+	it("arms nothing on a held gate", () => {
+		expect(failGate(started(["js"])).attack).toBeUndefined();
+	});
+
+	it("records how the gate closed, on a clear and on a hold alike", () => {
+		expect(clearGate(started(["js"])).lastClose).toEqual({
+			gate: 0,
+			band: "perfect",
+			cleared: true,
+		});
+		expect(failGate(started(["js"])).lastClose).toMatchObject({
+			gate: 0,
+			cleared: false,
+		});
+	});
+});
+
+describe("surviving a rival's audits pays on top of the clear (ADR-099)", () => {
+	const sender = { id: "misty", name: "Misty" };
+	const lockedAt = (gate: number): LockedIncident[] => [
+		{ id: 1, auditId: "not-found", gate, sentBy: sender },
+		{ id: 2, auditId: "read-only", gate, sentBy: sender },
+	];
+
+	it("pays the survival bonus per incident the cleared gate carried", () => {
+		const attacked = {
+			...audited(started(["js"]), 0, "not-found", "read-only"),
+			incidents: lockedAt(0),
+		};
+		const clean = clearGate(started(["js"]));
+		const survived = clearGate(attacked);
+
+		expect(survived.incidentSurvivalKb).toBe(2 * INCIDENT_SURVIVAL_KB);
+		expect(survived.gateRewardKb).toBe(
+			(clean.gateRewardKb ?? 0) + 2 * INCIDENT_SURVIVAL_KB
+		);
+	});
+
+	it("pays nothing for incidents waiting on a later gate", () => {
+		const cleared = clearGate({ ...started(["js"]), incidents: lockedAt(1) });
+		expect(cleared.incidentSurvivalKb).toBe(0);
+	});
+});
+
+describe("withLockedGate", () => {
+	const sender = { id: "misty", name: "Misty" };
+	const mirrorAt = (gate: number): LockedIncident => ({
+		id: 7,
+		auditId: "mirrored",
+		gate,
+		sentBy: sender,
+	});
+
+	it("makes the locked incidents the gate's whole audit list", () => {
+		const locked = withLockedGate(started(["js"]), 3, [mirrorAt(3)]);
+		expect(locked.auditSchedule?.[3]).toEqual(["mirrored"]);
+		expect(locked.incidents).toEqual([mirrorAt(3)]);
+	});
+
+	it("re-reads the pick budget when a mirror locks onto the gate in front", () => {
+		// Three options with one right: a mirror asks for two picks a poll, not one.
+		const threeWide = (entry: RunPoll): RunPoll => ({
+			...entry,
+			options: [
+				...entry.options,
+				{ id: `${entry.id}-c`, label: "Maybe", correct: false },
+			],
+		});
+		const state = started(["js"]);
+		const locked = withLockedGate(
+			{ ...state, polls: state.polls.map(threeWide) },
+			0,
+			[mirrorAt(0)]
+		);
+		expect(state.window.budget).toBe(SLICE_WINDOW);
+		expect(locked.window.budget).toBe(2 * SLICE_WINDOW);
+	});
+
+	it("leaves the open window alone when locking a later gate", () => {
+		const state = started(["js"]);
+		expect(withLockedGate(state, 1, [mirrorAt(1)]).window).toBe(state.window);
 	});
 });

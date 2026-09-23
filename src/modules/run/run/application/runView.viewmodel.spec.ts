@@ -10,9 +10,10 @@ import { audited, handed } from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
-	occupiedSlots,
 	perAnswerPreviewFor,
 	buildModifiersFor,
+	spaceForBuild,
+	upkeepForBuild,
 } from "~/modules/run/build/domain/build.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -31,9 +32,6 @@ import {
 	MAX_EXTENSIONS,
 } from "~/modules/run/shop/domain/draft.model";
 import {
-	BASE_SLOTS,
-	BUILD_SPACE_FROM_GATE,
-	spaceRungFor,
 	SLICE_WINDOW,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
@@ -53,6 +51,7 @@ import {
 import {
 	BASE_UNIT,
 	floorAt,
+	MULTIPLE_CREDIT,
 	healthyAt,
 	okAt,
 	percentOf,
@@ -84,7 +83,7 @@ const answeringWith = (
 	const created = createRun(polls, configs);
 	let state: RunState = {
 		...created,
-		build: { ...created.build, slots: occupiedSlots(configs) },
+		build: { ...created.build },
 	};
 	for (const config of configs)
 		state = runReducer(state, { type: "install", configId: config.id });
@@ -250,6 +249,37 @@ describe("toRunView", () => {
 		expect(toRunView(shown).categoryHidden).toBe(false);
 	});
 
+	it("presents every poll as a select-all at the 207 gate, whatever it really takes", () => {
+		const hidden = audited(answering(), 5, "multi-status");
+		expect(toRunView(hidden).poll?.answerType).toBe("multiple");
+		expect(toRunView(answering()).poll?.answerType).toBe("single");
+	});
+
+	it("prices a multiple-choice poll as a single at the 207 gate", () => {
+		const multi: RunPoll = {
+			id: "m",
+			category: "react",
+			question: "Pick every hook",
+			answerType: "multiple",
+			options: [
+				{ id: "m-a", label: "useState", correct: true },
+				{ id: "m-b", label: "useEffect", correct: true },
+				{ id: "m-c", label: "useBanjo", correct: false },
+			],
+		};
+		const base = {
+			...createRun([multi, poll("q1")], [CONFIGS.js]),
+			status: "answering" as const,
+		};
+
+		expect(toRunView(base).perAnswer.coveragePerCorrect).toBe(
+			BASE_GAIN * MULTIPLE_CREDIT
+		);
+		expect(
+			toRunView(audited(base, 5, "multi-status")).perAnswer.coveragePerCorrect
+		).toBe(BASE_GAIN);
+	});
+
 	it("drops the gate theme once the last gate is beaten", () => {
 		expect(
 			toRunView({ ...answering(), gatesCleared: 13 }).gateTheme
@@ -320,7 +350,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 		expect(view.shopControls.extendAvailable).toBe(false);
 	});
 
-	it("offers the lock only while yarn.lock is in the build", () => {
+	it("offers the lock only while .lock is in the build", () => {
 		expect(toRunView(shopping(1, 512)).shopControls.lockAvailable).toBe(false);
 		expect(
 			toRunView(withLocker(shopping(1, 512))).shopControls.lockAvailable
@@ -371,54 +401,42 @@ describe("shop controls (DVTD-5lt6)", () => {
 	});
 });
 
-describe("the build space in the shop (ADR-074)", () => {
-	const holding = (space = BASE_SLOTS, gatesCleared = 0) =>
-		toRunView({
-			...answering(),
-			gatesCleared,
-			build: { ...answering().build, slots: space },
-		});
+describe("the build space the shop reports (ADR-098)", () => {
+	const holdingWeight = (weight: number) => {
+		const base = answering();
+		const filler = Array.from({ length: weight }, () => CONFIGS.strict);
+		return toRunView({ ...base, build: { ...base.build, configs: filler } });
+	};
 
-	it("draws every rung of the ladder, the free one included", () => {
-		expect(holding().buildSpace.rungs.map((rung) => rung.weight)).toEqual([
-			4, 6, 8, 12, 16, 24, 32,
-		]);
+	it("reports the rung the build sits in, not a rung anyone picked", () => {
+		expect(holdingWeight(4).buildSpace.space).toBe(4);
+		expect(holdingWeight(5).buildSpace.space).toBe(6);
+		expect(holdingWeight(7).buildSpace.space).toBe(8);
 	});
 
-	it("marks the rung the build stands on and no other", () => {
-		const { rungs } = holding(8).buildSpace;
-
-		expect(
-			rungs.filter((rung) => rung.held).map((rung) => rung.weight)
-		).toEqual([8]);
+	it("reads the bill off that rung, so a weight short of one still pays it", () => {
+		expect(holdingWeight(4).buildSpace.perGateKb).toBe(0);
+		expect(holdingWeight(5).buildSpace.perGateKb).toBe(16);
+		expect(holdingWeight(7).buildSpace.perGateKb).toBe(32);
 	});
 
-	it("reads the bill off the rung held, not the weight in use", () => {
-		expect(holding(8).buildSpace.perGateKb).toBe(32);
-		expect(holding(BASE_SLOTS).buildSpace.perGateKb).toBe(0);
+	it("names the rung ahead and what it would cost, so a threshold is visible before it is crossed", () => {
+		const { nextWeight, nextPerGateKb } = holdingWeight(5).buildSpace;
+
+		expect(nextWeight).toBe(8);
+		expect(nextPerGateKb).toBe(32);
 	});
 
-	it("offers nothing before the run is stocking gate 2", () => {
-		const { offered, rungs } = holding(BASE_SLOTS, 1).buildSpace;
-
-		expect(offered).toBe(false);
-		expect(rungs.some((rung) => rung.pickable)).toBe(false);
+	it("names no rung ahead once the build sits on the top one", () => {
+		expect(holdingWeight(32).buildSpace.nextWeight).toBeUndefined();
 	});
 
-	it("opens every rung but the held one once the shop stocks gate 2", () => {
-		const { offered, rungs } = holding(
-			BASE_SLOTS,
-			BUILD_SPACE_FROM_GATE
-		).buildSpace;
-
-		expect(offered).toBe(true);
-		expect(rungs.filter((rung) => rung.pickable)).toHaveLength(
-			rungs.length - 1
-		);
+	it("carries no covered-space cap while the bill is being paid", () => {
+		expect(holdingWeight(5).buildSpace.coveredSpace).toBeNull();
 	});
 
 	it("puts the space it holds on the recurring bill", () => {
-		const line = holding(8).gateStake.subscriptions.lines.find(
+		const line = holdingWeight(7).gateStake.subscriptions.lines.find(
 			(entry) => entry.id === "build-space"
 		);
 
@@ -429,7 +447,7 @@ describe("the build space in the shop (ADR-074)", () => {
 
 	it("keeps the free rung off the bill entirely", () => {
 		expect(
-			holding(BASE_SLOTS).gateStake.subscriptions.lines.map((entry) => entry.id)
+			holdingWeight(4).gateStake.subscriptions.lines.map((entry) => entry.id)
 		).not.toContain("build-space");
 	});
 });
@@ -557,9 +575,9 @@ describe("the gate stake travels as one object", () => {
 			gateNumber: 4,
 			pollsPerGate: SLICE_WINDOW,
 			coverageLadder: {
-				floor: percentOf(floorAt(4)),
-				ok: percentOf(okAt(4)),
-				healthy: percentOf(healthyAt(4)),
+				floor: roundToOneDecimal(percentOf(floorAt(4))),
+				ok: roundToOneDecimal(percentOf(okAt(4))),
+				healthy: roundToOneDecimal(percentOf(healthyAt(4))),
 			},
 			coverageHeld: state.window.unitsEarned,
 			coverageAtOpen: roundToOneDecimal(
@@ -589,20 +607,11 @@ describe("the gate stake travels as one object", () => {
 				configs: state.build.configs,
 				gate: 4,
 				storageKb: state.storage,
-				spaceWeight: spaceRungFor(state.build.slots).weight,
-				spaceBillKb: spaceRungFor(state.build.slots).kb,
+				spaceWeight: spaceForBuild(state.build),
+				spaceBillKb: upkeepForBuild(state.build),
 			}),
 			modifiers: buildModifiersFor(state.build.configs, 4),
 			perAnswer: perAnswerPreviewFor(state.build.configs),
-		});
-	});
-
-	it("foreshadows the first audit while the gate runs clean", () => {
-		const view = toRunView(answeringWith([CONFIGS.js]));
-		expect(view.gateStake.upcomingAudit).toEqual({
-			gateNumber: 3,
-			name: "402 Payment Required",
-			description: expect.stringContaining("paid action"),
 		});
 	});
 
@@ -769,7 +778,7 @@ describe("the shop's controls answer to the reducer", () => {
 describe("the view prices the shop's offers", () => {
 	const roomy = (): RunState => {
 		const base = answeringWith([CONFIGS.js]);
-		return { ...base, build: { ...base.build, slots: BASE_SLOTS } };
+		return { ...base, build: { ...base.build } };
 	};
 
 	const shopping = (overrides: Partial<RunState> = {}): RunState => ({
@@ -800,16 +809,39 @@ describe("the view prices the shop's offers", () => {
 		});
 	});
 
-	it("refuses an offer that will not fit, naming both numbers", () => {
+	/**
+	 * Room stopped being a reason to refuse anywhere but the top of the ladder
+	 * (ADR-098): a build that cannot fit an offer rents the rung above instead,
+	 * and the install press states what that costs.
+	 */
+	it("no longer refuses for room below the top rung — it rents the rung above", () => {
 		const full = answeringWith([CONFIGS.js]);
 		const offer = only(
 			shopping({
 				...full,
 				status: "rewarding",
-				build: { ...full.build, slots: 1 },
+				storage: 512,
 				draftOptions: [CONFIGS.indexedDb],
 			})
 		);
+
+		expect(offer.refusal).toBeNull();
+		expect(offer.installable).toBe(true);
+	});
+
+	it("refuses for room at the top of the ladder, naming both numbers", () => {
+		const full = answeringWith([CONFIGS.js]);
+		const brimming = Array.from({ length: 4 }, () => CONFIGS.wtfpl);
+		const offer = only(
+			shopping({
+				...full,
+				status: "rewarding",
+				storage: 512,
+				build: { ...full.build, configs: brimming },
+				draftOptions: [CONFIGS.indexedDb],
+			})
+		);
+
 		expect(offer.refusal).toEqual({
 			reason: "no-room",
 			slots: 2,
@@ -847,7 +879,9 @@ describe("the recommended opening (ADR-057)", () => {
 		const view = toRunView(state);
 
 		expect(view.recommendedConfigIds).toEqual(
-			recommendedPicks(handed, state.build.slots).map((config) => config.id)
+			recommendedPicks(handed, spaceForBuild(state.build)).map(
+				(config) => config.id
+			)
 		);
 		expect(view.configs).toEqual([]);
 		expect(view.canStart).toBe(false);

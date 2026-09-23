@@ -26,6 +26,7 @@ export const RunNew = () => {
 					configId,
 				})
 			}
+			onVendorLock={(configId) => send({ type: "vendor-lock", configId })}
 			onStart={() => navigate({ to: "/run/prep" })}
 		/>
 	);

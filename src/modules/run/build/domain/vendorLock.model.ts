@@ -1,10 +1,21 @@
 import { vendorLockerFor } from "~/modules/run/build/domain/build.model";
-import { type RunState, withLog } from "~/modules/run/run/domain/run.model";
+import {
+	isPrepPhase,
+	type RunState,
+	withLog,
+} from "~/modules/run/run/domain/run.model";
 
+/**
+ * A build holding nothing but the locker has no legal target, so the offer
+ * lifts rather than standing: every screen that asks for the pick also holds
+ * its exit door on this predicate, and a standing offer with nothing to name
+ * would strand the player there.
+ */
 export const canVendorLock = (state: RunState): boolean => {
-	if (state.status !== "rewarding") return false;
+	if (!isPrepPhase(state)) return false;
 	if (vendorLockerFor(state.build.configs) === undefined) return false;
-	return state.build.vendorLockedConfigId === undefined;
+	if (state.build.vendorLockedConfigId !== undefined) return false;
+	return state.build.configs.some((config) => config.vendorLocks !== true);
 };
 
 /**

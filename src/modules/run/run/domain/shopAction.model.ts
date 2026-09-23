@@ -38,11 +38,6 @@ import {
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
-	buildSpaceFor,
-	rungIndexForSpace,
-	upkeepForSpace,
-	BUILD_SPACE_FROM_GATE,
-	BUILD_SPACE_RUNGS,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	addStorage,
@@ -148,36 +143,6 @@ export const upgrade = (state: RunState, configId: string): RunState => {
 	);
 };
 
-export const canPickBuildSpace = (state: RunState): boolean =>
-	state.gatesCleared >= BUILD_SPACE_FROM_GATE;
-
-export const buildSpaceRungOf = (state: RunState): number =>
-	rungIndexForSpace(state.build.slots);
-
-export const canSetBuildSpace = (state: RunState, rung: number): boolean =>
-	canPickBuildSpace(state) &&
-	rung >= 0 &&
-	rung < BUILD_SPACE_RUNGS.length &&
-	buildSpaceFor(rung) !== state.build.slots;
-
-export const setBuildSpace = (state: RunState, rung: number): RunState => {
-	if (!canSetBuildSpace(state, rung)) return state;
-
-	const slots = buildSpaceFor(rung);
-	const billKb = upkeepForSpace(slots);
-
-	return {
-		...state,
-		build: { ...state.build, slots },
-		log: withLog(
-			state,
-			billKb === 0
-				? `Build space at ${slots} — free to run.`
-				: `Build space at ${slots} — ${billKb}KB a gate.`
-		),
-	};
-};
-
 export const minifyConfig = (state: RunState, configId: string): RunState => {
 	const target = state.build.configs.find(
 		(candidate) => candidate.id === configId
@@ -253,11 +218,15 @@ export const finishReward = (state: RunState): RunState => {
 		draftedThisGate: [],
 		answeredThisGate: [],
 		faucetThisGateKb: 0,
+		escrowCommittedKb: 0,
+		escrowRolledBackKb: 0,
 		gateRewardKb: 0,
 		redoGate: undefined,
 		autoUpgradedConfigId: undefined,
 		autoUpgradedByConfigId: undefined,
 		deletedConfigs: undefined,
+		caughtFatalBy: undefined,
+		slaUpliftKb: undefined,
 		lapsedConfigs: undefined,
 		subscriptionBillKb: 0,
 		upkeepBilledKb: 0,

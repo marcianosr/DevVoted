@@ -1,3 +1,5 @@
+import { format } from "date-fns";
+
 import {
 	abArmLabel,
 	type Config,
@@ -18,6 +20,19 @@ import {
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
+import {
+	type CategoryRecord,
+	maintainerTitleOf,
+} from "~/modules/run/run/domain/categoryRecord.model";
+import {
+	difficultyBandOf,
+	type DifficultyBand,
+	firstAttemptRateOf,
+	isSeenBefore,
+	type PollStats,
+} from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
 import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
 import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
@@ -37,10 +52,19 @@ import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { BuildCounts } from "~/ui/kanto-theme/BuildFooter.ui";
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
+import type { ChoiceVerdict } from "~/ui/kanto-theme/Choice.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
+import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
-import type { FigureTone, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
+import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
+import type {
+	FigureTone,
+	LedgerRow,
+	LedgerTag,
+} from "~/ui/kanto-theme/LedgerRows.ui";
 import type {
 	PollPaid,
 	PollScoreRow,
@@ -118,12 +142,199 @@ export const pollHoldsFor = (view: RunView): string | undefined => {
 	return `${count} ${word} ${count === 1 ? "answer" : "answers"} in this gate`;
 };
 
-export const pollLabelFor = (view: RunView): string => {
+const BAND_TONE = {
+	untested: "pewter",
+	brutal: "cinnabar",
+	hard: "saffron",
+	fair: "celadon",
+	easy: "viridian",
+} as const satisfies Record<DifficultyBand, KantoColor>;
+
+const UNTESTED_TEXT = "too few first tries to say";
+const SEEN_BADGE = "seen before";
+const SEEN_TONE = "saffron";
+const DATE_FORMAT = "d MMM";
+
+const timesWord = (times: number): string => {
+	if (times === 1) return "once";
+	if (times === 2) return "twice";
+
+	return `${times} times`;
+};
+
+const everyTimeWord = (times: number): string =>
+	times === 2 ? "both times" : `all ${times} times`;
+
+const outcomeClause = (attempts: number, misses: number): string => {
+	if (misses === 0) {
+		if (attempts === 1) return "you got it right";
+
+		return `you got it right ${everyTimeWord(attempts)}`;
+	}
+	if (misses === attempts) {
+		if (attempts === 1) return "you missed it";
+
+		return `you missed it ${everyTimeWord(attempts)}`;
+	}
+
+	return `you missed it ${timesWord(misses)}`;
+};
+
+/**
+ * How hard the room found the poll. Stated before the question is read, which
+ * is the only place it is worth anything: it is the reason to spend a peek, not
+ * a verdict on having spent one.
+ */
+export const pollDifficultyFor = (stats: PollStats): PollFact => {
+	const band = difficultyBandOf(stats);
+	if (band === "untested") {
+		return { badge: band, tone: BAND_TONE[band], text: UNTESTED_TEXT };
+	}
+
+	return {
+		badge: band,
+		tone: BAND_TONE[band],
+		figure: `${firstAttemptRateOf(stats)}%`,
+		text: "got it right first time",
+	};
+};
+
+/** Absent until this account has answered the poll — there is nothing to say. */
+export const pollHistoryFor = (stats: PollStats): PollFact | undefined => {
+	if (!isSeenBefore(stats)) return undefined;
+
+	const when =
+		stats.lastAnsweredAt === undefined
+			? ""
+			: `, last on ${format(new Date(stats.lastAnsweredAt), DATE_FORMAT)}`;
+
+	return {
+		badge: SEEN_BADGE,
+		tone: SEEN_TONE,
+		text: `answered ${timesWord(stats.attempts)} · ${outcomeClause(
+			stats.attempts,
+			stats.misses
+		)}${when}`,
+	};
+};
+
+/**
+ * The band, or nothing. Undefined while an answer is on screen: the facts are
+ * what you read *before* the question, and the personal half would be a tick
+ * out of date the moment the answer lands.
+ */
+export const pollFactsFor = (
+	poll: PollView | undefined
+): Omit<PollFactsProps, "trailing"> | undefined => {
+	const stats = poll?.stats;
+	if (stats === undefined) return undefined;
+
+	return {
+		difficulty: pollDifficultyFor(stats),
+		history: pollHistoryFor(stats),
+	};
+};
+
+const RECORD_CAPTION = (category: string) =>
+	`the longest run of correct ${category} answers`;
+const RECORD_FIGURE = (streak: number) => `${streak} in a row`;
+const YOUR_BEST = (streak: number) => `your best ${streak}`;
+
+const recordHolderFor = (record: CategoryRecord): HallOfFameProps["holder"] => {
+	const { holder } = record;
+	if (holder === undefined) return undefined;
+
+	return {
+		handle: holder.handle,
+		title: maintainerTitleOf(record.category),
+		figure: RECORD_FIGURE(holder.streak),
+		you: holder.you,
+		...(holder.githubLogin === undefined
+			? {}
+			: { githubLogin: holder.githubLogin }),
+		...(holder.avatarUrl === undefined ? {} : { photoUrl: holder.avatarUrl }),
+		...(holder.borderUrl === undefined ? {} : { borderUrl: holder.borderUrl }),
+	};
+};
+
+/**
+ * Your own figure, or nothing to say.
+ *
+ * Left off at zero — `your best 0` states a fact nobody asked for — and left
+ * off when you are the holder, where the record already *is* your best and the
+ * row would print the same number twice.
+ */
+const yourBestFor = (record: CategoryRecord): string | undefined => {
+	if (record.holder?.you === true) return undefined;
+	if (record.yourBest === 0) return undefined;
+
+	return YOUR_BEST(record.yourBest);
+};
+
+/**
+ * The category's living record, under the byline.
+ *
+ * Withheld entirely while the category is hidden: the caption names the topic
+ * in full, so blinding the header badge and leaving this would hand back the
+ * very thing the audit took.
+ */
+export const hallOfFameFor = (
+	view: RunView,
+	poll: PollView | undefined
+): HallOfFameProps | undefined => {
+	const record = poll?.record;
+	if (record === undefined || view.categoryHidden) return undefined;
+
+	const holder = recordHolderFor(record);
+	const yourBest = yourBestFor(record);
+
+	return {
+		caption: RECORD_CAPTION(categoryNameOf(view, record.category)),
+		...(holder === undefined ? {} : { holder }),
+		...(yourBest === undefined ? {} : { yourBest }),
+	};
+};
+
+/** While an answer is on screen the step is the poll just answered, not the next one. */
+export const pollLabelFor = (view: RunView, revealing = false): string => {
 	const answered = view.answeredThisGate.length;
-	const step = Math.min(answered + 1, view.pollsPerGate);
+	const step = revealing
+		? Math.max(1, answered)
+		: Math.min(answered + 1, view.pollsPerGate);
 
 	return `${POLL_WORD} ${step} ${OUT_OF} ${view.pollsPerGate}`;
 };
+
+const verdictOf = (
+	label: string,
+	answered: AnsweredPoll
+): ChoiceVerdict | undefined => {
+	if (answered.correct === undefined) return undefined;
+	const picked = answered.picked.includes(label);
+	const correct = answered.correct.includes(label);
+	if (picked) return correct ? "right" : "wrong";
+	return correct ? "missed" : undefined;
+};
+
+export const answeredOptionsFor = (
+	answered: AnsweredPoll
+): readonly QuestionOption[] => {
+	const labels = answered.options ?? [
+		...new Set([...answered.picked, ...(answered.correct ?? [])]),
+	];
+
+	return labels.map((label, index) => ({
+		id: label,
+		letter: letterAt(index),
+		label,
+		verdict: verdictOf(label, answered),
+	}));
+};
+
+export const pollKeysFor = (view: RunView): readonly PollKey[] =>
+	(view.poll?.options ?? [])
+		.map((option, index) => ({ letter: letterAt(index), id: option.id }))
+		.filter((key) => !view.disabledOptionIds.includes(key.id));
 
 /** Percentages keep one decimal, so the badge reads as the panel meta does. */
 const coveragePercent = (held: number): string =>
@@ -143,12 +354,18 @@ export const coverageLeadFor = (view: RunView): LeadLine => {
 	];
 };
 
-const paidOf = (poll: AnsweredPoll): PollPaid => ({
-	figure: `${roundToTwoDecimals(poll.coverageEarned ?? 0)}`,
-	color: PAID_COLOR[poll.outcome],
-});
+const paidOf = (view: RunView, poll: AnsweredPoll): PollPaid => {
+	const receipt = pollBreakdownFor(view, poll);
+
+	return {
+		figure: `${roundToTwoDecimals(poll.coverageEarned ?? 0)}`,
+		color: PAID_COLOR[poll.outcome],
+		...(receipt.length === 0 ? {} : { receipt }),
+	};
+};
 
 const payoutRowFor = (
+	view: RunView,
 	answers: readonly AnsweredPoll[],
 	gate: number,
 	current: boolean,
@@ -160,7 +377,7 @@ const payoutRowFor = (
 	payouts: {
 		slots: Array.from({ length: polls }, (_, position) => {
 			const poll = answers[position];
-			return poll === undefined ? undefined : paidOf(poll);
+			return poll === undefined ? undefined : paidOf(view, poll);
 		}),
 		total: `${roundToTwoDecimals(
 			answers.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
@@ -175,7 +392,7 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 
 	return {
 		rows: answersPerGate(view.allAnswered, gate).map((answers, index) =>
-			payoutRowFor(answers, index, index === gate, view.pollsPerGate)
+			payoutRowFor(view, answers, index, index === gate, view.pollsPerGate)
 		),
 	};
 };
@@ -183,13 +400,16 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 /**
  * The gate in hand only. The run's whole payout history is the debrief's job:
  * on the screen you answer on, every earlier gate is a row you cannot act on.
+ *
+ * Every chip carries its own receipt, so any poll in the gate explains itself
+ * on hover rather than only the one just answered (ADR-095).
  */
 export const pollPaidFor = (view: RunView): PollScoresProps => {
 	const gate = view.gateStake.gateNumber;
 	const answers = answersPerGate(view.allAnswered, gate)[gate] ?? [];
 
 	return {
-		rows: [payoutRowFor(answers, gate, true, view.pollsPerGate)],
+		rows: [payoutRowFor(view, answers, gate, true, view.pollsPerGate)],
 	};
 };
 
@@ -421,10 +641,24 @@ const QUIET: FigureTone = "quiet";
 
 const unitsWord = (value: number): string => `${roundToTwoDecimals(value)}`;
 
-const bonusFigure = ({ value, factor }: CoverageConfigBonus): string =>
-	factor === undefined
-		? `${value > 0 ? "+" : ""}${unitsWord(value)}`
-		: `×${unitsWord(factor)}`;
+/**
+ * Two fixed decimals, so right-aligning the column also aligns the decimal
+ * points: the receipt has to read as the arithmetic it is (ADR-095).
+ */
+const receiptUnits = (value: number): string =>
+	roundToTwoDecimals(value).toFixed(2);
+
+const contributionWord = (value: number): string =>
+	`${value > 0 ? "+" : ""}${receiptUnits(value)}`;
+
+/**
+ * Only a multiplier needs one. An adder's sold form is the units it added, and
+ * the figure already states those.
+ */
+const soldFormTagsFor = ({
+	factor,
+}: CoverageConfigBonus): readonly LedgerTag[] | undefined =>
+	factor === undefined ? undefined : [{ label: `×${unitsWord(factor)}` }];
 
 const quietRow = (
 	label: string,
@@ -446,14 +680,23 @@ const bonusRowFor = (
 		config?.focusCategory === answered.category
 			? `${MATCHES} ${categoryNameOf(view, answered.category)}`
 			: undefined;
+	const tags = soldFormTagsFor(bonus);
 
-	return quietRow(config?.label ?? bonus.configId, bonusFigure(bonus), matched);
+	return {
+		...quietRow(
+			config?.label ?? bonus.configId,
+			contributionWord(bonus.value),
+			matched
+		),
+		...(tags === undefined ? {} : { tags }),
+	};
 };
 
 /**
  * The answer's receipt: where the figure in the payout badge came from. One row
- * per contributor, each in the form the config itself is sold in — a multiplier
- * states its factor, an adder states its units (ADR-083).
+ * per contributor, each stating the units it added, so the column sums to the
+ * total it closes on. A multiplier keeps the factor it was sold in as a tag
+ * beside its name (ADR-095, amending ADR-084).
  */
 export const pollBreakdownFor = (
 	view: RunView,
@@ -472,14 +715,20 @@ export const pollBreakdownFor = (
 	);
 
 	return [
-		quietRow(BASE_LABEL[answered.outcome], unitsWord(base), BASE_DETAIL),
+		quietRow(BASE_LABEL[answered.outcome], receiptUnits(base), BASE_DETAIL),
 		...configBonuses.map((bonus) => bonusRowFor(view, answered, bonus)),
 		...(streakBonus === 0
 			? []
-			: [quietRow(STREAK_LABEL, `+${unitsWord(streakBonus)}`)]),
+			: [quietRow(STREAK_LABEL, contributionWord(streakBonus))]),
 		...(lost === 0
 			? []
-			: [quietRow(WAGER_LOST_LABEL, `-${unitsWord(lost)}`, WAGER_LOST_DETAIL)]),
+			: [
+					quietRow(
+						WAGER_LOST_LABEL,
+						`−${receiptUnits(lost)}`,
+						WAGER_LOST_DETAIL
+					),
+				]),
 		{
 			label: PAID_LABEL,
 			figures: [

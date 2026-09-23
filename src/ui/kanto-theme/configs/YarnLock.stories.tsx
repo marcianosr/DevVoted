@@ -12,7 +12,7 @@ import {
 } from "~/test/configRun.harness";
 
 const meta: Meta = {
-	title: "Kanto/Configs/yarn.lock",
+	title: "Kanto/Configs/.lock",
 	parameters: { layout: "fullscreen" },
 };
 export default meta;

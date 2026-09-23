@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { faucetKbPerCorrect } from "~/modules/run/config/domain/config.model";
+import {
+	faucetKbPerCorrect,
+	minify,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { FAUCET_CAP_KB } from "~/modules/run/run/domain/rules.model";
 import {
@@ -18,6 +21,7 @@ const answering = (
 	answerType: "single",
 	answeredBefore,
 	cachedHits: 0,
+	previouslyMissed: false,
 });
 
 describe("effectOf — Focus", () => {
@@ -122,11 +126,47 @@ describe("effectOf — .prettierrc", () => {
 });
 
 describe("effectOf — Cold Start", () => {
-	it("doubles the window's opening answer only", () => {
+	it("pays nothing for the window's opener and ×1.5 for every answer after", () => {
 		const effect = effectOf(CONFIGS.coldStart);
-		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 2, add: 0 });
-		expect(effect.coverage?.(answering("js", 1))).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 0, add: 0 });
+		expect(effect.coverage?.(answering("js", 1))).toEqual({
+			mult: 1.5,
+			add: 0,
+		});
 		expect(effect.rewardMultiplier).toBeUndefined();
+	});
+
+	it("keeps the dead opener dead when minified, since a cost is never halved", () => {
+		const effect = effectOf(minify(CONFIGS.coldStart));
+		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 0, add: 0 });
+		expect(effect.coverage?.(answering("js", 1))).toEqual({
+			mult: 1.25,
+			add: 0,
+		});
+	});
+});
+
+describe("effectOf — Regression Test", () => {
+	const missed = (category: AnswerContext["category"]): AnswerContext => ({
+		...answering(category),
+		previouslyMissed: true,
+	});
+
+	it("doubles a poll this account has missed before, and only that poll", () => {
+		const effect = effectOf(CONFIGS.regressionTest);
+		expect(effect.coverage?.(missed("js"))).toEqual({ mult: 2, add: 0 });
+		expect(effect.coverage?.(answering("js"))).toEqual({ mult: 1, add: 0 });
+	});
+
+	it("halves the bonus when minified, since the doubling is what it pays", () => {
+		const effect = effectOf(minify(CONFIGS.regressionTest));
+		expect(effect.coverage?.(missed("js"))).toEqual({ mult: 1.5, add: 0 });
+	});
+
+	it("reads on any category, since a miss is not a subject", () => {
+		const effect = effectOf(CONFIGS.regressionTest);
+		expect(effect.coverage?.(missed("css"))).toEqual({ mult: 2, add: 0 });
+		expect(effect.coverage?.(missed("java"))).toEqual({ mult: 2, add: 0 });
 	});
 });
 
@@ -190,7 +230,9 @@ const onPoll = (
 	answerType: "single",
 	answeredBefore,
 	cachedHits: 0,
+	previouslyMissed: false,
 	suppressingAudit: false,
+	pendingKb: 0,
 	faucetRemainingKb: FAUCET_CAP_KB,
 	autoUpgradeProgress: 0,
 	...extras,
@@ -285,13 +327,25 @@ describe("configStatusFor — online", () => {
 		);
 	});
 
-	it("holds Cold Start to the opener, where its multiplier is the whole effect", () => {
+	it("keeps Cold Start online all window, since every answer reads its factor", () => {
 		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 0)).kind).toBe(
 			"online"
 		);
-		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 2))).toEqual({
+		expect(configStatusFor(CONFIGS.coldStart, onPoll("js", 2)).kind).toBe(
+			"online"
+		);
+	});
+
+	it("holds Regression Test to polls this account has missed before", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.regressionTest,
+				onPoll("js", 1, { previouslyMissed: true })
+			).kind
+		).toBe("online");
+		expect(configStatusFor(CONFIGS.regressionTest, onPoll("js"))).toEqual({
 			kind: "skipped",
-			why: { kind: "openerOnly" },
+			why: { kind: "missedOnly" },
 		});
 	});
 
@@ -342,6 +396,30 @@ describe("configStatusFor — skipped", () => {
 				onPoll("js", 1, { answerType: "multiple" })
 			)
 		).toEqual({ kind: "skipped", why: { kind: "paysOnPartial" } });
+	});
+
+	it("refuses to tell .prettierrc the answer type at the 207 gate — the status would leak it", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.prettierrc,
+				onPoll("js", 1, { answerTypeHidden: true })
+			)
+		).toEqual({ kind: "unknown" });
+		expect(
+			configStatusFor(
+				CONFIGS.prettierrc,
+				onPoll("js", 1, { answerType: "multiple", answerTypeHidden: true })
+			)
+		).toEqual({ kind: "unknown" });
+	});
+
+	it("keeps a category-blind config honest at the 207 gate — only the answer type is withheld", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.unitTests,
+				onPoll("js", 1, { answerTypeHidden: true })
+			)
+		).toEqual({ kind: "skipped", why: { kind: "paysAtGateClear" } });
 	});
 
 	it("keeps Dependabot online on every poll — the answer counts either way", () => {
@@ -426,6 +504,35 @@ describe("configStatusFor — skipped", () => {
 				CONFIGS.indexedDb,
 				onPoll("git", 1, { faucetRemainingKb: 8 })
 			)
+		).toEqual({ kind: "online" });
+	});
+
+	it("skips Database on the same spent allowance", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.database,
+				onPoll("git", 1, { faucetRemainingKb: 0 })
+			)
+		).toEqual({ kind: "skipped", why: { kind: "runCapReached" } });
+	});
+});
+
+describe("configStatusFor — an open transaction states what it holds", () => {
+	it("carries the KB Database is holding on this poll", () => {
+		expect(
+			configStatusFor(CONFIGS.database, onPoll("git", 1, { pendingKb: 24 }))
+		).toEqual({ kind: "online", holdingKb: 24 });
+	});
+
+	it("says nothing while the transaction is empty", () => {
+		expect(
+			configStatusFor(CONFIGS.database, onPoll("git", 1, { pendingKb: 0 }))
+		).toEqual({ kind: "online" });
+	});
+
+	it("never lets a plain faucet claim the figure", () => {
+		expect(
+			configStatusFor(CONFIGS.indexedDb, onPoll("git", 1, { pendingKb: 24 }))
 		).toEqual({ kind: "online" });
 	});
 });

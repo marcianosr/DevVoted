@@ -140,6 +140,9 @@ export const hydrateRunState = (
 		...snapshot,
 		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
 		coverage: finite(snapshot.coverage, 0),
+		// Every row written before Database shipped has no open transaction, and
+		// the poll screen reads the figure raw.
+		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
 		window: { ...snapshot.window, unitsEarned },
 	};
 

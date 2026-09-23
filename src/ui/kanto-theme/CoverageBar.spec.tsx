@@ -471,3 +471,23 @@ describe("CoverageBar", () => {
 		});
 	});
 });
+
+describe("boundary labels that would otherwise collide", () => {
+	it("drops the OK label where OK has collapsed onto the gate's line", () => {
+		render(<CoverageBar floor={0} ok={20} healthy={20} held={0} />);
+
+		expect(screen.queryByText("OK")).not.toBeInTheDocument();
+		expect(screen.getByText("HEALTHY 20%")).toBeInTheDocument();
+	});
+
+	it("grows each label away from its neighbours", () => {
+		render(<CoverageBar {...VOLCANO} held={70} />);
+
+		expect(screen.getByText("survive")).toHaveClass("-translate-x-full");
+		expect(screen.getByText("OK")).toHaveClass("-translate-x-1/2");
+		expect(screen.getByText("HEALTHY 80%")).not.toHaveClass(
+			"-translate-x-1/2",
+			"-translate-x-full"
+		);
+	});
+});

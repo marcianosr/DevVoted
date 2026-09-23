@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	createKantoShopScreenProps,
-	kantoBuildSpace,
 	kantoClosedShopProps,
 	kantoFirstShopProps,
 	kantoLateShopProps,
@@ -21,12 +20,15 @@ import { Uninstall } from "./Uninstall.ui";
 
 const props = createKantoShopScreenProps();
 
+/** What the first offer would do to the standing bill, for the arming story. */
+const CROSSING = { from: 8, to: 12, perGateKb: 64 };
+
 const ShopWithPanels = () => {
 	const [open, setOpen] = useState<string | undefined>(undefined);
 	const [uninstalling, setUninstalling] = useState<string | undefined>(
 		undefined
 	);
-	const [held, setHeld] = useState(8);
+	const [armed, setArmed] = useState<string | undefined>(undefined);
 
 	const toggle = (name: string) => setOpen(name === open ? undefined : name);
 	const close = () => setUninstalling(undefined);
@@ -36,7 +38,22 @@ const ShopWithPanels = () => {
 		onUninstall: () => setUninstalling(chip.name),
 	}));
 
-	const space = kantoBuildSpace(held);
+	// The first offer is the one that crosses a rung, so the story shows both
+	// halves of the press: a plain install, and one that has to arm first.
+	const offers = props.registry.offers.map((offer, index) =>
+		index !== 0 || offer.install === undefined
+			? offer
+			: {
+					...offer,
+					install: {
+						...offer.install,
+						scale: CROSSING,
+						armed: armed === offer.name,
+						onPress: () =>
+							setArmed(armed === offer.name ? undefined : offer.name),
+					},
+				}
+	);
 
 	const uninstall =
 		uninstalling === undefined ? undefined : kantoShopUninstalls[uninstalling];
@@ -51,15 +68,12 @@ const ShopWithPanels = () => {
 					openInfo: open,
 					onToggleInfo: toggle,
 				}}
-				buildSpace={{
-					...space,
-					rungs: space.rungs.map((rung) => ({
-						...rung,
-						onPick:
-							rung.weight === held ? undefined : () => setHeld(rung.weight),
-					})),
+				registry={{
+					...props.registry,
+					offers,
+					openInfo: open,
+					onToggleInfo: toggle,
 				}}
-				registry={{ ...props.registry, openInfo: open, onToggleInfo: toggle }}
 			/>
 
 			{uninstall === undefined ? null : (

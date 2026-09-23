@@ -52,10 +52,23 @@ only in fixtures and stories.
    for reserved room — dropping configs does not make the room cheaper — and the
    remedy it wanted already exists in the door. Never fatal: rung 4 is free.
 
-5. **The picker opens at gate 2.** Before the shop that stocks Cascade, every run
-   sits on the free four. The first two gates are the same for everyone, which
-   keeps the opening legible and gives the ladder something to be a choice
-   against.
+5. **The picker opens at gate 1** (amended 2026-09-22; it opened at gate 2 until
+   then). The first shop a run reaches is the one that stocks Boulder, and it
+   rents. Pallet stays the same for everyone — it is the calibration gate
+   (ADR-057) and the run has earned nothing to spend there anyway — but making
+   the *first* shop a shop with nothing to decide was a gate of dead time, not a
+   legible opening. The ladder is the shop's second lever beside the registry;
+   holding it back a further gate only delayed the choice it exists to pose.
+   `BUILD_SPACE_FROM_GATE` owns the number and every sentence naming the gate
+   derives from it.
+
+   The *picker* is what waits, not the panel: the shop draws the ladder and its
+   prices from the first shop on, locked, with a popover naming the gate that
+   opens it. Withholding the panel outright taught a new player that build space
+   was not a mechanic — they met `4 of 4 weight · 0 free` as a wall, and the one
+   sentence explaining the ladder sat behind them on the new-run screen. The
+   locked arm still has a case to draw at gate 1: `gatesCleared` advances only on
+   a clear, so a held Pallet shops with the ladder shut.
 
 ## Consequences
 

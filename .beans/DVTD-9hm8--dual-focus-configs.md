@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-08-13T20:51:48Z
-updated_at: 2026-09-04T18:48:44Z
+updated_at: 2026-09-19T18:20:01Z
 ---
 
 One slot focusing two categories, both appearance checks live. Split out of DVTD-72d9 Phase 3 (2026-08-13) so the rest of that roster work can ship without waiting on the model change.
@@ -33,3 +33,11 @@ Git has no natural intersection and stays solo. `.vue` is secretly the quad (SFC
 
 - Upgrade path: does a dual level up both categories at once, and does the coverage gate read the lower of the two?
 - Draft cost: uncommon at 64 KB, or priced above two commons (2 × 32) since it saves a slot?
+
+## Why this bean is the ONLY route to a General Backend focus (2026-09-19)
+
+A solo `.env` focus config was added and reverted the same day (DVTD-z1z2). That makes two invented file-shaped names for this gap now — `.be` and `.env` — so the note above is doing real work and should stay.
+
+Evidence for anyone tempted by a third: General Backend's polls are server-side **concepts** (5 databases, 2 HTTP, 1 auth in the seed), not a file, a tool or a config format. There is no file that means "databases and HTTP and auth", which is why `Node.js` pairing a language WITH the category is the shape that works.
+
+The wiki's open-item line now says this inline.
