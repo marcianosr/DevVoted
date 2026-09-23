@@ -18,7 +18,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && npx tsc --noEmit",
+		"build": "vite build && npm run typecheck",
+		"typecheck": "tsc --noEmit",
 		"start": "vite start",
 		"test": "vitest run",
 		"release": "tsx scripts/release.ts",

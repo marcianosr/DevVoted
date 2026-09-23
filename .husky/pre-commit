@@ -3,7 +3,7 @@ npx lint-staged
 
 # Run type checking on all files
 echo "Running type checks..."
-npx tsc --noEmit || {
+npm run typecheck || {
   echo "❌ Type check failed. Please fix type errors before committing."
   exit 1
 }
