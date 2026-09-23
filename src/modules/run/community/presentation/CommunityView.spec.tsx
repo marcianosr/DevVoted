@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -8,12 +10,11 @@ import type {
 } from "~/modules/run/community/application/community.service";
 import {
 	CommunityView,
-	defaultChipId,
-	ladderFor,
-	pollChipsFor,
-	pollDetailFor,
+	defaultOpenIndex,
+	pollResultsFor,
 	standoutEntriesFor,
 } from "~/modules/run/community/presentation/CommunityView.component";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
 const answered = (
 	pollId: number,
@@ -76,146 +77,75 @@ const climber = (
 	you,
 });
 
-describe("pollChipsFor", () => {
-	it("deals five chips: open, sealed and unreached", () => {
-		const chips = pollChipsFor([answered(10, 0), sealed(11, 1)]);
+const revealed = (poll: ReturnType<typeof pollResultsFor>[number]) =>
+	poll.state === "revealed" ? poll : undefined;
 
-		expect(chips).toHaveLength(5);
-		expect(chips[0]).toEqual({ id: "10", label: "1", disabled: false });
-		expect(chips[1]).toEqual({ id: "11", label: "2", disabled: true });
-		expect(chips[2]).toEqual({ id: "ahead-2", label: "3", disabled: true });
-	});
-});
+describe("pollResultsFor", () => {
+	it("deals five rows: revealed, sealed and not yet dealt", () => {
+		const rows = pollResultsFor([answered(10, 0), sealed(11, 1)]);
 
-describe("defaultChipId", () => {
-	it("opens on the last poll that still has something to show", () => {
-		expect(
-			defaultChipId([answered(10, 0), answered(11, 1), sealed(12, 2)])
-		).toBe("11");
-	});
-
-	it("opens on nothing when every consumed poll is sealed", () => {
-		expect(defaultChipId([sealed(12, 0)])).toBeUndefined();
-	});
-});
-
-describe("pollDetailFor", () => {
-	it("rounds the right-share into the got-it line", () => {
-		expect(pollDetailFor(answered(10, 0))?.rightShare).toBe("33% got it");
+		expect(rows).toHaveLength(5);
+		expect(rows[0].state).toBe("revealed");
+		expect(rows[1]).toEqual({
+			state: "sealed",
+			index: 1,
+			question: "Question 11?",
+		});
+		expect(rows[2]).toEqual({
+			state: "sealed",
+			index: 2,
+			question: "Not dealt yet",
+		});
 	});
 
-	it("letters the options in poll order", () => {
-		expect(
-			pollDetailFor(answered(10, 0))?.rows.map((row) => row.letter)
-		).toEqual(["A", "B"]);
+	it("deals nothing at all before the day's first poll", () => {
+		expect(pollResultsFor([])).toEqual([]);
+	});
+
+	it("rounds the right-share to a whole percent", () => {
+		expect(revealed(pollResultsFor([answered(10, 0)])[0])?.rightShare).toBe(33);
+	});
+
+	it("letters the options in poll order and carries their votes", () => {
+		const row = revealed(pollResultsFor([answered(10, 0)])[0]);
+
+		expect(row?.options.map((option) => option.letter)).toEqual(["A", "B"]);
+		expect(row?.options.map((option) => option.votes)).toEqual([1, 2]);
 	});
 
 	it("names the category and keeps the question", () => {
-		const detail = pollDetailFor(answered(10, 0));
-		expect(detail?.category).toBe("TypeScript");
-		expect(detail?.question).toBe("Question 10?");
+		const row = revealed(pollResultsFor([answered(10, 0)])[0]);
+
+		expect(row?.category).toBe("TypeScript");
+		expect(row?.question).toBe("Question 10?");
 	});
 
-	it("shows nothing for a sealed poll", () => {
-		expect(pollDetailFor(sealed(12, 0))).toBeUndefined();
+	it("opens the last poll that still has something to show", () => {
+		const rows = pollResultsFor([
+			answered(10, 0),
+			answered(11, 1),
+			sealed(12, 2),
+		]);
+
+		expect(revealed(rows[0])?.open).toBe(false);
+		expect(revealed(rows[1])?.open).toBe(true);
 	});
 });
 
-describe("ladderFor", () => {
-	const BLUE_BUILD = {
-		configs: [
-			{ id: "ts", label: ".ts", slots: 1, level: 4 },
-			{ id: "cache", label: "Cache", slots: 4 },
-		],
-		vendorLockedConfigId: "cache",
-	};
-	const climb = {
-		climbers: [
-			climber("red", 1, 2, true),
-			{ ...climber("blue", 1, 4), build: BLUE_BUILD },
-			climber("green", 3, 0),
-		],
-		fallen: [
-			{
-				runId: 11,
-				id: "koga",
-				displayName: "Koga",
-				photoUrl: null,
-				borderUrl: null,
-				gate: 2,
-				pollsIntoGate: 1,
-				build: { configs: [] },
-			},
-		],
-		bestPosition: 16,
-	};
-
-	it("stacks climbers under their gate, deepest first", () => {
-		const gates = ladderFor(climb);
-
-		expect(gates[1].climbers.map((entry) => entry.id)).toEqual(["blue", "red"]);
-		expect(gates[3].climbers.map((entry) => entry.id)).toEqual(["green"]);
+describe("defaultOpenIndex", () => {
+	it("opens on the last poll that still has something to show", () => {
+		expect(
+			defaultOpenIndex([answered(10, 0), answered(11, 1), sealed(12, 2)])
+		).toBe(1);
 	});
 
-	it("marks the viewer's gate as current", () => {
-		const gates = ladderFor(climb);
-
-		expect(gates[1].current).toBe(true);
-		expect(gates.filter((gate) => gate.current)).toHaveLength(1);
-	});
-
-	it("keys the fallen by run and parks them at their gate", () => {
-		const gates = ladderFor(climb);
-
-		expect(gates[2].fallen).toEqual([
-			{
-				id: "koga",
-				name: "Koga",
-				photoUrl: undefined,
-				borderUrl: undefined,
-				you: false,
-				build: [],
-				runKey: "11",
-			},
-		]);
-	});
-
-	it("hands a chip its build as plain names, versions and weights, flagging the vendor lock", () => {
-		const gates = ladderFor(climb);
-
-		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
-		expect(blue?.build).toEqual([
-			{ name: ".ts", slots: 1, version: 4 },
-			{ name: "Cache", slots: 4, locked: true },
-		]);
-	});
-
-	it("leaves a chip plain when the map knows no build for it", () => {
-		const gates = ladderFor(climb);
-
-		const red = gates[1].climbers.find((entry) => entry.id === "red");
-		expect(red).not.toHaveProperty("build");
-	});
-
-	it("charts up to the best position and leaves the rest uncharted", () => {
-		const gates = ladderFor(climb);
-
-		expect(gates[3].uncharted).toBe(false);
-		expect(gates[4].uncharted).toBe(true);
-		expect(gates[3].best).toBe(true);
-	});
-
-	it("charts only the viewer's own reach on a first climb", () => {
-		const gates = ladderFor({ ...climb, bestPosition: null });
-
-		expect(gates[1].uncharted).toBe(false);
-		expect(gates[2].uncharted).toBe(true);
-		expect(gates.every((gate) => !gate.best)).toBe(true);
+	it("opens on nothing when every consumed poll is sealed", () => {
+		expect(defaultOpenIndex([sealed(12, 0)])).toBeUndefined();
 	});
 });
 
 describe("standoutEntriesFor", () => {
-	it("bridges the voter onto an avatar with its border", () => {
+	it("bridges the voter onto a climber chip with its border", () => {
 		const entries = standoutEntriesFor([
 			{
 				voter: {
@@ -233,14 +163,13 @@ describe("standoutEntriesFor", () => {
 		expect(entries).toEqual([
 			{
 				title: "deepest",
-				avatar: {
+				climber: {
 					name: "Blue",
 					photoUrl: undefined,
 					borderUrl: "/borders/x.png",
 					you: true,
 				},
-				detail: "gate 7 · poll 1",
-				swatch: undefined,
+				value: "gate 7 · poll 1",
 			},
 		]);
 	});
@@ -272,25 +201,60 @@ describe("CommunityView", () => {
 		},
 	};
 
-	it("opens on the latest open poll and switches on a chip press", async () => {
-		const user = userEvent.setup();
-		render(
-			<CommunityView view={view} back={{ label: "Back", onBack: () => {} }} />
-		);
+	const board = (over: Partial<RunCommunityView> = {}) => (
+		<CommunityView
+			view={{ ...view, ...over }}
+			swatch={gateSwatchAt(1)}
+			back={{ label: "Back", onBack: () => {} }}
+		/>
+	);
 
+	it("renders every poll of the window and opens only the latest", () => {
+		render(board());
+
+		expect(screen.getByText("Question 10?")).toBeInTheDocument();
 		expect(screen.getByText("Question 11?")).toBeInTheDocument();
 
-		await user.click(screen.getByRole("tab", { name: "1" }));
-		expect(screen.getByText("Question 10?")).toBeInTheDocument();
+		const open = document.querySelectorAll("details[open]");
+		expect(open).toHaveLength(1);
+		expect(open[0]).toHaveTextContent("Question 11?");
 	});
 
-	it("shows the whole board: standouts, climb and the day's count", () => {
-		render(
-			<CommunityView view={view} back={{ label: "Back", onBack: () => {} }} />
-		);
+	it("shows the whole board: standouts, the day's count and the viewer's chip", () => {
+		render(board());
 
 		expect(screen.getByText("gate 10 · poll 2")).toBeInTheDocument();
 		expect(screen.getByText("3 players answered")).toBeInTheDocument();
-		expect(screen.getByTitle("you")).toBeInTheDocument();
+		// Twice over: the header stat and the climb badge both state the standing.
+		expect(screen.getAllByText("top 18%")).toHaveLength(2);
+	});
+
+	it("states the climb summary rather than a map it cannot draw yet", () => {
+		render(board());
+
+		expect(screen.getByText("1 on the ladder")).toBeInTheDocument();
+	});
+
+	it("refuses the way back while today's polls are spent", async () => {
+		const user = userEvent.setup();
+		const onBack = vi.fn();
+		render(
+			<CommunityView
+				view={view}
+				swatch={gateSwatchAt(1)}
+				back={{ label: "Back", onBack, disabled: true, hint: "Spent" }}
+			/>
+		);
+
+		const back = screen.getByRole("button", { name: "Back" });
+		expect(back).toBeDisabled();
+		await user.click(back);
+		expect(onBack).not.toHaveBeenCalled();
+	});
+
+	it("says there is nothing to compare before the day's first poll", () => {
+		render(board({ polls: [], standouts: [], climb: null }));
+
+		expect(screen.getByText(NOTHING_TO_COMPARE_YET)).toBeInTheDocument();
 	});
 });

@@ -14,10 +14,9 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
-import Footer from "~/components/Footer.component";
-import { PageLayoutUI } from "~/ui/old-theme/PageLayoutUI.component";
+import { Footer } from "~/components/Footer.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
-import { Dropdown, DropdownDivider } from "~/ui/old-theme/Dropdown.component";
+import { NavDisclosure, NavDivider } from "~/ui/kanto-theme/NavDisclosure.ui";
 
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
@@ -86,9 +85,10 @@ function RootComponent() {
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<Navigation />
-				<PageLayoutUI footer={<Footer />}>
+				<main className="flex flex-1 flex-col bg-zinc-950">
 					<Outlet />
-				</PageLayoutUI>
+					<Footer />
+				</main>
 			</QueryClientProvider>
 		</RootDocument>
 	);
@@ -102,55 +102,49 @@ function Navigation() {
 			<div className="p-2 flex gap-2 text-lg items-center">
 				{user && (
 					<div className="md:hidden">
-						<Dropdown
+						<NavDisclosure
 							align="left"
-							trigger={({ isOpen }) => (
+							summary={
 								<span
-									className="inline-flex items-center justify-center w-9 h-9 border border-gray-700 text-gray-200"
+									className="inline-flex h-9 w-9 items-center justify-center border border-gray-700 text-gray-200"
 									aria-label="Open menu"
 								>
-									{isOpen ? "✕" : "☰"}
+									☰
 								</span>
-							)}
+							}
 						>
-							{({ close }) => (
-								<>
-									<Link
-										to="/run"
-										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-										onClick={close}
-									>
-										Daily Run
-									</Link>
+							<>
+								<Link
+									to="/run"
+									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
+								>
+									Daily Run
+								</Link>
 
-									<Link
-										to="/dex"
-										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-										onClick={close}
-									>
-										Dex
-									</Link>
+								<Link
+									to="/dex"
+									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
+								>
+									Dex
+								</Link>
 
-									<Link
-										to="/polls/new"
-										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-										onClick={close}
-									>
-										Suggest your own poll
-									</Link>
-									<Link
-										to="/profile/$userId"
-										params={{ userId: user.id }}
-										hash="border-shop"
-										className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-										onClick={close}
-									>
-										Border Shop
-										<span className="ml-1 text-green-400 text-xs">(new)</span>
-									</Link>
-								</>
-							)}
-						</Dropdown>
+								<Link
+									to="/polls/new"
+									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
+								>
+									Suggest your own poll
+								</Link>
+								<Link
+									to="/profile/$userId"
+									params={{ userId: user.id }}
+									hash="border-shop"
+									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
+								>
+									Border Shop
+									<span className="ml-1 text-xs text-green-400">(new)</span>
+								</Link>
+							</>
+						</NavDisclosure>
 					</div>
 				)}
 
@@ -199,56 +193,41 @@ function Navigation() {
 				{user ? (
 					<>
 						<div className="ml-auto flex items-center">
-							<Dropdown
-								trigger={({ isOpen }) => (
+							<NavDisclosure
+								summary={
 									<span className="flex items-center gap-2 text-base">
 										{user.photoUrl && (
 											<img
 												src={user.photoUrl}
 												alt={user.displayName}
-												className="w-8 h-8 rounded-full"
+												className="h-8 w-8 rounded-full"
 											/>
 										)}
 										<span>{user.displayName || user.email}</span>
-										<span
-											className={`text-xs transition-transform ${
-												isOpen ? "rotate-180" : ""
-											}`}
-											aria-hidden="true"
-										>
-											▾
-										</span>
 									</span>
-								)}
+								}
 							>
-								{({ close }) => (
-									<>
-										<Link
-											to="/profile/$userId"
-											params={{ userId: user.id }}
-											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-											onClick={close}
-										>
-											Profile
-										</Link>
-										<Link
-											to="/polls"
-											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-											onClick={close}
-										>
-											My Polls
-										</Link>
-										<DropdownDivider />
-										<Link
-											to="/logout"
-											className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-											onClick={close}
-										>
-											Logout
-										</Link>
-									</>
-								)}
-							</Dropdown>
+								<Link
+									to="/profile/$userId"
+									params={{ userId: user.id }}
+									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
+								>
+									Profile
+								</Link>
+								<Link
+									to="/polls"
+									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
+								>
+									My Polls
+								</Link>
+								<NavDivider />
+								<Link
+									to="/logout"
+									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
+								>
+									Logout
+								</Link>
+							</NavDisclosure>
 						</div>
 					</>
 				) : (

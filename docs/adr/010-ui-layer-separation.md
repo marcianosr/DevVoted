@@ -25,8 +25,9 @@ tiers, but no file mixes them.
 - `src/modules/{context}/{aggregate}/presentation/` — aggregate visuals,
   colocated with the concept's own domain and application layers
   (e.g. `run/gate/presentation/GateRewardReport.ui.tsx`).
-- `src/ui/{domain}/` — older domain visuals (`runs/`, `economy/`, `polls/`,
-  `ranking/`); stays until each retires, no new files here.
+- `src/ui/kanto-theme/` — the one kit: global primitives and the screens built
+  from them. The older `src/ui/{domain}/` folders and `src/ui/old-theme/` are
+  gone (`DVTD-6crx`); `~/ui/old-theme/*` is an oxlint error.
 - These files own **all HTML tags and Tailwind classes in the codebase**.
 - They accept plain data props only — no hooks, no server functions, no
   TanStack Query. Every component has a Story rendering from mock factory data.

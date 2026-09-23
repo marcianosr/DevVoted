@@ -1,5 +1,5 @@
 import { formatStorage } from "~/shared/lib/storage";
-import { Button } from "~/ui/old-theme/Button.component";
+import { Button } from "~/ui/kanto-theme/Button.ui";
 
 const COPY = {
 	unequip: "Unequip",
@@ -41,15 +41,14 @@ export const BorderCard = ({
 		<div className="aspect-square bg-black/40 flex items-center justify-center">
 			<img src={image} alt="" className="max-w-full max-h-full" />
 		</div>
-		<div className="mt-auto pt-2">
+		<div className="mt-auto flex pt-2">
 			<Button
-				size="small"
-				onClick={onPress}
+				size="sm"
+				tone="action"
+				label={labelFor({ owned, equipped, canAfford, cost })}
+				onPress={onPress}
 				disabled={isMutating || (!owned && !canAfford)}
-				className="w-full"
-			>
-				{labelFor({ owned, equipped, canAfford, cost })}
-			</Button>
+			/>
 		</div>
 	</div>
 );

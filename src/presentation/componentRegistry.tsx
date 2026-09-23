@@ -12,7 +12,7 @@ import {
 	type DemoConfig,
 } from "./demo/types";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
-import { GameLoopExplainer } from "~/ui/old-theme/GameLoopExplainer.component";
+import { GameLoopExplainer } from "./demo/GameLoopExplainer";
 
 // Demo data for ConfigCards
 const DEMO_CONFIGS: DemoConfig[] = [

@@ -7,9 +7,11 @@ import {
 } from "@tanstack/react-router";
 
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { CatchBoundaryUI } from "~/ui/old-theme/CatchBoundaryUI.component";
+import { CatchBoundaryUI } from "~/ui/kanto-theme/CatchBoundary.ui";
 
-export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
+const LINK = "underline";
+
+export const DefaultCatchBoundary = ({ error }: ErrorComponentProps) => {
 	const router = useRouter();
 	const isRoot = useMatch({
 		strict: false,
@@ -19,18 +21,15 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 	console.error(error);
 
 	const navigationLink = isRoot ? (
-		<Link
-			to="/"
-			className="px-2 py-1 bg-surface-raised rounded text-white uppercase font-extrabold"
-		>
+		<Link to="/" className={LINK}>
 			Home
 		</Link>
 	) : (
 		<Link
 			to="/"
-			className="px-2 py-1 bg-surface-raised rounded text-white uppercase font-extrabold"
-			onClick={(e) => {
-				e.preventDefault();
+			className={LINK}
+			onClick={(event) => {
+				event.preventDefault();
 				window.history.back();
 			}}
 		>
@@ -45,4 +44,4 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 			navigationLink={navigationLink}
 		/>
 	);
-}
+};

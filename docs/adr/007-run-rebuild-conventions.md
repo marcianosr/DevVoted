@@ -20,10 +20,11 @@ the existing app keeps running alongside it.
   duplicated in TypeScript. Style descendants with the `.text-theme` /
   `.bg-theme` / `.bg-theme-soft` / `.border-theme` / `.accent-theme` utilities.
   Theme color is for accents only — never large fills.
-- All run text goes through three primitives in `src/ui/typography/` — `Title`,
-  `Subtitle`, `Paragraph` — each with a Storybook story under "Design System/…".
-  No ad-hoc `<h1>`/`<p>`/`<span>` with inline sizes, no additional label
-  primitive.
+- All run text goes through one primitive, `Typography` in
+  `src/ui/kanto-theme/`, whose `variant` picks the tag and the tone. (It
+  replaced the three `src/ui/typography/` primitives — `Title`, `Subtitle`,
+  `Paragraph` — deleted with `src/ui/old-theme/` in `DVTD-6crx`.) No ad-hoc
+  `<h1>`/`<p>`/`<span>` with inline sizes, no additional label primitive.
 - Pure engine first: ADR-006 mechanics port as tested reducers/functions before any
   presentation wires to them.
 

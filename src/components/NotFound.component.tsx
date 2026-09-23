@@ -1,21 +1,18 @@
+import type { ReactNode } from "react";
+
 import { Link } from "@tanstack/react-router";
 
-import { NotFoundUI } from "~/ui/old-theme/NotFoundUI.component";
+import { NotFoundUI } from "~/ui/kanto-theme/NotFound.ui";
 
-export function NotFound({ children }: { children?: React.ReactNode }) {
-	return (
-		<NotFoundUI
-			onGoBack={() => window.history.back()}
-			homeLink={
-				<Link
-					to="/"
-					className="bg-cyan-600 text-white px-2 py-1 rounded uppercase font-black text-sm"
-				>
-					Start Over
-				</Link>
-			}
-		>
-			{children}
-		</NotFoundUI>
-	);
-}
+export const NotFound = ({ children }: { children?: ReactNode }) => (
+	<NotFoundUI
+		onGoBack={() => window.history.back()}
+		homeLink={
+			<Link to="/" className="underline">
+				Start Over
+			</Link>
+		}
+	>
+		{children}
+	</NotFoundUI>
+);

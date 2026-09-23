@@ -68,8 +68,10 @@ which domain term.
 
 The restructure is **done** (`DVTD-36ct`, `DVTD-wj1t`): `src/domains/` no longer
 exists and every module lives in the context/aggregate/layer shape, with no
-legacy carve-out in `.dependency-cruiser.cjs`. `src/components/` and
-`src/ui/old-theme/` are the last legacy surfaces.
+legacy carve-out in `.dependency-cruiser.cjs`. `src/ui/old-theme/` is deleted
+(`DVTD-6crx`): **kanto is the only theme**, and importing `~/ui/old-theme/*` is
+an oxlint error. `src/components/` holds three router-bound wrappers and is the
+last legacy surface.
 
 ### UI Layer Architecture (CRITICAL)
 

@@ -63,7 +63,7 @@ boundary, so this table is the map an architecture review reads first.
 | Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
 | Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
-| Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming via `src/ui/theme/swatchTheme.ts` |
+| Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming is the `[data-swatch-theme]` / `[data-gate-theme]` palette in `src/styles/app.css` (ADR-020) |
 | Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
 | Gate screens | `gate/presentation` | `RunGate`, `GateOutcomeView`; one screen, two verdicts (ADR-076), so one route (ADR-088) |
 | Config | `config/domain` | `Config`, `ConfigSize`, `CONFIG_SIZES` (`config.model.ts`) |

@@ -5,11 +5,11 @@ import { getAllPolls } from "~/modules/polls/poll/application/poll.serverfn";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { getCategories } from "~/shared/lib/categories";
 import { pollQueryKeys } from "~/shared/queryKeys";
-import { FooterUI } from "~/ui/old-theme/FooterUI.component";
+import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
 
 declare const __LAST_COMMIT_DATE__: string;
 
-const Footer = () => {
+export const Footer = () => {
 	const { data, isLoading } = useQuery({
 		queryKey: pollQueryKeys.list(),
 		queryFn: () => getAllPolls(),
@@ -19,14 +19,11 @@ const Footer = () => {
 	const pollCount = !isLoading && data?.success ? data.data.length : null;
 
 	return (
-		<FooterUI
+		<AppFooter
 			pollCount={pollCount}
-			isLoading={isLoading}
 			categoryCount={getCategories().length}
 			configCount={CONFIG_LIST.length}
 			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
 		/>
 	);
 };
-
-export default Footer;

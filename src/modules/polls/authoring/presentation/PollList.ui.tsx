@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import type { Poll } from "~/modules/polls/poll/domain/poll.model";
-import { ErrorComponent } from "~/ui/old-theme/ErrorComponent.component";
+import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 const COPY = {
 	adminHeading: "All Polls",
@@ -76,7 +76,9 @@ export const PollListLoading = () => (
 );
 
 export const PollListError = ({ message }: { message: string }) => (
-	<ErrorComponent text={COPY.loadError(message)} />
+	<div className={PAGE} data-screen-theme="cinnabar">
+		<Typography variant="title">{COPY.loadError(message)}</Typography>
+	</div>
 );
 
 export type PollListProps<Status extends string, Category extends string> = {

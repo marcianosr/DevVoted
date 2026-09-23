@@ -835,10 +835,13 @@ meter::-webkit-meter-optimum-value {
  * gate it is standing in. The -theme suffix means what it means on badge-theme
  * and border-theme: this one reads the screen.
  *
- * Kept separate rather than re-pointing bg-hatched: terminal-theme's and
- * modern-theme's slot tracks sit on unthemed grounds where --theme-color falls
- * back to cerulean, and a blue hatch on a zinc track is a regression, not a
- * theming. bg-hatched's own 1-in-4 geometry stays with it.
+ * Kept separate rather than re-pointing bg-hatched. The original reason died
+ * with src/ui/old-theme (DVTD-6crx): terminal-theme's and modern-theme's slot
+ * tracks sat on unthemed grounds where --theme-color fell back to cerulean, and
+ * a blue hatch on a zinc track is a regression, not a theming. What survives is
+ * the geometry: bg-hatched's own 1-in-4 cells stay with it, against the broad
+ * 24px band below. Merging the two is now possible but is a visual change, so
+ * it wants its own pass.
  *
  * Broad bands, not pinstripes: 12px lit in a 24px period, half and half. The
  * first cut copied bg-hatched's 1px-in-4 and read as moire at this size — a row

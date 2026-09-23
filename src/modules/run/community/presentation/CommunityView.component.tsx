@@ -1,5 +1,4 @@
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
-import { useState } from "react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
@@ -7,37 +6,46 @@ import {
 	formatCount,
 	formatDuration,
 	formatPercent,
+	plural,
 } from "~/shared/lib/displayValue";
 
 import type {
-	ClimbTodayView,
 	RunCommunityPoll,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
-import type { CommunityStandout } from "~/modules/run/community/domain/standouts.model";
-import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
-import {
-	gateOf,
-	trackPosition,
-} from "~/modules/run/community/domain/climbMap.model";
-import {
-	ALL_SWATCHES,
-	type SwatchTheme,
-} from "~/modules/run/gate/domain/swatch.model";
+import type {
+	CommunityStandout,
+	CommunityVoter,
+} from "~/modules/run/community/domain/standouts.model";
+import { ladderSummaryFor } from "~/modules/run/community/application/climbLadder.viewmodel";
+import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	CommunityScreen,
-	type CommunityPollDetail,
-	type PollChip,
-	type StandoutEntry,
-} from "~/ui/terminal-theme/screens/CommunityScreen.ui";
-import type {
-	TrackClimber,
-	TrackConfig,
-	TrackGate,
-} from "~/ui/terminal-theme/ClimbTrack.ui";
+	type CommunityScreenProps,
+	type Standout,
+} from "~/ui/kanto-theme/CommunityScreen.ui";
+import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
+import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 const LETTERS = "ABCDEFGH";
+
+const COPY = {
+	climbTitle: "Your climb",
+	noRun: "no run on the map",
+	turnoutTitle: "Who showed up",
+	answeredToday: "answered today",
+	mapTitle: "Where everyone is",
+	noPlace: "start a run to place yourself",
+	standoutsTitle: "Standing out",
+	dayIsYoung: "nothing yet — the day is young",
+	pollsTitle: "The day’s polls",
+	notDealtYet: "Not dealt yet",
+	countdownHint: "until the next five polls are dealt",
+	pollsOpen: "polls are open",
+	standing: "your standing today",
+	whereYouStand: "where your run stands",
+} as const;
 
 const detailOf = (value: CommunityStandout["value"]): string => {
 	if (value.unit === "duration") return formatDuration(value);
@@ -48,127 +56,91 @@ const detailOf = (value: CommunityStandout["value"]): string => {
 	return value.text;
 };
 
+const climberOf = (voter: CommunityVoter): ClimberProps => ({
+	name: voter.displayName,
+	photoUrl: voter.photoUrl ?? undefined,
+	borderUrl: voter.borderUrl ?? undefined,
+	you: voter.you,
+});
+
 export const standoutEntriesFor = (
 	standouts: readonly CommunityStandout[]
-): StandoutEntry[] =>
+): Standout[] =>
 	standouts.map((standout) => ({
 		title: standout.title,
-		avatar: {
-			name: standout.voter.displayName,
-			photoUrl: standout.voter.photoUrl ?? undefined,
-			borderUrl: standout.voter.borderUrl ?? undefined,
-			you: standout.voter.you,
-		},
-		detail: detailOf(standout.value),
-		swatch: standout.swatch,
+		climber: climberOf(standout.voter),
+		value: detailOf(standout.value),
 	}));
-
-export const pollChipsFor = (polls: readonly RunCommunityPoll[]): PollChip[] =>
-	Array.from({ length: SLICE_WINDOW }, (_, index) => {
-		const poll = polls.find((entry) => entry.index === index);
-		if (poll === undefined)
-			return { id: `ahead-${index}`, label: `${index + 1}`, disabled: true };
-		return {
-			id: String(poll.pollId),
-			label: `${index + 1}`,
-			disabled: poll.detail === null,
-		};
-	});
 
 const categoryNameOf = (category: CategoryCode | null): string =>
 	category === null ? "Poll" : getCategoryMetadata(category).name;
 
-export const pollDetailFor = (
-	poll: RunCommunityPoll
-): CommunityPollDetail | undefined => {
-	if (poll.detail === null) return undefined;
-	const { answerType, answeredCount, gotItRightCount, options } = poll.detail;
-	return {
-		category: categoryNameOf(poll.category),
-		rightShare: `${Math.round((gotItRightCount / answeredCount) * 100)}% got it`,
-		question: poll.question,
-		multiple: answerType === "multiple",
-		rows: options.map((option, index) => ({
-			letter: LETTERS[index] ?? "?",
-			label: option.label,
-			percent: option.percent,
-			right: option.isRight,
-			yours: option.yours,
-		})),
-	};
-};
-
-const byDepthThenId = (
-	a: { pollsIntoGate: number; id: string },
-	b: { pollsIntoGate: number; id: string }
-): number => b.pollsIntoGate - a.pollsIntoGate || a.id.localeCompare(b.id);
-
-export const trackBuildFor = (build: PublicBuild): TrackConfig[] =>
-	build.configs.map((config) => ({
-		name: config.label,
-		slots: config.slots,
-		...(config.level === undefined ? {} : { version: config.level }),
-		...(config.id === build.vendorLockedConfigId ? { locked: true } : {}),
-	}));
-
-export const ladderFor = (climb: ClimbTodayView): TrackGate[] => {
-	const you = climb.climbers.find((climber) => climber.you);
-	const chartedTo = Math.max(
-		you === undefined ? 0 : trackPosition(you),
-		climb.bestPosition ?? 0
-	);
-	const bestGate =
-		climb.bestPosition === null ? null : gateOf(climb.bestPosition);
-
-	return ALL_SWATCHES.map((swatch) => ({
-		gate: swatch.gate,
-		name: swatch.gateName,
-		theme: swatch.theme,
-		finish: swatch.finish,
-		current: you?.gate === swatch.gate,
-		uncharted: swatch.gate * SLICE_WINDOW > chartedTo,
-		best: bestGate === swatch.gate,
-		climbers: [...climb.climbers]
-			.filter((climber) => climber.gate === swatch.gate)
-			.sort(byDepthThenId)
-			.map((climber): TrackClimber => ({
-				id: climber.id,
-				name: climber.displayName,
-				photoUrl: climber.photoUrl ?? undefined,
-				borderUrl: climber.borderUrl ?? undefined,
-				you: climber.you,
-				...(climber.build === undefined
-					? {}
-					: { build: trackBuildFor(climber.build) }),
-			})),
-		fallen: [...climb.fallen]
-			.filter((fallen) => fallen.gate === swatch.gate)
-			.sort(byDepthThenId)
-			.map((fallen) => ({
-				id: fallen.id,
-				name: fallen.displayName,
-				photoUrl: fallen.photoUrl ?? undefined,
-				borderUrl: fallen.borderUrl ?? undefined,
-				you: false,
-				build: trackBuildFor(fallen.build),
-				runKey: String(fallen.runId),
-			})),
-	}));
-};
-
-export const defaultChipId = (
+export const defaultOpenIndex = (
 	polls: readonly RunCommunityPoll[]
-): string | undefined => {
-	const lastOpen = polls.filter((poll) => poll.detail !== null).at(-1);
-	return lastOpen === undefined ? undefined : String(lastOpen.pollId);
+): number | undefined =>
+	polls.filter((poll) => poll.detail !== null).at(-1)?.index;
+
+/**
+ * Always five rows: the day's window is fixed, so a poll the seed has not dealt
+ * yet still reads as a slot rather than as absence.
+ */
+export const pollResultsFor = (
+	polls: readonly RunCommunityPoll[]
+): PollResultProps[] => {
+	if (polls.length === 0) return [];
+	const openAt = defaultOpenIndex(polls);
+
+	return Array.from({ length: SLICE_WINDOW }, (_, index): PollResultProps => {
+		const poll = polls.find((entry) => entry.index === index);
+		if (poll === undefined)
+			return { state: "sealed", index, question: COPY.notDealtYet };
+		if (poll.detail === null)
+			return { state: "sealed", index, question: poll.question };
+
+		const { answeredCount, gotItRightCount, options } = poll.detail;
+		return {
+			state: "revealed",
+			index,
+			question: poll.question,
+			category: categoryNameOf(poll.category),
+			outcome: poll.outcome === "missed" ? "wrong" : poll.outcome,
+			rightShare:
+				answeredCount === 0
+					? 0
+					: Math.round((gotItRightCount / answeredCount) * 100),
+			open: index === openAt,
+			options: options.map((option, position) => ({
+				letter: LETTERS[position] ?? "?",
+				label: option.label,
+				percent: option.percent,
+				votes: option.count,
+				isRight: option.isRight,
+				yours: option.yours,
+				voters: option.voters.map(climberOf),
+			})),
+		};
+	});
 };
 
-const SEALED = "Sealed — this poll may come back in a later seed.";
+const rightShareToday = (polls: readonly RunCommunityPoll[]): string => {
+	const revealed = polls.filter((poll) => poll.detail !== null);
+	if (revealed.length === 0) return "0% right today";
+	const right = revealed.filter((poll) => poll.outcome === "correct").length;
+	return `${Math.round((right / revealed.length) * 100)}% right today`;
+};
+
+const standingOf = (climb: RunCommunityView["climb"]): string => {
+	const you = climb?.climbers.find((climber) => climber.you);
+	if (you === undefined) return COPY.noRun;
+	return `gate ${you.gate} · poll ${you.pollsIntoGate + 1}`;
+};
 
 export type CommunityViewProps = {
 	view: RunCommunityView;
-	theme?: SwatchTheme;
+	swatch: GateSwatch;
 	countdown?: string;
+	/** Overrides the climb note — the pending and error boards state their own. */
+	note?: string;
 	back: {
 		label: string;
 		disabled?: boolean;
@@ -178,36 +150,92 @@ export type CommunityViewProps = {
 	aside?: { label: string; onUse?: () => void };
 };
 
-export const CommunityView = ({
+export const communityScreenPropsFor = ({
 	view,
-	theme,
+	swatch,
 	countdown,
+	note,
 	back,
 	aside,
-}: CommunityViewProps) => {
-	const [chosen, setChosen] = useState<string | null>(null);
-	const selected = chosen ?? defaultChipId(view.polls);
-	const selectedPoll = view.polls.find(
-		(poll) => String(poll.pollId) === selected
-	);
-	const detail =
-		selectedPoll === undefined ? undefined : pollDetailFor(selectedPoll);
+}: CommunityViewProps): CommunityScreenProps => {
+	const empty = view.polls.length === 0;
 
-	return (
-		<CommunityScreen
-			theme={theme}
-			standouts={standoutEntriesFor(view.standouts)}
-			pollChips={view.polls.length === 0 ? [] : pollChipsFor(view.polls)}
-			selectedChipId={selected}
-			onSelectPoll={setChosen}
-			poll={detail}
-			pollNote={view.polls.length === 0 ? NOTHING_TO_COMPARE_YET : SEALED}
-			totalPlayers={view.polls.length === 0 ? undefined : view.totalPlayers}
-			climb={view.climb === null ? undefined : { gates: ladderFor(view.climb) }}
-			topPercent={view.topPercent ?? undefined}
-			countdown={countdown}
-			back={back}
-			aside={aside}
-		/>
-	);
+	return {
+		header: {
+			swatch,
+			title: `${swatch.gateName} · today’s climb`,
+			subtitle: back.hint ?? view.date,
+			countdown: countdown ?? COPY.pollsOpen,
+			countdownColor: countdown === undefined ? "viridian" : undefined,
+			countdownHint: COPY.countdownHint,
+			stats: [
+				{
+					icon: "community",
+					label: plural(view.totalPlayers, "player"),
+					hint: COPY.answeredToday,
+				},
+				...(view.topPercent === null
+					? []
+					: [
+							{
+								icon: "review" as const,
+								label: `top ${view.topPercent}%`,
+								hint: COPY.standing,
+							},
+						]),
+				{
+					icon: "gate",
+					label: `gate ${swatch.gate} · ${swatch.gateName}`,
+					hint: COPY.whereYouStand,
+				},
+			],
+			shop: { label: aside?.label ?? "Incidents", onPress: aside?.onUse },
+			prep: {
+				label: back.label,
+				onPress: back.disabled === true ? undefined : back.onBack,
+			},
+		},
+		climb: {
+			title: COPY.climbTitle,
+			standing: standingOf(view.climb),
+			...(view.topPercent === null
+				? {}
+				: {
+						badge: `top ${view.topPercent}%`,
+						badgeColor: "viridian" as const,
+					}),
+			reading: rightShareToday(view.polls),
+			note: note ?? (empty ? NOTHING_TO_COMPARE_YET : undefined),
+		},
+		turnout: {
+			title: COPY.turnoutTitle,
+			when: view.date,
+			bands: [
+				{
+					label: COPY.answeredToday,
+					count: String(view.totalPlayers),
+					color: "cerulean",
+					climbers: [],
+				},
+			],
+		},
+		map: {
+			title: COPY.mapTitle,
+			summary: ladderSummaryFor(view.climb) ?? COPY.noPlace,
+		},
+		standouts: {
+			title: COPY.standoutsTitle,
+			summary: view.standouts.length === 0 ? COPY.dayIsYoung : undefined,
+			awards: standoutEntriesFor(view.standouts),
+		},
+		polls: {
+			title: COPY.pollsTitle,
+			summary: `${plural(view.totalPlayers, "player")} answered`,
+			polls: pollResultsFor(view.polls),
+		},
+	};
 };
+
+export const CommunityView = (props: CommunityViewProps) => (
+	<CommunityScreen {...communityScreenPropsFor(props)} />
+);

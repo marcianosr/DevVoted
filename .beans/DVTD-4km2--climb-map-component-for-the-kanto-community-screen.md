@@ -3,8 +3,9 @@
 title: Climb map component for the kanto community screen
 status: todo
 type: task
+priority: normal
 created_at: 2026-09-11T11:12:07Z
-updated_at: 2026-09-11T11:12:07Z
+updated_at: 2026-09-23T11:40:27Z
 blocked_by:
     - DVTD-agt2
 ---
@@ -18,3 +19,20 @@ The data already exists — `ladderFor()` in `CommunityView.component.tsx` build
 - [ ] Marks the viewer's own gate, and the edge past which the ladder is uncharted
 - [ ] Story + spec, fixture in `kantoCommunity.factory.ts`
 - [ ] Swap the placeholder out of `CommunityScreen.ui.tsx`
+
+## The reference render moved out of the tree (DVTD-6crx, 2026-09-23)
+
+`src/ui/old-theme/` was deleted wholesale, taking `ClimbTrack.ui.tsx` with it.
+Recover the render to port from:
+
+    git show 3df71fde:src/ui/terminal-theme/ClimbTrack.ui.tsx
+
+The data layer survived the deletion and moved: `ladderFor` / `trackBuildFor`
+now live in `src/modules/run/community/application/climbLadder.viewmodel.ts`,
+with module-owned `LadderGate` / `LadderClimber` / `LadderConfig` types
+replacing the dead terminal-theme ones. Their seven behaviours are covered by
+`climbLadder.viewmodel.spec.ts`. A `ClimbMap.ui.tsx` in `src/ui/` may import
+those types (type-only keeps `ui-stays-presentational` satisfied).
+
+The kanto community screen currently states `map.summary` ("3 on the ladder · 1
+fell today", from `ladderSummaryFor`) over the parked placeholder.

@@ -1,16 +1,35 @@
-import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { useNavigate } from "@tanstack/react-router";
 
+import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
-import { CommunityScreen } from "~/ui/terminal-theme/screens/CommunityScreen.ui";
+import type { RunCommunityView } from "~/modules/run/community/application/community.service";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
 const INCIDENTS_ASIDE = "Incidents →";
+const SPENT_HINT =
+	"Today’s polls are spent. Your run picks up when the next segment drops at midnight.";
+const LOADING = "Loading today’s comparison…";
+const LOAD_FAILED =
+	"Couldn’t load today’s comparison. Your run is unaffected — try again shortly.";
 
-/** Tier 2 wiring for the run community page (DVTD-xrpx, terminal skin DVTD-wii3). */
+/**
+ * Held locally rather than imported from the service: that module reaches its
+ * repositories, which would drag the database driver into the browser bundle.
+ */
+const EMPTY_COMMUNITY: RunCommunityView = {
+	date: "",
+	totalPlayers: 0,
+	topPercent: null,
+	standouts: [],
+	polls: [],
+	climb: null,
+};
+
+/** Tier 2 wiring for the run community page (DVTD-xrpx, kanto skin DVTD-6crx). */
 export const RunCommunity = () => {
 	const navigate = useNavigate();
 	const { view: run } = useTodaysRun();
@@ -24,55 +43,27 @@ export const RunCommunity = () => {
 		label: backTarget.label,
 		onBack: () => navigate({ to: backTarget.path }),
 		disabled: waitingForTomorrow,
-		hint: waitingForTomorrow
-			? "Today’s polls are spent. Your run picks up when the next segment drops at midnight."
-			: undefined,
+		hint: waitingForTomorrow ? SPENT_HINT : undefined,
 	};
 	const timer = countdown.isOpen ? undefined : countdown.label;
 	const aside = {
 		label: INCIDENTS_ASIDE,
 		onUse: () => navigate({ to: "/run/incidents" }),
 	};
+	const swatch = gateSwatchAt(run?.gatesCleared ?? 0);
+	const shared = { swatch, countdown: timer, back, aside };
 
-	if (community.isPending) {
+	if (community.isPending)
+		return <CommunityView view={EMPTY_COMMUNITY} note={LOADING} {...shared} />;
+
+	if (community.errorMessage || !community.view)
 		return (
-			<CommunityScreen
-				theme={run?.gateTheme}
-				standouts={[]}
-				pollChips={[]}
-				pollNote="Loading today’s comparison…"
-				countdown={timer}
-				back={back}
-				aside={aside}
+			<CommunityView
+				view={EMPTY_COMMUNITY}
+				note={community.errorMessage ? LOAD_FAILED : NOTHING_TO_COMPARE_YET}
+				{...shared}
 			/>
 		);
-	}
 
-	if (community.errorMessage || !community.view) {
-		return (
-			<CommunityScreen
-				theme={run?.gateTheme}
-				standouts={[]}
-				pollChips={[]}
-				pollNote={
-					community.errorMessage
-						? "Couldn’t load today’s comparison. Your run is unaffected — try again shortly."
-						: NOTHING_TO_COMPARE_YET
-				}
-				countdown={timer}
-				back={back}
-				aside={aside}
-			/>
-		);
-	}
-
-	return (
-		<CommunityView
-			view={community.view}
-			theme={run?.gateTheme}
-			countdown={timer}
-			back={back}
-			aside={aside}
-		/>
-	);
+	return <CommunityView view={community.view} {...shared} />;
 };

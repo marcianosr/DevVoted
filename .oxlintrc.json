@@ -126,6 +126,17 @@
 		"import/no-named-as-default-member": "warn",
 		"import/no-duplicates": "warn",
 		"@typescript-eslint/no-explicit-any": "off",
+		"no-restricted-imports": [
+			"error",
+			{
+				"patterns": [
+					{
+						"group": ["~/ui/old-theme", "~/ui/old-theme/*"],
+						"message": "src/ui/old-theme is deleted (DVTD-6crx). Kanto is the only theme: import from ~/ui/kanto-theme."
+					}
+				]
+			}
+		],
 		"no-console": [
 			"warn",
 			{
