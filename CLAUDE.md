@@ -66,10 +66,10 @@ ADR-002 owns structure, layering, naming, and the dependency rule (machine-enfor
 via `npm run lint` → `lint:arch`). [CONTEXT.md](CONTEXT.md) says which aggregate owns
 which domain term.
 
-The restructure is partly done (`DVTD-36ct`): **`src/modules/run/`,
-`src/modules/collection/` and `src/shared/` have migrated** and are the
-reference for what the shape looks like. `src/domains/` has not, and is
-legacy-but-live. Migrate a slice when you touch it, not wholesale.
+The restructure is **done** (`DVTD-36ct`, `DVTD-wj1t`): `src/domains/` no longer
+exists and every module lives in the context/aggregate/layer shape, with no
+legacy carve-out in `.dependency-cruiser.cjs`. `src/components/` and
+`src/ui/old-theme/` are the last legacy surfaces.
 
 ### UI Layer Architecture (CRITICAL)
 
@@ -224,5 +224,4 @@ Checklist for a new server function:
   or feel (not layout/admin/internal tooling). Before creating one, state the
   one-sentence game-design reason in the PR/commit message. If you're not sure
   it qualifies, ask rather than creating it.
-- If you're about to add new code to a domain that has legacy code sitting in src/domains/, ask whether to migrate that slice now or leave it.
 - NEVER comment the code unless it really needs a why, (never how) it's a temporary workaround or a TODO. If you feel the need to comment, write an ADR instead but check with me. The code should be self-documenting; comments are a smell.

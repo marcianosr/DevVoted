@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, 2025-02-14. Last updated 2026-08-12. Living document: owns module
+Accepted, 2025-02-14. Last updated 2026-09-23. Living document: owns module
 structure, layering, and naming for the whole app (ADR-007 and ADR-010 defer to
 it).
 
@@ -65,11 +65,11 @@ A context is a folder and nothing more; it holds no files of its own.
 | | `shop` | The offer: draft, rebuild, lock, extend |
 | | `community` | Today's other players: standouts, voters, climb map |
 | `polls` | `poll` | `Poll`, options, answer evaluation, categories, daily selection |
-| | `authoring` | Admin poll CRUD |
+| | `authoring` | Admin poll CRUD: the form, the list, the detail and edit screens |
 | `collection` | `dex` | Polldex, configdex, swatchdex |
 | | `unlockables` | Planned. The reason `collection` is a context and not an aggregate inside `polls` |
 | `account` | `auth` | Login, signup, session |
-| | `profile` | User, dev card, awards |
+| | `profile` | User, dev card, awards, plus the archive balance and the border catalogue — all three are columns on `users` |
 
 Screens belong to the aggregate whose concept they are about, not to a shared
 screens bucket: `ShopScreen` is shop's, `RewardScreen` and `StripScreen` are
@@ -347,7 +347,6 @@ read through the `run` aggregate's repository or through their own read-only one
 ```
 src/
 ├── modules/      # <context>/<aggregate>/<layer> — this ADR
-├── domains/      # Legacy. Migrating to modules/, opportunistically
 ├── routes/       # TanStack Router file-based routes
 ├── database/     # Drizzle setup, schema, migrations, seeds
 ├── shared/       # Cross-context code. Never imports from modules/
@@ -358,11 +357,9 @@ src/
 └── components/   # Legacy
 ```
 
-> `domains/` → `modules/` is in progress. New code goes under `modules/`;
-> existing code migrates when touched, not as a big-bang rewrite. The migration
-> currently includes **sanctioned duplication**: `modules/run/` is a rebuild of
-> `domains/runs/prototype/`, and both live in the tree until the old run UI
-> retires (ADR-007).
+> `domains/` → `modules/` is **complete** (DVTD-wj1t, 2026-09-23). Every module
+> lives in the context/aggregate/layer shape, and the `legacy-*` rules that
+> guarded the old tree are deleted from `.dependency-cruiser.cjs`.
 
 ## 8. What changed and why
 
@@ -389,8 +386,7 @@ separating server function from orchestration from DB access.
 ## 9. Enforcement
 
 `npm run lint:arch` (dependency-cruiser, `.dependency-cruiser.cjs`) fails on
-violations. The config is rewritten alongside the file moves, not before: the
-rules must describe the tree that exists. Rules to encode:
+violations. The rules encoded there:
 
 - The §3 layer table, per aggregate.
 - Cross-aggregate: no `domain/` → another aggregate's `application/` or `infrastructure/`.
@@ -411,14 +407,13 @@ contributor never has to ask whether this one is a snowflake.
 
 Two standing exceptions, both listed in `.dependency-cruiser.cjs`:
 
-1. **`src/domains/`** predates this ADR and migrates slice by slice. Its guards
-   live in the `legacy-*` rules. Do not add new concepts there.
-2. **The dev rigs**, `src/routes/proto-run.tsx` and
-   `src/routes/proto-session-slice.tsx`. They drive the run engine directly to
-   exercise gates and screens without a server round-trip, so they import domain
-   models at runtime, which `routes-only-into-presentation` otherwise forbids.
-   They are test environments, not app routes, and they stay. The exclusion is
-   scoped to those two filenames so it cannot spread.
+1. **The dev rig**, `src/routes/proto-run.tsx`. It drives the run engine
+   directly to exercise gates and screens without a server round-trip, so it
+   imports domain models at runtime, which `routes-only-into-presentation`
+   otherwise forbids. It is a test environment, not an app route, and it stays.
+   The exclusion is scoped to that one filename so it cannot spread.
+2. **`src/routes/__root.tsx`**, whose `beforeLoad` builds the router context
+   before any component exists, so it cannot reach its data by mounting one.
 
 ## 11. Links
 

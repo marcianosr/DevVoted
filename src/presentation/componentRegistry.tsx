@@ -2,18 +2,20 @@ import { useState, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import ConfigCard from "~/domains/economy/components/Cards/ConfigCard.component";
-import type { Config } from "~/domains/economy/models/config.model";
-import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
-import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid.component";
-import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.mock";
-import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
-import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
+import { ConfigCard } from "./demo/ConfigCard";
+import { StorageBreakdown } from "./demo/StorageBreakdown";
+import { CategoryCoverageGrid } from "./demo/CategoryCoverageGrid";
+import { calculateLevelAndCoverage } from "./demo/levelCalculations";
+import {
+	DEFAULT_WINDOW_SIZE,
+	demoCoverage,
+	type DemoConfig,
+} from "./demo/types";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { GameLoopExplainer } from "~/ui/old-theme/GameLoopExplainer.component";
 
 // Demo data for ConfigCards
-const DEMO_CONFIGS: Config[] = [
+const DEMO_CONFIGS: DemoConfig[] = [
 	{
 		id: ".js-config",
 		name: ".js",
@@ -74,48 +76,42 @@ const DEMO_CONFIGS: Config[] = [
 
 // Demo data for CategoryCoverageGrid using factory
 const DEMO_COVERAGE = [
-	createMockRunCategoryCoverage({
-		id: 1,
+	demoCoverage({
 		categoryCode: "js",
 		currentCoverage: 72.5,
 		currentStreak: 3,
 		bestStreak: 5,
 		pollsAnswered: 8,
 	}),
-	createMockRunCategoryCoverage({
-		id: 2,
+	demoCoverage({
 		categoryCode: "ts",
 		currentCoverage: 45.0,
 		currentStreak: 1,
 		bestStreak: 3,
 		pollsAnswered: 5,
 	}),
-	createMockRunCategoryCoverage({
-		id: 3,
+	demoCoverage({
 		categoryCode: "react",
 		currentCoverage: 88.2,
 		currentStreak: 6,
 		bestStreak: 6,
 		pollsAnswered: 10,
 	}),
-	createMockRunCategoryCoverage({
-		id: 4,
+	demoCoverage({
 		categoryCode: "css",
 		currentCoverage: 33.0,
 		currentStreak: 0,
 		bestStreak: 2,
 		pollsAnswered: 4,
 	}),
-	createMockRunCategoryCoverage({
-		id: 5,
+	demoCoverage({
 		categoryCode: "html",
 		currentCoverage: 60.0,
 		currentStreak: 2,
 		bestStreak: 4,
 		pollsAnswered: 6,
 	}),
-	createMockRunCategoryCoverage({
-		id: 6,
+	demoCoverage({
 		categoryCode: "git",
 		currentCoverage: 55.5,
 		currentStreak: 1,

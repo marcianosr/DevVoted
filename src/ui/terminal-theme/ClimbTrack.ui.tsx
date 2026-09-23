@@ -48,7 +48,7 @@ export type TrackClimber = {
 	photoUrl?: string;
 	borderUrl?: string;
 	you: boolean;
-	/** Their build as anyone may read it (ADR-100); a chip with none stays a plain chip. */
+	/** Their build as anyone may read it (ADR-101); a chip with none stays a plain chip. */
 	build?: readonly TrackConfig[];
 };
 

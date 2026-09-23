@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as StatsRouteImport } from './routes/stats'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as ProtoRunRouteImport } from './routes/proto-run'
 import { Route as PresentationRouteImport } from './routes/presentation'
@@ -38,11 +37,6 @@ import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
 import { Route as AuthedPollsPollIdEditRouteImport } from './routes/_authed/polls/$pollId/edit'
 
-const StatsRoute = StatsRouteImport.update({
-  id: '/stats',
-  path: '/stats',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SignUpRoute = SignUpRouteImport.update({
   id: '/sign-up',
   path: '/sign-up',
@@ -185,7 +179,6 @@ export interface FileRoutesByFullPath {
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
   '/sign-up': typeof SignUpRoute
-  '/stats': typeof StatsRoute
   '/run': typeof AuthedRunRouteRouteWithChildren
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
@@ -214,7 +207,6 @@ export interface FileRoutesByTo {
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
   '/sign-up': typeof SignUpRoute
-  '/stats': typeof StatsRoute
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -244,7 +236,6 @@ export interface FileRoutesById {
   '/presentation': typeof PresentationRoute
   '/proto-run': typeof ProtoRunRoute
   '/sign-up': typeof SignUpRoute
-  '/stats': typeof StatsRoute
   '/_authed/run': typeof AuthedRunRouteRouteWithChildren
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/dex': typeof AuthedDexRoute
@@ -275,7 +266,6 @@ export interface FileRouteTypes {
     | '/presentation'
     | '/proto-run'
     | '/sign-up'
-    | '/stats'
     | '/run'
     | '/admin'
     | '/dex'
@@ -304,7 +294,6 @@ export interface FileRouteTypes {
     | '/presentation'
     | '/proto-run'
     | '/sign-up'
-    | '/stats'
     | '/admin'
     | '/dex'
     | '/auth/callback'
@@ -333,7 +322,6 @@ export interface FileRouteTypes {
     | '/presentation'
     | '/proto-run'
     | '/sign-up'
-    | '/stats'
     | '/_authed/run'
     | '/_authed/admin'
     | '/_authed/dex'
@@ -364,19 +352,11 @@ export interface RootRouteChildren {
   PresentationRoute: typeof PresentationRoute
   ProtoRunRoute: typeof ProtoRunRoute
   SignUpRoute: typeof SignUpRoute
-  StatsRoute: typeof StatsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/stats': {
-      id: '/stats'
-      path: '/stats'
-      fullPath: '/stats'
-      preLoaderRoute: typeof StatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sign-up': {
       id: '/sign-up'
       path: '/sign-up'
@@ -634,7 +614,6 @@ const rootRouteChildren: RootRouteChildren = {
   PresentationRoute: PresentationRoute,
   ProtoRunRoute: ProtoRunRoute,
   SignUpRoute: SignUpRoute,
-  StatsRoute: StatsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

@@ -13,7 +13,7 @@ import { clearGate, started } from "~/modules/run/run/domain/run.factory";
 import type { RunState } from "~/modules/run/run/domain/run.model";
 import * as runs from "~/modules/run/run/infrastructure/run.repository";
 import type { RunTx } from "~/modules/run/run/infrastructure/run.repository";
-import { createMockRunRecord } from "~/domains/runs/models/run.mock";
+import { createMockRunRecord } from "~/test/runRecord.factory";
 import { createMockRunView } from "~/test/runView.factory";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({

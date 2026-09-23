@@ -1,11 +1,11 @@
 ---
 # DVTD-9qyd
 title: Delete the superseded old-app code in src/domains
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-13T11:18:20Z
-updated_at: 2026-09-22T18:48:25Z
+updated_at: 2026-09-23T09:38:10Z
 parent: DVTD-82c4
 ---
 
@@ -61,13 +61,15 @@ directory as dead. It is not.
 
 ## Still open on this bean
 
-- [ ] Retire the `legacy-*` dependency-cruiser rules — NOT done. `src/domains/` is
-      still largely live (the shell, poll authoring, /admin, /stats, /profile), so
-      the rules still guard something. Revisit after `DVTD-wj1t`.
-- [ ] Drop the `src/domains` exemption in `no-circular-runtime` — NOT done, same reason.
-      The `progress.service ↔ turn.service` cycle it hides is still there.
-- [ ] `economy/data/configs.ts` (1134 lines) is still live via `/admin`, `Footer` and
-      three `src/modules/` files — it cannot be deleted without migrating those.
+- [x] Retire the `legacy-*` dependency-cruiser rules — **done 2026-09-23** with
+      DVTD-wj1t. `LEGACY_FROM` and all three rules deleted;
+      `ui-stays-presentational` and `shared-not-into-modules` narrowed from
+      `^src/(modules|domains)/` to `^src/modules/`. Config 187 -> 151 lines, and it
+      gained no exemptions in exchange.
+- [x] Drop the `src/domains` exemption in `no-circular-runtime` — this was already
+      done on this bean; the cycle it hid died with the old engine.
+- [x] `economy/data/configs.ts` — deleted on this bean; what remained of `economy/`
+      was borders + archive, now `modules/account/profile/`.
 
 ## Blocker corrected 2026-09-22
 
@@ -96,3 +98,87 @@ first**, then the file can go, and only then do the last two items become possib
   `progress.service ↔ turn.service`
 
 Remaining under `src/domains/` as of today: polls **35**, runs **42**, economy **28**.
+
+## Cleanup pass 2026-09-23 — reachability re-run
+
+Rebuilt the import graph twice: once from all routes, once from ONLY the
+new-concept entrypoints (proto-run + /run/* + dex + community + incidents).
+
+**The new concept's entire debt to src/domains is 10 files:** borders.ts +
+border.model.ts (via Avatar.ui.tsx and 3 modules/run repositories), the archive
+slice (archive.{ts,handlers,queries} + useArchiveState + ArchiveSummary +
+BorderShop, via /dex and /profile), pollAnswerEvaluation.service.ts (30 lines,
+pure, via polldex.service) and score.service.ts — which survives on ONE type
+edge, schema.ts:368 `$type<import(...).ScoreCalculation>()`.
+
+The other 95 files are old-app only. What holds them up is not the new game:
+polls/api/polls.ts has 5 zero-consumer exports whose only job is to import
+dailyPoll.handlers (the doorway to turn.service -> progress.service -> the old
+scoring stack), and admin.handlers.ts has one zero-consumer export
+(getCategoryWeightsHandler) reaching categoryWeight.service + shop.queries and
+through them configs.ts.
+
+Plan: /Users/marciano/.claude-work/plans/i-want-to-cleanuo-refactored-newell.md
+
+## Landed 2026-09-23 — the old engine is deleted
+
+133 files changed, ~16,550 deletions. src/domains: **105 -> 29 files**.
+`src/domains/runs/` no longer exists; only `economy/` (borders + archive, 9)
+and `polls/` (authoring, 20) remain.
+
+Verified after every step: **201 test files / 3776 tests pass**, `lint:arch`
+clean (**742 modules**, down from 827), `npm run build` green.
+
+### What actually held it up
+Five zero-consumer exports in `polls/api/polls.ts` (`getDailyPoll`,
+`postPollOptions`, `getPollsSeenInRun`, `getRunPollHistoryServerFn`,
+`getPollById`) importing `dailyPoll.handlers`, plus `getCategoryWeightsHandler`
+in `admin.handlers.ts`. ~55 lines. `pollResponse.queries.ts` went 443 -> 28
+lines (only `hasUserAnsweredPoll` had a caller) which severed the last runtime
+edge into `domains/runs/`.
+
+### Corrections to the plan, found while executing
+- `poll.mock.ts`/`pollOption.mock.ts` were NOT dead — they feed the surviving
+  half of `handlers.spec.ts`. Renamed to `.factory.ts` (ADR-002 §4.2) and kept.
+- `answerScore.viewmodel.ts` and `modules/run/run/domain/run.factory.ts` were
+  NOT dead — 5+ live module specs import them. A route-graph walk cannot see
+  spec imports; every fixture file needs a second pass over spec edges.
+- `/admin` could NOT be rewired to `CONFIG_LIST`: the new roster has **no
+  `rarity` field**. The config browser section was deleted instead.
+- kanto `Confirm`/`Modal`/`Uninstall` left in place — `Panel.spec`,
+  `ShopScreen.stories` and `kantoPoll.factory` all import them.
+- `runs/api/queries.spec.ts` only *mocked* `debitArchivedStorageGuarded`;
+  `archive.queries.spec.ts` has a real 5-test block, so no coverage was lost.
+
+### Guard rails retired
+- `no-circular-runtime`: the `src/domains/` exemption is **dropped** — the
+  `progress.service <-> turn.service` cycle it hid is deleted. Lint still clean.
+- `DEV_RIG_ROUTES` narrowed to `proto-run` only (proto-session-slice is gone).
+  It is still required: proto-run legitimately imports `modules/*/domain/`.
+- The three `legacy-*` rules **stay** — they still guard the two live slices.
+- `sonar-scanner.cjs` stale `src/test/utils.tsx` entries removed.
+
+### Also done
+- Bug fixed by removal: `__root`'s nav could end a **new-engine** run through
+  the **legacy** finish path (`run.queries.ts` never filtered on `mode`).
+- The talk deck is self-contained: `src/presentation/demo/` holds frozen copies
+  (deliberately not tracking the live roster).
+- `ScoreCalculation` extracted to `src/database/scoreBreakdown.ts`.
+- Four `@deprecated` tables in schema.ts had blockers that no longer exist —
+  notes updated; those tables are now droppable (DVTD-lzds).
+- `admin.tsx`: `user.email as any` replaced with `isAdminEmail` in adminAuth.
+
+### Still open
+- [x] polls slice -> `src/modules/polls/{poll,authoring}/` (DVTD-wj1t, landed 2026-09-23)
+- [x] economy slice -> `src/modules/account/profile/` (same bean; `economy` retired as a name)
+
+Both warnings above proved correct: the dead-code cut came first, and
+`routes-only-into-presentation` fired on all four /polls routes plus
+`profile.$userId.tsx`. See DVTD-wj1t for what each one was hiding.
+
+## Closed 2026-09-23
+
+The last item on this bean was the `legacy-*` rule retirement, and it could not
+land until `src/domains/` was empty. DVTD-wj1t emptied it. `src/domains/` no
+longer exists, ADR-002 §10 no longer carries it as a standing exception, and
+`lint:arch` runs one rule set over 755 modules with no legacy carve-out.

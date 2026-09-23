@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { findBorderById } from "~/domains/economy/data/borders";
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
 
 export type AvatarUser = {
 	id: string;

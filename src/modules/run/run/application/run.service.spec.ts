@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockRunRecord } from "~/domains/runs/models/run.mock";
+import { createMockRunRecord } from "~/test/runRecord.factory";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";

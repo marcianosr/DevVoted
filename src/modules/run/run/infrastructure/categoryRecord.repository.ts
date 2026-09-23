@@ -2,7 +2,7 @@ import { and, asc, desc, eq, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { pollResponsesTable, pollsTable, usersTable } from "~/database/schema";
-import { findBorderById } from "~/domains/economy/data/borders";
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import type {

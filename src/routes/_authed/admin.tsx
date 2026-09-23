@@ -5,26 +5,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { format } from "date-fns";
 import { Resend } from "resend";
 
-import { configs as allConfigs } from "~/domains/economy/data/configs";
-import { Config } from "~/domains/economy/models/config.model";
-import { formatStorage } from "~/shared/lib/storage";
-
-import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
+import { isAdminEmail } from "~/shared/utils/adminAuth";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
-
-const RARITY_ORDER: Record<Config["rarity"], number> = {
-	legendary: 0,
-	rare: 1,
-	uncommon: 2,
-	common: 3,
-};
-
-const RARITY_COLORS: Record<Config["rarity"], { bg: string; text: string }> = {
-	common: { bg: "bg-blue-100", text: "text-blue-800" },
-	uncommon: { bg: "bg-green-100", text: "text-green-800" },
-	rare: { bg: "bg-red-100", text: "text-red-800" },
-	legendary: { bg: "bg-purple-100", text: "text-purple-800" },
-};
 
 const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 	const supabase = await getSupabaseServerClient();
@@ -37,7 +19,7 @@ const checkAdminAccess = createServerFn({ method: "GET" }).handler(async () => {
 		return { hasAccess: false, message: "Not authenticated" };
 	}
 
-	const hasAccess = ADMIN_EMAILS.includes(user.email as any);
+	const hasAccess = isAdminEmail(user.email);
 
 	return {
 		hasAccess,
@@ -57,7 +39,7 @@ const checkAdminAccessForAction = async () => {
 		throw new Error("Not authenticated");
 	}
 
-	const hasAccess = ADMIN_EMAILS.includes(user.email as any);
+	const hasAccess = isAdminEmail(user.email);
 	if (!hasAccess) {
 		throw new Error("Admin access required");
 	}
@@ -151,7 +133,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 		const activeRuns = await db
 			.select({
 				id: runsTable.id,
-				activeConfigIds: runsTable.active_config_ids,
 				userId: runsTable.user_id,
 				displayName: usersTable.display_name,
 				email: usersTable.email,
@@ -160,30 +141,10 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			.leftJoin(usersTable, eq(runsTable.user_id, usersTable.id))
 			.where(eq(runsTable.status, "active"));
 
-		// Calculate config usage stats
-		const configUsage: Record<
-			string,
-			{ count: number; users: { displayName: string; email: string }[] }
-		> = {};
-
-		for (const run of activeRuns) {
-			for (const configId of run.activeConfigIds || []) {
-				if (!configUsage[configId]) {
-					configUsage[configId] = { count: 0, users: [] };
-				}
-				configUsage[configId].count++;
-				configUsage[configId].users.push({
-					displayName: run.displayName || "Unknown",
-					email: run.email || "",
-				});
-			}
-		}
-
 		return {
 			activePolls,
 			pastPolls,
 			recentResponses,
-			configUsage,
 			allUsers,
 			stats: {
 				totalUsers: allUsers.length,
@@ -196,7 +157,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 			activePolls: [],
 			pastPolls: [],
 			recentResponses: [],
-			configUsage: {},
 			allUsers: [],
 			stats: { totalUsers: 0, activeRuns: 0 },
 			error: "Failed to load admin data",
@@ -286,39 +246,14 @@ type UserRow = {
 	run_id: number | null;
 };
 
-type ConfigSortOption = "rarity" | "cost" | "popularity";
-
 function AdminPanel() {
 	const data = Route.useLoaderData();
 	const [message, setMessage] = useState<{
 		type: "success" | "error";
 		text: string;
 	} | null>(null);
-	const [configSort, setConfigSort] = useState<ConfigSortOption>("rarity");
 	const [emailSending, setEmailSending] = useState<string | null>(null);
 	const [emailSent, setEmailSent] = useState<Set<string>>(new Set());
-
-	const configUsage = data.configUsage as Record<
-		string,
-		{ count: number; users: { displayName: string; email: string }[] }
-	>;
-
-	const getConfigUsageCount = (configId: string) =>
-		configUsage[configId]?.count ?? 0;
-
-	const sortedConfigs = [...allConfigs].sort((a, b) => {
-		if (configSort === "rarity") {
-			const rarityDiff = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity];
-			if (rarityDiff !== 0) return rarityDiff;
-			return b.cost - a.cost; // Secondary sort by cost (descending) within same rarity
-		}
-		if (configSort === "popularity") {
-			const countDiff = getConfigUsageCount(b.id) - getConfigUsageCount(a.id);
-			if (countDiff !== 0) return countDiff;
-			return RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]; // Secondary sort by rarity
-		}
-		return b.cost - a.cost; // Cost descending (highest first)
-	});
 
 	const formatDate = (date: Date | string) => {
 		const d = typeof date === "string" ? new Date(date) : date;
@@ -539,131 +474,6 @@ function AdminPanel() {
 				)}
 			</div>
 
-			{/* All Configs Section */}
-			<div className="mt-8 rounded-lg shadow-md p-6">
-				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-xl font-semibold text-white">
-						All Configs ({allConfigs.length})
-					</h2>
-					<div className="flex gap-2">
-						<button
-							onClick={() => setConfigSort("rarity")}
-							className={`px-3 py-1 rounded text-sm ${
-								configSort === "rarity"
-									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-white hover:bg-gray-600"
-							}`}
-						>
-							Sort by Rarity
-						</button>
-						<button
-							onClick={() => setConfigSort("cost")}
-							className={`px-3 py-1 rounded text-sm ${
-								configSort === "cost"
-									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-white hover:bg-gray-600"
-							}`}
-						>
-							Sort by Cost
-						</button>
-						<button
-							onClick={() => setConfigSort("popularity")}
-							className={`px-3 py-1 rounded text-sm ${
-								configSort === "popularity"
-									? "bg-blue-600 text-white"
-									: "bg-gray-700 text-white hover:bg-gray-600"
-							}`}
-						>
-							Sort by Popularity
-						</button>
-					</div>
-				</div>
-				<div className="overflow-x-auto">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b border-gray-600">
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Name
-								</th>
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Rarity
-								</th>
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Cost
-								</th>
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Users
-								</th>
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Description
-								</th>
-								<th className="text-left py-2 px-3 font-medium text-white">
-									Categories
-								</th>
-							</tr>
-						</thead>
-						<tbody>
-							{sortedConfigs.map((config) => {
-								const usage = configUsage[config.id];
-								const userCount = usage?.count ?? 0;
-								const users = usage?.users ?? [];
-
-								return (
-									<tr
-										key={config.id}
-										className="border-b border-gray-700 hover:bg-gray-800"
-									>
-										<td className="py-2 px-3 font-medium text-white">
-											{config.name}
-										</td>
-										<td className="py-2 px-3">
-											<span
-												className={`px-2 py-1 rounded text-xs capitalize ${RARITY_COLORS[config.rarity].bg} ${RARITY_COLORS[config.rarity].text}`}
-											>
-												{config.rarity}
-											</span>
-										</td>
-										<td className="py-2 px-3 text-white">
-											{formatStorage(config.cost)}
-										</td>
-										<td className="py-2 px-3">
-											{userCount > 0 ? (
-												<div className="group relative">
-													<span className="text-green-400 font-medium cursor-help">
-														{userCount} user{userCount !== 1 ? "s" : ""}
-													</span>
-													<div className="absolute left-0 top-full mt-1 hidden group-hover:block bg-gray-900 border border-gray-600 rounded p-2 z-10 min-w-48 shadow-lg">
-														<div className="text-xs text-white space-y-1">
-															{users.map((user, idx: number) => (
-																<div key={idx}>
-																	{user.displayName}
-																	{user.email && (
-																		<span className="text-white ml-1">
-																			({user.email})
-																		</span>
-																	)}
-																</div>
-															))}
-														</div>
-													</div>
-												</div>
-											) : (
-												<span className="text-white">0</span>
-											)}
-										</td>
-										<td className="py-2 px-3 text-white max-w-xs truncate">
-											{config.description}
-										</td>
-										<td className="py-2 px-3 text-white text-xs">
-											{config.targetCategories?.join(", ") || "All"}
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				</div>
-			</div>
 			{/* Users Section */}
 			<UsersSection
 				users={data.allUsers as UserRow[]}

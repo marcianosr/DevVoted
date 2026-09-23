@@ -20,7 +20,7 @@ export type PublicConfig = {
 	readonly level?: number;
 };
 
-/** A build as any other player may read it (ADR-100): what is installed, never what was answered. */
+/** A build as any other player may read it (ADR-101): what is installed, never what was answered. */
 export type PublicBuild = {
 	readonly configs: readonly PublicConfig[];
 	readonly vendorLockedConfigId?: string;

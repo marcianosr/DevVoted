@@ -1136,7 +1136,7 @@ horizontally on narrow screens and centres itself on your column. Gate/poll arit
 lives in `climbMap.model.ts`, one unit: polls, counted `gate * 5 + pollsIntoGate`.
 Press or hover any chip — climber or fallen — and their build opens beside it: every
 installed config with its version, the one they vendor-locked, and the total weight
-(ADR-100). 🟡 Storage is still not shown, and climbers folded behind `+N` have no chip
+(ADR-101). 🟡 Storage is still not shown, and climbers folded behind `+N` have no chip
 to press.
 
 **Today's polls** is a selector of five numbered chips — one per slot in the day's
@@ -1212,7 +1212,7 @@ Every audit in the game is interference (ADR-099, [2.3](#23-audits)): a HEALTHY 
 PERFECT clear arms one attack, prep's **Your attack** panel offers three rivals at your
 gate or ahead who last cleared strong, and one press files an incident against their
 next gate. Each offered rival's build is drawn under their name, so you read what they
-run before you fire (ADR-100). The audit is drawn from that gate's pool, never chosen; it locks when the
+run before you fire (ADR-101). The audit is drawn from that gate's pool, never chosen; it locks when the
 rival clears the gate they are in, so their receipt names it and you before they walk
 in; surviving it pays them 32 KB, and you earn nothing from their death. The
 **Incidents** page (`/run/incidents`, from prep and the community board) lists everyone's
@@ -1439,7 +1439,7 @@ The game leans hard into its CI metaphor.
 | **Attack**              | What a HEALTHY-or-better clear arms: one shot, aimed from prep at one of three offered rivals, held for the run until fired. PERFECT rolls two payloads to choose between.                                                                                           |
 | **410 Gone**            | An audit that deepens the peel by 10 points at Elite and 15 at the Champion, where a rival lands it.                                                                                                                                                                 |
 | **Peel**                | What a missed gate takes: configs of your choosing, before the same gate runs again.                                                                                                                                                                                 |
-| **Build**               | Your active setup: the track of config slots. Shown as **Your Build**. Public: any other player can read yours (ADR-100).                                                                                                                                            |
+| **Build**               | Your active setup: the track of config slots. Shown as **Your Build**. Public: any other player can read yours (ADR-101).                                                                                                                                            |
 | **Slot**                | One unit of room in the build, also called weight. A config takes as many as its size says: 1, 2, 4, 8, 12 or 16. Four are free; the rest are rented by the gate. Opens no gates.                                                                                    |
 | **Minify**              | Halving a config's slots and its bonus, one way.                                                                                                                                                                                                                     |
 | **Config**              | An installable dev-tool item: an effect with a price, demanding nothing.                                                                                                                                                                                             |

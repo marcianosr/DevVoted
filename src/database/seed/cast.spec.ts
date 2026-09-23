@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { SEED_CLIMBERS, SEED_PLAYERS } from "~/database/seed/cast";
-import { findBorderById } from "~/domains/economy/data/borders";
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
 
 const PUBLIC_DIR = "public";
 

@@ -218,8 +218,8 @@ export const pollsTable = pgTable("polls", {
 
 /**
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
- * Replaced by `daily_run_seeds` + `daily_run_polls`. Blocked on
- * `src/domains/polls/api/dailyPoll.queries.ts` and `/admin`. See DVTD-lzds.
+ * Replaced by `daily_run_seeds` + `daily_run_polls`. The legacy reader is gone
+ * (DVTD-9qyd); `/admin` is the last consumer. See DVTD-lzds.
  *
  * Daily Polls Table
  * Scheduling layer for daily poll selection - provides O(1) lookup by date
@@ -366,7 +366,7 @@ export const pollResponsesTable = pgTable(
 		outcome: pollAnswerOutcome("outcome"),
 		score_breakdown:
 			json("score_breakdown").$type<
-				import("~/domains/runs/services/score.service").ScoreCalculation
+				import("~/database/scoreBreakdown").ScoreCalculation
 			>(),
 		// Intentionally redundant with created_at — derived date used solely for unique constraint.
 		// Drizzle doesn't support unique constraints on expressions like DATE(created_at).
@@ -623,8 +623,8 @@ export const runPollsTable = pgTable(
 
 /**
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
- * Replaced by `run_states.state.coverageByCategory`. Blocked on
- * `src/domains/runs/api/{coverage,ranking,run,shop}.queries.ts`. See DVTD-lzds.
+ * Replaced by `run_states.state.coverageByCategory`. Every legacy reader is
+ * gone (DVTD-9qyd), so this table is now droppable. See DVTD-lzds.
  *
  * Run Category Coverage Table
  * Tracks coverage score earned in each category during a specific run
@@ -691,8 +691,9 @@ export const seasonsTable = pgTable("seasons", {
 /**
  *  This is a read optimization pattern - leaderboards are read thousands of times but written once per run. The duplication is intentional and beneficial. No expensive JOINs needed when displaying leaderboards.
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
- * The new game ranks via community standouts computed from `run_states`.
- * Blocked on `src/domains/runs/api/ranking.queries.ts`. See DVTD-lzds.
+ * The new game ranks via community standouts computed from `run_states`. The
+ * legacy reader is gone (DVTD-9qyd), so this table is now droppable.
+ * See DVTD-lzds.
  *
  * Leaderboard Table
  * Pre-computed leaderboard entries for completed runs
@@ -725,8 +726,8 @@ export const leaderboardTable = pgTable("leaderboard", {
 /**
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
  * The new shop rolls offers in the engine (`shopDraft` → `RunState.draftOptions`),
- * never in the DB. Blocked on `src/domains/economy/api/shopOfferings.queries.ts`.
- * See DVTD-lzds.
+ * never in the DB. The legacy reader is gone (DVTD-9qyd), so this table is now
+ * droppable. See DVTD-lzds.
  *
  * Run Shop Offerings Table
  * Stores randomly generated shop configs per run per day
@@ -758,7 +759,8 @@ export const runShopOfferingsTable = pgTable(
 
 /**
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
- * Blocked on `src/domains/economy/api/shopOfferings.queries.ts`. See DVTD-lzds.
+ * The legacy reader is gone (DVTD-9qyd), so this table is now droppable.
+ * See DVTD-lzds.
  *
  * Daily Exposed Deck Table
  * Stores the randomly selected player's deck exposed to public-config holders each day

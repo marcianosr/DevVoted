@@ -47,6 +47,13 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, "seenInRun", runId] as const,
 	polldex: (userId: string | undefined) =>
 		[...pollQueryKeys.all, "polldex", userId] as const,
+	/** Every poll, whoever wrote it — the footer's count. */
+	list: () => [...pollQueryKeys.all, "list"] as const,
+	/** The authoring list: an admin sees all polls here, everyone else sees theirs. */
+	authored: () => [...pollQueryKeys.all, "authored"] as const,
+	creators: () => [...pollQueryKeys.all, "creators"] as const,
+	/** Whether this account may edit any poll. */
+	adminAccess: () => [...pollQueryKeys.all, "adminAccess"] as const,
 };
 
 const USERS = ["users"] as const;

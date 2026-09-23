@@ -238,7 +238,7 @@ describe("lockIncidents", () => {
 	});
 });
 
-describe("what an offer says about its rival (ADR-100)", () => {
+describe("what an offer says about its rival (ADR-101)", () => {
 	it("carries the rival's public build onto the offer", () => {
 		const build = {
 			configs: [{ id: "cache", label: "Cache", slots: 4, level: 2 }],

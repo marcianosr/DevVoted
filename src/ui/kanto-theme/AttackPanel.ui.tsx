@@ -31,7 +31,7 @@ export type AttackRival = {
 	name: string;
 	/** Where the audit lands, as the row states it: "gate 7 · Marsh". */
 	gate: string;
-	/** What they run, readable before you fire (ADR-100). */
+	/** What they run, readable before you fire (ADR-101). */
 	build: readonly ConfigChipProps[];
 	payloads: readonly AttackPayload[];
 };

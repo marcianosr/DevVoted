@@ -19,7 +19,7 @@ import {
 	isDexTabId,
 	type DexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import { useArchiveState } from "~/domains/economy/hooks/useArchiveState";
+import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
 import { formatStorage } from "~/shared/lib/storage";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";

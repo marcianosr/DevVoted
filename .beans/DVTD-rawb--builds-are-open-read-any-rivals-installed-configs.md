@@ -5,12 +5,12 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-09-23T07:58:20Z
-updated_at: 2026-09-23T08:10:49Z
+updated_at: 2026-09-23T08:15:21Z
 ---
 
 ADR-099 §4 refuses a free payload pick *because* "builds are open", and the Marketplace draft (DVTD-8f3i) has a "Builds are public" section, yet nothing in the game showed another player's build: every cross-player read (`fetchActiveRunStats`, `fetchRivalCandidates`) projected counts and footprints only, and wiki §7.1 carried "🟡 Builds, configs and storage are still not shown."
 
-Decided 2026-09-22 with Marciano: a build is public (configs, versions, weight, the vendor lock), a run's answers are not, and it is display only. Recorded as ADR-100.
+Decided 2026-09-22 with Marciano: a build is public (configs, versions, weight, the vendor lock), a run's answers are not, and it is display only. Recorded as ADR-101 (100 was claimed by the living-record ADR mid-session).
 
 Surfaces: the kanto prep **AttackPanel** rival rows draw the rival's build as chips; the terminal **/run/community climb track** opens a climber's build on hover or tap (fallen included). The kanto community screen is unwired (DVTD-6poh) and inherits the data.
 
@@ -25,7 +25,7 @@ Related: DVTD-8f3i (Marketplace "Builds are public"), DVTD-kgch (death loot read
 - [x] `community.service.ts`: `ClimbClimber.build?`, `ClimbFallen.build`; `"description":` tripwire beside `"correct":`
 - [x] `CommunityView.component.tsx` `trackBuildFor`; `TrackClimber.build?`
 - [x] terminal `Tooltip` gains `hint: ReactNode` + `open`; `ClimbTrack.ui` chip becomes a button that opens the build on press, hover via the bubble
-- [x] ADR-100 + README row; wiki §7.1 / §7.4 / glossary; CHANGELOG Added; CONTEXT.md row
+- [x] ADR-101 (100 was claimed mid-session by the living-record ADR) + README row; wiki §7.1 / §7.4 / glossary; CHANGELOG Added; CONTEXT.md row
 - [x] `npm test` (230 files, 4158 passed), `npm run lint` (depcruise clean, wiki synced), `npm run build`
 
 ## Follow-ups (not here)
@@ -41,6 +41,6 @@ Related: DVTD-8f3i (Marketplace "Builds are public"), DVTD-kgch (death loot read
 - **Incident aggregate**: `RivalCandidate` → `AttackOffer` → `AttackOfferView` carry `build`; `rivalChipFor` turns a `PublicConfig` into a bare `ConfigChip` (no About, no press; vendor badge via `vendorChipFor`). `AttackPanel.ui` draws the strip under each rival's name, or "nothing installed".
 - **Community**: `ClimbClimber.build?` (absent only for a viewer whose run has ended), `ClimbFallen.build`; `trackBuildFor` → `TrackClimber.build`. Terminal `Tooltip` gains `hint: ReactNode` + `open`; `ClimbTrack.ui` wraps a chip with a build in a `<button aria-expanded>` whose `aria-label` reads the build in words; a press pins the bubble, hover still works, one open at a time; fallen chips included.
 - **Tripwires**: the community payload and the attack offers assert no `"description":` ever ships (no embedded `Config`).
-- **Docs**: ADR-100 + README row; wiki §7.1 (🟡 line replaced), §7.4, glossary; CHANGELOG Added; CONTEXT.md `Public build` row. Fixtures: `kantoIncidents.factory`, `ClimbTrack.stories`, `CommunityScreen.stories`, proto-run's simulated rivals.
+- **Docs**: ADR-101 + README row; wiki §7.1 (🟡 line replaced), §7.4, glossary; CHANGELOG Added; CONTEXT.md `Public build` row. Fixtures: `kantoIncidents.factory`, `ClimbTrack.stories`, `CommunityScreen.stories`, proto-run's simulated rivals.
 
 Follow-ups stay as listed above (`+N` fold, storage, kanto climb map).

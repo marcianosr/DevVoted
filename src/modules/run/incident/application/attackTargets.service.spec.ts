@@ -5,7 +5,7 @@ import type { RivalCandidate } from "~/modules/run/incident/domain/incident.mode
 import * as incidents from "~/modules/run/incident/infrastructure/incident.repository";
 import { started } from "~/modules/run/run/domain/run.factory";
 import * as runs from "~/modules/run/run/infrastructure/run.repository";
-import { createMockRunRecord } from "~/domains/runs/models/run.mock";
+import { createMockRunRecord } from "~/test/runRecord.factory";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	findActiveSessionRun: vi.fn(),

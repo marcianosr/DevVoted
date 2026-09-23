@@ -12,23 +12,13 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import { useState } from "react";
-
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import Footer from "~/components/Footer.component";
 import { PageLayoutUI } from "~/ui/old-theme/PageLayoutUI.component";
-import { useFinishRun } from "~/domains/runs/hooks/useFinishRun";
-import { deriveNavRunState } from "~/domains/runs/utils/deriveNavRunState";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
-import { ConfirmDialog } from "~/ui/old-theme/ConfirmDialog.component";
-import {
-	Dropdown,
-	DropdownDivider,
-	DropdownItem,
-} from "~/ui/old-theme/Dropdown.component";
+import { Dropdown, DropdownDivider } from "~/ui/old-theme/Dropdown.component";
 
-import { getActiveRun } from "../domains/runs/api/runs";
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
 
@@ -77,14 +67,7 @@ export const Route = createRootRoute({
 			{ rel: "icon", href: "/favicon.ico" },
 		],
 	}),
-	beforeLoad: async () => {
-		const [activeRun, user] = await Promise.all([getActiveRun(), fetchUser()]);
-
-		return {
-			user,
-			activeRun,
-		};
-	},
+	beforeLoad: async () => ({ user: await fetchUser() }),
 	errorComponent: (props) => {
 		return (
 			<RootDocument>
@@ -112,23 +95,7 @@ function RootComponent() {
 }
 
 function Navigation() {
-	const { user, activeRun } = Route.useRouteContext();
-	const { hasActiveRun, canEndRun } = deriveNavRunState(activeRun);
-
-	const [isEndRunDialogOpen, setIsEndRunDialogOpen] = useState(false);
-	const finishRun = useFinishRun({ userId: user?.id });
-
-	const handleEndRunConfirm = () => {
-		finishRun.reset();
-		finishRun.mutate(undefined, {
-			onSuccess: () => setIsEndRunDialogOpen(false),
-		});
-	};
-
-	const handleEndRunCancel = () => {
-		finishRun.reset();
-		setIsEndRunDialogOpen(false);
-	};
+	const { user } = Route.useRouteContext();
 
 	return (
 		<>
@@ -271,23 +238,6 @@ function Navigation() {
 										>
 											My Polls
 										</Link>
-										{hasActiveRun && (
-											<>
-												<DropdownDivider />
-												<DropdownItem
-													variant="danger"
-													disabled={!canEndRun}
-													onClick={() => {
-														close();
-														setIsEndRunDialogOpen(true);
-													}}
-												>
-													{canEndRun
-														? "End Run"
-														: "End Run (reach gate 5 first)"}
-												</DropdownItem>
-											</>
-										)}
 										<DropdownDivider />
 										<Link
 											to="/logout"
@@ -300,17 +250,6 @@ function Navigation() {
 								)}
 							</Dropdown>
 						</div>
-
-						<ConfirmDialog
-							isOpen={isEndRunDialogOpen}
-							onConfirm={handleEndRunConfirm}
-							onCancel={handleEndRunCancel}
-							title="End current run"
-							message="Your remaining storage will be archived in full. Ready to wrap up this run?"
-							confirmText="End run"
-							errorMessage={finishRun.error?.message ?? null}
-							isConfirming={finishRun.isPending}
-						/>
 					</>
 				) : (
 					<Link to="/login" className="ml-auto">

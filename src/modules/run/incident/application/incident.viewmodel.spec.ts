@@ -87,7 +87,7 @@ describe("attackPanelFor", () => {
 	});
 });
 
-describe("rivalChipFor (ADR-100)", () => {
+describe("rivalChipFor (ADR-101)", () => {
 	it("draws name, weight and version with nothing to press", () => {
 		expect(rivalChipFor(MISTY_BUILD.configs[0])).toEqual({
 			name: ".ts",

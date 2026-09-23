@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createMockRunRecord } from "~/domains/runs/models/run.mock";
+import { createMockRunRecord } from "~/test/runRecord.factory";
 import { TEST_DATES } from "~/test/kanto";
 
 import * as climbQueries from "~/modules/run/community/infrastructure/climbers.repository";

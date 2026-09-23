@@ -55,7 +55,7 @@ boundary, so this table is the map an architecture review reads first.
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
 | Run screens | `run/presentation` | `RunLayout` plus one Tier-2 component per route (`RunNew`, `RunPrep`, `RunPoll`, `RunGate`, `RunReview`, `RunShop`, `RunOver`, `RunStart`, `RunRecap`) and the kanto adapters they mount (`StartView`, `PrepView`, `PollView`, `GateOutcomeView`, `ReviewView`, `ShopView`, `RunOverView`). No HUD: each kanto screen carries its own header and footer (ADR-088) |
 | Build | `build/domain` | `Build` = `{ id, configs, vendorLockedConfigId? }` (`build.model.ts`); carries no space of its own — `spaceForBuild` derives it (ADR-098) |
-| Public build | `build/domain` | `PublicBuild`, `publicBuildOf`, `publicWeightOf` (`publicBuild.model.ts`); a build as any other player may read it — configs, versions, weight, the vendor lock — refreshed from the roster (ADR-100). Display only: no check reads it |
+| Public build | `build/domain` | `PublicBuild`, `publicBuildOf`, `publicWeightOf` (`publicBuild.model.ts`); a build as any other player may read it — configs, versions, weight, the vendor lock — refreshed from the roster (ADR-101). Display only: no check reads it |
 | Slot | `build/domain` | `occupiedSlots`, `billableSlotsOf`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity`, `MAX_BUILD_WEIGHT` (`build.model.ts`); the space a run rents is **derived** from its weight (`spaceForBuild`), and the ladder lives in `run/domain/rules.model.ts`. `hasRoomFor` measures against the top rung only (ADR-098); `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
 | Coverage | `build/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `build/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
@@ -95,8 +95,8 @@ run's way of drawing one.
 
 | Concept | Aggregate | Key symbols | Today |
 |---|---|---|---|
-| Poll | `poll` | Poll reads and answer evaluation | `domains/polls/` |
-| Poll authoring | `authoring` | Admin CRUD, `PollForm` | `domains/polls/components/`, `domains/polls/api/admin.handlers.ts` |
+| Poll | `poll` | `Poll`, `PollOption`, `evaluatePollAnswer` (`poll.model.ts`, `pollOption.model.ts`, `pollAnswer.model.ts`) | `modules/polls/poll/` |
+| Poll authoring | `authoring` | Admin CRUD plus the four `/polls/*` screens (`PollList`, `PollDetail`, `PollForm`, `PollEdit`) | `modules/polls/authoring/` |
 
 ### Context `collection`
 
@@ -111,15 +111,18 @@ run's way of drawing one.
 
 | Concept | Aggregate | Today |
 |---|---|---|
-| Login, signup, session | `auth` | `domains/users/` |
-| User, dev card, awards | `profile` | `domains/users/`, `routes/_authed/profile.$userId.tsx` |
+| Login, signup, session | `auth` | `modules/account/auth/` |
+| User, dev card, awards | `profile` | `modules/account/profile/`, `routes/_authed/profile.$userId.tsx` |
+| Archive + borders | `profile` | `border.model.ts` (catalogue + `findBorderById`), `archive.service.ts`, `useArchiveState.hook.ts`, `BorderShop`, `ArchiveSummary`. All three columns (`archived_storage`, `owned_border_ids`, `equipped_border_id`) sit on `users`, so one aggregate owns one table |
 
-### Legacy: `src/domains/`
+### `src/domains/` is gone
 
-`economy/`, `polls/`, `runs/`, `shared/`, `users/`. Live but being migrated per
-ADR-002. `shared/queryKeys.ts` and `shared/categories` are still cross-cutting
-and used by `src/modules/`; they belong in `src/shared/`. Do not add new
-concepts here.
+Retired 2026-09-23 (DVTD-wj1t). The last two slices landed as
+`modules/polls/{poll,authoring}/` and `modules/account/profile/`; the name
+`economy` went with them, since the archive and the borders are both columns on
+`users` and belong to `profile`. The three `legacy-*` dependency-cruiser rules
+that guarded the old tree are deleted, so ADR-002 now has one rule set and no
+legacy carve-out.
 
 ---
 
@@ -153,7 +156,7 @@ meant two things at once.
 | Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size. A version's odds of being rolled read as `1 in N rolls`, never as a tier word (ADR-097) | **Slots** (`Config.slots`, one of 1/2/4/8/12/16); **odds** for a version |
 | Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
 | Shelf | Renamed 2026-09-10: the offer list is an npm registry, which is what the player downloads and installs from. The **shop** is still the screen | **Registry** (`Registry.ui.tsx`, `RegistryControl.ui.tsx`, `ShopScreenProps.registry`) |
-| Turn | No such symbol in `src/modules/`; `turn.service.ts` is legacy `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
+| Turn | No such symbol anywhere; the legacy `turn.service.ts` was deleted with `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
 | Score / ScoreBlock | No score system and no such component; scoring *is* coverage | **Coverage** |
 | Config Trigger | Never built as a distinct concept | **Check** and **Effect** |
 | Config Effects Engine | The engine is one function | `effectOf` in `config/domain/effect.model.ts` |

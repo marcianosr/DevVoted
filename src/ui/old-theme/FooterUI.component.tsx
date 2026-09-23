@@ -6,7 +6,7 @@ type FooterUIProps = {
 	categoryCount: number;
 	configCount: number;
 	lastCommitDate: string;
-	statsLink: ReactNode;
+	statsLink?: ReactNode;
 };
 
 export const FooterUI = ({
@@ -24,8 +24,12 @@ export const FooterUI = ({
 			<div>{categoryCount} categories</div>
 			<span>·</span>
 			<div>{configCount} configs</div>
-			<span>·</span>
-			{statsLink}
+			{statsLink && (
+				<>
+					<span>·</span>
+					{statsLink}
+				</>
+			)}
 		</section>
 
 		<hr className="border-theme my-4" />

@@ -1,4 +1,4 @@
-import { evaluatePollAnswer } from "~/domains/polls/services/pollAnswerEvaluation.service";
+import { evaluatePollAnswer } from "~/modules/polls/poll/domain/pollAnswer.model";
 import { isCategoryCode } from "~/shared/lib/categories";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 

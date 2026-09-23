@@ -7,7 +7,7 @@ priority: critical
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-09-12T12:58:03Z
+updated_at: 2026-09-23T09:21:24Z
 parent: DVTD-z2r2
 ---
 
@@ -293,3 +293,21 @@ Configs and borders are untouched.
 Also relevant to the undecided trigger: "hit a coverage threshold in the
 config's own category" now has to survive a per-gate reset (ADR-073 decision 4).
 Same problem as DVTD-h9s5, and it should get the same answer.
+
+## Border rarity styling, parked here 2026-09-23 (DVTD-wj1t)
+
+`BorderShop.component.tsx` carried this commented out, with the note "parked
+until shop visual design is locked". Commented-out code does not travel into
+`src/modules/`, so the intent lives here instead. `Border.rarity` (`common` |
+`rare` | `epic` | `legendary`) is on the model and is currently rendered by
+nothing:
+
+    common    → ring-gray-500
+    rare      → ring-cyan-400
+    epic      → ring-fuchsia-500
+    legendary → ring-amber-300 animate-pulse
+
+Reinstate by mapping `border.rarity` onto the card wrapper's ring colour. Note
+the palette predates the kanto pass — DVTD-ati1 makes the same complaint about
+configs still being coloured by rarity, so settle whether rarity is a visual
+axis at all before wiring this.

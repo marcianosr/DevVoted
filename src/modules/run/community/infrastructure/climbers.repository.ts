@@ -2,7 +2,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { runStatesTable, runsTable, usersTable } from "~/database/schema";
-import { findBorderById } from "~/domains/economy/data/borders";
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import { localDayRange } from "~/shared/lib/dateUtils";
 
 import type {
@@ -61,7 +61,7 @@ const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} +
 const buildPath = sql`${runStatesTable.state}->${stateKey("build")}`;
 
 /**
- * A run's build as anyone may read it (ADR-100): ids, versions and the lock, in
+ * A run's build as anyone may read it (ADR-101): ids, versions and the lock, in
  * install order. The roster restates everything else in `publicBuildOf`, so no
  * embedded config object ever leaves Postgres.
  */

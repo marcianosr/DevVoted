@@ -1,22 +1,20 @@
 /**
- * ADR-002 §3. Two rule sets: LAYERED matches the migrated
- * context/aggregate/layer shape (only `modules/run/` today), LEGACY guards what
- * still uses `api/` + `presentation/{concept}/`. Delete each legacy rule as its
- * slice migrates (DVTD-36ct).
+ * ADR-002 §3. One rule set: every module lives in the
+ * context/aggregate/layer shape. `src/domains/` is gone (DVTD-wj1t), and with
+ * it the `legacy-*` rules that guarded it.
  *
  * Type-only imports pass every rule: types are contracts, not coupling.
  */
 
 const AGG = "^src/modules/[^/]+/[^/]+";
-const LEGACY_FROM = "^src/domains/[^/]+/";
-/** Dev rigs: they drive the engine directly, so runtime domain imports are expected. */
-const DEV_RIG_ROUTES = "^src/routes/proto-(run|session-slice)\\.tsx$";
 /** The root route builds the router context in `beforeLoad`, which runs before
  * any component exists — so it cannot reach its data by mounting one. */
 const ROOT_ROUTE = "^src/routes/__root\\.tsx$";
+/** The kanto reference rig drives the engine directly, so runtime domain
+ * imports are expected. (proto-session-slice was deleted with the old engine.) */
+const DEV_RIG_ROUTE = "^src/routes/proto-run\\.tsx$";
 /** TanStack generates routeTree and pairs it with router.tsx; the cycle is theirs. */
 const GENERATED_ROUTER = "^src/(router\\.tsx|routeTree\\.gen\\.ts)$";
-const LEGACY_TREE = "^src/domains/";
 
 module.exports = {
 	forbidden: [
@@ -26,15 +24,13 @@ module.exports = {
 				"Aggregates may depend on each other's types freely (CONTEXT.md assigns " +
 				"each term one owner), but a runtime cycle means neither module can be " +
 				"loaded, read or tested without the other. Exempt: the generated route " +
-				"tree, which TanStack Router pairs with router.tsx by design, and " +
-				"src/domains/, which holds one known cycle awaiting DVTD-wj1t " +
-				"(progress.service ↔ turn.service).",
+				"tree, which TanStack Router pairs with router.tsx by design.",
 			severity: "error",
-			from: { pathNot: `${GENERATED_ROUTER}|${LEGACY_TREE}` },
+			from: { pathNot: GENERATED_ROUTER },
 			to: {
 				circular: true,
 				dependencyTypesNot: ["type-only"],
-				pathNot: `${GENERATED_ROUTER}|${LEGACY_TREE}`,
+				pathNot: GENERATED_ROUTER,
 			},
 		},
 		{
@@ -102,7 +98,7 @@ module.exports = {
 			severity: "error",
 			from: {
 				path: "^src/routes/",
-				pathNot: `${DEV_RIG_ROUTES}|${ROOT_ROUTE}`,
+				pathNot: `${DEV_RIG_ROUTE}|${ROOT_ROUTE}`,
 			},
 			to: {
 				path: `${AGG}/(domain|application|infrastructure)/`,
@@ -122,7 +118,7 @@ module.exports = {
 			severity: "error",
 			from: { path: "^src/ui/", pathNot: "\\.stories\\." },
 			to: {
-				path: "^src/(modules|domains)/",
+				path: "^src/modules/",
 				dependencyTypesNot: ["type-only"],
 			},
 		},
@@ -132,7 +128,7 @@ module.exports = {
 			severity: "error",
 			from: { path: "^src/shared/", pathNot: "\\.spec\\.tsx?$" },
 			to: {
-				path: "^src/(modules|domains)/",
+				path: "^src/modules/",
 				dependencyTypesNot: ["type-only"],
 			},
 		},
@@ -143,39 +139,6 @@ module.exports = {
 			from: { path: `${AGG}/domain/`, pathNot: "\\.spec\\.tsx?$" },
 			to: {
 				path: "^src/shared/(?!lib/)",
-				dependencyTypesNot: ["type-only"],
-			},
-		},
-		{
-			name: "legacy-engine-stays-pure-no-react",
-			comment: "pre-ADR-002 layout: engine code is framework-free",
-			severity: "error",
-			from: {
-				path: LEGACY_FROM,
-				pathNot: "/(presentation|components|hooks|api)/",
-			},
-			to: { path: "^react(-dom)?$" },
-		},
-		{
-			name: "legacy-engine-stays-pure-no-db",
-			comment: "pre-ADR-002 layout: engine code never touches Drizzle",
-			severity: "error",
-			from: {
-				path: LEGACY_FROM,
-				pathNot: "/(api|factories)/",
-			},
-			to: {
-				path: "drizzle-orm|^src/database/",
-				dependencyTypesNot: ["type-only"],
-			},
-		},
-		{
-			name: "legacy-interface-not-into-queries",
-			comment: "pre-ADR-002 layout: reach data through handlers, not queries",
-			severity: "error",
-			from: { path: "/presentation/|^src/routes/" },
-			to: {
-				path: "/api/queries",
 				dependencyTypesNot: ["type-only"],
 			},
 		},

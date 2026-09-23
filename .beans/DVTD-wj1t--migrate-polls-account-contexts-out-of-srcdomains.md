@@ -1,11 +1,11 @@
 ---
 # DVTD-wj1t
 title: Migrate polls + account contexts out of src/domains
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2026-08-12T19:52:09Z
-updated_at: 2026-09-22T18:51:56Z
+updated_at: 2026-09-23T09:37:43Z
 parent: DVTD-u35m
 ---
 
@@ -132,3 +132,115 @@ DVTD-17b3 (the audit this waited on) is completed and archived. The real blocker
 named on DVTD-9qyd: `src/domains/economy/data/configs.ts` has 13 import sites including
 the live `/admin` route and `Footer.component.tsx`, so nothing further can move until
 those two migrate.
+
+## Summary of Changes — landed 2026-09-23
+
+**`src/domains/` no longer exists.** The last 29 files became
+`src/modules/polls/{poll,authoring}/` and `src/modules/account/profile/`.
+Verified at every step: **200 test files / 3775 tests**, `tsc --noEmit` clean,
+`npm run build` green, `lint:arch` clean at **755 modules**.
+
+### Step 0 — dead code cut in place first
+
+Per the warning carried on DVTD-9qyd: nothing forbids `modules/ -> domains/`, so
+moving before deleting would have hidden the problem behind a green lint.
+
+- `archive.queries.ts`: `creditArchivedStorage` (zero references — `run.repository.ts`
+  already credits inline), `debitArchivedStorageGuarded` (spec-only) and `DbExecutor`.
+  Its guarded-UPDATE SQL and TOCTOU rationale are recorded on **DVTD-lqjt** first.
+- `poll.model.ts` / `pollOption.model.ts`: six unused DTO mappers plus both
+  `*Factory` wrapper objects — only `.toDTO` and `.toDTOs` ever had callers.
+- Both test factories: `createMockPollRecord`, `createMockPollOptionRecord`.
+- `schemas.ts`: nine of eleven exports. Three of them (`pollSubmissionSchema`,
+  `createPollSchema`, `userResponseSchema`) were kept alive **only by their own
+  spec** — dead schemas with tests.
+
+### Tests replaced, not just deleted
+
+`schemas.spec.ts` tested three dead schemas and neither live one.
+`poll.validation.spec.ts` now has 9 tests over `createPollWithOptionsSchema` and
+`updatePollSchema` — the two that actually run on every create and update.
+`poll.handlers.spec.ts` became `poll.service.spec.ts` (6 tests), moved off
+`resetAllMocks` and fixed a call that passed `4` as a `pollId` while meaning a count.
+
+### `economy` is gone as a name
+
+Borders and the archive went to **`account/profile`**, not a fifth context:
+`archived_storage`, `owned_border_ids` and `equipped_border_id` are all columns on
+`users`, which `profile.repository.ts` already owns. One aggregate, one table.
+`border.model.ts` **must** sit in `domain/` — three `modules/run/*/infrastructure/`
+repositories import `findBorderById` at runtime and `infrastructure-stays-below`
+permits only `domain/`.
+
+### What the arch rule caught, exactly as predicted
+
+`routes-only-into-presentation` fired the moment the server functions landed under
+`modules/`. Every hit was a real gap that `src/domains/` had been hiding:
+
+- `profile.$userId.tsx` reached an application hook -> `ProfilePage.{component,ui}.tsx`; route is now 13 lines.
+- All four `/polls/*` routes -> `authoring/presentation/`. **~480 route lines became 40.**
+- `$pollId/index.tsx` and `$pollId/edit.tsx` lost their `loader:`; data moved to
+  `useQuery` (with `retry: false`, so an access error does not retry three times).
+  Same call DVTD-9qyd made for `stats.tsx`; `/polls/` index already fetched this way.
+- `edit.tsx` lost its `beforeLoad` guard, which declared a `createServerFn` inline.
+  It is now `hasPollAdminAccess` + a render branch. **No security change** —
+  `updatePoll` still calls `ensureAdminAccess` and `getPollByIdWithOptions` still
+  enforces creator-or-admin server-side. The route guard was always UX only.
+
+### ADR-010 splits
+
+`PollForm` 370 lines -> `PollForm.ui.tsx` (343, all markup, `COPY` per ADR-102) +
+`PollForm.component.tsx` (160, eight `useState` and the handlers). Also
+`PollList`, `PollDetail`, `PollEdit`, `ArchiveSummary`, `BorderShop`, `BorderCard`,
+`PollFormPage`. No Stories: CLAUDE.md exempts admin tooling.
+
+### Re-classifications (ADR-002 §5)
+
+- `pollAnswerEvaluation.service.ts` -> `poll/domain/pollAnswer.model.ts`. Pure
+  function, no collaborators: deleting it loses *a concept*, not *an action* —
+  the same call the ADR records for `seed.service.ts -> seed.model.ts`.
+- `pollCreator.model.ts` **deleted**; `PollCreator` is now a row type on
+  `poll.repository.ts`, matching `PublicUser` and `PolldexPollRow`.
+- DTO mapping moved into the repositories per §5 ("mapping lives INSIDE this file"),
+  which also removed the `database/schema` import from `domain/`.
+
+### `as` casts removed (hard rule)
+
+Five, all in files being touched anyway: three
+`email as (typeof ADMIN_EMAILS)[number]` -> `isAdminEmail`; `user.email as any` in
+`edit.tsx` -> the same; `opt.id as number` -> an `isExistingOption` type guard; and
+the two `<select>` handlers now look the value up in `CATEGORY_CODES` /
+`statusOptions` instead of casting.
+
+### Guard rails retired
+
+`.dependency-cruiser.cjs` **187 -> 151 lines**. `LEGACY_FROM` and the three
+`legacy-*` rules are deleted; `ui-stays-presentational` and
+`shared-not-into-modules` narrowed from `^src/(modules|domains)/` to
+`^src/modules/`. The config gained **no** exemptions — ADR-002 §10 is down to the
+`proto-run` dev rig and `__root.tsx`. Docs updated: ADR-002 §2/§7/§9/§10,
+CONTEXT.md, CLAUDE.md.
+
+### Also worth knowing
+
+- Four query keys centralised (`pollQueryKeys.list/authored/creators/adminAccess`);
+  `["user-polls"]`, `["poll-creators"]` and `["all-polls"]` string literals are gone.
+- `updatePollOptionSchema` now `.extend()`s `newPollOptionSchema` instead of
+  restating it; the two `.refine` blocks share one predicate.
+- `profile.repository.ts` shares one `archiveColumns` object across select and
+  returning, replacing four duplicated column blocks.
+- `PollForm`'s single-answer handler mutated its state array in place; the
+  extracted version is pure.
+- `routeTree.gen.ts` dropped `/stats` — that route was already deleted on this
+  branch, the generated tree just had not been regenerated.
+- Filed **DVTD-mcxk**: creating a poll silently drops its explanation. Pre-existing
+  (the old `createPollInputSchema` had the same omission), carried across rather
+  than fixed silently.
+- `src/presentation/slides.ts` still says `src/domains/` — frozen talk-deck content,
+  deliberately left (DVTD-9qyd).
+
+### Not verified
+
+The four `/polls/*` screens and `/profile/$userId` have no test coverage and were
+not exercised in a browser. Needs a playthrough: list filters, create, detail,
+edit as admin and non-admin, border purchase/equip/unequip.

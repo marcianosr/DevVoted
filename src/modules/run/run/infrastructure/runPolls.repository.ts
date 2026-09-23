@@ -13,7 +13,7 @@ import {
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
-import { findBorderById } from "~/domains/economy/data/borders";
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import type {
 	PollAuthor,
 	RunPoll,
