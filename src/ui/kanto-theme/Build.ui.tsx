@@ -1,3 +1,4 @@
+import { BUILD } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
 
@@ -20,6 +21,10 @@ import {
 	type WeightTrackFill,
 } from "./WeightTrack.ui";
 
+const COPY = {
+	occupancyName: "build",
+} as const;
+
 const BAND = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
 const WRAP_LAYOUT = "flex flex-wrap items-center gap-3";
@@ -41,7 +46,6 @@ const FOLD_BODY = "pt-3";
 
 const CARET_GLYPH = "›";
 const SEPARATOR = "·";
-const TITLE = "Build";
 
 const NO_UPKEEP = 0;
 const BILLED_COLOR: KantoColor = "saffron";
@@ -191,10 +195,8 @@ const fillsOf = (
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
-const OCCUPANCY_NAME = "build";
-
 const occupancyFillOf = ({ used }: BuildSlots): SlotTrackFill[] =>
-	used < 1 ? [] : [{ name: OCCUPANCY_NAME, slots: used }];
+	used < 1 ? [] : [{ name: COPY.occupancyName, slots: used }];
 
 const Vacancy = ({ slots }: { slots: BuildSlots }) => (
 	<>
@@ -318,7 +320,7 @@ export const Build = ({
 		<section className={BAND}>
 			{!heading ? null : (
 				<div className={TITLE_ROW}>
-					<Typography variant="title">{TITLE}</Typography>
+					<Typography variant="title">{BUILD}</Typography>
 					<Typography variant="hint" as="span">
 						{summaryOf(
 							configs.length + skipped.length,

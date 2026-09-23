@@ -1,6 +1,11 @@
+import { NEEDED } from "~/shared/lib/copy";
 import type { CSSProperties } from "react";
 
 import { Typography } from "./Typography.ui";
+
+const COPY = {
+	of: "of",
+} as const;
 
 const LAYOUT = "flex items-center gap-5";
 const RING = "coverage-ring relative grid size-22 shrink-0 place-items-center";
@@ -13,7 +18,7 @@ const FIGURE =
 	"flex items-baseline text-xl font-bold tabular-nums text-theme-faint";
 const HELD = "coverage-count";
 const DEMAND = "mt-0.5 text-xxs whitespace-nowrap text-theme-muted";
-const COPY = "flex min-w-0 flex-col gap-1";
+const TEXT_COLUMN = "flex min-w-0 flex-col gap-1";
 
 const VIEW_BOX = "0 0 100 100";
 const CENTRE = 50;
@@ -24,9 +29,7 @@ const SWEEP = 100;
 const TURN = 2 * Math.PI;
 const TENTHS = 10;
 
-const OF = "of";
 const PERCENT = "%";
-const READING_SUFFIX = "needed";
 
 type CountStyle = CSSProperties & Record<"--coverage-count", number>;
 
@@ -49,7 +52,7 @@ const tickAt = (share: number, radius: number) => ({
 });
 
 const readingOf = (held: number, demand: number) =>
-	`${toTenth(held)}${PERCENT} ${OF} ${toTenth(demand)}${PERCENT} ${READING_SUFFIX}`;
+	`${toTenth(held)}${PERCENT} ${COPY.of} ${toTenth(demand)}${PERCENT} ${NEEDED}`;
 
 export type CoverageRingProps = {
 	held: number;
@@ -116,13 +119,13 @@ export const CoverageRing = ({
 						{tenth === 0 ? null : `.${tenth}`}
 					</span>
 					<span className={DEMAND}>
-						{OF} {toTenth(demand)}
+						{COPY.of} {toTenth(demand)}
 						{PERCENT}
 					</span>
 				</span>
 			</span>
 			{title === undefined && note === undefined ? null : (
-				<div className={COPY}>
+				<div className={TEXT_COLUMN}>
 					{title === undefined ? null : (
 						<Typography variant="subtitle">{title}</Typography>
 					)}

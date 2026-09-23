@@ -12,7 +12,6 @@ export const COMMUNITY_SHOP_LABEL = "Back to the shop";
 export const COMMUNITY_PREP_LABEL = "Prep for Rainbow";
 export const COMMUNITY_DEX_LABEL = "Open the Dex";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
-export const COMMUNITY_MAP_PLACEHOLDER = "The climb map lands here";
 export const COMMUNITY_CLIMB_TITLE = "Lavender cleared";
 
 const CLEARED_GATE = 4;

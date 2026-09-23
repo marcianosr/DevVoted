@@ -1,5 +1,6 @@
-export const plural = (count: number, noun: string) =>
-	`${count} ${noun}${count === 1 ? "" : "s"}`;
+import { plural } from "~/shared/lib/displayValue";
+
+export { plural };
 
 export const countRange = (fewest: number, most: number, noun: string) =>
 	fewest === most ? plural(fewest, noun) : `${fewest}–${most} ${noun}s`;

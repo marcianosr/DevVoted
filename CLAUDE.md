@@ -83,6 +83,7 @@ Strict two-tier separation, both tiers inside `presentation/`. See
 - [ ] Renders HTML or uses Tailwind classes? → `{aggregate}/presentation/{Name}.ui.tsx`, plain props, has a Story.
 - [ ] Calls a hook or server function? → `{aggregate}/presentation/{Name}.component.tsx` or `src/routes/`, zero HTML/CSS.
 - [ ] Never mix both in the same file.
+- [ ] User-facing text? → a `COPY` object in the `.ui.tsx`, or `~/shared/lib/copy.ts` if a second surface states it. Run state picks the string → the viewmodel owns it ([ADR-102](docs/adr/102-copy-has-one-owner.md)).
 - [ ] `presentation/` may not import `infrastructure/` at all: go via an application hook or server function.
 
 ### Database Tables

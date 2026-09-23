@@ -1,3 +1,4 @@
+import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { useNavigate } from "@tanstack/react-router";
 
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
@@ -56,7 +57,7 @@ export const RunCommunity = () => {
 				pollNote={
 					community.errorMessage
 						? "Couldn’t load today’s comparison. Your run is unaffected — try again shortly."
-						: "Nothing to see yet — answer some of today’s polls first."
+						: NOTHING_TO_COMPARE_YET
 				}
 				countdown={timer}
 				back={back}

@@ -32,8 +32,8 @@ const SEPARATOR = "·";
 
 const NEW_RUN_TITLE = "New run";
 const FREE_PRICE = "free";
-const EMPTY_LABEL = "nothing installed yet";
-const SUGGESTED_LABEL = "suggested";
+export const EMPTY_LABEL = "nothing installed yet";
+export const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
 const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
 export const NEW_RUN_BUILD_NOTE = `The first ${BASE_SLOTS} weight is free. Past that the build rents the space it grows into, and bills for it at every gate you clear.`;

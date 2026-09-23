@@ -1,3 +1,4 @@
+import { LOCKED_CONFIG } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
@@ -14,6 +15,11 @@ import {
 } from "./Upgrades.ui";
 import { Version } from "./Version.ui";
 import { Weight } from "./Weight.ui";
+
+const COPY = {
+	install: "Install",
+	confirm: "Confirm",
+} as const;
 
 const WRAP = "group/info relative inline-flex";
 const CHIP =
@@ -54,12 +60,9 @@ const INSTALL_TONE: ButtonTone = "action";
 const CONFIRM_TONE: ButtonTone = "commit";
 const UNINSTALL_TONE: ButtonTone = "danger";
 
-const LOCKED_LABEL = "Locked config";
 const INFO_GLYPH = "i";
 const UNINSTALL_GLYPH = "×";
 const UPGRADE_GLYPH = "↑";
-const INSTALL_LABEL = "Install";
-const CONFIRM_LABEL = "Confirm";
 const HINT_SEPARATOR = " · ";
 
 export type ConfigChipBadge =
@@ -128,12 +131,12 @@ const upgradeHintOf = (name: string, { version, price }: UpgradeRung) => {
 };
 
 const installHintOf = (name: string, price?: string) => {
-	const names = `${INSTALL_LABEL} ${name}`;
+	const names = `${COPY.install} ${name}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
 const confirmHintOf = (name: string, price?: string) => {
-	const names = `${CONFIRM_LABEL} installing ${name}`;
+	const names = `${COPY.confirm} installing ${name}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
@@ -159,7 +162,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		return (
 			<span className={clsx(CHIP, EDGE, FIT_WIDTH)}>
 				<span className={NAME}>
-					<Redaction label={LOCKED_LABEL} />
+					<Redaction label={LOCKED_CONFIG} />
 				</span>
 			</span>
 		);
@@ -249,7 +252,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 				{install === undefined ? null : (
 					<Button
 						tone={arming === undefined ? INSTALL_TONE : CONFIRM_TONE}
-						label={arming === undefined ? INSTALL_LABEL : CONFIRM_LABEL}
+						label={arming === undefined ? COPY.install : COPY.confirm}
 						detail={install.price}
 						detailOn={priceOn}
 						hint={

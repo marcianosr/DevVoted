@@ -1,3 +1,4 @@
+import { LOCKED_CONFIG } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
 import { DexPanel } from "./DexPanel.ui";
 import { Figures } from "./Figures.ui";
@@ -6,6 +7,14 @@ import { Panel } from "./Panel.ui";
 import { Redaction } from "./Redaction.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Weight } from "./Weight.ui";
+
+const COPY = {
+	baseRung: "on install",
+	unlockLead: "unlock",
+	alternativeLead: "or",
+	starterTag: "starter",
+	earnedTag: "earned",
+} as const;
 
 const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-3";
 const CARD =
@@ -28,13 +37,7 @@ const COUNT = "shrink-0 tabular-nums";
 const READER_ONLY = "sr-only";
 
 const FIRST_VERSION = 1;
-const BASE_RUNG = "on install";
-const LOCKED_LABEL = "Locked config";
-const UNLOCK_LEAD = "unlock";
-const ALTERNATIVE_LEAD = "or";
 const SEPARATOR = "·";
-const STARTER_TAG = "starter";
-const EARNED_TAG = "earned";
 
 /** One rung of a config's in-run version ladder. `price` and `odds` are null
  * for v1, which is what installing it already gives you. */
@@ -87,16 +90,16 @@ export type DexConfigsProps = DexConfigsData & {
 };
 
 export const unlockLabelOf = (path: DexUnlockPath): string =>
-	`${UNLOCK_LEAD} ${SEPARATOR} ${path.text}`;
+	`${COPY.unlockLead} ${SEPARATOR} ${path.text}`;
 
 export const alternativeLabelOf = (path: DexUnlockPath): string =>
-	`${ALTERNATIVE_LEAD} ${SEPARATOR} ${path.text}`;
+	`${COPY.alternativeLead} ${SEPARATOR} ${path.text}`;
 
 export const progressLabelOf = ({ count, target }: UnlockProgress): string =>
 	`${count}/${target}`;
 
 export const provenanceTagOf = (starter: boolean): string =>
-	starter ? STARTER_TAG : EARNED_TAG;
+	starter ? COPY.starterTag : COPY.earnedTag;
 
 export const rungHintOf = (name: string, version: number): string =>
 	`Read ${name} v${version}`;
@@ -110,7 +113,8 @@ const effectOf = (row: GrantedRow, rung?: DexVersionRung): string =>
 	rung === undefined || rung.effect === "" ? row.effect : rung.effect;
 
 const RungPrice = ({ rung }: { rung: DexVersionRung }) => {
-	if (rung.price === null) return <span className={PRICE}>{BASE_RUNG}</span>;
+	if (rung.price === null)
+		return <span className={PRICE}>{COPY.baseRung}</span>;
 
 	return (
 		<span className={PRICE}>
@@ -204,7 +208,7 @@ const Alternative = ({ path }: { path: DexUnlockPath }) => {
 	return (
 		<span className={ALTERNATIVE}>
 			<span className={READER_ONLY}>{alternativeLabelOf(path)}</span>
-			<span aria-hidden>{ALTERNATIVE_LEAD}</span>
+			<span aria-hidden>{COPY.alternativeLead}</span>
 			<span className={ALTERNATIVE_BAR}>
 				<Meter value={path.progress.count} max={path.progress.target} />
 			</span>
@@ -221,7 +225,7 @@ const LockedCard = ({ row }: { row: LockedRow }) => {
 			<span className={HEAD}>
 				<Weight slots={row.slots} />
 				<span className={LOCKED_NAME}>
-					<Redaction label={LOCKED_LABEL} />
+					<Redaction label={LOCKED_CONFIG} />
 				</span>
 			</span>
 			<span className={PATHS}>

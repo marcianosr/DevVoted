@@ -1,3 +1,4 @@
+import { WEIGHT } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
 import { kbLabel } from "~/shared/lib/storage";
@@ -6,6 +7,15 @@ import type { KantoColor } from "./colors";
 import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
 import { Typography } from "./Typography.ui";
 import { upkeepLabelOf } from "./upkeep";
+
+const COPY = {
+	of: "of",
+	free: "free",
+	overBy: "over by",
+	beforeBill: "free before the bill becomes",
+	current: "Current:",
+	afterInstall: "After install:",
+} as const;
 
 const COLUMN = "flex w-full flex-col gap-1.5";
 const TRACK = "flex h-7.5 w-full";
@@ -39,14 +49,7 @@ const NO_WEIGHT = 0;
 const NO_UPKEEP = 0;
 const PREVIEW_LINE = "block tabular-nums";
 
-const WEIGHT_WORD = "weight";
 const SEPARATOR = "·";
-const OF_WORD = "of";
-const FREE_WORD = "free";
-const OVER_BY = "over by";
-const BEFORE_BILL = "free before the bill becomes";
-const CURRENT_LABEL = "Current:";
-const AFTER_LABEL = "After install:";
 
 const SEGMENT_RAMP = [
 	"pewter",
@@ -102,14 +105,14 @@ export const roomLineOf = (
 	next?: NextRung
 ): string => {
 	if (weight > held)
-		return `${weight} ${OF_WORD} ${held} ${WEIGHT_WORD} ${SEPARATOR} ${OVER_BY} ${weight - held}`;
+		return `${weight} ${COPY.of} ${held} ${WEIGHT} ${SEPARATOR} ${COPY.overBy} ${weight - held}`;
 
 	const room =
 		next === undefined
-			? `${held - weight} ${FREE_WORD}`
-			: `${held - weight} ${BEFORE_BILL} ${kbLabel(next.kb)}`;
+			? `${held - weight} ${COPY.free}`
+			: `${held - weight} ${COPY.beforeBill} ${kbLabel(next.kb)}`;
 
-	return `${weight} ${OF_WORD} ${held} ${WEIGHT_WORD} ${SEPARATOR} ${room}`;
+	return `${weight} ${COPY.of} ${held} ${WEIGHT} ${SEPARATOR} ${room}`;
 };
 
 /**
@@ -123,12 +126,12 @@ export const previewLinesOf = (
 	perGateKb: number,
 	preview: WeightPreview
 ): readonly string[] => [
-	`${CURRENT_LABEL} ${weight} ${OF_WORD} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
-	`${AFTER_LABEL} ${preview.weight} ${OF_WORD} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
+	`${COPY.current} ${weight} ${COPY.of} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
+	`${COPY.afterInstall} ${preview.weight} ${COPY.of} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
 ];
 
 const fillLineOf = ({ name, slots }: WeightTrackFill) =>
-	`${name} ${SEPARATOR} ${slots} ${WEIGHT_WORD}`;
+	`${name} ${SEPARATOR} ${slots} ${WEIGHT}`;
 
 const Segment = ({
 	fill,

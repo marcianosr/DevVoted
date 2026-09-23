@@ -1,3 +1,4 @@
+import { BUILD } from "~/shared/lib/copy";
 import { useEffect, useState } from "react";
 
 import { Build, configCountOf, type BuildProps } from "./Build.ui";
@@ -7,7 +8,6 @@ import { Fold, type FoldBadge } from "./Fold.ui";
 const STICKY =
 	"build-footer sticky bottom-0 z-20 -mx-4 mt-auto bg-theme-faint px-4 pb-4";
 
-const TITLE = "Build";
 const DESKTOP = "(min-width: 640px)";
 
 export const BUILD_FLASH_HOLD_MS = 1200;
@@ -82,7 +82,7 @@ export const BuildFooter = ({
 	return (
 		<footer data-flash={lit ? "true" : undefined} className={STICKY}>
 			<Fold
-				title={TITLE}
+				title={BUILD}
 				summary={configCountOf(total)}
 				badges={badgesOf(counts)}
 				open={open ?? defaultOpen}

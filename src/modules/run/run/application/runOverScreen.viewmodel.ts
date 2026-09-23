@@ -1,3 +1,4 @@
+import { plural } from "~/shared/lib/displayValue";
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
@@ -106,9 +107,6 @@ export type RunOverFrame = {
 	readonly archiveAfterKb?: number;
 	readonly unlocked: readonly UnlockLine[];
 };
-
-const plural = (count: number, noun: string) =>
-	`${count} ${noun}${count === 1 ? "" : "s"}`;
 
 /** Weight is a mass noun everywhere else in the kit ("7 of 10 weight · 3 free"). */
 const weightLabel = (weight: number) => `${weight} weight`;

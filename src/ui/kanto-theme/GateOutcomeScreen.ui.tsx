@@ -1,3 +1,4 @@
+import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
@@ -24,6 +25,10 @@ import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+
+const COPY = {
+	coverage: "Coverage",
+} as const;
 
 const HEADER = "flex w-full flex-col gap-4";
 const TITLE_ROW = "flex w-full items-start gap-4";
@@ -160,9 +165,6 @@ const GateOutcomeHeading = ({
 	</header>
 );
 
-const COVERAGE_TITLE = "Coverage";
-const PAID_TITLE = "what each poll paid";
-
 type CoveragePanelProps = {
 	bar: CoverageBarProps;
 	band: CoverageBandId;
@@ -172,7 +174,7 @@ type CoveragePanelProps = {
 
 const CoveragePanel = ({ bar, band, bonus, payouts }: CoveragePanelProps) => (
 	<Fold
-		title={COVERAGE_TITLE}
+		title={COPY.coverage}
 		summary={bonus?.summary}
 		badges={[
 			...(bonus?.badges ?? []),
@@ -188,7 +190,7 @@ const CoveragePanel = ({ bar, band, bonus, payouts }: CoveragePanelProps) => (
 		<CoverageBar {...bar} pin />
 		{payouts === undefined ? null : (
 			<>
-				<Typography variant="hint">{PAID_TITLE}</Typography>
+				<Typography variant="hint">{WHAT_EACH_POLL_PAID}</Typography>
 				<PollScores {...payouts} />
 			</>
 		)}

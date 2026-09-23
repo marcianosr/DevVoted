@@ -36,7 +36,9 @@ const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
 const CONTROL_SIZE = "md";
 
-const MAP_PLACEHOLDER = "The climb map lands here";
+export const COPY = {
+	mapPlaceholder: "The climb map lands here",
+} as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
 
@@ -259,7 +261,7 @@ const WhereEveryoneIs = ({
 		<Panel.Body>
 			<div className={PLACEHOLDER}>
 				<Typography variant="hint" as="span">
-					{MAP_PLACEHOLDER}
+					{COPY.mapPlaceholder}
 				</Typography>
 			</div>
 		</Panel.Body>

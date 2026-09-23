@@ -1,3 +1,4 @@
+import { BUILD, REGISTRY } from "~/shared/lib/copy";
 import { Audit, type AuditProps } from "./Audit.ui";
 import { Build, buildHeadOf, type BuildProps } from "./Build.ui";
 import { Header, type HeaderProps } from "./Header.ui";
@@ -11,15 +12,16 @@ import {
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 
+const COPY = {
+	controlsTitle: "Registry control",
+} as const;
+
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 
 const BUILD_LAYOUT = "column";
 const CONTROL_LAYOUT = "row";
-const BUILD_TITLE = "Build";
-const REGISTRY_TITLE = "Registry";
-const CONTROLS_TITLE = "Registry control";
 
 export type ShopScreenProps = {
 	build: BuildProps;
@@ -61,7 +63,7 @@ export const ShopScreen = ({
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
 					<Panel>
-						<Panel.Header label={BUILD_TITLE} meta={buildHeadOf(build)} />
+						<Panel.Header label={BUILD} meta={buildHeadOf(build)} />
 						<Panel.Body>
 							<Build {...build} layout={BUILD_LAYOUT} heading={false} />
 						</Panel.Body>
@@ -71,7 +73,7 @@ export const ShopScreen = ({
 				<div className={COLUMN}>
 					<Panel>
 						<Panel.Header
-							label={REGISTRY_TITLE}
+							label={REGISTRY}
 							meta={
 								<RegistrySummary
 									offers={registry.offers.length}
@@ -86,7 +88,7 @@ export const ShopScreen = ({
 
 					{controls.length === 0 ? null : (
 						<Panel>
-							<Panel.Header label={CONTROLS_TITLE} />
+							<Panel.Header label={COPY.controlsTitle} />
 							<Panel.Rows>
 								{controls.map((control) => (
 									<Panel.Row key={control.title}>

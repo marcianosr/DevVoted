@@ -1,16 +1,19 @@
+import { REGISTRY } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import type { DetailReveal } from "./Button.ui";
 import { Typography } from "./Typography.ui";
+
+const COPY = {
+	offers: "offers",
+	aSlot: "a slot",
+} as const;
 
 const COLUMN = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
 const LIST = "flex w-full flex-col gap-3";
 
 const SEPARATOR = "·";
-const TITLE = "Registry";
-const OFFERS_WORD = "offers";
-const A_SLOT = "a slot";
 
 /** The registry has room to spell its prices out, so nothing hides on hover. */
 const PRICE_ON: DetailReveal = "always";
@@ -36,9 +39,9 @@ export const RegistrySummary = ({
 	slotPrice,
 }: RegistrySummaryProps) => (
 	<>
-		<span>{`${offers} ${OFFERS_WORD} ${SEPARATOR} `}</span>
+		<span>{`${offers} ${COPY.offers} ${SEPARATOR} `}</span>
 		<Badge>{slotPrice}</Badge>
-		<span>{` ${A_SLOT}`}</span>
+		<span>{` ${COPY.aSlot}`}</span>
 	</>
 );
 
@@ -76,7 +79,7 @@ export const Registry = ({
 	<section className={COLUMN}>
 		{!heading ? null : (
 			<div className={TITLE_ROW}>
-				<Typography variant="title">{TITLE}</Typography>
+				<Typography variant="title">{REGISTRY}</Typography>
 				<Typography variant="hint" as="span">
 					<RegistrySummary offers={offers.length} slotPrice={slotPrice} />
 				</Typography>

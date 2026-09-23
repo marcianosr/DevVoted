@@ -1,3 +1,4 @@
+import { AUDITS } from "~/shared/lib/copy";
 import {
 	type Config,
 	escrowKbPerCorrect,
@@ -61,8 +62,6 @@ export const fundsOf = (kb: number, label: string): HeaderFunds => {
 	const [amount, unit] = kbLabel(kb).split(" ");
 	return { amount, unit, label };
 };
-
-const AUDITS_TITLE = "Audits";
 
 const SUMMIT_LINE = "the summit — nothing after this";
 const SEALED: LedgerFigure = { locked: true };
@@ -376,7 +375,7 @@ export const prepPropsFor = ({
 			rows: pollRowsFor(gate, window, prefetcher !== undefined),
 		},
 		audits: {
-			title: AUDITS_TITLE,
+			title: AUDITS,
 			meta: auditsMetaOf(audits.length),
 			...auditBillFor(configs, gate, balanceKb, buildSpace),
 			alerts: audits.map(auditPropsFor),

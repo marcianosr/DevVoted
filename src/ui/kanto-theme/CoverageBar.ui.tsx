@@ -1,9 +1,15 @@
+import { NEEDED } from "~/shared/lib/copy";
 import { type CSSProperties, useEffect, useState } from "react";
 
 import { clsx } from "clsx";
 
 import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
+
+const COPY = {
+	survive: "survive",
+	of: "of",
+} as const;
 
 const LAYOUT = "coverage-bar flex w-full flex-col gap-1.5";
 const TRACK =
@@ -38,12 +44,7 @@ const ANCHOR_CLASS = {
 
 type Mark = { at: number; label: string; anchor?: MarkAnchor };
 
-const SURVIVE = "survive";
-const OK_WORD = "OK";
-const HEALTHY_WORD = "HEALTHY";
 const PERCENT = "%";
-const OF = "of";
-const READING_SUFFIX = "needed";
 const SEPARATOR = "·";
 
 export type CoverageBandId = "danger" | "shaky" | "ok" | "healthy" | "perfect";
@@ -135,11 +136,16 @@ const boundaryMarksOf = ({
 }: CoverageLadder): readonly Mark[] =>
 	(
 		[
-			{ at: floor, label: SURVIVE, anchor: "end", room: ok - floor },
-			{ at: ok, label: OK_WORD, anchor: "center", room: healthy - ok },
+			{ at: floor, label: COPY.survive, anchor: "end", room: ok - floor },
+			{
+				at: ok,
+				label: COVERAGE_BAND_WORD.ok,
+				anchor: "center",
+				room: healthy - ok,
+			},
 			{
 				at: healthy,
-				label: `${HEALTHY_WORD} ${toTenth(healthy)}${PERCENT}`,
+				label: `${COVERAGE_BAND_WORD.healthy} ${toTenth(healthy)}${PERCENT}`,
 				anchor: "start",
 				room: FULL - healthy,
 			},
@@ -178,7 +184,7 @@ const marksOf = (ladder: CoverageLadder, marks: CoverageMarks) =>
 	MARKS_OF[marks](ladder);
 
 const readingOf = (held: number, healthy: number, band: CoverageBandId) =>
-	`${toTenth(held)}${PERCENT} ${OF} ${toTenth(healthy)}${PERCENT} ${READING_SUFFIX} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
+	`${toTenth(held)}${PERCENT} ${COPY.of} ${toTenth(healthy)}${PERCENT} ${NEEDED} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
 
 export type CoverageMarks = "boundaries" | "bands" | "rungs";
 

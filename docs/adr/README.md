@@ -87,8 +87,9 @@ it before proposing one again.**
 | [097](097-a-rolled-upgrade-climbs-on-a-coin-flip.md) | **A rolled upgrade climbs on a coin flip** | Accepted — amends 053 D4; one rung up then 1-in-2 per further rung to the cap; odds read as `1 in N rolls`; the registry offer sells through `draft` |
 | [098](098-build-space-scales-with-the-build.md) | **Build space scales with the build, and the install press states the bill** | Accepted — supersedes 082 D1, D2, D3 and D5 and restates its D4; the rung is derived from `billableSlotsOf`, never picked; crossing one arms the install press; ladder and prices unchanged |
 | [099](099-audits-are-fired-by-rivals.md) | **Audits are fired by rivals, and the gate's count is its capacity** | Accepted — supersedes 056 D1, D2, D4 and 038 D2; no floor, no authored gate, one run-long attack per HEALTHY-or-better clear, lock-time capacity is the law |
-| [100](100-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
 | [100](100-a-category-has-a-living-record.md) | **A category has a living record**, and holding it makes you its maintainer | Accepted — uses ADR-093's `PollView` seam; first slice of DVTD-vje6's per-category records |
+| [101](101-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
+| [102](102-copy-has-one-owner.md) | **Copy has one owner** — run state picks it or the view states it | Accepted — generalises 040 D2; `COPY` object per `.ui.tsx`, shared words in `shared/lib/copy.ts`, register is not drift |
 
 ## Retired
 

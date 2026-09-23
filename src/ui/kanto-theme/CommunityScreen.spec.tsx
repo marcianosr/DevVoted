@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+
+import { COPY } from "./CommunityScreen.ui";
 import { render, screen, within } from "@testing-library/react";
 
 import {
 	COMMUNITY_CLIMB_TITLE,
 	COMMUNITY_DEX_LABEL,
-	COMMUNITY_MAP_PLACEHOLDER,
 	COMMUNITY_PREP_LABEL,
 	COMMUNITY_SHOP_LABEL,
 	kantoCommunity,
@@ -97,7 +98,7 @@ describe("CommunityScreen", () => {
 	it("parks the climb map behind a placeholder until its component lands", () => {
 		render(<CommunityScreen {...props} />);
 
-		expect(screen.getByText(COMMUNITY_MAP_PLACEHOLDER)).toBeInTheDocument();
+		expect(screen.getByText(COPY.mapPlaceholder)).toBeInTheDocument();
 	});
 
 	it("lines one standout up per climber, never claiming a share of climbers ever", () => {

@@ -1,4 +1,5 @@
 import type { Count, Duration, Percent } from "~/shared/lib/displayValue";
+import { plural } from "~/shared/lib/displayValue";
 
 import {
 	type AnswerOutcome,
@@ -142,9 +143,6 @@ const award = (
 ): CommunityStandout => ({ voter: toVoter(user, viewerId), title, value });
 
 const text = (value: string): StandoutValue => ({ unit: "text", text: value });
-
-const plural = (amount: number, noun: string): string =>
-	`${amount} ${noun}${amount === 1 ? "" : "s"}`;
 
 const withGateSwatch = (
 	standout: CommunityStandout,

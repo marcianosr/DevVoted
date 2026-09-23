@@ -1,3 +1,4 @@
+import { AUDITS, WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
@@ -18,16 +19,17 @@ import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 
-const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
+const COPY = {
+	coverage: "Coverage",
+	rule: "what a poll pays",
+	wrongCost: "wrong costs",
+} as const;
+
+const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
 const PAID = "border-t border-theme-faint";
 const SEPARATOR = "·";
 
-const COVERAGE_TITLE = "Coverage";
-const PAID_TITLE = "what each poll paid";
-const RULE_WORDS = "what a poll pays";
-const AUDITS_TITLE = "Audits";
-const WRONG_COST_WORDS = "wrong costs";
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const HOLDS_COLOR: KantoColor = "cerulean";
 const CREDIT_SIZE: AuthorSize = "sm";
@@ -105,7 +107,7 @@ export const PollScreen = ({
 
 		<Panel>
 			<Panel.Header
-				label={COVERAGE_TITLE}
+				label={COPY.coverage}
 				meta={
 					<>
 						<span>{coverageReadingOf(coverage.bar)}</span>
@@ -116,7 +118,7 @@ export const PollScreen = ({
 							align="end"
 							width="wide"
 						>
-							{RULE_WORDS}
+							{COPY.rule}
 						</Tooltip>
 					</>
 				}
@@ -129,7 +131,7 @@ export const PollScreen = ({
 			</Panel.Body>
 			{coverage.paid === undefined ? null : (
 				<Panel.Body className={PAID}>
-					<Typography variant="hint">{PAID_TITLE}</Typography>
+					<Typography variant="hint">{WHAT_EACH_POLL_PAID}</Typography>
 					<PollScores {...coverage.paid} />
 				</Panel.Body>
 			)}
@@ -137,12 +139,9 @@ export const PollScreen = ({
 
 		{audits.length === 0 ? null : (
 			<Panel>
-				<Panel.Header
-					label={AUDITS_TITLE}
-					meta={auditsFiringOf(audits.length)}
-				/>
+				<Panel.Header label={AUDITS} meta={auditsFiringOf(audits.length)} />
 				<Panel.Body>
-					<div className={AUDITS}>
+					<div className={AUDITS_ROW}>
 						{audits.map((audit, index) => (
 							<Audit key={audit.code ?? index} {...audit} />
 						))}
@@ -166,7 +165,7 @@ export const PollScreen = ({
 						{wrongCost === undefined ? null : (
 							<span className={META_ROW}>
 								<span aria-hidden>{SEPARATOR}</span>
-								{WRONG_COST_WORDS}
+								{COPY.wrongCost}
 								<Badge color={WRONG_COST_COLOR}>{wrongCost}</Badge>
 							</span>
 						)}

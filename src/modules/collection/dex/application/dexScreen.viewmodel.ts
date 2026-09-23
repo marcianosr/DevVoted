@@ -1,3 +1,4 @@
+import { plural } from "~/shared/lib/displayValue";
 import { CATEGORY_METADATA } from "~/shared/lib/categories";
 
 import type { AuditdexEntry } from "~/modules/collection/dex/domain/auditdex.model";
@@ -88,9 +89,6 @@ export const dexThemeOf = (activeId: string): KantoColor =>
 
 const heldOf = (held: number, total: number): string => `${held} of ${total}`;
 
-const pluralise = (count: number, one: string, many = `${one}s`): string =>
-	`${count} ${count === 1 ? one : many}`;
-
 /* ---------------------------------------------------------------- polls -- */
 
 const POLLS_NOTE =
@@ -118,7 +116,7 @@ export const dexPollsFor = (
 	return {
 		rows: entries.map(pollRowFor),
 		count: heldOf(coverage.seen, coverage.total),
-		meta: pluralise(
+		meta: plural(
 			presentCategories([...entries]).length,
 			"category",
 			"categories"
@@ -336,7 +334,7 @@ export const dexRunsFor = (
 	entries: readonly RunHistoryEntry[]
 ): DexRunsProps => ({
 	rows: entries.map(runRowFor),
-	count: pluralise(entries.length, "run"),
+	count: plural(entries.length, "run"),
 	meta: bestOf(entries),
 	note: RUNS_NOTE,
 });

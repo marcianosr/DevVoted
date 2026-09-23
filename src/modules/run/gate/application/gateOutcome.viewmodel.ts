@@ -1,3 +1,5 @@
+import { NEEDED } from "~/shared/lib/copy";
+import { plural } from "~/shared/lib/displayValue";
 import {
 	flatClearPayoutsOf,
 	occupiedSlots,
@@ -115,7 +117,6 @@ const METER_SHORT = "the meter fell short";
 const CAUGHT_REASON = "the meter never reached the floor — caught";
 const CAUGHT_CHIP = "caught";
 const RIGHT_WORD = "right";
-const NEEDED_WORD = "needed";
 const METER_NEVER = "the meter never reached the floor";
 const NO_RETRY = "no retry, no peel";
 const CLIMB_DONE = "the climb is done";
@@ -247,9 +248,6 @@ const signedUnits = (units: number) =>
 
 export const categoryName = (code: CategoryCode) =>
 	CATEGORY_METADATA[code].name;
-
-export const plural = (count: number, noun: string) =>
-	`${count} ${noun}${count === 1 ? "" : "s"}`;
 
 export const totalCoverage = (answers: readonly GateAnswer[]) =>
 	roundToOneDecimal(answers.reduce((sum, answer) => sum + answer.coverage, 0));
@@ -385,7 +383,7 @@ const titleOf = (band: CoverageBandId, gateName: string) =>
 const holdReasonOf = (frame: GateOutcomeFrame): string => {
 	if (heldByCatch(frame)) return CAUGHT_REASON;
 	if (heldByFloor(frame))
-		return `${dayCountOf(frame)}, ${FLOOR_CORRECT} ${NEEDED_WORD}`;
+		return `${dayCountOf(frame)}, ${FLOOR_CORRECT} ${NEEDED}`;
 	return METER_SHORT;
 };
 

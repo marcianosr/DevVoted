@@ -1,3 +1,9 @@
+import {
+	EMPTY_LABEL,
+	SUGGESTED_LABEL,
+} from "~/modules/run/build/application/newRunScreen.viewmodel";
+export { EMPTY_LABEL as NEW_RUN_EMPTY_LABEL, SUGGESTED_LABEL };
+
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
 	chipFor,
@@ -733,8 +739,6 @@ const NUMBER_WORDS: Readonly<Record<number, string>> = {
 
 const numberWord = (count: number) => NUMBER_WORDS[count] ?? String(count);
 
-export const NEW_RUN_EMPTY_LABEL = "nothing installed yet";
-export const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
 const ARCHIVE_WORD = "archive";
 
@@ -1018,7 +1022,7 @@ export const kantoNewRunAt = (
 	build: {
 		configs: kantoNewRunBuild(installedIds),
 		weight: { held: BASE_SLOTS, perGateKb: upkeepForSpace(BASE_SLOTS) },
-		emptyLabel: NEW_RUN_EMPTY_LABEL,
+		emptyLabel: EMPTY_LABEL,
 	},
 	registry: kantoNewRunRegistry(installedIds, BASE_SLOTS),
 	footer: kantoGateZeroFooter(installedIds.length > 0),

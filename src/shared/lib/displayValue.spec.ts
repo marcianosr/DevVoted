@@ -9,6 +9,7 @@ import {
 	formatPercent,
 	kb,
 	percent,
+	plural,
 } from "~/shared/lib/displayValue";
 
 describe("formatPercent", () => {
@@ -56,5 +57,24 @@ describe("formatDuration", () => {
 describe("formatCount", () => {
 	it("shows a bare number, with no unit to read past", () => {
 		expect(formatCount(count(14))).toBe("14");
+	});
+});
+
+describe("plural", () => {
+	it("keeps the singular at exactly one", () => {
+		expect(plural(1, "slot")).toBe("1 slot");
+	});
+
+	it("pluralises everything above one", () => {
+		expect(plural(3, "slot")).toBe("3 slots");
+	});
+
+	it("pluralises zero, which reads as a count and not as a singular", () => {
+		expect(plural(0, "slot")).toBe("0 slots");
+	});
+
+	it("takes an irregular plural for nouns an -s would break", () => {
+		expect(plural(2, "entry", "entries")).toBe("2 entries");
+		expect(plural(1, "entry", "entries")).toBe("1 entry");
 	});
 });

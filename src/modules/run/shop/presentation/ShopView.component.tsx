@@ -1,3 +1,4 @@
+import { WEIGHT } from "~/shared/lib/copy";
 import { useState } from "react";
 
 import { DRAFT_COST_PER_SLOT_KB } from "~/modules/run/config/domain/config.model";
@@ -41,7 +42,6 @@ const PIN = { glyph: "⚑", detail: "if this run dies, the next resumes here" };
 
 const TO_PREP = "To prep";
 const SEPARATOR = "·";
-const WEIGHT_WORD = "weight";
 const OVER_MARK = "over the";
 const OVER_REMEDY = "the bill covered · sell or drop to fit it";
 
@@ -201,7 +201,7 @@ export const ShopView = ({
 					onPress: overSpace || needsVendor ? undefined : onContinue,
 				},
 				refusal: overSpace
-					? `${view.overflowSlots} ${WEIGHT_WORD} ${OVER_MARK} ${view.buildSpace.coveredSpace} ${OVER_REMEDY}`
+					? `${view.overflowSlots} ${WEIGHT} ${OVER_MARK} ${view.buildSpace.coveredSpace} ${OVER_REMEDY}`
 					: needsVendor
 						? VENDOR_REMEDY
 						: undefined,

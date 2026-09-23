@@ -48,3 +48,9 @@ export const formatCount = ({ amount }: Count): string => String(amount);
 /** An em dash reads as "nothing to report" in a column of numbers, where a blank
  * cell reads as a rendering fault. */
 export const NOTHING_SHOWN = "—";
+
+/** The `many` default covers regular nouns; pass it for the irregulars the Dex
+ * states ("1 entry" / "2 entries"). Lives here rather than per-surface because
+ * a domain model, three viewmodels and a theme all counted nouns separately. */
+export const plural = (count: number, one: string, many = `${one}s`): string =>
+	`${count} ${count === 1 ? one : many}`;

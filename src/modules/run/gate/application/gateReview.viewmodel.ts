@@ -1,3 +1,4 @@
+import { plural } from "~/shared/lib/displayValue";
 import { gateSwatchAt } from "./swatchTrack.viewmodel";
 import {
 	answerTallyOf,
@@ -5,7 +6,6 @@ import {
 	coverageColor,
 	type GateAnswer,
 	GATE_SHOP_LABEL,
-	plural,
 	signedPercent,
 	totalCoverage,
 } from "./gateOutcome.viewmodel";

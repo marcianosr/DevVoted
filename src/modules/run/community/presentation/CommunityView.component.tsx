@@ -1,3 +1,4 @@
+import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { useState } from "react";
 
 import type { CategoryCode } from "~/shared/lib/categories";
@@ -162,7 +163,6 @@ export const defaultChipId = (
 	return lastOpen === undefined ? undefined : String(lastOpen.pollId);
 };
 
-const NOTHING_YET = "Nothing to see yet — answer some of today's polls first.";
 const SEALED = "Sealed — this poll may come back in a later seed.";
 
 export type CommunityViewProps = {
@@ -201,7 +201,7 @@ export const CommunityView = ({
 			selectedChipId={selected}
 			onSelectPoll={setChosen}
 			poll={detail}
-			pollNote={view.polls.length === 0 ? NOTHING_YET : SEALED}
+			pollNote={view.polls.length === 0 ? NOTHING_TO_COMPARE_YET : SEALED}
 			totalPlayers={view.polls.length === 0 ? undefined : view.totalPlayers}
 			climb={view.climb === null ? undefined : { gates: ladderFor(view.climb) }}
 			topPercent={view.topPercent ?? undefined}
