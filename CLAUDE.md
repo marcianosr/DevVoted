@@ -49,7 +49,7 @@ Older but still useful documentation can be found here:
 - **Testing**: Vitest with Testing Library
 - **Styling**: Tailwind CSS v4
 - **Error Monitoring**: Sentry
-- **Utilities**: date-fns, clsx, deepmerge
+- **Utilities**: date-fns, clsx
 
 ### Module Architecture
 
