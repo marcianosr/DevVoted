@@ -19,13 +19,13 @@ export const getPollByIdWithOptionsService = async ({
 		const hasAnswered = userId ? await hasUserAnsweredPoll(id, userId) : false;
 
 		return { poll, options, hasAnswered };
-	});
+	}, "getPollByIdWithOptions");
 
 export const getAllPollsService = async () =>
-	handleApiOperation(async () => fetchAllPolls());
+	handleApiOperation(async () => fetchAllPolls(), "getAllPolls");
 
 export const getPollsByUserService = async (userId: string) =>
-	handleApiOperation(async () => fetchPollsByUser(userId));
+	handleApiOperation(async () => fetchPollsByUser(userId), "getPollsByUser");
 
 export const getPollCreatorsService = async () =>
-	handleApiOperation(async () => fetchPollCreators());
+	handleApiOperation(async () => fetchPollCreators(), "getPollCreators");

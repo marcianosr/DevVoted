@@ -8,7 +8,9 @@ vi.mock("~/shared/utils/supabase", () => ({
 	getSupabaseServerClient: vi.fn(),
 }));
 
-vi.mock("@sentry/react", () => ({ captureException: vi.fn() }));
+vi.mock("~/shared/utils/errorReporting", () => ({
+	reportHandledFailure: vi.fn(),
+}));
 
 const signedInAs = (id: string) =>
 	vi.mocked(getSupabaseServerClient).mockReturnValue({

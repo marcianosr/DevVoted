@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -142,6 +142,46 @@ export const fetchRunSnapshot = async (
 		.where(eq(runStatesTable.run_id, runId))
 		.limit(1);
 	return row?.state ?? null;
+};
+
+/**
+ * Config ids in the build after the action and not before. Keyed on the state
+ * diff rather than on `action.type === "install"` because a config also enters
+ * the build through the shop's draft — one predicate that cannot go stale as
+ * transitions are added.
+ */
+const configsNewlyInstalled = (
+	before: Pick<RunState, "build">,
+	after: Pick<RunState, "build">
+): readonly string[] => {
+	const held = new Set(before.build.configs.map((config) => config.id));
+	return after.build.configs
+		.map((config) => config.id)
+		.filter((configId) => !held.has(configId));
+};
+
+/**
+ * ADR-064's unplayed queue is "granted but never installed", so the stamp is
+ * write-once: the IS NULL guard makes re-installing on a later run a no-op
+ * rather than a rewrite. No row is ever created here — a config the account
+ * does not own cannot be installed in the first place.
+ */
+const stampFirstInstalls = async (
+	tx: Pick<typeof db, "update">,
+	userId: string,
+	configIds: readonly string[]
+): Promise<void> => {
+	if (configIds.length === 0) return;
+	await tx
+		.update(userConfigUnlocksTable)
+		.set({ first_installed_at: sql`now()` })
+		.where(
+			and(
+				eq(userConfigUnlocksTable.user_id, userId),
+				inArray(userConfigUnlocksTable.config_id, configIds),
+				isNull(userConfigUnlocksTable.first_installed_at)
+			)
+		);
 };
 
 const gatesNewlyEarned = (
@@ -648,6 +688,14 @@ export const applyActionToRun = async (args: {
 
 		const settled =
 			args.settle === undefined ? next : await args.settle(tx, state, next);
+
+		// Against `settled`, not `next`: this is the state actually persisted, so
+		// the stamp can never disagree with the build that got written.
+		await stampFirstInstalls(
+			tx,
+			args.userId,
+			configsNewlyInstalled(state, settled)
+		);
 
 		await tx
 			.update(runStatesTable)

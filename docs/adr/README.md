@@ -90,6 +90,7 @@ it before proposing one again.**
 | [100](100-a-category-has-a-living-record.md) | **A category has a living record**, and holding it makes you its maintainer | Accepted — uses ADR-093's `PollView` seam; first slice of DVTD-vje6's per-category records |
 | [101](101-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
 | [102](102-copy-has-one-owner.md) | **Copy has one owner** — run state picks it or the view states it | Accepted — generalises 040 D2; `COPY` object per `.ui.tsx`, shared words in `shared/lib/copy.ts`, register is not drift |
+| [104](104-visits-are-counted-without-a-banner.md) | **Visits are counted without a banner** — a date-keyed hash, no device storage | Accepted |
 
 ## Retired
 

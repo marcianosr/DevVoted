@@ -123,7 +123,7 @@ export const getTodaysRunService = async ({
 		const startedToday = await findSessionRunByDate(userId, date);
 		if (!startedToday || !isFinishedRun(startedToday)) return null;
 		return viewOfRun(startedToday);
-	});
+	}, "getTodaysRun");
 
 export const startRunService = async ({
 	userId,
@@ -166,7 +166,7 @@ export const startRunService = async ({
 		);
 		await createSessionRunWithState(userId, date, state);
 		return withPollReads(toRunView(state), userId);
-	});
+	}, "startRun");
 
 /**
  * A finished run by permalink. The live run needs no id — the session resolves
@@ -186,7 +186,7 @@ export const getRunRecapService = async ({
 		if (!run || run.user_id !== userId) throw new Error("Run not found");
 
 		return viewOfRun(run);
-	});
+	}, "getRunRecap");
 
 export const abandonRunService = async ({
 	userId,
@@ -200,7 +200,7 @@ export const abandonRunService = async ({
 		await abandonSessionRun(run.id, userId);
 		await endIncidentsForRun(run.id);
 		return { abandoned: true as const };
-	});
+	}, "abandonRun");
 
 /**
  * `settle` defaults to locking rivals' incidents; a caller that has more to
@@ -242,7 +242,7 @@ export const dispatchRunActionService = async ({
 			},
 			userId
 		);
-	});
+	}, "dispatchRunAction");
 
 /** The viewer's permanent swatch collection, earned by widening builds. */
 export const getOwnedSwatchesService = async ({
@@ -250,6 +250,9 @@ export const getOwnedSwatchesService = async ({
 }: {
 	userId: string;
 }): Promise<ApiResponse<{ ownedSwatchIds: readonly string[] }>> =>
-	handleApiOperation(async () => ({
-		ownedSwatchIds: await fetchOwnedSwatchIds(userId),
-	}));
+	handleApiOperation(
+		async () => ({
+			ownedSwatchIds: await fetchOwnedSwatchIds(userId),
+		}),
+		"getOwnedSwatches"
+	);

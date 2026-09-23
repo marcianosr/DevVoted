@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 import * as React from "react";
 
-import * as Sentry from "@sentry/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	HeadContent,
@@ -16,17 +15,11 @@ import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.componen
 import { NotFound } from "~/components/NotFound.component";
 import { Footer } from "~/components/Footer.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
+import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
 import { NavDisclosure, NavDivider } from "~/ui/kanto-theme/NavDisclosure.ui";
 
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
-
-if (import.meta.env.PROD) {
-	Sentry.init({
-		dsn: "https://aba674879b6205e4794be9321356edac@o4510300365651968.ingest.de.sentry.io/4510300654665808",
-		sendDefaultPii: true,
-	});
-}
 
 export const Route = createRootRoute({
 	head: () => ({
@@ -66,7 +59,14 @@ export const Route = createRootRoute({
 			{ rel: "icon", href: "/favicon.ico" },
 		],
 	}),
-	beforeLoad: async () => ({ user: await fetchUser() }),
+	// The one visit call site. Root beforeLoad is not cached per match: it runs
+	// server-side on the initial load and client-side on every navigation after
+	// it, which is exactly one record per screen. `preload` guards the hover.
+	beforeLoad: async ({ matches, preload }) => {
+		const user = await fetchUser();
+		if (!preload) recordScreen(matches);
+		return { user };
+	},
 	errorComponent: (props) => {
 		return (
 			<RootDocument>

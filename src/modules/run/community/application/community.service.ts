@@ -456,4 +456,4 @@ export const getRunCommunityService = async ({
 			polls: views,
 			climb,
 		};
-	});
+	}, "getRunCommunity");

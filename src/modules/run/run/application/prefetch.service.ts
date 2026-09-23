@@ -34,4 +34,4 @@ export const getUpcomingCategoriesService = async ({
 			throw new Error("No installed config reads the upcoming draw");
 
 		return fetchSeedCategoriesForDate(getTomorrowDateString());
-	});
+	}, "getUpcomingCategories");

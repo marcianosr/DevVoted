@@ -15,7 +15,7 @@ export const getArchiveStateService = async (userId: string) =>
 		}
 
 		return state;
-	});
+	}, "getArchiveState");
 
 export const purchaseBorderService = async (userId: string, borderId: string) =>
 	handleApiOperation(async () => {
@@ -32,7 +32,7 @@ export const purchaseBorderService = async (userId: string, borderId: string) =>
 		}
 
 		return next;
-	});
+	}, "purchaseBorder");
 
 export const equipBorderService = async (
 	userId: string,
@@ -51,4 +51,4 @@ export const equipBorderService = async (
 		if (!next) throw new Error("User not found");
 
 		return next;
-	});
+	}, "equipBorder");

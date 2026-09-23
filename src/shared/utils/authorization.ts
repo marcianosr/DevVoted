@@ -1,9 +1,8 @@
-import * as Sentry from "@sentry/react";
-
 import {
 	type ApiResponse,
 	createErrorResponse,
 } from "~/shared/utils/errorHandling";
+import { reportHandledFailure } from "~/shared/utils/errorReporting";
 
 import { getSupabaseServerClient } from "./supabase";
 
@@ -16,17 +15,33 @@ export const getAuthenticatedUserId = async () => {
 
 	if (error || !user) {
 		const authError = new Error("Not authenticated");
-		Sentry.captureException(authError, {
-			level: "warning",
-			extra: {
-				operation: "getAuthenticatedUserId",
-				supabaseError: error?.message,
-			},
+		reportHandledFailure(authError, "getAuthenticatedUserId", {
+			supabaseError: error?.message,
 		});
 		throw authError;
 	}
 
 	return user.id;
+};
+
+/**
+ * The session's user id, or null when signed out. Never throws, because signed
+ * out is the ordinary case for its one caller: the visit counter, which labels
+ * a row and authorizes nothing.
+ *
+ * `getClaims` verifies the token rather than trusting it, and does so locally
+ * without a network round trip on a project using asymmetric signing keys —
+ * which matters because the auth sync already runs on every navigation.
+ */
+export const findAuthenticatedUserId = async (): Promise<string | null> => {
+	try {
+		const supabase = getSupabaseServerClient();
+		const { data, error } = await supabase.auth.getClaims();
+		if (error || !data) return null;
+		return data.claims.sub ?? null;
+	} catch {
+		return null;
+	}
 };
 
 /**
@@ -59,13 +74,9 @@ export const ensureAuthorizedUser = (
 		const authError = new Error(
 			"Unauthorized: Cannot access another user's data"
 		);
-		Sentry.captureException(authError, {
-			level: "warning",
-			extra: {
-				operation: "ensureAuthorizedUser",
-				authenticatedUserId,
-				requestedUserId,
-			},
+		reportHandledFailure(authError, "ensureAuthorizedUser", {
+			authenticatedUserId,
+			requestedUserId,
 		});
 		throw authError;
 	}

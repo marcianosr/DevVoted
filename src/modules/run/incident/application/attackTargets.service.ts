@@ -81,4 +81,4 @@ export const getAttackTargetsService = async ({
 			date
 		);
 		return { attack: state.attack, offers: offers.map(attackOfferViewFor) };
-	});
+	}, "getAttackTargets");

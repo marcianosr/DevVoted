@@ -90,7 +90,7 @@ export const fireAuditService = async (args: {
 	targetRunId: number;
 	auditId: AuditId;
 }): Promise<ApiResponse<RunView>> => {
-	const aimed = await handleApiOperation(() => aim(args));
+	const aimed = await handleApiOperation(() => aim(args), "fireAudit");
 	if (!aimed.success) return aimed;
 
 	return dispatchRunActionService({

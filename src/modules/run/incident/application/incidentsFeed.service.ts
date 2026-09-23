@@ -21,8 +21,11 @@ export const getIncidentsFeedService = async ({
 	userId: string;
 	date: string;
 }): Promise<ApiResponse<IncidentsFeedView>> =>
-	handleApiOperation(async () => ({
-		rows: (await fetchIncidentsForDate(date)).map((row) =>
-			incidentFeedRowFor(row, userId)
-		),
-	}));
+	handleApiOperation(
+		async () => ({
+			rows: (await fetchIncidentsForDate(date)).map((row) =>
+				incidentFeedRowFor(row, userId)
+			),
+		}),
+		"getIncidentsFeed"
+	);

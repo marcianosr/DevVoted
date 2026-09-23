@@ -28,7 +28,7 @@ export const createPollService = async (
 			},
 			validated.options
 		);
-	}, "Failed to create poll");
+	}, "createPoll");
 
 export const updatePollService = async (data: UpdatePollInput) =>
 	handleApiOperation(async () => {
@@ -47,4 +47,4 @@ export const updatePollService = async (data: UpdatePollInput) =>
 			},
 			validated.options
 		);
-	}, "Failed to update poll");
+	}, "updatePoll");

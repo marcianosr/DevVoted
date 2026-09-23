@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { userConfigUnlocksTable, usersTable } from "~/database/schema";
@@ -73,3 +73,24 @@ export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 			.onConflictDoNothing();
 		return toAccountUser(row);
 	});
+
+/**
+ * Stamps today onto the account, at most once a day. The predicate is in SQL
+ * rather than a read-then-write because the auth sync runs on every navigation:
+ * the common case has to cost zero rows touched, and two concurrent navigations
+ * must not both write.
+ */
+export const touchLastSeen = async (userId: string): Promise<void> => {
+	await db
+		.update(usersTable)
+		.set({ last_seen_at: sql`now()` })
+		.where(
+			and(
+				eq(usersTable.id, userId),
+				or(
+					isNull(usersTable.last_seen_at),
+					lt(usersTable.last_seen_at, sql`date_trunc('day', now())`)
+				)
+			)
+		);
+};

@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import {
 	ErrorComponent,
 	Link,
@@ -7,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import type { ErrorComponentProps } from "@tanstack/react-router";
+import { reportHandledFailure } from "~/shared/utils/errorReporting";
 import { CatchBoundaryUI } from "~/ui/kanto-theme/CatchBoundary.ui";
 
 const LINK = "underline";
@@ -18,7 +21,11 @@ export const DefaultCatchBoundary = ({ error }: ErrorComponentProps) => {
 		select: (state) => state.id === rootRouteId,
 	});
 
-	console.error(error);
+	// The render path, not the request path: the server SDK's request middleware
+	// does not see an exception thrown while React renders.
+	useEffect(() => {
+		reportHandledFailure(error, "renderError");
+	}, [error]);
 
 	const navigationLink = isRoot ? (
 		<Link to="/" className={LINK}>

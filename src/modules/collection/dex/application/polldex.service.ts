@@ -107,4 +107,4 @@ export const getPolldexService = async ({ userId }: { userId: string }) =>
 		});
 
 		return { entries: sortByDexNumber(entries) };
-	});
+	}, "getPolldex");

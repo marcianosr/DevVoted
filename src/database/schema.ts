@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
 	bigint,
 	boolean,
+	date,
 	integer,
 	json,
 	index,
@@ -90,6 +91,19 @@ export const pollAnswerOutcome = pgEnum("answer_outcome", [
 	"wrong",
 ] as const);
 
+/**
+ * How a visit's device reads, coarse on purpose: derived from the user-agent
+ * string alone, never a fingerprint and never a model. `bot` is kept rather
+ * than dropped so crawler traffic can be measured and then excluded, instead of
+ * silently disappearing from the counts.
+ */
+export const visitDevice = pgEnum("visit_device", [
+	"desktop",
+	"mobile",
+	"tablet",
+	"bot",
+] as const);
+
 // === TABLES ===
 
 /**
@@ -133,6 +147,15 @@ export const usersTable = pgTable("users", {
 	// death starts at this gate, and starting consumes it (burn on use) — null
 	// means no tag is planted.
 	pinned_gate: integer("pinned_gate"),
+	// The account's birthday. Added to a populated table, so the migration
+	// backfills existing rows from the earliest trace each account left rather
+	// than stamping every one of them with the deploy date.
+	created_at: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	// The last day the account was seen, not the last request: the auth sync runs
+	// on every navigation, so this is written at most once per account per day.
+	last_seen_at: timestamp("last_seen_at", { withTimezone: true }),
 });
 
 /**
@@ -779,3 +802,65 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+/**
+ * App Visits Table
+ *
+ * First-party, banner-free visit counting. One row is one visitor's day on one
+ * screen, not one page view: `(visit_date, visitor_hash, route_id)` is unique
+ * and `hits` counts the repeats. That bound is the point — it caps the table at
+ * (visitors × screens) per day, and caps what an abusive client can write,
+ * without any rate-limit bookkeeping. The cost is that visits carry no ordering,
+ * so there is no screen-sequence funnel; add an append-only events table if a
+ * question ever needs one.
+ *
+ * - `visitor_hash` is a keyed one-way hash of IP + user-agent whose key is
+ *   re-derived from `visit_date`, so the same person is a different hash
+ *   tomorrow. Nothing is stored on the visitor's device and the IP itself is
+ *   never written, which is why the app owes no consent banner.
+ * - `route_id` is the matched TanStack route pattern (`/_authed/runs/$runId`),
+ *   never a URL: no ids, no query strings, nothing identifying can reach it.
+ * - `user_id` is null for signed-out visitors. Seeing the pre-signup funnel at
+ *   all is the reason this table exists — every other table in this schema
+ *   starts at the point someone already has an account.
+ * - `visit_date` is redundant with the timestamps and exists so daily grouping
+ *   is an indexed range scan rather than a function over every row, the same
+ *   trick `polls_responses.answer_date` uses.
+ */
+export const appVisitsTable = pgTable(
+	"app_visits",
+	{
+		id: serial("id").primaryKey(),
+		visit_date: date("visit_date", { mode: "string" }).notNull(),
+		visitor_hash: varchar("visitor_hash", { length: 32 }).notNull(),
+		route_id: varchar("route_id", { length: 64 }).notNull(),
+		user_id: uuid("user_id").references(() => usersTable.id, {
+			onDelete: "set null",
+		}),
+		hits: integer("hits").notNull().default(1),
+		device: visitDevice("device").notNull().default("desktop"),
+		country: varchar("country", { length: 2 }),
+		referrer_host: varchar("referrer_host", { length: 255 }),
+		first_seen_at: timestamp("first_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		last_seen_at: timestamp("last_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [
+		// Leads on visit_date, so every "one day" and "last N days" read is a
+		// range scan on this index and no separate date index is needed.
+		uniqueIndex("app_visits_day_visitor_route_uniq").on(
+			table.visit_date,
+			table.visitor_hash,
+			table.route_id
+		),
+		index("app_visits_day_route_idx").on(table.visit_date, table.route_id),
+		// Partial: cohort retention only ever asks about accounts, so signed-out
+		// rows — the bulk of the table — stay out of the index.
+		index("app_visits_user_day_idx")
+			.on(table.user_id, table.visit_date)
+			.where(sql`${table.user_id} is not null`),
+	]
+);

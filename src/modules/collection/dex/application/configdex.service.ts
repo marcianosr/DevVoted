@@ -26,4 +26,4 @@ export const getConfigdexService = async ({
 			fetchObjectiveProgressByUser(userId),
 		]);
 		return { unlocks, progress };
-	});
+	}, "getConfigdex");

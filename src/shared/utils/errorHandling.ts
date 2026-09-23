@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/react";
+import { reportApiFailure } from "~/shared/utils/errorReporting";
 
 export type ApiResponse<T = unknown> =
 	| {
@@ -29,28 +29,19 @@ export const createErrorResponse = (error: unknown): ApiResponse<never> => {
 	};
 };
 
+/**
+ * `operationName` is required because it is the only thing Sentry can group on:
+ * it becomes the issue fingerprint, so one broken service reads as one issue
+ * rather than one per distinct error message.
+ */
 export const handleApiOperation = async <T>(
 	operation: () => Promise<T>,
-	fallbackErrorMessage?: string
+	operationName: string
 ): Promise<ApiResponse<T>> => {
 	try {
-		const result = await operation();
-		return createSuccessResponse(result);
+		return createSuccessResponse(await operation());
 	} catch (error) {
-		Sentry.captureException(error, {
-			level: "warning",
-			extra: {
-				operation: fallbackErrorMessage || "handleApiOperation",
-			},
-		});
-
-		const message =
-			error instanceof Error
-				? error.message
-				: fallbackErrorMessage || "Something went wrong";
-		return {
-			success: false,
-			error: message,
-		};
+		reportApiFailure(error, operationName);
+		return createErrorResponse(error);
 	}
 };

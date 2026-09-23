@@ -115,6 +115,18 @@ run's way of drawing one.
 | User, dev card, awards | `profile` | `modules/account/profile/`, `routes/_authed/profile.$userId.tsx` |
 | Archive + borders | `profile` | `border.model.ts` (catalogue + `findBorderById`), `archive.service.ts`, `useArchiveState.hook.ts`, `BorderShop`, `ArchiveSummary`. All three columns (`archived_storage`, `owned_border_ids`, `equipped_border_id`) sit on `users`, so one aggregate owns one table |
 
+### Context `ops`
+
+Running the product, not playing it — the one context that is about DevVoted as
+a service. Named `ops` because `Analytics`, `Telemetry` and `Uptime` are all
+taken by configs in the roster.
+
+| Concept | Lives in | Key symbols |
+|---|---|---|
+| Visit | `pulse/domain` | `Visit`, `DeviceClass`, `KNOWN_ROUTE_IDS`, `isKnownRouteId`, `deviceClassOf`, `referrerHostOf`, `countryOf` (`visit.model.ts`); one visitor's day on one screen, never a page view |
+| Visitor identity | `pulse/infrastructure` | `visitorHashOf`, `readVisitorContext`, `isSameOriginRequest` (`visitor.repository.ts`); the only reader of the incoming request. The hash is keyed to the date, so it rotates at midnight and nothing links a visitor across days — which is why the app shows no consent banner |
+| Visit write path | `pulse/application` + `pulse/infrastructure` | `recordVisit` / `recordScreen` (`visit.serverfn.ts`), `recordVisitService` (`visit.service.ts`), `upsertVisit` (`visit.repository.ts`) |
+
 ### `src/domains/` is gone
 
 Retired 2026-09-23 (DVTD-wj1t). The last two slices landed as

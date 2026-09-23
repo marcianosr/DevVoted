@@ -1,8 +1,11 @@
-import * as Sentry from "@sentry/react";
 import { redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 import { ensureUserExists } from "~/modules/account/auth/application/userSync.service";
+import {
+	identifyUser,
+	reportHandledFailure,
+} from "~/shared/utils/errorReporting";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 /**
@@ -61,14 +64,13 @@ export const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 		const { data, error } = await supabase.auth.getUser();
 
 		if (error) {
-			Sentry.captureException(error, {
-				level: "warning",
-				extra: { operation: "fetchUser.getUser" },
-			});
+			reportHandledFailure(error, "fetchUser.getUser");
 			return null;
 		}
 
 		if (!data.user?.email) return null;
+
+		identifyUser(data.user.id);
 
 		return await ensureUserExists({
 			id: data.user.id,
@@ -79,10 +81,7 @@ export const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 			photoUrl: data.user.user_metadata?.avatar_url,
 		});
 	} catch (error) {
-		Sentry.captureException(error, {
-			level: "warning",
-			extra: { operation: "fetchUser.ensureUserExists" },
-		});
+		reportHandledFailure(error, "fetchUser.ensureUserExists");
 		return null;
 	}
 });

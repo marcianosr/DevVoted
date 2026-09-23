@@ -48,4 +48,4 @@ export const getPollSplitService = async ({
 		return toPollSplit(await fetchPollSplit(pollId), {
 			withSampleSize: showsSampleSize(peeker),
 		});
-	});
+	}, "getPollSplit");

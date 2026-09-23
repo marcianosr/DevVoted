@@ -16,4 +16,4 @@ export const getGateRunsService = async ({ userId }: { userId: string }) =>
 		const rows = await fetchGateRunsByUser(userId);
 
 		return { history: runHistory(rows) };
-	});
+	}, "getGateRuns");

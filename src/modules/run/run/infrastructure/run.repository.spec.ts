@@ -620,6 +620,62 @@ describe("applyActionToRun", () => {
 	});
 });
 
+describe("first install stamp (ADR-064)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	const configuringWith = (configs: RunState["build"]["configs"]): RunState => {
+		const base = createRun([], [CONFIGS.js, CONFIGS.gitRebase]);
+		return {
+			...base,
+			status: "configuring",
+			build: { ...base.build, configs },
+		};
+	};
+
+	const dispatchOn = (
+		state: RunState,
+		action: Parameters<typeof applyActionToRun>[0]["action"]
+	) => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		mock.results.push([stateRow(state)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		return applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action,
+		});
+	};
+
+	it("stamps the config the action just put into the build", async () => {
+		await dispatchOn(configuringWith([]), {
+			type: "install",
+			configId: CONFIGS.js.id,
+		});
+
+		expect(mock.updateTables).toContain(userConfigUnlocksTable);
+		expect(mock.setCalls).toContainEqual(
+			expect.objectContaining({ first_installed_at: expect.anything() })
+		);
+	});
+
+	// The build is what gets read, not the action: a config also arrives by
+	// buying it off the shop shelf, and that must stamp the same way.
+	it("stamps nothing when the action leaves the build untouched", async () => {
+		await dispatchOn(configuringWith([CONFIGS.js]), {
+			type: "uninstall",
+			configId: CONFIGS.js.id,
+		});
+
+		expect(mock.updateTables).not.toContain(userConfigUnlocksTable);
+	});
+});
+
 describe("abandonSessionRun", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
