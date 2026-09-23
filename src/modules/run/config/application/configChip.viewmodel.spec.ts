@@ -6,7 +6,7 @@ import {
 	rollOddsLabel,
 } from "~/modules/run/config/application/configChip.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import type { SkipReason } from "~/modules/run/config/domain/effect.model";
+import type { SkipReason } from "~/modules/run/config/domain/configStatus.model";
 
 const skipped = (why: SkipReason) => pollNoteFor({ kind: "skipped", why });
 

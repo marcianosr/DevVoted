@@ -1,9 +1,9 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
+import type { Coverage } from "~/modules/run/config/domain/effect.model";
 import type {
 	ConfigStatus,
-	Coverage,
 	SkipReason,
-} from "~/modules/run/config/domain/effect.model";
+} from "~/modules/run/config/domain/configStatus.model";
 import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 import {

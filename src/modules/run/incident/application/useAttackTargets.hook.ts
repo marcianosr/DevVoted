@@ -1,7 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { sessionRunQueryKeys } from "~/shared/queryKeys";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 
 import type { AttackTargetsView } from "~/modules/run/incident/application/attackTargets.service";
 import { getAttackTargets } from "~/modules/run/incident/application/incident.serverfn";
@@ -17,20 +16,12 @@ const OFFERS_STALE_MS = 5 * 60_000;
  * armed: the panel's empty state needs no rival.
  */
 export const useAttackTargets = (armed: boolean) => {
-	const query = useQuery({
+	const result = useApiQuery<AttackTargetsView>({
 		queryKey: attackTargetsQueryKey(),
 		queryFn: () => getAttackTargets(),
 		enabled: armed,
 		staleTime: OFFERS_STALE_MS,
 	});
 
-	const response = query.data;
-	const view: AttackTargetsView | null =
-		response?.success === true ? response.data : null;
-	const errorMessage =
-		response?.success === false
-			? response.error
-			: (query.error?.message ?? null);
-
-	return { view, isPending: armed && query.isPending, errorMessage };
+	return { ...result, isPending: armed && result.isPending };
 };

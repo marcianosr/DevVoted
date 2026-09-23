@@ -8,10 +8,12 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { FAUCET_CAP_KB } from "~/modules/run/run/domain/rules.model";
 import {
 	AnswerContext,
-	configStatusFor,
 	effectOf,
-	type PollStatusContext,
 } from "~/modules/run/config/domain/effect.model";
+import {
+	configStatusFor,
+	type PollStatusContext,
+} from "~/modules/run/config/domain/configStatus.model";
 
 const answering = (
 	category: AnswerContext["category"],

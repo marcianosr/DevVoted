@@ -57,7 +57,7 @@ import {
 import {
 	type ConfigStatus,
 	configStatusFor,
-} from "~/modules/run/config/domain/effect.model";
+} from "~/modules/run/config/domain/configStatus.model";
 import {
 	type PollSlot,
 	upcomingSlotsOf,

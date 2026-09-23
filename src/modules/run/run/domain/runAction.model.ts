@@ -130,72 +130,206 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
 
+type ActionRule = {
+	readonly type: RunAction["type"];
+	readonly when?: (state: RunState) => boolean;
+	readonly run: (state: RunState, action: RunAction) => RunState;
+};
+
+const isAction = <K extends RunAction["type"]>(
+	action: RunAction,
+	type: K
+): action is Extract<RunAction, { type: K }> => action.type === type;
+
+/**
+ * Widens one typed rule into the table's shape. The narrowing lives here rather
+ * than in each entry, so a rule states only its own action type and payload.
+ */
+const on = <K extends RunAction["type"]>(spec: {
+	readonly type: K;
+	readonly when?: (state: RunState) => boolean;
+	readonly run: (
+		state: RunState,
+		action: Extract<RunAction, { type: K }>
+	) => RunState;
+}): ActionRule => ({
+	type: spec.type,
+	when: spec.when,
+	run: (state, action) =>
+		isAction(action, spec.type) ? spec.run(state, action) : state,
+});
+
+const inStatus =
+	(...statuses: readonly RunState["status"][]) =>
+	(state: RunState): boolean =>
+		statuses.includes(state.status);
+
+// A config may be dropped freely while rewarding, but mid-gate only before the
+// first answer lands — once the window has scored, the build is what it was.
+const canDrop = (state: RunState): boolean =>
+	state.status === "rewarding" ||
+	(state.status === "answering" && state.window.answered === 0);
+
+/**
+ * First match wins, so order is behaviour. `minify` appears twice on purpose:
+ * peeling and shopping spell the same action differently, and the status is the
+ * only thing that separates them.
+ */
+const RULES: readonly ActionRule[] = [
+	on({
+		type: "install",
+		when: inStatus("configuring"),
+		run: (state, action) => installConfig(state, action.configId),
+	}),
+	on({
+		type: "uninstall",
+		when: inStatus("configuring"),
+		run: (state, action) => uninstallConfig(state, action.configId),
+	}),
+	on({
+		type: "start",
+		when: inStatus("configuring"),
+		run: (state) => start(state),
+	}),
+	on({
+		type: "rebase",
+		run: (state, action) => rebase(state, action.from, action.to),
+	}),
+	on({
+		type: "estimate",
+		run: (state, action) => commitEstimate(state, action.count),
+	}),
+	on({
+		type: "commit-band",
+		run: (state, action) => commitBand(state, action.band),
+	}),
+	on({ type: "fire-audit", run: (state) => fireAudit(state) }),
+	on({
+		type: "answer",
+		when: inStatus("answering"),
+		run: (state, action) => answer(state, action.optionIds, action.elapsedMs),
+	}),
+	on({
+		type: "close-gate",
+		when: inStatus("answering"),
+		run: (state) => closeGate(state),
+	}),
+	on({
+		type: "lint-poll",
+		when: inStatus("answering"),
+		run: (state) => spendLint(state),
+	}),
+	on({
+		type: "peek-poll",
+		when: inStatus("answering"),
+		run: (state) => spendPeek(state),
+	}),
+	on({
+		type: "arm-strict",
+		when: inStatus("answering"),
+		run: (state) => armStrict(state),
+	}),
+	on({
+		type: "buy-back-option",
+		when: inStatus("answering"),
+		run: (state, action) => spendBuyBack(state, action.optionId),
+	}),
+	on({
+		type: "strip",
+		when: inStatus("awaiting-strip"),
+		run: (state, action) => strip(state, action.configIds),
+	}),
+	on({
+		type: "minify",
+		when: inStatus("awaiting-strip"),
+		run: (state, action) => minifyForPeel(state, action.configId),
+	}),
+	on({
+		type: "refuse-gate",
+		when: inStatus("awaiting-strip"),
+		run: (state) => refuseGate(state),
+	}),
+	on({
+		type: "resume-climb",
+		when: inStatus("awaiting-strip"),
+		run: (state) => resumeClimb(state),
+	}),
+	on({
+		type: "draft",
+		when: inStatus("rewarding"),
+		run: (state, action) => draft(state, action.configId),
+	}),
+	on({
+		type: "upgrade",
+		when: inStatus("rewarding"),
+		run: (state, action) => upgrade(state, action.configId),
+	}),
+	on({
+		type: "rebuild-draft",
+		when: inStatus("rewarding"),
+		run: (state) => rebuildDraft(state),
+	}),
+	on({
+		type: "lock-offer",
+		when: inStatus("rewarding"),
+		run: (state, action) => lockOffer(state, action.configId),
+	}),
+	on({
+		type: "unlock-offer",
+		when: inStatus("rewarding"),
+		run: (state, action) => unlockOffer(state, action.configId),
+	}),
+	on({
+		type: "extend-offers",
+		when: inStatus("rewarding"),
+		run: (state) => extendOffers(state),
+	}),
+	on({
+		type: "plant-pin",
+		when: inStatus("rewarding"),
+		run: (state) => plantPin(state),
+	}),
+	on({
+		type: "finish-reward",
+		when: inStatus("rewarding"),
+		run: (state) => finishReward(state),
+	}),
+	on({
+		type: "sell",
+		when: inStatus("rewarding"),
+		run: (state, action) => sell(state, action.configId),
+	}),
+	on({
+		type: "vendor-lock",
+		when: isPrepPhase,
+		run: (state, action) => commitVendorLock(state, action.configId),
+	}),
+	on({
+		type: "minify",
+		when: inStatus("rewarding"),
+		run: (state, action) => minifyConfig(state, action.configId),
+	}),
+	on({
+		type: "switch-arm",
+		when: inStatus("rewarding", "answering"),
+		run: (state, action) => switchAbArm(state, action.configId),
+	}),
+	on({
+		type: "drop",
+		when: canDrop,
+		run: (state, action) => drop(state, action.configId),
+	}),
+];
+
+const ruleFor = (state: RunState, action: RunAction) =>
+	RULES.find(
+		(rule) => rule.type === action.type && (rule.when?.(state) ?? true)
+	);
+
 const reduce = (state: RunState, action: RunAction): RunState => {
 	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
-	if (action.type === "install" && state.status === "configuring")
-		return installConfig(state, action.configId);
-	if (action.type === "uninstall" && state.status === "configuring")
-		return uninstallConfig(state, action.configId);
-	if (action.type === "start" && state.status === "configuring")
-		return start(state);
-	if (action.type === "rebase") return rebase(state, action.from, action.to);
-	if (action.type === "estimate") return commitEstimate(state, action.count);
-	if (action.type === "commit-band") return commitBand(state, action.band);
-	if (action.type === "fire-audit") return fireAudit(state);
-	if (action.type === "answer" && state.status === "answering")
-		return answer(state, action.optionIds, action.elapsedMs);
-	if (action.type === "close-gate" && state.status === "answering")
-		return closeGate(state);
-	if (action.type === "lint-poll" && state.status === "answering")
-		return spendLint(state);
-	if (action.type === "peek-poll" && state.status === "answering")
-		return spendPeek(state);
-	if (action.type === "arm-strict" && state.status === "answering")
-		return armStrict(state);
-	if (action.type === "buy-back-option" && state.status === "answering")
-		return spendBuyBack(state, action.optionId);
-	if (action.type === "strip" && state.status === "awaiting-strip")
-		return strip(state, action.configIds);
-	if (action.type === "minify" && state.status === "awaiting-strip")
-		return minifyForPeel(state, action.configId);
-	if (action.type === "refuse-gate" && state.status === "awaiting-strip")
-		return refuseGate(state);
-	if (action.type === "resume-climb" && state.status === "awaiting-strip")
-		return resumeClimb(state);
-	if (action.type === "draft" && state.status === "rewarding")
-		return draft(state, action.configId);
-	if (action.type === "upgrade" && state.status === "rewarding")
-		return upgrade(state, action.configId);
-	if (action.type === "rebuild-draft" && state.status === "rewarding")
-		return rebuildDraft(state);
-	if (action.type === "lock-offer" && state.status === "rewarding")
-		return lockOffer(state, action.configId);
-	if (action.type === "unlock-offer" && state.status === "rewarding")
-		return unlockOffer(state, action.configId);
-	if (action.type === "extend-offers" && state.status === "rewarding")
-		return extendOffers(state);
-	if (action.type === "plant-pin" && state.status === "rewarding")
-		return plantPin(state);
-	if (action.type === "finish-reward" && state.status === "rewarding")
-		return finishReward(state);
-	if (action.type === "sell" && state.status === "rewarding")
-		return sell(state, action.configId);
-	if (action.type === "vendor-lock" && isPrepPhase(state))
-		return commitVendorLock(state, action.configId);
-	if (action.type === "minify" && state.status === "rewarding")
-		return minifyConfig(state, action.configId);
-	if (
-		action.type === "switch-arm" &&
-		(state.status === "rewarding" || state.status === "answering")
-	)
-		return switchAbArm(state, action.configId);
-	if (
-		action.type === "drop" &&
-		(state.status === "rewarding" ||
-			(state.status === "answering" && state.window.answered === 0))
-	)
-		return drop(state, action.configId);
-	return state;
+	const rule = ruleFor(state, action);
+	return rule ? rule.run(state, action) : state;
 };
 
 // A refused action returns the state it was handed, identity included, so the
