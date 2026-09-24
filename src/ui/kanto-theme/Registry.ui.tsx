@@ -24,6 +24,8 @@ export type RegistryProps = {
 	heading?: boolean;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
+	openUpgrades?: string;
+	onToggleUpgrades?: (name: string) => void;
 };
 
 export type RegistrySummaryProps = { offers: number; slotPrice: string };
@@ -49,10 +51,14 @@ const Offer = ({
 	offer,
 	openInfo,
 	onToggleInfo,
+	openUpgrades,
+	onToggleUpgrades,
 }: {
 	offer: ConfigChipProps;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
+	openUpgrades?: string;
+	onToggleUpgrades?: (name: string) => void;
 }) => {
 	if (offer.locked) return <ConfigChip locked />;
 
@@ -65,6 +71,12 @@ const Offer = ({
 			onToggleInfo={
 				onToggleInfo === undefined ? undefined : () => onToggleInfo(offer.name)
 			}
+			upgradesOpen={offer.name === openUpgrades}
+			onToggleUpgrades={
+				onToggleUpgrades === undefined
+					? undefined
+					: () => onToggleUpgrades(offer.name)
+			}
 		/>
 	);
 };
@@ -75,6 +87,8 @@ export const Registry = ({
 	heading = true,
 	openInfo,
 	onToggleInfo,
+	openUpgrades,
+	onToggleUpgrades,
 }: RegistryProps) => (
 	<section className={COLUMN}>
 		{!heading ? null : (
@@ -93,6 +107,8 @@ export const Registry = ({
 					offer={offer}
 					openInfo={openInfo}
 					onToggleInfo={onToggleInfo}
+					openUpgrades={openUpgrades}
+					onToggleUpgrades={onToggleUpgrades}
 				/>
 			))}
 		</div>

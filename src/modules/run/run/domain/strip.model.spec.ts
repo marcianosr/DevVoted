@@ -214,7 +214,7 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 	});
 });
 
-describe("configs lost (DVTD-wii3: the comeback standout's tally)", () => {
+describe("configs lost (DVTD-wii3: a run statistic, currently unread)", () => {
 	const awaitingStrip = (quota: number): RunState => {
 		let state = started(["unit-tests", "eslint"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);

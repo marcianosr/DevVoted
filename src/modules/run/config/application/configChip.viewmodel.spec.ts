@@ -4,6 +4,7 @@ import {
 	pollNoteFor,
 	registryUpgradesFor,
 	rollOddsLabel,
+	upgradesFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { SkipReason } from "~/modules/run/config/domain/configStatus.model";
@@ -171,5 +172,76 @@ describe("registryUpgradesFor (ADR-097)", () => {
 		offered.onBuy?.(2);
 
 		expect(onBuy).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("upgradesFor — the Build panel's own press", () => {
+	const RICH = { storageKb: 512, coveragePct: 100 };
+	const offeredIn = (props: ReturnType<typeof upgradesFor>) =>
+		props.rungs.find((rung) => rung.state === "offered");
+
+	it("offers the next rung up and totals the ladder to the ceiling", () => {
+		const panel = upgradesFor(CONFIGS.mooresLaw, RICH);
+
+		expect(offeredIn(panel)?.version).toBe(2);
+		expect(offeredIn(panel)?.price).toBe("64 KB");
+		expect(panel.toMax).toEqual({ version: 5, price: "448 KB" });
+	});
+
+	it("leaves the ladder read-only when no deal is offered", () => {
+		const panel = upgradesFor(CONFIGS.mooresLaw);
+
+		expect(panel.onBuy).toBeUndefined();
+		expect(panel.refusal).toBeUndefined();
+		expect(offeredIn(panel)?.disabled).toBeUndefined();
+	});
+
+	it("names the shortfall when the balance cannot cover the next rung", () => {
+		const panel = upgradesFor(CONFIGS.mooresLaw, {
+			...RICH,
+			storageKb: 32,
+		});
+
+		expect(panel.refusal).toBe("32 KB short");
+		expect(offeredIn(panel)?.disabled).toBe(true);
+	});
+
+	it("names the coverage a focus config unlocks its next version at", () => {
+		const panel = upgradesFor(CONFIGS.js, { storageKb: 512, coveragePct: 2 });
+
+		expect(panel.refusal).toBe(
+			"Unlocks at 5% JavaScript coverage, you have 2%."
+		);
+	});
+
+	it("puts the coverage gate before the price, being the one KB cannot answer", () => {
+		const panel = upgradesFor(CONFIGS.js, { storageKb: 0, coveragePct: 0 });
+
+		expect(panel.refusal).toBe(
+			"Unlocks at 5% JavaScript coverage, you have 0%."
+		);
+	});
+
+	it("waives the coverage gate for a config that has no focus category", () => {
+		expect(
+			upgradesFor(CONFIGS.mooresLaw, { ...RICH, coveragePct: 0 }).refusal
+		).toBeUndefined();
+	});
+
+	it("routes the buy press to the deal", () => {
+		const onBuy = vi.fn();
+		upgradesFor(CONFIGS.mooresLaw, { ...RICH, onBuy }).onBuy?.(2);
+
+		expect(onBuy).toHaveBeenCalledOnce();
+	});
+
+	it("refuses nothing on a config already at its ceiling", () => {
+		const maxed = upgradesFor(
+			{ ...CONFIGS.telemetry, level: 2 },
+			{ storageKb: 0, coveragePct: 0 }
+		);
+
+		expect(maxed.refusal).toBeUndefined();
+		expect(offeredIn(maxed)).toBeUndefined();
 	});
 });

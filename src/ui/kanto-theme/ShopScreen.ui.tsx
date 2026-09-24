@@ -1,6 +1,6 @@
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
 import { Audit, type AuditProps } from "./Audit.ui";
-import { Build, buildHeadOf, type BuildProps } from "./Build.ui";
+import { Build, BuildRoom, buildHeadOf, type BuildProps } from "./Build.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { NextGate, type NextGateProps } from "./NextGate.ui";
 import { Panel } from "./Panel.ui";
@@ -10,7 +10,7 @@ import {
 	type RegistryControlProps,
 } from "./RegistryControl.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const COPY = {
 	controlsTitle: "Registry control",
@@ -65,7 +65,13 @@ export const ShopScreen = ({
 					<Panel>
 						<Panel.Header label={BUILD} meta={buildHeadOf(build)} />
 						<Panel.Body>
-							<Build {...build} layout={BUILD_LAYOUT} heading={false} />
+							<BuildRoom {...build} />
+							<Build
+								{...build}
+								layout={BUILD_LAYOUT}
+								heading={false}
+								caption={false}
+							/>
 						</Panel.Body>
 					</Panel>
 				</div>
@@ -101,13 +107,7 @@ export const ShopScreen = ({
 				</div>
 			</div>
 
-			{footer === undefined ? null : (
-				<Panel>
-					<Panel.Body>
-						<ScreenFooter {...footer} rule={false} />
-					</Panel.Body>
-				</Panel>
-			)}
+			{footer === undefined ? null : <ScreenActions {...footer} />}
 		</Screen>
 	);
 };

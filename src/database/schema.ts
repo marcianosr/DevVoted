@@ -714,7 +714,7 @@ export const seasonsTable = pgTable("seasons", {
 /**
  *  This is a read optimization pattern - leaderboards are read thousands of times but written once per run. The duplication is intentional and beneficial. No expensive JOINs needed when displaying leaderboards.
  * @deprecated Legacy calendar loop — no file under `src/modules/**` reads this.
- * The new game ranks via community standouts computed from `run_states`. The
+ * The new game ranks via the climb map and the category leaders. The
  * legacy reader is gone (DVTD-9qyd), so this table is now droppable.
  * See DVTD-lzds.
  *

@@ -4,6 +4,7 @@ import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import type { IconName } from "./Icon.ui";
+import { Panel } from "./Panel.ui";
 import type { SwatchFill } from "./Swatch.ui";
 import { SwatchChip } from "./SwatchChip.ui";
 import { Typography } from "./Typography.ui";
@@ -15,8 +16,15 @@ const ACTION_ROW = "flex w-full flex-wrap items-center gap-3";
 const STAKE = "flex flex-wrap items-center gap-2";
 const FIGURES = "flex flex-wrap items-center gap-2";
 const ASIDE = "shrink-0";
-const ACTION = "ml-auto shrink-0";
-const ROW_NOTE = "min-w-0 flex-1 text-center";
+const ACTION = "shrink-0 sm:ml-auto";
+/**
+ * Between the buttons once there is room, on its own line below them before
+ * that. It is the only thing in the row that can give, and squeezing it is what
+ * collapsed it to one word per line on a phone — so it drops instead, and the
+ * buttons stay side by side at every width.
+ */
+const ROW_NOTE =
+	"order-last w-full min-w-0 text-center sm:order-none sm:w-auto sm:flex-1";
 
 const ACTION_SIZE = "md";
 
@@ -135,4 +143,23 @@ export const ScreenFooter = ({
 			<Typography variant="hint">{refusal}</Typography>
 		)}
 	</footer>
+);
+
+/**
+ * The press a screen is asking for, pinned to the foot of a phone the way the
+ * poll's build footer is. A long build list, shop shelf or debrief would
+ * otherwise push the one action below the fold, and the panel's own opaque
+ * surface is what lets the content scroll behind it.
+ *
+ * `PollScreen` deliberately does not use this: `BuildFooter` already holds that
+ * screen's sticky bottom slot, and two pinned bars would land on each other.
+ */
+const PINNED = "sticky bottom-0 z-20 md:static";
+
+export const ScreenActions = (footer: ScreenFooterProps) => (
+	<Panel className={PINNED}>
+		<Panel.Body>
+			<ScreenFooter {...footer} rule={false} />
+		</Panel.Body>
+	</Panel>
 );

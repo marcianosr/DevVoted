@@ -9,8 +9,10 @@ import { Typography } from "./Typography.ui";
 export const PANEL_SURFACE =
 	"flex flex-col rounded-2xl border border-theme-faint bg-theme-faint";
 
+// Wrapping, so a narrow screen drops the meta onto its own line instead of
+// squeezing the label until it breaks mid-phrase ("Poll 1 / out of 5").
 const HEADER =
-	"flex items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
+	"flex flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
 const GLYPH = "size-2.5 shrink-0 rounded-xs bg-theme-muted";
 const META =
 	"ml-auto flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
@@ -21,7 +23,8 @@ const ROWS = "flex w-full flex-col";
 const ROW =
 	"flex w-full items-center gap-3 border-t border-theme-faint px-4 py-2 first:border-t-0";
 const ROW_LINK = "transition-colors hover:bg-theme-raised";
-const FOOTER = "flex items-center gap-3 border-t border-theme-faint px-4 py-3";
+const FOOTER =
+	"flex flex-wrap items-center gap-3 border-t border-theme-faint px-4 py-3";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 
 export type PanelProps = {

@@ -67,7 +67,6 @@ const SUMMIT_LINE = "the summit — nothing after this";
 const SEALED: LedgerFigure = { locked: true };
 
 export const PREP_COMMUNITY_LABEL = "Community";
-export const PREP_INCIDENTS_LABEL = "Incidents";
 const START_LEAD = "Start";
 
 export const PREP_POLLS_TITLE = "The five polls";
@@ -291,7 +290,6 @@ export type PrepFrame = {
 	window: PrepWindow;
 	bar: CoverageBarProps;
 	/** Where the run stood when this window opened. Defaults to the live reading. */
-	openingHeld?: number;
 	coverageGainPercent: number;
 	peelKb: number;
 	payout: (correct: number) => number;
@@ -318,7 +316,6 @@ export const prepPropsFor = ({
 	buildSpace,
 	window,
 	bar,
-	openingHeld = bar.held,
 	coverageGainPercent,
 	peelKb,
 	payout,
@@ -345,8 +342,8 @@ export const prepPropsFor = ({
 					: `${audits.length} ${audits.length === 1 ? "audit" : "audits"}`,
 			note:
 				answered === 0
-					? `today's ${SLICE_WINDOW} polls are ready`
-					: `${answered} of ${SLICE_WINDOW} answered`,
+					? undefined
+					: `${answered} of ${SLICE_WINDOW} polls answered`,
 			noteAt: "track",
 		},
 		outcomes: bandOutcomesPropsFor(
@@ -355,7 +352,6 @@ export const prepPropsFor = ({
 				gate,
 				correctThisGate: rightAnswersIn(answeredThisGate),
 				held: bar.held,
-				openingHeld,
 				ladder: bar,
 				coverageGainPercent,
 				peelKb,
@@ -384,7 +380,6 @@ export const prepPropsFor = ({
 		footer: {
 			asides: [
 				{ label: PREP_COMMUNITY_LABEL, icon: "community", onPress: noop },
-				{ label: PREP_INCIDENTS_LABEL, icon: "gate", onPress: noop },
 			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,

@@ -19,9 +19,8 @@ import {
 	attackOfferViewFor,
 	attackPanelFor,
 	type IncidentFeedRowView,
-	incidentsScreenPropsFor,
+	incidentsPanelFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
-import { IncidentsScreen } from "~/ui/kanto-theme/IncidentsScreen.ui";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 import {
 	runReducer,
@@ -64,6 +63,7 @@ import {
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 import {
+	CATEGORY_CODES,
 	type CategoryCode,
 	getCategoryMetadata,
 } from "~/shared/lib/categories";
@@ -186,7 +186,6 @@ const PROTO_GRANT_KB = 256;
 const PROTO_RUN_ID = 0;
 const PROTO_USER_ID = "you";
 const PROTO_YOU = "You";
-const BACK_TO_PREP = "Back to prep →";
 
 const strongCloseAt = (gate: number): LastClose => ({
 	gate,
@@ -307,9 +306,53 @@ const climberOf = (trainer: SimTrainer): ClimberProps => ({
 	name: trainer.displayName,
 });
 
+const trainerBy = (seed: string) =>
+	climberOf(TRAINERS[hashOf(seed) % TRAINERS.length]);
+
+const trainerLeader = (seed: string) => ({
+	handle: `@${trainerBy(seed).name.toLowerCase().replace(/\W+/g, "")}`,
+});
+
 const COMMUNITY_COUNTDOWN = "6h 12m";
 const COMMUNITY_COUNTDOWN_HINT = "until the next five polls are dealt";
 const CLIMB_MAP_TITLE = "Where everyone is";
+/** Nine held, three open — the rig shows both seat states at once. */
+const SEATED_CATEGORIES = 9;
+
+/** The one category the rig leaves unheld, so both seat states are reachable. */
+const OPEN_SEAT_CATEGORY: CategoryCode = "git";
+
+/**
+ * The seat under the byline, which the rig has to fabricate.
+ *
+ * `toRunView` does not carry it: the service attaches it beside `stats` because
+ * it is read rather than derived (ADR-103). The rig drives the reducer directly
+ * and has no service, so without this the poll screen draws no leader at all.
+ */
+const withCategorySeat = (view: RunView): RunView => {
+	if (!view.poll) return view;
+
+	const category = view.poll.category;
+
+	return {
+		...view,
+		poll: {
+			...view.poll,
+			categorySeat: {
+				category,
+				...(category === OPEN_SEAT_CATEGORY
+					? {}
+					: {
+							leader: {
+								...trainerLeader(`seat:${category}`),
+								streak: 4 + (hashOf(`streak:${category}`) % 21),
+								you: false,
+							},
+						}),
+			},
+		},
+	};
+};
 const CLIMB_MAP_SUMMARY = "the climb map lands here";
 
 const simulateCommunityScreen = (
@@ -398,10 +441,6 @@ const simulateCommunityScreen = (
 				? middling
 				: struggling;
 
-	const trainerBy = (seed: string) =>
-		climberOf(TRAINERS[hashOf(seed) % TRAINERS.length]);
-	const best = [...rightsPerTrainer].sort((a, b) => b.rights - a.rights)[0];
-
 	return {
 		header: {
 			swatch,
@@ -460,32 +499,22 @@ const simulateCommunityScreen = (
 			],
 		},
 		map: { title: CLIMB_MAP_TITLE, summary: CLIMB_MAP_SUMMARY },
-		standouts: {
-			title: "Standouts",
-			awards: [
-				{
-					title: "fastest answer",
-					climber: trainerBy(`fastest:${gate}`),
-					value: `${4 + (hashOf(`fastms:${gate}`) % 51)}s`,
-				},
-				{
-					title: "first to answer",
-					climber: trainerBy(`first:${gate}`),
-					value: `${1 + (hashOf(`firsts:${gate}`) % 59)}m after the deal`,
-				},
-				{
-					title: "most right",
-					climber: best === undefined ? YOU : climberOf(best.trainer),
-					value: `${best?.rights ?? yourRights} of ${window}`,
-					tag: "today",
-					tagColor: "viridian",
-				},
-				{
-					title: "deepest gate",
-					climber: trainerBy(`gate:${gate}`),
-					value: swatch.gateName,
-				},
-			],
+		leaders: {
+			title: "Category leaders",
+			summary: "longest run of correct answers · all-time",
+			seated: `${SEATED_CATEGORIES} of ${CATEGORY_CODES.length} seated`,
+			seats: CATEGORY_CODES.map((code, index) => ({
+				category: getCategoryMetadata(code).name,
+				...(index < SEATED_CATEGORIES
+					? {
+							leader: {
+								...trainerLeader(`seat:${code}`),
+								figure: `${24 - index * 2} in a row`,
+							},
+						}
+					: { claim: "3 in a row claims it" }),
+			})),
+			footer: `A seat changes hands when somebody beats it. ${CATEGORY_CODES.length - SEATED_CATEGORIES} seats still open.`,
 		},
 		polls: {
 			title: "The day's polls",
@@ -559,7 +588,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setOverStep("summary");
 	}, [state.status]);
 
-	const view = toRunView(state);
+	const view = withCategorySeat(toRunView(state));
 	const settled: AnsweredPoll | undefined = pinned
 		? view.answeredThisGate.at(-1)
 		: undefined;
@@ -608,7 +637,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	};
 
 	const [filed, setFiled] = useState<readonly FiledIncident[]>([]);
-	const [incidentsOpen, setIncidentsOpen] = useState(false);
 	const rivals = simulatedRivals(state.gatesCleared);
 	const queued = queuedByRun(
 		filed.map((incident) => ({
@@ -678,17 +706,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 			? undefined
 			: `filed ${latest.row.code} against ${latest.row.target} · ${latest.row.gateName}`
 	);
-	const openIncidents = () => setIncidentsOpen(true);
-
-	if (incidentsOpen)
-		return (
-			<IncidentsScreen
-				{...incidentsScreenPropsFor(
-					filed.map((incident) => incident.row),
-					{ label: BACK_TO_PREP, onPress: () => setIncidentsOpen(false) }
-				)}
-			/>
-		);
 
 	return (
 		<>
@@ -718,7 +735,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 					attack={attack}
 					onFire={fire}
-					onIncidents={openIncidents}
 				/>
 			)}
 
@@ -771,6 +787,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					view={view}
 					onDraft={(id) => dispatch({ type: "draft", configId: id })}
 					onSell={(id) => dispatch({ type: "sell", configId: id })}
+					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
@@ -788,7 +805,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 					attack={attack}
 					onFire={fire}
-					onIncidents={openIncidents}
 				/>
 			)}
 
@@ -798,6 +814,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 						onShop: () => setRewardStep("shop"),
 						onPrep: () => setRewardStep("prep"),
 					})}
+					incidents={incidentsPanelFor(filed.map((incident) => incident.row))}
 				/>
 			)}
 

@@ -382,6 +382,7 @@ export const createKantoPollScreenProps =
 		audits: kantoAudits,
 		facts: createKantoPollFactsProps(),
 		hint: "tap any config to open it · press A, B or C to answer",
+		commit: { label: "Lock in", note: "pick an answer first" },
 	});
 
 const SEPARATOR = "·";
@@ -406,16 +407,21 @@ const FIRST_VERSION = 1;
 export const upgradeOfferFor = (
 	offer: Config,
 	balance: number = SHOP_BALANCE_KB,
-	heldLevel: number = FIRST_VERSION
+	heldLevel: number = FIRST_VERSION,
+	onInstall: () => void = noop
 ): ConfigChipProps => {
 	const priceKb = draftCost(offer);
 
 	return upgradeChipFor(offer, heldLevel, {
 		priceKb,
 		affordable: priceKb <= balance,
-		onInstall: noop,
+		onInstall,
 	});
 };
+
+/** The dealt registry's rolled upgrade, with a Buy press a spec can watch. */
+export const kantoUpgradeOffer = (onBuy: () => void): ConfigChipProps =>
+	upgradeOfferFor({ ...CONFIGS.ts, level: 3 }, SHOP_BALANCE_KB, 1, onBuy);
 
 const offersAt = (balance: number): ConfigChipProps[] => [
 	offerFor(CONFIGS.intellisense, balance),
@@ -824,7 +830,6 @@ import {
 	BAND_OUTCOMES_TITLE,
 } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 import {
-	NEW_RUN_REGISTRY_NOTE,
 	newRunFooterFor,
 	newRunRegistryFor,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
@@ -973,8 +978,6 @@ export type KantoPrepFrame = {
 	streak?: number;
 	answered?: number;
 	windowCorrect?: number;
-	/** Defaults to `coverageHeld`, which is right for a window yet to be played. */
-	openingHeld?: number;
 	/** Incidents rivals locked onto this gate. A gate nobody attacked is clean. */
 	audits?: readonly AuditId[];
 };
@@ -989,7 +992,6 @@ export const kantoPrepAt = ({
 	streak = 0,
 	answered = 0,
 	windowCorrect = 0,
-	openingHeld,
 	audits = [],
 }: KantoPrepFrame): PrepScreenProps =>
 	prepPropsFor({
@@ -1002,7 +1004,6 @@ export const kantoPrepAt = ({
 		buildSpace,
 		window,
 		bar: { ...prepLadderAt(gate), held: coverageHeld },
-		openingHeld: openingHeld ?? coverageHeld,
 		coverageGainPercent: coverageGainPercentFor(
 			gainPerCorrectFor(configs),
 			gate
@@ -1027,14 +1028,12 @@ export const kantoNewRunAt = (
 	registry: kantoNewRunRegistry(installedIds, BASE_SLOTS),
 	footer: kantoGateZeroFooter(installedIds.length > 0),
 	buildNote: newRunBuildNote(),
-	registryNote: NEW_RUN_REGISTRY_NOTE,
 });
 
 export const createKantoNewRunScreenProps =
 	createMockDataFactory<NewRunScreenProps>(kantoNewRunAt([]));
 
 /** The new run registry's note, re-exported: a ui/*.spec may not reach for it. */
-export const newRunRegistryNote = NEW_RUN_REGISTRY_NOTE;
 
 /** The prep screen's own ladder, re-exported: a ui/*.spec may not reach for it. */
 export const kantoPrepLadder = prepLadderAt;

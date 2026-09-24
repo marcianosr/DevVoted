@@ -5,8 +5,10 @@ import {
 	type BandOutcome,
 	type LeadLine,
 } from "./BandOutcomes.ui";
-import type { Objective } from "./Objectives.ui";
+import type { ObjectivesProps } from "./Objectives.ui";
+import type { PollScoresProps } from "./PollScores.ui";
 import { Screen } from "./Screen.ui";
+import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
 const TITLE = "Objectives and rewards";
 const NOTE =
@@ -16,25 +18,42 @@ const LEAD: readonly LeadLine[] = [
 	["Two things are on the table today, and they are won separately."],
 ];
 
-const OBJECTIVES: readonly Objective[] = [
-	{
-		name: "Clear the gate",
-		detail: "gate 9 opens tomorrow",
-		met: true,
-		requirement: {
-			lead: "reach",
+const OBJECTIVES: ObjectivesProps = {
+	requiredLead: "Main objective",
+	required: {
+		statement: {
+			lead: "Finish at",
 			figure: "OK",
 			color: "saffron",
 			trail: "or better",
 		},
+		explain: "to clear the gate",
+		met: true,
 	},
-	{
-		name: "Earn the Seafoam swatch",
-		detail: "kept for good",
-		met: false,
-		requirement: { lead: "answer", figure: "5 of 5" },
-	},
-];
+	optionalLead: "Extra objectives",
+	optional: [
+		{
+			statement: { lead: "Finish at", figure: "PERFECT", color: "cerulean" },
+			explain: "to earn the Seafoam swatch",
+			met: false,
+			figures: [{ label: "5 of 5" }],
+		},
+		{
+			statement: {
+				lead: "Finish at",
+				figure: "HEALTHY",
+				color: "viridian",
+				trail: "or better",
+			},
+			explain: "to arm an audit",
+			met: false,
+		},
+	],
+};
+
+const SCORES: PollScoresProps = {
+	rows: [{ swatch: gateSwatchAt(9), correct: 3, polls: 5, current: true }],
+};
 
 const SEAFOAM: readonly BandOutcome[] = [
 	{ band: "perfect", range: "100%", pays: "+1305 KB" },
@@ -64,6 +83,7 @@ const meta: Meta<typeof BandOutcomes> = {
 		outcomes: SEAFOAM,
 		lead: LEAD,
 		objectives: OBJECTIVES,
+		scores: SCORES,
 		note: NOTE,
 	},
 };
@@ -78,7 +98,12 @@ export const NoFloorToFallThrough: Story = {
 };
 
 export const BareTable: Story = {
-	args: { lead: undefined, objectives: undefined, note: undefined },
+	args: {
+		lead: undefined,
+		objectives: undefined,
+		scores: undefined,
+		note: undefined,
+	},
 };
 
 export const InHalfAScreen: Story = {

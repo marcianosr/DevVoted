@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-09-07T14:36:53Z
-updated_at: 2026-09-23T11:45:58Z
+updated_at: 2026-09-23T12:16:03Z
 blocked_by:
     - DVTD-tduu
 ---
@@ -44,3 +44,5 @@ Done. `src/ui/old-theme/` is deleted — 95 files — and `src/ui/` is now `kant
 **Carried forward:** DVTD-4km2 (climb map — the reference render is now only at `git show 3df71fde:src/ui/terminal-theme/ClimbTrack.ui.tsx`), DVTD-6poh (turnout/conversation data), DVTD-jx9l (multiple-choice marker lost), DVTD-6yug (the stories smoke spec died with old-theme, so ~120 kanto stories are rendered by nothing in CI).
 
 **Needs a decision:** the deleted `SpecialThanksPanel` credited three named people and had no importers — it looks like it fell out of the app by accident rather than by decision. Its server function `getUsersByDisplayNames` is now orphaned too.
+
+**Follow-up filed:** DVTD-t5g8 rebuilds the Special thanks credits (deleted here as dead code) and finds them a home.

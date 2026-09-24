@@ -11,10 +11,10 @@ import {
 	INCIDENTS_EMPTY,
 	INCIDENTS_TITLE,
 	incidentFeedRowFor,
-	incidentsScreenPropsFor,
+	incidentsPanelFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
 import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
-import type { IncidentsScreenProps } from "~/ui/kanto-theme/IncidentsScreen.ui";
+import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
 
 export {
 	ATTACK_DEALING,
@@ -43,7 +43,6 @@ const BROCK_BUILD = publicBuildOf({
 	vendorLockedConfigId: null,
 });
 const BARE_BUILD = publicBuildOf({ configs: [], vendorLockedConfigId: null });
-const BACK = { label: "Back to your run →" };
 
 const OFFERS: readonly AttackOffer[] = [
 	{
@@ -141,8 +140,8 @@ export const kantoIncidentRows = () =>
 		},
 	].map((row) => incidentFeedRowFor(row, VIEWER));
 
-export const kantoIncidents = (): IncidentsScreenProps =>
-	incidentsScreenPropsFor(kantoIncidentRows(), BACK);
+export const kantoIncidents = (): IncidentsPanelProps =>
+	incidentsPanelFor(kantoIncidentRows());
 
-export const kantoIncidentsQuiet = (): IncidentsScreenProps =>
-	incidentsScreenPropsFor([], BACK);
+export const kantoIncidentsQuiet = (): IncidentsPanelProps =>
+	incidentsPanelFor([]);

@@ -20,14 +20,6 @@ const COVERAGE = [
 		tags: [{ label: "1 poll" }],
 		figures: [{ label: "−4.4", color: "cinnabar" as const }],
 	},
-	{
-		label: "this gate",
-		total: true,
-		figures: [
-			{ label: "+39.4%", color: "viridian" as const },
-			{ label: "of 25% needed", tone: "quiet" as const },
-		],
-	},
 ];
 
 const meta: Meta<typeof Fold> = {

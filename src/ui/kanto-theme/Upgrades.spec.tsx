@@ -273,4 +273,27 @@ describe("Upgrades", () => {
 			screen.getByRole("button", { name: "Buy v3 · 96 KB" })
 		).toBeInTheDocument();
 	});
+
+	it("states why a refused offer will not go through", () => {
+		render(
+			<Upgrades
+				{...PANEL}
+				onBuy={vi.fn()}
+				rungs={refused(RUNGS)}
+				refusal="Unlocks at 10% Java coverage, you have 4%."
+			/>
+		);
+
+		expect(
+			screen.getByText("Unlocks at 10% Java coverage, you have 4%.")
+		).toBeInTheDocument();
+	});
+
+	it("says nothing extra when the offer stands", () => {
+		const { container } = render(<Upgrades {...PANEL} onBuy={vi.fn()} />);
+
+		expect(
+			container.querySelector('[data-screen-theme="cinnabar"]')
+		).toBeNull();
+	});
 });

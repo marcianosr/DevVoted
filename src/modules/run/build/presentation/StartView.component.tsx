@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
 	handCardFor,
 	NEW_RUN_BUILD_NOTE,
-	NEW_RUN_REGISTRY_NOTE,
 	newRunBuildFor,
 	newRunFooterFor,
 	newRunHeaderFor,
@@ -70,7 +69,6 @@ export const StartView = ({
 				onToggleInfo: toggleInfo,
 			})}
 			buildNote={NEW_RUN_BUILD_NOTE}
-			registryNote={NEW_RUN_REGISTRY_NOTE}
 			footer={newRunFooterFor(
 				view.canStart && !needsVendor ? onStart : undefined,
 				needsVendor ? VENDOR_REMEDY : undefined

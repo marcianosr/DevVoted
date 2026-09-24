@@ -12,7 +12,7 @@ import {
 	pollHistoryFor,
 	pollPaidFor,
 	pollPressesOf,
-	hallOfFameFor,
+	categoryLeaderFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -578,85 +578,72 @@ describe("pollFactsFor", () => {
 	});
 });
 
-describe("hallOfFameFor", () => {
+describe("categoryLeaderFor", () => {
 	const view = createMockRunView();
 	const jsPoll = createMockPollView({
 		category: "js",
-		record: {
+		categorySeat: {
 			category: "js",
-			holder: {
+			leader: {
 				handle: "@sabrina",
 				githubLogin: "sabrina",
 				streak: 17,
 				you: false,
 			},
-			yourBest: 4,
 		},
 	});
 
-	it("names the category the record was set in", () => {
-		expect(hallOfFameFor(view, jsPoll)?.caption).toBe(
-			"the longest run of correct JavaScript answers"
-		);
+	it("names the category the seat is held for", () => {
+		expect(categoryLeaderFor(view, jsPoll)?.category).toBe("JavaScript");
 	});
 
-	it("titles the holder after the category they maintain", () => {
-		expect(hallOfFameFor(view, jsPoll)?.holder?.title).toBe(
-			"JavaScript Maintainer"
-		);
+	it("carries no title beside the handle", () => {
+		expect(categoryLeaderFor(view, jsPoll)?.leader).not.toHaveProperty("title");
 	});
 
-	it("states the record as a run rather than a bare count", () => {
-		expect(hallOfFameFor(view, jsPoll)?.holder?.figure).toBe("17 in a row");
+	it("states the seat as a run rather than a bare count", () => {
+		expect(categoryLeaderFor(view, jsPoll)?.leader?.figure).toBe("17 in a row");
 	});
 
-	it("states how far this account has ever got", () => {
-		expect(hallOfFameFor(view, jsPoll)?.yourBest).toBe("your best 4");
+	it("says nothing about how far this account has got", () => {
+		expect(categoryLeaderFor(view, jsPoll)).not.toHaveProperty("yourBest");
 	});
 
-	it("leaves the record unclaimed when nobody holds it", () => {
+	it("opens the seat when nobody holds it, and says what claims it", () => {
+		const poll = createMockPollView({ categorySeat: { category: "js" } });
+
+		expect(categoryLeaderFor(view, poll)?.leader).toBeUndefined();
+		expect(categoryLeaderFor(view, poll)?.claim).toBe("3 in a row claims it");
+	});
+
+	it("states no claim while somebody holds the seat", () => {
+		expect(categoryLeaderFor(view, jsPoll)?.claim).toBeUndefined();
+	});
+
+	it("marks the seat as yours when you hold it", () => {
 		const poll = createMockPollView({
-			record: { category: "js", yourBest: 2 },
-		});
-
-		expect(hallOfFameFor(view, poll)?.holder).toBeUndefined();
-		expect(hallOfFameFor(view, poll)?.yourBest).toBe("your best 2");
-	});
-
-	it("says nothing about an account that has never strung two together", () => {
-		const poll = createMockPollView({
-			record: { category: "js", yourBest: 0 },
-		});
-
-		expect(hallOfFameFor(view, poll)?.yourBest).toBeUndefined();
-	});
-
-	it("does not restate the record as your best when you are the holder", () => {
-		const poll = createMockPollView({
-			record: {
+			categorySeat: {
 				category: "js",
-				holder: { handle: "@sabrina", streak: 17, you: true },
-				yourBest: 17,
+				leader: { handle: "@sabrina", streak: 17, you: true },
 			},
 		});
 
-		expect(hallOfFameFor(view, poll)?.holder?.you).toBe(true);
-		expect(hallOfFameFor(view, poll)?.yourBest).toBeUndefined();
+		expect(categoryLeaderFor(view, poll)?.leader?.you).toBe(true);
 	});
 
-	it("withholds the record while the category is hidden, caption and all", () => {
+	it("withholds the seat while the category is hidden, category name and all", () => {
 		const hidden = createMockRunView({ categoryHidden: true });
 
-		expect(hallOfFameFor(hidden, jsPoll)).toBeUndefined();
+		expect(categoryLeaderFor(hidden, jsPoll)).toBeUndefined();
 	});
 
 	it("draws nothing while an answer is on screen", () => {
-		expect(hallOfFameFor(view, undefined)).toBeUndefined();
+		expect(categoryLeaderFor(view, undefined)).toBeUndefined();
 	});
 
-	it("draws nothing for a poll the record was never read for", () => {
+	it("draws nothing for a poll the seat was never read for", () => {
 		expect(
-			hallOfFameFor(view, createMockPollView({ record: undefined }))
+			categoryLeaderFor(view, createMockPollView({ categorySeat: undefined }))
 		).toBeUndefined();
 	});
 });

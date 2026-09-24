@@ -36,9 +36,7 @@ export const EMPTY_LABEL = "nothing installed yet";
 export const SUGGESTED_LABEL = "suggested";
 const SUGGESTED_COLOR = "cerulean" as const;
 const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
-export const NEW_RUN_BUILD_NOTE = `The first ${BASE_SLOTS} weight is free. Past that the build rents the space it grows into, and bills for it at every gate you clear.`;
-export const NEW_RUN_REGISTRY_NOTE =
-	"The hand costs no storage, only room. Nothing is required, and the smallest three always fit together.";
+export const NEW_RUN_BUILD_NOTE = `Select configs up to ${BASE_SLOTS} weight units`;
 
 export const newRunHeaderFor = (balanceKb: number): HeaderProps => ({
 	swatch: gateSwatchAt(START_GATE),

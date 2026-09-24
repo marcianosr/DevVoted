@@ -2,30 +2,24 @@ import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import {
-	formatCount,
-	formatDuration,
-	formatPercent,
-	plural,
-} from "~/shared/lib/displayValue";
+import { plural } from "~/shared/lib/displayValue";
 
 import type {
 	RunCommunityPoll,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
-import type {
-	CommunityStandout,
-	CommunityVoter,
-} from "~/modules/run/community/domain/standouts.model";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
+import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
+import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
 import { ladderSummaryFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	CommunityScreen,
 	type CommunityScreenProps,
-	type Standout,
 } from "~/ui/kanto-theme/CommunityScreen.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
+import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 const LETTERS = "ABCDEFGH";
@@ -37,8 +31,9 @@ const COPY = {
 	answeredToday: "answered today",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
-	standoutsTitle: "Standing out",
-	dayIsYoung: "nothing yet — the day is young",
+	leadersTitle: "Category leaders",
+	leadersSummary: "longest run of correct answers · all-time",
+	seatsChangeHands: "A seat changes hands when somebody beats it.",
 	pollsTitle: "The day’s polls",
 	notDealtYet: "Not dealt yet",
 	countdownHint: "until the next five polls are dealt",
@@ -47,15 +42,6 @@ const COPY = {
 	whereYouStand: "where your run stands",
 } as const;
 
-const detailOf = (value: CommunityStandout["value"]): string => {
-	if (value.unit === "duration") return formatDuration(value);
-	if (value.unit === "percent") return formatPercent(value);
-	if (value.unit === "count") return formatCount(value);
-	if (value.unit === "configs")
-		return `${value.amount} config${value.amount === 1 ? "" : "s"}`;
-	return value.text;
-};
-
 const climberOf = (voter: CommunityVoter): ClimberProps => ({
 	name: voter.displayName,
 	photoUrl: voter.photoUrl ?? undefined,
@@ -63,14 +49,32 @@ const climberOf = (voter: CommunityVoter): ClimberProps => ({
 	you: voter.you,
 });
 
-export const standoutEntriesFor = (
-	standouts: readonly CommunityStandout[]
-): Standout[] =>
-	standouts.map((standout) => ({
-		title: standout.title,
-		climber: climberOf(standout.voter),
-		value: detailOf(standout.value),
-	}));
+const SEATED = (held: number, total: number) => `${held} of ${total} seated`;
+
+/**
+ * The board's own line under the seats. It states how a seat moves, because the
+ * figure is an all-time best: missing never costs the holder their seat, only
+ * somebody going further does.
+ */
+export const seatsFooterFor = (seats: readonly CategorySeat[]): string => {
+	const open = seats.filter(({ leader }) => leader === undefined).length;
+	if (open === 0) return COPY.seatsChangeHands;
+
+	return `${COPY.seatsChangeHands} ${plural(open, "seat")} still open.`;
+};
+
+export const leadersFor = (
+	seats: readonly CategorySeat[]
+): CommunityScreenProps["leaders"] => ({
+	title: COPY.leadersTitle,
+	summary: COPY.leadersSummary,
+	seated: SEATED(
+		seats.filter(({ leader }) => leader !== undefined).length,
+		seats.length
+	),
+	seats: seats.map(categoryLeaderRowFor),
+	footer: seatsFooterFor(seats),
+});
 
 const categoryNameOf = (category: CategoryCode | null): string =>
 	category === null ? "Poll" : getCategoryMetadata(category).name;
@@ -147,7 +151,8 @@ export type CommunityViewProps = {
 		hint?: string;
 		onBack: () => void;
 	};
-	aside?: { label: string; onUse?: () => void };
+	/** Today's audits, everyone's (ADR-099). Absent until the feed has read. */
+	incidents?: IncidentsPanelProps;
 };
 
 export const communityScreenPropsFor = ({
@@ -156,7 +161,7 @@ export const communityScreenPropsFor = ({
 	countdown,
 	note,
 	back,
-	aside,
+	incidents,
 }: CommunityViewProps): CommunityScreenProps => {
 	const empty = view.polls.length === 0;
 
@@ -189,7 +194,6 @@ export const communityScreenPropsFor = ({
 					hint: COPY.whereYouStand,
 				},
 			],
-			shop: { label: aside?.label ?? "Incidents", onPress: aside?.onUse },
 			prep: {
 				label: back.label,
 				onPress: back.disabled === true ? undefined : back.onBack,
@@ -223,11 +227,8 @@ export const communityScreenPropsFor = ({
 			title: COPY.mapTitle,
 			summary: ladderSummaryFor(view.climb) ?? COPY.noPlace,
 		},
-		standouts: {
-			title: COPY.standoutsTitle,
-			summary: view.standouts.length === 0 ? COPY.dayIsYoung : undefined,
-			awards: standoutEntriesFor(view.standouts),
-		},
+		...(incidents === undefined ? {} : { incidents }),
+		leaders: leadersFor(view.leaders),
 		polls: {
 			title: COPY.pollsTitle,
 			summary: `${plural(view.totalPlayers, "player")} answered`,

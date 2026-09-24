@@ -1,5 +1,4 @@
 import { CLEARING_BANDS } from "~/modules/run/gate/application/gateOutcome.viewmodel";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	SLICE_WINDOW,
 	roundToOneDecimal,
@@ -19,8 +18,8 @@ import {
 	type CoverageLadder,
 } from "~/ui/kanto-theme/CoverageBar.ui";
 import type {
+	Objective,
 	ObjectivesProps,
-	RequiredObjective,
 } from "~/ui/kanto-theme/Objectives.ui";
 
 const AS_PERCENT = 100;
@@ -34,18 +33,17 @@ export const BAND_OUTCOMES_NOTE =
 export const ESCROW_NOTE =
 	"An open transaction only pays on a clear: SHAKY or DANGER rolls back every KB this window held.";
 
+const REQUIRED_LEAD = "Main objective";
 const CLEAR_SECTION = "to clear the gate";
 const CLEAR_LEAD = "Finish at";
 const CLEAR_TRAIL = "or better";
 const OPTIONAL_LEAD = "Extra objectives";
-const CLIMB_SHUTS = "Anything under it and the climb ends here.";
-const ANSWER_LEAD = "answer";
-const SWATCH_KEPT = "kept for good";
+const SWATCH_SECTION = "to earn the";
+const SWATCH_WORD = "swatch";
+const AUDIT_SECTION = "to arm an audit";
 
 const ENDS_THE_RUN = "the run ends";
 const CAUGHT_INSTEAD = "caught · peel instead";
-const DAY_STILL_OWES = "the day still owes";
-const RIGHT_ANSWERS = "right answers";
 const PEEL_TRAIL = "peel";
 
 const spanLabel = (low: number, high: number) =>
@@ -131,8 +129,6 @@ export type BandOutcomesFrame = {
 	gate: number;
 	correctThisGate: number;
 	held: number;
-	/** Where the run stood when this window opened, so the price does not move. */
-	openingHeld: number;
 	ladder: CoverageLadder;
 	coverageGainPercent: number;
 	peelKb: number;
@@ -144,78 +140,80 @@ export type BandOutcomesFrame = {
 };
 
 /**
- * The line is priced in answers, and the day owes at least FLOOR_CORRECT of
- * them whatever the meter reads (ADR-094), so the quote never dips under it.
+ * A band is only landed when the meter reaches it AND the day's floor of right
+ * answers is paid: a floor-held meter reads high but closes SHAKY (ADR-094), so
+ * an objective that ignored the floor would tick on a window that failed.
  */
-const owedClause = (owed: number | undefined): string => {
-	if (owed === undefined)
-		return `, which ${outOf(SLICE_WINDOW)} right no longer reaches`;
-	if (owed === 0)
-		return `, which the run already holds; ${DAY_STILL_OWES} ${FLOOR_CORRECT} ${RIGHT_ANSWERS}`;
-	return `, or ${Math.max(owed, FLOOR_CORRECT)} of the ${SLICE_WINDOW} right`;
-};
+const landsAt = (line: number, frame: BandOutcomesFrame): boolean =>
+	roundToOneDecimal(frame.held) >= line &&
+	frame.correctThisGate >= FLOOR_CORRECT;
 
-const shutClause = (gate: number): string => {
-	const next = swatchForGate(gate + 1);
-	return next === undefined
-		? CLIMB_SHUTS
-		: `Anything under it and ${next.gateName} stays shut.`;
-};
-
-/**
- * The clearing line in three readings: the percentage, the answers that reach it
- * from where this window opened, and what staying under it costs. The badge
- * beside it names the band; this says what the band is worth in answers, which
- * is the unit the player actually spends.
- */
-const clearExplainFor = (
-	rung: CoverageRung,
-	{ gate, openingHeld, coverageGainPercent }: BandOutcomesFrame
-): string => {
-	const owed = answersOwedFor(rung.from, openingHeld, coverageGainPercent);
-
-	return `That is ${rung.from}% coverage${owedClause(owed)}. ${shutClause(gate)}`;
-};
-
-const requiredObjectiveFor = (
-	rung: CoverageRung,
+const bandObjectiveFor = (
+	band: CoverageBandId,
+	explain: string,
 	met: boolean,
-	frame: BandOutcomesFrame
-): RequiredObjective => ({
-	lead: CLEAR_SECTION,
+	trail?: string
+): Objective => ({
 	statement: {
 		lead: CLEAR_LEAD,
-		figure: COVERAGE_BAND_WORD[rung.band],
-		color: COVERAGE_BAND_COLOR[rung.band],
-		trail: CLEAR_TRAIL,
+		figure: COVERAGE_BAND_WORD[band],
+		color: COVERAGE_BAND_COLOR[band],
+		...(trail === undefined ? {} : { trail }),
 	},
-	explain: clearExplainFor(rung, frame),
+	explain,
 	met,
 });
 
 /**
- * The gate and its swatch are two prizes on one window, and a player can take
- * either without the other: run coverage is cumulative, so a flawless window
- * can still land short of the clearing line, and a comfortable clear can carry
- * a miss. Both rows read live, so the panel says which of the two is already in
- * hand before the build is committed.
+ * The audit a strong close arms (ADR-099), listed only where it is genuinely
+ * extra. At the calibration gates OK has no room, so the clearing line already
+ * is HEALTHY and the row would restate the required objective word for word.
+ */
+const auditObjectivesFor = (
+	rung: CoverageRung,
+	frame: BandOutcomesFrame
+): readonly Objective[] => {
+	if (rung.band === "healthy") return [];
+
+	return [
+		bandObjectiveFor(
+			"healthy",
+			AUDIT_SECTION,
+			landsAt(roundToOneDecimal(frame.ladder.healthy), frame),
+			CLEAR_TRAIL
+		),
+	];
+};
+
+/**
+ * The gate, its swatch and the audit a strong close arms are three prizes on one
+ * window, and a player can take any without the others: run coverage is
+ * cumulative, so a flawless window can still land short of the clearing line,
+ * and a comfortable clear can carry a miss. Every row reads live, so the panel
+ * says which are already in hand before the build is committed.
  */
 export const objectivesFor = (frame: BandOutcomesFrame): ObjectivesProps => {
 	const rung = clearingRungFor(frame.ladder);
-	const met =
-		roundToOneDecimal(frame.held) >= rung.from &&
-		frame.correctThisGate >= FLOOR_CORRECT;
 
 	return {
-		required: requiredObjectiveFor(rung, met, frame),
+		requiredLead: REQUIRED_LEAD,
+		required: bandObjectiveFor(
+			rung.band,
+			CLEAR_SECTION,
+			landsAt(rung.from, frame),
+			CLEAR_TRAIL
+		),
 		optionalLead: OPTIONAL_LEAD,
 		optional: [
 			{
-				name: `Earn the ${frame.gateName} swatch`,
-				detail: SWATCH_KEPT,
-				met: frame.correctThisGate >= SLICE_WINDOW,
-				requirements: [{ lead: ANSWER_LEAD, figure: outOf(SLICE_WINDOW) }],
+				...bandObjectiveFor(
+					"perfect",
+					`${SWATCH_SECTION} ${frame.gateName} ${SWATCH_WORD}`,
+					frame.correctThisGate >= SLICE_WINDOW
+				),
+				figures: [{ label: outOf(SLICE_WINDOW) }],
 			},
+			...auditObjectivesFor(rung, frame),
 		],
 	};
 };

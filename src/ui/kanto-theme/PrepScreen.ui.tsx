@@ -8,10 +8,10 @@ import { Figures } from "./Figures.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Ledger, type LedgerProps } from "./Ledger.ui";
 import { Panel } from "./Panel.ui";
-import { PollScores, type PollScoresProps } from "./PollScores.ui";
+import type { PollScoresProps } from "./PollScores.ui";
 import { RebaseList, type RebaseListProps } from "./RebaseList.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
@@ -98,15 +98,10 @@ export const PrepScreen = ({
 
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
-				<BandOutcomes {...outcomes} />
+				<BandOutcomes {...outcomes} scores={scores} />
 				{rebase === undefined ? null : <RebaseList {...rebase} />}
 				{estimate === undefined ? null : <EstimatePicker {...estimate} />}
 				{sla === undefined ? null : <SlaPicker {...sla} />}
-				<Panel>
-					<Panel.Body>
-						<PollScores {...scores} />
-					</Panel.Body>
-				</Panel>
 			</div>
 
 			<div className={COLUMN}>
@@ -116,10 +111,6 @@ export const PrepScreen = ({
 			</div>
 		</div>
 
-		<Panel>
-			<Panel.Body>
-				<ScreenFooter {...footer} rule={false} />
-			</Panel.Body>
-		</Panel>
+		<ScreenActions {...footer} />
 	</Screen>
 );

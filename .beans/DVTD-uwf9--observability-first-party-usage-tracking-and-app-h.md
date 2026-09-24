@@ -5,7 +5,7 @@ status: in-progress
 type: epic
 priority: high
 created_at: 2026-09-23T12:28:10Z
-updated_at: 2026-09-23T12:28:10Z
+updated_at: 2026-09-23T19:03:30Z
 ---
 
 Know who shows up each day and what they do, and know when the app is unhealthy — with no banner, popup or consent prompt ever shown to a player.

@@ -1,6 +1,7 @@
 import { WEIGHT } from "~/shared/lib/copy";
 import { useState } from "react";
 
+import type { Config } from "~/modules/run/config/domain/config.model";
 import { DRAFT_COST_PER_SLOT_KB } from "~/modules/run/config/domain/config.model";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
@@ -21,6 +22,7 @@ export type ShopViewProps = {
 	view: RunView;
 	onDraft: (configId: string) => void;
 	onSell: (configId: string) => void;
+	onUpgrade: (configId: string) => void;
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
@@ -70,6 +72,15 @@ const offersOf = (
 			? offerChipFor(offer.config, deal)
 			: upgradeChipFor(offer.config, offer.heldLevel, deal);
 	});
+
+/**
+ * A config with no focus category has no coverage gate to answer, so the figure
+ * it reports is never read; zero keeps the deal one shape either way.
+ */
+const focusCoverageOf = (view: RunView, config: Config): number =>
+	config.focusCategory === undefined
+		? 0
+		: (view.coverageByCategory[config.focusCategory] ?? 0);
 
 const controlsOf = (
 	view: RunView,
@@ -122,6 +133,7 @@ export const ShopView = ({
 	view,
 	onDraft,
 	onSell,
+	onUpgrade,
 	onRebuild,
 	onExtend,
 	onPlantPin,
@@ -129,10 +141,22 @@ export const ShopView = ({
 	onContinue,
 }: ShopViewProps) => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const [openUpgrades, setOpenUpgrades] = useState<string | undefined>(
+		undefined
+	);
 	const [armedId, setArmedId] = useState<string | undefined>(undefined);
 
-	const toggleInfo = (name: string) =>
+	// One panel at a time across both columns: the chip already ranks upgrades
+	// over info, and two open panels would argue about which the player meant.
+	const toggleInfo = (name: string) => {
+		setOpenUpgrades(undefined);
 		setOpenInfo(name === openInfo ? undefined : name);
+	};
+
+	const toggleUpgrades = (name: string) => {
+		setOpenInfo(undefined);
+		setOpenUpgrades(name === openUpgrades ? undefined : name);
+	};
 
 	const armed = view.offers.find((offer) => offer.config.id === armedId);
 	// Only ever self-inflicted, and only after a bill the balance could not
@@ -155,13 +179,22 @@ export const ShopView = ({
 			controls={controlsOf(view, { onRebuild, onExtend, onPlantPin })}
 			build={{
 				configs: view.configs.map((config) =>
-					buildChipFor(config, () => onSell(config.id), {
-						locked: view.vendorLock.lockedConfigId === config.id,
-						onLock:
-							view.vendorLock.offered && config.vendorLocks !== true
-								? () => onVendorLock(config.id)
-								: undefined,
-					})
+					buildChipFor(
+						config,
+						() => onSell(config.id),
+						{
+							locked: view.vendorLock.lockedConfigId === config.id,
+							onLock:
+								view.vendorLock.offered && config.vendorLocks !== true
+									? () => onVendorLock(config.id)
+									: undefined,
+						},
+						{
+							storageKb: view.storage,
+							coveragePct: focusCoverageOf(view, config),
+							onBuy: () => onUpgrade(config.id),
+						}
+					)
 				),
 				weight: {
 					held: view.buildSpace.space,
@@ -187,12 +220,16 @@ export const ShopView = ({
 				},
 				openInfo,
 				onToggleInfo: toggleInfo,
+				openUpgrades,
+				onToggleUpgrades: toggleUpgrades,
 			}}
 			registry={{
 				offers: offersOf(view, onDraft, armedId, setArmedId),
 				slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
 				openInfo,
 				onToggleInfo: toggleInfo,
+				openUpgrades,
+				onToggleUpgrades: toggleUpgrades,
 			}}
 			footer={{
 				action: {

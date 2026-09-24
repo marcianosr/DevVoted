@@ -18,7 +18,7 @@ import {
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
 import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
 import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
-import * as recordQueries from "~/modules/run/run/infrastructure/categoryRecord.repository";
+import * as leaderQueries from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import * as statsQueries from "~/modules/run/run/infrastructure/pollStats.repository";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
@@ -50,10 +50,8 @@ vi.mock("~/modules/run/run/infrastructure/pollStats.repository", () => ({
 	}),
 }));
 
-vi.mock("~/modules/run/run/infrastructure/categoryRecord.repository", () => ({
-	fetchCategoryRecord: vi
-		.fn()
-		.mockResolvedValue({ category: "js", yourBest: 0 }),
+vi.mock("~/modules/run/run/infrastructure/categoryLeader.repository", () => ({
+	fetchCategoryLeader: vi.fn().mockResolvedValue({ category: "js" }),
 }));
 
 vi.mock("~/modules/run/incident/infrastructure/incident.repository", () => ({
@@ -481,11 +479,10 @@ describe("the poll's own history on the view (ADR-093)", () => {
 		}
 	});
 
-	it("reads the record for the poll's own category (ADR-100)", async () => {
-		vi.mocked(recordQueries.fetchCategoryRecord).mockResolvedValue({
+	it("reads the leader of the poll's own category (ADR-103)", async () => {
+		vi.mocked(leaderQueries.fetchCategoryLeader).mockResolvedValue({
 			category: "js",
-			holder: { handle: "@sabrina", streak: 17, you: false },
-			yourBest: 4,
+			leader: { handle: "@sabrina", streak: 17, you: false },
 		});
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 			sessionRunRecord()
@@ -495,12 +492,11 @@ describe("the poll's own history on the view (ADR-093)", () => {
 		const result = await getTodaysRunService({ userId: USER, date: DATE });
 
 		expect(
-			vi.mocked(recordQueries.fetchCategoryRecord).mock.calls[0]?.[0]
+			vi.mocked(leaderQueries.fetchCategoryLeader).mock.calls[0]?.[0]
 		).toBe("js");
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data?.poll?.record?.holder?.streak).toBe(17);
-			expect(result.data?.poll?.record?.yourBest).toBe(4);
+			expect(result.data?.poll?.categorySeat?.leader?.streak).toBe(17);
 		}
 	});
 
@@ -513,6 +509,6 @@ describe("the poll's own history on the view (ADR-093)", () => {
 		await getTodaysRunService({ userId: USER, date: DATE });
 
 		expect(vi.mocked(statsQueries.fetchPollStats)).not.toHaveBeenCalled();
-		expect(vi.mocked(recordQueries.fetchCategoryRecord)).not.toHaveBeenCalled();
+		expect(vi.mocked(leaderQueries.fetchCategoryLeader)).not.toHaveBeenCalled();
 	});
 });

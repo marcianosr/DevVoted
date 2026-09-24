@@ -20,7 +20,7 @@ import type { IconName } from "./Icon.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
@@ -298,11 +298,7 @@ export const GateOutcomeScreen = ({
 			{tail?.choice === undefined ? null : <GateChoice {...tail.choice} />}
 			{tail?.ending === undefined ? null : <EndingPanel {...tail.ending} />}
 
-			<Panel>
-				<Panel.Body>
-					<ScreenFooter {...footer} rule={false} />
-				</Panel.Body>
-			</Panel>
+			<ScreenActions {...footer} />
 		</>
 	);
 

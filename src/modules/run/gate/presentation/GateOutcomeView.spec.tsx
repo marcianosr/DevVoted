@@ -287,7 +287,7 @@ describe("GateOutcomeView", () => {
 });
 
 describe("rivals' audits at the close (ADR-099)", () => {
-	it("itemises what surviving them paid and chips the attack the clear armed", () => {
+	it("itemises what surviving them paid and chips the audit the clear armed", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
@@ -309,6 +309,6 @@ describe("rivals' audits at the close (ADR-099)", () => {
 		);
 
 		expect(screen.getByText("audits survived")).toBeInTheDocument();
-		expect(screen.getByText("attack earned")).toBeInTheDocument();
+		expect(screen.getByText("audit earned")).toBeInTheDocument();
 	});
 });

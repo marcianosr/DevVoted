@@ -9,6 +9,7 @@ import {
 	type ChipWidth,
 	type ConfigChipProps,
 } from "./ConfigChip.ui";
+import { Lead, type LeadLine } from "./Lead.ui";
 import { SlotBox } from "./SlotBox.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
 import { Typography } from "./Typography.ui";
@@ -16,6 +17,7 @@ import { RECURRING_GLYPH, upkeepLabelOf } from "./upkeep";
 import {
 	WeightTrack,
 	roomLineOf,
+	roomPartsOf,
 	type NextRung,
 	type WeightPreview,
 	type WeightTrackFill,
@@ -136,6 +138,8 @@ export type BuildProps = {
 	caption?: boolean;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
+	openUpgrades?: string;
+	onToggleUpgrades?: (name: string) => void;
 } & BuildCount;
 
 export const buildSummaryOf = (props: BuildProps): string => {
@@ -156,26 +160,42 @@ export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
 );
 
 /**
- * The room line plus the bill it implies. A node rather than a string because
+ * The bill the build stands to pay, alone. A node rather than a string because
  * the recurring figure wears a badge like every other figure in the kit
  * (ADR-066), and `Figures` cannot find it: a bare weight is not a figure it
  * parses, so badging at the call site is the only way to keep the pair honest.
  */
-export const buildHeadOf = (props: BuildProps): ReactNode => {
-	if (props.weight === undefined) return buildSummaryOf(props);
-
-	const { configs, skipped = [], configCount = true, weight } = props;
-	const line = [
-		...led(configs.length + skipped.length, configCount),
-		roomLineOf(weightOf(fillsOf(configs, skipped)), weight.held, weight.next),
-	].join(` ${SEPARATOR} `);
-
-	return (
-		<>
-			<span>{`${line} ${SEPARATOR} `}</span>
-			<UpkeepBadge perGateKb={weight.perGateKb} />
-		</>
+export const buildHeadOf = (props: BuildProps): ReactNode =>
+	props.weight === undefined ? (
+		buildSummaryOf(props)
+	) : (
+		<UpkeepBadge perGateKb={props.weight.perGateKb} />
 	);
+
+/**
+ * The head's prose, as parts rather than a sentence. It sits below the title
+ * instead of beside it because a header that carries both a bill and a room
+ * line has no room left for either to be read.
+ */
+const buildRoomLine = (props: BuildProps): LeadLine | undefined => {
+	const { configs, skipped = [], configCount = true, weight } = props;
+	if (weight === undefined) return undefined;
+
+	return [
+		...led(configs.length + skipped.length, configCount).flatMap(
+			(label): LeadLine => [{ figure: label }, ` ${SEPARATOR} `]
+		),
+		...roomPartsOf(
+			weightOf(fillsOf(configs, skipped)),
+			weight.held,
+			weight.next
+		),
+	];
+};
+
+export const BuildRoom = (props: BuildProps) => {
+	const line = buildRoomLine(props);
+	return line === undefined ? null : <Lead line={line} />;
 };
 
 const vacantSlotsOf = ({ used, capacity }: BuildSlots) =>
@@ -211,6 +231,8 @@ const Chip = ({
 	width,
 	openInfo,
 	onToggleInfo,
+	openUpgrades,
+	onToggleUpgrades,
 	highlight,
 	onHighlight,
 }: {
@@ -218,6 +240,8 @@ const Chip = ({
 	width?: ChipWidth;
 	openInfo?: string;
 	onToggleInfo?: (name: string) => void;
+	openUpgrades?: string;
+	onToggleUpgrades?: (name: string) => void;
 	highlight?: string;
 	onHighlight?: (name?: string) => void;
 }) => {
@@ -230,6 +254,12 @@ const Chip = ({
 			infoOpen={config.name === openInfo}
 			onToggleInfo={
 				onToggleInfo === undefined ? undefined : () => onToggleInfo(config.name)
+			}
+			upgradesOpen={config.name === openUpgrades}
+			onToggleUpgrades={
+				onToggleUpgrades === undefined
+					? undefined
+					: () => onToggleUpgrades(config.name)
 			}
 			highlighted={config.name === highlight}
 			onHover={
@@ -257,6 +287,8 @@ export const Build = ({
 	caption = track === "configs",
 	openInfo,
 	onToggleInfo,
+	openUpgrades,
+	onToggleUpgrades,
 	...count
 }: BuildProps) => {
 	const width: ChipWidth | undefined = layout === "wrap" ? undefined : "full";
@@ -301,6 +333,8 @@ export const Build = ({
 					width={width}
 					openInfo={openInfo}
 					onToggleInfo={onToggleInfo}
+					openUpgrades={openUpgrades}
+					onToggleUpgrades={onToggleUpgrades}
 					highlight={highlight}
 					onHighlight={count.onHighlight}
 				/>
@@ -359,6 +393,8 @@ export const Build = ({
 								width={width}
 								openInfo={openInfo}
 								onToggleInfo={onToggleInfo}
+								openUpgrades={openUpgrades}
+								onToggleUpgrades={onToggleUpgrades}
 								highlight={highlight}
 								onHighlight={count.onHighlight}
 							/>

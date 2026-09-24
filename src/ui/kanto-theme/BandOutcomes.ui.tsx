@@ -15,10 +15,12 @@ import {
 } from "./Lead.ui";
 import { Objectives, type ObjectivesProps } from "./Objectives.ui";
 import { Panel, type PanelColumn } from "./Panel.ui";
+import { PollScores, type PollScoresProps } from "./PollScores.ui";
 
 import { Typography } from "./Typography.ui";
 
 const FATAL = "border-l-2 border-theme";
+const RULED = "border-t border-theme-faint";
 
 const COLUMNS = [
 	{ label: "band", width: "w-28 shrink-0" },
@@ -47,6 +49,8 @@ export type BandOutcomesProps = {
 	outcomes: readonly BandOutcome[];
 	lead?: readonly LeadLine[];
 	objectives?: ObjectivesProps;
+	/** Where the window actually stands, read against the objectives above it. */
+	scores?: PollScoresProps;
 	note?: string;
 	bar?: CoverageBarProps;
 };
@@ -80,6 +84,7 @@ export const BandOutcomes = ({
 	outcomes,
 	lead = [],
 	objectives,
+	scores,
 	note,
 	bar,
 }: BandOutcomesProps) => (
@@ -93,6 +98,11 @@ export const BandOutcomes = ({
 			</Panel.Body>
 		)}
 		{objectives === undefined ? null : <Objectives {...objectives} />}
+		{scores === undefined ? null : (
+			<Panel.Body className={RULED}>
+				<PollScores {...scores} />
+			</Panel.Body>
+		)}
 		{bar === undefined ? null : (
 			<Panel.Body>
 				<CoverageBar {...bar} />

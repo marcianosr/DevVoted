@@ -37,14 +37,20 @@ const bandBadgeFor = (band: string) =>
 const outcomeRowFor = (band: string) =>
 	bandBadgeFor(band).closest("div") as HTMLElement;
 
-const objectiveRowFor = (name: string) =>
-	screen.getByText(name).closest("div") as HTMLElement;
-
 const CLEAR_LEAD = "to clear the gate";
+const REQUIRED_LEAD = "Main objective";
 const OPTIONAL_LEAD = "Extra objectives";
+const SWATCH_LEAD = "to earn the Lavender swatch";
+const AUDIT_LEAD = "to arm an audit";
 
-const requiredBlock = () =>
-	screen.getByText(CLEAR_LEAD).closest("div") as HTMLElement;
+const objectiveBlockFor = (explain: string): HTMLElement => {
+	const block = screen.getByText(explain).closest("div")?.parentElement;
+	if (block === null || block === undefined)
+		throw new Error(`no objective block around "${explain}"`);
+	return block;
+};
+
+const requiredBlock = () => objectiveBlockFor(CLEAR_LEAD);
 
 describe("PrepScreen", () => {
 	it("opens on the stakes rather than on the build", () => {
@@ -61,7 +67,6 @@ describe("PrepScreen", () => {
 
 		expect(screen.getByText("Gate 4 · Lavender")).toBeInTheDocument();
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
-		expect(screen.getByText("today's 5 polls are ready")).toBeInTheDocument();
 	});
 
 	it("wears the gate it is about to run", () => {
@@ -175,53 +180,39 @@ describe("PrepScreen", () => {
 			it("asks for one thing, and offers the rest without asking", () => {
 				render(<PrepScreen {...props} />);
 
+				expect(screen.getByText(REQUIRED_LEAD)).toBeInTheDocument();
 				expect(
 					within(requiredBlock()).getByText("Finish at")
 				).toBeInTheDocument();
 				expect(screen.getByText(OPTIONAL_LEAD)).toBeInTheDocument();
-				expect(
-					screen.getByText("Earn the Lavender swatch")
-				).toBeInTheDocument();
+				expect(screen.getByText(SWATCH_LEAD)).toBeInTheDocument();
+				expect(screen.getByText(AUDIT_LEAD)).toBeInTheDocument();
 			});
 
-			it("says what an optional prize leaves behind once the window shuts", () => {
-				render(<PrepScreen {...props} />);
-
-				expect(
-					within(objectiveRowFor("Earn the Lavender swatch")).getByText(
-						/kept for good/
-					)
-				).toBeInTheDocument();
-			});
-
-			it("prices the clear in a band and in the answers it costs", () => {
+			it("states the clearing band and what it buys, nothing else", () => {
 				render(<PrepScreen {...props} />);
 
 				const block = within(requiredBlock());
 
 				expect(block.getByText("OK")).toBeInTheDocument();
-				expect(block.getByText(/of the 5 right/)).toBeInTheDocument();
+				expect(block.getByText(CLEAR_LEAD)).toBeInTheDocument();
+				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 			});
 
 			it("prices the swatch in the whole window, whatever the clear costs", () => {
 				render(<PrepScreen {...props} />);
 
 				expect(
-					within(objectiveRowFor("Earn the Lavender swatch")).getByText(
-						"5 of 5"
-					)
+					within(objectiveBlockFor(SWATCH_LEAD)).getByText("5 of 5")
 				).toBeInTheDocument();
 			});
 
-			it("offers an unwon prize with a plus, the clear with no mark at all", () => {
+			it("leaves an unwon prize unmarked, the clear too", () => {
 				render(<PrepScreen {...props} />);
 
 				expect(
-					within(objectiveRowFor("Earn the Lavender swatch")).getByRole("img", {
-						name: "not yet",
-					})
-				).toHaveTextContent("+");
-
+					within(objectiveBlockFor(SWATCH_LEAD)).queryByRole("img")
+				).toBeNull();
 				expect(
 					within(requiredBlock()).queryByRole("img", { name: "met" })
 				).toBeNull();
@@ -236,31 +227,11 @@ describe("PrepScreen", () => {
 				).not.toBeInTheDocument();
 			});
 
-			it("drops the price once the line is already in hand", () => {
-				render(<PrepScreen {...kantoPrepChampion()} />);
-
-				const block = within(requiredBlock());
-
-				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
-				expect(block.getByText(/already holds/)).toBeInTheDocument();
-				expect(
-					block.getByText(/the day still owes 2 right answers/)
-				).toBeInTheDocument();
-			});
-
 			it("ticks the clear where the run already stands above the line", () => {
 				render(<PrepScreen {...kantoPrepChampion()} />);
 
 				expect(
 					within(requiredBlock()).getByRole("img", { name: "met" })
-				).toBeInTheDocument();
-			});
-
-			it("has no tomorrow to shut at the summit", () => {
-				render(<PrepScreen {...kantoPrepChampion()} />);
-
-				expect(
-					within(requiredBlock()).getByText(/the climb ends here/)
 				).toBeInTheDocument();
 			});
 		});
@@ -276,7 +247,7 @@ describe("PrepScreen", () => {
 			).not.toBeInTheDocument();
 		});
 
-		it("breaks the standing down gate by gate, under the table it sums", () => {
+		it("breaks the standing down gate by gate, inside the panel that asks for it", () => {
 			render(<PrepScreen {...props} />);
 
 			const outcomes = sectionOf(BAND_OUTCOMES_TITLE);
@@ -285,8 +256,22 @@ describe("PrepScreen", () => {
 			expect(screen.getAllByLabelText(/— \d of 5 correct$/)).toHaveLength(
 				KANTO_PREP_GATE + 1
 			);
+			expect(outcomes).toContainElement(scores);
+		});
+
+		it("stands the window's answers between the objectives and the band table", () => {
+			render(<PrepScreen {...props} />);
+
+			const scores = screen.getByLabelText(/^Lavender —/);
+			const swatchObjective = screen.getByText(SWATCH_LEAD);
+			const bandRow = bandBadgeFor("PERFECT");
+
 			expect(
-				outcomes.compareDocumentPosition(scores) &
+				swatchObjective.compareDocumentPosition(scores) &
+					Node.DOCUMENT_POSITION_FOLLOWING
+			).toBeTruthy();
+			expect(
+				scores.compareDocumentPosition(bandRow) &
 					Node.DOCUMENT_POSITION_FOLLOWING
 			).toBeTruthy();
 		});

@@ -17,7 +17,7 @@ export const AUDITS = "Audits";
 export const WEIGHT = "weight";
 export const NEEDED = "needed";
 export const LOCKED_CONFIG = "Locked config";
-export const WHAT_EACH_POLL_PAID = "what each poll paid";
+export const WHAT_EACH_POLL_PAID = "Score";
 
 export const NOTHING_TO_COMPARE_YET =
 	"Nothing to see yet — answer some of today’s polls first.";

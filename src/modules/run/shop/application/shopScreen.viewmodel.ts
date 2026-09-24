@@ -1,11 +1,16 @@
 import type { InstallScale } from "~/modules/run/run/application/runView.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
 import {
+	isUpgradable,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
+import {
+	type BuildUpgradeDeal,
 	chipFor,
 	infoFor,
 	registryUpgradesFor,
 	rollOddsLabel,
+	upgradesFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
 import { offerOddsOf } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -47,7 +52,6 @@ const SEPARATOR = "·";
 const SHORT_TRAIL = "short";
 const CLEARED_TRAIL = "cleared";
 const SLOTS_TRAIL = "slots after it closes";
-const ALREADY_HELD_NOTE = "The run already holds this line.";
 const OUT_OF_REACH_NOTE = `${SLICE_WINDOW} of the ${SLICE_WINDOW} right will not reach it.`;
 const CLEARS_TRAIL = `of the ${SLICE_WINDOW} right clears it.`;
 const OPENS_AT = "tomorrow";
@@ -126,13 +130,22 @@ export const upgradeChipFor = (
 	};
 };
 
+/**
+ * An installed config sells its own next version here (ADR-097 decision 6): the
+ * registry's rolled offer waives the coverage gate, this press does not, so the
+ * two presses must not be the same one.
+ */
 export const buildChipFor = (
 	config: Config,
 	onUninstall?: () => void,
-	vendorLock?: VendorLockChip
+	vendorLock?: VendorLockChip,
+	deal?: BuildUpgradeDeal
 ): ConfigChipProps => ({
 	name: config.label,
 	...chipFor(config),
+	...(deal === undefined || !isUpgradable(config)
+		? {}
+		: { upgrades: upgradesFor(config, deal) }),
 	...vendorChipFor(vendorLock, onUninstall),
 });
 
@@ -164,9 +177,9 @@ export const shopHeaderFor = (
 	note: `gate ${cleared} ${CLEARED_TRAIL}`,
 });
 
-const owedNoteFor = (owed: number | undefined): string => {
+const owedNoteFor = (owed: number | undefined): string | undefined => {
 	if (owed === undefined) return OUT_OF_REACH_NOTE;
-	if (owed === 0) return ALREADY_HELD_NOTE;
+	if (owed === 0) return undefined;
 
 	return `${owed} ${CLEARS_TRAIL}`;
 };

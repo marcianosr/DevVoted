@@ -8,11 +8,11 @@ import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMN = "flex w-full flex-col gap-2";
-const ROW = "flex w-full items-center gap-3";
-const LABEL = "w-24 shrink-0 truncate tabular-nums";
-const TRACK = "flex min-w-0 flex-1 flex-wrap items-center gap-1";
+const ROW = "flex w-full flex-wrap items-center gap-2";
+const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
+const TRACK = "flex shrink-0 items-center gap-1";
 const TAG = "shrink-0";
-const SCORE = "ml-auto w-20 shrink-0 text-right tabular-nums";
+const SCORE = "ml-auto shrink-0";
 const EMPTY =
 	"inline-flex items-center justify-center rounded-md border border-dashed border-theme-faint px-2 py-0.5 text-xs font-bold tabular-nums text-theme-muted";
 
@@ -176,9 +176,7 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 		)}
 
 		<span aria-hidden className={SCORE}>
-			<Typography variant="hint" as="span">
-				{scoreOf(row)}
-			</Typography>
+			<Badge>{scoreOf(row)}</Badge>
 		</span>
 	</div>
 );

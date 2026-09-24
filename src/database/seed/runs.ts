@@ -32,8 +32,8 @@ const historyFor = (climber: SeedClimber, count: number): AnsweredPoll[] =>
 /**
  * One run per climber, parked at a known depth. Nothing here has to be a
  * plausible game history — only a valid snapshot the community board can read.
- * The denormalized columns matter as much as the blob: the climb map and the
- * standouts read them without opening the JSON.
+ * The denormalized columns matter as much as the blob: the climb map reads them
+ * without opening the JSON.
  */
 export const seedClimberRuns = async (today: string): Promise<number> => {
 	const blank = toRunSnapshot(createRun([], []));

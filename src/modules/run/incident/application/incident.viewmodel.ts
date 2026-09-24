@@ -19,8 +19,8 @@ import type {
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import type {
 	IncidentRowProps,
-	IncidentsScreenProps,
-} from "~/ui/kanto-theme/IncidentsScreen.ui";
+	IncidentsPanelProps,
+} from "~/ui/kanto-theme/IncidentsPanel.ui";
 
 export type PayloadView = {
 	readonly auditId: AuditId;
@@ -84,9 +84,9 @@ export const incidentFeedRowFor = (
 	};
 };
 
-export const ATTACK_TITLE = "Your attack";
+export const ATTACK_TITLE = "Your audit";
 export const ATTACK_UNARMED =
-	"no attack armed — clear a gate HEALTHY or better to earn one";
+	"no audit armed — clear a gate HEALTHY or better to earn one";
 export const ATTACK_NO_RIVAL =
 	"no rival in range — one must be at your gate or ahead, and have closed HEALTHY or better";
 export const ATTACK_DEALING = "dealing your rivals…";
@@ -182,18 +182,11 @@ const incidentRowFor = (row: IncidentFeedRowView): IncidentRowProps => ({
 	own: row.own,
 });
 
-export type IncidentsBack = {
-	readonly label: string;
-	readonly onPress?: () => void;
-};
-
-export const incidentsScreenPropsFor = (
-	rows: readonly IncidentFeedRowView[],
-	back: IncidentsBack
-): IncidentsScreenProps => ({
+export const incidentsPanelFor = (
+	rows: readonly IncidentFeedRowView[]
+): IncidentsPanelProps => ({
 	title: INCIDENTS_TITLE,
-	subtitle: `${rows.length} ${rows.length === 1 ? "incident" : "incidents"} ${FILED_TRAIL}`,
+	summary: `${rows.length} ${rows.length === 1 ? "incident" : "incidents"} ${FILED_TRAIL}`,
 	rows: rows.map(incidentRowFor),
 	empty: INCIDENTS_EMPTY,
-	footer: { action: { label: back.label, onPress: back.onPress } },
 });

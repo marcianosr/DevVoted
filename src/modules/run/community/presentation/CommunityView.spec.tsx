@@ -12,7 +12,8 @@ import {
 	CommunityView,
 	defaultOpenIndex,
 	pollResultsFor,
-	standoutEntriesFor,
+	leadersFor,
+	seatsFooterFor,
 } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
@@ -144,34 +145,68 @@ describe("defaultOpenIndex", () => {
 	});
 });
 
-describe("standoutEntriesFor", () => {
-	it("bridges the voter onto a climber chip with its border", () => {
-		const entries = standoutEntriesFor([
+describe("leadersFor", () => {
+	const gitSeat = {
+		category: "git" as const,
+		leader: {
+			handle: "@blue",
+			githubLogin: "blue",
+			borderUrl: "/borders/x.png",
+			streak: 13,
+			you: true,
+		},
+	};
+
+	it("bridges a held seat onto the row the board draws", () => {
+		expect(leadersFor([gitSeat]).seats).toEqual([
 			{
-				voter: {
-					id: "blue",
-					displayName: "Blue",
-					photoUrl: null,
+				category: "Git",
+				leader: {
+					handle: "@blue",
+					githubLogin: "blue",
 					borderUrl: "/borders/x.png",
+					figure: "13 in a row",
 					you: true,
 				},
-				title: "deepest",
-				value: { unit: "text", text: "gate 7 · poll 1" },
+			},
+		]);
+	});
+
+	it("says what claims a seat nobody holds", () => {
+		expect(leadersFor([{ category: "vue" }]).seats).toEqual([
+			{ category: "Vue", claim: "3 in a row claims it" },
+		]);
+	});
+
+	it("counts the seats that are held", () => {
+		expect(leadersFor([gitSeat, { category: "vue" }]).seated).toBe(
+			"1 of 2 seated"
+		);
+	});
+});
+
+describe("seatsFooterFor", () => {
+	it("states how a seat moves, never that missing loses it", () => {
+		expect(seatsFooterFor([{ category: "vue" }])).toBe(
+			"A seat changes hands when somebody beats it. 1 seat still open."
+		);
+	});
+
+	it("counts the open seats in the plural", () => {
+		expect(
+			seatsFooterFor([{ category: "vue" }, { category: "ruby" }])
+		).toContain("2 seats still open");
+	});
+
+	it("says nothing about open seats when every one is taken", () => {
+		const footer = seatsFooterFor([
+			{
+				category: "git",
+				leader: { handle: "@blue", streak: 13, you: false },
 			},
 		]);
 
-		expect(entries).toEqual([
-			{
-				title: "deepest",
-				climber: {
-					name: "Blue",
-					photoUrl: undefined,
-					borderUrl: "/borders/x.png",
-					you: true,
-				},
-				value: "gate 7 · poll 1",
-			},
-		]);
+		expect(footer).toBe("A seat changes hands when somebody beats it.");
 	});
 });
 
@@ -180,17 +215,10 @@ describe("CommunityView", () => {
 		date: "2026-05-13",
 		totalPlayers: 3,
 		topPercent: 18,
-		standouts: [
+		leaders: [
 			{
-				voter: {
-					id: "owen",
-					displayName: "Owen",
-					photoUrl: null,
-					borderUrl: null,
-					you: false,
-				},
-				title: "deepest",
-				value: { unit: "text", text: "gate 10 · poll 2" },
+				category: "git",
+				leader: { handle: "@owen", streak: 13, you: false },
 			},
 		],
 		polls: [answered(10, 0), answered(11, 1)],
@@ -220,10 +248,10 @@ describe("CommunityView", () => {
 		expect(open[0]).toHaveTextContent("Question 11?");
 	});
 
-	it("shows the whole board: standouts, the day's count and the viewer's chip", () => {
+	it("shows the whole board: the seats, the day's count and the viewer's chip", () => {
 		render(board());
 
-		expect(screen.getByText("gate 10 · poll 2")).toBeInTheDocument();
+		expect(screen.getByText("13 in a row")).toBeInTheDocument();
 		expect(screen.getByText("3 players answered")).toBeInTheDocument();
 		// Twice over: the header stat and the climb badge both state the standing.
 		expect(screen.getAllByText("top 18%")).toHaveLength(2);
@@ -253,7 +281,7 @@ describe("CommunityView", () => {
 	});
 
 	it("says there is nothing to compare before the day's first poll", () => {
-		render(board({ polls: [], standouts: [], climb: null }));
+		render(board({ polls: [], leaders: [], climb: null }));
 
 		expect(screen.getByText(NOTHING_TO_COMPARE_YET)).toBeInTheDocument();
 	});

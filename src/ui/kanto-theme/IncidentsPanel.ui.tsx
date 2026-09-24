@@ -4,20 +4,14 @@ import { Audit } from "./Audit.ui";
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Panel } from "./Panel.ui";
-import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
 
-const HEADER = "flex w-full flex-col gap-1";
 const PARTIES = "flex min-w-0 flex-wrap items-baseline gap-2 text-sm";
 const SENDER = "font-bold text-theme-soft";
 const ARROW = "text-theme-muted";
 const TARGET = "font-bold text-theme-soft";
 const ROW = "flex w-full flex-col gap-2";
 const OWN_ROW = "ring-1 ring-inset ring-theme-soft";
-
-/** Audits are saffron throughout the kit; a log of them wears the same colour. */
-const SCREEN_COLOR: KantoColor = "saffron";
 
 export type IncidentStatusLabel =
 	"queued" | "locked" | "survived" | "failed" | "lapsed";
@@ -43,14 +37,11 @@ export type IncidentRowProps = {
 	own?: boolean;
 };
 
-export type IncidentsScreenProps = {
+export type IncidentsPanelProps = {
 	title: string;
-	subtitle: string;
+	summary: string;
 	rows: readonly IncidentRowProps[];
 	empty: string;
-	footer: ScreenFooterProps;
-	width?: ScreenWidth;
-	ground?: ScreenGround;
 };
 
 const IncidentRow = ({
@@ -79,43 +70,29 @@ const IncidentRow = ({
 	</Panel.Row>
 );
 
-export const IncidentsScreen = ({
+/**
+ * Today's incidents sit on the board rather than on a page of their own: an
+ * audit is something a rival did to your climb, so it belongs beside who showed
+ * up and where they stand, not behind another press (ADR-099).
+ */
+export const IncidentsPanel = ({
 	title,
-	subtitle,
+	summary,
 	rows,
 	empty,
-	footer,
-	width,
-	ground = "bare",
-}: IncidentsScreenProps) => (
-	<Screen theme={SCREEN_COLOR} width={width} ground={ground}>
-		<header className={HEADER}>
-			<Typography variant="headline" as="h1">
-				{title}
-			</Typography>
-			<Typography variant="hint" as="span">
-				{subtitle}
-			</Typography>
-		</header>
-
-		<Panel>
-			{rows.length === 0 ? (
-				<Panel.Body>
-					<Typography variant="hint">{empty}</Typography>
-				</Panel.Body>
-			) : (
-				<Panel.Rows>
-					{rows.map((row) => (
-						<IncidentRow key={row.id} {...row} />
-					))}
-				</Panel.Rows>
-			)}
-		</Panel>
-
-		<Panel>
+}: IncidentsPanelProps) => (
+	<Panel>
+		<Panel.Header label={title} meta={summary} />
+		{rows.length === 0 ? (
 			<Panel.Body>
-				<ScreenFooter {...footer} rule={false} />
+				<Typography variant="hint">{empty}</Typography>
 			</Panel.Body>
-		</Panel>
-	</Screen>
+		) : (
+			<Panel.Rows>
+				{rows.map((row) => (
+					<IncidentRow key={row.id} {...row} />
+				))}
+			</Panel.Rows>
+		)}
+	</Panel>
 );

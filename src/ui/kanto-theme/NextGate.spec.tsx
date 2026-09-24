@@ -75,12 +75,10 @@ describe("NextGate", () => {
 		expect(screen.getByText("4 of the 5 right clears it.")).toBeInTheDocument();
 	});
 
-	it("says so plainly when the run already carries the line in", () => {
-		render(<NextGate {...propsAt(9, 47)} />);
+	it("says nothing at all when the run already carries the line in", () => {
+		const { container } = render(<NextGate {...propsAt(9, 47)} />);
 
-		expect(
-			screen.getByText("The run already holds this line.")
-		).toBeInTheDocument();
+		expect(container.querySelector("footer")).toBeNull();
 	});
 
 	it("warns when a flawless window still would not reach the line", () => {

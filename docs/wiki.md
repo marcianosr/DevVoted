@@ -217,14 +217,14 @@ Every category carries a **living record**: the longest unbroken run of correct
 answers any player has ever strung together in it, across every run and both loops
 (ADR-100). A wrong answer breaks a run; a **partial neither breaks nor extends** one,
 the same rule the streak bonus follows ([2.5](#25-coverage-scoring)). Mirrored answers
-([2.3](#23-audits)) are excluded — they graded a different question. Holding a
-category's record makes you its **maintainer** ("JavaScript Maintainer"), a title
-derived from the category rather than stored, so it changes hands the moment the record
-does. Under **3 in a row** the record is **unclaimed**: a title earned by two right
-answers devalues every one earned honestly. The poll screen states its own category's
-record under the byline ([8](#8-interface)), with your personal best beside it — your
-_best_, never your current streak, so it is a target rather than a figure that falls
-off the screen on the answer you are about to give.
+([2.3](#23-audits)) are excluded — they graded a different question. Whoever holds a
+category's record is its **leader**, carrying no title beyond the seat itself
+(ADR-103). Under **3 in a row** the seat is **open**, and says so: a seat earned by two
+right answers devalues every one earned honestly. The record is stated twice — once on
+the poll screen for the category being played ([8](#8-interface)), and once per
+category on the community board ([7.3](#73-category-leaders)). Both figures are
+all-time bests, never a current streak, so a seat is never lost by missing — only taken
+by somebody going further.
 
 🟡 Planned: more poll types (**Rapid fire**, three quick yes/no questions;
 **Guessers**, "Name 10 HTML tags" at ±0.1% coverage per guess; **Puzzle grids**, nine
@@ -801,10 +801,11 @@ git rebase -i are the exceptions at level 2. Every upgrade costs
   types are Prefetch's headline reveal and multiple choice pays double, so the level is
   what buys the overlap.
 
-The shop's Upgrade button carries the price and, while gated, names whichever
-requirement is in the way on hover. Arming an upgrade states the sentence the config
-will read at the next level and shows one `from → to` chip per number that moves
-(ADR-053). A rolled offer is the other way to buy a level: roughly one shop in eight
+The shop's Upgrade button sits on the config's chip in the Build panel and carries the
+next version and its price. Pressing it opens the version ladder, where the offered rung
+is the Buy press; while gated, that rung is greyed and the panel states whichever
+requirement is in the way — the coverage line first, the shortfall otherwise. A rolled
+offer is the other way to buy a level: roughly one shop in eight
 puts a newer version of something you already own in the registry, at the registry price
 whatever the version, with **no coverage requirement** — the bypass is what makes it
 worth taking. The offer starts one rung up and climbs on a coin flip per further rung
@@ -1117,12 +1118,12 @@ polls on the same day.
 After every shop visit the climb detours through `/run/community`, and a run locked for
 the day lands here too, with "Back to your run" disabled until local midnight and the
 countdown beside it. The page wears the terminal-theme kit (`CommunityScreen.ui.tsx`),
-one panel in three sections: standouts, the climb, then the polls. Every avatar chip
-on the page — standouts, climbers, fallen — wears the player's equipped border over a
-GitHub photo or a two-letter-initials fallback.
+one panel per section: your climb, turnout, the map, the category leaders, then the
+polls. Every avatar chip on the page — leaders, climbers, fallen — wears the player's
+equipped border over a GitHub photo or a two-letter-initials fallback.
 
-**Standouts today** heads the page as a grid of 🟢 six legend-bordered boxes
-([7.3](#73-awards)), each one avatar, name and a muted one-line value.
+**Category leaders** ([7.3](#73-category-leaders)) is the board's own section: twelve
+rows, one per category.
 
 **The climb today** is a horizontal track of the 13 numbered gate swatches with each
 live run's avatar chip stacked _beneath_ its gate. Your chip is ringed and titled
@@ -1156,69 +1157,52 @@ Two views: **progress today** (everyone on the same seed, comparable per segment
 **run completion** (won/dead, gates cleared, duration in days). Rows carry
 per-category coverage, total coverage, and best streak.
 
-### 7.3 Awards
+### 7.3 Category leaders
 
-Community awards in the vein of "top committers", shipped as **standouts today**.
+🟢 **Shipped.** One row per category, twelve in all, held seats first and longest run
+at the top. A row states the category, the word "leader", the holder's avatar and
+handle, and their record ("21 in a row"); the seat you hold rings the avatar, greens
+the figure and themes the row. The panel head carries the scope ("longest run of
+correct answers · all-time") and a count of held seats ("9 of 12 seated").
 
-🟢 **Shipped: six climb-shaped awards** (ADR-065), in the grid's own order, all
-shaped like the climb rather than the clock. The engine computes these six and the
-board draws all six.
+The figure is the same all-time record the poll screen states
+([2.4](#24-polls-and-categories)) — the longest unbroken run of correct answers anyone
+has strung together in that category, read straight off the answer ledger. Under
+**3 in a row** the seat is open and says what claims it; the footer states how a seat
+moves: _a seat changes hands when somebody beats it_. It cannot be lost by missing,
+because the record is a best and not a live streak.
 
-🟡 **Planned: four plain standings** — most active, most knowledgeable (per
-category), fastest, biggest bank. [ADR-067](adr/067-standouts-are-four-plain-standings.md)
-reverses ADR-065 on the grounds that the six each need the climb's vocabulary to read,
-which is a poor fit for the screen a player lands on before their first poll. It is
-accepted and unbuilt: the four exist only as fixtures, and `DVTD-j6t1` rewrites the
-model.
+No title comes with a seat. The category and the word "leader" already name it, and a
+derived badge would be the same fact a third time on every one of twelve rows
+([ADR-103](adr/103-the-board-seats-twelve-category-leaders.md)).
 
-- **deepest** — the furthest position on the ladder, gate and polls into it
-  ("gate 10 · poll 2"), wearing the gate's swatch.
-- **against the room** — right on the poll the fewest got right, when at most half the
-  room did ("right on poll 2 · 22% were").
-- **clean sweep** — a perfect five-of-five gate window, named by its gate
-  ("5 of 5 at Soul").
-- **widest build** — the most slots held ("11 slots held").
-- **travelling light** — deepest first, then the fewest configs
-  ("gate 8 on 3 configs").
-- **comeback** — the most configs lost to peels, decay or lapsed plans by a run that
-  still cleared a gate ("cleared after losing 4 configs"). The engine counts losses in
-  `RunState.configsLost`, so pre-existing runs start at zero.
+Retired with ADR-103: **standouts today** in both its rosters — ADR-065's six
+climb-shaped awards (deepest, against the room, clean sweep, widest build, travelling
+light, comeback), which were built, and ADR-067's four plain standings (most active,
+most knowledgeable, fastest, biggest bank), which were accepted and never were. The six
+each needed the climb's vocabulary on the screen a player meets before their first
+poll; the four were four things to learn where a seat per category is one thing
+repeated twelve times. `RunState.configsLost` is still counted, and answer timings are
+still captured.
 
-Against-the-room reads today's answers; the other five read live `run_states` across
-**active runs only**, so they rank a standing rather than an activity and a player who
-has not answered today still holds deepest. A box is a legend-bordered card: title as
-the legend, avatar chip, name, value line. Unearned awards are dropped rather than
-shown empty, and ties break on player id so a redraw never reshuffles. Logic and every
-threshold live in `standouts.model.ts`, which is pure: correctness arrives as a
-callback and run state as plain numbers.
-
-Retired with ADR-065: fastest answer, first to answer, first good (reflex, not
-knowledge), most _{category}_ polls (farmable), longest streak and most coverage
-(signals the climb already reports). Answer timings are still captured.
-
-Separate from the standouts, every category carries a **living record** with a holder
-and a derived title ([2.4](#24-polls-and-categories)) — an all-time standing rather than
-a today-scoped award, stated on the poll screen instead of the board. It is the first
-slice of the per-category award registry sketched in `docs/old-beans/DVTD-vje6`, whose
-other three metrics (coverage, participation, correct answers) and named awards
-(**Prototype Pioneer**, **Selector Sorcerer**) are still unbuilt. Those are earned and
-kept; a record is held until somebody takes it.
-
-🟡 Brainstormed: perfect gate, no linter used, biggest bank.
+🟡 Brainstormed: the per-category award registry sketched in `docs/old-beans/DVTD-vje6`
+(**Prototype Pioneer**, **Selector Sorcerer**) and its other three metrics — coverage,
+participation, correct answers. Those are earned and kept; a seat is held until
+somebody takes it.
 
 ### 7.4 Interference
 
 Every audit in the game is interference (ADR-099, [2.3](#23-audits)): a HEALTHY or
-PERFECT clear arms one attack, prep's **Your attack** panel offers three rivals at your
+PERFECT clear arms one audit, prep's **Your audit** panel offers three rivals at your
 gate or ahead who last cleared strong, and one press files an incident against their
 next gate. Each offered rival's build is drawn under their name, so you read what they
 run before you fire (ADR-101). The audit is drawn from that gate's pool, never chosen; it locks when the
 rival clears the gate they are in, so their receipt names it and you before they walk
 in; surviving it pays them 32 KB, and you earn nothing from their death. The
-**Incidents** page (`/run/incidents`, from prep and the community board) lists everyone's
-incidents filed today, queued / locked / survived / failed, with your own rows ringed.
+community board carries an **Incidents** panel listing everyone's incidents filed
+today, queued / locked / survived / failed, with your own rows ringed.
 
-🟡 Standouts for the most wanted and the survivor, and a run-over tally of incidents
+🟡 A board row for the most wanted and the survivor, and a run-over tally of incidents
 faced, are not built. A **Force push** (reorder a rival's gate) would ride the same
 queue if it is ever wanted.
 
@@ -1400,15 +1384,13 @@ The game leans hard into its CI metaphor.
   handle, and their title when they hold one ("@matthijsgroen · Poll editor"). Titles
   come from the account role: **Poll editor** and **Admin**; an ordinary player has
   none. With no photo on file the handle's first letter stands in.
-- **The hall of fame**: under the byline, the poll's category states its record
-  ([2.4](#24-polls-and-categories)) — a caption reading "hall of fame · longest run of
-  correct JavaScript answers", then the holder's avatar, their handle, their
-  **JavaScript Maintainer** badge, the record itself ("17 in a row"), and your own best
-  pushed to the far end ("your best 4"). Your figure is dropped when it is zero and
-  when you are the holder, since the record already is your best. A record nobody
-  holds reads "— unclaimed —". It is drawn on the question, not on the reveal, and a
-  gate that hides the category ([2.3](#23-audits)) withholds the whole block rather
-  than naming the category in the caption.
+- **The category leader**: under the byline, one line states who leads the poll's
+  category ([2.4](#24-polls-and-categories)) — the category badge, the word "leader",
+  the leader's avatar and handle, and the record pushed to the far end ("17 in a row").
+  Holding it yourself rings the avatar and greens the figure. A seat nobody holds reads
+  "seat open · 3 in a row claims it". It is drawn on the question, not on the reveal,
+  and a gate that hides the category ([2.3](#23-audits)) withholds the whole line
+  rather than naming the category in it.
 - **Run over**: the whole climb reported once, on the same screen whether the run died
   or summited. A death turns the screen red and titles itself **Run over**; a summit
   keeps the Champion's colour and reads **The climb is done**. Under the header (the

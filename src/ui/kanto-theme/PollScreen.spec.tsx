@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 
 import {
 	createKantoBuildFooterProps,
@@ -213,20 +213,18 @@ describe("PollScreen", () => {
 		);
 	});
 
-	it("stands the category's record under the credit rather than inside it", () => {
+	it("stands the category's leader under the credit rather than inside it", () => {
 		render(
 			<PollScreen
 				{...props}
 				author={{ handle: "marciano" }}
-				record={{
-					caption: "the longest run of correct TypeScript answers",
-					holder: {
+				categoryLeader={{
+					category: "TypeScript",
+					leader: {
 						handle: "@sabrina",
 						githubLogin: "sabrina",
-						title: "TypeScript Maintainer",
 						figure: "17 in a row",
 					},
-					yourBest: "your best 4",
 				}}
 			/>
 		);
@@ -236,14 +234,15 @@ describe("PollScreen", () => {
 			.closest("footer");
 
 		expect(footer).toHaveTextContent("press A, B or C to answer");
-		expect(footer).not.toHaveTextContent("Record holder");
+		expect(footer).not.toHaveTextContent("17 in a row");
 		expect(screen.getByText("17 in a row")).toBeInTheDocument();
 	});
 
-	it("leaves the record out when the category has none to state", () => {
+	it("leaves the leader out when the category has none to state", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.queryByText("Record holder")).not.toBeInTheDocument();
+		expect(screen.queryByText("seat open")).not.toBeInTheDocument();
+		expect(screen.queryByText("leader")).not.toBeInTheDocument();
 	});
 
 	it("runs the screen as one column: header, coverage, audits, poll, build", () => {
@@ -275,7 +274,13 @@ describe("PollScreen", () => {
 	it("heads the coverage panel with the band it is standing in", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.getByText("70% SHAKY")).toBeInTheDocument();
+		const head = screen
+			.getByRole("heading", { name: "Coverage" })
+			.closest<HTMLElement>("header");
+		if (head === null) throw new Error("Coverage heads no panel");
+
+		expect(within(head).getByText("70%")).toBeInTheDocument();
+		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
 	});
 
 	it("explains what a correct answer is worth, for a reader and on hover", () => {
@@ -301,14 +306,14 @@ describe("PollScreen", () => {
 	it("shows what this gate's polls paid, and no earlier gate's", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.getByText("what each poll paid")).toBeInTheDocument();
+		expect(screen.getByText("Score")).toBeInTheDocument();
 		expect(screen.queryByLabelText(/^Pallet/)).toBeNull();
 	});
 
 	it("leaves the explainer out when a call site has nothing to explain", () => {
 		render(<PollScreen {...props} coverage={{ bar: props.coverage.bar }} />);
 
-		expect(screen.queryByText("what each poll paid")).toBeNull();
+		expect(screen.queryByText("Score")).toBeNull();
 		expect(screen.queryByText(/You have scored/)).toBeNull();
 	});
 
@@ -375,22 +380,29 @@ describe("PollScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("submits a multi-answer poll from the footer once a pick exists", () => {
+	it("sends the answer from the poll's own footer, beside the count", () => {
 		render(
 			<PollScreen
 				{...props}
 				question={createKantoQuestionProps({
 					answerType: "multiple",
-					pickedIds: ["option-1"],
+					pickedIds: ["option-1", "option-2"],
 				})}
-				footer={{ action: { label: "Submit answer", onPress: () => {} } }}
+				commit={{
+					label: "Lock in 2 answers",
+					note: "2 picked",
+					onPress: () => {},
+				}}
 			/>
 		);
 
-		expect(screen.getByRole("button", { name: /Submit answer/ })).toBeEnabled();
+		expect(
+			screen.getByRole("button", { name: "Lock in 2 answers" })
+		).toBeEnabled();
+		expect(screen.getByText("2 picked")).toBeInTheDocument();
 	});
 
-	it("refuses the submit while nothing is picked", () => {
+	it("refuses the commit while nothing is picked, and says what it wants", () => {
 		render(
 			<PollScreen
 				{...props}
@@ -398,17 +410,12 @@ describe("PollScreen", () => {
 					answerType: "multiple",
 					pickedIds: [],
 				})}
-				footer={{
-					action: { label: "Submit answer" },
-					refusal: "pick an answer first",
-				}}
+				commit={{ label: "Lock in", note: "pick every answer that fits" }}
 			/>
 		);
 
-		expect(
-			screen.getByRole("button", { name: /Submit answer/ })
-		).toBeDisabled();
-		expect(screen.getByText("pick an answer first")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Lock in" })).toBeDisabled();
+		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
 	});
 
 	it("stands the footer above the build, under the poll", () => {

@@ -521,13 +521,13 @@ body[data-screen-theme] {
 	background-color: oklch(from var(--theme-color) l c h / 0.28);
 }
 @utility text-theme-muted {
-	color: oklch(from var(--theme-color) 0.58 calc(c* 0.55) h);
+	color: oklch(from var(--theme-color) 0.68 calc(c* 0.35) h);
 }
 /* text-theme-muted's background pair, for marks that carry a reading without
    carrying text — the weight block's pips. Same rung, so a pip and the label
    beside it read as one quiet line rather than two tones. */
 @utility bg-theme-muted {
-	background-color: oklch(from var(--theme-color) 0.58 calc(c* 0.55) h);
+	background-color: oklch(from var(--theme-color) 0.68 calc(c* 0.35) h);
 }
 /* A filled label's ground and ink in one utility, deliberately inseparable: the
    pair is chosen for its contrast ratio (7.3:1 at worst across the twelve Kanto

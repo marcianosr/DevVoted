@@ -19,6 +19,7 @@ const noop = () => {};
 const handlers = {
 	onDraft: noop,
 	onSell: noop,
+	onUpgrade: noop,
 	onRebuild: noop,
 	onExtend: noop,
 	onPlantPin: noop,
@@ -318,5 +319,61 @@ describe("ShopView vendor lock-in", () => {
 			screen.getByText(/2 weight over the 8 the bill covered/)
 		).toBeInTheDocument();
 		expect(screen.queryByText(/pick the config it exempts/)).toBeNull();
+	});
+});
+
+describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
+	const upgradable = createMockRunView({
+		configs: [CONFIGS.mooresLaw],
+		storage: 512,
+		slots: 6,
+		slotsUsed: 2,
+		offers: [
+			createMockShopOffer(
+				{ ...CONFIGS.telemetry, level: 2 },
+				{ priceKb: 32, installable: true, heldLevel: 1 }
+			),
+		],
+		gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
+	});
+
+	it("sells an installed config's next version through the upgrade action", async () => {
+		const onUpgrade = vi.fn();
+		render(<ShopView view={upgradable} {...handlers} onUpgrade={onUpgrade} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade Moore's Law to v2/ })
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^Buy v2/ }));
+
+		expect(onUpgrade).toHaveBeenCalledWith("moores-law");
+	});
+
+	it("sells the registry's rolled upgrade through the draft action instead", async () => {
+		const onDraft = vi.fn();
+		render(<ShopView view={upgradable} {...handlers} onDraft={onDraft} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade Telemetry to v2/ })
+		);
+		await userEvent.click(screen.getByRole("button", { name: /^Buy v2/ }));
+
+		expect(onDraft).toHaveBeenCalledWith("telemetry");
+	});
+
+	it("opens one panel at a time, the info panel giving way to the upgrade one", async () => {
+		render(<ShopView view={upgradable} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "About Moore's Law" })
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade Moore's Law to v2/ })
+		);
+
+		expect(
+			screen.getByRole("button", { name: "About Moore's Law" })
+		).toHaveAttribute("aria-expanded", "false");
+		expect(screen.getByRole("button", { name: /^Buy v2/ })).toBeInTheDocument();
 	});
 });

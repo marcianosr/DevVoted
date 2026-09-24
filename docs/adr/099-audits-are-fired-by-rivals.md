@@ -106,7 +106,7 @@ that a leader may be slowed.
 
 An incident names its sender on the stake receipt, on prep and on the debrief
 (the requirement DVTD-mvhv set for any thwart), and every incident filed today
-is readable by everyone at `/run/incidents`, with the viewer's own rows ringed.
+is readable by everyone on the community board, with the viewer's own rows ringed.
 
 ## Consequences
 

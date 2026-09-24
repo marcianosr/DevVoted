@@ -4,6 +4,7 @@ import { createMockRunRecord } from "~/test/runRecord.factory";
 import { TEST_DATES } from "~/test/kanto";
 
 import * as climbQueries from "~/modules/run/community/infrastructure/climbers.repository";
+import * as leaderQueries from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import { getRunCommunityService } from "~/modules/run/community/application/community.service";
 import * as communityQueries from "~/modules/run/community/infrastructure/community.repository";
 import type { SessionAnswerRow } from "~/modules/run/community/infrastructure/community.repository";
@@ -23,10 +24,13 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 
 vi.mock("~/modules/run/community/infrastructure/climbers.repository", () => ({
 	fetchActiveClimbers: vi.fn(),
-	fetchActiveRunStats: vi.fn(),
 	fetchClimbMarker: vi.fn(),
 	fetchFallenToday: vi.fn(),
 	fetchPersonalBestPosition: vi.fn(),
+}));
+
+vi.mock("~/modules/run/run/infrastructure/categoryLeader.repository", () => ({
+	fetchCategoryLeaders: vi.fn(),
 }));
 
 const DATE = TEST_DATES.birthday;
@@ -217,47 +221,21 @@ const FALLEN = [
 	},
 ];
 
-/** Live-run standings behind the run-scoped awards. Blue is the deepest, widest
- * and freshest sweep; Red carries the comeback. */
-const RUN_STATS = [
+/** Two of the twelve seats are held; `seatsFor` draws the other ten open. */
+const SEATS = [
 	{
-		userId: RED,
-		displayName: "Red",
-		photoUrl: null,
-		borderUrl: null,
-		gatesCleared: 6,
-		pollsIntoGate: 3,
-		configCount: 3,
-		slotsHeld: 3,
-		configsLost: 2,
-		startedAtGate: 0,
-		outcomes: ["correct", "correct", "wrong"] as const,
+		category: "js" as const,
+		leader: { handle: "@blue", streak: 21, you: false },
 	},
 	{
-		userId: BLUE,
-		displayName: "Blue",
-		photoUrl: null,
-		borderUrl: "/borders/x.png",
-		gatesCleared: 7,
-		pollsIntoGate: 1,
-		configCount: 7,
-		slotsHeld: 7,
-		configsLost: 0,
-		startedAtGate: 0,
-		outcomes: [
-			"correct",
-			"correct",
-			"correct",
-			"correct",
-			"correct",
-			"correct",
-		] as const,
+		category: "git" as const,
+		leader: { handle: "@red", streak: 13, you: true },
 	},
 ];
 
 const arrangeClimb = () => {
-	vi.mocked(climbQueries.fetchActiveRunStats).mockResolvedValue(
-		RUN_STATS.map((row) => ({ ...row, outcomes: [...row.outcomes] }))
+	vi.mocked(leaderQueries.fetchCategoryLeaders).mockResolvedValue(
+		SEATS.map((seat) => ({ ...seat }))
 	);
 	vi.mocked(climbQueries.fetchClimbMarker).mockResolvedValue(RED_AT);
 	vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(CLIMBERS);
@@ -427,77 +405,46 @@ describe("getRunCommunityService", () => {
 		expect(result.data.topPercent).toBe(67);
 	});
 
-	it("crowns the six awards in grid order", async () => {
+	it("seats all twelve categories, held first", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		expect(result.data.standouts.map((standout) => standout.title)).toEqual([
-			"deepest",
-			"against the room",
-			"clean sweep",
-			"widest build",
-			"travelling light",
-			"comeback",
-		]);
+		expect(result.data.leaders).toHaveLength(12);
+		expect(
+			result.data.leaders.slice(0, 2).map(({ category }) => category)
+		).toEqual(["js", "git"]);
 	});
 
-	it("crowns the contrarian off the poll where the room was mostly wrong", async () => {
+	it("draws a category nobody leads as an open seat", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const room = result.data.standouts.find(
-			(standout) => standout.title === "against the room"
+		const open = result.data.leaders.filter(
+			({ leader }) => leader === undefined
 		);
 
-		// Poll 11: only Blue's exact set landed — 1 of 3 answerers.
-		expect(room).toMatchObject({
-			value: { unit: "text", text: "right on poll 2 · 33% were" },
-			voter: { id: BLUE, you: false },
-		});
+		expect(open).toHaveLength(10);
 	});
 
-	it("reads the run-scoped awards off live runs", async () => {
+	it("marks the seat the viewer holds", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const byTitle = new Map(
-			result.data.standouts.map((standout) => [standout.title, standout])
-		);
+		const mine = result.data.leaders.find(({ leader }) => leader?.you === true);
 
-		expect(byTitle.get("deepest")).toMatchObject({
-			value: { unit: "text", text: "gate 7 · poll 1" },
-			voter: { id: BLUE, borderUrl: "/borders/x.png" },
-		});
-		expect(byTitle.get("deepest")?.swatch).toBeDefined();
-		// Blue's last settled window ran five clean, one gate back.
-		expect(byTitle.get("clean sweep")?.value).toEqual({
-			unit: "text",
-			text: "5 of 5 at Soul",
-		});
-		expect(byTitle.get("widest build")?.value).toEqual({
-			unit: "text",
-			text: "7 slots held",
-		});
-		expect(byTitle.get("travelling light")?.value).toEqual({
-			unit: "text",
-			text: "gate 7 on 7 configs",
-		});
-		expect(byTitle.get("comeback")).toMatchObject({
-			value: { unit: "text", text: "cleared after losing 2 configs" },
-			voter: { id: RED, you: true },
-		});
+		expect(mine?.category).toBe("git");
 	});
 
-	it("keeps the awards on a day the viewer has not answered anything", async () => {
+	it("keeps the seats on a day the viewer has not answered anything", async () => {
 		arrange();
 		vi.mocked(communityQueries.fetchConsumedPollsForDay).mockResolvedValue([]);
 
@@ -506,14 +453,8 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.polls).toEqual([]);
-		// Run-scoped awards stand on live runs, not on today's answers.
-		expect(result.data.standouts.map((standout) => standout.title)).toContain(
-			"deepest"
-		);
-		// But nothing may name a poll the viewer has not reached.
-		expect(
-			result.data.standouts.map((standout) => standout.title)
-		).not.toContain("against the room");
+		// The seats stand on an all-time ledger, not on today's answers.
+		expect(result.data.leaders).toHaveLength(12);
 	});
 
 	it("never exposes raw option correct flags in the payload", async () => {

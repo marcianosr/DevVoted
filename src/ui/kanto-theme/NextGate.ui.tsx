@@ -16,7 +16,6 @@ const NAME = "font-bold text-theme-faint";
 const DETAIL = "text-theme-muted";
 const READING =
 	"ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm";
-const BAND_WORD = "font-bold text-theme";
 
 const TITLE = "Next gate";
 const SEPARATOR = "·";
@@ -62,7 +61,9 @@ export const NextGate = ({
 				</span>
 
 				<span className={READING}>
-					<span className={BAND_WORD}>{COVERAGE_BAND_WORD[PASS_BAND]}</span>
+					<Badge color={COVERAGE_BAND_COLOR[PASS_BAND]}>
+						{COVERAGE_BAND_WORD[PASS_BAND]}
+					</Badge>
 					<Typography variant="hint" as="span">
 						{AT_WORD}
 					</Typography>

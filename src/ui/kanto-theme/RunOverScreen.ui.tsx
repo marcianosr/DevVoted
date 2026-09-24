@@ -7,7 +7,7 @@ import { Meter } from "./Meter.ui";
 import { Panel } from "./Panel.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
@@ -359,11 +359,7 @@ export const RunOverScreen = ({
 
 			<UnlockedPanel {...unlocked} />
 
-			<Panel>
-				<Panel.Body>
-					<ScreenFooter {...footer} rule={false} />
-				</Panel.Body>
-			</Panel>
+			<ScreenActions {...footer} />
 		</>
 	);
 

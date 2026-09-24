@@ -9,7 +9,6 @@ import {
 import {
 	FLOOR_CORRECT,
 	GATE_COUNT,
-	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
 
@@ -48,7 +47,6 @@ const frameFor = (
 	gate: 4,
 	correctThisGate: 0,
 	held: 0,
-	openingHeld: 0,
 	ladder: MID,
 	coverageGainPercent: 4,
 	peelKb: 64,
@@ -144,42 +142,18 @@ describe("the one thing a gate requires", () => {
 		);
 	});
 
-	it("states the line rather than listing it beside the optional prizes", () => {
+	it("says what the line buys, and leaves the arithmetic to the table", () => {
 		const required = clearOf(frameFor());
 
-		expect(required.lead).toBe("to clear the gate");
+		expect(required.explain).toBe("to clear the gate");
 		expect(required.statement).toMatchObject({
 			lead: "Finish at",
 			trail: "or better",
 		});
 	});
 
-	it("prices itself in the answers the window still owes", () => {
-		expect(
-			clearOf(frameFor({ held: MID.ok - 8, openingHeld: MID.ok - 8 })).explain
-		).toContain(`or 2 of the ${SLICE_WINDOW} right`);
-	});
-
-	it("drops the price once the line is already in hand, but still asks the day for two", () => {
-		const required = clearOf(
-			frameFor({ held: MID.ok + 4, openingHeld: MID.ok + 4 })
-		);
-
-		expect(required.explain).toContain("already holds");
-		expect(required.explain).toContain(
-			`the day still owes ${FLOOR_CORRECT} right answers`
-		);
-		expect(required.explain).not.toContain("of the 5 right");
-	});
-
-	it("never quotes fewer answers than the floor rule asks of the day", () => {
-		expect(
-			clearOf(frameFor({ held: MID.ok - 4, openingHeld: MID.ok - 4 })).explain
-		).toContain(`or ${FLOOR_CORRECT} of the ${SLICE_WINDOW} right`);
-	});
-
 	it("is not met on the line alone until two of the day are right (ADR-094)", () => {
-		const onTheLine = { held: MID.ok + 4, openingHeld: MID.ok + 4 };
+		const onTheLine = { held: MID.ok + 4 };
 
 		expect(clearOf(frameFor(onTheLine)).met).toBe(false);
 		expect(
@@ -191,57 +165,54 @@ describe("the one thing a gate requires", () => {
 		).toBe(true);
 	});
 
-	it("quotes the window's own price, not what is left of it part way through", () => {
-		const opening = clearOf(
-			frameFor({ held: MID.ok - 8, openingHeld: MID.ok - 8 })
-		);
-		const midway = clearOf(
-			frameFor({ held: MID.ok - 4, openingHeld: MID.ok - 8 })
-		);
-
-		expect(midway.explain).toBe(opening.explain);
-	});
-
-	it("says so where five right answers cannot reach the line", () => {
-		expect(clearOf(frameFor({ held: 0, openingHeld: 0 })).explain).toContain(
-			`which ${SLICE_WINDOW} of ${SLICE_WINDOW} right no longer reaches`
-		);
-	});
-
 	it("ticks off the same rounded rung the table cuts its ranges on", () => {
 		expect(
 			clearOf(
 				frameFor({
 					held: MID.ok,
-					openingHeld: MID.ok,
 					correctThisGate: FLOOR_CORRECT,
 				})
 			).met
 		).toBe(true);
 	});
-
-	it("names what staying under the line shuts, and the summit's lack of one", () => {
-		expect(clearOf(frameFor({ gate: 4 })).explain).toContain(
-			"Anything under it and Rainbow stays shut."
-		);
-		expect(clearOf(frameFor({ gate: 12 })).explain).toContain(
-			"Anything under it and the climb ends here."
-		);
-	});
 });
 
 describe("what a gate offers but does not ask for", () => {
-	it("keeps the swatch off the required line", () => {
-		const { optional, optionalLead } = objectivesFor(frameFor({ gate: 0 }));
+	it("offers the swatch and the audit, never the gate itself", () => {
+		const { optional, optionalLead } = objectivesFor(frameFor());
 
 		expect(optionalLead).toBe("Extra objectives");
-		expect(optional.map((prize) => prize.name)).toEqual([
-			"Earn the Lavender swatch",
+		expect(optional.map((prize) => prize.explain)).toEqual([
+			"to earn the Lavender swatch",
+			"to arm an audit",
 		]);
 	});
 
+	it("asks the audit for HEALTHY, which is what arms one (ADR-099)", () => {
+		const audit = objectivesFor(frameFor()).optional[1];
+
+		expect(audit.statement).toMatchObject({
+			figure: "HEALTHY",
+			trail: "or better",
+		});
+		expect(audit.met).toBe(false);
+		expect(
+			objectivesFor(
+				frameFor({ held: MID.healthy, correctThisGate: FLOOR_CORRECT })
+			).optional[1].met
+		).toBe(true);
+	});
+
+	it("drops the audit where clearing the gate already demands HEALTHY", () => {
+		expect(
+			objectivesFor(frameFor({ ladder: SQUEEZED })).optional.map(
+				(prize) => prize.explain
+			)
+		).toEqual(["to earn the Lavender swatch"]);
+	});
+
 	it("asks for the whole window however the coverage lands", () => {
-		expect(swatchRowOf(frameFor()).requirements[0].figure).toBe("5 of 5");
+		expect(swatchRowOf(frameFor()).figures?.[0].label).toBe("5 of 5");
 	});
 
 	it("ticks only on a flawless window", () => {

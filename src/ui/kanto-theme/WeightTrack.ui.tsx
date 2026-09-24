@@ -5,6 +5,7 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "./colors";
 import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
+import type { LeadLine, LeadPart } from "./Lead.ui";
 import { Typography } from "./Typography.ui";
 import { upkeepLabelOf } from "./upkeep";
 
@@ -12,7 +13,7 @@ const COPY = {
 	of: "of",
 	free: "free",
 	overBy: "over by",
-	beforeBill: "free before the bill becomes",
+	beforeBill: "before the bill becomes",
 	current: "Current:",
 	afterInstall: "After install:",
 } as const;
@@ -99,21 +100,42 @@ export type WeightTrackProps = {
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
+/**
+ * The room line broken into its badge-worthy figures. `roomLineOf` is the same
+ * line flattened, so the two can never drift: a surface that wants badges and a
+ * surface that wants a string are reading one sentence (ADR-102, ADR-066).
+ */
+export const roomPartsOf = (
+	weight: number,
+	held: number,
+	next?: NextRung
+): LeadLine => {
+	const load = { figure: `${weight} ${COPY.of} ${held} ${WEIGHT}` };
+	const gap = ` ${SEPARATOR} `;
+
+	if (weight > held)
+		return [load, gap, { figure: `${COPY.overBy} ${weight - held}` }];
+
+	const spare = { figure: `${held - weight} ${COPY.free}` };
+	if (next === undefined) return [load, gap, spare];
+
+	return [
+		load,
+		gap,
+		spare,
+		` ${COPY.beforeBill} `,
+		{ figure: kbLabel(next.kb) },
+	];
+};
+
+const textOf = (part: LeadPart): string =>
+	typeof part === "string" ? part : (part.figure ?? "");
+
 export const roomLineOf = (
 	weight: number,
 	held: number,
 	next?: NextRung
-): string => {
-	if (weight > held)
-		return `${weight} ${COPY.of} ${held} ${WEIGHT} ${SEPARATOR} ${COPY.overBy} ${weight - held}`;
-
-	const room =
-		next === undefined
-			? `${held - weight} ${COPY.free}`
-			: `${held - weight} ${COPY.beforeBill} ${kbLabel(next.kb)}`;
-
-	return `${weight} ${COPY.of} ${held} ${WEIGHT} ${SEPARATOR} ${room}`;
-};
+): string => roomPartsOf(weight, held, next).map(textOf).join("");
 
 /**
  * The two lines an armed offer draws. Stated as a before and an after rather

@@ -22,10 +22,7 @@ import {
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
-import {
-	type CategoryRecord,
-	maintainerTitleOf,
-} from "~/modules/run/run/domain/categoryRecord.model";
+import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
 import {
 	difficultyBandOf,
 	type DifficultyBand,
@@ -40,12 +37,14 @@ import {
 	answersPerGate,
 	type AnsweredPoll,
 	type AnswerOutcome,
+	type AnswerType,
 } from "~/modules/run/run/domain/runPoll.model";
 import {
 	roundToOneDecimal,
 	roundToTwoDecimals,
 } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA } from "~/shared/lib/categories";
+import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -54,11 +53,12 @@ import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { ChoiceVerdict } from "~/ui/kanto-theme/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
+import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { PollCommit } from "~/ui/kanto-theme/PollScreen.ui";
 import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
 import type {
 	FigureTone,
@@ -235,63 +235,50 @@ export const pollFactsFor = (
 	};
 };
 
-const RECORD_CAPTION = (category: string) =>
-	`the longest run of correct ${category} answers`;
-const RECORD_FIGURE = (streak: number) => `${streak} in a row`;
-const YOUR_BEST = (streak: number) => `your best ${streak}`;
-
-const recordHolderFor = (record: CategoryRecord): HallOfFameProps["holder"] => {
-	const { holder } = record;
-	if (holder === undefined) return undefined;
-
-	return {
-		handle: holder.handle,
-		title: maintainerTitleOf(record.category),
-		figure: RECORD_FIGURE(holder.streak),
-		you: holder.you,
-		...(holder.githubLogin === undefined
-			? {}
-			: { githubLogin: holder.githubLogin }),
-		...(holder.avatarUrl === undefined ? {} : { photoUrl: holder.avatarUrl }),
-		...(holder.borderUrl === undefined ? {} : { borderUrl: holder.borderUrl }),
-	};
-};
-
 /**
- * Your own figure, or nothing to say.
+ * Who leads the poll's category, under the byline.
  *
- * Left off at zero — `your best 0` states a fact nobody asked for — and left
- * off when you are the holder, where the record already *is* your best and the
- * row would print the same number twice.
+ * Withheld entirely while the category is hidden: the row names the topic, so
+ * blinding the header badge and leaving this would hand back the very thing the
+ * audit took.
  */
-const yourBestFor = (record: CategoryRecord): string | undefined => {
-	if (record.holder?.you === true) return undefined;
-	if (record.yourBest === 0) return undefined;
-
-	return YOUR_BEST(record.yourBest);
-};
-
-/**
- * The category's living record, under the byline.
- *
- * Withheld entirely while the category is hidden: the caption names the topic
- * in full, so blinding the header badge and leaving this would hand back the
- * very thing the audit took.
- */
-export const hallOfFameFor = (
+export const categoryLeaderFor = (
 	view: RunView,
 	poll: PollView | undefined
-): HallOfFameProps | undefined => {
-	const record = poll?.record;
-	if (record === undefined || view.categoryHidden) return undefined;
+): CategoryLeaderProps | undefined => {
+	const seat = poll?.categorySeat;
+	if (seat === undefined || view.categoryHidden) return undefined;
 
-	const holder = recordHolderFor(record);
-	const yourBest = yourBestFor(record);
+	return categoryLeaderRowFor(seat);
+};
+
+const LOCK_IN = "Lock in";
+const ANSWER_WORD = "answer";
+const PICKED_WORD = "picked";
+const PICK_ONE = "pick an answer first";
+const PICK_EVERY = "pick every answer that fits";
+
+/**
+ * The press and the count beside it come from the same number, so the footer can
+ * never offer to lock in more answers than the question holds. A select-all poll
+ * asks for every fitting option rather than for "an answer", because a partial
+ * set scores a partial ladder and the refusal is the only place that is said.
+ */
+export const pollCommitFor = (
+	answerType: AnswerType,
+	picked: number,
+	onSubmit: () => void
+): PollCommit => {
+	if (picked === 0)
+		return {
+			label: LOCK_IN,
+			note: answerType === "multiple" ? PICK_EVERY : PICK_ONE,
+		};
 
 	return {
-		caption: RECORD_CAPTION(categoryNameOf(view, record.category)),
-		...(holder === undefined ? {} : { holder }),
-		...(yourBest === undefined ? {} : { yourBest }),
+		label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`,
+		note: `${picked} ${PICKED_WORD}`,
+		onPress: onSubmit,
 	};
 };
 

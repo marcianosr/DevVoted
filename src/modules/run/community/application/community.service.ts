@@ -20,14 +20,12 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 import {
 	fetchActiveClimbers,
-	fetchActiveRunStats,
 	fetchClimbMarker,
 	fetchFallenToday,
 	fetchPersonalBestPosition,
 } from "~/modules/run/community/infrastructure/climbers.repository";
 import {
 	type CommunityPollRecord,
-	type ConsumedRunPoll,
 	fetchConsumedPollsForDay,
 	fetchPollsWithOptions,
 	fetchRunProgress,
@@ -38,17 +36,31 @@ import {
 	findActiveSessionRun,
 	findSessionRunByDate,
 } from "~/modules/run/run/infrastructure/run.repository";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import {
-	type CommunityAnswer,
-	type CommunityStandout,
-	type CommunityVoter,
-	standoutsFor,
-} from "~/modules/run/community/domain/standouts.model";
+	type CategorySeat,
+	seatsFor,
+} from "~/modules/run/run/domain/categoryLeader.model";
+import { fetchCategoryLeaders } from "~/modules/run/run/infrastructure/categoryLeader.repository";
 
-export type {
-	CommunityStandout,
-	CommunityVoter,
-} from "~/modules/run/community/domain/standouts.model";
+export type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
+
+type Player = {
+	id: string;
+	displayName: string;
+	photoUrl: string | null;
+	borderUrl: string | null;
+};
+
+/** One player's answer to one poll, folded from the day's response rows. */
+type CommunityAnswer = {
+	pollId: number;
+	user: Player;
+	optionIds: Set<number>;
+	/** Given at a Mirror gate, so the picks answer the inverted poll (ADR-038).
+	 * Whoever grades this answer has to invert with it. */
+	mirrored: boolean;
+};
 
 /**
  * One answer option with its community result. Named `isRight` (not `correct`)
@@ -123,7 +135,7 @@ export type RunCommunityView = {
 	totalPlayers: number;
 	/** "top X% of players today" — null until the viewer answered something today. */
 	topPercent: number | null;
-	standouts: CommunityStandout[];
+	leaders: CategorySeat[];
 	polls: RunCommunityPoll[];
 	/** The climb map — null when the viewer has no run to place themselves on. */
 	climb: ClimbTodayView | null;
@@ -234,65 +246,15 @@ const topPercentFor = (
 const EMPTY_VIEW = (
 	date: string,
 	climb: ClimbTodayView | null,
-	standouts: CommunityStandout[] = []
+	leaders: CategorySeat[] = []
 ): RunCommunityView => ({
 	date,
 	totalPlayers: 0,
 	topPercent: null,
-	standouts,
+	leaders,
 	polls: [],
 	climb,
 });
-
-/**
- * The day's awards, gathered for the model. Run-scoped awards read live runs
- * rather than today's answers, so this is built before the poll board's early
- * return — a player who has not answered yet still holds the deepest gate.
- */
-const buildStandouts = async ({
-	answers,
-	consumed,
-	pollsById,
-	viewerId,
-}: {
-	answers: CommunityAnswer[];
-	consumed: ConsumedRunPoll[];
-	pollsById: Map<number, CommunityPollRecord>;
-	viewerId: string;
-}): Promise<CommunityStandout[]> => {
-	const runStats = await fetchActiveRunStats();
-	return standoutsFor({
-		answers,
-		// Only what the viewer is past may be named — the same redaction the
-		// poll board applies.
-		eligiblePolls: consumed.flatMap((entry) => {
-			const poll = pollsById.get(entry.poll_id);
-			return poll ? [{ id: poll.id }] : [];
-		}),
-		isCorrect: (pollId, optionIds, mirrored) => {
-			const poll = pollsById.get(pollId);
-			if (!poll) return false;
-			const graded = mirrored ? mirrorGrading(poll) : poll;
-			return answerOutcome(graded, optionIds) === "correct";
-		},
-		runStats: runStats.map((row) => ({
-			user: {
-				id: row.userId,
-				displayName: row.displayName ?? row.userId,
-				photoUrl: row.photoUrl,
-				borderUrl: row.borderUrl,
-			},
-			gatesCleared: row.gatesCleared,
-			pollsIntoGate: row.pollsIntoGate,
-			configCount: row.configCount,
-			slotsHeld: row.slotsHeld,
-			configsLost: row.configsLost,
-			startedAtGate: row.startedAtGate,
-			outcomes: row.outcomes,
-		})),
-		viewerId,
-	});
-};
 
 /**
  * One marker per player. A user with more than one live run (the schema allows
@@ -400,15 +362,10 @@ export const getRunCommunityService = async ({
 		]);
 		const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 
-		// Ahead of the board's early return: the run-scoped awards stand on live
-		// runs, not on whether the viewer has answered anything today.
-		const standouts = await buildStandouts({
-			answers,
-			consumed,
-			pollsById,
-			viewerId: userId,
-		});
-		if (consumed.length === 0) return EMPTY_VIEW(date, climb, standouts);
+		// Ahead of the board's early return: the seats stand on an all-time
+		// ledger, not on whether the viewer has answered anything today.
+		const leaders = seatsFor(await fetchCategoryLeaders(userId));
+		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders);
 
 		const views = consumed.map((entry, index): RunCommunityPoll => {
 			const poll = pollsById.get(entry.poll_id);
@@ -452,7 +409,7 @@ export const getRunCommunityService = async ({
 			date,
 			totalPlayers: new Set(answers.map((answer) => answer.user.id)).size,
 			topPercent: topPercentFor(userId, polls, answers),
-			standouts,
+			leaders,
 			polls: views,
 			climb,
 		};

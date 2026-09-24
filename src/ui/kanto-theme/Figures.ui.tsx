@@ -1,21 +1,41 @@
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
 
 const UNIT = "KB|MB|%";
 const SIGNED = `[×+−]\\d+(?:\\.\\d+)?(?:\\s?(?:${UNIT}))?`;
 const PRICED = `\\d+(?:\\.\\d+)?\\s?(?:${UNIT})`;
 const SCALED = "\\d+(?:\\.\\d+)?×";
 
-const FIGURE = new RegExp(`(${SIGNED}|${PRICED}|${SCALED})`, "g");
+/**
+ * A band never reads as bare prose: wherever a sentence names one it wears the
+ * ladder's own colour, so "clear HEALTHY or better" and the bar below it are
+ * obviously the same reading rather than two vocabularies.
+ */
+const BAND_COLOR: Record<string, KantoColor> = {
+	[COVERAGE_BAND_WORD.danger]: COVERAGE_BAND_COLOR.danger,
+	[COVERAGE_BAND_WORD.shaky]: COVERAGE_BAND_COLOR.shaky,
+	[COVERAGE_BAND_WORD.ok]: COVERAGE_BAND_COLOR.ok,
+	[COVERAGE_BAND_WORD.healthy]: COVERAGE_BAND_COLOR.healthy,
+	[COVERAGE_BAND_WORD.perfect]: COVERAGE_BAND_COLOR.perfect,
+};
+
+const BAND = `\\b(?:${Object.keys(BAND_COLOR).join("|")})\\b`;
+
+const FIGURE = new RegExp(`(${SIGNED}|${PRICED}|${SCALED}|${BAND})`, "g");
 
 const GAIN: KantoColor = "viridian";
 const TERM: KantoColor = "saffron";
 const LOSS: KantoColor = "cinnabar";
 
+const isBand = (part: string) => part in BAND_COLOR;
+
 const isFigure = (part: string) =>
 	/^[×+−]\d/.test(part) ||
 	/\d×$/.test(part) ||
 	new RegExp(`^${PRICED}$`).test(part);
+
+const isBadged = (part: string) => isBand(part) || isFigure(part);
 
 const isMultiplier = (figure: string) =>
 	figure.startsWith("×") || figure.endsWith("×");
@@ -25,6 +45,7 @@ const multiplierOf = (figure: string) => parseFloat(figure.replace("×", ""));
 const isSigned = (figure: string) => /^[+−]/.test(figure);
 
 const toneOf = (figure: string, gain: KantoColor): KantoColor | undefined => {
+	if (isBand(figure)) return BAND_COLOR[figure];
 	if (figure.startsWith("−")) return LOSS;
 	if (isMultiplier(figure)) return multiplierOf(figure) < 1 ? TERM : gain;
 	return isSigned(figure) ? gain : undefined;
@@ -41,7 +62,7 @@ export const Figures = ({ text, gain = GAIN }: FiguresProps) => (
 			.split(FIGURE)
 			.filter((part) => part !== "")
 			.map((part, index) =>
-				isFigure(part) ? (
+				isBadged(part) ? (
 					<Badge key={`${part}-${index}`} color={toneOf(part, gain)}>
 						{part}
 					</Badge>

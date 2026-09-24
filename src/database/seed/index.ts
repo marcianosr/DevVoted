@@ -194,8 +194,8 @@ const seedTodaysSequence = async (
 };
 
 /**
- * Community answers for the opening gates, so per-poll splits, voter chips and
- * the standouts have data. Spread across three gates rather than one: with a
+ * Community answers for the opening gates, so per-poll splits and voter chips
+ * have data. Spread across three gates rather than one: with a
  * 96-poll day, answering only the first window would leave every later poll
  * with an empty community panel.
  */

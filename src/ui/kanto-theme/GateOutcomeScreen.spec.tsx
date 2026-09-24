@@ -136,12 +136,12 @@ describe("GateOutcomeScreen", () => {
 	});
 
 	describe("a perfect close", () => {
-		it("names the band in the title and says what filled the bar", () => {
+		it("names the band in the title and the swatch it won under it", () => {
 			render(<GateOutcomeScreen {...kantoGatePerfect()} />);
 
 			expect(headingOf("Lavender perfect")).toBeInTheDocument();
 			expect(
-				screen.getByText(/the bar filled · next up Rainbow/)
+				screen.getByText(/You earned the Lavender Swatch!/)
 			).toBeInTheDocument();
 		});
 
@@ -192,11 +192,13 @@ describe("GateOutcomeScreen", () => {
 	});
 
 	describe("a healthy close", () => {
-		it("clears the gate and points at the next one", () => {
+		it("clears the gate and says the swatch went unclaimed", () => {
 			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
 
 			expect(headingOf("Lavender cleared")).toBeInTheDocument();
-			expect(screen.getByText(/next up Rainbow/)).toBeInTheDocument();
+			expect(
+				screen.getByText(/You didn't earn the Lavender swatch/)
+			).toBeInTheDocument();
 		});
 
 		it("leaves the swatch behind, since a partial broke the window", () => {
@@ -496,13 +498,13 @@ describe("GateOutcomeScreen's payout history", () => {
 	it("lists what every gate the run has opened paid, inside Coverage", () => {
 		render(<GateOutcomeScreen {...kantoGatePerfect()} />);
 
-		expect(screen.getByText("what each poll paid")).toBeInTheDocument();
+		expect(screen.getByText("Score")).toBeInTheDocument();
 		expect(screen.getByLabelText(/^Pallet/)).toBeInTheDocument();
 	});
 
 	it("leaves the table out for a call site that passes no history", () => {
 		render(<GateOutcomeScreen {...kantoGatePerfect()} payouts={undefined} />);
 
-		expect(screen.queryByText("what each poll paid")).toBeNull();
+		expect(screen.queryByText("Score")).toBeNull();
 	});
 });

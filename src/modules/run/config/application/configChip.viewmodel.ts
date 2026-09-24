@@ -5,15 +5,19 @@ import type {
 	SkipReason,
 } from "~/modules/run/config/domain/configStatus.model";
 import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
-import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	describeConfig,
 	headlineFigureOf,
 	maxLevelOf,
 	sellRefund,
 	slotsOf,
+	upgradeCoverageRequired,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
+import {
+	getCategoryMetadata,
+	type CategoryCode,
+} from "~/shared/lib/categories";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
@@ -91,9 +95,56 @@ export const registryUpgradesFor = (
 	};
 };
 
-export const upgradesFor = (config: Config): UpgradesProps => {
+const PERCENT = "%";
+const UNLOCKS_AT = "Unlocks at";
+const COVERAGE_WORD = "coverage, you have";
+const SHORT_TRAIL = "short";
+
+/**
+ * The Build panel's own upgrade, as opposed to the registry's rolled one: it
+ * climbs exactly one rung, pays the `upgradeStorageCost` ladder, and answers to
+ * the coverage gate the rolled offer waives.
+ */
+export type BuildUpgradeDeal = {
+	storageKb: number;
+	/** Coverage held in the config's focus category; ignored by configs without one. */
+	coveragePct: number;
+	onBuy?: () => void;
+};
+
+/**
+ * `upgrade` refuses silently in the reducer, so the words have to be worked out
+ * here or the press reads as broken. The coverage gate comes first: it is the
+ * requirement a player cannot pay their way out of.
+ */
+export const upgradeRefusalOf = (
+	config: Config,
+	held: number,
+	{ storageKb, coveragePct }: BuildUpgradeDeal
+): string | undefined => {
+	const needed = upgradeCoverageRequired(held);
+	if (config.focusCategory !== undefined && coveragePct < needed) {
+		const category = getCategoryMetadata(config.focusCategory).name;
+		return `${UNLOCKS_AT} ${needed}${PERCENT} ${category} ${COVERAGE_WORD} ${coveragePct}${PERCENT}.`;
+	}
+
+	const price = upgradeStorageCost(held);
+	if (storageKb < price) return `${kbLabel(price - storageKb)} ${SHORT_TRAIL}`;
+
+	return undefined;
+};
+
+export const upgradesFor = (
+	config: Config,
+	deal?: BuildUpgradeDeal
+): UpgradesProps => {
 	const held = config.level ?? FIRST_VERSION;
 	const max = maxLevelOf(config);
+	const onBuy = deal?.onBuy;
+	const refusal =
+		deal === undefined || held >= max
+			? undefined
+			: upgradeRefusalOf(config, held, deal);
 
 	const rungs: UpgradeRung[] = Array.from({ length: max }, (_, index) => {
 		const version = index + 1;
@@ -104,6 +155,8 @@ export const upgradesFor = (config: Config): UpgradesProps => {
 			price:
 				version <= held ? undefined : kbLabel(upgradeStorageCost(version - 1)),
 			held: version === held,
+			disabled:
+				version === held + 1 && refusal !== undefined ? true : undefined,
 		};
 	});
 
@@ -111,15 +164,15 @@ export const upgradesFor = (config: Config): UpgradesProps => {
 		.filter((rung) => rung.price !== undefined)
 		.reduce((total, rung) => total + upgradeStorageCost(rung.version - 1), 0);
 
-	if (toMaxKb === 0) {
-		return { name: config.label, description: describeConfig(config), rungs };
-	}
-
 	return {
 		name: config.label,
 		description: describeConfig(config),
 		rungs,
-		toMax: { version: max, price: kbLabel(toMaxKb) },
+		...(toMaxKb === 0
+			? {}
+			: { toMax: { version: max, price: kbLabel(toMaxKb) } }),
+		...(refusal === undefined ? {} : { refusal }),
+		...(onBuy === undefined ? {} : { onBuy: () => onBuy() }),
 	};
 };
 

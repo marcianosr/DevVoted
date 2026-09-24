@@ -23,7 +23,6 @@ import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
 import { Route as AuthedRunIndexRouteImport } from './routes/_authed/run/index'
 import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
 import { Route as AuthedRunsRunIdRouteImport } from './routes/_authed/runs.$runId'
-import { Route as AuthedRunIncidentsRouteImport } from './routes/_authed/run_.incidents'
 import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
 import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
 import { Route as AuthedRunReviewRouteImport } from './routes/_authed/run/review'
@@ -104,11 +103,6 @@ const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
 const AuthedRunsRunIdRoute = AuthedRunsRunIdRouteImport.update({
   id: '/runs/$runId',
   path: '/runs/$runId',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedRunIncidentsRoute = AuthedRunIncidentsRouteImport.update({
-  id: '/run_/incidents',
-  path: '/run/incidents',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
@@ -193,7 +187,6 @@ export interface FileRoutesByFullPath {
   '/run/review': typeof AuthedRunReviewRoute
   '/run/shop': typeof AuthedRunShopRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/run/incidents': typeof AuthedRunIncidentsRoute
   '/runs/$runId': typeof AuthedRunsRunIdRoute
   '/polls/': typeof AuthedPollsIndexRoute
   '/run/': typeof AuthedRunIndexRoute
@@ -220,7 +213,6 @@ export interface FileRoutesByTo {
   '/run/review': typeof AuthedRunReviewRoute
   '/run/shop': typeof AuthedRunShopRoute
   '/run/community': typeof AuthedRunCommunityRoute
-  '/run/incidents': typeof AuthedRunIncidentsRoute
   '/runs/$runId': typeof AuthedRunsRunIdRoute
   '/polls': typeof AuthedPollsIndexRoute
   '/run': typeof AuthedRunIndexRoute
@@ -250,7 +242,6 @@ export interface FileRoutesById {
   '/_authed/run/review': typeof AuthedRunReviewRoute
   '/_authed/run/shop': typeof AuthedRunShopRoute
   '/_authed/run_/community': typeof AuthedRunCommunityRoute
-  '/_authed/run_/incidents': typeof AuthedRunIncidentsRoute
   '/_authed/runs/$runId': typeof AuthedRunsRunIdRoute
   '/_authed/polls/': typeof AuthedPollsIndexRoute
   '/_authed/run/': typeof AuthedRunIndexRoute
@@ -280,7 +271,6 @@ export interface FileRouteTypes {
     | '/run/review'
     | '/run/shop'
     | '/run/community'
-    | '/run/incidents'
     | '/runs/$runId'
     | '/polls/'
     | '/run/'
@@ -307,7 +297,6 @@ export interface FileRouteTypes {
     | '/run/review'
     | '/run/shop'
     | '/run/community'
-    | '/run/incidents'
     | '/runs/$runId'
     | '/polls'
     | '/run'
@@ -336,7 +325,6 @@ export interface FileRouteTypes {
     | '/_authed/run/review'
     | '/_authed/run/shop'
     | '/_authed/run_/community'
-    | '/_authed/run_/incidents'
     | '/_authed/runs/$runId'
     | '/_authed/polls/'
     | '/_authed/run/'
@@ -453,13 +441,6 @@ declare module '@tanstack/react-router' {
       path: '/runs/$runId'
       fullPath: '/runs/$runId'
       preLoaderRoute: typeof AuthedRunsRunIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/run_/incidents': {
-      id: '/_authed/run_/incidents'
-      path: '/run/incidents'
-      fullPath: '/run/incidents'
-      preLoaderRoute: typeof AuthedRunIncidentsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/run_/community': {
@@ -582,7 +563,6 @@ interface AuthedRouteChildren {
   AuthedPollsNewRoute: typeof AuthedPollsNewRoute
   AuthedProfileUserIdRoute: typeof AuthedProfileUserIdRoute
   AuthedRunCommunityRoute: typeof AuthedRunCommunityRoute
-  AuthedRunIncidentsRoute: typeof AuthedRunIncidentsRoute
   AuthedRunsRunIdRoute: typeof AuthedRunsRunIdRoute
   AuthedPollsIndexRoute: typeof AuthedPollsIndexRoute
   AuthedPollsPollIdEditRoute: typeof AuthedPollsPollIdEditRoute
@@ -596,7 +576,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPollsNewRoute: AuthedPollsNewRoute,
   AuthedProfileUserIdRoute: AuthedProfileUserIdRoute,
   AuthedRunCommunityRoute: AuthedRunCommunityRoute,
-  AuthedRunIncidentsRoute: AuthedRunIncidentsRoute,
   AuthedRunsRunIdRoute: AuthedRunsRunIdRoute,
   AuthedPollsIndexRoute: AuthedPollsIndexRoute,
   AuthedPollsPollIdEditRoute: AuthedPollsPollIdEditRoute,

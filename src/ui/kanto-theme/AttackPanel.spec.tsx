@@ -66,17 +66,30 @@ describe("AttackPanel", () => {
 		expect(onPress).toHaveBeenCalledWith(3, "timeout");
 	});
 
-	it("teaches how an attack is earned while nothing is armed", () => {
-		render(<AttackPanel {...kantoAttackPanelUnarmed()} />);
+	it("teaches how an audit is earned while nothing is armed", () => {
+		const { container } = render(
+			<AttackPanel {...kantoAttackPanelUnarmed()} />
+		);
 
-		expect(screen.getByText(ATTACK_UNARMED)).toBeInTheDocument();
+		expect(container.textContent).toContain(ATTACK_UNARMED);
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
 
-	it("says why an armed attack has nobody to aim at", () => {
-		render(<AttackPanel {...kantoAttackPanelNoRival()} />);
+	it("badges the band it asks for rather than leaving it in the prose", () => {
+		render(<AttackPanel {...kantoAttackPanelUnarmed()} />);
 
-		expect(screen.getByText(ATTACK_NO_RIVAL)).toBeInTheDocument();
+		expect(screen.getByText("HEALTHY")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("says why an armed audit has nobody to aim at", () => {
+		const { container } = render(
+			<AttackPanel {...kantoAttackPanelNoRival()} />
+		);
+
+		expect(container.textContent).toContain(ATTACK_NO_RIVAL);
 	});
 
 	it("says it is still dealing rather than showing an empty field", () => {

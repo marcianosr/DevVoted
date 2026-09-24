@@ -9,7 +9,6 @@ import {
 	kantoNewRunAt,
 	kantoNewRunRegistry,
 	newRunBuildNote,
-	newRunRegistryNote,
 } from "~/test/kantoPoll.factory";
 
 import { NewRunScreen } from "./NewRunScreen.ui";
@@ -146,7 +145,6 @@ describe("the deal the registry lists", () => {
 		expect(dealt()).toHaveTextContent(
 			`${kantoHandCards().length} offers · free a slot`
 		);
-		expect(screen.getByText(newRunRegistryNote)).toBeInTheDocument();
 	});
 
 	it("lists every card the run was dealt", () => {

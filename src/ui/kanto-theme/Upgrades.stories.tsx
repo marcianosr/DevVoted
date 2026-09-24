@@ -68,11 +68,21 @@ export const Buyable: Story = {
 };
 
 export const Unaffordable: Story = {
-	args: {
-		...MOORES_LAW,
+	args: upgradesFor(
+		{ ...CONFIGS.mooresLaw, level: 2 },
+		{
+			storageKb: 32,
+			coveragePct: 100,
+			onBuy: noop,
+		}
+	),
+};
+
+/** The one refusal KB cannot answer: a focus config wants the coverage first. */
+export const CoverageGated: Story = {
+	args: upgradesFor(CONFIGS.js, {
+		storageKb: 512,
+		coveragePct: 2,
 		onBuy: noop,
-		rungs: MOORES_LAW.rungs.map((rung) =>
-			rung.state === "offered" ? { ...rung, disabled: true } : rung
-		),
-	},
+	}),
 };

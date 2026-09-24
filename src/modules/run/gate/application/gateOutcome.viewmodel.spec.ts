@@ -97,11 +97,33 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 
 		expect(props.header.subtitle).toContain("1 of 5 right, 2 needed");
 		expect(props.header.subtitle).not.toContain("the meter fell short");
-		expect(props.coverage.badges?.[0]?.label).toBe("1 of 5 right");
+		expect(props.coverage.badges?.[1]?.label).toBe("1 of 5 right");
 	});
 
 	it("leaves the bar reading where the run actually stands", () => {
 		expect(gateOutcomePropsFor(heldByFloor()).bar.held).toBe(CLEARED);
+	});
+
+	it("still states what the gate itself gained, beside the shortfall", () => {
+		const badges = gateOutcomePropsFor(heldByFloor()).coverage.badges;
+
+		expect(badges?.[0]?.label).toMatch(/^[+-]\d/);
+		expect(badges).toHaveLength(2);
+	});
+});
+
+describe("the By category panel", () => {
+	it("totals nothing: the gate's gain is its header badge, the line is the bar", () => {
+		const props = gateOutcomePropsFor(frameOf([], CLEARED));
+
+		expect(props.coverage.rows.some((row) => row.total === true)).toBe(false);
+		expect(
+			props.coverage.rows.some((row) =>
+				row.figures?.some((figure) =>
+					(figure.locked === true ? "" : figure.label).includes("needed")
+				)
+			)
+		).toBe(false);
 	});
 });
 
@@ -175,7 +197,7 @@ describe("the storage ledger names Database's transaction", () => {
 		});
 		const plain = gateOutcomePropsFor(frameOf([], CLEARED));
 		const gateRowOf = (props: typeof plain) =>
-			props.storage.rows.find((row) => row.label === "gate cleared");
+			props.storage.rows.find((row) => row.label === "Gate cleared");
 
 		expect(gateRowOf(committed)?.figures).toContainEqual(
 			expect.objectContaining({ label: "+16 KB" })
@@ -230,9 +252,9 @@ describe("a clear whose parts are known", () => {
 		gateOutcomePropsFor(frame).storage.rows.find((row) => row.label === label);
 
 	it("keeps the gate's own row to the base and names the streak it paid on", () => {
-		const row = rowNamed(itemised(), "gate cleared");
+		const row = rowNamed(itemised(), "Gate cleared");
 
-		expect(row?.detail).toBe("· 5 of 5 correct · streak ×1.4");
+		expect(row?.notes).toEqual(["5 of 5 correct", "streak ×1.4"]);
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+36 KB" })
 		);
@@ -257,9 +279,9 @@ describe("a clear whose parts are known", () => {
 	});
 
 	it("keeps the whole payout on the gate's row when the parts are unknown", () => {
-		const row = rowNamed(frameOf([], CLEARED), "gate cleared");
+		const row = rowNamed(frameOf([], CLEARED), "Gate cleared");
 
-		expect(row?.detail).toBe("· 5 of 5 correct");
+		expect(row?.notes).toEqual(["5 of 5 correct"]);
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+32 KB" })
 		);
@@ -326,7 +348,7 @@ describe("what surviving a rival's audits paid, and the attack the clear armed (
 		expect(rowNamed(survived(), "audits survived")?.figures).toContainEqual(
 			expect.objectContaining({ label: "+64 KB" })
 		);
-		expect(rowNamed(survived(), "gate cleared")?.figures).toContainEqual(
+		expect(rowNamed(survived(), "Gate cleared")?.figures).toContainEqual(
 			expect.objectContaining({ label: "+32 KB" })
 		);
 	});
@@ -335,13 +357,13 @@ describe("what surviving a rival's audits paid, and the attack the clear armed (
 		expect(rowNamed(frameOf([], CLEARED), "audits survived")).toBeUndefined();
 	});
 
-	it("chips the attack the clear armed", () => {
+	it("chips the audit the clear armed", () => {
 		const props = gateOutcomePropsFor({
 			...frameOf([], CLEARED),
 			attackEarned: true,
 		});
 		expect(props.header.chips).toContainEqual(
-			expect.objectContaining({ label: "attack earned" })
+			expect.objectContaining({ label: "audit earned" })
 		);
 	});
 });

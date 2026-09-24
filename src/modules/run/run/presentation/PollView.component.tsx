@@ -10,7 +10,7 @@ import {
 	pollBarFor,
 	coverageLeadFor,
 	pollFactsFor,
-	hallOfFameFor,
+	categoryLeaderFor,
 	pollHoldsFor,
 	pollLabelFor,
 	pollPaidFor,
@@ -18,6 +18,7 @@ import {
 	gateLabelFor,
 	pollHeaderFor,
 	pollKeysFor,
+	pollCommitFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -32,7 +33,6 @@ import type {
 	QuestionOption,
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
-import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 
 export type PollViewProps = {
 	view: RunView;
@@ -47,11 +47,8 @@ export type PollViewProps = {
 
 type LivePoll = NonNullable<RunView["poll"]>;
 
-const SUBMIT_LABEL = "Submit answer";
 const NEXT_LABEL = "Next poll";
-const PICK_FIRST = "pick an answer first";
-const ENTER_SUBMITS = "Enter submits";
-const ENTER_CONTINUES = "Enter continues";
+const ENTER_CONTINUES = "Or click ENTER";
 
 const wrongCostOf = (view: RunView): string | undefined => {
 	const cost = view.gateStake.perAnswer.coveragePerWrong;
@@ -117,15 +114,6 @@ const authorOf = (poll: LivePoll): AuthorProps | undefined =>
 				borderUrl: poll.author.borderUrl,
 			};
 
-const submitFooterFor = (
-	picked: boolean,
-	onSubmit: () => void
-): ScreenFooterProps => ({
-	action: { label: SUBMIT_LABEL, onPress: picked ? onSubmit : undefined },
-	refusal: picked ? undefined : PICK_FIRST,
-	note: picked ? ENTER_SUBMITS : undefined,
-});
-
 const enterActionFor = (
 	revealing: boolean,
 	picked: boolean,
@@ -144,7 +132,8 @@ type PollMood = Pick<
 	| "wrongCost"
 	| "hint"
 	| "author"
-	| "record"
+	| "commit"
+	| "categoryLeader"
 	| "footer"
 >;
 
@@ -165,6 +154,7 @@ const answeredMoodFor = (
 			onPress: onNext,
 		},
 		note: ENTER_CONTINUES,
+		noteAt: "row",
 	},
 });
 
@@ -180,8 +170,8 @@ const liveMoodFor = (
 	category: categoryNameOf(view, poll.category),
 	wrongCost: wrongCostOf(view),
 	author: authorOf(poll),
-	record: hallOfFameFor(view, poll),
-	footer: submitFooterFor(selectedOptionIds.length > 0, onSubmit),
+	categoryLeader: categoryLeaderFor(view, poll),
+	commit: pollCommitFor(poll.answerType, selectedOptionIds.length, onSubmit),
 });
 
 export const PollView = ({

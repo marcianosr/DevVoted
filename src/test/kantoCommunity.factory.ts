@@ -1,18 +1,19 @@
 import type {
 	CommunityScreenProps,
-	Standout,
 	TurnoutBand,
 } from "~/ui/kanto-theme/CommunityScreen.ui";
+import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
+import { kantoIncidents } from "./kantoIncidents.factory";
 import { gateSwatchAt } from "./swatchTrack.factory";
 
 export const COMMUNITY_SHOP_LABEL = "Back to the shop";
 export const COMMUNITY_PREP_LABEL = "Prep for Rainbow";
-export const COMMUNITY_DEX_LABEL = "Open the Dex";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
 export const COMMUNITY_CLIMB_TITLE = "Lavender cleared";
+export const COMMUNITY_LEADERS_TITLE = "Category leaders";
 
 const CLEARED_GATE = 4;
 const NEXT_GATE = 5;
@@ -61,29 +62,43 @@ const bands = (): TurnoutBand[] => [
 	},
 ];
 
-const awards = (): Standout[] => [
-	{
-		title: "Most active",
-		climber: koga,
-		value: "38 answers today",
+const held = (
+	category: string,
+	handle: string,
+	streak: number,
+	borderUrl?: string
+): CategoryLeaderProps => ({
+	category,
+	leader: {
+		handle: `@${handle}`,
+		githubLogin: handle,
+		figure: `${streak} in a row`,
+		...(borderUrl === undefined ? {} : { borderUrl }),
 	},
+});
+
+const open = (category: string): CategoryLeaderProps => ({
+	category,
+	claim: "3 in a row claims it",
+});
+
+/** Nine of the twelve held, so the board shows both states at once. */
+const seats = (): CategoryLeaderProps[] => [
+	held("JavaScript", "koga", 21, BORDER.frontend),
+	held("CSS", "erika", 18, BORDER.react),
+	held("TypeScript", "sabrina", 16, BORDER.ts),
+	held("Git", "giovanni", 13, BORDER.html),
+	held("React", "blaine", 11, BORDER.ruby),
+	held("HTML", "misty", 9, BORDER.css),
+	held("Java", "ltsurge", 7, BORDER.js),
+	held("Python", "brock", 6, BORDER.git),
 	{
-		title: "Most knowledgeable",
-		climber: sabrina,
-		tag: "TypeScript",
-		tagColor: "lavender",
-		value: "94% right across 31 answers",
+		category: "Vue",
+		leader: { handle: "@marciano", figure: "5 in a row", you: true },
 	},
-	{
-		title: "Fastest",
-		climber: surge,
-		value: "4.1s average answer",
-	},
-	{
-		title: "Biggest bank",
-		climber: giovanni,
-		value: "2.4 MB banked",
-	},
+	open("Ruby"),
+	open("General Frontend"),
+	open("General Backend"),
 ];
 
 const polls = (): PollResultProps[] => [
@@ -287,11 +302,13 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 	},
 	turnout: { title: "Who showed up", when: "Today", bands: bands() },
 	map: { title: COMMUNITY_MAP_TITLE, summary: "11 climbing · 2 closed" },
-	standouts: {
-		title: "Standing out",
-		summary: "Four of forty awarded today",
-		dex: { label: COMMUNITY_DEX_LABEL, onPress: () => {} },
-		awards: awards(),
+	incidents: kantoIncidents(),
+	leaders: {
+		title: COMMUNITY_LEADERS_TITLE,
+		summary: "longest run of correct answers · all-time",
+		seated: "9 of 12 seated",
+		seats: seats(),
+		footer: "A seat changes hands when somebody beats it. 3 seats still open.",
 	},
 	polls: {
 		title: "The five polls",
@@ -325,6 +342,12 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 	const base = kantoCommunity();
 	return {
 		...base,
-		standouts: { ...base.standouts, summary: undefined, awards: [] },
+		leaders: {
+			...base.leaders,
+			seated: "0 of 12 seated",
+			seats: base.leaders.seats.map(({ category }) => open(category)),
+			footer:
+				"A seat changes hands when somebody beats it. 12 seats still open.",
+		},
 	};
 };

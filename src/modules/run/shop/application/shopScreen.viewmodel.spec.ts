@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { upgradeChipFor } from "~/modules/run/shop/application/shopScreen.viewmodel";
+import {
+	buildChipFor,
+	upgradeChipFor,
+} from "~/modules/run/shop/application/shopScreen.viewmodel";
 
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 	const deal = { priceKb: 32, affordable: true, onInstall: vi.fn() };
@@ -38,5 +41,40 @@ describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 
 		expect(broke.skipped).toBe(true);
 		expect(chip.skipped).toBe(false);
+	});
+});
+
+describe("buildChipFor (ADR-097 decision 6)", () => {
+	const deal = { storageKb: 512, coveragePct: 100 };
+
+	it("sells an installed config its own next version", () => {
+		const chip = buildChipFor(CONFIGS.mooresLaw, undefined, undefined, deal);
+		const offered = chip.upgrades?.rungs.find(
+			(rung) => rung.state === "offered"
+		);
+
+		expect(offered?.version).toBe(2);
+		expect(offered?.price).toBe("64 KB");
+	});
+
+	it("offers nothing on a config that has no version ladder", () => {
+		expect(
+			buildChipFor(CONFIGS.codeCoverage, undefined, undefined, deal).upgrades
+		).toBeUndefined();
+	});
+
+	it("offers nothing on a config already at its ceiling", () => {
+		expect(
+			buildChipFor(
+				{ ...CONFIGS.telemetry, level: 2 },
+				undefined,
+				undefined,
+				deal
+			).upgrades
+		).toBeUndefined();
+	});
+
+	it("carries no panel at all where no deal is on the table", () => {
+		expect(buildChipFor(CONFIGS.mooresLaw).upgrades).toBeUndefined();
 	});
 });

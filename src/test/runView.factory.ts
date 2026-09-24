@@ -44,18 +44,16 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		misses: 2,
 		lastAnsweredAt: "2026-08-04T09:00:00.000Z",
 	},
-	// Attached by the same read (ADR-100): the category's record stands at 17,
-	// this account has never got past 4. Override with `record: undefined` for
-	// the withheld case.
-	record: {
+	// Attached by the same read (ADR-103): @sabrina leads the category on 17.
+	// Override with `categorySeat: undefined` for the withheld case.
+	categorySeat: {
 		category: CATEGORY_CODES[0],
-		holder: {
+		leader: {
 			handle: "@sabrina",
 			githubLogin: "sabrina",
 			streak: 17,
 			you: false,
 		},
-		yourBest: 4,
 	},
 });
 

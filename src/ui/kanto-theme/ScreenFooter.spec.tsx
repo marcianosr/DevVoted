@@ -5,7 +5,11 @@ import userEvent from "@testing-library/user-event";
 import { kantoGateZeroFooter } from "~/test/kantoPoll.factory";
 import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import {
+	ScreenActions,
+	ScreenFooter,
+	type ScreenFooterProps,
+} from "./ScreenFooter.ui";
 
 const props = kantoGateZeroFooter();
 
@@ -118,12 +122,34 @@ describe("ScreenFooter", () => {
 		expect(start).not.toHaveAttribute("data-screen-theme");
 	});
 
-	it("pushes the start opposite the figures it acts on", () => {
+	it("pushes the start opposite the figures it acts on, once there is a row", () => {
 		render(<ScreenFooter {...props} />);
 
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ }).parentElement
-		).toHaveClass("ml-auto");
+		).toHaveClass("sm:ml-auto");
+	});
+
+	it("keeps its presses side by side at every width", () => {
+		render(<ScreenFooter {...props} />);
+
+		const row = screen.getByRole("button", { name: /Pallet gate prep/ })
+			.parentElement?.parentElement;
+
+		expect(row).toHaveClass("flex-wrap");
+		expect(row).not.toHaveClass("flex-col");
+	});
+
+	// The note is the only thing in the row that can give, and squeezing it is
+	// what collapsed it to one word per line on a phone.
+	it("drops the note onto its own line rather than squeezing it between the presses", () => {
+		render(<ScreenFooter {...props} note="Or click ENTER" noteAt="row" />);
+
+		expect(screen.getByText("Or click ENTER").parentElement).toHaveClass(
+			"order-last",
+			"w-full",
+			"sm:order-none"
+		);
 	});
 
 	it("draws no stake row for a screen that states its own stakes", () => {
@@ -254,5 +280,32 @@ describe("ScreenFooter", () => {
 				screen.getByRole("button", { name: "Community" }).querySelector("svg")
 			).not.toBeNull();
 		});
+	});
+});
+
+describe("ScreenActions", () => {
+	it("pins the screen's press to the foot of a phone, and lets it go on a desktop", () => {
+		const { container } = render(<ScreenActions {...props} />);
+
+		expect(container.firstElementChild).toHaveClass(
+			"sticky",
+			"bottom-0",
+			"md:static"
+		);
+	});
+
+	it("stands the press on an opaque panel, so the screen scrolls behind it", () => {
+		const { container } = render(<ScreenActions {...props} />);
+
+		expect(container.firstElementChild).toHaveClass("bg-theme-faint");
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toBeInTheDocument();
+	});
+
+	it("draws no rule of its own: the panel edge already is one", () => {
+		const { container } = render(<ScreenActions {...props} />);
+
+		expect(container.querySelector("footer")).not.toHaveClass("border-t");
 	});
 });

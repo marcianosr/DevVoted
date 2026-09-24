@@ -4,7 +4,6 @@ import { PEEL_KB_PER_SLOT } from "~/modules/run/gate/application/gateOutcome.vie
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	PREP_COMMUNITY_LABEL,
-	PREP_INCIDENTS_LABEL,
 	type PrepWindow,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
@@ -31,8 +30,6 @@ export type PrepViewProps = {
 	/** The attack in hand and its rivals (ADR-099). Absent on a screen that has not dealt them. */
 	attack?: AttackPanelProps;
 	onFire?: (targetRunId: number, auditId: AuditId) => void;
-	/** The day's incident log, the footer's second aside. */
-	onIncidents?: () => void;
 };
 
 export const buildSpaceOf = (view: RunView): number => view.buildSpace.space;
@@ -51,13 +48,10 @@ const BACK_TO_SHOP = "Back to the shop";
  * from the screen's own footer, so only the handler is wired here.
  */
 const asideHandlerFor = (
-	{ onCommunity, onIncidents }: PrepViewProps,
+	{ onCommunity }: PrepViewProps,
 	label: string
-): (() => void) | undefined => {
-	if (label === PREP_COMMUNITY_LABEL) return onCommunity;
-	if (label === PREP_INCIDENTS_LABEL) return onIncidents;
-	return undefined;
-};
+): (() => void) | undefined =>
+	label === PREP_COMMUNITY_LABEL ? onCommunity : undefined;
 
 const asidesFor = (
 	props: PrepViewProps,
@@ -115,7 +109,6 @@ export const PrepView = (props: PrepViewProps) => {
 		window: windowOf(view),
 		answeredThisGate: view.answeredThisGate,
 		bar: { ...gateStake.coverageLadder, held: gateStake.coverageHeld },
-		openingHeld: gateStake.coverageAtOpen,
 		coverageGainPercent: coverageGainPercentFor(
 			gateStake.perAnswer.coveragePerCorrect,
 			gateStake.gateNumber

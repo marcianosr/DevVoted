@@ -2,10 +2,12 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
-import { Climber, ClimberStack, type ClimberProps } from "./Climber.ui";
+import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
+import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
 import { Icon, type IconName } from "./Icon.ui";
+import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
 import { Panel } from "./Panel.ui";
 import { PollResult, type PollResultProps } from "./PollResult.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
@@ -28,12 +30,11 @@ const CLIMB_READING = "flex flex-wrap items-center gap-2 text-theme-faint";
 const PLACEHOLDER =
 	"flex w-full items-center justify-center rounded-lg border border-dashed border-theme-faint px-4 py-10 text-center";
 
-const STANDOUT_NAMING = "flex min-w-0 flex-col";
-
 const POLLS = "flex w-full flex-col gap-2";
 
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
+const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 
 export const COPY = {
@@ -50,7 +51,8 @@ export type CommunityHeader = {
 	countdownColor?: KantoColor;
 	countdownHint: string;
 	stats: readonly CommunityStat[];
-	shop: { label: string; onPress?: () => void };
+	/** An optional second exit beside the way back into the climb. */
+	shop?: { label: string; onPress?: () => void };
 	prep: { label: string; onPress?: () => void };
 };
 
@@ -77,19 +79,13 @@ export type CommunityTurnout = {
 	bands: readonly TurnoutBand[];
 };
 
-export type Standout = {
-	title: string;
-	climber: ClimberProps;
-	value: string;
-	tag?: string;
-	tagColor?: KantoColor;
-};
-
-export type CommunityStandouts = {
+export type CommunityLeaders = {
 	title: string;
 	summary?: string;
-	dex?: { label: string; onPress?: () => void };
-	awards: readonly Standout[];
+	/** How many of the twelve are held, as a badge beside the summary. */
+	seated?: string;
+	seats: readonly CategoryLeaderProps[];
+	footer?: string;
 };
 
 export type CommunityPolls = {
@@ -103,7 +99,9 @@ export type CommunityScreenProps = {
 	climb: CommunityClimb;
 	turnout: CommunityTurnout;
 	map: { title: string; summary?: string };
-	standouts: CommunityStandouts;
+	/** Today's audits, everyone's. Absent on a board that has not read them. */
+	incidents?: IncidentsPanelProps;
+	leaders: CommunityLeaders;
 	polls: CommunityPolls;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -148,13 +146,15 @@ const CommunityHeading = ({
 				<Badge color={countdownColor}>{countdown}</Badge>
 			</span>
 			<span className={CONTROLS}>
-				<Button
-					size={CONTROL_SIZE}
-					icon="shop"
-					label={shop.label}
-					disabled={shop.onPress === undefined}
-					onPress={shop.onPress}
-				/>
+				{shop === undefined ? null : (
+					<Button
+						size={CONTROL_SIZE}
+						icon="shop"
+						label={shop.label}
+						disabled={shop.onPress === undefined}
+						onPress={shop.onPress}
+					/>
+				)}
 				<Button
 					size={CONTROL_SIZE}
 					tone="action"
@@ -268,50 +268,50 @@ const WhereEveryoneIs = ({
 	</Panel>
 );
 
-const StandingOut = ({ title, summary, dex, awards }: CommunityStandouts) => (
+/**
+ * Twelve seats, one per category, held seats first.
+ *
+ * Every category draws a row whether or not anybody leads it: an open seat is
+ * the one state where a player can see exactly what it takes, and dropping it
+ * would make a young category look like a missing feature. Your own seat takes
+ * the row's theme rather than a mark of its own — the ring on the avatar and the
+ * green figure are already inside the line.
+ */
+const CategoryLeaders = ({
+	title,
+	summary,
+	seated,
+	seats,
+	footer,
+}: CommunityLeaders) => (
 	<Panel>
 		<Panel.Header
 			label={title}
 			meta={
 				<>
 					{summary}
-					{dex === undefined ? null : (
-						<Button
-							icon="review"
-							label={dex.label}
-							disabled={dex.onPress === undefined}
-							onPress={dex.onPress}
-						/>
-					)}
+					{seated === undefined ? null : <Badge>{seated}</Badge>}
 				</>
 			}
 		/>
-		{awards.length === 0 ? null : (
+		{seats.length === 0 ? null : (
 			<Panel.Rows>
-				{awards.map((award) => (
+				{seats.map((seat) => (
 					<Panel.Row
-						key={award.title}
-						trailing={
-							<>
-								{award.tag === undefined ? null : (
-									<Badge color={award.tagColor}>{award.tag}</Badge>
-								)}
-								<Figures text={award.value} />
-							</>
-						}
+						key={seat.category}
+						theme={seat.leader?.you === true ? YOUR_SEAT_COLOR : undefined}
 					>
-						<Climber {...award.climber} size={CLIMBER_SIZE} />
-						<span className={STANDOUT_NAMING}>
-							<Typography variant="subtitle" as="span">
-								{award.title}
-							</Typography>
-							<Typography variant="hint" as="span">
-								{award.climber.name}
-							</Typography>
-						</span>
+						<CategoryLeader {...seat} />
 					</Panel.Row>
 				))}
 			</Panel.Rows>
+		)}
+		{footer === undefined ? null : (
+			<Panel.Footer>
+				<Typography variant="hint" as="span">
+					{footer}
+				</Typography>
+			</Panel.Footer>
 		)}
 	</Panel>
 );
@@ -332,7 +332,8 @@ export const CommunityScreen = ({
 	climb,
 	turnout,
 	map,
-	standouts,
+	incidents,
+	leaders,
 	polls,
 	width,
 	ground = "bare",
@@ -342,7 +343,8 @@ export const CommunityScreen = ({
 		<YourClimb {...climb} />
 		<Turnout {...turnout} />
 		<WhereEveryoneIs {...map} />
-		<StandingOut {...standouts} />
+		{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
+		<CategoryLeaders {...leaders} />
 		<FivePolls {...polls} />
 	</Screen>
 );

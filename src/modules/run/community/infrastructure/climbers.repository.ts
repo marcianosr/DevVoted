@@ -5,10 +5,6 @@ import { runStatesTable, runsTable, usersTable } from "~/database/schema";
 import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import { localDayRange } from "~/shared/lib/dateUtils";
 
-import type {
-	AnsweredPoll,
-	AnswerOutcome,
-} from "~/modules/run/run/domain/runPoll.model";
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 import type { Build } from "~/modules/run/build/domain/build.model";
 import {
@@ -18,11 +14,7 @@ import {
 } from "~/modules/run/build/domain/publicBuild.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
-import {
-	type Config,
-	type ConfigSize,
-	slotsOf,
-} from "~/modules/run/config/domain/config.model";
+import type { Config } from "~/modules/run/config/domain/config.model";
 
 /**
  * "Who's climbing" reads (DVTD-6l80). These are the queries `run_states`'
@@ -47,7 +39,6 @@ import {
 const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
 const windowKey = <K extends keyof GateWindow>(key: K) => sql.raw(`'${key}'`);
 const buildKey = <K extends keyof Build>(key: K) => sql.raw(`'${key}'`);
-const answeredKey = <K extends keyof AnsweredPoll>(key: K) => sql.raw(`${key}`);
 const configKey = <K extends keyof Config>(key: K) => sql.raw(`'${key}'`);
 const storedKey = <K extends keyof StoredPublicBuild>(key: K) =>
 	sql.raw(`'${key}'`);
@@ -134,83 +125,6 @@ export const fetchClimbMarker = async (
 		.where(eq(runStatesTable.run_id, runId))
 		.limit(1);
 	return row ?? null;
-};
-
-export type ActiveRunStatsRow = {
-	userId: string;
-	displayName: string | null;
-	photoUrl: string | null;
-	borderUrl: string | null;
-	gatesCleared: number;
-	pollsIntoGate: number;
-	configCount: number;
-	slotsHeld: number;
-	configsLost: number;
-	startedAtGate: number;
-	outcomes: AnswerOutcome[];
-};
-
-type ConfigFootprint = {
-	slots: ConfigSize | null;
-	minified: boolean | null;
-};
-
-const slotsHeldIn = (footprints: readonly ConfigFootprint[]): number =>
-	footprints.reduce(
-		(total, footprint) =>
-			total +
-			slotsOf({
-				...(footprint.slots === null ? {} : { slots: footprint.slots }),
-				...(footprint.minified === null
-					? {}
-					: { minified: footprint.minified }),
-			}),
-		0
-	);
-
-/**
- * Every live run's standing, for the run-scoped standouts (DVTD-wp69).
- *
- * `outcomes` is extracted rather than the whole answer history: an `AnsweredPoll`
- * carries the poll's `correct` option ids, and there is no reason to lift
- * correctness data into Node just to measure a streak. Postgres unnests the
- * array and hands back the verdicts alone.
- */
-export const fetchActiveRunStats = async (): Promise<ActiveRunStatsRow[]> => {
-	const rows = await db
-		.select({
-			userId: runsTable.user_id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			equippedBorderId: usersTable.equipped_border_id,
-			gatesCleared: runStatesTable.gates_cleared,
-			pollsIntoGate,
-			configCount: sql<number>`coalesce(json_array_length(${runStatesTable.state}->${stateKey("build")}->${buildKey("configs")}), 0)`,
-			footprints: sql<ConfigFootprint[]>`coalesce((
-				select json_agg(json_build_object(
-					'slots', cfg->${configKey("slots")},
-					'minified', cfg->${configKey("minified")}
-				))
-				from json_array_elements(${runStatesTable.state}->${stateKey("build")}->${buildKey("configs")})
-					as build(cfg)
-			), '[]'::json)`,
-			configsLost: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("configsLost")})::int, 0)`,
-			startedAtGate: sql<number>`coalesce((${runStatesTable.state}->>${stateKey("startedAtGate")})::int, 0)`,
-			outcomes: sql<AnswerOutcome[]>`coalesce((
-				select json_agg(entry->>'${answeredKey("outcome")}' order by ord)
-				from json_array_elements(${runStatesTable.state}->${stateKey("allAnswered")})
-					with ordinality as history(entry, ord)
-			), '[]'::json)`,
-		})
-		.from(runsTable)
-		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
-		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
-		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
-	return rows.map(({ equippedBorderId, footprints, ...row }) => ({
-		...row,
-		borderUrl: borderUrlOf(equippedBorderId),
-		slotsHeld: slotsHeldIn(footprints),
-	}));
 };
 
 export type FallenRow = {

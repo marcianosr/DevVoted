@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { Tooltip } from "./Tooltip.ui";
 
@@ -14,7 +15,7 @@ describe("Tooltip", () => {
 		expect(screen.getByText("34/55 correct")).toBeInTheDocument();
 	});
 
-	it("hangs its panel shut until the trigger is hovered or focused", () => {
+	it("hangs its panel shut until the trigger is hovered", () => {
 		const { container } = render(
 			<Tooltip label="How a correct answer is counted" hint="Single is 1.">
 				34/55 correct
@@ -24,9 +25,38 @@ describe("Tooltip", () => {
 		const panel = container.querySelector("[aria-hidden]");
 
 		expect(panel).toHaveClass("invisible", "opacity-0");
-		expect(panel).toHaveClass(
-			"group-hover/tip:visible",
-			"group-has-[:focus-visible]/tip:visible"
+		expect(panel).toHaveClass("group-hover/tip:visible");
+	});
+
+	it("opens the panel on a press, which is the only way a phone can", async () => {
+		const { container } = render(
+			<Tooltip label="How a correct answer is counted" hint="Single is 1.">
+				34/55 correct
+			</Tooltip>
+		);
+
+		await userEvent.click(screen.getByRole("button"));
+
+		expect(container.querySelector("[aria-hidden]")).toHaveClass(
+			"visible",
+			"opacity-100"
+		);
+		expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+	});
+
+	it("shuts again on a second press", async () => {
+		const { container } = render(
+			<Tooltip label="How a correct answer is counted" hint="Single is 1.">
+				34/55 correct
+			</Tooltip>
+		);
+
+		await userEvent.click(screen.getByRole("button"));
+		await userEvent.click(screen.getByRole("button"));
+
+		expect(container.querySelector("[aria-hidden]")).toHaveClass(
+			"invisible",
+			"opacity-0"
 		);
 	});
 

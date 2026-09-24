@@ -3,10 +3,11 @@ import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
 import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
+import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
-import { CoverageBar, coverageReadingOf } from "./CoverageBar.ui";
+import { CoverageBar, CoverageReading } from "./CoverageBar.ui";
 import type { CoverageBarProps } from "./CoverageBar.ui";
-import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
+import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Lead, type LeadLine } from "./Lead.ui";
 import { Panel } from "./Panel.ui";
@@ -28,11 +29,29 @@ const COPY = {
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
 const PAID = "border-t border-theme-faint";
+// Its own region rather than a second line inside the credit footer, because
+// `Panel` pads each region and not its surface — that is what lets the rule
+// above the leader reach the panel's edges instead of stopping at the padding.
+const LEADER_REGION = "border-t border-theme-faint px-4 py-3";
 const SEPARATOR = "·";
 
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const HOLDS_COLOR: KantoColor = "cerulean";
 const CREDIT_SIZE: AuthorSize = "sm";
+const COMMIT_SIZE = "md";
+
+/**
+ * The answer is sent from the poll it belongs to rather than from a footer under
+ * the whole screen: the press sits beside the count it acts on, so "2 picked"
+ * and "Lock in 2 answers" cannot drift apart or scroll apart.
+ */
+export type PollCommit = {
+	/** "Lock in 2 answers", or "Lock in" while nothing is picked. */
+	label: string;
+	/** "2 picked", or why the press is refused while nothing is. */
+	note: string;
+	onPress?: () => void;
+};
 
 export type PollCoverage = {
 	bar: CoverageBarProps;
@@ -55,27 +74,45 @@ export type PollScreenProps = {
 	audits?: readonly AuditProps[];
 	hint?: string;
 	author?: AuthorProps;
-	record?: HallOfFameProps;
+	commit?: PollCommit;
+	categoryLeader?: CategoryLeaderProps;
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
 
-type PollCreditProps = Pick<PollScreenProps, "hint" | "author">;
+type PollCreditProps = Pick<PollScreenProps, "hint" | "author" | "commit">;
 
-const PollCredit = ({ hint, author }: PollCreditProps) => {
-	if (hint === undefined && author === undefined) return null;
+const CreditTrailing = ({ hint, commit }: PollCreditProps) => (
+	<>
+		{hint === undefined ? null : (
+			<Typography variant="hint" as="span">
+				{hint}
+			</Typography>
+		)}
+		{commit === undefined ? null : (
+			<>
+				<Typography variant="hint" as="span">
+					{commit.note}
+				</Typography>
+				<Button
+					size={COMMIT_SIZE}
+					tone={commit.onPress === undefined ? "ambient" : "action"}
+					label={commit.label}
+					disabled={commit.onPress === undefined}
+					onPress={commit.onPress}
+				/>
+			</>
+		)}
+	</>
+);
+
+const PollCredit = ({ hint, author, commit }: PollCreditProps) => {
+	if (hint === undefined && author === undefined && commit === undefined)
+		return null;
 
 	return (
-		<Panel.Footer
-			trailing={
-				hint === undefined ? undefined : (
-					<Typography variant="hint" as="span">
-						{hint}
-					</Typography>
-				)
-			}
-		>
+		<Panel.Footer trailing={<CreditTrailing hint={hint} commit={commit} />}>
 			{author === undefined ? null : (
 				<Author {...author} size={CREDIT_SIZE} rule={false} />
 			)}
@@ -97,7 +134,8 @@ export const PollScreen = ({
 	audits = [],
 	hint,
 	author,
-	record,
+	commit,
+	categoryLeader,
 	footer,
 	width,
 	ground = "bare",
@@ -110,7 +148,7 @@ export const PollScreen = ({
 				label={COPY.coverage}
 				meta={
 					<>
-						<span>{coverageReadingOf(coverage.bar)}</span>
+						<CoverageReading {...coverage.bar} />
 						<span aria-hidden>{SEPARATOR}</span>
 						<Tooltip
 							label={SCORING_RULE_LABEL}
@@ -126,7 +164,7 @@ export const PollScreen = ({
 			<Panel.Body>
 				<CoverageBar {...coverage.bar} />
 				{coverage.lead === undefined ? null : (
-					<Lead line={coverage.lead} variant="paragraph" />
+					<Lead line={coverage.lead} variant="caption" />
 				)}
 			</Panel.Body>
 			{coverage.paid === undefined ? null : (
@@ -178,8 +216,12 @@ export const PollScreen = ({
 			<Panel.Body className={facts === undefined ? undefined : PAID}>
 				<Question {...question} />
 			</Panel.Body>
-			<PollCredit hint={hint} author={author} />
-			{record === undefined ? null : <HallOfFame {...record} />}
+			<PollCredit hint={hint} author={author} commit={commit} />
+			{categoryLeader === undefined ? null : (
+				<div className={LEADER_REGION}>
+					<CategoryLeader {...categoryLeader} />
+				</div>
+			)}
 		</Panel>
 
 		{footer === undefined ? null : (

@@ -78,7 +78,6 @@ export const RunPrep = () => {
 			onFire={(targetRunId, auditId) => {
 				if (!fire.isPending) fire.mutate({ targetRunId, auditId });
 			}}
-			onIncidents={() => navigate({ to: "/run/incidents" })}
 		/>
 	);
 };

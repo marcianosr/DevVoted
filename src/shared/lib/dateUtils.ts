@@ -53,8 +53,8 @@ export const formatCompactDuration = (ms: number): string => {
  * Game-copy duration: "9s" under a minute, "1m45" past it. Hand-rolled on
  * purpose: Intl.DurationFormat's closest style is "1m 45s" and Temporal is
  * still Stage 3 (Firefox-only without a polyfill) — the exact compact copy is
- * a design choice, not a formatting gap. Floors at "1s": a standout can never
- * read "0s".
+ * a design choice, not a formatting gap. Floors at "1s": a duration on screen
+ * can never read "0s".
  */
 export const formatDurationMs = (ms: number): string => {
 	const seconds = Math.max(1, Math.round(ms / 1000));

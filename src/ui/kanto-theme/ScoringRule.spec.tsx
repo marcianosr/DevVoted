@@ -78,12 +78,19 @@ describe("ScoringRule", () => {
 		expect(part).toHaveAttribute("data-screen-theme", "saffron");
 	});
 
-	it("says these figures come before the build, not after it", () => {
+	it("names itself for the panel it explains", () => {
 		render(<ScoringRule />);
 
-		expect(
-			screen.getByText("before the build multiplies it")
-		).toBeInTheDocument();
+		expect(screen.getByText("Score info")).toBeInTheDocument();
+	});
+
+	it("stacks each case into a column until there is room for a row", () => {
+		const { container } = render(<ScoringRule />);
+
+		const row = screen.getByText("single answer").parentElement?.parentElement;
+
+		expect(row).toHaveClass("flex-col", "sm:flex-row");
+		expect(container.querySelector(".ml-auto")).toBeNull();
 	});
 
 	it("nests nothing but spans, so it can sit inside a tooltip", () => {

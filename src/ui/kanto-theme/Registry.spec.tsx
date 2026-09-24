@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import {
 	createKantoRegistryProps,
 	kantoRegistryOffers,
+	kantoUpgradeOffer,
 } from "~/test/kantoPoll.factory";
 
 import { Registry } from "./Registry.ui";
@@ -85,6 +86,34 @@ describe("Registry", () => {
 		expect(
 			screen.getByRole("button", { name: "Upgrade .ts to v3 \u00b7 32 KB" })
 		).toBeInTheDocument();
+	});
+
+	it("asks its parent to open the upgrade panel the press belongs to", async () => {
+		const onToggleUpgrades = vi.fn();
+		render(<Registry {...props} onToggleUpgrades={onToggleUpgrades} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade \.ts to v3/ })
+		);
+
+		expect(onToggleUpgrades).toHaveBeenCalledWith(".ts");
+	});
+
+	it("reaches the Buy press once the upgrade panel is open", async () => {
+		const onBuy = vi.fn();
+		render(
+			<Registry
+				{...props}
+				offers={[kantoUpgradeOffer(onBuy)]}
+				openUpgrades=".ts"
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Buy v3 \u00b7 32 KB" })
+		);
+
+		expect(onBuy).toHaveBeenCalledOnce();
 	});
 
 	it("states the odds the roll landed on beside the version, at rest", () => {

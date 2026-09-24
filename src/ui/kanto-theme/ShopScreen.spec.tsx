@@ -45,7 +45,9 @@ describe("ShopScreen", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(
-			screen.getByText("7 of 8 weight · 1 free before the bill becomes 64 KB")
+			sentence(
+				"5 configs · 7 of 8 weight · 1 free before the bill becomes 64 KB"
+			)
 		).toBeInTheDocument();
 	});
 
@@ -111,12 +113,11 @@ describe("ShopScreen", () => {
 		expect(container.firstElementChild).not.toHaveClass("rounded-3xl");
 	});
 
-	it("heads the build with what it holds against the room it rents", () => {
+	it("states the room below the head rather than inside it, and only once", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(headOf("Build")).toHaveTextContent(
-			"5 configs · 7 of 8 weight · 1 free"
-		);
+		expect(headOf("Build")).not.toHaveTextContent("7 of 8 weight");
+		expect(screen.getAllByText("7 of 8 weight")).toHaveLength(1);
 	});
 
 	it("quotes the bill once, in the Build panel that now owns it (ADR-098)", () => {

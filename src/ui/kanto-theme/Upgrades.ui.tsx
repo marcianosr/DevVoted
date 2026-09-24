@@ -29,6 +29,7 @@ const BUY_LABEL = "Buy";
 
 const GAIN: KantoColor = "viridian";
 const HINT_GAIN: KantoColor = "pewter";
+const REFUSAL: KantoColor = "cinnabar";
 
 export type UpgradeRung = {
 	version: number;
@@ -44,6 +45,8 @@ export type UpgradesProps = {
 	description: string;
 	rungs: readonly UpgradeRung[];
 	toMax?: { version: number; price: string };
+	/** Why the offered rung will not go through, in the player's own terms. */
+	refusal?: string;
 	onBuy?: (version: number) => void;
 };
 
@@ -121,6 +124,7 @@ export const Upgrades = ({
 	description,
 	rungs,
 	toMax,
+	refusal,
 	onBuy,
 }: UpgradesProps) => {
 	const held = heldRungOf(rungs);
@@ -153,6 +157,12 @@ export const Upgrades = ({
 						</>
 					)}
 				</div>
+
+				{refusal === undefined ? null : (
+					<span data-screen-theme={REFUSAL}>
+						<Typography variant="hint">{refusal}</Typography>
+					</span>
+				)}
 
 				{toMax === undefined ? null : (
 					<>

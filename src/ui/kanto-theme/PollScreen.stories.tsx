@@ -27,7 +27,7 @@ import { PollScreen } from "./PollScreen.ui";
 import { REDACTED } from "./Redaction.ui";
 import type { QuestionOption } from "./Question.ui";
 
-const SUBMIT_LABEL = "Submit answer";
+const LOCK_IN = "Lock in";
 const NEXT_LABEL = "Next poll";
 const ANSWERED_HELD = 62;
 const QUIET: FigureTone = "quiet";
@@ -233,7 +233,12 @@ export const MultipleAnswers: Story = {
 			pickedIds: ["option-1", "option-2"],
 		}),
 		wrongCost: undefined,
-		footer: { action: { label: SUBMIT_LABEL, onPress: noop } },
+		footer: undefined,
+		commit: {
+			label: `${LOCK_IN} 2 answers`,
+			note: "2 picked",
+			onPress: noop,
+		},
 	},
 };
 
@@ -246,10 +251,8 @@ export const NothingPicked: Story = {
 			pickedIds: [],
 		}),
 		wrongCost: undefined,
-		footer: {
-			action: { label: SUBMIT_LABEL },
-			refusal: "pick an answer first",
-		},
+		footer: undefined,
+		commit: { label: LOCK_IN, note: "pick every answer that fits" },
 	},
 };
 
@@ -328,7 +331,8 @@ export const Answered: Story = {
 		hint: "Partial<T> and Maybe<T> were the key; Optional<T> is not a built-in.",
 		footer: {
 			action: { label: NEXT_LABEL, icon: "gate", onPress: noop },
-			note: "Enter continues",
+			note: "Or click ENTER",
+			noteAt: "row",
 		},
 	},
 };

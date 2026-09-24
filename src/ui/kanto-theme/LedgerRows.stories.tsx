@@ -40,8 +40,8 @@ const ANSWERS = [
 
 const PAYOUTS = [
 	{
-		label: "gate cleared",
-		tags: [{ label: "x6" }],
+		label: "Gate cleared",
+		notes: ["5 of 5 correct", "streak ×1.5"],
 		figures: [{ label: "+192 KB", color: "viridian" as const }],
 	},
 	{

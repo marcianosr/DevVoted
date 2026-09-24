@@ -40,7 +40,6 @@ export const KNOWN_ROUTE_IDS = [
 	"/_authed/run/review",
 	"/_authed/run/shop",
 	"/_authed/run_/community",
-	"/_authed/run_/incidents",
 	"/_authed/runs/$runId",
 	"/_authed/polls/",
 	"/_authed/run/",

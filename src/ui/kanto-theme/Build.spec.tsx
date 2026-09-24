@@ -197,6 +197,51 @@ describe("Build", () => {
 		expect(onToggleInfo).toHaveBeenCalledWith("Cache");
 	});
 
+	const UPGRADABLE = [
+		{
+			name: "Cache",
+			badges: [],
+			upgrades: {
+				name: "Cache",
+				description: "Holds the last answer.",
+				rungs: [
+					{ version: 1, effect: "×1.5", state: "owned", held: true },
+					{ version: 2, effect: "×1.75", state: "offered", price: "64 KB" },
+				],
+			},
+		},
+	] satisfies ConfigChipProps[];
+
+	it("asks its parent to open an installed config's upgrade panel", async () => {
+		const onToggleUpgrades = vi.fn();
+		render(<Build configs={UPGRADABLE} onToggleUpgrades={onToggleUpgrades} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade Cache to v2/ })
+		);
+
+		expect(onToggleUpgrades).toHaveBeenCalledWith("Cache");
+	});
+
+	it("reaches the Buy press once an installed config's panel is open", async () => {
+		const onBuy = vi.fn();
+		render(
+			<Build
+				configs={UPGRADABLE.map((config) => ({
+					...config,
+					upgrades: { ...config.upgrades, onBuy },
+				}))}
+				openUpgrades="Cache"
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Buy v2 \u00b7 64 KB" })
+		);
+
+		expect(onBuy).toHaveBeenCalledWith(2);
+	});
+
 	it("hands a locked config no panel to open", () => {
 		render(<Build configs={[{ locked: true }]} />);
 

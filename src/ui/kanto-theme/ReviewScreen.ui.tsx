@@ -4,9 +4,8 @@ import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
-import { Panel } from "./Panel.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 import type { VerdictOutcome } from "./Verdict.ui";
@@ -150,10 +149,6 @@ export const ReviewScreen = ({
 			))}
 		</div>
 
-		<Panel>
-			<Panel.Body>
-				<ScreenFooter {...footer} rule={false} />
-			</Panel.Body>
-		</Panel>
+		<ScreenActions {...footer} />
 	</Screen>
 );

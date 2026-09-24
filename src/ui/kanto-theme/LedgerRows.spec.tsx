@@ -88,6 +88,25 @@ describe("LedgerRows", () => {
 		expect(screen.queryByText("FAIL")).not.toBeInTheDocument();
 	});
 
+	it("stacks notes under the label, one list item each", () => {
+		render(
+			<LedgerRows
+				rows={[
+					{
+						label: "Gate cleared",
+						notes: ["5 of 5 correct", "streak ×1.5"],
+					},
+				]}
+			/>
+		);
+
+		const notes = screen.getAllByRole("listitem");
+
+		expect(notes).toHaveLength(2);
+		expect(notes[0]).toHaveTextContent("5 of 5 correct");
+		expect(notes[1]).toHaveTextContent("streak ×1.5");
+	});
+
 	it("renders one row per entry, in the order the gate asked them", () => {
 		render(
 			<LedgerRows

@@ -188,16 +188,7 @@ describe("rivals' audits and the attack in hand (ADR-099)", () => {
 		expect(onFire).toHaveBeenCalledWith(2, "not-found");
 	});
 
-	it("opens the day's incident log from the footer aside", async () => {
-		const onIncidents = vi.fn();
-		render(<PrepView {...props} onIncidents={onIncidents} />);
-
-		await userEvent.click(screen.getByRole("button", { name: /Incidents/ }));
-
-		expect(onIncidents).toHaveBeenCalled();
-	});
-
-	it("offers no incident aside without a handler for it", () => {
+	it("sends nobody to an incident log of its own: the board carries it now", () => {
 		render(<PrepView {...props} />);
 
 		expect(

@@ -5,20 +5,27 @@ import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
 
 const CLEAR: Objective = {
-	name: "Clear the gate",
-	detail: "gate 1 opens tomorrow",
+	statement: { lead: "Finish at", figure: "OK", color: "saffron" },
+	explain: "to clear the gate",
 	met: true,
-	requirements: [
-		{ lead: "reach", figure: "OK", color: "saffron" },
-		{ lead: "answer", figure: "2 of 5" },
-	],
 };
 
 const SWATCH: Objective = {
-	name: "Earn the Pallet swatch",
-	detail: "kept for good",
+	statement: { lead: "Finish at", figure: "PERFECT", color: "cerulean" },
+	explain: "to earn the Pallet swatch",
 	met: false,
-	requirements: [{ lead: "answer", figure: "5 of 5" }],
+	figures: [{ label: "5 of 5" }],
+};
+
+const AUDIT: Objective = {
+	statement: {
+		lead: "Finish at",
+		figure: "HEALTHY",
+		color: "viridian",
+		trail: "or better",
+	},
+	explain: "to arm an audit",
+	met: false,
 };
 
 const meta: Meta<typeof Objectives> = {
@@ -32,7 +39,15 @@ const meta: Meta<typeof Objectives> = {
 			</Panel>
 		</Screen>
 	),
-	args: { objectives: [CLEAR, SWATCH] },
+	args: {
+		requiredLead: "Main objective",
+		required: {
+			...CLEAR,
+			statement: { ...CLEAR.statement, trail: "or better" },
+		},
+		optionalLead: "Extra objectives",
+		optional: [SWATCH, AUDIT],
+	},
 };
 export default meta;
 
@@ -41,25 +56,22 @@ type Story = StoryObj<typeof Objectives>;
 export const OnTheCalibrationGate: Story = {};
 
 export const NothingInHandYet: Story = {
-	args: { objectives: [{ ...CLEAR, met: false }, SWATCH] },
+	args: { required: { ...CLEAR, met: false } },
 };
 
-export const BothWon: Story = {
-	args: { objectives: [CLEAR, { ...SWATCH, met: true }] },
-};
-
-export const AtTheSummit: Story = {
-	render: (args) => (
-		<Screen theme="indigo" width="narrow">
-			<Panel>
-				<Objectives {...args} />
-			</Panel>
-		</Screen>
-	),
+export const EveryPrizeWon: Story = {
 	args: {
-		objectives: [
-			{ ...CLEAR, detail: "the climb ends here", met: false },
-			{ ...SWATCH, name: "Earn the Champion swatch" },
+		optional: [
+			{ ...SWATCH, met: true },
+			{ ...AUDIT, met: true },
 		],
 	},
+};
+
+export const AnExtraOutOfReach: Story = {
+	args: { optional: [{ ...SWATCH, lost: true }, AUDIT] },
+};
+
+export const NothingOnTheSide: Story = {
+	args: { optional: [] },
 };

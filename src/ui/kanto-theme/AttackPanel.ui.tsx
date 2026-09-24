@@ -3,6 +3,7 @@ import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
+import { Figures } from "./Figures.ui";
 import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
@@ -90,7 +91,7 @@ const Rival = ({ name, gate, build, payloads }: AttackRival) => (
 
 /**
  * The one moment a player acts against another: the rivals an armed attack
- * may be aimed at, one press per payload. Its empty states teach how an attack
+ * may be aimed at, one press per payload. Its empty states teach how an audit
  * is earned, so the panel is always drawn and never withheld.
  */
 export const AttackPanel = ({
@@ -108,7 +109,9 @@ export const AttackPanel = ({
 
 		{rivals.length === 0 ? (
 			<Panel.Body>
-				<Typography variant="hint">{empty}</Typography>
+				<Typography variant="hint">
+					<Figures text={empty ?? ""} />
+				</Typography>
 			</Panel.Body>
 		) : (
 			<Panel.Rows>
@@ -120,7 +123,9 @@ export const AttackPanel = ({
 
 		{note === undefined ? null : (
 			<Panel.Footer>
-				<Typography variant="hint">{note}</Typography>
+				<Typography variant="hint">
+					<Figures text={note} />
+				</Typography>
 			</Panel.Footer>
 		)}
 	</Panel>

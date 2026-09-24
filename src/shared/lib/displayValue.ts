@@ -8,7 +8,7 @@ import { formatKb } from "~/shared/lib/storage";
  * produces it.
  *
  * Each context composes its own union from these plus whatever it alone needs
- * (`GateRewardValue` adds check progress, `StandoutValue` adds config counts).
+ * (`GateRewardValue` adds check progress).
  * A single shared union would force every formatter to handle every other
  * context's variants. What is shared is the *formatting*, which is where the
  * two known inconsistencies came from: the same percentage rendered signed in

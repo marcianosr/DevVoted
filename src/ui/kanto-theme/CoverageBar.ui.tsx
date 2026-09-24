@@ -3,6 +3,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import { clsx } from "clsx";
 
+import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
@@ -108,8 +109,18 @@ const bandOf = (
 };
 
 /** The visible twin of the aria reading: what a panel header says out loud. */
-export const coverageReadingOf = (ladder: CoverageLadder & { held: number }) =>
-	`${toTenth(ladder.held)}${PERCENT} ${COVERAGE_BAND_WORD[coverageBandOf(ladder.held, ladder)]}`;
+export const CoverageReading = (ladder: CoverageLadder & { held: number }) => {
+	const band = coverageBandOf(ladder.held, ladder);
+
+	return (
+		<>
+			<Badge>{`${toTenth(ladder.held)}${PERCENT}`}</Badge>
+			<Badge color={COVERAGE_BAND_COLOR[band]}>
+				{COVERAGE_BAND_WORD[band]}
+			</Badge>
+		</>
+	);
+};
 
 export const coverageBandOf = (
 	held: number,

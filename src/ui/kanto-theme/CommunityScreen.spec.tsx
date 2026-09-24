@@ -5,7 +5,7 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	COMMUNITY_CLIMB_TITLE,
-	COMMUNITY_DEX_LABEL,
+	COMMUNITY_LEADERS_TITLE,
 	COMMUNITY_PREP_LABEL,
 	COMMUNITY_SHOP_LABEL,
 	kantoCommunity,
@@ -17,12 +17,7 @@ import { CommunityScreen } from "./CommunityScreen.ui";
 
 const props = kantoCommunity();
 
-const STANDOUT_TITLES = [
-	"Most active",
-	"Most knowledgeable",
-	"Fastest",
-	"Biggest bank",
-];
+const SEATED_CATEGORIES = ["JavaScript", "CSS", "TypeScript", "Git"];
 const CLIMBER_NAMED = /\w/;
 
 const sectionOf = (title: string): HTMLElement => {
@@ -34,6 +29,15 @@ const sectionOf = (title: string): HTMLElement => {
 };
 
 describe("CommunityScreen", () => {
+	it("carries the day's incidents, so no press stands between them and the board", () => {
+		render(<CommunityScreen {...kantoCommunity()} />);
+
+		expect(
+			screen.getByRole("heading", { name: "Incidents" })
+		).toBeInTheDocument();
+		expect(screen.getByText(/filed today/)).toBeInTheDocument();
+	});
+
 	it("wears the colour of the gate the viewer just cleared", () => {
 		const { container } = render(<CommunityScreen {...props} />);
 
@@ -101,28 +105,38 @@ describe("CommunityScreen", () => {
 		expect(screen.getByText(COPY.mapPlaceholder)).toBeInTheDocument();
 	});
 
-	it("lines one standout up per climber, never claiming a share of climbers ever", () => {
+	it("seats one row per category, whether or not anybody holds it", () => {
 		render(<CommunityScreen {...props} />);
-		const standouts = sectionOf("Standing out");
+		const leaders = sectionOf(COMMUNITY_LEADERS_TITLE);
 
-		expect(within(standouts).getAllByTitle(CLIMBER_NAMED)).toHaveLength(4);
-		expect(screen.queryByText(/of climbers, ever/)).toBeNull();
+		expect(within(leaders).getAllByTitle(CLIMBER_NAMED)).toHaveLength(9);
+		expect(within(leaders).getAllByText("seat open")).toHaveLength(3);
 	});
 
-	it("names the standouts the roster actually awards", () => {
+	it("names the category every seat is held for", () => {
 		render(<CommunityScreen {...props} />);
-		const standouts = sectionOf("Standing out");
+		const leaders = sectionOf(COMMUNITY_LEADERS_TITLE);
 
-		for (const award of STANDOUT_TITLES) {
-			expect(within(standouts).getByText(award)).toBeInTheDocument();
+		for (const category of SEATED_CATEGORIES) {
+			expect(within(leaders).getByText(category)).toBeInTheDocument();
 		}
 	});
 
-	it("opens the Dex from the standouts board", () => {
+	it("states how a seat moves, under the seats", () => {
 		render(<CommunityScreen {...props} />);
 
 		expect(
-			screen.getByRole("button", { name: COMMUNITY_DEX_LABEL })
+			within(sectionOf(COMMUNITY_LEADERS_TITLE)).getByText(
+				/A seat changes hands when somebody beats it/
+			)
+		).toBeInTheDocument();
+	});
+
+	it("counts the seats that are held", () => {
+		render(<CommunityScreen {...props} />);
+
+		expect(
+			within(sectionOf(COMMUNITY_LEADERS_TITLE)).getByText("9 of 12 seated")
 		).toBeInTheDocument();
 	});
 
@@ -170,11 +184,21 @@ describe("CommunityScreen, before the day's polls", () => {
 });
 
 describe("CommunityScreen, a first climb", () => {
-	it("draws no standout rows when nobody has been ranked", () => {
+	it("still draws twelve seats when nobody leads a category yet", () => {
+		render(<CommunityScreen {...kantoCommunityFirstClimb()} />);
+		const leaders = sectionOf(COMMUNITY_LEADERS_TITLE);
+
+		expect(within(leaders).queryAllByTitle(CLIMBER_NAMED)).toHaveLength(0);
+		expect(within(leaders).getAllByText("seat open")).toHaveLength(12);
+	});
+
+	it("says what claims an open seat", () => {
 		render(<CommunityScreen {...kantoCommunityFirstClimb()} />);
 
 		expect(
-			within(sectionOf("Standing out")).queryAllByTitle(CLIMBER_NAMED)
-		).toHaveLength(0);
+			within(sectionOf(COMMUNITY_LEADERS_TITLE)).getAllByText(
+				"3 in a row claims it"
+			)
+		).toHaveLength(12);
 	});
 });

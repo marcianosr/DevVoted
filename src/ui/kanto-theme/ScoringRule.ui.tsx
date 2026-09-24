@@ -2,14 +2,17 @@ import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
-const HEAD =
-	"flex w-full items-baseline gap-2 border-b border-theme-faint pb-2";
-const TITLE = "min-w-0 flex-1";
-const META = "ml-auto shrink-0";
-const ROW = "flex w-full flex-wrap items-center gap-x-3 gap-y-1";
-const CASE = "w-28 shrink-0";
-const LADDER = "flex shrink-0 items-center gap-1";
-const NOTE = "ml-auto shrink-0";
+const HEAD = "flex w-full border-b border-theme-faint pb-2";
+/**
+ * One column until there is room for a row. The panel is only 288px wide on a
+ * phone, where a case, its ladder and its note side by side left each of them
+ * one word per line.
+ */
+const ROW =
+	"flex w-full flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3";
+const CASE = "shrink-0 sm:w-28";
+const LADDER = "flex flex-wrap items-center gap-1";
+const NOTE = "shrink-0 sm:ml-auto";
 
 const MISS_COLOR: KantoColor = "cinnabar";
 const PART_COLOR: KantoColor = "saffron";
@@ -20,8 +23,7 @@ const SINGLE_PAYS = "1";
 const MULTIPLE_PAYS = "2";
 const PARTIAL_PAYS = ["0.5", "1", "1.5"] as const;
 
-const TITLE_WORDS = "what a poll pays";
-const META_WORDS = "before the build multiplies it";
+const TITLE_WORDS = "Score info";
 
 type Rung = { pays: string; color: KantoColor };
 
@@ -53,16 +55,9 @@ export const SCORING_RULE_LABEL = "How a correct answer is counted";
 export const ScoringRule = () => (
 	<>
 		<span className={HEAD}>
-			<span className={TITLE}>
-				<Typography variant="label" as="span">
-					{TITLE_WORDS}
-				</Typography>
-			</span>
-			<span className={META}>
-				<Typography variant="hint" as="span">
-					{META_WORDS}
-				</Typography>
-			</span>
+			<Typography variant="label" as="span">
+				{TITLE_WORDS}
+			</Typography>
 		</span>
 
 		{CASES.map((entry) => (

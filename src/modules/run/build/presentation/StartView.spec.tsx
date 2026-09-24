@@ -5,7 +5,6 @@ import userEvent from "@testing-library/user-event";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	NEW_RUN_BUILD_NOTE,
-	NEW_RUN_REGISTRY_NOTE,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { createMockRunView } from "~/test/runView.factory";
 
@@ -49,7 +48,6 @@ describe("StartView", () => {
 		render(<StartView view={view} {...handlers} />);
 
 		expect(screen.getByText("Registry")).toBeInTheDocument();
-		expect(screen.getByText(NEW_RUN_REGISTRY_NOTE)).toBeInTheDocument();
 	});
 
 	it("stands an installed config in the build as well as the registry", () => {

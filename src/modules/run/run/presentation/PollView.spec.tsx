@@ -102,41 +102,41 @@ describe("PollView", () => {
 		const onSubmit = vi.fn();
 		const { rerender } = render(<PollView {...props} onSubmit={onSubmit} />);
 
-		expect(
-			screen.getByRole("button", { name: /Submit answer/ })
-		).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Lock in" })).toBeDisabled();
+		expect(screen.getByText("pick an answer first")).toBeInTheDocument();
 
 		rerender(
 			<PollView {...props} selectedOptionIds={["a"]} onSubmit={onSubmit} />
 		);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Submit answer/ })
+			screen.getByRole("button", { name: "Lock in 1 answer" })
 		);
 		expect(onSubmit).toHaveBeenCalled();
 	});
 
-	it("submits a multi-answer poll only once something is picked", async () => {
+	it("asks a select-all poll for every answer that fits, not for one", async () => {
 		const onSubmit = vi.fn();
 		const { rerender } = render(
 			<PollView {...props} view={multipleView} onSubmit={onSubmit} />
 		);
 
-		expect(
-			screen.getByRole("button", { name: /Submit answer/ })
-		).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Lock in" })).toBeDisabled();
+		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
 
 		rerender(
 			<PollView
 				{...props}
 				view={multipleView}
-				selectedOptionIds={["a"]}
+				selectedOptionIds={["a", "b"]}
 				onSubmit={onSubmit}
 			/>
 		);
 
+		expect(screen.getByText("2 picked")).toBeInTheDocument();
+
 		await userEvent.click(
-			screen.getByRole("button", { name: /Submit answer/ })
+			screen.getByRole("button", { name: "Lock in 2 answers" })
 		);
 		expect(onSubmit).toHaveBeenCalled();
 	});

@@ -54,9 +54,7 @@ it before proposing one again.**
 | [061](061-coverage-reads-as-a-gauge-beside-the-answers.md) | Coverage reads as a gauge beside the answers | Accepted |
 | [062](062-the-starting-hand-is-dealt-under-guarantees.md) | The starting hand is dealt under guarantees | Accepted — amended by 064 |
 | [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted |
-| [065](065-standouts-are-six-climb-shaped-awards.md) | Standouts are six climb-shaped awards | Accepted — reversed by 067 |
 | [066](066-every-figure-wears-a-badge.md) | Every figure wears a badge | Accepted |
-| [067](067-standouts-are-four-plain-standings.md) | Standouts are four plain standings | Accepted — reverses 065; model not yet rewritten |
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
 | [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
 | [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
@@ -87,9 +85,10 @@ it before proposing one again.**
 | [097](097-a-rolled-upgrade-climbs-on-a-coin-flip.md) | **A rolled upgrade climbs on a coin flip** | Accepted — amends 053 D4; one rung up then 1-in-2 per further rung to the cap; odds read as `1 in N rolls`; the registry offer sells through `draft` |
 | [098](098-build-space-scales-with-the-build.md) | **Build space scales with the build, and the install press states the bill** | Accepted — supersedes 082 D1, D2, D3 and D5 and restates its D4; the rung is derived from `billableSlotsOf`, never picked; crossing one arms the install press; ladder and prices unchanged |
 | [099](099-audits-are-fired-by-rivals.md) | **Audits are fired by rivals, and the gate's count is its capacity** | Accepted — supersedes 056 D1, D2, D4 and 038 D2; no floor, no authored gate, one run-long attack per HEALTHY-or-better clear, lock-time capacity is the law |
-| [100](100-a-category-has-a-living-record.md) | **A category has a living record**, and holding it makes you its maintainer | Accepted — uses ADR-093's `PollView` seam; first slice of DVTD-vje6's per-category records |
+| [100](100-a-category-has-a-living-record.md) | **A category has a living record** | Accepted — uses ADR-093's `PollView` seam; D2 and D4 collapsed by 103, the rest stands |
 | [101](101-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
 | [102](102-copy-has-one-owner.md) | **Copy has one owner** — run state picks it or the view states it | Accepted — generalises 040 D2; `COPY` object per `.ui.tsx`, shared words in `shared/lib/copy.ts`, register is not drift |
+| [103](103-the-board-seats-twelve-category-leaders.md) | **The community board seats twelve category leaders** | Accepted — retires 065 and 067; collapses 100 D2 and D4; categories stay colourless (020 D1) |
 | [104](104-visits-are-counted-without-a-banner.md) | **Visits are counted without a banner** — a date-keyed hash, no device storage | Accepted |
 
 ## Retired
@@ -123,6 +122,8 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 045 | Spots come from gates, KB rents more on top | Retired — 046 owns it |
 | 071 | The band a gate closes in decides what the gate does | Retired — 076 owns it; OK clears and the peel came back |
 | 063 | Planning Poker pays on an exact match | Retired — 085 owns it |
+| 065 | Standouts are six climb-shaped awards | Retired — 103 replaced the section with category leaders |
+| 067 | Standouts are four plain standings | Retired — 103 replaced the section; the four were never built |
 
 ## Conventions
 

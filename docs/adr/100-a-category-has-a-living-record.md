@@ -1,8 +1,10 @@
-# ADR-100: A category has a living record, and holding it makes you its maintainer
+# ADR-100: A category has a living record
 
 ## Status
 
-Accepted — 2026-09-22 (Marciano, DVTD-pb7v). Uses the seam
+Accepted — 2026-09-22 (Marciano, DVTD-pb7v). Decisions 2 and 4 collapsed by
+[ADR-103](103-the-board-seats-twelve-category-leaders.md); 1, 3, 5 and 6 stand
+and are why the read is unchanged. Uses the seam
 [ADR-093](093-a-poll-states-how-the-room-did.md) opened when it put read data on
 `PollView` and said so: *"`stats` is optional, and that is the seam."* First
 slice of the per-category living records sketched in `docs/old-beans/DVTD-vje6`.
@@ -38,16 +40,8 @@ that says so.
 
 ## Decision 2: your own figure is your personal best, never a live streak
 
-The row states `your best 4`, not `you are on 4`.
-
-A live streak moves under the player while they read the question, and it moves
-*down* on the answer they are about to give. The screen would then be showing a
-number whose most likely next value is zero, right where the player is deciding
-how much to risk — a distraction dressed as information. A personal best is a
-target: it is what you have to beat, it cannot be lost by answering, and it is
-directly comparable to the record beside it because it is measured the same way.
-
-The cost is that the figure is inert for most of a run. That is the point.
+Dead — [ADR-103](103-the-board-seats-twelve-category-leaders.md) Decision 4
+drops `your best` from the row. No live figure replaces it.
 
 ## Decision 3: a partial neither extends nor breaks a run
 
@@ -62,15 +56,10 @@ rules is worse than no figure.
 
 ## Decision 4: the title is derived from the category, never stored
 
-Holding a category's record makes you its **maintainer**: `JavaScript
-Maintainer`, `Git Maintainer`, one rule for all twelve. No new column, no award
-table, and the title changes hands the instant the record does.
-
-DVTD-vje6's named award registry (`Prototype Pioneer`, `Selector Sorcerer`) was
-the alternative. It was not taken here because those awards are *earned and
-kept* — a permanent profile title with a threshold — and this row is the
-opposite thing: a standing that someone else can take from you tonight. Both can
-exist; conflating them would make a living record read as a permanent one.
+Dead — [ADR-103](103-the-board-seats-twelve-category-leaders.md) Decision 3
+drops the title. DVTD-vje6's named award registry stays unbuilt and stays a
+different thing: those are earned and kept, this is a standing somebody can take
+from you tonight.
 
 ## Decision 5: below a floor, the record is unclaimed
 

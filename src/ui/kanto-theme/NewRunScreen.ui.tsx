@@ -4,7 +4,7 @@ import { Header, type HeaderProps } from "./Header.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
@@ -17,7 +17,6 @@ export type NewRunScreenProps = {
 	registry: RegistryProps;
 	footer: ScreenFooterProps;
 	buildNote?: string;
-	registryNote?: string;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
@@ -28,7 +27,6 @@ export const NewRunScreen = ({
 	registry,
 	footer,
 	buildNote,
-	registryNote,
 	width,
 	ground = "bare",
 }: NewRunScreenProps) => {
@@ -74,20 +72,11 @@ export const NewRunScreen = ({
 						<Panel.Body>
 							<Registry {...registry} heading={false} />
 						</Panel.Body>
-						{registryNote === undefined ? null : (
-							<Panel.Footer>
-								<Typography variant="hint">{registryNote}</Typography>
-							</Panel.Footer>
-						)}
 					</Panel>
 				</div>
 			</div>
 
-			<Panel>
-				<Panel.Body>
-					<ScreenFooter {...footer} rule={false} />
-				</Panel.Body>
-			</Panel>
+			<ScreenActions {...footer} />
 		</Screen>
 	);
 };

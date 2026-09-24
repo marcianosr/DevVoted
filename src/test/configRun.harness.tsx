@@ -254,6 +254,7 @@ export const asShop = (state: RunState) => (
 		view={toRunView(state)}
 		onDraft={noop}
 		onSell={noop}
+		onUpgrade={noop}
 		onRebuild={noop}
 		onExtend={noop}
 		onPlantPin={noop}

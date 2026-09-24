@@ -75,7 +75,8 @@ boundary, so this table is the map an architecture review reads first.
 | Config visuals | `src/ui/kanto-theme` | `ConfigChip` and friends; the module's own `presentation/` folder is gone with old-theme |
 | Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount`, and the rolled upgrade's climb `upgradeOfferFor` / `CLIMB_ONE_IN` / `versionOddsFor` (`draft.model.ts`) |
 | Shop screen | `shop/presentation` | `RunShop`, `ShopView`; the Registry is a panel on it, and on New run |
-| Standouts / Awards | `community/domain` | `standoutsFor` (`standouts.model.ts`) |
+| Category leader / Seat | `run/domain` | `CategoryLeader`, `CategorySeat`, `seatsFor`, `MIN_LEADER_STREAK` (`categoryLeader.model.ts`); one seat per category, read by the poll screen and by the community board. The row both surfaces draw is `categoryLeaderRowFor` (`run/application`) |
+| Voter | `community/domain` | `CommunityVoter` (`voter.model.ts`); a player as the board draws them |
 | Climb map | `community/domain` | `ClimbMarker`, `trackPosition` (`climbMap.model.ts`); the shared per-day position track, read only by the community board |
 | Community board | `community/application` | `getRunCommunityService` and its view types (`community.service.ts`), `community.serverfn.ts` |
 | Community reads | `community/infrastructure` | `community.repository.ts`, `climbers.repository.ts` |
@@ -83,7 +84,7 @@ boundary, so this table is the map an architecture review reads first.
 | Incident / Attack | `incident/domain` | `RivalCandidate`, `AttackOffer`, `QueuedIncident`, `eligibleRivals`, `offersFor`, `lockIncidents` (`incident.model.ts`); the run-side vocabulary `Attack`, `LastClose`, `LockedIncident` lives on `RunState` (`run.model.ts`) with `armAttack` / `fireAudit` in `attack.model.ts`, so nothing in `run/domain` imports the aggregate |
 | Incident settlement | `incident/application` | `settleIncidents` (`incidentSettlement.service.ts`), the one writer of a gate's audits, handed to `applyActionToRun` as its `settle` seam; `attackTargets.service.ts`, `fireAudit.service.ts`, `incidentsFeed.service.ts`, `incident.serverfn.ts`, `incident.viewmodel.ts`, the three hooks |
 | Incident queue | `incident/infrastructure` | `incident.repository.ts` owns every statement against `audit_incidents` |
-| Incidents screen | `incident/presentation` | `RunIncidents`; the kit's `AttackPanel` and `IncidentsScreen` live in `src/ui/kanto-theme` |
+| Incidents feed | `src/ui/kanto-theme` | `AttackPanel` (prep) and `IncidentsPanel`, which the community board composes. The aggregate has no `presentation/` layer: the feed has no screen of its own |
 | Poll answering visuals | `poll/presentation` | `PollMarkdown`, `PollQuestionHeading`; the rest moved into the kanto `PollScreen` |
 
 A screen belongs to the aggregate whose concept it is about, which is why
@@ -191,7 +192,7 @@ Retired **folder and file** names, per the ADR-002 rewrite of 2026-08-12:
 ## Naming rules
 
 - Name an aggregate after the concept, never after its layer or its shape.
-  `gate/`, not `gateUtils/`; `standouts.model.ts`, not `awardsHelper.ts`.
+  `gate/`, not `gateUtils/`; `categoryLeader.model.ts`, not `leaderHelper.ts`.
 - Reuse a term from this file or the wiki glossary before coining a new one. A
   new word needs an entry here in the same commit.
 - Where a file goes is not a judgement call: walk the decision tree in

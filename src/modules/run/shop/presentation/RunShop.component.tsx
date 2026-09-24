@@ -17,6 +17,7 @@ export const RunShop = () => {
 			view={view}
 			onDraft={(configId) => send({ type: "draft", configId })}
 			onSell={(configId) => send({ type: "sell", configId })}
+			onUpgrade={(configId) => send({ type: "upgrade", configId })}
 			onRebuild={() => send({ type: "rebuild-draft" })}
 			onExtend={() => send({ type: "extend-offers" })}
 			onPlantPin={() => send({ type: "plant-pin" })}

@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-import type { CategoryRecord } from "~/modules/run/run/domain/categoryRecord.model";
+import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
 import type { PollStats } from "~/modules/run/run/domain/pollStats.model";
 import type {
 	AnswerType,
@@ -31,13 +31,13 @@ export type PollView = {
 	 */
 	readonly stats?: PollStats;
 	/**
-	 * The category's living record, filled by the service alongside `stats` and
-	 * for the same reason: it is read, not derived, and it moves while the run
-	 * is open. Optional on the same seam — an audit that blinds the category
-	 * withholds the record with it, or the whole caption would name the topic
-	 * the audit just hid.
+	 * Who leads the category this poll belongs to, filled by the service
+	 * alongside `stats` and for the same reason: it is read, not derived, and it
+	 * moves while the run is open. Optional on the same seam — an audit that
+	 * blinds the category withholds the seat with it, or the row would name the
+	 * topic the audit just hid.
 	 */
-	readonly record?: CategoryRecord;
+	readonly categorySeat?: CategorySeat;
 };
 
 export const REDACTED_LABEL = "?????";

@@ -28,7 +28,7 @@ import {
 	findSessionRunByDate,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
-import { fetchCategoryRecord } from "~/modules/run/run/infrastructure/categoryRecord.repository";
+import { fetchCategoryLeader } from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import { fetchPollStats } from "~/modules/run/run/infrastructure/pollStats.repository";
 import { settleIncidents } from "~/modules/run/incident/application/incidentSettlement.service";
 import { endIncidentsForRun } from "~/modules/run/incident/infrastructure/incident.repository";
@@ -46,7 +46,7 @@ const unlocksDuring = (run: SessionRunRecord) =>
 
 /**
  * The poll on screen states how the room did on it and what this account did
- * last time (ADR-093), plus its category's living record (ADR-100). Attached
+ * last time (ADR-093), plus who leads its category (ADR-103). Attached
  * here rather than in `toRunView` because these are the parts of the view that
  * are read rather than derived — and because leaving them off is how a config
  * or an audit withholds them.
@@ -57,12 +57,12 @@ const withPollReads = async (
 ): Promise<RunView> => {
 	if (!view.poll) return view;
 
-	const [stats, record] = await Promise.all([
+	const [stats, categorySeat] = await Promise.all([
 		fetchPollStats(Number(view.poll.id), userId),
-		fetchCategoryRecord(view.poll.category, userId),
+		fetchCategoryLeader(view.poll.category, userId),
 	]);
 
-	return { ...view, poll: { ...view.poll, stats, record } };
+	return { ...view, poll: { ...view.poll, stats, categorySeat } };
 };
 
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {

@@ -11,7 +11,7 @@ export const runCommunityQueryKey = () =>
  * Today's community board. The mirror of `useTodaysRun`, and named the same way
  * on purpose: the key lives here rather than at the call site so `useRunActions`
  * has something to invalidate. Answering a poll moves the board — a new answer,
- * a new standout, a moved climb marker — and nothing used to tell it so.
+ * a claimed seat, a moved climb marker — and nothing used to tell it so.
  */
 export const useRunCommunity = () =>
 	useApiQuery<RunCommunityView>({
