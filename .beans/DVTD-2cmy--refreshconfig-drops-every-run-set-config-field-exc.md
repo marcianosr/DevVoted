@@ -1,13 +1,24 @@
 ---
 # DVTD-2cmy
-title: refreshConfig drops every run-set config field except level
+title: A config's run-set changes are wiped on the next action
 status: todo
 type: bug
 priority: normal
 created_at: 2026-09-15T14:04:12Z
-updated_at: 2026-09-15T14:04:12Z
+updated_at: 2026-09-24T12:49:26Z
 parent: DVTD-72d9
 ---
+
+**What:** Changes made to a config during a run survive the next action.
+
+**Why:** Everything but its version is rebuilt from the roster each time, so a fading config almost certainly never fades.
+
+## Done when
+- [ ] A decayed config still holds its decay after the next action
+- [ ] The other fields set during a run survive too
+- [ ] A spec per field: minified, arm, coverage multiplier
+
+## Notes
 
 `refreshConfig` in src/modules/run/run/domain/runSnapshot.model.ts:39 rebuilds each build config from the roster on every hydration and preserves only `level`:
 
@@ -28,7 +39,7 @@ NOT VERIFIED END TO END. Found while tracing hydration for DVTD-5cut (vendor-loc
 
 ## Todos
 
-- [ ] Reproduce: hydrate a snapshot holding a decayed Deprecated and assert the multiplier survives
-- [ ] Decide the fix: an allowlist of run-set fields, or invert to merge roster copy over the run instance
-- [ ] Check whether anything relies on the roster refresh resetting a field
-- [ ] Spec per field: minified, abArm, coverageMultiplier
+- Reproduce: hydrate a snapshot holding a decayed Deprecated and assert the multiplier survives
+- Decide the fix: an allowlist of run-set fields, or invert to merge roster copy over the run instance
+- Check whether anything relies on the roster refresh resetting a field
+- Spec per field: minified, abArm, coverageMultiplier

@@ -83,7 +83,7 @@ describe("ReviewScreen", () => {
 		)!;
 
 		expect(within(miss).getByText("CSS")).toBeInTheDocument();
-		expect(within(miss).getByText("-4.4")).toHaveAttribute(
+		expect(within(miss).getByText("-4.4%")).toHaveAttribute(
 			"data-screen-theme",
 			"cinnabar"
 		);
@@ -180,12 +180,12 @@ describe("ReviewScreen", () => {
 		expect(container.firstElementChild).not.toHaveClass("rounded-3xl");
 	});
 
-	it("closes on a panel of its own, rather than a rule across the page", () => {
+	it("closes on a panel of its own where there is room for one, never on a rule across the page", () => {
 		render(<ReviewScreen {...props} />);
 
 		const exit = screen
 			.getByRole("button", { name: "To the shop" })
-			.closest("section");
+			.closest("footer")?.parentElement;
 
 		expect(exit).toHaveClass("border-theme-faint");
 		expect(

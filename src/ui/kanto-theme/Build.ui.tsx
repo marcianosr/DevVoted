@@ -12,6 +12,7 @@ import {
 import { Lead, type LeadLine } from "./Lead.ui";
 import { SlotBox } from "./SlotBox.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
+import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 import { RECURRING_GLYPH, upkeepLabelOf } from "./upkeep";
 import {
@@ -25,6 +26,9 @@ import {
 
 const COPY = {
 	occupancyName: "build",
+	upkeepLabel: "What the build costs a gate",
+	upkeepHint:
+		"The build rents its space, and the rent is charged at every gate you clear. It stays free while the build fits inside its current rung; outgrow the rung and this is what each clear takes.",
 } as const;
 
 const BAND = "flex w-full flex-col gap-3";
@@ -153,10 +157,17 @@ export const buildSummaryOf = (props: BuildProps): string => {
 	);
 };
 
+/**
+ * The badge is the trigger: "free" states a price without ever saying what is
+ * being priced, and a rent nobody can see the terms of is the one figure on the
+ * screen a player cannot plan against.
+ */
 export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
-	<Badge color={perGateKb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR}>
-		{RECURRING_GLYPH} {upkeepLabelOf(perGateKb)}
-	</Badge>
+	<Tooltip bare align="end" label={COPY.upkeepLabel} hint={COPY.upkeepHint}>
+		<Badge color={perGateKb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR}>
+			{RECURRING_GLYPH} {upkeepLabelOf(perGateKb)}
+		</Badge>
+	</Tooltip>
 );
 
 /**

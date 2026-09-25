@@ -37,7 +37,9 @@ import type { GateHoldReason } from "~/modules/run/gate/domain/gate.model";
 import {
 	PIN_START_KB_PER_GATE,
 	SLICE_WINDOW,
+	storageCreditRate,
 } from "~/modules/run/run/domain/rules.model";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 export const addStorage = (current: number, income: number): number =>
 	Math.max(0, current + income);
@@ -405,3 +407,18 @@ export const roomToCapOf = (state: RunState): number =>
 
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";
+
+/**
+ * What the archive banks when this run ends. Engine storage is KB and the
+ * archive is bytes, and only the gates actually climbed count: a tag-rescued
+ * run banks nothing for the gates its checkpoint skipped (ADR-036).
+ */
+export const archiveCreditBytes = (state: RunState): number =>
+	Math.round(
+		state.storage *
+			STORAGE_UNITS.KB *
+			storageCreditRate(
+				state.status === "won" ? "victory" : "dead",
+				state.gatesCleared - (state.startedAtGate ?? 0)
+			)
+	);

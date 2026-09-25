@@ -1,13 +1,25 @@
 ---
 # DVTD-144r
-title: 'Brainstorm: showing how often a config is installed'
+title: Decide whether to show how often a config is installed
 status: draft
 type: feature
 priority: normal
 created_at: 2026-08-27T11:32:06Z
-updated_at: 2026-09-01T20:26:20Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-h175
 ---
+
+**What:** Decide which install figure to show, and where it belongs.
+
+**Why:** The same number is an encyclopedia entry in the Dex and a drafting AI in the shop.
+
+## Done when
+- [ ] Which number is decided: installed, picked, kept, or won with
+- [ ] Where it appears is decided
+- [ ] The minimum number of players before any figure shows is set, and enforced on the server
+- [ ] If the shop is ever to show it free, the decision that prices information down is written first
+
+## Notes
 
 Concept exploration, not a build order: what it would mean to show a config's install rate ("14% of climbers ran Moore's Law"), where it belongs, and what it costs the game.
 
@@ -59,11 +71,11 @@ A Configdex column, all-time, quorum-gated, retrospective. It answers "is this t
 
 ## Todos
 
-- [ ] Decide which number (install / pick / keep / depth) is the one worth showing first
-- [ ] Decide the homes: Configdex only, or Configdex plus summary
-- [ ] Spike the count off `run_states` JSON to see whether the figures are interesting enough to build a table for
-- [ ] Set the quorum floor and where it is enforced (server, not UI)
-- [ ] If the shop is ever to show it free, write the ADR that prices the information axis down on purpose
+- Decide which number (install / pick / keep / depth) is the one worth showing first
+- Decide the homes: Configdex only, or Configdex plus summary
+- Spike the count off `run_states` JSON to see whether the figures are interesting enough to build a table for
+- Set the quorum floor and where it is enforced (server, not UI)
+- If the shop is ever to show it free, write the ADR that prices the information axis down on purpose
 
 ## Spin-off
 

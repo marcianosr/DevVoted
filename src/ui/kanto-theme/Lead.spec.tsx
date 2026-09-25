@@ -29,6 +29,17 @@ describe("Lead sets figures inside a sentence", () => {
 		expect(badgeFor("15")).toHaveAttribute("data-screen-theme", "pewter");
 	});
 
+	it("bands a figure in its own colour, so a poor score cannot read as a gain", () => {
+		draw([
+			{ figure: "0.0%", band: "danger" },
+			" and ",
+			{ figure: "6.2", gain: true },
+		]);
+
+		expect(badgeFor("0.0%")).toHaveAttribute("data-screen-theme", "cinnabar");
+		expect(badgeFor("6.2")).toHaveAttribute("data-screen-theme", "viridian");
+	});
+
 	it("names a band in its own colour, so the word and the bar agree", () => {
 		draw(["land in ", { band: "danger" }, " and the run ends"]);
 

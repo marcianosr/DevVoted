@@ -1,15 +1,28 @@
 ---
 # DVTD-trc0
-title: '???? offers: a rare mystery item in its own shop section'
+title: A rare mystery offer in its own shop section
 status: todo
 type: feature
 priority: critical
 created_at: 2026-09-05T14:52:24Z
-updated_at: 2026-09-05T14:52:30Z
+updated_at: 2026-09-25T11:00:14Z
 parent: DVTD-z2r2
 blocked_by:
     - DVTD-clgs
 ---
+
+**What:** A hidden item that turns up in the shop rarely, in a section of its own, and can be bought.
+
+**Why:** The shop has no lucky moment.
+
+## Done when
+- [ ] Decided: what buying it actually gives you, and whether that changes an existing decision
+- [ ] It cannot be fished for by rebuilding the shelf
+- [ ] The price and the room it needs are shown; only the name is hidden
+- [ ] What is inside leans toward configs the player has never seen
+- [ ] Specs cover the rate, and that a rebuild cannot conjure one
+
+## Notes
 
 A `????` item that turns up in the shop **rarely**, in its **own section**, and can be bought. The rare appearance is the point: it is the shop's lucky moment.
 
@@ -59,15 +72,40 @@ Uniform draw from configs not currently held, or biased toward configs the playe
 
 ## Open decisions
 
-- [ ] Decision 1 above: run-only, reveal-only, or grant (and the ADR amendment if grant)
-- [ ] The one-in rate, and whether it climbs with depth
-- [ ] Whether more than one `????` can appear in a section
-- [ ] Whether the section is visible-and-empty on ordinary visits, or absent entirely. Absent is louder when it appears; visible-and-empty teaches that the thing exists
+- Decision 1 above: run-only, reveal-only, or grant (and the ADR amendment if grant)
+- The one-in rate, and whether it climbs with depth
+- Whether more than one `????` can appear in a section
+- Whether the section is visible-and-empty on ordinary visits, or absent entirely. Absent is louder when it appears; visible-and-empty teaches that the thing exists
 
 ## Todo
 
-- [ ] `mysteryOfferFor(seed, …)` beside `upgradeOfferFor`, seeded so a rebuild cannot fish for it, with specs on the rate and on rebuild-immunity
-- [ ] `ShopScreen.ui.tsx`: a third `<Section>` alongside `Build` and `Offers`, with the hidden-name row (slot mark shown, name redacted) and a story
-- [ ] `ShopView.component.tsx`: map the offer, the price, and the buy handler
-- [ ] Dex reveal on purchase, if decision 1 keeps it
-- [ ] Wiki: the shop section gains the `????`, and §6 keeps its "KB never buys a config" line intact or gets amended, per decision 1
+- `mysteryOfferFor(seed, …)` beside `upgradeOfferFor`, seeded so a rebuild cannot fish for it, with specs on the rate and on rebuild-immunity
+- `ShopScreen.ui.tsx`: a third `<Section>` alongside `Build` and `Offers`, with the hidden-name row (slot mark shown, name redacted) and a story
+- `ShopView.component.tsx`: map the offer, the price, and the buy handler
+- Dex reveal on purchase, if decision 1 keeps it
+- Wiki: the shop section gains the `????`, and §6 keeps its "KB never buys a config" line intact or gets amended, per decision 1
+
+## Two of these decisions are now shared precedent (DVTD-r2k9, ADR-110)
+
+The registry-services bean hit the same two questions and took the same answers,
+so they are settled jointly rather than twice:
+
+- **"Whether the section is visible-and-empty on ordinary visits, or absent
+  entirely"** — absent. ADR-110 Decision 5: a panel renders only when it holds
+  something, no "nothing today" furniture. Apply it to the `????` section too.
+- **The seeding hole** — ADR-110 Decision 4 adopts this bean's finding verbatim:
+  roll off a seed that excludes `rebuildsUsed`, because `rebuildCost` starts at
+  4 KB and a jackpot you can shop for is not a jackpot. Services go further and
+  pick their eligible gate *once at run start*, which is worth copying: it is
+  rebuild-proof by construction and keeps the shop derived state (ADR-029 D5).
+
+Decision 1 of this bean (run-only / reveal-only / grant) is untouched. ADR-110
+Decision 7 restates that nothing it introduces buys a config, so ADR-050 D4 and
+ADR-051 D1 are still intact and this bean's "my pick: run-only mystery plus the
+Dex reveal" still needs no amendment.
+
+Note the shop's right column is now spoken for by four things: Registry,
+Registry controls, this `????` section, and Registry services. Worth deciding the
+order before two of them land.
+
+2026-09-25 (ADR-115): the render-only-when-occupied rule now lives in ADR-115 D9. ADR-110 D4 (roll the appearance off the run seed) died with licences, so the exclude-the-rebuild-count rule is this bean's own again.

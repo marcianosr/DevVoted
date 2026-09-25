@@ -19,7 +19,7 @@ const INFO = {
 } as const;
 
 const panelOf = (container: HTMLElement) =>
-	container.querySelector(".absolute");
+	container.querySelector(".sm\\:absolute");
 
 const tintOf = (node: Element | null) =>
 	Array.from(node?.classList ?? []).find((name) =>

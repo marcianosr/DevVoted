@@ -28,7 +28,7 @@ const RANGE_DASH = "–";
 
 export const BAND_OUTCOMES_TITLE = "Objectives and rewards";
 export const BAND_OUTCOMES_NOTE =
-	"Pays land in the run balance when the gate shuts, quoted at the fewest right answers that land the band and before the streak or any surplus. A peel is paid in KB or in configs.";
+	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
 
 export const ESCROW_NOTE =
 	"An open transaction only pays on a clear: SHAKY or DANGER rolls back every KB this window held.";

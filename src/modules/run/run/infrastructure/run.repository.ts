@@ -7,12 +7,21 @@ import {
 	runStatesTable,
 	runsTable,
 	userConfigUnlocksTable,
+	userServiceUnlocksTable,
 	userObjectiveProgressTable,
 	usersTable,
+	userTitlesTable,
 } from "~/database/schema";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
+
+import {
+	isExclusive,
+	type Title,
+	TITLE_METRICS,
+	titlesEarnedBy,
+} from "~/modules/account/profile/domain/title.model";
 
 import {
 	configsUnlockedBy,
@@ -20,10 +29,15 @@ import {
 	type ObjectiveMetric,
 	type UnlockGrant,
 } from "~/modules/run/config/domain/configUnlock.model";
+import {
+	servicesUnlockedBy,
+	type ServiceUnlockGrant,
+} from "~/modules/run/shop/domain/registryControl.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
 import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
 
 import {
+	archiveCreditBytes,
 	isRunOver,
 	type RunState,
 	scheduleOf,
@@ -269,6 +283,81 @@ const awardConfigUnlocks = async (
 	return rows.map((row) => row.config_id);
 };
 
+/**
+ * A service grant is the same row shape as a config grant (ADR-116): permanent,
+ * with its provenance, idempotent through ON CONFLICT DO NOTHING.
+ */
+const awardServiceUnlocks = async (
+	tx: Pick<typeof db, "insert">,
+	userId: string,
+	grants: readonly ServiceUnlockGrant[]
+): Promise<void> => {
+	await tx
+		.insert(userServiceUnlocksTable)
+		.values(
+			grants.map((grant) => ({
+				user_id: userId,
+				service_id: grant.serviceId,
+				via_metric: grant.viaMetric,
+			}))
+		)
+		.onConflictDoNothing();
+};
+
+/**
+ * A title is permanent, so the insert — not a predicate — is what decides one
+ * is new. ON CONFLICT DO NOTHING covers both keys at once: the primary key
+ * stops a second copy reaching the same account, and the partial unique index
+ * on an exclusive title stops a second account reaching the title at all. Every
+ * other row in the same batch still lands.
+ */
+const awardTitles = async (
+	tx: Pick<typeof db, "insert">,
+	userId: string,
+	titles: readonly Title[]
+): Promise<readonly string[]> => {
+	const rows = await tx
+		.insert(userTitlesTable)
+		.values(
+			titles.map((title) => ({
+				user_id: userId,
+				title_id: title.id,
+				exclusive: isExclusive(title),
+			}))
+		)
+		.onConflictDoNothing()
+		.returning({ title_id: userTitlesTable.title_id });
+	return rows.map((row) => row.title_id);
+};
+
+/**
+ * Titles settle when the run ends, not when the counter moves. Two reasons:
+ * "a correct answer in every category" cannot be read off an upsert's
+ * RETURNING, which holds only the metrics this one action touched, and the
+ * run-over screen is the only place a title is announced anyway. So the ledger
+ * is read wide once per run rather than once per answer.
+ */
+const grantEarnedTitles = async (
+	tx: Pick<typeof db, "select" | "insert">,
+	userId: string
+): Promise<readonly string[]> => {
+	const counts = await tx
+		.select({
+			metric: userObjectiveProgressTable.metric,
+			count: userObjectiveProgressTable.count,
+		})
+		.from(userObjectiveProgressTable)
+		.where(
+			and(
+				eq(userObjectiveProgressTable.user_id, userId),
+				inArray(userObjectiveProgressTable.metric, [...TITLE_METRICS])
+			)
+		);
+	const earned = titlesEarnedBy(counts);
+	if (earned.length === 0) return [];
+	return awardTitles(tx, userId, earned);
+};
+
 const grantObjectiveUnlocks = async (
 	tx: Pick<typeof db, "insert">,
 	userId: string,
@@ -276,8 +365,11 @@ const grantObjectiveUnlocks = async (
 ): Promise<readonly string[]> => {
 	const counts = await recordObjectiveProgress(tx, userId, metrics);
 	const grants = configsUnlockedBy(counts);
-	if (grants.length === 0) return [];
-	return awardConfigUnlocks(tx, userId, grants);
+	const unlocked =
+		grants.length === 0 ? [] : await awardConfigUnlocks(tx, userId, grants);
+	const services = servicesUnlockedBy(counts);
+	if (services.length > 0) await awardServiceUnlocks(tx, userId, services);
+	return unlocked;
 };
 
 /**
@@ -434,16 +526,8 @@ const finishSessionRun = async (
 		})
 		.where(eq(runsTable.id, runId));
 
-	// Economy bridge: leftover run storage becomes persistent meta-currency,
-	// at a rate proportional to how far the climb got (storageCreditRate).
-	// Only gates actually climbed count — a tag-rescued run banks nothing for
-	// the gates its checkpoint skipped (ADR-036). Engine storage is KB;
-	// archived_storage is bytes.
-	const creditBytes = Math.round(
-		state.storage *
-			STORAGE_UNITS.KB *
-			storageCreditRate(reason, state.gatesCleared - (state.startedAtGate ?? 0))
-	);
+	// Economy bridge: leftover run storage becomes persistent meta-currency.
+	const creditBytes = archiveCreditBytes(state);
 	if (creditBytes > 0) {
 		await tx
 			.update(usersTable)
@@ -594,6 +678,7 @@ export const loadRunState = async (runId: number): Promise<RunState> => {
 export type RunDispatchResult = {
 	readonly state: RunState;
 	readonly unlockedConfigIds: readonly string[];
+	readonly earnedTitleIds: readonly string[];
 };
 
 export const applyActionToRun = async (args: {
@@ -628,7 +713,8 @@ export const applyActionToRun = async (args: {
 		const polls = await fetchRunPollsForRun(args.runId, tx);
 		const state = hydrateRunState(stateRow.state, polls);
 		const next = runReducer(state, args.action);
-		if (next === state) return { state, unlockedConfigIds: [] };
+		if (next === state)
+			return { state, unlockedConfigIds: [], earnedTitleIds: [] };
 
 		// The objective ledger ticks at the seam (ADR-051): the reducer stays
 		// pure, the counters live on the account, and a crossed target grants
@@ -708,6 +794,12 @@ export const applyActionToRun = async (args: {
 			})
 			.where(eq(runStatesTable.run_id, args.runId));
 
+		// After the objective upsert above, so a summit read here already counts
+		// the clear that just happened.
+		const earnedTitleIds = isRunOver(settled.status)
+			? await grantEarnedTitles(tx, args.userId)
+			: [];
+
 		if (isRunOver(settled.status)) {
 			await finishSessionRun(tx, args.runId, args.userId, settled);
 		}
@@ -718,6 +810,6 @@ export const applyActionToRun = async (args: {
 		if ((settled.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
 			await raiseStorageWatermark(tx, args.userId, settled.peakStorageKb ?? 0);
 
-		return { state: settled, unlockedConfigIds };
+		return { state: settled, unlockedConfigIds, earnedTitleIds };
 	});
 };

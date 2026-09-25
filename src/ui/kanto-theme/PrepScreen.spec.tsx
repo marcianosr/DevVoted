@@ -65,7 +65,7 @@ describe("PrepScreen", () => {
 	it("reads as the gate about to be run, with what it carries", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("Gate 4 · Lavender")).toBeInTheDocument();
+		expect(screen.getByText("#4 - Lavender Gate")).toBeInTheDocument();
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
@@ -368,15 +368,32 @@ describe("PrepScreen", () => {
 
 			expect(screen.getByText("404")).toBeInTheDocument();
 			expect(screen.getByText("Not Found")).toBeInTheDocument();
-			expect(screen.getByText("1 this gate")).toBeInTheDocument();
+			expect(screen.getByText("1 firing this gate")).toBeInTheDocument();
 		});
 
 		it("bills the clear on the audits heading", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(screen.getByText("bills")).toBeInTheDocument();
-			expect(screen.getByText("−32 KB")).toBeInTheDocument();
+			expect(screen.getAllByText("−32 KB")).not.toHaveLength(0);
 			expect(screen.getByText("on a clear")).toBeInTheDocument();
+		});
+
+		it("breaks that total into the lines that make it up", () => {
+			render(<PrepScreen {...props} />);
+
+			const panel = within(sectionOf("Subscriptions"));
+
+			expect(panel.getByText("Every gate")).toBeInTheDocument();
+			expect(panel.getAllByText("−32 KB")).not.toHaveLength(0);
+		});
+
+		it("leaves the shortfall warning to the heading that already states it", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				within(sectionOf("Subscriptions")).queryByText(/lapses/)
+			).not.toBeInTheDocument();
 		});
 
 		it("bills nothing at a gate with no plan and no subscription", () => {
@@ -385,11 +402,14 @@ describe("PrepScreen", () => {
 			expect(screen.queryByText("bills")).not.toBeInTheDocument();
 		});
 
-		it("draws no audit panel at a gate that deals none", () => {
+		it("states the lock once, on the Audits panel alone", () => {
 			render(<PrepScreen {...kantoPrepCalibration()} />);
 
-			expect(screen.getByText("none this gate")).toBeInTheDocument();
-			expect(screen.queryByText("audits")).not.toBeInTheDocument();
+			expect(
+				screen.getByText("Audits are unlocked at gate 3 · Thunder")
+			).toBeInTheDocument();
+			expect(screen.getAllByText("gate 3 · Thunder")).toHaveLength(1);
+			expect(screen.queryByText("Your audit")).not.toBeInTheDocument();
 		});
 	});
 

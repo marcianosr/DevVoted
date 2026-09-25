@@ -32,7 +32,9 @@ describe("StartView", () => {
 		render(<StartView view={view} {...handlers} />);
 
 		expect(screen.getByText("New run")).toBeInTheDocument();
-		expect(screen.getAllByText(/gate 0/).length).toBeGreaterThan(0);
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toBeInTheDocument();
 	});
 
 	it("deals the hand it was given", () => {

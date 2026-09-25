@@ -63,6 +63,10 @@ vi.mock(
 	() => ({ settleIncidents: vi.fn(() => vi.fn()) })
 );
 
+vi.mock("~/modules/run/shop/infrastructure/serviceUnlock.repository", () => ({
+	fetchUnlockedServiceIds: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("~/modules/run/config/infrastructure/configUnlock.repository", () => ({
 	fetchUnlocksSince: vi.fn().mockResolvedValue([]),
 	fetchUnlockedConfigIds: vi.fn().mockResolvedValue([]),
@@ -379,6 +383,7 @@ describe("dispatchRunActionService", () => {
 		vi.mocked(queries.applyActionToRun).mockResolvedValue({
 			state: { ...configuringState(), status: "answering" },
 			unlockedConfigIds: [],
+			earnedTitleIds: [],
 		});
 
 		const result = await dispatchRunActionService({
@@ -405,6 +410,7 @@ describe("dispatchRunActionService", () => {
 		vi.mocked(queries.applyActionToRun).mockResolvedValue({
 			state: { ...configuringState(), status: "answering" },
 			unlockedConfigIds: [],
+			earnedTitleIds: [],
 		});
 
 		const result = await dispatchRunActionService({
@@ -427,6 +433,7 @@ describe("dispatchRunActionService", () => {
 		vi.mocked(queries.applyActionToRun).mockResolvedValue({
 			state: { ...configuringState(), status: "answering" },
 			unlockedConfigIds: ["telemetry"],
+			earnedTitleIds: [],
 		});
 		vi.mocked(unlockQueries.fetchUnlocksSince).mockResolvedValue([
 			{ configId: "telemetry", viaMetric: "community-peeks" },

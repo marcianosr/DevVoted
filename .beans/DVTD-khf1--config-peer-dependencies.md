@@ -7,9 +7,21 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-20T10:00:17Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:16Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that names one random other config as its peer: much better while you hold the peer, still worth something without it.
+
+**Why:** Synergy that is never dead, and the decision happens in the shop: hunt the peer, or run warned.
+
+## Done when
+- [ ] The peer is rolled when it is drafted, and shown before you buy
+- [ ] Holding the peer pays 48 KB on a gate clear; missing it pays 16 KB and shows a warning
+- [ ] Losing the peer later brings the warning back
+- [ ] The roll survives a reload
+
+## Notes
 
 npm-true synergy config (brainstorm 2026-08-19; survived two scrutiny rounds).
 

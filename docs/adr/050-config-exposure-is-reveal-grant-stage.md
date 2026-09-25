@@ -75,9 +75,9 @@ Three states, each carrying its requirement:
 - **Met, not granted:** named chip, dimmed, same requirement tooltip.
 - **Granted:** the tooltip reads as provenance.
 
-**Tooltip-first is not tooltip-only.** Tooltips are invisible on touch, so a
-silhouette row also carries its requirement as a visible caption. ADR-046 and
-ADR-051 both restate this rule, which is a sign it should have been a pillar.
+The visible-caption rule that stood here is retired by
+[ADR-108](108-the-dex-reads-configs-as-chip-rows.md) decision 3: the requirement
+sits behind the chip's `i`, which opens on a press.
 
 ## Consequences
 

@@ -127,6 +127,9 @@ export const usersTable = pgTable("users", {
 	archived_storage: bigint("archived_storage", { mode: "number" })
 		.notNull()
 		.default(0),
+	// What the 2.0 legacy top-up paid this account, in bytes. Null means unpaid,
+	// which is the guard that makes re-applying the grant migration a no-op.
+	legacy_bonus_bytes: bigint("legacy_bonus_bytes", { mode: "number" }),
 	// High-water mark of KB held in any run, in KB (not bytes, unlike
 	// archived_storage). Only ever raised. Reveals storage plan rungs: a rung
 	// opens once the cap below it has been filled (revealsPlanTier).
@@ -136,6 +139,10 @@ export const usersTable = pgTable("users", {
 		.notNull()
 		.default(sql`'{}'::text[]`),
 	equipped_border_id: text("equipped_border_id"),
+	// The one title worn beside the name. Owned titles are rows in
+	// `user_titles`; this is only which of them is on show, and null (wearing
+	// none) is the normal state for a new account.
+	equipped_title_id: text("equipped_title_id"),
 	// Gate swatches earned across every run (badge ids from
 	// modules/run/gate/swatch.model). Permanent: clearing gate 1 in any run earns
 	// the Boulder Swatch forever, and re-clearing it later is a no-op.
@@ -186,6 +193,29 @@ export const userConfigUnlocksTable = pgTable(
 );
 
 /**
+ * User Service Unlocks (ADR-116)
+ *
+ * A row is a permanent service grant, the shop's non-config purchases
+ * (Rebuild, Extend, the git tag …) earned once per account off the same
+ * objective ledger as configs. via_metric names the objective that completed.
+ * A starter service has no row: the roster says it is everyone's.
+ */
+export const userServiceUnlocksTable = pgTable(
+	"user_service_unlocks",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		service_id: varchar("service_id", { length: 64 }).notNull(),
+		via_metric: varchar("via_metric", { length: 64 }),
+		unlocked_at: timestamp("unlocked_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.service_id] })]
+);
+
+/**
  * User Objective Progress (ADR-051)
  *
  * Lifetime counters behind the config unlock objectives, one row per touched
@@ -206,6 +236,43 @@ export const userObjectiveProgressTable = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [primaryKey({ columns: [table.user_id, table.metric] })]
+);
+
+/**
+ * User Titles (ADR-109)
+ *
+ * A row is an earned title, and it is permanent: the predicate that granted it
+ * is never asked again, so a record that stops being true costs nobody their
+ * title. Writes are ON CONFLICT DO NOTHING, which makes re-crossing a threshold
+ * a no-op and leaves RETURNING holding exactly the newly earned ids.
+ *
+ * `exclusive` is denormalised from the catalogue so the partial unique index
+ * below can enforce a race title in the database: the first transaction to
+ * insert one wins it, and every later one conflicts away. No "am I first?"
+ * read, and therefore no race.
+ */
+export const userTitlesTable = pgTable(
+	"user_titles",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		title_id: varchar("title_id", { length: 64 }).notNull(),
+		exclusive: boolean("exclusive").notNull().default(false),
+		earned_at: timestamp("earned_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		// When the player was shown this title. Null means unannounced, which is
+		// the state every row starts in — including the ones a migration deals to
+		// a cohort that was never in a session to be told.
+		announced_at: timestamp("announced_at", { withTimezone: true }),
+	},
+	(table) => [
+		primaryKey({ columns: [table.user_id, table.title_id] }),
+		uniqueIndex("user_titles_exclusive_title")
+			.on(table.title_id)
+			.where(sql`${table.exclusive}`),
+	]
 );
 
 /**

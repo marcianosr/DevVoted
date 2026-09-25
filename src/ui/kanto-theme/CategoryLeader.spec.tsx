@@ -91,7 +91,7 @@ describe("CategoryLeader", () => {
 	it("says the seat is open when nobody leads the category", () => {
 		render(<CategoryLeader category={CATEGORY} claim="3 in a row claims it" />);
 
-		expect(screen.getByText("seat open")).toBeVisible();
+		expect(screen.getByText("unranked")).toBeVisible();
 		expect(screen.getByText("3 in a row claims it")).toBeVisible();
 	});
 

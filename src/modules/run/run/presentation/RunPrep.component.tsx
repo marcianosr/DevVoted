@@ -70,6 +70,7 @@ export const RunPrep = () => {
 			onCommitBand={(band) => send({ type: "commit-band", band })}
 			onRebase={(from, to) => send({ type: "rebase", from, to })}
 			attack={attackPanelFor(
+				view.gateStake.gateNumber,
 				view.attack,
 				targets.view?.offers ?? null,
 				targets.errorMessage,

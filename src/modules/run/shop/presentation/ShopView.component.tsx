@@ -13,10 +13,21 @@ import {
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
+import {
+	isServiceUnlocked,
+	isSoldInShop,
+	REGISTRY_CONTROL_LIST,
+	REGISTRY_CONTROLS,
+	unlockCaptionOf,
+	type ShopSoldId,
+	type ShopSoldSpec,
+} from "~/modules/run/shop/domain/registryControl.model";
 import { kbLabel } from "~/shared/lib/storage";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
-import { ShopScreen } from "~/ui/kanto-theme/ShopScreen.ui";
+import {
+	ShopScreen,
+	type ShopServiceRow,
+} from "~/ui/kanto-theme/ShopScreen.ui";
 
 export type ShopViewProps = {
 	view: RunView;
@@ -26,23 +37,20 @@ export type ShopViewProps = {
 	onRebuild: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
+	onAbandon: () => void;
 	onVendorLock: (configId: string) => void;
 	onContinue: () => void;
 };
 
-const REBUILD = {
-	glyph: "↻",
-	title: "Rebuild the registry",
-	detail: "deals a fresh set of offers",
-};
-const EXTEND = {
-	glyph: "+",
-	title: "Extend the registry",
-	detail: "one more offer, now and every shop after",
-};
-const PIN = { glyph: "⚑", detail: "if this run dies, the next resumes here" };
+const {
+	rebuild: REBUILD,
+	extend: EXTEND,
+	abandon: ABANDON,
+	pin: PIN,
+} = REGISTRY_CONTROLS;
 
 const TO_PREP = "To prep";
+const ABANDON_CONFIRM = "press again to end the run";
 const SEPARATOR = "·";
 const OVER_MARK = "over the";
 const OVER_REMEDY = "the bill covered · sell or drop to fit it";
@@ -82,52 +90,111 @@ const focusCoverageOf = (view: RunView, config: Config): number =>
 		? 0
 		: (view.coverageByCategory[config.focusCategory] ?? 0);
 
-const controlsOf = (
+type ServiceHandlers = Pick<
+	ShopViewProps,
+	"onRebuild" | "onExtend" | "onPlantPin" | "onAbandon"
+> & {
+	abandonArmed: boolean;
+	onArmAbandon: () => void;
+};
+
+/** The row an unlocked service gets once its gate has staged it in; nothing before. */
+const stagedRowFor = (
+	control: ShopSoldSpec,
 	view: RunView,
-	handlers: Pick<ShopViewProps, "onRebuild" | "onExtend" | "onPlantPin">
-): readonly RegistryControlProps[] => {
+	handlers: ServiceHandlers
+): ShopServiceRow | undefined => {
 	const { shopControls, storage } = view;
 	const cleared = view.gatePayout.clearedGateNumber;
-
-	return [
-		...(shopControls.rebuildAvailable
-			? [
-					controlRowFor(
-						REBUILD.glyph,
-						REBUILD.title,
-						REBUILD.detail,
-						shopControls.rebuildCost,
-						storage,
-						shopControls.canRebuild ? handlers.onRebuild : undefined
-					),
-				]
-			: []),
-		...(shopControls.extendAvailable
-			? [
-					controlRowFor(
-						EXTEND.glyph,
-						EXTEND.title,
-						EXTEND.detail,
-						shopControls.extendCost,
-						storage,
-						shopControls.canExtend ? handlers.onExtend : undefined
-					),
-				]
-			: []),
-		...(shopControls.pinAvailable
-			? [
-					controlRowFor(
-						PIN.glyph,
-						`git tag ${SEPARATOR} gate ${cleared + 1}`,
-						PIN.detail,
-						shopControls.pinCost,
-						storage,
-						shopControls.canPin ? handlers.onPlantPin : undefined
-					),
-				]
-			: []),
-	];
+	const rows: Record<ShopSoldId, () => ShopServiceRow | undefined> = {
+		rebuild: () =>
+			shopControls.rebuildAvailable
+				? {
+						id: REBUILD.id,
+						...controlRowFor(
+							REBUILD.glyph,
+							REBUILD.title,
+							REBUILD.detail,
+							shopControls.rebuildCost,
+							storage,
+							shopControls.canRebuild ? handlers.onRebuild : undefined
+						),
+					}
+				: undefined,
+		extend: () =>
+			shopControls.extendAvailable
+				? {
+						id: EXTEND.id,
+						...controlRowFor(
+							EXTEND.glyph,
+							EXTEND.title,
+							EXTEND.detail,
+							shopControls.extendCost,
+							storage,
+							shopControls.canExtend ? handlers.onExtend : undefined
+						),
+					}
+				: undefined,
+		// Earned already; sold once DVTD-r2fg and DVTD-rte1 give them a press.
+		hotReload: () => undefined,
+		returnPolicy: () => undefined,
+		// Ending the run is the one press that must be meant: the first arms it.
+		abandon: () => ({
+			id: ABANDON.id,
+			glyph: ABANDON.glyph,
+			title: ABANDON.title,
+			detail: handlers.abandonArmed ? ABANDON_CONFIRM : ABANDON.detail,
+			onPress: handlers.abandonArmed
+				? handlers.onAbandon
+				: handlers.onArmAbandon,
+		}),
+		pin: () =>
+			shopControls.pinAvailable
+				? {
+						id: PIN.id,
+						...controlRowFor(
+							PIN.glyph,
+							`${PIN.title} ${SEPARATOR} gate ${cleared + 1}`,
+							PIN.detail,
+							shopControls.pinCost,
+							storage,
+							shopControls.canPin ? handlers.onPlantPin : undefined
+						),
+					}
+				: undefined,
+	};
+	return rows[control.id]();
 };
+
+const lockedRowFor = (control: ShopSoldSpec): ShopServiceRow | undefined => {
+	const unlock = unlockCaptionOf(control);
+	return unlock === undefined
+		? undefined
+		: {
+				id: control.id,
+				locked: true,
+				glyph: control.glyph,
+				title: control.title,
+				detail: control.detail,
+				unlock,
+			};
+};
+
+/**
+ * Only what this shop sells (ADR-115 D10), in roster order so the row a player
+ * is working toward never moves: a locked service keeps its place, named, with
+ * the line that unlocks it (ADR-116).
+ */
+const controlsOf = (
+	view: RunView,
+	handlers: ServiceHandlers
+): readonly ShopServiceRow[] =>
+	REGISTRY_CONTROL_LIST.filter(isSoldInShop).flatMap((control) => {
+		const row = isServiceUnlocked(control, view.unlockedServiceIds)
+			? stagedRowFor(control, view, handlers)
+			: lockedRowFor(control);
+		return row === undefined ? [] : [row];
+	});
 
 export const ShopView = ({
 	view,
@@ -137,10 +204,12 @@ export const ShopView = ({
 	onRebuild,
 	onExtend,
 	onPlantPin,
+	onAbandon,
 	onVendorLock,
 	onContinue,
 }: ShopViewProps) => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const [abandonArmed, setAbandonArmed] = useState(false);
 	const [openUpgrades, setOpenUpgrades] = useState<string | undefined>(
 		undefined
 	);
@@ -159,6 +228,11 @@ export const ShopView = ({
 	};
 
 	const armed = view.offers.find((offer) => offer.config.id === armedId);
+	// Any other service press means the run goes on, so the kill is disarmed.
+	const disarming = (press: () => void) => () => {
+		setAbandonArmed(false);
+		press();
+	};
 	// Only ever self-inflicted, and only after a bill the balance could not
 	// cover: the run is held to the space it actually paid for until it fits.
 	const overSpace = view.overflowSlots > 0;
@@ -173,10 +247,16 @@ export const ShopView = ({
 			)}
 			nextGate={nextGateFor(
 				view.gatePayout.clearedGateNumber,
-				view.gateStake.unitsHeld,
-				view.gateStake.perAnswer.coveragePerCorrect
+				view.gateStake.unitsHeld
 			)}
-			controls={controlsOf(view, { onRebuild, onExtend, onPlantPin })}
+			controls={controlsOf(view, {
+				onRebuild: disarming(onRebuild),
+				onExtend: disarming(onExtend),
+				onPlantPin: disarming(onPlantPin),
+				onAbandon,
+				abandonArmed,
+				onArmAbandon: () => setAbandonArmed(true),
+			})}
 			build={{
 				configs: view.configs.map((config) =>
 					buildChipFor(

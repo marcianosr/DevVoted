@@ -7,11 +7,24 @@ priority: normal
 tags:
     - config
 created_at: 2026-09-05T08:45:44Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 blocked_by:
     - DVTD-w0ul
 ---
+
+**What:** A config that turns the coverage a wrong answer costs into a gain.
+
+**Why:** Every config multiplies the gain; nothing touches the loss.
+
+## Done when
+- [ ] The bound is picked so answering at random cannot climb: size, count, or both
+- [ ] A wrong answer pays instead of costing, and the pre-gate screen shows it as a gain
+- [ ] It never stacks with the audit that already zeroes the loss
+- [ ] A wrong answer still breaks the streak
+- [ ] Its relationship to Bug Bounty is settled before either ships
+
+## Notes
 
 A config that, while installed, turns the wrong-answer coverage loss into a gain. Working name: **`Math.abs()`** — it literally makes a negative positive, it is a real function, and the semantics match exactly, which is the naming bar this roster holds itself to.
 
@@ -51,10 +64,10 @@ Size: this is a build-defining effect, so 4 or 8 slots at 32 KB a slot rather th
 
 ## Todo
 
-- [ ] Pick the bound (magnitude, count, or both) and the number
-- [ ] Confirm the name against the alternatives: `Math.abs()`, `try/catch`, `?? 0`, `Error Boundary`
-- [ ] Effect in `effect.model.ts` / `build.model.ts` so `coverageLossFor` reads it; no special-casing in `answer.model.ts`
-- [ ] Must not stack with the audited-share zeroing
-- [ ] Specs: flipped value, audited case, streak still breaks, preview line sign
-- [ ] Decide the relationship to DVTD-w0ul before both ship
-- [ ] Wiki roster entry
+- Pick the bound (magnitude, count, or both) and the number
+- Confirm the name against the alternatives: `Math.abs()`, `try/catch`, `?? 0`, `Error Boundary`
+- Effect in `effect.model.ts` / `build.model.ts` so `coverageLossFor` reads it; no special-casing in `answer.model.ts`
+- Must not stack with the audited-share zeroing
+- Specs: flipped value, audited case, streak still breaks, preview line sign
+- Decide the relationship to DVTD-w0ul before both ship
+- Wiki roster entry

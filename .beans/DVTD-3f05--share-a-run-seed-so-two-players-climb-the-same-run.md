@@ -1,13 +1,26 @@
 ---
 # DVTD-3f05
-title: Share a run seed so two players climb the same run
+title: Share a code so two players climb the same run
 status: draft
 type: feature
 priority: normal
 created_at: 2026-09-12T13:08:40Z
-updated_at: 2026-09-12T13:08:40Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-h175
 ---
+
+**What:** Let two players climb the identical run from a shared code, so the only difference left is their decisions.
+
+**Why:** Everyone answers the same polls already, but each player is dealt a different hand, so builds cannot be compared.
+
+## Done when
+- [ ] Decided: shared by default or only when a code is pasted, and what the code is called
+- [ ] A run stores its own code, so a reload deals the same hand
+- [ ] The code is readable, shareable from the run summary, and pasteable on the new run screen
+- [ ] A code from another day is refused, with a reason
+- [ ] A same-day restart stops dealing the identical hand
+
+## Detail
 
 "What did you build today?" is the water-cooler moment ADR-009 was designed
 around, and it half works: everyone answers the same polls, but nobody can
@@ -80,13 +93,13 @@ probably not called a seed.
 
 ## Todo
 
-- [ ] Decide opt-in versus date-seeded-by-default, and the word for the shared code
-- [ ] Thread a run seed through `startingHand`, stored on the run so a reload deals the same hand
-- [ ] Generate a readable code (Balatro-style short string), not a raw hash
-- [ ] Entry point: paste a code on the new run screen, beside the dealt hand
-- [ ] Share point: the code on the run summary and the community board, copyable
-- [ ] Reject a code from another day with a message that says why, since the polls will not match
-- [ ] Check ADR-009 decision 4 still holds: a shared seed must never let a config change which polls appear
+- Decide opt-in versus date-seeded-by-default, and the word for the shared code
+- Thread a run seed through `startingHand`, stored on the run so a reload deals the same hand
+- Generate a readable code (Balatro-style short string), not a raw hash
+- Entry point: paste a code on the new run screen, beside the dealt hand
+- Share point: the code on the run summary and the community board, copyable
+- Reject a code from another day with a message that says why, since the polls will not match
+- Check ADR-009 decision 4 still holds: a shared seed must never let a config change which polls appear
 
 ## Notes
 

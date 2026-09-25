@@ -72,6 +72,10 @@ export const userQueryKeys = {
 	 * action can grant a config unlock, and the run flow holds no userId. */
 	unlocksAll: [...USERS, "unlocks"] as const,
 	unlocks: (userId: string) => [...userQueryKeys.unlocksAll, userId] as const,
+	/** Same shape once more: a gate clear can earn a service (ADR-116). */
+	serviceUnlocksAll: [...USERS, "service-unlocks"] as const,
+	serviceUnlocks: (userId: string) =>
+		[...userQueryKeys.serviceUnlocksAll, userId] as const,
 	gateRuns: (userId: string) => [...USERS, userId, "gate-runs"] as const,
 };
 
@@ -79,4 +83,12 @@ export const archiveQueryKeys = {
 	all: ["archive"] as const,
 	state: (userId: string | undefined) =>
 		[...archiveQueryKeys.all, userId] as const,
+};
+
+export const titleQueryKeys = {
+	all: ["titles"] as const,
+	state: (userId: string | undefined) =>
+		[...titleQueryKeys.all, userId] as const,
+	announcement: (userId: string | undefined) =>
+		[...titleQueryKeys.all, "announcement", userId] as const,
 };

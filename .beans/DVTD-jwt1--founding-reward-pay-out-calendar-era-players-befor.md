@@ -1,15 +1,28 @@
 ---
 # DVTD-jwt1
-title: 'Founding reward: pay out calendar-era players before 2.0'
+title: 'Founding reward: a border only the old game''s players can have'
 status: todo
 type: feature
 priority: high
 tags:
     - meta-progress
 created_at: 2026-09-09T10:36:05Z
-updated_at: 2026-09-09T11:35:30Z
+updated_at: 2026-09-24T13:24:03Z
 parent: DVTD-z2r2
 ---
+
+**What:** Give the accounts that played the calendar game a border no later account can ever get.
+
+**Why:** The old loop disappears at 2.0, and the people who played it should keep something from it.
+
+## Done when
+- [ ] The tiers are set from the real distribution, not guessed
+- [ ] The border art exists, one file per tier
+- [ ] A border can be marked not for sale: owners see and equip it, nobody else learns it exists
+- [ ] The grant runs once, does nothing on a re-run, and never overrides a border someone already equipped
+- [ ] Somewhere says what it is, and that it can no longer be earned
+
+## Notes
 
 Before DevVoted 2.0 replaces the calendar loop, pay out the accounts that played the
 old one with something no account created after the cutoff can ever obtain.
@@ -117,18 +130,18 @@ made.
 
 ## Todo
 
-- [ ] Query the production distribution of the axes above; set tier thresholds from it
-- [ ] Decide how many tiers, and name them
-- [ ] Border art in `public/borders/`, one file per tier
-- [ ] `Border` gains `limited?: true`; catalog entries appended
-- [ ] `BorderShop` hides limited borders you do not own; `BorderCard` not-for-sale state
-- [ ] Guarded backfill migration, containment-guarded, keyed to the frozen cutoff
-- [ ] Somewhere that says what it is and that it can no longer be earned (profile is
+- Query the production distribution of the axes above; set tier thresholds from it
+- Decide how many tiers, and name them
+- Border art in `public/borders/`, one file per tier
+- `Border` gains `limited?: true`; catalog entries appended
+- `BorderShop` hides limited borders you do not own; `BorderCard` not-for-sale state
+- Guarded backfill migration, containment-guarded, keyed to the frozen cutoff
+- Somewhere that says what it is and that it can no longer be earned (profile is
       the natural home, since that is where the shop already lives)
-- [ ] Specs: an ineligible account is not granted; a re-run is a no-op; an already
+- Specs: an ineligible account is not granted; a re-run is a no-op; an already
       equipped border is not overridden
-- [ ] CHANGELOG (player-visible)
-- [ ] lint, typecheck, tests
+- CHANGELOG (player-visible)
+- lint, typecheck, tests
 
 ## Deferred
 
@@ -144,3 +157,7 @@ everyone who does not have it.
 DVTD-2try (unlock system: configs, starter slots, borders) owns the wider border work.
 DVTD-z4rl (trainer card) and DVTD-0imu (unlockable titles) are further display
 surfaces for the same kind of reward.
+
+DVTD-n1pr pays the same cohort a title and an archive credit off the same cutoff and
+the same distribution query. Ship them together, or that query gets written twice and
+the two rewards can disagree about who is eligible.

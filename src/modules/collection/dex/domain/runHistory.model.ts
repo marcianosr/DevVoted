@@ -67,5 +67,11 @@ export const runHistory = (
 ): readonly RunHistoryEntry[] =>
 	rows.filter((row) => isRunOver(row.engineStatus)).map(toEntry);
 
-export const deepestGateIn = (entries: readonly RunHistoryEntry[]): number =>
-	entries.reduce((deepest, entry) => Math.max(deepest, entry.gatesCleared), 0);
+/**
+ * Read over rows to count the climb still under way, over entries to read the
+ * archive alone: a control met in this run is met, ended or not.
+ */
+export const deepestGateIn = (
+	climbs: readonly { readonly gatesCleared: number }[]
+): number =>
+	climbs.reduce((deepest, climb) => Math.max(deepest, climb.gatesCleared), 0);

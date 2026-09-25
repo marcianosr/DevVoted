@@ -1,13 +1,27 @@
 ---
 # DVTD-h9s5
-title: Coverage-gated config upgrades (e.g. .js needs 20%)
+title: Require category mastery before a config can be upgraded
 status: todo
 type: story
 priority: normal
 created_at: 2026-07-25T20:56:36Z
-updated_at: 2026-09-12T12:57:33Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-u35m
 ---
+
+**What:** Lock a config's upgrade until the player has shown mastery in its category.
+
+**Why:** Ties config power to what you have actually answered, not only to what you can pay.
+
+⚠️ The measure this asks for no longer accumulates: coverage resets at every gate, so it needs a counter that outlives the reset.
+
+## Done when
+- [ ] The measure is decided: a mastery counter that survives the reset, or a requirement phrased in what the per-gate model keeps
+- [ ] Which configs carry a requirement, and what each one asks for, is decided
+- [ ] The config card shows the lock and the progress toward it
+- [ ] Decided: how it fits with the other proposed upgrade gate
+
+## Notes
 
 Require category coverage before a specific config can be upgraded. E.g. the `.js` config's upgrade is locked until the player has 20% coverage in JavaScript; each upgradeable config would define its own category + threshold pair. Ties config power directly to demonstrated category mastery instead of storage/currency alone.
 
@@ -15,18 +29,18 @@ Sister bean: DVTD-7oa7 (config-upgrade acquisition surface for Tech Debt) — th
 
 ## Open questions
 
-- [ ] Which configs get an upgrade path, and what's each one's coverage threshold?
-- [ ] Is the threshold per-category coverage (category the config boosts) or something else?
-- [ ] Does the requirement gate purchase, or unlock an "upgrade" action on an already-owned config?
-- [ ] Does losing coverage (if that's ever possible) re-lock an already-upgraded config?
-- [ ] How does this interact with DVTD-7oa7's TD-based upgrade cost — combined gate or separate path?
+- Which configs get an upgrade path, and what's each one's coverage threshold?
+- Is the threshold per-category coverage (category the config boosts) or something else?
+- Does the requirement gate purchase, or unlock an "upgrade" action on an already-owned config?
+- Does losing coverage (if that's ever possible) re-lock an already-upgraded config?
+- How does this interact with DVTD-7oa7's TD-based upgrade cost — combined gate or separate path?
 
 ## Todos
 
-- [ ] Pick the first config(s) to prototype this on
-- [ ] Define threshold values per config
-- [ ] Decide interaction with Tech Debt upgrade surface (DVTD-7oa7)
-- [ ] UI: show locked/unlocked state + progress toward threshold on config card
+- Pick the first config(s) to prototype this on
+- Define threshold values per config
+- Decide interaction with Tech Debt upgrade surface (DVTD-7oa7)
+- UI: show locked/unlocked state + progress toward threshold on config card
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

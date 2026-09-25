@@ -55,6 +55,20 @@ export const FreshPlayer: Story = {
 
 export const PollsReady: Story = { render: () => <TodayScreen {...base} /> };
 
+/** Answered two, walked away: the rest of today's five go at midnight. */
+export const PartAnsweredDay: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			run={{
+				...onLavender,
+				pollsNote: "3 of today’s 5 left · they do not carry to tomorrow",
+			}}
+			action={{ label: "Resume", onPress: noop }}
+		/>
+	),
+};
+
 export const WaitingOnMidnight: Story = {
 	render: () => (
 		<TodayScreen

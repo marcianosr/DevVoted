@@ -3,31 +3,49 @@ import { type ReactNode, useState } from "react";
 const WRAP = "group/tip relative inline-flex";
 const TRIGGER = "cursor-help underline decoration-dotted underline-offset-4";
 const TRIGGER_BARE = "cursor-help";
-const PANEL = "pointer-events-none absolute z-30 transition-opacity";
+/**
+ * A phone gets a sheet, not a popup: the panel is wider than the gap between a
+ * chip and the screen's edge, so anchoring it to the trigger put half of it
+ * past the viewport with nothing to scroll it back. Fixed to the bottom of the
+ * screen it fits by construction. From `sm` there is room to anchor it again,
+ * which keeps the panel beside the thing it explains.
+ */
+const PANEL =
+	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:bottom-auto";
 const PANEL_SHUT =
-	"invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100";
-const PANEL_OPEN = "visible opacity-100";
+	"pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100";
+/**
+ * Pointer events come back when it opens. They were switched off on the panel
+ * itself and never switched on again, so a sheet too tall to fit could not be
+ * scrolled — the one case where the reader most needs to reach it.
+ */
+const PANEL_OPEN = "pointer-events-auto visible opacity-100";
+/**
+ * Capped and scrollable. The sheet is pinned by its bottom edge, so without a
+ * ceiling a long hint grows upward past the top of the screen and takes its
+ * first line with it.
+ */
 const BODY =
-	"flex w-full flex-col gap-2 rounded-2xl border border-theme-faint bg-theme-raised px-4 py-3 text-xs text-theme-soft";
+	"flex max-h-[70vh] w-full flex-col gap-2 overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised px-4 py-3 text-xs text-theme-soft";
 
 export type TooltipAlign = "start" | "center" | "end";
 export type TooltipSide = "top" | "bottom";
 export type TooltipWidth = "default" | "wide";
 
 const ALIGN = {
-	start: "left-0",
-	center: "left-1/2 -translate-x-1/2",
-	end: "right-0",
+	start: "sm:left-0",
+	center: "sm:left-1/2 sm:-translate-x-1/2",
+	end: "sm:right-0",
 } satisfies Record<TooltipAlign, string>;
 
 const SIDE = {
-	top: "bottom-full mb-2",
-	bottom: "top-full mt-2",
+	top: "sm:bottom-full sm:mb-2",
+	bottom: "sm:top-full sm:mt-2",
 } satisfies Record<TooltipSide, string>;
 
 const WIDTH = {
-	default: "w-72",
-	wide: "w-72 sm:w-112",
+	default: "sm:w-72",
+	wide: "sm:w-72 md:w-112",
 } satisfies Record<TooltipWidth, string>;
 
 export type TooltipProps = {

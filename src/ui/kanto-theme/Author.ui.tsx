@@ -3,16 +3,21 @@ import { clsx } from "clsx";
 import { Link } from "./Link.ui";
 import { Typography } from "./Typography.ui";
 
-const AUTHOR = "flex min-w-0 items-center gap-3";
+/**
+ * `gap-4` to match the gutter a panel region gives its sides, because the
+ * avatar sits between the two. An equipped border is drawn at `scale-120`, so
+ * it overflows its own box by a tenth on each side — with a narrower gap the
+ * frame ate into the space before the credit while the panel's padding kept
+ * its own, and the avatar read as pushed against the text.
+ */
+const AUTHOR = "flex min-w-0 items-center gap-4";
 const RULED = "w-full border-t border-edge pt-3";
 const FACE =
 	"absolute inset-0 flex items-center justify-center overflow-hidden rounded-sm border border-edge-strong bg-surface text-xs text-pewter";
 const PHOTO = "absolute inset-0 size-full object-cover";
 const FRAME = "pointer-events-none absolute inset-0 size-full scale-120";
 const CREDIT = "min-w-0";
-// The prose is a caption on someone else's screen; the handle is the only part
-// worth pressing, so the dimming belongs to the words rather than the line.
-const QUIET = "opacity-60";
+const TITLE = "block";
 
 const AVATAR = "relative shrink-0";
 const AVATAR_SIZE = {
@@ -21,7 +26,7 @@ const AVATAR_SIZE = {
 } as const;
 
 const CREATED_BY = "Created by";
-const TITLE_SEPARATOR = "·";
+const ROLE_SEPARATOR = "·";
 const GITHUB = "https://github.com";
 
 const handleOf = (handle: string) => handle.replace(/^@/, "");
@@ -33,6 +38,9 @@ export type AuthorSize = keyof typeof AVATAR_SIZE;
 
 export type AuthorProps = {
 	handle: string;
+	/** Account authority, on the handle line. Assigned, never earned. */
+	role?: string;
+	/** The earned title, on its own line beneath (ADR-109). */
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;
@@ -42,6 +50,7 @@ export type AuthorProps = {
 
 export const Author = ({
 	handle,
+	role,
 	title,
 	photoUrl,
 	borderUrl,
@@ -61,15 +70,20 @@ export const Author = ({
 			)}
 		</span>
 		<span className={CREDIT}>
-			<Typography variant="caption" as="span">
-				<span className={QUIET}>{`${CREATED_BY} `}</span>
+			<Typography variant="hint" as="span">
+				{`${CREATED_BY} `}
 				<Link href={`${GITHUB}/${handleOf(handle)}`} external>
 					{`@${handleOf(handle)}`}
 				</Link>
-				{title === undefined ? null : (
-					<span className={QUIET}>{` ${TITLE_SEPARATOR} ${title}`}</span>
-				)}
+				{role === undefined ? null : ` ${ROLE_SEPARATOR} ${role}`}
 			</Typography>
+			{title === undefined ? null : (
+				<span className={TITLE}>
+					<Typography variant="accent" as="span">
+						{title}
+					</Typography>
+				</span>
+			)}
 		</span>
 	</div>
 );

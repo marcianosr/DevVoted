@@ -1,22 +1,37 @@
 ---
 # DVTD-dr95
-title: 'Config: npm unpublish (Marciano builds core)'
+title: 'Config: npm unpublish takes a config off everyone''s shelf'
 status: todo
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-26T19:28:46Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** Name a config you own and it disappears from everyone else's shop.
+
+**Why:** The first move in the game that takes something from a stranger mid-climb. Marciano writes the core logic himself.
+
+⚠️ The scaffold this bean ticks off does not exist. Nothing in the code mentions unpublish. Start from zero.
+
+## Done when
+- [ ] Decided: gone tomorrow, or gone now for runs already in progress
+- [ ] Naming a config you own takes it off the shelves it should reach
+- [ ] It never touches a config already installed in someone's build
+- [ ] A day can never be stripped of usable offers
+- [ ] Specs cover the action and the shelf filter
+
+## Notes
 
 Legendary thwart config: name a config you own; it is sold out in everyone's shop tomorrow (left-pad memorial). Claude scaffolds (roster entry, state field, spec skeletons, TODO-marked reducer action + draft-roll filter); Marciano implements the core logic as a learning exercise.
 
 - [x] Scaffold: roster entry + RunState field + signatures + it.todo specs
-- [ ] Core: unpublish reducer action (Marciano)
-- [ ] Core: draft roll exclusion (Marciano)
-- [ ] Decide: does the unpublish last one day or until run death; can it be re-published
+- Core: unpublish reducer action (Marciano)
+- Core: draft roll exclusion (Marciano)
+- Decide: does the unpublish last one day or until run death; can it be re-published
 
 ## Scaffold pointers
 
@@ -42,7 +57,7 @@ Marciano asked for the live version: not "sold out tomorrow", but "gone from the
 
 **Recommendation:** ship the tomorrow-scoped version already scaffolded, and treat "live" as a follow-up that needs the global table plus the fairness call above. If live is what you actually want, decide it before the core logic lands, because the storage location changes (RunState field versus a shared table) and that is the part being hand-written.
 
-- [ ] Decide: tomorrow-scoped (scaffolded) or live for runs in progress (needs a shared table and a fairness ruling)
+- Decide: tomorrow-scoped (scaffolded) or live for runs in progress (needs a shared table and a fairness ruling)
 
 ## Correction 2026-09-05
 

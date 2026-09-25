@@ -1,12 +1,25 @@
 ---
 # DVTD-fcg9
-title: 'Config: open-source discounts future configs but locks selling'
+title: 'Config: open-source makes drafts cheaper but locks selling'
 status: draft
 type: feature
+priority: normal
 created_at: 2026-09-16T18:23:28Z
-updated_at: 2026-09-16T18:23:28Z
+updated_at: 2026-09-24T12:49:15Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that discounts every later draft, at the price of never selling anything again this run.
+
+**Why:** Both halves already exist on other configs, so the question is whether a third shop config earns a slot.
+
+## Done when
+- [ ] Decided: ship it, or re-cut the existing half-price config against it
+- [ ] Decided: whether the discount stacks with the other one, and whether it blocks dropping too
+- [ ] The discount size is set, and whether it covers upgrades
+- [ ] Specs cover the discount and the sell refusal
+
+## Notes
 
 Future configs cost less to draft, but nothing can be sold again for the rest of
 the run.
@@ -43,12 +56,12 @@ Which is also an argument that Freemium is the one that should be re-cut.
 
 ## Open questions
 
-- [ ] Ship all three, or re-cut Freemium against this?
-- [ ] Does the discount stack with Freemium's? draftDiscountIn is a product, so
+- Ship all three, or re-cut Freemium against this?
+- Does the discount stack with Freemium's? draftDiscountIn is a product, so
       today it would: 0.25x drafts, which is almost certainly too far.
-- [ ] Does the no-sell lock also block `drop`? drop refunds nothing, so blocking
+- Does the no-sell lock also block `drop`? drop refunds nothing, so blocking
       it would strand an over-wide build with no escape - probably not.
-- [ ] Discount size, and whether it discounts upgrades too (upgradeStorageCost is
+- Discount size, and whether it discounts upgrades too (upgradeStorageCost is
       untouched by draftDiscountIn today).
 
 ## Alternatives if it needs re-cutting

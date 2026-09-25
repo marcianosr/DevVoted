@@ -102,7 +102,7 @@ describe("getAttackTargetsService", () => {
 		expect(attack).toEqual({ band: "perfect" });
 		expect(offers.map((offer) => offer.name)).toEqual(["Misty"]);
 		expect(offers[0].gate).toBe(7);
-		expect(offers[0].gateName).toBe("Marsh");
+		expect(offers[0].userId).toBe("misty");
 		expect(offers[0].payloads).toHaveLength(2);
 		expect(incidents.fetchLastTargetUserId).toHaveBeenCalledWith(USER);
 	});

@@ -1,15 +1,27 @@
 ---
 # DVTD-d5kf
-title: 'Config: sell value that climbs each gate'
+title: 'Config: your configs sell back for more the longer you keep them'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-24T15:12:07Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that raises what everything else sells for, one step per gate it survives.
+
+**Why:** A refund is always half of list, so selling is never a decision.
+
+## Done when
+- [ ] A sale never returns more than the build paid for that config, pinned by a spec
+- [ ] What the climb counts, and whether it resets when the config leaves, is decided
+- [ ] It is checked against the config that zeroes refunds and the one that halves prices
+- [ ] It has a real name and a roster entry
+
+## Detail
 
 A config whose effect is that selling gets better the longer it is installed: each
 gate it survives, your configs sell back for more.
@@ -65,8 +77,8 @@ confirming that separation survives contact with the numbers, since "buy cheaper
 
 ## Todo
 
-- [ ] Pick what the ramp counts and whether it resets
-- [ ] Cap the refund at what was paid, and write the spec that asserts it
-- [ ] Check it against WTFPL (zeroes sales) and Freemium (halves the base) explicitly
-- [ ] Name it
-- [ ] Add to `CONFIG_LIST` with its rarity and draft cost
+- Pick what the ramp counts and whether it resets
+- Cap the refund at what was paid, and write the spec that asserts it
+- Check it against WTFPL (zeroes sales) and Freemium (halves the base) explicitly
+- Name it
+- Add to `CONFIG_LIST` with its rarity and draft cost

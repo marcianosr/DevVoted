@@ -9,7 +9,6 @@ import { Typography } from "./Typography.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
-const BUILD_LAYOUT = "column";
 
 export type NewRunScreenProps = {
 	header: HeaderProps;
@@ -32,7 +31,6 @@ export const NewRunScreen = ({
 }: NewRunScreenProps) => {
 	const dealt: BuildProps = {
 		...build,
-		layout: BUILD_LAYOUT,
 		heading: false,
 		configCount: false,
 		emptySlots: false,

@@ -7,7 +7,7 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 /** Tier 2: the registry, and the KB that installs from it. */
 export const RunShop = () => {
 	const { view } = useTodaysRun();
-	const { send } = useRunActions();
+	const { send, abandon } = useRunActions();
 	const navigate = useNavigate();
 
 	if (!view) return null;
@@ -21,6 +21,7 @@ export const RunShop = () => {
 			onRebuild={() => send({ type: "rebuild-draft" })}
 			onExtend={() => send({ type: "extend-offers" })}
 			onPlantPin={() => send({ type: "plant-pin" })}
+			onAbandon={() => abandon.mutate()}
 			onVendorLock={(configId) => send({ type: "vendor-lock", configId })}
 			onContinue={() => navigate({ to: "/run/prep" })}
 		/>

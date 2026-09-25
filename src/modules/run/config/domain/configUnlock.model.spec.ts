@@ -13,6 +13,7 @@ import {
 	CONFIGS,
 } from "~/modules/run/config/domain/configRoster.model";
 import { STARTER_POOL } from "~/modules/run/config/domain/hand.model";
+import { REGISTRY_CONTROL_LIST } from "~/modules/run/shop/domain/registryControl.model";
 
 const countsOf = (rows: Record<string, number>) =>
 	Object.entries(rows).map(([metric, count]) => ({ metric, count }));
@@ -42,22 +43,28 @@ describe("CONFIG_UNLOCKS", () => {
 		const earnedUnlocks = Object.values(CONFIG_UNLOCKS).filter(
 			(unlock) => unlock.kind === "earned"
 		);
-		expect(earnedUnlocks.length).toBe(36);
+		expect(earnedUnlocks.length).toBe(35);
 		for (const unlock of earnedUnlocks) {
 			expect(unlock.objective.target).toBeGreaterThan(0);
 			expect(unlock.fallbackPollsAnswered).toBeGreaterThan(0);
 		}
 	});
 
-	it("gives every one-shot objective a target of exactly 1", () => {
-		const oneShotUnlocks = Object.values(CONFIG_UNLOCKS).filter(
-			(unlock) =>
-				unlock.kind === "earned" && isOneShotMetric(unlock.objective.metric)
+	it("gives every one-shot objective, config or service, a target of exactly 1", () => {
+		const objectives = [
+			...Object.values(CONFIG_UNLOCKS).flatMap((unlock) =>
+				unlock.kind === "earned" ? [unlock.objective] : []
+			),
+			...REGISTRY_CONTROL_LIST.flatMap((control) =>
+				control.unlock.kind === "earned" ? [control.unlock.objective] : []
+			),
+		];
+		const oneShots = objectives.filter((objective) =>
+			isOneShotMetric(objective.metric)
 		);
-		expect(oneShotUnlocks.length).toBe(ONE_SHOT_METRICS.length);
-		for (const unlock of oneShotUnlocks) {
-			if (unlock.kind === "free") continue;
-			expect(unlock.objective.target).toBe(1);
+		expect(oneShots.length).toBe(ONE_SHOT_METRICS.length);
+		for (const objective of oneShots) {
+			expect(objective.target).toBe(1);
 		}
 	});
 

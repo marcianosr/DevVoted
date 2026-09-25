@@ -5,10 +5,15 @@ import type {
 	DexAuditRow,
 	DexAuditsProps,
 } from "~/ui/kanto-theme/DexAudits.ui";
+import type { DexUnlockPath } from "~/ui/kanto-theme/DexConfigChip.ui";
 import type {
-	DexConfigRow,
 	DexConfigsProps,
+	DexWeightGroup,
 } from "~/ui/kanto-theme/DexConfigs.ui";
+import type {
+	DexControlRow,
+	DexControlsProps,
+} from "~/ui/kanto-theme/DexControls.ui";
 import type { DexPollRow, DexPollsProps } from "~/ui/kanto-theme/DexPolls.ui";
 import type { DexRunRow, DexRunsProps } from "~/ui/kanto-theme/DexRuns.ui";
 import type {
@@ -54,52 +59,101 @@ export const dexPollsProps = (
 	...overrides,
 });
 
-export const dexConfigRows: readonly DexConfigRow[] = [
+const STARTER_PROVENANCE = "Starter config";
+
+const lockPaths = (
+	thematic: string,
+	count: number,
+	target: number,
+	fallbackTarget: number
+): readonly DexUnlockPath[] => [
+	{ text: thematic, progress: { count, target } },
 	{
-		id: "js",
-		slots: 1,
-		state: "granted",
-		name: ".js",
-		effect: "JavaScript polls reward ×1.25 coverage",
-		provenance: "Starter config",
-		starter: true,
-		versions: [
+		text: `Answer ${fallbackTarget} polls`,
+		progress: { count: 43, target: fallbackTarget },
+	},
+];
+
+export const dexConfigGroups: readonly DexWeightGroup[] = [
+	{
+		weight: 2,
+		heading: "2 weight · 3 of 5",
+		chips: [
 			{
-				version: 1,
-				effect: "JavaScript polls reward ×1.25 coverage",
-				price: null,
-				odds: null,
+				id: "codeCoverage",
+				slots: 2,
+				state: "granted",
+				name: "Code Coverage",
+				effect: "Correct answers pay +10% coverage",
+				starter: true,
+				provenance: STARTER_PROVENANCE,
+				figure: "+10%",
 			},
 			{
-				version: 2,
-				effect: "JavaScript polls reward ×1.5 coverage",
-				price: "64 KB",
-				odds: "1 in 2 rolls",
+				id: "indexedDb",
+				slots: 2,
+				state: "granted",
+				name: "IndexedDB",
+				effect: "+8KB per correct answer, up to 320KB a run",
+				starter: true,
+				provenance: STARTER_PROVENANCE,
+				figure: "+8 KB",
 			},
 			{
-				version: 3,
-				effect: "JavaScript polls reward ×1.75 coverage",
-				price: "96 KB",
-				odds: "1 in 4 rolls",
+				id: "regressionTest",
+				slots: 2,
+				state: "granted",
+				name: "Regression Test",
+				effect: "Polls you have previously missed pay ×2 coverage",
+				starter: false,
+				provenance: "Earned: answered 25 polls correctly",
+				figure: "×2",
+			},
+			{
+				id: "planningPoker",
+				slots: 2,
+				state: "met",
+				name: "Planning Poker",
+				paths: lockPaths("Land 3 exact estimates", 1, 3, 575),
+			},
+			{
+				id: "lock",
+				slots: 2,
+				state: "locked",
+				paths: lockPaths("Lock 5 shop offers", 2, 5, 550),
 			},
 		],
 	},
 	{
-		id: "cache",
-		slots: 4,
-		state: "granted",
-		name: "Cache",
-		effect: "+0.25 a cached hit, up to four hits",
-		provenance: "Earned: sweep three gates",
-		starter: false,
-	},
-	{
-		id: "agents",
-		slots: 8,
-		state: "locked",
-		paths: [
-			{ text: "Hold 2 MB in the archive", progress: { count: 1, target: 2 } },
-			{ text: "Answer 225 polls", progress: { count: 43, target: 225 } },
+		weight: 1,
+		heading: "1 weight · 2 of 3",
+		chips: [
+			{
+				id: "js",
+				slots: 1,
+				state: "granted",
+				name: ".js",
+				effect: "JavaScript polls reward ×1.25 coverage",
+				starter: true,
+				provenance: STARTER_PROVENANCE,
+				figure: "×1.25",
+				maxVersion: 5,
+			},
+			{
+				id: "eslint",
+				slots: 1,
+				state: "granted",
+				name: "ESLint",
+				effect: "Cross out a wrong answer on JS/TS polls",
+				starter: true,
+				provenance: STARTER_PROVENANCE,
+			},
+			{
+				id: "html",
+				slots: 1,
+				state: "locked",
+				paths: lockPaths("Answer 10 HTML polls correctly", 4, 10, 25),
+			},
 		],
 	},
 ];
@@ -107,11 +161,11 @@ export const dexConfigRows: readonly DexConfigRow[] = [
 export const dexConfigsProps = (
 	overrides: Partial<DexConfigsProps> = {}
 ): DexConfigsProps => ({
-	rows: dexConfigRows,
+	groups: dexConfigGroups,
 	count: "18 of 44",
 	meta: "by weight",
 	note: "Configs in the deck can be dealt into a hand or offered in the shop.",
-	onVersion: () => {},
+	onToggleInfo: () => {},
 	...overrides,
 });
 
@@ -217,5 +271,81 @@ export const dexRunsProps = (
 	count: "3 runs",
 	meta: "best reached gate 9",
 	note: "Coverage is the run's final score against its window.",
+	...overrides,
+});
+
+export const dexControlRows: readonly DexControlRow[] = [
+	{
+		id: "rebuild",
+		glyph: "↻",
+		title: "Rebuild the registry",
+		detail: "Registry · this visit",
+		price: "from 4 KB, doubling",
+	},
+	{
+		id: "extend",
+		glyph: "+",
+		title: "Extend the registry",
+		detail: "Registry · rest of the run",
+		locked: true,
+		unlock: "Reach Cascade",
+	},
+	{
+		id: "hotReload",
+		glyph: "⇋",
+		title: "Hot reload one offer",
+		detail: "Registry · this visit",
+		locked: true,
+		unlock: "Rebuild 5 times",
+	},
+	{
+		id: "returnPolicy",
+		glyph: "↩",
+		title: "Return policy",
+		detail: "Registry · this visit",
+		locked: true,
+		unlock: "Sell 5 configs",
+	},
+	{
+		id: "abandon",
+		glyph: "✕",
+		title: "kill -9",
+		detail: "Registry · ends the run",
+		locked: true,
+		unlock: "Clear gate 5",
+	},
+	{
+		id: "pin",
+		glyph: "⚑",
+		title: "git tag",
+		detail: "Run · carries into your next run",
+		locked: true,
+		unlock: "Reach gate 4",
+	},
+	{
+		id: "bootCache",
+		glyph: "▮",
+		title: "Boot Cache",
+		detail: "Next run · consumed on start",
+		locked: true,
+		unlock: "Bank 256 KB in one run",
+	},
+	{
+		id: "dockerImage",
+		glyph: "⧉",
+		title: "Docker Image",
+		detail: "Next run · spent in the first shop",
+		locked: true,
+		unlock: "Keep a starting config to the end",
+	},
+];
+
+export const dexControlsProps = (
+	overrides: Partial<DexControlsProps> = {}
+): DexControlsProps => ({
+	rows: dexControlRows,
+	count: "1 of 8",
+	meta: "registry, then run",
+	note: "A service is unlocked once, for good. A registry service is then bought in the shop with the run's own storage; a run service once a run, before it, from the archive.",
 	...overrides,
 });

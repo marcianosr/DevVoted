@@ -16,16 +16,12 @@ const PANEL = {
 	name: "Moore's Law",
 	description: "A share of held storage, paid on every gate clear.",
 	rungs: RUNGS,
-	toMax: { version: 5, price: "384 KB" },
 };
 
 const refused = (rungs: readonly UpgradeRung[]) =>
 	rungs.map((rung) =>
 		rung.state === "offered" ? { ...rung, disabled: true } : rung
 	);
-
-const sentence = (text: string) =>
-	screen.getByText((_, element) => element?.textContent === text);
 
 describe("Upgrades", () => {
 	it("names the config and says what it does", () => {
@@ -81,7 +77,7 @@ describe("Upgrades", () => {
 		}
 	);
 
-	it("gives the description the screen's accent, not the footer's grey", () => {
+	it("gives the description the screen's accent rather than a muted grey", () => {
 		render(<Upgrades {...PANEL} />);
 
 		expect(screen.getByText(PANEL.description)).toHaveClass(
@@ -167,26 +163,6 @@ describe("Upgrades", () => {
 		expect(screen.getByText("→")).toHaveAttribute("aria-hidden");
 	});
 
-	it("totals the climb and names what a press would buy", () => {
-		render(<Upgrades {...PANEL} />);
-
-		expect(
-			sentence("all the way to v5 costs 384 KB · press to buy v3")
-		).toBeInTheDocument();
-	});
-
-	it("drops the footer for a config with nothing left to buy", () => {
-		render(
-			<Upgrades
-				name="A/B Test"
-				description="Pick an arm."
-				rungs={[{ version: 1, effect: "×1.25", state: "owned", held: true }]}
-			/>
-		);
-
-		expect(screen.queryByText(/all the way/)).not.toBeInTheDocument();
-	});
-
 	it("says a config is fully upgraded only when every version is held", () => {
 		render(
 			<Upgrades
@@ -215,20 +191,6 @@ describe("Upgrades", () => {
 
 		expect(screen.getByText("nothing on offer")).toBeInTheDocument();
 		expect(screen.queryByText("fully upgraded")).not.toBeInTheDocument();
-	});
-
-	it("still totals the climb when nothing is on offer this gate", () => {
-		render(
-			<Upgrades
-				{...PANEL}
-				rungs={[
-					{ version: 1, effect: "+2%", state: "owned", held: true },
-					{ version: 2, effect: "+4%", state: "future", price: "64 KB" },
-				]}
-			/>
-		);
-
-		expect(sentence("all the way to v5 costs 384 KB")).toBeInTheDocument();
 	});
 
 	it("makes the offer card the buy control", async () => {
@@ -295,5 +257,24 @@ describe("Upgrades", () => {
 		expect(
 			container.querySelector('[data-screen-theme="cinnabar"]')
 		).toBeNull();
+	});
+
+	it("closes itself from a press beside its own name", async () => {
+		const onClose = vi.fn();
+		render(<Upgrades {...PANEL} onClose={onClose} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Close Moore's Law" })
+		);
+
+		expect(onClose).toHaveBeenCalledTimes(1);
+	});
+
+	it("shows no close press when there is nothing listening for one", () => {
+		render(<Upgrades {...PANEL} />);
+
+		expect(
+			screen.queryByRole("button", { name: /^Close/ })
+		).not.toBeInTheDocument();
 	});
 });

@@ -160,17 +160,10 @@ export const upgradesFor = (
 		};
 	});
 
-	const toMaxKb = rungs
-		.filter((rung) => rung.price !== undefined)
-		.reduce((total, rung) => total + upgradeStorageCost(rung.version - 1), 0);
-
 	return {
 		name: config.label,
 		description: describeConfig(config),
 		rungs,
-		...(toMaxKb === 0
-			? {}
-			: { toMax: { version: max, price: kbLabel(toMaxKb) } }),
 		...(refusal === undefined ? {} : { refusal }),
 		...(onBuy === undefined ? {} : { onBuy: () => onBuy() }),
 	};

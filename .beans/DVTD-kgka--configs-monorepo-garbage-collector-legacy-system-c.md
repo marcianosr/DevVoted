@@ -1,15 +1,29 @@
 ---
 # DVTD-kgka
-title: 'Configs: Monorepo, Garbage Collector, Legacy System, Cloud Provider'
+title: 'Configs: Garbage Collector, Legacy System and Cloud Provider'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-30T18:37:27Z
-updated_at: 2026-09-22T11:23:25Z
+updated_at: 2026-09-24T12:49:10Z
 parent: DVTD-72d9
 ---
+
+**What:** Three storage configs written up ready to argue with: a refund every third correct answer, a windfall that turns into a drain, and a doubled gate payout with a doubled bill.
+
+**Why:** The roster leans on coverage multipliers; these pay and charge in storage instead.
+
+⚠️ Monorepo, the fourth config here, is superseded by a different mechanic under the same name. Ignore it in this bean.
+
+## Done when
+- [ ] Each of the three has its numbers and its drawback agreed
+- [ ] Legacy System's negative payout has a rule: clamp at zero, or end the run
+- [ ] The run tracks what they need: spend this gate, and gates held per config
+- [ ] All three have roster entries and specs
+
+## Notes
 
 Four configs, all on the economy/storage side of the roster rather than the coverage
 side. Each is written up with what it needs decided before it can be built; where a
@@ -137,18 +151,18 @@ only drawback.
 
 ## Decide before building
 
-- [ ] Monorepo: raise the number (option 1) or change the shape (option 2)?
-- [ ] Garbage Collector: this gate's spend rather than the previous gate's?
-- [ ] Legacy System: does the decay go negative, and does negative storage clamp at 0 or
+- Monorepo: raise the number (option 1) or change the shape (option 2)?
+- Garbage Collector: this gate's spend rather than the previous gate's?
+- Legacy System: does the decay go negative, and does negative storage clamp at 0 or
       end the run?
-- [ ] Cloud Provider: ×2 on the gate reward, and slot rent as the drawback?
+- Cloud Provider: ×2 on the gate reward, and slot rent as the drawback?
 
 ## Then
 
-- [ ] `RunState`: `spentThisGateKb`, and a per-config gates-held counter
-- [ ] `Config`: fields for the four effects; uninstall/sell lock
-- [ ] Roster entries with `gives`/`costs` lines
-- [ ] Wiki: Legacy System's negative-storage rule is a new rule and needs a line; the
+- `RunState`: `spentThisGateKb`, and a per-config gates-held counter
+- `Config`: fields for the four effects; uninstall/sell lock
+- Roster entries with `gives`/`costs` lines
+- Wiki: Legacy System's negative-storage rule is a new rule and needs a line; the
       other three are roster rows only
 
 ## Monorepo superseded 2026-09-22

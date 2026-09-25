@@ -35,12 +35,19 @@ const PREVIEW_ROOM = "rounded-r-md border border-theme-soft bg-hatched-theme";
 const NAME = "truncate text-xs font-bold";
 const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
 
-const PANEL = "absolute top-full z-30 mt-2 transition-opacity";
+/**
+ * A phone gets a sheet, the same as `Tooltip` and `ConfigChip`. A segment here
+ * is `basis-0` and often only a few pixels wide, so anchoring a `w-80` panel to
+ * one put most of it past the screen with nothing to scroll it back — the worst
+ * case of the problem those two already solved. From `sm` it anchors again.
+ */
+const PANEL =
+	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:top-full sm:bottom-auto sm:mt-2";
 const PANEL_SHUT =
 	"pointer-events-none invisible opacity-0 group-hover/info:visible group-hover/info:opacity-100 group-has-[:focus-visible]/info:visible group-has-[:focus-visible]/info:opacity-100";
 
-const ALIGN_START = "left-0";
-const ALIGN_END = "right-0";
+const ALIGN_START = "sm:left-0";
+const ALIGN_END = "sm:right-0";
 
 const NAME_SHARE = 0.12;
 const FIGURE_SHARE = 0.05;

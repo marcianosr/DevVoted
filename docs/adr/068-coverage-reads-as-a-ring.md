@@ -18,8 +18,10 @@ The kanto poll screen drew no coverage at all. `Header` could carry a readout
 and a `Meter`, but `PollScreen` never passed one, so the screen the player
 answers on showed neither the score nor the bar it is judged against.
 
-ADR-061 put a vertical gauge in the left gutter. The kanto poll screen is one
-column (no sidebar, no gutter), so that placement has nowhere to go.
+ADR-061 put a vertical gauge in the left gutter. The kanto poll screen was one
+column (no sidebar, no gutter), so that placement had nowhere to go. It has two
+columns now ([ADR-113](113-the-poll-screen-stands-coverage-beside-the-question.md)),
+but the right-hand one is a rail for the bar, not a gutter.
 
 ## Decision
 

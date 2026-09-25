@@ -7,7 +7,9 @@ import {
 	runPollsTable,
 	userConfigUnlocksTable,
 	userObjectiveProgressTable,
+	userServiceUnlocksTable,
 	usersTable,
+	userTitlesTable,
 } from "~/database/schema";
 import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
 
@@ -237,6 +239,8 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		// The title ledger read the run's end fires (ADR-109).
+		mock.results.push([]);
 
 		const { state: next } = await dispatch({ type: "close-gate" });
 
@@ -251,6 +255,99 @@ describe("applyActionToRun", () => {
 		expect(mock.setCalls[3]).toHaveProperty("archived_storage");
 		expect(mock.setCalls[4]).toHaveProperty("peak_storage_kb");
 		expect(db.update).toHaveBeenCalledTimes(5);
+	});
+
+	// The title ledger is read once, when the run ends (ADR-109). Between the
+	// objective upsert and that read sit the swatch stamp and the run_states
+	// write, neither of which looks at what it gets back.
+	const summitDispatchWith = (counts: readonly unknown[]) => {
+		const summitReady = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			bankedUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(summitReady)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+		mock.results.push([]);
+		mock.results.push(counts);
+		return dispatch({ type: "close-gate" });
+	};
+
+	const titleRowsWritten = () =>
+		mock.valuesCalls.find(
+			(payload): payload is { title_id: string; exclusive: boolean }[] =>
+				Array.isArray(payload) &&
+				payload.some(
+					(row) => row && typeof row === "object" && "title_id" in row
+				)
+		) ?? [];
+
+	it("writes the titles the ledger satisfies when the run ends", async () => {
+		await summitDispatchWith([{ metric: "runs-won", count: 1 }]);
+
+		expect(mock.insertTables).toContain(userTitlesTable);
+		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
+			"title-summit"
+		);
+	});
+
+	it("writes a maintainer earned mid-run when the run it was crossed in ends", async () => {
+		await summitDispatchWith([{ metric: "category-correct:git", count: 25 }]);
+
+		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
+			"title-maintainer-git"
+		);
+	});
+
+	it("flags a race title exclusive, which is the column the unique index keys on", async () => {
+		await summitDispatchWith([{ metric: "runs-won", count: 1 }]);
+
+		const rows = titleRowsWritten();
+
+		expect(rows).toContainEqual(
+			expect.objectContaining({
+				title_id: "title-first-ascent",
+				exclusive: true,
+			})
+		);
+		expect(rows).toContainEqual(
+			expect.objectContaining({ title_id: "title-summit", exclusive: false })
+		);
+	});
+
+	it("writes no title row when the ledger satisfies none", async () => {
+		await summitDispatchWith([]);
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
+	});
+
+	it("leaves the title ledger alone while the run is still going", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+			elapsedMs: 1_200,
+		});
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
 	});
 
 	it("hands out no swatch at run start — Pallet is gate 0's reward", async () => {
@@ -564,6 +661,27 @@ describe("applyActionToRun", () => {
 		expect(result.unlockedConfigIds).toEqual(["telemetry"]);
 	});
 
+	it("grants the service whose gate the transaction reached, off the same counts", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "reached-gate:2", count: 1 }]);
+		mock.results.push([]);
+
+		await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userServiceUnlocksTable);
+		expect(mock.insertTables).not.toContain(userConfigUnlocksTable);
+		expect(mock.valuesCalls[1]).toEqual([
+			{
+				user_id: "red-from-pallet-town",
+				service_id: "extend",
+				via_metric: "reached-gate:2",
+			},
+		]);
+	});
+
 	it("returns no unlock when the grant row already existed", async () => {
 		mock.results.push([stateRow(peekReady())]);
 		mock.results.push(segmentRow());
@@ -608,6 +726,8 @@ describe("applyActionToRun", () => {
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		// The title ledger read the run's end fires (ADR-109).
+		mock.results.push([]);
 
 		const { state: next } = await dispatch({ type: "close-gate" });
 

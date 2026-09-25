@@ -1,6 +1,12 @@
 import type { AttackOfferView } from "~/modules/run/incident/application/incident.viewmodel";
 import type { AttackOffer } from "~/modules/run/incident/domain/incident.model";
 import { publicBuildOf } from "~/modules/run/build/domain/publicBuild.model";
+import { type AuditId, auditAt } from "~/modules/run/gate/domain/audit.model";
+import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+import { auditsPanelFor } from "~/modules/run/run/application/prepScreen.viewmodel";
+import type { IncidentSender } from "~/modules/run/run/domain/run.model";
+import type { AuditsPanelProps } from "~/ui/kanto-theme/AuditsPanel.ui";
 import {
 	ATTACK_DEALING,
 	ATTACK_NO_RIVAL,
@@ -24,6 +30,9 @@ export {
 	INCIDENTS_EMPTY,
 	INCIDENTS_TITLE,
 };
+
+/** The gate the fixtures fire from: the first one that can be fired at in return. */
+const OPEN_GATE = AUDITS_FROM_GATE;
 
 const VIEWER = "red";
 
@@ -49,6 +58,7 @@ const OFFERS: readonly AttackOffer[] = [
 		targetRunId: 2,
 		targetUserId: "misty",
 		name: "Misty",
+		title: "CSS Maintainer",
 		targetGate: 7,
 		build: MISTY_BUILD,
 		payloads: ["not-found", "memory-leak"],
@@ -57,6 +67,7 @@ const OFFERS: readonly AttackOffer[] = [
 		targetRunId: 3,
 		targetUserId: "brock",
 		name: "Brock",
+		title: "Summit",
 		targetGate: 9,
 		build: BROCK_BUILD,
 		payloads: ["timeout", "breaking-change"],
@@ -74,13 +85,35 @@ const OFFERS: readonly AttackOffer[] = [
 export const kantoAttackOffers = (): readonly AttackOfferView[] =>
 	OFFERS.map(attackOfferViewFor);
 
+/**
+ * Every fixture below sits at or above the audit floor, where `attackPanelFor`
+ * always gives a panel. Throwing rather than narrowing keeps that assumption
+ * stated: a fixture that slips below the floor fails loudly instead of
+ * silently becoming an empty screen.
+ */
+const panelAt = (
+	...args: Parameters<typeof attackPanelFor>
+): AttackPanelProps => {
+	const panel = attackPanelFor(...args);
+	if (panel === undefined)
+		throw new Error("no attack panel below the audit floor");
+	return panel;
+};
+
 /** A PERFECT close: three rivals, two payloads each to choose between. */
 export const kantoAttackPanel = (): AttackPanelProps =>
-	attackPanelFor({ band: "perfect" }, kantoAttackOffers());
+	panelAt(OPEN_GATE, { band: "perfect" }, kantoAttackOffers());
+
+/** A rival opened: their build reads beside the payloads it would meet. */
+export const kantoAttackPanelInspected = (): AttackPanelProps => ({
+	...kantoAttackPanel(),
+	openRunId: OFFERS[0].targetRunId,
+});
 
 /** A HEALTHY close: one payload per rival. */
 export const kantoAttackPanelHealthy = (): AttackPanelProps =>
-	attackPanelFor(
+	panelAt(
+		OPEN_GATE,
 		{ band: "healthy" },
 		kantoAttackOffers().map((offer) => ({
 			...offer,
@@ -89,13 +122,13 @@ export const kantoAttackPanelHealthy = (): AttackPanelProps =>
 	);
 
 export const kantoAttackPanelUnarmed = (): AttackPanelProps =>
-	attackPanelFor(null, null);
+	panelAt(OPEN_GATE, null, null);
 
 export const kantoAttackPanelNoRival = (): AttackPanelProps =>
-	attackPanelFor({ band: "healthy" }, []);
+	panelAt(OPEN_GATE, { band: "healthy" }, []);
 
 export const kantoAttackPanelDealing = (): AttackPanelProps =>
-	attackPanelFor({ band: "healthy" }, null);
+	panelAt(OPEN_GATE, { band: "healthy" }, null);
 
 const at = (hour: number) =>
 	new Date(`2026-09-22T${String(hour).padStart(2, "0")}:00:00`);
@@ -145,3 +178,45 @@ export const kantoIncidents = (): IncidentsPanelProps =>
 
 export const kantoIncidentsQuiet = (): IncidentsPanelProps =>
 	incidentsPanelFor([]);
+
+const AUDIT_BILL = { bill: "bills −32 KB on a clear" };
+
+const firedAt = (
+	gate: number,
+	id: AuditId,
+	sentBy?: IncidentSender
+): AuditView => {
+	const audit = auditAt(id, gate);
+	return {
+		id,
+		code: audit.code,
+		name: audit.name,
+		description: audit.description,
+		answerCue: audit.answerCue,
+		suppressed: false,
+		...(sentBy === undefined ? {} : { sentBy }),
+	};
+};
+
+/** Two rivals reached this gate: the panel names both, and bills the clear. */
+export const kantoAudits = (): AuditsPanelProps =>
+	auditsPanelFor(
+		OPEN_GATE,
+		[
+			firedAt(OPEN_GATE, "memory-leak", { id: "koga", name: "Koga" }),
+			firedAt(OPEN_GATE, "too-many-requests", { id: "erika", name: "Erika" }),
+		],
+		AUDIT_BILL
+	);
+
+/** A schedule dealt before rivals filled it: the row stands, unattributed. */
+export const kantoAuditsNoSender = (): AuditsPanelProps =>
+	auditsPanelFor(OPEN_GATE, [firedAt(OPEN_GATE, "memory-leak")], AUDIT_BILL);
+
+/** A gate nobody attacked. A quiet day is a real outcome (ADR-099). */
+export const kantoAuditsQuiet = (): AuditsPanelProps =>
+	auditsPanelFor(OPEN_GATE, [], {});
+
+/** Below the floor: no rival can reach the gate in front of you yet. */
+export const kantoAuditsLocked = (): AuditsPanelProps =>
+	auditsPanelFor(AUDITS_FROM_GATE - 1, [], {});

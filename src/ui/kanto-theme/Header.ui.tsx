@@ -18,17 +18,23 @@ const TRACK_ROW = "flex w-full items-center gap-4";
 const NOTE = "shrink-0 text-xs text-theme-faint opacity-60";
 const NOTE_AT_END = "ml-auto";
 
-const FUNDS = "ml-auto flex shrink-0 items-center gap-1.5 text-sm";
-const FUNDS_LABEL = "font-bold text-theme";
+const FUNDS = "ml-auto flex shrink-0 flex-col items-end gap-1";
+const FUNDS_LABEL = "text-xs font-bold text-theme";
 
 const COVERAGE = "ml-auto flex shrink-0 items-center gap-2 text-sm";
 const COVERAGE_LABEL = "font-bold text-theme";
 const COVERAGE_OF = "text-theme-muted";
 
-const NAME_SEPARATOR = "·";
 const SWATCH_SIZE = "small";
 
 const OF = "of";
+
+/**
+ * The one spelling of a gate's name, exported so a viewmodel that has to state
+ * it in prose reads it off the same formatter the header draws.
+ */
+export const gateTitleOf = (swatch: GateSwatch): string =>
+	`#${swatch.gate} - ${swatch.gateName} Gate`;
 
 export type HeaderFunds = { amount: string; unit: string; label: string };
 
@@ -79,9 +85,7 @@ export const Header = ({
 		<>
 			<div className={TITLE_ROW}>
 				<Swatch state={swatchState} swatch={swatch} size={SWATCH_SIZE} />
-				<Typography variant="title">
-					{title ?? `Gate ${swatch.gate} ${NAME_SEPARATOR} ${swatch.gateName}`}
-				</Typography>
+				<Typography variant="title">{title ?? gateTitleOf(swatch)}</Typography>
 				{subtitle === undefined ? null : (
 					<Typography variant="hint" as="span">
 						{subtitle}
@@ -90,8 +94,8 @@ export const Header = ({
 				{badge === undefined ? null : <Badge>{badge}</Badge>}
 				{funds === undefined ? null : (
 					<span className={FUNDS}>
-						<Badge>{`${funds.amount} ${funds.unit}`}</Badge>
 						<span className={FUNDS_LABEL}>{funds.label}</span>
+						<Badge>{`${funds.amount} ${funds.unit}`}</Badge>
 					</span>
 				)}
 			</div>

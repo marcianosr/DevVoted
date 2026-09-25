@@ -12,7 +12,14 @@ const ROW = "flex w-full flex-wrap items-center gap-2";
 const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
 const TRACK = "flex shrink-0 items-center gap-1";
 const TAG = "shrink-0";
-const SCORE = "ml-auto shrink-0";
+/**
+ * Hard right at every width. It already carried `ml-auto`, but that only aligns
+ * it within whatever line it lands on — taking the line outright on a phone is
+ * what makes the total sit under the track's right edge rather than wherever
+ * the wrap happened to leave it.
+ */
+const SCORE =
+	"ml-auto flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto";
 const EMPTY =
 	"inline-flex items-center justify-center rounded-md border border-dashed border-theme-faint px-2 py-0.5 text-xs font-bold tabular-nums text-theme-muted";
 
@@ -21,6 +28,7 @@ const CORRECT_WORD = "correct";
 const PAID_WORD = "paid";
 const OUT_OF = "out of";
 const POLL_WORD = "poll";
+const TOTAL_WORD = "Total units";
 
 export type PollPaid = {
 	figure: string;
@@ -176,6 +184,11 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 		)}
 
 		<span aria-hidden className={SCORE}>
+			{row.payouts === undefined ? null : (
+				<Typography variant="hint" as="span">
+					{TOTAL_WORD}
+				</Typography>
+			)}
 			<Badge>{scoreOf(row)}</Badge>
 		</span>
 	</div>

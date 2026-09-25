@@ -1,13 +1,26 @@
 ---
 # DVTD-b78a
-title: RunSummary shows the actual death cause, not a generic message
+title: The run-over screen says why the run ended
 status: todo
 type: feature
 priority: normal
 created_at: 2026-08-12T13:36:36Z
-updated_at: 2026-09-12T12:57:01Z
+updated_at: 2026-09-24T12:49:41Z
 parent: DVTD-kulw
 ---
+
+**What:** The run-over screen names the reason the run ended, instead of one fixed sentence.
+
+**Why:** Every death currently reads "Your pipeline was stripped bare and broke", which is wrong.
+
+⚠️ Both death paths this bean describes are gone. There is one death now: closing a gate below the floor. The screen needs to state that one properly, not tell two apart.
+
+## Done when
+- [ ] The screen states the band the last gate closed in
+- [ ] It states the line that was missed, and by how much
+- [ ] A spec covers that death
+
+## Notes
 
 RunSummary.ui.tsx hardcodes "Your pipeline was stripped bare and broke." for every
 death, regardless of cause. There are (at least) two distinct death paths now and
@@ -30,11 +43,11 @@ a community minimap, references pre-restructure paths (src/domains/runs,
 src/routes/_authed/game-over.tsx) that no longer exist, and is out of scope here.
 
 ## Todo
-- [ ] Decide the shape: reuse state.log's existing strings, or add a typed death-cause
+- Decide the shape: reuse state.log's existing strings, or add a typed death-cause
       field (e.g. a discriminated union) that RunSummary maps to copy
-- [ ] Wire the cause through RunView -> RunSummary props
-- [ ] Replace the hardcoded death subtitle with cause-specific copy
-- [ ] Cover both death paths (stripped-bare fail, stuck-width end-run) with a spec
+- Wire the cause through RunView -> RunSummary props
+- Replace the hardcoded death subtitle with cause-specific copy
+- Cover both death paths (stripped-bare fail, stuck-width end-run) with a spec
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

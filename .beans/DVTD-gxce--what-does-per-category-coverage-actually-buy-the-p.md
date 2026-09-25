@@ -1,16 +1,30 @@
 ---
 # DVTD-gxce
-title: What does per-category coverage actually buy the player?
+title: Decide what per-category coverage is for, or delete it
 status: todo
 type: feature
 priority: high
 created_at: 2026-09-03T14:46:32Z
-updated_at: 2026-09-12T12:58:03Z
+updated_at: 2026-09-24T12:49:40Z
 parent: DVTD-u35m
 blocking:
     - DVTD-h9s5
     - DVTD-4ova
 ---
+
+**What:** Decide what per-category coverage buys the player, then give it a use or remove it.
+
+**Why:** It feeds one rule, which upgrades the config that generates it, so nothing outside that loop reads it.
+
+⚠️ It no longer accumulates: coverage resets at every gate. The question is now whether a per-category measure survives that reset at all.
+
+## Done when
+- [ ] A decision says what each of the three per-category numbers is for, and which may gate anything
+- [ ] The config upgrade requirement is kept, re-based or dropped
+- [ ] The beans that depend on it are re-scoped to match
+- [ ] The wiki stops calling it a staging axis, or it becomes one
+
+## Notes
 
 Decide what per-category coverage is for, then either give it consumers or delete it. Output is an ADR plus a re-scope of the four beans listed at the bottom.
 
@@ -49,21 +63,21 @@ These are not exclusive. My pick is **B for the meta, E for the run, A alongside
 
 ## What the decision unblocks
 
-- [ ] ADR: what each of the three quantities is for, and which of them the game may ever gate on
-- [ ] The Focus upgrade requirement: keep, re-base on accuracy, or drop. **DVTD-h9s5 proposes what already shipped** and needs closing or narrowing either way
-- [ ] Wiki §2.8: stop calling category coverage a staging axis, or make it one
-- [ ] `DVTD-clgs` (ADR-051 ledger): confirms `category-correct` is the counter the objectives read
-- [ ] `DVTD-4ova` (configs that steer the category mix): only worth building if in-run category aim survives the decision
-- [ ] `DVTD-g8ty` (per-category chip): becomes concrete under option A
-- [ ] `DVTD-in1b` (Open Source wills leftover KB to a category pool): its pool needs this vocabulary
-- [ ] Dex Polls tab (DVTD-e15y): decides whether the tab shows coverage, accuracy, or both, and which of them a player is meant to chase
+- ADR: what each of the three quantities is for, and which of them the game may ever gate on
+- The Focus upgrade requirement: keep, re-base on accuracy, or drop. **DVTD-h9s5 proposes what already shipped** and needs closing or narrowing either way
+- Wiki §2.8: stop calling category coverage a staging axis, or make it one
+- `DVTD-clgs` (ADR-051 ledger): confirms `category-correct` is the counter the objectives read
+- `DVTD-4ova` (configs that steer the category mix): only worth building if in-run category aim survives the decision
+- `DVTD-g8ty` (per-category chip): becomes concrete under option A
+- `DVTD-in1b` (Open Source wills leftover KB to a category pool): its pool needs this vocabulary
+- Dex Polls tab (DVTD-e15y): decides whether the tab shows coverage, accuracy, or both, and which of them a player is meant to chase
 
 ## Todo
 
-- [ ] Design session on the five options, with the four beans above on the table
-- [ ] Write the ADR, including the rejection of C
-- [ ] Re-scope DVTD-h9s5, DVTD-4ova, DVTD-g8ty per the outcome
-- [ ] Wiki §2.8 and §4.4 corrected in the same pass
+- Design session on the five options, with the four beans above on the table
+- Write the ADR, including the rejection of C
+- Re-scope DVTD-h9s5, DVTD-4ova, DVTD-g8ty per the outcome
+- Wiki §2.8 and §4.4 corrected in the same pass
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

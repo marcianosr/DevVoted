@@ -109,6 +109,7 @@ const authorOf = (poll: LivePoll): AuthorProps | undefined =>
 		? undefined
 		: {
 				handle: poll.author.handle,
+				role: poll.author.role,
 				title: poll.author.title,
 				photoUrl: poll.author.avatarUrl,
 				borderUrl: poll.author.borderUrl,

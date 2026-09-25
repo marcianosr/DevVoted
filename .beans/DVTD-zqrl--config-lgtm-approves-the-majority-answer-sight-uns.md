@@ -1,15 +1,28 @@
 ---
 # DVTD-zqrl
-title: 'Config: LGTM approves the majority answer sight unseen'
+title: 'Config: LGTM submits the crowd''s answer without opening the poll'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-06T07:35:21Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that answers a poll blind, picking whatever most players have picked.
+
+**Why:** A real decision made off the envelope alone, and it writes a water-cooler line afterwards.
+
+## Done when
+- [ ] How many prior answers a poll needs before the press works is decided
+- [ ] Pressing it before opening the poll submits the most-picked option
+- [ ] Opening the poll withdraws the press
+- [ ] A wrong LGTM costs exactly what any wrong answer costs
+- [ ] Decided: multi-answer polls, the audit that inverts the majority, and once a window or not
+
+## Notes
 
 ## Design (2026-09-06 session)
 
@@ -28,7 +41,7 @@ parent: DVTD-72d9
 
 ## Todo
 
-- [ ] Sim majority accuracy off real poll data to price slots and uses
-- [ ] Decide the approvals threshold
-- [ ] Decide multi-answer handling and the 300 rule
-- [ ] Decide once-per-window vs unlimited
+- Sim majority accuracy off real poll data to price slots and uses
+- Decide the approvals threshold
+- Decide multi-answer handling and the 300 rule
+- Decide once-per-window vs unlimited

@@ -13,7 +13,8 @@ const meta: Meta<typeof Author> = {
 	title: "Kanto/Author",
 	args: {
 		handle: "matthijsgroen",
-		title: "Poll editor",
+		role: "Poll editor",
+		title: "Git Maintainer",
 		photoUrl: PORTRAIT,
 		borderUrl: BORDER,
 	},
@@ -33,10 +34,16 @@ export const NoBorderEquipped: Story = { args: { borderUrl: undefined } };
 
 export const NoTitle: Story = { args: { title: undefined } };
 
+export const NoRole: Story = { args: { role: undefined } };
+
+export const PlainPlayer: Story = {
+	args: { role: undefined, title: undefined },
+};
+
 export const AvatarFallback: Story = { args: { photoUrl: undefined } };
 
 export const LongTitle: Story = {
-	args: { title: "Poll editor and Kanto Pokédex maintainer" },
+	args: { title: "General Frontend Maintainer" },
 };
 
 export const InAPanelFooter: Story = {

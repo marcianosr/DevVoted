@@ -7,9 +7,21 @@ priority: normal
 tags:
     - config
 created_at: 2026-09-05T09:06:42Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:11Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that stops the price of a wrong answer climbing while you hold it.
+
+**Why:** A late miss costs almost as much as a right answer earns, and nothing sells insurance against it.
+
+## Done when
+- [ ] Which freeze ships is decided, and the config is named
+- [ ] The freeze touches the loss only, never what a correct answer earns
+- [ ] The pre-gate screen shows the frozen figure and says it is frozen
+- [ ] Specs cover the freeze across a gate clear and after later installs
+
+## Notes
 
 A config that freezes what a wrong answer costs, so the miss price stops climbing while you hold it. Working name: **`Object.freeze()`** — it freezes a value in place, which is exactly the effect. (`yarn.lock` is already the shop-lock config, so lockfile naming is taken.)
 
@@ -47,10 +59,10 @@ Hedge, inversion, insurance is a clean division, and each is legible on its own.
 
 ## Todo
 
-- [ ] Pick which of the three lock readings ships, and the name
-- [ ] Effect applies on the loss path only, never to `coveragePerCorrect`
-- [ ] Where the frozen figure lives: a config-level snapshot at install, if reading 2 wins
-- [ ] The pre-gate stake screen already prints `coveragePerWrong`, so it shows the frozen number for free; check the copy says it is frozen rather than looking like a bug
-- [ ] Specs: frozen across a gate clear, unaffected by later installs, correct interaction with the audited-share zeroing
-- [ ] Decide the family question against DVTD-w0ul and DVTD-zvcv
-- [ ] Wiki roster entry
+- Pick which of the three lock readings ships, and the name
+- Effect applies on the loss path only, never to `coveragePerCorrect`
+- Where the frozen figure lives: a config-level snapshot at install, if reading 2 wins
+- The pre-gate stake screen already prints `coveragePerWrong`, so it shows the frozen number for free; check the copy says it is frozen rather than looking like a bug
+- Specs: frozen across a gate clear, unaffected by later installs, correct interaction with the audited-share zeroing
+- Decide the family question against DVTD-w0ul and DVTD-zvcv
+- Wiki roster entry

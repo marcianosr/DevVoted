@@ -50,6 +50,23 @@ export const OneInfoOpen: Story = {
 	render: () => <RegistryWithPanels />,
 };
 
+/**
+ * Where the shelf actually lives: one half of the shop's two-column grid. A
+ * story at full screen width cannot show whether a wrapped chip's info panel
+ * clears the column beside it.
+ */
+export const InAShopColumn: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="pewter">
+			<div className="grid w-full gap-8 md:grid-cols-2">
+				<div />
+				<Registry {...createKantoRegistryProps()} heading={false} />
+			</div>
+		</Screen>
+	),
+};
+
 export const AcrossThemes: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (

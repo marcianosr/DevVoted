@@ -1,13 +1,24 @@
 ---
 # DVTD-vb7j
-title: 'Brainstorm: Marketplace as player package publishing'
+title: Explore letting players publish their own configs
 status: todo
 type: task
 priority: high
 created_at: 2026-08-15T16:15:39Z
-updated_at: 2026-09-22T11:24:28Z
+updated_at: 2026-09-24T12:49:45Z
 parent: DVTD-u35m
 ---
+
+**What:** Explore players publishing configs of their own for others to install, and being paid when they do.
+
+**Why:** A player-made content economy, which is a different axis from trading configs that already exist.
+
+## Done when
+- [ ] The trading marketplace design is read first, so the two do not collide
+- [ ] Whether player-published configs are wanted at all is decided
+- [ ] If they are, it gets its own bean with a real design
+
+## Notes
 
 Explore: Players can publish their own configs/packages to marketplace. Other players install them. Publisher gains storage (or other reward) when players install? Creates player-driven content economy.
 

@@ -1,12 +1,24 @@
 ---
 # DVTD-929w
-title: Drop the old game's tables and legacy columns
+title: Drop the old game's tables and columns
 status: todo
 type: task
+priority: normal
 created_at: 2026-09-22T18:49:14Z
-updated_at: 2026-09-22T18:49:14Z
+updated_at: 2026-09-24T12:49:36Z
 parent: DVTD-82c4
 ---
+
+**What:** Drop the seven tables and the old columns that nothing reads any more.
+
+**Why:** The old app is deleted, so they are dead weight in the schema.
+
+## Done when
+- [ ] Production row counts are checked before anything is dropped
+- [ ] The seven tables and the old columns go in one guarded migration
+- [ ] The tables both games share are untouched
+
+## Notes
 
 Split out of DVTD-7tof, which was scrapped as mostly-done-elsewhere. This is the part of
 it that never happened and still matters.
@@ -47,6 +59,6 @@ Per ADR-012, this is a guarded migration, not a `db:push`:
 
 A drop is irreversible, so confirm the production row counts before writing the migration.
 
-- [ ] Audit `schema.ts` for old-flow-only columns on `users`/`runs`
-- [ ] Check production row counts on all 7 tables before dropping
-- [ ] Drop the 7 tables and the legacy columns in one guarded migration
+- Audit `schema.ts` for old-flow-only columns on `users`/`runs`
+- Check production row counts on all 7 tables before dropping
+- Drop the 7 tables and the legacy columns in one guarded migration

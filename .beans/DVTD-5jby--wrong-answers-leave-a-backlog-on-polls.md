@@ -1,13 +1,25 @@
 ---
 # DVTD-5jby
-title: Wrong answers leave a backlog on polls
+title: A wrong answer leaves a backlog item to work off
 status: draft
 type: feature
 priority: normal
 created_at: 2026-08-24T12:49:22Z
-updated_at: 2026-08-25T10:54:23Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-z2r2
 ---
+
+**What:** Getting a poll wrong leaves an item on a backlog the player can clear later.
+
+**Why:** A miss costs coverage and then vanishes, so there is nothing to come back for.
+
+## Done when
+- [ ] How an item is cleared is settled without breaking one answer per daily poll
+- [ ] Decided: whether the backlog only records, pays for clearing, or costs while open
+- [ ] Decided: per run or permanent, and where it is shown
+- [ ] The word for it is confirmed before it reaches a screen
+
+## Notes
 
 Getting a poll wrong should leave something behind: an item on a backlog the player
 can work off later, so a miss is a debt rather than a moment that evaporates.
@@ -63,9 +75,9 @@ Confirm it before it reaches a screen, not after.
 
 ## Todo
 
-- [ ] Settle how a backlog item is cleared without breaking one-answer-per-daily-poll
-- [ ] Pick the teeth level, and say what the miss costs in total across coverage and backlog
-- [ ] Decide per-run or persistent, and whether it renders on the Polldex row or its own list
-- [ ] Fold DVTD-1d4w in, or state the split between the two beans
-- [ ] Confirm "backlog" as the word
-- [ ] Write the ADR once the shape is decided; it touches ADR-009 Decision 2's boundary
+- Settle how a backlog item is cleared without breaking one-answer-per-daily-poll
+- Pick the teeth level, and say what the miss costs in total across coverage and backlog
+- Decide per-run or persistent, and whether it renders on the Polldex row or its own list
+- Fold DVTD-1d4w in, or state the split between the two beans
+- Confirm "backlog" as the word
+- Write the ADR once the shape is decided; it touches ADR-009 Decision 2's boundary

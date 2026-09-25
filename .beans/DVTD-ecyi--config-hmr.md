@@ -1,15 +1,29 @@
 ---
 # DVTD-ecyi
-title: 'Config: HMR'
+title: 'Config: HMR opens the shop between polls'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-20T13:27:13Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-25T11:00:14Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that opens the shop once per gate, in the middle of a window.
+
+**Why:** Nothing lets you buy at the moment you can finally see what the gate needs.
+
+⚠️ 2026-09-25: the Hot Reload service now means "replace one chosen offer, paid with run storage" (ADR-115 D5), which is hot-reload shaped. The recommendation below flips: the service keeps the name and this config is renamed at build. Settle here.
+
+## Done when
+- [ ] The shop opens from the between-poll screen once per gate, and returns to the same poll
+- [ ] It offers the last shop's leftovers, not a fresh roll
+- [ ] The once-per-gate charge resets on a new gate and survives a reload
+- [ ] Decided: whether you can sell mid-gate, or only buy
+
+## Notes
 
 Shop agency on a new axis: not *what* the shop offers (WTFPL, ADR-029's breadth) but *when* you can reach it. Once per gate, the between-poll screen opens the shop.
 
@@ -43,13 +57,32 @@ Rare, 192KB (rare baseline 128, plus 64 for the timing). Legendary if playtestin
 
 Every shop action in `run.model.ts` is guarded on `status === "rewarding"` (draft, upgrade, rebuild-draft, lock-offer, extend-offers, plant-pin). Those guards must also admit `answering` while the config is held and the gate's charge is unspent.
 
-- [ ] `Config.opensShopBetweenPolls` + roster entry
-- [ ] Explicit `hmrSpentThisGate` flag on RunState, reset on gate advance (`heldAtGate` precedent: do not infer it)
-- [ ] Reducer guards widened, with a spec that the charge is once per gate
-- [ ] Shop reachable from the between-poll screen, and exits back to the same poll
-- [ ] Wiki roster count, CHANGELOG
+- `Config.opensShopBetweenPolls` + roster entry
+- Explicit `hmrSpentThisGate` flag on RunState, reset on gate advance (`heldAtGate` precedent: do not infer it)
+- Reducer guards widened, with a spec that the charge is once per gate
+- Shop reachable from the between-poll screen, and exits back to the same poll
+- Wiki roster count, CHANGELOG
 
 ## Open
 
 - Leftovers vs a fresh roll: leftovers chosen above to stay off Rebuild's axis. Confirm.
 - Can you sell mid-gate, or only buy? Selling mid-gate turns a losing window into KB, which may be a second mechanic wearing this config's name.
+
+## Name clash with the Hot Reload service (DVTD-r2k9, ADR-110)
+
+ADR-110 adds a registry **service** provisionally called *Hot Reload*: every
+fifth Rebuild in a visit is free. That is a rebate on the rebuild ladder and has
+nothing hot-reload-shaped about it.
+
+This bean's true-name argument is the stronger one. "HMR replaces a module in a
+running process without a restart, preserving state" is exactly this config's
+mechanic — swap a config into a live pipeline, answers so far intact — and
+nothing about a cheaper reroll is.
+
+So the recommendation is that **this bean keeps the name** and the service takes
+a different one, about buying from the registry cheaply rather than about
+reloading. Marciano's call; recorded here so whichever lands second does not
+quietly shadow the other.
+
+Nothing else in ADR-110 touches this bean: the service is on the rebuild-price
+axis, this config is on the *when* axis, and the two do not overlap.

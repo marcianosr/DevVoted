@@ -193,14 +193,6 @@ export const GateOutcomeView = ({
 		<GateOutcomeScreen
 			{...props}
 			tail={refusing(props.tail, onRefuse)}
-			answers={{
-				...props.answers,
-				...(props.answers.review === undefined
-					? {}
-					: {
-							review: { ...props.answers.review, onPress: onReview },
-						}),
-			}}
 			footer={{
 				...props.footer,
 				action: {

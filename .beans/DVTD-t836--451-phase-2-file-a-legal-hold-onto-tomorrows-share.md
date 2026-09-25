@@ -1,12 +1,26 @@
 ---
 # DVTD-t836
-title: '451 Phase 2: file a legal hold onto tomorrow''s shared day'
+title: '451: pay to seal tomorrow''s polls for everyone'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-09-16T18:56:15Z
-updated_at: 2026-09-16T18:56:15Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** Pay to seal answers on tomorrow's shared polls, and collect what the other players pay to unseal them.
+
+**Why:** The social half of 451, and the first move that reaches into someone else's day.
+
+## Done when
+- [ ] A filing is recorded against a date and binds to that day's polls when they are rolled
+- [ ] The shop carries a fourth press for it, priced 32 / 64 / 128 / 256 KB
+- [ ] Collections are capped at three times the stake
+- [ ] The filer is named where the victims see it, and is immune to their own filing
+- [ ] A sealed poll can never also carry the redaction audit
+
+## Notes
 
 The social half of 451, split out of DVTD-ltqb 2026-09-16 when that bean closed
 for the Phase 1 audit it delivered. Until now this scope survived only as prose
@@ -42,15 +56,15 @@ not protect it from co-drawing with 403. That guard has to be written explicitly
 
 ## Todo
 
-- [ ] The filing intent record `(date, by_user_id, seals)` — new table, plus the
+- The filing intent record `(date, by_user_id, seals)` — new table, plus the
       roll-time binding to the day's polls
-- [ ] The shop filing press, the fourth beside Rebuild / Lock / Extend
-- [ ] The 32 / 64 / 128 / 256 KB ladder and the 3x-stake cap on collections
-- [ ] Credit the filer in the **service layer** — the reducer is pure and may not
+- The shop filing press, the fourth beside Rebuild / Lock / Extend
+- The 32 / 64 / 128 / 256 KB ladder and the 3x-stake cap on collections
+- Credit the filer in the **service layer** — the reducer is pure and may not
       write another player's row
-- [ ] Filer attribution on the stake receipt and in the answer cue
-- [ ] Filer immunity to their own filing
-- [ ] Explicit guard against a filed 451 co-drawing with 403
+- Filer attribution on the stake receipt and in the answer cue
+- Filer immunity to their own filing
+- Explicit guard against a filed 451 co-drawing with 403
 
 ## Related
 

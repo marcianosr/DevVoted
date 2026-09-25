@@ -1,15 +1,30 @@
 ---
 # DVTD-uv4a
-title: 'Config: Hotfix'
+title: 'Config: Hotfix cuts what a shaky gate takes off your build'
 status: todo
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-15T13:55:05Z
-updated_at: 2026-09-22T06:42:49Z
+updated_at: 2026-09-24T12:49:13Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that reduces the slots a shaky gate close takes by a quarter.
+
+**Why:** Softens the one penalty that can end a run, without paying it back afterwards.
+
+⚠️ The effect described at the top of this bean already happens in the game. The re-aim below it is the live design.
+
+## Done when
+- [ ] The rounding is settled: what a one or two slot peel becomes
+- [ ] The cut comes off the slots owed, not just the bill
+- [ ] All three places that work out the peel agree, or are collapsed into one
+- [ ] Prep and the debrief state the reduced amount
+- [ ] Roster entry and specs
+
+## Notes
 
 Failed gate opens shop +32KB per peel
 
@@ -64,8 +79,8 @@ Settle this before building.
 
 ## Todo
 
-- [ ] SETTLE THE ROUNDING (above)
-- [ ] `Config.softensPeel` + the cut in `failPeelQuotaFor`'s caller
-- [ ] Land it in all three peel derivations, or collapse them into one first
-- [ ] Prep band table + debrief name the reduced obligation
-- [ ] Roster entry, CONFIG_UNLOCKS, specs, wiki, CHANGELOG
+- SETTLE THE ROUNDING (above)
+- `Config.softensPeel` + the cut in `failPeelQuotaFor`'s caller
+- Land it in all three peel derivations, or collapse them into one first
+- Prep band table + debrief name the reduced obligation
+- Roster entry, CONFIG_UNLOCKS, specs, wiki, CHANGELOG

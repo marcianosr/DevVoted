@@ -4,13 +4,28 @@ import type { KantoColor } from "./colors";
 import { Icon, type IconName } from "./Icon.ui";
 
 const BUTTON =
-	"group/press inline-flex shrink-0 items-center justify-center rounded-md text-xs leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+	"group/press items-center justify-center rounded-md text-xs leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
-const FIGURES = "w-fit font-bold tabular-nums whitespace-nowrap";
+const FIGURES = "font-bold tabular-nums whitespace-nowrap";
 
-const GLYPH_SHAPE = { sm: "size-5", md: "size-8" };
+/**
+ * The display is here rather than in `BUTTON` because `full` has to beat
+ * `inline-flex`, and two utilities setting the same property cannot be resolved
+ * by class order — Tailwind emits them in its own. Keeping the pair in one map
+ * means only one of them is ever written.
+ *
+ * `full` spans on a phone and shrink-wraps from `sm`: a lone press has the row
+ * to itself on a narrow screen, and reads as a press again once the row has
+ * room for a note beside it.
+ */
+const WIDTH = {
+	auto: "inline-flex shrink-0",
+	full: "flex w-full sm:inline-flex sm:w-fit",
+} satisfies Record<ButtonWidth, string>;
+
+const GLYPH_SHAPE = { sm: "size-7", md: "size-8" };
 const LABEL_SHAPE = {
-	sm: `h-5 px-2 ${FIGURES}`,
+	sm: `h-7 px-2 ${FIGURES}`,
 	md: `h-8 px-4 text-sm ${FIGURES}`,
 };
 const CAPPED_SHAPE = {
@@ -41,6 +56,7 @@ const SEPARATOR = " · ";
 
 export type ButtonTone = "ambient" | "action" | "danger" | "commit";
 export type ButtonSize = "sm" | "md";
+export type ButtonWidth = "auto" | "full";
 
 const TONE = {
 	ambient: AMBIENT,
@@ -99,6 +115,7 @@ export type ButtonProps = {
 	label: string;
 	tone?: ButtonTone;
 	size?: ButtonSize;
+	width?: ButtonWidth;
 	onPress?: () => void;
 	disabled?: boolean;
 	pressed?: boolean;
@@ -128,6 +145,7 @@ export const Button = ({
 	label,
 	tone = "ambient",
 	size = "sm",
+	width = "auto",
 	onPress,
 	disabled = false,
 	pressed,
@@ -145,6 +163,7 @@ export const Button = ({
 		onClick={onPress}
 		className={clsx(
 			BUTTON,
+			WIDTH[width],
 			shapeOf(size, shape.glyph, shape.cap),
 			TONE[tone],
 			shape.icon !== undefined && WITH_ICON,

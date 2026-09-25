@@ -7,6 +7,12 @@ import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 
 export const gateSwatchAt = (gate: number): GateSwatch => GATE_SWATCHES[gate];
 
+const GATE_WORD = "gate";
+
+/** How every surface names a gate once its colour matters: "gate 7 · Marsh". */
+export const gateLabelOf = (gate: number): string =>
+	`${GATE_WORD} ${gate} · ${gateSwatchAt(gate).gateName}`;
+
 /**
  * The climb ladder as the run actually holds it (ADR-080): a square is filled
  * only where that gate's window came up flawless, never because the run walked

@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
+	BRIBE_LABEL,
 	GATE_REVIEW_LABEL,
 	GATE_SHOP_LABEL,
 	NEW_RUN_LABEL,
@@ -310,7 +311,7 @@ describe("GateOutcomeScreen", () => {
 
 			expect(
 				screen.getByRole("button", {
-					name: "Bribe from the archive · short 20 KB",
+					name: `${BRIBE_LABEL} · short 20 KB`,
 				})
 			).toBeDisabled();
 		});
@@ -318,9 +319,7 @@ describe("GateOutcomeScreen", () => {
 		it("takes the bribe once the archive covers the bill", () => {
 			render(<GateOutcomeScreen {...kantoGateShakyFunded()} />);
 
-			expect(
-				screen.getByRole("button", { name: "Bribe from the archive" })
-			).toBeEnabled();
+			expect(screen.getByRole("button", { name: BRIBE_LABEL })).toBeEnabled();
 		});
 
 		it("holds the gate shut until the peel is settled", () => {

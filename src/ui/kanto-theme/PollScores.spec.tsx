@@ -163,6 +163,12 @@ describe("PollScores", () => {
 			expect(screen.getByText("3.0")).toBeInTheDocument();
 		});
 
+		it("names what the closing figure counts, a bare number naming nothing", () => {
+			render(<PollScores rows={PAID} />);
+
+			expect(screen.getAllByText("Total units")).toHaveLength(PAID.length);
+		});
+
 		it("greens a full answer, ambers a part and reddens a miss", () => {
 			const { container } = render(
 				<PollScores rows={pollPayoutRows([[1, 0.5, 0]])} />

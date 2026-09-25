@@ -51,7 +51,7 @@ export {
 	type GateAnswer,
 	type GateOutcomeFrame,
 	type RetryAction,
-	ARCHIVE_EMPTIES,
+	ONLY_BANKED_CARRIES,
 	BRIBE_LABEL,
 	GATE_COMMUNITY_LABEL,
 	GATE_REVIEW_LABEL,

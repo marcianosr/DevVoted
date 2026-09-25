@@ -12,7 +12,7 @@ import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
 const TITLE = "Objectives and rewards";
 const NOTE =
-	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
+	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
 
 const LEAD: readonly LeadLine[] = [
 	["Two things are on the table today, and they are won separately."],

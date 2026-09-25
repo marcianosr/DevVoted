@@ -7,9 +7,21 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-19T20:36:09Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that pays more for each gate cleared in a row, and resets the moment you miss one.
+
+**Why:** The first config that grows from how you play rather than what you buy.
+
+## Done when
+- [ ] Uptime pays 8 KB on a gate clear, rising 8 KB per gate cleared in a row
+- [ ] A missed gate resets it to the base
+- [ ] The counter survives a reload
+- [ ] A spec covers the climb and the reset
+
+## Notes
 
 Scaling-through-play config (Balatro Ride the Bus pattern; brainstorm 2026-08-19).
 

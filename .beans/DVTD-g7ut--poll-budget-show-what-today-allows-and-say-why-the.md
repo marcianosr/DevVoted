@@ -1,6 +1,6 @@
 ---
 # DVTD-g7ut
-title: 'Poll budget: show what today allows, and say why the run parks at community'
+title: Say what today's polls allow, and why the run parked
 status: todo
 type: feature
 priority: high
@@ -8,9 +8,21 @@ tags:
     - ui
     - gameplay
 created_at: 2026-08-22T07:51:30Z
-updated_at: 2026-09-04T15:03:59Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-u35m
 ---
+
+**What:** Say how many of today's polls are left, how many the gate still needs, and why the run stopped.
+
+**Why:** You are moved to the community page with no explanation at the moment it happens.
+
+## Done when
+- [ ] Prep says how many of today's polls are left, before you start a gate
+- [ ] The gate says how many answers it still needs to close
+- [ ] The move to community says why, both where it happens and where it lands
+- [ ] Decided: whether a window may start at all when the day cannot finish it
+
+## Notes
 
 A gate closes at exactly 5 answered polls (`SLICE_WINDOW`, `run.model.ts:839`) and a day deals exactly 5 (`SEED_LENGTH = SLICE_WINDOW`). When those two fall out of phase — you enter a window with only 3 of today's polls left — you answer the 3, hit the wall mid-window, and the app moves you to the community page with no explanation at the moment it happens.
 

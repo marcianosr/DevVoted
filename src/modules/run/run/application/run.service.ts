@@ -37,6 +37,7 @@ import {
 	fetchUnlockedConfigIds,
 	fetchUnlocksSince,
 } from "~/modules/run/config/infrastructure/configUnlock.repository";
+import { fetchUnlockedServiceIds } from "~/modules/run/shop/infrastructure/serviceUnlock.repository";
 
 // A run's unlock history is the grants stamped since it started — derived from
 // user_config_unlocks rather than stored on the run (ADR-064: the reducer
@@ -66,13 +67,18 @@ const withPollReads = async (
 };
 
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
-	const [state, unlockedThisRun, archiveAfterKb] = await Promise.all([
-		loadRunState(run.id),
-		unlocksDuring(run),
-		fetchArchivedStorageKb(run.user_id),
-	]);
+	const [state, unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
+		await Promise.all([
+			loadRunState(run.id),
+			unlocksDuring(run),
+			fetchArchivedStorageKb(run.user_id),
+			fetchUnlockedServiceIds(run.user_id),
+		]);
 	return withPollReads(
-		{ ...toRunView(state, [], unlockedThisRun), archiveAfterKb },
+		{
+			...toRunView(state, [], unlockedThisRun, [], unlockedServiceIds),
+			archiveAfterKb,
+		},
 		run.user_id
 	);
 };
@@ -221,7 +227,11 @@ export const dispatchRunActionService = async ({
 		const run = await findActiveSessionRun(userId);
 		if (!run) throw new Error("No active run");
 
-		const { state: next, unlockedConfigIds } = await applyActionToRun({
+		const {
+			state: next,
+			unlockedConfigIds,
+			earnedTitleIds,
+		} = await applyActionToRun({
 			runId: run.id,
 			userId,
 			today: date,
@@ -231,13 +241,21 @@ export const dispatchRunActionService = async ({
 		// Read after the dispatch: the action that ends a run banks its storage in
 		// the same transaction, so the archive is already the "after" figure the
 		// run-over screen prints.
-		const [unlockedThisRun, archiveAfterKb] = await Promise.all([
-			unlocksDuring(run),
-			fetchArchivedStorageKb(userId),
-		]);
+		const [unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
+			await Promise.all([
+				unlocksDuring(run),
+				fetchArchivedStorageKb(userId),
+				fetchUnlockedServiceIds(userId),
+			]);
 		return withPollReads(
 			{
-				...toRunView(next, unlockedConfigIds, unlockedThisRun),
+				...toRunView(
+					next,
+					unlockedConfigIds,
+					unlockedThisRun,
+					earnedTitleIds,
+					unlockedServiceIds
+				),
 				archiveAfterKb,
 			},
 			userId

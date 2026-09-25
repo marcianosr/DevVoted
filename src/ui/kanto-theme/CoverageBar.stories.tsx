@@ -17,7 +17,8 @@ const LOSS = 2.5;
 const OPENING = 42;
 
 const VOLCANO = { floor: 55, ok: 65, healthy: 80 };
-const PALLET = { floor: 0, ok: 0, healthy: 5 };
+const PALLET = { floor: 0, ok: 40, healthy: 60 };
+const PALLET_UNITS = { held: 2.1, healthy: 3 };
 const CHAMPION = { floor: 70, ok: 80, healthy: 95 };
 
 const meta: Meta<typeof CoverageBar> = {
@@ -132,6 +133,15 @@ export const EarlyGate: Story = {
 		...PALLET,
 		held: 12.5,
 		note: "Pallet has no floor, so nothing answered can close it.",
+	},
+};
+
+export const SpokenInUnits: Story = {
+	args: {
+		...PALLET,
+		held: 42,
+		units: PALLET_UNITS,
+		note: "The poll screen speaks units: the line rises at every gate, the number held never falls.",
 	},
 };
 

@@ -1,12 +1,25 @@
 ---
 # DVTD-sjh2
-title: 'Config: renovate always offers an installed config''s next version'
+title: 'Config: renovate keeps an upgrade on the shelf'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-09-16T18:22:47Z
-updated_at: 2026-09-16T18:22:47Z
+updated_at: 2026-09-24T12:49:22Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that keeps one shop slot permanently stocked with the next version of something you already run.
+
+**Why:** A guaranteed upgrade lane you pick yourself, next to the free one that picks for you.
+
+## Done when
+- [ ] One shop slot always offers an upgrade for a config you hold, when one exists
+- [ ] It still costs the full price and still skips the coverage gate, like any rolled upgrade
+- [ ] The offer survives a reload
+- [ ] Specs cover: held, nothing upgradable, and the price
+
+## Notes
 
 One registry slot always offers an installed config's next version when one
 exists. It still costs KB, and it still bypasses the coverage gate the shop
@@ -52,10 +65,10 @@ same code path and may be the same bug or the same fix.
 
 ## Todo
 
-- [ ] Config.alwaysOffersUpgrade axis
-- [ ] upgradeOfferFor branch + seeding note (the roll must stay reload-stable)
-- [ ] renovate roster entry + CONFIG_UNLOCKS entry
-- [ ] skipReasonFor -> inShop
-- [ ] Specs: guaranteed when held, absent when nothing is upgradable, still
+- Config.alwaysOffersUpgrade axis
+- upgradeOfferFor branch + seeding note (the roll must stay reload-stable)
+- renovate roster entry + CONFIG_UNLOCKS entry
+- skipReasonFor -> inShop
+- Specs: guaranteed when held, absent when nothing is upgradable, still
       priced at draftCostIn, still past the coverage gate
-- [ ] Story page, wiki 4.3 row, CHANGELOG
+- Story page, wiki 4.3 row, CHANGELOG

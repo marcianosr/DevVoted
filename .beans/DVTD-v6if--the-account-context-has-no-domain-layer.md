@@ -1,14 +1,29 @@
 ---
 # DVTD-v6if
-title: The account context has no domain layer
+title: The account module has no domain layer
 status: todo
 type: task
+priority: normal
 created_at: 2026-08-13T13:46:46Z
-updated_at: 2026-08-13T13:46:46Z
+updated_at: 2026-09-24T12:49:34Z
 parent: DVTD-82c4
 blocked_by:
     - DVTD-wj1t
 ---
+
+**What:** Give the account module a domain layer, and move the login markup into a UI file.
+
+**Why:** The user role lives in a UI file and the public user type in a repository, so one concept is declared twice.
+
+⚠️ The bean this says to fold into has already shipped. This one stands on its own now.
+
+## Done when
+- [ ] Both account aggregates have a domain layer holding the role and the public user
+- [ ] The duplicate person type is deleted and the list imports the domain one
+- [ ] The login markup lives in the UI file, and the dev-only form is a prop rather than an environment read
+- [ ] The account presentation files have specs and stories
+
+## Notes
 
 Fold into **DVTD-wj1t** (migrate polls + account out of `src/domains`) rather than running as a separate pass — the files are already moving.
 
@@ -26,8 +41,8 @@ Also:
 
 ## Todo
 
-- [ ] Add `auth/domain` and `profile/domain`; move `UserRole` and `PublicUser` there
-- [ ] Delete `CreditedPerson`; `CreditList` imports the domain type
-- [ ] Extract `Login.component.tsx`'s markup into `Auth.ui.tsx`
-- [ ] Make the dev-only form a prop, not a `NODE_ENV` read
-- [ ] Add specs and stories for the account presentation files
+- Add `auth/domain` and `profile/domain`; move `UserRole` and `PublicUser` there
+- Delete `CreditedPerson`; `CreditList` imports the domain type
+- Extract `Login.component.tsx`'s markup into `Auth.ui.tsx`
+- Make the dev-only form a prop, not a `NODE_ENV` read
+- Add specs and stories for the account presentation files

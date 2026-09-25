@@ -13,22 +13,23 @@ import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const COPY = {
-	controlsTitle: "Registry control",
+	controlsTitle: "Services",
 } as const;
 
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 
-const BUILD_LAYOUT = "column";
 const CONTROL_LAYOUT = "row";
+
+export type ShopServiceRow = RegistryControlProps & { id: string };
 
 export type ShopScreenProps = {
 	build: BuildProps;
 	registry: RegistryProps;
 	header: HeaderProps;
 	nextGate?: NextGateProps;
-	controls?: readonly RegistryControlProps[];
+	controls?: readonly ShopServiceRow[];
 	audits?: readonly AuditProps[];
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
@@ -66,12 +67,7 @@ export const ShopScreen = ({
 						<Panel.Header label={BUILD} meta={buildHeadOf(build)} />
 						<Panel.Body>
 							<BuildRoom {...build} />
-							<Build
-								{...build}
-								layout={BUILD_LAYOUT}
-								heading={false}
-								caption={false}
-							/>
+							<Build {...build} heading={false} caption={false} />
 						</Panel.Body>
 					</Panel>
 				</div>
@@ -96,8 +92,8 @@ export const ShopScreen = ({
 						<Panel>
 							<Panel.Header label={COPY.controlsTitle} />
 							<Panel.Rows>
-								{controls.map((control) => (
-									<Panel.Row key={control.title}>
+								{controls.map(({ id, ...control }) => (
+									<Panel.Row key={id}>
 										<RegistryControl {...control} layout={CONTROL_LAYOUT} />
 									</Panel.Row>
 								))}

@@ -7,9 +7,21 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-29T14:59:10Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that swaps the two prices on a shop row: you buy at the refund price and sell at the draft price.
+
+**Why:** Nothing makes selling a decision today, but flipped naively this prints storage out of nothing.
+
+## Done when
+- [ ] The shape is decided and written down: which side flips, and what stops buy-sell-repeat
+- [ ] Buying then selling can never net a profit, in any combination, pinned by a spec
+- [ ] Shop rows quote the flipped prices everywhere
+- [ ] How it stacks with the half-price config and the no-refunds config is stated in the roster entry
+
+## Notes
 
 A config that swaps the two numbers on every shop row: you draft at the refund price and sell back at the draft price. Common configs go in at 16KB and come out at 32KB.
 
@@ -45,8 +57,8 @@ Legendary, 256KB, economy. It is strictly stronger than Freemium's half-price sh
 
 ## Todos
 
-- [ ] Pick the shape (1 to 4) and therefore the name
-- [ ] Write the stacking rules for WTFPL and Freemium into the roster comment, not just the spec
-- [ ] `draftCostIn` / `sellRefundIn` read the flip; a spec pins that buy-then-sell nets zero or less in every combination, including with Freemium installed
-- [ ] Shop rows quote the flipped figures everywhere (offer price, sell button, refusal copy)
-- [ ] Roster entry, wiki roster row + the shop section, CHANGELOG
+- Pick the shape (1 to 4) and therefore the name
+- Write the stacking rules for WTFPL and Freemium into the roster comment, not just the spec
+- `draftCostIn` / `sellRefundIn` read the flip; a spec pins that buy-then-sell nets zero or less in every combination, including with Freemium installed
+- Shop rows quote the flipped figures everywhere (offer price, sell button, refusal copy)
+- Roster entry, wiki roster row + the shop section, CHANGELOG

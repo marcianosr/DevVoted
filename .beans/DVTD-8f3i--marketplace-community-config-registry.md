@@ -1,13 +1,26 @@
 ---
 # DVTD-8f3i
-title: 'Marketplace: Community Config Registry'
+title: 'Marketplace: buy and sell configs between players'
 status: draft
 type: feature
 priority: critical
 created_at: 2026-08-11T15:29:50Z
-updated_at: 2026-09-22T11:33:26Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-h175
 ---
+
+**What:** A market where players list and buy each other's configs: browsable anywhere, but only ever actioned in the shop.
+
+**Why:** The social layer has nothing a player can actually do with someone else's build.
+
+## Done when
+- [ ] Bids are escrowed from archived storage and can never touch a live run
+- [ ] A sale from a live build settles when that run ends; a peel voids it and returns the escrow
+- [ ] A bought config arrives as a package claimed in the shop, never into a live build
+- [ ] Builds are public, minus the hidden list: no current poll, no picks, no unrevealed audits
+- [ ] The fee, which configs are eligible, and listing expiry are decided
+
+## Notes
 
 Player-selling system for upgraded configs
 
@@ -118,9 +131,9 @@ manipulation.
 
 ## Open
 
-- [ ] Escrow in **archived storage**, not run KB: confirm it cannot touch a live
+- Escrow in **archived storage**, not run KB: confirm it cannot touch a live
       run's economy
-- [ ] What the owner sees, and whether a provisional accept can be withdrawn
-- [ ] Incoming-package UI in the Registry, and what happens if it no longer fits
-- [ ] Build visibility on a **dead** run vs a live one
-- [ ] Whether requesting from a live build leaks anything the hide-list protects
+- What the owner sees, and whether a provisional accept can be withdrawn
+- Incoming-package UI in the Registry, and what happens if it no longer fits
+- Build visibility on a **dead** run vs a live one
+- Whether requesting from a live build leaks anything the hide-list protects

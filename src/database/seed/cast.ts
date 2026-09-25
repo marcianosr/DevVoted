@@ -58,7 +58,6 @@ const RISK_POOL = poolWhere([
 	"abArm",
 	"suppressesAudit",
 	"catchesFatal",
-	"streakStepGrowth",
 	"coverageDecayPerClear",
 ]);
 
@@ -79,6 +78,17 @@ export type SeedPlayer = {
 	readonly ownedSwatchIds?: readonly string[];
 	readonly peakStorageKb?: number;
 	readonly archivedStorage?: number;
+	/** Earned titles (ADR-109). The first is the one they wear. */
+	readonly ownedTitleIds?: readonly string[];
+	/**
+	 * Calendar-era runs (ADR-111). The migration that grants the legacy titles
+	 * never runs locally, so the seed reproduces what it would have left behind:
+	 * these runs, and the grants the two predicates read off them.
+	 */
+	readonly legacyCalendarRuns?: {
+		readonly finished: number;
+		readonly active?: boolean;
+	};
 };
 
 /**
@@ -95,6 +105,12 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		role: "admin",
 		buildStyle: "everything unlocked — widest possible deal",
 		unlockedConfigIds: EVERY_CONFIG_ID,
+		ownedTitleIds: [
+			"title-summit",
+			"title-first-ascent",
+			"title-completer",
+			"title-maintainer-ts",
+		],
 		ownedSwatchIds: ["pallet", "pewter", "cerulean", "vermillion"],
 		peakStorageKb: 4096,
 		archivedStorage: 8_388_608,
@@ -108,6 +124,8 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		role: "user",
 		buildStyle: "risk — wagers, streak growth, audit suppression",
 		unlockedConfigIds: RISK_POOL,
+		ownedTitleIds: ["title-maintainer-js", "title-flawless"],
+		legacyCalendarRuns: { finished: 3 },
 		peakStorageKb: 2048,
 		archivedStorage: 2_097_152,
 	},
@@ -121,6 +139,7 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		buildStyle: "coverage — multipliers and focus categories",
 		unlockedConfigIds: COVERAGE_POOL,
 		pinnedGate: 4,
+		legacyCalendarRuns: { finished: 2, active: true },
 		peakStorageKb: 1536,
 	},
 	{
@@ -132,6 +151,8 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		role: "poll-editor",
 		buildStyle: "economy — storage, interest, subscriptions",
 		unlockedConfigIds: ECONOMY_POOL,
+		ownedTitleIds: ["title-maintainer-git"],
+		legacyCalendarRuns: { finished: 2 },
 		peakStorageKb: 3072,
 		archivedStorage: 4_194_304,
 	},

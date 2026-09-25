@@ -113,16 +113,31 @@ describe("BuildFooter", () => {
 		expect(screen.getAllByText(`${TOTAL} configs`)).toHaveLength(1);
 	});
 
-	it("sits at the bottom of the screen as the page scrolls under it", () => {
+	it("sits in the flow at the screen's floor while nothing has measured it", () => {
 		const { container } = render(<BuildFooter {...props} />);
 
-		expect(container.firstChild).toHaveClass("sticky", "bottom-0");
+		expect(container.firstChild).not.toHaveClass("sticky");
+		expect(container.firstChild).toHaveClass("mt-auto");
 	});
 
-	it("paints an opaque ground so the poll cannot show through it", () => {
-		const { container } = render(<BuildFooter {...props} />);
+	it("rides the viewport floor once the screen asks it to", () => {
+		const { container } = render(<BuildFooter {...props} pinned />);
 
-		expect(container.firstChild).toHaveClass("bg-theme-faint");
+		expect(container.firstChild).toHaveClass("sticky", "bottom-0", "z-20");
+	});
+
+	it("hands its own element to whoever has to measure it", () => {
+		let measured: HTMLElement | null = null;
+		const { container } = render(
+			<BuildFooter
+				{...props}
+				ref={(bar) => {
+					measured = bar;
+				}}
+			/>
+		);
+
+		expect(measured).toBe(container.firstChild);
 	});
 });
 

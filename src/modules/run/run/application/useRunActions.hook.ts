@@ -38,6 +38,9 @@ export const useRunActions = () => {
 		queryClient.invalidateQueries({ queryKey: runCommunityQueryKey() });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.swatchesAll });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.unlocksAll });
+		queryClient.invalidateQueries({
+			queryKey: userQueryKeys.serviceUnlocksAll,
+		});
 		queryClient.invalidateQueries({ queryKey: attackTargetsQueryKey() });
 		queryClient.invalidateQueries({ queryKey: incidentsFeedQueryKey() });
 	};

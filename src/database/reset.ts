@@ -25,7 +25,11 @@ async function resetDatabase() {
             DROP TABLE IF EXISTS daily_exposed_deck CASCADE;
             DROP TABLE IF EXISTS daily_polls CASCADE;
             DROP TABLE IF EXISTS user_config_unlocks CASCADE;
+            DROP TABLE IF EXISTS user_service_unlocks CASCADE;
             DROP TABLE IF EXISTS user_objective_progress CASCADE;
+            DROP TABLE IF EXISTS user_titles CASCADE;
+            DROP TABLE IF EXISTS audit_incidents CASCADE;
+            DROP TABLE IF EXISTS app_visits CASCADE;
             DROP TABLE IF EXISTS users CASCADE;
             DROP TABLE IF EXISTS __drizzle_migrations CASCADE;
         `);

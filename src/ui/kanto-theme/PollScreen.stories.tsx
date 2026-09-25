@@ -15,6 +15,7 @@ import {
 	createKantoQuestionProps,
 	kantoPollOptions,
 	kantoAudits,
+	kantoCoverageUnitsOf,
 	kantoRunningConfigs,
 } from "~/test/kantoPoll.factory";
 import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
@@ -316,7 +317,11 @@ export const Answered: Story = {
 	args: {
 		coverage: {
 			...createKantoPollScreenProps().coverage,
-			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD, pin: true }),
+			bar: createKantoCoverageBarProps({
+				held: ANSWERED_HELD,
+				pin: true,
+				units: kantoCoverageUnitsOf(ANSWERED_HELD),
+			}),
 			paid: answeredPaidFor(),
 		},
 		question: createKantoQuestionProps({

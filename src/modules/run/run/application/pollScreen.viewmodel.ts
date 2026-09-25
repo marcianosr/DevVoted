@@ -32,7 +32,10 @@ import {
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
 import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
-import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	healthyUnitsAt,
+	scoringSlotsAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
@@ -55,8 +58,11 @@ import type { ChoiceVerdict } from "~/ui/kanto-theme/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import {
+	coverageBandOf,
+	type CoverageBarProps,
+} from "~/ui/kanto-theme/CoverageBar.ui";
+import { gateTitleOf, type HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 import type { PollCommit } from "~/ui/kanto-theme/PollScreen.ui";
 import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
@@ -93,18 +99,13 @@ export const auditPropsOf = (
 			cue: audit.answerCue ?? audit.description,
 		}));
 
-const GATE_SEPARATOR = "·";
-
 /**
  * The one place this screen names a gate. The header used to fall back to its
  * own copy of the string and the close button needs the same words, so both read
  * it from here rather than drifting apart.
  */
-export const gateLabelFor = (gate: number): string => {
-	const swatch = gateSwatchAt(gate);
-
-	return `Gate ${swatch.gate} ${GATE_SEPARATOR} ${swatch.gateName}`;
-};
+export const gateLabelFor = (gate: number): string =>
+	gateTitleOf(gateSwatchAt(gate));
 
 export const pollHeaderFor = (view: RunView): HeaderProps => {
 	const gate = view.gateStake.gateNumber;
@@ -329,14 +330,18 @@ const coveragePercent = (held: number): string =>
 
 export const coverageLeadFor = (view: RunView): LeadLine => {
 	const units = roundToTwoDecimals(view.gateStake.unitsHeld);
+	const band = coverageBandOf(
+		view.gateStake.coverageHeld,
+		view.gateStake.coverageLadder
+	);
 
 	return [
 		SCORED_LEAD,
-		{ figure: `${units}`, gain: true },
+		{ figure: `${units}`, band },
 		units === 1 ? SCORED_JOIN_ONE : SCORED_JOIN,
 		{ figure: `${scoringSlotsAt(view.gateStake.gateNumber)}` },
 		SCORED_TRAIL,
-		{ figure: coveragePercent(view.gateStake.coverageHeld), gain: true },
+		{ figure: coveragePercent(view.gateStake.coverageHeld), band },
 		SCORED_CLOSE,
 	];
 };
@@ -350,6 +355,9 @@ const paidOf = (view: RunView, poll: AnsweredPoll): PollPaid => {
 		...(receipt.length === 0 ? {} : { receipt }),
 	};
 };
+
+const answeredIn = (row: PollScoreRow): number =>
+	row.payouts?.slots.filter((paid) => paid !== undefined).length ?? 0;
 
 const payoutRowFor = (
 	view: RunView,
@@ -373,14 +381,20 @@ const payoutRowFor = (
 	...(current ? { current: true } : {}),
 });
 
-/** Every gate the run has opened. The debrief's view, where history is the point. */
+/**
+ * Every gate the run has scored. History is the point here, which is why the
+ * gate just opened is left out: a debrief that lists the next gate's empty
+ * slots asks the player to read a row that says nothing yet.
+ */
 export const runPaidFor = (view: RunView): PollScoresProps => {
 	const gate = view.gateStake.gateNumber;
 
 	return {
-		rows: answersPerGate(view.allAnswered, gate).map((answers, index) =>
-			payoutRowFor(view, answers, index, index === gate, view.pollsPerGate)
-		),
+		rows: answersPerGate(view.allAnswered, gate)
+			.map((answers, index) =>
+				payoutRowFor(view, answers, index, index === gate, view.pollsPerGate)
+			)
+			.filter((row) => row.correct > 0 || answeredIn(row) > 0),
 	};
 };
 
@@ -404,6 +418,10 @@ export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
 	...view.gateStake.coverageLadder,
 	held: view.gateStake.coverageHeld,
 	pin,
+	units: {
+		held: view.gateStake.unitsHeld,
+		healthy: healthyUnitsAt(view.gateStake.gateNumber),
+	},
 });
 
 const offlineIdsOf = (view: RunView): ReadonlySet<string> =>

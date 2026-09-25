@@ -1,13 +1,27 @@
 ---
 # DVTD-yzyg
-title: Endless run past the Champion gate
+title: Keep climbing past the summit
 status: draft
 type: feature
 priority: high
 created_at: 2026-08-25T10:54:18Z
-updated_at: 2026-09-12T12:56:28Z
+updated_at: 2026-09-24T12:49:45Z
 parent: DVTD-kulw
 ---
+
+**What:** Offer a third choice at the summit: bank the win, or keep climbing into an endless stretch.
+
+**Why:** Clearing the summit simply ends the run, and every table that makes gates harder stops there.
+
+⚠️ The tables this bean planned around are gone. The same open end now sits on the upkeep curve, which is unspecified past the summit.
+
+## Done when
+- [ ] What a death past the summit costs is decided
+- [ ] Every table that stops at the summit has a rule for the gates above it
+- [ ] The endless gates have names, and whether they earn anything is decided
+- [ ] The screen says what happens when the day's polls run out mid-stretch
+
+## Notes
 
 Clearing the Champion gate ends the run. Offer a third option: bank the win, or keep
 climbing into an endless stretch past gate 12.
@@ -67,12 +81,12 @@ no explanation to anyone who has played the games.
 
 ## Todo
 
-- [ ] Decide the stake: what a death past gate 12 costs
-- [ ] Write the extrapolation rules for demand, strips, reward multiplier and audits
-- [ ] Decide what the endless gates are called and whether they earn anything collectible
-- [ ] Say what happens when the day's polls run out mid-stretch
-- [ ] Pick the name
-- [ ] ADR it: this touches ADR-034's demand curve and ADR-037's peel table
+- Decide the stake: what a death past gate 12 costs
+- Write the extrapolation rules for demand, strips, reward multiplier and audits
+- Decide what the endless gates are called and whether they earn anything collectible
+- Say what happens when the day's polls run out mid-stretch
+- Pick the name
+- ADR it: this touches ADR-034's demand curve and ADR-037's peel table
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

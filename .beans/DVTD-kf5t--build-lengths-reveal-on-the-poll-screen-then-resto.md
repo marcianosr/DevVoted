@@ -1,13 +1,25 @@
 ---
 # DVTD-kf5t
-title: Build .length's reveal on the poll screen, then restore its payout
+title: Draw what .length reveals, then give it its payout back
 status: todo
 type: feature
 priority: normal
 created_at: 2026-09-19T17:56:54Z
-updated_at: 2026-09-19T17:56:54Z
+updated_at: 2026-09-24T12:49:13Z
 parent: DVTD-72d9
 ---
+
+**What:** Show the count .length reveals on the poll screen, then restore its storage payout.
+
+**Why:** The count is worked out and never drawn, so the config's whole effect is invisible.
+
+## Done when
+- [ ] The poll screen shows the count .length reveals
+- [ ] The per-pick payout is back on the config, in that order
+- [ ] The two specs pinning the payout at zero are updated
+- [ ] The wiki row states the payout is live again
+
+## Notes
 
 `.length` is a 2-slot config whose entire effect is currently invisible.
 
@@ -26,11 +38,11 @@ Re-adding `storagePerExtraPick: 16` today restores exactly that masking. (Attemp
 
 ## Order of work
 
-- [ ] Draw the count on the poll screen, sourced from `RunView.correctCount` / `correctCountSource`
-- [ ] Then restore `storagePerExtraPick: 16` on `CONFIGS.length`
-- [ ] Update `build.model.spec.ts` "pays nothing to a build with no config on the axis" — it currently asserts `extraPickPayoutFor([CONFIGS.length], 3) === 0`
-- [ ] Update `run.model.spec.ts` ".length's pick budget > pays nothing for the count it reveals" and its comment
-- [ ] Wiki 4.3: the `.length` row now states the payout is off and why; restore it
+- Draw the count on the poll screen, sourced from `RunView.correctCount` / `correctCountSource`
+- Then restore `storagePerExtraPick: 16` on `CONFIGS.length`
+- Update `build.model.spec.ts` "pays nothing to a build with no config on the axis" — it currently asserts `extraPickPayoutFor([CONFIGS.length], 3) === 0`
+- Update `run.model.spec.ts` ".length's pick budget > pays nothing for the count it reveals" and its comment
+- Wiki 4.3: the `.length` row now states the payout is off and why; restore it
 
 ## Note
 

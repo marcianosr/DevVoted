@@ -48,8 +48,12 @@ export const createMockDb = (state: DrizzleMockState) => {
 			state.setCalls.push(payload);
 			return chain;
 		});
+		// An exhausted queue resolves to no rows, never `undefined`: a real query
+		// always hands back an array, and a spec that queues results for the
+		// statements it cares about should not break when an unrelated one is
+		// added upstream of it.
 		chain.then = (resolve: (value: unknown) => void) =>
-			resolve(state.results.shift());
+			resolve(state.results.shift() ?? []);
 		return chain;
 	};
 

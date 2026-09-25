@@ -124,7 +124,7 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
-		expect(await screen.findByText("Gate 1 · Boulder")).toBeVisible();
+		expect(await screen.findByText("#1 - Boulder Gate")).toBeVisible();
 	});
 
 	it("sends a day without a run to the start screen", async () => {

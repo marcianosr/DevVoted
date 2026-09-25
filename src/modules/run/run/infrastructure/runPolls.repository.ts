@@ -14,6 +14,7 @@ import {
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
 import { findBorderById } from "~/modules/account/profile/domain/border.model";
+import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import type {
 	PollAuthor,
 	RunPoll,
@@ -128,6 +129,7 @@ const ENGINE_POLL_COLUMNS = {
 	authorPhotoUrl: usersTable.photo_url,
 	authorBorderId: usersTable.equipped_border_id,
 	authorRole: usersTable.role,
+	authorTitleId: usersTable.equipped_title_id,
 };
 
 type EnginePollRow = {
@@ -142,18 +144,24 @@ type EnginePollRow = {
 	authorPhotoUrl: string | null;
 	authorBorderId: string | null;
 	authorRole: AuthorRole | null;
+	authorTitleId: string | null;
 };
 
 type AuthorRole = (typeof usersTable.$inferSelect)["role"];
 
-const ROLE_TITLES = {
+/**
+ * Authority, not achievement: these come with the account's role and say what
+ * someone may do, never what they have done. An earned title (ADR-109) is the
+ * separate `title` field below.
+ */
+const ROLE_LABELS = {
 	user: undefined,
 	"poll-editor": "Poll editor",
 	admin: "Admin",
 } satisfies Record<AuthorRole, string | undefined>;
 
-const titleFor = (role: AuthorRole | null): string | undefined =>
-	role === null ? undefined : ROLE_TITLES[role];
+const roleLabelFor = (role: AuthorRole | null): string | undefined =>
+	role === null ? undefined : ROLE_LABELS[role];
 
 const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
 	if (row.authorHandle === null) return undefined;
@@ -162,13 +170,16 @@ const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
 		row.authorBorderId === null
 			? undefined
 			: findBorderById(row.authorBorderId);
-	const title = titleFor(row.authorRole);
+	const role = roleLabelFor(row.authorRole);
+	const title =
+		row.authorTitleId === null ? undefined : findTitleById(row.authorTitleId);
 
 	return {
 		handle: `@${row.authorHandle}`,
 		...(row.authorPhotoUrl === null ? {} : { avatarUrl: row.authorPhotoUrl }),
 		...(border === undefined ? {} : { borderUrl: border.image }),
-		...(title === undefined ? {} : { title }),
+		...(role === undefined ? {} : { role }),
+		...(title === undefined ? {} : { title: title.name }),
 	};
 };
 

@@ -9,6 +9,7 @@ import {
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { resumeTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { pollsNoteFor } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
@@ -54,9 +55,9 @@ export const RunStart = () => {
 	// Today's segment is open unless this run has spent it. With no run there is
 	// nothing to have spent, so a fresh climb always finds it open.
 	const spent = view?.pollsExhausted === true && !countdown.isOpen;
-	const pollsNote = spent
-		? countdown.label
-		: `today’s ${plural(SLICE_WINDOW, "poll")} are ready`;
+	const todayRun = view
+		? todayRunFor(view, pollsNoteFor(view, spent ? countdown.label : undefined))
+		: null;
 
 	// The board counts distinct answerers of today's set, which is exactly what
 	// its own header calls "N players answered". Deliberately not reused for the
@@ -95,7 +96,7 @@ export const RunStart = () => {
 	return (
 		<TodayScreen
 			swatch={gateSwatchAt(view?.gatesCleared ?? 0)}
-			run={view ? todayRunFor(view, pollsNote) : null}
+			run={todayRun}
 			action={action}
 			polls={{
 				detail: [

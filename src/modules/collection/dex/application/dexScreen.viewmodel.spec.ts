@@ -4,6 +4,7 @@ import {
 	DEX_TABS,
 	dexAuditsFor,
 	dexConfigsFor,
+	dexControlsFor,
 	dexPollsFor,
 	dexRunsFor,
 	dexSwatchesFor,
@@ -12,6 +13,7 @@ import {
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { auditdex } from "~/modules/collection/dex/domain/auditdex.model";
 import { configdex } from "~/modules/collection/dex/domain/configdex.model";
+import { controldex } from "~/modules/collection/dex/domain/controldex.model";
 import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
 import type { PolldexEntry } from "~/modules/collection/dex/domain/polldex.model";
 import {
@@ -105,99 +107,98 @@ describe("dexPollsFor", () => {
 
 describe("dexConfigsFor", () => {
 	const props = dexConfigsFor(configdex([], []));
+	const chips = props.groups.flatMap((group) => group.chips);
+	const chipNamed = (name: string) =>
+		chips.find((chip) => chip.state === "granted" && chip.name === name);
 
-	it("orders the whole roster heaviest first, matching the 'by weight' axis", () => {
-		const slots = props.rows.map((row) => row.slots);
+	it("groups the roster by weight, heaviest first, matching the 'by weight' axis", () => {
+		const weights = props.groups.map((group) => group.weight);
 
-		expect(slots).toEqual([...slots].sort((a, b) => b - a));
+		expect(weights).toEqual([...weights].sort((a, b) => b - a));
+		expect(new Set(weights).size).toBe(weights.length);
 	});
 
-	it("does not group the deck you hold apart from the deck you owe", () => {
-		const heaviest = props.rows[0];
-
-		expect(heaviest.slots).toBe(Math.max(...props.rows.map((r) => r.slots)));
-		expect(heaviest.state).toBe("locked");
+	it("seats every chip under its own weight", () => {
+		expect(
+			props.groups.every((group) =>
+				group.chips.every((chip) => chip.slots === group.weight)
+			)
+		).toBe(true);
 	});
 
-	it("climbs .js from ×1.25 to ×2.25 over five versions", () => {
-		const js = props.rows.find(
-			(row) => row.state === "granted" && row.name === ".js"
+	it("heads a group with its weight and how much of it you hold", () => {
+		const light = props.groups.find((group) => group.weight === 1);
+		const held = light?.chips.filter((chip) => chip.state === "granted").length;
+
+		expect(light?.heading).toBe(`1 weight · ${held} of ${light?.chips.length}`);
+	});
+
+	it("reads what you hold before what you owe inside a weight", () => {
+		const mixed = props.groups.find(
+			(group) =>
+				group.chips.some((chip) => chip.state === "granted") &&
+				group.chips.some((chip) => chip.state === "locked")
 		);
+		const states = mixed?.chips.map((chip) => chip.state) ?? [];
 
-		expect(js?.state === "granted" && js.versions?.length).toBe(5);
-		expect(js?.state === "granted" && js.versions?.[0].effect).toBe(
+		expect(states.indexOf("locked")).toBe(states.lastIndexOf("granted") + 1);
+	});
+
+	it("names the ceiling of .js's ladder, which is a fact about the config", () => {
+		const js = chipNamed(".js");
+
+		expect(js?.state === "granted" && js.maxVersion).toBe(5);
+	});
+
+	it("states a short ladder's own ceiling rather than the roster's", () => {
+		const earned = dexConfigsFor(
+			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
+		);
+		const telemetry = earned.groups
+			.flatMap((group) => group.chips)
+			.find((chip) => chip.state === "granted" && chip.name === "Telemetry");
+
+		expect(telemetry?.state === "granted" && telemetry.maxVersion).toBe(2);
+	});
+
+	it("states .js's effect as a sentence and its figure as a badge", () => {
+		const js = chipNamed(".js");
+
+		expect(js?.state === "granted" && js.effect).toBe(
 			"JavaScript polls reward ×1.25 coverage"
 		);
-		expect(js?.state === "granted" && js.versions?.[4].effect).toBe(
-			"JavaScript polls reward ×2.25 coverage"
-		);
-	});
-
-	it("phrases a rung, since a card reads it as its only sentence", () => {
-		const js = props.rows.find(
-			(row) => row.state === "granted" && row.name === ".js"
-		);
-
-		expect(js?.state === "granted" && js.versions?.[1].effect).toContain(
-			"polls reward"
-		);
+		expect(js?.state === "granted" && js.figure).toBe("×1.25");
 	});
 
 	it("marks a starter apart from the roster it was dealt with", () => {
-		const js = props.rows.find(
-			(row) => row.state === "granted" && row.name === ".js"
-		);
+		const js = chipNamed(".js");
 
 		expect(js?.state === "granted" && js.starter).toBe(true);
 	});
 
-	it("prices v1 as null, since installing it already gives you that rung", () => {
-		const js = props.rows.find(
-			(row) => row.state === "granted" && row.name === ".js"
-		);
-
-		expect(js?.state === "granted" && js.versions?.[0].price).toBeNull();
-		expect(js?.state === "granted" && js.versions?.[1].price).toBe("64 KB");
-	});
-
-	it("states each rung's odds of being rolled from a fresh install, none for v1 (ADR-097)", () => {
-		const js = props.rows.find(
-			(row) => row.state === "granted" && row.name === ".js"
-		);
-		const versions = js?.state === "granted" ? js.versions : undefined;
-
-		expect(versions?.map((rung) => rung.odds)).toEqual([
-			null,
-			"1 in 2 rolls",
-			"1 in 4 rolls",
-			"1 in 8 rolls",
-			"1 in 8 rolls",
-		]);
-	});
-
-	it("tells the reader how the registry rolls a version", () => {
-		expect(props.note).toContain("coin flip");
-	});
-
 	it("leaves a config with no ladder unmarked rather than giving it one rung", () => {
-		const flat = props.rows.find(
-			(row) => row.state === "granted" && row.name === "Code Coverage"
-		);
+		const flat = chipNamed("Code Coverage");
 
-		expect(flat?.state === "granted" && flat.versions).toBeUndefined();
+		expect(flat?.state === "granted" && flat.maxVersion).toBeUndefined();
+	});
+
+	it("gives a config whose effect has no figure no badge at all", () => {
+		const eslint = chipNamed("ESLint");
+
+		expect(eslint?.state === "granted" && eslint.figure).toBeUndefined();
 	});
 
 	it("never carries a locked config's name, only its unlock paths", () => {
-		const locked = props.rows.filter((row) => row.state === "locked");
+		const locked = chips.filter((chip) => chip.state === "locked");
 
 		expect(locked.length).toBeGreaterThan(0);
 		expect(
-			locked.every((row) => row.state === "locked" && row.paths.length === 2)
+			locked.every((chip) => chip.state === "locked" && chip.paths.length === 2)
 		).toBe(true);
 	});
 
 	it("keeps a counted path's figures apart, so a bar can be drawn from it", () => {
-		const locked = props.rows.find((row) => row.state === "locked");
+		const locked = chips.find((chip) => chip.state === "locked");
 		const fallback = locked?.state === "locked" ? locked.paths[1] : undefined;
 
 		expect(fallback?.progress).toEqual({
@@ -207,17 +208,108 @@ describe("dexConfigsFor", () => {
 	});
 
 	it("counts nothing on a one-shot objective, which has no progress", () => {
-		const oneShot = props.rows.find(
-			(row) =>
-				row.state === "locked" &&
-				row.paths[0].text === "Clear a gate with every slot filled"
+		const oneShot = chips.find(
+			(chip) =>
+				chip.state === "locked" &&
+				chip.paths[0].text === "Clear a gate with every slot filled"
 		);
 
 		expect(oneShot?.state === "locked" && oneShot.paths[0].progress).toBeNull();
 	});
 
+	it("counts the deck you hold against the whole roster", () => {
+		const granted = chips.filter((chip) => chip.state === "granted").length;
+
+		expect(props.count).toBe(`${granted} of ${chips.length}`);
+	});
+
 	it("states the run-scoped ladder rule the collection cannot show", () => {
 		expect(props.note).toContain("lost when the run ends");
+		expect(props.note).toContain("behind the i");
+		expect(props.note).toContain("never a version you hold");
+	});
+});
+
+describe("dexControlsFor", () => {
+	const propsFor = (unlockedServiceIds: readonly string[]) =>
+		dexControlsFor(controldex(unlockedServiceIds));
+
+	const rowFor = (unlockedServiceIds: readonly string[], id: string) => {
+		const row = propsFor(unlockedServiceIds).rows.find(
+			(candidate) => candidate.id === id
+		);
+		if (!row) throw new Error(`no service row for ${id}`);
+		return row;
+	};
+
+	const priceOf = (unlockedServiceIds: readonly string[], id: string) => {
+		const row = rowFor(unlockedServiceIds, id);
+		return row.locked === true ? undefined : row.price;
+	};
+
+	const unlockOf = (unlockedServiceIds: readonly string[], id: string) => {
+		const row = rowFor(unlockedServiceIds, id);
+		return row.locked === true ? row.unlock : undefined;
+	};
+
+	it("labels the tab services and keeps its id", () => {
+		expect(DEX_TABS.find((tab) => tab.id === "controls")?.label).toBe(
+			"services"
+		);
+	});
+
+	it("lists every service in one section, registry first", () => {
+		expect(propsFor([]).rows.map((row) => row.id)).toEqual([
+			"rebuild",
+			"extend",
+			"hotReload",
+			"returnPolicy",
+			"abandon",
+			"pin",
+			"bootCache",
+			"dockerImage",
+		]);
+		expect(propsFor([]).meta).toBe("registry, then run");
+	});
+
+	it("counts the services this account has earned against the whole roster", () => {
+		expect(propsFor([]).count).toBe("1 of 8");
+		expect(propsFor(["extend", "pin"]).count).toBe("3 of 8");
+	});
+
+	it("states where a service is bought and how long the purchase lasts", () => {
+		expect(rowFor([], "rebuild").detail).toBe("Registry · this visit");
+		expect(rowFor([], "extend").detail).toBe("Registry · rest of the run");
+		expect(rowFor([], "pin").detail).toBe("Run · carries into your next run");
+		expect(rowFor([], "bootCache").detail).toBe("Next run · consumed on start");
+	});
+
+	it("prices an earned service by the ladder the shop actually charges", () => {
+		expect(priceOf([], "rebuild")).toBe("from 4 KB, doubling");
+		expect(priceOf(["extend"], "extend")).toBe("48 KB, then 96 KB");
+	});
+
+	it("says an earned service nobody sells yet is not for sale, rather than pricing it", () => {
+		expect(priceOf(["hotReload"], "hotReload")).toBe("not for sale yet");
+		expect(priceOf(["bootCache"], "bootCache")).toBe("not for sale yet");
+	});
+
+	it("prices kill -9 as free, since the press costs nothing", () => {
+		expect(priceOf(["abandon"], "abandon")).toBe("free");
+	});
+
+	it("names a locked service and says how to earn it, in place of a price", () => {
+		const row = rowFor([], "extend");
+
+		expect(row.title).toBe("Extend the registry");
+		expect(row.locked).toBe(true);
+		expect(unlockOf([], "extend")).toBe("Reach Cascade");
+		expect(priceOf([], "extend")).toBeUndefined();
+	});
+
+	it("keeps one footer for the whole roster", () => {
+		expect(propsFor([]).note).toContain("unlocked once");
+		expect(propsFor([]).note).toContain("bought in the shop today");
 	});
 });
 

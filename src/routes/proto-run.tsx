@@ -49,12 +49,16 @@ import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView
 import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
 import {
 	BASE_SLOTS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import {
+	gateLabelOf,
+	gateSwatchAt,
+} from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	CommunityScreen,
@@ -306,12 +310,17 @@ const climberOf = (trainer: SimTrainer): ClimberProps => ({
 	name: trainer.displayName,
 });
 
-const trainerBy = (seed: string) =>
-	climberOf(TRAINERS[hashOf(seed) % TRAINERS.length]);
+/**
+ * The rig's stand-in for a seat the service would have read. The trainer's own
+ * id is the login: deriving one from the display name is the guess the domain
+ * refuses, and without a login the rig can only ever draw the unlinked half of
+ * the row.
+ */
+const trainerLeader = (seed: string) => {
+	const login = TRAINERS[hashOf(seed) % TRAINERS.length].id;
 
-const trainerLeader = (seed: string) => ({
-	handle: `@${trainerBy(seed).name.toLowerCase().replace(/\W+/g, "")}`,
-});
+	return { handle: `@${login}`, githubLogin: login };
+};
 
 const COMMUNITY_COUNTDOWN = "6h 12m";
 const COMMUNITY_COUNTDOWN_HINT = "until the next five polls are dealt";
@@ -588,7 +597,9 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setOverStep("summary");
 	}, [state.status]);
 
-	const view = withCategorySeat(toRunView(state));
+	const view = withCategorySeat(
+		toRunView(state, [], [], [], REGISTRY_CONTROL_IDS)
+	);
 	const settled: AnsweredPoll | undefined = pinned
 		? view.answeredThisGate.at(-1)
 		: undefined;
@@ -689,7 +700,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					code: payload.code,
 					name: payload.name,
 					gate: offer.gate,
-					gateName: offer.gateName,
 					status: "queued",
 					own: true,
 				},
@@ -699,12 +709,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	};
 	const latest = filed[0];
 	const attack = attackPanelFor(
+		view.gateStake.gateNumber,
 		view.attack,
 		offers,
 		null,
 		latest === undefined
 			? undefined
-			: `filed ${latest.row.code} against ${latest.row.target} · ${latest.row.gateName}`
+			: `filed ${latest.row.code} against ${latest.row.target} · ${gateLabelOf(latest.row.gate)}`
 	);
 
 	return (
@@ -791,6 +802,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
+					onAbandon={() => undefined}
 					onVendorLock={(id) => dispatch({ type: "vendor-lock", configId: id })}
 					onContinue={() => setRewardStep("prep")}
 				/>

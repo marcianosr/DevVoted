@@ -1,5 +1,16 @@
+import { eq, sql } from "drizzle-orm";
+
 import { db } from "~/database/db";
-import { runStatesTable, runsTable } from "~/database/schema";
+import {
+	runStatesTable,
+	runsTable,
+	usersTable,
+	userTitlesTable,
+} from "~/database/schema";
+import {
+	findTitleById,
+	isExclusive,
+} from "~/modules/account/profile/domain/title.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
@@ -7,7 +18,7 @@ import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 
 import type { SeedClimber } from "~/database/seed/cast";
-import { SEED_CLIMBERS } from "~/database/seed/cast";
+import { SEED_CLIMBERS, SEED_PLAYERS } from "~/database/seed/cast";
 import { hashOf } from "~/database/seed/random";
 
 /**
@@ -156,4 +167,82 @@ const pastDate = (today: string, daysBack: number): string => {
 	const date = new Date(`${today}T00:00:00`);
 	date.setDate(date.getDate() - daysBack);
 	return date.toISOString().slice(0, 10);
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const LEGACY_TESTER = "title-legacy-tester";
+const LEGACY_ACTIVE = "title-legacy-active";
+
+const daysAgo = (days: number): Date => new Date(Date.now() - days * DAY_MS);
+
+const titleRowsFor = (userId: string, titleIds: readonly string[]) =>
+	titleIds.map((titleId) => {
+		const title = findTitleById(titleId);
+		if (!title) throw new Error(`Seed names unknown title ${titleId}`);
+		return {
+			user_id: userId,
+			title_id: title.id,
+			exclusive: isExclusive(title),
+		};
+	});
+
+/**
+ * The calendar era as the grant migration leaves it (ADR-111): every run closed,
+ * the one that was still open when the rebuild landed marked archived, and the
+ * titles the two predicates read off those rows. `announced_at` is left null on
+ * purpose — that is what puts the notice on screen at first login.
+ *
+ * This exists because migrations never run locally (ADR-012 has db:push build
+ * the schema and CI apply the SQL), so without it nothing here is demoable.
+ */
+export const seedLegacyEra = async (): Promise<number> => {
+	let granted = 0;
+
+	for (const player of SEED_PLAYERS) {
+		const legacy = player.legacyCalendarRuns;
+		if (!legacy) continue;
+
+		for (let index = 0; index < legacy.finished; index += 1) {
+			await db.insert(runsTable).values({
+				user_id: player.id,
+				mode: "calendar",
+				status: "finished",
+				started_at: daysAgo(90 - index * 7),
+				finished_at: daysAgo(85 - index * 7),
+			});
+		}
+
+		if (legacy.active) {
+			await db.insert(runsTable).values({
+				user_id: player.id,
+				mode: "calendar",
+				status: "finished",
+				completion_reason: "archived",
+				started_at: daysAgo(12),
+				finished_at: new Date(),
+			});
+		}
+
+		const titleIds = legacy.active
+			? [LEGACY_TESTER, LEGACY_ACTIVE]
+			: [LEGACY_TESTER];
+
+		await db
+			.insert(userTitlesTable)
+			.values(titleRowsFor(player.id, titleIds))
+			.onConflictDoNothing();
+
+		// coalesce, as the migration does: worn at once by an account wearing
+		// nothing, never over a title somebody already chose.
+		await db
+			.update(usersTable)
+			.set({
+				equipped_title_id: sql`coalesce(${usersTable.equipped_title_id}, ${titleIds[titleIds.length - 1]})`,
+			})
+			.where(eq(usersTable.id, player.id));
+
+		granted += titleIds.length;
+	}
+
+	return granted;
 };

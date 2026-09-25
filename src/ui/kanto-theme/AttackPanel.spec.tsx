@@ -9,15 +9,52 @@ import {
 	kantoAttackPanel,
 	kantoAttackPanelDealing,
 	kantoAttackPanelHealthy,
+	kantoAttackPanelInspected,
 	kantoAttackPanelNoRival,
 	kantoAttackPanelUnarmed,
 } from "~/test/kantoIncidents.factory";
 
 import { AttackPanel } from "./AttackPanel.ui";
 
+const BROCK_RUN_ID = 3;
+
+const openAt = (runId: number) => ({
+	...kantoAttackPanel(),
+	openRunId: runId,
+});
+
+/** The chip itself, not the name span inside it: the lit edge sits on the chip. */
+const chipFor = (name: string) =>
+	screen.getByText(name).closest("span.inline-flex");
+
 describe("AttackPanel", () => {
-	it("offers two presses per rival after a PERFECT close", () => {
+	it("names the title each rival wears, since their build is open anyway", () => {
 		render(<AttackPanel {...kantoAttackPanel()} />);
+
+		expect(screen.getByText("CSS Maintainer")).toBeInTheDocument();
+		expect(screen.getByText("Summit")).toBeInTheDocument();
+	});
+
+	// Erika is the fixture wearing none: a title-less rival is still a target.
+	it("lists a rival who wears no title beside the ones who do", () => {
+		render(<AttackPanel {...kantoAttackPanel()} />);
+
+		expect(screen.getByText("Misty")).toBeInTheDocument();
+		expect(screen.getByText("Brock")).toBeInTheDocument();
+		expect(screen.getByText("Erika")).toBeInTheDocument();
+	});
+
+	it("presses only to inspect until a rival is opened", () => {
+		render(<AttackPanel {...kantoAttackPanel()} />);
+
+		expect(screen.getAllByRole("button")).toHaveLength(3);
+		expect(
+			screen.queryByRole("button", { name: "Fire 404 at Misty" })
+		).not.toBeInTheDocument();
+	});
+
+	it("offers both rolled payloads once a PERFECT close's rival is open", () => {
+		render(<AttackPanel {...kantoAttackPanelInspected()} />);
 
 		expect(screen.getByText("choose 1 of 2 payloads")).toBeInTheDocument();
 		expect(
@@ -26,14 +63,40 @@ describe("AttackPanel", () => {
 		expect(
 			screen.getByRole("button", { name: "Fire 507 at Misty" })
 		).toBeInTheDocument();
-		expect(screen.getAllByRole("button")).toHaveLength(6);
 	});
 
-	it("offers one press per rival after a HEALTHY close", () => {
-		render(<AttackPanel {...kantoAttackPanelHealthy()} />);
+	it("offers the one payload a HEALTHY close rolled", () => {
+		render(
+			<AttackPanel {...kantoAttackPanelHealthy()} openRunId={BROCK_RUN_ID} />
+		);
 
 		expect(screen.getByText("1 payload")).toBeInTheDocument();
-		expect(screen.getAllByRole("button")).toHaveLength(3);
+		expect(
+			screen.getByRole("button", { name: "Fire 408 at Brock" })
+		).toBeInTheDocument();
+	});
+
+	it("marks the opened rival's press as expanded, and the others not", () => {
+		render(<AttackPanel {...kantoAttackPanelInspected()} />);
+
+		expect(screen.getByRole("button", { name: "close Misty" })).toHaveAttribute(
+			"aria-expanded",
+			"true"
+		);
+		expect(
+			screen.getByRole("button", { name: "inspect Brock" })
+		).toHaveAttribute("aria-expanded", "false");
+	});
+
+	it("asks to open the rival whose press was hit", async () => {
+		const onInspect = vi.fn();
+		render(<AttackPanel {...kantoAttackPanel()} onInspect={onInspect} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "inspect Brock" })
+		);
+
+		expect(onInspect).toHaveBeenCalledWith(BROCK_RUN_ID);
 	});
 
 	it("names the gate each attack lands on", () => {
@@ -43,9 +106,17 @@ describe("AttackPanel", () => {
 		expect(screen.getByText("gate 9 · Volcano")).toBeInTheDocument();
 	});
 
+	it("states what a build costs to run, the one figure ADR-101 makes public", () => {
+		render(<AttackPanel {...kantoAttackPanel()} />);
+
+		expect(screen.getByText("5 weight")).toBeInTheDocument();
+		expect(screen.getByText("3 weight")).toBeInTheDocument();
+		expect(screen.getByText("0 weight")).toBeInTheDocument();
+	});
+
 	it("fires the press's own pair", async () => {
 		const onPress = vi.fn();
-		const props = kantoAttackPanel();
+		const props = openAt(BROCK_RUN_ID);
 		render(
 			<AttackPanel
 				{...props}
@@ -63,7 +134,7 @@ describe("AttackPanel", () => {
 			screen.getByRole("button", { name: "Fire 408 at Brock" })
 		);
 
-		expect(onPress).toHaveBeenCalledWith(3, "timeout");
+		expect(onPress).toHaveBeenCalledWith(BROCK_RUN_ID, "timeout");
 	});
 
 	it("teaches how an audit is earned while nothing is armed", () => {
@@ -114,14 +185,31 @@ describe("AttackPanel", () => {
 	});
 
 	it("adds no press for a rival's config", () => {
-		render(<AttackPanel {...kantoAttackPanel()} />);
+		render(<AttackPanel {...kantoAttackPanelInspected()} />);
 
-		expect(screen.getAllByRole("button")).toHaveLength(6);
+		expect(
+			screen.queryByRole("button", { name: /About/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("says when a rival has nothing installed", () => {
 		render(<AttackPanel {...kantoAttackPanel()} />);
 
 		expect(screen.getByText("nothing installed")).toBeInTheDocument();
+	});
+
+	describe("the config a payload names", () => {
+		it("badges it on the payload and lights it in the build", () => {
+			render(<AttackPanel {...openAt(BROCK_RUN_ID)} />);
+
+			expect(screen.getByText("hits ESLint")).toBeInTheDocument();
+			expect(chipFor("ESLint")).toHaveClass("border-theme");
+		});
+
+		it("leaves the build unlit while the rival is shut", () => {
+			render(<AttackPanel {...kantoAttackPanel()} />);
+
+			expect(chipFor("ESLint")).not.toHaveClass("border-theme");
+		});
 	});
 });

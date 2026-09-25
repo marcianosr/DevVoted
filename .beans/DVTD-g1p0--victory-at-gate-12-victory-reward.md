@@ -1,13 +1,26 @@
 ---
 # DVTD-g1p0
-title: Victory at gate 12 + victory reward
+title: Decide what winning actually pays, and whether you can climb past it
 status: draft
 type: feature
 priority: normal
 created_at: 2026-07-19T07:44:48Z
-updated_at: 2026-08-06T11:08:16Z
+updated_at: 2026-09-24T12:49:42Z
 parent: DVTD-kulw
 ---
+
+**What:** Decide the reward for reaching the summit, and whether the climb continues past it.
+
+**Why:** The summit banks leftover storage and nothing else, so winning feels much like stopping.
+
+⚠️ The gate-12 half of this bean already shipped. Only the reward and the endless mode are left.
+
+## Done when
+- [ ] The victory reward is decided, and cannot be farmed by a run that scored nothing
+- [ ] Whether the climb continues past the summit is decided
+- [ ] Whatever is decided holds for the gates past the summit too
+
+## Notes
 
 Marciano leans toward VICTORY_GATE = 12 (currently 5): the game is won at gate 12. Open question: what the victory reward is — undecided, which is why this is a draft. Constant lives in rules.model.ts.
 

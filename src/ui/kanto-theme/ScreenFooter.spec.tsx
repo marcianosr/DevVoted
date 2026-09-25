@@ -122,12 +122,33 @@ describe("ScreenFooter", () => {
 		expect(start).not.toHaveAttribute("data-screen-theme");
 	});
 
-	it("pushes the start opposite the figures it acts on, once there is a row", () => {
+	it("pushes the start opposite the figures it acts on, at every width", () => {
 		render(<ScreenFooter {...props} />);
 
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ }).parentElement
-		).toHaveClass("sm:ml-auto");
+		).toHaveClass("ml-auto");
+	});
+
+	it("spans a lone press across a phone, having no aside to sit beside", () => {
+		render(<ScreenFooter {...props} />);
+
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).toHaveClass("w-full", "sm:w-fit");
+	});
+
+	it("leaves the press its own width once an aside shares the row", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[{ label: "Community", onPress: vi.fn() }]}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Pallet gate prep/ })
+		).not.toHaveClass("w-full");
 	});
 
 	it("keeps its presses side by side at every width", () => {
@@ -284,7 +305,7 @@ describe("ScreenFooter", () => {
 });
 
 describe("ScreenActions", () => {
-	it("pins the screen's press to the foot of a phone, and lets it go on a desktop", () => {
+	it("pins the screen's press to the bottom of a phone, and lets it go on a desktop", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
 		expect(container.firstElementChild).toHaveClass(
@@ -294,7 +315,17 @@ describe("ScreenActions", () => {
 		);
 	});
 
-	it("stands the press on an opaque panel, so the screen scrolls behind it", () => {
+	it("spans the phone flush to its edges, and closes into a panel on a desktop", () => {
+		const { container } = render(<ScreenActions {...props} />);
+
+		const bar = container.firstElementChild;
+
+		expect(bar).not.toHaveClass("rounded-2xl", "border");
+		expect(bar).toHaveClass("border-t", "md:rounded-2xl", "md:border");
+		expect(bar).toHaveClass("-mx-4", "sm:-mx-8", "md:mx-0");
+	});
+
+	it("stands the press on an opaque ground, so the screen scrolls behind it", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
 		expect(container.firstElementChild).toHaveClass("bg-theme-faint");
@@ -303,7 +334,14 @@ describe("ScreenActions", () => {
 		).toBeInTheDocument();
 	});
 
-	it("draws no rule of its own: the panel edge already is one", () => {
+	it("carries its own space rather than a spacer sized to guess at it", () => {
+		const { container } = render(<ScreenActions {...props} />);
+
+		expect(container.children).toHaveLength(1);
+		expect(container.firstElementChild).not.toHaveClass("fixed");
+	});
+
+	it("draws no rule of its own: the bar's own edge already is one", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
 		expect(container.querySelector("footer")).not.toHaveClass("border-t");

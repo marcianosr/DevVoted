@@ -13,13 +13,16 @@ const COPY = {
 export type ProfilePageProps = {
 	user: AvatarUser;
 	isOwnProfile: boolean;
-	/** Owner-only panels: storage summary and the border shop. */
+	/** The one title the account wears, if it wears any (ADR-109). */
+	wornTitle?: string;
+	/** Owner-only panels: storage summary, the title shelf and the border shop. */
 	children?: ReactNode;
 };
 
 export const ProfilePage = ({
 	user,
 	isOwnProfile,
+	wornTitle,
 	children,
 }: ProfilePageProps) => (
 	<section className="min-h-screen">
@@ -30,6 +33,9 @@ export const ProfilePage = ({
 					<h1 className="text-3xl text-theme">
 						{isOwnProfile ? COPY.ownTitle : COPY.otherTitle(user.id)}
 					</h1>
+					{wornTitle === undefined ? null : (
+						<p className="text-lg text-pewter">{wornTitle}</p>
+					)}
 				</div>
 			</header>
 

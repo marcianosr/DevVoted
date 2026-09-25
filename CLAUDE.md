@@ -219,6 +219,7 @@ Checklist for a new server function:
 - Test setup includes jsdom environment and jest-dom matchers
 - Development server runs on port 3005 (configured in vite.config.ts)
 - Architecture Decision Records are stored in `docs/adr/` (index + conventions: `docs/adr/README.md`)
+- Every bean you create or edit follows [ADR-107](docs/adr/107-a-bean-states-what-and-why-first.md): `**What:**` and `**Why:**` (one line each, blank line between), then `## Done when` with 2-6 outcome checkboxes, then everything else under `## Notes`. No code symbols, file paths or ADR numbers above Notes. Never delete detail to make a bean shorter.
 - If I disagree with something, please write this down in an ADR file
 - Docs boyscout rule: when this file or an ADR contradicts the code, fix the doc in the same session (or flag it explicitly). Never silently work around a stale doc. Prefer deleting doc content in favor of a pointer when the code already documents it.
 - When making player-visible changes, follow `docs/changelog-maintenance.md` to update `CHANGELOG.md`

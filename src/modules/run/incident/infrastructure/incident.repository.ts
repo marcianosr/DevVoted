@@ -10,6 +10,8 @@ import {
 	usersTable,
 } from "~/database/schema";
 
+import { findBorderById } from "~/modules/account/profile/domain/border.model";
+import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { publicBuildOf } from "~/modules/run/build/domain/publicBuild.model";
 import { publicBuildColumn } from "~/modules/run/community/infrastructure/climbers.repository";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
@@ -52,6 +54,9 @@ export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 			runId: runsTable.id,
 			userId: runsTable.user_id,
 			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			borderId: usersTable.equipped_border_id,
+			titleId: usersTable.equipped_title_id,
 			gatesCleared: runStatesTable.gates_cleared,
 			lastClose: sql<LastClose | null>`${runStatesTable.state}->${stateKey("lastClose")}`,
 			build: publicBuildColumn,
@@ -61,12 +66,29 @@ export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
 		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
 
-	return rows.map(({ displayName, lastClose, build, ...row }) => ({
-		...row,
-		name: displayName ?? UNNAMED_RIVAL,
-		build: publicBuildOf(build),
-		...(lastClose === null ? {} : { lastClose }),
-	}));
+	return rows.map(
+		({
+			displayName,
+			photoUrl,
+			borderId,
+			titleId,
+			lastClose,
+			build,
+			...row
+		}) => {
+			const border = borderId === null ? undefined : findBorderById(borderId);
+			const title = titleId === null ? undefined : findTitleById(titleId);
+			return {
+				...row,
+				name: displayName ?? UNNAMED_RIVAL,
+				build: publicBuildOf(build),
+				...(photoUrl === null ? {} : { photoUrl }),
+				...(border === undefined ? {} : { borderUrl: border.image }),
+				...(title === undefined ? {} : { title: title.name }),
+				...(lastClose === null ? {} : { lastClose }),
+			};
+		}
+	);
 };
 
 /** What is already aimed at every run, so capacity and family rules read one map. */

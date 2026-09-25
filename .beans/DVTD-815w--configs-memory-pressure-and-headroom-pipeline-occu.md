@@ -1,15 +1,29 @@
 ---
 # DVTD-815w
-title: 'Configs: Memory Pressure and Headroom (pipeline occupancy axis)'
+title: 'Configs: Memory Pressure and Headroom, paid on how full your build is'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-30T07:40:36Z
-updated_at: 2026-09-12T12:58:03Z
+updated_at: 2026-09-24T12:49:25Z
 parent: DVTD-72d9
 ---
+
+**What:** Two configs that pay for the shape of the build: one for a packed build, one for a nearly empty one.
+
+**Why:** The roster is full of configs that always pay; a pair pulling opposite ways makes how much to install a live question.
+
+⚠️ The thing these were keyed to has moved twice. The note at the foot of this bean re-keys both to the upkeep bill. Settle that before starting.
+
+## Done when
+- [ ] Both configs key off something the build actually has, and the choice is written down
+- [ ] Memory Pressure pays more while the build is heavy; Headroom pays more while it is light
+- [ ] Headroom is capped so an empty build cannot clear a gate on its own
+- [ ] Whatever they read is available where config effects are worked out
+
+## Notes
 
 Two configs on a new axis: they pay for the *shape* of your pipeline rather than for
 what is in it. One rewards a packed pipeline, the other an empty one, so together they
@@ -75,17 +89,17 @@ a real trade, and it stops scaling with the ladder.
 
 ## Decide before building
 
-- [ ] Memory Pressure re-keyed from KB capacity to spot occupancy? (no other reading is
+- Memory Pressure re-keyed from KB capacity to spot occupancy? (no other reading is
       buildable)
-- [ ] Headroom's cap: 2 counted free spots, or another number/shape?
+- Headroom's cap: 2 counted free spots, or another number/shape?
 
 ## Then
 
-- [ ] `AnswerContext` learns the pipeline's occupancy — it is `{category, answeredBefore}`
+- `AnswerContext` learns the pipeline's occupancy — it is `{category, answeredBefore}`
       today, and `effectOf(config).coverage(context)` cannot see spots at all. Both
       configs need it, and it is the only structural change either one asks for.
-- [ ] Roster entries + `gives`/`costs` lines
-- [ ] Wiki: neither config changes a rule, so only the roster table needs the rows
+- Roster entries + `gives`/`costs` lines
+- Wiki: neither config changes a rule, so only the roster table needs the rows
 
 ## Unblocked by DVTD-811d
 

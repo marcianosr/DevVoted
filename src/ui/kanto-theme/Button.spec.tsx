@@ -36,14 +36,24 @@ describe("Button", () => {
 		render(<Button glyph="×" label="Uninstall Cache" onPress={vi.fn()} />);
 
 		const button = screen.getByRole("button");
-		expect(button).toHaveClass("size-5");
-		expect(button).not.toHaveClass("w-fit");
+		expect(button).toHaveClass("size-7");
+		expect(button).not.toHaveClass("w-full");
 	});
 
 	it("sizes a labelled button off its own content", () => {
 		render(<Button label="↑ v3" onPress={vi.fn()} />);
 
-		expect(screen.getByRole("button")).toHaveClass("w-fit", "h-5");
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("inline-flex", "shrink-0", "h-7");
+		expect(button).not.toHaveClass("w-full");
+	});
+
+	it("spans the row on a phone and shrink-wraps from sm when told to", () => {
+		render(<Button label="Boulder gate prep" width="full" onPress={vi.fn()} />);
+
+		const button = screen.getByRole("button");
+		expect(button).toHaveClass("flex", "w-full", "sm:inline-flex", "sm:w-fit");
+		expect(button).not.toHaveClass("inline-flex", "shrink-0");
 	});
 
 	it("lets a hint name the control more fully than its label", () => {
@@ -238,7 +248,7 @@ describe("Button", () => {
 	});
 
 	it.each([
-		["sm", "h-5"],
+		["sm", "h-7"],
 		["md", "h-8"],
 	] as const)("stands a %s labelled button %s tall", (size, height) => {
 		render(<Button label="cancel" size={size} onPress={vi.fn()} />);
@@ -249,19 +259,25 @@ describe("Button", () => {
 	it("is small unless a size says otherwise", () => {
 		render(<Button label="cancel" onPress={vi.fn()} />);
 
-		expect(screen.getByRole("button")).toHaveClass("h-5");
+		expect(screen.getByRole("button")).toHaveClass("h-7");
 	});
 
-	it("squares a glyph button to the badge's own height", () => {
+	it("squares a glyph button to the height every other sm press stands at", () => {
 		render(<Button glyph="i" label="About Cache" onPress={vi.fn()} />);
 
-		expect(screen.getByRole("button")).toHaveClass("size-5");
+		expect(screen.getByRole("button")).toHaveClass("size-7");
 	});
 
 	it("holds a labelled button to that same height", () => {
 		render(<Button label="↑ v3" onPress={vi.fn()} />);
 
-		expect(screen.getByRole("button")).toHaveClass("h-5");
+		expect(screen.getByRole("button")).toHaveClass("h-7");
+	});
+
+	it("stands a capped press at that height too, so a row of presses agrees", () => {
+		render(<Button cap="↑" label="v2" detail="32 KB" onPress={vi.fn()} />);
+
+		expect(screen.getByRole("button")).toHaveClass("h-7");
 	});
 
 	it.each(TONES)(

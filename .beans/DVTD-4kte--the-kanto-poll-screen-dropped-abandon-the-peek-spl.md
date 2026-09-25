@@ -1,13 +1,24 @@
 ---
 # DVTD-4kte
-title: The kanto poll screen dropped abandon, the peek split and the clock
+title: The poll screen lost abandon, the peek result and the clock
 status: todo
 type: bug
 priority: normal
 created_at: 2026-09-16T10:44:43Z
-updated_at: 2026-09-16T10:44:43Z
+updated_at: 2026-09-24T12:49:38Z
 parent: DVTD-0x5c
 ---
+
+**What:** Bring back three things the poll screen lost in the redesign: abandon run, the split a peek pays for, and the countdown.
+
+**Why:** Abandon is unreachable, the peek buys a number nobody sees, and a timed audit gives no warning.
+
+## Done when
+- [ ] A player can abandon a run again, from somewhere on the run
+- [ ] The peek shows the split it paid for, or stops promising one
+- [ ] Time left is visible while a timed audit runs, or timed audits go
+
+## Notes
 
 Swapping `/run/poll` from the old-theme `AnsweringScreen` to the kanto `PollScreen` (DVTD-iiny) lost three affordances the kit has no slot for:
 
@@ -17,6 +28,6 @@ Swapping `/run/poll` from the old-theme `AnsweringScreen` to the kanto `PollScre
 
 This is the same shape as DVTD-gzbc: the kanto kit was drawn from mocks that never showed these.
 
-- [ ] Decide where abandon lives on the kanto run (header? prep? a run menu?)
-- [ ] Give `PollScreen` a split readout, or drop the peek's promise
-- [ ] Give `PollScreen` a clock, or drop timed audits
+- Decide where abandon lives on the kanto run (header? prep? a run menu?)
+- Give `PollScreen` a split readout, or drop the peek's promise
+- Give `PollScreen` a clock, or drop timed audits

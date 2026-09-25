@@ -22,6 +22,7 @@ import type { GateStake } from "~/modules/run/run/application/gateStake.viewmode
 
 import { createMockDataFactory } from "./createMockDataFactory";
 import { KANTO_QUIZ } from "./kanto";
+import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
 
 const [saffronPoll] = KANTO_QUIZ;
 
@@ -193,10 +194,13 @@ const createRunView = createMockDataFactory<RunView>({
 	archiveAfterKb: null,
 	unlockedConfigIds: [],
 	unlockedThisRun: [],
+	earnedTitleIds: [],
+	unlockedServiceIds: [...REGISTRY_CONTROL_IDS],
 	peelSlotsRemaining: 0,
 	peelRefundKb: 0,
 	poll: createMockPollView(),
 	awaitingTomorrow: false,
+	pollsLeftToday: 5,
 	pollsExhausted: false,
 	disabledOptionIds: [],
 	hiddenOptionIds: [],

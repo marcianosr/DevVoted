@@ -111,27 +111,14 @@ export const streakMultiplier = (streak: number): number =>
 
 export const STREAK_UNIT_STEP = 0.1;
 
-export const MAX_STREAK_UNIT_STEPS = SLICE_WINDOW - 1;
-
 /**
  * Every consecutive correct answer after the first pays a step, so a flawless
  * window is worth four of them. The step is added after the multipliers and
  * never multiplied by them: inside the stack a x6 build would turn it into
  * +0.6 and the streak would stop rewarding accuracy.
- *
- * A config can buy a `growth` that makes the step climb with the streak instead
- * of staying flat (ADR-090). It is clamped to a clean window's worth of steps
- * because a failed gate does not reset the streak, so a retry would otherwise
- * open on a step no window could have earned.
  */
-export const streakUnitBonus = (
-	streakBefore: number,
-	growth?: number
-): number => {
-	if (streakBefore < 1) return 0;
-	if (growth === undefined) return STREAK_UNIT_STEP;
-	return growth * Math.min(streakBefore, MAX_STREAK_UNIT_STEPS);
-};
+export const streakUnitBonus = (streakBefore: number): number =>
+	streakBefore < 1 ? 0 : STREAK_UNIT_STEP;
 
 /** Correct answers a gate demands whatever the run score says, counted before multipliers. */
 export const FLOOR_CORRECT = 2;
@@ -209,3 +196,6 @@ export const pinCostFor = (gatesCleared: number): number =>
 
 export const PIN_UNTIL_GATE = 10;
 export const PIN_START_KB_PER_GATE = 32;
+
+/** One run's archive credit reaching this earns Boot Cache (ADR-116). */
+export const BOOT_CACHE_BANK_KB = 256;

@@ -140,7 +140,8 @@ engine seam, which grades mirror-aware, so no derived-count bug is possible.
 ADR-050's three Configdex states stand, extended: a locked row shows both paths
 as visible caption lines with live progress ("Rebuild the shop 10 times · 6/10",
 "Answer 125 polls · 43/125"); one-shot paths show a checkbox without a count.
-Visible captions, not tooltip-only (DVTD-aiyp). Shelf-Reveal still names a met
+The paths sit behind the row's `i` since
+[ADR-108](108-the-dex-reads-configs-as-chip-rows.md) decision 3. Shelf-Reveal still names a met
 row; completing either path flips the row to name, effect and provenance.
 
 Starter stacks lose their gate rungs: a stack arrives when every config it

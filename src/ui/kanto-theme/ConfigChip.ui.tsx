@@ -22,14 +22,14 @@ const COPY = {
 } as const;
 
 const WRAP = "group/info relative inline-flex";
-const CHIP =
+export const CHIP =
 	"inline-flex items-center gap-1.5 rounded-lg border bg-theme/5 px-4 py-2 text-sm whitespace-nowrap";
-const EDGE = "border-theme-faint";
+export const EDGE = "border-theme-faint";
 const EDGE_LIT = "border-theme";
-const SKIPPED_CHIP = "opacity-60";
-const NAME = "text-theme-faint";
+export const SKIPPED_CHIP = "opacity-60";
+export const NAME = "text-theme-faint";
 const LOST_NAME = "line-through text-theme-soft";
-const SKIPPED_NAME = "text-theme-muted";
+export const SKIPPED_NAME = "text-theme-muted";
 
 const IDENTITY = "flex min-w-0 items-center gap-1.5";
 const IDENTITY_FIXED = "flex-1";
@@ -49,7 +49,15 @@ const WIDTH = {
 	full: FULL_WIDTH,
 } satisfies Record<ChipWidth, string>;
 
-const PANEL = "absolute top-full left-0 z-30 mt-2 transition-opacity";
+/**
+ * A phone gets a sheet, not a popup: the panel is wider than the gap between a
+ * chip and the screen's edge, so anchoring it to the trigger put half of it
+ * past the viewport with nothing to scroll it back. Fixed to the bottom of the
+ * screen it fits by construction. From `sm` there is room to anchor it again,
+ * which keeps the panel beside the thing it explains.
+ */
+const PANEL =
+	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:top-full sm:bottom-auto sm:left-0 sm:mt-2";
 const PANEL_SHUT =
 	"pointer-events-none invisible opacity-0 group-hover/info:visible group-hover/info:opacity-100 group-has-[:focus-visible]/info:visible group-has-[:focus-visible]/info:opacity-100";
 const PANEL_OPEN = "pointer-events-auto visible opacity-100";
@@ -204,7 +212,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		arming !== undefined ? (
 			<InstallScale {...arming} />
 		) : upgrading ? (
-			<Upgrades {...upgrades} />
+			<Upgrades {...upgrades} onClose={onToggleUpgrades} />
 		) : info === undefined ? null : (
 			<ConfigInfo {...info} />
 		);

@@ -7,9 +7,21 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-15T13:55:00Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that pays 16 KB for every wrong answer.
+
+**Why:** The only thing in the roster that pays exactly when the rest of the build does not.
+
+## Done when
+- [ ] The guard against missing on purpose is picked: pay only while behind, accept it, or pay less each time
+- [ ] A wrong answer pays 16 KB while it is installed
+- [ ] A mirrored question and a timed-out poll pay nothing
+- [ ] A spec per case
+
+## Notes
 
 Zero reward replaced with storage
 

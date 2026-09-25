@@ -22,6 +22,9 @@ export type PollAuthor = {
 	readonly handle: string;
 	readonly avatarUrl?: string;
 	readonly borderUrl?: string;
+	/** Account authority: Poll editor or Admin. Assigned, never earned. */
+	readonly role?: string;
+	/** The title the author wears, earned through play (ADR-109). */
 	readonly title?: string;
 };
 

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { gateClearPayout } from "~/modules/run/build/domain/build.model";
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
 import { PEEL_KB_PER_SLOT } from "~/modules/run/gate/application/gateOutcome.viewmodel";
@@ -7,7 +9,11 @@ import {
 	type PrepWindow,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
-import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
+import type {
+	AttackPanelProps,
+	AttackRival,
+} from "~/ui/kanto-theme/AttackPanel.ui";
+import type { AuditsPanelProps } from "~/ui/kanto-theme/AuditsPanel.ui";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { PrepScreen } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
@@ -73,15 +79,20 @@ const asidesFor = (
 	}),
 ];
 
+const RESPOND_UNOFFERED = "is not a target you were offered";
+
 /** Each press fires its own pair; the panel itself only knows labels. */
-const armedFor = ({
-	attack,
-	onFire,
-}: PrepViewProps): AttackPanelProps | undefined =>
+const armedFor = (
+	{ attack, onFire }: PrepViewProps,
+	openRunId: number | undefined,
+	onInspect: (targetRunId: number) => void
+): AttackPanelProps | undefined =>
 	attack === undefined
 		? undefined
 		: {
 				...attack,
+				...(openRunId === undefined ? {} : { openRunId }),
+				onInspect,
 				rivals: attack.rivals.map((rival) => ({
 					...rival,
 					payloads: rival.payloads.map((payload) => ({
@@ -94,16 +105,49 @@ const armedFor = ({
 				})),
 			};
 
+/**
+ * Answering an audit is aiming your own at whoever sent it, so the press only
+ * opens their row on the panel below — there is no reply mechanic of its own.
+ * A sender you were not offered is named in the refusal rather than hidden, so
+ * the rule reads off the screen (ADR-099 §4).
+ */
+const respondingFor = (
+	audits: PrepViewProps["view"]["gateStake"]["audits"],
+	rivals: readonly AttackRival[],
+	panel: AuditsPanelProps,
+	onInspect: (targetRunId: number) => void
+): AuditsPanelProps => ({
+	...panel,
+	rows: panel.rows.map((row) => {
+		const sender = audits.find((audit) => audit.code === row.code)?.sentBy;
+		if (sender === undefined) return row;
+
+		const rival = rivals.find((candidate) => candidate.userId === sender.id);
+		return {
+			...row,
+			respond:
+				rival === undefined
+					? { disabled: true, hint: `${sender.name} ${RESPOND_UNOFFERED}` }
+					: { onPress: () => onInspect(rival.targetRunId) },
+		};
+	}),
+});
+
 export const PrepView = (props: PrepViewProps) => {
 	const { view, onStart, startRefusal, onEstimate, onCommitBand, onRebase } =
 		props;
+	const [openRunId, setOpenRunId] = useState<number | undefined>(undefined);
+	const inspect = (targetRunId: number) =>
+		setOpenRunId((open) => (open === targetRunId ? undefined : targetRunId));
+
 	const { gateStake } = view;
+	const attack = armedFor(props, openRunId, inspect);
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
 		answeredPolls: view.allAnswered,
 		configs: view.configs,
 		audits: gateStake.audits,
-		attack: armedFor(props),
+		attack,
 		balanceKb: view.storage,
 		buildSpace: buildSpaceOf(view),
 		window: windowOf(view),
@@ -127,6 +171,12 @@ export const PrepView = (props: PrepViewProps) => {
 	return (
 		<PrepScreen
 			{...screen}
+			audits={respondingFor(
+				gateStake.audits,
+				attack?.rivals ?? [],
+				screen.audits,
+				inspect
+			)}
 			sla={
 				screen.sla === undefined
 					? undefined

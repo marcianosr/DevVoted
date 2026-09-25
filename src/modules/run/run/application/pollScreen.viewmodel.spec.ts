@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { healthyUnitsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	buildCountsOf,
 	coverageLeadFor,
+	pollBarFor,
 	pollBreakdownFor,
 	pollBuildFor,
 	pollDifficultyFor,
@@ -12,6 +14,7 @@ import {
 	pollHistoryFor,
 	pollPaidFor,
 	pollPressesOf,
+	runPaidFor,
 	categoryLeaderFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -202,12 +205,12 @@ describe("coverageLeadFor", () => {
 		expect(textOf(coverageLeadFor(toRunView(run)))).toContain("units across");
 	});
 
-	it("greens the score and leaves the slot count plain", () => {
+	it("bands the score by how the run is doing, and leaves the slot count plain", () => {
 		const [, score, , slots] = coverageLeadFor(
 			toRunView(runWith(BARE, JS_GATE))
 		);
 
-		expect(score).toEqual({ figure: "0", gain: true });
+		expect(score).toEqual({ figure: "0", band: "shaky" });
 		expect(slots).toEqual({ figure: `${SLICE_WINDOW}` });
 	});
 
@@ -215,7 +218,42 @@ describe("coverageLeadFor", () => {
 		const run = playing(JS_GATE, [true]);
 		const coverage = coverageLeadFor(toRunView(run)).at(-2);
 
-		expect(coverage).toEqual({ figure: "20.0%", gain: true });
+		expect(coverage).toEqual({ figure: "20.0%", band: "shaky" });
+	});
+});
+
+describe("pollBarFor", () => {
+	it("speaks the units held against the gate's HEALTHY units, over a track drawn in percent", () => {
+		const view = toRunView(playing(JS_GATE, [true, true]));
+
+		expect(pollBarFor(view)).toEqual({
+			...view.gateStake.coverageLadder,
+			held: view.gateStake.coverageHeld,
+			pin: false,
+			units: { held: view.gateStake.unitsHeld, healthy: healthyUnitsAt(0) },
+		});
+	});
+
+	it("keeps the units a cleared gate banked while the line rises with the next gate", () => {
+		const pallet = pollBarFor(
+			toRunView(playing(TWO_GATES, [true, true, true, false]))
+		);
+		const boulder = pollBarFor(
+			toRunView(playing(TWO_GATES, [true, true, true, false, false]))
+		);
+
+		expect(pallet.units?.healthy).toBe(healthyUnitsAt(0));
+		expect(boulder.units?.healthy).toBe(healthyUnitsAt(1));
+		expect(boulder.units?.held).toBe(pallet.units?.held);
+		expect(boulder.held).toBeCloseTo(pallet.held / 2);
+	});
+});
+
+describe("runPaidFor", () => {
+	it("leaves out the gate just opened, whose slots have nothing in them yet", () => {
+		const cleared = toRunView(playing(TWO_GATES, CLEARED));
+
+		expect(runPaidFor(cleared).rows).toHaveLength(1);
 	});
 });
 

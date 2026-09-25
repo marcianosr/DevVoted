@@ -1,15 +1,27 @@
 ---
 # DVTD-ecjo
-title: 'The day''s gate is not enforced at the entry points: a spent day still offers Start'
+title: A spent day still offers Start, then fails with a raw error
 status: todo
 type: bug
 priority: critical
 created_at: 2026-09-19T18:52:15Z
-updated_at: 2026-09-22T11:33:26Z
+updated_at: 2026-09-24T12:49:38Z
 parent: DVTD-0x5c
 blocking:
     - DVTD-6vw2
 ---
+
+**What:** Every entry point checks how many of today's five polls the player has left, instead of how far the current run got.
+
+**Why:** The hub advertises five polls ready on a spent day, and the press dies on a raw server error.
+
+## Done when
+- [ ] The hub says how many of today's polls are actually left
+- [ ] Start is refused in plain words when the day is spent, never with a raw error
+- [ ] A retry cannot spend a second day's polls on the same date
+- [ ] Specs cover: no run with the day spent, and a finished run with the day part spent
+
+## Notes
 
 **1 gate = 1 day = 5 polls (ADR-014).** Once a player has answered today's five,
 the climb must park until tomorrow. The dealing layer enforces this correctly.
@@ -68,17 +80,17 @@ point read that.
 
 ## Todo
 
-- [ ] Add the day's remaining-poll count to the view (server-derived from
+- Add the day's remaining-poll count to the view (server-derived from
       `fetchAnsweredPollIdsForDay`), so no screen has to infer it from one run
-- [ ] `RunStart`: derive `spent` from that, not from `view?.pollsExhausted`;
+- `RunStart`: derive `spent` from that, not from `view?.pollsExhausted`;
       stop printing `count: SLICE_WINDOW` when fewer remain
-- [ ] Refuse `start` in the service with a typed, player-readable refusal rather
+- Refuse `start` in the service with a typed, player-readable refusal rather
       than `throw new Error("No polls left for a run today")`
-- [ ] Cover the two reproductions above with specs: no run + day spent, and a
+- Cover the two reproductions above with specs: no run + day spent, and a
       finished run with the day partly spent
-- [ ] Check the retry path: ADR-076 says a SHAKY retry costs a day, so a retry
+- Check the retry path: ADR-076 says a SHAKY retry costs a day, so a retry
       must not be able to consume a second window on the same date
-- [ ] Wiki: state the rule where a player reads it (the hub and prep both say
+- Wiki: state the rule where a player reads it (the hub and prep both say
       when tomorrow's polls land)
 
 ## Related

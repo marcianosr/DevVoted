@@ -15,7 +15,6 @@ import {
 	streakMultiplier,
 	streakUnitBonus,
 	STREAK_UNIT_STEP,
-	MAX_STREAK_UNIT_STEPS,
 	GATE_COUNT,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -38,43 +37,24 @@ describe("the streak bonus", () => {
 });
 
 describe("the streak unit step", () => {
-	it("pays nothing on the window's opening answer, whatever the build bought", () => {
+	it("pays nothing on the window's opening answer", () => {
 		expect(streakUnitBonus(0)).toBe(0);
-		expect(streakUnitBonus(0, 0.25)).toBe(0);
 	});
 
-	it("stays flat at every streak length without a growth", () => {
+	it("stays flat at every streak length", () => {
 		expect(streakUnitBonus(1)).toBe(STREAK_UNIT_STEP);
 		expect(streakUnitBonus(4)).toBe(STREAK_UNIT_STEP);
 		expect(streakUnitBonus(40)).toBe(STREAK_UNIT_STEP);
 	});
 
-	it("climbs by the growth on each further answer in a row", () => {
-		expect(streakUnitBonus(1, 0.25)).toBeCloseTo(0.25);
-		expect(streakUnitBonus(2, 0.25)).toBeCloseTo(0.5);
-		expect(streakUnitBonus(3, 0.25)).toBeCloseTo(0.75);
-		expect(streakUnitBonus(4, 0.25)).toBeCloseTo(1);
-	});
-
-	it("pays a clean window 2.5 units of step against the flat 0.4", () => {
+	it("pays a clean window 0.4 units of step", () => {
 		const window = [0, 1, 2, 3, 4];
-		const flat = window.reduce(
+		const paid = window.reduce(
 			(sum, before) => sum + streakUnitBonus(before),
 			0
 		);
-		const grown = window.reduce(
-			(sum, before) => sum + streakUnitBonus(before, 0.25),
-			0
-		);
 
-		expect(flat).toBeCloseTo(0.4);
-		expect(grown).toBeCloseTo(2.5);
-	});
-
-	it("clamps a streak carried in from a failed gate to a clean window's climb", () => {
-		expect(MAX_STREAK_UNIT_STEPS).toBe(4);
-		expect(streakUnitBonus(5, 0.25)).toBeCloseTo(1);
-		expect(streakUnitBonus(9, 0.25)).toBeCloseTo(1);
+		expect(paid).toBeCloseTo(0.4);
 	});
 });
 

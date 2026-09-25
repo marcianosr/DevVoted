@@ -74,6 +74,8 @@ boundary, so this table is the map an architecture review reads first.
 | Stack | `config/domain` | `STARTER_STACKS`, `starterStackFor` (`stack.model.ts`); the staged opening loadouts |
 | Config visuals | `src/ui/kanto-theme` | `ConfigChip` and friends; the module's own `presentation/` folder is gone with old-theme |
 | Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount`, and the rolled upgrade's climb `upgradeOfferFor` / `CLIMB_ONE_IN` / `versionOddsFor` (`draft.model.ts`) |
+| Registry control roster | `shop/domain` | `REGISTRY_CONTROLS`, `REGISTRY_CONTROL_LIST`, `openingGateOf`, `closingGateOf`, `isSoldInShop`, `ShopSoldId` (`registryControl.model.ts`) — the one table naming the eight services (the player's word since ADR-115; the code says control), each with its scope, registry or run, where it is sold, shop or archive (ADR-115 D10), its unlock objective (`servicesUnlockedBy`, `isServiceUnlocked`, ADR-116) and, for a shop service, the gate it opens on; the shop and the Dex both read it |
+| Service unlocks | `shop/infrastructure` + `shop/application` | `fetchUnlockedServiceIds` (`serviceUnlock.repository.ts`), `getServiceUnlocks` (`serviceUnlock.serverfn.ts`) — the account's earned services (`user_service_unlocks`), read by the run view and the Dex; granted at the objective seam in `run.repository.ts` |
 | Shop screen | `shop/presentation` | `RunShop`, `ShopView`; the Registry is a panel on it, and on New run |
 | Category leader / Seat | `run/domain` | `CategoryLeader`, `CategorySeat`, `seatsFor`, `MIN_LEADER_STREAK` (`categoryLeader.model.ts`); one seat per category, read by the poll screen and by the community board. The row both surfaces draw is `categoryLeaderRowFor` (`run/application`) |
 | Voter | `community/domain` | `CommunityVoter` (`voter.model.ts`); a player as the board draws them |
@@ -105,7 +107,8 @@ run's way of drawing one.
 |---|---|---|
 | Polldex | `dex/domain` | `PolldexEntry`, `filterPolldexEntries`, `polldexCoverage` (`polldex.model.ts`) |
 | Dex reads | `dex/application` + `dex/infrastructure` | `getPolldexService` (`polldex.service.ts`), `getPolldex` (`polldex.serverfn.ts`), `polldex.repository.ts` |
-| The Dex | `dex/presentation` + `dex/application` | Tab shell plus the five panels (`Dex.component`, `dexScreen.viewmodel`, `DexScreen`, `DexPolls`, `DexConfigs`, `DexAudits`, `DexSwatches`, `DexRuns`) |
+| The Dex | `dex/presentation` + `dex/application` | Tab shell plus the six tabs (`Dex.component`, `dexScreen.viewmodel`, `DexScreen`, `DexPolls`, `DexConfigs`, `DexControls`, `DexAudits`, `DexSwatches`, `DexRuns`); the services tab is one section listing every service, named locked or not |
+| Controldex | `dex/domain` | `ControldexEntry`, `controldex` (`controldex.model.ts`) — every roster service with whether the account has unlocked it, read from the service grants (ADR-116) |
 | Unlockables | `unlockables` | Planned (`DVTD-2try`, `DVTD-g8ty`). The reason `collection` is its own context — not built |
 
 ### Context `account`
@@ -115,6 +118,7 @@ run's way of drawing one.
 | Login, signup, session | `auth` | `modules/account/auth/` |
 | User, dev card, awards | `profile` | `modules/account/profile/`, `routes/_authed/profile.$userId.tsx` |
 | Archive + borders | `profile` | `border.model.ts` (catalogue + `findBorderById`), `archive.service.ts`, `useArchiveState.hook.ts`, `BorderShop`, `ArchiveSummary`. All three columns (`archived_storage`, `owned_border_ids`, `equipped_border_id`) sit on `users`, so one aggregate owns one table |
+| Title | `profile` | `title.model.ts` (`Title`, `TitleEarn`, `TITLES`, `findTitleById`, `isExclusive`, `TITLE_METRICS`, `titlesEarnedBy`), `title.repository.ts`, `title.service.ts`, `useTitleState.hook.ts`, `TitleShelf`. Earned identity, permanent, one worn (ADR-109). Owned titles are rows in `user_titles`; `users.equipped_title_id` is only which one is on show. Not to be confused with an account **role** (`Poll editor`, `Admin`), which is authority and lives on `users.role` |
 
 ### Context `ops`
 
@@ -168,7 +172,9 @@ meant two things at once.
 | Spot | ADR-044 renamed slots to spots to keep width clear of money; ADR-048 reversed it | **Slot** |
 | Rarity / bit / crumb / nibble / byte | ADR-047 deleted the grade ladder; a config carries a plain size. A version's odds of being rolled read as `1 in N rolls`, never as a tier word (ADR-097) | **Slots** (`Config.slots`, one of 1/2/4/8/12/16); **odds** for a version |
 | Package Manager | Legacy in-fiction name for the shop; survives only in one `GameLoopExplainer` string | **Shop** |
+| Dex Registry | Two words only because plain "Registry" was taken; the navigation already said Dex, so the screen says Dex. **Registry** stays the shop's in-run offer list | **Dex** (`DEX_TITLE` in `DexScreen.ui.tsx`) |
 | Shelf | Renamed 2026-09-10: the offer list is an npm registry, which is what the player downloads and installs from. The **shop** is still the screen | **Registry** (`Registry.ui.tsx`, `RegistryControl.ui.tsx`, `ShopScreenProps.registry`) |
+| Control | Renamed for the player 2026-09-25 (ADR-115): the shop sells **services** in two scopes, registry and run. The code keeps the word, because ADR-002 reserves `.service.ts` | **Service** in copy; `RegistryControl*`, `controldex`, `shopControls` in code |
 | Turn | No such symbol anywhere; the legacy `turn.service.ts` was deleted with `src/domains/runs/` | **Answer** (`RunAction` `answer`, `AnsweredPoll`) |
 | Score / ScoreBlock | No score system and no such component; scoring *is* coverage | **Coverage** |
 | Config Trigger | Never built as a distinct concept | **Check** and **Effect** |

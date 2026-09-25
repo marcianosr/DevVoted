@@ -1,13 +1,27 @@
 ---
 # DVTD-wra4
-title: 'Gate bounty: opt-in demand raise for KB, unclaimed bounty feeds ghost loot'
+title: 'Gate bounty: raise your own gate''s demand for a reward'
 status: draft
 type: feature
 priority: normal
 created_at: 2026-08-20T10:23:02Z
-updated_at: 2026-09-14T13:49:51Z
+updated_at: 2026-09-24T12:49:42Z
 parent: DVTD-kulw
 ---
+
+**What:** Let a player raise this gate's demand on the stake screen, in exchange for storage.
+
+**Why:** A player with a strong build has no way to say so.
+
+⚠️ Two things here are stale: the downside is now a lost day rather than a peel, and every gate already carries an objective in the row this wanted. If it returns, it is a dial on that objective's bonus.
+
+## Done when
+- [ ] The name clash with Bug Bounty is resolved
+- [ ] Decided: whether it raises the clear line only, or the whole ladder under it
+- [ ] The raised demand replaces the normal one, so taking it is a real risk
+- [ ] The numbers come from a simulation
+
+## Notes
 
 Player-declared difficulty on the stake screen: TAKE BOUNTY raises this gate's demand (e.g. 14% instead of 10%) for a KB reward (e.g. +48KB). "My build is cracked — make Boulder harder."
 
@@ -25,9 +39,9 @@ Player-declared difficulty on the stake screen: TAKE BOUNTY raises this gate's d
 
 ## Todo
 
-- [ ] Resolve the bounty name collision with DVTD-w0ul
-- [ ] Decide demand/reward numbers via sim
-- [ ] Decide whether the loot failure clause ships with v1 or waits for loot storage
+- Resolve the bounty name collision with DVTD-w0ul
+- Decide demand/reward numbers via sim
+- Decide whether the loot failure clause ships with v1 or waits for loot storage
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

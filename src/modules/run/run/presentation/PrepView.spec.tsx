@@ -28,7 +28,7 @@ describe("PrepView", () => {
 	it("titles the window with the gate it is about to run", () => {
 		render(<PrepView {...props} />);
 
-		expect(screen.getByText(/gate 4/i)).toBeInTheDocument();
+		expect(screen.getByText("#4 - Lavender Gate")).toBeInTheDocument();
 	});
 
 	it("opens on what each band pays rather than on the build", () => {
@@ -166,7 +166,7 @@ describe("rivals' audits and the attack in hand (ADR-099)", () => {
 								name: "Not Found",
 								description: "No poll names its category.",
 								suppressed: false,
-								sentBy: "Misty",
+								sentBy: { id: "misty", name: "Misty" },
 							},
 						],
 					}),
@@ -174,18 +174,86 @@ describe("rivals' audits and the attack in hand (ADR-099)", () => {
 			/>
 		);
 
-		expect(screen.getByText("from Misty")).toBeInTheDocument();
+		expect(screen.getByText("from")).toBeInTheDocument();
+		expect(screen.getByText("Misty")).toBeInTheDocument();
 	});
 
-	it("fires the pressed payload at the pressed rival", async () => {
+	it("fires the pressed payload once its rival is open", async () => {
 		const onFire = vi.fn();
 		render(<PrepView {...props} attack={kantoAttackPanel()} onFire={onFire} />);
 
+		await userEvent.click(
+			screen.getByRole("button", { name: "inspect Misty" })
+		);
 		await userEvent.click(
 			screen.getByRole("button", { name: "Fire 404 at Misty" })
 		);
 
 		expect(onFire).toHaveBeenCalledWith(2, "not-found");
+	});
+
+	it("answers an audit by opening the row of whoever sent it", async () => {
+		render(
+			<PrepView
+				{...props}
+				attack={kantoAttackPanel()}
+				view={createMockRunView({
+					...view,
+					gateStake: createMockGateStake({
+						gateNumber: 4,
+						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
+						audits: [
+							{
+								id: "not-found",
+								code: 404,
+								name: "Not Found",
+								description: "No poll names its category.",
+								suppressed: false,
+								sentBy: { id: "misty", name: "Misty" },
+							},
+						],
+					}),
+				})}
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: "respond" }));
+
+		expect(
+			screen.getByRole("button", { name: "Fire 404 at Misty" })
+		).toBeInTheDocument();
+	});
+
+	it("refuses to answer a sender who is not a target you were offered", () => {
+		render(
+			<PrepView
+				{...props}
+				attack={kantoAttackPanel()}
+				view={createMockRunView({
+					...view,
+					gateStake: createMockGateStake({
+						gateNumber: 4,
+						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
+						audits: [
+							{
+								id: "not-found",
+								code: 404,
+								name: "Not Found",
+								description: "No poll names its category.",
+								suppressed: false,
+								sentBy: { id: "koga", name: "Koga" },
+							},
+						],
+					}),
+				})}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", {
+				name: "Koga is not a target you were offered",
+			})
+		).toBeDisabled();
 	});
 
 	it("sends nobody to an incident log of its own: the board carries it now", () => {

@@ -258,6 +258,7 @@ export const asShop = (state: RunState) => (
 		onRebuild={noop}
 		onExtend={noop}
 		onPlantPin={noop}
+		onAbandon={noop}
 		onVendorLock={noop}
 		onContinue={noop}
 	/>

@@ -3,10 +3,22 @@
 title: A failed run action tells the player nothing
 status: todo
 type: bug
+priority: normal
 created_at: 2026-08-13T15:29:44Z
-updated_at: 2026-08-13T15:29:44Z
+updated_at: 2026-09-24T12:49:35Z
 parent: DVTD-82c4
 ---
+
+**What:** When a run action fails on the server, say so.
+
+**Why:** Installing a config, answering a poll or starting a gate can fail and the button simply does nothing.
+
+## Done when
+- [ ] A failed action says something, in one agreed place
+- [ ] Failures come out of the shared action hook instead of each screen guessing
+- [ ] A spec per surface asserts the player sees the failure
+
+## Notes
 
 Split out of **DVTD-cmqj**, which made every server failure *inspectable* (one `ApiResponse` error mode) but did not make any of them *visible* for mutations.
 
@@ -32,9 +44,9 @@ The one exception, and the model to copy: `RunAnswer.component.tsx:135` feeds `a
 
 ## Todo
 
-- [ ] Decide where a failed action speaks — inline by the button, a toast, or the existing `ConfirmDialog` pattern widened
-- [ ] Surface `dispatch` failures from `useRunActions` rather than each call site guessing
-- [ ] Cover one failing action per surface, asserting the player sees something
+- Decide where a failed action speaks — inline by the button, a toast, or the existing `ConfirmDialog` pattern widened
+- Surface `dispatch` failures from `useRunActions` rather than each call site guessing
+- Cover one failing action per surface, asserting the player sees something
 
 ## Not in scope
 

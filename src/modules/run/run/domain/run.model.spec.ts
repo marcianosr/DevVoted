@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
+	archiveCreditBytes,
 	answerTypesOf,
 	createRun,
 	pickBudgetFor,
@@ -10,7 +11,13 @@ import {
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import { answerWith, handed, poll } from "~/modules/run/run/domain/run.factory";
+import {
+	answerWith,
+	handed,
+	poll,
+	started,
+} from "~/modules/run/run/domain/run.factory";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 describe(".length's pick budget", () => {
 	// Two correct options out of three, so this poll alone costs 2 of the budget.
@@ -116,5 +123,36 @@ describe("the window's answer types", () => {
 
 	it("counts nothing for a window with no polls left", () => {
 		expect(answerTypesOf([])).toEqual({ single: 0, multiple: 0 });
+	});
+});
+
+describe("archiveCreditBytes", () => {
+	const ended = (
+		status: "won" | "dead",
+		gatesCleared: number,
+		storage: number,
+		startedAtGate = 0
+	) => ({ ...started(["js"]), status, gatesCleared, storage, startedAtGate });
+
+	it("banks every KB of a won run, in bytes", () => {
+		expect(archiveCreditBytes(ended("won", 12, 100))).toBe(
+			100 * STORAGE_UNITS.KB
+		);
+	});
+
+	it("banks a dead run's share by the gates it climbed", () => {
+		expect(archiveCreditBytes(ended("dead", 6, 130))).toBe(
+			Math.round((130 * STORAGE_UNITS.KB * 6) / GATE_COUNT)
+		);
+	});
+
+	it("banks nothing for a run that died before clearing a gate", () => {
+		expect(archiveCreditBytes(ended("dead", 0, 500))).toBe(0);
+	});
+
+	it("credits a rescued run only for the gates it climbed itself", () => {
+		expect(archiveCreditBytes(ended("dead", 8, 130, 6))).toBe(
+			archiveCreditBytes(ended("dead", 2, 130))
+		);
 	});
 });

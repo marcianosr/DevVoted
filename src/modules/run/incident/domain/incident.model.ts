@@ -27,8 +27,19 @@ export type QueuedIncident = {
 	readonly sentBy: IncidentSender;
 };
 
+/**
+ * How a rival is drawn wherever their build is open (ADR-101). Every field is
+ * optional because none of it is required to be a valid target: an account with
+ * no photo, no border and no title is still fair game.
+ */
+export type RivalFace = {
+	readonly photoUrl?: string;
+	readonly borderUrl?: string;
+	readonly title?: string;
+};
+
 /** What a rival's live run tells us about whether it is fair game. */
-export type RivalCandidate = {
+export type RivalCandidate = RivalFace & {
 	readonly runId: number;
 	readonly userId: string;
 	readonly name: string;
@@ -57,7 +68,7 @@ export type QueuedEntry = {
 	readonly auditId: AuditId;
 };
 
-export type AttackOffer = {
+export type AttackOffer = RivalFace & {
 	readonly targetRunId: number;
 	readonly targetUserId: string;
 	readonly name: string;
@@ -111,6 +122,15 @@ const hasRoom = (rival: RivalCandidate, queued: QueuedByRun): boolean => {
 	return auditCapacityFor(gate) > queuedAt(queued, rival.runId, gate).length;
 };
 
+/**
+ * A gate that cannot carry an audit cannot fire one. Without this an early
+ * climber shoots at gate-4 leaders from gate 0, where nothing can reach back:
+ * the shell is only fair while you stand in range of one yourself.
+ */
+export const canFireFrom = (
+	attacker: Pick<Attacker, "gatesCleared">
+): boolean => auditCapacityFor(attacker.gatesCleared) > 0;
+
 export const isEligibleRival = (
 	attacker: Attacker,
 	rival: RivalCandidate,
@@ -130,9 +150,11 @@ export const eligibleRivals = (
 	queued: QueuedByRun,
 	lastTargetUserId: string | null
 ): readonly RivalCandidate[] =>
-	rivals.filter((rival) =>
-		isEligibleRival(attacker, rival, queued, lastTargetUserId)
-	);
+	canFireFrom(attacker)
+		? rivals.filter((rival) =>
+				isEligibleRival(attacker, rival, queued, lastTargetUserId)
+			)
+		: [];
 
 const payloadSeed = (attacker: Attacker, rival: RivalCandidate, date: string) =>
 	`${attacker.runId}:${rival.runId}:${targetGateOf(rival)}:${date}`;
@@ -156,6 +178,11 @@ export const offersFor = (
 				targetRunId: rival.runId,
 				targetUserId: rival.userId,
 				name: rival.name,
+				...(rival.photoUrl === undefined ? {} : { photoUrl: rival.photoUrl }),
+				...(rival.borderUrl === undefined
+					? {}
+					: { borderUrl: rival.borderUrl }),
+				...(rival.title === undefined ? {} : { title: rival.title }),
 				targetGate: gate,
 				build: rival.build,
 				payloads: drawPayloads(

@@ -1,12 +1,23 @@
 ---
 # DVTD-dl2n
-title: ADR-026 Decision 3 never mentions run end
+title: The gate-clear payoff decision never mentions the end of a run
 status: todo
 type: task
+priority: normal
 created_at: 2026-09-22T18:49:42Z
-updated_at: 2026-09-22T18:49:42Z
+updated_at: 2026-09-24T12:49:34Z
 parent: DVTD-82c4
 ---
+
+**What:** Extend the decision that a gate clear is a payoff rather than a report to cover run end.
+
+**Why:** The run-over screen was built on that principle and the decision does not mention it once.
+
+## Done when
+- [ ] The decision covers run end, or a sibling decision does
+- [ ] It states why the community screen sits outside the policed routes
+
+## Notes
 
 Split out of DVTD-6vw2, whose screen shipped.
 
@@ -30,5 +41,5 @@ the policed route set (`runRoutes.viewmodel.ts:16`), which is why the run-over s
 offer it as an aside without `routesForStatus` ever allowing a second route. That
 non-obvious fact currently lives only in a closed bean.
 
-- [ ] Amend ADR-026 Decision 3 to cover run end, or write the sibling ADR
-- [ ] State why `/run/community` sits outside the policed set
+- Amend ADR-026 Decision 3 to cover run end, or write the sibling ADR
+- State why `/run/community` sits outside the policed set

@@ -98,14 +98,27 @@ describe("gatedex", () => {
 
 	it("promises no width, because slots are bought and never handed over", () => {
 		expect(everyUnlockLabel()).toEqual(
-			expect.arrayContaining(["extend", "pin"])
+			expect.arrayContaining([
+				"rebuild",
+				"extend",
+				"hotReload",
+				"returnPolicy",
+				"abandon",
+				"pin",
+			])
 		);
-		expect(everyUnlockLabel()).toHaveLength(2);
+		expect(everyUnlockLabel()).toHaveLength(6);
 	});
 
 	it("hangs a shop action one gate below its gatesCleared floor", () => {
+		expect(unlockLabels(0)).toContain("rebuild");
 		expect(unlockLabels(2)).toContain("extend");
 		expect(unlockLabels(3)).toContain("pin");
+	});
+
+	it("hangs no archive service on any gate, since the profile sells it before the run", () => {
+		expect(everyUnlockLabel()).not.toContain("bootCache");
+		expect(everyUnlockLabel()).not.toContain("dockerImage");
 	});
 
 	it("promises no lock — that action belongs to .lock, not a gate", () => {

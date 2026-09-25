@@ -67,6 +67,11 @@ export const Buyable: Story = {
 	args: { ...MOORES_LAW, onBuy: noop },
 };
 
+/** How the panel arrives in play: opened from a chip, and shut from itself. */
+export const Closable: Story = {
+	args: { ...MOORES_LAW, onBuy: noop, onClose: noop },
+};
+
 export const Unaffordable: Story = {
 	args: upgradesFor(
 		{ ...CONFIGS.mooresLaw, level: 2 },

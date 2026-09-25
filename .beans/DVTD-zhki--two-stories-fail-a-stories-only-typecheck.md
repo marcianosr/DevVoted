@@ -1,13 +1,23 @@
 ---
 # DVTD-zhki
-title: Two stories fail a stories-only typecheck
-status: todo
+title: Four stories pass props their component no longer takes
+status: scrapped
 type: bug
 priority: low
 created_at: 2026-08-13T15:13:24Z
-updated_at: 2026-08-13T15:47:57Z
+updated_at: 2026-09-25T15:46:20Z
 parent: DVTD-82c4
 ---
+
+**What:** Fix the four stories passing removed or renamed props, and decide whether stories get typechecked.
+
+**Why:** Stories are left out of the typecheck, so this drift is invisible until someone goes looking.
+
+## Done when
+- [ ] All four stories match the current props
+- [ ] Decided: whether stories are typechecked in CI, so the fifth cannot happen quietly
+
+## Notes
 
 Found while verifying **DVTD-xg62**. `tsconfig.json` excludes `*.stories.tsx`, so `npm run build` never typechecks them and these stay invisible.
 
@@ -22,8 +32,8 @@ Related: the exclusion is also the cause of the phantom `~/` module-not-found er
 
 ## Todo
 
-- [ ] Fix both stories against the current prop types
-- [ ] Decide whether stories should be typechecked in CI — a `tsconfig.stories.json` in the lint script would stop the next silent drift
+- Fix both stories against the current prop types
+- Decide whether stories should be typechecked in CI — a `tsconfig.stories.json` in the lint script would stop the next silent drift
 
 ## Two more found (2026-08-13, during DVTD-od1l)
 

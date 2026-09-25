@@ -1,15 +1,32 @@
 ---
 # DVTD-2try
-title: 'Unlock system: configs, starter slots, borders'
-status: todo
+title: Unlock configs per account instead of handing over the whole roster
+status: completed
 type: feature
 priority: critical
 tags:
     - meta-progress
 created_at: 2026-07-16T20:29:52Z
-updated_at: 2026-09-23T09:21:24Z
+updated_at: 2026-09-25T11:50:57Z
 parent: DVTD-z2r2
 ---
+
+**What:** Each config unlocks permanently per account on its own objective, and only unlocked ones are dealt into the opening hand.
+
+**Why:** Every config is available from run one, so there is no progression and nothing to chase.
+
+⚠️ 2026-09-25: this bean's "shop tools take Reveal, never Grant" was reversed for services by ADR-116 (DVTD-k59a): a service is unlocked once per account and redacted until then.
+
+⚠️ Starter slots have dropped out of this bean: slots no longer exist. The equivalent is free weight or a cheaper upkeep bill, and it needs pricing against the plan ladder.
+
+## Done when
+- [x] Every config that is not free has an objective, plus a lifetime fallback
+- [x] The Dex shows locked configs as ? rows carrying the requirement and live progress
+- [x] The opening hand deals only from what is granted; the shop still offers everything (stacks were deleted before this landed, DVTD-ez37)
+- [x] Progress is recorded per account, and granting the same thing twice does nothing
+- [x] The prototype run stays fully unlocked
+
+## Notes
 
 Every config in CONFIG_LIST is available from run one; there is no progression gate. Three things should unlock permanently per account: configs, extra starter config slots, and cosmetic borders. Only unlocked configs feed the start-of-run draw and mid-run drafts.
 
@@ -32,10 +49,10 @@ Merged with DVTD-yuwi (scrapped), which carried the starter-slot and border scop
 
 ## Work, once the trigger is picked
 
-- [ ] Unlock-state persistence (configs, starter slots, border preference)
-- [ ] Starter slots: tiers, unlock criteria, loadout UI showing available vs locked
-- [ ] Borders: variants, selection UI, shown on run screens
-- [ ] Locked configs visible in the shop with their unlock criteria
+- Unlock-state persistence (configs, starter slots, border preference)
+- Starter slots: tiers, unlock criteria, loadout UI showing available vs locked
+- Borders: variants, selection UI, shown on run screens
+- Locked configs visible in the shop with their unlock criteria
 
 ---
 
@@ -169,9 +186,9 @@ economies do not compete for one pool.
 
 ### Follow-up work this implies
 
-- [ ] Dex tools tab: Rebuild / Lock / Extend / git tag as `???` until first met (Reveal)
-- [ ] Dex storage-plan rows, same treatment
-- [ ] Starter stack grants + the ledger read on the pre-run picker
+- Dex tools tab: Rebuild / Lock / Extend / git tag as `???` until first met (Reveal)
+- Dex storage-plan rows, same treatment
+- Starter stack grants + the ledger read on the pre-run picker
 
 ---
 
@@ -311,3 +328,59 @@ Reinstate by mapping `border.rarity` onto the card wrapper's ring colour. Note
 the palette predates the kanto pass — DVTD-ati1 makes the same complaint about
 configs still being coloured by rarity, so settle whether rarity is a visual
 axis at all before wiring this.
+
+## Summary of Changes
+
+Closed 2026-09-24. All five outcomes hold; the design sections above are kept as
+the record of how the shape was argued out, not as outstanding work.
+
+**What shipped, and where it lives**
+
+- Objectives and the roster: `configUnlock.model.ts` — 36 entries, 8 free, the
+  rest carrying a thematic objective plus a lifetime polls-answered fallback.
+  `configUnlock.model.spec.ts` enforces exhaustiveness against `CONFIG_LIST`, so
+  a new config cannot ship without an unlock row. Copy has one owner in
+  `unlockCaption.model.ts` (`caption` imperative, `earned` past tense,
+  `provenanceOf` the single provenance printer).
+- Tracking and grant: `user_objective_progress` and `user_config_unlocks`
+  (ADR-064 replaced the planned `text[]` column), both written inside the same
+  transaction as the action that crossed the target. Idempotence and the
+  announce payload are one expression: `ON CONFLICT DO NOTHING RETURNING` gives
+  back only genuinely new ids.
+- Dex: `configdex.model.ts` folds roster x unlocks x progress into granted and
+  locked entries, with redaction enforced at the type level (a locked entry
+  carries `config?: never`), so no panel can leak a hidden config's name.
+  Rendered by `DexConfigs.ui.tsx` and `DexConfigChip.ui.tsx`, wired in
+  `Dex.component.tsx`, and reshaped into chip rows by weight by ADR-108.
+- The hand: `startRunService` deals `startingHand(poolFor(unlockedConfigIds))`.
+  `poolFor` falls back to the free set for an empty ledger, so a run can never
+  fail to start. The shop shelf is deliberately never filtered
+  (`draft.model.ts` still pools the whole `CONFIG_LIST`), per the Grant-gates-
+  the-hand-never-the-shelf decision above.
+- proto-run deals from the hardcoded starter pool: client-only, no auth, no
+  ledger read, fully unlocked by construction.
+- Announcement: three beats via `unlockNotes.viewmodel.ts` and the terminal kit's
+  `Unlocks.ui.tsx`.
+
+Children: DVTD-clgs, DVTD-g6k0, DVTD-of79 completed 2026-09-06; DVTD-amtz
+(the hand actually reading the ledger) 2026-09-23.
+
+**Where the leftover scope went**
+
+- The guaranteed seat for a freshly earned config is the whole of DVTD-p9ah now,
+  which was narrowed to it on close. The unplayed queue is already recorded and
+  the install stamp already written; nothing reads either yet.
+- Pinning an objective outside the Dex stays DVTD-b9vi, still optional.
+- Storage plans as Reveal-only Dex rows, the last unbuilt item of the
+  Reveal / Grant / Stage framework above, became DVTD-ppuz.
+- What replaces starter slots now that ADR-074 has deleted them became DVTD-d9e0,
+  carrying the per-gate-reset question about category-coverage triggers with it.
+- The border rarity styling parked here moved to DVTD-8kiu, the bean that owns
+  the archive shop.
+
+**Known gaps accepted at close**
+
+The "met" Dex state (seen on a shelf but not earned) needs a seen-on-shelf ledger
+nothing writes, and was deferred by DVTD-g6k0 rather than built. The live
+answering and shop screens have no immediate unlock beat; only the terminal set
+does.

@@ -111,6 +111,14 @@ export const AUDIT_TIERS: readonly AuditTier[] = [
 	{ gates: [11, VICTORY_GATE], capacity: 3, pool: POOL_C },
 ];
 
+/**
+ * The first gate that can carry an audit. Derived from the tiers rather than
+ * written down, so the one table stays the only place the curve is stated.
+ */
+export const AUDITS_FROM_GATE: number = Math.min(
+	...AUDIT_TIERS.flatMap((tier) => tier.gates)
+);
+
 export const tierForGate = (gate: number): AuditTier | undefined =>
 	AUDIT_TIERS.find((tier) => tier.gates.includes(gate));
 

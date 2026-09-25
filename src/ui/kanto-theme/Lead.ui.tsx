@@ -11,8 +11,17 @@ const FIGURE_COLOR: KantoColor = "pewter";
 const GAIN_COLOR: KantoColor = "viridian";
 const DEFAULT_VARIANT: TypographyVariant = "hint";
 
-export type LeadBand = { band: CoverageBandId; figure?: never };
-export type LeadFigure = { figure: string; gain?: boolean; band?: never };
+export type LeadBand = { band: CoverageBandId; figure?: never; gain?: never };
+/**
+ * A figure carrying a band wears that band's colour rather than the gain green:
+ * a run's own reading has to say how the run is doing, and 0.0% in green says
+ * the opposite of what it means.
+ */
+export type LeadFigure = {
+	figure: string;
+	gain?: boolean;
+	band?: CoverageBandId;
+};
 export type LeadPart = string | LeadBand | LeadFigure;
 export type LeadLine = readonly LeadPart[];
 
@@ -21,17 +30,21 @@ export type LeadProps = {
 	variant?: TypographyVariant;
 };
 
-const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
-	if (part.band === undefined) {
-		const color = part.gain === true ? GAIN_COLOR : FIGURE_COLOR;
-		return <Badge color={color}>{part.figure}</Badge>;
-	}
+const colorOf = (part: LeadFigure): KantoColor => {
+	if (part.band !== undefined) return COVERAGE_BAND_COLOR[part.band];
 
-	return (
-		<Badge color={COVERAGE_BAND_COLOR[part.band]}>
-			{COVERAGE_BAND_WORD[part.band]}
-		</Badge>
-	);
+	return part.gain === true ? GAIN_COLOR : FIGURE_COLOR;
+};
+
+const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
+	if (part.figure === undefined)
+		return (
+			<Badge color={COVERAGE_BAND_COLOR[part.band]}>
+				{COVERAGE_BAND_WORD[part.band]}
+			</Badge>
+		);
+
+	return <Badge color={colorOf(part)}>{part.figure}</Badge>;
 };
 
 export const Lead = ({ line, variant = DEFAULT_VARIANT }: LeadProps) => (
@@ -40,7 +53,7 @@ export const Lead = ({ line, variant = DEFAULT_VARIANT }: LeadProps) => (
 			typeof part === "string" ? (
 				<span key={`${part}-${index}`}>{part}</span>
 			) : (
-				<Mark key={`${part.band ?? part.figure}-${index}`} part={part} />
+				<Mark key={`${part.figure ?? part.band}-${index}`} part={part} />
 			)
 		)}
 	</Typography>

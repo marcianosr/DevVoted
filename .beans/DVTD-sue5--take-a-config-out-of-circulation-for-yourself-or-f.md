@@ -3,10 +3,24 @@
 title: Take a config out of circulation, for yourself or for everyone
 status: draft
 type: feature
+priority: normal
 created_at: 2026-08-24T16:48:45Z
-updated_at: 2026-08-24T16:48:45Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-z2r2
 ---
+
+**What:** A way to take a config out of circulation, for yourself or for everybody.
+
+**Why:** Nothing removes a config from the pool, so the shop keeps offering what you would never buy.
+
+## Done when
+- [ ] Decided: one feature or two, the personal one and the shared one
+- [ ] For the personal one: how long it lasts, what it costs, how often, and whether it can be undone
+- [ ] Targeted versus shared is ruled on, with the reason recorded either way
+- [ ] The list of configs worth removing is checked first; a short list is a balance problem instead
+- [ ] The word for it is picked
+
+## Notes
 
 A way to take a config out of circulation: for yourself, or for another player.
 Two very different mechanics under one word; both are open.
@@ -70,8 +84,8 @@ installable if you insist). Both beat banish on the literal-naming rule.
 
 ## Todo
 
-- [ ] Decide whether the personal and the shared version are one feature or two beans
-- [ ] For the personal one: horizon, price, cap, reversibility
-- [ ] Rule explicitly on targeted-vs-shared, and record the reason either way
-- [ ] Check the banish-worthy list first; if it is short, fix balance instead
-- [ ] Pick the word (yank / deprecate / banish)
+- Decide whether the personal and the shared version are one feature or two beans
+- For the personal one: horizon, price, cap, reversibility
+- Rule explicitly on targeted-vs-shared, and record the reason either way
+- Check the banish-worthy list first; if it is short, fix balance instead
+- Pick the word (yank / deprecate / banish)

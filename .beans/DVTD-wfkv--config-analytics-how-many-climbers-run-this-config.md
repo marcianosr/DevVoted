@@ -1,17 +1,30 @@
 ---
 # DVTD-wfkv
-title: 'Config: Analytics, how many climbers run this config'
+title: 'Config: show how many climbers run each config'
 status: todo
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-01T20:26:12Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:23Z
 parent: DVTD-72d9
 blocked_by:
     - DVTD-144r
 ---
+
+**What:** A config that puts "31% of climbers hold this" on every shop row and build row.
+
+**Why:** Nothing tells you what other people run at the moment you are choosing.
+
+## Done when
+- [ ] The name is settled
+- [ ] Shop and build rows show the share of today's climbers holding that config
+- [ ] The figure is withheld, never estimated, below a minimum number of climbers
+- [ ] No win rate and no depth is ever shown, only the install share
+- [ ] Specs cover the withholding, and that it counts holders rather than installs ever
+
+## Notes
 
 An information config: while installed, every shop offer row and build row carries the share of today's climbers holding that config ("31% of climbers").
 
@@ -50,11 +63,11 @@ Never a win rate or a depth figure. That hands over a solved draft and is the li
 
 ## Todos
 
-- [ ] Settle the name (npm downloads / State of JS / Analytics)
-- [ ] Roster entry plus the `revealsInstallShare` field and its `gives` line
-- [ ] Server aggregate over active `run_states`, quorum-floored, cached per gate boundary
-- [ ] Shop offer row and build row render the share as a compact trailing figure, not a callout
-- [ ] v2 adds the denominator
-- [ ] Tests: withheld below quorum, counts holders not installs-ever, no figure without the config installed
-- [ ] Wiki 4.3 roster and 4.5 if it lands as a paid action after all
-- [ ] CHANGELOG (player-visible)
+- Settle the name (npm downloads / State of JS / Analytics)
+- Roster entry plus the `revealsInstallShare` field and its `gives` line
+- Server aggregate over active `run_states`, quorum-floored, cached per gate boundary
+- Shop offer row and build row render the share as a compact trailing figure, not a callout
+- v2 adds the denominator
+- Tests: withheld below quorum, counts holders not installs-ever, no figure without the config installed
+- Wiki 4.3 roster and 4.5 if it lands as a paid action after all
+- CHANGELOG (player-visible)

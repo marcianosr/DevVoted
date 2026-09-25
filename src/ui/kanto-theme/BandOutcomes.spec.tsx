@@ -12,7 +12,7 @@ const TITLE = "Objectives and rewards";
 const LEAD_TEXT = "Clear at ";
 const LEAD: readonly LeadLine[] = [[LEAD_TEXT, { band: "ok" }, " or better."]];
 const NOTE =
-	"Pays land in the run balance when the gate shuts. A peel is paid in KB or in configs.";
+	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
 
 const OUTCOMES: readonly BandOutcome[] = [
 	{ band: "perfect", range: "100%", pays: "+1305 KB" },

@@ -1,13 +1,25 @@
 ---
 # DVTD-fnuc
-title: Version badges use the designed rung; green text reads as celadon
+title: An armed upgrade drops the designed version badge, and green text is hard to read
 status: todo
 type: feature
 priority: normal
 created_at: 2026-09-03T09:45:30Z
-updated_at: 2026-09-03T09:45:30Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-cb52
 ---
+
+**What:** Show both versions in the designed badge when an upgrade is armed, and move green text to the lighter green.
+
+**Why:** The badge that carries the version disappears exactly when the version matters, and dark green on a green wash barely reads.
+
+## Done when
+- [ ] An armed upgrade shows both versions in the designed badge, not a flat green one
+- [ ] Green text and green borders use the lighter green; green fills keep the darker one
+- [ ] Every green text site is checked, and kept or switched on its own merit
+- [ ] The specs asserting the old green are updated, and the theme notes say what each green now means
+
+## Notes
 
 Two things about the green, both about reading a badge at a glance.
 
@@ -25,9 +37,9 @@ Fix: a version-aware change that composes two `Version` badges around the arrow,
 
 Where green is text or a border label, it becomes celadon:
 
-- [ ] `Badge.ui.tsx` tone `viridian`: `text-viridian` to `text-celadon` (one line, every caller improves)
-- [ ] `IconButton.ui.tsx` tone `viridian`, both the resting `border-viridian/40 text-viridian` and the armed `border-viridian bg-viridian/15 text-viridian`. Note this is the **default** tone, so it is most of the shop's icon buttons
-- [ ] Audit the `Text tone="viridian"` sites and keep or switch each on its own merit: `Equation` hero figure, `StoragePlan` "free", `Audits` suppressed row, the `ReviewScreen` and `GateClearScreen` check marks
+- `Badge.ui.tsx` tone `viridian`: `text-viridian` to `text-celadon` (one line, every caller improves)
+- `IconButton.ui.tsx` tone `viridian`, both the resting `border-viridian/40 text-viridian` and the armed `border-viridian bg-viridian/15 text-viridian`. Note this is the **default** tone, so it is most of the shop's icon buttons
+- Audit the `Text tone="viridian"` sites and keep or switch each on its own merit: `Equation` hero figure, `StoragePlan` "free", `Audits` suppressed row, the `ReviewScreen` and `GateClearScreen` check marks
 
 Where green is a fill behind dark text, or a meter, viridian stays: `StatusBadge` `bg-viridian text-black`, `GainBar`, `StoragePlan` HELD and HEADROOM, `Choice`'s expected border.
 
@@ -37,9 +49,9 @@ Do the two tone names keep their current meaning, or does `viridian` become fill
 
 ## Todo
 
-- [ ] Version-aware change component + story, wired into `ShopScreen.versionTag`
-- [ ] `Badge` and `IconButton` viridian tones use celadon for text
-- [ ] `Text tone="viridian"` audit
-- [ ] Update the specs that assert on `text-viridian`
-- [ ] One line in the theme's own notes on what viridian and celadon each mean now
-- [ ] Verify: `npm run lint`, `npm run build`, stories tsconfig, `npm test`
+- Version-aware change component + story, wired into `ShopScreen.versionTag`
+- `Badge` and `IconButton` viridian tones use celadon for text
+- `Text tone="viridian"` audit
+- Update the specs that assert on `text-viridian`
+- One line in the theme's own notes on what viridian and celadon each mean now
+- Verify: `npm run lint`, `npm run build`, stories tsconfig, `npm test`

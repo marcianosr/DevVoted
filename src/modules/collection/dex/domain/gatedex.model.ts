@@ -9,10 +9,14 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	failPeelShareFor,
-	PIN_FROM_GATE,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import { EXTEND_FROM_GATE } from "~/modules/run/shop/domain/draft.model";
+import {
+	isSoldInShop,
+	openingGateOf,
+	REGISTRY_CONTROL_LIST,
+	type RegistryControlId,
+} from "~/modules/run/shop/domain/registryControl.model";
 import {
 	healthyAt,
 	percentOf,
@@ -20,7 +24,7 @@ import {
 
 export type GatedexState = "cleared" | "next" | "locked";
 
-export type GateAction = "extend" | "pin";
+export type GateAction = RegistryControlId;
 
 export type GateUnlock = {
 	readonly kind: "action";
@@ -40,21 +44,10 @@ export type GatedexEntry = {
 	readonly state: GatedexState;
 };
 
-const grantedByClearing = (gatesClearedFloor: number): number =>
-	gatesClearedFloor - 1;
-
-const ACTION_UNLOCKS = [
-	{ action: "extend", fromGate: EXTEND_FROM_GATE },
-	{ action: "pin", fromGate: PIN_FROM_GATE },
-] as const satisfies readonly { action: GateAction; fromGate: number }[];
-
 const actionsOpenedBy = (gate: number): readonly GateUnlock[] =>
-	ACTION_UNLOCKS.filter(
-		(unlock) => grantedByClearing(unlock.fromGate) === gate
-	).map((unlock) => ({ kind: "action", action: unlock.action }));
-
-const unlocksOpenedBy = (gate: number): readonly GateUnlock[] =>
-	actionsOpenedBy(gate);
+	REGISTRY_CONTROL_LIST.filter(isSoldInShop)
+		.filter((control) => openingGateOf(control) === gate)
+		.map((control) => ({ kind: "action", action: control.id }));
 
 const stateOf = (
 	swatch: GateSwatch,
@@ -82,7 +75,7 @@ export const gatedex = (
 			auditLabelOf(id, swatch.gate)
 		),
 		auditCapacity: auditCapacityFor(swatch.gate),
-		unlocks: unlocksOpenedBy(swatch.gate),
+		unlocks: actionsOpenedBy(swatch.gate),
 		winsTheRun: swatch.gate === VICTORY_GATE,
 		state: stateOf(swatch, ownedSwatchIds, nextGate),
 	}));

@@ -233,6 +233,14 @@ describe("estimates", () => {
 });
 
 describe("gate clears", () => {
+	it("names every gate a clear reached, so depth can earn a service", () => {
+		let state = answerWith(started(["js"]), false);
+		state = answered(state, SLICE_WINDOW - 2);
+		const metrics = settledIncrementsOf(state, answerAction(state, true));
+		expect(metrics).toContain("reached-gate:1");
+		expect(metrics).not.toContain("reached-gate:2");
+	});
+
 	it("counts the clear, its audit and the full build", () => {
 		const closing = answered(
 			demandMet(audited(started(["js"]), 4, "memory-leak")),
@@ -441,5 +449,52 @@ describe("run actions", () => {
 		expect(settledIncrementsOf(answering, { type: "finish-reward" })).toEqual(
 			[]
 		);
+	});
+});
+
+describe("run end", () => {
+	const alive = { ...started(["js"]), gatesCleared: 6 };
+	const endedWith = (
+		overrides: Partial<RunState>
+	): readonly ObjectiveMetric[] =>
+		objectiveIncrementsFor(alive, { ...alive, ...overrides }, CLOSE);
+
+	it("counts the bank when a dead run's credit reaches 256 KB, at its gates' share", () => {
+		expect(endedWith({ status: "dead", storage: 555 })).toContain(
+			"banked-256-one-run"
+		);
+		expect(endedWith({ status: "dead", storage: 554 })).not.toContain(
+			"banked-256-one-run"
+		);
+	});
+
+	it("counts a won run's bank at the full rate", () => {
+		expect(endedWith({ status: "won", storage: 256 })).toContain(
+			"banked-256-one-run"
+		);
+		expect(endedWith({ status: "won", storage: 255 })).not.toContain(
+			"banked-256-one-run"
+		);
+	});
+
+	it("counts the kept starting config while the build still holds one of the dealt hand", () => {
+		expect(endedWith({ status: "dead" })).toContain(
+			"finished-holding-a-dealt-config"
+		);
+		expect(
+			endedWith({ status: "dead", build: { ...alive.build, configs: [] } })
+		).not.toContain("finished-holding-a-dealt-config");
+	});
+
+	it("counts neither while the run goes on", () => {
+		expect(endedWith({ storage: 9999 })).toEqual([]);
+	});
+
+	it("counts neither a second time once the run is already over", () => {
+		const dead: RunState = { ...alive, status: "dead", storage: 9999 };
+
+		expect(
+			objectiveIncrementsFor(dead, { ...dead, storage: 1 }, CLOSE)
+		).toEqual([]);
 	});
 });

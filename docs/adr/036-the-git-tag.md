@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-08-17 (Marciano, DVTD-taxo). Decision 1's flat price replaced 2026-08-18 by a per-gate curve with a gate-10 ceiling (DVTD-yx92). Depends on ADR-035's death model (strip audits) — a checkpoint is only worth buying once gates can kill again. Amends ADR-011's fresh-start assumption (a rescued run opens mid-ladder) and the storage-credit rule of the run-end economy (only gates actually climbed count).
+Accepted — 2026-08-17 (Marciano, DVTD-taxo). Decision 1's flat price replaced 2026-08-18 by a per-gate curve with a gate-10 ceiling (DVTD-yx92). Depends on ADR-035's death model (strip audits) — a checkpoint is only worth buying once gates can kill again. Amends ADR-011's fresh-start assumption (a rescued run opens mid-ladder) and the storage-credit rule of the run-end economy (only gates actually climbed count). Decision 1 amended by ADR-115: an archive deposit before the run carries the tag in; placement in the shop is unchanged.
 
 ## Context
 
@@ -10,7 +10,7 @@ Under ADR-035 a run dies only at the strip-audit gates (11 and 12) — deep, man
 
 ## Decision 1: a shop action, not a config
 
-**git tag** is a shop control beside Rebuild/Lock/Extend (ADR-029's third horizon, extended past the run): sold from gate 4, once per run, **priced by the gate it marks** — 128KB at gate 4, +64KB per gate, 512KB at gate 10 (`pinCostFor`). The price is the tag's worth: a checkpoint at gate 9 saves a week of climbing where one at gate 4 saves an evening, so a flat price made the shallow tag a bad deal and the deep one a steal.
+**git tag** is a run service (ADR-115): a flat archive deposit before the run carries one unplaced tag in, and placing it is the shop action below, beside Rebuild/Lock/Extend (ADR-029's third horizon, extended past the run): sold from gate 4, once per run, **priced by the gate it marks** — 128KB at gate 4, +64KB per gate, 512KB at gate 10 (`pinCostFor`). The price is the tag's worth: a checkpoint at gate 9 saves a week of climbing where one at gate 4 saves an evening, so a flat price made the shallow tag a bad deal and the deep one a steal.
 
 **Gate 10 is the last one that sells it** (`PIN_UNTIL_GATE`). Deeper, a rescue resumes three starter configs into stacked audits and a 4-config peel (ADR-037/038) — the tag would cost a fortune to buy a death. The ceiling also lands the deepest price exactly on the free tier's whole cap. Planting writes the current gate to `users.pinned_gate` — the tag belongs to the account and outlives the run. Not a config: it occupies no slot, has no effect on play, and its whole value lands after death. (Try/catch as the carrier was considered and rejected — a catch handles an error in flight, it does not restore state.)
 

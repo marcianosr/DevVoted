@@ -25,10 +25,7 @@ import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import {
-	SLICE_WINDOW,
-	roundToOneDecimal,
-} from "~/modules/run/run/domain/rules.model";
+import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type {
@@ -40,20 +37,16 @@ import type { NextGateProps } from "~/ui/kanto-theme/NextGate.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
 import {
 	bandFor,
-	coverageGainPercentFor,
 	healthyAt,
 	percentOf,
 	runCoverageOf,
 	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import { answersOwedFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 
-const SEPARATOR = "·";
 const SHORT_TRAIL = "short";
 const CLEARED_TRAIL = "cleared";
+const SHOP_WORD = "Shop";
 const SLOTS_TRAIL = "slots after it closes";
-const OUT_OF_REACH_NOTE = `${SLICE_WINDOW} of the ${SLICE_WINDOW} right will not reach it.`;
-const CLEARS_TRAIL = `of the ${SLICE_WINDOW} right clears it.`;
 const OPENS_AT = "tomorrow";
 const PERCENT = "%";
 
@@ -117,7 +110,14 @@ export const upgradeChipFor = (
 	return {
 		name: offer.label,
 		slots: slotsOf(offer),
-		version: offer.level,
+		/**
+		 * The version held, never the one on sale. A pennant means "this is what
+		 * you have" on the Build panel, and reading the offered rung here made
+		 * the same glyph mean "this is what is for sale" — so a v2 offer showed
+		 * `v2` beside a press offering v2, which reads as already owning it. The
+		 * press states the target; the pennant states the holding.
+		 */
+		version: heldLevel,
 		detail: share === undefined ? undefined : rollOddsLabel(share),
 		badges: [],
 		skipped: !affordable,
@@ -165,6 +165,16 @@ export const controlRowFor = (
 	onPress: priceKb <= balanceKb ? onPress : undefined,
 });
 
+/**
+ * Named for the gate it is stocking for, not the one just cleared: the player
+ * is here to spend on what comes next, and the swatch track beside the title
+ * already points there. The summit has no next gate, so it keeps the bare word.
+ */
+const shopTitleFor = (cleared: number): string => {
+	const next = gateSwatchAt(cleared + 1);
+	return next === undefined ? SHOP_WORD : `${next.gateName} ${SHOP_WORD}`;
+};
+
 export const shopHeaderFor = (
 	cleared: number,
 	balanceKb: number,
@@ -173,21 +183,13 @@ export const shopHeaderFor = (
 	swatch: gateSwatchAt(cleared),
 	swatches: swatchTrackFor(swatchGates, cleared + 1),
 	funds: fundsOf(balanceKb, BALANCE_WORD),
-	title: `Shop ${SEPARATOR} cleared ${gateSwatchAt(cleared).gateName}`,
+	title: shopTitleFor(cleared),
 	note: `gate ${cleared} ${CLEARED_TRAIL}`,
 });
 
-const owedNoteFor = (owed: number | undefined): string | undefined => {
-	if (owed === undefined) return OUT_OF_REACH_NOTE;
-	if (owed === 0) return undefined;
-
-	return `${owed} ${CLEARS_TRAIL}`;
-};
-
 export const nextGateFor = (
 	cleared: number,
-	unitsHeld: number,
-	unitsPerCorrect: number
+	unitsHeld: number
 ): NextGateProps | undefined => {
 	const next = gateSwatchAt(cleared + 1);
 	if (next === undefined) return undefined;
@@ -203,12 +205,5 @@ export const nextGateFor = (
 		held: `${reading}${PERCENT}`,
 		heldBand: bandFor(held, next.gate).id,
 		opensAt: OPENS_AT,
-		note: owedNoteFor(
-			answersOwedFor(
-				demand,
-				reading,
-				coverageGainPercentFor(unitsPerCorrect, next.gate)
-			)
-		),
 	};
 };

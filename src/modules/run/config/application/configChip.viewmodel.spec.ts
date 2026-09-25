@@ -143,10 +143,6 @@ describe("registryUpgradesFor (ADR-097)", () => {
 		]);
 	});
 
-	it("totals no press ladder, since the registry sells one rung and nothing after", () => {
-		expect(jump.toMax).toBeUndefined();
-	});
-
 	it("disables the offer the balance cannot cover and nothing else", () => {
 		const broke = registryUpgradesFor({ ...CONFIGS.js, level: 3 }, 1, {
 			...deal,
@@ -180,12 +176,11 @@ describe("upgradesFor — the Build panel's own press", () => {
 	const offeredIn = (props: ReturnType<typeof upgradesFor>) =>
 		props.rungs.find((rung) => rung.state === "offered");
 
-	it("offers the next rung up and totals the ladder to the ceiling", () => {
+	it("offers the next rung up at the price that rung costs", () => {
 		const panel = upgradesFor(CONFIGS.mooresLaw, RICH);
 
 		expect(offeredIn(panel)?.version).toBe(2);
 		expect(offeredIn(panel)?.price).toBe("64 KB");
-		expect(panel.toMax).toEqual({ version: 5, price: "448 KB" });
 	});
 
 	it("leaves the ladder read-only when no deal is offered", () => {

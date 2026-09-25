@@ -1,4 +1,4 @@
-import { AUDITS } from "~/shared/lib/copy";
+import { AUDITS, STORAGE_BALANCE } from "~/shared/lib/copy";
 import {
 	type Config,
 	escrowKbPerCorrect,
@@ -7,10 +7,15 @@ import {
 	catcherFor,
 	prefetcherFor,
 } from "~/modules/run/build/domain/build.model";
-import { billLedger } from "~/modules/run/config/domain/subscription.model";
+import {
+	billLedger,
+	type BillLedger,
+} from "~/modules/run/config/domain/subscription.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { bandOutcomesPropsFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
+import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
+	gateLabelOf,
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
@@ -41,9 +46,14 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 
 import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
-import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import type {
+	AuditsPanelProps,
+	AuditsRow,
+} from "~/ui/kanto-theme/AuditsPanel.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderFunds } from "~/ui/kanto-theme/Header.ui";
+import type { LedgerProps } from "~/ui/kanto-theme/Ledger.ui";
 import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type {
 	PollScoreRow,
@@ -54,7 +64,7 @@ import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
 import type { SlaPickerProps } from "~/ui/kanto-theme/SlaPicker.ui";
 import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
 
-export const BALANCE_WORD = "balance";
+export const BALANCE_WORD = STORAGE_BALANCE;
 
 const noop = () => {};
 
@@ -72,8 +82,13 @@ const START_LEAD = "Start";
 export const PREP_POLLS_TITLE = "The five polls";
 const BILL_LEAD = "bills";
 const BILL_TRAIL = "on a clear";
+const BILL_TOTAL = "Every gate";
+const BILL_COLOR: KantoColor = "cinnabar";
+const SUBSCRIPTIONS_TITLE = "Subscriptions";
+const LOCK_COLOR: KantoColor = "pewter";
 const NO_AUDITS = "none this gate";
-const AUDIT_COUNT_TRAIL = "this gate";
+const AUDIT_COUNT_TRAIL = "firing this gate";
+const AUDITS_SHUT = `Audits are unlocked at ${gateLabelOf(AUDITS_FROM_GATE)}`;
 const RUNG_MARKS = "rungs";
 const CORRECT_OUTCOME = "correct";
 
@@ -236,23 +251,51 @@ const pollRowsFor = (
 	];
 };
 
-const auditPropsFor = (audit: AuditView): AuditProps => ({
+const auditRowFor = (audit: AuditView): AuditsRow => ({
 	code: audit.code,
 	name: audit.name,
 	cue: audit.answerCue ?? audit.description,
-	sender: audit.sentBy,
+	...(audit.sentBy === undefined
+		? {}
+		: { sender: { name: audit.sentBy.name } }),
 });
 
 const auditsMetaOf = (count: number) =>
 	count === 0 ? NO_AUDITS : `${count} ${AUDIT_COUNT_TRAIL}`;
 
-const auditBillFor = (
+/**
+ * Drawn shut rather than empty: "none this gate" on a gate that could never
+ * carry one teaches the player the mechanic does not exist.
+ */
+export const auditsPanelFor = (
+	gate: number,
+	audits: readonly AuditView[],
+	bill: { bill?: string; note?: string }
+): AuditsPanelProps => {
+	if (gate < AUDITS_FROM_GATE)
+		return {
+			title: AUDITS,
+			badge: { label: gateLabelOf(AUDITS_FROM_GATE), color: LOCK_COLOR },
+			meta: AUDITS_SHUT,
+			rows: [],
+			...bill,
+		};
+
+	return {
+		title: AUDITS,
+		meta: auditsMetaOf(audits.length),
+		rows: audits.map(auditRowFor),
+		...bill,
+	};
+};
+
+const ledgerFor = (
 	configs: readonly Config[],
 	gate: number,
 	storageKb: number,
 	space: number
-): { bill?: string; note?: string } => {
-	const ledger = billLedger({
+): BillLedger =>
+	billLedger({
 		configs,
 		gate,
 		storageKb,
@@ -260,6 +303,7 @@ const auditBillFor = (
 		spaceBillKb: spaceRungFor(space).kb,
 	});
 
+const auditBillFor = (ledger: BillLedger): { bill?: string; note?: string } => {
 	if (ledger.totalKb === 0) return {};
 
 	return {
@@ -268,6 +312,38 @@ const auditBillFor = (
 			ledger.shortfallKb === 0
 				? undefined
 				: `${kbLabel(ledger.shortfallKb)} short — what you cannot pay lapses.`,
+	};
+};
+
+/**
+ * The standing bill, line by line. The shortfall warning is not restated here:
+ * the Audits header already owns that sentence (ADR-102).
+ *
+ * The Audits header states the total because
+ * that is what a player checks before starting a gate; this says what makes it
+ * up, which is the only way to know which config to drop when it stops being
+ * affordable. Nothing here is new — `billLedger` already had the lines, and no
+ * surface had ever read them.
+ */
+export const subscriptionsLedgerFor = (
+	ledger: BillLedger
+): LedgerProps | undefined => {
+	if (ledger.lines.length === 0) return undefined;
+
+	return {
+		title: SUBSCRIPTIONS_TITLE,
+		badge: `${ledger.lines.length} ${ledger.lines.length === 1 ? "line" : "lines"} ${BILL_TRAIL}`,
+		rows: [
+			...ledger.lines.map((line) => ({
+				label: line.label,
+				figures: [{ label: signedKbLabel(-line.kb), color: BILL_COLOR }],
+			})),
+			{
+				label: BILL_TOTAL,
+				total: true,
+				figures: [{ label: signedKbLabel(-ledger.totalKb), color: BILL_COLOR }],
+			},
+		],
 	};
 };
 
@@ -326,9 +402,10 @@ export const prepPropsFor = ({
 	rebaseSlots = [],
 	swatchGates = [],
 }: PrepFrame): PrepScreenProps => {
-	const answered = answeredThisGate.length;
 	const swatch = gateSwatchAt(gate);
 	const prefetcher = prefetcherFor(configs);
+	const bills = ledgerFor(configs, gate, balanceKb, buildSpace);
+	const subscriptions = subscriptionsLedgerFor(bills);
 
 	return {
 		header: {
@@ -340,11 +417,6 @@ export const prepPropsFor = ({
 				audits.length === 0
 					? undefined
 					: `${audits.length} ${audits.length === 1 ? "audit" : "audits"}`,
-			note:
-				answered === 0
-					? undefined
-					: `${answered} of ${SLICE_WINDOW} polls answered`,
-			noteAt: "track",
 		},
 		outcomes: bandOutcomesPropsFor(
 			{
@@ -370,12 +442,8 @@ export const prepPropsFor = ({
 			badge: prefetcher?.label,
 			rows: pollRowsFor(gate, window, prefetcher !== undefined),
 		},
-		audits: {
-			title: AUDITS,
-			meta: auditsMetaOf(audits.length),
-			...auditBillFor(configs, gate, balanceKb, buildSpace),
-			alerts: audits.map(auditPropsFor),
-		},
+		audits: auditsPanelFor(gate, audits, auditBillFor(bills)),
+		...(subscriptions === undefined ? {} : { subscriptions }),
 		attack,
 		footer: {
 			asides: [

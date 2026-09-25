@@ -1,13 +1,27 @@
 ---
 # DVTD-p3rf
-title: 'Two storage formatters disagree: formatKb(2048) is 2MB, formatStorage(2048) is 2 KB'
+title: Two storage formatters take different units under near-identical names
 status: todo
 type: task
 priority: low
 created_at: 2026-08-13T13:46:18Z
-updated_at: 2026-08-13T15:37:15Z
+updated_at: 2026-09-24T12:49:32Z
 parent: DVTD-82c4
 ---
+
+**What:** Leave one storage formatter, with the unit carried by the type rather than the parameter name.
+
+**Why:** Two same-sounding formatters take different units, so every caller has to know which is which.
+
+⚠️ The disagreement in the old title is not real: the two take different units and both are correct. This is a footgun, and most of its callers die with the old app.
+
+## Done when
+- [ ] What survives the old app's deletion is re-checked first
+- [ ] One formatter remains, and its unit is in the type
+- [ ] The two economy rules move to the service that uses them
+- [ ] The unused parse helper is deleted
+
+## Notes
 
 `src/shared/lib/storage.ts` is 91 lines and 7 exports doing three unrelated jobs.
 
@@ -31,9 +45,9 @@ parent: DVTD-82c4
 
 ## Todo
 
-- [ ] One formatter, with the unit at the type level (extend `displayValue`'s `Kb`)
-- [ ] Push `getStorageUsagePercentage` and `canAddToStorage` into `configManager.service.ts`
-- [ ] `storage.ts` ends as the units table plus one formatter
+- One formatter, with the unit at the type level (extend `displayValue`'s `Kb`)
+- Push `getStorageUsagePercentage` and `canAddToStorage` into `configManager.service.ts`
+- `storage.ts` ends as the units table plus one formatter
 
 ## Correction (2026-08-13, same day it was filed)
 
@@ -59,9 +73,9 @@ while `formatKb` is used only by `modules/run/shop/presentation/ShopScreen.ui.ts
 
 ### What is still worth doing, after 9qyd
 
-- [ ] Re-check what survives once the legacy callers are deleted; if only `formatKb` remains, delete `formatStorage`/`formatStorageDetailed` with them
-- [ ] Put the unit in the type rather than the parameter name (extend `displayValue`'s `Kb`) so the two can never be confused
-- [ ] Move `getStorageUsagePercentage` and `canAddToStorage` into `configManager.service.ts` — economy policy, one caller each
-- [ ] Delete `parseStorage` (zero callers)
+- Re-check what survives once the legacy callers are deleted; if only `formatKb` remains, delete `formatStorage`/`formatStorageDetailed` with them
+- Put the unit in the type rather than the parameter name (extend `displayValue`'s `Kb`) so the two can never be confused
+- Move `getStorageUsagePercentage` and `canAddToStorage` into `configManager.service.ts` — economy policy, one caller each
+- Delete `parseStorage` (zero callers)
 
 The original todo list below predates this correction.

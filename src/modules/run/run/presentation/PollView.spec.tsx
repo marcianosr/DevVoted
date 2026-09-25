@@ -214,7 +214,7 @@ describe("PollView once the answer has landed", () => {
 		);
 
 		expect(
-			screen.getByRole("button", { name: /Gate 4 . Lavender/ })
+			screen.getByRole("button", { name: /#4 - Lavender Gate/ })
 		).toBeInTheDocument();
 		expect(
 			screen.queryByRole("button", { name: /Next poll/ })
@@ -230,7 +230,7 @@ describe("PollView once the answer has landed", () => {
 		);
 
 		expect(
-			screen.getByRole("heading", { name: "Gate 4 · Lavender" })
+			screen.getByRole("heading", { name: "#4 - Lavender Gate" })
 		).toBeInTheDocument();
 	});
 

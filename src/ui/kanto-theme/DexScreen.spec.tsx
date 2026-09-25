@@ -29,7 +29,7 @@ describe("DexScreen", () => {
 	it("titles itself apart from the shop's registry", () => {
 		renderScreen();
 
-		expect(screen.getByRole("heading", { name: "Dex Registry" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Dex" })).toBeVisible();
 	});
 
 	it("reads out what the account is holding", () => {

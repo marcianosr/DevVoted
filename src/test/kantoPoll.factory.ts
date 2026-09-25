@@ -1,3 +1,4 @@
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import {
 	EMPTY_LABEL,
 	SUGGESTED_LABEL,
@@ -42,7 +43,6 @@ import {
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
-	BASE_UNIT,
 	floorAt,
 	percentOf,
 	coverageGainPercentFor,
@@ -50,6 +50,7 @@ import {
 	SINGLE_CREDIT,
 	gainPerCorrectFor,
 	healthyAt,
+	healthyUnitsAt,
 	okAt,
 	ratioOf,
 	scoringSlotsAt,
@@ -76,8 +77,11 @@ import type {
 	WeightTrackFill,
 	WeightTrackProps,
 } from "~/ui/kanto-theme/WeightTrack.ui";
-import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
-import type { ShopScreenProps } from "~/ui/kanto-theme/ShopScreen.ui";
+import type { UnlockedRegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+import type {
+	ShopScreenProps,
+	ShopServiceRow,
+} from "~/ui/kanto-theme/ShopScreen.ui";
 import type { UninstallProps } from "~/ui/kanto-theme/Uninstall.ui";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
@@ -88,7 +92,10 @@ import type {
 	QuestionOption,
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
+import type {
+	CoverageBarProps,
+	CoverageUnits,
+} from "~/ui/kanto-theme/CoverageBar.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 import type { CoverageRingProps } from "~/ui/kanto-theme/CoverageRing.ui";
 
@@ -270,7 +277,7 @@ export const kantoPollOptions = [
 	{ id: "option-3", letter: "C", label: "Maybe<T>" },
 ] satisfies QuestionOption[];
 
-export const BALANCE_WORD = "balance";
+export const BALANCE_WORD = STORAGE_BALANCE;
 
 export const createKantoHeaderProps = createMockDataFactory<HeaderProps>({
 	swatch: gateSwatchAt(SAMPLE_GATE),
@@ -307,12 +314,17 @@ export const createKantoCoverageRingProps =
 	});
 
 export const KANTO_COVERAGE_BAR_HELD = 70;
+export const kantoCoverageUnitsOf = (heldPercent: number): CoverageUnits => ({
+	held: ratioOf(heldPercent) * scoringSlotsAt(SAMPLE_GATE),
+	healthy: healthyUnitsAt(SAMPLE_GATE),
+});
 export const createKantoCoverageBarProps =
 	createMockDataFactory<CoverageBarProps>({
 		held: KANTO_COVERAGE_BAR_HELD,
 		floor: percentOf(floorAt(SAMPLE_GATE)),
 		ok: percentOf(okAt(SAMPLE_GATE)),
 		healthy: percentOf(healthyAt(SAMPLE_GATE)),
+		units: kantoCoverageUnitsOf(KANTO_COVERAGE_BAR_HELD),
 	});
 
 export const KANTO_RUN_PAYOUTS = [
@@ -491,13 +503,17 @@ export const baseSlots = BASE_SLOTS;
 const shortfallOf = (priceKb: number, balanceKb: number) =>
 	`${kbLabel(priceKb - balanceKb)} short`;
 
+export type KantoServiceRow = UnlockedRegistryControlProps & { id: string };
+
 const controlOf = (
+	id: string,
 	glyph: string,
 	title: string,
 	detail: string,
 	priceKb: number,
 	balance: number
-): RegistryControlProps => ({
+): KantoServiceRow => ({
+	id,
 	glyph,
 	title,
 	detail,
@@ -511,8 +527,9 @@ export const kantoShopControlsAt = (
 	balance: number = SHOP_BALANCE_KB,
 	extensionsBought = 0,
 	rebuildsUsed = 0
-): RegistryControlProps[] => [
+): KantoServiceRow[] => [
 	controlOf(
+		"rebuild",
 		"↻",
 		"Rebuild the registry",
 		"deals a fresh set of offers",
@@ -522,6 +539,7 @@ export const kantoShopControlsAt = (
 	...(cleared >= EXTEND_FROM_GATE && extensionsBought < MAX_EXTENSIONS
 		? [
 				controlOf(
+					"extend",
 					"+",
 					"Extend the registry",
 					"one more offer, now and every shop after",
@@ -533,6 +551,7 @@ export const kantoShopControlsAt = (
 	...(cleared >= PIN_FROM_GATE && cleared <= PIN_UNTIL_GATE
 		? [
 				controlOf(
+					"pin",
 					"⚑",
 					`git tag ${SEPARATOR} gate ${cleared + 1}`,
 					"if this run dies, the next resumes here",
@@ -544,6 +563,16 @@ export const kantoShopControlsAt = (
 ];
 
 export const kantoRegistryControls = kantoShopControlsAt();
+
+/** A service the account has not earned yet, named with the line that earns it (ADR-116). */
+export const kantoLockedService: ShopServiceRow = {
+	id: "extend",
+	locked: true,
+	glyph: "+",
+	title: "Extend the registry",
+	detail: "one more offer, now and every shop after",
+	unlock: "Reach Cascade",
+};
 
 export const SHOP_UNITS_HELD = 41;
 
@@ -560,9 +589,8 @@ export const kantoShopHeaderAt = (
 
 export const kantoNextGateAt = (
 	cleared: number = SAMPLE_GATE,
-	unitsHeld: number = SHOP_UNITS_HELD,
-	unitsPerCorrect = BASE_UNIT
-) => nextGateFor(cleared, unitsHeld, unitsPerCorrect);
+	unitsHeld: number = SHOP_UNITS_HELD
+) => nextGateFor(cleared, unitsHeld);
 
 const openChip = (chip: ConfigChipProps) => {
 	if (chip.locked === true) throw new Error("fixture chips are never redacted");
@@ -910,7 +938,18 @@ const prepPeelKbAt = (
 	audits: readonly AuditId[]
 ) => failPeelQuotaFor(configs, gate, { [gate]: audits }) * PEEL_KB_PER_SLOT;
 
-const prepAuditViewAt = (gate: number, id: AuditId): AuditView => {
+/** Nothing lands on a gate unless a rival fired it, so every fixture names one. */
+const PREP_SENDERS = [
+	{ id: "misty", name: "Misty" },
+	{ id: "koga", name: "Koga" },
+	{ id: "erika", name: "Erika" },
+] as const;
+
+const prepAuditViewAt = (
+	gate: number,
+	id: AuditId,
+	position = 0
+): AuditView => {
 	const audit = auditAt(id, gate);
 	return {
 		id,
@@ -919,6 +958,7 @@ const prepAuditViewAt = (gate: number, id: AuditId): AuditView => {
 		description: audit.description,
 		answerCue: audit.answerCue,
 		suppressed: false,
+		sentBy: PREP_SENDERS[position % PREP_SENDERS.length],
 	};
 };
 
@@ -999,7 +1039,7 @@ export const kantoPrepAt = ({
 		answeredPolls: kantoAnsweredThrough(gate, coverageHeld),
 		answeredThisGate: kantoWindowAnswers(gate, answered, windowCorrect),
 		configs,
-		audits: audits.map((id) => prepAuditViewAt(gate, id)),
+		audits: audits.map((id, position) => prepAuditViewAt(gate, id, position)),
 		balanceKb,
 		buildSpace,
 		window,

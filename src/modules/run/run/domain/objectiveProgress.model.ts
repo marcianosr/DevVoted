@@ -3,9 +3,14 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import { freeSlots } from "~/modules/run/build/domain/build.model";
 import type { ObjectiveMetric } from "~/modules/run/config/domain/configUnlock.model";
 import { mirrorsPolls } from "~/modules/run/gate/domain/audit.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
+	BOOT_CACHE_BANK_KB,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	archiveCreditBytes,
 	auditsOf,
+	isRunOver,
 	liveConfigsOf,
 	type RunState,
 } from "~/modules/run/run/domain/run.model";
@@ -14,6 +19,7 @@ import {
 	type AnsweredPoll,
 	cachedHitsFor,
 } from "~/modules/run/run/domain/runPoll.model";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 const lastLanded = (
 	state: RunState,
@@ -36,6 +42,15 @@ const metEstimate = (state: RunState, correct: boolean): boolean =>
 
 const holdsTwoUpgraded = (state: RunState): boolean =>
 	state.build.configs.filter((config) => (config.level ?? 1) >= 2).length >= 2;
+
+const gatesReached = (
+	state: RunState,
+	next: RunState
+): readonly ObjectiveMetric[] =>
+	Array.from(
+		{ length: next.gatesCleared - state.gatesCleared },
+		(_, offset) => `reached-gate:${state.gatesCleared + offset + 1}` as const
+	);
 
 const answerMetrics = (
 	state: RunState,
@@ -78,6 +93,7 @@ const clearMetrics = (
 	const preAudits = auditsOf(state);
 	return [
 		"gates-cleared",
+		...gatesReached(state, next),
 		...(preAudits.length > 0 ? (["audited-gates-cleared"] as const) : []),
 		...(mirrorsPolls(preAudits) && noMiss
 			? (["mirror-clear-no-miss"] as const)
@@ -90,6 +106,29 @@ const clearMetrics = (
 		// Only a clear can honour a promise, so this counter can only live here:
 		// the band SLA was measured against does not exist until the close.
 		...((next.slaUpliftKb ?? 0) > 0 ? (["slas-met"] as const) : []),
+		...(next.status === "won" ? (["runs-won"] as const) : []),
+	];
+};
+
+/** `available` is the hand dealt at run start and nothing rewrites it, so it is the hand. */
+const holdsADealtConfig = (state: RunState): boolean =>
+	state.build.configs.some((config) =>
+		state.available.some((dealt) => dealt.id === config.id)
+	);
+
+/** Once, on the action that ends the run; abandoning never comes through here. */
+const endMetrics = (
+	state: RunState,
+	next: RunState
+): readonly ObjectiveMetric[] => {
+	if (!isRunOver(next.status) || isRunOver(state.status)) return [];
+	return [
+		...(archiveCreditBytes(next) >= BOOT_CACHE_BANK_KB * STORAGE_UNITS.KB
+			? (["banked-256-one-run"] as const)
+			: []),
+		...(holdsADealtConfig(next)
+			? (["finished-holding-a-dealt-config"] as const)
+			: []),
 	];
 };
 
@@ -125,6 +164,7 @@ export const objectiveIncrementsFor = (
 	return [
 		...answerMetrics(state, next),
 		...clearMetrics(state, next),
+		...endMetrics(state, next),
 		...actionMetrics(state, next, action),
 	];
 };

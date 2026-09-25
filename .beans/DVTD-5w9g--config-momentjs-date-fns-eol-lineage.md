@@ -1,15 +1,27 @@
 ---
 # DVTD-5w9g
-title: 'Config: Moment.js → date-fns (EOL lineage)'
+title: 'Config: Moment.js, which can reach end of life and unlock date-fns'
 status: todo
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-19T20:36:10Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that pays well but can remove itself mid-run; the first time it does, it permanently unlocks a safer twin for that account.
+
+**Why:** Turns a loss into content, so players end up wanting it to happen once.
+
+## Done when
+- [ ] Moment.js pays 64 KB on a gate clear
+- [ ] Each clear has a 1-in-6 chance it uninstalls itself, and the roll survives a reload
+- [ ] The first end of life on an account adds date-fns to its pool for good
+- [ ] date-fns pays the same, with no such roll
+
+## Notes
 
 Self-destruct lineage config (Balatro Gros Michel → Cavendish; brainstorm
 2026-08-19).

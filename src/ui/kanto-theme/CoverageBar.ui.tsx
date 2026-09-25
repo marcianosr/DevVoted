@@ -32,6 +32,7 @@ const ANNOUNCE = "sr-only";
 
 const FULL = 100;
 const TENTHS = 10;
+const HUNDREDTHS = 100;
 
 export const COVERAGE_PIN_HOLD_MS = 1800;
 
@@ -68,6 +69,9 @@ export const COVERAGE_BAND_WORD = {
 
 const toTenth = (value: number) =>
 	Math.round(Math.max(0, value) * TENTHS) / TENTHS;
+
+const toHundredth = (value: number) =>
+	Math.round(Math.max(0, value) * HUNDREDTHS) / HUNDREDTHS;
 
 /**
  * Non-finite in means 0 out, not NaN out. The bar settles its reading during
@@ -108,13 +112,64 @@ const bandOf = (
 	return "danger";
 };
 
+/** Units held against the gate's HEALTHY units (ADR-106). */
+export type CoverageUnits = { held: number; healthy: number };
+
+/**
+ * What the bar says out loud. The track is drawn in percent whatever it
+ * speaks, so a units reading changes the figures and nothing in the geometry.
+ */
+type SpokenFigures = {
+	headline: string;
+	held: string;
+	needed: string;
+	count: number;
+	countSuffix: string;
+};
+
+const figuresInPercent = (held: number, healthy: number): SpokenFigures => {
+	const figure = `${toTenth(held)}${PERCENT}`;
+
+	return {
+		headline: figure,
+		held: figure,
+		needed: `${toTenth(healthy)}${PERCENT}`,
+		count: Math.round(clamped(held)),
+		countSuffix: PERCENT,
+	};
+};
+
+const figuresInUnits = ({ held, healthy }: CoverageUnits): SpokenFigures => {
+	const figure = `${toHundredth(held)}`;
+	const needed = `${toHundredth(healthy)}`;
+
+	return {
+		headline: `${figure} ${COPY.of} ${needed}`,
+		held: figure,
+		needed,
+		count: Math.round(Math.max(0, held)),
+		countSuffix: "",
+	};
+};
+
+const figuresOf = (
+	held: number,
+	healthy: number,
+	units: CoverageUnits | undefined
+): SpokenFigures =>
+	units === undefined ? figuresInPercent(held, healthy) : figuresInUnits(units);
+
 /** The visible twin of the aria reading: what a panel header says out loud. */
-export const CoverageReading = (ladder: CoverageLadder & { held: number }) => {
-	const band = coverageBandOf(ladder.held, ladder);
+export const CoverageReading = ({
+	held,
+	units,
+	...ladder
+}: CoverageLadder & Pick<CoverageBarProps, "held" | "units">) => {
+	const band = coverageBandOf(held, ladder);
 
 	return (
 		<>
-			<Badge>{`${toTenth(ladder.held)}${PERCENT}`}</Badge>
+			<Badge>{figuresOf(held, rungsOf(ladder).healthy, units).headline}</Badge>
 			<Badge color={COVERAGE_BAND_COLOR[band]}>
 				{COVERAGE_BAND_WORD[band]}
 			</Badge>
@@ -140,11 +195,10 @@ const zonesOf = ({ floor, ok, healthy }: CoverageLadder) =>
  * line, OK sits on its own, the gate's line starts on its line. A band with no
  * room has no edge to name, so its label goes with it.
  */
-const boundaryMarksOf = ({
-	floor,
-	ok,
-	healthy,
-}: CoverageLadder): readonly Mark[] =>
+const boundaryMarksOf = (
+	{ floor, ok, healthy }: CoverageLadder,
+	{ needed }: SpokenFigures
+): readonly Mark[] =>
 	(
 		[
 			{ at: floor, label: COPY.survive, anchor: "end", room: ok - floor },
@@ -156,7 +210,7 @@ const boundaryMarksOf = ({
 			},
 			{
 				at: healthy,
-				label: `${COVERAGE_BAND_WORD.healthy} ${toTenth(healthy)}${PERCENT}`,
+				label: `${COVERAGE_BAND_WORD.healthy} ${needed}`,
 				anchor: "start",
 				room: FULL - healthy,
 			},
@@ -189,13 +243,19 @@ const MARKS_OF = {
 	bands: bandMarksOf,
 	boundaries: boundaryMarksOf,
 	rungs: rungMarksOf,
-} satisfies Record<CoverageMarks, (ladder: CoverageLadder) => readonly Mark[]>;
+} satisfies Record<
+	CoverageMarks,
+	(ladder: CoverageLadder, spoken: SpokenFigures) => readonly Mark[]
+>;
 
-const marksOf = (ladder: CoverageLadder, marks: CoverageMarks) =>
-	MARKS_OF[marks](ladder);
+const marksOf = (
+	ladder: CoverageLadder,
+	marks: CoverageMarks,
+	spoken: SpokenFigures
+) => MARKS_OF[marks](ladder, spoken);
 
-const readingOf = (held: number, healthy: number, band: CoverageBandId) =>
-	`${toTenth(held)}${PERCENT} ${COPY.of} ${toTenth(healthy)}${PERCENT} ${NEEDED} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
+const readingOf = ({ held, needed }: SpokenFigures, band: CoverageBandId) =>
+	`${held} ${COPY.of} ${needed} ${NEEDED} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
 
 export type CoverageMarks = "boundaries" | "bands" | "rungs";
 
@@ -207,6 +267,7 @@ export type CoverageBarProps = {
 	marks?: CoverageMarks;
 	pin?: boolean;
 	note?: string;
+	units?: CoverageUnits;
 };
 
 export const CoverageBar = ({
@@ -217,10 +278,12 @@ export const CoverageBar = ({
 	marks = "boundaries",
 	pin = false,
 	note,
+	units,
 }: CoverageBarProps) => {
 	const ladder = rungsOf({ floor, ok, healthy });
 	const reading = clamped(held);
 	const band = bandOf(reading, ladder);
+	const spoken = figuresOf(held, ladder.healthy, units);
 
 	const [settled, setSettled] = useState(reading);
 	const [moved, setMoved] = useState(false);
@@ -253,29 +316,23 @@ export const CoverageBar = ({
 				>
 					<span className={PIN_LABEL}>
 						{pin ? (
-							toTenth(held)
+							spoken.held
 						) : (
-							<span
-								className={PIN_COUNT}
-								style={countStyle(Math.round(reading))}
-							/>
+							<>
+								<span className={PIN_COUNT} style={countStyle(spoken.count)} />
+								{spoken.countSuffix}
+							</>
 						)}
-						{PERCENT}
 					</span>
 					<span className={PIN_STEM} />
 				</span>
 			</span>
 			{pin ? null : (
 				<span role="status" className={ANNOUNCE}>
-					{toTenth(held)}
-					{PERCENT}
+					{spoken.held}
 				</span>
 			)}
-			<span
-				role="img"
-				aria-label={readingOf(held, ladder.healthy, band)}
-				className={TRACK}
-			>
+			<span role="img" aria-label={readingOf(spoken, band)} className={TRACK}>
 				{zonesOf(ladder).map((zone) => (
 					<span
 						key={zone.band}
@@ -289,7 +346,7 @@ export const CoverageBar = ({
 				</span>
 			</span>
 			<span aria-hidden className={MARKS}>
-				{marksOf(ladder, marks).map((mark) => (
+				{marksOf(ladder, marks, spoken).map((mark) => (
 					<span
 						key={mark.label}
 						style={{ left: `${mark.at}${PERCENT}` }}

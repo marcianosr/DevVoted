@@ -1,12 +1,27 @@
 ---
 # DVTD-ay94
-title: 'Config: Sandbox exempts one named config from every audit'
+title: 'Config: Sandbox shields one config from audits'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-09-16T18:23:09Z
-updated_at: 2026-09-16T18:23:09Z
+updated_at: 2026-09-24T12:49:12Z
 parent: DVTD-72d9
 ---
+
+**What:** Name one config at the start of a gate, and no audit can take it offline.
+
+**Why:** The only audit protection today cancels a whole audit; this one removes a target instead.
+
+⚠️ Blocked on its price. "Other configs cannot enhance it" means nothing here, because configs never enhance each other. Pick a real price first.
+
+## Done when
+- [ ] The price is decided and written down
+- [ ] The named config cannot be taken offline by any audit for that gate
+- [ ] The pick clears at the end of each gate, and cannot name itself
+- [ ] Specs cover every audit that takes a config offline
+
+## Notes
 
 Name one config at gate start. Audits cannot take it offline. In exchange other
 configs cannot enhance it.
@@ -71,13 +86,13 @@ that is the difference between losing your x2 and losing nothing.
 
 ## Todo
 
-- [ ] SETTLE THE COST (blocker above)
-- [ ] Build.sandboxedConfigId + withSandboxSurviving lens
-- [ ] sandbox-config action + SHOP_WRITES + zod mirror
-- [ ] offlinePairsFor exemption
-- [ ] Clear in closeWindow; cover both start() and finishReward() seams
-- [ ] Config.sandboxes axis + roster entry + CONFIG_UNLOCKS entry
-- [ ] Prep UI: the picker, and the named config's marker on the build track
-- [ ] Specs: each of the five offline audits skips the named config; the id
+- SETTLE THE COST (blocker above)
+- Build.sandboxedConfigId + withSandboxSurviving lens
+- sandbox-config action + SHOP_WRITES + zod mirror
+- offlinePairsFor exemption
+- Clear in closeWindow; cover both start() and finishReward() seams
+- Config.sandboxes axis + roster entry + CONFIG_UNLOCKS entry
+- Prep UI: the picker, and the named config's marker on the build track
+- Specs: each of the five offline audits skips the named config; the id
       survives a round trip through refreshConfig; it cannot name itself
-- [ ] Story page, wiki 4.3 row, ADR, CHANGELOG
+- Story page, wiki 4.3 row, ADR, CHANGELOG

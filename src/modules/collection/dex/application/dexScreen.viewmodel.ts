@@ -3,6 +3,7 @@ import { CATEGORY_METADATA } from "~/shared/lib/categories";
 
 import type { AuditdexEntry } from "~/modules/collection/dex/domain/auditdex.model";
 import type { ConfigdexEntry } from "~/modules/collection/dex/domain/configdex.model";
+import type { ControldexEntry } from "~/modules/collection/dex/domain/controldex.model";
 import type { GatedexEntry } from "~/modules/collection/dex/domain/gatedex.model";
 import {
 	deepestGateIn,
@@ -18,16 +19,21 @@ import {
 	givesOf,
 	isUpgradable,
 	maxLevelOf,
-	upgradeStorageCost,
 	type Config,
 } from "~/modules/run/config/domain/config.model";
+import { figureLabel } from "~/modules/run/config/application/configChip.viewmodel";
+import { extendCost, rebuildCost } from "~/modules/run/shop/domain/draft.model";
 import {
-	figureLabel,
-	rollOddsLabel,
-} from "~/modules/run/config/application/configChip.viewmodel";
-import { versionOddsFor } from "~/modules/run/shop/domain/draft.model";
+	unlockCaptionOf,
+	type RegistryControlId,
+} from "~/modules/run/shop/domain/registryControl.model";
+import {
+	PIN_FROM_GATE,
+	pinCostFor,
+} from "~/modules/run/run/domain/rules.model";
 import { kbLabel } from "~/shared/lib/storage";
 import type { UnlockPathCaption } from "~/modules/run/config/domain/unlockCaption.model";
+import { WEIGHT } from "~/shared/lib/copy";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import { percentOf } from "~/modules/run/build/domain/coverageRatio.model";
 
@@ -38,11 +44,17 @@ import {
 	type DexAuditsProps,
 } from "~/ui/kanto-theme/DexAudits.ui";
 import type {
-	DexConfigRow,
-	DexConfigsData,
+	DexConfigChipProps,
 	DexUnlockPath,
-	DexVersionRung,
+} from "~/ui/kanto-theme/DexConfigChip.ui";
+import type {
+	DexConfigsData,
+	DexWeightGroup,
 } from "~/ui/kanto-theme/DexConfigs.ui";
+import type {
+	DexControlRow,
+	DexControlsProps,
+} from "~/ui/kanto-theme/DexControls.ui";
 import type { DexPollRow, DexPollsProps } from "~/ui/kanto-theme/DexPolls.ui";
 import {
 	heldOutcomeOf,
@@ -59,7 +71,8 @@ import {
 import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 import type { TabItem } from "~/ui/kanto-theme/Tabs.ui";
 
-export type DexTabId = "polls" | "configs" | "audits" | "swatches" | "runs";
+export type DexTabId =
+	"polls" | "configs" | "controls" | "audits" | "swatches" | "runs";
 
 export type DexTab = TabItem & { id: DexTabId; color: KantoColor };
 
@@ -74,6 +87,7 @@ export type DexTab = TabItem & { id: DexTabId; color: KantoColor };
 export const DEX_TABS = [
 	{ id: "polls", label: "polls", color: "cerulean" },
 	{ id: "configs", label: "configs", color: "pallet" },
+	{ id: "controls", label: "services", color: "seafoam" },
 	{ id: "audits", label: "audits", color: "saffron" },
 	{ id: "swatches", label: "swatches", color: "lavender" },
 	{ id: "runs", label: "runs", color: "pewter" },
@@ -128,8 +142,9 @@ export const dexPollsFor = (
 /* -------------------------------------------------------------- configs -- */
 
 const CONFIGS_NOTE =
-	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends. About one shop in eight the registry rolls a newer version of one installed config at its registry price: one rung up, then a coin flip per further rung until the ladder ends. Odds read from a fresh install. Locked ones name their condition.";
+	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends, so the tag names the top of that ladder, never a version you hold. A locked config shows its weight and, behind the i, how to unlock it; its name and effect show once it is earned.";
 const CONFIGS_META = "by weight";
+const HEADING_SEPARATOR = " · ";
 
 const pathFor = (caption: UnlockPathCaption): DexUnlockPath => ({
 	text: caption.text,
@@ -139,43 +154,21 @@ const pathFor = (caption: UnlockPathCaption): DexUnlockPath => ({
 			: null,
 });
 
-const FIRST_VERSION = 1;
-
 /**
- * The in-run version ladder, read straight off the catalogue. A config's level
- * is bought with storage during a run and dies with it, so there is no held
- * version to mark here: a rung is a thing to read, not a thing you own.
- *
- * `givesOf` is level-aware for exactly the upgradable set, so re-running it
- * against a synthetic level is what yields prose per rung; `figureLabel` is the
- * bare-figure fallback for a shape it does not phrase.
- *
+ * A config's level is bought with storage during a run and dies with it, so
+ * there is no held version to state here. The chip names the ladder's ceiling
+ * instead, which is a fact about the config rather than about a run.
  * `undefined` for a config with no ladder, which is most of the roster.
  */
-const versionsOf = (config: Config): readonly DexVersionRung[] | undefined => {
-	if (!isUpgradable(config)) return undefined;
-	const odds = versionOddsFor(FIRST_VERSION, maxLevelOf(config));
-	const oddsAt = (version: number): string | null => {
-		const share = odds.find((rung) => rung.version === version)?.share;
-		return share === undefined ? null : rollOddsLabel(share);
-	};
+const maxVersionOf = (config: Config): number | undefined =>
+	isUpgradable(config) ? maxLevelOf(config) : undefined;
 
-	return Array.from({ length: maxLevelOf(config) }, (_, index) => {
-		const version = index + FIRST_VERSION;
-		const rung = { ...config, level: version };
-		return {
-			version,
-			effect: givesOf(rung) ?? figureLabel(rung),
-			price:
-				version === FIRST_VERSION
-					? null
-					: kbLabel(upgradeStorageCost(version - 1)),
-			odds: version === FIRST_VERSION ? null : oddsAt(version),
-		};
-	});
+const figureOf = (config: Config): string | undefined => {
+	const figure = figureLabel(config);
+	return figure === "" ? undefined : figure;
 };
 
-const configRowFor = (entry: ConfigdexEntry): DexConfigRow => {
+const chipFor = (entry: ConfigdexEntry): DexConfigChipProps => {
 	if (entry.state === "locked") {
 		return {
 			id: entry.id,
@@ -190,39 +183,117 @@ const configRowFor = (entry: ConfigdexEntry): DexConfigRow => {
 		slots: baseSlotsOf(entry.config),
 		state: "granted",
 		name: entry.config.label,
-		effect: entry.config.gives ?? entry.config.description,
-		provenance: entry.provenance,
+		effect: givesOf(entry.config) ?? entry.config.description,
 		starter: entry.starter,
-		versions: versionsOf(entry.config),
+		provenance: entry.provenance,
+		figure: figureOf(entry.config),
+		maxVersion: maxVersionOf(entry.config),
 	};
 };
 
-/**
- * Heaviest first across the whole roster, granted and locked alike: the header
- * says "by weight", so splitting the deck you hold from the deck you owe first
- * left the 1-weight starters sitting above every 8-weight config and read as no
- * order at all.
- */
-const byWeight = (rows: readonly DexConfigRow[]): readonly DexConfigRow[] =>
-	[...rows].sort((a, b) => b.slots - a.slots);
+const isGranted = (chip: DexConfigChipProps) => chip.state === "granted";
+
+/** Inside a weight, what you hold reads before what you owe; roster order otherwise. */
+const groupOf = (
+	weight: number,
+	chips: readonly DexConfigChipProps[]
+): DexWeightGroup => {
+	const granted = chips.filter(isGranted);
+	const rest = chips.filter((chip) => !isGranted(chip));
+
+	return {
+		weight,
+		heading: `${weight} ${WEIGHT}${HEADING_SEPARATOR}${heldOf(granted.length, chips.length)}`,
+		chips: [...granted, ...rest],
+	};
+};
+
+/** Heaviest weight first: the header says "by weight". */
+const byWeight = (
+	chips: readonly DexConfigChipProps[]
+): readonly DexWeightGroup[] =>
+	[...new Set(chips.map((chip) => chip.slots))]
+		.sort((a, b) => b - a)
+		.map((weight) =>
+			groupOf(
+				weight,
+				chips.filter((chip) => chip.slots === weight)
+			)
+		);
 
 export const dexConfigsFor = (
 	entries: readonly ConfigdexEntry[]
 ): DexConfigsData => {
-	const rows = entries.map(configRowFor);
+	const chips = entries.map(chipFor);
 
 	return {
-		rows: byWeight(rows),
-		count: heldOf(
-			rows.filter((row) => row.state === "granted").length,
-			rows.length
-		),
+		groups: byWeight(chips),
+		count: heldOf(chips.filter(isGranted).length, chips.length),
 		meta: CONFIGS_META,
 		note: CONFIGS_NOTE,
 	};
 };
 
-/* --------------------------------------------------------------- audits -- */
+/* ------------------------------------------------------------- services -- */
+
+const SERVICES_NOTE =
+	"A service is unlocked once, for good. A registry service is then bought in the shop with the run's own storage, as often as you can pay; a run service is bought once a run, before it, from the archive. The git tag is bought in the shop today and carries into your next run.";
+const SERVICES_META = "registry, then run";
+const NOT_YET_SOLD = "not for sale yet";
+const FREE = "free";
+
+/** Where it is bought and how long the purchase lasts, in the words of the mock. */
+const SERVICE_LINES: Record<RegistryControlId, string> = {
+	rebuild: "Registry · this visit",
+	extend: "Registry · rest of the run",
+	hotReload: "Registry · this visit",
+	returnPolicy: "Registry · this visit",
+	abandon: "Registry · ends the run",
+	pin: "Run · carries into your next run",
+	bootCache: "Next run · consumed on start",
+	dockerImage: "Next run · spent in the first shop",
+};
+
+const CONTROL_PRICES: Record<RegistryControlId, string> = {
+	rebuild: `from ${kbLabel(rebuildCost(0))}, doubling`,
+	extend: `${kbLabel(extendCost(0))}, then ${kbLabel(extendCost(1))}`,
+	hotReload: NOT_YET_SOLD,
+	returnPolicy: NOT_YET_SOLD,
+	abandon: FREE,
+	pin: `from ${kbLabel(pinCostFor(PIN_FROM_GATE))}, rising with depth`,
+	bootCache: NOT_YET_SOLD,
+	dockerImage: NOT_YET_SOLD,
+};
+
+const controlRowFor = ({
+	control,
+	unlocked,
+}: ControldexEntry): DexControlRow => {
+	const row = {
+		id: control.id,
+		glyph: control.glyph,
+		title: control.title,
+		detail: SERVICE_LINES[control.id],
+	};
+	const unlock = unlockCaptionOf(control);
+	return unlocked || unlock === undefined
+		? { ...row, price: CONTROL_PRICES[control.id] }
+		: { ...row, locked: true, unlock };
+};
+
+export const dexControlsFor = (
+	entries: readonly ControldexEntry[]
+): DexControlsProps => ({
+	rows: entries.map(controlRowFor),
+	count: heldOf(
+		entries.filter((entry) => entry.unlocked).length,
+		entries.length
+	),
+	meta: SERVICES_META,
+	note: SERVICES_NOTE,
+});
+
+/* ---------------------------------------------------------------- audits -- */
 
 const AUDITS_NOTE =
 	"An audit is logged the first time it fires. Reading it here does not stop it happening again.";

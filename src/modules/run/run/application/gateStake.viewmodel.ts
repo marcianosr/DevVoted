@@ -17,6 +17,7 @@ import type {
 } from "~/modules/run/gate/domain/gate.model";
 import {
 	incidentsAt,
+	type IncidentSender,
 	type RunState,
 	scheduleOf,
 } from "~/modules/run/run/domain/run.model";
@@ -30,7 +31,7 @@ export type AuditView = {
 	readonly suppressed: boolean;
 	readonly suppressedBy?: Config;
 	/** The rival who fired it, where the audit is one a rival locked in (ADR-099). */
-	readonly sentBy?: string;
+	readonly sentBy?: IncidentSender;
 };
 
 export type GateStake = {
@@ -75,7 +76,6 @@ export const auditViewsFor = (state: RunState): readonly AuditView[] => {
 		answerCue: audit.answerCue,
 		suppressed: audit.id === suppressed?.id,
 		suppressedBy: audit.id === suppressed?.id ? suppressor : undefined,
-		sentBy: incidents.find((incident) => incident.auditId === audit.id)?.sentBy
-			.name,
+		sentBy: incidents.find((incident) => incident.auditId === audit.id)?.sentBy,
 	}));
 };

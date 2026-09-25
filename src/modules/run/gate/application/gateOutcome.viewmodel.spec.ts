@@ -7,6 +7,7 @@ import {
 	gateOutcomePropsFor,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
 const GATE_0_LADDER = { floor: 0, ok: 40, healthy: 60 };
@@ -92,6 +93,45 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 		expect(props.storage.badges?.[0]?.label).toBe("nothing paid");
 	});
 
+	const dropBadgeFor = (frame: GateOutcomeFrame, name: string) => {
+		const chip = gateOutcomePropsFor(
+			frame
+		).tail?.choice?.peel.drop.configs.find((config) => config.name === name);
+		return chip?.badges?.at(-1);
+	};
+
+	const peeling = (chosen: readonly string[]): GateOutcomeFrame => ({
+		...heldByFloor(),
+		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
+		chosen,
+	});
+
+	it("keeps every drop live while the peel is still owed", () => {
+		const badge = dropBadgeFor(peeling([]), CONFIGS.js.label);
+
+		expect(badge).toEqual(expect.objectContaining({ disabled: false }));
+	});
+
+	it("spends no config the peel did not ask for, once it is settled", () => {
+		// One config sells for exactly the 16 KB this gate peels.
+		const settled = peeling([CONFIGS.js.id]);
+
+		expect(dropBadgeFor(settled, CONFIGS.ts.label)).toEqual(
+			expect.objectContaining({ disabled: true })
+		);
+		expect(dropBadgeFor(settled, CONFIGS.css.label)).toEqual(
+			expect.objectContaining({ disabled: true })
+		);
+	});
+
+	it("lets a config already dropping be taken back after the bill is met", () => {
+		const badge = dropBadgeFor(peeling([CONFIGS.js.id]), CONFIGS.js.label);
+
+		expect(badge).toEqual(
+			expect.objectContaining({ armed: true, disabled: false })
+		);
+	});
+
 	it("says the day came up short, not the meter", () => {
 		const props = gateOutcomePropsFor(heldByFloor());
 
@@ -124,6 +164,17 @@ describe("the By category panel", () => {
 				)
 			)
 		).toBe(false);
+	});
+
+	it("states each category's share as a percentage, as its own summary does", () => {
+		const props = gateOutcomePropsFor(frameOf([], CLEARED));
+
+		for (const row of props.coverage.rows)
+			expect(
+				row.figures?.every((figure) =>
+					(figure.locked === true ? "%" : figure.label).endsWith("%")
+				)
+			).toBe(true);
 	});
 });
 
@@ -254,7 +305,7 @@ describe("a clear whose parts are known", () => {
 	it("keeps the gate's own row to the base and names the streak it paid on", () => {
 		const row = rowNamed(itemised(), "Gate cleared");
 
-		expect(row?.notes).toEqual(["5 of 5 correct", "streak ×1.4"]);
+		expect(row?.notes).toEqual(["streak ×1.4"]);
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+36 KB" })
 		);
@@ -278,10 +329,31 @@ describe("a clear whose parts are known", () => {
 		);
 	});
 
+	it("reads the balance it moved from, landed on, and the step between", () => {
+		const row = rowNamed(itemised(), STORAGE_BALANCE);
+
+		expect(row?.total).toBe(true);
+		expect(row?.figures?.[0]).toEqual(
+			expect.objectContaining({ label: "64 →", tone: "quiet" })
+		);
+		expect(row?.figures?.[1]).toEqual(
+			expect.objectContaining({ label: expect.stringContaining("KB") })
+		);
+		expect(row?.figures?.[2]).toEqual(
+			expect.objectContaining({ label: expect.stringMatching(/^[+-]/) })
+		);
+	});
+
+	it("badges the landing rather than spelling it in a bare span", () => {
+		const row = rowNamed(itemised(), STORAGE_BALANCE);
+
+		expect(row?.figures?.[1]).not.toHaveProperty("tone");
+	});
+
 	it("keeps the whole payout on the gate's row when the parts are unknown", () => {
 		const row = rowNamed(frameOf([], CLEARED), "Gate cleared");
 
-		expect(row?.notes).toEqual(["5 of 5 correct"]);
+		expect(row?.notes).toEqual([]);
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+32 KB" })
 		);

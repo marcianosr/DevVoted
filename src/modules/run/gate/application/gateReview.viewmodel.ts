@@ -92,7 +92,7 @@ export const reviewPropsFor = ({
 			badges: [
 				...answerTallyOf(answers),
 				{
-					label: `${signedPercent(totalCoverage(answers))}%`,
+					label: signedPercent(totalCoverage(answers)),
 					color: coverageColor(totalCoverage(answers)),
 				},
 			],

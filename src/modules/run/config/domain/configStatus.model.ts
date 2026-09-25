@@ -80,8 +80,7 @@ const readsAhead = (config: Config): boolean =>
 	config.revealsCorrectCount === true;
 
 const countsThisAnswer = (config: Config): boolean =>
-	config.autoUpgradeAfterCorrect !== undefined ||
-	config.streakStepGrowth !== undefined;
+	config.autoUpgradeAfterCorrect !== undefined;
 
 const wagersThisAnswer = (config: Config): boolean =>
 	config.wagersAnswer !== undefined;

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { kantoNextGateAt } from "~/test/kantoPoll.factory";
 
+import { gateTitleOf } from "./Header.ui";
 import { NextGate, type NextGateProps } from "./NextGate.ui";
 
 const propsAt = (cleared = 9, unitsHeld = 42): NextGateProps => {
@@ -23,7 +24,7 @@ describe("NextGate", () => {
 		expect(
 			screen.getByRole("heading", { name: "Next gate" })
 		).toBeInTheDocument();
-		expect(screen.getByText("Gate 10 · Earth")).toBeInTheDocument();
+		expect(screen.getByText("#10 - Earth Gate")).toBeInTheDocument();
 	});
 
 	it("states what the gate will be scored out of once it closes", () => {
@@ -69,24 +70,14 @@ describe("NextGate", () => {
 		expect(swatch).toHaveAttribute("data-swatch-theme", props.swatch.theme);
 	});
 
-	it("prices the gate ahead in answers, which no denominator can re-base", () => {
-		render(<NextGate {...props} />);
+	it("keeps the swatch on the gate's own line, the two being one mark", () => {
+		const { container } = render(<NextGate {...props} />);
 
-		expect(screen.getByText("4 of the 5 right clears it.")).toBeInTheDocument();
-	});
+		const swatch = container.querySelector("[data-swatch-theme]");
+		const named = swatch?.parentElement;
 
-	it("says nothing at all when the run already carries the line in", () => {
-		const { container } = render(<NextGate {...propsAt(9, 47)} />);
-
-		expect(container.querySelector("footer")).toBeNull();
-	});
-
-	it("warns when a flawless window still would not reach the line", () => {
-		render(<NextGate {...propsAt(8, 0)} />);
-
-		expect(
-			screen.getByText("5 of the 5 right will not reach it.")
-		).toBeInTheDocument();
+		expect(named).not.toHaveClass("flex-wrap");
+		expect(named?.textContent).toContain(gateTitleOf(props.swatch));
 	});
 
 	it("rounds the demand, so gate 5 reads 65% rather than a float", () => {
@@ -94,12 +85,6 @@ describe("NextGate", () => {
 
 		expect(screen.getByText("65%")).toBeInTheDocument();
 		expect(screen.queryByText(/65\.0+1/)).not.toBeInTheDocument();
-	});
-
-	it("stays quiet when nothing is owed to say", () => {
-		render(<NextGate {...props} note={undefined} />);
-
-		expect(screen.queryByText(/right clears it/)).not.toBeInTheDocument();
 	});
 
 	it("says when the gate opens, and stays quiet when nothing says", () => {

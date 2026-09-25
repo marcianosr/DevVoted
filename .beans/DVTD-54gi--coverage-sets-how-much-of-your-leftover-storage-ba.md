@@ -1,13 +1,28 @@
 ---
 # DVTD-54gi
-title: Coverage sets how much of your leftover storage banks
+title: Bank storage on how well a run scored, not how far it got
 status: todo
 type: feature
 priority: high
 created_at: 2026-09-01T15:33:18Z
-updated_at: 2026-09-12T12:57:01Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-z2r2
 ---
+
+**What:** Base how much of a run's leftover storage banks on how well it played, rather than on the gate it died at.
+
+**Why:** Two runs that die at the same gate bank the same, whether they scraped through or doubled the line.
+
+⚠️ The number this bean divides by is gone, and coverage resets every gate. The measure has to be something that survives the reset: the bands the gates closed in, or the storage those gates paid.
+
+## Done when
+- [ ] The measure is picked, and it survives the per-gate reset
+- [ ] Abandoning still banks nothing, and winning still banks everything
+- [ ] A shallow death does not bank so little that starting stops being worth it
+- [ ] The run-over screen states the rate and what it banked
+- [ ] It does not pay twice for the same thing as the overshoot bean
+
+## Notes
 
 ## Problem
 
@@ -43,13 +58,13 @@ The git tag's anti-cash-out rule falls out for free. ADR-036 has to subtract `st
 
 ## Todos
 
-- [ ] ADR amending ADR-005's end-of-run economy bridge, and the `startedAtGate` clause of ADR-036
-- [ ] `storageCreditRate` takes coverage instead of gatesCleared; both call sites in run.repository.ts (finishSessionRun, abandonSessionRun) pass `state.coverage`
-- [ ] Rewrite rules.model.spec.ts's four `storageCreditRate` cases: abandon 0, victory floor 1, the table above, clamp above the demand
-- [ ] Game over screen states the rate and what it banked (GameOverScreen's `archive` note is the slot)
-- [ ] Stale comment at run.repository.ts:283 names a `STORAGE_CREDIT_RATE` constant that does not exist; fix while in the file
-- [ ] Wiki 6.1 ("at the outcome rate") and the numbers reference
-- [ ] CHANGELOG (player-visible)
+- ADR amending ADR-005's end-of-run economy bridge, and the `startedAtGate` clause of ADR-036
+- `storageCreditRate` takes coverage instead of gatesCleared; both call sites in run.repository.ts (finishSessionRun, abandonSessionRun) pass `state.coverage`
+- Rewrite rules.model.spec.ts's four `storageCreditRate` cases: abandon 0, victory floor 1, the table above, clamp above the demand
+- Game over screen states the rate and what it banked (GameOverScreen's `archive` note is the slot)
+- Stale comment at run.repository.ts:283 names a `STORAGE_CREDIT_RATE` constant that does not exist; fix while in the file
+- Wiki 6.1 ("at the outcome rate") and the numbers reference
+- CHANGELOG (player-visible)
 
 ## Risks to watch
 

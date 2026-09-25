@@ -8,7 +8,7 @@ import {
 	usedSlotsOf,
 } from "~/test/kantoPoll.factory";
 
-import { Build } from "./Build.ui";
+import { Build, UpkeepBadge } from "./Build.ui";
 import type { ConfigChipProps } from "./ConfigChip.ui";
 
 const chipNamed = (name: string) => {
@@ -774,5 +774,20 @@ describe("the build split across a screen's own columns", () => {
 		);
 
 		expect(container.querySelector("section")?.children).toHaveLength(0);
+	});
+
+	it("opens the terms behind the upkeep badge, a price naming what it prices", async () => {
+		render(<UpkeepBadge perGateKb={0} />);
+
+		const trigger = screen.getByRole("button", {
+			name: "What the build costs a gate",
+		});
+
+		expect(trigger).toHaveAttribute("aria-expanded", "false");
+		expect(screen.getByText(/rents its space/)).toBeInTheDocument();
+
+		await userEvent.click(trigger);
+
+		expect(trigger).toHaveAttribute("aria-expanded", "true");
 	});
 });

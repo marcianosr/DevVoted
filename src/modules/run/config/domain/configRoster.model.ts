@@ -115,17 +115,6 @@ export const CONFIGS = {
 		gives: "Correct answers pay +10% coverage",
 		coverageAdd: 0.1,
 	},
-	reduce: {
-		id: "reduce",
-		label: ".reduce()",
-		slots: 2,
-		description:
-			"Answer correctly in a row and the streak step climbs: +0.25, +0.50, +0.75, +1.00. A miss restarts it.",
-		gives: "Each correct answer in a row pays +0.25 more than the last",
-		costs:
-			"Replaces the flat +0.1 streak step, and one miss restarts the climb",
-		streakStepGrowth: 0.25,
-	},
 	indexedDb: {
 		id: "indexed-db",
 		label: "IndexedDB",

@@ -5,13 +5,15 @@ import {
 	buildChipFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
+import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
 
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 	const deal = { priceKb: 32, affordable: true, onInstall: vi.fn() };
 	const chip = upgradeChipFor({ ...CONFIGS.js, level: 3 }, 1, deal);
 
-	it("wears the version on offer, not the one held", () => {
-		expect(chip.version).toBe(3);
+	it("wears the version held, the press stating the one on offer", () => {
+		expect(chip.version).toBe(1);
+		expect(offeredRungOf(chip.upgrades?.rungs ?? [])?.version).toBe(3);
 	});
 
 	it("states the odds the roll landed on, at rest beside the pennant", () => {

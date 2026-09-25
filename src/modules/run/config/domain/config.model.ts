@@ -1,6 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { MAX_STREAK_UNIT_STEPS } from "~/modules/run/run/domain/rules.model";
 
 export type AbArm = "coverage" | "storage";
 
@@ -19,7 +18,6 @@ export type Config = {
 	readonly coverageMultiplier?: number;
 	readonly coverageAdd?: number;
 	readonly roundsPartialUnitsUp?: boolean;
-	readonly streakStepGrowth?: number;
 	readonly level?: number;
 	readonly maxLevel?: number;
 	readonly storagePerCorrect?: number;
@@ -72,22 +70,6 @@ export const focusCoverageMultiplier = (level: number): number =>
 
 export const focusMultiplierOf = (config: Config): number =>
 	minifiedMultiplier(config, focusCoverageMultiplier(config.level ?? 1));
-
-const STREAK_STEP_LEVEL_BONUS = 0.05;
-
-/**
- * The streak's unit step, for a config that buys a growing one (ADR-090). A
- * level buys a slightly steeper climb rather than a longer one, so the window
- * stays the ceiling.
- */
-export const streakStepOf = (config: Config): number | undefined => {
-	if (config.streakStepGrowth === undefined) return undefined;
-	return minifiedUnits(
-		config,
-		config.streakStepGrowth +
-			STREAK_STEP_LEVEL_BONUS * ((config.level ?? 1) - 1)
-	);
-};
 
 export const upgradeCoverageRequired = (currentLevel: number): number =>
 	currentLevel * 5;
@@ -148,8 +130,7 @@ export const isUpgradable = (config: Config): boolean => {
 		config.storageInterestPct !== undefined ||
 		config.peeksCommunitySplit === true ||
 		config.reordersGatePolls === true ||
-		config.autoUpgradeAfterCorrect !== undefined ||
-		config.streakStepGrowth !== undefined;
+		config.autoUpgradeAfterCorrect !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
 
@@ -192,9 +173,6 @@ export const storageOnClearOf = (config: Config): number | undefined =>
 		: minifiedAmount(config, config.storageOnClear * (config.level ?? 1));
 
 export const describeConfig = (config: Config): string => {
-	const streakStep = streakStepOf(config);
-	if (streakStep !== undefined)
-		return `Every correct answer in a row pays +${streakStep} more coverage than the one before it, up to ${MAX_STREAK_UNIT_STEPS} steps. A miss restarts the climb.`;
 	if (config.wagersAnswer !== undefined)
 		return `Arm it before you answer. An exact answer earns +${config.wagersAnswer} units; a partial, a miss or a timeout takes ${config.wagersAnswer} units off the gate. It disarms after every answer.`;
 	if (config.coverageDecayPerClear !== undefined)
@@ -281,8 +259,6 @@ export type ConfigFigure =
 	| { readonly kind: "percent"; readonly value: number };
 
 export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
-	const streakStep = streakStepOf(config);
-	if (streakStep !== undefined) return { kind: "coverage", value: streakStep };
 	if (config.wagersAnswer !== undefined)
 		return { kind: "coverage", value: config.wagersAnswer };
 	if (config.focusCategory)
@@ -322,9 +298,6 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 };
 
 export const givesOf = (config: Config): string | undefined => {
-	const streakStep = streakStepOf(config);
-	if (streakStep !== undefined)
-		return `Each correct answer in a row pays +${streakStep} more than the last`;
 	if (config.wagersAnswer !== undefined)
 		return `+${config.wagersAnswer} units on an exact answer, when armed`;
 	if (config.coverageDecayPerClear !== undefined)

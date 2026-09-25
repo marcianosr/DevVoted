@@ -1,15 +1,27 @@
 ---
 # DVTD-hmde
-title: 'Config: Dockerfile images one config into the next run'
+title: 'Config: Dockerfile saves one config into your next run'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-06T08:04:59Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:25Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that carries one of your installed configs into the opening hand of your next run.
+
+**Why:** Carries something across a run without handing out power you did not earn.
+
+## Done when
+- [ ] Reconciled with the archive-bought config injection idea, as one design
+- [ ] Decided: an extra card in the hand, or one of the five
+- [ ] Ending a run by victory or death lets you pick one installed config
+- [ ] The next run deals it, and never installs it for you
+
+## Notes
 
 ## Design (2026-09-06 session)
 
@@ -24,6 +36,6 @@ L2 could make the image standing: the imaged config appears in EVERY future run'
 
 ## Todo
 
-- [ ] Reconcile with DVTD-xbri's config injection
-- [ ] Decide whether the image is a 6th card or replaces one of the seeded 5
-- [ ] Decide the dotfiles upgrade path (standing image, death-bounded)
+- Reconcile with DVTD-xbri's config injection
+- Decide whether the image is a 6th card or replaces one of the seeded 5
+- Decide the dotfiles upgrade path (standing image, death-bounded)

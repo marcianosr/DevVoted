@@ -28,10 +28,10 @@ it before proposing one again.**
 | [020](020-gate-theme-replaces-category-colors.md) | The gate themes the run; categories carry no colour | Accepted |
 | [026](026-staged-onboarding-starter-stacks.md) | Staged onboarding: the payoff-first gate clear | Accepted — amended by 052 |
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
-| [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054 |
+| [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054; 115 overrules the rerolls rejection for run services |
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — whole again under 078 (the shop link is back) |
 | [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056, 099 |
-| [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted |
+| [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted — D1 amended by 115: the tag is a run service, archive deposit then run-KB placement |
 | [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — 076 owns what a miss does; the peel has two triggers (076, 074) |
 | [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 and 099 (the count is a capacity) |
 | [039](039-every-upgrade-costs-storage.md) | Every upgrade costs storage | Accepted — amended by 053 |
@@ -56,13 +56,13 @@ it before proposing one again.**
 | [064](064-a-grant-is-recorded-with-its-provenance.md) | A grant is recorded with its provenance | Accepted |
 | [066](066-every-figure-wears-a-badge.md) | Every figure wears a badge | Accepted |
 | [068](068-coverage-reads-as-a-ring.md) | Coverage reads as a ring | Accepted — replaces 061's placement for kanto; amended by 070 |
-| [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted |
-| [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar |
+| [069](069-the-build-sits-in-a-folded-footer.md) | The build sits in a folded footer on the poll screen | Accepted — extended by 114 (the send stacks on the pinned sheet) |
+| [070](070-coverage-reads-as-a-banded-bar.md) | Coverage reads as a banded bar | Accepted — amends 068; the poll screen takes the bar; amended by 106 (units) and 113 (placement) |
 | [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain over every slot the run has opened** | Accepted — supersedes 013's decision 1; amended by 081 and 094 (D2); half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — built by 082, which amends decisions 2, 3 and 4 |
 | [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked); context figures superseded by 094 |
 | [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; routed by `gateRulingFor`; amended by 094 (a hold names its reason) |
-| [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
+| [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to; amended by 106 (the moving pin counts whole units) |
 | [078](078-prep-reads-in-two-columns.md) | **Prep and New run read in two columns, and the band table drops its prose** | Accepted — supersedes 072; restores 032's shop link |
 | [079](079-a-partial-answer-pays-a-quarter-at-a-time.md) | **A partial answer pays a quarter at a time** | Accepted — amends 006 §11; the ladder 081 doubles |
 | [080](080-the-swatch-is-won-by-the-window.md) | **The swatch is won by the window, not by the clear** | Accepted — reverses 019's award rule |
@@ -75,7 +75,6 @@ it before proposing one again.**
 | [087](087-a-config-can-be-exempt-from-the-space-it-fills.md) | **A config can be exempt from the space it fills** | Accepted — splits carried weight from billable weight; scraps DVTD-kf93 |
 | [088](088-the-run-has-no-id-in-its-url.md) | **The run has no id in its URL** — the status owns the screen | Accepted |
 | [089](089-an-armed-wager-pays-or-bills-one-answer.md) | **An armed wager pays or bills one answer** | Accepted — reverses 073's no-loss rule for one config; second wager beside 085; an add under 083 |
-| [090](090-a-config-can-replace-the-streaks-unit-step.md) | **A config can replace the streak's unit step with a growing one** | Accepted — amends 083; the step climbs with the streak, clamped to the window |
 | [091](091-a-config-can-put-its-earnings-at-risk.md) | **A config can put its earnings at risk** | Accepted — Database escrows per exact answer; a clear commits at ×2, SHAKY or DANGER rolls it back |
 | [092](092-207-multi-status-hides-the-answer-type.md) | **207 Multi-Status hides the answer type and flattens the credit** | Accepted — seventeenth audit; resolves 081 D6; `poll-reading` family keeps it off a 300 gate |
 | [093](093-a-poll-states-how-the-room-did.md) | A poll states how the room did on it | Accepted |
@@ -84,12 +83,23 @@ it before proposing one again.**
 | [096](096-a-config-can-promise-a-band-or-catch-one.md) | **A config can promise a band, or catch one** | Accepted — SLA is the first band→KB slope; Try/Catch turns one DANGER close into a hold and is spent doing it |
 | [097](097-a-rolled-upgrade-climbs-on-a-coin-flip.md) | **A rolled upgrade climbs on a coin flip** | Accepted — amends 053 D4; one rung up then 1-in-2 per further rung to the cap; odds read as `1 in N rolls`; the registry offer sells through `draft` |
 | [098](098-build-space-scales-with-the-build.md) | **Build space scales with the build, and the install press states the bill** | Accepted — supersedes 082 D1, D2, D3 and D5 and restates its D4; the rung is derived from `billableSlotsOf`, never picked; crossing one arms the install press; ladder and prices unchanged |
-| [099](099-audits-are-fired-by-rivals.md) | **Audits are fired by rivals, and the gate's count is its capacity** | Accepted — supersedes 056 D1, D2, D4 and 038 D2; no floor, no authored gate, one run-long attack per HEALTHY-or-better clear, lock-time capacity is the law |
+| [099](099-audits-are-fired-by-rivals.md) | **Audits are fired by rivals, and the gate's count is its capacity** | Accepted — supersedes 056 D1, D2, D4 and 038 D2; no floor, no authored gate, one run-long attack per HEALTHY-or-better clear, lock-time capacity is the law; amended by 105 (you fire only from a gate that can be fired at) |
 | [100](100-a-category-has-a-living-record.md) | **A category has a living record** | Accepted — uses ADR-093's `PollView` seam; D2 and D4 collapsed by 103, the rest stands |
 | [101](101-builds-are-open.md) | **Builds are open** | Accepted — restates 099 §4 as a rule; configs, versions, weight and the vendor lock are public, the run's answers are not; display only |
 | [102](102-copy-has-one-owner.md) | **Copy has one owner** — run state picks it or the view states it | Accepted — generalises 040 D2; `COPY` object per `.ui.tsx`, shared words in `shared/lib/copy.ts`, register is not drift |
 | [103](103-the-board-seats-twelve-category-leaders.md) | **The community board seats twelve category leaders** | Accepted — retires 065 and 067; collapses 100 D2 and D4; categories stay colourless (020 D1) |
 | [104](104-visits-are-counted-without-a-banner.md) | **Visits are counted without a banner** — a date-keyed hash, no device storage | Accepted |
+| [105](105-you-fire-only-from-a-gate-that-can-be-fired-at.md) | You may only fire from a gate that can be fired at | Accepted |
+| [106](106-the-poll-screen-reads-coverage-in-units.md) | The poll screen reads coverage in units | Accepted — amends 070 and 077; only the poll screen passes units |
+| [107](107-a-bean-states-what-and-why-first.md) | **A bean states what and why first** | Accepted; what/why, then `Done when`, then everything else under Notes |
+| [108](108-the-dex-reads-configs-as-chip-rows.md) | The Dex reads configs as chip rows | Accepted — retires the caption rule of 050 D5 and 051 D7, amends 097 D4; the met state is a Story until DVTD-s5vo |
+| [109](109-a-title-is-earned-and-worn-one-at-a-time.md) | **A title is earned, permanent, and worn one at a time** | Accepted; frees `title` from the account role, which keeps the handle line |
+| [111](111-a-granted-title-is-dealt-and-announced-once.md) | **A granted title is dealt by a migration and announced once** | Accepted; completes 109, which left a granted title unawardable. Corrects 109 D4: the run-over screen never announced anything |
+| [112](112-the-archive-carries-and-buys-appearance.md) | **The archive carries, and it buys appearance and licences** | Accepted; names a carve-out to 051's no-backfill line; D1 amended by 115 (the archive buys run services, not licences); keeps the archive out of the run |
+| [113](113-the-poll-screen-stands-coverage-beside-the-question.md) | The poll screen stands coverage beside the question | Accepted — amends 068 and 070 on placement only; the poll leads, the bar rails beside it, the phone pin is gone |
+| [114](114-the-send-is-the-poll-panels-own-pinned-row.md) | The send is the poll panel's own pinned row | Accepted — extends 069 D1: both bottom bars pin as a stack, the send seated off the sheet's measured height |
+| [115](115-services-have-two-scopes.md) | **Services have two scopes**, the registry's paid by the run and the run's paid by the archive | Accepted — replaces 110; amends 112 D1 and 036 D1; overrules 029's rerolls rejection for run services; D1's availability amended by 116; D10 one catalogue surfaced by context, D11 abandoning is a service |
+| [116](116-a-service-is-unlocked-once-per-account.md) | A service is unlocked once, per account | Accepted — amends 115 D1; a locked service is named with the line that earns it (D3 amended); reverses the Reveal-only stance of DVTD-2try and DVTD-8zb3 |
 
 ## Retired
 
@@ -124,6 +134,7 @@ original text, and [rejected.md](rejected.md) holds the reasoning worth keeping.
 | 063 | Planning Poker pays on an exact match | Retired — 085 owns it |
 | 065 | Standouts are six climb-shaped awards | Retired — 103 replaced the section with category leaders |
 | 067 | Standouts are four plain standings | Retired — 103 replaced the section; the four were never built |
+| 110 | Registry services are licensed from the archive and equipped one at a time | Retired — 115 replaced licences with run services bought once per run |
 
 ## Conventions
 

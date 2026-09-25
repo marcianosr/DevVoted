@@ -1,4 +1,4 @@
-import { NEEDED } from "~/shared/lib/copy";
+import { NEEDED, STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	flatClearPayoutsOf,
@@ -84,8 +84,8 @@ const DROP_TITLE = "Drop configs instead";
 const REFUSAL_TITLE = "End the run here";
 const RUN_OVER_TITLE = "Run over";
 
-const BALANCE = "balance";
-const BALANCE_WORD = "balance";
+const BALANCE = STORAGE_BALANCE;
+const BALANCE_WORD = STORAGE_BALANCE;
 const CLEARED_ROW = "Gate cleared";
 const BONUS_ROW = "perfect bonus";
 const PLAN_ROW = "storage plan";
@@ -93,9 +93,9 @@ const CORRECT_ROW = "correct answers";
 const PEEL_ROW = "peel refund";
 const COMMIT_ROW = "transaction committed";
 const SLA_ROW = "agreement met";
-const SLA_DETAIL = "· the band you promised held";
+const SLA_NOTE = "the band you promised held";
 const SURVIVED_ROW = "audits survived";
-const SURVIVED_DETAIL = `· ${kbLabel(INCIDENT_SURVIVAL_KB)} per incident a rival fired`;
+const SURVIVED_NOTE = `${kbLabel(INCIDENT_SURVIVAL_KB)} per incident a rival fired`;
 const ATTACK_EARNED = "audit earned";
 const ROLLBACK_ROW = "transaction rolled back";
 
@@ -122,13 +122,13 @@ const CLIMB_DONE = "the climb is done";
 const PEEL_TO_PAY = "peel to pay";
 const PEEL_SETTLED = "the peel is settled";
 
-export const BRIBE_LABEL = "Bribe from the archive";
+export const BRIBE_LABEL = "Bribe from storage";
 export const REFUSAL_LABEL = "End the run";
 export const NEW_RUN_LABEL = "New run";
 export const PEEL_REFUSAL =
 	"The gate stays shut until the peel is paid in full.";
 export const PEEL_PAID = "The peel is paid. Five fresh polls on the retry.";
-export const ARCHIVE_EMPTIES = "the archive empties when the run ends";
+export const ONLY_BANKED_CARRIES = "only what banked carries into your archive";
 export const REFUSAL_NOTE =
 	"No peel, no retry. The swatches you earned stay on your profile.";
 export const NO_REFUND_NOTE =
@@ -239,8 +239,9 @@ export type GateOutcomeFrame = {
 	billKb: number;
 };
 
+/** Signed and suffixed: every surface that states a share states it as one. */
 export const signedPercent = (value: number) =>
-	`${value < 0 ? "" : "+"}${roundToOneDecimal(value)}`;
+	`${value < 0 ? "" : "+"}${roundToOneDecimal(value)}%`;
 
 const signedUnits = (units: number) =>
 	`${units < 0 ? "" : "+"}${roundToTwoDecimals(units)}`;
@@ -494,17 +495,22 @@ const outcomeChips = (
 ];
 
 const SURPLUS_ROW = "surplus";
-const SURPLUS_DETAIL = "· units past the full bar";
+const SURPLUS_NOTE = "coverage past the full bar, paid out instead of lost";
 const INTEREST_ROW = "interest";
-const INTEREST_DETAIL = "· on the balance held";
+const INTEREST_NOTE = "on the balance held";
 const EXTRA_PICKS_ROW = "extra picks";
-const EXTRA_PICKS_DETAIL = "· answers past the window";
-const FLAT_CLEAR_DETAIL = "· on the clear";
+const EXTRA_PICKS_NOTE = "answers past the window";
+const FLAT_CLEAR_NOTE = "on the clear";
 const STREAK_WORD = "streak";
 
+/**
+ * The qualifier rides `notes`, not `detail`: `detail` sets inside the row's
+ * identity at the label's own size, which made these one rung louder than the
+ * clear row's notes right beside them.
+ */
 const gainRow = (
 	label: string,
-	detail: string,
+	note: string,
 	kb: number
 ): readonly LedgerRow[] =>
 	kb === 0
@@ -512,24 +518,22 @@ const gainRow = (
 		: [
 				{
 					label,
-					detail,
+					notes: [note],
 					figures: [{ label: signedKbLabel(kb), color: GAIN_COLOR }],
 				},
 			];
 
-const clearedNotesOf = (
-	frame: GateOutcomeFrame,
-	correct: number
-): readonly string[] => {
-	const tally = `${correct} of ${frame.answers.length} correct`;
+/**
+ * The streak only, because it is what lifted the figure beside it. The gate's
+ * tally is already a chip in the screen's header, and a row that restates it
+ * reads as a second reason for a number it had no part in.
+ */
+const clearedNotesOf = (frame: GateOutcomeFrame): readonly string[] => {
 	const streak = frame.streak ?? 0;
 
 	return streak === 0
-		? [tally]
-		: [
-				tally,
-				`${STREAK_WORD} ×${roundToTwoDecimals(streakMultiplier(streak))}`,
-			];
+		? []
+		: [`${STREAK_WORD} ×${roundToTwoDecimals(streakMultiplier(streak))}`];
 };
 
 /**
@@ -546,16 +550,22 @@ const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 		clear: frame.clearKb - flatKb,
 		rows: [
 			...flat.flatMap((payout) =>
-				gainRow(payout.config.label, FLAT_CLEAR_DETAIL, payout.kb)
+				gainRow(payout.config.label, FLAT_CLEAR_NOTE, payout.kb)
 			),
-			...gainRow(SURPLUS_ROW, SURPLUS_DETAIL, frame.overflowKb ?? 0),
-			...gainRow(INTEREST_ROW, INTEREST_DETAIL, frame.interestKb ?? 0),
-			...gainRow(EXTRA_PICKS_ROW, EXTRA_PICKS_DETAIL, frame.extraPickKb ?? 0),
+			...gainRow(SURPLUS_ROW, SURPLUS_NOTE, frame.overflowKb ?? 0),
+			...gainRow(INTEREST_ROW, INTEREST_NOTE, frame.interestKb ?? 0),
+			...gainRow(EXTRA_PICKS_ROW, EXTRA_PICKS_NOTE, frame.extraPickKb ?? 0),
 		],
 	};
 };
 
+/**
+ * A total sums the payouts above it, so it is never one itself — its own step
+ * wears the same gain colour as the rows it adds up, and counting it would
+ * report one payout more than the strip lists.
+ */
 const isGainRow = (row: LedgerRow): boolean =>
+	row.total !== true &&
 	(row.figures ?? []).some(
 		(figure) => "color" in figure && figure.color === GAIN_COLOR
 	);
@@ -563,11 +573,41 @@ const isGainRow = (row: LedgerRow): boolean =>
 const storageSummaryOf = (rows: readonly LedgerRow[], bill: number): string =>
 	`${plural(rows.filter(isGainRow).length, "payout")}, ${plural(bill === 0 ? 0 : 1, "bill")}`;
 
+/**
+ * The balance a gate closes on, as a figure rather than as prose: the reading
+ * it moved from, the reading it landed on, and the step between them. The step
+ * is the one the player actually feels, and it was only ever derivable by
+ * subtracting two numbers on the same line.
+ */
+const balanceRow = (
+	frame: GateOutcomeFrame,
+	band: CoverageBandId
+): LedgerRow => {
+	const after = balanceOf(frame, band);
+	const moved = after - frame.balanceBeforeKb;
+
+	return {
+		label: BALANCE,
+		total: true,
+		figures: [
+			{ label: `${frame.balanceBeforeKb} →`, tone: "quiet" as const },
+			{ label: kbLabel(after) },
+			...(moved === 0
+				? []
+				: [
+						{
+							label: signedKbLabel(moved),
+							color: moved > 0 ? GAIN_COLOR : LOSS_COLOR,
+						},
+					]),
+		],
+	};
+};
+
 const clearedStorageRows = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
 ): readonly LedgerRow[] => {
-	const correct = correctCount(frame.answers);
 	const payout = payoutOf(frame, band);
 	const bonus = band === PERFECT_BAND ? frame.bonusKb : 0;
 	const committed = frame.escrowCommittedKb ?? 0;
@@ -582,12 +622,12 @@ const clearedStorageRows = (
 	return [
 		{
 			label: CLEARED_ROW,
-			notes: clearedNotesOf(frame, correct),
+			notes: clearedNotesOf(frame),
 			figures: [{ label: signedKbLabel(parts.clear), color: GAIN_COLOR }],
 		},
 		...parts.rows,
-		...gainRow(SLA_ROW, SLA_DETAIL, uplift),
-		...gainRow(SURVIVED_ROW, SURVIVED_DETAIL, survival),
+		...gainRow(SLA_ROW, SLA_NOTE, uplift),
+		...gainRow(SURVIVED_ROW, SURVIVED_NOTE, survival),
 		...(committed === 0
 			? []
 			: [
@@ -620,14 +660,7 @@ const clearedStorageRows = (
 						figures: [{ label: signedKbLabel(-bill), color: LOSS_COLOR }],
 					},
 				]),
-		{
-			label: BALANCE,
-			total: true,
-			figures: [
-				{ label: `${frame.balanceBeforeKb} →`, tone: "quiet" as const },
-				{ label: kbLabel(balanceOf(frame, band)), tone: "headline" as const },
-			],
-		},
+		balanceRow(frame, band),
 	];
 };
 
@@ -671,13 +704,7 @@ const heldStorageRows = (
 						figures: [{ label: signedKbLabel(refund), color: GAIN_COLOR }],
 					},
 				]),
-		{
-			label: BALANCE,
-			total: true,
-			figures: [
-				{ label: kbLabel(balanceOf(frame, band)), tone: "headline" as const },
-			],
-		},
+		balanceRow(frame, band),
 	];
 };
 
@@ -731,9 +758,14 @@ const dropChip = (
 	config: Config,
 	configs: readonly Config[],
 	chosen: boolean,
+	settled: boolean,
 	onPress: () => void
 ): ConfigChipProps => {
 	const refund = peelRefundIn(configs, config);
+	// Once the bill is covered, a further drop buys nothing and refunds nothing
+	// — the press would take a config and give the run no credit for it. A row
+	// already dropping stays live so the choice can be taken back.
+	const spent = settled && !chosen;
 
 	const badges: ConfigChipBadge[] = [
 		{ label: kbLabel(sellRefund(config)), color: TERM_COLOR },
@@ -744,6 +776,7 @@ const dropChip = (
 			label: chosen ? DROPPING_BADGE : DROP_BADGE,
 			onPress,
 			armed: chosen,
+			disabled: spent,
 			hint: `${chosen ? "Keep" : "Drop"} ${config.label}`,
 		},
 	];
@@ -801,8 +834,12 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 				title: DROP_TITLE,
 				note: collectsOnDrop(frame.configs) ? REFUND_NOTE : NO_REFUND_NOTE,
 				configs: frame.configs.map((config) =>
-					dropChip(config, frame.configs, chosen.includes(config), () =>
-						frame.onToggle?.(config.id)
+					dropChip(
+						config,
+						frame.configs,
+						chosen.includes(config),
+						owed === 0,
+						() => frame.onToggle?.(config.id)
 					)
 				),
 			},
@@ -818,7 +855,7 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 
 const endingOf = (frame: GateOutcomeFrame, band: CoverageBandId) => ({
 	title: band === RUN_OVER_BAND ? ENDING_TITLE : SUMMIT_TITLE,
-	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame, band))} unspent. The swatches you earned stay on your profile; the build and the archive do not carry into the next run.`,
+	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame, band))} unspent. The swatches you earned stay on your profile. The build does not carry; how much of the unspent storage banks into your archive is set by how far you climbed.`,
 });
 
 const footerOf = (
@@ -829,9 +866,10 @@ const footerOf = (
 	if (band === RUN_OVER_BAND || frame.won === true)
 		return {
 			asides: [
+				{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop },
 				{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop },
 			],
-			note: ARCHIVE_EMPTIES,
+			note: ONLY_BANKED_CARRIES,
 			noteAt: "row",
 			action: { label: NEW_RUN_LABEL, onPress: noop },
 		};
@@ -851,7 +889,10 @@ const footerOf = (
 	}
 
 	return {
-		asides: [{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop }],
+		asides: [
+			{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop },
+			{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop },
+		],
 		note:
 			nextName === undefined
 				? CLIMB_DONE
@@ -929,8 +970,8 @@ const figureOf = (frame: GateOutcomeFrame, band: CoverageBandId) => {
 	}
 
 	return {
-		amount: signedKbLabel(payoutOf(frame, band) - billOf(frame, band)),
-		note: `${BALANCE_WORD} ${kbLabel(balance)}`,
+		amount: kbLabel(balance),
+		note: BALANCE_WORD,
 	};
 };
 
@@ -957,7 +998,7 @@ export const gateOutcomePropsFor = (
 	const shortBy = roundToOneDecimal(Math.max(0, demand - held));
 	const cleared = CLEARING_BANDS[band];
 	const gainBadge = {
-		label: `${signedPercent(totalCoverage(answers))}%`,
+		label: signedPercent(totalCoverage(answers)),
 		color: GAIN_COLOR,
 	};
 	const bar =
@@ -1014,15 +1055,6 @@ export const gateOutcomePropsFor = (
 			badges: answerTallyOf(answers),
 			open: frame.open,
 			rows: answerRows(answers),
-			...(band === SHAKY_BAND
-				? {}
-				: {
-						review: {
-							label: GATE_REVIEW_LABEL,
-							icon: "review" as const,
-							onPress: noop,
-						},
-					}),
 		},
 		tail: tailOf(frame, band),
 		footer: footerOf(frame, band, next?.gateName),

@@ -19,11 +19,11 @@ describe("Tabs", () => {
 				items={ITEMS}
 				activeId="polls"
 				onSelect={noop}
-				label="Dex Registry"
+				label="Dex collections"
 			/>
 		);
 
-		expect(screen.getByRole("tablist")).toHaveAccessibleName("Dex Registry");
+		expect(screen.getByRole("tablist")).toHaveAccessibleName("Dex collections");
 	});
 
 	it("renders one tab per item", () => {

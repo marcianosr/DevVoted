@@ -4,6 +4,7 @@ import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 import { useRunRouteSync } from "~/modules/run/run/application/useRunRouteSync.hook";
+import { useScrollToTop } from "~/modules/run/run/application/useScrollToTop.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
 /**
@@ -13,6 +14,7 @@ import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
  */
 export const RunLayout = () => {
 	useRunRouteSync();
+	useScrollToTop();
 	const { isPending, errorMessage } = useTodaysRun();
 
 	if (isPending) {

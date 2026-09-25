@@ -1,15 +1,26 @@
 ---
 # DVTD-8wq2
-title: 'Comment sweep: cut narration, keep the WHY'
+title: 'Comment sweep: cut narration, keep the why'
 status: todo
 type: task
 priority: normal
 created_at: 2026-08-12T10:20:34Z
-updated_at: 2026-08-12T10:25:05Z
+updated_at: 2026-09-24T12:49:35Z
 parent: DVTD-82c4
 blocked_by:
     - DVTD-36ct
 ---
+
+**What:** Cut the comments in the run modules that restate the code, and keep the ones that explain why.
+
+**Why:** About 1,240 comment lines across 65 files, most of them narrating what the line below already says.
+
+## Done when
+- [ ] The ten worst files by comment ratio are swept
+- [ ] What remains is only a why, a constraint, or a pointer to a decision
+- [ ] Nothing load-bearing is cut: the seed determinism note is the example to protect
+
+## Notes
 
 Pre-existing comment bloat across src/modules/run: ~1240 comment lines in 65 files. Cut comments that restate the code; keep ADR/bean references and non-obvious constraints.
 
@@ -32,17 +43,17 @@ Trimmed it during DVTD-36ct, then reverted so the restructure diff stayed purely
 
 ## Worst by ratio (comment lines / code lines)
 
-- [ ] `config/domain/stack.model.ts` 45/88 (51%)
-- [ ] `gate/domain/swatch.model.ts` 57/117 (49%)
-- [ ] `gate/domain/gate.model.ts` 56/195 (29%)
-- [ ] `pipeline/domain/pipeline.model.ts` 62/273 (23%)
-- [ ] `community/infrastructure/climbers.repository.ts` 41/158 (26%)
-- [ ] `gate/presentation/GateRewardReport.ui.tsx` 69/379 (18%)
-- [ ] `community/domain/standouts.model.ts` 68/360 (19%)
-- [ ] `config/domain/effect.model.ts` 62/340 (18%)
-- [ ] `pipeline/presentation/SlotUnlockRow.ui.tsx` 38/206 (18%)
-- [ ] `run/infrastructure/run.repository.ts` 71/583 (12%)
-- [ ] remaining 55 files
+- `config/domain/stack.model.ts` 45/88 (51%)
+- `gate/domain/swatch.model.ts` 57/117 (49%)
+- `gate/domain/gate.model.ts` 56/195 (29%)
+- `pipeline/domain/pipeline.model.ts` 62/273 (23%)
+- `community/infrastructure/climbers.repository.ts` 41/158 (26%)
+- `gate/presentation/GateRewardReport.ui.tsx` 69/379 (18%)
+- `community/domain/standouts.model.ts` 68/360 (19%)
+- `config/domain/effect.model.ts` 62/340 (18%)
+- `pipeline/presentation/SlotUnlockRow.ui.tsx` 38/206 (18%)
+- `run/infrastructure/run.repository.ts` 71/583 (12%)
+- remaining 55 files
 
 ## Do not blind-sweep
 

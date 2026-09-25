@@ -1,15 +1,27 @@
 ---
 # DVTD-krh0
-title: 'Config: Math.random() rolls a seeded die per gate'
+title: 'Config: Math.random() rolls a die at the start of each gate'
 status: draft
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-06T07:17:54Z
-updated_at: 2026-09-06T09:57:04Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that rolls one face of a published die when a gate starts, and the window plays under it.
+
+**Why:** One config carries the whole variance idea, instead of a separate config per random event.
+
+## Done when
+- [ ] The faces and their odds are decided and simulated
+- [ ] Pressing Start rolls a face; a reload never re-rolls, a retry does
+- [ ] The Dex shows the whole die, and the screen shows the face you got
+- [ ] Decided: whether the roll is visible before you commit to the gate
+
+## Notes
 
 ## Design (2026-09-06 session)
 
@@ -39,6 +51,6 @@ Marciano's extension of a Chaos Monkey pitch: a specific self-outage is just one
 
 ## Todo
 
-- [ ] Sim the face table and weights
-- [ ] Decide roll timing: Start-press vs visible on the receipt (the shop-around question)
-- [ ] Recheck slots/price once faces settle
+- Sim the face table and weights
+- Decide roll timing: Start-press vs visible on the receipt (the shop-around question)
+- Recheck slots/price once faces settle

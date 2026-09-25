@@ -1,13 +1,26 @@
 ---
 # DVTD-nljz
-title: Reward coverage spill above the gate demand
+title: Decide what coverage above the line is worth
 status: draft
 type: feature
 priority: high
 created_at: 2026-08-24T12:58:24Z
-updated_at: 2026-09-12T12:57:33Z
+updated_at: 2026-09-24T12:49:45Z
 parent: DVTD-kulw
 ---
+
+**What:** Decide what earning more coverage than a gate asks for should be worth.
+
+**Why:** Overshooting changes nothing, so a strong build only clears earlier, and earlier pays nothing.
+
+⚠️ Both things this bean credits the overshoot with are gone: coverage resets every gate, so there is no run-wide score and no category total. The natural home now is the PERFECT band's undesigned bonus.
+
+## Done when
+- [ ] What an overshoot is worth is decided and written down
+- [ ] If it carries into the next gate, the fraction and its cap are set so a run cannot become unfailable
+- [ ] The word for it is settled against the words storage already uses
+
+## Notes
 
 Coverage earned above the gate's demand ("spill") currently changes nothing about
 the gate or its payout. Consider what else it should be worth.
@@ -72,10 +85,10 @@ reversal to make on purpose, in an ADR, not a tuning tweak.
 
 ## Todo
 
-- [ ] Instrument or eyeball a few runs: how much spill does a typical clear actually leave?
-- [ ] Do A first and see whether it settles the itch
-- [ ] If not, pick B/C/D/E and write the ADR, naming the score-vs-reward reversal if there is one
-- [ ] Settle the word
+- Instrument or eyeball a few runs: how much spill does a typical clear actually leave?
+- Do A first and see whether it settles the itch
+- If not, pick B/C/D/E and write the ADR, naming the score-vs-reward reversal if there is one
+- Settle the word
 
 ## Checked 2026-09-03: one of the two consumers is nearly vacuous
 
@@ -100,10 +113,10 @@ Open before this can be built:
 
 ## Todo (added 2026-09-03)
 
-- [ ] Pick the carry fraction and cap; state the curve at gate 2 versus gate 10
-- [ ] Write the ADR: starting balance versus reversing ADR-035's reset
-- [ ] Decide whether the Focus coverage requirement survives at all; it is the weaker of spill's two consumers
-- [ ] Separately: the island shop screens ignore the Focus requirement, so the rule is unenforced where it is played
+- Pick the carry fraction and cap; state the curve at gate 2 versus gate 10
+- Write the ADR: starting balance versus reversing ADR-035's reset
+- Decide whether the Focus coverage requirement survives at all; it is the weaker of spill's two consumers
+- Separately: the island shop screens ignore the Focus requirement, so the rule is unenforced where it is played
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

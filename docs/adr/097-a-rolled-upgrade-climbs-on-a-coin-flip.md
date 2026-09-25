@@ -50,9 +50,9 @@ made that misread worse (a v3 offer reading `↑ v4`), so the wiring is fixed he
    rung. On the registry, the rolled offer's row states the odds its rung landed on
    (`1 in 4 rolls`) beside the version pennant, at rest, as plain text: a "1 in N" is not
    an ADR-066 figure and must not wear a badge that reads as coverage, and the kit's
-   hints are aria-labels nobody can see. In the Dex, every rung of a ladder states its
-   odds from a fresh install beside its Upgrade-press price, and the tab's footer states
-   the rule. `Rarity` stays a retired term in CONTEXT.md.
+   hints are aria-labels nobody can see. The Dex states no odds since
+   [ADR-108](108-the-dex-reads-configs-as-chip-rows.md) decision 4. `Rarity` stays a
+   retired term in CONTEXT.md.
 5. **Dependabot is not a roll.** `autoUpgradeOnAnswer` still levels one random installed
    config by exactly one rung, free, on a clean streak. Rarity is what the registry
    *finds*; Dependabot *earns* the next rung. Its spec already pins "levels exactly one
@@ -62,6 +62,15 @@ made that misread worse (a v3 offer reading `↑ v4`), so the wiring is fixed he
    the rungs the roll leapt and the one it landed on, prices only the landed rung at the
    registry price, and totals no press ladder. `ShopView` routes the press to `onDraft`;
    the `upgrade` action belongs to the Build panel alone.
+7. **The pennant states the version held, on the registry as everywhere else.**
+   Amended 2026-09-24 (Marciano, DVTD-c2ha). This ADR originally had the registry row
+   wear the version *on offer*, on the reasoning that the row is an advertisement for a
+   rung. In play it reads as the opposite: a pennant means "this is what you have" on
+   the Build panel, so a v2 offer showing `v2` beside a press reading `↑ v2` reads as
+   being sold a version you already own. One glyph cannot carry two meanings across two
+   surfaces. The press states the target, the pennant states the holding, and decision 6
+   is untouched — the registry still sells the climb, and still waives the coverage gate
+   the Build press enforces.
 
 ## Numbers
 

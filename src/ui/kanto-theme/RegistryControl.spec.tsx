@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { RegistryControl } from "./RegistryControl.ui";
+import {
+	RegistryControl,
+	type RegistryControlProps,
+} from "./RegistryControl.ui";
 
 const props = {
 	glyph: "↻",
@@ -10,6 +13,14 @@ const props = {
 	detail: "deals a fresh set of offers",
 	price: "4 KB",
 };
+
+const lockedProps = {
+	glyph: "+",
+	title: "Extend the registry",
+	detail: "one more offer, now and every shop after",
+	locked: true,
+	unlock: "Reach Cascade",
+} satisfies RegistryControlProps;
 
 describe("RegistryControl", () => {
 	it("names what it does and what it costs", () => {
@@ -84,6 +95,38 @@ describe("RegistryControl", () => {
 			"data-screen-theme",
 			"cinnabar"
 		);
+	});
+
+	it("names a locked service and says how it is earned, in place of its price", () => {
+		render(<RegistryControl {...lockedProps} />);
+
+		expect(screen.getByText("Extend the registry")).toBeVisible();
+		expect(
+			screen.getByText("one more offer, now and every shop after")
+		).toBeVisible();
+		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
+		expect(screen.queryByText(/KB/)).not.toBeInTheDocument();
+	});
+
+	it("marks a locked service with a ? where its glyph would be, and never a press", () => {
+		render(<RegistryControl {...lockedProps} onPress={vi.fn()} />);
+
+		expect(screen.getByText("?")).toHaveAttribute("aria-hidden");
+		expect(screen.queryByText("+")).not.toBeInTheDocument();
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("shows no badge for a service with no price, and names the row by its title alone", () => {
+		render(
+			<RegistryControl
+				glyph="✕"
+				title="kill -9"
+				detail="end this run now; nothing banks"
+				onPress={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: "kill -9" })).toBeEnabled();
 	});
 
 	it("refuses the press and keeps price and shortfall in the row's name", async () => {

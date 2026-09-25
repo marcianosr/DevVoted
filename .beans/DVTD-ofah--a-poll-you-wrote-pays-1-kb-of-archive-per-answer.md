@@ -1,13 +1,28 @@
 ---
 # DVTD-ofah
-title: A poll you wrote pays 1 KB of Archive per answer
+title: A poll you wrote pays you for every player who answers it
 status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:45:44Z
-updated_at: 2026-09-05T08:45:44Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-z2r2
 ---
+
+**What:** Pay a poll's author 1 KB for each distinct player who answers it.
+
+**Why:** Writing polls should feed the account the same currency that runs do.
+
+⚠️ There is no way for a player to submit a poll at all: creation is admin-only. Decide whether this bean includes that flow or waits on it.
+
+## Done when
+- [ ] Decided: whether this includes the submission and moderation flow, or depends on it
+- [ ] An author is paid once per distinct answerer, and never for their own answer
+- [ ] Only published polls pay
+- [ ] Decided: whether polls written before this pay retroactively
+- [ ] The author can watch it accrue
+
+## Notes
 
 A poll you wrote pays its author 1 KB of Archive for every distinct player who answers it, so writing polls feeds the account the same currency runs do.
 
@@ -36,9 +51,9 @@ Paying per answer rewards *reach*, not *quality*. The cheapest way to be answere
 
 ## Todo
 
-- [ ] Decide the split: does this bean include the submission and moderation flow, or depend on it
-- [ ] Settle rules 1 to 6
-- [ ] Credit seam on answer recording, deduped per distinct answerer, self-answers excluded
-- [ ] Migration for whatever ledger the credit needs, guarded per ADR-012
-- [ ] Author-facing surface so the accrual is visible
-- [ ] Wiki: the Archive gains a second source, so §5 needs the sentence
+- Decide the split: does this bean include the submission and moderation flow, or depend on it
+- Settle rules 1 to 6
+- Credit seam on answer recording, deduped per distinct answerer, self-answers excluded
+- Migration for whatever ledger the credit needs, guarded per ADR-012
+- Author-facing surface so the accrual is visible
+- Wiki: the Archive gains a second source, so §5 needs the sentence

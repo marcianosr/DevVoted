@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import {
@@ -11,10 +11,21 @@ import {
 	kantoAudits,
 } from "~/test/kantoPoll.factory";
 import { gateSwatchAt } from "~/test/swatchTrack.factory";
+import { stubResizeObserver } from "~/test/resizeObserver.harness";
 
 import { PollScreen } from "./PollScreen.ui";
 
 const props = createKantoPollScreenProps();
+
+const LOCK_IN = { label: "Lock in", note: "pick an answer first" };
+
+/** The send rides its own region; the press sits two spans inside it. */
+const sendRow = () =>
+	screen.getByRole("button", { name: "Lock in" }).parentElement?.parentElement;
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 describe("PollScreen", () => {
 	it("takes its colour from the gate it is running, not from a prop", () => {
@@ -38,7 +49,7 @@ describe("PollScreen", () => {
 	it("leads with the gate, its track and the run's balance", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.getByText("Gate 9 · Volcano")).toBeInTheDocument();
+		expect(screen.getByText("#9 - Volcano Gate")).toBeInTheDocument();
 		expect(screen.getByText("1.8 MB")).toBeInTheDocument();
 	});
 
@@ -241,11 +252,11 @@ describe("PollScreen", () => {
 	it("leaves the leader out when the category has none to state", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.queryByText("seat open")).not.toBeInTheDocument();
+		expect(screen.queryByText("unranked")).not.toBeInTheDocument();
 		expect(screen.queryByText("leader")).not.toBeInTheDocument();
 	});
 
-	it("runs the screen as one column: header, coverage, audits, poll, build", () => {
+	it("runs the screen as header, audits, the poll row, then the build", () => {
 		const { container } = render(<PollScreen {...props} />);
 
 		const body = container.querySelector("section > div");
@@ -253,13 +264,20 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual([
-			"header",
-			"section",
-			"section",
-			"section",
-			"footer",
-		]);
+		expect(order).toEqual(["header", "section", "div", "footer"]);
+	});
+
+	it("stands the poll and the coverage readout in one row, poll first", () => {
+		render(<PollScreen {...props} />);
+
+		const row = screen
+			.getByRole("heading", { name: "Poll 4 out of 5" })
+			.closest("section")?.parentElement;
+		const panels = Array.from(row?.children ?? []);
+
+		expect(panels).toHaveLength(2);
+		expect(panels[1]).toHaveTextContent("Coverage");
+		expect(row).toHaveClass("lg:grid-cols-[minmax(0,1fr)_24rem]");
 	});
 
 	it("reads coverage in a panel of its own rather than inside the header", () => {
@@ -279,7 +297,7 @@ describe("PollScreen", () => {
 			.closest<HTMLElement>("header");
 		if (head === null) throw new Error("Coverage heads no panel");
 
-		expect(within(head).getByText("70%")).toBeInTheDocument();
+		expect(within(head).getByText("35 of 40")).toBeInTheDocument();
 		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
 	});
 
@@ -380,7 +398,7 @@ describe("PollScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("sends the answer from the poll's own footer, beside the count", () => {
+	it("sends the answer from the poll panel's own row, beside the count", () => {
 		render(
 			<PollScreen
 				{...props}
@@ -396,10 +414,77 @@ describe("PollScreen", () => {
 			/>
 		);
 
-		expect(
-			screen.getByRole("button", { name: "Lock in 2 answers" })
-		).toBeEnabled();
+		const send = screen.getByRole("button", { name: "Lock in 2 answers" });
+
+		expect(send).toBeEnabled();
+		expect(send.closest("section")).toHaveTextContent(
+			"Which utility type makes every property optional?"
+		);
 		expect(screen.getByText("2 picked")).toBeInTheDocument();
+	});
+
+	it("pins the send, and stands it above the credit rather than under it", () => {
+		render(
+			<PollScreen
+				{...props}
+				author={{ handle: "marciano" }}
+				commit={{ label: "Lock in", note: "pick an answer first" }}
+			/>
+		);
+
+		const row = sendRow();
+
+		expect(row).toHaveClass("sticky", "bg-theme-faint");
+		expect(row?.nextElementSibling).toContainElement(
+			screen.getByRole("link", { name: "@marciano" })
+		);
+	});
+
+	it("stands the send on the viewport floor while nothing is pinned beneath it", () => {
+		render(<PollScreen {...props} commit={LOCK_IN} />);
+
+		expect(sendRow()).toHaveStyle({ bottom: "0px" });
+		expect(sendRow()).not.toHaveClass("bottom-0");
+	});
+
+	it("leaves the build sheet in the flow until the screen can measure it", () => {
+		const { container } = render(<PollScreen {...props} commit={LOCK_IN} />);
+
+		expect(container.querySelector(".build-footer")).not.toHaveClass("sticky");
+	});
+
+	it("pins the sheet and lifts the send clear of it once it is measured", () => {
+		const observer = stubResizeObserver();
+		const { container } = render(<PollScreen {...props} commit={LOCK_IN} />);
+
+		observer.resizeTo(64);
+
+		expect(container.querySelector(".build-footer")).toHaveClass(
+			"sticky",
+			"bottom-0",
+			"z-20"
+		);
+		expect(sendRow()).toHaveStyle({ bottom: "64px" });
+	});
+
+	it("re-seats the send when the fold opens and the sheet grows under it", () => {
+		const observer = stubResizeObserver();
+		render(<PollScreen {...props} commit={LOCK_IN} />);
+
+		observer.resizeTo(64);
+		observer.resizeTo(312);
+
+		expect(sendRow()).toHaveStyle({ bottom: "312px" });
+	});
+
+	it("keeps the sheet on the layer above the send, so a stale measure tucks the press behind the bar", () => {
+		const observer = stubResizeObserver();
+		const { container } = render(<PollScreen {...props} commit={LOCK_IN} />);
+
+		observer.resizeTo(64);
+
+		expect(sendRow()).toHaveClass("z-10");
+		expect(container.querySelector(".build-footer")).toHaveClass("z-20");
 	});
 
 	it("refuses the commit while nothing is picked, and says what it wants", () => {
@@ -418,7 +503,25 @@ describe("PollScreen", () => {
 		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
 	});
 
-	it("stands the footer above the build, under the poll", () => {
+	it("hands the answered poll's press the same slot the send rode", () => {
+		render(
+			<PollScreen
+				{...props}
+				commit={undefined}
+				footer={{ action: { label: "Next poll", onPress: () => {} } }}
+			/>
+		);
+
+		const next = screen.getByRole("button", { name: /Next poll/ });
+
+		expect(next.closest(".build-footer")).toBeNull();
+		expect(next.closest("footer")?.parentElement).toHaveClass("sticky");
+		expect(next.closest("footer")?.parentElement).toHaveStyle({
+			bottom: "0px",
+		});
+	});
+
+	it("closes the screen on that one bar, with no panel left over", () => {
 		const { container } = render(
 			<PollScreen
 				{...props}
@@ -431,14 +534,7 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual([
-			"header",
-			"section",
-			"section",
-			"section",
-			"section",
-			"footer",
-		]);
+		expect(order).toEqual(["header", "section", "div", "footer"]);
 	});
 
 	it("pins the coverage bar where the answer landed", () => {
@@ -463,20 +559,42 @@ describe("PollScreen's fact band", () => {
 		expect(screen.getByText("seen before")).toBeInTheDocument();
 	});
 
-	it("moves the option count out of the header and onto the band", () => {
+	it("states the poll's shape on a line of its own, beside its category", () => {
 		render(<PollScreen {...createKantoPollScreenProps()} />);
 
-		const facts = screen.getByText("3 options · single answer");
+		const meta = screen.getByText("3 options · single answer").closest("div");
 
-		expect(facts.closest("div")).toContainElement(screen.getByText("brutal"));
+		expect(meta).toContainElement(screen.getByText("TypeScript"));
+		expect(meta?.previousElementSibling?.tagName).toBe("HEADER");
 	});
 
-	it("leaves the option count in the header when the band is withheld", () => {
+	it("keeps that line when the band is withheld: the poll's shape is not the band's", () => {
 		render(
 			<PollScreen {...createKantoPollScreenProps({ facts: undefined })} />
 		);
 
 		expect(screen.getByText("3 options · single answer")).toBeInTheDocument();
 		expect(screen.queryByText("brutal")).not.toBeInTheDocument();
+	});
+
+	it("follows the question down the page once the readout sits beside it", () => {
+		render(<PollScreen {...props} />);
+
+		const panel = screen
+			.getByRole("heading", { name: "Coverage" })
+			.closest("section");
+
+		expect(panel).toHaveClass("lg:sticky", "lg:top-4");
+		expect(panel).not.toHaveClass("sticky");
+	});
+
+	it("stands the pinned readout on an opaque ground, the screen passing under it", () => {
+		render(<PollScreen {...props} />);
+
+		const panel = screen
+			.getByRole("heading", { name: "Coverage" })
+			.closest("section");
+
+		expect(panel).toHaveClass("bg-theme-faint");
 	});
 });

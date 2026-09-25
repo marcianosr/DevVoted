@@ -24,7 +24,6 @@ import * as Overclock from "./Overclock.stories";
 import * as PlanningPoker from "./PlanningPoker.stories";
 import * as Prefetch from "./Prefetch.stories";
 import * as Prettierrc from "./Prettierrc.stories";
-import * as Reduce from "./Reduce.stories";
 import * as Sla from "./Sla.stories";
 import * as Strict from "./Strict.stories";
 import * as Stylelint from "./Stylelint.stories";
@@ -59,7 +58,6 @@ const PAGES = {
 	PlanningPoker,
 	Prefetch,
 	Prettierrc,
-	Reduce,
 	Sla,
 	Strict,
 	Stylelint,

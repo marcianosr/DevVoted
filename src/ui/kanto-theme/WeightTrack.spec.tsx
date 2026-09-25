@@ -223,6 +223,19 @@ describe("the config popup", () => {
 		).toBeInTheDocument();
 	});
 
+	it("lays the panel out as a sheet on a phone, a segment being too narrow to hang one off", () => {
+		const { container } = render(
+			<WeightTrack
+				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
+				held={HELD}
+			/>
+		);
+		const panel = trackOf(container)?.querySelector(".fixed");
+
+		expect(panel).toHaveClass("inset-x-4", "bottom-4");
+		expect(panel).toHaveClass("sm:absolute", "sm:top-full", "sm:bottom-auto");
+	});
+
 	it("keeps the panel shut until the segment is hovered or focused", () => {
 		const { container } = render(
 			<WeightTrack
@@ -230,7 +243,7 @@ describe("the config popup", () => {
 				held={HELD}
 			/>
 		);
-		const panel = trackOf(container)?.querySelector(".absolute");
+		const panel = trackOf(container)?.querySelector(".fixed");
 
 		expect(panel).toHaveClass("invisible", "group-hover/info:visible");
 	});
@@ -243,8 +256,8 @@ describe("the config popup", () => {
 			/>
 		);
 
-		expect(trackOf(container)?.querySelector(".absolute")).toHaveClass(
-			"left-0"
+		expect(trackOf(container)?.querySelector(".fixed")).toHaveClass(
+			"sm:left-0"
 		);
 	});
 
@@ -259,8 +272,8 @@ describe("the config popup", () => {
 			/>
 		);
 
-		expect(trackOf(container)?.querySelector(".absolute")).toHaveClass(
-			"right-0"
+		expect(trackOf(container)?.querySelector(".fixed")).toHaveClass(
+			"sm:right-0"
 		);
 	});
 
@@ -278,7 +291,7 @@ describe("the config popup", () => {
 	it("carries no panel for a config that offers none", () => {
 		const { container } = render(<WeightTrack fills={FILLS} held={HELD} />);
 
-		expect(trackOf(container)?.querySelector(".absolute")).toBeNull();
+		expect(trackOf(container)?.querySelector(".fixed")).toBeNull();
 	});
 });
 

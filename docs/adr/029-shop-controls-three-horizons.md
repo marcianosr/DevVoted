@@ -107,8 +107,10 @@ Rejected: **"Widen"** as Extend's name. Width and widening are pipeline-slot
 vocabulary (ADR-025 and ADR-027, both retired); reusing them for the offer list
 would make two unrelated numbers share a word.
 
-Rejected: **account-level rerolls**. Progression bought outside the run cannot
-trade off against the configs it is competing with.
+Rejected: **account-level rerolls** for registry services. Progression bought
+outside the run cannot trade off against the configs it is competing with.
+ADR-115 overrules this for run services only, which are bought before the run
+and consumed with it.
 
 ## Consequences
 

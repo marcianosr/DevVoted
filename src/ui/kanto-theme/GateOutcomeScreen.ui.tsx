@@ -1,6 +1,5 @@
 import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
-import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import {
@@ -16,7 +15,6 @@ import { Figures } from "./Figures.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
-import type { IconName } from "./Icon.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
@@ -40,11 +38,9 @@ const CHIPS = "flex w-full flex-wrap items-center gap-2";
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
-const REVIEW_ROW = "flex w-full justify-end";
 
 const SWATCH_SIZE = "hero";
 const TRACK_SIZE = "small";
-const REVIEW_SIZE = "sm";
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const RUN_OVER_COLOR: KantoColor = "cinnabar";
@@ -84,15 +80,7 @@ export type GateOutcomeBuildPanel = GateOutcomePanel & {
 	emptyLabel?: string;
 };
 
-export type GateOutcomeReview = {
-	label: string;
-	icon?: IconName;
-	onPress?: () => void;
-};
-
-export type GateOutcomeAnswersPanel = GateOutcomeLedgerPanel & {
-	review?: GateOutcomeReview;
-};
+export type GateOutcomeAnswersPanel = GateOutcomeLedgerPanel;
 
 export type GateEnding = { title: string; detail: string };
 
@@ -220,20 +208,9 @@ const ChangesPanel = ({
 	</Fold>
 );
 
-const AnswersPanel = ({ rows, review, ...panel }: GateOutcomeAnswersPanel) => (
+const AnswersPanel = ({ rows, ...panel }: GateOutcomeAnswersPanel) => (
 	<Fold {...panel}>
 		<LedgerRows rows={rows} />
-		{review === undefined ? null : (
-			<div className={REVIEW_ROW}>
-				<Button
-					size={REVIEW_SIZE}
-					label={review.label}
-					icon={review.icon}
-					disabled={review.onPress === undefined}
-					onPress={review.onPress}
-				/>
-			</div>
-		)}
 	</Fold>
 );
 

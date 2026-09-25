@@ -14,146 +14,71 @@ describe("DexConfigs", () => {
 		expect(screen.getByText("18 of 44")).toBeVisible();
 	});
 
-	it("shows a granted config's name and weight", () => {
+	it("heads each weight with its own count", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByText(".js")).toBeVisible();
-		expect(screen.getByText("1")).toBeVisible();
+		expect(screen.getByText("2 weight · 3 of 5")).toBeVisible();
+		expect(screen.getByText("1 weight · 2 of 3")).toBeVisible();
 	});
 
-	it("tags a starter apart from a config that was earned", () => {
+	it("lays the groups out in the order given, heaviest first", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByText("starter")).toBeVisible();
-		expect(screen.getByText("earned")).toBeVisible();
-	});
+		const heavy = screen.getByText("2 weight · 3 of 5");
+		const light = screen.getByText("1 weight · 2 of 3");
 
-	it("keeps the provenance sentence behind the tag that stands for it", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.getByText("Earned: sweep three gates")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: "Cache provenance" })
-		).toHaveTextContent("earned");
+			heavy.compareDocumentPosition(light) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
 	});
 
-	it("badges the figures in an effect so the numbers read at a glance", () => {
+	it("seats every chip under its own weight", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByText("+0.25")).toBeVisible();
+		const heavy = screen.getByText("2 weight · 3 of 5").parentElement;
+		const light = screen.getByText("1 weight · 2 of 3").parentElement;
+
+		expect(heavy).toHaveTextContent("Code Coverage");
+		expect(heavy).not.toHaveTextContent(".js");
+		expect(light).toHaveTextContent(".js");
 	});
 
-	it("withholds a locked config's name entirely, not just its effect", () => {
+	it("draws granted, met and locked chips side by side in one row", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByText("Locked config")).toBeInTheDocument();
-		expect(screen.queryByText("AGENTS.md")).not.toBeInTheDocument();
+		expect(screen.getByText("Regression Test")).toBeVisible();
+		expect(screen.getByText("Planning Poker")).toBeVisible();
+		expect(screen.getAllByText("???")).toHaveLength(3);
 	});
 
-	it("names the required unlock path and counts the progress against it", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
+	it("pins exactly the chip named as open", () => {
+		render(<DexConfigs {...dexConfigsProps({ openInfo: "js" })} />);
 
-		expect(screen.getByText("unlock · Hold 2 MB in the archive")).toBeVisible();
-		expect(screen.getByText("1/2")).toBeVisible();
-	});
-
-	it("draws every further path as an alternative, with its own count", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.getByText("43/225")).toBeVisible();
-	});
-
-	it("names an alternative path to a reader, which the bar cannot", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.getByText("or · Answer 225 polls")).toBeInTheDocument();
-	});
-
-	it("lays a version ladder out as one pressable rung each", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.getByRole("button", { name: "Read .js v1" })).toBeVisible();
-		expect(screen.getByRole("button", { name: "Read .js v2" })).toBeVisible();
-		expect(screen.getByRole("button", { name: "Read .js v3" })).toBeVisible();
-	});
-
-	it("opens a ladder on v1, which is what installing already gives you", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.getByRole("button", { name: "Read .js v1" })).toHaveAttribute(
-			"aria-pressed",
+		expect(screen.getByRole("button", { name: "About .js" })).toHaveAttribute(
+			"aria-expanded",
 			"true"
 		);
-		expect(screen.getByText("on install")).toBeVisible();
-		expect(screen.getByText("×1.25")).toBeVisible();
+		expect(
+			screen.getByRole("button", { name: "About ESLint" })
+		).toHaveAttribute("aria-expanded", "false");
 	});
 
-	it("reports which rung was pressed rather than moving on its own", async () => {
-		const onVersion = vi.fn();
-		render(<DexConfigs {...dexConfigsProps({ onVersion })} />);
+	it("reports which chip's i was pressed rather than opening on its own", async () => {
+		const onToggleInfo = vi.fn();
+		render(<DexConfigs {...dexConfigsProps({ onToggleInfo })} />);
 
-		await userEvent.click(screen.getByRole("button", { name: "Read .js v2" }));
+		await userEvent.click(screen.getByRole("button", { name: "About .js" }));
 
-		expect(onVersion).toHaveBeenCalledWith("js", 2);
+		expect(onToggleInfo).toHaveBeenCalledWith("js");
 	});
 
-	it("reads the selected rung's effect and what the step costs", () => {
-		render(<DexConfigs {...dexConfigsProps({ selected: { js: 3 } })} />);
-
-		expect(screen.getByText("×1.75")).toBeVisible();
-		expect(screen.queryByText("×1.25")).not.toBeInTheDocument();
-		expect(screen.getByText("96 KB")).toBeVisible();
-		expect(screen.queryByText("on install")).not.toBeInTheDocument();
-	});
-
-	it("states how often the registry rolls the rung being read", () => {
-		render(<DexConfigs {...dexConfigsProps({ selected: { js: 3 } })} />);
-
-		expect(screen.getByText("1 in 4 rolls")).toBeVisible();
-	});
-
-	it("quotes no odds for v1, which is never rolled", () => {
+	it("states the collection's rule in the footer", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.queryByText(/rolls/)).not.toBeInTheDocument();
-	});
-
-	it("marks only the rung being read, so the ladder reads as one choice", () => {
-		render(<DexConfigs {...dexConfigsProps({ selected: { js: 3 } })} />);
-
-		expect(screen.getByRole("button", { name: "Read .js v3" })).toHaveAttribute(
-			"aria-pressed",
-			"true"
-		);
-		expect(screen.getByRole("button", { name: "Read .js v1" })).toHaveAttribute(
-			"aria-pressed",
-			"false"
-		);
-	});
-
-	it("leaves a config with no ladder unmarked and unpriced", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
-
-		expect(screen.queryByRole("button", { name: /Read Cache/ })).toBeNull();
-		expect(screen.queryByText("64 KB")).not.toBeInTheDocument();
-	});
-
-	it("drops the count from a one-shot objective, which has none", () => {
-		render(
-			<DexConfigs
-				{...dexConfigsProps({
-					rows: [
-						{
-							id: "yarn",
-							slots: 2,
-							state: "locked",
-							paths: [{ text: "Clear gate 6", progress: null }],
-						},
-					],
-				})}
-			/>
-		);
-
-		expect(screen.getByText("unlock · Clear gate 6")).toBeVisible();
+		expect(
+			screen.getByText(
+				"Configs in the deck can be dealt into a hand or offered in the shop."
+			)
+		).toBeVisible();
 	});
 });

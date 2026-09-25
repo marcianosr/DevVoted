@@ -13,9 +13,14 @@ import {
 	runStatesTable,
 	runsTable,
 	userConfigUnlocksTable,
+	userTitlesTable,
 	userObjectiveProgressTable,
 	usersTable,
 } from "~/database/schema";
+import {
+	findTitleById,
+	isExclusive,
+} from "~/modules/account/profile/domain/title.model";
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { getCategories } from "~/shared/lib/categories";
@@ -35,7 +40,11 @@ import {
 } from "~/database/seed/cast";
 import { SEED_QUESTIONS } from "~/database/seed/questions";
 import { hashOf } from "~/database/seed/random";
-import { seedArchivedRuns, seedClimberRuns } from "~/database/seed/runs";
+import {
+	seedArchivedRuns,
+	seedClimberRuns,
+	seedLegacyEra,
+} from "~/database/seed/runs";
 
 /**
  * Wipes what the seed owns so `db:seed` is idempotent. Order follows the foreign
@@ -86,8 +95,32 @@ const seedPlayers = async (): Promise<number> => {
 				owned_swatch_ids: [...(player.ownedSwatchIds ?? [])],
 				peak_storage_kb: player.peakStorageKb ?? 0,
 				archived_storage: player.archivedStorage ?? 0,
+				equipped_title_id: player.ownedTitleIds?.[0] ?? null,
 			})
 			.where(sql`${usersTable.id} = ${player.id}`);
+
+		// Resolved against the catalogue rather than trusted: a typo in the cast
+		// would otherwise seed a title id nothing can ever render.
+		const titles = (player.ownedTitleIds ?? []).flatMap((titleId) => {
+			const title = findTitleById(titleId);
+			if (!title) throw new Error(`Seed names unknown title ${titleId}`);
+			return [title];
+		});
+		if (titles.length > 0) {
+			await db
+				.insert(userTitlesTable)
+				.values(
+					titles.map((title) => ({
+						user_id: player.id,
+						title_id: title.id,
+						exclusive: isExclusive(title),
+						// Titles the account is seeded holding were never news, so
+						// they must not queue up behind the grant notice.
+						announced_at: new Date(),
+					}))
+				)
+				.onConflictDoNothing();
+		}
 
 		const extra = player.unlockedConfigIds.filter(
 			(configId) => configId.length > 0
@@ -459,6 +492,9 @@ const seedDatabase = async (): Promise<void> => {
 	console.info(
 		`📦 ${archived} archived runs for ${SEED_PLAYERS[0].displayName}`
 	);
+
+	const legacy = await seedLegacyEra();
+	console.info(`🗄️  ${legacy} legacy titles granted off calendar-era runs`);
 
 	const history = await seedAnswerHistory(pollIds);
 	console.info(`📜 ${history} backdated answers across every category`);

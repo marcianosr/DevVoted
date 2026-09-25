@@ -12,9 +12,9 @@ const ARCHIVE = "ml-auto text-sm tabular-nums text-theme-muted";
 // float the active tab off the panel it is supposed to merge into.
 const TABBED = "flex w-full flex-col";
 
-export const DEX_TITLE = "Dex Registry";
+export const DEX_TITLE = "Dex";
 export const DEX_SUBTITLE = "everything the game has shown you";
-export const DEX_TABLIST_LABEL = "Dex Registry collections";
+export const DEX_TABLIST_LABEL = "Dex collections";
 
 export type DexScreenProps = {
 	tabs: readonly TabItem[];

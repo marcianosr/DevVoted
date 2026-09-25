@@ -251,6 +251,13 @@ export type RunView = {
 	readonly poll: PollView | null;
 	readonly awaitingTomorrow: boolean;
 
+	/**
+	 * Today's segment, minus what this run has answered of it. The rollover
+	 * (ADR-011) deletes the unplayed tail and appends today's polls in its place,
+	 * so everything from `currentIndex` on is today's and nothing else — which is
+	 * what lets one subtraction mean "left today" with no date on the client.
+	 */
+	readonly pollsLeftToday: number;
 	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
 	readonly hiddenOptionIds: readonly string[];
@@ -318,6 +325,10 @@ export type RunView = {
 	readonly archiveAfterKb: number | null;
 	readonly unlockedConfigIds: readonly string[];
 	readonly unlockedThisRun: readonly RunUnlock[];
+	/** Titles the LAST dispatch earned, for the run-over announce (ADR-109). */
+	readonly earnedTitleIds: readonly string[];
+	/** Services this account has earned (ADR-116); a starter never appears, the roster says it is everyone's. */
+	readonly unlockedServiceIds: readonly string[];
 };
 
 export type RunUnlock = {
@@ -466,9 +477,12 @@ const configStatusesFor = (
 export const toRunView = (
 	state: RunState,
 	unlockedConfigIds: readonly string[] = [],
-	unlockedThisRun: readonly RunUnlock[] = []
+	unlockedThisRun: readonly RunUnlock[] = [],
+	earnedTitleIds: readonly string[] = [],
+	unlockedServiceIds: readonly string[] = []
 ): RunView => {
 	const current = state.polls[state.currentIndex];
+	const leftToday = Math.max(0, state.polls.length - state.currentIndex);
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
 	const perAnswer = perAnswerPreviewFor(
 		state.build.configs,
@@ -528,6 +542,8 @@ export const toRunView = (
 		archiveAfterKb: null,
 		unlockedConfigIds,
 		unlockedThisRun,
+		earnedTitleIds,
+		unlockedServiceIds,
 		peelSlotsRemaining: state.peelSlotsRemaining,
 		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
@@ -539,7 +555,8 @@ export const toRunView = (
 					)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),
-		pollsExhausted: state.currentIndex >= state.polls.length,
+		pollsLeftToday: leftToday,
+		pollsExhausted: leftToday === 0,
 		disabledOptionIds: state.manualDisabled,
 		hiddenOptionIds: hidden,
 		buyBack: buyBackViewFor(state),

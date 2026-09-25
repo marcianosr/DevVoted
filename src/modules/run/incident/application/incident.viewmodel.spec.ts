@@ -8,6 +8,9 @@ import {
 	incidentFeedRowFor,
 	rivalChipFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
+import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
+
+const OPEN_GATE = AUDITS_FROM_GATE;
 
 const MISTY_BUILD = {
 	configs: [
@@ -36,7 +39,6 @@ describe("incidentFeedRowFor", () => {
 			code: 404,
 			name: "Not Found",
 			gate: 6,
-			gateName: "Soul",
 			status: "locked",
 			own: false,
 		});
@@ -59,11 +61,11 @@ describe("attackOfferViewFor", () => {
 				build: MISTY_BUILD,
 				payloads: ["timeout", "memory-leak"],
 			})
-		).toEqual({
+		).toMatchObject({
 			targetRunId: 2,
+			userId: "misty",
 			name: "Misty",
 			gate: 9,
-			gateName: "Volcano",
 			build: MISTY_BUILD,
 			payloads: [
 				{ auditId: "timeout", code: 408, name: "Request Timeout" },
@@ -75,13 +77,25 @@ describe("attackOfferViewFor", () => {
 
 describe("attackPanelFor", () => {
 	it("keeps the last filing's note once the credit is spent", () => {
-		const panel = attackPanelFor(null, null, null, "filed 502 against Brock");
-		expect(panel.empty).toBe(ATTACK_UNARMED);
-		expect(panel.note).toBe("filed 502 against Brock");
+		const panel = attackPanelFor(
+			OPEN_GATE,
+			null,
+			null,
+			null,
+			"filed 502 against Brock"
+		);
+		expect(panel?.empty).toBe(ATTACK_UNARMED);
+		expect(panel?.note).toBe("filed 502 against Brock");
+	});
+
+	it("gives no panel below the floor, the Audits panel stating the lock alone", () => {
+		expect(
+			attackPanelFor(AUDITS_FROM_GATE - 1, { band: "perfect" }, null)
+		).toBeUndefined();
 	});
 
 	it("says it is still dealing while armed with no offers read yet", () => {
-		expect(attackPanelFor({ band: "healthy" }, null).empty).toBe(
+		expect(attackPanelFor(OPEN_GATE, { band: "healthy" }, null)?.empty).toBe(
 			ATTACK_DEALING
 		);
 	});
@@ -119,8 +133,9 @@ describe("attackPanelFor lists the rival's build", () => {
 			payloads: ["timeout"],
 		});
 
-		const [rival] = attackPanelFor({ band: "healthy" }, [offer]).rivals;
+		const rival = attackPanelFor(OPEN_GATE, { band: "healthy" }, [offer])
+			?.rivals[0];
 
-		expect(rival.build.map((chip) => chip.name)).toEqual([".ts", "Cache"]);
+		expect(rival?.build.map((chip) => chip.name)).toEqual([".ts", "Cache"]);
 	});
 });

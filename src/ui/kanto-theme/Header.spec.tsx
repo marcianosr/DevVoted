@@ -52,7 +52,7 @@ describe("Header", () => {
 	it("names the gate from the roster rather than a passed-in string", () => {
 		render(<Header {...props} />);
 
-		expect(screen.getByText("Gate 9 · Volcano")).toBeInTheDocument();
+		expect(screen.getByText("#9 - Volcano Gate")).toBeInTheDocument();
 	});
 
 	it("leads with a swatch already filled in the gate's own colour", () => {
@@ -94,7 +94,7 @@ describe("Header", () => {
 	it("titles at 16px, with no margin to offset the swatch", () => {
 		render(<Header {...props} />);
 
-		const title = screen.getByText("Gate 9 · Volcano");
+		const title = screen.getByText("#9 - Volcano Gate");
 		expect(title).toHaveClass("text-base", "font-extrabold");
 		expect(title).not.toHaveClass("mb-5");
 	});
@@ -112,11 +112,26 @@ describe("Header", () => {
 		expect(container.firstChild).not.toHaveClass("gap-6");
 	});
 
-	it("reads the funds as one badged figure beside its label", () => {
+	it("reads the funds as one badged figure under its label", () => {
 		render(<Header {...props} funds={FUNDS} />);
 
 		expect(screen.getByText("1843 KB")).toHaveClass("badge-theme");
 		expect(screen.getByText("balance")).toBeInTheDocument();
+	});
+
+	it("stands the label over the figure, so neither widens the title row", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		const block = screen.getByText("balance").parentElement;
+
+		expect(block).toHaveClass("flex-col");
+		expect(block?.firstElementChild).toHaveTextContent("balance");
+	});
+
+	it("quiets the label below the figure it names", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(screen.getByText("balance")).toHaveClass("text-xs");
 	});
 
 	it("puts the funds opposite the gate name, on the title row", () => {
@@ -149,7 +164,7 @@ describe("Header", () => {
 		render(<Header {...props} title="Shop · cleared Volcano" />);
 
 		expect(screen.getByText("Shop · cleared Volcano")).toBeInTheDocument();
-		expect(screen.queryByText("Gate 9 · Volcano")).not.toBeInTheDocument();
+		expect(screen.queryByText("#9 - Volcano Gate")).not.toBeInTheDocument();
 	});
 
 	it("says nothing beside the track unless the screen gives it a note", () => {

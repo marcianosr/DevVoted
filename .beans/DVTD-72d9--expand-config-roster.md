@@ -5,9 +5,15 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-07-24T15:25:42Z
-updated_at: 2026-09-22T18:51:24Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-d0fw
 ---
+
+**What:** Grow the roster past coverage multipliers, into information, shop economy and run structure.
+
+**Why:** Most configs multiply the same number, so builds converge and the shop stops being a choice.
+
+## Notes
 
 Grow the run config roster. Phase 1: focus configs for every category lacking one (python, general-frontend, general-backend). Later phases (parked in chat): rm -rf (strip-all + 2x refund), localStorage (storage burst), storage extender (raise 1MB cap, sticky/non-removable risk).
 

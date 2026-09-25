@@ -28,7 +28,6 @@ import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 const START_GATE = 0;
 /** The opening build is the free rung by construction, so it never bills. */
 const FREE_UPKEEP = 0;
-const SEPARATOR = "·";
 
 const NEW_RUN_TITLE = "New run";
 const FREE_PRICE = "free";
@@ -43,7 +42,6 @@ export const newRunHeaderFor = (balanceKb: number): HeaderProps => ({
 	swatches: swatchTrackFor([], START_GATE),
 	funds: fundsOf(balanceKb, BALANCE_WORD),
 	title: NEW_RUN_TITLE,
-	subtitle: `gate ${START_GATE} ${SEPARATOR} ${gateSwatchAt(START_GATE).gateName}`,
 });
 
 export type HandCard = {

@@ -1,12 +1,26 @@
 ---
 # DVTD-kgch
-title: 'Death loot: dying open-sources the build (MIT is the default, not a config)'
+title: A dead run's build becomes loot everyone can draft
 status: draft
 type: feature
+priority: normal
 created_at: 2026-09-06T08:04:59Z
-updated_at: 2026-09-06T08:04:59Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-z2r2
 ---
+
+**What:** When a run dies its configs post as loot on a shared shelf, each offer naming whose run it came from.
+
+**Why:** The fallen player loses nothing, since those configs were evaporating anyway, and the attribution line is the payoff.
+
+## Done when
+- [ ] A dead run's configs appear on one shared shelf that everyone on the day sees
+- [ ] Every looted offer names whose run it came from and where it fell
+- [ ] The pool is fixed at a boundary, so nothing live reads live data
+- [ ] Loot pricing and duplicate handling are decided
+- [ ] Decided: whether the royalty config ships with it or later
+
+## Notes
 
 ## Design (2026-09-06 session)
 
@@ -25,7 +39,7 @@ Why it passes DVTD-545v's guard rails by construction:
 
 ## Todo
 
-- [ ] Decide loot pricing (shelf price vs discount) and dedupe when many fallen builds carry the same config
-- [ ] Decide the pool boundary: on-death vs midnight (DVTD-1z09)
-- [ ] Decide whether seeing loot counts as Reveal/"met" for ADR-051's Configdex
-- [ ] Decide whether Sponsors ships with v1 or after the shelf exists
+- Decide loot pricing (shelf price vs discount) and dedupe when many fallen builds carry the same config
+- Decide the pool boundary: on-death vs midnight (DVTD-1z09)
+- Decide whether seeing loot counts as Reveal/"met" for ADR-051's Configdex
+- Decide whether Sponsors ships with v1 or after the shelf exists

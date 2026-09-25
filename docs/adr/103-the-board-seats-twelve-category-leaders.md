@@ -32,7 +32,7 @@ show an almost empty panel and read as broken.
 
 ## Decision 2: an open seat states what claims it
 
-Below `MIN_LEADER_STREAK`, the row reads `seat open · 3 in a row claims it`.
+Below `MIN_LEADER_STREAK`, the row reads `unranked · 3 in a row claims it`.
 
 This is the one place the game states a threshold the player can act on
 immediately. ADR-100 Decision 5 already refused to hide an unclaimed record;

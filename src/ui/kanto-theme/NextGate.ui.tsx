@@ -6,16 +6,28 @@ import {
 	COVERAGE_BAND_WORD,
 	type CoverageBandId,
 } from "./CoverageBar.ui";
+import { gateTitleOf } from "./Header.ui";
 import { Panel } from "./Panel.ui";
 import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 
 const ROW = "flex w-full flex-wrap items-center gap-3";
-const IDENTITY = "flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm";
+const IDENTITY = "flex min-w-0 flex-wrap items-center gap-x-2 text-sm";
+/**
+ * The swatch is the gate's mark, so it never leaves the name it marks. Held
+ * together here because the row wraps: left as siblings of the row, the name
+ * was wide enough to wrap past the swatch and the mark sat alone on a line.
+ */
+const NAMED = "flex min-w-0 items-center gap-3";
 const NAME = "font-bold text-theme-faint";
 const DETAIL = "text-theme-muted";
+/**
+ * Takes its own line on a phone rather than being squeezed opposite the gate's
+ * name: five marks and three words do not share a line with a name at that
+ * width, and pulling them right only made the name wrap instead.
+ */
 const READING =
-	"ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm";
+	"flex w-full flex-wrap items-center gap-2 text-sm sm:ml-auto sm:w-auto sm:shrink-0 sm:justify-end";
 
 const TITLE = "Next gate";
 const SEPARATOR = "·";
@@ -32,7 +44,6 @@ export type NextGateProps = {
 	held: string;
 	heldBand?: CoverageBandId;
 	opensAt?: string;
-	note?: string;
 };
 
 export const NextGate = ({
@@ -42,18 +53,16 @@ export const NextGate = ({
 	held,
 	heldBand,
 	opensAt,
-	note,
 }: NextGateProps) => (
 	<Panel>
 		<Panel.Header label={TITLE} meta={opensAt} />
 
 		<Panel.Body>
 			<div className={ROW}>
-				<Swatch state={SWATCH_STATE} swatch={swatch} size={SWATCH_SIZE} />
-
 				<span className={IDENTITY}>
-					<span className={NAME}>
-						{`Gate ${swatch.gate} ${SEPARATOR} ${swatch.gateName}`}
+					<span className={NAMED}>
+						<Swatch state={SWATCH_STATE} swatch={swatch} size={SWATCH_SIZE} />
+						<span className={NAME}>{gateTitleOf(swatch)}</span>
 					</span>
 					<span className={DETAIL}>
 						{SEPARATOR} {slots}
@@ -81,13 +90,5 @@ export const NextGate = ({
 				</span>
 			</div>
 		</Panel.Body>
-
-		{note === undefined ? null : (
-			<Panel.Footer>
-				<Typography variant="hint" as="span">
-					{note}
-				</Typography>
-			</Panel.Footer>
-		)}
 	</Panel>
 );

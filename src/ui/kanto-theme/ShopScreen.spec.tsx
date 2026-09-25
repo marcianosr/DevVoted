@@ -1,3 +1,4 @@
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
@@ -5,6 +6,7 @@ import {
 	createKantoHeaderProps,
 	createKantoShopScreenProps,
 	kantoClosedShopProps,
+	kantoLockedService,
 	kantoRegistryControls,
 } from "~/test/kantoPoll.factory";
 
@@ -14,6 +16,12 @@ const props = createKantoShopScreenProps();
 
 const sentence = (text: string) =>
 	screen.getByText((_, element) => element?.textContent === text);
+
+/** The name alone is ambiguous: a chip renders its info panel even while shut. */
+const chipOf = (name: string) =>
+	screen
+		.getByRole("button", { name: `About ${name}` })
+		.closest<HTMLElement>(".rounded-lg");
 
 const panelOf = (name: string): HTMLElement => {
 	const panel = screen
@@ -57,11 +65,15 @@ describe("ShopScreen", () => {
 		expect(sentence("5 offers · 32 KB a slot")).toBeInTheDocument();
 	});
 
-	it("stretches the build's chips across the column rather than wrapping them", () => {
+	it.each([
+		["a build's chip", "Code Coverage"],
+		["a registry offer", "IndexedDB"],
+	])("sizes %s to what it says rather than to the column", (_, name) => {
 		render(<ShopScreen {...props} />);
 
-		const build = screen.getByText("Build").closest("section");
-		expect(build?.querySelector('.w-full[class*="bg-theme/"]')).not.toBeNull();
+		const chip = chipOf(name);
+		expect(chip).not.toHaveClass("w-full");
+		expect(chip?.closest(".flex-wrap")).not.toBeNull();
 	});
 
 	it("wears the gate it is running rather than a colour of its own", () => {
@@ -95,7 +107,7 @@ describe("ShopScreen", () => {
 	it("names the balance its offers are priced against", () => {
 		render(<ShopScreen {...props} />);
 
-		const funds = screen.getByText("balance").parentElement;
+		const funds = screen.getByText(STORAGE_BALANCE).parentElement;
 		expect(funds).toHaveTextContent("96 KB");
 	});
 
@@ -143,7 +155,7 @@ describe("ShopScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("stages the git tag as a control, refused with its shortfall", () => {
+	it("stages the git tag as a service, refused with its shortfall", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(screen.getByText("git tag · gate 10")).toBeInTheDocument();
@@ -152,10 +164,10 @@ describe("ShopScreen", () => {
 		expect(shortfall).toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 
-	it("stands the registry's controls in a panel of their own", () => {
+	it("stands the registry's services in a panel of their own", () => {
 		render(<ShopScreen {...props} />);
 
-		const panel = panelOf("Registry control");
+		const panel = panelOf("Services");
 
 		for (const control of kantoRegistryControls) {
 			expect(within(panel).getByText(control.title)).toBeInTheDocument();
@@ -163,7 +175,7 @@ describe("ShopScreen", () => {
 		expect(within(panel).queryByText("Intellisense")).toBeNull();
 	});
 
-	it("rules the controls apart rather than boxing each one twice", () => {
+	it("rules the services apart rather than boxing each one twice", () => {
 		render(<ShopScreen {...props} />);
 
 		const row = screen
@@ -174,11 +186,36 @@ describe("ShopScreen", () => {
 		expect(row?.querySelector(".bg-theme-raised.rounded-lg")).toBeNull();
 	});
 
-	it("drops the control panel when the shop offers no controls", () => {
+	it("names a locked service and states its unlock line in place of a price", () => {
+		render(
+			<ShopScreen
+				{...props}
+				controls={[
+					kantoLockedService,
+					{
+						id: "pin",
+						locked: true,
+						glyph: "⚑",
+						title: "git tag",
+						detail: "if this run dies, the next resumes here",
+						unlock: "Reach gate 4",
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getByText("Extend the registry")).toBeVisible();
+		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
+		expect(screen.getByText("git tag")).toBeVisible();
+		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
+		expect(screen.queryByRole("button", { name: /git tag/ })).toBeNull();
+	});
+
+	it("drops the services panel when the shop offers none", () => {
 		render(<ShopScreen {...props} controls={[]} />);
 
 		expect(
-			screen.queryByRole("heading", { name: "Registry control" })
+			screen.queryByRole("heading", { name: "Services" })
 		).not.toBeInTheDocument();
 	});
 
@@ -248,7 +285,7 @@ describe("the gate the shop is stocking for", () => {
 
 		const panel = panelOf("Next gate");
 
-		expect(within(panel).getByText("Gate 10 · Earth")).toBeInTheDocument();
+		expect(within(panel).getByText("#10 - Earth Gate")).toBeInTheDocument();
 		expect(
 			within(panel).getByText(/55 slots after it closes/)
 		).toBeInTheDocument();

@@ -11,7 +11,7 @@ const COPY = {
 
 const COLUMN = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
-const LIST = "flex w-full flex-col gap-3";
+const LIST = "flex w-full flex-wrap items-center gap-3";
 
 const SEPARATOR = "·";
 
@@ -65,7 +65,6 @@ const Offer = ({
 	return (
 		<ConfigChip
 			{...offer}
-			width="full"
 			priceOn={PRICE_ON}
 			infoOpen={offer.name === openInfo}
 			onToggleInfo={

@@ -8,7 +8,6 @@ import {
 	minifiedUnits,
 	minifiedMultiplier,
 	slotsOf,
-	streakStepOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	AnswerContext,
@@ -248,16 +247,6 @@ const buildMultiplierOf = (covers: readonly Coverage[]): number =>
 const flatUnitsOf = (covers: readonly Coverage[]): number =>
 	covers.reduce((sum, cover) => sum + cover.add, 0);
 
-export const streakStepperFor = (
-	configs: readonly Config[]
-): Config | undefined =>
-	configs.find((config) => config.streakStepGrowth !== undefined);
-
-const streakGrowthOf = (configs: readonly Config[]): number | undefined => {
-	const stepper = streakStepperFor(configs);
-	return stepper === undefined ? undefined : streakStepOf(stepper);
-};
-
 export const coverageForAnswer = (
 	configs: readonly Config[],
 	context: AnswerContext,
@@ -270,7 +259,7 @@ export const coverageForAnswer = (
 	return roundToTwoDecimals(
 		credited * buildMultiplierOf(covers) +
 			flatUnitsOf(covers) +
-			streakUnitBonus(streakBefore, streakGrowthOf(configs))
+			streakUnitBonus(streakBefore)
 	);
 };
 
@@ -304,7 +293,7 @@ export const coverageBreakdownForAnswer = (
 		return { base: 0, streakBonus: 0, configBonuses: [] };
 	}
 
-	const streakBonus = streakUnitBonus(streakBefore, streakGrowthOf(configs));
+	const streakBonus = streakUnitBonus(streakBefore);
 	const earned =
 		coverageForAnswer(configs, context, share, streakBefore) + wagerUnits;
 	const gain = creditedUnitsFor(context, share);

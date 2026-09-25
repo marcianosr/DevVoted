@@ -399,32 +399,9 @@ describe("coverageForAnswer", () => {
 		expect(coverageForAnswer([], at("js"), 1, 0)).toBe(BASE);
 	});
 
-	it("grows the streak step each answer in a row while .reduce() is installed", () => {
-		const build = [CONFIGS.reduce];
-		expect(coverageForAnswer(build, at("js"), 1, 0)).toBe(BASE);
-		expect(coverageForAnswer(build, at("js"), 1, 1)).toBeCloseTo(BASE + 0.25);
-		expect(coverageForAnswer(build, at("js"), 1, 2)).toBeCloseTo(BASE + 0.5);
-		expect(coverageForAnswer(build, at("js"), 1, 3)).toBeCloseTo(BASE + 0.75);
-		expect(coverageForAnswer(build, at("js"), 1, 4)).toBeCloseTo(BASE + 1);
-	});
-
-	it("keeps .reduce() outside the multipliers, so a fat build cannot amplify it", () => {
-		expect(
-			coverageForAnswer([CONFIGS.reduce, CONFIGS.agentsMd], at("js"), 1, 4)
-		).toBeCloseTo(BASE * 2 + 1);
-	});
-
-	it("steepens the climb a level at a time, never lengthening it", () => {
-		const levelled = { ...CONFIGS.reduce, level: 5 };
-		expect(coverageForAnswer([levelled], at("js"), 1, 1)).toBeCloseTo(BASE + 0.45);
-		expect(coverageForAnswer([levelled], at("js"), 1, 4)).toBeCloseTo(BASE + 1.8);
-		expect(coverageForAnswer([levelled], at("js"), 1, 9)).toBeCloseTo(BASE + 1.8);
-	});
-
-	it("clamps a streak carried in from a failed gate to a clean window's climb", () => {
-		const build = [CONFIGS.reduce];
-		expect(coverageForAnswer(build, at("js"), 1, 9)).toBeCloseTo(
-			coverageForAnswer(build, at("js"), 1, 4)
+	it("pays the same flat step however long the streak runs", () => {
+		expect(coverageForAnswer([], at("js"), 1, 9)).toBeCloseTo(
+			coverageForAnswer([], at("js"), 1, 1)
 		);
 	});
 
@@ -542,18 +519,16 @@ describe("coverageBreakdownForAnswer", () => {
 		);
 	});
 
-	it("reads .reduce()'s climb on the streak row, not as a config chip", () => {
-		expect(
-			coverageBreakdownForAnswer([CONFIGS.reduce], at("js"), 1, 3)
-		).toEqual({
+	it("reads the streak step on its own row, not as a config chip", () => {
+		expect(coverageBreakdownForAnswer([], at("js"), 1, 3)).toEqual({
 			base: BASE,
-			streakBonus: 0.75,
+			streakBonus: 0.1,
 			configBonuses: [],
 		});
 	});
 
-	it("keeps the rows summing to the paid total once .reduce() is running", () => {
-		const build = [CONFIGS.reduce, CONFIGS.agentsMd];
+	it("keeps the rows summing to the paid total once the streak is running", () => {
+		const build = [CONFIGS.agentsMd];
 		const breakdown = coverageBreakdownForAnswer(build, at("js"), 1, 3);
 		const rows =
 			breakdown.base +

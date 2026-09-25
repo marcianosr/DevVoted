@@ -1,11 +1,11 @@
 ---
 # DVTD-4km2
 title: Climb map component for the kanto community screen
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-09-11T11:12:07Z
-updated_at: 2026-09-23T11:40:27Z
+updated_at: 2026-09-25T17:51:22Z
 blocked_by:
     - DVTD-agt2
 ---
@@ -36,3 +36,7 @@ those types (type-only keeps `ui-stays-presentational` satisfied).
 
 The kanto community screen currently states `map.summary` ("3 on the ladder · 1
 fell today", from `ladderSummaryFor`) over the parked placeholder.
+
+## Reasons for Scrapping
+
+Absorbed into DVTD-2fy8, which carries both unfinished community sections in one bean. Every note here — the recovery SHA for the deleted render, the surviving data layer, the five checkboxes — moved across intact.

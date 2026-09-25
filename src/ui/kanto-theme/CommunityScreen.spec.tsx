@@ -110,7 +110,7 @@ describe("CommunityScreen", () => {
 		const leaders = sectionOf(COMMUNITY_LEADERS_TITLE);
 
 		expect(within(leaders).getAllByTitle(CLIMBER_NAMED)).toHaveLength(9);
-		expect(within(leaders).getAllByText("seat open")).toHaveLength(3);
+		expect(within(leaders).getAllByText("unranked")).toHaveLength(3);
 	});
 
 	it("names the category every seat is held for", () => {
@@ -189,7 +189,7 @@ describe("CommunityScreen, a first climb", () => {
 		const leaders = sectionOf(COMMUNITY_LEADERS_TITLE);
 
 		expect(within(leaders).queryAllByTitle(CLIMBER_NAMED)).toHaveLength(0);
-		expect(within(leaders).getAllByText("seat open")).toHaveLength(12);
+		expect(within(leaders).getAllByText("unranked")).toHaveLength(12);
 	});
 
 	it("says what claims an open seat", () => {

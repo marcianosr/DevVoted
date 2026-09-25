@@ -56,4 +56,10 @@ describe("getGateRunsService", () => {
 		expect(history).toHaveLength(1);
 		expect(history[0].heldBy).toBe("Lavender");
 	});
+
+	it("leaves the climb still under way out of the history", async () => {
+		fetched.mockResolvedValue([climb(4, "dead"), climb(7, "answering")]);
+
+		expect((await dataFor()).history).toHaveLength(1);
+	});
 });

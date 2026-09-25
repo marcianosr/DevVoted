@@ -7,9 +7,20 @@ priority: normal
 tags:
     - config
 created_at: 2026-08-19T20:36:09Z
-updated_at: 2026-09-06T09:57:03Z
+updated_at: 2026-09-24T12:49:22Z
 parent: DVTD-72d9
 ---
+
+**What:** A config that discounts the storage bill for every empty slot in the build.
+
+**Why:** Pays you for not installing things, and it is the first config to touch the bill.
+
+## Done when
+- [ ] YAGNI can be drafted and installed
+- [ ] Each empty slot lowers the bill by a set amount
+- [ ] A spec covers zero, one and several empty slots
+
+## Notes
 
 Empty-slot config on the BILL axis (Marciano picked this axis over
 storage-on-clear, 2026-08-19; Balatro Joker Stencil pattern).

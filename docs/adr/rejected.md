@@ -205,12 +205,41 @@ its real headline category rather than a vibe phrase ("React Rush" was rejected
 as "doesn't say anything"), and a name has to earn the identity it claims (Full
 stack originally bundled three front-end configs).
 
+## Shop services
+
+**Service licences, owned forever and equipped one at a time** (was ADR-110,
+deleted by ADR-115)
+Archived storage bought a licence permanently; one was equipped before a run
+and its service turned up once during the climb. Replaced by run services,
+bought once per run and consumed with it, because a permanent right saturates
+once every licence is owned. One argument survives the model: a shared random
+pool of owned licences was never tried, since buying a second would lower the
+odds of seeing the first, and collecting would punish itself. "No Dependencies"
+(accept before doing anything else, leave without another action to be paid)
+died with the licence model and came back as Skip shop, a default registry
+service (ADR-115).
+
+**A free or rebated Rebuild** (was ADR-110 Decision 6, deleted by ADR-115)
+A flat free rebuild was refused three times, by ADR-029, DVTD-st9e and
+DVTD-72d9, and all three land on the same thing: value handed over with nothing
+traded. ADR-110 accepted a rebate on the fifth press of a visit instead, and
+forbade the free press resetting the ladder, which would be an unbounded loop
+of 4 KB rerolls. ADR-115 dropped the rebate when Hot Reload became a paid
+replacement of one chosen offer.
+
+**Repackage behind a pre-run purchase** (was ADR-110 Decision 7, deleted by
+ADR-115)
+It would make a bad audit roll unfixable for any run that did not bring the
+purchase. Still the reason Repackage is a registry service and not a run
+service.
+
 ## Also rejected, recorded in a live ADR
 
 Full reasoning sits with the decision it explains.
 
 - **Account-level rerolls**, ADR-029: progression bought outside the run cannot
-  trade off against the configs it competes with.
+  trade off against the configs it competes with. ADR-115 overrules it for run
+  services only.
 - **"Widen" as Extend's name**, ADR-029: width is slot vocabulary, and two
   unrelated numbers would share a word.
 - **A block-level Lock**, ADR-029: it would need a pick-an-offer mode to say
@@ -236,3 +265,7 @@ Full reasoning sits with the decision it explains.
 - **Keeping gates 3 and 12 authored under player-fired audits**, ADR-099: the Champion's reliable challenge is its 90% line, and an introduction nobody fires is not one.
 - **Skipping straight to the shop after a gate**, ADR-057.
 - **The archived-storage random config pull**, ADR-050.
+- **The Dex as a till**, ADR-115 Decision 9: no Dex tab has ever sold anything,
+  and the profile is the one page that spends the archive.
+- **A permanent right to a service**, ADR-115: it would be the licence again; a
+  run service is consumed with the run.

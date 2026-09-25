@@ -4,6 +4,10 @@ import userEvent from "@testing-library/user-event";
 
 import { Tooltip } from "./Tooltip.ui";
 
+// A sheet on a phone, anchored from `sm`: the anchored class is what marks it.
+const panelOf = (container: HTMLElement) =>
+	container.querySelector(".sm\\:absolute");
+
 describe("Tooltip", () => {
 	it("shows what it was wrapped around", () => {
 		render(
@@ -89,7 +93,7 @@ describe("Tooltip", () => {
 			</Tooltip>
 		);
 
-		expect(container.querySelector(".absolute")).toHaveClass("left-0");
+		expect(panelOf(container)).toHaveClass("sm:left-0");
 
 		rerender(
 			<Tooltip
@@ -101,7 +105,7 @@ describe("Tooltip", () => {
 			</Tooltip>
 		);
 
-		expect(container.querySelector(".absolute")).toHaveClass("right-0");
+		expect(panelOf(container)).toHaveClass("sm:right-0");
 	});
 
 	it("widens on demand, so a table of rungs keeps each row on one line", () => {
@@ -111,8 +115,8 @@ describe("Tooltip", () => {
 			</Tooltip>
 		);
 
-		expect(container.querySelector(".absolute")).toHaveClass("w-72");
-		expect(container.querySelector(".absolute")).not.toHaveClass("sm:w-112");
+		expect(panelOf(container)).toHaveClass("sm:w-72");
+		expect(panelOf(container)).not.toHaveClass("md:w-112");
 
 		rerender(
 			<Tooltip
@@ -124,7 +128,7 @@ describe("Tooltip", () => {
 			</Tooltip>
 		);
 
-		expect(container.querySelector(".absolute")).toHaveClass("sm:w-112");
+		expect(panelOf(container)).toHaveClass("md:w-112");
 	});
 
 	it("hands back a bare reading when there is no rule to explain", () => {
@@ -134,5 +138,33 @@ describe("Tooltip", () => {
 
 		expect(screen.getByText("34/55 correct")).toBeInTheDocument();
 		expect(container.querySelector("button")).toBeNull();
+	});
+
+	it("caps the sheet and lets it scroll, a long hint having nowhere to grow", () => {
+		const { container } = render(
+			<Tooltip label="What a poll pays" hint="a very long reading">
+				rule
+			</Tooltip>
+		);
+
+		expect(container.querySelector(".max-h-\\[70vh\\]")).toHaveClass(
+			"overflow-y-auto"
+		);
+	});
+
+	it("takes pointer events back when it opens, so the reader can reach it", async () => {
+		const { container } = render(
+			<Tooltip label="What a poll pays" hint="a very long reading">
+				rule
+			</Tooltip>
+		);
+
+		const panel = container.querySelector(".fixed");
+		expect(panel).toHaveClass("pointer-events-none");
+
+		await userEvent.click(screen.getByRole("button"));
+
+		expect(panel).toHaveClass("pointer-events-auto");
+		expect(panel).not.toHaveClass("pointer-events-none");
 	});
 });

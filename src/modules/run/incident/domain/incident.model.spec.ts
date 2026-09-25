@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	type Attacker,
+	canFireFrom,
 	eligibleRivals,
 	isEligibleRival,
 	lockIncidents,
@@ -14,7 +15,10 @@ import {
 	targetGateOf,
 } from "~/modules/run/incident/domain/incident.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
-import { familyOf } from "~/modules/run/gate/domain/auditSchedule.model";
+import {
+	AUDITS_FROM_GATE,
+	familyOf,
+} from "~/modules/run/gate/domain/auditSchedule.model";
 import type { LastClose } from "~/modules/run/run/domain/run.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 
@@ -97,6 +101,22 @@ describe("who a rival may aim at (ADR-099)", () => {
 	it("skips the rival you fired at last time", () => {
 		expect(isEligibleRival(red, rival(), NO_QUEUE, "misty")).toBe(false);
 		expect(eligibleRivals(red, [rival()], NO_QUEUE, "misty")).toEqual([]);
+	});
+});
+
+describe("you may only fire from a gate that can be fired at (ADR-105)", () => {
+	it("offers nobody while your own gate carries no capacity", () => {
+		const early = { ...red, gatesCleared: AUDITS_FROM_GATE - 1 };
+
+		expect(canFireFrom(early)).toBe(false);
+		expect(eligibleRivals(early, [rival()], NO_QUEUE, null)).toEqual([]);
+	});
+
+	it("opens the moment your own gate could carry one", () => {
+		const opened = { ...red, gatesCleared: AUDITS_FROM_GATE };
+
+		expect(canFireFrom(opened)).toBe(true);
+		expect(eligibleRivals(opened, [rival()], NO_QUEUE, null)).toHaveLength(1);
 	});
 });
 

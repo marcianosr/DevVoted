@@ -9,7 +9,7 @@ const TRAILING = "ml-auto shrink-0";
 
 const COPY = {
 	leader: "leader",
-	seatOpen: "seat open",
+	unranked: "unranked",
 };
 
 const GITHUB = "https://github.com";
@@ -34,21 +34,22 @@ export type CategoryLeaderProps = {
 	claim?: string;
 };
 
-const LeaderName = ({ handle, githubLogin }: CategorySeatLeader) => {
-	if (githubLogin === undefined) {
-		return (
-			<Typography variant="accent" as="span">
+/**
+ * The same chrome the poll's byline gives its author: a handle is a handle
+ * wherever it appears, and this line sits directly under that one on the poll
+ * screen, where two weights for one kind of name read as two kinds of name.
+ */
+const LeaderName = ({ handle, githubLogin }: CategorySeatLeader) => (
+	<Typography variant="hint" as="span">
+		{githubLogin === undefined ? (
+			handle
+		) : (
+			<Link href={`${GITHUB}/${githubLogin}`} external>
 				{handle}
-			</Typography>
-		);
-	}
-
-	return (
-		<Link href={`${GITHUB}/${githubLogin}`} external>
-			{handle}
-		</Link>
-	);
-};
+			</Link>
+		)}
+	</Typography>
+);
 
 const Held = (leader: CategorySeatLeader) => (
 	<>
@@ -75,7 +76,7 @@ const Held = (leader: CategorySeatLeader) => (
 const Open = ({ claim }: Pick<CategoryLeaderProps, "claim">) => (
 	<>
 		<Typography variant="hint" as="span">
-			{COPY.seatOpen}
+			{COPY.unranked}
 		</Typography>
 		{claim === undefined ? null : (
 			<span className={TRAILING}>

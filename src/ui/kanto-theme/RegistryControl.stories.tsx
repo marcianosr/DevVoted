@@ -36,6 +36,17 @@ export const Unaffordable: Story = { args: { disabled: true } };
 
 export const Inert: Story = { args: { onPress: undefined } };
 
+export const Locked: Story = {
+	args: {
+		glyph: "+",
+		title: "Extend the registry",
+		detail: "one more offer, now and every shop after",
+		locked: true,
+		unlock: "Reach Cascade",
+		onPress: undefined,
+	},
+};
+
 export const BothControls: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (

@@ -12,7 +12,7 @@ import { Registry } from "./Registry.ui";
 
 const props = createKantoRegistryProps();
 
-const rowOf = (name: string) =>
+const chipOf = (name: string) =>
 	screen
 		.getByRole("button", { name: `About ${name}` })
 		.closest<HTMLElement>(".rounded-lg");
@@ -44,9 +44,17 @@ describe("Registry", () => {
 		(name) => {
 			render(<Registry {...props} />);
 
-			expect(rowOf(name)).toHaveTextContent(name);
+			expect(chipOf(name)).toHaveTextContent(name);
 		}
 	);
+
+	it("sizes an offer to what it says, so the shelf wraps rather than stacks", () => {
+		render(<Registry {...props} />);
+
+		const offer = chipOf("IndexedDB");
+		expect(offer).not.toHaveClass("w-full");
+		expect(offer?.closest(".flex-wrap")).not.toBeNull();
+	});
 
 	it("makes an affordable price the control that takes the offer", () => {
 		render(<Registry {...props} />);
@@ -67,11 +75,11 @@ describe("Registry", () => {
 		expect(install).toHaveTextContent("Install \u00b7 128 KB");
 	});
 
-	it("dims the row of an offer that cannot be taken", () => {
+	it("dims the chip of an offer that cannot be taken", () => {
 		render(<Registry {...props} />);
 
-		expect(rowOf("Intellisense")).toHaveClass("opacity-60");
-		expect(rowOf("IndexedDB")).not.toHaveClass("opacity-60");
+		expect(chipOf("Intellisense")).toHaveClass("opacity-60");
+		expect(chipOf("IndexedDB")).not.toHaveClass("opacity-60");
 	});
 
 	it("shows an upgrade offer's price at rest rather than on hover", () => {
@@ -119,7 +127,7 @@ describe("Registry", () => {
 	it("states the odds the roll landed on beside the version, at rest", () => {
 		render(<Registry {...props} />);
 
-		expect(rowOf(".ts")).toHaveTextContent("1 in 4 rolls");
+		expect(chipOf(".ts")).toHaveTextContent("1 in 4 rolls");
 	});
 
 	it("lists offers alone, the controls being the screen's to place", () => {

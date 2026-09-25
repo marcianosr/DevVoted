@@ -1,6 +1,6 @@
 ---
 # DVTD-545v
-title: Loot storage from other players when their run ends
+title: Loot storage from a run that has ended
 status: todo
 type: feature
 priority: normal
@@ -9,9 +9,21 @@ tags:
     - juice
     - meta-progress
 created_at: 2026-07-19T09:09:13Z
-updated_at: 2026-09-04T18:44:37Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-z2r2
 ---
+
+**What:** Let a player take storage off another player's finished run.
+
+**Why:** Turns someone else's failure into something you can find.
+
+## Done when
+- [ ] Only finished runs can be looted, from a pool fixed at a day boundary
+- [ ] Nothing a player already banked can be taken
+- [ ] Who you can loot does not vary from player to player within a shared day
+- [ ] A spec covers the pool and the transfer
+
+## Notes
 
 When another player's run ends, their abandoned items/loot should be storable by other players who encounter them. This creates emergent gameplay where players can benefit from others' progress and failures.
 

@@ -1,13 +1,27 @@
 ---
 # DVTD-z4rl
-title: 'Gate mastery: three stars per gate, and the trainer card'
+title: Grade how well each gate was cleared, and show it on a trainer card
 status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:21:03Z
-updated_at: 2026-09-14T13:50:01Z
+updated_at: 2026-09-24T12:49:08Z
 parent: DVTD-z2r2
 ---
+
+**What:** Record how well a gate was cleared, not just that it was, and put the record on a trainer card.
+
+**Why:** A scraped clear and a flawless one leave exactly the same mark.
+
+⚠️ Two of the three stars are already done by other things: the band records how well, and the gate objective already pays. What clearly survives is the trainer card.
+
+## Done when
+- [ ] The stars are re-scoped against the bands and the objectives, or dropped
+- [ ] Whatever survives is recorded best-ever per gate
+- [ ] A trainer card shows the record, and whether it is one card with the category card is decided
+- [ ] It pays nothing in run power
+
+## Notes
 
 A gate is binary today: you cleared it or it peeled you. Nothing records *how well*, so a 5-of-5 clear on a bare build and a scraped clear bought with four linter runs leave the same mark. Mastery grades the clear, and the trainer card is where the grades live.
 
@@ -56,13 +70,13 @@ Related: DVTD-g8ty (Collect Swatches) is the per-category chip idea and should b
 ## Todo
 
 - [x] Pick the third star: margin, double the demanded coverage
-- [ ] Settle the git tag scope (pick: forfeit on the starting gate only)
-- [ ] `gateStars(state)` in `src/modules/run/gate/domain/`, pure over `RunState` at clear, with specs per star
-- [ ] Persist best-ever per gate; migration guarded per ADR-012
-- [ ] Gate-clear screen shows the three stars, including the ones missed and why
-- [ ] Trainer card surface, after the dev card decision above
-- [ ] Dex Gates tab shows stars per gate (folds into DVTD-e15y if that lands first)
-- [ ] Wiki: mastery rules alongside §2.8
+- Settle the git tag scope (pick: forfeit on the starting gate only)
+- `gateStars(state)` in `src/modules/run/gate/domain/`, pure over `RunState` at clear, with specs per star
+- Persist best-ever per gate; migration guarded per ADR-012
+- Gate-clear screen shows the three stars, including the ones missed and why
+- Trainer card surface, after the dev card decision above
+- Dex Gates tab shows stars per gate (folds into DVTD-e15y if that lands first)
+- Wiki: mastery rules alongside §2.8
 
 ## Model change 2026-09-12 (DVTD-nd6r)
 

@@ -1,13 +1,27 @@
 ---
 # DVTD-6ce4
-title: Planning Poker becomes a hand of cards you spend
+title: Planning Poker deals a hand of four cards, one per gate
 status: todo
 type: feature
 priority: high
 created_at: 2026-09-08T14:12:46Z
-updated_at: 2026-09-15T12:25:48Z
+updated_at: 2026-09-24T12:49:09Z
 parent: DVTD-72d9
 ---
+
+**What:** The bet becomes a dealt hand of 1, 2, 3 and 5, one card spent per gate, instead of a free pick every gate.
+
+**Why:** A free pick costs nothing, so there is never a reason to play the low card.
+
+⚠️ Most of this bean already shipped: the at-least-k rule, the depth scaling and the coverage payout are all in. Only the dealt deck and the version ladder are left.
+
+## Done when
+- [ ] The run deals the four cards once, and a card played is gone for the rest of the run
+- [ ] Playing a card already spent is refused
+- [ ] The hand survives a reload, and a missed gate still spends the card
+- [ ] Prep says what is left in hand
+
+## Notes
 
 Playtest verdict on the shipped v1 (DVTD-68jr, ADR-063): the bet has risk but no
 loss, so the decision is an EV lookup rather than a choice, and the low cards are
@@ -100,16 +114,16 @@ since the hand is now the interesting state.
 
 ## Todo
 
-- [ ] ADR-069 supersedes ADR-063's payout, range and no-upgrade decisions; keep its
+- ADR-069 supersedes ADR-063's payout, range and no-upgrade decisions; keep its
       pays-after-a-miss and asking-is-not-a-demand decisions, which still hold
-- [ ] Deck and floor semantics in `estimate.model.ts` + specs
-- [ ] Depth-scaled payout, spent-card set on `RunState`, snapshot round-trip
-- [ ] `closeWindow` spends the card on both branches
-- [ ] Roster copy, `isUpgradable`, `maxLevel: 3`
-- [ ] `Estimate.ui.tsx` spent state + hint copy, prep Section note
-- [ ] wiki 4.3 and the 2.6 miss-payout row
-- [ ] CHANGELOG (player-visible)
-- [ ] lint, typecheck, tests
+- Deck and floor semantics in `estimate.model.ts` + specs
+- Depth-scaled payout, spent-card set on `RunState`, snapshot round-trip
+- `closeWindow` spends the card on both branches
+- Roster copy, `isUpgradable`, `maxLevel: 3`
+- `Estimate.ui.tsx` spent state + hint copy, prep Section note
+- wiki 4.3 and the 2.6 miss-payout row
+- CHANGELOG (player-visible)
+- lint, typecheck, tests
 
 ## Open knobs
 

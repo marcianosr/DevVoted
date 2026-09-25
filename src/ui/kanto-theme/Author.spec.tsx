@@ -28,18 +28,46 @@ describe("Author", () => {
 		).toBeInTheDocument();
 	});
 
-	it("appends the author's title after a separator", () => {
-		render(<Author handle="matthijsgroen" title="Poll editor" />);
+	it("appends the author's role after a separator", () => {
+		render(<Author handle="matthijsgroen" role="Poll editor" />);
 
 		expect(
 			screen.getByText(creditIs("Created by @matthijsgroen · Poll editor"))
 		).toBeInTheDocument();
 	});
 
-	it("omits the separator when the author has no title", () => {
+	it("omits the separator when the author holds no role", () => {
 		render(<Author handle="matthijsgroen" />);
 
 		expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+	});
+
+	it("sets an earned title on its own line, not after the role separator", () => {
+		render(
+			<Author
+				handle="matthijsgroen"
+				role="Poll editor"
+				title="Git Maintainer"
+			/>
+		);
+
+		expect(
+			screen.getByText(creditIs("Created by @matthijsgroen · Poll editor"))
+		).toBeInTheDocument();
+		expect(screen.getByText("Git Maintainer")).toBeInTheDocument();
+	});
+
+	it("wears an earned title without a role, which most players have", () => {
+		render(<Author handle="matthijsgroen" title="Git Maintainer" />);
+
+		expect(screen.getByText("Git Maintainer")).toBeInTheDocument();
+		expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+	});
+
+	it("draws no title line for an account wearing none", () => {
+		render(<Author handle="matthijsgroen" role="Poll editor" />);
+
+		expect(screen.queryByText("Git Maintainer")).not.toBeInTheDocument();
 	});
 
 	it("draws the photo it is handed rather than deriving one from the handle", () => {
@@ -126,12 +154,20 @@ describe("Author", () => {
 		expect(link).toHaveAttribute("rel", "noreferrer");
 	});
 
-	it("leaves the link at full strength while the credit around it stays quiet", () => {
-		render(<Author handle="matthijsgroen" title="Poll editor" />);
+	it("leaves the link brighter than the credit around it", () => {
+		render(<Author handle="matthijsgroen" role="Poll editor" />);
 
 		const link = screen.getByRole("link", { name: "@matthijsgroen" });
 
-		expect(link.className).not.toMatch(/opacity-/);
-		expect(screen.getByText("Created by")).toHaveClass("opacity-60");
+		expect(link).toHaveClass("text-theme-soft");
+		expect(link.parentElement).toHaveClass("text-theme-muted");
+	});
+
+	it("sets the credit in the kit's smallest prose", () => {
+		render(<Author handle="matthijsgroen" role="Poll editor" />);
+
+		const link = screen.getByRole("link", { name: "@matthijsgroen" });
+
+		expect(link.parentElement).toHaveClass("text-xs");
 	});
 });

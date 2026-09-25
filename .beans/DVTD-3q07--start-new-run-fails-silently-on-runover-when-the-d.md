@@ -1,15 +1,26 @@
 ---
 # DVTD-3q07
-title: Start new run fails silently on /run/over when the day's polls are spent
+title: Start new run does nothing when today's polls are spent
 status: todo
 type: bug
 priority: high
 created_at: 2026-09-22T18:49:00Z
-updated_at: 2026-09-22T18:49:14Z
+updated_at: 2026-09-24T12:49:37Z
 parent: DVTD-0x5c
 blocking:
     - DVTD-ecjo
 ---
+
+**What:** The run-over screen refuses Start new run out loud, and says when polls come back.
+
+**Why:** Today the press does nothing at all: no error, no countdown, no explanation.
+
+## Done when
+- [ ] Pressing Start new run on a spent day says why, and when polls return
+- [ ] An open day still starts a run from that screen
+- [ ] A spec covers both cases
+
+## Notes
 
 Split out of DVTD-6vw2, whose screen shipped. This is the one behaviour still missing.
 
@@ -58,6 +69,6 @@ consults `polls.ready` on the live-run branch, and `/run/new` has no window gate
 (`StartView.component.tsx:60` gates on `view.canStart`, which is build-completeness only).
 Worth fixing together — one rule about when the day is spent, applied at every door.
 
-- [ ] Refuse the press on `/run/over` when the window is spent, stating the countdown
-- [ ] Decide whether the refusal needs a `RunOverScreen.ui` prop or rides `onPress`
-- [ ] Spec: exhausted window shows the countdown, open window still starts a run
+- Refuse the press on `/run/over` when the window is spent, stating the countdown
+- Decide whether the refusal needs a `RunOverScreen.ui` prop or rides `onPress`
+- Spec: exhausted window shows the countdown, open window still starts a run

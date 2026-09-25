@@ -23,6 +23,7 @@ const handlers = {
 	onRebuild: noop,
 	onExtend: noop,
 	onPlantPin: noop,
+	onAbandon: noop,
 	onVendorLock: noop,
 	onContinue: noop,
 };
@@ -54,7 +55,6 @@ describe("ShopView", () => {
 		render(<ShopView view={toRunView(cleared)} {...handlers} />);
 
 		expect(screen.getByText("21%")).toBeInTheDocument();
-		expect(screen.getByText("4 of the 5 right clears it.")).toBeInTheDocument();
 	});
 
 	it("stands the build beside the registry", () => {
@@ -64,10 +64,11 @@ describe("ShopView", () => {
 		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("names the gate the shop opened on", () => {
+	it("names the shop for the gate it is stocking for, not the one cleared", () => {
 		render(<ShopView view={view} {...handlers} />);
 
-		expect(screen.getByText(/^Shop/)).toBeInTheDocument();
+		expect(screen.getByText(/Shop$/)).toBeInTheDocument();
+		expect(screen.queryByText(/^Shop ·/)).not.toBeInTheDocument();
 	});
 
 	it("installs an offer the run can afford", async () => {
@@ -375,5 +376,157 @@ describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
 			screen.getByRole("button", { name: "About Moore's Law" })
 		).toHaveAttribute("aria-expanded", "false");
 		expect(screen.getByRole("button", { name: /^Buy v2/ })).toBeInTheDocument();
+	});
+});
+
+describe("ShopView services (ADR-116)", () => {
+	const gateFour = createMockRunView({
+		storage: 512,
+		gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
+		shopControls: createMockShopControls({
+			rebuildAvailable: true,
+			canRebuild: true,
+			extendAvailable: true,
+			canExtend: true,
+			pinAvailable: true,
+			canPin: true,
+		}),
+	});
+
+	it("names a service the account has not earned, with the line that earns it and no press", () => {
+		render(
+			<ShopView view={{ ...gateFour, unlockedServiceIds: [] }} {...handlers} />
+		);
+
+		expect(screen.getByText("Extend the registry")).toBeVisible();
+		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
+		expect(screen.getByText("git tag")).toBeVisible();
+		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
+		expect(
+			screen.queryByRole("button", { name: /Extend the registry/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("still sells the starter service to an account that has earned nothing", () => {
+		render(
+			<ShopView view={{ ...gateFour, unlockedServiceIds: [] }} {...handlers} />
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Rebuild the registry/ })
+		).toBeEnabled();
+	});
+
+	it("sells an earned service like any other, with no press on the locked ones", () => {
+		render(
+			<ShopView
+				view={{ ...gateFour, unlockedServiceIds: ["extend"] }}
+				{...handlers}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Extend the registry/ })
+		).toBeEnabled();
+		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
+		expect(screen.getAllByRole("button", { name: /registry/ })).toHaveLength(2);
+	});
+
+	it("lists only what the shop sells: an archive service never appears, earned or not", () => {
+		render(
+			<ShopView
+				view={{ ...gateFour, unlockedServiceIds: ["bootCache", "dockerImage"] }}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.queryByText("Boot Cache")).not.toBeInTheDocument();
+		expect(screen.queryByText("Docker Image")).not.toBeInTheDocument();
+		expect(screen.queryByText(/Bank 256 KB/)).not.toBeInTheDocument();
+	});
+
+	it("renders nothing for an earned service that has no press yet, rather than a dead row", () => {
+		render(
+			<ShopView
+				view={{ ...gateFour, unlockedServiceIds: ["hotReload"] }}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.queryByText("Hot reload one offer")).not.toBeInTheDocument();
+	});
+});
+
+describe("ShopView kill -9", () => {
+	const gateSix = createMockRunView({
+		storage: 512,
+		gatePayout: createMockGatePayout({ clearedGateNumber: 6 }),
+		shopControls: createMockShopControls({
+			rebuildAvailable: true,
+			canRebuild: true,
+		}),
+	});
+
+	it("reads its unlock line until gate 5 is cleared", () => {
+		render(
+			<ShopView view={{ ...gateSix, unlockedServiceIds: [] }} {...handlers} />
+		);
+
+		expect(screen.getByText("kill -9")).toBeVisible();
+		expect(screen.getByText("unlock · Clear gate 5")).toBeVisible();
+		expect(
+			screen.queryByRole("button", { name: /kill -9/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("ends the run on the second press only, the first arming the row", async () => {
+		const onAbandon = vi.fn();
+		render(
+			<ShopView
+				view={{ ...gateSix, unlockedServiceIds: ["abandon"] }}
+				{...handlers}
+				onAbandon={onAbandon}
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: "kill -9" }));
+		expect(onAbandon).not.toHaveBeenCalled();
+		expect(screen.getByText("press again to end the run")).toBeVisible();
+
+		await userEvent.click(screen.getByRole("button", { name: "kill -9" }));
+		expect(onAbandon).toHaveBeenCalledOnce();
+	});
+
+	it("disarms when another service is pressed instead", async () => {
+		const onAbandon = vi.fn();
+		render(
+			<ShopView
+				view={{ ...gateSix, unlockedServiceIds: ["abandon"] }}
+				{...handlers}
+				onAbandon={onAbandon}
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: "kill -9" }));
+		await userEvent.click(
+			screen.getByRole("button", { name: /Rebuild the registry/ })
+		);
+		expect(
+			screen.queryByText("press again to end the run")
+		).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole("button", { name: "kill -9" }));
+		expect(onAbandon).not.toHaveBeenCalled();
+	});
+
+	it("carries no price, since the press costs nothing", () => {
+		render(
+			<ShopView
+				view={{ ...gateSix, unlockedServiceIds: ["abandon"] }}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: "kill -9" })).toBeEnabled();
 	});
 });

@@ -17,8 +17,9 @@ export type ScreenGround = "framed" | "bare";
 const WIDTH = {
 	narrow: "max-w-2xl",
 	default: "max-w-[900px]",
-	// A collection screen lists rather than decides: it needs room the run
-	// screens, which ask one question at a time, deliberately refuse.
+	// Room for two columns: a collection screen listing rather than deciding,
+	// and the poll screen, which stands its coverage readout beside the
+	// question. A run screen that asks one question at a time still refuses it.
 	wide: "max-w-6xl",
 } satisfies Record<ScreenWidth, string>;
 

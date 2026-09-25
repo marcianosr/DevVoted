@@ -1,13 +1,15 @@
 import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
+import { Button, type ButtonTone } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { Panel } from "./Panel.ui";
-import { Figures } from "./Figures.ui";
 import { Typography } from "./Typography.ui";
 import { Version, versionAccentOf, type VersionState } from "./Version.ui";
 
 const WIDTH = "w-fit max-w-112";
+const HEAD = "flex w-full items-center gap-3";
+const CLOSE = "ml-auto";
 const PAIR = "flex w-full items-stretch gap-3";
 const CARD =
 	"flex flex-col gap-2 rounded-lg border border-theme-soft p-3 text-left";
@@ -17,7 +19,6 @@ const PRESSABLE =
 	"cursor-pointer enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 const FIGURES = "flex items-center gap-2";
 const ARROW = "shrink-0 self-center text-theme-muted";
-const DIVIDER = "border-t border-theme-faint";
 
 const HELD_LABEL = "installed";
 const OFFER_LABEL = "next";
@@ -26,9 +27,11 @@ const NO_OFFER_LABEL = "nothing on offer";
 const ARROW_GLYPH = "→";
 const SEPARATOR = "·";
 const BUY_LABEL = "Buy";
+const CLOSE_GLYPH = "×";
+const CLOSE_LABEL = "Close";
+const CLOSE_TONE: ButtonTone = "ambient";
 
 const GAIN: KantoColor = "viridian";
-const HINT_GAIN: KantoColor = "pewter";
 const REFUSAL: KantoColor = "cinnabar";
 
 export type UpgradeRung = {
@@ -44,10 +47,10 @@ export type UpgradesProps = {
 	name: string;
 	description: string;
 	rungs: readonly UpgradeRung[];
-	toMax?: { version: number; price: string };
 	/** Why the offered rung will not go through, in the player's own terms. */
 	refusal?: string;
 	onBuy?: (version: number) => void;
+	onClose?: () => void;
 };
 
 export const offeredRungOf = (rungs: readonly UpgradeRung[]) =>
@@ -55,16 +58,6 @@ export const offeredRungOf = (rungs: readonly UpgradeRung[]) =>
 
 const heldRungOf = (rungs: readonly UpgradeRung[]) =>
 	rungs.find((rung) => rung.held === true);
-
-const footerOf = (
-	rungs: readonly UpgradeRung[],
-	toMax: { version: number; price: string }
-) => {
-	const offered = offeredRungOf(rungs);
-	const cost = `all the way to v${toMax.version} costs ${toMax.price}`;
-	if (offered === undefined) return cost;
-	return `${cost} ${SEPARATOR} press to buy v${offered.version}`;
-};
 
 const noOfferLabelOf = (rungs: readonly UpgradeRung[]) =>
 	rungs.every((rung) => rung.state === "owned") ? MAXED_LABEL : NO_OFFER_LABEL;
@@ -123,9 +116,9 @@ export const Upgrades = ({
 	name,
 	description,
 	rungs,
-	toMax,
 	refusal,
 	onBuy,
+	onClose,
 }: UpgradesProps) => {
 	const held = heldRungOf(rungs);
 	const offered = offeredRungOf(rungs);
@@ -133,7 +126,19 @@ export const Upgrades = ({
 	return (
 		<Panel className={WIDTH}>
 			<Panel.Body>
-				<Typography variant="title">{name}</Typography>
+				<span className={HEAD}>
+					<Typography variant="title">{name}</Typography>
+					{onClose === undefined ? null : (
+						<span className={CLOSE}>
+							<Button
+								tone={CLOSE_TONE}
+								glyph={CLOSE_GLYPH}
+								label={`${CLOSE_LABEL} ${name}`}
+								onPress={onClose}
+							/>
+						</span>
+					)}
+				</span>
 				<Typography variant="caption" as="p">
 					{description}
 				</Typography>
@@ -162,15 +167,6 @@ export const Upgrades = ({
 					<span data-screen-theme={REFUSAL}>
 						<Typography variant="hint">{refusal}</Typography>
 					</span>
-				)}
-
-				{toMax === undefined ? null : (
-					<>
-						<div className={DIVIDER} />
-						<Typography variant="hint">
-							<Figures text={footerOf(rungs, toMax)} gain={HINT_GAIN} />
-						</Typography>
-					</>
 				)}
 			</Panel.Body>
 		</Panel>

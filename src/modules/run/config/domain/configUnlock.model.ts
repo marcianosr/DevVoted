@@ -7,6 +7,8 @@ export const ONE_SHOT_METRICS = [
 	"mirror-clear-no-miss",
 	"sold-three-one-shop",
 	"lean-gate-four",
+	"banked-256-one-run",
+	"finished-holding-a-dealt-config",
 ] as const;
 
 export type OneShotMetric = (typeof ONE_SHOT_METRICS)[number];
@@ -16,6 +18,12 @@ export type CumulativeMetric =
 	| "polls-correct"
 	| `category-correct:${CategoryCode}`
 	| "gates-cleared"
+	// Runs taken all the way to the summit. `gates-cleared` counts gates across
+	// every run, so it can never say that thirteen of them fell in one.
+	| "runs-won"
+	// Runs that stood at gate N. Same reason: a lifetime sum of clears cannot
+	// say how deep any one climb went, and a service unlocks on depth (ADR-116).
+	| `reached-gate:${number}`
 	| "audited-gates-cleared"
 	| "rebuilds"
 	| "perfect-windows"
@@ -116,13 +124,6 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Close 3 perfect windows",
 		"closed 3 perfect windows",
 		125
-	),
-	reduce: earned(
-		"perfect-windows",
-		6,
-		"Close 6 perfect windows",
-		"closed 6 perfect windows",
-		250
 	),
 	git: earned(
 		"category-correct:git",

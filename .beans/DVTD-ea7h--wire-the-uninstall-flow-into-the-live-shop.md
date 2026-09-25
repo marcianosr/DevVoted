@@ -1,12 +1,25 @@
 ---
 # DVTD-ea7h
-title: Wire the uninstall flow into the live shop
+title: Uninstall exists in the kit but not in the real shop
 status: todo
 type: feature
+priority: normal
 created_at: 2026-09-22T18:49:30Z
-updated_at: 2026-09-22T18:49:30Z
+updated_at: 2026-09-24T12:49:07Z
 parent: DVTD-cb52
 ---
+
+**What:** Make the uninstall flow reachable from the live shop.
+
+**Why:** The kit demos an affordance the game does not have: the whole flow lives in a story.
+
+## Done when
+- [ ] What an uninstall refunds is decided, and matches what the shop actually pays
+- [ ] The shop offers uninstall, backed by the real balance, slots and capacity
+- [ ] What freeing a slot does to rented build space is decided
+- [ ] Specs run against the live viewmodel, not the demo factory
+
+## Notes
 
 Split out of DVTD-7tof, where it sat under 'Held back — needs your call'. **Decided
 2026-09-22: wire it in**, rather than delete it.
@@ -43,8 +56,8 @@ quote a refund it does not pay.
 Related: ADR-082 made build space rented by the gate, so freeing a slot mid-run has
 consequences the story's fixed `capacity: 10` does not model.
 
-- [ ] Decide the refund rule: `sellRefundIn` (discount-aware) or flat `sellRefund`
-- [ ] Add `onUninstall` to `ShopScreen.ui` and its props
-- [ ] Back the modal with real balance/slots/capacity from `shopScreen.viewmodel.ts`
-- [ ] Decide what an uninstall does to build space under ADR-082
-- [ ] Spec the refund and the freed slot against the live viewmodel, not the factory
+- Decide the refund rule: `sellRefundIn` (discount-aware) or flat `sellRefund`
+- Add `onUninstall` to `ShopScreen.ui` and its props
+- Back the modal with real balance/slots/capacity from `shopScreen.viewmodel.ts`
+- Decide what an uninstall does to build space under ADR-082
+- Spec the refund and the freed slot against the live viewmodel, not the factory
