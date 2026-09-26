@@ -20,6 +20,7 @@ import {
 import {
 	findTitleById,
 	isExclusive,
+	WORN_TITLE_CAP,
 } from "~/modules/account/profile/domain/title.model";
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
@@ -86,7 +87,10 @@ const seedPlayers = async (): Promise<number> => {
 				owned_swatch_ids: [...(player.ownedSwatchIds ?? [])],
 				peak_storage_kb: player.peakStorageKb ?? 0,
 				archived_storage: player.archivedStorage ?? 0,
-				equipped_title_id: player.ownedTitleIds?.[0] ?? null,
+				equipped_title_ids: (player.ownedTitleIds ?? []).slice(
+					0,
+					WORN_TITLE_CAP
+				),
 			})
 			.where(sql`${usersTable.id} = ${player.id}`);
 

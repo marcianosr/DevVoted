@@ -9,6 +9,7 @@ export type DexPanelProps = {
 	count: string;
 	meta: string;
 	note: string;
+	trailing?: ReactNode;
 	children: ReactNode;
 };
 
@@ -17,6 +18,7 @@ export const DexPanel = ({
 	count,
 	meta,
 	note,
+	trailing,
 	children,
 }: DexPanelProps) => (
 	<Panel>
@@ -28,6 +30,7 @@ export const DexPanel = ({
 					<Badge>{count}</Badge>
 				</>
 			}
+			trailing={trailing}
 		/>
 		{children}
 		<Panel.Footer>

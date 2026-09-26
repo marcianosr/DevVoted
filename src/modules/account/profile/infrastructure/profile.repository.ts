@@ -38,6 +38,38 @@ export const fetchUsersByDisplayNames = async (
 	return users;
 };
 
+export type PublicProfileRow = {
+	id: string;
+	displayName: string;
+	photoUrl: string | null;
+	githubUsername: string | null;
+	equippedBorderId: string | null;
+	equippedTitleIds: string[];
+	archivedStorage: number;
+	ownedSwatchIds: string[];
+};
+
+export const fetchPublicProfile = async (
+	userId: string
+): Promise<PublicProfileRow | null> => {
+	const [row] = await db
+		.select({
+			id: usersTable.id,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+			githubUsername: usersTable.github_username,
+			equippedBorderId: usersTable.equipped_border_id,
+			equippedTitleIds: usersTable.equipped_title_ids,
+			archivedStorage: usersTable.archived_storage,
+			ownedSwatchIds: usersTable.owned_swatch_ids,
+		})
+		.from(usersTable)
+		.where(eq(usersTable.id, userId))
+		.limit(1);
+
+	return row ?? null;
+};
+
 export type UserArchiveState = {
 	archivedStorage: number;
 	ownedBorderIds: string[];

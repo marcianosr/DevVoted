@@ -1,14 +1,27 @@
+import { clsx } from "clsx";
+
 import { formatStorage } from "~/shared/lib/storage";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 
 const COPY = {
-	unequip: "Unequip",
-	equip: "Equip",
+	unequip: "Take off",
+	equip: "Wear",
 	buy: "Buy",
 	locked: "Locked",
+	worn: "worn",
 } as const;
 
+const CARD =
+	"flex flex-col gap-2 rounded-lg border border-theme-faint bg-theme-raised p-3";
+const CARD_WORN = "ring-2 ring-viridian";
+const FRAME =
+	"flex aspect-square items-center justify-center rounded-md bg-theme-faint";
+const IMAGE = "max-h-full max-w-full";
+const NAME = "truncate text-xs font-bold text-theme-soft";
+const PRESS = "mt-auto flex";
+
 export type BorderCardProps = {
+	name: string;
 	image: string;
 	cost: number;
 	owned: boolean;
@@ -18,7 +31,7 @@ export type BorderCardProps = {
 	onPress: () => void;
 };
 
-const labelFor = ({
+export const labelFor = ({
 	owned,
 	equipped,
 	canAfford,
@@ -29,6 +42,7 @@ const labelFor = ({
 };
 
 export const BorderCard = ({
+	name,
 	image,
 	cost,
 	owned,
@@ -37,18 +51,19 @@ export const BorderCard = ({
 	isMutating,
 	onPress,
 }: BorderCardProps) => (
-	<div className="border border-gray-800 p-3 flex flex-col gap-2">
-		<div className="aspect-square bg-black/40 flex items-center justify-center">
-			<img src={image} alt="" className="max-w-full max-h-full" />
+	<div className={clsx(CARD, equipped && CARD_WORN)}>
+		<div className={FRAME}>
+			<img src={image} alt="" className={IMAGE} />
 		</div>
-		<div className="mt-auto flex pt-2">
+		<span className={NAME}>{name}</span>
+		<span className={PRESS}>
 			<Button
 				size="sm"
-				tone="action"
+				tone={equipped ? "ambient" : "action"}
 				label={labelFor({ owned, equipped, canAfford, cost })}
 				onPress={onPress}
 				disabled={isMutating || (!owned && !canAfford)}
 			/>
-		</div>
+		</span>
 	</div>
 );

@@ -7,8 +7,8 @@ import {
 	userObjectiveProgressTable,
 	usersTable,
 } from "~/database/schema";
-import { findBorderById } from "~/modules/account/profile/domain/border.model";
-import { findTitleById } from "~/modules/account/profile/domain/title.model";
+import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
+import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
 import { localDayRange } from "~/shared/lib/dateUtils";
 
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
@@ -57,16 +57,6 @@ export const publicBuildColumn = sql<StoredPublicBuild>`json_build_object(
 	${storedKey("vendorLockedConfigId")}, ${buildPath}->>${buildKey("vendorLockedConfigId")}
 )`;
 
-export const titleOf = (equippedTitleId: string | null): string | null => {
-	if (equippedTitleId === null) return null;
-	return findTitleById(equippedTitleId)?.name ?? null;
-};
-
-export const borderUrlOf = (equippedBorderId: string | null): string | null => {
-	if (equippedBorderId === null) return null;
-	return findBorderById(equippedBorderId)?.image ?? null;
-};
-
 export type ClimberRow = {
 	userId: string;
 	displayName: string | null;
@@ -97,7 +87,7 @@ export const fetchActiveClimbers = async (): Promise<ClimberRow[]> => {
 			lastClose: lastCloseColumn,
 			startedAtGate: startedAtGateColumn,
 			handle: usersTable.github_username,
-			titleId: usersTable.equipped_title_id,
+			titleIds: usersTable.equipped_title_ids,
 			coverageUnits: runStatesTable.coverage,
 			streak: streakColumn,
 			storageKb: storageColumn,
@@ -107,12 +97,12 @@ export const fetchActiveClimbers = async (): Promise<ClimberRow[]> => {
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
 		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
 	return rows.map(
-		({ equippedBorderId, build, lastClose, titleId, ...row }) => ({
+		({ equippedBorderId, build, lastClose, titleIds, ...row }) => ({
 			...row,
 			borderUrl: borderUrlOf(equippedBorderId),
 			build: publicBuildOf(build),
 			closingBand: lastClose?.band ?? null,
-			title: titleOf(titleId),
+			title: primaryTitleName(titleIds),
 		})
 	);
 };
@@ -162,7 +152,7 @@ export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 			lastClose: lastCloseColumn,
 			startedAtGate: startedAtGateColumn,
 			handle: usersTable.github_username,
-			titleId: usersTable.equipped_title_id,
+			titleIds: usersTable.equipped_title_ids,
 			coverageUnits: runStatesTable.coverage,
 			streak: streakColumn,
 			storageKb: storageColumn,
@@ -180,12 +170,12 @@ export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 			)
 		);
 	return rows.map(
-		({ equippedBorderId, build, lastClose, titleId, ...row }) => ({
+		({ equippedBorderId, build, lastClose, titleIds, ...row }) => ({
 			...row,
 			borderUrl: borderUrlOf(equippedBorderId),
 			build: publicBuildOf(build),
 			closingBand: lastClose?.band ?? null,
-			title: titleOf(titleId),
+			title: primaryTitleName(titleIds),
 		})
 	);
 };

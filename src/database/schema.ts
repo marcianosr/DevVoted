@@ -74,7 +74,10 @@ export const usersTable = pgTable("users", {
 		.notNull()
 		.default(sql`'{}'::text[]`),
 	equipped_border_id: text("equipped_border_id"),
-	equipped_title_id: text("equipped_title_id"),
+	equipped_title_ids: text("equipped_title_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
 	owned_swatch_ids: text("owned_swatch_ids")
 		.array()
 		.notNull()

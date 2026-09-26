@@ -133,6 +133,26 @@ export const CONFIGS = {
 		costs: "A gate that does not clear rolls back every KB it was holding",
 		escrowPerCorrect: 8,
 	},
+	andAnd: {
+		id: "and-and",
+		label: "&&",
+		slots: 4,
+		description:
+			"Correct answers chain. The first link pays 1KB and every link after it pays double the last; any wrong answer sends the chain back to the start. Shares IndexedDB's 320KB run cap.",
+		gives:
+			"+1KB on the first correct answer, doubling with every link after it",
+		costs: "One wrong answer sends the chain back to its first link",
+		chainStartKb: 1,
+	},
+	yagni: {
+		id: "yagni",
+		label: "YAGNI",
+		description:
+			"Every slot your build leaves empty takes 8KB off the build space bill at each gate clear.",
+		gives: "-8KB a gate for every empty slot in the build",
+		costs: "It fills a slot itself, so it can push the build into a wider rung",
+		emptySlotDiscountKb: 8,
+	},
 	mooresLaw: {
 		id: "moores-law",
 		label: "Moore's Law",

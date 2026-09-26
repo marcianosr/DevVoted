@@ -7,6 +7,7 @@ import {
 	createKantoCoverageBarProps,
 	createKantoHeaderProps,
 	createKantoPollScreenProps,
+	kantoPollReadout,
 	createKantoQuestionProps,
 	kantoAudits,
 } from "~/test/kantoPoll.factory";
@@ -312,6 +313,31 @@ describe("PollScreen", () => {
 		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
 	});
 
+	it("keeps the panel and drops the reading when the meter is down", () => {
+		render(<PollScreen {...props} coverage={{ locked: true }} />);
+
+		const panel = screen
+			.getByRole("heading", { name: "Coverage" })
+			.closest<HTMLElement>("section");
+		if (panel === null) throw new Error("Coverage heads no panel");
+
+		expect(
+			within(panel).getByText("Coverage reading unavailable")
+		).toBeInTheDocument();
+		expect(within(panel).queryByText("35 of 40")).toBeNull();
+		expect(within(panel).queryByText("SHAKY")).toBeNull();
+		expect(screen.queryByText(/You have scored/)).toBeNull();
+		expect(screen.queryByText("Score")).toBeNull();
+	});
+
+	it("still explains what a poll pays while the meter is down", () => {
+		render(<PollScreen {...props} coverage={{ locked: true }} />);
+
+		expect(
+			screen.getByRole("button", { name: "How a correct answer is counted" })
+		).toBeInTheDocument();
+	});
+
 	it("explains what a correct answer is worth, for a reader and on hover", () => {
 		render(<PollScreen {...props} />);
 
@@ -340,7 +366,9 @@ describe("PollScreen", () => {
 	});
 
 	it("leaves the explainer out when a call site has nothing to explain", () => {
-		render(<PollScreen {...props} coverage={{ bar: props.coverage.bar }} />);
+		render(
+			<PollScreen {...props} coverage={{ bar: kantoPollReadout().bar }} />
+		);
 
 		expect(screen.queryByText("Score")).toBeNull();
 		expect(screen.queryByText(/You have scored/)).toBeNull();
@@ -351,7 +379,7 @@ describe("PollScreen", () => {
 			<PollScreen
 				{...props}
 				coverage={{
-					...props.coverage,
+					...kantoPollReadout(),
 					paid: {
 						rows: [
 							{

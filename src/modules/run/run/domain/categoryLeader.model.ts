@@ -1,6 +1,7 @@
 import { CATEGORY_CODES, type CategoryCode } from "~/shared/lib/categories";
 
 export type CategoryLeader = {
+	readonly userId: string;
 	readonly handle: string;
 	readonly githubLogin?: string;
 	readonly avatarUrl?: string;

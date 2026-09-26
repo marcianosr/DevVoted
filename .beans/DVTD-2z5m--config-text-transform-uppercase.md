@@ -1,13 +1,13 @@
 ---
 # DVTD-2z5m
 title: 'Config: text-transform: uppercase'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-08-15T13:55:10Z
-updated_at: 2026-09-24T12:49:18Z
+updated_at: 2026-09-26T15:40:34Z
 parent: DVTD-72d9
 ---
 

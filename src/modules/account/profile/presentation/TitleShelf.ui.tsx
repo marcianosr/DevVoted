@@ -1,13 +1,23 @@
+import { DexPanel } from "~/ui/kanto-theme/DexPanel.ui";
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
+import { Panel } from "~/ui/kanto-theme/Panel.ui";
+import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
-const COPY = {
-	heading: "Titles",
-	blurb: "Earned through play, never bought. Wear one.",
-	equip: "Wear",
-	unequip: "Take off",
+export const COPY = {
+	label: "titles earned",
+	worn: (worn: number, cap: number) => `${worn} of ${cap} worn`,
+	note: "A title is earned by playing and is yours permanently, even if the record that won it stops being true. Wear as many as the card holds; the first one you wear is the one other screens show.",
+	wear: "Wear",
+	takeOff: "Take off",
 	locked: "Locked",
-	none: "No titles earned yet.",
+	none: "No titles earned yet. The lines below are the bars.",
 } as const;
+
+const NAME = "min-w-0 flex-1";
+const EARNED_NAME = "block text-sm font-bold text-theme-soft";
+const LOCKED_NAME = "block text-sm font-bold text-theme-muted";
+const ERROR = "text-sm text-cinnabar";
 
 export type TitleRowProps = {
 	name: string;
@@ -15,11 +25,15 @@ export type TitleRowProps = {
 	earned: boolean;
 	equipped: boolean;
 	isMutating: boolean;
+	blocked: boolean;
 	onPress: () => void;
 };
 
 export type TitleShelfProps = {
 	rows: readonly (TitleRowProps & { id: string })[];
+	held: string;
+	worn: number;
+	cap: number;
 	error?: string;
 };
 
@@ -29,50 +43,63 @@ const TitleRow = ({
 	earned,
 	equipped,
 	isMutating,
+	blocked,
 	onPress,
 }: TitleRowProps) => (
-	<li
-		className={`border p-3 flex items-center gap-4 ${
-			earned ? "border-gray-800" : "border-gray-800/40 opacity-60"
-		}`}
+	<Panel.Row
+		theme={equipped ? "viridian" : undefined}
+		trailing={
+			earned ? (
+				<Button
+					size="sm"
+					tone={equipped ? "ambient" : "action"}
+					label={equipped ? COPY.takeOff : COPY.wear}
+					onPress={onPress}
+					disabled={isMutating || blocked}
+				/>
+			) : (
+				<Badge>{COPY.locked}</Badge>
+			)
+		}
 	>
-		<span className="min-w-0 flex-1">
-			<span className={`block ${earned ? "text-theme" : "text-pewter"}`}>
-				{name}
-			</span>
-			<span className="block text-sm text-pewter">{earnedWhen}</span>
+		<span className={NAME}>
+			<span className={earned ? EARNED_NAME : LOCKED_NAME}>{name}</span>
+			<Typography variant="hint" as="span">
+				{earnedWhen}
+			</Typography>
 		</span>
-		{earned ? (
-			<Button
-				size="sm"
-				tone="action"
-				label={equipped ? COPY.unequip : COPY.equip}
-				onPress={onPress}
-				disabled={isMutating}
-			/>
-		) : (
-			<span className="text-sm text-pewter">{COPY.locked}</span>
-		)}
-	</li>
+	</Panel.Row>
 );
 
-export const TitleShelf = ({ rows, error }: TitleShelfProps) => (
-	<section id="titles" className="space-y-3 scroll-mt-8">
-		<header className="space-y-2">
-			<h2 className="text-4xl">{COPY.heading}</h2>
-			<p className="text-lg">{COPY.blurb}</p>
-		</header>
-
-		{rows.some((row) => row.earned) ? null : (
-			<p className="text-sm text-pewter">{COPY.none}</p>
-		)}
-
-		<ul className="space-y-2">
+export const TitleShelf = ({
+	rows,
+	held,
+	worn,
+	cap,
+	error,
+}: TitleShelfProps) => (
+	<DexPanel
+		label={COPY.label}
+		count={held}
+		meta={COPY.worn(worn, cap)}
+		note={COPY.note}
+	>
+		<Panel.Rows>
 			{rows.map(({ id, ...row }) => (
 				<TitleRow key={id} {...row} />
 			))}
-		</ul>
-
-		{error && <p className="text-cinnabar text-sm">{error}</p>}
-	</section>
+		</Panel.Rows>
+		{rows.some((row) => row.earned) ? null : (
+			<Panel.Body>
+				<Typography variant="hint" as="p">
+					{COPY.none}
+				</Typography>
+			</Panel.Body>
+		)}
+		{error === undefined ? null : (
+			<Panel.Body>
+				<span className={ERROR}>{error}</span>
+			</Panel.Body>
+		)}
+	</DexPanel>
 );

@@ -296,3 +296,27 @@ describe("runOverPropsFor", () => {
 		expect(footer.asides?.[0].label).toBe("Community");
 	});
 });
+
+describe("the build at the end, with YAGNI held", () => {
+	const withYagni = (overrides = {}) =>
+		runOverPropsFor(
+			runOverFrame({
+				space: 12,
+				weight: 9,
+				configs: [CONFIGS.yagni, CONFIGS.wtfpl],
+				...overrides,
+			})
+		);
+
+	it("bills the rung less the room the build never used", () => {
+		expect(withYagni().build.badge.label).toBe("40 KB a gate");
+	});
+
+	it("says the idle weight paid its way instead of calling it wasted", () => {
+		const { build } = withYagni();
+
+		expect(build.note).not.toContain("never paid for itself");
+		expect(build.note).toContain("3 weight of it stayed empty");
+		expect(build.note).toContain("24 KB a gate off the bill");
+	});
+});

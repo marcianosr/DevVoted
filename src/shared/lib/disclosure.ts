@@ -7,6 +7,7 @@ export const disclosedIn = (
 
 export const INSTALLED_CARDS_OPEN = false;
 export const OFFERED_CARDS_OPEN = true;
+export const DEX_CARDS_OPEN = false;
 
 export const discloseAll = (
 	names: readonly string[],

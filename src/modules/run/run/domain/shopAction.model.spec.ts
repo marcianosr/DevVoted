@@ -754,3 +754,66 @@ describe("finish-reward and the audit in hand (ADR-119)", () => {
 		expect(climbing.repackagedThisShop).toBeUndefined();
 	});
 });
+
+describe("YAGNI takes the empty room off the bill at the close", () => {
+	const shopAt = (gates: number): RunState => {
+		let state: RunState = started(["js"], 12 * SLICE_WINDOW);
+		for (let gate = 0; gate < gates; gate += 1) {
+			state = clearGate(state);
+			if (gate < gates - 1)
+				state = runReducer(state, { type: "finish-reward" });
+		}
+		return state;
+	};
+
+	const withConfigs = (
+		state: RunState,
+		storage: number,
+		...configs: Config[]
+	): RunState => ({
+		...state,
+		build: { ...state.build, configs: [...state.build.configs, ...configs] },
+		storage,
+	});
+
+	const RICH = 500;
+
+	const billFor = (state: RunState): number =>
+		clearGate(runReducer(state, { type: "finish-reward" })).upkeepBilledKb ?? 0;
+
+	it("bills the rung less 8 KB for the one slot left open", () => {
+		expect(billFor(withConfigs(shopAt(2), RICH, CONFIGS.strict))).toBe(16);
+		expect(billFor(withConfigs(shopAt(2), RICH, CONFIGS.yagni))).toBe(8);
+	});
+
+	it("keeps a run solvent that the undiscounted bill would have capped", () => {
+		const TIGHT = 230;
+		const heavy = (...extra: Config[]) =>
+			runReducer(
+				withConfigs(
+					shopAt(1),
+					TIGHT,
+					CONFIGS.agentsMd,
+					CONFIGS.wtfpl,
+					CONFIGS.dependabot,
+					...extra
+				),
+				{ type: "finish-reward" }
+			);
+
+		const plain = clearGate(heavy());
+		expect(plain.upkeepBilledKb).toBe(256);
+		expect(plain.spaceDroppedTo).toBe(24);
+
+		const lean = clearGate(heavy(CONFIGS.yagni));
+		expect(lean.upkeepBilledKb).toBe(488);
+		expect(lean.spaceDroppedTo).toBeUndefined();
+	});
+
+	it("bills more, not less, when it tips a build flush with its rung", () => {
+		expect(billFor(withConfigs(shopAt(2), RICH, CONFIGS.cache))).toBe(32);
+		expect(
+			billFor(withConfigs(shopAt(2), RICH, CONFIGS.cache, CONFIGS.yagni))
+		).toBe(40);
+	});
+});

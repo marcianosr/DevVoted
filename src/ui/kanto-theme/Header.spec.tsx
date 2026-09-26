@@ -7,14 +7,9 @@ import { BALANCE_PILL_HOLD_MS, Header } from "./Header.ui";
 
 const VOLCANO = gateSwatchAt(9);
 
-const FUNDS = {
-	amount: "1843",
-	unit: "KB",
-	label: "balance",
-	kb: 1843,
-} as const;
+const FUNDS = { label: "balance", kb: 843 } as const;
 
-const figureOf = (reading = "1843 KB") =>
+const figureOf = (reading = "843 KB") =>
 	screen.getByRole("img", { name: reading });
 
 const countOf = () => document.querySelector(".balance-count");
@@ -194,14 +189,14 @@ describe("Header", () => {
 					...FUNDS,
 					preview: {
 						label: "after install",
-						figure: "1811 KB",
+						figure: "811 KB",
 						color: "vermillion",
 					},
 				}}
 			/>
 		);
 
-		expect(screen.getByText("1811 KB")).toHaveAttribute(
+		expect(screen.getByText("811 KB")).toHaveAttribute(
 			"data-screen-theme",
 			"vermillion"
 		);
@@ -255,12 +250,7 @@ describe("Header", () => {
 	});
 
 	it("names the purse the amount came from, at whatever unit it rolled to", () => {
-		render(
-			<Header
-				{...props}
-				funds={{ amount: "1.9", unit: "MB", label: "archive", kb: 1946 }}
-			/>
-		);
+		render(<Header {...props} funds={{ label: "archive", kb: 1946 }} />);
 
 		expect(figureOf("1.9 MB")).toBeInTheDocument();
 		expect(screen.getByText("MB")).toBeInTheDocument();
@@ -336,12 +326,7 @@ describe("Header", () => {
 describe("Header funds, as the balance moves", () => {
 	const props = { swatch: VOLCANO, swatches: trackTo(9) };
 
-	const fundsAt = (kb: number, amount: string, unit = "KB") => ({
-		amount,
-		unit,
-		label: "balance",
-		kb,
-	});
+	const fundsAt = (kb: number) => ({ label: "balance", kb });
 
 	afterEach(() => {
 		vi.useRealTimers();
@@ -350,38 +335,32 @@ describe("Header funds, as the balance moves", () => {
 	it("counts to the new reading when the balance climbs", () => {
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		rerender(<Header {...props} funds={fundsAt(875)} />);
 
-		expect(countAt()).toBe("1875");
+		expect(countAt()).toBe("875");
 		expect(countOf()).toHaveAttribute("data-counts", "true");
 	});
 
 	it("tints the figure as it climbs, so a gain reads before it is parsed", () => {
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		rerender(<Header {...props} funds={fundsAt(875)} />);
 
-		expect(figureOf("1875 KB")).toHaveAttribute(
-			"data-screen-theme",
-			"viridian"
-		);
+		expect(figureOf("875 KB")).toHaveAttribute("data-screen-theme", "viridian");
 	});
 
 	it("tints the figure the other way when the balance falls", () => {
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1811, "1811")} />);
+		rerender(<Header {...props} funds={fundsAt(811)} />);
 
-		expect(figureOf("1811 KB")).toHaveAttribute(
-			"data-screen-theme",
-			"cinnabar"
-		);
+		expect(figureOf("811 KB")).toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 
 	it("names the change in a pill, signed the way it went", () => {
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		rerender(<Header {...props} funds={fundsAt(875)} />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("+32 KB");
 	});
@@ -389,7 +368,7 @@ describe("Header funds, as the balance moves", () => {
 	it("names a loss with a minus rather than a plus", () => {
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1811, "1811")} />);
+		rerender(<Header {...props} funds={fundsAt(811)} />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("\u221232 KB");
 	});
@@ -405,7 +384,7 @@ describe("Header funds, as the balance moves", () => {
 		vi.useFakeTimers();
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		rerender(<Header {...props} funds={fundsAt(875)} />);
 		expect(screen.getByRole("status")).toBeInTheDocument();
 
 		act(() => {
@@ -419,21 +398,19 @@ describe("Header funds, as the balance moves", () => {
 		vi.useFakeTimers();
 		const { rerender } = render(<Header {...props} funds={FUNDS} />);
 
-		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		rerender(<Header {...props} funds={fundsAt(875)} />);
 
 		act(() => {
 			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
 		});
 
-		expect(figureOf("1875 KB")).not.toHaveAttribute("data-screen-theme");
+		expect(figureOf("875 KB")).not.toHaveAttribute("data-screen-theme");
 	});
 
 	it("refuses to count across a unit roll, which would climb downwards", () => {
-		const { rerender } = render(
-			<Header {...props} funds={fundsAt(999, "999")} />
-		);
+		const { rerender } = render(<Header {...props} funds={fundsAt(999)} />);
 
-		rerender(<Header {...props} funds={fundsAt(1946, "1.9", "MB")} />);
+		rerender(<Header {...props} funds={fundsAt(1946)} />);
 
 		expect(countOf()).toHaveAttribute("data-counts", "false");
 		expect(countAt()).toBe("1");
@@ -441,12 +418,132 @@ describe("Header funds, as the balance moves", () => {
 	});
 
 	it("still names the change across a unit roll, where the digits cannot", () => {
-		const { rerender } = render(
-			<Header {...props} funds={fundsAt(999, "999")} />
-		);
+		const { rerender } = render(<Header {...props} funds={fundsAt(999)} />);
 
-		rerender(<Header {...props} funds={fundsAt(1946, "1.9", "MB")} />);
+		rerender(<Header {...props} funds={fundsAt(1946)} />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("+947 KB");
+	});
+
+	it("names the first change before the second, when both land inside one hold", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		rerender(<Header {...props} funds={fundsAt(827)} />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("+32 KB");
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(screen.getByRole("status")).toHaveTextContent("−48 KB");
+	});
+
+	it("holds the figure on the first reading until its change has been read", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		rerender(<Header {...props} funds={fundsAt(827)} />);
+
+		expect(figureOf("875 KB")).toBeInTheDocument();
+		expect(countAt()).toBe("875");
+	});
+
+	it("tints a gain then a spend green then red, never one tint for both", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		rerender(<Header {...props} funds={fundsAt(827)} />);
+
+		expect(figureOf("875 KB")).toHaveAttribute("data-screen-theme", "viridian");
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(figureOf("827 KB")).toHaveAttribute("data-screen-theme", "cinnabar");
+	});
+
+	it("measures each change from the one before it, not from what is showing", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		rerender(<Header {...props} funds={fundsAt(827)} />);
+		rerender(<Header {...props} funds={fundsAt(859)} />);
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(screen.getByRole("status")).toHaveTextContent("+32 KB");
+	});
+
+	it("lands on the true balance once the last change has played", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		rerender(<Header {...props} funds={fundsAt(827)} />);
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(figureOf("827 KB")).toBeInTheDocument();
+		expect(screen.queryByRole("status")).not.toBeInTheDocument();
+	});
+
+	it("plays a repeated change again rather than leaving the first pill up", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(875)} />);
+		const first = screen.getByRole("status");
+
+		rerender(<Header {...props} funds={fundsAt(907)} />);
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		const second = screen.getByRole("status");
+		expect(second).toHaveTextContent("+32 KB");
+		expect(second).not.toBe(first);
+	});
+
+	it("withholds the after-install preview while a change is still playing", () => {
+		vi.useFakeTimers();
+		const pointed = (kb: number) => ({
+			...fundsAt(kb),
+			preview: {
+				label: "after install",
+				figure: "811 KB",
+				color: "vermillion",
+			} as const,
+		});
+		const { rerender } = render(<Header {...props} funds={pointed(843)} />);
+
+		expect(screen.getByText(/after install/)).toBeInTheDocument();
+
+		rerender(<Header {...props} funds={pointed(875)} />);
+
+		expect(screen.queryByText(/after install/)).not.toBeInTheDocument();
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(screen.getByText(/after install/)).toBeInTheDocument();
 	});
 });

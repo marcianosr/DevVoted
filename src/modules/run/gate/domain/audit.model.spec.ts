@@ -6,6 +6,8 @@ import {
 	type AuditId,
 	type AuditSchedule,
 	auditAt,
+	auditsHideMeter,
+	auditsResetVersions,
 	auditBurnKb,
 	auditDemandFactor,
 	auditFeeMultiplier,
@@ -40,9 +42,9 @@ const scheduleWith = (gate: number, ...ids: AuditId[]): AuditSchedule => ({
 describe("the audit roster", () => {
 	const everyAudit = AUDIT_RANK.map((id) => auditAt(id, 11));
 
-	it("holds seventeen rules, each reachable by its own id", () => {
-		expect(AUDIT_RANK).toHaveLength(17);
-		expect(new Set(AUDIT_RANK).size).toBe(17);
+	it("holds twenty rules, each reachable by its own id", () => {
+		expect(AUDIT_RANK).toHaveLength(20);
+		expect(new Set(AUDIT_RANK).size).toBe(20);
 		for (const id of AUDIT_RANK) expect(auditAt(id, 11).id).toBe(id);
 	});
 
@@ -328,7 +330,7 @@ describe("the configs an audit takes offline", () => {
 			CONFIGS.agentsMd,
 		];
 
-		it("takes the highest-level config, roll or no roll", () => {
+		it("takes the highest-version config, roll or no roll", () => {
 			expect(offlineConfigsFor(levelled, breaking, window, 0)[0]?.id).toBe(
 				"unit-tests"
 			);
@@ -359,6 +361,30 @@ describe("the configs an audit takes offline", () => {
 		});
 	});
 
+	describe("425 Too Early — the whole build, one poll", () => {
+		const tooEarly = at(5, "too-early");
+
+		it("takes every installed config on the window's opening poll", () => {
+			expect(offlineConfigsFor(build, tooEarly, window, 0)).toHaveLength(
+				build.length
+			);
+		});
+
+		it("hands the build back from the second poll on", () => {
+			expect(
+				[1, 2, 3, 4].flatMap((answered) =>
+					offlineConfigsFor(build, tooEarly, window, answered)
+				)
+			).toEqual([]);
+		});
+
+		it("bites again on the next attempt, whose window starts later", () => {
+			expect(offlineConfigsFor(build, tooEarly, window + 5, 0)).toHaveLength(
+				build.length
+			);
+		});
+	});
+
 	describe("426 Upgrade Required — the one you neglected", () => {
 		const stale = at(11, "upgrade-required");
 		const levelled = [
@@ -367,7 +393,7 @@ describe("the configs an audit takes offline", () => {
 			CONFIGS.agentsMd,
 		];
 
-		it("takes the lowest-level config, the mirror of a breaking change", () => {
+		it("takes the lowest-version config, the mirror of a breaking change", () => {
 			expect(offlineConfigsFor(levelled, stale, window, 0)).toEqual([
 				CONFIGS.agentsMd,
 			]);
@@ -493,5 +519,30 @@ describe("the defeat device (ADR-028, repurposed)", () => {
 		expect(liveAuditsFor([CONFIGS.js], 7, schedule)).toEqual(
 			auditsForGate(7, schedule)
 		);
+	});
+});
+
+describe("500 Internal Server Error", () => {
+	const meterDown = [auditAt("meter-down", 9)];
+
+	it("darkens the reading for the window's first four answers", () => {
+		expect(
+			[0, 1, 2, 3].map((answered) => auditsHideMeter(meterDown, answered))
+		).toEqual([true, true, true, true]);
+	});
+
+	it("hands the reading back on the fifth", () => {
+		expect(auditsHideMeter(meterDown, 4)).toBe(false);
+	});
+
+	it("leaves the reading standing when nothing blinds it", () => {
+		expect(auditsHideMeter([auditAt("not-found", 9)], 0)).toBe(false);
+	});
+});
+
+describe("510 Not Extended", () => {
+	it("is the one audit that flattens versions", () => {
+		expect(auditsResetVersions([auditAt("not-extended", 11)])).toBe(true);
+		expect(auditsResetVersions([auditAt("upgrade-required", 11)])).toBe(false);
 	});
 });

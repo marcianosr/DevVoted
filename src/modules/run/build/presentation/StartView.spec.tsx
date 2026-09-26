@@ -159,6 +159,17 @@ describe("StartView", () => {
 		expect(onVendorLock).toHaveBeenCalledWith(CONFIGS.agentsMd.id);
 	});
 
+	it("promises nothing back for an uninstall this screen does not pay", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		const press = screen.getByRole("button", {
+			name: `Uninstall ${CONFIGS.js.label}`,
+		});
+
+		expect(press).toHaveTextContent(/^Uninstall$/);
+		expect(screen.queryByText(/uninstalls for/)).not.toBeInTheDocument();
+	});
+
 	it("takes the uninstall press off the config it locked in", () => {
 		render(
 			<StartView

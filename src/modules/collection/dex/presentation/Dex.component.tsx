@@ -10,40 +10,39 @@ import { getConfigdex } from "~/modules/collection/dex/application/configdex.ser
 import { getGateRuns } from "~/modules/collection/dex/application/runHistory.serverfn";
 import { getPolldex } from "~/modules/collection/dex/application/polldex.serverfn";
 import {
-	DEX_TABS,
 	dexAuditsFor,
 	dexConfigsFor,
 	dexControlsFor,
 	dexPollsFor,
 	dexRunsFor,
 	dexSwatchesFor,
-	dexThemeOf,
-	isDexTabId,
 	type DexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
 import { getServiceUnlocks } from "~/modules/run/shop/application/serviceUnlock.serverfn";
-import { formatStorage } from "~/shared/lib/storage";
+import {
+	DEX_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
 import { DexAudits } from "~/ui/kanto-theme/DexAudits.ui";
 import { DexConfigs } from "~/ui/kanto-theme/DexConfigs.ui";
 import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
 import { DexPolls } from "~/ui/kanto-theme/DexPolls.ui";
 import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
-import { DexScreen } from "~/ui/kanto-theme/DexScreen.ui";
 import { DexSwatches } from "~/ui/kanto-theme/DexSwatches.ui";
 
 type DexProps = {
 	userId: string;
+	activeId: DexTabId;
 };
 
-const FIRST_TAB: DexTabId = "polls";
-const ARCHIVE_SUFFIX = "archive";
-
-export const Dex = ({ userId }: DexProps) => {
-	const [activeId, setActiveId] = useState<DexTabId>(FIRST_TAB);
-	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+export const Dex = ({ userId, activeId }: DexProps) => {
+	const [configFlips, setConfigFlips] = useState<ReadonlySet<string>>(
+		new Set()
+	);
 
 	const polldex = useQuery({
 		queryKey: pollQueryKeys.polldex(userId),
@@ -82,31 +81,36 @@ export const Dex = ({ userId }: DexProps) => {
 		? configdex(unlocks.data.data.unlocks, unlocks.data.data.progress)
 		: [];
 
-	const archive = useArchiveState(userId);
-
 	const gates = gatedex(ownedSwatchIds);
 
-	const selectTab = (id: string) => {
-		if (isDexTabId(id)) setActiveId(id);
-	};
+	const configs = dexConfigsFor(configEntries);
+	const configIds = configs.groups.flatMap((group) =>
+		group.chips.map((card) => card.id)
+	);
 
-	const toggleInfo = (configId: string) =>
-		setOpenInfo(configId === openInfo ? undefined : configId);
+	const configsOpen = disclosedIn(configIds, configFlips, DEX_CARDS_OPEN);
+
+	const toggleConfig = (configId: string) =>
+		setConfigFlips(toggleDisclosure(configFlips, configId));
+
+	const toggleAllConfigs = () =>
+		setConfigFlips(
+			discloseAll(
+				configIds,
+				configsOpen.size < configIds.length,
+				DEX_CARDS_OPEN
+			)
+		);
 
 	return (
-		<DexScreen
-			tabs={DEX_TABS}
-			activeId={activeId}
-			onSelect={selectTab}
-			theme={dexThemeOf(activeId)}
-			archive={`${formatStorage(archive.data?.archivedStorage ?? 0)} ${ARCHIVE_SUFFIX}`}
-		>
+		<>
 			{activeId === "polls" ? <DexPolls {...dexPollsFor(entries)} /> : null}
 			{activeId === "configs" ? (
 				<DexConfigs
-					{...dexConfigsFor(configEntries)}
-					openInfo={openInfo}
-					onToggleInfo={toggleInfo}
+					{...configs}
+					openInfo={configsOpen}
+					onToggleInfo={toggleConfig}
+					onToggleAll={toggleAllConfigs}
 				/>
 			) : null}
 			{activeId === "controls" ? (
@@ -119,6 +123,6 @@ export const Dex = ({ userId }: DexProps) => {
 				<DexSwatches {...dexSwatchesFor(gates)} />
 			) : null}
 			{activeId === "runs" ? <DexRuns {...dexRunsFor(history)} /> : null}
-		</DexScreen>
+		</>
 	);
 };

@@ -6,6 +6,7 @@ import {
 	answerOutcome,
 	answersPerGate,
 	cachedHitsFor,
+	chainLengthOf,
 	coverageShare,
 } from "~/modules/run/run/domain/runPoll.model";
 
@@ -257,5 +258,71 @@ describe("answersPerGate splits the run's record into the gates that own it", ()
 
 		expect(idsIn(rows)[0]).toEqual(["p0", "p1", "p2", "p3", "p4"]);
 		expect(idsIn(rows)[1]).toEqual(["p5", "p6"]);
+	});
+});
+
+describe("chainLengthOf counts correct answers since the last wrong one", () => {
+	const answered = (
+		category: AnsweredPoll["category"],
+		outcome: AnswerOutcome,
+		gate = 0
+	): AnsweredPoll => ({
+		id: `${category}-${outcome}-${gate}`,
+		question: "",
+		category,
+		outcome,
+		picked: [],
+		gate,
+	});
+
+	it("starts at nothing with no answers", () => {
+		expect(chainLengthOf([])).toBe(0);
+	});
+
+	it("adds a link per correct answer", () => {
+		expect(
+			chainLengthOf([answered("js", "correct"), answered("js", "correct")])
+		).toBe(2);
+	});
+
+	it("chains across categories, unlike a cached hit", () => {
+		const history = [
+			answered("css", "correct"),
+			answered("js", "correct"),
+			answered("java", "correct"),
+		];
+		expect(chainLengthOf(history)).toBe(3);
+		expect(cachedHitsFor(history, "js")).toBe(1);
+	});
+
+	it("chains across a gate boundary, unlike the run streak", () => {
+		const history = [
+			answered("js", "correct", 0),
+			answered("css", "correct", 1),
+		];
+		expect(chainLengthOf(history)).toBe(2);
+	});
+
+	it("short-circuits back to nothing on a wrong answer", () => {
+		const history = [
+			answered("js", "correct"),
+			answered("css", "correct"),
+			answered("java", "wrong"),
+		];
+		expect(chainLengthOf(history)).toBe(0);
+	});
+
+	it("restarts the chain after a break", () => {
+		const history = [
+			answered("js", "correct"),
+			answered("js", "wrong"),
+			answered("css", "correct"),
+		];
+		expect(chainLengthOf(history)).toBe(1);
+	});
+
+	it("neither extends nor breaks on a partial answer", () => {
+		const history = [answered("js", "correct"), answered("css", "partial")];
+		expect(chainLengthOf(history)).toBe(1);
 	});
 });

@@ -1,6 +1,6 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-import { Config } from "~/modules/run/config/domain/config.model";
+import { chainKbFor, Config } from "~/modules/run/config/domain/config.model";
 import { bumpInFor } from "~/modules/run/config/domain/autoUpgrade.model";
 import {
 	type AnswerContext,
@@ -13,6 +13,7 @@ export type ConfigStatus =
 			readonly kind: "online";
 			readonly coverage?: Coverage;
 			readonly bumpIn?: number;
+			readonly nextLinkKb?: number;
 			readonly holdingKb?: number;
 			readonly capLeftKb?: number;
 	  }
@@ -47,6 +48,7 @@ export type PollStatusContext = AnswerContext & {
 	readonly offlineAudit?: string;
 	readonly faucetRemainingKb: number;
 	readonly autoUpgradeProgress: number;
+	readonly chainLength: number;
 	readonly pendingKb: number;
 };
 
@@ -61,14 +63,14 @@ const coverageOnPoll = (
 
 const drawsOnFaucet = (config: Config): boolean =>
 	config.storagePerCorrect !== undefined ||
-	config.escrowPerCorrect !== undefined;
+	config.escrowPerCorrect !== undefined ||
+	config.chainStartKb !== undefined;
 
 const paysOnThisAnswer = (
 	config: Config,
 	context: PollStatusContext
 ): boolean =>
-	(config.storagePerCorrect !== undefined && context.faucetRemainingKb > 0) ||
-	(config.escrowPerCorrect !== undefined && context.faucetRemainingKb > 0) ||
+	(drawsOnFaucet(config) && context.faucetRemainingKb > 0) ||
 	config.storagePerExtraPick !== undefined;
 
 const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
@@ -147,13 +149,12 @@ const SKIP_REASONS: readonly ((
 	(config) =>
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||
+		config.emptySlotDiscountKb !== undefined ||
 		config.coveragePerEstimate !== undefined
 			? { kind: "paysAtGateClear" }
 			: undefined,
 	(config, context) =>
-		(config.storagePerCorrect !== undefined ||
-			config.escrowPerCorrect !== undefined) &&
-		context.faucetRemainingKb === 0
+		drawsOnFaucet(config) && context.faucetRemainingKb === 0
 			? { kind: "runCapReached" }
 			: undefined,
 	(config, context) =>
@@ -190,6 +191,10 @@ export const configStatusFor = (
 		return { kind: "skipped", why: skipReasonFor(config, context) };
 
 	const bumpIn = bumpInFor(config, context.autoUpgradeProgress);
+	const nextLinkKb =
+		config.chainStartKb === undefined
+			? undefined
+			: chainKbFor([config], context.chainLength + 1);
 	const holdingKb =
 		config.escrowPerCorrect !== undefined && context.pendingKb > 0
 			? context.pendingKb
@@ -199,6 +204,7 @@ export const configStatusFor = (
 		kind: "online",
 		...(coverage === undefined ? {} : { coverage }),
 		...(bumpIn === undefined ? {} : { bumpIn }),
+		...(nextLinkKb === undefined ? {} : { nextLinkKb }),
 		...(holdingKb === undefined ? {} : { holdingKb }),
 		...(drawsOnFaucet(config) ? { capLeftKb: context.faucetRemainingKb } : {}),
 	};

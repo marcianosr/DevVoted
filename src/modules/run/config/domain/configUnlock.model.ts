@@ -7,6 +7,7 @@ export const ONE_SHOT_METRICS = [
 	"mirror-clear-no-miss",
 	"sold-three-one-shop",
 	"lean-gate-four",
+	"free-rung-gate-four",
 	"banked-256-one-run",
 	"finished-holding-a-dealt-config",
 ] as const;
@@ -330,6 +331,20 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Answer 200 polls correctly",
 		"answered 200 polls correctly",
 		775
+	),
+	"and-and": earned(
+		"perfect-windows",
+		5,
+		"Close 5 perfect windows",
+		"closed 5 perfect windows",
+		850
+	),
+	yagni: earned(
+		"free-rung-gate-four",
+		1,
+		"Reach gate 4 having never paid upkeep",
+		"reached gate 4 having never paid upkeep",
+		875
 	),
 };
 

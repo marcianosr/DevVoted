@@ -11,6 +11,7 @@ import {
 	chipFor,
 	figureLabel,
 	infoFor,
+	settledChipFor,
 	upgradesFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
 
@@ -22,6 +23,7 @@ import {
 	abArmLabel,
 	DRAFT_COST_PER_SLOT_KB,
 	draftCost,
+	emptySlotCreditPerSlotKb,
 	sellRefund,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
@@ -30,6 +32,7 @@ import { lintCost, peekCost } from "~/modules/run/run/domain/paidAction.model";
 import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import {
 	BASE_SLOTS,
+	spaceRungFor,
 	BUILD_SPACE_RUNGS,
 	MAX_PARTIAL_SHARE,
 	rungIndexFitting,
@@ -87,7 +90,10 @@ import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
 import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 import type { PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
-import type { PollScreenProps } from "~/ui/kanto-theme/PollScreen.ui";
+import type {
+	PollReadout,
+	PollScreenProps,
+} from "~/ui/kanto-theme/PollScreen.ui";
 import type {
 	QuestionOption,
 	QuestionProps,
@@ -371,16 +377,18 @@ export const createKantoPollFactsProps = createMockDataFactory<
 	},
 });
 
+export const kantoPollReadout = (): PollReadout => ({
+	bar: createKantoCoverageBarProps(),
+	lead: kantoCoverageLead(),
+	paid: {
+		rows: pollPayoutRows(KANTO_RUN_PAYOUTS).slice(-1),
+	},
+});
+
 export const createKantoPollScreenProps =
 	createMockDataFactory<PollScreenProps>({
 		header: createKantoHeaderProps(),
-		coverage: {
-			bar: createKantoCoverageBarProps(),
-			lead: kantoCoverageLead(),
-			paid: {
-				rows: pollPayoutRows(KANTO_RUN_PAYOUTS).slice(-1),
-			},
-		},
+		coverage: kantoPollReadout(),
 		category: "TypeScript",
 		categoryColor: "cinnabar",
 		wrongCost: "0.77",
@@ -853,7 +861,7 @@ export const kantoNewRunBuild = (
 			name: config.label,
 			badges: [{ label: figureLabel(config), color: "viridian" as const }],
 			onUninstall: noop,
-			...chipFor(config),
+			...settledChipFor(config),
 		})
 	);
 
@@ -877,7 +885,10 @@ import {
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { failPeelQuotaFor } from "~/modules/run/gate/domain/gate.model";
 import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
-import { gateClearPayout } from "~/modules/run/build/domain/build.model";
+import {
+	gateClearPayout,
+	occupiedSlots,
+} from "~/modules/run/build/domain/build.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	fundsOf,
@@ -1046,6 +1057,12 @@ export const kantoPrepAt = ({
 		audits: audits.map((id, position) => prepAuditViewAt(gate, id, position)),
 		balanceKb,
 		buildSpace,
+		spaceBillKb: Math.max(
+			0,
+			spaceRungFor(buildSpace).kb -
+				emptySlotCreditPerSlotKb(configs) *
+					Math.max(0, buildSpace - occupiedSlots(configs))
+		),
 		window,
 		bar: { ...prepLadderAt(gate), held: coverageHeld },
 		coverageGainPercent: coverageGainPercentFor(

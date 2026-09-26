@@ -1,13 +1,13 @@
 ---
 # DVTD-wfkv
 title: 'Config: show how many climbers run each config'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-01T20:26:12Z
-updated_at: 2026-09-24T12:49:23Z
+updated_at: 2026-09-26T15:40:29Z
 parent: DVTD-72d9
 blocked_by:
     - DVTD-144r

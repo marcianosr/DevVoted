@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
 	findTitleById,
 	isExclusive,
+	removeTitle,
 	TITLE_METRICS,
 	TITLES,
 	titlesEarnedBy,
 	visibleTitles,
+	wearTitle,
+	WORN_TITLE_CAP,
 } from "~/modules/account/profile/domain/title.model";
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 
@@ -177,5 +180,94 @@ describe("visibleTitles", () => {
 		).length;
 
 		expect(visibleTitles([]).length).toBe(TITLES.length - granted);
+	});
+});
+
+const OWNED = [
+	"title-summit",
+	"title-completer",
+	"title-flawless",
+	"title-first-ascent",
+] as const;
+
+describe("wearTitle", () => {
+	it("wears a title the account owns", () => {
+		expect(wearTitle([], "title-summit", OWNED)).toEqual({
+			kind: "worn",
+			worn: ["title-summit"],
+		});
+	});
+
+	it("appends behind what is already worn, so the first stays primary", () => {
+		const decision = wearTitle(["title-summit"], "title-completer", OWNED);
+
+		expect(decision).toEqual({
+			kind: "worn",
+			worn: ["title-summit", "title-completer"],
+		});
+	});
+
+	it("refuses a title the account has not earned", () => {
+		expect(wearTitle([], "title-summit", [])).toEqual({
+			kind: "refused",
+			reason: "not-owned",
+		});
+	});
+
+	it("refuses an id no catalogue entry claims", () => {
+		expect(wearTitle([], "title-does-not-exist", OWNED)).toEqual({
+			kind: "refused",
+			reason: "unknown",
+		});
+	});
+
+	it("refuses a title already worn, so the worn set never repeats one", () => {
+		expect(wearTitle(["title-summit"], "title-summit", OWNED)).toEqual({
+			kind: "refused",
+			reason: "already-worn",
+		});
+	});
+
+	it("refuses one past the cap", () => {
+		const full = OWNED.slice(0, WORN_TITLE_CAP);
+
+		expect(wearTitle(full, "title-first-ascent", OWNED)).toEqual({
+			kind: "refused",
+			reason: "at-cap",
+		});
+	});
+
+	it("leaves the worn set untouched when it refuses", () => {
+		const worn = ["title-summit"];
+		wearTitle(worn, "title-completer", []);
+
+		expect(worn).toEqual(["title-summit"]);
+	});
+});
+
+describe("removeTitle", () => {
+	it("takes off a worn title", () => {
+		expect(removeTitle(["title-summit"], "title-summit")).toEqual([]);
+	});
+
+	it("keeps the order of the titles still worn", () => {
+		const worn = ["title-summit", "title-completer", "title-flawless"];
+
+		expect(removeTitle(worn, "title-completer")).toEqual([
+			"title-summit",
+			"title-flawless",
+		]);
+	});
+
+	it("promotes the second title to primary when the first comes off", () => {
+		const worn = ["title-summit", "title-completer"];
+
+		expect(removeTitle(worn, "title-summit")[0]).toBe("title-completer");
+	});
+
+	it("changes nothing when the title is not worn", () => {
+		const worn = ["title-summit"];
+
+		expect(removeTitle(worn, "title-flawless")).toEqual(["title-summit"]);
 	});
 });

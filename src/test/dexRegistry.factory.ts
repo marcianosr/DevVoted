@@ -5,8 +5,9 @@ import type {
 	DexAuditRow,
 	DexAuditsProps,
 } from "~/ui/kanto-theme/DexAudits.ui";
-import type { DexUnlockPath } from "~/ui/kanto-theme/DexConfigChip.ui";
+import type { ConfigUnlockPath } from "~/ui/kanto-theme/ConfigUnlock.ui";
 import type {
+	DexConfigCard,
 	DexConfigsProps,
 	DexWeightGroup,
 } from "~/ui/kanto-theme/DexConfigs.ui";
@@ -59,14 +60,14 @@ export const dexPollsProps = (
 	...overrides,
 });
 
-const STARTER_PROVENANCE = "Starter config";
+const FIGURE_COLOR = "viridian" as const;
 
 const lockPaths = (
 	thematic: string,
 	count: number,
 	target: number,
 	fallbackTarget: number
-): readonly DexUnlockPath[] => [
+): readonly ConfigUnlockPath[] => [
 	{ text: thematic, progress: { count, target } },
 	{
 		text: `Answer ${fallbackTarget} polls`,
@@ -74,85 +75,109 @@ const lockPaths = (
 	},
 ];
 
+const STARTER_PROVENANCE = "Starter config";
+
+const noteLine = (provenance: string, maxVersion?: number): string =>
+	maxVersion === undefined ? provenance : `${provenance} · v1 of ${maxVersion}`;
+
+type GrantedCard = {
+	id: string;
+	name: string;
+	slots: number;
+	effect: string;
+	provenance?: string;
+	figure?: string;
+	maxVersion?: number;
+};
+
+const grantedCard = ({
+	id,
+	name,
+	slots,
+	effect,
+	provenance,
+	figure,
+	maxVersion,
+}: GrantedCard): DexConfigCard => ({
+	id,
+	name,
+	slots,
+	version: maxVersion,
+	badges: figure === undefined ? [] : [{ label: figure, color: FIGURE_COLOR }],
+	info: {
+		description: effect,
+		slots,
+		note: noteLine(provenance ?? STARTER_PROVENANCE, maxVersion),
+	},
+});
+
 export const dexConfigGroups: readonly DexWeightGroup[] = [
 	{
 		weight: 2,
-		heading: "2 weight · 3 of 5",
+		label: "weight 2",
+		held: "3 of 5",
 		chips: [
-			{
+			grantedCard({
 				id: "codeCoverage",
-				slots: 2,
-				state: "granted",
 				name: "Code Coverage",
+				slots: 2,
 				effect: "Correct answers pay +10% coverage",
-				starter: true,
-				provenance: STARTER_PROVENANCE,
 				figure: "+10%",
-			},
-			{
+			}),
+			grantedCard({
 				id: "indexedDb",
-				slots: 2,
-				state: "granted",
 				name: "IndexedDB",
-				effect: "+8KB per correct answer, up to 320KB a run",
-				starter: true,
-				provenance: STARTER_PROVENANCE,
-				figure: "+8 KB",
-			},
-			{
-				id: "regressionTest",
 				slots: 2,
-				state: "granted",
+				effect: "+8KB per correct answer, up to 320KB a run",
+				figure: "+8 KB",
+			}),
+			grantedCard({
+				id: "regressionTest",
 				name: "Regression Test",
+				slots: 2,
 				effect: "Polls you have previously missed pay ×2 coverage",
-				starter: false,
 				provenance: "Earned: answered 25 polls correctly",
 				figure: "×2",
-			},
+			}),
 			{
 				id: "planningPoker",
-				slots: 2,
-				state: "met",
 				name: "Planning Poker",
-				paths: lockPaths("Land 3 exact estimates", 1, 3, 575),
+				slots: 2,
+				badges: [],
+				unlock: lockPaths("Land 3 exact estimates", 1, 3, 575),
 			},
 			{
 				id: "lock",
+				locked: true,
 				slots: 2,
-				state: "locked",
-				paths: lockPaths("Lock 5 shop offers", 2, 5, 550),
+				unlock: lockPaths("Lock 5 shop offers", 2, 5, 550),
 			},
 		],
 	},
 	{
 		weight: 1,
-		heading: "1 weight · 2 of 3",
+		label: "weight 1",
+		held: "2 of 3",
 		chips: [
-			{
+			grantedCard({
 				id: "js",
-				slots: 1,
-				state: "granted",
 				name: ".js",
+				slots: 1,
 				effect: "JavaScript polls reward ×1.25 coverage",
-				starter: true,
-				provenance: STARTER_PROVENANCE,
 				figure: "×1.25",
 				maxVersion: 5,
-			},
-			{
+			}),
+			grantedCard({
 				id: "eslint",
-				slots: 1,
-				state: "granted",
 				name: "ESLint",
+				slots: 1,
 				effect: "Cross out a wrong answer on JavaScript / TypeScript polls",
-				starter: true,
-				provenance: STARTER_PROVENANCE,
-			},
+			}),
 			{
 				id: "html",
+				locked: true,
 				slots: 1,
-				state: "locked",
-				paths: lockPaths("Answer 10 HTML polls correctly", 4, 10, 25),
+				unlock: lockPaths("Answer 10 HTML polls correctly", 4, 10, 25),
 			},
 		],
 	},
@@ -165,7 +190,9 @@ export const dexConfigsProps = (
 	count: "18 of 44",
 	meta: "by weight",
 	note: "Configs in the deck can be dealt into a hand or offered in the shop.",
+	openInfo: new Set(),
 	onToggleInfo: () => {},
+	onToggleAll: () => {},
 	...overrides,
 });
 

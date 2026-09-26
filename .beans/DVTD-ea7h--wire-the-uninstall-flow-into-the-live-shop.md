@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-22T18:49:30Z
-updated_at: 2026-09-24T12:49:07Z
+updated_at: 2026-09-26T17:06:54Z
 parent: DVTD-cb52
 ---
 
@@ -61,3 +61,16 @@ consequences the story's fixed `capacity: 10` does not model.
 - Back the modal with real balance/slots/capacity from `shopScreen.viewmodel.ts`
 - Decide what an uninstall does to build space under ADR-082
 - Spec the refund and the freed slot against the live viewmodel, not the factory
+
+## The quote still disagrees with the payout (2026-09-26)
+
+Confirmed while fixing DVTD-ptum, and left alone deliberately: the shop's card
+quotes `sellRefund`, the undiscounted figure, while `sell` pays
+`sellRefundIn`, which halves again under a draft discount and pays nothing at
+all while a config offering the full roster is installed. So a shop holding
+WTFPL quotes a refund of 32 KB and pays 0.
+
+Fixing it means threading the installed build into `offerChipFor` /
+`buildChipFor`, which today take a config and a deal and know nothing about the
+rest of the build. That is the 'decide the refund rule' box above, not a
+separate concern.

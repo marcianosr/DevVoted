@@ -19,6 +19,7 @@ export type RunOption = {
 export type AnswerType = "single" | "multiple";
 
 export type PollAuthor = {
+	readonly userId?: string;
 	readonly handle: string;
 	readonly avatarUrl?: string;
 	readonly borderUrl?: string;
@@ -179,14 +180,15 @@ export const answersPerGate = (
 	);
 };
 
+export const chainLengthOf = (answered: readonly AnsweredPoll[]): number =>
+	answered.reduce((links, poll) => {
+		if (poll.outcome === "correct") return links + 1;
+		if (poll.outcome === "wrong") return 0;
+		return links;
+	}, 0);
+
 export const cachedHitsFor = (
 	answered: readonly AnsweredPoll[],
 	category: CategoryCode
 ): number =>
-	answered
-		.filter((poll) => poll.category === category)
-		.reduce((hits, poll) => {
-			if (poll.outcome === "correct") return hits + 1;
-			if (poll.outcome === "wrong") return 0;
-			return hits;
-		}, 0);
+	chainLengthOf(answered.filter((poll) => poll.category === category));

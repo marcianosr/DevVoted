@@ -89,7 +89,7 @@ describe("shopHeaderFor, previewing an install", () => {
 	it("leaves the balance alone when nothing is pointed at", () => {
 		const header = shopHeaderFor(CLEARED, BALANCE_KB);
 
-		expect(header.funds?.amount).toBe("410");
+		expect(header.funds?.kb).toBe(BALANCE_KB);
 		expect(header.funds?.preview).toBeUndefined();
 	});
 
@@ -107,7 +107,6 @@ describe("shopHeaderFor, previewing an install", () => {
 		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], 32);
 
 		expect(header.funds?.kb).toBe(BALANCE_KB);
-		expect(header.funds?.amount).toBe("410");
 	});
 
 	it("states no after for an offer the balance cannot cover", () => {

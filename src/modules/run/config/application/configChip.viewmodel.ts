@@ -169,11 +169,17 @@ export const infoFor = (config: Config, note?: string): ConfigFactsProps => ({
 export const settledFactsFor = (config: Config): ConfigFactsProps =>
 	factsOf(config);
 
-export const chipFor = (config: Config, note?: string) => ({
+const chipWith = (config: Config, info: ConfigFactsProps) => ({
 	slots: slotsOf(config),
 	version: config.level,
-	info: infoFor(config, note),
+	info,
 });
+
+export const chipFor = (config: Config, note?: string) =>
+	chipWith(config, infoFor(config, note));
+
+export const settledChipFor = (config: Config) =>
+	chipWith(config, settledFactsFor(config));
 
 const HERE = "here";
 const IDLE = "idle this poll";

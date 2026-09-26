@@ -149,6 +149,7 @@ describe("leadersFor", () => {
 	const gitSeat = {
 		category: "git" as const,
 		leader: {
+			userId: "leader-id",
 			handle: "@blue",
 			githubLogin: "blue",
 			borderUrl: "/borders/x.png",
@@ -166,10 +167,18 @@ describe("leadersFor", () => {
 					githubLogin: "blue",
 					borderUrl: "/borders/x.png",
 					figure: "13 in a row",
+					profileHref: "/profile/leader-id",
 					you: true,
 				},
 			},
 		]);
+	});
+
+	it("sends the seat's face to that player's page, not to GitHub", () => {
+		const [seat] = leadersFor([gitSeat]).seats;
+
+		expect(seat.leader?.profileHref).toBe("/profile/leader-id");
+		expect(seat.leader?.githubLogin).toBe("blue");
 	});
 
 	it("says what claims a seat nobody holds", () => {
@@ -202,7 +211,7 @@ describe("seatsFooterFor", () => {
 		const footer = seatsFooterFor([
 			{
 				category: "git",
-				leader: { handle: "@blue", streak: 13, you: false },
+				leader: { userId: "blue-id", handle: "@blue", streak: 13, you: false },
 			},
 		]);
 
@@ -218,7 +227,7 @@ describe("CommunityView", () => {
 		leaders: [
 			{
 				category: "git",
-				leader: { handle: "@owen", streak: 13, you: false },
+				leader: { userId: "owen-id", handle: "@owen", streak: 13, you: false },
 			},
 		],
 		polls: [answered(10, 0), answered(11, 1)],
@@ -253,7 +262,7 @@ describe("CommunityView", () => {
 
 		expect(screen.getByText("13 in a row")).toBeInTheDocument();
 		expect(screen.getByText("3 players answered")).toBeInTheDocument();
-		expect(screen.getAllByText("top 18%")).toHaveLength(2);
+		expect(screen.getAllByText("top 18%")).toHaveLength(1);
 	});
 
 	it("places every climber under their gate, and rings today's rivals", () => {

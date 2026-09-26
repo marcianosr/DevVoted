@@ -853,3 +853,28 @@ describe("the recommended opening (ADR-057)", () => {
 		expect(toRunView(dealt()).recommendedConfigIds).toEqual([]);
 	});
 });
+
+describe("the bill the shop reports with YAGNI held", () => {
+	const holding = (...configs: Config[]) => {
+		const base = answering();
+		return toRunView({ ...base, build: { ...base.build, configs } });
+	};
+
+	const weightOf = (count: number) =>
+		Array.from({ length: count }, () => CONFIGS.strict);
+
+	it("reads the bill less the room the build is not using", () => {
+		expect(holding(...weightOf(5)).buildSpace.perGateKb).toBe(16);
+		expect(holding(CONFIGS.yagni, ...weightOf(4)).buildSpace.perGateKb).toBe(8);
+	});
+
+	it("carries the discounted figure onto the recurring bill", () => {
+		const line = holding(
+			CONFIGS.yagni,
+			...weightOf(6)
+		).gateStake.subscriptions.lines.find((entry) => entry.id === "build-space");
+
+		expect(line?.label).toBe("8 weight build space");
+		expect(line?.kb).toBe(24);
+	});
+});

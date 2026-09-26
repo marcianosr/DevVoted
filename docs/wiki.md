@@ -147,7 +147,8 @@ gate keeps its audits on the retry, though whatever an audit picks (which config
 offline) rolls again.
 
 Every audit is named for the HTTP status it behaves like, and the class carries the
-signal: **4xx means the rules changed on you**, **5xx means your build is down**.
+signal: **4xx means the rules changed on you**, **5xx means something on your side
+broke**.
 
 | Audit                                 | What it does                                                                                                                                                                                                                                                                            |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -158,16 +159,24 @@ signal: **4xx means the rules changed on you**, **5xx means your build is down**
 | **404 Not Found**                     | No poll names its category, so which of your configs is about to pay is yours to work out.                                                                                                                                                                                              |
 | **405 Method Not Allowed**            | The shop _before_ this gate is read-only: nothing bought, sold, upgraded or switched.                                                                                                                                                                                                   |
 | **408 Request Timeout**               | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked.                                                                                                                                                                                 |
-| **409 Conflict**                      | Your highest-level config takes a breaking change and is switched off for the attempt.                                                                                                                                                                                                  |
+| **409 Conflict**                      | Your highest-version config takes a breaking change and is switched off for the attempt.                                                                                                                                                                                                |
 | **410 Gone**                          | Deepens the peel: 10 points at Elite, 15 at the Champion, where a rival lands it.                                                                                                                                                                                                       |
 | **413 Payload Too Large**             | Every slot past the 12th leaks 8 KB a poll, so a wide build pays to carry itself.                                                                                                                                                                                                       |
 | **424 Failed Dependency**             | One config is offline for the whole attempt.                                                                                                                                                                                                                                            |
-| **426 Upgrade Required**              | Your lowest-level config goes out of date and sits the attempt out.                                                                                                                                                                                                                     |
+| **425 Too Early**                     | Your configs do not contribute to the window's opening poll. That poll's ordinary base credit still scores, so an opener build such as Overclock loses its one big answer and still pays the throttle that bought it.                                                                   |
+| **426 Upgrade Required**              | Your lowest-version config goes out of date and sits the attempt out.                                                                                                                                                                                                                   |
 | **429 Too Many Requests**             | One paid action for the whole window: the linter or the peek, not both.                                                                                                                                                                                                                 |
 | **451 Unavailable For Legal Reasons** | The window's first 3 polls arrive with 2 answers redacted as `?????`. A redacted answer is still pickable; 4 KB buys one back.                                                                                                                                                          |
+| **500 Internal Server Error**         | The coverage meter, the band beside it and the gate's units row go dark for the window's first 4 polls and come back for the fifth. Scoring is unchanged; you simply answer without knowing where you stand.                                                                            |
 | **502 Bad Gateway**                   | One config flakes on every poll, rolled fresh each time.                                                                                                                                                                                                                                |
 | **503 Service Unavailable**           | A different config is down for each poll of the window.                                                                                                                                                                                                                                 |
 | **507 Insufficient Storage**          | Storage leaks every poll: −16 KB, −32 KB on a miss.                                                                                                                                                                                                                                     |
+| **510 Not Extended**                  | Every upgraded config runs at v1 for the attempt. Nothing goes offline; the versions you bought simply do nothing, and a build you never upgraded shrugs it off.                                                                                                                        |
+
+Three audits take a config without taking it offline. **425** takes the whole build for
+one poll, **510** takes every version the build bought for the whole attempt, and **500**
+takes nothing at all — only the reading. A build with no upgrades shrugs 510 off the way a
+narrow build shrugs off 413, and an attacker can tell in advance, since builds are open.
 
 The five offline audits differ only in which config they take and for how long. Three
 roll at random (seeded, so a reload never re-rolls one); 409 aims at whatever
@@ -474,13 +483,17 @@ what a rival's payload is drawn from when they aim at that gate:
 
 <!-- BEGIN GENERATED:AUDIT_POOLS -->
 
-| Pool  | Lands at                   | Holds                                                                     |
-| ----- | -------------------------- | ------------------------------------------------------------------------- |
-| **A** | gates 3 to 7, room for 1   | 207, 404, 405, 424, 429, 451, 502, 507                                    |
-| **B** | gates 8 to 10, room for 2  | 207, 300, 402, 404, 405, 408, 409, 413, 424, 426, 429, 451, 502, 503, 507 |
-| **C** | gates 11 to 12, room for 3 | 207, 300, 403, 408, 409, 410, 413, 426, 451, 502, 503, 507                |
+| Pool  | Lands at                   | Holds                                                                               |
+| ----- | -------------------------- | ----------------------------------------------------------------------------------- |
+| **A** | gates 3 to 7, room for 1   | 207, 404, 405, 424, 429, 451, 500, 502, 507                                         |
+| **B** | gates 8 to 10, room for 2  | 207, 300, 402, 404, 405, 408, 409, 413, 424, 425, 426, 429, 451, 500, 502, 503, 507 |
+| **C** | gates 11 to 12, room for 3 | 207, 300, 403, 408, 409, 410, 413, 425, 426, 451, 500, 502, 503, 507, 510           |
 
 <!-- END GENERATED:AUDIT_POOLS -->
+
+425 and 510 answer to how hard they hit: 425 costs about a fifth of a window's config
+value and waits for pool B, 510 has the highest ceiling of the three and is Elite-tier
+only. 500 takes nothing away, so it is drawn from gate 3 on.
 
 409 and 426 read a config's level, so they wait for pool B where upgrades exist; 413
 needs a build past 12 slots to bite; 403 and 410 are Elite-tier only; 402 is absent
@@ -548,6 +561,14 @@ below 32, the top of the ladder: a build that does not fit its rung rents the on
 pressure: crossing from 4 to 5 weight costs 16 KB at every gate for the rest of the run,
 so the question is never "can I afford this config" but "can I afford it every gate".
 
+**YAGNI is the one config that touches the bill** ([4.3](#43-roster)). It takes **8 KB
+a gate off the rent for every slot the build leaves empty**, so the 9-weight build above
+pays 40 rather than 64. Eight is deliberately less than a rung is worth: crossing up is
+still always a loss and stepping back down is still always a saving, so the pressure
+above survives the discount rather than being cancelled by it (ADR-122). While it is
+held, every install arms — an install inside the rung you already rent now raises the
+bill too, by eating an empty slot, so the press states the new figure before it commits.
+
 **Crossing a rung asks twice.** An install that widens the rung arms instead of
 committing: the press opens with `Build space scales 4 → 6` and `Upkeep becomes 16 KB a
 gate`, and installs on a second press. An install that fits the rung you already rent is
@@ -593,6 +614,9 @@ card that does not fit is refused rather than rented — so nothing can start
 over-capacity, and picking nothing at all is the only thing that holds the button.
 Nothing in a build is ever locked or mandatory. The run opens on the free
 four and rents nothing before it starts; the ladder opens at the Boulder gate.
+Nothing in the opening build is paid for, so taking one back out refunds
+nothing, and the screen quotes no refund: the shop is the only place an
+uninstall pays ([5.4](#54-the-shop)).
 
 The deal is shaped, not just shuffled (ADR-062). Three rules hold on every seed:
 nothing larger than your opening slots is dealt (so a card is always installable,
@@ -670,7 +694,7 @@ worth half a maxed build. The Dex's Configs tab orders the roster by size.
 
 <!-- BEGIN GENERATED:CONFIG_COUNTS -->
 
-**43 configs** ship. **8** are granted at signup and the other **35** unlock individually.
+**45 configs** ship. **8** are granted at signup and the other **37** unlock individually.
 
 <!-- END GENERATED:CONFIG_COUNTS -->
 
@@ -680,6 +704,7 @@ worth half a maxed build. The Dex's Configs tab orders the roster by size.
 | `package.json`                                                      | 1     | General Frontend polls reward ×1.25 (Focus, upgradable)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | Build Artifacts                                                     | 1     | +32 KB × level storage on gate clear                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Moore's Law                                                         | 1     | On each gate clear, +2% × level of held storage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| YAGNI                                                               | 1     | Every slot the build leaves **empty** takes **8 KB a gate** off the build space rent, so a 9-weight build on the 12 rung pays 40 rather than 64. The one config that touches the bill. It fills a slot itself, so installing it into a build already flush with its rung tips the build into the next rung and the bill goes **up** — it is worth most to a build sitting low in a wide rung, and nothing at all on the free four. Eight is less than a rung is worth on purpose: crossing up stays a loss and stepping back down stays a saving (ADR-122)                                                                                                                                                                                                      |
 | ESLint                                                              | 1     | Cross out one wrong answer on JavaScript / TypeScript polls, fee doubling from 8 KB per gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Stylelint                                                           | 1     | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `.lock`                                                             | 1     | Lock shop offers for 16 KB each ([5.2](#52-the-shop)); a locked offer leads every shop until installed or released, and every lock releases if `.lock` leaves the build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -697,6 +722,7 @@ worth half a maxed build. The Dex's Configs tab orders the roster by size.
 | Dry Run                                                             | 2     | While an answer is picked, the coverage meter marks where the gate lands if it scores and where it lands if it misses. It reads nothing about the answer itself: both marks come from the per-answer figures the poll already quotes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `Math.ceil()`                                                       | 2     | A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1 and three quarters pays 2. The top-up is flat, so no multiplier amplifies it — which is what keeps a near-miss behind a full answer in any build above a bare one (ADR-086)                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | SLA                                                                 | 2     | On the prep screen before every gate, promise **OK**, **HEALTHY** or **PERFECT** — **the gate will not open until you have**, and no promise can cost you anything. Close in that band or better and the gate's own payout rises **+10%**, **+25%** or **+50%**. The rate is read off the band you _promised_, never the one you landed in, so promising PERFECT and closing HEALTHY pays nothing where a promise of OK would have paid. A floor, like Planning Poker's: beating your own promise still pays, and missing it costs nothing beyond the uplift you did not get. The one thing in the game that makes a better clearing band worth more KB — the base payout is the same at OK as at PERFECT (ADR-096)                                             |
+| `&&`                                                                | 4     | Correct answers **chain**. The first link pays **1 KB** and every link after it pays **double** the last (1, 2, 4, 8, 16, 32, 64, 128, 256), so nine in a row empties the run faucet on its own. Any wrong answer short-circuits the chain back to its first link; a partial neither extends nor breaks it. The chain **survives a gate clear**, where the engine's own streak resets — which is what makes it a second number rather than a second reading of the same one. It shares IndexedDB's 320 KB run cap, so it is an opening-game plan the way Freemium is, and its row on the poll screen states what the next link pays before you answer (ADR-121)                                                                                                 |
 | Try/Catch                                                           | 4     | A gate that would close in **DANGER** holds instead, owing its peel — the one exception to "no retry, no peel, no choice". The catch is spent doing it and **deletes itself**, and its own 4 weight is the first thing that peel takes, so it settles 4 slots of the debt on its way out. It handles the exception rather than undoing it: you still owe the peel and still have to re-run the gate. A caught gate can never then die to its own peel. Re-drafting it later buys a second catch at full price (ADR-096)                                                                                                                                                                                                                                         |
 | vendor lock-in                                                      | 4     | Names one config in the build as the run's vendor. That config keeps its weight and keeps paying its effect, but the build space you rent is measured as though it were not there, so the room it frees is a rung you no longer have to pay for. In exchange it cannot be sold or dropped for the rest of the run. It asks for its target the moment it joins the build — in the opening build or in the shop — and the screen holds until you name one, so the weight can never be spent on nobody. It cannot name itself, and it only pays on a config heavier than its own 4 — the thing worth exempting is the thing you would least like to be stuck with. A peel can still take the locked config, and selling vendor lock-in releases the lock (ADR-087) |
 | Intellisense                                                        | 4     | All coverage ×1.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -869,7 +895,8 @@ reveal names every answer afterwards whether you paid or not, so a gamble still 
 - **Faucets**: clearing a gate pays `32 KB × (gate + 1) × correct ÷ 5` (the multiplier
   caps at ×13, which the thirteen-gate ladder reaches but never passes); IndexedDB adds +8 KB per correct answer,
   capped at 320 KB per run; **Database** holds 8 KB per exact answer and pays it at ×2
-  only if the gate clears, drawing on the same 320 KB cap.
+  only if the gate clears, drawing on the same 320 KB cap; **`&&`** pays a doubling
+  chain off the same cap, which nine correct answers in a row empty on their own.
 - **Sinks**: the build space bill, drafting configs (32 to 512 KB by size), upgrades,
   lint and peek fees, draft rebuilds, lock, extend, the git tag, and subscribed
   configs' bills.
@@ -1076,10 +1103,17 @@ mastery, a separate collection that reuses the name deliberately.
 
 ### 6.4 The Dex
 
-The Pokédex of DevVoted, at `/dex`, titled **Dex** — the word the navigation
-already uses. **Registry** is reserved for the shop's in-run offer list and
-never names this screen. Six tabs, each colouring the whole screen after the
-collection you opened.
+The Pokédex of DevVoted, titled **Dex** — the word the navigation already uses.
+**Registry** is reserved for the shop's in-run offer list and never names this
+screen. Eight tabs, each colouring the whole screen after the collection you
+opened.
+
+The Dex is not a page of its own: it is the lower half of **your profile**, at
+`/profile/$userId`, under the card that names you ([6.7](#67-your-profile)).
+`/dex` redirects there. Six of the eight tabs are the collection — polls,
+configs, services, audits, swatches, runs — and the last two, **borders** and
+**titles**, are the shelves you equip from; they are drawn on your own page only
+(ADR-125).
 
 **Polls** tracks every poll you have been dealt, with its repeats and its
 fully-correct record ("answered ×4", "3/4"). A poll you have never been dealt
@@ -1087,30 +1121,34 @@ gives up nothing at all: its category and its question both read `???`. The row
 says _answered_, not _seen_: nothing in the session engine writes
 `polls_history`, so a dealt-but-unanswered count does not exist yet.
 
-**Configs** is the unlock checklist, read as rows of chips: one row per weight,
-heaviest first, each headed with the weight and how much of it you hold ("2
-weight · 4 of 14"). Inside a row what you hold reads before what you owe. A
-granted chip carries its weight, its name, the ceiling of its version ladder as
-a tag ("v5"), the effect's headline figure as a badge ("×1.25", "+8 KB") and an
-`i`. Hover or press the `i` for a two-line hint: "starter · v1
-of 5" (or "earned"), then the effect in full; an earned config adds how it was
-earned ("Earned: peeked the community split 5 times", off `via_metric`). The tag
-names how far the config can climb, never a version you hold: versions are
-bought with storage inside a run and lost with it ([5.4](#54-the-shop)), and
-most of the roster has no ladder and wears no tag. A config whose effect
-has no figure (Telemetry's peek) wears no badge; its sentence sits in the hint.
-What a further version costs and how often the registry rolls one is stated in
-the shop, where it is bought, not here (ADR-108).
+**Configs** is the unlock checklist, read as the same config card the run
+screens draw (ADR-119, ADR-120), grouped by weight, heaviest first. Each group
+is headed by a labelled bar: the weight block, the weight named ("weight 2"),
+how much of it you hold ("4 of 14"), then a rule. Inside a group what you hold
+reads before what you owe. The tab arrives collapsed, with one press in the
+panel header to open every card.
 
-A locked config is a dashed chip showing only its weight, a `???` where the name
-goes and an `i`; the dashed edge reads as an empty socket in the checklist that
-play already underway fills. Its `i` opens both unlock paths with live
-progress: the requirement with its count ("unlock · Peek the community split 5
-times", 3/5) and the alternative as a bar with its own count ("or", 43/100),
-naming itself to a screen reader, which the bar cannot (ADR-051; one-shot
-objectives carry no count). The redaction is type-enforced: a locked entry holds
-no config at all. ADR-050's middle state, met but not earned, has a chip and no
-data yet (below).
+Shut, a granted card is its weight block, its name and the effect's headline
+figure as a badge ("×1.25", "+8 KB"). Open, the effect reads as a sentence in
+the card's body, and under it how the config came to you and the rung an install
+gives you: "Starter config · v1 of 5", or "Earned: peeked the community split 5
+times · v1 of 2" (off `via_metric`). The footer carries the ceiling of the
+version ladder as a pennant ("v5") beside the badge. The pennant names how far
+the config can climb, never a version you hold: versions are bought with storage
+inside a run and lost with it ([5.4](#54-the-shop)), and most of the roster has
+no ladder and wears no pennant. A config whose effect has no figure (Telemetry's
+peek) wears no badge. What a further version costs and how often the registry
+rolls one is stated in the shop, where it is bought, not here (ADR-108).
+
+A locked config is a dashed card showing only its weight and a `???` where the
+name goes; the dashed edge reads as an empty socket in the checklist that play
+already underway fills. Opening it states both unlock paths with live progress:
+the requirement with its count ("Peek the community split 5 times", 3/5) and the
+alternative as a bar with its own count ("or", 43/100), naming itself to a
+screen reader, which the bar cannot (ADR-051; one-shot objectives carry no
+count). The redaction is per-attribute and type-enforced: the weight and the
+paths are stated, the name and the effect withheld. ADR-050's middle state, met
+but not earned, has a card and no data yet (below).
 
 **Services** lists every service the roster knows in one section (ADR-115
 D10), registry services first: Rebuild, Extend, Hot Reload, Return Policy and
@@ -1152,8 +1190,8 @@ audit-firing counts (DVTD-gvc9).
 
 ### 6.5 Borders and seasons
 
-Avatar borders are decorative unlockables bought in the border shop and equipped on
-your profile. An equipped border is worn wherever the game draws you, including the
+Avatar borders are decorative unlockables bought on your profile's borders tab
+([6.7](#67-your-profile)) and worn on your card. An equipped border is worn wherever the game draws you, including the
 byline crediting a poll you wrote ([8](#8-interface)), which is where other players
 meet it; 🟡 rarity-based border unlocks via meta-progression are planned. Runs and
 leaderboards live inside **seasons** (upcoming, active, finished, archived), the
@@ -1171,11 +1209,13 @@ comparison against other players, which is what the category seat
 writes the title to your account and the check is never run again, so a record that
 later stops being true never costs you the title.
 
-You may hold many and **wear exactly one**. The worn title shows on your profile, on
-your open build when a rival inspects it ([7.1](#71-the-community-board)), and under
-the byline of a poll you wrote ([8](#8-interface)). Compact climb chips stay
-avatar-only. Titles are settled when a run ends, and a title you have not been shown
-yet is announced in a notice the next time you open the game — once, and never again.
+You may hold many and **wear up to three at once**, in the order you put them on
+(ADR-125). Your card shows every title you wear ([6.7](#67-your-profile)); everywhere
+else shows the **first** one — your open build when a rival inspects it
+([7.1](#71-the-community-board)), and the byline of a poll you wrote
+([8](#8-interface)). Compact climb chips stay avatar-only. Titles are settled when a
+run ends, and a title you have not been shown yet is announced in a notice the next
+time you open the game — once, and never again.
 
 Three titles are not thresholds. **First Ascent** goes to the first account ever to
 clear all thirteen gates and can never be won again. The other two are **granted**:
@@ -1187,6 +1227,31 @@ that cohort — it is not listed, locked, or hinted at on their shelf, because t
 no bar they could work towards.
 
 🟡 The title roster is small and is expected to grow.
+
+### 6.7 Your profile
+
+Every player has one page, at `/profile/$userId`, and it opens with one **card**:
+the border you wear, your avatar, your name, and the titles you wear. That card is
+the same component wherever the game shows a player, so you recognise somebody from
+their page before you have read the name (ADR-125).
+
+**Your own page** carries the whole Dex under the card — the six collection tabs
+plus **borders** and **titles**, the two shelves you equip from
+([6.4](#64-the-dex)). The archive balance rides the collection heading, because
+that is what the borders cost. "Edit profile" on the card opens the borders tab:
+your name and your photo come from the account you signed in with, so what you
+wear is the whole of what you can change.
+
+**Somebody else's page** gives you the card and four counts — polls seen, configs
+held, gates cleared, archive. No tabs. The collection is your own record of what
+the game has shown you, and a visitor reading your unanswered polls would be
+reading ahead; the same line the climber card already draws, where answers,
+unanswered polls and prefetch stay private.
+
+You reach another player's page by pressing their **face** — on a poll byline, on
+the category seat, on the climb map card, on a rival in the attack panel. The
+`@handle` beside the face still goes to GitHub. One is who they are here, the other
+is who they are there.
 
 ---
 
@@ -1200,9 +1265,11 @@ polls on the same day.
 After every shop visit the climb detours through `/run/community`, and a run locked for
 the day lands here too, with "Back to your run" disabled until local midnight and the
 countdown beside it. The page wears the terminal-theme kit (`CommunityScreen.ui.tsx`),
-one panel per section: your climb, turnout, the map, the category leaders, then the
-polls. Every avatar chip on the page — leaders, climbers, fallen — wears the player's
-equipped border over a GitHub photo or a two-letter-initials fallback.
+one panel per section: turnout, the map, the category leaders, then the polls. What
+the board has to say about the day (still loading, could not be loaded, nothing to
+compare yet) reads as the subtitle under the board's title. Every avatar chip on the
+page — leaders, climbers, fallen — wears the player's equipped border over a GitHub
+photo or a two-letter-initials fallback.
 
 **Category leaders** ([7.3](#73-category-leaders)) is the board's own section: twelve
 rows, one per category.
@@ -1318,7 +1385,11 @@ The game leans hard into its CI metaphor.
 - **Run HUD**: storage as a **balance** — "320 KB" over the word `balance`, and no
   bar. Nothing caps storage ([5.1](#51-storage-kb)), so there is no ceiling to draw
   against: a bar would need a full mark it does not have, and read as a tank emptying
-  besides. Then the gate, polls answered, streak, and total coverage. The gate is
+  besides. **The balance names every change it makes** (ADR-124): the figure counts to
+  its new reading, tints green on a gain and red on a spend, and a signed pill above it
+  says what moved. Several changes landing close together queue and play in order, one
+  at a time, so none is overwritten before it can be read. Then the gate, polls
+  answered, streak, and total coverage. The gate is
   named in the title — "Gate 0 · Pallet" — over a **pip bar** that doubles as the badge
   collection: one pip per
   gate in that gate's swatch colour, gates behind you solid, the gate underway filling
@@ -1599,6 +1670,8 @@ applies. `rules.model.ts` holds most of it.
 | `BUILD_SPACE_RUNGS`                             | 4/free · 6/16 · 8/32 · 12/64 · 16/128 · 24/256 · 32/512 KB a gate, billed on clear against the smallest rung the build fits in (ADR-098) |
 | `spaceForBuild` / `upkeepForBuild`              | the rung a build occupies and what it bills; both read `billableSlotsOf`, so vendor lock-in lowers the rung it is billed at              |
 | `FAUCET_CAP_KB`                                 | 320 per run                                                                                                                              |
+| `chainKbFor` / `chainStartKb`                   | `1 KB × 2^(link − 1)`, the link being the run's correct answers since its last wrong one; drawn from `FAUCET_CAP_KB` (ADR-121)           |
+| `upkeepAfterCreditOf` / `emptySlotDiscountKb`   | the rung's KB less `8 × freeSlots(build)`, floored at 0; 8 is the largest flat step at which crossing a rung is still a loss (ADR-122)   |
 | Archived-storage credit                         | 1 / `gates ÷ 13` / 0 for victory / death / abandon                                                                                       |
 
 **Build and shop**

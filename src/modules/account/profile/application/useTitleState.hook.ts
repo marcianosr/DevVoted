@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
-	equipTitle,
 	getTitleState,
+	removeTitle,
+	wearTitle,
 } from "~/modules/account/profile/application/title.serverfn";
 import { titleQueryKeys } from "~/shared/queryKeys";
 
@@ -17,11 +18,15 @@ export const useTitleState = (userId: string | undefined) =>
 		enabled: !!userId,
 	});
 
-export const useEquipTitle = (userId: string | undefined) => {
+export type ToggleTitle = { titleId: string; worn: boolean };
+
+export const useToggleTitle = (userId: string | undefined) => {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: async (titleId: string | null) => {
-			const response = await equipTitle({ data: { titleId } });
+		mutationFn: async ({ titleId, worn }: ToggleTitle) => {
+			const response = worn
+				? await removeTitle({ data: { titleId } })
+				: await wearTitle({ data: { titleId } });
 			if (!response.success) throw new Error(response.error);
 			return response.data;
 		},

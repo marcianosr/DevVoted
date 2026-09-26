@@ -1,11 +1,12 @@
 import { clsx } from "clsx";
 
-export type ClimberSize = "sm" | "md";
+export type ClimberSize = "sm" | "md" | "lg";
 
 const CHIP = "relative inline-block shrink-0";
 const SIZE = {
 	sm: "size-7",
 	md: "size-9",
+	lg: "size-16",
 } satisfies Record<ClimberSize, string>;
 
 const FACE =
@@ -13,6 +14,7 @@ const FACE =
 const FACE_TEXT = {
 	sm: "text-[10px]",
 	md: "text-xs",
+	lg: "text-xl",
 } satisfies Record<ClimberSize, string>;
 
 const PHOTO = "size-full object-cover";

@@ -1908,3 +1908,86 @@ describe("withLockedGate", () => {
 		expect(withLockedGate(state, 1, [mirrorAt(1)]).window).toBe(state.window);
 	});
 });
+
+describe("&& chains correct answers into a doubling storage payment", () => {
+	const chained = (): RunState => {
+		const base = started([]);
+		return { ...base, build: { ...base.build, configs: [CONFIGS.andAnd] } };
+	};
+
+	const partialPoll = (): RunPoll => ({
+		id: "chain-multi",
+		category: "ts",
+		question: "Which are TS utility types?",
+		answerType: "multiple",
+		options: [
+			{ id: "a", label: "Partial", correct: true },
+			{ id: "b", label: "Pick", correct: true },
+			{ id: "c", label: "Banjo", correct: false },
+		],
+	});
+
+	it("opens at 1 KB and doubles with every link", () => {
+		let state = chained();
+		state = answerWith(state, true);
+		expect(state.storage).toBe(1);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(3);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(7);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(15);
+	});
+
+	it("pays nothing when the config is not installed", () => {
+		expect(answerWith(started([]), true).storage).toBe(0);
+	});
+
+	it("short-circuits back to the first link after a wrong answer", () => {
+		let state = chained();
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		state = answerWith(state, false);
+		expect(state.storage).toBe(3);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(4);
+	});
+
+	it("holds the chain across a partial answer", () => {
+		const base = chained();
+		let state: RunState = {
+			...base,
+			polls: [base.polls[0], partialPoll(), ...base.polls.slice(1)],
+		};
+		state = answerWith(state, true);
+		state = runReducer(state, { type: "answer", optionIds: ["a"] });
+		expect(state.answeredThisGate[1].outcome).toBe("partial");
+		expect(state.storage).toBe(1);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(3);
+	});
+
+	it("keeps the chain across a gate clear, where the run streak resets", () => {
+		const cleared = runReducer(clearGate(chained()), {
+			type: "finish-reward",
+		});
+		expect(cleared.streak).toBe(0);
+
+		const before = cleared.storage;
+		const next = answerWith(cleared, true);
+		expect(next.storage - before).toBe(32);
+		expect(next.streak).toBe(1);
+	});
+
+	it("stops paying once the run faucet cap is reached", () => {
+		let state: RunState = {
+			...chained(),
+			faucetEarnedKb: FAUCET_CAP_KB - 1,
+		};
+		state = answerWith(state, true);
+		expect(state.storage).toBe(1);
+		expect(state.faucetEarnedKb).toBe(FAUCET_CAP_KB);
+		state = answerWith(state, true);
+		expect(state.storage).toBe(1);
+	});
+});

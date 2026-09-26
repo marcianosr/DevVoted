@@ -2,7 +2,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import { clsx } from "clsx";
 
-import { signedKbLabel } from "~/shared/lib/storage";
+import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
@@ -56,8 +56,6 @@ export type HeaderFundsPreview = {
 };
 
 export type HeaderFunds = {
-	amount: string;
-	unit: string;
 	label: string;
 	kb: number;
 	preview?: HeaderFundsPreview;
@@ -110,78 +108,115 @@ const toneOf = (moved: number | undefined): KantoColor | undefined => {
 	return moved > 0 ? GAIN : LOSS;
 };
 
-type Landing = {
-	kb: number;
-	unit: string;
-	moved?: number;
-	counts: boolean;
+type Reading = { readonly amount: string; readonly unit: string };
+
+const readingOf = (kb: number): Reading => {
+	const [amount, unit] = kbLabel(kb).split(" ");
+	return { amount, unit };
 };
 
-const landedAt = (funds: HeaderFunds): Landing => ({
-	kb: funds.kb,
-	unit: funds.unit,
-	counts: false,
+type Move = {
+	readonly id: number;
+	readonly kb: number;
+	readonly unit: string;
+	readonly moved: number;
+	readonly counts: boolean;
+};
+
+type Landing = {
+	readonly settled: { readonly kb: number; readonly unit: string };
+	readonly moves: readonly Move[];
+	readonly nextId: number;
+};
+
+const seededAt = (kb: number): Landing => ({
+	settled: { kb, unit: readingOf(kb).unit },
+	moves: [],
+	nextId: 0,
+});
+
+const enqueued = (landed: Landing, kb: number): Landing => {
+	const { unit } = readingOf(kb);
+	return {
+		settled: { kb, unit },
+		moves: [
+			...landed.moves,
+			{
+				id: landed.nextId,
+				kb,
+				unit,
+				moved: kb - landed.settled.kb,
+				counts: landed.settled.unit === unit,
+			},
+		],
+		nextId: landed.nextId + 1,
+	};
+};
+
+const retired = (landed: Landing): Landing => ({
+	...landed,
+	moves: landed.moves.slice(1),
 });
 
 const FundsReadout = ({ funds }: { funds: HeaderFunds }) => {
-	const [landed, setLanded] = useState<Landing>(() => landedAt(funds));
+	const [landed, setLanded] = useState<Landing>(() => seededAt(funds.kb));
 
-	if (landed.kb !== funds.kb)
-		setLanded({
-			kb: funds.kb,
-			unit: funds.unit,
-			moved: funds.kb - landed.kb,
-			counts: landed.unit === funds.unit,
-		});
+	if (landed.settled.kb !== funds.kb) setLanded(enqueued(landed, funds.kb));
+
+	const [playing] = landed.moves;
 
 	useEffect(() => {
-		if (landed.moved === undefined) return;
+		if (playing === undefined) return;
 
-		const hold = setTimeout(
-			() => setLanded((settled) => ({ ...settled, moved: undefined })),
-			BALANCE_PILL_HOLD_MS
-		);
+		const hold = setTimeout(() => setLanded(retired), BALANCE_PILL_HOLD_MS);
 		return () => clearTimeout(hold);
-	}, [landed]);
+	}, [playing]);
 
-	const [whole, fraction] = funds.amount.split(".");
-	const tone = toneOf(landed.moved);
+	const { amount, unit } = readingOf(playing?.kb ?? funds.kb);
+	const [whole, fraction] = amount.split(".");
+	const tone = toneOf(playing?.moved);
+	const preview = playing === undefined ? funds.preview : undefined;
 
 	return (
 		<span className={FUNDS}>
-			{landed.moved === undefined ? null : (
-				<span role="status" className={FUNDS_PILL} data-screen-theme={tone}>
-					{signedKbLabel(landed.moved)}
+			{playing === undefined ? null : (
+				<span
+					key={playing.id}
+					role="status"
+					className={FUNDS_PILL}
+					data-screen-theme={tone}
+				>
+					{signedKbLabel(playing.moved)}
 				</span>
 			)}
 			<span
 				role="img"
-				aria-label={`${funds.amount} ${funds.unit}`}
+				aria-label={`${amount} ${unit}`}
 				className={FUNDS_FIGURE}
 				data-screen-theme={tone}
 			>
 				<span className={FUNDS_AMOUNT}>
 					<span
 						className={FUNDS_COUNT}
-						data-counts={landed.counts}
+						data-counts={playing?.counts ?? false}
 						style={countStyle(Number(whole))}
 					/>
 					{fraction === undefined ? null : `.${fraction}`}
 				</span>
-				<span className={FUNDS_UNIT}>{funds.unit}</span>
+				<span className={FUNDS_UNIT}>{unit}</span>
 			</span>
 			<span className={FUNDS_LABEL}>
 				<Icon name="floppy" />
 				{funds.label}
 			</span>
-			{funds.preview === undefined ? null : (
+			{preview === undefined ? null : (
 				<span className={FUNDS_PREVIEW}>
-					{`${funds.preview.label} ${TOWARD}`}
+					{`${preview.label} ${TOWARD}`}
 					<span
 						className={FUNDS_PREVIEW_FIGURE}
-						data-screen-theme={funds.preview.color}
+						data-screen-theme={preview.color}
 					>
-						{funds.preview.figure}
+						{preview.figure}
 					</span>
 				</span>
 			)}

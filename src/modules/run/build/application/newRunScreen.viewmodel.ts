@@ -1,8 +1,8 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import {
-	chipFor,
-	infoFor,
+	settledChipFor,
+	settledFactsFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
 import {
 	gateSwatchAt,
@@ -79,7 +79,7 @@ export const handCardFor = ({
 	install: held
 		? { label: INSTALLED_LABEL, disabled: true }
 		: { onPress, disabled: !fits },
-	info: infoFor(config),
+	info: settledFactsFor(config),
 });
 
 export const newRunBuildFor = (
@@ -92,7 +92,7 @@ export const newRunBuildFor = (
 ): BuildProps => ({
 	configs: configs.map((config) => ({
 		name: config.label,
-		...chipFor(config),
+		...settledChipFor(config),
 		...vendorChipFor(vendorLockFor(config.id), () => onUninstall(config.id)),
 	})),
 	weight: { held, perGateKb: FREE_UPKEEP },

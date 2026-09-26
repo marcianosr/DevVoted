@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
 import {
-	COMMUNITY_CLIMB_TITLE,
 	COMMUNITY_LEADERS_TITLE,
 	COMMUNITY_PREP_LABEL,
 	COMMUNITY_SHOP_LABEL,
@@ -80,14 +79,6 @@ describe("CommunityScreen", () => {
 		expect(screen.getByLabelText("gates cleared today")).toBeInTheDocument();
 		expect(screen.getByLabelText("runs closed")).toBeInTheDocument();
 		expect(screen.queryByText(/climbers reviewing ·/)).toBeNull();
-	});
-
-	it("heads the climb panel with the gate the viewer just cleared", () => {
-		render(<CommunityScreen {...props} />);
-
-		expect(
-			screen.getByRole("heading", { name: COMMUNITY_CLIMB_TITLE })
-		).toBeInTheDocument();
 	});
 
 	it("counts the room it cannot draw rather than drawing a thousand chips", () => {

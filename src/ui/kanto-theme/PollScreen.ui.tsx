@@ -17,6 +17,7 @@ import { Panel } from "./Panel.ui";
 import { PollFacts, type PollFactsProps } from "./PollFacts.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Question, questionFactsOf, type QuestionProps } from "./Question.ui";
+import { Redaction, type Redactable } from "./Redaction.ui";
 import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import type { SwatchFill } from "./Swatch.ui";
@@ -28,6 +29,8 @@ const COPY = {
 	coverage: "Coverage",
 	rule: "what a poll pays",
 	wrongCost: "wrong costs",
+	readingDown: "Coverage reading unavailable",
+	readingDownHint: "The meter is down. Answers still score.",
 } as const;
 
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
@@ -36,10 +39,15 @@ const META_LINE = "flex justify-end sm:ml-2";
 const POLL_ROW =
 	"grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]";
 const PINNED_READOUT = "lg:sticky lg:top-4 lg:z-10";
+const DARK_TRACK =
+	"flex h-6 w-full items-center justify-center rounded-md bg-theme-raised";
+const DARK_READOUT = "flex w-full flex-col gap-1.5";
 
 const PAID = "border-t border-theme-faint";
 const SCORE_BLOCK = "flex w-full flex-col gap-2";
 const LEADER_REGION = "border-t border-theme-faint px-4 py-3";
+
+const POLL_FLOOR = "94vh";
 const META_REGION =
 	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 first:rounded-t-2xl";
 const META_TRAILING = "flex flex-wrap items-center gap-2 sm:ml-auto";
@@ -51,11 +59,13 @@ const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const HOLDS_COLOR: KantoColor = "cerulean";
 const CREDIT_SIZE: AuthorSize = "sm";
 
-export type PollCoverage = {
+export type PollReadout = {
 	bar: CoverageBarProps;
 	lead?: LeadLine;
 	paid?: PollScoresProps;
 };
+
+export type PollCoverage = Redactable<PollReadout>;
 
 export type PollCommit = {
 	label: string;
@@ -101,26 +111,19 @@ const PollCredit = ({ hint, author }: PollCreditProps) => {
 	);
 };
 
-const CoveragePanel = ({ bar, lead, paid }: PollCoverage) => (
-	<Panel className={PINNED_READOUT}>
-		<Panel.Header
-			label={COPY.coverage}
-			meta={
-				<>
-					<CoverageReading {...bar} />
-					<span className={META_LINE}>
-						<Tooltip
-							label={SCORING_RULE_LABEL}
-							hint={<ScoringRule />}
-							align="end"
-							width="wide"
-						>
-							{COPY.rule}
-						</Tooltip>
-					</span>
-				</>
-			}
-		/>
+const DarkReading = () => (
+	<Panel.Body>
+		<div className={DARK_READOUT}>
+			<div className={DARK_TRACK}>
+				<Redaction label={COPY.readingDown} />
+			</div>
+			<Typography variant="hint">{COPY.readingDownHint}</Typography>
+		</div>
+	</Panel.Body>
+);
+
+const LiveReading = ({ bar, lead, paid }: PollReadout) => (
+	<>
 		<Panel.Body>
 			<CoverageBar {...bar} />
 			{lead === undefined ? null : <Lead line={lead} variant="caption" />}
@@ -135,6 +138,32 @@ const CoveragePanel = ({ bar, lead, paid }: PollCoverage) => (
 				</div>
 			</Panel.Body>
 		)}
+	</>
+);
+
+const CoveragePanel = (coverage: PollCoverage) => (
+	<Panel className={PINNED_READOUT}>
+		<Panel.Header
+			label={COPY.coverage}
+			meta={
+				<>
+					{coverage.locked === true ? null : (
+						<CoverageReading {...coverage.bar} />
+					)}
+					<span className={META_LINE}>
+						<Tooltip
+							label={SCORING_RULE_LABEL}
+							hint={<ScoringRule />}
+							align="end"
+							width="wide"
+						>
+							{COPY.rule}
+						</Tooltip>
+					</span>
+				</>
+			}
+		/>
+		{coverage.locked === true ? <DarkReading /> : <LiveReading {...coverage} />}
 	</Panel>
 );
 
@@ -246,7 +275,12 @@ export const PollScreen = ({
 	const [measureSend, sendHeight] = useBarHeight();
 
 	return (
-		<Screen gate={header.swatch.theme} width={width} ground={ground}>
+		<Screen
+			gate={header.swatch.theme}
+			width={width}
+			ground={ground}
+			floor={POLL_FLOOR}
+		>
 			<Header {...header} />
 
 			{audits.length === 0 ? null : (

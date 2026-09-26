@@ -2,9 +2,9 @@ export const REDACTED = "???";
 
 export const REDACTED_ITEM = "?";
 
-export type Redactable<T> =
-	| ({ locked: true } & { [Field in keyof T]?: never })
-	| ({ locked?: false } & T);
+export type Redactable<Secret, Stated = unknown> =
+	| ({ locked: true } & { [Field in keyof Secret]?: never } & Stated)
+	| ({ locked?: false } & Secret & Stated);
 
 const REDACTION = "select-none opacity-40";
 const READER_ONLY = "sr-only";

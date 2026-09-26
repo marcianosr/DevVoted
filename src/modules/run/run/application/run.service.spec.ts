@@ -481,7 +481,12 @@ describe("the poll's own history on the view (ADR-093)", () => {
 	it("reads the leader of the poll's own category (ADR-103)", async () => {
 		vi.mocked(leaderQueries.fetchCategoryLeader).mockResolvedValue({
 			category: "js",
-			leader: { handle: "@sabrina", streak: 17, you: false },
+			leader: {
+				userId: "sabrina-id",
+				handle: "@sabrina",
+				streak: 17,
+				you: false,
+			},
 		});
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 			sessionRunRecord()

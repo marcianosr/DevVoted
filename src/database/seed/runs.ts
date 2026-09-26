@@ -208,7 +208,7 @@ export const seedLegacyEra = async (): Promise<number> => {
 		await db
 			.update(usersTable)
 			.set({
-				equipped_title_id: sql`coalesce(${usersTable.equipped_title_id}, ${titleIds[titleIds.length - 1]})`,
+				equipped_title_ids: sql`case when cardinality(${usersTable.equipped_title_ids}) = 0 then array[${titleIds[titleIds.length - 1]}]::text[] else ${usersTable.equipped_title_ids} end`,
 			})
 			.where(eq(usersTable.id, player.id));
 

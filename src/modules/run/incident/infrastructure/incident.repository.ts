@@ -10,8 +10,8 @@ import {
 	usersTable,
 } from "~/database/schema";
 
-import { findBorderById } from "~/modules/account/profile/domain/border.model";
-import { findTitleById } from "~/modules/account/profile/domain/title.model";
+import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
+import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
 import { publicBuildOf } from "~/modules/run/build/domain/publicBuild.model";
 import { publicBuildColumn } from "~/modules/run/community/infrastructure/climbers.repository";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
@@ -51,7 +51,7 @@ export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 			displayName: usersTable.display_name,
 			photoUrl: usersTable.photo_url,
 			borderId: usersTable.equipped_border_id,
-			titleId: usersTable.equipped_title_id,
+			titleIds: usersTable.equipped_title_ids,
 			gatesCleared: runStatesTable.gates_cleared,
 			lastClose: sql<LastClose | null>`${runStatesTable.state}->${stateKey("lastClose")}`,
 			build: publicBuildColumn,
@@ -66,20 +66,20 @@ export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 			displayName,
 			photoUrl,
 			borderId,
-			titleId,
+			titleIds,
 			lastClose,
 			build,
 			...row
 		}) => {
-			const border = borderId === null ? undefined : findBorderById(borderId);
-			const title = titleId === null ? undefined : findTitleById(titleId);
+			const borderUrl = borderUrlOf(borderId);
+			const title = primaryTitleName(titleIds);
 			return {
 				...row,
 				name: displayName ?? UNNAMED_RIVAL,
 				build: publicBuildOf(build),
 				...(photoUrl === null ? {} : { photoUrl }),
-				...(border === undefined ? {} : { borderUrl: border.image }),
-				...(title === undefined ? {} : { title: title.name }),
+				...(borderUrl === null ? {} : { borderUrl }),
+				...(title === null ? {} : { title }),
 				...(lastClose === null ? {} : { lastClose }),
 			};
 		}

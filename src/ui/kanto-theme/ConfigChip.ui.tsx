@@ -9,6 +9,7 @@ import {
 	ConfigMeta,
 	type ConfigFactsProps,
 } from "./ConfigFacts.ui";
+import { ConfigUnlock, type ConfigUnlockPath } from "./ConfigUnlock.ui";
 import { CountedFigure } from "./CountedFigure.ui";
 import { Icon } from "./Icon.ui";
 import { InstallScale, type InstallScaleProps } from "./InstallScale.ui";
@@ -42,6 +43,7 @@ export const CHIP =
 const BARE_WIDTH = "w-fit max-w-full";
 export const EDGE = "border-theme-faint";
 const EDGE_LIT = "border-theme";
+const LOCKED_EDGE = "border-dashed border-theme-faint";
 export const SKIPPED_CHIP = "opacity-60";
 export const NAME = "text-theme-faint";
 const LOST_NAME = "line-through text-theme-soft";
@@ -103,10 +105,9 @@ export type ChipInstall = {
 	armed?: boolean;
 };
 
-export type ConfigChipProps = Redactable<{
+type ConfigChipSecrets = {
 	name: string;
 	badges: ConfigChipBadge[];
-	slots?: number;
 	version?: number;
 	detail?: string;
 	lost?: boolean;
@@ -114,8 +115,6 @@ export type ConfigChipProps = Redactable<{
 	install?: ChipInstall;
 	onUninstall?: () => void;
 	info?: ConfigFactsProps;
-	infoOpen?: boolean;
-	onToggleInfo?: () => void;
 	upgrades?: UpgradesProps;
 	upgradesOpen?: boolean;
 	onToggleUpgrades?: () => void;
@@ -124,7 +123,16 @@ export type ConfigChipProps = Redactable<{
 	credited?: boolean;
 	onHover?: () => void;
 	onLeave?: () => void;
-}>;
+};
+
+type ConfigChipStated = {
+	slots?: number;
+	unlock?: readonly ConfigUnlockPath[];
+	infoOpen?: boolean;
+	onToggleInfo?: () => void;
+};
+
+export type ConfigChipProps = Redactable<ConfigChipSecrets, ConfigChipStated>;
 
 const nameStyleFor = (lost: boolean, skipped: boolean) => {
 	if (lost) return LOST_NAME;
@@ -224,15 +232,80 @@ const BadgeOf = ({ badge }: { badge: ConfigChipBadge }) => {
 	);
 };
 
+type DiscloseProps = {
+	stated: boolean;
+	name: string;
+	onPress: () => void;
+};
+
+const Disclose = ({ stated, name, onPress }: DiscloseProps) => (
+	<Button
+		tone={DISCLOSE_TONE}
+		glyph={
+			<Icon
+				name="chevron"
+				className={clsx(DISCLOSE_GLYPH, stated && DISCLOSE_OPEN)}
+			/>
+		}
+		label={`${stated ? COPY.collapse : COPY.expand} ${name}`}
+		expanded={stated}
+		onPress={onPress}
+	/>
+);
+
+const LockedCard = ({
+	slots,
+	unlock,
+	infoOpen = false,
+	onToggleInfo,
+}: ConfigChipStated) => {
+	const foldable = onToggleInfo !== undefined;
+	const stated = foldable ? infoOpen : true;
+
+	return (
+		<div className={clsx(CARD, LOCKED_EDGE)}>
+			<div className={HEAD}>
+				{onToggleInfo === undefined ? null : (
+					<Disclose
+						stated={stated}
+						name={LOCKED_CONFIG}
+						onPress={onToggleInfo}
+					/>
+				)}
+				{slots === undefined ? null : <Weight slots={slots} />}
+				<div className={IDENTITY}>
+					<span className={NAME}>
+						<Redaction label={LOCKED_CONFIG} />
+					</span>
+				</div>
+			</div>
+
+			{!stated || unlock === undefined ? null : (
+				<>
+					<div className={RULE} />
+
+					<div className={BODY}>
+						<ConfigUnlock paths={unlock} />
+					</div>
+				</>
+			)}
+		</div>
+	);
+};
+
 export const ConfigChip = (props: ConfigChipProps) => {
 	if (props.locked) {
-		return (
-			<span className={clsx(CHIP, BARE_WIDTH, EDGE)}>
-				<span className={NAME}>
-					<Redaction label={LOCKED_CONFIG} />
+		if (props.slots === undefined && props.unlock === undefined) {
+			return (
+				<span className={clsx(CHIP, BARE_WIDTH, EDGE)}>
+					<span className={NAME}>
+						<Redaction label={LOCKED_CONFIG} />
+					</span>
 				</span>
-			</span>
-		);
+			);
+		}
+
+		return <LockedCard {...props} />;
 	}
 
 	const {
@@ -246,6 +319,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		install,
 		onUninstall,
 		info,
+		unlock,
 		infoOpen = false,
 		onToggleInfo,
 		upgrades,
@@ -280,6 +354,12 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	const sellPrice = onUninstall === undefined ? info?.sellPrice : undefined;
 
 	const headBadges = stated ? [] : decorative;
+
+	const footerVersion = info?.version ?? version;
+	const footerStated =
+		footerVersion !== undefined ||
+		sellPrice !== undefined ||
+		decorative.length > 0;
 
 	const nameSpan = (
 		<span
@@ -360,7 +440,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		</span>
 	);
 
-	if (info === undefined) {
+	if (info === undefined && unlock === undefined) {
 		const bare = (
 			<span
 				data-config={name}
@@ -401,19 +481,8 @@ export const ConfigChip = (props: ConfigChipProps) => {
 			className={clsx(CARD, edge, skipped && SKIPPED_CHIP)}
 		>
 			<div className={HEAD}>
-				{!foldable ? null : (
-					<Button
-						tone={DISCLOSE_TONE}
-						glyph={
-							<Icon
-								name="chevron"
-								className={clsx(DISCLOSE_GLYPH, stated && DISCLOSE_OPEN)}
-							/>
-						}
-						label={`${stated ? COPY.collapse : COPY.expand} ${name}`}
-						expanded={stated}
-						onPress={onToggleInfo}
-					/>
+				{onToggleInfo === undefined ? null : (
+					<Disclose stated={stated} name={name} onPress={onToggleInfo} />
 				)}
 				{slots === undefined ? null : <Weight slots={slots} />}
 				<div className={IDENTITY}>
@@ -437,20 +506,27 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					<div className={RULE} />
 
 					<div className={BODY}>
-						<ConfigEffect description={info.description} note={info.note} />
+						{info === undefined ? null : (
+							<ConfigEffect description={info.description} note={info.note} />
+						)}
+						{unlock === undefined ? null : <ConfigUnlock paths={unlock} />}
 					</div>
 
-					<div className={RULE} />
+					{!footerStated ? null : (
+						<>
+							<div className={RULE} />
 
-					<div className={FOOT}>
-						<ConfigMeta
-							sellPrice={sellPrice}
-							version={info.version ?? version}
-							badges={decorative.map((badge) => (
-								<BadgeOf key={badge.label} badge={badge} />
-							))}
-						/>
-					</div>
+							<div className={FOOT}>
+								<ConfigMeta
+									sellPrice={sellPrice}
+									version={footerVersion}
+									badges={decorative.map((badge) => (
+										<BadgeOf key={badge.label} badge={badge} />
+									))}
+								/>
+							</div>
+						</>
+					)}
 				</>
 			)}
 		</div>

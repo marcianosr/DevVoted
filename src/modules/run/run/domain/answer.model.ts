@@ -1,6 +1,7 @@
 import {
 	type Config,
 	escrowKbPerCorrect,
+	chainKbFor,
 	faucetKbPerCorrect,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
@@ -19,7 +20,7 @@ import {
 	extraPickPayoutFor,
 	gateClearPayout,
 	occupiedSlots,
-	upkeepForBuild,
+	upkeepAfterCreditOf,
 	storageInterestFor,
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
@@ -73,6 +74,7 @@ import {
 	type RunPoll,
 	answerOutcome,
 	cachedHitsFor,
+	chainLengthOf,
 	coverageShare,
 	mirrorPoll,
 	nextStreak,
@@ -102,7 +104,7 @@ type UpkeepSettlement = {
 };
 
 const settleUpkeep = (build: Build, balanceKb: number): UpkeepSettlement => {
-	const owed = upkeepForBuild(build);
+	const owed = upkeepAfterCreditOf(build);
 	if (owed <= balanceKb) return { paidKb: owed };
 
 	const affordable = highestAffordableSpace(balanceKb);
@@ -488,7 +490,10 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		grade.outcome
 	);
 	const rawFaucet =
-		grade.outcome === "correct" ? faucetKbPerCorrect(configs) : 0;
+		grade.outcome === "correct"
+			? faucetKbPerCorrect(configs) +
+				chainKbFor(configs, chainLengthOf(state.allAnswered ?? []) + 1)
+			: 0;
 	const faucetKb = Math.min(
 		rawFaucet,
 		faucetRemainingKb(state.faucetEarnedKb ?? 0)

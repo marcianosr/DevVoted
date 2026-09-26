@@ -10,6 +10,7 @@ const TRAILING = "ml-auto shrink-0";
 const COPY = {
 	leader: "leader",
 	unranked: "unranked",
+	profileOf: (handle: string) => `${handle}'s profile`,
 };
 
 const GITHUB = "https://github.com";
@@ -22,6 +23,7 @@ export type CategorySeatLeader = {
 	githubLogin?: string;
 	photoUrl?: string;
 	borderUrl?: string;
+	profileHref?: string;
 	you?: boolean;
 };
 
@@ -43,18 +45,32 @@ const LeaderName = ({ handle, githubLogin }: CategorySeatLeader) => (
 	</Typography>
 );
 
+const Face = (leader: CategorySeatLeader) => {
+	const climber = (
+		<Climber
+			name={leader.handle}
+			photoUrl={leader.photoUrl}
+			borderUrl={leader.borderUrl}
+			you={leader.you}
+		/>
+	);
+
+	if (leader.profileHref === undefined) return climber;
+
+	return (
+		<a href={leader.profileHref} aria-label={COPY.profileOf(leader.handle)}>
+			{climber}
+		</a>
+	);
+};
+
 const Held = (leader: CategorySeatLeader) => (
 	<>
 		<Typography variant="hint" as="span">
 			{COPY.leader}
 		</Typography>
 		<span className={NAME}>
-			<Climber
-				name={leader.handle}
-				photoUrl={leader.photoUrl}
-				borderUrl={leader.borderUrl}
-				you={leader.you}
-			/>
+			<Face {...leader} />
 			<LeaderName {...leader} />
 		</span>
 		<span className={TRAILING}>

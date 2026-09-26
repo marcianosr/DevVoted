@@ -64,7 +64,7 @@ import {
 } from "~/ui/kanto-theme/CoverageBar.ui";
 import { gateTitleOf, type HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
-import type { PollCommit } from "~/ui/kanto-theme/PollScreen.ui";
+import type { PollCommit, PollCoverage } from "~/ui/kanto-theme/PollScreen.ui";
 import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
 import type {
 	FigureTone,
@@ -379,6 +379,15 @@ export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
 		healthy: healthyUnitsAt(view.gateStake.gateNumber),
 	},
 });
+
+export const pollCoverageFor = (view: RunView, pin = false): PollCoverage =>
+	view.meterHidden
+		? { locked: true }
+		: {
+				bar: pollBarFor(view, pin),
+				lead: coverageLeadFor(view),
+				paid: pollPaidFor(view),
+			};
 
 const offlineIdsOf = (view: RunView): ReadonlySet<string> =>
 	new Set(view.offlineConfigs.map((offline) => offline.config.id));

@@ -13,8 +13,8 @@ import {
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
-import { findBorderById } from "~/modules/account/profile/domain/border.model";
-import { findTitleById } from "~/modules/account/profile/domain/title.model";
+import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
+import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
 import type {
 	PollAuthor,
 	RunPoll,
@@ -104,11 +104,12 @@ const ENGINE_POLL_COLUMNS = {
 	answerType: pollsTable.answer_type,
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
+	authorId: usersTable.id,
 	authorHandle: usersTable.github_username,
 	authorPhotoUrl: usersTable.photo_url,
 	authorBorderId: usersTable.equipped_border_id,
 	authorRole: usersTable.role,
-	authorTitleId: usersTable.equipped_title_id,
+	authorTitleIds: usersTable.equipped_title_ids,
 };
 
 type EnginePollRow = {
@@ -119,11 +120,12 @@ type EnginePollRow = {
 	answerType: RunPoll["answerType"];
 	categoryCode: string;
 	explanation: string | null;
+	authorId: string | null;
 	authorHandle: string | null;
 	authorPhotoUrl: string | null;
 	authorBorderId: string | null;
 	authorRole: AuthorRole | null;
-	authorTitleId: string | null;
+	authorTitleIds: readonly string[] | null;
 };
 
 type AuthorRole = (typeof usersTable.$inferSelect)["role"];
@@ -140,20 +142,17 @@ const roleLabelFor = (role: AuthorRole | null): string | undefined =>
 const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
 	if (row.authorHandle === null) return undefined;
 
-	const border =
-		row.authorBorderId === null
-			? undefined
-			: findBorderById(row.authorBorderId);
+	const borderUrl = borderUrlOf(row.authorBorderId);
 	const role = roleLabelFor(row.authorRole);
-	const title =
-		row.authorTitleId === null ? undefined : findTitleById(row.authorTitleId);
+	const title = primaryTitleName(row.authorTitleIds ?? []);
 
 	return {
 		handle: `@${row.authorHandle}`,
+		...(row.authorId === null ? {} : { userId: row.authorId }),
 		...(row.authorPhotoUrl === null ? {} : { avatarUrl: row.authorPhotoUrl }),
-		...(border === undefined ? {} : { borderUrl: border.image }),
+		...(borderUrl === null ? {} : { borderUrl }),
 		...(role === undefined ? {} : { role }),
-		...(title === undefined ? {} : { title: title.name }),
+		...(title === null ? {} : { title }),
 	};
 };
 

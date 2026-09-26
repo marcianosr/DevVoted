@@ -25,7 +25,9 @@ export const upkeepLineOf = ({ perGateKb }: InstallScaleProps): string =>
 export const InstallScale = (props: InstallScaleProps) => (
 	<Panel className={WIDTH}>
 		<Panel.Body className={COLUMN}>
-			<Typography variant="hint">{scaleLineOf(props)}</Typography>
+			{props.from === props.to ? null : (
+				<Typography variant="hint">{scaleLineOf(props)}</Typography>
+			)}
 			<Typography variant="hint">
 				<Figures text={upkeepLineOf(props)} />
 			</Typography>

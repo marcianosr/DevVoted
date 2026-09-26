@@ -5,7 +5,7 @@ import { usersTable, userTitlesTable } from "~/database/schema";
 
 export type UserTitleState = {
 	readonly ownedTitleIds: readonly string[];
-	readonly equippedTitleId: string | null;
+	readonly equippedTitleIds: readonly string[];
 };
 
 export const fetchOwnedTitleIds = async (
@@ -23,7 +23,7 @@ export const fetchUserTitleState = async (
 	userId: string
 ): Promise<UserTitleState | null> => {
 	const [user] = await db
-		.select({ equippedTitleId: usersTable.equipped_title_id })
+		.select({ equippedTitleIds: usersTable.equipped_title_ids })
 		.from(usersTable)
 		.where(eq(usersTable.id, userId))
 		.limit(1);
@@ -31,53 +31,25 @@ export const fetchUserTitleState = async (
 	if (!user) return null;
 	return {
 		ownedTitleIds: await fetchOwnedTitleIds(userId),
-		equippedTitleId: user.equippedTitleId,
+		equippedTitleIds: user.equippedTitleIds,
 	};
 };
 
-export const setEquippedTitle = async (
+export const setEquippedTitles = async (
 	userId: string,
-	titleId: string | null
+	titleIds: readonly string[]
 ): Promise<UserTitleState | null> => {
-	if (titleId !== null) {
-		const [owned] = await db
-			.select({ titleId: userTitlesTable.title_id })
-			.from(userTitlesTable)
-			.where(
-				and(
-					eq(userTitlesTable.user_id, userId),
-					eq(userTitlesTable.title_id, titleId)
-				)
-			)
-			.limit(1);
-		if (!owned) return null;
-	}
+	const ownedTitleIds = await fetchOwnedTitleIds(userId);
+	if (titleIds.some((titleId) => !ownedTitleIds.includes(titleId))) return null;
 
 	const [row] = await db
 		.update(usersTable)
-		.set({ equipped_title_id: titleId })
+		.set({ equipped_title_ids: [...titleIds] })
 		.where(eq(usersTable.id, userId))
-		.returning({ equippedTitleId: usersTable.equipped_title_id });
+		.returning({ equippedTitleIds: usersTable.equipped_title_ids });
 
 	if (!row) return null;
-	return {
-		ownedTitleIds: await fetchOwnedTitleIds(userId),
-		equippedTitleId: row.equippedTitleId,
-	};
-};
-
-export const fetchEquippedTitleIds = async (
-	userIds: readonly string[]
-): Promise<ReadonlyMap<string, string>> => {
-	if (userIds.length === 0) return new Map();
-	const rows = await db
-		.select({ id: usersTable.id, titleId: usersTable.equipped_title_id })
-		.from(usersTable)
-		.where(inArray(usersTable.id, [...userIds]));
-
-	return new Map(
-		rows.flatMap((row) => (row.titleId ? [[row.id, row.titleId] as const] : []))
-	);
+	return { ownedTitleIds, equippedTitleIds: row.equippedTitleIds };
 };
 
 export const fetchUnannouncedTitleIds = async (

@@ -1,4 +1,5 @@
 import { getCategoryMetadata } from "~/shared/lib/categories";
+import { profilePathFor } from "~/shared/lib/profilePath";
 
 import {
 	type CategoryLeader,
@@ -17,6 +18,7 @@ const CLAIMS_IT = (streak: number) => `${IN_A_ROW(streak)} claims it`;
 const leaderRowOf = (leader: CategoryLeader): CategorySeatLeader => ({
 	handle: leader.handle,
 	figure: IN_A_ROW(leader.streak),
+	profileHref: profilePathFor(leader.userId),
 	you: leader.you,
 	...(leader.githubLogin === undefined
 		? {}

@@ -45,6 +45,7 @@ import {
 import { strictStakeOf } from "~/modules/run/run/domain/strict.model";
 import {
 	type AnsweredPoll,
+	chainLengthOf,
 	mirrorPoll,
 	type RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
@@ -96,6 +97,7 @@ import {
 	auditLabel,
 	auditsHideAnswerType,
 	auditsHideCategory,
+	auditsHideMeter,
 	auditTimeLimitMs,
 	liveAuditsFor,
 	mirrorsPolls,
@@ -118,7 +120,7 @@ import {
 	buildModifiersFor,
 	rungAfterBuild,
 	spaceForBuild,
-	upkeepForBuild,
+	upkeepAfterCreditOf,
 } from "~/modules/run/build/domain/build.model";
 import { canVendorLock } from "~/modules/run/build/domain/vendorLock.model";
 import {
@@ -136,7 +138,6 @@ import {
 	isPeelFatal,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	upkeepForSpace,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 
@@ -247,6 +248,7 @@ export type RunView = {
 	readonly configStatuses: Readonly<Record<string, ConfigStatus>>;
 	readonly mirroredPolls: boolean;
 	readonly categoryHidden: boolean;
+	readonly meterHidden: boolean;
 	readonly pollTimeLimitMs: number | null;
 	readonly currentPollPeeked: boolean;
 	readonly correctAnswersThisGate: number | null;
@@ -355,11 +357,14 @@ const scaleFor = (
 	state: RunState,
 	withIt: readonly Config[]
 ): InstallScale | null => {
+	const after = { ...state.build, configs: withIt };
 	const from = spaceForBuild(state.build);
-	const to = spaceForBuild({ ...state.build, configs: withIt });
-	if (to === from) return null;
+	const to = spaceForBuild(after);
+	const perGateKb = upkeepAfterCreditOf(after);
+	if (to === from && perGateKb === upkeepAfterCreditOf(state.build))
+		return null;
 
-	return { from, to, perGateKb: upkeepForSpace(to) };
+	return { from, to, perGateKb };
 };
 
 const offersFor = (state: RunState): readonly ShopOffer[] => {
@@ -402,7 +407,7 @@ const buildSpaceViewFor = (state: RunState): BuildSpaceView => {
 	return {
 		space: spaceForBuild(state.build),
 		weight: occupiedSlots(state.build.configs),
-		perGateKb: upkeepForBuild(state.build),
+		perGateKb: upkeepAfterCreditOf(state.build),
 		nextWeight: next?.weight,
 		nextPerGateKb: next?.kb,
 		coveredSpace: state.spaceDroppedTo ?? null,
@@ -430,6 +435,7 @@ const configStatusesFor = (
 		answerTypeHidden: auditsHideAnswerType(liveAudits),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
 		autoUpgradeProgress: state.autoUpgradeProgress ?? 0,
+		chainLength: chainLengthOf(state.allAnswered ?? []),
 		pendingKb: state.pendingKb ?? 0,
 	};
 
@@ -539,6 +545,7 @@ export const toRunView = (
 		configStatuses,
 		mirroredPolls: mirrored,
 		categoryHidden: auditsHideCategory(liveAudits),
+		meterHidden: auditsHideMeter(liveAudits, state.window.answered),
 		pollTimeLimitMs:
 			auditTimeLimitMs(liveAudits, state.window.answered) ?? null,
 		currentPollPeeked:
@@ -625,7 +632,7 @@ export const toRunView = (
 				gate: state.gatesCleared,
 				storageKb: state.storage,
 				spaceWeight: spaceForBuild(state.build),
-				spaceBillKb: upkeepForBuild(state.build),
+				spaceBillKb: upkeepAfterCreditOf(state.build),
 			}),
 			modifiers,
 			perAnswer,

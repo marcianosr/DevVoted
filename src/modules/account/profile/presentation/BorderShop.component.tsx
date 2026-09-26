@@ -30,6 +30,7 @@ export const BorderShop = ({ userId }: BorderShopProps) => {
 
 		return {
 			id: border.id,
+			name: border.name,
 			image: border.image,
 			cost: border.cost,
 			owned,
@@ -43,6 +44,7 @@ export const BorderShop = ({ userId }: BorderShopProps) => {
 	return (
 		<BorderShopUI
 			cards={cards}
+			held={`${archive.ownedBorderIds.length} of ${borders.length}`}
 			error={(purchase.error || equip.error)?.message}
 		/>
 	);

@@ -10,7 +10,7 @@ import {
 	runStatesTable,
 	usersTable,
 } from "~/database/schema";
-import { borderUrlOf } from "~/modules/run/community/infrastructure/climbers.repository";
+import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 
 export type ConsumedRunPoll = {
 	position: number;

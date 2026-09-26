@@ -26,6 +26,9 @@ export const AUDIT_IDS = [
 	"feature-freeze",
 	"legal-hold",
 	"strip",
+	"too-early",
+	"meter-down",
+	"not-extended",
 ] as const;
 
 export type AuditId = (typeof AUDIT_IDS)[number];
@@ -48,6 +51,8 @@ export type Audit = {
 	readonly closesShop?: boolean;
 	readonly hidesCategory?: boolean;
 	readonly hidesAnswerType?: boolean;
+	readonly blindPolls?: number;
+	readonly resetsVersions?: boolean;
 	readonly overWidthBurn?: { readonly freeSlots: number; readonly kb: number };
 	readonly disablesConfig?: OfflinePick;
 	readonly timedPolls?: { readonly count: number; readonly limitMs: number };
@@ -58,6 +63,7 @@ export type Audit = {
 };
 
 export type OfflinePick =
+	| "whole-build-first-poll"
 	| "one-per-attempt"
 	| "random-per-poll"
 	| "rotating-per-poll"
@@ -177,7 +183,7 @@ const BREAKING_CHANGE: Audit = {
 	code: 409,
 	name: "Conflict",
 	description:
-		"Your highest-level config takes a breaking change for the whole attempt — the one you upgraded most does nothing.",
+		"Your highest-version config takes a breaking change for the whole attempt — the one you upgraded most does nothing.",
 	answerCue:
 		"Breaking change: your most-upgraded config is switched off this gate.",
 	disablesConfig: "highest-level",
@@ -231,10 +237,41 @@ const UPGRADE_REQUIRED: Audit = {
 	code: 426,
 	name: "Upgrade Required",
 	description:
-		"The config you neglected goes out of date: your lowest-level one sits the whole attempt out.",
+		"The config you neglected goes out of date: your lowest-version one sits the whole attempt out.",
 	answerCue:
 		"Upgrade required: your least-upgraded config is offline this gate.",
 	disablesConfig: "lowest-level",
+};
+
+const TOO_EARLY: Audit = {
+	id: "too-early",
+	code: 425,
+	name: "Too Early",
+	description:
+		"Your configs do not contribute to the window's first poll — its ordinary base credit still scores.",
+	answerCue: "Too early: your build sits out the window's opening poll.",
+	disablesConfig: "whole-build-first-poll",
+};
+
+const NOT_EXTENDED: Audit = {
+	id: "not-extended",
+	code: 510,
+	name: "Not Extended",
+	description:
+		"Every upgraded config runs at v1 for the whole attempt — the versions you bought do nothing.",
+	answerCue: "Not extended: every config is running at v1 this gate.",
+	resetsVersions: true,
+};
+
+const BLIND_POLLS = 4;
+
+const METER_DOWN: Audit = {
+	id: "meter-down",
+	code: 500,
+	name: "Internal Server Error",
+	description: `The coverage meter and the band it reads go dark for the window's first ${BLIND_POLLS} polls. Scoring is unchanged.`,
+	answerCue: "Meter down: you are answering without the coverage reading.",
+	blindPolls: BLIND_POLLS,
 };
 
 const PAYLOAD_FREE_SLOTS = 12;
@@ -283,6 +320,9 @@ const AUDIT_ROSTER = {
 	"feature-freeze": () => FEATURE_FREEZE,
 	"legal-hold": () => LEGAL_HOLD,
 	strip: stripAudit,
+	"too-early": () => TOO_EARLY,
+	"meter-down": () => METER_DOWN,
+	"not-extended": () => NOT_EXTENDED,
 } as const satisfies Record<AuditId, (gate: number) => Audit>;
 
 export const AUDIT_ROSTER_SIZE = Object.keys(AUDIT_ROSTER).length;
@@ -356,6 +396,18 @@ export const auditsHideCategory = (audits: readonly Audit[]): boolean =>
 
 export const auditsHideAnswerType = (audits: readonly Audit[]): boolean =>
 	audits.some((audit) => audit.hidesAnswerType === true);
+
+export const auditsResetVersions = (audits: readonly Audit[]): boolean =>
+	audits.some((audit) => audit.resetsVersions === true);
+
+export const auditsHideMeter = (
+	audits: readonly Audit[],
+	answeredBefore: number
+): boolean =>
+	audits.some(
+		(audit) =>
+			audit.blindPolls !== undefined && answeredBefore < audit.blindPolls
+	);
 
 export const auditPaidActionLimit = (
 	audits: readonly Audit[]
@@ -468,6 +520,8 @@ const pickOffline = (
 	windowStart: number,
 	answeredThisWindow: number
 ): readonly Config[] => {
+	if (pick === "whole-build-first-poll")
+		return answeredThisWindow === 0 ? sorted : [];
 	if (pick === "one-per-attempt")
 		return onlyFound(selectSeededRandom([...sorted], `outage-${windowStart}`));
 	if (pick === "random-per-poll")

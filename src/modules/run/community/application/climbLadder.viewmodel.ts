@@ -9,6 +9,7 @@ import {
 	publicWeightOf,
 } from "~/modules/run/build/domain/publicBuild.model";
 import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
+import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
 import { OF, WEIGHT } from "~/shared/lib/copy";
 import {
@@ -86,6 +87,7 @@ const cardOf = (
 
 	return {
 		name: chip.name,
+		profileHref: profilePathFor(entry.id),
 		...(entry.handle === undefined ? {} : { handle: entry.handle }),
 		...(entry.title === undefined ? {} : { title: entry.title }),
 		...(chip.photoUrl === undefined ? {} : { photoUrl: chip.photoUrl }),

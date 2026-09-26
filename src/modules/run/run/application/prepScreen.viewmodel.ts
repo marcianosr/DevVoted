@@ -74,10 +74,10 @@ export const BALANCE_WORD = STORAGE_BALANCE;
 
 const noop = () => {};
 
-export const fundsOf = (kb: number, label: string): HeaderFunds => {
-	const [amount, unit] = kbLabel(kb).split(" ");
-	return { amount, unit, label, kb };
-};
+export const fundsOf = (kb: number, label: string): HeaderFunds => ({
+	kb,
+	label,
+});
 
 const SUMMIT_LINE = "the summit — nothing after this";
 const SEALED: LedgerFigure = { locked: true };
@@ -340,14 +340,15 @@ const ledgerFor = (
 	configs: readonly Config[],
 	gate: number,
 	storageKb: number,
-	space: number
+	space: number,
+	spaceBillKb: number
 ): BillLedger =>
 	billLedger({
 		configs,
 		gate,
 		storageKb,
 		spaceWeight: spaceRungFor(space).weight,
-		spaceBillKb: spaceRungFor(space).kb,
+		spaceBillKb,
 	});
 
 const auditBillFor = (ledger: BillLedger): { bill?: string; note?: string } => {
@@ -393,6 +394,7 @@ export type PrepFrame = {
 	attack?: AttackPanelProps;
 	balanceKb: number;
 	buildSpace: number;
+	spaceBillKb: number;
 	window: PrepWindow;
 	bar: CoverageBarProps;
 	coverageGainPercent: number;
@@ -415,6 +417,7 @@ export const prepPropsFor = ({
 	attack,
 	balanceKb,
 	buildSpace,
+	spaceBillKb,
 	window,
 	bar,
 	coverageGainPercent,
@@ -429,7 +432,7 @@ export const prepPropsFor = ({
 }: PrepFrame): PrepScreenProps => {
 	const swatch = gateSwatchAt(gate);
 	const prefetcher = prefetcherFor(configs);
-	const bills = ledgerFor(configs, gate, balanceKb, buildSpace);
+	const bills = ledgerFor(configs, gate, balanceKb, buildSpace, spaceBillKb);
 	const subscriptions = subscriptionsLedgerFor(bills);
 
 	return {

@@ -19,6 +19,7 @@ export const COPY = {
 	none: "—",
 	privately: "answers, unanswered polls and prefetch stay private",
 	close: "Close",
+	profileOf: (name: string) => `${name}'s profile`,
 } as const;
 
 const GITHUB = "https://github.com";
@@ -55,6 +56,7 @@ export type ClimberCardProps = {
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;
+	profileHref?: string;
 	you?: boolean;
 	rival?: boolean;
 	perfect?: boolean;
@@ -93,12 +95,38 @@ const Naming = ({
 	</span>
 );
 
+type FaceProps = Pick<
+	ClimberCardProps,
+	| "name"
+	| "photoUrl"
+	| "borderUrl"
+	| "profileHref"
+	| "you"
+	| "rival"
+	| "perfect"
+	| "shaky"
+	| "rescued"
+>;
+
+const Face = ({ profileHref, ...climber }: FaceProps) => {
+	const face = <Climber {...climber} size="md" />;
+
+	if (profileHref === undefined) return face;
+
+	return (
+		<a href={profileHref} aria-label={COPY.profileOf(climber.name)}>
+			{face}
+		</a>
+	);
+};
+
 export const ClimberCard = ({
 	name,
 	handle,
 	title,
 	photoUrl,
 	borderUrl,
+	profileHref,
 	you = false,
 	rival = false,
 	perfect = false,
@@ -115,16 +143,16 @@ export const ClimberCard = ({
 }: ClimberCardProps) => (
 	<div className={CARD}>
 		<div className={HEAD}>
-			<Climber
+			<Face
 				name={name}
 				photoUrl={photoUrl}
 				borderUrl={borderUrl}
+				profileHref={profileHref}
 				you={you}
 				rival={rival}
 				perfect={perfect}
 				shaky={shaky}
 				rescued={rescued}
-				size="md"
 			/>
 			<Naming name={name} handle={handle} title={title} />
 			{onClose === undefined ? null : (

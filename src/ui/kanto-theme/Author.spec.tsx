@@ -170,3 +170,30 @@ describe("Author", () => {
 		expect(link.parentElement).toHaveClass("text-xs");
 	});
 });
+
+describe("Author, linking to the writer's page", () => {
+	it("sends the face to their profile while the handle still goes to GitHub", () => {
+		render(
+			<Author handle="matthijsgroen" profileHref="/profile/matthijs-id" />
+		);
+
+		expect(
+			screen.getByRole("link", { name: "@matthijsgroen's profile" })
+		).toHaveAttribute("href", "/profile/matthijs-id");
+		expect(
+			screen.getByRole("link", { name: "@matthijsgroen" })
+		).toHaveAttribute("href", "https://github.com/matthijsgroen");
+	});
+
+	it("leaves the face unlinked when no page was handed over", () => {
+		render(<Author handle="matthijsgroen" />);
+
+		const links = screen.getAllByRole("link");
+
+		expect(links).toHaveLength(1);
+		expect(links[0]).toHaveAttribute(
+			"href",
+			"https://github.com/matthijsgroen"
+		);
+	});
+});

@@ -16,6 +16,7 @@ import {
 	pollPressesOf,
 	runPaidFor,
 	categoryLeaderFor,
+	pollCoverageFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -625,6 +626,7 @@ describe("categoryLeaderFor", () => {
 		categorySeat: {
 			category: "js",
 			leader: {
+				userId: "leader-id",
 				handle: "@sabrina",
 				githubLogin: "sabrina",
 				streak: 17,
@@ -664,7 +666,12 @@ describe("categoryLeaderFor", () => {
 		const poll = createMockPollView({
 			categorySeat: {
 				category: "js",
-				leader: { handle: "@sabrina", streak: 17, you: true },
+				leader: {
+					userId: "sabrina-id",
+					handle: "@sabrina",
+					streak: 17,
+					you: true,
+				},
 			},
 		});
 
@@ -685,5 +692,24 @@ describe("categoryLeaderFor", () => {
 		expect(
 			categoryLeaderFor(view, createMockPollView({ categorySeat: undefined }))
 		).toBeUndefined();
+	});
+});
+
+describe("pollCoverageFor", () => {
+	it("hands the panel a reading while the meter stands", () => {
+		const coverage = pollCoverageFor(createMockRunView());
+
+		expect(coverage.locked).toBeUndefined();
+		expect(coverage.bar).toBeDefined();
+		expect(coverage.lead).toBeDefined();
+	});
+
+	it("locks the panel and withholds every figure once the meter is down", () => {
+		const coverage = pollCoverageFor(createMockRunView({ meterHidden: true }));
+
+		expect(coverage.locked).toBe(true);
+		expect(coverage.bar).toBeUndefined();
+		expect(coverage.lead).toBeUndefined();
+		expect(coverage.paid).toBeUndefined();
 	});
 });

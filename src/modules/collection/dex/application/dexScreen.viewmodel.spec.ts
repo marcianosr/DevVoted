@@ -20,6 +20,7 @@ import {
 	runHistory,
 	type RunHistoryRow,
 } from "~/modules/collection/dex/domain/runHistory.model";
+import type { DexConfigCard } from "~/ui/kanto-theme/DexConfigs.ui";
 
 const poll = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
 	id: 1,
@@ -107,9 +108,9 @@ describe("dexPollsFor", () => {
 
 describe("dexConfigsFor", () => {
 	const props = dexConfigsFor(configdex([], []));
-	const chips = props.groups.flatMap((group) => group.chips);
-	const chipNamed = (name: string) =>
-		chips.find((chip) => chip.state === "granted" && chip.name === name);
+	const cards = props.groups.flatMap((group) => group.chips);
+	const isGranted = (card: DexConfigCard) => card.locked !== true;
+	const cardNamed = (name: string) => cards.find((card) => card.name === name);
 
 	it("groups the roster by weight, heaviest first, matching the 'by weight' axis", () => {
 		const weights = props.groups.map((group) => group.weight);
@@ -118,36 +119,35 @@ describe("dexConfigsFor", () => {
 		expect(new Set(weights).size).toBe(weights.length);
 	});
 
-	it("seats every chip under its own weight", () => {
+	it("seats every card under its own weight", () => {
 		expect(
 			props.groups.every((group) =>
-				group.chips.every((chip) => chip.slots === group.weight)
+				group.chips.every((card) => card.slots === group.weight)
 			)
 		).toBe(true);
 	});
 
-	it("heads a group with its weight and how much of it you hold", () => {
+	it("heads a group with its weight named and how much of it you hold", () => {
 		const light = props.groups.find((group) => group.weight === 1);
-		const held = light?.chips.filter((chip) => chip.state === "granted").length;
+		const held = light?.chips.filter(isGranted).length;
 
-		expect(light?.heading).toBe(`1 weight · ${held} of ${light?.chips.length}`);
+		expect(light?.label).toBe("weight 1");
+		expect(light?.held).toBe(`${held} of ${light?.chips.length}`);
 	});
 
 	it("reads what you hold before what you owe inside a weight", () => {
 		const mixed = props.groups.find(
 			(group) =>
-				group.chips.some((chip) => chip.state === "granted") &&
-				group.chips.some((chip) => chip.state === "locked")
+				group.chips.some(isGranted) &&
+				group.chips.some((card) => !isGranted(card))
 		);
-		const states = mixed?.chips.map((chip) => chip.state) ?? [];
+		const granted = mixed?.chips.map(isGranted) ?? [];
 
-		expect(states.indexOf("locked")).toBe(states.lastIndexOf("granted") + 1);
+		expect(granted.indexOf(false)).toBe(granted.lastIndexOf(true) + 1);
 	});
 
 	it("names the ceiling of .js's ladder, which is a fact about the config", () => {
-		const js = chipNamed(".js");
-
-		expect(js?.state === "granted" && js.maxVersion).toBe(5);
+		expect(cardNamed(".js")?.version).toBe(5);
 	});
 
 	it("states a short ladder's own ceiling rather than the roster's", () => {
@@ -156,76 +156,102 @@ describe("dexConfigsFor", () => {
 		);
 		const telemetry = earned.groups
 			.flatMap((group) => group.chips)
-			.find((chip) => chip.state === "granted" && chip.name === "Telemetry");
+			.find((card) => card.name === "Telemetry");
 
-		expect(telemetry?.state === "granted" && telemetry.maxVersion).toBe(2);
+		expect(telemetry?.version).toBe(2);
 	});
 
 	it("states .js's effect as a sentence and its figure as a badge", () => {
-		const js = chipNamed(".js");
+		const js = cardNamed(".js");
 
-		expect(js?.state === "granted" && js.effect).toBe(
+		expect(js?.info?.description).toBe(
 			"JavaScript polls reward ×1.25 coverage"
 		);
-		expect(js?.state === "granted" && js.figure).toBe("×1.25");
+		expect(js?.badges).toEqual([{ label: "×1.25", color: "viridian" }]);
 	});
 
-	it("marks a starter apart from the roster it was dealt with", () => {
-		const js = chipNamed(".js");
+	it("names the rung an install gives you, which the ceiling tag does not", () => {
+		expect(cardNamed(".js")?.info?.note).toBe("Starter config · v1 of 5");
+	});
 
-		expect(js?.state === "granted" && js.starter).toBe(true);
+	it("marks a starter apart from a config that had to be earned", () => {
+		expect(cardNamed(".js")?.info?.note).toContain("Starter config");
+
+		const earned = dexConfigsFor(
+			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
+		);
+		const telemetry = earned.groups
+			.flatMap((group) => group.chips)
+			.find((card) => card.name === "Telemetry");
+
+		expect(telemetry?.info?.note).toBe(
+			"Earned: peeked the community split 5 times · v1 of 2"
+		);
+	});
+
+	it("keeps how a config was earned out of the head, where a shut card reads", () => {
+		const earned = dexConfigsFor(
+			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
+		);
+
+		expect(
+			earned.groups
+				.flatMap((group) => group.chips)
+				.every((card) => card.detail === undefined)
+		).toBe(true);
 	});
 
 	it("leaves a config with no ladder unmarked rather than giving it one rung", () => {
-		const flat = chipNamed("Code Coverage");
+		const flat = cardNamed("Code Coverage");
 
-		expect(flat?.state === "granted" && flat.maxVersion).toBeUndefined();
+		expect(flat?.version).toBeUndefined();
+		expect(flat?.info?.note).toBe("Starter config");
 	});
 
 	it("gives a config whose effect has no figure no badge at all", () => {
-		const eslint = chipNamed("ESLint");
-
-		expect(eslint?.state === "granted" && eslint.figure).toBeUndefined();
+		expect(cardNamed("ESLint")?.badges).toEqual([]);
 	});
 
-	it("never carries a locked config's name, only its unlock paths", () => {
-		const locked = chips.filter((chip) => chip.state === "locked");
+	it("never carries a locked config's name or effect, only its weight and unlock paths", () => {
+		const locked = cards.filter((card) => card.locked === true);
 
 		expect(locked.length).toBeGreaterThan(0);
 		expect(
-			locked.every((chip) => chip.state === "locked" && chip.paths.length === 2)
+			locked.every((card) => card.name === undefined && card.info === undefined)
+		).toBe(true);
+		expect(
+			locked.every(
+				(card) => card.slots !== undefined && card.unlock?.length === 2
+			)
 		).toBe(true);
 	});
 
 	it("keeps a counted path's figures apart, so a bar can be drawn from it", () => {
-		const locked = chips.find((chip) => chip.state === "locked");
-		const fallback = locked?.state === "locked" ? locked.paths[1] : undefined;
+		const locked = cards.find((card) => card.locked === true);
 
-		expect(fallback?.progress).toEqual({
+		expect(locked?.unlock?.[1].progress).toEqual({
 			count: expect.any(Number),
 			target: expect.any(Number),
 		});
 	});
 
 	it("counts nothing on a one-shot objective, which has no progress", () => {
-		const oneShot = chips.find(
-			(chip) =>
-				chip.state === "locked" &&
-				chip.paths[0].text === "Clear a gate with every slot filled"
+		const oneShot = cards.find(
+			(card) => card.unlock?.[0].text === "Clear a gate with every slot filled"
 		);
 
-		expect(oneShot?.state === "locked" && oneShot.paths[0].progress).toBeNull();
+		expect(oneShot?.unlock?.[0].progress).toBeNull();
 	});
 
 	it("counts the deck you hold against the whole roster", () => {
-		const granted = chips.filter((chip) => chip.state === "granted").length;
+		const granted = cards.filter(isGranted).length;
 
-		expect(props.count).toBe(`${granted} of ${chips.length}`);
+		expect(props.count).toBe(`${granted} of ${cards.length}`);
 	});
 
 	it("states the run-scoped ladder rule the collection cannot show", () => {
 		expect(props.note).toContain("lost when the run ends");
-		expect(props.note).toContain("behind the i");
+		expect(props.note).toContain("how to unlock it");
 		expect(props.note).toContain("never a version you hold");
 	});
 });

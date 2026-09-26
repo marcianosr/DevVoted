@@ -92,7 +92,7 @@ it before proposing one again.**
 | [105](105-you-fire-only-from-a-gate-that-can-be-fired-at.md) | You may only fire from a gate that can be fired at | Accepted |
 | [106](106-the-poll-screen-reads-coverage-in-units.md) | The poll screen reads coverage in units | Accepted — amends 070 and 077; only the poll screen passes units |
 | [107](107-a-bean-states-what-and-why-first.md) | **A bean states what and why first** | Accepted; what/why, then `Done when`, then everything else under Notes |
-| [108](108-the-dex-reads-configs-as-chip-rows.md) | The Dex reads configs as chip rows | Accepted — retires the caption rule of 050 D5 and 051 D7, amends 097 D4; the met state is a Story until DVTD-s5vo |
+| [108](108-the-dex-reads-configs-as-chip-rows.md) | The Dex reads configs as chip rows | Accepted — amends 097 D4; D1, D2, D3 and D5 superseded by 120; D4 (the pennant names the ceiling) stands; the met state is a Story until DVTD-s5vo |
 | [109](109-a-title-is-earned-and-worn-one-at-a-time.md) | **A title is earned, permanent, and worn one at a time** | Accepted; frees `title` from the account role, which keeps the handle line |
 | [111](111-a-granted-title-is-dealt-and-announced-once.md) | **A granted title is dealt by a migration and announced once** | Accepted; completes 109, which left a granted title unawardable. Corrects 109 D4: the run-over screen never announced anything |
 | [112](112-the-archive-carries-and-buys-appearance.md) | **The archive carries, and it buys appearance and licences** | Accepted; names a carve-out to 051's no-backfill line; D1 amended by 115 (the archive buys run services, not licences); keeps the archive out of the run |
@@ -103,6 +103,14 @@ it before proposing one again.**
 | [117](117-the-primary-press-is-one-wide-bar.md) | **The primary press is one wide bar** that wears its gate | Accepted — reverses 114 D2 and D3 on which bar holds the floor; one CTA per screen, the reading inside the press, `noteAt` and the poll's count heading gone |
 | [118](118-a-config-may-require-the-input-it-reads.md) | **A config may require the input it reads** — prep holds the gate for it | Accepted — amends 035, 085 |
 | [119](119-a-config-card-flows-by-the-room-it-has.md) | **A config card flows by the room it has**, and never below its own name | Accepted — supersedes DVTD-8byc's wrap-at-own-width; a card with no fold states itself, badges ride whichever half is showing, panels fold all at once |
+| [120](120-the-dex-draws-the-one-config-card.md) | **The Dex draws the one config card** | Accepted — replaces 108 D1, D2, D3, D5; the weight and the unlock paths are not the secret, the name and the effect are; an empty footer is not drawn |
+| [121](121-a-config-can-pay-the-faucet-on-a-ramp.md) | **A config can pay the faucet on a ramp**, if it states its next rung | Accepted — ships `&&`; storage not coverage, the chain counts the run not the window, and `nextLinkKb` is the condition |
+| [122](122-an-audit-may-dial-the-build-down.md) | **An audit may dial the build down**, not only switch it off | Accepted — ships 425 and 510; the whole build for one poll, every version flattened for an attempt, both in the offline-config family |
+| [123](123-the-meter-can-go-dark-the-panel-cannot.md) | **The coverage meter can go dark, the panel cannot** | Accepted — ships 500; amends 106's rejection of a gate-wide hide, keeps 113's rail, and takes every restatement of the figure with it |
+| [122](122-a-config-can-discount-the-build-space-bill.md) | **A config can discount the build space bill**, by less than a rung is worth | Accepted — ships YAGNI; amends 087's "a per-config term cannot reach the bill"; 8 KB is the largest step that keeps a rung crossing a loss; extends 098 D2 to arm on the bill |
+| [123](123-a-card-states-a-figure-only-where-it-is-paid.md) | **A card states a figure only where it is paid**, and prose only in its body | Accepted — the new run build promises no refund it cannot give; `detail` is a short mark, never a sentence, so the Dex states provenance in the note |
+| [124](124-the-balance-names-every-change-one-at-a-time.md) | **The balance names every change, one at a time** | Accepted, extends 077 to the balance; a burst queues instead of overwriting, the figure steps through each reading, and the queue belongs to the readout |
+| [125](125-a-player-has-one-page-and-one-card.md) | **A player has one page and one card** | Accepted — the Dex merges into `/profile/$userId`; amends 109 D1 (several worn titles, ordered) and D6 (the three surfaces link to the page); a visitor gets the card and four counts, never a tab |
 
 ## Retired
 

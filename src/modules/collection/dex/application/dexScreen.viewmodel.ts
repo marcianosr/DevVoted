@@ -2,7 +2,10 @@ import { plural } from "~/shared/lib/displayValue";
 import { CATEGORY_METADATA } from "~/shared/lib/categories";
 
 import type { AuditdexEntry } from "~/modules/collection/dex/domain/auditdex.model";
-import type { ConfigdexEntry } from "~/modules/collection/dex/domain/configdex.model";
+import {
+	grantedCountIn,
+	type ConfigdexEntry,
+} from "~/modules/collection/dex/domain/configdex.model";
 import type { ControldexEntry } from "~/modules/collection/dex/domain/controldex.model";
 import type { GatedexEntry } from "~/modules/collection/dex/domain/gatedex.model";
 import {
@@ -43,11 +46,9 @@ import {
 	type DexAuditRow,
 	type DexAuditsProps,
 } from "~/ui/kanto-theme/DexAudits.ui";
+import type { ConfigUnlockPath } from "~/ui/kanto-theme/ConfigUnlock.ui";
 import type {
-	DexConfigChipProps,
-	DexUnlockPath,
-} from "~/ui/kanto-theme/DexConfigChip.ui";
-import type {
+	DexConfigCard,
 	DexConfigsData,
 	DexWeightGroup,
 } from "~/ui/kanto-theme/DexConfigs.ui";
@@ -130,11 +131,13 @@ export const dexPollsFor = (
 };
 
 const CONFIGS_NOTE =
-	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends, so the tag names the top of that ladder, never a version you hold. A locked config shows its weight and, behind the i, how to unlock it; its name and effect show once it is earned.";
+	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends, so the tag names the top of that ladder, never a version you hold. A locked config states its weight and how to unlock it; its name and effect show once it is earned.";
 const CONFIGS_META = "by weight";
-const HEADING_SEPARATOR = " · ";
+const LADDER_SEPARATOR = " · ";
+const FIRST_VERSION = 1;
+const FIGURE_COLOR: KantoColor = "viridian";
 
-const pathFor = (caption: UnlockPathCaption): DexUnlockPath => ({
+const pathFor = (caption: UnlockPathCaption): ConfigUnlockPath => ({
 	text: caption.text,
 	progress:
 		caption.kind === "counted"
@@ -150,69 +153,89 @@ const figureOf = (config: Config): string | undefined => {
 	return figure === "" ? undefined : figure;
 };
 
-const chipFor = (entry: ConfigdexEntry): DexConfigChipProps => {
-	if (entry.state === "locked") {
-		return {
-			id: entry.id,
-			slots: entry.slots,
-			state: "locked",
-			paths: [pathFor(entry.thematic), pathFor(entry.fallback)],
-		};
-	}
+export const noteOf = (
+	provenance: string,
+	maxVersion: number | undefined
+): string =>
+	maxVersion === undefined
+		? provenance
+		: `${provenance}${LADDER_SEPARATOR}v${FIRST_VERSION} of ${maxVersion}`;
+
+const grantedCardFor = (
+	entry: Extract<ConfigdexEntry, { state: "granted" }>
+): DexConfigCard => {
+	const slots = baseSlotsOf(entry.config);
+	const maxVersion = maxVersionOf(entry.config);
+	const figure = figureOf(entry.config);
 
 	return {
 		id: entry.config.id,
-		slots: baseSlotsOf(entry.config),
-		state: "granted",
 		name: entry.config.label,
-		effect: givesOf(entry.config) ?? entry.config.description,
-		starter: entry.starter,
-		provenance: entry.provenance,
-		figure: figureOf(entry.config),
-		maxVersion: maxVersionOf(entry.config),
+		slots,
+		version: maxVersion,
+		badges:
+			figure === undefined ? [] : [{ label: figure, color: FIGURE_COLOR }],
+		info: {
+			description: givesOf(entry.config) ?? entry.config.description,
+			slots,
+			note: noteOf(entry.provenance, maxVersion),
+		},
 	};
 };
 
-const isGranted = (chip: DexConfigChipProps) => chip.state === "granted";
+const cardFor = (entry: ConfigdexEntry): DexConfigCard => {
+	if (entry.state === "locked") {
+		return {
+			id: entry.id,
+			locked: true,
+			slots: entry.slots,
+			unlock: [pathFor(entry.thematic), pathFor(entry.fallback)],
+		};
+	}
+
+	return grantedCardFor(entry);
+};
+
+const isGranted = (card: DexConfigCard) => card.locked !== true;
+
+const weightOf = (entry: ConfigdexEntry): number =>
+	entry.state === "locked" ? entry.slots : baseSlotsOf(entry.config);
 
 const groupOf = (
 	weight: number,
-	chips: readonly DexConfigChipProps[]
+	cards: readonly DexConfigCard[]
 ): DexWeightGroup => {
-	const granted = chips.filter(isGranted);
-	const rest = chips.filter((chip) => !isGranted(chip));
+	const granted = cards.filter(isGranted);
+	const rest = cards.filter((card) => !isGranted(card));
 
 	return {
 		weight,
-		heading: `${weight} ${WEIGHT}${HEADING_SEPARATOR}${heldOf(granted.length, chips.length)}`,
+		label: `${WEIGHT} ${weight}`,
+		held: heldOf(granted.length, cards.length),
 		chips: [...granted, ...rest],
 	};
 };
 
 const byWeight = (
-	chips: readonly DexConfigChipProps[]
+	entries: readonly ConfigdexEntry[]
 ): readonly DexWeightGroup[] =>
-	[...new Set(chips.map((chip) => chip.slots))]
+	[...new Set(entries.map(weightOf))]
 		.sort((a, b) => b - a)
 		.map((weight) =>
 			groupOf(
 				weight,
-				chips.filter((chip) => chip.slots === weight)
+				entries.filter((entry) => weightOf(entry) === weight).map(cardFor)
 			)
 		);
 
 export const dexConfigsFor = (
 	entries: readonly ConfigdexEntry[]
-): DexConfigsData => {
-	const chips = entries.map(chipFor);
-
-	return {
-		groups: byWeight(chips),
-		count: heldOf(chips.filter(isGranted).length, chips.length),
-		meta: CONFIGS_META,
-		note: CONFIGS_NOTE,
-	};
-};
+): DexConfigsData => ({
+	groups: byWeight(entries),
+	count: heldOf(grantedCountIn(entries), entries.length),
+	meta: CONFIGS_META,
+	note: CONFIGS_NOTE,
+});
 
 const SERVICES_NOTE =
 	"A service is unlocked once, for good. A registry service is then bought in the shop with the run's own storage, as often as you can pay; a run service is bought once a run, before it, from the archive. The git tag is bought in the shop today and carries into your next run.";

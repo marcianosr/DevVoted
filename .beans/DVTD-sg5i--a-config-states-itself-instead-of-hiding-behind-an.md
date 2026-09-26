@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-26T09:25:21Z
-updated_at: 2026-09-26T11:16:41Z
+updated_at: 2026-09-26T15:31:18Z
 ---
 
 **What:** Every config reads as an expanded card that states its effect, its weight, its version and what it sells for, instead of a one-line chip with all of that behind a floating info press.
@@ -39,7 +39,7 @@ Verification: 3930 tests across 204 files, typecheck, oxlint, dependency-cruiser
 ## Still open
 
 - Provenance has no producer outside the Dex yet, so today the `i` appears on upgradable configs only.
-- The Dex card (`DexConfigChip`) has not been moved onto the shared parts.
+- ~~The Dex card (`DexConfigChip`) has not been moved onto the shared parts.~~ Done in DVTD-wtri (ADR-120).
 - The rename to `ConfigCard` and the ADR are not done.
 - Touch lost the weight-track highlight: opening a panel used to light a config's segment, and that was the only route without hover.
 

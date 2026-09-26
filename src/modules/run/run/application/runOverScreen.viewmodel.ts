@@ -1,5 +1,9 @@
 import { plural } from "~/shared/lib/displayValue";
-import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	emptySlotCreditPerSlotKb,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
@@ -64,6 +68,8 @@ const EARNED_WORD = "earned";
 const A_GATE = "a gate";
 const NO_UPKEEP = "The run never paid upkeep.";
 const NEVER_PAID = "never paid for itself";
+const STAYED_EMPTY = "stayed empty";
+const OFF_THE_BILL = "a gate off the bill";
 const BARE_BUILD = "The run ended with nothing installed.";
 
 const ARCHIVED_ROW = "archived this run";
@@ -268,22 +274,34 @@ const chipOf = (config: Config): ConfigChipProps => ({
 	info: settledFactsFor(config),
 });
 
+const spareWeightOf = (frame: RunOverFrame): number =>
+	Math.max(0, frame.space - frame.weight);
+
+const emptyCreditOf = (frame: RunOverFrame): number =>
+	emptySlotCreditPerSlotKb(frame.configs) * spareWeightOf(frame);
+
+const upkeepOf = (frame: RunOverFrame): number =>
+	Math.max(0, upkeepForSpace(frame.space) - emptyCreditOf(frame));
+
 const buildNoteOf = (frame: RunOverFrame): string => {
 	if (frame.configs.length === 0) return BARE_BUILD;
 	if (frame.upkeepPaidKb === 0) return NO_UPKEEP;
 
-	const spare = frame.space - frame.weight;
+	const spare = spareWeightOf(frame);
+	const credit = emptyCreditOf(frame);
 	const spent = `Upkeep took ${kbLabel(frame.upkeepPaidKb)} across ${plural(frame.gate, "gate")}.`;
 
-	return spare <= 0
-		? spent
-		: `${spent} ${weightLabel(spare)} of it ${NEVER_PAID}.`;
+	if (spare === 0) return spent;
+	if (credit > 0)
+		return `${spent} ${weightLabel(spare)} of it ${STAYED_EMPTY}, taking ${kbLabel(credit)} ${OFF_THE_BILL}.`;
+
+	return `${spent} ${weightLabel(spare)} of it ${NEVER_PAID}.`;
 };
 
 const buildOf = (frame: RunOverFrame) => ({
 	meta: weightLabel(frame.weight),
 	badge: {
-		label: `${kbLabel(upkeepForSpace(frame.space))} ${A_GATE}`,
+		label: `${kbLabel(upkeepOf(frame))} ${A_GATE}`,
 		color: TERM_COLOR,
 	},
 	configs: frame.configs.map(chipOf),

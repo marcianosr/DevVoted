@@ -4,6 +4,7 @@ import type { StoryObj } from "@storybook/react";
 
 import * as AbTest from "./AbTest.stories";
 import * as AgentsMd from "./AgentsMd.stories";
+import * as AndAnd from "./AndAnd.stories";
 import * as Cache from "./Cache.stories";
 import * as CodeCoverage from "./CodeCoverage.stories";
 import * as ColdStart from "./ColdStart.stories";
@@ -33,11 +34,13 @@ import * as UnitTests from "./UnitTests.stories";
 import * as VendorLockIn from "./VendorLockIn.stories";
 import * as VolkswagenCi from "./VolkswagenCi.stories";
 import * as Wtfpl from "./Wtfpl.stories";
+import * as Yagni from "./Yagni.stories";
 import * as YarnLock from "./YarnLock.stories";
 
 const PAGES = {
 	AbTest,
 	AgentsMd,
+	AndAnd,
 	Cache,
 	CodeCoverage,
 	ColdStart,
@@ -67,6 +70,7 @@ const PAGES = {
 	VendorLockIn,
 	VolkswagenCi,
 	Wtfpl,
+	Yagni,
 	YarnLock,
 };
 

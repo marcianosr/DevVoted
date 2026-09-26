@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { clsx } from "clsx";
 
@@ -20,10 +20,16 @@ const WIDTH = {
 	wide: "max-w-6xl",
 } satisfies Record<ScreenWidth, string>;
 
+type FloorStyle = CSSProperties & Record<"--screen-floor", string>;
+
+const floorStyle = (floor: string | undefined): FloorStyle | undefined =>
+	floor === undefined ? undefined : { "--screen-floor": floor };
+
 export type ScreenProps = {
 	children: ReactNode;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
+	floor?: string;
 } & (
 	{ theme: KantoColor; gate?: never } | { gate: SwatchTheme; theme?: never }
 );
@@ -31,12 +37,14 @@ export type ScreenProps = {
 export const Screen = ({
 	width = "default",
 	ground = "framed",
+	floor,
 	children,
 	...props
 }: ScreenProps) => (
 	<section
 		data-screen-theme={props.theme}
 		data-gate-theme={props.gate}
+		style={floorStyle(floor)}
 		className={clsx(SCREEN, WIDTH[width], ground === "framed" && FRAME)}
 	>
 		<div className={BODY}>{children}</div>

@@ -3,6 +3,7 @@ import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
 export type AuditFamily =
+	| "meter"
 	| "paid-actions"
 	| "offline-config"
 	| "storage-burn"
@@ -29,6 +30,9 @@ const FAMILY_OF = {
 	"read-only": "shop",
 	timeout: "clock",
 	strip: "stake",
+	"too-early": "offline-config",
+	"not-extended": "offline-config",
+	"meter-down": "meter",
 } as const satisfies Record<AuditId, AuditFamily>;
 
 export const familyOf = (id: AuditId): AuditFamily => FAMILY_OF[id];
@@ -40,6 +44,7 @@ const DENY_PAIRS: readonly (readonly [AuditId, AuditId])[] = [
 export const AUDIT_RANK: readonly AuditId[] = [
 	"strip",
 	"mirrored",
+	"not-extended",
 	"multi-status",
 	"timeout",
 	"feature-freeze",
@@ -48,11 +53,13 @@ export const AUDIT_RANK: readonly AuditId[] = [
 	"payload-too-large",
 	"breaking-change",
 	"upgrade-required",
+	"too-early",
 	"rolling-outage",
 	"flaky-build",
 	"dependency-outage",
 	"legal-hold",
 	"not-found",
+	"meter-down",
 	"too-many-requests",
 	"cost-overrun",
 ];
@@ -66,6 +73,7 @@ const POOL_A: readonly AuditId[] = [
 	"flaky-build",
 	"memory-leak",
 	"legal-hold",
+	"meter-down",
 ];
 
 const POOL_B: readonly AuditId[] = [
@@ -77,6 +85,7 @@ const POOL_B: readonly AuditId[] = [
 	"mirrored",
 	"timeout",
 	"payload-too-large",
+	"too-early",
 ];
 
 const POOL_C: readonly AuditId[] = [
@@ -92,6 +101,9 @@ const POOL_C: readonly AuditId[] = [
 	"flaky-build",
 	"legal-hold",
 	"strip",
+	"too-early",
+	"not-extended",
+	"meter-down",
 ];
 
 export type AuditTier = {

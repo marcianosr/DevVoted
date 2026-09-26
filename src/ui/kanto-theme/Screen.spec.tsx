@@ -129,3 +129,27 @@ describe("Screen", () => {
 		expect(body).toContain("var(--theme-ground-floor)");
 	});
 });
+
+describe("Screen floor", () => {
+	it("stands at its own floor when a screen names one", () => {
+		const { container } = render(
+			<Screen theme="cerulean" floor="94vh">
+				<p>body</p>
+			</Screen>
+		);
+
+		expect(container.querySelector("section")).toHaveStyle({
+			"--screen-floor": "94vh",
+		});
+	});
+
+	it("leaves the default floor alone when no screen names one", () => {
+		const { container } = render(
+			<Screen theme="cerulean">
+				<p>body</p>
+			</Screen>
+		);
+
+		expect(container.querySelector("section")).not.toHaveAttribute("style");
+	});
+});

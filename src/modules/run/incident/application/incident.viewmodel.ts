@@ -1,4 +1,5 @@
 import { WEIGHT } from "~/shared/lib/copy";
+import { profilePathFor } from "~/shared/lib/profilePath";
 
 import { publicBuildChipsFor } from "~/modules/run/build/application/publicBuild.viewmodel";
 import {
@@ -174,6 +175,7 @@ const rivalFor = (offer: AttackOfferView): AttackRival => {
 	return {
 		targetRunId: offer.targetRunId,
 		userId: offer.userId,
+		profileHref: profilePathFor(offer.userId),
 		name: offer.name,
 		...(offer.photoUrl === undefined ? {} : { photoUrl: offer.photoUrl }),
 		...(offer.borderUrl === undefined ? {} : { borderUrl: offer.borderUrl }),

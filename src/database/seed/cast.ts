@@ -40,6 +40,8 @@ const COVERAGE_POOL = poolWhere([
 const ECONOMY_POOL = poolWhere([
 	"storagePerCorrect",
 	"escrowPerCorrect",
+	"chainStartKb",
+	"emptySlotDiscountKb",
 	"storageOnClear",
 	"storageInterestPct",
 	"storagePerExtraPick",

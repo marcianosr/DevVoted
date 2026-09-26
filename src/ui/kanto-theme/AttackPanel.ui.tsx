@@ -17,6 +17,7 @@ const COPY = {
 	send: "send",
 	hits: "hits",
 	nothingInstalled: "nothing installed",
+	profileOf: (name: string) => `${name}'s profile`,
 } as const;
 
 const RIVAL = "flex w-full min-w-0 flex-col gap-2";
@@ -47,6 +48,7 @@ export type AttackPayload = {
 export type AttackRival = {
 	targetRunId: number;
 	userId: string;
+	profileHref: string;
 	name: string;
 	photoUrl?: string;
 	borderUrl?: string;
@@ -134,12 +136,14 @@ const Rival = ({
 	<Panel.Row>
 		<span className={RIVAL}>
 			<span className={HEAD}>
-				<Climber
-					name={rival.name}
-					photoUrl={rival.photoUrl}
-					borderUrl={rival.borderUrl}
-					size="sm"
-				/>
+				<a href={rival.profileHref} aria-label={COPY.profileOf(rival.name)}>
+					<Climber
+						name={rival.name}
+						photoUrl={rival.photoUrl}
+						borderUrl={rival.borderUrl}
+						size="sm"
+					/>
+				</a>
 				<span className={NAME}>{rival.name}</span>
 				{rival.title === undefined ? null : (
 					<span className={TITLE}>{rival.title}</span>

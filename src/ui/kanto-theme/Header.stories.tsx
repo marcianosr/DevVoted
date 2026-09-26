@@ -6,7 +6,6 @@ import {
 	ALL_SWATCHES,
 	GATE_SWATCHES,
 } from "~/modules/run/gate/domain/swatch.model";
-import { kbLabel } from "~/shared/lib/storage";
 import { trackTo } from "~/test/swatchTrack.factory";
 
 import { Header } from "./Header.ui";
@@ -15,10 +14,9 @@ import { Screen } from "./Screen.ui";
 const PRESS =
 	"rounded-md border border-theme-faint px-3 py-1 text-xs font-bold text-theme";
 
-const fundsAt = (kb: number) => {
-	const [amount, unit] = kbLabel(kb).split(" ");
-	return { amount, unit, label: "storage", kb };
-};
+const fundsAt = (kb: number) => ({ label: "storage", kb });
+
+const BACK_TO_BACK_MS = 300;
 
 const meta: Meta<typeof Header> = {
 	component: Header,
@@ -101,6 +99,11 @@ export const EveryGate: Story = {
 const HeaderWithMovingBalance = () => {
 	const [kb, setKb] = useState(349);
 
+	const backToBack = (first: number, second: number) => {
+		setKb((held) => held + first);
+		setTimeout(() => setKb((held) => held + second), BACK_TO_BACK_MS);
+	};
+
 	return (
 		<Screen theme="pewter" width="narrow">
 			<Header
@@ -109,14 +112,20 @@ const HeaderWithMovingBalance = () => {
 				funds={fundsAt(kb)}
 			/>
 			<div className="mt-6 flex flex-wrap gap-2">
-				<button className={PRESS} onClick={() => setKb(kb + 32)}>
+				<button className={PRESS} onClick={() => setKb((held) => held + 32)}>
 					+32 KB payout
 				</button>
-				<button className={PRESS} onClick={() => setKb(kb + 61)}>
+				<button className={PRESS} onClick={() => setKb((held) => held + 61)}>
 					+61 KB payout
 				</button>
-				<button className={PRESS} onClick={() => setKb(kb - 32)}>
+				<button className={PRESS} onClick={() => setKb((held) => held - 32)}>
 					install · 32 KB
+				</button>
+				<button className={PRESS} onClick={() => backToBack(-32, -48)}>
+					two installs, back to back
+				</button>
+				<button className={PRESS} onClick={() => backToBack(61, -32)}>
+					payout, then install
 				</button>
 				<button className={PRESS} onClick={() => setKb(1046)}>
 					roll to MB

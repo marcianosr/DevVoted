@@ -49,6 +49,7 @@ describe("incident.repository", () => {
 					runId: 2,
 					userId: "misty",
 					displayName: "Misty",
+					titleIds: [],
 					gatesCleared: 6,
 					lastClose: { gate: 5, band: "healthy", cleared: true },
 					build: {
@@ -63,6 +64,7 @@ describe("incident.repository", () => {
 					runId: 3,
 					userId: "brock",
 					displayName: null,
+					titleIds: ["title-summit"],
 					gatesCleared: 0,
 					lastClose: null,
 					build: { configs: [], vendorLockedConfigId: null },
@@ -85,6 +87,7 @@ describe("incident.repository", () => {
 					runId: 3,
 					userId: "brock",
 					name: "a climber",
+					title: "Summit",
 					gatesCleared: 0,
 					build: { configs: [] },
 				},

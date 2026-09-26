@@ -5,8 +5,8 @@ import {
 	useTitleAnnouncement,
 } from "~/modules/account/profile/application/useTitleAnnouncement.hook";
 import {
-	useEquipTitle,
 	useTitleState,
+	useToggleTitle,
 } from "~/modules/account/profile/application/useTitleState.hook";
 import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { TitleGrantModal } from "~/modules/account/profile/presentation/TitleGrantModal.ui";
@@ -21,7 +21,8 @@ export const TitleAnnouncement = ({ userId }: { userId: string }) => {
 	const hasSomethingToSay = titleIds.length > 0;
 
 	const { data: state } = useTitleState(hasSomethingToSay ? userId : undefined);
-	const equip = useEquipTitle(hasSomethingToSay ? userId : undefined);
+	const toggle = useToggleTitle(hasSomethingToSay ? userId : undefined);
+	const worn = new Set(state?.equippedTitleIds ?? []);
 
 	const titles = titleIds.flatMap((titleId) => {
 		const title = findTitleById(titleId);
@@ -38,15 +39,15 @@ export const TitleAnnouncement = ({ userId }: { userId: string }) => {
 				id: title.id,
 				name: title.name,
 				earnedWhen: title.earnedWhen,
-				worn: state?.equippedTitleId === title.id,
+				worn: worn.has(title.id),
 			}))}
 			archivedOn={
 				archivedAt
 					? format(new Date(archivedAt), ARCHIVED_ON_FORMAT)
 					: undefined
 			}
-			isMutating={acknowledge.isPending || equip.isPending}
-			onWear={(titleId) => equip.mutate(titleId)}
+			isMutating={acknowledge.isPending || toggle.isPending}
+			onWear={(titleId) => toggle.mutate({ titleId, worn: false })}
 			onDismiss={() => acknowledge.mutate(titleIds)}
 		/>
 	);

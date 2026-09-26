@@ -16,6 +16,7 @@ import { NotFound } from "~/components/NotFound.component";
 import { Footer } from "~/components/Footer.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
+import { Climber } from "~/ui/kanto-theme/Climber.ui";
 import { NavDisclosure, NavDivider } from "~/ui/kanto-theme/NavDisclosure.ui";
 
 import appCss from "../styles/app.css?url";
@@ -119,10 +120,11 @@ function Navigation() {
 								</Link>
 
 								<Link
-									to="/dex"
+									to="/profile/$userId"
+									params={{ userId: user.id }}
 									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 								>
-									Dex
+									Profile
 								</Link>
 
 								<Link
@@ -130,15 +132,6 @@ function Navigation() {
 									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
 								>
 									Suggest your own poll
-								</Link>
-								<Link
-									to="/profile/$userId"
-									params={{ userId: user.id }}
-									hash="border-shop"
-									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
-								>
-									Border Shop
-									<span className="ml-1 text-xs text-green-400">(new)</span>
 								</Link>
 							</>
 						</NavDisclosure>
@@ -158,11 +151,11 @@ function Navigation() {
 						<>
 							<span className="text-white">·</span>
 							<Link
-								to="/dex"
+								to="/profile/$userId"
+								params={{ userId: user.id }}
 								activeProps={{ className: "underline" }}
-								activeOptions={{ exact: true }}
 							>
-								Dex
+								Profile
 							</Link>
 							<span className="text-white">·</span>
 							<Link
@@ -171,16 +164,6 @@ function Navigation() {
 								activeOptions={{ exact: true }}
 							>
 								Suggest your own poll
-							</Link>
-							<span className="text-white">·</span>
-							<Link
-								to="/profile/$userId"
-								params={{ userId: user.id }}
-								hash="border-shop"
-								activeProps={{ className: "underline" }}
-							>
-								Border Shop
-								<span className="ml-1 text-green-400 text-sm">(new)</span>
 							</Link>
 						</>
 					)}
@@ -192,13 +175,11 @@ function Navigation() {
 							<NavDisclosure
 								summary={
 									<span className="flex items-center gap-2 text-base">
-										{user.photoUrl && (
-											<img
-												src={user.photoUrl}
-												alt={user.displayName}
-												className="h-8 w-8 rounded-full"
-											/>
-										)}
+										<Climber
+											name={user.displayName || user.email}
+											photoUrl={user.photoUrl ?? undefined}
+											size="md"
+										/>
 										<span>{user.displayName || user.email}</span>
 									</span>
 								}

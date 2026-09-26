@@ -3,6 +3,7 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Config,
 	minifiedAmount,
+	emptySlotCreditPerSlotKb,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { effectOf } from "~/modules/run/config/domain/effect.model";
@@ -44,6 +45,12 @@ export const rungAfterBuild = (build: Build) =>
 
 export const freeSlots = (build: Build): number =>
 	Math.max(0, spaceForBuild(build) - billableSlotsOf(build));
+
+export const emptySlotCreditOf = (build: Build): number =>
+	emptySlotCreditPerSlotKb(build.configs) * freeSlots(build);
+
+export const upkeepAfterCreditOf = (build: Build): number =>
+	Math.max(0, upkeepForBuild(build) - emptySlotCreditOf(build));
 
 export const MAX_BUILD_WEIGHT = buildSpaceFor(TOP_BUILD_SPACE_RUNG);
 

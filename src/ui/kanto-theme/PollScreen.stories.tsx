@@ -419,3 +419,10 @@ export const ConfigPanels: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => <ScreenWithPanels />,
 };
+
+export const MeterDown: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<PollScreen {...createKantoPollScreenProps()} coverage={{ locked: true }} />
+	),
+};

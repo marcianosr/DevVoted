@@ -6,7 +6,6 @@ import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
 import type { KantoColor } from "./colors";
-import { Figures } from "./Figures.ui";
 import { Icon, type IconName } from "./Icon.ui";
 import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
 import { Panel } from "./Panel.ui";
@@ -25,8 +24,6 @@ const STAT = "flex items-center gap-1.5 text-theme-muted";
 
 const SECTION = "flex w-full flex-col gap-3";
 const SECTION_HEAD = "flex flex-wrap items-baseline gap-3";
-
-const CLIMB_READING = "flex flex-wrap items-center gap-2 text-theme-faint";
 
 const POLLS = "flex w-full flex-col gap-2";
 
@@ -59,15 +56,6 @@ export type CommunityHeader = {
 	prep: { label: string; onPress?: () => void };
 };
 
-export type CommunityClimb = {
-	title: string;
-	standing: string;
-	badge?: string;
-	badgeColor?: KantoColor;
-	reading: string;
-	note?: string;
-};
-
 export type TurnoutBand = {
 	label: string;
 	count: string;
@@ -98,7 +86,6 @@ export type CommunityPolls = {
 
 export type CommunityScreenProps = {
 	header: CommunityHeader;
-	climb: CommunityClimb;
 	turnout: CommunityTurnout;
 	map: CommunityMap;
 	incidents?: IncidentsPanelProps;
@@ -192,35 +179,6 @@ const CommunityHeading = ({
 			))}
 		</div>
 	</header>
-);
-
-const YourClimb = ({
-	title,
-	standing,
-	badge,
-	badgeColor,
-	reading,
-	note,
-}: CommunityClimb) => (
-	<Panel>
-		<Panel.Header
-			label={title}
-			badge={
-				badge === undefined ? undefined : { label: badge, color: badgeColor }
-			}
-			meta={standing}
-		/>
-		<Panel.Body>
-			<div className={CLIMB_READING}>
-				<Figures text={reading} />
-			</div>
-		</Panel.Body>
-		{note === undefined ? null : (
-			<Panel.Footer>
-				<Typography variant="hint">{note}</Typography>
-			</Panel.Footer>
-		)}
-	</Panel>
 );
 
 const Turnout = ({ title, when, bands }: CommunityTurnout) => (
@@ -320,7 +278,6 @@ const FivePolls = ({ title, summary, polls }: CommunityPolls) => (
 
 export const CommunityScreen = ({
 	header,
-	climb,
 	turnout,
 	map,
 	incidents,
@@ -331,7 +288,6 @@ export const CommunityScreen = ({
 }: CommunityScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
 		<CommunityHeading {...header} />
-		<YourClimb {...climb} />
 		<Turnout {...turnout} />
 		<WhereEveryoneIs {...map} />
 		{incidents === undefined ? null : <IncidentsPanel {...incidents} />}

@@ -11,6 +11,7 @@ import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	Build,
+	emptySlotCreditOf,
 	freeSlots,
 	gateClearPayout,
 	canLint,
@@ -21,6 +22,7 @@ import {
 	occupiedSlots,
 	rungAfterBuild,
 	spaceForBuild,
+	upkeepAfterCreditOf,
 	upkeepForBuild,
 	overflowSlots,
 	buildModifiersFor,
@@ -245,5 +247,66 @@ describe("stripConfig and isBare", () => {
 			"eslint"
 		);
 		expect(stripped.configs.map((config) => config.id)).toEqual(["js"]);
+	});
+});
+
+describe("YAGNI discounts the bill for the room the build is not using", () => {
+	it("leaves the bill alone when it is not installed", () => {
+		expect(upkeepAfterCreditOf(buildOf([CONFIGS.wtfpl]))).toBe(32);
+		expect(emptySlotCreditOf(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(0);
+	});
+
+	it("credits nothing when the build fills its rung exactly", () => {
+		const flush = buildOf([
+			CONFIGS.yagni,
+			CONFIGS.wtfpl,
+			CONFIGS.js,
+			CONFIGS.indexedDb,
+		]);
+		expect(freeSlots(flush)).toBe(0);
+		expect(upkeepAfterCreditOf(flush)).toBe(64);
+	});
+
+	it("credits 8 KB for a single empty slot", () => {
+		const oneSpare = buildOf([CONFIGS.yagni, CONFIGS.wtfpl, CONFIGS.indexedDb]);
+		expect(freeSlots(oneSpare)).toBe(1);
+		expect(emptySlotCreditOf(oneSpare)).toBe(8);
+		expect(upkeepAfterCreditOf(oneSpare)).toBe(56);
+	});
+
+	it("credits every empty slot, so a build low in a wide rung pays least", () => {
+		const threeSpare = buildOf([CONFIGS.yagni, CONFIGS.wtfpl]);
+		expect(freeSlots(threeSpare)).toBe(3);
+		expect(emptySlotCreditOf(threeSpare)).toBe(24);
+		expect(upkeepAfterCreditOf(threeSpare)).toBe(40);
+	});
+
+	it("never credits past the bill, so the free rung still pays nothing", () => {
+		const tiny = buildOf([CONFIGS.yagni, CONFIGS.js]);
+		expect(freeSlots(tiny)).toBe(2);
+		expect(upkeepForBuild(tiny)).toBe(0);
+		expect(upkeepAfterCreditOf(tiny)).toBe(0);
+	});
+
+	it("costs more than it saves when it tips a flush build into a wider rung", () => {
+		const flush = buildOf([CONFIGS.wtfpl]);
+		const tipped = buildOf([CONFIGS.wtfpl, CONFIGS.yagni]);
+		expect(upkeepAfterCreditOf(flush)).toBe(32);
+		expect(upkeepAfterCreditOf(tipped)).toBe(40);
+	});
+
+	it("counts the room a vendor lock frees as empty too", () => {
+		const locked: Build = {
+			id: "hyrule-ci",
+			configs: [
+				CONFIGS.vendorLockIn,
+				CONFIGS.yagni,
+				CONFIGS.agentsMd,
+				CONFIGS.indexedDb,
+			],
+			vendorLockedConfigId: CONFIGS.agentsMd.id,
+		};
+		expect(freeSlots(locked)).toBe(1);
+		expect(upkeepAfterCreditOf(locked)).toBe(24);
 	});
 });

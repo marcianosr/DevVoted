@@ -28,6 +28,8 @@ export type Config = {
 	readonly missedPollMultiplier?: number;
 	readonly throttleCoverageMultiplier?: number;
 	readonly cacheHitStep?: number;
+	readonly chainStartKb?: number;
+	readonly emptySlotDiscountKb?: number;
 	readonly abArm?: AbArm;
 	readonly peeksCommunitySplit?: boolean;
 	readonly storagePerExtraPick?: number;
@@ -132,6 +134,9 @@ export const isUpgradable = (config: Config): boolean => {
 		config.autoUpgradeAfterCorrect !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
+
+export const atFirstVersion = (config: Config): Config =>
+	(config.level ?? 1) === 1 ? config : { ...config, level: 1 };
 
 export const levelUp = (config: Config): Config => ({
 	...config,
@@ -277,6 +282,13 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 			kind: "kb",
 			value: minifiedAmount(config, config.storagePerCorrect),
 		};
+	if (config.chainStartKb !== undefined)
+		return { kind: "kb", value: minifiedAmount(config, config.chainStartKb) };
+	if (config.emptySlotDiscountKb !== undefined)
+		return {
+			kind: "kb",
+			value: minifiedAmount(config, config.emptySlotDiscountKb),
+		};
 	const onClear = storageOnClearOf(config);
 	if (onClear !== undefined) return { kind: "kb", value: onClear };
 
@@ -365,12 +377,32 @@ export const topUpUnitsFor = (config: Config, creditedUnits: number): number =>
 		? minifiedUnits(config, Math.ceil(creditedUnits) - creditedUnits)
 		: 0;
 
+export const emptySlotCreditPerSlotKb = (configs: readonly Config[]): number =>
+	configs.reduce(
+		(sum, config) =>
+			sum + minifiedAmount(config, config.emptySlotDiscountKb ?? 0),
+		0
+	);
+
 export const faucetKbPerCorrect = (configs: readonly Config[]): number =>
 	configs.reduce(
 		(sum, config) =>
 			sum + minifiedAmount(config, config.storagePerCorrect ?? 0),
 		0
 	);
+
+export const chainKbFor = (
+	configs: readonly Config[],
+	links: number
+): number =>
+	links <= 0
+		? 0
+		: configs.reduce(
+				(sum, config) =>
+					sum +
+					minifiedAmount(config, (config.chainStartKb ?? 0) * 2 ** (links - 1)),
+				0
+			);
 
 export const escrowKbPerCorrect = (configs: readonly Config[]): number =>
 	configs.reduce(

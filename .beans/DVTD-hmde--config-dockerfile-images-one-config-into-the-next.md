@@ -1,13 +1,13 @@
 ---
 # DVTD-hmde
 title: 'Config: Dockerfile saves one config into your next run'
-status: draft
+status: scrapped
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-06T08:04:59Z
-updated_at: 2026-09-24T12:49:25Z
+updated_at: 2026-09-26T15:42:01Z
 parent: DVTD-72d9
 ---
 

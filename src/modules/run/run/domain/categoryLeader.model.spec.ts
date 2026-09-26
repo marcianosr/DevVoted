@@ -15,7 +15,7 @@ const seat = (
 	streak: number
 ): CategorySeat => ({
 	category,
-	leader: { handle: `@${handle}`, streak, you: false },
+	leader: { userId: handle, handle: `@${handle}`, streak, you: false },
 });
 
 describe("isLeadingStreak", () => {

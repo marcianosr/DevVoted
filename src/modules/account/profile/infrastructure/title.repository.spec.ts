@@ -10,7 +10,7 @@ import {
 	fetchUnannouncedTitleIds,
 	fetchUserTitleState,
 	markTitlesAnnounced,
-	setEquippedTitle,
+	setEquippedTitles,
 } from "~/modules/account/profile/infrastructure/title.repository";
 
 const mock = vi.hoisted((): DrizzleMockState => ({
@@ -36,23 +36,32 @@ describe("fetchUserTitleState", () => {
 		resetDrizzleMock(mock);
 	});
 
-	it("reports the worn title alongside everything the account has earned", async () => {
-		mock.results.push([{ equippedTitleId: GIT }]);
+	it("reports the worn titles alongside everything the account has earned", async () => {
+		mock.results.push([{ equippedTitleIds: [GIT] }]);
 		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
 
 		expect(await fetchUserTitleState(RED)).toEqual({
 			ownedTitleIds: [GIT, "title-summit"],
-			equippedTitleId: GIT,
+			equippedTitleIds: [GIT],
 		});
 	});
 
+	it("keeps the order it was written in, because the first worn title is primary", async () => {
+		mock.results.push([{ equippedTitleIds: ["title-summit", GIT] }]);
+		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
+
+		const state = await fetchUserTitleState(RED);
+
+		expect(state?.equippedTitleIds).toEqual(["title-summit", GIT]);
+	});
+
 	it("reports an account wearing none, which is where every account starts", async () => {
-		mock.results.push([{ equippedTitleId: null }]);
+		mock.results.push([{ equippedTitleIds: [] }]);
 		mock.results.push([]);
 
 		expect(await fetchUserTitleState(RED)).toEqual({
 			ownedTitleIds: [],
-			equippedTitleId: null,
+			equippedTitleIds: [],
 		});
 	});
 
@@ -63,49 +72,49 @@ describe("fetchUserTitleState", () => {
 	});
 });
 
-describe("setEquippedTitle", () => {
+describe("setEquippedTitles", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		resetDrizzleMock(mock);
 	});
 
-	it("equips a title the account holds", async () => {
-		mock.results.push([{ titleId: GIT }]);
-		mock.results.push([{ equippedTitleId: GIT }]);
-		mock.results.push([{ titleId: GIT }]);
+	it("wears titles the account holds", async () => {
+		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
+		mock.results.push([{ equippedTitleIds: [GIT, "title-summit"] }]);
 
-		expect(await setEquippedTitle(RED, GIT)).toEqual({
-			ownedTitleIds: [GIT],
-			equippedTitleId: GIT,
+		expect(await setEquippedTitles(RED, [GIT, "title-summit"])).toEqual({
+			ownedTitleIds: [GIT, "title-summit"],
+			equippedTitleIds: [GIT, "title-summit"],
 		});
-		expect(mock.setCalls[0]).toEqual({ equipped_title_id: GIT });
+		expect(mock.setCalls[0]).toEqual({
+			equipped_title_ids: [GIT, "title-summit"],
+		});
 	});
 
-	it("refuses a title the account has not earned, and writes nothing", async () => {
-		mock.results.push([]);
+	it("refuses the whole set when one title was never earned, and writes nothing", async () => {
+		mock.results.push([{ titleId: GIT }]);
 
-		expect(await setEquippedTitle(RED, GIT)).toBeNull();
+		expect(await setEquippedTitles(RED, [GIT, "title-summit"])).toBeNull();
 		expect(mock.updateTables).not.toContain(usersTable);
 		expect(mock.setCalls).toEqual([]);
 	});
 
-	it("takes a title off without asking the ledger, since wearing none is always allowed", async () => {
-		mock.results.push([{ equippedTitleId: null }]);
+	it("takes everything off without asking the ledger, since wearing none is always allowed", async () => {
 		mock.results.push([]);
+		mock.results.push([{ equippedTitleIds: [] }]);
 
-		expect(await setEquippedTitle(RED, null)).toEqual({
+		expect(await setEquippedTitles(RED, [])).toEqual({
 			ownedTitleIds: [],
-			equippedTitleId: null,
+			equippedTitleIds: [],
 		});
-		expect(mock.setCalls[0]).toEqual({ equipped_title_id: null });
+		expect(mock.setCalls[0]).toEqual({ equipped_title_ids: [] });
 	});
 
-	it("proves ownership in the same statement it reads, never on a second table", async () => {
+	it("writes the worn set to the account, never back to the ledger", async () => {
 		mock.results.push([{ titleId: GIT }]);
-		mock.results.push([{ equippedTitleId: GIT }]);
-		mock.results.push([{ titleId: GIT }]);
+		mock.results.push([{ equippedTitleIds: [GIT] }]);
 
-		await setEquippedTitle(RED, GIT);
+		await setEquippedTitles(RED, [GIT]);
 
 		expect(mock.updateTables).not.toContain(userTitlesTable);
 	});

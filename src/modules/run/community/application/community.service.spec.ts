@@ -252,11 +252,11 @@ const FALLEN = [
 const SEATS = [
 	{
 		category: "js" as const,
-		leader: { handle: "@blue", streak: 21, you: false },
+		leader: { userId: "blue-id", handle: "@blue", streak: 21, you: false },
 	},
 	{
 		category: "git" as const,
-		leader: { handle: "@red", streak: 13, you: true },
+		leader: { userId: "red-id", handle: "@red", streak: 13, you: true },
 	},
 ];
 

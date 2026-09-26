@@ -51,7 +51,15 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
-import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
+import {
+	REGISTRY_CONTROL_IDS,
+	REGISTRY_CONTROL_LIST,
+	type RegistryControlId,
+} from "~/modules/run/shop/domain/registryControl.model";
+import { controldex } from "~/modules/collection/dex/domain/controldex.model";
+import { dexControlsFor } from "~/modules/collection/dex/application/dexScreen.viewmodel";
+import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
+import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import {
 	BASE_SLOTS,
 	SLICE_WINDOW,
@@ -334,6 +342,7 @@ const withCategorySeat = (view: RunView): RunView => {
 					? {}
 					: {
 							leader: {
+								userId: `seat:${category}`,
 								...trainerLeader(`seat:${category}`),
 								streak: 4 + (hashOf(`streak:${category}`) % 21),
 								you: false,
@@ -482,12 +491,6 @@ const simulateCommunityScreen = (
 			shop: { label: "Back to the shop", onPress: press.onShop },
 			prep: { label: "On to prep", onPress: press.onPrep },
 		},
-		climb: {
-			title: "Your climb",
-			standing: `gate ${gate} of ${view.victoryGate} · ${view.configs.length} configs`,
-			badge: `${yourRights} of ${window}`,
-			reading: `${view.gateStake.coverageHeld.toFixed(1)}% held against ${view.gateStake.coverageLadder.healthy}% asked`,
-		},
 		turnout: {
 			title: "Who cleared what",
 			when: "today",
@@ -606,6 +609,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	}, [state.status]);
 	const [overStep, setOverStep] = useState<OverStep>("summary");
 	const [openClimberId, setOpenClimberId] = useState<string>();
+	const [servicesOpen, setServicesOpen] = useState(false);
+	const [unlockedServiceIds, setUnlockedServiceIds] =
+		useState<readonly RegistryControlId[]>(REGISTRY_CONTROL_IDS);
+	const toggleService = (id: RegistryControlId) =>
+		setUnlockedServiceIds((current) =>
+			current.includes(id)
+				? current.filter((candidate) => candidate !== id)
+				: [...current, id]
+		);
 	const climbMapPress = {
 		...(openClimberId === undefined ? {} : { openId: openClimberId }),
 		onInspect: (id: string) =>
@@ -616,7 +628,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	}, [state.status]);
 
 	const view = withCategorySeat(
-		toRunView(state, [], [], [], REGISTRY_CONTROL_IDS)
+		toRunView(state, [], [], [], unlockedServiceIds)
 	);
 	const settled: AnsweredPoll | undefined = pinned
 		? view.answeredThisGate.at(-1)
@@ -904,6 +916,12 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					/>
 				)}
 
+			{servicesOpen && (
+				<Screen theme="seafoam" width="wide" ground="bare">
+					<DexControls {...dexControlsFor(controldex(unlockedServiceIds))} />
+				</Screen>
+			)}
+
 			<div className="mx-auto mt-4 flex w-full max-w-6xl shrink-0 flex-wrap items-center gap-2 rounded-lg border border-dashed border-zinc-700 bg-zinc-900 p-3 text-xs text-pewter">
 				<span className="font-semibold uppercase tracking-wide">Dev rig</span>
 				{!settled && state.status === "answering" && (
@@ -945,6 +963,50 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				>
 					💾 +{PROTO_GRANT_KB} KB storage
 				</button>
+				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
+					<span className="mr-1 font-semibold uppercase tracking-wide">
+						Services {unlockedServiceIds.length}/{REGISTRY_CONTROL_IDS.length}
+					</span>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => setServicesOpen((current) => !current)}
+					>
+						{servicesOpen ? "Hide the dex panel" : "Show the dex panel"}
+					</button>
+					{REGISTRY_CONTROL_LIST.map((control) => {
+						const unlocked = unlockedServiceIds.includes(control.id);
+						return (
+							<button
+								key={control.id}
+								type="button"
+								title={`${control.title} · ${control.detail}`}
+								className={
+									unlocked
+										? "rounded bg-viridian px-1.5 py-0.5 text-white"
+										: "rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700"
+								}
+								onClick={() => toggleService(control.id)}
+							>
+								{control.glyph} {control.title}
+							</button>
+						);
+					})}
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => setUnlockedServiceIds([])}
+					>
+						Lock all
+					</button>
+					<button
+						type="button"
+						className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+						onClick={() => setUnlockedServiceIds(REGISTRY_CONTROL_IDS)}
+					>
+						Unlock all
+					</button>
+				</div>
 				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
 					<span className="mr-1 font-semibold uppercase tracking-wide">
 						Configs {occupiedSlots(state.build.configs)}/

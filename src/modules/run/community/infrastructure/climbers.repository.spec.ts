@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { borderUrlOf } from "~/modules/run/community/infrastructure/climbers.repository";
+import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 
 describe("borderUrlOf", () => {
 	it("resolves an equipped border id to its catalog art", () => {

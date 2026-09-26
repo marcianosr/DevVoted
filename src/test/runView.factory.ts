@@ -45,6 +45,7 @@ export const createMockPollView = createMockDataFactory<PollView>({
 	categorySeat: {
 		category: CATEGORY_CODES[0],
 		leader: {
+			userId: "sabrina-id",
 			handle: "@sabrina",
 			githubLogin: "sabrina",
 			streak: 17,
@@ -205,6 +206,7 @@ const createRunView = createMockDataFactory<RunView>({
 	configStatuses: {},
 	mirroredPolls: false,
 	categoryHidden: false,
+	meterHidden: false,
 	pollTimeLimitMs: null,
 	currentPollPeeked: false,
 	correctAnswersThisGate: null,

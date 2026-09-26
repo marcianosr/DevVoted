@@ -874,7 +874,7 @@ describe("ConfigChip's width", () => {
 });
 
 describe("ConfigChip when locked withholds the new affordances", () => {
-	it("withholds the weight, which would leak how big the config is", () => {
+	it("withholds the weight it was never given, rather than guessing one", () => {
 		const { container } = render(<ConfigChip locked />);
 
 		expect(container.querySelector(".badge-theme")).toBeNull();
@@ -884,6 +884,113 @@ describe("ConfigChip when locked withholds the new affordances", () => {
 		render(<ConfigChip locked />);
 
 		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+});
+
+describe("ConfigChip when locked but told the way in", () => {
+	const PATHS = [
+		{
+			text: "Answer 10 HTML polls correctly",
+			progress: { count: 4, target: 10 },
+		},
+		{ text: "Answer 25 polls", progress: { count: 43, target: 25 } },
+	];
+
+	const rulesIn = (container: HTMLElement) =>
+		container.querySelectorAll(".border-t");
+
+	it("states a weight it is handed, a list grouped by weight having named it already", () => {
+		render(<ConfigChip locked slots={2} unlock={PATHS} />);
+
+		expect(screen.getByText("2")).toBeVisible();
+	});
+
+	it("withholds the name all the same, which is the secret", () => {
+		render(<ConfigChip locked slots={2} unlock={PATHS} />);
+
+		expect(screen.getByText(REDACTED)).toBeVisible();
+	});
+
+	it("wears a dashed edge, an empty socket play already underway can fill", () => {
+		const { container } = render(
+			<ConfigChip locked slots={2} unlock={PATHS} />
+		);
+
+		expect(container.firstElementChild).toHaveClass("border-dashed");
+	});
+
+	it("leaves a blackout's edge solid, no path being live to fill it", () => {
+		const { container } = render(<ConfigChip locked />);
+
+		expect(container.firstElementChild).not.toHaveClass("border-dashed");
+	});
+
+	it("withholds the paths while collapsed", () => {
+		render(<ConfigChip locked slots={2} unlock={PATHS} onToggleInfo={noop} />);
+
+		expect(screen.queryByText(/^unlock · /)).not.toBeInTheDocument();
+	});
+
+	it("states the paths in place once opened, rather than over the card", () => {
+		render(
+			<ConfigChip
+				locked
+				slots={2}
+				unlock={PATHS}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(screen.getByText("4/10").parentElement).toHaveTextContent(
+			"unlock · Answer 10 HTML polls correctly"
+		);
+	});
+
+	it("names the press for the state it opens, never for the config", () => {
+		render(<ConfigChip locked slots={2} unlock={PATHS} onToggleInfo={noop} />);
+
+		expect(
+			screen.getByRole("button", { name: "Expand Locked config" })
+		).toBeVisible();
+	});
+
+	it("closes under the paths, having no version and nothing to sell", () => {
+		const { container } = render(
+			<ConfigChip
+				locked
+				slots={2}
+				unlock={PATHS}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(rulesIn(container)).toHaveLength(1);
+	});
+});
+
+describe("ConfigChip's footer", () => {
+	const FACTS = { description: "Rerolls the shelf.", slots: 1 };
+
+	const cardWith = (info: typeof FACTS & { version?: number }) =>
+		render(
+			<ConfigChip
+				name="Hot Reload"
+				badges={[]}
+				slots={1}
+				info={info}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		).container.querySelectorAll(".border-t");
+
+	it("draws no footer for a card with no version, no price and no badge", () => {
+		expect(cardWith(FACTS)).toHaveLength(1);
+	});
+
+	it("draws one as soon as there is a version to name", () => {
+		expect(cardWith({ ...FACTS, version: 2 })).toHaveLength(2);
 	});
 });
 

@@ -272,3 +272,8 @@ export const borders: Border[] = [
 
 export const findBorderById = (id: string): Border | undefined =>
 	borders.find((border) => border.id === id);
+
+export const borderUrlOf = (equippedBorderId: string | null): string | null =>
+	equippedBorderId === null
+		? null
+		: (findBorderById(equippedBorderId)?.image ?? null);

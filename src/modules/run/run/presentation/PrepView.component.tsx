@@ -139,6 +139,7 @@ export const PrepView = (props: PrepViewProps) => {
 		attack,
 		balanceKb: view.storage,
 		buildSpace: buildSpaceOf(view),
+		spaceBillKb: view.buildSpace.perGateKb,
 		window: windowOf(view),
 		answeredThisGate: view.answeredThisGate,
 		bar: { ...gateStake.coverageLadder, held: gateStake.coverageHeld },

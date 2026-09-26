@@ -117,3 +117,26 @@ describe("CategoryLeader", () => {
 		expect(container.firstChild).not.toHaveClass("px-4");
 	});
 });
+
+describe("CategoryLeader, linking to the seated player", () => {
+	it("sends the seat's face to their page while the handle still goes to GitHub", () => {
+		render(
+			<CategoryLeader
+				category={CATEGORY}
+				leader={{ ...SABRINA, profileHref: "/profile/sabrina-id" }}
+			/>
+		);
+
+		expect(
+			screen.getByRole("link", { name: `${SABRINA.handle}'s profile` })
+		).toHaveAttribute("href", "/profile/sabrina-id");
+	});
+
+	it("leaves the face unlinked when no page was handed over", () => {
+		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
+
+		expect(
+			screen.queryByRole("link", { name: `${SABRINA.handle}'s profile` })
+		).not.toBeInTheDocument();
+	});
+});

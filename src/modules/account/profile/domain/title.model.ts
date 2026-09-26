@@ -90,6 +90,18 @@ export const TITLES: readonly Title[] = [
 export const findTitleById = (titleId: string): Title | undefined =>
 	TITLES.find((title) => title.id === titleId);
 
+export const wornTitleNames = (
+	equippedTitleIds: readonly string[]
+): readonly string[] =>
+	equippedTitleIds.flatMap((titleId) => {
+		const title = findTitleById(titleId);
+		return title ? [title.name] : [];
+	});
+
+export const primaryTitleName = (
+	equippedTitleIds: readonly string[]
+): string | null => wornTitleNames(equippedTitleIds)[0] ?? null;
+
 export const visibleTitles = (
 	ownedTitleIds: readonly string[]
 ): readonly Title[] => {
@@ -101,6 +113,37 @@ export const visibleTitles = (
 
 export const isExclusive = (title: Title): boolean =>
 	title.earn.kind === "race";
+
+export const WORN_TITLE_CAP = 3;
+
+export type WearRefusal = "unknown" | "not-owned" | "already-worn" | "at-cap";
+
+export type WearDecision =
+	| { readonly kind: "worn"; readonly worn: readonly string[] }
+	| { readonly kind: "refused"; readonly reason: WearRefusal };
+
+const refuse = (reason: WearRefusal): WearDecision => ({
+	kind: "refused",
+	reason,
+});
+
+export const wearTitle = (
+	worn: readonly string[],
+	titleId: string,
+	ownedTitleIds: readonly string[]
+): WearDecision => {
+	if (!findTitleById(titleId)) return refuse("unknown");
+	if (!ownedTitleIds.includes(titleId)) return refuse("not-owned");
+	if (worn.includes(titleId)) return refuse("already-worn");
+	if (worn.length >= WORN_TITLE_CAP) return refuse("at-cap");
+
+	return { kind: "worn", worn: [...worn, titleId] };
+};
+
+export const removeTitle = (
+	worn: readonly string[],
+	titleId: string
+): readonly string[] => worn.filter((id) => id !== titleId);
 
 export const TITLE_METRICS: readonly string[] = [
 	...new Set(

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	autoUpgradeAfterCorrectOf,
 	cacheUnitsFor,
+	chainKbFor,
 	describeConfig,
 	draftCost,
 	focusCoverageMultiplier,
@@ -428,5 +429,46 @@ describe("upgradePreview", () => {
 
 	it("promises nothing for a config with no axis to upgrade", () => {
 		expect(upgradePreview(CONFIGS.eslint)).toEqual([]);
+	});
+});
+
+describe("chainKbFor", () => {
+	it("pays nothing before the chain has a link", () => {
+		expect(chainKbFor([CONFIGS.andAnd], 0)).toBe(0);
+	});
+
+	it("opens the chain at 1 KB", () => {
+		expect(chainKbFor([CONFIGS.andAnd], 1)).toBe(1);
+	});
+
+	it("doubles what it pays with every link", () => {
+		expect(chainKbFor([CONFIGS.andAnd], 2)).toBe(2);
+		expect(chainKbFor([CONFIGS.andAnd], 3)).toBe(4);
+		expect(chainKbFor([CONFIGS.andAnd], 5)).toBe(16);
+	});
+
+	it("reaches 256 KB on the ninth link, which empties the run faucet", () => {
+		expect(chainKbFor([CONFIGS.andAnd], 9)).toBe(256);
+	});
+
+	it("pays nothing when the chaining config is not installed", () => {
+		expect(chainKbFor([CONFIGS.indexedDb, CONFIGS.agentsMd], 4)).toBe(0);
+	});
+
+	it("halves every link when minified", () => {
+		expect(chainKbFor([minify(CONFIGS.andAnd)], 3)).toBe(2);
+		expect(chainKbFor([minify(CONFIGS.andAnd)], 9)).toBe(128);
+	});
+});
+
+describe("headlineFigureOf on the chaining config", () => {
+	it("states the opening link in KB, the one figure that does not move", () => {
+		expect(headlineFigureOf(CONFIGS.andAnd)).toEqual({ kind: "kb", value: 1 });
+	});
+});
+
+describe("headlineFigureOf on the empty-slot discount", () => {
+	it("states what one empty slot takes off the bill", () => {
+		expect(headlineFigureOf(CONFIGS.yagni)).toEqual({ kind: "kb", value: 8 });
 	});
 });

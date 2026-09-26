@@ -11,7 +11,10 @@ import {
 	withVendorLockSurviving,
 	Build,
 } from "~/modules/run/build/domain/build.model";
-import { Config } from "~/modules/run/config/domain/config.model";
+import {
+	atFirstVersion,
+	Config,
+} from "~/modules/run/config/domain/config.model";
 import type {
 	CommittableBand,
 	CoverageBandId,
@@ -26,6 +29,7 @@ import {
 	type Audit,
 	type AuditId,
 	type AuditSchedule,
+	auditsResetVersions,
 	liveAuditsFor,
 	redactedOptionIdsFor,
 	mirrorsPolls,
@@ -341,10 +345,16 @@ export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
 		state.window.answered
 	);
 
+export const standingConfigsOf = (state: RunState): readonly Config[] =>
+	auditsResetVersions(auditsOf(state))
+		? state.build.configs.map(atFirstVersion)
+		: state.build.configs;
+
 export const liveConfigsOf = (state: RunState): readonly Config[] => {
+	const standing = standingConfigsOf(state);
 	const offline = offlineConfigsOf(state);
-	if (offline.length === 0) return state.build.configs;
-	return state.build.configs.filter(
+	if (offline.length === 0) return standing;
+	return standing.filter(
 		(config) => !offline.some((down) => down.id === config.id)
 	);
 };

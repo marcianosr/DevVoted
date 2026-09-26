@@ -19,11 +19,9 @@ import { gateSwatchAt } from "./swatchTrack.factory";
 export const COMMUNITY_SHOP_LABEL = "Back to the shop";
 export const COMMUNITY_PREP_LABEL = "Prep for Rainbow";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
-export const COMMUNITY_CLIMB_TITLE = "Lavender cleared";
 export const COMMUNITY_LEADERS_TITLE = "Category leaders";
 
 const CLEARED_GATE = 4;
-const NEXT_GATE = 5;
 
 const BORDER = {
 	js: "/borders/border-js-saffron.svg",
@@ -450,14 +448,6 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		shop: { label: COMMUNITY_SHOP_LABEL, onPress: () => {} },
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },
 	},
-	climb: {
-		title: COMMUNITY_CLIMB_TITLE,
-		standing: "Gate 4 of 12 · 310 KB · four configs",
-		badge: "4 of 5",
-		badgeColor: "viridian",
-		reading: "62.4% against the 60% Lavender asked for.",
-		note: `The shop stays open until ${gateSwatchAt(NEXT_GATE).gateName} starts, then shuts until your next clear.`,
-	},
 	turnout: { title: "Who showed up", when: "Today", bands: bands() },
 	map: { title: COMMUNITY_MAP_TITLE, track: kantoClimbMap() },
 	incidents: kantoIncidents(),
@@ -479,11 +469,6 @@ export const kantoCommunityBeforePolls = (): CommunityScreenProps => {
 	const base = kantoCommunity();
 	return {
 		...base,
-		climb: {
-			...base.climb,
-			badge: undefined,
-			reading: "Five polls waiting. 60% is what Lavender asks for.",
-		},
 		polls: {
 			...base.polls,
 			summary: "Answer them to see how the room found them",

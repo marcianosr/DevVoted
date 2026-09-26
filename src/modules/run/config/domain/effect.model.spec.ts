@@ -246,6 +246,7 @@ const onPoll = (
 	pendingKb: 0,
 	faucetRemainingKb: FAUCET_CAP_KB,
 	autoUpgradeProgress: 0,
+	chainLength: 0,
 	...extras,
 });
 
@@ -543,5 +544,56 @@ describe("configStatusFor — an open transaction states what it holds", () => {
 		expect(
 			configStatusFor(CONFIGS.indexedDb, onPoll("git", 1, { pendingKb: 24 }))
 		).toEqual({ kind: "online", capLeftKb: FAUCET_CAP_KB });
+	});
+});
+
+describe("configStatusFor — the chain states what its next link pays", () => {
+	it("quotes the opening link before the chain has started", () => {
+		expect(configStatusFor(CONFIGS.andAnd, onPoll("js"))).toEqual({
+			kind: "online",
+			nextLinkKb: 1,
+			capLeftKb: FAUCET_CAP_KB,
+		});
+	});
+
+	it("doubles the quote as the chain grows", () => {
+		expect(
+			configStatusFor(CONFIGS.andAnd, onPoll("js", 1, { chainLength: 4 }))
+		).toEqual({
+			kind: "online",
+			nextLinkKb: 16,
+			capLeftKb: FAUCET_CAP_KB,
+		});
+	});
+
+	it("quotes what a minified chain pays, not what a whole one would", () => {
+		expect(
+			configStatusFor(
+				minify(CONFIGS.andAnd),
+				onPoll("js", 1, { chainLength: 4 })
+			)
+		).toEqual({
+			kind: "online",
+			nextLinkKb: 8,
+			capLeftKb: FAUCET_CAP_KB,
+		});
+	});
+
+	it("skips with the cap named once the run faucet is dry", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.andAnd,
+				onPoll("js", 1, { chainLength: 4, faucetRemainingKb: 0 })
+			)
+		).toEqual({ kind: "skipped", why: { kind: "runCapReached" } });
+	});
+});
+
+describe("configStatusFor — the empty-slot discount pays at the close", () => {
+	it("skips the poll screen, naming the gate clear as where it pays", () => {
+		expect(configStatusFor(CONFIGS.yagni, onPoll("js"))).toEqual({
+			kind: "skipped",
+			why: { kind: "paysAtGateClear" },
+		});
 	});
 });

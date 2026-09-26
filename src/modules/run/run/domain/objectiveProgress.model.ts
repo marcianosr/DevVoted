@@ -103,6 +103,9 @@ const clearMetrics = (
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)
 			: []),
+		...(next.gatesCleared === 4 && (next.upkeepPaidKb ?? 0) === 0
+			? (["free-rung-gate-four"] as const)
+			: []),
 		...((next.slaUpliftKb ?? 0) > 0 ? (["slas-met"] as const) : []),
 		...(next.status === "won" ? (["runs-won"] as const) : []),
 	];

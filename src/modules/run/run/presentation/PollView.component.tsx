@@ -13,12 +13,10 @@ import {
 	categoryNameOf,
 	type PressAction,
 	letterAt,
-	pollBarFor,
-	coverageLeadFor,
+	pollCoverageFor,
 	pollFactsFor,
 	categoryLeaderFor,
 	pollHoldsFor,
-	pollPaidFor,
 	pollBuildFor,
 	gateLabelFor,
 	pollHeaderFor,
@@ -28,6 +26,7 @@ import {
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
 import {
 	PollScreen,
@@ -114,6 +113,10 @@ const authorOf = (poll: LivePoll): AuthorProps | undefined =>
 		? undefined
 		: {
 				handle: poll.author.handle,
+				profileHref:
+					poll.author.userId === undefined
+						? undefined
+						: profilePathFor(poll.author.userId),
 				role: poll.author.role,
 				title: poll.author.title,
 				photoUrl: poll.author.avatarUrl,
@@ -224,11 +227,7 @@ export const PollView = ({
 		<PollScreen
 			{...mood}
 			header={pollHeaderFor(view)}
-			coverage={{
-				bar: pollBarFor(view, answered !== undefined),
-				lead: coverageLeadFor(view),
-				paid: pollPaidFor(view),
-			}}
+			coverage={pollCoverageFor(view, answered !== undefined)}
 			holds={pollHoldsFor(view)}
 			facts={pollFactsFor(live)}
 			audits={auditPropsOf(view.audits)}

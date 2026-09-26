@@ -98,6 +98,8 @@ const leaderOf = (
 ): CategoryLeader | undefined => {
 	if (row === undefined) return undefined;
 
+	if (row.userId === null) return undefined;
+
 	const streak = countOf(row.best);
 	if (!isLeadingStreak(streak)) return undefined;
 
@@ -108,6 +110,7 @@ const leaderOf = (
 		row.borderId === null ? undefined : findBorderById(row.borderId)?.image;
 
 	return {
+		userId: row.userId,
 		handle,
 		streak,
 		you: row.userId === userId,

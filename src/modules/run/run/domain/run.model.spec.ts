@@ -6,6 +6,7 @@ import {
 	archiveCreditBytes,
 	answerTypesOf,
 	createRun,
+	liveConfigsOf,
 	pickBudgetFor,
 	type RunState,
 } from "~/modules/run/run/domain/run.model";
@@ -13,6 +14,7 @@ import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
+	atGateWithBuild,
 	handed,
 	poll,
 	started,
@@ -145,5 +147,57 @@ describe("archiveCreditBytes", () => {
 		expect(archiveCreditBytes(ended("dead", 8, 130, 6))).toBe(
 			archiveCreditBytes(ended("dead", 2, 130))
 		);
+	});
+});
+
+describe("425 Too Early", () => {
+	const BUILD_SIZE = 3;
+
+	it("leaves nothing live on the window's opening poll", () => {
+		expect(liveConfigsOf(atGateWithBuild(9, BUILD_SIZE, "too-early"))).toEqual(
+			[]
+		);
+	});
+
+	it("hands the build back once the first answer is in", () => {
+		const opener = atGateWithBuild(9, BUILD_SIZE, "too-early");
+		const second: RunState = {
+			...opener,
+			currentIndex: opener.currentIndex + 1,
+			window: { ...opener.window, answered: 1 },
+		};
+		expect(liveConfigsOf(second)).toHaveLength(BUILD_SIZE);
+	});
+});
+
+describe("510 Not Extended", () => {
+	const atVersion = (state: RunState, level: number): RunState => ({
+		...state,
+		build: {
+			...state.build,
+			configs: state.build.configs.map((config) => ({ ...config, level })),
+		},
+	});
+
+	const versionsScored = (state: RunState): (number | undefined)[] =>
+		liveConfigsOf(state).map((config) => config.level);
+
+	it("scores every config at its first version while the audit stands", () => {
+		expect(
+			versionsScored(atVersion(atGateWithBuild(11, 3, "not-extended"), 4))
+		).toEqual([1, 1, 1]);
+	});
+
+	it("leaves the stored build alone, so the versions are back at the next gate", () => {
+		const state = atVersion(atGateWithBuild(11, 3, "not-extended"), 4);
+		expect(state.build.configs.map((config) => config.level)).toEqual([
+			4, 4, 4,
+		]);
+	});
+
+	it("touches nothing when no audit flattens versions", () => {
+		expect(
+			versionsScored(atVersion(atGateWithBuild(11, 3, "not-found"), 4))
+		).toEqual([4, 4, 4]);
 	});
 });

@@ -27,8 +27,6 @@ import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 const LETTERS = "ABCDEFGH";
 
 const COPY = {
-	climbTitle: "Your climb",
-	noRun: "no run on the map",
 	turnoutTitle: "Who showed up",
 	answeredToday: "answered today",
 	mapTitle: "Where everyone is",
@@ -119,19 +117,6 @@ export const pollResultsFor = (
 	});
 };
 
-const rightShareToday = (polls: readonly RunCommunityPoll[]): string => {
-	const revealed = polls.filter((poll) => poll.detail !== null);
-	if (revealed.length === 0) return "0% right today";
-	const right = revealed.filter((poll) => poll.outcome === "correct").length;
-	return `${Math.round((right / revealed.length) * 100)}% right today`;
-};
-
-const standingOf = (climb: RunCommunityView["climb"]): string => {
-	const you = climb?.climbers.find((climber) => climber.you);
-	if (you === undefined) return COPY.noRun;
-	return `gate ${you.gate} · poll ${you.pollsIntoGate + 1}`;
-};
-
 export type CommunityViewProps = {
 	view: RunCommunityView;
 	swatch: GateSwatch;
@@ -161,12 +146,13 @@ export const communityScreenPropsFor = ({
 	onInspectClimber,
 }: CommunityViewProps): CommunityScreenProps => {
 	const empty = view.polls.length === 0;
+	const dayNote = note ?? (empty ? NOTHING_TO_COMPARE_YET : undefined);
 
 	return {
 		header: {
 			swatch,
 			title: `${swatch.gateName} · today’s climb`,
-			subtitle: back.hint ?? view.date,
+			subtitle: dayNote ?? back.hint ?? view.date,
 			countdown: countdown ?? COPY.pollsOpen,
 			countdownColor: countdown === undefined ? "viridian" : undefined,
 			countdownHint: COPY.countdownHint,
@@ -195,18 +181,6 @@ export const communityScreenPropsFor = ({
 				label: back.label,
 				onPress: back.disabled === true ? undefined : back.onBack,
 			},
-		},
-		climb: {
-			title: COPY.climbTitle,
-			standing: standingOf(view.climb),
-			...(view.topPercent === null
-				? {}
-				: {
-						badge: `top ${view.topPercent}%`,
-						badgeColor: "viridian" as const,
-					}),
-			reading: rightShareToday(view.polls),
-			note: note ?? (empty ? NOTHING_TO_COMPARE_YET : undefined),
 		},
 		turnout: {
 			title: COPY.turnoutTitle,
