@@ -36,10 +36,10 @@ If `[Unreleased]` is empty, it no-ops.
 
 ## Fallback: manual migration
 
-Migrations normally run via `main.yaml`. To apply one by hand:
+Migrations normally run via `main.yaml` (`supabase db push`). To apply a guarded SQL
+file from `supabase/migrations/` by hand (ADR-012):
 
 ```bash
-npm run db:generate          # review SQL in drizzle/
 psql "postgresql://postgres.smrkmigjsnhrhwrxobjc:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres" \
-  -f drizzle/XXXX_migration_name.sql
+  -f supabase/migrations/YYYYMMDDHHMMSS_description.sql
 ```

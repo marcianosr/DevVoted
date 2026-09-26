@@ -1,17 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 
-import { configs } from "~/domains/economy/data/configs";
-import { getAllPolls } from "~/domains/polls/api/polls";
-import { getCategories } from "~/domains/shared/categories";
-import { FooterUI } from "~/ui/FooterUI.component";
+import { getAllPolls } from "~/modules/polls/poll/application/poll.serverfn";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { getCategories } from "~/shared/lib/categories";
+import { pollQueryKeys } from "~/shared/queryKeys";
+import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
 
 declare const __LAST_COMMIT_DATE__: string;
 
-const Footer = () => {
+export const Footer = () => {
 	const { data, isLoading } = useQuery({
-		queryKey: ["all-polls"],
+		queryKey: pollQueryKeys.list(),
 		queryFn: () => getAllPolls(),
 		staleTime: 1000 * 60 * 30,
 	});
@@ -19,19 +19,11 @@ const Footer = () => {
 	const pollCount = !isLoading && data?.success ? data.data.length : null;
 
 	return (
-		<FooterUI
+		<AppFooter
 			pollCount={pollCount}
-			isLoading={isLoading}
 			categoryCount={getCategories().length}
-			configCount={configs.length}
+			configCount={CONFIG_LIST.length}
 			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
-			statsLink={
-				<Link to="/stats" className="underline">
-					See all game info stats
-				</Link>
-			}
 		/>
 	);
 };
-
-export default Footer;

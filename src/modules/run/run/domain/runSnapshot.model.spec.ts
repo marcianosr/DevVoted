@@ -1,0 +1,309 @@
+import { describe, expect, it } from "vitest";
+
+import { KANTO_QUIZ, KANTO_TOWNS } from "~/test/kanto";
+
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import {
+	hydrateRunState,
+	toRunSnapshot,
+} from "~/modules/run/run/domain/runSnapshot.model";
+
+const kantoPoll = (index: number): RunPoll => {
+	const quiz = KANTO_QUIZ[index % KANTO_QUIZ.length];
+	return {
+		id: `poll-${index}`,
+		category: "js",
+		question: quiz.question,
+		answerType: "single",
+		options: quiz.options.map((label, optionIndex) => ({
+			id: `poll-${index}-${optionIndex}`,
+			label,
+			correct: label === quiz.correctAnswer,
+		})),
+	};
+};
+
+const POLLS = [kantoPoll(0), kantoPoll(1), kantoPoll(2)];
+const HANDED = [CONFIGS.js, CONFIGS.eslint];
+
+const baseState = createRun(POLLS, HANDED);
+
+const stateVariants: Record<string, RunState> = {
+	configuring: baseState,
+	"mid-gate answering": {
+		...baseState,
+		status: "answering",
+		currentIndex: 2,
+		streak: 2,
+		coverage: 2.4,
+		coverageByCategory: { js: 2.4 },
+		window: {
+			correct: 2,
+			answered: 2,
+			unitsEarned: 2.4,
+			byCategory: { js: { seen: 2, correct: 2 } },
+			budget: 3,
+		},
+		storage: 120,
+		log: ["Gate 1 progress"],
+	},
+	"awaiting-strip with strips remaining": {
+		...baseState,
+		status: "awaiting-strip",
+		peelSlotsRemaining: 2,
+		gatesCleared: 3,
+	},
+	"rewarding with draft options": {
+		...baseState,
+		status: "rewarding",
+		draftOptions: [CONFIGS.agentsMd, CONFIGS.indexedDb],
+		draftedThisGate: [CONFIGS.agentsMd.id],
+		rebuildsUsed: 1,
+		gatesCleared: 1,
+	},
+};
+
+describe("runSnapshot codec", () => {
+	Object.entries(stateVariants).forEach(([name, state]) => {
+		it(`round-trips a ${name} state without loss`, () => {
+			const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+			expect(rehydrated).toEqual(state);
+		});
+	});
+
+	it("never persists the polls (the shared daily seed lives in daily_run_polls)", () => {
+		const snapshot = toRunSnapshot(stateVariants["mid-gate answering"]);
+		expect(snapshot).not.toHaveProperty("polls");
+	});
+
+	it("survives a JSON round-trip (the persistence format)", () => {
+		const state = stateVariants["rewarding with draft options"];
+		const stored = JSON.parse(JSON.stringify(toRunSnapshot(state)));
+		expect(hydrateRunState(stored, state.polls)).toEqual(state);
+	});
+});
+
+describe("hydrateRunState — the roster is authoritative", () => {
+	it("swaps a stale embedded config for its current roster version", () => {
+		const staleEslint = {
+			...CONFIGS.eslint,
+			description: "Disables one wrong answer on JS/TS polls.",
+			check: undefined,
+		};
+		const state: RunState = {
+			...baseState,
+			build: { ...baseState.build, configs: [staleEslint] },
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.build.configs[0]).toEqual(CONFIGS.eslint);
+	});
+
+	it("keeps the player's earned level while refreshing everything else", () => {
+		const staleLevelled = { ...CONFIGS.js, level: 3, description: "stale" };
+		const state: RunState = {
+			...baseState,
+			available: [staleLevelled],
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.available[0]).toEqual({ ...CONFIGS.js, level: 3 });
+	});
+
+	it("passes an unknown config id through untouched instead of crashing the run", () => {
+		const retired = {
+			...CONFIGS.agentsMd,
+			id: "team-rocket",
+			label: "Team Rocket",
+		};
+		const state: RunState = {
+			...baseState,
+			draftOptions: [retired],
+		};
+		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
+		expect(rehydrated.draftOptions[0]).toEqual(retired);
+	});
+});
+
+describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
+	const preRenameSnapshot = (coverage: number, windowUnits: number) => {
+		const snapshot = toRunSnapshot({
+			...baseState,
+			gatesCleared: 4,
+			coverage,
+		});
+		const { unitsEarned: _renamed, ...window } = snapshot.window;
+		const { bankedUnits: _absent, ...rest } = snapshot;
+
+		return {
+			...rest,
+			window: { ...window, coverageGained: windowUnits },
+		};
+	};
+
+	it("reads the window's units off the name they were stored under", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(9.4, 2), POLLS);
+		expect(hydrated.window.unitsEarned).toBe(2);
+	});
+
+	it("reconstructs the banked units rather than zeroing the run", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(9.4, 2), POLLS);
+		expect(hydrated.bankedUnits).toBeCloseTo(7.4);
+	});
+
+	it("never hands the coverage bar a figure it cannot settle", () => {
+		const hydrated = hydrateRunState(preRenameSnapshot(0, 0), POLLS);
+		expect(Number.isFinite(hydrated.bankedUnits)).toBe(true);
+		expect(Number.isFinite(hydrated.window.unitsEarned)).toBe(true);
+		expect(Number.isFinite(hydrated.coverage)).toBe(true);
+	});
+
+	it("leaves a current snapshot exactly as it found it", () => {
+		const current = toRunSnapshot({
+			...baseState,
+			bankedUnits: 12,
+			coverage: 13.5,
+			window: { ...baseState.window, unitsEarned: 1.5 },
+		});
+		const hydrated = hydrateRunState(current, POLLS);
+		expect(hydrated.bankedUnits).toBe(12);
+		expect(hydrated.window.unitsEarned).toBe(1.5);
+	});
+});
+
+describe("hydrateRunState — a snapshot written before Database", () => {
+	const preEscrowSnapshot = () => {
+		const { pendingKb: _absent, ...rest } = toRunSnapshot({
+			...baseState,
+			gatesCleared: 2,
+		});
+		return rest;
+	};
+
+	it("opens an empty transaction rather than an undefined one", () => {
+		expect(hydrateRunState(preEscrowSnapshot(), POLLS).pendingKb).toBe(0);
+	});
+
+	it("keeps an open transaction a current snapshot was holding", () => {
+		const current = toRunSnapshot({ ...baseState, pendingKb: 24 });
+		expect(hydrateRunState(current, POLLS).pendingKb).toBe(24);
+	});
+});
+
+describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
+	const multiPoll = (id: string, correctCount: number): RunPoll => ({
+		id,
+		category: "js",
+		question: "Which of these are Kanto towns?",
+		answerType: "multiple",
+		options: KANTO_TOWNS.slice(0, 4).map((town, index) => ({
+			id: `${id}-${index}`,
+			label: town.name,
+			correct: index < correctCount,
+		})),
+	});
+
+	const midGate = stateVariants["mid-gate answering"];
+
+	it("recomputes the pick budget from the polls the window holds now", () => {
+		const afterRollover = [POLLS[0], POLLS[1], multiPoll("day2-0", 3)];
+		const rehydrated = hydrateRunState(toRunSnapshot(midGate), afterRollover);
+		expect(midGate.window.budget).toBe(3);
+		expect(rehydrated.window.budget).toBe(5);
+	});
+
+	it("counts the polls already answered this window, not just the ones ahead", () => {
+		const answeredWereMulti = [
+			multiPoll("day1-0", 3),
+			multiPoll("day1-1", 3),
+			POLLS[2],
+		];
+		const rehydrated = hydrateRunState(
+			toRunSnapshot(midGate),
+			answeredWereMulti
+		);
+		expect(rehydrated.window.budget).toBe(7);
+	});
+
+	it("measures the window from its own first poll, not from the run's", () => {
+		const secondWindow: RunState = {
+			...midGate,
+			currentIndex: 6,
+			gatesCleared: 1,
+			window: { ...midGate.window, answered: 1 },
+		};
+		const polls = [
+			...Array.from({ length: 5 }, (_, index) =>
+				multiPoll(`gate1-${index}`, 4)
+			),
+			multiPoll("gate2-0", 2),
+			POLLS[0],
+			POLLS[1],
+		];
+		expect(
+			hydrateRunState(toRunSnapshot(secondWindow), polls).window.budget
+		).toBe(4);
+	});
+
+	it("gives a legacy snapshot with no budget a real one", () => {
+		const legacy = toRunSnapshot({
+			...midGate,
+			window: { ...midGate.window, budget: undefined },
+		});
+		expect(hydrateRunState(legacy, POLLS).window.budget).toBe(3);
+	});
+
+	it("reads a budget of zero on a fresh window with the day's polls used up", () => {
+		const awaitingTomorrow: RunState = {
+			...midGate,
+			currentIndex: POLLS.length,
+			window: { ...midGate.window, answered: 0 },
+		};
+		expect(
+			hydrateRunState(toRunSnapshot(awaitingTomorrow), POLLS).window.budget
+		).toBe(0);
+	});
+});
+
+describe("hydrateRunState — a snapshot written before the sealed audit (ADR-119)", () => {
+	const armedLegacySnapshot = () => {
+		const { heldAudit: _renamed, ...snapshot } = toRunSnapshot({
+			...baseState,
+			gatesCleared: 3,
+		});
+		return {
+			...snapshot,
+			attack: { band: "healthy" as const },
+			attackEarnedAtGate: 2,
+		};
+	};
+
+	it("hydrates a pre-ADR-119 armed attack into the held audit of that band", () => {
+		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
+		expect(hydrated.heldAudit).toEqual({ band: "healthy", gate: 2 });
+		expect(hydrated.auditHandedAtGate).toBe(2);
+	});
+
+	it("stamps the gate before the one in front when the legacy row never recorded one", () => {
+		const { attackEarnedAtGate: _unstamped, ...unstamped } =
+			armedLegacySnapshot();
+		expect(hydrateRunState(unstamped, POLLS).heldAudit).toEqual({
+			band: "healthy",
+			gate: 2,
+		});
+	});
+
+	it("drops the legacy attack keys so the next write is clean", () => {
+		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
+		expect(hydrated).not.toHaveProperty("attack");
+		expect(hydrated).not.toHaveProperty("attackEarnedAtGate");
+	});
+
+	it("prefers what a current snapshot holds over a stale legacy key", () => {
+		const hydrated = hydrateRunState(
+			{ ...armedLegacySnapshot(), heldAudit: { band: "perfect", gate: 1 } },
+			POLLS
+		);
+		expect(hydrated.heldAudit).toEqual({ band: "perfect", gate: 1 });
+	});
+});

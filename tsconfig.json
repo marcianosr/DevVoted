@@ -1,11 +1,6 @@
 {
 	"include": ["**/*.ts", "**/*.tsx"],
-	"exclude": [
-		"src/database/seed.ts",
-		"src/database/reset.ts",
-		".storybook",
-		"**/*.stories.tsx"
-	],
+	"exclude": [".storybook", "**/*.stories.tsx"],
 	"compilerOptions": {
 		"strict": true,
 		"esModuleInterop": true,

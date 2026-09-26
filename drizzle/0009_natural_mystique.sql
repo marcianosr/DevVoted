@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "active_config_ids" json DEFAULT '[]'::json NOT NULL;

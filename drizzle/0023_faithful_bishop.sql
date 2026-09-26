@@ -1,1 +1,0 @@
-ALTER TABLE "runs" DROP COLUMN "required_categories_count";

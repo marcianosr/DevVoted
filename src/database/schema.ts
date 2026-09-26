@@ -2,62 +2,35 @@ import { sql } from "drizzle-orm";
 import {
 	bigint,
 	boolean,
+	date,
 	integer,
 	json,
+	index,
 	pgEnum,
 	pgTable,
+	primaryKey,
 	real,
 	serial,
 	text,
 	timestamp,
 	unique,
+	uniqueIndex,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
 
-import { STORAGE_UNITS } from "~/lib/storage";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
-/**
- * Database Schema for DevVoted Quiz Game
- *
- * This schema represents the data structure for a quiz game where users can:
- * - Create and answer polls
- * - Track their progress and submissions
- * - Maintain streaks and earn XP
- * - Participate in community-driven poll selection
- */
-
-// === ENUMS ===
-
-/**
- * User role types for access control and permissions
- * - user: Regular player with standard permissions
- * - admin: Administrative user with extended capabilities
- */
 export const userRoles = pgEnum("roles", [
 	"user",
 	"poll-editor",
 	"admin",
 ] as const);
 
-/**
- * Poll status types to track the lifecycle of each poll
- * - draft: Initial state, not yet published
- * - open: Currently accepting responses
- * - closed: No longer accepting responses
- * - archived: Historical poll, no longer relevant
- */
 export const pollStatus = pgEnum("status", ["draft", "published", "archived"]);
 
 export const runStatus = pgEnum("run_status", ["finished", "active"]);
 
-/**
- * Season status types to manage season lifecycle
- * - upcoming: Season scheduled but not yet started
- * - active: Current season accepting new runs
- * - finished: Season completed, no new runs allowed
- * - archived: Historical season, no longer displayed
- */
 export const seasonStatus = pgEnum("season_status", [
 	"upcoming",
 	"active",
@@ -65,25 +38,24 @@ export const seasonStatus = pgEnum("season_status", [
 	"archived",
 ] as const);
 
-/**
- * Poll answer type to determine if a poll accepts single or multiple answers
- * - single: Only one answer can be selected
- * - multiple: Multiple answers can be selected
- */
 export const pollAnswerType = pgEnum("answer_type", [
 	"single",
 	"multiple",
 ] as const);
 
-// === TABLES ===
+export const pollAnswerOutcome = pgEnum("answer_outcome", [
+	"correct",
+	"partial",
+	"wrong",
+] as const);
 
-/**
- * Users Table
- * Stores player profiles and authentication data
- * - Tracks basic user information
- * - Manages authentication state
- * - Records gameplay statistics
- */
+export const visitDevice = pgEnum("visit_device", [
+	"desktop",
+	"mobile",
+	"tablet",
+	"bot",
+] as const);
+
 export const usersTable = pgTable("users", {
 	id: uuid("id").primaryKey(),
 	display_name: varchar("display_name", { length: 256 }).notNull(),
@@ -92,76 +64,134 @@ export const usersTable = pgTable("users", {
 	github_username: varchar("github_username", { length: 100 }),
 	role: userRoles("roles").notNull().default("user"),
 	total_polls_submitted: integer("total_polls_submitted").notNull().default(0),
-	// Persistent meta-progression currency in bytes. Credited at run end from
-	// unused in-run storage (storageLimit - storageUsed). bigint because
-	// long-tail accounts can accumulate beyond int32 max (2.1GB).
 	archived_storage: bigint("archived_storage", { mode: "number" })
 		.notNull()
 		.default(0),
+	legacy_bonus_bytes: bigint("legacy_bonus_bytes", { mode: "number" }),
+	peak_storage_kb: integer("peak_storage_kb").notNull().default(0),
 	owned_border_ids: text("owned_border_ids")
 		.array()
 		.notNull()
 		.default(sql`'{}'::text[]`),
 	equipped_border_id: text("equipped_border_id"),
+	equipped_title_ids: text("equipped_title_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	owned_swatch_ids: text("owned_swatch_ids")
+		.array()
+		.notNull()
+		.default(sql`'{}'::text[]`),
+	pinned_gate: integer("pinned_gate"),
+	created_at: timestamp("created_at", { withTimezone: true })
+		.defaultNow()
+		.notNull(),
+	last_seen_at: timestamp("last_seen_at", { withTimezone: true }),
 });
 
-/**
- * Polls Table
- * Core table for quiz questions and their metadata
- * - Stores the actual poll questions
- * - Manages poll lifecycle through status
- * - Tracks creation and modification timestamps
- * - Links to categories and creators
- */
+export const userConfigUnlocksTable = pgTable(
+	"user_config_unlocks",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		config_id: varchar("config_id", { length: 64 }).notNull(),
+		via_metric: varchar("via_metric", { length: 64 }),
+		unlocked_at: timestamp("unlocked_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		first_installed_at: timestamp("first_installed_at", {
+			withTimezone: true,
+		}),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.config_id] })]
+);
+
+export const userServiceUnlocksTable = pgTable(
+	"user_service_unlocks",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		service_id: varchar("service_id", { length: 64 }).notNull(),
+		via_metric: varchar("via_metric", { length: 64 }),
+		unlocked_at: timestamp("unlocked_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.service_id] })]
+);
+
+export const userObjectiveProgressTable = pgTable(
+	"user_objective_progress",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		metric: varchar("metric", { length: 64 }).notNull(),
+		count: integer("count").notNull().default(0),
+		updated_at: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.notNull()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [primaryKey({ columns: [table.user_id, table.metric] })]
+);
+
+export const userTitlesTable = pgTable(
+	"user_titles",
+	{
+		user_id: uuid("user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		title_id: varchar("title_id", { length: 64 }).notNull(),
+		exclusive: boolean("exclusive").notNull().default(false),
+		earned_at: timestamp("earned_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		announced_at: timestamp("announced_at", { withTimezone: true }),
+	},
+	(table) => [
+		primaryKey({ columns: [table.user_id, table.title_id] }),
+		uniqueIndex("user_titles_exclusive_title")
+			.on(table.title_id)
+			.where(sql`${table.exclusive}`),
+	]
+);
+
 export const pollsTable = pgTable("polls", {
 	id: serial("id").primaryKey(),
 	question: text("question").notNull(),
 	poll_number: integer("poll_number"),
-	code_block: text("code_block"), // Optional code block shown in poll
+	code_block: text("code_block"),
 	code_sandbox_example: text("code_sandbox_example"),
-	explanation: text("explanation"), // Optional explanation shown after answering
+	explanation: text("explanation"),
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
 	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),
 	closing_time: timestamp("closing_time", { withTimezone: true }).notNull(),
 	created_by: uuid("created_by")
-		.references(() => usersTable.id, { onDelete: "set null" }) // Preserves poll history even if user is deleted
+		.references(() => usersTable.id, { onDelete: "set null" })
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
-		.$onUpdate(() => new Date()), // Automatically tracks last modification
+		.$onUpdate(() => new Date()),
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(),
 });
 
-/**
- * Daily Polls Table
- * Scheduling layer for daily poll selection - provides O(1) lookup by date
- * - One poll per day (enforced by unique constraint on date)
- * - Eliminates expensive full-table scans for poll selection
- * - category_weights: Snapshot of global weights at end of previous day
- * - poll_id: Selected poll (nullable until poll is chosen using weights)
- */
 export const dailyPollsTable = pgTable("daily_polls", {
 	id: serial("id").primaryKey(),
-	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	date: varchar("date", { length: 10 }).notNull().unique(),
 	poll_id: integer("poll_id").references(() => pollsTable.id, {
 		onDelete: "cascade",
-	}), // Nullable - filled when poll is selected
-	category_weights: json("category_weights").$type<Record<string, number>>(), // Weights snapshot from previous day
+	}),
+	category_weights: json("category_weights").$type<Record<string, number>>(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-/**
- * Poll History Table
- * Tracks poll viewing and answering statistics per run
- * - One record per run per poll (enforced by unique constraint)
- * - Counters for views and answers within the specific run
- * - Timestamps for first/last view and last answer
- * - Run-scoped to enable proper gate and round resets between runs
- */
 export const pollHistoryTable = pgTable(
 	"polls_history",
 	{
@@ -192,13 +222,6 @@ export const pollHistoryTable = pgTable(
 	}
 );
 
-/**
- * Poll Options Table
- * Stores answer choices for each poll
- * - Contains all possible answers for a poll
- * - Marks correct answers for scoring
- * - Automatically deleted when parent poll is removed
- */
 export const pollOptionsTable = pgTable("polls_options", {
 	id: serial("id").primaryKey().notNull(),
 	poll_id: integer("poll_id")
@@ -208,26 +231,12 @@ export const pollOptionsTable = pgTable("polls_options", {
 	correct: boolean("correct").notNull().default(false),
 });
 
-/**
- * Poll Categories Table
- * Manages quiz categories for organization and filtering
- * - Enables category-based progression
- * - Supports streak tracking per category
- * - Allows for targeted learning paths
- */
 export const pollCategoriesTable = pgTable("polls_categories", {
 	id: serial("id").primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
 	code: varchar("code", { length: 256 }).notNull().unique(),
 });
 
-/**
- * Poll Response Options Table
- * Links user responses to specific answer choices
- * - Implements many-to-many relationship between responses and options
- * - Enables tracking of specific answer selections
- * - Maintains response history for analytics
- */
 export const pollResponseOptionsTable = pgTable("polls_response_options", {
 	id: serial("id").primaryKey().notNull(),
 	response_id: integer("response_id")
@@ -240,14 +249,6 @@ export const pollResponseOptionsTable = pgTable("polls_response_options", {
 		.notNull(),
 });
 
-/**
- * Poll Responses Table
- * Records user submissions and answers
- * - Tracks who answered what and when
- * - Scoped to runs for game session tracking
- * - Daily unique constraint prevents race condition duplicates
- * - Maintains response history even if user is deleted
- */
 export const pollResponsesTable = pgTable(
 	"polls_responses",
 	{
@@ -260,14 +261,19 @@ export const pollResponsesTable = pgTable(
 		}),
 		run_id: integer("run_id").references(() => runsTable.id, {
 			onDelete: "cascade",
-		}), // Nullable for legacy responses before this column existed
-		coverage_delta: real("coverage_delta"), // Coverage % gained for this response (null for legacy rows)
+		}),
+		mode: varchar("mode", { length: 16 })
+			.notNull()
+			.default("calendar")
+			.$type<"calendar" | "session">(),
+		coverage_delta: real("coverage_delta"),
+		answer_time_ms: integer("answer_time_ms"),
+		mirrored: boolean("mirrored").notNull().default(false),
+		outcome: pollAnswerOutcome("outcome"),
 		score_breakdown:
 			json("score_breakdown").$type<
-				import("~/domains/runs/services/score.service").ScoreCalculation
+				import("~/database/scoreBreakdown").ScoreCalculation
 			>(),
-		// Intentionally redundant with created_at — derived date used solely for unique constraint.
-		// Drizzle doesn't support unique constraints on expressions like DATE(created_at).
 		answer_date: varchar("answer_date", { length: 10 }).notNull(),
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 		updated_at: timestamp("updated_at", { withTimezone: true })
@@ -275,21 +281,15 @@ export const pollResponsesTable = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => ({
-		uniquePollUserDaily: unique().on(
-			table.poll_id,
-			table.user_id,
-			table.answer_date
-		),
+		uniqueCalendarDaily: uniqueIndex("polls_responses_calendar_daily_uniq")
+			.on(table.poll_id, table.user_id, table.answer_date)
+			.where(sql`${table.mode} = 'calendar'`),
+		uniqueSessionRunPoll: uniqueIndex("polls_responses_session_run_poll_uniq")
+			.on(table.run_id, table.poll_id)
+			.where(sql`${table.mode} = 'session'`),
 	})
 );
 
-/**
- * Runs Table
- * Stores individual game runs for players
- * - Each run represents a complete game session
- * - Players can have multiple runs over time
- * - Only one active run per user at a time
- */
 export const runsTable = pgTable("runs", {
 	id: serial("id").primaryKey(),
 	user_id: uuid("user_id")
@@ -297,23 +297,27 @@ export const runsTable = pgTable("runs", {
 		.notNull(),
 	season_id: integer("season_id").references(() => seasonsTable.id, {
 		onDelete: "set null",
-	}), // Nullable for backward compatibility with pre-season runs
+	}),
 	status: runStatus("status").notNull().default("active"),
-	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB), // 1MB in bytes
+	mode: varchar("mode", { length: 16 })
+		.notNull()
+		.default("calendar")
+		.$type<"calendar" | "session">(),
+	storage_limit: integer("storage_limit").notNull().default(STORAGE_UNITS.MB),
 	injected_archive_bytes: integer("injected_archive_bytes")
 		.notNull()
-		.default(0), // Archive bytes spent at run-start to front-load storage_limit. Tracked separately so the breakdown UI can attribute it.
+		.default(0),
 	active_config_ids: json("active_config_ids")
 		.$type<string[]>()
 		.notNull()
-		.default([]), // Array of config IDs
-	rerolls: integer("rerolls").notNull().default(0), // Current poll session rerolls (resets each poll)
-	total_rerolls: integer("total_rerolls").notNull().default(0), // Total rerolls across entire run
-	reroll_storage_used: integer("reroll_storage_used").notNull().default(0), // Actual storage bytes used on rerolls
-	shop_skipped_date: varchar("shop_skipped_date", { length: 10 }), // Date when shop was skipped "YYYY-MM-DD"
-	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }), // Date when user interacted with shop
-	deinstall_penalty: integer("deinstall_penalty").notNull().default(0), // Storage penalty from deinstalling configs
-	correct_polls_count: integer("correct_polls_count").notNull().default(0), // Number of correctly answered polls in this run
+		.default([]),
+	rerolls: integer("rerolls").notNull().default(0),
+	total_rerolls: integer("total_rerolls").notNull().default(0),
+	reroll_storage_used: integer("reroll_storage_used").notNull().default(0),
+	shop_skipped_date: varchar("shop_skipped_date", { length: 10 }),
+	shop_interacted_date: varchar("shop_interacted_date", { length: 10 }),
+	deinstall_penalty: integer("deinstall_penalty").notNull().default(0),
+	correct_polls_count: integer("correct_polls_count").notNull().default(0),
 	pipeline_slots: json("pipeline_slots")
 		.$type<
 			Array<{
@@ -324,7 +328,7 @@ export const runsTable = pgTable("runs", {
 			}>
 		>()
 		.notNull()
-		.default([]), // Active pipeline slots for the current run
+		.default([]),
 	pipeline_slot_snapshots: json("pipeline_slot_snapshots")
 		.$type<
 			Array<
@@ -337,7 +341,7 @@ export const runsTable = pgTable("runs", {
 			>
 		>()
 		.notNull()
-		.default([]), // Per-gate slot snapshots: index 0 = slots active during gate 1, index 1 = gate 2, etc.
+		.default([]),
 	pending_upgrade_cards: json("pending_upgrade_cards").$type<
 		Array<{
 			kind: string;
@@ -346,9 +350,12 @@ export const runsTable = pgTable("runs", {
 			from?: string;
 			to?: string;
 		}>
-	>(), // Upgrade cards pending player decision — null when no decision is pending
-	completion_reason: text("completion_reason"), // Reason for run completion — stores JSON for pipeline failures, plain strings for others
-	victory_achieved_at: timestamp("victory_achieved_at", { withTimezone: true }), // When player passed all gates (run continues in post-victory mode)
+	>(),
+	seed_date: varchar("seed_date", { length: 10 }),
+	completion_reason: text("completion_reason"),
+	victory_achieved_at: timestamp("victory_achieved_at", {
+		withTimezone: true,
+	}),
 	looted_by_user_id: uuid("looted_by_user_id").references(() => usersTable.id, {
 		onDelete: "set null",
 	}),
@@ -362,13 +369,108 @@ export const runsTable = pgTable("runs", {
 		.$onUpdate(() => new Date()),
 });
 
-/**
- * Run Category Coverage Table
- * Tracks coverage score earned in each category during a specific run
- * - Each run starts with 0% coverage in all categories
- * - Coverage accumulates as players answer polls correctly (1% per correct answer)
- * - Enables category-specific progression within runs
- */
+export const runStatesTable = pgTable("run_states", {
+	id: serial("id").primaryKey(),
+	run_id: integer("run_id")
+		.references(() => runsTable.id, { onDelete: "cascade" })
+		.notNull()
+		.unique(),
+	state: json("state")
+		.$type<import("~/modules/run/run/domain/runSnapshot.model").RunSnapshot>()
+		.notNull(),
+	engine_status: varchar("engine_status", { length: 16 })
+		.notNull()
+		.$type<import("~/modules/run/run/domain/run.model").RunStatus>(),
+	gates_cleared: integer("gates_cleared").notNull().default(0),
+	coverage: real("coverage").notNull().default(0),
+	polls_answered: integer("polls_answered").notNull().default(0),
+	engine_version: integer("engine_version").notNull().default(1),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+	updated_at: timestamp("updated_at", { withTimezone: true })
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+});
+
+export const auditIncidentStatus = pgEnum("audit_incident_status", [
+	"queued",
+	"locked",
+	"survived",
+	"failed",
+	"lapsed",
+]);
+
+export const auditIncidentsTable = pgTable(
+	"audit_incidents",
+	{
+		id: serial("id").primaryKey(),
+		sent_by_user_id: uuid("sent_by_user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_user_id: uuid("target_user_id")
+			.references(() => usersTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_run_id: integer("target_run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		target_gate: integer("target_gate").notNull(),
+		audit_id: varchar("audit_id", { length: 32 })
+			.notNull()
+			.$type<import("~/modules/run/gate/domain/audit.model").AuditId>(),
+		status: auditIncidentStatus("status").notNull().default("queued"),
+		created_at: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		locked_at: timestamp("locked_at", { withTimezone: true }),
+	},
+	(table) => [
+		index("audit_incidents_target_queue_idx").on(
+			table.target_run_id,
+			table.target_gate,
+			table.status
+		),
+		index("audit_incidents_created_idx").on(table.created_at),
+	]
+);
+
+export const dailyRunSeedsTable = pgTable("daily_run_seeds", {
+	id: serial("id").primaryKey(),
+	date: varchar("date", { length: 10 }).notNull().unique(),
+	seed: varchar("seed", { length: 64 }).notNull(),
+	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const dailyRunPollsTable = pgTable(
+	"daily_run_polls",
+	{
+		id: serial("id").primaryKey(),
+		date: varchar("date", { length: 10 }).notNull(),
+		position: integer("position").notNull(),
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+	},
+	(table) => [
+		unique().on(table.date, table.position),
+		unique().on(table.date, table.poll_id),
+	]
+);
+
+export const runPollsTable = pgTable(
+	"run_polls",
+	{
+		id: serial("id").primaryKey(),
+		run_id: integer("run_id")
+			.references(() => runsTable.id, { onDelete: "cascade" })
+			.notNull(),
+		position: integer("position").notNull(),
+		poll_id: integer("poll_id")
+			.references(() => pollsTable.id, { onDelete: "restrict" })
+			.notNull(),
+		segment_date: varchar("segment_date", { length: 10 }).notNull(),
+	},
+	(table) => [unique().on(table.run_id, table.position)]
+);
+
 export const runCategoryCoverageTable = pgTable(
 	"run_category_coverage",
 	{
@@ -401,13 +503,6 @@ export const runCategoryCoverageTable = pgTable(
 		};
 	}
 );
-/**
- * Seasons Table
- * Manages game seasons for temporal organization and progression tracking
- * - Provides context for runs, leaderboards, and events
- * - Enables season-specific mechanics and rewards
- * - Supports historical tracking and analytics
- */
 export const seasonsTable = pgTable("seasons", {
 	id: serial("id").primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
@@ -421,14 +516,6 @@ export const seasonsTable = pgTable("seasons", {
 		.$onUpdate(() => new Date()),
 });
 
-/**
- *  This is a read optimization pattern - leaderboards are read thousands of times but written once per run. The duplication is intentional and beneficial. No expensive JOINs needed when displaying leaderboards.
- * Leaderboard Table
- * Pre-computed leaderboard entries for completed runs
- * - Created when a run finishes to enable fast leaderboard queries
- * - Aggregates data from run_category_xp for simplified queries
- * - Eliminates need for complex JOINs in leaderboard displays
- */
 export const leaderboardTable = pgTable("leaderboard", {
 	id: serial("id").primaryKey(),
 	user_id: uuid("user_id")
@@ -436,28 +523,21 @@ export const leaderboardTable = pgTable("leaderboard", {
 		.notNull(),
 	run_id: integer("run_id")
 		.references(() => runsTable.id, { onDelete: "cascade" })
-		.notNull(), // Multiple leaderboard entries allowed for run history
+		.notNull(),
 	season_id: integer("season_id").references(() => seasonsTable.id, {
 		onDelete: "set null",
-	}), // Nullable for pre-season runs
+	}),
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
-		.notNull(), // Category for this leaderboard entry
-	category_coverage: real("category_coverage").notNull().default(0), // Coverage % achieved in this category for this run
-	total_coverage: real("total_coverage").notNull().default(0), // Overall coverage % for the run (for global leaderboards)
+		.notNull(),
+	category_coverage: real("category_coverage").notNull().default(0),
+	total_coverage: real("total_coverage").notNull().default(0),
 	best_streak: integer("best_streak").notNull().default(0),
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-/**
- * Run Shop Offerings Table
- * Stores randomly generated shop configs per run per day
- * - Replaces seed-based deterministic generation with persisted random selection
- * - One offering per run + date + reroll combination
- * - is_locked: When true (yarn.lock config), offering persists across days until reroll
- */
 export const runShopOfferingsTable = pgTable(
 	"run_shop_offerings",
 	{
@@ -465,7 +545,7 @@ export const runShopOfferingsTable = pgTable(
 		run_id: integer("run_id")
 			.references(() => runsTable.id, { onDelete: "cascade" })
 			.notNull(),
-		date: varchar("date", { length: 10 }).notNull(), // "YYYY-MM-DD"
+		date: varchar("date", { length: 10 }).notNull(),
 		reroll_number: integer("reroll_number").notNull().default(0),
 		config_ids: json("config_ids").$type<string[]>().notNull(),
 		is_locked: boolean("is_locked").notNull().default(false),
@@ -480,16 +560,9 @@ export const runShopOfferingsTable = pgTable(
 	})
 );
 
-/**
- * Daily Exposed Deck Table
- * Stores the randomly selected player's deck exposed to public-config holders each day
- * - One row per day (enforced by unique date)
- * - All users with public-config see the same player's deck
- * - Replaces seed-based selection with persisted random choice
- */
 export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 	id: serial("id").primaryKey(),
-	date: varchar("date", { length: 10 }).notNull().unique(), // "YYYY-MM-DD"
+	date: varchar("date", { length: 10 }).notNull().unique(),
 	run_id: integer("run_id")
 		.references(() => runsTable.id, { onDelete: "cascade" })
 		.notNull(),
@@ -498,3 +571,37 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
+
+export const appVisitsTable = pgTable(
+	"app_visits",
+	{
+		id: serial("id").primaryKey(),
+		visit_date: date("visit_date", { mode: "string" }).notNull(),
+		visitor_hash: varchar("visitor_hash", { length: 32 }).notNull(),
+		route_id: varchar("route_id", { length: 64 }).notNull(),
+		user_id: uuid("user_id").references(() => usersTable.id, {
+			onDelete: "set null",
+		}),
+		hits: integer("hits").notNull().default(1),
+		device: visitDevice("device").notNull().default("desktop"),
+		country: varchar("country", { length: 2 }),
+		referrer_host: varchar("referrer_host", { length: 255 }),
+		first_seen_at: timestamp("first_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		last_seen_at: timestamp("last_seen_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+	},
+	(table) => [
+		uniqueIndex("app_visits_day_visitor_route_uniq").on(
+			table.visit_date,
+			table.visitor_hash,
+			table.route_id
+		),
+		index("app_visits_day_route_idx").on(table.visit_date, table.route_id),
+		index("app_visits_user_day_idx")
+			.on(table.user_id, table.visit_date)
+			.where(sql`${table.user_id} is not null`),
+	]
+);

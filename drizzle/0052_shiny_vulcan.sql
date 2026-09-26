@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ALTER COLUMN "completion_reason" SET DATA TYPE text;

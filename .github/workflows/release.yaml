@@ -30,12 +30,9 @@ jobs:
       - name: Check for unreleased changes
         id: check
         run: |
-          npm run release --silent -- --dry-run 2>&1 | tee /tmp/release-dry.txt
-          if grep -q "Nothing in \[Unreleased\]" /tmp/release-dry.txt; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          fi
+          npm run release --silent -- --dry-run --json > release.json
+          cat release.json
+          echo "skip=$(jq -r 'if .willRelease then "false" else "true" end' release.json)" >> "$GITHUB_OUTPUT"
 
       - name: Bump version and finalize changelog
         if: steps.check.outputs.skip == 'false'

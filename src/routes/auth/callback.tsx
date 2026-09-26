@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
-import { getSupabaseServerClient } from "~/utils/supabase";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
 const exchangeCodeForSession = createServerFn({ method: "GET" })
 	.validator((data: { code: string }) => data)
@@ -71,7 +71,7 @@ export const Route = createFileRoute("/auth/callback")({
 		}
 
 		throw redirect({
-			to: "/daily-poll",
+			to: "/run",
 		});
 	},
 });

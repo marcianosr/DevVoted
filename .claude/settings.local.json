@@ -1,23 +1,37 @@
 {
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "$HOME/.claude-work/hooks/lint-on-edit.sh",
+						"statusMessage": "Linting"
+					}
+				]
+			}
+		]
+	},
 	"permissions": {
 		"allow": [
 			"Bash",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__new_page",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__close_page",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_pages",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__wait_for",
 			"Skill(Notion:notion-database-query)",
 			"Skill(Notion:notion-search)",
 			"mcp__plugin_Notion_notion__notion-fetch",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__fill",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_console_messages",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__get_console_message",
-			"mcp__plugin_chrome-devtools-mcp_chrome-devtools__resize_page"
+			"mcp__playwright__browser_navigate",
+			"Artifact",
+			"mcp__playwright__browser_snapshot",
+			"mcp__playwright__browser_fill_form",
+			"mcp__playwright__browser_click",
+			"mcp__playwright__browser_wait_for",
+			"mcp__playwright__browser_take_screenshot",
+			"mcp__playwright__browser_console_messages",
+			"Bash(beans show *)",
+			"Bash(beans list *)",
+			"Bash(grep -nE \"^#{1,4} \" docs/wiki.md)",
+			"Bash(python3 -c \"import sys,json; [print\\(d['id'],'|',d['status'],'|',d['title']\\) for d in json.load\\(sys.stdin\\)]\")",
+			"Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('STATUS:',d['status']\\); print\\(d['body']\\)\")"
 		],
 		"deny": []
 	}

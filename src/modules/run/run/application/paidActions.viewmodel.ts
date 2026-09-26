@@ -1,0 +1,83 @@
+import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	linterFor,
+	peekerFor,
+	wagererFor,
+} from "~/modules/run/build/domain/build.model";
+import {
+	buyBackFeeFor,
+	canBuyPeek,
+	canRunLinter,
+	lintApplies,
+	lintFeeFor,
+	lintRefusalOf,
+	type PaidRefusal,
+	peekApplies,
+	peekFeeFor,
+	peekRefusalOf,
+} from "~/modules/run/run/domain/paidAction.model";
+import {
+	hiddenOptionIdsOf,
+	liveConfigsOf,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
+import {
+	canArmStrict,
+	strictStakeOf,
+} from "~/modules/run/run/domain/strict.model";
+
+export type PaidActions = {
+	readonly canLint: boolean;
+	readonly lintReady: boolean;
+	readonly lintCost: number;
+	readonly lintRefusal: PaidRefusal | undefined;
+	readonly linter: Config | null;
+	readonly canPeek: boolean;
+	readonly peekReady: boolean;
+	readonly peekCost: number;
+	readonly peekRefusal: PaidRefusal | undefined;
+	readonly peeker: Config | null;
+	readonly canWager: boolean;
+	readonly wagerArmed: boolean;
+	readonly wagerStake: number;
+	readonly wagerer: Config | null;
+};
+
+export type BuyBackView = {
+	readonly costKb: number;
+	readonly ready: boolean;
+	readonly sealedCount: number;
+};
+
+export const buyBackViewFor = (state: RunState): BuyBackView => {
+	const sealed = hiddenOptionIdsOf(state);
+	const costKb = buyBackFeeFor(state);
+	return {
+		costKb,
+		ready: sealed.length > 0 && state.storage >= costKb,
+		sealedCount: sealed.length,
+	};
+};
+
+export const paidActionsFor = (state: RunState): PaidActions => {
+	const current = state.polls[state.currentIndex];
+	return {
+		canLint: lintApplies(state),
+		lintReady: canRunLinter(state),
+		lintCost: lintFeeFor(state),
+		lintRefusal: lintRefusalOf(state),
+		linter:
+			current === undefined
+				? null
+				: (linterFor(state.build.configs, current.category) ?? null),
+		canPeek: peekApplies(state),
+		peekReady: canBuyPeek(state),
+		peekCost: peekFeeFor(state),
+		peekRefusal: peekRefusalOf(state),
+		peeker: peekerFor(state.build.configs) ?? null,
+		canWager: canArmStrict(state),
+		wagerArmed: state.strictArmed === true,
+		wagerStake: strictStakeOf(liveConfigsOf(state)) ?? 0,
+		wagerer: wagererFor(state.build.configs) ?? null,
+	};
+};

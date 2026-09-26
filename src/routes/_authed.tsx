@@ -1,25 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { Login } from "../domains/users/components/Login.component";
-import { getSupabaseServerClient } from "../utils/supabase";
+import { Login } from "~/modules/account/auth/presentation/Login.component";
+import { TitleAnnouncement } from "~/modules/account/profile/presentation/TitleAnnouncement.component";
 
-export const loginFn = createServerFn({ method: "POST" })
-	.validator((d: { email: string; password: string }) => d)
-	.handler(async ({ data }) => {
-		const supabase = await getSupabaseServerClient();
-		const { error } = await supabase.auth.signInWithPassword({
-			email: data.email,
-			password: data.password,
-		});
+const AuthedLayout = () => {
+	const { user } = Route.useRouteContext();
 
-		if (error) {
-			return {
-				error: true,
-				message: error.message,
-			};
-		}
-	});
+	return (
+		<>
+			{user ? <TitleAnnouncement userId={user.id} /> : null}
+			<Outlet />
+		</>
+	);
+};
 
 export const Route = createFileRoute("/_authed")({
 	beforeLoad: ({ context }) => {
@@ -27,6 +20,7 @@ export const Route = createFileRoute("/_authed")({
 			throw new Error("Not authenticated");
 		}
 	},
+	component: AuthedLayout,
 	errorComponent: ({ error }) => {
 		if (error.message === "Not authenticated") {
 			return <Login />;

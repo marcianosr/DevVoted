@@ -12,6 +12,29 @@ A developer quiz game combining trivia with roguelike mechanics. Test your knowl
 
 Visit http://localhost:3005 to play!
 
+### Seeded accounts
+
+`npm run db:seed` creates five Kanto logins, all with the password `kanto123`.
+They differ only in their unlocked configs, so each opens on a different kind of
+build:
+
+| Login | Configs | Build |
+|---|---|---|
+| `lance@kanto.dev` | all 40 | everything unlocked |
+| `lorelei@kanto.dev` | 23 | coverage multipliers and focus categories |
+| `agatha@kanto.dev` | 13 | wagers, streak growth, audit suppression |
+| `bruno@kanto.dev` | 12 | storage, interest, subscriptions |
+| `blue@kanto.dev` | 8 | the free starter set — a fresh account |
+
+The eight Kanto gym leaders author the polls and populate the community board.
+They have no login: they exist to give every poll a byline and a face.
+
+The seed also writes the whole 96-poll bank into today's sequence, so a full
+13-gate run is playable in one sitting rather than over 13 days. It is
+idempotent — re-run it any time, and re-run it the next day to refresh the date.
+It needs `SUPABASE_SERVICE_ROLE_KEY` in `.env` (from `npx supabase status`) to
+create the login accounts, and refuses to run without it.
+
 ## Tech Stack
 
 - TanStack Start (React-based full-stack framework)
@@ -25,6 +48,7 @@ Visit http://localhost:3005 to play!
 ### Local Development
 
 1. Make schema changes in `src/database/schema.ts`
-2. Generate migration: `npm run db:generate`
-3. Apply migration: `npm run db:push`
+2. Apply them locally: `npm run db:push` (prototyping only)
+3. Add a guarded SQL file under `supabase/migrations/` — CI applies it to
+   production on merge. See [ADR-012](docs/adr/012-migration-strategy.md).
 

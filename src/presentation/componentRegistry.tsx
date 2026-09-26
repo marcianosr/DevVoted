@@ -2,18 +2,19 @@ import { useState, type ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-import ConfigCard from "~/domains/economy/components/Cards/ConfigCard.component";
-import type { Config } from "~/domains/economy/models/config.model";
-import { StorageBreakdown } from "~/domains/economy/components/StorageBreakdown.component";
-import { CategoryCoverageGrid } from "~/domains/runs/components/CategoryCoverageGrid.component";
-import { createMockRunCategoryCoverage } from "~/domains/runs/models/runCategoryCoverage.mock";
-import { DEFAULT_WINDOW_SIZE } from "~/domains/runs/services/pipelineEvaluator.service";
-import { calculateLevelAndCoverage } from "~/domains/runs/utils/levelCalculations";
-import { STORAGE_UNITS } from "~/lib/storage";
-import { GameLoopExplainer } from "~/ui/GameLoopExplainer.component";
+import { ConfigCard } from "./demo/ConfigCard";
+import { StorageBreakdown } from "./demo/StorageBreakdown";
+import { CategoryCoverageGrid } from "./demo/CategoryCoverageGrid";
+import { calculateLevelAndCoverage } from "./demo/levelCalculations";
+import {
+	DEFAULT_WINDOW_SIZE,
+	demoCoverage,
+	type DemoConfig,
+} from "./demo/types";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
+import { GameLoopExplainer } from "./demo/GameLoopExplainer";
 
-// Demo data for ConfigCards
-const DEMO_CONFIGS: Config[] = [
+const DEMO_CONFIGS: DemoConfig[] = [
 	{
 		id: ".js-config",
 		name: ".js",
@@ -72,50 +73,43 @@ const DEMO_CONFIGS: Config[] = [
 	},
 ];
 
-// Demo data for CategoryCoverageGrid using factory
 const DEMO_COVERAGE = [
-	createMockRunCategoryCoverage({
-		id: 1,
+	demoCoverage({
 		categoryCode: "js",
 		currentCoverage: 72.5,
 		currentStreak: 3,
 		bestStreak: 5,
 		pollsAnswered: 8,
 	}),
-	createMockRunCategoryCoverage({
-		id: 2,
+	demoCoverage({
 		categoryCode: "ts",
 		currentCoverage: 45.0,
 		currentStreak: 1,
 		bestStreak: 3,
 		pollsAnswered: 5,
 	}),
-	createMockRunCategoryCoverage({
-		id: 3,
+	demoCoverage({
 		categoryCode: "react",
 		currentCoverage: 88.2,
 		currentStreak: 6,
 		bestStreak: 6,
 		pollsAnswered: 10,
 	}),
-	createMockRunCategoryCoverage({
-		id: 4,
+	demoCoverage({
 		categoryCode: "css",
 		currentCoverage: 33.0,
 		currentStreak: 0,
 		bestStreak: 2,
 		pollsAnswered: 4,
 	}),
-	createMockRunCategoryCoverage({
-		id: 5,
+	demoCoverage({
 		categoryCode: "html",
 		currentCoverage: 60.0,
 		currentStreak: 2,
 		bestStreak: 4,
 		pollsAnswered: 6,
 	}),
-	createMockRunCategoryCoverage({
-		id: 6,
+	demoCoverage({
 		categoryCode: "git",
 		currentCoverage: 55.5,
 		currentStreak: 1,
@@ -124,7 +118,6 @@ const DEMO_COVERAGE = [
 	}),
 ];
 
-// Demo component: Game Loop Explainer
 const GameLoopDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-2xl">
@@ -133,7 +126,6 @@ const GameLoopDemo = () => (
 	</div>
 );
 
-// Demo component: Config Cards showcase
 const ConfigCardsDemo = () => (
 	<div className="flex flex-col items-center justify-center h-full gap-6">
 		<p className="text-gray-400 text-lg">
@@ -147,12 +139,8 @@ const ConfigCardsDemo = () => (
 	</div>
 );
 
-// Demo component: Category Coverage Grid
 const CoverageDemo = () => (
-	<div
-		className="flex items-center justify-center h-full"
-		data-category-theme="react"
-	>
+	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-2xl border border-gray-700 p-6">
 			<CategoryCoverageGrid
 				categoryCoverage={DEMO_COVERAGE}
@@ -162,7 +150,6 @@ const CoverageDemo = () => (
 	</div>
 );
 
-// Demo component: Storage Breakdown
 const StorageDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-md border border-gray-700 p-6">
@@ -178,9 +165,8 @@ const StorageDemo = () => (
 	</div>
 );
 
-// Combined demo showing multiple elements
 const FullDemo = () => (
-	<div className="grid grid-cols-2 gap-8 h-full p-4" data-category-theme="js">
+	<div className="grid grid-cols-2 gap-8 h-full p-4">
 		<div className="flex flex-col gap-4">
 			<div className="border border-gray-700 p-4">
 				<CategoryCoverageGrid
@@ -207,7 +193,6 @@ const FullDemo = () => (
 	</div>
 );
 
-// Demo data for Leaderboard with real player names
 type DemoLeaderboardEntry = {
 	userId: string;
 	displayName: string;
@@ -298,7 +283,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 const getPlayerGateNumber = (pollsSeen: number): number =>
 	Math.max(1, Math.ceil(pollsSeen / DEFAULT_WINDOW_SIZE));
 
-// Demo component: Static Leaderboard with mock data
 const LeaderboardDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-5xl">
@@ -375,7 +359,6 @@ const LeaderboardDemo = () => (
 	</div>
 );
 
-// Demo data for Daily Poll
 const DEMO_POLL_QUESTION = "What does `Array.prototype.at(-1)` return?";
 const DEMO_POLL_OPTIONS = [
 	{ id: 1, option: "The first element of the array", correct: false },
@@ -384,7 +367,6 @@ const DEMO_POLL_OPTIONS = [
 	{ id: 4, option: "Throws a `RangeError`", correct: false },
 ];
 
-// Demo component: Daily Poll with radio buttons
 const DailyPollDemo = () => {
 	const [selectedOption, setSelectedOption] = useState<number | null>(null);
 
@@ -464,7 +446,6 @@ type DemoGate = {
 	requirements: { label: string }[];
 };
 
-// Demo data for CI Gates — legacy presentation slide, not tied to the live system
 const DEMO_CI_GATES: DemoGate[] = [
 	{
 		gate: 1,
@@ -524,7 +505,6 @@ const DEMO_CI_GATES: DemoGate[] = [
 	},
 ];
 
-// Demo component: CI Gates progression
 const CIGatesDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-5xl">
@@ -602,18 +582,6 @@ const CIGatesDemo = () => (
 	</div>
 );
 
-/**
- * Registry of interactive components that can be embedded in slides.
- *
- * Usage in slides.ts:
- * {
- *   id: "demo-slide",
- *   type: "component",
- *   title: "Live Demo",
- *   componentId: "game-loop",
- *   accentColor: "cerulean",
- * }
- */
 export const COMPONENT_REGISTRY: Record<string, () => ReactNode> = {
 	"game-loop": () => <GameLoopDemo />,
 	"daily-poll": () => <DailyPollDemo />,

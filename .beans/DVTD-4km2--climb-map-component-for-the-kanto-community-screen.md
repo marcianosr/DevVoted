@@ -1,0 +1,42 @@
+---
+# DVTD-4km2
+title: Climb map component for the kanto community screen
+status: scrapped
+type: task
+priority: normal
+created_at: 2026-09-11T11:12:07Z
+updated_at: 2026-09-25T17:51:22Z
+blocked_by:
+    - DVTD-agt2
+---
+
+`CommunityScreen.ui.tsx` parks 'Where everyone is' behind a placeholder div. Build the real thing: the 0-12 gate ladder with climber chips stacked above their position, fallen runs dimmed in their own lane, and the personal-best ghost.
+
+The data already exists — `ladderFor()` in `CommunityView.component.tsx` builds exactly this shape, and `climbMap.model.ts` owns the geometry (`trackPosition`, `TRACK_LENGTH` = 65, `positionPercent`). `src/ui/terminal-theme/ClimbTrack.ui.tsx` is the existing render to port.
+
+- [ ] `ClimbMap.ui.tsx` in kanto-theme, plain props
+- [ ] Uses `Climber`/`ClimberStack` and `Swatch` for the gate rung
+- [ ] Marks the viewer's own gate, and the edge past which the ladder is uncharted
+- [ ] Story + spec, fixture in `kantoCommunity.factory.ts`
+- [ ] Swap the placeholder out of `CommunityScreen.ui.tsx`
+
+## The reference render moved out of the tree (DVTD-6crx, 2026-09-23)
+
+`src/ui/old-theme/` was deleted wholesale, taking `ClimbTrack.ui.tsx` with it.
+Recover the render to port from:
+
+    git show 3df71fde:src/ui/terminal-theme/ClimbTrack.ui.tsx
+
+The data layer survived the deletion and moved: `ladderFor` / `trackBuildFor`
+now live in `src/modules/run/community/application/climbLadder.viewmodel.ts`,
+with module-owned `LadderGate` / `LadderClimber` / `LadderConfig` types
+replacing the dead terminal-theme ones. Their seven behaviours are covered by
+`climbLadder.viewmodel.spec.ts`. A `ClimbMap.ui.tsx` in `src/ui/` may import
+those types (type-only keeps `ui-stays-presentational` satisfied).
+
+The kanto community screen currently states `map.summary` ("3 on the ladder · 1
+fell today", from `ladderSummaryFor`) over the parked placeholder.
+
+## Reasons for Scrapping
+
+Absorbed into DVTD-2fy8, which carries both unfinished community sections in one bean. Every note here — the recovery SHA for the deleted render, the surviving data layer, the five checkboxes — moved across intact.

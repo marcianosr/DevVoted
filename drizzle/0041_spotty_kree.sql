@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "victory_achieved_at" timestamp with time zone;

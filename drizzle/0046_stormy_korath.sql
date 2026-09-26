@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "pipeline_slots" json DEFAULT '[]'::json NOT NULL;

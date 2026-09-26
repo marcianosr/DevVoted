@@ -1,1 +1,0 @@
-ALTER TABLE "runs" RENAME COLUMN "pending_upgrade_card" TO "pending_upgrade_cards";

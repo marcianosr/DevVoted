@@ -10,8 +10,6 @@ if (!DATABASE_URL && !isTestEnvironment) {
 	throw new Error("DATABASE_URL is not defined in your environment variables");
 }
 
-// Disable prefetch as it is not supported for "Transaction" pool mode
-// In test environment, use a dummy connection string to prevent errors
 const connectionString = isTestEnvironment
 	? "postgresql://dummy:dummy@localhost:5432/dummy"
 	: DATABASE_URL;

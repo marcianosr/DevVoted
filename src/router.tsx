@@ -1,4 +1,4 @@
-// src/router.tsx
+import * as Sentry from "@sentry/tanstackstart-react";
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 
 import { routeTree } from "./routeTree.gen";
@@ -8,6 +8,12 @@ export function getRouter() {
 		routeTree,
 		scrollRestoration: true,
 	});
+
+	if (!router.isServer) {
+		Sentry.addIntegration(
+			Sentry.tanstackRouterBrowserTracingIntegration(router)
+		);
+	}
 
 	return router;
 }

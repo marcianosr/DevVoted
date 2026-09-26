@@ -1,0 +1,171 @@
+import { useState } from "react";
+
+import type { Meta, StoryObj } from "@storybook/react";
+
+import {
+	INSTALLED_CARDS_OPEN,
+	OFFERED_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+import {
+	createKantoShopScreenProps,
+	kantoClosedShopProps,
+	kantoFirstShopProps,
+	kantoLateShopProps,
+	kantoLockedRegistryOffers,
+	kantoShopBuild,
+	kantoShopWeight,
+	kantoShopUninstalls,
+	kantoTagShopProps,
+} from "~/test/kantoPoll.factory";
+
+import { Modal } from "./Modal.ui";
+import { ShopScreen } from "./ShopScreen.ui";
+import { Uninstall } from "./Uninstall.ui";
+
+const props = createKantoShopScreenProps();
+
+const CROSSING = { from: 8, to: 12, perGateKb: 64 };
+
+const ShopWithPanels = () => {
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
+	const [uninstalling, setUninstalling] = useState<string | undefined>(
+		undefined
+	);
+	const [armed, setArmed] = useState<string | undefined>(undefined);
+
+	const close = () => setUninstalling(undefined);
+
+	const chips = kantoShopBuild.map((chip) => ({
+		...chip,
+		onUninstall: () => setUninstalling(chip.name),
+	}));
+
+	const buildNames = chips.map((chip) => chip.name ?? "");
+	const offerNames = props.registry.offers.map((offer) => offer.name ?? "");
+
+	const offers = props.registry.offers.map((offer, index) =>
+		index !== 0 || offer.install === undefined
+			? offer
+			: {
+					...offer,
+					install: {
+						...offer.install,
+						scale: CROSSING,
+						armed: armed === offer.name,
+						onPress: () =>
+							setArmed(armed === offer.name ? undefined : offer.name),
+					},
+				}
+	);
+
+	const uninstall =
+		uninstalling === undefined ? undefined : kantoShopUninstalls[uninstalling];
+
+	return (
+		<>
+			<ShopScreen
+				{...props}
+				build={{
+					configs: chips,
+					weight: kantoShopWeight(),
+					openInfo: disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN),
+					onToggleInfo: (name) =>
+						setBuildFlips(toggleDisclosure(buildFlips, name)),
+					onToggleAll: () =>
+						setBuildFlips(
+							discloseAll(buildNames, buildFlips.size > 0, INSTALLED_CARDS_OPEN)
+						),
+				}}
+				registry={{
+					...props.registry,
+					offers,
+					openInfo: disclosedIn(offerNames, offerFlips, OFFERED_CARDS_OPEN),
+					onToggleInfo: (name) =>
+						setOfferFlips(toggleDisclosure(offerFlips, name)),
+					onToggleAll: () =>
+						setOfferFlips(
+							discloseAll(offerNames, offerFlips.size > 0, OFFERED_CARDS_OPEN)
+						),
+				}}
+			/>
+
+			{uninstall === undefined ? null : (
+				<Modal label="Uninstall" onDismiss={close}>
+					<Uninstall {...uninstall} onConfirm={close} onCancel={close} />
+				</Modal>
+			)}
+		</>
+	);
+};
+
+const meta: Meta<typeof ShopScreen> = {
+	component: ShopScreen,
+	title: "Kanto/Screens/ShopScreen",
+	parameters: { controls: { disable: true } },
+};
+export default meta;
+
+type Story = StoryObj<typeof ShopScreen>;
+
+export const UnderAGate: Story = { render: () => <ShopScreen {...props} /> };
+
+export const WithPanels: Story = { render: () => <ShopWithPanels /> };
+
+export const WithFooter: Story = {
+	render: () => (
+		<ShopScreen
+			{...props}
+			footer={{
+				action: {
+					label: "To gate 10 prep",
+					icon: "gate",
+					onPress: () => {},
+				},
+			}}
+		/>
+	),
+};
+
+export const ExitLocked: Story = {
+	render: () => (
+		<ShopScreen
+			{...props}
+			footer={{
+				action: { label: "To gate 10 prep" },
+				refusal: "the build is over capacity by 1 slot",
+			}}
+		/>
+	),
+};
+
+export const FirstShop: Story = {
+	render: () => <ShopScreen {...kantoFirstShopProps()} />,
+};
+
+export const TagOnSale: Story = {
+	render: () => <ShopScreen {...kantoTagShopProps()} />,
+};
+
+export const LateShop: Story = {
+	render: () => <ShopScreen {...kantoLateShopProps()} />,
+};
+
+export const LockedOffers: Story = {
+	render: () => (
+		<ShopScreen
+			{...props}
+			registry={{
+				...props.registry,
+				offers: kantoLockedRegistryOffers,
+			}}
+		/>
+	),
+};
+
+export const ShopClosed: Story = {
+	render: () => <ShopScreen {...kantoClosedShopProps()} />,
+};

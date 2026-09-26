@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 import {
 	ErrorComponent,
 	Link,
@@ -7,30 +9,32 @@ import {
 } from "@tanstack/react-router";
 
 import type { ErrorComponentProps } from "@tanstack/react-router";
-import { CatchBoundaryUI } from "~/ui/CatchBoundaryUI.component";
+import { reportHandledFailure } from "~/shared/utils/errorReporting";
+import { CatchBoundaryUI } from "~/ui/kanto-theme/CatchBoundary.ui";
 
-export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
+const LINK = "underline";
+
+export const DefaultCatchBoundary = ({ error }: ErrorComponentProps) => {
 	const router = useRouter();
 	const isRoot = useMatch({
 		strict: false,
 		select: (state) => state.id === rootRouteId,
 	});
 
-	console.error(error);
+	useEffect(() => {
+		reportHandledFailure(error, "renderError");
+	}, [error]);
 
 	const navigationLink = isRoot ? (
-		<Link
-			to="/"
-			className="px-2 py-1 bg-gray-600 dark:bg-gray-700 rounded text-white uppercase font-extrabold"
-		>
+		<Link to="/" className={LINK}>
 			Home
 		</Link>
 	) : (
 		<Link
 			to="/"
-			className="px-2 py-1 bg-gray-600 dark:bg-gray-700 rounded text-white uppercase font-extrabold"
-			onClick={(e) => {
-				e.preventDefault();
+			className={LINK}
+			onClick={(event) => {
+				event.preventDefault();
 				window.history.back();
 			}}
 		>
@@ -45,4 +49,4 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
 			navigationLink={navigationLink}
 		/>
 	);
-}
+};

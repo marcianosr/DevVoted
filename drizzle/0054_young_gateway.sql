@@ -1,2 +1,0 @@
-ALTER TABLE "run_category_coverage" ADD COLUMN "correct_polls_answered" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
-ALTER TABLE "run_category_coverage" ADD COLUMN "final_correct_polls_answered" integer;

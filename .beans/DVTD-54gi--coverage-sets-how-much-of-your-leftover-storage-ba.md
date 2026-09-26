@@ -1,0 +1,89 @@
+---
+# DVTD-54gi
+title: Bank storage on how well a run scored, not how far it got
+status: todo
+type: feature
+priority: high
+created_at: 2026-09-01T15:33:18Z
+updated_at: 2026-09-24T12:49:07Z
+parent: DVTD-z2r2
+---
+
+**What:** Base how much of a run's leftover storage banks on how well it played, rather than on the gate it died at.
+
+**Why:** Two runs that die at the same gate bank the same, whether they scraped through or doubled the line.
+
+⚠️ The number this bean divides by is gone, and coverage resets every gate. The measure has to be something that survives the reset: the bands the gates closed in, or the storage those gates paid.
+
+## Done when
+- [ ] The measure is picked, and it survives the per-gate reset
+- [ ] Abandoning still banks nothing, and winning still banks everything
+- [ ] A shallow death does not bank so little that starting stops being worth it
+- [ ] The run-over screen states the rate and what it banked
+- [ ] It does not pay twice for the same thing as the overshoot bean
+
+## Notes
+
+## Problem
+
+`storageCreditRate(reason, gatesCleared)` (src/modules/run/run/domain/rules.model.ts:59) pays the archive on **depth**: 0 on abandon, 1 on victory, `gatesCleared / GATE_COUNT` on death. Two runs that die at gate 6 bank the same share whether they scraped through on the demand or doubled it, so coverage, the game's actual score, has no say in the one payout that outlives the run. Progress pays; playing well does not.
+
+## Decision
+
+The rate reads coverage against the victory gate's demand:
+
+    rate = min(1, state.coverage / coverageDemandFor(VICTORY_GATE - 1))
+
+That denominator is 290, the demand a run faces at gate 12 (`COVERAGE_DEMANDS[11]`). Abandon stays 0. Victory stays a floor of 1, so an audit-raised demand can never make a winner bank less than everything.
+
+Use the plain ladder number, not `gateDemandFor(configs, ...)`: the audit-adjusted demand differs per build, and a cross-run payout has to be comparable between runs. A build that dodged audits should not bank more for identical play.
+
+## Numbers
+
+Share of leftover KB banked on a death, today against the proposal (coverage assumed at the minimum that clears that many gates):
+
+| gates cleared | coverage met | today | proposed |
+| --- | --- | --- | --- |
+| 3 | 25 | 23% | 9% |
+| 6 | 85 | 46% | 29% |
+| 9 | 175 | 69% | 60% |
+| 11 | 250 | 85% | 86% |
+| victory | 290 | 100% | 100% |
+
+Deep runs land where they already were. Early deaths bank much less, and a run that overperforms its demand banks more than its depth ever paid, which is the point.
+
+## Why coverage is the better axis
+
+The git tag's anti-cash-out rule falls out for free. ADR-036 has to subtract `startedAtGate` from the credit so a rescued run cannot bank the gates its checkpoint skipped. A rescued run starts at coverage 0, so a coverage-based rate already pays only for what this run scored, and the subtraction (plus the reason-and-gates signature) drops out of the formula.
+
+## Todos
+
+- ADR amending ADR-005's end-of-run economy bridge, and the `startedAtGate` clause of ADR-036
+- `storageCreditRate` takes coverage instead of gatesCleared; both call sites in run.repository.ts (finishSessionRun, abandonSessionRun) pass `state.coverage`
+- Rewrite rules.model.spec.ts's four `storageCreditRate` cases: abandon 0, victory floor 1, the table above, clamp above the demand
+- Game over screen states the rate and what it banked (GameOverScreen's `archive` note is the slot)
+- Stale comment at run.repository.ts:283 names a `STORAGE_CREDIT_RATE` constant that does not exist; fix while in the file
+- Wiki 6.1 ("at the outcome rate") and the numbers reference
+- CHANGELOG (player-visible)
+
+## Risks to watch
+
+- **Double counting.** Leftover KB already correlates with playing well, and the rate now multiplies the same signal a second time. Strong runs get paid twice; check the spread between a median and a strong run before shipping.
+- **Early deaths get meaner.** A gate-3 death banks 9% where it banked 23%, and ADR-042 calls retention the top structural risk. The knob is a floor on the rate for shallow deaths, not the denominator.
+- **Hoarding.** A high rate rewards not spending at the last shop. Not new (victory already banks 100%), but a coverage-driven rate makes it visible sooner.
+- Overlaps DVTD-nljz (reward coverage spill above the gate demand): both pay for coverage earned past the demand, and they should not both pay for it.
+
+## Model change 2026-09-12 (DVTD-nd6r)
+
+The denominator does not exist any more. `COVERAGE_DEMANDS` is the old engine's
+point table; the line a gate asks for now is `healthyAt(gate)` in
+`coverageRatio.model.ts`, and it is a percentage of a per-gate window rather
+than a running total.
+
+Worse for this bean: ADR-073 decision 4 makes coverage reset to 0% at every
+gate, so `state.coverage` stops being a run-wide score that a payout can read.
+The problem this bean names is still real and still worth fixing (depth pays,
+playing well does not), but the numerator has to be something that survives the
+reset. Candidates: the bands a run closed its gates in, or the sum of
+`gatePayoutKb` earned, which already prices coverage against each gate's own
+line.

@@ -43,13 +43,11 @@ sonarqubeScanner(
 				"**/.scannerwork/**",
 				"src/routeTree.gen.ts",
 				"src/test/setup.ts",
-				"src/test/utils.tsx",
 				"**/*.config.*",
 				"**/*.d.ts",
 			].join(","),
 			"sonar.test.exclusions": [
 				"src/test/setup.ts",
-				"src/test/utils.tsx",
 				"src/test/createMockDataFactory.ts",
 			].join(","),
 			"sonar.typescript.lcov.reportPaths": coveragePath,

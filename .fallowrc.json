@@ -1,0 +1,17 @@
+{
+	"$schema": "./node_modules/fallow/schema.json",
+	"ignorePatterns": ["storybook-static/**", "public/**", "supabase/**"],
+	"ignoreFindings": [
+		"scripts/**",
+		"src/presentation/**",
+		"src/routes/proto-run.tsx"
+	],
+	// Kept deliberately as part of the SonarQube stack (DVTD-4jbz, reverted 2026-09-19).
+	"ignoreDependencies": ["jest-sonar-reporter"],
+	"duplicates": {
+		"ignore": ["scripts/**", "src/routes/proto-run.tsx"]
+	},
+	"health": {
+		"ignore": ["scripts/**", "src/routes/proto-run.tsx"]
+	}
+}
