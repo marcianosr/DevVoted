@@ -14,6 +14,7 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import { Footer } from "~/components/Footer.component";
+import { ACTIVE_SKIN } from "~/config/skin";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
 import { Climber } from "~/ui/kanto-theme/Climber.ui";
@@ -220,7 +221,7 @@ function Navigation() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
-		<html className="dark">
+		<html className="dark" data-skin={ACTIVE_SKIN}>
 			<head>
 				<HeadContent />
 			</head>
