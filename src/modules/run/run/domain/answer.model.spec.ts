@@ -63,7 +63,6 @@ import {
 	started,
 } from "~/modules/run/run/domain/run.factory";
 
-/** A flawless window fills the bar and its four streak steps spill into storage. */
 const FLAWLESS_OVERFLOW_KB = 13;
 
 describe("what one answer is worth at the opening gate", () => {
@@ -94,7 +93,6 @@ describe("the gate holds until its last answer has been read", () => {
 		return runReducer(state, { type: "answer", optionIds: [option.id] });
 	};
 
-	/** Four right and one wrong, which a bare build pays 4.2 units for. */
 	const filledWindow = (): RunState =>
 		[true, true, false, true, true].reduce(scoreOnly, started([]));
 
@@ -251,8 +249,6 @@ describe("gates and rewards", () => {
 			coverage: 100,
 		};
 
-		// Not `draftOptions[0]`: the seeded roll reshuffles every time the roster
-		// grows, and the first offer is regularly too heavy or too dear to draft.
 		const pick = [...state.draftOptions]
 			.sort((left, right) => slotsOf(left) - slotsOf(right))
 			.find(
@@ -269,11 +265,6 @@ describe("gates and rewards", () => {
 	});
 });
 
-/**
- * ADR-046's rule survives ADR-098's rewrite of where room comes from: the run
- * still never gets room for free. It just comes from installing rather than
- * buying, and the price is the standing bill rather than a counter charge.
- */
 describe("room comes from the build, never from the climb (ADR-098)", () => {
 	it("widens on no answer, however much coverage it earns", () => {
 		let state = { ...started(["js"]), coverage: 1000 };
@@ -435,16 +426,12 @@ describe("enhancement configs on one build", () => {
 		expect(state.coverage).toBeCloseTo(BASE_UNIT * 1.5 + STREAK_UNIT_STEP);
 	});
 
-	// Regression Test is not in `handed`, and that fixture's order is indexed
-	// into elsewhere, so the build is set directly rather than installed.
 	const regressionBuild = (missedBefore: boolean): RunState => {
 		const base = started([]);
 		const [first, ...rest] = base.polls;
 		return {
 			...base,
 			build: { ...base.build, configs: [CONFIGS.regressionTest] },
-			// The flag rides the poll, attached when the sequence is read, so the
-			// engine never learns how the miss was recorded.
 			polls: [{ ...first, missedBefore }, ...rest],
 		};
 	};
@@ -1201,9 +1188,6 @@ describe("Moore's Law", () => {
 		).toBe(2);
 	});
 
-	// The balance has to out-earn the rent as well as fit under the cap: at
-	// 800 KB the 10% pays 80 against tier 2's 96 a gate, which the gate reward
-	// covers. A smaller principal on the same rung decays instead.
 	it("compounds while the plan is wide enough to hold the balance", () => {
 		const rich: RunState = {
 			...maxed(held(started(["moores-law"], 4 * SLICE_WINDOW), 800)),
@@ -1469,8 +1453,6 @@ describe("an armed strict wager", () => {
 });
 
 describe("Database holds its earnings until the gate closes", () => {
-	// Database is not in the dealt-hand fixture, so the build is set directly
-	// rather than installed — the same dodge Regression Test uses above.
 	const withDatabase = (extra: Partial<RunState> = {}): RunState => {
 		const base = started([]);
 		return {
@@ -1653,7 +1635,6 @@ describe("the clear's receipt", () => {
 });
 
 describe("Try/Catch turns a fatal close into a held one (ADR-096)", () => {
-	// Try/Catch is not in the dealt-hand fixture, so the build is set directly.
 	const holding = (
 		configs: readonly Config[],
 		extra: Partial<RunState> = {}
@@ -1737,8 +1718,6 @@ describe("Try/Catch turns a fatal close into a held one (ADR-096)", () => {
 });
 
 describe("SLA pays for holding to the band it promised (ADR-096)", () => {
-	// The build stays on the free rung: a wider one bills every clear, and a
-	// bigger reward then buys a bigger bill, which hides the uplift in storage.
 	const promising = (band: string, extra: Partial<RunState> = {}): RunState => {
 		const base = started([]);
 		const prep: RunState = {
@@ -1770,8 +1749,6 @@ describe("SLA pays for holding to the band it promised (ADR-096)", () => {
 	});
 
 	it("pays nothing on a gate that cleared but fell short of its promise", () => {
-		// Deep enough that five right answers clear the gate without filling the
-		// bar, which is the only place a promise can be missed on a clear.
 		const short = clearGate(
 			promising("perfect", { gatesCleared: 4, bankedUnits: 12 })
 		);
@@ -1801,10 +1778,8 @@ describe("SLA pays for holding to the band it promised (ADR-096)", () => {
 });
 
 describe("a clear hands a sealed audit, and every close leaves a record (ADR-119)", () => {
-	// Deep enough that five right answers clear the gate without filling the bar.
 	const deepHealthy = { ...started(["js"]), gatesCleared: 4, bankedUnits: 12 };
 
-	/** The banked total at gate 4 that lands five right answers in the named band. */
 	const clearingIn = (band: HeldAuditBand): RunState => {
 		const landing = Array.from({ length: 40 }, (_, banked) => ({
 			...started(["js"]),
@@ -1911,7 +1886,6 @@ describe("withLockedGate", () => {
 	});
 
 	it("re-reads the pick budget when a mirror locks onto the gate in front", () => {
-		// Three options with one right: a mirror asks for two picks a poll, not one.
 		const threeWide = (entry: RunPoll): RunPoll => ({
 			...entry,
 			options: [

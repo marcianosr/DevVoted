@@ -199,11 +199,6 @@ const strongCloseAt = (gate: number): LastClose => ({
 	cleared: true,
 });
 
-/**
- * A field of rivals around the player's gate, so the attack panel can be seen
- * without a second account. Two are deliberately out of range so the real
- * eligibility filter is exercised: Koga is behind, Sabrina last closed thin.
- */
 const RIVAL_BUILDS = {
 	misty: {
 		configs: [
@@ -268,7 +263,6 @@ const simulatedRivals = (gatesCleared: number): readonly RivalCandidate[] => {
 	];
 };
 
-/** What the simulator filed, kept as the feed row plus what the queue fold needs. */
 type FiledIncident = {
 	readonly targetRunId: number;
 	readonly targetUserId: string;
@@ -312,12 +306,6 @@ const climberOf = (trainer: SimTrainer): ClimberProps => ({
 	name: trainer.displayName,
 });
 
-/**
- * The rig's stand-in for a seat the service would have read. The trainer's own
- * id is the login: deriving one from the display name is the guess the domain
- * refuses, and without a login the rig can only ever draw the unlinked half of
- * the row.
- */
 const trainerLeader = (seed: string) => {
 	const login = TRAINERS[hashOf(seed) % TRAINERS.length].id;
 
@@ -327,19 +315,10 @@ const trainerLeader = (seed: string) => {
 const COMMUNITY_COUNTDOWN = "6h 12m";
 const COMMUNITY_COUNTDOWN_HINT = "until the next five polls are dealt";
 const CLIMB_MAP_TITLE = "Where everyone is";
-/** Nine held, three open — the rig shows both seat states at once. */
 const SEATED_CATEGORIES = 9;
 
-/** The one category the rig leaves unheld, so both seat states are reachable. */
 const OPEN_SEAT_CATEGORY: CategoryCode = "git";
 
-/**
- * The seat under the byline, which the rig has to fabricate.
- *
- * `toRunView` does not carry it: the service attaches it beside `stats` because
- * it is read rather than derived (ADR-103). The rig drives the reducer directly
- * and has no service, so without this the poll screen draws no leader at all.
- */
 const withCategorySeat = (view: RunView): RunView => {
 	if (!view.poll) return view;
 
@@ -364,12 +343,6 @@ const withCategorySeat = (view: RunView): RunView => {
 		},
 	};
 };
-/**
- * The rig has no service, so the ladder is simulated: trainers are spread over
- * the gates below the viewer by their own hash, and the viewer stands where the
- * reducer actually put them. Deepening slice 5b replaces this simulation with
- * the real adapter.
- */
 const protoClimbFor = (gate: number): ClimbTodayView => ({
 	climbers: [
 		...TRAINERS.map((trainer, index) => ({

@@ -67,7 +67,6 @@ export const Buyable: Story = {
 	args: { ...MOORES_LAW, onBuy: noop },
 };
 
-/** How the panel arrives in play: opened from a chip, and shut from itself. */
 export const Closable: Story = {
 	args: { ...MOORES_LAW, onBuy: noop, onClose: noop },
 };
@@ -83,7 +82,6 @@ export const Unaffordable: Story = {
 	),
 };
 
-/** The one refusal KB cannot answer: a focus config wants the coverage first. */
 export const CoverageGated: Story = {
 	args: upgradesFor(CONFIGS.js, {
 		storageKb: 512,

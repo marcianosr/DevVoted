@@ -27,7 +27,6 @@ import { Uninstall } from "./Uninstall.ui";
 
 const props = createKantoShopScreenProps();
 
-/** What the first offer would do to the standing bill, for the arming story. */
 const CROSSING = { from: 8, to: 12, perGateKb: 64 };
 
 const ShopWithPanels = () => {
@@ -48,8 +47,6 @@ const ShopWithPanels = () => {
 	const buildNames = chips.map((chip) => chip.name ?? "");
 	const offerNames = props.registry.offers.map((offer) => offer.name ?? "");
 
-	// The first offer is the one that crosses a rung, so the story shows both
-	// halves of the press: a plain install, and one that has to arm first.
 	const offers = props.registry.offers.map((offer, index) =>
 		index !== 0 || offer.install === undefined
 			? offer

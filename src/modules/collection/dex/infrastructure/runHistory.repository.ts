@@ -14,15 +14,6 @@ export type GateRunRow = {
 	swatchGates: readonly number[] | null;
 };
 
-/**
- * Every session climb this account has taken, newest first. Calendar runs are
- * excluded: they never meet a gate.
- *
- * `run_states` denormalises `gates_cleared` and `coverage` off the state blob
- * precisely so a list like this never has to open it. The one thing still
- * trapped inside is the per-run swatch roster, pulled out here by JSON path so
- * the blob itself stays on the server.
- */
 export const fetchGateRunsByUser = async (
 	userId: string
 ): Promise<GateRunRow[]> =>

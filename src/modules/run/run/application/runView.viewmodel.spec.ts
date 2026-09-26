@@ -747,11 +747,6 @@ describe("the view prices the shop's offers", () => {
 		});
 	});
 
-	/**
-	 * Room stopped being a reason to refuse anywhere but the top of the ladder
-	 * (ADR-098): a build that cannot fit an offer rents the rung above instead,
-	 * and the install press states what that costs.
-	 */
 	it("no longer refuses for room below the top rung — it rents the rung above", () => {
 		const full = answeringWith([CONFIGS.js]);
 		const offer = only(
@@ -833,8 +828,6 @@ describe("the recommended opening (ADR-057)", () => {
 		).toHaveLength(RECOMMENDED_SIZE);
 	});
 
-	// This is what earns recomputing over persisting: the advice is derived from
-	// `available` and `build.slots`, both of which already survive a snapshot.
 	it("gives the same advice after a reload", () => {
 		const polls = [poll("q0"), poll("q1")];
 		const state = createRun(polls, handed);

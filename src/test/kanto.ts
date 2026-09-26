@@ -1,10 +1,3 @@
-/**
- * Canonical Kanto test-data pool (see CLAUDE.md → Testing Philosophy).
- * Specs, factories, and stories pull flavored-but-deterministic data from here
- * instead of inventing ad-hoc strings.
- * Source: https://bulbapedia.bulbagarden.net/wiki/Kanto
- */
-
 export const KANTO_TOWNS = [
 	{
 		name: "Pallet Town",
@@ -107,10 +100,6 @@ export const KANTO_LANDMARKS = [
 	"Diglett's Cave",
 ] as const;
 
-/**
- * Ready-made poll-shaped questions — four options, one correct.
- * Use these when a spec needs a full question instead of a bare string.
- */
 export const KANTO_QUIZ = [
 	{
 		question: "What is the tallest building in Saffron City?",
@@ -144,9 +133,7 @@ export const KANTO_QUIZ = [
 	},
 ] as const;
 
-/** Canonical deterministic dates for specs (ISO strings — wrap in new Date() as needed). */
 export const TEST_DATES = {
-	/** Marciano's birthday — the go-to "specific day" */
 	birthday: "2026-05-13",
 	christmasEve: "2025-12-24",
 	christmas: "2025-12-25",

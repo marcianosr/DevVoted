@@ -33,13 +33,10 @@ export type GatePayout = {
 	readonly clearedGateNumber: number;
 	readonly clearedGateLadder: GateLadder;
 	readonly clearedCoverageHeld: number;
-	/** Why the gate in front held, while it is held. */
 	readonly heldBy: GateHoldReason | null;
 	readonly caughtFatalBy: string | null;
 	readonly slaUpliftKb: number;
-	/** What surviving rivals' audits paid on this clear, inside the reward. */
 	readonly incidentSurvivalKb: number;
-	/** Whether this clear armed or upgraded the run's heldAudit (ADR-099). */
 	readonly auditHanded: boolean;
 };
 

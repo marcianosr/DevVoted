@@ -109,7 +109,6 @@ export const updatePollWithOptions = async (
 		const newOptions = options.filter((option) => option.id === undefined);
 		const keptIds = existingOptions.map((option) => option.id);
 
-		// Options the form dropped are gone; with no kept ids the whole set goes.
 		await tx
 			.delete(pollOptionsTable)
 			.where(

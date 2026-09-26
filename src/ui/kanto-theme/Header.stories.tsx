@@ -98,11 +98,6 @@ export const EveryGate: Story = {
 	),
 };
 
-/**
- * The readout only moves when the balance does, so the moods it has to carry —
- * counting up green, down red, and the unit roll it refuses to count across —
- * need a press to drive them rather than a fixed arg.
- */
 const HeaderWithMovingBalance = () => {
 	const [kb, setKb] = useState(349);
 

@@ -176,15 +176,10 @@ export const slides: Slide[] = [
 		accentColor: "prismatic",
 	},
 
-	// 'Spelers kunnen "coverage" scoren door vragen correct te beantwoorden in dagelijkse polls',
-	// 		'Spelers "strijden" door dagelijkse polls tegen een CI coverage gate, met zichzelf maar ook tegen elkaar',
-	// 		"Spelers kunnen powerups gebruiken om hun kansen/strategie in de run te verbeteren (installable configs), of die van anderen te dwarsbomen",
-	// 		"Spelen is leren: door deel te nemen aan de polls, leren spelers over verschillende development topics",
 	{
 		id: "16-demo-poll",
 		type: "component",
 		title: "Daily Poll",
-		// subtitle: "Kennis opbouwen door dagelijks korte quizzes",
 		componentId: "daily-poll",
 		accentColor: "indigo",
 	},

@@ -70,7 +70,6 @@ import {
 
 export type SessionRunRecord = typeof runsTable.$inferSelect;
 
-/** The user's persistent run-in-progress (ADR-011) — at most one exists. */
 export const findActiveSessionRun = async (
 	userId: string
 ): Promise<SessionRunRecord | null> => {
@@ -89,7 +88,6 @@ export const findActiveSessionRun = async (
 	return run ?? null;
 };
 
-/** Latest run started on `seedDate` — several may exist since same-day restart (DVTD-li9i). */
 export const findSessionRunByDate = async (
 	userId: string,
 	seedDate: string
@@ -109,11 +107,6 @@ export const findSessionRunByDate = async (
 	return run ?? null;
 };
 
-/**
- * One run by id, whoever owns it. The caller checks ownership — a permalink
- * takes its id from the URL, so the row has to come back before it can be
- * judged against the session.
- */
 export const findSessionRunById = async (
 	runId: number
 ): Promise<SessionRunRecord | null> => {
@@ -125,11 +118,6 @@ export const findSessionRunById = async (
 	return run ?? null;
 };
 
-/**
- * Every poll the user answered today across ALL their runs. New runs start
- * from today's seed minus these, so a same-day restart can never re-answer a
- * poll — one vote per player per poll per day stays true for the community.
- */
 export const fetchAnsweredPollIdsForDay = async (
 	userId: string,
 	date: string
@@ -158,12 +146,6 @@ export const fetchRunSnapshot = async (
 	return row?.state ?? null;
 };
 
-/**
- * Config ids in the build after the action and not before. Keyed on the state
- * diff rather than on `action.type === "install"` because a config also enters
- * the build through the shop's draft — one predicate that cannot go stale as
- * transitions are added.
- */
 const configsNewlyInstalled = (
 	before: Pick<RunState, "build">,
 	after: Pick<RunState, "build">
@@ -174,12 +156,6 @@ const configsNewlyInstalled = (
 		.filter((configId) => !held.has(configId));
 };
 
-/**
- * ADR-064's unplayed queue is "granted but never installed", so the stamp is
- * write-once: the IS NULL guard makes re-installing on a later run a no-op
- * rather than a rewrite. No row is ever created here — a config the account
- * does not own cannot be installed in the first place.
- */
 const stampFirstInstalls = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
@@ -206,11 +182,6 @@ const gatesNewlyEarned = (
 	return (after.swatchGatesEarned ?? []).filter((gate) => !held.includes(gate));
 };
 
-/**
- * A flawless window earns that gate's swatch permanently, account-wide
- * (ADR-080). The guard makes it idempotent: earning Boulder again on a later
- * run matches no row, so the array never collects duplicates.
- */
 const awardGateSwatch = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
@@ -231,11 +202,6 @@ const awardGateSwatch = async (
 		);
 };
 
-/**
- * The objective ledger's upsert (ADR-051): every touched metric gains one, and
- * RETURNING hands back the fresh lifetime counts so the grant check reads what
- * this very transaction wrote.
- */
 const recordObjectiveProgress = async (
 	tx: Pick<typeof db, "insert">,
 	userId: string,
@@ -259,11 +225,6 @@ const recordObjectiveProgress = async (
 			count: userObjectiveProgressTable.count,
 		});
 
-/**
- * A grant is a row with its provenance (ADR-064). ON CONFLICT DO NOTHING makes
- * re-crossing a target idempotent, and RETURNING yields only the rows this
- * insert actually created — exactly the just-unlocked ids the client announces.
- */
 const awardConfigUnlocks = async (
 	tx: Pick<typeof db, "insert">,
 	userId: string,
@@ -283,10 +244,6 @@ const awardConfigUnlocks = async (
 	return rows.map((row) => row.config_id);
 };
 
-/**
- * A service grant is the same row shape as a config grant (ADR-116): permanent,
- * with its provenance, idempotent through ON CONFLICT DO NOTHING.
- */
 const awardServiceUnlocks = async (
 	tx: Pick<typeof db, "insert">,
 	userId: string,
@@ -304,13 +261,6 @@ const awardServiceUnlocks = async (
 		.onConflictDoNothing();
 };
 
-/**
- * A title is permanent, so the insert — not a predicate — is what decides one
- * is new. ON CONFLICT DO NOTHING covers both keys at once: the primary key
- * stops a second copy reaching the same account, and the partial unique index
- * on an exclusive title stops a second account reaching the title at all. Every
- * other row in the same batch still lands.
- */
 const awardTitles = async (
 	tx: Pick<typeof db, "insert">,
 	userId: string,
@@ -330,13 +280,6 @@ const awardTitles = async (
 	return rows.map((row) => row.title_id);
 };
 
-/**
- * Titles settle when the run ends, not when the counter moves. Two reasons:
- * "a correct answer in every category" cannot be read off an upsert's
- * RETURNING, which holds only the metrics this one action touched, and the
- * run-over screen is the only place a title is announced anyway. So the ledger
- * is read wide once per run rather than once per answer.
- */
 const grantEarnedTitles = async (
 	tx: Pick<typeof db, "select" | "insert">,
 	userId: string
@@ -372,10 +315,6 @@ const grantObjectiveUnlocks = async (
 	return unlocked;
 };
 
-/**
- * Raises the account's KB high-water mark. `GREATEST` rather than a read and a
- * write, so two runs settling at once cannot lower it between them.
- */
 const raiseStorageWatermark = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
@@ -422,24 +361,16 @@ export const createSessionRunWithState = async (
 export type RunTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Tx = RunTx;
 
-/**
- * The one seam after the reducer and before the write. Whatever it returns is
- * what persists, so a rival's incident can lock into the snapshot without a
- * second write path (ADR-099).
- */
 export type RunSettlement = (
 	tx: RunTx,
 	before: RunState,
 	after: RunState
 ) => Promise<RunState>;
 
-/** Standalone rollover for read paths (getTodaysRun). Dispatch rolls over inside its own transaction. */
 export const ensureTodaysSegment = async (
 	runId: number,
 	today: string
 ): Promise<void> => {
-	// Before the lock, not inside it: the seed opens its own transaction, and
-	// taking it while holding run_states FOR UPDATE inverts the lock order.
 	await getOrCreateDailyRunSeed(today);
 	return db.transaction(async (tx) => {
 		const [stateRow] = await tx
@@ -452,11 +383,6 @@ export const ensureTodaysSegment = async (
 	});
 };
 
-/**
- * Maps engine option ids (strings) back to DB option ids for the answered
- * poll. The engine tolerates unknown ids (they count as a wrong pick), so the
- * persistence layer must not be stricter than the game authority.
- */
 const toSelectedOptionRecordIds = (
 	poll: RunPoll,
 	optionIds: readonly string[]
@@ -465,13 +391,6 @@ const toSelectedOptionRecordIds = (
 		.filter((option) => optionIds.includes(option.id))
 		.map((option) => Number(option.id));
 
-/**
- * Session answers double as real polls_responses rows (slice 2, ADR-005) so
- * answer data is queryable by the social layer — even for abandoned runs.
- * Runs inside the dispatch transaction: the response row commits iff the
- * state advance commits. score_breakdown/coverage_delta stay null; session
- * scoring lives in run_states.
- */
 const recordSessionAnswer = async (
 	tx: Tx,
 	args: { runId: number; userId: string; today: string },
@@ -526,7 +445,6 @@ const finishSessionRun = async (
 		})
 		.where(eq(runsTable.id, runId));
 
-	// Economy bridge: leftover run storage becomes persistent meta-currency.
 	const creditBytes = archiveCreditBytes(state);
 	if (creditBytes > 0) {
 		await tx
@@ -538,11 +456,6 @@ const finishSessionRun = async (
 	}
 };
 
-/**
- * The account archive, in KB. The finish credit is applied inside the same
- * transaction that ends a run, so by the time the run-over screen asks, this
- * already reads as the balance *after* the run banked.
- */
 export const fetchArchivedStorageKb = async (
 	userId: string
 ): Promise<number> => {
@@ -555,19 +468,11 @@ export const fetchArchivedStorageKb = async (
 	return Math.round((row?.bytes ?? 0) / STORAGE_UNITS.KB);
 };
 
-/**
- * Walking away: the run finishes as "abandoned" and its leftover storage is
- * banked at STORAGE_CREDIT_RATE.abandoned (currently nothing — abandoning is
- * not a cash-out). Locks the state row like dispatch does, so an in-flight
- * answer and an abandon cannot interleave.
- */
 export const abandonSessionRun = async (
 	runId: number,
 	userId: string
 ): Promise<void> =>
 	db.transaction(async (tx) => {
-		// A missing state row means a corrupt, unplayable run (seen once on
-		// dev) — abandoning is exactly how it gets cleaned up, with 0 credit.
 		const [stateRow] = await tx
 			.select({ state: runStatesTable.state })
 			.from(runStatesTable)
@@ -600,11 +505,6 @@ export const abandonSessionRun = async (
 		}
 	});
 
-/**
- * The git tag's persistence (ADR-036). Planting writes the account column so
- * the tag outlives the run that bought it; starting the rescued run consumes
- * it atomically (UPDATE … RETURNING) — burn on use, one rescue per tag.
- */
 const persistPinnedGate = async (
 	tx: Pick<typeof db, "update">,
 	userId: string,
@@ -632,7 +532,6 @@ export const consumePinnedGate = async (userId: string): Promise<number> =>
 		return pinnedGate;
 	});
 
-/** Swatch ids the player has earned across every run — the collection surface. */
 export const fetchStorageWatermark = async (
 	userId: string
 ): Promise<number> => {
@@ -655,19 +554,6 @@ export const fetchOwnedSwatchIds = async (
 	return row?.ownedSwatchIds ?? [];
 };
 
-/**
- * The dispatch hot path. One transaction: lock the state row (serializes
- * double-submits), rehydrate, run the engine as authority, persist. Returns
- * the next state — identical to the previous state when the action was
- * illegal for the current status (the reducer's no-op contract) — plus the
- * config ids this very action unlocked (ADR-051's grant seam).
- */
-/**
- * A run's hydrated engine state. The snapshot and the day's polls live in
- * different tables (ADR-009: the sequence is shared, so it is stored once), and
- * putting the join here keeps callers from having to know that — or the order
- * to do it in.
- */
 export const loadRunState = async (runId: number): Promise<RunState> => {
 	const snapshot = await fetchRunSnapshot(runId);
 	if (!snapshot) throw new Error("Run state not found");
@@ -688,9 +574,6 @@ export const applyActionToRun = async (args: {
 	action: RunAction;
 	settle?: RunSettlement;
 }): Promise<RunDispatchResult> => {
-	// Same ordering as ensureTodaysSegment: today's shared sequence must exist
-	// before the rollover inside the lock goes looking for it, and a missing
-	// seed makes that rollover a silent no-op rather than an error.
 	await getOrCreateDailyRunSeed(args.today);
 	return db.transaction(async (tx) => {
 		const [stateRow] = await tx
@@ -716,19 +599,12 @@ export const applyActionToRun = async (args: {
 		if (next === state)
 			return { state, unlockedConfigIds: [], earnedTitleIds: [] };
 
-		// The objective ledger ticks at the seam (ADR-051): the reducer stays
-		// pure, the counters live on the account, and a crossed target grants
-		// inside the same transaction as the action that crossed it.
 		const touched = objectiveIncrementsFor(state, next, args.action);
 		const unlockedConfigIds =
 			touched.length === 0
 				? []
 				: await grantObjectiveUnlocks(tx, args.userId, touched);
 
-		// `rebase` rewrites only `RunState.polls`, which the snapshot drops, so
-		// the new order has to reach `run_polls` or it dies with this request
-		// (DVTD-mkhg). `state.currentIndex` because a rebase never moves the
-		// cursor, matching how the answer branch below sources its poll.
 		if (args.action.type === "rebase")
 			await rewriteRunPollOrder(
 				tx,
@@ -738,17 +614,12 @@ export const applyActionToRun = async (args: {
 			);
 
 		if (args.action.type === "answer") {
-			// The answered poll comes from the PRE-action state: `next` has either
-			// advanced currentIndex past it, or held it for the gate's close.
 			await recordSessionAnswer(
 				tx,
 				args,
 				state.polls[state.currentIndex],
 				args.action.optionIds,
 				args.action.elapsedMs,
-				// Which question was asked, recorded beside the answer: the picks
-				// alone cannot say, and every reader downstream needs to know
-				// (ADR-038).
 				mirrorsPolls(
 					liveAuditsFor(
 						state.build.configs,
@@ -759,13 +630,9 @@ export const applyActionToRun = async (args: {
 			);
 		}
 
-		// The swatch rides the window, not the clear: the close stamps the gate
-		// whose five polls all landed, and only a fresh stamp pays out (ADR-080).
 		for (const gate of gatesNewlyEarned(state, next))
 			await awardGateSwatch(tx, args.userId, gate);
 
-		// A freshly planted tag mirrors onto the account, where it outlives the
-		// run (ADR-036).
 		if (
 			next.pinPlantedAtGate !== undefined &&
 			next.pinPlantedAtGate !== state.pinPlantedAtGate
@@ -775,8 +642,6 @@ export const applyActionToRun = async (args: {
 		const settled =
 			args.settle === undefined ? next : await args.settle(tx, state, next);
 
-		// Against `settled`, not `next`: this is the state actually persisted, so
-		// the stamp can never disagree with the build that got written.
 		await stampFirstInstalls(
 			tx,
 			args.userId,
@@ -794,8 +659,6 @@ export const applyActionToRun = async (args: {
 			})
 			.where(eq(runStatesTable.run_id, args.runId));
 
-		// After the objective upsert above, so a summit read here already counts
-		// the clear that just happened.
 		const earnedTitleIds = isRunOver(settled.status)
 			? await grantEarnedTitles(tx, args.userId)
 			: [];
@@ -804,9 +667,6 @@ export const applyActionToRun = async (args: {
 			await finishSessionRun(tx, args.runId, args.userId, settled);
 		}
 
-		// The account remembers the best KB any run ever held, which is what
-		// opens storage rungs. Every earner counts, not only a clear, and a run
-		// that dies still keeps the mark it reached.
 		if ((settled.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
 			await raiseStorageWatermark(tx, args.userId, settled.peakStorageKb ?? 0);
 

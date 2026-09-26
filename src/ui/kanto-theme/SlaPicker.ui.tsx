@@ -6,13 +6,9 @@ const ROW = "flex w-full min-w-0 items-center gap-3";
 const TERMS = "min-w-0 flex-1";
 
 export type SlaCard = {
-	/** The band's own id, which is what the press commits. */
 	band: string;
-	/** The band as the ladder spells it, e.g. "HEALTHY". */
 	label: string;
-	/** What the promise is worth in words, e.g. "close at HEALTHY or better". */
 	terms: string;
-	/** The uplift it pays, already resolved by the engine. */
 	uplift: string;
 };
 
@@ -21,12 +17,7 @@ export type SlaPickerProps = {
 	hint: string;
 	cards: readonly SlaCard[];
 	committed: string | null;
-	/** Absent once the promise is locked, which is the moment the gate starts. */
 	onPick?: (band: string) => void;
-	/**
-	 * Why no band can be promised. Visible text rather than a `hint`, because a
-	 * `hint` is an aria-label and a refusal nobody can see is not a refusal.
-	 */
 	refusal?: string;
 };
 

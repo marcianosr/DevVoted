@@ -5,7 +5,6 @@ export type PollKey = { readonly letter: string; readonly id: string };
 export type PollKeyboard = {
 	readonly keys: readonly PollKey[];
 	readonly onPick?: (id: string) => void;
-	/** What Enter does: submit while answering, continue once answered. */
 	readonly onEnter?: () => void;
 };
 
@@ -19,12 +18,6 @@ const isTyping = (target: EventTarget | null): boolean =>
 const hasModifier = (event: KeyboardEvent): boolean =>
 	event.metaKey || event.ctrlKey || event.altKey;
 
-/**
- * Letter keys pick and Enter presses the footer's action. Enter is claimed
- * only while there is an action to press: a mouse click leaves focus on the
- * answer row it landed on, and left to the browser Enter would toggle that
- * row again instead of submitting.
- */
 export const usePollKeyboard = ({ keys, onPick, onEnter }: PollKeyboard) => {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {

@@ -161,10 +161,6 @@ describe("ShopView", () => {
 		expect(onContinue).toHaveBeenCalled();
 	});
 
-	/**
-	 * The only lock left on the door, and only ever after a bill the balance
-	 * could not cover: the run is held to the space it actually paid for.
-	 */
 	it("shuts the exit while the build outweighs the space its bill covered", () => {
 		render(
 			<ShopView
@@ -221,8 +217,6 @@ describe("ShopView", () => {
 		expect(onDraft).not.toHaveBeenCalled();
 		expect(screen.getByText("Build space scales 4 → 6")).toBeInTheDocument();
 
-		// The press renames itself, so the second press is a different affordance
-		// rather than the same one pressed twice.
 		const confirm = screen.getByRole("button", {
 			name: /Confirm installing ESLint/,
 		});
@@ -408,8 +402,6 @@ describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
 		expect(onDraft).toHaveBeenCalledWith("telemetry");
 	});
 
-	// The card discloses in place and the ladder floats, so neither displaces the
-	// other — the old "one panel at a time" rule had nothing left to arbitrate.
 	it("leaves a card's disclosure alone when its upgrade panel opens", async () => {
 		render(<ShopView view={upgradable} {...handlers} />);
 

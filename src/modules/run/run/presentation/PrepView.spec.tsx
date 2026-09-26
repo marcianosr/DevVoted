@@ -61,8 +61,6 @@ describe("PrepView", () => {
 		});
 	});
 
-	// DVTD-ooii: the reducer and RunView carried both of these for months while
-	// PrepViewProps quietly dropped them, so prep drew no control at all.
 	describe("the two configs that act in prep", () => {
 		it("draws no picker and no list while neither config is installed", () => {
 			render(<PrepView {...props} />);
@@ -317,8 +315,6 @@ describe("a prep-time config holding the gate", () => {
 		expect(screen.getByText(/SLA has no promise/)).toBeInTheDocument();
 	});
 
-	// The countdown is the only refusal nothing on this screen can lift, so it
-	// is the one that gets said.
 	it("states the wait for tomorrow's polls ahead of the call it could take now", () => {
 		render(
 			<PrepView {...props} view={betOwed} startRefusal="Next polls at 09:00" />
@@ -328,8 +324,6 @@ describe("a prep-time config holding the gate", () => {
 		expect(screen.queryByText(/Planning Poker has no bet/)).toBeNull();
 	});
 
-	// The vendor is named on the build or in the shop, so sending the player
-	// after a bet first would send them to the wrong screen twice.
 	it("states the vendor's unnamed target ahead of the call", () => {
 		render(
 			<PrepView

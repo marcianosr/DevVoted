@@ -125,9 +125,6 @@ describe("applyActionToRun", () => {
 		expect(db.update).not.toHaveBeenCalled();
 	});
 
-	// DVTD-mkhg: `rebase` writes only `RunState.polls`, the one field the
-	// snapshot drops, so without a write to `run_polls` the reorder was served
-	// back in its original order on the very next dispatch.
 	it("writes a rebased gate slice back to the run's poll sequence", async () => {
 		const base = createRun([], [CONFIGS.gitRebase]);
 		const prepping: RunState = {
@@ -239,7 +236,6 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
-		// The title ledger read the run's end fires (ADR-109).
 		mock.results.push([]);
 
 		const { state: next } = await dispatch({ type: "close-gate" });
@@ -257,9 +253,6 @@ describe("applyActionToRun", () => {
 		expect(db.update).toHaveBeenCalledTimes(5);
 	});
 
-	// The title ledger is read once, when the run ends (ADR-109). Between the
-	// objective upsert and that read sit the swatch stamp and the run_states
-	// write, neither of which looks at what it gets back.
 	const summitDispatchWith = (counts: readonly unknown[]) => {
 		const summitReady = answeringState({
 			storage: 100,
@@ -443,8 +436,6 @@ describe("applyActionToRun", () => {
 
 		expect(next.status).toBe("answering");
 		expect(mock.setCalls[0]).toMatchObject({ engine_status: "answering" });
-		// The state row, plus the account's KB mark: a run loaded without one
-		// takes the balance it is already holding as its first mark.
 		expect(db.update).toHaveBeenCalledTimes(2);
 	});
 
@@ -726,7 +717,6 @@ describe("applyActionToRun", () => {
 		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
 		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
-		// The title ledger read the run's end fires (ADR-109).
 		mock.results.push([]);
 
 		const { state: next } = await dispatch({ type: "close-gate" });
@@ -784,8 +774,6 @@ describe("first install stamp (ADR-064)", () => {
 		);
 	});
 
-	// The build is what gets read, not the action: a config also arrives by
-	// buying it off the shop shelf, and that must stamp the same way.
 	it("stamps nothing when the action leaves the build untouched", async () => {
 		await dispatchOn(configuringWith([CONFIGS.js]), {
 			type: "uninstall",

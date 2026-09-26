@@ -21,12 +21,6 @@ import type { SeedClimber } from "~/database/seed/cast";
 import { SEED_CLIMBERS, SEED_PLAYERS } from "~/database/seed/cast";
 import { hashOf } from "~/database/seed/random";
 
-/**
- * A climber's answer history, shaped by their accuracy so "longest streak" has
- * something to rank. `index * 37` because hashOf increments with its input:
- * plain indices hand back consecutive values, which lands every correct answer
- * in one block and invents a run-long streak at 60% accuracy.
- */
 const historyFor = (climber: SeedClimber, count: number): AnsweredPoll[] =>
 	Array.from({ length: count }, (_, index) => ({
 		id: `seed-${climber.id}-${index}`,
@@ -40,12 +34,6 @@ const historyFor = (climber: SeedClimber, count: number): AnsweredPoll[] =>
 		picked: [],
 	}));
 
-/**
- * One run per climber, parked at a known depth. Nothing here has to be a
- * plausible game history — only a valid snapshot the community board can read.
- * The denormalized columns matter as much as the blob: the climb map reads them
- * without opening the JSON.
- */
 export const seedClimberRuns = async (today: string): Promise<number> => {
 	const blank = toRunSnapshot(createRun([], []));
 
@@ -95,10 +83,6 @@ export const seedClimberRuns = async (today: string): Promise<number> => {
 	return SEED_CLIMBERS.length;
 };
 
-/**
- * Finished runs for a player, so the archive permalink, the Dex Runs tab and the
- * run-over screen all have real rows to read rather than an empty state.
- */
 export const seedArchivedRuns = async (
 	userId: string,
 	today: string
@@ -133,8 +117,6 @@ export const seedArchivedRuns = async (
 				user_id: userId,
 				mode: "session",
 				status: "finished",
-				// Past days: an archived run must not collide with today's live run,
-				// which is unique per (user_id, seed_date) for mode 'session'.
 				seed_date: pastDate(today, index + 1),
 				completion_reason: entry.reason,
 				finished_at: new Date(),
@@ -186,15 +168,6 @@ const titleRowsFor = (userId: string, titleIds: readonly string[]) =>
 		};
 	});
 
-/**
- * The calendar era as the grant migration leaves it (ADR-111): every run closed,
- * the one that was still open when the rebuild landed marked archived, and the
- * titles the two predicates read off those rows. `announced_at` is left null on
- * purpose — that is what puts the notice on screen at first login.
- *
- * This exists because migrations never run locally (ADR-012 has db:push build
- * the schema and CI apply the SQL), so without it nothing here is demoable.
- */
 export const seedLegacyEra = async (): Promise<number> => {
 	let granted = 0;
 
@@ -232,8 +205,6 @@ export const seedLegacyEra = async (): Promise<number> => {
 			.values(titleRowsFor(player.id, titleIds))
 			.onConflictDoNothing();
 
-		// coalesce, as the migration does: worn at once by an account wearing
-		// nothing, never over a title somebody already chose.
 		await db
 			.update(usersTable)
 			.set({

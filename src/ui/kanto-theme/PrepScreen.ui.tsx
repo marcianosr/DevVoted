@@ -19,11 +19,8 @@ export type PrepScreenProps = {
 	scores: PollScoresProps;
 	polls: LedgerProps;
 	audits: AuditsPanelProps;
-	/** The standing bill line by line, behind the total the Audits header states. */
 	subscriptions?: LedgerProps;
-	/** The attack this run holds and who it may be aimed at (ADR-099). */
 	attack?: AttackPanelProps;
-	/** Both are bets on this gate, so they sit with the band table, not the Ledger. */
 	estimate?: EstimatePickerProps;
 	sla?: SlaPickerProps;
 	rebase?: RebaseListProps;

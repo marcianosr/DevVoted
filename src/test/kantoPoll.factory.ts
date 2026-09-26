@@ -355,10 +355,6 @@ export const kantoCoverageLead = (): LeadLine => [
 	" coverage.",
 ];
 
-/**
- * The mock's own numbers: a poll 31% of the room cracked on their first deal,
- * dealt to this account twice and missed both times.
- */
 export const createKantoPollFactsProps = createMockDataFactory<
 	Omit<PollFactsProps, "trailing">
 >({
@@ -430,7 +426,6 @@ export const upgradeOfferFor = (
 	});
 };
 
-/** The dealt registry's rolled upgrade, with a Buy press a spec can watch. */
 export const kantoUpgradeOffer = (onBuy: () => void): ConfigChipProps =>
 	upgradeOfferFor({ ...CONFIGS.ts, level: 3 }, SHOP_BALANCE_KB, 1, onBuy);
 
@@ -563,7 +558,6 @@ export const kantoShopControlsAt = (
 
 export const kantoRegistryControls = kantoShopControlsAt();
 
-/** A service the account has not earned yet, named with the line that earns it (ADR-116). */
 export const kantoLockedService: ShopServiceRow = {
 	id: "extend",
 	locked: true,
@@ -820,8 +814,6 @@ export const kantoHandCards = (
 		? suggestedIdsIn(NEW_RUN_HAND, capacity)
 		: new Set<string>();
 
-	// Through the viewmodel, not beside it: a hand card assembled here drifts
-	// from the one the screen deals the moment either changes.
 	return NEW_RUN_HAND.map((config) => {
 		const held = installed.has(config.id);
 
@@ -835,11 +827,6 @@ export const kantoHandCards = (
 	});
 };
 
-/**
- * Dealt open, the way `StartView` deals it. A fixture that leaves `openInfo` out
- * draws every offer shut, which is a state no player ever arrives in — and a
- * story or spec reading it would be measuring the fixture, not the screen.
- */
 export const kantoNewRunRegistry = (
 	installedIds: readonly string[] = [],
 	capacity: number = BASE_SLOTS,
@@ -960,7 +947,6 @@ const prepPeelKbAt = (
 	audits: readonly AuditId[]
 ) => failPeelQuotaFor(configs, gate, { [gate]: audits }) * PEEL_KB_PER_SLOT;
 
-/** Nothing lands on a gate unless a rival fired it, so every fixture names one. */
 const PREP_SENDERS = [
 	{ id: "misty", name: "Misty" },
 	{ id: "koga", name: "Koga" },
@@ -984,7 +970,6 @@ const prepAuditViewAt = (
 	};
 };
 
-/** The summit fixture keeps the trio the Champion used to deal, now as three locked incidents. */
 export const KANTO_CHAMPION_AUDITS: readonly AuditId[] = [
 	"timeout",
 	"strip",
@@ -1005,7 +990,6 @@ const spreadsEvenly = (index: number, right: number, total: number) =>
 	Math.floor((index * right) / total) <
 	Math.floor(((index + 1) * right) / total);
 
-/** The gates already cleared, holding enough right answers to be worth `coverageHeld`. */
 export const kantoAnsweredThrough = (
 	gate: number,
 	coverageHeld: number
@@ -1020,7 +1004,6 @@ export const kantoAnsweredThrough = (
 	);
 };
 
-/** This window's own answers, `right` of `answered` of them correct. */
 const kantoWindowAnswers = (
 	gate: number,
 	answered: number,
@@ -1040,7 +1023,6 @@ export type KantoPrepFrame = {
 	streak?: number;
 	answered?: number;
 	windowCorrect?: number;
-	/** Incidents rivals locked onto this gate. A gate nobody attacked is clean. */
 	audits?: readonly AuditId[];
 };
 
@@ -1098,9 +1080,6 @@ export const kantoNewRunAt = (
 export const createKantoNewRunScreenProps =
 	createMockDataFactory<NewRunScreenProps>(kantoNewRunAt([]));
 
-/** The new run registry's note, re-exported: a ui/*.spec may not reach for it. */
-
-/** The prep screen's own ladder, re-exported: a ui/*.spec may not reach for it. */
 export const kantoPrepLadder = prepLadderAt;
 export const KANTO_PREP_GATE = LAVENDER_GATE;
 export const KANTO_PREP_SUMMIT_GATE = VICTORY_GATE;
@@ -1194,7 +1173,6 @@ export const kantoPrepCalibration = (): PrepScreenProps =>
 		window: LAVENDER_WINDOW,
 	});
 
-/** Boulder opened from a thin Pallet: two units of ten read 20%, under the 30% floor. */
 export const kantoPrepSecondGate = (): PrepScreenProps =>
 	kantoPrepAt({
 		gate: 1,

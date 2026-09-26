@@ -99,11 +99,6 @@ export type PeelConfigRange = {
 	readonly most: number;
 };
 
-// The quota is slots, so it does not name a number of configs: an 8-slot config
-// settles a 2-slot debt alone, and a build of ones pays it one config at a
-// time. Dropping the biggest first gives the floor, the smallest first the
-// ceiling. Minifying can undercut the floor further, which is why the forecast
-// says "remove" and the hint beside it says "or minify".
 export const peelConfigRangeFor = (
 	configs: readonly Config[],
 	quota: number
@@ -121,15 +116,8 @@ export const peelConfigRangeFor = (
 	};
 };
 
-/** What a gate did when it shut. The application layer already speaks this. */
 export type GateClosing = "cleared" | "held" | "fatal";
 
-/**
- * Why a held gate held. A bare build never clears; the floor is the day's own
- * count of right answers; the band is the meter. The debrief needs the
- * distinction because a floor hold can sit on a HEALTHY meter, and the bar
- * must not be clamped down to make the two agree (ADR-094).
- */
 export type GateHoldReason = "bare" | "floor" | "band" | "catch";
 
 export type GateRuling =
@@ -137,11 +125,6 @@ export type GateRuling =
 	| { readonly closing: "fatal" }
 	| { readonly closing: "held"; readonly heldBy: GateHoldReason };
 
-/**
- * Everything the close needs. `correctThisGate` is counted before multipliers
- * on purpose: a floor a x2 build clears with one right answer exempts exactly
- * the builds the floor exists to catch.
- */
 export type GateClose = {
 	readonly build: Build;
 	readonly bankedUnits: number;
@@ -160,11 +143,6 @@ export const isFlawlessGate = (close: GateClose): boolean =>
 export const clearsGateFloor = (close: GateClose): boolean =>
 	meetsGateFloor(close.correctThisGate);
 
-/**
- * The band the run score lands in, against this gate's audited ladder. Both
- * sides are compared at the precision the screen shows, so the number the
- * player reads and the verdict they get can never disagree.
- */
 export const bandAtClose = (close: GateClose): CoverageBand => {
 	const ladder = gateLadderFor(
 		close.build.configs,
@@ -180,27 +158,16 @@ export const bandAtClose = (close: GateClose): CoverageBand => {
 	return bandOf("danger");
 };
 
-// A flawless gate may hold and owe a peel. It must never be fatal.
 const closingBandFor = (close: GateClose): CoverageBand =>
 	isFlawlessGate(close)
 		? atLeastBand(bandAtClose(close), "shaky")
 		: bandAtClose(close);
 
-/**
- * The verdict, in order: a bare build never clears (a free redo would soft-lock
- * the run forever); DANGER ends the run whatever the day counted, unless a catch
- * is installed to take it; then the
- * day's own five must carry FLOOR_CORRECT right answers, or the gate holds
- * however good the run reads, because a cushion banked yesterday is the one
- * thing a cumulative meter cannot otherwise make a player earn again.
- */
 export const gateRulingFor = (close: GateClose): GateRuling => {
 	if (isBare(close.build)) return { closing: "held", heldBy: "bare" };
 
 	const band = closingBandFor(close);
 
-	// Try/Catch handles the fatal exception in flight: the gate still shuts and
-	// still owes its peel, it just stops being the end of the run (ADR-096).
 	if (band.id === "danger")
 		return catcherFor(close.build.configs) === undefined
 			? { closing: "fatal" }
@@ -225,11 +192,6 @@ export type GateProjection = {
 	readonly missClears: boolean;
 };
 
-/**
- * Where one more answer lands the run score. A miss earns nothing and the gate's
- * slot count is already fixed, so a miss leaves the number where it is: the cost
- * of a wrong answer is the gain it forfeits, not a bleed.
- */
 export const gateProjectionFor = (
 	units: number,
 	preview: PerAnswerPreview,

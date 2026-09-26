@@ -9,7 +9,6 @@ export type ServiceUnlocksData = {
 	readonly unlockedServiceIds: readonly string[];
 };
 
-/** The viewer's earned services (ADR-116); a starter service never appears here. */
 export const getServiceUnlocksService = async ({
 	userId,
 }: {

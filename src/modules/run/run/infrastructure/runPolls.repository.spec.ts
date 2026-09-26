@@ -40,10 +40,10 @@ describe("getOrCreateDailyRunSeed", () => {
 
 	it("rolls and persists the sequence when the day has none", async () => {
 		const published = [1, 2, 3, 4].map((id) => ({ id }));
-		mock.results.push([]); // no existing sequence
-		mock.results.push([{ id: 1 }]); // seed row claimed
+		mock.results.push([]);
+		mock.results.push([{ id: 1 }]);
 		mock.results.push(published);
-		mock.results.push(undefined); // daily_run_polls insert
+		mock.results.push(undefined);
 
 		const sequence = await getOrCreateDailyRunSeed(TEST_DATES.birthday);
 
@@ -54,8 +54,8 @@ describe("getOrCreateDailyRunSeed", () => {
 	});
 
 	it("reads the winner's sequence when losing the creation race", async () => {
-		mock.results.push([]); // no existing sequence yet
-		mock.results.push([]); // claim conflicts — another request won
+		mock.results.push([]);
+		mock.results.push([]);
 		mock.results.push([{ poll_id: 9 }, { poll_id: 5 }]);
 
 		const sequence = await getOrCreateDailyRunSeed(TEST_DATES.christmas);

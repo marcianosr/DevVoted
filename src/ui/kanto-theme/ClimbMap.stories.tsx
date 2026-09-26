@@ -45,10 +45,6 @@ const PressableMap = () => {
 
 export const OpeningAClimber: Story = { render: () => <PressableMap /> };
 
-/**
- * The card is a foldout on a phone, so the story is framed at phone width: the
- * panel pins itself to the bottom of the frame rather than hanging off a chip.
- */
 export const OnAPhone: Story = {
 	parameters: { viewport: { defaultViewport: "mobile1" } },
 	render: () => (

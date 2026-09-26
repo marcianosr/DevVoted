@@ -44,7 +44,6 @@ const stateVariants: Record<string, RunState> = {
 			answered: 2,
 			unitsEarned: 2.4,
 			byCategory: { js: { seen: 2, correct: 2 } },
-			// Three single-answer polls from index 0: what hydration will recompute.
 			budget: 3,
 		},
 		storage: 120,
@@ -127,12 +126,6 @@ describe("hydrateRunState — the roster is authoritative", () => {
 });
 
 describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
-	/**
-	 * Every run persisted before the units rename stores `coverageGained` on the
-	 * window and no `bankedUnits`. Read straight back, both arrive as undefined
-	 * and the coverage bar receives NaN — which does not render wrong, it
-	 * re-renders forever.
-	 */
 	const preRenameSnapshot = (coverage: number, windowUnits: number) => {
 		const snapshot = toRunSnapshot({
 			...baseState,
@@ -213,8 +206,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	const midGate = stateVariants["mid-gate answering"];
 
 	it("recomputes the pick budget from the polls the window holds now", () => {
-		// The rollover dropped the unplayed tail and appended multi-answer polls, so
-		// the budget the window opened with describes polls that no longer exist.
 		const afterRollover = [POLLS[0], POLLS[1], multiPoll("day2-0", 3)];
 		const rehydrated = hydrateRunState(toRunSnapshot(midGate), afterRollover);
 		expect(midGate.window.budget).toBe(3);
@@ -222,8 +213,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	});
 
 	it("counts the polls already answered this window, not just the ones ahead", () => {
-		// Two answered polls with three correct options each, one single-answer poll
-		// left: a budget of only the remaining poll would let a spent pick vanish.
 		const answeredWereMulti = [
 			multiPoll("day1-0", 3),
 			multiPoll("day1-1", 3),
@@ -237,7 +226,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	});
 
 	it("measures the window from its own first poll, not from the run's", () => {
-		// Second window, one poll in: the budget must skip the cleared gate's polls.
 		const secondWindow: RunState = {
 			...midGate,
 			currentIndex: 6,
@@ -252,7 +240,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 			POLLS[0],
 			POLLS[1],
 		];
-		// From index 5: gate2-0 (2) + two single-answer polls (1 each).
 		expect(
 			hydrateRunState(toRunSnapshot(secondWindow), polls).window.budget
 		).toBe(4);
@@ -267,8 +254,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 	});
 
 	it("reads a budget of zero on a fresh window with the day's polls used up", () => {
-		// Awaiting tomorrow: the window opened on nothing, so the check stands down
-		// instead of demanding picks the day cannot supply.
 		const awaitingTomorrow: RunState = {
 			...midGate,
 			currentIndex: POLLS.length,
@@ -281,7 +266,6 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 });
 
 describe("hydrateRunState — a snapshot written before the sealed audit (ADR-119)", () => {
-	/** Rows from the ADR-099 days hold the held attack under `attack`. */
 	const armedLegacySnapshot = () => {
 		const { heldAudit: _renamed, ...snapshot } = toRunSnapshot({
 			...baseState,

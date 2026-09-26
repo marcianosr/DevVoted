@@ -27,7 +27,6 @@ import type { NewRunScreenProps } from "~/ui/kanto-theme/NewRunScreen.ui";
 import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
 
 const START_GATE = 0;
-/** The opening build is the free rung by construction, so it never bills. */
 const FREE_UPKEEP = 0;
 
 const NEW_RUN_TITLE = "New run";
@@ -45,23 +44,9 @@ export const BARE_BUILD_REMEDY = `install at least one ${CONFIG_WORD}`;
 
 export type NewRunBuild = { configs: number; held: number; slots: number };
 
-/**
- * What the start press reads under its label: the build it is about to start
- * with, or the one thing standing between the player and starting at all.
- *
- * A bare build is stated as the remedy rather than as "0 configs · 0/4 weight",
- * which is the same fact told as a score. The press is shut, and a shut press
- * owes the player the way to open it.
- */
 export const newRunPressNoteOf = (build: NewRunBuild): string =>
 	build.configs === 0 ? BARE_BUILD_REMEDY : buildReadingOf(build);
 
-/**
- * A build in one line: what it holds, and what that weighs against the room it
- * has. Owned here because the build aggregate owns what a build is; the shop
- * states the same reading on the press that carries the build into prep, and
- * two surfaces counting the same configs separately is how they drift.
- */
 export const buildReadingOf = ({ configs, held, slots }: NewRunBuild): string =>
 	`${plural(configs, CONFIG_WORD)}${READING_JOIN}${held}/${slots} ${WEIGHT_WORD}`;
 

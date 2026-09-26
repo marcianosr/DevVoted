@@ -90,7 +90,7 @@ Strict two-tier separation, both tiers inside `presentation/`. See
 
 ### Database Tables
 
-`src/database/schema.ts` is the single source of truth — every table is documented inline there. Do not maintain a table list in this file.
+`src/database/schema.ts` is the single source of truth for table shape. What the columns mean lives in [the wiki](./docs/wiki.md) and the ADRs. Do not maintain a table list in this file.
 
 ### Path Aliases
 Standardize on `~/` (the only configured alias, mapping to `src/`). Every import starts from it: `~/shared/utils/errorHandling`, `~/test/kanto`. No deep relative imports.
@@ -227,4 +227,12 @@ Checklist for a new server function:
   or feel (not layout/admin/internal tooling). Before creating one, state the
   one-sentence game-design reason in the PR/commit message. If you're not sure
   it qualifies, ask rather than creating it.
-- NEVER comment the code unless it really needs a why, (never how) it's a temporary workaround or a TODO. If you feel the need to comment, write an ADR instead but check with me. The code should be self-documenting; comments are a smell.
+- Write NO comments. Not JSDoc, not a one-line why, not `{/* */}` in JSX. The
+  code is self-documenting: names carry the meaning, and reasoning belongs in an
+  ADR or the wiki, which is where the decisions already live. The only things
+  that stay are functional directives — `///` references, `eslint-disable`,
+  `oxlint-disable`, `@ts-expect-error`, `@ts-nocheck`, `@vitest-environment` —
+  and a tool's own user-facing message field (dependency-cruiser `comment`,
+  thrown error strings), which is output, not commentary. `src/styles/app.css` is
+  exempt: its comments document the Kanto token system. This has been swept three
+  times (DVTD-k2aw, DVTD-fw0z, DVTD-8wq2); treat the zero default as standing.

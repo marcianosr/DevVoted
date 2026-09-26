@@ -8,12 +8,6 @@ import {
 	type CategoryCode,
 } from "~/shared/lib/categories";
 
-/**
- * How a title is earned. `race` and `threshold` read the same ledger; the
- * difference is that only one account may ever hold a race title, which the
- * partial unique index on `user_titles` enforces rather than a "am I first?"
- * read. `granted` titles have no predicate at all — a migration writes them.
- */
 export type TitleEarn =
 	| {
 			readonly kind: "threshold";
@@ -87,8 +81,6 @@ export const TITLES: readonly Title[] = [
 	},
 	{
 		id: "title-legacy-active",
-		// TODO: working name. The id names the predicate because the ledger
-		// stores it; the label is still open and can change without a migration.
 		name: "Legacy Climber",
 		earnedWhen: "Still climbing when the rebuild landed. Cannot be earned.",
 		earn: { kind: "granted" },
@@ -98,12 +90,6 @@ export const TITLES: readonly Title[] = [
 export const findTitleById = (titleId: string): Title | undefined =>
 	TITLES.find((title) => title.id === titleId);
 
-/**
- * The roster as one account may see it. A granted title has no bar to work
- * towards, so listing one you do not hold offers nothing and gives away that a
- * closed cohort exists. An earned title stays listed while locked — its line is
- * the bar.
- */
 export const visibleTitles = (
 	ownedTitleIds: readonly string[]
 ): readonly Title[] => {
@@ -116,10 +102,6 @@ export const visibleTitles = (
 export const isExclusive = (title: Title): boolean =>
 	title.earn.kind === "race";
 
-/**
- * The metrics any title reads. The grant path only re-reads the ledger when an
- * action moved one of these, so a shop action never pays for a title check.
- */
 export const TITLE_METRICS: readonly string[] = [
 	...new Set(
 		TITLES.flatMap((title) =>
@@ -144,11 +126,6 @@ const isSatisfied = (
 	return countOf(earn.metric) >= earn.target;
 };
 
-/**
- * Which titles the counts now satisfy. Already-held titles are not filtered out
- * here: the insert is ON CONFLICT DO NOTHING, so the ledger is what decides a
- * title is new, and this stays a pure read of the counts.
- */
 export const titlesEarnedBy = (
 	counts: readonly ObjectiveCount[]
 ): readonly Title[] => {

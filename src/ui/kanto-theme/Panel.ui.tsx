@@ -9,13 +9,9 @@ import { Typography } from "./Typography.ui";
 export const PANEL_SURFACE =
 	"flex flex-col rounded-2xl border border-theme-faint bg-theme-faint";
 
-// Wrapping, so a narrow screen drops the meta onto its own line instead of
-// squeezing the label until it breaks mid-phrase ("Poll 1 / out of 5").
 const HEADER =
 	"flex flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
 const GLYPH = "size-2.5 shrink-0 rounded-xs bg-theme-muted";
-// The reading and any control over the body share one right-hand group, so the
-// header has a single thing to push to its end however many of them there are.
 const HEADER_END = "ml-auto flex flex-wrap items-center justify-end gap-2";
 const META =
 	"flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
@@ -45,7 +41,6 @@ export type PanelHeaderProps = {
 	label: string;
 	badge?: PanelBadge;
 	meta?: ReactNode;
-	/** A control over the panel's own body, opposite the reading of it. */
 	trailing?: ReactNode;
 };
 
@@ -105,11 +100,6 @@ export type PanelRowProps = {
 	trailing?: ReactNode;
 	theme?: KantoColor;
 	className?: string;
-	/**
-	 * Makes the whole row the link rather than seeding one inside it: a row is
-	 * a single thing, so a reader should not have to find the one word in it
-	 * that navigates. Kept a plain string, so the kit never learns the router.
-	 */
 	href?: string;
 };
 

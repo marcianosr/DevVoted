@@ -41,7 +41,6 @@ export const Committed: Story = {
 	args: { committed: 3 },
 };
 
-/** The gate has started, so the bet is locked and the refusal has to be read. */
 export const Locked: Story = {
 	args: {
 		committed: 3,

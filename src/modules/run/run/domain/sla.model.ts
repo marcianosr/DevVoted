@@ -19,7 +19,6 @@ export const committerFor = (configs: readonly Config[]): Config | undefined =>
 export const canCommitBand = (state: Pick<RunState, "status">): boolean =>
 	isPrepPhase(state);
 
-/** Whether the build still owes this gate a promise. Reads like `estimateOwed`. */
 export const bandOwed = (state: RunState): boolean =>
 	committerFor(state.build.configs) !== undefined &&
 	canCommitBand(state) &&
@@ -35,15 +34,6 @@ export const commitBand = (state: RunState, band: string): RunState => {
 	return { ...state, slaBand: band };
 };
 
-/**
- * A floor, like Planning Poker's: closing above the promised band still pays.
- * The rate is read off the band COMMITTED to rather than the one landed in,
- * which is the whole decision — promise PERFECT and land HEALTHY and the
- * agreement pays nothing, where a promise of OK would have paid.
- *
- * Only a clear reaches here, so SHAKY and DANGER pay nothing by construction:
- * there is no payout for a percentage of.
- */
 export const slaUpliftKb = (
 	configs: readonly Config[],
 	committed: CommittableBand | undefined,

@@ -17,27 +17,6 @@ type Scope = {
 	readonly onlyUserId?: string;
 };
 
-/**
- * Every honest answer, each row carrying how many runs the player had already
- * broken in that category before it.
- *
- * That running count of `wrong` answers is the island key: rows sharing one
- * count sat between the same two breaks, so grouping by it groups by unbroken
- * run. A `partial` increments nothing and is counted as nothing, which is
- * exactly `nextStreak`'s rule — it neither extends a run nor ends one.
- *
- * The window always partitions by category as well as by player, so one
- * statement serves both the poll screen's single category and the board's
- * twelve. Narrowing to one category in the `where` cannot change the result:
- * the partition only ever splits rows the filter has already kept.
- *
- * Three filters, three different reasons to be wrong without them:
- * `mirrored` rows graded the inverted question (ADR-038), so they would
- * fabricate and destroy runs arbitrarily; a null `user_id` is a deleted
- * account, and every one of them would collapse into a single phantom player;
- * a null `outcome` is a row the backfill never reached, which is unknown, not
- * a break.
- */
 const islandsIn = (reader: DbReader, scope: Scope) => {
 	const answers = reader
 		.select({
@@ -80,7 +59,6 @@ const islandsIn = (reader: DbReader, scope: Scope) => {
 		.as("islands");
 };
 
-/** The longest island each player has, one row per player per category. */
 const bestsIn = (reader: DbReader, scope: Scope) => {
 	const islands = islandsIn(reader, scope);
 
@@ -111,7 +89,6 @@ type LeaderRow = {
 	borderId: string | null;
 };
 
-/** A raw `sql` aggregate arrives as whatever the driver decided. */
 const countOf = (value: string | number | null | undefined): number =>
 	value === null || value === undefined ? 0 : Number(value);
 
@@ -140,13 +117,6 @@ const leaderOf = (
 	};
 };
 
-/**
- * One category's seat, for the poll screen that belongs to it.
- *
- * Ordering the tie-break by `user_id` keeps the leader stable — Postgres row
- * order is otherwise arbitrary and the seat would change hands between two
- * identical requests.
- */
 export const fetchCategoryLeader = async (
 	category: CategoryCode,
 	userId: string,
@@ -166,17 +136,6 @@ export const fetchCategoryLeader = async (
 	return { category, ...(leader === undefined ? {} : { leader }) };
 };
 
-/**
- * Every seat that somebody holds, for the community board.
- *
- * `row_number()` rather than twelve round trips: the fold is the expensive
- * part, and running it once per category would pay for it twelve times over.
- * The same `best desc, user_id asc` tie-break as the single read, for the same
- * reason.
- *
- * Categories nobody leads are simply absent — `seatsFor` draws them as open
- * seats, so the read never has to invent a row for a category with no answers.
- */
 export const fetchCategoryLeaders = async (
 	userId: string,
 	reader: DbReader = db

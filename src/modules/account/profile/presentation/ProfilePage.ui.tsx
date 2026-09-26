@@ -13,9 +13,7 @@ const COPY = {
 export type ProfilePageProps = {
 	user: AvatarUser;
 	isOwnProfile: boolean;
-	/** The one title the account wears, if it wears any (ADR-109). */
 	wornTitle?: string;
-	/** Owner-only panels: storage summary, the title shelf and the border shop. */
 	children?: ReactNode;
 };
 

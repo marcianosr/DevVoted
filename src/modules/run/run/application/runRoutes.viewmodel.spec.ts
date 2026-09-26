@@ -28,8 +28,6 @@ describe("syncTarget", () => {
 		expect(syncTarget("/run/shop", null, true)).toBeNull();
 	});
 
-	// A null view means "no run today, go start one" — but only once the read
-	// resolved. While it is unknown the same null must move nobody (DVTD-cmqj).
 	it("holds position when the run could not be read, though null alone sends home", () => {
 		expect(syncTarget("/run/new", null, true)).toBeNull();
 		expect(syncTarget("/run/new", null, false)).toBe("/run");
@@ -60,8 +58,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// One server status, four page turns: the payout, the answers, the shop,
-	// and the prep hub the shop feeds into (ADR-032).
 	it("stays put on any of the reward pages while rewarding", () => {
 		expect(
 			syncTarget(
@@ -93,9 +89,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// A retry shares the clear's status, so the sync is the only thing keeping the
-	// player off a payout screen that would name the gate they just missed and
-	// pay 0KB for it (ADR-037).
 	describe("while a missed gate is being replayed", () => {
 		const redoing = climbing({
 			status: "rewarding",
@@ -114,8 +107,6 @@ describe("syncTarget", () => {
 		});
 	});
 
-	// The failed gate closes on its answers too: strip → review, with the
-	// resume waiting on the review page.
 	it("stays put on the strip and review pages while a strip is owed", () => {
 		expect(
 			syncTarget(
@@ -133,8 +124,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// A waived peel (ADR-057) has nothing to repair, so the answers lead instead
-	// of a repair screen with an empty list.
 	it("sends a waived miss to the answers, not to the repair screen", () => {
 		expect(
 			syncTarget(
@@ -149,8 +138,6 @@ describe("syncTarget", () => {
 		).toBe("/run/review");
 	});
 
-	// Paying the last slot drops the debt to 0 mid-screen; the player must keep
-	// the repair screen and its own press, not be yanked to the answers.
 	it("leaves a player who just paid their peel on the repair screen", () => {
 		expect(
 			syncTarget(
@@ -165,7 +152,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// Landing on the status must always put the repair first.
 	it("redirects a stale screen to the strip page while a strip is owed", () => {
 		expect(
 			syncTarget(
@@ -176,8 +162,6 @@ describe("syncTarget", () => {
 		).toBe("/run/gate");
 	});
 
-	// The review is only ever this gate's answers, so it has no meaning once the
-	// status has moved on — the sync sends the player back to the live screen.
 	it("redirects the review page away once the gate is no longer being paid out", () => {
 		expect(
 			syncTarget(
@@ -205,9 +189,6 @@ describe("syncTarget", () => {
 		).toBe("/run/prep");
 	});
 
-	// /run is the day's hub, not a step in the climb: it reports what your run
-	// is doing and offers a press back into it, so pulling a live run off it
-	// would make its own Resume row unreachable.
 	it("leaves a live run standing on the hub", () => {
 		expect(
 			syncTarget(
@@ -221,8 +202,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// Prep is legal before the run starts, but not after gate 0 opened: once you
-	// are answering it, its stake is behind you, so a deep link goes to the poll.
 	it("sends a stale screen on gate 0 straight to the poll, never to prep", () => {
 		expect(
 			syncTarget(
@@ -240,8 +219,6 @@ describe("syncTarget", () => {
 		).toBe("/run/poll");
 	});
 
-	// DVTD-inrq: gate 0 states its terms on the same screen every later gate
-	// does, so the opening build and the opening stake are two page turns.
 	it("keeps the build and its prep both legal before the run starts", () => {
 		const opening = climbing({ status: "configuring", gatesCleared: 0 });
 		expect(syncTarget("/run/new", opening, false)).toBeNull();
@@ -249,8 +226,6 @@ describe("syncTarget", () => {
 		expect(syncTarget("/run/shop", opening, false)).toBe("/run/new");
 	});
 
-	// One screen, two verdicts (ADR-076), so one route — and the status is what
-	// says which verdict it wears.
 	it("serves both ends of a gate from the one gate route", () => {
 		expect(
 			syncTarget(
@@ -285,9 +260,6 @@ describe("syncTarget", () => {
 		).toBe("/run/over");
 	});
 
-	// The hub stays put once you are on it, but it is still where a run with
-	// nowhere else to go gets sent: the exemption is about the path you are ON,
-	// never about the target.
 	it("sends a day without a run back to the hub", () => {
 		expect(syncTarget("/run/new", null, false)).toBe("/run");
 	});
@@ -309,9 +281,6 @@ describe("syncTarget", () => {
 		).toBeNull();
 	});
 
-	// The daily lock (ADR-014): today's polls are spent, the run waits for
-	// tomorrow's segment. There is nothing to show on any run screen, so the
-	// player lands on the community board instead of a blank answer page.
 	describe("while the run awaits tomorrow's polls", () => {
 		const locked = {
 			status: "answering",
@@ -330,9 +299,6 @@ describe("syncTarget", () => {
 			expect(syncTarget("/run/prep", locked, false)).toBe("/run/community");
 		});
 
-		// The hub is the one screen with something to say about the wait: its
-		// Resume press carries the countdown, so it is not a blank page to be
-		// redirected off.
 		it("leaves the hub alone, countdown and all", () => {
 			expect(syncTarget("/run", locked, false)).toBeNull();
 		});

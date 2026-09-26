@@ -73,11 +73,6 @@ const toTenth = (value: number) =>
 const toHundredth = (value: number) =>
 	Math.round(Math.max(0, value) * HUNDREDTHS) / HUNDREDTHS;
 
-/**
- * Non-finite in means 0 out, not NaN out. The bar settles its reading during
- * render, and NaN never equals itself, so letting one through turns the
- * comparison below into an infinite re-render instead of a wrong number.
- */
 const clamped = (value: number) =>
 	Number.isFinite(value) ? Math.min(FULL, Math.max(0, value)) : 0;
 
@@ -112,13 +107,8 @@ const bandOf = (
 	return "danger";
 };
 
-/** Units held against the gate's HEALTHY units (ADR-106). */
 export type CoverageUnits = { held: number; healthy: number };
 
-/**
- * What the bar says out loud. The track is drawn in percent whatever it
- * speaks, so a units reading changes the figures and nothing in the geometry.
- */
 type SpokenFigures = {
 	headline: string;
 	held: string;
@@ -159,7 +149,6 @@ const figuresOf = (
 ): SpokenFigures =>
 	units === undefined ? figuresInPercent(held, healthy) : figuresInUnits(units);
 
-/** The visible twin of the aria reading: what a panel header says out loud. */
 export const CoverageReading = ({
 	held,
 	units,
@@ -190,11 +179,6 @@ const zonesOf = ({ floor, ok, healthy }: CoverageLadder) =>
 		{ band: "healthy", width: FULL - healthy },
 	] satisfies readonly { band: CoverageBandId; width: number }[];
 
-/**
- * Each boundary label grows away from its neighbours: "survive" ends on its
- * line, OK sits on its own, the gate's line starts on its line. A band with no
- * room has no edge to name, so its label goes with it.
- */
 const boundaryMarksOf = (
 	{ floor, ok, healthy }: CoverageLadder,
 	{ needed }: SpokenFigures

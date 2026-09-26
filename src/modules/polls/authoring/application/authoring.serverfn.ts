@@ -25,7 +25,6 @@ const ensureAdminAccess = async () => {
 	return data.user.id;
 };
 
-/** Whether the signed-in account may edit any poll — the edit screen's gate. */
 export const hasPollAdminAccess = createServerFn({ method: "GET" }).handler(
 	async () => {
 		const supabase = getSupabaseServerClient();
@@ -57,7 +56,6 @@ export const createPoll = createServerFn({ method: "POST" })
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 
-		// Every player-authored poll enters as a draft, whoever submits it.
 		return createPollService({
 			...data,
 			poll: { ...data.poll, status: "draft" },

@@ -39,10 +39,8 @@ export default meta;
 
 type Story = StoryObj<typeof RebaseList>;
 
-/** v1 lists subject lines, the way the real `rebase -i` does. */
 export const Categories: Story = {};
 
-/** v2 also names which polls take more than one answer, and those pay double. */
 export const WithAnswerTypes: Story = {
 	args: { rows: TYPED },
 };

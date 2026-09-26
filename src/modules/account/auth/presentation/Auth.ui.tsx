@@ -39,7 +39,6 @@ export type AuthProps = {
 	status: "pending" | "idle" | "success" | "error";
 	onSubmit: (credentials: AuthCredentials) => void;
 	message?: string;
-	/** Offered when the credentials look like an account that does not exist yet. */
 	retry?: { label: string; onRetry: (credentials: AuthCredentials) => void };
 	github?: { pending: boolean; onPress: () => void };
 };

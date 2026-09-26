@@ -15,7 +15,6 @@ import { Auth } from "~/modules/account/auth/presentation/Auth.ui";
 const NO_SUCH_ACCOUNT = "Invalid login credentials";
 const SIGN_UP_INSTEAD = "Sign up instead?";
 
-/** Tier 2: wires the login, signup-fallback and GitHub flows to the auth form. */
 export const Login = () => {
 	const router = useRouter();
 	const [githubPending, setGithubPending] = useState(false);

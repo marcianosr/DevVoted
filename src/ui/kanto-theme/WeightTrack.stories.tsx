@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { KANTO_BUILD_SPACE, kantoWeightFills } from "~/test/kantoPoll.factory";
 
-/** What the 8 rung bills, stated here so the story never imports the domain. */
 const KANTO_BUILD_SPACE_KB = 32;
 
 import { Build } from "./Build.ui";
@@ -92,7 +91,6 @@ export const RoomToSpare: Story = {};
 
 export const NearlyEmpty: Story = { args: { fills: NEARLY_EMPTY } };
 
-/** What the track says while an offer that crosses a rung sits armed (ADR-098). */
 export const PreviewingAnInstallThatCrossesARung: Story = {
 	args: {
 		held: 8,

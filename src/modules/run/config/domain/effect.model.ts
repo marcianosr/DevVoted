@@ -46,7 +46,6 @@ export type AnswerContext = {
 	readonly previouslyMissed: boolean;
 };
 
-/** A price quoted before the poll is known: with no category, no Focus can match. */
 export type PayoutContext = Omit<AnswerContext, "category"> & {
 	readonly category?: CategoryCode;
 };
@@ -69,12 +68,6 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.cacheHitStep !== undefined ||
 	config.roundsPartialUnitsUp !== undefined;
 
-/**
- * ADR-044 D5: a config's costs are never halved, so minifying may only soften a
- * factor that pays. Which of the opener and the throttle is the cost differs by
- * config — Overclock front-loads, Cold Start back-loads — so the side of 1 the
- * factor falls on decides, not which field carries it.
- */
 const minifiedFactor = (config: Config, factor: number): number =>
 	factor >= 1 ? minifiedMultiplier(config, factor) : factor;
 

@@ -10,11 +10,6 @@ const playerUUID = (index: number): string =>
 const climberUUID = (index: number): string =>
 	`c0ffee00-0000-4000-8000-${index.toString(16).padStart(12, "0")}`;
 
-/**
- * Archetypes are derived from the effects a config actually carries, never from
- * a hardcoded id list: `Config` has no family field, so a list would drift
- * silently every time the roster gains or loses a card.
- */
 const touches = (config: Config, keys: readonly (keyof Config)[]): boolean =>
 	keys.some((key) => config[key] !== undefined);
 
@@ -63,14 +58,12 @@ const RISK_POOL = poolWhere([
 
 const portraitOf = (slug: string): string => `/editors/${slug}.png`;
 
-/** A playable account: a real auth login, an unlock ledger, and a build style. */
 export type SeedPlayer = {
 	readonly id: string;
 	readonly displayName: string;
 	readonly email: string;
 	readonly githubUsername: string;
 	readonly role: "user" | "poll-editor" | "admin";
-	/** Shapes their seeded answer history, so category records differ per account. */
 	readonly accuracy: number;
 	readonly buildStyle: string;
 	readonly unlockedConfigIds: readonly string[];
@@ -78,23 +71,13 @@ export type SeedPlayer = {
 	readonly ownedSwatchIds?: readonly string[];
 	readonly peakStorageKb?: number;
 	readonly archivedStorage?: number;
-	/** Earned titles (ADR-109). The first is the one they wear. */
 	readonly ownedTitleIds?: readonly string[];
-	/**
-	 * Calendar-era runs (ADR-111). The migration that grants the legacy titles
-	 * never runs locally, so the seed reproduces what it would have left behind:
-	 * these runs, and the grants the two predicates read off them.
-	 */
 	readonly legacyCalendarRuns?: {
 		readonly finished: number;
 		readonly active?: boolean;
 	};
 };
 
-/**
- * The Elite Four and the rival, never a gym leader: a leader authors polls, and
- * a name that sat in both lists would climb the community board against itself.
- */
 export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	{
 		id: playerUUID(1),
@@ -168,18 +151,12 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 	},
 ];
 
-/**
- * Climbers populate the community board and author the polls — `polls.created_by`
- * is a notNull FK, and the poll byline renders their handle, photo and role.
- * They get no auth row: nobody needs to log in as them.
- */
 export type SeedClimber = {
 	readonly id: string;
 	readonly displayName: string;
 	readonly email: string;
 	readonly githubUsername: string;
 	readonly photoUrl: string;
-	/** Equipped, and the only border owned — a leader wears one badge, not a shelf. */
 	readonly borderId: string;
 	readonly accuracy: number;
 	readonly climb: {
@@ -193,15 +170,6 @@ export type SeedClimber = {
 	};
 };
 
-/**
- * The eight Kanto gym leaders, listed in reverse badge order so the community
- * ladder reads as the badge ladder: Giovanni sits at the top, Brock at the foot.
- *
- * Each wears the border whose colour is their own city's — Brock pewter, Misty
- * cerulean, Erika celadon — which is why the border ids look arbitrary here but
- * are not. Giovanni takes the leftover lavender; Viridian has no border of its
- * own.
- */
 export const SEED_CLIMBERS: readonly SeedClimber[] = [
 	{
 		id: climberUUID(1),
@@ -310,7 +278,6 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 	},
 ];
 
-/** Polls are authored by the climbers, round-robin, so bylines vary across a run. */
 export const POLL_AUTHOR_IDS: readonly string[] = SEED_CLIMBERS.map(
 	(climber) => climber.id
 );

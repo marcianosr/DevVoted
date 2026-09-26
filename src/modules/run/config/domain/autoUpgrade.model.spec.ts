@@ -7,15 +7,11 @@ import {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
-// Firing is decided by the count alone; the seed only picks the target.
-// Picks index the candidates sorted by id, verified against the LCG in
-// seededRandom: with three candidates, "beta" picks the first, "eta" the second.
 const PICKS_FIRST = "beta";
 const PICKS_SECOND = "eta";
 
 const NEEDED = 5;
 
-// Sorted candidate ids: dependabot, js, unit-tests.
 const build: readonly Config[] = [
 	CONFIGS.dependabot,
 	CONFIGS.js,
@@ -98,8 +94,6 @@ describe("autoUpgradeOnAnswer", () => {
 	});
 
 	it("bumps a Focus config no mastery has earned — merges land without review", () => {
-		// .js at L1 with zero JavaScript coverage anywhere: the shop would refuse
-		// this upgrade, Dependabot does not (Option A, 2026-08-20).
 		const result = answerCorrectly(build, NEEDED, PICKS_SECOND);
 		expect(result.bumps).toEqual(["js"]);
 	});
@@ -110,7 +104,6 @@ describe("autoUpgradeOnAnswer", () => {
 	});
 
 	it("changes nothing when the count completes but nothing can level", () => {
-		// Dependabot at its cap, ESLint has no level axis: no candidates.
 		const maxed = { ...CONFIGS.dependabot, level: 2 };
 		const stuck = [maxed, CONFIGS.eslint];
 		const result = answerCorrectly(stuck, 10, PICKS_FIRST);

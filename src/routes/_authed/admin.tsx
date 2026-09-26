@@ -60,7 +60,6 @@ const getAdminData = createServerFn({ method: "GET" }).handler(async () => {
 	const { getTodayDateString } = await import("~/shared/lib/dateUtils");
 
 	try {
-		// Get today's daily poll using the new daily_polls table
 		const todayDate = getTodayDateString();
 		const activePolls = await db
 			.select({
@@ -307,7 +306,6 @@ function AdminPanel() {
 			)}
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-				{/* System Status */}
 				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-white">
 						System Status
@@ -334,7 +332,6 @@ function AdminPanel() {
 					</div>
 				</div>
 
-				{/* Active Polls */}
 				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-white">
 						Active Polls
@@ -365,7 +362,6 @@ function AdminPanel() {
 					)}
 				</div>
 
-				{/* Recent Responses */}
 				<div className=" rounded-lg shadow-md p-6">
 					<h2 className="text-xl font-semibold mb-4 text-white">
 						Recent Responses
@@ -400,7 +396,6 @@ function AdminPanel() {
 				</div>
 			</div>
 
-			{/* Past Polls Section */}
 			<div className="mt-8 rounded-lg shadow-md p-6">
 				<h2 className="text-xl font-semibold mb-4 text-white">
 					Past Daily Polls ({data.pastPolls.length})
@@ -474,7 +469,6 @@ function AdminPanel() {
 				)}
 			</div>
 
-			{/* Users Section */}
 			<UsersSection
 				users={data.allUsers as UserRow[]}
 				emailSending={emailSending}

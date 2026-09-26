@@ -14,7 +14,6 @@ const LIST = `grid w-full gap-3 ${CARD_FLOW}`;
 
 const SEPARATOR = "·";
 
-/** The registry has room to spell its prices out, so nothing hides on hover. */
 const PRICE_ON: DetailReveal = "always";
 
 export type RegistryProps = {
@@ -23,10 +22,6 @@ export type RegistryProps = {
 	heading?: boolean;
 	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
-	/**
-	 * Opens or shuts every offer at once. Read by the screen, which owns the
-	 * panel header the press sits in; the shelf itself only lists the cards.
-	 */
 	onToggleAll?: () => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
@@ -34,12 +29,6 @@ export type RegistryProps = {
 
 export type RegistrySummaryProps = { offers: number; slotPrice: string };
 
-/**
- * The slot price wears a badge whatever it says. `Figures` only badges what it
- * recognises as a figure, which silently left "free" bare beside a "32 KB" that
- * had one (ADR-066). The spaces stay inside the text so the line still reads as
- * a sentence wherever it lands, flex header or inline heading.
- */
 export const RegistrySummary = ({
 	offers,
 	slotPrice,

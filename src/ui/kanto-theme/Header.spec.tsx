@@ -14,10 +14,6 @@ const FUNDS = {
 	kb: 1843,
 } as const;
 
-/**
- * The digits are a CSS counter, so they never reach the DOM: the reading is the
- * figure's accessible name, and the value it is counting to is the property.
- */
 const figureOf = (reading = "1843 KB") =>
 	screen.getByRole("img", { name: reading });
 

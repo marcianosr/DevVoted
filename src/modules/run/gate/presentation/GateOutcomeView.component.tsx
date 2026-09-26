@@ -144,10 +144,6 @@ export const gateOutcomeFrameOf = (
 	};
 };
 
-/**
- * ADR-076 Decision 4's exit. The viewmodel can only offer the arm; the run it
- * ends lives out here, so without this the button was drawn and did nothing.
- */
 const refusing = (
 	tail: GateOutcomeTail | undefined,
 	onRefuse: (() => void) | undefined

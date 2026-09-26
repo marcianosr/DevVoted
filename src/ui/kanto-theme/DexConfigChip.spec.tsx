@@ -32,7 +32,6 @@ const chipOf = (container: HTMLElement): HTMLElement => {
 	return chip;
 };
 
-/** The hint is the wrapper's last child; the i's glyph is aria-hidden too, so never query by that alone. */
 const hintOf = (container: HTMLElement) =>
 	container.firstElementChild?.lastElementChild;
 

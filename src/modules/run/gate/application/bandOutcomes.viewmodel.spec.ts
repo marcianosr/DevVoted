@@ -34,7 +34,6 @@ const CALIBRATION = ladderAt(0);
 const SECOND = ladderAt(1);
 const MID = ladderAt(4);
 
-/** An audit that scales every line until OK has no room left under HEALTHY. */
 const SQUEEZED: CoverageLadder = { floor: 30, ok: 49.6, healthy: 50 };
 
 const bandsOf = (ladder: CoverageLadder) =>
@@ -228,11 +227,6 @@ describe("the band table", () => {
 		);
 	});
 
-	/**
-	 * The gain used to arrive as a unit count read as a percentage, a hundred
-	 * times too high, so every line divided down to one answer and the two
-	 * clearing bands quoted the same KB.
-	 */
 	it("never pays a thin clear what it pays a healthy one", () => {
 		const paid = bandOutcomesFor(frameFor({ coverageGainPercent: 15 }));
 		const kbOf = (band: string) =>

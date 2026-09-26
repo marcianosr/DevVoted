@@ -198,8 +198,6 @@ describe("451 Unavailable For Legal Reasons", () => {
 		expect(redactedOptionIdsFor(optioned(4), held, 3)).toEqual([]);
 	});
 
-	// The property the whole audit rests on: if redaction tracked correctness,
-	// ????? would tell you the answer instead of hiding it.
 	it("never seals an option because it is wrong", () => {
 		const poll = optioned(4);
 		const flipped: RunPoll = {

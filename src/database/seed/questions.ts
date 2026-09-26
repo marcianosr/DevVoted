@@ -1,10 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-/**
- * One authored poll. `correct` must hold at least one index or the poll is
- * silently dropped from every climb — `getOrCreateDailyRunSeed` only admits
- * published polls that have a correct option.
- */
 export type SeedQuestion = {
 	readonly category: CategoryCode;
 	readonly question: string;
@@ -1073,11 +1068,6 @@ const VUE_QUESTIONS: readonly SeedQuestion[] = [
 	},
 ];
 
-/**
- * The authored pool, ordered category by category. The seed publishes every one
- * of these and writes all of them into today's sequence, so a full 13-gate run
- * (65 polls, plus 5 for each failed gate) fits in one sitting.
- */
 export const SEED_QUESTIONS: readonly SeedQuestion[] = [
 	...CSS_QUESTIONS,
 	...JS_QUESTIONS,

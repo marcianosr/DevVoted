@@ -59,11 +59,6 @@ export type RegistryDeal = {
 	onBuy?: () => void;
 };
 
-/**
- * The registry's rolled upgrade, as opposed to the shop's Upgrade press: the
- * offered rung can sit more than one above the held one, it sells at the
- * registry price, and there is no press ladder to total in a footer.
- */
 export const registryUpgradesFor = (
 	offer: Config,
 	heldLevel: number,
@@ -100,23 +95,12 @@ const UNLOCKS_AT = "Unlocks at";
 const COVERAGE_WORD = "coverage, you have";
 const SHORT_TRAIL = "short";
 
-/**
- * The Build panel's own upgrade, as opposed to the registry's rolled one: it
- * climbs exactly one rung, pays the `upgradeStorageCost` ladder, and answers to
- * the coverage gate the rolled offer waives.
- */
 export type BuildUpgradeDeal = {
 	storageKb: number;
-	/** Coverage held in the config's focus category; ignored by configs without one. */
 	coveragePct: number;
 	onBuy?: () => void;
 };
 
-/**
- * `upgrade` refuses silently in the reducer, so the words have to be worked out
- * here or the press reads as broken. The coverage gate comes first: it is the
- * requirement a player cannot pay their way out of.
- */
 export const upgradeRefusalOf = (
 	config: Config,
 	held: number,
@@ -182,11 +166,6 @@ export const infoFor = (config: Config, note?: string): ConfigFactsProps => ({
 	sellPrice: kbLabel(sellRefund(config)),
 });
 
-/**
- * A config on a screen that only reports what already happened. It carries no
- * sell price because there is no sale to make: quoting one is the same failure
- * as hiding a price you could act on.
- */
 export const settledFactsFor = (config: Config): ConfigFactsProps =>
 	factsOf(config);
 
@@ -204,9 +183,7 @@ const LOSS_COLOR: KantoColor = "cinnabar";
 const BUMP_COLOR: KantoColor = "vermillion";
 const BUMP_WORD = "bump in";
 
-/** Neutral: a config sitting a poll out has neither gained nor lost anything. */
 const SKIP_COLOR: KantoColor = "pewter";
-/** The cap is room still to spend, so it reads as a term rather than a gain. */
 const CAP_COLOR: KantoColor = "saffron";
 const CAP_WORDS = "KB left";
 const HOLDING_COLOR: KantoColor = "saffron";
@@ -250,15 +227,8 @@ const skipWords = (why: SkipReason): string =>
 
 export type PollNote = { badge?: ConfigChipBadge; detail?: string };
 
-/**
- * What a config is worth on the poll in front of you. A build that never states
- * this leaves the payout unattributable, which is the whole of DVTD-zr20.
- */
 export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 	if (status === undefined) return {};
-	// A badge, not a note: why a config is sitting the poll out is the same kind
-	// of fact as what it is paying — the one thing the chip states about this
-	// poll — and a card whose only state read as muted prose looked stateless.
 	if (status.kind === "skipped")
 		return { badge: { label: skipWords(status.why), color: SKIP_COLOR } };
 	if (status.kind !== "online") return {};
@@ -271,14 +241,9 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 			},
 		};
 
-	// Before the bump: a faucet's cap is the figure that moves on every answer,
-	// and it is the one thing that decides whether the config pays at all.
 	if (status.capLeftKb !== undefined)
 		return {
 			badge: {
-				// The figure travels as a number, not inside the words: it drains on
-				// every correct answer, and the chip animates it down from whatever it
-				// last read rather than swapping one frozen string for another.
 				count: status.capLeftKb,
 				label: CAP_WORDS,
 				color: CAP_COLOR,
@@ -290,8 +255,6 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 			badge: { label: `${BUMP_WORD} ${status.bumpIn}`, color: BUMP_COLOR },
 		};
 
-	// Saffron, not viridian: the figure is held rather than earned, and the
-	// colour is the only thing on the chip that says which.
 	if (status.holdingKb !== undefined)
 		return {
 			badge: {

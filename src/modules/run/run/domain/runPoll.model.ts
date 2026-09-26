@@ -22,9 +22,7 @@ export type PollAuthor = {
 	readonly handle: string;
 	readonly avatarUrl?: string;
 	readonly borderUrl?: string;
-	/** Account authority: Poll editor or Admin. Assigned, never earned. */
 	readonly role?: string;
-	/** The title the author wears, earned through play (ADR-109). */
 	readonly title?: string;
 };
 
@@ -38,11 +36,6 @@ export type RunPoll = {
 	readonly options: readonly RunOption[];
 	readonly explanation?: string;
 	readonly author?: PollAuthor;
-	/**
-	 * This account has answered this poll before and did not get it fully right.
-	 * Attached when the sequence is read, never stored on the snapshot: the set
-	 * shrinks as the player learns, so a persisted flag would go stale.
-	 */
 	readonly missedBefore?: boolean;
 };
 

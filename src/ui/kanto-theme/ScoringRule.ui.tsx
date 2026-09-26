@@ -3,11 +3,6 @@ import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
 const HEAD = "flex w-full border-b border-theme-faint pb-2";
-/**
- * One column until there is room for a row. The panel is only 288px wide on a
- * phone, where a case, its ladder and its note side by side left each of them
- * one word per line.
- */
 const ROW =
 	"flex w-full flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3";
 const CASE = "shrink-0 sm:w-28";

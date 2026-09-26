@@ -76,14 +76,6 @@ export type DexTabId =
 
 export type DexTab = TabItem & { id: DexTabId; color: KantoColor };
 
-/**
- * One colour per collection, so the whole screen reads as the tab you opened.
- *
- * Configs is the exception that proves it: a card grid is almost entirely
- * badges, and viridian is the one tab colour that tints the ground hard enough
- * to swallow them. Pallet sets no ground chroma, so the badges keep their own
- * colours and a gain still reads green against them.
- */
 export const DEX_TABS = [
 	{ id: "polls", label: "polls", color: "cerulean" },
 	{ id: "configs", label: "configs", color: "pallet" },
@@ -102,8 +94,6 @@ export const dexThemeOf = (activeId: string): KantoColor =>
 	(DEX_TABS.find((tab) => tab.id === activeId) ?? FALLBACK_TAB).color;
 
 const heldOf = (held: number, total: number): string => `${held} of ${total}`;
-
-/* ---------------------------------------------------------------- polls -- */
 
 const POLLS_NOTE =
 	"A poll enters the dex the first time it is dealt to you. Repeats show how often and how you did.";
@@ -139,8 +129,6 @@ export const dexPollsFor = (
 	};
 };
 
-/* -------------------------------------------------------------- configs -- */
-
 const CONFIGS_NOTE =
 	"Configs in the deck can be dealt into a hand or offered in the shop. A version ladder is bought with storage inside a run and lost when the run ends, so the tag names the top of that ladder, never a version you hold. A locked config shows its weight and, behind the i, how to unlock it; its name and effect show once it is earned.";
 const CONFIGS_META = "by weight";
@@ -154,12 +142,6 @@ const pathFor = (caption: UnlockPathCaption): DexUnlockPath => ({
 			: null,
 });
 
-/**
- * A config's level is bought with storage during a run and dies with it, so
- * there is no held version to state here. The chip names the ladder's ceiling
- * instead, which is a fact about the config rather than about a run.
- * `undefined` for a config with no ladder, which is most of the roster.
- */
 const maxVersionOf = (config: Config): number | undefined =>
 	isUpgradable(config) ? maxLevelOf(config) : undefined;
 
@@ -193,7 +175,6 @@ const chipFor = (entry: ConfigdexEntry): DexConfigChipProps => {
 
 const isGranted = (chip: DexConfigChipProps) => chip.state === "granted";
 
-/** Inside a weight, what you hold reads before what you owe; roster order otherwise. */
 const groupOf = (
 	weight: number,
 	chips: readonly DexConfigChipProps[]
@@ -208,7 +189,6 @@ const groupOf = (
 	};
 };
 
-/** Heaviest weight first: the header says "by weight". */
 const byWeight = (
 	chips: readonly DexConfigChipProps[]
 ): readonly DexWeightGroup[] =>
@@ -234,15 +214,12 @@ export const dexConfigsFor = (
 	};
 };
 
-/* ------------------------------------------------------------- services -- */
-
 const SERVICES_NOTE =
 	"A service is unlocked once, for good. A registry service is then bought in the shop with the run's own storage, as often as you can pay; a run service is bought once a run, before it, from the archive. The git tag is bought in the shop today and carries into your next run.";
 const SERVICES_META = "registry, then run";
 const NOT_YET_SOLD = "not for sale yet";
 const FREE = "free";
 
-/** Where it is bought and how long the purchase lasts, in the words of the mock. */
 const SERVICE_LINES: Record<RegistryControlId, string> = {
 	rebuild: "Registry · this visit",
 	extend: "Registry · rest of the run",
@@ -293,8 +270,6 @@ export const dexControlsFor = (
 	note: SERVICES_NOTE,
 });
 
-/* ---------------------------------------------------------------- audits -- */
-
 const AUDITS_NOTE =
 	"An audit is logged the first time it fires. Reading it here does not stop it happening again.";
 const AUDITS_META = "HTTP codes";
@@ -324,8 +299,6 @@ export const dexAuditsFor = (
 	meta: AUDITS_META,
 	note: AUDITS_NOTE,
 });
-
-/* ------------------------------------------------------------- swatches -- */
 
 const SWATCHES_NOTE =
 	"A swatch is earned by answering all five polls of its gate. Clearing the gate alone does not mint it.";
@@ -358,8 +331,6 @@ export const dexSwatchesFor = (
 	meta: SWATCHES_META,
 	note: SWATCHES_NOTE,
 });
-
-/* ----------------------------------------------------------------- runs -- */
 
 const RUNS_NOTE =
 	"Coverage is the run's final score against its window. A run ends at the gate that held it.";

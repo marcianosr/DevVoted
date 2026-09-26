@@ -27,11 +27,6 @@ export const fetchRunProgress = async (runId: number): Promise<number> => {
 	return row.polls_answered;
 };
 
-/**
- * The viewer's polls from today's segment that they are already PAST
- * (answered or linted). Polls at or beyond currentIndex stay invisible to the
- * community page — their community data would spoil the climb ahead.
- */
 export const fetchConsumedPollsForDay = async (
 	runId: number,
 	date: string,
@@ -108,17 +103,9 @@ export type SessionAnswerRow = {
 	photoUrl: string | null;
 	borderUrl: string | null;
 	optionId: number | null;
-	/** Answered at a Mirror gate, so the picks are the poll's WRONG options on
-	 * purpose (ADR-038) — the board grades them against that expectation. */
 	mirrored: boolean;
 };
 
-/**
- * Every session answer given on `date`, across ALL of the day's polls — one
- * row per picked option. Feeds both the per-poll breakdowns and the
- * day-percentile ("top X%"), which needs everyone's full day, not just the
- * polls the viewer consumed.
- */
 export const fetchSessionAnswersForDay = async (
 	date: string
 ): Promise<SessionAnswerRow[]> => {
@@ -152,27 +139,10 @@ export const fetchSessionAnswersForDay = async (
 };
 
 export type PollSplitRecord = {
-	/** Everyone who has ever answered the poll, both loops. */
 	answeredCount: number;
 	picksByOptionId: Readonly<Record<number, number>>;
 };
 
-/**
- * How the whole community has answered one poll, over the poll's entire life and
- * across both loops (ADR-005) — deliberately not scoped to today's date or to
- * `mode = 'session'` the way the community board is. Telemetry sells this while
- * the poll is still open, so a day-scoped pool would leave the config dead for
- * every early climber and thin for everyone else.
- *
- * Returns pick counts only. Correctness never joins this query: the caller hands
- * the numbers to a player who has not answered yet.
- *
- * Mirrored answers are excluded (ADR-038). The split reports what the room thinks
- * the answer is, and a player at a Mirror gate was asked for the incorrect
- * options — their picks would invert the very signal being sold. A smaller honest
- * sample beats a larger misleading one, and Telemetry's L2 upgrade shows that
- * sample size for exactly this reason.
- */
 export const fetchPollSplit = async (
 	pollId: number
 ): Promise<PollSplitRecord> => {

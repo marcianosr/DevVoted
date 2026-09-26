@@ -141,10 +141,6 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"repackage",
 ];
 
-/**
- * The server names the seed an open or a repackage draws from; the client never
- * does, and the wire schema refuses one it sends.
- */
 export const withSeed = (action: RunAction, seed: string): RunAction =>
 	action.type === "open-audit" || action.type === "repackage"
 		? { ...action, seed }
@@ -153,19 +149,8 @@ export const withSeed = (action: RunAction, seed: string): RunAction =>
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
 
-/**
- * The two actions that walk out of prep and open a gate. Gate 0 leaves through
- * `start` and every gate after it through `finish-reward`, in two different
- * files — so a rule about leaving prep is keyed on the action rather than
- * written into either one, where it would hold for one age of the run only.
- */
 const PREP_EXITS: readonly RunAction["type"][] = ["start", "finish-reward"];
 
-/**
- * What prep is still waiting on. A config the player installed may ask for the
- * input its own effect reads, and the gate holds until it gets one; the screen
- * that states the hold also carries the control that lifts it.
- */
 export const prepHold = (state: RunState): boolean =>
 	canVendorLock(state) || estimateOwed(state) || bandOwed(state);
 
@@ -180,10 +165,6 @@ const isAction = <K extends RunAction["type"]>(
 	type: K
 ): action is Extract<RunAction, { type: K }> => action.type === type;
 
-/**
- * Widens one typed rule into the table's shape. The narrowing lives here rather
- * than in each entry, so a rule states only its own action type and payload.
- */
 const on = <K extends RunAction["type"]>(spec: {
 	readonly type: K;
 	readonly when?: (state: RunState) => boolean;
@@ -203,17 +184,10 @@ const inStatus =
 	(state: RunState): boolean =>
 		statuses.includes(state.status);
 
-// A config may be dropped freely while rewarding, but mid-gate only before the
-// first answer lands — once the window has scored, the build is what it was.
 const canDrop = (state: RunState): boolean =>
 	state.status === "rewarding" ||
 	(state.status === "answering" && state.window.answered === 0);
 
-/**
- * First match wins, so order is behaviour. `minify` appears twice on purpose:
- * peeling and shopping spell the same action differently, and the status is the
- * only thing that separates them.
- */
 const RULES: readonly ActionRule[] = [
 	on({
 		type: "install",
@@ -398,8 +372,6 @@ const reduce = (state: RunState, action: RunAction): RunState => {
 	return rule ? rule.run(state, action) : state;
 };
 
-// A refused action returns the state it was handed, identity included, so the
-// mark is only ever taken off a state something actually happened to.
 export const runReducer = (state: RunState, action: RunAction): RunState => {
 	const next = reduce(state, action);
 	return next === state ? state : withPeakStorage(next);

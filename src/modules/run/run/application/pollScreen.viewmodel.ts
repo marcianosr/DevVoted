@@ -99,11 +99,6 @@ export const auditPropsOf = (
 			cue: audit.answerCue ?? audit.description,
 		}));
 
-/**
- * The one place this screen names a gate. The header used to fall back to its
- * own copy of the string and the close button needs the same words, so both read
- * it from here rather than drifting apart.
- */
 export const gateLabelFor = (gate: number): string =>
 	gateTitleOf(gateSwatchAt(gate));
 
@@ -134,7 +129,6 @@ const PAID_COLOR = {
 	wrong: "cinnabar",
 } as const;
 
-/** What `.length` buys: the gate's running tally, or nothing without it. */
 export const pollHoldsFor = (view: RunView): string | undefined => {
 	const count = view.correctAnswersThisGate;
 	if (count === null) return undefined;
@@ -181,11 +175,6 @@ const outcomeClause = (attempts: number, misses: number): string => {
 	return `you missed it ${timesWord(misses)}`;
 };
 
-/**
- * How hard the room found the poll. Stated before the question is read, which
- * is the only place it is worth anything: it is the reason to spend a peek, not
- * a verdict on having spent one.
- */
 export const pollDifficultyFor = (stats: PollStats): PollFact => {
 	const band = difficultyBandOf(stats);
 	if (band === "untested") {
@@ -200,7 +189,6 @@ export const pollDifficultyFor = (stats: PollStats): PollFact => {
 	};
 };
 
-/** Absent until this account has answered the poll — there is nothing to say. */
 export const pollHistoryFor = (stats: PollStats): PollFact | undefined => {
 	if (!isSeenBefore(stats)) return undefined;
 
@@ -219,11 +207,6 @@ export const pollHistoryFor = (stats: PollStats): PollFact | undefined => {
 	};
 };
 
-/**
- * The band, or nothing. Undefined while an answer is on screen: the facts are
- * what you read *before* the question, and the personal half would be a tick
- * out of date the moment the answer lands.
- */
 export const pollFactsFor = (
 	poll: PollView | undefined
 ): Omit<PollFactsProps, "trailing"> | undefined => {
@@ -236,13 +219,6 @@ export const pollFactsFor = (
 	};
 };
 
-/**
- * Who leads the poll's category, under the byline.
- *
- * Withheld entirely while the category is hidden: the row names the topic, so
- * blinding the header badge and leaving this would hand back the very thing the
- * audit took.
- */
 export const categoryLeaderFor = (
 	view: RunView,
 	poll: PollView | undefined
@@ -259,12 +235,6 @@ const PICKED_WORD = "picked";
 const PICK_ONE = "pick an answer first";
 const PICK_EVERY = "pick every answer that fits";
 
-/**
- * The press and the count beside it come from the same number, so the footer can
- * never offer to lock in more answers than the question holds. A select-all poll
- * asks for every fitting option rather than for "an answer", because a partial
- * set scores a partial ladder and the refusal is the only place that is said.
- */
 export const pollCommitFor = (
 	answerType: AnswerType,
 	picked: number,
@@ -283,7 +253,6 @@ export const pollCommitFor = (
 	};
 };
 
-/** While an answer is on screen the step is the poll just answered, not the next one. */
 export const pollLabelFor = (view: RunView, revealing = false): string => {
 	const answered = view.answeredThisGate.length;
 	const step = revealing
@@ -324,7 +293,6 @@ export const pollKeysFor = (view: RunView): readonly PollKey[] =>
 		.map((option, index) => ({ letter: letterAt(index), id: option.id }))
 		.filter((key) => !view.disabledOptionIds.includes(key.id));
 
-/** Percentages keep one decimal, so the badge reads as the panel meta does. */
 const coveragePercent = (held: number): string =>
 	`${roundToOneDecimal(held).toFixed(1)}%`;
 
@@ -381,11 +349,6 @@ const payoutRowFor = (
 	...(current ? { current: true } : {}),
 });
 
-/**
- * Every gate the run has scored. History is the point here, which is why the
- * gate just opened is left out: a debrief that lists the next gate's empty
- * slots asks the player to read a row that says nothing yet.
- */
 export const runPaidFor = (view: RunView): PollScoresProps => {
 	const gate = view.gateStake.gateNumber;
 
@@ -398,13 +361,6 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 	};
 };
 
-/**
- * The gate in hand only. The run's whole payout history is the debrief's job:
- * on the screen you answer on, every earlier gate is a row you cannot act on.
- *
- * Every chip carries its own receipt, so any poll in the gate explains itself
- * on hover rather than only the one just answered (ADR-095).
- */
 export const pollPaidFor = (view: RunView): PollScoresProps => {
 	const gate = view.gateStake.gateNumber;
 	const answers = answersPerGate(view.allAnswered, gate)[gate] ?? [];
@@ -435,7 +391,6 @@ export type PollPress = {
 	readonly label: string;
 	readonly ready: boolean;
 	readonly refusal: string | undefined;
-	/** Only a toggle carries this: a one-shot press has no pressed state to state. */
 	readonly armed?: boolean;
 };
 
@@ -525,10 +480,6 @@ const pressesOf = (view: RunView): readonly PollPress[] => {
 	});
 };
 
-/**
- * One source for both the chip badges and the footer count, so the count can
- * never again promise a press the screen does not draw (ADR-069).
- */
 export const pollPressesOf = (view: RunView): readonly PollPress[] => {
 	const offline = offlineIdsOf(view);
 	return pressesOf(view).filter((press) => !offline.has(press.configId));
@@ -559,11 +510,6 @@ export type PressHandlers = {
 	readonly onPress?: (action: PressAction, configId: string) => void;
 };
 
-/**
- * A refused press wears its reason as the label. `hint` only reaches the DOM as
- * an aria-label, which no sighted player reads and which would replace the
- * button's own name for everyone else.
- */
 const badgesFor = (
 	press: PollPress | undefined,
 	onPress: PressHandlers["onPress"],
@@ -646,20 +592,12 @@ const QUIET: FigureTone = "quiet";
 
 const unitsWord = (value: number): string => `${roundToTwoDecimals(value)}`;
 
-/**
- * Two fixed decimals, so right-aligning the column also aligns the decimal
- * points: the receipt has to read as the arithmetic it is (ADR-095).
- */
 const receiptUnits = (value: number): string =>
 	roundToTwoDecimals(value).toFixed(2);
 
 const contributionWord = (value: number): string =>
 	`${value > 0 ? "+" : ""}${receiptUnits(value)}`;
 
-/**
- * Only a multiplier needs one. An adder's sold form is the units it added, and
- * the figure already states those.
- */
 const soldFormTagsFor = ({
 	factor,
 }: CoverageConfigBonus): readonly LedgerTag[] | undefined =>
@@ -697,12 +635,6 @@ const bonusRowFor = (
 	};
 };
 
-/**
- * The answer's receipt: where the figure in the payout badge came from. One row
- * per contributor, each stating the units it added, so the column sums to the
- * total it closes on. A multiplier keeps the factor it was sold in as a tag
- * beside its name (ADR-095, amending ADR-084).
- */
 export const pollBreakdownFor = (
 	view: RunView,
 	answered: AnsweredPoll

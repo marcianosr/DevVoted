@@ -10,7 +10,6 @@ export type RunRecapProps = {
 	runId: number;
 };
 
-/** Tier 2: one finished climb, read-only, at a URL worth keeping. */
 export const RunRecap = ({ runId }: RunRecapProps) => {
 	const { view, isPending, errorMessage } = useRunRecap(runId);
 	const navigate = useNavigate();
@@ -23,8 +22,6 @@ export const RunRecap = ({ runId }: RunRecapProps) => {
 		);
 	}
 
-	// A run belonging to someone else reads the same as one that never existed:
-	// the service refuses both without distinguishing them.
 	if (!view) {
 		return (
 			<Screen theme="pewter" width="narrow">

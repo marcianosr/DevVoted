@@ -25,25 +25,16 @@ const TRACK_SIZE = "small";
 export type TodayPress = { label: string; onPress?: () => void };
 
 export type TodayRun = {
-	/** Run state picks live-vs-over, so the caller states it (ADR-102). */
 	title: string;
-	/** "gate 4 of 12 · 296 KB stored" */
 	standing: string;
 	swatches: readonly SwatchFill[];
-	/** "today’s 5 polls are ready", or the wait until the next segment drops. Read under the press. */
 	pollsNote: string;
 };
 
 export type TodayScreenProps = {
 	swatch: GateSwatch;
 	run: TodayRun | null;
-	/** Start, Resume, or the wait itself — a press with no handler is refused. */
 	action: TodayPress;
-	/**
-	 * How many of today's polls are still unanswered, stood in the press's own
-	 * mark. A spent day reads 0 there while the press reads the wait, so the
-	 * two halves of "none left, and here is when more land" arrive together.
-	 */
 	pollsLeft?: number;
 	polls: { detail: string; press: TodayPress };
 	community: { detail: string; press: TodayPress };
@@ -80,7 +71,6 @@ const TodayRow = ({ icon, label, detail, press }: TodayRowProps) => (
 	</Panel.Row>
 );
 
-/** The /run hub: what your climb is doing today, and the ways off it. */
 export const TodayScreen = ({
 	swatch,
 	run,

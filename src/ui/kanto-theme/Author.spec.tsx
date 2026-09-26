@@ -6,7 +6,6 @@ import { Author } from "./Author.ui";
 const BORDER = "/borders/grass.png";
 const PHOTO = "/editors/brock.png";
 
-// The handle is a link now, so the credit spans several elements.
 const creditIs = (whole: string) => (_: string, element: Element | null) =>
 	element?.textContent === whole &&
 	!Array.from(element.children).some((child) => child.textContent === whole);

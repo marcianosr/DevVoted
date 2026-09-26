@@ -17,7 +17,6 @@ export const answeredLabelOf = (answered: number): string =>
 export const scoreLabelOf = (correct: number, answered: number): string =>
 	`${correct}/${answered}`;
 
-/** An unseen poll gives up nothing, its category included. */
 export type DexPollRow = { id: number } & Redactable<{
 	category: string;
 	question: string;

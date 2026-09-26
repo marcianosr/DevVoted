@@ -4,7 +4,6 @@ import { RunOverView } from "~/modules/run/run/presentation/RunOverView.componen
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/** Tier 2: the end-of-run summary for a won or dead climb. */
 export const RunOver = () => {
 	const { view } = useTodaysRun();
 	const { start } = useRunActions();

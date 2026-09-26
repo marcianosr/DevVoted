@@ -28,7 +28,6 @@ export type AuditView = {
 	readonly answerCue?: string;
 	readonly suppressed: boolean;
 	readonly suppressedBy?: Config;
-	/** The rival who fired it, where the audit is one a rival locked in (ADR-099). */
 	readonly sentBy?: IncidentSender;
 };
 
@@ -37,13 +36,7 @@ export type GateStake = {
 	readonly pollsPerGate: number;
 	readonly coverageLadder: GateLadder;
 	readonly coverageHeld: number;
-	/**
-	 * The same reading with this window's own units taken back out: what the run
-	 * held when the gate opened. Fixed for the whole window, including a retry,
-	 * so a price quoted against it cannot move while the window is played.
-	 */
 	readonly coverageAtOpen: number;
-	/** The same reading in units, so a screen can say "12 of 15" rather than a percentage. */
 	readonly unitsHeld: number;
 	readonly audits: readonly AuditView[];
 	readonly peelSlotsOnFailure: number;

@@ -2,7 +2,6 @@ import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { spaceFitting } from "~/modules/run/run/domain/rules.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 
-/** One installed config as Postgres projects it out of the blob: nothing the roster can restate. */
 export type InstalledConfigRef = {
 	readonly id: string;
 	readonly level: number | null;
@@ -21,7 +20,6 @@ export type PublicConfig = {
 	readonly level?: number;
 };
 
-/** A build as any other player may read it (ADR-101): what is installed, never what was answered. */
 export type PublicBuild = {
 	readonly configs: readonly PublicConfig[];
 	readonly vendorLockedConfigId?: string;
@@ -61,12 +59,6 @@ export const publicBuildOf = ({
 export const publicWeightOf = (build: PublicBuild): number =>
 	build.configs.reduce((total, config) => total + config.slots, 0);
 
-/**
- * The space a build rents, read from the outside (ADR-098). Mirrors
- * `spaceForBuild`, including the vendor lock's exemption (ADR-087): the locked
- * config occupies the build but is not what the rung is billed on, so a reader
- * sees the same "x of y" its owner does.
- */
 export const publicSpaceOf = (build: PublicBuild): number =>
 	spaceFitting(
 		build.configs

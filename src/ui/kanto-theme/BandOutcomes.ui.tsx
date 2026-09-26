@@ -49,7 +49,6 @@ export type BandOutcomesProps = {
 	outcomes: readonly BandOutcome[];
 	lead?: readonly LeadLine[];
 	objectives?: ObjectivesProps;
-	/** Where the window actually stands, read against the objectives above it. */
 	scores?: PollScoresProps;
 	note?: string;
 	bar?: CoverageBarProps;

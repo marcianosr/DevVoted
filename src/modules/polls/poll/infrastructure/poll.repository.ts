@@ -84,7 +84,6 @@ export const fetchPollsByUser = async (userId: string): Promise<Poll[]> => {
 	return records.map(toPoll);
 };
 
-/** A user who has created at least one poll — the authoring list's filter rows. */
 export type PollCreator = {
 	id: string;
 	displayName: string;
@@ -121,8 +120,6 @@ export const hasUserAnsweredPoll = async (
 			and(
 				eq(pollResponsesTable.poll_id, pollId),
 				eq(pollResponsesTable.user_id, userId),
-				// Answering a poll inside a session run must not count as
-				// having answered today's calendar poll.
 				eq(pollResponsesTable.mode, "calendar"),
 				gte(pollResponsesTable.created_at, today)
 			)

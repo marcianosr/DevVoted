@@ -27,7 +27,6 @@ describe("deviceClassOf", () => {
 		expect(deviceClassOf(IPAD)).toBe("tablet");
 	});
 
-	// An Android tablet says "Android" without "Mobile": the absence is the signal.
 	it("reads an Android without the Mobile token as tablet", () => {
 		expect(deviceClassOf(ANDROID_TABLET)).toBe("tablet");
 	});
@@ -50,7 +49,6 @@ describe("isKnownRouteId", () => {
 		expect(isKnownRouteId("/_authed/runs/$runId")).toBe(true);
 	});
 
-	// The endpoint is unauthenticated, so anything not in the tree writes nothing.
 	it("rejects a resolved url, which would leak a real id into the funnel", () => {
 		expect(isKnownRouteId("/_authed/runs/482")).toBe(false);
 	});
@@ -77,7 +75,6 @@ describe("referrerHostOf", () => {
 		).toBe("reddit.com");
 	});
 
-	// On an in-app navigation the Referer is always us, which is noise.
 	it("reads our own host as no referrer", () => {
 		expect(
 			referrerHostOf("https://devvoted.dev/run/poll", "devvoted.dev")

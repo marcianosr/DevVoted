@@ -113,8 +113,6 @@ describe("getPollSplitService", () => {
 			pollId: POLL_ID,
 		});
 
-		// Not merely hidden in the UI: the number never reaches the client, so the
-		// L1 blindness survives a devtools tab.
 		expect(result.success && result.data).not.toHaveProperty("answeredCount");
 	});
 

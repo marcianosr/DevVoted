@@ -35,7 +35,6 @@ type FilterRowProps<Value extends string> = {
 	label: string;
 	choices: readonly FilterChoice<Value>[];
 	selected: Value;
-	/** The category row highlights with the theme colour, the rest with primary. */
 	accent?: "primary" | "theme";
 	onSelect: (value: Value) => void;
 };

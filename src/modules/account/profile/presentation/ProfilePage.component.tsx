@@ -6,7 +6,6 @@ import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { ProfilePage as ProfilePageUI } from "~/modules/account/profile/presentation/ProfilePage.ui";
 import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
 
-/** The signed-in account, as the router context carries it: null when signed out. */
 type Viewer = {
 	id: string;
 	displayName?: string | null;

@@ -38,51 +38,34 @@ export type AttackPayload = {
 	auditId: AuditId;
 	code: number;
 	name: string;
-	/** What it does where it lands, as the roster states it. */
 	effect: string;
-	/** The whole press: "Fire 404 at Misty". */
 	label: string;
-	/** The rival config this payload names, where the build alone names one. */
 	hits?: string;
 	onPress?: () => void;
 };
 
 export type AttackRival = {
 	targetRunId: number;
-	/** Who they are, so an audit they sent you can find their row again. */
 	userId: string;
 	name: string;
-	/** Their GitHub photo, so a rival wears the same face as every other chip. */
 	photoUrl?: string;
-	/** The border they equipped, drawn over the photo. */
 	borderUrl?: string;
-	/** The title they wear, earned through play (ADR-109). */
 	title?: string;
-	/** Where the audit lands, as the row states it: "gate 7 · Marsh". */
 	gate: string;
-	/** That gate's colour, so the row carries the same mark the screen does. */
 	swatch: SwatchFill;
-	/** What their build costs to run — the one figure ADR-101 makes public. */
 	weight: string;
-	/** What they run, readable before you fire (ADR-101). */
 	build: readonly ConfigChipProps[];
-	/** Config names a payload would take out, lit once the row is open. */
 	hits: readonly string[];
 	payloads: readonly AttackPayload[];
 };
 
 export type AttackPanelProps = {
 	title: string;
-	/** What the armed band earns: "1 payload" or "choose 1 of 2 payloads". */
 	meta?: string;
-	/** The gate that opens the panel, while it is still shut. */
 	badge?: PanelBadge;
 	rivals: readonly AttackRival[];
-	/** Why there is nothing to press: shut, unarmed, no rival in range, dealing. */
 	empty?: string;
-	/** A refusal or a result, under the rows. */
 	note?: string;
-	/** Whose payloads are open. Tier 1 holds no state of its own. */
 	openRunId?: number;
 	onInspect?: (targetRunId: number) => void;
 };
@@ -190,14 +173,6 @@ const Rival = ({
 	</Panel.Row>
 );
 
-/**
- * The one moment a player acts against another: the rivals an armed attack may
- * be aimed at, each read as a person with a build. Opening a rival is what
- * shows the payload and the config it would take out, so the build above it is
- * read for a reason rather than decorating the row. Its empty states teach how
- * an audit is earned and when the exchange opens, so the panel is always drawn
- * and never withheld.
- */
 export const AttackPanel = ({
 	title,
 	meta,

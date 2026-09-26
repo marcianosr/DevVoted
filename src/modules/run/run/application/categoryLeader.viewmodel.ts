@@ -25,17 +25,6 @@ const leaderRowOf = (leader: CategoryLeader): CategorySeatLeader => ({
 	...(leader.borderUrl === undefined ? {} : { borderUrl: leader.borderUrl }),
 });
 
-/**
- * One seat, as both surfaces state it: the poll screen for the category being
- * played, the community board for all twelve.
- *
- * One owner for the row's words (ADR-102). The figure and the claim are the
- * same sentence on either screen, and a second copy of them is how the board
- * and the poll screen would drift into quoting different floors.
- *
- * An open seat says what claims it rather than saying nothing. A player who
- * cannot see the bar has no reason to aim at it.
- */
 export const categoryLeaderRowFor = (
 	seat: CategorySeat
 ): CategoryLeaderProps => ({

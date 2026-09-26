@@ -115,11 +115,6 @@ export type VersionOdds = {
 	readonly share: number;
 };
 
-/**
- * The share of rolled upgrades that land on each rung above the one held, as
- * `climbFrom` deals them. The cap ends the climb, so it keeps the flips it
- * cannot take.
- */
 export const versionOddsFor = (
 	held: number,
 	maxLevel: number

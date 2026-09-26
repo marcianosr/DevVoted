@@ -201,7 +201,7 @@ describe("sortByDexNumber", () => {
 		const sorted = sortByDexNumber(input);
 
 		expect(sorted.map((e) => e.pollNumber ?? e.id)).toEqual([3, 31, 322]);
-		expect(input[0].pollNumber).toBe(322); // original array untouched
+		expect(input[0].pollNumber).toBe(322);
 	});
 });
 

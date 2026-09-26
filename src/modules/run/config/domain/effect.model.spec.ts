@@ -498,9 +498,6 @@ describe("configStatusFor — skipped", () => {
 		).toEqual({ kind: "skipped", why: { kind: "notThisPoll" } });
 	});
 
-	// The rate never changes, so the row would keep advertising +8KB on a run
-	// that cannot pay it. The budget is what went to zero, and it is what the
-	// player needs told.
 	it("skips IndexedDB once the run's faucet allowance is spent", () => {
 		expect(
 			configStatusFor(

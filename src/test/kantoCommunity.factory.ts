@@ -47,7 +47,6 @@ const blaine: ClimberProps = { name: "Blaine", borderUrl: BORDER.ruby };
 const giovanni: ClimberProps = { name: "Giovanni", borderUrl: BORDER.html };
 const oak: ClimberProps = { name: "Oak" };
 
-/** What a climber runs, as their card opens it. */
 const YOUR_CHIPS = [
 	{ name: "ESLint", slots: 1, version: 2, badges: [] },
 	{
@@ -64,12 +63,6 @@ const RIVAL_CHIPS = [
 	{ name: "Sentry", slots: 2, badges: [] },
 ];
 
-/**
- * The ladder as the board draws it: the viewer four gates up with a perfect
- * close behind them, a rival and a rescued run beside them, a crowd that folds
- * behind a +N, and a run today's gate killed. Every cue the legend names is
- * reachable from this one fixture.
- */
 const ladderChip = (
 	climber: ClimberProps,
 	over: Partial<LadderClimber> = {}
@@ -83,10 +76,6 @@ const ladderChip = (
 	...over,
 });
 
-/**
- * A card carries the same facts its chip does, so a mark on the track and a
- * mark on the card can never disagree in a story.
- */
 const cardFor = (
 	climber: LadderClimber,
 	over: Partial<ClimberCardProps> = {}
@@ -192,7 +181,6 @@ const ladderGates = (): LadderGate[] =>
 
 export const kantoClimbMap = (): ClimbMapProps => ({ gates: ladderGates() });
 
-/** One climber's card, as a rival mid-climb with a full build shows it. */
 export const kantoClimberCard = (): ClimberCardProps =>
 	cardFor(ladderChip(misty, { rival: true, mark: "perfect" }), {
 		handle: "misty",
@@ -253,7 +241,6 @@ const open = (category: string): CategoryLeaderProps => ({
 	claim: "3 in a row claims it",
 });
 
-/** Nine of the twelve held, so the board shows both states at once. */
 const seats = (): CategoryLeaderProps[] => [
 	held("JavaScript", "koga", 21, BORDER.frontend),
 	held("CSS", "erika", 18, BORDER.react),

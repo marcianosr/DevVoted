@@ -100,26 +100,16 @@ export type AuditTier = {
 	readonly pool: readonly AuditId[];
 };
 
-/**
- * The ADR-038 count curve read as a ceiling (ADR-099): how many incidents a
- * rival can land on a gate, and which rules the payload is drawn from. Nothing
- * here is dealt; a gate nobody attacked is clean.
- */
 export const AUDIT_TIERS: readonly AuditTier[] = [
 	{ gates: [3, 4, 5, 6, 7], capacity: 1, pool: POOL_A },
 	{ gates: [8, 9, 10], capacity: 2, pool: POOL_B },
 	{ gates: [11, VICTORY_GATE], capacity: 3, pool: POOL_C },
 ];
 
-/**
- * The first gate that can carry an audit. Derived from the tiers rather than
- * written down, so the one table stays the only place the curve is stated.
- */
 export const AUDITS_FROM_GATE: number = Math.min(
 	...AUDIT_TIERS.flatMap((tier) => tier.gates)
 );
 
-/** Derived, never hardcoded: the first gate any incident can land on. */
 export const FIRST_AUDITED_GATE = Math.min(
 	...AUDIT_TIERS.flatMap((tier) => tier.gates)
 );
@@ -161,11 +151,6 @@ export const eligibleFor = (
 export const rankAudits = (ids: readonly AuditId[]): readonly AuditId[] =>
 	[...ids].sort((a, b) => AUDIT_RANK.indexOf(a) - AUDIT_RANK.indexOf(b));
 
-/**
- * The alternatives a rival may fire at a gate: distinct, each one compatible
- * with what the gate already carries, and fixed by the seed so a refresh never
- * re-rolls them.
- */
 export const drawPayloads = (
 	pool: readonly AuditId[],
 	taken: readonly AuditId[],

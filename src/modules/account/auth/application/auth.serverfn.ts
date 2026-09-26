@@ -8,11 +8,6 @@ import {
 } from "~/shared/utils/errorReporting";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
-/**
- * Both live here rather than beside the routes that call them. `Login` needs
- * `loginFn` and `/_authed` renders `Login` on an auth error, so defining the
- * server function in the route file made the two import each other.
- */
 export const loginFn = createServerFn({ method: "POST" })
 	.validator((d: { email: string; password: string }) => d)
 	.handler(async ({ data }) => {
@@ -47,17 +42,11 @@ export const signupFn = createServerFn({ method: "POST" })
 			};
 		}
 
-		// Redirect to the prev page stored in the "redirect" search param
 		throw redirect({
 			href: data.redirectUrl || "/",
 		});
 	});
 
-/**
- * The session's user, created in our own tables on first sight. Returns null
- * rather than throwing on any failure: the root route builds its context from
- * this, and a logged-out visitor is the ordinary case, not an error.
- */
 export const fetchUser = createServerFn({ method: "GET" }).handler(async () => {
 	try {
 		const supabase = getSupabaseServerClient();

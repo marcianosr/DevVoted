@@ -48,7 +48,6 @@ export type UpgradesProps = {
 	name: string;
 	description: string;
 	rungs: readonly UpgradeRung[];
-	/** Why the offered rung will not go through, in the player's own terms. */
 	refusal?: string;
 	onBuy?: (version: number) => void;
 	onClose?: () => void;

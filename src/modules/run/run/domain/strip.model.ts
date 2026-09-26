@@ -80,12 +80,6 @@ const stripOne = (state: RunState, configId: string): RunState => {
 	};
 };
 
-/**
- * The peel is one press: the gate screen collects a tick-list and settles it in
- * a single transaction. Folding rather than dispatching per config also makes
- * the overshoot free — once the quota is paid, `stripOne` refuses the rest, so
- * a player who ticked one config too many keeps it.
- */
 export const strip = (
 	state: RunState,
 	configIds: readonly string[]
@@ -109,11 +103,6 @@ export const minifyForPeel = (state: RunState, configId: string): RunState => {
 	);
 };
 
-/**
- * ADR-076 Decision 4: the shaky hold offers a peel or an exit, and refusing the
- * gate is the exit. It ends as a death so the archive banks at the same
- * `gatesCleared / GATE_COUNT` credit rate a death banks at.
- */
 export const refuseGate = (state: RunState): RunState => ({
 	...state,
 	status: "dead",

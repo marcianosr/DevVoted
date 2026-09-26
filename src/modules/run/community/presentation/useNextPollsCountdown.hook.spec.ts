@@ -6,7 +6,6 @@ import { useNextPollsCountdown } from "~/modules/run/community/presentation/useN
 describe("useNextPollsCountdown", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
-		// 16:30 local — 7h 30m short of the midnight rollover.
 		vi.setSystemTime(new Date(2026, 7, 4, 16, 30, 0));
 	});
 
@@ -36,8 +35,6 @@ describe("useNextPollsCountdown", () => {
 		expect(result.current.isOpen).toBe(true);
 	});
 
-	// Regression: the deadline is pinned at mount. Recomputing "next midnight"
-	// per tick would read ~24h the moment the day rolls over and never open.
 	it("stays open while the player lingers past midnight", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		act(() => {

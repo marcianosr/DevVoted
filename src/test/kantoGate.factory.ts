@@ -86,7 +86,6 @@ export type GateOutcomeFixture = Omit<
 	GateOutcomeFrame,
 	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb" | "swatchGates"
 > & {
-	/** Coverage the run carried into the gate, in percent, on top of the day's answers. */
 	openingHeld?: number;
 };
 
@@ -291,7 +290,6 @@ export const SHAKY_ANSWERS = outcomesAt(
 	52
 );
 
-/** One right answer on a day the run carried in HEALTHY: the floor rule holds it. */
 export const FLOOR_HELD_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "wrong", "wrong"],
 	12
@@ -456,7 +454,6 @@ export const kantoGatePeelBillKb =
 
 export const kantoGateAnswers = LAVENDER_ANSWERS;
 export const kantoGateWindow = SLICE_WINDOW;
-/** The ladder lines, re-exported: a ui/*.spec may not reach into a module itself. */
 export const kantoGateHealthyLine = (gate: number): number =>
 	roundToOneDecimal(percentOf(healthyAt(gate)));
 export { maxLevelOf };

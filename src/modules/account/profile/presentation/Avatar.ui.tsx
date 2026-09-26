@@ -14,9 +14,7 @@ export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 type AvatarProps = {
 	user: AvatarUser;
 	size?: AvatarSize;
-	/** 'square' enables the equipped-border overlay (border art is square). */
 	shape?: "square" | "circle";
-	/** Drop the native title — for callers wrapping the avatar in a Tooltip. */
 	noTitle?: boolean;
 };
 

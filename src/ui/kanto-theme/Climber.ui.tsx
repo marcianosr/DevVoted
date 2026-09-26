@@ -19,20 +19,9 @@ const PHOTO = "size-full object-cover";
 const FRAME = "pointer-events-none absolute inset-0 size-full";
 const DIMMED = "opacity-40 grayscale";
 
-/**
- * Who the chip is, as the board says it everywhere else: your own things are
- * viridian (the seat you hold, the figure that is yours), a rival is the colour
- * the build footer marks what is changing under you.
- */
 const YOU = "ring-2 ring-viridian";
 const RIVAL = "ring-2 ring-vermillion";
 
-/**
- * How their last gate closed. A rim sits outside the face so it reads at a
- * glance in a stack of overlapping chips, and the flicker is a class rather
- * than a ring because a shaky close is a state, not a decoration; reduced
- * motion falls back to a dashed edge so the cue survives (see app.css).
- */
 const PERFECT = "ring-2 ring-offset-1 ring-theme ring-offset-transparent";
 const SHAKY = "climber-flicker";
 
@@ -59,13 +48,9 @@ export type ClimberProps = {
 	photoUrl?: string;
 	borderUrl?: string;
 	you?: boolean;
-	/** Traded an audit with the viewer today (ADR-099). */
 	rival?: boolean;
-	/** Their last gate closed PERFECT: a rim in the gate's own colour. */
 	perfect?: boolean;
-	/** Their last gate closed SHAKY: the chip flickers. */
 	shaky?: boolean;
-	/** Their run resumed from a git tag rather than starting at the bottom. */
 	rescued?: boolean;
 	dimmed?: boolean;
 	size?: ClimberSize;

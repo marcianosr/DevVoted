@@ -40,7 +40,6 @@ vi.mock("~/modules/run/community/application/community.serverfn", () => ({
 	getRunCommunity: vi.fn(),
 }));
 
-// jsdom does not implement HTMLDialogElement.showModal / close.
 beforeAll(() => {
 	HTMLDialogElement.prototype.showModal = vi.fn(function (
 		this: HTMLDialogElement
@@ -56,11 +55,6 @@ beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-/**
- * The real /run route shape (layout + per-screen leaves) on a memory history,
- * so the sync behavior is exercised through actual navigation — only the
- * server boundary is mocked.
- */
 const renderRunRoutes = (initialPath: string) => {
 	const rootRoute = createRootRoute();
 	const runRoute = createRoute({
@@ -70,7 +64,6 @@ const renderRunRoutes = (initialPath: string) => {
 	});
 	const leaf = (path: string, component: () => React.ReactNode) =>
 		createRoute({ getParentRoute: () => runRoute, path, component });
-	// Community sits OUTSIDE the run layout, mirroring run_.community.tsx.
 	const communityRoute = createRoute({
 		getParentRoute: () => rootRoute,
 		path: "run/community",
@@ -136,9 +129,6 @@ describe("run route sync", () => {
 		expect(await screen.findByText("Today’s climb")).toBeVisible();
 	});
 
-	// The counterpart to the test above, and the reason the two must not share a
-	// code path: "no run today" is an answer that moves the player, while a read
-	// that failed is not an answer at all (DVTD-cmqj).
 	it("keeps a player whose run could not be read where they are, and says why", async () => {
 		vi.mocked(getTodaysRun).mockRejectedValue(new Error("Not authenticated"));
 
@@ -178,8 +168,6 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
-		// finish-reward waits for prep's start button (ADR-032) — the shop must
-		// stay open behind the back button.
 		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
 	});
 
@@ -279,9 +267,6 @@ describe("run route sync", () => {
 
 	it("starting the gate from the prep hub commits finish-reward and reaches the poll", async () => {
 		const user = userEvent.setup();
-		// A stateful server stub: every fetch reports the run parked in the shop
-		// phase until finish-reward lands, then reports the climb resumed —
-		// otherwise a background refetch would revert the committed status.
 		let serverView = createMockRunView({
 			status: "rewarding",
 			gatesCleared: 1,
@@ -332,8 +317,6 @@ describe("run route sync", () => {
 		);
 	});
 
-	// DVTD-inrq: the opening build now turns the page to prep instead of
-	// dispatching `start`, so gate 0 states its terms like every later gate.
 	it("the opening build turns the page to gate-0 prep", async () => {
 		const user = userEvent.setup();
 		const view = createMockRunView({
@@ -391,10 +374,6 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/community")
 		);
-		// The way back waits with the run — /run would only bounce here again —
-		// and the countdown stands beside it saying how long that will be.
-		// The disabled button's accessible name carries its hint, so the
-		// query matches on the label alone.
 		const back = await screen.findByRole("button", {
 			name: /Back to your run →/,
 		});

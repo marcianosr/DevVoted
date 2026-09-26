@@ -21,10 +21,6 @@ const LOADING = "Loading today’s comparison…";
 const LOAD_FAILED =
 	"Couldn’t load today’s comparison. Your run is unaffected — try again shortly.";
 
-/**
- * Held locally rather than imported from the service: that module reaches its
- * repositories, which would drag the database driver into the browser bundle.
- */
 const EMPTY_COMMUNITY: RunCommunityView = {
 	date: "",
 	totalPlayers: 0,
@@ -34,7 +30,6 @@ const EMPTY_COMMUNITY: RunCommunityView = {
 	climb: null,
 };
 
-/** Tier 2 wiring for the run community page (DVTD-xrpx, kanto skin DVTD-6crx). */
 export const RunCommunity = () => {
 	const navigate = useNavigate();
 	const { view: run } = useTodaysRun();

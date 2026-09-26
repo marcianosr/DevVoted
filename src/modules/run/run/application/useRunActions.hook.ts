@@ -16,24 +16,10 @@ import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.ho
 export type RunActionResult = Awaited<ReturnType<typeof dispatchRunAction>>;
 export type RunActionSuccess = Extract<RunActionResult, { success: true }>;
 
-/**
- * Mutations for the run flow. Committing a result writes the returned RunView
- * into the query cache — the layout's route sync reacts to the new status, so
- * actions never navigate themselves.
- */
 export const useRunActions = () => {
 	const queryClient = useQueryClient();
 	const queryKey = todaysRunQueryKey();
 
-	/**
-	 * The caches a run action moves without returning them. All are marked
-	 * stale rather than refetched — none is mounted while the run is being
-	 * played, so they reload when the player next opens them. Every action
-	 * invalidates all three rather than only the ones that qualify: an answer
-	 * moves the board, a gate clear awards a swatch, a crossed objective grants
-	 * a config, and a stale mark is cheaper than a rule about which action did
-	 * what.
-	 */
 	const invalidateSideViews = () => {
 		queryClient.invalidateQueries({ queryKey: runCommunityQueryKey() });
 		queryClient.invalidateQueries({ queryKey: userQueryKeys.swatchesAll });
@@ -54,7 +40,6 @@ export const useRunActions = () => {
 		mutationFn: (action: RunAction) => dispatchRunAction({ data: { action } }),
 	});
 
-	/** Dispatch an action and commit the resulting view — the default. */
 	const send = (action: RunAction) =>
 		dispatch.mutate(action, {
 			onSuccess: (result) => {
@@ -62,11 +47,6 @@ export const useRunActions = () => {
 			},
 		});
 
-	/**
-	 * Dispatch without committing, handing the result to the caller — for beats
-	 * that stage the new view before it lands (the answer reveal) or that must
-	 * act right after committing (shop → community detour).
-	 */
 	const sendWith = (
 		action: RunAction,
 		onResult: (result: RunActionResult) => void
@@ -84,7 +64,6 @@ export const useRunActions = () => {
 		onSuccess: (result) => {
 			if (!result.success) return;
 			queryClient.invalidateQueries({ queryKey });
-			// A quit takes you off the climb map too.
 			invalidateSideViews();
 		},
 	});

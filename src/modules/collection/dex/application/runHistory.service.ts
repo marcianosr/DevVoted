@@ -7,7 +7,6 @@ import {
 import { fetchGateRunsByUser } from "~/modules/collection/dex/infrastructure/runHistory.repository";
 
 export type GateRunsData = {
-	/** The archive listing, which counts only climbs that ended. */
 	history: readonly RunHistoryEntry[];
 };
 

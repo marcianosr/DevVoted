@@ -39,7 +39,6 @@ export default meta;
 
 type Story = StoryObj<typeof DexConfigChip>;
 
-/** Hover reveals the hint; a press pins it. One open at a time, as the Dex does. */
 const OneOpen = ({ configs }: { configs: readonly DexConfigChipProps[] }) => {
 	const [open, setOpen] = useState<string | undefined>(undefined);
 
@@ -71,7 +70,6 @@ export const Earned: Story = {
 	render: () => <OneOpen configs={[chipNamed("Regression Test")]} />,
 };
 
-/** Met in a shop or a rival's build and not yet earned. Nothing feeds this yet. */
 export const Met: Story = {
 	render: () => <OneOpen configs={[chipNamed("Planning Poker")]} />,
 };

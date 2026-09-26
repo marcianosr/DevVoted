@@ -11,17 +11,11 @@ const ALIGN = { left: "left-0", right: "right-0" } as const;
 export type NavAlign = keyof typeof ALIGN;
 
 export type NavDisclosureProps = {
-	/** What the closed control shows — a burger glyph, or the signed-in player. */
 	summary: ReactNode;
 	children: ReactNode;
 	align?: NavAlign;
 };
 
-/**
- * A native disclosure rather than a scripted dropdown: `<details>` already
- * carries the keyboard and screen-reader behaviour, so the only script left is
- * closing the panel once a link inside it has been followed.
- */
 export const NavDisclosure = ({
 	summary,
 	children,

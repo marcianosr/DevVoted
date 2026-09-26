@@ -29,7 +29,6 @@ export const FirstClimb: Story = {
 	render: () => <CommunityScreen {...kantoCommunityFirstClimb()} />,
 };
 
-/** The board with a climber open, which is how the map is actually read. */
 export const AClimberOpen: Story = {
 	render: () => {
 		const board = kantoCommunity();

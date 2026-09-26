@@ -3,9 +3,7 @@ export const VICTORY_GATE = 12;
 
 export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
-/** Paid per rival-fired audit a cleared gate carried (ADR-099). */
 export const INCIDENT_SURVIVAL_KB = 32;
-/** Redraws the opened audit in hand, once a shop (ADR-119). Never sells one. */
 export const REPACKAGE_KB = 32;
 
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
@@ -46,11 +44,6 @@ export const spaceRungFor = (space: number): BuildSpaceRung =>
 
 export const upkeepForSpace = (space: number): number => spaceRungFor(space).kb;
 
-/**
- * The rung a weight is billed at (ADR-098), which is the smallest one it fits
- * in — the mirror of `rungIndexForSpace`, which resolves downward because it
- * answers a different question: what a *held* space was paying for.
- */
 export const rungIndexFitting = (weight: number): number => {
 	const index = BUILD_SPACE_RUNGS.findIndex((rung) => rung.weight >= weight);
 	return index === -1 ? TOP_BUILD_SPACE_RUNG : index;
@@ -62,7 +55,6 @@ export const spaceFitting = (weight: number): number =>
 export const upkeepFitting = (weight: number): number =>
 	buildSpaceRungAt(rungIndexFitting(weight)).kb;
 
-/** The rung above the one this weight sits in, or undefined at the top. */
 export const rungAfterFitting = (weight: number): BuildSpaceRung | undefined =>
 	BUILD_SPACE_RUNGS[rungIndexFitting(weight) + 1];
 
@@ -85,11 +77,6 @@ export const FAUCET_CAP_KB = 320;
 export const faucetRemainingKb = (earnedKb: number): number =>
 	Math.max(0, FAUCET_CAP_KB - earnedKb);
 
-/**
- * What a committed transaction pays against what it held. The cap meters the
- * commit rather than the pledge, so a rolled-back transaction costs no cap
- * room — which is the only reading of "rolled back" that leaves no trace.
- */
 export const ESCROW_COMMIT_MULTIPLIER = 2;
 
 export const escrowCommitKb = (pendingKb: number, earnedKb: number): number =>
@@ -113,16 +100,9 @@ export const streakMultiplier = (streak: number): number =>
 
 export const STREAK_UNIT_STEP = 0.1;
 
-/**
- * Every consecutive correct answer after the first pays a step, so a flawless
- * window is worth four of them. The step is added after the multipliers and
- * never multiplied by them: inside the stack a x6 build would turn it into
- * +0.6 and the streak would stop rewarding accuracy.
- */
 export const streakUnitBonus = (streakBefore: number): number =>
 	streakBefore < 1 ? 0 : STREAK_UNIT_STEP;
 
-/** Correct answers a gate demands whatever the run score says, counted before multipliers. */
 export const FLOOR_CORRECT = 2;
 
 export const meetsGateFloor = (correct: number): boolean =>
@@ -167,7 +147,6 @@ export const peelQuotaSlotsFor = (
 export const roundToOneDecimal = (value: number): number =>
 	Math.round(value * 10) / 10;
 
-/** Units carry a second decimal: a 1.25x focus on a 1.25x cache is 1.56, not 1.6. */
 export const roundToTwoDecimals = (value: number): number =>
 	Math.round(value * 100) / 100;
 
@@ -199,5 +178,4 @@ export const pinCostFor = (gatesCleared: number): number =>
 export const PIN_UNTIL_GATE = 10;
 export const PIN_START_KB_PER_GATE = 32;
 
-/** One run's archive credit reaching this earns Boot Cache (ADR-116). */
 export const BOOT_CACHE_BANK_KB = 256;

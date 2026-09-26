@@ -55,7 +55,6 @@ describe("recordVisitService", () => {
 		});
 	});
 
-	// The point of the table: every other table starts once someone has an account.
 	it("records a signed-out visitor with a null user id rather than skipping them", async () => {
 		await record("/login");
 
@@ -90,7 +89,6 @@ describe("recordVisitService", () => {
 		expect(upsertVisit).not.toHaveBeenCalled();
 	});
 
-	// No secret means no hash: the path goes quiet rather than writing a weak one.
 	it("writes nothing when the hash secret is unset", async () => {
 		vi.mocked(visitorContextOf).mockReturnValue(null);
 
@@ -112,7 +110,6 @@ describe("recordVisitService", () => {
 		);
 	});
 
-	// It hangs off every navigation, so a dead counter must never break one.
 	it("resolves rather than rejecting when the write fails", async () => {
 		vi.mocked(upsertVisit).mockRejectedValue(new Error("connection lost"));
 

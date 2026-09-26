@@ -19,12 +19,6 @@ export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.coldStart,
 ];
 
-/**
- * The pool a run deals from. An account plays its own unlocked configs, and
- * falls back to the starter set when its ledger is empty — pre-seed accounts
- * and anyone whose unlocks all left the roster still get a playable hand.
- * Ids no longer in CONFIG_LIST are dropped rather than faked (DVTD-amtz).
- */
 export const poolFor = (
 	unlockedConfigIds: readonly string[]
 ): readonly Config[] => {

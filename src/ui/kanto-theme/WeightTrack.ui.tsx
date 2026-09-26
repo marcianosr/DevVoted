@@ -23,11 +23,6 @@ const SEGMENT =
 const PADDED = "px-1.5";
 const DIMMED = "opacity-35";
 const ROOM = "rounded-r-md border border-dashed border-theme-faint";
-/**
- * Room the build would grow into, not room it holds. Hatched rather than dashed
- * under the app.css law: dashed is space you can fill at a price already paid,
- * and this is space that costs more the moment it is filled.
- */
 const PREVIEW_ROOM = "rounded-r-md border border-theme-soft bg-hatched-theme";
 
 const NAME = "truncate text-xs font-bold";
@@ -64,10 +59,8 @@ export type WeightTrackFill = {
 	slots: number;
 };
 
-/** The rung the build would cross into next, and what it would then bill. */
 export type NextRung = { weight: number; kb: number };
 
-/** What an offer under consideration would do to the track (ADR-098). */
 export type WeightPreview = {
 	weight: number;
 	held: number;
@@ -76,7 +69,6 @@ export type WeightPreview = {
 
 export type WeightTrackProps = {
 	fills: readonly WeightTrackFill[];
-	/** The build space the run rents — derived from the build it draws (ADR-098). */
 	held: number;
 	next?: NextRung;
 	preview?: WeightPreview;
@@ -88,11 +80,6 @@ export type WeightTrackProps = {
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
-/**
- * The room line broken into its badge-worthy figures. `roomLineOf` is the same
- * line flattened, so the two can never drift: a surface that wants badges and a
- * surface that wants a string are reading one sentence (ADR-102, ADR-066).
- */
 export const roomPartsOf = (
 	weight: number,
 	held: number,
@@ -125,11 +112,6 @@ export const roomLineOf = (
 	next?: NextRung
 ): string => roomPartsOf(weight, held, next).map(textOf).join("");
 
-/**
- * The two lines an armed offer draws. Stated as a before and an after rather
- * than a delta: the standing bill is the number the player has to weigh, and a
- * "+16 KB" makes them do the addition to find it.
- */
 export const previewLinesOf = (
 	weight: number,
 	held: number,

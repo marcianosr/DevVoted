@@ -21,28 +21,15 @@ export type RegistryControlId =
 	| "bootCache"
 	| "dockerImage";
 
-/**
- * Which wallet ADR-115 gives it. Today both scopes are still bought in the
- * shop with run storage; the archive purchase for the run scope is not built.
- */
 export type RegistryControlScope = "registry" | "run";
 
-/**
- * Grant, once per account (ADR-116): a starter service is everyone's from the
- * first shop, an earned one is locked until its objective is met.
- */
 export type ServiceUnlock =
 	| { readonly kind: "starter" }
 	| { readonly kind: "earned"; readonly objective: ThematicObjective };
 
-/**
- * Where it is sold (ADR-115 D10). Only a shop service has a gate to open on;
- * an archive service is bought on the profile, before the run.
- */
 export type ServiceSale =
 	| {
 			readonly soldIn: "shop";
-			/** Gates cleared before the shop sells it, matching each `*Available` predicate. */
 			readonly opensAfterGates: number;
 			readonly closesAfterGates?: number;
 	  }
@@ -62,12 +49,10 @@ export type ServiceUnlockGrant = {
 	readonly viaMetric: ObjectiveMetric;
 };
 
-/** Rebuild answers to no depth check of its own: the first shop is the condition. */
 const REBUILD_FROM_GATE = 1;
 
 export const CASCADE_GATE = 2;
 
-/** Standing at gate 6 is having cleared gate 5, which is what earns kill -9. */
 export const ABANDON_FROM_GATE = 6;
 
 const UNLOCK_TARGET = 5;
@@ -198,7 +183,6 @@ export const REGISTRY_CONTROLS = {
 	},
 } as const satisfies Record<RegistryControlId, RegistryControlSpec>;
 
-/** The ids the shop has a row for; a new shop-sold service fails to compile until it does. */
 export type ShopSoldId = {
 	[Id in RegistryControlId]: (typeof REGISTRY_CONTROLS)[Id] extends {
 		soldIn: "shop";
@@ -235,7 +219,6 @@ export const isServiceUnlocked = (
 ): boolean =>
 	control.unlock.kind === "starter" || unlockedServiceIds.includes(control.id);
 
-/** The line a locked row states; a starter service never needs one. */
 export const unlockCaptionOf = (
 	control: RegistryControlSpec
 ): string | undefined =>

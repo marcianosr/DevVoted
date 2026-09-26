@@ -14,27 +14,15 @@ import type {
 export type PollSlot = {
 	readonly id: string;
 	readonly category: CategoryCode;
-	/** v2 only. At v1 a row is a subject line, the way `rebase -i` lists one. */
 	readonly answerType?: AnswerType;
 };
 
 export const rebaserFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.reordersGatePolls === true);
 
-/**
- * Prep is two statuses, not one: `configuring` at the run's start and
- * `rewarding` for every shop-then-prep hub after it (ADR-032). Both stand in
- * front of a gate that has not begun, which is the whole condition — once an
- * answer lands the order is the player's committed bet.
- */
 export const canRebase = (state: Pick<RunState, "status">): boolean =>
 	state.status === "configuring" || state.status === "rewarding";
 
-/**
- * The gate's polls, never the day's. `polls` runs long in the pool-fed
- * prototype, so the end is clamped, and the start is the cursor rather than 0
- * so an answered poll can never be dragged back into play.
- */
 export const gateSliceOf = (
 	state: Pick<RunState, "polls" | "currentIndex">
 ): readonly RunPoll[] =>
@@ -54,15 +42,6 @@ export const upcomingSlotsOf = (
 	}));
 };
 
-/**
- * Moves one poll within the gate slice. `from` and `to` are offsets into that
- * slice, not into `polls` — the client never learns the engine's cursor, and
- * the validator can bound them against SLICE_WINDOW alone.
- *
- * Splice-move rather than swap: the player is arranging a ramp, so everything
- * the moved poll passes shifts one place and keeps its relative order. A swap
- * would scramble two positions the player had already placed.
- */
 export const movedSlice = (
 	slice: readonly RunPoll[],
 	from: number,

@@ -314,8 +314,6 @@ describe("dexControlsFor", () => {
 });
 
 describe("dexAuditsFor", () => {
-	// Clearing through gate 3 opens pool A and nothing deeper, so it is the
-	// smallest roster that has both met audits and unmet ones.
 	const CLIMBED = [
 		"swatch-pallet",
 		"swatch-boulder",

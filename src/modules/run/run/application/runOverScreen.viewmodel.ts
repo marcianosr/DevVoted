@@ -83,14 +83,12 @@ const GAIN_COLOR: KantoColor = "viridian";
 const LOSS_COLOR: KantoColor = "cinnabar";
 const TERM_COLOR: KantoColor = "saffron";
 
-/** Below this share a category reads as the run's leak rather than a soft spot. */
 const LEAK_SHARE = 0.5;
 
 const PERCENT = "%";
 const SEPARATOR = " · ";
 
 export type RunOverFrame = {
-	/** The gate the run stopped on: the one it failed, or the summit it took. */
 	readonly gate: number;
 	readonly won: boolean;
 	readonly answers: readonly AnsweredPoll[];
@@ -99,17 +97,14 @@ export type RunOverFrame = {
 	readonly unitsHeld: number;
 	readonly swatchGates: readonly number[];
 	readonly configs: readonly Config[];
-	/** The build space the run rented at the end (ADR-082): the rung it held. */
 	readonly space: number;
 	readonly weight: number;
 	readonly balanceKb: number;
 	readonly upkeepPaidKb: number;
-	/** The account archive once this run banks. Absent where no account is loaded. */
 	readonly archiveAfterKb?: number;
 	readonly unlocked: readonly UnlockLine[];
 };
 
-/** Weight is a mass noun everywhere else in the kit ("7 of 10 weight · 3 free"). */
 const weightLabel = (weight: number) => `${weight} weight`;
 
 const swatchCount = (count: number) =>
@@ -121,12 +116,6 @@ const units = (value: number) => `${roundToTwoDecimals(value)}`;
 
 const bandOf = (bar: CoverageBarProps) => coverageBandOf(bar.held, bar);
 
-/**
- * The line the run is measured against. A dead run missed the floor, so quoting
- * it the healthy line reports a shortfall it was never close to clearing; a
- * summited one has no floor left to miss. Both come off the bar rather than the
- * raw ladder, because an audit scales the gate's demand.
- */
 const lineOf = (frame: RunOverFrame) =>
 	frame.won ? frame.bar.healthy : frame.bar.floor;
 
@@ -232,7 +221,6 @@ const tallyCategories = (
 		.sort((one, other) => other.correct / other.seen - one.correct / one.seen);
 };
 
-/** Ranked rows only earn a tag when there is something to rank them against. */
 const tagFor = (
 	tally: CategoryTally,
 	index: number,

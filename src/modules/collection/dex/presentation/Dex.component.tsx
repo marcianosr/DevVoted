@@ -35,20 +35,12 @@ import { DexScreen } from "~/ui/kanto-theme/DexScreen.ui";
 import { DexSwatches } from "~/ui/kanto-theme/DexSwatches.ui";
 
 type DexProps = {
-	// Only the query-cache discriminator; the server derives auth server-side.
 	userId: string;
 };
 
 const FIRST_TAB: DexTabId = "polls";
 const ARCHIVE_SUFFIX = "archive";
 
-/**
- * Tier 2 wiring for the Dex: tab state, the queries, and the presenters.
- *
- * Swatches and Audits are read off `owned_swatch_ids` alone, so neither needs
- * the poll query. Services read their own grant ledger (ADR-116), the way
- * configs do.
- */
 export const Dex = ({ userId }: DexProps) => {
 	const [activeId, setActiveId] = useState<DexTabId>(FIRST_TAB);
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);

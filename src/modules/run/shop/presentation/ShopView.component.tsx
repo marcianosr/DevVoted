@@ -80,9 +80,6 @@ const offersOf = (
 			armed,
 			onHover: () => point(offer.config.id),
 			onLeave: () => point(undefined),
-			// The rung an install rents is a cost no button can state, so the first
-			// press states it and the second agrees to it. An install that stays
-			// inside the rung already rented has nothing to state and commits at once.
 			onInstall:
 				offer.scale === null || armed
 					? () => onDraft(offer.config.id)
@@ -93,10 +90,6 @@ const offersOf = (
 			: upgradeChipFor(offer.config, offer.heldLevel, deal);
 	});
 
-/**
- * A config with no focus category has no coverage gate to answer, so the figure
- * it reports is never read; zero keeps the deal one shape either way.
- */
 const focusCoverageOf = (view: RunView, config: Config): number =>
 	config.focusCategory === undefined
 		? 0
@@ -110,7 +103,6 @@ type ServiceHandlers = Pick<
 	onArmAbandon: () => void;
 };
 
-/** The row an unlocked service gets once its gate has staged it in; nothing before. */
 const stagedRowFor = (
 	control: ShopSoldSpec,
 	view: RunView,
@@ -147,10 +139,8 @@ const stagedRowFor = (
 						),
 					}
 				: undefined,
-		// Earned already; sold once DVTD-r2fg and DVTD-rte1 give them a press.
 		hotReload: () => undefined,
 		returnPolicy: () => undefined,
-		// Ending the run is the one press that must be meant: the first arms it.
 		abandon: () => ({
 			id: ABANDON.id,
 			glyph: ABANDON.glyph,
@@ -192,11 +182,6 @@ const lockedRowFor = (control: ShopSoldSpec): ShopServiceRow | undefined => {
 			};
 };
 
-/**
- * Only what this shop sells (ADR-115 D10), in roster order so the row a player
- * is working toward never moves: a locked service keeps its place, named, with
- * the line that unlocks it (ADR-116).
- */
 const controlsOf = (
 	view: RunView,
 	handlers: ServiceHandlers
@@ -229,8 +214,6 @@ export const ShopView = ({
 	const [armedId, setArmedId] = useState<string | undefined>(undefined);
 	const [pointedId, setPointedId] = useState<string | undefined>(undefined);
 
-	// The two columns disclose independently: a name can sit in the build and on
-	// the shelf at once, and one flip set would collapse the pair together.
 	const buildNames = view.configs.map((config) => config.label);
 	const offerNames = view.offers.map((offer) => offer.config.label);
 
@@ -266,13 +249,10 @@ export const ShopView = ({
 
 	const armed = view.offers.find((offer) => offer.config.id === armedId);
 	const pointed = view.offers.find((offer) => offer.config.id === pointedId);
-	// Any other service press means the run goes on, so the kill is disarmed.
 	const disarming = (press: () => void) => () => {
 		setAbandonArmed(false);
 		press();
 	};
-	// Only ever self-inflicted, and only after a bill the balance could not
-	// cover: the run is held to the space it actually paid for until it fits.
 	const overSpace = view.overflowSlots > 0;
 	const needsVendor = view.vendorLock.offered;
 

@@ -20,7 +20,6 @@ import {
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 describe(".length's pick budget", () => {
-	// Two correct options out of three, so this poll alone costs 2 of the budget.
 	const multiPoll = (id: string): RunPoll => ({
 		id,
 		category: "react",
@@ -33,8 +32,6 @@ describe(".length's pick budget", () => {
 		],
 	});
 
-	// One multi-answer poll in the first window: budget 6 across 5 polls, so the
-	// window holds exactly one correct answer beyond one per poll.
 	const mixedPool = (size = 60): RunPoll[] => [
 		multiPoll("celadon"),
 		...Array.from({ length: size - 1 }, (_, index) =>
@@ -60,8 +57,6 @@ describe(".length's pick budget", () => {
 		expect(pickBudgetFor(mixedPool(), 0)).toBe(6);
 	});
 
-	// The same build with .length swapped for a linter the react-only pool never
-	// serves, so any difference in the clear payout is .length's alone.
 	const uncounted = (polls: RunPoll[] = mixedPool()): RunState => {
 		let state = createRun(polls, handed);
 		for (const configId of ["eslint", "ts", "css"])
@@ -69,9 +64,6 @@ describe(".length's pick budget", () => {
 		return runReducer(state, { type: "start" });
 	};
 
-	// `.length` sells knowledge, not KB. It used to pay per extra pick as well,
-	// which made a config bought for its reveal earn its keep on the ledger — and
-	// left the reveal itself unbuilt on the screens that were meant to carry it.
 	it("pays nothing for the count it reveals, even where extra picks are owed", () => {
 		let state = spendAll(counting());
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
@@ -93,7 +85,6 @@ describe(".length's pick budget", () => {
 		let state = spendAll(counting());
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-		// The second window is all single-answer, so its budget is one per poll.
 		expect(state.window.budget).toBe(5);
 	});
 });

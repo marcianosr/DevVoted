@@ -9,7 +9,6 @@ import { Typography } from "./Typography.ui";
 const PORTRAIT = "/editors/sabrina.png";
 const BORDER = "/borders/border-js-saffron.svg";
 const CATEGORY = "JavaScript";
-/** Mirrors `LEADER_REGION` in `PollScreen.ui`, which is what places this line. */
 const REGION = "border-t border-theme-faint px-4 py-3";
 
 const meta: Meta<typeof CategoryLeader> = {

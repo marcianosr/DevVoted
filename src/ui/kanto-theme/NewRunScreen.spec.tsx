@@ -15,7 +15,6 @@ import { NewRunScreen } from "./NewRunScreen.ui";
 
 const props = createKantoNewRunScreenProps();
 
-/** The screen's own column grid, not the card grids nested inside each column. */
 const columns = (root: ParentNode): HTMLElement[] =>
 	[...(root.querySelector<HTMLElement>("div.grid")?.children ?? [])].filter(
 		(node): node is HTMLElement => node instanceof HTMLElement

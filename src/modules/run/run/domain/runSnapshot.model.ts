@@ -16,28 +16,13 @@ import {
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 
-/**
- * The persisted shape of a run (run_states.state): everything the engine
- * needs EXCEPT the day's poll sequence. Polls are the shared daily seed
- * (ADR-009) — identical for every player and holding correctness — so they
- * are stored once in daily_run_polls and rehydrated on load, never duplicated
- * per run.
- */
 export type RunSnapshot = Omit<RunState, "polls">;
 
-/**
- * What a persisted row may actually hold. We always WRITE a `RunSnapshot`, but
- * we READ whatever the engine version that wrote it produced, and older ones
- * predate the units rename. Every `RunSnapshot` is assignable to this, so the
- * looser type costs callers nothing and stops the reader pretending fields are
- * there.
- */
 export type StoredSnapshot = Omit<RunSnapshot, "bankedUnits" | "window"> & {
 	readonly bankedUnits?: number;
 	readonly window: Omit<GateWindow, "unitsEarned"> & {
 		readonly unitsEarned?: number;
 	};
-	/** Rows written before the held attack became the sealed audit (ADR-119). */
 	readonly attack?: { readonly band: "healthy" | "perfect" };
 	readonly attackEarnedAtGate?: number;
 };
@@ -47,13 +32,6 @@ export const toRunSnapshot = (state: RunState): RunSnapshot => {
 	return snapshot;
 };
 
-/**
- * Snapshots embed full Config objects at slot/draft time, so an in-flight run
- * carries the roster as it looked back then. The roster is authoritative on
- * load: swap each embedded config for its current version, keeping only the
- * player's earned level. Unknown ids (a config since removed) pass through
- * untouched rather than crashing the run.
- */
 const refreshConfig = (config: Config): Config => {
 	const current = CONFIG_LIST.find((candidate) => candidate.id === config.id);
 	if (!current) return config;
@@ -64,12 +42,6 @@ const refreshConfig = (config: Config): Config => {
 const refreshConfigs = (configs: readonly Config[]): readonly Config[] =>
 	configs.map(refreshConfig);
 
-/**
- * The author is a live profile — avatar, equipped border, title — so a snapshot
- * that embedded it credits the player as they looked when they answered.
- * Re-reading it off the day's polls keeps the credit current, the same way the
- * roster is re-read above. A poll the rollover dropped simply loses its credit.
- */
 const refreshAuthors = (
 	answered: readonly AnsweredPoll[],
 	polls: readonly RunPoll[]
@@ -83,13 +55,6 @@ const refreshAuthors = (
 		return { ...entry, author };
 	});
 
-/**
- * Snapshots written before the units rename carry `coverageGained` on the window
- * and no `bankedUnits` at all. Both reach the coverage bar as raw numbers, so a
- * missing one arrives as NaN — and NaN never equals itself, which turns the
- * bar's render-phase comparison into an infinite loop rather than a wrong
- * figure. Healed here for the same reason the roster and the pick budget are.
- */
 const legacyUnitsOf = (
 	window: StoredSnapshot["window"]
 ): number | undefined => {
@@ -107,12 +72,6 @@ const unitsEarnedOf = (window: StoredSnapshot["window"]): number => {
 	return legacyUnitsOf(window) ?? 0;
 };
 
-/**
- * `coverage` has always been the run's running unit total, so the units the
- * cleared gates banked are that total minus the open window's share. A
- * reconstruction, not a default: zeroing it would silently wipe the score of
- * every run already in flight.
- */
 const bankedUnitsOf = (
 	snapshot: StoredSnapshot,
 	unitsEarned: number
@@ -123,14 +82,6 @@ const bankedUnitsOf = (
 	return Math.max(0, finite(snapshot.coverage, 0) - unitsEarned);
 };
 
-/**
- * The polls are authoritative on load in the same way the roster is: a day
- * rollover (ADR-011) drops the window's unplayed tail and appends today's
- * segment, so a pick budget stored when the window opened would describe polls
- * that no longer exist. Recomputing it here covers every load path, and the
- * reducer keeps setting it at open so a window that fills inside one session
- * never needs a round trip to learn its own budget.
- */
 export const hydrateRunState = (
 	snapshot: StoredSnapshot,
 	polls: readonly RunPoll[]
@@ -150,18 +101,12 @@ export const hydrateRunState = (
 					gate: legacyHandedAtGate ?? Math.max(0, snapshot.gatesCleared - 1),
 				});
 	const auditHandedAtGate = current.auditHandedAtGate ?? legacyHandedAtGate;
-	// Healed first, so everything downstream reads one shape: `windowStartIndex`
-	// and the audit lens both take a snapshot, and neither should learn that an
-	// older engine wrote fewer fields. The legacy keys are dropped, not carried,
-	// so the next write is clean.
 	const healed: RunSnapshot = {
 		...current,
 		...(heldAudit === undefined ? {} : { heldAudit }),
 		...(auditHandedAtGate === undefined ? {} : { auditHandedAtGate }),
 		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
 		coverage: finite(snapshot.coverage, 0),
-		// Every row written before Database shipped has no open transaction, and
-		// the poll screen reads the figure raw.
 		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
 		window: { ...snapshot.window, unitsEarned },
 	};

@@ -172,9 +172,6 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("banks the won bet as coverage where the gate has room for it", () => {
-		// Banked on the floor: a flawless window carries BOTH runs over the line,
-		// the gap between them is the bet alone, and the sum stays under the
-		// gate's 25 slots so neither is clamped.
 		const GATE = 4;
 		const bet = {
 			...answering(5),
@@ -189,8 +186,6 @@ describe("the gate settling an estimate", () => {
 		expect(withBet.bankedUnits - noBet.bankedUnits).toBe(6.25);
 	});
 
-	// Gate 0 opens only five slots and a flawless window already fills them, so
-	// this is the one place the overflow is reachable without a deep build.
 	it("spills a bet past the gate line into storage instead of wasting it", () => {
 		const withBet = answerGate(answering(5), SLICE_WINDOW);
 		const noBet = answerGate(
@@ -202,9 +197,6 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("pays a missed gate too, which is the only thing a low estimate is for", () => {
-		// Banked low enough that one right answer plus the won bet still lands
-		// under the OK line while staying above the floor, which would end the
-		// run (ADR-076).
 		const MISSED_GATE = 4;
 		const UNDER_THE_LINE = 2;
 		const start: RunState = {
@@ -219,8 +211,6 @@ describe("the gate settling an estimate", () => {
 	});
 
 	it("lets a won bet lift a gate over its own line, which is what settling it inside the window is for", () => {
-		// Two right answers meet the floor rule on their own and land a unit
-		// under the OK line; only the won bet carries the gate over it.
 		const GATE = 4;
 		const SHORT_OF_OK = 3;
 		const underTheLine: RunState = {
@@ -275,8 +265,6 @@ describe(estimateOwed, () => {
 		);
 	});
 
-	// The hold and the picker read the same two clauses on purpose: a gate held
-	// on a call the screen is not offering would be a run nobody can finish.
 	it("is only ever owed while the bet can still be made", () => {
 		const owing = withPlanningPoker();
 		expect(estimateOwed(owing)).toBe(canEstimate(owing));

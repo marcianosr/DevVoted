@@ -56,7 +56,6 @@ const PANELS: Record<string, ReactNode> = {
 	runs: <DexRuns {...dexRunsProps()} />,
 };
 
-/** The configs tab pins one chip's hint at a time, as the Dex itself does. */
 const ConfigsPanel = () => {
 	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
 

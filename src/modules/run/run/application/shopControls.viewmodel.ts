@@ -21,13 +21,9 @@ import {
 	rebuildAvailable,
 } from "~/modules/run/run/domain/shopAction.model";
 
-/** ADR-029's three horizons plus the tag. `*Available` is whether the shop
- * sells it at all (staged by depth, or for Lock by .lock being in the
- * build), `can*` whether the run can pay: the shop hides one and disables the other. */
 export type ShopControls = {
 	readonly rebuildCost: number;
 	readonly canRebuild: boolean;
-	/** False while WTFPL shows the whole catalog — a reroll would sell nothing. */
 	readonly rebuildAvailable: boolean;
 	readonly lockAvailable: boolean;
 	readonly lockCost: number;
@@ -36,13 +32,11 @@ export type ShopControls = {
 	readonly extendAvailable: boolean;
 	readonly extendCost: number;
 	readonly canExtend: boolean;
-	/** Read-only (ADR-038): every buy, sell and plan change refuses. */
 	readonly shopLocked: boolean;
 	readonly pinAvailable: boolean;
 	readonly pinCost: number;
 	readonly canPin: boolean;
 	readonly pinnedAtGate: number | null;
-	/** An opened audit is in hand, so the shop sells a redraw of it (ADR-119). */
 	readonly repackageAvailable: boolean;
 	readonly repackageUsed: boolean;
 	readonly repackageCost: number;

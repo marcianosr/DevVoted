@@ -16,7 +16,6 @@ export type PolldexPollRow = {
 	categoryCode: string;
 };
 
-/** Every published poll — the canon the Polldex catalogues. */
 export const fetchPublishedPollsForDex = async (): Promise<PolldexPollRow[]> =>
 	db
 		.select({
@@ -34,10 +33,6 @@ export type PolldexSeenRow = {
 	timesSeen: number;
 };
 
-/**
- * Lifetime views per poll for one user — SUM(times_seen) across every run.
- * The batched form of `getTimesEncountered`, one row per encountered poll.
- */
 export const fetchSeenCountsByUser = async (
 	userId: string
 ): Promise<PolldexSeenRow[]> =>
@@ -57,12 +52,6 @@ export type PolldexCorrectnessRow = {
 	optionSelected: number | null;
 };
 
-/**
- * One row per (response, option) for all of the user's responses across both
- * modes. `optionSelected` is non-null when that option was chosen. Correctness
- * is deliberately NOT decided here — the handler folds these rows through
- * `evaluatePollAnswer` so the full/partial/wrong rule stays in one place.
- */
 export const fetchAnswerCorrectnessByUser = async (
 	userId: string
 ): Promise<PolldexCorrectnessRow[]> =>

@@ -25,7 +25,6 @@ type PollAccuracy = {
 	fullyCorrect: number;
 };
 
-/** Fold per-(response,option) rows into per-response tallies keyed by responseId. */
 const tallyResponses = (
 	rows: PolldexCorrectnessRow[]
 ): Map<number, ResponseTally> => {
@@ -46,7 +45,6 @@ const tallyResponses = (
 	return tallies;
 };
 
-/** Per-poll answered count + fully-correct count, reusing the shared rule. */
 const accuracyByPoll = (
 	tallies: Map<number, ResponseTally>
 ): Map<number, PollAccuracy> => {
@@ -82,8 +80,6 @@ export const getPolldexService = async ({ userId }: { userId: string }) =>
 			const viewCount = seenByPoll.get(poll.id) ?? 0;
 			const answered = accuracy.get(poll.id);
 			const answeredCount = answered?.answeredCount ?? 0;
-			// Answering a poll counts as seeing it: daily/calendar answers write no
-			// run-scoped history row, so views alone read 0 for a poll you answered.
 			const timesSeen = Math.max(viewCount, answeredCount);
 			const seen = timesSeen > 0;
 
@@ -93,7 +89,6 @@ export const getPolldexService = async ({ userId }: { userId: string }) =>
 					pollNumber: poll.pollNumber,
 					categoryCode: poll.categoryCode,
 					seen,
-					// Redact the question text for unseen polls — never crosses the wire.
 					question: seen ? poll.question : null,
 					timesSeen,
 					answeredCount,

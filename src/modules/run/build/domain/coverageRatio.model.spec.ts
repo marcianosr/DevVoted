@@ -126,12 +126,6 @@ describe("the bands are cut in answers, not points", () => {
 		expect(okDropAt(VICTORY_GATE)).toBeGreaterThan(okDropAt(0));
 	});
 
-	/**
-	 * The reason the bands cannot be fixed percentage points. A whole day moves
-	 * the run score 5/65 at the champion; a band wider than five answers could
-	 * not be crossed in a day, so the last gates could not change a run's
-	 * standing at all.
-	 */
 	it("keeps a single day able to cross OK at every gate", () => {
 		const walled = GATES.filter((gate) => okDropAt(gate) >= SLICE_WINDOW);
 
@@ -265,10 +259,6 @@ describe("the balance this model exists to hold", () => {
 		};
 	};
 
-	/**
-	 * Carries the ledger across gates, which is the whole point of the model:
-	 * a gate is judged on the run behind it, not on its own five answers.
-	 */
 	const simulate = (
 		configs: readonly Config[],
 		accuracy: number,
@@ -296,7 +286,6 @@ describe("the balance this model exists to hold", () => {
 				for (let poll = 0; poll < SLICE_WINDOW; poll++) {
 					if (roll() >= accuracy) continue;
 					rights++;
-					// Short-circuits at multiShare 0 so an all-singles run keeps its roll stream.
 					const multiple = multiShare > 0 && roll() < multiShare;
 					units += unitsPerCorrect(configs, multiple ? "multiple" : "single");
 				}
@@ -321,19 +310,10 @@ describe("the balance this model exists to hold", () => {
 		return { winRate: wins / TRIALS, averageGate: deepest / TRIALS };
 	};
 
-	/**
-	 * Not quite zero since ADR-094 eased the late floor to yesterday's line:
-	 * about one run in a thousand squeaks through on the poll order alone.
-	 */
 	it("walls a bare build at poor accuracy", () => {
 		expect(simulate(BARE, 0.6).winRate).toBeLessThan(0.01);
 	});
 
-	/**
-	 * The reversal ADR-073 Decision 3 chose against. A run-wide score cannot wall
-	 * a bare build, because a player answering everything correctly earns one
-	 * unit a slot and one unit a slot is 100%. Skill now substitutes for a build.
-	 */
 	it("lets skill alone summit, which the per-gate meter never did", () => {
 		expect(simulate(BARE, 0.9).winRate).toBeGreaterThan(0.9);
 	});
@@ -344,13 +324,6 @@ describe("the balance this model exists to hold", () => {
 		);
 	});
 
-	/**
-	 * The cap's bill. Coverage tops out at 100%, so the ladder can never ask for
-	 * more than line / accuracy, which is about 1.4x at 70%. Every multiplier
-	 * past that buys nothing, and x2, x3 and x6 land within noise of each other.
-	 * This is the shape the memo calls "a percentage bar cannot be the
-	 * difficulty dial", and it is asserted here so it cannot change in silence.
-	 */
 	it("stops paying for multiplier once the cap binds", () => {
 		const doubled = simulate(DOUBLER, 0.7).winRate;
 		const stacked = simulate(STACKED, 0.7).winRate;
@@ -368,22 +341,11 @@ describe("the balance this model exists to hold", () => {
 		expect(simulate(STACKED, 0.6).winRate).toBeLessThan(0.5);
 	});
 
-	/**
-	 * The multiple-choice bonus is the largest difficulty dial in the model and
-	 * the player does not hold it: the seed deals the mix. A bare build at 70%
-	 * summits about 4% of all-singles runs and better than a third of runs once
-	 * a quarter of the window asks for a set. Recorded so it cannot widen unseen.
-	 */
 	it("swings a near-walled bare build to winnable on the poll mix alone", () => {
 		expect(simulate(BARE, 0.7).winRate).toBeLessThan(0.05);
 		expect(simulate(BARE, 0.7, 0.25).winRate).toBeGreaterThan(0.3);
 	});
 
-	/**
-	 * The same 100% cap that flattens the multiplier ladder flattens this one:
-	 * past roughly half the window, the extra credit overflows into KB instead
-	 * of coverage, so an all-multiple run is no safer than a half-multiple one.
-	 */
 	it("stops paying for poll mix once the cap binds", () => {
 		const half = simulate(BARE, 0.75, 0.5).winRate;
 		const every = simulate(BARE, 0.75, 1).winRate;

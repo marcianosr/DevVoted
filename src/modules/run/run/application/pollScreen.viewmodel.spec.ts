@@ -145,8 +145,6 @@ describe("pollBuildFor", () => {
 		const build = pollBuildFor(viewOf([CONFIGS.eslint], CSS_GATE), {
 			onPress: () => {},
 		});
-		// The skip badge states the same refusal first; the press is the one
-		// carrying the action, so it is found by being pressable, not by position.
 		const press = (build.configs[0].badges ?? []).find(
 			(badge) => "onPress" in badge
 		);

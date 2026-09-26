@@ -568,12 +568,6 @@ describe("the sealed audit lives in the shop (ADR-119)", () => {
 	});
 });
 
-/**
- * Gate 0 leaves prep through `start` and every gate after it through
- * `finish-reward`. The hold is keyed on the action rather than written into
- * either exit, so these two specs are what prove it did not land on one age of
- * the run only.
- */
 describe("a config that asks for a call in prep holds the gate", () => {
 	const owingAtGateZero = (): RunState =>
 		["planning-poker", "js", "ts", "css"].reduce(

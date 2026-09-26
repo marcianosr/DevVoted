@@ -12,7 +12,6 @@ export type RunOverViewProps = {
 	view: RunView;
 	onNewRun: () => void;
 	onCommunity?: () => void;
-	/** The account archive after this run banks. Absent wherever no server answered. */
 	archiveAfterKb?: number;
 };
 
@@ -44,7 +43,6 @@ export const runOverFrameOf = (
 	};
 };
 
-/** Tier 2: the whole run reported once, for a climb that summited or stopped. */
 export const RunOverView = ({
 	view,
 	onNewRun,

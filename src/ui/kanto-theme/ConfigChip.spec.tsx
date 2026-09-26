@@ -11,7 +11,6 @@ const appCss = readFileSync("src/styles/app.css", "utf8");
 
 const BADGES = [{ label: "×2", color: "viridian" }] as const;
 
-/** A card only folds where a panel has wired the toggle. */
 const noop = () => {};
 
 const INFO = {
@@ -962,8 +961,6 @@ describe("ConfigChip's highlight", () => {
 		expect(onLeave).toHaveBeenCalledTimes(1);
 	});
 
-	// mouseenter does not bubble, so a wrapper carrying the handler would never
-	// fire. The upgrade panel is what puts a wrapper back around the card.
 	it("hovers on the card itself rather than through the panel's wrapper", async () => {
 		const onHover = vi.fn();
 		const { container } = render(

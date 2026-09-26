@@ -11,7 +11,6 @@ export type ConfigUnlockRow = {
 	viaMetric: string | null;
 };
 
-/** Every config the account has been granted, free set included. */
 export const fetchConfigUnlocksByUser = async (
 	userId: string
 ): Promise<ConfigUnlockRow[]> =>
@@ -29,7 +28,6 @@ export type ObjectiveProgressRow = {
 	count: number;
 };
 
-/** The account's lifetime objective counters, one row per touched metric. */
 export const fetchObjectiveProgressByUser = async (
 	userId: string
 ): Promise<ObjectiveProgressRow[]> =>

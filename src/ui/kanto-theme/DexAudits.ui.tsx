@@ -11,11 +11,6 @@ export const gatesLabelOf = (gates: readonly number[]): string => {
 	return `gates ${gates[0]}–${gates[gates.length - 1]}`;
 };
 
-/**
- * An audit row names where the rule *can* land, never how often it has. The
- * roster is drawn per run and nothing records what a draw dealt, so a count
- * would read zero for every drawn audit a player has actually met.
- */
 export type DexAuditRow = { id: string; gates: string } & Redactable<{
 	code: number;
 	name: string;

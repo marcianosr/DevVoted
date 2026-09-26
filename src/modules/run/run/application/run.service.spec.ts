@@ -104,7 +104,6 @@ const sessionRunRecord = (
 const configuringState = (): RunState =>
 	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint]);
 
-// `start` is refused on a bare build, so the hand has to be installed first.
 const answeringState = (): RunState => {
 	const configs = [CONFIGS.js, CONFIGS.eslint];
 	const installed = configs.reduce(
@@ -133,8 +132,6 @@ describe("getRunRecapService (DVTD-t3lt: the archive's one id-bearing URL)", () 
 		if (result.success) expect(result.data.status).toBe("configuring");
 	});
 
-	// The id comes from the URL, so this is the whole guard. Refusing without
-	// saying the run exists keeps a stranger's archive unenumerable.
 	it("refuses a run belonging to someone else, and never reads its state", async () => {
 		vi.mocked(queries.findSessionRunById).mockResolvedValue(
 			sessionRunRecord({ user_id: "blue-from-pallet-town" })
@@ -190,8 +187,6 @@ describe("getTodaysRunService", () => {
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data?.status).toBe("configuring");
-		// Seeding today's sequence is the rollover's own business now, so the
-		// service only has to ask for it once (DVTD-5n9l).
 		expect(queries.ensureTodaysSegment).toHaveBeenCalledWith(64, DATE);
 		expect(queries.loadRunState).toHaveBeenCalledWith(64);
 	});
@@ -237,8 +232,6 @@ describe("getTodaysRunService", () => {
 	});
 
 	it("self-heals an active run whose state row is missing instead of bricking", async () => {
-		// Corrupt run (seen on dev): abandon it for nothing and show the start
-		// screen, rather than erroring on every request forever.
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
 			sessionRunRecord()
 		);
@@ -299,7 +292,6 @@ describe("startRunService", () => {
 
 	it("starts a same-day rerun from today's seed minus already-answered polls", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		// POLLS[0] has engine id "0" — answered in the abandoned run this morning.
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			new Set([0])
 		);

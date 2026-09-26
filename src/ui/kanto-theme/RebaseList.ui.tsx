@@ -17,7 +17,6 @@ export type RebaseRow = {
 	id: string;
 	category: string;
 	color?: KantoColor;
-	/** v2 only: which polls take more than one answer. */
 	answerType?: string;
 };
 
@@ -25,17 +24,10 @@ export type RebaseListProps = {
 	label: string;
 	hint: string;
 	rows: readonly RebaseRow[];
-	/** Absent once the order is locked, which is the moment the gate starts. */
 	onMove?: (from: number, to: number) => void;
-	/** Why the order cannot be changed. Visible text, never an aria-label. */
 	refusal?: string;
 };
 
-/**
- * Up and down presses rather than a drag: one press is one `{from, to}`, it is
- * reachable from the keyboard, and it needs no drag library. `movedSlice` is a
- * splice-move, so an adjacent move reads as the swap it looks like.
- */
 const Moves = ({
 	index,
 	last,

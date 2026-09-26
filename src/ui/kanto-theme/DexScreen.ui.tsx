@@ -8,8 +8,6 @@ import { Typography } from "./Typography.ui";
 const TITLE_ROW = "flex w-full flex-wrap items-baseline gap-x-3 gap-y-1";
 const SUBTITLE = "text-sm text-theme-muted";
 const ARCHIVE = "ml-auto text-sm tabular-nums text-theme-muted";
-// The tab strip and its panel are one surface; the screen's own gap would
-// float the active tab off the panel it is supposed to merge into.
 const TABBED = "flex w-full flex-col";
 
 export const DEX_TITLE = "Dex";
@@ -20,9 +18,7 @@ export type DexScreenProps = {
 	tabs: readonly TabItem[];
 	activeId: string;
 	onSelect: (id: string) => void;
-	/** Colours the whole screen after the tab being read. */
 	theme: KantoColor;
-	/** What the account is holding, e.g. "8.2 MB archive". */
 	archive: string;
 	children: ReactNode;
 };

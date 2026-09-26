@@ -26,11 +26,6 @@ const STACK_MAX = 4;
 const SCROLLER = "no-scrollbar flex w-full gap-1.5 overflow-x-auto pb-2";
 const COLUMN = "flex w-24 shrink-0 flex-col items-center gap-2";
 
-/**
- * The dashed run of track between one gate and the next, drawn on the column
- * rather than under the row: a border on the block itself stays with its gate
- * however far the track is scrolled, and needs no second layer to line up with.
- */
 const BLOCK = "relative flex w-full items-center justify-center";
 const RAIL =
 	"absolute top-1/2 left-1/2 -z-10 h-0 w-full border-t border-dashed border-theme-faint";
@@ -49,7 +44,6 @@ const FALLEN_LANE =
 
 const CHIP_PRESS = "rounded-md focus:outline-none focus-visible:ring-2";
 
-/** The card hangs off the map, never off a chip: the track scrolls and would clip it. */
 const ROOT = "relative flex w-full flex-col gap-2";
 
 const LEGEND = "flex w-full flex-col gap-1 pt-1";
@@ -59,7 +53,6 @@ const DOT = "size-2 shrink-0 rounded-full";
 
 export type ClimbMapProps = {
 	gates: readonly LadderGate[];
-	/** Whose build is open under the track. Tier 1 holds no state of its own. */
 	openId?: string;
 	onInspect?: (id: string) => void;
 };
@@ -153,12 +146,6 @@ const Legend = () => (
 	</div>
 );
 
-/**
- * The whole ladder, always: a screen too narrow for it scrolls rather than
- * paging, and opens centred on the viewer's own gate so the first thing read is
- * where they stand. jsdom measures every element at zero, so the centring is
- * inert under test and the column carries `data-current` for the spec to find.
- */
 export const ClimbMap = ({ gates, openId, onInspect }: ClimbMapProps) => {
 	const scroller = useRef<HTMLUListElement>(null);
 	const currentColumn = useRef<HTMLLIElement>(null);

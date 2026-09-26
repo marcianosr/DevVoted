@@ -55,7 +55,6 @@ const PATHS = {
 			<path d="M2.4 7c0 1 2.1 1.8 4.6 1.8s4.6-.8 4.6-1.8" />
 		</>
 	),
-	/** The balance's own mark: a save, because storage is what a run banks. */
 	floppy: (
 		<>
 			<path d="M2.4 2.4h7l2.2 2.2v7H2.4Z" />
@@ -71,14 +70,12 @@ const PATHS = {
 		</>
 	),
 	chevron: <path d="M5.5 3.5 9 7l-3.5 3.5" />,
-	/** The card's chevron doubled: one press that moves every card, not one. */
 	fold: (
 		<>
 			<path d="M4.4 6.1 7 3.5l2.6 2.6" />
 			<path d="M4.4 7.9 7 10.5l2.6-2.6" />
 		</>
 	),
-	/** What a press gives back. */
 	undo: (
 		<>
 			<path d="M3.4 6.4h5.1a2.6 2.6 0 0 1 0 5.2H6.3" />
@@ -92,7 +89,6 @@ const PATHS = {
 			<path d="M6.5 4 3.5 7l3 3" />
 		</>
 	),
-	/** `back` mirrored: the way on, for the one press a screen is asking for. */
 	forward: (
 		<>
 			<path d="M2.5 7h8" />

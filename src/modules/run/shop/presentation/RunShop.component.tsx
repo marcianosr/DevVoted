@@ -4,7 +4,6 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/** Tier 2: the registry, and the KB that installs from it. */
 export const RunShop = () => {
 	const { view } = useTodaysRun();
 	const { send, abandon } = useRunActions();

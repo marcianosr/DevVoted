@@ -4,7 +4,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { signupFn } from "~/modules/account/auth/application/auth.serverfn";
 import { Auth } from "~/modules/account/auth/presentation/Auth.ui";
 
-/** Tier 2: wires the signup mutation to the shared auth form. */
 export const SignUp = () => {
 	const signupMutation = useMutation({
 		mutationFn: useServerFn(signupFn),

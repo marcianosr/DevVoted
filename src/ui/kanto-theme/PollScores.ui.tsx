@@ -14,22 +14,11 @@ const ROW = "flex w-full flex-wrap items-center gap-2";
 const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
 const TRACK = "flex shrink-0 items-center gap-1";
 const TAG = "shrink-0";
-/**
- * Hard right at every width. It already carried `ml-auto`, but that only aligns
- * it within whatever line it lands on — taking the line outright on a phone is
- * what makes the total sit under the track's right edge rather than wherever
- * the wrap happened to leave it.
- */
 const SCORE =
 	"ml-auto flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto";
 const EMPTY =
 	"inline-flex items-center justify-center rounded-md border-dashed px-2 py-0.5 text-xs font-bold tabular-nums";
 const WAITING = "border border-theme-faint text-theme-muted";
-/**
- * The same dashed well the swatch draws for the gate you are standing on. The
- * width and the colour are spelled here rather than added to `EMPTY`, because
- * two utilities setting one property resolve by Tailwind's emit order.
- */
 const CURRENT = "border-2 border-theme bg-theme-raised text-theme-faint";
 
 const SWATCH_SIZE = "small";
@@ -42,7 +31,6 @@ const TOTAL_WORD = "Total units";
 export type PollPaid = {
 	figure: string;
 	color: KantoColor;
-	/** What the figure is made of, shown on hovering the chip that states it. */
 	receipt?: readonly LedgerRow[];
 };
 
@@ -59,11 +47,6 @@ export type PollScoreRow = {
 	polls: number;
 	current?: boolean;
 	payouts?: PollPayouts;
-	/**
-	 * Names the gate where the payout track would otherwise count answers. The run
-	 * debrief lists every gate at once, and "4 out of 5" five times over says which
-	 * row you are on only by counting down from the top.
-	 */
 	label?: string;
 	tag?: PollScoreTag;
 };
@@ -114,10 +97,6 @@ const markFor = ({ swatch, current = false }: PollScoreRow): SwatchFill =>
 const receiptLabelOf = (paid: PollPaid, position: number): string =>
 	`${POLL_WORD} ${position + 1} — ${PAID_WORD} ${paid.figure}`;
 
-/**
- * A track whose chips carry receipts holds real buttons, so it may not be
- * hidden from assistive tech the way a purely decorative track is.
- */
 const tracksReceipts = ({ payouts }: PollScoreRow): boolean =>
 	payouts !== undefined &&
 	payouts.slots.some(
@@ -142,12 +121,6 @@ const PaidChip = ({ paid, position }: { paid: PollPaid; position: number }) => {
 	);
 };
 
-/**
- * The poll being answered: the first slot still empty, on the gate in hand.
- * Counted from the track rather than passed in, so the mark cannot point at a
- * poll the slots beside it say is already paid. A gate the run has moved past
- * has nothing current in it, however many slots it left empty.
- */
 const currentSlotOf = (row: PollScoreRow): number | undefined => {
 	if (row.current !== true || row.payouts === undefined) return undefined;
 

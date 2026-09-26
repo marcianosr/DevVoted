@@ -63,31 +63,17 @@ export type OfferDeal = {
 	priceKb: number;
 	affordable: boolean;
 	onInstall?: () => void;
-	/** Pointing at an offer previews what installing it leaves in the balance. */
 	onHover?: () => void;
 	onLeave?: () => void;
-	/** Present only when this install would cross a rung (ADR-098). */
 	scale?: InstallScale | null;
 	armed?: boolean;
 };
 
-/**
- * Hover and focus both land here: the chip points them at the same pair, so a
- * keyboard reaches the preview a pointer gets.
- */
 const pointersOf = ({ onHover, onLeave }: OfferDeal) => ({
 	...(onHover === undefined ? {} : { onHover }),
 	...(onLeave === undefined ? {} : { onLeave }),
 });
 
-/**
- * The price rides the Install button rather than a badge beside it, so the one
- * install affordance reads the same here as it does on the new-run hand.
- *
- * An install that changes the standing bill arms first: the price on the press
- * is what the config costs once, and the rung it rents is what it costs every
- * gate after. Only the first of those fits on a button.
- */
 const offerInstallFor = ({
 	priceKb,
 	affordable,
@@ -114,11 +100,6 @@ export const offerChipFor = (
 	...pointersOf(deal),
 });
 
-/**
- * A rolled upgrade sells through the same `draft` press as any offer, so the
- * deal is the install deal; the odds beside the pennant say how lucky the roll
- * was, at rest, because the kit's hints are aria-labels nobody can see.
- */
 export const upgradeChipFor = (
 	offer: Config,
 	heldLevel: number,
@@ -129,13 +110,6 @@ export const upgradeChipFor = (
 	return {
 		name: offer.label,
 		slots: slotsOf(offer),
-		/**
-		 * The version held, never the one on sale. A pennant means "this is what
-		 * you have" on the Build panel, and reading the offered rung here made
-		 * the same glyph mean "this is what is for sale" — so a v2 offer showed
-		 * `v2` beside a press offering v2, which reads as already owning it. The
-		 * press states the target; the pennant states the holding.
-		 */
 		version: heldLevel,
 		detail: share === undefined ? undefined : rollOddsLabel(share),
 		badges: [],
@@ -149,11 +123,6 @@ export const upgradeChipFor = (
 	};
 };
 
-/**
- * An installed config sells its own next version here (ADR-097 decision 6): the
- * registry's rolled offer waives the coverage gate, this press does not, so the
- * two presses must not be the same one.
- */
 export const buildChipFor = (
 	config: Config,
 	onUninstall?: () => void,
@@ -184,29 +153,16 @@ export const controlRowFor = (
 	onPress: priceKb <= balanceKb ? onPress : undefined,
 });
 
-/**
- * Named for the gate it is stocking for, not the one just cleared: the player
- * is here to spend on what comes next, and the swatch track beside the title
- * already points there. The summit has no next gate, so it keeps the bare word.
- */
 const shopTitleFor = (cleared: number): string => {
 	const next = gateSwatchAt(cleared + 1);
 	return next === undefined ? SHOP_WORD : `${next.gateName} ${SHOP_WORD}`;
 };
 
-/**
- * What the balance reads if the offer under the pointer goes through. Stated
- * as the balance rather than the price, because the price is already on the
- * press and what the player cannot see is what it leaves behind.
- */
 const afterInstallOf = (
 	balanceKb: number,
 	priceKb: number | undefined
 ): HeaderFundsPreview | undefined => {
 	if (priceKb === undefined) return undefined;
-	// A balance never goes below nothing, so an offer the shelf cannot cover has
-	// no after to state. What it is short by is the chip's to say, not the
-	// header's, and kbLabel has no negative reading to give either way.
 	if (priceKb > balanceKb) return undefined;
 
 	return {

@@ -14,11 +14,6 @@ import { ShopScreen } from "./ShopScreen.ui";
 
 const props = createKantoShopScreenProps();
 
-/**
- * The innermost element stating the whole sentence. A wrapper whose only other
- * child is a press with no words of its own carries the same text content, so
- * matching on it alone finds a row rather than the line being asserted.
- */
 const sentence = (text: string) =>
 	screen.getAllByText((_, element) => element?.textContent === text).at(-1);
 
@@ -152,10 +147,6 @@ describe("ShopScreen", () => {
 		expect(screen.getAllByText(/32 KB a gate/)).toHaveLength(1);
 	});
 
-	/**
-	 * The rung is no longer a thing the shop sells, so there is no panel and no
-	 * press for it (ADR-098) — it is stated on the build it follows.
-	 */
 	it("sells no build space at all, in a panel or on a press", () => {
 		render(<ShopScreen {...props} />);
 

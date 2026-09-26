@@ -23,7 +23,6 @@ import type { HeldAudit, RunState } from "~/modules/run/run/domain/run.model";
 
 const SEED = "64:2026-09-23";
 
-/** The shop after gate 0: one sealed PERFECT audit in hand. */
 const shopping = (): RunState => clearGate(started(["js"]));
 
 const holding = (

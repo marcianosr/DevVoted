@@ -25,15 +25,10 @@ describe(pollsNoteFor, () => {
 		);
 	});
 
-	// The press above this note already reads the wait on a spent day, so the
-	// note says the other half rather than the same half twice.
 	it("says the day is answered once every poll of it is spent", () => {
 		expect(pollsNoteFor(today(0))).toBe("today’s 5 polls are answered");
 	});
 
-	// A run abandoned mid-day restarts on today's five minus what the account
-	// already answered (ADR-014), so a short segment is a genuinely part-answered
-	// day — the player did answer the missing polls, just in the run they left.
 	it("reads a restarted run's short segment as a part-answered day", () => {
 		expect(pollsNoteFor(today(2))).toBe(
 			"2 of today’s 5 left · they do not carry to tomorrow"

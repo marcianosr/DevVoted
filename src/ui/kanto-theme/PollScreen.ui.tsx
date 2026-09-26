@@ -32,80 +32,17 @@ const COPY = {
 
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
-/**
- * Beside the readings, not under them, with air between: the rule is a thing to
- * press and the readings are figures, so the gap is what tells them apart. It
- * still wraps to its own line on a phone — the row it sits in allows that — but
- * it no longer claims one at every width.
- */
 const META_LINE = "flex justify-end sm:ml-2";
-/**
- * The question and the thing it is being weighed against, side by side once
- * there is room for both. The poll leads in the source, so a phone gets it
- * first and the readout under it — a reader who has to scroll past the
- * coverage panel to reach the question is reading the screen backwards.
- *
- * A fixed rail rather than a fraction: the readout is a fixed set of figures
- * and a bar, and giving it a share of the width would only stretch it while
- * squeezing the one column whose content actually varies in length.
- */
 const POLL_ROW =
 	"grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]";
-/**
- * The readout follows the answers down the page: it is what every choice on the
- * screen is being weighed against, and scrolling it away leaves the player
- * picking blind.
- *
- * It pins only where it sits beside the question. Stacked under the poll on a
- * phone there is nothing above the answers to pin, and `POLL_ROW`'s
- * `items-start` is what gives the rail a box short enough to travel inside —
- * a stretched grid item is already as tall as its row and cannot move.
- *
- * `z-10` sits below `BuildFooter`'s `z-20`, which pins to the bottom.
- */
 const PINNED_READOUT = "lg:sticky lg:top-4 lg:z-10";
 
 const PAID = "border-t border-theme-faint";
-/**
- * Its own column rather than leaning on `Panel.Body`'s gap: the body spaces
- * unrelated regions at `gap-4`, and a heading wants to sit nearer the thing it
- * heads than that. Overriding the body's own gap is not an option — two `gap`
- * utilities are resolved by Tailwind's order, not by ours.
- */
 const SCORE_BLOCK = "flex w-full flex-col gap-2";
-// Its own region rather than a second line inside the credit footer, because
-// `Panel` pads each region and not its surface — that is what lets the rule
-// above the leader reach the panel's edges instead of stopping at the padding.
 const LEADER_REGION = "border-t border-theme-faint px-4 py-3";
-/**
- * Everything about the poll that is not the question: its category, its shape,
- * and whatever the build has to say about it.
- *
- * This is the panel's whole header. The count that used to head it ("Poll 1 out
- * of 5") is already on the screen — the coverage rail states the run's position
- * in the window — and two stacked header rows above a question read as chrome
- * before the thing the screen is actually asking.
- */
 const META_REGION =
 	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 first:rounded-t-2xl";
 const META_TRAILING = "flex flex-wrap items-center gap-2 sm:ml-auto";
-/**
- * The send, and the floor of the screen's pinned stack. It rides the bottom of
- * the viewport while the poll runs off the end of it, then settles above the
- * byline once the panel's end is in view — so the press is always within reach
- * of the question it commits, and never floats free of the panel it belongs to.
- *
- * It holds the floor rather than riding on the build sheet: this is the one
- * press the screen is asking for, and a bar that has to be found above another
- * bar is not the first thing a thumb reaches. The sheet is seated on it
- * instead, off this row's measured height.
- *
- * The send alone draws no ground: it is an opaque bar already, and a second one
- * behind it is a black plate around a press. The screen's own footer does draw
- * one — it seats bare text over answers that scroll beneath. The bottom
- * rounding only ever applies to a poll that credits nobody, where this row is
- * the panel's last.
- */
 const COMMIT_REGION =
 	"sticky bottom-0 z-10 flex w-full flex-col gap-3 px-4 py-3 last:rounded-b-2xl";
 const COMMIT_GROUND = "border-t border-theme-faint bg-theme-faint";
@@ -120,14 +57,8 @@ export type PollCoverage = {
 	paid?: PollScoresProps;
 };
 
-/**
- * The answer's send. It states the count it acts on beside itself, so "2 picked"
- * and "Lock in 2 answers" cannot drift apart or scroll apart.
- */
 export type PollCommit = {
-	/** "Lock in 2 answers", or "Lock in" while nothing is picked. */
 	label: string;
-	/** "2 picked", or why the press is refused while nothing is. */
 	note: string;
 	onPress?: () => void;
 };
@@ -155,12 +86,6 @@ export type PollScreenProps = {
 
 type PollCreditProps = Pick<PollScreenProps, "hint" | "author">;
 
-/**
- * A badge, not a hint: what it states about the author is the same kind of fact
- * as the streak the category leader wears on the row below, and the two sit at
- * the same trailing edge. Reading one as a label and the other as an aside made
- * the pair look like two unrelated rows.
- */
 const CreditTrailing = ({ hint }: PollCreditProps) =>
 	hint === undefined ? null : <Badge>{hint}</Badge>;
 
@@ -213,10 +138,6 @@ const CoveragePanel = ({ bar, lead, paid }: PollCoverage) => (
 	</Panel>
 );
 
-/**
- * The send and the screen's own press share one slot because the two never
- * coexist: one commits the answer, the other moves past it once it is committed.
- */
 const PollSend = ({ commit, footer, swatch, measure }: PollSendProps) => {
 	if (footer === undefined && commit === undefined) return null;
 
@@ -239,13 +160,7 @@ const PollSend = ({ commit, footer, swatch, measure }: PollSendProps) => {
 };
 
 type PollSendProps = Pick<PollScreenProps, "commit" | "footer"> & {
-	/** The gate being played, so the send wears the mark of what it commits to. */
 	swatch?: SwatchFill;
-	/**
-	 * Addresses this row's own element. The screen measures it to seat the build
-	 * sheet clear of it, which is a height only the DOM knows: the row wraps and
-	 * the note under the label changes length as the answer does.
-	 */
 	measure: (bar: HTMLElement | null) => void;
 };
 

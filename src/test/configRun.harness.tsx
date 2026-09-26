@@ -139,7 +139,6 @@ const pollsOf = (entries: readonly GateEntry[]): RunPoll[] =>
 			: selectAllPoll(`${entry.category}-${index}`, entry.category)
 	);
 
-/** What a build's prep-time configs are told to call, when a story cares. */
 export type PrepCalls = {
 	readonly estimate?: number;
 	readonly band?: "ok" | "healthy" | "perfect";
@@ -147,12 +146,6 @@ export type PrepCalls = {
 
 const DEFAULT_CALLS = { estimate: 1, band: "ok" } as const;
 
-/**
- * A config that asks for a call in prep holds the gate until it gets one, so a
- * story build carrying one has to answer before the window can open at all.
- * The call is cleared at every close, so later preps are un-called again the
- * way a real run leaves them.
- */
 const calling = (state: RunState, calls: PrepCalls): RunState => {
 	const bet =
 		estimatorFor(state.build.configs) === undefined
@@ -170,11 +163,6 @@ const calling = (state: RunState, calls: PrepCalls): RunState => {
 	});
 };
 
-/**
- * Sets `build.configs` directly so a story can show a build the shop's install
- * caps would never deal, answers whatever prep is waiting on, then starts the
- * run so the window opens for real.
- */
 export const runWith = (
 	configs: readonly Config[],
 	entries: readonly GateEntry[],
@@ -212,7 +200,6 @@ export const dispatching = (
 	...actions: readonly RunAction[]
 ): RunState => actions.reduce(runReducer, state);
 
-/** A number is how much of the key to catch, so a story can land a partial rung. */
 export type AnswerOutcome = boolean | number;
 
 const pickedFor = (poll: RunPoll, outcome: AnswerOutcome): string[] => {

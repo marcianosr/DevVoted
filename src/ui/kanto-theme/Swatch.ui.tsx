@@ -11,10 +11,8 @@ export type SwatchFill =
 
 export type SwatchState = SwatchFill["state"];
 
-/** A fill that may carry a figure in its well. See `count` on `SwatchProps`. */
 export type SwatchMark = SwatchFill & { count?: number };
 
-/** How light the surface behind the mark is. Everything here is pitched at `dark`. */
 export type SwatchGround = "dark" | "bright";
 
 const BASE = "inline-block shrink-0";
@@ -31,29 +29,12 @@ const FILL = {
 	undiscovered: "bg-theme-raised",
 } satisfies Record<SwatchState, string>;
 
-/**
- * The same three marks on a ground lighter than they are. Every fill above is
- * pitched against the near-black screen and inverts badly on a bright one: the
- * well the dashes enclose becomes a dark chip, and `border-theme` is the raw
- * theme colour, which on a surface wearing that colour is the ground itself.
- *
- * `current` rather than a second set of theme rungs, because the only bright
- * ground in the kit is the primary press, and the utility painting it ships an
- * ink already tuned to clear AA against its own fill across all twelve hues.
- * Borrowing that ink is how the mark stays legible without the swatch having to
- * learn which hue it is standing on.
- */
 const ON_BRIGHT = {
 	discovered: "bg-current",
 	current: "border-2 border-dashed border-current",
 	undiscovered: "bg-current/25",
 } satisfies Record<SwatchState, string>;
 
-/**
- * A `current` mark is an empty dashed well, which is room a figure can sit in
- * without the mark losing its shape. Only applied when there is one, so every
- * swatch that carries nothing keeps its `inline-block` box exactly as it was.
- */
 const COUNTED = "inline-flex items-center justify-center text-xs leading-none";
 
 const PLATE = "ring-1 ring-pewter";
@@ -66,7 +47,6 @@ const PRISMATIC = {
 export type SwatchProps = SwatchFill & {
 	size?: SwatchSize;
 	ground?: SwatchGround;
-	/** A figure to stand in the mark's well. Sized for `large` and up. */
 	count?: number;
 };
 

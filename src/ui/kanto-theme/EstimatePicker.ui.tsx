@@ -7,9 +7,7 @@ const FLOOR = "min-w-0 flex-1";
 
 export type EstimateCard = {
 	count: number;
-	/** The bet in words, e.g. "at least 3 of 5". */
 	floor: string;
-	/** What it pays if the window meets it, already resolved by the engine. */
 	payout: string;
 };
 
@@ -18,12 +16,7 @@ export type EstimatePickerProps = {
 	hint: string;
 	cards: readonly EstimateCard[];
 	committed: number | null;
-	/** Absent once the bet is locked, which is the moment the gate starts. */
 	onPick?: (count: number) => void;
-	/**
-	 * Why no card can be picked. Visible text rather than a `hint`, because a
-	 * `hint` is an aria-label and a refusal nobody can see is not a refusal.
-	 */
 	refusal?: string;
 };
 

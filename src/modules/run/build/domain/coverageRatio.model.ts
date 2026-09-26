@@ -23,17 +23,10 @@ export const percentOf = (ratio: number): number => ratio * AS_PERCENT;
 export const ratioOf = (percent: number): number => percent / AS_PERCENT;
 
 export type GateRung = {
-	/** Units the run must hold at this close to read HEALTHY. */
 	readonly healthy: number;
-	/** Answers under the line where OK ends. */
 	readonly okDrop: number;
 };
 
-/**
- * One row per gate, in answers. The step between rows is what a run sitting
- * on yesterday's line must earn today, and it grows with the climb; OK widens
- * from one answer under the line to three (ADR-094). Percent is derived.
- */
 export const GATE_RUNGS: readonly GateRung[] = [
 	{ healthy: 3, okDrop: 1 },
 	{ healthy: 6, okDrop: 1 },
@@ -57,11 +50,6 @@ export const healthyUnitsAt = (gate: number): number => rungAt(gate).healthy;
 
 export const okDropAt = (gate: number): number => rungAt(gate).okDrop;
 
-/**
- * The floor is where HEALTHY stood the day before, so a run that closed
- * HEALTHY never opens the next gate in DANGER, and Pallet has no floor at all
- * (ADR-057: the calibration gate can hold a run, never kill it).
- */
 export const floorUnitsAt = (gate: number): number =>
 	gate <= 0 ? 0 : healthyUnitsAt(gate - 1);
 
@@ -76,12 +64,6 @@ export const unitsToRatio = (units: number, gate: number): number =>
 export const runCoverageOf = (units: number, gate: number): number =>
 	asRatio(unitsToRatio(units, gate));
 
-/**
- * What units move the run-coverage bar by, at this gate. Units are flat, the bar
- * is a share of every slot the run has opened, so the same right answer is worth
- * less the deeper the climb goes. Reading `percentOf` off the units directly
- * reports a hundred times the truth at gate 0 and sixty-five at the summit.
- */
 export const coverageGainPercentFor = (units: number, gate: number): number =>
 	percentOf(unitsToRatio(units, gate));
 
@@ -97,7 +79,6 @@ export const surplusPayoutKb = (units: number, gate: number): number =>
 export const healthyAt = (gate: number): number =>
 	unitsToRatio(healthyUnitsAt(gate), gate);
 
-/** Units the run must hold at this close to read OK: HEALTHY, less the drop. */
 export const okUnitsAt = (gate: number): number =>
 	healthyUnitsAt(gate) - okDropAt(gate);
 
@@ -110,11 +91,9 @@ export const floorAt = (gate: number): number =>
 export type CoverageConfigBonus = {
 	readonly configId: string;
 	readonly value: number;
-	/** Present only when the config multiplied, so a row can pick its native form. */
 	readonly factor?: number;
 };
 
-/** What one answer paid, split so the reveal can name each contributor. */
 export type CoverageBreakdown = {
 	readonly base: number;
 	readonly streakBonus: number;
@@ -164,17 +143,11 @@ const BAND_ORDER: readonly CoverageBandId[] = [
 	"perfect",
 ];
 
-/** The bands a player may promise. Holding to SHAKY or DANGER is not a promise. */
 export type CommittableBand = Extract<
 	CoverageBandId,
 	"ok" | "healthy" | "perfect"
 >;
 
-/**
- * What SLA pays for holding to the band it promised. Read off the band the
- * player COMMITTED to, never the one they landed in: paying for the landing
- * would make the promise free and every promise would be OK.
- */
 export const SLA_UPLIFT: Readonly<Record<CommittableBand, number>> = {
 	ok: 0.1,
 	healthy: 0.25,

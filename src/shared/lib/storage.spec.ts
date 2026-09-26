@@ -9,7 +9,6 @@ import {
 } from "./storage";
 
 describe("Storage utilities", () => {
-	// The run economy's own unit: whole KB in, tight label out.
 	describe("formatKb", () => {
 		it("writes sub-megabyte caps in KB", () => {
 			expect(formatKb(512)).toBe("512KB");

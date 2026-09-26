@@ -94,8 +94,6 @@ describe("the band a promise names", () => {
 	});
 
 	it("leaves the engine to refuse a band nobody can promise", () => {
-		// The schema guards the shape; `commitBand` owns which bands are legal,
-		// so an unknown one is a refused action rather than a rejected request.
 		expect(
 			runActionSchema.safeParse({ type: "commit-band", band: "danger" }).success
 		).toBe(true);

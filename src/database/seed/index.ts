@@ -46,11 +46,6 @@ import {
 	seedLegacyEra,
 } from "~/database/seed/runs";
 
-/**
- * Wipes what the seed owns so `db:seed` is idempotent. Order follows the foreign
- * keys: `daily_run_polls.poll_id` and `run_polls.poll_id` are ON DELETE RESTRICT,
- * so the sequences must go before the polls they point at.
- */
 const clearSeededData = async (): Promise<void> => {
 	await db.delete(dailyRunPollsTable);
 	await db.delete(runPollsTable);
@@ -76,10 +71,6 @@ const seedPlayers = async (): Promise<number> => {
 			password: SEED_PASSWORD,
 		});
 
-		// The production signup path, so a seeded account is shaped exactly like a
-		// real one — including the free config grants it writes in the same
-		// transaction. Hand-rolling this insert is how the old seed ended up with
-		// players whose unlock ledger was empty.
 		await insertUser({
 			id: player.id,
 			email: player.email,
@@ -99,8 +90,6 @@ const seedPlayers = async (): Promise<number> => {
 			})
 			.where(sql`${usersTable.id} = ${player.id}`);
 
-		// Resolved against the catalogue rather than trusted: a typo in the cast
-		// would otherwise seed a title id nothing can ever render.
 		const titles = (player.ownedTitleIds ?? []).flatMap((titleId) => {
 			const title = findTitleById(titleId);
 			if (!title) throw new Error(`Seed names unknown title ${titleId}`);
@@ -114,8 +103,6 @@ const seedPlayers = async (): Promise<number> => {
 						user_id: player.id,
 						title_id: title.id,
 						exclusive: isExclusive(title),
-						// Titles the account is seeded holding were never news, so
-						// they must not queue up behind the grant notice.
 						announced_at: new Date(),
 					}))
 				)
@@ -160,7 +147,6 @@ const seedClimbers = async (): Promise<number> => {
 
 const seedCategories = async (): Promise<number> => {
 	const categories = getCategories();
-	// Upsert rather than replace: legacy tables still carry FKs to these rows.
 	await db
 		.insert(pollCategoriesTable)
 		.values(categories.map(({ code, name }) => ({ code, name })))
@@ -168,7 +154,6 @@ const seedCategories = async (): Promise<number> => {
 	return categories.length;
 };
 
-/** Every poll is published with at least one correct option, or the climb drops it. */
 const seedPolls = async (): Promise<number[]> => {
 	const openingTime = new Date("2020-01-01T00:00:00Z");
 	const closingTime = new Date("2099-12-31T23:59:59Z");
@@ -207,12 +192,6 @@ const seedPolls = async (): Promise<number[]> => {
 	return rows.map((row) => row.id);
 };
 
-/**
- * The whole pool becomes today's sequence. `getOrCreateDailyRunSeed` returns a
- * persisted sequence verbatim, so writing every poll here is what lets a full
- * 13-gate run (65 polls, plus 5 per failed gate) be played in one sitting
- * instead of over 13 calendar days.
- */
 const seedTodaysSequence = async (
 	today: string,
 	pollIds: readonly number[]
@@ -226,12 +205,6 @@ const seedTodaysSequence = async (
 	return pollIds.length;
 };
 
-/**
- * Community answers for the opening gates, so per-poll splits and voter chips
- * have data. Spread across three gates rather than one: with a
- * 96-poll day, answering only the first window would leave every later poll
- * with an empty community panel.
- */
 const COMMUNITY_POLL_COUNT = SLICE_WINDOW * 3;
 
 const seedCommunityAnswers = async (
@@ -295,41 +268,9 @@ const seedCommunityAnswers = async (
 	return written;
 };
 
-/**
- * Every seeded account's answer history across the **whole** pool, backdated.
- *
- * Three things the community pass above cannot give, and why they need their
- * own rows rather than a wider slice of that one:
- *
- * - **Every category.** The pool is eight questions per category laid out in
- *   category order, so slicing the opening gates hands the first two categories
- *   everything and the other ten nothing. A record is per category, and ten
- *   empty ones read as a broken feature rather than an open invitation.
- * - **The accounts you log in as.** `SEED_PLAYERS` had no responses at all, so
- *   every record stood at "unclaimed for you" however well the room was doing.
- * - **`mode: "calendar"`.** Session rows dated today are what
- *   `fetchAnsweredPollIdsForDay` reads to decide what this account has already
- *   answered *in today's run* — seeding the pool that way would open every run
- *   with its whole sequence spent. Backdated calendar rows are exactly what the
- *   legacy loop wrote, and every all-time reader (`fetchPollStats`,
- *   `fetchPollSplit`, `fetchCategoryRecord`) counts both loops.
- *
- * `created_at` is set rather than defaulted because a streak is an ordering:
- * one batch insert would stamp every row with the same transaction clock and
- * leave the runs to be cut by whatever order the rows came back in.
- */
 const HISTORY_DAYS = 56;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const HISTORY_ANSWER_MS = 3000;
-/**
- * Two sittings through the pool, not one.
- *
- * The pool is eight questions per category, so a single pass caps every record
- * at eight and an accurate account sweeps the category outright — nine of the
- * twelve records came back at a flat 8, decided by the tie-break rather than by
- * anyone's play. Doubling the ceiling makes a clean sweep rare enough that the
- * records differ from one another, which is the whole point of stating one.
- */
 const HISTORY_PASSES = 2;
 
 type SeedAnswerer = {
@@ -338,17 +279,6 @@ type SeedAnswerer = {
 	readonly accuracy: number;
 };
 
-/**
- * Two hashes mixed rather than one.
- *
- * `hashOf` is a linear `hash * 31 + char` fold, so keys ending in consecutive
- * poll ids land on a short cycle: the roll steps by a fixed amount each poll
- * and an 88%-accurate account walks the whole category without once landing
- * above its threshold. Records then came back at the category ceiling six
- * times in twelve — a flat number decided by nothing. Folding a second hash
- * over a differently-shaped key breaks the walk; the seed stays reproducible
- * because both halves are still pure.
- */
 const rollFor = (
 	answerer: SeedAnswerer,
 	pass: number,

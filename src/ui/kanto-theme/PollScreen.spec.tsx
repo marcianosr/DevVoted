@@ -19,7 +19,6 @@ const props = createKantoPollScreenProps();
 
 const LOCK_IN = { label: "Lock in", note: "pick an answer first" };
 
-/** The send rides its own region; the press sits two spans inside it. */
 const sendRow = () =>
 	screen.getByRole("button", { name: /^Lock in/ }).parentElement;
 
@@ -28,17 +27,12 @@ const buildSheet = (container: HTMLElement) =>
 
 const POLL_SHAPE = "3 options · single answer";
 
-/** The row heading the poll panel: its category first, then its shape. */
 const pollMeta = () => {
 	const meta = screen.getByText(POLL_SHAPE).closest("div");
 	if (!(meta instanceof HTMLElement)) throw new Error("no poll meta row");
 	return meta;
 };
 
-/**
- * A build holding `.ts` while a TypeScript poll is up states the category in
- * its own chip, so the poll's badge has to be named rather than searched for.
- */
 const pollCategory = () => within(pollMeta()).getByText("TypeScript");
 
 afterEach(() => {
@@ -179,8 +173,6 @@ describe("PollScreen", () => {
 		);
 	});
 
-	// The coverage rail already states the run's position in the window, and two
-	// stacked header rows read as chrome before the question itself.
 	it("heads the poll on one row, not on a count above it", () => {
 		render(<PollScreen {...props} />);
 
@@ -460,7 +452,6 @@ describe("PollScreen", () => {
 		);
 	});
 
-	// The screen's own footer seats bare text over answers that scroll beneath.
 	it("grounds the row once the screen's footer rides in it instead of the send", () => {
 		render(
 			<PollScreen
@@ -510,8 +501,6 @@ describe("PollScreen", () => {
 		expect(buildSheet(container)).toHaveStyle({ bottom: "112px" });
 	});
 
-	// The fold's config popups open at the sheet's layer, so they must clear the
-	// press rather than opening behind it.
 	it("keeps the sheet on the layer above the send", () => {
 		const observer = stubResizeObserver();
 		const { container } = render(<PollScreen {...props} commit={LOCK_IN} />);

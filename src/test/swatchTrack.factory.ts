@@ -17,7 +17,6 @@ export const trackFor = (
 	current?: number
 ): SwatchFill[] => swatchTrackFor(earned, current);
 
-/** A fixture track holding every swatch below `discovered`, standing on it. */
 export const trackTo = (discovered: number): SwatchFill[] =>
 	trackFor(
 		Array.from({ length: discovered }, (_, gate) => gate),

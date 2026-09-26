@@ -4,7 +4,6 @@ import {
 	type RegistryControlSpec,
 } from "~/modules/run/shop/domain/registryControl.model";
 
-/** Every service the roster knows, earned or not: the Dex is the catalogue (ADR-116). */
 export type ControldexEntry = {
 	readonly control: RegistryControlSpec;
 	readonly unlocked: boolean;

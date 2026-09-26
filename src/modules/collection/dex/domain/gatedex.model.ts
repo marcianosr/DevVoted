@@ -36,7 +36,6 @@ export type GatedexEntry = {
 	readonly swatch: GateSwatch;
 	readonly coverageDemand: number;
 	readonly peelShare: number;
-	/** What a rival can throw at this gate, and how many at most (ADR-099). */
 	readonly auditPool: readonly string[];
 	readonly auditCapacity: number;
 	readonly unlocks: readonly GateUnlock[];

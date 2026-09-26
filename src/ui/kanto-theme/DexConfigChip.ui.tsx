@@ -26,21 +26,11 @@ const COPY = {
 
 const WRAP = "group/info relative inline-flex";
 const FIT_WIDTH = "w-fit max-w-full";
-/**
- * A locked chip is an empty socket in the checklist: both unlock paths are live
- * and count on their own, so play already underway fills it. That is what a
- * dashed edge means everywhere else in the kit.
- */
 const LOCKED_EDGE = "border-dashed border-theme-faint";
 const IDENTITY = "flex min-w-0 items-center gap-1.5";
 const NAME_LIMIT = "truncate";
 const TRAILING = "flex shrink-0 items-center gap-1.5";
 
-/**
- * Opens above the chip rather than below it as ConfigChip does: the rows run
- * to the panel's bottom edge, so a hint under the last row would open off the
- * panel. A phone gets the same fixed sheet.
- */
 const PANEL =
 	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:bottom-full sm:left-0 sm:mb-2";
 const PANEL_SHUT =
@@ -60,14 +50,12 @@ const READER_ONLY = "sr-only";
 const INFO_GLYPH = "i";
 const SEPARATOR = "·";
 const GAIN: KantoColor = "viridian";
-/** What installing already gives you, and the rung every ladder opens on. */
 const FIRST_VERSION = 1;
 
 export type UnlockProgress = { count: number; target: number };
 
 export type DexUnlockPath = {
 	text: string;
-	/** Null for a one-shot objective, which has nothing to count. */
 	progress: UnlockProgress | null;
 };
 
@@ -77,25 +65,14 @@ type Granted = {
 	effect: string;
 	starter: boolean;
 	provenance: string;
-	/** The headline figure, "×1.25" or "+8 KB"; absent when the effect has none. */
 	figure?: string;
-	/**
-	 * The top of the in-run ladder, which is what the tag names. Absent for the
-	 * configs that have no ladder, which is most of the roster.
-	 */
 	maxVersion?: number;
 };
 
-/** Met in a shop or a rival's build, not yet earned: named, effect withheld. */
 type Met = { state: "met"; name: string; paths: readonly DexUnlockPath[] };
 
 type Locked = { state: "locked"; paths: readonly DexUnlockPath[] };
 
-/**
- * Redaction is per attribute. Weight is the axis the tab is grouped along, so
- * every state shows it; a name needs the config met and an effect needs it
- * earned.
- */
 export type DexConfigChipProps = {
 	id: string;
 	slots: number;
@@ -115,11 +92,6 @@ export const progressLabelOf = ({ count, target }: UnlockProgress): string =>
 export const provenanceTagOf = (starter: boolean): string =>
 	starter ? COPY.starterTag : COPY.earnedTag;
 
-/**
- * "starter · v1 of 5", or the tag alone for a config with no ladder. The chip
- * states the ceiling, so the lead line is where the rung you actually install
- * is named.
- */
 export const leadLineOf = ({
 	starter,
 	maxVersion,
@@ -161,10 +133,6 @@ const GrantedHint = ({ chip }: { chip: Granted }) => (
 	</Hint>
 );
 
-/**
- * Every path after the first reads as an alternative to it. The bar carries no
- * visible text of its own, so the path names itself to a reader instead.
- */
 const Alternative = ({ path }: { path: DexUnlockPath }) => {
 	if (path.progress === null)
 		return (

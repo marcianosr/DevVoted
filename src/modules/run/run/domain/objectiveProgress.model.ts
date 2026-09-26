@@ -103,20 +103,16 @@ const clearMetrics = (
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)
 			: []),
-		// Only a clear can honour a promise, so this counter can only live here:
-		// the band SLA was measured against does not exist until the close.
 		...((next.slaUpliftKb ?? 0) > 0 ? (["slas-met"] as const) : []),
 		...(next.status === "won" ? (["runs-won"] as const) : []),
 	];
 };
 
-/** `available` is the hand dealt at run start and nothing rewrites it, so it is the hand. */
 const holdsADealtConfig = (state: RunState): boolean =>
 	state.build.configs.some((config) =>
 		state.available.some((dealt) => dealt.id === config.id)
 	);
 
-/** Once, on the action that ends the run; abandoning never comes through here. */
 const endMetrics = (
 	state: RunState,
 	next: RunState

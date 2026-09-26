@@ -5,12 +5,6 @@ import {
 	withLog,
 } from "~/modules/run/run/domain/run.model";
 
-/**
- * A build holding nothing but the locker has no legal target, so the offer
- * lifts rather than standing: every screen that asks for the pick also holds
- * its exit door on this predicate, and a standing offer with nothing to name
- * would strand the player there.
- */
 export const canVendorLock = (state: RunState): boolean => {
 	if (!isPrepPhase(state)) return false;
 	if (vendorLockerFor(state.build.configs) === undefined) return false;
@@ -18,11 +12,6 @@ export const canVendorLock = (state: RunState): boolean => {
 	return state.build.configs.some((config) => config.vendorLocks !== true);
 };
 
-/**
- * A vendor cannot be its own customer: exempting the locker itself would be
- * four free weight for its price with nothing given up, which is the
- * purchasable free weight ADR-082 retired.
- */
 export const commitVendorLock = (
 	state: RunState,
 	configId: string

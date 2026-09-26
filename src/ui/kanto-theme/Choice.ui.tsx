@@ -8,10 +8,6 @@ import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
-// Rows rule against each other inside `Question`'s frame rather than carrying
-// their own box, so the list reads as one thing. The corners are rounded on the
-// end rows instead of on every row, which is what keeps the picked and hover
-// fills inside the frame — the same trick `Panel` plays with its own regions.
 const ROW =
 	"flex w-full items-center gap-5 border-t border-theme-faint px-4 py-2.5 text-left transition-colors first:rounded-t-lg first:border-t-0 last:rounded-b-lg";
 const PICKABLE = "cursor-pointer hover:bg-theme-raised";
@@ -86,7 +82,6 @@ export type ChoiceProps = {
 	letter: string;
 	answerType?: AnswerType;
 	picked?: boolean;
-	/** The reveal's reading of this row: only set once the poll is answered. */
 	verdict?: ChoiceVerdict;
 	onPick?: () => void;
 } & (

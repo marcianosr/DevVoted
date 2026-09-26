@@ -54,8 +54,6 @@ describe("auditdex", () => {
 		expect(auditNamed("403 Forbidden", 3).tier).toBe("unseen");
 	});
 
-	// Standing in front of gate 3 puts every pool-A rule within a rival's reach,
-	// so the Dex opens the whole pool rather than one row at a time.
 	it("opens a tier's whole pool once its first gate is in front of you", () => {
 		for (const name of [
 			"405 Method Not Allowed",
@@ -76,8 +74,6 @@ describe("auditdex", () => {
 	});
 
 	it("states a varying rule without this gate's own figures", () => {
-		// The clock's own description names one gate's seconds, which is a lie on
-		// a row covering every gate the audit can be drawn at.
 		expect(auditNamed("408 Request Timeout", 12).rule).not.toMatch(/\d/);
 		expect(auditNamed("410 Gone", 12).rule).not.toMatch(/\d/);
 	});

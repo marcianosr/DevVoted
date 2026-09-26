@@ -11,8 +11,6 @@ import {
 
 describe("GATE_SWATCHES", () => {
 	it("carries exactly one swatch per gate of the climb", () => {
-		// The roster is the ladder: a missing entry would leave a gate with no
-		// badge to award, an extra one a badge no gate can reach.
 		expect(ALL_SWATCHES).toHaveLength(GATE_COUNT);
 		for (let gate = 0; gate <= VICTORY_GATE; gate += 1) {
 			expect(swatchForGate(gate)?.gate).toBe(gate);
@@ -59,10 +57,6 @@ describe("GATE_SWATCHES", () => {
 	});
 
 	it("walks the two non-gym landmarks where Kanto actually walks them", () => {
-		// Lavender Town comes out of Rock Tunnel after Vermilion and before
-		// Celadon; the Seafoam Islands sit on Route 20 on the way to Cinnabar.
-		// Appending them after all eight badges put mid-game stops next to the
-		// Elite Four, and left the deepest gates wearing the palest colours.
 		expect(swatchForGate(4)?.gateName).toBe("Lavender");
 		expect(swatchForGate(8)?.gateName).toBe("Seafoam");
 		expect(swatchForGate(3)?.gateName).toBe("Thunder");
@@ -72,8 +66,6 @@ describe("GATE_SWATCHES", () => {
 	});
 
 	it("draws only the summit pair off the flat palette", () => {
-		// 13 gates against a 12-colour palette: the two specials are what keeps
-		// every badge's colour its own.
 		const special = ALL_SWATCHES.filter((swatch) => swatch.finish !== "flat");
 		expect(special.map(({ name, finish }) => [name, finish])).toEqual([
 			["Elite Swatch", "plate"],
@@ -85,8 +77,6 @@ describe("GATE_SWATCHES", () => {
 	});
 
 	it("keeps a theme colour for everything but the gradient", () => {
-		// The Elite plate is still indigo, so it themes its subtree; only the
-		// Champion has no colour to hand down (`text-theme` would vanish).
 		expect(
 			ALL_SWATCHES.filter((s) => !hasThemeColor(s)).map((s) => s.name)
 		).toEqual(["Champion Swatch"]);

@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import { POLL_STATUSES } from "~/modules/polls/poll/domain/poll.model";
 
-// New poll option (without pollId — for create/edit forms)
 const newPollOptionSchema = z.object({
 	option: z
 		.string()
@@ -11,8 +10,6 @@ const newPollOptionSchema = z.object({
 	correct: z.boolean().default(false),
 });
 
-// Poll option for updates: existing options carry an id so they are updated
-// rather than replaced.
 const updatePollOptionSchema = newPollOptionSchema.extend({
 	id: z.number().int().positive().optional(),
 });

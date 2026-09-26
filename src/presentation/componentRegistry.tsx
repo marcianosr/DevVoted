@@ -14,7 +14,6 @@ import {
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { GameLoopExplainer } from "./demo/GameLoopExplainer";
 
-// Demo data for ConfigCards
 const DEMO_CONFIGS: DemoConfig[] = [
 	{
 		id: ".js-config",
@@ -74,7 +73,6 @@ const DEMO_CONFIGS: DemoConfig[] = [
 	},
 ];
 
-// Demo data for CategoryCoverageGrid using factory
 const DEMO_COVERAGE = [
 	demoCoverage({
 		categoryCode: "js",
@@ -120,7 +118,6 @@ const DEMO_COVERAGE = [
 	}),
 ];
 
-// Demo component: Game Loop Explainer
 const GameLoopDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-2xl">
@@ -129,7 +126,6 @@ const GameLoopDemo = () => (
 	</div>
 );
 
-// Demo component: Config Cards showcase
 const ConfigCardsDemo = () => (
 	<div className="flex flex-col items-center justify-center h-full gap-6">
 		<p className="text-gray-400 text-lg">
@@ -143,7 +139,6 @@ const ConfigCardsDemo = () => (
 	</div>
 );
 
-// Demo component: Category Coverage Grid
 const CoverageDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-2xl border border-gray-700 p-6">
@@ -155,7 +150,6 @@ const CoverageDemo = () => (
 	</div>
 );
 
-// Demo component: Storage Breakdown
 const StorageDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-md border border-gray-700 p-6">
@@ -171,7 +165,6 @@ const StorageDemo = () => (
 	</div>
 );
 
-// Combined demo showing multiple elements
 const FullDemo = () => (
 	<div className="grid grid-cols-2 gap-8 h-full p-4">
 		<div className="flex flex-col gap-4">
@@ -200,7 +193,6 @@ const FullDemo = () => (
 	</div>
 );
 
-// Demo data for Leaderboard with real player names
 type DemoLeaderboardEntry = {
 	userId: string;
 	displayName: string;
@@ -291,7 +283,6 @@ const DEMO_LEADERBOARD_ENTRIES: DemoLeaderboardEntry[] = [
 const getPlayerGateNumber = (pollsSeen: number): number =>
 	Math.max(1, Math.ceil(pollsSeen / DEFAULT_WINDOW_SIZE));
 
-// Demo component: Static Leaderboard with mock data
 const LeaderboardDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-5xl">
@@ -368,7 +359,6 @@ const LeaderboardDemo = () => (
 	</div>
 );
 
-// Demo data for Daily Poll
 const DEMO_POLL_QUESTION = "What does `Array.prototype.at(-1)` return?";
 const DEMO_POLL_OPTIONS = [
 	{ id: 1, option: "The first element of the array", correct: false },
@@ -377,7 +367,6 @@ const DEMO_POLL_OPTIONS = [
 	{ id: 4, option: "Throws a `RangeError`", correct: false },
 ];
 
-// Demo component: Daily Poll with radio buttons
 const DailyPollDemo = () => {
 	const [selectedOption, setSelectedOption] = useState<number | null>(null);
 
@@ -457,7 +446,6 @@ type DemoGate = {
 	requirements: { label: string }[];
 };
 
-// Demo data for CI Gates — legacy presentation slide, not tied to the live system
 const DEMO_CI_GATES: DemoGate[] = [
 	{
 		gate: 1,
@@ -517,7 +505,6 @@ const DEMO_CI_GATES: DemoGate[] = [
 	},
 ];
 
-// Demo component: CI Gates progression
 const CIGatesDemo = () => (
 	<div className="flex items-center justify-center h-full">
 		<div className="w-full max-w-5xl">
@@ -595,18 +582,6 @@ const CIGatesDemo = () => (
 	</div>
 );
 
-/**
- * Registry of interactive components that can be embedded in slides.
- *
- * Usage in slides.ts:
- * {
- *   id: "demo-slide",
- *   type: "component",
- *   title: "Live Demo",
- *   componentId: "game-loop",
- *   accentColor: "cerulean",
- * }
- */
 export const COMPONENT_REGISTRY: Record<string, () => ReactNode> = {
 	"game-loop": () => <GameLoopDemo />,
 	"daily-poll": () => <DailyPollDemo />,

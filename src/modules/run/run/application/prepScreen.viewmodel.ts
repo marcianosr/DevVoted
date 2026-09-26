@@ -91,17 +91,6 @@ const READING_JOIN = " · ";
 const OK_DEMAND_LEAD = "need";
 const OK_DEMAND_TRAIL = `for ${COVERAGE_BAND_WORD.ok}`;
 
-/**
- * What the start press reads under its label: the window it is about to open,
- * and what it has to earn in it.
- *
- * Polls and slots are both stated because they are different numbers off gate
- * 0 — the window is always five polls, while the slots the run is scored
- * across grow with every gate it has opened.
- *
- * The demand is dropped once it is met, rather than stated as "need 0": a run
- * already holding the line is not owed a debt of nothing.
- */
 export const prepPressNoteOf = (gate: number, unitsHeld: number): string => {
 	const owed = okUnitsAt(gate) - unitsHeld;
 	const window = [
@@ -150,15 +139,6 @@ const owedClause = (
 	return `${control.configLabel} ${remedy}`;
 };
 
-/**
- * What prep is still waiting on before it will open the gate. One clause per
- * config, each true on its own, because two configs waiting is two separate
- * things to go and do rather than one compound sentence.
- *
- * The name comes off the control rather than the roster, so a config that is
- * renamed renames its own refusal. A control is only ever present while its
- * pick is legal, which is what keeps this in step with the engine's own hold.
- */
 export const commitmentRemedy = (
 	frame: Pick<PrepFrame, "estimate" | "estimatedCorrect" | "sla" | "slaBand">
 ): string | undefined => {
@@ -334,10 +314,6 @@ const auditRowFor = (audit: AuditView): AuditsRow => ({
 const auditsMetaOf = (count: number) =>
 	count === 0 ? NO_AUDITS : `${count} ${AUDIT_COUNT_TRAIL}`;
 
-/**
- * Drawn shut rather than empty: "none this gate" on a gate that could never
- * carry one teaches the player the mechanic does not exist.
- */
 export const auditsPanelFor = (
 	gate: number,
 	audits: readonly AuditView[],
@@ -386,16 +362,6 @@ const auditBillFor = (ledger: BillLedger): { bill?: string; note?: string } => {
 	};
 };
 
-/**
- * The standing bill, line by line. The shortfall warning is not restated here:
- * the Audits header already owns that sentence (ADR-102).
- *
- * The Audits header states the total because
- * that is what a player checks before starting a gate; this says what makes it
- * up, which is the only way to know which config to drop when it stops being
- * affordable. Nothing here is new — `billLedger` already had the lines, and no
- * surface had ever read them.
- */
 export const subscriptionsLedgerFor = (
 	ledger: BillLedger
 ): LedgerProps | undefined => {
@@ -421,34 +387,22 @@ export const subscriptionsLedgerFor = (
 export type PrepFrame = {
 	gate: number;
 	answeredPolls: readonly AnsweredPoll[];
-	/**
-	 * This window's answers, in order. Not a slice of `answeredPolls`: that record
-	 * is append-only across attempts, so a retried gate leaves it holding ten
-	 * entries where the position arithmetic expects five.
-	 */
 	answeredThisGate?: readonly AnsweredPoll[];
 	configs: readonly Config[];
-	/** What rivals locked onto this gate, as the stake receipt states it. */
 	audits?: readonly AuditView[];
-	/** The attack this run holds and who it may be aimed at. Absent on fixtures that predate it. */
 	attack?: AttackPanelProps;
 	balanceKb: number;
 	buildSpace: number;
 	window: PrepWindow;
 	bar: CoverageBarProps;
-	/** Where the run stood when this window opened. Defaults to the live reading. */
 	coverageGainPercent: number;
 	peelKb: number;
 	payout: (correct: number) => number;
-	/** Planning Poker's control. Null whenever the bet cannot be placed. */
 	estimate?: EstimateControl | null;
 	estimatedCorrect?: number | null;
-	/** SLA's control. Null whenever no band can be promised. */
 	sla?: SlaControl | null;
 	slaBand?: CommittableBand | null;
-	/** git rebase -i's rows. Empty whenever the order cannot be changed. */
 	rebaseSlots?: readonly PollSlot[];
-	/** Gates this run played flawlessly. Only these fill on the track. */
 	swatchGates?: readonly number[];
 };
 

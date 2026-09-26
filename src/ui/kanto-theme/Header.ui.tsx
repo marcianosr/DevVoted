@@ -46,18 +46,9 @@ const SWATCH_SIZE = "small";
 const OF = "of";
 const TOWARD = "\u2192";
 
-/**
- * The one spelling of a gate's name, exported so a viewmodel that has to state
- * it in prose reads it off the same formatter the header draws.
- */
 export const gateTitleOf = (swatch: GateSwatch): string =>
 	`#${swatch.gate} - ${swatch.gateName} Gate`;
 
-/**
- * What the balance would read if the thing the player is pointing at went
- * through. The wording is the caller's because the run state picks it
- * (ADR-102); the arrow between the two halves is the readout's own.
- */
 export type HeaderFundsPreview = {
 	label: string;
 	figure: string;
@@ -68,7 +59,6 @@ export type HeaderFunds = {
 	amount: string;
 	unit: string;
 	label: string;
-	/** The balance itself, so the readout can tell which way it just moved. */
 	kb: number;
 	preview?: HeaderFundsPreview;
 };
@@ -104,7 +94,6 @@ export type HeaderProps = {
 	noteAt?: NotePlacement;
 } & HeaderReading;
 
-/** How long the pill naming a change stays up. Matches --callout-duration. */
 export const BALANCE_PILL_HOLD_MS = 1800;
 
 const GAIN: KantoColor = "viridian";
@@ -121,11 +110,6 @@ const toneOf = (moved: number | undefined): KantoColor | undefined => {
 	return moved > 0 ? GAIN : LOSS;
 };
 
-/**
- * What the readout last settled on. `moved` is the change still being named;
- * `counts` is false across a unit roll, where climbing 999 KB to 1.9 MB would
- * otherwise animate the digits downwards.
- */
 type Landing = {
 	kb: number;
 	unit: string;

@@ -14,7 +14,6 @@ import {
 	type RegistryControlScope,
 } from "~/modules/run/shop/domain/registryControl.model";
 
-/** The trailing slot a price takes; a caption longer than this wraps into the row. */
 const ROW_CAPTION_LIMIT = 40;
 
 const idsInScope = (scope: RegistryControlScope): readonly string[] =>

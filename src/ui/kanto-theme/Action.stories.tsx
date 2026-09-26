@@ -43,7 +43,6 @@ export const NothingPicked: Story = {
 	args: { label: "Lock in", note: "pick an answer first", onPress: undefined },
 };
 
-/** The gate behind you: the mark fills once it is no longer the one being played. */
 export const AGateAlreadyCleared: Story = {
 	args: {
 		label: "Next gate",
@@ -52,7 +51,6 @@ export const AGateAlreadyCleared: Story = {
 	},
 };
 
-/** A press that carries no gate wears where it leads: the shop stands outside the climb. */
 export const OutsideARun: Story = {
 	args: {
 		label: "To the shop",
@@ -62,12 +60,10 @@ export const OutsideARun: Story = {
 	},
 };
 
-/** Nothing to mark it with at all: the label takes the slot. */
 export const Unmarked: Story = {
 	args: { label: "Start a run", note: "5 polls a day", swatch: undefined },
 };
 
-/** The ink is half of a contrast pair, so the loudest hue has to read as well as the palest. */
 export const TheLoudestHue: Story = {
 	args: {
 		label: `${VOLCANO.gateName} gate prep`,

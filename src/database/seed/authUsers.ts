@@ -12,11 +12,6 @@ const isAlreadyExists = (body: AdminUserError): boolean =>
 	body.error_code === "user_already_exists" ||
 	(body.msg ?? body.message ?? "").toLowerCase().includes("already");
 
-/**
- * The seed is worthless without this key: every account it creates would exist
- * in `users` but not in `auth.users`, so nobody could log in and the failure
- * would only surface at the login screen. Refuse to run instead.
- */
 export const requireServiceRoleKey = (): void => {
 	if (SERVICE_ROLE_KEY) return;
 	throw new Error(
@@ -25,11 +20,6 @@ export const requireServiceRoleKey = (): void => {
 	);
 };
 
-/**
- * Creates the Supabase auth row a seeded player logs in with. `users.id` has no
- * FK to `auth.users`, so the shared UUID is the only link — it must be passed in
- * rather than generated here.
- */
 export const createLocalAuthUser = async (args: {
 	id: string;
 	email: string;
@@ -55,7 +45,6 @@ export const createLocalAuthUser = async (args: {
 	);
 };
 
-/** Auth rows survive `db:reset` (it only drops public tables), so re-seeding must clear them. */
 export const deleteLocalAuthUser = async (id: string): Promise<void> => {
 	await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
 		method: "DELETE",

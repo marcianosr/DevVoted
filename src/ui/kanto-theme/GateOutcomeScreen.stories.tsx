@@ -47,7 +47,6 @@ export const Shaky: Story = { args: kantoGateShaky() };
 
 export const ShakyFunded: Story = { args: kantoGateShakyFunded() };
 
-/** The floor rule held the gate on one right answer while the meter reads HEALTHY (ADR-094). */
 export const HeldByFloor: Story = { args: kantoGateHeldByFloor() };
 
 export const ShakyPartlyPaid: Story = { args: kantoGateShakyPicking() };

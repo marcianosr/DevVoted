@@ -5,7 +5,6 @@ import { userConfigUnlocksTable, usersTable } from "~/database/schema";
 
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
 
-/** The account as the app knows it, in app-shaped names rather than DB columns. */
 export type AccountUser = {
 	id: string;
 	email: string;
@@ -44,11 +43,6 @@ export const findUserByEmail = async (
 	return row ? toAccountUser(row) : undefined;
 };
 
-/**
- * Signup seeds the free starter set into user_config_unlocks with no
- * provenance (ADR-064: via_metric null reads as "Starter config" in the Dex).
- * One transaction, so an account never exists without its free grants.
- */
 export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 	db.transaction(async (tx) => {
 		const [row] = await tx
@@ -74,12 +68,6 @@ export const insertUser = async (user: AccountUser): Promise<AccountUser> =>
 		return toAccountUser(row);
 	});
 
-/**
- * Stamps today onto the account, at most once a day. The predicate is in SQL
- * rather than a read-then-write because the auth sync runs on every navigation:
- * the common case has to cost zero rows touched, and two concurrent navigations
- * must not both write.
- */
 export const touchLastSeen = async (userId: string): Promise<void> => {
 	await db
 		.update(usersTable)

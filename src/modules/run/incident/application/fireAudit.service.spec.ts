@@ -54,7 +54,6 @@ const MISTY: RivalCandidate = {
 };
 const tx = {} as unknown as RunTx;
 
-/** A debrief with an heldAudit in hand: the one place a fire is legal. */
 const armedAtPrep = (): RunState => {
 	const cleared = clearGate({
 		...started(["js"]),

@@ -8,19 +8,8 @@ const UNIT = "KB|MB|%";
 const SIGNED = `[×+−]\\d+(?:\\.\\d+)?(?:\\s?(?:${UNIT}))?`;
 const PRICED = `\\d+(?:\\.\\d+)?\\s?(?:${UNIT})`;
 const SCALED = "\\d+(?:\\.\\d+)?×";
-/**
- * Coverage's own unit is a word, not a suffix, and the badge takes the figure
- * without it: "takes 0.5 units off the gate" reads as a figure in a sentence,
- * where "0.5 units" boxed whole reads as a term. A lookahead, so the word stays
- * in the prose that owns it.
- */
 const COUNTED = "\\d+(?:\\.\\d+)?(?=\\s?units?\\b)";
 
-/**
- * A band never reads as bare prose: wherever a sentence names one it wears the
- * ladder's own colour, so "clear HEALTHY or better" and the bar below it are
- * obviously the same reading rather than two vocabularies.
- */
 const BAND_COLOR: Record<string, KantoColor> = {
 	[COVERAGE_BAND_WORD.danger]: COVERAGE_BAND_COLOR.danger,
 	[COVERAGE_BAND_WORD.shaky]: COVERAGE_BAND_COLOR.shaky,
@@ -31,13 +20,6 @@ const BAND_COLOR: Record<string, KantoColor> = {
 
 const BAND = `\\b(?:${Object.keys(BAND_COLOR).join("|")})\\b`;
 
-/**
- * A category is a noun, so it takes no colour — hue already means gain, loss or
- * term. Matching is case-sensitive, which is what makes a closed vocabulary of
- * words safe here where teaching the regex "free" was not: the game writes a
- * category only as its own proper name, and the lower-cased register elsewhere
- * (the gate mix reads "javascript 3") is left alone on purpose.
- */
 const CATEGORY_NAMES: readonly string[] = Object.values(CATEGORY_METADATA)
 	.map(({ name }) => name)
 	.sort((one, other) => other.length - one.length);

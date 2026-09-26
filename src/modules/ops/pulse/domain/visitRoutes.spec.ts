@@ -5,12 +5,6 @@ import { describe, expect, it } from "vitest";
 
 import { KNOWN_ROUTE_IDS } from "~/modules/ops/pulse/domain/visit.model";
 
-/**
- * The allowlist is the only thing standing between an unauthenticated endpoint
- * and junk in the screen funnel, so it must not drift. Reading the generated
- * tree off disk keeps that honest without the domain layer importing anything
- * from `src/routes/`.
- */
 const generatedRouteIds = (): string[] => {
 	const tree = readFileSync(
 		resolve(process.cwd(), "src/routeTree.gen.ts"),

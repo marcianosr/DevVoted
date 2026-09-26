@@ -35,9 +35,6 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		id: `option-${index + 1}`,
 		label,
 	})),
-	// The live sequence read always attaches these, so the default carries them
-	// too: a poll 31% of the room cracked first time, missed twice by this
-	// account. Override with `stats: undefined` for the withheld case.
 	stats: {
 		firstAttempts: 90,
 		firstAttemptsRight: 28,
@@ -45,8 +42,6 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		misses: 2,
 		lastAnsweredAt: "2026-08-04T09:00:00.000Z",
 	},
-	// Attached by the same read (ADR-103): @sabrina leads the category on 17.
-	// Override with `categorySeat: undefined` for the withheld case.
 	categorySeat: {
 		category: CATEGORY_CODES[0],
 		leader: {

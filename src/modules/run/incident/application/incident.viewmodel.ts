@@ -39,13 +39,11 @@ export type PayloadView = {
 	readonly auditId: AuditId;
 	readonly code: number;
 	readonly name: string;
-	/** What it does to the gate it lands on, as the roster states it. */
 	readonly effect: string;
 };
 
 export type AttackOfferView = RivalFace & {
 	readonly targetRunId: number;
-	/** Who they are, so an audit they sent you can find them again in the offers. */
 	readonly userId: string;
 	readonly name: string;
 	readonly gate: number;
@@ -61,7 +59,6 @@ export type IncidentFeedRowView = {
 	readonly name: string;
 	readonly gate: number;
 	readonly status: IncidentStatus;
-	/** The viewer fired it or is its target, so the feed can ring it. */
 	readonly own: boolean;
 };
 
@@ -106,11 +103,6 @@ export const incidentFeedRowFor = (
 	};
 };
 
-/**
- * Everyone the viewer traded an audit with today: whoever they fired at, and
- * whoever fired at them. Read off the rows before the feed drops the ids, so
- * the climb map can ring the same people the incidents panel lists.
- */
 export const rivalIdsFor = (
 	rows: readonly IncidentFeedRow[],
 	viewerId: string
@@ -135,12 +127,6 @@ export const ATTACK_NOTE =
 const FIRE_WORD = "Fire";
 const AT_WORD = "at";
 
-/**
- * Nobody may be aimed at from a gate that could not be aimed at in return, so
- * the panel states the gate that opens the exchange rather than reading as an
- * empty field of rivals (ADR-105).
- */
-
 const attackMetaOf = (band: HeldAuditBand): string =>
 	band === "perfect" ? "choose 1 of 2 payloads" : "1 payload";
 
@@ -148,12 +134,6 @@ const FIRST_VERSION = 1;
 
 const levelOf = (config: PublicConfig): number => config.level ?? FIRST_VERSION;
 
-/**
- * The config a payload names from the build alone. Only the level-edge picks
- * are knowable off a `PublicBuild`: the others are seeded on a poll window we
- * never hold for a rival, and a tie at the edge is broken by that same seed, so
- * both stay unnamed rather than guessed at.
- */
 export const targetedConfigOf = (
 	auditId: AuditId,
 	gate: number,
@@ -209,15 +189,6 @@ const rivalFor = (offer: AttackOfferView): AttackRival => {
 	};
 };
 
-/**
- * A panel once audits exist, nothing before them. Below the floor it said the
- * same sentence the Audits panel beside it already says, so the screen stated
- * the lock twice; the Audits panel is the one that keeps it (ADR-105).
- *
- * Above the floor it is always a panel: an unarmed run reads how to earn a
- * shot, an armed one still dealing says so, and an armed one with no rival
- * says why.
- */
 export const attackPanelFor = (
 	gate: number,
 	heldAudit: HeldAudit | null,

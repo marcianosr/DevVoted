@@ -7,11 +7,6 @@ import { useRunRouteSync } from "~/modules/run/run/application/useRunRouteSync.h
 import { useScrollToTop } from "~/modules/run/run/application/useScrollToTop.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/**
- * No HUD: every kanto screen carries its own header, coverage bar and build
- * footer, so a layout-level bar would state the same numbers twice. The layout
- * is now only the route sync plus the two states no screen can draw itself.
- */
 export const RunLayout = () => {
 	useRunRouteSync();
 	useScrollToTop();

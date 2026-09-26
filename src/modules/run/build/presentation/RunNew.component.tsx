@@ -4,10 +4,6 @@ import { StartView } from "~/modules/run/build/presentation/StartView.component"
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/**
- * Tier 2: the opening build. Starting does not fire `start` — it turns the page
- * to prep, where gate 0 states its terms the way every later gate does.
- */
 export const RunNew = () => {
 	const { view } = useTodaysRun();
 	const { send } = useRunActions();

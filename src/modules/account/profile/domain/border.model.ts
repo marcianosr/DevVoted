@@ -6,16 +6,11 @@ export type Border = {
 	id: string;
 	name: string;
 	description: string;
-	image: string; // root-relative path under /public, e.g. "/borders/<id>.png"
-	cost: number; // archive bytes
+	image: string;
+	cost: number;
 	rarity: BorderRarity;
 };
 
-// Border catalog wired to assets in public/borders/. Filenames are kept as-is
-// so they match what's on disk; readable names live in `name`.
-// To add a border: drop the file in public/borders/<filename> and append an
-// entry here. To rename, change `name`/`description` only — id is stable so
-// owned-by-user references don't break.
 export const borders: Border[] = [
 	{
 		id: "border-00b9a62e",

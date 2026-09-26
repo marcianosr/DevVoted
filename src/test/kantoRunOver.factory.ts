@@ -30,7 +30,6 @@ const PAID_COLOR = {
 	wrong: "cinnabar",
 } as const;
 
-/** The gate the sample run dies on: Lavender, deep enough to have a real ladder. */
 export const SAMPLE_GATE = 4;
 
 const CATEGORIES: readonly CategoryCode[] = [
@@ -60,7 +59,6 @@ const answerAt = (
 	coverageEarned: unitsEarned,
 });
 
-/** Each inner array is one gate's five payouts, in the order they were answered. */
 export const runAnswers = (
 	paid: readonly (readonly number[])[]
 ): readonly AnsweredPoll[] =>

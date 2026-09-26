@@ -31,7 +31,6 @@ export const fetchUnlocksSince = async (
 	}));
 };
 
-/** Every config this account has unlocked — the pool a new run deals from. */
 export const fetchUnlockedConfigIds = async (
 	userId: string
 ): Promise<readonly string[]> => {

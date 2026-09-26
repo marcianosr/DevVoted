@@ -21,19 +21,6 @@ import type {
 } from "~/modules/run/run/domain/runPoll.model";
 import { rollDailySeedSequence } from "~/modules/run/run/domain/seed.model";
 
-/**
- * Every statement against the poll-sequence tables: the day's shared sequence
- * (`daily_run_seeds`, `daily_run_polls`) and each run's materialized copy of it
- * (`run_polls`). Split out of `run.repository` (DVTD-eyya), which keeps the run
- * record, its state and the dispatch transaction.
- *
- * The cut is by table knowledge rather than by read-versus-write, because the
- * rollover is both: it reads today's seed and writes the run's tail. Anything
- * that must join the caller's transaction takes a `reader`/`tx`, so the dispatch
- * hot path still commits everything in one transaction of its own.
- */
-
-/** Both `db` and a transaction handle satisfy this — reads work inside either. */
 export type DbReader = Pick<typeof db, "select">;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -56,11 +43,6 @@ export const fetchSeedPollIds = async (
 	return rows.map((row) => row.poll_id);
 };
 
-/**
- * The day's shared climb sequence (ADR-009), created exactly once. Losing a
- * creation race is fine: the insert blocks on the winner's in-flight unique
- * conflict, then falls through to reading the winner's committed sequence.
- */
 export const getOrCreateDailyRunSeed = async (
 	date: string
 ): Promise<number[]> => {
@@ -76,9 +58,6 @@ export const getOrCreateDailyRunSeed = async (
 
 		if (!claimed) return fetchSeedPollIds(tx, date);
 
-		// Answerable published polls only: a poll without a single correct
-		// option can never be answered right (engine stays strict — see
-		// "answer judging" in run.model.spec), so it must not enter a climb.
 		const published = await tx
 			.select({ id: pollsTable.id })
 			.from(pollsTable)
@@ -149,11 +128,6 @@ type EnginePollRow = {
 
 type AuthorRole = (typeof usersTable.$inferSelect)["role"];
 
-/**
- * Authority, not achievement: these come with the account's role and say what
- * someone may do, never what they have done. An earned title (ADR-109) is the
- * separate `title` field below.
- */
 const ROLE_LABELS = {
 	user: undefined,
 	"poll-editor": "Poll editor",
@@ -183,10 +157,6 @@ const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
 	};
 };
 
-/**
- * Hydrates poll rows into engine polls — WITH correctness. The result must
- * never leave the server; clients only ever see toRunView output.
- */
 const withOptions = async (
 	reader: DbReader,
 	pollRows: EnginePollRow[]
@@ -241,13 +211,6 @@ const fetchRunPollsWith = async (
 	return withOptions(reader, pollRows);
 };
 
-/**
- * The day's shared sequence, materializing it first if this is the first
- * request of the day. Seeding here rather than at the call site is the same
- * rule `ensureTodaysSegment` and `applyActionToRun` follow: every reader of
- * today's sequence guarantees it exists, because a missing one reads as an
- * empty day rather than an error.
- */
 export const fetchRunPollsForDate = async (
 	date: string
 ): Promise<RunPoll[]> => {
@@ -255,13 +218,6 @@ export const fetchRunPollsForDate = async (
 	return fetchRunPollsWith(db, date);
 };
 
-/**
- * The categories of a date's shared sequence, materializing the seed first —
- * Prefetch's product (DVTD-ekbz). Called with tomorrow's date this IS the
- * early roll: the set freezes now, so polls published later today cannot
- * enter it. Categories only — the questions stay sealed until the day deals
- * them, and correctness never touches this path.
- */
 export const fetchSeedCategoriesForDate = async (
 	date: string
 ): Promise<CategoryCode[]> => {
@@ -275,15 +231,6 @@ export const fetchSeedCategoriesForDate = async (
 	return rows.map((row) => toCategory(row.categoryCode));
 };
 
-/**
- * Poll ids this run's own account has answered before without getting fully
- * right — Regression Test's trigger. Scoped to the polls this run holds, so the
- * scan is bounded by the run rather than by the account's whole history, and
- * derived from the account that owns the run so no caller has to pass a userId.
- *
- * Mirrored answers count here, which predates the stored grade and is left
- * alone deliberately: changing it would move a config's trigger.
- */
 const fetchMissedPollIds = async (
 	runId: number,
 	pollIds: readonly number[],
@@ -308,10 +255,6 @@ const fetchMissedPollIds = async (
 	return new Set(rows.map((row) => String(row.pollId)));
 };
 
-/**
- * The run's own materialized sequence (ADR-011) — the engine's poll list.
- * Ordered by position; may span multiple daily segments.
- */
 export const fetchRunPollsForRun = async (
 	runId: number,
 	reader: DbReader = db,
@@ -339,7 +282,6 @@ export const fetchRunPollsForRun = async (
 	);
 };
 
-/** A new run's opening segment, copied from the day it started on. */
 export const insertRunPolls = async (
 	tx: Pick<typeof db, "insert">,
 	runId: number,
@@ -356,16 +298,6 @@ export const insertRunPolls = async (
 	);
 };
 
-/**
- * Writes a reordered gate slice back to the run's sequence (git rebase -i).
- * Without this the reorder lives only on `RunState.polls`, which is the one
- * field `toRunSnapshot` drops, so the next dispatch rehydrates the original
- * order and the drag is cosmetic for exactly one request (DVTD-mkhg).
- *
- * `run_polls` is unique on (run_id, position), so positions are held fixed and
- * the poll sitting at each one is reassigned instead. Moving rows to new
- * positions would collide with the constraint partway through the sweep.
- */
 export const rewriteRunPollOrder = async (
 	tx: Pick<typeof db, "update">,
 	runId: number,
@@ -384,14 +316,6 @@ export const rewriteRunPollOrder = async (
 			);
 };
 
-/**
- * Day rollover (ADR-011 Decision 2). If the run's newest segment predates
- * `today`: drop the unplayed tail (positions >= currentIndex), then append
- * today's shared sequence minus polls already answered in this run. Same-day
- * calls are no-ops, so this is safe on every read and dispatch. Callers must
- * hold the run_states FOR UPDATE lock — it serializes concurrent rollovers,
- * and taking it is `run.repository`'s job because run_states is its table.
- */
 export const rollSegmentForward = async (
 	tx: Tx,
 	runId: number,

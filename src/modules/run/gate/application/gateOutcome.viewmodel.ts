@@ -147,11 +147,6 @@ const BAND_TICK = 0.1;
 const within = (value: number, low: number, high: number) =>
 	Math.min(high, Math.max(low, value));
 
-/**
- * A bare build fails its gate however much it covered (`gatePassed` refuses it
- * outright), so the reading and the verdict can disagree. ADR-076 derives the
- * screen's band from the bar, so the bar is what has to be held to the verdict.
- */
 export const closedBarFor = (
 	closing: GateClosing,
 	ladder: GateLadder,
@@ -162,10 +157,6 @@ export const closedBarFor = (
 	held: closedHeldFor(closing, ladder, held, heldBy),
 });
 
-// A floor hold sits on whatever the meter reads, HEALTHY included; clamping it
-// down would print a SHAKY bar the run never had (ADR-094). A caught hold is the
-// same rule read the other way: the meter really was under the floor, and
-// clamping it up would print a SHAKY bar the run never had either (ADR-096).
 const closedHeldFor = (
 	closing: GateClosing,
 	{ floor, ok }: GateLadder,
@@ -199,7 +190,6 @@ export type GateAnswer = {
 export type GateOutcomeFrame = {
 	gate: number;
 	answers: readonly GateAnswer[];
-	/** Gates this run played flawlessly, so the screen never infers a swatch. */
 	swatchGates: readonly number[];
 	balanceBeforeKb: number;
 	configs: readonly Config[];
@@ -213,33 +203,25 @@ export type GateOutcomeFrame = {
 	onToggle?: (configId: string) => void;
 	won?: boolean;
 	open?: boolean;
-	/** Set when the day's own count held the gate, so the bar may read HEALTHY. */
 	heldBy?: GateHoldReason;
-	/** The config that turned a fatal close into this one, spent doing it. */
 	caughtFatalBy?: string;
-	/** What SLA paid for holding to the band it promised. Inside `payoutKb`. */
 	slaUpliftKb?: number;
-	/** What surviving rivals' audits paid. Inside `payoutKb`. */
 	incidentSurvivalKb?: number;
-	/** Whether this clear armed or upgraded the run's heldAudit. */
 	auditHanded?: boolean;
 	bar: CoverageBarProps;
 	payouts?: PollScoresProps;
 	payoutKb: number;
-	/** The parts the reward was paid in. Absent, the gate's row carries the whole payout. */
 	clearKb?: number;
 	overflowKb?: number;
 	interestKb?: number;
 	extraPickKb?: number;
 	bonusKb: number;
 	faucetKb: number;
-	/** Database's transaction: committed inside `payoutKb`, or rolled back whole. */
 	escrowCommittedKb?: number;
 	escrowRolledBackKb?: number;
 	billKb: number;
 };
 
-/** Signed and suffixed: every surface that states a share states it as one. */
 export const signedPercent = (value: number) =>
 	`${value < 0 ? "" : "+"}${roundToOneDecimal(value)}%`;
 
@@ -307,8 +289,6 @@ const heldByFloor = (frame: GateOutcomeFrame): boolean =>
 const heldByCatch = (frame: GateOutcomeFrame): boolean =>
 	frame.heldBy === "catch";
 
-// Both read off `heldBy` rather than the bar: each one holds a gate whose meter
-// says something else, which is the whole reason they are worth naming.
 const bandOf = (frame: GateOutcomeFrame): CoverageBandId =>
 	heldByFloor(frame) || heldByCatch(frame)
 		? SHAKY_BAND
@@ -336,10 +316,6 @@ const STREAK_HOLDS = {
 	danger: false,
 } satisfies Record<CoverageBandId, boolean>;
 
-/**
- * The headline reports the clear and nothing else (ADR-080). The swatch is the
- * window's own prize and rides a chip, so no band may imply it was won.
- */
 const OUTCOME_SUFFIX = {
 	perfect: "perfect",
 	healthy: "cleared",
@@ -373,11 +349,6 @@ const holdReasonOf = (frame: GateOutcomeFrame): string => {
 	return METER_SHORT;
 };
 
-/**
- * A clear's tail is the swatch verdict rather than where the climb goes next:
- * the swatch is the one prize the window can win or lose outright, and the
- * footer already names the gate ahead.
- */
 const swatchLineOf = (frame: GateOutcomeFrame, gateName: string) =>
 	swatchEarnedIn(frame)
 		? `${SWATCH_WON} ${gateName} ${SWATCH_WORD_WON}`
@@ -503,11 +474,6 @@ const EXTRA_PICKS_NOTE = "answers past the window";
 const FLAT_CLEAR_NOTE = "on the clear";
 const STREAK_WORD = "streak";
 
-/**
- * The qualifier rides `notes`, not `detail`: `detail` sets inside the row's
- * identity at the label's own size, which made these one rung louder than the
- * clear row's notes right beside them.
- */
 const gainRow = (
 	label: string,
 	note: string,
@@ -523,11 +489,6 @@ const gainRow = (
 				},
 			];
 
-/**
- * The streak only, because it is what lifted the figure beside it. The gate's
- * tally is already a chip in the screen's header, and a row that restates it
- * reads as a second reason for a number it had no part in.
- */
 const clearedNotesOf = (frame: GateOutcomeFrame): readonly string[] => {
 	const streak = frame.streak ?? 0;
 
@@ -536,10 +497,6 @@ const clearedNotesOf = (frame: GateOutcomeFrame): readonly string[] => {
 		: [`${STREAK_WORD} ×${roundToTwoDecimals(streakMultiplier(streak))}`];
 };
 
-/**
- * A frame that knows the parts of its reward itemises them; one that only
- * knows the total (older snapshots, fixtures) keeps it on the gate's own row.
- */
 const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 	if (frame.clearKb === undefined) return { clear: whole, rows: [] };
 
@@ -559,11 +516,6 @@ const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 	};
 };
 
-/**
- * A total sums the payouts above it, so it is never one itself — its own step
- * wears the same gain colour as the rows it adds up, and counting it would
- * report one payout more than the strip lists.
- */
 const isGainRow = (row: LedgerRow): boolean =>
 	row.total !== true &&
 	(row.figures ?? []).some(
@@ -573,12 +525,6 @@ const isGainRow = (row: LedgerRow): boolean =>
 const storageSummaryOf = (rows: readonly LedgerRow[], bill: number): string =>
 	`${plural(rows.filter(isGainRow).length, "payout")}, ${plural(bill === 0 ? 0 : 1, "bill")}`;
 
-/**
- * The balance a gate closes on, as a figure rather than as prose: the reading
- * it moved from, the reading it landed on, and the step between them. The step
- * is the one the player actually feels, and it was only ever derivable by
- * subtracting two numbers on the same line.
- */
 const balanceRow = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
@@ -677,8 +623,6 @@ const heldStorageRows = (
 			label: CLEARED_ROW,
 			figures: [{ label: NOT_PAID, tone: "quiet" as const }],
 		},
-		// The balance never held this, so it carries no figure — the row exists
-		// to name what the close took back rather than to move a number.
 		...(rolledBack === 0
 			? []
 			: [
@@ -762,9 +706,6 @@ const dropChip = (
 	onPress: () => void
 ): ConfigChipProps => {
 	const refund = peelRefundIn(configs, config);
-	// Once the bill is covered, a further drop buys nothing and refunds nothing
-	// — the press would take a config and give the run no credit for it. A row
-	// already dropping stays live so the choice can be taken back.
 	const spent = settled && !chosen;
 
 	const badges: ConfigChipBadge[] = [

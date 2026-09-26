@@ -34,7 +34,6 @@ type Reader = Pick<typeof db, "select">;
 type Writer = Pick<typeof db, "update">;
 type Inserter = Pick<typeof db, "insert">;
 
-/** Keys into the `run_states.state` blob, bound to the type that owns them (see climbers.repository). */
 const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
 
 const UNNAMED_RIVAL = "a climber";
@@ -44,10 +43,6 @@ const senderOf = (id: string, name: string | null): IncidentSender => ({
 	name: name ?? UNNAMED_RIVAL,
 });
 
-/**
- * Every live climb, with the one fact eligibility needs from the blob. The
- * blob itself never crosses the wire: it carries correctness data.
- */
 export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 	const rows = await db
 		.select({
@@ -91,7 +86,6 @@ export const fetchRivalCandidates = async (): Promise<RivalCandidate[]> => {
 	);
 };
 
-/** What is already aimed at every run, so capacity and family rules read one map. */
 export const fetchQueuedByRun = async (): Promise<QueuedByRun> => {
 	const rows = await db
 		.select({
@@ -105,7 +99,6 @@ export const fetchQueuedByRun = async (): Promise<QueuedByRun> => {
 	return queuedByRun(rows);
 };
 
-/** The cooldown's one fact: who this attacker aimed at last. */
 export const fetchLastTargetUserId = async (
 	sentByUserId: string
 ): Promise<string | null> => {
@@ -118,7 +111,6 @@ export const fetchLastTargetUserId = async (
 	return row?.targetUserId ?? null;
 };
 
-/** Arrival order, locked for the settlement that is about to decide them. */
 export const fetchQueuedIncidents = async (
 	tx: Reader,
 	runId: number,
@@ -186,7 +178,6 @@ export const markIncidents = async (
 		.where(inArray(auditIncidentsTable.id, [...ids]));
 };
 
-/** An incident the lock could not seat waits for the following gate. */
 export const carryIncidentsForward = async (
 	tx: Writer,
 	ids: readonly number[]
@@ -215,7 +206,6 @@ export const markSurvived = async (
 		);
 };
 
-/** A run that ends fails what was locked onto it and lapses what was still queued. */
 export const endIncidentsForRun = async (
 	runId: number,
 	tx: Writer = db
@@ -250,7 +240,6 @@ export type IncidentFeedRow = {
 	readonly createdAt: Date;
 };
 
-/** Everyone's incidents filed today, newest first: the public log. */
 export const fetchIncidentsForDate = async (
 	date: string
 ): Promise<IncidentFeedRow[]> => {

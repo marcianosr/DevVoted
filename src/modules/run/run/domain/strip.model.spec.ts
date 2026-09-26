@@ -143,8 +143,6 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 		expect(state.redoGate).toBeUndefined();
 	});
 
-	// Still fatal at the Pallet gate despite the waived peel: isPeelFatal is
-	// `quota >= occupied`, and 0 >= 0. Narrowing it to `>` would strand the run.
 	it("ends the run when a bare build misses — a bare retry would loop forever", () => {
 		let state = started(["js"]);
 		state = { ...state, build: { ...state.build, configs: [] } };
@@ -282,9 +280,6 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		expect(state.peelRefundKb).toBe(128);
 	});
 
-	// The peel is one request now (DVTD-3hcg). A refund is priced against the
-	// build it leaves behind, so the fold must stay sequential: settling both at
-	// once off the opening build would pay the wrong number.
 	it("settles a two-config press exactly as two presses would", () => {
 		const start = collecting([GC, CONFIGS.agentsMd, CONFIGS.js], 64);
 		const onePress = runReducer(start, {
@@ -325,8 +320,6 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		expect(state.peelRefundKb ?? 0).toBe(0);
 	});
 
-	// Sharp because addStorage re-clamps to the plan cap: an unguarded refund of 0
-	// would burn the surplus on an action that never touched money.
 	it("leaves an over-cap balance alone when a minify frees the slots", () => {
 		const state = runReducer(collecting([GC, CONFIGS.agentsMd], 4, 400), {
 			type: "minify",
@@ -386,8 +379,6 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		expect(state.log.at(-1)).not.toContain("collected");
 	});
 
-	// A fatal miss returns "dead" before the awaiting-strip branch, so strip() is
-	// unreachable and no peel refund can run on the miss that ends the run.
 	it("pays nothing on a fatal miss, which never reaches the strip screen", () => {
 		const base = started(["unit-tests", "eslint"]);
 		const state = failGate({
@@ -399,8 +390,6 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		expect(state.storage).toBe(0);
 	});
 
-	// isPeelFatal is `ceil(occupied * share) >= occupied` and share tops out at 0.5,
-	// so only a one-slot build is ever fatal — the collector's own two always survive.
 	it("cannot be in the build a peel kills", () => {
 		const base = started(["unit-tests", "eslint"]);
 		const state = failGate({

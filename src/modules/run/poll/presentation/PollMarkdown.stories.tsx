@@ -28,8 +28,6 @@ export const QuestionWithCodeBlock: Story = {
 	},
 };
 
-// MarkdownText escapes stray markdown/HTML so free-text options render
-// literally — the tag and blockquote marker below stay visible as text.
 export const EscapedFreeText: Story = {
 	render: () => (
 		<MarkdownText>

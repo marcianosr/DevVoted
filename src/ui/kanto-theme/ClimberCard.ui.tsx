@@ -24,12 +24,6 @@ export const COPY = {
 const GITHUB = "https://github.com";
 const CLOSE_GLYPH = "×";
 
-/**
- * A phone gets a foldout, not a popup: the card is wider than the gap between a
- * chip and the screen's edge. From `sm` there is room to anchor it again — but
- * it anchors to the map rather than to the chip it belongs to, because the
- * track is a horizontal scroller and would clip anything hung inside it.
- */
 export const CARD_PANEL =
 	"fixed inset-x-4 bottom-4 z-30 sm:absolute sm:inset-x-auto sm:top-full sm:left-1/2 sm:mt-2 sm:w-112 sm:-translate-x-1/2";
 
@@ -57,9 +51,7 @@ export type ClimberCardStat = { label: string; value: string };
 
 export type ClimberCardProps = {
 	name: string;
-	/** Their GitHub account, linked from the name when they have one. */
 	handle?: string;
-	/** The one title they wear, earned through play (ADR-109). */
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;
@@ -68,12 +60,9 @@ export type ClimberCardProps = {
 	perfect?: boolean;
 	shaky?: boolean;
 	rescued?: boolean;
-	/** Where they stand, as every surface says it: "gate 5 · Rainbow". */
 	gate: string;
-	/** How their last gate closed. Absent before a first close. */
 	band?: CoverageBandId;
 	coveragePercent?: number;
-	/** What their build carries against what it rents: "14 of 16 weight". */
 	weight: string;
 	storage?: string;
 	build: readonly ConfigChipProps[];
@@ -104,11 +93,6 @@ const Naming = ({
 	</span>
 );
 
-/**
- * Who a climber is, where they stand and what they are running. Everything on
- * it is public by ADR-101; the note at the foot states what is not, so the
- * reader knows the card is the whole of what they get rather than a teaser.
- */
 export const ClimberCard = ({
 	name,
 	handle,

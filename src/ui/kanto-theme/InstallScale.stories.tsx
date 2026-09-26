@@ -20,7 +20,6 @@ type Story = StoryObj<typeof InstallScale>;
 
 export const OffTheFreeRung: Story = {};
 
-/** The step that hurts: the ladder doubles, so every crossing costs more than the last. */
 export const IntoTheTopRung: Story = {
 	args: { from: 24, to: 32, perGateKb: 512 },
 };

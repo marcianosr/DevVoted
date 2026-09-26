@@ -27,7 +27,6 @@ const incrementsOf = (
 
 const CLOSE: RunAction = { type: "close-gate" };
 
-/** The answer and the close that follows it, which is how a gate actually settles. */
 const settledIncrementsOf = (
 	state: RunState,
 	action: RunAction
@@ -55,7 +54,6 @@ const answered = (state: RunState, count: number, correct = true): RunState => {
 	return next;
 };
 
-/** Enters the gate carrying a full bar, so the close turns on this gate's five. */
 const demandMet = (state: RunState): RunState => ({
 	...state,
 	bankedUnits: SLICE_WINDOW * state.gatesCleared,
@@ -289,10 +287,6 @@ describe("gate clears", () => {
 
 	it("skips the full-build badge while a slot sits open", () => {
 		const state = started(["js"]);
-		// Four 1-weight configs sit exactly on the free rung, so the open slot has
-		// to come from a build that does NOT land on a rung: a fifth weight rents
-		// the 6 and leaves one spare (ADR-098). Holding a wider rung is no longer
-		// expressible — the rung follows the build.
 		const roomy: RunState = {
 			...state,
 			build: {

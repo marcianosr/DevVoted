@@ -1,8 +1,3 @@
-/**
- * Centralized query key factory for consistent cache management
- * across the application
- */
-
 export const runQueryKeys = {
 	all: ["runs"] as const,
 	active: (userId: string | undefined) =>
@@ -18,20 +13,14 @@ export const sessionRunQueryKeys = {
 	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
-	/** Keyed by date: offers are dealt per attacker per day (ADR-099). */
 	attackTargets: (date: string) =>
 		[...sessionRunQueryKeys.all, "attack-targets", date] as const,
-	/** Everyone's incidents filed on that day. */
 	incidents: (date: string) =>
 		[...sessionRunQueryKeys.all, "incidents", date] as const,
-	/** Keyed by poll rather than by date: a peek is bought once and stays bought
-	 * for as long as that poll is on screen. */
 	pollSplit: (pollId: number) =>
 		[...sessionRunQueryKeys.all, "split", pollId] as const,
-	/** A finished run's permalink: immutable, so it is keyed by id alone. */
 	recap: (runId: number) =>
 		[...sessionRunQueryKeys.all, "recap", runId] as const,
-	/** Keyed by date: "tomorrow" is a different day once the day rolls over. */
 	upcomingCategories: (date: string) =>
 		[...sessionRunQueryKeys.all, "upcoming", date] as const,
 };
@@ -47,12 +36,9 @@ export const pollQueryKeys = {
 		[...pollQueryKeys.all, "seenInRun", runId] as const,
 	polldex: (userId: string | undefined) =>
 		[...pollQueryKeys.all, "polldex", userId] as const,
-	/** Every poll, whoever wrote it — the footer's count. */
 	list: () => [...pollQueryKeys.all, "list"] as const,
-	/** The authoring list: an admin sees all polls here, everyone else sees theirs. */
 	authored: () => [...pollQueryKeys.all, "authored"] as const,
 	creators: () => [...pollQueryKeys.all, "creators"] as const,
-	/** Whether this account may edit any poll. */
 	adminAccess: () => [...pollQueryKeys.all, "adminAccess"] as const,
 };
 
@@ -61,18 +47,10 @@ const USERS = ["users"] as const;
 export const userQueryKeys = {
 	all: USERS,
 	profile: (userId: string) => [...USERS, userId, "profile"] as const,
-	/**
-	 * Grouped by concern *before* the user, unlike `profile`: a gate clear awards
-	 * a swatch and has to invalidate this, but the run flow never holds a userId
-	 * (the server derives it from the session), so it needs a prefix it can name.
-	 */
 	swatchesAll: [...USERS, "swatches"] as const,
 	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
-	/** Same prefix-before-user shape as swatches, for the same reason: a run
-	 * action can grant a config unlock, and the run flow holds no userId. */
 	unlocksAll: [...USERS, "unlocks"] as const,
 	unlocks: (userId: string) => [...userQueryKeys.unlocksAll, userId] as const,
-	/** Same shape once more: a gate clear can earn a service (ADR-116). */
 	serviceUnlocksAll: [...USERS, "service-unlocks"] as const,
 	serviceUnlocks: (userId: string) =>
 		[...userQueryKeys.serviceUnlocksAll, userId] as const,

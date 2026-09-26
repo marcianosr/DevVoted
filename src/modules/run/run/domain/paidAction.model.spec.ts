@@ -25,7 +25,6 @@ import {
 } from "~/modules/run/run/domain/run.factory";
 
 describe("the lint fee", () => {
-	// Three options so the lint action applies (it needs >1 wrong option left).
 	const lintablePoll = (id: string, correct: boolean): RunPoll => ({
 		id,
 		category: "js",
@@ -59,7 +58,7 @@ describe("the lint fee", () => {
 
 	it("doubles the fee at a Cost Overrun gate (ADR-038)", () => {
 		const overrun: RunState = audited(lintableRun(), 3, "cost-overrun");
-		expect(lintFeeFor(overrun)).toBe(16); // the 8KB rung, doubled
+		expect(lintFeeFor(overrun)).toBe(16);
 		expect(runReducer(overrun, { type: "lint-poll" }).storage).toBe(84);
 	});
 
@@ -90,15 +89,12 @@ describe("the lint fee", () => {
 	it("charges the fee for a lint but demands nothing back for it", () => {
 		let state = lintableRun();
 		state = runReducer(state, { type: "lint-poll" });
-		expect(state.storage).toBe(92); // -8KB lint fee
-		state = answerWith(state, false); // the linted poll still missed
+		expect(state.storage).toBe(92);
+		state = answerWith(state, false);
 		for (let i = 0; i < 4; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 	});
 
-	// The cross-out is unlimited and the ladder is the only thing metering it.
-	// Its position used to live on `manualDisabled`, which every answer clears,
-	// so the fee reset per poll and a whole gate linted at 8KB a go.
 	it("climbs the ladder across the gate, so a later poll's cross-out costs double", () => {
 		let state = lintableRun();
 		expect(lintFeeFor(state)).toBe(8);
@@ -116,14 +112,11 @@ describe("the lint fee", () => {
 		expect(lintFeeFor(state)).toBe(8);
 	});
 
-	// A redo replays the gate from scratch (ADR-037) on a fresh window, so the fee
-	// it was climbing comes back down with it.
 	it("resets the ladder for a redo, not only for a clear", () => {
 		let state = failGate(lintableRun());
 		while (state.peelSlotsRemaining > 0)
 			state = runReducer(state, {
 				type: "strip",
-				// Never the linter: peeling it would answer a different question.
 				configIds: [state.build.configs[state.build.configs.length - 1].id],
 			});
 		state = runReducer(
@@ -136,8 +129,6 @@ describe("the lint fee", () => {
 });
 
 describe("Telemetry peeks", () => {
-	// ts/css masteries skip on the react-only pool, so Telemetry's is the only
-	// check that judges this window.
 	const peekingRun = (): RunState => ({
 		...started(["telemetry"]),
 		storage: 200,
@@ -157,7 +148,7 @@ describe("Telemetry peeks", () => {
 		let state = peek(peekingRun());
 		state = answerWith(state, true);
 		state = peek(state);
-		expect(state.storage).toBe(104); // 200 - 32 - 64
+		expect(state.storage).toBe(104);
 	});
 
 	it("refuses a second peek on the same poll — the split comes over once", () => {
@@ -301,16 +292,12 @@ describe("buying back a redacted answer (451)", () => {
 		expect(canBuyBack(state, sealedOn(state)[0])).toBe(false);
 	});
 
-	// 403 freezes the linter and the peek, never this: a seal you are forbidden
-	// to read is a trap rather than a rule, whichever way the seal arrived.
 	it("survives a 403 Forbidden gate, which freezes the other two", () => {
 		const state = heldRun("feature-freeze");
 		expect(canBuyBack(state, sealedOn(state)[0])).toBe(true);
 		expect(lintApplies(state)).toBe(false);
 	});
 
-	// The restorative exemption: 429 caps the window at one paid action, and
-	// metering the audit's own escape hatch against it would strand the window.
 	it("leaves the rate limit alone at a 429 Too Many Requests gate", () => {
 		const state = heldRun("too-many-requests");
 		const [first, second] = sealedOn(state);
@@ -332,8 +319,6 @@ describe("buying back a redacted answer (451)", () => {
 		expect(bought.boughtBackOptionIds).toContain(target);
 	});
 
-	// Crossing out a sealed option would state that it is wrong, which is the
-	// leak the redaction exists to prevent.
 	it("keeps the linter off the sealed answers", () => {
 		const state = heldRun();
 		const sealed = new Set(sealedOn(state));

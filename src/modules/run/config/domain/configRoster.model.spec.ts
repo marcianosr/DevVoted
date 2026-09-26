@@ -16,11 +16,6 @@ describe("readsMissedHistory", () => {
 		expect(readsMissedHistory([CONFIGS.js, CONFIGS.regressionTest])).toBe(true);
 	});
 
-	/**
-	 * A snapshot embeds the config as it looked when it was drafted, so a run
-	 * that predates the effect carries an entry without the field. The roster
-	 * decides, or the extra query would be skipped for exactly those runs.
-	 */
 	it("resolves against the roster rather than the embedded shape", () => {
 		expect(readsMissedHistory([{ id: "regression-test" }])).toBe(true);
 	});

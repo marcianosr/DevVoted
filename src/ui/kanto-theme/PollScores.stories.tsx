@@ -81,7 +81,6 @@ export const PaidWithABuildBehindIt: Story = {
 	},
 };
 
-/** Hover any score: the chip states what the figure is made of. */
 export const AScoreCarriesItsReceipt: Story = {
 	args: {
 		rows: pollPayoutRows([[1.25, 1, 0, undefined, undefined]]).map((row) => ({

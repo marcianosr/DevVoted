@@ -253,7 +253,6 @@ describe("CommunityView", () => {
 
 		expect(screen.getByText("13 in a row")).toBeInTheDocument();
 		expect(screen.getByText("3 players answered")).toBeInTheDocument();
-		// Twice over: the header stat and the climb badge both state the standing.
 		expect(screen.getAllByText("top 18%")).toHaveLength(2);
 	});
 

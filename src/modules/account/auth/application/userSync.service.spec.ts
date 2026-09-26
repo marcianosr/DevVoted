@@ -41,8 +41,6 @@ describe("ensureUserExists", () => {
 		expect(repository.insertUser).toHaveBeenCalledWith(BANJO);
 	});
 
-	// Two sign-ins racing on the same email: the loser's insert violates the
-	// unique constraint, and by then the winner has created the row it wanted.
 	it("falls back to the email lookup when a concurrent insert won the race", async () => {
 		vi.mocked(repository.findUserById).mockResolvedValue(undefined);
 		vi.mocked(repository.insertUser).mockRejectedValue(
@@ -85,8 +83,6 @@ describe("last seen bookkeeping", () => {
 		expect(repository.touchLastSeen).not.toHaveBeenCalled();
 	});
 
-	// fetchUser turns any throw from here into a null user, which the router
-	// reads as "logged out" — so a failed counter must never propagate.
 	it("returns the account even when the stamp fails, rather than signing the player out", async () => {
 		vi.mocked(repository.findUserById).mockResolvedValue(BANJO);
 		vi.mocked(repository.touchLastSeen).mockRejectedValue(

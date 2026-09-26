@@ -71,8 +71,6 @@ describe("startingHand", () => {
 		expect(new Set(hands).size).toBeGreaterThan(1);
 	});
 
-	// Aim decides runs, so a hand with no category multiplier is broken rather
-	// than merely unlucky.
 	it("always deals a focus config, whatever the seed", () => {
 		seeds(200).forEach((seed) =>
 			expect(hasFocus(startingHand(STARTER_POOL, seed, SLOT_BUDGET))).toBe(true)
@@ -80,8 +78,6 @@ describe("startingHand", () => {
 	});
 
 	it("trades a card for a focus config when the draw comes up with none", () => {
-		// One focus config, sat past the draw on every seed but its own: the
-		// guarantee has to reach back into the undealt half to find it.
 		const focusLast: readonly Config[] = [
 			CONFIGS.unitTests,
 			CONFIGS.agentsMd,
@@ -131,8 +127,6 @@ describe("startingHand", () => {
 	});
 });
 
-// ADR-062. STARTER_POOL's curation held these by construction; a draw from the
-// account's granted pool (DVTD-p9ah) does not, so the draw enforces them.
 describe("startingHand guarantees", () => {
 	it("never deals a config the slot budget cannot install", () => {
 		const oversized = [CONFIGS.agentsMd, CONFIGS.volkswagenCi];
@@ -144,8 +138,6 @@ describe("startingHand guarantees", () => {
 		});
 	});
 
-	// The rule is larger-than, not as-large-as: a config that exactly fills the
-	// budget is a legal all-in opening, not a dead card.
 	it("still deals a config that exactly fills the budget", () => {
 		const dealtSomewhere = seeds(200).some((seed) =>
 			ids(startingHand(CONFIG_LIST, seed, SLOT_BUDGET)).includes(
@@ -188,8 +180,6 @@ describe("startingHand guarantees", () => {
 		expect(counts).toEqual(new Set([FOCUS_BAND.min, FOCUS_BAND.max]));
 	});
 
-	// The floor is one config (ADR-057); a hand whose cards cannot sit together
-	// would make that floor the ceiling too.
 	it("deals PAIRABLE_PICKS configs that fit the budget together", () => {
 		seeds(200).forEach((seed) => {
 			const dealt = startingHand(CONFIG_LIST, seed, SLOT_BUDGET);
@@ -199,8 +189,6 @@ describe("startingHand guarantees", () => {
 	});
 
 	it("trades a crowding card for a smaller one when the draw cannot pair", () => {
-		// Four 2-slot configs and one 1-slot: any three of the 2-slot cards
-		// overshoot a budget of 4, so the draw has to reach for the small ones.
 		const crowded: readonly Config[] = [
 			CONFIGS.codeCoverage,
 			CONFIGS.indexedDb,
@@ -236,8 +224,6 @@ describe("startingHand guarantees", () => {
 		);
 	});
 
-	// The free eight satisfy every rule by accident; only a roster-sized pool
-	// proves the draw enforces them.
 	it("holds every guarantee against the full roster, on every seed", () => {
 		seeds(200).forEach((seed) => {
 			const dealt = startingHand(CONFIG_LIST, seed, SLOT_BUDGET);
@@ -255,8 +241,6 @@ describe("startingHand guarantees", () => {
 });
 
 describe("RECOMMENDED_SIZE", () => {
-	// Every recommendedPicks spec asserts against the constant, so a slide back
-	// to preselecting three would stay green without this.
 	it("marks two of the five, leaving the opening a decision (ADR-057)", () => {
 		expect(RECOMMENDED_SIZE).toBe(2);
 		expect(HAND_SIZE).toBe(5);
@@ -272,8 +256,6 @@ describe("poolFor (DVTD-amtz: an unlock has to reach the table)", () => {
 		]);
 	});
 
-	// A pre-seed account has no rows at all, and an account whose every unlock
-	// left the roster reads the same way. Both must still get a playable hand.
 	it("falls back to the starter set for an empty ledger", () => {
 		expect(poolFor([])).toBe(STARTER_POOL);
 		expect(poolFor(["a-config-that-was-deleted"])).toBe(STARTER_POOL);
@@ -290,15 +272,11 @@ describe("poolFor (DVTD-amtz: an unlock has to reach the table)", () => {
 });
 
 describe("STARTER_POOL", () => {
-	// A pool that could not fill a hand would make HAND_SIZE a lie, and one with
-	// no focus configs would make the guarantee unsatisfiable.
 	it("holds enough configs to fill a hand, with something to aim by", () => {
 		expect(STARTER_POOL.length).toBeGreaterThanOrEqual(HAND_SIZE);
 		expect(hasFocus(STARTER_POOL)).toBe(true);
 	});
 
-	// ADR-051 Decision 2, amended 2026-09-04 to eight. The pool is the stand-in
-	// for the account's granted set until DVTD-p9ah swaps it.
 	it("is ADR-051's free eight, so the stand-in matches what signup will grant", () => {
 		expect(ids(STARTER_POOL).sort()).toEqual(
 			[
@@ -321,8 +299,6 @@ describe("STARTER_POOL", () => {
 		expect(smallestPicksOccupy(STARTER_POOL)).toBeLessThanOrEqual(SLOT_BUDGET);
 	});
 
-	// Handed configs are free; the expensive half of the roster is what drafting
-	// is for.
 	it("hands out nothing the shop prices as a drawback", () => {
 		STARTER_POOL.forEach((config) => expect(config.draftCost).toBeUndefined());
 	});

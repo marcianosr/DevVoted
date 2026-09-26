@@ -9,9 +9,6 @@ type StorageBreakdownProps = {
 	configsStorage: number;
 	rerollsStorage: number;
 	deinstallPenalty: number;
-	// Bytes the player spent from their archive at run-start to front-load
-	// storage_limit. Shown as a dedicated breakdown line so the source is
-	// distinct from gate-earned storage.
 	injectedArchive?: number;
 };
 

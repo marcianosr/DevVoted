@@ -59,9 +59,6 @@ export const Route = createRootRoute({
 			{ rel: "icon", href: "/favicon.ico" },
 		],
 	}),
-	// The one visit call site. Root beforeLoad is not cached per match: it runs
-	// server-side on the initial load and client-side on every navigation after
-	// it, which is exactly one record per screen. `preload` guards the hover.
 	beforeLoad: async ({ matches, preload }) => {
 		const user = await fetchUser();
 		if (!preload) recordScreen(matches);
@@ -176,7 +173,6 @@ function Navigation() {
 								Suggest your own poll
 							</Link>
 							<span className="text-white">·</span>
-							{/* TEMP: surface the new border shop until it gets a real home */}
 							<Link
 								to="/profile/$userId"
 								params={{ userId: user.id }}

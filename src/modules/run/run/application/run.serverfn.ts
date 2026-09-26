@@ -15,12 +15,6 @@ import {
 	startRunService,
 } from "~/modules/run/run/application/run.service";
 
-/**
- * The trust boundary (DVTD-ay5e): the server owns run state and correctness.
- * Clients send intent (a RunAction) and only ever receive the redacted
- * RunView — never RunState, never option `correct` flags.
- */
-
 export const getTodaysRun = createServerFn({ method: "GET" }).handler(
 	async () =>
 		withAuthenticatedUser((userId) =>
@@ -34,7 +28,6 @@ export const startRun = createServerFn({ method: "POST" }).handler(async () =>
 	)
 );
 
-/** Give up the active run: 50% of leftover storage banks, a fresh start opens (DVTD-li9i). */
 export const abandonRun = createServerFn({ method: "POST" }).handler(async () =>
 	withAuthenticatedUser((userId) => abandonRunService({ userId }))
 );
@@ -51,10 +44,6 @@ export const dispatchRunAction = createServerFn({ method: "POST" })
 		)
 	);
 
-/**
- * A finished run's summary, by id. The id is client-supplied — the only run
- * URL that is — so the service matches it against the session before reading.
- */
 export const getRunRecap = createServerFn({ method: "GET" })
 	.validator(z.object({ runId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
@@ -63,16 +52,11 @@ export const getRunRecap = createServerFn({ method: "GET" })
 		)
 	);
 
-/** Tomorrow's poll categories — Prefetch's product; refused without the config. */
 export const getUpcomingCategories = createServerFn({ method: "GET" }).handler(
 	async () =>
 		withAuthenticatedUser((userId) => getUpcomingCategoriesService({ userId }))
 );
 
-/**
- * The viewer's swatch collection. userId comes from the session, never the
- * client — the collection is per-user.
- */
 export const getOwnedSwatches = createServerFn({ method: "GET" }).handler(
 	async () =>
 		withAuthenticatedUser((userId) => getOwnedSwatchesService({ userId }))

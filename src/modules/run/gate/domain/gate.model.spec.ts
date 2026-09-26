@@ -31,7 +31,6 @@ const buildWith = (configs: Config[]): Build => ({
 	id: "build",
 	configs,
 });
-/** Units that land the run exactly on `ratio` when this gate shuts. */
 const unitsFor = (ratio: number, gate: number): number =>
 	ratio * scoringSlotsAt(gate);
 
@@ -307,10 +306,6 @@ describe("gateProjectionFor (Dry Run)", () => {
 		expect(projection.passClears).toBe(false);
 	});
 
-	/**
-	 * The gate's slot count is already fixed, so a miss earns nothing and
-	 * subtracts nothing. Its cost is the gain it forfeits.
-	 */
 	it("leaves a wrong answer exactly where the run already stands", () => {
 		const projection = gateProjectionFor(10, PAYS_TWO, GATE, 50);
 

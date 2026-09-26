@@ -23,7 +23,6 @@ const openAt = (runId: number) => ({
 	openRunId: runId,
 });
 
-/** The chip itself, not the name span inside it: the lit edge sits on the chip. */
 const chipFor = (name: string) =>
 	screen.getByText(name).closest("span.inline-flex");
 
@@ -35,7 +34,6 @@ describe("AttackPanel", () => {
 		expect(screen.getByText("Summit")).toBeInTheDocument();
 	});
 
-	// Erika is the fixture wearing none: a title-less rival is still a target.
 	it("lists a rival who wears no title beside the ones who do", () => {
 		render(<AttackPanel {...kantoAttackPanel()} />);
 

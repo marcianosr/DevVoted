@@ -50,7 +50,6 @@ export type LedgerRow = {
 	share?: number;
 	tags?: readonly LedgerTag[];
 	detail?: string;
-	/** Clauses that qualify the row, one per line. A single clause belongs in `detail`. */
 	notes?: readonly string[];
 	figures?: readonly LedgerFigure[];
 	total?: boolean;
@@ -151,7 +150,6 @@ const Row = ({
 	);
 };
 
-/** Where the hairlines fall: between every row, or only above the total. */
 export type LedgerRules = "each" | "total";
 
 export type LedgerRowsProps = {

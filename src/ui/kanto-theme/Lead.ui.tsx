@@ -12,11 +12,6 @@ const GAIN_COLOR: KantoColor = "viridian";
 const DEFAULT_VARIANT: TypographyVariant = "hint";
 
 export type LeadBand = { band: CoverageBandId; figure?: never; gain?: never };
-/**
- * A figure carrying a band wears that band's colour rather than the gain green:
- * a run's own reading has to say how the run is doing, and 0.0% in green says
- * the opposite of what it means.
- */
 export type LeadFigure = {
 	figure: string;
 	gain?: boolean;

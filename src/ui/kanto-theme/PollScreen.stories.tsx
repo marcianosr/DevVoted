@@ -212,7 +212,6 @@ export const LateRun: Story = {
 	},
 };
 
-/** What a new player sees most: a poll nobody has measured and they have never met. */
 export const FreshPoll: Story = {
 	args: {
 		facts: {
@@ -225,7 +224,6 @@ export const FreshPoll: Story = {
 	},
 };
 
-/** A config or an audit withheld the band; the option count falls back to the header. */
 export const FactsWithheld: Story = { args: { facts: undefined } };
 
 export const NoHint: Story = { args: { hint: undefined } };
@@ -285,7 +283,6 @@ const ANSWER_RECEIPT = [
 	},
 ] as const satisfies readonly LedgerRow[];
 
-/** The answer that just landed, on the chip that paid it. */
 const answeredPaidFor = (): PollScoresProps => {
 	const { paid } = createKantoPollScreenProps().coverage;
 	const [row] = paid?.rows ?? [];

@@ -18,25 +18,18 @@ import type {
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
-/** A rival's audit filed against a gate this run has not reached yet. */
 export type QueuedIncident = {
 	readonly id: number;
 	readonly auditId: AuditId;
 	readonly sentBy: IncidentSender;
 };
 
-/**
- * How a rival is drawn wherever their build is open (ADR-101). Every field is
- * optional because none of it is required to be a valid target: an account with
- * no photo, no border and no title is still fair game.
- */
 export type RivalFace = {
 	readonly photoUrl?: string;
 	readonly borderUrl?: string;
 	readonly title?: string;
 };
 
-/** What a rival's live run tells us about whether it is fair game. */
 export type RivalCandidate = RivalFace & {
 	readonly runId: number;
 	readonly userId: string;
@@ -53,13 +46,11 @@ export type Attacker = {
 	readonly band: HeldAuditBand;
 };
 
-/** Audit ids already queued per target run, keyed on the gate they aim at. */
 export type QueuedByRun = ReadonlyMap<
 	number,
 	ReadonlyMap<number, readonly AuditId[]>
 >;
 
-/** One queued row, as the fold below needs it. */
 export type QueuedEntry = {
 	readonly runId: number;
 	readonly gate: number;
@@ -83,7 +74,6 @@ export type LockOutcome = {
 
 export const OFFER_COUNT = 3;
 
-/** Audit ids per target run and gate, so capacity and family rules read one map. */
 export const queuedByRun = (entries: readonly QueuedEntry[]): QueuedByRun =>
 	entries.reduce<Map<number, Map<number, readonly AuditId[]>>>(
 		(byRun, entry) => {
@@ -98,7 +88,6 @@ export const queuedByRun = (entries: readonly QueuedEntry[]): QueuedByRun =>
 		new Map()
 	);
 
-/** An audit never interrupts the gate a rival is in: it aims at the next one. */
 export const targetGateOf = (
 	rival: Pick<RivalCandidate, "gatesCleared">
 ): number => rival.gatesCleared + 1;
@@ -109,11 +98,6 @@ const queuedAt = (
 	gate: number
 ): readonly AuditId[] => queued.get(runId)?.get(gate) ?? [];
 
-/**
- * OK and SHAKY players are already struggling; only a strong clear is fair
- * game. Its own list, not the hand's: an OK clear hands an audit (ADR-119) but
- * still never draws one.
- */
 const STRONG_CLOSE: readonly CoverageBandId[] = ["healthy", "perfect"];
 
 const closedStrong = (rival: RivalCandidate): boolean =>
@@ -126,11 +110,6 @@ const hasRoom = (rival: RivalCandidate, queued: QueuedByRun): boolean => {
 	return auditCapacityFor(gate) > queuedAt(queued, rival.runId, gate).length;
 };
 
-/**
- * A gate that cannot carry an audit cannot fire one. Without this an early
- * climber shoots at gate-4 leaders from gate 0, where nothing can reach back:
- * the shell is only fair while you stand in range of one yourself.
- */
 export const canFireFrom = (
 	attacker: Pick<Attacker, "gatesCleared">
 ): boolean => auditCapacityFor(attacker.gatesCleared) > 0;
@@ -163,10 +142,6 @@ export const eligibleRivals = (
 const payloadSeed = (attacker: Attacker, rival: RivalCandidate, date: string) =>
 	`${attacker.runId}:${rival.runId}:${targetGateOf(rival)}:${date}`;
 
-/**
- * Leaders first, ties broken by a seeded shuffle, three offered: rubber-banding
- * without letting a refresh re-deal the rivals or the payloads.
- */
 export const offersFor = (
 	attacker: Attacker,
 	eligible: readonly RivalCandidate[],
@@ -201,11 +176,6 @@ export const offersFor = (
 const admits = (taken: readonly AuditId[], id: AuditId, capacity: number) =>
 	taken.length < capacity && eligibleFor([id], taken).length === 1;
 
-/**
- * First come, first locked, up to the gate's capacity; an incident that clashes
- * with one already taken waits for the following gate, or lapses past the
- * summit. The locked set is ranked so the defeat device stays predictable.
- */
 export const lockIncidents = (
 	gate: number,
 	queued: readonly QueuedIncident[]

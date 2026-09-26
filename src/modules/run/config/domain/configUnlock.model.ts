@@ -18,11 +18,7 @@ export type CumulativeMetric =
 	| "polls-correct"
 	| `category-correct:${CategoryCode}`
 	| "gates-cleared"
-	// Runs taken all the way to the summit. `gates-cleared` counts gates across
-	// every run, so it can never say that thirteen of them fell in one.
 	| "runs-won"
-	// Runs that stood at gate N. Same reason: a lifetime sum of clears cannot
-	// say how deep any one climb went, and a service unlocks on depth (ADR-116).
 	| `reached-gate:${number}`
 	| "audited-gates-cleared"
 	| "rebuilds"

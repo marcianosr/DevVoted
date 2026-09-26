@@ -52,12 +52,6 @@ describe("gateStartPercent", () => {
 	});
 });
 
-// These state the answer outright rather than recomputing it: the block they
-// replace asserted `gate * SLICE_WINDOW + polls`, which is the implementation
-// retyped, so it could never fail for the reason it existed (DVTD-rn26).
-// climbers.repository builds the same position in SQL for aggregates it cannot
-// do in TS, and interpolates the same SLICE_WINDOW — so the tunable is shared
-// and only the arithmetic shape is written twice.
 describe("trackPosition", () => {
 	it("starts the track at zero", () => {
 		expect(trackPosition({ gate: 0, pollsIntoGate: 0 })).toBe(0);

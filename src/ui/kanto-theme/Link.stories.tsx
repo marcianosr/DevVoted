@@ -24,14 +24,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Outside a Screen the theme falls back to :root's cerulean. */
 export const External: Story = {};
 
 export const InApp: Story = {
 	args: { href: "/dex", children: "the Dex", external: false },
 };
 
-/** The link has to out-read prose that is almost always muted. */
 export const InQuietProse: Story = {
 	render: (args) => (
 		<Screen theme="cinnabar" width="narrow">
@@ -44,7 +42,6 @@ export const InQuietProse: Story = {
 	),
 };
 
-/** The same link, four screens: it belongs to the screen rather than to itself. */
 export const AcrossScreens: Story = {
 	render: (args) => (
 		<div className="flex flex-col gap-4">

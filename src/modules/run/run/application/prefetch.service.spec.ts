@@ -60,8 +60,6 @@ describe("getUpcomingCategoriesService", () => {
 	});
 
 	it("refuses without the config, and never rolls tomorrow's seed", async () => {
-		// Server-side, not UI-side: the categories are the config's whole product,
-		// and the early roll is a side effect no free rider should trigger.
 		vi.mocked(runQueries.loadRunState).mockResolvedValue(
 			runWith([CONFIGS.js, CONFIGS.telemetry])
 		);

@@ -33,8 +33,6 @@ describe(redactPoll, () => {
 		]);
 	});
 
-	// The view is what crosses the wire, so a sealed label must not be in it at
-	// all — hiding it in the UI would ship the answer inside the response.
 	it("never puts a sealed option's text in the view", () => {
 		const view = redactPoll(poll, ["a", "c"]);
 		expect(JSON.stringify(view)).not.toContain("Array.prototype.map");
@@ -53,9 +51,6 @@ describe(redactPoll, () => {
 });
 
 describe(revealedPoll, () => {
-	// Without this the reveal leaves a redacted poll reading ?????, and since
-	// correctness is matched by label nothing lights up either: the player
-	// gambles and is taught nothing.
 	it("puts the real text back once the answer is in", () => {
 		const sealed = redactPoll(poll, ["a", "c"]);
 		const shown = revealedPoll(

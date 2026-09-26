@@ -22,7 +22,6 @@ export default meta;
 
 type Story = StoryObj<typeof IncidentsPanel>;
 
-/** The day's public log on the board; the viewer's own rows are ringed. */
 export const Today: Story = { args: kantoIncidents() };
 
 export const QuietDay: Story = { args: kantoIncidentsQuiet() };

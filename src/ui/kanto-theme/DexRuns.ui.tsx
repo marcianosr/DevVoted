@@ -20,12 +20,10 @@ export const heldOutcomeOf = (gateName: string): string => `${gateName} held`;
 
 export type DexRunRow = {
 	runId: number;
-	/** The run's permalink in the archive. Built by the viewmodel: a URL is data. */
 	href: string;
 	date: string;
 	swatches: readonly SwatchFill[];
 	outcome: string;
-	/** Already a share of the run's own window, never raw units. */
 	coverage: string;
 	band: CoverageBandId;
 };

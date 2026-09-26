@@ -20,12 +20,10 @@ export default meta;
 
 type Story = StoryObj<typeof AttackPanel>;
 
-/** A PERFECT close rolls two payloads per rival; the player picks one. */
 export const Perfect: Story = {
 	render: () => <AttackPanel {...kantoAttackPanel()} />,
 };
 
-/** Opening a rival is what shows the payload and the config it would take out. */
 export const Inspected: Story = {
 	render: () => <AttackPanel {...kantoAttackPanelInspected()} />,
 };

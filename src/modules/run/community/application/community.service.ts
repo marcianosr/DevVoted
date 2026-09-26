@@ -59,29 +59,19 @@ type Player = {
 	borderUrl: string | null;
 };
 
-/** One player's answer to one poll, folded from the day's response rows. */
 type CommunityAnswer = {
 	pollId: number;
 	user: Player;
 	optionIds: Set<number>;
-	/** Given at a Mirror gate, so the picks answer the inverted poll (ADR-038).
-	 * Whoever grades this answer has to invert with it. */
 	mirrored: boolean;
 };
 
-/**
- * One answer option with its community result. Named `isRight` (not `correct`)
- * on purpose: the payload tripwire spec rejects any `"correct":` key, guarding
- * against a raw DB option record leaking into the response.
- */
 export type CommunityOptionResult = {
 	label: string;
 	isRight: boolean;
 	count: number;
-	/** Share of this poll's answerers, 0–100. Multi-answer polls may sum past 100. */
 	percent: number;
 	yours: boolean;
-	/** Everyone who picked this option, viewer first. */
 	voters: CommunityVoter[];
 };
 
@@ -97,52 +87,31 @@ export type RunCommunityPoll = {
 	pollId: number;
 	index: number;
 	question: string;
-	/** The category swatch next to the question — null for missed polls (sealed). */
 	category: CategoryCode | null;
 	outcome: AnswerOutcome | "missed";
-	/** Absent for missed polls: they may reappear in a later seed, so nothing may be revealed. */
 	detail: RunCommunityPollDetail | null;
 };
 
-/**
- * How a run is doing, as anyone may read it (ADR-101 §2, narrowed 2026-09-26).
- * Absent on a viewer whose own run has ended: their standing then sits on their
- * fallen chip, beside the build it belonged to.
- */
 export type ClimbStanding = {
-	/** The GitHub account behind the name, when they have one. */
 	handle?: string;
-	/** The one title on show (ADR-109). */
 	title?: string;
-	/** Coverage banked so far, as a whole percentage of what this gate scores against. */
 	coveragePercent?: number;
 	streak?: number;
 	storageKb?: number;
-	/** The category they have answered right most often, lifetime. */
 	bestCategory?: string;
 };
 
-/** One player's live position on the climb map. */
 export type ClimbClimber = ClimbMarker & {
 	id: string;
 	displayName: string;
 	photoUrl?: string | null;
 	borderUrl?: string | null;
-	/** The viewer's own marker — drawn exactly once, however their run ended. */
 	you: boolean;
-	/** Absent only for a viewer whose run has ended: their build then sits on their fallen chip. */
 	build?: PublicBuild;
-	/** The band the last gate closed on; absent before a first close, and for a viewer whose run has ended. */
 	closingBand?: CoverageBandId;
-	/** Where the run began: above 0, a git tag rescued it. Absent for a viewer whose run has ended. */
 	startedAtGate?: number;
 } & ClimbStanding;
 
-/**
- * A run the gate killed today, drawn as its player greyed out where they fell.
- * Keyed by run rather than by player: one player can lose more than one run in
- * a day, and each loss happened somewhere different.
- */
 export type ClimbFallen = ClimbMarker &
 	ClimbStanding & {
 		runId: number;
@@ -158,18 +127,15 @@ export type ClimbFallen = ClimbMarker &
 export type ClimbTodayView = {
 	climbers: ClimbClimber[];
 	fallen: ClimbFallen[];
-	/** Deepest position any finished run of the viewer's reached — null on a first climb. */
 	bestPosition: number | null;
 };
 
 export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
-	/** "top X% of players today" — null until the viewer answered something today. */
 	topPercent: number | null;
 	leaders: CategorySeat[];
 	polls: RunCommunityPoll[];
-	/** The climb map — null when the viewer has no run to place themselves on. */
 	climb: ClimbTodayView | null;
 };
 
@@ -205,11 +171,6 @@ const buildPollDetail = (
 	viewerAnswer: CommunityAnswer,
 	pollAnswers: CommunityAnswer[]
 ): RunCommunityPollDetail => {
-	// Knowledge, not opinion (ADR-038): a mirrored answer proves the player knows
-	// which options are wrong, so it is graded against the question they were
-	// actually asked. The count mixes mirrored and plain answers on purpose —
-	// both demonstrate the same knowledge, which is what "got it right" means
-	// here. (The paid split cannot mix them and excludes mirrored rows instead.)
 	const gotItRight = pollAnswers.filter(
 		(answer) =>
 			answerOutcome(
@@ -246,7 +207,6 @@ const buildPollDetail = (
 	};
 };
 
-/** "top 18%": players with a better correct-count today push you down. */
 const topPercentFor = (
 	viewerId: string,
 	polls: CommunityPollRecord[],
@@ -288,11 +248,6 @@ const EMPTY_VIEW = (
 	climb,
 });
 
-/**
- * One marker per player. A user with more than one live run (the schema allows
- * it even though the loop does not) keeps their deepest, so the map never draws
- * the same person twice.
- */
 const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
 	const byUser = new Map<string, ClimbClimber>();
 	for (const climber of climbers) {
@@ -305,7 +260,6 @@ const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
 	);
 };
 
-/** What a chip wears off the run's own record: its last close, and where it began. */
 const closeOf = ({
 	closingBand,
 	startedAtGate,
@@ -314,11 +268,6 @@ const closeOf = ({
 	startedAtGate,
 });
 
-/**
- * How the run is doing. Coverage leaves the database as the units the column
- * stores and becomes a percentage here, because a percentage needs the gate to
- * divide by and SQL has no business knowing the ladder.
- */
 const standingOf = (
 	row: ClimberRow,
 	bestCategory: string | undefined
@@ -340,7 +289,6 @@ const buildClimbToday = async ({
 }: {
 	userId: string;
 	date: string;
-	/** The viewer's own position, so they appear even once their run is over. */
 	viewerAt: ClimbMarker;
 }): Promise<ClimbTodayView> => {
 	const [active, fallen, bestPosition] = await Promise.all([
@@ -367,8 +315,6 @@ const buildClimbToday = async ({
 			...standingOf(row, bestCategories.get(row.userId)),
 		}));
 
-	// The viewer's marker comes from their own run, not the active-climber list:
-	// a run that died today has left that list but still belongs on the map.
 	const viewerRow = active.find((row) => row.userId === userId);
 	const viewer: ClimbClimber = {
 		id: userId,
@@ -417,8 +363,6 @@ export const getRunCommunityService = async ({
 			(await findSessionRunByDate(userId, date));
 		if (!run) return EMPTY_VIEW(date, null);
 
-		// Built before the poll board's early returns: the map has something to say
-		// from the moment a run exists, including on a day with nothing answered yet.
 		const viewerAt = await fetchClimbMarker(run.id);
 		const climb = viewerAt
 			? await buildClimbToday({ userId, date, viewerAt })
@@ -435,8 +379,6 @@ export const getRunCommunityService = async ({
 		]);
 		const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 
-		// Ahead of the board's early return: the seats stand on an all-time
-		// ledger, not on whether the viewer has answered anything today.
 		const leaders = seatsFor(await fetchCategoryLeaders(userId));
 		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders);
 
@@ -452,8 +394,6 @@ export const getRunCommunityService = async ({
 				(answer) => answer.user.id === userId
 			);
 
-			// Linted/skipped: the poll may reappear in a later seed for this
-			// player — reveal nothing beyond its existence.
 			if (!viewerAnswer) {
 				return {
 					pollId: poll.id,

@@ -26,10 +26,6 @@ export type RegistryControlData = {
 	detail: string;
 };
 
-/**
- * Earned: priced, or free when the press costs nothing. Locked: named all the
- * same, with the line that earns it where the price would go (ADR-116).
- */
 export type RegistryControlState =
 	{ locked?: false; price?: string } | { locked: true; unlock: string };
 
@@ -44,7 +40,6 @@ export type RegistryControlProps = RegistryControlData &
 	RegistryControlState &
 	RegistryControlChrome;
 
-/** The earned half, for a caller holding a service the account has unlocked. */
 export type UnlockedRegistryControlProps = RegistryControlData &
 	Extract<RegistryControlState, { locked?: false }> &
 	RegistryControlChrome;

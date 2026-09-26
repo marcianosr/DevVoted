@@ -6,33 +6,11 @@ import type { PollStats } from "~/modules/run/run/domain/pollStats.model";
 
 import type { DbReader } from "~/modules/run/run/infrastructure/runPolls.repository";
 
-/**
- * A raw `sql` fragment carries no column mapper, so the driver decides whether
- * this aggregate arrives as a Date or as a string. Normalising here is what
- * keeps `PollStats.lastAnsweredAt` the ISO string its consumers parse.
- */
 const isoOf = (value: Date | string | null | undefined): string | undefined =>
 	value === null || value === undefined
 		? undefined
 		: new Date(value).toISOString();
 
-/**
- * What the room and one account have done with a single poll.
- *
- * Scoped to one poll on purpose. These figures are read for the poll on screen
- * and nowhere else, so they are fetched where the view is built rather than
- * attached to the whole sequence: the dispatch path hydrates state for the
- * reducer, which has no business knowing how hard other people found a
- * question.
- *
- * Correctness comes from the stored `outcome` rather than a fold over option
- * rows, which is what keeps the room's half a grouped count instead of a scan
- * of (players × options).
- *
- * Mirrored answers (ADR-038) are left out of both halves: they answered a
- * different question, so counting them would report a miss the player never
- * made.
- */
 export const fetchPollStats = async (
 	pollId: number,
 	userId: string,

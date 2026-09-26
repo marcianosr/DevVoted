@@ -23,19 +23,13 @@ import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
 export type PrepViewProps = {
 	view: RunView;
 	onStart: () => void;
-	/** Offered only while the shop is still open behind prep. */
 	onBackToShop?: () => void;
-	/** The footer's one aside slot falls to this once the shop has closed. */
 	onCommunity?: () => void;
 	backLabel?: string;
-	/** Why the gate cannot start, when it cannot: the wait for tomorrow's polls. */
 	startRefusal?: string;
-	/** Planning Poker. Absent leaves the cards unpressable rather than hidden. */
 	onEstimate?: (count: number) => void;
 	onCommitBand?: (band: string) => void;
-	/** git rebase -i. Absent leaves the rows in place with no move presses. */
 	onRebase?: (from: number, to: number) => void;
-	/** The attack in hand and its rivals (ADR-099). Absent on a screen that has not dealt them. */
 	attack?: AttackPanelProps;
 	onFire?: (targetRunId: number, auditId: AuditId) => void;
 };
@@ -50,11 +44,6 @@ const windowOf = (view: RunView): PrepWindow => ({
 });
 
 const BACK_TO_SHOP = "Back to the shop";
-/**
- * Prep is the hub, so it offers both exits at once: back to the shop while it is
- * still open, and on to the community board. The board's own label and icon come
- * from the screen's own footer, so only the handler is wired here.
- */
 const asideHandlerFor = (
 	{ onCommunity }: PrepViewProps,
 	label: string
@@ -83,7 +72,6 @@ const asidesFor = (
 
 const RESPOND_UNOFFERED = "is not a target you were offered";
 
-/** Each press fires its own pair; the panel itself only knows labels. */
 const armedFor = (
 	{ attack, onFire }: PrepViewProps,
 	openRunId: number | undefined,
@@ -107,12 +95,6 @@ const armedFor = (
 				})),
 			};
 
-/**
- * Answering an audit is aiming your own at whoever sent it, so the press only
- * opens their row on the panel below — there is no reply mechanic of its own.
- * A sender you were not offered is named in the refusal rather than hidden, so
- * the rule reads off the screen (ADR-099 §4).
- */
 const respondingFor = (
 	audits: PrepViewProps["view"]["gateStake"]["audits"],
 	rivals: readonly AttackRival[],
@@ -145,12 +127,6 @@ export const PrepView = (props: PrepViewProps) => {
 	const { gateStake } = view;
 	const owed = commitmentRemedy(view);
 	const vendorOwed = view.vendorLock.offered;
-	/**
-	 * The countdown first, because it is the one nothing on this screen can
-	 * lift; then the vendor, which is answered on the build or in the shop;
-	 * then the calls, which are answered here. Naming a remedy the player
-	 * cannot reach before one they can would send them to the wrong screen.
-	 */
 	const refusal =
 		startRefusal ?? (vendorOwed ? VENDOR_REMEDY : undefined) ?? owed;
 	const held = view.pollsExhausted || vendorOwed || owed !== undefined;

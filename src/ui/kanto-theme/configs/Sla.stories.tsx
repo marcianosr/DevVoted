@@ -20,8 +20,6 @@ export default meta;
 
 type Story = StoryObj;
 
-// The harness has to promise a band before it can open gate 0 at all, and a
-// real close clears the promise again. Dropping it here is that clear.
 const prepping = (): RunState => ({
 	...runWith([CONFIGS.sla], MIXED_GATE),
 	status: "rewarding",

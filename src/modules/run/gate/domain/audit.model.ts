@@ -122,8 +122,6 @@ const FEATURE_FREEZE: Audit = {
 const REDACTED_POLL_COUNT = 3;
 const REDACTED_PER_POLL = 2;
 
-// The audit sells its own escape hatch, so it owns the price: no config grants
-// the buy-back, unlike the linter and the peek.
 export const BUY_BACK_KB = 4;
 
 const LEGAL_HOLD: Audit = {
@@ -300,7 +298,6 @@ export const auditLabelOf = (id: AuditId, gate = 0): string =>
 
 export type AuditSchedule = Readonly<Record<number, readonly AuditId[]>>;
 
-/** No gate carries anything until a rival's incident locks into it (ADR-099). */
 export const EMPTY_AUDIT_SCHEDULE: AuditSchedule = {};
 
 export const auditsForGate = (
@@ -405,14 +402,8 @@ export const auditRedactionPerPoll = (
 		return Math.max(perPoll, redacted.perPoll);
 	}, 0);
 
-// Never leave a poll a coin flip.
 const READABLE_FLOOR = 2;
 
-/**
- * Which options arrive sealed. Seeded on the poll id — never on the window
- * position, which would put the redaction in the same option letters all
- * window, and never on `correct`, which would make ????? a tell.
- */
 export const redactedOptionIdsFor = (
 	poll: RunPoll,
 	audits: readonly Audit[],

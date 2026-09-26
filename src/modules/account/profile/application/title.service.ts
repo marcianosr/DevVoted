@@ -41,11 +41,6 @@ const NOTHING_TO_ANNOUNCE: TitleAnnouncement = {
 	archivedRunStartedAt: null,
 };
 
-/**
- * What this account has been granted and never told about. The archived run is
- * only looked up when there is something to announce, so the common case — an
- * account with nothing pending — costs one query on every navigation.
- */
 export const getTitleAnnouncementService = async (userId: string) =>
 	handleApiOperation(async () => {
 		const titleIds = await fetchUnannouncedTitleIds(userId);

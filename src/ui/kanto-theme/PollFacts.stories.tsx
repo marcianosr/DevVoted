@@ -67,7 +67,6 @@ export const Easy: Story = {
 	},
 };
 
-/** A poll too few people have answered says so rather than guessing at a band. */
 export const Untested: Story = {
 	args: {
 		difficulty: {
@@ -79,7 +78,6 @@ export const Untested: Story = {
 	},
 };
 
-/** The common case for a new player: nothing of their own to report yet. */
 export const NeverSeen: Story = {
 	args: { history: undefined },
 };

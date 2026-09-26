@@ -2,17 +2,6 @@ import type { Rarity } from "./types";
 
 export type { Rarity };
 
-/**
- * Design-system tokens mapping a config's rarity to its themed border/text/bg
- * Tailwind classes. Lives in the UI tier so both primitives and domain surfaces
- * share one source of truth for rarity styling.
- */
-/**
- * The static Kanto-gradient ring (no animation — Marciano, 2026-08-04): the
- * element's own border goes transparent so the masked ring overlays exactly
- * where it would sit. Shared with `swatchBorderClass`, since a legendary swatch
- * and a legendary config wear the same treatment.
- */
 export const LEGENDARY_BORDER = "border-transparent legendary-ring";
 
 export const RARITY_COLORS: Record<

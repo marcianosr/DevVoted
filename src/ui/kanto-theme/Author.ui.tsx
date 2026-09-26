@@ -3,13 +3,6 @@ import { clsx } from "clsx";
 import { Link } from "./Link.ui";
 import { Typography } from "./Typography.ui";
 
-/**
- * `gap-4` to match the gutter a panel region gives its sides, because the
- * avatar sits between the two. An equipped border is drawn at `scale-120`, so
- * it overflows its own box by a tenth on each side — with a narrower gap the
- * frame ate into the space before the credit while the panel's padding kept
- * its own, and the avatar read as pushed against the text.
- */
 const AUTHOR = "flex min-w-0 items-center gap-4";
 const RULED = "w-full border-t border-edge pt-3";
 const FACE =
@@ -38,9 +31,7 @@ export type AuthorSize = keyof typeof AVATAR_SIZE;
 
 export type AuthorProps = {
 	handle: string;
-	/** Account authority, on the handle line. Assigned, never earned. */
 	role?: string;
-	/** The earned title, on its own line beneath (ADR-109). */
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;

@@ -144,28 +144,19 @@ export type BuildSpaceView = {
 	readonly space: number;
 	readonly weight: number;
 	readonly perGateKb: number;
-	/** The rung the build would cross into next, absent at the top of the ladder. */
 	readonly nextWeight?: number;
 	readonly nextPerGateKb?: number;
-	/**
-	 * The space a short bill actually covered, and so the weight the shop door
-	 * holds the run to. Null whenever the bill was paid in full, which is every
-	 * gate the run could afford.
-	 */
 	readonly coveredSpace: number | null;
 };
 
 export type VendorLockView = {
-	/** The build holds the vendor and has not named one yet, so a pick is live. */
 	readonly offered: boolean;
 	readonly lockedConfigId?: string;
 };
 
 export type SlaChoice = {
 	readonly band: CommittableBand;
-	/** The band as the ladder spells it, so the screen never re-spells it. */
 	readonly label: string;
-	/** The uplift as a share, e.g. 0.25. The screen owns the percent sign. */
 	readonly uplift: number;
 };
 
@@ -176,7 +167,6 @@ export type SlaControl = {
 
 export type EstimateChoice = {
 	readonly count: number;
-	/** What this card pays if the window meets it, already resolved by the engine. */
 	readonly units: number;
 };
 
@@ -209,11 +199,6 @@ export type InstalledConfig = {
 	readonly minifySavingSlots: number;
 };
 
-/**
- * What installing an offer does to the standing bill (ADR-098). Null when the
- * install lands inside the rung already rented, which is the signal the shop
- * reads to decide whether the press needs arming.
- */
 export type InstallScale = {
 	readonly from: number;
 	readonly to: number;
@@ -227,7 +212,6 @@ export type ShopOffer = {
 	readonly scale: InstallScale | null;
 	readonly owned: boolean;
 	readonly upgrades: boolean;
-	/** The version installed when this offer upgrades it; null for a new config. */
 	readonly heldLevel: number | null;
 	readonly locked: boolean;
 	readonly installable: boolean;
@@ -253,12 +237,6 @@ export type RunView = {
 	readonly poll: PollView | null;
 	readonly awaitingTomorrow: boolean;
 
-	/**
-	 * Today's segment, minus what this run has answered of it. The rollover
-	 * (ADR-011) deletes the unplayed tail and appends today's polls in its place,
-	 * so everything from `currentIndex` on is today's and nothing else — which is
-	 * what lets one subtraction mean "left today" with no date on the client.
-	 */
 	readonly pollsLeftToday: number;
 	readonly pollsExhausted: boolean;
 	readonly disabledOptionIds: readonly string[];
@@ -285,9 +263,7 @@ export type RunView = {
 	readonly optionCountsThisGate: readonly number[] | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
-	/** The heldAudit a HEALTHY-or-better clear armed, until it is fired (ADR-099). */
 	readonly heldAudit: HeldAudit | null;
-	/** A second audit handed while one was held, for this shop visit only. */
 	readonly offeredAudit: HeldAudit | null;
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
@@ -298,14 +274,12 @@ export type RunView = {
 	readonly faucetRemainingKb: number;
 	readonly autoUpgradeRemaining: number | null;
 	readonly gatesCleared: number;
-	/** The gate's five results are in and it owes a close. */
 	readonly gateComplete: boolean;
 
 	readonly gateTheme?: SwatchTheme;
 
 	readonly redoingGate: number | null;
 	readonly clearedGate: number | null;
-	/** Gates this run played flawlessly, each one a swatch kept for good. */
 	readonly swatchGates: readonly number[];
 	readonly victoryGate: number;
 
@@ -316,21 +290,14 @@ export type RunView = {
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
 	readonly storage: number;
-	/** Build-space upkeep the whole run paid, for the run-over report. */
 	readonly upkeepPaidKb: number;
 	readonly buildSpace: BuildSpaceView;
 	readonly vendorLock: VendorLockView;
 
-	/**
-	 * The account archive, in KB. Not run state — the service fills it from the
-	 * users row, because a run knows nothing about the account it banks into.
-	 */
 	readonly archiveAfterKb: number | null;
 	readonly unlockedConfigIds: readonly string[];
 	readonly unlockedThisRun: readonly RunUnlock[];
-	/** Titles the LAST dispatch earned, for the run-over announce (ADR-109). */
 	readonly earnedTitleIds: readonly string[];
-	/** Services this account has earned (ADR-116); a starter never appears, the roster says it is everyone's. */
 	readonly unlockedServiceIds: readonly string[];
 };
 
@@ -397,8 +364,6 @@ const scaleFor = (
 
 const offersFor = (state: RunState): readonly ShopOffer[] => {
 	const installed = state.build.configs;
-	// Room is measured to the cap, never to the rung: crossing a rung is what
-	// the install press warns about, not something the registry may refuse.
 	const free = roomToCapOf(state);
 	const locked = state.lockedOfferIds ?? [];
 

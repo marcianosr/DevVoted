@@ -99,12 +99,6 @@ export const atGateWithBuild = (
 	);
 };
 
-/**
- * Misses the whole window, carrying just enough history to land between the
- * gate's floor and its OK line. Zero units alone is DANGER at any gate with a
- * floor, and DANGER ends the run (ADR-076) — which would exercise the wrong
- * exit for every spec that means "the gate held and owes a peel".
- */
 export const failGate = (state: RunState): RunState => {
 	const ladder = gateLadderFor(
 		state.build.configs,

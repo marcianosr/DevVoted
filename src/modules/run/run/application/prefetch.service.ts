@@ -12,14 +12,6 @@ import {
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchSeedCategoriesForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
 
-/**
- * Tomorrow's poll categories, sold to Prefetch holders only. The gate is
- * server-side (the community split's precedent): the information is the whole
- * product, so an open endpoint would hand every client the config's value for
- * free. Fetching is what rolls tomorrow's shared seed early — the sequence is
- * identical for every player, so a holder learns the schedule, never
- * something another player cannot eventually see.
- */
 export const getUpcomingCategoriesService = async ({
 	userId,
 }: {

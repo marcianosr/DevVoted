@@ -1,8 +1,3 @@
-/**
- * The block's length is the weight, but it starts wide enough to read as a
- * block rather than as a digit that happens to be boxed: a one-weight config
- * sits beside a name, not inside a track.
- */
 const WIDTH_BY_SLOTS = [
 	"w-5",
 	"w-6",

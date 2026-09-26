@@ -19,7 +19,6 @@ describe("answerOutcome grades the community board and the engine alike", () => 
 		],
 	} as const;
 
-	// Same poll and picks, in each side's shape: numeric ids in a Set, string ids in an array.
 	const boardPoll = {
 		answerType: "multiple",
 		options: [
@@ -49,7 +48,6 @@ describe("answerOutcome grades the community board and the engine alike", () => 
 	});
 
 	it("grades a single-answer poll on the correct pick, not on set equality", () => {
-		// Malformed data is where the board's old set-equality copy disagreed with the engine.
 		const single = {
 			answerType: "single",
 			options: [

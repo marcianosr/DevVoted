@@ -76,11 +76,6 @@ describe("what fills the build (ADR-044)", () => {
 		expect(freeSlots(buildOf([CONFIGS.wtfpl]))).toBe(0);
 	});
 
-	/**
-	 * Room stopped being a reason to refuse an offer at every rung but the last
-	 * (ADR-098): a build grows into the rung above rather than being held out of
-	 * it, so only the top of the ladder can still say no.
-	 */
 	it("refuses only what the top rung cannot hold", () => {
 		expect(hasRoomFor(buildOf([CONFIGS.indexedDb]), 16)).toBe(true);
 

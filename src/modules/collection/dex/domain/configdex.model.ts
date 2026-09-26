@@ -22,11 +22,6 @@ export type ProgressFact = {
 	readonly count: number;
 };
 
-/**
- * Redaction is enforced at the type level: a locked entry carries no `Config`,
- * so no panel can leak a name, effect or tooltip it was supposed to hide —
- * only the slot silhouette and the two unlock paths survive the fold.
- */
 export type ConfigdexEntry =
 	| {
 			readonly state: "granted";
@@ -43,11 +38,6 @@ export type ConfigdexEntry =
 			readonly fallback: UnlockPathCaption;
 	  };
 
-/**
- * The free set reads granted even without a ledger row — a presentation guard
- * for pre-seed accounts (ADR-051 decision 2 shows starters granted, no
- * objective rows), deliberately looser than ADR-064's row-exists semantics.
- */
 export const configdex = (
 	unlocks: readonly UnlockFact[],
 	progress: readonly ProgressFact[]

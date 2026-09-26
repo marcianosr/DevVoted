@@ -163,7 +163,6 @@ describe("ScreenFooter", () => {
 		expect(press.parentElement).toHaveClass("w-full", "sm:flex-1");
 	});
 
-	// A string standing between the two presses reads as a third control.
 	it("drops the string the press cannot carry below the row, never between them", () => {
 		render(
 			<ScreenFooter
@@ -181,8 +180,6 @@ describe("ScreenFooter", () => {
 		expect(spare.parentElement?.parentElement?.nodeName).toBe("FOOTER");
 	});
 
-	// A screen offering two exits is offering a choice, and a choice reads as a
-	// pair of equals rather than a queue to the left of the real press.
 	it("gives two ways out a row of their own above the press, split evenly", () => {
 		render(
 			<ScreenFooter
@@ -403,7 +400,6 @@ describe("ScreenActions", () => {
 		).toBeInTheDocument();
 	});
 
-	// A stake reading and an aside's note have no fill of their own.
 	it("stands on an opaque ground once it carries more than the press", () => {
 		const { container } = render(
 			<ScreenActions

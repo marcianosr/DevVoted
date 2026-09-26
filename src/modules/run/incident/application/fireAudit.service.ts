@@ -29,11 +29,6 @@ type Aim = {
 	readonly auditId: AuditId;
 };
 
-/**
- * The client names a pair; the server deals the offers again and refuses a
- * pair it did not deal. Live rivals move, so a stale pick is refused with a
- * readable reason rather than filed against the wrong gate.
- */
 const aim = async ({
 	userId,
 	date,
@@ -64,11 +59,6 @@ const aim = async ({
 	return { offer, auditId };
 };
 
-/**
- * Files the incident in the same transaction that spends the credit, and only
- * when the reducer actually spent it (ADR-058 D5: the reducer stays pure, the
- * cross-player write sits beside the dispatch).
- */
 const filing =
 	(userId: string, { offer, auditId }: Aim) =>
 	(runId: number): RunSettlement =>

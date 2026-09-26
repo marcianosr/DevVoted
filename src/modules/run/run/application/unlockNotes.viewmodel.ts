@@ -29,7 +29,6 @@ const viaOf = (view: RunView, configId: string): string | null =>
 	view.unlockedThisRun.find((grant) => grant.configId === configId)
 		?.viaMetric ?? null;
 
-/** The run's grants as chip-ready lines; unknown ids are dropped, not thrown. */
 export const unlockLinesFor = (
 	grants: readonly RunUnlock[]
 ): readonly UnlockLine[] =>
@@ -39,7 +38,6 @@ export const unlockLinesFor = (
 		return [{ config, detail: provenanceOf(grant.configId, grant.viaMetric) }];
 	});
 
-/** The grants the LAST dispatch fired — the immediate saffron beat. */
 export const justFiredLines = (view: RunView): readonly UnlockLine[] =>
 	unlockLinesFor(
 		view.unlockedThisRun.filter((grant) =>
@@ -47,7 +45,6 @@ export const justFiredLines = (view: RunView): readonly UnlockLine[] =>
 		)
 	);
 
-/** The same beat as plain strings, for the terminal kit's Unlocks rows. */
 export const unlockNotesFor = (view: RunView): readonly UnlockAnnouncement[] =>
 	view.unlockedConfigIds.flatMap((configId) => {
 		const config = configById.get(configId);

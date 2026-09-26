@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 
 import { Tooltip } from "./Tooltip.ui";
 
-// A sheet on a phone, anchored from `sm`: the anchored class is what marks it.
 const panelOf = (container: HTMLElement) =>
 	container.querySelector(".sm\\:absolute");
 

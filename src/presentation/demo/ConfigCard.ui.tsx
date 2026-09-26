@@ -1,5 +1,3 @@
-// Restored from src/ui/economy when that island retired (DVTD-7q8l): the
-// slides deck still renders it via the legacy Cards components below.
 import { clsx } from "clsx";
 
 import { RARITY_COLORS } from "./rarityColors";

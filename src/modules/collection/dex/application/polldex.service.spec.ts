@@ -12,7 +12,6 @@ vi.mock("~/modules/collection/dex/infrastructure/polldex.repository", () => ({
 
 const USER = "red-from-pallet-town";
 
-/** Rows for one response to a 2-option poll (one option correct). */
 const response = (
 	responseId: number,
 	pollId: number,
@@ -99,7 +98,7 @@ describe("getPolldexService", () => {
 		expect(entry.seen).toBe(true);
 		expect(entry.timesSeen).toBe(5);
 		expect(entry.answeredCount).toBe(3);
-		expect(entry.accuracy).toBe(67); // 2 of 3 fully correct
+		expect(entry.accuracy).toBe(67);
 		expect(entry.question).toBe("Box model?");
 	});
 
@@ -139,7 +138,6 @@ describe("getPolldexService", () => {
 	});
 
 	it("counts an answered poll as seen even when run view-history is empty", async () => {
-		// Calendar/daily answers write polls_responses but no polls_history row.
 		mockQueries({
 			polls: [
 				{ id: 386, pollNumber: 386, question: "CSS?", categoryCode: "css" },
@@ -151,7 +149,7 @@ describe("getPolldexService", () => {
 		const [entry] = await unwrap();
 
 		expect(entry.seen).toBe(true);
-		expect(entry.timesSeen).toBe(1); // seen ≥ answered, never 0 for an answered poll
+		expect(entry.timesSeen).toBe(1);
 		expect(entry.answeredCount).toBe(1);
 		expect(entry.accuracy).toBe(0);
 		expect(entry.question).toBe("CSS?");

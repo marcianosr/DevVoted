@@ -5,11 +5,6 @@ import { createKantoPollFactsProps } from "~/test/kantoPoll.factory";
 
 import { PollFacts } from "./PollFacts.ui";
 
-/**
- * `Figures` splits prose across spans, so several nested elements share the
- * whole sentence. Match the innermost of them — the one whose children do not
- * already say it all by themselves.
- */
 const textIs = (whole: string) => (_: string, element: Element | null) =>
 	element?.textContent === whole &&
 	!Array.from(element.children).some((child) => child.textContent === whole);

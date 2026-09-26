@@ -113,7 +113,6 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 	});
 
 	it("spends no config the peel did not ask for, once it is settled", () => {
-		// One config sells for exactly the 16 KB this gate peels.
 		const settled = peeling([CONFIGS.js.id]);
 
 		expect(dropBadgeFor(settled, CONFIGS.ts.label)).toEqual(

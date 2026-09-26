@@ -1,15 +1,5 @@
 import { vi } from "vitest";
 
-/**
- * Chainable thenable db mock: every query-builder method returns the chain,
- * awaiting the chain consumes the next queued result. Writes (values/set)
- * record their payloads for assertions. Queue results in the exact order the
- * code under test awaits its queries.
- *
- * Shared by the two repository specs that talk to `run_states` and to the poll
- * sequence (DVTD-eyya split them). The state object stays declared in the spec
- * via `vi.hoisted`, because a `vi.mock` factory may close over nothing else.
- */
 export type DrizzleMockState = {
 	results: unknown[];
 	setCalls: Record<string, unknown>[];
@@ -48,10 +38,6 @@ export const createMockDb = (state: DrizzleMockState) => {
 			state.setCalls.push(payload);
 			return chain;
 		});
-		// An exhausted queue resolves to no rows, never `undefined`: a real query
-		// always hands back an array, and a spec that queues results for the
-		// statements it cares about should not break when an unrelated one is
-		// added upstream of it.
 		chain.then = (resolve: (value: unknown) => void) =>
 			resolve(state.results.shift() ?? []);
 		return chain;

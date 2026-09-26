@@ -49,11 +49,6 @@ const FREE_COLOR: KantoColor = "viridian";
 export type BuildSlots = { used: number; capacity: number };
 
 export type BuildWeight = {
-	/**
-	 * The build space the run rents, derived from the build itself (ADR-098).
-	 * The bill comes with it: since the ladder stopped being a panel of its own,
-	 * this is the one surface that owns the recurring figure.
-	 */
 	held: number;
 	perGateKb: number;
 	next?: NextRung;
@@ -130,10 +125,6 @@ export type BuildProps = {
 	caption?: boolean;
 	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
-	/**
-	 * Opens or shuts every card at once. Read by the screen, which owns the
-	 * panel header the press sits in; the build itself only lists the cards.
-	 */
 	onToggleAll?: () => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
@@ -150,11 +141,6 @@ export const buildSummaryOf = (props: BuildProps): string => {
 	);
 };
 
-/**
- * The badge is the trigger: "free" states a price without ever saying what is
- * being priced, and a rent nobody can see the terms of is the one figure on the
- * screen a player cannot plan against.
- */
 export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
 	<Tooltip bare align="end" label={COPY.upkeepLabel} hint={COPY.upkeepHint}>
 		<Badge color={perGateKb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR}>
@@ -163,12 +149,6 @@ export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
 	</Tooltip>
 );
 
-/**
- * The bill the build stands to pay, alone. A node rather than a string because
- * the recurring figure wears a badge like every other figure in the kit
- * (ADR-066), and `Figures` cannot find it: a bare weight is not a figure it
- * parses, so badging at the call site is the only way to keep the pair honest.
- */
 export const buildHeadOf = (props: BuildProps): ReactNode =>
 	props.weight === undefined ? (
 		buildSummaryOf(props)
@@ -176,11 +156,6 @@ export const buildHeadOf = (props: BuildProps): ReactNode =>
 		<UpkeepBadge perGateKb={props.weight.perGateKb} />
 	);
 
-/**
- * The head's prose, as parts rather than a sentence. It sits below the title
- * instead of beside it because a header that carries both a bill and a room
- * line has no room left for either to be read.
- */
 const buildRoomLine = (props: BuildProps): LeadLine | undefined => {
 	const { configs, skipped = [], configCount = true, weight } = props;
 	if (weight === undefined) return undefined;
@@ -222,11 +197,6 @@ const weightOf = (fills: readonly WeightTrackFill[]) =>
 const occupancyFillOf = ({ used }: BuildSlots): SlotTrackFill[] =>
 	used < 1 ? [] : [{ name: COPY.occupancyName, slots: used }];
 
-/**
- * The room left, in the unit the head states it in. Weight wins where a build
- * has both: the header reads "1 of 4 weight · 3 free", and a vacancy row
- * counting something else beside it is two answers to one question.
- */
 const roomLeftOf = (count: BuildCount, weight: number): number | undefined => {
 	if (count.weight !== undefined)
 		return Math.max(0, count.weight.held - weight);

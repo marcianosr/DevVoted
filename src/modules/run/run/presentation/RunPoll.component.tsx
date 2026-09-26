@@ -10,7 +10,6 @@ import {
 } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
-/** The ceiling the engine records; a tab left open must not read as thought. */
 const MAX_ELAPSED_MS = 600_000;
 
 const PRESS_ACTIONS = {
@@ -38,12 +37,6 @@ export const RunPoll = () => {
 	if (!view?.poll) return null;
 	const poll = view.poll;
 
-	/**
-	 * The reveal stages the answered view without committing it: the kanto screen
-	 * reads its answered mood off `answered`, so the staged result is the only
-	 * source and no second "pinned" flag is needed. Committing is what lets the
-	 * layout's route sync see the new status.
-	 */
 	const submit = (optionIds: readonly string[]) => {
 		if (busy || reveal || optionIds.length === 0) return;
 		sendWith(

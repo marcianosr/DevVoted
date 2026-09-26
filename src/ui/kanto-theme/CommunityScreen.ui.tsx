@@ -43,9 +43,7 @@ export type CommunityStat = { icon: IconName; label: string; hint: string };
 
 export type CommunityMap = {
 	title: string;
-	/** The ladder itself. Absent for a viewer with no run to stand on. */
 	track?: ClimbMapProps;
-	/** What the panel says instead of a track. */
 	empty?: string;
 };
 
@@ -57,7 +55,6 @@ export type CommunityHeader = {
 	countdownColor?: KantoColor;
 	countdownHint: string;
 	stats: readonly CommunityStat[];
-	/** An optional second exit beside the way back into the climb. */
 	shop?: { label: string; onPress?: () => void };
 	prep: { label: string; onPress?: () => void };
 };
@@ -88,7 +85,6 @@ export type CommunityTurnout = {
 export type CommunityLeaders = {
 	title: string;
 	summary?: string;
-	/** How many of the twelve are held, as a badge beside the summary. */
 	seated?: string;
 	seats: readonly CategoryLeaderProps[];
 	footer?: string;
@@ -105,7 +101,6 @@ export type CommunityScreenProps = {
 	climb: CommunityClimb;
 	turnout: CommunityTurnout;
 	map: CommunityMap;
-	/** Today's audits, everyone's. Absent on a board that has not read them. */
 	incidents?: IncidentsPanelProps;
 	leaders: CommunityLeaders;
 	polls: CommunityPolls;
@@ -255,11 +250,6 @@ const Turnout = ({ title, when, bands }: CommunityTurnout) => (
 	</Panel>
 );
 
-/**
- * The whole ladder, or the one sentence that replaces it. A viewer with no run
- * has nowhere to stand and no reach to chart, so the board says how to get on
- * the map rather than drawing an empty one.
- */
 const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
 	<Panel>
 		<Panel.Header
@@ -278,15 +268,6 @@ const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
 	</Panel>
 );
 
-/**
- * Twelve seats, one per category, held seats first.
- *
- * Every category draws a row whether or not anybody leads it: an open seat is
- * the one state where a player can see exactly what it takes, and dropping it
- * would make a young category look like a missing feature. Your own seat takes
- * the row's theme rather than a mark of its own — the ring on the avatar and the
- * green figure are already inside the line.
- */
 const CategoryLeaders = ({
 	title,
 	summary,

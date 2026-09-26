@@ -33,25 +33,8 @@ const COPY = {
 const WRAP = "group/info relative flex w-full";
 const BARE_WRAP = "group/info relative inline-flex w-fit max-w-full";
 
-/**
- * Neither carries an edge colour: `highlighted` swaps it, and with no
- * tailwind-merge in the repo two border-colour utilities would resolve by
- * Tailwind's emit order rather than by the class list.
- */
 export const CARD = "flex w-full flex-col rounded-xl border bg-theme/5 text-sm";
 
-/**
- * How a panel of cards flows: as many to a row as fit, never narrower than a
- * head needs. `auto-fill` rather than `auto-fit` because a half-filled row must
- * keep its empty tracks — collapsing them stretches two cards across a wide
- * panel, which is the shape this floor exists to prevent. Below the floor the
- * head has no width left for the name, and the name is the one thing a card
- * cannot do without.
- *
- * `items-start` because a grid row otherwise stretches every cell to the
- * tallest in it, and a shut card padded out to the height of an open one beside
- * it reads as a card with something missing rather than as a card that is shut.
- */
 export const CARD_FLOW =
 	"grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] items-start";
 export const CHIP =
@@ -64,12 +47,6 @@ export const NAME = "text-theme-faint";
 const LOST_NAME = "line-through text-theme-soft";
 export const SKIPPED_NAME = "text-theme-muted";
 
-/**
- * A tighter gap than the kit's usual `gap-3` because the weight block already
- * carries its own: a one-digit weight sits centred in a block sized for the
- * ladder, so the whitespace the eye reads between the figure and the name is
- * that padding plus this gap. Widening the block spends the gap's budget.
- */
 const HEAD = "flex items-center gap-2 px-4 py-3";
 const IDENTITY = "flex min-w-0 flex-1 flex-col font-extrabold";
 const BARE_IDENTITY = "flex min-w-0 items-center gap-1.5";
@@ -82,13 +59,6 @@ const RULE = "border-t border-theme-faint";
 const BODY = "flex flex-col gap-1.5 px-4 py-3";
 const FOOT = "px-4 py-2";
 
-/**
- * A phone gets a sheet, not a popup: the panel is wider than the gap between a
- * card and the screen's edge, so anchoring it to the trigger put half of it
- * past the viewport with nothing to scroll it back. Fixed to the bottom of the
- * screen it fits by construction. From `sm` there is room to anchor it again,
- * which keeps the panel beside the thing it explains.
- */
 const PANEL =
 	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:top-full sm:bottom-auto sm:left-0 sm:mt-2";
 const PANEL_SHUT =
@@ -96,25 +66,11 @@ const PANEL_SHUT =
 const PANEL_OPEN = "pointer-events-auto visible opacity-100";
 
 const DISCLOSE_TONE: ButtonTone = "bare";
-/**
- * Drawn rather than typed: `›` is a thin typographic mark, and the head needs
- * the fold to read at a glance from across the card.
- */
 const DISCLOSE_GLYPH = "size-4 stroke-[2.5] transition-transform";
 const DISCLOSE_OPEN = "rotate-90";
 const UPGRADE_TONE: ButtonTone = "action";
-/**
- * The palest press on the card, because it is the one thing a card in a shop is
- * asking for. Every other press on it — the fold, the upgrade, the uninstall —
- * is something the player may do instead.
- */
 const INSTALL_TONE: ButtonTone = "bright";
 const CONFIRM_TONE: ButtonTone = "commit";
-/**
- * Quiet, with the storage it hands back stated in the gain colour beside it.
- * Uninstalling reads as a trade rather than a loss: the cost is already sunk,
- * and what the player is deciding is whether the room is worth more.
- */
 const UNINSTALL_TONE: ButtonTone = "ambient";
 const REFUND_COLOR: KantoColor = "viridian";
 const REFUND_GLYPH = "size-3";
@@ -127,11 +83,6 @@ export type ConfigChipBadge =
 	| {
 			label: string;
 			color: KantoColor;
-			/**
-			 * A figure inside the label that moves as the run goes on — a storage
-			 * cap draining. Given it, the badge animates the digits instead of
-			 * swapping them, and `label` states what they count.
-			 */
 			count?: number;
 	  }
 	| {
@@ -144,20 +95,10 @@ export type ConfigChipBadge =
 
 export type ChipInstall = {
 	onPress?: () => void;
-	/**
-	 * What the press says instead of "Install". Run state picks it — an offer
-	 * already in the build reads "Installed" — so the viewmodel owns the word
-	 * (ADR-102).
-	 */
 	label?: string;
 	price?: string;
 	disabled?: boolean;
 	hint?: string;
-	/**
-	 * What this install would do to the standing bill, when it crosses a rung
-	 * (ADR-098). Its presence is what makes the press arm: an install inside the
-	 * rung already rented stays a single press.
-	 */
 	scale?: InstallScaleProps;
 	armed?: boolean;
 };
@@ -172,11 +113,6 @@ export type ConfigChipProps = Redactable<{
 	skipped?: boolean;
 	install?: ChipInstall;
 	onUninstall?: () => void;
-	/**
-	 * What the card states on its face. Without it the config draws as a bare
-	 * row: another player's build is a reference token, not something you act on
-	 * (ADR-101).
-	 */
 	info?: ConfigFactsProps;
 	infoOpen?: boolean;
 	onToggleInfo?: () => void;
@@ -230,7 +166,6 @@ const gainOf = (refund: string) => `${GAIN_SIGN}${refund}`;
 
 type UninstallPressProps = {
 	name: string;
-	/** What the config hands back, stated on the press itself. */
 	refund?: string;
 	onPress: () => void;
 };
@@ -326,16 +261,9 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	const offered =
 		upgrades === undefined ? undefined : offeredRungOf(upgrades.rungs);
 
-	/**
-	 * A card nobody has wired a fold to states itself. The alternative is a
-	 * chevron that does nothing over facts that cannot be reached — which is the
-	 * hiding this card exists to stop, dressed as a control.
-	 */
 	const foldable = onToggleInfo !== undefined;
 	const stated = foldable ? infoOpen : true;
 
-	// An armed install outranks the ladder: it is the only panel the player is
-	// mid-way through answering, and it goes away the moment they answer it.
 	const arming = install?.armed === true ? install.scale : undefined;
 	const upgrading = upgradesOpen && upgrades !== undefined;
 	const panel =
@@ -349,19 +277,8 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	const decorative = badges.filter((badge) => !isPressable(badge));
 	const controls = badges.filter(isPressable);
 
-	/**
-	 * The uninstall press states the refund on its own face, so the footer would
-	 * otherwise quote the same figure twice on the same card. A card with no
-	 * press to sell from keeps the line: that is the only place it is stated.
-	 */
 	const sellPrice = onUninstall === undefined ? info?.sellPrice : undefined;
 
-	/**
-	 * Badges ride the head only while the card is shut. Open, they read as the
-	 * footer's tags beside the version; shut, there is no footer, and a live one
-	 * — a streak counting down to its bump — would go with it. Either way they
-	 * appear exactly once.
-	 */
 	const headBadges = stated ? [] : decorative;
 
 	const nameSpan = (
@@ -426,10 +343,6 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	);
 
 	const edge = highlighted ? EDGE_LIT : EDGE;
-	/* Focus rides the same pair as hover: React maps onFocus/onBlur to
-	   focusin/focusout, which bubble, so the wrapper catches the press inside
-	   it. Touch has no hover and Safari will not focus a tapped button, so
-	   this reaches a keyboard and a pointer, and nothing else. */
 	const hovers = {
 		onMouseEnter: onHover,
 		onMouseLeave: onLeave,

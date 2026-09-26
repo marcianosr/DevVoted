@@ -18,13 +18,10 @@ export default meta;
 
 type Story = StoryObj<typeof RunOverScreen>;
 
-/** The common ending: a gate closed under its floor and the run stopped there. */
 export const Dead: Story = {};
 
-/** The rare one. Same screen, gate colour instead of red, nothing lost. */
 export const Summited: Story = { args: kantoRunSummit() };
 
-/** Gate 0 kills nobody, but a run abandoned there has no history to report. */
 export const FirstGate: Story = {
 	args: kantoRunOver({
 		gate: 0,
@@ -42,7 +39,6 @@ export const FirstGate: Story = {
 	}),
 };
 
-/** The account archive is only known once a server has been asked for it. */
 export const WithArchive: Story = {
 	args: kantoRunOver({ archiveAfterKb: 8_400 }),
 };

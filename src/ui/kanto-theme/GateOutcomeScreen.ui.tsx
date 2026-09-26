@@ -52,7 +52,6 @@ export type GateOutcomeChip = { label: string; color?: KantoColor };
 
 export type GateOutcomeHeader = {
 	swatch: GateSwatch;
-	/** The window came up flawless, so this gate's swatch is the run's to keep. */
 	earned: boolean;
 	swatches: readonly SwatchFill[];
 	title: string;

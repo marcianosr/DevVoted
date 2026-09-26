@@ -21,8 +21,6 @@ export const DefaultCatchBoundary = ({ error }: ErrorComponentProps) => {
 		select: (state) => state.id === rootRouteId,
 	});
 
-	// The render path, not the request path: the server SDK's request middleware
-	// does not see an exception thrown while React renders.
 	useEffect(() => {
 		reportHandledFailure(error, "renderError");
 	}, [error]);

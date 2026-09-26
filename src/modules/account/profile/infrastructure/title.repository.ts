@@ -35,12 +35,6 @@ export const fetchUserTitleState = async (
 	};
 };
 
-/**
- * Equipping proves ownership in the WHERE clause rather than in a read before
- * the write, so two requests cannot race between the check and the update. A
- * title the account does not hold matches no row and changes nothing, which is
- * what the null return reports.
- */
 export const setEquippedTitle = async (
 	userId: string,
 	titleId: string | null
@@ -72,7 +66,6 @@ export const setEquippedTitle = async (
 	};
 };
 
-/** The worn title of many accounts at once, for the surfaces that draw others. */
 export const fetchEquippedTitleIds = async (
 	userIds: readonly string[]
 ): Promise<ReadonlyMap<string, string>> => {
@@ -87,7 +80,6 @@ export const fetchEquippedTitleIds = async (
 	);
 };
 
-/** The titles this account holds but has never been shown. */
 export const fetchUnannouncedTitleIds = async (
 	userId: string
 ): Promise<readonly string[]> => {
@@ -104,12 +96,6 @@ export const fetchUnannouncedTitleIds = async (
 	return rows.map((row) => row.titleId);
 };
 
-/**
- * Stamps only the titles that were actually shown, never every unannounced row:
- * one earned while the notice was open has not been seen, and stamping it here
- * would bury it behind a modal the player has already closed. The null check
- * keeps a second dismiss from moving a timestamp that is already set.
- */
 export const markTitlesAnnounced = async (
 	userId: string,
 	titleIds: readonly string[]

@@ -8,7 +8,6 @@ import type { IncidentsFeedView } from "~/modules/run/incident/application/incid
 export const incidentsFeedQueryKey = () =>
 	sessionRunQueryKeys.incidents(getTodayDateString());
 
-/** Today's public incident log, the mirror of `useRunCommunity`. */
 export const useIncidentsFeed = () =>
 	useApiQuery<IncidentsFeedView>({
 		queryKey: incidentsFeedQueryKey(),

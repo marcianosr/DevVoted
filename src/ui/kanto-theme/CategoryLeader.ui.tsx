@@ -13,8 +13,6 @@ const COPY = {
 };
 
 const GITHUB = "https://github.com";
-// The figure is a count, and `Figures` only badges signed values, prices and
-// scales — a bare count would come out unbadged beside a badged category.
 const FIGURE_TONE = "pewter";
 const YOUR_FIGURE_TONE = "viridian";
 
@@ -30,15 +28,9 @@ export type CategorySeatLeader = {
 export type CategoryLeaderProps = {
 	category: string;
 	leader?: CategorySeatLeader;
-	/** What it takes to claim an open seat. Ignored while somebody holds it. */
 	claim?: string;
 };
 
-/**
- * The same chrome the poll's byline gives its author: a handle is a handle
- * wherever it appears, and this line sits directly under that one on the poll
- * screen, where two weights for one kind of name read as two kinds of name.
- */
 const LeaderName = ({ handle, githubLogin }: CategorySeatLeader) => (
 	<Typography variant="hint" as="span">
 		{githubLogin === undefined ? (
@@ -88,18 +80,6 @@ const Open = ({ claim }: Pick<CategoryLeaderProps, "claim">) => (
 	</>
 );
 
-/**
- * One category and whoever leads it: the longest unbroken run of correct
- * answers anyone has strung together in it.
- *
- * One line on two surfaces — under the poll byline for the category being
- * played, and once per category on the community board — so the figure a
- * player meets mid-run is drawn by the same component as the one they compare
- * against on the board.
- *
- * It carries no padding or rule of its own: the poll screen gives it a region
- * so the rule reaches the panel's edges, and the board hands it a `Panel.Row`.
- */
 export const CategoryLeader = ({
 	category,
 	leader,

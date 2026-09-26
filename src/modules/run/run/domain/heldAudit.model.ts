@@ -14,7 +14,6 @@ import {
 	withLog,
 } from "~/modules/run/run/domain/run.model";
 
-/** A thin clear opens the most: rubber-banding lives in the choice, never in the count. */
 const PAYLOADS_BY_BAND = { ok: 2, healthy: 1, perfect: 1 } satisfies Record<
 	HeldAuditBand,
 	number
@@ -38,11 +37,6 @@ export type HandedAudit = Partial<
 	Pick<RunState, "heldAudit" | "offeredAudit" | "auditHandedAtGate">
 >;
 
-/**
- * Every clear hands one sealed audit (ADR-119). A held one is never displaced
- * by the clear itself: the second is offered for the shop visit, where the
- * player fires, takes or leaves it.
- */
 export const handAudit = (
 	state: Pick<RunState, "heldAudit">,
 	band: CoverageBandId,
@@ -55,10 +49,6 @@ export const handAudit = (
 		: { offeredAudit: handed, auditHandedAtGate: gate };
 };
 
-/**
- * The lowest gate a held payload can land on: rivals stand at your gate or
- * ahead, and nothing lands before the first audited gate.
- */
 export const landingGateFor = (gatesCleared: number): number =>
 	Math.max(gatesCleared + 1, FIRST_AUDITED_GATE);
 
@@ -79,7 +69,6 @@ const opened = (held: HeldAudit, drawn: readonly AuditId[]): HeldAudit => {
 	return { band: held.band, gate: held.gate, choices: drawn };
 };
 
-/** Sealed → opened. The server names the seed; a refresh never re-rolls it. */
 export const openAudit = (state: RunState, seed: string): RunState => {
 	const held = state.heldAudit;
 	if (held === undefined || isOpened(held)) return state;
@@ -92,7 +81,6 @@ export const openAudit = (state: RunState, seed: string): RunState => {
 	return { ...state, heldAudit: opened(held, drawn) };
 };
 
-/** An OK audit opened two; keeping one settles it. */
 export const keepPayload = (state: RunState, auditId: AuditId): RunState => {
 	const held = state.heldAudit;
 	if (held?.choices === undefined || !held.choices.includes(auditId))
@@ -103,7 +91,6 @@ export const keepPayload = (state: RunState, auditId: AuditId): RunState => {
 	};
 };
 
-/** The offered audit replaces the held one, opened or not. */
 export const takeAudit = (state: RunState): RunState =>
 	state.offeredAudit === undefined
 		? state
@@ -112,7 +99,6 @@ export const takeAudit = (state: RunState): RunState =>
 const inHand = (held: HeldAudit): readonly AuditId[] =>
 	held.payload === undefined ? (held.choices ?? []) : [held.payload];
 
-/** Whether the shop sells a repackage at all: an opened audit is in hand. */
 export const repackageAvailable = (state: RunState): boolean =>
 	state.heldAudit !== undefined && isOpened(state.heldAudit);
 
@@ -121,11 +107,6 @@ export const canRepackage = (state: RunState): boolean =>
 	state.repackagedThisShop !== true &&
 	state.storage >= REPACKAGE_KB;
 
-/**
- * A reroll, never a sale: the band's count again, minus what is already in
- * hand. The pool is narrowed by hand rather than through `drawPayloads`'s
- * `taken`, which would also bar the whole family of what was held.
- */
 export const repackage = (state: RunState, seed: string): RunState => {
 	const held = state.heldAudit;
 	if (held === undefined || !canRepackage(state)) return state;
@@ -145,10 +126,6 @@ export const repackage = (state: RunState, seed: string): RunState => {
 	};
 };
 
-/**
- * The reducer only spends the payload; the service files the incident
- * (ADR-058 D5). An offered audit, if any, slides into the hand still sealed.
- */
 export const fireAudit = (state: RunState): RunState =>
 	state.heldAudit === undefined || !isKept(state.heldAudit)
 		? state

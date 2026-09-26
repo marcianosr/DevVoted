@@ -53,11 +53,6 @@ const climberOf = (voter: CommunityVoter): ClimberProps => ({
 
 const SEATED = (held: number, total: number) => `${held} of ${total} seated`;
 
-/**
- * The board's own line under the seats. It states how a seat moves, because the
- * figure is an all-time best: missing never costs the holder their seat, only
- * somebody going further does.
- */
 export const seatsFooterFor = (seats: readonly CategorySeat[]): string => {
 	const open = seats.filter(({ leader }) => leader === undefined).length;
 	if (open === 0) return COPY.seatsChangeHands;
@@ -86,10 +81,6 @@ export const defaultOpenIndex = (
 ): number | undefined =>
 	polls.filter((poll) => poll.detail !== null).at(-1)?.index;
 
-/**
- * Always five rows: the day's window is fixed, so a poll the seed has not dealt
- * yet still reads as a slot rather than as absence.
- */
 export const pollResultsFor = (
 	polls: readonly RunCommunityPoll[]
 ): PollResultProps[] => {
@@ -144,13 +135,10 @@ const standingOf = (climb: RunCommunityView["climb"]): string => {
 export type CommunityViewProps = {
 	view: RunCommunityView;
 	swatch: GateSwatch;
-	/** Everyone the viewer traded an audit with today, ringed on the map (ADR-099). */
 	rivals?: readonly string[];
-	/** Whose build the map has open, and the press that opens one. */
 	openClimberId?: string;
 	onInspectClimber?: (id: string) => void;
 	countdown?: string;
-	/** Overrides the climb note — the pending and error boards state their own. */
 	note?: string;
 	back: {
 		label: string;
@@ -158,7 +146,6 @@ export type CommunityViewProps = {
 		hint?: string;
 		onBack: () => void;
 	};
-	/** Today's audits, everyone's (ADR-099). Absent until the feed has read. */
 	incidents?: IncidentsPanelProps;
 };
 
@@ -257,11 +244,6 @@ export const communityScreenPropsFor = ({
 	};
 };
 
-/**
- * Which climber's build the map has open is this screen's own business — no
- * route and no query cares — so the adapter holds it and every caller, the rig
- * included, gets the press without wiring it.
- */
 export const CommunityView = (props: CommunityViewProps) => {
 	const [openClimberId, setOpenClimberId] = useState<string>();
 

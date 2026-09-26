@@ -37,7 +37,6 @@ export type AuditProps = Redactable<{
 	cue: string;
 }> & {
 	layout?: AuditLayout;
-	/** The rival who fired it, where the audit is one a rival locked in (ADR-099). */
 	sender?: string;
 };
 

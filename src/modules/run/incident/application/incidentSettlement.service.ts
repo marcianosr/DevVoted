@@ -17,11 +17,6 @@ import type {
 	RunTx,
 } from "~/modules/run/run/infrastructure/run.repository";
 
-/**
- * The gate the run just cleared is behind it; the one in front takes whatever
- * rivals queued for it, up to its capacity. This is the one writer of a gate's
- * audits, and it runs before the snapshot persists (ADR-099).
- */
 const lockGateInFront = async (
 	tx: RunTx,
 	runId: number,

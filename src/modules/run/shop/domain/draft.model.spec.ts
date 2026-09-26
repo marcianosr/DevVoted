@@ -23,7 +23,6 @@ import {
 
 const ids = (configs: readonly Config[]): string[] =>
 	configs.map((config) => config.id);
-/** Enough rolls to reach a pool this size, so a new config cannot starve the sample. */
 const SEEDS_PER_CONFIG = 3;
 
 const seenAcrossSeeds = (equipped: readonly Config[]): string[] =>

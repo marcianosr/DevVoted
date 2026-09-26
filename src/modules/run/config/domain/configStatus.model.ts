@@ -13,14 +13,7 @@ export type ConfigStatus =
 			readonly kind: "online";
 			readonly coverage?: Coverage;
 			readonly bumpIn?: number;
-			/** KB this config's open transaction is holding, unpaid and at risk. */
 			readonly holdingKb?: number;
-			/**
-			 * KB the run's storage faucet has left to give. Only a config drawing on
-			 * it reports it, and it reports the run's figure rather than its own:
-			 * IndexedDB and Database share one cap, so two chips naming separate
-			 * remainders would be two wrong answers to the same question.
-			 */
 			readonly capLeftKb?: number;
 	  }
 	| { readonly kind: "unknown" }
@@ -66,7 +59,6 @@ const coverageOnPoll = (
 	return coverage.mult === 1 && coverage.add === 0 ? undefined : coverage;
 };
 
-/** Whether this config takes its pay out of the run's shared storage cap. */
 const drawsOnFaucet = (config: Config): boolean =>
 	config.storagePerCorrect !== undefined ||
 	config.escrowPerCorrect !== undefined;
@@ -110,10 +102,6 @@ const isOnline = (
 	wagersThisAnswer(config) ||
 	(config.suppressesAudit === true && context.suppressingAudit);
 
-/**
- * Why a config sat this poll out. First match wins: several reasons can be true
- * at once, and the order decides which explanation the player is shown.
- */
 const SKIP_REASONS: readonly ((
 	config: Config,
 	context: PollStatusContext
@@ -202,8 +190,6 @@ export const configStatusFor = (
 		return { kind: "skipped", why: skipReasonFor(config, context) };
 
 	const bumpIn = bumpInFor(config, context.autoUpgradeProgress);
-	// Only the config that escrows claims the figure, so a build holding two
-	// faucets never shows the same KB twice.
 	const holdingKb =
 		config.escrowPerCorrect !== undefined && context.pendingKb > 0
 			? context.pendingKb

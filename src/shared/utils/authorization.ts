@@ -24,15 +24,6 @@ export const getAuthenticatedUserId = async () => {
 	return user.id;
 };
 
-/**
- * The session's user id, or null when signed out. Never throws, because signed
- * out is the ordinary case for its one caller: the visit counter, which labels
- * a row and authorizes nothing.
- *
- * `getClaims` verifies the token rather than trusting it, and does so locally
- * without a network round trip on a project using asymmetric signing keys —
- * which matters because the auth sync already runs on every navigation.
- */
 export const findAuthenticatedUserId = async (): Promise<string | null> => {
 	try {
 		const supabase = getSupabaseServerClient();
@@ -44,16 +35,6 @@ export const findAuthenticatedUserId = async (): Promise<string | null> => {
 	}
 };
 
-/**
- * Runs an operation with the session's user id, reporting a failed sign-in the
- * same way a failed domain call reports: as `ApiResponse`.
- *
- * Without it a server function has two error modes — `getAuthenticatedUserId`
- * rejects while everything downstream resolves — and callers reliably handle
- * only the second. A rejected read then looks identical to "no data", which is
- * how a signed-out player used to be sent to the start-a-run screen instead of
- * being told to sign in (DVTD-cmqj).
- */
 export const withAuthenticatedUser = async <T>(
 	operation: (userId: string) => Promise<ApiResponse<T>>
 ): Promise<ApiResponse<T>> => {
@@ -61,7 +42,6 @@ export const withAuthenticatedUser = async <T>(
 		const userId = await getAuthenticatedUserId();
 		return await operation(userId);
 	} catch (error) {
-		// getAuthenticatedUserId already reported to Sentry; don't double-count.
 		return createErrorResponse(error);
 	}
 };

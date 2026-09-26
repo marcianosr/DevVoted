@@ -16,11 +16,6 @@ export const estimatorFor = (configs: readonly Config[]): Config | undefined =>
 export const canEstimate = (state: Pick<RunState, "status">): boolean =>
 	isPrepPhase(state);
 
-/**
- * Whether the build still owes this gate a bet. The first two clauses are the
- * ones `estimateControlFor` reads, so the hold and the picker cannot disagree:
- * the gate is only ever held while the control that lifts it is on screen.
- */
 export const estimateOwed = (state: RunState): boolean =>
 	estimatorFor(state.build.configs) !== undefined &&
 	canEstimate(state) &&
@@ -36,17 +31,6 @@ export const commitEstimate = (state: RunState, count: number): RunState => {
 	return { ...state, estimatedCorrect: count };
 };
 
-/**
- * The bet is a floor, not a bullseye: beating your own call still pays. Under
- * the exact-match rule it replaced, playing 1 predicted that you would bomb
- * four of five, so caution and a low card were opposite gestures and no
- * cautious bet existed anywhere on the board.
- *
- * The rate is per point PER GATE because the line it is measured against grows
- * with depth (`scoringSlotsAt` is `5 * (gate + 1)`). A flat payout would be a
- * quarter of a window at gate 0 and rounding error by gate 12; scaling holds it
- * at a constant share of whatever the gate is asking for.
- */
 export const estimatePayoutUnits = (
 	configs: readonly Config[],
 	estimated: number | undefined,

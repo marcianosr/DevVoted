@@ -49,14 +49,8 @@ export type RunStatus =
 
 export type HeldAuditBand = "ok" | "healthy" | "perfect";
 
-/**
- * One sealed audit a clear handed, held until fired or the run ends (ADR-119).
- * Sealed until opened in the shop; an OK clear opens two `choices` and keeps
- * one, a HEALTHY or PERFECT clear opens straight to its `payload`.
- */
 export type HeldAudit = {
 	readonly band: HeldAuditBand;
-	/** The gate whose clear handed it. */
 	readonly gate: number;
 	readonly choices?: readonly AuditId[];
 	readonly payload?: AuditId;
@@ -64,7 +58,6 @@ export type HeldAudit = {
 
 export type KeptAudit = HeldAudit & { readonly payload: AuditId };
 
-/** How the last gate closed, read by rivals deciding whether this run is fair game. */
 export type LastClose = {
 	readonly gate: number;
 	readonly band: CoverageBandId;
@@ -76,7 +69,6 @@ export type IncidentSender = {
 	readonly name: string;
 };
 
-/** A rival's audit once it has locked into one of this run's gates (ADR-099). */
 export type LockedIncident = {
 	readonly id: number;
 	readonly auditId: AuditId;
@@ -108,11 +100,8 @@ export type RunState = {
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
-	/** Units banked by cleared gates. Run coverage is derived from it, never stored. */
 	readonly bankedUnits: number;
-	/** Attempts already spent on the gate in front. Each one prices the next peel higher. */
 	readonly gateAttempts?: number;
-	/** Why the gate in front held, while it is held. Cleared on the clear and on the retry. */
 	readonly heldBy?: GateHoldReason;
 	readonly coverage: number;
 	readonly coverageByCategory: Readonly<Record<string, number>>;
@@ -120,62 +109,43 @@ export type RunState = {
 	readonly peakStorageKb?: number;
 	readonly faucetEarnedKb?: number;
 	readonly faucetThisGateKb?: number;
-	/**
-	 * The open transaction: KB held by Database's exact answers and not yet
-	 * paid. Only a cleared gate turns it into storage, so unlike every other
-	 * faucet it can be taken back.
-	 */
 	readonly pendingKb?: number;
 	readonly escrowCommittedKb?: number;
 	readonly escrowRolledBackKb?: number;
 	readonly gateRewardKb?: number;
-	/** The parts of the last clear's reward, so the debrief can itemise it. */
 	readonly clearThisGateKb?: number;
 	readonly overflowThisGateKb?: number;
-	/** The streak the clear paid on, kept because the clear resets the live one. */
 	readonly streakAtClose?: number;
-	/** What the gate's own objective added to the clear, zero where it was missed. */
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly peelRefundKb?: number;
 	readonly extraPickThisGateKb?: number;
 	readonly estimatedCorrect?: number;
 	readonly estimateThisGateUnits?: number;
-	/** The band SLA promised this gate, and what holding to it paid. */
 	readonly slaBand?: CommittableBand;
 	readonly slaUpliftKb?: number;
 	readonly upkeepBilledKb?: number;
-	/** Build-space upkeep billed across the whole run, for the run-over report. */
 	readonly upkeepPaidKb?: number;
-	/** The space the run was forced down to when it could not pay for the one it held. */
 	readonly spaceDroppedTo?: number;
 	readonly clearedGate?: number;
-	/** Gates whose swatch this run has earned, in the order the windows landed. */
 	readonly swatchGatesEarned?: readonly number[];
 	readonly redoGate?: number;
 	readonly autoUpgradeProgress?: number;
 	readonly autoUpgradedConfigId?: string;
 	readonly autoUpgradedByConfigId?: string;
 	readonly deletedConfigs?: readonly Config[];
-	/** The config that turned a fatal close into a held one, spent doing it. */
 	readonly caughtFatalBy?: string;
 	readonly lapsedConfigs?: readonly Config[];
 	readonly subscriptionBillKb?: number;
 	readonly pinPlantedAtGate?: number;
 	readonly startedAtGate?: number;
 	readonly auditSchedule?: AuditSchedule;
-	/** The sealed audit in hand, until fired or the run ends (ADR-119). */
 	readonly heldAudit?: HeldAudit;
-	/** A second audit a clear handed while one was held; lives for the shop visit only. */
 	readonly offeredAudit?: HeldAudit;
-	/** The gate whose clear last handed an audit, for the debrief chip. */
 	readonly auditHandedAtGate?: number;
 	readonly repackagedThisShop?: true;
-	/** How the last gate closed, read by rivals deciding whether this run is fair game. */
 	readonly lastClose?: LastClose;
-	/** Rivals' audits locked onto this run's gates, with who sent each. */
 	readonly incidents?: readonly LockedIncident[];
-	/** What surviving this gate's incidents paid, inside gateRewardKb. */
 	readonly incidentSurvivalKb?: number;
 	readonly log: readonly string[];
 };
@@ -278,10 +248,6 @@ export const createRun = (
 	log: [],
 });
 
-/**
- * The beat between gates, where a config may ask the player for something:
- * before gate 0 opens, and in the shop/prep beat after every later clear.
- */
 export const isPrepPhase = (state: Pick<RunState, "status">): boolean =>
 	state.status === "configuring" || state.status === "rewarding";
 
@@ -291,11 +257,6 @@ export const incidentsAt = (
 ): readonly LockedIncident[] =>
 	(state.incidents ?? []).filter((incident) => incident.gate === gate);
 
-/**
- * A gate's audits are exactly the incidents that locked into it. Locking the
- * gate in front re-reads the pick budget, because the window opened before the
- * lock and a mirror changes how many picks a poll asks for.
- */
 export const withLockedGate = (
 	state: RunState,
 	gate: number,
@@ -329,12 +290,6 @@ export const withLog = (
 	...lines: string[]
 ): readonly string[] => [...state.log, ...lines];
 
-/**
- * The high-water mark of KB held, which is what opens storage rungs
- * (`revealsPlanTier`). Applied once around the reducer rather than at each of
- * the sites that raise storage — a faucet, a clear, a refund — so a new earner
- * can never forget to record its own peak.
- */
 export const withPeakStorage = (state: RunState): RunState =>
 	state.storage <= (state.peakStorageKb ?? 0)
 		? state
@@ -359,11 +314,6 @@ export const shopDraft = (state: RunState, seed: number): readonly Config[] =>
 export const auditsOf = (state: RunState): readonly Audit[] =>
 	liveAuditsFor(state.build.configs, state.gatesCleared, scheduleOf(state));
 
-/**
- * The options still sealed on the poll in front of the player. Subtracting the
- * bought-back set here keeps un-redaction in one place, so `redactPoll` never
- * has to learn the concept.
- */
 export const hiddenOptionIdsOf = (state: RunState): readonly string[] => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return [];
@@ -402,13 +352,6 @@ export const liveConfigsOf = (state: RunState): readonly Config[] => {
 export const canStart = (build: Build): boolean =>
 	!isBare(build) && !isOverCapacity(build);
 
-/**
- * The weight the run is held to. Normally the top of the ladder — the rung
- * follows the build, so nothing narrower can bind (ADR-098) — but a clear whose
- * balance could not cover its bill only rented the space it could afford, and
- * the build is held to that until it fits. `finishReward` clears the figure, so
- * the lock lasts exactly the one shop visit it was imposed in.
- */
 export const spaceCapOf = (state: RunState): number =>
 	state.spaceDroppedTo ?? MAX_BUILD_WEIGHT;
 
@@ -421,11 +364,6 @@ export const roomToCapOf = (state: RunState): number =>
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";
 
-/**
- * What the archive banks when this run ends. Engine storage is KB and the
- * archive is bytes, and only the gates actually climbed count: a tag-rescued
- * run banks nothing for the gates its checkpoint skipped (ADR-036).
- */
 export const archiveCreditBytes = (state: RunState): number =>
 	Math.round(
 		state.storage *

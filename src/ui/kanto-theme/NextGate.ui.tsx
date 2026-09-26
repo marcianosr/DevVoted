@@ -13,19 +13,9 @@ import { Typography } from "./Typography.ui";
 
 const ROW = "flex w-full flex-wrap items-center gap-3";
 const IDENTITY = "flex min-w-0 flex-wrap items-center gap-x-2 text-sm";
-/**
- * The swatch is the gate's mark, so it never leaves the name it marks. Held
- * together here because the row wraps: left as siblings of the row, the name
- * was wide enough to wrap past the swatch and the mark sat alone on a line.
- */
 const NAMED = "flex min-w-0 items-center gap-3";
 const NAME = "font-bold text-theme-faint";
 const DETAIL = "text-theme-muted";
-/**
- * Takes its own line on a phone rather than being squeezed opposite the gate's
- * name: five marks and three words do not share a line with a name at that
- * width, and pulling them right only made the name wrap instead.
- */
 const READING =
 	"flex w-full flex-wrap items-center gap-2 text-sm sm:ml-auto sm:w-auto sm:shrink-0 sm:justify-end";
 

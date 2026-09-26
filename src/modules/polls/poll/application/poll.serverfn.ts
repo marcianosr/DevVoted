@@ -10,7 +10,6 @@ import {
 import { isAdminEmail } from "~/shared/utils/adminAuth";
 import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
-/** The signed-in account, or a thrown error — every poll read below needs one. */
 const requireUser = async () => {
 	const supabase = getSupabaseServerClient();
 	const { data, error } = await supabase.auth.getUser();
@@ -35,7 +34,6 @@ export const getPollByIdWithOptions = createServerFn({ method: "GET" })
 			return result;
 		}
 
-		// A draft poll is visible to its author and to admins, nobody else.
 		if (!user.isAdmin && result.data.poll.createdBy !== user.id) {
 			return { success: false as const, error: "Access denied" };
 		}

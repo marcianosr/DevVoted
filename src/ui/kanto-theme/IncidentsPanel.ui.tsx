@@ -30,10 +30,8 @@ export type IncidentRowProps = {
 	target: string;
 	code: number;
 	name: string;
-	/** Where it lands, as the row states it: "gate 6 · Soul". */
 	gate: string;
 	status: IncidentStatusLabel;
-	/** The viewer fired it or is its target. */
 	own?: boolean;
 };
 
@@ -70,11 +68,6 @@ const IncidentRow = ({
 	</Panel.Row>
 );
 
-/**
- * Today's incidents sit on the board rather than on a page of their own: an
- * audit is something a rival did to your climb, so it belongs beside who showed
- * up and where they stand, not behind another press (ADR-099).
- */
 export const IncidentsPanel = ({
 	title,
 	summary,

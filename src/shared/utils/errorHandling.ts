@@ -29,11 +29,6 @@ export const createErrorResponse = (error: unknown): ApiResponse<never> => {
 	};
 };
 
-/**
- * `operationName` is required because it is the only thing Sentry can group on:
- * it becomes the issue fingerprint, so one broken service reads as one issue
- * rather than one per distinct error message.
- */
 export const handleApiOperation = async <T>(
 	operation: () => Promise<T>,
 	operationName: string

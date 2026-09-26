@@ -17,18 +17,15 @@ describe("seededRandom", () => {
 		it("maintains deterministic behavior across different seeds", () => {
 			const items = ["item1", "item2", "item3", "item4", "item5"];
 
-			// Test that each seed produces a consistent result
 			const seedResults = new Map();
 			const seeds = ["2024-01-15", "2024-01-16", "monday", "tuesday", "seed-a"];
 
-			// First pass - record results
 			for (const seed of seeds) {
 				const result = selectSeededRandom(items, seed);
 				seedResults.set(seed, result);
 				expect(items).toContain(result);
 			}
 
-			// Second pass - verify consistency
 			for (const seed of seeds) {
 				const result = selectSeededRandom(items, seed);
 				expect(result).toBe(seedResults.get(seed));
@@ -65,26 +62,20 @@ describe("seededRandom", () => {
 				{ id: 5, question: "Poll 5" },
 			];
 
-			// Simulate same day for multiple users
 			const today = "2024-01-15";
 
 			const user1Selection = selectSeededRandom(polls, today);
 			const user2Selection = selectSeededRandom(polls, today);
 			const user3Selection = selectSeededRandom(polls, today);
 
-			// All users should see the same poll on the same day
 			expect(user1Selection).toBe(user2Selection);
 			expect(user2Selection).toBe(user3Selection);
 
-			// Test that different days can produce different results
-			// (This is probabilistic, so we test the selection works correctly)
 			const tomorrow = "2024-01-16";
 			const tomorrowSelection = selectSeededRandom(polls, tomorrow);
 
-			// The selection should always be valid
 			expect(polls).toContain(tomorrowSelection);
 
-			// Test determinism for tomorrow as well
 			const anotherTomorrowSelection = selectSeededRandom(polls, tomorrow);
 			expect(tomorrowSelection).toBe(anotherTomorrowSelection);
 		});
@@ -120,7 +111,6 @@ describe("seededRandom", () => {
 				counts[result as "rareware-gem" | "common-jiggy"]++;
 			}
 
-			// Common should be significantly more frequent (at least 10x)
 			expect(counts["common-jiggy"]).toBeGreaterThan(
 				counts["rareware-gem"] * 10
 			);
@@ -147,7 +137,6 @@ describe("seededRandom", () => {
 				counts[result as keyof typeof counts]++;
 			}
 
-			// Each should be roughly 1/3 (allow 20% variance)
 			const expectedCount = 1000;
 			const variance = 200;
 			expect(counts.bottles).toBeGreaterThan(expectedCount - variance);

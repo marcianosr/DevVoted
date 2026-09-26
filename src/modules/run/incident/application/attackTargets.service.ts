@@ -43,7 +43,6 @@ export const attackerOf = (
 	band: heldAudit.band,
 });
 
-/** The live field, filtered and dealt. Shared with the fire, which re-derives it. */
 export const offersForAttacker = async (
 	attacker: Attacker,
 	date: string
@@ -61,7 +60,6 @@ export const offersForAttacker = async (
 	);
 };
 
-/** Reads no rival at all while nothing is armed: the panel then has nothing to offer. */
 export const getAttackTargetsService = async ({
 	userId,
 	date,

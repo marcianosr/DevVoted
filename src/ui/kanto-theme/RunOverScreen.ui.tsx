@@ -104,7 +104,6 @@ export type RunOverStorageRow = {
 
 export type RunOverStorage = { rows: readonly RunOverStorageRow[] };
 
-/** A row names either a plain thing the run kept or the config chip it registered. */
 type RunOverUnlockBody =
 	{ label: string; chip?: never } | { chip: ConfigChipProps; label?: never };
 
@@ -130,7 +129,6 @@ export type RunOverScreenProps = {
 	storage: RunOverStorage;
 	unlocked: RunOverUnlocked;
 	footer: ScreenFooterProps;
-	/** A summited run keeps its gate's colour; a dead one turns the screen red. */
 	won?: boolean;
 	width?: ScreenWidth;
 };

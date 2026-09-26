@@ -23,14 +23,12 @@ const NO_FACE =
 
 const PRESS_SIZE = "sm";
 
-/** Who fired it. Absent on a gate whose schedule predates the rival that filled it. */
 export type AuditSender = {
 	name: string;
 	photoUrl?: string;
 	borderUrl?: string;
 };
 
-/** Aim your own audit back at them, where they are a target you were offered. */
 export type AuditRespond = {
 	onPress?: () => void;
 	disabled?: boolean;
@@ -47,11 +45,8 @@ export type AuditsRow = {
 
 export type AuditsPanelProps = {
 	title: string;
-	/** How many are firing, or why none are. */
 	meta?: string;
-	/** The gate that opens the panel, while it is still shut. */
 	badge?: PanelBadge;
-	/** What the gate bills you, stated beside what it throws at you. */
 	bill?: string;
 	note?: string;
 	rows: readonly AuditsRow[];
@@ -88,11 +83,6 @@ const From = ({ sender, respond }: Pick<AuditsRow, "sender" | "respond">) => (
 	</span>
 );
 
-/**
- * What rivals locked onto the gate in front of you, each row naming the player
- * who fired it. The sender sits where the target sits on the panel below, so
- * the pair reads as one exchange rather than as two lists of audits (ADR-099).
- */
 export const AuditsPanel = ({
 	title,
 	meta,

@@ -12,11 +12,6 @@ const ROOM_WORDS = "weight free";
 
 export type SlotBoxProps = {
 	label?: string;
-	/**
-	 * The room left, as one row rather than one box per unit. A box per unit
-	 * counts what the block already measures, and four of them push the build
-	 * off the screen.
-	 */
 	slots?: number;
 };
 

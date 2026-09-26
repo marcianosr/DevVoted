@@ -1,10 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-// Frozen copies of the legacy shapes the slide deck illustrates. The deck
-// documents the game as it was pitched, so these must NOT track the live
-// roster in src/modules/run/ — that roster has since dropped `rarity`
-// entirely, which these slides are about.
-
 export type Rarity = "common" | "uncommon" | "rare" | "legendary";
 
 export type DemoConfig = {
@@ -43,5 +38,4 @@ export const demoCoverage = (
 	...overrides,
 });
 
-// The old pipeline graded coverage over a rolling window of this many polls.
 export const DEFAULT_WINDOW_SIZE = 5;

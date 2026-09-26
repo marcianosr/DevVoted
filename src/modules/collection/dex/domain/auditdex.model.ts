@@ -13,25 +13,11 @@ import type {
 	GatedexState,
 } from "~/modules/collection/dex/domain/gatedex.model";
 
-/**
- * The audit roster read as a collection: one row per rule, each with the gates
- * it sits on and how much of it the player has earned the right to read.
- *
- * One row per audit id (ADR-056 made ids canonical, so there is nothing to
- * dedupe). `gates` names where an audit *can* land, not where it did: the
- * roster is drawn per run, so the catalogue teaches the pools. `runsFaced` and
- * `runsBeaten` therefore count only the gates an audit is certain to appear at,
- * and read 0 for a drawn one until something records what a draw dealt
- * (DVTD-gvc9).
- */
 export type AuditdexTier = "faced" | "unlocked" | "unseen";
 
 export type AuditdexEntry = {
 	readonly id: AuditId;
-	/** The HTTP status the rule is named for, kept apart from the label so a
-	 * row can seat it in its own cell. */
 	readonly code: number;
-	/** The rule's name without its code, for the same reason. */
 	readonly title: string;
 	readonly name: string;
 	readonly rule: string;
@@ -63,12 +49,6 @@ const ROSTER: readonly AuditFacts[] = AUDIT_RANK.map(factsOf)
 	)
 	.map((ranked) => ranked.facts);
 
-/**
- * Faced means the gate carrying it has fallen; unlocked means that gate is the
- * one in front of you, so its stake receipt has named the rule. Nothing is
- * spoiled that the player has not already stood in front of, which is why an
- * audit on two gates reads off whichever of them they have reached.
- */
 const tierFor = (
 	gates: readonly number[],
 	stateByGate: ReadonlyMap<number, GatedexState>
@@ -93,12 +73,6 @@ export const auditdex = (
 export const auditsFacedIn = (entries: readonly AuditdexEntry[]): number =>
 	entries.filter((entry) => entry.tier === "faced").length;
 
-/**
- * The audits a player may read the name of anywhere in the Dex. Keyed on name
- * rather than on gate, which is what keeps the two tabs from disagreeing: an
- * audit met at gate 7 stays named on gate 11's row, even though that gate is
- * still locked.
- */
 export const revealedAuditNames = (
 	entries: readonly AuditdexEntry[]
 ): ReadonlySet<string> =>

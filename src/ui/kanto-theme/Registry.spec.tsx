@@ -59,8 +59,6 @@ describe("Registry", () => {
 
 		const list = chipOf("IndexedDB")?.closest(".grid");
 
-		// auto-fill, not auto-fit: a half-filled row keeps its empty tracks
-		// instead of stretching two cards across the whole panel.
 		expect(list?.className).toContain(
 			"grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]"
 		);
@@ -69,8 +67,6 @@ describe("Registry", () => {
 	it("lets a shut card keep its own height beside an open one", () => {
 		render(<Registry {...props} />);
 
-		// Without this a grid row stretches every cell to the tallest in it, and a
-		// collapsed card reads as one with its body missing.
 		expect(chipOf("IndexedDB")?.closest(".grid")).toHaveClass("items-start");
 	});
 

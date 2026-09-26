@@ -23,12 +23,6 @@ const PEEK_COSTS = [32, 64, 128, 256, 512];
 export const peekCost = (usesThisGate: number): number =>
 	PEEK_COSTS[usesThisGate] ?? PEEK_COSTS[PEEK_COSTS.length - 1];
 
-/**
- * Redacted options are excluded, not merely skipped: `disabledOptionIds` ships
- * to the client, so crossing one out would state that a sealed option is wrong
- * — the leak the redaction exists to prevent. It also makes the linter walk the
- * sealed set for free, since the pick is the first wrong option in poll order.
- */
 const wrongStillOn = (state: RunState) => {
 	const poll = state.polls[state.currentIndex];
 	const alreadyOff = new Set<string>(state.manualDisabled);
@@ -56,7 +50,6 @@ const rateLimited = (state: RunState): boolean => {
 export const lintApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !canLint(liveConfigsOf(state), poll.category)) return false;
-	// Feature Freeze removes the action rather than pricing it.
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	if (rateLimited(state)) return false;
 	return wrongStillOn(state).length > 1;
@@ -109,7 +102,6 @@ export const spendLint = (state: RunState): RunState => {
 	};
 };
 
-/** Once per poll: the whole split arrives at once, so a second look would charge for nothing. */
 export const peekApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !peekerFor(liveConfigsOf(state))) return false;
@@ -137,13 +129,6 @@ export const spendPeek = (state: RunState): RunState => {
 export const buyBackFeeFor = (state: RunState): number =>
 	BUY_BACK_KB * auditFeeMultiplier(auditsOf(state));
 
-/**
- * Flat, and outside every meter: not the 429 allowance, not the 403 freeze, no
- * ladder. 451 hands out the problem, so it always hands out the answer — a seal
- * with no way to read it is a trap rather than a rule, and that has to hold
- * however the seal arrived. The fee is charged per option, not per gate, so a
- * ladder would price the escape hatch out of reach.
- */
 export const buyBackApplies = (state: RunState, optionId: string): boolean =>
 	hiddenOptionIdsOf(state).includes(optionId);
 

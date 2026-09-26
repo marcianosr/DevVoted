@@ -12,11 +12,9 @@ import { fetchIncidentsForDate } from "~/modules/run/incident/infrastructure/inc
 
 export type IncidentsFeedView = {
 	readonly rows: readonly IncidentFeedRowView[];
-	/** Everyone the viewer traded an audit with today, so the climb map can ring them. */
 	readonly rivals: readonly string[];
 };
 
-/** Everyone's incidents filed today: public, attributable, newest first. */
 export const getIncidentsFeedService = async ({
 	userId,
 	date,

@@ -24,7 +24,6 @@ import {
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 export type AnswerPayout = {
-	/** Units the answer banks: base, build, streak step and an armed wager's win. */
 	readonly earned: number;
 	readonly breakdown: CoverageBreakdown;
 	readonly factors?: CoverageFactors;
@@ -53,10 +52,6 @@ type BonusWalk = {
 	readonly subtotal: number;
 };
 
-/**
- * Flat adds are listed first and credited at face value; each multiplier is
- * then credited on the running subtotal, so the rows add up to what was paid.
- */
 const bonusRowsOf = (
 	covered: readonly Covered[],
 	creditedUnits: number,
@@ -103,10 +98,6 @@ const NOTHING_PAID: CoverageBreakdown = {
 	configBonuses: [],
 };
 
-/**
- * The one walk that prices a right answer. Everything that quotes or attributes
- * that price reads this result, so a preview can never disagree with a payout.
- */
 export const answerPayoutFor = (
 	configs: readonly Config[],
 	context: PayoutContext,
@@ -152,7 +143,6 @@ export type PerAnswerPreview = {
 	readonly streakStepMultiplier: number;
 };
 
-/** What is known about the next answer before its poll is on screen. */
 export type PreviewFacts = {
 	readonly answeredBefore: number;
 	readonly answerType?: AnswerType;

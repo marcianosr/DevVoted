@@ -17,8 +17,6 @@ describe("formatPercent", () => {
 		expect(formatPercent(percent(3.9))).toBe("+3.9%");
 	});
 
-	// The awards panel used an always-"+" template, which would have rendered
-	// "+-1.2%" the first time an award went negative.
 	it("leaves a loss its own minus rather than adding a second sign", () => {
 		expect(formatPercent(percent(-1.2))).toBe("-1.2%");
 	});
@@ -33,8 +31,6 @@ describe("formatKbGain", () => {
 		expect(formatKbGain(kb(32))).toBe("+32KB");
 	});
 
-	// The gate report hand-rolled `+${n}KB`, so a four-figure payout read
-	// "+2048KB" there while the shop's formatKb read "2MB" for the same number.
 	it("rolls a four-figure payout over to MB, as the shop already did", () => {
 		expect(formatKbGain(kb(2048))).toBe("+2MB");
 	});

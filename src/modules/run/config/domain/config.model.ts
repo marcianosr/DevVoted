@@ -61,7 +61,6 @@ export const minifiedMultiplier = (
 export const minifiedAmount = (config: Config, amount: number): number =>
 	config.minified === true ? Math.floor(amount / 2) : amount;
 
-/** KB stays whole, so `minifiedAmount` floors. Coverage units are fractional by design. */
 export const minifiedUnits = (config: Config, units: number): number =>
 	config.minified === true ? units / 2 : units;
 
@@ -153,11 +152,6 @@ export const showsSampleSize = (config: Config): boolean =>
 
 const ANSWER_TYPE_LEVEL = 2;
 
-/**
- * Which polls take more than one answer is Prefetch's headline reveal, and
- * multiple choice pays double, so handing it over at v1 would make a 4-slot
- * config redundant. The upgrade is what buys the overlap.
- */
 export const showsAnswerTypes = (config: Config): boolean =>
 	(config.level ?? 1) >= ANSWER_TYPE_LEVEL;
 

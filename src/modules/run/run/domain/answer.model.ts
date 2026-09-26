@@ -98,12 +98,6 @@ const clearLine = (gateNumber: number, reward: number): string => {
 
 type UpkeepSettlement = {
 	readonly paidKb: number;
-	/**
-	 * Set only when the balance fell short: the space the payment actually
-	 * bought. The build cannot be dropped to fit it — the rung follows the build
-	 * (ADR-098) — so it becomes a cap the shop door holds the run to until the
-	 * build fits, which is ADR-082 Decision 4's remedy with the rung derived.
-	 */
 	readonly droppedTo?: number;
 };
 
@@ -126,7 +120,6 @@ const missedLineFor = (
 		? `Gate ${gateNumber} failed: ${correct} of ${SLICE_WINDOW} right, ${FLOOR_CORRECT} needed.`
 		: `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
 
-/** The gate's five results are in. It owes a close, not another answer. */
 export const gateWindowComplete = (state: RunState): boolean =>
 	state.window.answered >= SLICE_WINDOW;
 
@@ -146,20 +139,11 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		estimateThisGateUnits: committed === undefined ? undefined : estimateUnits,
 	};
 
-	// SLA cannot settle here the way the estimate does: it is a function OF the
-	// band, so it has to wait until the close has read one. Only the clearing
-	// path can pay it, and every other path drops the promise unpaid.
 	const promised = state.slaBand;
 	const droppedSla = { slaBand: undefined, slaUpliftKb: undefined };
 
-	// The bet settles INSIDE the window rather than beside it: a won bet has to
-	// be able to lift a gate over its own line, and it cannot once the band has
-	// already been read off the window.
 	const unitsThisGate = state.window.unitsEarned + estimateUnits;
 
-	// The swatch is the window's own prize, not the clear's: a flawless window
-	// earns it even where cumulative coverage lands the gate short (ADR-080).
-	// A retried gate can come up flawless twice, so the gate is stamped once.
 	const swatchGates = state.swatchGatesEarned ?? [];
 	const settledSwatch = {
 		swatchGatesEarned:
@@ -168,9 +152,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				: swatchGates,
 	};
 
-	// Database's open transaction. Only a cleared gate turns it into storage;
-	// every other close rolls it back, and no cap room is spent either way until
-	// the commit lands.
 	const pending = state.pendingKb ?? 0;
 	const rolledBackEscrow = {
 		pendingKb: 0,
@@ -199,9 +180,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 
 	if (ruling.closing !== "cleared") {
 		const attempts = state.gateAttempts ?? 0;
-		// Drawn on the build that closed the gate, the catcher included: it is the
-		// first thing the peel takes, and its own weight settles that much of the
-		// debt (ADR-096).
 		const quota = failPeelQuotaFor(
 			state.build.configs,
 			gateNumber,
@@ -235,7 +213,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			demand
 		);
 
-		// DANGER shuts the gate for good: no retry, no peel, no choice (ADR-076).
 		if (ruling.closing === "fatal")
 			return {
 				...state,
@@ -249,8 +226,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 				log: withLog(state, `${missed} The gate shut on it. Run over.`),
 			};
 
-		// A catch that still let the build be emptied would die in exactly the
-		// thin, deep build it was bought for.
 		if (caught === undefined && isPeelFatal(quota, occupied))
 			return {
 				...state,
@@ -316,12 +291,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		state.gatesCleared,
 		state.streak
 	);
-	// The commit is clamped here rather than at the answer, so the run cap
-	// meters what a transaction paid and never what it merely held.
 	const committedKb = escrowCommitKb(pending, state.faucetEarnedKb ?? 0);
-	// A percentage of the gate's own prize, which is the figure prep already
-	// printed against each band — never of the interest or the faucet, which the
-	// promise said nothing about.
 	const upliftKb = slaUpliftKb(
 		state.build.configs,
 		promised,
@@ -400,11 +370,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			? cleared.build
 			: withBuild(cleared.build, billed.configs);
 
-	/**
-	 * Read after the subscriptions settle, because a lapse sheds weight too: a
-	 * build the lapse already shrank into the space the bill covered is not over
-	 * it, and carrying the cap would shut the door on a run that already fits.
-	 */
 	const overCovered =
 		bill.droppedTo !== undefined &&
 		billableSlotsOf(finalBuild) > bill.droppedTo;
@@ -459,11 +424,6 @@ type AnswerGrade = {
 export const gradedPollFor = (state: RunState, poll: RunPoll): RunPoll =>
 	mirrorsPolls(auditsOf(state)) ? mirrorPoll(poll) : poll;
 
-/**
- * What the answer is PRICED as, which 207 Multi-Status flattens to a single.
- * The poll keeps its own type for grading; only the credit reads this, so a
- * select-all still has to be named in full to pay anything at all.
- */
 export const creditedAnswerTypeFor = (
 	state: RunState,
 	poll: RunPoll
@@ -504,7 +464,6 @@ type AnswerLedger = {
 	readonly breakdown: CoverageBreakdown;
 	readonly factors?: CoverageFactors;
 	readonly faucetKb: number;
-	/** Pledged into the open transaction, not paid. Never reaches `storage` here. */
 	readonly escrowKb: number;
 	readonly burnKb: number;
 };
@@ -547,8 +506,6 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		breakdown: payout.breakdown,
 		factors: payout.factors,
 		faucetKb,
-		// Unclamped on purpose: the cap meters the commit, so a transaction that
-		// rolls back must leave the run's cap room exactly as it found it.
 		escrowKb: grade.outcome === "correct" ? escrowKbPerCorrect(configs) : 0,
 		burnKb: Math.min(
 			auditBurnKb(
@@ -708,8 +665,6 @@ export const answer = (
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
 	const counted = countAutoUpgrade(applied, state, grade.outcome);
 
-	// The answer that fills the window leaves `currentIndex` on its own poll, so
-	// the reveal the player is reading still belongs to the gate that asked it.
 	if (gateWindowComplete(counted)) return counted;
 	return {
 		...counted,

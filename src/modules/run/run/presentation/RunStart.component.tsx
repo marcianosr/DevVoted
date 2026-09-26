@@ -28,8 +28,6 @@ const EVERYONE = "see how everyone else is doing today";
 
 const DIVIDER = " · ";
 
-// No `days` yet: nothing on RunView counts how long a climb has been going, and
-// a number the row cannot source is a number it should not print.
 const todayRunFor = (view: RunView, pollsNote: string): TodayRun => {
 	const swatch = gateSwatchAt(view.gatesCleared);
 	const held = view.isOver ? "banked" : "stored";
@@ -44,7 +42,6 @@ const todayRunFor = (view: RunView, pollsNote: string): TodayRun => {
 	};
 };
 
-/** Tier 2: the /run hub — what your climb is doing, and the ways off it. */
 export const RunStart = () => {
 	const navigate = useNavigate();
 	const { view } = useTodaysRun();
@@ -52,19 +49,11 @@ export const RunStart = () => {
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
 
-	// Today's segment is open unless this run has spent it. With no run there is
-	// nothing to have spent, so a fresh climb always finds it open.
 	const spent = view?.pollsExhausted === true && !countdown.isOpen;
 	const todayRun = view ? todayRunFor(view, pollsNoteFor(view)) : null;
 
-	// The board counts distinct answerers of today's set, which is exactly what
-	// its own header calls "N players answered". Deliberately not reused for the
-	// community row: printing one number twice under two labels would state it
-	// as two facts.
 	const answeredBy = community.view?.totalPlayers;
 
-	// Today's questions are answered inside the run — there is no standalone
-	// screen for them, so "Answer it" leads where playing them leads.
 	const startAndEnter = () =>
 		start.mutate(undefined, {
 			onSuccess: (result) => {

@@ -6,14 +6,12 @@ import { Typography } from "./Typography.ui";
 const SECTION = "flex w-full flex-col gap-2";
 const ROW = "flex flex-wrap items-center gap-3";
 
-/** One row of chips per weight, headed "2 weight · 4 of 14". */
 export type DexWeightGroup = {
 	weight: number;
 	heading: string;
 	chips: readonly DexConfigChipProps[];
 };
 
-/** What the presenter derives from the domain, with no wiring in it. */
 export type DexConfigsData = {
 	groups: readonly DexWeightGroup[];
 	count: string;
@@ -22,7 +20,6 @@ export type DexConfigsData = {
 };
 
 export type DexConfigsProps = DexConfigsData & {
-	/** The one chip whose hint is pinned open, by config id. */
 	openInfo?: string;
 	onToggleInfo?: (id: string) => void;
 };

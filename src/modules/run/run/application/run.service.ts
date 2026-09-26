@@ -39,19 +39,9 @@ import {
 } from "~/modules/run/config/infrastructure/configUnlock.repository";
 import { fetchUnlockedServiceIds } from "~/modules/run/shop/infrastructure/serviceUnlock.repository";
 
-// A run's unlock history is the grants stamped since it started — derived from
-// user_config_unlocks rather than stored on the run (ADR-064: the reducer
-// stays pure, and only one session run is ever active at a time).
 const unlocksDuring = (run: SessionRunRecord) =>
 	fetchUnlocksSince(run.user_id, run.started_at ?? new Date(0));
 
-/**
- * The poll on screen states how the room did on it and what this account did
- * last time (ADR-093), plus who leads its category (ADR-103). Attached
- * here rather than in `toRunView` because these are the parts of the view that
- * are read rather than derived — and because leaving them off is how a config
- * or an audit withholds them.
- */
 const withPollReads = async (
 	view: RunView,
 	userId: string
@@ -91,11 +81,6 @@ const continueActiveRun = async (
 	return viewOfRun(run);
 };
 
-/**
- * The active run, if it is playable. An active run whose state row is missing
- * (corrupt — seen once on dev) is unplayable and would brick every request;
- * self-heal by abandoning it (credits nothing) and report "no active run".
- */
 const findResumableRun = async (
 	userId: string
 ): Promise<SessionRunRecord | null> => {
@@ -109,7 +94,6 @@ const findResumableRun = async (
 	return null;
 };
 
-/** Only a properly finished run has a summary screen worth surfacing. */
 const isFinishedRun = (run: SessionRunRecord): boolean =>
 	run.completion_reason === "victory" || run.completion_reason === "dead";
 
@@ -124,8 +108,6 @@ export const getTodaysRunService = async ({
 		const active = await findResumableRun(userId);
 		if (active) return continueActiveRun(active, date);
 
-		// No run in progress — surface today's latest won/dead run (its summary
-		// screen). Abandoned or corrupt runs fall through to the start screen.
 		const startedToday = await findSessionRunByDate(userId, date);
 		if (!startedToday || !isFinishedRun(startedToday)) return null;
 		return viewOfRun(startedToday);
@@ -150,21 +132,10 @@ export const startRunService = async ({
 			throw new Error("No polls left for a run today");
 		}
 
-		// A planted git tag rescues this run (ADR-036): it starts at the pinned
-		// gate and the tag burns on use — consuming before creating means a
-		// crash between the two costs the tag, never duplicates it.
 		const [pinnedGate, unlockedConfigIds] = await Promise.all([
 			consumePinnedGate(userId),
 			fetchUnlockedConfigIds(userId),
 		]);
-		// Per player and per day: the poll sequence is the thing everyone shares
-		// (ADR-009), while the hand is what you personally opened with. The draw
-		// is stored in the run, so the seed only has to be stable long enough to
-		// deal once — it is the persisted hand a reload comes back to.
-		// The pool is the account's own unlocked set (DVTD-amtz), falling back to
-		// the starter set for an empty ledger. The budget shapes the deal rather
-		// than only pricing it: a card the opening slots cannot hold is not a
-		// choice (ADR-062).
 		const state = createRun(
 			polls,
 			startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
@@ -174,12 +145,6 @@ export const startRunService = async ({
 		return withPollReads(toRunView(state), userId);
 	}, "startRun");
 
-/**
- * A finished run by permalink. The live run needs no id — the session resolves
- * it — but the archive holds many, so these are the one run URLs that carry
- * one. The id arrives from the URL, so ownership is checked here and a run
- * belonging to someone else is refused without saying it exists.
- */
 export const getRunRecapService = async ({
 	userId,
 	runId,
@@ -208,10 +173,6 @@ export const abandonRunService = async ({
 		return { abandoned: true as const };
 	}, "abandonRun");
 
-/**
- * `settle` defaults to locking rivals' incidents; a caller that has more to
- * settle in the same transaction (firing one, ADR-099) composes its own.
- */
 export const dispatchRunActionService = async ({
 	userId,
 	date,
@@ -238,9 +199,6 @@ export const dispatchRunActionService = async ({
 			action,
 			settle: (settle ?? settleIncidents)(run.id),
 		});
-		// Read after the dispatch: the action that ends a run banks its storage in
-		// the same transaction, so the archive is already the "after" figure the
-		// run-over screen prints.
 		const [unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
 			await Promise.all([
 				unlocksDuring(run),
@@ -262,7 +220,6 @@ export const dispatchRunActionService = async ({
 		);
 	}, "dispatchRunAction");
 
-/** The viewer's permanent swatch collection, earned by widening builds. */
 export const getOwnedSwatchesService = async ({
 	userId,
 }: {

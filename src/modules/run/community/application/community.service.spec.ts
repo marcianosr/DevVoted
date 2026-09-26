@@ -39,12 +39,6 @@ const RED = "red";
 const BLUE = "blue";
 const GREEN = "green";
 
-/**
- * Fixture day: three climbers, three polls.
- * - poll 10 (single, correct 101): red+green right, blue wrong
- * - poll 11 (multi, correct 111+112): blue exact, red partial (111), green wrong
- * - poll 12 (single, correct 121): blue right; red LINTED it (no response)
- */
 const POLLS = [
 	{
 		id: 10,
@@ -158,7 +152,6 @@ const consumedForViewer = [
 	{ position: 2, poll_id: 12 },
 ];
 
-/** The standing every row carries since ADR-101's narrowing; overridden where a case reads it. */
 const standing = (
 	over: {
 		handle?: string;
@@ -178,7 +171,6 @@ const standing = (
 	...(over.title === undefined ? {} : { title: over.title }),
 });
 
-/** Climb map fixture: Red (the usual viewer) mid-Soul, Blue ahead, Green well back. */
 const RED_AT = { gate: 6, pollsIntoGate: 3 };
 const RED_BUILD = {
 	configs: [{ id: "ts", label: ".ts", slots: 1, level: 3 }],
@@ -257,7 +249,6 @@ const FALLEN = [
 	},
 ];
 
-/** Two of the twelve seats are held; `seatsFor` draws the other ten open. */
 const SEATS = [
 	{
 		category: "js" as const,
@@ -326,7 +317,7 @@ describe("getRunCommunityService", () => {
 
 		expect(first.outcome).toBe("correct");
 		expect(first.detail?.answeredCount).toBe(3);
-		expect(first.detail?.gotItRightCount).toBe(2); // red + green
+		expect(first.detail?.gotItRightCount).toBe(2);
 		expect(first.detail?.youGotItRight).toBe(true);
 		expect(first.detail?.options).toEqual([
 			{
@@ -389,14 +380,14 @@ describe("getRunCommunityService", () => {
 		const multi = result.data.polls[1];
 
 		expect(multi.outcome).toBe("partial");
-		expect(multi.detail?.gotItRightCount).toBe(1); // only Blue's exact set
+		expect(multi.detail?.gotItRightCount).toBe(1);
 		expect(multi.detail?.youGotItRight).toBe(false);
 		expect(
 			multi.detail?.options.map((option) => [option.label, option.count])
 		).toEqual([
-			["Talon Trot", 2], // red + blue
-			["Beak Barge", 1], // blue
-			["Falcon Punch", 1], // green
+			["Talon Trot", 2],
+			["Beak Barge", 1],
+			["Falcon Punch", 1],
 		]);
 	});
 
@@ -409,7 +400,6 @@ describe("getRunCommunityService", () => {
 		if (!result.success) return;
 		const [first] = result.data.polls;
 
-		// Red answered before Green, but Green is the viewer here.
 		expect(first.detail?.options[0].voters.map((voter) => voter.id)).toEqual([
 			GREEN,
 			RED,
@@ -440,7 +430,6 @@ describe("getRunCommunityService", () => {
 		if (!result.success) return;
 
 		expect(result.data.totalPlayers).toBe(3);
-		// Blue (2 correct) beats Red (1 correct): ceil(2/3 * 100)
 		expect(result.data.topPercent).toBe(67);
 	});
 
@@ -492,7 +481,6 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.polls).toEqual([]);
-		// The seats stand on an all-time ledger, not on today's answers.
 		expect(result.data.leaders).toHaveLength(12);
 	});
 
@@ -635,7 +623,7 @@ describe("getRunCommunityService climb map", () => {
 			(climber) => climber.id === BLUE
 		);
 		expect(blues).toHaveLength(1);
-		expect(blues?.[0].gate).toBe(7); // the deeper of the two
+		expect(blues?.[0].gate).toBe(7);
 	});
 
 	it("marks where runs the gate killed today came to a stop, with who fell", async () => {
@@ -661,7 +649,6 @@ describe("getRunCommunityService climb map", () => {
 				streak: 0,
 				storageKb: 0,
 			},
-			// A nameless account falls back to its id, so the avatar still draws.
 			{
 				runId: 12,
 				id: "misty",
@@ -702,7 +689,6 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		const you = result.data.climb?.climbers.find((climber) => climber.you);
-		// 24 units at gate 6 is 24 of the 35 slots scored so far.
 		expect(you?.coveragePercent).toBe(69);
 	});
 
@@ -778,16 +764,7 @@ describe("getRunCommunityService climb map", () => {
 	});
 });
 
-/**
- * ADR-038: a mirrored answer is a correct answer to a different question. The
- * board counts demonstrated knowledge, so it grades against the question the
- * player was asked — the paid split is the surface that cannot mix the two, and
- * it excludes mirrored rows instead.
- */
 describe("a board that mixes mirrored and plain answers", () => {
-	// Poll 10 holds one right option and two wrong ones, so a mirrored Red has to
-	// name BOTH wrong ones — the mirror asks for every incorrect option, and half
-	// of them is a partial exactly as it would be off the mirror.
 	const mirrorRedsAnswer = (optionIds: readonly number[]) => {
 		arrange();
 		const others = answerRows.filter(
@@ -813,7 +790,6 @@ describe("a board that mixes mirrored and plain answers", () => {
 		const [first] = result.data.polls;
 		expect(first.outcome).toBe("correct");
 		expect(first.detail?.youGotItRight).toBe(true);
-		// Green still counts off their own plain answer, so both kinds add up.
 		expect(first.detail?.gotItRightCount).toBe(2);
 	});
 
@@ -835,8 +811,6 @@ describe("a board that mixes mirrored and plain answers", () => {
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		// "isRight" is a fact about the poll, not about the viewer's gate: the
-		// mirror changes what was asked of one player, never what is true.
 		const rows = result.data.polls[0].detail?.options ?? [];
 		expect(rows.map((row) => row.isRight)).toEqual([true, false, false]);
 	});

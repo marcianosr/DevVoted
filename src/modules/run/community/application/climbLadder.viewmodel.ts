@@ -28,25 +28,17 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
-/** The two closes a chip wears: a perfect window earns a rim, a shaky one flickers. */
 export type ClimberMark = "perfect" | "shaky";
 
-/**
- * The ladder's own vocabulary, owned here so the shape outlives whichever kit
- * draws it; `ClimbMap.ui.tsx` takes these as types only.
- */
 export type LadderClimber = {
 	id: string;
 	name: string;
 	photoUrl?: string;
 	borderUrl?: string;
 	you: boolean;
-	/** Traded an audit with the viewer today. */
 	rival: boolean;
-	/** The run resumed from a git tag rather than starting at the bottom. */
 	rescued: boolean;
 	mark?: ClimberMark;
-	/** Everything the card states about them, built where the run's facts are. */
 	card?: ClimberCardProps;
 };
 
@@ -77,11 +69,6 @@ const categoryNameOf = (code: string | undefined): string | undefined =>
 		? undefined
 		: getCategoryMetadata(code).name;
 
-/**
- * The three figures the card tiles. A run with no streak still states a zero,
- * because "0" is a reading; a category nobody has ever been right in has no
- * reading at all and says so.
- */
 const statsOf = (entry: ClimbClimber | ClimbFallen) => [
 	{ label: CARD_COPY.streak, value: String(entry.streak ?? 0) },
 	{

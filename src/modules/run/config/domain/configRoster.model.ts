@@ -382,13 +382,6 @@ export const CONFIGS = {
 
 export const CONFIG_LIST: readonly Config[] = Object.values(CONFIGS);
 
-/**
- * Whether a build wants each poll's miss history attached when the sequence is
- * read — one extra query on the dispatch path, so it is asked before it is
- * paid for. Resolved against the roster rather than the embedded config,
- * because a snapshot carries the shape the config had when it was drafted
- * (`refreshConfig`).
- */
 export const readsMissedHistory = (
 	configs: readonly { readonly id: string }[]
 ): boolean =>

@@ -62,9 +62,6 @@ export const fetchUserArchiveState = async (
 	return row ?? null;
 };
 
-// Atomic purchase: deducts cost and appends border id only if the user has
-// enough balance AND doesn't already own it. Returns null when either check
-// fails so callers can surface the right error.
 export const purchaseBorderTx = async (
 	userId: string,
 	borderId: string,
@@ -93,8 +90,6 @@ export const purchaseBorderTx = async (
 		return row ?? null;
 	});
 
-// Set or unset (null) the equipped border. Caller is responsible for verifying
-// ownership before calling.
 export const setEquippedBorder = async (
 	userId: string,
 	borderId: string | null

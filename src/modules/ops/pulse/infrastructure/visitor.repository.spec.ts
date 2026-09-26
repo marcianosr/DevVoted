@@ -8,12 +8,6 @@ import {
 } from "~/modules/ops/pulse/infrastructure/visitor.repository";
 import { TEST_DATES } from "~/test/kanto";
 
-/**
- * Only the pure half is covered here. `readRequestFacts` calls
- * `@tanstack/react-start/server`, which vitest replaces with an import-
- * protection stub, so it cannot be exercised in a unit test at all — which is
- * precisely why every decision was moved off it and onto `RequestFacts`.
- */
 const CHROME =
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36";
 
@@ -37,7 +31,6 @@ afterEach(() => {
 });
 
 describe("visitorHashOf", () => {
-	// The whole banner-free argument rests on this one property.
 	it("gives the same visitor a different identity tomorrow", () => {
 		expect(visitorHashOf(TEST_DATES.birthday, "81.1.2.3", CHROME)).not.toBe(
 			visitorHashOf(TEST_DATES.christmas, "81.1.2.3", CHROME)
@@ -63,7 +56,6 @@ describe("visitorHashOf", () => {
 		expect(hash).toMatch(/^[0-9a-f]{32}$/);
 	});
 
-	// A missing secret must read as no data, never as weak data.
 	it("refuses to hash at all when the secret is unset", () => {
 		delete process.env.VISIT_HASH_SECRET;
 
@@ -109,7 +101,6 @@ describe("isSameOrigin", () => {
 		expect(isSameOrigin(factsOf({ fetchSite: "same-origin" }))).toBe(true);
 	});
 
-	// A typed-in address is the entry visit this exists to count.
 	it("allows a direct address-bar load", () => {
 		expect(isSameOrigin(factsOf({ fetchSite: "none" }))).toBe(true);
 	});

@@ -44,8 +44,6 @@ describe("withAuthenticatedUser", () => {
 		expect(result).toEqual({ success: true, data: { sawUserId: brock.name } });
 	});
 
-	// The whole point: without this the caller has two error modes — a rejection
-	// for auth, an ApiResponse for everything else — and writes only one.
 	it("reports a signed-out request as a failed response, not a rejection", async () => {
 		signedOut();
 		const operation = vi.fn();

@@ -11,8 +11,6 @@ if (dsn) {
 		environment: __DEPLOY_ENVIRONMENT__,
 		release: __COMMIT_SHA__,
 		tracesSampleRate: 0.1,
-		// PII would attach the request headers, and this app authenticates with
-		// Supabase cookies: one 500 would carry a live session token into an issue.
 		sendDefaultPii: false,
 	});
 }

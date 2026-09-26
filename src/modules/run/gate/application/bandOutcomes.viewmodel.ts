@@ -61,13 +61,6 @@ const PERFECT_RUNG: CoverageRung = {
 	to: AS_PERCENT,
 };
 
-/**
- * The bands this gate's ladder has room to draw, best first. The opening gates
- * squeeze their lower rungs out — OK collapses onto the healthy line and the
- * floor clamps to zero — and an audit that scales the ladder can squeeze one out
- * at any gate. One derivation, so the table's rows, the objective's badge and
- * the tick beside it can never name different sets.
- */
 export const coverageRungsFor = (
 	ladder: CoverageLadder
 ): readonly CoverageRung[] => {
@@ -88,22 +81,12 @@ export const coverageRungsFor = (
 	];
 };
 
-/**
- * The lowest landing that still clears. Usually OK; at the calibration gate,
- * where OK has no room, it is HEALTHY. The rungs run best first and the clearing
- * bands are a prefix of them, so the last clearing rung is the lowest one.
- */
 export const clearingRungFor = (ladder: CoverageLadder): CoverageRung =>
 	coverageRungsFor(ladder).reduce(
 		(lowest, rung) => (CLEARING_BANDS[rung.band] ? rung : lowest),
 		PERFECT_RUNG
 	);
 
-/**
- * Right answers this window owes to reach `line`, or undefined where five cannot.
- * Counted from where the run stood when the window opened, so the figure prices
- * the window rather than counting down as it is played out.
- */
 export const answersOwedFor = (
 	line: number,
 	held: number,
@@ -132,18 +115,11 @@ export type BandOutcomesFrame = {
 	ladder: CoverageLadder;
 	coverageGainPercent: number;
 	peelKb: number;
-	/** True while the build holds a config that escrows its earnings (Database). */
 	escrows?: boolean;
-	/** True while a catch stands between a DANGER close and the end of the run. */
 	catchesFatal?: boolean;
 	payout: (correct: number) => number;
 };
 
-/**
- * A band is only landed when the meter reaches it AND the day's floor of right
- * answers is paid: a floor-held meter reads high but closes SHAKY (ADR-094), so
- * an objective that ignored the floor would tick on a window that failed.
- */
 const landsAt = (line: number, frame: BandOutcomesFrame): boolean =>
 	roundToOneDecimal(frame.held) >= line &&
 	frame.correctThisGate >= FLOOR_CORRECT;
@@ -164,11 +140,6 @@ const bandObjectiveFor = (
 	met,
 });
 
-/**
- * The audit a strong close arms (ADR-099), listed only where it is genuinely
- * extra. At the calibration gates OK has no room, so the clearing line already
- * is HEALTHY and the row would restate the required objective word for word.
- */
 const auditObjectivesFor = (
 	rung: CoverageRung,
 	frame: BandOutcomesFrame
@@ -185,13 +156,6 @@ const auditObjectivesFor = (
 	];
 };
 
-/**
- * The gate, its swatch and the audit a strong close arms are three prizes on one
- * window, and a player can take any without the others: run coverage is
- * cumulative, so a flawless window can still land short of the clearing line,
- * and a comfortable clear can carry a miss. Every row reads live, so the panel
- * says which are already in hand before the build is committed.
- */
 export const objectivesFor = (frame: BandOutcomesFrame): ObjectivesProps => {
 	const rung = clearingRungFor(frame.ladder);
 

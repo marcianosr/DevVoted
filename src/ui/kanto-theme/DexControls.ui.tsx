@@ -5,10 +5,6 @@ import {
 	type RegistryControlProps,
 } from "./RegistryControl.ui";
 
-/**
- * A service row states where it is bought and never a press: the Dex reveals
- * what is sold, and buying stays where the run pays for it (ADR-029).
- */
 export type DexControlRow = RegistryControlProps & { id: string };
 
 export type DexControlsProps = {

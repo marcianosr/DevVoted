@@ -89,8 +89,6 @@ export const PollForm = ({
 			)
 		);
 
-	// Single-answer polls hold exactly one correct option, so picking one clears
-	// the rest; multiple-answer polls toggle each independently.
 	const toggleCorrect = (index: number) =>
 		setOptions((current) =>
 			current.map((option, position) => {

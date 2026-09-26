@@ -13,10 +13,6 @@ const RUN_ROUTES = {
 
 type RunRoutePath = (typeof RUN_ROUTES)[keyof typeof RUN_ROUTES];
 
-/**
- * Deliberately NOT in RUN_ROUTES: the community board is a breather outside
- * the climb, so the sync must never police it — it is only ever a target.
- */
 const COMMUNITY_ROUTE = "/run/community";
 
 const isHub = (pathname: string) => pathname === RUN_ROUTES.start;
@@ -34,20 +30,12 @@ const routesForStatus = (
 	if (!view) return [RUN_ROUTES.start];
 	switch (view.status) {
 		case "configuring":
-			// Prep is legal before the run starts: gate 0 states its terms on the
-			// same screen every later gate does, so the opening build and the
-			// opening stake are two page turns rather than one flag.
 			return [RUN_ROUTES.new, RUN_ROUTES.prep];
 		case "answering":
 			return view.gatesCleared > 0
 				? [RUN_ROUTES.prep, RUN_ROUTES.poll]
 				: [RUN_ROUTES.poll];
 		case "rewarding":
-			// A retry shares the clear's status but not its outcome screen: that
-			// screen is a "+KB, gate cleared" celebration, and the gate it would
-			// name is the one just missed (ADR-037). The failure's own report was
-			// the same screen wearing its held verdict; from here the loop is
-			// shop, prep, same gate.
 			return view.redoingGate !== null
 				? [RUN_ROUTES.shop, RUN_ROUTES.prep, RUN_ROUTES.review]
 				: [
@@ -57,10 +45,6 @@ const routesForStatus = (
 						RUN_ROUTES.prep,
 					];
 		case "awaiting-strip":
-			// A waived peel (ADR-057) has nothing to repair, so the answers lead and
-			// the repair screen stays reachable but unvisited. A player already on
-			// the gate screen having just paid stays put: syncTarget only moves
-			// someone whose current screen is not in this list.
 			return view.peelSlotsRemaining === 0
 				? [RUN_ROUTES.review, RUN_ROUTES.gate]
 				: [RUN_ROUTES.gate, RUN_ROUTES.review];

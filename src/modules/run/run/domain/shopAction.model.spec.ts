@@ -123,11 +123,6 @@ describe("shop controls (DVTD-5lt6)", () => {
 
 	const firstOffer = (state: RunState): string => state.draftOptions[0].id;
 
-	/**
-	 * The offer this build can actually take. Picking `draftOptions[0]` breaks
-	 * every time the roster grows and reshuffles the seeded roll onto something
-	 * too heavy or too dear for the fixture.
-	 */
 	const draftableOffer = (state: RunState): string =>
 		[...state.draftOptions]
 			.sort(
@@ -429,7 +424,6 @@ describe("the git tag (ADR-036)", () => {
 	});
 });
 
-/** A flawless window fills the bar and its four streak steps spill into storage. */
 const FLAWLESS_OVERFLOW_KB = 13;
 
 describe("economy", () => {
@@ -579,11 +573,6 @@ describe("build space follows the build (ADR-098)", () => {
 		expect(second.upkeepPaidKb).toBe(32);
 	});
 
-	/**
-	 * ADR-082 Decision 4's remedy with the rung derived: the run cannot be
-	 * dropped to a cheaper rung, because the rung is its build — so the space the
-	 * bill did cover becomes a cap, and the shop door holds it there.
-	 */
 	it("holds the run to the space its balance covered when the bill outruns it", () => {
 		const heavy = grownBy(
 			shopAfter(1),

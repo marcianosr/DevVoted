@@ -1,6 +1,5 @@
 export type DeviceClass = "desktop" | "mobile" | "tablet" | "bot";
 
-/** One visitor's day on one screen. Never a page view: `app_visits` counts repeats in `hits`. */
 export type Visit = {
 	readonly date: string;
 	readonly visitorHash: string;
@@ -11,13 +10,6 @@ export type Visit = {
 	readonly referrerHost: string | null;
 };
 
-/**
- * Every route id the generated tree can match. A closed set rather than a
- * pattern: the recording endpoint is unauthenticated, and an allowlist means a
- * forged id writes nothing at all, where a regex would let junk inflate the
- * screen funnel. `visitRoutes.spec.ts` fails if this drifts from the generated
- * tree, so adding a route cannot silently lose its visits.
- */
 export const KNOWN_ROUTE_IDS = [
 	"/",
 	"/_authed",
@@ -66,7 +58,6 @@ const BOT_MARKERS = [
 const isBot = (agent: string) =>
 	BOT_MARKERS.some((marker) => agent.includes(marker));
 
-// An Android tablet says "Android" without "Mobile" — the absence is the signal.
 const isTablet = (agent: string) =>
 	agent.includes("ipad") ||
 	(agent.includes("android") && !agent.includes("mobile"));
@@ -77,7 +68,6 @@ const isMobile = (agent: string) =>
 	agent.includes("ipod") ||
 	agent.includes("android");
 
-/** Coarse on purpose: a class, never a fingerprint and never a model. */
 export const deviceClassOf = (userAgent: string): DeviceClass => {
 	const agent = userAgent.toLowerCase();
 	if (isBot(agent)) return "bot";
@@ -86,11 +76,6 @@ export const deviceClassOf = (userAgent: string): DeviceClass => {
 	return "desktop";
 };
 
-/**
- * The referrer's host alone — never the full URL, which can carry a search
- * query or a path identifying the visitor. Our own host reads as null: on an
- * in-app navigation the Referer is always us, which is noise, not a referral.
- */
 export const referrerHostOf = (
 	referer: string | null,
 	selfHost: string
