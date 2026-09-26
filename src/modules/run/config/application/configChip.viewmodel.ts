@@ -22,7 +22,7 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { ConfigInfoProps } from "~/ui/kanto-theme/ConfigInfo.ui";
+import type { ConfigFactsProps } from "~/ui/kanto-theme/ConfigFacts.ui";
 import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
 import type { VersionState } from "~/ui/kanto-theme/Version.ui";
 
@@ -169,15 +169,26 @@ export const upgradesFor = (
 	};
 };
 
-export const infoFor = (config: Config, note?: string): ConfigInfoProps => ({
-	name: config.label,
+const factsOf = (config: Config, note?: string): ConfigFactsProps => ({
 	description: describeConfig(config),
 	slots: slotsOf(config),
-	sellPrice: kbLabel(sellRefund(config)),
 	version: config.level ?? 1,
 	maxVersion: maxLevelOf(config),
 	note,
 });
+
+export const infoFor = (config: Config, note?: string): ConfigFactsProps => ({
+	...factsOf(config, note),
+	sellPrice: kbLabel(sellRefund(config)),
+});
+
+/**
+ * A config on a screen that only reports what already happened. It carries no
+ * sell price because there is no sale to make: quoting one is the same failure
+ * as hiding a price you could act on.
+ */
+export const settledFactsFor = (config: Config): ConfigFactsProps =>
+	factsOf(config);
 
 export const chipFor = (config: Config, note?: string) => ({
 	slots: slotsOf(config),
@@ -193,6 +204,11 @@ const LOSS_COLOR: KantoColor = "cinnabar";
 const BUMP_COLOR: KantoColor = "vermillion";
 const BUMP_WORD = "bump in";
 
+/** Neutral: a config sitting a poll out has neither gained nor lost anything. */
+const SKIP_COLOR: KantoColor = "pewter";
+/** The cap is room still to spend, so it reads as a term rather than a gain. */
+const CAP_COLOR: KantoColor = "saffron";
+const CAP_WORDS = "KB left";
 const HOLDING_COLOR: KantoColor = "saffron";
 const HOLDING_WORD = "holding";
 const AT_RISK = "paid on a clear, rolled back otherwise";
@@ -215,7 +231,7 @@ const SKIP_WORDS = {
 } satisfies Record<Exclude<SkipReason["kind"], "otherCategories">, string>;
 
 export const categoriesWord = (categories: readonly CategoryCode[]): string =>
-	categories.map((code) => code.toUpperCase()).join(" or ");
+	categories.map((code) => getCategoryMetadata(code).name).join(" or ");
 
 const figureOf = (value: number): string => `${roundToTwoDecimals(value)}`;
 
@@ -240,7 +256,11 @@ export type PollNote = { badge?: ConfigChipBadge; detail?: string };
  */
 export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 	if (status === undefined) return {};
-	if (status.kind === "skipped") return { detail: skipWords(status.why) };
+	// A badge, not a note: why a config is sitting the poll out is the same kind
+	// of fact as what it is paying — the one thing the chip states about this
+	// poll — and a card whose only state read as muted prose looked stateless.
+	if (status.kind === "skipped")
+		return { badge: { label: skipWords(status.why), color: SKIP_COLOR } };
 	if (status.kind !== "online") return {};
 
 	if (status.coverage !== undefined)
@@ -248,6 +268,20 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 			badge: {
 				label: `${coverageWords(status.coverage)} ${HERE}`,
 				color: status.coverage.mult < 1 ? LOSS_COLOR : GAIN_COLOR,
+			},
+		};
+
+	// Before the bump: a faucet's cap is the figure that moves on every answer,
+	// and it is the one thing that decides whether the config pays at all.
+	if (status.capLeftKb !== undefined)
+		return {
+			badge: {
+				// The figure travels as a number, not inside the words: it drains on
+				// every correct answer, and the chip animates it down from whatever it
+				// last read rather than swapping one frozen string for another.
+				count: status.capLeftKb,
+				label: CAP_WORDS,
+				color: CAP_COLOR,
 			},
 		};
 

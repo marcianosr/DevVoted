@@ -17,9 +17,11 @@ saffron could mean "a JavaScript poll" or "the Marsh badge".
 
 ## Decision
 
-1. **Categories are colorless.** They appear as plain text labels (question
-   header, community board, coverage lists, Dex) — never as a
-   color, chip, or themed row. `categoryTheme.ts` and the
+1. **Categories are colorless.** They wear the neutral badge wherever they are
+   named — the question header, the community board, coverage lists, the Dex, and
+   inside prose that names one — but never a color, a hue of their own, or a
+   themed row. A badge with no color follows the screen it sits on, so it spends
+   none of the palette this ADR is about. `categoryTheme.ts` and the
    `[data-category-theme]` CSS are deleted; `CategoryTag` is gone.
 2. **The gate being played themes the app.** `RunView.gateTheme` derives
    `swatchForGate(gatesCleared)?.theme`; run screens pass it to `Screen`, which

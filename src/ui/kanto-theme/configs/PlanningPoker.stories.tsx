@@ -38,10 +38,7 @@ export const PaysTheCallItMet: Story = {
 	render: () =>
 		asGateOutcome(
 			afterAnswers(
-				dispatching(runWith([CONFIGS.planningPoker], MIXED_GATE), {
-					type: "estimate",
-					count: 5,
-				}),
+				runWith([CONFIGS.planningPoker], MIXED_GATE, 0, { estimate: 5 }),
 				ALL_RIGHT
 			)
 		),

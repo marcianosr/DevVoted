@@ -18,29 +18,29 @@ import {
 	fetchQueuedByRun,
 	fetchRivalCandidates,
 } from "~/modules/run/incident/infrastructure/incident.repository";
-import type { Attack, RunState } from "~/modules/run/run/domain/run.model";
+import type { HeldAudit, RunState } from "~/modules/run/run/domain/run.model";
 import {
 	findActiveSessionRun,
 	loadRunState,
 } from "~/modules/run/run/infrastructure/run.repository";
 
 export type AttackTargetsView = {
-	readonly attack: Attack | null;
+	readonly heldAudit: HeldAudit | null;
 	readonly offers: readonly AttackOfferView[];
 };
 
-const NOTHING_ARMED: AttackTargetsView = { attack: null, offers: [] };
+const NOTHING_ARMED: AttackTargetsView = { heldAudit: null, offers: [] };
 
 export const attackerOf = (
 	runId: number,
 	userId: string,
 	state: RunState,
-	attack: Attack
+	heldAudit: HeldAudit
 ): Attacker => ({
 	runId,
 	userId,
 	gatesCleared: state.gatesCleared,
-	band: attack.band,
+	band: heldAudit.band,
 });
 
 /** The live field, filtered and dealt. Shared with the fire, which re-derives it. */
@@ -74,11 +74,14 @@ export const getAttackTargetsService = async ({
 		if (!run) return NOTHING_ARMED;
 
 		const state = await loadRunState(run.id);
-		if (state.attack === undefined) return NOTHING_ARMED;
+		if (state.heldAudit === undefined) return NOTHING_ARMED;
 
 		const offers = await offersForAttacker(
-			attackerOf(run.id, userId, state, state.attack),
+			attackerOf(run.id, userId, state, state.heldAudit),
 			date
 		);
-		return { attack: state.attack, offers: offers.map(attackOfferViewFor) };
+		return {
+			heldAudit: state.heldAudit,
+			offers: offers.map(attackOfferViewFor),
+		};
 	}, "getAttackTargets");

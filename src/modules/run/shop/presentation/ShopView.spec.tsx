@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -87,6 +87,52 @@ describe("ShopView", () => {
 		expect(
 			screen.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
 		).toHaveTextContent("Install \u00b7 64 KB");
+	});
+
+	it("previews what an install would leave when the offer is pointed at", async () => {
+		const user = userEvent.setup();
+		render(<ShopView view={view} {...handlers} />);
+
+		await user.hover(
+			screen.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
+		);
+
+		expect(screen.getByText(/after install/)).toBeInTheDocument();
+		expect(screen.getByText("448 KB")).toBeInTheDocument();
+	});
+
+	it("drops the preview once the pointer leaves the offer", async () => {
+		const user = userEvent.setup();
+		render(<ShopView view={view} {...handlers} />);
+
+		const press = screen.getByRole("button", {
+			name: "Install ESLint \u00b7 64 KB",
+		});
+		await user.hover(press);
+		await user.unhover(press);
+
+		expect(screen.queryByText(/after install/)).not.toBeInTheDocument();
+	});
+
+	it("previews for a keyboard too, which never hovers anything", async () => {
+		render(<ShopView view={view} {...handlers} />);
+
+		act(() => {
+			screen
+				.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
+				.focus();
+		});
+
+		expect(screen.getByText("448 KB")).toBeInTheDocument();
+	});
+
+	it("previews nothing for an offer the balance cannot cover", async () => {
+		const user = userEvent.setup();
+		render(<ShopView view={view} {...handlers} />);
+
+		await user.hover(screen.getByRole("button", { name: /^Install \.ts/ }));
+
+		expect(screen.queryByText(/after install/)).not.toBeInTheDocument();
 	});
 
 	it("refuses the install of an offer the run cannot afford", () => {
@@ -275,10 +321,10 @@ describe("ShopView vendor lock-in", () => {
 		);
 
 		expect(
-			screen.queryByRole("button", { name: "Uninstall AGENTS.md" })
+			screen.queryByRole("button", { name: /^Uninstall AGENTS\.md/ })
 		).toBeNull();
 		expect(
-			screen.getByRole("button", { name: "Uninstall vendor lock-in" })
+			screen.getByRole("button", { name: /^Uninstall vendor lock-in/ })
 		).toBeInTheDocument();
 	});
 
@@ -362,19 +408,20 @@ describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
 		expect(onDraft).toHaveBeenCalledWith("telemetry");
 	});
 
-	it("opens one panel at a time, the info panel giving way to the upgrade one", async () => {
+	// The card discloses in place and the ladder floats, so neither displaces the
+	// other — the old "one panel at a time" rule had nothing left to arbitrate.
+	it("leaves a card's disclosure alone when its upgrade panel opens", async () => {
 		render(<ShopView view={upgradable} {...handlers} />);
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "About Moore's Law" })
-		);
+		const chevron = () =>
+			screen.getByRole("button", { name: /(Expand|Collapse) Moore's Law/ });
+		const before = chevron().getAttribute("aria-expanded");
+
 		await userEvent.click(
 			screen.getByRole("button", { name: /Upgrade Moore's Law to v2/ })
 		);
 
-		expect(
-			screen.getByRole("button", { name: "About Moore's Law" })
-		).toHaveAttribute("aria-expanded", "false");
+		expect(chevron()).toHaveAttribute("aria-expanded", before);
 		expect(screen.getByRole("button", { name: /^Buy v2/ })).toBeInTheDocument();
 	});
 });

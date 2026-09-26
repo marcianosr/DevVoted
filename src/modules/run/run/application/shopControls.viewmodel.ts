@@ -3,7 +3,11 @@ import {
 	LOCK_COST_KB,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
-import { pinCostFor } from "~/modules/run/run/domain/rules.model";
+import { pinCostFor, REPACKAGE_KB } from "~/modules/run/run/domain/rules.model";
+import {
+	canRepackage,
+	repackageAvailable,
+} from "~/modules/run/run/domain/heldAudit.model";
 import type { RunState } from "~/modules/run/run/domain/run.model";
 import { isShopLocked } from "~/modules/run/run/domain/runAction.model";
 import {
@@ -38,6 +42,11 @@ export type ShopControls = {
 	readonly pinCost: number;
 	readonly canPin: boolean;
 	readonly pinnedAtGate: number | null;
+	/** An opened audit is in hand, so the shop sells a redraw of it (ADR-119). */
+	readonly repackageAvailable: boolean;
+	readonly repackageUsed: boolean;
+	readonly repackageCost: number;
+	readonly canRepackage: boolean;
 };
 
 export const shopControlsFor = (state: RunState): ShopControls => ({
@@ -56,4 +65,8 @@ export const shopControlsFor = (state: RunState): ShopControls => ({
 	pinCost: pinCostFor(state.gatesCleared),
 	canPin: canPlantPin(state),
 	pinnedAtGate: state.pinPlantedAtGate ?? null,
+	repackageAvailable: repackageAvailable(state),
+	repackageUsed: state.repackagedThisShop === true,
+	repackageCost: REPACKAGE_KB,
+	canRepackage: canRepackage(state),
 });

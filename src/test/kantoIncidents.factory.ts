@@ -102,7 +102,7 @@ const panelAt = (
 
 /** A PERFECT close: three rivals, two payloads each to choose between. */
 export const kantoAttackPanel = (): AttackPanelProps =>
-	panelAt(OPEN_GATE, { band: "perfect" }, kantoAttackOffers());
+	panelAt(OPEN_GATE, { band: "perfect", gate: 4 }, kantoAttackOffers());
 
 /** A rival opened: their build reads beside the payloads it would meet. */
 export const kantoAttackPanelInspected = (): AttackPanelProps => ({
@@ -114,7 +114,7 @@ export const kantoAttackPanelInspected = (): AttackPanelProps => ({
 export const kantoAttackPanelHealthy = (): AttackPanelProps =>
 	panelAt(
 		OPEN_GATE,
-		{ band: "healthy" },
+		{ band: "healthy", gate: 4 },
 		kantoAttackOffers().map((offer) => ({
 			...offer,
 			payloads: offer.payloads.slice(0, 1),
@@ -125,10 +125,10 @@ export const kantoAttackPanelUnarmed = (): AttackPanelProps =>
 	panelAt(OPEN_GATE, null, null);
 
 export const kantoAttackPanelNoRival = (): AttackPanelProps =>
-	panelAt(OPEN_GATE, { band: "healthy" }, []);
+	panelAt(OPEN_GATE, { band: "healthy", gate: 4 }, []);
 
 export const kantoAttackPanelDealing = (): AttackPanelProps =>
-	panelAt(OPEN_GATE, { band: "healthy" }, null);
+	panelAt(OPEN_GATE, { band: "healthy", gate: 4 }, null);
 
 const at = (hour: number) =>
 	new Date(`2026-09-22T${String(hour).padStart(2, "0")}:00:00`);

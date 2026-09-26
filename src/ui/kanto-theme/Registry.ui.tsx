@@ -1,17 +1,16 @@
 import { REGISTRY } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
-import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
+import { CARD_FLOW, ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import type { DetailReveal } from "./Button.ui";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
 	offers: "offers",
-	aSlot: "a slot",
 } as const;
 
 const COLUMN = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
-const LIST = "flex w-full flex-wrap items-center gap-3";
+const LIST = `grid w-full gap-3 ${CARD_FLOW}`;
 
 const SEPARATOR = "·";
 
@@ -22,8 +21,13 @@ export type RegistryProps = {
 	offers: readonly ConfigChipProps[];
 	slotPrice: string;
 	heading?: boolean;
-	openInfo?: string;
+	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
+	/**
+	 * Opens or shuts every offer at once. Read by the screen, which owns the
+	 * panel header the press sits in; the shelf itself only lists the cards.
+	 */
+	onToggleAll?: () => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
 };
@@ -43,7 +47,6 @@ export const RegistrySummary = ({
 	<>
 		<span>{`${offers} ${COPY.offers} ${SEPARATOR} `}</span>
 		<Badge>{slotPrice}</Badge>
-		<span>{` ${COPY.aSlot}`}</span>
 	</>
 );
 
@@ -55,7 +58,7 @@ const Offer = ({
 	onToggleUpgrades,
 }: {
 	offer: ConfigChipProps;
-	openInfo?: string;
+	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
@@ -66,7 +69,7 @@ const Offer = ({
 		<ConfigChip
 			{...offer}
 			priceOn={PRICE_ON}
-			infoOpen={offer.name === openInfo}
+			infoOpen={openInfo?.has(offer.name) === true}
 			onToggleInfo={
 				onToggleInfo === undefined ? undefined : () => onToggleInfo(offer.name)
 			}

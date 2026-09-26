@@ -23,13 +23,6 @@ const FILLS = [
 	{ name: "Telemetry", slots: 2 },
 ] as const satisfies readonly WeightTrackFill[];
 
-const INFO = {
-	name: "Telemetry",
-	description: "Reports the sample size beside every answer.",
-	slots: 2,
-	sellPrice: "32 KB",
-};
-
 const trackOf = (container: HTMLElement) =>
 	container.firstElementChild?.firstElementChild;
 
@@ -209,86 +202,8 @@ describe("the room the build has not filled", () => {
 	});
 });
 
-describe("the config popup", () => {
-	it("hangs a config's own panel off the segment that draws it", () => {
-		render(
-			<WeightTrack
-				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
-				held={HELD}
-			/>
-		);
-
-		expect(
-			screen.getByText("Reports the sample size beside every answer.")
-		).toBeInTheDocument();
-	});
-
-	it("lays the panel out as a sheet on a phone, a segment being too narrow to hang one off", () => {
-		const { container } = render(
-			<WeightTrack
-				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
-				held={HELD}
-			/>
-		);
-		const panel = trackOf(container)?.querySelector(".fixed");
-
-		expect(panel).toHaveClass("inset-x-4", "bottom-4");
-		expect(panel).toHaveClass("sm:absolute", "sm:top-full", "sm:bottom-auto");
-	});
-
-	it("keeps the panel shut until the segment is hovered or focused", () => {
-		const { container } = render(
-			<WeightTrack
-				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
-				held={HELD}
-			/>
-		);
-		const panel = trackOf(container)?.querySelector(".fixed");
-
-		expect(panel).toHaveClass("invisible", "group-hover/info:visible");
-	});
-
-	it("opens the panel from the left while the segment sits in the first half", () => {
-		const { container } = render(
-			<WeightTrack
-				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
-				held={HELD}
-			/>
-		);
-
-		expect(trackOf(container)?.querySelector(".fixed")).toHaveClass(
-			"sm:left-0"
-		);
-	});
-
-	it("opens the panel from the right once the segment sits past the middle", () => {
-		const { container } = render(
-			<WeightTrack
-				fills={[
-					{ name: "Freemium", slots: 6 },
-					{ name: "Telemetry", slots: 2, info: INFO },
-				]}
-				held={HELD}
-			/>
-		);
-
-		expect(trackOf(container)?.querySelector(".fixed")).toHaveClass(
-			"sm:right-0"
-		);
-	});
-
-	it("clips no popup, the bar holding no overflow rule of its own", () => {
-		const { container } = render(
-			<WeightTrack
-				fills={[{ name: "Telemetry", slots: 2, info: INFO }]}
-				held={HELD}
-			/>
-		);
-
-		expect(trackOf(container)).not.toHaveClass("overflow-hidden");
-	});
-
-	it("carries no panel for a config that offers none", () => {
+describe("the config's facts", () => {
+	it("hangs no panel off a segment, the card beside the track stating them", () => {
 		const { container } = render(<WeightTrack fills={FILLS} held={HELD} />);
 
 		expect(trackOf(container)?.querySelector(".fixed")).toBeNull();

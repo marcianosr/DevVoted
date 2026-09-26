@@ -102,7 +102,7 @@ describe("PollView", () => {
 		const onSubmit = vi.fn();
 		const { rerender } = render(<PollView {...props} onSubmit={onSubmit} />);
 
-		expect(screen.getByRole("button", { name: "Lock in" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
 		expect(screen.getByText("pick an answer first")).toBeInTheDocument();
 
 		rerender(
@@ -110,7 +110,7 @@ describe("PollView", () => {
 		);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Lock in 1 answer" })
+			screen.getByRole("button", { name: /^Lock in 1 answer/ })
 		);
 		expect(onSubmit).toHaveBeenCalled();
 	});
@@ -121,7 +121,7 @@ describe("PollView", () => {
 			<PollView {...props} view={multipleView} onSubmit={onSubmit} />
 		);
 
-		expect(screen.getByRole("button", { name: "Lock in" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
 		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
 
 		rerender(
@@ -136,7 +136,7 @@ describe("PollView", () => {
 		expect(screen.getByText("2 picked")).toBeInTheDocument();
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Lock in 2 answers" })
+			screen.getByRole("button", { name: /^Lock in 2 answers/ })
 		);
 		expect(onSubmit).toHaveBeenCalled();
 	});

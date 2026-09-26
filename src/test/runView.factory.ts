@@ -74,8 +74,6 @@ export const createMockShopOffer = (
 	refusal: null,
 	preview: {
 		rewardMultiplier: 1,
-		coverageMultiplier: 1,
-		coverageAdd: 0,
 		gateReward: 32,
 	},
 	previewPerAnswer: {
@@ -103,6 +101,10 @@ export const createMockShopControls = createMockDataFactory<ShopControls>({
 	pinCost: pinCostFor(0),
 	canPin: false,
 	pinnedAtGate: null,
+	repackageAvailable: false,
+	repackageUsed: false,
+	repackageCost: 32,
+	canRepackage: false,
 });
 
 export const createMockGatePayout = createMockDataFactory<GatePayout>({
@@ -126,7 +128,7 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	caughtFatalBy: null,
 	slaUpliftKb: 0,
 	incidentSurvivalKb: 0,
-	attackEarned: false,
+	auditHanded: false,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
@@ -167,8 +169,6 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	subscriptions: { lines: [], totalKb: 0, onMissKb: 0, shortfallKb: 0 },
 	modifiers: {
 		rewardMultiplier: 1,
-		coverageMultiplier: 1,
-		coverageAdd: 0,
 		gateReward: 32,
 	},
 	perAnswer: {
@@ -226,16 +226,11 @@ const createRunView = createMockDataFactory<RunView>({
 	optionCountsThisGate: null,
 	shopControls: createMockShopControls(),
 	gatePayout: createMockGatePayout(),
-	attack: null,
+	heldAudit: null,
+	offeredAudit: null,
 	audits: [],
 	answeredThisGate: [],
 	allAnswered: [],
-	perAnswer: {
-		coveragePerCorrect: 2,
-		coveragePerWrong: -0.3,
-		storageKbPerCorrect: 0,
-		streakStepMultiplier: 1.1,
-	},
 	gateStake: createMockGateStake(),
 	canStart: false,
 	isOver: false,

@@ -15,18 +15,16 @@ import { NewRunScreen } from "./NewRunScreen.ui";
 
 const props = createKantoNewRunScreenProps();
 
-const COLUMN_SELECTOR = "div.grid > div";
-
-const columns = (root: ParentNode): HTMLElement[] => [
-	...root.querySelectorAll<HTMLElement>(COLUMN_SELECTOR),
-];
+/** The screen's own column grid, not the card grids nested inside each column. */
+const columns = (root: ParentNode): HTMLElement[] =>
+	[...(root.querySelector<HTMLElement>("div.grid")?.children ?? [])].filter(
+		(node): node is HTMLElement => node instanceof HTMLElement
+	);
 
 const dealt = () => columns(document.body)[1];
 
 const offerOf = (name: string) =>
-	within(dealt())
-		.getByRole("button", { name: `About ${name}` })
-		.closest<HTMLElement>(".rounded-lg");
+	dealt().querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 describe("NewRunScreen", () => {
 	it("stands the build beside the registry it is dealt from", () => {
@@ -80,7 +78,7 @@ describe("NewRunScreen", () => {
 	it("reads the archive as the purse the header holds", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getByText("512 KB")).toBeInTheDocument();
+		expect(screen.getByRole("img", { name: "512 KB" })).toBeInTheDocument();
 		expect(screen.getByText("archive")).toBeInTheDocument();
 	});
 
@@ -143,7 +141,7 @@ describe("the deal the registry lists", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(dealt()).toHaveTextContent(
-			`${kantoHandCards().length} offers · free a slot`
+			`${kantoHandCards().length} offers · free`
 		);
 	});
 
@@ -192,6 +190,22 @@ describe("the deal the registry lists", () => {
 		expect(
 			screen.getByRole("button", { name: "Install .js" })
 		).toHaveTextContent("Install");
+	});
+
+	it("says a card is already in, rather than dropping its press entirely", () => {
+		render(<NewRunScreen {...props} registry={kantoNewRunRegistry(["js"])} />);
+
+		const taken = screen.getByRole("button", { name: "Installed .js" });
+		expect(taken).toHaveTextContent("Installed");
+		expect(taken).toBeDisabled();
+	});
+
+	it("folds the whole shelf from its header", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(
+			screen.getAllByRole("button", { name: "collapse all" }).length
+		).toBeGreaterThan(0);
 	});
 });
 

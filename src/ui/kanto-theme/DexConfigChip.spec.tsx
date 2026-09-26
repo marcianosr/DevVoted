@@ -179,10 +179,10 @@ describe("DexConfigChip", () => {
 		it("names the required path and counts the progress against it", () => {
 			render(<DexConfigChip {...locked} infoOpen />);
 
-			expect(
-				screen.getByText("unlock · Answer 10 HTML polls correctly")
-			).toBeInTheDocument();
-			expect(screen.getByText("4/10")).toBeInTheDocument();
+			const path = screen.getByText("4/10").parentElement;
+
+			expect(path).toHaveTextContent("unlock · Answer 10 HTML polls correctly");
+			expect(screen.getByText("HTML")).toHaveClass("badge-theme");
 		});
 
 		it("draws every further path as an alternative that names itself to a reader", () => {

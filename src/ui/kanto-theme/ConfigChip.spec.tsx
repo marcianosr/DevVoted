@@ -11,12 +11,19 @@ const appCss = readFileSync("src/styles/app.css", "utf8");
 
 const BADGES = [{ label: "×2", color: "viridian" }] as const;
 
+/** A card only folds where a panel has wired the toggle. */
+const noop = () => {};
+
 const INFO = {
-	name: "Cache",
 	description: "Coverage climbs with every correct answer in a row.",
 	slots: 2,
 	sellPrice: "32 KB",
+	version: 1,
+	maxVersion: 5,
 } as const;
+
+const cardOf = (name: string) =>
+	document.querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 const panelOf = (container: HTMLElement) =>
 	container.querySelector(".sm\\:absolute");
@@ -27,7 +34,7 @@ const tintOf = (node: Element | null) =>
 	);
 
 const tintedChip = (container: HTMLElement) =>
-	Array.from(container.querySelectorAll("span")).find(
+	Array.from(container.querySelectorAll("span, div")).find(
 		(node) => tintOf(node) !== undefined
 	);
 
@@ -61,13 +68,35 @@ describe("ConfigChip", () => {
 		expect(container.firstChild).toHaveClass("border", "border-theme-faint");
 	});
 
-	it("rings the info button in a utility app.css declares", () => {
-		render(<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />);
-
-		expect(screen.getByRole("button", { name: "About Cache" })).toHaveClass(
-			"ring-theme-faint"
+	it("leaves the fold press unboxed, so the head reads as a row not a toolbar", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
 		);
-		expect(appCss).toContain("@utility ring-theme-faint");
+
+		const fold = screen.getByRole("button", { name: "Expand Cache" });
+		expect(fold).toHaveClass("ring-transparent");
+		expect(fold).not.toHaveClass("ring-theme-faint");
+	});
+
+	it("fills no box when the fold is open, having no box to fill", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Collapse Cache" })
+		).not.toHaveClass("bg-theme");
 	});
 
 	it("carries an alpha of the screen's colour rather than an opaque rung", () => {
@@ -351,40 +380,58 @@ describe("ConfigChip states and controls", () => {
 		expect(screen.getByText("×1.25")).toHaveClass("badge-theme");
 	});
 
-	it("offers no info button to a config with no panel", () => {
+	it("offers no chevron to a config with no facts to disclose", () => {
 		render(<ConfigChip name="Cache" badges={[...BADGES]} />);
 
 		expect(
-			screen.queryByRole("button", { name: /About/ })
+			screen.queryByRole("button", { name: /Expand|Collapse/ })
 		).not.toBeInTheDocument();
 	});
 
-	it("offers an info button once there is a panel to open", () => {
-		render(<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />);
+	it("offers a chevron once there are facts to disclose", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
+		);
 
 		expect(
-			screen.getByRole("button", { name: "About Cache" })
+			screen.getByRole("button", { name: "Expand Cache" })
 		).toBeInTheDocument();
 	});
 
-	it("reports the panel shut until it is pinned", () => {
-		render(<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />);
-
-		expect(screen.getByRole("button", { name: "About Cache" })).toHaveAttribute(
-			"aria-expanded",
-			"false"
+	it("reports itself collapsed, and names the press for what it will do", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
 		);
+
+		expect(
+			screen.getByRole("button", { name: "Expand Cache" })
+		).toHaveAttribute("aria-expanded", "false");
 	});
 
-	it("reports the panel open once pinned", () => {
+	it("reports itself expanded, and names the press for what it will do", () => {
 		render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} infoOpen />
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
 		);
 
-		expect(screen.getByRole("button", { name: "About Cache" })).toHaveAttribute(
-			"aria-expanded",
-			"true"
-		);
+		expect(
+			screen.getByRole("button", { name: "Collapse Cache" })
+		).toHaveAttribute("aria-expanded", "true");
 	});
 
 	it("asks its parent to toggle, since the chip holds no state", async () => {
@@ -398,67 +445,83 @@ describe("ConfigChip states and controls", () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: "About Cache" }));
+		await userEvent.click(screen.getByRole("button", { name: "Expand Cache" }));
 
 		expect(onToggleInfo).toHaveBeenCalledOnce();
 	});
 
-	it("keeps a shut panel out of the accessibility tree", () => {
-		const { container } = render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />
-		);
-
-		expect(panelOf(container)).toHaveAttribute("aria-hidden", "true");
-	});
-
-	it("never carries a shut and an open visibility at once", () => {
-		for (const infoOpen of [true, false]) {
-			const { container } = render(
-				<ConfigChip
-					name="Cache"
-					badges={[...BADGES]}
-					info={INFO}
-					infoOpen={infoOpen}
-				/>
-			);
-
-			const panel = panelOf(container);
-			const classes = (panel?.className ?? "").split(" ");
-
-			expect(classes.includes("visible")).toBe(infoOpen);
-			expect(classes.includes("invisible")).toBe(!infoOpen);
-			expect(classes.includes("opacity-100")).toBe(infoOpen);
-			expect(classes.includes("opacity-0")).toBe(!infoOpen);
-		}
-	});
-
-	it("takes pointer events back once pinned, so a tap cannot fall through", () => {
-		const { container: shut } = render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />
-		);
-		const { container: open } = render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} infoOpen />
-		);
-
-		expect(panelOf(shut)).toHaveClass("pointer-events-none");
-		expect(panelOf(open)).toHaveClass("pointer-events-auto");
-	});
-
-	it("still reveals on hover and on keyboard focus while shut", () => {
-		const { container } = render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />
-		);
-
-		const panel = panelOf(container);
-		expect(panel).toHaveClass("group-hover/info:visible");
-		expect(panel).toHaveClass("group-has-[:focus-visible]/info:visible");
-	});
-
-	it("exposes the panel once it is pinned", () => {
+	it("withholds the effect, the weight and the price while collapsed", () => {
 		render(
-			<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} infoOpen />
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
 		);
 
+		expect(screen.queryByText(INFO.description)).not.toBeInTheDocument();
+		expect(screen.queryByText("uninstalls for")).not.toBeInTheDocument();
+	});
+
+	it("states itself where no panel wired a fold, rather than hiding behind one", () => {
+		render(<ConfigChip name="Cache" badges={[...BADGES]} info={INFO} />);
+
+		expect(screen.getByText(INFO.description)).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: /Cache/ })).toBeNull();
+	});
+
+	it("states them once expanded", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(screen.getByText(INFO.description)).toBeInTheDocument();
+		expect(screen.getByText("uninstalls for")).toBeInTheDocument();
+		expect(screen.getByText(INFO.sellPrice)).toBeInTheDocument();
+	});
+
+	it("names the config whether it is collapsed or expanded", () => {
+		const { rerender } = render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
+		);
+		expect(screen.getByText("Cache")).toBeInTheDocument();
+
+		rerender(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+		expect(screen.getByText("Cache")).toBeInTheDocument();
+	});
+
+	it("discloses in place rather than over the card, so a phone can reach it", () => {
+		const { container } = render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(panelOf(container)).toBeNull();
 		expect(screen.getByText(INFO.description)).toBeInTheDocument();
 	});
 
@@ -476,11 +539,12 @@ describe("ConfigChip states and controls", () => {
 				badges={[{ label: "424", color: "cinnabar" }]}
 				lost
 				info={INFO}
+				onToggleInfo={noop}
 			/>
 		);
 
 		expect(
-			screen.getByRole("button", { name: "About Intellisense" })
+			screen.getByRole("button", { name: "Expand Intellisense" })
 		).toBeInTheDocument();
 		expect(screen.getByText("Intellisense")).toHaveClass("line-through");
 	});
@@ -512,7 +576,7 @@ describe("ConfigChip's weight", () => {
 	it("hands the block to Weight rather than painting one here", () => {
 		render(<ConfigChip name="Cache" badges={[...BADGES]} slots={4} />);
 
-		expect(screen.getByText("4")).toHaveClass("badge-theme", "w-7");
+		expect(screen.getByText("4")).toHaveClass("badge-theme", "w-9");
 	});
 });
 
@@ -631,20 +695,36 @@ describe("ConfigChip's upgrade", () => {
 			/>
 		);
 
-		expect(screen.queryByText(INFO.description)).not.toBeInTheDocument();
+		expect(screen.queryByText("v1 of 5")).not.toBeInTheDocument();
 	});
 
-	it("hands the slot back to the info panel once the upgrade panel shuts", () => {
+	it("keeps stating the effect while the upgrade panel is open over it", () => {
 		render(
 			<ConfigChip
 				name="Cache"
 				badges={[...BADGES]}
 				info={INFO}
+				infoOpen
 				upgrades={UPGRADES}
+				upgradesOpen
 			/>
 		);
 
 		expect(screen.getByText(INFO.description)).toBeInTheDocument();
+	});
+
+	it("floats nothing once the upgrade panel shuts, the card stating its own facts", () => {
+		const { container } = render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				upgrades={UPGRADES}
+			/>
+		);
+
+		expect(panelOf(container)).toBeNull();
 	});
 
 	it("buys from inside the panel, not from the chip's button", async () => {
@@ -688,15 +768,47 @@ describe("ConfigChip's uninstall", () => {
 		expect(onUninstall).toHaveBeenCalledOnce();
 	});
 
-	it("names the config it would remove, since the glyph names nothing", () => {
+	it("names the config it would remove, since the press says only the verb", () => {
 		render(
 			<ConfigChip name="Cache" badges={[...BADGES]} onUninstall={vi.fn()} />
 		);
 
-		expect(screen.getByText("×")).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Uninstall Cache" })
 		).toBeInTheDocument();
+	});
+
+	it("states the storage it hands back on the press itself", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+				onUninstall={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText(`+${INFO.sellPrice}`)).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Uninstall Cache · +32 KB" })
+		).toBeInTheDocument();
+	});
+
+	it("leaves the refund off the footer once the press is quoting it", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				onUninstall={vi.fn()}
+			/>
+		);
+
+		expect(screen.queryByText("uninstalls for")).not.toBeInTheDocument();
+		expect(screen.getByText(`+${INFO.sellPrice}`)).toBeInTheDocument();
 	});
 
 	it("trails the controls in the order the mock reads them", () => {
@@ -708,6 +820,7 @@ describe("ConfigChip's uninstall", () => {
 				]}
 				upgrades={UPGRADES}
 				info={INFO}
+				onToggleInfo={noop}
 				onUninstall={vi.fn()}
 			/>
 		);
@@ -715,82 +828,50 @@ describe("ConfigChip's uninstall", () => {
 		expect(
 			screen.getAllByRole("button").map((button) => button.ariaLabel)
 		).toStrictEqual([
+			"Expand ESLint",
 			"ESLint · lint",
 			"Upgrade ESLint to v2 · 64 KB",
-			"About ESLint",
-			"Uninstall ESLint",
+			"Uninstall ESLint · +32 KB",
 		]);
 	});
 });
 
-describe("ConfigChip at a fixed width", () => {
-	it("pins the chip so a column of them aligns on its controls", () => {
-		const { container } = render(
-			<ConfigChip name="Cache" badges={[...BADGES]} width="fixed" />
-		);
-
-		expect(container.firstChild).toHaveClass("w-82");
-		expect(container.firstChild).not.toHaveClass("w-fit");
-	});
-
-	it("gives the slack to the identity, which is why a short name leaves a gap", () => {
-		render(<ConfigChip name=".ts" badges={[...BADGES]} width="fixed" />);
-
-		expect(screen.getByText(".ts").parentElement).toHaveClass("flex-1");
-	});
-
-	it("truncates a name too long for the column rather than growing the chip", () => {
-		render(
-			<ConfigChip name="Code Coverage" badges={[...BADGES]} width="fixed" />
-		);
-
-		expect(screen.getByText("Code Coverage")).toHaveClass("truncate");
-	});
-
-	it("leaves the default chip content-width", () => {
-		const { container } = render(
-			<ConfigChip name="Code Coverage" badges={[...BADGES]} />
-		);
-
-		expect(container.firstChild).toHaveClass("w-fit");
-		expect(container.firstChild).not.toHaveClass("w-82", "w-full");
-	});
-
-	it("hands the wrapper the width, so a panel cannot free the chip to grow", () => {
+describe("ConfigChip's width", () => {
+	it("fills the cell it is given, the row deciding the column rather than the card", () => {
 		const { container } = render(
 			<ConfigChip
-				name="Unit Tests"
+				name="Cache"
 				badges={[...BADGES]}
-				width="full"
 				info={INFO}
+				onToggleInfo={noop}
 			/>
 		);
 
-		expect(container.firstChild).toHaveClass("w-full");
-		expect(container.firstChild).not.toHaveClass("w-fit");
+		expect(cardOf("Cache")).toHaveClass("w-full");
+		expect(container.querySelector(".w-82")).toBeNull();
 	});
 
-	it("caps a content-width chip at its container so it cannot overhang", () => {
-		const { container } = render(
-			<ConfigChip name="Code Coverage" badges={[...BADGES]} info={INFO} />
+	it("keeps a config with no facts content-width, so a rival's build reads as a row", () => {
+		render(<ConfigChip name="Code Coverage" badges={[...BADGES]} />);
+
+		expect(cardOf("Code Coverage")).toHaveClass("w-fit", "max-w-full");
+	});
+
+	it("truncates a name too long for its column rather than overhanging", () => {
+		render(
+			<ConfigChip
+				name="Code Coverage"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
 		);
 
-		expect(container.firstChild).toHaveClass("w-fit", "max-w-full");
+		const name = screen.getByText("Code Coverage");
+
+		expect(name).toHaveClass("truncate");
+		expect(name.parentElement).toHaveClass("min-w-0");
 	});
-
-	it.each(["fit", "fixed", "full"] as const)(
-		"truncates the name rather than overhanging at width %s",
-		(width) => {
-			render(
-				<ConfigChip name="Code Coverage" badges={[...BADGES]} width={width} />
-			);
-
-			const name = screen.getByText("Code Coverage");
-
-			expect(name).toHaveClass("truncate");
-			expect(name.parentElement).toHaveClass("min-w-0");
-		}
-	);
 });
 
 describe("ConfigChip when locked withholds the new affordances", () => {
@@ -881,25 +962,24 @@ describe("ConfigChip's highlight", () => {
 		expect(onLeave).toHaveBeenCalledTimes(1);
 	});
 
-	it("hovers on the chip itself rather than through a wrapper", async () => {
+	// mouseenter does not bubble, so a wrapper carrying the handler would never
+	// fire. The upgrade panel is what puts a wrapper back around the card.
+	it("hovers on the card itself rather than through the panel's wrapper", async () => {
 		const onHover = vi.fn();
 		const { container } = render(
 			<ConfigChip
 				{...CHIP}
-				info={{
-					name: "Cache",
-					description: "Warms answers.",
-					slots: 4,
-					sellPrice: "64 KB",
-				}}
+				info={INFO}
+				upgrades={UPGRADES}
+				upgradesOpen
 				onHover={onHover}
 			/>
 		);
 
-		const chip = tintedChip(container);
-		expect(chip).not.toBe(container.firstChild);
+		const card = tintedChip(container);
+		expect(card).not.toBe(container.firstChild);
 
-		await userEvent.hover(chip!);
+		await userEvent.hover(card!);
 
 		expect(onHover).toHaveBeenCalledTimes(1);
 	});
@@ -913,14 +993,15 @@ describe("ConfigChip's highlight", () => {
 		expect(onPress).toHaveBeenCalledOnce();
 	});
 
-	it("reads the install press as the one that commits", () => {
+	it("reads the install press as the palest thing on the card", () => {
 		render(
 			<ConfigChip name=".js" badges={[]} install={{ onPress: vi.fn() }} />
 		);
 
-		expect(
-			screen.getByRole("button", { name: "Install .js" })
-		).not.toHaveAttribute("data-screen-theme");
+		expect(screen.getByRole("button", { name: "Install .js" })).toHaveAttribute(
+			"data-screen-theme",
+			"pallet"
+		);
 	});
 
 	it("refuses an install the build has no room for", async () => {
@@ -957,7 +1038,6 @@ describe("ConfigChip's highlight", () => {
 					version={2}
 					detail="earned: peeked the community split 5 times"
 					badges={[{ label: "unlocked", color: "viridian" }]}
-					width="full"
 				/>
 			);
 
@@ -977,7 +1057,6 @@ describe("ConfigChip's highlight", () => {
 					name="Telemetry"
 					detail="earned: peeked the community split 5 times"
 					badges={[]}
-					width="full"
 				/>
 			);
 

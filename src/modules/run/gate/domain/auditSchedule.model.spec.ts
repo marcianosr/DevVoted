@@ -9,6 +9,7 @@ import {
 	AUDIT_TIERS,
 	appearsAtGates,
 	auditCapacityFor,
+	FIRST_AUDITED_GATE,
 	drawPayloads,
 	eligibleFor,
 	familyOf,
@@ -159,5 +160,13 @@ describe("what the Dex can state without a run", () => {
 	it("reads an audit's reach off the tiers whose pool holds it", () => {
 		expect(appearsAtGates("feature-freeze")).toEqual([11, VICTORY_GATE]);
 		expect(appearsAtGates("not-found")).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
+	});
+});
+
+describe("the first audited gate (ADR-119)", () => {
+	it("is read off the tiers, and the gate before it takes nothing", () => {
+		expect(FIRST_AUDITED_GATE).toBe(3);
+		expect(auditCapacityFor(FIRST_AUDITED_GATE - 1)).toBe(0);
+		expect(auditCapacityFor(FIRST_AUDITED_GATE)).toBeGreaterThan(0);
 	});
 });

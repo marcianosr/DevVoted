@@ -30,7 +30,7 @@ it before proposing one again.**
 | [028](028-the-defeat-device.md) | Volkswagen CI, the defeat device | Accepted — amended by 035 |
 | [029](029-shop-controls-three-horizons.md) | Shop controls on three horizons | Accepted — amended by 054; 115 overrules the rerolls rejection for run services |
 | [032](032-prep-is-the-post-shop-hub.md) | Prep is the post-shop hub | Accepted — whole again under 078 (the shop link is back) |
-| [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056, 099 |
+| [035](035-gates-are-auditors.md) | **Gates are auditors** — the friction moved to the gate | Accepted — amended by 037, 038, 056, 099, 118 |
 | [036](036-the-git-tag.md) | The git tag: a cross-run checkpoint | Accepted — D1 amended by 115: the tag is a run service, archive deposit then run-KB placement |
 | [037](037-a-missed-gate-peels-a-config.md) | A missed gate peels a config | Accepted — 076 owns what a miss does; the peel has two triggers (076, 074) |
 | [038](038-the-audit-roster.md) | The audit roster, staged by count | Accepted — amended by 056 and 099 (the count is a capacity) |
@@ -70,7 +70,7 @@ it before proposing one again.**
 | [082](082-build-space-is-rented-by-the-gate.md) | **Build space is rented by the gate** | Accepted — builds 074, amends its decisions 2, 3 and 4; retires 046 and 049; **D1, D2, D3 and D5 superseded by 098** (the rung is derived, not picked) |
 | [083](083-a-coverage-config-multiplies-or-adds-units.md) | **A coverage config either multiplies the answer or adds flat units** | Accepted — amends the earn formula in 073's decision 1 and 081's decision 1; leaves 079 whole |
 | [084](084-the-answer-shows-its-own-receipt.md) | **An answer shows its own receipt, and the build flashes what paid** | Accepted — builds on 083; amends 069 by giving the footer the flash; D1 and D2 amended by 095 |
-| [085](085-a-prep-time-bet-pays-coverage-on-a-floor.md) | A prep-time bet pays coverage on a floor | Accepted |
+| [085](085-a-prep-time-bet-pays-coverage-on-a-floor.md) | A prep-time bet pays coverage on a floor | Accepted — amended by 118 |
 | [086](086-a-config-can-round-a-partial-up.md) | **A config can round a partial up to a whole unit** | Accepted — amends 079's decision 2; sits inside 083 as an add; leaves 081 whole |
 | [087](087-a-config-can-be-exempt-from-the-space-it-fills.md) | **A config can be exempt from the space it fills** | Accepted — splits carried weight from billable weight; scraps DVTD-kf93 |
 | [088](088-the-run-has-no-id-in-its-url.md) | **The run has no id in its URL** — the status owns the screen | Accepted |
@@ -97,9 +97,12 @@ it before proposing one again.**
 | [111](111-a-granted-title-is-dealt-and-announced-once.md) | **A granted title is dealt by a migration and announced once** | Accepted; completes 109, which left a granted title unawardable. Corrects 109 D4: the run-over screen never announced anything |
 | [112](112-the-archive-carries-and-buys-appearance.md) | **The archive carries, and it buys appearance and licences** | Accepted; names a carve-out to 051's no-backfill line; D1 amended by 115 (the archive buys run services, not licences); keeps the archive out of the run |
 | [113](113-the-poll-screen-stands-coverage-beside-the-question.md) | The poll screen stands coverage beside the question | Accepted — amends 068 and 070 on placement only; the poll leads, the bar rails beside it, the phone pin is gone |
-| [114](114-the-send-is-the-poll-panels-own-pinned-row.md) | The send is the poll panel's own pinned row | Accepted — extends 069 D1: both bottom bars pin as a stack, the send seated off the sheet's measured height |
+| [114](114-the-send-is-the-poll-panels-own-pinned-row.md) | The send is the poll panel's own pinned row | Accepted — extends 069 D1: both bottom bars pin as a stack; D2 and D3 reversed by 117, the send now holds the floor and the sheet is seated on it |
 | [115](115-services-have-two-scopes.md) | **Services have two scopes**, the registry's paid by the run and the run's paid by the archive | Accepted — replaces 110; amends 112 D1 and 036 D1; overrules 029's rerolls rejection for run services; D1's availability amended by 116; D10 one catalogue surfaced by context, D11 abandoning is a service |
 | [116](116-a-service-is-unlocked-once-per-account.md) | A service is unlocked once, per account | Accepted — amends 115 D1; a locked service is named with the line that earns it (D3 amended); reverses the Reveal-only stance of DVTD-2try and DVTD-8zb3 |
+| [117](117-the-primary-press-is-one-wide-bar.md) | **The primary press is one wide bar** that wears its gate | Accepted — reverses 114 D2 and D3 on which bar holds the floor; one CTA per screen, the reading inside the press, `noteAt` and the poll's count heading gone |
+| [118](118-a-config-may-require-the-input-it-reads.md) | **A config may require the input it reads** — prep holds the gate for it | Accepted — amends 035, 085 |
+| [119](119-a-config-card-flows-by-the-room-it-has.md) | **A config card flows by the room it has**, and never below its own name | Accepted — supersedes DVTD-8byc's wrap-at-own-width; a card with no fold states itself, badges ride whichever half is showing, panels fold all at once |
 
 ## Retired
 

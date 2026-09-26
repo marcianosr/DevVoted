@@ -76,7 +76,7 @@ describe("who a rival may aim at (ADR-099)", () => {
 		expect(eligible(rival({ gatesCleared: 4 }))).toBe(false);
 	});
 
-	it("protects a rival whose last close was thin, held or never happened", () => {
+	it("protects a rival whose last close was thin, held or never happened — an OK clear hands an audit, it never draws one", () => {
 		expect(eligible(rival({ lastClose: { ...strong(5), band: "ok" } }))).toBe(
 			false
 		);
@@ -153,11 +153,15 @@ describe("the three offered rivals", () => {
 		expect(brock.payloads).toHaveLength(1);
 	});
 
-	it("rolls two payloads to choose between for a PERFECT attacker", () => {
-		const perfect = { ...red, band: "perfect" as const };
-		const [brock] = offersFor(perfect, field, NO_QUEUE, DATE);
+	it("rolls two payloads to choose between for an OK attacker, one for PERFECT (ADR-119)", () => {
+		const thin = { ...red, band: "ok" as const };
+		const [brock] = offersFor(thin, field, NO_QUEUE, DATE);
 		expect(brock.payloads).toHaveLength(2);
 		expect(new Set(brock.payloads).size).toBe(2);
+		const perfect = { ...red, band: "perfect" as const };
+		expect(offersFor(perfect, field, NO_QUEUE, DATE)[0].payloads).toHaveLength(
+			1
+		);
 	});
 
 	it("never rolls a payload the target gate already carries a sibling of", () => {

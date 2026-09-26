@@ -1,10 +1,10 @@
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
+import type { PerAnswerPreview } from "~/modules/run/build/domain/answerPayout.model";
 import {
 	Build,
 	catcherFor,
 	isBare,
 	occupiedSlots,
-	type PerAnswerPreview,
 } from "~/modules/run/build/domain/build.model";
 import {
 	SLICE_WINDOW,

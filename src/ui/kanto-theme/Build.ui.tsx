@@ -4,11 +4,7 @@ import type { ReactNode } from "react";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
-import {
-	ConfigChip,
-	type ChipWidth,
-	type ConfigChipProps,
-} from "./ConfigChip.ui";
+import { CARD_FLOW, ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Lead, type LeadLine } from "./Lead.ui";
 import { SlotBox } from "./SlotBox.ui";
 import { SlotTrack, type SlotTrackFill } from "./SlotTrack.ui";
@@ -33,15 +29,8 @@ const COPY = {
 
 const BAND = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
-const WRAP_LAYOUT = "flex flex-wrap items-center gap-3";
-const COLUMN_LAYOUT = "flex flex-col gap-3";
-export type BuildLayout = "wrap" | "column";
+const LIST_LAYOUT = `grid gap-3 ${CARD_FLOW}`;
 export type BuildTrack = "configs" | "occupancy";
-
-const LAYOUT = {
-	wrap: WRAP_LAYOUT,
-	column: COLUMN_LAYOUT,
-} satisfies Record<BuildLayout, string>;
 
 const FOLD = "group/skipped w-full";
 const SUMMARY =
@@ -127,7 +116,6 @@ const skippedSummaryOf = (count: number, note?: string) => {
 
 export type BuildProps = {
 	configs: readonly ConfigChipProps[];
-	layout?: BuildLayout;
 	skipped?: readonly ConfigChipProps[];
 	skippedNote?: string;
 	skippedOpen?: boolean;
@@ -140,8 +128,13 @@ export type BuildProps = {
 	resting?: string;
 	track?: BuildTrack;
 	caption?: boolean;
-	openInfo?: string;
+	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
+	/**
+	 * Opens or shuts every card at once. Read by the screen, which owns the
+	 * panel header the press sits in; the build itself only lists the cards.
+	 */
+	onToggleAll?: () => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
 } & BuildCount;
@@ -215,7 +208,7 @@ const vacantSlotsOf = ({ used, capacity }: BuildSlots) =>
 const fillOf = (config: ConfigChipProps): WeightTrackFill[] => {
 	if (config.locked === true) return [];
 	if (config.slots === undefined) return [];
-	return [{ name: config.name, slots: config.slots, info: config.info }];
+	return [{ name: config.name, slots: config.slots }];
 };
 
 const fillsOf = (
@@ -229,17 +222,20 @@ const weightOf = (fills: readonly WeightTrackFill[]) =>
 const occupancyFillOf = ({ used }: BuildSlots): SlotTrackFill[] =>
 	used < 1 ? [] : [{ name: COPY.occupancyName, slots: used }];
 
-const Vacancy = ({ slots }: { slots: BuildSlots }) => (
-	<>
-		{Array.from({ length: vacantSlotsOf(slots) }, (_, index) => (
-			<SlotBox key={index} />
-		))}
-	</>
-);
+/**
+ * The room left, in the unit the head states it in. Weight wins where a build
+ * has both: the header reads "1 of 4 weight · 3 free", and a vacancy row
+ * counting something else beside it is two answers to one question.
+ */
+const roomLeftOf = (count: BuildCount, weight: number): number | undefined => {
+	if (count.weight !== undefined)
+		return Math.max(0, count.weight.held - weight);
+	if (count.slots !== undefined) return vacantSlotsOf(count.slots);
+	return undefined;
+};
 
 const Chip = ({
 	config,
-	width,
 	openInfo,
 	onToggleInfo,
 	openUpgrades,
@@ -248,8 +244,7 @@ const Chip = ({
 	onHighlight,
 }: {
 	config: ConfigChipProps;
-	width?: ChipWidth;
-	openInfo?: string;
+	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
@@ -261,8 +256,7 @@ const Chip = ({
 	return (
 		<ConfigChip
 			{...config}
-			width={width}
-			infoOpen={config.name === openInfo}
+			infoOpen={openInfo?.has(config.name) === true}
 			onToggleInfo={
 				onToggleInfo === undefined ? undefined : () => onToggleInfo(config.name)
 			}
@@ -283,7 +277,6 @@ const Chip = ({
 
 export const Build = ({
 	configs,
-	layout = "wrap",
 	skipped = [],
 	skippedNote,
 	skippedOpen = false,
@@ -302,8 +295,7 @@ export const Build = ({
 	onToggleUpgrades,
 	...count
 }: BuildProps) => {
-	const width: ChipWidth | undefined = layout === "wrap" ? undefined : "full";
-	const highlight = count.highlight ?? openInfo;
+	const highlight = count.highlight;
 	const fills = fillsOf(configs, skipped);
 
 	const reading = (
@@ -332,16 +324,14 @@ export const Build = ({
 		</>
 	);
 
+	const room = roomLeftOf(count, weightOf(fills));
+
 	const installed = (
 		<>
-			{emptyLabel === undefined || configs.length > 0 ? null : (
-				<SlotBox label={emptyLabel} />
-			)}
 			{configs.map((config, index) => (
 				<Chip
 					key={config.name ?? index}
 					config={config}
-					width={width}
 					openInfo={openInfo}
 					onToggleInfo={onToggleInfo}
 					openUpgrades={openUpgrades}
@@ -350,13 +340,12 @@ export const Build = ({
 					onHighlight={count.onHighlight}
 				/>
 			))}
-		</>
-	);
 
-	const offered = (
-		<>
-			{count.slots === undefined || !emptySlots ? null : (
-				<Vacancy slots={count.slots} />
+			{room === undefined || room === 0 || !emptySlots ? null : (
+				<SlotBox
+					label={configs.length === 0 ? emptyLabel : undefined}
+					slots={room}
+				/>
 			)}
 		</>
 	);
@@ -379,12 +368,7 @@ export const Build = ({
 
 			{!readout ? null : reading}
 
-			{!readout && !list ? null : (
-				<div className={LAYOUT[layout]}>
-					{!list ? null : installed}
-					{!readout ? null : offered}
-				</div>
-			)}
+			{!list ? null : <div className={LIST_LAYOUT}>{installed}</div>}
 
 			{skipped.length === 0 || !list ? null : (
 				<details open={skippedOpen} className={FOLD}>
@@ -396,12 +380,11 @@ export const Build = ({
 							{skippedSummaryOf(skipped.length, skippedNote)}
 						</Typography>
 					</summary>
-					<div className={clsx(FOLD_BODY, LAYOUT[layout])}>
+					<div className={clsx(FOLD_BODY, LIST_LAYOUT)}>
 						{skipped.map((config, index) => (
 							<Chip
 								key={config.name ?? index}
 								config={config}
-								width={width}
 								openInfo={openInfo}
 								onToggleInfo={onToggleInfo}
 								openUpgrades={openUpgrades}

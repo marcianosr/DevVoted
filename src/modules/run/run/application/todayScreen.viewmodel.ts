@@ -4,6 +4,7 @@ import { plural } from "~/shared/lib/displayValue";
 type PollsToday = Pick<RunView, "pollsLeftToday" | "pollsPerGate">;
 
 const READY_TRAIL = "are ready";
+const DONE_TRAIL = "are answered";
 const LEFT_TRAIL = "left · they do not carry to tomorrow";
 
 const todays = (words: string): string => `today’s ${words}`;
@@ -13,18 +14,16 @@ const todays = (words: string): string => `today’s ${words}`;
  * the rollover drops the unplayed tail (ADR-011): a player who stops at two
  * forfeits the rest at midnight, and until this note they were never told.
  *
- * The countdown wins whenever the caller has one, so the clock stays in the
- * component that owns the timer and this function stays pure.
+ * It states the day and never the clock. The press above it already reads the
+ * countdown on a spent day, and a note repeating its own press says one thing
+ * twice where the reader is entitled to two.
  */
-export const pollsNoteFor = (
-	view: PollsToday,
-	countdownLabel: string | undefined
-): string => {
-	if (countdownLabel !== undefined) return countdownLabel;
-
+export const pollsNoteFor = (view: PollsToday): string => {
 	const { pollsLeftToday, pollsPerGate } = view;
-	if (pollsLeftToday >= pollsPerGate)
-		return `${todays(plural(pollsPerGate, "poll"))} ${READY_TRAIL}`;
+	const wholeDay = todays(plural(pollsPerGate, "poll"));
+
+	if (pollsLeftToday >= pollsPerGate) return `${wholeDay} ${READY_TRAIL}`;
+	if (pollsLeftToday <= 0) return `${wholeDay} ${DONE_TRAIL}`;
 
 	return `${pollsLeftToday} of ${todays(String(pollsPerGate))} ${LEFT_TRAIL}`;
 };

@@ -6,7 +6,7 @@ import {
 	attackOfferViewFor,
 	attackPanelFor,
 	incidentFeedRowFor,
-	rivalChipFor,
+	rivalIdsFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
 import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 
@@ -90,35 +90,44 @@ describe("attackPanelFor", () => {
 
 	it("gives no panel below the floor, the Audits panel stating the lock alone", () => {
 		expect(
-			attackPanelFor(AUDITS_FROM_GATE - 1, { band: "perfect" }, null)
+			attackPanelFor(AUDITS_FROM_GATE - 1, { band: "perfect", gate: 4 }, null)
 		).toBeUndefined();
 	});
 
 	it("says it is still dealing while armed with no offers read yet", () => {
-		expect(attackPanelFor(OPEN_GATE, { band: "healthy" }, null)?.empty).toBe(
-			ATTACK_DEALING
-		);
+		expect(
+			attackPanelFor(OPEN_GATE, { band: "healthy", gate: 4 }, null)?.empty
+		).toBe(ATTACK_DEALING);
 	});
 });
 
-describe("rivalChipFor (ADR-101)", () => {
-	it("draws name, weight and version with nothing to press", () => {
-		expect(rivalChipFor(MISTY_BUILD.configs[0])).toEqual({
-			name: ".ts",
-			slots: 1,
-			version: 4,
-			badges: [],
-		});
+describe("rivalIdsFor", () => {
+	const fired = {
+		...row,
+		id: 6,
+		sentBy: { id: "red", name: "Red" },
+		target: { id: "brock", name: "Brock" },
+	};
+	const hitBy = {
+		...row,
+		id: 7,
+		sentBy: { id: "misty", name: "Misty" },
+		target: { id: "red", name: "Red" },
+	};
+
+	it("names who the viewer fired at and who fired at them", () => {
+		expect(rivalIdsFor([fired, hitBy], "red")).toEqual(["brock", "misty"]);
 	});
 
-	it("leaves the version off a config never upgraded", () => {
-		expect(rivalChipFor(MISTY_BUILD.configs[1])).not.toHaveProperty("version");
-	});
-
-	it("badges the config the rival vendor-locked as locked in", () => {
-		expect(rivalChipFor(MISTY_BUILD.configs[1], "cache").badges).toEqual([
-			{ label: "locked in", color: "saffron" },
+	it("names a rival once however many audits they traded", () => {
+		expect(rivalIdsFor([row, fired, { ...fired, id: 8 }], "red")).toEqual([
+			"misty",
+			"brock",
 		]);
+	});
+
+	it("leaves out every incident the viewer is not part of", () => {
+		expect(rivalIdsFor([row, fired], "koga")).toEqual([]);
 	});
 });
 
@@ -133,8 +142,9 @@ describe("attackPanelFor lists the rival's build", () => {
 			payloads: ["timeout"],
 		});
 
-		const rival = attackPanelFor(OPEN_GATE, { band: "healthy" }, [offer])
-			?.rivals[0];
+		const rival = attackPanelFor(OPEN_GATE, { band: "healthy", gate: 4 }, [
+			offer,
+		])?.rivals[0];
 
 		expect(rival?.build.map((chip) => chip.name)).toEqual([".ts", "Cache"]);
 	});

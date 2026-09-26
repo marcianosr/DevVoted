@@ -8,7 +8,12 @@ import { Button, type ButtonTone } from "./Button.ui";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
-const TONES = ["ambient", "action", "danger"] as const satisfies ButtonTone[];
+const TONES = [
+	"ambient",
+	"action",
+	"danger",
+	"bright",
+] as const satisfies ButtonTone[];
 
 const themedUtilitiesOf = (element: HTMLElement) =>
 	element.className
@@ -212,6 +217,40 @@ describe("Button", () => {
 		render(<Button cap="↑" label="v3" onPress={vi.fn()} />);
 
 		expect(screen.getByText("↑")).toHaveAttribute("aria-hidden");
+	});
+
+	it("stands a cap after the label when that is where it is asked for", () => {
+		render(
+			<Button cap="+32 KB" capAt="trail" label="Uninstall" onPress={vi.fn()} />
+		);
+
+		const button = screen.getByRole("button");
+		expect(button.textContent).toBe("Uninstall+32 KB");
+		expect(button).toHaveClass("pl-2.5");
+	});
+
+	it("lets a cap wear a colour of its own, apart from the press around it", () => {
+		render(
+			<Button
+				cap="+32 KB"
+				capColor="viridian"
+				label="Uninstall"
+				onPress={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText("+32 KB")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("themes a bright press pallet, so it does not read as the screen's own", () => {
+		render(<Button label="Install" tone="bright" onPress={vi.fn()} />);
+
+		const button = screen.getByRole("button");
+		expect(button).toHaveAttribute("data-screen-theme", "pallet");
+		expect(button).toHaveClass("segment-theme");
 	});
 
 	it("holds a detail back until the button is hovered", () => {

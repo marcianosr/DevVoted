@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 
 import type { CategoryCode } from "~/shared/lib/categories";
@@ -11,7 +13,7 @@ import type {
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
-import { ladderSummaryFor } from "~/modules/run/community/application/climbLadder.viewmodel";
+import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
@@ -142,6 +144,11 @@ const standingOf = (climb: RunCommunityView["climb"]): string => {
 export type CommunityViewProps = {
 	view: RunCommunityView;
 	swatch: GateSwatch;
+	/** Everyone the viewer traded an audit with today, ringed on the map (ADR-099). */
+	rivals?: readonly string[];
+	/** Whose build the map has open, and the press that opens one. */
+	openClimberId?: string;
+	onInspectClimber?: (id: string) => void;
 	countdown?: string;
 	/** Overrides the climb note — the pending and error boards state their own. */
 	note?: string;
@@ -162,6 +169,9 @@ export const communityScreenPropsFor = ({
 	note,
 	back,
 	incidents,
+	rivals = [],
+	openClimberId,
+	onInspectClimber,
 }: CommunityViewProps): CommunityScreenProps => {
 	const empty = view.polls.length === 0;
 
@@ -225,7 +235,17 @@ export const communityScreenPropsFor = ({
 		},
 		map: {
 			title: COPY.mapTitle,
-			summary: ladderSummaryFor(view.climb) ?? COPY.noPlace,
+			...(view.climb === null
+				? { empty: COPY.noPlace }
+				: {
+						track: {
+							gates: ladderFor(view.climb, rivals),
+							...(openClimberId === undefined ? {} : { openId: openClimberId }),
+							...(onInspectClimber === undefined
+								? {}
+								: { onInspect: onInspectClimber }),
+						},
+					}),
 		},
 		...(incidents === undefined ? {} : { incidents }),
 		leaders: leadersFor(view.leaders),
@@ -237,6 +257,22 @@ export const communityScreenPropsFor = ({
 	};
 };
 
-export const CommunityView = (props: CommunityViewProps) => (
-	<CommunityScreen {...communityScreenPropsFor(props)} />
-);
+/**
+ * Which climber's build the map has open is this screen's own business — no
+ * route and no query cares — so the adapter holds it and every caller, the rig
+ * included, gets the press without wiring it.
+ */
+export const CommunityView = (props: CommunityViewProps) => {
+	const [openClimberId, setOpenClimberId] = useState<string>();
+
+	return (
+		<CommunityScreen
+			{...communityScreenPropsFor({
+				...props,
+				openClimberId,
+				onInspectClimber: (id) =>
+					setOpenClimberId((current) => (current === id ? undefined : id)),
+			})}
+		/>
+	);
+};

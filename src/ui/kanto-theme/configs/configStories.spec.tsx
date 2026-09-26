@@ -106,8 +106,12 @@ describe("config story pages", () => {
 		expect(armed.container.textContent).toContain("lint 8 KB");
 		cleanup();
 
-		const refused = render(ESLint.WaitsForJsOrTs.render?.({}, {} as never));
-		expect(refused.container.textContent).toContain("waits for JS or TS");
+		const refused = render(
+			ESLint.WaitsForJavaScriptOrTypeScript.render?.({}, {} as never)
+		);
+		expect(refused.container.textContent).toContain(
+			"waits for JavaScript or TypeScript"
+		);
 	});
 
 	it("reads the gate's correct count once .length is installed", () => {
@@ -147,7 +151,9 @@ describe("config story pages", () => {
 		expect(armed.container.textContent).toContain("1 ready");
 		cleanup();
 
-		const refused = render(ESLint.WaitsForJsOrTs.render?.({}, {} as never));
+		const refused = render(
+			ESLint.WaitsForJavaScriptOrTypeScript.render?.({}, {} as never)
+		);
 		expect(refused.container.textContent).not.toContain("ready");
 	});
 });

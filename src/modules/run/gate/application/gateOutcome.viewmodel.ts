@@ -6,10 +6,10 @@ import {
 } from "~/modules/run/build/domain/build.model";
 import {
 	DRAFT_COST_PER_SLOT_KB,
-	describeConfig,
 	sellRefund,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
+import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
 import type {
@@ -221,8 +221,8 @@ export type GateOutcomeFrame = {
 	slaUpliftKb?: number;
 	/** What surviving rivals' audits paid. Inside `payoutKb`. */
 	incidentSurvivalKb?: number;
-	/** Whether this clear armed or upgraded the run's attack. */
-	attackEarned?: boolean;
+	/** Whether this clear armed or upgraded the run's heldAudit. */
+	auditHanded?: boolean;
 	bar: CoverageBarProps;
 	payouts?: PollScoresProps;
 	payoutKb: number;
@@ -485,7 +485,7 @@ const outcomeChips = (
 					color: TERM_COLOR,
 				},
 			]),
-	...(frame.attackEarned === true
+	...(frame.auditHanded === true
 		? [{ label: ATTACK_EARNED, color: GAIN_COLOR }]
 		: []),
 	...auditsOf(frame).map((audit) => ({
@@ -723,8 +723,8 @@ const changeChip = (
 	slots: slotsOf(config),
 	version: config.level ?? 1,
 	detail,
-	width: "full",
 	badges: [{ label, color }],
+	info: settledFactsFor(config),
 });
 
 const paidChip = (
@@ -736,8 +736,8 @@ const paidChip = (
 	slots: slotsOf(config),
 	version: config.level ?? 1,
 	detail,
-	width: "full",
 	badges: [{ label: signedKbLabel(kb), color: GAIN_COLOR }],
+	info: settledFactsFor(config),
 });
 
 const answerRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
@@ -785,10 +785,9 @@ const dropChip = (
 		name: config.label,
 		slots: slotsOf(config),
 		version: config.level ?? 1,
-		width: "full",
-		detail: describeConfig(config),
 		lost: chosen,
 		badges,
+		info: settledFactsFor(config),
 	};
 };
 
@@ -870,7 +869,6 @@ const footerOf = (
 				{ label: GATE_COMMUNITY_LABEL, icon: "community", onPress: noop },
 			],
 			note: ONLY_BANKED_CARRIES,
-			noteAt: "row",
 			action: { label: NEW_RUN_LABEL, onPress: noop },
 		};
 
@@ -883,7 +881,6 @@ const footerOf = (
 		return {
 			asides: [{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop }],
 			note: owed > 0 ? PEEL_REFUSAL : PEEL_PAID,
-			noteAt: "row",
 			action: retryActionOf(frame.gate, owed),
 		};
 	}
@@ -896,8 +893,7 @@ const footerOf = (
 		note:
 			nextName === undefined
 				? CLIMB_DONE
-				: `the shop stays open until ${nextName} starts`,
-		noteAt: "row",
+				: `the shop stays open until the next gate starts`,
 		action: { label: GATE_SHOP_LABEL, icon: "shop", onPress: noop },
 	};
 };

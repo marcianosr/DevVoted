@@ -5,6 +5,7 @@ import {
 	canEstimate,
 	commitEstimate,
 	ESTIMATE_CHOICES,
+	estimateOwed,
 	estimatePayoutUnits,
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
@@ -252,5 +253,32 @@ describe("the gate settling an estimate", () => {
 			answerGate(answering(5), SLICE_WINDOW).estimatedCorrect
 		).toBeUndefined();
 		expect(answerGate(answering(1), 1).estimatedCorrect).toBeUndefined();
+	});
+});
+
+describe(estimateOwed, () => {
+	it("owes a bet while Planning Poker is installed and none is placed", () => {
+		expect(estimateOwed(withPlanningPoker())).toBe(true);
+	});
+
+	it("owes nothing once the bet is placed", () => {
+		expect(estimateOwed(commitEstimate(withPlanningPoker(), 2))).toBe(false);
+	});
+
+	it("owes nothing from a build without Planning Poker", () => {
+		expect(estimateOwed(prepping("js"))).toBe(false);
+	});
+
+	it("owes nothing once the gate is under way, where no bet can be placed", () => {
+		expect(estimateOwed({ ...withPlanningPoker(), status: "answering" })).toBe(
+			false
+		);
+	});
+
+	// The hold and the picker read the same two clauses on purpose: a gate held
+	// on a call the screen is not offering would be a run nobody can finish.
+	it("is only ever owed while the bet can still be made", () => {
+		const owing = withPlanningPoker();
+		expect(estimateOwed(owing)).toBe(canEstimate(owing));
 	});
 });

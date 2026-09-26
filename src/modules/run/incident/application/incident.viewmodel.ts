@@ -1,6 +1,6 @@
 import { WEIGHT } from "~/shared/lib/copy";
 
-import { vendorChipFor } from "~/modules/run/build/application/vendorChip.viewmodel";
+import { publicBuildChipsFor } from "~/modules/run/build/application/publicBuild.viewmodel";
 import {
 	publicWeightOf,
 	type PublicBuild,
@@ -21,13 +21,15 @@ import type {
 	IncidentFeedRow,
 	IncidentStatus,
 } from "~/modules/run/incident/infrastructure/incident.repository";
-import type { Attack, AttackBand } from "~/modules/run/run/domain/run.model";
+import type {
+	HeldAudit,
+	HeldAuditBand,
+} from "~/modules/run/run/domain/run.model";
 import type {
 	AttackPanelProps,
 	AttackPayload,
 	AttackRival,
 } from "~/ui/kanto-theme/AttackPanel.ui";
-import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import type {
 	IncidentRowProps,
 	IncidentsPanelProps,
@@ -104,6 +106,24 @@ export const incidentFeedRowFor = (
 	};
 };
 
+/**
+ * Everyone the viewer traded an audit with today: whoever they fired at, and
+ * whoever fired at them. Read off the rows before the feed drops the ids, so
+ * the climb map can ring the same people the incidents panel lists.
+ */
+export const rivalIdsFor = (
+	rows: readonly IncidentFeedRow[],
+	viewerId: string
+): readonly string[] => [
+	...new Set(
+		rows.flatMap((row) => {
+			if (row.sentBy.id === viewerId) return [row.target.id];
+			if (row.target.id === viewerId) return [row.sentBy.id];
+			return [];
+		})
+	),
+];
+
 export const ATTACK_TITLE = "Your audit";
 export const ATTACK_UNARMED =
 	"no audit armed — clear a gate HEALTHY or better to earn one";
@@ -121,7 +141,7 @@ const AT_WORD = "at";
  * empty field of rivals (ADR-105).
  */
 
-const attackMetaOf = (band: AttackBand): string =>
+const attackMetaOf = (band: HeldAuditBand): string =>
 	band === "perfect" ? "choose 1 of 2 payloads" : "1 payload";
 
 const FIRST_VERSION = 1;
@@ -154,28 +174,6 @@ export const targetedConfigOf = (
 	return tied.length === 1 ? tied[0] : undefined;
 };
 
-/**
- * A rival's config as a chip with nothing to press: the row's only action is the
- * fire, and an About per chip would bury it. The vendor badge is spelled where
- * the build spells it, so "locked in" reads the same on both screens.
- */
-export const rivalChipFor = (
-	config: PublicConfig,
-	vendorLockedConfigId?: string
-): ConfigChipProps => ({
-	name: config.label,
-	slots: config.slots,
-	...(config.level === undefined ? {} : { version: config.level }),
-	badges: vendorChipFor(
-		config.id === vendorLockedConfigId ? { locked: true } : undefined
-	).badges,
-});
-
-const rivalBuildFor = (build: PublicBuild): readonly ConfigChipProps[] =>
-	build.configs.map((config) =>
-		rivalChipFor(config, build.vendorLockedConfigId)
-	);
-
 const payloadFor = (
 	offer: AttackOfferView,
 	payload: PayloadView
@@ -203,7 +201,7 @@ const rivalFor = (offer: AttackOfferView): AttackRival => {
 		gate: gateLabelOf(offer.gate),
 		swatch: { state: "discovered", swatch: gateSwatchAt(offer.gate) },
 		weight: `${publicWeightOf(offer.build)} ${WEIGHT}`,
-		build: rivalBuildFor(offer.build),
+		build: publicBuildChipsFor(offer.build),
 		hits: payloads.flatMap((payload) =>
 			payload.hits === undefined ? [] : [payload.hits]
 		),
@@ -222,17 +220,17 @@ const rivalFor = (offer: AttackOfferView): AttackRival => {
  */
 export const attackPanelFor = (
 	gate: number,
-	attack: Attack | null,
+	heldAudit: HeldAudit | null,
 	offers: readonly AttackOfferView[] | null,
 	problem: string | null = null,
 	note: string = ATTACK_NOTE
 ): AttackPanelProps | undefined => {
 	if (gate < AUDITS_FROM_GATE) return undefined;
 
-	if (attack === null)
+	if (heldAudit === null)
 		return { title: ATTACK_TITLE, rivals: [], empty: ATTACK_UNARMED, note };
 
-	const meta = attackMetaOf(attack.band);
+	const meta = attackMetaOf(heldAudit.band);
 	if (problem !== null)
 		return { title: ATTACK_TITLE, meta, rivals: [], empty: problem, note };
 	if (offers === null)

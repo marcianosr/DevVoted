@@ -1,6 +1,7 @@
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
 import { Audit, type AuditProps } from "./Audit.ui";
 import { Build, BuildRoom, buildHeadOf, type BuildProps } from "./Build.ui";
+import { discloseAllFor } from "./DiscloseAll.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { NextGate, type NextGateProps } from "./NextGate.ui";
 import { Panel } from "./Panel.ui";
@@ -64,7 +65,11 @@ export const ShopScreen = ({
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
 					<Panel>
-						<Panel.Header label={BUILD} meta={buildHeadOf(build)} />
+						<Panel.Header
+							label={BUILD}
+							meta={buildHeadOf(build)}
+							trailing={discloseAllFor(build, build.configs.length)}
+						/>
 						<Panel.Body>
 							<BuildRoom {...build} />
 							<Build {...build} heading={false} caption={false} />
@@ -82,6 +87,7 @@ export const ShopScreen = ({
 									slotPrice={registry.slotPrice}
 								/>
 							}
+							trailing={discloseAllFor(registry, registry.offers.length)}
 						/>
 						<Panel.Body>
 							<Registry {...registry} heading={false} />

@@ -299,7 +299,7 @@ describe("rivals' audits at the close (ADR-099)", () => {
 						storageBeforeClearKb: 384,
 						clearThisGateKb: 192,
 						incidentSurvivalKb: 64,
-						attackEarned: true,
+						auditHanded: true,
 					}),
 				})}
 				verdict="cleared"

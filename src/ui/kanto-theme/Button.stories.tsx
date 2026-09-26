@@ -2,17 +2,28 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Button } from "./Button.ui";
 import { KANTO_COLORS } from "./colors";
+import { Icon } from "./Icon.ui";
 import { Screen } from "./Screen.ui";
 
 const noop = () => {};
 
 const ROW = "flex flex-wrap items-center gap-3";
 
+const REFUND = (
+	<>
+		<Icon name="undo" className="size-3" />
+		+32 KB
+	</>
+);
+
 const meta: Meta<typeof Button> = {
 	component: Button,
 	title: "Kanto/Button",
 	argTypes: {
-		tone: { control: "inline-radio", options: ["ambient", "action", "danger"] },
+		tone: {
+			control: "inline-radio",
+			options: ["ambient", "action", "danger", "bright"],
+		},
 		disabled: { control: "boolean" },
 		pressed: { control: "boolean" },
 		expanded: { control: "boolean" },
@@ -40,8 +51,18 @@ export const InfoPinned: Story = {
 	args: { glyph: "i", label: "About Cache", tone: "ambient", expanded: true },
 };
 
+export const Install: Story = {
+	args: { label: "Install", tone: "bright" },
+};
+
 export const Uninstall: Story = {
-	args: { glyph: "×", label: "Uninstall Cache", tone: "danger" },
+	args: {
+		label: "Uninstall",
+		cap: REFUND,
+		capAt: "trail",
+		capColor: "viridian",
+		hint: "Uninstall Cache · +32 KB",
+	},
 };
 
 export const ChipControls: Story = {
@@ -59,10 +80,13 @@ export const ChipControls: Story = {
 					expanded
 					onPress={noop}
 				/>
+				<Button label="Install" tone="bright" onPress={noop} />
 				<Button
-					glyph="×"
-					label="Uninstall Cache"
-					tone="danger"
+					label="Uninstall"
+					cap={REFUND}
+					capAt="trail"
+					capColor="viridian"
+					hint="Uninstall Cache · +32 KB"
 					onPress={noop}
 				/>
 			</div>
@@ -78,6 +102,7 @@ export const EveryTone: Story = {
 				<Button label="ambient" tone="ambient" onPress={noop} />
 				<Button label="action" tone="action" onPress={noop} />
 				<Button label="danger" tone="danger" onPress={noop} />
+				<Button label="bright" tone="bright" onPress={noop} />
 			</div>
 		</Screen>
 	),
@@ -92,12 +117,7 @@ export const AcrossThemes: Story = {
 					<div className={ROW}>
 						<Button glyph="i" label="About Cache" onPress={noop} />
 						<Button label="↑ v3" tone="action" onPress={noop} />
-						<Button
-							glyph="×"
-							label="Uninstall Cache"
-							tone="danger"
-							onPress={noop}
-						/>
+						<Button label="Install" tone="bright" onPress={noop} />
 					</div>
 				</Screen>
 			))}

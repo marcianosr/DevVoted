@@ -144,7 +144,7 @@ export const dexConfigGroups: readonly DexWeightGroup[] = [
 				slots: 1,
 				state: "granted",
 				name: "ESLint",
-				effect: "Cross out a wrong answer on JS/TS polls",
+				effect: "Cross out a wrong answer on JavaScript / TypeScript polls",
 				starter: true,
 				provenance: STARTER_PROVENANCE,
 			},

@@ -11,13 +11,11 @@ import {
 	type AnswerContext,
 	type GateWindow,
 } from "~/modules/run/config/domain/effect.model";
+import { answerPayoutFor } from "~/modules/run/build/domain/answerPayout.model";
 import {
 	type Build,
 	billableSlotsOf,
 	catcherFor,
-	coverageBreakdownForAnswer,
-	coverageFactorsForAnswer,
-	coverageForAnswer,
 	extraPickPayoutFor,
 	gateClearPayout,
 	occupiedSlots,
@@ -52,7 +50,7 @@ import {
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { estimatePayoutUnits } from "~/modules/run/run/domain/estimate.model";
 import { slaUpliftKb } from "~/modules/run/run/domain/sla.model";
-import { armAttack } from "~/modules/run/run/domain/attack.model";
+import { handAudit } from "~/modules/run/run/domain/heldAudit.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -332,7 +330,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	);
 	const survivalKb =
 		INCIDENT_SURVIVAL_KB * incidentsAt(state, gateNumber).length;
-	const armed = armAttack(state.attack, closingBand.id);
+	const handed = handAudit(state, closingBand.id, gateNumber);
 	const reward =
 		clearKb +
 		interest +
@@ -380,9 +378,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		slaBand: undefined,
 		slaUpliftKb: promised === undefined ? undefined : upliftKb,
 		incidentSurvivalKb: survivalKb,
-		attack: armed,
-		attackEarnedAtGate:
-			armed === state.attack ? state.attackEarnedAtGate : gateNumber,
+		...handed,
 		currentIndex: nextIndex,
 	};
 
@@ -538,20 +534,18 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		rawFaucet,
 		faucetRemainingKb(state.faucetEarnedKb ?? 0)
 	);
+	const payout = answerPayoutFor(
+		configs,
+		answerContext,
+		auditedShare,
+		state.streak,
+		wager.bonus
+	);
 	return {
-		earnedCoverage: roundToTwoDecimals(
-			coverageForAnswer(configs, answerContext, auditedShare, state.streak) +
-				wager.bonus
-		),
+		earnedCoverage: payout.earned,
 		coverageLoss: wager.loss,
-		breakdown: coverageBreakdownForAnswer(
-			configs,
-			answerContext,
-			auditedShare,
-			state.streak,
-			wager.bonus
-		),
-		factors: coverageFactorsForAnswer(configs, answerContext, auditedShare),
+		breakdown: payout.breakdown,
+		factors: payout.factors,
 		faucetKb,
 		// Unclamped on purpose: the cap meters the commit, so a transaction that
 		// rolls back must leave the run's cap room exactly as it found it.

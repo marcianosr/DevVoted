@@ -16,49 +16,49 @@ import {
 	atLeastBand,
 	bandFor,
 	bankableUnits,
-	clearsBar,
-	coverageAfter,
-	coverageMultiplierFor,
 	coverageGainPercentFor,
-	coverageMultiplierOf,
 	floorAt,
 	floorUnitsAt,
-	focusBonusFor,
-	gainPerCorrectFor,
 	gatePayoutKb,
 	healthyAt,
 	healthyUnitsAt,
-	isRunUnwinnable,
-	maxReachableFrom,
-	multiplierToClear,
-	multiplierToSurvive,
 	okAt,
 	okDropAt,
 	payoutRatioFor,
 	meetsBand,
 	bandOf,
 	perfectBonusFor,
-	readCoverage,
-	rightsToClear,
-	rightsToFill,
-	rightsToSurvive,
 	runCoverageOf,
 	scoringSlotsAt,
 	surplusPayoutKb,
 	surplusUnits,
-	survivesGate,
 	unitsToRatio,
 } from "./coverageRatio.model";
+import { answerPayoutFor, previewContextFor } from "./answerPayout.model";
 
 const EARLY = 2;
-const LATE = VICTORY_GATE;
 const BARE: readonly never[] = [];
-const PACE = 4;
 const GATES = Array.from({ length: VICTORY_GATE + 1 }, (_, gate) => gate);
 
 const DOUBLER = [CONFIGS.agentsMd];
 const TRIPLER = [CONFIGS.agentsMd, CONFIGS.intellisense];
 const STACKED = [CONFIGS.agentsMd, CONFIGS.intellisense, CONFIGS.deprecated];
+
+const unitsPerCorrect = (
+	configs: readonly Config[],
+	answerType: "single" | "multiple"
+): number =>
+	answerPayoutFor(
+		configs,
+		previewContextFor({ answeredBefore: 1, answerType }),
+		1,
+		0
+	).earned;
+
+const buildMultiplierOf = (configs: readonly Config[]): number =>
+	answerPayoutFor(configs, previewContextFor({ answeredBefore: 1 }), 1, 0)
+		.factors?.build ?? 1;
+
 
 describe("the scoring slots", () => {
 	it("opens on five and ends the run on sixty-five", () => {
@@ -165,12 +165,12 @@ describe("run coverage", () => {
 	});
 
 	it("adds a flat unit per correct answer on a bare build", () => {
-		expect(gainPerCorrectFor(BARE)).toBe(BASE_UNIT);
+		expect(unitsPerCorrect(BARE, "single")).toBe(BASE_UNIT);
 	});
 
 	it("pays the build multiplier on every answer alike", () => {
-		expect(gainPerCorrectFor(DOUBLER)).toBeCloseTo(2);
-		expect(gainPerCorrectFor(TRIPLER)).toBeCloseTo(3);
+		expect(unitsPerCorrect(DOUBLER, "single")).toBeCloseTo(2);
+		expect(unitsPerCorrect(TRIPLER, "single")).toBeCloseTo(3);
 	});
 });
 
@@ -185,47 +185,11 @@ describe("what a unit moves the bar by", () => {
 	});
 
 	it("scales with the build, so a tripler moves the bar three times as far", () => {
-		expect(coverageGainPercentFor(gainPerCorrectFor(TRIPLER), 4)).toBeCloseTo(12);
+		expect(coverageGainPercentFor(unitsPerCorrect(TRIPLER, "single"), 4)).toBeCloseTo(12);
 	});
 
 	it("is not the unit count itself, which reads a hundred times too high", () => {
 		expect(coverageGainPercentFor(3, 4)).not.toBeCloseTo(300);
-	});
-});
-
-describe("the headroom a single gate has", () => {
-	/**
-	 * The law the whole model turns on: entering gate g on coverage c, a gate
-	 * earning M units an answer moves the score (M - c) / (g + 1). It decays,
-	 * which is why the bands have to decay with it.
-	 */
-	const headroom = (
-		banked: number,
-		gate: number,
-		configs: readonly Config[]
-	): number =>
-		coverageAfter(SLICE_WINDOW, gate, configs, banked) -
-		runCoverageOf(banked, gate);
-
-	it("matches (M - c) / (g + 1) on a bare build", () => {
-		const gate = 4;
-		const banked = 6.8;
-		const entering = banked / (SLICE_WINDOW * gate);
-
-		expect(entering).toBeCloseTo(0.34);
-		expect(
-			coverageAfter(SLICE_WINDOW, gate, BARE, banked) - entering
-		).toBeCloseTo((BASE_UNIT - entering) / (gate + 1));
-	});
-
-	it("shrinks as the run lengthens", () => {
-		expect(headroom(2, 1, BARE)).toBeGreaterThan(headroom(20, 9, BARE));
-	});
-
-	it("is what a multiplier buys: the same five answers move it further", () => {
-		expect(headroom(6.8, 4, DOUBLER)).toBeGreaterThan(
-			headroom(6.8, 4, BARE)
-		);
 	});
 });
 
@@ -273,39 +237,6 @@ describe("the bands a run lands in", () => {
 	});
 });
 
-describe("what a run still has in front of it", () => {
-	it("counts every remaining poll at the build's rate", () => {
-		expect(maxReachableFrom(60, VICTORY_GATE, BASE_UNIT)).toBeCloseTo(1);
-	});
-
-	it("calls a late run dead when its ceiling sits under the summit floor", () => {
-		expect(isRunUnwinnable(30, 11, BASE_UNIT)).toBe(true);
-	});
-
-	it("spares the same run once a multiplier is on it", () => {
-		expect(isRunUnwinnable(30, 11, 4)).toBe(false);
-	});
-});
-
-describe("reading a gate", () => {
-	it("cannot close on anyone while the floor is zero", () => {
-		expect(survivesGate(0, 0)).toBe(true);
-	});
-
-	it("carries the slots it proved alongside the percentage", () => {
-		const check = readCoverage(12, 0.5, 8);
-
-		expect(check.coveredSlots).toBeCloseTo(6);
-		expect(check.healthyOwed).toBeCloseTo(healthyAt(8) - 0.5);
-	});
-
-	it("clears on the line and survives on the floor", () => {
-		expect(clearsBar(healthyAt(6), 6)).toBe(true);
-		expect(survivesGate(floorAt(6), 6)).toBe(true);
-		expect(clearsBar(okAt(6), 6)).toBe(false);
-	});
-});
-
 describe("what the gate pays", () => {
 	it("pays the proven slots at the going rate", () => {
 		expect(gatePayoutKb(healthyAt(4), 4, 12, 0)).toBe(
@@ -320,44 +251,6 @@ describe("what the gate pays", () => {
 	it("pays a full bar a bonus on top of the cap", () => {
 		expect(perfectBonusFor(1)).toBe(PERFECT_BONUS);
 		expect(perfectBonusFor(0.99)).toBe(1);
-	});
-});
-
-describe("the solvers the prep screen quotes", () => {
-	it("says how many right answers clear a gate from where the run stands", () => {
-		expect(rightsToClear(4, SLICE_WINDOW, BARE, 10)).toBeUndefined();
-		expect(rightsToClear(4, SLICE_WINDOW, DOUBLER, 10)).toBe(3);
-	});
-
-	it("says how many keep it alive", () => {
-		expect(rightsToSurvive(4, SLICE_WINDOW, BARE, 10)).toBe(2);
-	});
-
-	it("says when the bar can still be filled", () => {
-		expect(rightsToFill(0, SLICE_WINDOW, BARE, 0)).toBe(SLICE_WINDOW);
-		expect(rightsToFill(4, SLICE_WINDOW, BARE, 6.8)).toBeUndefined();
-	});
-
-	it("says what multiplier the gate in front is asking for", () => {
-		expect(multiplierToSurvive(4, PACE, 10)).toBeCloseTo(0.5);
-		expect(multiplierToClear(9, PACE, 20)).toBeCloseTo(5);
-	});
-
-	it("gives up when no multiplier can carry a gate with no right answers", () => {
-		expect(multiplierToClear(LATE, 0, 0)).toBeUndefined();
-	});
-});
-
-describe("focus", () => {
-	it("pays its quarter only on its own category", () => {
-		expect(coverageMultiplierFor([CONFIGS.js], "js")).toBeCloseTo(1.25);
-		expect(coverageMultiplierFor([CONFIGS.js], "css")).toBeCloseTo(1);
-	});
-
-	it("reads as a bonus over whatever the build already pays", () => {
-		expect(focusBonusFor([CONFIGS.js, CONFIGS.agentsMd], "js")).toBeCloseTo(
-			1.25
-		);
 	});
 });
 
@@ -383,7 +276,7 @@ describe("the balance this model exists to hold", () => {
 	) => {
 		const roll = seededRolls(
 			Math.round(
-				coverageMultiplierOf(configs) * 7919 +
+				buildMultiplierOf(configs) * 7919 +
 					accuracy * 100 +
 					multiShare * 31
 			)
@@ -405,18 +298,14 @@ describe("the balance this model exists to hold", () => {
 					rights++;
 					// Short-circuits at multiShare 0 so an all-singles run keeps its roll stream.
 					const multiple = multiShare > 0 && roll() < multiShare;
-					units += gainPerCorrectFor(
-						configs,
-						undefined,
-						multiple ? "multiple" : "single"
-					);
+					units += unitsPerCorrect(configs, multiple ? "multiple" : "single");
 				}
 
 				const carried = banked + units;
 
 				if (
 					!meetsGateFloor(rights) ||
-					!survivesGate(runCoverageOf(carried, gate), gate)
+					bandFor(runCoverageOf(carried, gate), gate).id === "danger"
 				) {
 					alive = false;
 				} else {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
@@ -12,6 +13,7 @@ import {
 import {
 	isShopLocked,
 	runReducer,
+	withSeed,
 } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -498,18 +500,123 @@ describe("the storage high-water mark", () => {
 	});
 });
 
-describe("fire-audit (ADR-099)", () => {
-	it("spends the armed attack from the debrief", () => {
-		const armed = clearGate(started(["js"]));
-		expect(armed.attack).toBeDefined();
-		expect(runReducer(armed, { type: "fire-audit" }).attack).toBeUndefined();
+describe("the sealed audit lives in the shop (ADR-119)", () => {
+	const SEED = "64:2026-09-23";
+	const kept = { band: "healthy", gate: 0, payload: "not-found" } as const;
+
+	it("open-audit without a server seed changes nothing", () => {
+		const sealed = clearGate(started(["js"]));
+		expect(sealed.status).toBe("rewarding");
+		expect(runReducer(sealed, { type: "open-audit" })).toBe(sealed);
+		expect(
+			runReducer(sealed, withSeed({ type: "open-audit" }, SEED)).heldAudit
+				?.payload
+		).toBeDefined();
 	});
 
-	it("is refused mid-window, where no picker is offered", () => {
-		const answering = {
+	it("open-audit, keep-payload, take-audit and fire-audit refuse mid-window", () => {
+		const answering: RunState = {
 			...started(["js"]),
-			attack: { band: "healthy" as const },
+			heldAudit: { band: "ok", gate: 0, choices: ["not-found", "timeout"] },
+			offeredAudit: { band: "healthy", gate: 1 },
 		};
-		expect(runReducer(answering, { type: "fire-audit" })).toBe(answering);
+		expect(runReducer(answering, withSeed({ type: "open-audit" }, SEED))).toBe(
+			answering
+		);
+		expect(
+			runReducer(answering, { type: "keep-payload", auditId: "timeout" })
+		).toBe(answering);
+		expect(runReducer(answering, { type: "take-audit" })).toBe(answering);
+		const armedMidWindow: RunState = { ...answering, heldAudit: kept };
+		expect(runReducer(armedMidWindow, { type: "fire-audit" })).toBe(
+			armedMidWindow
+		);
+	});
+
+	it("repackage is a shop write the 405 refuses", () => {
+		const cleared = clearGate(started(["js"]));
+		const closed: RunState = audited(
+			{ ...cleared, heldAudit: kept, storage: 100 },
+			cleared.gatesCleared,
+			"read-only"
+		);
+		expect(runReducer(closed, withSeed({ type: "repackage" }, SEED))).toBe(
+			closed
+		);
+		const open: RunState = { ...cleared, heldAudit: kept, storage: 100 };
+		expect(
+			runReducer(open, withSeed({ type: "repackage" }, SEED)).repackagedThisShop
+		).toBe(true);
+	});
+
+	it("fire-audit spends a kept payload from the shop", () => {
+		const armed: RunState = { ...clearGate(started(["js"])), heldAudit: kept };
+		expect(runReducer(armed, { type: "fire-audit" }).heldAudit).toBeUndefined();
+	});
+
+	it("withSeed stamps open-audit and repackage and passes every other action through", () => {
+		expect(withSeed({ type: "open-audit" }, SEED)).toEqual({
+			type: "open-audit",
+			seed: SEED,
+		});
+		expect(withSeed({ type: "repackage" }, SEED)).toEqual({
+			type: "repackage",
+			seed: SEED,
+		});
+		const fire = { type: "fire-audit" } as const;
+		expect(withSeed(fire, SEED)).toBe(fire);
+	});
+});
+
+/**
+ * Gate 0 leaves prep through `start` and every gate after it through
+ * `finish-reward`. The hold is keyed on the action rather than written into
+ * either exit, so these two specs are what prove it did not land on one age of
+ * the run only.
+ */
+describe("a config that asks for a call in prep holds the gate", () => {
+	const owingAtGateZero = (): RunState =>
+		["planning-poker", "js", "ts", "css"].reduce(
+			(state, configId) => runReducer(state, { type: "install", configId }),
+			createRun(pool(40), [...handed, CONFIGS.planningPoker])
+		);
+
+	const owingAtALaterGate = (config: Config): RunState => {
+		const base = started(["js"]);
+		return {
+			...base,
+			status: "rewarding",
+			build: { ...base.build, configs: [...base.build.configs, config] },
+			estimatedCorrect: undefined,
+			slaBand: undefined,
+		};
+	};
+
+	it("refuses to open gate 0 while Planning Poker has no bet", () => {
+		const owing = owingAtGateZero();
+		expect(runReducer(owing, { type: "start" })).toBe(owing);
+	});
+
+	it("opens gate 0 once the bet is placed", () => {
+		const bet = runReducer(owingAtGateZero(), { type: "estimate", count: 3 });
+		expect(runReducer(bet, { type: "start" }).status).toBe("answering");
+	});
+
+	it("refuses to leave a later gate's prep while the bet is owed", () => {
+		const owing = owingAtALaterGate(CONFIGS.planningPoker);
+		expect(runReducer(owing, { type: "finish-reward" })).toBe(owing);
+	});
+
+	it("refuses to leave a later gate's prep while SLA has no promise", () => {
+		const owing = owingAtALaterGate(CONFIGS.sla);
+		expect(runReducer(owing, { type: "finish-reward" })).toBe(owing);
+	});
+
+	it("leaves a later gate's prep once the promise is made", () => {
+		const promised = runReducer(owingAtALaterGate(CONFIGS.sla), {
+			type: "commit-band",
+			band: "ok",
+		});
+		expect(runReducer(promised, { type: "finish-reward" })).not.toBe(promised);
 	});
 });

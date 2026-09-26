@@ -257,10 +257,65 @@ describe("CommunityView", () => {
 		expect(screen.getAllByText("top 18%")).toHaveLength(2);
 	});
 
-	it("states the climb summary rather than a map it cannot draw yet", () => {
-		render(board());
+	it("places every climber under their gate, and rings today's rivals", () => {
+		const { container } = render(
+			<CommunityView
+				view={{
+					...view,
+					climb: {
+						climbers: [
+							climber("red", 1, 2, true),
+							climber("misty", 3, 1),
+							climber("brock", 3, 4),
+						],
+						fallen: [],
+						bestPosition: null,
+					},
+				}}
+				swatch={gateSwatchAt(1)}
+				rivals={["misty"]}
+				back={{ label: "Back", onBack: () => {} }}
+			/>
+		);
 
-		expect(screen.getByText("1 on the ladder")).toBeInTheDocument();
+		expect(screen.getByTitle("you")).toBeInTheDocument();
+		expect(screen.getByTitle("misty")).toBeInTheDocument();
+		expect(container.querySelectorAll(".ring-vermillion")).toHaveLength(1);
+	});
+
+	it("draws no track for a viewer with no run to stand on", () => {
+		const { container } = render(board({ climb: null }));
+
+		expect(
+			screen.getByText("start a run to place yourself")
+		).toBeInTheDocument();
+		expect(container.querySelector("[data-current]")).toBeNull();
+	});
+
+	it("opens a climber's card when their chip is pressed", async () => {
+		const user = userEvent.setup();
+		render(
+			board({
+				climb: {
+					climbers: [
+						{
+							...climber("red", 1, 2, true),
+							build: { configs: [{ id: "ts", label: ".ts", slots: 1 }] },
+							coveragePercent: 40,
+							streak: 3,
+						},
+					],
+					fallen: [],
+					bestPosition: null,
+				},
+			})
+		);
+
+		await user.click(screen.getByRole("button", { name: "red" }));
+
+		expect(screen.getByText(".ts")).toBeInTheDocument();
+		expect(screen.getByText("40%")).toBeInTheDocument();
+		expect(screen.getByText("1 of 4 weight")).toBeInTheDocument();
 	});
 
 	it("refuses the way back while today's polls are spent", async () => {

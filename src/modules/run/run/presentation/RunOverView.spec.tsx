@@ -56,7 +56,7 @@ describe("RunOverView", () => {
 		render(<RunOverView view={deadView()} onNewRun={onNewRun} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Start new run" })
+			screen.getByRole("button", { name: /^Start new run/ })
 		);
 
 		expect(onNewRun).toHaveBeenCalledOnce();

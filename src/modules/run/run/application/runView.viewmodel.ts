@@ -27,7 +27,7 @@ import {
 	redactPoll,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import {
-	type Attack,
+	type HeldAudit,
 	type AnswerTypeSplit,
 	answerTypesOf,
 	canStart,
@@ -107,11 +107,13 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import {
 	type PerAnswerPreview,
+	perAnswerPreviewFor,
+} from "~/modules/run/build/domain/answerPayout.model";
+import {
 	type BuildModifiers,
 	budgeterFor,
 	occupiedSlots,
 	prefetcherFor,
-	perAnswerPreviewFor,
 	projectorFor,
 	buildModifiersFor,
 	rungAfterBuild,
@@ -283,12 +285,13 @@ export type RunView = {
 	readonly optionCountsThisGate: readonly number[] | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
-	/** The attack a HEALTHY-or-better clear armed, until it is fired (ADR-099). */
-	readonly attack: Attack | null;
+	/** The heldAudit a HEALTHY-or-better clear armed, until it is fired (ADR-099). */
+	readonly heldAudit: HeldAudit | null;
+	/** A second audit handed while one was held, for this shop visit only. */
+	readonly offeredAudit: HeldAudit | null;
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
-	readonly perAnswer: PerAnswerPreview;
 	readonly gateStake: GateStake;
 	readonly canStart: boolean;
 	readonly isOver: boolean;
@@ -421,7 +424,9 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 			installable: !owned && refusal === null,
 			refusal,
 			preview: buildModifiersFor(withIt, state.gatesCleared),
-			previewPerAnswer: perAnswerPreviewFor(withIt),
+			previewPerAnswer: perAnswerPreviewFor(withIt, {
+				answeredBefore: state.window.answered,
+			}),
 		};
 	});
 };
@@ -484,13 +489,17 @@ export const toRunView = (
 	const current = state.polls[state.currentIndex];
 	const leftToday = Math.max(0, state.polls.length - state.currentIndex);
 	const modifiers = buildModifiersFor(state.build.configs, state.gatesCleared);
-	const perAnswer = perAnswerPreviewFor(
-		state.build.configs,
-		current === undefined
-			? undefined
-			: creditedAnswerTypeFor(state, gradedPollFor(state, current)),
-		state.strictArmed === true ? (strictStakeOf(liveConfigsOf(state)) ?? 0) : 0
-	);
+	const perAnswer = perAnswerPreviewFor(state.build.configs, {
+		answeredBefore: state.window.answered,
+		answerType:
+			current === undefined
+				? undefined
+				: creditedAnswerTypeFor(state, gradedPollFor(state, current)),
+		wagerUnits:
+			state.strictArmed === true
+				? (strictStakeOf(liveConfigsOf(state)) ?? 0)
+				: 0,
+	});
 	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
 	const schedule = scheduleOf(state);
 	const peelSlots = failPeelQuotaFor(
@@ -618,11 +627,11 @@ export const toRunView = (
 						.map((poll) => poll.options.length),
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
-		attack: state.attack ?? null,
+		heldAudit: state.heldAudit ?? null,
+		offeredAudit: state.offeredAudit ?? null,
 		audits,
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],
-		perAnswer,
 		gateStake: {
 			gateNumber: state.gatesCleared,
 			pollsPerGate: SLICE_WINDOW,

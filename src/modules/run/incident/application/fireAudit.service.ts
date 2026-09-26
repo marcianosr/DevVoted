@@ -48,11 +48,11 @@ const aim = async ({
 	const run = await findActiveSessionRun(userId);
 	if (!run) throw new Error("No active run");
 	const state = await loadRunState(run.id);
-	if (state.attack === undefined) throw new Error(NO_ATTACK);
+	if (state.heldAudit === undefined) throw new Error(NO_ATTACK);
 	if (!isPrepPhase(state)) throw new Error(NOT_PREP);
 
 	const offers = await offersForAttacker(
-		attackerOf(run.id, userId, state, state.attack),
+		attackerOf(run.id, userId, state, state.heldAudit),
 		date
 	);
 	const offer = offers.find(
@@ -73,7 +73,7 @@ const filing =
 	(userId: string, { offer, auditId }: Aim) =>
 	(runId: number): RunSettlement =>
 	async (tx, before, after) => {
-		if (before.attack !== undefined && after.attack === undefined)
+		if (before.heldAudit !== undefined && after.heldAudit === undefined)
 			await insertIncident(tx, {
 				sentByUserId: userId,
 				targetUserId: offer.targetUserId,

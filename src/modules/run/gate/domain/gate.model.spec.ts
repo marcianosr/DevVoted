@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	Build,
-	type PerAnswerPreview,
-	projectorFor,
-} from "~/modules/run/build/domain/build.model";
+import type { PerAnswerPreview } from "~/modules/run/build/domain/answerPayout.model";
+import { Build, projectorFor } from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIG_LIST,

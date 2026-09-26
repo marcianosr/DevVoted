@@ -1,15 +1,24 @@
+import { useState } from "react";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	ALL_SWATCHES,
 	GATE_SWATCHES,
 } from "~/modules/run/gate/domain/swatch.model";
+import { kbLabel } from "~/shared/lib/storage";
 import { trackTo } from "~/test/swatchTrack.factory";
 
 import { Header } from "./Header.ui";
 import { Screen } from "./Screen.ui";
 
-const VICTORY_GATE = 12;
+const PRESS =
+	"rounded-md border border-theme-faint px-3 py-1 text-xs font-bold text-theme";
+
+const fundsAt = (kb: number) => {
+	const [amount, unit] = kbLabel(kb).split(" ");
+	return { amount, unit, label: "storage", kb };
+};
 
 const meta: Meta<typeof Header> = {
 	component: Header,
@@ -39,7 +48,7 @@ export const WithCoverage: Story = {
 		note: "2 of 5 answered",
 		noteAt: "track",
 		badge: "3 audits",
-		funds: { amount: "1.9", unit: "MB", label: "balance" },
+		funds: { amount: "1.9", unit: "MB", label: "balance", kb: 1946 },
 		coverage: {
 			label: "coverage",
 			held: "92.5",
@@ -51,14 +60,14 @@ export const WithCoverage: Story = {
 
 export const WithRing: Story = {
 	args: {
-		funds: { amount: "1.8", unit: "MB", label: "balance" },
+		funds: { amount: "1.8", unit: "MB", label: "balance", kb: 1843 },
 		ring: { held: 148, demand: 210 },
 	},
 };
 
 export const WithRingCaptioned: Story = {
 	args: {
-		funds: { amount: "1.8", unit: "MB", label: "balance" },
+		funds: { amount: "1.8", unit: "MB", label: "balance", kb: 1843 },
 		ring: {
 			held: 148,
 			demand: 210,
@@ -87,4 +96,58 @@ export const EveryGate: Story = {
 			))}
 		</div>
 	),
+};
+
+/**
+ * The readout only moves when the balance does, so the moods it has to carry —
+ * counting up green, down red, and the unit roll it refuses to count across —
+ * need a press to drive them rather than a fixed arg.
+ */
+const HeaderWithMovingBalance = () => {
+	const [kb, setKb] = useState(349);
+
+	return (
+		<Screen theme="pewter" width="narrow">
+			<Header
+				swatch={GATE_SWATCHES[9]}
+				swatches={trackTo(9)}
+				funds={fundsAt(kb)}
+			/>
+			<div className="mt-6 flex flex-wrap gap-2">
+				<button className={PRESS} onClick={() => setKb(kb + 32)}>
+					+32 KB payout
+				</button>
+				<button className={PRESS} onClick={() => setKb(kb + 61)}>
+					+61 KB payout
+				</button>
+				<button className={PRESS} onClick={() => setKb(kb - 32)}>
+					install · 32 KB
+				</button>
+				<button className={PRESS} onClick={() => setKb(1046)}>
+					roll to MB
+				</button>
+				<button className={PRESS} onClick={() => setKb(349)}>
+					reset to 349
+				</button>
+			</div>
+		</Screen>
+	);
+};
+
+export const BalanceMoving: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => <HeaderWithMovingBalance />,
+};
+
+export const PreviewingAnInstall: Story = {
+	args: {
+		funds: {
+			...fundsAt(410),
+			preview: {
+				label: "after install",
+				figure: "378 KB",
+				color: "vermillion",
+			},
+		},
+	},
 };

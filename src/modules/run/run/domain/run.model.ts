@@ -47,12 +47,22 @@ export const addStorage = (current: number, income: number): number =>
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
-export type AttackBand = "healthy" | "perfect";
+export type HeldAuditBand = "ok" | "healthy" | "perfect";
 
-/** One attack a HEALTHY-or-better clear armed, held until fired (ADR-099). */
-export type Attack = {
-	readonly band: AttackBand;
+/**
+ * One sealed audit a clear handed, held until fired or the run ends (ADR-119).
+ * Sealed until opened in the shop; an OK clear opens two `choices` and keeps
+ * one, a HEALTHY or PERFECT clear opens straight to its `payload`.
+ */
+export type HeldAudit = {
+	readonly band: HeldAuditBand;
+	/** The gate whose clear handed it. */
+	readonly gate: number;
+	readonly choices?: readonly AuditId[];
+	readonly payload?: AuditId;
 };
+
+export type KeptAudit = HeldAudit & { readonly payload: AuditId };
 
 /** How the last gate closed, read by rivals deciding whether this run is fair game. */
 export type LastClose = {
@@ -154,10 +164,13 @@ export type RunState = {
 	readonly pinPlantedAtGate?: number;
 	readonly startedAtGate?: number;
 	readonly auditSchedule?: AuditSchedule;
-	/** The attack a HEALTHY-or-better clear armed, held until fired (ADR-099). */
-	readonly attack?: Attack;
-	/** The gate whose clear last armed or upgraded the attack, for the debrief chip. */
-	readonly attackEarnedAtGate?: number;
+	/** The sealed audit in hand, until fired or the run ends (ADR-119). */
+	readonly heldAudit?: HeldAudit;
+	/** A second audit a clear handed while one was held; lives for the shop visit only. */
+	readonly offeredAudit?: HeldAudit;
+	/** The gate whose clear last handed an audit, for the debrief chip. */
+	readonly auditHandedAtGate?: number;
+	readonly repackagedThisShop?: true;
 	/** How the last gate closed, read by rivals deciding whether this run is fair game. */
 	readonly lastClose?: LastClose;
 	/** Rivals' audits locked onto this run's gates, with who sent each. */

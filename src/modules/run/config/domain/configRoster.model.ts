@@ -4,13 +4,13 @@ export const CONFIGS = {
 	js: {
 		id: "js",
 		label: ".js",
-		description: "JS polls pay 1.25× coverage.",
+		description: "JavaScript polls pay 1.25× coverage.",
 		focusCategory: "js",
 	},
 	ts: {
 		id: "ts",
 		label: ".ts",
-		description: "TS polls pay 1.25× coverage.",
+		description: "TypeScript polls pay 1.25× coverage.",
 		focusCategory: "ts",
 	},
 	css: {
@@ -78,8 +78,8 @@ export const CONFIGS = {
 		id: "eslint",
 		label: "ESLint",
 		description:
-			"Cross out a wrong answer on JS/TS polls for an escalating fee.",
-		gives: "Cross out a wrong answer on JS/TS polls",
+			"Cross out a wrong answer on JavaScript / TypeScript polls for an escalating fee.",
+		gives: "Cross out a wrong answer on JavaScript / TypeScript polls",
 		costs: "The fee doubles each use, and resets each gate",
 		eliminatesWrongOptionsFor: ["js", "ts"],
 	},
@@ -313,10 +313,10 @@ export const CONFIGS = {
 		label: "Planning Poker",
 		slots: 1,
 		description:
-			"Before a gate, bet on how many of its 5 polls you will answer correctly. Answer at least that many and it pays coverage — a bolder bet pays more, and so does a deeper gate.",
+			"On the prep screen before every gate, bet on how many of its 5 polls you will answer correctly. Answer at least that many and it pays coverage — a bolder bet pays more, and so does a deeper gate. The gate will not open until you have bet, and no bet can cost you anything.",
 		gives: "Coverage when you answer at least as many as you bet",
 		costs:
-			"Fall one short and it pays nothing — and the bet locks when you answer",
+			"Fall one short and it pays nothing — and the gate holds in prep until you bet, which locks when you answer",
 		coveragePerEstimate: 0.25,
 	},
 	strict: {
@@ -343,9 +343,10 @@ export const CONFIGS = {
 		label: "SLA",
 		slots: 2,
 		description:
-			"Name OK, HEALTHY or PERFECT before the gate. Close in that band or better and the gate's payout rises 10%, 25% or 50%. Fall short of your own promise and it pays nothing.",
+			"On the prep screen before every gate, name OK, HEALTHY or PERFECT. Close in that band or better and the gate's payout rises 10%, 25% or 50%. Fall short of your own promise and it pays nothing. The gate will not open until you have promised, and no promise can cost you anything.",
 		gives: "The band you promise pays +10%, +25% or +50% on the clear",
-		costs: "A band you promise and miss pays nothing at all",
+		costs:
+			"A band you promise and miss pays nothing at all — and the gate holds in prep until you name one",
 		commitsBand: true,
 	},
 	tryCatch: {

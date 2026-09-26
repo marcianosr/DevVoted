@@ -16,6 +16,16 @@ export const estimatorFor = (configs: readonly Config[]): Config | undefined =>
 export const canEstimate = (state: Pick<RunState, "status">): boolean =>
 	isPrepPhase(state);
 
+/**
+ * Whether the build still owes this gate a bet. The first two clauses are the
+ * ones `estimateControlFor` reads, so the hold and the picker cannot disagree:
+ * the gate is only ever held while the control that lifts it is on screen.
+ */
+export const estimateOwed = (state: RunState): boolean =>
+	estimatorFor(state.build.configs) !== undefined &&
+	canEstimate(state) &&
+	state.estimatedCorrect === undefined;
+
 const isWholeWindowCount = (count: number): boolean =>
 	Number.isInteger(count) && count >= 1 && count <= SLICE_WINDOW;
 

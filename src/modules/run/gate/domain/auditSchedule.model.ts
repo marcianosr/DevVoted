@@ -119,6 +119,11 @@ export const AUDITS_FROM_GATE: number = Math.min(
 	...AUDIT_TIERS.flatMap((tier) => tier.gates)
 );
 
+/** Derived, never hardcoded: the first gate any incident can land on. */
+export const FIRST_AUDITED_GATE = Math.min(
+	...AUDIT_TIERS.flatMap((tier) => tier.gates)
+);
+
 export const tierForGate = (gate: number): AuditTier | undefined =>
 	AUDIT_TIERS.find((tier) => tier.gates.includes(gate));
 

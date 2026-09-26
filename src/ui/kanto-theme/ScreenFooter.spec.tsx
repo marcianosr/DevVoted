@@ -122,23 +122,15 @@ describe("ScreenFooter", () => {
 		expect(start).not.toHaveAttribute("data-screen-theme");
 	});
 
-	it("pushes the start opposite the figures it acts on, at every width", () => {
-		render(<ScreenFooter {...props} />);
-
-		expect(
-			screen.getByRole("button", { name: /Pallet gate prep/ }).parentElement
-		).toHaveClass("ml-auto");
-	});
-
-	it("spans a lone press across a phone, having no aside to sit beside", () => {
+	it("spans the press across the footer at every width", () => {
 		render(<ScreenFooter {...props} />);
 
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ })
-		).toHaveClass("w-full", "sm:w-fit");
+		).toHaveClass("w-full");
 	});
 
-	it("leaves the press its own width once an aside shares the row", () => {
+	it("keeps the press the full width even once asides share the footer", () => {
 		render(
 			<ScreenFooter
 				{...props}
@@ -148,29 +140,107 @@ describe("ScreenFooter", () => {
 
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ })
-		).not.toHaveClass("w-full");
+		).toHaveClass("w-full");
 	});
 
-	it("keeps its presses side by side at every width", () => {
-		render(<ScreenFooter {...props} />);
+	it("stacks the press under the asides on a phone and sets it beside them from sm", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[{ label: "Community", onPress: vi.fn() }]}
+			/>
+		);
 
-		const row = screen.getByRole("button", { name: /Pallet gate prep/ })
+		const press = screen.getByRole("button", { name: /Pallet gate prep/ });
+		const asideRow = screen.getByRole("button", { name: "Community" })
 			.parentElement?.parentElement;
+
+		expect(asideRow).not.toContainElement(press);
+		expect(press.parentElement?.parentElement).toHaveClass(
+			"flex-col",
+			"sm:flex-row"
+		);
+		expect(press.parentElement).toHaveClass("w-full", "sm:flex-1");
+	});
+
+	// A string standing between the two presses reads as a third control.
+	it("drops the string the press cannot carry below the row, never between them", () => {
+		render(
+			<ScreenFooter
+				{...kantoGateZeroFooter(true)}
+				asides={[{ label: "Community", onPress: vi.fn() }]}
+				refusal="That run is already going."
+			/>
+		);
+
+		const spare = screen.getByText("That run is already going.");
+		const row = screen.getByRole("button", { name: "Community" }).parentElement
+			?.parentElement?.parentElement;
+
+		expect(row).not.toContainElement(spare);
+		expect(spare.parentElement?.parentElement?.nodeName).toBe("FOOTER");
+	});
+
+	// A screen offering two exits is offering a choice, and a choice reads as a
+	// pair of equals rather than a queue to the left of the real press.
+	it("gives two ways out a row of their own above the press, split evenly", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[
+					{ label: "Review answers", onPress: vi.fn() },
+					{ label: "Community", onPress: vi.fn() },
+				]}
+			/>
+		);
+
+		const review = screen.getByRole("button", { name: "Review answers" });
+		const block = review.parentElement?.parentElement?.parentElement;
+
+		expect(block).not.toHaveClass("sm:flex-row");
+		expect(review.parentElement).toHaveClass("flex-1");
+		expect(review).toHaveClass("w-full");
+		expect(review).not.toHaveClass("sm:w-fit");
+	});
+
+	it("stands the ways out at the size of the press they sit beside", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[{ label: "Community", onPress: vi.fn() }]}
+			/>
+		);
+
+		expect(screen.getByRole("button", { name: "Community" })).toHaveClass(
+			"h-14",
+			"rounded-2xl"
+		);
+	});
+
+	it("keeps its asides side by side at every width", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[
+					{ label: "Community", onPress: vi.fn() },
+					{ label: "To the shop", onPress: vi.fn() },
+				]}
+			/>
+		);
+
+		const row = screen.getByRole("button", { name: "Community" }).parentElement
+			?.parentElement;
 
 		expect(row).toHaveClass("flex-wrap");
 		expect(row).not.toHaveClass("flex-col");
 	});
 
-	// The note is the only thing in the row that can give, and squeezing it is
-	// what collapsed it to one word per line on a phone.
-	it("drops the note onto its own line rather than squeezing it between the presses", () => {
-		render(<ScreenFooter {...props} note="Or click ENTER" noteAt="row" />);
+	it("reads the note under the press's own label", () => {
+		render(<ScreenFooter {...props} note="Or click ENTER" />);
 
-		expect(screen.getByText("Or click ENTER").parentElement).toHaveClass(
-			"order-last",
-			"w-full",
-			"sm:order-none"
-		);
+		expect(
+			screen.getByRole("button", { name: /Or click ENTER/ })
+		).toContainElement(screen.getByText("Or click ENTER"));
 	});
 
 	it("draws no stake row for a screen that states its own stakes", () => {
@@ -216,7 +286,7 @@ describe("ScreenFooter", () => {
 			).not.toHaveAttribute("data-screen-theme");
 			expect(
 				screen.getByRole("button", { name: "Start Lavender" })
-			).toHaveClass("press-theme");
+			).toHaveClass("segment-theme");
 		});
 
 		it("spends a second line on a cost with news in it", () => {
@@ -258,7 +328,7 @@ describe("ScreenFooter", () => {
 					onPress: () => {},
 				},
 			],
-			note: "the shop stays open until Vermilion starts",
+			note: "the shop stays open until next gate starts",
 		};
 
 		it("stands with no stakes at all", () => {
@@ -266,37 +336,36 @@ describe("ScreenFooter", () => {
 
 			expect(container.querySelector(".justify-end")).toBeNull();
 			expect(
-				screen.getByRole("button", { name: "To the shop" })
+				screen.getByRole("button", { name: /To the shop/ })
 			).toBeInTheDocument();
 		});
 
-		it("sets the note between the two presses when asked", () => {
-			render(<ScreenFooter {...debrief} noteAt="row" />);
+		it("carries the note inside the press it describes", () => {
+			render(<ScreenFooter {...debrief} />);
 
 			const note = screen.getByText(
-				"the shop stays open until Vermilion starts"
+				"the shop stays open until next gate starts"
 			);
 
 			expect(note.nodeName).toBe("SPAN");
-			expect(note.closest("div")).toContainElement(
-				screen.getByRole("button", { name: "Community" })
-			);
+			expect(
+				screen.getByRole("button", { name: /To the shop/ })
+			).toContainElement(note);
 		});
 
-		it("keeps the note under the rows by default", () => {
+		it("marks the press with the icon where it has no gate to wear", () => {
 			render(<ScreenFooter {...debrief} />);
 
 			expect(
-				screen.getByText("the shop stays open until Vermilion starts").nodeName
-			).toBe("P");
+				screen
+					.getByRole("button", { name: /To the shop/ })
+					.querySelectorAll("svg")
+			).toHaveLength(2);
 		});
 
-		it("signs each press with the icon it was given", () => {
+		it("signs each aside with the icon it was given", () => {
 			render(<ScreenFooter {...debrief} />);
 
-			expect(
-				screen.getByRole("button", { name: "To the shop" }).querySelector("svg")
-			).not.toBeNull();
 			expect(
 				screen.getByRole("button", { name: "Community" }).querySelector("svg")
 			).not.toBeNull();
@@ -315,23 +384,53 @@ describe("ScreenActions", () => {
 		);
 	});
 
-	it("spans the phone flush to its edges, and closes into a panel on a desktop", () => {
+	it("spans the phone flush to its edges at every width", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
-		const bar = container.firstElementChild;
-
-		expect(bar).not.toHaveClass("rounded-2xl", "border");
-		expect(bar).toHaveClass("border-t", "md:rounded-2xl", "md:border");
-		expect(bar).toHaveClass("-mx-4", "sm:-mx-8", "md:mx-0");
+		expect(container.firstElementChild).toHaveClass(
+			"-mx-4",
+			"sm:-mx-8",
+			"md:mx-0"
+		);
 	});
 
-	it("stands the press on an opaque ground, so the screen scrolls behind it", () => {
+	it("draws no ground of its own behind a bar that is only the press", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
-		expect(container.firstElementChild).toHaveClass("bg-theme-faint");
+		expect(container.firstElementChild).not.toHaveClass("bg-theme-faint");
 		expect(
 			screen.getByRole("button", { name: /Pallet gate prep/ })
 		).toBeInTheDocument();
+	});
+
+	// A stake reading and an aside's note have no fill of their own.
+	it("stands on an opaque ground once it carries more than the press", () => {
+		const { container } = render(
+			<ScreenActions
+				{...props}
+				asides={[{ label: "Community", onPress: () => {} }]}
+			/>
+		);
+
+		const bar = container.firstElementChild;
+
+		expect(bar).toHaveClass("bg-theme-faint", "border-t");
+		expect(bar).toHaveClass("md:rounded-2xl", "md:border");
+		expect(bar).not.toHaveClass("rounded-2xl", "border");
+	});
+
+	it("stands on a ground for a refusal it has to seat above a live press", () => {
+		const { container } = render(
+			<ScreenActions
+				{...kantoGateZeroFooter(true)}
+				refusal="That run is already going."
+			/>
+		);
+
+		expect(container.firstElementChild).toHaveClass("bg-theme-faint");
+		expect(screen.getByText("That run is already going.").nodeName).toBe(
+			"SPAN"
+		);
 	});
 
 	it("carries its own space rather than a spacer sized to guess at it", () => {

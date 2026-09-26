@@ -1,4 +1,11 @@
 import { WEIGHT } from "~/shared/lib/copy";
+import {
+	INSTALLED_CARDS_OPEN,
+	OFFERED_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
 import { useState } from "react";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
@@ -13,6 +20,8 @@ import {
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
+import { buildReadingOf } from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	isServiceUnlocked,
 	isSoldInShop,
@@ -59,7 +68,8 @@ const offersOf = (
 	view: RunView,
 	onDraft: (id: string) => void,
 	armedId: string | undefined,
-	arm: (configId: string) => void
+	arm: (configId: string) => void,
+	point: (configId: string | undefined) => void
 ): readonly ConfigChipProps[] =>
 	view.offers.map((offer) => {
 		const armed = armedId === offer.config.id;
@@ -68,6 +78,8 @@ const offersOf = (
 			affordable: offer.installable && offer.refusal === null,
 			scale: offer.scale,
 			armed,
+			onHover: () => point(offer.config.id),
+			onLeave: () => point(undefined),
 			// The rung an install rents is a cost no button can state, so the first
 			// press states it and the second agrees to it. An install that stays
 			// inside the rung already rented has nothing to state and commits at once.
@@ -208,26 +220,52 @@ export const ShopView = ({
 	onVendorLock,
 	onContinue,
 }: ShopViewProps) => {
-	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
 	const [abandonArmed, setAbandonArmed] = useState(false);
 	const [openUpgrades, setOpenUpgrades] = useState<string | undefined>(
 		undefined
 	);
 	const [armedId, setArmedId] = useState<string | undefined>(undefined);
+	const [pointedId, setPointedId] = useState<string | undefined>(undefined);
 
-	// One panel at a time across both columns: the chip already ranks upgrades
-	// over info, and two open panels would argue about which the player meant.
-	const toggleInfo = (name: string) => {
-		setOpenUpgrades(undefined);
-		setOpenInfo(name === openInfo ? undefined : name);
-	};
+	// The two columns disclose independently: a name can sit in the build and on
+	// the shelf at once, and one flip set would collapse the pair together.
+	const buildNames = view.configs.map((config) => config.label);
+	const offerNames = view.offers.map((offer) => offer.config.label);
 
-	const toggleUpgrades = (name: string) => {
-		setOpenInfo(undefined);
+	const buildOpen = disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN);
+	const offersOpen = disclosedIn(offerNames, offerFlips, OFFERED_CARDS_OPEN);
+
+	const toggleBuild = (name: string) =>
+		setBuildFlips(toggleDisclosure(buildFlips, name));
+
+	const toggleOffer = (name: string) =>
+		setOfferFlips(toggleDisclosure(offerFlips, name));
+
+	const toggleAllBuild = () =>
+		setBuildFlips(
+			discloseAll(
+				buildNames,
+				buildOpen.size < buildNames.length,
+				INSTALLED_CARDS_OPEN
+			)
+		);
+
+	const toggleAllOffers = () =>
+		setOfferFlips(
+			discloseAll(
+				offerNames,
+				offersOpen.size < offerNames.length,
+				OFFERED_CARDS_OPEN
+			)
+		);
+
+	const toggleUpgrades = (name: string) =>
 		setOpenUpgrades(name === openUpgrades ? undefined : name);
-	};
 
 	const armed = view.offers.find((offer) => offer.config.id === armedId);
+	const pointed = view.offers.find((offer) => offer.config.id === pointedId);
 	// Any other service press means the run goes on, so the kill is disarmed.
 	const disarming = (press: () => void) => () => {
 		setAbandonArmed(false);
@@ -243,7 +281,8 @@ export const ShopView = ({
 			header={shopHeaderFor(
 				view.gatePayout.clearedGateNumber,
 				view.storage,
-				view.swatchGates
+				view.swatchGates,
+				pointed?.priceKb
 			)}
 			nextGate={nextGateFor(
 				view.gatePayout.clearedGateNumber,
@@ -298,25 +337,35 @@ export const ShopView = ({
 								},
 							}),
 				},
-				openInfo,
-				onToggleInfo: toggleInfo,
+				openInfo: buildOpen,
+				onToggleInfo: toggleBuild,
+				onToggleAll: toggleAllBuild,
 				openUpgrades,
 				onToggleUpgrades: toggleUpgrades,
 			}}
 			registry={{
-				offers: offersOf(view, onDraft, armedId, setArmedId),
+				offers: offersOf(view, onDraft, armedId, setArmedId, setPointedId),
 				slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
-				openInfo,
-				onToggleInfo: toggleInfo,
+				openInfo: offersOpen,
+				onToggleInfo: toggleOffer,
+				onToggleAll: toggleAllOffers,
 				openUpgrades,
 				onToggleUpgrades: toggleUpgrades,
 			}}
 			footer={{
 				action: {
 					label: TO_PREP,
-					icon: "gate",
+					swatch: {
+						state: "current",
+						swatch: gateSwatchAt(view.gatePayout.clearedGateNumber + 1),
+					},
 					onPress: overSpace || needsVendor ? undefined : onContinue,
 				},
+				note: buildReadingOf({
+					configs: view.configs.length,
+					held: view.buildSpace.weight,
+					slots: view.buildSpace.space,
+				}),
 				refusal: overSpace
 					? `${view.overflowSlots} ${WEIGHT} ${OVER_MARK} ${view.buildSpace.coveredSpace} ${OVER_REMEDY}`
 					: needsVendor

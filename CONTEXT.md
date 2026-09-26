@@ -49,7 +49,6 @@ boundary, so this table is the map an architecture review reads first.
 | Paid actions | `run/application` | `PaidActions`, `paidActionsFor` (`paidActions.viewmodel.ts`); lint and peek as the answering screen sees them |
 | Shop controls | `run/application` | `ShopControls`, `shopControlsFor` (`shopControls.viewmodel.ts`); ADR-029's rebuild / lock / extend plus the git tag |
 | Gate payout | `run/application` | `GatePayout`, `gatePayoutFor` (`gatePayout.viewmodel.ts`); what the cleared gate paid and took back |
-| Answer score | `run/application` | `AnswerScore`, `latestAnswerScore`, `correctOptionIdsFor` (`answerScore.viewmodel.ts`); selectors over a built `RunView`, not part of `toRunView` |
 | Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
 | Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
@@ -57,7 +56,7 @@ boundary, so this table is the map an architecture review reads first.
 | Build | `build/domain` | `Build` = `{ id, configs, vendorLockedConfigId? }` (`build.model.ts`); carries no space of its own — `spaceForBuild` derives it (ADR-098) |
 | Public build | `build/domain` | `PublicBuild`, `publicBuildOf`, `publicWeightOf` (`publicBuild.model.ts`); a build as any other player may read it — configs, versions, weight, the vendor lock — refreshed from the roster (ADR-101). Display only: no check reads it |
 | Slot | `build/domain` | `occupiedSlots`, `billableSlotsOf`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity`, `MAX_BUILD_WEIGHT` (`build.model.ts`); the space a run rents is **derived** from its weight (`spaceForBuild`), and the ladder lives in `run/domain/rules.model.ts`. `hasRoomFor` measures against the top rung only (ADR-098); `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
-| Coverage | `build/domain` | `coverageForAnswer`, `coverageBreakdownForAnswer`; run totals held on `RunState.coverage` / `coverageByCategory` |
+| Answer payout | `build/domain` | `answerPayoutFor`, `AnswerPayout`, `previewContextFor`, `perAnswerPreviewFor`, `PerAnswerPreview` (`answerPayout.model.ts`) and `PayoutContext` (`config/domain/effect.model.ts`); the one walk that prices a right answer and attributes it, and the preview is that same walk with no category, so a quote can never disagree with a payout. Run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `build/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
 | Build screen | `build/presentation` | `RunNew`, `StartView` |
 | Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
@@ -80,13 +79,17 @@ boundary, so this table is the map an architecture review reads first.
 | Category leader / Seat | `run/domain` | `CategoryLeader`, `CategorySeat`, `seatsFor`, `MIN_LEADER_STREAK` (`categoryLeader.model.ts`); one seat per category, read by the poll screen and by the community board. The row both surfaces draw is `categoryLeaderRowFor` (`run/application`) |
 | Voter | `community/domain` | `CommunityVoter` (`voter.model.ts`); a player as the board draws them |
 | Climb map | `community/domain` | `ClimbMarker`, `trackPosition` (`climbMap.model.ts`); the shared per-day position track, read only by the community board |
+| Climb ladder | `community/application` | `ladderFor`, `LadderGate`, `LadderClimber`, `LadderFallen`, `ClimberMark` (`climbLadder.viewmodel.ts`); the map's gates with everyone standing under them, the fallen keyed by run, each chip's rival ring, close mark and rescue tag, and the `ClimberCard` a chip opens |
 | Community board | `community/application` | `getRunCommunityService` and its view types (`community.service.ts`), `community.serverfn.ts` |
+| Climb standing | `community/application` | `ClimbStanding` (`community.service.ts`); how a run is doing as anyone may read it — handle, worn title, coverage percent, streak, storage, best category. ADR-101 §2 says what is never on it |
 | Community reads | `community/infrastructure` | `community.repository.ts`, `climbers.repository.ts` |
 | Community screen | `community/presentation` | `RunCommunity`, `CommunityView`, `useNextPollsCountdown` |
 | Incident / Attack | `incident/domain` | `RivalCandidate`, `AttackOffer`, `QueuedIncident`, `eligibleRivals`, `offersFor`, `lockIncidents` (`incident.model.ts`); the run-side vocabulary `Attack`, `LastClose`, `LockedIncident` lives on `RunState` (`run.model.ts`) with `armAttack` / `fireAudit` in `attack.model.ts`, so nothing in `run/domain` imports the aggregate |
 | Incident settlement | `incident/application` | `settleIncidents` (`incidentSettlement.service.ts`), the one writer of a gate's audits, handed to `applyActionToRun` as its `settle` seam; `attackTargets.service.ts`, `fireAudit.service.ts`, `incidentsFeed.service.ts`, `incident.serverfn.ts`, `incident.viewmodel.ts`, the three hooks |
 | Incident queue | `incident/infrastructure` | `incident.repository.ts` owns every statement against `audit_incidents` |
 | Incidents feed | `src/ui/kanto-theme` | `AttackPanel` (prep) and `IncidentsPanel`, which the community board composes. The aggregate has no `presentation/` layer: the feed has no screen of its own |
+| Public build chips | `build/application` | `publicBuildChipsFor`, `publicConfigChipFor` (`publicBuild.viewmodel.ts`); the one way another player's build becomes chips, drawn by the prep attack rows and by the climb map |
+| Public build space | `build/domain` | `publicSpaceOf` (`publicBuild.model.ts`); the rung another player's build rents, vendor lock exempt, mirroring `spaceForBuild` |
 | Poll answering visuals | `poll/presentation` | `PollMarkdown`, `PollQuestionHeading`; the rest moved into the kanto `PollScreen` |
 
 A screen belongs to the aggregate whose concept it is about, which is why
@@ -167,6 +170,7 @@ meant two things at once.
 
 | Retired | Why | Use instead |
 |---|---|---|
+| `ladderSummaryFor` / `trackBuildFor` / `rivalChipFor` | The map stated a one-line count while it was a placeholder, and a public build became chips in two places | `ladderFor` for the map; `publicBuildChipsFor` for the chips |
 | Pipeline | Retired as the container word (ADR-048): it read as the thing judging you, which is the gate | **Build** for the player's setup; **Gate** for the judgement |
 | Board | Never the container word | **Build** |
 | Spot | ADR-044 renamed slots to spots to keep width clear of money; ADR-048 reversed it | **Slot** |
@@ -181,11 +185,14 @@ meant two things at once.
 | Config Effects Engine | The engine is one function | `effectOf` in `config/domain/effect.model.ts` |
 | Config Discovery | Not built; tracked in DVTD-2try | Say "config unlocks" and link the bean |
 | `session-run` | Renamed to `run` in 2026-07; the orphan folder was deleted 2026-08-12 | `src/modules/run/`; the DB value `mode: "session"` keeps the old name |
+| `coverageForAnswer` / `coverageProfileFor` / `coveragePerCorrectRaw` / `gainPerCorrectFor` / `coverageMultiplierFor` | Four formulas priced one right answer, and the one the prep and shop quoted skipped focus, missed-poll and cache and folded the throttle in, so the quote and the payout could disagree (deleted 2026-09-25) | `answerPayoutFor`; the preview is `perAnswerPreviewFor`, the same walk with no category |
+| `answerScore.viewmodel` | Documented as a run concept with no production caller; the receipt reads `AnsweredPoll.coverageBreakdown` directly (deleted 2026-09-25) | `CoverageBreakdown` on the answered poll |
 
 Retired **folder and file** names, per the ADR-002 rewrite of 2026-08-12:
 
 | Retired | Why | Use instead |
 |---|---|---|
+| `ladderSummaryFor` / `trackBuildFor` / `rivalChipFor` | The map stated a one-line count while it was a placeholder, and a public build became chips in two places | `ladderFor` for the map; `publicBuildChipsFor` for the chips |
 | `presentation/{concept}/` beside concept folders | Split the same concept across two folders | `{aggregate}/presentation/` |
 | `queries.ts` | Names the SQL verb, not the role; reads and writes share table knowledge | `{name}.repository.ts` in `infrastructure/` |
 | `handlers.ts` | Orchestration is a service. (`.handlers.ts` means MSW in the ADR-083 lineage; DevVoted has no MSW) | `{name}.service.ts` in `application/` |

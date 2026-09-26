@@ -113,31 +113,26 @@ describe("BuildFooter", () => {
 		expect(screen.getAllByText(`${TOTAL} configs`)).toHaveLength(1);
 	});
 
-	it("sits in the flow at the screen's floor while nothing has measured it", () => {
+	it("sits in the flow at the screen's floor while the press beneath it is unmeasured", () => {
 		const { container } = render(<BuildFooter {...props} />);
 
 		expect(container.firstChild).not.toHaveClass("sticky");
 		expect(container.firstChild).toHaveClass("mt-auto");
+		expect(container.firstElementChild).not.toHaveAttribute("style");
 	});
 
-	it("rides the viewport floor once the screen asks it to", () => {
-		const { container } = render(<BuildFooter {...props} pinned />);
+	it("rides on the press beneath it once that press has been measured", () => {
+		const { container } = render(<BuildFooter {...props} seat={72} />);
 
-		expect(container.firstChild).toHaveClass("sticky", "bottom-0", "z-20");
+		expect(container.firstChild).toHaveClass("sticky", "z-20");
+		expect(container.firstElementChild).toHaveStyle({ bottom: "72px" });
 	});
 
-	it("hands its own element to whoever has to measure it", () => {
-		let measured: HTMLElement | null = null;
-		const { container } = render(
-			<BuildFooter
-				{...props}
-				ref={(bar) => {
-					measured = bar;
-				}}
-			/>
-		);
+	it("takes the floor itself where the press beneath it measures nothing", () => {
+		const { container } = render(<BuildFooter {...props} seat={0} />);
 
-		expect(measured).toBe(container.firstChild);
+		expect(container.firstChild).toHaveClass("sticky");
+		expect(container.firstElementChild).toHaveStyle({ bottom: "0px" });
 	});
 });
 

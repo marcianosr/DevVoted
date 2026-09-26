@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone } from "./Button.ui";
 import type { KantoColor } from "./colors";
+import { Figures } from "./Figures.ui";
 import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 import { Version, versionAccentOf, type VersionState } from "./Version.ui";
@@ -140,7 +141,7 @@ export const Upgrades = ({
 					)}
 				</span>
 				<Typography variant="caption" as="p">
-					{description}
+					<Figures text={description} />
 				</Typography>
 
 				<div className={PAIR}>

@@ -39,6 +39,15 @@ describe("effectOf — Focus", () => {
 		).toEqual({ mult: 1.5, add: 0 });
 	});
 
+	it("focuses nothing when the poll's category is not known yet", () => {
+		expect(
+			effectOf(CONFIGS.js).coverage?.({
+				...answering("js"),
+				category: undefined,
+			})
+		).toEqual({ mult: 1, add: 0 });
+	});
+
 	it("contributes no faucet or mask", () => {
 		const effect = effectOf(CONFIGS.js);
 		expect(faucetKbPerCorrect([CONFIGS.js])).toBe(0);
@@ -314,6 +323,7 @@ describe("configStatusFor — online", () => {
 	it("counts a per-answer payout and a sellable peek as work on this poll", () => {
 		expect(configStatusFor(CONFIGS.indexedDb, onPoll("git"))).toEqual({
 			kind: "online",
+			capLeftKb: FAUCET_CAP_KB,
 		});
 		expect(configStatusFor(CONFIGS.telemetry, onPoll("git"))).toEqual({
 			kind: "online",
@@ -506,7 +516,7 @@ describe("configStatusFor — skipped", () => {
 				CONFIGS.indexedDb,
 				onPoll("git", 1, { faucetRemainingKb: 8 })
 			)
-		).toEqual({ kind: "online" });
+		).toEqual({ kind: "online", capLeftKb: 8 });
 	});
 
 	it("skips Database on the same spent allowance", () => {
@@ -523,18 +533,18 @@ describe("configStatusFor — an open transaction states what it holds", () => {
 	it("carries the KB Database is holding on this poll", () => {
 		expect(
 			configStatusFor(CONFIGS.database, onPoll("git", 1, { pendingKb: 24 }))
-		).toEqual({ kind: "online", holdingKb: 24 });
+		).toEqual({ kind: "online", holdingKb: 24, capLeftKb: FAUCET_CAP_KB });
 	});
 
 	it("says nothing while the transaction is empty", () => {
 		expect(
 			configStatusFor(CONFIGS.database, onPoll("git", 1, { pendingKb: 0 }))
-		).toEqual({ kind: "online" });
+		).toEqual({ kind: "online", capLeftKb: FAUCET_CAP_KB });
 	});
 
 	it("never lets a plain faucet claim the figure", () => {
 		expect(
 			configStatusFor(CONFIGS.indexedDb, onPoll("git", 1, { pendingKb: 24 }))
-		).toEqual({ kind: "online" });
+		).toEqual({ kind: "online", capLeftKb: FAUCET_CAP_KB });
 	});
 });

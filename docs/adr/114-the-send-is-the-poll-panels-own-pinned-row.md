@@ -4,7 +4,10 @@
 
 Accepted — 2026-09-25 (Marciano, DVTD-ktf3). Extends
 [ADR-069](069-the-build-sits-in-a-folded-footer.md) decision 1 rather than
-amending it: the build sheet keeps its pin, and the send stacks on top of it.
+amending it: both bars pin, as a stack.
+
+Decisions 2 and 3 reversed — 2026-09-26 (Marciano, DVTD-967r). The stack is the
+same stack; which bar holds the floor swapped. Decisions 1 and 4 stand.
 
 ## Context
 
@@ -27,23 +30,34 @@ has to clear is a measurement, not a constant.
    the end of it and settles above the byline once the panel's end is in view.
    The press now sits inside the border of the thing it commits.
 
-2. **Both bars pin, as a stack.** The sheet keeps `sticky bottom-0`; the send
-   sits at `bottom: <the sheet's measured height>`. A `ResizeObserver` on the
-   sheet feeds that number — `Fold` is an uncontrolled `<details>` and nothing
-   listens for `toggle`, so the player opening the build produces no React
-   render at all, and an observer on the box is the only thing that sees it move.
+2. **Both bars pin, and the send holds the floor.** The send keeps
+   `sticky bottom-0`; the sheet sits at `bottom: <the send's measured height>`.
+   A `ResizeObserver` on the send feeds that number.
 
-   They cannot overlap. The send's natural position is always above the sheet's,
-   and both are clamped against the same viewport offset, so the send stays above
-   the sheet in every combination of pinned and settled.
+   The send is the one press the screen is asking for, and a press that has to
+   be found above another bar is not the first thing a thumb reaches. The sheet
+   is the thing a player opens when they want it, so it is the thing that moves.
 
-3. **The sheet does not pin until it has been measured**, and until then the send
-   holds the bare floor. Not a nicety: `startsOpen` returns true on the server,
-   so SSR always renders the fold open and a phone collapses it at hydration. No
-   one constant describes both, and guessing low would park an unmeasured `z-20`
-   bar over the press for the whole pre-hydration window. An unpinned sheet with
-   the send on the floor is correct in that gap rather than approximately wrong,
-   and it is what a reader with no JS gets.
+   Originally the other way round, on the reasoning that the sheet was the
+   heavier furniture and should sit on the floor. That read the stack as
+   scenery. It is not: one of these two bars is the screen's question and the
+   other is a reference, and the question goes where the hand is.
+
+   The observer stays for the same reason it was introduced, now pointed at the
+   other bar: `Fold` is an uncontrolled `<details>` and nothing listens for
+   `toggle`, so the player opening the build produces no React render at all,
+   and the send's own height moves too — its note changes length as the answer
+   does, and it wraps at narrow widths.
+
+   They cannot overlap. The sheet's natural position is always above the send's,
+   and both are clamped against the same viewport offset.
+
+3. **The sheet does not pin until the send has been measured**, and until then
+   the send holds the floor alone and the sheet stays in the flow. Not a
+   nicety: the send's height is not a constant anyone can write down, and
+   guessing low would park an unseated `z-20` bar over the press for the whole
+   pre-hydration window. An unpinned sheet is correct in that gap rather than
+   approximately wrong, and it is what a reader with no JS gets.
 
 4. **The answered poll's press takes the same slot.** `commit` and `footer`
    never coexist — one sends the answer, the other moves past it — so both
@@ -51,10 +65,10 @@ has to clear is a measurement, not a constant.
 
 ## Consequences
 
-`PollCommit` moved out of `BuildFooter.ui` into `PollScreen.ui`, and
-`BuildFooterProps` lost `commit` and `footer` while gaining `pinned` and a
-`ref`. The sheet is only the sheet; it does not know what stacks on it, only
-that someone measures it.
+`PollCommit` moved out of `BuildFooter.ui` into `PollScreen.ui`.
+`BuildFooterProps` lost `commit` and `footer`, and takes a single `seat` — how
+far off the floor it rides, absent until the press below it has been measured.
+The sheet is only the sheet; it does not know what it stands on, only how high.
 
 `src/ui/` gains its first hook file and its first observer. The one measurement
 this repo had was deleted for reasons recorded in `app.css` — stale coordinates

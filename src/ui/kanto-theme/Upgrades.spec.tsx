@@ -23,6 +23,15 @@ const refused = (rungs: readonly UpgradeRung[]) =>
 		rung.state === "offered" ? { ...rung, disabled: true } : rung
 	);
 
+/**
+ * `Figures` splits prose across spans, so several nested elements share the
+ * whole sentence. Match the innermost of them — the one whose children do not
+ * already say it all by themselves.
+ */
+const textIs = (whole: string) => (_: string, element: Element | null) =>
+	element?.textContent === whole &&
+	!Array.from(element.children).some((child) => child.textContent === whole);
+
 describe("Upgrades", () => {
 	it("names the config and says what it does", () => {
 		render(<Upgrades {...PANEL} />);
@@ -80,10 +89,9 @@ describe("Upgrades", () => {
 	it("gives the description the screen's accent rather than a muted grey", () => {
 		render(<Upgrades {...PANEL} />);
 
-		expect(screen.getByText(PANEL.description)).toHaveClass(
-			"text-sm",
-			"text-theme-soft"
-		);
+		expect(
+			screen.getByText(textIs(PANEL.description)).closest("p")
+		).toHaveClass("text-sm", "text-theme-soft");
 	});
 
 	it("badges the effect as a gain, green on both cards", () => {

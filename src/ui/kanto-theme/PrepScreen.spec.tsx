@@ -432,7 +432,7 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...kantoPrepSpent()} />);
 
 			expect(
-				screen.getByRole("button", { name: "Start Lavender" })
+				screen.getByRole("button", { name: /^Start Lavender/ })
 			).toBeDisabled();
 			expect(
 				screen.getByText("Tomorrow's polls open in 7h 14m.")
@@ -454,7 +454,7 @@ describe("PrepScreen", () => {
 		it("reads the balance at whatever unit it has rolled to", () => {
 			render(<PrepScreen {...champion} />);
 
-			expect(screen.getByText("1.9 MB")).toBeInTheDocument();
+			expect(screen.getByRole("img", { name: "1.9 MB" })).toBeInTheDocument();
 		});
 
 		it("keeps the per-poll leak out of the bill and on its audit", () => {
@@ -490,23 +490,29 @@ describe("PrepScreen", () => {
 	});
 
 	describe("signing its presses", () => {
-		it("gives every way out of the screen an icon rather than an arrow", () => {
-			render(<PrepScreen {...props} />);
+		it("marks the start with the gate it starts, and the way out with an icon", () => {
+			const { container } = render(<PrepScreen {...props} />);
 
-			for (const name of ["Start Lavender", PREP_COMMUNITY_LABEL]) {
-				expect(
-					screen.getByRole("button", { name }).querySelector("svg")
-				).not.toBeNull();
-			}
+			expect(
+				screen
+					.getByRole("button", { name: /^Start Lavender/ })
+					.querySelector("[data-swatch-theme='lavender']")
+			).not.toBeNull();
+			expect(
+				screen
+					.getByRole("button", { name: PREP_COMMUNITY_LABEL })
+					.querySelector("svg")
+			).not.toBeNull();
+			expect(container).toBeInTheDocument();
 		});
 
 		it("starts the gate in the gate's own colour, not a stock green", () => {
 			render(<PrepScreen {...props} />);
 
-			const start = screen.getByRole("button", { name: "Start Lavender" });
+			const start = screen.getByRole("button", { name: /^Start Lavender/ });
 
 			expect(start).not.toHaveAttribute("data-screen-theme");
-			expect(start).toHaveClass("press-theme");
+			expect(start).toHaveClass("segment-theme");
 		});
 	});
 });

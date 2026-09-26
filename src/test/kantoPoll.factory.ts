@@ -1,4 +1,5 @@
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
+import { OFFERED_CARDS_OPEN, disclosedIn } from "~/shared/lib/disclosure";
 import {
 	EMPTY_LABEL,
 	SUGGESTED_LABEL,
@@ -48,7 +49,6 @@ import {
 	coverageGainPercentFor,
 	MULTIPLE_CREDIT,
 	SINGLE_CREDIT,
-	gainPerCorrectFor,
 	healthyAt,
 	healthyUnitsAt,
 	okAt,
@@ -385,7 +385,6 @@ export const createKantoPollScreenProps =
 				rows: pollPayoutRows(KANTO_RUN_PAYOUTS).slice(-1),
 			},
 		},
-		pollLabel: "Poll 4 out of 5",
 		category: "TypeScript",
 		categoryColor: "cinnabar",
 		wrongCost: "0.77",
@@ -632,6 +631,13 @@ export const kantoShopUninstalls: Readonly<Record<string, UninstallProps>> = {
 export const createKantoRegistryProps = createMockDataFactory<RegistryProps>({
 	offers: kantoRegistryOffers,
 	slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+	openInfo: disclosedIn(
+		kantoRegistryOffers.map((offer) => offer.name ?? ""),
+		new Set(),
+		OFFERED_CARDS_OPEN
+	),
+	onToggleInfo: noop,
+	onToggleAll: noop,
 });
 
 export const kantoShopWeight = (): BuildWeight => ({
@@ -648,6 +654,8 @@ export const createKantoShopScreenProps =
 		build: {
 			configs: kantoShopBuild,
 			weight: kantoShopWeight(),
+			onToggleInfo: noop,
+			onToggleAll: noop,
 		},
 		registry: createKantoRegistryProps(),
 	});
@@ -773,7 +781,6 @@ const NUMBER_WORDS: Readonly<Record<number, string>> = {
 
 const numberWord = (count: number) => NUMBER_WORDS[count] ?? String(count);
 
-const SUGGESTED_COLOR = "cerulean" as const;
 const ARCHIVE_WORD = "archive";
 
 export const kantoNewRunHeader = (
@@ -813,30 +820,43 @@ export const kantoHandCards = (
 		? suggestedIdsIn(NEW_RUN_HAND, capacity)
 		: new Set<string>();
 
+	// Through the viewmodel, not beside it: a hand card assembled here drifts
+	// from the one the screen deals the moment either changes.
 	return NEW_RUN_HAND.map((config) => {
 		const held = installed.has(config.id);
-		const fits = slotsOf(config) <= capacity - usedSlots;
-		const marked = !held && marks.has(config.id);
 
-		return {
-			name: config.label,
-			slots: slotsOf(config),
-			badges: marked
-				? [{ label: SUGGESTED_LABEL, color: SUGGESTED_COLOR }]
-				: [],
-			skipped: held || !fits,
-			install: held ? undefined : { onPress: noop, disabled: !fits },
-			info: infoFor(config),
-		};
+		return handCardFor({
+			config,
+			held,
+			suggested: !held && marks.has(config.id),
+			fits: slotsOf(config) <= capacity - usedSlots,
+			onPress: noop,
+		});
 	});
 };
 
+/**
+ * Dealt open, the way `StartView` deals it. A fixture that leaves `openInfo` out
+ * draws every offer shut, which is a state no player ever arrives in — and a
+ * story or spec reading it would be measuring the fixture, not the screen.
+ */
 export const kantoNewRunRegistry = (
 	installedIds: readonly string[] = [],
 	capacity: number = BASE_SLOTS,
 	suggested = true
-): RegistryProps =>
-	newRunRegistryFor(kantoHandCards(installedIds, capacity, suggested));
+): RegistryProps => {
+	const offers = kantoHandCards(installedIds, capacity, suggested);
+
+	return newRunRegistryFor(offers, {
+		openInfo: disclosedIn(
+			offers.map((offer) => offer.name ?? ""),
+			new Set(),
+			OFFERED_CARDS_OPEN
+		),
+		onToggleInfo: noop,
+		onToggleAll: noop,
+	});
+};
 
 export const kantoNewRunBuild = (
 	installedIds: readonly string[]
@@ -858,6 +878,7 @@ import {
 	BAND_OUTCOMES_TITLE,
 } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 import {
+	handCardFor,
 	newRunFooterFor,
 	newRunRegistryFor,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
@@ -868,6 +889,7 @@ import {
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { failPeelQuotaFor } from "~/modules/run/gate/domain/gate.model";
+import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
 import { gateClearPayout } from "~/modules/run/build/domain/build.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
@@ -1045,7 +1067,8 @@ export const kantoPrepAt = ({
 		window,
 		bar: { ...prepLadderAt(gate), held: coverageHeld },
 		coverageGainPercent: coverageGainPercentFor(
-			gainPerCorrectFor(configs),
+			perAnswerPreviewFor(configs, { answeredBefore: answered })
+				.coveragePerCorrect,
 			gate
 		),
 		peelKb: prepPeelKbAt(gate, configs, audits),
@@ -1064,6 +1087,8 @@ export const kantoNewRunAt = (
 		configs: kantoNewRunBuild(installedIds),
 		weight: { held: BASE_SLOTS, perGateKb: upkeepForSpace(BASE_SLOTS) },
 		emptyLabel: EMPTY_LABEL,
+		onToggleInfo: noop,
+		onToggleAll: noop,
 	},
 	registry: kantoNewRunRegistry(installedIds, BASE_SLOTS),
 	footer: kantoGateZeroFooter(installedIds.length > 0),

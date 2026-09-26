@@ -120,10 +120,10 @@ describe("Build", () => {
 		expect(within(fold).queryByText("Cache")).not.toBeInTheDocument();
 	});
 
-	it("wraps the chips rather than letting a full build overflow the screen", () => {
+	it("grids the cards, so a one-line effect and a four-line one still line up", () => {
 		render(<Build configs={RUNNING} />);
 
-		expect(screen.getByText("Cache").closest(".flex-wrap")).not.toBeNull();
+		expect(screen.getByText("Cache").closest(".grid")).not.toBeNull();
 	});
 
 	const WITH_PANELS = [
@@ -131,40 +131,46 @@ describe("Build", () => {
 			name: "Cache",
 			badges: [{ label: "×1.75", color: "viridian" }],
 			info: {
-				name: "Cache",
 				description: "Coverage climbs with every correct answer in a row.",
 				slots: 2,
 				sellPrice: "32 KB",
+				maxVersion: 5,
 			},
 		},
 		{
 			name: "ESLint",
 			badges: [{ label: "lint 32 KB", color: "cerulean" }],
 			info: {
-				name: "ESLint",
-				description: "Cross out a wrong answer on JS/TS polls.",
+				description:
+					"Cross out a wrong answer on JavaScript / TypeScript polls.",
 				slots: 1,
 				sellPrice: "16 KB",
+				maxVersion: 5,
 			},
 		},
 	] satisfies ConfigChipProps[];
 
-	it("opens the panel of the named config and no other", () => {
-		render(<Build configs={WITH_PANELS} openInfo="Cache" />);
-
-		expect(screen.getByRole("button", { name: "About Cache" })).toHaveAttribute(
-			"aria-expanded",
-			"true"
+	it("expands the named config and no other", () => {
+		render(
+			<Build
+				configs={WITH_PANELS}
+				openInfo={new Set(["Cache"])}
+				onToggleInfo={vi.fn()}
+			/>
 		);
+
 		expect(
-			screen.getByRole("button", { name: "About ESLint" })
+			screen.getByRole("button", { name: "Collapse Cache" })
+		).toHaveAttribute("aria-expanded", "true");
+		expect(
+			screen.getByRole("button", { name: "Expand ESLint" })
 		).toHaveAttribute("aria-expanded", "false");
 	});
 
-	it("opens nothing when no config is named", () => {
-		render(<Build configs={WITH_PANELS} />);
+	it("expands nothing when no config is named", () => {
+		render(<Build configs={WITH_PANELS} onToggleInfo={vi.fn()} />);
 
-		for (const name of ["About Cache", "About ESLint"]) {
+		for (const name of ["Expand Cache", "Expand ESLint"]) {
 			expect(screen.getByRole("button", { name })).toHaveAttribute(
 				"aria-expanded",
 				"false"
@@ -172,11 +178,13 @@ describe("Build", () => {
 		}
 	});
 
-	it("reports which config was asked about, so the parent can pin it", async () => {
+	it("reports which config was flipped, so the parent can record it", async () => {
 		const onToggleInfo = vi.fn();
 		render(<Build configs={WITH_PANELS} onToggleInfo={onToggleInfo} />);
 
-		await userEvent.click(screen.getByRole("button", { name: "About ESLint" }));
+		await userEvent.click(
+			screen.getByRole("button", { name: "Expand ESLint" })
+		);
 
 		expect(onToggleInfo).toHaveBeenCalledWith("ESLint");
 	});
@@ -192,7 +200,7 @@ describe("Build", () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: "About Cache" }));
+		await userEvent.click(screen.getByRole("button", { name: "Expand Cache" }));
 
 		expect(onToggleInfo).toHaveBeenCalledWith("Cache");
 	});
@@ -278,36 +286,36 @@ describe("Build's vacancy", () => {
 	const FULL = { used: 10, capacity: 10 } as const;
 	const ROOMY = { used: 7, capacity: 10 } as const;
 
-	it("opens one box per slot the build has not filled", () => {
+	it("states the room left as one row, not one box a slot", () => {
 		render(<Build configs={RUNNING} slots={ROOMY} />);
 
-		expect(screen.getAllByText("empty slot")).toHaveLength(3);
+		expect(screen.getAllByText("empty")).toHaveLength(1);
+		expect(screen.getByText("3 weight free")).toBeInTheDocument();
 	});
 
-	it("opens no boxes once every slot is filled", () => {
+	it("opens no box once every slot is filled", () => {
 		render(<Build configs={RUNNING} slots={FULL} />);
 
-		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+		expect(screen.queryByText("empty")).not.toBeInTheDocument();
 	});
 
-	it("opens no boxes over capacity, rather than counting backwards", () => {
+	it("opens no box over capacity, rather than counting backwards", () => {
 		render(<Build configs={RUNNING} slots={{ used: 12, capacity: 10 }} />);
 
-		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+		expect(screen.queryByText("empty")).not.toBeInTheDocument();
 	});
 
-	it("draws one box per empty slot and sells none of them (ADR-074)", () => {
+	it("sells none of the room it states (ADR-074)", () => {
 		render(<Build configs={RUNNING} slots={ROOMY} />);
 
-		expect(screen.getAllByText("empty slot")).toHaveLength(3);
 		expect(screen.queryByRole("button", { name: /slot/ })).toBeNull();
 	});
 
 	it("keeps the vacancy inside the chip column, so it lines up with it", () => {
-		render(<Build configs={RUNNING} layout="column" slots={ROOMY} />);
+		render(<Build configs={RUNNING} slots={ROOMY} />);
 
 		const chip = screen.getByText("Cache").closest('span[class*="bg-theme/"]');
-		const box = screen.getAllByText("empty slot")[0].parentElement;
+		const box = screen.getByText("empty").parentElement;
 
 		expect(box?.parentElement).toBe(chip?.parentElement);
 	});
@@ -315,13 +323,13 @@ describe("Build's vacancy", () => {
 	it("draws no box for a merely empty slot when the screen says not to", () => {
 		render(<Build configs={RUNNING} slots={ROOMY} emptySlots={false} />);
 
-		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+		expect(screen.queryByText("empty")).not.toBeInTheDocument();
 	});
 
 	it("leaves the poll band no vacancy to draw", () => {
 		const { container } = render(<Build configs={RUNNING} />);
 
-		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
+		expect(screen.queryByText("empty")).not.toBeInTheDocument();
 		expect(container.querySelector(".bg-hatched-theme")).toBeNull();
 	});
 });
@@ -387,7 +395,6 @@ describe("Build's slot track", () => {
 		const { container } = render(
 			<Build
 				configs={kantoShopBuild}
-				layout="column"
 				slots={{ used, capacity: SHOP_CAPACITY_SLOTS }}
 			/>
 		);
@@ -441,14 +448,7 @@ describe("Build's slot track", () => {
 
 	it("reports the config the pointer is over", async () => {
 		const onHighlight = vi.fn();
-		render(
-			<Build
-				configs={SIZED}
-				layout="column"
-				slots={ROOMY}
-				onHighlight={onHighlight}
-			/>
-		);
+		render(<Build configs={SIZED} slots={ROOMY} onHighlight={onHighlight} />);
 
 		await userEvent.hover(screen.getByText("Cache"));
 
@@ -457,14 +457,7 @@ describe("Build's slot track", () => {
 
 	it("clears the highlight when the pointer leaves the chip", async () => {
 		const onHighlight = vi.fn();
-		render(
-			<Build
-				configs={SIZED}
-				layout="column"
-				slots={ROOMY}
-				onHighlight={onHighlight}
-			/>
-		);
+		render(<Build configs={SIZED} slots={ROOMY} onHighlight={onHighlight} />);
 
 		await userEvent.hover(screen.getByText("Cache"));
 		await userEvent.unhover(screen.getByText("Cache"));
@@ -480,17 +473,14 @@ describe("Build's slot track", () => {
 		expect(captionOf(container)).toBe("Cache takes 4 slots of 10");
 	});
 
-	it("lights the config whose panel is open, so a phone can read the track", () => {
+	it("leaves the track to the hover, expanding a card lighting no segment", () => {
 		const { container } = render(
-			<Build configs={SIZED} slots={ROOMY} openInfo="Cache" />
-		);
-
-		expect(captionOf(container)).toBe("Cache takes 4 slots of 10");
-	});
-
-	it("lets a hover beat an open panel, it being the more deliberate of the two", () => {
-		const { container } = render(
-			<Build configs={SIZED} slots={ROOMY} openInfo="Cache" highlight=".ts" />
+			<Build
+				configs={SIZED}
+				slots={ROOMY}
+				openInfo={new Set(["Cache"])}
+				highlight=".ts"
+			/>
 		);
 
 		expect(captionOf(container)).toBe(".ts takes 2 slots of 10");
@@ -506,7 +496,7 @@ describe("Build's slot track", () => {
 		);
 
 		expect(screen.getByText("nothing installed yet")).toBeInTheDocument();
-		expect(screen.getAllByText("empty slot")).toHaveLength(4);
+		expect(screen.getByText("4 weight free")).toBeInTheDocument();
 	});
 
 	it("drops the placeholder as soon as the build holds anything", () => {
@@ -525,7 +515,7 @@ describe("Build's slot track", () => {
 		render(<Build configs={[]} slots={{ used: 0, capacity: 4 }} />);
 
 		expect(screen.queryByText("nothing installed yet")).not.toBeInTheDocument();
-		expect(screen.getAllByText("empty slot")).toHaveLength(4);
+		expect(screen.getByText("empty")).toBeInTheDocument();
 	});
 
 	it("hands the track the resting line it was given", () => {

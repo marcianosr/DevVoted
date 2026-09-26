@@ -15,8 +15,11 @@ import {
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
 import { answer, closeGate } from "~/modules/run/run/domain/answer.model";
-import { commitEstimate } from "~/modules/run/run/domain/estimate.model";
-import { commitBand } from "~/modules/run/run/domain/sla.model";
+import {
+	commitEstimate,
+	estimateOwed,
+} from "~/modules/run/run/domain/estimate.model";
+import { bandOwed, commitBand } from "~/modules/run/run/domain/sla.model";
 import {
 	canVendorLock,
 	commitVendorLock,
@@ -24,7 +27,14 @@ import {
 } from "~/modules/run/build/domain/vendorLock.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import { armStrict } from "~/modules/run/run/domain/strict.model";
-import { fireAudit } from "~/modules/run/run/domain/attack.model";
+import {
+	fireAudit,
+	keepPayload,
+	openAudit,
+	repackage,
+	takeAudit,
+} from "~/modules/run/run/domain/heldAudit.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	draft,
 	drop,
@@ -54,6 +64,10 @@ export type RunAction =
 	| { readonly type: "estimate"; readonly count: number }
 	| { readonly type: "commit-band"; readonly band: string }
 	| { readonly type: "fire-audit" }
+	| { readonly type: "open-audit"; readonly seed?: string }
+	| { readonly type: "keep-payload"; readonly auditId: AuditId }
+	| { readonly type: "take-audit" }
+	| { readonly type: "repackage"; readonly seed?: string }
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
@@ -111,7 +125,6 @@ const uninstallConfig = (state: RunState, configId: string): RunState => {
 
 const start = (state: RunState): RunState => {
 	if (!canStart(state.build)) return state;
-	if (canVendorLock(state)) return state;
 	return { ...state, status: "answering" };
 };
 
@@ -125,10 +138,36 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"plant-pin",
 	"sell",
 	"vendor-lock",
+	"repackage",
 ];
+
+/**
+ * The server names the seed an open or a repackage draws from; the client never
+ * does, and the wire schema refuses one it sends.
+ */
+export const withSeed = (action: RunAction, seed: string): RunAction =>
+	action.type === "open-audit" || action.type === "repackage"
+		? { ...action, seed }
+		: action;
 
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
+
+/**
+ * The two actions that walk out of prep and open a gate. Gate 0 leaves through
+ * `start` and every gate after it through `finish-reward`, in two different
+ * files — so a rule about leaving prep is keyed on the action rather than
+ * written into either one, where it would hold for one age of the run only.
+ */
+const PREP_EXITS: readonly RunAction["type"][] = ["start", "finish-reward"];
+
+/**
+ * What prep is still waiting on. A config the player installed may ask for the
+ * input its own effect reads, and the gate holds until it gets one; the screen
+ * that states the hold also carries the control that lifts it.
+ */
+export const prepHold = (state: RunState): boolean =>
+	canVendorLock(state) || estimateOwed(state) || bandOwed(state);
 
 type ActionRule = {
 	readonly type: RunAction["type"];
@@ -203,7 +242,33 @@ const RULES: readonly ActionRule[] = [
 		type: "commit-band",
 		run: (state, action) => commitBand(state, action.band),
 	}),
-	on({ type: "fire-audit", run: (state) => fireAudit(state) }),
+	on({
+		type: "fire-audit",
+		when: inStatus("rewarding"),
+		run: (state) => fireAudit(state),
+	}),
+	on({
+		type: "open-audit",
+		when: inStatus("rewarding"),
+		run: (state, action) =>
+			action.seed === undefined ? state : openAudit(state, action.seed),
+	}),
+	on({
+		type: "keep-payload",
+		when: inStatus("rewarding"),
+		run: (state, action) => keepPayload(state, action.auditId),
+	}),
+	on({
+		type: "take-audit",
+		when: inStatus("rewarding"),
+		run: (state) => takeAudit(state),
+	}),
+	on({
+		type: "repackage",
+		when: inStatus("rewarding"),
+		run: (state, action) =>
+			action.seed === undefined ? state : repackage(state, action.seed),
+	}),
 	on({
 		type: "answer",
 		when: inStatus("answering"),
@@ -328,6 +393,7 @@ const ruleFor = (state: RunState, action: RunAction) =>
 
 const reduce = (state: RunState, action: RunAction): RunState => {
 	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
+	if (PREP_EXITS.includes(action.type) && prepHold(state)) return state;
 	const rule = ruleFor(state, action);
 	return rule ? rule.run(state, action) : state;
 };

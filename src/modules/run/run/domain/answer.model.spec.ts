@@ -47,6 +47,7 @@ import {
 	type LockedIncident,
 	scheduleOf,
 	withLockedGate,
+	type HeldAuditBand,
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -1799,32 +1800,59 @@ describe("SLA pays for holding to the band it promised (ADR-096)", () => {
 	});
 });
 
-describe("a clear arms an attack, and every close leaves a record (ADR-099)", () => {
+describe("a clear hands a sealed audit, and every close leaves a record (ADR-119)", () => {
 	// Deep enough that five right answers clear the gate without filling the bar.
 	const deepHealthy = { ...started(["js"]), gatesCleared: 4, bankedUnits: 12 };
 
-	it("arms a two-payload attack on a PERFECT clear and stamps the gate", () => {
+	/** The banked total at gate 4 that lands five right answers in the named band. */
+	const clearingIn = (band: HeldAuditBand): RunState => {
+		const landing = Array.from({ length: 40 }, (_, banked) => ({
+			...started(["js"]),
+			gatesCleared: 4,
+			bankedUnits: banked,
+		})).find((state) => {
+			const closed = clearGate(state);
+			return closed.status === "rewarding" && closed.lastClose?.band === band;
+		});
+		if (landing === undefined) throw new Error(`no ${band} clear at gate 4`);
+		return landing;
+	};
+
+	it("hands a sealed audit on a PERFECT clear and stamps the gate", () => {
 		const cleared = clearGate(started(["js"]));
-		expect(cleared.attack).toEqual({ band: "perfect" });
-		expect(cleared.attackEarnedAtGate).toBe(0);
+		expect(cleared.heldAudit).toEqual({ band: "perfect", gate: 0 });
+		expect(cleared.auditHandedAtGate).toBe(0);
+		expect(cleared.offeredAudit).toBeUndefined();
 	});
 
-	it("arms a single-payload attack on a HEALTHY clear", () => {
-		expect(clearGate(deepHealthy).attack).toEqual({ band: "healthy" });
+	it("hands one on a HEALTHY clear", () => {
+		expect(clearGate(deepHealthy).heldAudit).toEqual({
+			band: "healthy",
+			gate: 4,
+		});
 	});
 
-	it("keeps a held PERFECT through a later HEALTHY clear, stamp untouched", () => {
+	it("hands one on an OK clear too — a thin clear still earns the moment", () => {
+		const cleared = clearGate(clearingIn("ok"));
+		expect(cleared.lastClose?.band).toBe("ok");
+		expect(cleared.heldAudit).toEqual({ band: "ok", gate: 4 });
+	});
+
+	it("offers a second while one is held and restamps the gate", () => {
 		const held = clearGate({
 			...deepHealthy,
-			attack: { band: "perfect" },
-			attackEarnedAtGate: 2,
+			heldAudit: { band: "perfect", gate: 2 },
+			auditHandedAtGate: 2,
 		});
-		expect(held.attack).toEqual({ band: "perfect" });
-		expect(held.attackEarnedAtGate).toBe(2);
+		expect(held.heldAudit).toEqual({ band: "perfect", gate: 2 });
+		expect(held.offeredAudit).toEqual({ band: "healthy", gate: 4 });
+		expect(held.auditHandedAtGate).toBe(4);
 	});
 
-	it("arms nothing on a held gate", () => {
-		expect(failGate(started(["js"])).attack).toBeUndefined();
+	it("hands nothing on a held gate", () => {
+		const held = failGate(started(["js"]));
+		expect(held.heldAudit).toBeUndefined();
+		expect(held.offeredAudit).toBeUndefined();
 	});
 
 	it("records how the gate closed, on a clear and on a hold alike", () => {

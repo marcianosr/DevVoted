@@ -3,8 +3,9 @@
 title: The community screen has no placeholders left
 status: todo
 type: feature
+priority: normal
 created_at: 2026-09-25T17:51:14Z
-updated_at: 2026-09-25T17:51:14Z
+updated_at: 2026-09-26T08:42:45Z
 parent: DVTD-u35m
 ---
 
@@ -14,7 +15,7 @@ parent: DVTD-u35m
 
 ## Done when
 - [ ] Turnout states the real all-right, most-right and held-back split, with the faces in each band
-- [ ] The map draws where every climber stands, the fallen included, and marks where you are
+- [x] The map draws where every climber stands, the fallen included, and marks where you are (DVTD-4nkm, 2026-09-26)
 - [ ] No section of the screen is a placeholder or a stand-in figure
 - [ ] Both reads are covered by specs
 

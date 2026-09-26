@@ -3,6 +3,11 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
+import {
+	INSTALLED_CARDS_OPEN,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
 
 import {
 	BALANCE_WORD,
@@ -337,7 +342,6 @@ export const Answered: Story = {
 		footer: {
 			action: { label: NEXT_LABEL, icon: "gate", onPress: noop },
 			note: "Or click ENTER",
-			noteAt: "row",
 		},
 	},
 };
@@ -392,8 +396,11 @@ export const EveryGate: Story = {
 };
 
 const ScreenWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
+	const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
 	const props = createKantoPollScreenProps();
+	const names = props.buildFooter.build.configs.map(
+		(config) => config.name ?? ""
+	);
 
 	return (
 		<PollScreen
@@ -403,8 +410,8 @@ const ScreenWithPanels = () => {
 				open: true,
 				build: {
 					...props.buildFooter.build,
-					openInfo: open,
-					onToggleInfo: (name) => setOpen(name === open ? undefined : name),
+					openInfo: disclosedIn(names, flipped, INSTALLED_CARDS_OPEN),
+					onToggleInfo: (name) => setFlipped(toggleDisclosure(flipped, name)),
 				},
 			}}
 		/>

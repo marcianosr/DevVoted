@@ -106,7 +106,6 @@ const RivalBuild = ({
 					<ConfigChip
 						key={config.name}
 						{...config}
-						width="fit"
 						highlighted={hits.includes(config.name)}
 					/>
 				)

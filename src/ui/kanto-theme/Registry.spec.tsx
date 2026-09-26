@@ -13,9 +13,7 @@ import { Registry } from "./Registry.ui";
 const props = createKantoRegistryProps();
 
 const chipOf = (name: string) =>
-	screen
-		.getByRole("button", { name: `About ${name}` })
-		.closest<HTMLElement>(".rounded-lg");
+	document.querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 const sentence = (text: string) =>
 	screen.getByText((_, element) => element?.textContent === text);
@@ -26,7 +24,7 @@ describe("Registry", () => {
 
 		expect(screen.getByText("Registry")).toBeInTheDocument();
 		expect(
-			sentence(`${kantoRegistryOffers.length} offers · 32 KB a slot`)
+			sentence(`${kantoRegistryOffers.length} offers · 32 KB`)
 		).toBeInTheDocument();
 	});
 
@@ -48,12 +46,40 @@ describe("Registry", () => {
 		}
 	);
 
-	it("sizes an offer to what it says, so the shelf wraps rather than stacks", () => {
+	it("grids the offers, an offer filling its cell rather than sizing itself", () => {
 		render(<Registry {...props} />);
 
 		const offer = chipOf("IndexedDB");
-		expect(offer).not.toHaveClass("w-full");
-		expect(offer?.closest(".flex-wrap")).not.toBeNull();
+		expect(offer).toHaveClass("w-full");
+		expect(offer?.closest(".grid")).not.toBeNull();
+	});
+
+	it("flows as many offers to a row as fit, never below a head's width", () => {
+		render(<Registry {...props} />);
+
+		const list = chipOf("IndexedDB")?.closest(".grid");
+
+		// auto-fill, not auto-fit: a half-filled row keeps its empty tracks
+		// instead of stretching two cards across the whole panel.
+		expect(list?.className).toContain(
+			"grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]"
+		);
+	});
+
+	it("lets a shut card keep its own height beside an open one", () => {
+		render(<Registry {...props} />);
+
+		// Without this a grid row stretches every cell to the tallest in it, and a
+		// collapsed card reads as one with its body missing.
+		expect(chipOf("IndexedDB")?.closest(".grid")).toHaveClass("items-start");
+	});
+
+	it("names every offer at the head of its card, whatever the panel's width", () => {
+		render(<Registry {...props} />);
+
+		for (const offer of kantoRegistryOffers) {
+			expect(chipOf(offer.name ?? "")).toHaveTextContent(offer.name ?? "");
+		}
 	});
 
 	it("makes an affordable price the control that takes the offer", () => {
@@ -139,12 +165,12 @@ describe("Registry", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("asks its parent which panel to open, holding no state itself", async () => {
+	it("asks its parent which card was flipped, holding no state itself", async () => {
 		const onToggleInfo = vi.fn();
 		render(<Registry {...props} onToggleInfo={onToggleInfo} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "About IndexedDB" })
+			screen.getByRole("button", { name: /(Expand|Collapse) IndexedDB/ })
 		);
 
 		expect(onToggleInfo).toHaveBeenCalledWith("IndexedDB");

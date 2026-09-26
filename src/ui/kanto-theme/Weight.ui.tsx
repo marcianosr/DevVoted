@@ -3,7 +3,7 @@ import { clsx } from "clsx";
 import { isWeightClamped, weightWidth } from "./weights";
 
 const BLOCK =
-	"badge-theme inline-flex h-5 shrink-0 items-center justify-center rounded-md text-xs font-bold tabular-nums";
+	"badge-theme inline-flex h-6 shrink-0 items-center justify-center rounded-md text-xs font-bold tabular-nums";
 const CLAMPED = "ring-1 ring-inset ring-theme-soft";
 
 export type WeightProps = {

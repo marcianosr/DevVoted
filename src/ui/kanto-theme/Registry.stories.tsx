@@ -3,6 +3,11 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	OFFERED_CARDS_OPEN,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+import {
 	createKantoRegistryProps,
 	kantoRegistryOffers,
 } from "~/test/kantoPoll.factory";
@@ -12,14 +17,19 @@ import { Screen } from "./Screen.ui";
 import { Registry } from "./Registry.ui";
 
 const RegistryWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
+	const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
+	const props = createKantoRegistryProps();
 
 	return (
 		<Screen theme="pewter">
 			<Registry
-				{...createKantoRegistryProps()}
-				openInfo={open}
-				onToggleInfo={(name) => setOpen(name === open ? undefined : name)}
+				{...props}
+				openInfo={disclosedIn(
+					props.offers.map((offer) => offer.name ?? ""),
+					flipped,
+					OFFERED_CARDS_OPEN
+				)}
+				onToggleInfo={(name) => setFlipped(toggleDisclosure(flipped, name))}
 			/>
 		</Screen>
 	);
@@ -45,7 +55,7 @@ export const AllAffordable: Story = {
 	args: { offers: kantoRegistryOffers.slice(1, 4) },
 };
 
-export const OneInfoOpen: Story = {
+export const FoldingCards: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => <RegistryWithPanels />,
 };

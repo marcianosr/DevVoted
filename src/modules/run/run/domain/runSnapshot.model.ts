@@ -37,6 +37,9 @@ export type StoredSnapshot = Omit<RunSnapshot, "bankedUnits" | "window"> & {
 	readonly window: Omit<GateWindow, "unitsEarned"> & {
 		readonly unitsEarned?: number;
 	};
+	/** Rows written before the held attack became the sealed audit (ADR-119). */
+	readonly attack?: { readonly band: "healthy" | "perfect" };
+	readonly attackEarnedAtGate?: number;
 };
 
 export const toRunSnapshot = (state: RunState): RunSnapshot => {
@@ -133,11 +136,28 @@ export const hydrateRunState = (
 	polls: readonly RunPoll[]
 ): RunState => {
 	const unitsEarned = unitsEarnedOf(snapshot.window);
+	const {
+		attack: legacyAttack,
+		attackEarnedAtGate: legacyHandedAtGate,
+		...current
+	} = snapshot;
+	const heldAudit =
+		current.heldAudit ??
+		(legacyAttack === undefined
+			? undefined
+			: {
+					band: legacyAttack.band,
+					gate: legacyHandedAtGate ?? Math.max(0, snapshot.gatesCleared - 1),
+				});
+	const auditHandedAtGate = current.auditHandedAtGate ?? legacyHandedAtGate;
 	// Healed first, so everything downstream reads one shape: `windowStartIndex`
 	// and the audit lens both take a snapshot, and neither should learn that an
-	// older engine wrote fewer fields.
+	// older engine wrote fewer fields. The legacy keys are dropped, not carried,
+	// so the next write is clean.
 	const healed: RunSnapshot = {
-		...snapshot,
+		...current,
+		...(heldAudit === undefined ? {} : { heldAudit }),
+		...(auditHandedAtGate === undefined ? {} : { auditHandedAtGate }),
 		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
 		coverage: finite(snapshot.coverage, 0),
 		// Every row written before Database shipped has no open transaction, and

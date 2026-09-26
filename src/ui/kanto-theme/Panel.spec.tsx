@@ -82,7 +82,9 @@ describe("Panel", () => {
 	it("pushes the header meta and the footer trailing to the right", () => {
 		render(<Full />);
 
-		expect(screen.getByText("0 of 4 slots")).toHaveClass("ml-auto");
+		expect(screen.getByText("0 of 4 slots").parentElement).toHaveClass(
+			"ml-auto"
+		);
 		expect(
 			screen.getByRole("button", { name: "buy" }).parentElement
 		).toHaveClass("ml-auto");

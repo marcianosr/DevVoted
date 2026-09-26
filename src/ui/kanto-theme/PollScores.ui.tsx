@@ -1,5 +1,7 @@
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
+import { clsx } from "clsx";
+
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
@@ -21,7 +23,14 @@ const TAG = "shrink-0";
 const SCORE =
 	"ml-auto flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto";
 const EMPTY =
-	"inline-flex items-center justify-center rounded-md border border-dashed border-theme-faint px-2 py-0.5 text-xs font-bold tabular-nums text-theme-muted";
+	"inline-flex items-center justify-center rounded-md border-dashed px-2 py-0.5 text-xs font-bold tabular-nums";
+const WAITING = "border border-theme-faint text-theme-muted";
+/**
+ * The same dashed well the swatch draws for the gate you are standing on. The
+ * width and the colour are spelled here rather than added to `EMPTY`, because
+ * two utilities setting one property resolve by Tailwind's emit order.
+ */
+const CURRENT = "border-2 border-theme bg-theme-raised text-theme-faint";
 
 const SWATCH_SIZE = "small";
 const CORRECT_WORD = "correct";
@@ -133,6 +142,19 @@ const PaidChip = ({ paid, position }: { paid: PollPaid; position: number }) => {
 	);
 };
 
+/**
+ * The poll being answered: the first slot still empty, on the gate in hand.
+ * Counted from the track rather than passed in, so the mark cannot point at a
+ * poll the slots beside it say is already paid. A gate the run has moved past
+ * has nothing current in it, however many slots it left empty.
+ */
+const currentSlotOf = (row: PollScoreRow): number | undefined => {
+	if (row.current !== true || row.payouts === undefined) return undefined;
+
+	const waiting = row.payouts.slots.findIndex((paid) => paid === undefined);
+	return waiting === -1 ? undefined : waiting;
+};
+
 const Track = ({ row }: { row: PollScoreRow }) => {
 	if (row.payouts === undefined)
 		return (
@@ -143,11 +165,16 @@ const Track = ({ row }: { row: PollScoreRow }) => {
 			</>
 		);
 
+	const current = currentSlotOf(row);
+
 	return (
 		<>
 			{row.payouts.slots.map((paid, position) =>
 				paid === undefined ? (
-					<span key={position} className={EMPTY}>
+					<span
+						key={position}
+						className={clsx(EMPTY, position === current ? CURRENT : WAITING)}
+					>
 						{position + 1}
 					</span>
 				) : (

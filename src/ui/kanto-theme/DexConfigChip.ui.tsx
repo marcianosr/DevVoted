@@ -155,7 +155,7 @@ const GrantedHint = ({ chip }: { chip: Granted }) => (
 		</p>
 		{chip.starter ? null : (
 			<Typography variant="hint" as="span">
-				{chip.provenance}
+				<Figures text={chip.provenance} />
 			</Typography>
 		)}
 	</Hint>
@@ -167,7 +167,11 @@ const GrantedHint = ({ chip }: { chip: Granted }) => (
  */
 const Alternative = ({ path }: { path: DexUnlockPath }) => {
 	if (path.progress === null)
-		return <span className={PATH}>{alternativeLabelOf(path)}</span>;
+		return (
+			<span className={PATH}>
+				<Figures text={alternativeLabelOf(path)} />
+			</span>
+		);
 
 	return (
 		<span className={ALTERNATIVE}>
@@ -187,7 +191,7 @@ const UnlockHint = ({ paths }: { paths: readonly DexUnlockPath[] }) => {
 	return (
 		<Hint>
 			<span className={PATH}>
-				{unlockLabelOf(required)}
+				<Figures text={unlockLabelOf(required)} />
 				{required.progress === null ? null : (
 					<Badge>{progressLabelOf(required.progress)}</Badge>
 				)}

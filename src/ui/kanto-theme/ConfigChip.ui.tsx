@@ -4,7 +4,13 @@ import { clsx } from "clsx";
 import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone, type DetailReveal } from "./Button.ui";
 import type { KantoColor } from "./colors";
-import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
+import {
+	ConfigEffect,
+	ConfigMeta,
+	type ConfigFactsProps,
+} from "./ConfigFacts.ui";
+import { CountedFigure } from "./CountedFigure.ui";
+import { Icon } from "./Icon.ui";
 import { InstallScale, type InstallScaleProps } from "./InstallScale.ui";
 import { Redaction, type Redactable } from "./Redaction.ui";
 import {
@@ -18,12 +24,39 @@ import { Weight } from "./Weight.ui";
 
 const COPY = {
 	install: "Install",
+	uninstall: "Uninstall",
 	confirm: "Confirm",
+	expand: "Expand",
+	collapse: "Collapse",
 } as const;
 
-const WRAP = "group/info relative inline-flex";
+const WRAP = "group/info relative flex w-full";
+const BARE_WRAP = "group/info relative inline-flex w-fit max-w-full";
+
+/**
+ * Neither carries an edge colour: `highlighted` swaps it, and with no
+ * tailwind-merge in the repo two border-colour utilities would resolve by
+ * Tailwind's emit order rather than by the class list.
+ */
+export const CARD = "flex w-full flex-col rounded-xl border bg-theme/5 text-sm";
+
+/**
+ * How a panel of cards flows: as many to a row as fit, never narrower than a
+ * head needs. `auto-fill` rather than `auto-fit` because a half-filled row must
+ * keep its empty tracks — collapsing them stretches two cards across a wide
+ * panel, which is the shape this floor exists to prevent. Below the floor the
+ * head has no width left for the name, and the name is the one thing a card
+ * cannot do without.
+ *
+ * `items-start` because a grid row otherwise stretches every cell to the
+ * tallest in it, and a shut card padded out to the height of an open one beside
+ * it reads as a card with something missing rather than as a card that is shut.
+ */
+export const CARD_FLOW =
+	"grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] items-start";
 export const CHIP =
 	"inline-flex items-center gap-1.5 rounded-lg border bg-theme/5 px-4 py-2 text-sm whitespace-nowrap";
+const BARE_WIDTH = "w-fit max-w-full";
 export const EDGE = "border-theme-faint";
 const EDGE_LIT = "border-theme";
 export const SKIPPED_CHIP = "opacity-60";
@@ -31,27 +64,27 @@ export const NAME = "text-theme-faint";
 const LOST_NAME = "line-through text-theme-soft";
 export const SKIPPED_NAME = "text-theme-muted";
 
-const IDENTITY = "flex min-w-0 items-center gap-1.5";
-const IDENTITY_FIXED = "flex-1";
+/**
+ * A tighter gap than the kit's usual `gap-3` because the weight block already
+ * carries its own: a one-digit weight sits centred in a block sized for the
+ * ladder, so the whitespace the eye reads between the figure and the name is
+ * that padding plus this gap. Widening the block spends the gap's budget.
+ */
+const HEAD = "flex items-center gap-2 px-4 py-3";
+const IDENTITY = "flex min-w-0 flex-1 flex-col font-extrabold";
+const BARE_IDENTITY = "flex min-w-0 items-center gap-1.5";
 const NAME_LIMIT = "truncate";
-const DETAIL = "min-w-0 flex-1 truncate text-xs text-theme-muted";
+const TAG_LINE = "flex flex-wrap items-center gap-1.5";
+const DETAIL = "min-w-0 text-xs text-theme-muted";
+const BARE_DETAIL = "min-w-0 flex-1 truncate text-xs text-theme-muted";
 const TRAILING = "flex shrink-0 items-center gap-1.5";
-
-const FIT_WIDTH = "w-fit max-w-full";
-const FIXED_WIDTH = "w-82";
-const FULL_WIDTH = "w-full";
-
-export type ChipWidth = "fit" | "fixed" | "full";
-
-const WIDTH = {
-	fit: FIT_WIDTH,
-	fixed: FIXED_WIDTH,
-	full: FULL_WIDTH,
-} satisfies Record<ChipWidth, string>;
+const RULE = "border-t border-theme-faint";
+const BODY = "flex flex-col gap-1.5 px-4 py-3";
+const FOOT = "px-4 py-2";
 
 /**
  * A phone gets a sheet, not a popup: the panel is wider than the gap between a
- * chip and the screen's edge, so anchoring it to the trigger put half of it
+ * card and the screen's edge, so anchoring it to the trigger put half of it
  * past the viewport with nothing to scroll it back. Fixed to the bottom of the
  * screen it fits by construction. From `sm` there is room to anchor it again,
  * which keeps the panel beside the thing it explains.
@@ -62,19 +95,45 @@ const PANEL_SHUT =
 	"pointer-events-none invisible opacity-0 group-hover/info:visible group-hover/info:opacity-100 group-has-[:focus-visible]/info:visible group-has-[:focus-visible]/info:opacity-100";
 const PANEL_OPEN = "pointer-events-auto visible opacity-100";
 
-const INFO_TONE: ButtonTone = "ambient";
+const DISCLOSE_TONE: ButtonTone = "bare";
+/**
+ * Drawn rather than typed: `›` is a thin typographic mark, and the head needs
+ * the fold to read at a glance from across the card.
+ */
+const DISCLOSE_GLYPH = "size-4 stroke-[2.5] transition-transform";
+const DISCLOSE_OPEN = "rotate-90";
 const UPGRADE_TONE: ButtonTone = "action";
-const INSTALL_TONE: ButtonTone = "action";
+/**
+ * The palest press on the card, because it is the one thing a card in a shop is
+ * asking for. Every other press on it — the fold, the upgrade, the uninstall —
+ * is something the player may do instead.
+ */
+const INSTALL_TONE: ButtonTone = "bright";
 const CONFIRM_TONE: ButtonTone = "commit";
-const UNINSTALL_TONE: ButtonTone = "danger";
+/**
+ * Quiet, with the storage it hands back stated in the gain colour beside it.
+ * Uninstalling reads as a trade rather than a loss: the cost is already sunk,
+ * and what the player is deciding is whether the room is worth more.
+ */
+const UNINSTALL_TONE: ButtonTone = "ambient";
+const REFUND_COLOR: KantoColor = "viridian";
+const REFUND_GLYPH = "size-3";
+const GAIN_SIGN = "+";
 
-const INFO_GLYPH = "i";
-const UNINSTALL_GLYPH = "×";
 const UPGRADE_GLYPH = "↑";
 const HINT_SEPARATOR = " · ";
 
 export type ConfigChipBadge =
-	| { label: string; color: KantoColor }
+	| {
+			label: string;
+			color: KantoColor;
+			/**
+			 * A figure inside the label that moves as the run goes on — a storage
+			 * cap draining. Given it, the badge animates the digits instead of
+			 * swapping them, and `label` states what they count.
+			 */
+			count?: number;
+	  }
 	| {
 			label: string;
 			onPress: () => void;
@@ -85,6 +144,12 @@ export type ConfigChipBadge =
 
 export type ChipInstall = {
 	onPress?: () => void;
+	/**
+	 * What the press says instead of "Install". Run state picks it — an offer
+	 * already in the build reads "Installed" — so the viewmodel owns the word
+	 * (ADR-102).
+	 */
+	label?: string;
 	price?: string;
 	disabled?: boolean;
 	hint?: string;
@@ -103,12 +168,16 @@ export type ConfigChipProps = Redactable<{
 	slots?: number;
 	version?: number;
 	detail?: string;
-	width?: ChipWidth;
 	lost?: boolean;
 	skipped?: boolean;
 	install?: ChipInstall;
 	onUninstall?: () => void;
-	info?: ConfigInfoProps;
+	/**
+	 * What the card states on its face. Without it the config draws as a bare
+	 * row: another player's build is a reference token, not something you act on
+	 * (ADR-101).
+	 */
+	info?: ConfigFactsProps;
 	infoOpen?: boolean;
 	onToggleInfo?: () => void;
 	upgrades?: UpgradesProps;
@@ -133,13 +202,15 @@ const lastColorOf = (badges: ConfigChipBadge[]) => {
 	return last.color;
 };
 
+const isPressable = (badge: ConfigChipBadge) => "onPress" in badge;
+
 const upgradeHintOf = (name: string, { version, price }: UpgradeRung) => {
 	const names = `Upgrade ${name} to v${version}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
-const installHintOf = (name: string, price?: string) => {
-	const names = `${COPY.install} ${name}`;
+const installHintOf = (verb: string, name: string, price?: string) => {
+	const names = `${verb} ${name}`;
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
@@ -148,9 +219,62 @@ const confirmHintOf = (name: string, price?: string) => {
 	return price === undefined ? names : `${names}${HINT_SEPARATOR}${price}`;
 };
 
+const uninstallHintOf = (name: string, refund?: string) => {
+	const names = `${COPY.uninstall} ${name}`;
+	return refund === undefined
+		? names
+		: `${names}${HINT_SEPARATOR}${gainOf(refund)}`;
+};
+
+const gainOf = (refund: string) => `${GAIN_SIGN}${refund}`;
+
+type UninstallPressProps = {
+	name: string;
+	/** What the config hands back, stated on the press itself. */
+	refund?: string;
+	onPress: () => void;
+};
+
+const UninstallPress = ({ name, refund, onPress }: UninstallPressProps) => {
+	if (refund === undefined)
+		return (
+			<Button
+				tone={UNINSTALL_TONE}
+				label={COPY.uninstall}
+				hint={uninstallHintOf(name)}
+				onPress={onPress}
+			/>
+		);
+
+	return (
+		<Button
+			tone={UNINSTALL_TONE}
+			label={COPY.uninstall}
+			cap={
+				<>
+					<Icon name="undo" className={REFUND_GLYPH} />
+					{gainOf(refund)}
+				</>
+			}
+			capAt="trail"
+			capColor={REFUND_COLOR}
+			hint={uninstallHintOf(name, refund)}
+			onPress={onPress}
+		/>
+	);
+};
+
 const BadgeOf = ({ badge }: { badge: ConfigChipBadge }) => {
 	if ("color" in badge) {
-		return <Badge color={badge.color}>{badge.label}</Badge>;
+		return (
+			<Badge color={badge.color}>
+				{badge.count === undefined ? (
+					badge.label
+				) : (
+					<CountedFigure value={badge.count} unit={badge.label} />
+				)}
+			</Badge>
+		);
 	}
 
 	return (
@@ -168,7 +292,7 @@ const BadgeOf = ({ badge }: { badge: ConfigChipBadge }) => {
 export const ConfigChip = (props: ConfigChipProps) => {
 	if (props.locked) {
 		return (
-			<span className={clsx(CHIP, EDGE, FIT_WIDTH)}>
+			<span className={clsx(CHIP, BARE_WIDTH, EDGE)}>
 				<span className={NAME}>
 					<Redaction label={LOCKED_CONFIG} />
 				</span>
@@ -182,7 +306,6 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		slots,
 		version,
 		detail,
-		width = "fit",
 		lost = false,
 		skipped = false,
 		install,
@@ -200,12 +323,19 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		onLeave,
 	} = props;
 
-	const fixed = width !== "fit";
 	const offered =
 		upgrades === undefined ? undefined : offeredRungOf(upgrades.rungs);
 
-	// An armed install outranks both: it is the only panel the player is mid-way
-	// through answering, and it goes away the moment they answer it.
+	/**
+	 * A card nobody has wired a fold to states itself. The alternative is a
+	 * chevron that does nothing over facts that cannot be reached — which is the
+	 * hiding this card exists to stop, dressed as a control.
+	 */
+	const foldable = onToggleInfo !== undefined;
+	const stated = foldable ? infoOpen : true;
+
+	// An armed install outranks the ladder: it is the only panel the player is
+	// mid-way through answering, and it goes away the moment they answer it.
 	const arming = install?.armed === true ? install.scale : undefined;
 	const upgrading = upgradesOpen && upgrades !== undefined;
 	const panel =
@@ -213,98 +343,212 @@ export const ConfigChip = (props: ConfigChipProps) => {
 			<InstallScale {...arming} />
 		) : upgrading ? (
 			<Upgrades {...upgrades} onClose={onToggleUpgrades} />
-		) : info === undefined ? null : (
-			<ConfigInfo {...info} />
-		);
-	const pinned = arming !== undefined || upgrading || infoOpen;
+		) : null;
+	const pinned = arming !== undefined || upgrading;
 
-	const chip = (
+	const decorative = badges.filter((badge) => !isPressable(badge));
+	const controls = badges.filter(isPressable);
+
+	/**
+	 * The uninstall press states the refund on its own face, so the footer would
+	 * otherwise quote the same figure twice on the same card. A card with no
+	 * press to sell from keeps the line: that is the only place it is stated.
+	 */
+	const sellPrice = onUninstall === undefined ? info?.sellPrice : undefined;
+
+	/**
+	 * Badges ride the head only while the card is shut. Open, they read as the
+	 * footer's tags beside the version; shut, there is no footer, and a live one
+	 * — a streak counting down to its bump — would go with it. Either way they
+	 * appear exactly once.
+	 */
+	const headBadges = stated ? [] : decorative;
+
+	const nameSpan = (
 		<span
-			data-credited={credited ? "true" : undefined}
-			onMouseEnter={onHover}
-			onMouseLeave={onLeave}
-			className={clsx(
-				CHIP,
-				highlighted ? EDGE_LIT : EDGE,
-				WIDTH[width],
-				skipped && SKIPPED_CHIP
-			)}
+			data-screen-theme={lost ? lastColorOf(badges) : undefined}
+			className={clsx(nameStyleFor(lost, skipped), NAME_LIMIT)}
 		>
-			{slots === undefined ? null : <Weight slots={slots} />}
-			<span className={clsx(IDENTITY, fixed && IDENTITY_FIXED)}>
-				<span
-					data-screen-theme={lost ? lastColorOf(badges) : undefined}
-					className={clsx(nameStyleFor(lost, skipped), NAME_LIMIT)}
-				>
-					{name}
-				</span>
-				{version === undefined ? null : <Version version={version} />}
-				{detail === undefined ? null : <span className={DETAIL}>{detail}</span>}
-			</span>
-			<span className={TRAILING}>
-				{badges.map((badge) => (
-					<BadgeOf key={badge.label} badge={badge} />
-				))}
-				{offered === undefined ? null : (
-					<Button
-						tone={UPGRADE_TONE}
-						cap={UPGRADE_GLYPH}
-						label={`v${offered.version}`}
-						detail={offered.price}
-						detailOn={priceOn}
-						hint={upgradeHintOf(name, offered)}
-						expanded={upgradesOpen}
-						onPress={onToggleUpgrades}
-					/>
-				)}
-				{install === undefined ? null : (
-					<Button
-						tone={arming === undefined ? INSTALL_TONE : CONFIRM_TONE}
-						label={arming === undefined ? COPY.install : COPY.confirm}
-						detail={install.price}
-						detailOn={priceOn}
-						hint={
-							arming === undefined
-								? (install.hint ?? installHintOf(name, install.price))
-								: confirmHintOf(name, install.price)
-						}
-						disabled={install.disabled ?? install.onPress === undefined}
-						pressed={arming !== undefined}
-						onPress={install.onPress}
-					/>
-				)}
-				{info === undefined ? null : (
-					<Button
-						tone={INFO_TONE}
-						glyph={INFO_GLYPH}
-						label={`About ${name}`}
-						expanded={infoOpen}
-						onPress={onToggleInfo}
-					/>
-				)}
-				{onUninstall === undefined ? null : (
-					<Button
-						tone={UNINSTALL_TONE}
-						glyph={UNINSTALL_GLYPH}
-						label={`Uninstall ${name}`}
-						onPress={onUninstall}
-					/>
-				)}
-			</span>
+			{name}
 		</span>
 	);
 
-	if (panel === null) return chip;
+	const trailing = (
+		<span className={TRAILING}>
+			{controls.map((badge) => (
+				<BadgeOf key={badge.label} badge={badge} />
+			))}
+			{offered === undefined ? null : (
+				<Button
+					tone={UPGRADE_TONE}
+					cap={UPGRADE_GLYPH}
+					label={`v${offered.version}`}
+					detail={offered.price}
+					detailOn={priceOn}
+					hint={upgradeHintOf(name, offered)}
+					expanded={upgradesOpen}
+					onPress={onToggleUpgrades}
+				/>
+			)}
+			{install === undefined ? null : (
+				<Button
+					tone={arming === undefined ? INSTALL_TONE : CONFIRM_TONE}
+					label={
+						arming === undefined
+							? (install.label ?? COPY.install)
+							: COPY.confirm
+					}
+					detail={install.price}
+					detailOn={priceOn}
+					hint={
+						arming === undefined
+							? (install.hint ??
+								installHintOf(
+									install.label ?? COPY.install,
+									name,
+									install.price
+								))
+							: confirmHintOf(name, install.price)
+					}
+					disabled={install.disabled ?? install.onPress === undefined}
+					pressed={arming !== undefined}
+					onPress={install.onPress}
+				/>
+			)}
+			{onUninstall === undefined ? null : (
+				<UninstallPress
+					name={name}
+					refund={info?.sellPrice}
+					onPress={onUninstall}
+				/>
+			)}
+		</span>
+	);
+
+	const edge = highlighted ? EDGE_LIT : EDGE;
+	/* Focus rides the same pair as hover: React maps onFocus/onBlur to
+	   focusin/focusout, which bubble, so the wrapper catches the press inside
+	   it. Touch has no hover and Safari will not focus a tapped button, so
+	   this reaches a keyboard and a pointer, and nothing else. */
+	const hovers = {
+		onMouseEnter: onHover,
+		onMouseLeave: onLeave,
+		onFocus: onHover,
+		onBlur: onLeave,
+	};
+	const credit = credited ? "true" : undefined;
+
+	const sheet = (
+		<span
+			aria-hidden={!pinned}
+			className={clsx(PANEL, pinned ? PANEL_OPEN : PANEL_SHUT)}
+		>
+			{panel}
+		</span>
+	);
+
+	if (info === undefined) {
+		const bare = (
+			<span
+				data-config={name}
+				data-credited={credit}
+				{...hovers}
+				className={clsx(CHIP, BARE_WIDTH, edge, skipped && SKIPPED_CHIP)}
+			>
+				{slots === undefined ? null : <Weight slots={slots} />}
+				<span className={BARE_IDENTITY}>
+					{nameSpan}
+					{version === undefined ? null : <Version version={version} />}
+					{decorative.map((badge) => (
+						<BadgeOf key={badge.label} badge={badge} />
+					))}
+					{detail === undefined ? null : (
+						<span className={BARE_DETAIL}>{detail}</span>
+					)}
+				</span>
+				{trailing}
+			</span>
+		);
+
+		if (panel === null) return bare;
+
+		return (
+			<span className={BARE_WRAP}>
+				{bare}
+				{sheet}
+			</span>
+		);
+	}
+
+	const card = (
+		<div
+			data-config={name}
+			data-credited={credit}
+			{...hovers}
+			className={clsx(CARD, edge, skipped && SKIPPED_CHIP)}
+		>
+			<div className={HEAD}>
+				{!foldable ? null : (
+					<Button
+						tone={DISCLOSE_TONE}
+						glyph={
+							<Icon
+								name="chevron"
+								className={clsx(DISCLOSE_GLYPH, stated && DISCLOSE_OPEN)}
+							/>
+						}
+						label={`${stated ? COPY.collapse : COPY.expand} ${name}`}
+						expanded={stated}
+						onPress={onToggleInfo}
+					/>
+				)}
+				{slots === undefined ? null : <Weight slots={slots} />}
+				<div className={IDENTITY}>
+					{nameSpan}
+					{headBadges.length === 0 && detail === undefined ? null : (
+						<div className={TAG_LINE}>
+							{headBadges.map((badge) => (
+								<BadgeOf key={badge.label} badge={badge} />
+							))}
+							{detail === undefined ? null : (
+								<span className={DETAIL}>{detail}</span>
+							)}
+						</div>
+					)}
+				</div>
+				{trailing}
+			</div>
+
+			{!stated ? null : (
+				<>
+					<div className={RULE} />
+
+					<div className={BODY}>
+						<ConfigEffect description={info.description} note={info.note} />
+					</div>
+
+					<div className={RULE} />
+
+					<div className={FOOT}>
+						<ConfigMeta
+							sellPrice={sellPrice}
+							version={info.version ?? version}
+							badges={decorative.map((badge) => (
+								<BadgeOf key={badge.label} badge={badge} />
+							))}
+						/>
+					</div>
+				</>
+			)}
+		</div>
+	);
+
+	if (panel === null) return card;
 
 	return (
-		<span className={clsx(WRAP, WIDTH[width])}>
-			{chip}
-			<span
-				aria-hidden={!pinned}
-				className={clsx(PANEL, pinned ? PANEL_OPEN : PANEL_SHUT)}
-			>
-				{panel}
-			</span>
-		</span>
+		<div className={WRAP}>
+			{card}
+			{sheet}
+		</div>
 	);
 };

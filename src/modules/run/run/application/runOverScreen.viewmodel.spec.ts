@@ -267,13 +267,25 @@ describe("runOverPropsFor", () => {
 				],
 			});
 
-			expect(unlocked.rows[0].chip).toEqual({
+			expect(unlocked.rows[0].chip).toMatchObject({
 				name: CONFIGS.cache.label,
 				slots: slotsOf(CONFIGS.cache),
 				version: 1,
 				badges: [],
 			});
 			expect(unlocked.rows[0].detail).toBe("Able to install in future builds");
+		});
+
+		it("quotes no sell price for a config the finished run can no longer sell", () => {
+			const { unlocked } = propsFor({
+				swatchGates: [],
+				unlocked: [
+					{ config: CONFIGS.cache, detail: "Earned: answered 30 polls" },
+				],
+			});
+
+			expect(unlocked.rows[0].chip?.info?.description).toBeDefined();
+			expect(unlocked.rows[0].chip?.info?.sellPrice).toBeUndefined();
 		});
 	});
 

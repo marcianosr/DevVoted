@@ -9,8 +9,8 @@ import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
 import { audited, handed } from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
 import {
-	perAnswerPreviewFor,
 	buildModifiersFor,
 	spaceForBuild,
 	upkeepForBuild,
@@ -44,10 +44,6 @@ import {
 	recommendedPicks,
 } from "~/modules/run/config/domain/hand.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
-import {
-	correctOptionIdsFor,
-	latestAnswerScore,
-} from "~/modules/run/run/application/answerScore.viewmodel";
 import {
 	BASE_UNIT,
 	floorAt,
@@ -272,11 +268,12 @@ describe("toRunView", () => {
 			status: "answering" as const,
 		};
 
-		expect(toRunView(base).perAnswer.coveragePerCorrect).toBe(
+		expect(toRunView(base).gateStake.perAnswer.coveragePerCorrect).toBe(
 			BASE_GAIN * MULTIPLE_CREDIT
 		);
 		expect(
-			toRunView(audited(base, 5, "multi-status")).perAnswer.coveragePerCorrect
+			toRunView(audited(base, 5, "multi-status")).gateStake.perAnswer
+				.coveragePerCorrect
 		).toBe(BASE_GAIN);
 	});
 
@@ -452,69 +449,6 @@ describe("the build space the shop reports (ADR-098)", () => {
 	});
 });
 
-describe("latestAnswerScore", () => {
-	it("is null before any answer this gate", () => {
-		expect(latestAnswerScore(toRunView(answering()))).toBeNull();
-	});
-
-	it("breaks a correct answer into base, configs and total", () => {
-		const state = runReducer(answering(), {
-			type: "answer",
-			optionIds: ["q0-a"],
-		});
-		expect(latestAnswerScore(toRunView(state))).toEqual({
-			isCorrect: true,
-			baseCoverage: BASE_GAIN,
-			streakBonus: 0,
-			configBonuses: [],
-			earnedCoverage: BASE_GAIN,
-		});
-	});
-
-	it("adds a chip for a coverage-affecting config and sums the total", () => {
-		const state = runReducer(answeringWith([CONFIGS.agentsMd]), {
-			type: "answer",
-			optionIds: ["q0-a"],
-		});
-		expect(latestAnswerScore(toRunView(state))).toEqual({
-			isCorrect: true,
-			baseCoverage: BASE_GAIN,
-			streakBonus: 0,
-			configBonuses: [{ configId: "agents-md", value: BASE_GAIN, factor: 2 }],
-			earnedCoverage: BASE_GAIN * 2,
-		});
-	});
-
-	it("reads a miss as nothing earned and no bonuses", () => {
-		const state = runReducer(answering(), {
-			type: "answer",
-			optionIds: ["q0-b"],
-		});
-		expect(latestAnswerScore(toRunView(state))).toEqual({
-			isCorrect: false,
-			baseCoverage: 0,
-			streakBonus: 0,
-			configBonuses: [],
-			earnedCoverage: 0,
-		});
-	});
-});
-
-describe("correctOptionIdsFor", () => {
-	it("maps the verdict back to option ids on the poll that was on screen", () => {
-		const onScreen = toRunView(answering());
-		const answered = toRunView(
-			runReducer(answering(), { type: "answer", optionIds: ["q0-b"] })
-		);
-		expect(correctOptionIdsFor(onScreen.poll!, answered)).toEqual(["q0-a"]);
-	});
-
-	it("is empty when nothing has been answered", () => {
-		const onScreen = toRunView(answering());
-		expect(correctOptionIdsFor(onScreen.poll!, onScreen)).toEqual([]);
-	});
-});
-
 describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 	const configuringWith = (configs: Config[]) => {
 		let state = createRun([poll("q0"), poll("q1")], configs);
@@ -557,8 +491,10 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 
 	it("prices one answer so screens do not call the domain themselves", () => {
 		const state = answeringWith([CONFIGS.js]);
-		expect(toRunView(state).perAnswer).toEqual(
-			perAnswerPreviewFor(state.build.configs)
+		expect(toRunView(state).gateStake.perAnswer).toEqual(
+			perAnswerPreviewFor(state.build.configs, {
+				answeredBefore: state.window.answered,
+			})
 		);
 	});
 });
@@ -611,7 +547,9 @@ describe("the gate stake travels as one object", () => {
 				spaceBillKb: upkeepForBuild(state.build),
 			}),
 			modifiers: buildModifiersFor(state.build.configs, 4),
-			perAnswer: perAnswerPreviewFor(state.build.configs),
+			perAnswer: perAnswerPreviewFor(state.build.configs, {
+				answeredBefore: state.window.answered,
+			}),
 		});
 	});
 
@@ -866,7 +804,9 @@ describe("the view prices the shop's offers", () => {
 		const offer = only(state);
 		const withIt = [...state.build.configs, CONFIGS.eslint];
 		expect(offer.preview).toEqual(buildModifiersFor(withIt, 0));
-		expect(offer.previewPerAnswer).toEqual(perAnswerPreviewFor(withIt));
+		expect(offer.previewPerAnswer).toEqual(
+			perAnswerPreviewFor(withIt, { answeredBefore: state.window.answered })
+		);
 	});
 });
 

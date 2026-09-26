@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { COPY } from "./CommunityScreen.ui";
 import { render, screen, within } from "@testing-library/react";
 
 import {
@@ -13,7 +12,7 @@ import {
 	kantoCommunityFirstClimb,
 } from "~/test/kantoCommunity.factory";
 
-import { CommunityScreen } from "./CommunityScreen.ui";
+import { COPY, CommunityScreen } from "./CommunityScreen.ui";
 
 const props = kantoCommunity();
 
@@ -99,10 +98,28 @@ describe("CommunityScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("parks the climb map behind a placeholder until its component lands", () => {
-		render(<CommunityScreen {...props} />);
+	it("draws the whole ladder, with the viewer standing on their own gate", () => {
+		const { container } = render(<CommunityScreen {...props} />);
 
-		expect(screen.getByText(COPY.mapPlaceholder)).toBeInTheDocument();
+		expect(screen.getByText(COPY.mapHint)).toBeInTheDocument();
+		expect(container.querySelectorAll("[data-current]")).toHaveLength(1);
+	});
+
+	it("says how to get on the map when the viewer has no run to stand on", () => {
+		render(
+			<CommunityScreen
+				{...props}
+				map={{
+					title: "Where everyone is",
+					empty: "start a run to place yourself",
+				}}
+			/>
+		);
+
+		expect(
+			screen.getByText("start a run to place yourself")
+		).toBeInTheDocument();
+		expect(screen.queryByText(COPY.mapHint)).toBeNull();
 	});
 
 	it("seats one row per category, whether or not anybody holds it", () => {

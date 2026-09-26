@@ -2,7 +2,9 @@ import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import { estimatorFor } from "~/modules/run/run/domain/estimate.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
+import { committerFor } from "~/modules/run/run/domain/sla.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { CategoryCode } from "~/shared/lib/categories";
@@ -137,24 +139,60 @@ const pollsOf = (entries: readonly GateEntry[]): RunPoll[] =>
 			: selectAllPoll(`${entry.category}-${index}`, entry.category)
 	);
 
+/** What a build's prep-time configs are told to call, when a story cares. */
+export type PrepCalls = {
+	readonly estimate?: number;
+	readonly band?: "ok" | "healthy" | "perfect";
+};
+
+const DEFAULT_CALLS = { estimate: 1, band: "ok" } as const;
+
+/**
+ * A config that asks for a call in prep holds the gate until it gets one, so a
+ * story build carrying one has to answer before the window can open at all.
+ * The call is cleared at every close, so later preps are un-called again the
+ * way a real run leaves them.
+ */
+const calling = (state: RunState, calls: PrepCalls): RunState => {
+	const bet =
+		estimatorFor(state.build.configs) === undefined
+			? state
+			: runReducer(state, {
+					type: "estimate",
+					count: calls.estimate ?? DEFAULT_CALLS.estimate,
+				});
+
+	if (committerFor(bet.build.configs) === undefined) return bet;
+
+	return runReducer(bet, {
+		type: "commit-band",
+		band: calls.band ?? DEFAULT_CALLS.band,
+	});
+};
+
 /**
  * Sets `build.configs` directly so a story can show a build the shop's install
- * caps would never deal, then starts the run so the window opens for real.
+ * caps would never deal, answers whatever prep is waiting on, then starts the
+ * run so the window opens for real.
  */
 export const runWith = (
 	configs: readonly Config[],
 	entries: readonly GateEntry[],
-	startAtGate = 0
+	startAtGate = 0,
+	calls: PrepCalls = {}
 ): RunState => {
 	const base = createRun(pollsOf(entries), [...configs], startAtGate);
 	return runReducer(
-		{
-			...base,
-			build: {
-				...base.build,
-				configs: [...configs],
+		calling(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: [...configs],
+				},
 			},
-		},
+			calls
+		),
 		{ type: "start" }
 	);
 };

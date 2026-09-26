@@ -32,7 +32,11 @@ import type {
 	ChipInstall,
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import type {
+	HeaderFundsPreview,
+	HeaderProps,
+} from "~/ui/kanto-theme/Header.ui";
 import type { NextGateProps } from "~/ui/kanto-theme/NextGate.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
 import {
@@ -49,6 +53,8 @@ const SHOP_WORD = "Shop";
 const SLOTS_TRAIL = "slots after it closes";
 const OPENS_AT = "tomorrow";
 const PERCENT = "%";
+const AFTER_INSTALL = "after install";
+const AFTER_INSTALL_COLOR: KantoColor = "vermillion";
 
 export const shortfallOf = (priceKb: number, balanceKb: number): string =>
 	`${kbLabel(priceKb - balanceKb)} ${SHORT_TRAIL}`;
@@ -57,10 +63,22 @@ export type OfferDeal = {
 	priceKb: number;
 	affordable: boolean;
 	onInstall?: () => void;
+	/** Pointing at an offer previews what installing it leaves in the balance. */
+	onHover?: () => void;
+	onLeave?: () => void;
 	/** Present only when this install would cross a rung (ADR-098). */
 	scale?: InstallScale | null;
 	armed?: boolean;
 };
+
+/**
+ * Hover and focus both land here: the chip points them at the same pair, so a
+ * keyboard reaches the preview a pointer gets.
+ */
+const pointersOf = ({ onHover, onLeave }: OfferDeal) => ({
+	...(onHover === undefined ? {} : { onHover }),
+	...(onLeave === undefined ? {} : { onLeave }),
+});
 
 /**
  * The price rides the Install button rather than a badge beside it, so the one
@@ -93,6 +111,7 @@ export const offerChipFor = (
 	skipped: !deal.affordable,
 	install: offerInstallFor(deal),
 	info: infoFor(config),
+	...pointersOf(deal),
 });
 
 /**
@@ -175,17 +194,47 @@ const shopTitleFor = (cleared: number): string => {
 	return next === undefined ? SHOP_WORD : `${next.gateName} ${SHOP_WORD}`;
 };
 
+/**
+ * What the balance reads if the offer under the pointer goes through. Stated
+ * as the balance rather than the price, because the price is already on the
+ * press and what the player cannot see is what it leaves behind.
+ */
+const afterInstallOf = (
+	balanceKb: number,
+	priceKb: number | undefined
+): HeaderFundsPreview | undefined => {
+	if (priceKb === undefined) return undefined;
+	// A balance never goes below nothing, so an offer the shelf cannot cover has
+	// no after to state. What it is short by is the chip's to say, not the
+	// header's, and kbLabel has no negative reading to give either way.
+	if (priceKb > balanceKb) return undefined;
+
+	return {
+		label: AFTER_INSTALL,
+		figure: kbLabel(balanceKb - priceKb),
+		color: AFTER_INSTALL_COLOR,
+	};
+};
+
 export const shopHeaderFor = (
 	cleared: number,
 	balanceKb: number,
-	swatchGates: readonly number[] = []
-): HeaderProps => ({
-	swatch: gateSwatchAt(cleared),
-	swatches: swatchTrackFor(swatchGates, cleared + 1),
-	funds: fundsOf(balanceKb, BALANCE_WORD),
-	title: shopTitleFor(cleared),
-	note: `gate ${cleared} ${CLEARED_TRAIL}`,
-});
+	swatchGates: readonly number[] = [],
+	pointedPriceKb?: number
+): HeaderProps => {
+	const preview = afterInstallOf(balanceKb, pointedPriceKb);
+
+	return {
+		swatch: gateSwatchAt(cleared),
+		swatches: swatchTrackFor(swatchGates, cleared + 1),
+		funds: {
+			...fundsOf(balanceKb, BALANCE_WORD),
+			...(preview === undefined ? {} : { preview }),
+		},
+		title: shopTitleFor(cleared),
+		note: `gate ${cleared} ${CLEARED_TRAIL}`,
+	};
+};
 
 export const nextGateFor = (
 	cleared: number,

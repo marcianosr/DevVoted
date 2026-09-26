@@ -1,4 +1,5 @@
 import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	auditCapacityFor,
@@ -7,12 +8,9 @@ import {
 	poolForGate,
 	rankAudits,
 } from "~/modules/run/gate/domain/auditSchedule.model";
-import {
-	isAttackBand,
-	payloadCountFor,
-} from "~/modules/run/run/domain/attack.model";
+import { payloadCountFor } from "~/modules/run/run/domain/heldAudit.model";
 import type {
-	AttackBand,
+	HeldAuditBand,
 	IncidentSender,
 	LastClose,
 	LockedIncident,
@@ -52,7 +50,7 @@ export type Attacker = {
 	readonly runId: number;
 	readonly userId: string;
 	readonly gatesCleared: number;
-	readonly band: AttackBand;
+	readonly band: HeldAuditBand;
 };
 
 /** Audit ids already queued per target run, keyed on the gate they aim at. */
@@ -111,11 +109,17 @@ const queuedAt = (
 	gate: number
 ): readonly AuditId[] => queued.get(runId)?.get(gate) ?? [];
 
-/** OK and SHAKY players are already struggling; only a strong clear is fair game. */
+/**
+ * OK and SHAKY players are already struggling; only a strong clear is fair
+ * game. Its own list, not the hand's: an OK clear hands an audit (ADR-119) but
+ * still never draws one.
+ */
+const STRONG_CLOSE: readonly CoverageBandId[] = ["healthy", "perfect"];
+
 const closedStrong = (rival: RivalCandidate): boolean =>
 	rival.lastClose !== undefined &&
 	rival.lastClose.cleared &&
-	isAttackBand(rival.lastClose.band);
+	STRONG_CLOSE.includes(rival.lastClose.band);
 
 const hasRoom = (rival: RivalCandidate, queued: QueuedByRun): boolean => {
 	const gate = targetGateOf(rival);

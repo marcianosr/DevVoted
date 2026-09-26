@@ -231,6 +231,8 @@ export const finishReward = (state: RunState): RunState => {
 		subscriptionBillKb: 0,
 		upkeepBilledKb: 0,
 		spaceDroppedTo: undefined,
+		offeredAudit: undefined,
+		repackagedThisShop: undefined,
 		status: "answering",
 		log: withLog(state, "Climbing on."),
 	};

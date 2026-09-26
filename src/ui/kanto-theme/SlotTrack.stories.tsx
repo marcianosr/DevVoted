@@ -29,7 +29,6 @@ const HoveredBuild = () => {
 	return (
 		<Build
 			configs={kantoShopBuild}
-			layout="column"
 			slots={{ used: USED, capacity: SHOP_CAPACITY_SLOTS }}
 			highlight={highlight}
 			onHighlight={setHighlight}

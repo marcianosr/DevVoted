@@ -36,7 +36,7 @@ export const RefusesWhenOneWrongIsLeft: Story = {
 		),
 };
 
-export const WaitsForJsOrTs: Story = {
+export const WaitsForJavaScriptOrTypeScript: Story = {
 	render: () => asPoll(funded(runWith([CONFIGS.eslint], CSS_GATE), 256)),
 };
 

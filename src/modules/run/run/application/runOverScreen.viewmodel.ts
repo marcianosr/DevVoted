@@ -1,5 +1,6 @@
 import { plural } from "~/shared/lib/displayValue";
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
+import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	gateSwatchAt,
@@ -276,6 +277,7 @@ const chipOf = (config: Config): ConfigChipProps => ({
 	slots: slotsOf(config),
 	version: config.level ?? 1,
 	badges: [],
+	info: settledFactsFor(config),
 });
 
 const buildNoteOf = (frame: RunOverFrame): string => {
@@ -391,7 +393,6 @@ export const runOverPropsFor = (frame: RunOverFrame): RunOverScreenProps => ({
 	footer: {
 		asides: [{ label: COMMUNITY_LABEL, icon: "community", onPress: noop }],
 		note: FRESH_HAND,
-		noteAt: "row",
 		action: {
 			label: NEW_RUN_LABEL,
 			icon: "chevron",

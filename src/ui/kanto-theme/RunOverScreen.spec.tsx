@@ -154,7 +154,9 @@ describe("RunOverScreen", () => {
 			/>
 		);
 
-		await userEvent.click(screen.getByRole("button", { name: NEW_RUN_LABEL }));
+		await userEvent.click(
+			screen.getByRole("button", { name: new RegExp(`^${NEW_RUN_LABEL}`) })
+		);
 		await userEvent.click(
 			screen.getByRole("button", { name: COMMUNITY_LABEL })
 		);

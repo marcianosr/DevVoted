@@ -26,11 +26,19 @@ const ROSTER = [
 const UNLOCKED_COUNT = 6;
 const COLUMN = "flex flex-col items-start gap-3";
 
-const OneOpen = ({ configs }: { configs: readonly ConfigChipProps[] }) => {
+const GRID = "grid gap-3 grid-cols-[repeat(auto-fill,minmax(20rem,1fr))]";
+
+const OneOpen = ({
+	configs,
+	layout = COLUMN,
+}: {
+	configs: readonly ConfigChipProps[];
+	layout?: string;
+}) => {
 	const [open, setOpen] = useState<string | undefined>(undefined);
 
 	return (
-		<div className={COLUMN}>
+		<div className={layout}>
 			{configs.map((config, index) => {
 				if (config.locked) return <ConfigChip key={index} locked />;
 
@@ -263,13 +271,6 @@ const MOORES_LAW = {
 	upgrades: upgradesFor({ ...CONFIGS.mooresLaw, level: 2 }),
 } satisfies ConfigChipProps;
 
-const asRail = (configs: readonly ConfigChipProps[]): ConfigChipProps[] =>
-	configs.map((config) =>
-		config.locked === true
-			? config
-			: { ...config, width: "fixed", onUninstall: noop }
-	);
-
 const WithPanels = (props: ConfigChipProps) => {
 	const [open, setOpen] = useState<"info" | "upgrades" | undefined>(undefined);
 
@@ -334,35 +335,21 @@ export const WithUninstall: Story = {
 	args: { slots: 2, onUninstall: noop },
 };
 
-export const FixedWidth: Story = {
-	parameters: { controls: { disable: true } },
-	render: () => (
-		<Screen theme="vermillion" width="narrow">
-			<WithPanels
-				{...MOORES_LAW}
-				name="Code Coverage"
-				slots={2}
-				width="fixed"
-				onUninstall={noop}
-			/>
-		</Screen>
-	),
-};
-
-export const FixedWidthRail: Story = {
-	parameters: { controls: { disable: true } },
-	render: () => (
-		<Screen theme="vermillion">
-			<OneOpen configs={asRail(kantoRunningConfigs)} />
-		</Screen>
-	),
-};
-
-export const ContentWidthRail: Story = {
+export const InAColumn: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="vermillion">
 			<OneOpen configs={kantoRunningConfigs} />
+		</Screen>
+	),
+};
+
+/** Bodies run one line to four, so the row stretches rather than going ragged. */
+export const InAGrid: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion">
+			<OneOpen configs={kantoRunningConfigs} layout={GRID} />
 		</Screen>
 	),
 };
@@ -375,19 +362,15 @@ export const TooNarrowForTheName: Story = {
 	render: () => (
 		<Screen theme="vermillion">
 			<div className={NARROW_COLUMN}>
-				{(["full", "fixed", "fit"] as const).map((width) => (
-					<ConfigChip
-						key={width}
-						name="Continuous Integration"
-						slots={2}
-						version={3}
-						width={width}
-						badges={[{ label: "+96 KB", color: "viridian" }]}
-						upgrades={upgradesFor({ ...CONFIGS.unitTests, level: 3 })}
-						info={infoFor(CONFIGS.unitTests)}
-						onUninstall={noop}
-					/>
-				))}
+				<ConfigChip
+					name="Continuous Integration"
+					slots={2}
+					version={3}
+					badges={[{ label: "+96 KB", color: "viridian" }]}
+					upgrades={upgradesFor({ ...CONFIGS.unitTests, level: 3 })}
+					info={infoFor(CONFIGS.unitTests)}
+					onUninstall={noop}
+				/>
 			</div>
 		</Screen>
 	),
@@ -404,7 +387,6 @@ export const EveryWeight: Story = {
 						name="Code Coverage"
 						slots={slots}
 						badges={[...LADDER_BADGES]}
-						width="fixed"
 						upgrades={MOORES_LAW.upgrades}
 						onUninstall={noop}
 					/>
@@ -425,7 +407,6 @@ export const OfferedInsideTheRung: Story = {
 				name=".js"
 				slots={1}
 				badges={[]}
-				width="fixed"
 				priceOn="always"
 				install={{ price: "32 KB", onPress: noop }}
 			/>
@@ -446,7 +427,6 @@ export const ArmedBecauseItCrossesARung: Story = {
 				name=".js"
 				slots={1}
 				badges={[]}
-				width="fixed"
 				priceOn="always"
 				install={{
 					price: "32 KB",

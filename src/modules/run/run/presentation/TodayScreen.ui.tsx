@@ -30,7 +30,7 @@ export type TodayRun = {
 	/** "gate 4 of 12 · 296 KB stored" */
 	standing: string;
 	swatches: readonly SwatchFill[];
-	/** "today’s 5 polls are ready", or the wait until the next segment drops. */
+	/** "today’s 5 polls are ready", or the wait until the next segment drops. Read under the press. */
 	pollsNote: string;
 };
 
@@ -39,6 +39,12 @@ export type TodayScreenProps = {
 	run: TodayRun | null;
 	/** Start, Resume, or the wait itself — a press with no handler is refused. */
 	action: TodayPress;
+	/**
+	 * How many of today's polls are still unanswered, stood in the press's own
+	 * mark. A spent day reads 0 there while the press reads the wait, so the
+	 * two halves of "none left, and here is when more land" arrive together.
+	 */
+	pollsLeft?: number;
 	polls: { detail: string; press: TodayPress };
 	community: { detail: string; press: TodayPress };
 	error?: string;
@@ -79,6 +85,7 @@ export const TodayScreen = ({
 	swatch,
 	run,
 	action,
+	pollsLeft,
 	polls,
 	community,
 	error,
@@ -93,9 +100,6 @@ export const TodayScreen = ({
 				<Panel.Body>
 					<div className={LADDER_ROW}>
 						<SwatchTrack swatches={run.swatches} size={TRACK_SIZE} />
-						<Typography variant="hint" as="span">
-							{run.pollsNote}
-						</Typography>
 					</div>
 				</Panel.Body>
 			)}
@@ -118,10 +122,10 @@ export const TodayScreen = ({
 		<ScreenFooter
 			action={{
 				label: action.label,
+				swatch: { state: "current", swatch, count: pollsLeft },
 				onPress: action.onPress,
-				icon: "gate",
-				iconAt: "trail",
 			}}
+			note={run?.pollsNote}
 			refusal={error}
 		/>
 	</Screen>

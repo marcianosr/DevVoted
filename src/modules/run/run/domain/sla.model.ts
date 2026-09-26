@@ -19,6 +19,12 @@ export const committerFor = (configs: readonly Config[]): Config | undefined =>
 export const canCommitBand = (state: Pick<RunState, "status">): boolean =>
 	isPrepPhase(state);
 
+/** Whether the build still owes this gate a promise. Reads like `estimateOwed`. */
+export const bandOwed = (state: RunState): boolean =>
+	committerFor(state.build.configs) !== undefined &&
+	canCommitBand(state) &&
+	state.slaBand === undefined;
+
 const isCommittableBand = (band: string): band is CommittableBand =>
 	SLA_BANDS.some((candidate) => candidate === band);
 

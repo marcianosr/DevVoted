@@ -15,6 +15,8 @@ export const BUILD = "Build";
 export const REGISTRY = "Registry";
 export const AUDITS = "Audits";
 export const WEIGHT = "weight";
+/** The join in "14 of 16 weight", stated by the weight track and by a climber's card. */
+export const OF = "of";
 export const NEEDED = "needed";
 export const LOCKED_CONFIG = "Locked config";
 export const WHAT_EACH_POLL_PAID = "Score";

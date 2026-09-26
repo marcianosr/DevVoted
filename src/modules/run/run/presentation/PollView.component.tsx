@@ -1,6 +1,12 @@
 import { useState } from "react";
 
 import {
+	INSTALLED_CARDS_OPEN,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+
+import {
 	answeredOptionsFor,
 	auditPropsOf,
 	buildCountsOf,
@@ -12,7 +18,6 @@ import {
 	pollFactsFor,
 	categoryLeaderFor,
 	pollHoldsFor,
-	pollLabelFor,
 	pollPaidFor,
 	pollBuildFor,
 	gateLabelFor,
@@ -155,7 +160,6 @@ const answeredMoodFor = (
 			onPress: onNext,
 		},
 		note: ENTER_CONTINUES,
-		noteAt: "row",
 	},
 });
 
@@ -185,7 +189,7 @@ export const PollView = ({
 	onPress,
 	onUnseal,
 }: PollViewProps) => {
-	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
 	const revealing = answered !== undefined;
 
 	usePollKeyboard({
@@ -225,7 +229,6 @@ export const PollView = ({
 				lead: coverageLeadFor(view),
 				paid: pollPaidFor(view),
 			}}
-			pollLabel={pollLabelFor(view, revealing)}
 			holds={pollHoldsFor(view)}
 			facts={pollFactsFor(live)}
 			audits={auditPropsOf(view.audits)}
@@ -233,9 +236,13 @@ export const PollView = ({
 				build: pollBuildFor(
 					view,
 					{
-						openInfo,
+						openInfo: disclosedIn(
+							view.configs.map((config) => config.label),
+							buildFlips,
+							INSTALLED_CARDS_OPEN
+						),
 						onToggleInfo: (name) =>
-							setOpenInfo(name === openInfo ? undefined : name),
+							setBuildFlips(toggleDisclosure(buildFlips, name)),
 						onPress,
 					},
 					answered

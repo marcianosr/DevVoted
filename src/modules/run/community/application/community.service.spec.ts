@@ -24,6 +24,7 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 
 vi.mock("~/modules/run/community/infrastructure/climbers.repository", () => ({
 	fetchActiveClimbers: vi.fn(),
+	fetchBestCategories: vi.fn(),
 	fetchClimbMarker: vi.fn(),
 	fetchFallenToday: vi.fn(),
 	fetchPersonalBestPosition: vi.fn(),
@@ -157,6 +158,26 @@ const consumedForViewer = [
 	{ position: 2, poll_id: 12 },
 ];
 
+/** The standing every row carries since ADR-101's narrowing; overridden where a case reads it. */
+const standing = (
+	over: {
+		handle?: string;
+		title?: string;
+		coverageUnits?: number;
+		streak?: number;
+		storageKb?: number;
+	} = {}
+) => ({
+	handle: null,
+	title: null,
+	coverageUnits: 0,
+	streak: 0,
+	storageKb: 0,
+	...over,
+	...(over.handle === undefined ? {} : { handle: over.handle }),
+	...(over.title === undefined ? {} : { title: over.title }),
+});
+
 /** Climb map fixture: Red (the usual viewer) mid-Soul, Blue ahead, Green well back. */
 const RED_AT = { gate: 6, pollsIntoGate: 3 };
 const RED_BUILD = {
@@ -178,6 +199,9 @@ const CLIMBERS = [
 		borderUrl: null,
 		...RED_AT,
 		build: RED_BUILD,
+		closingBand: "shaky" as const,
+		startedAtGate: 0,
+		...standing({ handle: "red", title: "Completionist", coverageUnits: 24 }),
 	},
 	{
 		userId: BLUE,
@@ -187,6 +211,9 @@ const CLIMBERS = [
 		gate: 7,
 		pollsIntoGate: 1,
 		build: BLUE_BUILD,
+		closingBand: "perfect" as const,
+		startedAtGate: 5,
+		...standing({ streak: 6, storageKb: 896 }),
 	},
 	{
 		userId: GREEN,
@@ -196,6 +223,9 @@ const CLIMBERS = [
 		gate: 2,
 		pollsIntoGate: 4,
 		build: BARE_BUILD,
+		closingBand: null,
+		startedAtGate: 0,
+		...standing(),
 	},
 ];
 const FALLEN = [
@@ -208,6 +238,9 @@ const FALLEN = [
 		gate: 3,
 		pollsIntoGate: 2,
 		build: BLUE_BUILD,
+		closingBand: "danger" as const,
+		startedAtGate: 0,
+		...standing(),
 	},
 	{
 		runId: 12,
@@ -218,6 +251,9 @@ const FALLEN = [
 		gate: 5,
 		pollsIntoGate: 0,
 		build: BARE_BUILD,
+		closingBand: null,
+		startedAtGate: 3,
+		...standing(),
 	},
 ];
 
@@ -241,6 +277,9 @@ const arrangeClimb = () => {
 	vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(CLIMBERS);
 	vi.mocked(climbQueries.fetchFallenToday).mockResolvedValue(FALLEN);
 	vi.mocked(climbQueries.fetchPersonalBestPosition).mockResolvedValue(31);
+	vi.mocked(climbQueries.fetchBestCategories).mockResolvedValue(
+		new Map([[RED, "js"]])
+	);
 };
 
 const arrange = () => {
@@ -491,6 +530,10 @@ describe("getRunCommunityService climb map", () => {
 				pollsIntoGate: 4,
 				you: false,
 				build: BARE_BUILD,
+				startedAtGate: 0,
+				coveragePercent: 0,
+				streak: 0,
+				storageKb: 0,
 			},
 			{
 				id: RED,
@@ -501,6 +544,14 @@ describe("getRunCommunityService climb map", () => {
 				pollsIntoGate: 3,
 				you: true,
 				build: RED_BUILD,
+				closingBand: "shaky",
+				startedAtGate: 0,
+				handle: "red",
+				title: "Completionist",
+				coveragePercent: 69,
+				streak: 0,
+				storageKb: 0,
+				bestCategory: "js",
 			},
 			{
 				id: BLUE,
@@ -511,6 +562,11 @@ describe("getRunCommunityService climb map", () => {
 				pollsIntoGate: 1,
 				you: false,
 				build: BLUE_BUILD,
+				closingBand: "perfect",
+				startedAtGate: 5,
+				coveragePercent: 0,
+				streak: 6,
+				storageKb: 896,
 			},
 		]);
 	});
@@ -565,6 +621,9 @@ describe("getRunCommunityService climb map", () => {
 				gate: 1,
 				pollsIntoGate: 0,
 				build: BARE_BUILD,
+				closingBand: null,
+				startedAtGate: 0,
+				...standing(),
 			},
 		]);
 
@@ -596,6 +655,11 @@ describe("getRunCommunityService climb map", () => {
 				gate: 3,
 				pollsIntoGate: 2,
 				build: BLUE_BUILD,
+				closingBand: "danger",
+				startedAtGate: 0,
+				coveragePercent: 0,
+				streak: 0,
+				storageKb: 0,
 			},
 			// A nameless account falls back to its id, so the avatar still draws.
 			{
@@ -607,8 +671,77 @@ describe("getRunCommunityService climb map", () => {
 				gate: 5,
 				pollsIntoGate: 0,
 				build: BARE_BUILD,
+				startedAtGate: 3,
+				coveragePercent: 0,
+				streak: 0,
+				storageKb: 0,
 			},
 		]);
+	});
+
+	it("reads a climber's standing: their handle, title, streak and storage", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const blue = result.data.climb?.climbers.find(
+			(climber) => climber.id === BLUE
+		);
+		expect(blue).toMatchObject({ streak: 6, storageKb: 896 });
+		const you = result.data.climb?.climbers.find((climber) => climber.you);
+		expect(you).toMatchObject({ handle: "red", title: "Completionist" });
+	});
+
+	it("states coverage as a percentage of what the gate scores against, not as units", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const you = result.data.climb?.climbers.find((climber) => climber.you);
+		// 24 units at gate 6 is 24 of the 35 slots scored so far.
+		expect(you?.coveragePercent).toBe(69);
+	});
+
+	it("names the category a climber has answered right most often", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const you = result.data.climb?.climbers.find((climber) => climber.you);
+		expect(you?.bestCategory).toBe("js");
+	});
+
+	it("leaves the best category off a player who has never been right", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const green = result.data.climb?.climbers.find(
+			(climber) => climber.id === GREEN
+		);
+		expect(green).not.toHaveProperty("bestCategory");
+	});
+
+	it("leaves a handle and a title off an account that wears neither", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const green = result.data.climb?.climbers.find(
+			(climber) => climber.id === GREEN
+		);
+		expect(green).not.toHaveProperty("handle");
+		expect(green).not.toHaveProperty("title");
 	});
 
 	it("carries the viewer's deepest finished run as their best", async () => {

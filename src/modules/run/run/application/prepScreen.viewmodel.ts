@@ -27,6 +27,8 @@ import {
 import {
 	type CommittableBand,
 	coverageGainPercentFor,
+	okUnitsAt,
+	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	rebaserFor,
@@ -38,6 +40,7 @@ import type {
 	SlaControl,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
+import { plural } from "~/shared/lib/displayValue";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import {
@@ -51,7 +54,10 @@ import type {
 	AuditsPanelProps,
 	AuditsRow,
 } from "~/ui/kanto-theme/AuditsPanel.ui";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
+import {
+	COVERAGE_BAND_WORD,
+	type CoverageBarProps,
+} from "~/ui/kanto-theme/CoverageBar.ui";
 import type { HeaderFunds } from "~/ui/kanto-theme/Header.ui";
 import type { LedgerProps } from "~/ui/kanto-theme/Ledger.ui";
 import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
@@ -70,7 +76,7 @@ const noop = () => {};
 
 export const fundsOf = (kb: number, label: string): HeaderFunds => {
 	const [amount, unit] = kbLabel(kb).split(" ");
-	return { amount, unit, label };
+	return { amount, unit, label, kb };
 };
 
 const SUMMIT_LINE = "the summit — nothing after this";
@@ -78,6 +84,38 @@ const SEALED: LedgerFigure = { locked: true };
 
 export const PREP_COMMUNITY_LABEL = "Community";
 const START_LEAD = "Start";
+const POLL_WORD = "poll";
+const SLOT_WORD = "slot";
+const UNIT_WORD = "unit";
+const READING_JOIN = " · ";
+const OK_DEMAND_LEAD = "need";
+const OK_DEMAND_TRAIL = `for ${COVERAGE_BAND_WORD.ok}`;
+
+/**
+ * What the start press reads under its label: the window it is about to open,
+ * and what it has to earn in it.
+ *
+ * Polls and slots are both stated because they are different numbers off gate
+ * 0 — the window is always five polls, while the slots the run is scored
+ * across grow with every gate it has opened.
+ *
+ * The demand is dropped once it is met, rather than stated as "need 0": a run
+ * already holding the line is not owed a debt of nothing.
+ */
+export const prepPressNoteOf = (gate: number, unitsHeld: number): string => {
+	const owed = okUnitsAt(gate) - unitsHeld;
+	const window = [
+		plural(SLICE_WINDOW, POLL_WORD),
+		plural(scoringSlotsAt(gate), SLOT_WORD),
+	];
+
+	if (owed <= 0) return window.join(READING_JOIN);
+
+	return [
+		...window,
+		`${OK_DEMAND_LEAD} ${plural(owed, UNIT_WORD)} ${OK_DEMAND_TRAIL}`,
+	].join(READING_JOIN);
+};
 
 export const PREP_POLLS_TITLE = "The five polls";
 const BILL_LEAD = "bills";
@@ -98,6 +136,39 @@ const SLA_HINT =
 	"Promise a band before you answer. Close there or better and the gate pays more; miss your own promise and it pays nothing extra.";
 const REBASE_HINT =
 	"Put the categories you are surest of first — a streak pays, and the opener counts twice for some builds.";
+
+const NO_BET_REMEDY = "has no bet — call one above";
+const NO_PROMISE_REMEDY = "has no promise — name a band above";
+
+const owedClause = (
+	control: { configLabel: string } | null | undefined,
+	committed: number | string | null | undefined,
+	remedy: string
+): string | undefined => {
+	if (control === null || control === undefined) return undefined;
+	if (committed !== null && committed !== undefined) return undefined;
+	return `${control.configLabel} ${remedy}`;
+};
+
+/**
+ * What prep is still waiting on before it will open the gate. One clause per
+ * config, each true on its own, because two configs waiting is two separate
+ * things to go and do rather than one compound sentence.
+ *
+ * The name comes off the control rather than the roster, so a config that is
+ * renamed renames its own refusal. A control is only ever present while its
+ * pick is legal, which is what keeps this in step with the engine's own hold.
+ */
+export const commitmentRemedy = (
+	frame: Pick<PrepFrame, "estimate" | "estimatedCorrect" | "sla" | "slaBand">
+): string | undefined => {
+	const clauses = [
+		owedClause(frame.estimate, frame.estimatedCorrect, NO_BET_REMEDY),
+		owedClause(frame.sla, frame.slaBand, NO_PROMISE_REMEDY),
+	].filter((clause): clause is string => clause !== undefined);
+
+	return clauses.length === 0 ? undefined : clauses.join(READING_JOIN);
+};
 const MULTIPLE_LABEL = "two answers";
 const SINGLE_LABEL = "one answer";
 
@@ -451,9 +522,10 @@ export const prepPropsFor = ({
 			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,
-				icon: "chevron",
+				swatch: { state: "current", swatch },
 				onPress: noop,
 			},
+			note: prepPressNoteOf(gate, bar.units?.held ?? 0),
 		},
 	};
 };

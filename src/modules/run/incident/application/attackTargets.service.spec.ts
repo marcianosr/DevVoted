@@ -77,15 +77,15 @@ describe("getAttackTargetsService", () => {
 	it("offers nothing without a run, and reads no rival for it", async () => {
 		vi.mocked(runs.findActiveSessionRun).mockResolvedValue(null);
 
-		expect(await targetsFor()).toEqual({ attack: null, offers: [] });
+		expect(await targetsFor()).toEqual({ heldAudit: null, offers: [] });
 		expect(incidents.fetchRivalCandidates).not.toHaveBeenCalled();
 	});
 
-	it("offers nothing while no attack is armed", async () => {
+	it("offers nothing while no heldAudit is armed", async () => {
 		vi.mocked(runs.findActiveSessionRun).mockResolvedValue(RUN);
 		vi.mocked(runs.loadRunState).mockResolvedValue(started(["js"]));
 
-		expect(await targetsFor()).toEqual({ attack: null, offers: [] });
+		expect(await targetsFor()).toEqual({ heldAudit: null, offers: [] });
 		expect(incidents.fetchRivalCandidates).not.toHaveBeenCalled();
 	});
 
@@ -94,16 +94,16 @@ describe("getAttackTargetsService", () => {
 		vi.mocked(runs.loadRunState).mockResolvedValue({
 			...started(["js"]),
 			gatesCleared: 5,
-			attack: { band: "perfect" },
+			heldAudit: { band: "perfect", gate: 4 },
 		});
 
-		const { attack, offers } = await targetsFor();
+		const { heldAudit, offers } = await targetsFor();
 
-		expect(attack).toEqual({ band: "perfect" });
+		expect(heldAudit).toEqual({ band: "perfect", gate: 4 });
 		expect(offers.map((offer) => offer.name)).toEqual(["Misty"]);
 		expect(offers[0].gate).toBe(7);
 		expect(offers[0].userId).toBe("misty");
-		expect(offers[0].payloads).toHaveLength(2);
+		expect(offers[0].payloads).toHaveLength(1);
 		expect(incidents.fetchLastTargetUserId).toHaveBeenCalledWith(USER);
 	});
 
@@ -112,7 +112,7 @@ describe("getAttackTargetsService", () => {
 		vi.mocked(runs.loadRunState).mockResolvedValue({
 			...started(["js"]),
 			gatesCleared: 5,
-			attack: { band: "healthy" },
+			heldAudit: { band: "healthy", gate: 4 },
 		});
 
 		const { offers } = await targetsFor();

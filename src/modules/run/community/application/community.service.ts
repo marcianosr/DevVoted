@@ -7,6 +7,11 @@ import {
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+import {
+	type CoverageBandId,
+	percentOf,
+	runCoverageOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 
 import {
 	type ClimbMarker,
@@ -19,7 +24,9 @@ import {
 	mirrorGrading,
 } from "~/modules/run/run/domain/runPoll.model";
 import {
+	type ClimberRow,
 	fetchActiveClimbers,
+	fetchBestCategories,
 	fetchClimbMarker,
 	fetchFallenToday,
 	fetchPersonalBestPosition,
@@ -97,6 +104,24 @@ export type RunCommunityPoll = {
 	detail: RunCommunityPollDetail | null;
 };
 
+/**
+ * How a run is doing, as anyone may read it (ADR-101 §2, narrowed 2026-09-26).
+ * Absent on a viewer whose own run has ended: their standing then sits on their
+ * fallen chip, beside the build it belonged to.
+ */
+export type ClimbStanding = {
+	/** The GitHub account behind the name, when they have one. */
+	handle?: string;
+	/** The one title on show (ADR-109). */
+	title?: string;
+	/** Coverage banked so far, as a whole percentage of what this gate scores against. */
+	coveragePercent?: number;
+	streak?: number;
+	storageKb?: number;
+	/** The category they have answered right most often, lifetime. */
+	bestCategory?: string;
+};
+
 /** One player's live position on the climb map. */
 export type ClimbClimber = ClimbMarker & {
 	id: string;
@@ -107,21 +132,28 @@ export type ClimbClimber = ClimbMarker & {
 	you: boolean;
 	/** Absent only for a viewer whose run has ended: their build then sits on their fallen chip. */
 	build?: PublicBuild;
-};
+	/** The band the last gate closed on; absent before a first close, and for a viewer whose run has ended. */
+	closingBand?: CoverageBandId;
+	/** Where the run began: above 0, a git tag rescued it. Absent for a viewer whose run has ended. */
+	startedAtGate?: number;
+} & ClimbStanding;
 
 /**
  * A run the gate killed today, drawn as its player greyed out where they fell.
  * Keyed by run rather than by player: one player can lose more than one run in
  * a day, and each loss happened somewhere different.
  */
-export type ClimbFallen = ClimbMarker & {
-	runId: number;
-	id: string;
-	displayName: string;
-	photoUrl?: string | null;
-	borderUrl?: string | null;
-	build: PublicBuild;
-};
+export type ClimbFallen = ClimbMarker &
+	ClimbStanding & {
+		runId: number;
+		id: string;
+		displayName: string;
+		photoUrl?: string | null;
+		borderUrl?: string | null;
+		build: PublicBuild;
+		closingBand?: CoverageBandId;
+		startedAtGate: number;
+	};
 
 export type ClimbTodayView = {
 	climbers: ClimbClimber[];
@@ -273,6 +305,34 @@ const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
 	);
 };
 
+/** What a chip wears off the run's own record: its last close, and where it began. */
+const closeOf = ({
+	closingBand,
+	startedAtGate,
+}: Pick<ClimberRow, "closingBand" | "startedAtGate">) => ({
+	...(closingBand === null ? {} : { closingBand }),
+	startedAtGate,
+});
+
+/**
+ * How the run is doing. Coverage leaves the database as the units the column
+ * stores and becomes a percentage here, because a percentage needs the gate to
+ * divide by and SQL has no business knowing the ladder.
+ */
+const standingOf = (
+	row: ClimberRow,
+	bestCategory: string | undefined
+): ClimbStanding => ({
+	...(row.handle === null ? {} : { handle: row.handle }),
+	...(row.title === null ? {} : { title: row.title }),
+	coveragePercent: Math.round(
+		percentOf(runCoverageOf(row.coverageUnits, row.gate))
+	),
+	streak: row.streak,
+	storageKb: row.storageKb,
+	...(bestCategory === undefined ? {} : { bestCategory }),
+});
+
 const buildClimbToday = async ({
 	userId,
 	date,
@@ -288,6 +348,9 @@ const buildClimbToday = async ({
 		fetchFallenToday(date),
 		fetchPersonalBestPosition(userId),
 	]);
+	const bestCategories = await fetchBestCategories([
+		...new Set([...active, ...fallen].map((row) => row.userId)),
+	]);
 
 	const others = active
 		.filter((row) => row.userId !== userId)
@@ -300,6 +363,8 @@ const buildClimbToday = async ({
 			pollsIntoGate: row.pollsIntoGate,
 			you: false,
 			build: row.build,
+			...closeOf(row),
+			...standingOf(row, bestCategories.get(row.userId)),
 		}));
 
 	// The viewer's marker comes from their own run, not the active-climber list:
@@ -312,7 +377,13 @@ const buildClimbToday = async ({
 		borderUrl: viewerRow?.borderUrl,
 		...viewerAt,
 		you: true,
-		...(viewerRow === undefined ? {} : { build: viewerRow.build }),
+		...(viewerRow === undefined
+			? {}
+			: {
+					build: viewerRow.build,
+					...closeOf(viewerRow),
+					...standingOf(viewerRow, bestCategories.get(userId)),
+				}),
 	};
 
 	return {
@@ -326,6 +397,8 @@ const buildClimbToday = async ({
 			gate: row.gate,
 			pollsIntoGate: row.pollsIntoGate,
 			build: row.build,
+			...closeOf(row),
+			...standingOf(row, bestCategories.get(row.userId)),
 		})),
 		bestPosition,
 	};

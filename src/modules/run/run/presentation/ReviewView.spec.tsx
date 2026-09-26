@@ -103,7 +103,7 @@ describe("ReviewView", () => {
 		);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Back to the gate" })
+			screen.getByRole("button", { name: /^Back to the gate/ })
 		);
 		expect(onUse).toHaveBeenCalled();
 	});

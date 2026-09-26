@@ -54,14 +54,17 @@ const MISTY: RivalCandidate = {
 };
 const tx = {} as unknown as RunTx;
 
-/** A debrief with an attack in hand: the one place a fire is legal. */
+/** A debrief with an heldAudit in hand: the one place a fire is legal. */
 const armedAtPrep = (): RunState => {
 	const cleared = clearGate({
 		...started(["js"]),
 		gatesCleared: 5,
 		bankedUnits: 20,
 	});
-	return { ...cleared, attack: { band: "healthy" } };
+	return {
+		...cleared,
+		heldAudit: { band: "healthy", gate: 4, payload: "not-found" },
+	};
 };
 
 const fire = (targetRunId: number, auditId: AuditId) =>
@@ -69,7 +72,7 @@ const fire = (targetRunId: number, auditId: AuditId) =>
 
 const offeredPayload = async (state: RunState) => {
 	const [offer] = await offersForAttacker(
-		attackerOf(RUN.id, USER, state, { band: "healthy" }),
+		attackerOf(RUN.id, USER, state, { band: "healthy", gate: 4 }),
 		DATE
 	);
 	return { offer, auditId: offer.payloads[0] };
@@ -101,7 +104,7 @@ describe("fireAuditService", () => {
 	it("refuses to fire mid-window, where no picker was offered", async () => {
 		vi.mocked(runs.loadRunState).mockResolvedValue({
 			...started(["js"]),
-			attack: { band: "healthy" },
+			heldAudit: { band: "healthy", gate: 4 },
 		});
 
 		const result = await fire(2, "not-found");
@@ -144,7 +147,7 @@ describe("fireAuditService", () => {
 
 		const settle = dispatched.settle?.(RUN.id);
 		if (settle === undefined) throw new Error("no settlement composed");
-		await settle(tx, state, { ...state, attack: undefined });
+		await settle(tx, state, { ...state, heldAudit: undefined });
 
 		expect(incidents.insertIncident).toHaveBeenCalledWith(tx, {
 			sentByUserId: USER,

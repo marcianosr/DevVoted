@@ -65,12 +65,14 @@ describe("pollNoteFor — a config sitting this poll out", () => {
 	it("names the categories a category-bound config waits for", () => {
 		expect(
 			skipped({ kind: "otherCategories", categories: ["js", "ts"] })
-		).toEqual({ detail: "JS or TS only" });
+		).toEqual({
+			badge: { label: "JavaScript or TypeScript only", color: "pewter" },
+		});
 	});
 
 	it("falls back to a bare idle note when no category is named", () => {
 		expect(skipped({ kind: "otherCategories", categories: [] })).toEqual({
-			detail: "idle this poll",
+			badge: { label: "idle this poll", color: "pewter" },
 		});
 	});
 
@@ -87,7 +89,7 @@ describe("pollNoteFor — a config sitting this poll out", () => {
 			{ kind: "runCapReached" },
 			{ kind: "notThisPoll" },
 		];
-		const words = reasons.map((why) => skipped(why).detail);
+		const words = reasons.map((why) => skipped(why).badge?.label);
 
 		expect(words.filter(Boolean)).toHaveLength(reasons.length);
 		expect(new Set(words).size).toBe(reasons.length);
@@ -238,5 +240,25 @@ describe("upgradesFor — the Build panel's own press", () => {
 
 		expect(maxed.refusal).toBeUndefined();
 		expect(offeredIn(maxed)).toBeUndefined();
+	});
+});
+
+describe("pollNoteFor — a faucet draining its run cap", () => {
+	it("states the cap left as a figure that can move, not a frozen string", () => {
+		expect(pollNoteFor({ kind: "online", capLeftKb: 320 })).toEqual({
+			badge: { count: 320, label: "KB left", color: "saffron" },
+		});
+	});
+
+	it("keeps stating it once spent, so the chip never goes quiet mid-run", () => {
+		expect(pollNoteFor({ kind: "online", capLeftKb: 0 })).toEqual({
+			badge: { count: 0, label: "KB left", color: "saffron" },
+		});
+	});
+
+	it("puts the cap before a bump, the cap being what decides a payout", () => {
+		expect(pollNoteFor({ kind: "online", capLeftKb: 96, bumpIn: 2 })).toEqual({
+			badge: { count: 96, label: "KB left", color: "saffron" },
+		});
 	});
 });

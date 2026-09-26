@@ -102,7 +102,6 @@ export const reviewPropsFor = ({
 		rows: answers.map((answer) => reviewRowFor(answer, open)),
 		footer: {
 			note: REVIEW_DEX_NOTE,
-			noteAt: "row",
 			action: { label: GATE_SHOP_LABEL, icon: "shop", onPress: noop },
 		},
 	};

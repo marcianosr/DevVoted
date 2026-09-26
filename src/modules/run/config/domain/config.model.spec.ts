@@ -278,6 +278,18 @@ describe("describeConfig", () => {
 		);
 	});
 
+	it("names a linter's categories in full, never abbreviated", () => {
+		expect(describeConfig(CONFIGS.eslint)).toBe(
+			"Cross out a wrong answer on JavaScript / TypeScript polls for an escalating fee."
+		);
+	});
+
+	it("states a single-category linter without a separator", () => {
+		expect(describeConfig(CONFIGS.stylelint)).toBe(
+			"Cross out a wrong answer on CSS polls for an escalating fee."
+		);
+	});
+
 	it("describes Moore's Law without a balance floor", () => {
 		expect(describeConfig(CONFIGS.mooresLaw)).toBe(
 			"+2% of held storage on gate clear."
@@ -323,7 +335,13 @@ describe("givesOf", () => {
 	});
 
 	it("passes a non-focus config's authored copy through untouched", () => {
-		expect(givesOf(CONFIGS.eslint)).toBe(CONFIGS.eslint.gives);
+		expect(givesOf(CONFIGS.intellisense)).toBe(CONFIGS.intellisense.gives);
+	});
+
+	it("names both of a linter's categories in full", () => {
+		expect(givesOf(CONFIGS.eslint)).toBe(
+			"Cross out a wrong answer on JavaScript / TypeScript polls"
+		);
 	});
 
 	it("derives Unit Tests' gives from its level", () => {

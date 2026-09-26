@@ -745,3 +745,23 @@ describe("upgrade offers in the registry (ADR-053)", () => {
 		expect(bought.draftOptions).toHaveLength(0);
 	});
 });
+
+describe("finish-reward and the audit in hand (ADR-119)", () => {
+	it("drops an offered audit the player never took, keeps the held one, and frees the repackage", () => {
+		const shopping: RunState = {
+			...clearGate(started(["js"])),
+			heldAudit: { band: "perfect", gate: 0, payload: "not-found" },
+			offeredAudit: { band: "healthy", gate: 1 },
+			repackagedThisShop: true,
+		};
+		const climbing = runReducer(shopping, { type: "finish-reward" });
+		expect(climbing.status).toBe("answering");
+		expect(climbing.heldAudit).toEqual({
+			band: "perfect",
+			gate: 0,
+			payload: "not-found",
+		});
+		expect(climbing.offeredAudit).toBeUndefined();
+		expect(climbing.repackagedThisShop).toBeUndefined();
+	});
+});

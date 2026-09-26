@@ -20,10 +20,30 @@ describe("runActionSchema", () => {
 			{ type: "drop", configId: "agents-md" },
 			{ type: "commit-band", band: "healthy" },
 			{ type: "fire-audit" },
+			{ type: "open-audit" },
+			{ type: "keep-payload", auditId: "not-found" },
+			{ type: "take-audit" },
+			{ type: "repackage" },
 		];
 		actions.forEach((action) => {
 			expect(runActionSchema.safeParse(action).success).toBe(true);
 		});
+	});
+
+	it("rejects a client-picked seed on open-audit and repackage (ADR-119)", () => {
+		expect(
+			runActionSchema.safeParse({ type: "open-audit", seed: "1:x" }).success
+		).toBe(false);
+		expect(
+			runActionSchema.safeParse({ type: "repackage", seed: "1:x" }).success
+		).toBe(false);
+	});
+
+	it("rejects keep-payload naming an unknown audit", () => {
+		expect(
+			runActionSchema.safeParse({ type: "keep-payload", auditId: "418-teapot" })
+				.success
+		).toBe(false);
 	});
 
 	it("rejects unknown action types", () => {

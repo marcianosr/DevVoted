@@ -1,6 +1,9 @@
+/**
+ * The block's length is the weight, but it starts wide enough to read as a
+ * block rather than as a digit that happens to be boxed: a one-weight config
+ * sits beside a name, not inside a track.
+ */
 const WIDTH_BY_SLOTS = [
-	"w-3",
-	"w-4",
 	"w-5",
 	"w-6",
 	"w-7",
@@ -8,11 +11,13 @@ const WIDTH_BY_SLOTS = [
 	"w-9",
 	"w-10",
 	"w-11",
+	"w-12",
+	"w-13",
 ] as const;
 
 export const SLOTS_AT_CAP = 8;
 
-const CAPPED_WIDTH = "w-11";
+const CAPPED_WIDTH = "w-13";
 const NO_SLOTS = 0;
 
 export const weightWidth = (slots: number): string =>

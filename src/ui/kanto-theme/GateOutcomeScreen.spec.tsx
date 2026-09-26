@@ -237,7 +237,9 @@ describe("GateOutcomeScreen", () => {
 		it("sends the player on to the shop", () => {
 			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
 
-			expect(screen.getByRole("button", { name: "To the shop" })).toBeEnabled();
+			expect(
+				screen.getByRole("button", { name: /^To the shop/ })
+			).toBeEnabled();
 		});
 	});
 
@@ -326,7 +328,7 @@ describe("GateOutcomeScreen", () => {
 			render(<GateOutcomeScreen {...kantoGateShaky()} />);
 
 			expect(
-				screen.getByRole("button", { name: "Retry gate 4" })
+				screen.getByRole("button", { name: /^Retry gate 4/ })
 			).toBeDisabled();
 			expect(screen.getByText(PEEL_REFUSAL)).toBeInTheDocument();
 		});
@@ -405,9 +407,13 @@ describe("GateOutcomeScreen", () => {
 		it("offers a new run rather than a shop that has nothing left to sell", () => {
 			render(<GateOutcomeScreen {...kantoGateWon()} />);
 
-			expect(screen.getByRole("button", { name: NEW_RUN_LABEL })).toBeEnabled();
 			expect(
-				screen.queryByRole("button", { name: GATE_SHOP_LABEL })
+				screen.getByRole("button", { name: new RegExp(`^${NEW_RUN_LABEL}`) })
+			).toBeEnabled();
+			expect(
+				screen.queryByRole("button", {
+					name: new RegExp(`^${GATE_SHOP_LABEL}`),
+				})
 			).not.toBeInTheDocument();
 		});
 	});
@@ -459,7 +465,9 @@ describe("GateOutcomeScreen", () => {
 		it("offers a new run and no retry", () => {
 			render(<GateOutcomeScreen {...kantoGateDanger()} />);
 
-			expect(screen.getByRole("button", { name: NEW_RUN_LABEL })).toBeEnabled();
+			expect(
+				screen.getByRole("button", { name: new RegExp(`^${NEW_RUN_LABEL}`) })
+			).toBeEnabled();
 			expect(
 				screen.queryByRole("button", { name: /^Retry gate/ })
 			).not.toBeInTheDocument();

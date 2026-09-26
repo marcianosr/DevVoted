@@ -1,6 +1,14 @@
 import { useState } from "react";
 
 import {
+	INSTALLED_CARDS_OPEN,
+	OFFERED_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+
+import {
 	handCardFor,
 	NEW_RUN_BUILD_NOTE,
 	newRunBuildFor,
@@ -27,10 +35,38 @@ export const StartView = ({
 	onVendorLock,
 	onStart,
 }: StartViewProps) => {
-	const [openInfo, setOpenInfo] = useState<string | undefined>(undefined);
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
 
-	const toggleInfo = (name: string) =>
-		setOpenInfo(name === openInfo ? undefined : name);
+	const buildNames = view.configs.map((config) => config.label);
+	const offerNames = view.available.map((config) => config.label);
+
+	const openBuild = disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN);
+	const openOffers = disclosedIn(offerNames, offerFlips, OFFERED_CARDS_OPEN);
+
+	const toggleBuild = (name: string) =>
+		setBuildFlips(toggleDisclosure(buildFlips, name));
+
+	const toggleOffer = (name: string) =>
+		setOfferFlips(toggleDisclosure(offerFlips, name));
+
+	const toggleAllBuild = () =>
+		setBuildFlips(
+			discloseAll(
+				buildNames,
+				openBuild.size < buildNames.length,
+				INSTALLED_CARDS_OPEN
+			)
+		);
+
+	const toggleAllOffers = () =>
+		setOfferFlips(
+			discloseAll(
+				offerNames,
+				openOffers.size < offerNames.length,
+				OFFERED_CARDS_OPEN
+			)
+		);
 
 	const held = new Set(view.configs.map((config) => config.id));
 	const free = view.slots - occupiedSlots(view.configs);
@@ -61,17 +97,24 @@ export const StartView = ({
 		<NewRunScreen
 			header={newRunHeaderFor(view.storage)}
 			build={newRunBuildFor(view.configs, view.slots, onToggle, vendorLockFor, {
-				openInfo,
-				onToggleInfo: toggleInfo,
+				openInfo: openBuild,
+				onToggleInfo: toggleBuild,
+				onToggleAll: toggleAllBuild,
 			})}
 			registry={newRunRegistryFor(offers, {
-				openInfo,
-				onToggleInfo: toggleInfo,
+				openInfo: openOffers,
+				onToggleInfo: toggleOffer,
+				onToggleAll: toggleAllOffers,
 			})}
 			buildNote={NEW_RUN_BUILD_NOTE}
 			footer={newRunFooterFor(
 				view.canStart && !needsVendor ? onStart : undefined,
-				needsVendor ? VENDOR_REMEDY : undefined
+				needsVendor ? VENDOR_REMEDY : undefined,
+				{
+					configs: view.configs.length,
+					held: occupiedSlots(view.configs),
+					slots: view.slots,
+				}
 			)}
 		/>
 	);

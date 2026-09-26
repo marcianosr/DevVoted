@@ -3,6 +3,13 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	INSTALLED_CARDS_OPEN,
+	OFFERED_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+import {
 	createKantoShopScreenProps,
 	kantoClosedShopProps,
 	kantoFirstShopProps,
@@ -24,19 +31,22 @@ const props = createKantoShopScreenProps();
 const CROSSING = { from: 8, to: 12, perGateKb: 64 };
 
 const ShopWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
 	const [uninstalling, setUninstalling] = useState<string | undefined>(
 		undefined
 	);
 	const [armed, setArmed] = useState<string | undefined>(undefined);
 
-	const toggle = (name: string) => setOpen(name === open ? undefined : name);
 	const close = () => setUninstalling(undefined);
 
 	const chips = kantoShopBuild.map((chip) => ({
 		...chip,
 		onUninstall: () => setUninstalling(chip.name),
 	}));
+
+	const buildNames = chips.map((chip) => chip.name ?? "");
+	const offerNames = props.registry.offers.map((offer) => offer.name ?? "");
 
 	// The first offer is the one that crosses a rung, so the story shows both
 	// halves of the press: a plain install, and one that has to arm first.
@@ -65,14 +75,24 @@ const ShopWithPanels = () => {
 				build={{
 					configs: chips,
 					weight: kantoShopWeight(),
-					openInfo: open,
-					onToggleInfo: toggle,
+					openInfo: disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN),
+					onToggleInfo: (name) =>
+						setBuildFlips(toggleDisclosure(buildFlips, name)),
+					onToggleAll: () =>
+						setBuildFlips(
+							discloseAll(buildNames, buildFlips.size > 0, INSTALLED_CARDS_OPEN)
+						),
 				}}
 				registry={{
 					...props.registry,
 					offers,
-					openInfo: open,
-					onToggleInfo: toggle,
+					openInfo: disclosedIn(offerNames, offerFlips, OFFERED_CARDS_OPEN),
+					onToggleInfo: (name) =>
+						setOfferFlips(toggleDisclosure(offerFlips, name)),
+					onToggleAll: () =>
+						setOfferFlips(
+							discloseAll(offerNames, offerFlips.size > 0, OFFERED_CARDS_OPEN)
+						),
 				}}
 			/>
 

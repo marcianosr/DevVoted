@@ -5,6 +5,8 @@ export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
 /** Paid per rival-fired audit a cleared gate carried (ADR-099). */
 export const INCIDENT_SURVIVAL_KB = 32;
+/** Redraws the opened audit in hand, once a shop (ADR-119). Never sells one. */
+export const REPACKAGE_KB = 32;
 
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 

@@ -196,6 +196,24 @@ describe("PollScores", () => {
 			expect(open[1]).toHaveTextContent("3");
 		});
 
+		it("lights the first open slot on the gate in hand as the poll being answered", () => {
+			render(<PollScores rows={pollPayoutRows([[1, undefined, undefined]])} />);
+
+			expect(screen.getByText("2")).toHaveClass("border-theme");
+			expect(screen.getByText("3")).toHaveClass("border-theme-faint");
+		});
+
+		it("lights nothing on a gate the run has already climbed past", () => {
+			const [past] = pollPayoutRows([
+				[1, undefined, undefined],
+				[undefined, undefined, undefined],
+			]);
+
+			render(<PollScores rows={[past]} />);
+
+			expect(screen.getByText("2")).toHaveClass("border-theme-faint");
+		});
+
 		it("reads the row to a screen reader as what it paid, not as a tally", () => {
 			render(<PollScores rows={PAID} />);
 

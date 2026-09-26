@@ -14,8 +14,11 @@ export const PANEL_SURFACE =
 const HEADER =
 	"flex flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
 const GLYPH = "size-2.5 shrink-0 rounded-xs bg-theme-muted";
+// The reading and any control over the body share one right-hand group, so the
+// header has a single thing to push to its end however many of them there are.
+const HEADER_END = "ml-auto flex flex-wrap items-center justify-end gap-2";
 const META =
-	"ml-auto flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
+	"flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
 const BODY = "flex flex-col gap-4 px-4 py-4";
 const COLUMNS =
 	"flex w-full items-baseline gap-4 border-b border-theme-faint bg-theme-raised px-4 py-2 text-xs text-theme-muted first:rounded-t-2xl last:rounded-b-2xl";
@@ -42,9 +45,11 @@ export type PanelHeaderProps = {
 	label: string;
 	badge?: PanelBadge;
 	meta?: ReactNode;
+	/** A control over the panel's own body, opposite the reading of it. */
+	trailing?: ReactNode;
 };
 
-const PanelHeader = ({ label, badge, meta }: PanelHeaderProps) => (
+const PanelHeader = ({ label, badge, meta, trailing }: PanelHeaderProps) => (
 	<header className={HEADER}>
 		<span aria-hidden className={GLYPH} />
 		<Typography variant="title" as="h3">
@@ -53,7 +58,12 @@ const PanelHeader = ({ label, badge, meta }: PanelHeaderProps) => (
 		{badge === undefined ? null : (
 			<Badge color={badge.color}>{badge.label}</Badge>
 		)}
-		{meta === undefined ? null : <span className={META}>{meta}</span>}
+		{meta === undefined && trailing === undefined ? null : (
+			<span className={HEADER_END}>
+				{meta === undefined ? null : <span className={META}>{meta}</span>}
+				{trailing}
+			</span>
+		)}
 	</header>
 );
 

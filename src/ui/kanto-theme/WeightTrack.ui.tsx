@@ -1,16 +1,14 @@
-import { WEIGHT } from "~/shared/lib/copy";
+import { OF, WEIGHT } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
 import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "./colors";
-import { ConfigInfo, type ConfigInfoProps } from "./ConfigInfo.ui";
 import type { LeadLine, LeadPart } from "./Lead.ui";
 import { Typography } from "./Typography.ui";
 import { upkeepLabelOf } from "./upkeep";
 
 const COPY = {
-	of: "of",
 	free: "free",
 	overBy: "over by",
 	beforeBill: "before the bill becomes",
@@ -21,7 +19,7 @@ const COPY = {
 const COLUMN = "flex w-full flex-col gap-1.5";
 const TRACK = "flex h-7.5 w-full";
 const SEGMENT =
-	"group/info relative flex min-w-0 basis-0 items-center justify-center gap-1.5 first:rounded-l-md last:rounded-r-md";
+	"flex min-w-0 basis-0 items-center justify-center gap-1.5 first:rounded-l-md last:rounded-r-md";
 const PADDED = "px-1.5";
 const DIMMED = "opacity-35";
 const ROOM = "rounded-r-md border border-dashed border-theme-faint";
@@ -35,25 +33,9 @@ const PREVIEW_ROOM = "rounded-r-md border border-theme-soft bg-hatched-theme";
 const NAME = "truncate text-xs font-bold";
 const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
 
-/**
- * A phone gets a sheet, the same as `Tooltip` and `ConfigChip`. A segment here
- * is `basis-0` and often only a few pixels wide, so anchoring a `w-80` panel to
- * one put most of it past the screen with nothing to scroll it back — the worst
- * case of the problem those two already solved. From `sm` it anchors again.
- */
-const PANEL =
-	"fixed inset-x-4 bottom-4 z-30 transition-opacity sm:absolute sm:inset-x-auto sm:top-full sm:bottom-auto sm:mt-2";
-const PANEL_SHUT =
-	"pointer-events-none invisible opacity-0 group-hover/info:visible group-hover/info:opacity-100 group-has-[:focus-visible]/info:visible group-has-[:focus-visible]/info:opacity-100";
-
-const ALIGN_START = "sm:left-0";
-const ALIGN_END = "sm:right-0";
-
 const NAME_SHARE = 0.12;
 const FIGURE_SHARE = 0.05;
-const PAST_THE_MIDDLE = 0.5;
 const MIN_AXIS = 1;
-const NO_WEIGHT = 0;
 const NO_UPKEEP = 0;
 const PREVIEW_LINE = "block tabular-nums";
 
@@ -80,7 +62,6 @@ export const segmentColorOf = (index: number): KantoColor =>
 export type WeightTrackFill = {
 	name: string;
 	slots: number;
-	info?: ConfigInfoProps;
 };
 
 /** The rung the build would cross into next, and what it would then bill. */
@@ -117,7 +98,7 @@ export const roomPartsOf = (
 	held: number,
 	next?: NextRung
 ): LeadLine => {
-	const load = { figure: `${weight} ${COPY.of} ${held} ${WEIGHT}` };
+	const load = { figure: `${weight} ${OF} ${held} ${WEIGHT}` };
 	const gap = ` ${SEPARATOR} `;
 
 	if (weight > held)
@@ -155,8 +136,8 @@ export const previewLinesOf = (
 	perGateKb: number,
 	preview: WeightPreview
 ): readonly string[] => [
-	`${COPY.current} ${weight} ${COPY.of} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
-	`${COPY.afterInstall} ${preview.weight} ${COPY.of} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
+	`${COPY.current} ${weight} ${OF} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
+	`${COPY.afterInstall} ${preview.weight} ${OF} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
 ];
 
 const fillLineOf = ({ name, slots }: WeightTrackFill) =>
@@ -165,13 +146,11 @@ const fillLineOf = ({ name, slots }: WeightTrackFill) =>
 const Segment = ({
 	fill,
 	share,
-	start,
 	color,
 	dimmed,
 }: {
 	fill: WeightTrackFill;
 	share: number;
-	start: number;
 	color: KantoColor;
 	dimmed: boolean;
 }) => {
@@ -200,19 +179,6 @@ const Segment = ({
 					{fill.slots}
 				</span>
 			)}
-
-			{fill.info === undefined ? null : (
-				<span
-					aria-hidden
-					className={clsx(
-						PANEL,
-						PANEL_SHUT,
-						start > PAST_THE_MIDDLE ? ALIGN_END : ALIGN_START
-					)}
-				>
-					<ConfigInfo {...fill.info} />
-				</span>
-			)}
 		</li>
 	);
 };
@@ -230,22 +196,14 @@ export const WeightTrack = ({
 	const axis = Math.max(held, weight, preview?.held ?? MIN_AXIS, MIN_AXIS);
 	const highlighted = fills.find((fill) => fill.name === highlight);
 
-	let taken = NO_WEIGHT;
-	const placed = fills.map((fill) => {
-		const start = taken / axis;
-		taken += fill.slots;
-		return { fill, start };
-	});
-
 	return (
 		<div className={COLUMN}>
 			<ul className={TRACK}>
-				{placed.map(({ fill, start }, index) => (
+				{fills.map((fill, index) => (
 					<Segment
 						key={fill.name}
 						fill={fill}
 						share={fill.slots / axis}
-						start={start}
 						color={segmentColorOf(index)}
 						dimmed={highlighted !== undefined && fill.name !== highlight}
 					/>

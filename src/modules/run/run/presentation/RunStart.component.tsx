@@ -55,9 +55,7 @@ export const RunStart = () => {
 	// Today's segment is open unless this run has spent it. With no run there is
 	// nothing to have spent, so a fresh climb always finds it open.
 	const spent = view?.pollsExhausted === true && !countdown.isOpen;
-	const todayRun = view
-		? todayRunFor(view, pollsNoteFor(view, spent ? countdown.label : undefined))
-		: null;
+	const todayRun = view ? todayRunFor(view, pollsNoteFor(view)) : null;
 
 	// The board counts distinct answerers of today's set, which is exactly what
 	// its own header calls "N players answered". Deliberately not reused for the
@@ -98,6 +96,7 @@ export const RunStart = () => {
 			swatch={gateSwatchAt(view?.gatesCleared ?? 0)}
 			run={todayRun}
 			action={action}
+			pollsLeft={view?.pollsLeftToday ?? SLICE_WINDOW}
 			polls={{
 				detail: [
 					`${plural(SLICE_WINDOW, "question")}, ${SHARED}`,

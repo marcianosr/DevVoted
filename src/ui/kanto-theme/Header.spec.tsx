@@ -1,13 +1,32 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 
 import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
-import { Header } from "./Header.ui";
+import { BALANCE_PILL_HOLD_MS, Header } from "./Header.ui";
 
 const VOLCANO = gateSwatchAt(9);
 
-const FUNDS = { amount: "1843", unit: "KB", label: "balance" } as const;
+const FUNDS = {
+	amount: "1843",
+	unit: "KB",
+	label: "balance",
+	kb: 1843,
+} as const;
+
+/**
+ * The digits are a CSS counter, so they never reach the DOM: the reading is the
+ * figure's accessible name, and the value it is counting to is the property.
+ */
+const figureOf = (reading = "1843 KB") =>
+	screen.getByRole("img", { name: reading });
+
+const countOf = () => document.querySelector(".balance-count");
+
+const countAt = () =>
+	countOf()
+		?.getAttribute("style")
+		?.match(/--balance-count:\s*(-?\d+)/)?.[1];
 
 const COVERAGE = {
 	label: "coverage",
@@ -112,20 +131,37 @@ describe("Header", () => {
 		expect(container.firstChild).not.toHaveClass("gap-6");
 	});
 
-	it("reads the funds as one badged figure under its label", () => {
+	it("reads the funds as a figure over the word it is measured in", () => {
 		render(<Header {...props} funds={FUNDS} />);
 
-		expect(screen.getByText("1843 KB")).toHaveClass("badge-theme");
+		expect(figureOf()).toBeInTheDocument();
+		expect(screen.getByText("KB")).toBeInTheDocument();
 		expect(screen.getByText("balance")).toBeInTheDocument();
 	});
 
-	it("stands the label over the figure, so neither widens the title row", () => {
+	it("leads with the figure and drops the label beneath it", () => {
 		render(<Header {...props} funds={FUNDS} />);
 
 		const block = screen.getByText("balance").parentElement;
 
 		expect(block).toHaveClass("flex-col");
-		expect(block?.firstElementChild).toHaveTextContent("balance");
+		expect(block?.firstElementChild).toBe(figureOf());
+		expect(block?.lastElementChild).toHaveTextContent("balance");
+	});
+
+	it("marks the label with the floppy, so the figure needs no unit spelled out", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(
+			screen.getByText("balance").querySelector("svg")
+		).toBeInTheDocument();
+	});
+
+	it("sizes the amount to lead and quiets the unit beside it", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(countOf()?.parentElement).toHaveClass("text-display");
+		expect(screen.getByText("KB")).toHaveClass("text-theme-muted");
 	});
 
 	it("quiets the label below the figure it names", () => {
@@ -138,20 +174,48 @@ describe("Header", () => {
 		const { container } = render(<Header {...props} funds={FUNDS} />);
 
 		const titleRow = container.querySelector("header > div");
-		expect(titleRow).toContainElement(screen.getByText("1843 KB"));
-		expect(screen.getByText("1843 KB").parentElement).toHaveClass("ml-auto");
+		expect(titleRow).toContainElement(figureOf());
+		expect(screen.getByText("balance").parentElement).toHaveClass("ml-auto");
 	});
 
 	it("holds the amount in tabular figures, so it cannot jitter poll to poll", () => {
 		render(<Header {...props} funds={FUNDS} />);
 
-		expect(screen.getByText("1843 KB")).toHaveClass("tabular-nums");
+		expect(figureOf()).toHaveClass("tabular-nums");
 	});
 
 	it("gives the label the full theme colour", () => {
 		render(<Header {...props} funds={FUNDS} />);
 
 		expect(screen.getByText("balance")).toHaveClass("text-theme");
+	});
+
+	it("states what an install would leave, beside the balance it would leave it in", () => {
+		render(
+			<Header
+				{...props}
+				funds={{
+					...FUNDS,
+					preview: {
+						label: "after install",
+						figure: "1811 KB",
+						color: "vermillion",
+					},
+				}}
+			/>
+		);
+
+		expect(screen.getByText("1811 KB")).toHaveAttribute(
+			"data-screen-theme",
+			"vermillion"
+		);
+		expect(screen.getByText(/after install/)).toBeInTheDocument();
+	});
+
+	it("says nothing about an install when nothing is pointed at", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(screen.queryByText(/after install/)).not.toBeInTheDocument();
 	});
 
 	it("shows no funds at all when none are given", () => {
@@ -198,11 +262,12 @@ describe("Header", () => {
 		render(
 			<Header
 				{...props}
-				funds={{ amount: "1.9", unit: "MB", label: "archive" }}
+				funds={{ amount: "1.9", unit: "MB", label: "archive", kb: 1946 }}
 			/>
 		);
 
-		expect(screen.getByText("1.9 MB")).toBeInTheDocument();
+		expect(figureOf("1.9 MB")).toBeInTheDocument();
+		expect(screen.getByText("MB")).toBeInTheDocument();
 		expect(screen.getByText("archive")).toBeInTheDocument();
 		expect(screen.queryByText("balance")).not.toBeInTheDocument();
 	});
@@ -269,5 +334,123 @@ describe("Header", () => {
 		const { container } = render(<Header {...props} />);
 
 		expect(container.querySelector("header > [aria-hidden]")).toBeNull();
+	});
+});
+
+describe("Header funds, as the balance moves", () => {
+	const props = { swatch: VOLCANO, swatches: trackTo(9) };
+
+	const fundsAt = (kb: number, amount: string, unit = "KB") => ({
+		amount,
+		unit,
+		label: "balance",
+		kb,
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("counts to the new reading when the balance climbs", () => {
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+
+		expect(countAt()).toBe("1875");
+		expect(countOf()).toHaveAttribute("data-counts", "true");
+	});
+
+	it("tints the figure as it climbs, so a gain reads before it is parsed", () => {
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+
+		expect(figureOf("1875 KB")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("tints the figure the other way when the balance falls", () => {
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1811, "1811")} />);
+
+		expect(figureOf("1811 KB")).toHaveAttribute(
+			"data-screen-theme",
+			"cinnabar"
+		);
+	});
+
+	it("names the change in a pill, signed the way it went", () => {
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("+32 KB");
+	});
+
+	it("names a loss with a minus rather than a plus", () => {
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1811, "1811")} />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("\u221232 KB");
+	});
+
+	it("says nothing on arrival, so mounting a screen names no gain", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(screen.queryByRole("status")).not.toBeInTheDocument();
+		expect(countOf()).toHaveAttribute("data-counts", "false");
+	});
+
+	it("drops the pill once the change has had time to be read", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+		expect(screen.getByRole("status")).toBeInTheDocument();
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(screen.queryByRole("status")).not.toBeInTheDocument();
+	});
+
+	it("clears the tint with the pill, leaving the figure the screen's own", () => {
+		vi.useFakeTimers();
+		const { rerender } = render(<Header {...props} funds={FUNDS} />);
+
+		rerender(<Header {...props} funds={fundsAt(1875, "1875")} />);
+
+		act(() => {
+			vi.advanceTimersByTime(BALANCE_PILL_HOLD_MS);
+		});
+
+		expect(figureOf("1875 KB")).not.toHaveAttribute("data-screen-theme");
+	});
+
+	it("refuses to count across a unit roll, which would climb downwards", () => {
+		const { rerender } = render(
+			<Header {...props} funds={fundsAt(999, "999")} />
+		);
+
+		rerender(<Header {...props} funds={fundsAt(1946, "1.9", "MB")} />);
+
+		expect(countOf()).toHaveAttribute("data-counts", "false");
+		expect(countAt()).toBe("1");
+		expect(figureOf("1.9 MB")).toHaveTextContent(".9");
+	});
+
+	it("still names the change across a unit roll, where the digits cannot", () => {
+		const { rerender } = render(
+			<Header {...props} funds={fundsAt(999, "999")} />
+		);
+
+		rerender(<Header {...props} funds={fundsAt(1946, "1.9", "MB")} />);
+
+		expect(screen.getByRole("status")).toHaveTextContent("+947 KB");
 	});
 });

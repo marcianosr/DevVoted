@@ -14,6 +14,8 @@ const NAMES = [
 	"gate",
 	"review",
 	"chevron",
+	"fold",
+	"undo",
 	"tick",
 ] as const;
 

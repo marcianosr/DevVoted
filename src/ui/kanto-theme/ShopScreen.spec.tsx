@@ -14,14 +14,16 @@ import { ShopScreen } from "./ShopScreen.ui";
 
 const props = createKantoShopScreenProps();
 
+/**
+ * The innermost element stating the whole sentence. A wrapper whose only other
+ * child is a press with no words of its own carries the same text content, so
+ * matching on it alone finds a row rather than the line being asserted.
+ */
 const sentence = (text: string) =>
-	screen.getByText((_, element) => element?.textContent === text);
+	screen.getAllByText((_, element) => element?.textContent === text).at(-1);
 
-/** The name alone is ambiguous: a chip renders its info panel even while shut. */
 const chipOf = (name: string) =>
-	screen
-		.getByRole("button", { name: `About ${name}` })
-		.closest<HTMLElement>(".rounded-lg");
+	document.querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 const panelOf = (name: string): HTMLElement => {
 	const panel = screen
@@ -62,18 +64,29 @@ describe("ShopScreen", () => {
 	it("prices a slot in the registry's own header", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(sentence("5 offers · 32 KB a slot")).toBeInTheDocument();
+		expect(sentence("5 offers · 32 KB")).toBeInTheDocument();
+	});
+
+	it("folds each column from its own header, the build shut and the shelf open", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(
+			screen.getByRole("button", { name: "expand all" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "collapse all" })
+		).toBeInTheDocument();
 	});
 
 	it.each([
-		["a build's chip", "Code Coverage"],
+		["a build's card", "Code Coverage"],
 		["a registry offer", "IndexedDB"],
-	])("sizes %s to what it says rather than to the column", (_, name) => {
+	])("grids %s, so each fills its own cell", (_, name) => {
 		render(<ShopScreen {...props} />);
 
 		const chip = chipOf(name);
-		expect(chip).not.toHaveClass("w-full");
-		expect(chip?.closest(".flex-wrap")).not.toBeNull();
+		expect(chip).toHaveClass("w-full");
+		expect(chip?.closest(".grid")).not.toBeNull();
 	});
 
 	it("wears the gate it is running rather than a colour of its own", () => {
@@ -108,7 +121,7 @@ describe("ShopScreen", () => {
 		render(<ShopScreen {...props} />);
 
 		const funds = screen.getByText(STORAGE_BALANCE).parentElement;
-		expect(funds).toHaveTextContent("96 KB");
+		expect(funds).toContainElement(screen.getByRole("img", { name: "96 KB" }));
 	});
 
 	it("reads as the shop of the gate it cleared, counting that gate off", () => {

@@ -4,6 +4,7 @@ import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
+import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
 import { Icon, type IconName } from "./Icon.ui";
@@ -27,9 +28,6 @@ const SECTION_HEAD = "flex flex-wrap items-baseline gap-3";
 
 const CLIMB_READING = "flex flex-wrap items-center gap-2 text-theme-faint";
 
-const PLACEHOLDER =
-	"flex w-full items-center justify-center rounded-lg border border-dashed border-theme-faint px-4 py-10 text-center";
-
 const POLLS = "flex w-full flex-col gap-2";
 
 const SWATCH_SIZE = "hero";
@@ -38,10 +36,18 @@ const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 
 export const COPY = {
-	mapPlaceholder: "The climb map lands here",
+	mapHint: "tap an avatar",
 } as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
+
+export type CommunityMap = {
+	title: string;
+	/** The ladder itself. Absent for a viewer with no run to stand on. */
+	track?: ClimbMapProps;
+	/** What the panel says instead of a track. */
+	empty?: string;
+};
 
 export type CommunityHeader = {
 	swatch: GateSwatch;
@@ -98,7 +104,7 @@ export type CommunityScreenProps = {
 	header: CommunityHeader;
 	climb: CommunityClimb;
 	turnout: CommunityTurnout;
-	map: { title: string; summary?: string };
+	map: CommunityMap;
 	/** Today's audits, everyone's. Absent on a board that has not read them. */
 	incidents?: IncidentsPanelProps;
 	leaders: CommunityLeaders;
@@ -249,21 +255,25 @@ const Turnout = ({ title, when, bands }: CommunityTurnout) => (
 	</Panel>
 );
 
-const WhereEveryoneIs = ({
-	title,
-	summary,
-}: {
-	title: string;
-	summary?: string;
-}) => (
+/**
+ * The whole ladder, or the one sentence that replaces it. A viewer with no run
+ * has nowhere to stand and no reach to chart, so the board says how to get on
+ * the map rather than drawing an empty one.
+ */
+const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
 	<Panel>
-		<Panel.Header label={title} meta={summary} />
+		<Panel.Header
+			label={title}
+			meta={track === undefined ? undefined : COPY.mapHint}
+		/>
 		<Panel.Body>
-			<div className={PLACEHOLDER}>
+			{track === undefined ? (
 				<Typography variant="hint" as="span">
-					{COPY.mapPlaceholder}
+					{empty}
 				</Typography>
-			</div>
+			) : (
+				<ClimbMap {...track} />
+			)}
 		</Panel.Body>
 	</Panel>
 );

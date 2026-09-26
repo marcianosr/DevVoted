@@ -55,6 +55,26 @@ An unsigned figure takes **no colour**, and so follows the screen it sits on. On
 earns a hue: `+` the caller's gain colour, `−` cinnabar, a sub-1 multiplier saffron. A
 price painted green reads as a payout, which is the same confusion one layer down.
 
+## Decision 4: `Figures` also badges a closed, case-sensitive vocabulary
+
+Two things that are not figures now badge through the same parser: the band words
+(DANGER…PERFECT) and the twelve poll category names. Both are nouns the reader
+already meets as badges elsewhere — the coverage bar states a band, the community
+board states a category — so leaving them bare inside a sentence made one word read
+two ways depending on the screen.
+
+The guard is what matters here, because an earlier attempt to teach the regex the
+word "free" was rejected: `Figures` renders config descriptions, and "a **free**
+upgrade" would have badged mid-sentence. A vocabulary is admissible only when it is
+**closed** and **matched case-sensitively**. The game writes a band in caps and a
+category as its own proper name, so neither can collide with ordinary prose — and
+the lower-cased register the gate mix uses ("javascript 3") is left alone, which is
+the behaviour we want rather than an accident we tolerate. A lowercase word stays
+banned; badge it at the call site instead.
+
+A category takes **no colour**, like an unsigned price. Hue means gain, loss or
+term; a category is neither, and ADR-020 exists to keep hue off categories.
+
 ## Consequences
 
 - Prose that carries a figure is now split across elements, so a spec asserting the whole

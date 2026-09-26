@@ -1,14 +1,8 @@
 import {
-	type Config,
-	focusMultiplierOf,
-} from "~/modules/run/config/domain/config.model";
-import {
 	SLICE_WINDOW,
-	VICTORY_GATE,
 	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
-import type { CategoryCode } from "~/shared/lib/categories";
 
 export const BASE_UNIT = 1;
 export const SINGLE_CREDIT = 1;
@@ -103,8 +97,12 @@ export const surplusPayoutKb = (units: number, gate: number): number =>
 export const healthyAt = (gate: number): number =>
 	unitsToRatio(healthyUnitsAt(gate), gate);
 
+/** Units the run must hold at this close to read OK: HEALTHY, less the drop. */
+export const okUnitsAt = (gate: number): number =>
+	healthyUnitsAt(gate) - okDropAt(gate);
+
 export const okAt = (gate: number): number =>
-	unitsToRatio(healthyUnitsAt(gate) - okDropAt(gate), gate);
+	unitsToRatio(okUnitsAt(gate), gate);
 
 export const floorAt = (gate: number): number =>
 	unitsToRatio(floorUnitsAt(gate), gate);
@@ -193,84 +191,6 @@ export const atLeastBand = (
 	least: CoverageBandId
 ): CoverageBand => (meetsBand(band, least) ? band : BAND[least]);
 
-const focusesOn = (
-	config: Config,
-	category: CategoryCode | undefined
-): boolean => category !== undefined && config.focusCategory === category;
-
-export const coverageMultiplierFor = (
-	configs: readonly Config[],
-	category?: CategoryCode
-): number =>
-	configs.reduce(
-		(multiplier, config) =>
-			multiplier *
-			(config.coverageMultiplier ?? 1) *
-			(focusesOn(config, category) ? focusMultiplierOf(config) : 1),
-		1
-	);
-
-export const coverageMultiplierOf = (configs: readonly Config[]): number =>
-	coverageMultiplierFor(configs);
-
-export const focusBonusFor = (
-	configs: readonly Config[],
-	category?: CategoryCode
-): number =>
-	coverageMultiplierFor(configs, category) / coverageMultiplierFor(configs);
-
-export const gainPerCorrectFor = (
-	configs: readonly Config[],
-	category?: CategoryCode,
-	answerType: AnswerType = "single"
-): number =>
-	BASE_UNIT * creditFor(answerType) * coverageMultiplierFor(configs, category);
-
-export const coverageAfter = (
-	rights: number,
-	gate: number,
-	configs: readonly Config[],
-	banked = 0,
-	category?: CategoryCode
-): number =>
-	runCoverageOf(banked + rights * gainPerCorrectFor(configs, category), gate);
-
-const multiplierToReach = (
-	line: number,
-	gate: number,
-	rights: number,
-	banked: number
-): number | undefined => {
-	const owed = line * scoringSlotsAt(gate) - banked;
-
-	if (owed <= 0) return 0;
-	if (rights <= 0) return undefined;
-
-	return owed / (rights * BASE_UNIT);
-};
-
-export const multiplierToSurvive = (
-	gate: number,
-	rights: number,
-	banked = 0
-): number | undefined => multiplierToReach(floorAt(gate), gate, rights, banked);
-
-export const multiplierToClear = (
-	gate: number,
-	rights: number,
-	banked = 0
-): number | undefined =>
-	multiplierToReach(healthyAt(gate), gate, rights, banked);
-
-export const coveredSlotsOf = (ratio: number, weight: number): number =>
-	asRatio(ratio) * weight;
-
-export const clearsBar = (ratio: number, gate: number): boolean =>
-	ratio + FLOAT_TOLERANCE >= healthyAt(gate);
-
-export const survivesGate = (ratio: number, gate: number): boolean =>
-	ratio + FLOAT_TOLERANCE >= floorAt(gate);
-
 export const payoutRatioFor = (ratio: number, gate: number): number =>
 	Math.min(PAYOUT_RATIO_CAP, asRatio(ratio) / healthyAt(gate));
 
@@ -288,105 +208,3 @@ export const gatePayoutKb = (
 			streakMultiplier(streak)
 	);
 
-/**
- * The best run coverage still reachable if every remaining poll lands. A run
- * whose ceiling sits under the summit's floor is over, and the model says so
- * rather than letting the player walk out three more days.
- */
-export const maxReachableFrom = (
-	banked: number,
-	gate: number,
-	unitsPerCorrect: number
-): number => {
-	const gatesLeft = Math.max(0, VICTORY_GATE - gate + 1);
-
-	return runCoverageOf(
-		banked + gatesLeft * SLICE_WINDOW * unitsPerCorrect,
-		VICTORY_GATE
-	);
-};
-
-export const isRunUnwinnable = (
-	banked: number,
-	gate: number,
-	unitsPerCorrect: number
-): boolean =>
-	maxReachableFrom(banked, gate, unitsPerCorrect) + FLOAT_TOLERANCE <
-	floorAt(VICTORY_GATE);
-
-const rightsUpTo = (polls: number): readonly number[] =>
-	Array.from({ length: polls + 1 }, (_, rights) => rights);
-
-export const rightsToFill = (
-	gate: number,
-	polls: number,
-	configs: readonly Config[],
-	banked = 0
-): number | undefined =>
-	rightsUpTo(polls).find(
-		(rights) => coverageAfter(rights, gate, configs, banked) >= 1
-	);
-
-export const rightsToSurvive = (
-	gate: number,
-	polls: number,
-	configs: readonly Config[],
-	banked = 0
-): number | undefined =>
-	rightsUpTo(polls).find((rights) =>
-		survivesGate(coverageAfter(rights, gate, configs, banked), gate)
-	);
-
-export const rightsToClear = (
-	gate: number,
-	polls: number,
-	configs: readonly Config[],
-	banked = 0
-): number | undefined =>
-	rightsUpTo(polls).find((rights) =>
-		clearsBar(coverageAfter(rights, gate, configs, banked), gate)
-	);
-
-export type CoveragePeril = "fatal" | "safe";
-
-export const PERIL_COLOUR = {
-	fatal: "cinnabar",
-	safe: "viridian",
-} as const satisfies Record<CoveragePeril, string>;
-
-export type CoverageReading = {
-	readonly weight: number;
-	readonly ratio: number;
-	readonly coveredSlots: number;
-	readonly band: CoverageBand;
-	readonly floor: number;
-	readonly healthyLine: number;
-	readonly healthyOwed: number;
-	readonly survivalOwed: number;
-	readonly meetsBar: boolean;
-	readonly survives: boolean;
-	readonly peril: CoveragePeril;
-};
-
-export const readCoverage = (
-	weight: number,
-	ratio: number,
-	gate: number
-): CoverageReading => {
-	const held = asRatio(ratio);
-	const survives = survivesGate(held, gate);
-
-	return {
-		weight,
-		ratio: held,
-		coveredSlots: coveredSlotsOf(held, weight),
-		band: bandFor(held, gate),
-		floor: floorAt(gate),
-		healthyLine: healthyAt(gate),
-		healthyOwed: Math.max(0, healthyAt(gate) - held),
-		survivalOwed: Math.max(0, floorAt(gate) - held),
-		meetsBar: clearsBar(held, gate),
-		survives,
-		peril: survives ? "safe" : "fatal",
-	};
-};

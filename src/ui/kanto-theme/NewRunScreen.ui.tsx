@@ -1,5 +1,6 @@
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
 import { Build, buildSummaryOf, type BuildProps } from "./Build.ui";
+import { discloseAllFor } from "./DiscloseAll.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
@@ -33,7 +34,6 @@ export const NewRunScreen = ({
 		...build,
 		heading: false,
 		configCount: false,
-		emptySlots: false,
 		caption: false,
 	};
 
@@ -44,7 +44,11 @@ export const NewRunScreen = ({
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
 					<Panel>
-						<Panel.Header label={BUILD} meta={buildSummaryOf(dealt)} />
+						<Panel.Header
+							label={BUILD}
+							meta={buildSummaryOf(dealt)}
+							trailing={discloseAllFor(dealt, dealt.configs.length)}
+						/>
 						<Panel.Body>
 							<Build {...dealt} />
 						</Panel.Body>
@@ -66,6 +70,7 @@ export const NewRunScreen = ({
 									slotPrice={registry.slotPrice}
 								/>
 							}
+							trailing={discloseAllFor(registry, registry.offers.length)}
 						/>
 						<Panel.Body>
 							<Registry {...registry} heading={false} />

@@ -49,6 +49,8 @@ import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView
 import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
+import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
 import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
 import {
 	BASE_SLOTS,
@@ -362,12 +364,42 @@ const withCategorySeat = (view: RunView): RunView => {
 		},
 	};
 };
-const CLIMB_MAP_SUMMARY = "the climb map lands here";
+/**
+ * The rig has no service, so the ladder is simulated: trainers are spread over
+ * the gates below the viewer by their own hash, and the viewer stands where the
+ * reducer actually put them. Deepening slice 5b replaces this simulation with
+ * the real adapter.
+ */
+const protoClimbFor = (gate: number): ClimbTodayView => ({
+	climbers: [
+		...TRAINERS.map((trainer, index) => ({
+			id: trainer.id,
+			displayName: trainer.displayName,
+			gate: hashOf(trainer.id) % (gate + 1),
+			pollsIntoGate: hashOf(trainer.displayName) % SLICE_WINDOW,
+			you: false,
+			startedAtGate: index % 4 === 0 ? 1 : 0,
+			...(index % 3 === 0 ? { closingBand: "perfect" as const } : {}),
+			...(index % 3 === 1 ? { closingBand: "shaky" as const } : {}),
+		})),
+		{
+			id: "you",
+			displayName: YOU.name,
+			gate,
+			pollsIntoGate: 0,
+			you: true,
+			startedAtGate: 0,
+		},
+	],
+	fallen: [],
+	bestPosition: null,
+});
 
 const simulateCommunityScreen = (
 	view: RunView,
 	polls: readonly RunPoll[],
-	press: { onShop: () => void; onPrep: () => void }
+	press: { onShop: () => void; onPrep: () => void },
+	map: { openId?: string; onInspect: (id: string) => void }
 ): CommunityScreenProps => {
 	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 	const answered = view.answeredThisGate;
@@ -507,7 +539,14 @@ const simulateCommunityScreen = (
 				},
 			],
 		},
-		map: { title: CLIMB_MAP_TITLE, summary: CLIMB_MAP_SUMMARY },
+		map: {
+			title: CLIMB_MAP_TITLE,
+			track: {
+				gates: ladderFor(protoClimbFor(gate)),
+				...(map.openId === undefined ? {} : { openId: map.openId }),
+				onInspect: map.onInspect,
+			},
+		},
 		leaders: {
 			title: "Category leaders",
 			summary: "longest run of correct answers · all-time",
@@ -593,6 +632,12 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		setStripStep("removal");
 	}, [state.status]);
 	const [overStep, setOverStep] = useState<OverStep>("summary");
+	const [openClimberId, setOpenClimberId] = useState<string>();
+	const climbMapPress = {
+		...(openClimberId === undefined ? {} : { openId: openClimberId }),
+		onInspect: (id: string) =>
+			setOpenClimberId((current) => (current === id ? undefined : id)),
+	};
 	useEffect(() => {
 		setOverStep("summary");
 	}, [state.status]);
@@ -657,13 +702,13 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 		}))
 	);
 	const attacker: Attacker | null =
-		state.attack === undefined
+		state.heldAudit === undefined
 			? null
 			: {
 					runId: PROTO_RUN_ID,
 					userId: PROTO_USER_ID,
 					gatesCleared: state.gatesCleared,
-					band: state.attack.band,
+					band: state.heldAudit.band,
 				};
 	const offers =
 		attacker === null
@@ -710,7 +755,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 	const latest = filed[0];
 	const attack = attackPanelFor(
 		view.gateStake.gateNumber,
-		view.attack,
+		view.heldAudit,
 		offers,
 		null,
 		latest === undefined
@@ -743,6 +788,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onStart={() => dispatch({ type: "start" })}
 					onBackToShop={() => setStartStep("build")}
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
+					onCommitBand={(band) => dispatch({ type: "commit-band", band })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 					attack={attack}
 					onFire={fire}
@@ -814,6 +860,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onStart={() => dispatch({ type: "finish-reward" })}
 					onBackToShop={() => setRewardStep("shop")}
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
+					onCommitBand={(band) => dispatch({ type: "commit-band", band })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
 					attack={attack}
 					onFire={fire}
@@ -822,10 +869,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 
 			{state.status === "rewarding" && rewardStep === "community" && (
 				<CommunityScreen
-					{...simulateCommunityScreen(view, state.polls, {
-						onShop: () => setRewardStep("shop"),
-						onPrep: () => setRewardStep("prep"),
-					})}
+					{...simulateCommunityScreen(
+						view,
+						state.polls,
+						{
+							onShop: () => setRewardStep("shop"),
+							onPrep: () => setRewardStep("prep"),
+						},
+						climbMapPress
+					)}
 					incidents={incidentsPanelFor(filed.map((incident) => incident.row))}
 				/>
 			)}
@@ -867,10 +919,15 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				(state.status === "won" || state.status === "dead") &&
 				overStep === "community" && (
 					<CommunityScreen
-						{...simulateCommunityScreen(view, state.polls, {
-							onShop: () => setOverStep("summary"),
-							onPrep: () => setOverStep("summary"),
-						})}
+						{...simulateCommunityScreen(
+							view,
+							state.polls,
+							{
+								onShop: () => setOverStep("summary"),
+								onPrep: () => setOverStep("summary"),
+							},
+							climbMapPress
+						)}
 					/>
 				)}
 

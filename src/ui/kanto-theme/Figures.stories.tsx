@@ -30,7 +30,13 @@ export const Losses: Story = {
 };
 
 export const NoFigures: Story = {
-	args: { text: "Cross out a wrong answer on JS/TS polls." },
+	args: { text: "Cross out a wrong answer for an escalating fee." },
+};
+
+export const Categories: Story = {
+	args: {
+		text: "Cross out a wrong answer on JavaScript / TypeScript polls for an escalating fee.",
+	},
 };
 
 export const SameFigureBothTones: Story = {

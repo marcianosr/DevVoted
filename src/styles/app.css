@@ -562,6 +562,33 @@ body[data-screen-theme] {
 	background-color: oklch(from var(--theme-color) 0.78 calc(c* 0.65) h);
 	color: oklch(from var(--theme-color) 0.3 calc(c* 0.6) h);
 }
+/* The depth under the one press a screen is asking for. Two layers, because a
+   blur alone reads as a smudge and an edge alone reads as a border: a hard
+   plinth in the press's own hue holds the shape, and an ambient shadow under it
+   lifts the whole thing off the page.
+
+   The plinth is the fill darkened rather than a neutral, so a press keeps its
+   identity at the one place a flat fill would lose it -- twelve differently-hued
+   bars over one grey shadow read as stickers on a page.
+
+   Paired with `press-sunk` below and not usable without it: a raised control
+   that does not move when pressed is a picture of a button. */
+@utility press-raised {
+	box-shadow:
+		0 0.1875rem 0 0 oklch(from var(--theme-color) 0.62 calc(c * 0.6) h),
+		0 0.5rem 0.75rem -0.25rem oklch(from var(--theme-color) 0.18 calc(c * 0.4) h / 0.55);
+	transition:
+		box-shadow 100ms ease,
+		transform 100ms ease;
+}
+/* Pressed: the plinth collapses and the bar travels exactly its own height, so
+   the bottom edge lands where the plinth was and nothing else on the row moves. */
+@utility press-sunk {
+	transform: translateY(0.1875rem);
+	box-shadow:
+		0 0 0 0 oklch(from var(--theme-color) 0.62 calc(c * 0.6) h),
+		0 0.125rem 0.25rem -0.125rem oklch(from var(--theme-color) 0.18 calc(c * 0.4) h / 0.45);
+}
 /* A badge the player can press. Same paired fill-and-ink contract as
    badge-theme, because a control's legibility must not be separable from its
    ground, in rungs: idle, armed (a two-state control showing which state is
@@ -630,16 +657,25 @@ body[data-screen-theme] {
 /* The bottom rung: a hairline that says "this panel has an edge" without the
    edge being the thing you notice. Alpha rather than the lightness crush
    bg-theme-faint uses, because a border has to stay readable over any surface,
-   including the crushed ground itself. */
+   including the crushed ground itself.
+
+   0.12, not the 0.2 it opened at. On a page of stacked panels every edge is
+   drawn twice — one panel's bottom against the next panel's top — so a rung
+   tuned against a single panel reads as a grid once the screen fills up. The
+   alpha is what gives; the lightness cannot, for the reason above.
+
+   KEEP THIS IDENTICAL to ring-theme-faint below: they are one rung wearing two
+   properties, and a control whose edge is meant to be as quiet as a panel's
+   stops being quiet the moment only one of them moves. */
 @utility border-theme-faint {
-	border-color: oklch(from var(--theme-color) l c h / 0.2);
+	border-color: oklch(from var(--theme-color) l c h / 0.12);
 }
 /* border-theme-faint's ring pair, for a round control whose edge should be as
    quiet as a panel's. Declared because reaching for `ring-theme-faint` and
    getting nothing is silent: Tailwind emits no rule, the ring keeps its
    default currentColor, and the mistake looks plausible on screen. */
 @utility ring-theme-faint {
-	--tw-ring-color: oklch(from var(--theme-color) l c h / 0.2);
+	--tw-ring-color: oklch(from var(--theme-color) l c h / 0.12);
 }
 
 @font-face {
@@ -1225,7 +1261,37 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
-@keyframes coverage-callout {
+/* A climber whose last gate closed SHAKY. The chip dips rather than blinks out:
+   a stack of overlapping faces reads as one object, and a face going fully
+   transparent tears a hole in it. Reduced motion keeps the cue as a dashed edge
+   on the face, because losing the animation must not lose the state. */
+@keyframes climber-flicker {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	45% {
+		opacity: 0.45;
+	}
+	55% {
+		opacity: 0.6;
+	}
+}
+
+.climber-flicker {
+	animation: climber-flicker 1800ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.climber-flicker {
+		animation: none;
+	}
+	.climber-flicker > span:first-child {
+		border-style: dashed;
+	}
+}
+
+@keyframes callout {
 	0% {
 		opacity: 0;
 		transform: translateY(0.5rem);
@@ -1244,12 +1310,12 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
-.coverage-callout {
-	animation: coverage-callout 3200ms ease-out both;
+.callout {
+	animation: callout var(--callout-duration, 3200ms) ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.coverage-callout {
+	.callout {
 		animation: none;
 	}
 }
@@ -1302,12 +1368,35 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
+/* The same mechanism as the coverage counter, for any lone figure that moves
+   while the player watches — a storage cap draining as answers land. Its own
+   registered property rather than a shared one, because two counters on one
+   screen tweening off the same custom property would fight over it. No
+   @starting-style: a cap arrives at whatever it has left and only the change
+   is worth animating; sweeping it up from zero on mount would read as the run
+   having just spent it. */
+@property --figure-count {
+	syntax: "<integer>";
+	initial-value: 0;
+	inherits: false;
+}
+
+.figure-count {
+	transition: --figure-count var(--figure-duration, 600ms) ease-out;
+	counter-reset: figure var(--figure-count);
+}
+
+.figure-count::after {
+	content: counter(figure);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.coverage-arc,
 	.coverage-count,
 	.coverage-bar-count,
 	.coverage-bar-fill,
-	.coverage-bar-pin {
+	.coverage-bar-pin,
+	.figure-count {
 		transition: none;
 	}
 }
@@ -1400,6 +1489,51 @@ meter::-webkit-meter-optimum-value {
 @media (prefers-reduced-motion: reduce) {
 	.build-footer [data-credited="true"],
 	.build-footer details:not([open]) {
+		transition: none;
+	}
+}
+
+/* The balance counts to its new reading the way coverage does: on a registered
+   property, because that is the only value CSS will interpolate into a
+   counter, which is what buys the climb with no rAF loop (ADR-068 decision 4).
+   Its own duration, never the ring's --coverage-duration, whose two uses a
+   spec counts to prove the arc and its digits cannot land apart.
+
+   The transition hangs off an attribute rather than the class so the counting
+   span is never unmounted. A remount resets a registered property to its
+   initial value, so the digits would climb from zero every time the reading
+   rolled between KB and MB — which is also why the unit change switches the
+   transition off rather than animating 999 down to 1. */
+@property --balance-count {
+	syntax: "<integer>";
+	initial-value: 0;
+	inherits: false;
+}
+
+.balance-readout {
+	--balance-duration: 620ms;
+	--callout-duration: 1800ms;
+}
+
+.balance-figure {
+	transition: color 320ms ease-out;
+}
+
+.balance-count {
+	counter-reset: balance var(--balance-count);
+}
+
+.balance-count[data-counts="true"] {
+	transition: --balance-count var(--balance-duration) ease-out;
+}
+
+.balance-count::after {
+	content: counter(balance);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.balance-figure,
+	.balance-count[data-counts="true"] {
 		transition: none;
 	}
 }

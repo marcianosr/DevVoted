@@ -10,7 +10,7 @@ import { SLOTS_AT_CAP, weightLadder, weightWidth } from "./weights";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
-const CAPPED_WIDTH = "w-11";
+const CAPPED_WIDTH = "w-13";
 const RING = "ring-theme-soft";
 
 describe("Weight", () => {
@@ -21,12 +21,12 @@ describe("Weight", () => {
 	});
 
 	it.each([
-		[1, "w-4"],
-		[2, "w-5"],
-		[4, "w-7"],
-		[8, "w-11"],
-		[12, "w-11"],
-		[16, "w-11"],
+		[1, "w-6"],
+		[2, "w-7"],
+		[4, "w-9"],
+		[8, "w-13"],
+		[12, "w-13"],
+		[16, "w-13"],
 	])("draws a %i-slot config's block %s wide", (slots, width) => {
 		render(<Weight slots={slots} />);
 

@@ -1,8 +1,14 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, like, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import { runStatesTable, runsTable, usersTable } from "~/database/schema";
+import {
+	runStatesTable,
+	runsTable,
+	userObjectiveProgressTable,
+	usersTable,
+} from "~/database/schema";
 import { findBorderById } from "~/modules/account/profile/domain/border.model";
+import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { localDayRange } from "~/shared/lib/dateUtils";
 
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
@@ -13,6 +19,8 @@ import {
 	type StoredPublicBuild,
 } from "~/modules/run/build/domain/publicBuild.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
+import type { LastClose } from "~/modules/run/run/domain/run.model";
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 
@@ -49,6 +57,16 @@ const pollsIntoGate = sql<number>`coalesce((${runStatesTable.state}->${stateKey(
  *  Mirrors trackPosition; climbMap.model.spec pins the formula. */
 const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} + coalesce((${runStatesTable.state}->${stateKey("window")}->>${windowKey("answered")})::int, 0)`;
 
+/** How the run's last gate closed, as its own record states it; null before a first close. */
+const lastCloseColumn = sql<LastClose | null>`${runStatesTable.state}->${stateKey("lastClose")}`;
+
+/** Where the run began: 0 from the bottom, the pinned gate when a git tag resumed it. */
+const startedAtGateColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("startedAtGate")})::int, 0)`;
+
+/** The streak the run is carrying, and what it has banked. Public since ADR-101's 2026-09-26 narrowing. */
+const streakColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("streak")})::int, 0)`;
+const storageColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("storage")})::int, 0)`;
+
 const buildPath = sql`${runStatesTable.state}->${stateKey("build")}`;
 
 /**
@@ -69,6 +87,12 @@ export const publicBuildColumn = sql<StoredPublicBuild>`json_build_object(
 	${storedKey("vendorLockedConfigId")}, ${buildPath}->>${buildKey("vendorLockedConfigId")}
 )`;
 
+/** The one title on show beside the name (ADR-109); the roster restates it, so no join. */
+export const titleOf = (equippedTitleId: string | null): string | null => {
+	if (equippedTitleId === null) return null;
+	return findTitleById(equippedTitleId)?.name ?? null;
+};
+
 export const borderUrlOf = (equippedBorderId: string | null): string | null => {
 	if (equippedBorderId === null) return null;
 	return findBorderById(equippedBorderId)?.image ?? null;
@@ -82,6 +106,14 @@ export type ClimberRow = {
 	gate: number;
 	pollsIntoGate: number;
 	build: PublicBuild;
+	closingBand: CoverageBandId | null;
+	startedAtGate: number;
+	handle: string | null;
+	title: string | null;
+	/** Coverage in UNITS, as the column stores it: a percentage is `runCoverageOf`'s job. */
+	coverageUnits: number;
+	streak: number;
+	storageKb: number;
 };
 
 /**
@@ -99,16 +131,27 @@ export const fetchActiveClimbers = async (): Promise<ClimberRow[]> => {
 			gate: runStatesTable.gates_cleared,
 			pollsIntoGate,
 			build: publicBuildColumn,
+			lastClose: lastCloseColumn,
+			startedAtGate: startedAtGateColumn,
+			handle: usersTable.github_username,
+			titleId: usersTable.equipped_title_id,
+			coverageUnits: runStatesTable.coverage,
+			streak: streakColumn,
+			storageKb: storageColumn,
 		})
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
 		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
-	return rows.map(({ equippedBorderId, build, ...row }) => ({
-		...row,
-		borderUrl: borderUrlOf(equippedBorderId),
-		build: publicBuildOf(build),
-	}));
+	return rows.map(
+		({ equippedBorderId, build, lastClose, titleId, ...row }) => ({
+			...row,
+			borderUrl: borderUrlOf(equippedBorderId),
+			build: publicBuildOf(build),
+			closingBand: lastClose?.band ?? null,
+			title: titleOf(titleId),
+		})
+	);
 };
 
 /**
@@ -136,6 +179,14 @@ export type FallenRow = {
 	gate: number;
 	pollsIntoGate: number;
 	build: PublicBuild;
+	closingBand: CoverageBandId | null;
+	startedAtGate: number;
+	handle: string | null;
+	title: string | null;
+	/** Coverage in UNITS, as the column stores it: a percentage is `runCoverageOf`'s job. */
+	coverageUnits: number;
+	streak: number;
+	storageKb: number;
 };
 
 /**
@@ -158,6 +209,13 @@ export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 			gate: runStatesTable.gates_cleared,
 			pollsIntoGate,
 			build: publicBuildColumn,
+			lastClose: lastCloseColumn,
+			startedAtGate: startedAtGateColumn,
+			handle: usersTable.github_username,
+			titleId: usersTable.equipped_title_id,
+			coverageUnits: runStatesTable.coverage,
+			streak: streakColumn,
+			storageKb: storageColumn,
 		})
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
@@ -171,11 +229,15 @@ export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
 				lt(runsTable.finished_at, dayEnd)
 			)
 		);
-	return rows.map(({ equippedBorderId, build, ...row }) => ({
-		...row,
-		borderUrl: borderUrlOf(equippedBorderId),
-		build: publicBuildOf(build),
-	}));
+	return rows.map(
+		({ equippedBorderId, build, lastClose, titleId, ...row }) => ({
+			...row,
+			borderUrl: borderUrlOf(equippedBorderId),
+			build: publicBuildOf(build),
+			closingBand: lastClose?.band ?? null,
+			title: titleOf(titleId),
+		})
+	);
 };
 
 /**
@@ -198,4 +260,50 @@ export const fetchPersonalBestPosition = async (
 			)
 		);
 	return row?.best ?? null;
+};
+
+const CATEGORY_CORRECT = "category-correct:";
+
+/**
+ * The category each player has answered right most often, lifetime. Read off
+ * the objective counters the unlock ladder already keeps, rather than
+ * re-aggregating every answer: one indexed row per player per category.
+ *
+ * Ties break on the category code so the board does not reshuffle between
+ * loads. A player who has never answered anything right has no row and no
+ * best category, which is the honest answer rather than a default.
+ */
+export const fetchBestCategories = async (
+	userIds: readonly string[]
+): Promise<Map<string, string>> => {
+	if (userIds.length === 0) return new Map();
+
+	const rows = await db
+		.select({
+			userId: userObjectiveProgressTable.user_id,
+			metric: userObjectiveProgressTable.metric,
+			count: userObjectiveProgressTable.count,
+		})
+		.from(userObjectiveProgressTable)
+		.where(
+			and(
+				inArray(userObjectiveProgressTable.user_id, [...userIds]),
+				like(userObjectiveProgressTable.metric, `${CATEGORY_CORRECT}%`)
+			)
+		);
+
+	const best = new Map<string, { category: string; count: number }>();
+	for (const row of rows) {
+		if (row.count <= 0) continue;
+		const category = row.metric.slice(CATEGORY_CORRECT.length);
+		const held = best.get(row.userId);
+		if (
+			held === undefined ||
+			row.count > held.count ||
+			(row.count === held.count && category < held.category)
+		)
+			best.set(row.userId, { category, count: row.count });
+	}
+
+	return new Map([...best].map(([userId, { category }]) => [userId, category]));
 };

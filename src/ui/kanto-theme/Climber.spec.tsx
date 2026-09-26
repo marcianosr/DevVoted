@@ -55,7 +55,52 @@ describe("Climber", () => {
 		const { container } = render(<Climber name="Marciano" you />);
 
 		expect(screen.getByTitle("you")).toBeInTheDocument();
-		expect(container.querySelector("span > span")).toHaveClass("ring-cerulean");
+		expect(container.querySelector("span > span")).toHaveClass("ring-viridian");
+	});
+
+	it("rings a rival in the colour the board marks a rival", () => {
+		const { container } = render(<Climber name="Misty" rival />);
+
+		expect(container.querySelector("span > span")).toHaveClass(
+			"ring-vermillion"
+		);
+	});
+
+	it("keeps the viewer's own ring when they are also a rival", () => {
+		const { container } = render(<Climber name="Marciano" you rival />);
+		const face = container.querySelector("span > span");
+
+		expect(face).toHaveClass("ring-viridian");
+		expect(face).not.toHaveClass("ring-vermillion");
+	});
+
+	it("rims a chip whose last gate closed perfect", () => {
+		const { container } = render(<Climber name="Misty" perfect />);
+
+		expect(container.querySelector("span > span")).toHaveClass("ring-theme");
+	});
+
+	it("flickers a chip whose last gate closed shaky", () => {
+		const { container } = render(<Climber name="Misty" shaky />);
+
+		expect(container.firstChild).toHaveClass("climber-flicker");
+	});
+
+	it("tags a run a git tag rescued", () => {
+		render(<Climber name="Misty" rescued />);
+
+		expect(screen.getByTitle("Misty")).toHaveTextContent("tag");
+	});
+
+	it("leaves an unmarked chip bare", () => {
+		const { container } = render(<Climber name="Misty" />);
+		const chip = container.firstChild;
+
+		expect(chip).not.toHaveClass("climber-flicker");
+		expect(chip).toHaveTextContent("MI");
+		expect(container.querySelector("span > span")).not.toHaveClass(
+			"ring-theme"
+		);
 	});
 
 	it("prefers a photo over initials", () => {

@@ -124,7 +124,7 @@ export const gateOutcomeFrameOf = (
 		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
 		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
 		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
-		attackEarned: cleared && view.gatePayout.attackEarned,
+		auditHanded: cleared && view.gatePayout.auditHanded,
 		bar: closedBarFor(
 			CLOSING_OF[verdict],
 			ladderFor(view, verdict),

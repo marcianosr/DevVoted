@@ -406,7 +406,7 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 	});
 });
 
-describe("what surviving a rival's audits paid, and the attack the clear armed (ADR-099)", () => {
+describe("what surviving a rival's audits paid, and the heldAudit the clear armed (ADR-099)", () => {
 	const survived = (): GateOutcomeFrame => ({
 		...frameOf([], CLEARED),
 		payoutKb: 96,
@@ -432,7 +432,7 @@ describe("what surviving a rival's audits paid, and the attack the clear armed (
 	it("chips the audit the clear armed", () => {
 		const props = gateOutcomePropsFor({
 			...frameOf([], CLEARED),
-			attackEarned: true,
+			auditHanded: true,
 		});
 		expect(props.header.chips).toContainEqual(
 			expect.objectContaining({ label: "audit earned" })

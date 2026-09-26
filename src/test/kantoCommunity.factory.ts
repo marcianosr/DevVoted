@@ -4,6 +4,13 @@ import type {
 } from "~/ui/kanto-theme/CommunityScreen.ui";
 import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
+import type { ClimbMapProps } from "~/ui/kanto-theme/ClimbMap.ui";
+import type { ClimberCardProps } from "~/ui/kanto-theme/ClimberCard.ui";
+import type {
+	LadderClimber,
+	LadderGate,
+} from "~/modules/run/community/application/climbLadder.viewmodel";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 import { kantoIncidents } from "./kantoIncidents.factory";
@@ -38,6 +45,170 @@ const koga: ClimberProps = { name: "Koga", borderUrl: BORDER.frontend };
 const sabrina: ClimberProps = { name: "Sabrina", borderUrl: BORDER.ts };
 const blaine: ClimberProps = { name: "Blaine", borderUrl: BORDER.ruby };
 const giovanni: ClimberProps = { name: "Giovanni", borderUrl: BORDER.html };
+const oak: ClimberProps = { name: "Oak" };
+
+/** What a climber runs, as their card opens it. */
+const YOUR_CHIPS = [
+	{ name: "ESLint", slots: 1, version: 2, badges: [] },
+	{
+		name: "Cache",
+		slots: 4,
+		badges: [{ label: "locked in", color: "saffron" as const }],
+	},
+];
+
+const RIVAL_CHIPS = [
+	{ name: "Webpack", slots: 3, badges: [] },
+	{ name: "Babel", slots: 2, badges: [] },
+	{ name: "Jest", slots: 2, badges: [] },
+	{ name: "Sentry", slots: 2, badges: [] },
+];
+
+/**
+ * The ladder as the board draws it: the viewer four gates up with a perfect
+ * close behind them, a rival and a rescued run beside them, a crowd that folds
+ * behind a +N, and a run today's gate killed. Every cue the legend names is
+ * reachable from this one fixture.
+ */
+const ladderChip = (
+	climber: ClimberProps,
+	over: Partial<LadderClimber> = {}
+): LadderClimber => ({
+	id: climber.name.toLowerCase().replace(/\W/g, ""),
+	name: climber.name,
+	...(climber.borderUrl === undefined ? {} : { borderUrl: climber.borderUrl }),
+	you: climber.you === true,
+	rival: false,
+	rescued: false,
+	...over,
+});
+
+/**
+ * A card carries the same facts its chip does, so a mark on the track and a
+ * mark on the card can never disagree in a story.
+ */
+const cardFor = (
+	climber: LadderClimber,
+	over: Partial<ClimberCardProps> = {}
+): ClimberCardProps => ({
+	name: climber.name,
+	...(climber.borderUrl === undefined ? {} : { borderUrl: climber.borderUrl }),
+	you: climber.you,
+	rival: climber.rival,
+	perfect: climber.mark === "perfect",
+	shaky: climber.mark === "shaky",
+	rescued: climber.rescued,
+	gate: "gate 4 · Lavender",
+	weight: "7 of 8 weight",
+	build: YOUR_CHIPS,
+	stats: [
+		{ label: "current streak", value: "3" },
+		{ label: "best category", value: "TypeScript" },
+		{ label: "current gate", value: "4" },
+	],
+	...over,
+});
+
+const withCard = (
+	climber: LadderClimber,
+	over: Partial<ClimberCardProps> = {}
+): LadderClimber => ({ ...climber, card: cardFor(climber, over) });
+
+const LADDER_STANDING: Readonly<Record<number, LadderClimber[]>> = {
+	1: [withCard(ladderChip(oak), { gate: "gate 1 · Boulder", build: [] })],
+	2: [
+		withCard(ladderChip(brock, { mark: "shaky" }), {
+			gate: "gate 2 · Cascade",
+			band: "shaky",
+			coveragePercent: 31,
+		}),
+	],
+	3: [
+		withCard(ladderChip(misty, { rival: true, mark: "perfect" }), {
+			handle: "misty",
+			title: "Heavy Pipeline",
+			gate: "gate 3 · Thunder",
+			band: "perfect",
+			coveragePercent: 70,
+			weight: "9 of 12 weight",
+			storage: "896 KB",
+			build: RIVAL_CHIPS,
+			stats: [
+				{ label: "current streak", value: "6" },
+				{ label: "best category", value: "JavaScript" },
+				{ label: "current gate", value: "3" },
+			],
+		}),
+	],
+	4: [
+		withCard(ladderChip(you, { mark: "perfect" }), {
+			handle: "marciano",
+			band: "perfect",
+			coveragePercent: 64,
+			storage: "512 KB",
+		}),
+		withCard(ladderChip(surge, { rescued: true })),
+		withCard(ladderChip(erika)),
+		withCard(ladderChip(koga), { build: [] }),
+		withCard(ladderChip(sabrina)),
+	],
+	5: [
+		withCard(ladderChip(giovanni, { rival: true }), {
+			gate: "gate 5 · Rainbow",
+		}),
+	],
+};
+
+const LADDER_FALLEN: Readonly<Record<number, LadderClimber[]>> = {
+	3: [
+		withCard(ladderChip(blaine, { mark: "shaky" }), {
+			gate: "gate 3 · Thunder",
+			band: "danger",
+			coveragePercent: 18,
+			storage: "64 KB",
+		}),
+	],
+};
+
+const CURRENT_GATE = 4;
+const BEST_GATE = 6;
+const CHARTED_TO = 6;
+
+const ladderGates = (): LadderGate[] =>
+	ALL_SWATCHES.map((swatch) => ({
+		gate: swatch.gate,
+		name: swatch.gateName,
+		theme: swatch.theme,
+		finish: swatch.finish,
+		current: swatch.gate === CURRENT_GATE,
+		uncharted: swatch.gate > CHARTED_TO,
+		best: swatch.gate === BEST_GATE,
+		climbers: LADDER_STANDING[swatch.gate] ?? [],
+		fallen: (LADDER_FALLEN[swatch.gate] ?? []).map((climber) => ({
+			...climber,
+			runKey: `run-${climber.id}`,
+		})),
+	}));
+
+export const kantoClimbMap = (): ClimbMapProps => ({ gates: ladderGates() });
+
+/** One climber's card, as a rival mid-climb with a full build shows it. */
+export const kantoClimberCard = (): ClimberCardProps =>
+	cardFor(ladderChip(misty, { rival: true, mark: "perfect" }), {
+		handle: "misty",
+		title: "Heavy Pipeline",
+		gate: "gate 3 · Thunder",
+		band: "perfect",
+		coveragePercent: 70,
+		weight: "9 of 12 weight",
+		storage: "896 KB",
+		build: RIVAL_CHIPS,
+		stats: [
+			{ label: "current streak", value: "6" },
+			{ label: "best category", value: "JavaScript" },
+			{ label: "current gate", value: "3" },
+		],
+	});
 
 const bands = (): TurnoutBand[] => [
 	{
@@ -57,7 +228,7 @@ const bands = (): TurnoutBand[] => [
 	{
 		label: "Not started",
 		count: "57",
-		climbers: [{ name: "Oak" }, { name: "Mr. Fuji" }],
+		climbers: [oak, { name: "Mr. Fuji" }],
 		overflow: 55,
 	},
 ];
@@ -301,7 +472,7 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		note: `The shop stays open until ${gateSwatchAt(NEXT_GATE).gateName} starts, then shuts until your next clear.`,
 	},
 	turnout: { title: "Who showed up", when: "Today", bands: bands() },
-	map: { title: COMMUNITY_MAP_TITLE, summary: "11 climbing · 2 closed" },
+	map: { title: COMMUNITY_MAP_TITLE, track: kantoClimbMap() },
 	incidents: kantoIncidents(),
 	leaders: {
 		title: COMMUNITY_LEADERS_TITLE,

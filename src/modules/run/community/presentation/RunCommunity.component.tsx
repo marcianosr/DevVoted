@@ -58,7 +58,13 @@ export const RunCommunity = () => {
 		...(feed.isPending ? { empty: INCIDENTS_DEALING } : {}),
 		...(feed.errorMessage === null ? {} : { empty: INCIDENTS_UNREADABLE }),
 	};
-	const shared = { swatch, countdown: timer, back, incidents };
+	const shared = {
+		swatch,
+		countdown: timer,
+		back,
+		incidents,
+		rivals: feed.view?.rivals ?? [],
+	};
 
 	if (community.isPending)
 		return <CommunityView view={EMPTY_COMMUNITY} note={LOADING} {...shared} />;

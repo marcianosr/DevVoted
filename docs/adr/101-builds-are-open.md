@@ -12,6 +12,11 @@ Built the same day. `publicBuild.model.ts` owns the projection, the
 `publicBuildColumn` in `climbers.repository.ts` is the one read, and the prep
 attack rows and the community climb track are the two surfaces.
 
+**§2 narrowed 2026-09-26** (Marciano, DVTD-kc5k): a run's storage, the coverage
+it has banked so far and its current streak are public. A climber's card on the
+community board is the surface that states them. What a run knows and you do
+not is still private, and §2 lists it.
+
 ## Context
 
 ADR-099 refused a free payload pick *because* "builds are open, and a free pick
@@ -38,11 +43,20 @@ chip, fallen chips included.
 
 ### 2. What stays hidden
 
-Everything else on the run. The current poll and the position inside it, the
-picks (`answeredThisGate`, `allAnswered`), Telemetry peeks, `.length` and its
-estimates, the committed band, Prefetch's upcoming categories, an armed
-`strict: true` wager, whether an attack is held, and storage. Incidents queued
-at a rival's next gate are the Incidents page's business, not the build's.
+What a run knows that the reader does not. The current poll and the position
+inside it, the picks (`answeredThisGate`, `allAnswered`), Telemetry peeks,
+`.length` and its estimates, the committed band, Prefetch's upcoming
+categories, an armed `strict: true` wager, and whether an attack is held.
+Incidents queued at a rival's next gate are the Incidents page's business, not
+the build's.
+
+The line is knowledge, not modesty. Every item above would hand the reader an
+answer, or a read on a shot about to be fired at them. **Standing, by contrast,
+is public**: where a run is, how its last gate closed, the coverage it has
+banked, its streak, its storage, and what it is carrying. None of that can be
+played against the player it belongs to — ADR-105 already decides who may fire
+at whom off the closing band alone — and a board that draws everyone's position
+while hiding how they are doing states the score of a race it refuses to call.
 
 Only `{ id, level, minified, vendorLockedConfigId }` leave Postgres, projected
 inside the query like every other cross-player read. The roster restates the
@@ -61,6 +75,11 @@ this is a readout, not an input.
 - `RivalCandidate`, `AttackOffer`, `ClimbClimber` and `ClimbFallen` carry a
   `PublicBuild`; the reads that already scanned every live row select one more
   JSON column.
+- Since the 2026-09-26 narrowing, the climbers read also projects the worn
+  title, the GitHub handle, `run_states.coverage`, and `streak` and `storage`
+  by JSON path. Coverage crosses the wire as the units the column stores and
+  becomes a percentage through `runCoverageOf`, never as a percentage computed
+  in SQL.
 - A future kanto community screen (DVTD-6poh, DVTD-4km2) inherits the reveal
   from the data; its climber chip owes a `build` prop.
 - Climbers folded behind the track's `+N` badge have no chip to press, so their
@@ -79,3 +98,8 @@ this is a readout, not an input.
   social layer opt-in. A toggle would let the leaders hide from the shells.
 - **A new community section listing builds.** A build belongs beside the
   person, where the rival is already drawn.
+- **Keeping storage private while showing the build it bought** (reconsidered
+  2026-09-26). The weight a build carries was already public, and weight is
+  what storage buys, so the secret was half-told and told misleadingly: a
+  reader could see the build and not whether its owner could afford the next
+  one. Hiding it protected nothing a rival could act on.

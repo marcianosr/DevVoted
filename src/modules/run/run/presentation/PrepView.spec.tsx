@@ -264,3 +264,85 @@ describe("rivals' audits and the attack in hand (ADR-099)", () => {
 		).not.toBeInTheDocument();
 	});
 });
+
+describe("a prep-time config holding the gate", () => {
+	const betOwed = createMockRunView({
+		...view,
+		estimate: {
+			configLabel: "Planning Poker",
+			choices: [
+				{ count: 1, units: 0.25 },
+				{ count: 2, units: 0.5 },
+			],
+		},
+		estimatedCorrect: null,
+	});
+
+	const startPress = () => screen.getByRole("button", { name: /^Start/ });
+
+	it("holds the start and names the config still waiting", () => {
+		render(<PrepView {...props} view={betOwed} />);
+
+		expect(startPress()).toBeDisabled();
+		expect(screen.getByText(/Planning Poker has no bet/)).toBeInTheDocument();
+	});
+
+	it("frees the start once the bet is on the record", () => {
+		render(
+			<PrepView
+				{...props}
+				view={createMockRunView({ ...betOwed, estimatedCorrect: 2 })}
+			/>
+		);
+
+		expect(startPress()).toBeEnabled();
+	});
+
+	it("names both configs when both are still waiting", () => {
+		render(
+			<PrepView
+				{...props}
+				view={createMockRunView({
+					...betOwed,
+					sla: {
+						configLabel: "SLA",
+						choices: [{ band: "ok", label: "OK", uplift: 0.1 }],
+					},
+					slaBand: null,
+				})}
+			/>
+		);
+
+		expect(screen.getByText(/Planning Poker has no bet/)).toBeInTheDocument();
+		expect(screen.getByText(/SLA has no promise/)).toBeInTheDocument();
+	});
+
+	// The countdown is the only refusal nothing on this screen can lift, so it
+	// is the one that gets said.
+	it("states the wait for tomorrow's polls ahead of the call it could take now", () => {
+		render(
+			<PrepView {...props} view={betOwed} startRefusal="Next polls at 09:00" />
+		);
+
+		expect(screen.getByText("Next polls at 09:00")).toBeInTheDocument();
+		expect(screen.queryByText(/Planning Poker has no bet/)).toBeNull();
+	});
+
+	// The vendor is named on the build or in the shop, so sending the player
+	// after a bet first would send them to the wrong screen twice.
+	it("states the vendor's unnamed target ahead of the call", () => {
+		render(
+			<PrepView
+				{...props}
+				view={createMockRunView({
+					...betOwed,
+					vendorLock: { offered: true },
+				})}
+			/>
+		);
+
+		expect(startPress()).toBeDisabled();
+		expect(screen.getByText(/vendor lock-in names nobody/)).toBeInTheDocument();
+		expect(screen.queryByText(/Planning Poker has no bet/)).toBeNull();
+	});
+});

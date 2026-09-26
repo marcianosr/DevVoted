@@ -46,11 +46,16 @@ export type AnswerContext = {
 	readonly previouslyMissed: boolean;
 };
 
+/** A price quoted before the poll is known: with no category, no Focus can match. */
+export type PayoutContext = Omit<AnswerContext, "category"> & {
+	readonly category?: CategoryCode;
+};
+
 export type Effect = {
 	rewardMultiplier?: number;
 	storageOnClear?: number;
 	storageInterestPct?: number;
-	coverage?: (context: AnswerContext, creditedUnits?: number) => Coverage;
+	coverage?: (context: PayoutContext, creditedUnits?: number) => Coverage;
 	maskWrongOn?: (category: CategoryCode) => boolean;
 };
 
@@ -80,7 +85,9 @@ const coverageOf = (config: Config): Effect["coverage"] => {
 		creditedUnits = 0
 	) => ({
 		mult:
-			(config.focusCategory === category ? focusMultiplierOf(config) : 1) *
+			(config.focusCategory !== undefined && config.focusCategory === category
+				? focusMultiplierOf(config)
+				: 1) *
 			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
 			(previouslyMissed
 				? minifiedFactor(config, config.missedPollMultiplier ?? 1)

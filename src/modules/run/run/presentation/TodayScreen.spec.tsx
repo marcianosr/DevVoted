@@ -57,10 +57,13 @@ describe("TodayScreen", () => {
 		expect(onPress).toHaveBeenCalledOnce();
 	});
 
-	it("says today's polls are waiting", () => {
+	it("says today's polls are waiting, under the press that plays them", () => {
 		render(<TodayScreen {...props()} />);
 
-		expect(screen.getByText("today’s 5 polls are ready")).toBeInTheDocument();
+		const note = screen.getByText("today’s 5 polls are ready");
+
+		expect(note).toBeInTheDocument();
+		expect(note.closest("button")).toHaveClass("segment-theme");
 	});
 
 	it("puts the wait on the press that would have played, once the day is spent", async () => {

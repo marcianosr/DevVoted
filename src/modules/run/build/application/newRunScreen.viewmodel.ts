@@ -13,6 +13,7 @@ import {
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
+import { plural } from "~/shared/lib/displayValue";
 import {
 	type VendorLockChip,
 	vendorChipFor,
@@ -33,9 +34,36 @@ const NEW_RUN_TITLE = "New run";
 const FREE_PRICE = "free";
 export const EMPTY_LABEL = "nothing installed yet";
 export const SUGGESTED_LABEL = "suggested";
+export const INSTALLED_LABEL = "Installed";
 const SUGGESTED_COLOR = "cerulean" as const;
 const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
 export const NEW_RUN_BUILD_NOTE = `Select configs up to ${BASE_SLOTS} weight units`;
+const CONFIG_WORD = "config";
+const WEIGHT_WORD = "weight";
+const READING_JOIN = " · ";
+export const BARE_BUILD_REMEDY = `install at least one ${CONFIG_WORD}`;
+
+export type NewRunBuild = { configs: number; held: number; slots: number };
+
+/**
+ * What the start press reads under its label: the build it is about to start
+ * with, or the one thing standing between the player and starting at all.
+ *
+ * A bare build is stated as the remedy rather than as "0 configs · 0/4 weight",
+ * which is the same fact told as a score. The press is shut, and a shut press
+ * owes the player the way to open it.
+ */
+export const newRunPressNoteOf = (build: NewRunBuild): string =>
+	build.configs === 0 ? BARE_BUILD_REMEDY : buildReadingOf(build);
+
+/**
+ * A build in one line: what it holds, and what that weighs against the room it
+ * has. Owned here because the build aggregate owns what a build is; the shop
+ * states the same reading on the press that carries the build into prep, and
+ * two surfaces counting the same configs separately is how they drift.
+ */
+export const buildReadingOf = ({ configs, held, slots }: NewRunBuild): string =>
+	`${plural(configs, CONFIG_WORD)}${READING_JOIN}${held}/${slots} ${WEIGHT_WORD}`;
 
 export const newRunHeaderFor = (balanceKb: number): HeaderProps => ({
 	swatch: gateSwatchAt(START_GATE),
@@ -63,7 +91,9 @@ export const handCardFor = ({
 	slots: slotsOf(config),
 	badges: suggested ? [{ label: SUGGESTED_LABEL, color: SUGGESTED_COLOR }] : [],
 	skipped: held || !fits,
-	install: held ? undefined : { onPress, disabled: !fits },
+	install: held
+		? { label: INSTALLED_LABEL, disabled: true }
+		: { onPress, disabled: !fits },
 	info: infoFor(config),
 });
 
@@ -73,7 +103,7 @@ export const newRunBuildFor = (
 	onUninstall: (configId: string) => void,
 	vendorLockFor: (configId: string) => VendorLockChip | undefined = () =>
 		undefined,
-	panels: Pick<BuildProps, "openInfo" | "onToggleInfo"> = {}
+	panels: Pick<BuildProps, "openInfo" | "onToggleInfo" | "onToggleAll"> = {}
 ): BuildProps => ({
 	configs: configs.map((config) => ({
 		name: config.label,
@@ -87,7 +117,7 @@ export const newRunBuildFor = (
 
 export const newRunRegistryFor = (
 	offers: readonly ConfigChipProps[],
-	panels: Pick<RegistryProps, "openInfo" | "onToggleInfo"> = {}
+	panels: Pick<RegistryProps, "openInfo" | "onToggleInfo" | "onToggleAll"> = {}
 ): RegistryProps => ({
 	offers,
 	slotPrice: FREE_PRICE,
@@ -96,9 +126,15 @@ export const newRunRegistryFor = (
 
 export const newRunFooterFor = (
 	onStart?: () => void,
-	refusal?: string
+	refusal?: string,
+	build: NewRunBuild = { configs: 0, held: 0, slots: BASE_SLOTS }
 ): ScreenFooterProps => ({
-	action: { label: START_LABEL, icon: "chevron", onPress: onStart },
+	action: {
+		label: START_LABEL,
+		swatch: { state: "current", swatch: gateSwatchAt(START_GATE) },
+		onPress: onStart,
+	},
+	note: newRunPressNoteOf(build),
 	...(refusal === undefined ? {} : { refusal }),
 });
 

@@ -1,10 +1,12 @@
+import { clsx } from "clsx";
+
 import { AUDITS, WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
+import { Action } from "./Action.ui";
 import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
 import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
 import { useBarHeight } from "./useBarHeight.hook";
-import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { CoverageBar, CoverageReading } from "./CoverageBar.ui";
 import type { CoverageBarProps } from "./CoverageBar.ui";
@@ -17,6 +19,7 @@ import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Question, questionFactsOf, type QuestionProps } from "./Question.ui";
 import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
+import type { SwatchFill } from "./Swatch.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
@@ -76,42 +79,36 @@ const SCORE_BLOCK = "flex w-full flex-col gap-2";
 const LEADER_REGION = "border-t border-theme-faint px-4 py-3";
 /**
  * Everything about the poll that is not the question: its category, its shape,
- * and whatever the build has to say about it. Its own line under the title
- * because the title row could not hold it on a phone without wrapping, and
- * because a config can add to this line — `.length` already does.
+ * and whatever the build has to say about it.
+ *
+ * This is the panel's whole header. The count that used to head it ("Poll 1 out
+ * of 5") is already on the screen — the coverage rail states the run's position
+ * in the window — and two stacked header rows above a question read as chrome
+ * before the thing the screen is actually asking.
  */
 const META_REGION =
-	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-2";
+	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 first:rounded-t-2xl";
 const META_TRAILING = "flex flex-wrap items-center gap-2 sm:ml-auto";
 /**
- * The send, and the top of the screen's pinned stack. It rides the bottom of the
- * viewport while the poll runs off the end of it, then settles above the byline
- * once the panel's end is in view — so the press is always within reach of the
- * question it commits, and never floats free of the panel it belongs to.
+ * The send, and the floor of the screen's pinned stack. It rides the bottom of
+ * the viewport while the poll runs off the end of it, then settles above the
+ * byline once the panel's end is in view — so the press is always within reach
+ * of the question it commits, and never floats free of the panel it belongs to.
  *
- * It carries no `bottom-*` class: the build sheet is pinned beneath it and the
- * gap it has to clear is that sheet's measured height, which changes when the
- * fold opens. A class and an inline override for one property would only be two
- * answers to the same question, one of them stale.
+ * It holds the floor rather than riding on the build sheet: this is the one
+ * press the screen is asking for, and a bar that has to be found above another
+ * bar is not the first thing a thumb reaches. The sheet is seated on it
+ * instead, off this row's measured height.
  *
- * It carries the panel's own ground: a transparent sticky row would have the
- * answers scrolling through it. The bottom rounding only ever applies to a poll
- * that credits nobody, where this row is the panel's last.
+ * The send alone draws no ground: it is an opaque bar already, and a second one
+ * behind it is a black plate around a press. The screen's own footer does draw
+ * one — it seats bare text over answers that scroll beneath. The bottom
+ * rounding only ever applies to a poll that credits nobody, where this row is
+ * the panel's last.
  */
 const COMMIT_REGION =
-	"sticky z-10 flex w-full flex-wrap items-center gap-3 border-t border-theme-faint bg-theme-faint px-4 py-3 last:rounded-b-2xl";
-const COMMIT_PRESS = "ml-auto";
-
-const COMMIT_SIZE = "md";
-
-/**
- * Where the send sits while nothing is pinned under it. Not an estimate of the
- * sheet — an estimate would be wrong in the one direction that hides the press,
- * and wrong for a long time: the server renders the fold open, a phone collapses
- * it at hydration, so no single number describes both. The sheet does not pin
- * until it has been measured, which makes the bare floor the honest answer here.
- */
-const VIEWPORT_FLOOR = 0;
+	"sticky bottom-0 z-10 flex w-full flex-col gap-3 px-4 py-3 last:rounded-b-2xl";
+const COMMIT_GROUND = "border-t border-theme-faint bg-theme-faint";
 
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const HOLDS_COLOR: KantoColor = "cerulean";
@@ -139,7 +136,6 @@ export type PollScreenProps = {
 	header: HeaderProps;
 	coverage: PollCoverage;
 	buildFooter: BuildFooterProps;
-	pollLabel: string;
 	question: QuestionProps;
 	category: string;
 	categoryColor?: KantoColor;
@@ -159,12 +155,14 @@ export type PollScreenProps = {
 
 type PollCreditProps = Pick<PollScreenProps, "hint" | "author">;
 
+/**
+ * A badge, not a hint: what it states about the author is the same kind of fact
+ * as the streak the category leader wears on the row below, and the two sit at
+ * the same trailing edge. Reading one as a label and the other as an aside made
+ * the pair look like two unrelated rows.
+ */
 const CreditTrailing = ({ hint }: PollCreditProps) =>
-	hint === undefined ? null : (
-		<Typography variant="hint" as="span">
-			{hint}
-		</Typography>
-	);
+	hint === undefined ? null : <Badge>{hint}</Badge>;
 
 const PollCredit = ({ hint, author }: PollCreditProps) => {
 	if (hint === undefined && author === undefined) return null;
@@ -219,42 +217,40 @@ const CoveragePanel = ({ bar, lead, paid }: PollCoverage) => (
  * The send and the screen's own press share one slot because the two never
  * coexist: one commits the answer, the other moves past it once it is committed.
  */
-const PollSend = ({ commit, footer, sendFloor }: PollSendProps) => {
-	if (footer !== undefined)
-		return (
-			<div className={COMMIT_REGION} style={{ bottom: sendFloor }}>
-				<ScreenFooter {...footer} rule={false} />
-			</div>
-		);
-
-	if (commit === undefined) return null;
+const PollSend = ({ commit, footer, swatch, measure }: PollSendProps) => {
+	if (footer === undefined && commit === undefined) return null;
 
 	return (
-		<div className={COMMIT_REGION} style={{ bottom: sendFloor }}>
-			<Typography variant="hint" as="span">
-				{commit.note}
-			</Typography>
-			<span className={COMMIT_PRESS}>
-				<Button
-					size={COMMIT_SIZE}
-					tone={commit.onPress === undefined ? "ambient" : "action"}
+		<div
+			ref={measure}
+			className={clsx(COMMIT_REGION, footer !== undefined && COMMIT_GROUND)}
+		>
+			{footer === undefined ? null : <ScreenFooter {...footer} rule={false} />}
+			{commit === undefined ? null : (
+				<Action
 					label={commit.label}
-					disabled={commit.onPress === undefined}
+					note={commit.note}
+					swatch={swatch}
 					onPress={commit.onPress}
 				/>
-			</span>
+			)}
 		</div>
 	);
 };
 
 type PollSendProps = Pick<PollScreenProps, "commit" | "footer"> & {
-	/** How far off the viewport floor the send sits: the sheet's own height. */
-	sendFloor: number;
+	/** The gate being played, so the send wears the mark of what it commits to. */
+	swatch?: SwatchFill;
+	/**
+	 * Addresses this row's own element. The screen measures it to seat the build
+	 * sheet clear of it, which is a height only the DOM knows: the row wraps and
+	 * the note under the label changes length as the answer does.
+	 */
+	measure: (bar: HTMLElement | null) => void;
 };
 
 type PollPanelProps = Pick<
 	PollScreenProps,
-	| "pollLabel"
 	| "question"
 	| "category"
 	| "categoryColor"
@@ -268,7 +264,6 @@ type PollPanelProps = Pick<
 	PollSendProps;
 
 const PollPanel = ({
-	pollLabel,
 	question,
 	category,
 	categoryColor,
@@ -280,10 +275,10 @@ const PollPanel = ({
 	categoryLeader,
 	commit,
 	footer,
-	sendFloor,
+	swatch,
+	measure,
 }: PollPanelProps) => (
 	<Panel>
-		<Panel.Header label={pollLabel} />
 		<div className={META_REGION}>
 			<Badge color={categoryColor}>{category}</Badge>
 			<Typography variant="hint" as="span">
@@ -309,7 +304,12 @@ const PollPanel = ({
 		<Panel.Body className={facts === undefined ? undefined : PAID}>
 			<Question {...question} />
 		</Panel.Body>
-		<PollSend commit={commit} footer={footer} sendFloor={sendFloor} />
+		<PollSend
+			commit={commit}
+			footer={footer}
+			swatch={swatch}
+			measure={measure}
+		/>
 		<PollCredit hint={hint} author={author} />
 		{categoryLeader === undefined ? null : (
 			<div className={LEADER_REGION}>
@@ -328,7 +328,7 @@ export const PollScreen = ({
 	ground = "bare",
 	...poll
 }: PollScreenProps) => {
-	const [measureSheet, sheetHeight] = useBarHeight();
+	const [measureSend, sendHeight] = useBarHeight();
 
 	return (
 		<Screen gate={header.swatch.theme} width={width} ground={ground}>
@@ -348,15 +348,15 @@ export const PollScreen = ({
 			)}
 
 			<div className={POLL_ROW}>
-				<PollPanel {...poll} sendFloor={sheetHeight ?? VIEWPORT_FLOOR} />
+				<PollPanel
+					{...poll}
+					swatch={{ state: "current", swatch: header.swatch }}
+					measure={measureSend}
+				/>
 				<CoveragePanel {...coverage} />
 			</div>
 
-			<BuildFooter
-				{...buildFooter}
-				ref={measureSheet}
-				pinned={sheetHeight !== undefined}
-			/>
+			<BuildFooter {...buildFooter} seat={sendHeight} />
 		</Screen>
 	);
 };

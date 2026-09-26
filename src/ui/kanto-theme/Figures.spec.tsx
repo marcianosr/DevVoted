@@ -66,10 +66,51 @@ describe("Figures", () => {
 
 	it("badges nothing in prose that carries no figure", () => {
 		const { container } = render(
-			<Figures text="Cross out a wrong answer on JS/TS polls." />
+			<Figures text="Cross out a wrong answer for an escalating fee." />
 		);
 
 		expect(container.querySelector(".badge-theme")).toBeNull();
+	});
+
+	it("badges a poll category, and leaves it uncoloured like a price", () => {
+		render(<Figures text="JavaScript polls earn 1.25× coverage." />);
+
+		const category = screen.getByText("JavaScript");
+
+		expect(category).toHaveClass("badge-theme");
+		expect(category).not.toHaveAttribute("data-screen-theme");
+	});
+
+	it("keeps a two-word category whole", () => {
+		const { container } = render(
+			<Figures text="Answer 10 General Backend polls correctly" />
+		);
+
+		expect(screen.getByText("General Backend")).toHaveClass("badge-theme");
+		expect(container.textContent).toBe(
+			"Answer 10 General Backend polls correctly"
+		);
+	});
+
+	it("does not tear JavaScript into a badged Java", () => {
+		render(<Figures text="JavaScript polls earn 1.25× coverage." />);
+
+		expect(screen.queryByText("Java")).not.toBeInTheDocument();
+	});
+
+	it("leaves a lower-cased category alone, because that register is not a name", () => {
+		const { container } = render(<Figures text="javascript 3 · ruby 2" />);
+
+		expect(container.querySelector(".badge-theme")).toBeNull();
+	});
+
+	it("paints a band word in the ladder's own colour", () => {
+		render(<Figures text="clear HEALTHY or better" />);
+
+		expect(screen.getByText("HEALTHY")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
 	});
 
 	it("keeps every figure in a line that carries several", () => {

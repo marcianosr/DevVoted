@@ -1,5 +1,11 @@
 import { useState } from "react";
 
+import {
+	INSTALLED_CARDS_OPEN,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -38,14 +44,19 @@ const EVERY_STATE = [
 const FIRST_GATE = kantoRunningConfigs.slice(0, 2);
 
 const BandWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
+	const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
+	const props = createKantoBuildProps();
 
 	return (
 		<Screen theme="vermillion">
 			<Build
-				{...createKantoBuildProps()}
-				openInfo={open}
-				onToggleInfo={(name) => setOpen(name === open ? undefined : name)}
+				{...props}
+				openInfo={disclosedIn(
+					props.configs.map((config) => config.name ?? ""),
+					flipped,
+					INSTALLED_CARDS_OPEN
+				)}
+				onToggleInfo={(name) => setFlipped(toggleDisclosure(flipped, name))}
 			/>
 		</Screen>
 	);
@@ -121,24 +132,20 @@ export const AcrossThemes: Story = {
 	),
 };
 
-export const OneInfoOpen: Story = {
+export const FoldingCards: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => <BandWithPanels />,
 };
 
-export const InfoPinnedOnACache: Story = {
-	args: { openInfo: "Cache" },
+export const OneCardOpen: Story = {
+	args: { openInfo: new Set(["Cache"]), onToggleInfo: () => {} },
 };
 
 export const ShopColumn: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="pewter" width="narrow">
-			<Build
-				configs={kantoShopBuild}
-				layout="column"
-				slots={{ used: 7, capacity: 10 }}
-			/>
+			<Build configs={kantoShopBuild} slots={{ used: 7, capacity: 10 }} />
 		</Screen>
 	),
 };
@@ -147,11 +154,7 @@ export const ShopColumnWithRoom: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="pewter" width="narrow">
-			<Build
-				configs={kantoShopBuild}
-				layout="column"
-				slots={{ used: 7, capacity: 10 }}
-			/>
+			<Build configs={kantoShopBuild} slots={{ used: 7, capacity: 10 }} />
 		</Screen>
 	),
 };
@@ -160,11 +163,7 @@ export const ShopColumnFull: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="pewter" width="narrow">
-			<Build
-				configs={kantoShopBuild}
-				layout="column"
-				slots={{ used: 10, capacity: 10 }}
-			/>
+			<Build configs={kantoShopBuild} slots={{ used: 10, capacity: 10 }} />
 		</Screen>
 	),
 };
@@ -172,7 +171,6 @@ export const ShopColumnFull: Story = {
 export const UnderAWeightLadder: Story = {
 	args: {
 		configs: kantoShopBuild,
-		layout: "column",
 		weight: kantoShopWeight(),
 	},
 };
@@ -180,7 +178,6 @@ export const UnderAWeightLadder: Story = {
 export const UnderAWeightLadderHovered: Story = {
 	args: {
 		configs: kantoShopBuild,
-		layout: "column",
 		weight: kantoShopWeight(),
 		highlight: "Telemetry",
 	},
@@ -189,7 +186,6 @@ export const UnderAWeightLadderHovered: Story = {
 export const ReadoutOnly: Story = {
 	args: {
 		configs: kantoShopBuild,
-		layout: "column",
 		weight: kantoShopWeight(),
 		list: false,
 	},
@@ -198,7 +194,6 @@ export const ReadoutOnly: Story = {
 export const InstallationsOnly: Story = {
 	args: {
 		configs: kantoShopBuild,
-		layout: "column",
 		weight: kantoShopWeight(),
 		heading: false,
 		readout: false,
@@ -211,10 +206,10 @@ export const SplitAcrossColumns: Story = {
 			<div className="grid w-full gap-8 md:grid-cols-2">
 				<div className="flex w-full min-w-0 flex-col gap-6">
 					<Registry {...kantoNewRunRegistry()} />
-					<Build {...args} layout="column" list={false} />
+					<Build {...args} list={false} />
 				</div>
 				<div className="flex w-full min-w-0 flex-col gap-6">
-					<Build {...args} layout="column" heading={false} readout={false} />
+					<Build {...args} heading={false} readout={false} />
 				</div>
 			</div>
 		</Screen>

@@ -9,7 +9,7 @@ const KANTO_BUILD_SPACE_KB = 32;
 
 import { Build } from "./Build.ui";
 import { KANTO_COLORS } from "./colors";
-import type { ConfigInfoProps } from "./ConfigInfo.ui";
+import type { ConfigFactsProps } from "./ConfigFacts.ui";
 import { Screen } from "./Screen.ui";
 import { WeightTrack, type WeightTrackFill } from "./WeightTrack.ui";
 
@@ -48,19 +48,13 @@ const WRAPS_THE_RAMP: readonly WeightTrackFill[] = KANTO_COLORS.map(
 	})
 );
 
-const infoFor = (name: string, slots: number): ConfigInfoProps => ({
-	name,
+const infoFor = (name: string, slots: number): ConfigFactsProps => ({
 	description: `${name} pulls its weight on every poll it touches.`,
 	slots,
 	sellPrice: `${slots * 16} KB`,
 	version: 2,
 	maxVersion: 5,
 });
-
-const WITH_INFO: readonly WeightTrackFill[] = kantoWeightFills.map((fill) => ({
-	...fill,
-	info: infoFor(fill.name, fill.slots),
-}));
 
 const HoveredBuild = () => {
 	const [highlight, setHighlight] = useState<string | undefined>();
@@ -73,7 +67,6 @@ const HoveredBuild = () => {
 				badges: [],
 				info: infoFor(fill.name, fill.slots),
 			}))}
-			layout="column"
 			weight={{ held: KANTO_BUILD_SPACE, perGateKb: KANTO_BUILD_SPACE_KB }}
 			highlight={highlight}
 			onHighlight={setHighlight}
@@ -137,14 +130,6 @@ export const HoveredOnAConfig: Story = {
 };
 
 export const BarAlone: Story = { args: { caption: false } };
-
-export const HoverOpensTheConfig: Story = {
-	args: { fills: WITH_INFO },
-};
-
-export const HoverOpensTheConfigOnTheRight: Story = {
-	args: { fills: WITH_INFO, highlight: "Telemetry" },
-};
 
 export const HoveredInsideABuild: Story = {
 	parameters: { controls: { disable: true } },

@@ -168,7 +168,7 @@ describe("ReviewScreen", () => {
 		render(<ReviewScreen {...props} />);
 
 		expect(
-			screen.getByRole("button", { name: "To the shop" })
+			screen.getByRole("button", { name: /^To the shop/ })
 		).toBeInTheDocument();
 		expect(screen.getByText(REVIEW_DEX_NOTE)).toBeInTheDocument();
 	});
@@ -180,17 +180,15 @@ describe("ReviewScreen", () => {
 		expect(container.firstElementChild).not.toHaveClass("rounded-3xl");
 	});
 
-	it("closes on a panel of its own where there is room for one, never on a rule across the page", () => {
+	it("closes on the press itself, never on a rule across the page", () => {
 		render(<ReviewScreen {...props} />);
 
-		const exit = screen
-			.getByRole("button", { name: "To the shop" })
-			.closest("footer")?.parentElement;
+		const exit = screen.getByRole("button", { name: /^To the shop/ });
 
-		expect(exit).toHaveClass("border-theme-faint");
-		expect(
-			within(exit ?? document.body).getByText(REVIEW_DEX_NOTE)
-		).toBeInTheDocument();
+		expect(exit.closest("footer")?.parentElement).not.toHaveClass(
+			"border-theme-faint"
+		);
+		expect(within(exit).getByText(REVIEW_DEX_NOTE)).toBeInTheDocument();
 	});
 
 	it("folds the whole screen away on a flawless gate", () => {

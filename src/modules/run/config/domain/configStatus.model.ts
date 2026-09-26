@@ -15,6 +15,13 @@ export type ConfigStatus =
 			readonly bumpIn?: number;
 			/** KB this config's open transaction is holding, unpaid and at risk. */
 			readonly holdingKb?: number;
+			/**
+			 * KB the run's storage faucet has left to give. Only a config drawing on
+			 * it reports it, and it reports the run's figure rather than its own:
+			 * IndexedDB and Database share one cap, so two chips naming separate
+			 * remainders would be two wrong answers to the same question.
+			 */
+			readonly capLeftKb?: number;
 	  }
 	| { readonly kind: "unknown" }
 	| { readonly kind: "skipped"; readonly why: SkipReason }
@@ -58,6 +65,11 @@ const coverageOnPoll = (
 	if (coverage === undefined) return undefined;
 	return coverage.mult === 1 && coverage.add === 0 ? undefined : coverage;
 };
+
+/** Whether this config takes its pay out of the run's shared storage cap. */
+const drawsOnFaucet = (config: Config): boolean =>
+	config.storagePerCorrect !== undefined ||
+	config.escrowPerCorrect !== undefined;
 
 const paysOnThisAnswer = (
 	config: Config,
@@ -202,5 +214,6 @@ export const configStatusFor = (
 		...(coverage === undefined ? {} : { coverage }),
 		...(bumpIn === undefined ? {} : { bumpIn }),
 		...(holdingKb === undefined ? {} : { holdingKb }),
+		...(drawsOnFaucet(config) ? { capLeftKb: context.faucetRemainingKb } : {}),
 	};
 };

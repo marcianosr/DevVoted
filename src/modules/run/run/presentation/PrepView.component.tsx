@@ -4,9 +4,11 @@ import { gateClearPayout } from "~/modules/run/build/domain/build.model";
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
 import { PEEL_KB_PER_SLOT } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
 import {
 	PREP_COMMUNITY_LABEL,
 	type PrepWindow,
+	commitmentRemedy,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type {
@@ -141,6 +143,17 @@ export const PrepView = (props: PrepViewProps) => {
 		setOpenRunId((open) => (open === targetRunId ? undefined : targetRunId));
 
 	const { gateStake } = view;
+	const owed = commitmentRemedy(view);
+	const vendorOwed = view.vendorLock.offered;
+	/**
+	 * The countdown first, because it is the one nothing on this screen can
+	 * lift; then the vendor, which is answered on the build or in the shop;
+	 * then the calls, which are answered here. Naming a remedy the player
+	 * cannot reach before one they can would send them to the wrong screen.
+	 */
+	const refusal =
+		startRefusal ?? (vendorOwed ? VENDOR_REMEDY : undefined) ?? owed;
+	const held = view.pollsExhausted || vendorOwed || owed !== undefined;
 	const attack = armedFor(props, openRunId, inspect);
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
@@ -196,10 +209,10 @@ export const PrepView = (props: PrepViewProps) => {
 				...screen.footer,
 				action: {
 					...screen.footer.action,
-					onPress: view.pollsExhausted ? undefined : onStart,
+					onPress: held ? undefined : onStart,
 				},
 				asides: asidesFor(props, screen.footer.asides ?? []),
-				...(startRefusal === undefined ? {} : { refusal: startRefusal }),
+				...(refusal === undefined ? {} : { refusal }),
 			}}
 		/>
 	);

@@ -279,3 +279,47 @@ describe("hydrateRunState — the polls are authoritative (DVTD-6nkn)", () => {
 		).toBe(0);
 	});
 });
+
+describe("hydrateRunState — a snapshot written before the sealed audit (ADR-119)", () => {
+	/** Rows from the ADR-099 days hold the held attack under `attack`. */
+	const armedLegacySnapshot = () => {
+		const { heldAudit: _renamed, ...snapshot } = toRunSnapshot({
+			...baseState,
+			gatesCleared: 3,
+		});
+		return {
+			...snapshot,
+			attack: { band: "healthy" as const },
+			attackEarnedAtGate: 2,
+		};
+	};
+
+	it("hydrates a pre-ADR-119 armed attack into the held audit of that band", () => {
+		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
+		expect(hydrated.heldAudit).toEqual({ band: "healthy", gate: 2 });
+		expect(hydrated.auditHandedAtGate).toBe(2);
+	});
+
+	it("stamps the gate before the one in front when the legacy row never recorded one", () => {
+		const { attackEarnedAtGate: _unstamped, ...unstamped } =
+			armedLegacySnapshot();
+		expect(hydrateRunState(unstamped, POLLS).heldAudit).toEqual({
+			band: "healthy",
+			gate: 2,
+		});
+	});
+
+	it("drops the legacy attack keys so the next write is clean", () => {
+		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
+		expect(hydrated).not.toHaveProperty("attack");
+		expect(hydrated).not.toHaveProperty("attackEarnedAtGate");
+	});
+
+	it("prefers what a current snapshot holds over a stale legacy key", () => {
+		const hydrated = hydrateRunState(
+			{ ...armedLegacySnapshot(), heldAudit: { band: "perfect", gate: 1 } },
+			POLLS
+		);
+		expect(hydrated.heldAudit).toEqual({ band: "perfect", gate: 1 });
+	});
+});

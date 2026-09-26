@@ -39,8 +39,8 @@ export type GatePayout = {
 	readonly slaUpliftKb: number;
 	/** What surviving rivals' audits paid on this clear, inside the reward. */
 	readonly incidentSurvivalKb: number;
-	/** Whether this clear armed or upgraded the run's attack (ADR-099). */
-	readonly attackEarned: boolean;
+	/** Whether this clear armed or upgraded the run's heldAudit (ADR-099). */
+	readonly auditHanded: boolean;
 };
 
 export const gatePayoutFor = (state: RunState): GatePayout => {
@@ -83,6 +83,6 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		caughtFatalBy: state.caughtFatalBy ?? null,
 		slaUpliftKb: state.slaUpliftKb ?? 0,
 		incidentSurvivalKb: state.incidentSurvivalKb ?? 0,
-		attackEarned: state.attackEarnedAtGate === reportedGate,
+		auditHanded: state.auditHandedAtGate === reportedGate,
 	};
 };

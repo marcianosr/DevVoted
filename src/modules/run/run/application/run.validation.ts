@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AUDIT_IDS } from "~/modules/run/gate/domain/audit.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
@@ -54,6 +55,12 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		})
 		.strict(),
 	bareActionSchema("fire-audit"),
+	bareActionSchema("open-audit"),
+	z
+		.object({ type: z.literal("keep-payload"), auditId: z.enum(AUDIT_IDS) })
+		.strict(),
+	bareActionSchema("take-audit"),
+	bareActionSchema("repackage"),
 	bareActionSchema("close-gate"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),

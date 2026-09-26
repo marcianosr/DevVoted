@@ -1,12 +1,26 @@
 import type {
+	ClimbClimber,
+	ClimbFallen,
 	ClimbTodayView,
-	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
+import { gateLabelOf } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import {
+	publicSpaceOf,
+	publicWeightOf,
+} from "~/modules/run/build/domain/publicBuild.model";
+import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
+import { kbLabel } from "~/shared/lib/storage";
+import { OF, WEIGHT } from "~/shared/lib/copy";
+import {
+	COPY as CARD_COPY,
+	type ClimberCardProps,
+} from "~/ui/kanto-theme/ClimberCard.ui";
 import {
 	gateOf,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
-import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+import { publicBuildChipsFor } from "~/modules/run/build/application/publicBuild.viewmodel";
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	ALL_SWATCHES,
 	type SwatchFinish,
@@ -14,25 +28,26 @@ import {
 } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
-/**
- * The ladder's own vocabulary. It used to be the terminal kit's `TrackConfig` /
- * `TrackClimber` / `TrackGate`; owning it here means the shape outlives whichever
- * kit draws it, and a future `ClimbMap.ui.tsx` can take these as types only.
- */
-export type LadderConfig = {
-	name: string;
-	slots: number;
-	version?: number;
-	locked?: boolean;
-};
+/** The two closes a chip wears: a perfect window earns a rim, a shaky one flickers. */
+export type ClimberMark = "perfect" | "shaky";
 
+/**
+ * The ladder's own vocabulary, owned here so the shape outlives whichever kit
+ * draws it; `ClimbMap.ui.tsx` takes these as types only.
+ */
 export type LadderClimber = {
 	id: string;
 	name: string;
 	photoUrl?: string;
 	borderUrl?: string;
 	you: boolean;
-	build?: readonly LadderConfig[];
+	/** Traded an audit with the viewer today. */
+	rival: boolean;
+	/** The run resumed from a git tag rather than starting at the bottom. */
+	rescued: boolean;
+	mark?: ClimberMark;
+	/** Everything the card states about them, built where the run's facts are. */
+	card?: ClimberCardProps;
 };
 
 export type LadderFallen = LadderClimber & { runKey: string };
@@ -54,15 +69,84 @@ const byDepthThenId = (
 	b: { pollsIntoGate: number; id: string }
 ): number => b.pollsIntoGate - a.pollsIntoGate || a.id.localeCompare(b.id);
 
-export const trackBuildFor = (build: PublicBuild): LadderConfig[] =>
-	build.configs.map((config) => ({
-		name: config.label,
-		slots: config.slots,
-		...(config.level === undefined ? {} : { version: config.level }),
-		...(config.id === build.vendorLockedConfigId ? { locked: true } : {}),
-	}));
+const markOf = (band: CoverageBandId | undefined): ClimberMark | undefined =>
+	band === "perfect" || band === "shaky" ? band : undefined;
 
-export const ladderFor = (climb: ClimbTodayView): LadderGate[] => {
+const categoryNameOf = (code: string | undefined): string | undefined =>
+	code === undefined || !isCategoryCode(code)
+		? undefined
+		: getCategoryMetadata(code).name;
+
+/**
+ * The three figures the card tiles. A run with no streak still states a zero,
+ * because "0" is a reading; a category nobody has ever been right in has no
+ * reading at all and says so.
+ */
+const statsOf = (entry: ClimbClimber | ClimbFallen) => [
+	{ label: CARD_COPY.streak, value: String(entry.streak ?? 0) },
+	{
+		label: CARD_COPY.bestCategory,
+		value: categoryNameOf(entry.bestCategory) ?? CARD_COPY.none,
+	},
+	{ label: CARD_COPY.gate, value: String(entry.gate) },
+];
+
+const cardOf = (
+	entry: ClimbClimber | ClimbFallen,
+	chip: LadderClimber
+): ClimberCardProps | undefined => {
+	if (entry.build === undefined) return undefined;
+
+	return {
+		name: chip.name,
+		...(entry.handle === undefined ? {} : { handle: entry.handle }),
+		...(entry.title === undefined ? {} : { title: entry.title }),
+		...(chip.photoUrl === undefined ? {} : { photoUrl: chip.photoUrl }),
+		...(chip.borderUrl === undefined ? {} : { borderUrl: chip.borderUrl }),
+		you: chip.you,
+		rival: chip.rival,
+		perfect: chip.mark === "perfect",
+		shaky: chip.mark === "shaky",
+		rescued: chip.rescued,
+		gate: gateLabelOf(entry.gate),
+		...(entry.closingBand === undefined ? {} : { band: entry.closingBand }),
+		...(entry.coveragePercent === undefined
+			? {}
+			: { coveragePercent: entry.coveragePercent }),
+		weight: `${publicWeightOf(entry.build)} ${OF} ${publicSpaceOf(entry.build)} ${WEIGHT}`,
+		...(entry.storageKb === undefined
+			? {}
+			: { storage: kbLabel(entry.storageKb) }),
+		build: publicBuildChipsFor(entry.build),
+		stats: statsOf(entry),
+	};
+};
+
+const chipOf = (
+	entry: ClimbClimber | ClimbFallen,
+	rivalIds: readonly string[],
+	you: boolean
+): LadderClimber => {
+	const mark = markOf(entry.closingBand);
+	const chip: LadderClimber = {
+		id: entry.id,
+		name: entry.displayName,
+		photoUrl: entry.photoUrl ?? undefined,
+		borderUrl: entry.borderUrl ?? undefined,
+		you,
+		rival: rivalIds.includes(entry.id),
+		rescued: (entry.startedAtGate ?? 0) > 0,
+		...(mark === undefined ? {} : { mark }),
+	};
+	const card = cardOf(entry, chip);
+
+	return card === undefined ? chip : { ...chip, card };
+};
+
+export const ladderFor = (
+	climb: ClimbTodayView,
+	rivalIds: readonly string[] = []
+): LadderGate[] => {
 	const you = climb.climbers.find((climber) => climber.you);
 	const chartedTo = Math.max(
 		you === undefined ? 0 : trackPosition(you),
@@ -82,38 +166,13 @@ export const ladderFor = (climb: ClimbTodayView): LadderGate[] => {
 		climbers: [...climb.climbers]
 			.filter((climber) => climber.gate === swatch.gate)
 			.sort(byDepthThenId)
-			.map((climber): LadderClimber => ({
-				id: climber.id,
-				name: climber.displayName,
-				photoUrl: climber.photoUrl ?? undefined,
-				borderUrl: climber.borderUrl ?? undefined,
-				you: climber.you,
-				...(climber.build === undefined
-					? {}
-					: { build: trackBuildFor(climber.build) }),
-			})),
+			.map((climber) => chipOf(climber, rivalIds, climber.you)),
 		fallen: [...climb.fallen]
 			.filter((fallen) => fallen.gate === swatch.gate)
 			.sort(byDepthThenId)
 			.map((fallen) => ({
-				id: fallen.id,
-				name: fallen.displayName,
-				photoUrl: fallen.photoUrl ?? undefined,
-				borderUrl: fallen.borderUrl ?? undefined,
-				you: false,
-				build: trackBuildFor(fallen.build),
+				...chipOf(fallen, rivalIds, false),
 				runKey: String(fallen.runId),
 			})),
 	}));
-};
-
-/** "3 on the ladder · 1 fell today" — the summary the parked map still states. */
-export const ladderSummaryFor = (
-	climb: RunCommunityView["climb"]
-): string | undefined => {
-	if (climb === null) return undefined;
-	const climbers = `${climb.climbers.length} on the ladder`;
-	return climb.fallen.length === 0
-		? climbers
-		: `${climbers} · ${climb.fallen.length} fell today`;
 };

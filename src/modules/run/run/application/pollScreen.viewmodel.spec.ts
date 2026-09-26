@@ -110,7 +110,7 @@ describe("pollPressesOf", () => {
 		const [press] = pollPressesOf(viewOf([CONFIGS.eslint], CSS_GATE));
 
 		expect(press.ready).toBe(false);
-		expect(press.refusal).toBe("waits for JS or TS");
+		expect(press.refusal).toBe("waits for JavaScript or TypeScript");
 	});
 
 	it("refuses a second lint once one wrong answer is left standing", () => {
@@ -145,11 +145,15 @@ describe("pollBuildFor", () => {
 		const build = pollBuildFor(viewOf([CONFIGS.eslint], CSS_GATE), {
 			onPress: () => {},
 		});
-		const [badge] = build.configs[0].badges ?? [];
+		// The skip badge states the same refusal first; the press is the one
+		// carrying the action, so it is found by being pressable, not by position.
+		const press = (build.configs[0].badges ?? []).find(
+			(badge) => "onPress" in badge
+		);
 
-		expect(badge).toMatchObject({
+		expect(press).toMatchObject({
 			disabled: true,
-			label: "waits for JS or TS",
+			label: "waits for JavaScript or TypeScript",
 		});
 	});
 
@@ -334,8 +338,8 @@ describe("pollBuildFor — what each config is worth on this poll", () => {
 		const build = pollBuildFor(viewOf(JS_BUILD, JS_GATE));
 		const [, linter] = build.configs;
 
-		expect(linter.detail).toBe("CSS only");
-		expect(linter.badges).toEqual([]);
+		expect(linter.badges).toEqual([{ label: "CSS only", color: "pewter" }]);
+		expect(linter.detail).toBeUndefined();
 	});
 
 	it("puts the figure before the press, so the chip reads worth then action", () => {

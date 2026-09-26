@@ -1,5 +1,5 @@
 import { BUILD } from "~/shared/lib/copy";
-import { type Ref, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { clsx } from "clsx";
 
@@ -15,16 +15,20 @@ import { Fold, type FoldBadge } from "./Fold.ui";
  */
 const FOOTER = "build-footer mt-auto w-full";
 /**
- * Pinned only once the screen has measured it. The send above it is seated off
- * this bar's height, and that number does not exist until an effect has run —
- * so until it does the sheet stays in the flow and the send holds the floor
- * alone. Pinning first would put an unmeasured bar over the press.
+ * Pinned only once the screen has measured the press beneath it. This bar rides
+ * on that press, and its height does not exist until an effect has run — so
+ * until it does the sheet stays in the flow and the press holds the floor
+ * alone. Pinning first would drop an unseated bar over the press.
  *
- * `z-20` is above the send's `z-10` on purpose: sticky makes this a stacking
+ * It carries no `bottom-*` class: the seat is an inline figure, and a class
+ * plus an override for the same property would be two answers to one question,
+ * one of them stale.
+ *
+ * `z-20` is above the press's `z-10` on purpose: sticky makes this a stacking
  * context, so the config popups inside the fold ride at this level too, and
- * they must be able to open over the send row rather than under it.
+ * they must be able to open over the press rather than under it.
  */
-const PINNED = "sticky bottom-0 z-20";
+const PINNED = "sticky z-20";
 
 const DESKTOP = "(min-width: 640px)";
 
@@ -65,14 +69,12 @@ export type BuildFooterProps = {
 	open?: boolean;
 	/** Changes to a new answer's identity to raise the flash; undefined is quiet. */
 	flash?: string;
-	/** Rides the viewport floor. Off until the screen above has measured it. */
-	pinned?: boolean;
 	/**
-	 * Addresses the sheet's own element. The poll screen measures it to seat its
-	 * send row clear of this bar, which is a height only the DOM knows: the fold
-	 * opens without telling React.
+	 * How far off the viewport floor the sheet rides: the measured height of the
+	 * press pinned beneath it. Absent leaves the sheet in the flow, which is the
+	 * honest answer before that press has been measured.
 	 */
-	ref?: Ref<HTMLElement>;
+	seat?: number;
 };
 
 /**
@@ -86,8 +88,7 @@ export const BuildFooter = ({
 	counts,
 	open,
 	flash,
-	pinned = false,
-	ref,
+	seat,
 }: BuildFooterProps) => {
 	const [defaultOpen] = useState(startsOpen);
 	const [credited, setCredited] = useState(flash);
@@ -109,9 +110,9 @@ export const BuildFooter = ({
 
 	return (
 		<footer
-			ref={ref}
 			data-flash={lit ? "true" : undefined}
-			className={clsx(FOOTER, pinned && PINNED)}
+			style={seat === undefined ? undefined : { bottom: seat }}
+			className={clsx(FOOTER, seat !== undefined && PINNED)}
 		>
 			<Fold
 				title={BUILD}

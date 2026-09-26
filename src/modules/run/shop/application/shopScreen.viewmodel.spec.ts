@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	buildChipFor,
+	shopHeaderFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
@@ -78,5 +79,46 @@ describe("buildChipFor (ADR-097 decision 6)", () => {
 
 	it("carries no panel at all where no deal is on the table", () => {
 		expect(buildChipFor(CONFIGS.mooresLaw).upgrades).toBeUndefined();
+	});
+});
+
+describe("shopHeaderFor, previewing an install", () => {
+	const CLEARED = 3;
+	const BALANCE_KB = 410;
+
+	it("leaves the balance alone when nothing is pointed at", () => {
+		const header = shopHeaderFor(CLEARED, BALANCE_KB);
+
+		expect(header.funds?.amount).toBe("410");
+		expect(header.funds?.preview).toBeUndefined();
+	});
+
+	it("states what the pointed offer would leave behind", () => {
+		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], 32);
+
+		expect(header.funds?.preview).toEqual({
+			label: "after install",
+			figure: "378 KB",
+			color: "vermillion",
+		});
+	});
+
+	it("keeps the balance itself unchanged, so the preview cannot be mistaken for it", () => {
+		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], 32);
+
+		expect(header.funds?.kb).toBe(BALANCE_KB);
+		expect(header.funds?.amount).toBe("410");
+	});
+
+	it("states no after for an offer the balance cannot cover", () => {
+		const header = shopHeaderFor(CLEARED, 16, [], 64);
+
+		expect(header.funds?.preview).toBeUndefined();
+	});
+
+	it("still states the after for an offer that spends the balance exactly", () => {
+		const header = shopHeaderFor(CLEARED, 64, [], 64);
+
+		expect(header.funds?.preview?.figure).toBe("0 B");
 	});
 });

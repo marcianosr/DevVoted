@@ -22,7 +22,7 @@ export const RunPrep = () => {
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
-	const targets = useAttackTargets((view?.attack ?? null) !== null);
+	const targets = useAttackTargets((view?.heldAudit ?? null) !== null);
 	const fire = useFireAudit();
 
 	if (!view) return null;
@@ -71,7 +71,7 @@ export const RunPrep = () => {
 			onRebase={(from, to) => send({ type: "rebase", from, to })}
 			attack={attackPanelFor(
 				view.gateStake.gateNumber,
-				view.attack,
+				view.heldAudit,
 				targets.view?.offers ?? null,
 				targets.errorMessage,
 				fireRefusal

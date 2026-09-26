@@ -3,6 +3,13 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
+import {
+	INSTALLED_CARDS_OPEN,
+	OFFERED_CARDS_OPEN,
+	discloseAll,
+	disclosedIn,
+	toggleDisclosure,
+} from "~/shared/lib/disclosure";
 
 import {
 	createKantoNewRunScreenProps,
@@ -15,14 +22,46 @@ import { NewRunScreen } from "./NewRunScreen.ui";
 const props = createKantoNewRunScreenProps();
 
 const NewRunWithPanels = () => {
-	const [open, setOpen] = useState<string | undefined>(undefined);
-	const toggle = (name: string) => setOpen(name === open ? undefined : name);
+	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
+
+	const buildNames = props.build.configs.map((config) => config.name ?? "");
+	const offerNames = props.registry.offers.map((offer) => offer.name ?? "");
+
+	const openBuild = disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN);
+	const openOffers = disclosedIn(offerNames, offerFlips, OFFERED_CARDS_OPEN);
 
 	return (
 		<NewRunScreen
 			{...props}
-			build={{ ...props.build, openInfo: open, onToggleInfo: toggle }}
-			registry={{ ...props.registry, openInfo: open, onToggleInfo: toggle }}
+			build={{
+				...props.build,
+				openInfo: openBuild,
+				onToggleInfo: (name) =>
+					setBuildFlips(toggleDisclosure(buildFlips, name)),
+				onToggleAll: () =>
+					setBuildFlips(
+						discloseAll(
+							buildNames,
+							openBuild.size < buildNames.length,
+							INSTALLED_CARDS_OPEN
+						)
+					),
+			}}
+			registry={{
+				...props.registry,
+				openInfo: openOffers,
+				onToggleInfo: (name) =>
+					setOfferFlips(toggleDisclosure(offerFlips, name)),
+				onToggleAll: () =>
+					setOfferFlips(
+						discloseAll(
+							offerNames,
+							openOffers.size < offerNames.length,
+							OFFERED_CARDS_OPEN
+						)
+					),
+			}}
 		/>
 	);
 };

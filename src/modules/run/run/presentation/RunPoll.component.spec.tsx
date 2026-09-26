@@ -56,7 +56,7 @@ describe("RunPoll", () => {
 		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
 
 		await user.click(
-			await screen.findByRole("button", { name: "Lock in 1 answer" })
+			await screen.findByRole("button", { name: /^Lock in 1 answer/ })
 		);
 
 		await waitFor(() =>
@@ -75,7 +75,7 @@ describe("RunPoll", () => {
 		await user.click(await screen.findByRole("button", { name: /^B/ }));
 		await user.click(await screen.findByRole("button", { name: /^C/ }));
 		await user.click(
-			await screen.findByRole("button", { name: "Lock in 1 answer" })
+			await screen.findByRole("button", { name: /^Lock in 1 answer/ })
 		);
 
 		await waitFor(() =>
@@ -92,7 +92,7 @@ describe("RunPoll", () => {
 		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
 
 		await user.click(
-			await screen.findByRole("button", { name: "Lock in 2 answers" })
+			await screen.findByRole("button", { name: /^Lock in 2 answers/ })
 		);
 
 		await waitFor(() =>

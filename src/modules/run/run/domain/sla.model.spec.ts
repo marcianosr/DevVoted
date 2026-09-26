@@ -6,7 +6,11 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunState } from "~/modules/run/run/domain/run.model";
 import { started } from "~/modules/run/run/domain/run.factory";
-import { commitBand, slaUpliftKb } from "~/modules/run/run/domain/sla.model";
+import {
+	bandOwed,
+	commitBand,
+	slaUpliftKb,
+} from "~/modules/run/run/domain/sla.model";
 
 const holding = (
 	configs: readonly Config[] = [CONFIGS.sla],
@@ -92,5 +96,25 @@ describe("the commit-band action", () => {
 	it("hands back the same state it was given when it refuses", () => {
 		const bare = holding([CONFIGS.js]);
 		expect(runReducer(bare, { type: "commit-band", band: "ok" })).toBe(bare);
+	});
+});
+
+describe(bandOwed, () => {
+	it("owes a promise while SLA is installed and none is made", () => {
+		expect(bandOwed(holding())).toBe(true);
+	});
+
+	it("owes nothing once the band is promised", () => {
+		expect(bandOwed(commitBand(holding(), "healthy"))).toBe(false);
+	});
+
+	it("owes nothing from a build without SLA", () => {
+		expect(bandOwed(holding([CONFIGS.js]))).toBe(false);
+	});
+
+	it("owes nothing once the gate is under way", () => {
+		expect(bandOwed(holding([CONFIGS.sla], { status: "answering" }))).toBe(
+			false
+		);
 	});
 });

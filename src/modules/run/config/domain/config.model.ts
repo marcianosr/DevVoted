@@ -172,6 +172,9 @@ export const storageOnClearOf = (config: Config): number | undefined =>
 		? undefined
 		: minifiedAmount(config, config.storageOnClear * (config.level ?? 1));
 
+const categoryNames = (codes: readonly CategoryCode[]): string =>
+	codes.map((code) => getCategoryMetadata(code).name).join(" / ");
+
 export const describeConfig = (config: Config): string => {
 	if (config.wagersAnswer !== undefined)
 		return `Arm it before you answer. An exact answer earns +${config.wagersAnswer} units; a partial, a miss or a timeout takes ${config.wagersAnswer} units off the gate. It disarms after every answer.`;
@@ -187,6 +190,8 @@ export const describeConfig = (config: Config): string => {
 		return `+${interestPctOf(config)}% of held storage on gate clear.`;
 	if (config.storageOnClear !== undefined)
 		return `+${storageOnClearOf(config)}KB storage on gate clear.`;
+	if (config.eliminatesWrongOptionsFor !== undefined)
+		return `Cross out a wrong answer on ${categoryNames(config.eliminatesWrongOptionsFor)} polls for an escalating fee.`;
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls earn ${focusMultiplierOf(config)}× coverage.`;
@@ -312,6 +317,8 @@ export const givesOf = (config: Config): string | undefined => {
 		return `+${interestPctOf(config)}% of held storage on clear`;
 	if (config.storageOnClear !== undefined)
 		return `+${storageOnClearOf(config)}KB on clear`;
+	if (config.eliminatesWrongOptionsFor !== undefined)
+		return `Cross out a wrong answer on ${categoryNames(config.eliminatesWrongOptionsFor)} polls`;
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;

@@ -1,3 +1,5 @@
+import { CATEGORY_METADATA } from "~/shared/lib/categories";
+
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
@@ -6,6 +8,13 @@ const UNIT = "KB|MB|%";
 const SIGNED = `[×+−]\\d+(?:\\.\\d+)?(?:\\s?(?:${UNIT}))?`;
 const PRICED = `\\d+(?:\\.\\d+)?\\s?(?:${UNIT})`;
 const SCALED = "\\d+(?:\\.\\d+)?×";
+/**
+ * Coverage's own unit is a word, not a suffix, and the badge takes the figure
+ * without it: "takes 0.5 units off the gate" reads as a figure in a sentence,
+ * where "0.5 units" boxed whole reads as a term. A lookahead, so the word stays
+ * in the prose that owns it.
+ */
+const COUNTED = "\\d+(?:\\.\\d+)?(?=\\s?units?\\b)";
 
 /**
  * A band never reads as bare prose: wherever a sentence names one it wears the
@@ -22,7 +31,23 @@ const BAND_COLOR: Record<string, KantoColor> = {
 
 const BAND = `\\b(?:${Object.keys(BAND_COLOR).join("|")})\\b`;
 
-const FIGURE = new RegExp(`(${SIGNED}|${PRICED}|${SCALED}|${BAND})`, "g");
+/**
+ * A category is a noun, so it takes no colour — hue already means gain, loss or
+ * term. Matching is case-sensitive, which is what makes a closed vocabulary of
+ * words safe here where teaching the regex "free" was not: the game writes a
+ * category only as its own proper name, and the lower-cased register elsewhere
+ * (the gate mix reads "javascript 3") is left alone on purpose.
+ */
+const CATEGORY_NAMES: readonly string[] = Object.values(CATEGORY_METADATA)
+	.map(({ name }) => name)
+	.sort((one, other) => other.length - one.length);
+
+const CATEGORY = `\\b(?:${CATEGORY_NAMES.join("|")})\\b`;
+
+const FIGURE = new RegExp(
+	`(${SIGNED}|${PRICED}|${SCALED}|${BAND}|${CATEGORY}|${COUNTED})`,
+	"g"
+);
 
 const GAIN: KantoColor = "viridian";
 const TERM: KantoColor = "saffron";
@@ -33,9 +58,13 @@ const isBand = (part: string) => part in BAND_COLOR;
 const isFigure = (part: string) =>
 	/^[×+−]\d/.test(part) ||
 	/\d×$/.test(part) ||
+	/^\d+(?:\.\d+)?$/.test(part) ||
 	new RegExp(`^${PRICED}$`).test(part);
 
-const isBadged = (part: string) => isBand(part) || isFigure(part);
+const isCategory = (part: string) => CATEGORY_NAMES.includes(part);
+
+const isBadged = (part: string) =>
+	isBand(part) || isFigure(part) || isCategory(part);
 
 const isMultiplier = (figure: string) =>
 	figure.startsWith("×") || figure.endsWith("×");
