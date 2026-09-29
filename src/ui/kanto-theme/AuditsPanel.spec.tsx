@@ -50,9 +50,9 @@ describe("AuditsPanel", () => {
 		render(<AuditsPanel {...kantoAuditsLocked()} />);
 
 		expect(
-			screen.getByText("Audits are unlocked at gate 3 · Thunder")
+			screen.getByText("Audits are unlocked at gate 3")
 		).toBeInTheDocument();
-		expect(screen.getByText("gate 3 · Thunder")).toBeInTheDocument();
+		expect(screen.getByText("gate 3")).toBeInTheDocument();
 	});
 
 	describe("answering the sender", () => {

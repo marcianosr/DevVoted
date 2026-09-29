@@ -42,6 +42,7 @@ vi.mock(
 );
 
 const USER = "red";
+const HELD: AuditId = "not-found";
 const DATE = "2026-09-22";
 const RUN = createMockRunRecord({ id: 1, user_id: USER });
 const MISTY: RivalCandidate = {
@@ -60,21 +61,17 @@ const armedAtPrep = (): RunState => {
 		gatesCleared: 5,
 		bankedUnits: 20,
 	});
-	return {
-		...cleared,
-		heldAudit: { band: "healthy", gate: 4, payload: "not-found" },
-	};
+	return { ...cleared, heldAudit: { auditId: HELD } };
 };
 
-const fire = (targetRunId: number, auditId: AuditId) =>
-	fireAuditService({ userId: USER, date: DATE, targetRunId, auditId });
+const fire = (targetRunId: number) =>
+	fireAuditService({ userId: USER, date: DATE, targetRunId });
 
-const offeredPayload = async (state: RunState) => {
+const offered = async (state: RunState) => {
 	const [offer] = await offersForAttacker(
-		attackerOf(RUN.id, USER, state, { band: "healthy", gate: 4 }),
-		DATE
+		attackerOf(RUN.id, USER, state, HELD)
 	);
-	return { offer, auditId: offer.payloads[0] };
+	return offer;
 };
 
 describe("fireAuditService", () => {
@@ -93,48 +90,42 @@ describe("fireAuditService", () => {
 	it("refuses to fire with nothing armed", async () => {
 		vi.mocked(runs.loadRunState).mockResolvedValue(started(["js"]));
 
-		const result = await fire(2, "not-found");
+		const result = await fire(2);
 
 		expect(result.success).toBe(false);
-		if (!result.success) expect(result.error).toContain("Nothing is armed");
+		if (!result.success) expect(result.error).toContain("Nothing to file");
 		expect(dispatchRunActionService).not.toHaveBeenCalled();
 	});
 
 	it("refuses to fire mid-window, where no picker was offered", async () => {
 		vi.mocked(runs.loadRunState).mockResolvedValue({
 			...started(["js"]),
-			heldAudit: { band: "healthy", gate: 4 },
+			heldAudit: { auditId: HELD },
 		});
 
-		const result = await fire(2, "not-found");
+		const result = await fire(2);
 
 		expect(result.success).toBe(false);
-		if (!result.success) expect(result.error).toContain("Aim from prep");
+		if (!result.success) expect(result.error).toContain("File between gates");
 	});
 
-	it("refuses a pair it did not deal, and says the rival moved on", async () => {
+	it("refuses a rival it did not offer, and says they moved on", async () => {
 		const state = armedAtPrep();
 		vi.mocked(runs.loadRunState).mockResolvedValue(state);
-		const { auditId } = await offeredPayload(state);
 
-		const wrongRun = await fire(99, auditId);
-		const wrongPayload = await fire(
-			2,
-			auditId === "strip" ? "not-found" : "strip"
-		);
+		const wrongRun = await fire(99);
 
 		expect(wrongRun.success).toBe(false);
 		if (!wrongRun.success) expect(wrongRun.error).toContain("moved on");
-		expect(wrongPayload.success).toBe(false);
 		expect(dispatchRunActionService).not.toHaveBeenCalled();
 	});
 
 	it("spends the credit through the reducer and files the incident beside it", async () => {
 		const state = armedAtPrep();
 		vi.mocked(runs.loadRunState).mockResolvedValue(state);
-		const { offer, auditId } = await offeredPayload(state);
+		const offer = await offered(state);
 
-		const result = await fire(2, auditId);
+		const result = await fire(2);
 
 		expect(result.success).toBe(true);
 		const dispatched = vi.mocked(dispatchRunActionService).mock.calls[0][0];
@@ -153,16 +144,14 @@ describe("fireAuditService", () => {
 			targetUserId: "misty",
 			targetRunId: 2,
 			targetGate: offer.targetGate,
-			auditId,
+			auditId: HELD,
 		});
 	});
 
 	it("files nothing when the reducer refused to spend the credit", async () => {
 		const state = armedAtPrep();
 		vi.mocked(runs.loadRunState).mockResolvedValue(state);
-		const { auditId } = await offeredPayload(state);
-
-		await fire(2, auditId);
+		await fire(2);
 		const settle = vi
 			.mocked(dispatchRunActionService)
 			.mock.calls[0][0].settle?.(RUN.id);

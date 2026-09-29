@@ -9,7 +9,7 @@ import {
 import {
 	isRunOver,
 	type RunState,
-	withLockedGate,
+	withGateAudits,
 } from "~/modules/run/run/domain/run.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import type {
@@ -20,6 +20,7 @@ import type {
 const lockGateInFront = async (
 	tx: RunTx,
 	runId: number,
+	date: string,
 	after: RunState
 ): Promise<RunState> => {
 	const gate = after.gatesCleared;
@@ -43,15 +44,17 @@ const lockGateInFront = async (
 		outcome.lapsed.map((incident) => incident.id),
 		"lapsed"
 	);
-	return withLockedGate(after, gate, outcome.locked);
+	return withGateAudits(after, gate, date, outcome.locked);
 };
 
 export const settleIncidents =
-	(runId: number): RunSettlement =>
+	(runId: number, date: string): RunSettlement =>
 	async (tx, before, after) => {
 		const cleared = after.gatesCleared > before.gatesCleared;
 		if (cleared) await markSurvived(tx, runId, before.gatesCleared);
-		const settled = cleared ? await lockGateInFront(tx, runId, after) : after;
+		const settled = cleared
+			? await lockGateInFront(tx, runId, date, after)
+			: after;
 
 		if (isRunOver(after.status) && !isRunOver(before.status))
 			await endIncidentsForRun(runId, tx);

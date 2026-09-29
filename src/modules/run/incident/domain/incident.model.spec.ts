@@ -6,7 +6,6 @@ import {
 	eligibleRivals,
 	isEligibleRival,
 	lockIncidents,
-	OFFER_COUNT,
 	offersFor,
 	type QueuedByRun,
 	type QueuedIncident,
@@ -17,12 +16,11 @@ import {
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	AUDITS_FROM_GATE,
-	familyOf,
+	poolForGate,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { LastClose } from "~/modules/run/run/domain/run.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 
-const DATE = "2026-09-22";
 const NO_QUEUE: QueuedByRun = new Map();
 const BARE_BUILD = { configs: [] };
 
@@ -36,7 +34,7 @@ const red: Attacker = {
 	runId: 1,
 	userId: "red",
 	gatesCleared: 5,
-	band: "healthy",
+	auditId: "legal-hold",
 };
 
 const rival = (overrides: Partial<RivalCandidate> = {}): RivalCandidate => ({
@@ -120,7 +118,29 @@ describe("you may only fire from a gate that can be fired at (ADR-105)", () => {
 	});
 });
 
-describe("the three offered rivals", () => {
+describe("a rival can only take an audit their gate draws from", () => {
+	it("offers a rival whose next gate's pool holds the audit you carry", () => {
+		expect(eligible(rival())).toBe(true);
+	});
+
+	it("protects a rival standing too deep for the audit you bought", () => {
+		const cheap = { ...red, auditId: "not-found" as const };
+		const champion = rival({ gatesCleared: VICTORY_GATE - 1 });
+
+		expect(poolForGate(targetGateOf(champion))).not.toContain("not-found");
+		expect(isEligibleRival(cheap, champion, NO_QUEUE, null)).toBe(false);
+	});
+
+	it("reaches the summit with an audit the summit draws", () => {
+		const deep = { ...red, auditId: "feature-freeze" as const };
+		const champion = rival({ gatesCleared: VICTORY_GATE - 1 });
+
+		expect(isEligibleRival(deep, champion, NO_QUEUE, null)).toBe(true);
+		expect(isEligibleRival(deep, rival(), NO_QUEUE, null)).toBe(false);
+	});
+});
+
+describe("the rivals you may file against", () => {
 	const field = [
 		rival({ runId: 2, userId: "misty", name: "Misty", gatesCleared: 6 }),
 		rival({ runId: 3, userId: "brock", name: "Brock", gatesCleared: 9 }),
@@ -129,45 +149,26 @@ describe("the three offered rivals", () => {
 		rival({ runId: 6, userId: "sabrina", name: "Sabrina", gatesCleared: 5 }),
 	];
 
-	it("offers at most three, leaders first", () => {
-		const offers = offersFor(red, field, NO_QUEUE, DATE);
-		expect(offers).toHaveLength(OFFER_COUNT);
+	it("offers every eligible rival, leaders first, now that the shot was paid for", () => {
+		const offers = offersFor(red, field);
+
+		expect(offers).toHaveLength(field.length);
 		expect(offers[0].name).toBe("Brock");
-		expect(
-			offers
-				.slice(1)
-				.map((offer) => offer.name)
-				.sort()
-		).toEqual(["Erika", "Koga"]);
+		expect(offers.map((offer) => offer.targetGate)).toEqual([10, 8, 8, 7, 6]);
 	});
 
-	it("deals the same rivals to the same run all day", () => {
-		expect(offersFor(red, field, NO_QUEUE, DATE)).toEqual(
-			offersFor(red, field, NO_QUEUE, DATE)
-		);
-	});
+	it("aims each offer at the rival's next gate carrying the audit you hold", () => {
+		const [brock] = offersFor(red, field);
 
-	it("aims each offer at the rival's next gate with one payload for HEALTHY", () => {
-		const [brock] = offersFor(red, field, NO_QUEUE, DATE);
 		expect(brock.targetGate).toBe(10);
-		expect(brock.payloads).toHaveLength(1);
+		expect(brock.auditId).toBe(red.auditId);
 	});
 
-	it("rolls two payloads to choose between for an OK attacker, one for PERFECT (ADR-119)", () => {
-		const thin = { ...red, band: "ok" as const };
-		const [brock] = offersFor(thin, field, NO_QUEUE, DATE);
-		expect(brock.payloads).toHaveLength(2);
-		expect(new Set(brock.payloads).size).toBe(2);
-		const perfect = { ...red, band: "perfect" as const };
-		expect(offersFor(perfect, field, NO_QUEUE, DATE)[0].payloads).toHaveLength(
-			1
-		);
-	});
+	it("names the rival so their card can state who it would reach", () => {
+		const [brock] = offersFor(red, field);
 
-	it("never rolls a payload the target gate already carries a sibling of", () => {
-		const queued = queuedFor(3, 10, ["dependency-outage"]);
-		const [brock] = offersFor(red, field, queued, DATE);
-		expect(brock.payloads.map(familyOf)).not.toContain("offline-config");
+		expect(brock.targetRunId).toBe(3);
+		expect(brock.targetUserId).toBe("brock");
 	});
 });
 
@@ -269,7 +270,7 @@ describe("what an offer says about its rival (ADR-101)", () => {
 			vendorLockedConfigId: "cache",
 		};
 
-		const [offer] = offersFor(red, [rival({ build })], NO_QUEUE, DATE);
+		const [offer] = offersFor(red, [rival({ build })]);
 
 		expect(offer.build).toEqual(build);
 	});

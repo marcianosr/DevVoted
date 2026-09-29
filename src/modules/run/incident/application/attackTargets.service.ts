@@ -3,11 +3,14 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	type Attacker,
 	type AttackOffer,
 	eligibleRivals,
 	offersFor,
+	type QueuedByRun,
+	type RivalCandidate,
 } from "~/modules/run/incident/domain/incident.model";
 import {
 	type AttackOfferView,
@@ -27,59 +30,77 @@ import {
 export type AttackTargetsView = {
 	readonly heldAudit: HeldAudit | null;
 	readonly offers: readonly AttackOfferView[];
+	readonly rivalsForOffer: number | null;
 };
 
-const NOTHING_ARMED: AttackTargetsView = { heldAudit: null, offers: [] };
+const NOTHING_TO_FILE: AttackTargetsView = {
+	heldAudit: null,
+	offers: [],
+	rivalsForOffer: null,
+};
 
 export const attackerOf = (
 	runId: number,
 	userId: string,
-	state: RunState,
-	heldAudit: HeldAudit
+	state: Pick<RunState, "gatesCleared">,
+	auditId: AuditId
 ): Attacker => ({
 	runId,
 	userId,
 	gatesCleared: state.gatesCleared,
-	band: heldAudit.band,
+	auditId,
 });
 
-export const offersForAttacker = async (
-	attacker: Attacker,
-	date: string
-): Promise<readonly AttackOffer[]> => {
+type Field = {
+	readonly rivals: readonly RivalCandidate[];
+	readonly queued: QueuedByRun;
+	readonly lastTargetUserId: string | null;
+};
+
+const fieldFor = async (userId: string): Promise<Field> => {
 	const [rivals, queued, lastTargetUserId] = await Promise.all([
 		fetchRivalCandidates(),
 		fetchQueuedByRun(),
-		fetchLastTargetUserId(attacker.userId),
+		fetchLastTargetUserId(userId),
 	]);
-	return offersFor(
-		attacker,
-		eligibleRivals(attacker, rivals, queued, lastTargetUserId),
-		queued,
-		date
-	);
+	return { rivals, queued, lastTargetUserId };
 };
+
+const reachOf = (attacker: Attacker, field: Field): readonly RivalCandidate[] =>
+	eligibleRivals(attacker, field.rivals, field.queued, field.lastTargetUserId);
+
+export const offersForAttacker = async (
+	attacker: Attacker
+): Promise<readonly AttackOffer[]> =>
+	offersFor(attacker, reachOf(attacker, await fieldFor(attacker.userId)));
 
 export const getAttackTargetsService = async ({
 	userId,
-	date,
 }: {
 	userId: string;
-	date: string;
 }): Promise<ApiResponse<AttackTargetsView>> =>
 	handleApiOperation(async () => {
 		const run = await findActiveSessionRun(userId);
-		if (!run) return NOTHING_ARMED;
+		if (!run) return NOTHING_TO_FILE;
 
 		const state = await loadRunState(run.id);
-		if (state.heldAudit === undefined) return NOTHING_ARMED;
+		const held = state.heldAudit;
+		const offered = state.incidentOffer;
+		if (held === undefined && offered === undefined) return NOTHING_TO_FILE;
 
-		const offers = await offersForAttacker(
-			attackerOf(run.id, userId, state, state.heldAudit),
-			date
-		);
+		const field = await fieldFor(userId);
+		const reach = (auditId: AuditId) =>
+			reachOf(attackerOf(run.id, userId, state, auditId), field);
+
 		return {
-			heldAudit: state.heldAudit,
-			offers: offers.map(attackOfferViewFor),
+			heldAudit: held ?? null,
+			offers:
+				held === undefined
+					? []
+					: offersFor(
+							attackerOf(run.id, userId, state, held.auditId),
+							reach(held.auditId)
+						).map(attackOfferViewFor),
+			rivalsForOffer: offered === undefined ? null : reach(offered).length,
 		};
 	}, "getAttackTargets");

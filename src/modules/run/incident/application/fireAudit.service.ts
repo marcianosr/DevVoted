@@ -3,7 +3,6 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
-import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import type { AttackOffer } from "~/modules/run/incident/domain/incident.model";
 import {
 	attackerOf,
@@ -20,47 +19,35 @@ import {
 	type RunSettlement,
 } from "~/modules/run/run/infrastructure/run.repository";
 
-const NO_ATTACK = "Nothing is armed — clear a gate HEALTHY or better first";
-const NOT_PREP = "Aim from prep, once the gate has closed";
+const NOTHING_HELD = "Nothing to file — buy an incident in the shop first";
+const MID_GATE = "File between gates, once this one has closed";
 const MOVED_ON = "That rival has moved on — pick again";
-
-type Aim = {
-	readonly offer: AttackOffer;
-	readonly auditId: AuditId;
-};
 
 const aim = async ({
 	userId,
-	date,
 	targetRunId,
-	auditId,
 }: {
 	userId: string;
-	date: string;
 	targetRunId: number;
-	auditId: AuditId;
-}): Promise<Aim> => {
+}): Promise<AttackOffer> => {
 	const run = await findActiveSessionRun(userId);
 	if (!run) throw new Error("No active run");
 	const state = await loadRunState(run.id);
-	if (state.heldAudit === undefined) throw new Error(NO_ATTACK);
-	if (!isPrepPhase(state)) throw new Error(NOT_PREP);
+	if (state.heldAudit === undefined) throw new Error(NOTHING_HELD);
+	if (!isPrepPhase(state)) throw new Error(MID_GATE);
 
 	const offers = await offersForAttacker(
-		attackerOf(run.id, userId, state, state.heldAudit),
-		date
+		attackerOf(run.id, userId, state, state.heldAudit.auditId)
 	);
 	const offer = offers.find(
-		(candidate) =>
-			candidate.targetRunId === targetRunId &&
-			candidate.payloads.includes(auditId)
+		(candidate) => candidate.targetRunId === targetRunId
 	);
 	if (offer === undefined) throw new Error(MOVED_ON);
-	return { offer, auditId };
+	return offer;
 };
 
 const filing =
-	(userId: string, { offer, auditId }: Aim) =>
+	(userId: string, date: string, offer: AttackOffer) =>
 	(runId: number): RunSettlement =>
 	async (tx, before, after) => {
 		if (before.heldAudit !== undefined && after.heldAudit === undefined)
@@ -69,16 +56,15 @@ const filing =
 				targetUserId: offer.targetUserId,
 				targetRunId: offer.targetRunId,
 				targetGate: offer.targetGate,
-				auditId,
+				auditId: offer.auditId,
 			});
-		return settleIncidents(runId)(tx, before, after);
+		return settleIncidents(runId, date)(tx, before, after);
 	};
 
 export const fireAuditService = async (args: {
 	userId: string;
 	date: string;
 	targetRunId: number;
-	auditId: AuditId;
 }): Promise<ApiResponse<RunView>> => {
 	const aimed = await handleApiOperation(() => aim(args), "fireAudit");
 	if (!aimed.success) return aimed;
@@ -87,6 +73,6 @@ export const fireAuditService = async (args: {
 		userId: args.userId,
 		date: args.date,
 		action: { type: "fire-audit" },
-		settle: filing(args.userId, aimed.data),
+		settle: filing(args.userId, args.date, aimed.data),
 	});
 };

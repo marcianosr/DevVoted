@@ -10,9 +10,7 @@ import { getIncidentsFeedService } from "~/modules/run/incident/application/inci
 
 export const getAttackTargets = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) =>
-			getAttackTargetsService({ userId, date: getTodayDateString() })
-		)
+		withAuthenticatedUser((userId) => getAttackTargetsService({ userId }))
 );
 
 export const fireAudit = createServerFn({ method: "POST" })

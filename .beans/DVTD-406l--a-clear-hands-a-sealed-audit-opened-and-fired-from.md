@@ -1,11 +1,11 @@
 ---
 # DVTD-406l
 title: A cleared gate hands you a sealed audit, opened and fired from the shop
-status: in-progress
+status: scrapped
 type: feature
 priority: high
 created_at: 2026-09-23T19:23:15Z
-updated_at: 2026-09-25T11:00:14Z
+updated_at: 2026-09-28T14:36:21Z
 parent: DVTD-h175
 ---
 
@@ -59,3 +59,21 @@ DVTD-87ql (ADR-099, D3/D4 superseded here), DVTD-rawb (ADR-101 builds are open),
 Planned and approved; paused before any `src/` edit because the working tree held 172 uncommitted files from a parallel session touching the same screens. Marciano chose to commit that work first. Resume from slice 1 once `git status` is near-clean; re-check `ls docs/adr` (105/106 were free at plan time).
 
 2026-09-25 (ADR-115): Repackage is a **registry service** in the player's words; its roster row carries `scope: "registry"` and player copy says service. Nothing else changes.
+
+## Open question (2026-09-28, from DVTD-e6zc)
+
+Marciano now wants audits **bought in the shop from gate 3**, and the locked
+"audits unlock at Thunder" block moved there. The Decided table above says every
+clear **hands** a sealed audit. Those are different acquisition rules; settle
+which one stands before slice 2 lands.
+
+Prep's left column no longer states an audit at all (ADR-136 D6), so the prep
+half of slice 8 is already done.
+
+## Reasons for Scrapping
+
+Superseded by DVTD-rqg8 / ADR-138 on 2026-09-28. Its premise — that **every clear hands you a sealed audit** — is the rubber band this redesign removed: earning a shot for clearing well gives the strongest climbers the most ammunition.
+
+An incident is now bought at the shop's Incident desk instead, and it is **revealed before you pay**, so sealing has nothing left to hide. `openAudit`, `keepPayload`, `takeAudit` and `repackage` are deleted rather than finished; none of them had ever been dispatched by a screen (slices 1-2 landed, 3-10 did not).
+
+What survived from the decisions here: the whole flow lives in the shop, one in hand at a time, and a rival is picked with their build visible (now on the community climber card rather than a shop panel, since the build is already drawn there). The vocabulary decision was reversed — "package" stays out of player copy, but "sealed audit / open / keep / Repackage" name nothing that still exists, and the desk says **Buy**, **Replace held** and **Refresh**.

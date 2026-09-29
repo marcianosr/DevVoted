@@ -170,3 +170,23 @@ export const drawPayloads = (
 	count: number
 ): readonly AuditId[] =>
 	shuffleSeeded(eligibleFor(pool, taken), seed).slice(0, count);
+
+export const gateDrawSeed = (date: string, gate: number): string =>
+	`${date}:${gate}:gate`;
+
+export const gateAuditsFor = (
+	gate: number,
+	date: string,
+	incidents: readonly AuditId[]
+): readonly AuditId[] => {
+	const room = Math.max(0, auditCapacityFor(gate) - incidents.length);
+	return rankAudits([
+		...incidents.slice(0, auditCapacityFor(gate)),
+		...drawPayloads(
+			poolForGate(gate),
+			incidents,
+			gateDrawSeed(date, gate),
+			room
+		),
+	]);
+};

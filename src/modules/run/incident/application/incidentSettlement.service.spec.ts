@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { auditCapacityFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import { settleIncidents } from "~/modules/run/incident/application/incidentSettlement.service";
 import type { QueuedIncident } from "~/modules/run/incident/domain/incident.model";
+import { TEST_DATES } from "~/test/kanto";
 import * as repository from "~/modules/run/incident/infrastructure/incident.repository";
 import type { RunTx } from "~/modules/run/run/infrastructure/run.repository";
 import { clearGate, started } from "~/modules/run/run/domain/run.factory";
@@ -30,6 +32,8 @@ const carried = vi.mocked(repository.carryIncidentsForward);
 const survived = vi.mocked(repository.markSurvived);
 const ended = vi.mocked(repository.endIncidentsForRun);
 
+const DATE = TEST_DATES.birthday;
+
 describe("settleIncidents", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -40,7 +44,7 @@ describe("settleIncidents", () => {
 		const before = started(["js"]);
 		const after = { ...before, currentIndex: before.currentIndex + 1 };
 
-		expect(await settleIncidents(RUN_ID)(tx, before, after)).toBe(after);
+		expect(await settleIncidents(RUN_ID, DATE)(tx, before, after)).toBe(after);
 		expect(fetched).not.toHaveBeenCalled();
 		expect(survived).not.toHaveBeenCalled();
 	});
@@ -55,10 +59,11 @@ describe("settleIncidents", () => {
 			queued(3, "read-only"),
 		]);
 
-		const settled = await settleIncidents(RUN_ID)(tx, before, after);
+		const settled = await settleIncidents(RUN_ID, DATE)(tx, before, after);
 
 		expect(fetched).toHaveBeenCalledWith(tx, RUN_ID, 9);
 		expect(settled.auditSchedule?.[9]).toEqual(["memory-leak", "not-found"]);
+		expect(settled.auditSchedule?.[9]).toHaveLength(auditCapacityFor(9));
 		expect(settled.incidents?.map((incident) => incident.id)).toEqual([2, 1]);
 		expect(marked).toHaveBeenCalledWith(tx, [2, 1], "locked");
 		expect(carried).toHaveBeenCalledWith(tx, [3]);
@@ -66,7 +71,7 @@ describe("settleIncidents", () => {
 
 	it("marks the incidents on the gate just cleared as survived", async () => {
 		const before = { ...started(["js"]), gatesCleared: 8, bankedUnits: 40 };
-		await settleIncidents(RUN_ID)(tx, before, clearGate(before));
+		await settleIncidents(RUN_ID, DATE)(tx, before, clearGate(before));
 
 		expect(survived).toHaveBeenCalledWith(tx, RUN_ID, 8);
 	});
@@ -75,7 +80,7 @@ describe("settleIncidents", () => {
 		const before = started(["js"]);
 		const dead = { ...before, status: "dead" as const };
 
-		await settleIncidents(RUN_ID)(tx, before, dead);
+		await settleIncidents(RUN_ID, DATE)(tx, before, dead);
 
 		expect(ended).toHaveBeenCalledWith(RUN_ID, tx);
 	});
@@ -89,7 +94,7 @@ describe("settleIncidents", () => {
 		const won = clearGate(before);
 		expect(won.status).toBe("won");
 
-		await settleIncidents(RUN_ID)(tx, before, won);
+		await settleIncidents(RUN_ID, DATE)(tx, before, won);
 
 		expect(survived).toHaveBeenCalledWith(tx, RUN_ID, VICTORY_GATE);
 		expect(fetched).not.toHaveBeenCalled();

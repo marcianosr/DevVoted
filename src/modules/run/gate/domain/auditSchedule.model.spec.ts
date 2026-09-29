@@ -13,11 +13,13 @@ import {
 	drawPayloads,
 	eligibleFor,
 	familyOf,
+	gateAuditsFor,
 	poolForGate,
 	rankAudits,
 	tierForGate,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import { TEST_DATES } from "~/test/kanto";
 
 const EARLY_GATES = [3, 4, 5, 6, 7];
 const EXPECTED_CAPACITY = [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3];
@@ -168,5 +170,71 @@ describe("the first audited gate (ADR-119)", () => {
 		expect(FIRST_AUDITED_GATE).toBe(3);
 		expect(auditCapacityFor(FIRST_AUDITED_GATE - 1)).toBe(0);
 		expect(auditCapacityFor(FIRST_AUDITED_GATE)).toBeGreaterThan(0);
+	});
+});
+
+describe("a gate draws its own audits, and an incident replaces one", () => {
+	const { birthday, christmas } = TEST_DATES;
+
+	it("fills every audited gate to its capacity when nobody filed anything", () => {
+		for (let gate = FIRST_AUDITED_GATE; gate <= VICTORY_GATE; gate++)
+			expect(gateAuditsFor(gate, birthday, [])).toHaveLength(
+				auditCapacityFor(gate)
+			);
+	});
+
+	it("leaves the clean gates empty", () => {
+		for (const gate of [0, 1, 2])
+			expect(gateAuditsFor(gate, birthday, [])).toEqual([]);
+	});
+
+	it("deals every climber the same gate on the same day", () => {
+		expect(gateAuditsFor(9, birthday, [])).toEqual(
+			gateAuditsFor(9, birthday, [])
+		);
+	});
+
+	it("deals a different gauntlet on another day", () => {
+		const days = Array.from({ length: 30 }, (_, day) =>
+			JSON.stringify(gateAuditsFor(9, `2026-09-${day}`, []))
+		);
+		expect(new Set(days).size).toBeGreaterThan(1);
+	});
+
+	it("deals gate 9 and gate 10 apart on the same day", () => {
+		expect(gateAuditsFor(9, christmas, [])).not.toEqual(
+			gateAuditsFor(10, christmas, [])
+		);
+	});
+
+	it("keeps the count at capacity when an incident lands", () => {
+		const withIncident = gateAuditsFor(9, birthday, ["legal-hold"]);
+		expect(withIncident).toHaveLength(auditCapacityFor(9));
+		expect(withIncident).toContain("legal-hold");
+	});
+
+	it("leaves a one-slot gate carrying nothing but the incident", () => {
+		expect(gateAuditsFor(5, birthday, ["not-found"])).toEqual(["not-found"]);
+	});
+
+	it("never seats two audits of one family", () => {
+		const seated = gateAuditsFor(VICTORY_GATE, birthday, ["flaky-build"]);
+		const families = seated.map(familyOf);
+		expect(new Set(families).size).toBe(families.length);
+	});
+
+	it("seats the gate in severity order, so the defeat device stays predictable", () => {
+		const seated = gateAuditsFor(VICTORY_GATE, birthday, ["meter-down"]);
+		expect(seated).toEqual(rankAudits(seated));
+	});
+
+	it("carries nothing beyond capacity when the queue overfills the gate", () => {
+		const queue: readonly AuditId[] = [
+			"legal-hold",
+			"meter-down",
+			"flaky-build",
+			"timeout",
+		];
+		expect(gateAuditsFor(5, birthday, queue)).toEqual([queue[0]]);
 	});
 });

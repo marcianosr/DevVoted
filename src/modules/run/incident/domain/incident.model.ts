@@ -3,20 +3,16 @@ import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.mo
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	auditCapacityFor,
-	drawPayloads,
 	eligibleFor,
 	poolForGate,
 	rankAudits,
 } from "~/modules/run/gate/domain/auditSchedule.model";
-import { payloadCountFor } from "~/modules/run/run/domain/heldAudit.model";
 import type {
-	HeldAuditBand,
 	IncidentSender,
 	LastClose,
 	LockedIncident,
 } from "~/modules/run/run/domain/run.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
-import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
 export type QueuedIncident = {
 	readonly id: number;
@@ -43,7 +39,7 @@ export type Attacker = {
 	readonly runId: number;
 	readonly userId: string;
 	readonly gatesCleared: number;
-	readonly band: HeldAuditBand;
+	readonly auditId: AuditId;
 };
 
 export type QueuedByRun = ReadonlyMap<
@@ -63,7 +59,7 @@ export type AttackOffer = RivalFace & {
 	readonly name: string;
 	readonly targetGate: number;
 	readonly build: PublicBuild;
-	readonly payloads: readonly AuditId[];
+	readonly auditId: AuditId;
 };
 
 export type LockOutcome = {
@@ -71,8 +67,6 @@ export type LockOutcome = {
 	readonly carried: readonly QueuedIncident[];
 	readonly lapsed: readonly QueuedIncident[];
 };
-
-export const OFFER_COUNT = 3;
 
 export const queuedByRun = (entries: readonly QueuedEntry[]): QueuedByRun =>
 	entries.reduce<Map<number, Map<number, readonly AuditId[]>>>(
@@ -110,6 +104,9 @@ const hasRoom = (rival: RivalCandidate, queued: QueuedByRun): boolean => {
 	return auditCapacityFor(gate) > queuedAt(queued, rival.runId, gate).length;
 };
 
+const takesAudit = (rival: RivalCandidate, auditId: AuditId): boolean =>
+	poolForGate(targetGateOf(rival)).includes(auditId);
+
 export const canFireFrom = (
 	attacker: Pick<Attacker, "gatesCleared">
 ): boolean => auditCapacityFor(attacker.gatesCleared) > 0;
@@ -125,6 +122,7 @@ export const isEligibleRival = (
 	rival.gatesCleared >= attacker.gatesCleared &&
 	targetGateOf(rival) <= VICTORY_GATE &&
 	closedStrong(rival) &&
+	takesAudit(rival, attacker.auditId) &&
 	hasRoom(rival, queued);
 
 export const eligibleRivals = (
@@ -139,39 +137,23 @@ export const eligibleRivals = (
 			)
 		: [];
 
-const payloadSeed = (attacker: Attacker, rival: RivalCandidate, date: string) =>
-	`${attacker.runId}:${rival.runId}:${targetGateOf(rival)}:${date}`;
-
 export const offersFor = (
 	attacker: Attacker,
-	eligible: readonly RivalCandidate[],
-	queued: QueuedByRun,
-	date: string
+	eligible: readonly RivalCandidate[]
 ): readonly AttackOffer[] =>
-	shuffleSeeded(eligible, `${attacker.runId}:${date}`)
+	[...eligible]
 		.sort((a, b) => b.gatesCleared - a.gatesCleared)
-		.slice(0, OFFER_COUNT)
-		.map((rival) => {
-			const gate = targetGateOf(rival);
-			return {
-				targetRunId: rival.runId,
-				targetUserId: rival.userId,
-				name: rival.name,
-				...(rival.photoUrl === undefined ? {} : { photoUrl: rival.photoUrl }),
-				...(rival.borderUrl === undefined
-					? {}
-					: { borderUrl: rival.borderUrl }),
-				...(rival.title === undefined ? {} : { title: rival.title }),
-				targetGate: gate,
-				build: rival.build,
-				payloads: drawPayloads(
-					poolForGate(gate),
-					queuedAt(queued, rival.runId, gate),
-					payloadSeed(attacker, rival, date),
-					payloadCountFor(attacker.band)
-				),
-			};
-		});
+		.map((rival) => ({
+			targetRunId: rival.runId,
+			targetUserId: rival.userId,
+			name: rival.name,
+			...(rival.photoUrl === undefined ? {} : { photoUrl: rival.photoUrl }),
+			...(rival.borderUrl === undefined ? {} : { borderUrl: rival.borderUrl }),
+			...(rival.title === undefined ? {} : { title: rival.title }),
+			targetGate: targetGateOf(rival),
+			build: rival.build,
+			auditId: attacker.auditId,
+		}));
 
 const admits = (taken: readonly AuditId[], id: AuditId, capacity: number) =>
 	taken.length < capacity && eligibleFor([id], taken).length === 1;

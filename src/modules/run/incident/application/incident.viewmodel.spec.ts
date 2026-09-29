@@ -1,16 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	ATTACK_DEALING,
-	ATTACK_UNARMED,
 	attackOfferViewFor,
-	attackPanelFor,
 	incidentFeedRowFor,
 	rivalIdsFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
-import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
-
-const OPEN_GATE = AUDITS_FROM_GATE;
 
 const MISTY_BUILD = {
 	configs: [
@@ -51,7 +45,7 @@ describe("incidentFeedRowFor", () => {
 });
 
 describe("attackOfferViewFor", () => {
-	it("labels each payload for the press that fires it", () => {
+	it("states the audit it would file, read at the gate it would land on", () => {
 		expect(
 			attackOfferViewFor({
 				targetRunId: 2,
@@ -59,7 +53,7 @@ describe("attackOfferViewFor", () => {
 				name: "Misty",
 				targetGate: 9,
 				build: MISTY_BUILD,
-				payloads: ["timeout", "memory-leak"],
+				auditId: "timeout",
 			})
 		).toMatchObject({
 			targetRunId: 2,
@@ -67,37 +61,8 @@ describe("attackOfferViewFor", () => {
 			name: "Misty",
 			gate: 9,
 			build: MISTY_BUILD,
-			payloads: [
-				{ auditId: "timeout", code: 408, name: "Request Timeout" },
-				{ auditId: "memory-leak", code: 507, name: "Insufficient Storage" },
-			],
+			audit: { auditId: "timeout", code: 408, name: "Request Timeout" },
 		});
-	});
-});
-
-describe("attackPanelFor", () => {
-	it("keeps the last filing's note once the credit is spent", () => {
-		const panel = attackPanelFor(
-			OPEN_GATE,
-			null,
-			null,
-			null,
-			"filed 502 against Brock"
-		);
-		expect(panel?.empty).toBe(ATTACK_UNARMED);
-		expect(panel?.note).toBe("filed 502 against Brock");
-	});
-
-	it("gives no panel below the floor, the Audits panel stating the lock alone", () => {
-		expect(
-			attackPanelFor(AUDITS_FROM_GATE - 1, { band: "perfect", gate: 4 }, null)
-		).toBeUndefined();
-	});
-
-	it("says it is still dealing while armed with no offers read yet", () => {
-		expect(
-			attackPanelFor(OPEN_GATE, { band: "healthy", gate: 4 }, null)?.empty
-		).toBe(ATTACK_DEALING);
 	});
 });
 
@@ -131,21 +96,17 @@ describe("rivalIdsFor", () => {
 	});
 });
 
-describe("attackPanelFor lists the rival's build", () => {
-	it("hands each rival row its build as chips", () => {
+describe("an offer carries the rival's open build (ADR-101)", () => {
+	it("ships the public build straight through to the card", () => {
 		const offer = attackOfferViewFor({
 			targetRunId: 2,
 			targetUserId: "misty",
 			name: "Misty",
 			targetGate: 9,
 			build: MISTY_BUILD,
-			payloads: ["timeout"],
+			auditId: "timeout",
 		});
 
-		const rival = attackPanelFor(OPEN_GATE, { band: "healthy", gate: 4 }, [
-			offer,
-		])?.rivals[0];
-
-		expect(rival?.build.map((chip) => chip.name)).toEqual([".ts", "Cache"]);
+		expect(offer.build).toEqual(MISTY_BUILD);
 	});
 });
