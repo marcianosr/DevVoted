@@ -44,17 +44,26 @@ explaining a shut press could scroll out of sight while the shut press stayed.
    same slot at the same size, so a footer that swaps one for the other does not
    move the label beside it.
 
+   The mark may also carry a count, and prep's start press uses it for the five
+   polls the gate holds rather than spending the note on them. A counted mark is
+   text inside the press, so `Action` now always writes its own `aria-label`:
+   left to the button's contents the count would be read before the label.
+
 5. **The wrapper draws a ground only when it carries more than the press.** The
    press is an opaque bar in its own right, so a second bar behind it is a black
    plate around a button. A stake reading or an aside's note has no fill of its
    own and still needs one.
 
-6. **One aside sits beside the press; two or more take a row of their own.** A
-   lone way out shares the press's line from `sm`. Two do not: that leaves the
-   press the narrowest thing in a row it is supposed to lead, and a screen
-   offering two exits is offering a choice — a choice reads as a pair of equals,
-   not as a queue to the left of the real press. Several asides therefore span
-   the footer above the press and split it evenly.
+6. **One aside sits beside the press; two or more take a row of their own.**
+   Amended by [ADR-126](126-storage-settles-what-the-drops-cannot.md) decision
+   5: the line falls at **three**, not two. A lone way out shares the press's
+   line from `sm`, and so does a pair. Three or more span the footer above the
+   press and split it evenly.
+
+   The original reasoning held that two exits read as a choice between equals
+   rather than a queue beside the real press. In practice two asides plus the
+   press render as three stacked bars, and review-and-community is the common
+   footer, not an exceptional one.
 
    Either way they keep the quiet ambient tone and stand at the press's own
    height: `Button` gained an `lg` size rounded like a panel, so a way out and
@@ -102,3 +111,13 @@ are gone with it.
 Every press's accessible name now carries its reading, joined the way `Button`
 joins a label and its detail. Tests that matched a press by its exact label
 match a prefix instead.
+
+`lg` is a `min-h-14` floor, not a fixed height. The footer's seats are flex
+containers, so a way out stretches to the press it sits beside (a press with a
+note is taller than the floor) and the pair shares top and bottom edges. The
+plinth is a shadow outside the box and stays the press's own.
+
+The mark has a third form: a dashed square, for a press that fills an empty slot
+outside a run (`Action` `mark="dashed"`). It is the look a `current` gate swatch
+has on the bright ground, drawn without a gate.
+

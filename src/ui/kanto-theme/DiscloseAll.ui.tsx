@@ -7,7 +7,7 @@ const COPY = {
 } as const;
 
 const TONE: ButtonTone = "ambient";
-const GLYPH = "size-4 stroke-[2.5]";
+const GLYPH = "size-4 stroke-[1.5]";
 
 export type DiscloseAllProps = {
 	allOpen: boolean;

@@ -16,23 +16,27 @@ const LINES = "flex min-w-0 flex-col gap-0.5";
 const LEADS_ON = "ml-auto size-4";
 const LEADS_ON_ICON: IconName = "forward";
 const MARK = "size-7";
+const DASHED = "size-7 shrink-0 rounded-md border border-dashed border-current";
 
 const MARK_SIZE: SwatchSize = "large";
 
 const SEPARATOR = " · ";
 
 const accessibleNameOf = (label: string, note?: string) =>
-	note === undefined ? undefined : `${label}${SEPARATOR}${note}`;
+	note === undefined ? label : `${label}${SEPARATOR}${note}`;
+
+export type ActionMark = "dashed";
 
 export type ActionProps = {
 	label: string;
 	note?: string;
 	swatch?: SwatchMark;
 	icon?: IconName;
+	mark?: ActionMark;
 	onPress?: () => void;
 };
 
-const Mark = ({ swatch, icon, refused }: MarkProps) => {
+const Mark = ({ swatch, icon, mark, refused }: MarkProps) => {
 	if (swatch !== undefined)
 		return (
 			<Swatch
@@ -43,13 +47,23 @@ const Mark = ({ swatch, icon, refused }: MarkProps) => {
 		);
 
 	if (icon !== undefined) return <Icon name={icon} className={MARK} />;
+	if (mark !== undefined) return <span aria-hidden className={DASHED} />;
 
 	return null;
 };
 
-type MarkProps = Pick<ActionProps, "swatch" | "icon"> & { refused: boolean };
+type MarkProps = Pick<ActionProps, "swatch" | "icon" | "mark"> & {
+	refused: boolean;
+};
 
-export const Action = ({ label, note, swatch, icon, onPress }: ActionProps) => {
+export const Action = ({
+	label,
+	note,
+	swatch,
+	icon,
+	mark,
+	onPress,
+}: ActionProps) => {
 	const refused = onPress === undefined;
 
 	return (
@@ -60,7 +74,7 @@ export const Action = ({ label, note, swatch, icon, onPress }: ActionProps) => {
 			onClick={onPress}
 			className={clsx(PRESS, refused ? REFUSED : LIVE)}
 		>
-			<Mark swatch={swatch} icon={icon} refused={refused} />
+			<Mark swatch={swatch} icon={icon} mark={mark} refused={refused} />
 			<span className={LINES}>
 				<span className={LABEL}>{label}</span>
 				{note === undefined ? null : <span className={NOTE}>{note}</span>}

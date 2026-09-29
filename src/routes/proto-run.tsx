@@ -4,24 +4,13 @@ import { useEffect, useState } from "react";
 import {
 	addStorage,
 	createRun,
-	type LastClose,
 	withBuild,
 } from "~/modules/run/run/domain/run.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
-	type Attacker,
-	eligibleRivals,
-	offersFor,
-	queuedByRun,
-	type RivalCandidate,
-} from "~/modules/run/incident/domain/incident.model";
-import {
-	attackOfferViewFor,
-	attackPanelFor,
 	type IncidentFeedRowView,
 	incidentsPanelFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
-import { getTodayDateString } from "~/shared/lib/dateUtils";
 import {
 	runReducer,
 	RunAction,
@@ -65,10 +54,7 @@ import {
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
-import {
-	gateLabelOf,
-	gateSwatchAt,
-} from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	CommunityScreen,
@@ -197,80 +183,6 @@ const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
 const PROTO_START_KB = 256;
 const PROTO_GRANT_KB = 256;
 
-const PROTO_RUN_ID = 0;
-const PROTO_USER_ID = "you";
-const PROTO_YOU = "You";
-
-const strongCloseAt = (gate: number): LastClose => ({
-	gate,
-	band: "healthy",
-	cleared: true,
-});
-
-const RIVAL_BUILDS = {
-	misty: {
-		configs: [
-			{ id: "ts", label: ".ts", slots: 1, level: 3 },
-			{ id: "cache", label: "Cache", slots: 4 },
-		],
-		vendorLockedConfigId: "cache",
-	},
-	brock: {
-		configs: [
-			{ id: "eslint", label: "ESLint", slots: 1, level: 2 },
-			{ id: "telemetry", label: "Telemetry", slots: 2 },
-		],
-	},
-	erika: { configs: [{ id: "prefetch", label: "Prefetch", slots: 4 }] },
-	bare: { configs: [] },
-};
-
-const simulatedRivals = (gatesCleared: number): readonly RivalCandidate[] => {
-	const ahead = (by: number) => Math.min(gatesCleared + by, VICTORY_GATE - 1);
-	return [
-		{
-			runId: 101,
-			userId: "misty",
-			name: "Misty",
-			gatesCleared: ahead(0),
-			lastClose: strongCloseAt(ahead(0) - 1),
-			build: RIVAL_BUILDS.misty,
-		},
-		{
-			runId: 102,
-			userId: "brock",
-			name: "Brock",
-			gatesCleared: ahead(1),
-			lastClose: strongCloseAt(ahead(1) - 1),
-			build: RIVAL_BUILDS.brock,
-		},
-		{
-			runId: 103,
-			userId: "erika",
-			name: "Erika",
-			gatesCleared: ahead(2),
-			lastClose: strongCloseAt(ahead(2) - 1),
-			build: RIVAL_BUILDS.erika,
-		},
-		{
-			runId: 104,
-			userId: "koga",
-			name: "Koga",
-			gatesCleared: Math.max(0, gatesCleared - 1),
-			lastClose: strongCloseAt(Math.max(0, gatesCleared - 2)),
-			build: RIVAL_BUILDS.bare,
-		},
-		{
-			runId: 105,
-			userId: "sabrina",
-			name: "Sabrina",
-			gatesCleared: ahead(1),
-			lastClose: { gate: ahead(1) - 1, band: "ok", cleared: true },
-			build: RIVAL_BUILDS.bare,
-		},
-	];
-};
-
 type FiledIncident = {
 	readonly targetRunId: number;
 	readonly targetUserId: string;
@@ -317,7 +229,7 @@ const climberOf = (trainer: SimTrainer): ClimberProps => ({
 const trainerLeader = (seed: string) => {
 	const login = TRAINERS[hashOf(seed) % TRAINERS.length].id;
 
-	return { handle: `@${login}`, githubLogin: login };
+	return { userId: login, handle: `@${login}` };
 };
 
 const COMMUNITY_COUNTDOWN = "6h 12m";
@@ -326,6 +238,21 @@ const CLIMB_MAP_TITLE = "Where everyone is";
 const SEATED_CATEGORIES = 9;
 
 const OPEN_SEAT_CATEGORY: CategoryCode = "git";
+
+const PROTO_BOARDS = [
+	{
+		title: "Streak leaders",
+		summary: "longest run of correct answers in one run · all-time",
+		figure: (index: number) => `${24 - index * 2} in a row`,
+		claim: "3 in a row claims it",
+	},
+	{
+		title: "Correct leaders",
+		summary: "most correct answers in one run · all-time",
+		figure: (index: number) => `${61 - index * 5} correct`,
+		claim: "4 correct claims it",
+	},
+];
 
 const withCategorySeat = (view: RunView): RunView => {
 	if (!view.poll) return view;
@@ -342,9 +269,9 @@ const withCategorySeat = (view: RunView): RunView => {
 					? {}
 					: {
 							leader: {
-								userId: `seat:${category}`,
 								...trainerLeader(`seat:${category}`),
-								streak: 4 + (hashOf(`streak:${category}`) % 21),
+								userId: `seat:${category}`,
+								best: 4 + (hashOf(`streak:${category}`) % 21),
 								you: false,
 							},
 						}),
@@ -352,7 +279,10 @@ const withCategorySeat = (view: RunView): RunView => {
 		},
 	};
 };
-const protoClimbFor = (gate: number): ClimbTodayView => ({
+const protoClimbFor = (
+	gate: number,
+	startedAtGate: number
+): ClimbTodayView => ({
 	climbers: [
 		...TRAINERS.map((trainer, index) => ({
 			id: trainer.id,
@@ -370,18 +300,20 @@ const protoClimbFor = (gate: number): ClimbTodayView => ({
 			gate,
 			pollsIntoGate: 0,
 			you: true,
-			startedAtGate: 0,
+			startedAtGate,
 		},
 	],
 	fallen: [],
 	bestPosition: null,
+	viewer: { id: "you", hasLiveRun: true },
 });
 
 const simulateCommunityScreen = (
 	view: RunView,
 	polls: readonly RunPoll[],
 	press: { onShop: () => void; onPrep: () => void },
-	map: { openId?: string; onInspect: (id: string) => void }
+	map: { openId?: string; onInspect: (id: string) => void },
+	startedAtGate: number
 ): CommunityScreenProps => {
 	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 	const answered = view.answeredThisGate;
@@ -518,28 +450,28 @@ const simulateCommunityScreen = (
 		map: {
 			title: CLIMB_MAP_TITLE,
 			track: {
-				gates: ladderFor(protoClimbFor(gate)),
+				gates: ladderFor(protoClimbFor(gate, startedAtGate)),
 				...(map.openId === undefined ? {} : { openId: map.openId }),
 				onInspect: map.onInspect,
 			},
 		},
-		leaders: {
-			title: "Category leaders",
-			summary: "longest run of correct answers · all-time",
+		leaders: PROTO_BOARDS.map(({ title, summary, figure, claim }) => ({
+			title,
+			summary,
 			seated: `${SEATED_CATEGORIES} of ${CATEGORY_CODES.length} seated`,
 			seats: CATEGORY_CODES.map((code, index) => ({
 				category: getCategoryMetadata(code).name,
 				...(index < SEATED_CATEGORIES
 					? {
 							leader: {
-								...trainerLeader(`seat:${code}`),
-								figure: `${24 - index * 2} in a row`,
+								...trainerLeader(`${title}:${code}`),
+								figure: figure(index),
 							},
 						}
-					: { claim: "3 in a row claims it" }),
+					: { claim }),
 			})),
 			footer: `A seat changes hands when somebody beats it. ${CATEGORY_CODES.length - SEATED_CATEGORIES} seats still open.`,
-		},
+		})),
 		polls: {
 			title: "The day's polls",
 			summary: `${results.length} answered`,
@@ -554,14 +486,21 @@ type StartStep = "build" | "prep";
 
 const BACK_TO_BUILD = "Back to the build";
 
-const RunGame = ({ onRestart }: { onRestart: () => void }) => {
-	const [state, setState] = useState(() => ({
-		...createRun(
+const RunGame = ({
+	startAtGate,
+	onRestart,
+}: {
+	startAtGate: number;
+	onRestart: (pinnedGate: number) => void;
+}) => {
+	const [state, setState] = useState(() => {
+		const fresh = createRun(
 			POOLS,
-			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS)
-		),
-		storage: PROTO_START_KB,
-	}));
+			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS),
+			startAtGate
+		);
+		return startAtGate === 0 ? { ...fresh, storage: PROTO_START_KB } : fresh;
+	});
 	const grantStorage = () =>
 		setState((current) => ({
 			...current,
@@ -668,85 +607,17 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				: [...current, optionId]
 		);
 	};
-	const payPeel = (configIds: readonly string[]) => {
+	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		setRewardStep("shop");
 		setState((current) =>
-			runReducer(runReducer(current, { type: "strip", configIds }), {
-				type: "resume-climb",
-			})
+			runReducer(
+				runReducer(current, { type: "strip", configIds, fromStorage }),
+				{ type: "resume-climb" }
+			)
 		);
 	};
 
-	const [filed, setFiled] = useState<readonly FiledIncident[]>([]);
-	const rivals = simulatedRivals(state.gatesCleared);
-	const queued = queuedByRun(
-		filed.map((incident) => ({
-			runId: incident.targetRunId,
-			gate: incident.targetGate,
-			auditId: incident.auditId,
-		}))
-	);
-	const attacker: Attacker | null =
-		state.heldAudit === undefined
-			? null
-			: {
-					runId: PROTO_RUN_ID,
-					userId: PROTO_USER_ID,
-					gatesCleared: state.gatesCleared,
-					band: state.heldAudit.band,
-				};
-	const offers =
-		attacker === null
-			? []
-			: offersFor(
-					attacker,
-					eligibleRivals(
-						attacker,
-						rivals,
-						queued,
-						filed[0]?.targetUserId ?? null
-					),
-					queued,
-					getTodayDateString()
-				).map(attackOfferViewFor);
-	const fire = (targetRunId: number, auditId: AuditId) => {
-		const offer = offers.find((entry) => entry.targetRunId === targetRunId);
-		const payload = offer?.payloads.find((entry) => entry.auditId === auditId);
-		const rival = rivals.find((entry) => entry.runId === targetRunId);
-		if (offer === undefined || payload === undefined || rival === undefined)
-			return;
-
-		dispatch({ type: "fire-audit" });
-		setFiled((current) => [
-			{
-				targetRunId,
-				targetUserId: rival.userId,
-				targetGate: offer.gate,
-				auditId,
-				row: {
-					id: current.length + 1,
-					sentBy: PROTO_YOU,
-					target: offer.name,
-					code: payload.code,
-					name: payload.name,
-					gate: offer.gate,
-					status: "queued",
-					own: true,
-				},
-			},
-			...current,
-		]);
-	};
-	const latest = filed[0];
-	const attack = attackPanelFor(
-		view.gateStake.gateNumber,
-		view.heldAudit,
-		offers,
-		null,
-		latest === undefined
-			? undefined
-			: `filed ${latest.row.code} against ${latest.row.target} · ${gateLabelOf(latest.row.gate)}`
-	);
+	const filed: readonly FiledIncident[] = [];
 
 	return (
 		<>
@@ -775,8 +646,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
 					onCommitBand={(band) => dispatch({ type: "commit-band", band })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
-					attack={attack}
-					onFire={fire}
 				/>
 			)}
 
@@ -847,8 +716,6 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 					onEstimate={(count) => dispatch({ type: "estimate", count })}
 					onCommitBand={(band) => dispatch({ type: "commit-band", band })}
 					onRebase={(from, to) => dispatch({ type: "rebase", from, to })}
-					attack={attack}
-					onFire={fire}
 				/>
 			)}
 
@@ -861,7 +728,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 							onShop: () => setRewardStep("shop"),
 							onPrep: () => setRewardStep("prep"),
 						},
-						climbMapPress
+						climbMapPress,
+						state.startedAtGate ?? 0
 					)}
 					incidents={incidentsPanelFor(filed.map((incident) => incident.row))}
 				/>
@@ -895,7 +763,7 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 				overStep === "summary" && (
 					<RunOverView
 						view={view}
-						onNewRun={onRestart}
+						onNewRun={() => onRestart(state.pinPlantedAtGate ?? 0)}
 						onCommunity={() => setOverStep("community")}
 					/>
 				)}
@@ -911,7 +779,8 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 								onShop: () => setOverStep("summary"),
 								onPrep: () => setOverStep("summary"),
 							},
-							climbMapPress
+							climbMapPress,
+							state.startedAtGate ?? 0
 						)}
 					/>
 				)}
@@ -1039,10 +908,19 @@ const RunGame = ({ onRestart }: { onRestart: () => void }) => {
 };
 
 function RouteComponent() {
-	const [seed, setSeed] = useState(0);
+	const [run, setRun] = useState({ seed: 0, startAtGate: 0 });
 	return (
 		<div className="flex flex-1 flex-col text-white [--screen-floor:0px] justify-center">
-			<RunGame key={seed} onRestart={() => setSeed((current) => current + 1)} />
+			<RunGame
+				key={run.seed}
+				startAtGate={run.startAtGate}
+				onRestart={(pinnedGate) =>
+					setRun((current) => ({
+						seed: current.seed + 1,
+						startAtGate: pinnedGate,
+					}))
+				}
+			/>
 		</div>
 	);
 }

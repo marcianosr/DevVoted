@@ -12,6 +12,7 @@ const ROW = "flex items-baseline gap-3 text-sm";
 const ROW_LABEL = "text-theme-faint";
 const ROW_VALUE = "ml-auto shrink-0";
 const ACTIONS = "flex items-center gap-3 pt-1";
+const CONFIRM_SEAT = "min-w-0 flex-1";
 
 const CANCEL_LABEL = "cancel";
 
@@ -68,8 +69,16 @@ export const Confirm = ({
 		</dl>
 
 		<div className={ACTIONS}>
-			<Button label={confirmLabel} size="md" onPress={onConfirm} />
-			<Button label={CANCEL_LABEL} size="md" onPress={onCancel} />
+			<Button label={CANCEL_LABEL} size="sm" onPress={onCancel} />
+			<span className={CONFIRM_SEAT}>
+				<Button
+					label={confirmLabel}
+					size="md"
+					width="fill"
+					tone="action"
+					onPress={onConfirm}
+				/>
+			</span>
 		</div>
 	</>
 );

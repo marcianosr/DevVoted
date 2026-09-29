@@ -180,13 +180,33 @@ describe("ScreenFooter", () => {
 		expect(spare.parentElement?.parentElement?.nodeName).toBe("FOOTER");
 	});
 
-	it("gives two ways out a row of their own above the press, split evenly", () => {
+	it("stands two ways out beside the press, not in a row above it", () => {
 		render(
 			<ScreenFooter
 				{...props}
 				asides={[
 					{ label: "Review answers", onPress: vi.fn() },
 					{ label: "Community", onPress: vi.fn() },
+				]}
+			/>
+		);
+
+		const review = screen.getByRole("button", { name: "Review answers" });
+		const block = review.parentElement?.parentElement?.parentElement;
+
+		expect(block).toHaveClass("sm:flex-row");
+		expect(review.parentElement).toHaveClass("shrink-0");
+		expect(review).not.toHaveClass("w-full");
+	});
+
+	it("gives three ways out a row of their own above the press, split evenly", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[
+					{ label: "Review answers", onPress: vi.fn() },
+					{ label: "Community", onPress: vi.fn() },
+					{ label: "Profile", onPress: vi.fn() },
 				]}
 			/>
 		);
@@ -208,10 +228,29 @@ describe("ScreenFooter", () => {
 			/>
 		);
 
-		expect(screen.getByRole("button", { name: "Community" })).toHaveClass(
-			"h-14",
-			"rounded-2xl"
+		const aside = screen.getByRole("button", { name: "Community" });
+
+		expect(aside).toHaveClass("min-h-14", "rounded-2xl");
+		expect(aside).not.toHaveClass("h-14");
+	});
+
+	it("stretches a way out to the press's height rather than centring it beside a taller bar", () => {
+		render(
+			<ScreenFooter
+				{...props}
+				asides={[{ label: "Community", onPress: vi.fn() }]}
+			/>
 		);
+
+		const aside = screen.getByRole("button", { name: "Community" });
+		const press = screen.getByRole("button", { name: /Pallet gate prep/ });
+		const block = press.parentElement?.parentElement;
+
+		expect(aside.parentElement).toHaveClass("flex");
+		expect(aside.parentElement?.parentElement).toHaveClass("items-stretch");
+		expect(aside.parentElement?.parentElement).not.toHaveClass("items-center");
+		expect(press.parentElement).toHaveClass("flex");
+		expect(block).not.toHaveClass("sm:items-center");
 	});
 
 	it("keeps its asides side by side at every width", () => {

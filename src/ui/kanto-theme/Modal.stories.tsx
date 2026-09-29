@@ -48,3 +48,21 @@ export const PlainBody: Story = {
 		</Screen>
 	),
 };
+
+export const WithHeading: Story = {
+	render: () => (
+		<Screen theme="viridian">
+			<Modal
+				label="Titles granted"
+				heading="Thank you for playing"
+				theme="cerulean"
+				onDismiss={noop}
+			>
+				<Typography variant="caption" as="p">
+					The header bar and the cerulean pin belong to the dialog, not to the
+					green screen behind it.
+				</Typography>
+			</Modal>
+		</Screen>
+	),
+};

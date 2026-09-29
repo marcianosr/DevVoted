@@ -1,7 +1,11 @@
+import { gateSwatchAt } from "~/test/swatchTrack.factory";
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Lead, type LeadLine } from "./Lead.ui";
+import { Lead, type LeadLine, leadTextOf } from "./Lead.ui";
+
+const THUNDER = gateSwatchAt(3);
 
 const draw = (line: LeadLine, variant?: "paragraph") =>
 	render(<Lead line={line} {...(variant === undefined ? {} : { variant })} />);
@@ -58,5 +62,32 @@ describe("Lead sets figures inside a sentence", () => {
 		const { container } = draw(["Nothing here is worth boxing."]);
 
 		expect(container.querySelectorAll("[data-screen-theme]")).toHaveLength(0);
+	});
+
+	it("marks a swatch figure with the gate's own square", () => {
+		const { container } = draw([
+			"earns ",
+			{ swatch: THUNDER, label: "Thunder swatch" },
+		]);
+
+		expect(screen.getByText("Thunder swatch")).toBeInTheDocument();
+		expect(
+			container.querySelector('[data-swatch-theme="thunder"]')
+		).not.toBeNull();
+	});
+
+	it("reads a swatch figure back as its label, so a key and a screen reader agree", () => {
+		expect(
+			leadTextOf(["earns ", { swatch: THUNDER, label: "Thunder swatch" }])
+		).toBe("earns Thunder swatch");
+	});
+
+	it("takes the tag a call site asks for, so a statement need not be a heading", () => {
+		const { container } = render(
+			<Lead line={["Finish at ", { band: "ok" }]} variant="title" as="span" />
+		);
+
+		expect(container.firstChild?.nodeName).toBe("SPAN");
+		expect(container.querySelector("h2")).toBeNull();
 	});
 });

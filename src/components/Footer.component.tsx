@@ -8,6 +8,7 @@ import { pollQueryKeys } from "~/shared/queryKeys";
 import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
 
 declare const __LAST_COMMIT_DATE__: string;
+declare const __LAST_COMMIT_AUTHOR__: string;
 
 export const Footer = () => {
 	const { data, isLoading } = useQuery({
@@ -24,6 +25,7 @@ export const Footer = () => {
 			categoryCount={getCategories().length}
 			configCount={CONFIG_LIST.length}
 			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
+			lastCommitAuthor={__LAST_COMMIT_AUTHOR__}
 		/>
 	);
 };

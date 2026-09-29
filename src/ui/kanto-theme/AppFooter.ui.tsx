@@ -1,76 +1,79 @@
-import type { ReactNode } from "react";
-
-import { Link } from "./Link.ui";
+import { Badge } from "./Badge.ui";
+import type { KantoColor } from "./colors";
+import { Logo } from "./Logo.ui";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
-	credit:
-		"A crazy roguelite obsession built with craftsmanship, passion, ❤️ & TanStack Start by Marciano Schildmeijer",
-	established: "EST may 2022",
-	updated: "Last updated:",
-	foundBug: "Found a bug?",
-	report: "Report it on GitHub",
+	tagline:
+		"a roguelite obsession, built with craftsmanship, passion ♥ & TanStack Start",
+	lastCommit: "last commit",
+	by: "by",
+	since: "since 2022",
+	report: "report a bug",
 } as const;
 
 const ISSUES = "https://github.com/marcianosr/DevVoted/issues";
-
-const FOOTER =
-	"mt-auto flex flex-col items-center gap-4 border-t border-theme-faint px-4 py-6";
-const COUNTS = "flex flex-wrap items-center justify-center gap-2";
-const CREDIT = "flex flex-col items-center gap-1 text-center";
-
+const BUG = "🐛";
 const SEPARATOR = "·";
+const THEME: KantoColor = "pewter";
+
+const FOOTER = "mt-auto px-4 pt-10 pb-6";
+const CARD =
+	"flex flex-wrap items-center gap-x-6 gap-y-4 rounded-2xl border border-theme-faint bg-theme-faint px-5 py-4";
+const COUNTS = "flex flex-wrap items-center gap-2";
+const META = "flex grow flex-wrap items-center justify-end gap-x-3 gap-y-2";
+const STAMP = "font-bold lowercase text-brand-sand";
+const HANDLE = "font-bold text-brand-bone";
+const REPORT =
+	"inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-bold text-theme-muted ring-1 ring-inset ring-theme-faint transition-colors hover:text-theme-soft hover:ring-theme-soft";
 
 export type AppFooterProps = {
 	pollCount: number | null;
 	categoryCount: number;
 	configCount: number;
 	lastCommitDate: string;
-	statsLink?: ReactNode;
+	lastCommitAuthor: string;
 };
-
-const Count = ({ children }: { children: ReactNode }) => (
-	<Typography variant="hint" as="span">
-		{children}
-	</Typography>
-);
 
 export const AppFooter = ({
 	pollCount,
 	categoryCount,
 	configCount,
 	lastCommitDate,
-	statsLink,
+	lastCommitAuthor,
 }: AppFooterProps) => (
 	<footer className={FOOTER}>
-		<section className={COUNTS}>
-			{pollCount === null ? null : (
-				<>
-					<Count>{`${pollCount} polls`}</Count>
-					<Count>{SEPARATOR}</Count>
-				</>
-			)}
-			<Count>{`${categoryCount} categories`}</Count>
-			<Count>{SEPARATOR}</Count>
-			<Count>{`${configCount} configs`}</Count>
-			{statsLink === undefined ? null : (
-				<>
-					<Count>{SEPARATOR}</Count>
-					{statsLink}
-				</>
-			)}
-		</section>
+		<div data-screen-theme={THEME} className={CARD}>
+			<Logo
+				size="md"
+				below={
+					<>
+						<Typography variant="hint">{COPY.tagline}</Typography>
+						<span className={COUNTS}>
+							{pollCount === null ? null : (
+								<Badge>{`${pollCount} polls`}</Badge>
+							)}
+							<Badge>{`${categoryCount} categories`}</Badge>
+							<Badge>{`${configCount} configs`}</Badge>
+						</span>
+					</>
+				}
+			/>
 
-		<section className={CREDIT}>
-			<Typography variant="hint">
-				{`${COPY.credit} | ${COPY.established} | ${COPY.updated} ${lastCommitDate}`}
-			</Typography>
-			<Typography variant="hint">
-				{COPY.foundBug}{" "}
-				<Link href={ISSUES} external>
+			<div className={META}>
+				<Typography variant="hint" as="span">
+					{`${COPY.lastCommit} `}
+					<span className={STAMP}>{lastCommitDate}</span>
+					{` ${COPY.by} `}
+					<span className={HANDLE}>{`@${lastCommitAuthor}`}</span>
+					{` ${SEPARATOR} ${COPY.since}`}
+				</Typography>
+
+				<a className={REPORT} href={ISSUES} target="_blank" rel="noreferrer">
+					<span aria-hidden>{BUG}</span>
 					{COPY.report}
-				</Link>
-			</Typography>
-		</section>
+				</a>
+			</div>
+		</div>
 	</footer>
 );

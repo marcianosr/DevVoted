@@ -29,8 +29,11 @@ tiers, but no file mixes them.
   from them. The older `src/ui/{domain}/` folders and `src/ui/old-theme/` are
   gone (`DVTD-6crx`); `~/ui/old-theme/*` is an oxlint error.
 - These files own **all HTML tags and Tailwind classes in the codebase**.
-- They accept plain data props only — no hooks, no server functions, no
-  TanStack Query. Every component has a Story rendering from mock factory data.
+- They accept plain data props only — no *data* hooks, no server functions, no
+  TanStack Query. React hooks over the component's own props are allowed and in
+  use: `useRef`, `useState`, `useEffect`, `window.matchMedia`, and the kit's own
+  `useBarHeight` / `usePageTheme`. The line is data reach, not React.
+  Every component has a Story rendering from mock factory data.
 
 **Tier 2 — Composition (app layer): `{Name}.component.tsx` and routes**
 

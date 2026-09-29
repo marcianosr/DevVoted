@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 
+import { useState, type ReactNode } from "react";
+
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
@@ -7,6 +9,11 @@ import { KANTO_COLORS } from "./colors";
 import { gateRoster } from "~/test/swatchTrack.factory";
 
 import { Screen } from "./Screen.ui";
+import {
+	PageThemeContext,
+	pageThemeAttributes,
+	type PageTheme,
+} from "./usePageTheme.hook";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
@@ -28,7 +35,7 @@ describe("Screen", () => {
 		expect(container.firstChild).toHaveTextContent("body");
 	});
 
-	it("paints its own ground rather than mirroring onto the body", () => {
+	it("paints its own ground rather than writing to the body itself", () => {
 		const { container } = render(<Screen theme="cinnabar">body</Screen>);
 
 		expect(container.firstChild).toHaveClass("bg-theme-faint");
@@ -151,5 +158,71 @@ describe("Screen floor", () => {
 		);
 
 		expect(container.querySelector("section")).not.toHaveAttribute("style");
+	});
+});
+
+describe("the page under a Screen", () => {
+	const Shell = ({ children }: { children: ReactNode }) => {
+		const [page, setPage] = useState<PageTheme>({});
+
+		return (
+			<PageThemeContext.Provider value={setPage}>
+				<div data-testid="shell" {...pageThemeAttributes(page)}>
+					{children}
+				</div>
+			</PageThemeContext.Provider>
+		);
+	};
+
+	const drawInShell = (children: ReactNode) =>
+		render(<Shell>{children}</Shell>);
+
+	const shellTheme = () => {
+		const shell = screen.getByTestId("shell");
+
+		return [
+			shell.getAttribute("data-screen-theme"),
+			shell.getAttribute("data-gate-theme"),
+		];
+	};
+
+	it("hands its mood to the shell, so chrome outside it follows", () => {
+		drawInShell(<Screen theme="cinnabar">body</Screen>);
+
+		expect(shellTheme()).toEqual(["cinnabar", null]);
+	});
+
+	it("hands its gate to the shell", () => {
+		drawInShell(<Screen gate="elite">body</Screen>);
+
+		expect(shellTheme()).toEqual([null, "elite"]);
+	});
+
+	it("never leaves both live, because a mood silently beats a gate", () => {
+		const { rerender } = drawInShell(<Screen gate="boulder">body</Screen>);
+		expect(shellTheme()).toEqual([null, "boulder"]);
+
+		rerender(
+			<Shell>
+				<Screen theme="cinnabar">body</Screen>
+			</Shell>
+		);
+
+		expect(shellTheme()).toEqual(["cinnabar", null]);
+	});
+
+	it("leaves the shell pewter when no screen is mounted at all", () => {
+		drawInShell(null);
+
+		expect(shellTheme()).toEqual(["pewter", null]);
+	});
+
+	it("hands the shell back to pewter when the screen leaves", () => {
+		const { rerender } = drawInShell(<Screen gate="elite">body</Screen>);
+		expect(shellTheme()).toEqual([null, "elite"]);
+
+		rerender(<Shell>{null}</Shell>);
+
+		expect(shellTheme()).toEqual(["pewter", null]);
 	});
 });

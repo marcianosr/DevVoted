@@ -13,7 +13,8 @@ const SUMMARY =
 	"flex cursor-pointer list-none flex-wrap items-center gap-3 border-theme-faint px-4 py-3 select-none group-open/fold:border-b [&::-webkit-details-marker]:hidden";
 const CARET =
 	"inline-block shrink-0 text-theme-muted transition-transform group-open/fold:rotate-90";
-const META = "flex flex-wrap items-center gap-2 sm:ml-auto";
+const NAMING = "grow";
+const META = "flex flex-wrap items-center gap-2";
 const BODY = "flex w-full flex-col gap-4 px-4 py-4";
 
 const CARET_GLYPH = "›";
@@ -54,9 +55,11 @@ export const Fold = ({
 				{CARET_GLYPH}
 			</span>
 			{lead === undefined ? null : <Verdict outcome={lead} share={leadShare} />}
-			<Typography variant={HEADING[heading]} as="h3">
-				{title}
-			</Typography>
+			<span className={NAMING}>
+				<Typography variant={HEADING[heading]} as="h3">
+					{title}
+				</Typography>
+			</span>
 			{summary === undefined && badges.length === 0 ? null : (
 				<span className={META}>
 					{summary === undefined ? null : (

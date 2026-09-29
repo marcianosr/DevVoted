@@ -3,7 +3,8 @@ import { act, render, screen } from "@testing-library/react";
 
 import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
-import { BALANCE_PILL_HOLD_MS, Header } from "./Header.ui";
+import { BALANCE_PILL_HOLD_MS } from "./Balance.ui";
+import { Header } from "./Header.ui";
 
 const VOLCANO = gateSwatchAt(9);
 
@@ -268,7 +269,7 @@ describe("Header", () => {
 		const { container } = render(<Header {...props} swatchState="current" />);
 
 		const lead = container.querySelector("header > div > span");
-		expect(lead).toHaveClass("border-2", "border-dashed", "border-theme");
+		expect(lead).toHaveClass("border", "border-dashed", "border-theme-faint");
 		expect(lead).not.toHaveClass("bg-theme");
 	});
 
@@ -545,5 +546,86 @@ describe("Header funds, as the balance moves", () => {
 		});
 
 		expect(screen.getByText(/after install/)).toBeInTheDocument();
+	});
+});
+
+describe("Header, pinned", () => {
+	const headerIn = (container: HTMLElement) =>
+		container.querySelector("header");
+
+	it("hangs from the top of the viewport, which the bar no longer occupies", () => {
+		const { container } = render(<Header {...props} pinned />);
+
+		expect(headerIn(container)).toHaveClass("md:sticky", "md:top-0", "md:z-20");
+	});
+
+	it("stands in the flow like any other row when no screen pins it", () => {
+		const { container } = render(<Header {...props} />);
+
+		expect(headerIn(container)).not.toHaveClass("md:sticky");
+		expect(headerIn(container)).toHaveClass("w-full");
+	});
+
+	it("drops its own width where it bleeds, so the gutters are painted too", () => {
+		const { container } = render(<Header {...props} pinned />);
+
+		expect(headerIn(container)).toHaveClass("md:-mx-8", "md:px-8", "md:w-auto");
+	});
+
+	it("paints an opaque ground, so the shelf does not read through it", () => {
+		const { container } = render(<Header {...props} pinned />);
+
+		expect(headerIn(container)).toHaveClass("md:bg-theme-faint", "md:border-b");
+	});
+
+	it("keeps headroom for the change pill, which stands above the figure", () => {
+		const { container } = render(<Header {...props} pinned />);
+
+		expect(headerIn(container)).toHaveClass("md:pt-6", "md:-mt-6");
+	});
+
+	it("gives back the room it takes, so pinning moves nothing below it", () => {
+		const { container } = render(<Header {...props} pinned />);
+
+		expect(headerIn(container)).toHaveClass("md:pb-3", "md:-mb-3");
+	});
+
+	const trackIn = () =>
+		screen.getByRole("img", { name: /of 13 swatches discovered/ });
+
+	it("hangs the gate mark, the name and the balance", () => {
+		const { container } = render(<Header {...props} funds={FUNDS} pinned />);
+		const bar = headerIn(container);
+
+		expect(bar).toHaveTextContent(/Volcano/);
+		expect(bar).toContainElement(screen.getByRole("img", { name: "843 KB" }));
+	});
+
+	it("sheds the track, which is reference rather than a price", () => {
+		const { container } = render(<Header {...props} pinned />);
+		const bar = headerIn(container);
+
+		expect(bar).not.toContainElement(trackIn());
+		expect(bar?.nextElementSibling).toContainElement(trackIn());
+	});
+
+	it("keeps the track inside the header where nothing pins it", () => {
+		const { container } = render(<Header {...props} />);
+
+		expect(headerIn(container)).toContainElement(trackIn());
+	});
+
+	it("compacts the balance into the bar, and leaves it stacked otherwise", () => {
+		const { container } = render(<Header {...props} funds={FUNDS} pinned />);
+
+		expect(container.querySelector(".balance-readout")).toHaveClass("border");
+	});
+
+	it("leaves the balance stacked where nothing pins the header", () => {
+		const { container } = render(<Header {...props} funds={FUNDS} />);
+
+		expect(container.querySelector(".balance-readout")).not.toHaveClass(
+			"border"
+		);
 	});
 });

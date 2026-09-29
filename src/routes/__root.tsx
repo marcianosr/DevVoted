@@ -4,7 +4,6 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	HeadContent,
-	Link,
 	Outlet,
 	Scripts,
 	createRootRoute,
@@ -14,12 +13,15 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { DefaultCatchBoundary } from "~/components/DefaultCatchBoundary.component";
 import { NotFound } from "~/components/NotFound.component";
 import { Footer } from "~/components/Footer.component";
-import { ACTIVE_SKIN } from "~/config/skin";
+import { Nav } from "~/components/Nav.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
-import { Climber } from "~/ui/kanto-theme/Climber.ui";
-import { NavDisclosure, NavDivider } from "~/ui/kanto-theme/NavDisclosure.ui";
-
+import { PlayerHover } from "~/modules/run/community/presentation/PlayerHover.component";
+import {
+	PageThemeContext,
+	pageThemeAttributes,
+	type PageTheme,
+} from "~/ui/kanto-theme/usePageTheme.hook";
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
 
@@ -45,6 +47,7 @@ export const Route = createRootRoute({
 				sizes: "180x180",
 				href: "/apple-touch-icon.png",
 			},
+			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
 			{
 				rel: "icon",
 				type: "image/png",
@@ -57,7 +60,7 @@ export const Route = createRootRoute({
 				sizes: "16x16",
 				href: "/favicon-16x16.png",
 			},
-			{ rel: "manifest", href: "/site.webmanifest", color: "#fffff" },
+			{ rel: "manifest", href: "/site.webmanifest" },
 			{ rel: "icon", href: "/favicon.ico" },
 		],
 	}),
@@ -79,157 +82,41 @@ export const Route = createRootRoute({
 
 function RootComponent() {
 	const queryClient = new QueryClient();
+	const { user } = Route.useRouteContext();
 
 	return (
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
-				<Navigation />
-				<main className="flex flex-1 flex-col bg-zinc-950">
-					<Outlet />
-					<Footer />
-				</main>
+				<PlayerHover>
+					<Nav user={user} />
+					<main className="flex flex-1 flex-col bg-zinc-950">
+						<Outlet />
+						<Footer />
+					</main>
+				</PlayerHover>
 			</QueryClientProvider>
 		</RootDocument>
 	);
 }
 
-function Navigation() {
-	const { user } = Route.useRouteContext();
-
-	return (
-		<>
-			<div className="p-2 flex gap-2 text-lg items-center">
-				{user && (
-					<div className="md:hidden">
-						<NavDisclosure
-							align="left"
-							summary={
-								<span
-									className="inline-flex h-9 w-9 items-center justify-center border border-gray-700 text-gray-200"
-									aria-label="Open menu"
-								>
-									☰
-								</span>
-							}
-						>
-							<>
-								<Link
-									to="/run"
-									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-								>
-									Daily Run
-								</Link>
-
-								<Link
-									to="/profile/$userId"
-									params={{ userId: user.id }}
-									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-								>
-									Profile
-								</Link>
-
-								<Link
-									to="/polls/new"
-									className="block w-full text-left px-4 py-2 text-base hover:bg-gray-800"
-								>
-									Suggest your own poll
-								</Link>
-							</>
-						</NavDisclosure>
-					</div>
-				)}
-
-				<div className="hidden md:flex gap-2 items-center min-w-0">
-					<Link
-						to="/run"
-						activeProps={{ className: "underline" }}
-						activeOptions={{ exact: true }}
-					>
-						Daily Run
-					</Link>
-
-					{user && (
-						<>
-							<span className="text-white">·</span>
-							<Link
-								to="/profile/$userId"
-								params={{ userId: user.id }}
-								activeProps={{ className: "underline" }}
-							>
-								Profile
-							</Link>
-							<span className="text-white">·</span>
-							<Link
-								to="/polls/new"
-								activeProps={{ className: "underline" }}
-								activeOptions={{ exact: true }}
-							>
-								Suggest your own poll
-							</Link>
-						</>
-					)}
-				</div>
-
-				{user ? (
-					<>
-						<div className="ml-auto flex items-center">
-							<NavDisclosure
-								summary={
-									<span className="flex items-center gap-2 text-base">
-										<Climber
-											name={user.displayName || user.email}
-											photoUrl={user.photoUrl ?? undefined}
-											size="md"
-										/>
-										<span>{user.displayName || user.email}</span>
-									</span>
-								}
-							>
-								<Link
-									to="/profile/$userId"
-									params={{ userId: user.id }}
-									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
-								>
-									Profile
-								</Link>
-								<Link
-									to="/polls"
-									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
-								>
-									My Polls
-								</Link>
-								<NavDivider />
-								<Link
-									to="/logout"
-									className="block w-full px-4 py-2 text-left text-base hover:bg-gray-800"
-								>
-									Logout
-								</Link>
-							</NavDisclosure>
-						</div>
-					</>
-				) : (
-					<Link to="/login" className="ml-auto">
-						Login
-					</Link>
-				)}
-			</div>
-			<hr />
-		</>
-	);
-}
-
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const [page, setPage] = React.useState<PageTheme>({});
+
 	return (
-		<html className="dark" data-skin={ACTIVE_SKIN}>
-			<head>
-				<HeadContent />
-			</head>
-			<body className="bg-black text-white min-h-dvh flex flex-col">
-				{children}
-				<TanStackRouterDevtools position="bottom-right" />
-				<Scripts />
-			</body>
-		</html>
+		<PageThemeContext.Provider value={setPage}>
+			<html className="dark">
+				<head>
+					<HeadContent />
+				</head>
+				<body
+					className="bg-black text-white min-h-dvh flex flex-col"
+					{...pageThemeAttributes(page)}
+				>
+					{children}
+					<TanStackRouterDevtools position="bottom-right" />
+					<Scripts />
+				</body>
+			</html>
+		</PageThemeContext.Provider>
 	);
 }

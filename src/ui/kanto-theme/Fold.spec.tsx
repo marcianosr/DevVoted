@@ -133,7 +133,25 @@ describe("Fold", () => {
 			</Fold>
 		);
 
-		expect(container.querySelector(".ml-auto")).toBeNull();
+		expect(container.querySelector(".gap-2")).toBeNull();
+	});
+
+	it("ends its meta strip against the title rather than the right edge, so a wrapped strip still starts at the left", () => {
+		render(
+			<Fold
+				title="By category"
+				summary="5 categories"
+				badges={[{ label: "+30%" }, { label: "0 of 5 right" }]}
+			>
+				<p>CSS</p>
+			</Fold>
+		);
+
+		const meta = screen.getByText("5 categories").parentElement;
+		expect(meta).not.toHaveClass("ml-auto");
+		expect(
+			screen.getByRole("heading", { name: "By category" }).parentElement
+		).toHaveClass("grow");
 	});
 
 	describe("as a row rather than a section", () => {

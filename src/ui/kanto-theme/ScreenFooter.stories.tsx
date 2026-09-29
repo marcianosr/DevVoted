@@ -9,6 +9,8 @@ import {
 import { Screen } from "./Screen.ui";
 import { ScreenFooter } from "./ScreenFooter.ui";
 
+const noop = () => undefined;
+
 const meta: Meta<typeof ScreenFooter> = {
 	component: ScreenFooter,
 	title: "Kanto/ScreenFooter",
@@ -31,3 +33,10 @@ export const ReadyToStart: Story = { args: kantoGateZeroFooter(true) };
 export const TwoStakes: Story = { args: kantoPrepSealed().footer };
 
 export const CostWithNews: Story = { args: kantoPrepChampion().footer };
+
+export const BesideAWayOut: Story = {
+	args: {
+		...kantoGateZeroFooter(true),
+		asides: [{ label: "Community", icon: "community", onPress: noop }],
+	},
+};

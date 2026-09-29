@@ -77,4 +77,16 @@ describe("Action", () => {
 
 		expect(container.querySelector("[data-swatch-theme]")).toBeNull();
 	});
+
+	it("draws an empty dashed slot as its mark when the press fills one", () => {
+		const { container } = render(
+			<Action label="Wear the title" mark="dashed" onPress={() => undefined} />
+		);
+
+		expect(container.querySelector(".border-dashed")).toHaveClass(
+			"size-7",
+			"border-current"
+		);
+		expect(container.querySelector("[data-swatch-theme]")).toBeNull();
+	});
 });

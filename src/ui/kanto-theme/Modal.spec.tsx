@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Modal } from "./Modal.ui";
+import { Screen } from "./Screen.ui";
 
 describe("Modal", () => {
 	it("names the dialog it opens", () => {
@@ -81,5 +82,44 @@ describe("Modal", () => {
 
 		expect(onConfirm).toHaveBeenCalledOnce();
 		expect(onDismiss).not.toHaveBeenCalled();
+	});
+
+	it("crowns the dialog with a header bar when given a heading", () => {
+		render(
+			<Modal label="Titles granted" heading="Thank you for playing">
+				<p>body</p>
+			</Modal>
+		);
+
+		expect(
+			within(screen.getByRole("dialog")).getByRole("heading", {
+				name: "Thank you for playing",
+			})
+		).toBeInTheDocument();
+	});
+
+	it("draws no header bar when no heading is given", () => {
+		render(
+			<Modal label="Uninstall">
+				<p>body</p>
+			</Modal>
+		);
+
+		expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+	});
+
+	it("wears the colour it is pinned to, whatever screen it opens over", () => {
+		render(
+			<Screen theme="viridian">
+				<Modal label="Titles granted" theme="cerulean">
+					<p>body</p>
+				</Modal>
+			</Screen>
+		);
+
+		expect(screen.getByRole("dialog")).toHaveAttribute(
+			"data-screen-theme",
+			"cerulean"
+		);
 	});
 });

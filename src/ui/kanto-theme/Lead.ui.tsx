@@ -1,3 +1,5 @@
+import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+
 import { Badge } from "./Badge.ui";
 import {
 	COVERAGE_BAND_COLOR,
@@ -5,24 +7,48 @@ import {
 	type CoverageBandId,
 } from "./CoverageBar.ui";
 import type { KantoColor } from "./colors";
-import { Typography, type TypographyVariant } from "./Typography.ui";
+import { Swatch, type SwatchSize } from "./Swatch.ui";
+import {
+	Typography,
+	type TypographyTag,
+	type TypographyVariant,
+} from "./Typography.ui";
 
 const FIGURE_COLOR: KantoColor = "pewter";
 const GAIN_COLOR: KantoColor = "viridian";
 const DEFAULT_VARIANT: TypographyVariant = "hint";
+const SWATCH_SIZE: SwatchSize = "small";
 
-export type LeadBand = { band: CoverageBandId; figure?: never; gain?: never };
+const MARKED = "flex items-center gap-1.5";
+
+export type LeadBand = {
+	band: CoverageBandId;
+	figure?: never;
+	gain?: never;
+	swatch?: never;
+	label?: never;
+};
 export type LeadFigure = {
 	figure: string;
 	gain?: boolean;
 	band?: CoverageBandId;
+	swatch?: never;
+	label?: never;
 };
-export type LeadPart = string | LeadBand | LeadFigure;
+export type LeadSwatch = {
+	swatch: GateSwatch;
+	label: string;
+	figure?: never;
+	band?: never;
+	gain?: never;
+};
+export type LeadPart = string | LeadBand | LeadFigure | LeadSwatch;
 export type LeadLine = readonly LeadPart[];
 
 export type LeadProps = {
 	line: LeadLine;
 	variant?: TypographyVariant;
+	as?: TypographyTag;
 };
 
 const colorOf = (part: LeadFigure): KantoColor => {
@@ -31,7 +57,26 @@ const colorOf = (part: LeadFigure): KantoColor => {
 	return part.gain === true ? GAIN_COLOR : FIGURE_COLOR;
 };
 
-const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
+const textOf = (part: LeadPart): string => {
+	if (typeof part === "string") return part;
+	if (part.swatch !== undefined) return part.label;
+	if (part.figure !== undefined) return part.figure;
+	return COVERAGE_BAND_WORD[part.band];
+};
+
+export const leadTextOf = (line: LeadLine): string => line.map(textOf).join("");
+
+const Mark = ({ part }: { part: LeadBand | LeadFigure | LeadSwatch }) => {
+	if (part.swatch !== undefined)
+		return (
+			<Badge>
+				<span className={MARKED}>
+					<Swatch size={SWATCH_SIZE} state="discovered" swatch={part.swatch} />
+					{part.label}
+				</span>
+			</Badge>
+		);
+
 	if (part.figure === undefined)
 		return (
 			<Badge color={COVERAGE_BAND_COLOR[part.band]}>
@@ -42,13 +87,13 @@ const Mark = ({ part }: { part: LeadBand | LeadFigure }) => {
 	return <Badge color={colorOf(part)}>{part.figure}</Badge>;
 };
 
-export const Lead = ({ line, variant = DEFAULT_VARIANT }: LeadProps) => (
-	<Typography variant={variant}>
+export const Lead = ({ line, variant = DEFAULT_VARIANT, as }: LeadProps) => (
+	<Typography variant={variant} as={as}>
 		{line.map((part, index) =>
 			typeof part === "string" ? (
 				<span key={`${part}-${index}`}>{part}</span>
 			) : (
-				<Mark key={`${part.figure ?? part.band}-${index}`} part={part} />
+				<Mark key={`${textOf(part)}-${index}`} part={part} />
 			)
 		)}
 	</Typography>

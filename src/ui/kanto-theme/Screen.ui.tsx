@@ -5,6 +5,7 @@ import { clsx } from "clsx";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 import type { KantoColor } from "./colors";
+import { usePageTheme } from "./usePageTheme.hook";
 
 const SCREEN =
 	"flex min-h-[var(--screen-floor,80vh)] w-full flex-col items-center mx-auto";
@@ -40,13 +41,17 @@ export const Screen = ({
 	floor,
 	children,
 	...props
-}: ScreenProps) => (
-	<section
-		data-screen-theme={props.theme}
-		data-gate-theme={props.gate}
-		style={floorStyle(floor)}
-		className={clsx(SCREEN, WIDTH[width], ground === "framed" && FRAME)}
-	>
-		<div className={BODY}>{children}</div>
-	</section>
-);
+}: ScreenProps) => {
+	usePageTheme({ theme: props.theme, gate: props.gate });
+
+	return (
+		<section
+			data-screen-theme={props.theme}
+			data-gate-theme={props.gate}
+			style={floorStyle(floor)}
+			className={clsx(SCREEN, WIDTH[width], ground === "framed" && FRAME)}
+		>
+			<div className={BODY}>{children}</div>
+		</section>
+	);
+};

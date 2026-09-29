@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
@@ -11,12 +9,7 @@ import { trackTo } from "~/test/swatchTrack.factory";
 import { Header } from "./Header.ui";
 import { Screen } from "./Screen.ui";
 
-const PRESS =
-	"rounded-md border border-theme-faint px-3 py-1 text-xs font-bold text-theme";
-
 const fundsAt = (kb: number) => ({ label: "storage", kb });
-
-const BACK_TO_BACK_MS = 300;
 
 const meta: Meta<typeof Header> = {
 	component: Header,
@@ -46,7 +39,7 @@ export const WithCoverage: Story = {
 		note: "2 of 5 answered",
 		noteAt: "track",
 		badge: "3 audits",
-		funds: { amount: "1.9", unit: "MB", label: "balance", kb: 1946 },
+		funds: fundsAt(1946),
 		coverage: {
 			label: "coverage",
 			held: "92.5",
@@ -58,14 +51,14 @@ export const WithCoverage: Story = {
 
 export const WithRing: Story = {
 	args: {
-		funds: { amount: "1.8", unit: "MB", label: "balance", kb: 1843 },
+		funds: fundsAt(1843),
 		ring: { held: 148, demand: 210 },
 	},
 };
 
 export const WithRingCaptioned: Story = {
 	args: {
-		funds: { amount: "1.8", unit: "MB", label: "balance", kb: 1843 },
+		funds: fundsAt(1843),
 		ring: {
 			held: 148,
 			demand: 210,
@@ -96,62 +89,24 @@ export const EveryGate: Story = {
 	),
 };
 
-const HeaderWithMovingBalance = () => {
-	const [kb, setKb] = useState(349);
+const SHELF = "flex flex-col gap-4";
+const OFFER =
+	"rounded-2xl border border-theme-faint bg-theme-faint px-4 py-8 text-sm text-theme-muted";
 
-	const backToBack = (first: number, second: number) => {
-		setKb((held) => held + first);
-		setTimeout(() => setKb((held) => held + second), BACK_TO_BACK_MS);
-	};
+const shelf = Array.from({ length: 12 }, (_, row) => `Offer ${row + 1}`);
 
-	return (
+export const Pinned: Story = {
+	args: { funds: fundsAt(96), title: "Thunder Shop", note: "gate 2 cleared" },
+	render: (args) => (
 		<Screen theme="pewter" width="narrow">
-			<Header
-				swatch={GATE_SWATCHES[9]}
-				swatches={trackTo(9)}
-				funds={fundsAt(kb)}
-			/>
-			<div className="mt-6 flex flex-wrap gap-2">
-				<button className={PRESS} onClick={() => setKb((held) => held + 32)}>
-					+32 KB payout
-				</button>
-				<button className={PRESS} onClick={() => setKb((held) => held + 61)}>
-					+61 KB payout
-				</button>
-				<button className={PRESS} onClick={() => setKb((held) => held - 32)}>
-					install · 32 KB
-				</button>
-				<button className={PRESS} onClick={() => backToBack(-32, -48)}>
-					two installs, back to back
-				</button>
-				<button className={PRESS} onClick={() => backToBack(61, -32)}>
-					payout, then install
-				</button>
-				<button className={PRESS} onClick={() => setKb(1046)}>
-					roll to MB
-				</button>
-				<button className={PRESS} onClick={() => setKb(349)}>
-					reset to 349
-				</button>
+			<Header {...args} pinned />
+			<div className={SHELF}>
+				{shelf.map((offer) => (
+					<div key={offer} className={OFFER}>
+						{offer}
+					</div>
+				))}
 			</div>
 		</Screen>
-	);
-};
-
-export const BalanceMoving: Story = {
-	parameters: { controls: { disable: true } },
-	render: () => <HeaderWithMovingBalance />,
-};
-
-export const PreviewingAnInstall: Story = {
-	args: {
-		funds: {
-			...fundsAt(410),
-			preview: {
-				label: "after install",
-				figure: "378 KB",
-				color: "vermillion",
-			},
-		},
-	},
+	),
 };

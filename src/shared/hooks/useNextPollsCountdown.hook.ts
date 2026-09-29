@@ -7,7 +7,7 @@ import {
 
 type NextPollsCountdown = {
 	readonly isOpen: boolean;
-	readonly label: string;
+	readonly remaining: string;
 };
 
 const TICK_MS = 10_000;
@@ -26,6 +26,6 @@ export const useNextPollsCountdown = (): NextPollsCountdown => {
 
 	return {
 		isOpen: remainingMs <= 0,
-		label: `New polls in ${formatCompactDuration(remainingMs)}`,
+		remaining: formatCompactDuration(remainingMs),
 	};
 };

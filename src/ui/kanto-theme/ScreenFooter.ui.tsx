@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
 
-import { Action } from "./Action.ui";
+import { Action, type ActionMark } from "./Action.ui";
 import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
@@ -11,20 +11,22 @@ import { Typography } from "./Typography.ui";
 
 const FOOTER = "flex w-full flex-col gap-3";
 const PRESS_BLOCK = "flex w-full flex-col gap-3";
-const PRESS_BLOCK_INLINE = "sm:flex-row sm:items-center";
-const PRESS_SEAT = "w-full";
+const PRESS_BLOCK_INLINE = "sm:flex-row";
+const PRESS_SEAT = "flex w-full";
 const PRESS_BESIDE_ASIDE = "sm:min-w-0 sm:flex-1";
 const FOOTER_RULE = "border-t border-theme-faint pt-4";
 const STAKE_ROW = "flex w-full flex-wrap items-center justify-end gap-4";
-const ASIDE_ROW = "flex w-full flex-wrap items-center gap-3";
+const ASIDE_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const ASIDE_ROW_INLINE = "sm:w-auto sm:shrink-0";
 const STAKE = "flex flex-wrap items-center gap-2";
 const FIGURES = "flex flex-wrap items-center gap-2";
-const ASIDE = "shrink-0";
-const ASIDE_SHARE = "min-w-40 flex-1";
+const ASIDE = "flex shrink-0";
+const ASIDE_SHARE = "flex min-w-40 flex-1";
 const SPARE_NOTE = "w-full min-w-0";
 
 const ASIDE_SIZE = "lg";
+
+const ASIDES_BESIDE_THE_PRESS = 2;
 
 const ASIDE_TONE: ButtonTone = "ambient";
 
@@ -42,6 +44,7 @@ export type FooterAction = {
 	swatch?: SwatchMark;
 	icon?: IconName;
 	iconAt?: IconPlacement;
+	mark?: ActionMark;
 };
 
 export type ScreenFooterProps = {
@@ -95,7 +98,8 @@ export const ScreenFooter = ({
 	rule = true,
 }: ScreenFooterProps) => {
 	const lines = footerLinesOf(refusal, note, action.onPress !== undefined);
-	const alongside = asides.length === 1;
+	const alongside =
+		asides.length > 0 && asides.length <= ASIDES_BESIDE_THE_PRESS;
 
 	return (
 		<footer className={clsx(FOOTER, rule && FOOTER_RULE)}>
@@ -136,6 +140,7 @@ export const ScreenFooter = ({
 						note={lines.press}
 						swatch={action.swatch}
 						icon={action.icon}
+						mark={action.mark}
 						onPress={action.onPress}
 					/>
 				</div>

@@ -25,30 +25,28 @@ const OFFER_ACTIONS = "ml-auto flex shrink-0 items-center gap-2";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 
 const OFFERS = [
-	{ name: "Unit Tests", weight: 1, suggested: false },
-	{ name: "IndexedDB", weight: 2, suggested: false },
-	{ name: "Code Coverage", weight: 2, suggested: true },
-	{ name: "Cold Start", weight: 2, suggested: false },
-	{ name: ".ts", weight: 1, suggested: true },
+	{ name: "Unit Tests", weight: 1 },
+	{ name: "IndexedDB", weight: 2 },
+	{ name: "Code Coverage", weight: 2 },
+	{ name: "Cold Start", weight: 2 },
+	{ name: ".ts", weight: 1 },
 ];
 
-const Offer = ({ name, weight, suggested }: (typeof OFFERS)[number]) => (
+const Offer = ({ name, weight }: (typeof OFFERS)[number]) => (
 	<div className={OFFER}>
 		<Badge color="pewter">{weight}</Badge>
 		<span className={OFFER_NAME}>{name}</span>
 		<span className={OFFER_ACTIONS}>
-			{suggested ? <Badge color="cerulean">suggested</Badge> : null}
 			<Button label="install" size="sm" onPress={noop} />
 			<Button label="i" size="sm" onPress={noop} />
 		</span>
 	</div>
 );
 
-const RowOffer = ({ name, weight, suggested }: (typeof OFFERS)[number]) => (
+const RowOffer = ({ name, weight }: (typeof OFFERS)[number]) => (
 	<Panel.Row
 		trailing={
 			<>
-				{suggested ? <Badge color="cerulean">suggested</Badge> : null}
 				<Button label="install" size="sm" onPress={noop} />
 				<Button label="i" size="sm" onPress={noop} />
 			</>
@@ -87,7 +85,7 @@ const BuildCard = () => (
 
 const RegistryCard = () => (
 	<Panel>
-		<Panel.Header label="registry" meta="5 offers · 2 suggested" />
+		<Panel.Header label="registry" meta="5 offers · free" />
 		<Panel.Body>
 			{OFFERS.map((offer) => (
 				<Offer key={offer.name} {...offer} />
@@ -104,7 +102,7 @@ const RegistryCard = () => (
 
 const RegistryCardInRows = () => (
 	<Panel>
-		<Panel.Header label="registry" meta="5 offers · 2 suggested" />
+		<Panel.Header label="registry" meta="5 offers · free" />
 		<Panel.Rows>
 			{OFFERS.map((offer) => (
 				<RowOffer key={offer.name} {...offer} />

@@ -13,6 +13,7 @@ const TONES = [
 	"action",
 	"danger",
 	"bright",
+	"slot",
 ] as const satisfies ButtonTone[];
 
 const themedUtilitiesOf = (element: HTMLElement) =>
@@ -368,5 +369,64 @@ describe("Button", () => {
 					.querySelector("svg")
 			).toBeNull();
 		});
+	});
+});
+
+describe("a large button", () => {
+	it("keeps its floor and lets a row stretch it taller", () => {
+		render(<Button size="lg" label="Later" onPress={vi.fn()} />);
+
+		const button = screen.getByRole("button", { name: "Later" });
+
+		expect(button).toHaveClass("min-h-14");
+		expect(button).not.toHaveClass("h-14");
+	});
+});
+
+describe("a link-shaped button", () => {
+	it("is a link when it has somewhere to go", () => {
+		render(<Button label="Suggest a poll" tone="action" href="/polls/new" />);
+
+		const link = screen.getByRole("link", { name: "Suggest a poll" });
+		expect(link).toHaveAttribute("href", "/polls/new");
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
+	});
+
+	it("dresses a link exactly as it dresses a press", () => {
+		render(
+			<>
+				<Button
+					label="Suggest a poll"
+					tone="bright"
+					icon="plus"
+					href="/polls/new"
+				/>
+				<Button
+					label="Suggest a poll"
+					tone="bright"
+					icon="plus"
+					onPress={vi.fn()}
+				/>
+			</>
+		);
+
+		const link = screen.getByRole("link");
+		const press = screen.getByRole("button");
+		expect(link.className).toBe(press.className);
+		expect(link.getAttribute("data-screen-theme")).toBe("pallet");
+		expect(press.getAttribute("data-screen-theme")).toBe("pallet");
+	});
+});
+
+describe("a slot press", () => {
+	it("dashes its edge, since it stands for a slot you can fill", () => {
+		render(
+			<Button label="add answer" tone="slot" icon="plus" onPress={vi.fn()} />
+		);
+
+		expect(screen.getByRole("button")).toHaveClass(
+			"border-dashed",
+			"ring-transparent"
+		);
 	});
 });

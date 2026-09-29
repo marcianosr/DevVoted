@@ -103,6 +103,7 @@ export const EveryTone: Story = {
 				<Button label="action" tone="action" onPress={noop} />
 				<Button label="danger" tone="danger" onPress={noop} />
 				<Button label="bright" tone="bright" onPress={noop} />
+				<Button label="slot" tone="slot" icon="plus" onPress={noop} />
 			</div>
 		</Screen>
 	),
@@ -172,6 +173,25 @@ export const EverySize: Story = {
 				<Button cap="↑" label="v3" size="md" onPress={noop} tone="action" />
 				<Button glyph="i" label="About" onPress={noop} />
 				<Button glyph="i" label="About" size="md" onPress={noop} />
+			</div>
+		</Screen>
+	),
+};
+
+export const LinkShaped: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="cerulean" width="narrow">
+			<div className={ROW}>
+				<Button label="Suggest a poll" tone="action" icon="plus" href="#" />
+				<Button
+					label="Suggest a poll"
+					tone="action"
+					size="md"
+					icon="plus"
+					href="#"
+				/>
+				<Button label="load more" icon="chevron" href="#" />
 			</div>
 		</Screen>
 	),

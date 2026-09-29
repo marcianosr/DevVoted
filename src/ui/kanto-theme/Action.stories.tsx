@@ -60,6 +60,15 @@ export const OutsideARun: Story = {
 	},
 };
 
+export const FillsAnEmptySlot: Story = {
+	args: {
+		label: "Wear the title",
+		note: undefined,
+		swatch: undefined,
+		mark: "dashed",
+	},
+};
+
 export const Unmarked: Story = {
 	args: { label: "Start a run", note: "5 polls a day", swatch: undefined },
 };

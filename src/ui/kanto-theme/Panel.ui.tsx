@@ -15,6 +15,7 @@ const GLYPH = "size-2.5 shrink-0 rounded-xs bg-theme-muted";
 const HEADER_END = "ml-auto flex flex-wrap items-center justify-end gap-2";
 const META =
 	"flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
+const HEADER_SUMMARY = "basis-full text-xs text-theme-muted";
 const BODY = "flex flex-col gap-4 px-4 py-4";
 const COLUMNS =
 	"flex w-full items-baseline gap-4 border-b border-theme-faint bg-theme-raised px-4 py-2 text-xs text-theme-muted first:rounded-t-2xl last:rounded-b-2xl";
@@ -40,11 +41,18 @@ export type PanelBadge = { label: string; color?: KantoColor };
 export type PanelHeaderProps = {
 	label: string;
 	badge?: PanelBadge;
+	summary?: ReactNode;
 	meta?: ReactNode;
 	trailing?: ReactNode;
 };
 
-const PanelHeader = ({ label, badge, meta, trailing }: PanelHeaderProps) => (
+const PanelHeader = ({
+	label,
+	badge,
+	summary,
+	meta,
+	trailing,
+}: PanelHeaderProps) => (
 	<header className={HEADER}>
 		<span aria-hidden className={GLYPH} />
 		<Typography variant="title" as="h3">
@@ -58,6 +66,9 @@ const PanelHeader = ({ label, badge, meta, trailing }: PanelHeaderProps) => (
 				{meta === undefined ? null : <span className={META}>{meta}</span>}
 				{trailing}
 			</span>
+		)}
+		{summary === undefined ? null : (
+			<span className={HEADER_SUMMARY}>{summary}</span>
 		)}
 	</header>
 );

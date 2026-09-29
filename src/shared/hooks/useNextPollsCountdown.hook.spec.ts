@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
+import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 
 describe("useNextPollsCountdown", () => {
 	beforeEach(() => {
@@ -16,15 +16,20 @@ describe("useNextPollsCountdown", () => {
 	it("opens with the time left until the local day rolls over", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		expect(result.current.isOpen).toBe(false);
-		expect(result.current.label).toBe("New polls in 7h 30m");
+		expect(result.current.remaining).toBe("7h 30m");
 	});
 
-	it("ticks the label down as the evening passes", () => {
+	it("ticks the remaining time down as the evening passes", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		act(() => {
 			vi.advanceTimersByTime(31 * 60_000);
 		});
-		expect(result.current.label).toBe("New polls in 6h 59m");
+		expect(result.current.remaining).toBe("6h 59m");
+	});
+
+	it("states the bare duration, leaving each surface to phrase it", () => {
+		const { result } = renderHook(() => useNextPollsCountdown());
+		expect(result.current.remaining).not.toContain("New polls");
 	});
 
 	it("flips open once midnight passes", () => {
