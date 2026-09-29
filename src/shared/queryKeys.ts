@@ -19,6 +19,8 @@ export const sessionRunQueryKeys = {
 		[...sessionRunQueryKeys.all, "incidents", date] as const,
 	pollSplit: (pollId: number) =>
 		[...sessionRunQueryKeys.all, "split", pollId] as const,
+	approvalSlots: (date: string) =>
+		[...sessionRunQueryKeys.all, "approval-slots", date] as const,
 	recap: (runId: number) =>
 		[...sessionRunQueryKeys.all, "recap", runId] as const,
 	upcomingCategories: (date: string) =>
@@ -55,6 +57,7 @@ export const userQueryKeys = {
 	serviceUnlocks: (userId: string) =>
 		[...userQueryKeys.serviceUnlocksAll, userId] as const,
 	gateRuns: (userId: string) => [...USERS, userId, "gate-runs"] as const,
+	card: (userId: string) => [...USERS, userId, "card"] as const,
 };
 
 export const archiveQueryKeys = {

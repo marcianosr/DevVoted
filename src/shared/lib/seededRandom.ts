@@ -27,6 +27,9 @@ class SeededRandom {
 	}
 }
 
+export const oneInSeeded = (chances: number, seed: string): boolean =>
+	new SeededRandom(seed).nextInt(0, chances) === 0;
+
 export const selectSeededRandom = <T>(array: T[], seed: string): T | null => {
 	if (array.length === 0) {
 		return null;

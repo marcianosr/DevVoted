@@ -7,15 +7,13 @@ import {
 	usersTable,
 	userTitlesTable,
 } from "~/database/schema";
-import {
-	findTitleById,
-	isExclusive,
-} from "~/modules/account/profile/domain/title.model";
+import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { SLICE_WINDOW, unbankedKb } from "~/modules/run/run/domain/rules.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import type { SeedClimber } from "~/database/seed/cast";
 import { SEED_CLIMBERS, SEED_PLAYERS } from "~/database/seed/cast";
@@ -34,14 +32,30 @@ const historyFor = (climber: SeedClimber, count: number): AnsweredPoll[] =>
 		picked: [],
 	}));
 
-export const seedClimberRuns = async (today: string): Promise<number> => {
+export const seedClimberRuns = async (
+	today: string
+): Promise<Map<string, number>> => {
 	const blank = toRunSnapshot(createRun([], []));
+	const runByClimber = new Map<string, number>();
 
 	for (const climber of SEED_CLIMBERS) {
 		const { gatesCleared, pollsIntoGate, fell = false } = climber.climb;
 		const { configs, coverageUnits, configsLost, startedAtGate } =
 			climber.climb;
+		const { storageKb = 0, lootedBy, closingBand } = climber.climb;
 		const answeredCount = gatesCleared * SLICE_WINDOW + pollsIntoGate;
+		const spoils =
+			lootedBy === undefined
+				? {}
+				: {
+						looted_by_user_id: lootedBy,
+						looted_at: new Date(),
+						loot_amount: unbankedKb(
+							storageKb,
+							gatesCleared - (startedAtGate ?? 0),
+							false
+						),
+					};
 
 		const [run] = await db
 			.insert(runsTable)
@@ -52,6 +66,7 @@ export const seedClimberRuns = async (today: string): Promise<number> => {
 				seed_date: today,
 				completion_reason: fell ? "dead" : null,
 				finished_at: fell ? new Date() : null,
+				...spoils,
 			})
 			.returning({ id: runsTable.id });
 
@@ -61,11 +76,22 @@ export const seedClimberRuns = async (today: string): Promise<number> => {
 				...blank,
 				status: fell ? "dead" : "answering",
 				gatesCleared,
+				storage: storageKb,
+				peakStorageKb: storageKb,
 				coverage: coverageUnits,
 				currentIndex: answeredCount,
 				allAnswered: historyFor(climber, answeredCount),
 				configsLost,
 				startedAtGate,
+				...(closingBand === undefined
+					? {}
+					: {
+							lastClose: {
+								gate: gatesCleared,
+								band: closingBand,
+								cleared: !fell,
+							},
+						}),
 				build: { ...blank.build, configs: CONFIG_LIST.slice(0, configs) },
 				window: {
 					...blank.window,
@@ -78,9 +104,11 @@ export const seedClimberRuns = async (today: string): Promise<number> => {
 			coverage: coverageUnits,
 			polls_answered: answeredCount,
 		});
+
+		runByClimber.set(climber.id, run.id);
 	}
 
-	return SEED_CLIMBERS.length;
+	return runByClimber;
 };
 
 export const seedArchivedRuns = async (
@@ -154,6 +182,10 @@ const pastDate = (today: string, daysBack: number): string => {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LEGACY_TESTER = "title-legacy-tester";
 const LEGACY_ACTIVE = "title-legacy-active";
+const LEGACY_BONUS_BYTES = {
+	played: 256 * STORAGE_UNITS.KB,
+	caughtMidClimb: STORAGE_UNITS.MB,
+} as const;
 
 const daysAgo = (days: number): Date => new Date(Date.now() - days * DAY_MS);
 
@@ -164,7 +196,6 @@ const titleRowsFor = (userId: string, titleIds: readonly string[]) =>
 		return {
 			user_id: userId,
 			title_id: title.id,
-			exclusive: isExclusive(title),
 		};
 	});
 
@@ -205,10 +236,16 @@ export const seedLegacyEra = async (): Promise<number> => {
 			.values(titleRowsFor(player.id, titleIds))
 			.onConflictDoNothing();
 
+		const bonusBytes = legacy.active
+			? LEGACY_BONUS_BYTES.caughtMidClimb
+			: LEGACY_BONUS_BYTES.played;
+
 		await db
 			.update(usersTable)
 			.set({
 				equipped_title_ids: sql`case when cardinality(${usersTable.equipped_title_ids}) = 0 then array[${titleIds[titleIds.length - 1]}]::text[] else ${usersTable.equipped_title_ids} end`,
+				archived_storage: sql`${usersTable.archived_storage} + ${bonusBytes}`,
+				legacy_bonus_bytes: bonusBytes,
 			})
 			.where(eq(usersTable.id, player.id));
 

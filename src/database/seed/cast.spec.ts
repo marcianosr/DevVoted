@@ -15,12 +15,22 @@ describe("the seeded poll editors", () => {
 		expect(unknown.map((climber) => climber.displayName)).toEqual([]);
 	});
 
-	it("points every portrait at a file that ships in public/", () => {
+	it("points every portrait it names at a file that ships in public/", () => {
 		const missing = SEED_CLIMBERS.filter(
-			(climber) => !existsSync(`${PUBLIC_DIR}${climber.photoUrl}`)
+			(climber) =>
+				climber.photoUrl !== undefined &&
+				!existsSync(`${PUBLIC_DIR}${climber.photoUrl}`)
 		);
 
 		expect(missing.map((climber) => climber.photoUrl)).toEqual([]);
+	});
+
+	it("hands every climber an id and a login of their own", () => {
+		const ids = SEED_CLIMBERS.map((climber) => climber.id);
+		const emails = SEED_CLIMBERS.map((climber) => climber.email);
+
+		expect(new Set(ids).size).toBe(ids.length);
+		expect(new Set(emails).size).toBe(emails.length);
 	});
 
 	it("shares no name with a playable login, so nobody climbs against themselves", () => {

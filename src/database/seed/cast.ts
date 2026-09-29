@@ -1,3 +1,4 @@
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
@@ -56,6 +57,7 @@ const RISK_POOL = poolWhere([
 	"suppressesAudit",
 	"catchesFatal",
 	"coverageDecayPerClear",
+	"submitsCrowdPick",
 ]);
 
 const portraitOf = (slug: string): string => `/editors/${slug}.png`;
@@ -71,6 +73,7 @@ export type SeedPlayer = {
 	readonly unlockedConfigIds: readonly string[];
 	readonly pinnedGate?: number;
 	readonly ownedSwatchIds?: readonly string[];
+	readonly equippedSwatchId?: string;
 	readonly peakStorageKb?: number;
 	readonly archivedStorage?: number;
 	readonly ownedTitleIds?: readonly string[];
@@ -91,12 +94,17 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		buildStyle: "everything unlocked — widest possible deal",
 		unlockedConfigIds: EVERY_CONFIG_ID,
 		ownedTitleIds: [
-			"title-summit",
-			"title-first-ascent",
-			"title-completer",
+			"title-rank-poll-newbie",
+			"title-rank-poll-acquaintance",
 			"title-maintainer-ts",
 		],
-		ownedSwatchIds: ["pallet", "pewter", "cerulean", "vermillion"],
+		ownedSwatchIds: [
+			"swatch-pallet",
+			"swatch-boulder",
+			"swatch-cascade",
+			"swatch-volcano",
+		],
+		equippedSwatchId: "swatch-volcano",
 		peakStorageKb: 4096,
 		archivedStorage: 8_388_608,
 	},
@@ -109,7 +117,7 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		role: "user",
 		buildStyle: "risk — wagers, streak growth, audit suppression",
 		unlockedConfigIds: RISK_POOL,
-		ownedTitleIds: ["title-maintainer-js", "title-flawless"],
+		ownedTitleIds: ["title-maintainer-js", "title-works-on-my-machine"],
 		legacyCalendarRuns: { finished: 3 },
 		peakStorageKb: 2048,
 		archivedStorage: 2_097_152,
@@ -158,7 +166,7 @@ export type SeedClimber = {
 	readonly displayName: string;
 	readonly email: string;
 	readonly githubUsername: string;
-	readonly photoUrl: string;
+	readonly photoUrl?: string;
 	readonly borderId: string;
 	readonly accuracy: number;
 	readonly climb: {
@@ -169,6 +177,9 @@ export type SeedClimber = {
 		readonly coverageUnits: number;
 		readonly configsLost?: number;
 		readonly startedAtGate?: number;
+		readonly storageKb?: number;
+		readonly lootedBy?: string;
+		readonly closingBand?: CoverageBandId;
 	};
 };
 
@@ -181,7 +192,13 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 		photoUrl: portraitOf("giovanni"),
 		borderId: "border-ts",
 		accuracy: 0.9,
-		climb: { gatesCleared: 9, pollsIntoGate: 2, configs: 8, coverageUnits: 46 },
+		climb: {
+			gatesCleared: 9,
+			pollsIntoGate: 2,
+			configs: 8,
+			coverageUnits: 46,
+			storageKb: 288,
+		},
 	},
 	{
 		id: climberUUID(2),
@@ -197,6 +214,7 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 			configs: 6,
 			coverageUnits: 39,
 			configsLost: 1,
+			storageKb: 164,
 		},
 	},
 	{
@@ -207,7 +225,13 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 		photoUrl: portraitOf("sabrina"),
 		borderId: "border-js",
 		accuracy: 0.78,
-		climb: { gatesCleared: 7, pollsIntoGate: 1, configs: 7, coverageUnits: 33 },
+		climb: {
+			gatesCleared: 7,
+			pollsIntoGate: 1,
+			configs: 7,
+			coverageUnits: 33,
+			storageKb: 96,
+		},
 	},
 	{
 		id: climberUUID(4),
@@ -223,6 +247,7 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 			configs: 4,
 			coverageUnits: 27,
 			startedAtGate: 2,
+			storageKb: 132,
 		},
 	},
 	{
@@ -233,7 +258,13 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 		photoUrl: portraitOf("erika"),
 		borderId: "border-react",
 		accuracy: 0.66,
-		climb: { gatesCleared: 5, pollsIntoGate: 0, configs: 6, coverageUnits: 22 },
+		climb: {
+			gatesCleared: 5,
+			pollsIntoGate: 0,
+			configs: 6,
+			coverageUnits: 22,
+			storageKb: 72,
+		},
 	},
 	{
 		id: climberUUID(6),
@@ -250,6 +281,8 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 			configs: 5,
 			coverageUnits: 24,
 			configsLost: 2,
+			storageKb: 120,
+			lootedBy: climberUUID(7),
 		},
 	},
 	{
@@ -260,7 +293,13 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 		photoUrl: portraitOf("misty"),
 		borderId: "border-css",
 		accuracy: 0.55,
-		climb: { gatesCleared: 3, pollsIntoGate: 4, configs: 5, coverageUnits: 14 },
+		climb: {
+			gatesCleared: 3,
+			pollsIntoGate: 4,
+			configs: 5,
+			coverageUnits: 14,
+			storageKb: 48,
+		},
 	},
 	{
 		id: climberUUID(8),
@@ -276,6 +315,171 @@ export const SEED_CLIMBERS: readonly SeedClimber[] = [
 			fell: true,
 			configs: 3,
 			coverageUnits: 11,
+			storageKb: 180,
+			closingBand: "danger",
+		},
+	},
+	{
+		id: climberUUID(9),
+		displayName: "Red",
+		email: "red@kanto.dev",
+		githubUsername: "red",
+		borderId: "border-ts",
+		accuracy: 0.94,
+		climb: {
+			gatesCleared: 11,
+			pollsIntoGate: 1,
+			configs: 9,
+			coverageUnits: 58,
+			storageKb: 512,
+			closingBand: "perfect",
+		},
+	},
+	{
+		id: climberUUID(10),
+		displayName: "Bill",
+		email: "bill@kanto.dev",
+		githubUsername: "bill",
+		borderId: "border-js",
+		accuracy: 0.82,
+		climb: {
+			gatesCleared: 4,
+			pollsIntoGate: 2,
+			configs: 6,
+			coverageUnits: 21,
+			storageKb: 224,
+			closingBand: "perfect",
+		},
+	},
+	{
+		id: climberUUID(11),
+		displayName: "Prof. Oak",
+		email: "oak@kanto.dev",
+		githubUsername: "samueloak",
+		borderId: "border-react",
+		accuracy: 0.86,
+		climb: {
+			gatesCleared: 4,
+			pollsIntoGate: 0,
+			configs: 7,
+			coverageUnits: 19,
+			storageKb: 308,
+			closingBand: "healthy",
+		},
+	},
+	{
+		id: climberUUID(12),
+		displayName: "Daisy",
+		email: "daisy@kanto.dev",
+		githubUsername: "daisyoak",
+		borderId: "border-css",
+		accuracy: 0.68,
+		climb: {
+			gatesCleared: 2,
+			pollsIntoGate: 3,
+			configs: 4,
+			coverageUnits: 9,
+			storageKb: 64,
+			closingBand: "shaky",
+		},
+	},
+	{
+		id: climberUUID(13),
+		displayName: "Mr. Fuji",
+		email: "fuji@kanto.dev",
+		githubUsername: "mrfuji",
+		borderId: "border-git",
+		accuracy: 0.6,
+		climb: {
+			gatesCleared: 1,
+			pollsIntoGate: 4,
+			configs: 3,
+			coverageUnits: 5,
+			storageKb: 40,
+			closingBand: "shaky",
+		},
+	},
+	{
+		id: climberUUID(14),
+		displayName: "Nurse Joy",
+		email: "joy@kanto.dev",
+		githubUsername: "nursejoy",
+		borderId: "border-frontend",
+		accuracy: 0.58,
+		climb: {
+			gatesCleared: 0,
+			pollsIntoGate: 3,
+			configs: 2,
+			coverageUnits: 2,
+			storageKb: 24,
+		},
+	},
+	{
+		id: climberUUID(15),
+		displayName: "Officer Jenny",
+		email: "jenny@kanto.dev",
+		githubUsername: "officerjenny",
+		borderId: "border-html",
+		accuracy: 0.63,
+		climb: {
+			gatesCleared: 1,
+			pollsIntoGate: 1,
+			configs: 3,
+			coverageUnits: 6,
+			storageKb: 56,
+			closingBand: "ok",
+		},
+	},
+	{
+		id: climberUUID(16),
+		displayName: "Jessie",
+		email: "jessie@kanto.dev",
+		githubUsername: "jessie",
+		borderId: "border-ruby",
+		accuracy: 0.52,
+		climb: {
+			gatesCleared: 2,
+			pollsIntoGate: 2,
+			fell: true,
+			configs: 4,
+			coverageUnits: 7,
+			configsLost: 1,
+			storageKb: 88,
+			closingBand: "danger",
+		},
+	},
+	{
+		id: climberUUID(17),
+		displayName: "James",
+		email: "james@kanto.dev",
+		githubUsername: "jamesrocket",
+		borderId: "border-ruby",
+		accuracy: 0.54,
+		climb: {
+			gatesCleared: 2,
+			pollsIntoGate: 0,
+			configs: 4,
+			coverageUnits: 8,
+			startedAtGate: 1,
+			storageKb: 72,
+			closingBand: "shaky",
+		},
+	},
+	{
+		id: climberUUID(18),
+		displayName: "Copycat",
+		email: "copycat@kanto.dev",
+		githubUsername: "copycat",
+		borderId: "border-js",
+		accuracy: 0.71,
+		climb: {
+			gatesCleared: 3,
+			pollsIntoGate: 1,
+			configs: 5,
+			coverageUnits: 13,
+			startedAtGate: 2,
+			storageKb: 104,
+			closingBand: "ok",
 		},
 	},
 ];

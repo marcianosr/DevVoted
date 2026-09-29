@@ -82,6 +82,7 @@ export const usersTable = pgTable("users", {
 		.array()
 		.notNull()
 		.default(sql`'{}'::text[]`),
+	equipped_swatch_id: text("equipped_swatch_id"),
 	pinned_gate: integer("pinned_gate"),
 	created_at: timestamp("created_at", { withTimezone: true })
 		.defaultNow()

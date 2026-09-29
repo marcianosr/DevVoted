@@ -5,7 +5,7 @@ status: todo
 type: task
 priority: normal
 created_at: 2026-09-19T15:50:43Z
-updated_at: 2026-09-19T15:50:43Z
+updated_at: 2026-09-28T12:18:56Z
 ---
 
 Six tables in `src/database/schema.ts` are read by nothing under `src/modules/**`.
@@ -43,8 +43,10 @@ and `src/routes`.
 `pipeline_slots`, `pipeline_slot_snapshots`, `active_config_ids`, `rerolls`,
 `total_rerolls`, `reroll_storage_used`, `storage_limit`, `injected_archive_bytes`,
 `shop_skipped_date`, `shop_interacted_date`, `deinstall_penalty`,
-`correct_polls_count`, `pending_upgrade_cards`, `looted_by_user_id`, `looted_at`,
-`loot_amount`, `season_id`.
+`correct_polls_count`, `pending_upgrade_cards`, `season_id`.
+
+`looted_by_user_id`, `looted_at` and `loot_amount` were on that list and are
+now off it: DVTD-545v brought them back into use (ADR-135). Do not drop them.
 
 ## Blocker on deleting src/domains entirely
 

@@ -19,7 +19,6 @@ import {
 } from "~/database/schema";
 import {
 	findTitleById,
-	isExclusive,
 	WORN_TITLE_CAP,
 } from "~/modules/account/profile/domain/title.model";
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
@@ -85,6 +84,7 @@ const seedPlayers = async (): Promise<number> => {
 				role: player.role,
 				pinned_gate: player.pinnedGate ?? null,
 				owned_swatch_ids: [...(player.ownedSwatchIds ?? [])],
+				equipped_swatch_id: player.equippedSwatchId ?? null,
 				peak_storage_kb: player.peakStorageKb ?? 0,
 				archived_storage: player.archivedStorage ?? 0,
 				equipped_title_ids: (player.ownedTitleIds ?? []).slice(
@@ -106,7 +106,6 @@ const seedPlayers = async (): Promise<number> => {
 					titles.map((title) => ({
 						user_id: player.id,
 						title_id: title.id,
-						exclusive: isExclusive(title),
 						announced_at: new Date(),
 					}))
 				)
@@ -140,7 +139,7 @@ const seedClimbers = async (): Promise<number> => {
 			display_name: climber.displayName,
 			email: climber.email,
 			github_username: climber.githubUsername,
-			photo_url: climber.photoUrl,
+			photo_url: climber.photoUrl ?? null,
 			owned_border_ids: [climber.borderId],
 			equipped_border_id: climber.borderId,
 			role: "poll-editor" as const,
@@ -213,7 +212,8 @@ const COMMUNITY_POLL_COUNT = SLICE_WINDOW * 3;
 
 const seedCommunityAnswers = async (
 	today: string,
-	pollIds: readonly number[]
+	pollIds: readonly number[],
+	runByClimber: Map<string, number>
 ): Promise<number> => {
 	const covered = pollIds.slice(0, COMMUNITY_POLL_COUNT);
 	const options = await db
@@ -251,6 +251,9 @@ const seedCommunityAnswers = async (
 				.values({
 					poll_id: pollId,
 					user_id: climber.id,
+					...(runByClimber.get(climber.id) === undefined
+						? {}
+						: { run_id: runByClimber.get(climber.id) }),
 					mode: "session",
 					answer_date: today,
 					answer_time_ms: 2000 + (hashOf(`${climber.id}:${pollId}`) % 18000),
@@ -275,7 +278,15 @@ const seedCommunityAnswers = async (
 const HISTORY_DAYS = 56;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const HISTORY_ANSWER_MS = 3000;
-const HISTORY_PASSES = 2;
+const HISTORY_RUNS = 4;
+const RUN_COVERAGE = [62, 52, 42, 32];
+const TILT_STEPS = 5;
+const TILT_CENTRE = 2;
+const TILT_POINTS = 7;
+const TILT_CEILING = 78;
+
+const HISTORY_START = () => Date.now() - HISTORY_DAYS * MS_PER_DAY;
+const RUN_SPAN = ((HISTORY_DAYS - 1) * MS_PER_DAY) / HISTORY_RUNS;
 
 type SeedAnswerer = {
 	readonly id: string;
@@ -283,14 +294,29 @@ type SeedAnswerer = {
 	readonly accuracy: number;
 };
 
-const rollFor = (
-	answerer: SeedAnswerer,
-	pass: number,
-	pollId: number
-): number =>
-	(hashOf(`${pollId * 37 + pass}:${answerer.displayName}`) * 31 +
-		hashOf(`${answerer.id}:${pollId}:${pass}`)) %
+const rollFor = (answerer: SeedAnswerer, run: number, pollId: number): number =>
+	(hashOf(`${pollId * 37 + run * 101}:${answerer.displayName}`) * 31 +
+		hashOf(`${answerer.id}:${pollId}:${run}`)) %
 	100;
+
+const takesPoll = (
+	answerer: SeedAnswerer,
+	run: number,
+	pollId: number
+): boolean =>
+	hashOf(`${answerer.id}:${run}:${pollId * 37}`) % 100 < RUN_COVERAGE[run];
+
+const accuracyFor = (answerer: SeedAnswerer, category: string): number => {
+	const tilt =
+		(hashOf(`${answerer.id}:${category}`) % TILT_STEPS) - TILT_CENTRE;
+
+	return Math.min(
+		TILT_CEILING,
+		Math.max(0, answerer.accuracy * 100 + tilt * TILT_POINTS)
+	);
+};
+
+const dayOf = (when: Date): string => when.toISOString().slice(0, 10);
 
 const seedAnswerHistory = async (
 	pollIds: readonly number[]
@@ -307,6 +333,14 @@ const seedAnswerHistory = async (
 		})
 		.from(pollOptionsTable);
 
+	const categories = await db
+		.select({ id: pollsTable.id, category: pollsTable.category_code })
+		.from(pollsTable);
+
+	const categoryByPoll = new Map(
+		categories.map((poll) => [poll.id, poll.category])
+	);
+
 	const optionsByPoll = new Map<number, typeof options>();
 	for (const option of options) {
 		optionsByPoll.set(option.poll_id, [
@@ -315,40 +349,67 @@ const seedAnswerHistory = async (
 		]);
 	}
 
-	const sittings = Array.from({ length: HISTORY_PASSES }, (_, pass) => pass);
-	const answerCount = HISTORY_PASSES * pollIds.length;
+	const startedAt = HISTORY_START();
 
-	const answeredAt = (position: number): Date =>
+	const answeredAt = (run: number, position: number, taken: number): Date =>
 		new Date(
-			Date.now() -
-				HISTORY_DAYS * MS_PER_DAY +
-				Math.round((position / answerCount) * HISTORY_DAYS * MS_PER_DAY)
+			startedAt +
+				run * RUN_SPAN +
+				Math.round((position / Math.max(taken, 1)) * RUN_SPAN)
 		);
+
+	const sittings = answerers.flatMap((answerer) =>
+		Array.from({ length: HISTORY_RUNS }, (_, run) => ({
+			answerer,
+			run,
+			polls: pollIds.filter((pollId) => takesPoll(answerer, run, pollId)),
+		}))
+	);
+
+	const runs = await db
+		.insert(runsTable)
+		.values(
+			sittings.map(({ answerer, run }) => ({
+				user_id: answerer.id,
+				mode: "session" as const,
+				status: "finished" as const,
+				seed_date: dayOf(answeredAt(run, 0, 1)),
+				completion_reason: run === HISTORY_RUNS - 1 ? "victory" : "dead",
+				started_at: answeredAt(run, 0, 1),
+				finished_at: answeredAt(run, 1, 1),
+			}))
+		)
+		.returning({ id: runsTable.id });
 
 	const answerOf = (
 		answerer: SeedAnswerer,
-		pass: number,
+		run: number,
+		runId: number,
 		pollId: number,
-		position: number
+		position: number,
+		taken: number
 	) => {
 		const pollOptions = optionsByPoll.get(pollId) ?? [];
-		if (pollOptions.length === 0) return [];
+		const category = categoryByPoll.get(pollId);
+		if (pollOptions.length === 0 || category === undefined) return [];
 
-		const correct = rollFor(answerer, pass, pollId) < answerer.accuracy * 100;
+		const correct =
+			rollFor(answerer, run, pollId) < accuracyFor(answerer, category);
 		const picked = correct
 			? pollOptions.filter((option) => option.correct)
 			: pollOptions.filter((option) => !option.correct).slice(0, 1);
 		if (picked.length === 0) return [];
 
-		const when = answeredAt(position);
+		const when = answeredAt(run, position, taken);
 		return [
 			{
 				picked,
 				row: {
 					poll_id: pollId,
 					user_id: answerer.id,
-					mode: "calendar" as const,
-					answer_date: when.toISOString().slice(0, 10),
+					run_id: runId,
+					mode: "session" as const,
+					answer_date: dayOf(when),
 					answer_time_ms:
 						HISTORY_ANSWER_MS + (hashOf(`${answerer.id}:${pollId}`) % 18000),
 					mirrored: false,
@@ -359,11 +420,9 @@ const seedAnswerHistory = async (
 		];
 	};
 
-	const answers = answerers.flatMap((answerer) =>
-		sittings.flatMap((pass) =>
-			pollIds.flatMap((pollId, index) =>
-				answerOf(answerer, pass, pollId, pass * pollIds.length + index)
-			)
+	const answers = sittings.flatMap(({ answerer, run, polls }, sitting) =>
+		polls.flatMap((pollId, position) =>
+			answerOf(answerer, run, runs[sitting].id, pollId, position, polls.length)
 		)
 	);
 
@@ -419,8 +478,8 @@ const seedDatabase = async (): Promise<void> => {
 	const sequence = await seedTodaysSequence(today, pollIds);
 	console.info(`📅 ${sequence} polls in today's sequence`);
 
-	const runs = await seedClimberRuns(today);
-	console.info(`🏃 ${runs} live climber runs`);
+	const climberRuns = await seedClimberRuns(today);
+	console.info(`🏃 ${climberRuns.size} live climber runs`);
 
 	const archived = await seedArchivedRuns(SEED_PLAYERS[0].id, today);
 	console.info(
@@ -433,7 +492,7 @@ const seedDatabase = async (): Promise<void> => {
 	const history = await seedAnswerHistory(pollIds);
 	console.info(`📜 ${history} backdated answers across every category`);
 
-	const answers = await seedCommunityAnswers(today, pollIds);
+	const answers = await seedCommunityAnswers(today, pollIds, climberRuns);
 	console.info(`💬 ${answers} community answers`);
 
 	await seedObjectiveProgress();

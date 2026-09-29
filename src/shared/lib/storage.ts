@@ -40,6 +40,11 @@ export const kbLabel = (kb: number): string =>
 export const signedKbLabel = (kb: number): string =>
 	`${kb < 0 ? "−" : "+"}${kbLabel(Math.abs(kb))}`;
 
+const ARCHIVED = "archived";
+
+export const archiveLabel = (bytes: number): string =>
+	`${formatStorage(bytes)} ${ARCHIVED}`;
+
 export function formatStorageDetailed(bytes: number): string {
 	const primary = formatStorage(bytes);
 

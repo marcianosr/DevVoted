@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+	archiveLabel,
 	formatKb,
 	formatStorage,
 	getStorageUsagePercentage,
@@ -78,5 +79,15 @@ describe("Storage utilities", () => {
 		it("returns true when exactly at limit", () => {
 			expect(canAddToStorage(512, 512, 1024)).toBe(true);
 		});
+	});
+});
+
+describe("archiveLabel", () => {
+	it("names the unit, because a bare number reads as a score", () => {
+		expect(archiveLabel(8_388_608)).toBe("8 MB archived");
+	});
+
+	it("reads zero as bytes rather than as nothing at all", () => {
+		expect(archiveLabel(0)).toBe("0 B archived");
 	});
 });
