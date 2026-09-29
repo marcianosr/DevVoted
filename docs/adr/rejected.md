@@ -261,8 +261,12 @@ Full reasoning sits with the decision it explains.
 - **Coverage-earner, dedupe-by-effect, can-trigger-today and rarity weighting on
   the starting deal**, ADR-062: the draw stays uniform; the guarantees constrain
   shape, never the probability of power.
-- **A drawn-audit floor under rivals' incidents** (the count minus one, or the old count with attacks replacing draws), ADR-099: either keeps the date dealing audits, and the second gives an attack no teeth.
-- **Keeping gates 3 and 12 authored under player-fired audits**, ADR-099: the Champion's reliable challenge is its 90% line, and an introduction nobody fires is not one.
+- ~~**A drawn-audit floor under rivals' incidents**, ADR-099~~ — **reversed by ADR-138.** The second form (the old count, with an incident replacing a draw) is what ships. The date dealing audits turned out to be the point: it is what makes the difficulty authored rather than socially random, and a gate nobody attacked was empty far more often than expected. An incident has teeth because it replaces the draw you would otherwise have picked your build against.
+- **Keeping gates 3 and 12 authored under player-fired audits**, ADR-099: the Champion's reliable challenge is its 90% line, and an introduction nobody fires is not one. ADR-138 brought the draw back and left both gates unauthored.
+- **A standalone discard press on the incident desk**, ADR-138: buying already replaces what you hold, so discarding alone costs nothing and gains nothing.
+- **Letting Refresh conjure an offer in a shop that dealt none**, ADR-138: the find is the point; a shop you can always buy from is a shelf.
+- **"Test suite" as the name of the slot pool**, ADR-139: tests cover code, nothing covers a suite. The player's answers are the tests; the slots they cover are the codebase.
+- **A second coverage bar on prep**, ADR-139: coverage appears once per screen, so the bar moved out of At stake instead of being drawn twice.
 - **Skipping straight to the shop after a gate**, ADR-057.
 - **The archived-storage random config pull**, ADR-050.
 - **The Dex as a till**, ADR-115 Decision 9: no Dex tab has ever sold anything,
