@@ -4,8 +4,9 @@
 
 Accepted — 2026-09-23 (Marciano, DVTD-zptd). Retires
 [ADR-065](README.md#retired) and [ADR-067](README.md#retired); collapses
-[ADR-100](100-a-category-has-a-living-record.md) decisions 2 and 4. ADR-100's
-other four decisions stand and are why the read is unchanged.
+[ADR-100](100-a-category-has-a-living-record.md) decisions 2 and 4. Decision 1
+superseded and Decision 2 amended by [ADR-131](131-a-record-belongs-to-one-run.md); Decisions 3, 4, 5 and 6
+stand, and Decision 4 is reaffirmed there.
 
 ## Context
 
@@ -22,15 +23,15 @@ could agree on, and one record with nowhere to live at full size.
 
 ## Decision 1: the board is twelve seats, one per category
 
-Every category draws a row whether or not anybody leads it. The roster is
-`CATEGORY_CODES`, so it cannot fall out of step with the game's categories, and
-held seats sort to the top by their run.
-
-The alternative — listing only the categories somebody leads — makes the board
-shrink as the game gets younger, which is exactly backwards. A new game would
-show an almost empty panel and read as broken.
+Superseded — [ADR-131](131-a-record-belongs-to-one-run.md) Decision 2 makes it two boards of twelve. The
+argument below still holds for each of them: a roster of `CATEGORY_CODES` cannot
+fall out of step with the game, and listing only the categories somebody leads
+would make the board shrink as the game gets younger, which is backwards.
 
 ## Decision 2: an open seat states what claims it
+
+Amended — [ADR-131](131-a-record-belongs-to-one-run.md) Decision 4 states the claim in each board's own
+figure, so the correct board reads `4 correct claims it`.
 
 Below `MIN_LEADER_STREAK`, the row reads `unranked · 3 in a row claims it`.
 

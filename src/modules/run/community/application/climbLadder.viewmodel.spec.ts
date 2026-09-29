@@ -1,7 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
-import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
+import {
+	fileOf,
+	LOOT_COPY,
+	ladderFor,
+} from "~/modules/run/community/application/climbLadder.viewmodel";
+import type {
+	ClimbFallen,
+	ClimbTodayView,
+} from "~/modules/run/community/application/community.service";
+import type {
+	FileHand,
+	LootHand,
+} from "~/modules/run/community/application/climbLadder.viewmodel";
 
 const climber = (
 	id: string,
@@ -35,7 +46,6 @@ describe("ladderFor", () => {
 				build: BLUE_BUILD,
 				closingBand: "perfect",
 				startedAtGate: 1,
-				handle: "bluehandle",
 				title: "Completionist",
 				coveragePercent: 42,
 				streak: 6,
@@ -56,10 +66,22 @@ describe("ladderFor", () => {
 				build: { configs: [] },
 				closingBand: "danger",
 				startedAtGate: 0,
+				lootKb: 67,
+				lootedById: null,
+				lootedByName: null,
 			},
 		],
 		bestPosition: 16,
+		viewer: { id: "red", hasLiveRun: true },
 	};
+
+	const koga = (over: Partial<ClimbFallen> = {}): ClimbTodayView => ({
+		...climb,
+		fallen: [{ ...climb.fallen[0], ...over }],
+	});
+
+	const lootPressOn = (view: ClimbTodayView, hand?: LootHand) =>
+		ladderFor(view, [], hand).flatMap((gate) => gate.fallen)[0].card?.loot;
 
 	it("stacks climbers under their gate, deepest first", () => {
 		const gates = ladderFor(climb);
@@ -93,7 +115,7 @@ describe("ladderFor", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
-		expect(blue?.card?.build).toEqual([
+		expect(blue?.card?.standing?.build).toEqual([
 			{ name: ".ts", slots: 1, version: 4, badges: [] },
 			{
 				name: "Cache",
@@ -110,17 +132,24 @@ describe("ladderFor", () => {
 		expect(red).not.toHaveProperty("card");
 	});
 
-	it("states where a climber stands, how they closed and what they banked", () => {
+	it("links the card to the climber's in-game page and badges their worn title", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
 		expect(blue?.card).toMatchObject({
-			handle: "bluehandle",
+			profileHref: "/profile/blue",
 			title: "Completionist",
-			gate: "gate 1 · Boulder",
-			band: "perfect",
-			coveragePercent: 42,
-			storage: "896 KB",
+		});
+	});
+
+	it("states the gate a climber stands at and the coverage they hold", () => {
+		const gates = ladderFor(climb);
+
+		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
+		expect(blue?.card?.standing?.gate).toMatchObject({
+			name: "Boulder",
+			label: "gate 1",
+			coverage: { held: 42 },
 		});
 	});
 
@@ -128,17 +157,17 @@ describe("ladderFor", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
-		expect(blue?.card?.weight).toBe("5 of 4 weight");
+		expect(blue?.card?.standing?.weight).toBe("5 of 4 weight");
 	});
 
-	it("tiles the streak, the best category and the gate", () => {
+	it("tiles the run storage, the streak and the best category", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
-		expect(blue?.card?.stats).toEqual([
-			{ label: "current streak", value: "6" },
-			{ label: "best category", value: "JavaScript" },
-			{ label: "current gate", value: "1" },
+		expect(blue?.card?.standing?.stats).toEqual([
+			{ label: "run storage", value: "896 KB" },
+			{ label: "streak", value: "6" },
+			{ label: "best", value: "JavaScript" },
 		]);
 	});
 
@@ -146,8 +175,8 @@ describe("ladderFor", () => {
 		const gates = ladderFor(climb);
 
 		const koga = gates[2].fallen[0];
-		expect(koga.card?.stats[1]).toEqual({
-			label: "best category",
+		expect(koga.card?.standing?.stats[2]).toEqual({
+			label: "best",
 			value: "—",
 		});
 	});
@@ -206,5 +235,119 @@ describe("ladderFor", () => {
 		expect(gates[1].uncharted).toBe(false);
 		expect(gates[2].uncharted).toBe(true);
 		expect(gates.every((gate) => !gate.best)).toBe(true);
+	});
+
+	describe("the loot a fallen run carries", () => {
+		const hand: LootHand = { onLoot: () => undefined };
+
+		it("offers the take, naming the figure on the press", () => {
+			expect(lootPressOn(koga(), hand)).toMatchObject({
+				label: LOOT_COPY.take("67 KB"),
+			});
+		});
+
+		it("hands the press the fallen run's id", () => {
+			const taken: number[] = [];
+			lootPressOn(koga(), {
+				onLoot: (runId) => taken.push(runId),
+			})?.onPress?.();
+
+			expect(taken).toEqual([11]);
+		});
+
+		it("holds the press while that run's take is in flight", () => {
+			expect(lootPressOn(koga(), { ...hand, pendingRunId: 11 })?.pending).toBe(
+				true
+			);
+			expect(lootPressOn(koga(), { ...hand, pendingRunId: 12 })?.pending).toBe(
+				false
+			);
+		});
+
+		it("states the figure without a press when the reader has no run", () => {
+			const parked = { ...koga(), viewer: { id: "red", hasLiveRun: false } };
+
+			expect(lootPressOn(parked, hand)).toEqual({
+				label: LOOT_COPY.unbanked("67 KB"),
+			});
+		});
+
+		it("states the figure without a press on the reader's own fallen run", () => {
+			const yours = { ...koga(), viewer: { id: "koga", hasLiveRun: true } };
+
+			expect(lootPressOn(yours, hand)).toEqual({
+				label: LOOT_COPY.unbanked("67 KB"),
+			});
+		});
+
+		it("names who got there first once a run is spent", () => {
+			const spent = koga({ lootedById: "blue", lootedByName: "Blue" });
+
+			expect(lootPressOn(spent, hand)).toEqual({
+				label: LOOT_COPY.takenBy("Blue", "67 KB"),
+			});
+		});
+
+		it("says so when the reader is the one who took it", () => {
+			const mine = koga({ lootedById: "red", lootedByName: "Red" });
+
+			expect(lootPressOn(mine, hand)).toEqual({
+				label: LOOT_COPY.takenByYou("67 KB"),
+			});
+		});
+
+		it("names an unnamed looter rather than leaving a gap", () => {
+			const spent = koga({ lootedById: "ghost", lootedByName: null });
+
+			expect(lootPressOn(spent, hand)).toEqual({
+				label: LOOT_COPY.takenBy(LOOT_COPY.someone, "67 KB"),
+			});
+		});
+
+		it("says a run that banked everything has nothing to take", () => {
+			expect(lootPressOn(koga({ lootKb: 0 }), hand)).toEqual({
+				label: LOOT_COPY.empty,
+			});
+		});
+	});
+});
+
+describe("the incident you hold, offered on a climber's card", () => {
+	const MISTY = "misty";
+	const hand = (overrides: Partial<FileHand> = {}): FileHand => ({
+		audit: "409 Conflict",
+		targetRunIdByUserId: new Map([[MISTY, 7]]),
+		onFile: () => {},
+		...overrides,
+	});
+
+	it("offers no filing at all while your hand is empty", () => {
+		expect(fileOf(MISTY, undefined)).toBeUndefined();
+	});
+
+	it("names the audit it would file at a rival in reach", () => {
+		expect(fileOf(MISTY, hand())).toMatchObject({
+			label: "File 409 Conflict",
+		});
+	});
+
+	it("files against that rival's run, not their user", () => {
+		const onFile = vi.fn();
+
+		fileOf(MISTY, hand({ onFile }))?.onPress?.();
+
+		expect(onFile).toHaveBeenCalledWith(7);
+	});
+
+	it("refuses a climber the audit cannot reach, and says so", () => {
+		const press = fileOf("brock", hand());
+
+		expect(press?.onPress).toBeUndefined();
+		expect(press?.refusal).toBe("409 Conflict cannot reach them");
+	});
+
+	it("holds the press while a filing at that rival is in flight", () => {
+		expect(fileOf(MISTY, hand({ pendingRunId: 7 }))?.pending).toBe(true);
+		expect(fileOf(MISTY, hand({ pendingRunId: 9 }))?.pending).toBe(false);
 	});
 });

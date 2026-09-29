@@ -1,37 +1,82 @@
 import { getCategoryMetadata } from "~/shared/lib/categories";
-import { profilePathFor } from "~/shared/lib/profilePath";
+import { IN_A_ROW, MOST_CORRECT } from "~/shared/lib/copy";
+import { plural } from "~/shared/lib/displayValue";
 
 import {
+	type CategoryBoard,
 	type CategoryLeader,
+	type CategoryMeasure,
 	type CategorySeat,
-	MIN_LEADER_STREAK,
+	MIN_LEADER,
 } from "~/modules/run/run/domain/categoryLeader.model";
 
 import type {
 	CategoryLeaderProps,
 	CategorySeatLeader,
 } from "~/ui/kanto-theme/CategoryLeader.ui";
+import type { CommunityLeaders } from "~/ui/kanto-theme/CommunityScreen.ui";
 
-const IN_A_ROW = (streak: number) => `${streak} in a row`;
-const CLAIMS_IT = (streak: number) => `${IN_A_ROW(streak)} claims it`;
+const FIGURE = {
+	streak: IN_A_ROW,
+	correct: MOST_CORRECT,
+} satisfies Record<CategoryMeasure, (best: number) => string>;
 
-const leaderRowOf = (leader: CategoryLeader): CategorySeatLeader => ({
+const HEADING = {
+	streak: {
+		title: "Streak leaders",
+		summary: "longest run of correct answers in one run · all-time",
+	},
+	correct: {
+		title: "Correct leaders",
+		summary: "most correct answers in one run · all-time",
+	},
+} satisfies Record<CategoryMeasure, { title: string; summary: string }>;
+
+const SEATS_CHANGE_HANDS = "A seat changes hands when somebody beats it.";
+const SEATED = (held: number, total: number) => `${held} of ${total} seated`;
+
+const CLAIMS_IT = (measure: CategoryMeasure) =>
+	`${FIGURE[measure](MIN_LEADER[measure])} claims it`;
+
+const leaderRowOf = (
+	measure: CategoryMeasure,
+	leader: CategoryLeader
+): CategorySeatLeader => ({
+	userId: leader.userId,
 	handle: leader.handle,
-	figure: IN_A_ROW(leader.streak),
-	profileHref: profilePathFor(leader.userId),
+	figure: FIGURE[measure](leader.best),
 	you: leader.you,
-	...(leader.githubLogin === undefined
-		? {}
-		: { githubLogin: leader.githubLogin }),
 	...(leader.avatarUrl === undefined ? {} : { photoUrl: leader.avatarUrl }),
 	...(leader.borderUrl === undefined ? {} : { borderUrl: leader.borderUrl }),
 });
 
 export const categoryLeaderRowFor = (
+	measure: CategoryMeasure,
 	seat: CategorySeat
 ): CategoryLeaderProps => ({
 	category: getCategoryMetadata(seat.category).name,
 	...(seat.leader === undefined
-		? { claim: CLAIMS_IT(MIN_LEADER_STREAK) }
-		: { leader: leaderRowOf(seat.leader) }),
+		? { claim: CLAIMS_IT(measure) }
+		: { leader: leaderRowOf(measure, seat.leader) }),
+});
+
+export const seatsFooterFor = (seats: readonly CategorySeat[]): string => {
+	const open = seats.filter(({ leader }) => leader === undefined).length;
+	if (open === 0) return SEATS_CHANGE_HANDS;
+
+	return `${SEATS_CHANGE_HANDS} ${plural(open, "seat")} still open.`;
+};
+
+export const categoryBoardFor = ({
+	measure,
+	seats,
+}: CategoryBoard): CommunityLeaders => ({
+	title: HEADING[measure].title,
+	summary: HEADING[measure].summary,
+	seated: SEATED(
+		seats.filter(({ leader }) => leader !== undefined).length,
+		seats.length
+	),
+	seats: seats.map((seat) => categoryLeaderRowFor(measure, seat)),
+	footer: seatsFooterFor(seats),
 });

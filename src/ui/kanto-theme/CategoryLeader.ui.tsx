@@ -1,29 +1,29 @@
+import { profilePathFor } from "~/shared/lib/profilePath";
+
 import { Badge } from "./Badge.ui";
 import { Climber } from "./Climber.ui";
 import { Link } from "./Link.ui";
 import { Typography } from "./Typography.ui";
 
-const LINE = "flex w-full min-w-0 flex-wrap items-center gap-2";
+const LINE = "grid w-full min-w-0 grid-cols-[1fr_auto] items-center gap-2";
+const FACTS = "flex min-w-0 flex-wrap items-center gap-2";
 const NAME = "flex min-w-0 items-center gap-2";
-const TRAILING = "ml-auto shrink-0";
+const TRAILING = "shrink-0";
 
 const COPY = {
 	leader: "leader",
 	unranked: "unranked",
-	profileOf: (handle: string) => `${handle}'s profile`,
 };
 
-const GITHUB = "https://github.com";
 const FIGURE_TONE = "pewter";
 const YOUR_FIGURE_TONE = "viridian";
 
 export type CategorySeatLeader = {
+	userId: string;
 	handle: string;
 	figure: string;
-	githubLogin?: string;
 	photoUrl?: string;
 	borderUrl?: string;
-	profileHref?: string;
 	you?: boolean;
 };
 
@@ -33,36 +33,21 @@ export type CategoryLeaderProps = {
 	claim?: string;
 };
 
-const LeaderName = ({ handle, githubLogin }: CategorySeatLeader) => (
+const LeaderName = ({ userId, handle }: CategorySeatLeader) => (
 	<Typography variant="hint" as="span">
-		{githubLogin === undefined ? (
-			handle
-		) : (
-			<Link href={`${GITHUB}/${githubLogin}`} external>
-				{handle}
-			</Link>
-		)}
+		<Link href={profilePathFor(userId)}>{handle}</Link>
 	</Typography>
 );
 
-const Face = (leader: CategorySeatLeader) => {
-	const climber = (
-		<Climber
-			name={leader.handle}
-			photoUrl={leader.photoUrl}
-			borderUrl={leader.borderUrl}
-			you={leader.you}
-		/>
-	);
-
-	if (leader.profileHref === undefined) return climber;
-
-	return (
-		<a href={leader.profileHref} aria-label={COPY.profileOf(leader.handle)}>
-			{climber}
-		</a>
-	);
-};
+const Face = (leader: CategorySeatLeader) => (
+	<Climber
+		userId={leader.userId}
+		name={leader.handle}
+		photoUrl={leader.photoUrl}
+		borderUrl={leader.borderUrl}
+		you={leader.you}
+	/>
+);
 
 const Held = (leader: CategorySeatLeader) => (
 	<>
@@ -73,28 +58,31 @@ const Held = (leader: CategorySeatLeader) => (
 			<Face {...leader} />
 			<LeaderName {...leader} />
 		</span>
-		<span className={TRAILING}>
-			<Badge color={leader.you === true ? YOUR_FIGURE_TONE : FIGURE_TONE}>
-				{leader.figure}
-			</Badge>
-		</span>
 	</>
 );
 
-const Open = ({ claim }: Pick<CategoryLeaderProps, "claim">) => (
-	<>
-		<Typography variant="hint" as="span">
-			{COPY.unranked}
-		</Typography>
-		{claim === undefined ? null : (
-			<span className={TRAILING}>
-				<Typography variant="hint" as="span">
-					{claim}
-				</Typography>
-			</span>
-		)}
-	</>
+const Open = () => (
+	<Typography variant="hint" as="span">
+		{COPY.unranked}
+	</Typography>
 );
+
+const Figure = ({ leader, claim }: Omit<CategoryLeaderProps, "category">) => {
+	if (leader !== undefined)
+		return (
+			<Badge color={leader.you === true ? YOUR_FIGURE_TONE : FIGURE_TONE}>
+				{leader.figure}
+			</Badge>
+		);
+
+	if (claim === undefined) return null;
+
+	return (
+		<Typography variant="hint" as="span">
+			{claim}
+		</Typography>
+	);
+};
 
 export const CategoryLeader = ({
 	category,
@@ -102,7 +90,12 @@ export const CategoryLeader = ({
 	claim,
 }: CategoryLeaderProps) => (
 	<div className={LINE}>
-		<Badge>{category}</Badge>
-		{leader === undefined ? <Open claim={claim} /> : <Held {...leader} />}
+		<span className={FACTS}>
+			<Badge>{category}</Badge>
+			{leader === undefined ? <Open /> : <Held {...leader} />}
+		</span>
+		<span className={TRAILING}>
+			<Figure leader={leader} claim={claim} />
+		</span>
 	</div>
 );

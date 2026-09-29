@@ -2,25 +2,24 @@ import type {
 	ClimbClimber,
 	ClimbFallen,
 	ClimbTodayView,
+	ClimbViewer,
 } from "~/modules/run/community/application/community.service";
-import { gateLabelOf } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { lootRefusalOf } from "~/modules/run/community/domain/loot.model";
 import {
-	publicSpaceOf,
-	publicWeightOf,
-} from "~/modules/run/build/domain/publicBuild.model";
-import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
+	type PlayerCardView,
+	playerCardFor,
+} from "~/modules/run/community/application/playerCard.viewmodel";
 import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
-import { OF, WEIGHT } from "~/shared/lib/copy";
 import {
-	COPY as CARD_COPY,
+	type ClimberCardFile,
+	type ClimberCardLoot,
 	type ClimberCardProps,
 } from "~/ui/kanto-theme/ClimberCard.ui";
 import {
 	gateOf,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
-import { publicBuildChipsFor } from "~/modules/run/build/application/publicBuild.viewmodel";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	ALL_SWATCHES,
@@ -28,6 +27,32 @@ import {
 	type SwatchTheme,
 } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+
+export const LOOT_COPY = {
+	take: (figure: string) => `Loot ${figure}`,
+	unbanked: (figure: string) => `${figure} unbanked`,
+	takenBy: (name: string, figure: string) => `looted by ${name} · ${figure}`,
+	takenByYou: (figure: string) => `looted by you · ${figure}`,
+	empty: "nothing left to loot",
+	someone: "another climber",
+} as const;
+
+export type LootHand = {
+	readonly onLoot: (runId: number) => void;
+	readonly pendingRunId?: number;
+};
+
+export const FILE_COPY = {
+	press: (audit: string) => `File ${audit}`,
+	outOfReach: (audit: string) => `${audit} cannot reach them`,
+} as const;
+
+export type FileHand = {
+	readonly audit: string;
+	readonly targetRunIdByUserId: ReadonlyMap<string, number>;
+	readonly onFile: (targetRunId: number) => void;
+	readonly pendingRunId?: number;
+};
 
 export type ClimberMark = "perfect" | "shaky";
 
@@ -65,56 +90,111 @@ const byDepthThenId = (
 const markOf = (band: CoverageBandId | undefined): ClimberMark | undefined =>
 	band === "perfect" || band === "shaky" ? band : undefined;
 
-const categoryNameOf = (code: string | undefined): string | undefined =>
-	code === undefined || !isCategoryCode(code)
-		? undefined
-		: getCategoryMetadata(code).name;
+const takenLabelOf = (fallen: ClimbFallen, viewer: ClimbViewer): string => {
+	const figure = kbLabel(fallen.lootKb);
 
-const statsOf = (entry: ClimbClimber | ClimbFallen) => [
-	{ label: CARD_COPY.streak, value: String(entry.streak ?? 0) },
-	{
-		label: CARD_COPY.bestCategory,
-		value: categoryNameOf(entry.bestCategory) ?? CARD_COPY.none,
-	},
-	{ label: CARD_COPY.gate, value: String(entry.gate) },
-];
+	return fallen.lootedById === viewer.id
+		? LOOT_COPY.takenByYou(figure)
+		: LOOT_COPY.takenBy(fallen.lootedByName ?? LOOT_COPY.someone, figure);
+};
+
+export const lootOf = (
+	fallen: ClimbFallen,
+	viewer: ClimbViewer,
+	hand?: LootHand
+): ClimberCardLoot => {
+	const refusal = lootRefusalOf(
+		{
+			ownerId: fallen.id,
+			lootedById: fallen.lootedById,
+			lootKb: fallen.lootKb,
+		},
+		viewer
+	);
+
+	if (refusal === "already-looted")
+		return { label: takenLabelOf(fallen, viewer) };
+	if (refusal === "nothing-left") return { label: LOOT_COPY.empty };
+	if (refusal !== null || hand === undefined)
+		return { label: LOOT_COPY.unbanked(kbLabel(fallen.lootKb)) };
+
+	return {
+		label: LOOT_COPY.take(kbLabel(fallen.lootKb)),
+		onPress: () => hand.onLoot(fallen.runId),
+		pending: hand.pendingRunId === fallen.runId,
+	};
+};
+
+export const fileOf = (
+	userId: string,
+	hand?: FileHand
+): ClimberCardFile | undefined => {
+	if (hand === undefined) return undefined;
+
+	const label = FILE_COPY.press(hand.audit);
+	const targetRunId = hand.targetRunIdByUserId.get(userId);
+	if (targetRunId === undefined)
+		return { label, refusal: FILE_COPY.outOfReach(hand.audit) };
+
+	return {
+		label,
+		onPress: () => hand.onFile(targetRunId),
+		pending: hand.pendingRunId === targetRunId,
+	};
+};
+
+export const playerCardViewOf = (
+	entry: ClimbClimber | ClimbFallen
+): PlayerCardView => ({
+	userId: entry.id,
+	displayName: entry.displayName,
+	...(entry.photoUrl == null ? {} : { photoUrl: entry.photoUrl }),
+	...(entry.borderUrl == null ? {} : { borderUrl: entry.borderUrl }),
+	...(entry.title === undefined ? {} : { title: entry.title }),
+	...(entry.build === undefined
+		? {}
+		: {
+				run: {
+					gate: entry.gate,
+					coveragePercent: entry.coveragePercent ?? 0,
+					streak: entry.streak ?? 0,
+					storageKb: entry.storageKb ?? 0,
+					build: entry.build,
+					...(entry.bestCategory === undefined
+						? {}
+						: { bestCategory: entry.bestCategory }),
+				},
+			}),
+});
 
 const cardOf = (
 	entry: ClimbClimber | ClimbFallen,
-	chip: LadderClimber
+	chip: LadderClimber,
+	loot?: ClimberCardLoot,
+	file?: ClimberCardFile
 ): ClimberCardProps | undefined => {
 	if (entry.build === undefined) return undefined;
 
 	return {
+		...playerCardFor(playerCardViewOf(entry)),
 		name: chip.name,
 		profileHref: profilePathFor(entry.id),
-		...(entry.handle === undefined ? {} : { handle: entry.handle }),
-		...(entry.title === undefined ? {} : { title: entry.title }),
-		...(chip.photoUrl === undefined ? {} : { photoUrl: chip.photoUrl }),
-		...(chip.borderUrl === undefined ? {} : { borderUrl: chip.borderUrl }),
 		you: chip.you,
 		rival: chip.rival,
 		perfect: chip.mark === "perfect",
 		shaky: chip.mark === "shaky",
 		rescued: chip.rescued,
-		gate: gateLabelOf(entry.gate),
-		...(entry.closingBand === undefined ? {} : { band: entry.closingBand }),
-		...(entry.coveragePercent === undefined
-			? {}
-			: { coveragePercent: entry.coveragePercent }),
-		weight: `${publicWeightOf(entry.build)} ${OF} ${publicSpaceOf(entry.build)} ${WEIGHT}`,
-		...(entry.storageKb === undefined
-			? {}
-			: { storage: kbLabel(entry.storageKb) }),
-		build: publicBuildChipsFor(entry.build),
-		stats: statsOf(entry),
+		...(loot === undefined ? {} : { loot }),
+		...(file === undefined ? {} : { file }),
 	};
 };
 
 const chipOf = (
 	entry: ClimbClimber | ClimbFallen,
 	rivalIds: readonly string[],
-	you: boolean
+	you: boolean,
+	loot?: ClimberCardLoot,
+	file?: ClimberCardFile
 ): LadderClimber => {
 	const mark = markOf(entry.closingBand);
 	const chip: LadderClimber = {
@@ -127,14 +207,16 @@ const chipOf = (
 		rescued: (entry.startedAtGate ?? 0) > 0,
 		...(mark === undefined ? {} : { mark }),
 	};
-	const card = cardOf(entry, chip);
+	const card = cardOf(entry, chip, loot, file);
 
 	return card === undefined ? chip : { ...chip, card };
 };
 
 export const ladderFor = (
 	climb: ClimbTodayView,
-	rivalIds: readonly string[] = []
+	rivalIds: readonly string[] = [],
+	hand?: LootHand,
+	filing?: FileHand
 ): LadderGate[] => {
 	const you = climb.climbers.find((climber) => climber.you);
 	const chartedTo = Math.max(
@@ -155,12 +237,20 @@ export const ladderFor = (
 		climbers: [...climb.climbers]
 			.filter((climber) => climber.gate === swatch.gate)
 			.sort(byDepthThenId)
-			.map((climber) => chipOf(climber, rivalIds, climber.you)),
+			.map((climber) =>
+				chipOf(
+					climber,
+					rivalIds,
+					climber.you,
+					undefined,
+					climber.you ? undefined : fileOf(climber.id, filing)
+				)
+			),
 		fallen: [...climb.fallen]
 			.filter((fallen) => fallen.gate === swatch.gate)
 			.sort(byDepthThenId)
 			.map((fallen) => ({
-				...chipOf(fallen, rivalIds, false),
+				...chipOf(fallen, rivalIds, false, lootOf(fallen, climb.viewer, hand)),
 				runKey: String(fallen.runId),
 			})),
 	}));

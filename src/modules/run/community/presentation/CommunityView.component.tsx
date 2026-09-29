@@ -11,9 +11,12 @@ import type {
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
-import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
-import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
-import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
+import { categoryBoardFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
+import {
+	type FileHand,
+	ladderFor,
+	type LootHand,
+} from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
@@ -26,14 +29,13 @@ import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 const LETTERS = "ABCDEFGH";
 
+const TURNOUT_FACES = 10;
+
 const COPY = {
 	turnoutTitle: "Who showed up",
 	answeredToday: "answered today",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
-	leadersTitle: "Category leaders",
-	leadersSummary: "longest run of correct answers · all-time",
-	seatsChangeHands: "A seat changes hands when somebody beats it.",
 	pollsTitle: "The day’s polls",
 	notDealtYet: "Not dealt yet",
 	countdownHint: "until the next five polls are dealt",
@@ -43,32 +45,11 @@ const COPY = {
 } as const;
 
 const climberOf = (voter: CommunityVoter): ClimberProps => ({
+	userId: voter.id,
 	name: voter.displayName,
 	photoUrl: voter.photoUrl ?? undefined,
 	borderUrl: voter.borderUrl ?? undefined,
 	you: voter.you,
-});
-
-const SEATED = (held: number, total: number) => `${held} of ${total} seated`;
-
-export const seatsFooterFor = (seats: readonly CategorySeat[]): string => {
-	const open = seats.filter(({ leader }) => leader === undefined).length;
-	if (open === 0) return COPY.seatsChangeHands;
-
-	return `${COPY.seatsChangeHands} ${plural(open, "seat")} still open.`;
-};
-
-export const leadersFor = (
-	seats: readonly CategorySeat[]
-): CommunityScreenProps["leaders"] => ({
-	title: COPY.leadersTitle,
-	summary: COPY.leadersSummary,
-	seated: SEATED(
-		seats.filter(({ leader }) => leader !== undefined).length,
-		seats.length
-	),
-	seats: seats.map(categoryLeaderRowFor),
-	footer: seatsFooterFor(seats),
 });
 
 const categoryNameOf = (category: CategoryCode | null): string =>
@@ -132,6 +113,8 @@ export type CommunityViewProps = {
 		onBack: () => void;
 	};
 	incidents?: IncidentsPanelProps;
+	loot?: LootHand;
+	filing?: FileHand;
 };
 
 export const communityScreenPropsFor = ({
@@ -141,9 +124,11 @@ export const communityScreenPropsFor = ({
 	note,
 	back,
 	incidents,
+	filing,
 	rivals = [],
 	openClimberId,
 	onInspectClimber,
+	loot,
 }: CommunityViewProps): CommunityScreenProps => {
 	const empty = view.polls.length === 0;
 	const dayNote = note ?? (empty ? NOTHING_TO_COMPARE_YET : undefined);
@@ -190,7 +175,8 @@ export const communityScreenPropsFor = ({
 					label: COPY.answeredToday,
 					count: String(view.totalPlayers),
 					color: "cerulean",
-					climbers: [],
+					climbers: view.players.slice(0, TURNOUT_FACES).map(climberOf),
+					overflow: Math.max(0, view.players.length - TURNOUT_FACES),
 				},
 			],
 		},
@@ -200,7 +186,7 @@ export const communityScreenPropsFor = ({
 				? { empty: COPY.noPlace }
 				: {
 						track: {
-							gates: ladderFor(view.climb, rivals),
+							gates: ladderFor(view.climb, rivals, loot, filing),
 							...(openClimberId === undefined ? {} : { openId: openClimberId }),
 							...(onInspectClimber === undefined
 								? {}
@@ -209,7 +195,7 @@ export const communityScreenPropsFor = ({
 					}),
 		},
 		...(incidents === undefined ? {} : { incidents }),
-		leaders: leadersFor(view.leaders),
+		leaders: view.leaders.map(categoryBoardFor),
 		polls: {
 			title: COPY.pollsTitle,
 			summary: `${plural(view.totalPlayers, "player")} answered`,

@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { PlayerHoverContext } from "~/shared/hooks/usePlayerHover.hook";
 
 import { Climber, ClimberStack, initialsOf } from "./Climber.ui";
 
@@ -131,5 +134,64 @@ describe("ClimberStack", () => {
 		render(<ClimberStack climbers={[{ name: "Brock" }]} />);
 
 		expect(screen.queryByText(/^\+/)).toBeNull();
+	});
+});
+
+describe("Climber, as a way into a player", () => {
+	it("stays a plain face when it is handed no player", () => {
+		render(<Climber name="Misty" />);
+
+		expect(screen.queryByRole("link")).toBeNull();
+		expect(screen.getByTitle("Misty")).toBeInTheDocument();
+	});
+
+	it("links a player's face to their in-game page", () => {
+		render(<Climber name="Misty" userId="misty-id" />);
+
+		expect(
+			screen.getByRole("link", { name: "Misty's profile" })
+		).toHaveAttribute("href", "/profile/misty-id");
+	});
+
+	it("drops the browser's own tooltip, so it cannot cover the card", () => {
+		render(<Climber name="Misty" userId="misty-id" />);
+
+		expect(screen.queryByTitle("Misty")).toBeNull();
+	});
+
+	it("reports hover and focus to the card, and leaving to put it away", async () => {
+		const show = vi.fn();
+		const hide = vi.fn();
+		const user = userEvent.setup();
+		render(
+			<PlayerHoverContext.Provider value={{ show, hide }}>
+				<Climber name="Misty" userId="misty-id" />
+			</PlayerHoverContext.Provider>
+		);
+		const face = screen.getByRole("link", { name: "Misty's profile" });
+
+		await user.hover(face);
+		expect(show).toHaveBeenCalledWith(
+			"misty-id",
+			expect.objectContaining({ top: expect.any(Number) })
+		);
+
+		await user.unhover(face);
+		expect(hide).toHaveBeenCalled();
+	});
+
+	it("keys a stack of faces by player, so two players sharing a name both draw", () => {
+		render(
+			<ClimberStack
+				climbers={[
+					{ name: "Red", userId: "red-1" },
+					{ name: "Red", userId: "red-2" },
+				]}
+			/>
+		);
+
+		expect(screen.getAllByRole("link", { name: "Red's profile" })).toHaveLength(
+			2
+		);
 	});
 });

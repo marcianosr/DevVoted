@@ -4,6 +4,7 @@ import { createMockRunRecord } from "~/test/runRecord.factory";
 import { TEST_DATES } from "~/test/kanto";
 
 import * as climbQueries from "~/modules/run/community/infrastructure/climbers.repository";
+import { GATE_COUNT } from "~/modules/run/run/domain/rules.model";
 import * as leaderQueries from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import { getRunCommunityService } from "~/modules/run/community/application/community.service";
 import * as communityQueries from "~/modules/run/community/infrastructure/community.repository";
@@ -31,7 +32,7 @@ vi.mock("~/modules/run/community/infrastructure/climbers.repository", () => ({
 }));
 
 vi.mock("~/modules/run/run/infrastructure/categoryLeader.repository", () => ({
-	fetchCategoryLeaders: vi.fn(),
+	fetchCategoryBoards: vi.fn(),
 }));
 
 const DATE = TEST_DATES.birthday;
@@ -220,6 +221,19 @@ const CLIMBERS = [
 		...standing(),
 	},
 ];
+const spoils = (
+	over: {
+		lootedById?: string;
+		lootedByName?: string;
+		lootedKb?: number;
+	} = {}
+) => ({
+	lootedById: null,
+	lootedByName: null,
+	lootedKb: null,
+	...over,
+});
+
 const FALLEN = [
 	{
 		runId: 11,
@@ -232,7 +246,8 @@ const FALLEN = [
 		build: BLUE_BUILD,
 		closingBand: "danger" as const,
 		startedAtGate: 0,
-		...standing(),
+		...standing({ storageKb: 130 }),
+		...spoils(),
 	},
 	{
 		runId: 12,
@@ -245,25 +260,30 @@ const FALLEN = [
 		build: BARE_BUILD,
 		closingBand: null,
 		startedAtGate: 3,
-		...standing(),
+		...standing({ storageKb: 100 }),
+		...spoils({ lootedById: RED, lootedByName: "Red", lootedKb: 42 }),
 	},
 ];
 
-const SEATS = [
-	{
-		category: "js" as const,
-		leader: { userId: "blue-id", handle: "@blue", streak: 21, you: false },
-	},
-	{
-		category: "git" as const,
-		leader: { userId: "red-id", handle: "@red", streak: 13, you: true },
-	},
-];
+const SEATS = {
+	streak: [
+		{
+			category: "js" as const,
+			leader: { userId: "blue-id", handle: "@blue", best: 21, you: false },
+		},
+		{
+			category: "git" as const,
+			leader: { userId: "red-id", handle: "@red", best: 13, you: true },
+		},
+	],
+	correct: [],
+};
 
 const arrangeClimb = () => {
-	vi.mocked(leaderQueries.fetchCategoryLeaders).mockResolvedValue(
-		SEATS.map((seat) => ({ ...seat }))
-	);
+	vi.mocked(leaderQueries.fetchCategoryBoards).mockResolvedValue({
+		streak: SEATS.streak.map((seat) => ({ ...seat })),
+		correct: [],
+	});
 	vi.mocked(climbQueries.fetchClimbMarker).mockResolvedValue(RED_AT);
 	vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(CLIMBERS);
 	vi.mocked(climbQueries.fetchFallenToday).mockResolvedValue(FALLEN);
@@ -433,16 +453,20 @@ describe("getRunCommunityService", () => {
 		expect(result.data.topPercent).toBe(67);
 	});
 
-	it("seats all twelve categories, held first", async () => {
+	it("seats all twelve categories on each board, held first", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		expect(result.data.leaders).toHaveLength(12);
+		expect(result.data.leaders.map(({ measure }) => measure)).toEqual([
+			"streak",
+			"correct",
+		]);
+		expect(result.data.leaders[0].seats).toHaveLength(12);
 		expect(
-			result.data.leaders.slice(0, 2).map(({ category }) => category)
+			result.data.leaders[0].seats.slice(0, 2).map(({ category }) => category)
 		).toEqual(["js", "git"]);
 	});
 
@@ -453,7 +477,7 @@ describe("getRunCommunityService", () => {
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const open = result.data.leaders.filter(
+		const open = result.data.leaders[0].seats.filter(
 			({ leader }) => leader === undefined
 		);
 
@@ -467,7 +491,9 @@ describe("getRunCommunityService", () => {
 
 		expect(result.success).toBe(true);
 		if (!result.success) return;
-		const mine = result.data.leaders.find(({ leader }) => leader?.you === true);
+		const mine = result.data.leaders[0].seats.find(
+			({ leader }) => leader?.you === true
+		);
 
 		expect(mine?.category).toBe("git");
 	});
@@ -481,7 +507,19 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.polls).toEqual([]);
-		expect(result.data.leaders).toHaveLength(12);
+		expect(result.data.leaders[0].seats).toHaveLength(12);
+	});
+
+	it("counts the day's turnout before the viewer has answered anything", async () => {
+		arrange();
+		vi.mocked(communityQueries.fetchConsumedPollsForDay).mockResolvedValue([]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.totalPlayers).toBe(3);
+		expect(result.data.players.map(({ you }) => you)).toContain(true);
 	});
 
 	it("never exposes raw option correct flags in the payload", async () => {
@@ -534,7 +572,6 @@ describe("getRunCommunityService climb map", () => {
 				build: RED_BUILD,
 				closingBand: "shaky",
 				startedAtGate: 0,
-				handle: "red",
 				title: "Completionist",
 				coveragePercent: 69,
 				streak: 0,
@@ -647,7 +684,10 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 0,
 				coveragePercent: 0,
 				streak: 0,
-				storageKb: 0,
+				storageKb: 130,
+				lootKb: 100,
+				lootedById: null,
+				lootedByName: null,
 			},
 			{
 				runId: 12,
@@ -661,12 +701,49 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 3,
 				coveragePercent: 0,
 				streak: 0,
-				storageKb: 0,
+				storageKb: 100,
+				lootKb: 42,
+				lootedById: RED,
+				lootedByName: "Red",
 			},
 		]);
 	});
 
-	it("reads a climber's standing: their handle, title, streak and storage", async () => {
+	it("leaves a rescued run only the gates it climbed itself to loot", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const koga = result.data.climb?.fallen.find(({ id }) => id === "koga");
+		expect(koga?.lootKb).toBe(130 - Math.round((130 * 3) / GATE_COUNT));
+	});
+
+	it("names the reader and whether they have a run to loot into", async () => {
+		arrange();
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb?.viewer).toEqual({ id: RED, hasLiveRun: true });
+	});
+
+	it("reports no run to loot into when the reader is not climbing", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValue(
+			CLIMBERS.filter((climber) => climber.userId !== RED)
+		);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.climb?.viewer.hasLiveRun).toBe(false);
+	});
+
+	it("reads a climber's standing: their title, streak and storage", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
@@ -678,7 +755,7 @@ describe("getRunCommunityService climb map", () => {
 		);
 		expect(blue).toMatchObject({ streak: 6, storageKb: 896 });
 		const you = result.data.climb?.climbers.find((climber) => climber.you);
-		expect(you).toMatchObject({ handle: "red", title: "Completionist" });
+		expect(you).toMatchObject({ title: "Completionist" });
 	});
 
 	it("states coverage as a percentage of what the gate scores against, not as units", async () => {
@@ -716,7 +793,7 @@ describe("getRunCommunityService climb map", () => {
 		expect(green).not.toHaveProperty("bestCategory");
 	});
 
-	it("leaves a handle and a title off an account that wears neither", async () => {
+	it("carries no GitHub handle, and no title for an account wearing none", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });

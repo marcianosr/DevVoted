@@ -12,8 +12,6 @@ import {
 	CommunityView,
 	defaultOpenIndex,
 	pollResultsFor,
-	leadersFor,
-	seatsFooterFor,
 } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
@@ -145,89 +143,26 @@ describe("defaultOpenIndex", () => {
 	});
 });
 
-describe("leadersFor", () => {
-	const gitSeat = {
-		category: "git" as const,
-		leader: {
-			userId: "leader-id",
-			handle: "@blue",
-			githubLogin: "blue",
-			borderUrl: "/borders/x.png",
-			streak: 13,
-			you: true,
-		},
-	};
-
-	it("bridges a held seat onto the row the board draws", () => {
-		expect(leadersFor([gitSeat]).seats).toEqual([
-			{
-				category: "Git",
-				leader: {
-					handle: "@blue",
-					githubLogin: "blue",
-					borderUrl: "/borders/x.png",
-					figure: "13 in a row",
-					profileHref: "/profile/leader-id",
-					you: true,
-				},
-			},
-		]);
-	});
-
-	it("sends the seat's face to that player's page, not to GitHub", () => {
-		const [seat] = leadersFor([gitSeat]).seats;
-
-		expect(seat.leader?.profileHref).toBe("/profile/leader-id");
-		expect(seat.leader?.githubLogin).toBe("blue");
-	});
-
-	it("says what claims a seat nobody holds", () => {
-		expect(leadersFor([{ category: "vue" }]).seats).toEqual([
-			{ category: "Vue", claim: "3 in a row claims it" },
-		]);
-	});
-
-	it("counts the seats that are held", () => {
-		expect(leadersFor([gitSeat, { category: "vue" }]).seated).toBe(
-			"1 of 2 seated"
-		);
-	});
-});
-
-describe("seatsFooterFor", () => {
-	it("states how a seat moves, never that missing loses it", () => {
-		expect(seatsFooterFor([{ category: "vue" }])).toBe(
-			"A seat changes hands when somebody beats it. 1 seat still open."
-		);
-	});
-
-	it("counts the open seats in the plural", () => {
-		expect(
-			seatsFooterFor([{ category: "vue" }, { category: "ruby" }])
-		).toContain("2 seats still open");
-	});
-
-	it("says nothing about open seats when every one is taken", () => {
-		const footer = seatsFooterFor([
-			{
-				category: "git",
-				leader: { userId: "blue-id", handle: "@blue", streak: 13, you: false },
-			},
-		]);
-
-		expect(footer).toBe("A seat changes hands when somebody beats it.");
-	});
-});
-
 describe("CommunityView", () => {
 	const view: RunCommunityView = {
 		date: "2026-05-13",
 		totalPlayers: 3,
 		topPercent: 18,
+		players: [],
 		leaders: [
 			{
-				category: "git",
-				leader: { userId: "owen-id", handle: "@owen", streak: 13, you: false },
+				measure: "streak",
+				seats: [
+					{
+						category: "git",
+						leader: {
+							userId: "owen-id",
+							handle: "@owen",
+							best: 13,
+							you: false,
+						},
+					},
+				],
 			},
 		],
 		polls: [answered(10, 0), answered(11, 1)],
@@ -235,6 +170,7 @@ describe("CommunityView", () => {
 			climbers: [climber("red", 1, 2, true)],
 			fallen: [],
 			bestPosition: null,
+			viewer: { id: "red", hasLiveRun: true },
 		},
 	};
 
@@ -278,6 +214,7 @@ describe("CommunityView", () => {
 						],
 						fallen: [],
 						bestPosition: null,
+						viewer: { id: "red", hasLiveRun: true },
 					},
 				}}
 				swatch={gateSwatchAt(1)}
@@ -315,6 +252,7 @@ describe("CommunityView", () => {
 					],
 					fallen: [],
 					bestPosition: null,
+					viewer: { id: "red", hasLiveRun: true },
 				},
 			})
 		);
@@ -322,7 +260,7 @@ describe("CommunityView", () => {
 		await user.click(screen.getByRole("button", { name: "red" }));
 
 		expect(screen.getByText(".ts")).toBeInTheDocument();
-		expect(screen.getByText("40%")).toBeInTheDocument();
+		expect(screen.getByRole("img", { name: /^40% of / })).toBeInTheDocument();
 		expect(screen.getByText("1 of 4 weight")).toBeInTheDocument();
 	});
 

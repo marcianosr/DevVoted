@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 import { Badge } from "./Badge.ui";
@@ -12,6 +14,7 @@ import { Panel } from "./Panel.ui";
 import { PollResult, type PollResultProps } from "./PollResult.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { Swatch } from "./Swatch.ui";
+import { Tabs } from "./Tabs.ui";
 import { Typography } from "./Typography.ui";
 
 const HEADER = "flex w-full flex-col gap-4";
@@ -23,6 +26,7 @@ const STATS = "flex flex-wrap items-center gap-2";
 const STAT = "flex items-center gap-1.5 text-theme-muted";
 
 const SECTION = "flex w-full flex-col gap-3";
+const BOARDS = "flex w-full flex-col gap-3";
 const SECTION_HEAD = "flex flex-wrap items-baseline gap-3";
 
 const POLLS = "flex w-full flex-col gap-2";
@@ -34,6 +38,7 @@ const CONTROL_SIZE = "md";
 
 export const COPY = {
 	mapHint: "tap an avatar",
+	boards: "which board",
 } as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
@@ -89,7 +94,7 @@ export type CommunityScreenProps = {
 	turnout: CommunityTurnout;
 	map: CommunityMap;
 	incidents?: IncidentsPanelProps;
-	leaders: CommunityLeaders;
+	leaders: readonly CommunityLeaders[];
 	polls: CommunityPolls;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -236,12 +241,8 @@ const CategoryLeaders = ({
 	<Panel>
 		<Panel.Header
 			label={title}
-			meta={
-				<>
-					{summary}
-					{seated === undefined ? null : <Badge>{seated}</Badge>}
-				</>
-			}
+			summary={summary}
+			meta={seated === undefined ? undefined : <Badge>{seated}</Badge>}
 		/>
 		{seats.length === 0 ? null : (
 			<Panel.Rows>
@@ -264,6 +265,27 @@ const CategoryLeaders = ({
 		)}
 	</Panel>
 );
+
+const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
+	const [showing, setShowing] = useState<string | undefined>(undefined);
+	const board = boards.find(({ title }) => title === showing) ?? boards[0];
+
+	if (board === undefined) return null;
+
+	return (
+		<section className={BOARDS}>
+			{boards.length < 2 ? null : (
+				<Tabs
+					label={COPY.boards}
+					items={boards.map(({ title }) => ({ id: title, label: title }))}
+					activeId={board.title}
+					onSelect={setShowing}
+				/>
+			)}
+			<CategoryLeaders {...board} />
+		</section>
+	);
+};
 
 const FivePolls = ({ title, summary, polls }: CommunityPolls) => (
 	<section className={SECTION}>
@@ -291,7 +313,7 @@ export const CommunityScreen = ({
 		<Turnout {...turnout} />
 		<WhereEveryoneIs {...map} />
 		{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
-		<CategoryLeaders {...leaders} />
+		<LeaderBoards boards={leaders} />
 		<FivePolls {...polls} />
 	</Screen>
 );

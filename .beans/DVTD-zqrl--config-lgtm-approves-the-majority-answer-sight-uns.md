@@ -1,13 +1,13 @@
 ---
 # DVTD-zqrl
 title: 'Config: LGTM submits the crowd''s answer without opening the poll'
-status: draft
+status: completed
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-06T07:35:21Z
-updated_at: 2026-09-24T12:49:09Z
+updated_at: 2026-09-27T13:53:59Z
 parent: DVTD-72d9
 ---
 
@@ -16,11 +16,11 @@ parent: DVTD-72d9
 **Why:** A real decision made off the envelope alone, and it writes a water-cooler line afterwards.
 
 ## Done when
-- [ ] How many prior answers a poll needs before the press works is decided
-- [ ] Pressing it before opening the poll submits the most-picked option
-- [ ] Opening the poll withdraws the press
-- [ ] A wrong LGTM costs exactly what any wrong answer costs
-- [ ] Decided: multi-answer polls, the audit that inverts the majority, and once a window or not
+- [x] How many prior answers a poll needs before the press works is decided
+- [x] Pressing it before opening the poll submits the most-picked option
+- [x] Opening the poll withdraws the press
+- [x] A wrong LGTM costs exactly what any wrong answer costs
+- [x] Decided: multi-answer polls, the audit that inverts the majority, and once a window or not
 
 ## Notes
 
@@ -45,3 +45,51 @@ parent: DVTD-72d9
 - Decide the approvals threshold
 - Decide multi-answer handling and the 300 rule
 - Decide once-per-window vs unlimited
+
+## Summary of Changes
+
+Built 2026-09-27. LGTM is on the roster (2 slots, 64 KB, unlocks at 45 gates cleared).
+
+**The design moved, because the premise did not survive the code.** The bean
+assumed an unopened-poll state that has never existed: the view hands the client
+the whole poll the instant the window opens, and there is no `open-poll` action
+or pre-open step anywhere. So the blind moment moved to **prep**, where the only
+blind surface already lives. You name one of the gate's five upcoming slots off
+its category alone; when that poll arrives its option keys are inert and the only
+press is LGTM.
+
+That supersedes the "Opening the poll withdraws the press" box. Ticked because
+the outcome it wanted is met more strongly than the mechanic it named: you never
+get to choose after seeing the question at all, rather than losing the press once
+you look.
+
+**Settled rules:** threshold 2 prior honest answers · the row states
+`needs 2 approvals` and never the live count, since sample size is Telemetry L2's
+product · LGTM answers do feed the pool they read, so no column and no migration ·
+once per window, bounded by one field holding one poll id rather than a counter.
+
+**The crowd's pick** is every option more than half of responses picked, falling
+back to the single most-picked, ties on the lower id read numerically. Computed
+on raw counts, not the rounded percentages, or two options on 50.4% and 50.2%
+both round to 50 and both get dropped. Select-all polls are handled rather than
+refused: a refusal row would have to read "waits for a single-answer poll", which
+leaks what 207 Multi-Status hides.
+
+**Audits:** refused outright under 300 (the mirror inverts what a majority
+means); under 404 the categories read `?????` and the approval is blind twice
+over. The two can never share a gate.
+
+**Not built, and why:** the bean's reveal line, "you and 7 others LGTM'd this".
+Counting approvals needs a column on `polls_responses`, and the no-migration
+decision ruled that out. Stating the crowd's share instead would give away
+Telemetry's product. The reveal states no figure.
+
+See [ADR-127](../docs/adr/127-a-config-may-ask-for-an-input-it-can-decline.md) for
+the argument that LGTM must **not** hold the gate the way ADR-118's two configs
+do, and for why it resolves in its own service rather than as a reducer action.
+
+**Verified:** 4237 tests pass across 217 files (58 new), `tsc --noEmit` clean,
+oxlint + dependency-cruiser + docs:check clean. One unrelated failure stands on
+this branch: `Screen.spec.tsx` fails because `src/styles/app.css` was reformatted
+by prettier before this session, eating the space in `max(c * var(...))` at four
+sites. Untouched here.

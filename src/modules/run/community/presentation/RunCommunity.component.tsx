@@ -1,6 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import {
 	INCIDENTS_DEALING,
@@ -11,7 +10,13 @@ import { useIncidentsFeed } from "~/modules/run/incident/application/useIncident
 import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
-import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
+import type { FileHand } from "~/modules/run/community/application/climbLadder.viewmodel";
+import { auditLabelOf } from "~/modules/run/gate/domain/audit.model";
+import { useAttackTargets } from "~/modules/run/incident/application/useAttackTargets.hook";
+import { useFireAudit } from "~/modules/run/incident/application/useFireAudit.hook";
+import { useLootFallenRun } from "~/modules/run/community/presentation/useLootFallenRun.hook";
+import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
+import { NEW_POLLS_IN, NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import type { RunCommunityView } from "~/modules/run/community/application/community.service";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
@@ -24,6 +29,7 @@ const LOAD_FAILED =
 const EMPTY_COMMUNITY: RunCommunityView = {
 	date: "",
 	totalPlayers: 0,
+	players: [],
 	topPercent: null,
 	leaders: [],
 	polls: [],
@@ -36,6 +42,9 @@ export const RunCommunity = () => {
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
 	const feed = useIncidentsFeed();
+	const loot = useLootFallenRun();
+	const targets = useAttackTargets(run?.heldAudit != null);
+	const fire = useFireAudit();
 
 	const waitingForTomorrow =
 		run?.awaitingTomorrow === true && !countdown.isOpen;
@@ -46,19 +55,45 @@ export const RunCommunity = () => {
 		disabled: waitingForTomorrow,
 		hint: waitingForTomorrow ? SPENT_HINT : undefined,
 	};
-	const timer = countdown.isOpen ? undefined : countdown.label;
+	const timer = countdown.isOpen
+		? undefined
+		: NEW_POLLS_IN(countdown.remaining);
 	const swatch = gateSwatchAt(run?.gatesCleared ?? 0);
 	const incidents = {
 		...incidentsPanelFor(feed.view?.rows ?? []),
 		...(feed.isPending ? { empty: INCIDENTS_DEALING } : {}),
 		...(feed.errorMessage === null ? {} : { empty: INCIDENTS_UNREADABLE }),
 	};
+	const held = targets.view?.heldAudit ?? null;
+	const offers = targets.view?.offers ?? [];
+	const filing: FileHand | undefined =
+		held === null
+			? undefined
+			: {
+					audit: auditLabelOf(held.auditId),
+					targetRunIdByUserId: new Map(
+						offers.map((offer) => [offer.userId, offer.targetRunId])
+					),
+					onFile: (targetRunId: number) => {
+						if (!fire.isPending) fire.mutate({ targetRunId });
+					},
+					...(fire.isPending && fire.variables !== undefined
+						? { pendingRunId: fire.variables.targetRunId }
+						: {}),
+				};
 	const shared = {
 		swatch,
 		countdown: timer,
 		back,
 		incidents,
 		rivals: feed.view?.rivals ?? [],
+		loot: {
+			onLoot: loot.onLoot,
+			...(loot.pendingRunId === undefined
+				? {}
+				: { pendingRunId: loot.pendingRunId }),
+		},
+		...(filing === undefined ? {} : { filing }),
 	};
 
 	if (community.isPending)

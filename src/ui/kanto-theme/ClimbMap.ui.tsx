@@ -17,7 +17,6 @@ export const COPY = {
 	rival: "rival",
 	fallen: "fallen",
 	pb: "your pb",
-	marks: "flicker = shaky · rim = perfect · tag = rescued",
 } as const;
 
 const STAR = "★";
@@ -46,8 +45,7 @@ const CHIP_PRESS = "rounded-md focus:outline-none focus-visible:ring-2";
 
 const ROOT = "relative flex w-full flex-col gap-2";
 
-const LEGEND = "flex w-full flex-col gap-1 pt-1";
-const LEGEND_ROW = "flex flex-wrap items-center gap-x-4 gap-y-1";
+const LEGEND = "flex w-full flex-wrap items-center gap-x-4 gap-y-1 pt-1";
 const LEGEND_ITEM = "flex items-center gap-1.5 text-xs text-theme-muted";
 const DOT = "size-2 shrink-0 rounded-full";
 
@@ -131,18 +129,13 @@ const LegendDot = ({
 
 const Legend = () => (
 	<div className={LEGEND}>
-		<div className={LEGEND_ROW}>
-			<LegendDot className="bg-viridian" word={COPY.you} />
-			<LegendDot className="bg-vermillion" word={COPY.rival} />
-			<LegendDot className="bg-pewter" word={COPY.fallen} />
-			<span className={clsx(LEGEND_ITEM, "text-saffron")}>
-				<span aria-hidden>{STAR}</span>
-				{COPY.pb}
-			</span>
-		</div>
-		<Typography variant="hint" as="span">
-			{COPY.marks}
-		</Typography>
+		<LegendDot className="bg-viridian" word={COPY.you} />
+		<LegendDot className="bg-vermillion" word={COPY.rival} />
+		<LegendDot className="bg-pewter" word={COPY.fallen} />
+		<span className={clsx(LEGEND_ITEM, "text-saffron")}>
+			<span aria-hidden>{STAR}</span>
+			{COPY.pb}
+		</span>
 	</div>
 );
 

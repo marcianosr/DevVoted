@@ -11,6 +11,7 @@ import {
 	usersTable,
 } from "~/database/schema";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
+import type { PollSplitTally } from "~/modules/run/community/domain/pollSplit.model";
 
 export type ConsumedRunPoll = {
 	position: number;
@@ -138,10 +139,7 @@ export const fetchSessionAnswersForDay = async (
 	}));
 };
 
-export type PollSplitRecord = {
-	answeredCount: number;
-	picksByOptionId: Readonly<Record<number, number>>;
-};
+export type PollSplitRecord = PollSplitTally;
 
 export const fetchPollSplit = async (
 	pollId: number
@@ -175,4 +173,26 @@ export const fetchPollSplit = async (
 			picks.map((row) => [row.optionId, row.picks])
 		),
 	};
+};
+
+export const fetchApprovalCounts = async (
+	pollIds: readonly number[]
+): Promise<Readonly<Record<number, number>>> => {
+	if (pollIds.length === 0) return {};
+
+	const rows = await db
+		.select({
+			pollId: pollResponsesTable.poll_id,
+			answeredCount: sql<number>`count(*)::int`,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				inArray(pollResponsesTable.poll_id, [...pollIds]),
+				eq(pollResponsesTable.mirrored, false)
+			)
+		)
+		.groupBy(pollResponsesTable.poll_id);
+
+	return Object.fromEntries(rows.map((row) => [row.pollId, row.answeredCount]));
 };

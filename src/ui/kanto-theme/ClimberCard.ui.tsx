@@ -1,106 +1,103 @@
-import { clsx } from "clsx";
-
-import type { CoverageBandId } from "./CoverageBar.ui";
-import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
-
-import { Badge } from "./Badge.ui";
-import { Button } from "./Button.ui";
+import { Button, type ButtonTone } from "./Button.ui";
 import { Climber } from "./Climber.ui";
-import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Link } from "./Link.ui";
+import {
+	COPY as STANDING_COPY,
+	GateTag,
+	Standing,
+	type StandingProps,
+	type StandingStat,
+} from "./Standing.ui";
 import { Typography } from "./Typography.ui";
+import { WornTitles } from "./WornTitles.ui";
 
 export const COPY = {
-	nothingInstalled: "nothing installed",
-	coverage: "coverage",
-	streak: "current streak",
-	bestCategory: "best category",
-	gate: "current gate",
-	none: "—",
-	privately: "answers, unanswered polls and prefetch stay private",
+	...STANDING_COPY,
 	close: "Close",
+	rescued: "Saved by git tag",
+	noOpenRun: "no open run",
 	profileOf: (name: string) => `${name}'s profile`,
 } as const;
 
-const GITHUB = "https://github.com";
 const CLOSE_GLYPH = "×";
 
 export const CARD_PANEL =
 	"fixed inset-x-4 bottom-4 z-30 sm:absolute sm:inset-x-auto sm:top-full sm:left-1/2 sm:mt-2 sm:w-112 sm:-translate-x-1/2";
 
 const CARD =
-	"flex max-h-[70vh] w-full flex-col gap-3 overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised px-4 py-3";
+	"flex max-h-[70vh] w-full flex-col overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised";
 
-const HEAD = "flex w-full items-center gap-3";
-const NAMING = "flex min-w-0 flex-col";
-const NAME = "text-sm font-bold text-theme-soft";
-const CLOSE = "ml-auto shrink-0";
+const HEAD =
+	"flex w-full items-center gap-3 border-b border-theme-faint px-4 py-3";
+const BODY = "flex w-full flex-col gap-3 px-4 py-3";
+const PRESS_ROW =
+	"flex items-center justify-between gap-2 border-t border-theme-faint pt-3";
+const PRESS_NOTE = "text-xs font-bold text-theme-muted";
+const FACING = "flex shrink-0 flex-col items-center gap-1";
+const RESCUE = "w-16 text-center text-xxs leading-tight text-theme-muted";
+const NAMING = "flex min-w-0 flex-col items-start gap-1.5";
+const NAME = "truncate text-base font-bold text-theme-soft";
+const TRAILING = "ml-auto flex shrink-0 items-start gap-3";
 
-const STATUS = "flex flex-wrap items-center gap-2 text-xs text-theme-muted";
-const LINE = "flex flex-wrap items-baseline gap-2 text-xs text-theme-muted";
-const FIGURE = "font-bold text-theme-soft tabular-nums";
+export type ClimberCardStat = StandingStat;
 
-const BUILD = "flex flex-wrap items-center gap-1.5";
+export type ClimberCardStanding = StandingProps;
 
-const TILES = "grid grid-cols-2 gap-2 sm:grid-cols-3";
-const TILE = "flex flex-col gap-0.5 rounded-lg bg-theme-faint px-3 py-2";
-const TILE_VALUE = "text-sm font-bold text-theme-soft tabular-nums";
+export type ClimberCardLoot = {
+	label: string;
+	onPress?: () => void;
+	pending?: boolean;
+};
 
-const NOTE = "rounded-lg border border-theme-faint px-3 py-2";
-
-export type ClimberCardStat = { label: string; value: string };
+export type ClimberCardFile = ClimberCardLoot & { refusal?: string };
 
 export type ClimberCardProps = {
 	name: string;
-	handle?: string;
+	profileHref?: string;
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;
-	profileHref?: string;
 	you?: boolean;
 	rival?: boolean;
 	perfect?: boolean;
 	shaky?: boolean;
 	rescued?: boolean;
-	gate: string;
-	band?: CoverageBandId;
-	coveragePercent?: number;
-	weight: string;
-	storage?: string;
-	build: readonly ConfigChipProps[];
-	stats: readonly ClimberCardStat[];
+	standing?: ClimberCardStanding;
+	loot?: ClimberCardLoot;
+	file?: ClimberCardFile;
 	onClose?: () => void;
 };
 
-const Naming = ({
-	name,
-	handle,
-	title,
-}: Pick<ClimberCardProps, "name" | "handle" | "title">) => (
-	<span className={NAMING}>
-		<span className={NAME}>
-			{handle === undefined ? (
-				name
-			) : (
-				<Link href={`${GITHUB}/${handle}`} external>
-					{`@${handle}`}
-				</Link>
-			)}
-		</span>
-		{title === undefined ? null : (
-			<Typography variant="hint" as="span">
-				{title}
-			</Typography>
+type CardPressProps = ClimberCardFile & { tone: ButtonTone };
+
+const CardPress = ({
+	label,
+	onPress,
+	pending = false,
+	refusal,
+	tone,
+}: CardPressProps) => (
+	<div className={PRESS_ROW}>
+		{onPress === undefined ? (
+			<span className={PRESS_NOTE}>{refusal ?? label}</span>
+		) : (
+			<Button
+				tone={tone}
+				size="sm"
+				label={label}
+				disabled={pending}
+				onPress={onPress}
+			/>
 		)}
-	</span>
+	</div>
 );
 
 type FaceProps = Pick<
 	ClimberCardProps,
+	| "profileHref"
 	| "name"
 	| "photoUrl"
 	| "borderUrl"
-	| "profileHref"
 	| "you"
 	| "rival"
 	| "perfect"
@@ -109,122 +106,97 @@ type FaceProps = Pick<
 >;
 
 const Face = ({ profileHref, ...climber }: FaceProps) => {
-	const face = <Climber {...climber} size="md" />;
-
-	if (profileHref === undefined) return face;
+	const face = <Climber {...climber} size="lg" />;
 
 	return (
-		<a href={profileHref} aria-label={COPY.profileOf(climber.name)}>
-			{face}
-		</a>
+		<span className={FACING}>
+			{profileHref === undefined ? (
+				face
+			) : (
+				<a href={profileHref} aria-label={COPY.profileOf(climber.name)}>
+					{face}
+				</a>
+			)}
+			{climber.rescued === true ? (
+				<span className={RESCUE}>{COPY.rescued}</span>
+			) : null}
+		</span>
 	);
 };
 
+const Naming = ({
+	profileHref,
+	name,
+	title,
+}: Pick<ClimberCardProps, "profileHref" | "name" | "title">) => (
+	<span className={NAMING}>
+		<span className={NAME}>
+			{profileHref === undefined ? (
+				name
+			) : (
+				<Link href={profileHref}>{name}</Link>
+			)}
+		</span>
+		{title === undefined ? null : <WornTitles titles={[title]} />}
+	</span>
+);
+
+const Body = ({ standing }: Pick<ClimberCardProps, "standing">) =>
+	standing === undefined ? (
+		<Typography variant="hint" as="span">
+			{COPY.noOpenRun}
+		</Typography>
+	) : (
+		<Standing {...standing} namesGate={false} />
+	);
+
 export const ClimberCard = ({
 	name,
-	handle,
+	profileHref,
 	title,
 	photoUrl,
 	borderUrl,
-	profileHref,
 	you = false,
 	rival = false,
 	perfect = false,
 	shaky = false,
 	rescued = false,
-	gate,
-	band,
-	coveragePercent,
-	weight,
-	storage,
-	build,
-	stats,
+	standing,
+	loot,
+	file,
 	onClose,
 }: ClimberCardProps) => (
 	<div className={CARD}>
 		<div className={HEAD}>
 			<Face
+				profileHref={profileHref}
 				name={name}
 				photoUrl={photoUrl}
 				borderUrl={borderUrl}
-				profileHref={profileHref}
 				you={you}
 				rival={rival}
 				perfect={perfect}
 				shaky={shaky}
 				rescued={rescued}
 			/>
-			<Naming name={name} handle={handle} title={title} />
-			{onClose === undefined ? null : (
-				<span className={CLOSE}>
+			<Naming profileHref={profileHref} name={name} title={title} />
+			<span className={TRAILING}>
+				{standing === undefined ? null : <GateTag {...standing.gate} />}
+				{onClose === undefined ? null : (
 					<Button
 						tone="ambient"
 						glyph={CLOSE_GLYPH}
 						label={`${COPY.close} ${name}`}
 						onPress={onClose}
 					/>
-				</span>
-			)}
-		</div>
-
-		<div className={STATUS}>
-			<span className={FIGURE}>{gate}</span>
-			{band === undefined ? null : (
-				<Badge color={COVERAGE_BAND_COLOR[band]}>
-					{COVERAGE_BAND_WORD[band]}
-				</Badge>
-			)}
-			{coveragePercent === undefined ? null : (
-				<span>
-					<span className={FIGURE}>{`${coveragePercent}%`}</span>
-					{` ${COPY.coverage}`}
-				</span>
-			)}
-		</div>
-
-		<div className={LINE}>
-			<span className={FIGURE}>{weight}</span>
-			{storage === undefined ? null : (
-				<>
-					<span aria-hidden>·</span>
-					<span className={FIGURE}>{storage}</span>
-				</>
-			)}
-		</div>
-
-		{build.length === 0 ? (
-			<Typography variant="hint" as="span">
-				{COPY.nothingInstalled}
-			</Typography>
-		) : (
-			<div className={BUILD}>
-				{build.map((config, index) =>
-					config.locked === true ? (
-						<ConfigChip key={index} locked />
-					) : (
-						<ConfigChip key={config.name} {...config} />
-					)
 				)}
-			</div>
-		)}
+			</span>
+		</div>
 
-		{stats.length === 0 ? null : (
-			<div className={TILES}>
-				{stats.map((stat) => (
-					<div key={stat.label} className={TILE}>
-						<Typography variant="hint" as="span">
-							{stat.label}
-						</Typography>
-						<span className={TILE_VALUE}>{stat.value}</span>
-					</div>
-				))}
-			</div>
-		)}
-
-		<div className={clsx(NOTE)}>
-			<Typography variant="hint" as="span">
-				{COPY.privately}
-			</Typography>
+		<div className={BODY}>
+			<Body standing={standing} />
+			{file === undefined ? null : <CardPress {...file} tone="danger" />}
+			{loot === undefined ? null : <CardPress {...loot} tone="action" />}
 		</div>
 	</div>
 );

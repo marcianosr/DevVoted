@@ -1,12 +1,15 @@
 import { CATEGORY_CODES, type CategoryCode } from "~/shared/lib/categories";
 
+export const CATEGORY_MEASURES = ["streak", "correct"] as const;
+
+export type CategoryMeasure = (typeof CATEGORY_MEASURES)[number];
+
 export type CategoryLeader = {
 	readonly userId: string;
 	readonly handle: string;
-	readonly githubLogin?: string;
 	readonly avatarUrl?: string;
 	readonly borderUrl?: string;
-	readonly streak: number;
+	readonly best: number;
 	readonly you: boolean;
 };
 
@@ -15,17 +18,35 @@ export type CategorySeat = {
 	readonly leader?: CategoryLeader;
 };
 
-export const MIN_LEADER_STREAK = 3;
+export type CategoryBoard = {
+	readonly measure: CategoryMeasure;
+	readonly seats: readonly CategorySeat[];
+};
 
-export const isLeadingStreak = (streak: number): boolean =>
-	streak >= MIN_LEADER_STREAK;
+export type CategoryBoards = Readonly<
+	Record<CategoryMeasure, readonly CategorySeat[]>
+>;
 
-const streakOf = (seat: CategorySeat): number => seat.leader?.streak ?? 0;
+export const MIN_LEADER = {
+	streak: 3,
+	correct: 4,
+} satisfies Record<CategoryMeasure, number>;
+
+export const isLeading = (measure: CategoryMeasure, best: number): boolean =>
+	best >= MIN_LEADER[measure];
+
+const bestOf = (seat: CategorySeat): number => seat.leader?.best ?? 0;
 
 export const seatsFor = (held: readonly CategorySeat[]): CategorySeat[] => {
 	const byCategory = new Map(held.map((seat) => [seat.category, seat]));
 
 	return CATEGORY_CODES.map(
 		(category): CategorySeat => byCategory.get(category) ?? { category }
-	).sort((a, b) => streakOf(b) - streakOf(a));
+	).sort((a, b) => bestOf(b) - bestOf(a));
 };
+
+export const boardsFor = (held: CategoryBoards): readonly CategoryBoard[] =>
+	CATEGORY_MEASURES.map((measure) => ({
+		measure,
+		seats: seatsFor(held[measure]),
+	}));

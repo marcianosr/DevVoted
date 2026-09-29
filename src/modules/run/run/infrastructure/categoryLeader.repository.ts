@@ -6,25 +6,27 @@ import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
 import type {
+	CategoryBoards,
 	CategoryLeader,
+	CategoryMeasure,
 	CategorySeat,
 } from "~/modules/run/run/domain/categoryLeader.model";
-import { isLeadingStreak } from "~/modules/run/run/domain/categoryLeader.model";
+import { isLeading } from "~/modules/run/run/domain/categoryLeader.model";
 import type { DbReader } from "~/modules/run/run/infrastructure/runPolls.repository";
 
 type Scope = {
 	readonly category?: CategoryCode;
-	readonly onlyUserId?: string;
 };
 
-const islandsIn = (reader: DbReader, scope: Scope) => {
-	const answers = reader
+const answersIn = (reader: DbReader, scope: Scope) =>
+	reader
 		.select({
 			userId: pollResponsesTable.user_id,
+			runId: pollResponsesTable.run_id,
 			categoryCode: pollsTable.category_code,
 			outcome: pollResponsesTable.outcome,
 			broken:
-				sql<number>`count(*) filter (where ${pollResponsesTable.outcome} = 'wrong') over (partition by ${pollResponsesTable.user_id}, ${pollsTable.category_code} order by ${pollResponsesTable.created_at}, ${pollResponsesTable.response_id} rows unbounded preceding)`.as(
+				sql<number>`count(*) filter (where ${pollResponsesTable.outcome} = 'wrong') over (partition by ${pollResponsesTable.user_id}, ${pollResponsesTable.run_id}, ${pollsTable.category_code} order by ${pollResponsesTable.created_at}, ${pollResponsesTable.response_id} rows unbounded preceding)`.as(
 					"broken"
 				),
 		})
@@ -34,20 +36,22 @@ const islandsIn = (reader: DbReader, scope: Scope) => {
 			and(
 				eq(pollResponsesTable.mirrored, false),
 				isNotNull(pollResponsesTable.user_id),
+				isNotNull(pollResponsesTable.run_id),
 				isNotNull(pollResponsesTable.outcome),
 				scope.category === undefined
 					? undefined
-					: eq(pollsTable.category_code, scope.category),
-				scope.onlyUserId === undefined
-					? undefined
-					: eq(pollResponsesTable.user_id, scope.onlyUserId)
+					: eq(pollsTable.category_code, scope.category)
 			)
 		)
 		.as("answers");
 
+const islandsIn = (reader: DbReader, scope: Scope) => {
+	const answers = answersIn(reader, scope);
+
 	return reader
 		.select({
 			userId: answers.userId,
+			runId: answers.runId,
 			categoryCode: answers.categoryCode,
 			streak:
 				sql<string>`count(*) filter (where ${answers.outcome} = 'correct')`.as(
@@ -55,21 +59,42 @@ const islandsIn = (reader: DbReader, scope: Scope) => {
 				),
 		})
 		.from(answers)
-		.groupBy(answers.userId, answers.categoryCode, answers.broken)
+		.groupBy(
+			answers.userId,
+			answers.runId,
+			answers.categoryCode,
+			answers.broken
+		)
 		.as("islands");
 };
 
-const bestsIn = (reader: DbReader, scope: Scope) => {
+const runBestsIn = (reader: DbReader, scope: Scope) => {
 	const islands = islandsIn(reader, scope);
 
 	return reader
 		.select({
 			userId: islands.userId,
 			categoryCode: islands.categoryCode,
-			best: sql<string>`max(${islands.streak})`.as("best"),
+			runStreak: sql<string>`max(${islands.streak})`.as("run_streak"),
+			runCorrect: sql<string>`sum(${islands.streak})`.as("run_correct"),
 		})
 		.from(islands)
-		.groupBy(islands.userId, islands.categoryCode)
+		.groupBy(islands.userId, islands.runId, islands.categoryCode)
+		.as("run_bests");
+};
+
+const bestsIn = (reader: DbReader, scope: Scope) => {
+	const runBests = runBestsIn(reader, scope);
+
+	return reader
+		.select({
+			userId: runBests.userId,
+			categoryCode: runBests.categoryCode,
+			bestStreak: sql<string>`max(${runBests.runStreak})`.as("best_streak"),
+			bestCorrect: sql<string>`max(${runBests.runCorrect})`.as("best_correct"),
+		})
+		.from(runBests)
+		.groupBy(runBests.userId, runBests.categoryCode)
 		.as("bests");
 };
 
@@ -80,28 +105,50 @@ const LEADER_COLUMNS = {
 	borderId: usersTable.equipped_border_id,
 };
 
-type LeaderRow = {
+type Figure = string | number | null;
+
+type LeaderIdentity = {
 	userId: string | null;
-	best: string | number | null;
 	handle: string | null;
 	displayName: string | null;
 	photoUrl: string | null;
 	borderId: string | null;
 };
 
-const countOf = (value: string | number | null | undefined): number =>
+type BoardRow = LeaderIdentity & {
+	categoryCode: string;
+	bestStreak: Figure;
+	bestCorrect: Figure;
+	streakRank: Figure;
+	correctRank: Figure;
+};
+
+const STANDING = {
+	streak: (row: BoardRow) => ({ best: row.bestStreak, rank: row.streakRank }),
+	correct: (row: BoardRow) => ({
+		best: row.bestCorrect,
+		rank: row.correctRank,
+	}),
+} satisfies Record<
+	CategoryMeasure,
+	(row: BoardRow) => { best: Figure; rank: Figure }
+>;
+
+const TOP_RANK = 1;
+
+const countOf = (value: Figure | undefined): number =>
 	value === null || value === undefined ? 0 : Number(value);
 
 const leaderOf = (
-	row: LeaderRow | undefined,
+	row: LeaderIdentity,
+	best: Figure,
+	measure: CategoryMeasure,
 	userId: string
 ): CategoryLeader | undefined => {
-	if (row === undefined) return undefined;
-
 	if (row.userId === null) return undefined;
 
-	const streak = countOf(row.best);
-	if (!isLeadingStreak(streak)) return undefined;
+	const figure = countOf(best);
+	if (!isLeading(measure, figure)) return undefined;
 
 	const handle = row.handle === null ? row.displayName : `@${row.handle}`;
 	if (handle === null) return undefined;
@@ -112,13 +159,28 @@ const leaderOf = (
 	return {
 		userId: row.userId,
 		handle,
-		streak,
+		best: figure,
 		you: row.userId === userId,
 		...(row.photoUrl === null ? {} : { avatarUrl: row.photoUrl }),
 		...(borderUrl === undefined ? {} : { borderUrl }),
-		...(row.handle === null ? {} : { githubLogin: row.handle }),
 	};
 };
+
+const seatsOf = (
+	rows: readonly BoardRow[],
+	measure: CategoryMeasure,
+	userId: string
+): CategorySeat[] =>
+	rows.flatMap((row): CategorySeat[] => {
+		const { best, rank } = STANDING[measure](row);
+		if (countOf(rank) !== TOP_RANK || !isCategoryCode(row.categoryCode))
+			return [];
+
+		const leader = leaderOf(row, best, measure, userId);
+		if (leader === undefined) return [];
+
+		return [{ category: row.categoryCode, leader }];
+	});
 
 export const fetchCategoryLeader = async (
 	category: CategoryCode,
@@ -128,32 +190,44 @@ export const fetchCategoryLeader = async (
 	const bests = bestsIn(reader, { category });
 
 	const rows = await reader
-		.select({ userId: bests.userId, best: bests.best, ...LEADER_COLUMNS })
+		.select({
+			userId: bests.userId,
+			best: bests.bestStreak,
+			...LEADER_COLUMNS,
+		})
 		.from(bests)
 		.innerJoin(usersTable, eq(usersTable.id, bests.userId))
-		.orderBy(desc(bests.best), asc(bests.userId))
+		.orderBy(desc(bests.bestStreak), asc(bests.userId))
 		.limit(1);
 
-	const leader = leaderOf(rows[0], userId);
+	const row = rows[0];
+	const leader =
+		row === undefined ? undefined : leaderOf(row, row.best, "streak", userId);
 
 	return { category, ...(leader === undefined ? {} : { leader }) };
 };
 
-export const fetchCategoryLeaders = async (
+export const fetchCategoryBoards = async (
 	userId: string,
 	reader: DbReader = db
-): Promise<CategorySeat[]> => {
+): Promise<CategoryBoards> => {
 	const bests = bestsIn(reader, {});
 
 	const ranked = reader
 		.select({
 			categoryCode: bests.categoryCode,
 			userId: bests.userId,
-			best: bests.best,
+			bestStreak: bests.bestStreak,
+			bestCorrect: bests.bestCorrect,
 			...LEADER_COLUMNS,
-			rank: sql<number>`row_number() over (partition by ${bests.categoryCode} order by ${bests.best} desc, ${bests.userId} asc)`.as(
-				"rank"
-			),
+			streakRank:
+				sql<string>`row_number() over (partition by ${bests.categoryCode} order by ${bests.bestStreak} desc, ${bests.userId} asc)`.as(
+					"streak_rank"
+				),
+			correctRank:
+				sql<string>`row_number() over (partition by ${bests.categoryCode} order by ${bests.bestCorrect} desc, ${bests.userId} asc)`.as(
+					"correct_rank"
+				),
 		})
 		.from(bests)
 		.innerJoin(usersTable, eq(usersTable.id, bests.userId))
@@ -163,19 +237,22 @@ export const fetchCategoryLeaders = async (
 		.select({
 			categoryCode: ranked.categoryCode,
 			userId: ranked.userId,
-			best: ranked.best,
+			bestStreak: ranked.bestStreak,
+			bestCorrect: ranked.bestCorrect,
+			streakRank: ranked.streakRank,
+			correctRank: ranked.correctRank,
 			handle: ranked.handle,
 			displayName: ranked.displayName,
 			photoUrl: ranked.photoUrl,
 			borderId: ranked.borderId,
 		})
 		.from(ranked)
-		.where(eq(ranked.rank, 1));
+		.where(
+			sql`${ranked.streakRank} = ${TOP_RANK} or ${ranked.correctRank} = ${TOP_RANK}`
+		);
 
-	return rows.flatMap((row): CategorySeat[] => {
-		const leader = leaderOf(row, userId);
-		if (leader === undefined || !isCategoryCode(row.categoryCode)) return [];
-
-		return [{ category: row.categoryCode, leader }];
-	});
+	return {
+		streak: seatsOf(rows, "streak", userId),
+		correct: seatsOf(rows, "correct", userId),
+	};
 };

@@ -1,4 +1,13 @@
+import type { FocusEvent, MouseEvent, ReactNode } from "react";
+
 import { clsx } from "clsx";
+
+import {
+	PLAYER_CARD_TOOLTIP_ID,
+	type PlayerAnchor,
+	usePlayerHover,
+} from "~/shared/hooks/usePlayerHover.hook";
+import { profilePathFor } from "~/shared/lib/profilePath";
 
 export type ClimberSize = "sm" | "md" | "lg";
 
@@ -34,6 +43,13 @@ const TAG_WORD = "tag";
 const STACK = "flex items-center -space-x-1.5";
 const OVERFLOW = "pl-3 text-xs text-theme-muted tabular-nums";
 
+const FACE_LINK =
+	"inline-flex shrink-0 rounded-md focus:outline-none focus-visible:ring-2";
+
+export const COPY = {
+	profileOf: (name: string) => `${name}'s profile`,
+} as const;
+
 const YOU_NAME = "you";
 const NO_NAME = "?";
 const INITIALS = 2;
@@ -56,9 +72,52 @@ export type ClimberProps = {
 	rescued?: boolean;
 	dimmed?: boolean;
 	size?: ClimberSize;
+	userId?: string;
 };
 
-export const Climber = ({
+const anchorOf = (element: Element): PlayerAnchor => {
+	const { top, bottom, left, right } = element.getBoundingClientRect();
+	return { top, bottom, left, right };
+};
+
+export type PlayerFaceLinkProps = {
+	userId: string;
+	name: string;
+	className?: string;
+	children: ReactNode;
+};
+
+export const PlayerFaceLink = ({
+	userId,
+	name,
+	className = FACE_LINK,
+	children,
+}: PlayerFaceLinkProps) => {
+	const { show, hide } = usePlayerHover();
+	const reveal = (event: MouseEvent<Element> | FocusEvent<Element>) =>
+		show(userId, anchorOf(event.currentTarget));
+
+	return (
+		<a
+			href={profilePathFor(userId)}
+			aria-label={COPY.profileOf(name)}
+			aria-describedby={PLAYER_CARD_TOOLTIP_ID}
+			className={className}
+			onMouseEnter={reveal}
+			onFocus={reveal}
+			onMouseLeave={hide}
+			onBlur={hide}
+		>
+			{children}
+		</a>
+	);
+};
+
+const titleOf = (name: string, you: boolean): string => (you ? YOU_NAME : name);
+
+type FaceProps = Omit<ClimberProps, "userId"> & { titled: boolean };
+
+const Face = ({
 	name,
 	photoUrl,
 	borderUrl,
@@ -69,9 +128,10 @@ export const Climber = ({
 	rescued = false,
 	dimmed = false,
 	size = "sm",
-}: ClimberProps) => (
+	titled,
+}: FaceProps) => (
 	<span
-		title={you ? YOU_NAME : name}
+		title={titled ? titleOf(name, you) : undefined}
 		className={clsx(CHIP, SIZE[size], dimmed && DIMMED, shaky && SHAKY)}
 	>
 		<span
@@ -100,6 +160,15 @@ export const Climber = ({
 	</span>
 );
 
+export const Climber = ({ userId, ...face }: ClimberProps) =>
+	userId === undefined ? (
+		<Face {...face} titled />
+	) : (
+		<PlayerFaceLink userId={userId} name={face.name}>
+			<Face {...face} titled={false} />
+		</PlayerFaceLink>
+	);
+
 export type ClimberStackProps = {
 	climbers: readonly ClimberProps[];
 	overflow?: number;
@@ -113,7 +182,7 @@ export const ClimberStack = ({
 }: ClimberStackProps) => (
 	<span className={STACK}>
 		{climbers.map((climber) => (
-			<Climber key={climber.name} {...climber} size={size} />
+			<Climber key={climber.userId ?? climber.name} {...climber} size={size} />
 		))}
 		{overflow === 0 ? null : (
 			<span className={OVERFLOW}>{`+${overflow.toLocaleString()}`}</span>

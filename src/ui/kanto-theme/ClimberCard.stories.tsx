@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { kantoClimberCard } from "~/test/kantoCommunity.factory";
+import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
 
 import { ClimberCard } from "./ClimberCard.ui";
 import { Screen } from "./Screen.ui";
@@ -26,36 +26,83 @@ export const ARival: Story = {
 	render: () => on(<ClimberCard {...kantoClimberCard()} onClose={() => {}} />),
 };
 
+export const ARivalYouCanFileAt: Story = {
+	render: () =>
+		on(
+			<ClimberCard
+				{...kantoClimberCard()}
+				file={{ label: "File 409 Conflict", onPress: () => {} }}
+			/>
+		),
+};
+
+export const ARivalOutOfReach: Story = {
+	render: () =>
+		on(
+			<ClimberCard
+				{...kantoClimberCard()}
+				file={{
+					label: "File 409 Conflict",
+					refusal: "409 Conflict cannot reach them",
+				}}
+			/>
+		),
+};
+
 export const ClimbingBare: Story = {
 	render: () =>
 		on(
 			<ClimberCard
 				{...kantoClimberCard()}
 				name="Oak"
-				handle={undefined}
 				title={undefined}
-				build={[]}
-				storage={undefined}
-				weight="0 of 4 weight"
+				standing={kantoStanding({
+					build: [],
+					freeSlots: 4,
+					weight: "0 of 4 weight",
+				})}
 			/>
 		),
 };
 
+const fallen = () => {
+	const standing = kantoStanding();
+
+	return {
+		...kantoClimberCard(),
+		name: "Blaine",
+		title: undefined,
+		rival: false,
+		perfect: false,
+		shaky: true,
+		standing: {
+			...standing,
+			gate: {
+				...standing.gate,
+				coverage: { ...standing.gate.coverage, held: 18 },
+			},
+		},
+	};
+};
+
 export const AFallenRun: Story = {
+	render: () => on(<ClimberCard {...fallen()} />),
+};
+
+export const AFallenRunYouCanLoot: Story = {
 	render: () =>
 		on(
 			<ClimberCard
-				{...kantoClimberCard()}
-				name="Blaine"
-				handle="blaine"
-				title={undefined}
-				rival={false}
-				perfect={false}
-				shaky
-				band="danger"
-				coveragePercent={18}
-				gate="gate 3 · Thunder"
+				{...fallen()}
+				loot={{ label: "Loot 138 KB", onPress: () => {} }}
 			/>
+		),
+};
+
+export const AFallenRunAlreadyLooted: Story = {
+	render: () =>
+		on(
+			<ClimberCard {...fallen()} loot={{ label: "looted by Misty · 138 KB" }} />
 		),
 };
 
@@ -65,10 +112,19 @@ export const YourOwnCard: Story = {
 			<ClimberCard
 				{...kantoClimberCard()}
 				name="Marciano"
-				handle="marciano"
 				you
 				rival={false}
 				rescued
 			/>
 		),
+};
+
+export const NoRunOpen: Story = {
+	render: () =>
+		on(<ClimberCard {...kantoClimberCard()} name="Oak" standing={undefined} />),
+};
+
+export const AsAHoverCard: Story = {
+	render: () =>
+		on(<ClimberCard {...kantoClimberCard()} profileHref={undefined} />),
 };

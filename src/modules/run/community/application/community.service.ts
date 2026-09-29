@@ -17,6 +17,7 @@ import {
 	type ClimbMarker,
 	trackPosition,
 } from "~/modules/run/community/domain/climbMap.model";
+import { lootableKbOf } from "~/modules/run/community/application/loot.service";
 import {
 	answerOutcome,
 	type AnswerOutcome,
@@ -25,6 +26,7 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 import {
 	type ClimberRow,
+	type FallenRow,
 	fetchActiveClimbers,
 	fetchBestCategories,
 	fetchClimbMarker,
@@ -45,10 +47,10 @@ import {
 } from "~/modules/run/run/infrastructure/run.repository";
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import {
-	type CategorySeat,
-	seatsFor,
+	type CategoryBoard,
+	boardsFor,
 } from "~/modules/run/run/domain/categoryLeader.model";
-import { fetchCategoryLeaders } from "~/modules/run/run/infrastructure/categoryLeader.repository";
+import { fetchCategoryBoards } from "~/modules/run/run/infrastructure/categoryLeader.repository";
 
 export type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 
@@ -93,7 +95,6 @@ export type RunCommunityPoll = {
 };
 
 export type ClimbStanding = {
-	handle?: string;
 	title?: string;
 	coveragePercent?: number;
 	streak?: number;
@@ -122,19 +123,29 @@ export type ClimbFallen = ClimbMarker &
 		build: PublicBuild;
 		closingBand?: CoverageBandId;
 		startedAtGate: number;
+		lootKb: number;
+		lootedById: string | null;
+		lootedByName: string | null;
 	};
+
+export type ClimbViewer = {
+	id: string;
+	hasLiveRun: boolean;
+};
 
 export type ClimbTodayView = {
 	climbers: ClimbClimber[];
 	fallen: ClimbFallen[];
 	bestPosition: number | null;
+	viewer: ClimbViewer;
 };
 
 export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
+	players: readonly CommunityVoter[];
 	topPercent: number | null;
-	leaders: CategorySeat[];
+	leaders: readonly CategoryBoard[];
 	polls: RunCommunityPoll[];
 	climb: ClimbTodayView | null;
 };
@@ -165,6 +176,16 @@ const toPercent = (part: number, total: number): number =>
 
 const viewerFirst = (voters: CommunityVoter[]): CommunityVoter[] =>
 	[...voters].sort((a, b) => Number(b.you) - Number(a.you));
+
+const playersOf = (
+	answers: readonly CommunityAnswer[],
+	userId: string
+): CommunityVoter[] =>
+	viewerFirst(
+		[...new Map(answers.map(({ user }) => [user.id, user])).values()].map(
+			(user) => ({ ...user, you: user.id === userId })
+		)
+	);
 
 const buildPollDetail = (
 	poll: CommunityPollRecord,
@@ -238,10 +259,12 @@ const topPercentFor = (
 const EMPTY_VIEW = (
 	date: string,
 	climb: ClimbTodayView | null,
-	leaders: CategorySeat[] = []
+	leaders: readonly CategoryBoard[] = [],
+	players: readonly CommunityVoter[] = []
 ): RunCommunityView => ({
 	date,
-	totalPlayers: 0,
+	totalPlayers: players.length,
+	players,
 	topPercent: null,
 	leaders,
 	polls: [],
@@ -272,7 +295,6 @@ const standingOf = (
 	row: ClimberRow,
 	bestCategory: string | undefined
 ): ClimbStanding => ({
-	...(row.handle === null ? {} : { handle: row.handle }),
 	...(row.title === null ? {} : { title: row.title }),
 	coveragePercent: Math.round(
 		percentOf(runCoverageOf(row.coverageUnits, row.gate))
@@ -281,6 +303,24 @@ const standingOf = (
 	storageKb: row.storageKb,
 	...(bestCategory === undefined ? {} : { bestCategory }),
 });
+
+const fallenOf =
+	(bestCategories: Map<string, string>) =>
+	(row: FallenRow): ClimbFallen => ({
+		runId: row.runId,
+		id: row.userId,
+		displayName: row.displayName ?? row.userId,
+		photoUrl: row.photoUrl,
+		borderUrl: row.borderUrl,
+		gate: row.gate,
+		pollsIntoGate: row.pollsIntoGate,
+		build: row.build,
+		lootKb: lootableKbOf(row),
+		lootedById: row.lootedById,
+		lootedByName: row.lootedByName,
+		...closeOf(row),
+		...standingOf(row, bestCategories.get(row.userId)),
+	});
 
 const buildClimbToday = async ({
 	userId,
@@ -334,19 +374,9 @@ const buildClimbToday = async ({
 
 	return {
 		climbers: deepestPerUser([...others, viewer]),
-		fallen: fallen.map((row) => ({
-			runId: row.runId,
-			id: row.userId,
-			displayName: row.displayName ?? row.userId,
-			photoUrl: row.photoUrl,
-			borderUrl: row.borderUrl,
-			gate: row.gate,
-			pollsIntoGate: row.pollsIntoGate,
-			build: row.build,
-			...closeOf(row),
-			...standingOf(row, bestCategories.get(row.userId)),
-		})),
+		fallen: fallen.map(fallenOf(bestCategories)),
 		bestPosition,
+		viewer: { id: userId, hasLiveRun: viewerRow !== undefined },
 	};
 };
 
@@ -379,8 +409,9 @@ export const getRunCommunityService = async ({
 		]);
 		const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
 
-		const leaders = seatsFor(await fetchCategoryLeaders(userId));
-		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders);
+		const leaders = boardsFor(await fetchCategoryBoards(userId));
+		const players = playersOf(answers, userId);
+		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders, players);
 
 		const views = consumed.map((entry, index): RunCommunityPoll => {
 			const poll = pollsById.get(entry.poll_id);
@@ -420,7 +451,8 @@ export const getRunCommunityService = async ({
 
 		return {
 			date,
-			totalPlayers: new Set(answers.map((answer) => answer.user.id)).size,
+			totalPlayers: players.length,
+			players,
 			topPercent: topPercentFor(userId, polls, answers),
 			leaders,
 			polls: views,

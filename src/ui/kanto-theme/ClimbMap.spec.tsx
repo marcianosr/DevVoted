@@ -3,9 +3,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { LadderGate } from "~/modules/run/community/application/climbLadder.viewmodel";
+import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
 
 import { ClimbMap, COPY } from "./ClimbMap.ui";
 import { COPY as CARD_COPY, type ClimberCardProps } from "./ClimberCard.ui";
+import type { StandingProps } from "./Standing.ui";
 
 const gate = (over: Partial<LadderGate> & { gate: number }): LadderGate => ({
 	name: `Gate ${over.gate}`,
@@ -35,15 +37,12 @@ const MISTY_BUILD = [
 
 const cardFor = (
 	name: string,
-	over: Partial<ClimberCardProps> = {}
-): ClimberCardProps => ({
-	name,
-	gate: "gate 6 · Soul",
-	weight: "5 of 6 weight",
-	build: MISTY_BUILD,
-	stats: [],
-	...over,
-});
+	build: StandingProps["build"] = MISTY_BUILD
+): ClimberCardProps =>
+	kantoClimberCard({
+		name,
+		standing: kantoStanding({ weight: "5 of 6 weight", build }),
+	});
 
 const GATES: LadderGate[] = [
 	gate({ gate: 0, name: "Pallet" }),
@@ -61,7 +60,7 @@ const GATES: LadderGate[] = [
 			{
 				...chip("Blaine"),
 				runKey: "77",
-				card: cardFor("Blaine", { build: [] }),
+				card: cardFor("Blaine", []),
 			},
 		],
 	}),
@@ -164,7 +163,6 @@ describe("ClimbMap", () => {
 		);
 
 		expect(screen.getByText(".ts")).toBeInTheDocument();
-		expect(screen.getByText("gate 6 · Soul")).toBeInTheDocument();
 		expect(screen.getByText("5 of 6 weight")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Misty" })).toHaveAttribute(
 			"aria-pressed",
@@ -201,7 +199,9 @@ describe("ClimbMap", () => {
 			/>
 		);
 
-		expect(screen.queryByText(CARD_COPY.privately)).toBeNull();
+		expect(
+			screen.queryByRole("button", { name: `${CARD_COPY.close} Misty` })
+		).toBeNull();
 	});
 
 	it("says so when the open climber runs nothing at all", () => {
@@ -210,7 +210,7 @@ describe("ClimbMap", () => {
 				gates={[
 					gate({
 						gate: 0,
-						climbers: [chip("Oak", { card: cardFor("Oak", { build: [] }) })],
+						climbers: [chip("Oak", { card: cardFor("Oak", []) })],
 					}),
 				]}
 				openId="oak"
@@ -238,12 +238,11 @@ describe("ClimbMap", () => {
 		expect(screen.getByTitle("Koga")).toBeInTheDocument();
 	});
 
-	it("reads out what every mark on the track means", () => {
+	it("names the colour every face on the track can wear", () => {
 		render(<ClimbMap gates={GATES} />);
 
 		expect(screen.getByText(COPY.you)).toBeInTheDocument();
 		expect(screen.getByText(COPY.rival)).toBeInTheDocument();
 		expect(screen.getByText(COPY.fallen)).toBeInTheDocument();
-		expect(screen.getByText(COPY.marks)).toBeInTheDocument();
 	});
 });

@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, like, lt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { db } from "~/database/db";
 import {
@@ -74,37 +75,73 @@ export type ClimberRow = {
 	storageKb: number;
 };
 
+const CLIMBER_COLUMNS = {
+	userId: runsTable.user_id,
+	displayName: usersTable.display_name,
+	photoUrl: usersTable.photo_url,
+	equippedBorderId: usersTable.equipped_border_id,
+	gate: runStatesTable.gates_cleared,
+	pollsIntoGate,
+	build: publicBuildColumn,
+	lastClose: lastCloseColumn,
+	startedAtGate: startedAtGateColumn,
+	handle: usersTable.github_username,
+	titleIds: usersTable.equipped_title_ids,
+	coverageUnits: runStatesTable.coverage,
+	streak: streakColumn,
+	storageKb: storageColumn,
+};
+
+type ClimberSelection = Omit<
+	ClimberRow,
+	"borderUrl" | "build" | "closingBand" | "title"
+> & {
+	equippedBorderId: string | null;
+	build: StoredPublicBuild;
+	lastClose: LastClose | null;
+	titleIds: string[];
+};
+
+const toClimberRow = ({
+	equippedBorderId,
+	build,
+	lastClose,
+	titleIds,
+	...row
+}: ClimberSelection): ClimberRow => ({
+	...row,
+	borderUrl: borderUrlOf(equippedBorderId),
+	build: publicBuildOf(build),
+	closingBand: lastClose?.band ?? null,
+	title: primaryTitleName(titleIds),
+});
+
+const isLiveSessionRun = and(
+	eq(runsTable.mode, "session"),
+	eq(runsTable.status, "active")
+);
+
 export const fetchActiveClimbers = async (): Promise<ClimberRow[]> => {
 	const rows = await db
-		.select({
-			userId: runsTable.user_id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			equippedBorderId: usersTable.equipped_border_id,
-			gate: runStatesTable.gates_cleared,
-			pollsIntoGate,
-			build: publicBuildColumn,
-			lastClose: lastCloseColumn,
-			startedAtGate: startedAtGateColumn,
-			handle: usersTable.github_username,
-			titleIds: usersTable.equipped_title_ids,
-			coverageUnits: runStatesTable.coverage,
-			streak: streakColumn,
-			storageKb: storageColumn,
-		})
+		.select(CLIMBER_COLUMNS)
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
-		.where(and(eq(runsTable.mode, "session"), eq(runsTable.status, "active")));
-	return rows.map(
-		({ equippedBorderId, build, lastClose, titleIds, ...row }) => ({
-			...row,
-			borderUrl: borderUrlOf(equippedBorderId),
-			build: publicBuildOf(build),
-			closingBand: lastClose?.band ?? null,
-			title: primaryTitleName(titleIds),
-		})
-	);
+		.where(isLiveSessionRun);
+	return rows.map(toClimberRow);
+};
+
+export const fetchActiveClimberFor = async (
+	userId: string
+): Promise<ClimberRow | null> => {
+	const [row] = await db
+		.select(CLIMBER_COLUMNS)
+		.from(runsTable)
+		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
+		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
+		.where(and(isLiveSessionRun, eq(runsTable.user_id, userId)))
+		.limit(1);
+	return row === undefined ? null : toClimberRow(row);
 };
 
 export const fetchClimbMarker = async (
@@ -118,66 +155,71 @@ export const fetchClimbMarker = async (
 	return row ?? null;
 };
 
-export type FallenRow = {
+const looterTable = alias(usersTable, "looter");
+
+export type FallenRow = ClimberRow & {
 	runId: number;
-	userId: string;
-	displayName: string | null;
-	photoUrl: string | null;
-	borderUrl: string | null;
-	gate: number;
-	pollsIntoGate: number;
-	build: PublicBuild;
-	closingBand: CoverageBandId | null;
-	startedAtGate: number;
-	handle: string | null;
-	title: string | null;
-	coverageUnits: number;
-	streak: number;
-	storageKb: number;
+	lootedById: string | null;
+	lootedByName: string | null;
+	lootedKb: number | null;
 };
 
-export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
+const FALLEN_COLUMNS = {
+	runId: runsTable.id,
+	lootedById: runsTable.looted_by_user_id,
+	lootedByName: looterTable.display_name,
+	lootedKb: runsTable.loot_amount,
+	...CLIMBER_COLUMNS,
+};
+
+type FallenSelection = Omit<FallenRow, keyof ClimberRow> & ClimberSelection;
+
+const toFallenRow = ({
+	runId,
+	lootedById,
+	lootedByName,
+	lootedKb,
+	...row
+}: FallenSelection): FallenRow => ({
+	runId,
+	lootedById,
+	lootedByName,
+	lootedKb,
+	...toClimberRow(row),
+});
+
+const fellOn = (date: string) => {
 	const { start: dayStart, end: dayEnd } = localDayRange(date);
 
-	const rows = await db
-		.select({
-			runId: runsTable.id,
-			userId: runsTable.user_id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			equippedBorderId: usersTable.equipped_border_id,
-			gate: runStatesTable.gates_cleared,
-			pollsIntoGate,
-			build: publicBuildColumn,
-			lastClose: lastCloseColumn,
-			startedAtGate: startedAtGateColumn,
-			handle: usersTable.github_username,
-			titleIds: usersTable.equipped_title_ids,
-			coverageUnits: runStatesTable.coverage,
-			streak: streakColumn,
-			storageKb: storageColumn,
-		})
+	return and(
+		eq(runsTable.mode, "session"),
+		eq(runsTable.status, "finished"),
+		eq(runsTable.completion_reason, "dead"),
+		gte(runsTable.finished_at, dayStart),
+		lt(runsTable.finished_at, dayEnd)
+	);
+};
+
+const selectFallen = (where: ReturnType<typeof fellOn>) =>
+	db
+		.select(FALLEN_COLUMNS)
 		.from(runsTable)
 		.innerJoin(runStatesTable, eq(runStatesTable.run_id, runsTable.id))
 		.innerJoin(usersTable, eq(usersTable.id, runsTable.user_id))
-		.where(
-			and(
-				eq(runsTable.mode, "session"),
-				eq(runsTable.status, "finished"),
-				eq(runsTable.completion_reason, "dead"),
-				gte(runsTable.finished_at, dayStart),
-				lt(runsTable.finished_at, dayEnd)
-			)
-		);
-	return rows.map(
-		({ equippedBorderId, build, lastClose, titleIds, ...row }) => ({
-			...row,
-			borderUrl: borderUrlOf(equippedBorderId),
-			build: publicBuildOf(build),
-			closingBand: lastClose?.band ?? null,
-			title: primaryTitleName(titleIds),
-		})
-	);
+		.leftJoin(looterTable, eq(looterTable.id, runsTable.looted_by_user_id))
+		.where(where);
+
+export const fetchFallenToday = async (date: string): Promise<FallenRow[]> => {
+	const rows = await selectFallen(fellOn(date));
+	return rows.map(toFallenRow);
+};
+
+export const fetchFallenRun = async (
+	runId: number,
+	date: string
+): Promise<FallenRow | null> => {
+	const [row] = await selectFallen(and(fellOn(date), eq(runsTable.id, runId)));
+	return row === undefined ? null : toFallenRow(row);
 };
 
 export const fetchPersonalBestPosition = async (

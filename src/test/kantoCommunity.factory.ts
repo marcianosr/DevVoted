@@ -6,11 +6,13 @@ import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { ClimbMapProps } from "~/ui/kanto-theme/ClimbMap.ui";
 import type { ClimberCardProps } from "~/ui/kanto-theme/ClimberCard.ui";
+import type { StandingProps } from "~/ui/kanto-theme/Standing.ui";
 import type {
 	LadderClimber,
 	LadderGate,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+import { baseGateLadderAt } from "~/modules/run/gate/domain/gate.model";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 import { kantoIncidents } from "./kantoIncidents.factory";
@@ -19,7 +21,8 @@ import { gateSwatchAt } from "./swatchTrack.factory";
 export const COMMUNITY_SHOP_LABEL = "Back to the shop";
 export const COMMUNITY_PREP_LABEL = "Prep for Rainbow";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
-export const COMMUNITY_LEADERS_TITLE = "Category leaders";
+export const COMMUNITY_STREAK_TITLE = "Streak leaders";
+export const COMMUNITY_CORRECT_TITLE = "Correct leaders";
 
 const CLEARED_GATE = 4;
 
@@ -74,25 +77,41 @@ const ladderChip = (
 	...over,
 });
 
+const standingAt = (
+	gate: number,
+	held: number,
+	over: Partial<StandingProps> = {}
+): StandingProps => ({
+	gate: {
+		name: gateSwatchAt(gate).gateName,
+		label: `gate ${gate}`,
+		swatch: gateSwatchAt(gate),
+		coverage: { ...baseGateLadderAt(gate), held },
+	},
+	weight: "7 of 8 weight",
+	build: YOUR_CHIPS,
+	freeSlots: 1,
+	stats: [
+		{ label: "run storage", value: "512 KB" },
+		{ label: "streak", value: "3" },
+		{ label: "best", value: "TypeScript" },
+	],
+	...over,
+});
+
 const cardFor = (
 	climber: LadderClimber,
 	over: Partial<ClimberCardProps> = {}
 ): ClimberCardProps => ({
 	name: climber.name,
+	profileHref: `/profile/${climber.id}`,
 	...(climber.borderUrl === undefined ? {} : { borderUrl: climber.borderUrl }),
 	you: climber.you,
 	rival: climber.rival,
 	perfect: climber.mark === "perfect",
 	shaky: climber.mark === "shaky",
 	rescued: climber.rescued,
-	gate: "gate 4 · Lavender",
-	weight: "7 of 8 weight",
-	build: YOUR_CHIPS,
-	stats: [
-		{ label: "current streak", value: "3" },
-		{ label: "best category", value: "TypeScript" },
-		{ label: "current gate", value: "4" },
-	],
+	standing: standingAt(CLEARED_GATE, 40),
 	...over,
 });
 
@@ -101,47 +120,48 @@ const withCard = (
 	over: Partial<ClimberCardProps> = {}
 ): LadderClimber => ({ ...climber, card: cardFor(climber, over) });
 
+const MISTY_STANDING = standingAt(3, 70, {
+	weight: "9 of 12 weight",
+	build: RIVAL_CHIPS,
+	freeSlots: 3,
+	stats: [
+		{ label: "run storage", value: "896 KB" },
+		{ label: "streak", value: "6" },
+		{ label: "best", value: "JavaScript" },
+	],
+});
+
 const LADDER_STANDING: Readonly<Record<number, LadderClimber[]>> = {
-	1: [withCard(ladderChip(oak), { gate: "gate 1 · Boulder", build: [] })],
+	1: [
+		withCard(ladderChip(oak), {
+			standing: standingAt(1, 12, { build: [], freeSlots: 4 }),
+		}),
+	],
 	2: [
 		withCard(ladderChip(brock, { mark: "shaky" }), {
-			gate: "gate 2 · Cascade",
-			band: "shaky",
-			coveragePercent: 31,
+			standing: standingAt(2, 31),
 		}),
 	],
 	3: [
 		withCard(ladderChip(misty, { rival: true, mark: "perfect" }), {
-			handle: "misty",
 			title: "Heavy Pipeline",
-			gate: "gate 3 · Thunder",
-			band: "perfect",
-			coveragePercent: 70,
-			weight: "9 of 12 weight",
-			storage: "896 KB",
-			build: RIVAL_CHIPS,
-			stats: [
-				{ label: "current streak", value: "6" },
-				{ label: "best category", value: "JavaScript" },
-				{ label: "current gate", value: "3" },
-			],
+			standing: MISTY_STANDING,
 		}),
 	],
 	4: [
 		withCard(ladderChip(you, { mark: "perfect" }), {
-			handle: "marciano",
-			band: "perfect",
-			coveragePercent: 64,
-			storage: "512 KB",
+			standing: standingAt(4, 64),
 		}),
 		withCard(ladderChip(surge, { rescued: true })),
 		withCard(ladderChip(erika)),
-		withCard(ladderChip(koga), { build: [] }),
+		withCard(ladderChip(koga), {
+			standing: standingAt(4, 40, { build: [], freeSlots: 8 }),
+		}),
 		withCard(ladderChip(sabrina)),
 	],
 	5: [
 		withCard(ladderChip(giovanni, { rival: true }), {
-			gate: "gate 5 · Rainbow",
+			standing: standingAt(5, 55),
 		}),
 	],
 };
@@ -149,10 +169,7 @@ const LADDER_STANDING: Readonly<Record<number, LadderClimber[]>> = {
 const LADDER_FALLEN: Readonly<Record<number, LadderClimber[]>> = {
 	3: [
 		withCard(ladderChip(blaine, { mark: "shaky" }), {
-			gate: "gate 3 · Thunder",
-			band: "danger",
-			coveragePercent: 18,
-			storage: "64 KB",
+			standing: standingAt(3, 18),
 		}),
 	],
 };
@@ -179,22 +196,18 @@ const ladderGates = (): LadderGate[] =>
 
 export const kantoClimbMap = (): ClimbMapProps => ({ gates: ladderGates() });
 
-export const kantoClimberCard = (): ClimberCardProps =>
+export const kantoClimberCard = (
+	over: Partial<ClimberCardProps> = {}
+): ClimberCardProps =>
 	cardFor(ladderChip(misty, { rival: true, mark: "perfect" }), {
-		handle: "misty",
 		title: "Heavy Pipeline",
-		gate: "gate 3 · Thunder",
-		band: "perfect",
-		coveragePercent: 70,
-		weight: "9 of 12 weight",
-		storage: "896 KB",
-		build: RIVAL_CHIPS,
-		stats: [
-			{ label: "current streak", value: "6" },
-			{ label: "best category", value: "JavaScript" },
-			{ label: "current gate", value: "3" },
-		],
+		standing: MISTY_STANDING,
+		...over,
 	});
+
+export const kantoStanding = (
+	over: Partial<StandingProps> = {}
+): StandingProps => ({ ...MISTY_STANDING, ...over });
 
 const bands = (): TurnoutBand[] => [
 	{
@@ -219,42 +232,77 @@ const bands = (): TurnoutBand[] => [
 	},
 ];
 
+const IN_A_ROW = (best: number) => `${best} in a row`;
+const CORRECT = (best: number) => `${best} correct`;
+
 const held = (
+	figure: (best: number) => string,
 	category: string,
 	handle: string,
-	streak: number,
+	best: number,
 	borderUrl?: string
 ): CategoryLeaderProps => ({
 	category,
 	leader: {
+		userId: handle,
 		handle: `@${handle}`,
-		githubLogin: handle,
-		figure: `${streak} in a row`,
+		figure: figure(best),
 		...(borderUrl === undefined ? {} : { borderUrl }),
 	},
 });
 
-const open = (category: string): CategoryLeaderProps => ({
+const open = (claim: string, category: string): CategoryLeaderProps => ({
 	category,
-	claim: "3 in a row claims it",
+	claim,
 });
 
-const seats = (): CategoryLeaderProps[] => [
-	held("JavaScript", "koga", 21, BORDER.frontend),
-	held("CSS", "erika", 18, BORDER.react),
-	held("TypeScript", "sabrina", 16, BORDER.ts),
-	held("Git", "giovanni", 13, BORDER.html),
-	held("React", "blaine", 11, BORDER.ruby),
-	held("HTML", "misty", 9, BORDER.css),
-	held("Java", "ltsurge", 7, BORDER.js),
-	held("Python", "brock", 6, BORDER.git),
+const STREAK_CLAIM = "3 in a row claims it";
+const CORRECT_CLAIM = "4 correct claims it";
+
+const streakSeats = (): CategoryLeaderProps[] => [
+	held(IN_A_ROW, "JavaScript", "koga", 21, BORDER.frontend),
+	held(IN_A_ROW, "CSS", "erika", 18, BORDER.react),
+	held(IN_A_ROW, "TypeScript", "sabrina", 16, BORDER.ts),
+	held(IN_A_ROW, "Git", "giovanni", 13, BORDER.html),
+	held(IN_A_ROW, "React", "blaine", 11, BORDER.ruby),
+	held(IN_A_ROW, "HTML", "misty", 9, BORDER.css),
+	held(IN_A_ROW, "Java", "ltsurge", 7, BORDER.js),
+	held(IN_A_ROW, "Python", "brock", 6, BORDER.git),
 	{
 		category: "Vue",
-		leader: { handle: "@marciano", figure: "5 in a row", you: true },
+		leader: {
+			userId: "marciano",
+			handle: "@marciano",
+			figure: IN_A_ROW(5),
+			you: true,
+		},
 	},
-	open("Ruby"),
-	open("General Frontend"),
-	open("General Backend"),
+	open(STREAK_CLAIM, "Ruby"),
+	open(STREAK_CLAIM, "General Frontend"),
+	open(STREAK_CLAIM, "General Backend"),
+];
+
+const correctSeats = (): CategoryLeaderProps[] => [
+	held(CORRECT, "TypeScript", "brock", 58, BORDER.git),
+	held(CORRECT, "JavaScript", "koga", 47, BORDER.frontend),
+	held(CORRECT, "React", "erika", 41, BORDER.react),
+	held(CORRECT, "Git", "giovanni", 33, BORDER.html),
+	held(CORRECT, "CSS", "misty", 29, BORDER.css),
+	held(CORRECT, "Ruby", "blaine", 22, BORDER.ruby),
+	held(CORRECT, "HTML", "ltsurge", 18, BORDER.js),
+	held(CORRECT, "Python", "sabrina", 14, BORDER.ts),
+	{
+		category: "Java",
+		leader: {
+			userId: "marciano",
+			handle: "@marciano",
+			figure: CORRECT(9),
+			you: true,
+		},
+	},
+	open(CORRECT_CLAIM, "Vue"),
+	open(CORRECT_CLAIM, "General Frontend"),
+	open(CORRECT_CLAIM, "General Backend"),
 ];
 
 const polls = (): PollResultProps[] => [
@@ -451,13 +499,24 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 	turnout: { title: "Who showed up", when: "Today", bands: bands() },
 	map: { title: COMMUNITY_MAP_TITLE, track: kantoClimbMap() },
 	incidents: kantoIncidents(),
-	leaders: {
-		title: COMMUNITY_LEADERS_TITLE,
-		summary: "longest run of correct answers · all-time",
-		seated: "9 of 12 seated",
-		seats: seats(),
-		footer: "A seat changes hands when somebody beats it. 3 seats still open.",
-	},
+	leaders: [
+		{
+			title: COMMUNITY_STREAK_TITLE,
+			summary: "longest run of correct answers in one run · all-time",
+			seated: "9 of 12 seated",
+			seats: streakSeats(),
+			footer:
+				"A seat changes hands when somebody beats it. 3 seats still open.",
+		},
+		{
+			title: COMMUNITY_CORRECT_TITLE,
+			summary: "most correct answers in one run · all-time",
+			seated: "9 of 12 seated",
+			seats: correctSeats(),
+			footer:
+				"A seat changes hands when somebody beats it. 3 seats still open.",
+		},
+	],
 	polls: {
 		title: "The five polls",
 		summary: "Percentage is how much of the room got it right",
@@ -485,12 +544,17 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 	const base = kantoCommunity();
 	return {
 		...base,
-		leaders: {
-			...base.leaders,
+		leaders: base.leaders.map((board) => ({
+			...board,
 			seated: "0 of 12 seated",
-			seats: base.leaders.seats.map(({ category }) => open(category)),
+			seats: board.seats.map(({ category }) =>
+				open(
+					board.title === COMMUNITY_STREAK_TITLE ? STREAK_CLAIM : CORRECT_CLAIM,
+					category
+				)
+			),
 			footer:
 				"A seat changes hands when somebody beats it. 12 seats still open.",
-		},
+		})),
 	};
 };

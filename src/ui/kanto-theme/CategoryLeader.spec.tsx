@@ -6,8 +6,8 @@ import { CategoryLeader, type CategorySeatLeader } from "./CategoryLeader.ui";
 const CATEGORY = "JavaScript";
 
 const SABRINA: CategorySeatLeader = {
+	userId: "sabrina-id",
 	handle: "@sabrina",
-	githubLogin: "sabrina",
 	figure: "17 in a row",
 	photoUrl: "/editors/sabrina.png",
 };
@@ -38,42 +38,38 @@ describe("CategoryLeader", () => {
 		expect(screen.queryByRole("button")).toBeNull();
 	});
 
-	it("links the leader to their account without doubling the handle marker", () => {
+	it("links the handle to the leader's in-game page, never to GitHub", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
 		expect(screen.getByRole("link", { name: "@sabrina" })).toHaveAttribute(
 			"href",
-			"https://github.com/sabrina"
+			"/profile/sabrina-id"
 		);
+		expect(
+			screen
+				.getAllByRole("link")
+				.some((link) => link.getAttribute("href")?.includes("github.com"))
+		).toBe(false);
 	});
 
-	it("states a leader with no GitHub account rather than linking a guess", () => {
-		render(
-			<CategoryLeader
-				category={CATEGORY}
-				leader={{ ...SABRINA, githubLogin: undefined, handle: "Sabrina" }}
-			/>
-		);
-
-		expect(screen.queryByRole("link")).toBeNull();
-		expect(screen.getByText("Sabrina")).toBeVisible();
-	});
-
-	it("opens the leader's account in its own tab", () => {
+	it("keeps the handle in the page's own tab", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
-		expect(screen.getByRole("link", { name: "@sabrina" })).toHaveAttribute(
-			"target",
-			"_blank"
+		expect(screen.getByRole("link", { name: "@sabrina" })).not.toHaveAttribute(
+			"target"
 		);
 	});
 
-	it("pushes the figure to the far end of the line", () => {
+	it("sits the figure in the row's own cell, outside the group that wraps", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
-		expect(screen.getByText("17 in a row").parentElement).toHaveClass(
-			"ml-auto"
-		);
+		const facts = screen.getByText(CATEGORY).parentElement;
+		const trailing = screen.getByText("17 in a row").parentElement;
+
+		expect(facts).toHaveClass("flex-wrap");
+		expect(facts).not.toContainElement(trailing);
+		expect(trailing).not.toHaveClass("ml-auto");
+		expect(facts?.parentElement).toHaveClass("grid-cols-[1fr_auto]");
 	});
 
 	it("rings the avatar and greens the figure when the seat is your own", () => {
@@ -81,7 +77,10 @@ describe("CategoryLeader", () => {
 			<CategoryLeader category={CATEGORY} leader={{ ...SABRINA, you: true }} />
 		);
 
-		expect(screen.getByTitle("you")).toBeVisible();
+		expect(
+			screen.getByRole("link", { name: `${SABRINA.handle}'s profile` })
+				.firstElementChild?.firstElementChild
+		).toHaveClass("ring-viridian");
 		expect(screen.getByText("17 in a row")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
@@ -119,24 +118,11 @@ describe("CategoryLeader", () => {
 });
 
 describe("CategoryLeader, linking to the seated player", () => {
-	it("sends the seat's face to their page while the handle still goes to GitHub", () => {
-		render(
-			<CategoryLeader
-				category={CATEGORY}
-				leader={{ ...SABRINA, profileHref: "/profile/sabrina-id" }}
-			/>
-		);
+	it("sends the seat's face to their in-game page", () => {
+		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
 		expect(
 			screen.getByRole("link", { name: `${SABRINA.handle}'s profile` })
 		).toHaveAttribute("href", "/profile/sabrina-id");
-	});
-
-	it("leaves the face unlinked when no page was handed over", () => {
-		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
-
-		expect(
-			screen.queryByRole("link", { name: `${SABRINA.handle}'s profile` })
-		).not.toBeInTheDocument();
 	});
 });

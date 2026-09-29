@@ -18,7 +18,7 @@ const meta: Meta<typeof CategoryLeader> = {
 		category: CATEGORY,
 		leader: {
 			handle: "@sabrina",
-			githubLogin: "sabrina",
+			userId: "sabrina",
 			figure: "17 in a row",
 			photoUrl: PORTRAIT,
 		},
@@ -43,11 +43,26 @@ export const SeatOpen: Story = {
 	args: { leader: undefined, claim: "3 in a row claims it" },
 };
 
+export const CountedAsCorrect: Story = {
+	args: {
+		leader: {
+			handle: "@brock",
+			userId: "brock",
+			figure: "58 correct",
+			photoUrl: PORTRAIT,
+		},
+	},
+};
+
+export const CorrectSeatOpen: Story = {
+	args: { leader: undefined, claim: "4 correct claims it" },
+};
+
 export const YouHoldIt: Story = {
 	args: {
 		leader: {
 			handle: "@marcianoschildmeijer",
-			githubLogin: "marcianoschildmeijer",
+			userId: "marcianoschildmeijer",
 			figure: "17 in a row",
 			photoUrl: PORTRAIT,
 			you: true,
@@ -59,21 +74,23 @@ export const NoPhotoYet: Story = {
 	args: {
 		leader: {
 			handle: "@giovanni",
-			githubLogin: "giovanni",
+			userId: "giovanni",
 			figure: "9 in a row",
 		},
 	},
 };
 
 export const NoGithubToLinkTo: Story = {
-	args: { leader: { handle: "Professor Oak", figure: "9 in a row" } },
+	args: {
+		leader: { userId: "oak", handle: "Professor Oak", figure: "9 in a row" },
+	},
 };
 
 export const EquippedBorder: Story = {
 	args: {
 		leader: {
 			handle: "@sabrina",
-			githubLogin: "sabrina",
+			userId: "sabrina",
 			figure: "17 in a row",
 			photoUrl: PORTRAIT,
 			borderUrl: BORDER,
@@ -114,39 +131,103 @@ export const UnderTheByline: Story = {
 	),
 };
 
-const BOARD = [
+const STREAK_BOARD = [
 	{ category: "JavaScript", handle: "@koga", figure: "21 in a row" },
 	{ category: "CSS", handle: "@erika", figure: "18 in a row" },
 	{ category: "Git", handle: "@giovanni", figure: "13 in a row" },
 ];
 
+const CORRECT_BOARD = [
+	{ category: "TypeScript", handle: "@brock", figure: "58 correct" },
+	{ category: "JavaScript", handle: "@koga", figure: "47 correct" },
+	{ category: "React", handle: "@erika", figure: "41 correct" },
+];
+
+const BoardPanel = ({
+	label,
+	meta,
+	rows,
+	openCategory,
+	claim,
+}: {
+	label: string;
+	meta: string;
+	rows: typeof STREAK_BOARD;
+	openCategory: string;
+	claim: string;
+}) => (
+	<Panel>
+		<Panel.Header label={label} meta={meta} />
+		<Panel.Rows>
+			{rows.map(({ category, handle, figure }) => (
+				<Panel.Row key={category}>
+					<CategoryLeader
+						category={category}
+						leader={{ userId: handle.slice(1), handle, figure }}
+					/>
+				</Panel.Row>
+			))}
+			<Panel.Row>
+				<CategoryLeader category={openCategory} claim={claim} />
+			</Panel.Row>
+		</Panel.Rows>
+		<Panel.Footer>
+			<Typography variant="hint" as="span">
+				A seat changes hands when somebody beats it.
+			</Typography>
+		</Panel.Footer>
+	</Panel>
+);
+
 export const OnTheBoard: Story = {
 	render: () => (
 		<Screen theme="viridian" width="narrow">
-			<Panel>
-				<Panel.Header
-					label="Category leaders"
-					meta="longest run of correct answers · all-time"
-				/>
-				<Panel.Rows>
-					{BOARD.map(({ category, handle, figure }) => (
-						<Panel.Row key={category}>
+			<BoardPanel
+				label="Streak leaders"
+				meta="longest run of correct answers in one run · all-time"
+				rows={STREAK_BOARD}
+				openCategory="Vue"
+				claim="3 in a row claims it"
+			/>
+		</Screen>
+	),
+};
+
+export const OnTheCorrectBoard: Story = {
+	render: () => (
+		<Screen theme="viridian" width="narrow">
+			<BoardPanel
+				label="Correct leaders"
+				meta="most correct answers in one run · all-time"
+				rows={CORRECT_BOARD}
+				openCategory="Vue"
+				claim="4 correct claims it"
+			/>
+		</Screen>
+	),
+};
+
+export const InANarrowColumn: Story = {
+	render: () => (
+		<div className="max-w-[380px]">
+			<Screen theme="viridian" width="narrow">
+				<Panel>
+					<Panel.Header label="Streak leaders" />
+					<Panel.Rows>
+						<Panel.Row>
 							<CategoryLeader
-								category={category}
-								leader={{ handle, githubLogin: handle.slice(1), figure }}
+								category="General Frontend"
+								leader={{
+									handle: "@marcianoschildmeijer",
+									userId: "marcianoschildmeijer",
+									figure: "21 in a row",
+									photoUrl: PORTRAIT,
+								}}
 							/>
 						</Panel.Row>
-					))}
-					<Panel.Row>
-						<CategoryLeader category="Vue" claim="3 in a row claims it" />
-					</Panel.Row>
-				</Panel.Rows>
-				<Panel.Footer>
-					<Typography variant="hint" as="span">
-						A seat changes hands when somebody beats it.
-					</Typography>
-				</Panel.Footer>
-			</Panel>
-		</Screen>
+					</Panel.Rows>
+				</Panel>
+			</Screen>
+		</div>
 	),
 };
