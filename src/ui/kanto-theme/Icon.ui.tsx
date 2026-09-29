@@ -95,6 +95,25 @@ const PATHS = {
 			<path d="M7.5 4l3 3-3 3" />
 		</>
 	),
+	search: (
+		<>
+			<circle cx="6.2" cy="6.2" r="3.6" />
+			<path d="M8.8 8.8 12 12" />
+		</>
+	),
+	plus: (
+		<>
+			<path d="M7 3v8" />
+			<path d="M3 7h8" />
+		</>
+	),
+	star: (
+		<path
+			d="M7 1.8 8.3 5.7 12.2 7 8.3 8.3 7 12.2 5.7 8.3 1.8 7 5.7 5.7Z"
+			fill="currentColor"
+			stroke="none"
+		/>
+	),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;

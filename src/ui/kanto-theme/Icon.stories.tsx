@@ -17,6 +17,9 @@ const NAMES = [
 	"fold",
 	"undo",
 	"tick",
+	"star",
+	"search",
+	"plus",
 ] as const;
 
 const meta: Meta<typeof Icon> = {
