@@ -8,7 +8,7 @@ import {
 	pollsTable,
 	usersTable,
 } from "~/database/schema";
-import type { Poll } from "~/modules/polls/poll/domain/poll.model";
+import type { Poll, PollCreator } from "~/modules/polls/poll/domain/poll.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
@@ -82,14 +82,6 @@ export const fetchPollsByUser = async (userId: string): Promise<Poll[]> => {
 		.orderBy(pollsTable.created_at);
 
 	return records.map(toPoll);
-};
-
-export type PollCreator = {
-	id: string;
-	displayName: string;
-	amountOfPolls: number;
-	photoUrl: string | null;
-	githubUsername: string | null;
 };
 
 export const fetchPollCreators = async (): Promise<PollCreator[]> =>

@@ -1,12 +1,20 @@
 import { z } from "zod";
 
-import { POLL_STATUSES } from "~/modules/polls/poll/domain/poll.model";
+import {
+	POLL_LIMITS,
+	POLL_STATUSES,
+} from "~/modules/polls/poll/domain/poll.model";
+
+export const CODE_SANDBOX_URL = z.string().url();
 
 const newPollOptionSchema = z.object({
 	option: z
 		.string()
 		.min(1, "Option cannot be empty")
-		.max(500, "Option cannot exceed 500 characters"),
+		.max(
+			POLL_LIMITS.answer.max,
+			`Option cannot exceed ${POLL_LIMITS.answer.max} characters`
+		),
 	correct: z.boolean().default(false),
 });
 
@@ -17,19 +25,40 @@ const updatePollOptionSchema = newPollOptionSchema.extend({
 const basePollDataSchema = z.object({
 	question: z
 		.string()
-		.min(10, "Question must be at least 10 characters")
-		.max(2000, "Question cannot exceed 2000 characters"),
+		.min(
+			POLL_LIMITS.question.min,
+			`Question must be at least ${POLL_LIMITS.question.min} characters`
+		)
+		.max(
+			POLL_LIMITS.question.max,
+			`Question cannot exceed ${POLL_LIMITS.question.max} characters`
+		),
 	status: z.enum(POLL_STATUSES),
 	answerType: z.enum(["single", "multiple"]),
 	categoryCode: z.string().min(1, "Category is required"),
 	codeBlock: z.string().nullable().optional(),
-	codeSandboxExample: z.string().url().nullable().optional(),
+	codeSandboxExample: CODE_SANDBOX_URL.nullable().optional(),
 	explanation: z
 		.string()
-		.max(2000, "Explanation cannot exceed 2000 characters")
+		.max(
+			POLL_LIMITS.explanation.max,
+			`Explanation cannot exceed ${POLL_LIMITS.explanation.max} characters`
+		)
 		.nullable()
 		.optional(),
 });
+
+const optionsOf = <Option extends z.ZodTypeAny>(option: Option) =>
+	z
+		.array(option)
+		.min(
+			POLL_LIMITS.answers.min,
+			`At least ${POLL_LIMITS.answers.min} options required`
+		)
+		.max(
+			POLL_LIMITS.answers.max,
+			`Cannot exceed ${POLL_LIMITS.answers.max} options`
+		);
 
 const hasACorrectOption = {
 	check: (data: { options: { correct: boolean }[] }) =>
@@ -41,10 +70,7 @@ const hasACorrectOption = {
 export const createPollWithOptionsSchema = z
 	.object({
 		poll: basePollDataSchema,
-		options: z
-			.array(newPollOptionSchema)
-			.min(3, "At least 3 options required")
-			.max(20, "Cannot exceed 20 options"),
+		options: optionsOf(newPollOptionSchema),
 	})
 	.refine(hasACorrectOption.check, {
 		message: hasACorrectOption.message,
@@ -55,10 +81,7 @@ export const updatePollSchema = z
 	.object({
 		id: z.number().int().positive(),
 		poll: basePollDataSchema.partial(),
-		options: z
-			.array(updatePollOptionSchema)
-			.min(3, "At least 3 options required")
-			.max(20, "Cannot exceed 20 options"),
+		options: optionsOf(updatePollOptionSchema),
 	})
 	.refine(hasACorrectOption.check, {
 		message: hasACorrectOption.message,

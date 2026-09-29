@@ -132,3 +132,28 @@ export const AcrossThemes: Story = {
 		</div>
 	),
 };
+
+export const WithInlineCode: Story = {
+	args: {
+		answerType: "single",
+		question: "What does `flex: 1` expand to?",
+		options: SHORT_ANSWERS,
+	},
+};
+
+export const WithFencedCode: Story = {
+	args: {
+		answerType: "single",
+		question: `What does this log?\n\`\`\`js\n${CODE}\n\`\`\``,
+		options: SHORT_ANSWERS,
+	},
+};
+
+export const Rhyme: Story = {
+	args: {
+		answerType: "single",
+		question:
+			"A `const` you declare, then reassign with flair;\nwhat does the engine throw into the air?",
+		options: SHORT_ANSWERS,
+	},
+};

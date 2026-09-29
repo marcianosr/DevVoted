@@ -1,15 +1,15 @@
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 
+import { splitCodeSpans } from "~/shared/lib/codeSpans";
 import { highlightOptions } from "~/shared/lib/syntaxHighlight";
 
 const escapeOutsideCodeSpans = (
 	text: string,
 	transform: (segment: string) => string
 ): string =>
-	text
-		.split(/(`+[^`]*`+)/g)
-		.map((segment, index) => (index % 2 === 0 ? transform(segment) : segment))
+	splitCodeSpans(text)
+		.map((span) => (span.kind === "text" ? transform(span.text) : span.text))
 		.join("");
 
 const escapeMarkdownSyntax = (text: string): string =>

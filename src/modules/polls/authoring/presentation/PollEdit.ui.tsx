@@ -1,30 +1,37 @@
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { Screen } from "~/ui/kanto-theme/Screen.ui";
+import { Typography } from "~/ui/kanto-theme/Typography.ui";
+
 const COPY = {
-	accessDenied: "Access Denied",
-	adminOnly: "This area is restricted to administrators only.",
+	accessDenied: "Access denied",
+	adminOnly: "Only an admin can edit a poll.",
 	loadError: "Error loading poll",
-	loading: "Loading poll...",
+	loading: "Loading poll…",
 } as const;
 
-const PAGE = "max-w-3xl mx-auto p-4";
+const THEME: KantoColor = "cerulean";
+const ERROR_THEME: KantoColor = "cinnabar";
 
 export const PollEditLoading = () => (
-	<div className={PAGE}>
-		<div className="animate-pulse">{COPY.loading}</div>
-	</div>
+	<Screen theme={THEME} ground="bare">
+		<Typography variant="hint">{COPY.loading}</Typography>
+	</Screen>
 );
 
 export const PollEditDenied = () => (
-	<div className="flex items-center justify-center min-h-screen">
-		<div className="text-center">
-			<h1 className="text-2xl text-cinnabar mb-4">{COPY.accessDenied}</h1>
-			<p>{COPY.adminOnly}</p>
-		</div>
-	</div>
+	<Screen theme={ERROR_THEME} ground="bare">
+		<Typography variant="title" as="h1">
+			{COPY.accessDenied}
+		</Typography>
+		<Typography variant="paragraph">{COPY.adminOnly}</Typography>
+	</Screen>
 );
 
 export const PollEditError = ({ message }: { message: string }) => (
-	<div className={PAGE}>
-		<h1 className="text-cinnabar text-3xl">{COPY.loadError}</h1>
-		<p className="text-gray-400 mt-2">{message}</p>
-	</div>
+	<Screen theme={ERROR_THEME} ground="bare">
+		<Typography variant="title" as="h1">
+			{COPY.loadError}
+		</Typography>
+		<Typography variant="paragraph">{message}</Typography>
+	</Screen>
 );

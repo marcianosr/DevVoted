@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import { createPollWithOptionsSchema } from "~/modules/polls/authoring/application/poll.validation";
 import {
 	createPollService,
 	updatePollService,
@@ -40,19 +41,7 @@ const optionInput = z.object({
 });
 
 export const createPoll = createServerFn({ method: "POST" })
-	.validator(
-		z.object({
-			poll: z.object({
-				question: z.string().min(10).max(2000),
-				status: z.enum(POLL_STATUSES),
-				answerType: z.enum(["single", "multiple"]),
-				categoryCode: z.string().min(1),
-				codeBlock: z.string().nullable().optional(),
-				codeSandboxExample: z.string().nullable().optional(),
-			}),
-			options: z.array(optionInput),
-		})
-	)
+	.validator(createPollWithOptionsSchema)
 	.handler(async ({ data }) => {
 		const userId = await getAuthenticatedUserId();
 

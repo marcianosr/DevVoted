@@ -64,3 +64,11 @@ describe("CodeBlock", () => {
 		);
 	});
 });
+
+describe("CodeBlock with a language", () => {
+	it("labels the code with the fence's language so highlighting need not guess", () => {
+		const { container } = render(<CodeBlock lang="js">{SOURCE}</CodeBlock>);
+
+		expect(container.querySelector("code")?.className).toMatch(/language-js/);
+	});
+});

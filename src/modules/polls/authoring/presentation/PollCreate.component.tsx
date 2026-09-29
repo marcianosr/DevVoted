@@ -2,13 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { createPoll } from "~/modules/polls/authoring/application/authoring.serverfn";
-import {
-	PollForm,
-	type PollFormData,
-} from "~/modules/polls/authoring/presentation/PollForm.component";
-import { PollFormPage } from "~/modules/polls/authoring/presentation/PollFormPage.ui";
-
-const TITLE = "Create New Poll";
+import type { PollFormData } from "~/modules/polls/authoring/application/pollForm.viewmodel";
+import { PollForm } from "~/modules/polls/authoring/presentation/PollForm.component";
 
 export const PollCreate = () => {
 	const navigate = useNavigate();
@@ -25,13 +20,11 @@ export const PollCreate = () => {
 	});
 
 	return (
-		<PollFormPage title={TITLE} error={create.error?.message}>
-			<PollForm
-				onSubmit={async (data) => {
-					await create.mutateAsync(data);
-				}}
-				isSubmitting={create.isPending}
-			/>
-		</PollFormPage>
+		<PollForm
+			mode="suggest"
+			error={create.error?.message}
+			submitting={create.isPending}
+			onSubmit={(data) => create.mutate(data)}
+		/>
 	);
 };

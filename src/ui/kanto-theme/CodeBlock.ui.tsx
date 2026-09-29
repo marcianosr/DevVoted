@@ -12,13 +12,14 @@ const FENCE = "```";
 
 export type CodeBlockProps = {
 	children: string;
+	lang?: string;
 };
 
-export const CodeBlock = ({ children }: CodeBlockProps) => (
+export const CodeBlock = ({ children, lang = "" }: CodeBlockProps) => (
 	<Panel className={CODE}>
 		<Panel.Body>
 			<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
-				{`${FENCE}\n${children}\n${FENCE}`}
+				{`${FENCE}${lang}\n${children}\n${FENCE}`}
 			</ReactMarkdown>
 		</Panel.Body>
 	</Panel>

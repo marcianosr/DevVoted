@@ -1,174 +1,269 @@
-import { Link } from "@tanstack/react-router";
+import { Fragment } from "react";
 
-import type { Poll } from "~/modules/polls/poll/domain/poll.model";
+import type {
+	PollListChoices,
+	PollListFilter,
+	PollRow,
+	QuestionSegment,
+} from "~/modules/polls/authoring/application/pollList.viewmodel";
+import type { PollStatus } from "~/modules/polls/poll/domain/poll.model";
+import { SUGGEST_A_POLL, YOUR_SUGGESTED_POLLS } from "~/shared/lib/copy";
+import { NOTHING_SHOWN } from "~/shared/lib/displayValue";
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
+import { Button } from "~/ui/kanto-theme/Button.ui";
+import { Climber } from "~/ui/kanto-theme/Climber.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { Panel, type PanelColumn } from "~/ui/kanto-theme/Panel.ui";
+import { Screen } from "~/ui/kanto-theme/Screen.ui";
+import { SearchField } from "~/ui/kanto-theme/SearchField.ui";
+import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
+import { Select } from "~/ui/kanto-theme/Select.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 const COPY = {
-	adminHeading: "All Polls",
-	ownHeading: "My Poll Submissions",
-	loadingHeading: "Available Polls",
-	loading: "Loading polls...",
-	create: "Create Poll",
-	status: "Status:",
-	category: "Category:",
-	creator: "Creator:",
-	all: "All",
-	empty: "No polls matching the selected filters.",
-	category_: (code: string) => `Category: ${code}`,
+	adminHeading: "Polls",
+	ownHeading: YOUR_SUGGESTED_POLLS,
+	suggest: SUGGEST_A_POLL,
+	search: "Search questions",
+	searchPlaceholder: "search questions…",
+	status: "Status",
+	answerType: "Answer type",
+	withCode: "with code",
+	category: "Category",
+	creator: "Creator",
+	numberColumn: "#",
+	categoryColumn: "category",
+	questionColumn: "question",
+	byColumn: "by",
+	statusColumn: "status",
+	showing: (shown: number, matching: number) =>
+		`showing ${shown} of ${matching}`,
+	loadMore: "load more",
+	empty: "No polls match these filters.",
+	loading: "Loading polls…",
 	loadError: (reason: string) => `Error loading polls: ${reason}`,
 } as const;
 
-const PAGE = "p-4";
-const CHIP = "px-3 py-1 rounded-full text-sm transition-colors";
-const CHIP_ON = "bg-primary text-white";
-const CHIP_OFF = "bg-gray-700 text-gray-300 hover:bg-gray-600";
-const FILTER_ROW = "flex flex-wrap gap-2 mb-2";
-const FILTER_LABEL = "text-sm text-gray-400 self-center w-20";
+const THEME: KantoColor = "cerulean";
+const ERROR_THEME: KantoColor = "cinnabar";
 
-export type FilterChoice<Value extends string> = {
-	value: Value;
-	label: string;
-	count?: number;
-};
+const STATUS_COLOR = {
+	published: "viridian",
+	draft: "saffron",
+	archived: "pewter",
+} satisfies Record<PollStatus, KantoColor>;
 
-type FilterRowProps<Value extends string> = {
-	label: string;
-	choices: readonly FilterChoice<Value>[];
-	selected: Value;
-	accent?: "primary" | "theme";
-	onSelect: (value: Value) => void;
-};
+const TITLE_ROW = "flex w-full flex-wrap items-center gap-x-3 gap-y-2";
+const COUNT = "text-theme-muted";
+const SUGGEST = "ml-auto";
+const TOOLBAR = "flex flex-wrap items-center gap-2";
+const SEARCH = "min-w-48 flex-1 basis-64";
+const CELLS = "flex w-full min-w-0 items-center gap-4";
+const NUMBER = "w-8 shrink-0 text-xs text-theme-muted";
+const CATEGORY = "w-28 shrink-0";
+const QUESTION = "flex min-w-0 flex-1 flex-col gap-0.5";
+const QUESTION_TEXT = "truncate text-sm font-bold text-theme-faint";
+const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
+const BY = "flex w-28 shrink-0 items-center gap-2";
+const AUTHOR_NAME = "truncate text-xs text-theme-soft";
+const STATUS = "flex w-24 shrink-0 justify-end";
 
-const FilterRow = <Value extends string>({
-	label,
-	choices,
-	selected,
-	accent = "primary",
-	onSelect,
-}: FilterRowProps<Value>) => (
-	<div className={FILTER_ROW}>
-		<span className={FILTER_LABEL}>{label}</span>
-		{choices.map((choice) => (
-			<button
-				key={choice.value}
-				onClick={() => onSelect(choice.value)}
-				className={`${CHIP} ${
-					selected === choice.value
-						? accent === "theme"
-							? "bg-theme text-white"
-							: CHIP_ON
-						: CHIP_OFF
-				}`}
-			>
-				{choice.label}
-				{choice.count === undefined ? "" : ` (${choice.count})`}
-			</button>
-		))}
-	</div>
+const columnsOf = (admin: boolean): readonly PanelColumn[] => [
+	{ label: COPY.numberColumn, width: NUMBER },
+	{ label: COPY.categoryColumn, width: CATEGORY },
+	{ label: COPY.questionColumn, width: QUESTION },
+	...(admin ? [{ label: COPY.byColumn, width: BY }] : []),
+	{ label: COPY.statusColumn, width: STATUS },
+];
+
+const Question = ({
+	segments,
+	facts,
+}: {
+	segments: readonly QuestionSegment[];
+	facts: string;
+}) => (
+	<span className={QUESTION}>
+		<span className={QUESTION_TEXT}>
+			{segments.map((segment, index) =>
+				segment.kind === "code" ? (
+					<code key={`${index}-${segment.text}`} className={CODE}>
+						{segment.text}
+					</code>
+				) : (
+					<Fragment key={`${index}-${segment.text}`}>{segment.text}</Fragment>
+				)
+			)}
+		</span>
+		<Typography variant="hint" as="span">
+			{facts}
+		</Typography>
+	</span>
+);
+
+const Author = ({ author }: Pick<PollRow, "author">) => (
+	<span className={BY}>
+		{author === undefined ? (
+			<span className={COUNT}>{NOTHING_SHOWN}</span>
+		) : (
+			<>
+				<Climber name={author.name} photoUrl={author.photoUrl} size="sm" />
+				<span className={AUTHOR_NAME}>{author.name}</span>
+			</>
+		)}
+	</span>
+);
+
+const Row = ({ row, admin }: { row: PollRow; admin: boolean }) => (
+	<Panel.Row href={row.href}>
+		<span className={CELLS}>
+			<span className={NUMBER}>{row.number}</span>
+			<span className={CATEGORY}>
+				<Badge>{row.category}</Badge>
+			</span>
+			<Question segments={row.question} facts={row.facts} />
+			{admin ? <Author author={row.author} /> : null}
+			<span className={STATUS}>
+				<Badge color={STATUS_COLOR[row.status]}>{row.status}</Badge>
+			</span>
+		</span>
+	</Panel.Row>
 );
 
 export const PollListLoading = () => (
-	<div className={PAGE}>
-		<h1 className="text-2xl mb-4">{COPY.loadingHeading}</h1>
-		<p>{COPY.loading}</p>
-	</div>
+	<Screen theme={THEME} width="wide" ground="bare">
+		<Typography variant="hint">{COPY.loading}</Typography>
+	</Screen>
 );
 
 export const PollListError = ({ message }: { message: string }) => (
-	<div className={PAGE} data-screen-theme="cinnabar">
+	<Screen theme={ERROR_THEME} width="wide" ground="bare">
 		<Typography variant="title">{COPY.loadError(message)}</Typography>
-	</div>
+	</Screen>
 );
 
-export type PollListProps<Status extends string, Category extends string> = {
-	polls: readonly Poll[];
+export type PollListProps = {
+	admin: boolean;
 	total: number;
-	isAdmin: boolean;
-	statusChoices: readonly FilterChoice<Status>[];
-	statusFilter: Status;
-	categoryChoices: readonly FilterChoice<Category>[];
-	categoryFilter: Category;
-	creatorChoices: readonly FilterChoice<string>[];
-	creatorFilter: string;
-	onStatusChange: (value: Status) => void;
-	onCategoryChange: (value: Category) => void;
-	onCreatorChange: (value: string) => void;
+	matching: number;
+	shown: number;
+	rows: readonly PollRow[];
+	filter: PollListFilter;
+	choices: PollListChoices;
+	suggestHref: string;
+	onFilterChange: (filter: PollListFilter) => void;
+	onLoadMore?: () => void;
 };
 
-export const PollList = <Status extends string, Category extends string>({
-	polls,
+export const PollList = ({
+	admin,
 	total,
-	isAdmin,
-	statusChoices,
-	statusFilter,
-	categoryChoices,
-	categoryFilter,
-	creatorChoices,
-	creatorFilter,
-	onStatusChange,
-	onCategoryChange,
-	onCreatorChange,
-}: PollListProps<Status, Category>) => (
-	<div className={PAGE}>
-		<div className="flex justify-between items-center mb-4">
-			<h1 className="text-2xl">
-				{isAdmin ? COPY.adminHeading : COPY.ownHeading}{" "}
-				<span className="text-gray-400">({total})</span>
-			</h1>
-			<Link
-				to="/polls/new"
-				className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80"
-			>
-				{COPY.create}
-			</Link>
+	matching,
+	shown,
+	rows,
+	filter,
+	choices,
+	suggestHref,
+	onFilterChange,
+	onLoadMore,
+}: PollListProps) => (
+	<Screen theme={THEME} width="wide" ground="bare">
+		<div className={TITLE_ROW}>
+			<Typography variant="headline" as="h1">
+				{admin ? COPY.adminHeading : COPY.ownHeading}{" "}
+				<span className={COUNT}>{total}</span>
+			</Typography>
+			<span className={SUGGEST}>
+				<Button
+					label={COPY.suggest}
+					tone="action"
+					size="md"
+					icon="plus"
+					iconAt="lead"
+					href={suggestHref}
+				/>
+			</span>
 		</div>
 
-		<FilterRow
-			label={COPY.status}
-			choices={statusChoices}
-			selected={statusFilter}
-			onSelect={onStatusChange}
-		/>
-		<FilterRow
-			label={COPY.category}
-			choices={categoryChoices}
-			selected={categoryFilter}
-			accent="theme"
-			onSelect={onCategoryChange}
-		/>
-		{isAdmin && creatorChoices.length > 1 && (
-			<FilterRow
-				label={COPY.creator}
-				choices={creatorChoices}
-				selected={creatorFilter}
-				onSelect={onCreatorChange}
-			/>
-		)}
+		<Panel>
+			<Panel.Body>
+				<div className={TOOLBAR}>
+					<span className={SEARCH}>
+						<SearchField
+							label={COPY.search}
+							value={filter.search}
+							placeholder={COPY.searchPlaceholder}
+							onChange={(search) => onFilterChange({ ...filter, search })}
+						/>
+					</span>
+					<Segmented
+						label={COPY.status}
+						items={choices.status}
+						value={filter.status}
+						onSelect={(status) => onFilterChange({ ...filter, status })}
+					/>
+					<Segmented
+						label={COPY.answerType}
+						items={choices.answerType}
+						value={filter.answerType}
+						onSelect={(answerType) => onFilterChange({ ...filter, answerType })}
+					/>
+					<Button
+						label={COPY.withCode}
+						cap={choices.withCode}
+						capAt="trail"
+						pressed={filter.withCode}
+						onPress={() =>
+							onFilterChange({ ...filter, withCode: !filter.withCode })
+						}
+					/>
+					{choices.creator === undefined ? null : (
+						<Select
+							label={COPY.creator}
+							options={choices.creator}
+							value={filter.creator}
+							onChange={(creator) => onFilterChange({ ...filter, creator })}
+						/>
+					)}
+				</div>
+				<Segmented
+					label={COPY.category}
+					items={choices.category}
+					value={filter.category}
+					look="loose"
+					onSelect={(category) => onFilterChange({ ...filter, category })}
+				/>
+			</Panel.Body>
 
-		{polls.length === 0 ? (
-			<p>{COPY.empty}</p>
-		) : (
-			<div className="space-y-4">
-				{polls.map((poll) => (
-					<div
-						key={poll.id}
-						className="p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-					>
-						<Link
-							to="/polls/$pollId"
-							params={{ pollId: String(poll.id) }}
-							className="text-cerulean hover:underline"
-						>
-							<div>{poll.id}</div>
-							<div>{poll.question}</div>
-							<div className="text-sm text-gray-500 mt-1 flex justify-between">
-								<span>{COPY.category_(poll.categoryCode)}</span>
-								<span className="capitalize">{poll.status}</span>
-							</div>
-						</Link>
-					</div>
-				))}
-			</div>
-		)}
-	</div>
+			<Panel.Columns columns={columnsOf(admin)} />
+			<Panel.Rows>
+				{rows.length === 0 ? (
+					<Panel.Row>
+						<Typography variant="hint" as="span">
+							{COPY.empty}
+						</Typography>
+					</Panel.Row>
+				) : (
+					rows.map((row) => <Row key={row.id} row={row} admin={admin} />)
+				)}
+			</Panel.Rows>
+
+			<Panel.Footer
+				trailing={
+					onLoadMore === undefined ? undefined : (
+						<Button
+							label={COPY.loadMore}
+							icon="chevron"
+							iconAt="trail"
+							onPress={onLoadMore}
+						/>
+					)
+				}
+			>
+				<Typography variant="hint" as="span">
+					{COPY.showing(shown, matching)}
+				</Typography>
+			</Panel.Footer>
+		</Panel>
+	</Screen>
 );

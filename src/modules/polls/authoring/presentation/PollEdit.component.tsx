@@ -6,10 +6,11 @@ import {
 	updatePoll,
 } from "~/modules/polls/authoring/application/authoring.serverfn";
 import {
-	PollForm,
+	STATUS_CHOICES,
+	pollFormStateOf,
 	type PollFormData,
-} from "~/modules/polls/authoring/presentation/PollForm.component";
-import { PollFormPage } from "~/modules/polls/authoring/presentation/PollFormPage.ui";
+} from "~/modules/polls/authoring/application/pollForm.viewmodel";
+import { PollForm } from "~/modules/polls/authoring/presentation/PollForm.component";
 import {
 	PollEditDenied,
 	PollEditError,
@@ -17,9 +18,6 @@ import {
 } from "~/modules/polls/authoring/presentation/PollEdit.ui";
 import { getPollByIdWithOptions } from "~/modules/polls/poll/application/poll.serverfn";
 import { pollQueryKeys } from "~/shared/queryKeys";
-
-const titleFor = (pollNumber: number | null, id: number) =>
-	`Edit Poll #${pollNumber ?? id}`;
 
 type PollEditProps = {
 	pollId: number;
@@ -65,18 +63,14 @@ export const PollEdit = ({ pollId }: PollEditProps) => {
 	}
 
 	return (
-		<PollFormPage
-			title={titleFor(poll.data.poll.pollNumber, poll.data.poll.id)}
+		<PollForm
+			mode="edit"
+			pollNumber={poll.data.poll.pollNumber ?? undefined}
+			initial={pollFormStateOf(poll.data.poll, poll.data.options)}
+			statuses={STATUS_CHOICES}
 			error={update.error?.message}
-		>
-			<PollForm
-				initialData={{ ...poll.data.poll, options: poll.data.options }}
-				onSubmit={async (data) => {
-					await update.mutateAsync(data);
-				}}
-				isSubmitting={update.isPending}
-				isAdmin
-			/>
-		</PollFormPage>
+			submitting={update.isPending}
+			onSubmit={(data) => update.mutate(data)}
+		/>
 	);
 };

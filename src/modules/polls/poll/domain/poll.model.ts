@@ -21,3 +21,21 @@ export type Poll = {
 	explanation: string | null;
 	pollNumber: number | null;
 };
+
+export type PollCreator = {
+	id: string;
+	displayName: string;
+	amountOfPolls: number;
+	photoUrl: string | null;
+	githubUsername: string | null;
+};
+
+export const POLL_LIMITS = {
+	question: { min: 10, max: 2000 },
+	explanation: { max: 2000 },
+	answers: { min: 3, max: 20 },
+	answer: { max: 500 },
+} as const;
+
+export const isPollStatus = (value: string): value is PollStatus =>
+	(POLL_STATUSES as readonly string[]).includes(value);

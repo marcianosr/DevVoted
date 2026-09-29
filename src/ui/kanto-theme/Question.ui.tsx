@@ -1,6 +1,12 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
+import {
+	splitCodeBlocks,
+	splitCodeSpans,
+	stripCodeFence,
+} from "~/shared/lib/codeSpans";
+import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceVerdict } from "./Choice.ui";
 import { CodeBlock } from "./CodeBlock.ui";
@@ -8,13 +14,10 @@ import { Typography } from "./Typography.ui";
 
 const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
+const PROSE = "whitespace-pre-line";
+const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
 
 const SEPARATOR = "·";
-
-const ANSWER_TYPE_LABEL = {
-	single: "single answer",
-	multiple: "multiple answers",
-} satisfies Record<AnswerType, string>;
 
 export const questionFactsOf = ({
 	options,
@@ -40,6 +43,44 @@ export type QuestionProps = {
 	onPick?: (id: string) => void;
 };
 
+const Prose = ({ text }: { text: string }) => (
+	<span className={PROSE}>
+		{splitCodeSpans(text).map((span, index) =>
+			span.kind === "code" ? (
+				<code key={`${index}-${span.text}`} className={CODE}>
+					{stripCodeFence(span.text)}
+				</code>
+			) : (
+				<Fragment key={`${index}-${span.text}`}>{span.text}</Fragment>
+			)
+		)}
+	</span>
+);
+
+const QuestionText = ({ question }: { question: string }) => {
+	const parts = splitCodeBlocks(question);
+	const heading = parts.findIndex((part) => part.kind === "prose");
+	return (
+		<>
+			{parts.map((part, index) =>
+				part.kind === "block" ? (
+					<CodeBlock key={`${part.kind}-${index}`} lang={part.lang}>
+						{part.code}
+					</CodeBlock>
+				) : (
+					<Typography
+						key={`${part.kind}-${index}`}
+						variant="headline"
+						as={index === heading ? "h1" : "p"}
+					>
+						<Prose text={part.text} />
+					</Typography>
+				)
+			)}
+		</>
+	);
+};
+
 export const Question = ({
 	answerType,
 	question,
@@ -49,7 +90,7 @@ export const Question = ({
 	onPick,
 }: QuestionProps) => (
 	<section className={BLOCK}>
-		<Typography variant="headline">{question}</Typography>
+		<QuestionText question={question} />
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 

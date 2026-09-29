@@ -6,6 +6,7 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { Keycap } from "./Keycap.ui";
 import { Typography } from "./Typography.ui";
 
 const ROW =
@@ -14,15 +15,6 @@ const PICKABLE = "cursor-pointer hover:bg-theme-raised";
 const PICKED = "bg-theme-soft";
 const RULED_OUT = "cursor-not-allowed opacity-50";
 const PICK_AREA = "flex min-w-0 flex-1 items-center gap-5 self-stretch";
-
-const CAP =
-	"flex size-8 shrink-0 items-center justify-center border border-b-4 text-xs leading-none";
-const CAP_SHAPE = {
-	single: "rounded-full",
-	multiple: "rounded-md",
-} satisfies Record<AnswerType, string>;
-const CAP_IDLE = "border-edge-strong bg-theme-raised text-pewter";
-const CAP_PICKED = "border-theme bg-theme-soft text-theme-soft";
 
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const SEAL_BAR = "block h-5 rounded-md bg-theme-raised";
@@ -100,17 +92,12 @@ export const Choice = ({
 	seal,
 }: ChoiceProps) => {
 	const theme = verdict === undefined ? undefined : VERDICT_COLOR[verdict];
-	const capLit = picked || verdict === "missed";
 	const cap = (
-		<span
-			className={clsx(
-				CAP,
-				CAP_SHAPE[answerType],
-				capLit ? CAP_PICKED : CAP_IDLE
-			)}
-		>
-			{letter}
-		</span>
+		<Keycap
+			letter={letter}
+			answerType={answerType}
+			lit={picked || verdict === "missed"}
+		/>
 	);
 
 	if (seal === undefined) {

@@ -25,6 +25,7 @@ export const createPollService = async (
 				categoryCode: validated.poll.categoryCode,
 				codeBlock: validated.poll.codeBlock ?? null,
 				codeSandboxExample: validated.poll.codeSandboxExample ?? null,
+				explanation: validated.poll.explanation ?? null,
 			},
 			validated.options
 		);

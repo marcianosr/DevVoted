@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { ChoiceVerdict } from "./Choice.ui";
@@ -168,5 +168,67 @@ describe("the answer list's frame", () => {
 
 		expect(list).toHaveClass("rounded-lg", "border", "border-theme-faint");
 		expect(list?.className).not.toMatch(/\bgap-/);
+	});
+});
+
+describe("Question with code in it", () => {
+	it("marks inline backticks as code inside the heading, backticks dropped", () => {
+		render(<Question {...props} question="What does `flex: 1` expand to?" />);
+
+		const heading = screen.getByRole("heading", {
+			name: "What does flex: 1 expand to?",
+		});
+		expect(within(heading).getByText("flex: 1").tagName).toBe("CODE");
+	});
+
+	it("lifts a fenced block out of the heading into a code panel with its language", () => {
+		const { container } = render(
+			<Question
+				{...props}
+				question={"What does this log?\n```js\nconsole.log(0.1 + 0.2)\n```"}
+			/>
+		);
+
+		expect(
+			screen.getByRole("heading", { name: "What does this log?" })
+		).toBeInTheDocument();
+		expect(container.querySelector("pre code")).toHaveTextContent(
+			"console.log(0.1 + 0.2)"
+		);
+		expect(container.querySelector("pre code")?.className).toMatch(
+			/language-js/
+		);
+	});
+
+	it("keeps prose after a block as a second line, never a second heading", () => {
+		render(
+			<Question
+				{...props}
+				question={
+					"Given this:\n```css\n.a { flex: 1 }\n```\nwhat is its width?"
+				}
+			/>
+		);
+
+		expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+		expect(screen.getByText("what is its width?")).toBeInTheDocument();
+	});
+
+	it("interprets nothing but backticks", () => {
+		render(<Question {...props} question="What does 2 > 1 return? *really*" />);
+
+		expect(
+			screen.getByRole("heading", { name: "What does 2 > 1 return? *really*" })
+		).toBeInTheDocument();
+	});
+
+	it("keeps a rhyme on its own lines", () => {
+		render(
+			<Question {...props} question={"Roses are red,\nthe stack is blue"} />
+		);
+
+		expect(screen.getByRole("heading", { level: 1 }).firstChild).toHaveClass(
+			"whitespace-pre-line"
+		);
 	});
 });
