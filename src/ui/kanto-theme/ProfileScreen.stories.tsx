@@ -11,6 +11,8 @@ import {
 	dexRunsProps,
 	dexSwatchesProps,
 } from "~/test/dexRegistry.factory";
+import { kantoStanding } from "~/test/kantoCommunity.factory";
+import { trackFor } from "~/test/swatchTrack.factory";
 
 import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
@@ -21,7 +23,11 @@ import { DexPolls } from "./DexPolls.ui";
 import { DexRuns } from "./DexRuns.ui";
 import { DexSwatches } from "./DexSwatches.ui";
 import { ProfileCard } from "./ProfileCard.ui";
-import { ProfileScreen } from "./ProfileScreen.ui";
+import { ProfileClimbing } from "./ProfileClimbing.ui";
+import { ProfileCollection } from "./ProfileCollection.ui";
+import { ProfileRecord } from "./ProfileRecord.ui";
+import { EDIT_PROFILE, ProfileScreen } from "./ProfileScreen.ui";
+import type { StandingProps } from "./Standing.ui";
 
 const meta: Meta<typeof ProfileScreen> = {
 	component: ProfileScreen,
@@ -40,8 +46,7 @@ const TABS = [
 	{ id: "audits", label: "audits" },
 	{ id: "swatches", label: "swatches" },
 	{ id: "runs", label: "runs" },
-	{ id: "borders", label: "borders" },
-	{ id: "titles", label: "titles" },
+	{ id: "appearance", label: "appearance" },
 ];
 
 const THEME: Record<string, KantoColor> = {
@@ -102,7 +107,7 @@ const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 					name={NAME}
 					borderUrl={BORDER}
 					titles={titles}
-					trailing={<Button size="sm" tone="ambient" label="edit profile" />}
+					trailing={<Button size="sm" tone="ambient" label={EDIT_PROFILE} />}
 				/>
 			}
 			tabs={TABS}
@@ -145,25 +150,70 @@ export const NoTitleYet: Story = {
 	render: () => <Own start="polls" titles={[]} />,
 };
 
+const VISITED_CARD = (
+	<ProfileCard
+		name="Misty"
+		handle="misty"
+		photoUrl="/editors/misty.png"
+		borderUrl={BORDER}
+		titles={["Completer", "Flawless"]}
+	/>
+);
+
+const RECORD_NOTE =
+	"Where they have been, and the gates they took without a wrong answer.";
+const COLLECTION_NOTE =
+	"Which polls they have seen, and the answers they gave, stay private.";
+
+const visitedSections = (standing?: StandingProps) => (
+	<>
+		<ProfileRecord
+			figures={[
+				{ label: "deepest gate", figure: "9 of 13", yours: "you 6 of 13" },
+				{ label: "swatches", figure: "5 of 13", yours: "you 3 of 13" },
+				{ label: "runs finished", figure: "24" },
+			]}
+			swatches={trackFor([0, 1, 2, 3, 5])}
+			seats={[
+				{ category: "CSS", figure: "21 in a row" },
+				{ category: "General Frontend", figure: "16 in a row" },
+			]}
+			meta="reached gate 9"
+			note={RECORD_NOTE}
+		/>
+		<DexRuns {...dexRunsProps()} />
+		<ProfileClimbing
+			standing={standing}
+			meta={standing === undefined ? "nothing open" : "a run is open"}
+		/>
+		<ProfileCollection
+			counts={[
+				{ label: "polls", figure: "41 of 96", held: 41, total: 96 },
+				{ label: "configs", figure: "12 of 46", held: 12, total: 46 },
+				{ label: "titles", figure: "2 of 16", held: 2, total: 16 },
+			]}
+			meta="completion only · 2.4 MB archive"
+			note={COLLECTION_NOTE}
+		/>
+	</>
+);
+
 export const Visited: Story = {
 	render: () => (
 		<ProfileScreen
-			card={
-				<ProfileCard
-					name="Misty"
-					handle="misty"
-					photoUrl="/editors/misty.png"
-					borderUrl={BORDER}
-					titles={["Completer", "Flawless"]}
-				/>
-			}
+			card={VISITED_CARD}
 			theme="cerulean"
-			totals={[
-				"41 of 96 polls",
-				"12 of 30 configs",
-				"7 of 13 gates",
-				"2.4 MB archive",
-			]}
+			sections={visitedSections(kantoStanding())}
+		/>
+	),
+};
+
+export const VisitedWhileResting: Story = {
+	render: () => (
+		<ProfileScreen
+			card={VISITED_CARD}
+			theme="cerulean"
+			sections={visitedSections()}
 		/>
 	),
 };

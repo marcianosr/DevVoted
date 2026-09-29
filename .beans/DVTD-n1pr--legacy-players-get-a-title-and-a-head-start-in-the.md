@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: high
 created_at: 2026-09-24T13:23:53Z
-updated_at: 2026-09-25T09:08:24Z
+updated_at: 2026-09-28T11:49:08Z
 parent: DVTD-z2r2
 ---
 
@@ -134,6 +134,15 @@ migration: same table, same predicate, so the eligibility query is written once.
 - [x] Seed a calendar-era archetype so both tiers are demoable locally
 - [x] ADR-111, wiki §6.6, CHANGELOG
 - [x] lint, typecheck, tests
+- [x] Return notice states the archive credit, read off legacy_bonus_bytes
+- [x] Notice re-laid on the ADR-117 press row: one wide press wears every unworn title, Later only dismisses
+- [x] Legacy reads fetched only for a granted title; legacyRun.repository folded into legacy.repository
+- [x] Seed mirrors the bonus migration
+- [x] Modal takes a heading and a theme, Icon gains star, both with stories
+- [x] Aside and press share one height in every press row (lg is a min-h-14 floor, seats stretch)
+- [x] Press wears the design's dashed mark; the notice sits on the kit's own ScreenFooter row
+- [x] Marciano's own account paid the credit locally by replaying the bonus migration
+- [ ] Seen on screen as Marciano, Lorelei, Bruno; gone on the second load
 
 ## Summary of Changes
 
@@ -208,3 +217,29 @@ This bean narrowed to titles and shipped as ADR-111. The storage half — balanc
 carrying across the cutover, and the 256 KB / 1 MB top-up for this same cohort —
 was decided and built on DVTD-yqy4 as ADR-112, reading the `user_titles` rows this
 bean writes. Nothing to re-add here.
+
+## The notice states the credit (2026-09-28)
+
+The answer to "where does the player see the bonus" was nowhere: nothing in `src/`
+read `legacy_bonus_bytes` and the seed never wrote it. Now the announcement payload
+carries `legacyBonusBytes`, read only when a granted title is waiting (an earned
+title's notice no longer re-fetches the archived run either), and the notice draws
+it as a second reward row. The modal is re-laid on the ADR-117 press row: one wide
+`Action` wears every listed title there is room for, then stamps the grant; `Later`
+only stamps. Auto-equip stays, so a legacy player wearing nothing arrives with the
+title on and the press reads `Close`. At the worn cap the press is shut with the
+reason inside it. The archived-run date moved into the footer line. The seed now
+mirrors the bonus migration (Agatha and Bruno 256 KB, Lorelei 1 MB), and replaying
+the production SQL on top is a no-op.
+
+Kit: `Modal` takes `heading` and `theme`; `Icon` gains `star`. The press mark is the
+star icon, not the mock's dashed square, because `Action`'s swatch slot needs a real
+gate swatch (ADR-117 D4).
+
+Verified: targeted specs 73 pass; full run 4427 pass, 39 fail in the two community
+specs that were already red on the branch; typecheck has 9 pre-existing errors in
+those same files plus `proto-run.tsx`; lint clean.
+
+Still open: the notice on screen. Log in as Agatha (wears two, so Tester takes her
+to the cap of three), Bruno (one press), Lorelei (Climber already on, press wears
+Tester).

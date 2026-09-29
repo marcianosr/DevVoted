@@ -355,7 +355,7 @@ export const dexSwatchesFor = (
 	note: SWATCHES_NOTE,
 });
 
-const RUNS_NOTE =
+export const RUNS_NOTE =
 	"Coverage is the run's final score against its window. A run ends at the gate that held it.";
 const NO_RUNS_META = "no climbs yet";
 
@@ -369,7 +369,7 @@ const dateOf = (endedAt: Date | null): string =>
 		? "—"
 		: new Intl.DateTimeFormat("en-GB", DATE_FORMAT).format(endedAt);
 
-const runTrackFor = (earned: readonly number[]): readonly SwatchFill[] =>
+export const runTrackFor = (earned: readonly number[]): readonly SwatchFill[] =>
 	ALL_SWATCHES.map((swatch) =>
 		earned.includes(swatch.gate)
 			? { state: "discovered", swatch }
@@ -378,9 +378,8 @@ const runTrackFor = (earned: readonly number[]): readonly SwatchFill[] =>
 
 const archiveHrefFor = (runId: number): string => `/runs/${runId}`;
 
-const runRowFor = (entry: RunHistoryEntry): DexRunRow => ({
+export const runRowFor = (entry: RunHistoryEntry): DexRunRow => ({
 	runId: entry.runId,
-	href: archiveHrefFor(entry.runId),
 	date: dateOf(entry.endedAt),
 	swatches: runTrackFor(entry.swatchGates),
 	outcome: entry.won
@@ -388,6 +387,11 @@ const runRowFor = (entry: RunHistoryEntry): DexRunRow => ({
 		: heldOutcomeOf(entry.heldBy ?? String(entry.gatesCleared)),
 	coverage: `${Math.round(percentOf(entry.coverage))}%`,
 	band: entry.band,
+});
+
+const archiveRunRowFor = (entry: RunHistoryEntry): DexRunRow => ({
+	...runRowFor(entry),
+	href: archiveHrefFor(entry.runId),
 });
 
 const bestOf = (entries: readonly RunHistoryEntry[]): string =>
@@ -398,7 +402,7 @@ const bestOf = (entries: readonly RunHistoryEntry[]): string =>
 export const dexRunsFor = (
 	entries: readonly RunHistoryEntry[]
 ): DexRunsProps => ({
-	rows: entries.map(runRowFor),
+	rows: entries.map(archiveRunRowFor),
 	count: plural(entries.length, "run"),
 	meta: bestOf(entries),
 	note: RUNS_NOTE,

@@ -9,7 +9,7 @@ import { Typography } from "~/ui/kanto-theme/Typography.ui";
 export const COPY = {
 	label: "borders owned",
 	meta: "bought with archived storage",
-	note: "A border is bought with archived storage and worn on your card. Everyone who meets you sees it — on the byline of a poll you wrote, on the climb map, and here.",
+	note: "Press a border to try it on in the preview. Buying it spends archived storage; wearing it shows it to everyone.",
 } as const;
 
 const GRID = "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4";

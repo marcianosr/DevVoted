@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Button } from "./Button.ui";
 import { ProfileCard } from "./ProfileCard.ui";
+import { EDIT_PROFILE } from "./ProfileScreen.ui";
 import { Screen } from "./Screen.ui";
 
 const meta: Meta<typeof ProfileCard> = {
@@ -21,20 +22,26 @@ type Story = StoryObj<typeof ProfileCard>;
 const BORDER = "/borders/border-ts-lavender.svg";
 const PHOTO = "/editors/misty.png";
 
-const EDIT = <Button size="sm" tone="ambient" label="edit profile" />;
+const EDIT = <Button size="sm" tone="ambient" label={EDIT_PROFILE} />;
 
 export const NoTitleYet: Story = {
 	args: { borderUrl: BORDER, trailing: EDIT },
 };
 
 export const OneTitle: Story = {
-	args: { borderUrl: BORDER, titles: ["Git Maintainer"], trailing: EDIT },
+	args: {
+		borderUrl: BORDER,
+		titles: ["Git GOAT"],
+		rank: "'Long Polling'",
+		trailing: EDIT,
+	},
 };
 
 export const ThreeTitles: Story = {
 	args: {
 		borderUrl: BORDER,
-		titles: ["Git Maintainer", "First Ascent", "Summit"],
+		titles: ["Git GOAT", "First Ascent", "Summit"],
+		rank: "Polls Galore!",
 		trailing: EDIT,
 	},
 };
@@ -56,7 +63,7 @@ export const NoPhotoNoBorder: Story = {
 export const Yours: Story = {
 	args: {
 		borderUrl: BORDER,
-		titles: ["Git Maintainer"],
+		titles: ["Git GOAT"],
 		you: true,
 		trailing: EDIT,
 	},

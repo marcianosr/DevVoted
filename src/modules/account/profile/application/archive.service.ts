@@ -1,8 +1,13 @@
 import { findBorderById } from "~/modules/account/profile/domain/border.model";
 import {
+	wearSwatch,
+	type SwatchWearRefusal,
+} from "~/modules/account/profile/domain/profileTheme.model";
+import {
 	fetchUserArchiveState,
 	purchaseBorderTx,
 	setEquippedBorder,
+	setEquippedSwatch,
 } from "~/modules/account/profile/infrastructure/profile.repository";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 
@@ -52,3 +57,27 @@ export const equipBorderService = async (
 
 		return next;
 	}, "equipBorder");
+
+const SWATCH_REFUSAL_MESSAGE = {
+	unknown: "No such swatch",
+	"not-owned": "Cannot wear a swatch you haven't earned",
+} satisfies Record<SwatchWearRefusal, string>;
+
+export const equipSwatchService = async (
+	userId: string,
+	swatchId: string | null
+) =>
+	handleApiOperation(async () => {
+		const state = await fetchUserArchiveState(userId);
+		if (!state) throw new Error("User not found");
+
+		const decision = wearSwatch(swatchId, state.ownedSwatchIds);
+		if (decision.kind === "refused") {
+			throw new Error(SWATCH_REFUSAL_MESSAGE[decision.reason]);
+		}
+
+		const next = await setEquippedSwatch(userId, decision.worn);
+		if (!next) throw new Error("User not found");
+
+		return next;
+	}, "equipSwatch");

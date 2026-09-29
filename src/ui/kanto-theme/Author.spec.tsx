@@ -143,18 +143,19 @@ describe("Author", () => {
 		expect(container.querySelector("span")).toHaveClass("size-12");
 	});
 
-	it("points the handle at the author's GitHub, opened away from the run", () => {
-		render(<Author handle="@matthijsgroen" />);
+	it("points the handle at the author's in-game page, in the same tab", () => {
+		render(<Author handle="@matthijsgroen" userId="matthijs-id" />);
 
 		const link = screen.getByRole("link", { name: "@matthijsgroen" });
 
-		expect(link).toHaveAttribute("href", "https://github.com/matthijsgroen");
-		expect(link).toHaveAttribute("target", "_blank");
-		expect(link).toHaveAttribute("rel", "noreferrer");
+		expect(link).toHaveAttribute("href", "/profile/matthijs-id");
+		expect(link).not.toHaveAttribute("target");
 	});
 
 	it("leaves the link brighter than the credit around it", () => {
-		render(<Author handle="matthijsgroen" role="Poll editor" />);
+		render(
+			<Author handle="matthijsgroen" role="Poll editor" userId="matthijs-id" />
+		);
 
 		const link = screen.getByRole("link", { name: "@matthijsgroen" });
 
@@ -165,35 +166,26 @@ describe("Author", () => {
 	it("sets the credit in the kit's smallest prose", () => {
 		render(<Author handle="matthijsgroen" role="Poll editor" />);
 
-		const link = screen.getByRole("link", { name: "@matthijsgroen" });
-
-		expect(link.parentElement).toHaveClass("text-xs");
+		expect(screen.getByText(/@matthijsgroen/)).toHaveClass("text-xs");
 	});
 });
 
 describe("Author, linking to the writer's page", () => {
-	it("sends the face to their profile while the handle still goes to GitHub", () => {
-		render(
-			<Author handle="matthijsgroen" profileHref="/profile/matthijs-id" />
-		);
+	it("sends the face and the handle to their in-game page, never to GitHub", () => {
+		render(<Author handle="matthijsgroen" userId="matthijs-id" />);
 
 		expect(
 			screen.getByRole("link", { name: "@matthijsgroen's profile" })
 		).toHaveAttribute("href", "/profile/matthijs-id");
 		expect(
 			screen.getByRole("link", { name: "@matthijsgroen" })
-		).toHaveAttribute("href", "https://github.com/matthijsgroen");
+		).toHaveAttribute("href", "/profile/matthijs-id");
 	});
 
-	it("leaves the face unlinked when no page was handed over", () => {
+	it("states the handle unlinked when no player was handed over", () => {
 		render(<Author handle="matthijsgroen" />);
 
-		const links = screen.getAllByRole("link");
-
-		expect(links).toHaveLength(1);
-		expect(links[0]).toHaveAttribute(
-			"href",
-			"https://github.com/matthijsgroen"
-		);
+		expect(screen.queryByRole("link")).toBeNull();
+		expect(screen.getByText(/@matthijsgroen/)).toBeVisible();
 	});
 });

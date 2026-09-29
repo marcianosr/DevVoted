@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { COPY, ProfileCard } from "./ProfileCard.ui";
+import { ProfileCard } from "./ProfileCard.ui";
+import { COPY } from "./WornTitles.ui";
 
 const NAME = "marciano_schildmeijer";
 const BORDER = "/borders/border-ts-lavender.svg";

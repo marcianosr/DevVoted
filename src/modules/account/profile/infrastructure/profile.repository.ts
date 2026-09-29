@@ -2,6 +2,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { usersTable } from "~/database/schema";
+import type { Look } from "~/modules/account/profile/domain/look.model";
 
 export const fetchUserDisplayName = async (
 	userId: string
@@ -47,6 +48,7 @@ export type PublicProfileRow = {
 	equippedTitleIds: string[];
 	archivedStorage: number;
 	ownedSwatchIds: string[];
+	equippedSwatchId: string | null;
 };
 
 export const fetchPublicProfile = async (
@@ -62,6 +64,7 @@ export const fetchPublicProfile = async (
 			equippedTitleIds: usersTable.equipped_title_ids,
 			archivedStorage: usersTable.archived_storage,
 			ownedSwatchIds: usersTable.owned_swatch_ids,
+			equippedSwatchId: usersTable.equipped_swatch_id,
 		})
 		.from(usersTable)
 		.where(eq(usersTable.id, userId))
@@ -74,12 +77,16 @@ export type UserArchiveState = {
 	archivedStorage: number;
 	ownedBorderIds: string[];
 	equippedBorderId: string | null;
+	ownedSwatchIds: string[];
+	equippedSwatchId: string | null;
 };
 
 const archiveColumns = {
 	archivedStorage: usersTable.archived_storage,
 	ownedBorderIds: usersTable.owned_border_ids,
 	equippedBorderId: usersTable.equipped_border_id,
+	ownedSwatchIds: usersTable.owned_swatch_ids,
+	equippedSwatchId: usersTable.equipped_swatch_id,
 };
 
 export const fetchUserArchiveState = async (
@@ -129,6 +136,38 @@ export const setEquippedBorder = async (
 	const [row] = await db
 		.update(usersTable)
 		.set({ equipped_border_id: borderId })
+		.where(eq(usersTable.id, userId))
+		.returning(archiveColumns);
+
+	return row ?? null;
+};
+
+export const setEquippedLook = async (
+	userId: string,
+	look: Look
+): Promise<Look | null> => {
+	const [row] = await db
+		.update(usersTable)
+		.set({
+			equipped_border_id: look.borderId,
+			equipped_title_ids: [...look.titleIds],
+		})
+		.where(eq(usersTable.id, userId))
+		.returning({
+			borderId: usersTable.equipped_border_id,
+			titleIds: usersTable.equipped_title_ids,
+		});
+
+	return row ?? null;
+};
+
+export const setEquippedSwatch = async (
+	userId: string,
+	swatchId: string | null
+): Promise<UserArchiveState | null> => {
+	const [row] = await db
+		.update(usersTable)
+		.set({ equipped_swatch_id: swatchId })
 		.where(eq(usersTable.id, userId))
 		.returning(archiveColumns);
 

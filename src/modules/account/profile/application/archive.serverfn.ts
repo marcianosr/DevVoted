@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
 	equipBorderService,
+	equipSwatchService,
 	getArchiveStateService,
 	purchaseBorderService,
 } from "~/modules/account/profile/application/archive.service";
@@ -22,4 +23,10 @@ export const equipBorder = createServerFn({ method: "POST" })
 	.validator(z.object({ borderId: z.string().min(1).nullable() }))
 	.handler(async ({ data }) =>
 		equipBorderService(await getAuthenticatedUserId(), data.borderId)
+	);
+
+export const equipSwatch = createServerFn({ method: "POST" })
+	.validator(z.object({ swatchId: z.string().min(1).nullable() }))
+	.handler(async ({ data }) =>
+		equipSwatchService(await getAuthenticatedUserId(), data.swatchId)
 	);

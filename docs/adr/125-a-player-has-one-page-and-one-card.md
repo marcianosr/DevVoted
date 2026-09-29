@@ -5,6 +5,11 @@
 Accepted — 2026-09-26 (Marciano, DVTD-w70d). Amends
 [ADR-109](109-a-title-is-earned-and-worn-one-at-a-time.md) Decisions 1 and 6.
 
+**D4 narrowed 2026-09-27** (Marciano, DVTD-e8rm) by
+[ADR-129](129-a-visitor-reads-the-record-not-the-collection.md): the reasoning
+covers the poll collection, not the whole page, so a visitor also reads the
+record and the open run's standing. D4 below states what stays private.
+
 ## Context
 
 A player's identity was split across two pages that did not link to each other
@@ -60,17 +65,19 @@ than throwing — unknown, not-owned, already-worn, at-cap — so the domain dec
 and the service chooses what the player is told. That is the shape the border
 shelf will share when the two equip paths are merged.
 
-## Decision 4: a visitor sees the card and the totals, and nothing else
+## Decision 4: a visitor never sees the collection itself
 
 `getPublicProfile` is a read-only server function taking a validated `userId`,
-which the authorization checklist permits for public data. It returns two halves:
-the identity the card needs, and four counts — polls seen, configs held, gates
-cleared, archive.
+which the authorization checklist permits for public data.
 
 No tabs, and nothing behind them. The collection tabs are the account's own record
 of what it has been shown, and a visitor reading somebody's unanswered polls would
-be reading ahead. This is the boundary the climber card already states in prose:
-answers, unanswered polls and prefetch stay private.
+be reading ahead: answers, unanswered polls and prefetch stay private.
+
+ADR-129 narrowed this to what it was aimed at. The collection is still counts
+only, and a visitor still gets no tab; what a visitor may also read is the
+record and the standing of the run they have open, neither of which leaks an
+answer.
 
 ## Decision 5: the shelves are tabs, not a separate page
 
@@ -86,14 +93,8 @@ routing anywhere.
 
 ## Decision 6: a name goes in-app, a handle goes to GitHub
 
-ADR-109 D6 named three surfaces that show a title. Those surfaces now link to the
-page instead of only stating it: the poll byline, the category seat, the climb map
-card and the attack panel each turn the **face** into a link to `/profile/$userId`.
-The `@handle` beside it still goes to GitHub, because it is a different claim —
-one is who they are here, the other is who they are there.
-
-`CategoryLeader` and `PollAuthor` had no `userId` at all; both now carry one, and
-both repositories already selected from `users`, so it was one column each.
+Replaced by [ADR-141](141-a-face-shows-the-player-and-leads-to-them.md) D3: the
+name beside a face goes to the profile too, and GitHub appears only on the page.
 
 ## Consequences
 

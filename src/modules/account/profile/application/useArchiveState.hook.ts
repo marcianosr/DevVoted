@@ -2,10 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
 	equipBorder,
+	equipSwatch,
 	getArchiveState,
 	purchaseBorder,
 } from "~/modules/account/profile/application/archive.serverfn";
-import { archiveQueryKeys } from "~/shared/queryKeys";
+import { archiveQueryKeys, userQueryKeys } from "~/shared/queryKeys";
 
 export const useArchiveState = (userId: string | undefined) =>
 	useQuery({
@@ -45,6 +46,25 @@ export const useEquipBorder = (userId: string | undefined) => {
 		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: archiveQueryKeys.state(userId),
+			});
+		},
+	});
+};
+
+export const useEquipSwatch = (userId: string | undefined) => {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: async (swatchId: string | null) => {
+			const response = await equipSwatch({ data: { swatchId } });
+			if (!response.success) throw new Error(response.error);
+			return response.data;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: archiveQueryKeys.state(userId),
+			});
+			queryClient.invalidateQueries({
+				queryKey: userQueryKeys.profile(userId ?? ""),
 			});
 		},
 	});

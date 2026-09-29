@@ -1,13 +1,16 @@
 import { useState } from "react";
 
 import {
-	archiveLabelOf,
 	isOwnerTabId,
 	isProfileTabId,
 	PROFILE_TABS,
 	profileCardFor,
+	profileClimbingFor,
+	profileCollectionFor,
+	profileRecordFor,
+	profileRunsFor,
 	profileThemeOf,
-	profileTotalsFor,
+	type ProfileIdentity,
 	type ProfileTabId,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
@@ -15,19 +18,22 @@ import { usePublicProfile } from "~/modules/account/profile/application/usePubli
 import { useTitleState } from "~/modules/account/profile/application/useTitleState.hook";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
-import { BorderShop } from "~/modules/account/profile/presentation/BorderShop.component";
-import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
+import { Appearance } from "~/modules/account/profile/presentation/Appearance.component";
 import { Dex } from "~/modules/collection/dex/presentation/Dex.component";
+import { archiveLabel } from "~/shared/lib/storage";
 import { Button } from "~/ui/kanto-theme/Button.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
 import { ProfileCard } from "~/ui/kanto-theme/ProfileCard.ui";
-import { ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
+import { ProfileClimbing } from "~/ui/kanto-theme/ProfileClimbing.ui";
+import { ProfileCollection } from "~/ui/kanto-theme/ProfileCollection.ui";
+import { ProfileRecord } from "~/ui/kanto-theme/ProfileRecord.ui";
+import { EDIT_PROFILE, ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
 
-const COPY = {
-	edit: "edit profile",
-} as const;
+const VISITED_THEME: KantoColor = "cerulean";
 
 const FIRST_TAB: ProfileTabId = "polls";
-const APPEARANCE_TAB: ProfileTabId = "borders";
+const APPEARANCE_TAB: ProfileTabId = "appearance";
 
 type Viewer = {
 	id: string;
@@ -50,23 +56,24 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 		if (isProfileTabId(id)) setActiveId(id);
 	};
 
+	const equippedBorderId = archive?.equippedBorderId ?? null;
+	const identity: ProfileIdentity = {
+		displayName: viewer.displayName ?? viewer.id,
+		githubUsername: null,
+		photoUrl: viewer.photoUrl ?? null,
+		borderUrl: borderUrlOf(equippedBorderId),
+		wornTitles: wornTitleNames(titles?.equippedTitleIds ?? []),
+		pollsAnswered: titles?.pollsAnswered ?? 0,
+	};
+
 	const card = (
 		<ProfileCard
-			{...profileCardFor(
-				{
-					displayName: viewer.displayName ?? viewer.id,
-					githubUsername: null,
-					photoUrl: viewer.photoUrl ?? null,
-					borderUrl: borderUrlOf(archive?.equippedBorderId ?? null),
-					wornTitles: wornTitleNames(titles?.equippedTitleIds ?? []),
-				},
-				true
-			)}
+			{...profileCardFor(identity, true)}
 			trailing={
 				<Button
 					size="sm"
 					tone="ambient"
-					label={COPY.edit}
+					label={EDIT_PROFILE}
 					onPress={() => setActiveId(APPEARANCE_TAB)}
 				/>
 			}
@@ -80,27 +87,48 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 			activeId={activeId}
 			onSelect={selectTab}
 			theme={profileThemeOf(activeId)}
-			archive={archiveLabelOf(archive?.archivedStorage ?? 0)}
+			archive={archiveLabel(archive?.archivedStorage ?? 0)}
 		>
 			{isOwnerTabId(activeId) ? null : (
 				<Dex userId={viewer.id} activeId={activeId} />
 			)}
-			{activeId === "borders" ? <BorderShop userId={viewer.id} /> : null}
-			{activeId === "titles" ? <TitleShelf userId={viewer.id} /> : null}
+			{activeId === APPEARANCE_TAB ? (
+				<Appearance
+					userId={viewer.id}
+					identity={identity}
+					equippedBorderId={equippedBorderId}
+				/>
+			) : null}
 		</ProfileScreen>
 	);
 };
 
-const VisitedProfile = ({ userId }: { userId: string }) => {
+const VisitedProfile = ({
+	userId,
+	viewerId,
+}: {
+	userId: string;
+	viewerId: string | undefined;
+}) => {
 	const { data: profile } = usePublicProfile(userId);
+	const { data: viewer } = usePublicProfile(viewerId);
 
 	if (!profile) return null;
 
 	return (
 		<ProfileScreen
 			card={<ProfileCard {...profileCardFor(profile.identity, false)} />}
-			theme="cerulean"
-			totals={profileTotalsFor(profile.totals)}
+			theme={VISITED_THEME}
+			sections={
+				<>
+					<ProfileRecord
+						{...profileRecordFor(profile.record, viewer?.record)}
+					/>
+					<DexRuns {...profileRunsFor(profile.record)} />
+					<ProfileClimbing {...profileClimbingFor(profile.standing)} />
+					<ProfileCollection {...profileCollectionFor(profile.totals)} />
+				</>
+			}
 		/>
 	);
 };
@@ -109,5 +137,5 @@ export const ProfilePage = ({ userId, viewer }: ProfilePageProps) =>
 	viewer?.id === userId ? (
 		<OwnProfile viewer={viewer} />
 	) : (
-		<VisitedProfile userId={userId} />
+		<VisitedProfile userId={userId} viewerId={viewer?.id} />
 	);

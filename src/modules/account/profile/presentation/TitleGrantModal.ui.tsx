@@ -1,87 +1,147 @@
-import { Button } from "~/ui/kanto-theme/Button.ui";
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { Icon, type IconName } from "~/ui/kanto-theme/Icon.ui";
 import { Modal } from "~/ui/kanto-theme/Modal.ui";
-import { Typography } from "~/ui/kanto-theme/Typography.ui";
+import { Panel } from "~/ui/kanto-theme/Panel.ui";
+import { ScreenFooter } from "~/ui/kanto-theme/ScreenFooter.ui";
+import {
+	Typography,
+	type TypographyVariant,
+} from "~/ui/kanto-theme/Typography.ui";
 
 const COPY = {
 	label: "Titles granted",
-	eyebrow: "you were here before",
-	heading: "The rebuild kept your record",
-	closing: "New runs begin under the current rules.",
-	wear: "Wear",
-	worn: "Worn",
+	heading: "Thank you for playing",
+	intro: "You played before the rebuild. Thanks for sticking around.",
+	titleGain: "+ title",
+	archivedStorage: "Archived storage",
+	kept: "history kept",
+	rules: "new runs use the current rules",
+	archivedRun: (on: string) => `run from ${on} archived`,
+	wearOne: "Wear the title",
+	wearMany: "Wear the titles",
 	close: "Close",
+	later: "Later",
 } as const;
 
-const LIST = "flex flex-col gap-3";
-const ROW = "flex items-center gap-4 border border-theme-faint p-3";
-const ROW_TEXT = "flex min-w-0 flex-1 flex-col gap-1";
-const DIVIDER = "border-t border-theme-faint";
-const ACTIONS = "flex items-center justify-end pt-1";
-const STACK = "flex flex-col gap-4";
+const MODAL_THEME: KantoColor = "cerulean";
+const GAIN: KantoColor = "viridian";
+const TITLE_ICON: IconName = "star";
+const STORAGE_ICON: IconName = "floppy";
+const TITLE_NAME: TypographyVariant = "accent";
+const STORAGE_NAME: TypographyVariant = "subtitle";
+const SEPARATOR = " · ";
 
-export type GrantedTitle = {
-	id: string;
-	name: string;
-	earnedWhen: string;
-	worn: boolean;
-};
+const TILE =
+	"flex size-7 shrink-0 items-center justify-center rounded-md bg-theme-raised text-theme";
+
+export type GrantedTitle = { id: string; name: string; worn: boolean };
 
 export type TitleGrantModalProps = {
 	titles: readonly GrantedTitle[];
+	archiveBonus?: string;
 	archivedOn?: string;
+	wears: number;
+	note?: string;
 	isMutating?: boolean;
-	onWear: (titleId: string) => void;
+	onWear: () => void;
 	onDismiss: () => void;
 };
 
+const pressLabelFor = (count: number): string =>
+	count === 0 ? COPY.close : count === 1 ? COPY.wearOne : COPY.wearMany;
+
+const footerLineFor = (archivedOn?: string): string =>
+	[
+		COPY.kept,
+		...(archivedOn === undefined ? [] : [COPY.archivedRun(archivedOn)]),
+		COPY.rules,
+	].join(SEPARATOR);
+
+type RewardRowProps = {
+	icon: IconName;
+	name: string;
+	variant: TypographyVariant;
+	gain: string;
+};
+
+const RewardRow = ({ icon, name, variant, gain }: RewardRowProps) => (
+	<Panel.Row trailing={<Badge color={GAIN}>{gain}</Badge>}>
+		<span aria-hidden className={TILE}>
+			<Icon name={icon} />
+		</span>
+		<Typography variant={variant} as="span">
+			{name}
+		</Typography>
+	</Panel.Row>
+);
+
 export const TitleGrantModal = ({
 	titles,
+	archiveBonus,
 	archivedOn,
+	wears,
+	note,
 	isMutating = false,
 	onWear,
 	onDismiss,
-}: TitleGrantModalProps) => (
-	<Modal label={COPY.label} onDismiss={onDismiss}>
-		<div className={STACK}>
-			<Typography variant="hint">{COPY.eyebrow}</Typography>
-			<Typography variant="title">{COPY.heading}</Typography>
-			{archivedOn === undefined ? null : (
-				<Typography variant="caption" as="p">
-					{`Your run from ${archivedOn} has entered the archive.`}
-				</Typography>
-			)}
+}: TitleGrantModalProps) => {
+	const unworn = titles.filter((title) => !title.worn).length;
+	const atCap = wears === 0 && unworn > 0;
+	const shut = isMutating || atCap;
+	const pressLabel = pressLabelFor(atCap ? unworn : wears);
+	const pressHandler = wears === 0 ? onDismiss : onWear;
 
-			<div className={DIVIDER} />
+	return (
+		<Modal
+			label={COPY.label}
+			heading={COPY.heading}
+			theme={MODAL_THEME}
+			onDismiss={onDismiss}
+		>
+			<Typography variant="caption" as="p">
+				{COPY.intro}
+			</Typography>
 
-			<ul className={LIST}>
-				{titles.map((title) => (
-					<li key={title.id} className={ROW}>
-						<span className={ROW_TEXT}>
-							<Typography variant="accent">{title.name}</Typography>
-							<Typography variant="hint">{title.earnedWhen}</Typography>
-						</span>
-						<Button
-							size="sm"
-							tone={title.worn ? "ambient" : "action"}
-							label={title.worn ? COPY.worn : COPY.wear}
-							disabled={title.worn || isMutating}
-							onPress={() => onWear(title.id)}
+			<Panel>
+				<Panel.Rows>
+					{titles.map((title) => (
+						<RewardRow
+							key={title.id}
+							icon={TITLE_ICON}
+							name={title.name}
+							variant={TITLE_NAME}
+							gain={COPY.titleGain}
 						/>
-					</li>
-				))}
-			</ul>
+					))}
+					{archiveBonus === undefined ? null : (
+						<RewardRow
+							icon={STORAGE_ICON}
+							name={COPY.archivedStorage}
+							variant={STORAGE_NAME}
+							gain={`+ ${archiveBonus}`}
+						/>
+					)}
+				</Panel.Rows>
+				<Panel.Footer>
+					<Typography variant="hint" as="span">
+						<Icon name="tick" /> {footerLineFor(archivedOn)}
+					</Typography>
+				</Panel.Footer>
+			</Panel>
 
-			<Typography variant="hint">{COPY.closing}</Typography>
-
-			<div className={ACTIONS}>
-				<Button
-					size="md"
-					tone="commit"
-					label={COPY.close}
-					disabled={isMutating}
-					onPress={onDismiss}
-				/>
-			</div>
-		</div>
-	</Modal>
-);
+			<ScreenFooter
+				action={{
+					label: pressLabel,
+					mark: "dashed",
+					onPress: shut ? undefined : pressHandler,
+				}}
+				asides={[
+					{ label: COPY.later, onPress: isMutating ? undefined : onDismiss },
+				]}
+				note={note}
+				rule={false}
+			/>
+		</Modal>
+	);
+};

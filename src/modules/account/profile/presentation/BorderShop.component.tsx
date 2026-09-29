@@ -8,9 +8,15 @@ import { BorderShop as BorderShopUI } from "~/modules/account/profile/presentati
 
 type BorderShopProps = {
 	userId: string;
+	tryingOnId: string | null;
+	onTryOn: (borderId: string | null) => void;
 };
 
-export const BorderShop = ({ userId }: BorderShopProps) => {
+export const BorderShop = ({
+	userId,
+	tryingOnId,
+	onTryOn,
+}: BorderShopProps) => {
 	const { data: archive } = useArchiveState(userId);
 	const purchase = usePurchaseBorder(userId);
 	const equip = useEquipBorder(userId);
@@ -23,9 +29,12 @@ export const BorderShop = ({ userId }: BorderShopProps) => {
 		const owned = archive.ownedBorderIds.includes(border.id);
 		const equipped = archive.equippedBorderId === border.id;
 
+		const tryingOn = tryingOnId === border.id;
+		const settled = { onSuccess: () => onTryOn(null) };
+
 		const press = () => {
-			if (!owned) return purchase.mutate(border.id);
-			return equip.mutate(equipped ? null : border.id);
+			if (!owned) return purchase.mutate(border.id, settled);
+			return equip.mutate(equipped ? null : border.id, settled);
 		};
 
 		return {
@@ -37,7 +46,9 @@ export const BorderShop = ({ userId }: BorderShopProps) => {
 			equipped,
 			canAfford: archive.archivedStorage >= border.cost,
 			isMutating,
+			tryingOn,
 			onPress: press,
+			onTryOn: () => onTryOn(tryingOn ? null : border.id),
 		};
 	});
 

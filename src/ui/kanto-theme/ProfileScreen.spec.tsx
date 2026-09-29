@@ -42,10 +42,11 @@ describe("ProfileScreen", () => {
 		expect(screen.getByRole("heading", { name: "Dex" })).toBeVisible();
 	});
 
-	it("reads out what the account is holding", () => {
+	it("reads out what the account is holding, with the figure in a badge", () => {
 		renderOwn();
 
-		expect(screen.getByText("8.2 MB archive")).toBeVisible();
+		expect(screen.getByText("8.2 MB")).toHaveClass("badge-theme");
+		expect(screen.getByText("archive")).toBeVisible();
 	});
 
 	it("shows the panel it was handed", () => {
@@ -79,7 +80,7 @@ describe("ProfileScreen, seen by a visitor", () => {
 			<ProfileScreen
 				card={CARD}
 				theme="cerulean"
-				totals={["9 of 96 polls", "3 of 13 gates"]}
+				sections={<p>9 of 96 polls</p>}
 			/>
 		);
 
@@ -89,11 +90,10 @@ describe("ProfileScreen, seen by a visitor", () => {
 		expect(screen.getByText("marciano_schildmeijer")).toBeVisible();
 	});
 
-	it("states the headline totals", () => {
+	it("draws the sections it was handed under the card", () => {
 		renderVisited();
 
 		expect(screen.getByText("9 of 96 polls")).toBeVisible();
-		expect(screen.getByText("3 of 13 gates")).toBeVisible();
 	});
 
 	it("offers no tabs at all, because another player's collection is not shown", () => {

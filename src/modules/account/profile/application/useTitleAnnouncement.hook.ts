@@ -12,6 +12,7 @@ const ANNOUNCEMENT_STALE_MS = 1000 * 60 * 30;
 const NOTHING_PENDING: TitleAnnouncement = {
 	titleIds: [],
 	archivedRunStartedAt: null,
+	legacyBonusBytes: null,
 };
 
 export const useTitleAnnouncement = (userId: string | undefined) =>

@@ -1,10 +1,14 @@
 import {
+	isGrantedTitleId,
 	removeTitle,
 	wearTitle,
 	WORN_TITLE_CAP,
 	type WearRefusal,
 } from "~/modules/account/profile/domain/title.model";
-import { fetchArchivedRunStartedAt } from "~/modules/account/profile/infrastructure/legacyRun.repository";
+import {
+	fetchArchivedRunStartedAt,
+	fetchLegacyBonusBytes,
+} from "~/modules/account/profile/infrastructure/legacy.repository";
 import {
 	fetchUnannouncedTitleIds,
 	fetchUserTitleState,
@@ -12,6 +16,8 @@ import {
 	setEquippedTitles,
 } from "~/modules/account/profile/infrastructure/title.repository";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
+import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
+import { fetchObjectiveProgressByUser } from "~/modules/collection/dex/infrastructure/configdex.repository";
 
 const NO_SUCH_USER = "User not found";
 
@@ -24,10 +30,17 @@ const REFUSAL_MESSAGE: Record<WearRefusal, string> = {
 
 export const getTitleStateService = async (userId: string) =>
 	handleApiOperation(async () => {
-		const state = await fetchUserTitleState(userId);
+		const [state, progress] = await Promise.all([
+			fetchUserTitleState(userId),
+			fetchObjectiveProgressByUser(userId),
+		]);
 		if (!state) throw new Error(NO_SUCH_USER);
 
-		return state;
+		return {
+			...state,
+			pollsAnswered: pollsAnsweredIn(progress),
+			counts: progress,
+		};
 	}, "getTitleState");
 
 export const wearTitleService = async (userId: string, titleId: string) =>
@@ -67,22 +80,31 @@ export const removeTitleService = async (userId: string, titleId: string) =>
 export type TitleAnnouncement = {
 	readonly titleIds: readonly string[];
 	readonly archivedRunStartedAt: string | null;
+	readonly legacyBonusBytes: number | null;
 };
 
 const NOTHING_TO_ANNOUNCE: TitleAnnouncement = {
 	titleIds: [],
 	archivedRunStartedAt: null,
+	legacyBonusBytes: null,
 };
 
 export const getTitleAnnouncementService = async (userId: string) =>
 	handleApiOperation(async () => {
 		const titleIds = await fetchUnannouncedTitleIds(userId);
 		if (titleIds.length === 0) return NOTHING_TO_ANNOUNCE;
+		if (!titleIds.some(isGrantedTitleId)) {
+			return { ...NOTHING_TO_ANNOUNCE, titleIds } satisfies TitleAnnouncement;
+		}
 
-		const startedAt = await fetchArchivedRunStartedAt(userId);
+		const [startedAt, legacyBonusBytes] = await Promise.all([
+			fetchArchivedRunStartedAt(userId),
+			fetchLegacyBonusBytes(userId),
+		]);
 		return {
 			titleIds,
 			archivedRunStartedAt: startedAt?.toISOString() ?? null,
+			legacyBonusBytes,
 		} satisfies TitleAnnouncement;
 	}, "getTitleAnnouncement");
 

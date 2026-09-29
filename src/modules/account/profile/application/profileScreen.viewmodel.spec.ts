@@ -1,24 +1,34 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	archiveLabelOf,
+	appearancePreviewFor,
 	isOwnerTabId,
 	isProfileTabId,
 	OWNER_TAB_IDS,
 	PROFILE_TABS,
 	profileCardFor,
+	profileClimbingFor,
+	profileCollectionFor,
+	profileRecordFor,
 	profileThemeOf,
-	profileTotalsFor,
+	triedOnBorderOf,
 	type ProfileIdentity,
+	type ProfileRecord,
+	type ProfileStanding,
+	type ProfileTotals,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { borders } from "~/modules/account/profile/domain/border.model";
 import { DEX_TABS } from "~/modules/collection/dex/application/dexScreen.viewmodel";
+import { standingFor } from "~/modules/run/community/application/playerCard.viewmodel";
+import { kbLabel } from "~/shared/lib/storage";
 
 const IDENTITY: ProfileIdentity = {
 	displayName: "marciano_schildmeijer",
 	githubUsername: "marciano",
 	photoUrl: "/editors/misty.png",
 	borderUrl: "/borders/border-ts-lavender.svg",
-	wornTitles: ["Git Maintainer", "Summit"],
+	wornTitles: ["Git GOAT", "Summit"],
+	pollsAnswered: 120,
 };
 
 const BARE: ProfileIdentity = {
@@ -27,6 +37,7 @@ const BARE: ProfileIdentity = {
 	photoUrl: null,
 	borderUrl: null,
 	wornTitles: [],
+	pollsAnswered: 0,
 };
 
 describe("PROFILE_TABS", () => {
@@ -36,10 +47,10 @@ describe("PROFILE_TABS", () => {
 		for (const tab of DEX_TABS) expect(ids).toContain(tab.id);
 	});
 
-	it("adds the two shelves the owner equips from, behind the collection", () => {
+	it("adds one appearance tab the owner equips from, behind the collection", () => {
 		const ids = PROFILE_TABS.map((tab) => tab.id);
 
-		expect(ids.slice(-2)).toEqual(["borders", "titles"]);
+		expect(ids.slice(-1)).toEqual(["appearance"]);
 	});
 
 	it("names each tab once, because the id is what the press reads", () => {
@@ -58,8 +69,13 @@ describe("isProfileTabId", () => {
 		expect(isProfileTabId("swatches")).toBe(true);
 	});
 
-	it("admits a shelf", () => {
-		expect(isProfileTabId("titles")).toBe(true);
+	it("admits the appearance tab", () => {
+		expect(isProfileTabId("appearance")).toBe(true);
+	});
+
+	it("refuses the retired shelf ids, so an old press cannot set a dead tab", () => {
+		expect(isProfileTabId("borders")).toBe(false);
+		expect(isProfileTabId("titles")).toBe(false);
 	});
 
 	it("refuses anything else, so a stale press cannot set a dead tab", () => {
@@ -68,7 +84,7 @@ describe("isProfileTabId", () => {
 });
 
 describe("isOwnerTabId", () => {
-	it("names only the shelves, which a visitor never sees", () => {
+	it("names only the appearance tab, which a visitor never sees", () => {
 		expect(OWNER_TAB_IDS.every(isOwnerTabId)).toBe(true);
 		expect(isOwnerTabId("polls")).toBe(false);
 	});
@@ -79,8 +95,10 @@ describe("profileThemeOf", () => {
 		expect(profileThemeOf("swatches")).toBe("lavender");
 	});
 
-	it("gives each shelf a colour of its own", () => {
-		expect(profileThemeOf("borders")).not.toBe(profileThemeOf("titles"));
+	it("gives the appearance tab a colour no Dex tab wears", () => {
+		const dexColors = DEX_TABS.map((tab) => tab.color);
+
+		expect(dexColors).not.toContain(profileThemeOf("appearance"));
 	});
 
 	it("falls back to the first tab's colour for an id nothing claims", () => {
@@ -92,7 +110,7 @@ describe("profileCardFor", () => {
 	it("names the player and every title they wear", () => {
 		expect(profileCardFor(IDENTITY, false)).toMatchObject({
 			name: "marciano_schildmeijer",
-			titles: ["Git Maintainer", "Summit"],
+			titles: ["Git GOAT", "Summit"],
 			handle: "marciano",
 			photoUrl: "/editors/misty.png",
 			borderUrl: "/borders/border-ts-lavender.svg",
@@ -117,48 +135,238 @@ describe("profileCardFor", () => {
 	it("marks the card as yours when it is", () => {
 		expect(profileCardFor(IDENTITY, true).you).toBe(true);
 	});
+
+	it("states the rank the answer count has reached", () => {
+		expect(profileCardFor(IDENTITY, false).rank).toBe("'Long Polling'");
+	});
+
+	it("puts an account that has answered nothing on the first rung", () => {
+		expect(profileCardFor(BARE, false).rank).toBe("Poll Newbie");
+	});
 });
 
-describe("profileTotalsFor", () => {
-	const TOTALS = {
+describe("profileCollectionFor", () => {
+	const TOTALS: ProfileTotals = {
 		pollsSeen: 9,
 		pollsTotal: 96,
 		configsHeld: 4,
 		configsTotal: 30,
-		gatesCleared: 3,
-		gatesTotal: 13,
+		titlesOwned: 2,
+		titlesTotal: 16,
 		archivedStorage: 8_388_608,
 	};
 
 	it("states each collection as held of total", () => {
-		expect(profileTotalsFor(TOTALS)).toEqual([
-			"9 of 96 polls",
-			"4 of 30 configs",
-			"3 of 13 gates",
-			"8 MB archive",
+		expect(profileCollectionFor(TOTALS).counts).toEqual([
+			{ label: "polls", figure: "9 of 96", held: 9, total: 96 },
+			{ label: "configs", figure: "4 of 30", held: 4, total: 30 },
+			{ label: "titles", figure: "2 of 16", held: 2, total: 16 },
 		]);
 	});
 
 	it("states a brand new account as zero rather than leaving it blank", () => {
-		const fresh = profileTotalsFor({
+		const fresh = profileCollectionFor({
 			...TOTALS,
 			pollsSeen: 0,
 			configsHeld: 0,
-			gatesCleared: 0,
-			archivedStorage: 0,
+			titlesOwned: 0,
 		});
 
-		expect(fresh[0]).toBe("0 of 96 polls");
-		expect(fresh[2]).toBe("0 of 13 gates");
+		expect(fresh.counts[0].figure).toBe("0 of 96");
+	});
+
+	it("carries the archive on the heading, where the borders are paid for", () => {
+		expect(profileCollectionFor(TOTALS).meta).toContain("8 MB archive");
+	});
+
+	it("counts no gates, because the record states depth and swatches", () => {
+		const labels = profileCollectionFor(TOTALS).counts.map(
+			(count) => count.label
+		);
+
+		expect(labels).not.toContain("gates");
+		expect(labels).not.toContain("swatches");
+	});
+
+	it("says the polls themselves stay private", () => {
+		expect(profileCollectionFor(TOTALS).note).toContain("private");
 	});
 });
 
-describe("archiveLabelOf", () => {
-	it("names the unit, because a bare number reads as a score", () => {
-		expect(archiveLabelOf(8_388_608)).toBe("8 MB archive");
+describe("profileRecordFor", () => {
+	const RECORD: ProfileRecord = {
+		deepestGate: 9,
+		gatesTotal: 13,
+		clearedGates: [1, 2, 3, 4, 6],
+		runsFinished: 24,
+		seats: [{ category: "css", streak: 21 }],
+		recentRuns: [],
+	};
+
+	it("leads with how deep they reached and how many gates they swept", () => {
+		expect(profileRecordFor(RECORD).figures).toMatchObject([
+			{ label: "deepest gate", figure: "9 of 13" },
+			{ label: "swatches", figure: "5 of 13" },
+			{ label: "runs finished", figure: "24" },
+		]);
 	});
 
-	it("reads zero as bytes rather than as nothing at all", () => {
-		expect(archiveLabelOf(0)).toContain("archive");
+	it("states the viewer's own figure beside the two headline ones", () => {
+		const yours: ProfileRecord = {
+			...RECORD,
+			deepestGate: 6,
+			clearedGates: [1, 2, 3],
+		};
+
+		const [deepest, swatches] = profileRecordFor(RECORD, yours).figures;
+
+		expect(deepest.yours).toBe("you 6 of 13");
+		expect(swatches.yours).toBe("you 3 of 13");
+	});
+
+	it("withholds the comparison when there is no viewer to compare against", () => {
+		for (const figure of profileRecordFor(RECORD).figures)
+			expect(figure).not.toHaveProperty("yours");
+	});
+
+	it("leaves the run count uncompared, because it rewards playing, not climbing", () => {
+		const [, , runs] = profileRecordFor(RECORD, RECORD).figures;
+
+		expect(runs).not.toHaveProperty("yours");
+	});
+
+	it("draws a swatch for every gate, filling only the ones they swept", () => {
+		const { swatches } = profileRecordFor(RECORD);
+
+		expect(swatches).toHaveLength(13);
+		expect(swatches.filter((fill) => fill.state === "discovered")).toHaveLength(
+			5
+		);
+	});
+
+	it("names each seat they hold and the streak that holds it", () => {
+		expect(profileRecordFor(RECORD).seats).toEqual([
+			{ category: "CSS", figure: "21 in a row" },
+		]);
+	});
+
+	it("holds no seats without inventing one", () => {
+		expect(profileRecordFor({ ...RECORD, seats: [] }).seats).toEqual([]);
+	});
+});
+
+describe("profileClimbingFor", () => {
+	const STANDING: ProfileStanding = {
+		gate: 6,
+		band: "healthy",
+		coveragePercent: 68,
+		streak: 7,
+		storageKb: 4_300,
+		build: { configs: [] },
+	};
+
+	it("draws the coverage the open run holds against its gate", () => {
+		const { standing } = profileClimbingFor(STANDING);
+
+		expect(standing?.gate).toMatchObject({
+			label: "gate 6",
+			coverage: { held: 68 },
+		});
+	});
+
+	it("draws the same standing the hover card draws", () => {
+		expect(profileClimbingFor(STANDING).standing).toEqual(
+			standingFor(STANDING)
+		);
+	});
+
+	it("tiles run storage, streak and best category", () => {
+		expect(
+			profileClimbingFor({ ...STANDING, bestCategory: "css" }).standing?.stats
+		).toEqual([
+			{ label: "run storage", value: kbLabel(4_300) },
+			{ label: "streak", value: "7" },
+			{ label: "best", value: "CSS" },
+		]);
+	});
+
+	it("draws no standing when no run is open, and says so on the heading", () => {
+		const climbing = profileClimbingFor(null);
+
+		expect(climbing.standing).toBeUndefined();
+		expect(climbing.meta).toBe("nothing open");
+	});
+});
+
+describe("triedOnBorderOf", () => {
+	const [stackTrace, mergeConflict] = borders;
+
+	it("names the border being tried on when it is not the one worn", () => {
+		expect(triedOnBorderOf(mergeConflict.id, stackTrace.id)).toBe(
+			mergeConflict
+		);
+	});
+
+	it("names a tried-on border when nothing is worn", () => {
+		expect(triedOnBorderOf(stackTrace.id, null)).toBe(stackTrace);
+	});
+
+	it("names nothing when the tried-on border is already worn", () => {
+		expect(triedOnBorderOf(stackTrace.id, stackTrace.id)).toBeUndefined();
+	});
+
+	it("names nothing when nothing is tried on", () => {
+		expect(triedOnBorderOf(null, stackTrace.id)).toBeUndefined();
+	});
+
+	it("names nothing for an id the catalogue does not hold", () => {
+		expect(triedOnBorderOf("border-missingno", null)).toBeUndefined();
+	});
+});
+
+describe("appearancePreviewFor", () => {
+	it("draws the visitor's card, never marked as yours", () => {
+		expect(appearancePreviewFor(IDENTITY).card).toEqual(
+			profileCardFor(IDENTITY, false)
+		);
+	});
+
+	it("wears the same face and border on the byline and the climber card", () => {
+		const { byline, climber } = appearancePreviewFor(IDENTITY);
+
+		expect(byline).toMatchObject({
+			photoUrl: "/editors/misty.png",
+			borderUrl: "/borders/border-ts-lavender.svg",
+		});
+		expect(climber).toMatchObject({
+			name: "marciano_schildmeijer",
+			photoUrl: "/editors/misty.png",
+			borderUrl: "/borders/border-ts-lavender.svg",
+		});
+	});
+
+	it("shows the first worn title on the surfaces that seat only one", () => {
+		const { byline, climber } = appearancePreviewFor(IDENTITY);
+
+		expect(byline.title).toBe("Git GOAT");
+		expect(climber.title).toBe("Git GOAT");
+	});
+
+	it("credits the byline to the GitHub handle", () => {
+		expect(appearancePreviewFor(IDENTITY).byline.handle).toBe("marciano");
+	});
+
+	it("credits the byline to the display name when there is no handle", () => {
+		expect(appearancePreviewFor(BARE).byline.handle).toBe("Brock");
+	});
+
+	it("withholds a title, photo and border the player does not have", () => {
+		const { byline, climber } = appearancePreviewFor(BARE);
+
+		for (const surface of [byline, climber]) {
+			expect(surface).not.toHaveProperty("title");
+			expect(surface).not.toHaveProperty("photoUrl");
+			expect(surface).not.toHaveProperty("borderUrl");
+		}
 	});
 });

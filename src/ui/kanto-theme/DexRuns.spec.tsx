@@ -52,6 +52,26 @@ describe("DexRuns", () => {
 		).toEqual(["/runs/1", "/runs/2", "/runs/3"]);
 	});
 
+	it("draws a row without a permalink when the reader may not open the run", () => {
+		const props = dexRunsProps();
+		render(
+			<DexRuns
+				{...props}
+				rows={props.rows.map((row) => ({
+					runId: row.runId,
+					date: row.date,
+					swatches: row.swatches,
+					outcome: row.outcome,
+					coverage: row.coverage,
+					band: row.band,
+				}))}
+			/>
+		);
+
+		expect(screen.queryAllByRole("link")).toHaveLength(0);
+		expect(screen.getByText("Lavender held")).toBeVisible();
+	});
+
 	it("draws every run against the full gate ladder", () => {
 		render(<DexRuns {...dexRunsProps()} />);
 

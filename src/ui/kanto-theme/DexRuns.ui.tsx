@@ -20,7 +20,7 @@ export const heldOutcomeOf = (gateName: string): string => `${gateName} held`;
 
 export type DexRunRow = {
 	runId: number;
-	href: string;
+	href?: string;
 	date: string;
 	swatches: readonly SwatchFill[];
 	outcome: string;

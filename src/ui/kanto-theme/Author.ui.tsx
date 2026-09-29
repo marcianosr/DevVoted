@@ -1,5 +1,8 @@
 import { clsx } from "clsx";
 
+import { profilePathFor } from "~/shared/lib/profilePath";
+
+import { PlayerFaceLink } from "./Climber.ui";
 import { Link } from "./Link.ui";
 import { Typography } from "./Typography.ui";
 
@@ -20,8 +23,6 @@ const AVATAR_SIZE = {
 
 const CREATED_BY = "Created by";
 const ROLE_SEPARATOR = "·";
-const GITHUB = "https://github.com";
-const PROFILE_OF = (handle: string) => `${handle}'s profile`;
 
 const handleOf = (handle: string) => handle.replace(/^@/, "");
 
@@ -34,17 +35,11 @@ type FaceProps = {
 	handle: string;
 	photoUrl?: string;
 	borderUrl?: string;
-	profileHref?: string;
+	userId?: string;
 	size: AuthorSize;
 };
 
-const Face = ({
-	handle,
-	photoUrl,
-	borderUrl,
-	profileHref,
-	size,
-}: FaceProps) => {
+const Face = ({ handle, photoUrl, borderUrl, userId, size }: FaceProps) => {
 	const drawn = (
 		<>
 			<span aria-hidden className={FACE}>
@@ -59,19 +54,26 @@ const Face = ({
 		</>
 	);
 
-	if (profileHref === undefined)
+	if (userId === undefined)
 		return <span className={clsx(AVATAR, AVATAR_SIZE[size])}>{drawn}</span>;
 
 	return (
-		<a
-			href={profileHref}
-			aria-label={PROFILE_OF(`@${handleOf(handle)}`)}
+		<PlayerFaceLink
+			userId={userId}
+			name={`@${handleOf(handle)}`}
 			className={clsx(AVATAR, AVATAR_SIZE[size])}
 		>
 			{drawn}
-		</a>
+		</PlayerFaceLink>
 	);
 };
+
+const Credit = ({ handle, userId }: Pick<AuthorProps, "handle" | "userId">) =>
+	userId === undefined ? (
+		<>{`@${handleOf(handle)}`}</>
+	) : (
+		<Link href={profilePathFor(userId)}>{`@${handleOf(handle)}`}</Link>
+	);
 
 export type AuthorProps = {
 	handle: string;
@@ -79,7 +81,7 @@ export type AuthorProps = {
 	title?: string;
 	photoUrl?: string;
 	borderUrl?: string;
-	profileHref?: string;
+	userId?: string;
 	size?: AuthorSize;
 	rule?: boolean;
 };
@@ -90,7 +92,7 @@ export const Author = ({
 	title,
 	photoUrl,
 	borderUrl,
-	profileHref,
+	userId,
 	size = "md",
 	rule = true,
 }: AuthorProps) => (
@@ -99,15 +101,13 @@ export const Author = ({
 			handle={handle}
 			photoUrl={photoUrl}
 			borderUrl={borderUrl}
-			profileHref={profileHref}
+			userId={userId}
 			size={size}
 		/>
 		<span className={CREDIT}>
 			<Typography variant="hint" as="span">
 				{`${CREATED_BY} `}
-				<Link href={`${GITHUB}/${handleOf(handle)}`} external>
-					{`@${handleOf(handle)}`}
-				</Link>
+				<Credit handle={handle} userId={userId} />
 				{role === undefined ? null : ` ${ROLE_SEPARATOR} ${role}`}
 			</Typography>
 			{title === undefined ? null : (

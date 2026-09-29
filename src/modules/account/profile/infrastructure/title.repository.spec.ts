@@ -38,21 +38,21 @@ describe("fetchUserTitleState", () => {
 
 	it("reports the worn titles alongside everything the account has earned", async () => {
 		mock.results.push([{ equippedTitleIds: [GIT] }]);
-		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
+		mock.results.push([{ titleId: GIT }, { titleId: "title-bikeshedder" }]);
 
 		expect(await fetchUserTitleState(RED)).toEqual({
-			ownedTitleIds: [GIT, "title-summit"],
+			ownedTitleIds: [GIT, "title-bikeshedder"],
 			equippedTitleIds: [GIT],
 		});
 	});
 
 	it("keeps the order it was written in, because the first worn title is primary", async () => {
-		mock.results.push([{ equippedTitleIds: ["title-summit", GIT] }]);
-		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
+		mock.results.push([{ equippedTitleIds: ["title-bikeshedder", GIT] }]);
+		mock.results.push([{ titleId: GIT }, { titleId: "title-bikeshedder" }]);
 
 		const state = await fetchUserTitleState(RED);
 
-		expect(state?.equippedTitleIds).toEqual(["title-summit", GIT]);
+		expect(state?.equippedTitleIds).toEqual(["title-bikeshedder", GIT]);
 	});
 
 	it("reports an account wearing none, which is where every account starts", async () => {
@@ -79,22 +79,22 @@ describe("setEquippedTitles", () => {
 	});
 
 	it("wears titles the account holds", async () => {
-		mock.results.push([{ titleId: GIT }, { titleId: "title-summit" }]);
-		mock.results.push([{ equippedTitleIds: [GIT, "title-summit"] }]);
+		mock.results.push([{ titleId: GIT }, { titleId: "title-bikeshedder" }]);
+		mock.results.push([{ equippedTitleIds: [GIT, "title-bikeshedder"] }]);
 
-		expect(await setEquippedTitles(RED, [GIT, "title-summit"])).toEqual({
-			ownedTitleIds: [GIT, "title-summit"],
-			equippedTitleIds: [GIT, "title-summit"],
+		expect(await setEquippedTitles(RED, [GIT, "title-bikeshedder"])).toEqual({
+			ownedTitleIds: [GIT, "title-bikeshedder"],
+			equippedTitleIds: [GIT, "title-bikeshedder"],
 		});
 		expect(mock.setCalls[0]).toEqual({
-			equipped_title_ids: [GIT, "title-summit"],
+			equipped_title_ids: [GIT, "title-bikeshedder"],
 		});
 	});
 
 	it("refuses the whole set when one title was never earned, and writes nothing", async () => {
 		mock.results.push([{ titleId: GIT }]);
 
-		expect(await setEquippedTitles(RED, [GIT, "title-summit"])).toBeNull();
+		expect(await setEquippedTitles(RED, [GIT, "title-bikeshedder"])).toBeNull();
 		expect(mock.updateTables).not.toContain(usersTable);
 		expect(mock.setCalls).toEqual([]);
 	});
