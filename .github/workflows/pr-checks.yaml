@@ -40,29 +40,44 @@ jobs:
         id: check_changelog
         run: |
           npm run release --silent -- --dry-run --json > release.json
-          cat release.json
+          jq -c 'del(.unreleased)' release.json
           {
             echo "will_release=$(jq -r '.willRelease' release.json)"
             echo "new_version=$(jq -r '.newVersion // empty' release.json)"
             echo "bump_type=$(jq -r '.bumpType // empty' release.json)"
-            echo "unreleased_content<<CHANGELOG_EOF"
-            jq -r '.unreleased // empty' release.json
-            echo "CHANGELOG_EOF"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Build release comment
+        if: steps.check_changelog.outputs.will_release == 'true'
+        env:
+          BUMP_TYPE: ${{ steps.check_changelog.outputs.bump_type }}
+          NEW_VERSION: ${{ steps.check_changelog.outputs.new_version }}
+          MAX_UNRELEASED_LENGTH: "20000"
+        run: |
+          jq -r '.unreleased // empty' release.json > unreleased.md
+          awk -v max="$MAX_UNRELEASED_LENGTH" \
+            'n + length($0) + 1 > max { exit } { print; n += length($0) + 1 }' \
+            unreleased.md > unreleased-excerpt.md
+          {
+            echo "After merge, a **new version** of the game will be published."
+            echo
+            echo "A **${BUMP_TYPE}** bump → version **${NEW_VERSION}**"
+            echo
+            echo "<details><summary>Unreleased changes</summary>"
+            echo
+            cat unreleased-excerpt.md
+            if ! cmp -s unreleased.md unreleased-excerpt.md; then
+              echo
+              echo "_Excerpt only: the \`Unreleased\` section is $(wc -c < unreleased.md | tr -d ' ') bytes, over the budget for a single comment. Read \`CHANGELOG.md\` for the rest._"
+            fi
+            echo
+            echo "</details>"
+          } > pr-comment.md
 
       - uses: mshick/add-pr-comment@v3
         if: steps.check_changelog.outputs.will_release == 'true'
         with:
-          message: |
-            After merge, a **new version** of the game will be published.
-
-            A **${{ steps.check_changelog.outputs.bump_type }}** bump → version **${{ steps.check_changelog.outputs.new_version }}**
-
-            <details><summary>Unreleased changes</summary>
-
-            ${{ steps.check_changelog.outputs.unreleased_content }}
-
-            </details>
+          message-path: pr-comment.md
 
       - uses: mshick/add-pr-comment@v3
         if: steps.check_changelog.outputs.will_release == 'false'

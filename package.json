@@ -38,6 +38,7 @@
 		"sonar:dev": "npm run sonar:scan",
 		"db:seed": "tsx src/database/seed/index.ts",
 		"db:reset": "tsx src/database/reset.ts",
+		"db:titles": "tsx src/database/grantTitles.ts",
 		"db:push": "npx drizzle-kit push",
 		"db:refresh": "npm run db:reset && npm run db:push && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js",

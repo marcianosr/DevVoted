@@ -38,6 +38,11 @@ import {
 	DRAFT_COST_PER_SLOT_KB,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import {
+	CONFIG_GROUP_ORDER,
+	configGroupOf,
+} from "~/modules/run/config/domain/configGroup.model";
+import { CONFIG_GROUP_LABELS } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
 import { STARTER_POOL } from "~/modules/run/config/domain/hand.model";
 import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
@@ -114,7 +119,7 @@ const gateLadder = () =>
 			"Coverage in its window",
 			"A clear pays",
 			"A miss peels",
-			"Rivals may land",
+			"Audits it carries",
 			"Also unlocks",
 		],
 		GATES.map((gate) => [
@@ -172,6 +177,15 @@ const configCounts = () => {
 	return `**${CONFIG_LIST.length} configs** ship. **${FREE_CONFIG_IDS.length}** are granted at signup and the other **${earned}** unlock individually.`;
 };
 
+const configGroups = () =>
+	table(
+		["Group", "Configs"],
+		CONFIG_GROUP_ORDER.map((group) => [
+			CONFIG_GROUP_LABELS[group],
+			CONFIG_LIST.filter((config) => configGroupOf(config) === group).length,
+		])
+	);
+
 const isFileShaped = (label: string) => label.startsWith(".");
 
 const starterPool = () =>
@@ -185,6 +199,7 @@ const BLOCKS: Readonly<Record<string, () => string>> = {
 	CONFIG_SIZES: configSizes,
 	AUDIT_POOLS: auditPools,
 	CONFIG_COUNTS: configCounts,
+	CONFIG_GROUPS: configGroups,
 	STARTER_POOL: starterPool,
 };
 

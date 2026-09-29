@@ -15,6 +15,14 @@ const getLastCommitDate = () => {
 	}
 };
 
+const getLastCommitAuthor = () => {
+	try {
+		return execSync("git log -1 --format=%an").toString().trim();
+	} catch {
+		return "local";
+	}
+};
+
 const getCommitSha = () => {
 	try {
 		return execSync("git rev-parse HEAD").toString().trim();
@@ -25,6 +33,8 @@ const getCommitSha = () => {
 
 // Vercel's checkout can be shallow, so prefer the value it hands the build.
 const COMMIT_SHA = process.env.VERCEL_GIT_COMMIT_SHA ?? getCommitSha();
+const LAST_COMMIT_AUTHOR =
+	process.env.VERCEL_GIT_COMMIT_AUTHOR_LOGIN ?? getLastCommitAuthor();
 const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
 
 export default defineConfig(({ mode }) => ({
@@ -41,6 +51,7 @@ export default defineConfig(({ mode }) => ({
 		// Widening envPrefix would ship every VERCEL_* var — including the
 		// automation bypass secret — into the browser, so bridge just these two.
 		__COMMIT_SHA__: JSON.stringify(COMMIT_SHA),
+		__LAST_COMMIT_AUTHOR__: JSON.stringify(LAST_COMMIT_AUTHOR),
 		__DEPLOY_ENVIRONMENT__: JSON.stringify(process.env.VERCEL_ENV ?? mode),
 	},
 	resolve: {
