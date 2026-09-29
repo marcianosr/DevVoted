@@ -1,17 +1,14 @@
 import { OF, WEIGHT } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
-import { kbLabel } from "~/shared/lib/storage";
-
 import type { KantoColor } from "./colors";
-import type { LeadLine, LeadPart } from "./Lead.ui";
+import { leadTextOf, type LeadLine } from "./Lead.ui";
 import { Typography } from "./Typography.ui";
 import { upkeepLabelOf } from "./upkeep";
 
 const COPY = {
 	free: "free",
 	overBy: "over by",
-	beforeBill: "before the bill becomes",
 	current: "Current:",
 	afterInstall: "After install:",
 } as const;
@@ -59,8 +56,6 @@ export type WeightTrackFill = {
 	slots: number;
 };
 
-export type NextRung = { weight: number; kb: number };
-
 export type WeightPreview = {
 	weight: number;
 	held: number;
@@ -70,7 +65,6 @@ export type WeightPreview = {
 export type WeightTrackProps = {
 	fills: readonly WeightTrackFill[];
 	held: number;
-	next?: NextRung;
 	preview?: WeightPreview;
 	perGateKb?: number;
 	highlight?: string;
@@ -80,37 +74,18 @@ export type WeightTrackProps = {
 const weightOf = (fills: readonly WeightTrackFill[]) =>
 	fills.reduce((total, fill) => total + fill.slots, 0);
 
-export const roomPartsOf = (
-	weight: number,
-	held: number,
-	next?: NextRung
-): LeadLine => {
+export const roomPartsOf = (weight: number, held: number): LeadLine => {
 	const load = { figure: `${weight} ${OF} ${held} ${WEIGHT}` };
 	const gap = ` ${SEPARATOR} `;
 
 	if (weight > held)
 		return [load, gap, { figure: `${COPY.overBy} ${weight - held}` }];
 
-	const spare = { figure: `${held - weight} ${COPY.free}` };
-	if (next === undefined) return [load, gap, spare];
-
-	return [
-		load,
-		gap,
-		spare,
-		` ${COPY.beforeBill} `,
-		{ figure: kbLabel(next.kb) },
-	];
+	return [load, gap, { figure: `${held - weight} ${COPY.free}` }];
 };
 
-const textOf = (part: LeadPart): string =>
-	typeof part === "string" ? part : (part.figure ?? "");
-
-export const roomLineOf = (
-	weight: number,
-	held: number,
-	next?: NextRung
-): string => roomPartsOf(weight, held, next).map(textOf).join("");
+export const roomLineOf = (weight: number, held: number): string =>
+	leadTextOf(roomPartsOf(weight, held));
 
 export const previewLinesOf = (
 	weight: number,
@@ -168,7 +143,6 @@ const Segment = ({
 export const WeightTrack = ({
 	fills,
 	held,
-	next,
 	preview,
 	perGateKb = NO_UPKEEP,
 	highlight,
@@ -219,7 +193,7 @@ export const WeightTrack = ({
 			) : (
 				<Typography variant="hint">
 					{highlighted === undefined
-						? roomLineOf(weight, held, next)
+						? roomLineOf(weight, held)
 						: fillLineOf(highlighted)}
 				</Typography>
 			)}

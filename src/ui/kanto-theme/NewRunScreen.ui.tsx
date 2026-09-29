@@ -1,12 +1,13 @@
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
-import { Build, buildSummaryOf, type BuildProps } from "./Build.ui";
+import { Build, type BuildProps } from "./Build.ui";
 import { discloseAllFor } from "./DiscloseAll.ui";
 import { Header, type HeaderProps } from "./Header.ui";
+import { Lead, type LeadLine } from "./Lead.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
+import { RegistryHelp, type RegistryHelpProps } from "./RegistryHelp.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
-import { Typography } from "./Typography.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
@@ -16,7 +17,8 @@ export type NewRunScreenProps = {
 	build: BuildProps;
 	registry: RegistryProps;
 	footer: ScreenFooterProps;
-	buildNote?: string;
+	help?: RegistryHelpProps;
+	buildNote?: LeadLine;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
@@ -26,6 +28,7 @@ export const NewRunScreen = ({
 	build,
 	registry,
 	footer,
+	help,
 	buildNote,
 	width,
 	ground = "bare",
@@ -39,14 +42,13 @@ export const NewRunScreen = ({
 
 	return (
 		<Screen gate={header.swatch.theme} width={width} ground={ground}>
-			<Header {...header} />
+			<Header {...header} pinned />
 
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
 					<Panel>
 						<Panel.Header
 							label={BUILD}
-							meta={buildSummaryOf(dealt)}
 							trailing={discloseAllFor(dealt, dealt.configs.length)}
 						/>
 						<Panel.Body>
@@ -54,7 +56,7 @@ export const NewRunScreen = ({
 						</Panel.Body>
 						{buildNote === undefined ? null : (
 							<Panel.Footer>
-								<Typography variant="hint">{buildNote}</Typography>
+								<Lead line={buildNote} />
 							</Panel.Footer>
 						)}
 					</Panel>
@@ -73,6 +75,7 @@ export const NewRunScreen = ({
 							trailing={discloseAllFor(registry, registry.offers.length)}
 						/>
 						<Panel.Body>
+							{help === undefined ? null : <RegistryHelp {...help} />}
 							<Registry {...registry} heading={false} />
 						</Panel.Body>
 					</Panel>

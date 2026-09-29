@@ -20,7 +20,7 @@ const fade = (config: Config): Config =>
 		: config;
 
 const isSpent = (config: Config): boolean =>
-	isDecaying(config) && (config.coverageMultiplier ?? 1) <= 1;
+	isDecaying(config) && (config.coverageMultiplier ?? 1) <= 0;
 
 export const decayOnClear = (configs: readonly Config[]): Decay => {
 	if (!configs.some(isDecaying)) return { configs, deleted: [] };

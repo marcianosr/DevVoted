@@ -46,6 +46,17 @@ anything handed to it either shrinks to nothing or grows without limit.
    came to you, merged into the note that already carried the rung an install
    gives you.
 
+5. **Install and uninstall are one press wearing two figures.** Both are an
+   ambient press with the figure capped on its trailing edge: the label stays
+   quiet and the badge carries the colour. Uninstall's cap is viridian because a
+   refund is a gain; install's takes no colour of its own, so the price wears
+   the config's own theme. The install press used to be a solid pallet fill —
+   the palest thing on the card — which made the cheapest thing on offer read
+   louder than the config it was buying.
+
+   The price leaves the button's text and enters its cap, which is `aria-hidden`.
+   The press keeps naming it because the hint already did: `Install Cache · 128 KB`.
+
 ## Consequences
 
 - The Dex's `starter` / `earned` tags are gone. The note states the provenance

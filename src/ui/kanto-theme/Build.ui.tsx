@@ -2,6 +2,8 @@ import { BUILD } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 import type { ReactNode } from "react";
 
+import { kbLabel } from "~/shared/lib/storage";
+
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { CARD_FLOW, ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
@@ -15,7 +17,6 @@ import {
 	WeightTrack,
 	roomLineOf,
 	roomPartsOf,
-	type NextRung,
 	type WeightPreview,
 	type WeightTrackFill,
 } from "./WeightTrack.ui";
@@ -24,7 +25,8 @@ const COPY = {
 	occupancyName: "build",
 	upkeepLabel: "What the build costs a gate",
 	upkeepHint:
-		"The build rents its space, and the rent is charged at every gate you clear. It stays free while the build fits inside its current rung; outgrow the rung and this is what each clear takes.",
+		"The build rents its space, and the rent is charged at every gate you clear.",
+	free: "free",
 } as const;
 
 const BAND = "flex w-full flex-col gap-3";
@@ -46,12 +48,18 @@ const NO_UPKEEP = 0;
 const BILLED_COLOR: KantoColor = "saffron";
 const FREE_COLOR: KantoColor = "viridian";
 
+const RUNGS = "flex w-full flex-col gap-1";
+const RUNG = "flex items-center gap-2";
+const RUNG_RENT = "tabular-nums text-theme-muted";
+
 export type BuildSlots = { used: number; capacity: number };
+
+export type BuildRung = { weight: number; kb: number };
 
 export type BuildWeight = {
 	held: number;
 	perGateKb: number;
-	next?: NextRung;
+	rungs?: readonly BuildRung[];
 	preview?: WeightPreview;
 };
 
@@ -90,10 +98,9 @@ const summaryOf = (
 	counted: boolean
 ): string => {
 	if (count.weight !== undefined)
-		return [
-			...led(total, counted),
-			roomLineOf(weight, count.weight.held, count.weight.next),
-		].join(` ${SEPARATOR} `);
+		return [...led(total, counted), roomLineOf(weight, count.weight.held)].join(
+			` ${SEPARATOR} `
+		);
 	if (count.slots === undefined) return configCountOf(total);
 
 	const { used, capacity } = count.slots;
@@ -130,7 +137,7 @@ export type BuildProps = {
 	onToggleUpgrades?: (name: string) => void;
 } & BuildCount;
 
-export const buildSummaryOf = (props: BuildProps): string => {
+const buildSummaryOf = (props: BuildProps): string => {
 	const { configs, skipped = [], configCount = true } = props;
 
 	return summaryOf(
@@ -141,9 +148,52 @@ export const buildSummaryOf = (props: BuildProps): string => {
 	);
 };
 
-export const UpkeepBadge = ({ perGateKb }: { perGateKb: number }) => (
-	<Tooltip bare align="end" label={COPY.upkeepLabel} hint={COPY.upkeepHint}>
-		<Badge color={perGateKb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR}>
+const rungColorOf = (kb: number): KantoColor =>
+	kb > NO_UPKEEP ? BILLED_COLOR : FREE_COLOR;
+
+const rungRentOf = (kb: number): string =>
+	kb === NO_UPKEEP ? COPY.free : kbLabel(kb);
+
+const UpkeepLadder = ({
+	rungs,
+	held,
+}: {
+	rungs: readonly BuildRung[];
+	held?: number;
+}) => (
+	<span className={RUNGS}>
+		{rungs.map((rung) => (
+			<span key={rung.weight} className={RUNG}>
+				<Badge color={rung.weight === held ? rungColorOf(rung.kb) : undefined}>
+					{rung.weight}
+				</Badge>
+				<span className={RUNG_RENT}>{rungRentOf(rung.kb)}</span>
+			</span>
+		))}
+	</span>
+);
+
+export const UpkeepBadge = ({
+	perGateKb,
+	rungs = [],
+	held,
+}: {
+	perGateKb: number;
+	rungs?: readonly BuildRung[];
+	held?: number;
+}) => (
+	<Tooltip
+		bare
+		align="end"
+		label={COPY.upkeepLabel}
+		hint={
+			<>
+				<span>{COPY.upkeepHint}</span>
+				{rungs.length === 0 ? null : <UpkeepLadder rungs={rungs} held={held} />}
+			</>
+		}
+	>
+		<Badge color={rungColorOf(perGateKb)}>
 			{RECURRING_GLYPH} {upkeepLabelOf(perGateKb)}
 		</Badge>
 	</Tooltip>
@@ -153,7 +203,11 @@ export const buildHeadOf = (props: BuildProps): ReactNode =>
 	props.weight === undefined ? (
 		buildSummaryOf(props)
 	) : (
-		<UpkeepBadge perGateKb={props.weight.perGateKb} />
+		<UpkeepBadge
+			perGateKb={props.weight.perGateKb}
+			rungs={props.weight.rungs}
+			held={props.weight.held}
+		/>
 	);
 
 const buildRoomLine = (props: BuildProps): LeadLine | undefined => {
@@ -164,11 +218,7 @@ const buildRoomLine = (props: BuildProps): LeadLine | undefined => {
 		...led(configs.length + skipped.length, configCount).flatMap(
 			(label): LeadLine => [{ figure: label }, ` ${SEPARATOR} `]
 		),
-		...roomPartsOf(
-			weightOf(fillsOf(configs, skipped)),
-			weight.held,
-			weight.next
-		),
+		...roomPartsOf(weightOf(fillsOf(configs, skipped)), weight.held),
 	];
 };
 
@@ -274,7 +324,6 @@ export const Build = ({
 				<WeightTrack
 					fills={fills}
 					held={count.weight.held}
-					next={count.weight.next}
 					preview={count.weight.preview}
 					perGateKb={count.weight.perGateKb}
 					highlight={highlight}

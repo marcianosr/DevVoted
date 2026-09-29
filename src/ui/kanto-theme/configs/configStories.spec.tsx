@@ -103,7 +103,7 @@ describe("config story pages", () => {
 					expect(container.textContent).not.toContain(deadEnd);
 			});
 
-	it("arms ESLint's press on a JS poll and refuses it on a CSS one", () => {
+	it("arms ESLint's press on a JS poll and withdraws it on a CSS one", () => {
 		const armed = render(
 			ESLint.CrossesOutAWrongAnswer.render?.({}, {} as never)
 		);
@@ -113,8 +113,9 @@ describe("config story pages", () => {
 		const refused = render(
 			ESLint.WaitsForJavaScriptOrTypeScript.render?.({}, {} as never)
 		);
+		expect(refused.container.textContent).not.toContain("lint 8 KB");
 		expect(refused.container.textContent).toContain(
-			"waits for JavaScript or TypeScript"
+			"JavaScript or TypeScript only"
 		);
 	});
 

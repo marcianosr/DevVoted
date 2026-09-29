@@ -856,7 +856,7 @@ describe("ConfigChip's width", () => {
 		expect(cardOf("Code Coverage")).toHaveClass("w-fit", "max-w-full");
 	});
 
-	it("truncates a name too long for its column rather than overhanging", () => {
+	it("leaves the name its own content as a floor, taking no min-w-0", () => {
 		render(
 			<ConfigChip
 				name="Code Coverage"
@@ -868,8 +868,48 @@ describe("ConfigChip's width", () => {
 
 		const name = screen.getByText("Code Coverage");
 
-		expect(name).toHaveClass("truncate");
-		expect(name.parentElement).toHaveClass("min-w-0");
+		expect(name).toHaveClass("break-words", "flex-1");
+		expect(name).not.toHaveClass("min-w-0");
+	});
+
+	it("seats the name and the presses in one row", () => {
+		render(
+			<ConfigChip
+				name="Code Coverage"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+				onUninstall={noop}
+			/>
+		);
+
+		const row = screen.getByText("Code Coverage").parentElement;
+
+		expect(row).toHaveClass("flex-wrap");
+		expect(row).toContainElement(
+			screen.getByRole("button", { name: /^Uninstall/ })
+		);
+	});
+
+	it("seats a badge on its own row, where it cannot squeeze the name", () => {
+		render(
+			<ConfigChip
+				name="Code Coverage"
+				badges={[{ label: "JavaScript or TypeScript only", color: "pewter" }]}
+				info={INFO}
+				onToggleInfo={noop}
+				infoOpen={false}
+			/>
+		);
+
+		const tagLine = screen.getByText(
+			"JavaScript or TypeScript only"
+		).parentElement;
+		const row = screen.getByText("Code Coverage").parentElement;
+
+		expect(tagLine).toHaveClass("w-full");
+		expect(tagLine).not.toContainElement(screen.getByText("Code Coverage"));
+		expect(row?.parentElement).toContainElement(tagLine as HTMLElement);
 	});
 });
 
@@ -1097,15 +1137,21 @@ describe("ConfigChip's highlight", () => {
 		expect(onPress).toHaveBeenCalledOnce();
 	});
 
-	it("reads the install press as the palest thing on the card", () => {
+	it("keeps the install press quiet and puts the theme on the price", () => {
 		render(
-			<ConfigChip name=".js" badges={[]} install={{ onPress: vi.fn() }} />
+			<ConfigChip
+				name=".js"
+				badges={[]}
+				install={{ onPress: vi.fn(), price: "32 KB" }}
+			/>
 		);
 
-		expect(screen.getByRole("button", { name: "Install .js" })).toHaveAttribute(
-			"data-screen-theme",
-			"pallet"
-		);
+		const install = screen.getByRole("button", {
+			name: "Install .js \u00b7 32 KB",
+		});
+
+		expect(install).not.toHaveAttribute("data-screen-theme");
+		expect(screen.getByText("32 KB")).toHaveClass("badge-theme");
 	});
 
 	it("refuses an install the build has no room for", async () => {

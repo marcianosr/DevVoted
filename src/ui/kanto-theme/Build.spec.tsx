@@ -11,6 +11,12 @@ import {
 import { Build, UpkeepBadge } from "./Build.ui";
 import type { ConfigChipProps } from "./ConfigChip.ui";
 
+const RUNGS = [
+	{ weight: 4, kb: 0 },
+	{ weight: 6, kb: 16 },
+	{ weight: 8, kb: 32 },
+] as const;
+
 const chipNamed = (name: string) => {
 	const onTheChip = screen
 		.getAllByText(name)
@@ -779,5 +785,31 @@ describe("the build split across a screen's own columns", () => {
 		await userEvent.click(trigger);
 
 		expect(trigger).toHaveAttribute("aria-expanded", "true");
+	});
+
+	it("prices every rung the build could grow into, not only the next one", () => {
+		render(<UpkeepBadge perGateKb={16} held={6} rungs={RUNGS} />);
+
+		expect(screen.getByText("4")).toBeInTheDocument();
+		expect(screen.getByText("8")).toBeInTheDocument();
+		expect(screen.getAllByText("free")).toHaveLength(1);
+		expect(screen.getByText("16 KB")).toBeInTheDocument();
+		expect(screen.getByText("32 KB")).toBeInTheDocument();
+	});
+
+	it("marks the rung the build stands on, so the bill has a place on the ladder", () => {
+		render(<UpkeepBadge perGateKb={16} held={6} rungs={RUNGS} />);
+
+		expect(screen.getByText("6")).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
+		expect(screen.getByText("8")).not.toHaveAttribute("data-screen-theme");
+	});
+
+	it("states the terms alone when no ladder was handed to it", () => {
+		render(<UpkeepBadge perGateKb={0} />);
+
+		expect(screen.queryByText("16 KB")).toBeNull();
 	});
 });

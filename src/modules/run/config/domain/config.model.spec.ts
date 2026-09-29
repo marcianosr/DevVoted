@@ -314,12 +314,12 @@ describe("describeConfig", () => {
 
 	it("reads Deprecated's live multiplier, so the chip fades with the config", () => {
 		expect(describeConfig(CONFIGS.deprecated)).toBe(
-			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1."
+			"All coverage earns ×3, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
 		);
 		expect(
 			describeConfig({ ...CONFIGS.deprecated, coverageMultiplier: 2.5 })
 		).toBe(
-			"All coverage earns ×2.5, fading ×0.5 each gate clear. Deleted at ×1."
+			"All coverage earns ×2.5, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
 		);
 	});
 });

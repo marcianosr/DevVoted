@@ -10,6 +10,7 @@ export const ONE_SHOT_METRICS = [
 	"free-rung-gate-four",
 	"banked-256-one-run",
 	"finished-holding-a-dealt-config",
+	"bare-build-clear",
 ] as const;
 
 export type OneShotMetric = (typeof ONE_SHOT_METRICS)[number];
@@ -18,6 +19,7 @@ export type CumulativeMetric =
 	| "polls-answered"
 	| "polls-correct"
 	| `category-correct:${CategoryCode}`
+	| `category-answered:${CategoryCode}`
 	| "gates-cleared"
 	| "runs-won"
 	| `reached-gate:${number}`
@@ -346,6 +348,7 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"reached gate 4 having never paid upkeep",
 		875
 	),
+	lgtm: earned("gates-cleared", 45, "Clear 45 gates", "cleared 45 gates", 900),
 };
 
 export const FREE_CONFIG_IDS: readonly string[] = Object.entries(CONFIG_UNLOCKS)

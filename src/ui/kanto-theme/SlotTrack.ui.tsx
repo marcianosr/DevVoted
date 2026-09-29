@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 
+import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
 const COLUMN = "flex w-full flex-col gap-1.5";
@@ -21,7 +22,11 @@ const RESTING = "hover a config to find its room on the track";
 
 const MIN_DRAWN_SLOTS = 1;
 
-export type SlotTrackFill = { name: string; slots: number };
+export type SlotTrackFill = {
+	name: string;
+	slots: number;
+	color?: KantoColor;
+};
 
 export type SlotTrackProps = {
 	fills: readonly SlotTrackFill[];
@@ -44,8 +49,20 @@ const openSlotsOf = (fills: readonly SlotTrackFill[], capacity: number) =>
 const slotWords = (slots: number) =>
 	`${slots} ${slots === 1 ? "slot" : "slots"}`;
 
-const Box = ({ slots, paint }: { slots: number; paint: string }) => (
-	<span style={{ flexGrow: slots }} className={clsx(BOX, paint)} />
+const Box = ({
+	slots,
+	paint,
+	color,
+}: {
+	slots: number;
+	paint: string;
+	color?: KantoColor;
+}) => (
+	<span
+		data-screen-theme={color}
+		style={{ flexGrow: slots }}
+		className={clsx(BOX, paint)}
+	/>
 );
 
 const costOf = ({ name, slots }: SlotTrackFill, capacity: number) => (
@@ -74,6 +91,7 @@ export const SlotTrack = ({
 					<Box
 						key={fill.name}
 						slots={fill.slots}
+						color={fill.color}
 						paint={fill.name === highlight ? LIT : FILLED}
 					/>
 				))}

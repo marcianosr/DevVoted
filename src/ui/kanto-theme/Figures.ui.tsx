@@ -4,9 +4,9 @@ import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
 
-const UNIT = "KB|MB|%";
-const SIGNED = `[×+−]\\d+(?:\\.\\d+)?(?:\\s?(?:${UNIT}))?`;
-const PRICED = `\\d+(?:\\.\\d+)?\\s?(?:${UNIT})`;
+const UNIT = "(?:[KMG]?B\\b|%)";
+const SIGNED = `[×+−]\\d+(?:\\.\\d+)?(?:\\s?${UNIT})?`;
+const PRICED = `\\d+(?:\\.\\d+)?\\s?${UNIT}`;
 const SCALED = "\\d+(?:\\.\\d+)?×";
 const COUNTED = "\\d+(?:\\.\\d+)?(?=\\s?units?\\b)";
 

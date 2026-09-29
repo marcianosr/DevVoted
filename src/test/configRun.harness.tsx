@@ -2,6 +2,11 @@ import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type {
+	ApprovalBoard,
+	ApprovalRefusal,
+} from "~/modules/run/run/domain/approval.model";
+import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
 import { estimatorFor } from "~/modules/run/run/domain/estimate.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { committerFor } from "~/modules/run/run/domain/sla.model";
@@ -264,13 +269,33 @@ export const asAnswered = (state: RunState) => {
 	);
 };
 
-export const asPrep = (state: RunState) => (
+export const approvingSlots = (
+	state: RunState,
+	options: {
+		readonly ready?: readonly number[];
+		readonly refusal?: ApprovalRefusal;
+	} = {}
+): ApprovalBoard => ({
+	slots: gateSliceOf(state).map((poll, index) => ({
+		pollId: poll.id,
+		category: poll.category,
+		ready: options.ready === undefined || options.ready.includes(index),
+	})),
+	refusal: options.refusal ?? null,
+});
+
+export const asPrep = (
+	state: RunState,
+	approval: ApprovalBoard | null = null
+) => (
 	<PrepView
 		view={toRunView(state)}
 		onStart={noop}
 		onBackToShop={noop}
 		onEstimate={noop}
 		onRebase={noop}
+		approval={approval}
+		onApprove={noop}
 	/>
 );
 

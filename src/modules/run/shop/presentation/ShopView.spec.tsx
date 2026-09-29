@@ -2,9 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { COMMUNITY } from "~/shared/lib/copy";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
-import { answerWith, started } from "~/modules/run/run/domain/run.factory";
 import {
 	createMockGatePayout,
 	createMockRunView,
@@ -46,17 +45,6 @@ const view = createMockRunView({
 });
 
 describe("ShopView", () => {
-	it("prices the gate ahead in answers, so a re-based percentage still reads", () => {
-		const cleared = [true, true, false, false, false].reduce(
-			answerWith,
-			started([])
-		);
-
-		render(<ShopView view={toRunView(cleared)} {...handlers} />);
-
-		expect(screen.getByText("21%")).toBeInTheDocument();
-	});
-
 	it("stands the build beside the registry", () => {
 		render(<ShopView view={view} {...handlers} />);
 
@@ -84,9 +72,12 @@ describe("ShopView", () => {
 	it("prices the install on the button rather than in a badge beside it", () => {
 		render(<ShopView view={view} {...handlers} />);
 
-		expect(
-			screen.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
-		).toHaveTextContent("Install \u00b7 64 KB");
+		const install = screen.getByRole("button", {
+			name: "Install ESLint \u00b7 64 KB",
+		});
+
+		expect(install).toHaveTextContent("Install");
+		expect(install).toHaveTextContent("64 KB");
 	});
 
 	it("previews what an install would leave when the offer is pointed at", async () => {
@@ -159,6 +150,20 @@ describe("ShopView", () => {
 
 		await userEvent.click(screen.getByRole("button", { name: /To prep/ }));
 		expect(onContinue).toHaveBeenCalled();
+	});
+
+	it("offers the community board beside the exit to prep", async () => {
+		const onCommunity = vi.fn();
+		render(<ShopView view={view} {...handlers} onCommunity={onCommunity} />);
+
+		await userEvent.click(screen.getByRole("button", { name: COMMUNITY }));
+		expect(onCommunity).toHaveBeenCalled();
+	});
+
+	it("withholds the community board when the shop was given no route to it", () => {
+		render(<ShopView view={view} {...handlers} />);
+
+		expect(screen.queryByRole("button", { name: COMMUNITY })).toBeNull();
 	});
 
 	it("shuts the exit while the build outweighs the space its bill covered", () => {

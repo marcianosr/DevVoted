@@ -6,7 +6,6 @@ import {
 	CONFIGS,
 	CONFIG_LIST,
 } from "~/modules/run/config/domain/configRoster.model";
-import { touchesCoverage } from "~/modules/run/config/domain/effect.model";
 
 export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.js,
@@ -29,8 +28,6 @@ export const poolFor = (
 };
 
 export const HAND_SIZE = 5;
-
-export const RECOMMENDED_SIZE = 2;
 
 export const FOCUS_BAND = { min: 1, max: 2 } as const;
 
@@ -120,42 +117,5 @@ export const startingHand = (
 			slotBudget
 		),
 		`${seed}:order`
-	);
-};
-
-const occupiedBy = (picks: readonly Config[]): number =>
-	picks.reduce((total, pick) => total + slotsOf(pick), 0);
-
-const fitsWith = (
-	picks: readonly Config[],
-	config: Config,
-	maxSlots: number
-): boolean => occupiedBy(picks) + slotsOf(config) <= maxSlots;
-
-export const recommendedPicks = (
-	hand: readonly Config[],
-	maxSlots: number
-): readonly Config[] => {
-	const seeded = [isFocus, touchesCoverage].reduce<readonly Config[]>(
-		(picks, wanted) => {
-			const next = hand.find(
-				(config) =>
-					!picks.includes(config) &&
-					wanted(config) &&
-					fitsWith(picks, config, maxSlots)
-			);
-			return next ? [...picks, next] : picks;
-		},
-		[]
-	);
-
-	return hand.reduce<readonly Config[]>(
-		(picks, config) =>
-			picks.length < RECOMMENDED_SIZE &&
-			!picks.includes(config) &&
-			fitsWith(picks, config, maxSlots)
-				? [...picks, config]
-				: picks,
-		seeded
 	);
 };

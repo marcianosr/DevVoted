@@ -3,10 +3,11 @@ import {
 	LOCK_COST_KB,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
-import { pinCostFor, REPACKAGE_KB } from "~/modules/run/run/domain/rules.model";
+import { INCIDENT_KB, pinCostFor } from "~/modules/run/run/domain/rules.model";
 import {
-	canRepackage,
-	repackageAvailable,
+	canBuyIncident,
+	canRefreshIncident,
+	incidentRefreshCost,
 } from "~/modules/run/run/domain/heldAudit.model";
 import type { RunState } from "~/modules/run/run/domain/run.model";
 import { isShopLocked } from "~/modules/run/run/domain/runAction.model";
@@ -37,10 +38,10 @@ export type ShopControls = {
 	readonly pinCost: number;
 	readonly canPin: boolean;
 	readonly pinnedAtGate: number | null;
-	readonly repackageAvailable: boolean;
-	readonly repackageUsed: boolean;
-	readonly repackageCost: number;
-	readonly canRepackage: boolean;
+	readonly incidentCost: number;
+	readonly canBuyIncident: boolean;
+	readonly incidentRefreshCost: number;
+	readonly canRefreshIncident: boolean;
 };
 
 export const shopControlsFor = (state: RunState): ShopControls => ({
@@ -59,8 +60,8 @@ export const shopControlsFor = (state: RunState): ShopControls => ({
 	pinCost: pinCostFor(state.gatesCleared),
 	canPin: canPlantPin(state),
 	pinnedAtGate: state.pinPlantedAtGate ?? null,
-	repackageAvailable: repackageAvailable(state),
-	repackageUsed: state.repackagedThisShop === true,
-	repackageCost: REPACKAGE_KB,
-	canRepackage: canRepackage(state),
+	incidentCost: INCIDENT_KB,
+	canBuyIncident: canBuyIncident(state),
+	incidentRefreshCost: incidentRefreshCost(state.incidentRefreshes ?? 0),
+	canRefreshIncident: canRefreshIncident(state),
 });

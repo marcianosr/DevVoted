@@ -130,6 +130,24 @@ describe("Figures", () => {
 		expect(price).not.toHaveAttribute("data-screen-theme");
 	});
 
+	it("badges a figure that never grew past bytes, so an empty archive reads like a full one", () => {
+		render(<Figures text="0 B archived" />);
+
+		expect(screen.getByText("0 B")).toHaveClass("badge-theme");
+	});
+
+	it("badges a gigabyte figure", () => {
+		render(<Figures text="holding 1.5 GB" />);
+
+		expect(screen.getByText("1.5 GB")).toHaveClass("badge-theme");
+	});
+
+	it("leaves a word that merely starts with the byte unit alone", () => {
+		const { container } = render(<Figures text="cleared 3 Badges today" />);
+
+		expect(container.querySelector(".badge-theme")).toBeNull();
+	});
+
 	it("badges an unsigned percentage the same way", () => {
 		render(<Figures text="opens once a run has held 92.5%" />);
 

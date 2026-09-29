@@ -99,10 +99,6 @@ export const PreviewingAnInstallThatCrossesARung: Story = {
 	},
 };
 
-export const NamesWhatTheNextRungWouldCost: Story = {
-	args: { held: 8, perGateKb: 32, next: { weight: 12, kb: 64 } },
-};
-
 export const FullToTheMark: Story = {
 	args: { fills: [{ name: "Freemium", slots: 8 }] },
 };

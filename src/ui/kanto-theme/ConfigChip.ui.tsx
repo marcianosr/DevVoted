@@ -21,6 +21,7 @@ import {
 	type UpgradesProps,
 } from "./Upgrades.ui";
 import { Version } from "./Version.ui";
+import { Pick, type PickProps } from "./Pick.ui";
 import { Weight } from "./Weight.ui";
 
 const COPY = {
@@ -49,11 +50,12 @@ export const NAME = "text-theme-faint";
 const LOST_NAME = "line-through text-theme-soft";
 export const SKIPPED_NAME = "text-theme-muted";
 
-const HEAD = "flex items-center gap-2 px-4 py-3";
-const IDENTITY = "flex min-w-0 flex-1 flex-col font-extrabold";
+const HEAD = "flex flex-col gap-2 px-4 py-3";
+const HEAD_ROW = "flex flex-wrap items-center gap-2";
+const CARD_NAME = "flex-1 font-extrabold";
 const BARE_IDENTITY = "flex min-w-0 items-center gap-1.5";
-const NAME_LIMIT = "truncate";
-const TAG_LINE = "flex flex-wrap items-center gap-1.5";
+const NAME_LIMIT = "break-words";
+const TAG_LINE = "flex w-full flex-wrap items-center gap-1.5";
 const DETAIL = "min-w-0 text-xs text-theme-muted";
 const BARE_DETAIL = "min-w-0 flex-1 truncate text-xs text-theme-muted";
 const TRAILING = "flex shrink-0 items-center gap-1.5";
@@ -71,7 +73,7 @@ const DISCLOSE_TONE: ButtonTone = "bare";
 const DISCLOSE_GLYPH = "size-4 stroke-[2.5] transition-transform";
 const DISCLOSE_OPEN = "rotate-90";
 const UPGRADE_TONE: ButtonTone = "action";
-const INSTALL_TONE: ButtonTone = "bright";
+const INSTALL_TONE: ButtonTone = "ambient";
 const CONFIRM_TONE: ButtonTone = "commit";
 const UNINSTALL_TONE: ButtonTone = "ambient";
 const REFUND_COLOR: KantoColor = "viridian";
@@ -108,6 +110,7 @@ export type ChipInstall = {
 type ConfigChipSecrets = {
 	name: string;
 	badges: ConfigChipBadge[];
+	pick?: PickProps;
 	version?: number;
 	detail?: string;
 	lost?: boolean;
@@ -265,16 +268,16 @@ const LockedCard = ({
 	return (
 		<div className={clsx(CARD, LOCKED_EDGE)}>
 			<div className={HEAD}>
-				{onToggleInfo === undefined ? null : (
-					<Disclose
-						stated={stated}
-						name={LOCKED_CONFIG}
-						onPress={onToggleInfo}
-					/>
-				)}
-				{slots === undefined ? null : <Weight slots={slots} />}
-				<div className={IDENTITY}>
-					<span className={NAME}>
+				<div className={HEAD_ROW}>
+					{onToggleInfo === undefined ? null : (
+						<Disclose
+							stated={stated}
+							name={LOCKED_CONFIG}
+							onPress={onToggleInfo}
+						/>
+					)}
+					{slots === undefined ? null : <Weight slots={slots} />}
+					<span className={clsx(NAME, CARD_NAME)}>
 						<Redaction label={LOCKED_CONFIG} />
 					</span>
 				</div>
@@ -311,6 +314,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	const {
 		name,
 		badges,
+		pick,
 		slots,
 		version,
 		detail,
@@ -361,10 +365,10 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		sellPrice !== undefined ||
 		decorative.length > 0;
 
-	const nameSpan = (
+	const nameSeated = (seat?: string) => (
 		<span
 			data-screen-theme={lost ? lastColorOf(badges) : undefined}
-			className={clsx(nameStyleFor(lost, skipped), NAME_LIMIT)}
+			className={clsx(nameStyleFor(lost, skipped), NAME_LIMIT, seat)}
 		>
 			{name}
 		</span>
@@ -395,8 +399,8 @@ export const ConfigChip = (props: ConfigChipProps) => {
 							? (install.label ?? COPY.install)
 							: COPY.confirm
 					}
-					detail={install.price}
-					detailOn={priceOn}
+					cap={install.price}
+					capAt="trail"
 					hint={
 						arming === undefined
 							? (install.hint ??
@@ -448,9 +452,10 @@ export const ConfigChip = (props: ConfigChipProps) => {
 				{...hovers}
 				className={clsx(CHIP, BARE_WIDTH, edge, skipped && SKIPPED_CHIP)}
 			>
+				{pick === undefined ? null : <Pick {...pick} />}
 				{slots === undefined ? null : <Weight slots={slots} />}
 				<span className={BARE_IDENTITY}>
-					{nameSpan}
+					{nameSeated()}
 					{version === undefined ? null : <Version version={version} />}
 					{decorative.map((badge) => (
 						<BadgeOf key={badge.label} badge={badge} />
@@ -481,24 +486,26 @@ export const ConfigChip = (props: ConfigChipProps) => {
 			className={clsx(CARD, edge, skipped && SKIPPED_CHIP)}
 		>
 			<div className={HEAD}>
-				{onToggleInfo === undefined ? null : (
-					<Disclose stated={stated} name={name} onPress={onToggleInfo} />
-				)}
-				{slots === undefined ? null : <Weight slots={slots} />}
-				<div className={IDENTITY}>
-					{nameSpan}
-					{headBadges.length === 0 && detail === undefined ? null : (
-						<div className={TAG_LINE}>
-							{headBadges.map((badge) => (
-								<BadgeOf key={badge.label} badge={badge} />
-							))}
-							{detail === undefined ? null : (
-								<span className={DETAIL}>{detail}</span>
-							)}
-						</div>
+				<div className={HEAD_ROW}>
+					{onToggleInfo === undefined ? null : (
+						<Disclose stated={stated} name={name} onPress={onToggleInfo} />
 					)}
+					{pick === undefined ? null : <Pick {...pick} />}
+					{slots === undefined ? null : <Weight slots={slots} />}
+					{nameSeated(CARD_NAME)}
+					{trailing}
 				</div>
-				{trailing}
+
+				{headBadges.length === 0 && detail === undefined ? null : (
+					<div className={TAG_LINE}>
+						{headBadges.map((badge) => (
+							<BadgeOf key={badge.label} badge={badge} />
+						))}
+						{detail === undefined ? null : (
+							<span className={DETAIL}>{detail}</span>
+						)}
+					</div>
+				)}
 			</div>
 
 			{!stated ? null : (

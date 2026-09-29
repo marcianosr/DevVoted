@@ -9,11 +9,12 @@ import {
 } from "~/shared/lib/disclosure";
 
 import {
-	handCardFor,
 	NEW_RUN_BUILD_NOTE,
 	newRunBuildFor,
 	newRunFooterFor,
+	newRunGroupsFor,
 	newRunHeaderFor,
+	newRunHelpFor,
 	newRunRegistryFor,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
@@ -37,6 +38,8 @@ export const StartView = ({
 }: StartViewProps) => {
 	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
 	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
+	const [pickedGroup, setPickedGroup] = useState<string>();
+	const [helpHidden, setHelpHidden] = useState(false);
 
 	const buildNames = view.configs.map((config) => config.label);
 	const offerNames = view.available.map((config) => config.label);
@@ -70,7 +73,6 @@ export const StartView = ({
 
 	const held = new Set(view.configs.map((config) => config.id));
 	const free = view.slots - occupiedSlots(view.configs);
-	const suggested = new Set(view.recommendedConfigIds);
 	const needsVendor = view.vendorLock.offered;
 
 	const vendorLockFor = (configId: string) => ({
@@ -83,15 +85,24 @@ export const StartView = ({
 				: undefined,
 	});
 
-	const offers = view.available.map((config) =>
-		handCardFor({
+	const groups = newRunGroupsFor(
+		view.available.map((config) => ({
 			config,
 			held: held.has(config.id),
-			suggested: !held.has(config.id) && suggested.has(config.id),
 			fits: slotsOf(config) <= free,
 			onPress: () => onToggle(config.id),
-		})
+		}))
 	);
+
+	const pickGroup = (id: string) =>
+		setPickedGroup(id === pickedGroup ? undefined : id);
+
+	const help = helpHidden
+		? undefined
+		: newRunHelpFor(groups, pickedGroup, {
+				onPick: pickGroup,
+				onHide: () => setHelpHidden(true),
+			});
 
 	return (
 		<NewRunScreen
@@ -101,11 +112,12 @@ export const StartView = ({
 				onToggleInfo: toggleBuild,
 				onToggleAll: toggleAllBuild,
 			})}
-			registry={newRunRegistryFor(offers, {
+			registry={newRunRegistryFor(groups, pickedGroup, {
 				openInfo: openOffers,
 				onToggleInfo: toggleOffer,
 				onToggleAll: toggleAllOffers,
 			})}
+			help={help}
 			buildNote={NEW_RUN_BUILD_NOTE}
 			footer={newRunFooterFor(
 				view.canStart && !needsVendor ? onStart : undefined,

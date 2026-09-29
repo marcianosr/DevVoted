@@ -53,6 +53,7 @@ export type Config = {
 	readonly vendorLocks?: boolean;
 	readonly catchesFatal?: boolean;
 	readonly commitsBand?: boolean;
+	readonly submitsCrowdPick?: boolean;
 };
 
 export const minifiedMultiplier = (
@@ -178,7 +179,7 @@ export const describeConfig = (config: Config): string => {
 	if (config.wagersAnswer !== undefined)
 		return `Arm it before you answer. An exact answer earns +${config.wagersAnswer} units; a partial, a miss or a timeout takes ${config.wagersAnswer} units off the gate. It disarms after every answer.`;
 	if (config.coverageDecayPerClear !== undefined)
-		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Deleted at ×1.`;
+		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0.`;
 	if (config.autoUpgradeAfterCorrect !== undefined)
 		return `${autoUpgradeAfterCorrectOf(config)} correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over.`;
 	if (config.peeksCommunitySplit)

@@ -39,6 +39,14 @@ const headOf = (label: string): HTMLElement => {
 };
 
 describe("ShopScreen", () => {
+	it("pins its header, so the balance stays with the prices", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.getByText(STORAGE_BALANCE).closest("header")).toHaveClass(
+			"md:sticky"
+		);
+	});
+
 	it("stands the build beside the registry", () => {
 		render(<ShopScreen {...props} />);
 
@@ -46,14 +54,10 @@ describe("ShopScreen", () => {
 		expect(screen.getByText("Registry")).toBeInTheDocument();
 	});
 
-	it("counts the room left and names what crossing it would cost", () => {
+	it("counts the room the build has left", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(
-			sentence(
-				"5 configs · 7 of 8 weight · 1 free before the bill becomes 64 KB"
-			)
-		).toBeInTheDocument();
+		expect(sentence("5 configs · 7 of 8 weight · 1 free")).toBeInTheDocument();
 	});
 
 	it("prices a slot in the registry's own header", () => {
@@ -280,48 +284,5 @@ describe("ShopScreen", () => {
 		expect(
 			screen.getByText("the build is over capacity by 1 slot")
 		).toBeInTheDocument();
-	});
-});
-
-describe("the gate the shop is stocking for", () => {
-	it("names the gate ahead and what it will be scored out of", () => {
-		render(<ShopScreen {...props} />);
-
-		const panel = panelOf("Next gate");
-
-		expect(within(panel).getByText("#10 - Earth Gate")).toBeInTheDocument();
-		expect(
-			within(panel).getByText(/55 slots after it closes/)
-		).toBeInTheDocument();
-	});
-
-	it("sets the pass line against the coverage the run carries in", () => {
-		render(<ShopScreen {...props} />);
-
-		const panel = panelOf("Next gate");
-
-		expect(within(panel).getByText("HEALTHY")).toBeInTheDocument();
-		expect(within(panel).getByText("83.6%")).toHaveAttribute(
-			"data-screen-theme",
-			"viridian"
-		);
-		expect(within(panel).getByText("74.5%")).toHaveAttribute(
-			"data-screen-theme",
-			"vermillion"
-		);
-	});
-
-	it("says when the gate opens, the run being one gate a day", () => {
-		render(<ShopScreen {...props} />);
-
-		expect(screen.getByText("tomorrow")).toBeInTheDocument();
-	});
-
-	it("shows no gate ahead once the shop has no next gate", () => {
-		render(<ShopScreen {...props} nextGate={undefined} />);
-
-		expect(
-			screen.queryByRole("heading", { name: "Next gate" })
-		).not.toBeInTheDocument();
 	});
 });

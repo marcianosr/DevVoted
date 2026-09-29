@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	buildChipFor,
+	incidentDeskFor,
 	shopHeaderFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
+import { kantoIncidentDeal } from "~/test/kantoIncidentDesk.factory";
 import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
 
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
@@ -119,5 +121,72 @@ describe("shopHeaderFor, previewing an install", () => {
 		const header = shopHeaderFor(CLEARED, 64, [], 64);
 
 		expect(header.funds?.preview?.figure).toBe("0 B");
+	});
+});
+
+describe("incidentDeskFor, the shop's incident on offer", () => {
+	it("reads the offered audit at the gate it would land on", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal());
+
+		expect(desk.audit.code).toBe(409);
+		expect(desk.audit.name).toBe("Conflict");
+	});
+
+	it("states the rule the desk plays by", () => {
+		expect(incidentDeskFor(kantoIncidentDeal()).rule).toBe(
+			"hold 1 · targets your gate or ahead"
+		);
+	});
+
+	it("offers a plain buy while the hand is empty", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal());
+
+		expect(desk.buy.label).toBe("Buy");
+		expect(desk.buy.onPress).toBeDefined();
+		expect(desk.discards).toBeUndefined();
+	});
+
+	it("names what a replacement would throw away", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal({ heldAudit: "not-found" }));
+
+		expect(desk.buy.label).toBe("Replace held");
+		expect(desk.discards).toBe("Your held 404 Not Found will be discarded.");
+	});
+
+	it("refuses the buy when nobody could take it, before price is even asked", () => {
+		const desk = incidentDeskFor(
+			kantoIncidentDeal({ rivalsInReach: 0, balanceKb: 0 })
+		);
+
+		expect(desk.buy.onPress).toBeUndefined();
+		expect(desk.buy.refusal).toBe("nobody in reach");
+	});
+
+	it("refuses the buy short, naming the gap", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal({ balanceKb: 8 }));
+
+		expect(desk.buy.refusal).toBe("24 KB short");
+	});
+
+	it("closes both presses under a read-only shop", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal({ shopLocked: true }));
+
+		expect(desk.buy.onPress).toBeUndefined();
+		expect(desk.refresh?.onPress).toBeUndefined();
+	});
+
+	it("marks the rung the refresh price stands on", () => {
+		const desk = incidentDeskFor(
+			kantoIncidentDeal({ refreshes: 2, refreshCostKb: 32 })
+		);
+
+		expect(desk.refresh?.atRung).toBe(2);
+		expect(desk.refresh?.price).toBe("32 KB");
+	});
+
+	it("holds at the last rung rather than pointing past the ladder", () => {
+		const desk = incidentDeskFor(kantoIncidentDeal({ refreshes: 99 }));
+
+		expect(desk.refresh?.atRung).toBe((desk.refresh?.rungs.length ?? 0) - 1);
 	});
 });

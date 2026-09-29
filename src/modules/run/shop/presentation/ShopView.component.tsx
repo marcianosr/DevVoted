@@ -1,4 +1,4 @@
-import { WEIGHT } from "~/shared/lib/copy";
+import { COMMUNITY, WEIGHT } from "~/shared/lib/copy";
 import {
 	INSTALLED_CARDS_OPEN,
 	OFFERED_CARDS_OPEN,
@@ -14,7 +14,7 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	buildChipFor,
 	controlRowFor,
-	nextGateFor,
+	incidentDeskFor,
 	offerChipFor,
 	shopHeaderFor,
 	upgradeChipFor,
@@ -22,6 +22,10 @@ import {
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
 import { buildReadingOf } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import {
+	BUILD_SPACE_RUNGS,
+	INCIDENT_REFRESH_COST_KB,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	isServiceUnlocked,
 	isSoldInShop,
@@ -48,7 +52,11 @@ export type ShopViewProps = {
 	onPlantPin: () => void;
 	onAbandon: () => void;
 	onVendorLock: (configId: string) => void;
+	onBuyIncident?: () => void;
+	onRefreshIncident?: () => void;
+	rivalsInReach?: number | null;
 	onContinue: () => void;
+	onCommunity?: () => void;
 };
 
 const {
@@ -203,7 +211,11 @@ export const ShopView = ({
 	onPlantPin,
 	onAbandon,
 	onVendorLock,
+	onBuyIncident,
+	onRefreshIncident,
+	rivalsInReach = null,
 	onContinue,
+	onCommunity,
 }: ShopViewProps) => {
 	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
 	const [offerFlips, setOfferFlips] = useState<ReadonlySet<string>>(new Set());
@@ -262,12 +274,31 @@ export const ShopView = ({
 				view.gatePayout.clearedGateNumber,
 				view.storage,
 				view.swatchGates,
-				pointed?.priceKb
+				pointed?.priceKb,
+				view.heldAudit?.auditId
 			)}
-			nextGate={nextGateFor(
-				view.gatePayout.clearedGateNumber,
-				view.gateStake.unitsHeld
-			)}
+			{...(view.incidentOffer === null
+				? {}
+				: {
+						incidents: incidentDeskFor({
+							offer: view.incidentOffer,
+							gate: view.gatesCleared,
+							heldAudit: view.heldAudit?.auditId ?? null,
+							rivalsInReach,
+							balanceKb: view.storage,
+							costKb: view.shopControls.incidentCost,
+							refreshCostKb: view.shopControls.incidentRefreshCost,
+							refreshRungsKb: INCIDENT_REFRESH_COST_KB,
+							refreshes: view.incidentRefreshes,
+							shopLocked: view.shopControls.shopLocked,
+							...(onBuyIncident === undefined
+								? {}
+								: { onBuy: disarming(onBuyIncident) }),
+							...(onRefreshIncident === undefined
+								? {}
+								: { onRefresh: disarming(onRefreshIncident) }),
+						}),
+					})}
 			controls={controlsOf(view, {
 				onRebuild: disarming(onRebuild),
 				onExtend: disarming(onExtend),
@@ -298,15 +329,7 @@ export const ShopView = ({
 				weight: {
 					held: view.buildSpace.space,
 					perGateKb: view.buildSpace.perGateKb,
-					...(view.buildSpace.nextWeight === undefined ||
-					view.buildSpace.nextPerGateKb === undefined
-						? {}
-						: {
-								next: {
-									weight: view.buildSpace.nextWeight,
-									kb: view.buildSpace.nextPerGateKb,
-								},
-							}),
+					rungs: BUILD_SPACE_RUNGS,
 					...(armed?.scale == null
 						? {}
 						: {
@@ -333,6 +356,10 @@ export const ShopView = ({
 				onToggleUpgrades: toggleUpgrades,
 			}}
 			footer={{
+				asides:
+					onCommunity === undefined
+						? []
+						: [{ label: COMMUNITY, icon: "community", onPress: onCommunity }],
 				action: {
 					label: TO_PREP,
 					swatch: {

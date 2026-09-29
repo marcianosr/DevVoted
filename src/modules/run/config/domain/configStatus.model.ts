@@ -50,6 +50,7 @@ export type PollStatusContext = AnswerContext & {
 	readonly autoUpgradeProgress: number;
 	readonly chainLength: number;
 	readonly pendingKb: number;
+	readonly approvedThisPoll?: boolean;
 };
 
 const coverageOnPoll = (
@@ -91,6 +92,9 @@ const countsThisAnswer = (config: Config): boolean =>
 const wagersThisAnswer = (config: Config): boolean =>
 	config.wagersAnswer !== undefined;
 
+const answersThisPoll = (config: Config, context: PollStatusContext): boolean =>
+	config.submitsCrowdPick === true && context.approvedThisPoll === true;
+
 const isOnline = (
 	config: Config,
 	context: PollStatusContext,
@@ -102,6 +106,7 @@ const isOnline = (
 	readsAhead(config) ||
 	countsThisAnswer(config) ||
 	wagersThisAnswer(config) ||
+	answersThisPoll(config, context) ||
 	(config.suppressesAudit === true && context.suppressingAudit);
 
 const SKIP_REASONS: readonly ((
@@ -133,7 +138,9 @@ const SKIP_REASONS: readonly ((
 			? { kind: "billsAtGateClear" }
 			: undefined,
 	(config) =>
-		config.reordersGatePolls === true ? { kind: "inPrep" } : undefined,
+		config.reordersGatePolls === true || config.submitsCrowdPick === true
+			? { kind: "inPrep" }
+			: undefined,
 	(config) =>
 		config.offersFullRoster === true ||
 		config.draftCostFactor !== undefined ||

@@ -490,7 +490,7 @@ describe("configStatusFor — skipped", () => {
 		});
 	});
 
-	it("skips a fully decayed Deprecated, which multiplies nothing at ×1", () => {
+	it("skips Deprecated at ×1, the one rung of its fade that multiplies nothing", () => {
 		expect(
 			configStatusFor(
 				{ ...CONFIGS.deprecated, coverageMultiplier: 1 },

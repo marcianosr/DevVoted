@@ -3,9 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import {
-	NEW_RUN_BUILD_NOTE,
-} from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { NEW_RUN_BUILD_NOTE } from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 import { createMockRunView } from "~/test/runView.factory";
 
 import { StartView } from "./StartView.component";
@@ -22,7 +21,6 @@ const view = createMockRunView({
 	status: "configuring",
 	configs: [CONFIGS.js],
 	available: [CONFIGS.js, CONFIGS.eslint, CONFIGS.unitTests],
-	recommendedConfigIds: [CONFIGS.unitTests.id],
 	slots: 4,
 	canStart: true,
 });
@@ -61,13 +59,87 @@ describe("StartView", () => {
 	it("says a slot is paid for out of the archive, not the run", () => {
 		render(<StartView view={view} {...handlers} />);
 
-		expect(screen.getByText(NEW_RUN_BUILD_NOTE)).toBeInTheDocument();
+		expect(
+			screen
+				.getAllByText(
+					(_, element) =>
+						element?.textContent === leadTextOf(NEW_RUN_BUILD_NOTE)
+				)
+				.at(-1)
+		).toBeInTheDocument();
 	});
 
-	it("marks the hand's advice without requiring it", () => {
+	it("heads the hand with the group each config pays into", () => {
 		render(<StartView view={view} {...handlers} />);
 
-		expect(screen.getByText("suggested")).toBeInTheDocument();
+		expect(screen.getByRole("group", { name: "Coverage" })).toBeInTheDocument();
+		expect(screen.getByRole("group", { name: "Storage" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("group", { name: "Answer help" })
+		).toBeInTheDocument();
+	});
+
+	it("marks no config as advised, so the opening pick stays the player's", () => {
+		render(<StartView view={view} {...handlers} />);
+
+		expect(screen.queryByText("suggested")).not.toBeInTheDocument();
+	});
+
+	it("cuts the offers to one group on a press, and restores them on the next", async () => {
+		render(<StartView view={view} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Storage \u00b7 1" })
+		);
+		expect(
+			screen.queryByRole("group", { name: "Coverage" })
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("group", { name: "Storage" })).toBeInTheDocument();
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Storage \u00b7 1" })
+		);
+		expect(screen.getByRole("group", { name: "Coverage" })).toBeInTheDocument();
+	});
+
+	it("keeps counting every group while one of them is picked", async () => {
+		render(<StartView view={view} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Storage \u00b7 1" })
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Coverage \u00b7 1" })
+		).toBeInTheDocument();
+	});
+
+	it("takes the help away for good once it is hidden", async () => {
+		render(<StartView view={view} {...handlers} />);
+
+		await userEvent.click(screen.getByRole("button", { name: "hide" }));
+
+		expect(
+			screen.queryByRole("button", { name: "Storage \u00b7 1" })
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("group", { name: "Storage" })).toBeInTheDocument();
+	});
+
+	it("offers no help when the whole hand pays into one group", () => {
+		render(
+			<StartView
+				view={createMockRunView({
+					status: "configuring",
+					configs: [],
+					available: [CONFIGS.js, CONFIGS.ts],
+					slots: 4,
+				})}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.queryByRole("button", { name: "hide" })).not.toBeInTheDocument();
+		expect(screen.getByText("Coverage")).toBeInTheDocument();
 	});
 
 	it("installs a config from the hand", async () => {
@@ -83,7 +155,7 @@ describe("StartView", () => {
 		render(<StartView view={view} {...handlers} />);
 
 		expect(
-			screen.queryByRole("heading", { name: "Objectives and rewards" })
+			screen.queryByRole("heading", { name: "At stake" })
 		).toBeNull();
 	});
 

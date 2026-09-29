@@ -18,6 +18,7 @@ export type PublicConfig = {
 	readonly label: string;
 	readonly slots: number;
 	readonly level?: number;
+	readonly minified?: boolean;
 };
 
 export type PublicBuild = {
@@ -33,6 +34,7 @@ const publicConfigOf = (ref: InstalledConfigRef): PublicConfig | undefined => {
 		label: current.label,
 		slots: slotsOf({ ...current, minified: ref.minified === true }),
 		...(ref.level === null ? {} : { level: ref.level }),
+		...(ref.minified === true ? { minified: true } : {}),
 	};
 };
 

@@ -13,6 +13,7 @@ import {
 
 import {
 	createKantoNewRunScreenProps,
+	kantoNewRunHelp,
 	kantoNewRunRegistry,
 	kantoNewRunAt,
 } from "~/test/kantoPoll.factory";
@@ -91,13 +92,18 @@ export const BuildFull: Story = {
 	),
 };
 
-export const NothingSuggested: Story = {
+export const CutToOneGroup: Story = {
 	render: () => (
 		<NewRunScreen
 			{...props}
-			registry={kantoNewRunRegistry([], BASE_SLOTS, false)}
+			registry={kantoNewRunRegistry([], BASE_SLOTS, "coverage")}
+			help={kantoNewRunHelp([], BASE_SLOTS, "coverage")}
 		/>
 	),
+};
+
+export const HelpHidden: Story = {
+	render: () => <NewRunScreen {...props} help={undefined} />,
 };
 
 export const Framed: Story = {

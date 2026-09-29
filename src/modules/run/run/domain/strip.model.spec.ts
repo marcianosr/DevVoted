@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { type Config, minify } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	minify,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	failPeelShareFor,
+	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import { type RunState } from "~/modules/run/run/domain/run.model";
@@ -398,5 +403,76 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 			build: { ...base.build, configs: [GC] },
 		});
 		expect(state.status).toBe("awaiting-strip");
+	});
+});
+
+describe("settling the peel from storage (DVTD-cx1p)", () => {
+	const held = (quota: number, storage: number): RunState => {
+		let state = started(["unit-tests", "eslint"]);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
+		return {
+			...state,
+			status: "awaiting-strip",
+			peelSlotsRemaining: quota,
+			storage,
+		};
+	};
+
+	const settle = (state: RunState, ids: readonly string[] = []): RunState =>
+		runReducer(state, { type: "strip", configIds: ids, fromStorage: true });
+
+	it("covers the whole quota when no config was dropped", () => {
+		const state = settle(held(2, 10 * PEEL_KB_PER_SLOT));
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.storage).toBe(8 * PEEL_KB_PER_SLOT);
+		expect(state.build.configs).toHaveLength(4);
+	});
+
+	it("covers only what the dropped configs left owed", () => {
+		const build = held(3, 10 * PEEL_KB_PER_SLOT);
+		const freed = slotsOf(
+			build.build.configs.find((config) => config.id === "eslint")!
+		);
+		const state = settle(build, ["eslint"]);
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.storage).toBe((10 - (3 - freed)) * PEEL_KB_PER_SLOT);
+	});
+
+	it("charges nothing when the drops already settled the quota", () => {
+		const state = settle(held(1, 10 * PEEL_KB_PER_SLOT), ["eslint"]);
+		expect(state.peelSlotsRemaining).toBe(0);
+		expect(state.storage).toBe(10 * PEEL_KB_PER_SLOT);
+	});
+
+	it("settles what storage covers and leaves the rest owed", () => {
+		const state = settle(held(4, 1 * PEEL_KB_PER_SLOT));
+		expect(state.peelSlotsRemaining).toBe(3);
+		expect(state.storage).toBe(0);
+	});
+
+	it("never overdraws the balance", () => {
+		const state = settle(held(4, 0));
+		expect(state.peelSlotsRemaining).toBe(4);
+		expect(state.storage).toBe(0);
+	});
+
+	it("leaves the balance alone when storage was not offered", () => {
+		const state = runReducer(held(2, 10 * PEEL_KB_PER_SLOT), {
+			type: "strip",
+			configIds: ["eslint"],
+		});
+		expect(state.storage).toBe(10 * PEEL_KB_PER_SLOT);
+	});
+
+	it("names the settled KB in the log", () => {
+		const state = settle(held(2, 10 * PEEL_KB_PER_SLOT));
+		expect(state.log.at(-1)).toContain(`${2 * PEEL_KB_PER_SLOT}KB`);
+	});
+
+	it("lets the settled peel resume to the shop", () => {
+		const state = runReducer(settle(held(2, 10 * PEEL_KB_PER_SLOT)), {
+			type: "resume-climb",
+		});
+		expect(state.status).toBe("rewarding");
 	});
 });

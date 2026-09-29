@@ -25,7 +25,11 @@ import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
+import {
+	type AuditId,
+	auditAt,
+	auditLabelOf,
+} from "~/modules/run/gate/domain/audit.model";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type {
@@ -33,26 +37,18 @@ import type {
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type {
-	HeaderFundsPreview,
-	HeaderProps,
-} from "~/ui/kanto-theme/Header.ui";
-import type { NextGateProps } from "~/ui/kanto-theme/NextGate.ui";
-import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+import type { BalancePreview } from "~/ui/kanto-theme/Balance.ui";
+import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
+import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import {
-	bandFor,
-	healthyAt,
-	percentOf,
-	runCoverageOf,
-	scoringSlotsAt,
-} from "~/modules/run/build/domain/coverageRatio.model";
+	COPY as INCIDENT_DESK_COPY,
+	type IncidentDeskProps,
+} from "~/ui/kanto-theme/IncidentDesk.ui";
+import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
 
 const SHORT_TRAIL = "short";
 const CLEARED_TRAIL = "cleared";
 const SHOP_WORD = "Shop";
-const SLOTS_TRAIL = "slots after it closes";
-const OPENS_AT = "tomorrow";
-const PERCENT = "%";
 const AFTER_INSTALL = "after install";
 const AFTER_INSTALL_COLOR: KantoColor = "vermillion";
 
@@ -161,7 +157,7 @@ const shopTitleFor = (cleared: number): string => {
 const afterInstallOf = (
 	balanceKb: number,
 	priceKb: number | undefined
-): HeaderFundsPreview | undefined => {
+): BalancePreview | undefined => {
 	if (priceKb === undefined) return undefined;
 	if (priceKb > balanceKb) return undefined;
 
@@ -176,11 +172,15 @@ export const shopHeaderFor = (
 	cleared: number,
 	balanceKb: number,
 	swatchGates: readonly number[] = [],
-	pointedPriceKb?: number
+	pointedPriceKb?: number,
+	heldAudit?: AuditId
 ): HeaderProps => {
 	const preview = afterInstallOf(balanceKb, pointedPriceKb);
 
 	return {
+		...(heldAudit === undefined
+			? {}
+			: { held: auditLabelOf(heldAudit, cleared) }),
 		swatch: gateSwatchAt(cleared),
 		swatches: swatchTrackFor(swatchGates, cleared + 1),
 		funds: {
@@ -192,23 +192,94 @@ export const shopHeaderFor = (
 	};
 };
 
-export const nextGateFor = (
-	cleared: number,
-	unitsHeld: number
-): NextGateProps | undefined => {
-	const next = gateSwatchAt(cleared + 1);
-	if (next === undefined) return undefined;
+const INCIDENT_COPY = {
+	buy: "Buy",
+	replace: "Replace held",
+	rule: "hold 1 · targets your gate or ahead",
+	reach: (count: number) =>
+		count === 1 ? "1 rival has room" : `${count} rivals have room`,
+	noReach: "nobody in reach",
+	refresh: "Refresh",
+	refreshDetail: "deals another incident · doubles this shop",
+	shopClosed: "the shop is read-only this gate",
+} as const;
 
-	const held = runCoverageOf(unitsHeld, next.gate);
-	const demand = roundToOneDecimal(percentOf(healthyAt(next.gate)));
-	const reading = roundToOneDecimal(percentOf(held));
+export type IncidentDeal = {
+	offer: AuditId;
+	gate: number;
+	heldAudit: AuditId | null;
+	rivalsInReach: number | null;
+	balanceKb: number;
+	costKb: number;
+	refreshCostKb: number;
+	refreshRungsKb: readonly number[];
+	refreshes: number;
+	shopLocked: boolean;
+	onBuy?: () => void;
+	onRefresh?: () => void;
+};
+
+const buyRefusalOf = (deal: IncidentDeal): string | undefined => {
+	if (deal.onBuy === undefined) return INCIDENT_COPY.shopClosed;
+	if (deal.shopLocked) return INCIDENT_COPY.shopClosed;
+	if (deal.rivalsInReach === 0) return INCIDENT_COPY.noReach;
+	if (deal.balanceKb < deal.costKb)
+		return shortfallOf(deal.costKb, deal.balanceKb);
+	return undefined;
+};
+
+const refreshRefusalOf = (deal: IncidentDeal): string | undefined => {
+	if (deal.onRefresh === undefined) return INCIDENT_COPY.shopClosed;
+	if (deal.shopLocked) return INCIDENT_COPY.shopClosed;
+	if (deal.balanceKb < deal.refreshCostKb)
+		return shortfallOf(deal.refreshCostKb, deal.balanceKb);
+	return undefined;
+};
+
+const auditPropsOf = (id: AuditId, gate: number): AuditProps => {
+	const audit = auditAt(id, gate);
+	return {
+		code: audit.code,
+		name: audit.name,
+		cue: audit.description,
+	};
+};
+
+export const incidentDeskFor = (deal: IncidentDeal): IncidentDeskProps => {
+	const buyRefusal = buyRefusalOf(deal);
+	const refreshRefusal = refreshRefusalOf(deal);
 
 	return {
-		swatch: next,
-		slots: `${scoringSlotsAt(next.gate)} ${SLOTS_TRAIL}`,
-		demand: `${demand}${PERCENT}`,
-		held: `${reading}${PERCENT}`,
-		heldBand: bandFor(held, next.gate).id,
-		opensAt: OPENS_AT,
+		audit: auditPropsOf(deal.offer, deal.gate),
+		buy: {
+			label:
+				deal.heldAudit === null ? INCIDENT_COPY.buy : INCIDENT_COPY.replace,
+			price: kbLabel(deal.costKb),
+			...(buyRefusal === undefined && deal.onBuy !== undefined
+				? { onPress: deal.onBuy }
+				: { refusal: buyRefusal }),
+		},
+		...(deal.heldAudit === null
+			? {}
+			: {
+					discards: INCIDENT_DESK_COPY.held(
+						auditLabelOf(deal.heldAudit, deal.gate)
+					),
+				}),
+		rule: INCIDENT_COPY.rule,
+		reach:
+			deal.rivalsInReach === null
+				? INCIDENT_COPY.noReach
+				: INCIDENT_COPY.reach(deal.rivalsInReach),
+		refresh: {
+			label: INCIDENT_COPY.refresh,
+			price: kbLabel(deal.refreshCostKb),
+			detail: INCIDENT_COPY.refreshDetail,
+			rungs: deal.refreshRungsKb.map(kbLabel),
+			atRung: Math.min(deal.refreshes, deal.refreshRungsKb.length - 1),
+			...(refreshRefusal === undefined && deal.onRefresh !== undefined
+				? { onPress: deal.onRefresh }
+				: { refusal: refreshRefusal }),
+		},
 	};
 };

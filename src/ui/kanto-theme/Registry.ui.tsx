@@ -11,20 +11,34 @@ const COPY = {
 const COLUMN = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
 const LIST = `grid w-full gap-3 ${CARD_FLOW}`;
+const GROUPS = "flex w-full flex-col gap-6";
+const GROUP = "flex w-full flex-col gap-3";
+const GROUP_HEADING = "flex items-center gap-2";
+const RULE = "min-w-8 flex-1 border-t border-theme-faint";
 
 const SEPARATOR = "·";
 
 const PRICE_ON: DetailReveal = "always";
 
-export type RegistryProps = {
+export type RegistryGroup = {
+	id: string;
+	label: string;
 	offers: readonly ConfigChipProps[];
-	slotPrice: string;
-	heading?: boolean;
+};
+
+export type RegistryPanels = {
 	openInfo?: ReadonlySet<string>;
 	onToggleInfo?: (name: string) => void;
-	onToggleAll?: () => void;
 	openUpgrades?: string;
 	onToggleUpgrades?: (name: string) => void;
+};
+
+export type RegistryProps = RegistryPanels & {
+	offers: readonly ConfigChipProps[];
+	slotPrice: string;
+	groups?: readonly RegistryGroup[];
+	heading?: boolean;
+	onToggleAll?: () => void;
 };
 
 export type RegistrySummaryProps = { offers: number; slotPrice: string };
@@ -45,13 +59,7 @@ const Offer = ({
 	onToggleInfo,
 	openUpgrades,
 	onToggleUpgrades,
-}: {
-	offer: ConfigChipProps;
-	openInfo?: ReadonlySet<string>;
-	onToggleInfo?: (name: string) => void;
-	openUpgrades?: string;
-	onToggleUpgrades?: (name: string) => void;
-}) => {
+}: RegistryPanels & { offer: ConfigChipProps }) => {
 	if (offer.locked) return <ConfigChip locked />;
 
 	return (
@@ -72,36 +80,73 @@ const Offer = ({
 	);
 };
 
+const Offers = ({
+	offers,
+	...panels
+}: RegistryPanels & { offers: readonly ConfigChipProps[] }) => (
+	<div className={LIST}>
+		{offers.map((offer, index) => (
+			<Offer key={offer.name ?? index} offer={offer} {...panels} />
+		))}
+	</div>
+);
+
+const Group = ({
+	group,
+	...panels
+}: RegistryPanels & { group: RegistryGroup }) => (
+	<div role="group" aria-label={group.label} className={GROUP}>
+		<div className={GROUP_HEADING}>
+			<Typography variant="subtitle" as="span">
+				{group.label}
+			</Typography>
+			<Typography variant="hint" as="span">
+				{group.offers.length}
+			</Typography>
+			<span aria-hidden className={RULE} />
+		</div>
+
+		<Offers offers={group.offers} {...panels} />
+	</div>
+);
+
 export const Registry = ({
 	offers,
 	slotPrice,
+	groups,
 	heading = true,
 	openInfo,
 	onToggleInfo,
 	openUpgrades,
 	onToggleUpgrades,
-}: RegistryProps) => (
-	<section className={COLUMN}>
-		{!heading ? null : (
-			<div className={TITLE_ROW}>
-				<Typography variant="title">{REGISTRY}</Typography>
-				<Typography variant="hint" as="span">
-					<RegistrySummary offers={offers.length} slotPrice={slotPrice} />
-				</Typography>
-			</div>
-		)}
+}: RegistryProps) => {
+	const panels: RegistryPanels = {
+		openInfo,
+		onToggleInfo,
+		openUpgrades,
+		onToggleUpgrades,
+	};
 
-		<div className={LIST}>
-			{offers.map((offer, index) => (
-				<Offer
-					key={offer.name ?? index}
-					offer={offer}
-					openInfo={openInfo}
-					onToggleInfo={onToggleInfo}
-					openUpgrades={openUpgrades}
-					onToggleUpgrades={onToggleUpgrades}
-				/>
-			))}
-		</div>
-	</section>
-);
+	return (
+		<section className={COLUMN}>
+			{!heading ? null : (
+				<div className={TITLE_ROW}>
+					<Typography variant="title">{REGISTRY}</Typography>
+					<Typography variant="hint" as="span">
+						<RegistrySummary offers={offers.length} slotPrice={slotPrice} />
+					</Typography>
+				</div>
+			)}
+
+			{groups === undefined ? (
+				<Offers offers={offers} {...panels} />
+			) : (
+				<div className={GROUPS}>
+					{groups.map((group) => (
+						<Group key={group.id} group={group} {...panels} />
+					))}
+				</div>
+			)}
+		</section>
+	);
+};

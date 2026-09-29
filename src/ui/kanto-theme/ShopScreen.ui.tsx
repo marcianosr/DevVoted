@@ -1,9 +1,9 @@
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
-import { Audit, type AuditProps } from "./Audit.ui";
 import { Build, BuildRoom, buildHeadOf, type BuildProps } from "./Build.ui";
+import { Audit, type AuditProps } from "./Audit.ui";
 import { discloseAllFor } from "./DiscloseAll.ui";
+import { IncidentDesk, type IncidentDeskProps } from "./IncidentDesk.ui";
 import { Header, type HeaderProps } from "./Header.ui";
-import { NextGate, type NextGateProps } from "./NextGate.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
 import {
@@ -29,9 +29,9 @@ export type ShopScreenProps = {
 	build: BuildProps;
 	registry: RegistryProps;
 	header: HeaderProps;
-	nextGate?: NextGateProps;
 	controls?: readonly ShopServiceRow[];
 	audits?: readonly AuditProps[];
+	incidents?: IncidentDeskProps;
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -41,16 +41,16 @@ export const ShopScreen = ({
 	build,
 	registry,
 	header,
-	nextGate,
 	controls = [],
 	audits = [],
+	incidents,
 	footer,
 	width,
 	ground = "bare",
 }: ShopScreenProps) => {
 	return (
 		<Screen gate={header.swatch.theme} width={width} ground={ground}>
-			<Header {...header} />
+			<Header {...header} pinned />
 
 			{audits.length === 0 ? null : (
 				<div className={AUDITS}>
@@ -59,8 +59,6 @@ export const ShopScreen = ({
 					))}
 				</div>
 			)}
-
-			{nextGate === undefined ? null : <NextGate {...nextGate} />}
 
 			<div className={COLUMNS}>
 				<div className={COLUMN}>
@@ -93,6 +91,8 @@ export const ShopScreen = ({
 							<Registry {...registry} heading={false} />
 						</Panel.Body>
 					</Panel>
+
+					{incidents === undefined ? null : <IncidentDesk {...incidents} />}
 
 					{controls.length === 0 ? null : (
 						<Panel>

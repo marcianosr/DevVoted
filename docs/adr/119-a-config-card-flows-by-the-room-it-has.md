@@ -62,6 +62,31 @@ way, and it gave way to nothing. The shelf rendered five nameless boxes with a
    weight — not one box per free slot. It follows the list rather than the
    readout: a screen drawing no list has no vacancy to speak for.
 
+6. **The header is two rows: the name shares one with the presses, the badges
+   take the other.** The bug came back inside a card decision 1 had already made
+   wide enough. `IDENTITY` stacked the name on top of the tag line, so the box
+   the name sat in had the *badge's* content as its minimum — a `w-fit
+   whitespace-nowrap` atom near 180px. That is the only reason it carried
+   `min-w-0`, and with it the name was again the one thing in the header that
+   could give.
+
+   A flex item already refuses to shrink below its own content; `min-width:
+   auto` is the default. So the fix is to stop the name sharing a box with the
+   badge, not to name a floor. `HEAD` is a column of `HEAD_ROW` — disclosure,
+   pick, weight, name, presses — and `TAG_LINE`, which spans the full width
+   beneath it. The name is `flex-1 break-words` and takes no `min-w-0`; its
+   longest word is its floor.
+
+   A floor in pixels was tried first and lasted an hour. At 20rem the header has
+   338px, a four-slot card spends 212px of it on everything but the name, and
+   `min-w-32` is 128px — two pixels too many, so the Install press wrapped.
+   Every fixed number puts the cliff somewhere; the content does not.
+
+   `HEAD_ROW` keeps `flex-wrap` as a last resort. With the badge gone from the
+   row it fires only when the presses genuinely cannot sit beside the name's
+   longest word — a registry offer carrying an upgrade *and* an install — and
+   then the presses drop, never the name.
+
 ## Consequences
 
 - Reversing DVTD-8byc means a short name again reads as wide as a long one. That
@@ -69,6 +94,10 @@ way, and it gave way to nothing. The shelf rendered five nameless boxes with a
   an effect sentence that sets its own width.
 - The poll rail and prep draw one card per row more often than before, so those
   folds are taller.
+- A crowded header is two rows: the badges take the second one whenever the card
+  is shut and carries any. The presses join them only in the rare case above.
+- The head's `detail` is no longer extrabold. It wore that weight by inheriting
+  it from `IDENTITY`, which the bare chip's copy of the same string never did.
 - A fixture that omits `openInfo` draws a panel no player ever sees. `Registry`
   and the new-run hand fixtures now deal open, matching `ShopView` and
   `StartView`; the collapsed shelf in Storybook was a fixture, not the screen.

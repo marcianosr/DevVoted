@@ -292,9 +292,9 @@ export const CONFIGS = {
 		label: "Deprecated",
 		slots: 4,
 		description:
-			"All coverage earns ×3, fading ×0.5 each gate clear. Deleted at ×1.",
+			"All coverage earns ×3, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0.",
 		gives: "All coverage earns ×3, fading ×0.5 per clear",
-		costs: "Deleted when it fades to ×1",
+		costs: "Fades below ×1 into a coverage cut, and deletes itself at ×0",
 		coverageMultiplier: 3,
 		coverageDecayPerClear: 0.5,
 	},
@@ -333,7 +333,7 @@ export const CONFIGS = {
 		label: "Planning Poker",
 		slots: 1,
 		description:
-			"On the prep screen before every gate, bet on how many of its 5 polls you will answer correctly. Answer at least that many and it pays coverage — a bolder bet pays more, and so does a deeper gate. The gate will not open until you have bet, and no bet can cost you anything.",
+			"Every gate holds in prep until you bet how many of its 5 polls you will answer correctly. Answer at least that many and it pays coverage — bolder bets and deeper gates pay more. Fall short and you only lose that coverage.",
 		gives: "Coverage when you answer at least as many as you bet",
 		costs:
 			"Fall one short and it pays nothing — and the gate holds in prep until you bet, which locks when you answer",
@@ -363,7 +363,7 @@ export const CONFIGS = {
 		label: "SLA",
 		slots: 2,
 		description:
-			"On the prep screen before every gate, name OK, HEALTHY or PERFECT. Close in that band or better and the gate's payout rises 10%, 25% or 50%. Fall short of your own promise and it pays nothing. The gate will not open until you have promised, and no promise can cost you anything.",
+			"Every gate holds in prep until you name OK, HEALTHY or PERFECT. Close in that band or better and its payout rises 10%, 25% or 50%. Miss it and you only lose the rise.",
 		gives: "The band you promise pays +10%, +25% or +50% on the clear",
 		costs:
 			"A band you promise and miss pays nothing at all — and the gate holds in prep until you name one",
@@ -397,6 +397,17 @@ export const CONFIGS = {
 			"Marks the gate meter with where this answer lands, right or wrong, before you submit it.",
 		gives: "The gate meter shows where a right and a wrong answer land",
 		projectsGateOutcome: true,
+	},
+	lgtm: {
+		id: "lgtm",
+		label: "LGTM",
+		slots: 2,
+		description:
+			"In prep, approve one of the gate's five polls without reading it. When it comes up, it is answered with whatever the community has picked most on it, all time.",
+		gives: "One poll a gate is answered by the room",
+		costs:
+			"You approve off the category alone, a wrong approval bleeds like any other wrong answer, and a select-all poll can only land a partial",
+		submitsCrowdPick: true,
 	},
 } as const satisfies Record<string, Config>;
 

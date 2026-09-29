@@ -3,7 +3,6 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	NEW_RUN_EMPTY_LABEL,
-	SUGGESTED_LABEL,
 	createKantoNewRunScreenProps,
 	kantoHandCards,
 	kantoNewRunAt,
@@ -11,9 +10,13 @@ import {
 	newRunBuildNote,
 } from "~/test/kantoPoll.factory";
 
+import { leadTextOf } from "./Lead.ui";
 import { NewRunScreen } from "./NewRunScreen.ui";
 
 const props = createKantoNewRunScreenProps();
+
+const sentence = (text: string) =>
+	screen.getAllByText((_, element) => element?.textContent === text).at(-1);
 
 const columns = (root: ParentNode): HTMLElement[] =>
 	[...(root.querySelector<HTMLElement>("div.grid")?.children ?? [])].filter(
@@ -26,6 +29,14 @@ const offerOf = (name: string) =>
 	dealt().querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 describe("NewRunScreen", () => {
+	it("pins its header, so the archive stays with the hand", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(screen.getByText("archive").closest("header")).toHaveClass(
+			"md:sticky"
+		);
+	});
+
 	it("stands the build beside the registry it is dealt from", () => {
 		render(<NewRunScreen {...props} />);
 
@@ -55,15 +66,10 @@ describe("NewRunScreen", () => {
 		).toBeTruthy();
 	});
 
-	it("opens on a build that weighs nothing and bills nothing", () => {
-		render(<NewRunScreen {...props} />);
-
-		expect(screen.getByText("0 of 4 weight · 4 free")).toBeInTheDocument();
-	});
-
-	it("counts the room it has left without re-counting the chips beside it", () => {
+	it("leaves the weight unstated in the build's own heading", () => {
 		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
+		expect(screen.queryByText(/of 4 weight/)).toBeNull();
 		expect(screen.queryByText(/^1 configs/)).toBeNull();
 	});
 
@@ -116,13 +122,12 @@ describe("NewRunScreen", () => {
 	it("states what the build's own weight costs, under the build", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getByText(newRunBuildNote())).toBeInTheDocument();
+		expect(sentence(leadTextOf(newRunBuildNote()))).toBeInTheDocument();
 	});
 
 	it("opens the run on one pick, in the build and in the registry alike", () => {
 		render(<NewRunScreen {...kantoNewRunAt(["js"])} />);
 
-		expect(screen.getByText("1 of 4 weight · 3 free")).toBeInTheDocument();
 		expect(offerOf(".js")).toHaveClass("opacity-60");
 		expect(screen.queryByText(NEW_RUN_EMPTY_LABEL)).not.toBeInTheDocument();
 	});
@@ -152,21 +157,42 @@ describe("the deal the registry lists", () => {
 		}
 	});
 
-	it("marks the advice recommendedPicks names, and drops it once taken", () => {
+	it("heads each card with the group it pays into", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getAllByText(SUGGESTED_LABEL)).toHaveLength(2);
-		expect(offerOf(".js")).toContainElement(
-			screen.getAllByText(SUGGESTED_LABEL)[0]
-		);
+		expect(
+			within(screen.getByRole("group", { name: "Coverage" })).getByRole(
+				"button",
+				{ name: "Install .js" }
+			)
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByRole("group", { name: "Answer help" })).getByRole(
+				"button",
+				{ name: "Install ESLint" }
+			)
+		).toBeInTheDocument();
 	});
 
-	it("deals no advice when nothing is recommended", () => {
+	it("counts the deal into the groups it holds, and no empty ones", () => {
+		render(<NewRunScreen {...props} />);
+
+		expect(screen.getAllByRole("group")).toHaveLength(3);
+		expect(
+			screen.queryByRole("group", { name: "Risk" })
+		).not.toBeInTheDocument();
+	});
+
+	it("shows one group alone when the registry is cut to it", () => {
 		render(
-			<NewRunScreen {...props} registry={kantoNewRunRegistry([], 4, false)} />
+			<NewRunScreen
+				{...props}
+				registry={kantoNewRunRegistry([], undefined, "storage")}
+			/>
 		);
 
-		expect(screen.queryByText(SUGGESTED_LABEL)).not.toBeInTheDocument();
+		expect(screen.getAllByRole("group")).toHaveLength(1);
+		expect(dealt()).toHaveTextContent("1 offers · free");
 	});
 
 	it("dims a card too wide for the room left and refuses its press", () => {
@@ -212,9 +238,7 @@ describe("what it leaves to prep", () => {
 	it("prices no band at all, the stakes being prep's screen", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(
-			screen.queryByRole("heading", { name: "Objectives and rewards" })
-		).toBeNull();
+		expect(screen.queryByRole("heading", { name: "At stake" })).toBeNull();
 		for (const band of ["PERFECT", "HEALTHY", "SHAKY", "DANGER"]) {
 			expect(screen.queryByText(band)).toBeNull();
 		}

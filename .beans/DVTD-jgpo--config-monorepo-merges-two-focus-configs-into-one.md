@@ -1,11 +1,11 @@
 ---
 # DVTD-jgpo
 title: 'Config: Monorepo merges two category configs into one'
-status: draft
+status: scrapped
 type: feature
 priority: critical
 created_at: 2026-09-22T11:23:19Z
-updated_at: 2026-09-24T12:49:18Z
+updated_at: 2026-09-27T17:34:40Z
 parent: DVTD-72d9
 ---
 
@@ -70,3 +70,18 @@ merging configs is fun before an entire consumable system gets built around it.
 Replaces the Monorepo written up as Config 1 of **DVTD-kgka**, which was a
 category-bonus passive ("every category config fires on every poll"). Same name,
 unrelated mechanic.
+
+## Reasons for Scrapping
+
+Superseded by DVTD-e0u5 (2026-09-27, Marciano: "Monorepo merging is out of date
+now"). The recipe merge keeps what this bean wanted — two configs become one,
+weight bought back, one failure point — and answers its open questions by design:
+
+- Per-child levels are gone: the output starts at v1 with **one shared version**,
+  so no panel ever shows two levels and an upgrade has nothing to pick.
+- An outage disables the whole output — both halves live on one config.
+- Free-form pairing is gone: **only authored recipes merge**, and outputs are real
+  roster entries (the engine's snapshot refresh keeps only a level, so a synthetic
+  combined config could never persist its two arms anyway).
+- "Occasional service" became a permanent, unlockable registry service priced at
+  64 KB per weight removed.

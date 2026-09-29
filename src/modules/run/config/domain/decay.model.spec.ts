@@ -25,20 +25,37 @@ describe("decayOnClear", () => {
 		expect(configs[0]).toBe(CONFIGS.js);
 	});
 
-	it("deletes the config that fades to ×1 — a dead multiplier never sits in a slot", () => {
-		const nearlySpent = { ...CONFIGS.deprecated, coverageMultiplier: 1.5 };
-		const { configs, deleted } = decayOnClear([CONFIGS.js, nearlySpent]);
-		expect(configs).toEqual([CONFIGS.js]);
-		expect(deleted).toEqual([{ ...nearlySpent, coverageMultiplier: 1 }]);
+	it("keeps the config alive at ×1, which pays nothing but is not yet a loss", () => {
+		const neutral = { ...CONFIGS.deprecated, coverageMultiplier: 1.5 };
+		const { configs, deleted } = decayOnClear([CONFIGS.js, neutral]);
+		expect(configs).toEqual([
+			CONFIGS.js,
+			{ ...neutral, coverageMultiplier: 1 },
+		]);
+		expect(deleted).toEqual([]);
 	});
 
-	it("serves exactly four gates from a fresh ×3: 3, 2.5, 2, 1.5, gone", () => {
+	it("keeps the config alive at ×0.5, where it cuts coverage rather than paying it", () => {
+		const rotting = { ...CONFIGS.deprecated, coverageMultiplier: 1 };
+		const { configs, deleted } = decayOnClear([rotting]);
+		expect(configs).toEqual([{ ...rotting, coverageMultiplier: 0.5 }]);
+		expect(deleted).toEqual([]);
+	});
+
+	it("deletes the config that fades to ×0 — a multiplier that zeroes coverage never sits in a slot", () => {
+		const nearlySpent = { ...CONFIGS.deprecated, coverageMultiplier: 0.5 };
+		const { configs, deleted } = decayOnClear([CONFIGS.js, nearlySpent]);
+		expect(configs).toEqual([CONFIGS.js]);
+		expect(deleted).toEqual([{ ...nearlySpent, coverageMultiplier: 0 }]);
+	});
+
+	it("serves six gates from a fresh ×3, the last two at or below break-even: 3, 2.5, 2, 1.5, 1, 0.5, gone", () => {
 		const ladder: number[] = [];
 		let build: readonly Config[] = [CONFIGS.deprecated];
 		while (build.length > 0) {
 			ladder.push(build[0].coverageMultiplier ?? 0);
 			build = decayOnClear(build).configs;
 		}
-		expect(ladder).toEqual([3, 2.5, 2, 1.5]);
+		expect(ladder).toEqual([3, 2.5, 2, 1.5, 1, 0.5]);
 	});
 });

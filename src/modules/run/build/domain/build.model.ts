@@ -157,6 +157,11 @@ export const canLint = (
 export const peekerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.peeksCommunitySplit === true);
 
+export const crowdSubmitterFor = (
+	configs: readonly Config[]
+): Config | undefined =>
+	configs.find((config) => config.submitsCrowdPick === true);
+
 export const budgeterFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsCorrectCount === true);
 

@@ -9,7 +9,7 @@ const COPY = {
 	sell: "uninstalls for",
 } as const;
 
-const EFFECT = "text-xs leading-relaxed font-normal text-theme-soft";
+const EFFECT = "text-xs leading-relaxed font-normal text-theme-faint";
 const NOTE = "text-xs leading-8 font-normal text-theme-muted";
 const META = "flex items-center gap-2 text-xs text-theme-muted";
 const SELL = "ml-auto flex shrink-0 items-center gap-1.5";

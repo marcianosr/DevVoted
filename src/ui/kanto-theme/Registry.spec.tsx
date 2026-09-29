@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
 	createKantoRegistryProps,
+	kantoNewRunGroups,
 	kantoRegistryOffers,
 	kantoUpgradeOffer,
 } from "~/test/kantoPoll.factory";
@@ -94,7 +95,8 @@ describe("Registry", () => {
 		});
 
 		expect(install).toBeDisabled();
-		expect(install).toHaveTextContent("Install \u00b7 128 KB");
+		expect(install).toHaveTextContent("Install");
+		expect(install).toHaveTextContent("128 KB");
 	});
 
 	it("dims the chip of an offer that cannot be taken", () => {
@@ -170,5 +172,35 @@ describe("Registry", () => {
 		);
 
 		expect(onToggleInfo).toHaveBeenCalledWith("IndexedDB");
+	});
+
+	it("groups no offer when it is handed no groups, as the shop hands none", () => {
+		render(<Registry {...props} />);
+
+		expect(screen.queryAllByRole("group")).toHaveLength(0);
+		for (const offer of kantoRegistryOffers) {
+			expect(chipOf(offer.name ?? "")).not.toBeNull();
+		}
+	});
+
+	it("files every offer under its group when it is handed them", () => {
+		const groups = kantoNewRunGroups();
+		render(<Registry {...props} groups={groups} />);
+
+		expect(screen.getAllByRole("group")).toHaveLength(groups.length);
+		for (const group of groups) {
+			const region = screen.getByRole("group", { name: group.label });
+			for (const offer of group.offers) {
+				expect(within(region).getByText(offer.name ?? "")).toBeInTheDocument();
+			}
+		}
+	});
+
+	it("counts each group beside its name", () => {
+		const groups = kantoNewRunGroups();
+		render(<Registry {...props} groups={groups} />);
+
+		const coverage = screen.getByRole("group", { name: "Coverage" });
+		expect(within(coverage).getByText("3")).toBeInTheDocument();
 	});
 });

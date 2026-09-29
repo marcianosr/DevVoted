@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	publicBuildChipsFor,
+	publicConfigCardFor,
 	publicConfigChipFor,
 } from "~/modules/run/build/application/publicBuild.viewmodel";
 import { publicSpaceOf } from "~/modules/run/build/domain/publicBuild.model";
@@ -56,6 +57,48 @@ describe("publicSpaceOf", () => {
 		expect(
 			publicSpaceOf({ configs: [{ id: "a", label: "A", slots: 64 }] })
 		).toBe(32);
+	});
+});
+
+describe("publicConfigCardFor", () => {
+	it("carries the description and the version ceiling so the card can expand", () => {
+		expect(publicConfigCardFor(MISTY_BUILD.configs[0]).info).toEqual({
+			description: "TypeScript polls earn 2× coverage.",
+			slots: 1,
+			maxVersion: 5,
+			version: 4,
+		});
+	});
+
+	it("reads the description at the version the player actually runs", () => {
+		const atFirst = publicConfigCardFor({
+			id: "ts",
+			label: ".ts",
+			slots: 1,
+			level: 1,
+		});
+
+		expect(atFirst.info?.description).not.toBe(
+			publicConfigCardFor(MISTY_BUILD.configs[0]).info?.description
+		);
+	});
+
+	it("leaves a config the roster no longer knows without an expandable body", () => {
+		expect(
+			publicConfigCardFor({ id: "retired", label: "Retired", slots: 1 }).info
+		).toBeUndefined();
+	});
+
+	it("quotes no sell price, because a visitor cannot sell another build", () => {
+		expect(publicConfigCardFor(MISTY_BUILD.configs[0]).info).not.toHaveProperty(
+			"sellPrice"
+		);
+	});
+
+	it("states no run note, which is state the visitor may not read", () => {
+		expect(publicConfigCardFor(MISTY_BUILD.configs[0]).info).not.toHaveProperty(
+			"note"
+		);
 	});
 });
 
