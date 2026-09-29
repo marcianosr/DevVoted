@@ -36,6 +36,12 @@ export type GateLadder = {
 	readonly healthy: number;
 };
 
+export const baseGateLadderAt = (gatesCleared: number): GateLadder => ({
+	floor: roundToOneDecimal(percentOf(floorAt(gatesCleared))),
+	ok: roundToOneDecimal(percentOf(okAt(gatesCleared))),
+	healthy: roundToOneDecimal(percentOf(healthyAt(gatesCleared))),
+});
+
 export const gateDemandFor = (
 	configs: readonly Config[],
 	gatesCleared: number,

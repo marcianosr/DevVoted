@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { AUDIT_IDS } from "~/modules/run/gate/domain/audit.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 
@@ -49,18 +48,20 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 	z
 		.object({
+			type: z.literal("approve-slot"),
+			pollId: z.string().min(1),
+		})
+		.strict(),
+	z
+		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1).readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),
 	bareActionSchema("fire-audit"),
-	bareActionSchema("open-audit"),
-	z
-		.object({ type: z.literal("keep-payload"), auditId: z.enum(AUDIT_IDS) })
-		.strict(),
-	bareActionSchema("take-audit"),
-	bareActionSchema("repackage"),
+	bareActionSchema("buy-incident"),
+	bareActionSchema("refresh-incident"),
 	bareActionSchema("close-gate"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
@@ -69,9 +70,14 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	z
 		.object({
 			type: z.literal("strip"),
-			configIds: z.array(z.string().min(1)).min(1).readonly(),
+			configIds: z.array(z.string().min(1)).readonly(),
+			fromStorage: z.boolean().optional(),
 		})
-		.strict(),
+		.strict()
+		.refine(
+			(action) => action.configIds.length > 0 || action.fromStorage === true,
+			{ message: "A strip must drop a config, settle from storage, or both." }
+		),
 	bareActionSchema("refuse-gate"),
 	bareActionSchema("resume-climb"),
 	configActionSchema("draft"),
@@ -89,11 +95,22 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	configActionSchema("vendor-lock"),
 ]);
 
-type SchemaAction = z.infer<typeof runActionSchema>;
+export type WireRunAction = z.infer<typeof runActionSchema>;
+
+type SchemaAction = WireRunAction;
 type Assert<T extends true> = T;
 
+export type ServerMintedAction = "loot";
+
+type ClientAction = Exclude<RunAction["type"], ServerMintedAction>;
+
 export type SchemaCoversEveryAction = Assert<
-	[RunAction["type"]] extends [SchemaAction["type"]] ? true : false
+	[ClientAction] extends [SchemaAction["type"]] ? true : false
+>;
+export type SchemaMintsNothingForTheClient = Assert<
+	[Extract<SchemaAction["type"], ServerMintedAction>] extends [never]
+		? true
+		: false
 >;
 export type SchemaAddsNoAction = Assert<
 	[SchemaAction["type"]] extends [RunAction["type"]] ? true : false

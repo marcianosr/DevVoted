@@ -39,7 +39,8 @@ baseline and keeps the drop.
 
 3. **Only the poll screen passes units.** Debrief, run over, prep and shop keep
    the percent: comparing gates against one another is their point, and a
-   percent is the one figure that compares across denominators.
+   percent is the one figure that compares across denominators. Amended by
+   [ADR-139](139-prep-prices-a-poll-and-draws-the-codebase.md): prep's What a poll pays panel states the standing in units.
 
 4. **The lead line keeps its percent.** "You have scored 35 units across 50
    slots, which is 70.0% coverage" is the bridge that explains why 35 of 40

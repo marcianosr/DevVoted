@@ -8,6 +8,7 @@ import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { PIN_START_KB_PER_GATE } from "~/modules/run/run/domain/rules.model";
 import {
 	abandonRunService,
 	dispatchRunActionService,
@@ -310,6 +311,49 @@ describe("startRunService", () => {
 		);
 	});
 
+	it("checks a tagged run out at the pinned gate on the real stipend", async () => {
+		const RESCUE_GATE = 7;
+		vi.mocked(queries.consumePinnedGate).mockResolvedValueOnce(RESCUE_GATE);
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 66,
+		});
+
+		const result = await startRunService({ userId: USER, date: DATE });
+
+		expect(result.success).toBe(true);
+		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
+			USER,
+			DATE,
+			expect.objectContaining({
+				gatesCleared: RESCUE_GATE,
+				startedAtGate: RESCUE_GATE,
+				storage: PIN_START_KB_PER_GATE * RESCUE_GATE,
+				coverage: 0,
+			})
+		);
+	});
+
+	it("burns the tag on a fresh start and opens at gate zero when none is stored", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 67,
+		});
+
+		await startRunService({ userId: USER, date: DATE });
+
+		expect(queries.consumePinnedGate).toHaveBeenCalledWith(USER);
+		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
+			USER,
+			DATE,
+			expect.objectContaining({ gatesCleared: 0, startedAtGate: 0 })
+		);
+	});
+
 	it("errors when every poll of the day is already answered", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
@@ -484,7 +528,7 @@ describe("the poll's own history on the view (ADR-093)", () => {
 			leader: {
 				userId: "sabrina-id",
 				handle: "@sabrina",
-				streak: 17,
+				best: 17,
 				you: false,
 			},
 		});
@@ -500,7 +544,7 @@ describe("the poll's own history on the view (ADR-093)", () => {
 		).toBe("js");
 		expect(result.success).toBe(true);
 		if (result.success) {
-			expect(result.data?.poll?.categorySeat?.leader?.streak).toBe(17);
+			expect(result.data?.poll?.categorySeat?.leader?.best).toBe(17);
 		}
 	});
 

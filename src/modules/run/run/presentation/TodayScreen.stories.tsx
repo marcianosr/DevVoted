@@ -6,30 +6,40 @@ import {
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	TodayScreen,
-	type TodayRun,
 	type TodayScreenProps,
 } from "~/modules/run/run/presentation/TodayScreen.ui";
 
 const noop = () => {};
 
-const onLavender: TodayRun = {
-	title: "Your run is on Lavender",
-	standing: "gate 4 of 12 · 296 KB stored",
-	swatches: swatchTrackFor([1, 3], 4),
-	pollsNote: "today’s 5 polls are ready",
-};
+const CLOCK = "New polls in 7h 23m";
+const RUNGS = [
+	{ band: "ok", label: "OK", at: "40%" },
+	{ band: "healthy", label: "HEALTHY", at: "60%" },
+] as const;
 
 const base: TodayScreenProps = {
 	swatch: gateSwatchAt(4),
-	run: onLavender,
-	action: { label: "Resume", onPress: noop },
-	polls: {
-		detail: "5 questions, shared by everyone · 8 have answered",
-		press: { label: "Answer it", onPress: noop },
+	press: {
+		label: "Resume Lavender",
+		note: `Poll 3 out of 5 · ${CLOCK}`,
+		pollsLeft: 3,
+		onPress: noop,
 	},
+	shop: {
+		label: "Shop",
+		hint: "Shop · the shop opens when you clear a gate",
+		open: false,
+		onPress: noop,
+	},
+	standing: {
+		swatches: swatchTrackFor([1, 2, 3], 4),
+		line: "gate 4 of 12 · 296 KB stored · 3 of today’s 5 left · they do not carry to tomorrow",
+	},
+	coverage: { held: 42, demand: 60, rungs: RUNGS },
 	community: {
-		detail: "see how everyone else is doing today",
-		press: { label: "Open board", onPress: noop },
+		count: 8,
+		detail: "players answered today",
+		href: "/run/community",
 	},
 };
 
@@ -47,23 +57,53 @@ export const FreshPlayer: Story = {
 		<TodayScreen
 			{...base}
 			swatch={gateSwatchAt(0)}
-			run={null}
-			action={{ label: "Start today’s climb", onPress: noop }}
+			press={{
+				label: "Start today’s climb",
+				note: CLOCK,
+				pollsLeft: 5,
+				onPress: noop,
+			}}
+			standing={null}
+			coverage={null}
+			community={{
+				count: 1,
+				detail: "player answered today",
+				href: "/run/community",
+			}}
 		/>
 	),
 };
 
-export const PollsReady: Story = { render: () => <TodayScreen {...base} /> };
-
-export const PartAnsweredDay: Story = {
+export const PollsReady: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
-			run={{
-				...onLavender,
-				pollsNote: "3 of today’s 5 left · they do not carry to tomorrow",
+			press={{
+				...base.press,
+				note: `Poll 1 out of 5 · ${CLOCK}`,
+				pollsLeft: 5,
 			}}
-			action={{ label: "Resume", onPress: noop }}
+			coverage={{ held: 0, demand: 60, rungs: RUNGS }}
+		/>
+	),
+};
+
+export const PartAnsweredDay: Story = {
+	render: () => <TodayScreen {...base} />,
+};
+
+export const AtAGate: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			press={{
+				label: "Resume Lavender",
+				note: `Poll 5 out of 5 · ${CLOCK}`,
+				pollsLeft: 0,
+				onPress: noop,
+			}}
+			shop={{ label: "Shop", open: true, onPress: noop }}
+			coverage={{ held: 64, demand: 60, rungs: RUNGS }}
 		/>
 	),
 };
@@ -72,8 +112,7 @@ export const WaitingOnMidnight: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
-			run={{ ...onLavender, pollsNote: "New polls in 7h 23m" }}
-			action={{ label: "New polls in 7h 23m" }}
+			press={{ label: CLOCK, note: "Poll 4 out of 5", pollsLeft: 0 }}
 		/>
 	),
 };
@@ -82,12 +121,34 @@ export const RunOver: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
-			run={{
-				...onLavender,
-				title: "Your last run reached Lavender",
-				standing: "gate 4 of 12 · 296 KB banked",
+			press={{
+				label: "Start today’s climb",
+				note: CLOCK,
+				pollsLeft: 5,
+				onPress: noop,
 			}}
-			action={{ label: "Start today’s climb", onPress: noop }}
+			standing={{
+				swatches: swatchTrackFor([1, 2, 3, 4]),
+				line: "gate 4 of 12 · 296 KB banked · today’s 5 polls are ready",
+			}}
+			coverage={null}
+		/>
+	),
+};
+
+export const RefusedStart: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			press={{
+				label: "Start today’s climb",
+				note: CLOCK,
+				pollsLeft: 5,
+				onPress: noop,
+			}}
+			standing={null}
+			coverage={null}
+			refusal="You already have a run going today."
 		/>
 	),
 };

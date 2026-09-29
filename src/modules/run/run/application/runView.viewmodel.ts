@@ -1,5 +1,7 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
+import { approvedPollOf } from "~/modules/run/run/domain/approval.model";
+
 import {
 	type ShopControls,
 	shopControlsFor,
@@ -96,6 +98,7 @@ import {
 	type Audit,
 	auditLabel,
 	auditsHideAnswerType,
+	type AuditId,
 	auditsHideCategory,
 	auditsHideMeter,
 	auditTimeLimitMs,
@@ -118,7 +121,6 @@ import {
 	prefetcherFor,
 	projectorFor,
 	buildModifiersFor,
-	rungAfterBuild,
 	spaceForBuild,
 	upkeepAfterCreditOf,
 } from "~/modules/run/build/domain/build.model";
@@ -131,7 +133,6 @@ import {
 	bandOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
-import { recommendedPicks } from "~/modules/run/config/domain/hand.model";
 import {
 	atMinimumWidth,
 	faucetRemainingKb,
@@ -145,8 +146,6 @@ export type BuildSpaceView = {
 	readonly space: number;
 	readonly weight: number;
 	readonly perGateKb: number;
-	readonly nextWeight?: number;
-	readonly nextPerGateKb?: number;
 	readonly coveredSpace: number | null;
 };
 
@@ -230,7 +229,6 @@ export type RunView = {
 	readonly configs: readonly Config[];
 	readonly installed: readonly InstalledConfig[];
 	readonly available: readonly Config[];
-	readonly recommendedConfigIds: readonly string[];
 	readonly offers: readonly ShopOffer[];
 	readonly newConfigIds: readonly string[];
 	readonly peelSlotsRemaining: number;
@@ -256,6 +254,7 @@ export type RunView = {
 	readonly rebaseSlots: readonly PollSlot[];
 	readonly estimate: EstimateControl | null;
 	readonly estimatedCorrect: number | null;
+	readonly approvedPollId: string | null;
 	readonly sla: SlaControl | null;
 	readonly slaBand: CommittableBand | null;
 	readonly correctThisGate: number;
@@ -266,7 +265,8 @@ export type RunView = {
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
 	readonly heldAudit: HeldAudit | null;
-	readonly offeredAudit: HeldAudit | null;
+	readonly incidentOffer: AuditId | null;
+	readonly incidentRefreshes: number;
 	readonly audits: readonly AuditView[];
 	readonly answeredThisGate: readonly AnsweredPoll[];
 	readonly allAnswered: readonly AnsweredPoll[];
@@ -401,18 +401,12 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	});
 };
 
-const buildSpaceViewFor = (state: RunState): BuildSpaceView => {
-	const next = rungAfterBuild(state.build);
-
-	return {
-		space: spaceForBuild(state.build),
-		weight: occupiedSlots(state.build.configs),
-		perGateKb: upkeepAfterCreditOf(state.build),
-		nextWeight: next?.weight,
-		nextPerGateKb: next?.kb,
-		coveredSpace: state.spaceDroppedTo ?? null,
-	};
-};
+const buildSpaceViewFor = (state: RunState): BuildSpaceView => ({
+	space: spaceForBuild(state.build),
+	weight: occupiedSlots(state.build.configs),
+	perGateKb: upkeepAfterCreditOf(state.build),
+	coveredSpace: state.spaceDroppedTo ?? null,
+});
 
 const configStatusesFor = (
 	state: RunState,
@@ -437,6 +431,7 @@ const configStatusesFor = (
 		autoUpgradeProgress: state.autoUpgradeProgress ?? 0,
 		chainLength: chainLengthOf(state.allAnswered ?? []),
 		pendingKb: state.pendingKb ?? 0,
+		approvedThisPoll: approvedPollOf(state) !== undefined,
 	};
 
 	return Object.fromEntries(
@@ -513,10 +508,6 @@ export const toRunView = (
 			minifySavingSlots: minifySavingSlots(config),
 		})),
 		available: state.available,
-		recommendedConfigIds: recommendedPicks(
-			state.available,
-			spaceForBuild(state.build)
-		).map((config) => config.id),
 		offers: offersFor(state),
 		newConfigIds: state.draftedThisGate,
 		archiveAfterKb: null,
@@ -558,6 +549,7 @@ export const toRunView = (
 		rebaseSlots: upcomingSlotsOf(state),
 		estimate: estimateControlFor(state),
 		estimatedCorrect: state.estimatedCorrect ?? null,
+		approvedPollId: state.approvedPollId ?? null,
 		sla: slaControlFor(state),
 		slaBand: state.slaBand ?? null,
 		correctThisGate: state.window.correct,
@@ -600,7 +592,8 @@ export const toRunView = (
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
 		heldAudit: state.heldAudit ?? null,
-		offeredAudit: state.offeredAudit ?? null,
+		incidentOffer: state.incidentOffer ?? null,
+		incidentRefreshes: state.incidentRefreshes ?? 0,
 		audits,
 		answeredThisGate: state.answeredThisGate,
 		allAnswered: state.allAnswered ?? [],

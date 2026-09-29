@@ -1,3 +1,4 @@
+import { COMMUNITY } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	type Config,
@@ -17,7 +18,8 @@ import {
 	GATE_COUNT,
 	roundToOneDecimal,
 	roundToTwoDecimals,
-	storageCreditRate,
+	bankedKb,
+	unbankedKb,
 	upkeepForSpace,
 } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
@@ -47,7 +49,7 @@ const noop = () => {};
 export const RUN_OVER_TITLE = "Run over";
 export const SUMMIT_TITLE = "The climb is done";
 export const NEW_RUN_LABEL = "Start new run";
-export const COMMUNITY_LABEL = "Community";
+export const COMMUNITY_LABEL = COMMUNITY;
 
 const NO_RETRY = "no retry, no peel";
 const HELD_WORD = "held";
@@ -309,9 +311,8 @@ const buildOf = (frame: RunOverFrame) => ({
 });
 
 const storageOf = (frame: RunOverFrame): readonly RunOverStorageRow[] => {
-	const rate = storageCreditRate(frame.won ? "victory" : "dead", frame.gate);
-	const archived = Math.round(frame.balanceKb * rate);
-	const lost = frame.balanceKb - archived;
+	const archived = bankedKb(frame.balanceKb, frame.gate, frame.won);
+	const lost = unbankedKb(frame.balanceKb, frame.gate, frame.won);
 
 	return [
 		{

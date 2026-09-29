@@ -1,14 +1,10 @@
-import { NEEDED, STORAGE_BALANCE } from "~/shared/lib/copy";
+import { COMMUNITY, NEEDED, STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	flatClearPayoutsOf,
 	occupiedSlots,
 } from "~/modules/run/build/domain/build.model";
-import {
-	DRAFT_COST_PER_SLOT_KB,
-	sellRefund,
-	slotsOf,
-} from "~/modules/run/config/domain/config.model";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
@@ -26,6 +22,7 @@ import {
 	FLOOR_CORRECT,
 	GATE_COUNT,
 	INCIDENT_SURVIVAL_KB,
+	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 	failPeelShareFor,
@@ -50,12 +47,17 @@ import {
 	type CoverageBarProps,
 	coverageBandOf,
 } from "~/ui/kanto-theme/CoverageBar.ui";
+import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
 import type {
 	ConfigChipBadge,
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { FoldBadge } from "~/ui/kanto-theme/Fold.ui";
-import type { GateChoiceProps } from "~/ui/kanto-theme/GateChoice.ui";
+import type {
+	GateChoiceProps,
+	GatePeelBribe,
+	GatePeelSource,
+} from "~/ui/kanto-theme/GateChoice.ui";
 import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
 import type {
 	GateOutcomeChip,
@@ -65,11 +67,13 @@ import type {
 import type { LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
+export { PEEL_KB_PER_SLOT };
+
 const noop = () => {};
 
 export const GATE_REVIEW_LABEL = "Review answers";
 export const GATE_SHOP_LABEL = "To the shop";
-export const GATE_COMMUNITY_LABEL = "Community";
+export const GATE_COMMUNITY_LABEL = COMMUNITY;
 
 const COVERAGE_TITLE = "By category";
 const STORAGE_TITLE = "Payout";
@@ -77,10 +81,17 @@ const CHANGES_TITLE = "Build changes";
 const ANSWERS_TITLE = "The five answers";
 
 const BONUS_TITLE = "Perfect bonus";
-const CHOICE_TITLE = "How this gate ends";
+const SETTLE_TITLE = "Settle the peel to retry";
 const ENDING_TITLE = "The run ends here";
 const SUMMIT_TITLE = "The climb is done";
-const DROP_TITLE = "Drop configs instead";
+const DROP_TITLE = "Or drop configs";
+const BRIBE_TITLE = "Pay from storage";
+const BRIBE_SPENT = "Nothing left for storage to cover";
+const BRIBE_NOTHING = "the drops already settle the peel";
+const FROM_STORAGE = "from storage";
+const FROM_DROPS = "from dropped configs";
+const OVERPAID = "overpaid · lost";
+const NOTHING_COVERED = "nothing covered yet";
 const REFUSAL_TITLE = "End the run here";
 const RUN_OVER_TITLE = "Run over";
 
@@ -96,7 +107,6 @@ const SLA_ROW = "agreement met";
 const SLA_NOTE = "the band you promised held";
 const SURVIVED_ROW = "audits survived";
 const SURVIVED_NOTE = `${kbLabel(INCIDENT_SURVIVAL_KB)} per incident a rival fired`;
-const ATTACK_EARNED = "audit earned";
 const ROLLBACK_ROW = "transaction rolled back";
 
 const UNLOCKED = "unlocked";
@@ -107,8 +117,6 @@ const NOT_PAID = "not paid";
 const ROLLED_BACK = "nothing paid";
 const NOTHING_PAID = "nothing paid";
 const STREAK_BROKEN = "streak broken";
-const DROP_BADGE = "drop";
-const DROPPING_BADGE = "dropping";
 
 const BAR_FILLED = "the bar filled";
 const PAYOUT_CUT = "the payout is cut";
@@ -119,18 +127,17 @@ const RIGHT_WORD = "right";
 const METER_NEVER = "the meter never reached the floor";
 const NO_RETRY = "no retry, no peel";
 const CLIMB_DONE = "the climb is done";
-const PEEL_TO_PAY = "peel to pay";
 const PEEL_SETTLED = "the peel is settled";
 
-export const BRIBE_LABEL = "Bribe from storage";
+export const BRIBE_LABEL = "Pay the peel from storage";
 export const REFUSAL_LABEL = "End the run";
 export const NEW_RUN_LABEL = "New run";
 export const PEEL_REFUSAL =
 	"The gate stays shut until the peel is paid in full.";
 export const PEEL_PAID = "The peel is paid. Five fresh polls on the retry.";
 export const ONLY_BANKED_CARRIES = "only what banked carries into your archive";
-export const REFUSAL_NOTE =
-	"No peel, no retry. The swatches you earned stay on your profile.";
+export const REFUSAL_NOTE = "No peel, no retry.";
+export const REFUSAL_TAIL = "Swatches you earned stay on your profile.";
 export const NO_REFUND_NOTE =
 	"A drop settles its own sell value and refunds nothing. Whatever you overpay is simply gone.";
 export const REFUND_NOTE =
@@ -139,6 +146,10 @@ export const REFUND_NOTE =
 const GAIN_COLOR = "viridian" as const;
 const LOSS_COLOR = "cinnabar" as const;
 const TERM_COLOR = "saffron" as const;
+
+const STORAGE_COLOR = "saffron" as const;
+const DROP_COLOR = "cerulean" as const;
+const OVER_COLOR = "vermillion" as const;
 
 export type GateClosing = "cleared" | "held" | "fatal";
 
@@ -201,13 +212,14 @@ export type GateOutcomeFrame = {
 	auditIds?: readonly AuditId[];
 	chosen?: readonly string[];
 	onToggle?: (configId: string) => void;
+	fromStorage?: boolean;
+	onToggleStorage?: () => void;
 	won?: boolean;
 	open?: boolean;
 	heldBy?: GateHoldReason;
 	caughtFatalBy?: string;
 	slaUpliftKb?: number;
 	incidentSurvivalKb?: number;
-	auditHanded?: boolean;
 	bar: CoverageBarProps;
 	payouts?: PollScoresProps;
 	payoutKb: number;
@@ -280,8 +292,6 @@ const coverageRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 			figures: [{ label: signedPercent(gained), color: coverageColor(gained) }],
 		};
 	});
-
-export const PEEL_KB_PER_SLOT = DRAFT_COST_PER_SLOT_KB / 2;
 
 const heldByFloor = (frame: GateOutcomeFrame): boolean =>
 	frame.heldBy === "floor";
@@ -387,18 +397,20 @@ const faucetOf = (frame: GateOutcomeFrame) => frame.faucetKb;
 const billOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
 	CLEARING_BANDS[band] ? frame.billKb : 0;
 
-const peelBillKbOf = (frame: GateOutcomeFrame) =>
+const peelBillSlotsOf = (frame: GateOutcomeFrame) =>
 	peelQuotaSlotsFor(
 		occupiedSlots(frame.configs),
 		failPeelShareFor(frame.gate),
 		frame.gate
-	) * PEEL_KB_PER_SLOT;
+	);
 
 const chosenIn = (frame: GateOutcomeFrame) =>
 	frame.configs.filter((config) => (frame.chosen ?? []).includes(config.id));
 
-const peelPaidKbOf = (chosen: readonly Config[]) =>
-	chosen.reduce((sum, config) => sum + sellRefund(config), 0);
+export const peelSlotsOf = (configs: readonly Config[]) =>
+	configs.reduce((sum, config) => sum + slotsOf(config), 0);
+
+const peelValueKbOf = (config: Config) => slotsOf(config) * PEEL_KB_PER_SLOT;
 
 const collectsOnDrop = (configs: readonly Config[]) =>
 	configs.some((config) => config.refundsPeeledConfigs === true);
@@ -456,9 +468,6 @@ const outcomeChips = (
 					color: TERM_COLOR,
 				},
 			]),
-	...(frame.auditHanded === true
-		? [{ label: ATTACK_EARNED, color: GAIN_COLOR }]
-		: []),
 	...auditsOf(frame).map((audit) => ({
 		label: `${audit.code} fired`,
 		color: TERM_COLOR,
@@ -703,23 +712,16 @@ const dropChip = (
 	configs: readonly Config[],
 	chosen: boolean,
 	settled: boolean,
-	onPress: () => void
+	onToggle: () => void
 ): ConfigChipProps => {
 	const refund = peelRefundIn(configs, config);
 	const spent = settled && !chosen;
 
 	const badges: ConfigChipBadge[] = [
-		{ label: kbLabel(sellRefund(config)), color: TERM_COLOR },
+		{ label: kbLabel(peelValueKbOf(config)), color: TERM_COLOR },
 		...(refund === 0
 			? []
 			: [{ label: signedKbLabel(refund), color: GAIN_COLOR }]),
-		{
-			label: chosen ? DROPPING_BADGE : DROP_BADGE,
-			onPress,
-			armed: chosen,
-			disabled: spent,
-			hint: `${chosen ? "Keep" : "Drop"} ${config.label}`,
-		},
 	];
 
 	return {
@@ -728,6 +730,12 @@ const dropChip = (
 		version: config.level ?? 1,
 		lost: chosen,
 		badges,
+		pick: {
+			label: `${chosen ? "Keep" : "Drop"} ${config.label}`,
+			checked: chosen,
+			disabled: spent,
+			onToggle,
+		},
 		info: settledFactsFor(config),
 	};
 };
@@ -735,12 +743,17 @@ const dropChip = (
 export const peelTallyOf = (billKb: number, paidKb: number): string => {
 	const over = paidKb - billKb;
 
-	if (paidKb === 0) return `${kbLabel(billKb)} still owed`;
+	if (paidKb === 0) return NOTHING_COVERED;
 	if (over > 0) return `${PEEL_SETTLED} · ${kbLabel(over)} over`;
 	if (over === 0) return PEEL_SETTLED;
 
-	return `${kbLabel(-over)} still owed · ${kbLabel(paidKb)} chosen`;
+	return `${kbLabel(paidKb)} of ${kbLabel(billKb)} covered`;
 };
+
+export const peelHeadlineOf = (billKb: number, paidKb: number): string =>
+	paidKb >= billKb
+		? `${kbLabel(paidKb)} settled`
+		: `${kbLabel(billKb - paidKb)} owed`;
 
 export type RetryAction = { label: string; onPress?: () => void };
 
@@ -749,27 +762,89 @@ export const retryActionOf = (gate: number, owedKb: number): RetryAction =>
 		? { label: `Retry gate ${gate}` }
 		: { label: `Retry gate ${gate}`, onPress: noop };
 
-const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
-	const bill = peelBillKbOf(frame);
-	const chosen = chosenIn(frame);
-	const paid = peelPaidKbOf(chosen);
-	const owed = Math.max(0, bill - paid);
-	const balance = balanceOf(frame, SHAKY_BAND);
-	const affordable = balance >= owed;
+export type PeelSettlement = {
+	billSlots: number;
+	droppedSlots: number;
+	storageSlots: number;
+	overSlots: number;
+	owedKb: number;
+	paidKb: number;
+	storageKb: number;
+	balanceKb: number;
+};
+
+export const peelSettlementOf = (frame: GateOutcomeFrame): PeelSettlement => {
+	const billSlots = peelBillSlotsOf(frame);
+	const balanceKb = balanceOf(frame, SHAKY_BAND);
+	const droppedSlots = peelSlotsOf(chosenIn(frame));
+	const counted = Math.min(droppedSlots, billSlots);
+	const affordable = Math.floor(balanceKb / PEEL_KB_PER_SLOT);
+	const offered = Math.min(billSlots - counted, Math.max(0, affordable));
+	const storageSlots = frame.fromStorage === true ? offered : 0;
 
 	return {
-		title: CHOICE_TITLE,
+		billSlots,
+		droppedSlots: counted,
+		storageSlots,
+		overSlots: droppedSlots - counted,
+		owedKb: (billSlots - counted - storageSlots) * PEEL_KB_PER_SLOT,
+		paidKb: (droppedSlots + storageSlots) * PEEL_KB_PER_SLOT,
+		storageKb: offered * PEEL_KB_PER_SLOT,
+		balanceKb,
+	};
+};
+
+const sourcesOf = (settlement: PeelSettlement): readonly GatePeelSource[] =>
+	[
+		{
+			label: FROM_STORAGE,
+			slots: settlement.storageSlots,
+			color: STORAGE_COLOR,
+		},
+		{ label: FROM_DROPS, slots: settlement.droppedSlots, color: DROP_COLOR },
+		{ label: OVERPAID, slots: settlement.overSlots, color: OVER_COLOR },
+	].filter((source) => source.slots > 0);
+
+const bribeOf = (
+	settlement: PeelSettlement,
+	frame: GateOutcomeFrame
+): GatePeelBribe => {
+	const { storageKb, balanceKb } = settlement;
+	const nothingToPay = storageKb === 0;
+
+	return {
+		title: BRIBE_TITLE,
+		balance: `you have ${kbLabel(balanceKb)}`,
+		label: nothingToPay ? BRIBE_SPENT : `Pay ${kbLabel(storageKb)} of the peel`,
+		note: nothingToPay
+			? BRIBE_NOTHING
+			: `storage drops to ${kbLabel(balanceKb - storageKb)} · your build stays intact`,
+		cost: signedKbLabel(-storageKb),
+		pick: {
+			label: BRIBE_LABEL,
+			checked: frame.fromStorage === true,
+			disabled: nothingToPay,
+			onToggle: () => frame.onToggleStorage?.(),
+		},
+	};
+};
+
+const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
+	const settlement = peelSettlementOf(frame);
+	const { billSlots, owedKb, paidKb, balanceKb } = settlement;
+	const bill = billSlots * PEEL_KB_PER_SLOT;
+	const chosen = chosenIn(frame);
+
+	return {
 		peel: {
-			title: `Retry gate ${frame.gate}`,
-			owed: peelTallyOf(bill, paid),
-			meter: { value: paid, max: bill },
-			note: `${plural(SLICE_WINDOW, "fresh poll")} on the retry · the build stays locked for the window`,
-			bribe: {
-				label: BRIBE_LABEL,
-				balance: kbLabel(balance),
-				shortfall: affordable ? undefined : `short ${kbLabel(owed - balance)}`,
-				onPress: affordable ? noop : undefined,
-			},
+			title: SETTLE_TITLE,
+			note: `${plural(SLICE_WINDOW, "fresh poll")} on the retry`,
+			owed: peelHeadlineOf(bill, paidKb),
+			owedColor: owedKb > 0 ? LOSS_COLOR : GAIN_COLOR,
+			tally: peelTallyOf(bill, paidKb),
+			bill: billSlots,
+			sources: sourcesOf(settlement),
+			bribe: bribeOf(settlement, frame),
 			drop: {
 				title: DROP_TITLE,
 				note: collectsOnDrop(frame.configs) ? REFUND_NOTE : NO_REFUND_NOTE,
@@ -778,7 +853,7 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 						config,
 						frame.configs,
 						chosen.includes(config),
-						owed === 0,
+						owedKb === 0,
 						() => frame.onToggle?.(config.id)
 					)
 				),
@@ -786,8 +861,8 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 		},
 		refusal: {
 			title: REFUSAL_TITLE,
-			price: `banks ${frame.gate} of ${GATE_COUNT} · ${kbLabel(balance)} in the archive`,
-			note: REFUSAL_NOTE,
+			price: `Banks gate ${frame.gate} of ${GATE_COUNT} and archives ${signedKbLabel(balanceKb)}.`,
+			note: `${REFUSAL_NOTE} ${REFUSAL_TAIL}`,
 			action: { label: REFUSAL_LABEL, onPress: noop },
 		},
 	};
@@ -814,15 +889,12 @@ const footerOf = (
 		};
 
 	if (band === SHAKY_BAND) {
-		const owed = Math.max(
-			0,
-			peelBillKbOf(frame) - peelPaidKbOf(chosenIn(frame))
-		);
+		const { owedKb } = peelSettlementOf(frame);
 
 		return {
 			asides: [{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop }],
-			note: owed > 0 ? PEEL_REFUSAL : PEEL_PAID,
-			action: retryActionOf(frame.gate, owed),
+			note: owedKb > 0 ? PEEL_REFUSAL : PEEL_PAID,
+			action: retryActionOf(frame.gate, owedKb),
 		};
 	}
 
@@ -885,32 +957,13 @@ const changesPanelOf = (frame: GateOutcomeFrame) => {
 	};
 };
 
-const figureOf = (frame: GateOutcomeFrame, band: CoverageBandId) => {
-	const balance = balanceOf(frame, band);
-
-	if (band === RUN_OVER_BAND)
-		return {
-			amount: `${roundToOneDecimal(frame.bar.held)}%`,
-			note: `${frame.gate} gates held · ${kbLabel(balance)} left in the archive`,
-		};
-
-	if (band === SHAKY_BAND) {
-		const owed = Math.max(
-			0,
-			peelBillKbOf(frame) - peelPaidKbOf(chosenIn(frame))
-		);
-
-		return {
-			amount: kbLabel(owed),
-			note: `${PEEL_TO_PAY} · ${BALANCE_WORD} ${kbLabel(balance)}`,
-		};
-	}
-
-	return {
-		amount: kbLabel(balance),
-		note: BALANCE_WORD,
-	};
-};
+const headerBalanceOf = (
+	frame: GateOutcomeFrame,
+	band: CoverageBandId
+): BalanceProps => ({
+	kb: balanceOf(frame, band),
+	label: BALANCE_WORD,
+});
 
 const tailOf = (
 	frame: GateOutcomeFrame,
@@ -953,7 +1006,7 @@ export const gateOutcomePropsFor = (
 			swatches: swatchTrackFor(frame.swatchGates, cleared ? gate + 1 : gate),
 			title: titleOf(band, swatch.gateName),
 			subtitle: subtitleOf(frame, band, swatch.gateName),
-			figure: figureOf(frame, band),
+			balance: headerBalanceOf(frame, band),
 			chips: outcomeChips(frame, band),
 		},
 		bar,

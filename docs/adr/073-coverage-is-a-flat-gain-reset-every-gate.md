@@ -78,8 +78,8 @@ bad window later and what makes a collapse something to climb out of.
 The cost is a discontinuity the player feels: clearing a gate opens the next
 gate's five slots, so the same score is divided by a larger number the moment
 the gate shuts. Pallet at 42% reads 21% at Boulder having lost nothing. The
-screens have to say so (`NextGate`'s note prices the next gate in answers, the
-debrief names the slots ahead); the model does not bend to hide it.
+screens have to say so (the debrief names the slots ahead); the model does not
+bend to hide it.
 
 Gains still clamp at 100%. Past a full bar `bankableUnits` stops banking and
 `surplusPayoutKb` pays the overshoot at 32 KB a unit, so a stacked build

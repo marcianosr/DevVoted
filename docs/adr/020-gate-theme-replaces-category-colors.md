@@ -25,9 +25,13 @@ saffron could mean "a JavaScript poll" or "the Marsh badge".
    `[data-category-theme]` CSS are deleted; `CategoryTag` is gone.
 2. **The gate being played themes the app.** `RunView.gateTheme` derives
    `swatchForGate(gatesCleared)?.theme`; run screens pass it to `Screen`, which
-   sets `data-gate-theme` on its section and mirrors it onto `<body>` (page
-   tint + the HUD, which sits outside the section). Answering polls of
-   different categories never changes the theme; clearing a gate does.
+   sets `data-gate-theme` on its section and hands it to the page as well (page
+   tint + the chrome, which sits outside the section). Answering polls of
+   different categories never changes the theme; clearing a gate does. The page
+   half of this went unbuilt until
+   [ADR-133](133-the-chrome-wears-the-screen-under-it.md), which routes it
+   through React state on the root rather than the `<body>` write described
+   here.
 3. **Two CSS namespaces, one palette.** `[data-swatch-theme]` keeps the *chip*
    colors (unchanged); the new `[data-gate-theme]` table carries the *ambient*
    colors. They differ only at the summit, which is the reason two namespaces

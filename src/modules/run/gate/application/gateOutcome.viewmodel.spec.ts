@@ -93,11 +93,11 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 		expect(props.storage.badges?.[0]?.label).toBe("nothing paid");
 	});
 
-	const dropBadgeFor = (frame: GateOutcomeFrame, name: string) => {
+	const dropPickFor = (frame: GateOutcomeFrame, name: string) => {
 		const chip = gateOutcomePropsFor(
 			frame
 		).tail?.choice?.peel.drop.configs.find((config) => config.name === name);
-		return chip?.badges?.at(-1);
+		return chip?.pick;
 	};
 
 	const peeling = (chosen: readonly string[]): GateOutcomeFrame => ({
@@ -107,27 +107,29 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 	});
 
 	it("keeps every drop live while the peel is still owed", () => {
-		const badge = dropBadgeFor(peeling([]), CONFIGS.js.label);
+		const pick = dropPickFor(peeling([]), CONFIGS.js.label);
 
-		expect(badge).toEqual(expect.objectContaining({ disabled: false }));
+		expect(pick).toEqual(
+			expect.objectContaining({ checked: false, disabled: false })
+		);
 	});
 
 	it("spends no config the peel did not ask for, once it is settled", () => {
 		const settled = peeling([CONFIGS.js.id]);
 
-		expect(dropBadgeFor(settled, CONFIGS.ts.label)).toEqual(
+		expect(dropPickFor(settled, CONFIGS.ts.label)).toEqual(
 			expect.objectContaining({ disabled: true })
 		);
-		expect(dropBadgeFor(settled, CONFIGS.css.label)).toEqual(
+		expect(dropPickFor(settled, CONFIGS.css.label)).toEqual(
 			expect.objectContaining({ disabled: true })
 		);
 	});
 
 	it("lets a config already dropping be taken back after the bill is met", () => {
-		const badge = dropBadgeFor(peeling([CONFIGS.js.id]), CONFIGS.js.label);
+		const pick = dropPickFor(peeling([CONFIGS.js.id]), CONFIGS.js.label);
 
-		expect(badge).toEqual(
-			expect.objectContaining({ armed: true, disabled: false })
+		expect(pick).toEqual(
+			expect.objectContaining({ checked: true, disabled: false })
 		);
 	});
 
@@ -428,12 +430,10 @@ describe("what surviving a rival's audits paid, and the heldAudit the clear arme
 		expect(rowNamed(frameOf([], CLEARED), "audits survived")).toBeUndefined();
 	});
 
-	it("chips the audit the clear armed", () => {
-		const props = gateOutcomePropsFor({
-			...frameOf([], CLEARED),
-			auditHanded: true,
-		});
-		expect(props.header.chips).toContainEqual(
+	it("chips nothing earned: a clear is paid in KB, never in ammunition", () => {
+		const props = gateOutcomePropsFor(frameOf([], CLEARED));
+
+		expect(props.header.chips).not.toContainEqual(
 			expect.objectContaining({ label: "audit earned" })
 		);
 	});

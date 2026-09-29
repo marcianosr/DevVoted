@@ -6,9 +6,13 @@ import {
 	type BandOutcome,
 	type LeadLine,
 } from "./BandOutcomes.ui";
-import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
+import {
+	COVERAGE_BAND_COLOR,
+	COVERAGE_BAND_WORD,
+	type CoverageBandId,
+} from "./CoverageBar.ui";
 
-const TITLE = "Objectives and rewards";
+const TITLE = "At stake";
 const LEAD_TEXT = "Clear at ";
 const LEAD: readonly LeadLine[] = [[LEAD_TEXT, { band: "ok" }, " or better."]];
 const NOTE =
@@ -98,7 +102,7 @@ describe("BandOutcomes", () => {
 		expect(themeOf(rowFor("DANGER"))).toBe(COVERAGE_BAND_COLOR.danger);
 	});
 
-	it("edges the fatal row alone, so the ending reads before it is parsed", () => {
+	it("edges the fatal row even where the run has no reading to stand on", () => {
 		draw();
 
 		expect(rowFor("DANGER")).toHaveClass("border-l-2");
@@ -161,47 +165,58 @@ describe("the prose around the table", () => {
 	});
 });
 
-describe("the ladder the outcomes are cut from", () => {
-	const LADDER = { held: 0, floor: 50, ok: 60, healthy: 75 };
+describe("the band the run is standing in", () => {
+	const standing = (band: CoverageBandId) =>
+		render(<BandOutcomes title={TITLE} outcomes={OUTCOMES} standing={band} />);
 
-	it("draws no bar for a table that was handed none", () => {
+	const tableRowFor = (band: string): HTMLElement => {
+		const cell = screen
+			.getAllByText(band)
+			.find((node) => node.closest(".coverage-bar") === null);
+
+		const row = cell?.closest("div");
+		if (row === null || row === undefined)
+			throw new Error(`no table row for "${band}"`);
+		return row;
+	};
+
+	it("edges the row the run is standing in", () => {
+		standing("ok");
+
+		expect(tableRowFor("OK")).toHaveClass("border-l-2");
+	});
+
+	it("reads that edge in the colour of the band it marks", () => {
+		standing("ok");
+
+		expect(themeOf(tableRowFor("OK"))).toBe(COVERAGE_BAND_COLOR.ok);
+	});
+
+	it("leaves the bands the run is not in alone", () => {
+		standing("ok");
+
+		expect(tableRowFor("HEALTHY")).not.toHaveClass("border-l-2");
+		expect(themeOf(tableRowFor("HEALTHY"))).toBeNull();
+		expect(tableRowFor("SHAKY")).not.toHaveClass("border-l-2");
+	});
+
+	it("keeps the fatal row edged while the run stands somewhere else", () => {
+		standing("ok");
+
+		expect(tableRowFor("DANGER")).toHaveClass("border-l-2");
+		expect(themeOf(tableRowFor("DANGER"))).toBe(COVERAGE_BAND_COLOR.danger);
+	});
+
+	it("moves the edge with the band the viewmodel read off the bar", () => {
+		standing("healthy");
+
+		expect(tableRowFor("HEALTHY")).toHaveClass("border-l-2");
+		expect(tableRowFor("OK")).not.toHaveClass("border-l-2");
+	});
+
+	it("edges nothing but the fatal row when the table was handed no standing", () => {
 		const { container } = draw();
 
-		expect(container.querySelector(".coverage-bar")).toBeNull();
-	});
-
-	it("stands the bar above the table it explains", () => {
-		const { container } = render(
-			<BandOutcomes title={TITLE} outcomes={OUTCOMES} bar={LADDER} />
-		);
-
-		const [bar] = [
-			...(container.querySelector("header + div")?.children ?? []),
-		];
-
-		expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
-		expect(bar).toHaveClass("coverage-bar");
-	});
-
-	it("reads the same line the table cuts its bands on", () => {
-		render(<BandOutcomes title={TITLE} outcomes={OUTCOMES} bar={LADDER} />);
-
-		expect(
-			screen.getByRole("img", { name: /0% of 75% needed/ })
-		).toBeInTheDocument();
-	});
-
-	it("carries the note the bar was given, so the ladder says what reaches it", () => {
-		render(
-			<BandOutcomes
-				title={TITLE}
-				outcomes={OUTCOMES}
-				bar={{ ...LADDER, note: "three correct polls reaches the line" }}
-			/>
-		);
-
-		expect(
-			screen.getByText("three correct polls reaches the line")
-		).toBeInTheDocument();
+		expect(container.querySelectorAll(".border-l-2")).toHaveLength(1);
 	});
 });

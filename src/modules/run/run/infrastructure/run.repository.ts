@@ -17,7 +17,6 @@ import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
 
 import {
-	isExclusive,
 	type Title,
 	TITLE_METRICS,
 	titlesEarnedBy,
@@ -272,7 +271,6 @@ const awardTitles = async (
 			titles.map((title) => ({
 				user_id: userId,
 				title_id: title.id,
-				exclusive: isExclusive(title),
 			}))
 		)
 		.onConflictDoNothing()

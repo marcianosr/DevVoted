@@ -20,11 +20,11 @@ export const RunGate = () => {
 			navigate({ to: "/run/shop" });
 		});
 
-	const payPeel = (configIds: readonly string[]) => {
+	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		if (busy) return;
-		if (configIds.length === 0) return resumeToShop();
+		if (configIds.length === 0 && !fromStorage) return resumeToShop();
 
-		sendWith({ type: "strip", configIds }, (result) => {
+		sendWith({ type: "strip", configIds, fromStorage }, (result) => {
 			if (!result.success) return;
 			commit(result);
 			if (result.data.peelSlotsRemaining === 0) resumeToShop();

@@ -9,6 +9,7 @@ import {
 	KANTO_PREP_GATE,
 	KANTO_PREP_SUMMIT_GATE,
 	kantoPrepCalibration,
+	kantoPrepCascadeThin,
 	kantoPrepChampion,
 	kantoPrepFatal,
 	kantoPrepLadder,
@@ -17,6 +18,8 @@ import {
 	kantoPrepSpent,
 } from "~/test/kantoPoll.factory";
 
+import { GATE_STRICTNESS_TITLE } from "./GateStrictness.ui";
+import { POLL_PAYS_TITLE } from "./PollPays.ui";
 import { PrepScreen } from "./PrepScreen.ui";
 
 const props = kantoPrepSealed();
@@ -37,22 +40,35 @@ const bandBadgeFor = (band: string) =>
 const outcomeRowFor = (band: string) =>
 	bandBadgeFor(band).closest("div") as HTMLElement;
 
-const CLEAR_LEAD = "to clear the gate";
-const REQUIRED_LEAD = "Main objective";
-const OPTIONAL_LEAD = "Extra objectives";
-const SWATCH_LEAD = "to earn the Lavender swatch";
-const AUDIT_LEAD = "to arm an audit";
+const CLEAR_LEAD = "Finish at";
+const SWATCH_LEAD = "Answer all 5 right";
+const SWATCH_REWARD = "Lavender swatch";
 
-const objectiveBlockFor = (explain: string): HTMLElement => {
-	const block = screen.getByText(explain).closest("div")?.parentElement;
-	if (block === null || block === undefined)
-		throw new Error(`no objective block around "${explain}"`);
+const objectiveBlockFor = (statement: string): HTMLElement => {
+	const block = screen.getByText(statement).closest("div");
+	if (block === null) throw new Error(`no objective block for "${statement}"`);
 	return block;
 };
 
 const requiredBlock = () => objectiveBlockFor(CLEAR_LEAD);
 
 describe("PrepScreen", () => {
+	it("floats the band it stands in above the bar, and never takes it away", () => {
+		const { container } = render(<PrepScreen {...props} />);
+
+		const pin = container.querySelector(".coverage-bar-pin");
+
+		expect(pin).toHaveAttribute("data-shown", "true");
+		expect(pin).toHaveTextContent(/%/);
+		expect(pin).toHaveTextContent(/DANGER|SHAKY|OK|HEALTHY|PERFECT/);
+	});
+
+	it("pins its header, so the balance stays with what it buys back", () => {
+		const { container } = render(<PrepScreen {...props} />);
+
+		expect(container.querySelector("header")).toHaveClass("md:sticky");
+	});
+
 	it("opens on the stakes rather than on the build", () => {
 		render(<PrepScreen {...props} />);
 
@@ -89,14 +105,20 @@ describe("PrepScreen", () => {
 		expect(right).toContainElement(sectionOf("Audits"));
 	});
 
-	it("no longer prices a single answer, the table pricing the landing", () => {
-		render(<PrepScreen {...props} />);
+	it("prices a single, a focus and a multiple answer in units and as a share of the codebase", () => {
+		render(<PrepScreen {...kantoPrepCascadeThin()} />);
 
-		expect(screen.queryByText("What it takes")).not.toBeInTheDocument();
-		expect(screen.queryByText("Each right answer")).not.toBeInTheDocument();
+		const pays = sectionOf(POLL_PAYS_TITLE);
+
+		expect(within(pays).getAllByText("single answer")).toHaveLength(2);
+		expect(within(pays).getByText(".ts ×1.25")).toBeInTheDocument();
+		expect(within(pays).getByText("multiple answers")).toBeInTheDocument();
+		expect(within(pays).getByText("1.25 units")).toHaveClass("badge-theme");
+		expect(within(pays).getByText("+6.67%")).toHaveClass("badge-theme");
+		expect(within(pays).getByText("+13.33%")).toBeInTheDocument();
 	});
 
-	describe("the coverage bar over the outcomes", () => {
+	describe("the coverage bar in What a poll pays", () => {
 		it("starts empty on the gate's own line", () => {
 			render(<PrepScreen {...props} />);
 
@@ -107,12 +129,13 @@ describe("PrepScreen", () => {
 			).toBeInTheDocument();
 		});
 
-		it("stands inside the outcomes panel rather than across the header", () => {
+		it("stands inside What a poll pays, in neither At stake nor the header", () => {
 			const { container } = render(<PrepScreen {...props} />);
 
 			const bar = container.querySelector(".coverage-bar") as HTMLElement;
 
-			expect(sectionOf(BAND_OUTCOMES_TITLE)).toContainElement(bar);
+			expect(sectionOf(POLL_PAYS_TITLE)).toContainElement(bar);
+			expect(sectionOf(BAND_OUTCOMES_TITLE)).not.toContainElement(bar);
 			expect(container.querySelector("header")).not.toContainElement(bar);
 		});
 
@@ -177,44 +200,45 @@ describe("PrepScreen", () => {
 		});
 
 		describe("the objectives", () => {
-			it("asks for one thing, and offers the rest without asking", () => {
+			it("states two objectives and puts no section label over either", () => {
 				render(<PrepScreen {...props} />);
 
-				expect(screen.getByText(REQUIRED_LEAD)).toBeInTheDocument();
 				expect(
-					within(requiredBlock()).getByText("Finish at")
+					within(requiredBlock()).getByText(CLEAR_LEAD)
 				).toBeInTheDocument();
-				expect(screen.getByText(OPTIONAL_LEAD)).toBeInTheDocument();
 				expect(screen.getByText(SWATCH_LEAD)).toBeInTheDocument();
-				expect(screen.getByText(AUDIT_LEAD)).toBeInTheDocument();
+				expect(screen.queryByText("Main objective")).not.toBeInTheDocument();
+				expect(screen.queryByText("Extra objectives")).not.toBeInTheDocument();
 			});
 
-			it("states the clearing band and what it buys, nothing else", () => {
+			it("names what clearing pays rather than restating the objective", () => {
 				render(<PrepScreen {...props} />);
 
 				const block = within(requiredBlock());
 
 				expect(block.getByText("OK")).toBeInTheDocument();
-				expect(block.getByText(CLEAR_LEAD)).toBeInTheDocument();
+				expect(block.getByText("advance to Rainbow")).toBeInTheDocument();
+				expect(block.queryByText("to clear the gate")).not.toBeInTheDocument();
 				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 			});
 
-			it("prices the swatch in the whole window, whatever the clear costs", () => {
-				render(<PrepScreen {...props} />);
+			it("earns the swatch on a flawless window, not on a coverage band", () => {
+				const block = (() => {
+					render(<PrepScreen {...props} />);
+					return within(objectiveBlockFor(SWATCH_LEAD));
+				})();
 
-				expect(
-					within(objectiveBlockFor(SWATCH_LEAD)).getByText("5 of 5")
-				).toBeInTheDocument();
+				expect(block.getByText(SWATCH_REWARD)).toBeInTheDocument();
+				expect(block.queryByText("PERFECT")).not.toBeInTheDocument();
+				expect(block.queryByText("5 of 5")).not.toBeInTheDocument();
 			});
 
-			it("leaves an unwon prize unmarked, the clear too", () => {
+			it("marks neither objective as met or out of reach", () => {
 				render(<PrepScreen {...props} />);
 
+				expect(within(requiredBlock()).queryByRole("img")).toBeNull();
 				expect(
 					within(objectiveBlockFor(SWATCH_LEAD)).queryByRole("img")
-				).toBeNull();
-				expect(
-					within(requiredBlock()).queryByRole("img", { name: "met" })
 				).toBeNull();
 			});
 
@@ -227,13 +251,36 @@ describe("PrepScreen", () => {
 				).not.toBeInTheDocument();
 			});
 
-			it("ticks the clear where the run already stands above the line", () => {
+			it("promises no next gate at the summit, where there is not one", () => {
 				render(<PrepScreen {...kantoPrepChampion()} />);
 
 				expect(
-					within(requiredBlock()).getByRole("img", { name: "met" })
-				).toBeInTheDocument();
+					within(requiredBlock()).queryByText(/advance to/)
+				).not.toBeInTheDocument();
 			});
+
+			it("states no audit, whichever gate is being prepped", () => {
+				render(<PrepScreen {...props} />);
+
+				const panel = sectionOf(BAND_OUTCOMES_TITLE);
+
+				expect(within(panel).queryByText(/audit/)).not.toBeInTheDocument();
+			});
+		});
+
+		it("edges the band row the pin is standing on, so the two cannot disagree", () => {
+			const { container } = render(<PrepScreen {...props} />);
+
+			const pinned = container
+				.querySelector(".coverage-bar-pin")
+				?.getAttribute("data-screen-theme");
+
+			const edged = [...outcomeTable().children]
+				.filter((row) => row.classList.contains("border-l-2"))
+				.map((row) => row.getAttribute("data-screen-theme"));
+
+			expect(pinned).not.toBeNull();
+			expect(edged).toContain(pinned);
 		});
 
 		it("opens on the line it requires, not on a list of three chores", () => {
@@ -244,6 +291,9 @@ describe("PrepScreen", () => {
 			expect(within(panel).getByText(CLEAR_LEAD)).toBeInTheDocument();
 			expect(
 				within(panel).queryByText(/are won separately/)
+			).not.toBeInTheDocument();
+			expect(
+				within(panel).queryByText(/Main objective/)
 			).not.toBeInTheDocument();
 		});
 
@@ -281,13 +331,6 @@ describe("PrepScreen", () => {
 
 			expect(screen.queryByText("this gate")).toBeNull();
 			expect(screen.getByLabelText(/^Lavender —/)).toBeInTheDocument();
-		});
-
-		it("no longer quotes a base poll score or a coverage standing", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(screen.queryByText(/base poll score/)).not.toBeInTheDocument();
-			expect(screen.queryByText(/coverage\./)).not.toBeInTheDocument();
 		});
 
 		it("footnotes where a pay lands and what a peel is settled in", () => {
@@ -328,6 +371,54 @@ describe("PrepScreen", () => {
 		});
 	});
 
+	describe("what a poll pays", () => {
+		it("counts the open slots on the panel", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				within(sectionOf(POLL_PAYS_TITLE)).getByText("25 slots open")
+			).toHaveClass("badge-theme");
+		});
+
+		it("draws one square per slot the run has opened", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(
+				screen.getByRole("img", { name: "0 of 25 slots covered" })
+			).toBeInTheDocument();
+		});
+
+		it("states the standing in units across slots, with yesterday's percent, from the second gate on", () => {
+			render(<PrepScreen {...kantoPrepCascadeThin()} />);
+
+			expect(
+				screen.getByText(/Nothing was lost\./).closest("p")
+			).toHaveTextContent(
+				"The codebase grew from 10 to 15 slots. The same 8 units read 80.0% at Boulder and 53.3% here. Nothing was lost."
+			);
+		});
+
+		it("reads the plain standing at the calibration gate, where nothing has moved yet", () => {
+			render(<PrepScreen {...kantoPrepCalibration()} />);
+
+			expect(screen.getByText(/which is/).closest("p")).toHaveTextContent(
+				"You have scored 0 units across 5 slots, which is 0.0% coverage."
+			);
+			expect(screen.queryByText(/Nothing was lost/)).toBeNull();
+		});
+
+		it("folds the strictness table shut under the column, summarising today's gate", () => {
+			render(<PrepScreen {...props} />);
+
+			const fold = screen
+				.getByRole("heading", { name: GATE_STRICTNESS_TITLE })
+				.closest("details") as HTMLDetailsElement;
+
+			expect(fold).not.toHaveAttribute("open");
+			expect(fold).toHaveTextContent("Lavender · 25 slots · one unit is +4%");
+		});
+	});
+
 	describe("the five polls", () => {
 		it("withholds the window while nothing reveals it", () => {
 			render(<PrepScreen {...props} />);
@@ -340,12 +431,6 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(screen.queryByText("next gate")).not.toBeInTheDocument();
-		});
-
-		it("lists the window without a line explaining what it is worth", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(screen.queryByText(/a matching config pays/)).toBeNull();
 		});
 
 		it("opens the whole window at once when Prefetch is in the build", () => {
@@ -406,9 +491,9 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...kantoPrepCalibration()} />);
 
 			expect(
-				screen.getByText("Audits are unlocked at gate 3 · Thunder")
+				screen.getByText("Audits are unlocked at gate 3")
 			).toBeInTheDocument();
-			expect(screen.getAllByText("gate 3 · Thunder")).toHaveLength(1);
+			expect(screen.getAllByText("gate 3")).toHaveLength(1);
 			expect(screen.queryByText("Your audit")).not.toBeInTheDocument();
 		});
 	});

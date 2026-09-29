@@ -51,7 +51,7 @@ import {
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { estimatePayoutUnits } from "~/modules/run/run/domain/estimate.model";
 import { slaUpliftKb } from "~/modules/run/run/domain/sla.model";
-import { handAudit } from "~/modules/run/run/domain/heldAudit.model";
+import { dealIncidentOffer } from "~/modules/run/run/domain/heldAudit.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -136,9 +136,10 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		state.window.correct,
 		state.gatesCleared
 	);
-	const settledEstimate = {
+	const settledCommitments = {
 		estimatedCorrect: undefined,
 		estimateThisGateUnits: committed === undefined ? undefined : estimateUnits,
+		approvedPollId: undefined,
 	};
 
 	const promised = state.slaBand;
@@ -218,7 +219,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		if (ruling.closing === "fatal")
 			return {
 				...state,
-				...settledEstimate,
+				...settledCommitments,
 				...settledSwatch,
 				...rolledBackEscrow,
 				...droppedSla,
@@ -231,7 +232,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		if (caught === undefined && isPeelFatal(quota, occupied))
 			return {
 				...state,
-				...settledEstimate,
+				...settledCommitments,
 				...settledSwatch,
 				...rolledBackEscrow,
 				...droppedSla,
@@ -246,7 +247,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		const owed = caught?.owed ?? quota;
 		return {
 			...state,
-			...settledEstimate,
+			...settledCommitments,
 			...settledSwatch,
 			...rolledBackEscrow,
 			...droppedSla,
@@ -302,7 +303,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	);
 	const survivalKb =
 		INCIDENT_SURVIVAL_KB * incidentsAt(state, gateNumber).length;
-	const handed = handAudit(state, closingBand.id, gateNumber);
 	const reward =
 		clearKb +
 		interest +
@@ -315,7 +315,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 	const bill = settleUpkeep(state.build, rewarded);
 	const cleared: RunState = {
 		...state,
-		...settledEstimate,
+		...settledCommitments,
 		...settledSwatch,
 		...recordedClose,
 		window: freshWindow(
@@ -350,7 +350,6 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		slaBand: undefined,
 		slaUpliftKb: promised === undefined ? undefined : upliftKb,
 		incidentSurvivalKb: survivalKb,
-		...handed,
 		currentIndex: nextIndex,
 	};
 
@@ -376,41 +375,47 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		bill.droppedTo !== undefined &&
 		billableSlotsOf(finalBuild) > bill.droppedTo;
 
-	return {
-		...cleared,
-		build: finalBuild,
-		spaceDroppedTo: overCovered ? bill.droppedTo : undefined,
-		storage: cleared.storage - billed.paidKb,
-		subscriptionBillKb: billed.paidKb,
-		deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
-		lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
-		configsLost:
-			(state.configsLost ?? 0) + settled.deleted.length + billed.lapsed.length,
-		draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
-		rebuildsUsed: 0,
-		soldThisShop: 0,
-		draftedThisGate: [],
-		status: "rewarding",
-		log: withLog(
-			state,
-			`${clearLine(gateNumber, reward)} Spend it in the shop.`,
-			...settled.deleted.map(
-				(config) => `${config.label} faded to ×1 — deleted from the build.`
+	return dealIncidentOffer(
+		{
+			...cleared,
+			build: finalBuild,
+			spaceDroppedTo: overCovered ? bill.droppedTo : undefined,
+			storage: cleared.storage - billed.paidKb,
+			subscriptionBillKb: billed.paidKb,
+			deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
+			lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
+			configsLost:
+				(state.configsLost ?? 0) +
+				settled.deleted.length +
+				billed.lapsed.length,
+			draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
+			rebuildsUsed: 0,
+			soldThisShop: 0,
+			draftedThisGate: [],
+			status: "rewarding",
+			log: withLog(
+				state,
+				`${clearLine(gateNumber, reward)} Spend it in the shop.`,
+				...settled.deleted.map(
+					(config) => `${config.label} faded to ×1 — deleted from the build.`
+				),
+				...(bill.paidKb > 0 ? [`Build space billed (-${bill.paidKb}KB).`] : []),
+				...(overCovered
+					? [
+							`The space went unpaid — the bill covered ${bill.droppedTo}. Sell or drop to fit it before the shop lets you out.`,
+						]
+					: []),
+				...(billed.paidKb > 0
+					? [`Subscriptions billed (-${billed.paidKb}KB).`]
+					: []),
+				...billed.lapsed.map(
+					(config) => `${config.label} went unpaid — the plan lapsed.`
+				)
 			),
-			...(bill.paidKb > 0 ? [`Build space billed (-${bill.paidKb}KB).`] : []),
-			...(overCovered
-				? [
-						`The space went unpaid — the bill covered ${bill.droppedTo}. Sell or drop to fit it before the shop lets you out.`,
-					]
-				: []),
-			...(billed.paidKb > 0
-				? [`Subscriptions billed (-${billed.paidKb}KB).`]
-				: []),
-			...billed.lapsed.map(
-				(config) => `${config.label} went unpaid — the plan lapsed.`
-			)
-		),
-	};
+		},
+		cleared.gatesCleared,
+		nextIndex
+	);
 };
 
 type AnswerGrade = {

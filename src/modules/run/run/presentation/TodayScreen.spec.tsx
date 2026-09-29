@@ -8,31 +8,36 @@ import {
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	TodayScreen,
-	type TodayRun,
 	type TodayScreenProps,
 } from "~/modules/run/run/presentation/TodayScreen.ui";
-
-const onLavender = (overrides: Partial<TodayRun> = {}): TodayRun => ({
-	title: "Your run is on Lavender",
-	standing: "gate 4 of 12 · 296 KB stored",
-	swatches: swatchTrackFor([1, 2], 4),
-	pollsNote: "today’s 5 polls are ready",
-	...overrides,
-});
 
 const props = (
 	overrides: Partial<TodayScreenProps> = {}
 ): TodayScreenProps => ({
 	swatch: gateSwatchAt(4),
-	run: onLavender(),
-	action: { label: "Resume", onPress: () => {} },
-	polls: {
-		detail: "5 questions, shared by everyone · 8 have answered",
-		press: { label: "Answer it", onPress: () => {} },
+	press: {
+		label: "Resume Lavender",
+		note: "Poll 3 out of 5 · New polls in 7h 23m",
+		pollsLeft: 3,
+		onPress: () => {},
+	},
+	shop: { label: "Shop", open: true, onPress: () => {} },
+	standing: {
+		swatches: swatchTrackFor([1, 2], 4),
+		line: "gate 4 of 12 · 296 KB stored · 3 of today’s 5 left · they do not carry to tomorrow",
+	},
+	coverage: {
+		held: 42,
+		demand: 60,
+		rungs: [
+			{ band: "ok", label: "OK", at: "40%" },
+			{ band: "healthy", label: "HEALTHY", at: "60%" },
+		],
 	},
 	community: {
-		detail: "see how everyone else is doing today",
-		press: { label: "Open board", onPress: () => {} },
+		count: 8,
+		detail: "players answered today",
+		href: "/run/community",
 	},
 	...overrides,
 });
@@ -40,110 +45,154 @@ const props = (
 const press = (name: RegExp) => screen.getByRole("button", { name });
 
 describe("TodayScreen", () => {
-	it("names the gate a live run is standing on", () => {
+	it("leads with a press that names the gate it resumes onto", () => {
 		render(<TodayScreen {...props()} />);
 
-		expect(screen.getByText("Your run is on Lavender")).toBeInTheDocument();
+		expect(press(/Resume Lavender/)).toBeEnabled();
 	});
 
-	it("resumes a live run whose polls are ready", async () => {
+	it("resumes the run when the leading press is taken", async () => {
 		const onPress = vi.fn();
 		render(
-			<TodayScreen {...props({ action: { label: "Resume", onPress } })} />
+			<TodayScreen {...props({ press: { ...props().press, onPress } })} />
 		);
 
-		await userEvent.click(press(/Resume/));
+		await userEvent.click(press(/Resume Lavender/));
 
 		expect(onPress).toHaveBeenCalledOnce();
 	});
 
-	it("says today's polls are waiting, under the press that plays them", () => {
+	it("states the run's position and the clock inside the press itself", () => {
 		render(<TodayScreen {...props()} />);
 
-		const note = screen.getByText("today’s 5 polls are ready");
-
-		expect(note).toBeInTheDocument();
-		expect(note.closest("button")).toHaveClass("segment-theme");
+		expect(
+			press(/Resume Lavender · Poll 3 out of 5 · New polls in 7h 23m/)
+		).toBeInTheDocument();
 	});
 
-	it("puts the wait on the press that would have played, once the day is spent", async () => {
+	it("shuts the leading press when it is given nowhere to go", () => {
 		render(
 			<TodayScreen
 				{...props({
-					action: { label: "New polls in 7h 23m" },
-					run: onLavender({ pollsNote: "New polls in 7h 23m" }),
+					press: {
+						label: "New polls in 7h 23m",
+						note: "today’s 5 polls are answered",
+						pollsLeft: 0,
+					},
 				})}
 			/>
 		);
 
 		expect(press(/New polls in 7h 23m/)).toBeDisabled();
-		expect(screen.queryByRole("button", { name: /Resume/ })).toBeNull();
 	});
 
-	it("reads a finished run as history and offers a new climb", () => {
-		render(
-			<TodayScreen
-				{...props({
-					run: onLavender({
-						title: "Your last run reached Lavender",
-						standing: "gate 4 of 12 · 296 KB banked",
-					}),
-					action: { label: "Start today’s climb", onPress: () => {} },
-				})}
-			/>
-		);
-
-		expect(
-			screen.getByText("Your last run reached Lavender")
-		).toBeInTheDocument();
-		expect(press(/Start today’s climb/)).toBeEnabled();
-		expect(screen.queryByRole("button", { name: /Resume/ })).toBeNull();
-	});
-
-	it("reports no past climb to a player who has never had one", () => {
-		render(
-			<TodayScreen
-				{...props({
-					run: null,
-					action: { label: "Start today’s climb", onPress: () => {} },
-				})}
-			/>
-		);
-
-		expect(screen.getByText("Today’s climb")).toBeInTheDocument();
-		expect(screen.queryByText(/last run/)).toBeNull();
-		expect(press(/Start today’s climb/)).toBeEnabled();
-	});
-
-	it("keeps both rows whatever the run is doing", () => {
-		render(<TodayScreen {...props({ run: null })} />);
-
-		expect(screen.getByText("Today’s polls")).toBeInTheDocument();
-		expect(screen.getByText("Community")).toBeInTheDocument();
-	});
-
-	it("counts the day's shared set rather than calling it one question", () => {
+	it("keeps the swatch ladder and the run's standing under the press", () => {
 		render(<TodayScreen {...props()} />);
 
 		expect(
-			screen.getByText("5 questions, shared by everyone · 8 have answered")
+			screen.getByText(/gate 4 of 12 · 296 KB stored/)
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("img", { name: /swatches discovered/ })
 		).toBeInTheDocument();
 	});
 
-	it("holds the start press while a run is being opened", async () => {
+	it("drops the standing row for a player with no run yet", () => {
+		render(<TodayScreen {...props({ standing: null })} />);
+
+		expect(
+			screen.queryByRole("img", { name: /swatches discovered/ })
+		).toBeNull();
+	});
+
+	it("opens the shop beside the press while a gate is paying out", async () => {
+		const onPress = vi.fn();
+		render(<TodayScreen {...props({ shop: { ...props().shop, onPress } })} />);
+
+		await userEvent.click(press(/Shop/));
+
+		expect(onPress).toHaveBeenCalledOnce();
+	});
+
+	it("refuses the shop mid-gate and names the reason without printing it", () => {
 		render(
 			<TodayScreen
-				{...props({ run: null, action: { label: "Start today’s climb" } })}
+				{...props({
+					shop: {
+						label: "Shop",
+						hint: "Shop · the shop opens when you clear a gate",
+						open: false,
+						onPress: () => {},
+					},
+				})}
 			/>
 		);
 
-		expect(press(/Start today’s climb/)).toBeDisabled();
+		expect(press(/Shop · the shop opens when you clear a gate/)).toBeDisabled();
+		expect(
+			screen.queryByText(/the shop opens when you clear a gate/)
+		).toBeNull();
+	});
+
+	it("reads coverage held against what the gate needs", () => {
+		render(<TodayScreen {...props()} />);
+
+		expect(screen.getByText("Coverage so far")).toBeInTheDocument();
+		expect(
+			screen.getByRole("img", { name: "42% of 60% needed" })
+		).toBeInTheDocument();
+	});
+
+	it("draws the coverage arc against a full circle, not against the rung", () => {
+		const { container } = render(<TodayScreen {...props()} />);
+
+		expect(container.querySelector(".coverage-arc")).toHaveStyle({
+			strokeDashoffset: "58",
+		});
+	});
+
+	it("badges a rung's percentage in its own band's colour, not in ambient grey", () => {
+		render(<TodayScreen {...props()} />);
+
+		for (const [figure, theme] of [
+			["OK", "saffron"],
+			["40%", "saffron"],
+			["HEALTHY", "viridian"],
+			["60%", "viridian"],
+		])
+			expect(screen.getByText(figure)).toHaveAttribute(
+				"data-screen-theme",
+				theme
+			);
+	});
+
+	it("says nothing about coverage before a run is open", () => {
+		render(<TodayScreen {...props({ coverage: null })} />);
+
+		expect(screen.queryByText("Coverage so far")).toBeNull();
+	});
+
+	it("badges the room's count and opens the board", () => {
+		render(<TodayScreen {...props()} />);
+
+		expect(screen.getByText("8")).toBeInTheDocument();
+		expect(screen.getByText("players answered today")).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: /Community/ })).toHaveAttribute(
+			"href",
+			"/run/community"
+		);
+	});
+
+	it("holds the community card back until the room has been counted", () => {
+		render(<TodayScreen {...props({ community: null })} />);
+
+		expect(screen.queryByText("Community")).toBeNull();
 	});
 
 	it("states a refused start rather than dropping it", () => {
 		render(
 			<TodayScreen
-				{...props({ error: "You already have a run going today." })}
+				{...props({ refusal: "You already have a run going today." })}
 			/>
 		);
 

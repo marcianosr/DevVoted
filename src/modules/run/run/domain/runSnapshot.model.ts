@@ -1,6 +1,7 @@
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import {
+	type HeldAudit,
 	type RunState,
 	pickBudgetFor,
 	scheduleOf,
@@ -12,19 +13,37 @@ import type {
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 import {
+	type AuditId,
 	liveAuditsFor,
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 
 export type RunSnapshot = Omit<RunState, "polls">;
 
-export type StoredSnapshot = Omit<RunSnapshot, "bankedUnits" | "window"> & {
+type StoredHeldAudit = {
+	readonly auditId?: AuditId;
+	readonly payload?: AuditId;
+};
+
+export type StoredSnapshot = Omit<
+	RunSnapshot,
+	"bankedUnits" | "window" | "heldAudit"
+> & {
 	readonly bankedUnits?: number;
 	readonly window: Omit<GateWindow, "unitsEarned"> & {
 		readonly unitsEarned?: number;
 	};
-	readonly attack?: { readonly band: "healthy" | "perfect" };
+	readonly heldAudit?: StoredHeldAudit;
+	readonly offeredAudit?: StoredHeldAudit;
+	readonly attack?: { readonly band: string };
 	readonly attackEarnedAtGate?: number;
+	readonly auditHandedAtGate?: number;
+	readonly repackagedThisShop?: true;
+};
+
+const keptPayloadOf = (held?: StoredHeldAudit): HeldAudit | undefined => {
+	const auditId = held?.auditId ?? held?.payload;
+	return auditId === undefined ? undefined : { auditId };
 };
 
 export const toRunSnapshot = (state: RunState): RunSnapshot => {
@@ -88,23 +107,18 @@ export const hydrateRunState = (
 ): RunState => {
 	const unitsEarned = unitsEarnedOf(snapshot.window);
 	const {
-		attack: legacyAttack,
-		attackEarnedAtGate: legacyHandedAtGate,
+		attack: _attack,
+		attackEarnedAtGate: _attackEarnedAtGate,
+		auditHandedAtGate: _auditHandedAtGate,
+		repackagedThisShop: _repackagedThisShop,
+		offeredAudit: _offeredAudit,
+		heldAudit: storedHeldAudit,
 		...current
 	} = snapshot;
-	const heldAudit =
-		current.heldAudit ??
-		(legacyAttack === undefined
-			? undefined
-			: {
-					band: legacyAttack.band,
-					gate: legacyHandedAtGate ?? Math.max(0, snapshot.gatesCleared - 1),
-				});
-	const auditHandedAtGate = current.auditHandedAtGate ?? legacyHandedAtGate;
+	const heldAudit = keptPayloadOf(storedHeldAudit);
 	const healed: RunSnapshot = {
 		...current,
 		...(heldAudit === undefined ? {} : { heldAudit }),
-		...(auditHandedAtGate === undefined ? {} : { auditHandedAtGate }),
 		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
 		coverage: finite(snapshot.coverage, 0),
 		pendingKb: finite(snapshot.pendingKb ?? 0, 0),

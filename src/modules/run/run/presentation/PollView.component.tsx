@@ -19,14 +19,15 @@ import {
 	pollHoldsFor,
 	pollBuildFor,
 	gateLabelFor,
+	gateMarkFor,
 	pollHeaderFor,
 	pollKeysFor,
 	pollCommitFor,
+	approvalCommitFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
 import {
 	PollScreen,
@@ -47,6 +48,7 @@ export type PollViewProps = {
 	onNext: () => void;
 	onPress?: (action: PressAction, configId: string) => void;
 	onUnseal?: (optionId: string) => void;
+	onApprove?: () => void;
 };
 
 type LivePoll = NonNullable<RunView["poll"]>;
@@ -113,10 +115,7 @@ const authorOf = (poll: LivePoll): AuthorProps | undefined =>
 		? undefined
 		: {
 				handle: poll.author.handle,
-				profileHref:
-					poll.author.userId === undefined
-						? undefined
-						: profilePathFor(poll.author.userId),
+				userId: poll.author.userId,
 				role: poll.author.role,
 				title: poll.author.title,
 				photoUrl: poll.author.avatarUrl,
@@ -159,11 +158,26 @@ const answeredMoodFor = (
 			label: view.gateComplete
 				? gateLabelFor(view.gateStake.gateNumber)
 				: NEXT_LABEL,
-			icon: "gate",
+			swatch: gateMarkFor(view.gateStake.gateNumber),
 			onPress: onNext,
 		},
 		note: ENTER_CONTINUES,
 	},
+});
+
+const wasApprovedUnread = (view: RunView, poll: LivePoll): boolean =>
+	view.approvedPollId !== null && view.approvedPollId === poll.id;
+
+const approvedQuestionFor = (
+	view: RunView,
+	poll: LivePoll,
+	onUnseal: ((optionId: string) => void) | undefined
+): QuestionProps => ({
+	answerType: poll.answerType,
+	question: poll.question,
+	options: optionsOf(poll, view, onUnseal),
+	codeBlock: poll.codeBlock,
+	pickedIds: [],
 });
 
 const liveMoodFor = (
@@ -172,15 +186,35 @@ const liveMoodFor = (
 	selectedOptionIds: readonly string[],
 	onSelect: (optionId: string) => void,
 	onSubmit: () => void,
-	onUnseal: ((optionId: string) => void) | undefined
-): PollMood => ({
-	question: liveQuestionFor(view, poll, selectedOptionIds, onSelect, onUnseal),
-	category: categoryNameOf(view, poll.category),
-	wrongCost: wrongCostOf(view),
-	author: authorOf(poll),
-	categoryLeader: categoryLeaderFor(view, poll),
-	commit: pollCommitFor(poll.answerType, selectedOptionIds.length, onSubmit),
-});
+	onUnseal: ((optionId: string) => void) | undefined,
+	onApprove: (() => void) | undefined
+): PollMood => {
+	const shared = {
+		category: categoryNameOf(view, poll.category),
+		wrongCost: wrongCostOf(view),
+		author: authorOf(poll),
+		categoryLeader: categoryLeaderFor(view, poll),
+	};
+
+	if (wasApprovedUnread(view, poll) && onApprove !== undefined)
+		return {
+			...shared,
+			question: approvedQuestionFor(view, poll, onUnseal),
+			commit: approvalCommitFor(onApprove),
+		};
+
+	return {
+		...shared,
+		question: liveQuestionFor(
+			view,
+			poll,
+			selectedOptionIds,
+			onSelect,
+			onUnseal
+		),
+		commit: pollCommitFor(poll.answerType, selectedOptionIds.length, onSubmit),
+	};
+};
 
 export const PollView = ({
 	view,
@@ -191,6 +225,7 @@ export const PollView = ({
 	onNext,
 	onPress,
 	onUnseal,
+	onApprove,
 }: PollViewProps) => {
 	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
 	const revealing = answered !== undefined;
@@ -218,7 +253,8 @@ export const PollView = ({
 						selectedOptionIds,
 						onSelect,
 						onSubmit,
-						onUnseal
+						onUnseal,
+						onApprove
 					);
 
 	if (mood === undefined) return null;

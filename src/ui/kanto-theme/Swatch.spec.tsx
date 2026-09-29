@@ -54,9 +54,9 @@ describe("Swatch", () => {
 		const { container } = render(<Swatch state="current" swatch={PALLET} />);
 
 		expect(container.firstChild).toHaveClass(
-			"border-2",
+			"border",
 			"border-dashed",
-			"border-theme"
+			"border-theme-faint"
 		);
 		expect(container.firstChild).not.toHaveClass("bg-theme");
 	});
@@ -157,7 +157,7 @@ describe("Swatch", () => {
 
 	it.each([
 		["large", "rounded-md"],
-		["small", "rounded-xs"],
+		["small", "rounded-[3px]"],
 	] as const)("gives every %s swatch the same %s corners", (size, radius) => {
 		const { container } = render(
 			<SwatchTrack swatches={trackTo(2)} size={size} />

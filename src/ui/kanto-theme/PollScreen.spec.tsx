@@ -221,12 +221,22 @@ describe("PollScreen", () => {
 		const { rerender } = render(<PollScreen {...props} />);
 		expect(screen.queryByText(/Created by/)).not.toBeInTheDocument();
 
-		rerender(<PollScreen {...props} author={{ handle: "marciano" }} />);
+		rerender(
+			<PollScreen
+				{...props}
+				author={{ handle: "marciano", userId: "marciano-id" }}
+			/>
+		);
 		expect(screen.getByRole("link", { name: "@marciano" })).toBeInTheDocument();
 	});
 
 	it("closes the poll panel on one footer: the credit beside the hint", () => {
-		render(<PollScreen {...props} author={{ handle: "marciano" }} />);
+		render(
+			<PollScreen
+				{...props}
+				author={{ handle: "marciano", userId: "marciano-id" }}
+			/>
+		);
 
 		const footer = screen
 			.getByRole("link", { name: "@marciano" })
@@ -242,12 +252,12 @@ describe("PollScreen", () => {
 		render(
 			<PollScreen
 				{...props}
-				author={{ handle: "marciano" }}
+				author={{ handle: "marciano", userId: "marciano-id" }}
 				categoryLeader={{
 					category: "TypeScript",
 					leader: {
+						userId: "sabrina",
 						handle: "@sabrina",
-						githubLogin: "sabrina",
 						figure: "17 in a row",
 					},
 				}}
@@ -270,7 +280,7 @@ describe("PollScreen", () => {
 		expect(screen.queryByText("leader")).not.toBeInTheDocument();
 	});
 
-	it("runs the screen as header, audits, the poll row, then the build", () => {
+	it("runs the screen as the pinned bar, its track, the poll row, then the build", () => {
 		const { container } = render(<PollScreen {...props} />);
 
 		const body = container.querySelector("section > div");
@@ -278,7 +288,7 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual(["header", "section", "div", "footer"]);
+		expect(order).toEqual(["header", "div", "section", "div", "footer"]);
 	});
 
 	it("stands the poll and the coverage readout in one row, poll first", () => {
@@ -466,7 +476,7 @@ describe("PollScreen", () => {
 		render(
 			<PollScreen
 				{...props}
-				author={{ handle: "marciano" }}
+				author={{ handle: "marciano", userId: "marciano-id" }}
 				commit={{ label: "Lock in", note: "pick an answer first" }}
 			/>
 		);
@@ -586,7 +596,7 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual(["header", "section", "div", "footer"]);
+		expect(order).toEqual(["header", "div", "section", "div", "footer"]);
 	});
 
 	it("pins the coverage bar where the answer landed", () => {
@@ -629,14 +639,14 @@ describe("PollScreen's fact band", () => {
 		expect(screen.queryByText("brutal")).not.toBeInTheDocument();
 	});
 
-	it("follows the question down the page once the readout sits beside it", () => {
+	it("leaves the readout in the flow, the header being the pinned edge now", () => {
 		render(<PollScreen {...props} />);
 
 		const panel = screen
 			.getByRole("heading", { name: "Coverage" })
 			.closest("section");
 
-		expect(panel).toHaveClass("lg:sticky", "lg:top-4");
+		expect(panel).not.toHaveClass("lg:sticky");
 		expect(panel).not.toHaveClass("sticky");
 	});
 

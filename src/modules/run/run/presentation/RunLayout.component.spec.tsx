@@ -126,7 +126,9 @@ describe("run route sync", () => {
 		const router = renderRunRoutes("/run/new");
 
 		await waitFor(() => expect(router.state.location.pathname).toBe("/run"));
-		expect(await screen.findByText("Today’s climb")).toBeVisible();
+		expect(
+			await screen.findByRole("button", { name: /Start today’s climb/ })
+		).toBeVisible();
 	});
 
 	it("keeps a player whose run could not be read where they are, and says why", async () => {
@@ -136,7 +138,9 @@ describe("run route sync", () => {
 
 		expect(await screen.findByText("Not authenticated")).toBeVisible();
 		expect(router.state.location.pathname).toBe("/run/new");
-		expect(screen.queryByText("Today’s climb")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Start today’s climb/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("surfaces a failed read the server reported as a failure, not a rejection", async () => {
@@ -186,6 +190,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				players: [],
 				topPercent: null,
 				leaders: [],
 				polls: [],
@@ -216,6 +221,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				players: [],
 				topPercent: null,
 				leaders: [],
 				polls: [],
@@ -248,6 +254,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				players: [],
 				topPercent: null,
 				leaders: [],
 				polls: [],
@@ -362,6 +369,7 @@ describe("run route sync", () => {
 			data: {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
+				players: [],
 				topPercent: null,
 				leaders: [],
 				polls: [],

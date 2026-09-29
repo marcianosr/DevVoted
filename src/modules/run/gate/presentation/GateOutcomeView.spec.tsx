@@ -109,7 +109,7 @@ describe("GateOutcomeView", () => {
 
 		expect(screen.queryByText(/Run over/)).not.toBeInTheDocument();
 		expect(
-			screen.queryByRole("heading", { name: /How this gate ends/ })
+			screen.queryByRole("heading", { name: /Settle the peel/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -117,7 +117,7 @@ describe("GateOutcomeView", () => {
 		renderAt("held", { onRemove: () => {} });
 
 		expect(
-			screen.getByRole("heading", { name: /How this gate ends/ })
+			screen.getByRole("heading", { name: /Settle the peel/ })
 		).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: /^Retry gate/ })).toBeDisabled();
 	});
@@ -126,14 +126,29 @@ describe("GateOutcomeView", () => {
 		const onRemove = vi.fn();
 		renderAt("held", { onRemove });
 
-		const drops = screen.getAllByRole("button", { name: /drop/i });
+		const drops = screen.getAllByRole("checkbox", { name: /^Drop / });
 		for (const drop of drops) await userEvent.click(drop);
 
 		const retry = screen.getByRole("button", { name: /^Retry gate/ });
 		expect(retry).toBeEnabled();
 
 		await userEvent.click(retry);
-		expect(onRemove).toHaveBeenCalled();
+		expect(onRemove).toHaveBeenCalledWith(expect.any(Array), false);
+	});
+
+	it("opens the retry on storage alone, dropping nothing", async () => {
+		const onRemove = vi.fn();
+		renderAt("held", { onRemove });
+
+		await userEvent.click(
+			screen.getByRole("checkbox", { name: /^Pay the peel from storage/ })
+		);
+
+		const retry = screen.getByRole("button", { name: /^Retry gate/ });
+		expect(retry).toBeEnabled();
+
+		await userEvent.click(retry);
+		expect(onRemove).toHaveBeenCalledWith([], true);
 	});
 
 	it("ends the run from the refusal arm of a held gate", async () => {
@@ -287,7 +302,7 @@ describe("GateOutcomeView", () => {
 });
 
 describe("rivals' audits at the close (ADR-099)", () => {
-	it("itemises what surviving them paid and chips the audit the clear armed", () => {
+	it("itemises what surviving a rival's incidents paid", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
@@ -299,7 +314,6 @@ describe("rivals' audits at the close (ADR-099)", () => {
 						storageBeforeClearKb: 384,
 						clearThisGateKb: 192,
 						incidentSurvivalKb: 64,
-						auditHanded: true,
 					}),
 				})}
 				verdict="cleared"
@@ -309,6 +323,6 @@ describe("rivals' audits at the close (ADR-099)", () => {
 		);
 
 		expect(screen.getByText("audits survived")).toBeInTheDocument();
-		expect(screen.getByText("audit earned")).toBeInTheDocument();
+		expect(screen.queryByText("audit earned")).not.toBeInTheDocument();
 	});
 });

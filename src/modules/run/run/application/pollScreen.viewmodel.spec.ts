@@ -107,11 +107,8 @@ describe("buildCountsOf", () => {
 });
 
 describe("pollPressesOf", () => {
-	it("names the categories a linter is waiting for", () => {
-		const [press] = pollPressesOf(viewOf([CONFIGS.eslint], CSS_GATE));
-
-		expect(press.ready).toBe(false);
-		expect(press.refusal).toBe("waits for JavaScript or TypeScript");
+	it("sells no press for a linter sitting the poll out", () => {
+		expect(pollPressesOf(viewOf([CONFIGS.eslint], CSS_GATE))).toEqual([]);
 	});
 
 	it("refuses a second lint once one wrong answer is left standing", () => {
@@ -142,17 +139,29 @@ describe("pollBuildFor", () => {
 		expect(build.configs[0].badges).toEqual([]);
 	});
 
-	it("disables a refused press and says why on the badge", () => {
+	it("states a sitting-out linter's categories once, on its own badge", () => {
 		const build = pollBuildFor(viewOf([CONFIGS.eslint], CSS_GATE), {
 			onPress: () => {},
 		});
+
+		expect(build.configs[0].badges).toEqual([
+			{ label: "JavaScript or TypeScript only", color: "pewter" },
+		]);
+	});
+
+	it("disables a refused press and says why on the badge", () => {
+		const state = runWith([CONFIGS.eslint], JS_GATE);
+		const build = pollBuildFor(
+			toRunView(runReducer(state, { type: "lint-poll" })),
+			{ onPress: () => {} }
+		);
 		const press = (build.configs[0].badges ?? []).find(
 			(badge) => "onPress" in badge
 		);
 
 		expect(press).toMatchObject({
 			disabled: true,
-			label: "waits for JavaScript or TypeScript",
+			label: "one wrong left",
 		});
 	});
 
@@ -628,8 +637,7 @@ describe("categoryLeaderFor", () => {
 			leader: {
 				userId: "leader-id",
 				handle: "@sabrina",
-				githubLogin: "sabrina",
-				streak: 17,
+				best: 17,
 				you: false,
 			},
 		},
@@ -669,7 +677,7 @@ describe("categoryLeaderFor", () => {
 				leader: {
 					userId: "sabrina-id",
 					handle: "@sabrina",
-					streak: 17,
+					best: 17,
 					you: true,
 				},
 			},

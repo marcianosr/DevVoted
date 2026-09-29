@@ -37,7 +37,6 @@ export type GatePayout = {
 	readonly caughtFatalBy: string | null;
 	readonly slaUpliftKb: number;
 	readonly incidentSurvivalKb: number;
-	readonly auditHanded: boolean;
 };
 
 export const gatePayoutFor = (state: RunState): GatePayout => {
@@ -80,6 +79,5 @@ export const gatePayoutFor = (state: RunState): GatePayout => {
 		caughtFatalBy: state.caughtFatalBy ?? null,
 		slaUpliftKb: state.slaUpliftKb ?? 0,
 		incidentSurvivalKb: state.incidentSurvivalKb ?? 0,
-		auditHanded: state.auditHandedAtGate === reportedGate,
 	};
 };

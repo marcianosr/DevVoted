@@ -1,58 +1,45 @@
+import { gateSwatchAt } from "~/test/swatchTrack.factory";
+
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-	BandOutcomes,
-	type BandOutcome,
-	type LeadLine,
-} from "./BandOutcomes.ui";
+import { BandOutcomes, type BandOutcome } from "./BandOutcomes.ui";
 import type { ObjectivesProps } from "./Objectives.ui";
 import type { PollScoresProps } from "./PollScores.ui";
 import { Screen } from "./Screen.ui";
-import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
-const TITLE = "Objectives and rewards";
+const SEAFOAM_GATE = 8;
+
+const TITLE = "At stake";
 const NOTE =
 	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
-
-const LEAD: readonly LeadLine[] = [
-	["Two things are on the table today, and they are won separately."],
-];
+const FREE_MISS_NOTE =
+	"Paid when the gate shuts. Miss it and you owe nothing: the same gate runs again on 5 fresh polls.";
 
 const OBJECTIVES: ObjectivesProps = {
-	requiredLead: "Main objective",
-	required: {
-		statement: {
-			lead: "Finish at",
-			figure: "OK",
-			color: "saffron",
-			trail: "or better",
-		},
-		explain: "to clear the gate",
-		met: true,
-	},
-	optionalLead: "Extra objectives",
-	optional: [
+	objectives: [
 		{
-			statement: { lead: "Finish at", figure: "PERFECT", color: "cerulean" },
-			explain: "to earn the Seafoam swatch",
-			met: false,
-			figures: [{ label: "5 of 5" }],
+			statement: ["Finish at ", { band: "ok" }, " or better"],
+			earns: [
+				"earns ",
+				{ figure: "advance to Volcano" },
+				{ figure: "+522 KB", band: "ok" },
+				" or more",
+			],
 		},
 		{
-			statement: {
-				lead: "Finish at",
-				figure: "HEALTHY",
-				color: "viridian",
-				trail: "or better",
-			},
-			explain: "to arm an audit",
-			met: false,
+			statement: ["Answer all 5 right"],
+			earns: [
+				"earns ",
+				{ swatch: gateSwatchAt(SEAFOAM_GATE), label: "Seafoam swatch" },
+			],
 		},
 	],
 };
 
 const SCORES: PollScoresProps = {
-	rows: [{ swatch: gateSwatchAt(9), correct: 3, polls: 5, current: true }],
+	rows: [
+		{ swatch: gateSwatchAt(SEAFOAM_GATE), correct: 3, polls: 5, current: true },
+	],
 };
 
 const SEAFOAM: readonly BandOutcome[] = [
@@ -64,9 +51,10 @@ const SEAFOAM: readonly BandOutcome[] = [
 ];
 
 const PALLET: readonly BandOutcome[] = [
-	{ band: "perfect", range: "100%", pays: "+288 KB" },
-	{ band: "healthy", range: "5 – 99%", pays: "+128 KB" },
-	{ band: "ok", range: "0 – 4%", pays: "+32 KB" },
+	{ band: "perfect", range: "100%", pays: "+32 KB" },
+	{ band: "healthy", range: "60 – 99%", pays: "+19 KB" },
+	{ band: "ok", range: "40 – 59%", pays: "+13 KB" },
+	{ band: "shaky", range: "0 – 39%", pays: "no peel" },
 ];
 
 const meta: Meta<typeof BandOutcomes> = {
@@ -81,28 +69,36 @@ const meta: Meta<typeof BandOutcomes> = {
 	args: {
 		title: TITLE,
 		outcomes: SEAFOAM,
-		lead: LEAD,
 		objectives: OBJECTIVES,
 		scores: SCORES,
 		note: NOTE,
+		standing: "ok",
 	},
 };
 export default meta;
 
 type Story = StoryObj<typeof BandOutcomes>;
 
-export const AtAMidGate: Story = {};
+export const StandingInOk: Story = {};
+
+export const StandingUnderTheFloor: Story = {
+	args: { standing: "danger" },
+};
 
 export const NoFloorToFallThrough: Story = {
-	args: { outcomes: PALLET, lead: LEAD },
+	args: {
+		outcomes: PALLET,
+		note: FREE_MISS_NOTE,
+		standing: "ok",
+	},
 };
 
 export const BareTable: Story = {
 	args: {
-		lead: undefined,
 		objectives: undefined,
 		scores: undefined,
 		note: undefined,
+		standing: undefined,
 	},
 };
 
@@ -117,17 +113,4 @@ export const InHalfAScreen: Story = {
 			</div>
 		</Screen>
 	),
-};
-
-export const OverItsOwnLadder: Story = {
-	args: {
-		bar: {
-			held: 0,
-			floor: 50,
-			ok: 60,
-			healthy: 75,
-			marks: "boundaries",
-			note: "four correct polls reaches the line",
-		},
-	},
 };

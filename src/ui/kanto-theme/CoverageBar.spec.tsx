@@ -294,6 +294,16 @@ describe("CoverageBar", () => {
 			expect(pinOf(container)).toHaveAttribute("data-shown", "true");
 		});
 
+		it("names the band it stands in, in that band's colour", () => {
+			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
+
+			expect(pinOf(container)).toHaveTextContent("70%");
+			expect(pinOf(container)).toHaveTextContent("OK");
+			expect(
+				pinOf(container)?.querySelector("[data-screen-theme]")
+			).toHaveAttribute("data-screen-theme", COVERAGE_BAND_COLOR.ok);
+		});
+
 		it("stands where the reading closed", () => {
 			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
 

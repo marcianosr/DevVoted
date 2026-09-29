@@ -19,8 +19,10 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import { EMPTY_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/audit.model";
 import {
+	baseGateLadderAt,
 	type GateClose,
 	gateClosingFor,
+	gateLadderFor,
 	gatePassed,
 	gateRulingFor,
 	gateProjectionFor,
@@ -363,10 +365,29 @@ describe("Dry Run in the roster", () => {
 	});
 
 	it("sits last in the roster, since fixtures slice it positionally", () => {
-		expect(CONFIG_LIST.at(-1)).toBe(CONFIGS.dryRun);
+		expect(CONFIG_LIST.at(-1)).toBe(CONFIGS.lgtm);
 	});
 
 	it("sells information rather than coverage, so it stacks with anything", () => {
 		expect(touchesCoverage(CONFIGS.dryRun)).toBe(false);
+	});
+});
+
+describe("baseGateLadderAt", () => {
+	it.each([0, 1, 6, 12])(
+		"reads gate %i as the ladder a build with no live audit faces",
+		(gate) => {
+			expect(baseGateLadderAt(gate)).toEqual(
+				gateLadderFor([], gate, EMPTY_AUDIT_SCHEDULE)
+			);
+		}
+	);
+
+	it("climbs from floor to ok to healthy in percent", () => {
+		const { floor, ok, healthy } = baseGateLadderAt(6);
+
+		expect(floor).toBeLessThanOrEqual(ok);
+		expect(ok).toBeLessThanOrEqual(healthy);
+		expect(healthy).toBeLessThanOrEqual(100);
 	});
 });

@@ -21,11 +21,10 @@ const FILL =
 const EDGE = "absolute inset-y-0 right-0 w-0.5 bg-theme";
 const MARKS = "relative h-3 w-full";
 const MARK = "absolute text-xxs whitespace-nowrap text-theme-muted";
-const PINS = "relative h-5 w-full";
+const PINS = "relative h-7 w-full";
 const PIN =
 	"coverage-bar-pin absolute bottom-0 flex -translate-x-1/2 flex-col items-center gap-0.5";
-const PIN_LABEL =
-	"text-xxs font-bold tabular-nums whitespace-nowrap text-theme-soft";
+const PIN_BAND = "flex items-center gap-1";
 const PIN_STEM = "h-1.5 w-0.5 bg-theme";
 const PIN_COUNT = "coverage-bar-count";
 const ANNOUNCE = "sr-only";
@@ -286,6 +285,22 @@ export const CoverageBar = ({
 
 	const shown = pin || moved;
 
+	const track = (
+		<span role="img" aria-label={readingOf(spoken, band)} className={TRACK}>
+			{zonesOf(ladder).map((zone) => (
+				<span
+					key={zone.band}
+					data-screen-theme={COVERAGE_BAND_COLOR[zone.band]}
+					style={{ flexBasis: `${zone.width}${PERCENT}` }}
+					className={ZONE}
+				/>
+			))}
+			<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={FILL}>
+				<span className={EDGE} />
+			</span>
+		</span>
+	);
+
 	return (
 		<div style={heldStyle(reading)} className={LAYOUT}>
 			{note === undefined ? null : (
@@ -298,16 +313,22 @@ export const CoverageBar = ({
 					style={{ left: `${reading}${PERCENT}` }}
 					className={PIN}
 				>
-					<span className={PIN_LABEL}>
-						{pin ? (
-							spoken.held
-						) : (
-							<>
-								<span className={PIN_COUNT} style={countStyle(spoken.count)} />
-								{spoken.countSuffix}
-							</>
-						)}
-					</span>
+					<Badge color={COVERAGE_BAND_COLOR[band]}>
+						<span className={PIN_BAND}>
+							{pin ? (
+								spoken.held
+							) : (
+								<>
+									<span
+										className={PIN_COUNT}
+										style={countStyle(spoken.count)}
+									/>
+									{spoken.countSuffix}
+								</>
+							)}
+							{COVERAGE_BAND_WORD[band]}
+						</span>
+					</Badge>
 					<span className={PIN_STEM} />
 				</span>
 			</span>
@@ -316,19 +337,7 @@ export const CoverageBar = ({
 					{spoken.held}
 				</span>
 			)}
-			<span role="img" aria-label={readingOf(spoken, band)} className={TRACK}>
-				{zonesOf(ladder).map((zone) => (
-					<span
-						key={zone.band}
-						data-screen-theme={COVERAGE_BAND_COLOR[zone.band]}
-						style={{ flexBasis: `${zone.width}${PERCENT}` }}
-						className={ZONE}
-					/>
-				))}
-				<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={FILL}>
-					<span className={EDGE} />
-				</span>
-			</span>
+			{track}
 			<span aria-hidden className={MARKS}>
 				{marksOf(ladder, marks, spoken).map((mark) => (
 					<span

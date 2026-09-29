@@ -28,7 +28,7 @@ export type GateOutcomeViewProps = {
 	onReview: () => void;
 	onNext: () => void;
 	onCommunity?: () => void;
-	onRemove?: (configIds: readonly string[]) => void;
+	onRemove?: (configIds: readonly string[], fromStorage: boolean) => void;
 	onRefuse?: () => void;
 };
 
@@ -93,11 +93,17 @@ const paidRowsFor = (view: RunView) =>
 				},
 			];
 
+export type GatePeelPicks = {
+	chosen: readonly string[];
+	onToggle: (configId: string) => void;
+	fromStorage: boolean;
+	onToggleStorage: () => void;
+};
+
 export const gateOutcomeFrameOf = (
 	view: RunView,
 	verdict: GateVerdict,
-	chosen: readonly string[],
-	onToggle: (configId: string) => void
+	picks: GatePeelPicks
 ): GateOutcomeFrame => {
 	const cleared = verdict === "cleared" || verdict === "won";
 	const gate = gateNumberFor(view, verdict);
@@ -117,14 +123,15 @@ export const gateOutcomeFrameOf = (
 		paid: paidRowsFor(view),
 		payouts: runPaidFor(view),
 		auditIds: view.gateStake.audits.map((audit) => audit.id),
-		chosen,
-		onToggle,
+		chosen: picks.chosen,
+		onToggle: picks.onToggle,
+		fromStorage: picks.fromStorage,
+		onToggleStorage: picks.onToggleStorage,
 		won: verdict === "won",
 		heldBy: heldByFor(view, verdict),
 		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
 		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
 		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
-		auditHanded: cleared && view.gatePayout.auditHanded,
 		bar: closedBarFor(
 			CLOSING_OF[verdict],
 			ladderFor(view, verdict),
@@ -171,6 +178,7 @@ export const GateOutcomeView = ({
 	onRefuse,
 }: GateOutcomeViewProps) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
+	const [fromStorage, setFromStorage] = useState(false);
 
 	const toggle = (configId: string) =>
 		setChosen((held) =>
@@ -180,7 +188,12 @@ export const GateOutcomeView = ({
 		);
 
 	const props = gateOutcomePropsFor(
-		gateOutcomeFrameOf(view, verdict, chosen, toggle)
+		gateOutcomeFrameOf(view, verdict, {
+			chosen,
+			onToggle: toggle,
+			fromStorage,
+			onToggleStorage: () => setFromStorage((paying) => !paying),
+		})
 	);
 	const settles = verdict === "held" && onRemove !== undefined;
 	const commits = props.footer.action.onPress !== undefined;
@@ -194,7 +207,11 @@ export const GateOutcomeView = ({
 				action: {
 					...props.footer.action,
 					...(settles
-						? { onPress: commits ? () => onRemove(chosen) : undefined }
+						? {
+								onPress: commits
+									? () => onRemove(chosen, fromStorage)
+									: undefined,
+							}
 						: { onPress: onNext }),
 				},
 				asides: (props.footer.asides ?? []).map((aside) => ({

@@ -9,7 +9,6 @@ import {
 	kantoPrepSecondGate,
 	kantoPrepSpent,
 } from "~/test/kantoPoll.factory";
-import { kantoAttackPanel } from "~/test/kantoIncidents.factory";
 
 import { PrepScreen } from "./PrepScreen.ui";
 
@@ -25,10 +24,6 @@ export default meta;
 type Story = StoryObj<typeof PrepScreen>;
 
 export const Sealed: Story = { render: () => <PrepScreen {...props} /> };
-
-export const Armed: Story = {
-	render: () => <PrepScreen {...props} attack={kantoAttackPanel()} />,
-};
 
 export const Prefetched: Story = {
 	render: () => <PrepScreen {...kantoPrepPrefetched()} />,

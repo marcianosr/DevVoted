@@ -197,7 +197,7 @@ export const dispatchRunActionService = async ({
 			userId,
 			today: date,
 			action,
-			settle: (settle ?? settleIncidents)(run.id),
+			settle: settle?.(run.id) ?? settleIncidents(run.id, date),
 		});
 		const [unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
 			await Promise.all([

@@ -18,12 +18,16 @@ import {
 	kantoGateOutcomeOpen,
 	kantoGatePerfect,
 	kantoGateShaky,
+	kantoGateShakyCollected,
+	kantoGateShakyCollecting,
 	kantoGateShakyFunded,
 	kantoGateShakyPicking,
 	kantoGateZero,
 	kantoGateHealthyLine,
 	kantoGateHeldByFloor,
 } from "~/test/kantoGate.factory";
+
+import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
 import { GateOutcomeScreen } from "./GateOutcomeScreen.ui";
@@ -267,8 +271,8 @@ describe("GateOutcomeScreen", () => {
 		});
 
 		it("pays less than the same build cleared healthy", () => {
-			const thin = kantoGateOk().header.figure.amount;
-			const full = kantoGateHealthy().header.figure.amount;
+			const thin = kantoGateOk().header.balance.kb;
+			const full = kantoGateHealthy().header.balance.kb;
 
 			expect(thin).not.toBe(full);
 		});
@@ -283,7 +287,7 @@ describe("GateOutcomeScreen", () => {
 				screen.getByLabelText("70% of 62% needed \u00b7 HEALTHY")
 			).toBeInTheDocument();
 			expect(screen.getByText(/1 of 5 right, 2 needed/)).toBeInTheDocument();
-			expect(headingOf("Retry gate 4")).toBeInTheDocument();
+			expect(headingOf("Settle the peel to retry")).toBeInTheDocument();
 		});
 
 		it("holds the gate rather than earning it", () => {
@@ -297,9 +301,17 @@ describe("GateOutcomeScreen", () => {
 		it("offers both exits, priced, rather than only the retry", () => {
 			render(<GateOutcomeScreen {...kantoGateShaky()} />);
 
-			expect(headingOf("How this gate ends")).toBeInTheDocument();
-			expect(headingOf("Retry gate 4")).toBeInTheDocument();
-			expect(headingOf("End the run here")).toBeInTheDocument();
+			expect(headingOf("Settle the peel to retry")).toBeInTheDocument();
+			expect(screen.getByText(/End the run here/)).toBeInTheDocument();
+			expect(screen.getByText(/Banks gate 4 of 13/)).toBeInTheDocument();
+		});
+
+		it("leads with the settlement and shuts the recap beneath it", () => {
+			render(<GateOutcomeScreen {...kantoGateShaky()} />);
+
+			expect(headingOf("What happened")).toBeInTheDocument();
+			expect(foldOf("Coverage")?.open).toBe(false);
+			expect(foldOf("The five answers")?.open).toBe(false);
 		});
 
 		it("lets the player walk away even while the peel is unpaid", () => {
@@ -308,20 +320,17 @@ describe("GateOutcomeScreen", () => {
 			expect(screen.getByRole("button", { name: "End the run" })).toBeEnabled();
 		});
 
-		it("refuses the bribe it cannot afford, naming the shortfall", () => {
+		it("offers storage only as far as the balance reaches", () => {
 			render(<GateOutcomeScreen {...kantoGateShaky()} />);
 
-			expect(
-				screen.getByRole("button", {
-					name: `${BRIBE_LABEL} · short 20 KB`,
-				})
-			).toBeDisabled();
+			expect(screen.getByRole("checkbox", { name: BRIBE_LABEL })).toBeEnabled();
+			expect(screen.getByText("Pay 16 KB of the peel")).toBeInTheDocument();
 		});
 
-		it("takes the bribe once the archive covers the bill", () => {
+		it("offers the whole bill once the archive covers it", () => {
 			render(<GateOutcomeScreen {...kantoGateShakyFunded()} />);
 
-			expect(screen.getByRole("button", { name: BRIBE_LABEL })).toBeEnabled();
+			expect(screen.getByText("Pay 48 KB of the peel")).toBeInTheDocument();
 		});
 
 		it("holds the gate shut until the peel is settled", () => {
@@ -336,15 +345,35 @@ describe("GateOutcomeScreen", () => {
 		it("counts a part payment down rather than restating the bill", () => {
 			render(<GateOutcomeScreen {...kantoGateShakyPicking()} />);
 
-			expect(
-				screen.getByText("16 KB still owed · 32 KB chosen")
-			).toBeInTheDocument();
+			expect(screen.getByText("16 KB owed")).toBeInTheDocument();
+			expect(screen.getByText(/covered/).parentElement).toHaveTextContent(
+				"32 KB of 48 KB covered"
+			);
+		});
+
+		it("names a drop refund in a pill, rather than swapping the balance in silence", () => {
+			const { rerender } = render(
+				<GateOutcomeScreen {...kantoGateShakyCollecting()} />
+			);
+
+			rerender(<GateOutcomeScreen {...kantoGateShakyCollected()} />);
+
+			const refunded =
+				kantoGateShakyCollected().header.balance.kb -
+				kantoGateShakyCollecting().header.balance.kb;
+
+			expect(refunded).toBeGreaterThan(0);
+			expect(screen.getByRole("status")).toHaveTextContent(
+				signedKbLabel(refunded)
+			);
 		});
 
 		it("strikes a config through once it is chosen to go", () => {
 			render(<GateOutcomeScreen {...kantoGateShakyPicking()} />);
 
-			const drop = within(headingOf("How this gate ends").closest("section")!);
+			const drop = within(
+				headingOf("Settle the peel to retry").closest("section")!
+			);
 
 			expect(drop.getByText("IndexedDB")).toHaveClass("line-through");
 			expect(drop.getByText("Cache")).not.toHaveClass("line-through");
@@ -365,7 +394,9 @@ describe("GateOutcomeScreen", () => {
 				/>
 			);
 
-			await userEvent.click(screen.getByRole("button", { name: "Drop Cache" }));
+			await userEvent.click(
+				screen.getByRole("checkbox", { name: "Drop Cache" })
+			);
 
 			expect(onToggle).toHaveBeenCalledWith("cache");
 		});
@@ -427,10 +458,15 @@ describe("GateOutcomeScreen", () => {
 			expect(headingOf("The run ends here")).toBeInTheDocument();
 		});
 
-		it("leads with the coverage it reached, not with a payout it never got", () => {
+		it("leads with the storage it still holds, leaving the coverage it reached to the bar", () => {
 			render(<GateOutcomeScreen {...kantoGateDanger()} />);
 
-			expect(figureOf()).toHaveTextContent("20%");
+			expect(figureOf()).toContainElement(
+				screen.getByRole("img", {
+					name: kbLabel(kantoGateDanger().header.balance.kb),
+				})
+			);
+			expect(screen.getByLabelText(/^20% of/)).toBeInTheDocument();
 		});
 
 		it("wears the ending's colour rather than the gate's, since no gate follows", () => {

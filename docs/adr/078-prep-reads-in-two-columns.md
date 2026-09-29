@@ -47,11 +47,8 @@ to get there.
    being paid `Nothing` — a nil payout and a finished run are different facts
    and the column was collapsing them.
 
-5. **The bar moves off the header into the outcomes panel and numbers its
-   rungs.** It explains the table, so it belongs to the table. `marks="rungs"`
-   is new alongside `bands` and `boundaries`: 0, the floor, the OK line, the
-   healthy line and 100, as bare numbers. The table names the bands one row
-   below, so naming them again on the bar was the doubling this ADR is about.
+5. **The bar moves off the header into the outcomes panel.** Superseded by
+   [ADR-139](139-prep-prices-a-poll-and-draws-the-codebase.md): the bar stands in What a poll pays. `marks="rungs"` stays.
 
 6. **The band table is prep's alone.** The New run screen drew the same five rows
    one screen earlier, for a gate whose build was still being assembled and whose
@@ -86,9 +83,9 @@ to get there.
    rung at a time and the ladder steps, so the price after this one is the thing
    a player wants before spending.
 
-10. **"What it takes" comes off the screen.** It priced one answer while the
-   table prices the landing that answer contributes to, and the poll screen
-   states the wrong-answer cost at the moment it applies.
+10. **"What it takes" comes off the screen.** Superseded by [ADR-139](139-prep-prices-a-poll-and-draws-the-codebase.md): prep
+   prices a single, a focus and a multiple answer again, in units and as a
+   share of the codebase.
 
 11. **A band's payout is priced by the answers it takes to reach.** A band's
    floor divided by the flat per-answer gain (ADR-073) is the answers needed,

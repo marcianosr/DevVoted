@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { auditCapacityFor } from "~/modules/run/gate/domain/auditSchedule.model";
+import { TEST_DATES } from "~/test/kanto";
+
 import {
 	type Config,
 	draftCost,
@@ -46,8 +49,7 @@ import {
 	type RunState,
 	type LockedIncident,
 	scheduleOf,
-	withLockedGate,
-	type HeldAuditBand,
+	withGateAudits,
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -1242,11 +1244,17 @@ describe("Deprecated's decay", () => {
 		expect(state.deletedConfigs).toBeUndefined();
 	});
 
-	it("deletes it at ×1 and announces the deletion — the config is gone, only state can say so", () => {
-		const state = clearGate(holdingDeprecated(1.5));
+	it("fades ×1 to ×0.5 and keeps it, so a spent Deprecated costs coverage until it is dropped", () => {
+		const state = clearGate(holdingDeprecated(1));
+		expect(deprecatedIn(state)?.coverageMultiplier).toBe(0.5);
+		expect(state.deletedConfigs).toBeUndefined();
+	});
+
+	it("deletes it at ×0 and announces the deletion — the config is gone, only state can say so", () => {
+		const state = clearGate(holdingDeprecated(0.5));
 		expect(deprecatedIn(state)).toBeUndefined();
 		expect(state.deletedConfigs).toEqual([
-			{ ...CONFIGS.deprecated, coverageMultiplier: 1 },
+			{ ...CONFIGS.deprecated, coverageMultiplier: 0 },
 		]);
 	});
 
@@ -1257,7 +1265,7 @@ describe("Deprecated's decay", () => {
 	});
 
 	it("clears the announcement when the climb resumes", () => {
-		const announced = clearGate(holdingDeprecated(1.5));
+		const announced = clearGate(holdingDeprecated(0.5));
 		const state = runReducer(announced, { type: "finish-reward" });
 		expect(state.deletedConfigs).toBeUndefined();
 	});
@@ -1277,7 +1285,7 @@ describe("configs lost at the clear (DVTD-wii3: the comeback tally)", () => {
 
 	it("adds a decay deletion to the run's losses", () => {
 		const state = clearGate(
-			holding({ ...CONFIGS.deprecated, coverageMultiplier: 1.5 })
+			holding({ ...CONFIGS.deprecated, coverageMultiplier: 0.5 })
 		);
 		expect(state.deletedConfigs).toHaveLength(1);
 		expect(state.configsLost).toBe(1);
@@ -1777,57 +1785,21 @@ describe("SLA pays for holding to the band it promised (ADR-096)", () => {
 	});
 });
 
-describe("a clear hands a sealed audit, and every close leaves a record (ADR-119)", () => {
+describe("a clear hands nothing, and every close leaves a record", () => {
 	const deepHealthy = { ...started(["js"]), gatesCleared: 4, bankedUnits: 12 };
 
-	const clearingIn = (band: HeldAuditBand): RunState => {
-		const landing = Array.from({ length: 40 }, (_, banked) => ({
-			...started(["js"]),
-			gatesCleared: 4,
-			bankedUnits: banked,
-		})).find((state) => {
-			const closed = clearGate(state);
-			return closed.status === "rewarding" && closed.lastClose?.band === band;
-		});
-		if (landing === undefined) throw new Error(`no ${band} clear at gate 4`);
-		return landing;
-	};
-
-	it("hands a sealed audit on a PERFECT clear and stamps the gate", () => {
-		const cleared = clearGate(started(["js"]));
-		expect(cleared.heldAudit).toEqual({ band: "perfect", gate: 0 });
-		expect(cleared.auditHandedAtGate).toBe(0);
-		expect(cleared.offeredAudit).toBeUndefined();
+	it("hands no audit, however well the gate closed", () => {
+		expect(clearGate(started(["js"])).heldAudit).toBeUndefined();
+		expect(clearGate(deepHealthy).heldAudit).toBeUndefined();
 	});
 
-	it("hands one on a HEALTHY clear", () => {
-		expect(clearGate(deepHealthy).heldAudit).toEqual({
-			band: "healthy",
-			gate: 4,
-		});
-	});
-
-	it("hands one on an OK clear too — a thin clear still earns the moment", () => {
-		const cleared = clearGate(clearingIn("ok"));
-		expect(cleared.lastClose?.band).toBe("ok");
-		expect(cleared.heldAudit).toEqual({ band: "ok", gate: 4 });
-	});
-
-	it("offers a second while one is held and restamps the gate", () => {
+	it("leaves an incident already in hand alone", () => {
 		const held = clearGate({
 			...deepHealthy,
-			heldAudit: { band: "perfect", gate: 2 },
-			auditHandedAtGate: 2,
+			heldAudit: { auditId: "not-found" },
 		});
-		expect(held.heldAudit).toEqual({ band: "perfect", gate: 2 });
-		expect(held.offeredAudit).toEqual({ band: "healthy", gate: 4 });
-		expect(held.auditHandedAtGate).toBe(4);
-	});
 
-	it("hands nothing on a held gate", () => {
-		const held = failGate(started(["js"]));
-		expect(held.heldAudit).toBeUndefined();
-		expect(held.offeredAudit).toBeUndefined();
+		expect(held.heldAudit).toEqual({ auditId: "not-found" });
 	});
 
 	it("records how the gate closed, on a clear and on a hold alike", () => {
@@ -1870,7 +1842,8 @@ describe("surviving a rival's audits pays on top of the clear (ADR-099)", () => 
 	});
 });
 
-describe("withLockedGate", () => {
+describe("withGateAudits", () => {
+	const DATE = TEST_DATES.birthday;
 	const sender = { id: "misty", name: "Misty" };
 	const mirrorAt = (gate: number): LockedIncident => ({
 		id: 7,
@@ -1879,10 +1852,25 @@ describe("withLockedGate", () => {
 		sentBy: sender,
 	});
 
-	it("makes the locked incidents the gate's whole audit list", () => {
-		const locked = withLockedGate(started(["js"]), 3, [mirrorAt(3)]);
-		expect(locked.auditSchedule?.[3]).toEqual(["mirrored"]);
-		expect(locked.incidents).toEqual([mirrorAt(3)]);
+	it("seats the incident and fills the gate's remaining room from the pool", () => {
+		const locked = withGateAudits(started(["js"]), 9, DATE, [mirrorAt(9)]);
+
+		expect(locked.auditSchedule?.[9]).toContain("mirrored");
+		expect(locked.auditSchedule?.[9]).toHaveLength(auditCapacityFor(9));
+		expect(locked.incidents).toEqual([mirrorAt(9)]);
+	});
+
+	it("draws the gate on its own when nobody filed anything", () => {
+		const clean = withGateAudits(started(["js"]), 5, DATE, []);
+
+		expect(clean.auditSchedule?.[5]).toHaveLength(auditCapacityFor(5));
+		expect(clean.incidents ?? []).toEqual([]);
+	});
+
+	it("leaves a gate that carries nothing empty", () => {
+		const early = withGateAudits(started(["js"]), 1, DATE, []);
+
+		expect(early.auditSchedule?.[1]).toEqual([]);
 	});
 
 	it("re-reads the pick budget when a mirror locks onto the gate in front", () => {
@@ -1894,18 +1882,21 @@ describe("withLockedGate", () => {
 			],
 		});
 		const state = started(["js"]);
-		const locked = withLockedGate(
-			{ ...state, polls: state.polls.map(threeWide) },
-			0,
-			[mirrorAt(0)]
-		);
+		const atSummit = {
+			...state,
+			gatesCleared: 11,
+			polls: state.polls.map(threeWide),
+		};
+		const locked = withGateAudits(atSummit, 11, DATE, [mirrorAt(11)]);
+
 		expect(state.window.budget).toBe(SLICE_WINDOW);
 		expect(locked.window.budget).toBe(2 * SLICE_WINDOW);
 	});
 
 	it("leaves the open window alone when locking a later gate", () => {
 		const state = started(["js"]);
-		expect(withLockedGate(state, 1, [mirrorAt(1)]).window).toBe(state.window);
+
+		expect(withGateAudits(state, 1, DATE, []).window).toBe(state.window);
 	});
 });
 

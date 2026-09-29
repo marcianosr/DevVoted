@@ -5,7 +5,7 @@ import {
 	dispatchRunAction,
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
-import type { RunAction } from "~/modules/run/run/domain/runAction.model";
+import type { WireRunAction } from "~/modules/run/run/application/run.validation";
 import { userQueryKeys } from "~/shared/queryKeys";
 
 import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
@@ -37,10 +37,11 @@ export const useRunActions = () => {
 	};
 
 	const dispatch = useMutation({
-		mutationFn: (action: RunAction) => dispatchRunAction({ data: { action } }),
+		mutationFn: (action: WireRunAction) =>
+			dispatchRunAction({ data: { action } }),
 	});
 
-	const send = (action: RunAction) =>
+	const send = (action: WireRunAction) =>
 		dispatch.mutate(action, {
 			onSuccess: (result) => {
 				if (result.success) commit(result);
@@ -48,7 +49,7 @@ export const useRunActions = () => {
 		});
 
 	const sendWith = (
-		action: RunAction,
+		action: WireRunAction,
 		onResult: (result: RunActionResult) => void
 	) => dispatch.mutate(action, { onSuccess: (result) => onResult(result) });
 

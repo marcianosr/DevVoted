@@ -35,14 +35,6 @@ import {
 	SLICE_WINDOW,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
-import {
-	hydrateRunState,
-	toRunSnapshot,
-} from "~/modules/run/run/domain/runSnapshot.model";
-import {
-	RECOMMENDED_SIZE,
-	recommendedPicks,
-} from "~/modules/run/config/domain/hand.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	BASE_UNIT,
@@ -415,17 +407,6 @@ describe("the build space the shop reports (ADR-098)", () => {
 		expect(holdingWeight(4).buildSpace.perGateKb).toBe(0);
 		expect(holdingWeight(5).buildSpace.perGateKb).toBe(16);
 		expect(holdingWeight(7).buildSpace.perGateKb).toBe(32);
-	});
-
-	it("names the rung ahead and what it would cost, so a threshold is visible before it is crossed", () => {
-		const { nextWeight, nextPerGateKb } = holdingWeight(5).buildSpace;
-
-		expect(nextWeight).toBe(8);
-		expect(nextPerGateKb).toBe(32);
-	});
-
-	it("names no rung ahead once the build sits on the top one", () => {
-		expect(holdingWeight(32).buildSpace.nextWeight).toBeUndefined();
 	});
 
 	it("carries no covered-space cap while the bill is being paid", () => {
@@ -805,52 +786,13 @@ describe("the view prices the shop's offers", () => {
 	});
 });
 
-describe("the recommended opening (ADR-057)", () => {
-	const dealt = () =>
-		createRun([poll("q0"), poll("q1")], [], undefined, undefined);
+describe("the opening build", () => {
+	it("opens empty and unstartable, so the first pick is the player's", () => {
+		const view = toRunView(createRun([poll("q0")], handed));
 
-	it("advises without installing — the build opens empty and unstartable", () => {
-		const state = createRun([poll("q0")], handed);
-		const view = toRunView(state);
-
-		expect(view.recommendedConfigIds).toEqual(
-			recommendedPicks(handed, spaceForBuild(state.build)).map(
-				(config) => config.id
-			)
-		);
+		expect(view.available).toEqual(handed);
 		expect(view.configs).toEqual([]);
 		expect(view.canStart).toBe(false);
-	});
-
-	it("advises RECOMMENDED_SIZE of the hand", () => {
-		expect(
-			toRunView(createRun([poll("q0")], handed)).recommendedConfigIds
-		).toHaveLength(RECOMMENDED_SIZE);
-	});
-
-	it("gives the same advice after a reload", () => {
-		const polls = [poll("q0"), poll("q1")];
-		const state = createRun(polls, handed);
-		const before = toRunView(state).recommendedConfigIds;
-
-		const after = toRunView(
-			hydrateRunState(toRunSnapshot(state), polls)
-		).recommendedConfigIds;
-
-		expect(after).toEqual(before);
-	});
-
-	it("keeps advising the same configs after a pick, so the marker holds still", () => {
-		const state = createRun([poll("q0")], handed);
-		const before = toRunView(state).recommendedConfigIds;
-
-		const picked = runReducer(state, { type: "install", configId: "js" });
-
-		expect(toRunView(picked).recommendedConfigIds).toEqual(before);
-	});
-
-	it("advises nothing once the hand is gone", () => {
-		expect(toRunView(dealt()).recommendedConfigIds).toEqual([]);
 	});
 });
 

@@ -107,7 +107,7 @@ describe("landed answers", () => {
 	it("counts a cancelled-out answer as landed only, a miss paying nothing", () => {
 		expect(
 			incrementsOf(multiAnswerRun(), { type: "answer", optionIds: ["a", "c"] })
-		).toEqual(["polls-answered"]);
+		).toEqual(["polls-answered", "category-answered:ts"]);
 	});
 
 	it("counts a correct answer as no partial, the two being exclusive", () => {
@@ -121,7 +121,25 @@ describe("landed answers", () => {
 		const state = started(["js"]);
 		expect(incrementsOf(state, answerAction(state, false))).toEqual([
 			"polls-answered",
+			"category-answered:react",
 		]);
+	});
+
+	it("counts a wrong answer toward the category it was asked in", () => {
+		const state = started(["js"]);
+
+		expect(incrementsOf(state, answerAction(state, false))).toContain(
+			"category-answered:react"
+		);
+	});
+
+	it("counts turning up once per answer, never twice for a correct one", () => {
+		const state = started(["js"]);
+		const metrics = incrementsOf(state, answerAction(state, true));
+
+		expect(
+			metrics.filter((metric) => metric === "category-answered:react")
+		).toHaveLength(1);
 	});
 
 	it("counts a mirror-graded correct toward the real category", () => {
@@ -260,7 +278,7 @@ describe("gate clears", () => {
 	it("counts nothing gate-shaped on a failed close", () => {
 		const state = answered(started(["js"]), SLICE_WINDOW - 1, false);
 		const metrics = settledIncrementsOf(state, answerAction(state, false));
-		expect(metrics).toEqual(["polls-answered"]);
+		expect(metrics).toEqual(["polls-answered", "category-answered:react"]);
 	});
 
 	it("counts a mirror clear without a miss exactly once each", () => {

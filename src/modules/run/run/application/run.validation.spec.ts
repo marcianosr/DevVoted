@@ -20,28 +20,21 @@ describe("runActionSchema", () => {
 			{ type: "drop", configId: "agents-md" },
 			{ type: "commit-band", band: "healthy" },
 			{ type: "fire-audit" },
-			{ type: "open-audit" },
-			{ type: "keep-payload", auditId: "not-found" },
-			{ type: "take-audit" },
-			{ type: "repackage" },
+			{ type: "buy-incident" },
+			{ type: "refresh-incident" },
 		];
 		actions.forEach((action) => {
 			expect(runActionSchema.safeParse(action).success).toBe(true);
 		});
 	});
 
-	it("rejects a client-picked seed on open-audit and repackage (ADR-119)", () => {
+	it("rejects a client-named audit on a buy: the shop's offer is the server's", () => {
 		expect(
-			runActionSchema.safeParse({ type: "open-audit", seed: "1:x" }).success
+			runActionSchema.safeParse({ type: "buy-incident", auditId: "not-found" })
+				.success
 		).toBe(false);
 		expect(
-			runActionSchema.safeParse({ type: "repackage", seed: "1:x" }).success
-		).toBe(false);
-	});
-
-	it("rejects keep-payload naming an unknown audit", () => {
-		expect(
-			runActionSchema.safeParse({ type: "keep-payload", auditId: "418-teapot" })
+			runActionSchema.safeParse({ type: "refresh-incident", seed: "1:x" })
 				.success
 		).toBe(false);
 	});
@@ -64,6 +57,13 @@ describe("runActionSchema", () => {
 			gatesCleared: 5,
 		});
 		expect(onBareAction.success).toBe(false);
+	});
+
+	it("refuses a loot take off the wire — the server mints it (ADR-135)", () => {
+		expect(runActionSchema.safeParse({ type: "loot", kb: 999 }).success).toBe(
+			false
+		);
+		expect(runActionSchema.safeParse({ type: "loot" }).success).toBe(false);
 	});
 
 	it("rejects an answer without options", () => {

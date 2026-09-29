@@ -9,8 +9,11 @@ export const gateSwatchAt = (gate: number): GateSwatch => GATE_SWATCHES[gate];
 
 const GATE_WORD = "gate";
 
+export const gateNumberLabelOf = (gate: number): string =>
+	`${GATE_WORD} ${gate}`;
+
 export const gateLabelOf = (gate: number): string =>
-	`${GATE_WORD} ${gate} · ${gateSwatchAt(gate).gateName}`;
+	`${gateNumberLabelOf(gate)} · ${gateSwatchAt(gate).gateName}`;
 
 export const swatchTrackFor = (
 	earned: readonly number[],

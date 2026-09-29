@@ -3,8 +3,9 @@
 ## Status
 
 Accepted — 2026-09-22 (Marciano, DVTD-pb7v). Decisions 2 and 4 collapsed by
-[ADR-103](103-the-board-seats-twelve-category-leaders.md); 1, 3, 5 and 6 stand
-and are why the read is unchanged. Uses the seam
+[ADR-103](103-the-board-seats-twelve-category-leaders.md); Decision 1
+superseded and Decision 5 generalised by [ADR-131](131-a-record-belongs-to-one-run.md). Decisions 3 and 6
+stand, and Decision 3 is why the island cut is unchanged. Uses the seam
 [ADR-093](093-a-poll-states-how-the-room-did.md) opened when it put read data on
 `PollView` and said so: *"`stats` is optional, and that is the seam."* First
 slice of the per-category living records sketched in `docs/old-beans/DVTD-vje6`.
@@ -28,15 +29,10 @@ cheapest possible version of that — no matchmaking, no live opponent, one row.
 
 ## Decision 1: the record is the longest run of correct answers, all-time
 
-Not coverage, not participation, not accuracy. DVTD-vje6 lists four candidate
-per-category metrics; the streak is the one the poll screen can put a player
-*inside*. Coverage and participation describe a season's grinding. A streak
-describes the next answer.
-
-All-time rather than seasonal because seasons do not exist: `seasons` is a table
-with no writer and `runs.season_id` is its only reference. A "season record"
-that silently means *since the dawn of time* is worse than an all-time record
-that says so.
+Superseded — [ADR-131](131-a-record-belongs-to-one-run.md) Decision 1 bounds the record to one run, and its
+Decision 2 adds a second measure. The streak's own argument survives there: a
+streak describes the next answer. So does the refusal of seasons, which still
+have no writer.
 
 ## Decision 2: your own figure is your personal best, never a live streak
 
@@ -62,6 +58,9 @@ different thing: those are earned and kept, this is a standing somebody can take
 from you tonight.
 
 ## Decision 5: below a floor, the record is unclaimed
+
+Generalised — [ADR-131](131-a-record-belongs-to-one-run.md) Decision 4 gives each board its own floor. The
+argument below is unchanged and still sets the streak floor at 3.
 
 `MIN_RECORD_STREAK = 3`. Two right answers in a row is not evidence of anything,
 and a `JavaScript Maintainer` badge earned by two devalues the badge in every

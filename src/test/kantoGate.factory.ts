@@ -9,6 +9,7 @@ import {
 	faucetKbPerCorrect,
 	maxLevelOf,
 	sellRefund,
+	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import {
 	SLICE_WINDOW,
@@ -46,6 +47,8 @@ import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
 export {
 	answerTallyOf,
+	peelHeadlineOf,
+	peelSlotsOf,
 	peelTallyOf,
 	retryActionOf,
 	type GateAnswer,
@@ -376,6 +379,34 @@ export const kantoGateShakyFunded = (): GateOutcomeScreenProps =>
 		outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 512 })
 	);
 
+export const kantoGateShakyFromStorage = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		outcomeFrame({
+			answers: SHAKY_ANSWERS,
+			balanceBeforeKb: 512,
+			fromStorage: true,
+		})
+	);
+
+export const kantoGateShakyMixed = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		outcomeFrame({
+			answers: SHAKY_ANSWERS,
+			balanceBeforeKb: 512,
+			chosen: [CONFIGS.indexedDb.id],
+			fromStorage: true,
+		})
+	);
+
+export const kantoGateShakyCollecting = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		outcomeFrame({
+			answers: SHAKY_ANSWERS,
+			balanceBeforeKb: 12,
+			configs: COLLECTED_BUILD,
+		})
+	);
+
 export const kantoGateShakyCollected = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
 		outcomeFrame({
@@ -443,14 +474,19 @@ export const kantoGateOutcomeGate = OUTCOME_GATE;
 export const kantoGateOutcomeSellValues: readonly number[] =
 	LAVENDER_BUILD.map(sellRefund);
 
+export const kantoGatePeelValues: readonly number[] = LAVENDER_BUILD.map(
+	(config) => slotsOf(config) * PEEL_KB_PER_SLOT
+);
+
 export const kantoGateOutcomeOccupiedSlots = occupiedSlots(LAVENDER_BUILD);
 
-export const kantoGatePeelBillKb =
-	peelQuotaSlotsFor(
-		occupiedSlots(LAVENDER_BUILD),
-		failPeelShareFor(OUTCOME_GATE),
-		OUTCOME_GATE
-	) * PEEL_KB_PER_SLOT;
+export const kantoGatePeelBillSlots = peelQuotaSlotsFor(
+	occupiedSlots(LAVENDER_BUILD),
+	failPeelShareFor(OUTCOME_GATE),
+	OUTCOME_GATE
+);
+
+export const kantoGatePeelBillKb = kantoGatePeelBillSlots * PEEL_KB_PER_SLOT;
 
 export const kantoGateAnswers = LAVENDER_ANSWERS;
 export const kantoGateWindow = SLICE_WINDOW;

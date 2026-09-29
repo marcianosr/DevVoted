@@ -37,6 +37,7 @@ import {
 	type OfflinePair,
 	offlinePairsFor,
 } from "~/modules/run/gate/domain/audit.model";
+import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { GateHoldReason } from "~/modules/run/gate/domain/gate.model";
 import {
 	PIN_START_KB_PER_GATE,
@@ -51,16 +52,9 @@ export const addStorage = (current: number, income: number): number =>
 export type RunStatus =
 	"configuring" | "answering" | "awaiting-strip" | "rewarding" | "won" | "dead";
 
-export type HeldAuditBand = "ok" | "healthy" | "perfect";
-
 export type HeldAudit = {
-	readonly band: HeldAuditBand;
-	readonly gate: number;
-	readonly choices?: readonly AuditId[];
-	readonly payload?: AuditId;
+	readonly auditId: AuditId;
 };
-
-export type KeptAudit = HeldAudit & { readonly payload: AuditId };
 
 export type LastClose = {
 	readonly gate: number;
@@ -101,6 +95,7 @@ export type RunState = {
 	readonly manualDisabled: readonly string[];
 	readonly strictArmed?: boolean;
 	readonly peekedPollIds?: readonly string[];
+	readonly approvedPollId?: string;
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
@@ -145,9 +140,9 @@ export type RunState = {
 	readonly startedAtGate?: number;
 	readonly auditSchedule?: AuditSchedule;
 	readonly heldAudit?: HeldAudit;
-	readonly offeredAudit?: HeldAudit;
-	readonly auditHandedAtGate?: number;
-	readonly repackagedThisShop?: true;
+	readonly incidentOffer?: AuditId;
+	readonly incidentRefreshes?: number;
+	readonly incidentWindowIndex?: number;
 	readonly lastClose?: LastClose;
 	readonly incidents?: readonly LockedIncident[];
 	readonly incidentSurvivalKb?: number;
@@ -261,14 +256,19 @@ export const incidentsAt = (
 ): readonly LockedIncident[] =>
 	(state.incidents ?? []).filter((incident) => incident.gate === gate);
 
-export const withLockedGate = (
+export const withGateAudits = (
 	state: RunState,
 	gate: number,
+	date: string,
 	locked: readonly LockedIncident[]
 ): RunState => {
 	const auditSchedule = {
 		...scheduleOf(state),
-		[gate]: locked.map((incident) => incident.auditId),
+		[gate]: gateAuditsFor(
+			gate,
+			date,
+			locked.map((incident) => incident.auditId)
+		),
 	};
 	const next = {
 		...state,

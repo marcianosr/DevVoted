@@ -6,11 +6,10 @@ import {
 	okAt,
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	FLOOR_CORRECT,
-	GATE_COUNT,
-} from "~/modules/run/run/domain/rules.model";
+import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
+import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 
 import {
 	answersOwedFor,
@@ -18,6 +17,7 @@ import {
 	bandOutcomesPropsFor,
 	BAND_OUTCOMES_NOTE,
 	ESCROW_NOTE,
+	FREE_MISS_NOTE,
 	clearingRungFor,
 	coverageRungsFor,
 	objectivesFor,
@@ -42,9 +42,8 @@ const bandsOf = (ladder: CoverageLadder) =>
 const frameFor = (
 	over: Partial<BandOutcomesFrame> = {}
 ): BandOutcomesFrame => ({
-	gateName: "Lavender",
+	swatch: GATE_SWATCHES[4],
 	gate: 4,
-	correctThisGate: 0,
 	held: 0,
 	ladder: MID,
 	coverageGainPercent: 4,
@@ -53,9 +52,10 @@ const frameFor = (
 	...over,
 });
 
-const clearOf = (frame: BandOutcomesFrame) => objectivesFor(frame).required;
+const clearOf = (frame: BandOutcomesFrame) =>
+	objectivesFor(frame).objectives[0];
 const swatchRowOf = (frame: BandOutcomesFrame) =>
-	objectivesFor(frame).optional[0];
+	objectivesFor(frame).objectives[1];
 
 describe("the rungs a gate's ladder has room for", () => {
 	it("draws four rungs at the calibration gate, which has no floor to fall under", () => {
@@ -131,92 +131,98 @@ describe("the answers a window owes", () => {
 	});
 });
 
-describe("the one thing a gate requires", () => {
+describe("the objective that clears the gate", () => {
 	it("badges the band the gate actually draws, not a fixed OK", () => {
 		expect(
-			clearOf(frameFor({ gate: 0, ladder: CALIBRATION })).statement.figure
-		).toBe("OK");
-		expect(clearOf(frameFor({ ladder: SQUEEZED })).statement.figure).toBe(
-			"HEALTHY"
+			clearOf(frameFor({ gate: 0, ladder: CALIBRATION })).statement
+		).toContainEqual({ band: "ok" });
+		expect(clearOf(frameFor({ ladder: SQUEEZED })).statement).toContainEqual({
+			band: "healthy",
+		});
+	});
+
+	it("states the demand as a band, and nothing about what the band is for", () => {
+		expect(leadTextOf(clearOf(frameFor()).statement)).toBe(
+			"Finish at OK or better"
 		);
 	});
 
-	it("says what the line buys, and leaves the arithmetic to the table", () => {
-		const required = clearOf(frameFor());
-
-		expect(required.explain).toBe("to clear the gate");
-		expect(required.statement).toMatchObject({
-			lead: "Finish at",
-			trail: "or better",
-		});
+	it("names the gate that clearing opens", () => {
+		expect(leadTextOf(clearOf(frameFor()).earns)).toContain(
+			"advance to Rainbow"
+		);
 	});
 
-	it("is not met on the line alone until two of the day are right (ADR-094)", () => {
-		const onTheLine = { held: MID.ok + 4 };
+	it("quotes the figure its own table row quotes, so the two cannot drift", () => {
+		const frame = frameFor();
+		const row = bandOutcomesFor(frame).find((outcome) => outcome.band === "ok");
 
-		expect(clearOf(frameFor(onTheLine)).met).toBe(false);
-		expect(
-			clearOf(frameFor({ ...onTheLine, correctThisGate: FLOOR_CORRECT - 1 }))
-				.met
-		).toBe(false);
-		expect(
-			clearOf(frameFor({ ...onTheLine, correctThisGate: FLOOR_CORRECT })).met
-		).toBe(true);
+		expect(row?.pays).toBeDefined();
+		expect(leadTextOf(clearOf(frame).earns)).toContain(row?.pays);
 	});
 
-	it("ticks off the same rounded rung the table cuts its ranges on", () => {
-		expect(
+	it("prices the figure in the band that pays it", () => {
+		expect(clearOf(frameFor()).earns).toContainEqual(
+			expect.objectContaining({ band: "ok" })
+		);
+	});
+
+	it("promises no gate after the summit, because there is not one", () => {
+		const summit = leadTextOf(
 			clearOf(
-				frameFor({
-					held: MID.ok,
-					correctThisGate: FLOOR_CORRECT,
-				})
-			).met
-		).toBe(true);
+				frameFor({ gate: VICTORY_GATE, swatch: GATE_SWATCHES[VICTORY_GATE] })
+			).earns
+		);
+
+		expect(summit).not.toContain("advance to");
+		expect(summit).toContain("or more");
 	});
 });
 
-describe("what a gate offers but does not ask for", () => {
-	it("offers the swatch and the audit, never the gate itself", () => {
-		const { optional, optionalLead } = objectivesFor(frameFor());
-
-		expect(optionalLead).toBe("Extra objectives");
-		expect(optional.map((prize) => prize.explain)).toEqual([
-			"to earn the Lavender swatch",
-			"to arm an audit",
-		]);
+describe("the objective that earns the swatch", () => {
+	it("asks for a flawless window, which is what stamps a gate (ADR-080)", () => {
+		expect(leadTextOf(swatchRowOf(frameFor()).statement)).toBe(
+			"Answer all 5 right"
+		);
 	});
 
-	it("asks the audit for HEALTHY, which is what arms one (ADR-099)", () => {
-		const audit = objectivesFor(frameFor()).optional[1];
+	it("never asks for a coverage band, which is a different test entirely", () => {
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			const statement = leadTextOf(
+				swatchRowOf(frameFor({ gate, ladder: ladderAt(gate) })).statement
+			);
 
-		expect(audit.statement).toMatchObject({
-			figure: "HEALTHY",
-			trail: "or better",
+			expect(statement).not.toContain("PERFECT");
+		}
+	});
+
+	it("marks the reward with the gate's own swatch", () => {
+		expect(swatchRowOf(frameFor()).earns).toContainEqual({
+			swatch: GATE_SWATCHES[4],
+			label: "Lavender swatch",
 		});
-		expect(audit.met).toBe(false);
-		expect(
-			objectivesFor(
-				frameFor({ held: MID.healthy, correctThisGate: FLOOR_CORRECT })
-			).optional[1].met
-		).toBe(true);
+	});
+});
+
+describe("what the column no longer states", () => {
+	it("says nothing about an audit at any gate", () => {
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			const stated = objectivesFor(frameFor({ gate, ladder: ladderAt(gate) }))
+				.objectives.flatMap((objective) => [
+					leadTextOf(objective.statement),
+					leadTextOf(objective.earns),
+				])
+				.join(" ");
+
+			expect(stated).not.toContain("audit");
+		}
 	});
 
-	it("drops the audit where clearing the gate already demands HEALTHY", () => {
-		expect(
-			objectivesFor(frameFor({ ladder: SQUEEZED })).optional.map(
-				(prize) => prize.explain
-			)
-		).toEqual(["to earn the Lavender swatch"]);
-	});
-
-	it("asks for the whole window however the coverage lands", () => {
-		expect(swatchRowOf(frameFor()).figures?.[0].label).toBe("5 of 5");
-	});
-
-	it("ticks only on a flawless window", () => {
-		expect(swatchRowOf(frameFor({ correctThisGate: 4 })).met).toBe(false);
-		expect(swatchRowOf(frameFor({ correctThisGate: 5 })).met).toBe(true);
+	it("states two objectives and no section labels around them", () => {
+		expect(objectivesFor(frameFor()).objectives).toHaveLength(2);
+		expect(objectivesFor(frameFor())).toEqual({
+			objectives: expect.any(Array),
+		});
 	});
 });
 
@@ -244,18 +250,46 @@ describe("the band table", () => {
 
 describe("the prep table warns before the window, not after it", () => {
 	it("names the rollback while the build holds an escrowing config", () => {
-		const props = bandOutcomesPropsFor(frameFor({ escrows: true }), {
-			...MID,
-			held: 0,
-		});
+		const props = bandOutcomesPropsFor(frameFor({ escrows: true }), "ok");
 
 		expect(props.note).toContain(ESCROW_NOTE);
 	});
 
 	it("says nothing about transactions a build cannot open", () => {
-		const props = bandOutcomesPropsFor(frameFor(), { ...MID, held: 0 });
+		const props = bandOutcomesPropsFor(frameFor(), "ok");
 
 		expect(props.note).toBe(BAND_OUTCOMES_NOTE);
+	});
+
+	it("owes nothing at a gate that peels nothing, instead of a peel it never takes", () => {
+		const props = bandOutcomesPropsFor(frameFor({ peelKb: 0 }), "ok");
+
+		expect(props.note).toBe(FREE_MISS_NOTE);
+		expect(props.note).not.toContain("owe a peel");
+	});
+
+	it("still names the rollback at a gate that peels nothing", () => {
+		const props = bandOutcomesPropsFor(
+			frameFor({ peelKb: 0, escrows: true }),
+			"ok"
+		);
+
+		expect(props.note).toBe(`${FREE_MISS_NOTE} ${ESCROW_NOTE}`);
+	});
+});
+
+describe("the SHAKY row reads what the gate takes on a miss", () => {
+	const shakyRow = (frame: BandOutcomesFrame) =>
+		bandOutcomesFor(frame).find((row) => row.band === "shaky");
+
+	it("quotes the peel as a negative figure where the gate takes one", () => {
+		expect(shakyRow(frameFor())?.pays).toBe("−64 KB peel");
+	});
+
+	it("says no peel at Pallet, which takes none (ADR-057), never a zero figure", () => {
+		expect(
+			shakyRow(frameFor({ gate: 0, ladder: CALIBRATION, peelKb: 0 }))?.pays
+		).toBe("no peel");
 	});
 });
 

@@ -1,9 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 
-import { useNextPollsCountdown } from "~/modules/run/community/presentation/useNextPollsCountdown.hook";
-import { attackPanelFor } from "~/modules/run/incident/application/incident.viewmodel";
-import { useAttackTargets } from "~/modules/run/incident/application/useAttackTargets.hook";
-import { useFireAudit } from "~/modules/run/incident/application/useFireAudit.hook";
+import { crowdSubmitterFor } from "~/modules/run/build/domain/build.model";
+import { useApprovalSlots } from "~/modules/run/community/presentation/useApprovalSlots.hook";
+import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
+import { NEW_POLLS_IN } from "~/shared/lib/copy";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
@@ -17,13 +17,11 @@ export const RunPrep = () => {
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
-	const targets = useAttackTargets((view?.heldAudit ?? null) !== null);
-	const fire = useFireAudit();
+	const approval = useApprovalSlots(
+		crowdSubmitterFor(view?.configs ?? []) !== undefined
+	);
 
 	if (!view) return null;
-
-	const fireRefusal =
-		fire.data?.success === false ? fire.data.error : undefined;
 
 	const parkedInShopPhase = view.status === SHOP_PHASE;
 	const beforeFirstGate = view.status === OPENING_PHASE;
@@ -57,21 +55,15 @@ export const RunPrep = () => {
 			backLabel={beforeFirstGate ? "← Back to the build" : undefined}
 			onCommunity={() => navigate({ to: "/run/community" })}
 			startRefusal={
-				view.pollsExhausted && !countdown.isOpen ? countdown.label : undefined
+				view.pollsExhausted && !countdown.isOpen
+					? NEW_POLLS_IN(countdown.remaining)
+					: undefined
 			}
 			onEstimate={(count) => send({ type: "estimate", count })}
 			onCommitBand={(band) => send({ type: "commit-band", band })}
 			onRebase={(from, to) => send({ type: "rebase", from, to })}
-			attack={attackPanelFor(
-				view.gateStake.gateNumber,
-				view.heldAudit,
-				targets.view?.offers ?? null,
-				targets.errorMessage,
-				fireRefusal
-			)}
-			onFire={(targetRunId, auditId) => {
-				if (!fire.isPending) fire.mutate({ targetRunId, auditId });
-			}}
+			approval={approval}
+			onApprove={(pollId) => send({ type: "approve-slot", pollId })}
 		/>
 	);
 };

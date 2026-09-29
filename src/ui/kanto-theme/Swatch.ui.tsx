@@ -18,20 +18,20 @@ export type SwatchGround = "dark" | "bright";
 const BASE = "inline-block shrink-0";
 
 const SIZE = {
-	small: "size-3.5 rounded-xs",
+	small: "size-3.5 rounded-[3px]",
 	large: "size-7 rounded-md",
 	hero: "size-10 rounded-lg",
 } satisfies Record<SwatchSize, string>;
 
 const FILL = {
 	discovered: "bg-theme",
-	current: "border-2 border-dashed border-theme bg-theme-raised",
+	current: "border border-dashed border-theme-faint bg-theme-raised",
 	undiscovered: "bg-theme-raised",
 } satisfies Record<SwatchState, string>;
 
 const ON_BRIGHT = {
 	discovered: "bg-current",
-	current: "border-2 border-dashed border-current",
+	current: "border border-dashed border-current",
 	undiscovered: "bg-current/25",
 } satisfies Record<SwatchState, string>;
 
@@ -49,6 +49,17 @@ export type SwatchProps = SwatchFill & {
 	ground?: SwatchGround;
 	count?: number;
 };
+
+export const swatchFillsFor = (
+	swatch: GateSwatch,
+	filled: number,
+	total: number,
+	current = false
+): SwatchFill[] =>
+	Array.from({ length: total }, (_, position) => {
+		if (position < filled) return { state: "discovered", swatch };
+		return current ? { state: "current", swatch } : { state: "undiscovered" };
+	});
 
 export const Swatch = (props: SwatchProps) => {
 	const size = SIZE[props.size ?? "large"];

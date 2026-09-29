@@ -6,7 +6,6 @@ import {
 	otherArmOf,
 } from "~/modules/run/config/domain/config.model";
 import {
-	categoriesWord,
 	chipFor,
 	pollNoteFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
@@ -32,20 +31,14 @@ import {
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
 import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	healthyUnitsAt,
-	scoringSlotsAt,
-} from "~/modules/run/build/domain/coverageRatio.model";
+import { healthyUnitsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
 	type AnswerOutcome,
 	type AnswerType,
 } from "~/modules/run/run/domain/runPoll.model";
-import {
-	roundToOneDecimal,
-	roundToTwoDecimals,
-} from "~/modules/run/run/domain/rules.model";
+import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
@@ -58,14 +51,14 @@ import type { ChoiceVerdict } from "~/ui/kanto-theme/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
-import {
-	coverageBandOf,
-	type CoverageBarProps,
-} from "~/ui/kanto-theme/CoverageBar.ui";
+import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import { gateTitleOf, type HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+
+import { scoredLeadFor } from "./scoredLead.viewmodel";
 import type { PollCommit, PollCoverage } from "~/ui/kanto-theme/PollScreen.ui";
 import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
+import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
 import type {
 	FigureTone,
 	LedgerRow,
@@ -102,6 +95,11 @@ export const auditPropsOf = (
 export const gateLabelFor = (gate: number): string =>
 	gateTitleOf(gateSwatchAt(gate));
 
+export const gateMarkFor = (gate: number): SwatchMark => ({
+	state: "current",
+	swatch: gateSwatchAt(gate),
+});
+
 export const pollHeaderFor = (view: RunView): HeaderProps => {
 	const gate = view.gateStake.gateNumber;
 
@@ -117,11 +115,6 @@ export const pollHeaderFor = (view: RunView): HeaderProps => {
 const POLL_WORD = "Poll";
 const OUT_OF = "out of";
 const CORRECT_OUTCOME = "correct";
-const SCORED_LEAD = "You have scored ";
-const SCORED_JOIN = " units across ";
-const SCORED_JOIN_ONE = " unit across ";
-const SCORED_TRAIL = " slots, which is ";
-const SCORED_CLOSE = " coverage.";
 
 const PAID_COLOR = {
 	correct: "viridian",
@@ -226,7 +219,7 @@ export const categoryLeaderFor = (
 	const seat = poll?.categorySeat;
 	if (seat === undefined || view.categoryHidden) return undefined;
 
-	return categoryLeaderRowFor(seat);
+	return categoryLeaderRowFor("streak", seat);
 };
 
 const LOCK_IN = "Lock in";
@@ -252,6 +245,15 @@ export const pollCommitFor = (
 		onPress: onSubmit,
 	};
 };
+
+const APPROVE_LABEL = "LGTM";
+const APPROVE_NOTE = "the room answers this one for you";
+
+export const approvalCommitFor = (onApprove: () => void): PollCommit => ({
+	label: APPROVE_LABEL,
+	note: APPROVE_NOTE,
+	onPress: onApprove,
+});
 
 export const pollLabelFor = (view: RunView, revealing = false): string => {
 	const answered = view.answeredThisGate.length;
@@ -293,26 +295,13 @@ export const pollKeysFor = (view: RunView): readonly PollKey[] =>
 		.map((option, index) => ({ letter: letterAt(index), id: option.id }))
 		.filter((key) => !view.disabledOptionIds.includes(key.id));
 
-const coveragePercent = (held: number): string =>
-	`${roundToOneDecimal(held).toFixed(1)}%`;
-
-export const coverageLeadFor = (view: RunView): LeadLine => {
-	const units = roundToTwoDecimals(view.gateStake.unitsHeld);
-	const band = coverageBandOf(
-		view.gateStake.coverageHeld,
-		view.gateStake.coverageLadder
-	);
-
-	return [
-		SCORED_LEAD,
-		{ figure: `${units}`, band },
-		units === 1 ? SCORED_JOIN_ONE : SCORED_JOIN,
-		{ figure: `${scoringSlotsAt(view.gateStake.gateNumber)}` },
-		SCORED_TRAIL,
-		{ figure: coveragePercent(view.gateStake.coverageHeld), band },
-		SCORED_CLOSE,
-	];
-};
+export const coverageLeadFor = (view: RunView): LeadLine =>
+	scoredLeadFor({
+		gate: view.gateStake.gateNumber,
+		unitsHeld: view.gateStake.unitsHeld,
+		held: view.gateStake.coverageHeld,
+		ladder: view.gateStake.coverageLadder,
+	});
 
 const paidOf = (view: RunView, poll: AnsweredPoll): PollPaid => {
 	const receipt = pollBreakdownFor(view, poll);
@@ -419,18 +408,6 @@ const REFUSAL_COPY: Record<PaidRefusal, string> = {
 	cannotAfford: "cannot afford",
 };
 
-const lintRefusalCopy = (
-	config: Config,
-	refusal: PaidRefusal | undefined
-): string | undefined => {
-	if (refusal === undefined) return undefined;
-	if (refusal !== "otherCategory") return REFUSAL_COPY[refusal];
-	const categories = config.eliminatesWrongOptionsFor ?? [];
-	return categories.length === 0
-		? REFUSAL_COPY.otherCategory
-		: `waits for ${categoriesWord(categories)}`;
-};
-
 const pressesOf = (view: RunView): readonly PollPress[] => {
 	const { lintReady, lintCost, lintRefusal } = view.paidActions;
 	const { peekReady, peekCost, peekRefusal } = view.paidActions;
@@ -443,7 +420,8 @@ const pressesOf = (view: RunView): readonly PollPress[] => {
 					action: "lint",
 					label: `lint ${kbLabel(lintCost)}`,
 					ready: lintReady && view.paidActions.linter?.id === config.id,
-					refusal: lintRefusalCopy(config, lintRefusal),
+					refusal:
+						lintRefusal === undefined ? undefined : REFUSAL_COPY[lintRefusal],
 				},
 			];
 
@@ -489,9 +467,15 @@ const pressesOf = (view: RunView): readonly PollPress[] => {
 	});
 };
 
+const isSittingOut = (view: RunView, configId: string): boolean =>
+	view.configStatuses[configId]?.kind === "skipped";
+
 export const pollPressesOf = (view: RunView): readonly PollPress[] => {
 	const offline = offlineIdsOf(view);
-	return pressesOf(view).filter((press) => !offline.has(press.configId));
+	return pressesOf(view).filter(
+		(press) =>
+			!offline.has(press.configId) && !isSittingOut(view, press.configId)
+	);
 };
 
 export const buildCountsOf = (view: RunView): BuildCounts => {

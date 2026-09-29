@@ -1,7 +1,6 @@
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
 	BASE_SLOTS,
-	BUILD_SPACE_RUNGS,
 	FAUCET_CAP_KB,
 	pinCostFor,
 } from "~/modules/run/run/domain/rules.model";
@@ -47,8 +46,7 @@ export const createMockPollView = createMockDataFactory<PollView>({
 		leader: {
 			userId: "sabrina-id",
 			handle: "@sabrina",
-			githubLogin: "sabrina",
-			streak: 17,
+			best: 17,
 			you: false,
 		},
 	},
@@ -97,10 +95,10 @@ export const createMockShopControls = createMockDataFactory<ShopControls>({
 	pinCost: pinCostFor(0),
 	canPin: false,
 	pinnedAtGate: null,
-	repackageAvailable: false,
-	repackageUsed: false,
-	repackageCost: 32,
-	canRepackage: false,
+	incidentCost: 32,
+	canBuyIncident: false,
+	incidentRefreshCost: 8,
+	canRefreshIncident: false,
 });
 
 export const createMockGatePayout = createMockDataFactory<GatePayout>({
@@ -124,7 +122,6 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	caughtFatalBy: null,
 	slaUpliftKb: 0,
 	incidentSurvivalKb: 0,
-	auditHanded: false,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
@@ -184,7 +181,6 @@ const createRunView = createMockDataFactory<RunView>({
 	configs: [],
 	installed: [],
 	available: [],
-	recommendedConfigIds: [],
 	offers: [],
 	newConfigIds: [],
 	archiveAfterKb: null,
@@ -214,6 +210,7 @@ const createRunView = createMockDataFactory<RunView>({
 	rebaseSlots: [],
 	estimate: null,
 	estimatedCorrect: null,
+	approvedPollId: null,
 	sla: null,
 	slaBand: null,
 	correctThisGate: 0,
@@ -224,7 +221,8 @@ const createRunView = createMockDataFactory<RunView>({
 	shopControls: createMockShopControls(),
 	gatePayout: createMockGatePayout(),
 	heldAudit: null,
-	offeredAudit: null,
+	incidentOffer: null,
+	incidentRefreshes: 0,
 	audits: [],
 	answeredThisGate: [],
 	allAnswered: [],
@@ -251,8 +249,6 @@ const createRunView = createMockDataFactory<RunView>({
 		space: BASE_SLOTS,
 		weight: 0,
 		perGateKb: 0,
-		nextWeight: BUILD_SPACE_RUNGS[1].weight,
-		nextPerGateKb: BUILD_SPACE_RUNGS[1].kb,
 		coveredSpace: null,
 	},
 	vendorLock: { offered: false },

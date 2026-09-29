@@ -1,10 +1,8 @@
 import { Badge } from "./Badge.ui";
 import {
-	CoverageBar,
 	COVERAGE_BAND_COLOR,
 	COVERAGE_BAND_WORD,
 	type CoverageBandId,
-	type CoverageBarProps,
 } from "./CoverageBar.ui";
 import {
 	Lead,
@@ -19,7 +17,7 @@ import { PollScores, type PollScoresProps } from "./PollScores.ui";
 
 import { Typography } from "./Typography.ui";
 
-const FATAL = "border-l-2 border-theme";
+const ACCENT = "border-l-2 border-theme";
 const RULED = "border-t border-theme-faint";
 
 const COLUMNS = [
@@ -51,21 +49,22 @@ export type BandOutcomesProps = {
 	objectives?: ObjectivesProps;
 	scores?: PollScoresProps;
 	note?: string;
-	bar?: CoverageBarProps;
+	standing?: CoverageBandId;
 };
 
 type OutcomeProps = {
 	outcome: BandOutcome;
+	standing: boolean;
 };
 
-const Outcome = ({ outcome }: OutcomeProps) => {
+const Outcome = ({ outcome, standing }: OutcomeProps) => {
 	const color = COVERAGE_BAND_COLOR[outcome.band];
-	const fatal = outcome.band === FATAL_BAND;
+	const accented = standing || outcome.band === FATAL_BAND;
 
 	return (
 		<Panel.Row
-			theme={fatal ? color : undefined}
-			className={fatal ? FATAL : undefined}
+			theme={accented ? color : undefined}
+			className={accented ? ACCENT : undefined}
 		>
 			<span className={BAND}>
 				<Badge color={color}>{COVERAGE_BAND_WORD[outcome.band]}</Badge>
@@ -85,7 +84,7 @@ export const BandOutcomes = ({
 	objectives,
 	scores,
 	note,
-	bar,
+	standing,
 }: BandOutcomesProps) => (
 	<Panel>
 		<Panel.Header label={title} />
@@ -102,15 +101,14 @@ export const BandOutcomes = ({
 				<PollScores {...scores} />
 			</Panel.Body>
 		)}
-		{bar === undefined ? null : (
-			<Panel.Body>
-				<CoverageBar {...bar} />
-			</Panel.Body>
-		)}
 		<Panel.Columns columns={COLUMNS} />
 		<Panel.Rows>
 			{outcomes.map((outcome) => (
-				<Outcome key={outcome.band} outcome={outcome} />
+				<Outcome
+					key={outcome.band}
+					outcome={outcome}
+					standing={outcome.band === standing}
+				/>
 			))}
 		</Panel.Rows>
 		{note === undefined ? null : (

@@ -13,7 +13,6 @@ import {
 import {
 	isShopLocked,
 	runReducer,
-	withSeed,
 } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -500,71 +499,55 @@ describe("the storage high-water mark", () => {
 	});
 });
 
-describe("the sealed audit lives in the shop (ADR-119)", () => {
-	const SEED = "64:2026-09-23";
-	const kept = { band: "healthy", gate: 0, payload: "not-found" } as const;
-
-	it("open-audit without a server seed changes nothing", () => {
-		const sealed = clearGate(started(["js"]));
-		expect(sealed.status).toBe("rewarding");
-		expect(runReducer(sealed, { type: "open-audit" })).toBe(sealed);
-		expect(
-			runReducer(sealed, withSeed({ type: "open-audit" }, SEED)).heldAudit
-				?.payload
-		).toBeDefined();
+describe("the incident desk lives in the shop", () => {
+	const holding = (state: RunState): RunState => ({
+		...state,
+		heldAudit: { auditId: "not-found" },
+	});
+	const offering = (state: RunState): RunState => ({
+		...state,
+		incidentOffer: "not-found",
+		storage: 256,
 	});
 
-	it("open-audit, keep-payload, take-audit and fire-audit refuse mid-window", () => {
-		const answering: RunState = {
-			...started(["js"]),
-			heldAudit: { band: "ok", gate: 0, choices: ["not-found", "timeout"] },
-			offeredAudit: { band: "healthy", gate: 1 },
-		};
-		expect(runReducer(answering, withSeed({ type: "open-audit" }, SEED))).toBe(
-			answering
-		);
-		expect(
-			runReducer(answering, { type: "keep-payload", auditId: "timeout" })
-		).toBe(answering);
-		expect(runReducer(answering, { type: "take-audit" })).toBe(answering);
-		const armedMidWindow: RunState = { ...answering, heldAudit: kept };
-		expect(runReducer(armedMidWindow, { type: "fire-audit" })).toBe(
-			armedMidWindow
-		);
+	it("buys the incident on offer once the gate has closed", () => {
+		const shop = offering(clearGate(started(["js"])));
+		expect(shop.status).toBe("rewarding");
+
+		expect(runReducer(shop, { type: "buy-incident" }).heldAudit).toEqual({
+			auditId: "not-found",
+		});
 	});
 
-	it("repackage is a shop write the 405 refuses", () => {
+	it("refuses to buy, refresh or file mid-window", () => {
+		const answering = offering(started(["js"]));
+
+		expect(runReducer(answering, { type: "buy-incident" })).toBe(answering);
+		expect(runReducer(answering, { type: "refresh-incident" })).toBe(answering);
+		const held = holding(answering);
+		expect(runReducer(held, { type: "fire-audit" })).toBe(held);
+	});
+
+	it("buying and refreshing are shop writes the 405 refuses", () => {
 		const cleared = clearGate(started(["js"]));
-		const closed: RunState = audited(
-			{ ...cleared, heldAudit: kept, storage: 100 },
+		const closed = audited(
+			offering(cleared),
 			cleared.gatesCleared,
 			"read-only"
 		);
-		expect(runReducer(closed, withSeed({ type: "repackage" }, SEED))).toBe(
-			closed
-		);
-		const open: RunState = { ...cleared, heldAudit: kept, storage: 100 };
+
+		expect(runReducer(closed, { type: "buy-incident" })).toBe(closed);
+		expect(runReducer(closed, { type: "refresh-incident" })).toBe(closed);
 		expect(
-			runReducer(open, withSeed({ type: "repackage" }, SEED)).repackagedThisShop
-		).toBe(true);
+			runReducer(offering(cleared), { type: "refresh-incident" })
+				.incidentRefreshes
+		).toBe(1);
 	});
 
-	it("fire-audit spends a kept payload from the shop", () => {
-		const armed: RunState = { ...clearGate(started(["js"])), heldAudit: kept };
+	it("files what is held, from the shop", () => {
+		const armed = holding(clearGate(started(["js"])));
+
 		expect(runReducer(armed, { type: "fire-audit" }).heldAudit).toBeUndefined();
-	});
-
-	it("withSeed stamps open-audit and repackage and passes every other action through", () => {
-		expect(withSeed({ type: "open-audit" }, SEED)).toEqual({
-			type: "open-audit",
-			seed: SEED,
-		});
-		expect(withSeed({ type: "repackage" }, SEED)).toEqual({
-			type: "repackage",
-			seed: SEED,
-		});
-		const fire = { type: "fire-audit" } as const;
-		expect(withSeed(fire, SEED)).toBe(fire);
 	});
 });
 
@@ -612,5 +595,30 @@ describe("a config that asks for a call in prep holds the gate", () => {
 			band: "ok",
 		});
 		expect(runReducer(promised, { type: "finish-reward" })).not.toBe(promised);
+	});
+});
+
+describe("looting a fallen run", () => {
+	it("credits the take to the run's balance", () => {
+		const state = createRun(pool(60), handed);
+		const looted = runReducer(state, { type: "loot", kb: 67 });
+		expect(looted.storage).toBe(state.storage + 67);
+	});
+
+	it("raises the watermark the take pushes past", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: 67 }).peakStorageKb).toBe(
+			state.storage + 67
+		);
+	});
+
+	it("leaves the run untouched when there was nothing to take", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: 0 })).toBe(state);
+	});
+
+	it("refuses a take that would bill the run", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: -32 })).toBe(state);
 	});
 });

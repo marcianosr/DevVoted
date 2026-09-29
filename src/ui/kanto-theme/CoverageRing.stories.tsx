@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { KANTO_COLORS } from "./colors";
 import { CoverageRing } from "./CoverageRing.ui";
+import { Figures } from "./Figures.ui";
 import { Screen } from "./Screen.ui";
 
 const LADDER = "flex flex-col gap-5";
@@ -57,6 +58,16 @@ export const PastTheDemand: Story = {
 };
 
 export const NoNote: Story = { args: { note: undefined } };
+
+export const BadgedNote: Story = {
+	args: {
+		held: 42,
+		demand: 60,
+		ceiling: 100,
+		title: "Coverage so far",
+		note: <Figures text="OK at 40% · HEALTHY at 60%" />,
+	},
+};
 
 export const LongestReading: Story = {
 	args: {

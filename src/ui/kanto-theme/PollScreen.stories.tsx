@@ -337,7 +337,11 @@ export const Answered: Story = {
 		wrongCost: undefined,
 		hint: "Partial<T> and Maybe<T> were the key; Optional<T> is not a built-in.",
 		footer: {
-			action: { label: NEXT_LABEL, icon: "gate", onPress: noop },
+			action: {
+				label: NEXT_LABEL,
+				swatch: { state: "current", swatch: gateSwatchAt(FIRST_GATE) },
+				onPress: noop,
+			},
 			note: "Or click ENTER",
 		},
 	},

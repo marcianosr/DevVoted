@@ -38,7 +38,6 @@ const META_ROW = "flex flex-wrap items-center gap-2";
 const META_LINE = "flex justify-end sm:ml-2";
 const POLL_ROW =
 	"grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]";
-const PINNED_READOUT = "lg:sticky lg:top-4 lg:z-10";
 const DARK_TRACK =
 	"flex h-6 w-full items-center justify-center rounded-md bg-theme-raised";
 const DARK_READOUT = "flex w-full flex-col gap-1.5";
@@ -142,7 +141,7 @@ const LiveReading = ({ bar, lead, paid }: PollReadout) => (
 );
 
 const CoveragePanel = (coverage: PollCoverage) => (
-	<Panel className={PINNED_READOUT}>
+	<Panel>
 		<Panel.Header
 			label={COPY.coverage}
 			meta={
@@ -281,7 +280,7 @@ export const PollScreen = ({
 			ground={ground}
 			floor={POLL_FLOOR}
 		>
-			<Header {...header} />
+			<Header {...header} pinned />
 
 			{audits.length === 0 ? null : (
 				<Panel>

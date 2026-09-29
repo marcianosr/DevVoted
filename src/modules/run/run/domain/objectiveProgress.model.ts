@@ -64,6 +64,7 @@ const answerMetrics = (
 		settled && windowCorrectAfter(state, correct) === SLICE_WINDOW;
 	return [
 		"polls-answered",
+		`category-answered:${landed.category}`,
 		...(correct
 			? (["polls-correct", `category-correct:${landed.category}`] as const)
 			: []),
@@ -99,6 +100,9 @@ const clearMetrics = (
 			? (["mirror-clear-no-miss"] as const)
 			: []),
 		...(freeSlots(state.build) === 0 ? (["full-build-clear"] as const) : []),
+		...(state.build.configs.length === 0
+			? (["bare-build-clear"] as const)
+			: []),
 		...(holdsTwoUpgraded(state) ? (["double-v2-clear"] as const) : []),
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)

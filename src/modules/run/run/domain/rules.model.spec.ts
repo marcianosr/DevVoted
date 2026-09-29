@@ -6,6 +6,8 @@ import {
 	peelQuotaSlotsFor,
 	isPeelFatal,
 	storageCreditRate,
+	bankedKb,
+	unbankedKb,
 	buildSpaceFor,
 	highestAffordableSpace,
 	rungIndexForSpace,
@@ -78,6 +80,32 @@ describe("storageCreditRate", () => {
 
 	it("never pays more than the full leftovers", () => {
 		expect(storageCreditRate("dead", VICTORY_GATE + 3)).toBe(1);
+	});
+});
+
+describe("the two halves a finished run splits its balance into", () => {
+	it("banks everything and leaves nothing behind on a victory", () => {
+		expect(bankedKb(96, VICTORY_GATE, true)).toBe(96);
+		expect(unbankedKb(96, VICTORY_GATE, true)).toBe(0);
+	});
+
+	it("leaves the whole balance behind when a run dies at the first gate", () => {
+		expect(bankedKb(96, 0, false)).toBe(0);
+		expect(unbankedKb(96, 0, false)).toBe(96);
+	});
+
+	it("leaves less behind the deeper a run got before it died", () => {
+		expect(unbankedKb(96, 4, false)).toBeGreaterThan(unbankedKb(96, 11, false));
+	});
+
+	it("splits the balance with nothing created and nothing lost", () => {
+		for (const gate of [0, 1, 4, 7, 11, VICTORY_GATE]) {
+			expect(bankedKb(97, gate, false) + unbankedKb(97, gate, false)).toBe(97);
+		}
+	});
+
+	it("leaves nothing behind for a run that held nothing", () => {
+		expect(unbankedKb(0, 4, false)).toBe(0);
 	});
 });
 

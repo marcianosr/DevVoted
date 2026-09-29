@@ -1,5 +1,5 @@
 import { NEEDED } from "~/shared/lib/copy";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { Typography } from "./Typography.ui";
 
@@ -59,7 +59,7 @@ export type CoverageRingProps = {
 	demand: number;
 	ceiling?: number;
 	title?: string;
-	note?: string;
+	note?: ReactNode;
 };
 
 export const CoverageRing = ({

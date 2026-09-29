@@ -1,122 +1,199 @@
+import { clsx } from "clsx";
+
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+import type { TodayRung } from "~/modules/run/run/application/todayScreen.viewmodel";
+import { Action } from "~/ui/kanto-theme/Action.ui";
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
-import type { IconName } from "~/ui/kanto-theme/Icon.ui";
+import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
+import { CoverageRing } from "~/ui/kanto-theme/CoverageRing.ui";
+import { Icon } from "~/ui/kanto-theme/Icon.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
-import { ScreenFooter } from "~/ui/kanto-theme/ScreenFooter.ui";
 import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 import { SwatchTrack } from "~/ui/kanto-theme/SwatchTrack.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 export const COPY = {
-	freshTitle: "Today’s climb",
-	freshStanding:
-		"one shared seed · everyone gets the same polls, in the same order",
-	polls: "Today’s polls",
+	coverage: "Coverage so far",
 	community: "Community",
+	at: "at",
 } as const;
 
-const LADDER_ROW = "flex w-full flex-wrap items-center gap-3";
-const NAMING = "flex min-w-0 flex-col";
+const LEDE =
+	"flex w-full flex-col gap-4 rounded-2xl border border-theme-faint bg-theme-faint p-4";
+const PRESS_ROW = "flex w-full flex-col gap-3 sm:flex-row-reverse";
+const PRESS_SEAT = "flex w-full sm:min-w-0 sm:flex-1";
+const ASIDE_SEAT = "flex w-full sm:w-auto sm:shrink-0";
+const STANDING = "flex w-full flex-wrap items-center gap-x-4 gap-y-2";
+const CARDS = "grid w-full gap-4";
+const CARDS_PAIR = "sm:grid-cols-2";
+const CARD_ROW = "py-4";
+const NAMING = "flex min-w-0 flex-col gap-1";
+const DETAIL = "flex flex-wrap items-center gap-1.5";
+const RUNGS = "flex flex-wrap items-center gap-x-3 gap-y-1.5";
+const RUNG = "flex items-center gap-1.5";
+const LEADING = "size-7";
+const LEADS_ON = "size-4";
 
-const PRESS_SIZE = "md";
+const FULL_RING = 100;
 const TRACK_SIZE = "small";
+const ASIDE_SIZE = "lg";
+const ASIDE_TONE = "ambient";
+const SHOP_ICON = "shop";
+const COMMUNITY_ICON = "community";
+const LEADS_ON_ICON = "forward";
 
-export type TodayPress = { label: string; onPress?: () => void };
+export type TodayPressProps = {
+	label: string;
+	note: string;
+	pollsLeft: number;
+	onPress?: () => void;
+};
 
-export type TodayRun = {
-	title: string;
-	standing: string;
+export type TodayShopProps = {
+	label: string;
+	hint?: string;
+	open: boolean;
+	onPress: () => void;
+};
+
+export type TodayStandingProps = {
 	swatches: readonly SwatchFill[];
-	pollsNote: string;
+	line: string;
+};
+
+export type TodayCoverageProps = {
+	held: number;
+	demand: number;
+	rungs: readonly TodayRung[];
+};
+
+export type TodayCommunityProps = {
+	count: number;
+	detail: string;
+	href: string;
 };
 
 export type TodayScreenProps = {
 	swatch: GateSwatch;
-	run: TodayRun | null;
-	action: TodayPress;
-	pollsLeft?: number;
-	polls: { detail: string; press: TodayPress };
-	community: { detail: string; press: TodayPress };
-	error?: string;
+	press: TodayPressProps;
+	shop: TodayShopProps;
+	standing: TodayStandingProps | null;
+	coverage: TodayCoverageProps | null;
+	community: TodayCommunityProps | null;
+	refusal?: string;
 };
 
-type TodayRowProps = {
-	icon: IconName;
-	label: string;
-	detail: string;
-	press: TodayPress;
-};
+const Rungs = ({ rungs }: { rungs: readonly TodayRung[] }) => (
+	<span className={RUNGS}>
+		{rungs.map((rung) => (
+			<span key={rung.band} className={RUNG}>
+				<Badge color={COVERAGE_BAND_COLOR[rung.band]}>{rung.label}</Badge>
+				{COPY.at}
+				<Badge color={COVERAGE_BAND_COLOR[rung.band]}>{rung.at}</Badge>
+			</span>
+		))}
+	</span>
+);
 
-const TodayRow = ({ icon, label, detail, press }: TodayRowProps) => (
-	<Panel.Row
-		trailing={
-			<Button
-				size={PRESS_SIZE}
-				icon={icon}
-				label={press.label}
-				disabled={press.onPress === undefined}
-				onPress={press.onPress}
+const CoverageCard = ({ held, demand, rungs }: TodayCoverageProps) => (
+	<Panel>
+		<Panel.Body>
+			<CoverageRing
+				held={held}
+				demand={demand}
+				ceiling={FULL_RING}
+				title={COPY.coverage}
+				note={<Rungs rungs={rungs} />}
 			/>
-		}
-	>
-		<span className={NAMING}>
-			<Typography variant="subtitle" as="span">
-				{label}
-			</Typography>
-			<Typography variant="hint" as="span">
-				{detail}
-			</Typography>
-		</span>
-	</Panel.Row>
+		</Panel.Body>
+	</Panel>
+);
+
+const CommunityCard = ({ count, detail, href }: TodayCommunityProps) => (
+	<Panel>
+		<Panel.Rows>
+			<Panel.Row
+				href={href}
+				className={CARD_ROW}
+				trailing={<Icon name={LEADS_ON_ICON} className={LEADS_ON} />}
+			>
+				<Icon name={COMMUNITY_ICON} className={LEADING} />
+				<span className={NAMING}>
+					<Typography variant="subtitle" as="span">
+						{COPY.community}
+					</Typography>
+					<span className={DETAIL}>
+						<Badge>{count}</Badge>
+						<Typography variant="hint" as="span">
+							{detail}
+						</Typography>
+					</span>
+				</span>
+			</Panel.Row>
+		</Panel.Rows>
+	</Panel>
 );
 
 export const TodayScreen = ({
 	swatch,
-	run,
-	action,
-	pollsLeft,
-	polls,
+	press,
+	shop,
+	standing,
+	coverage,
 	community,
-	error,
+	refusal,
 }: TodayScreenProps) => (
-	<Screen gate={swatch.theme} width="narrow" ground="bare">
-		<Panel>
-			<Panel.Header
-				label={run?.title ?? COPY.freshTitle}
-				meta={run?.standing ?? COPY.freshStanding}
-			/>
-			{run === null ? null : (
-				<Panel.Body>
-					<div className={LADDER_ROW}>
-						<SwatchTrack swatches={run.swatches} size={TRACK_SIZE} />
-					</div>
-				</Panel.Body>
-			)}
-			<Panel.Rows>
-				<TodayRow
-					icon="clock"
-					label={COPY.polls}
-					detail={polls.detail}
-					press={polls.press}
-				/>
-				<TodayRow
-					icon="community"
-					label={COPY.community}
-					detail={community.detail}
-					press={community.press}
-				/>
-			</Panel.Rows>
-		</Panel>
+	<Screen gate={swatch.theme} width="default" ground="bare">
+		<div className={LEDE}>
+			<div className={PRESS_ROW}>
+				<div className={PRESS_SEAT}>
+					<Action
+						label={press.label}
+						note={press.note}
+						swatch={{ state: "current", swatch, count: press.pollsLeft }}
+						onPress={press.onPress}
+					/>
+				</div>
+				<div className={ASIDE_SEAT}>
+					<Button
+						size={ASIDE_SIZE}
+						width="fill"
+						tone={ASIDE_TONE}
+						icon={SHOP_ICON}
+						label={shop.label}
+						hint={shop.hint}
+						disabled={!shop.open}
+						onPress={shop.onPress}
+					/>
+				</div>
+			</div>
 
-		<ScreenFooter
-			action={{
-				label: action.label,
-				swatch: { state: "current", swatch, count: pollsLeft },
-				onPress: action.onPress,
-			}}
-			note={run?.pollsNote}
-			refusal={error}
-		/>
+			{standing === null ? null : (
+				<div className={STANDING}>
+					<SwatchTrack swatches={standing.swatches} size={TRACK_SIZE} />
+					<Typography variant="hint" as="span">
+						{standing.line}
+					</Typography>
+				</div>
+			)}
+
+			{refusal === undefined ? null : (
+				<Typography variant="hint" as="span">
+					{refusal}
+				</Typography>
+			)}
+		</div>
+
+		<div
+			className={clsx(
+				CARDS,
+				coverage !== null && community !== null && CARDS_PAIR
+			)}
+		>
+			{coverage === null ? null : <CoverageCard {...coverage} />}
+			{community === null ? null : <CommunityCard {...community} />}
+		</div>
 	</Screen>
 );

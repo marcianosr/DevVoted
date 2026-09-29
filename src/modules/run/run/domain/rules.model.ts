@@ -1,10 +1,14 @@
+import { DRAFT_COST_PER_SLOT_KB } from "~/modules/run/config/domain/config.model";
+
 export const SLICE_WINDOW = 5;
 export const VICTORY_GATE = 12;
 
 export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
 export const INCIDENT_SURVIVAL_KB = 32;
-export const REPACKAGE_KB = 32;
+export const INCIDENT_KB = 32;
+export const INCIDENT_REFRESH_COST_KB = [8, 16, 32, 64, 128, 256];
+export const INCIDENT_OFFER_ONE_IN = 3;
 
 export const GATE_REWARD_MULTIPLIER_CAP = GATE_COUNT;
 
@@ -91,6 +95,21 @@ export const storageCreditRate = (
 	return Math.min(1, gatesCleared / GATE_COUNT);
 };
 
+export const bankedKb = (
+	heldKb: number,
+	gatesCleared: number,
+	won: boolean
+): number =>
+	Math.round(
+		heldKb * storageCreditRate(won ? "victory" : "dead", gatesCleared)
+	);
+
+export const unbankedKb = (
+	heldKb: number,
+	gatesCleared: number,
+	won: boolean
+): number => heldKb - bankedKb(heldKb, gatesCleared, won);
+
 const STREAK_COVERAGE_BONUS = 0.1;
 
 export const BASE_STREAK_STEPS = 10;
@@ -113,6 +132,8 @@ export const gateRewardMultiplier = (gatesCleared: number): number =>
 
 export const atMinimumWidth = (configCount: number): boolean =>
 	configCount <= 1;
+
+export const PEEL_KB_PER_SLOT = DRAFT_COST_PER_SLOT_KB / 2;
 
 const GATE_FAIL_PEEL_SHARE = [
 	0, 0.2, 0.2, 0.25, 0.25, 0.25, 0.25, 0.3, 0.3, 0.3, 0.3, 0.35, 0.35,

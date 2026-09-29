@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { useSubmitCrowdPick } from "~/modules/run/community/presentation/useSubmitCrowdPick.hook";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import type { PressAction } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
@@ -22,6 +23,7 @@ const PRESS_ACTIONS = {
 export const RunPoll = () => {
 	const { view } = useTodaysRun();
 	const { send, sendWith, commit, busy } = useRunActions();
+	const approval = useSubmitCrowdPick();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	const [reveal, setReveal] = useState<RunActionSuccess | null>(null);
@@ -49,6 +51,15 @@ export const RunPoll = () => {
 				if (result.success) setReveal(result);
 			}
 		);
+	};
+
+	const approveWithTheRoom = () => {
+		if (busy || reveal || approval.isPending) return;
+		approval.mutate(undefined, {
+			onSuccess: (result) => {
+				if (result.success) setReveal(result);
+			},
+		});
 	};
 
 	const advanceFromReveal = () => {
@@ -79,6 +90,7 @@ export const RunPoll = () => {
 			onNext={advanceFromReveal}
 			onPress={(action, configId) => send(PRESS_ACTIONS[action](configId))}
 			onUnseal={(optionId) => send({ type: "buy-back-option", optionId })}
+			onApprove={approveWithTheRoom}
 		/>
 	);
 };

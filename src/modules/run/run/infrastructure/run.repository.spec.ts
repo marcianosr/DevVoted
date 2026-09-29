@@ -5,6 +5,7 @@ import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
 	runPollsTable,
+	runStatesTable,
 	userConfigUnlocksTable,
 	userObjectiveProgressTable,
 	userServiceUnlocksTable,
@@ -17,6 +18,8 @@ import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
+	PIN_FROM_GATE,
+	pinCostFor,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -144,6 +147,40 @@ describe("applyActionToRun", () => {
 		expect(mock.setCalls.slice(0, SLICE_WINDOW)).toEqual(
 			[2, 3, 1, 4, 5].map((poll_id) => ({ poll_id }))
 		);
+	});
+
+	it("writes the planted gate to the user row", async () => {
+		const rewarding: RunState = {
+			...createRun([], [CONFIGS.js], PIN_FROM_GATE),
+			status: "rewarding",
+			storage: pinCostFor(PIN_FROM_GATE),
+		};
+		mock.results.push([stateRow(rewarding)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		await dispatch({ type: "plant-pin" });
+
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls).toContainEqual({ pinned_gate: PIN_FROM_GATE });
+	});
+
+	it("leaves the user row alone for an action that plants no tag", async () => {
+		const rewarding: RunState = {
+			...createRun([], [CONFIGS.js], PIN_FROM_GATE),
+			status: "rewarding",
+			storage: pinCostFor(PIN_FROM_GATE),
+		};
+		mock.results.push([stateRow(rewarding)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		await dispatch({ type: "rebuild-draft" });
+
+		expect(mock.updateTables).toContain(runStatesTable);
+		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
 	it("leaves the poll sequence alone for every action that is not a rebase", async () => {
@@ -280,7 +317,7 @@ describe("applyActionToRun", () => {
 
 	const titleRowsWritten = () =>
 		mock.valuesCalls.find(
-			(payload): payload is { title_id: string; exclusive: boolean }[] =>
+			(payload): payload is { title_id: string }[] =>
 				Array.isArray(payload) &&
 				payload.some(
 					(row) => row && typeof row === "object" && "title_id" in row
@@ -288,11 +325,11 @@ describe("applyActionToRun", () => {
 		) ?? [];
 
 	it("writes the titles the ledger satisfies when the run ends", async () => {
-		await summitDispatchWith([{ metric: "runs-won", count: 1 }]);
+		await summitDispatchWith([{ metric: "polls-answered", count: 1 }]);
 
 		expect(mock.insertTables).toContain(userTitlesTable);
 		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
-			"title-summit"
+			"title-rank-poll-newbie"
 		);
 	});
 
@@ -301,22 +338,6 @@ describe("applyActionToRun", () => {
 
 		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
 			"title-maintainer-git"
-		);
-	});
-
-	it("flags a race title exclusive, which is the column the unique index keys on", async () => {
-		await summitDispatchWith([{ metric: "runs-won", count: 1 }]);
-
-		const rows = titleRowsWritten();
-
-		expect(rows).toContainEqual(
-			expect.objectContaining({
-				title_id: "title-first-ascent",
-				exclusive: true,
-			})
-		);
-		expect(rows).toContainEqual(
-			expect.objectContaining({ title_id: "title-summit", exclusive: false })
 		);
 	});
 
@@ -613,6 +634,11 @@ describe("applyActionToRun", () => {
 		expect(mock.insertTables).toContain(userObjectiveProgressTable);
 		expect(mock.valuesCalls[0]).toEqual([
 			{ user_id: "red-from-pallet-town", metric: "polls-answered", count: 1 },
+			{
+				user_id: "red-from-pallet-town",
+				metric: "category-answered:js",
+				count: 1,
+			},
 			{ user_id: "red-from-pallet-town", metric: "polls-correct", count: 1 },
 			{
 				user_id: "red-from-pallet-town",

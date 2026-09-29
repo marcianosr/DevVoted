@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { kantoAttackPanel } from "~/test/kantoIncidents.factory";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
 
 import { PrepView } from "./PrepView.component";
@@ -35,7 +35,7 @@ describe("PrepView", () => {
 		render(<PrepView {...props} />);
 
 		expect(
-			screen.getByRole("heading", { name: "Objectives and rewards" })
+			screen.getByRole("heading", { name: "At stake" })
 		).toBeInTheDocument();
 	});
 
@@ -125,6 +125,15 @@ describe("PrepView", () => {
 		expect(onStart).toHaveBeenCalled();
 	});
 
+	it("counts the gate's polls on the start press mark, not in a note", () => {
+		render(<PrepView {...props} />);
+
+		const press = screen.getByRole("button", { name: /^Start/ });
+
+		expect(press).toHaveTextContent(`${SLICE_WINDOW}`);
+		expect(press).not.toHaveTextContent(/slots|units/);
+	});
+
 	it("refuses the start when the run has no polls left", () => {
 		render(
 			<PrepView
@@ -147,7 +156,7 @@ describe("PrepView", () => {
 	});
 });
 
-describe("rivals' audits and the attack in hand (ADR-099)", () => {
+describe("an incoming audit names who filed it", () => {
 	it("names the rival who fired an incoming audit", () => {
 		render(
 			<PrepView
@@ -174,84 +183,6 @@ describe("rivals' audits and the attack in hand (ADR-099)", () => {
 
 		expect(screen.getByText("from")).toBeInTheDocument();
 		expect(screen.getByText("Misty")).toBeInTheDocument();
-	});
-
-	it("fires the pressed payload once its rival is open", async () => {
-		const onFire = vi.fn();
-		render(<PrepView {...props} attack={kantoAttackPanel()} onFire={onFire} />);
-
-		await userEvent.click(
-			screen.getByRole("button", { name: "inspect Misty" })
-		);
-		await userEvent.click(
-			screen.getByRole("button", { name: "Fire 404 at Misty" })
-		);
-
-		expect(onFire).toHaveBeenCalledWith(2, "not-found");
-	});
-
-	it("answers an audit by opening the row of whoever sent it", async () => {
-		render(
-			<PrepView
-				{...props}
-				attack={kantoAttackPanel()}
-				view={createMockRunView({
-					...view,
-					gateStake: createMockGateStake({
-						gateNumber: 4,
-						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
-						audits: [
-							{
-								id: "not-found",
-								code: 404,
-								name: "Not Found",
-								description: "No poll names its category.",
-								suppressed: false,
-								sentBy: { id: "misty", name: "Misty" },
-							},
-						],
-					}),
-				})}
-			/>
-		);
-
-		await userEvent.click(screen.getByRole("button", { name: "respond" }));
-
-		expect(
-			screen.getByRole("button", { name: "Fire 404 at Misty" })
-		).toBeInTheDocument();
-	});
-
-	it("refuses to answer a sender who is not a target you were offered", () => {
-		render(
-			<PrepView
-				{...props}
-				attack={kantoAttackPanel()}
-				view={createMockRunView({
-					...view,
-					gateStake: createMockGateStake({
-						gateNumber: 4,
-						coverageLadder: { floor: 0, ok: 0, healthy: 60 },
-						audits: [
-							{
-								id: "not-found",
-								code: 404,
-								name: "Not Found",
-								description: "No poll names its category.",
-								suppressed: false,
-								sentBy: { id: "koga", name: "Koga" },
-							},
-						],
-					}),
-				})}
-			/>
-		);
-
-		expect(
-			screen.getByRole("button", {
-				name: "Koga is not a target you were offered",
-			})
-		).toBeDisabled();
 	});
 
 	it("sends nobody to an incident log of its own: the board carries it now", () => {

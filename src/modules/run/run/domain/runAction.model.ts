@@ -1,12 +1,14 @@
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
 import { hasRoomFor } from "~/modules/run/build/domain/build.model";
+import { approve } from "~/modules/run/run/domain/approval.model";
 import {
 	spendLint,
 	spendBuyBack,
 	spendPeek,
 } from "~/modules/run/run/domain/paidAction.model";
 import {
+	addStorage,
 	auditsOf,
 	canStart,
 	isPrepPhase,
@@ -28,13 +30,10 @@ import {
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import { armStrict } from "~/modules/run/run/domain/strict.model";
 import {
+	buyIncident,
 	fireAudit,
-	keepPayload,
-	openAudit,
-	repackage,
-	takeAudit,
+	refreshIncident,
 } from "~/modules/run/run/domain/heldAudit.model";
-import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	draft,
 	drop,
@@ -63,11 +62,10 @@ export type RunAction =
 	| { readonly type: "rebase"; readonly from: number; readonly to: number }
 	| { readonly type: "estimate"; readonly count: number }
 	| { readonly type: "commit-band"; readonly band: string }
+	| { readonly type: "approve-slot"; readonly pollId: string }
 	| { readonly type: "fire-audit" }
-	| { readonly type: "open-audit"; readonly seed?: string }
-	| { readonly type: "keep-payload"; readonly auditId: AuditId }
-	| { readonly type: "take-audit" }
-	| { readonly type: "repackage"; readonly seed?: string }
+	| { readonly type: "buy-incident" }
+	| { readonly type: "refresh-incident" }
 	| {
 			readonly type: "answer";
 			readonly optionIds: readonly string[];
@@ -78,7 +76,11 @@ export type RunAction =
 	| { readonly type: "peek-poll" }
 	| { readonly type: "arm-strict" }
 	| { readonly type: "buy-back-option"; readonly optionId: string }
-	| { readonly type: "strip"; readonly configIds: readonly string[] }
+	| {
+			readonly type: "strip";
+			readonly configIds: readonly string[];
+			readonly fromStorage?: boolean;
+	  }
 	| { readonly type: "refuse-gate" }
 	| { readonly type: "resume-climb" }
 	| { readonly type: "draft"; readonly configId: string }
@@ -93,7 +95,8 @@ export type RunAction =
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
 	| { readonly type: "switch-arm"; readonly configId: string }
-	| { readonly type: "vendor-lock"; readonly configId: string };
+	| { readonly type: "vendor-lock"; readonly configId: string }
+	| { readonly type: "loot"; readonly kb: number };
 
 const installConfig = (state: RunState, configId: string): RunState => {
 	const config = state.available.find((candidate) => candidate.id === configId);
@@ -138,13 +141,9 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"plant-pin",
 	"sell",
 	"vendor-lock",
-	"repackage",
+	"buy-incident",
+	"refresh-incident",
 ];
-
-export const withSeed = (action: RunAction, seed: string): RunAction =>
-	action.type === "open-audit" || action.type === "repackage"
-		? { ...action, seed }
-		: action;
 
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
@@ -222,26 +221,14 @@ const RULES: readonly ActionRule[] = [
 		run: (state) => fireAudit(state),
 	}),
 	on({
-		type: "open-audit",
+		type: "buy-incident",
 		when: inStatus("rewarding"),
-		run: (state, action) =>
-			action.seed === undefined ? state : openAudit(state, action.seed),
+		run: (state) => buyIncident(state),
 	}),
 	on({
-		type: "keep-payload",
+		type: "refresh-incident",
 		when: inStatus("rewarding"),
-		run: (state, action) => keepPayload(state, action.auditId),
-	}),
-	on({
-		type: "take-audit",
-		when: inStatus("rewarding"),
-		run: (state) => takeAudit(state),
-	}),
-	on({
-		type: "repackage",
-		when: inStatus("rewarding"),
-		run: (state, action) =>
-			action.seed === undefined ? state : repackage(state, action.seed),
+		run: (state) => refreshIncident(state),
 	}),
 	on({
 		type: "answer",
@@ -276,7 +263,7 @@ const RULES: readonly ActionRule[] = [
 	on({
 		type: "strip",
 		when: inStatus("awaiting-strip"),
-		run: (state, action) => strip(state, action.configIds),
+		run: (state, action) => strip(state, action.configIds, action.fromStorage),
 	}),
 	on({
 		type: "minify",
@@ -344,6 +331,11 @@ const RULES: readonly ActionRule[] = [
 		run: (state, action) => commitVendorLock(state, action.configId),
 	}),
 	on({
+		type: "approve-slot",
+		when: isPrepPhase,
+		run: (state, action) => approve(state, action.pollId),
+	}),
+	on({
 		type: "minify",
 		when: inStatus("rewarding"),
 		run: (state, action) => minifyConfig(state, action.configId),
@@ -357,6 +349,13 @@ const RULES: readonly ActionRule[] = [
 		type: "drop",
 		when: canDrop,
 		run: (state, action) => drop(state, action.configId),
+	}),
+	on({
+		type: "loot",
+		run: (state, action) =>
+			action.kb <= 0
+				? state
+				: { ...state, storage: addStorage(state.storage, action.kb) },
 	}),
 ];
 

@@ -278,32 +278,38 @@ describe("hydrateRunState — a snapshot written before the sealed audit (ADR-11
 		};
 	};
 
-	it("hydrates a pre-ADR-119 armed attack into the held audit of that band", () => {
+	it("drops a legacy armed attack: nothing was ever chosen to file", () => {
 		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
-		expect(hydrated.heldAudit).toEqual({ band: "healthy", gate: 2 });
-		expect(hydrated.auditHandedAtGate).toBe(2);
-	});
 
-	it("stamps the gate before the one in front when the legacy row never recorded one", () => {
-		const { attackEarnedAtGate: _unstamped, ...unstamped } =
-			armedLegacySnapshot();
-		expect(hydrateRunState(unstamped, POLLS).heldAudit).toEqual({
-			band: "healthy",
-			gate: 2,
-		});
+		expect(hydrated.heldAudit).toBeUndefined();
 	});
 
 	it("drops the legacy attack keys so the next write is clean", () => {
 		const hydrated = hydrateRunState(armedLegacySnapshot(), POLLS);
+
 		expect(hydrated).not.toHaveProperty("attack");
 		expect(hydrated).not.toHaveProperty("attackEarnedAtGate");
+		expect(hydrated).not.toHaveProperty("auditHandedAtGate");
 	});
 
-	it("prefers what a current snapshot holds over a stale legacy key", () => {
+	it("keeps a payload a legacy snapshot had already settled on", () => {
 		const hydrated = hydrateRunState(
-			{ ...armedLegacySnapshot(), heldAudit: { band: "perfect", gate: 1 } },
+			{
+				...armedLegacySnapshot(),
+				heldAudit: { payload: "not-found" as const },
+			},
 			POLLS
 		);
-		expect(hydrated.heldAudit).toEqual({ band: "perfect", gate: 1 });
+
+		expect(hydrated.heldAudit).toEqual({ auditId: "not-found" });
+	});
+
+	it("drops a sealed audit that was never opened", () => {
+		const hydrated = hydrateRunState(
+			{ ...armedLegacySnapshot(), heldAudit: {} },
+			POLLS
+		);
+
+		expect(hydrated.heldAudit).toBeUndefined();
 	});
 });

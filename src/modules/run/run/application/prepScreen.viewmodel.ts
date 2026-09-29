@@ -1,9 +1,10 @@
-import { AUDITS, STORAGE_BALANCE } from "~/shared/lib/copy";
+import { AUDITS, COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
 import {
 	type Config,
 	escrowKbPerCorrect,
 } from "~/modules/run/config/domain/config.model";
 import {
+	crowdSubmitterFor,
 	catcherFor,
 	prefetcherFor,
 } from "~/modules/run/build/domain/build.model";
@@ -13,9 +14,10 @@ import {
 } from "~/modules/run/config/domain/subscription.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import { bandOutcomesPropsFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
+import { pollPaysPropsFor, strictnessFor } from "./pollPays.viewmodel";
 import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
-	gateLabelOf,
+	gateNumberLabelOf,
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
@@ -27,8 +29,6 @@ import {
 import {
 	type CommittableBand,
 	coverageGainPercentFor,
-	okUnitsAt,
-	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	rebaserFor,
@@ -40,7 +40,6 @@ import type {
 	SlaControl,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
-import { plural } from "~/shared/lib/displayValue";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import {
@@ -48,17 +47,16 @@ import {
 	type AnsweredPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 
-import type { AttackPanelProps } from "~/ui/kanto-theme/AttackPanel.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type {
 	AuditsPanelProps,
 	AuditsRow,
 } from "~/ui/kanto-theme/AuditsPanel.ui";
 import {
-	COVERAGE_BAND_WORD,
 	type CoverageBarProps,
+	coverageBandOf,
 } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { HeaderFunds } from "~/ui/kanto-theme/Header.ui";
+import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
 import type { LedgerProps } from "~/ui/kanto-theme/Ledger.ui";
 import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type {
@@ -68,13 +66,18 @@ import type {
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
 import type { SlaPickerProps } from "~/ui/kanto-theme/SlaPicker.ui";
+import type { ApprovalListProps } from "~/ui/kanto-theme/ApprovalList.ui";
+import {
+	APPROVALS_NEEDED,
+	type ApprovalBoard,
+} from "~/modules/run/run/domain/approval.model";
 import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
 
 export const BALANCE_WORD = STORAGE_BALANCE;
 
 const noop = () => {};
 
-export const fundsOf = (kb: number, label: string): HeaderFunds => ({
+export const fundsOf = (kb: number, label: string): BalanceProps => ({
 	kb,
 	label,
 });
@@ -82,29 +85,9 @@ export const fundsOf = (kb: number, label: string): HeaderFunds => ({
 const SUMMIT_LINE = "the summit — nothing after this";
 const SEALED: LedgerFigure = { locked: true };
 
-export const PREP_COMMUNITY_LABEL = "Community";
+export const PREP_COMMUNITY_LABEL = COMMUNITY;
 const START_LEAD = "Start";
-const POLL_WORD = "poll";
-const SLOT_WORD = "slot";
-const UNIT_WORD = "unit";
 const READING_JOIN = " · ";
-const OK_DEMAND_LEAD = "need";
-const OK_DEMAND_TRAIL = `for ${COVERAGE_BAND_WORD.ok}`;
-
-export const prepPressNoteOf = (gate: number, unitsHeld: number): string => {
-	const owed = okUnitsAt(gate) - unitsHeld;
-	const window = [
-		plural(SLICE_WINDOW, POLL_WORD),
-		plural(scoringSlotsAt(gate), SLOT_WORD),
-	];
-
-	if (owed <= 0) return window.join(READING_JOIN);
-
-	return [
-		...window,
-		`${OK_DEMAND_LEAD} ${plural(owed, UNIT_WORD)} ${OK_DEMAND_TRAIL}`,
-	].join(READING_JOIN);
-};
 
 export const PREP_POLLS_TITLE = "The five polls";
 const BILL_LEAD = "bills";
@@ -115,7 +98,7 @@ const SUBSCRIPTIONS_TITLE = "Subscriptions";
 const LOCK_COLOR: KantoColor = "pewter";
 const NO_AUDITS = "none this gate";
 const AUDIT_COUNT_TRAIL = "firing this gate";
-const AUDITS_SHUT = `Audits are unlocked at ${gateLabelOf(AUDITS_FROM_GATE)}`;
+const AUDITS_SHUT = `Audits are unlocked at ${gateNumberLabelOf(AUDITS_FROM_GATE)}`;
 const RUNG_MARKS = "rungs";
 const CORRECT_OUTCOME = "correct";
 
@@ -125,6 +108,12 @@ const SLA_HINT =
 	"Promise a band before you answer. Close there or better and the gate pays more; miss your own promise and it pays nothing extra.";
 const REBASE_HINT =
 	"Put the categories you are surest of first — a streak pays, and the opener counts twice for some builds.";
+
+const APPROVAL_HINT =
+	"Approve one of the five without reading it. When it comes up it is answered with whatever the room has picked most.";
+const NEEDS_APPROVALS = `needs ${APPROVALS_NEEDED} approvals`;
+const MIRROR_REFUSAL =
+	"The mirror inverts what a majority means, so nothing can be approved this gate.";
 
 const NO_BET_REMEDY = "has no bet — call one above";
 const NO_PROMISE_REMEDY = "has no promise — name a band above";
@@ -212,6 +201,31 @@ const rebaseListFor = (
 			category: CATEGORY_METADATA[slot.category].name,
 			answerType: answerTypeLabel(slot.answerType),
 		})),
+	};
+};
+
+const approvalListFor = (
+	configs: readonly Config[],
+	board: ApprovalBoard | null,
+	approvedPollId: string | null
+): ApprovalListProps | undefined => {
+	const approver = crowdSubmitterFor(configs);
+	if (approver === undefined || board === null || board.slots.length === 0)
+		return undefined;
+
+	const refused = board.refusal !== null;
+
+	return {
+		label: approver.label,
+		hint: APPROVAL_HINT,
+		committed: approvedPollId,
+		rows: board.slots.map((slot, index) => ({
+			pollId: slot.pollId,
+			slot: index + 1,
+			category: CATEGORY_METADATA[slot.category].name,
+			...(refused || slot.ready ? {} : { refusal: NEEDS_APPROVALS }),
+		})),
+		...(board.refusal === "mirrored" ? { refusal: MIRROR_REFUSAL } : {}),
 	};
 };
 
@@ -322,7 +336,10 @@ export const auditsPanelFor = (
 	if (gate < AUDITS_FROM_GATE)
 		return {
 			title: AUDITS,
-			badge: { label: gateLabelOf(AUDITS_FROM_GATE), color: LOCK_COLOR },
+			badge: {
+				label: gateNumberLabelOf(AUDITS_FROM_GATE),
+				color: LOCK_COLOR,
+			},
 			meta: AUDITS_SHUT,
 			rows: [],
 			...bill,
@@ -388,15 +405,14 @@ export const subscriptionsLedgerFor = (
 export type PrepFrame = {
 	gate: number;
 	answeredPolls: readonly AnsweredPoll[];
-	answeredThisGate?: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	audits?: readonly AuditView[];
-	attack?: AttackPanelProps;
 	balanceKb: number;
 	buildSpace: number;
 	spaceBillKb: number;
 	window: PrepWindow;
 	bar: CoverageBarProps;
+	unitsHeld: number;
 	coverageGainPercent: number;
 	peelKb: number;
 	payout: (correct: number) => number;
@@ -405,21 +421,22 @@ export type PrepFrame = {
 	sla?: SlaControl | null;
 	slaBand?: CommittableBand | null;
 	rebaseSlots?: readonly PollSlot[];
+	approval?: ApprovalBoard | null;
+	approvedPollId?: string | null;
 	swatchGates?: readonly number[];
 };
 
 export const prepPropsFor = ({
 	gate,
 	answeredPolls,
-	answeredThisGate = [],
 	configs,
 	audits = [],
-	attack,
 	balanceKb,
 	buildSpace,
 	spaceBillKb,
 	window,
 	bar,
+	unitsHeld,
 	coverageGainPercent,
 	peelKb,
 	payout,
@@ -428,6 +445,8 @@ export const prepPropsFor = ({
 	sla = null,
 	slaBand = null,
 	rebaseSlots = [],
+	approval = null,
+	approvedPollId = null,
 	swatchGates = [],
 }: PrepFrame): PrepScreenProps => {
 	const swatch = gateSwatchAt(gate);
@@ -448,9 +467,8 @@ export const prepPropsFor = ({
 		},
 		outcomes: bandOutcomesPropsFor(
 			{
-				gateName: swatch.gateName,
+				swatch,
 				gate,
-				correctThisGate: rightAnswersIn(answeredThisGate),
 				held: bar.held,
 				ladder: bar,
 				coverageGainPercent,
@@ -459,11 +477,17 @@ export const prepPropsFor = ({
 				catchesFatal: catcherFor(configs) !== undefined,
 				payout,
 			},
-			{ ...bar, marks: RUNG_MARKS }
+			coverageBandOf(bar.held, bar)
 		),
+		pays: pollPaysPropsFor(
+			{ gate, unitsHeld, configs, ladder: bar, held: bar.held },
+			{ ...bar, marks: RUNG_MARKS, pin: true }
+		),
+		strictness: strictnessFor(gate),
 		estimate: estimatePickerFor(gate, estimate, estimatedCorrect),
 		sla: slaPickerFor(sla, slaBand),
 		rebase: rebaseListFor(configs, rebaseSlots),
+		approval: approvalListFor(configs, approval, approvedPollId),
 		scores: pollScoresFor(gate, answeredPolls),
 		polls: {
 			title: PREP_POLLS_TITLE,
@@ -472,17 +496,15 @@ export const prepPropsFor = ({
 		},
 		audits: auditsPanelFor(gate, audits, auditBillFor(bills)),
 		...(subscriptions === undefined ? {} : { subscriptions }),
-		attack,
 		footer: {
 			asides: [
 				{ label: PREP_COMMUNITY_LABEL, icon: "community", onPress: noop },
 			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,
-				swatch: { state: "current", swatch },
+				swatch: { state: "current", swatch, count: SLICE_WINDOW },
 				onPress: noop,
 			},
-			note: prepPressNoteOf(gate, bar.units?.held ?? 0),
 		},
 	};
 };

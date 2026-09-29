@@ -63,8 +63,9 @@ export const Won: Story = { args: kantoGateWon() };
 
 export const AllOpen: Story = { args: kantoGateOutcomeOpen() };
 
-const ShakyWithPicks = () => {
+const ShakyWithPicks = ({ balanceBeforeKb }: { balanceBeforeKb: number }) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
+	const [fromStorage, setFromStorage] = useState(false);
 
 	const toggle = (configId: string) =>
 		setChosen((held) =>
@@ -78,14 +79,22 @@ const ShakyWithPicks = () => {
 			{...kantoGateOutcomeAt({
 				gate: 4,
 				answers: SHAKY_ANSWERS,
-				balanceBeforeKb: 12,
+				balanceBeforeKb,
 				configs: kantoGateOutcomeBuild,
 				streak: 3,
 				chosen,
 				onToggle: toggle,
+				fromStorage,
+				onToggleStorage: () => setFromStorage((paying) => !paying),
 			})}
 		/>
 	);
 };
 
-export const Picking: Story = { render: () => <ShakyWithPicks /> };
+export const Picking: Story = {
+	render: () => <ShakyWithPicks balanceBeforeKb={12} />,
+};
+
+export const PickingWithStorage: Story = {
+	render: () => <ShakyWithPicks balanceBeforeKb={512} />,
+};

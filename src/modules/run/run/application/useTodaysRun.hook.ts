@@ -7,10 +7,11 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 export const todaysRunQueryKey = () =>
 	sessionRunQueryKeys.today(getTodayDateString());
 
-export const useTodaysRun = () => {
+export const useTodaysRun = (enabled = true) => {
 	const result = useApiQuery<RunView | null>({
 		queryKey: todaysRunQueryKey(),
 		queryFn: () => getTodaysRun(),
+		enabled,
 	});
 
 	return {

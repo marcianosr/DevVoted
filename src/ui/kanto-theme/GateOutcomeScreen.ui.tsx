@@ -1,5 +1,6 @@
 import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { Badge } from "./Badge.ui";
+import { Balance, type BalanceProps } from "./Balance.ui";
 import type { KantoColor } from "./colors";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import {
@@ -26,18 +27,17 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 const COPY = {
 	coverage: "Coverage",
+	whatHappened: "What happened",
 } as const;
 
 const HEADER = "flex w-full flex-col gap-4";
 const TITLE_ROW = "flex w-full items-start gap-4";
 const NAMING = "flex min-w-0 flex-col gap-1";
-const FIGURE = "ml-auto flex shrink-0 flex-col items-end gap-1";
-const FIGURE_AMOUNT = "text-2xl font-extrabold tabular-nums text-theme";
-const FIGURE_NOTE = "text-xs text-theme-muted";
 const CHIPS = "flex w-full flex-wrap items-center gap-2";
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
+const RECAP = "flex w-full flex-col gap-3";
 
 const SWATCH_SIZE = "hero";
 const TRACK_SIZE = "small";
@@ -45,8 +45,6 @@ const TRACK_SIZE = "small";
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const RUN_OVER_COLOR: KantoColor = "cinnabar";
 const MARKED_BAND: CoverageBandId = "perfect";
-
-export type GateOutcomeFigure = { amount: string; note: string };
 
 export type GateOutcomeChip = { label: string; color?: KantoColor };
 
@@ -56,7 +54,7 @@ export type GateOutcomeHeader = {
 	swatches: readonly SwatchFill[];
 	title: string;
 	subtitle: string;
-	figure: GateOutcomeFigure;
+	balance: BalanceProps;
 	chips: readonly GateOutcomeChip[];
 };
 
@@ -109,7 +107,7 @@ const GateOutcomeHeading = ({
 	swatches,
 	title,
 	subtitle,
-	figure,
+	balance,
 	chips,
 }: GateOutcomeHeader & { band: CoverageBandId }) => (
 	<header className={HEADER}>
@@ -132,10 +130,7 @@ const GateOutcomeHeading = ({
 					{subtitle}
 				</Typography>
 			</span>
-			<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={FIGURE}>
-				<span className={FIGURE_AMOUNT}>{figure.amount}</span>
-				<span className={FIGURE_NOTE}>{figure.note}</span>
-			</span>
+			<Balance {...balance} color={COVERAGE_BAND_COLOR[band]} />
 		</div>
 
 		<SwatchTrack swatches={swatches} size={TRACK_SIZE} />
@@ -157,9 +152,16 @@ type CoveragePanelProps = {
 	band: CoverageBandId;
 	bonus?: GateOutcomeBonusPanel;
 	payouts?: PollScoresProps;
+	open?: boolean;
 };
 
-const CoveragePanel = ({ bar, band, bonus, payouts }: CoveragePanelProps) => (
+const CoveragePanel = ({
+	bar,
+	band,
+	bonus,
+	payouts,
+	open = true,
+}: CoveragePanelProps) => (
 	<Fold
 		title={COPY.coverage}
 		summary={bonus?.summary}
@@ -167,7 +169,7 @@ const CoveragePanel = ({ bar, band, bonus, payouts }: CoveragePanelProps) => (
 			...(bonus?.badges ?? []),
 			{ label: COVERAGE_BAND_WORD[band], color: COVERAGE_BAND_COLOR[band] },
 		]}
-		open
+		open={open}
 	>
 		{bonus === undefined ? null : (
 			<Typography variant="paragraph">
@@ -239,6 +241,25 @@ export const GateOutcomeScreen = ({
 	width = "default",
 }: GateOutcomeScreenProps) => {
 	const band = coverageBandOf(bar.held, bar);
+	const settling = tail?.choice !== undefined;
+
+	const shut = <T extends GateOutcomePanel>(panel: T): T =>
+		settling ? { ...panel, open: false } : panel;
+
+	const coveragePanel = (
+		<CoveragePanel
+			bar={bar}
+			band={band}
+			bonus={bonus}
+			payouts={payouts}
+			open={!settling}
+		/>
+	);
+	const coverageLedger = <LedgerPanel {...shut(coverage)} />;
+	const storageLedger = <LedgerPanel {...shut(storage)} />;
+	const changesPanel =
+		changes === undefined ? null : <ChangesPanel {...shut(changes)} />;
+	const answersPanel = <AnswersPanel {...shut(answers)} />;
 
 	const body = (
 		<>
@@ -252,26 +273,39 @@ export const GateOutcomeScreen = ({
 				</div>
 			)}
 
-			<div className={COLUMNS}>
-				<div className={COLUMN}>
-					<CoveragePanel
-						bar={bar}
-						band={band}
-						bonus={bonus}
-						payouts={payouts}
-					/>
-					<LedgerPanel {...coverage} />
-				</div>
-
-				<div className={COLUMN}>
-					<LedgerPanel {...storage} />
-					{changes === undefined ? null : <ChangesPanel {...changes} />}
-				</div>
-			</div>
-
-			<AnswersPanel {...answers} />
-
 			{tail?.choice === undefined ? null : <GateChoice {...tail.choice} />}
+
+			{settling ? (
+				<section className={RECAP}>
+					<Typography variant="label" as="h2">
+						{COPY.whatHappened}
+					</Typography>
+					<div className={COLUMN}>
+						{coveragePanel}
+						{coverageLedger}
+						{storageLedger}
+						{changesPanel}
+						{answersPanel}
+					</div>
+				</section>
+			) : (
+				<>
+					<div className={COLUMNS}>
+						<div className={COLUMN}>
+							{coveragePanel}
+							{coverageLedger}
+						</div>
+
+						<div className={COLUMN}>
+							{storageLedger}
+							{changesPanel}
+						</div>
+					</div>
+
+					{answersPanel}
+				</>
+			)}
+
 			{tail?.ending === undefined ? null : <EndingPanel {...tail.ending} />}
 
 			<ScreenActions {...footer} />

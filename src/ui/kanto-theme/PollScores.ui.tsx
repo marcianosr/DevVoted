@@ -5,7 +5,7 @@ import { clsx } from "clsx";
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
-import { Swatch, type SwatchFill } from "./Swatch.ui";
+import { Swatch, type SwatchFill, swatchFillsFor } from "./Swatch.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 
@@ -80,16 +80,8 @@ const readingOf = (row: PollScoreRow): string => {
 	return row.tag === undefined ? score : `${score} — ${row.tag.label}`;
 };
 
-const fillsFor = ({
-	swatch,
-	correct,
-	polls,
-	current = false,
-}: PollScoreRow): SwatchFill[] =>
-	Array.from({ length: polls }, (_, position) => {
-		if (position < correct) return { state: "discovered", swatch };
-		return current ? { state: "current", swatch } : { state: "undiscovered" };
-	});
+const fillsFor = ({ swatch, correct, polls, current }: PollScoreRow) =>
+	swatchFillsFor(swatch, correct, polls, current);
 
 const markFor = ({ swatch, current = false }: PollScoreRow): SwatchFill =>
 	current ? { state: "current", swatch } : { state: "discovered", swatch };
