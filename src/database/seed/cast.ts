@@ -117,7 +117,7 @@ export const SEED_PLAYERS: readonly SeedPlayer[] = [
 		role: "user",
 		buildStyle: "risk — wagers, streak growth, audit suppression",
 		unlockedConfigIds: RISK_POOL,
-		ownedTitleIds: ["title-maintainer-js", "title-works-on-my-machine"],
+		ownedTitleIds: ["title-maintainer-js", "title-i-m-a-teapot"],
 		legacyCalendarRuns: { finished: 3 },
 		peakStorageKb: 2048,
 		archivedStorage: 2_097_152,

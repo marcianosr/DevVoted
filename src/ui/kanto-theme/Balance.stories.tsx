@@ -48,6 +48,13 @@ export const PreviewingAnInstall: Story = {
 	},
 };
 
+export const PreviewingAnUninstall: Story = {
+	args: {
+		kb: 410,
+		preview: { label: "after uninstall", figure: "442 KB", color: "viridian" },
+	},
+};
+
 const MovingBalance = () => {
 	const [kb, setKb] = useState(349);
 

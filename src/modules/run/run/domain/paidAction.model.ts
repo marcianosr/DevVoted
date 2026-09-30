@@ -1,4 +1,12 @@
-import { canLint, peekerFor } from "~/modules/run/build/domain/build.model";
+import {
+	canLint,
+	linterFor,
+	peekerFor,
+} from "~/modules/run/build/domain/build.model";
+import {
+	lintFeeFactorOf,
+	lintResetsEachGate,
+} from "~/modules/run/config/domain/config.model";
 import {
 	auditFeeMultiplier,
 	auditPaidActionLimit,
@@ -33,8 +41,29 @@ const wrongStillOn = (state: RunState) => {
 	);
 };
 
+const linterOnDeck = (state: RunState) => {
+	const poll = state.polls[state.currentIndex];
+	return poll === undefined
+		? undefined
+		: linterFor(liveConfigsOf(state), poll.category);
+};
+
+const lintUsesFor = (state: RunState): number => {
+	const linter = linterOnDeck(state);
+	if (linter === undefined || lintResetsEachGate(linter))
+		return state.window.linted ?? 0;
+	return state.lintsThisRun ?? 0;
+};
+
+const lintFeeFactorFor = (state: RunState): number => {
+	const linter = linterOnDeck(state);
+	return linter === undefined ? 1 : lintFeeFactorOf(linter);
+};
+
 export const lintFeeFor = (state: RunState): number =>
-	lintCost(state.window.linted ?? 0) * auditFeeMultiplier(auditsOf(state));
+	lintCost(lintUsesFor(state)) *
+	lintFeeFactorFor(state) *
+	auditFeeMultiplier(auditsOf(state));
 
 export const peekFeeFor = (state: RunState): number =>
 	peekCost(state.window.peeked ?? 0) * auditFeeMultiplier(auditsOf(state));
@@ -97,6 +126,7 @@ export const spendLint = (state: RunState): RunState => {
 		...state,
 		storage: state.storage - cost,
 		manualDisabled: [...state.manualDisabled, wrongStillOn(state)[0].id],
+		lintsThisRun: (state.lintsThisRun ?? 0) + 1,
 		window: { ...state.window, linted: (state.window.linted ?? 0) + 1 },
 		log: withLog(state, `Ran the linter (-${cost}KB).`),
 	};

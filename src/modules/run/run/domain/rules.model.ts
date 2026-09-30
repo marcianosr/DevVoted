@@ -1,4 +1,5 @@
 import { DRAFT_COST_PER_SLOT_KB } from "~/modules/run/config/domain/config.model";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 export const SLICE_WINDOW = 5;
 export const VICTORY_GATE = 12;
@@ -7,6 +8,7 @@ export const GATE_COUNT = VICTORY_GATE + 1;
 export const GATE_REWARD_KB = 32;
 export const INCIDENT_SURVIVAL_KB = 32;
 export const INCIDENT_KB = 32;
+export const SKIP_SHOP_KB = 16;
 export const INCIDENT_REFRESH_COST_KB = [8, 16, 32, 64, 128, 256];
 export const INCIDENT_OFFER_ONE_IN = 3;
 
@@ -122,10 +124,10 @@ export const STREAK_UNIT_STEP = 0.1;
 export const streakUnitBonus = (streakBefore: number): number =>
 	streakBefore < 1 ? 0 : STREAK_UNIT_STEP;
 
-export const FLOOR_CORRECT = 2;
+export const MIN_WINDOW_UNITS = 2;
 
-export const meetsGateFloor = (correct: number): boolean =>
-	correct >= FLOOR_CORRECT;
+export const meetsWindowMinimum = (baseUnits: number): boolean =>
+	baseUnits >= MIN_WINDOW_UNITS;
 
 export const gateRewardMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;
@@ -200,3 +202,26 @@ export const PIN_UNTIL_GATE = 10;
 export const PIN_START_KB_PER_GATE = 32;
 
 export const BOOT_CACHE_BANK_KB = 256;
+
+export const BOOT_CACHE_RATE = 2;
+
+export type BootCacheRung = {
+	readonly storageKb: number;
+	readonly archiveBytes: number;
+};
+
+const BOOT_CACHE_STORAGE_KB = [64, 128, 256];
+
+const bootCacheRung = (storageKb: number): BootCacheRung => ({
+	storageKb,
+	archiveBytes: storageKb * BOOT_CACHE_RATE * STORAGE_UNITS.KB,
+});
+
+export const BOOT_CACHE_RUNGS: readonly BootCacheRung[] =
+	BOOT_CACHE_STORAGE_KB.map(bootCacheRung);
+
+export const bootCacheRungAt = (index: number): BootCacheRung | undefined =>
+	BOOT_CACHE_RUNGS[index];
+
+export const EXTEND_CARRY_BYTES = 64 * STORAGE_UNITS.KB;
+export const PIN_CARRY_BYTES = 128 * STORAGE_UNITS.KB;

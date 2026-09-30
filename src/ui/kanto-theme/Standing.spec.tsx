@@ -13,18 +13,17 @@ describe("Standing", () => {
 		expect(screen.getByText("gate 3")).toBeVisible();
 	});
 
-	it("pins the coverage held above the bar, for good", () => {
-		const { container } = render(<Standing {...kantoStanding()} />);
+	it("reads the coverage held and its band beside the gate", () => {
+		render(<Standing {...kantoStanding()} />);
 
-		const pin = container.querySelector(".coverage-bar-pin");
-		expect(pin).toHaveAttribute("data-shown", "true");
-		expect(pin).toHaveTextContent("70%");
+		expect(screen.getByText("70% · HEALTHY")).toBeVisible();
 	});
 
-	it("leaves the gate unnamed when the surface names it elsewhere", () => {
-		render(<Standing {...kantoStanding()} namesGate={false} />);
+	it("points at the coverage on the bar rather than labelling its boundaries", () => {
+		const { container } = render(<Standing {...kantoStanding()} />);
 
-		expect(screen.queryByText("gate 3")).not.toBeInTheDocument();
+		expect(container.querySelector(".coverage-bar-pin")).toHaveTextContent("");
+		expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 	});
 
 	it("draws the coverage on the kit's bar", () => {
@@ -37,7 +36,8 @@ describe("Standing", () => {
 		render(<Standing {...kantoStanding()} />);
 
 		expect(screen.getByText(COPY.build)).toBeVisible();
-		expect(screen.getByText("9 of 12 weight")).toBeVisible();
+		expect(screen.getByText("9 / 12")).toBeVisible();
+		expect(screen.getByText(COPY.weight)).toBeVisible();
 	});
 
 	it("draws a chip for every installed config", () => {
@@ -47,17 +47,17 @@ describe("Standing", () => {
 		expect(screen.getByText("Sentry")).toBeVisible();
 	});
 
-	it("draws the weight left free as an empty slot", () => {
+	it("draws the weight left free as a free slot", () => {
 		render(<Standing {...kantoStanding({ freeSlots: 3 })} />);
 
-		expect(screen.getByText("empty")).toBeVisible();
+		expect(screen.getByText(COPY.free)).toBeVisible();
 		expect(screen.getByText("3 weight free")).toBeInTheDocument();
 	});
 
-	it("draws no empty slot for a full build", () => {
+	it("draws no free slot for a full build", () => {
 		render(<Standing {...kantoStanding({ freeSlots: 0 })} />);
 
-		expect(screen.queryByText("empty")).toBeNull();
+		expect(screen.queryByText(COPY.free)).toBeNull();
 	});
 
 	it("says a build is empty rather than drawing nothing", () => {
@@ -72,5 +72,14 @@ describe("Standing", () => {
 		expect(screen.getByText(COPY.storage)).toBeVisible();
 		expect(screen.getByText("896 KB")).toBeVisible();
 		expect(screen.getByText("JavaScript")).toBeVisible();
+	});
+
+	it("badges each figure in the colour it was handed", () => {
+		render(<Standing {...kantoStanding()} />);
+
+		expect(screen.getByText("896 KB")).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
 	});
 });

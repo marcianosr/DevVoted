@@ -1,17 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { dexConfigsProps } from "~/test/dexRegistry.factory";
+import {
+	dexConfigCards,
+	dexConfigDetail,
+	dexConfigsProps,
+} from "~/test/dexRegistry.factory";
 
 import { DexConfigs } from "./DexConfigs.ui";
 
-const groupHeaded = (label: string) => {
-	const section = screen.getByText(label).parentElement?.parentElement;
-	if (!(section instanceof HTMLElement))
-		throw new Error(`no weight group headed ${label}`);
+const paneAt = (container: HTMLElement, index: number) => {
+	const pane = container.querySelectorAll("section")[index];
+	if (!(pane instanceof HTMLElement)) throw new Error(`no pane at ${index}`);
 
-	return section;
+	return pane;
+};
+
+const list = (container: HTMLElement) => paneAt(container, 0);
+const detail = (container: HTMLElement) => paneAt(container, 1);
+
+const rowNamed = (container: HTMLElement, name: string) => {
+	const row = within(list(container)).getByText(name).closest("button");
+	if (!(row instanceof HTMLElement)) throw new Error(`no row named ${name}`);
+
+	return row;
+};
+
+const cardNamed = (id: string) => {
+	const card = dexConfigCards.find((entry) => entry.id === id);
+	if (card === undefined) throw new Error(`no fixture card ${id}`);
+
+	return card;
 };
 
 describe("DexConfigs", () => {
@@ -19,117 +39,140 @@ describe("DexConfigs", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
 		expect(screen.getByRole("heading", { name: "configs" })).toBeVisible();
-		expect(screen.getByText("18 of 44")).toBeVisible();
+		expect(screen.getByText("6 of 8")).toBeVisible();
 	});
 
-	it("heads each weight with its block, the weight named and how much you hold", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
+	it("lists every entry it was given, holding none back", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByText("weight 2")).toBeVisible();
-		expect(screen.getByText("3 of 5")).toBeVisible();
-		expect(screen.getByText("weight 1")).toBeVisible();
-		expect(screen.getByText("2 of 3")).toBeVisible();
+		expect(within(list(container)).getAllByRole("button")).toHaveLength(
+			dexConfigCards.length
+		);
 	});
 
-	it("leads the heading with the weight block, so its length reads as the rung", () => {
+	it("arrives on the filter that shows everything", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		const heading = screen.getByText("weight 2").parentElement;
-
-		expect(heading?.firstElementChild).toHaveTextContent("2");
+		expect(screen.getByRole("radio", { name: "all" })).toBeChecked();
 	});
 
-	it("lays the groups out in the order given, heaviest first", () => {
+	it("offers one chip a weight, each counting its own held against its own total", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		const heavy = screen.getByText("weight 2");
-		const light = screen.getByText("weight 1");
-
-		expect(
-			heavy.compareDocumentPosition(light) & Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
+		expect(screen.getByRole("radio", { name: "1 · 2 of 3" })).toBeVisible();
+		expect(screen.getByRole("radio", { name: "2 · 4 of 5" })).toBeVisible();
 	});
 
-	it("seats every card under its own weight", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
+	it("reports the chosen weight rather than narrowing on its own", async () => {
+		const onFilter = vi.fn();
+		render(<DexConfigs {...dexConfigsProps({ onFilter })} />);
 
-		expect(groupHeaded("weight 2")).toHaveTextContent("Code Coverage");
-		expect(groupHeaded("weight 2")).not.toHaveTextContent(".js");
-		expect(groupHeaded("weight 1")).toHaveTextContent(".js");
+		await userEvent.click(screen.getByRole("radio", { name: "2 · 4 of 5" }));
+
+		expect(onFilter).toHaveBeenCalledWith("2");
 	});
 
-	it("draws granted, met and locked cards side by side in one group", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
+	it("leads a row with its weight block and trails it with its figure and ladder", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
+		const row = rowNamed(container, ".js");
 
-		expect(screen.getByText("Regression Test")).toBeVisible();
-		expect(screen.getByText("Planning Poker")).toBeVisible();
-		expect(screen.getAllByText("???")).toHaveLength(2);
+		expect(row.firstElementChild).toHaveTextContent("1");
+		expect(row).toHaveTextContent("×1.25");
+		expect(row).toHaveTextContent("v5");
 	});
 
-	it("arrives with every card collapsed, the tab being a list to scan", () => {
-		render(<DexConfigs {...dexConfigsProps()} />);
+	it("withholds the name of a config you have not earned", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByRole("button", { name: "Expand .js" })).toHaveAttribute(
-			"aria-expanded",
+		expect(within(list(container)).getAllByText("???")).toHaveLength(2);
+	});
+
+	it("marks the picked row as the one the panel is reading", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
+
+		expect(rowNamed(container, ".js")).toHaveAttribute("aria-current", "true");
+		expect(rowNamed(container, "ESLint")).toHaveAttribute(
+			"aria-current",
 			"false"
 		);
-		expect(screen.queryByText(/polls reward/)).not.toBeInTheDocument();
 	});
 
-	it("opens exactly the card named as open", () => {
-		render(<DexConfigs {...dexConfigsProps({ openInfo: new Set(["js"]) })} />);
-
-		expect(
-			screen.getByRole("button", { name: "Collapse .js" })
-		).toHaveAttribute("aria-expanded", "true");
-		expect(
-			screen.getByRole("button", { name: "Expand ESLint" })
-		).toHaveAttribute("aria-expanded", "false");
-	});
-
-	it("states an open config's effect on the card rather than over it", () => {
-		render(<DexConfigs {...dexConfigsProps({ openInfo: new Set(["js"]) })} />);
-
-		expect(screen.getByText(/polls reward/)).toBeVisible();
-		expect(screen.getByText("Starter config · v1 of 5")).toBeVisible();
-	});
-
-	it("states a locked config's unlock paths once its card is opened", () => {
-		render(
-			<DexConfigs {...dexConfigsProps({ openInfo: new Set(["lock"]) })} />
+	it("reports which row was pressed rather than moving the panel itself", async () => {
+		const onSelect = vi.fn();
+		const { container } = render(
+			<DexConfigs {...dexConfigsProps({ onSelect })} />
 		);
 
-		expect(screen.getByText("unlock · Lock 5 shop offers")).toBeVisible();
-		expect(screen.getByText("2/5")).toBeVisible();
+		await userEvent.click(rowNamed(container, "ESLint"));
+
+		expect(onSelect).toHaveBeenCalledWith("eslint");
 	});
 
-	it("reports which card was pressed rather than opening on its own", async () => {
-		const onToggleInfo = vi.fn();
-		render(<DexConfigs {...dexConfigsProps({ onToggleInfo })} />);
+	it("heads the panel with the config's own name", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
 
-		await userEvent.click(screen.getByRole("button", { name: "Expand .js" }));
-
-		expect(onToggleInfo).toHaveBeenCalledWith("js");
+		expect(
+			within(detail(container)).getByRole("heading", { name: ".js" })
+		).toBeVisible();
 	});
 
-	it("offers one press to open every card in the tab", async () => {
-		const onToggleAll = vi.fn();
-		render(<DexConfigs {...dexConfigsProps({ onToggleAll })} />);
+	it("states a granted config's effect and where it came from, with no press", () => {
+		const { container } = render(<DexConfigs {...dexConfigsProps()} />);
+		const panel = within(detail(container));
 
-		await userEvent.click(screen.getByRole("button", { name: "expand all" }));
-
-		expect(onToggleAll).toHaveBeenCalledTimes(1);
+		expect(panel.getByText(/polls reward/)).toBeVisible();
+		expect(panel.getByText("Starter config · v1 of 5")).toBeVisible();
+		expect(
+			panel.queryByRole("button", { name: /Expand/ })
+		).not.toBeInTheDocument();
 	});
 
-	it("names the press for the move it is about to make", () => {
-		const open = new Set(
-			dexConfigsProps().groups.flatMap((group) =>
-				group.chips.map((card) => card.id)
-			)
+	it("states both unlock paths of a config you have not earned", () => {
+		const { container } = render(
+			<DexConfigs
+				{...dexConfigsProps({
+					selectedId: "lock",
+					detail: dexConfigDetail(cardNamed("lock")),
+				})}
+			/>
 		);
-		render(<DexConfigs {...dexConfigsProps({ openInfo: open })} />);
+		const panel = within(detail(container));
 
-		expect(screen.getByRole("button", { name: "collapse all" })).toBeVisible();
+		expect(panel.getByText("unlock · Lock 5 shop offers")).toBeVisible();
+		expect(panel.getByText("2/5")).toBeVisible();
+		expect(panel.getByText("43/550")).toBeVisible();
+	});
+
+	it("withholds the name of a config you have not earned from the panel too", () => {
+		const { container } = render(
+			<DexConfigs
+				{...dexConfigsProps({
+					selectedId: "lock",
+					detail: dexConfigDetail(cardNamed("lock")),
+				})}
+			/>
+		);
+
+		expect(
+			within(detail(container)).getByRole("heading", { name: "???" })
+		).toBeVisible();
+	});
+
+	it("says so plainly when the chosen weight holds nothing", () => {
+		const { container } = render(
+			<DexConfigs
+				{...dexConfigsProps({
+					filter: "8",
+					rows: [],
+					selectedId: null,
+					detail: null,
+				})}
+			/>
+		);
+
+		expect(
+			within(detail(container)).getByText("No config at this weight yet.")
+		).toBeVisible();
 	});
 
 	it("states the collection's rule in the footer", () => {

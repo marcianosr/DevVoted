@@ -13,6 +13,10 @@ import {
 } from "~/database/schema";
 import { type CategoryCode, isCategoryCode } from "~/shared/lib/categories";
 
+import {
+	type AuthorRole,
+	roleLabelFor,
+} from "~/modules/account/profile/domain/authorship.model";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
 import type {
@@ -127,17 +131,6 @@ type EnginePollRow = {
 	authorRole: AuthorRole | null;
 	authorTitleIds: readonly string[] | null;
 };
-
-type AuthorRole = (typeof usersTable.$inferSelect)["role"];
-
-const ROLE_LABELS = {
-	user: undefined,
-	"poll-editor": "Poll editor",
-	admin: "Admin",
-} satisfies Record<AuthorRole, string | undefined>;
-
-const roleLabelFor = (role: AuthorRole | null): string | undefined =>
-	role === null ? undefined : ROLE_LABELS[role];
 
 const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
 	if (row.authorHandle === null) return undefined;

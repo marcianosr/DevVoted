@@ -138,7 +138,9 @@ const SKIP_REASONS: readonly ((
 			? { kind: "billsAtGateClear" }
 			: undefined,
 	(config) =>
-		config.reordersGatePolls === true || config.submitsCrowdPick === true
+		config.reordersGatePolls === true ||
+		config.submitsCrowdPick === true ||
+		config.revealsOutageTargets === true
 			? { kind: "inPrep" }
 			: undefined,
 	(config) =>

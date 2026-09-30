@@ -3,7 +3,11 @@ import {
 	LOCK_COST_KB,
 	rebuildCost,
 } from "~/modules/run/shop/domain/draft.model";
-import { INCIDENT_KB, pinCostFor } from "~/modules/run/run/domain/rules.model";
+import {
+	INCIDENT_KB,
+	pinCostFor,
+	SKIP_SHOP_KB,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	canBuyIncident,
 	canRefreshIncident,
@@ -20,6 +24,7 @@ import {
 	lockAvailable,
 	pinAvailable,
 	rebuildAvailable,
+	skipShopAvailable,
 } from "~/modules/run/run/domain/shopAction.model";
 
 export type ShopControls = {
@@ -34,6 +39,8 @@ export type ShopControls = {
 	readonly extendCost: number;
 	readonly canExtend: boolean;
 	readonly shopLocked: boolean;
+	readonly skipPayoutKb: number;
+	readonly canSkip: boolean;
 	readonly pinAvailable: boolean;
 	readonly pinCost: number;
 	readonly canPin: boolean;
@@ -56,6 +63,8 @@ export const shopControlsFor = (state: RunState): ShopControls => ({
 	extendCost: extendCost(state.extensionsBought ?? 0),
 	canExtend: canExtend(state),
 	shopLocked: isShopLocked(state),
+	skipPayoutKb: SKIP_SHOP_KB,
+	canSkip: skipShopAvailable(state) && !isShopLocked(state),
 	pinAvailable: pinAvailable(state),
 	pinCost: pinCostFor(state.gatesCleared),
 	canPin: canPlantPin(state),

@@ -13,9 +13,12 @@ import {
 
 import {
 	createKantoNewRunScreenProps,
-	kantoNewRunHelp,
+	kantoBootedPanel,
+	kantoGateZeroFooter,
+	kantoNewRunFilter,
 	kantoNewRunRegistry,
 	kantoNewRunAt,
+	kantoWarmBootPanel,
 } from "~/test/kantoPoll.factory";
 
 import { NewRunScreen } from "./NewRunScreen.ui";
@@ -97,13 +100,45 @@ export const CutToOneGroup: Story = {
 		<NewRunScreen
 			{...props}
 			registry={kantoNewRunRegistry([], BASE_SLOTS, "coverage")}
-			help={kantoNewRunHelp([], BASE_SLOTS, "coverage")}
+			filter={kantoNewRunFilter([], BASE_SLOTS, "coverage")}
 		/>
 	),
 };
 
-export const HelpHidden: Story = {
-	render: () => <NewRunScreen {...props} help={undefined} />,
+export const Unfiltered: Story = {
+	render: () => <NewRunScreen {...props} filter={undefined} />,
+};
+
+export const Drafted: Story = {
+	render: () => (
+		<NewRunScreen
+			{...kantoNewRunAt(["js"])}
+			warmBoot={kantoWarmBootPanel(512, { rung: 1, serviceIds: ["pin"] })}
+			footer={{
+				...kantoGateZeroFooter(true),
+				action: {
+					...kantoGateZeroFooter(true).action,
+					label: "Pallet gate prep · 384 KB archive",
+					tone: "commit",
+				},
+			}}
+		/>
+	),
+};
+
+export const ArchiveShort: Story = {
+	render: () => (
+		<NewRunScreen
+			{...kantoNewRunAt(["js"])}
+			warmBoot={kantoWarmBootPanel(100)}
+		/>
+	),
+};
+
+export const Booted: Story = {
+	render: () => (
+		<NewRunScreen {...kantoNewRunAt(["js"])} warmBoot={kantoBootedPanel()} />
+	),
 };
 
 export const Framed: Story = {

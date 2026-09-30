@@ -105,7 +105,7 @@ describe("autoUpgradeOnAnswer", () => {
 
 	it("changes nothing when the count completes but nothing can level", () => {
 		const maxed = { ...CONFIGS.dependabot, level: 2 };
-		const stuck = [maxed, CONFIGS.eslint];
+		const stuck = [maxed, CONFIGS.agentsMd];
 		const result = answerCorrectly(stuck, 10, PICKS_FIRST);
 		expect(result.bumps).toEqual([]);
 		expect(result.configs).toEqual(stuck);

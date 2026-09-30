@@ -46,7 +46,7 @@ it.
 
 **`git rebase -i` gains a second version.** v1 lists the gate's polls by category, the
 way the real `rebase -i` lists subject lines rather than diffs. v2 also names which of
-them take more than one answer. Answer types are Prefetch's headline reveal and
+them take more than one answer. Answer types are Prefetch v2's headline reveal (ADR-158) and
 multiple choice pays double (ADR-081), so handing them over at v1 would make a 4-slot
 config redundant. The upgrade is what buys the overlap.
 

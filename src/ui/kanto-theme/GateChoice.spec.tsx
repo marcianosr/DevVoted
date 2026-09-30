@@ -132,7 +132,7 @@ describe("GateChoice", () => {
 
 			expect(
 				screen.getByText(/storage drops to/).parentElement
-			).toHaveTextContent("storage drops to 480 KB · your build stays intact");
+			).toHaveTextContent("storage drops to 464 KB · your build stays intact");
 		});
 
 		it("carries the toggle the screen hands it", async () => {

@@ -11,6 +11,9 @@ to the poll screen.
 Amended 2026-09-28 (Marciano, DVTD-s02d) after playing it: decision 1 was wrong
 on both of its clauses, decision 3 never shipped, and decision 7 is new.
 
+Amended 2026-09-29 (Marciano, DVTD-o70a): decision 1 now covers every run
+screen but the hub, not only the screens that spend.
+
 ## Context
 
 The header states the balance
@@ -26,21 +29,25 @@ every row below is priced against.
 
 ## Decision
 
-1. **Every screen that spends storage pins its header, and pins one row of it.**
-   The shop, a new run, prep and the poll. The rule is unchanged — a screen pins
-   its header when the reading is what the screen below it is priced against —
-   but it was applied to the wrong list. Prep buys answers back and fires
-   audits; the poll buys back a redacted option. Both price against the balance,
-   and both scroll far enough to lose it.
+1. **Every run screen but the hub pins the same header, and pins one row of it.**
+   The shop, a new run, prep, the poll, the gate result, the review and run
+   over. It started as the screens that spend, because those are priced against
+   the balance. After playing it, a bar that is there on some run screens and
+   replaced by a hero heading on the others made the top of the screen change
+   shape at every step of the run. One bar in one place won over the rule. The
+   gate result keeps its outcome as the title, its grade chips as the header's
+   badges and the PERFECT ring on the mark. The hub keeps its own strip
+   ([ADR-147](147-the-hub-shows-the-run-so-far.md)), which already states the
+   same readout.
 
-   What hangs is the gate mark, the screen's name and the balance. The swatch
-   track, the note and any coverage reading stay in the flow and scroll away.
-   The first draft of this decision refused the split because "half a header is
-   a second layout to design" — the second layout turned out to be one flex row
-   the header already built. The track is reference: thirteen squares stating
-   where the run has been, which no price is read against. Pinning it spends a
-   third of the viewport on chrome, which is what the objection in decision 2 is
-   about, only vertically.
+   What hangs is the gate mark, the screen's name, the swatch track and the
+   balance, in one row. The note and any coverage reading stay in the flow and
+   scroll away. The first draft of this decision refused the split because
+   "half a header is a second layout to design" — the second layout turned out
+   to be one flex row the header already built. The track first stayed in the
+   flow on its own row, as reference. Played, that row floated loose under the
+   bar, cut off from the gate it counts, so it moved into the title row, where
+   it costs no height.
 
    Structurally the two halves are siblings, not a box inside a box: a sticky
    element holds only while its own parent is in view, so a row nested in the

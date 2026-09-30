@@ -41,7 +41,7 @@ const cardFor = (
 ): ClimberCardProps =>
 	kantoClimberCard({
 		name,
-		standing: kantoStanding({ weight: "5 of 6 weight", build }),
+		standing: kantoStanding({ weight: "5 / 6", build }),
 	});
 
 const GATES: LadderGate[] = [
@@ -163,7 +163,7 @@ describe("ClimbMap", () => {
 		);
 
 		expect(screen.getByText(".ts")).toBeInTheDocument();
-		expect(screen.getByText("5 of 6 weight")).toBeInTheDocument();
+		expect(screen.getByText("5 / 6")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Misty" })).toHaveAttribute(
 			"aria-pressed",
 			"true"

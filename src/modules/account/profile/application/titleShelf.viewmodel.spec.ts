@@ -7,13 +7,12 @@ import {
 	type ShelfTitle,
 	type TitleShelfInput,
 } from "~/modules/account/profile/application/titleShelf.viewmodel";
-import { WORN_TITLE_CAP } from "~/modules/account/profile/domain/title.model";
 
 const NEWBIE = "title-rank-poll-newbie";
 const ACQUAINTANCE = "title-rank-poll-acquaintance";
 const CSS_CARRIER = "title-answered-css";
 const CSS_CONNOISSEUR = "title-maintainer-css";
-const BIKESHEDDER = "title-bikeshedder";
+const IT_COMPILES = "title-it-compiles";
 const TESTER = "title-legacy-tester";
 
 const count = (metric: string, value: number) => ({ metric, count: value });
@@ -21,7 +20,6 @@ const count = (metric: string, value: number) => ({ metric, count: value });
 const shelfOf = (input: Partial<TitleShelfInput> = {}) =>
 	titleShelfFor({
 		ownedTitleIds: [],
-		equippedTitleIds: [],
 		counts: [],
 		filter: "all",
 		moreCategories: false,
@@ -30,13 +28,11 @@ const shelfOf = (input: Partial<TitleShelfInput> = {}) =>
 
 const MOCK_ACCOUNT: Partial<TitleShelfInput> = {
 	ownedTitleIds: [NEWBIE, CSS_CARRIER, TESTER],
-	equippedTitleIds: [TESTER],
 	counts: [
 		count("polls-answered", 34),
-		count("category-answered:css", 10),
-		count("category-correct:css", 14),
-		count("category-answered:js", 7),
-		count("gates-reordered", 20),
+		count("category-seen:css", 50),
+		count("category-mastered:css", 28),
+		count("category-seen:js", 35),
 	],
 };
 
@@ -48,23 +44,7 @@ describe("titleShelfFor", () => {
 			const shelf = shelfOf(MOCK_ACCOUNT);
 
 			expect(shelf.held).toBe(3);
-			expect(shelf.total).toBe(47);
-		});
-	});
-
-	describe("worn slots", () => {
-		it("lays out one slot per wearable title, the worn ones first by the order they were put on", () => {
-			const shelf = shelfOf({
-				...MOCK_ACCOUNT,
-				equippedTitleIds: [CSS_CARRIER, TESTER],
-			});
-
-			expect(shelf.worn).toEqual([
-				{ id: CSS_CARRIER, name: "CSS Carrier" },
-				{ id: TESTER, name: "Legacy Tester" },
-				null,
-			]);
-			expect(shelf.worn).toHaveLength(WORN_TITLE_CAP);
+			expect(shelf.total).toBe(50);
 		});
 	});
 
@@ -118,10 +98,9 @@ describe("titleShelfFor", () => {
 			expect(ladder.fill).toBe(1);
 		});
 
-		it("offers every earned rung by name, so a player can wear an early one", () => {
+		it("offers every earned rung by name, earliest first", () => {
 			const { ladder } = shelfOf({
 				ownedTitleIds: [NEWBIE, ACQUAINTANCE],
-				equippedTitleIds: [NEWBIE],
 				counts: [count("polls-answered", 40)],
 			});
 
@@ -129,7 +108,6 @@ describe("titleShelfFor", () => {
 				"Poll Newbie",
 				"Poll Acquaintance",
 			]);
-			expect(ladder.earned.map((rung) => rung.worn)).toEqual([true, false]);
 		});
 	});
 
@@ -140,14 +118,14 @@ describe("titleShelfFor", () => {
 
 			expect(css?.answered).toMatchObject({
 				id: CSS_CARRIER,
-				count: 10,
-				target: 10,
+				count: 50,
+				target: 50,
 				earned: true,
 			});
 			expect(css?.correct).toMatchObject({
 				id: CSS_CONNOISSEUR,
-				count: 14,
-				target: 25,
+				count: 28,
+				target: 50,
 				earned: false,
 			});
 		});
@@ -187,13 +165,13 @@ describe("titleShelfFor", () => {
 	describe("special", () => {
 		it("hides an unearned special title's name but states how to earn it", () => {
 			const { special } = shelfOf(MOCK_ACCOUNT);
-			const bikeshedder = special.titles.find(
-				(title) => title.id === BIKESHEDDER
+			const itCompiles = special.titles.find(
+				(title) => title.id === IT_COMPILES
 			);
 
-			expect(bikeshedder?.locked).toBe(true);
-			expect(bikeshedder?.earnedWhen).toBe("Reorder the gates 25 times");
-			expect(bikeshedder?.count).toBe(20);
+			expect(itCompiles?.locked).toBe(true);
+			expect(itCompiles?.earnedWhen).toBe("Win a run");
+			expect(itCompiles?.count).toBe(0);
 		});
 
 		it("leads with an earned special title", () => {
@@ -222,7 +200,6 @@ describe("titleShelfFor", () => {
 
 			expect(closest.map((title) => title.id)).toEqual([
 				"title-rank-poll-acquaintance",
-				BIKESHEDDER,
 				"title-answered-js",
 				CSS_CONNOISSEUR,
 			]);
@@ -231,26 +208,11 @@ describe("titleShelfFor", () => {
 		it("lists at most a set number of closest titles", () => {
 			const { closest } = shelfOf({
 				counts: ["html", "css", "js", "ts", "react", "git", "java"].map(
-					(code) => count(`category-answered:${code}`, 5)
+					(code) => count(`category-seen:${code}`, 5)
 				),
 			});
 
 			expect(closest).toHaveLength(CLOSEST_COUNT);
-		});
-	});
-
-	describe("wear presses", () => {
-		it("refuses every unworn title once the card is full, but still lets one come off", () => {
-			const { categories, special } = shelfOf({
-				...MOCK_ACCOUNT,
-				ownedTitleIds: [NEWBIE, CSS_CARRIER, TESTER, BIKESHEDDER],
-				equippedTitleIds: [NEWBIE, TESTER, BIKESHEDDER],
-			});
-			const css = categories.rows.find((row) => row.code === "css");
-			const tester = special.titles.find((title) => title.id === TESTER);
-
-			expect(css?.answered.blocked).toBe(true);
-			expect(tester?.blocked).toBe(false);
 		});
 	});
 });

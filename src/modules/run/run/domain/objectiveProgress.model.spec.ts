@@ -6,6 +6,8 @@ import type { ObjectiveMetric } from "~/modules/run/config/domain/configUnlock.m
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	type RunAction,
 	runReducer,
@@ -508,5 +510,233 @@ describe("run end", () => {
 		expect(
 			objectiveIncrementsFor(dead, { ...dead, storage: 1 }, CLOSE)
 		).toEqual([]);
+	});
+});
+
+describe("special titles", () => {
+	const base = started(["js"]);
+	const landing = (
+		outcome: AnsweredPoll["outcome"],
+		overrides: Partial<AnsweredPoll> = {}
+	): AnsweredPoll => ({
+		id: "p1",
+		question: "Which Pokémon does Ash choose in Pallet Town?",
+		category: "js",
+		outcome,
+		picked: [],
+		...overrides,
+	});
+	const stepped = (
+		state: RunState,
+		overrides: Partial<RunState>,
+		action: RunAction = CLOSE
+	): readonly ObjectiveMetric[] =>
+		objectiveIncrementsFor(state, { ...state, ...overrides }, action);
+	const landed = (
+		state: RunState,
+		poll: AnsweredPoll
+	): readonly ObjectiveMetric[] =>
+		stepped(state, { allAnswered: [...(state.allAnswered ?? []), poll] });
+	const clearedAt = (
+		state: RunState,
+		band: CoverageBandId,
+		overrides: Partial<RunState> = {}
+	): readonly ObjectiveMetric[] =>
+		stepped(state, {
+			gatesCleared: state.gatesCleared + 1,
+			lastClose: { gate: state.gatesCleared, band, cleared: true },
+			...overrides,
+		});
+
+	it("counts a run's first answer when it is exactly correct", () => {
+		expect(landed(base, landing("correct"))).toContain("first-poll-correct");
+	});
+
+	it("counts no first answer that was only partly right", () => {
+		expect(landed(base, landing("partial"))).not.toContain(
+			"first-poll-correct"
+		);
+	});
+
+	it("counts no correct answer after the run's first", () => {
+		const second = { ...base, allAnswered: [landing("wrong")] };
+		expect(landed(second, landing("correct"))).not.toContain(
+			"first-poll-correct"
+		);
+	});
+
+	it("counts a won run in which every answer was correct", () => {
+		expect(
+			stepped(base, {
+				status: "won",
+				allAnswered: [landing("correct"), landing("correct")],
+			})
+		).toContain("won-every-answer-correct");
+	});
+
+	it("counts no all-correct win when one answer was partial", () => {
+		expect(
+			stepped(base, {
+				status: "won",
+				allAnswered: [landing("correct"), landing("partial")],
+			})
+		).not.toContain("won-every-answer-correct");
+	});
+
+	it("counts an audited gate cleared at exactly OK", () => {
+		const auditedGate = audited(base, 4, "memory-leak");
+		expect(clearedAt(auditedGate, "ok")).toContain("audited-clear-ok");
+	});
+
+	it("counts no OK badge for an audited gate cleared HEALTHY", () => {
+		const auditedGate = audited(base, 4, "memory-leak");
+		expect(clearedAt(auditedGate, "healthy")).not.toContain("audited-clear-ok");
+	});
+
+	it("counts no OK badge for an unaudited gate cleared at OK", () => {
+		expect(clearedAt(base, "ok")).not.toContain("audited-clear-ok");
+	});
+
+	it("counts one answer that earned ten coverage units", () => {
+		expect(landed(base, landing("correct", { coverageEarned: 10 }))).toContain(
+			"ten-unit-answer"
+		);
+	});
+
+	it("counts no answer that earned nine units", () => {
+		expect(
+			landed(base, landing("correct", { coverageEarned: 9 }))
+		).not.toContain("ten-unit-answer");
+	});
+
+	it("counts a gate closed past full coverage, paid as overflow", () => {
+		expect(clearedAt(base, "perfect", { overflowThisGateKb: 8 })).toContain(
+			"gate-over-full"
+		);
+	});
+
+	it("counts no overflow for a gate closed exactly full", () => {
+		expect(clearedAt(base, "perfect", { overflowThisGateKb: 0 })).not.toContain(
+			"gate-over-full"
+		);
+	});
+
+	it("counts a clear after missing the gate's first two polls", () => {
+		const recovering = {
+			...base,
+			answeredThisGate: [
+				landing("wrong"),
+				landing("partial"),
+				landing("correct"),
+				landing("correct"),
+				landing("correct"),
+			],
+		};
+		expect(clearedAt(recovering, "ok")).toContain("cleared-after-two-misses");
+	});
+
+	it("counts no recovery when only the first poll missed", () => {
+		const recovering = {
+			...base,
+			answeredThisGate: [
+				landing("wrong"),
+				landing("correct"),
+				landing("correct"),
+			],
+		};
+		expect(clearedAt(recovering, "ok")).not.toContain(
+			"cleared-after-two-misses"
+		);
+	});
+
+	it("counts no recovery on a gate that held", () => {
+		const recovering = {
+			...base,
+			answeredThisGate: [landing("wrong"), landing("wrong")],
+		};
+		expect(
+			stepped(recovering, {
+				lastClose: { gate: 0, band: "shaky", cleared: false },
+			})
+		).not.toContain("cleared-after-two-misses");
+	});
+
+	const holding = (count: number): RunState => ({
+		...base,
+		build: {
+			...base.build,
+			configs: Object.values(CONFIGS).slice(0, count),
+		},
+	});
+
+	it("counts the moment a build first holds eight configs", () => {
+		expect(stepped(holding(7), { build: holding(8).build }, CLOSE)).toContain(
+			"eight-configs-held"
+		);
+	});
+
+	it("counts no eighth config while the build stays at eight", () => {
+		expect(stepped(holding(8), { storage: 1 })).not.toContain(
+			"eight-configs-held"
+		);
+	});
+
+	it("counts no build of seven configs", () => {
+		expect(stepped(holding(6), { build: holding(7).build })).not.toContain(
+			"eight-configs-held"
+		);
+	});
+
+	const DRAFT: RunAction = { type: "draft", configId: "js" };
+
+	it("counts an install after three rebuilds in one shop", () => {
+		const shop = { ...base, rebuildsUsed: 3, draftedThisGate: [] };
+		expect(stepped(shop, { draftedThisGate: ["js"] }, DRAFT)).toContain(
+			"install-after-three-rebuilds"
+		);
+	});
+
+	it("counts no install after two rebuilds", () => {
+		const shop = { ...base, rebuildsUsed: 2, draftedThisGate: [] };
+		expect(stepped(shop, { draftedThisGate: ["js"] }, DRAFT)).not.toContain(
+			"install-after-three-rebuilds"
+		);
+	});
+
+	it("counts landing on exactly 418 KB", () => {
+		expect(stepped({ ...base, storage: 400 }, { storage: 418 })).toContain(
+			"storage-418"
+		);
+	});
+
+	it("counts no teapot at 417 KB, nor again while sitting on 418", () => {
+		expect(stepped({ ...base, storage: 400 }, { storage: 417 })).not.toContain(
+			"storage-418"
+		);
+		expect(
+			stepped({ ...base, storage: 418 }, { streak: 1, storage: 418 })
+		).not.toContain("storage-418");
+	});
+
+	const REFUSE: RunAction = { type: "refuse-gate" };
+
+	it("counts refusing the peel of a SHAKY gate", () => {
+		const held = {
+			...base,
+			lastClose: { gate: 0, band: "shaky", cleared: false },
+		} satisfies RunState;
+		expect(stepped(held, { status: "dead" }, REFUSE)).toContain(
+			"refused-shaky-peel"
+		);
+	});
+
+	it("counts no WONTFIX for refusing a gate held at DANGER", () => {
+		const held = {
+			...base,
+			lastClose: { gate: 0, band: "danger", cleared: false },
+		} satisfies RunState;
+		expect(stepped(held, { status: "dead" }, REFUSE)).not.toContain(
+			"refused-shaky-peel"
+		);
 	});
 });

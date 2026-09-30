@@ -1,26 +1,19 @@
 import { AnswerDiff, type AnswerDiffProps } from "./AnswerDiff.ui";
 import { Author, type AuthorProps } from "./Author.ui";
-import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
+import { Header, type HeaderProps } from "./Header.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
-import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 import type { VerdictOutcome } from "./Verdict.ui";
-import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
-const HEADER = "flex w-full flex-col gap-4";
-const TITLE_ROW = "flex w-full items-start gap-4";
-const NAMING = "flex min-w-0 flex-col gap-1";
-const TALLY = "ml-auto flex shrink-0 flex-wrap items-center gap-2";
 const CONTROL_ROW = "flex w-full flex-wrap items-center gap-3";
 const EXPAND = "ml-auto shrink-0";
 const ROWS = "flex w-full flex-col gap-3";
 const PASSED = "opacity-70";
 
-const SWATCH_SIZE = "hero";
 const EXPAND_SIZE = "md";
 
 export type ReviewRow = {
@@ -38,17 +31,10 @@ export type ReviewRow = {
 	author?: AuthorProps;
 };
 
-export type ReviewHeader = {
-	swatch: GateSwatch;
-	title: string;
-	subtitle: string;
-	badges: readonly FoldBadge[];
-};
-
 export type ReviewExpand = { label: string; onPress?: () => void };
 
 export type ReviewScreenProps = {
-	header: ReviewHeader;
+	header: HeaderProps;
 	hint: string;
 	expand: ReviewExpand;
 	rows: readonly ReviewRow[];
@@ -59,29 +45,6 @@ export type ReviewScreenProps = {
 
 const opensOnArrival = (row: ReviewRow) =>
 	row.open ?? row.verdict !== "correct";
-
-const ReviewHeading = ({ swatch, title, subtitle, badges }: ReviewHeader) => (
-	<header className={HEADER}>
-		<div className={TITLE_ROW}>
-			<Swatch state="discovered" swatch={swatch} size={SWATCH_SIZE} />
-			<span className={NAMING}>
-				<Typography variant="headline" as="h1">
-					{title}
-				</Typography>
-				<Typography variant="hint" as="span">
-					{subtitle}
-				</Typography>
-			</span>
-			<span className={TALLY}>
-				{badges.map((badge, index) => (
-					<Badge key={index} color={badge.color}>
-						{badge.label}
-					</Badge>
-				))}
-			</span>
-		</div>
-	</header>
-);
 
 const Row = ({ row }: { row: ReviewRow }) => {
 	const open = opensOnArrival(row);
@@ -127,7 +90,7 @@ export const ReviewScreen = ({
 	ground = "bare",
 }: ReviewScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
-		<ReviewHeading {...header} />
+		<Header {...header} pinned />
 
 		<div className={CONTROL_ROW}>
 			<Typography variant="hint" as="span">

@@ -1,7 +1,8 @@
 import { clsx } from "clsx";
 
-import { Action, type ActionMark } from "./Action.ui";
+import { Action, type ActionMark, type ActionTone } from "./Action.ui";
 import { Badge } from "./Badge.ui";
+import { Balance, type BalanceProps } from "./Balance.ui";
 import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import type { IconName } from "./Icon.ui";
@@ -12,7 +13,8 @@ import { Typography } from "./Typography.ui";
 const FOOTER = "flex w-full flex-col gap-3";
 const PRESS_BLOCK = "flex w-full flex-col gap-3";
 const PRESS_BLOCK_INLINE = "sm:flex-row";
-const PRESS_SEAT = "flex w-full";
+const PRESS_SEAT = "flex w-full items-center gap-4";
+const PHONE_FUNDS = "flex shrink-0 md:hidden";
 const PRESS_BESIDE_ASIDE = "sm:min-w-0 sm:flex-1";
 const FOOTER_RULE = "border-t border-theme-faint pt-4";
 const STAKE_ROW = "flex w-full flex-wrap items-center justify-end gap-4";
@@ -45,6 +47,7 @@ export type FooterAction = {
 	icon?: IconName;
 	iconAt?: IconPlacement;
 	mark?: ActionMark;
+	tone?: ActionTone;
 };
 
 export type ScreenFooterProps = {
@@ -54,6 +57,7 @@ export type ScreenFooterProps = {
 	refusal?: string;
 	note?: string;
 	rule?: boolean;
+	phoneFunds?: BalanceProps;
 };
 
 type FooterLines = { press?: string; above?: string };
@@ -96,6 +100,7 @@ export const ScreenFooter = ({
 	refusal,
 	note,
 	rule = true,
+	phoneFunds,
 }: ScreenFooterProps) => {
 	const lines = footerLinesOf(refusal, note, action.onPress !== undefined);
 	const alongside =
@@ -135,12 +140,18 @@ export const ScreenFooter = ({
 				)}
 
 				<div className={clsx(PRESS_SEAT, alongside && PRESS_BESIDE_ASIDE)}>
+					{phoneFunds === undefined ? null : (
+						<span className={PHONE_FUNDS}>
+							<Balance {...phoneFunds} layout="stacked" />
+						</span>
+					)}
 					<Action
 						label={action.label}
 						note={lines.press}
 						swatch={action.swatch}
 						icon={action.icon}
 						mark={action.mark}
+						tone={action.tone}
 						onPress={action.onPress}
 					/>
 				</div>

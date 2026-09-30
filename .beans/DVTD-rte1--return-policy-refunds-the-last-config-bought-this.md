@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-25T11:00:11Z
-updated_at: 2026-09-25T18:06:10Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-r2k9
 ---
 
@@ -30,3 +30,5 @@ parent: DVTD-r2k9
 2026-09-25 (ADR-116): **unlock: Sell 5 drafted configs** — the `configs-sold` metric already ticks on every sell, target 5; redacted until then with that line. Marciano's shop mock names the row **Return policy · sell a drafted config back at full price · 16 KB**.
 
 2026-09-25, later (DVTD-lm8p): roster row and counter built: `returnPolicy`, caption `Sell 5 configs`, sold in the shop from the first shop, listed locked; earned reads *not for sale yet* until this bean adds the press. Marciano's table reads "undo the most recent install before leaving; full refund minus a small service fee": the fee is the service's own price (16 KB in the mock), the refund is the full draft price.
+
+2026-09-29 (ADR-153): when the press ships, give the roster row a `carryBytes` price; `CarriedServiceId` then forces the Dex's press-price table, and the new run panel and the shop's uncarried row follow from `isCarriedService`. The fee stays run KB in the shop.

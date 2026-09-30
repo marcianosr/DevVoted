@@ -430,3 +430,65 @@ describe("a slot press", () => {
 		);
 	});
 });
+
+describe("a press that reports a pointer", () => {
+	it("reports a hover and then a leave, so a price can name what it would cost", async () => {
+		const onHover = vi.fn();
+		const onLeave = vi.fn();
+		render(
+			<Button
+				label="Install Cache"
+				onPress={vi.fn()}
+				onHover={onHover}
+				onLeave={onLeave}
+			/>
+		);
+
+		const press = screen.getByRole("button");
+		await userEvent.hover(press);
+		expect(onHover).toHaveBeenCalledTimes(1);
+
+		await userEvent.unhover(press);
+		expect(onLeave).toHaveBeenCalledTimes(1);
+	});
+
+	it("reports a focus and a blur too, since a keyboard hovers nothing", async () => {
+		const onHover = vi.fn();
+		const onLeave = vi.fn();
+		render(
+			<>
+				<Button
+					label="Install Cache"
+					onPress={vi.fn()}
+					onHover={onHover}
+					onLeave={onLeave}
+				/>
+				<Button label="Uninstall Cache" onPress={vi.fn()} />
+			</>
+		);
+
+		await userEvent.tab();
+		expect(onHover).toHaveBeenCalledTimes(1);
+
+		await userEvent.tab();
+		expect(onLeave).toHaveBeenCalledTimes(1);
+	});
+
+	it("reports nothing while it is refused, which has no cost to name", async () => {
+		const onHover = vi.fn();
+		render(<Button label="Install Cache" disabled onHover={onHover} />);
+
+		await userEvent.hover(screen.getByRole("button"));
+
+		expect(onHover).not.toHaveBeenCalled();
+	});
+
+	it("reports a hover on an anchor as well as a press", async () => {
+		const onHover = vi.fn();
+		render(<Button label="To prep" href="/run/prep" onHover={onHover} />);
+
+		await userEvent.hover(screen.getByRole("link"));
+
+		expect(onHover).toHaveBeenCalledTimes(1);
+	});
+});

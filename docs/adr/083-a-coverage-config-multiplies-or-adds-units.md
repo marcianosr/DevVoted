@@ -51,7 +51,8 @@ through printed `+0.1 KB`: a coverage bonus labelled as storage.
 5. **The numbers do not move.** `coverageAdd` stays 0.1 and `cacheHitStep` stays
    0.25. A multiplier of x1.1 applied to a one unit base is the same thing as
    adding 0.1 units, so a correct single pays exactly what it paid before. The
-   roster is not edited.
+   roster is not edited. ADR-158 scales the add by version; the v1 figure still
+   does not move.
 
 6. **Units are halved when minified, never floored.** `minifiedAmount` floors,
    because it was written for KB and KB stays whole. Coverage units are

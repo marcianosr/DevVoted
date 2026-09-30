@@ -5,9 +5,10 @@ const FOCUS =
 
 const ITEM = `inline-flex h-7 cursor-pointer items-center gap-2 px-2 text-xs font-bold tabular-nums whitespace-nowrap transition-colors ${FOCUS}`;
 const COUNTED_ITEM = "p-0.5 pl-2.5";
+const MARKED_ITEM = "p-0.5 pr-2.5";
 const IDLE = "text-theme-muted hover:text-theme-soft";
-const CHECKED = "bg-theme text-theme-faint";
-const COUNT = "badge-theme flex h-full items-center rounded px-1.5";
+const CHECKED = "segment-theme";
+const SLOT = "badge-theme flex h-full items-center rounded px-1.5";
 
 const JOINED =
 	"inline-flex w-fit overflow-hidden rounded-md ring-1 ring-inset ring-theme-faint";
@@ -22,6 +23,7 @@ export type SegmentedLook = "joined" | "loose";
 export type SegmentedItem<Value extends string> = {
 	value: Value;
 	label: string;
+	mark?: string;
 	count?: number;
 };
 
@@ -33,8 +35,15 @@ export type SegmentedProps<Value extends string> = {
 	look?: SegmentedLook;
 };
 
-const nameOf = ({ label, count }: SegmentedItem<string>) =>
-	count === undefined ? undefined : `${label}${SEPARATOR}${count}`;
+const spokenPartsOf = ({ mark, label, count }: SegmentedItem<string>) =>
+	[mark, label, count?.toString()].filter(
+		(part): part is string => part !== undefined
+	);
+
+const nameOf = (item: SegmentedItem<string>) => {
+	const parts = spokenPartsOf(item);
+	return parts.length < 2 ? undefined : parts.join(SEPARATOR);
+};
 
 export const Segmented = <Value extends string>({
 	label,
@@ -59,13 +68,19 @@ export const Segmented = <Value extends string>({
 				className={clsx(
 					ITEM,
 					item.count !== undefined && COUNTED_ITEM,
+					item.mark !== undefined && MARKED_ITEM,
 					look === "joined" ? JOINED_ITEM : LOOSE_ITEM,
 					item.value === value ? CHECKED : IDLE
 				)}
 			>
+				{item.mark === undefined ? null : (
+					<span aria-hidden className={SLOT}>
+						{item.mark}
+					</span>
+				)}
 				{item.label}
 				{item.count === undefined ? null : (
-					<span aria-hidden className={COUNT}>
+					<span aria-hidden className={SLOT}>
 						{item.count}
 					</span>
 				)}

@@ -10,23 +10,19 @@ import {
 	TitleShelf,
 } from "~/modules/account/profile/presentation/TitleShelf.ui";
 
-const CSS_CARRIER = "title-answered-css";
 const TESTER = "title-legacy-tester";
 
 const MOCK_ACCOUNT: TitleShelfInput = {
-	ownedTitleIds: ["title-rank-poll-newbie", CSS_CARRIER, TESTER],
-	equippedTitleIds: [TESTER],
+	ownedTitleIds: ["title-rank-poll-newbie", "title-answered-css", TESTER],
 	counts: [
 		{ metric: "polls-answered", count: 34 },
-		{ metric: "category-answered:css", count: 10 },
-		{ metric: "category-correct:css", count: 14 },
-		{ metric: "gates-reordered", count: 20 },
+		{ metric: "category-seen:css", count: 50 },
+		{ metric: "category-mastered:css", count: 28 },
 	],
 	filter: "all",
 	moreCategories: false,
 };
 
-const onToggle = vi.fn();
 const onFilter = vi.fn();
 const onMoreCategories = vi.fn();
 
@@ -34,8 +30,6 @@ const renderShelf = (input: Partial<TitleShelfInput> = {}) =>
 	render(
 		<TitleShelf
 			{...titleShelfFor({ ...MOCK_ACCOUNT, ...input })}
-			isMutating={false}
-			onToggle={onToggle}
 			onFilter={onFilter}
 			onMoreCategories={onMoreCategories}
 		/>
@@ -46,44 +40,13 @@ describe("TitleShelf", () => {
 		vi.clearAllMocks();
 	});
 
-	it("offers every free worn slot as a dashed place to fill", () => {
+	it("states an earned title without offering to wear it, because wearing lives in appearance", () => {
 		renderShelf();
 
-		const empty = screen.getAllByText(COPY.emptySlot);
-
-		expect(empty).toHaveLength(2);
-		expect(empty[0].closest("span")).toHaveClass("border-dashed");
-	});
-
-	it("takes a worn title off from its slot", () => {
-		renderShelf();
-
-		fireEvent.click(
-			screen.getByRole("button", { name: COPY.takeOff("Legacy Tester") })
-		);
-
-		expect(onToggle).toHaveBeenCalledWith(TESTER, true);
-	});
-
-	it("wears an earned category title from its cell", () => {
-		renderShelf();
-
-		fireEvent.click(
-			screen.getByRole("button", { name: COPY.wearName("CSS Carrier") })
-		);
-
-		expect(onToggle).toHaveBeenCalledWith(CSS_CARRIER, false);
-	});
-
-	it("refuses a wear press once every slot is taken", () => {
-		renderShelf({
-			ownedTitleIds: [...MOCK_ACCOUNT.ownedTitleIds, "title-bikeshedder"],
-			equippedTitleIds: [TESTER, "title-rank-poll-newbie", "title-bikeshedder"],
-		});
-
+		expect(screen.getByText("CSS Carrier")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: COPY.wearName("CSS Carrier") })
-		).toBeDisabled();
+			screen.queryByRole("button", { name: /wear/i })
+		).not.toBeInTheDocument();
 	});
 
 	it("names the next poll-count threshold and how far off it is", () => {
@@ -96,8 +59,8 @@ describe("TitleShelf", () => {
 	it("hides an unearned special title's name but states how to earn it", () => {
 		renderShelf();
 
-		expect(screen.queryByText("Bikeshedder")).not.toBeInTheDocument();
-		expect(screen.getByText("Reorder the gates 25 times")).toBeInTheDocument();
+		expect(screen.queryByText("It Compiles")).not.toBeInTheDocument();
+		expect(screen.getByText("Win a run")).toBeInTheDocument();
 	});
 
 	it("asks for the held-back categories", () => {
@@ -114,8 +77,10 @@ describe("TitleShelf", () => {
 		renderShelf({ filter: "closest" });
 
 		expect(screen.queryByText(COPY.sections.category)).not.toBeInTheDocument();
-		expect(screen.getByText("Reorder the gates 25 times")).toBeInTheDocument();
-		expect(screen.getByText(COPY.toGo(5))).toBeInTheDocument();
+		expect(
+			screen.getByText("50 distinct CSS polls answered correctly")
+		).toBeInTheDocument();
+		expect(screen.getByText(COPY.toGo(22))).toBeInTheDocument();
 	});
 
 	it("reports the chosen filter", () => {

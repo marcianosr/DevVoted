@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	ALL_FILTER,
 	DEX_TABS,
 	dexAuditsFor,
 	dexConfigsFor,
@@ -12,7 +13,10 @@ import {
 	isDexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { auditdex } from "~/modules/collection/dex/domain/auditdex.model";
-import { configdex } from "~/modules/collection/dex/domain/configdex.model";
+import {
+	configdex,
+	type UnlockFact,
+} from "~/modules/collection/dex/domain/configdex.model";
 import { controldex } from "~/modules/collection/dex/domain/controldex.model";
 import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
 import type { PolldexEntry } from "~/modules/collection/dex/domain/polldex.model";
@@ -20,7 +24,7 @@ import {
 	runHistory,
 	type RunHistoryRow,
 } from "~/modules/collection/dex/domain/runHistory.model";
-import type { DexConfigCard } from "~/ui/kanto-theme/DexConfigs.ui";
+import type { DexConfigRow } from "~/ui/kanto-theme/DexConfigs.ui";
 
 const poll = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
 	id: 1,
@@ -69,10 +73,40 @@ describe("DEX_TABS", () => {
 });
 
 describe("dexPollsFor", () => {
-	it("names the category rather than printing its code", () => {
-		const [row] = dexPollsFor([poll()]).rows;
+	const ROSTER = [
+		poll({ id: 1, pollNumber: 1, categoryCode: "css" }),
+		poll({ id: 2, pollNumber: 2, categoryCode: "ts" }),
+		poll({
+			id: 3,
+			pollNumber: 3,
+			categoryCode: "css",
+			seen: false,
+			question: null,
+		}),
+	];
 
-		expect(row.category).toBe("TypeScript");
+	it("lists every poll it was given, holding none back", () => {
+		expect(dexPollsFor(ROSTER).rows).toHaveLength(3);
+	});
+
+	it("reads in dex number order rather than the order it was handed", () => {
+		const shuffled = dexPollsFor([ROSTER[2], ROSTER[0], ROSTER[1]]);
+
+		expect(shuffled.rows.map((row) => row.number)).toEqual([
+			"#001",
+			"#002",
+			"#003",
+		]);
+	});
+
+	it("pads a dex number so the column reads as a roster", () => {
+		expect(dexPollsFor([poll({ pollNumber: 7 })]).rows[0].number).toBe("#007");
+	});
+
+	it("falls back to the poll's own id when it has no roster number", () => {
+		expect(
+			dexPollsFor([poll({ id: 42, pollNumber: null })]).rows[0].number
+		).toBe("#042");
 	});
 
 	it("carries the raw correct count, not a rounded percentage", () => {
@@ -83,13 +117,86 @@ describe("dexPollsFor", () => {
 		expect(row.answered).toBe(4);
 	});
 
-	it("locks a poll never dealt, giving up its category as well", () => {
-		const [row] = dexPollsFor([
-			poll({ seen: false, question: null, categoryCode: "react" }),
-		]).rows;
+	it("withholds the question of a poll never dealt to you", () => {
+		const [row] = dexPollsFor([poll({ seen: false, question: null })]).rows;
 
 		expect(row.locked).toBe(true);
-		expect(row.category).toBeUndefined();
+		expect(row.question).toBeUndefined();
+	});
+
+	it("offers one chip a present category, plus one that shows everything", () => {
+		const { filters } = dexPollsFor(ROSTER);
+
+		expect(filters.map((item) => item.value)).toEqual([
+			ALL_FILTER,
+			"css",
+			"ts",
+		]);
+		expect(filters[1].mark).toBe("CSS");
+	});
+
+	it("counts a chip's own seen against that category alone", () => {
+		const { filters } = dexPollsFor(ROSTER);
+
+		expect(filters[1].label).toBe("1 of 2");
+		expect(filters[2].label).toBe("1 of 1");
+	});
+
+	it("leaves out a category holding no polls at all", () => {
+		expect(dexPollsFor([poll({ categoryCode: "ts" })]).filters).toHaveLength(2);
+	});
+
+	it("shows only the chosen category once a chip is picked", () => {
+		const css = dexPollsFor(ROSTER, "css");
+
+		expect(css.rows.map((row) => row.id)).toEqual(["1", "3"]);
+	});
+
+	it("shows everything again for a filter value that names no category", () => {
+		expect(dexPollsFor(ROSTER, ALL_FILTER).rows).toHaveLength(3);
+	});
+
+	it("reads the first row when nothing has been picked", () => {
+		const props = dexPollsFor(ROSTER);
+
+		expect(props.selectedId).toBe("1");
+		expect(props.detail?.number).toBe("#001");
+	});
+
+	it("falls back to the first row when the pick is not in the chosen category", () => {
+		const css = dexPollsFor(ROSTER, "css", "2");
+
+		expect(css.selectedId).toBe("1");
+	});
+
+	it("names the category of the poll the panel is reading", () => {
+		expect(dexPollsFor(ROSTER, ALL_FILTER, "2").detail?.category).toBe(
+			"TypeScript"
+		);
+	});
+
+	it("keeps a poll you have not been dealt in its real category, so a target has a place", () => {
+		const detail = dexPollsFor(ROSTER, ALL_FILTER, "3").detail;
+
+		expect(detail?.locked).toBe(true);
+		expect(detail?.category).toBe("CSS");
+		expect(detail?.question).toBeUndefined();
+	});
+
+	it("carries the whole record of a poll the panel is reading", () => {
+		const detail = dexPollsFor([poll()], ALL_FILTER).detail;
+
+		expect(detail?.timesSeen).toBe(4);
+		expect(detail?.answered).toBe(4);
+		expect(detail?.correct).toBe(3);
+		expect(detail?.accuracy).toBe(75);
+	});
+
+	it("has nothing to read when the roster is empty", () => {
+		const empty = dexPollsFor([]);
+
+		expect(empty.selectedId).toBeNull();
+		expect(empty.detail).toBeNull();
 	});
 
 	it("counts seen against the whole roster", () => {
@@ -107,146 +214,211 @@ describe("dexPollsFor", () => {
 });
 
 describe("dexConfigsFor", () => {
-	const props = dexConfigsFor(configdex([], []));
-	const cards = props.groups.flatMap((group) => group.chips);
-	const isGranted = (card: DexConfigCard) => card.locked !== true;
-	const cardNamed = (name: string) => cards.find((card) => card.name === name);
+	const entries = configdex([], []);
+	const props = dexConfigsFor(entries);
+	const isGranted = (row: DexConfigRow) => row.locked !== true;
 
-	it("groups the roster by weight, heaviest first, matching the 'by weight' axis", () => {
-		const weights = props.groups.map((group) => group.weight);
+	const idNamed = (name: string, held: readonly UnlockFact[] = []) => {
+		const row = dexConfigsFor(configdex(held, [])).rows.find(
+			(candidate) => candidate.name === name
+		);
+		if (row === undefined) throw new Error(`no row named ${name}`);
+		return row.id;
+	};
 
-		expect(weights).toEqual([...weights].sort((a, b) => b - a));
-		expect(new Set(weights).size).toBe(weights.length);
+	const detailNamed = (name: string, held: readonly UnlockFact[] = []) => {
+		const detail = dexConfigsFor(
+			configdex(held, []),
+			ALL_FILTER,
+			idNamed(name, held)
+		).detail;
+		if (detail === null) throw new Error(`no detail for ${name}`);
+		return detail;
+	};
+
+	const cardNamed = (name: string, held: readonly UnlockFact[] = []) =>
+		detailNamed(name, held).card;
+
+	const TELEMETRY = [
+		{ configId: "telemetry", viaMetric: "community-peeks" },
+	] as const;
+
+	it("lists the whole roster, holding nothing back", () => {
+		expect(props.rows).toHaveLength(entries.length);
 	});
 
-	it("seats every card under its own weight", () => {
-		expect(
-			props.groups.every((group) =>
-				group.chips.every((card) => card.slots === group.weight)
-			)
-		).toBe(true);
-	});
+	it("reads lightest first, so the list climbs the weight axis", () => {
+		const weights = props.rows.map((row) => row.slots);
 
-	it("heads a group with its weight named and how much of it you hold", () => {
-		const light = props.groups.find((group) => group.weight === 1);
-		const held = light?.chips.filter(isGranted).length;
-
-		expect(light?.label).toBe("weight 1");
-		expect(light?.held).toBe(`${held} of ${light?.chips.length}`);
+		expect(weights).toEqual([...weights].sort((a, b) => a - b));
 	});
 
 	it("reads what you hold before what you owe inside a weight", () => {
-		const mixed = props.groups.find(
-			(group) =>
-				group.chips.some(isGranted) &&
-				group.chips.some((card) => !isGranted(card))
-		);
-		const granted = mixed?.chips.map(isGranted) ?? [];
+		const light = props.rows.filter((row) => row.slots === 1).map(isGranted);
 
-		expect(granted.indexOf(false)).toBe(granted.lastIndexOf(true) + 1);
+		expect(light.indexOf(false)).toBe(light.lastIndexOf(true) + 1);
+	});
+
+	it("offers one chip a weight, plus one that holds everything back from nothing", () => {
+		const values = props.filters.map((item) => item.value);
+
+		expect(values[0]).toBe(ALL_FILTER);
+		expect(values.slice(1)).toEqual(
+			[...new Set(props.rows.map((row) => row.slots))]
+				.sort((a, b) => a - b)
+				.map(String)
+		);
+	});
+
+	it("counts a chip's own held against its own total, not the roster's", () => {
+		const light = props.rows.filter((row) => row.slots === 1);
+		const chip = props.filters.find((item) => item.value === "1");
+
+		expect(chip?.mark).toBe("1");
+		expect(chip?.label).toBe(
+			`${light.filter(isGranted).length} of ${light.length}`
+		);
+	});
+
+	it("shows only the chosen weight once a chip is picked", () => {
+		const light = dexConfigsFor(entries, "1");
+
+		expect(light.rows.every((row) => row.slots === 1)).toBe(true);
+		expect(light.rows.length).toBeLessThan(props.rows.length);
+	});
+
+	it("keeps counting the whole roster in the header while a weight is chosen", () => {
+		expect(dexConfigsFor(entries, "1").count).toBe(props.count);
+	});
+
+	it("reads the first row when nothing has been picked", () => {
+		expect(props.selectedId).toBe(props.rows[0].id);
+	});
+
+	it("falls back to the first row when the pick is not in the chosen weight", () => {
+		const light = dexConfigsFor(entries, "1", idNamed("Code Coverage"));
+
+		expect(light.selectedId).toBe(light.rows[0].id);
+	});
+
+	it("reads the picked row when it survives the filter", () => {
+		const picked = dexConfigsFor(entries, ALL_FILTER, idNamed("Linter"));
+
+		expect(picked.selectedId).toBe(idNamed("Linter"));
+	});
+
+	it("has nothing to read when the chosen weight holds nothing", () => {
+		const empty = dexConfigsFor([], ALL_FILTER);
+
+		expect(empty.rows).toEqual([]);
+		expect(empty.selectedId).toBeNull();
+		expect(empty.detail).toBeNull();
+	});
+
+	it("heads the panel with the config's own name", () => {
+		expect(detailNamed(".js").label).toBe(".js");
+	});
+
+	it("withholds the name of a config you have not earned, from the head as well", () => {
+		const locked = props.rows.find((row) => row.locked === true);
+		const detail = dexConfigsFor(entries, ALL_FILTER, locked?.id).detail;
+
+		expect(detail?.label).toBe("???");
+		expect(detail?.card.name).toBeUndefined();
 	});
 
 	it("names the ceiling of .js's ladder, which is a fact about the config", () => {
-		expect(cardNamed(".js")?.version).toBe(5);
+		expect(cardNamed(".js").version).toBe(5);
 	});
 
 	it("states a short ladder's own ceiling rather than the roster's", () => {
-		const earned = dexConfigsFor(
-			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
-		);
-		const telemetry = earned.groups
-			.flatMap((group) => group.chips)
-			.find((card) => card.name === "Telemetry");
+		expect(cardNamed("Telemetry", TELEMETRY).version).toBe(2);
+	});
 
-		expect(telemetry?.version).toBe(2);
+	it("puts the ladder's ceiling on the row too, so the list reads without the panel", () => {
+		const row = props.rows.find((candidate) => candidate.name === ".js");
+
+		expect(row?.version).toBe(5);
+		expect(row?.figure).toBe("×1.25");
 	});
 
 	it("states .js's effect as a sentence and its figure as a badge", () => {
 		const js = cardNamed(".js");
 
-		expect(js?.info?.description).toBe(
-			"JavaScript polls reward ×1.25 coverage"
-		);
-		expect(js?.badges).toEqual([{ label: "×1.25", color: "viridian" }]);
+		expect(js.info?.description).toBe("JavaScript polls reward ×1.25 coverage");
+		expect(js.badges).toEqual([{ label: "×1.25", color: "viridian" }]);
 	});
 
 	it("names the rung an install gives you, which the ceiling tag does not", () => {
-		expect(cardNamed(".js")?.info?.note).toBe("Starter config · v1 of 5");
+		expect(cardNamed(".js").info?.note).toBe("Starter config · v1 of 5");
 	});
 
 	it("marks a starter apart from a config that had to be earned", () => {
-		expect(cardNamed(".js")?.info?.note).toContain("Starter config");
-
-		const earned = dexConfigsFor(
-			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
-		);
-		const telemetry = earned.groups
-			.flatMap((group) => group.chips)
-			.find((card) => card.name === "Telemetry");
-
-		expect(telemetry?.info?.note).toBe(
+		expect(cardNamed(".js").info?.note).toContain("Starter config");
+		expect(cardNamed("Telemetry", TELEMETRY).info?.note).toBe(
 			"Earned: peeked the community split 5 times · v1 of 2"
 		);
 	});
 
-	it("keeps how a config was earned out of the head, where a shut card reads", () => {
-		const earned = dexConfigsFor(
-			configdex([{ configId: "telemetry", viaMetric: "community-peeks" }], [])
-		);
-
-		expect(
-			earned.groups
-				.flatMap((group) => group.chips)
-				.every((card) => card.detail === undefined)
-		).toBe(true);
+	it("keeps how a config was earned out of the head, where the panel reads", () => {
+		expect(cardNamed("Telemetry", TELEMETRY).detail).toBeUndefined();
 	});
 
 	it("leaves a config with no ladder unmarked rather than giving it one rung", () => {
-		const flat = cardNamed("Code Coverage");
+		const flat = cardNamed("IndexedDB");
 
-		expect(flat?.version).toBeUndefined();
-		expect(flat?.info?.note).toBe("Starter config");
+		expect(flat.version).toBeUndefined();
+		expect(flat.info?.note).toBe("Starter config");
 	});
 
 	it("gives a config whose effect has no figure no badge at all", () => {
-		expect(cardNamed("ESLint")?.badges).toEqual([]);
+		expect(cardNamed("Linter").badges).toEqual([]);
 	});
 
-	it("never carries a locked config's name or effect, only its weight and unlock paths", () => {
-		const locked = cards.filter((card) => card.locked === true);
+	it("carries a locked config's weight and both unlock paths, and nothing else", () => {
+		const locked = props.rows.filter((row) => row.locked === true);
+		const cards = locked.map(
+			(row) => dexConfigsFor(entries, ALL_FILTER, row.id).detail?.card
+		);
 
 		expect(locked.length).toBeGreaterThan(0);
 		expect(
-			locked.every((card) => card.name === undefined && card.info === undefined)
+			cards.every(
+				(card) => card?.name === undefined && card?.info === undefined
+			)
 		).toBe(true);
 		expect(
-			locked.every(
-				(card) => card.slots !== undefined && card.unlock?.length === 2
+			cards.every(
+				(card) => card?.slots !== undefined && card?.unlock?.length === 2
 			)
 		).toBe(true);
 	});
 
 	it("keeps a counted path's figures apart, so a bar can be drawn from it", () => {
-		const locked = cards.find((card) => card.locked === true);
+		const locked = props.rows.find((row) => row.locked === true);
+		const card = dexConfigsFor(entries, ALL_FILTER, locked?.id).detail?.card;
 
-		expect(locked?.unlock?.[1].progress).toEqual({
+		expect(card?.unlock?.[1].progress).toEqual({
 			count: expect.any(Number),
 			target: expect.any(Number),
 		});
 	});
 
 	it("counts nothing on a one-shot objective, which has no progress", () => {
-		const oneShot = cards.find(
-			(card) => card.unlock?.[0].text === "Clear a gate with every slot filled"
-		);
+		const oneShot = props.rows
+			.map((row) => dexConfigsFor(entries, ALL_FILTER, row.id).detail?.card)
+			.find(
+				(card) =>
+					card?.unlock?.[0].text === "Clear a gate with every slot filled"
+			);
 
 		expect(oneShot?.unlock?.[0].progress).toBeNull();
 	});
 
 	it("counts the deck you hold against the whole roster", () => {
-		const granted = cards.filter(isGranted).length;
+		const granted = props.rows.filter(isGranted).length;
 
-		expect(props.count).toBe(`${granted} of ${cards.length}`);
+		expect(props.count).toBe(`${granted} of ${props.rows.length}`);
 	});
 
 	it("states the run-scoped ladder rule the collection cannot show", () => {
@@ -270,7 +442,7 @@ describe("dexControlsFor", () => {
 
 	const priceOf = (unlockedServiceIds: readonly string[], id: string) => {
 		const row = rowFor(unlockedServiceIds, id);
-		return row.locked === true ? undefined : row.price;
+		return row.locked === true || row.carried === false ? undefined : row.price;
 	};
 
 	const unlockOf = (unlockedServiceIds: readonly string[], id: string) => {
@@ -280,13 +452,14 @@ describe("dexControlsFor", () => {
 
 	it("labels the tab services and keeps its id", () => {
 		expect(DEX_TABS.find((tab) => tab.id === "controls")?.label).toBe(
-			"services"
+			"Services"
 		);
 	});
 
-	it("lists every service in one section, registry first", () => {
+	it("lists every service in one section, in roster order", () => {
 		expect(propsFor([]).rows.map((row) => row.id)).toEqual([
 			"rebuild",
+			"skipShop",
 			"extend",
 			"hotReload",
 			"returnPolicy",
@@ -295,29 +468,61 @@ describe("dexControlsFor", () => {
 			"bootCache",
 			"dockerImage",
 		]);
-		expect(propsFor([]).meta).toBe("registry, then run");
+		expect(propsFor([]).meta).toBe("earned once · carried per run");
 	});
 
 	it("counts the services this account has earned against the whole roster", () => {
-		expect(propsFor([]).count).toBe("1 of 8");
-		expect(propsFor(["extend", "pin"]).count).toBe("3 of 8");
+		expect(propsFor([]).count).toBe("2 of 9");
+		expect(propsFor(["extend", "pin"]).count).toBe("4 of 9");
 	});
 
-	it("states where a service is bought and how long the purchase lasts", () => {
-		expect(rowFor([], "rebuild").detail).toBe("Registry · this visit");
-		expect(rowFor([], "extend").detail).toBe("Registry · rest of the run");
-		expect(rowFor([], "pin").detail).toBe("Run · carries into your next run");
-		expect(rowFor([], "bootCache").detail).toBe("Next run · consumed on start");
+	it("states where a service is pressed and how long the purchase lasts", () => {
+		expect(rowFor([], "rebuild").detail).toBe("Every shop · this visit");
+		expect(rowFor([], "extend").detail).toBe(
+			"Shop from Cascade · rest of the run"
+		);
+		expect(rowFor([], "pin").detail).toBe(
+			"Shop, gates 4–10 · carries into your next run"
+		);
+		expect(rowFor([], "bootCache").detail).toBe(
+			"New run · banked at the start"
+		);
 	});
 
-	it("prices an earned service by the ladder the shop actually charges", () => {
+	it("prices a service pressed in the shop by the ladder the shop actually charges", () => {
 		expect(priceOf([], "rebuild")).toBe("from 4 KB, doubling");
-		expect(priceOf(["extend"], "extend")).toBe("48 KB, then 96 KB");
+	});
+
+	it("prices a carried service by what the new run screen charges to carry it (ADR-153)", () => {
+		expect(priceOf(["extend"], "extend")).toBe("new run · 64 KB");
+		expect(priceOf(["pin"], "pin")).toBe("new run · 128 KB");
+		expect(priceOf(["bootCache"], "bootCache")).toBe(
+			"new run · 128 KB to 512 KB"
+		);
+	});
+
+	it("states a carried service's shop ladder in its panel, since the row names only the carry", () => {
+		const detail = dexControlsFor(controldex(["extend"]), "extend").detail;
+
+		expect(detail?.availability).toBe(
+			"Carried in at new run for 64 KB of archive. On sale in the shop once you have cleared gate 3. Pressed in the shop for 48 KB, then 96 KB of run storage."
+		);
+	});
+
+	it("states Boot Cache's rungs in its panel", () => {
+		const detail = dexControlsFor(
+			controldex(["bootCache"]),
+			"bootCache"
+		).detail;
+
+		expect(detail?.availability).toBe(
+			"Carried in at new run: 128 KB of archive banks 64 KB, 256 KB of archive banks 128 KB, 512 KB of archive banks 256 KB."
+		);
 	});
 
 	it("says an earned service nobody sells yet is not for sale, rather than pricing it", () => {
 		expect(priceOf(["hotReload"], "hotReload")).toBe("not for sale yet");
-		expect(priceOf(["bootCache"], "bootCache")).toBe("not for sale yet");
+		expect(priceOf(["dockerImage"], "dockerImage")).toBe("not for sale yet");
 	});
 
 	it("prices kill -9 as free, since the press costs nothing", () => {
@@ -335,7 +540,7 @@ describe("dexControlsFor", () => {
 
 	it("keeps one footer for the whole roster", () => {
 		expect(propsFor([]).note).toContain("unlocked once");
-		expect(propsFor([]).note).toContain("bought in the shop today");
+		expect(propsFor([]).note).toContain("picked at new run");
 	});
 });
 
@@ -366,23 +571,49 @@ describe("dexAuditsFor", () => {
 
 describe("dexSwatchesFor", () => {
 	it("marks the next gate current and the rest undiscovered", () => {
-		const cards = dexSwatchesFor(gatedex([])).cards;
+		const rows = dexSwatchesFor(gatedex([])).rows;
 
-		expect(cards[0].swatch.state).toBe("current");
-		expect(cards[1].swatch.state).toBe("undiscovered");
+		expect(rows[0].swatch.state).toBe("current");
+		expect(rows[1].swatch.state).toBe("undiscovered");
 	});
 
 	it("marks a held swatch discovered and swept", () => {
-		const cards = dexSwatchesFor(gatedex(["swatch-pallet"])).cards;
+		const rows = dexSwatchesFor(gatedex(["swatch-pallet"])).rows;
 
-		expect(cards[0].swatch.state).toBe("discovered");
-		expect(cards[0].note).toBe("swept");
+		expect(rows[0].swatch.state).toBe("discovered");
+		expect(rows[0].note).toBe("swept");
 	});
 
 	it("names gates by their badge, the same name the run screens show", () => {
-		const cards = dexSwatchesFor(gatedex([])).cards;
+		const rows = dexSwatchesFor(gatedex([])).rows;
 
-		expect(cards[3].name).toBe("Thunder");
+		expect(rows[3].name).toBe("Thunder");
+	});
+
+	it("reads the first gate when nothing has been picked", () => {
+		const props = dexSwatchesFor(gatedex([]));
+
+		expect(props.selectedId).toBe("0");
+		expect(props.detail?.label).toBe("Pallet");
+	});
+
+	it("states how an unearned swatch is minted, which is its whole rule", () => {
+		const detail = dexSwatchesFor(gatedex([]), "7").detail;
+
+		expect(detail?.rule).toContain("Answer all five polls");
+	});
+
+	it("says a swept gate has already minted its swatch", () => {
+		const detail = dexSwatchesFor(gatedex(["swatch-pallet"]), "0").detail;
+
+		expect(detail?.rule).toContain("Minted");
+	});
+
+	it("has nothing to read when there is no gate roster at all", () => {
+		const empty = dexSwatchesFor([]);
+
+		expect(empty.selectedId).toBeNull();
+		expect(empty.detail).toBeNull();
 	});
 });
 
@@ -393,10 +624,24 @@ describe("dexRunsFor", () => {
 		expect(row.coverage).toBe("56%");
 	});
 
-	it("points each row at that run's own permalink in the archive", () => {
-		const [row] = dexRunsFor(runHistory([climb({ runId: 42 })])).rows;
+	it("keeps the permalink on the panel, where a row is now a press", () => {
+		const props = dexRunsFor(runHistory([climb({ runId: 42 })]));
 
-		expect(row.href).toBe("/runs/42");
+		expect(props.detail?.href).toBe("/runs/42");
+		expect(props.selectedId).toBe("42");
+	});
+
+	it("heads the panel with the day the run ended", () => {
+		const props = dexRunsFor(runHistory([climb()]));
+
+		expect(props.detail?.label).toBe(props.rows[0].date);
+	});
+
+	it("has nothing to read when nothing has been climbed", () => {
+		const empty = dexRunsFor([]);
+
+		expect(empty.selectedId).toBeNull();
+		expect(empty.detail).toBeNull();
 	});
 
 	it("names the gate that held the run", () => {

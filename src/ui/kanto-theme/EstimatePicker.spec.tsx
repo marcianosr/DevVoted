@@ -47,6 +47,24 @@ describe("EstimatePicker", () => {
 		);
 	});
 
+	it("tells the player to press a number while no bet is called", () => {
+		render(<EstimatePicker {...props} onPick={() => {}} />);
+
+		expect(screen.getByText("press a number to call it")).toBeInTheDocument();
+	});
+
+	it("drops the instruction once a number is called or the bet is locked", () => {
+		const { rerender } = render(
+			<EstimatePicker {...props} committed={3} onPick={() => {}} />
+		);
+
+		expect(screen.queryByText("press a number to call it")).toBeNull();
+
+		rerender(<EstimatePicker {...props} />);
+
+		expect(screen.queryByText("press a number to call it")).toBeNull();
+	});
+
 	it("offers no press at all once the bet is locked", () => {
 		render(<EstimatePicker {...props} committed={3} />);
 

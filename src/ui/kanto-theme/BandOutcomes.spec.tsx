@@ -1,222 +1,151 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 
-import {
-	BandOutcomes,
-	type BandOutcome,
-	type LeadLine,
-} from "./BandOutcomes.ui";
-import {
-	COVERAGE_BAND_COLOR,
-	COVERAGE_BAND_WORD,
-	type CoverageBandId,
-} from "./CoverageBar.ui";
+import { gateSwatchAt } from "~/test/swatchTrack.factory";
 
+import { BandOutcomes, type BandOutcomesProps } from "./BandOutcomes.ui";
+import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
+
+const LAVENDER_GATE = 4;
 const TITLE = "At stake";
-const LEAD_TEXT = "Clear at ";
-const LEAD: readonly LeadLine[] = [[LEAD_TEXT, { band: "ok" }, " or better."]];
 const NOTE =
 	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
 
-const OUTCOMES: readonly BandOutcome[] = [
-	{ band: "perfect", range: "100%", pays: "+1305 KB" },
-	{ band: "healthy", range: "75 – 99%", pays: "+870 KB" },
-	{ band: "ok", range: "60 – 74%", pays: "+522 KB" },
-	{ band: "shaky", range: "50 – 59%", pays: "−64 KB peel" },
-	{ band: "danger", range: "under 50%", pays: "the run ends" },
-];
+const props: BandOutcomesProps = {
+	title: TITLE,
+	meta: ["Lavender · gate ", { figure: "4" }],
+	objectives: {
+		objectives: [
+			{
+				statement: ["Finish at ", { band: "ok" }, " or better"],
+				earns: [
+					"earns ",
+					{ figure: "advance to Rainbow" },
+					{ figure: "+40 KB", band: "ok" },
+					" or more",
+				],
+			},
+			{
+				statement: ["Answer all ", { figure: "5" }, " right"],
+				earns: [
+					"earns ",
+					{ swatch: gateSwatchAt(LAVENDER_GATE), label: "Lavender swatch" },
+				],
+			},
+		],
+	},
+	scores: {
+		rows: [
+			{
+				swatch: gateSwatchAt(LAVENDER_GATE),
+				correct: 3,
+				polls: 5,
+				current: true,
+			},
+		],
+	},
+	ladder: {
+		held: 58,
+		lines: { floor: 48, ok: 56, healthy: 62 },
+		rungs: [
+			{ band: "danger", from: 0, to: 48, pays: "the run ends" },
+			{ band: "shaky", from: 48, to: 56, pays: "−64 KB peel" },
+			{ band: "ok", from: 56, to: 62, pays: "+40 KB" },
+			{ band: "healthy", from: 62, to: 100, pays: "+58 KB" },
+			{ band: "perfect", from: 100, to: 100, pays: "+96 KB" },
+		],
+	},
+	standing: [
+		{ figure: "+1", band: "healthy" },
+		" unit to ",
+		{ band: "healthy" },
+		" · ",
+		{ figure: "2" },
+		" polls left",
+	],
+	note: NOTE,
+};
 
-const draw = () => render(<BandOutcomes title={TITLE} outcomes={OUTCOMES} />);
+const follows = (before: Element, after: Element) =>
+	Boolean(
+		before.compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING
+	);
 
-const rowFor = (band: string) =>
-	screen.getByText(band).closest("div") as HTMLElement;
-
-const themeOf = (node: Element | null) =>
-	node?.getAttribute("data-screen-theme");
+const sectionOf = (container: HTMLElement) =>
+	container.querySelector("section") as HTMLElement;
 
 describe("BandOutcomes", () => {
-	it("names every band the gate can close in", () => {
-		draw();
+	it("heads itself with the gate it prices, the number badged", () => {
+		const { container } = render(<BandOutcomes {...props} />);
 
-		for (const band of ["PERFECT", "HEALTHY", "OK", "SHAKY", "DANGER"]) {
-			expect(screen.getByText(band)).toBeInTheDocument();
-		}
-	});
-
-	it("takes its words from the bar, so the two readouts cannot drift", () => {
-		draw();
-
-		for (const outcome of OUTCOMES) {
-			expect(
-				screen.getByText(COVERAGE_BAND_WORD[outcome.band])
-			).toBeInTheDocument();
-		}
-	});
-
-	it("states each band's range and what it pays, and nothing else", () => {
-		draw();
-
-		const row = rowFor("HEALTHY");
-
-		expect(within(row).getByText("75 – 99%")).toBeInTheDocument();
-		expect(within(row).getByText("+870 KB")).toBeInTheDocument();
-	});
-
-	it("heads three columns, the outcome prose having left the table", () => {
-		draw();
-
-		for (const heading of ["band", "coverage", "pays"]) {
-			expect(screen.getByText(heading)).toBeInTheDocument();
-		}
-		expect(screen.queryByText("outcome")).not.toBeInTheDocument();
-	});
-
-	it("bills the holding band a peel rather than paying it", () => {
-		draw();
-
-		expect(
-			within(rowFor("SHAKY")).getByText("−64 KB peel")
-		).toBeInTheDocument();
-	});
-
-	it("says the fatal band ends the run instead of quoting it a figure", () => {
-		draw();
-
-		expect(
-			within(rowFor("DANGER")).getByText("the run ends")
-		).toBeInTheDocument();
-	});
-
-	it("wears each band's own colour on the badge and the figure alike", () => {
-		draw();
-
-		expect(themeOf(screen.getByText("SHAKY"))).toBe(COVERAGE_BAND_COLOR.shaky);
-		expect(themeOf(screen.getByText("−64 KB peel"))).toBe(
-			COVERAGE_BAND_COLOR.shaky
-		);
-	});
-
-	it("reads the fatal row in the colour of the band that ends the run", () => {
-		draw();
-
-		expect(themeOf(rowFor("DANGER"))).toBe(COVERAGE_BAND_COLOR.danger);
-	});
-
-	it("edges the fatal row even where the run has no reading to stand on", () => {
-		draw();
-
-		expect(rowFor("DANGER")).toHaveClass("border-l-2");
-		expect(rowFor("SHAKY")).not.toHaveClass("border-l-2");
-	});
-
-	it("leaves every survivable row unthemed, the full bar included", () => {
-		draw();
-
-		expect(themeOf(rowFor("HEALTHY"))).toBeNull();
-		expect(themeOf(rowFor("PERFECT"))).toBeNull();
-	});
-
-	it("rules between the outcomes but not above the first", () => {
-		const { container } = draw();
-
-		const ruled = [...container.querySelectorAll(".border-t")];
-
-		expect(ruled).toHaveLength(OUTCOMES.length);
-		expect(ruled[0]).toHaveClass("first:border-t-0");
-	});
-
-	it("heads the table so the screen says what the rows are for", () => {
-		draw();
+		const header = container.querySelector("header") as HTMLElement;
 
 		expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
-	});
-});
-
-describe("the prose around the table", () => {
-	it("draws neither lead nor note when it was handed neither", () => {
-		draw();
-
-		expect(screen.queryByText(LEAD_TEXT)).not.toBeInTheDocument();
-		expect(screen.queryByText(NOTE)).not.toBeInTheDocument();
+		expect(header).toHaveTextContent("Lavender · gate 4");
+		expect(within(header).getByText("4")).toHaveClass("badge-theme");
 	});
 
-	it("stands the lead between the heading and the table it introduces", () => {
-		const { container } = render(
-			<BandOutcomes title={TITLE} outcomes={OUTCOMES} lead={LEAD} />
+	it("reads the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
+		const { container } = render(<BandOutcomes {...props} />);
+
+		const objective = screen.getByText("Finish at");
+		const scores = screen.getByLabelText(/^Lavender —/);
+		const ladder = container.querySelector(".band-ladder") as HTMLElement;
+		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
+		const note = screen.getByText(NOTE);
+
+		expect(follows(objective, scores)).toBe(true);
+		expect(follows(scores, ladder)).toBe(true);
+		expect(follows(ladder, standing)).toBe(true);
+		expect(follows(standing, note)).toBe(true);
+	});
+
+	it("draws the ladder inside the panel with no column headings around it", () => {
+		const { container } = render(<BandOutcomes {...props} />);
+
+		expect(sectionOf(container)).toContainElement(
+			container.querySelector(".band-ladder")
 		);
-
-		const [lead] = [
-			...(container.querySelector("header + div")?.children ?? []),
-		];
-
-		expect(screen.getByRole("heading", { name: TITLE })).toBeInTheDocument();
-		expect(lead).toHaveTextContent("Clear at OK or better.");
+		expect(screen.queryByText("coverage")).toBeNull();
+		expect(screen.queryByText("pays")).toBeNull();
 	});
 
-	it("puts the note last, under the table it footnotes", () => {
-		const { container } = render(
-			<BandOutcomes title={TITLE} outcomes={OUTCOMES} note={NOTE} />
+	it("rings the rung the run stands in, read off the ladder's own numbers", () => {
+		const { container } = render(<BandOutcomes {...props} />);
+
+		expect(container.querySelector(".band-ladder-row.ring-2")).toHaveAttribute(
+			"data-screen-theme",
+			COVERAGE_BAND_COLOR.ok
 		);
-
-		const section = container.querySelector("section") as HTMLElement;
-		const last = section.children[section.children.length - 1];
-
-		expect(last).toHaveTextContent(NOTE);
-	});
-});
-
-describe("the band the run is standing in", () => {
-	const standing = (band: CoverageBandId) =>
-		render(<BandOutcomes title={TITLE} outcomes={OUTCOMES} standing={band} />);
-
-	const tableRowFor = (band: string): HTMLElement => {
-		const cell = screen
-			.getAllByText(band)
-			.find((node) => node.closest(".coverage-bar") === null);
-
-		const row = cell?.closest("div");
-		if (row === null || row === undefined)
-			throw new Error(`no table row for "${band}"`);
-		return row;
-	};
-
-	it("edges the row the run is standing in", () => {
-		standing("ok");
-
-		expect(tableRowFor("OK")).toHaveClass("border-l-2");
 	});
 
-	it("reads that edge in the colour of the band it marks", () => {
-		standing("ok");
+	it("states the standing line under the ladder with its figures badged", () => {
+		render(<BandOutcomes {...props} />);
 
-		expect(themeOf(tableRowFor("OK"))).toBe(COVERAGE_BAND_COLOR.ok);
+		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
+
+		expect(standing).toHaveTextContent("+1 unit to HEALTHY · 2 polls left");
+		expect(within(standing).getByText("+1")).toHaveAttribute(
+			"data-screen-theme",
+			COVERAGE_BAND_COLOR.healthy
+		);
+		expect(within(standing).getByText("2")).toHaveClass("badge-theme");
 	});
 
-	it("leaves the bands the run is not in alone", () => {
-		standing("ok");
+	it("draws neither answers nor a note when handed neither", () => {
+		render(<BandOutcomes {...props} scores={undefined} note={undefined} />);
 
-		expect(tableRowFor("HEALTHY")).not.toHaveClass("border-l-2");
-		expect(themeOf(tableRowFor("HEALTHY"))).toBeNull();
-		expect(tableRowFor("SHAKY")).not.toHaveClass("border-l-2");
+		expect(screen.queryByLabelText(/^Lavender —/)).toBeNull();
+		expect(screen.queryByText(NOTE)).toBeNull();
 	});
 
-	it("keeps the fatal row edged while the run stands somewhere else", () => {
-		standing("ok");
+	it("puts the note last, under the ladder it footnotes", () => {
+		const { container } = render(<BandOutcomes {...props} />);
 
-		expect(tableRowFor("DANGER")).toHaveClass("border-l-2");
-		expect(themeOf(tableRowFor("DANGER"))).toBe(COVERAGE_BAND_COLOR.danger);
-	});
+		const section = sectionOf(container);
 
-	it("moves the edge with the band the viewmodel read off the bar", () => {
-		standing("healthy");
-
-		expect(tableRowFor("HEALTHY")).toHaveClass("border-l-2");
-		expect(tableRowFor("OK")).not.toHaveClass("border-l-2");
-	});
-
-	it("edges nothing but the fatal row when the table was handed no standing", () => {
-		const { container } = draw();
-
-		expect(container.querySelectorAll(".border-l-2")).toHaveLength(1);
+		expect(section.children[section.children.length - 1]).toHaveTextContent(
+			NOTE
+		);
 	});
 });

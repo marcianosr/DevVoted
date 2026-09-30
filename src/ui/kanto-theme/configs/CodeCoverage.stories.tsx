@@ -28,3 +28,8 @@ export const FiveCorrectAnswersLater: Story = {
 			afterAnswers(runWith([CONFIGS.codeCoverage], MIXED_GATE), ALL_RIGHT)
 		),
 };
+
+export const PaysHalfAUnitAtV5: Story = {
+	render: () =>
+		asPoll(runWith([{ ...CONFIGS.codeCoverage, level: 5 }], MIXED_GATE)),
+};

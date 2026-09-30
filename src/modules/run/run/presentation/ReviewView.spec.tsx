@@ -56,7 +56,9 @@ describe("ReviewView", () => {
 	it("names the gate that was reviewed", () => {
 		render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText(/gate 4/)).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: /^Review · / })
+		).toBeInTheDocument();
 	});
 
 	it("costs a wrong answer coverage rather than crediting it", () => {

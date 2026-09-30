@@ -308,7 +308,7 @@ describe("run route sync", () => {
 		const serverView = createMockRunView({
 			status: "rewarding",
 			gatesCleared: 4,
-			configs: [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd],
+			configs: [CONFIGS.js, CONFIGS.linter, CONFIGS.agentsMd],
 			poll: null,
 		});
 		vi.mocked(getTodaysRun).mockImplementation(async () => ({

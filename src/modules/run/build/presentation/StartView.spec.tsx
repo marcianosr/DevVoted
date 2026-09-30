@@ -20,7 +20,7 @@ const handlers = {
 const view = createMockRunView({
 	status: "configuring",
 	configs: [CONFIGS.js],
-	available: [CONFIGS.js, CONFIGS.eslint, CONFIGS.unitTests],
+	available: [CONFIGS.js, CONFIGS.linter, CONFIGS.unitTests],
 	slots: 4,
 	canStart: true,
 });
@@ -38,7 +38,7 @@ describe("StartView", () => {
 	it("deals the hand it was given", () => {
 		render(<StartView view={view} {...handlers} />);
 
-		expect(screen.getAllByText(CONFIGS.eslint.label).length).toBeGreaterThan(0);
+		expect(screen.getAllByText(CONFIGS.linter.label).length).toBeGreaterThan(0);
 		expect(
 			screen.getAllByText(CONFIGS.unitTests.label).length
 		).toBeGreaterThan(0);
@@ -85,47 +85,30 @@ describe("StartView", () => {
 		expect(screen.queryByText("suggested")).not.toBeInTheDocument();
 	});
 
-	it("cuts the offers to one group on a press, and restores them on the next", async () => {
+	it("cuts the offers to one group, and restores them on All", async () => {
 		render(<StartView view={view} {...handlers} />);
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "Storage \u00b7 1" })
-		);
+		await userEvent.click(screen.getByRole("radio", { name: "Storage \u00b7 1" }));
 		expect(
 			screen.queryByRole("group", { name: "Coverage" })
 		).not.toBeInTheDocument();
 		expect(screen.getByRole("group", { name: "Storage" })).toBeInTheDocument();
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "Storage \u00b7 1" })
-		);
+		await userEvent.click(screen.getByRole("radio", { name: /^All/ }));
 		expect(screen.getByRole("group", { name: "Coverage" })).toBeInTheDocument();
 	});
 
 	it("keeps counting every group while one of them is picked", async () => {
 		render(<StartView view={view} {...handlers} />);
 
-		await userEvent.click(
-			screen.getByRole("button", { name: "Storage \u00b7 1" })
-		);
+		await userEvent.click(screen.getByRole("radio", { name: "Storage \u00b7 1" }));
 
 		expect(
-			screen.getByRole("button", { name: "Coverage \u00b7 1" })
+			screen.getByRole("radio", { name: "Coverage \u00b7 1" })
 		).toBeInTheDocument();
 	});
 
-	it("takes the help away for good once it is hidden", async () => {
-		render(<StartView view={view} {...handlers} />);
-
-		await userEvent.click(screen.getByRole("button", { name: "hide" }));
-
-		expect(
-			screen.queryByRole("button", { name: "Storage \u00b7 1" })
-		).not.toBeInTheDocument();
-		expect(screen.getByRole("group", { name: "Storage" })).toBeInTheDocument();
-	});
-
-	it("offers no help when the whole hand pays into one group", () => {
+	it("offers no filter when the whole hand pays into one group", () => {
 		render(
 			<StartView
 				view={createMockRunView({
@@ -138,7 +121,7 @@ describe("StartView", () => {
 			/>
 		);
 
-		expect(screen.queryByRole("button", { name: "hide" })).not.toBeInTheDocument();
+		expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
 		expect(screen.getByText("Coverage")).toBeInTheDocument();
 	});
 
@@ -260,5 +243,133 @@ describe("StartView", () => {
 				name: `Uninstall ${CONFIGS.agentsMd.label}`,
 			})
 		).not.toBeInTheDocument();
+	});
+
+	describe("the warm boot (ADR-153)", () => {
+		const thick = createMockRunView({
+			...view,
+			archiveAfterKb: 512,
+			unlockedServiceIds: ["bootCache", "extend", "pin"],
+			warmBoot: null,
+		});
+
+		it("starts plain when nothing is drafted", async () => {
+			const onStart = vi.fn();
+			const onWarmBoot = vi.fn();
+			render(
+				<StartView
+					view={thick}
+					{...handlers}
+					onStart={onStart}
+					onWarmBoot={onWarmBoot}
+				/>
+			);
+
+			await userEvent.click(
+				screen.getByRole("button", { name: /^Pallet gate prep · 1 config/ })
+			);
+
+			expect(onStart).toHaveBeenCalled();
+			expect(onWarmBoot).not.toHaveBeenCalled();
+		});
+
+		it("commits the draft with the start press, naming what it spends", async () => {
+			const onStart = vi.fn();
+			const onWarmBoot = vi.fn();
+			render(
+				<StartView
+					view={thick}
+					{...handlers}
+					onStart={onStart}
+					onWarmBoot={onWarmBoot}
+				/>
+			);
+
+			await userEvent.click(
+				screen.getByRole("checkbox", { name: "carry Boot Cache · 128 KB" })
+			);
+			await userEvent.click(
+				screen.getByRole("checkbox", { name: "carry git tag" })
+			);
+			await userEvent.click(
+				screen.getByRole("button", {
+					name: /Pallet gate prep · 384 KB archive/,
+				})
+			);
+
+			expect(onWarmBoot).toHaveBeenCalledWith({
+				bootCacheRung: 1,
+				serviceIds: ["pin"],
+			});
+			expect(onStart).not.toHaveBeenCalled();
+		});
+
+		it("keeps one rung at a time", async () => {
+			render(<StartView view={thick} {...handlers} onWarmBoot={noop} />);
+
+			await userEvent.click(
+				screen.getByRole("checkbox", { name: "carry Boot Cache · 64 KB" })
+			);
+			await userEvent.click(
+				screen.getByRole("checkbox", { name: "carry Boot Cache · 256 KB" })
+			);
+
+			expect(
+				screen.getByRole("checkbox", { name: "carry Boot Cache · 64 KB" })
+			).not.toBeChecked();
+			expect(
+				screen.getByRole("checkbox", { name: "carry Boot Cache · 256 KB" })
+			).toBeChecked();
+			expect(screen.getByText("512 KB archived · 0 B after")).toBeInTheDocument();
+		});
+
+		it("reads back what a booted run carries, with no checkboxes and a plain press", () => {
+			render(
+				<StartView
+					view={createMockRunView({
+						...thick,
+						storage: 128,
+						archiveAfterKb: 128,
+						warmBoot: {
+							storageKb: 128,
+							serviceIds: ["pin"],
+							archiveBytes: 393216,
+						},
+					})}
+					{...handlers}
+					onWarmBoot={noop}
+				/>
+			);
+
+			expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+			expect(screen.getByText("Boot Cache · 128 KB banked")).toBeInTheDocument();
+			expect(screen.getByText("spent 384 KB · 128 KB archived")).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: /^Pallet gate prep · 1 config/ })
+			).toBeEnabled();
+		});
+
+		it("states the refusal the server sent and holds the press while booting", () => {
+			render(
+				<StartView
+					view={thick}
+					{...handlers}
+					onWarmBoot={noop}
+					bootRefusal="The archive cannot cover that"
+					booting
+				/>
+			);
+
+			expect(screen.getByText("The archive cannot cover that")).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: /Pallet gate prep/ })
+			).toBeDisabled();
+		});
+
+		it("draws no panel when the screen is given nowhere to send the boot", () => {
+			render(<StartView view={thick} {...handlers} />);
+
+			expect(screen.queryByText("Warm boot")).not.toBeInTheDocument();
+		});
 	});
 });

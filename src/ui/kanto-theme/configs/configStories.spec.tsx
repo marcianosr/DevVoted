@@ -12,7 +12,6 @@ import * as Database from "./Database.stories";
 import * as Dependabot from "./Dependabot.stories";
 import * as Deprecated from "./Deprecated.stories";
 import * as DryRun from "./DryRun.stories";
-import * as ESLint from "./ESLint.stories";
 import * as FocusFamily from "./FocusFamily.stories";
 import * as Freemium from "./Freemium.stories";
 import * as GarbageCollection from "./GarbageCollection.stories";
@@ -20,14 +19,15 @@ import * as GitRebase from "./GitRebase.stories";
 import * as IndexedDb from "./IndexedDb.stories";
 import * as Intellisense from "./Intellisense.stories";
 import * as Length from "./Length.stories";
+import * as Linter from "./Linter.stories";
 import * as MooresLaw from "./MooresLaw.stories";
+import * as NpmAudit from "./NpmAudit.stories";
 import * as Overclock from "./Overclock.stories";
 import * as PlanningPoker from "./PlanningPoker.stories";
 import * as Prefetch from "./Prefetch.stories";
 import * as Prettierrc from "./Prettierrc.stories";
 import * as Sla from "./Sla.stories";
 import * as Strict from "./Strict.stories";
-import * as Stylelint from "./Stylelint.stories";
 import * as Telemetry from "./Telemetry.stories";
 import * as TryCatch from "./TryCatch.stories";
 import * as UnitTests from "./UnitTests.stories";
@@ -48,7 +48,6 @@ const PAGES = {
 	Dependabot,
 	Deprecated,
 	DryRun,
-	ESLint,
 	FocusFamily,
 	Freemium,
 	GarbageCollection,
@@ -56,14 +55,15 @@ const PAGES = {
 	IndexedDb,
 	Intellisense,
 	Length,
+	Linter,
 	MooresLaw,
+	NpmAudit,
 	Overclock,
 	PlanningPoker,
 	Prefetch,
 	Prettierrc,
 	Sla,
 	Strict,
-	Stylelint,
 	Telemetry,
 	TryCatch,
 	UnitTests,
@@ -103,20 +103,37 @@ describe("config story pages", () => {
 					expect(container.textContent).not.toContain(deadEnd);
 			});
 
-	it("arms ESLint's press on a JS poll and withdraws it on a CSS one", () => {
-		const armed = render(
-			ESLint.CrossesOutAWrongAnswer.render?.({}, {} as never)
+	it("arms Linter's press on a JS poll and on a CSS poll alike", () => {
+		const onJs = render(
+			Linter.CrossesOutAWrongAnswer.render?.({}, {} as never)
 		);
-		expect(armed.container.textContent).toContain("lint 8 KB");
+		expect(onJs.container.textContent).toContain("lint 8 KB");
 		cleanup();
 
-		const refused = render(
-			ESLint.WaitsForJavaScriptOrTypeScript.render?.({}, {} as never)
+		const onCss = render(Linter.LintsAnyCategory.render?.({}, {} as never));
+		expect(onCss.container.textContent).toContain("lint 8 KB");
+	});
+
+	it("prices Linter's ladder by version: carried at v1, reset at v2, halved at v3", () => {
+		const carried = render(
+			Linter.FeeCarriesAcrossTheClearAtV1.render?.({}, {} as never)
 		);
-		expect(refused.container.textContent).not.toContain("lint 8 KB");
-		expect(refused.container.textContent).toContain(
-			"JavaScript or TypeScript only"
+		expect(carried.container.textContent).toContain("lint 16 KB");
+		cleanup();
+
+		const reset = render(Linter.ResetsEachGateAtV2.render?.({}, {} as never));
+		expect(reset.container.textContent).toContain("lint 8 KB");
+		cleanup();
+
+		const halved = render(Linter.HalfPriceAtV3.render?.({}, {} as never));
+		expect(halved.container.textContent).toContain("lint 4 KB");
+	});
+
+	it("names an outage's target in prep once npm audit is installed", () => {
+		const named = render(
+			NpmAudit.NamesTheOutageTargetInPrep.render?.({}, {} as never)
 		);
+		expect(named.container.textContent).toMatch(/takes .+ offline/);
 	});
 
 	it("reads the gate's correct count once .length is installed", () => {
@@ -151,14 +168,12 @@ describe("config story pages", () => {
 
 	it("counts what it can press, never what it cannot", () => {
 		const armed = render(
-			ESLint.CrossesOutAWrongAnswer.render?.({}, {} as never)
+			Linter.CrossesOutAWrongAnswer.render?.({}, {} as never)
 		);
 		expect(armed.container.textContent).toContain("1 ready");
 		cleanup();
 
-		const refused = render(
-			ESLint.WaitsForJavaScriptOrTypeScript.render?.({}, {} as never)
-		);
-		expect(refused.container.textContent).not.toContain("ready");
+		const idle = render(NpmAudit.SitsThePollOut.render?.({}, {} as never));
+		expect(idle.container.textContent).not.toContain("ready");
 	});
 });

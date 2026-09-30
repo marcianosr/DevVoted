@@ -33,9 +33,8 @@ to get there.
    and the gate's audits on the right. The same grid the New run screen uses, so
    the two screens either side of a gate do not re-teach their layout.
 
-2. **The band table is three columns: band, coverage, pays.** The outcome
-   sentence comes out. What a landing does was being spelled five times in prose
-   to say what the band word and the figure beside it already say.
+2. **The band table is three columns: band, coverage, pays.** Superseded by
+   [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md): the ladder's zones carry the band and its figure.
 
 3. **What the table cannot say per row it says once, above and below.** A lead
    line names the bands that win the gate and the bands that cost; a footnote
@@ -48,7 +47,7 @@ to get there.
    and the column was collapsing them.
 
 5. **The bar moves off the header into the outcomes panel.** Superseded by
-   [ADR-139](139-prep-prices-a-poll-and-draws-the-codebase.md): the bar stands in What a poll pays. `marks="rungs"` stays.
+   [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md): At stake draws the ladder itself.
 
 6. **The band table is prep's alone.** The New run screen drew the same five rows
    one screen earlier, for a gate whose build was still being assembled and whose

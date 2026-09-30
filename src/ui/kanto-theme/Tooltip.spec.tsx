@@ -63,6 +63,23 @@ describe("Tooltip", () => {
 		);
 	});
 
+	it("shuts a pressed panel once the pointer leaves, so a click never pins it open", async () => {
+		const { container } = render(
+			<Tooltip label="How a correct answer is counted" hint="Single is 1.">
+				34/55 correct
+			</Tooltip>
+		);
+
+		await userEvent.click(screen.getByRole("button"));
+		await userEvent.unhover(screen.getByRole("button"));
+
+		expect(screen.getByRole("button")).toHaveAttribute(
+			"aria-expanded",
+			"false"
+		);
+		expect(container.querySelector("[aria-hidden]")).toHaveClass("invisible");
+	});
+
 	it("names the rule for a reader the hover panel is hidden from", () => {
 		render(
 			<Tooltip label="How a correct answer is counted" hint="Single is 1.">

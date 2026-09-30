@@ -2,35 +2,48 @@ import { describe, expect, it } from "vitest";
 
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
+	EXTEND_CARRY_BYTES,
+	PIN_CARRY_BYTES,
+} from "~/modules/run/run/domain/rules.model";
+import {
 	ABANDON_FROM_GATE,
 	CASCADE_GATE,
+	isCarriedService,
+	isRegistryControlId,
 	isServiceUnlocked,
 	isSoldInShop,
 	openingGateOf,
 	REGISTRY_CONTROL_LIST,
 	REGISTRY_CONTROLS,
+	registryControlOf,
 	servicesUnlockedBy,
 	unlockCaptionOf,
-	type RegistryControlScope,
 } from "~/modules/run/shop/domain/registryControl.model";
 
 const ROW_CAPTION_LIMIT = 40;
 
-const idsInScope = (scope: RegistryControlScope): readonly string[] =>
-	REGISTRY_CONTROL_LIST.filter((control) => control.scope === scope).map(
-		(control) => control.id
-	);
-
 describe("REGISTRY_CONTROLS", () => {
-	it("puts the tag, Boot Cache and Docker Image in the run scope and the rest in the registry scope", () => {
-		expect(idsInScope("run")).toEqual(["pin", "bootCache", "dockerImage"]);
-		expect(idsInScope("registry")).toEqual([
-			"rebuild",
-			"extend",
-			"hotReload",
-			"returnPolicy",
-			"abandon",
+	it("carries Extend and the git tag in at new run for an archive price, nothing else (ADR-153)", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.filter(isCarriedService).map((control) => [
+				control.id,
+				control.carryBytes,
+			])
+		).toEqual([
+			["extend", EXTEND_CARRY_BYTES],
+			["pin", PIN_CARRY_BYTES],
 		]);
+	});
+
+	it("lets Rebuild and kill -9 into every run free, with no carry to pick", () => {
+		expect(isCarriedService(REGISTRY_CONTROLS.rebuild)).toBe(false);
+		expect(isCarriedService(REGISTRY_CONTROLS.abandon)).toBe(false);
+	});
+
+	it("names every roster id and nothing else", () => {
+		expect(isRegistryControlId("extend")).toBe(true);
+		expect(isRegistryControlId("Extend")).toBe(false);
+		expect(registryControlOf("pin").title).toBe("git tag");
 	});
 
 	it("sells the registry services and the tag in the shop, the other two on the archive", () => {
@@ -38,6 +51,7 @@ describe("REGISTRY_CONTROLS", () => {
 			REGISTRY_CONTROL_LIST.filter(isSoldInShop).map((control) => control.id)
 		).toEqual([
 			"rebuild",
+			"skipShop",
 			"extend",
 			"hotReload",
 			"returnPolicy",
@@ -46,12 +60,6 @@ describe("REGISTRY_CONTROLS", () => {
 		]);
 		expect(REGISTRY_CONTROLS.bootCache.soldIn).toBe("archive");
 		expect(REGISTRY_CONTROLS.dockerImage.soldIn).toBe("archive");
-	});
-
-	it("lists the registry services before the run services, which is the Dex's order", () => {
-		const scopes = REGISTRY_CONTROL_LIST.map((control) => control.scope);
-
-		expect(scopes.indexOf("run")).toBe(scopes.lastIndexOf("registry") + 1);
 	});
 
 	it("opens every shop service on the first shop, except Extend and the tag", () => {

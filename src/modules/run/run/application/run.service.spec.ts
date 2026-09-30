@@ -21,6 +21,7 @@ import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.reposito
 import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
 import * as leaderQueries from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import * as statsQueries from "~/modules/run/run/infrastructure/pollStats.repository";
+import * as serviceQueries from "~/modules/run/shop/infrastructure/serviceUnlock.repository";
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	abandonSessionRun: vi.fn(),
@@ -103,10 +104,10 @@ const sessionRunRecord = (
 	});
 
 const configuringState = (): RunState =>
-	createRun(POLLS, [CONFIGS.js, CONFIGS.eslint]);
+	createRun(POLLS, [CONFIGS.js, CONFIGS.linter]);
 
 const answeringState = (): RunState => {
-	const configs = [CONFIGS.js, CONFIGS.eslint];
+	const configs = [CONFIGS.js, CONFIGS.linter];
 	const installed = configs.reduce(
 		(state, config) =>
 			runReducer(state, { type: "install", configId: config.id }),
@@ -289,6 +290,27 @@ describe("startRunService", () => {
 				build: expect.objectContaining({ configs: [] }),
 			})
 		);
+	});
+
+	it("opens the new run with the archive balance and the account's services, so the warm boot can draw on them (ADR-153)", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 64,
+		});
+		vi.mocked(queries.fetchArchivedStorageKb).mockResolvedValueOnce(512);
+		vi.mocked(serviceQueries.fetchUnlockedServiceIds).mockResolvedValueOnce([
+			"extend",
+		]);
+
+		const result = await startRunService({ userId: USER, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(result.data.archiveAfterKb).toBe(512);
+		expect(result.data.unlockedServiceIds).toEqual(["extend"]);
+		expect(result.data.warmBoot).toBeNull();
 	});
 
 	it("starts a same-day rerun from today's seed minus already-answered polls", async () => {

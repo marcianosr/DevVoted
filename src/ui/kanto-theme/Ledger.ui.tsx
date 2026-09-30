@@ -1,4 +1,4 @@
-import { Badge } from "./Badge.ui";
+import { Lead, type LeadLine } from "./Lead.ui";
 import {
 	LedgerRows,
 	type FigureTone,
@@ -15,17 +15,17 @@ export type { FigureTone, LedgerFigure, LedgerRow, LedgerTag };
 
 export type LedgerProps = {
 	title: string;
-	badge?: string;
+	meta?: LeadLine;
 	rows: readonly LedgerRow[];
 	meter?: MeterProps;
 	note?: string;
 };
 
-export const Ledger = ({ title, badge, rows, meter, note }: LedgerProps) => (
+export const Ledger = ({ title, meta, rows, meter, note }: LedgerProps) => (
 	<Panel>
 		<Panel.Header
 			label={title}
-			meta={badge === undefined ? undefined : <Badge>{badge}</Badge>}
+			meta={meta === undefined ? undefined : <Lead line={meta} as="span" />}
 		/>
 		<Panel.Body>
 			<PanelTable>

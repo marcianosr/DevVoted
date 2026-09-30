@@ -1,7 +1,8 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, count, countDistinct, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import { usersTable } from "~/database/schema";
+import { pollResponsesTable, pollsTable, usersTable } from "~/database/schema";
+import type { AuthorRole } from "~/modules/account/profile/domain/authorship.model";
 import type { Look } from "~/modules/account/profile/domain/look.model";
 
 export const fetchUserDisplayName = async (
@@ -49,6 +50,7 @@ export type PublicProfileRow = {
 	archivedStorage: number;
 	ownedSwatchIds: string[];
 	equippedSwatchId: string | null;
+	role: AuthorRole;
 };
 
 export const fetchPublicProfile = async (
@@ -65,12 +67,38 @@ export const fetchPublicProfile = async (
 			archivedStorage: usersTable.archived_storage,
 			ownedSwatchIds: usersTable.owned_swatch_ids,
 			equippedSwatchId: usersTable.equipped_swatch_id,
+			role: usersTable.role,
 		})
 		.from(usersTable)
 		.where(eq(usersTable.id, userId))
 		.limit(1);
 
 	return row ?? null;
+};
+
+export type PublishedPollCounts = {
+	published: number;
+	answers: number;
+};
+
+export const fetchPublishedPollCounts = async (
+	userId: string
+): Promise<PublishedPollCounts> => {
+	const [row] = await db
+		.select({
+			published: countDistinct(pollsTable.id),
+			answers: count(pollResponsesTable.response_id),
+		})
+		.from(pollsTable)
+		.leftJoin(pollResponsesTable, eq(pollResponsesTable.poll_id, pollsTable.id))
+		.where(
+			and(eq(pollsTable.created_by, userId), eq(pollsTable.status, "published"))
+		);
+
+	return {
+		published: Number(row?.published ?? 0),
+		answers: Number(row?.answers ?? 0),
+	};
 };
 
 export type UserArchiveState = {

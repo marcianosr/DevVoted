@@ -20,12 +20,15 @@ import {
 	pollBuildFor,
 	gateLabelFor,
 	gateMarkFor,
+	nextPollMarkFor,
 	pollHeaderFor,
+	pollStepFor,
 	pollKeysFor,
 	pollCommitFor,
 	approvalCommitFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { kbLabel } from "~/shared/lib/storage";
@@ -41,6 +44,7 @@ import type {
 
 export type PollViewProps = {
 	view: RunView;
+	runNumber?: number | null;
 	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
 	onSelect: (optionId: string) => void;
@@ -158,7 +162,9 @@ const answeredMoodFor = (
 			label: view.gateComplete
 				? gateLabelFor(view.gateStake.gateNumber)
 				: NEXT_LABEL,
-			swatch: gateMarkFor(view.gateStake.gateNumber),
+			swatch: view.gateComplete
+				? gateMarkFor(view.gateStake.gateNumber)
+				: nextPollMarkFor(view),
 			onPress: onNext,
 		},
 		note: ENTER_CONTINUES,
@@ -218,6 +224,7 @@ const liveMoodFor = (
 
 export const PollView = ({
 	view,
+	runNumber = null,
 	answered,
 	selectedOptionIds,
 	onSelect,
@@ -262,7 +269,11 @@ export const PollView = ({
 	return (
 		<PollScreen
 			{...mood}
-			header={pollHeaderFor(view)}
+			header={{
+				...pollHeaderFor(view),
+				readout: runReadoutFor(view, runNumber),
+			}}
+			step={pollStepFor(view, revealing)}
 			coverage={pollCoverageFor(view, answered !== undefined)}
 			holds={pollHoldsFor(view)}
 			facts={pollFactsFor(live)}

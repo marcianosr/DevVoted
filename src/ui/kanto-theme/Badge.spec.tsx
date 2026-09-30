@@ -16,6 +16,19 @@ describe("Badge", () => {
 		expect(screen.getByText("×2 fading")).toBeInTheDocument();
 	});
 
+	it("leads its label with a decorative icon when handed one", () => {
+		render(
+			<Badge color="viridian" icon="floppy">
+				266 KB
+			</Badge>
+		);
+
+		const badge = screen.getByText("266 KB");
+
+		expect(badge.querySelector("svg")).toHaveAttribute("aria-hidden");
+		expect(badge).toHaveClass("gap-1");
+	});
+
 	it.each(KANTO_COLORS)("takes %s as its own colour", (color) => {
 		render(<Badge color={color}>×2 fading</Badge>);
 

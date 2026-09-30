@@ -23,7 +23,7 @@ describe("ReviewScreen", () => {
 		expect(
 			screen.getByRole("heading", { name: "Review · Lavender" })
 		).toBeInTheDocument();
-		expect(screen.getByText("gate 4 · 5 polls")).toBeInTheDocument();
+		expect(screen.getByText("5 polls")).toBeInTheDocument();
 	});
 
 	it("tallies the three outcomes apart, rather than lumping part with failed", () => {

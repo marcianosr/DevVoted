@@ -1,11 +1,11 @@
 ---
 # DVTD-8as9
 title: Boot Cache opens a run with storage already banked
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-25T11:00:12Z
-updated_at: 2026-09-25T18:06:10Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-r2k9
 ---
 
@@ -29,3 +29,7 @@ parent: DVTD-r2k9
 2026-09-25 (ADR-116): **unlock: Bank at least 256 KB from one run** — no metric measures a single run's archive credit today; `finishSessionRun` computes `creditBytes` and adds it straight onto `users.archived_storage`, so this needs a one-shot metric ticked at run end when the credit reaches 256 KB (target-1 counter on the objective ledger, the `lean-gate-four` shape).
 
 2026-09-25, later (DVTD-lm8p): roster row and counter built: `bootCache`, archive-sold, never in the shop; the one-shot `banked-256-one-run` ticks in `endMetrics` when `archiveCreditBytes(next)` reaches `BOOT_CACHE_BANK_KB` (256) on the action that ends the run; caption `Bank 256 KB in one run`. Earned reads *not for sale yet* in the Dex until DVTD-0now sells it. Marciano's table reads "pay storage now so the next run starts with a smaller amount, e.g. pay 128 KB to carry 64 KB": a 2:1 rate is the example for the two dials.
+
+## Summary of Changes
+
+Built 2026-09-29 under ADR-153 with DVTD-0now, on the new run screen rather than the profile: three rungs (`BOOT_CACHE_RUNGS`, 128 → 64, 256 → 128, 512 → 256 KB at `BOOT_CACHE_RATE` 2), picked one at a time on the warm boot panel, paid by the start press; the storage lands via the server-minted `warm-boot` action (`bootRun`) and reads on the header balance and in the first shop. Consumed with the run: `RunState.warmBoot` records it and a second boot is refused. The price and the grant are both dials in `rules.model.ts`.

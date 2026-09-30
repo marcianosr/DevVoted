@@ -144,7 +144,7 @@ const READ_ONLY: Audit = {
 	code: 405,
 	name: "Method Not Allowed",
 	description:
-		"The shop before this gate is read-only: no drafting, upgrades, rebuilds or plan changes.",
+		"The shop before this gate is read-only: no drafting, upgrades, rebuilds, plan changes or incidents.",
 	closesShop: true,
 };
 
@@ -506,6 +506,33 @@ export const offlinePairsFor = (
 		return pickOffline(pick, sorted, windowStart, answeredThisWindow).map(
 			(config) => ({ config, audit })
 		);
+	});
+};
+
+export type OutageTarget = {
+	readonly audit: Audit;
+	readonly targets: readonly (readonly Config[])[];
+};
+
+export const outageTargetsFor = (
+	configs: readonly Config[],
+	audits: readonly Audit[],
+	windowStart: number,
+	windowSize: number
+): readonly OutageTarget[] => {
+	if (configs.length === 0) return [];
+	const sorted = sortedById(configs);
+	return audits.flatMap((audit): readonly OutageTarget[] => {
+		const pick = audit.disablesConfig;
+		if (pick === undefined) return [];
+		return [
+			{
+				audit,
+				targets: Array.from({ length: windowSize }, (_, position) =>
+					pickOffline(pick, sorted, windowStart, position)
+				),
+			},
+		];
 	});
 };
 

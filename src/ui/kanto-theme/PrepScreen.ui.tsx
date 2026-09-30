@@ -1,15 +1,14 @@
 import { AuditsPanel, type AuditsPanelProps } from "./AuditsPanel.ui";
 import { BandOutcomes, type BandOutcomesProps } from "./BandOutcomes.ui";
 import { EstimatePicker, type EstimatePickerProps } from "./EstimatePicker.ui";
-import { GateStrictness, type GateStrictnessProps } from "./GateStrictness.ui";
 import { SlaPicker, type SlaPickerProps } from "./SlaPicker.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Ledger, type LedgerProps } from "./Ledger.ui";
-import { PollPays, type PollPaysProps } from "./PollPays.ui";
 import type { PollScoresProps } from "./PollScores.ui";
 import { ApprovalList, type ApprovalListProps } from "./ApprovalList.ui";
 import { RebaseList, type RebaseListProps } from "./RebaseList.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
+import { Scoring, type ScoringProps } from "./Scoring.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
@@ -19,8 +18,7 @@ export type PrepScreenProps = {
 	header: HeaderProps;
 	outcomes: BandOutcomesProps;
 	scores: PollScoresProps;
-	pays: PollPaysProps;
-	strictness: GateStrictnessProps;
+	scoring: ScoringProps;
 	polls: LedgerProps;
 	audits: AuditsPanelProps;
 	subscriptions?: LedgerProps;
@@ -37,8 +35,7 @@ export const PrepScreen = ({
 	header,
 	outcomes,
 	scores,
-	pays,
-	strictness,
+	scoring,
 	polls,
 	audits,
 	subscriptions,
@@ -56,15 +53,14 @@ export const PrepScreen = ({
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
 				<BandOutcomes {...outcomes} scores={scores} />
-				<PollPays {...pays} />
 				{rebase === undefined ? null : <RebaseList {...rebase} />}
 				{approval === undefined ? null : <ApprovalList {...approval} />}
 				{estimate === undefined ? null : <EstimatePicker {...estimate} />}
 				{sla === undefined ? null : <SlaPicker {...sla} />}
-				<GateStrictness {...strictness} />
 			</div>
 
 			<div className={COLUMN}>
+				<Scoring {...scoring} />
 				<Ledger {...polls} />
 				<AuditsPanel {...audits} />
 				{subscriptions === undefined ? null : <Ledger {...subscriptions} />}

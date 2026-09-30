@@ -31,7 +31,6 @@ import {
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
 import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
-import { healthyUnitsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
@@ -224,9 +223,9 @@ export const categoryLeaderFor = (
 
 const LOCK_IN = "Lock in";
 const ANSWER_WORD = "answer";
-const PICKED_WORD = "picked";
-const PICK_ONE = "pick an answer first";
-const PICK_EVERY = "pick every answer that fits";
+export const PICK_ONE = "pick an answer, or press its letter";
+export const PICK_EVERY = "pick every answer that fits, or press their letters";
+export const ENTER_ANSWERS = "you can also press Enter to answer";
 
 export const pollCommitFor = (
 	answerType: AnswerType,
@@ -241,7 +240,7 @@ export const pollCommitFor = (
 
 	return {
 		label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`,
-		note: `${picked} ${PICKED_WORD}`,
+		note: ENTER_ANSWERS,
 		onPress: onSubmit,
 	};
 };
@@ -255,14 +254,21 @@ export const approvalCommitFor = (onApprove: () => void): PollCommit => ({
 	onPress: onApprove,
 });
 
-export const pollLabelFor = (view: RunView, revealing = false): string => {
+export const pollStepFor = (view: RunView, revealing = false): number => {
 	const answered = view.answeredThisGate.length;
-	const step = revealing
+
+	return revealing
 		? Math.max(1, answered)
 		: Math.min(answered + 1, view.pollsPerGate);
-
-	return `${POLL_WORD} ${step} ${OUT_OF} ${view.pollsPerGate}`;
 };
+
+export const pollLabelFor = (view: RunView, revealing = false): string =>
+	`${POLL_WORD} ${pollStepFor(view, revealing)} ${OUT_OF} ${view.pollsPerGate}`;
+
+export const nextPollMarkFor = (view: RunView): SwatchMark => ({
+	...gateMarkFor(view.gateStake.gateNumber),
+	count: pollStepFor(view),
+});
 
 const verdictOf = (
 	label: string,
@@ -363,10 +369,6 @@ export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
 	...view.gateStake.coverageLadder,
 	held: view.gateStake.coverageHeld,
 	pin,
-	units: {
-		held: view.gateStake.unitsHeld,
-		healthy: healthyUnitsAt(view.gateStake.gateNumber),
-	},
 });
 
 export const pollCoverageFor = (view: RunView, pin = false): PollCoverage =>

@@ -1,18 +1,26 @@
-import { CLEARING_BANDS } from "~/modules/run/gate/application/gateOutcome.viewmodel";
+import {
+	ratioOf,
+	scoringSlotsAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
+import { GATE_WORD } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 import {
 	type GateSwatch,
 	swatchForGate,
 } from "~/modules/run/gate/domain/swatch.model";
 import {
+	MIN_WINDOW_UNITS,
 	SLICE_WINDOW,
+	meetsWindowMinimum,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import { signedKbLabel } from "~/shared/lib/storage";
 
 import type {
-	BandOutcome,
-	BandOutcomesProps,
-} from "~/ui/kanto-theme/BandOutcomes.ui";
+	BandLadderProps,
+	LadderRung,
+} from "~/ui/kanto-theme/BandLadder.ui";
+import type { BandOutcomesProps } from "~/ui/kanto-theme/BandOutcomes.ui";
 import type {
 	CoverageBandId,
 	CoverageLadder,
@@ -24,8 +32,7 @@ import type {
 } from "~/ui/kanto-theme/Objectives.ui";
 
 const AS_PERCENT = 100;
-const BELOW_FULL = AS_PERCENT - 1;
-const RANGE_DASH = "–";
+const ROOM = 1;
 
 export const BAND_OUTCOMES_TITLE = "At stake";
 const PAID_WHEN = "Paid when the gate shuts.";
@@ -40,16 +47,29 @@ const CLEAR_TRAIL = " or better";
 const EARNS = "earns ";
 const ADVANCE_LEAD = "advance to ";
 const OR_MORE = " or more";
-const ALL_RIGHT = `Answer all ${SLICE_WINDOW} right`;
+const ALL_RIGHT_LEAD = "Answer all ";
+const OF_WORD = "of";
+const SCORED_WORD = "scored";
+const MINIMUM_LEAD = "Score at least ";
+const MINIMUM_TRAIL = " units this window";
+const MINIMUM_EARNS =
+	"partials count · the gate holds otherwise, whatever the meter reads";
+const ALL_RIGHT_TRAIL = " right";
 const SWATCH_WORD = "swatch";
+const META_JOIN = " · ";
 
 const ENDS_THE_RUN = "the run ends";
 const CAUGHT_INSTEAD = "caught · peel instead";
 const PEEL_TRAIL = "peel";
 const NO_PEEL = "no peel";
 
-const spanLabel = (low: number, high: number) =>
-	`${low} ${RANGE_DASH} ${high}%`;
+const UNIT_WORD = "unit";
+const UNITS_WORD = "units";
+const UNITS_TO = " to ";
+const POLL_WORD = "poll";
+const POLLS_WORD = "polls";
+const LEFT = " left";
+const STANDING_JOIN = " · ";
 
 export type CoverageRung = {
 	readonly band: CoverageBandId;
@@ -63,6 +83,9 @@ const PERFECT_RUNG: CoverageRung = {
 	to: AS_PERCENT,
 };
 
+const hasRoom = (rung: CoverageRung) =>
+	rung.band === "danger" ? rung.to > rung.from : rung.to - rung.from >= ROOM;
+
 export const coverageRungsFor = (
 	ladder: CoverageLadder
 ): readonly CoverageRung[] => {
@@ -72,22 +95,29 @@ export const coverageRungsFor = (
 
 	return [
 		PERFECT_RUNG,
-		{ band: "healthy", from: healthy, to: BELOW_FULL },
-		...(ok > healthy - 1
-			? []
-			: [{ band: "ok" as const, from: ok, to: healthy - 1 }]),
-		...(floor > ok - 1
-			? []
-			: [{ band: "shaky" as const, from: floor, to: ok - 1 }]),
-		...(floor <= 0 ? [] : [{ band: "danger" as const, from: 0, to: floor }]),
+		{ band: "healthy", from: healthy, to: AS_PERCENT },
+		...[
+			{ band: "ok" as const, from: ok, to: healthy },
+			{ band: "shaky" as const, from: floor, to: ok },
+			{ band: "danger" as const, from: 0, to: floor },
+		].filter(hasRoom),
 	];
 };
 
-export const clearingRungFor = (ladder: CoverageLadder): CoverageRung =>
+export const clearingRungFor = (
+	ladder: CoverageLadder,
+	gate: number
+): CoverageRung =>
 	coverageRungsFor(ladder).reduce(
-		(lowest, rung) => (CLEARING_BANDS[rung.band] ? rung : lowest),
+		(lowest, rung) => (clearsAt(rung.band, gate) ? rung : lowest),
 		PERFECT_RUNG
 	);
+
+const nextRungFor = (
+	ladder: CoverageLadder,
+	held: number
+): CoverageRung | undefined =>
+	[...coverageRungsFor(ladder)].reverse().find((rung) => rung.from > held);
 
 export const answersOwedFor = (
 	line: number,
@@ -114,27 +144,23 @@ export type BandOutcomesFrame = {
 	ladder: CoverageLadder;
 	coverageGainPercent: number;
 	peelKb: number;
+	answeredThisGate: number;
+	scoredThisGate?: number;
 	escrows?: boolean;
 	catchesFatal?: boolean;
 	payout: (correct: number) => number;
-};
-
-const rangeOf = ({ band, from, to }: CoverageRung) => {
-	if (band === "perfect") return `${AS_PERCENT}%`;
-	if (band === "danger") return `under ${to}%`;
-	return spanLabel(from, to);
 };
 
 const peelsNothing = (frame: BandOutcomesFrame) => frame.peelKb === 0;
 
 const paysOf = (rung: CoverageRung, frame: BandOutcomesFrame) => {
 	if (rung.band === "perfect") return signedKbLabel(frame.payout(SLICE_WINDOW));
-	if (rung.band === "shaky")
+	if (rung.band === "danger")
+		return frame.catchesFatal === true ? CAUGHT_INSTEAD : ENDS_THE_RUN;
+	if (!clearsAt(rung.band, frame.gate))
 		return peelsNothing(frame)
 			? NO_PEEL
 			: `${signedKbLabel(-frame.peelKb)} ${PEEL_TRAIL}`;
-	if (rung.band === "danger")
-		return frame.catchesFatal === true ? CAUGHT_INSTEAD : ENDS_THE_RUN;
 
 	return signedKbLabel(
 		frame.payout(answersToLand(rung.from, frame.coverageGainPercent))
@@ -165,24 +191,83 @@ const clearObjectiveFor = (
 	};
 };
 
+const minimumObjectiveFor = (): Objective => ({
+	statement: [MINIMUM_LEAD, { figure: `${MIN_WINDOW_UNITS}` }, MINIMUM_TRAIL],
+	earns: [MINIMUM_EARNS],
+});
+
 const swatchObjectiveFor = ({ swatch }: BandOutcomesFrame): Objective => ({
-	statement: [ALL_RIGHT],
+	statement: [ALL_RIGHT_LEAD, { figure: `${SLICE_WINDOW}` }, ALL_RIGHT_TRAIL],
 	earns: [EARNS, { swatch, label: `${swatch.gateName} ${SWATCH_WORD}` }],
 });
 
 export const objectivesFor = (frame: BandOutcomesFrame): ObjectivesProps => ({
 	objectives: [
-		clearObjectiveFor(clearingRungFor(frame.ladder), frame),
+		clearObjectiveFor(clearingRungFor(frame.ladder, frame.gate), frame),
+		minimumObjectiveFor(),
 		swatchObjectiveFor(frame),
 	],
 });
 
-export const bandOutcomesFor = (frame: BandOutcomesFrame): BandOutcome[] =>
-	coverageRungsFor(frame.ladder).map((rung) => ({
-		band: rung.band,
-		range: rangeOf(rung),
-		pays: paysOf(rung, frame),
-	}));
+export const metaFor = ({ swatch, gate }: BandOutcomesFrame): LeadLine => [
+	`${swatch.gateName}${META_JOIN}${GATE_WORD} `,
+	{ figure: `${gate}` },
+];
+
+export const ladderFor = (frame: BandOutcomesFrame): BandLadderProps => ({
+	held: frame.held,
+	lines: frame.ladder,
+	rungs: [...coverageRungsFor(frame.ladder)]
+		.reverse()
+		.map((rung): LadderRung => ({ ...rung, pays: paysOf(rung, frame) })),
+});
+
+const wordOf = (count: number, one: string, many: string) =>
+	count === 1 ? one : many;
+
+const pollsLeftPartsFor = (frame: BandOutcomesFrame): readonly LeadPart[] => {
+	const left = SLICE_WINDOW - frame.answeredThisGate;
+
+	return [
+		{ figure: `${left}` },
+		` ${wordOf(left, POLL_WORD, POLLS_WORD)}${LEFT}`,
+	];
+};
+
+const minimumPartsFor = (frame: BandOutcomesFrame): readonly LeadPart[] => {
+	const scored = frame.scoredThisGate;
+
+	if (scored === undefined || meetsWindowMinimum(scored)) return [];
+
+	return [
+		STANDING_JOIN,
+		{ figure: `${roundToOneDecimal(scored)}` },
+		` ${OF_WORD} `,
+		{ figure: `${MIN_WINDOW_UNITS}` },
+		` ${UNITS_WORD} ${SCORED_WORD}`,
+	];
+};
+
+export const standingLineFor = (frame: BandOutcomesFrame): LeadLine => {
+	const next = nextRungFor(frame.ladder, frame.held);
+	const polls = pollsLeftPartsFor(frame);
+	const minimum = minimumPartsFor(frame);
+
+	if (next === undefined) return [...polls, ...minimum];
+
+	const owed = roundToOneDecimal(
+		ratioOf(next.from - frame.held) * scoringSlotsAt(frame.gate)
+	);
+
+	return [
+		{ figure: `+${owed}`, band: next.band },
+		` ${wordOf(owed, UNIT_WORD, UNITS_WORD)}${UNITS_TO}`,
+		{ band: next.band },
+		STANDING_JOIN,
+		...polls,
+		...minimum,
+	];
+};
 
 const noteFor = (frame: BandOutcomesFrame): string => {
 	const lead = peelsNothing(frame) ? FREE_MISS_NOTE : BAND_OUTCOMES_NOTE;
@@ -191,12 +276,12 @@ const noteFor = (frame: BandOutcomesFrame): string => {
 };
 
 export const bandOutcomesPropsFor = (
-	frame: BandOutcomesFrame,
-	standing: CoverageBandId
+	frame: BandOutcomesFrame
 ): BandOutcomesProps => ({
 	title: BAND_OUTCOMES_TITLE,
+	meta: metaFor(frame),
 	objectives: objectivesFor(frame),
+	ladder: ladderFor(frame),
+	standing: standingLineFor(frame),
 	note: noteFor(frame),
-	outcomes: bandOutcomesFor(frame),
-	standing,
 });

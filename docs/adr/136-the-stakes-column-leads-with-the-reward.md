@@ -5,8 +5,9 @@
 Accepted — 2026-09-28 (Marciano, DVTD-e6zc). Supersedes
 [ADR-080](080-the-swatch-is-won-by-the-window.md) D4's two-row panel and
 [ADR-078](078-prep-reads-in-two-columns.md) D3's lead line, and corrects the
-swatch objective onto ADR-080 D1. ADR-078's three-column table, its one figure
-per band and its numbered rungs all stand.
+swatch objective onto ADR-080 D1. ADR-078's one figure per band and its
+numbered rungs stand; its table is superseded by [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md),
+which also supersedes decision 5 below.
 
 Built in the kanto kit: `Objectives.ui.tsx`, `Lead.ui.tsx`, `BandOutcomes.ui.tsx`
 and `bandOutcomes.viewmodel.ts`.
@@ -34,7 +35,7 @@ does not run.
    purpose clause comes out; naming the reward says what it was reaching for.
 
 2. **The clear names the next gate and quotes its own table row.** The figure is
-   `paysOf` on the clearing rung — the same call the band table makes — rather
+   `paysOf` on the clearing rung — the same call the ladder makes — rather
    than a second computation. ADR-078 D11 priced the bands through
    `gateClearPayout` for this reason; a panel that states a figure twice must
    state it from one place.
@@ -49,13 +50,8 @@ does not run.
    a third reading of the same state was the doubling ADR-078 was written
    against.
 
-5. **The band row the run is standing in is edged in its own colour.** The
-   component derives the band from the bar's own numbers via `coverageBandOf`
-   rather than taking it as a prop, which is the rule
-   [ADR-070](070-coverage-reads-as-a-banded-bar.md) D4 and
-   [ADR-076](076-the-closing-band-decides-what-it-costs.md) already set for this
-   panel: the accent, the pin and the fill cannot then disagree. DANGER keeps its
-   edge whether or not the run is standing in it.
+5. **The band row the run is standing in is edged in its own colour.** Superseded
+   by [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md): the ladder rings the zone, read off the same number the pin uses.
 
 6. **Audits are stated nowhere in this column.** The *arm an audit* objective is
    gone. Where an audit is acquired is DVTD-406l's question, and prep's right

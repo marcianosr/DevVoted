@@ -480,4 +480,21 @@ describe("ScreenActions", () => {
 
 		expect(container.querySelector("footer")).not.toHaveClass("border-t");
 	});
+
+	it("states the balance beside the press on a phone only, where no header pins it", () => {
+		render(
+			<ScreenFooter {...props} phoneFunds={{ label: "run storage", kb: 327 }} />
+		);
+
+		const figure = screen.getByRole("img", { name: "327 KB" });
+
+		expect(figure.closest(".md\\:hidden")).not.toBeNull();
+		expect(screen.getByText("run storage")).toBeInTheDocument();
+	});
+
+	it("states no balance when the screen hands it none", () => {
+		render(<ScreenFooter {...props} />);
+
+		expect(screen.queryByRole("img", { name: /KB$/ })).not.toBeInTheDocument();
+	});
 });

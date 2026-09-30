@@ -9,12 +9,15 @@ import {
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { ApprovalBoard } from "~/modules/run/run/domain/approval.model";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { POLLS_SPENT } from "~/shared/lib/copy";
 import { PrepScreen } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
 
 export type PrepViewProps = {
 	view: RunView;
+	runNumber?: number | null;
 	onStart: () => void;
 	onBackToShop?: () => void;
 	onCommunity?: () => void;
@@ -63,9 +66,20 @@ const asidesFor = (
 	}),
 ];
 
+const startRefusalFor = (
+	view: RunView,
+	stated: string | undefined
+): string | undefined => {
+	if (stated !== undefined) return stated;
+	if (view.pollsExhausted) return POLLS_SPENT;
+	if (view.vendorLock.offered) return VENDOR_REMEDY;
+	return commitmentRemedy(view);
+};
+
 export const PrepView = (props: PrepViewProps) => {
 	const {
 		view,
+		runNumber = null,
 		onStart,
 		startRefusal,
 		onEstimate,
@@ -75,14 +89,12 @@ export const PrepView = (props: PrepViewProps) => {
 		onApprove,
 	} = props;
 	const { gateStake } = view;
-	const owed = commitmentRemedy(view);
-	const vendorOwed = view.vendorLock.offered;
-	const refusal =
-		startRefusal ?? (vendorOwed ? VENDOR_REMEDY : undefined) ?? owed;
-	const held = view.pollsExhausted || vendorOwed || owed !== undefined;
+	const refusal = startRefusalFor(view, startRefusal);
+	const held = refusal !== undefined;
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
 		answeredPolls: view.allAnswered,
+		scoredThisGate: view.scoredThisGate,
 		configs: view.configs,
 		audits: gateStake.audits,
 		balanceKb: view.storage,
@@ -90,7 +102,6 @@ export const PrepView = (props: PrepViewProps) => {
 		spaceBillKb: view.buildSpace.perGateKb,
 		window: windowOf(view),
 		bar: { ...gateStake.coverageLadder, held: gateStake.coverageHeld },
-		unitsHeld: gateStake.unitsHeld,
 		coverageGainPercent: coverageGainPercentFor(
 			gateStake.perAnswer.coveragePerCorrect,
 			gateStake.gateNumber
@@ -106,6 +117,8 @@ export const PrepView = (props: PrepViewProps) => {
 		approval: approval ?? null,
 		approvedPollId: view.approvedPollId,
 		swatchGates: view.swatchGates,
+		outageTargets: view.outageTargets,
+		readout: runReadoutFor(view, runNumber),
 	});
 
 	return (

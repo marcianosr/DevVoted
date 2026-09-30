@@ -2,10 +2,12 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
+import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
 export const RunGate = () => {
 	const { view } = useTodaysRun();
+	const runNumber = useRunNumber();
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 
@@ -33,6 +35,7 @@ export const RunGate = () => {
 
 	return (
 		<GateOutcomeView
+			runNumber={runNumber.view}
 			view={view}
 			verdict={held ? "held" : "cleared"}
 			onReview={() => navigate({ to: "/run/review" })}

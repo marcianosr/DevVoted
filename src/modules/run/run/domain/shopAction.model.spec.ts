@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	CHEAPEST_DRAFT_COST_KB,
 	type Config,
 	draftCost,
 	slotsOf,
@@ -26,6 +27,7 @@ import {
 	BASE_SLOTS,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
+	SKIP_SHOP_KB,
 	SLICE_WINDOW,
 	pinCostFor,
 	streakMultiplier,
@@ -35,11 +37,16 @@ import {
 	overflowWeightOf,
 	type RunState,
 } from "~/modules/run/run/domain/run.model";
-import { pinAvailable } from "~/modules/run/run/domain/shopAction.model";
+import {
+	pinAvailable,
+	skipShopAvailable,
+} from "~/modules/run/run/domain/shopAction.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	answerWith,
+	audited,
+	carrying,
 	clearGate,
 	configIds,
 	handed,
@@ -55,22 +62,22 @@ describe("selling in the shop", () => {
 	};
 
 	it("removes a sold config and refunds half its draft cost", () => {
-		let state = { ...rewardingWith("eslint"), storage: 0 };
-		state = runReducer(state, { type: "sell", configId: "eslint" });
-		expect(configIds(state)).not.toContain("eslint");
+		let state = { ...rewardingWith("html"), storage: 0 };
+		state = runReducer(state, { type: "sell", configId: "html" });
+		expect(configIds(state)).not.toContain("html");
 		expect(state.storage).toBe(16);
 	});
 
 	it("refuses to deinstall the only installed config", () => {
 		const state = {
-			...rewardingWith("eslint"),
+			...rewardingWith("linter"),
 			storage: 0,
 		};
 		const oneConfig = {
 			...state,
-			build: { ...state.build, configs: [CONFIGS.eslint] },
+			build: { ...state.build, configs: [CONFIGS.linter] },
 		};
-		const blocked = runReducer(oneConfig, { type: "sell", configId: "eslint" });
+		const blocked = runReducer(oneConfig, { type: "sell", configId: "linter" });
 		expect(blocked).toBe(oneConfig);
 	});
 
@@ -93,8 +100,8 @@ describe("selling in the shop", () => {
 	});
 
 	it("resets the sale tally when the shop closes", () => {
-		let state = rewardingWith("eslint");
-		state = runReducer(state, { type: "sell", configId: "eslint" });
+		let state = rewardingWith("linter");
+		state = runReducer(state, { type: "sell", configId: "linter" });
 		state = runReducer(state, { type: "finish-reward" });
 		expect(state.soldThisShop).toBe(0);
 	});
@@ -102,9 +109,9 @@ describe("selling in the shop", () => {
 
 describe("shop controls (DVTD-5lt6)", () => {
 	const shopping = (gatesCleared = 3, storage = 512): RunState => {
-		let state = started(["eslint"]);
+		let state = started(["linter"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		return { ...state, gatesCleared, storage, streak: 50 };
+		return carrying({ ...state, gatesCleared, storage, streak: 50 }, "extend");
 	};
 
 	const lockerShopping = (gatesCleared = 3, storage = 512): RunState => {
@@ -293,6 +300,11 @@ describe("shop controls (DVTD-5lt6)", () => {
 			const early = shopping(EXTEND_FROM_GATE - 1);
 			expect(runReducer(early, { type: "extend-offers" })).toBe(early);
 		});
+
+		it("is refused when the run did not carry Extend in at new run (ADR-153)", () => {
+			const uncarried = { ...shopping(), warmBoot: undefined };
+			expect(runReducer(uncarried, { type: "extend-offers" })).toBe(uncarried);
+		});
 	});
 
 	it("resets rebuilds at the next shop but keeps locks and extensions", () => {
@@ -310,19 +322,19 @@ describe("shop controls (DVTD-5lt6)", () => {
 
 describe("dropping from the gate-prep screen", () => {
 	it("drops an installed config while answering, no refund", () => {
-		let state = { ...started(["eslint", "js"]), storage: 0 };
-		state = runReducer(state, { type: "drop", configId: "eslint" });
-		expect(configIds(state)).not.toContain("eslint");
+		let state = { ...started(["linter", "js"]), storage: 0 };
+		state = runReducer(state, { type: "drop", configId: "linter" });
+		expect(configIds(state)).not.toContain("linter");
 		expect(state.storage).toBe(0);
 	});
 
 	it("refuses to drop the only installed config while answering", () => {
-		const state = started(["eslint"]);
+		const state = started(["linter"]);
 		const oneConfig = {
 			...state,
-			build: { ...state.build, configs: [CONFIGS.eslint] },
+			build: { ...state.build, configs: [CONFIGS.linter] },
 		};
-		const blocked = runReducer(oneConfig, { type: "drop", configId: "eslint" });
+		const blocked = runReducer(oneConfig, { type: "drop", configId: "linter" });
 		expect(blocked).toBe(oneConfig);
 	});
 
@@ -335,11 +347,21 @@ describe("dropping from the gate-prep screen", () => {
 });
 
 describe("the git tag (ADR-036)", () => {
-	const shopAt = (gatesCleared: number, storage = 1000): RunState => ({
-		...started(["js"]),
-		status: "rewarding",
-		gatesCleared,
-		storage,
+	const shopAt = (gatesCleared: number, storage = 1000): RunState =>
+		carrying(
+			{
+				...started(["js"]),
+				status: "rewarding",
+				gatesCleared,
+				storage,
+			},
+			"pin"
+		);
+
+	it("is never sold to a run that did not carry a tag in (ADR-153)", () => {
+		const uncarried = { ...shopAt(4), warmBoot: undefined };
+		expect(pinAvailable(uncarried)).toBe(false);
+		expect(runReducer(uncarried, { type: "plant-pin" })).toBe(uncarried);
 	});
 
 	it("plants the tag at the current gate and charges that gate's price", () => {
@@ -403,11 +425,10 @@ describe("the git tag (ADR-036)", () => {
 	});
 
 	it("sells a rescued run another tag, at its own gate's price", () => {
-		const rescued: RunState = {
-			...createRun(pool(20), handed, 7),
-			status: "rewarding",
-			storage: 1000,
-		};
+		const rescued: RunState = carrying(
+			{ ...createRun(pool(20), handed, 7), status: "rewarding", storage: 1000 },
+			"pin"
+		);
 		expect(rescued.pinPlantedAtGate).toBeUndefined();
 		expect(pinAvailable(rescued)).toBe(true);
 		const planted = runReducer(rescued, { type: "plant-pin" });
@@ -461,7 +482,7 @@ describe("economy", () => {
 			...createRun([triPoll], handed),
 			status: "answering",
 			storage: 100,
-			build: { id: "build", configs: [CONFIGS.eslint] },
+			build: { id: "build", configs: [CONFIGS.linter] },
 		};
 		const linted = runReducer(withLinter, { type: "lint-poll" });
 		expect(linted.storage).toBe(92);
@@ -494,7 +515,7 @@ describe("economy", () => {
 			...createRun([quadPoll], handed),
 			status: "answering",
 			storage: 100,
-			build: { id: "build", configs: [CONFIGS.eslint] },
+			build: { id: "build", configs: [CONFIGS.linter] },
 		};
 
 		const once = runReducer(state, { type: "lint-poll" });
@@ -602,7 +623,7 @@ describe("build space follows the build (ADR-098)", () => {
 
 describe("WTFPL's open shop", () => {
 	const licensed = (): RunState => {
-		let state = started(["eslint"]);
+		let state = started(["linter"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		return {
 			...state,
@@ -630,8 +651,8 @@ describe("WTFPL's open shop", () => {
 	});
 
 	it("zeroes every other sale too while installed — no warranty on anything", () => {
-		const sold = runReducer(holding(), { type: "sell", configId: "eslint" });
-		expect(configIds(sold)).not.toContain("eslint");
+		const sold = runReducer(holding(), { type: "sell", configId: "linter" });
+		expect(configIds(sold)).not.toContain("linter");
 		expect(sold.storage).toBe(600 - 512);
 	});
 
@@ -813,5 +834,98 @@ describe("YAGNI takes the empty room off the bill at the close", () => {
 		expect(
 			billFor(withConfigs(shopAt(2), RICH, CONFIGS.cache, CONFIGS.yagni))
 		).toBe(40);
+	});
+});
+
+describe("skip shop pays for leaving the registry untouched (DVTD-2l5k)", () => {
+	const shopping = (storage = 100): RunState => ({
+		...clearGate(started(["js"])),
+		storage,
+		draftOptions: [CONFIGS.indexedDb],
+	});
+
+	it("pays the skip into storage and marks the visit skipped", () => {
+		const skipped = runReducer(shopping(), { type: "skip-shop" });
+
+		expect(skipped.storage).toBe(100 + SKIP_SHOP_KB);
+		expect(skipped.shopVisit).toBe("skipped");
+	});
+
+	it("pays less than the cheapest draft", () => {
+		expect(SKIP_SHOP_KB).toBeLessThan(CHEAPEST_DRAFT_COST_KB);
+	});
+
+	it("refuses a second skip in the same visit", () => {
+		const skipped = runReducer(shopping(), { type: "skip-shop" });
+
+		expect(runReducer(skipped, { type: "skip-shop" })).toBe(skipped);
+	});
+
+	it("refuses the skip once the registry was touched", () => {
+		const drafted = runReducer(shopping(), {
+			type: "draft",
+			configId: "indexed-db",
+		});
+
+		expect(drafted.shopVisit).toBe("touched");
+		expect(runReducer(drafted, { type: "skip-shop" })).toBe(drafted);
+	});
+
+	it("keeps the skip open when a registry press is refused", () => {
+		const broke = shopping(0);
+		const refused = runReducer(broke, {
+			type: "draft",
+			configId: "indexed-db",
+		});
+
+		expect(refused).toBe(broke);
+		expect(skipShopAvailable(refused)).toBe(true);
+	});
+
+	it("closes the registry for the rest of a skipped visit", () => {
+		const skipped = runReducer(shopping(), { type: "skip-shop" });
+
+		expect(runReducer(skipped, { type: "draft", configId: "indexed-db" })).toBe(
+			skipped
+		);
+		expect(runReducer(skipped, { type: "rebuild-draft" })).toBe(skipped);
+	});
+
+	it("still takes the vendor lock after a skip", () => {
+		const base = shopping();
+		const withLocker: RunState = {
+			...base,
+			build: {
+				...base.build,
+				configs: [...base.build.configs, CONFIGS.vendorLockIn],
+			},
+		};
+		const skipped = runReducer(withLocker, { type: "skip-shop" });
+
+		const locked = runReducer(skipped, { type: "vendor-lock", configId: "js" });
+
+		expect(locked.build.vendorLockedConfigId).toBe("js");
+	});
+
+	it("refuses the skip while an audit closes the shop", () => {
+		const readOnly = audited(
+			{ ...shopping(), gatesCleared: 6 },
+			6,
+			"read-only"
+		);
+
+		expect(runReducer(readOnly, { type: "skip-shop" })).toBe(readOnly);
+	});
+
+	it("opens the next visit untouched", () => {
+		const drafted = runReducer(shopping(), {
+			type: "draft",
+			configId: "indexed-db",
+		});
+
+		const next = clearGate(runReducer(drafted, { type: "finish-reward" }));
+
+		expect(next.shopVisit).toBeUndefined();
+		expect(skipShopAvailable(next)).toBe(true);
 	});
 });

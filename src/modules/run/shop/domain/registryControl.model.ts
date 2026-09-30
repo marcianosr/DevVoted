@@ -5,6 +5,8 @@ import type {
 } from "~/modules/run/config/domain/configUnlock.model";
 import {
 	BOOT_CACHE_BANK_KB,
+	EXTEND_CARRY_BYTES,
+	PIN_CARRY_BYTES,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -13,6 +15,7 @@ import { kbLabel } from "~/shared/lib/storage";
 
 export type RegistryControlId =
 	| "rebuild"
+	| "skipShop"
 	| "extend"
 	| "hotReload"
 	| "returnPolicy"
@@ -20,8 +23,6 @@ export type RegistryControlId =
 	| "pin"
 	| "bootCache"
 	| "dockerImage";
-
-export type RegistryControlScope = "registry" | "run";
 
 export type ServiceUnlock =
 	| { readonly kind: "starter" }
@@ -37,11 +38,11 @@ export type ServiceSale =
 
 export type RegistryControlSpec = {
 	readonly id: RegistryControlId;
-	readonly scope: RegistryControlScope;
 	readonly glyph: string;
 	readonly title: string;
 	readonly detail: string;
 	readonly unlock: ServiceUnlock;
+	readonly carryBytes?: number;
 } & ServiceSale;
 
 export type ServiceUnlockGrant = {
@@ -76,7 +77,6 @@ const reached = (gate: number, caption: string, earnedCaption: string) =>
 export const REGISTRY_CONTROLS = {
 	rebuild: {
 		id: "rebuild",
-		scope: "registry",
 		glyph: "↻",
 		title: "Rebuild the registry",
 		detail: "deals a fresh set of offers",
@@ -84,19 +84,27 @@ export const REGISTRY_CONTROLS = {
 		soldIn: "shop",
 		opensAfterGates: REBUILD_FROM_GATE,
 	},
+	skipShop: {
+		id: "skipShop",
+		glyph: "⏭",
+		title: "Skip the shop",
+		detail: "leave without touching the registry; paid a little storage",
+		unlock: { kind: "starter" },
+		soldIn: "shop",
+		opensAfterGates: REBUILD_FROM_GATE,
+	},
 	extend: {
 		id: "extend",
-		scope: "registry",
 		glyph: "+",
 		title: "Extend the registry",
-		detail: "one more offer, now and every shop after",
+		detail: "add extra offers throughout the run, against a price",
 		unlock: reached(CASCADE_GATE, "Reach Cascade", "reached Cascade"),
 		soldIn: "shop",
 		opensAfterGates: EXTEND_FROM_GATE,
+		carryBytes: EXTEND_CARRY_BYTES,
 	},
 	hotReload: {
 		id: "hotReload",
-		scope: "registry",
 		glyph: "⇋",
 		title: "Hot reload one offer",
 		detail: "reroll a single card, keep the rest",
@@ -111,7 +119,6 @@ export const REGISTRY_CONTROLS = {
 	},
 	returnPolicy: {
 		id: "returnPolicy",
-		scope: "registry",
 		glyph: "↩",
 		title: "Return policy",
 		detail: "sell a drafted config back at full price",
@@ -126,7 +133,6 @@ export const REGISTRY_CONTROLS = {
 	},
 	abandon: {
 		id: "abandon",
-		scope: "registry",
 		glyph: "✕",
 		title: "kill -9",
 		detail: "end this run now; nothing banks",
@@ -140,10 +146,10 @@ export const REGISTRY_CONTROLS = {
 	},
 	pin: {
 		id: "pin",
-		scope: "run",
 		glyph: "⚑",
 		title: "git tag",
-		detail: "if this run dies, the next resumes here",
+		detail:
+			"save your last checkpoint once; each gate asks a higher price to activate it",
 		unlock: reached(
 			PIN_FROM_GATE,
 			`Reach gate ${PIN_FROM_GATE}`,
@@ -152,10 +158,10 @@ export const REGISTRY_CONTROLS = {
 		soldIn: "shop",
 		opensAfterGates: PIN_FROM_GATE,
 		closesAfterGates: PIN_UNTIL_GATE,
+		carryBytes: PIN_CARRY_BYTES,
 	},
 	bootCache: {
 		id: "bootCache",
-		scope: "run",
 		glyph: "▮",
 		title: "Boot Cache",
 		detail: "start the next run with storage already banked",
@@ -169,7 +175,6 @@ export const REGISTRY_CONTROLS = {
 	},
 	dockerImage: {
 		id: "dockerImage",
-		scope: "run",
 		glyph: "⧉",
 		title: "Docker Image",
 		detail: "one config from your last build, offered again at its price",
@@ -195,15 +200,40 @@ export type ShopSoldSpec = Extract<RegistryControlSpec, { soldIn: "shop" }> & {
 	readonly id: ShopSoldId;
 };
 
+export type CarriedServiceId = {
+	[Id in RegistryControlId]: (typeof REGISTRY_CONTROLS)[Id] extends {
+		carryBytes: number;
+	}
+		? Id
+		: never;
+}[RegistryControlId];
+
+export type CarriedServiceSpec = RegistryControlSpec & {
+	readonly id: CarriedServiceId;
+	readonly carryBytes: number;
+};
+
 export const REGISTRY_CONTROL_LIST: readonly RegistryControlSpec[] =
 	Object.values(REGISTRY_CONTROLS);
 
 export const REGISTRY_CONTROL_IDS: readonly RegistryControlId[] =
 	REGISTRY_CONTROL_LIST.map((control) => control.id);
 
+export const registryControlOf = (id: RegistryControlId): RegistryControlSpec =>
+	REGISTRY_CONTROLS[id];
+
+export const isRegistryControlId = (
+	value: string
+): value is RegistryControlId =>
+	REGISTRY_CONTROL_IDS.some((id) => id === value);
+
 export const isSoldInShop = (
 	control: RegistryControlSpec
 ): control is ShopSoldSpec => control.soldIn === "shop";
+
+export const isCarriedService = (
+	control: RegistryControlSpec
+): control is CarriedServiceSpec => control.carryBytes !== undefined;
 
 export const openingGateOf = (control: ShopSoldSpec): number =>
 	control.opensAfterGates - 1;

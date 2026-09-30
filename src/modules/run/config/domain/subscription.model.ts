@@ -55,9 +55,12 @@ export const billSubscriptionsOnClear = (
 export type BillLine = {
 	readonly id: string;
 	readonly label: string;
+	readonly weight?: number;
 	readonly kb: number;
 	readonly billedOnMiss: boolean;
 };
+
+const SPACE_LINE_LABEL = "weight build space";
 
 export type BillLedger = {
 	readonly lines: readonly BillLine[];
@@ -92,7 +95,8 @@ export const billLedger = ({
 			? [
 					{
 						id: "build-space",
-						label: `${spaceWeight} weight build space`,
+						label: SPACE_LINE_LABEL,
+						weight: spaceWeight,
 						kb: spaceBillKb,
 						billedOnMiss: false,
 					},

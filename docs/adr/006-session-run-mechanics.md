@@ -54,7 +54,8 @@ ADR-008 made the clear a multi-buy shop bounded by storage.
 
 The on-demand "cross out a wrong answer" action is available **only when a
 linter config is equipped**. Owning ESLint or Stylelint grants both the passive
-cross-out and the paid on-demand button. No config, no button.
+cross-out and the paid on-demand button. No config, no button. Since ADR-158 the
+linter is one config, Linter, covering every category and versioned.
 
 *Rationale:* everything a player can *do* is earned by drafting it. An action
 that exists unconditionally is a rule of the game; an action a config grants is

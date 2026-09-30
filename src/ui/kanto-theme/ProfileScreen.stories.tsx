@@ -15,7 +15,6 @@ import { kantoStanding } from "~/test/kantoCommunity.factory";
 import { trackFor } from "~/test/swatchTrack.factory";
 
 import { Button } from "./Button.ui";
-import type { KantoColor } from "./colors";
 import { DexAudits } from "./DexAudits.ui";
 import { DexConfigs } from "./DexConfigs.ui";
 import { DexControls } from "./DexControls.ui";
@@ -48,17 +47,6 @@ const TABS = [
 	{ id: "runs", label: "runs" },
 	{ id: "appearance", label: "appearance" },
 ];
-
-const THEME: Record<string, KantoColor> = {
-	polls: "cerulean",
-	configs: "pallet",
-	controls: "seafoam",
-	audits: "saffron",
-	swatches: "lavender",
-	runs: "pewter",
-	borders: "fuchsia",
-	titles: "viridian",
-};
 
 const PANELS: Record<string, ReactNode> = {
 	polls: <DexPolls {...dexPollsProps()} />,
@@ -113,7 +101,7 @@ const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 			tabs={TABS}
 			activeId={activeId}
 			onSelect={setActiveId}
-			theme={THEME[activeId]}
+			theme="pallet"
 			archive="8.2 MB archive"
 		>
 			{activeId === "configs" ? <ConfigsPanel /> : PANELS[activeId]}
@@ -202,7 +190,7 @@ export const Visited: Story = {
 	render: () => (
 		<ProfileScreen
 			card={VISITED_CARD}
-			theme="cerulean"
+			theme="pallet"
 			sections={visitedSections(kantoStanding())}
 		/>
 	),
@@ -212,7 +200,7 @@ export const VisitedWhileResting: Story = {
 	render: () => (
 		<ProfileScreen
 			card={VISITED_CARD}
-			theme="cerulean"
+			theme="pallet"
 			sections={visitedSections()}
 		/>
 	),

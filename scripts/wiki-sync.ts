@@ -91,7 +91,7 @@ const unlocksAt = (gate: number) => {
 	const notes = [
 		gate === 0 ? GATE_0_UNLOCKS : undefined,
 		gate === EXTEND_FROM_GATE ? "**Extend**" : undefined,
-		gate === VICTORY_GATE ? "Clearing it wins the run" : undefined,
+		gate === VICTORY_GATE ? "Clearing it on HEALTHY or better wins the run" : undefined,
 	].filter((note) => note !== undefined);
 
 	return notes.length === 0 ? "—" : notes.join(", ");

@@ -1,13 +1,15 @@
-import { COMMUNITY, NEEDED, STORAGE_BALANCE } from "~/shared/lib/copy";
+import { COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	flatClearPayoutsOf,
 	occupiedSlots,
 } from "~/modules/run/build/domain/build.model";
 import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { clearsUntilDeleted } from "~/modules/run/config/domain/decay.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
+import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 import type {
 	GateHoldReason,
 	GateLadder,
@@ -19,12 +21,11 @@ import {
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	ESCROW_COMMIT_MULTIPLIER,
-	FLOOR_CORRECT,
 	GATE_COUNT,
 	INCIDENT_SURVIVAL_KB,
+	MIN_WINDOW_UNITS,
 	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
-	VICTORY_GATE,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
 	roundToOneDecimal,
@@ -43,6 +44,7 @@ import {
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import {
+	COVERAGE_BAND_COLOR,
 	type CoverageBandId,
 	type CoverageBarProps,
 	coverageBandOf,
@@ -59,11 +61,15 @@ import type {
 	GatePeelSource,
 } from "~/ui/kanto-theme/GateChoice.ui";
 import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
+import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type {
-	GateOutcomeChip,
+	GateOutcomeRow,
+	GateOutcomeRowsPanel,
 	GateOutcomeScreenProps,
 	GateOutcomeTail,
 } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
+import { swatchFillsFor } from "~/ui/kanto-theme/Swatch.ui";
+import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import type { LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
@@ -98,21 +104,37 @@ const RUN_OVER_TITLE = "Run over";
 const BALANCE = STORAGE_BALANCE;
 const BALANCE_WORD = STORAGE_BALANCE;
 const CLEARED_ROW = "Gate cleared";
-const BONUS_ROW = "perfect bonus";
-const PLAN_ROW = "storage plan";
-const CORRECT_ROW = "correct answers";
-const PEEL_ROW = "peel refund";
-const COMMIT_ROW = "transaction committed";
-const SLA_ROW = "agreement met";
+const BONUS_ROW = "Perfect bonus";
+const PLAN_ROW = "Storage plan";
+const CORRECT_ROW = "Correct answers";
+const PEEL_ROW = "Peel refund";
+const COMMIT_ROW = "Transaction committed";
+const SLA_ROW = "Agreement met";
 const SLA_NOTE = "the band you promised held";
-const SURVIVED_ROW = "audits survived";
+const SURVIVED_ROW = "Audits survived";
 const SURVIVED_NOTE = `${kbLabel(INCIDENT_SURVIVAL_KB)} per incident a rival fired`;
-const ROLLBACK_ROW = "transaction rolled back";
+const ROLLBACK_ROW = "Transaction rolled back";
 
-const UNLOCKED = "unlocked";
-const FADED = "faded";
+const EARNED_TITLE = "Earned";
+const EARNED_HINT = "Dex and Appearance update right away.";
+const NEW_WORD = "new";
+const NOTHING_NEW = "nothing new";
+const UNLOCKED_VERB = "unlocked";
+const NEW_CONFIG = "new config";
+const NEW_TITLE = "new title";
+const TITLE_GLYPH = "✦";
+const SWATCH_EARNED_NAME = "swatch earned";
+const SWATCH_MISSED_NAME = "swatch missed";
+const SWATCH_NEEDS = `needs all ${SLICE_WINDOW} right`;
+const SWATCH_WORD = "swatch";
+
+const DEPRECATED_VERB = "deprecated";
+const REMOVED_VERB = "removed";
+const EXPIRING_WORD = "expiring";
+const UPGRADED_WORD = "upgraded";
+const GATE_LEFT = "1 gate left";
+const REPLACE_IN_SHOP = "replace it in the shop";
 const NOTHING_MOVED = "nothing moved";
-const NOTHING_CHANGED = "none";
 const NOT_PAID = "not paid";
 const ROLLED_BACK = "nothing paid";
 const NOTHING_PAID = "nothing paid";
@@ -121,9 +143,11 @@ const STREAK_BROKEN = "streak broken";
 const BAR_FILLED = "the bar filled";
 const PAYOUT_CUT = "the payout is cut";
 const METER_SHORT = "the meter fell short";
+const SCORED_LEAD = "scored";
+const OF_WORD = "of";
+const UNITS_WORD = "units";
 const CAUGHT_REASON = "the meter never reached the floor — caught";
 const CAUGHT_CHIP = "caught";
-const RIGHT_WORD = "right";
 const METER_NEVER = "the meter never reached the floor";
 const NO_RETRY = "no retry, no peel";
 const CLIMB_DONE = "the climb is done";
@@ -144,6 +168,8 @@ export const REFUND_NOTE =
 	"Garbage Collection is installed, so every config you drop here also refunds its sell value.";
 
 const GAIN_COLOR = "viridian" as const;
+const NEW_COLOR = "cerulean" as const;
+const BALANCE_ICON = "floppy" as const;
 const LOSS_COLOR = "cinnabar" as const;
 const TERM_COLOR = "saffron" as const;
 
@@ -160,26 +186,34 @@ const within = (value: number, low: number, high: number) =>
 
 export const closedBarFor = (
 	closing: GateClosing,
+	gate: number,
 	ladder: GateLadder,
 	held: number,
 	heldBy?: GateHoldReason
 ): CoverageBarProps => ({
 	...ladder,
-	held: closedHeldFor(closing, ladder, held, heldBy),
+	held: closedHeldFor(closing, gate, ladder, held, heldBy),
 });
+
+const clearingLineOf = (gate: number, { ok, healthy }: GateLadder): number =>
+	clearsAt("ok", gate) ? ok : healthy;
 
 const closedHeldFor = (
 	closing: GateClosing,
-	{ floor, ok }: GateLadder,
+	gate: number,
+	ladder: GateLadder,
 	held: number,
 	heldBy: GateHoldReason | undefined
 ): number => {
-	if (closing === "cleared") return Math.max(ok, held);
-	if (closing === "held" && heldBy === "floor") return within(held, 0, 100);
-	if (closing === "held" && heldBy === "catch") return within(held, 0, 100);
-	if (closing === "held") return within(held, floor, ok - BAND_TICK);
+	const clearingLine = clearingLineOf(gate, ladder);
 
-	return within(held, 0, Math.max(0, floor - BAND_TICK));
+	if (closing === "cleared") return Math.max(clearingLine, held);
+	if (closing === "held" && heldBy === "unscored") return within(held, 0, 100);
+	if (closing === "held" && heldBy === "catch") return within(held, 0, 100);
+	if (closing === "held")
+		return within(held, ladder.floor, clearingLine - BAND_TICK);
+
+	return within(held, 0, Math.max(0, ladder.floor - BAND_TICK));
 };
 
 export type GateAnswer = {
@@ -202,13 +236,16 @@ export type GateOutcomeFrame = {
 	gate: number;
 	answers: readonly GateAnswer[];
 	swatchGates: readonly number[];
+	readout?: RunReadoutProps;
 	balanceBeforeKb: number;
 	configs: readonly Config[];
 	buildSpace?: number;
 	streak?: number;
 	unlocked?: readonly { config: Config; detail: string }[];
-	faded?: readonly { config: Config; detail: string }[];
+	titles?: readonly { name: string; detail: string }[];
 	paid?: readonly { config: Config; detail: string; kb: number }[];
+	upgraded?: readonly { config: Config; detail: string }[];
+	removed?: readonly { config: Config; detail: string }[];
 	auditIds?: readonly AuditId[];
 	chosen?: readonly string[];
 	onToggle?: (configId: string) => void;
@@ -217,6 +254,8 @@ export type GateOutcomeFrame = {
 	won?: boolean;
 	open?: boolean;
 	heldBy?: GateHoldReason;
+	scoredUnits?: number;
+	peelSlotsRemaining?: number;
 	caughtFatalBy?: string;
 	slaUpliftKb?: number;
 	incidentSurvivalKb?: number;
@@ -293,27 +332,33 @@ const coverageRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 		};
 	});
 
-const heldByFloor = (frame: GateOutcomeFrame): boolean =>
-	frame.heldBy === "floor";
+const heldByUnscored = (frame: GateOutcomeFrame): boolean =>
+	frame.heldBy === "unscored";
+
+const scoredLineOf = (frame: GateOutcomeFrame): string =>
+	`${SCORED_LEAD} ${frame.scoredUnits ?? 0} ${OF_WORD} ${MIN_WINDOW_UNITS} ${UNITS_WORD}`;
 
 const heldByCatch = (frame: GateOutcomeFrame): boolean =>
 	frame.heldBy === "catch";
 
-const bandOf = (frame: GateOutcomeFrame): CoverageBandId =>
-	heldByFloor(frame) || heldByCatch(frame)
-		? SHAKY_BAND
-		: coverageBandOf(frame.bar.held, frame.bar);
+const readsAsHeld = (frame: GateOutcomeFrame, band: CoverageBandId): boolean =>
+	band !== RUN_OVER_BAND && !clearsAt(band, frame.gate);
 
-const dayCountOf = (frame: GateOutcomeFrame): string =>
-	`${correctCount(frame.answers)} of ${SLICE_WINDOW} ${RIGHT_WORD}`;
+const bandOf = (frame: GateOutcomeFrame): CoverageBandId => {
+	const band = coverageBandOf(frame.bar.held, frame.bar);
+
+	return heldByUnscored(frame) || heldByCatch(frame) || readsAsHeld(frame, band)
+		? SHAKY_BAND
+		: band;
+};
 
 const swatchEarnedIn = (frame: GateOutcomeFrame): boolean =>
 	frame.swatchGates.includes(frame.gate);
 
-export const CLEARING_BANDS = {
+const SWATCH_BANDS = {
 	perfect: true,
 	healthy: true,
-	ok: true,
+	ok: false,
 	shaky: false,
 	danger: false,
 } satisfies Record<CoverageBandId, boolean>;
@@ -334,12 +379,6 @@ const OUTCOME_SUFFIX = {
 	danger: "",
 } satisfies Record<CoverageBandId, string>;
 
-const SWATCH_EARNED = "swatch earned";
-const SWATCH_WON = "You earned the";
-const SWATCH_WORD_WON = "Swatch!";
-const SWATCH_LOST = "You didn't earn the";
-const SWATCH_WORD_LOST = "swatch";
-
 const SCORES_OUT_OF = "scores out of";
 const SLOTS_WORD = "slots";
 
@@ -354,50 +393,34 @@ const titleOf = (band: CoverageBandId, gateName: string) =>
 
 const holdReasonOf = (frame: GateOutcomeFrame): string => {
 	if (heldByCatch(frame)) return CAUGHT_REASON;
-	if (heldByFloor(frame))
-		return `${dayCountOf(frame)}, ${FLOOR_CORRECT} ${NEEDED}`;
+	if (heldByUnscored(frame)) return scoredLineOf(frame);
 	return METER_SHORT;
 };
 
-const swatchLineOf = (frame: GateOutcomeFrame, gateName: string) =>
-	swatchEarnedIn(frame)
-		? `${SWATCH_WON} ${gateName} ${SWATCH_WORD_WON}`
-		: `${SWATCH_LOST} ${gateName} ${SWATCH_WORD_LOST}`;
-
-const subtitleOf = (
-	frame: GateOutcomeFrame,
-	band: CoverageBandId,
-	gateName: string
-) => {
-	const place = `gate ${frame.gate} of ${VICTORY_GATE}`;
-	const swatch = swatchLineOf(frame, gateName);
-
-	if (band === "perfect") return `${place} cleared · ${swatch}`;
-	if (band === "healthy") return `${place} cleared · ${swatch}`;
-	if (band === "ok") return `${place} cleared on the OK band · ${PAYOUT_CUT}`;
+const noteOf = (frame: GateOutcomeFrame, band: CoverageBandId) => {
+	if (SWATCH_BANDS[band]) return undefined;
+	if (band === "ok") return `cleared on the OK band · ${PAYOUT_CUT}`;
 	if (band === "shaky")
-		return `${place} · ${holdReasonOf(frame)} · ${plural(SLICE_WINDOW, "fresh poll")} on the retry`;
+		return `${holdReasonOf(frame)} · ${plural(SLICE_WINDOW, "fresh poll")} on the retry`;
 
-	return `${place} · ${METER_NEVER} · ${NO_RETRY}`;
+	return `${METER_NEVER} · ${NO_RETRY}`;
 };
 
-const shortfallBadgeOf = (
-	frame: GateOutcomeFrame,
-	shortBy: number
-): FoldBadge => ({
-	label: heldByFloor(frame) ? dayCountOf(frame) : `short by ${shortBy}%`,
+const shortfallBadgeOf = (shortBy: number): FoldBadge => ({
+	label: `short by ${shortBy}%`,
 	color: LOSS_COLOR,
 });
 
 const payoutOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	CLEARING_BANDS[band] ? frame.payoutKb : 0;
+	clearsAt(band, frame.gate) ? frame.payoutKb : 0;
 
 const faucetOf = (frame: GateOutcomeFrame) => frame.faucetKb;
 
 const billOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	CLEARING_BANDS[band] ? frame.billKb : 0;
+	clearsAt(band, frame.gate) ? frame.billKb : 0;
 
 const peelBillSlotsOf = (frame: GateOutcomeFrame) =>
+	frame.peelSlotsRemaining ??
 	peelQuotaSlotsFor(
 		occupiedSlots(frame.configs),
 		failPeelShareFor(frame.gate),
@@ -421,9 +444,9 @@ const peelRefundFor = (configs: readonly Config[], chosen: readonly Config[]) =>
 const balanceOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
 	frame.balanceBeforeKb +
 	payoutOf(frame, band) +
-	(CLEARING_BANDS[band]
+	(clearsAt(band, frame.gate)
 		? (frame.paid ?? []).reduce((sum, row) => sum + row.kb, 0)
-		: faucetOf(frame) + peelRefundFor(frame.configs, chosenIn(frame))) -
+		: peelRefundFor(frame.configs, chosenIn(frame))) -
 	billOf(frame, band);
 
 const auditsOf = (frame: GateOutcomeFrame): readonly AuditProps[] =>
@@ -440,7 +463,7 @@ const auditsOf = (frame: GateOutcomeFrame): readonly AuditProps[] =>
 const streakChipOf = (
 	streak: number | undefined,
 	band: CoverageBandId
-): readonly GateOutcomeChip[] => {
+): readonly FoldBadge[] => {
 	if (streak === undefined) return [];
 	if (STREAK_HOLDS[band]) return [{ label: `streak ${streak}` }];
 
@@ -450,13 +473,10 @@ const streakChipOf = (
 const outcomeChips = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
-): readonly GateOutcomeChip[] => [
+): readonly FoldBadge[] => [
 	{
 		label: `${correctCount(frame.answers)} of ${frame.answers.length} right`,
 	},
-	...(swatchEarnedIn(frame)
-		? [{ label: SWATCH_EARNED, color: GAIN_COLOR }]
-		: []),
 	...(band === RUN_OVER_BAND
 		? [{ label: `${frame.gate} gates held` }]
 		: streakChipOf(frame.streak, band)),
@@ -474,11 +494,11 @@ const outcomeChips = (
 	})),
 ];
 
-const SURPLUS_ROW = "surplus";
-const SURPLUS_NOTE = "coverage past the full bar, paid out instead of lost";
-const INTEREST_ROW = "interest";
+const SURPLUS_ROW = "Surplus";
+const SURPLUS_NOTE = "past the full bar";
+const INTEREST_ROW = "Interest";
 const INTEREST_NOTE = "on the balance held";
-const EXTRA_PICKS_ROW = "extra picks";
+const EXTRA_PICKS_ROW = "Extra picks";
 const EXTRA_PICKS_NOTE = "answers past the window";
 const FLAT_CLEAR_NOTE = "on the clear";
 const STREAK_WORD = "streak";
@@ -532,29 +552,23 @@ const isGainRow = (row: LedgerRow): boolean =>
 	);
 
 const storageSummaryOf = (rows: readonly LedgerRow[], bill: number): string =>
-	`${plural(rows.filter(isGainRow).length, "payout")}, ${plural(bill === 0 ? 0 : 1, "bill")}`;
+	[
+		plural(rows.filter(isGainRow).length, "payout"),
+		...(bill === 0 ? [] : [plural(1, "bill")]),
+	].join(", ");
 
 const balanceRow = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
 ): LedgerRow => {
 	const after = balanceOf(frame, band);
-	const moved = after - frame.balanceBeforeKb;
 
 	return {
 		label: BALANCE,
 		total: true,
 		figures: [
 			{ label: `${frame.balanceBeforeKb} →`, tone: "quiet" as const },
-			{ label: kbLabel(after) },
-			...(moved === 0
-				? []
-				: [
-						{
-							label: signedKbLabel(moved),
-							color: moved > 0 ? GAIN_COLOR : LOSS_COLOR,
-						},
-					]),
+			{ label: kbLabel(after), color: GAIN_COLOR, icon: BALANCE_ICON },
 		],
 	};
 };
@@ -588,7 +602,7 @@ const clearedStorageRows = (
 			: [
 					{
 						label: COMMIT_ROW,
-						detail: `· ×${ESCROW_COMMIT_MULTIPLIER} on what the gate held`,
+						notes: [`×${ESCROW_COMMIT_MULTIPLIER} on what the gate held`],
 						figures: [{ label: signedKbLabel(committed), color: GAIN_COLOR }],
 					},
 				]),
@@ -597,13 +611,13 @@ const clearedStorageRows = (
 			: [
 					{
 						label: BONUS_ROW,
-						detail: `· ×${PERFECT_BONUS} on a full bar`,
+						notes: [`×${PERFECT_BONUS} on a full bar`],
 						figures: [{ label: signedKbLabel(bonus), color: GAIN_COLOR }],
 					},
 				]),
 		...(frame.paid ?? []).map((row) => ({
 			label: row.config.label,
-			detail: `· ${row.detail}`,
+			notes: [row.detail],
 			figures: [{ label: signedKbLabel(row.kb), color: GAIN_COLOR }],
 		})),
 		...(bill === 0
@@ -611,7 +625,6 @@ const clearedStorageRows = (
 			: [
 					{
 						label: PLAN_ROW,
-						detail: `· ${kbLabel(bill)} a gate`,
 						figures: [{ label: signedKbLabel(-bill), color: LOSS_COLOR }],
 					},
 				]),
@@ -637,7 +650,7 @@ const heldStorageRows = (
 			: [
 					{
 						label: ROLLBACK_ROW,
-						detail: `· ${kbLabel(rolledBack * ESCROW_COMMIT_MULTIPLIER)} unpaid`,
+						notes: [`${kbLabel(rolledBack * ESCROW_COMMIT_MULTIPLIER)} unpaid`],
 						figures: [{ label: ROLLED_BACK, tone: "quiet" as const }],
 					},
 				]),
@@ -662,36 +675,9 @@ const heldStorageRows = (
 };
 
 const storageRowsOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	CLEARING_BANDS[band]
+	clearsAt(band, frame.gate)
 		? clearedStorageRows(frame, band)
 		: heldStorageRows(frame, band);
-
-const changeChip = (
-	config: Config,
-	detail: string,
-	label: string,
-	color: typeof GAIN_COLOR | typeof TERM_COLOR
-): ConfigChipProps => ({
-	name: config.label,
-	slots: slotsOf(config),
-	version: config.level ?? 1,
-	detail,
-	badges: [{ label, color }],
-	info: settledFactsFor(config),
-});
-
-const paidChip = (
-	config: Config,
-	detail: string,
-	kb: number
-): ConfigChipProps => ({
-	name: config.label,
-	slots: slotsOf(config),
-	version: config.level ?? 1,
-	detail,
-	badges: [{ label: signedKbLabel(kb), color: GAIN_COLOR }],
-	info: settledFactsFor(config),
-});
 
 const answerRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 	answers.map((answer) => ({
@@ -924,36 +910,167 @@ const bonusPanelOf = (frame: GateOutcomeFrame, gateName: string) => ({
 	detail: `A full bar multiplies the gate's payout by ×${PERFECT_BONUS}, and the ${gateName} swatch is marked for it. Perfect does not carry: the next gate still starts at zero.`,
 });
 
-const changesPanelOf = (frame: GateOutcomeFrame) => {
-	const { unlocked = [], faded = [], paid = [] } = frame;
-	const changed = unlocked.length + faded.length + paid.length;
+const unlockRowOf = ({
+	config,
+	detail,
+}: {
+	config: Config;
+	detail: string;
+}): GateOutcomeRow => ({
+	lead: { weight: slotsOf(config), color: NEW_COLOR },
+	name: config.label,
+	verb: UNLOCKED_VERB,
+	detail,
+	badge: { label: NEW_CONFIG, color: NEW_COLOR },
+});
+
+const titleRowOf = ({
+	name,
+	detail,
+}: {
+	name: string;
+	detail: string;
+}): GateOutcomeRow => ({
+	lead: { glyph: TITLE_GLYPH },
+	name,
+	detail,
+	badge: { label: NEW_TITLE, color: NEW_COLOR },
+});
+
+const swatchCountOf = (frame: GateOutcomeFrame): string =>
+	`${correctCount(frame.answers)} of ${SLICE_WINDOW}`;
+
+const swatchRowOf = (
+	frame: GateOutcomeFrame,
+	swatch: GateSwatch
+): GateOutcomeRow => {
+	const count = swatchCountOf(frame);
+	if (swatchEarnedIn(frame))
+		return {
+			lead: { swatch: { state: "discovered", swatch } },
+			name: `${swatch.gateName} ${SWATCH_EARNED_NAME}`,
+			detail: SWATCH_NEEDS,
+			badge: { label: count, color: GAIN_COLOR },
+		};
+
+	return {
+		lead: { swatch: { state: "current", swatch } },
+		name: `${swatch.gateName} ${SWATCH_MISSED_NAME}`,
+		detail: SWATCH_NEEDS,
+		marks: swatchFillsFor(swatch, correctCount(frame.answers), SLICE_WINDOW),
+		badge: { label: count },
+	};
+};
+
+const earnedPanelOf = (
+	frame: GateOutcomeFrame,
+	band: CoverageBandId,
+	swatch: GateSwatch
+): GateOutcomeRowsPanel | undefined => {
+	const gains = [
+		...(frame.unlocked ?? []).map(unlockRowOf),
+		...(frame.titles ?? []).map(titleRowOf),
+	];
+	const swatchRows =
+		SWATCH_BANDS[band] || swatchEarnedIn(frame)
+			? [swatchRowOf(frame, swatch)]
+			: [];
+	if (gains.length === 0 && swatchRows.length === 0) return undefined;
+
+	const swatchSummary =
+		swatchRows.length === 0 ? [] : [`${SWATCH_WORD} ${swatchCountOf(frame)}`];
+
+	return {
+		title: EARNED_TITLE,
+		summary:
+			gains.length === 0
+				? [NOTHING_NEW, ...swatchSummary].join(" · ")
+				: undefined,
+		badges:
+			gains.length === 0
+				? []
+				: [{ label: `${gains.length} ${NEW_WORD}`, color: NEW_COLOR }],
+		open: frame.open ?? gains.length > 0,
+		rows: [...gains, ...swatchRows],
+		hint: gains.length === 0 ? undefined : EARNED_HINT,
+	};
+};
+
+const isExpiring = (config: Config): boolean =>
+	clearsUntilDeleted(config) === 1;
+
+const expiringRowOf = (
+	config: Config,
+	nextGateName: string | undefined
+): GateOutcomeRow => ({
+	lead: { weight: slotsOf(config) },
+	name: config.label,
+	versions: { to: config.level ?? 1 },
+	verb: DEPRECATED_VERB,
+	detail: [
+		nextGateName === undefined
+			? undefined
+			: `deleted when ${nextGateName} clears`,
+		REPLACE_IN_SHOP,
+	]
+		.filter((part) => part !== undefined)
+		.join(" · "),
+	badge: { label: GATE_LEFT, color: TERM_COLOR },
+	edge: TERM_COLOR,
+});
+
+const upgradedRowOf = ({
+	config,
+	detail,
+}: {
+	config: Config;
+	detail: string;
+}): GateOutcomeRow => {
+	const level = config.level ?? 1;
+	return {
+		lead: { weight: slotsOf(config) },
+		name: config.label,
+		versions: { from: Math.max(1, level - 1), to: level },
+		detail,
+		badge: { label: UPGRADED_WORD, color: GAIN_COLOR },
+	};
+};
+
+const removedRowOf = ({
+	config,
+	detail,
+}: {
+	config: Config;
+	detail: string;
+}): GateOutcomeRow => ({
+	lead: { weight: slotsOf(config) },
+	name: config.label,
+	verb: REMOVED_VERB,
+	detail,
+	badge: { label: `-${slotsOf(config)} weight`, color: LOSS_COLOR },
+	edge: LOSS_COLOR,
+});
+
+const changesPanelOf = (
+	frame: GateOutcomeFrame,
+	nextGateName: string | undefined
+): GateOutcomeRowsPanel => {
+	const expiring = frame.configs.filter(isExpiring);
+	const rows = [
+		...expiring.map((config) => expiringRowOf(config, nextGateName)),
+		...(frame.upgraded ?? []).map(upgradedRowOf),
+		...(frame.removed ?? []).map(removedRowOf),
+	];
 
 	return {
 		title: CHANGES_TITLE,
-		summary: changed === 0 ? NOTHING_MOVED : undefined,
-		emptyLabel: NOTHING_CHANGED,
-		badges: [
-			...(unlocked.length === 0
+		summary: rows.length === 0 ? NOTHING_MOVED : undefined,
+		badges:
+			expiring.length === 0
 				? []
-				: [{ label: `${unlocked.length} ${UNLOCKED}`, color: GAIN_COLOR }]),
-			...(faded.length === 0
-				? []
-				: [{ label: `${faded.length} ${FADED}`, color: TERM_COLOR }]),
-		],
-		open: frame.open,
-		changes: [
-			...unlocked.map((row) =>
-				changeChip(row.config, row.detail, UNLOCKED, GAIN_COLOR)
-			),
-			...faded.map((row) =>
-				changeChip(row.config, row.detail, FADED, TERM_COLOR)
-			),
-			...paid.map((row) => paidChip(row.config, row.detail, row.kb)),
-		],
-		note:
-			unlocked.length === 0
-				? undefined
-				: `${unlocked[0].config.label} is dealt into future starting hands from now on.`,
+				: [{ label: `${expiring.length} ${EXPIRING_WORD}`, color: TERM_COLOR }],
+		open: frame.open ?? rows.length > 0,
+		rows,
 	};
 };
 
@@ -963,6 +1080,7 @@ const headerBalanceOf = (
 ): BalanceProps => ({
 	kb: balanceOf(frame, band),
 	label: BALANCE_WORD,
+	color: COVERAGE_BAND_COLOR[band],
 });
 
 const tailOf = (
@@ -986,7 +1104,8 @@ export const gateOutcomePropsFor = (
 	const demand = roundToOneDecimal(frame.bar.healthy);
 	const held = roundToOneDecimal(frame.bar.held);
 	const shortBy = roundToOneDecimal(Math.max(0, demand - held));
-	const cleared = CLEARING_BANDS[band];
+	const cleared = clearsAt(band, gate);
+	const earned = earnedPanelOf(frame, band, swatch);
 	const gainBadge = {
 		label: signedPercent(totalCoverage(answers)),
 		color: GAIN_COLOR,
@@ -1002,28 +1121,34 @@ export const gateOutcomePropsFor = (
 	return {
 		header: {
 			swatch,
-			earned: swatchEarnedIn(frame),
+			swatchState: swatchEarnedIn(frame) ? "discovered" : "current",
+			marked: band === PERFECT_BAND,
 			swatches: swatchTrackFor(frame.swatchGates, cleared ? gate + 1 : gate),
 			title: titleOf(band, swatch.gateName),
-			subtitle: subtitleOf(frame, band, swatch.gateName),
-			balance: headerBalanceOf(frame, band),
-			chips: outcomeChips(frame, band),
+			note: noteOf(frame, band),
+			funds: headerBalanceOf(frame, band),
+			readout: frame.readout,
+			badges: outcomeChips(frame, band),
 		},
 		bar,
+		outcome: band,
+		...(heldByUnscored(frame) ? { coverageHold: scoredLineOf(frame) } : {}),
 		...(frame.payouts === undefined ? {} : { payouts: frame.payouts }),
 		audits: auditsOf(frame),
 		...(band === PERFECT_BAND && frame.bonusKb > 0
 			? { bonus: bonusPanelOf(frame, swatch.gateName) }
 			: {}),
+		...(earned === undefined ? {} : { earned }),
 		coverage: {
 			title: COVERAGE_TITLE,
 			summary: plural(byCategory(answers).size, "category").replace(
 				"categorys",
 				"categories"
 			),
-			badges: cleared
-				? [gainBadge]
-				: [gainBadge, shortfallBadgeOf(frame, shortBy)],
+			badges:
+				cleared || heldByUnscored(frame)
+					? [gainBadge]
+					: [gainBadge, shortfallBadgeOf(shortBy)],
 			open: frame.open,
 			rows: coverageRows(answers),
 		},
@@ -1039,7 +1164,9 @@ export const gateOutcomePropsFor = (
 			open: frame.open,
 			rows: storageRowsOf(frame, band),
 		},
-		...(band === RUN_OVER_BAND ? {} : { changes: changesPanelOf(frame) }),
+		...(band === RUN_OVER_BAND
+			? {}
+			: { changes: changesPanelOf(frame, next?.gateName) }),
 		answers: {
 			title: ANSWERS_TITLE,
 			badges: answerTallyOf(answers),

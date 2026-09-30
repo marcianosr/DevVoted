@@ -13,7 +13,7 @@ const RUBBER_DUCK = "border-0a006140";
 const SHIP_IT = "title-rank-poll-newbie";
 const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
-const BIKESHEDDER = "title-bikeshedder";
+const BIKESHEDDER = "title-it-compiles";
 
 const OWNED: LookOwnership = {
 	ownedBorderIds: [GREEN_BUILD],

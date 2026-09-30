@@ -5,7 +5,7 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	SLICE_WINDOW,
 	VICTORY_GATE,
-	meetsGateFloor,
+	meetsWindowMinimum,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	BASE_UNIT,
@@ -280,12 +280,12 @@ describe("the balance this model exists to hold", () => {
 			let alive = true;
 
 			while (alive && gate <= VICTORY_GATE) {
-				let rights = 0;
+				let scored = 0;
 				let units = 0;
 
 				for (let poll = 0; poll < SLICE_WINDOW; poll++) {
 					if (roll() >= accuracy) continue;
-					rights++;
+					scored++;
 					const multiple = multiShare > 0 && roll() < multiShare;
 					units += unitsPerCorrect(configs, multiple ? "multiple" : "single");
 				}
@@ -293,7 +293,7 @@ describe("the balance this model exists to hold", () => {
 				const carried = banked + units;
 
 				if (
-					!meetsGateFloor(rights) ||
+					!meetsWindowMinimum(scored) ||
 					bandFor(runCoverageOf(carried, gate), gate).id === "danger"
 				) {
 					alive = false;

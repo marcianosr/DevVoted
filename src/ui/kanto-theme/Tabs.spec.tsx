@@ -68,4 +68,40 @@ describe("Tabs", () => {
 
 		expect(onSelect).toHaveBeenCalledWith("runs");
 	});
+
+	it("counts a tab in a badge and names it with the count", () => {
+		render(
+			<Tabs
+				items={[{ id: "registry", label: "Registry", count: "5" }]}
+				activeId="registry"
+				onSelect={noop}
+				label="Shop"
+				look="pill"
+			/>
+		);
+
+		expect(screen.getByRole("tab", { name: "Registry 5" })).toHaveTextContent(
+			"Registry5"
+		);
+	});
+
+	it("scrolls a pill bar sideways rather than wrapping it", () => {
+		render(
+			<Tabs
+				items={ITEMS}
+				activeId="polls"
+				onSelect={noop}
+				label="Dex"
+				look="pill"
+			/>
+		);
+
+		expect(screen.getByRole("tablist")).toHaveClass(
+			"flex-nowrap",
+			"overflow-x-auto"
+		);
+		expect(screen.getByRole("tab", { name: "polls" })).toHaveClass(
+			"segment-theme"
+		);
+	});
 });

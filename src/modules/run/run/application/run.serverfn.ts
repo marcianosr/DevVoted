@@ -5,11 +5,16 @@ import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { withAuthenticatedUser } from "~/shared/utils/authorization";
 
 import { getUpcomingCategoriesService } from "~/modules/run/run/application/prefetch.service";
-import { runActionSchema } from "~/modules/run/run/application/run.validation";
+import {
+	runActionSchema,
+	warmBootPickSchema,
+} from "~/modules/run/run/application/run.validation";
+import { warmBootRunService } from "~/modules/run/run/application/warmBoot.service";
 import {
 	abandonRunService,
 	dispatchRunActionService,
 	getOwnedSwatchesService,
+	getRunNumberService,
 	getRunRecapService,
 	getTodaysRunService,
 	startRunService,
@@ -27,6 +32,14 @@ export const startRun = createServerFn({ method: "POST" }).handler(async () =>
 		startRunService({ userId, date: getTodayDateString() })
 	)
 );
+
+export const warmBootRun = createServerFn({ method: "POST" })
+	.validator(warmBootPickSchema)
+	.handler(async ({ data }) =>
+		withAuthenticatedUser((userId) =>
+			warmBootRunService({ userId, date: getTodayDateString(), pick: data })
+		)
+	);
 
 export const abandonRun = createServerFn({ method: "POST" }).handler(async () =>
 	withAuthenticatedUser((userId) => abandonRunService({ userId }))
@@ -60,4 +73,8 @@ export const getUpcomingCategories = createServerFn({ method: "GET" }).handler(
 export const getOwnedSwatches = createServerFn({ method: "GET" }).handler(
 	async () =>
 		withAuthenticatedUser((userId) => getOwnedSwatchesService({ userId }))
+);
+
+export const getRunNumber = createServerFn({ method: "GET" }).handler(
+	async () => withAuthenticatedUser((userId) => getRunNumberService({ userId }))
 );

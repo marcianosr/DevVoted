@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-25T11:00:13Z
-updated_at: 2026-09-25T18:06:11Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-r2k9
 ---
 
@@ -29,3 +29,5 @@ parent: DVTD-r2k9
 2026-09-25 (ADR-116): **unlock: Finish a run with one starting config still installed** — nothing records the opening hand today (no `startingConfigIds` on the run state or the runs table), so this needs the dealt hand stamped at run start and a one-shot metric ticked at run end when the build still holds one of them.
 
 2026-09-25, later (DVTD-lm8p): roster row and counter built: `dockerImage`, archive-sold; the one-shot `finished-holding-a-dealt-config` ticks in `endMetrics` when the build still holds a config from `RunState.available`, which is the dealt hand and is never rewritten after `createRun`, so no field was added; caption `Keep a starting config to the end`. Earned reads *not for sale yet* until DVTD-0now sells it. Marciano's table reads "choose one installed config; guarantee it as a normally priced offer in the next run".
+
+2026-09-29 (ADR-153): sold on the new run screen's warm boot panel, not the profile. Give the roster row a `carryBytes` price when the guaranteed offer is built; the panel row and the Dex line follow from `isCarriedService`. No `user_run_services` table: the carry rides `RunState.warmBoot`.

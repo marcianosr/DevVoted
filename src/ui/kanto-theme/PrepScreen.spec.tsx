@@ -18,9 +18,8 @@ import {
 	kantoPrepSpent,
 } from "~/test/kantoPoll.factory";
 
-import { GATE_STRICTNESS_TITLE } from "./GateStrictness.ui";
-import { POLL_PAYS_TITLE } from "./PollPays.ui";
-import { PrepScreen } from "./PrepScreen.ui";
+import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
+import { SCORING_TITLE } from "./Scoring.ui";
 
 const props = kantoPrepSealed();
 const ladder = kantoPrepLadder(KANTO_PREP_GATE);
@@ -28,20 +27,35 @@ const ladder = kantoPrepLadder(KANTO_PREP_GATE);
 const sectionOf = (name: string) =>
 	screen.getByRole("heading", { name }).closest("section") as HTMLElement;
 
-const BAND_BADGE = ".badge-theme";
+const scoringFold = () =>
+	screen
+		.getByRole("heading", { name: SCORING_TITLE })
+		.closest("details") as HTMLDetailsElement;
 
-const outcomeTable = () =>
-	within(sectionOf(BAND_OUTCOMES_TITLE)).getByText("band").closest("div")
-		?.nextElementSibling as HTMLElement;
+const ladderOf = () =>
+	sectionOf(BAND_OUTCOMES_TITLE).querySelector(".band-ladder") as HTMLElement;
 
-const bandBadgeFor = (band: string) =>
-	within(outcomeTable()).getByText(band, { selector: BAND_BADGE });
+const ringedRowOf = () =>
+	ladderOf().querySelector(".band-ladder-row.ring-2") as HTMLElement;
 
-const outcomeRowFor = (band: string) =>
-	bandBadgeFor(band).closest("div") as HTMLElement;
+const rowThemesOf = () =>
+	[...ladderOf().querySelectorAll(".band-ladder-row")].map((row) =>
+		row.getAttribute("data-screen-theme")
+	);
+
+const rowOf = (word: string) =>
+	within(ladderOf()).getByText(word).closest("li") as HTMLElement;
+
+const paysOf = (screenProps: PrepScreenProps, band: string) =>
+	screenProps.outcomes.ladder.rungs.find((rung) => rung.band === band)?.pays;
+
+const standingLineOf = () =>
+	within(sectionOf(BAND_OUTCOMES_TITLE))
+		.getByText(/polls left/)
+		.closest("p") as HTMLElement;
 
 const CLEAR_LEAD = "Finish at";
-const SWATCH_LEAD = "Answer all 5 right";
+const SWATCH_LEAD = "Answer all";
 const SWATCH_REWARD = "Lavender swatch";
 
 const objectiveBlockFor = (statement: string): HTMLElement => {
@@ -60,7 +74,9 @@ describe("PrepScreen", () => {
 
 		expect(pin).toHaveAttribute("data-shown", "true");
 		expect(pin).toHaveTextContent(/%/);
-		expect(pin).toHaveTextContent(/DANGER|SHAKY|OK|HEALTHY|PERFECT/);
+		expect(pin?.getAttribute("data-screen-theme")).toBe(
+			ringedRowOf().getAttribute("data-screen-theme")
+		);
 	});
 
 	it("pins its header, so the balance stays with what it buys back", () => {
@@ -101,24 +117,12 @@ describe("PrepScreen", () => {
 		const [left, right] = [...columns.children];
 
 		expect(left).toContainElement(sectionOf(BAND_OUTCOMES_TITLE));
+		expect(right.firstElementChild).toBe(scoringFold());
 		expect(right).toContainElement(sectionOf(PREP_POLLS_TITLE));
 		expect(right).toContainElement(sectionOf("Audits"));
 	});
 
-	it("prices a single, a focus and a multiple answer in units and as a share of the codebase", () => {
-		render(<PrepScreen {...kantoPrepCascadeThin()} />);
-
-		const pays = sectionOf(POLL_PAYS_TITLE);
-
-		expect(within(pays).getAllByText("single answer")).toHaveLength(2);
-		expect(within(pays).getByText(".ts ×1.25")).toBeInTheDocument();
-		expect(within(pays).getByText("multiple answers")).toBeInTheDocument();
-		expect(within(pays).getByText("1.25 units")).toHaveClass("badge-theme");
-		expect(within(pays).getByText("+6.67%")).toHaveClass("badge-theme");
-		expect(within(pays).getByText("+13.33%")).toBeInTheDocument();
-	});
-
-	describe("the coverage bar in What a poll pays", () => {
+	describe("the ladder in At stake", () => {
 		it("starts empty on the gate's own line", () => {
 			render(<PrepScreen {...props} />);
 
@@ -129,74 +133,90 @@ describe("PrepScreen", () => {
 			).toBeInTheDocument();
 		});
 
-		it("stands inside What a poll pays, in neither At stake nor the header", () => {
+		it("stands inside At stake, in neither the Scoring fold nor the header", () => {
 			const { container } = render(<PrepScreen {...props} />);
 
-			const bar = container.querySelector(".coverage-bar") as HTMLElement;
-
-			expect(sectionOf(POLL_PAYS_TITLE)).toContainElement(bar);
-			expect(sectionOf(BAND_OUTCOMES_TITLE)).not.toContainElement(bar);
-			expect(container.querySelector("header")).not.toContainElement(bar);
+			expect(container.querySelectorAll(".band-ladder")).toHaveLength(1);
+			expect(scoringFold()).not.toContainElement(ladderOf());
+			expect(container.querySelector("header")).not.toContainElement(
+				ladderOf()
+			);
+			expect(container.querySelectorAll(".coverage-bar")).toHaveLength(1);
+			expect(ladderOf()).toContainElement(
+				container.querySelector(".coverage-bar")
+			);
 		});
 
-		it("numbers the rungs rather than naming the bands", () => {
-			const { container } = render(<PrepScreen {...props} />);
+		it("writes each band's range beside it, so the room between lines reads as numbers", () => {
+			render(<PrepScreen {...props} />);
 
-			const marks = container.querySelector(".coverage-bar")?.textContent;
-
-			for (const rung of [0, ladder.floor, ladder.ok, ladder.healthy, 100]) {
-				expect(marks).toContain(`${rung}`);
-			}
-			expect(marks).not.toContain("SHAKY");
-			expect(marks).not.toContain("survive");
+			expect(
+				within(rowOf("SHAKY")).getByText(`${ladder.floor} – ${ladder.ok}`)
+			).toBeInTheDocument();
+			expect(
+				within(rowOf("HEALTHY")).getByText(`${ladder.healthy} – 100`)
+			).toBeInTheDocument();
 		});
 	});
 
 	describe("where you finish", () => {
-		it("lays out all five bands, best outcome first and worst last", () => {
+		it("lists all five bands as rows, worst first, the full bar last", () => {
 			render(<PrepScreen {...props} />);
 
-			const badges = ["PERFECT", "HEALTHY", "OK", "SHAKY", "DANGER"].map(
-				bandBadgeFor
-			);
-
-			for (const badge of badges) {
-				expect(badge).toBeInTheDocument();
-			}
-
-			for (const [index, badge] of badges.slice(1).entries()) {
-				expect(
-					badges[index].compareDocumentPosition(badge) &
-						Node.DOCUMENT_POSITION_FOLLOWING
-				).toBeTruthy();
+			expect(rowThemesOf()).toEqual([
+				"cinnabar",
+				"vermillion",
+				"saffron",
+				"viridian",
+				"cerulean",
+			]);
+			for (const band of ["DANGER", "SHAKY", "OK", "HEALTHY", "PERFECT"]) {
+				expect(within(ladderOf()).getByText(band)).toBeInTheDocument();
 			}
 		});
 
-		it("cuts the ranges on the gate's own ladder", () => {
+		it("draws no band table, the ladder having taken its rows", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(
-				within(outcomeRowFor("PERFECT")).getByText("100%")
-			).toBeInTheDocument();
-			expect(screen.getByText(`${ladder.healthy} – 99%`)).toBeInTheDocument();
-			expect(
-				screen.getByText(`${ladder.ok} – ${ladder.healthy - 1}%`)
-			).toBeInTheDocument();
-			expect(
-				screen.getByText(`${ladder.floor} – ${ladder.ok - 1}%`)
-			).toBeInTheDocument();
-			expect(screen.getByText(`under ${ladder.floor}%`)).toBeInTheDocument();
-		});
-
-		it("leaves the table three columns, the prose having come out of it", () => {
-			render(<PrepScreen {...props} />);
-
-			const table = sectionOf(BAND_OUTCOMES_TITLE);
+			const panel = within(sectionOf(BAND_OUTCOMES_TITLE));
 
 			for (const heading of ["band", "coverage", "pays"]) {
-				expect(within(table).getByText(heading)).toBeInTheDocument();
+				expect(panel.queryByText(heading)).not.toBeInTheDocument();
 			}
-			expect(within(table).queryByText("outcome")).not.toBeInTheDocument();
+		});
+
+		it("heads the panel with the gate it prices, the number badged", () => {
+			render(<PrepScreen {...props} />);
+
+			const header = sectionOf(BAND_OUTCOMES_TITLE).querySelector(
+				"header"
+			) as HTMLElement;
+
+			expect(header).toHaveTextContent("Lavender · gate 4");
+			expect(within(header).getByText("4")).toHaveClass("badge-theme");
+		});
+
+		it("states the units to the next band up and the polls left, every figure badged", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(standingLineOf()).toHaveTextContent(
+				"+12 units to SHAKY · 5 polls left"
+			);
+			expect(within(standingLineOf()).getByText("+12")).toHaveAttribute(
+				"data-screen-theme",
+				"vermillion"
+			);
+			expect(within(standingLineOf()).getByText("5")).toHaveClass(
+				"badge-theme"
+			);
+		});
+
+		it("aims the standing line at HEALTHY from inside OK", () => {
+			render(<PrepScreen {...kantoPrepCascadeThin()} />);
+
+			expect(standingLineOf()).toHaveTextContent(
+				"+1 unit to HEALTHY · 5 polls left"
+			);
 		});
 
 		describe("the objectives", () => {
@@ -242,13 +262,22 @@ describe("PrepScreen", () => {
 				).toBeNull();
 			});
 
-			it("badges OK at the calibration gate and draws it no DANGER row", () => {
+			it("badges OK at the calibration gate and draws it no DANGER zone", () => {
 				render(<PrepScreen {...kantoPrepCalibration()} />);
 
 				expect(within(requiredBlock()).getByText("OK")).toBeInTheDocument();
 				expect(
-					within(outcomeTable()).queryByText("DANGER", { selector: BAND_BADGE })
+					within(ladderOf()).queryByText("DANGER")
 				).not.toBeInTheDocument();
+			});
+
+			it("asks for all five with the count badged", () => {
+				render(<PrepScreen {...props} />);
+
+				const block = objectiveBlockFor(SWATCH_LEAD);
+
+				expect(block).toHaveTextContent("Answer all 5 right");
+				expect(within(block).getByText("5")).toHaveClass("badge-theme");
 			});
 
 			it("promises no next gate at the summit, where there is not one", () => {
@@ -268,19 +297,16 @@ describe("PrepScreen", () => {
 			});
 		});
 
-		it("edges the band row the pin is standing on, so the two cannot disagree", () => {
+		it("rings the row the pin is standing on, so the two cannot disagree", () => {
 			const { container } = render(<PrepScreen {...props} />);
 
 			const pinned = container
 				.querySelector(".coverage-bar-pin")
 				?.getAttribute("data-screen-theme");
 
-			const edged = [...outcomeTable().children]
-				.filter((row) => row.classList.contains("border-l-2"))
-				.map((row) => row.getAttribute("data-screen-theme"));
-
 			expect(pinned).not.toBeNull();
-			expect(edged).toContain(pinned);
+			expect(ladderOf().querySelectorAll(".ring-2")).toHaveLength(1);
+			expect(ringedRowOf()).toHaveAttribute("data-screen-theme", pinned);
 		});
 
 		it("opens on the line it requires, not on a list of three chores", () => {
@@ -297,24 +323,22 @@ describe("PrepScreen", () => {
 			).not.toBeInTheDocument();
 		});
 
-		it("breaks the standing down gate by gate, inside the panel that asks for it", () => {
+		it("shows only today's gate's answers, inside the panel that asks for them", () => {
 			render(<PrepScreen {...props} />);
 
 			const outcomes = sectionOf(BAND_OUTCOMES_TITLE);
 			const scores = screen.getByLabelText(/^Lavender —/);
 
-			expect(screen.getAllByLabelText(/— \d of 5 correct$/)).toHaveLength(
-				KANTO_PREP_GATE + 1
-			);
+			expect(screen.getAllByLabelText(/— \d of 5 correct$/)).toHaveLength(1);
 			expect(outcomes).toContainElement(scores);
 		});
 
-		it("stands the window's answers between the objectives and the band table", () => {
+		it("stands the window's answers between the objectives and the ladder", () => {
 			render(<PrepScreen {...props} />);
 
 			const scores = screen.getByLabelText(/^Lavender —/);
 			const swatchObjective = screen.getByText(SWATCH_LEAD);
-			const bandRow = bandBadgeFor("PERFECT");
+			const bandRow = ladderOf();
 
 			expect(
 				swatchObjective.compareDocumentPosition(scores) &
@@ -343,79 +367,61 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(outcomeRowFor("SHAKY")).getByText(/peel$/)
-			).toHaveTextContent(/^−\d/);
+				within(rowOf("SHAKY")).getByText(/^−\d+ KB peel$/)
+			).toBeInTheDocument();
+			expect(paysOf(props, "shaky")).toMatch(/^−\d+ KB peel$/);
 		});
 
 		it("ends the run under the floor rather than quoting a figure", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(outcomeRowFor("DANGER")).getByText("the run ends")
+				within(rowOf("DANGER")).getByText("the run ends")
 			).toBeInTheDocument();
 		});
 
 		it("never pays a lower landing more than a higher one", () => {
-			render(<PrepScreen {...props} />);
-
 			const kbOf = (band: string) =>
-				Number(
-					within(outcomeRowFor(band))
-						.getByText(/KB/)
-						.textContent?.match(/(\d+)/)?.[1]
-				);
+				Number(paysOf(props, band)?.match(/(\d+)/)?.[1]);
 
-			expect(kbOf("PERFECT")).toBeGreaterThanOrEqual(kbOf("HEALTHY"));
-			expect(kbOf("HEALTHY")).toBeGreaterThanOrEqual(kbOf("OK"));
-			expect(kbOf("PERFECT")).toBeGreaterThan(kbOf("OK"));
+			expect(kbOf("perfect")).toBeGreaterThanOrEqual(kbOf("healthy"));
+			expect(kbOf("healthy")).toBeGreaterThanOrEqual(kbOf("ok"));
+			expect(kbOf("perfect")).toBeGreaterThan(kbOf("ok"));
 		});
 	});
 
-	describe("what a poll pays", () => {
-		it("counts the open slots on the panel", () => {
+	describe("scoring", () => {
+		it("folds the scoring shut at the top of the right column, the codebase and a unit's worth on the strip", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(
-				within(sectionOf(POLL_PAYS_TITLE)).getByText("25 slots open")
-			).toHaveClass("badge-theme");
-		});
-
-		it("draws one square per slot the run has opened", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(
-				screen.getByRole("img", { name: "0 of 25 slots covered" })
-			).toBeInTheDocument();
-		});
-
-		it("states the standing in units across slots, with yesterday's percent, from the second gate on", () => {
-			render(<PrepScreen {...kantoPrepCascadeThin()} />);
-
-			expect(
-				screen.getByText(/Nothing was lost\./).closest("p")
-			).toHaveTextContent(
-				"The codebase grew from 10 to 15 slots. The same 8 units read 80.0% at Boulder and 53.3% here. Nothing was lost."
+			expect(scoringFold()).not.toHaveAttribute("open");
+			expect(scoringFold().querySelector("summary")).toHaveTextContent(
+				"25 slots 1 unit +4%"
 			);
 		});
 
-		it("reads the plain standing at the calibration gate, where nothing has moved yet", () => {
-			render(<PrepScreen {...kantoPrepCalibration()} />);
-
-			expect(screen.getByText(/which is/).closest("p")).toHaveTextContent(
-				"You have scored 0 units across 5 slots, which is 0.0% coverage."
-			);
-			expect(screen.queryByText(/Nothing was lost/)).toBeNull();
-		});
-
-		it("folds the strictness table shut under the column, summarising today's gate", () => {
+		it("seals the figures of the gates ahead but keeps their names", () => {
 			render(<PrepScreen {...props} />);
 
-			const fold = screen
-				.getByRole("heading", { name: GATE_STRICTNESS_TITLE })
-				.closest("details") as HTMLDetailsElement;
+			const fold = within(scoringFold());
 
-			expect(fold).not.toHaveAttribute("open");
-			expect(fold).toHaveTextContent("Lavender · 25 slots · one unit is +4%");
+			for (const reached of ["Pallet", "Boulder", "Cascade", "Thunder"]) {
+				expect(fold.getByText(reached)).toBeInTheDocument();
+			}
+			expect(fold.getByText("Rainbow")).toBeInTheDocument();
+			expect(fold.getByText("Champion")).toBeInTheDocument();
+			expect(fold.getAllByText("???")).toHaveLength(6);
+			expect(fold.getAllByText("⋮")).toHaveLength(1);
+		});
+
+		it("seals nothing at the summit, where every gate has been reached", () => {
+			render(<PrepScreen {...kantoPrepChampion()} />);
+
+			const fold = within(scoringFold());
+
+			expect(fold.queryByText("???")).toBeNull();
+			expect(fold.queryByText("⋮")).toBeNull();
+			expect(fold.getByText("Champion")).toBeInTheDocument();
 		});
 	});
 
@@ -423,27 +429,51 @@ describe("PrepScreen", () => {
 		it("withholds the window while nothing reveals it", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(screen.getAllByText("???")).toHaveLength(2);
-			expect(screen.getAllByText("?")).toHaveLength(5);
+			const polls = within(sectionOf(PREP_POLLS_TITLE));
+
+			expect(polls.getAllByText("???")).toHaveLength(3);
+			expect(polls.getAllByText("?")).toHaveLength(5);
 		});
 
-		it("names no next gate at all while the window is sealed", () => {
+		it("seals the next gate's row too while the window is sealed", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(screen.queryByText("next gate")).not.toBeInTheDocument();
+			const polls = within(sectionOf(PREP_POLLS_TITLE));
+
+			expect(polls.getByText("next gate")).toBeInTheDocument();
+			expect(polls.getAllByText("???")).toHaveLength(3);
 		});
 
-		it("opens the whole window at once when Prefetch is in the build", () => {
+		it("counts nothing revealed and says what would reveal it", () => {
+			render(<PrepScreen {...props} />);
+
+			const polls = within(sectionOf(PREP_POLLS_TITLE));
+
+			expect(polls.getByText("0 of 4")).toHaveClass("badge-theme");
+			expect(polls.getByText("revealed")).toBeInTheDocument();
+			expect(
+				polls.getByText("Some configs reveal these before you answer.")
+			).toBeInTheDocument();
+		});
+
+		it("opens the whole window at once when Prefetch is in the build, counted and credited", () => {
 			render(<PrepScreen {...kantoPrepPrefetched()} />);
 
 			const polls = sectionOf(PREP_POLLS_TITLE);
 
 			expect(within(polls).getByText("Prefetch")).toHaveClass("badge-theme");
+			expect(within(polls).getByText("4 of 4")).toHaveClass("badge-theme");
+			expect(polls.querySelector("header")).toHaveTextContent(
+				"4 of 4 revealed by Prefetch"
+			);
 			expect(screen.getByText("1 single")).toBeInTheDocument();
 			expect(screen.getByText("4 multiple")).toBeInTheDocument();
-			expect(screen.getByText("typescript 3")).toBeInTheDocument();
-			expect(screen.getByText("git 5")).toBeInTheDocument();
-			expect(screen.queryByText("???")).not.toBeInTheDocument();
+			expect(screen.getByText("TypeScript ×3")).toBeInTheDocument();
+			expect(screen.getByText("Git ×5")).toBeInTheDocument();
+			expect(within(polls).queryByText("???")).not.toBeInTheDocument();
+			expect(
+				within(polls).queryByText(/Some configs reveal/)
+			).not.toBeInTheDocument();
 		});
 	});
 
@@ -456,12 +486,11 @@ describe("PrepScreen", () => {
 			expect(screen.getByText("1 firing this gate")).toBeInTheDocument();
 		});
 
-		it("bills the clear on the audits heading", () => {
+		it("leaves the bill to the subscriptions panel that owns it", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(screen.getByText("bills")).toBeInTheDocument();
+			expect(screen.queryByText("bills")).not.toBeInTheDocument();
 			expect(screen.getAllByText("−32 KB")).not.toHaveLength(0);
-			expect(screen.getByText("on a clear")).toBeInTheDocument();
 		});
 
 		it("breaks that total into the lines that make it up", () => {

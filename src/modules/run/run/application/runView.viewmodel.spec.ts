@@ -6,7 +6,11 @@ import {
 	scheduleOf,
 } from "~/modules/run/run/domain/run.model";
 import { auditsForGate } from "~/modules/run/gate/domain/audit.model";
-import { audited, handed } from "~/modules/run/run/domain/run.factory";
+import {
+	audited,
+	carrying,
+	handed,
+} from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
@@ -106,7 +110,7 @@ describe("toRunView", () => {
 		).toEqual(["react", "react"]);
 	});
 
-	it("counts the remaining polls' options in play order, only for Prefetch", () => {
+	it("counts the remaining polls' options in play order, only for a v2 Prefetch", () => {
 		const wide = (id: string): RunPoll => ({
 			...poll(id),
 			options: [
@@ -117,8 +121,12 @@ describe("toRunView", () => {
 
 		expect(toRunView(answering()).optionCountsThisGate).toBeNull();
 		expect(
-			toRunView(answeringWith([CONFIGS.prefetch], [poll("q0"), wide("q1")]))
-				.optionCountsThisGate
+			toRunView(
+				answeringWith(
+					[{ ...CONFIGS.prefetch, level: 2 }],
+					[poll("q0"), wide("q1")]
+				)
+			).optionCountsThisGate
 		).toEqual([2, 3]);
 	});
 
@@ -188,7 +196,7 @@ describe("toRunView", () => {
 	it("flags a one-config build so sell and drop refuse (ADR-035)", () => {
 		expect(toRunView(answeringWith([CONFIGS.js])).atMinimumWidth).toBe(true);
 		expect(
-			toRunView(answeringWith([CONFIGS.js, CONFIGS.eslint])).atMinimumWidth
+			toRunView(answeringWith([CONFIGS.js, CONFIGS.linter])).atMinimumWidth
 		).toBe(false);
 	});
 
@@ -319,11 +327,8 @@ describe("gateComplete", () => {
 });
 
 describe("shop controls (DVTD-5lt6)", () => {
-	const shopping = (gatesCleared: number, storage: number) => ({
-		...answering(),
-		gatesCleared,
-		storage,
-	});
+	const shopping = (gatesCleared: number, storage: number) =>
+		carrying({ ...answering(), gatesCleared, storage }, "extend", "pin");
 
 	const withLocker = (state: RunState): RunState => ({
 		...state,
@@ -367,10 +372,10 @@ describe("shop controls (DVTD-5lt6)", () => {
 	it("keeps selling locks while offers are already held", () => {
 		const view = toRunView({
 			...withLocker(shopping(EXTEND_FROM_GATE, 512)),
-			lockedOfferIds: ["eslint"],
+			lockedOfferIds: ["linter"],
 		});
 		expect(view.shopControls.lockAvailable).toBe(true);
-		expect(view.shopControls.lockedOfferIds).toEqual(["eslint"]);
+		expect(view.shopControls.lockedOfferIds).toEqual(["linter"]);
 	});
 
 	it("prices the next extension against the ones already bought", () => {
@@ -418,7 +423,8 @@ describe("the build space the shop reports (ADR-098)", () => {
 			(entry) => entry.id === "build-space"
 		);
 
-		expect(line?.label).toBe("8 weight build space");
+		expect(line?.label).toBe("weight build space");
+		expect(line?.weight).toBe(8);
 		expect(line?.kb).toBe(32);
 		expect(line?.billedOnMiss).toBe(false);
 	});
@@ -483,7 +489,7 @@ describe("the view answers what screens used to re-derive (DVTD-z1ij)", () => {
 describe("the gate stake travels as one object", () => {
 	it("collects what the coming gate demands and pays", () => {
 		const state = {
-			...answeringWith([CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd]),
+			...answeringWith([CONFIGS.js, CONFIGS.linter, CONFIGS.agentsMd]),
 			gatesCleared: 4,
 		};
 		const view = toRunView(state);
@@ -567,7 +573,7 @@ describe("the gate stake travels as one object", () => {
 	});
 
 	it("prices the peel deeper at a strip-audit gate", () => {
-		const build = [CONFIGS.js, CONFIGS.indexedDb, CONFIGS.eslint];
+		const build = [CONFIGS.js, CONFIGS.indexedDb, CONFIGS.linter];
 		const audited = { ...answeringWith(build), gatesCleared: 11 };
 		const clean = { ...answeringWith(build), gatesCleared: 10 };
 		expect(toRunView(audited).gateStake.peelShareOnFailure).toBeGreaterThan(
@@ -580,7 +586,7 @@ describe("the gate stake travels as one object", () => {
 		expect(toRunView(lastConfig).gateStake.missIsFatal).toBe(true);
 		expect(
 			toRunView({
-				...answeringWith([CONFIGS.js, CONFIGS.eslint]),
+				...answeringWith([CONFIGS.js, CONFIGS.linter]),
 				gatesCleared: 1,
 			}).gateStake.missIsFatal
 		).toBe(false);
@@ -625,7 +631,7 @@ describe("the shop's controls answer to the reducer", () => {
 	});
 
 	it("offers the lock exactly when the reducer takes one", () => {
-		const onOffer = { ...answering(), draftOptions: [CONFIGS.eslint] };
+		const onOffer = { ...answering(), draftOptions: [CONFIGS.linter] };
 		const holdsLocker = (state: RunState): RunState => ({
 			...state,
 			build: {
@@ -636,13 +642,13 @@ describe("the shop's controls answer to the reducer", () => {
 		const armed = shopWith(holdsLocker(onOffer), 512);
 		const bare = shopWith(onOffer, 512);
 		const broke = shopWith(holdsLocker(onOffer), 0);
-		const lock = { type: "lock-offer", configId: CONFIGS.eslint.id } as const;
+		const lock = { type: "lock-offer", configId: CONFIGS.linter.id } as const;
 
 		expect(
 			toRunView(armed).shopControls.lockAvailable &&
 				toRunView(armed).shopControls.canLock
 		).toBe(true);
-		expect(runReducer(armed, lock).lockedOfferIds).toEqual([CONFIGS.eslint.id]);
+		expect(runReducer(armed, lock).lockedOfferIds).toEqual([CONFIGS.linter.id]);
 
 		expect(toRunView(bare).shopControls.lockAvailable).toBe(false);
 		expect(runReducer(bare, lock).lockedOfferIds).toEqual([]);
@@ -652,14 +658,14 @@ describe("the shop's controls answer to the reducer", () => {
 	});
 
 	it("offers the extension exactly when the reducer buys one", () => {
-		const deep = shopWith(
-			{ ...answering(), gatesCleared: EXTEND_FROM_GATE },
-			512
+		const deep = carrying(
+			shopWith({ ...answering(), gatesCleared: EXTEND_FROM_GATE }, 512),
+			"extend"
 		);
 		const maxed = { ...deep, extensionsBought: MAX_EXTENSIONS };
-		const broke = shopWith(
-			{ ...answering(), gatesCleared: EXTEND_FROM_GATE },
-			0
+		const broke = carrying(
+			shopWith({ ...answering(), gatesCleared: EXTEND_FROM_GATE }, 0),
+			"extend"
 		);
 		const extend = { type: "extend-offers" } as const;
 
@@ -704,7 +710,7 @@ describe("the view prices the shop's offers", () => {
 		...roomy(),
 		status: "rewarding",
 		storage: 512,
-		draftOptions: [CONFIGS.eslint],
+		draftOptions: [CONFIGS.linter],
 		...overrides,
 	});
 
@@ -712,8 +718,8 @@ describe("the view prices the shop's offers", () => {
 
 	it("prices each offer and clears it for install when the run can pay", () => {
 		const offer = only(shopping());
-		expect(offer.config.id).toBe("eslint");
-		expect(offer.priceKb).toBe(draftCost(CONFIGS.eslint));
+		expect(offer.config.id).toBe("linter");
+		expect(offer.priceKb).toBe(draftCost(CONFIGS.linter));
 		expect(offer.installable).toBe(true);
 		expect(offer.refusal).toBeNull();
 	});
@@ -723,7 +729,7 @@ describe("the view prices the shop's offers", () => {
 		expect(offer.installable).toBe(false);
 		expect(offer.refusal).toEqual({
 			reason: "too-expensive",
-			priceKb: draftCost(CONFIGS.eslint),
+			priceKb: draftCost(CONFIGS.linter),
 			storageKb: 8,
 		});
 	});
@@ -770,15 +776,15 @@ describe("the view prices the shop's offers", () => {
 	});
 
 	it("marks a held offer without changing what it costs", () => {
-		const offer = only(shopping({ lockedOfferIds: ["eslint"] }));
+		const offer = only(shopping({ lockedOfferIds: ["linter"] }));
 		expect(offer.locked).toBe(true);
-		expect(offer.priceKb).toBe(draftCost(CONFIGS.eslint));
+		expect(offer.priceKb).toBe(draftCost(CONFIGS.linter));
 	});
 
 	it("previews what installing the offer would do to the build's payouts", () => {
 		const state = shopping();
 		const offer = only(state);
-		const withIt = [...state.build.configs, CONFIGS.eslint];
+		const withIt = [...state.build.configs, CONFIGS.linter];
 		expect(offer.preview).toEqual(buildModifiersFor(withIt, 0));
 		expect(offer.previewPerAnswer).toEqual(
 			perAnswerPreviewFor(withIt, { answeredBefore: state.window.answered })
@@ -816,7 +822,66 @@ describe("the bill the shop reports with YAGNI held", () => {
 			...weightOf(6)
 		).gateStake.subscriptions.lines.find((entry) => entry.id === "build-space");
 
-		expect(line?.label).toBe("8 weight build space");
+		expect(line?.label).toBe("weight build space");
+		expect(line?.weight).toBe(8);
 		expect(line?.kb).toBe(24);
+	});
+});
+
+describe("Prefetch by version", () => {
+	it("names the polls at v1 and seals their shape until v2", () => {
+		const v1 = toRunView(answeringWith([CONFIGS.prefetch]));
+		expect(v1.upcomingCategories).not.toBeNull();
+		expect(v1.nextGateCategories).not.toBeNull();
+		expect(v1.answerTypesThisGate).toBeNull();
+		expect(v1.optionCountsThisGate).toBeNull();
+
+		const v2 = toRunView(answeringWith([{ ...CONFIGS.prefetch, level: 2 }]));
+		expect(v2.answerTypesThisGate).not.toBeNull();
+		expect(v2.optionCountsThisGate).not.toBeNull();
+	});
+
+	it("seals a v2 Prefetch's shape under 510 Not Extended, which reads every config at v1", () => {
+		const flattened = audited(
+			answeringWith([{ ...CONFIGS.prefetch, level: 2 }]),
+			3,
+			"not-extended"
+		);
+		expect(toRunView(flattened).optionCountsThisGate).toBeNull();
+		expect(toRunView(flattened).upcomingCategories).not.toBeNull();
+	});
+});
+
+describe("npm audit", () => {
+	it("names outage targets only to a build holding npm audit", () => {
+		const bare = audited(
+			answeringWith([CONFIGS.js, CONFIGS.cache]),
+			4,
+			"dependency-outage"
+		);
+		expect(toRunView(bare).outageTargets).toBeNull();
+
+		const auditing = audited(
+			answeringWith([CONFIGS.js, CONFIGS.cache, CONFIGS.npmAudit]),
+			4,
+			"dependency-outage"
+		);
+		const [target] = toRunView(auditing).outageTargets ?? [];
+		expect(target.auditId).toBe("dependency-outage");
+		expect(target.targets).toHaveLength(SLICE_WINDOW);
+		expect(new Set(target.targets.map((names) => names.join())).size).toBe(1);
+	});
+
+	it("names the whole build on the first poll under 425 Too Early", () => {
+		const early = audited(
+			answeringWith([CONFIGS.js, CONFIGS.npmAudit]),
+			4,
+			"too-early"
+		);
+		const [target] = toRunView(early).outageTargets ?? [];
+		expect(target.targets[0]).toEqual([".js", "npm audit"]);
+		expect(target.targets.slice(1).every((names) => names.length === 0)).toBe(
+			true
+		);
 	});
 });

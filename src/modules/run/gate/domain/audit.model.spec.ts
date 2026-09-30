@@ -27,6 +27,8 @@ import {
 	EMPTY_AUDIT_SCHEDULE,
 	redactedOptionIdsFor,
 	suppressedAuditFor,
+	offlinePairsFor,
+	outageTargetsFor,
 } from "~/modules/run/gate/domain/audit.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { AUDIT_RANK } from "~/modules/run/gate/domain/auditSchedule.model";
@@ -259,7 +261,7 @@ describe("410 Gone", () => {
 });
 
 describe("the configs an audit takes offline", () => {
-	const build = [CONFIGS.js, CONFIGS.eslint, CONFIGS.agentsMd];
+	const build = [CONFIGS.js, CONFIGS.linter, CONFIGS.agentsMd];
 	const window = 15;
 	const idsAcrossWindow = (audits: readonly Audit[]) =>
 		[0, 1, 2, 3, 4].map(
@@ -389,7 +391,7 @@ describe("the configs an audit takes offline", () => {
 		const stale = at(11, "upgrade-required");
 		const levelled = [
 			{ ...CONFIGS.js, level: 3 },
-			{ ...CONFIGS.eslint, level: 2 },
+			{ ...CONFIGS.linter, level: 2 },
 			CONFIGS.agentsMd,
 		];
 
@@ -544,5 +546,46 @@ describe("510 Not Extended", () => {
 	it("is the one audit that flattens versions", () => {
 		expect(auditsResetVersions([auditAt("not-extended", 11)])).toBe(true);
 		expect(auditsResetVersions([auditAt("upgrade-required", 11)])).toBe(false);
+	});
+});
+
+describe("the targets an outage names before the gate", () => {
+	const build = [CONFIGS.js, CONFIGS.linter, CONFIGS.agentsMd];
+	const window = 15;
+	const OUTAGES = [
+		"dependency-outage",
+		"flaky-build",
+		"rolling-outage",
+		"too-early",
+		"breaking-change",
+		"upgrade-required",
+	] as const;
+
+	it("names, for position k, exactly what the gate takes offline after k answers", () => {
+		OUTAGES.forEach((id) => {
+			const audits = [auditAt(id, 8)];
+			const [target] = outageTargetsFor(build, audits, window, 5);
+
+			expect(target.audit.id).toBe(id);
+			target.targets.forEach((configs, position) =>
+				expect(configs.map((config) => config.id)).toEqual(
+					offlinePairsFor(build, audits, window, position).map(
+						(pair) => pair.config.id
+					)
+				)
+			);
+		});
+	});
+
+	it("names nothing for an audit that takes no config offline", () => {
+		expect(
+			outageTargetsFor(build, [auditAt("cost-overrun", 3)], window, 5)
+		).toEqual([]);
+	});
+
+	it("names nothing for an empty build", () => {
+		expect(
+			outageTargetsFor([], [auditAt("dependency-outage", 4)], window, 5)
+		).toEqual([]);
 	});
 });

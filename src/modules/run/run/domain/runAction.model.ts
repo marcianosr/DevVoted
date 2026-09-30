@@ -46,6 +46,7 @@ import {
 	plantPin,
 	rebuildDraft,
 	sell,
+	skipShop,
 	upgrade,
 } from "~/modules/run/run/domain/shopAction.model";
 import {
@@ -54,6 +55,8 @@ import {
 	resumeClimb,
 	strip,
 } from "~/modules/run/run/domain/strip.model";
+import { bootRun } from "~/modules/run/run/domain/warmBoot.model";
+import type { RegistryControlId } from "~/modules/run/shop/domain/registryControl.model";
 
 export type RunAction =
 	| { readonly type: "install"; readonly configId: string }
@@ -91,11 +94,18 @@ export type RunAction =
 	| { readonly type: "extend-offers" }
 	| { readonly type: "plant-pin" }
 	| { readonly type: "finish-reward" }
+	| { readonly type: "skip-shop" }
 	| { readonly type: "sell"; readonly configId: string }
 	| { readonly type: "drop"; readonly configId: string }
 	| { readonly type: "minify"; readonly configId: string }
 	| { readonly type: "switch-arm"; readonly configId: string }
 	| { readonly type: "vendor-lock"; readonly configId: string }
+	| {
+			readonly type: "warm-boot";
+			readonly storageKb: number;
+			readonly serviceIds: readonly RegistryControlId[];
+			readonly archiveBytes: number;
+	  }
 	| { readonly type: "loot"; readonly kb: number };
 
 const installConfig = (state: RunState, configId: string): RunState => {
@@ -143,7 +153,26 @@ const SHOP_WRITES: readonly RunAction["type"][] = [
 	"vendor-lock",
 	"buy-incident",
 	"refresh-incident",
+	"skip-shop",
 ];
+
+const REGISTRY_TOUCHES: readonly RunAction["type"][] = [
+	"draft",
+	"upgrade",
+	"rebuild-draft",
+	"lock-offer",
+	"unlock-offer",
+	"extend-offers",
+	"plant-pin",
+	"sell",
+	"drop",
+	"minify",
+	"buy-incident",
+	"refresh-incident",
+];
+
+const touchesRegistry = (state: RunState, action: RunAction): boolean =>
+	state.status === "rewarding" && REGISTRY_TOUCHES.includes(action.type);
 
 export const isShopLocked = (state: RunState): boolean =>
 	auditsCloseShop(auditsOf(state));
@@ -202,6 +231,16 @@ const RULES: readonly ActionRule[] = [
 		type: "start",
 		when: inStatus("configuring"),
 		run: (state) => start(state),
+	}),
+	on({
+		type: "warm-boot",
+		when: inStatus("configuring"),
+		run: (state, action) =>
+			bootRun(state, {
+				storageKb: action.storageKb,
+				serviceIds: action.serviceIds,
+				archiveBytes: action.archiveBytes,
+			}),
 	}),
 	on({
 		type: "rebase",
@@ -321,6 +360,11 @@ const RULES: readonly ActionRule[] = [
 		run: (state) => finishReward(state),
 	}),
 	on({
+		type: "skip-shop",
+		when: inStatus("rewarding"),
+		run: (state) => skipShop(state),
+	}),
+	on({
 		type: "sell",
 		when: inStatus("rewarding"),
 		run: (state, action) => sell(state, action.configId),
@@ -364,11 +408,18 @@ const ruleFor = (state: RunState, action: RunAction) =>
 		(rule) => rule.type === action.type && (rule.when?.(state) ?? true)
 	);
 
-const reduce = (state: RunState, action: RunAction): RunState => {
+const applyRule = (state: RunState, action: RunAction): RunState => {
 	if (SHOP_WRITES.includes(action.type) && isShopLocked(state)) return state;
 	if (PREP_EXITS.includes(action.type) && prepHold(state)) return state;
 	const rule = ruleFor(state, action);
 	return rule ? rule.run(state, action) : state;
+};
+
+const reduce = (state: RunState, action: RunAction): RunState => {
+	if (!touchesRegistry(state, action)) return applyRule(state, action);
+	if (state.shopVisit === "skipped") return state;
+	const next = applyRule(state, action);
+	return next === state ? state : { ...next, shopVisit: "touched" };
 };
 
 export const runReducer = (state: RunState, action: RunAction): RunState => {

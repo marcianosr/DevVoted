@@ -55,12 +55,12 @@ consumable or item class"), and `passive` was left alone because
 `gate/domain/configRole.model.ts` already spends it on the
 conditional-versus-always-on axis.
 
-## Decision 3: shut on phones, open on desktop, decided once at mount
+## Decision 3: shut on every width
 
-`BuildFooter` reads `matchMedia("(min-width: 640px)")` once into `useState`,
-the pattern `RunCommunity.ui.tsx` already uses. The `open` prop overrides it in
-both directions. `Fold` stays uncontrolled after that: the native `<details>`
-owns the flip, as it does everywhere else in the kit.
+The footer arrives folded on phones and desktop alike. It used to open on
+desktop through a mount-time `matchMedia` read; that read is gone. The `open`
+prop still forces it open. `Fold` stays uncontrolled after that: the native
+`<details>` owns the flip, as it does everywhere else in the kit.
 
 ## Decision 4: the summary row stacks rather than overflows
 
@@ -72,12 +72,8 @@ also shoved to the right edge. Every other `Fold` had the same latent overflow.
 
 ## Consequences
 
-- The first `position: sticky` in the codebase, and the first hook in
-  `src/ui/kanto-theme/`. The hook is a mount-time read of the viewport with no
-  data behind it, so ADR-010's Tier 1 rule holds, but the kit is no longer
-  hook-free and the next one will not look like a first.
-- The guards in `startsOpen` return `true` under jsdom and SSR, so the footer
-  renders open in every spec that does not pass `open` explicitly.
+- The first `position: sticky` in the codebase.
+- The footer renders shut in every spec that does not pass `open`.
 - `Build` lost `paying` and `ready`, which nothing derived and nothing named
   outside its own summary line, and gained `heading` so the `Fold` can carry the
   title instead of stacking a second one.

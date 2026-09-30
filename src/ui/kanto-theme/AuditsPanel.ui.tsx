@@ -39,6 +39,7 @@ export type AuditsRow = {
 	code: number;
 	name: string;
 	cue: string;
+	target?: string;
 	sender?: AuditSender;
 	respond?: AuditRespond;
 };
@@ -118,6 +119,9 @@ export const AuditsPanel = ({
 								cue={row.cue}
 								layout="row"
 							/>
+							{row.target === undefined ? null : (
+								<Typography variant="hint">{row.target}</Typography>
+							)}
 						</span>
 					</Panel.Row>
 				))}

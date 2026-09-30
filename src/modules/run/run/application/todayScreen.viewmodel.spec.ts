@@ -2,23 +2,20 @@ import { describe, expect, it } from "vitest";
 
 import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
 import {
+	climbersAtOrPast,
 	communityLineFor,
-	coverageReadingFor,
-	rungsFor,
+	hubBuildFor,
+	hubStripFor,
+	incomingIncidentsFor,
 	pollsBadgeFor,
-	pollsNoteFor,
+	runSoFarFor,
 	shopAsideFor,
-	standingFor,
 	todayPressFor,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { CATEGORY_CODES } from "~/shared/lib/categories";
-
-const today = (pollsLeftToday: number) => ({
-	pollsLeftToday,
-	pollsPerGate: SLICE_WINDOW,
-});
 
 const answered = (index: number): AnsweredPoll => ({
 	id: `poll-${index + 1}`,
@@ -30,39 +27,6 @@ const answered = (index: number): AnsweredPoll => ({
 
 const OPEN = { isOpen: true, remaining: "0m" };
 const SHUT = { isOpen: false, remaining: "7h 23m" };
-
-describe(pollsNoteFor, () => {
-	it("calls the day ready while every poll of it is still there", () => {
-		expect(pollsNoteFor(today(SLICE_WINDOW))).toBe("today’s 5 polls are ready");
-	});
-
-	it("states what is left and that it expires, once the day is part-answered", () => {
-		expect(pollsNoteFor(today(3))).toBe(
-			"3 of today’s 5 left · they do not carry to tomorrow"
-		);
-	});
-
-	it("warns on the last poll of a part-answered day", () => {
-		expect(pollsNoteFor(today(1))).toBe(
-			"1 of today’s 5 left · they do not carry to tomorrow"
-		);
-	});
-
-	it("says the day is answered once every poll of it is spent", () => {
-		expect(pollsNoteFor(today(0))).toBe("today’s 5 polls are answered");
-	});
-
-	it("reads a restarted run's short segment as a part-answered day", () => {
-		expect(pollsNoteFor(today(2))).toBe(
-			"2 of today’s 5 left · they do not carry to tomorrow"
-		);
-	});
-
-	it("never quotes a clock, which is the press's to state", () => {
-		for (const left of [0, 1, 3, SLICE_WINDOW])
-			expect(pollsNoteFor(today(left))).not.toMatch(/\d+[hm]\b/);
-	});
-});
 
 describe(todayPressFor, () => {
 	it("offers a fresh start when no run is open", () => {
@@ -80,20 +44,44 @@ describe(todayPressFor, () => {
 		expect(press.label).toBe("Start today’s climb");
 	});
 
-	it("names the gate it resumes onto", () => {
-		const press = todayPressFor(createMockRunView({ gatesCleared: 1 }), SHUT);
+	it("names the gate it continues to", () => {
+		const press = todayPressFor(createMockRunView({ gatesCleared: 3 }), SHUT);
 
 		expect(press.kind).toBe("resume");
-		expect(press.label).toBe("Resume Boulder");
+		expect(press.label).toBe("Continue to Thunder");
 	});
 
-	it("reads the poll's position in the gate beside the clock", () => {
+	it("sends the player to prep first while the gate has not started", () => {
 		const press = todayPressFor(
-			createMockRunView({ pollsPerGate: 5, answeredThisGate: [] }),
+			createMockRunView({ status: "rewarding", answeredThisGate: [] }),
 			SHUT
 		);
 
-		expect(press.note).toBe("Poll 1 out of 5 · New polls in 7h 23m");
+		expect(press.note).toBe("5 polls ready · prep first");
+	});
+
+	it("reads the poll's position once the gate is being answered", () => {
+		const press = todayPressFor(
+			createMockRunView({ status: "answering", answeredThisGate: [] }),
+			SHUT
+		);
+
+		expect(press.note).toBe("Poll 1 out of 5");
+	});
+
+	it("warns that a part-answered day's leftovers do not carry to tomorrow", () => {
+		const press = todayPressFor(
+			createMockRunView({
+				status: "answering",
+				answeredThisGate: [answered(0), answered(1)],
+				pollsLeftToday: 3,
+			}),
+			SHUT
+		);
+
+		expect(press.note).toBe(
+			"Poll 3 out of 5 · 3 of today’s 5 left · they do not carry to tomorrow"
+		);
 	});
 
 	it("counts the gate's remaining polls onto the mark, not the run's whole pool", () => {
@@ -111,6 +99,7 @@ describe(todayPressFor, () => {
 
 	it("keeps the mark and the poll label telling the same story", () => {
 		const view = createMockRunView({
+			status: "answering",
 			pollsPerGate: 5,
 			answeredThisGate: [answered(0), answered(1)],
 		});
@@ -132,28 +121,19 @@ describe(todayPressFor, () => {
 		expect(press.pollsLeft).toBe(0);
 	});
 
-	it("shuts and takes the clock as its label once the day is spent", () => {
+	it("shuts and names when the gate opens once the day is spent", () => {
 		const press = todayPressFor(
 			createMockRunView({
+				gatesCleared: 3,
 				pollsExhausted: true,
 				pollsLeftToday: 0,
-				answeredThisGate: [],
 			}),
 			SHUT
 		);
 
 		expect(press.kind).toBe("locked");
-		expect(press.label).toBe("New polls in 7h 23m");
-		expect(press.note).toBe("Poll 1 out of 5");
-	});
-
-	it("leaves the day's leftovers to the standing line, never restating them", () => {
-		for (const view of [
-			null,
-			createMockRunView({ pollsLeftToday: 3 }),
-			createMockRunView({ pollsExhausted: true, pollsLeftToday: 0 }),
-		])
-			expect(todayPressFor(view, SHUT).note).not.toMatch(/today’s/);
+		expect(press.label).toBe("Thunder opens in 7h 23m");
+		expect(press.note).toBe("today’s polls are done · come back tomorrow");
 	});
 
 	it("reopens the moment the clock runs out, without a reload", () => {
@@ -166,90 +146,182 @@ describe(todayPressFor, () => {
 	});
 });
 
-describe(standingFor, () => {
-	it("states the gate reached and what is stored against it", () => {
+describe(hubStripFor, () => {
+	it("states the run, the gate reached and the balance", () => {
 		expect(
-			standingFor(createMockRunView({ gatesCleared: 4, storage: 296 }))
-		).toBe("gate 4 of 12 · 296 KB stored · today’s 5 polls are ready");
+			hubStripFor(createMockRunView({ gatesCleared: 3, storage: 106 }), 14)
+		).toMatchObject({ runNumber: 14, gate: 3, gates: 12, storage: 106 });
 	});
 
-	it("calls the storage banked once the run is over", () => {
-		expect(
-			standingFor(
-				createMockRunView({ gatesCleared: 4, storage: 296, isOver: true })
-			)
-		).toBe("gate 4 of 12 · 296 KB banked · today’s 5 polls are ready");
-	});
-
-	it("warns that a part-answered day's leftovers expire, which only it says", () => {
-		expect(
-			standingFor(
-				createMockRunView({ gatesCleared: 4, storage: 296, pollsLeftToday: 3 })
-			)
-		).toBe(
-			"gate 4 of 12 · 296 KB stored · 3 of today’s 5 left · they do not carry to tomorrow"
-		);
+	it("has no strip before a run is open", () => {
+		expect(hubStripFor(null, 14)).toBeNull();
 	});
 });
 
-describe(rungsFor, () => {
-	it("names both clearing rungs and keeps each band beside its percentage", () => {
-		expect(rungsFor({ floor: 20, ok: 40, healthy: 60 })).toEqual([
-			{ band: "ok", label: "OK", at: "40%" },
-			{ band: "healthy", label: "HEALTHY", at: "60%" },
+describe(runSoFarFor, () => {
+	const closes = [
+		{ gate: 0, band: "perfect", cleared: true, kb: 32 },
+		{ gate: 1, band: "healthy", cleared: true, kb: 19 },
+		{ gate: 2, band: "ok", cleared: true, kb: 13 },
+	] as const;
+
+	it("lists every closed gate with its grade and what it banked", () => {
+		const soFar = runSoFarFor(createMockRunView({ gatesCleared: 3, closes }));
+
+		expect(
+			soFar?.rows.map((row) => [row.swatch.gateName, row.band.label, row.kb])
+		).toEqual([
+			["Pallet", "PERFECT", "+32 KB"],
+			["Boulder", "HEALTHY", "+19 KB"],
+			["Cascade", "OK", "+13 KB"],
 		]);
+		expect(soFar?.banked).toBe("+64 KB");
 	});
 
-	it("rounds a rung to one decimal rather than quoting the raw ratio", () => {
-		expect(rungsFor({ floor: 0, ok: 33.333, healthy: 66.666 })).toEqual([
-			{ band: "ok", label: "OK", at: "33.3%" },
-			{ band: "healthy", label: "HEALTHY", at: "66.7%" },
-		]);
-	});
-});
-
-describe(coverageReadingFor, () => {
-	it("reads coverage held against the healthy rung", () => {
-		const reading = coverageReadingFor(
+	it("shows a held gate once, by the close that finally cleared it", () => {
+		const soFar = runSoFarFor(
 			createMockRunView({
-				gateStake: createMockGateStake({
-					coverageHeld: 42,
-					coverageLadder: { floor: 20, ok: 40, healthy: 60 },
-				}),
+				gatesCleared: 1,
+				closes: [
+					{ gate: 0, band: "shaky", cleared: false, kb: 0 },
+					{ gate: 0, band: "ok", cleared: true, kb: 12 },
+				],
 			})
 		);
 
-		expect(reading).toEqual({
-			held: 42,
-			demand: 60,
-			rungs: [
-				{ band: "ok", label: "OK", at: "40%" },
-				{ band: "healthy", label: "HEALTHY", at: "60%" },
+		expect(soFar?.rows).toHaveLength(1);
+		expect(soFar?.rows[0]?.band.label).toBe("OK");
+	});
+
+	it("projects the next gate from the coverage held and a clean clear", () => {
+		const soFar = runSoFarFor(
+			createMockRunView({
+				gatesCleared: 3,
+				fullClearKb: 40,
+				gateStake: createMockGateStake({ coverageHeld: 40 }),
+			})
+		);
+
+		expect(soFar?.next).toMatchObject({ share: "40%", kb: "+40 KB" });
+		expect(soFar?.next?.swatch.gateName).toBe("Thunder");
+	});
+
+	it("drops the next gate once the run is over", () => {
+		expect(runSoFarFor(createMockRunView({ isOver: true }))?.next).toBeNull();
+	});
+});
+
+describe(hubBuildFor, () => {
+	it("lists each installed config with its weight and version", () => {
+		const build = hubBuildFor(
+			createMockRunView({
+				installed: [
+					{
+						config: { ...CONFIGS.codeCoverage, level: 2 },
+						slots: 2,
+						canMinify: false,
+						minifySavingSlots: 0,
+					},
+				],
+				slotsUsed: 4,
+				slots: 6,
+				slotsFree: 2,
+			})
+		);
+
+		expect(build).toEqual({
+			rows: [
+				{ id: "code-coverage", name: "Code Coverage", slots: 2, version: 2 },
 			],
+			weight: "4 / 6",
+			free: 2,
 		});
 	});
 
-	it("has nothing to read before a run is open", () => {
-		expect(coverageReadingFor(null)).toBeNull();
+	it("has no build before a run is open", () => {
+		expect(hubBuildFor(null)).toBeNull();
+	});
+});
+
+describe(incomingIncidentsFor, () => {
+	it("names a rival's incident waiting at the next gate", () => {
+		const view = createMockRunView({
+			gatesCleared: 3,
+			audits: [
+				{
+					id: "not-found",
+					code: 404,
+					name: "Not Found",
+					description: "",
+					suppressed: false,
+					sentBy: { id: "erika", name: "erika" },
+				},
+			],
+		});
+
+		expect(incomingIncidentsFor(view)).toEqual([
+			{
+				id: "not-found",
+				code: 404,
+				name: "Not Found",
+				cue: "waits at Thunder · it replaces one audit",
+				sender: "@erika",
+			},
+		]);
 	});
 
-	it("has nothing to read once the run is over", () => {
-		expect(coverageReadingFor(createMockRunView({ isOver: true }))).toBeNull();
+	it("leaves out the gate's own drawn audits", () => {
+		const view = createMockRunView({
+			audits: [
+				{
+					id: "not-found",
+					code: 404,
+					name: "Not Found",
+					description: "",
+					suppressed: false,
+				},
+			],
+		});
+
+		expect(incomingIncidentsFor(view)).toEqual([]);
+	});
+});
+
+describe(climbersAtOrPast, () => {
+	it("counts other climbers at the gate or past it, never you", () => {
+		expect(
+			climbersAtOrPast(
+				[
+					{ gate: 2, you: false },
+					{ gate: 3, you: false },
+					{ gate: 5, you: false },
+					{ gate: 3, you: true },
+				],
+				3
+			)
+		).toBe(2);
 	});
 });
 
 describe(communityLineFor, () => {
 	it("keeps the count apart from its wording so the figure can be badged", () => {
-		expect(communityLineFor(8)).toEqual({
+		expect(communityLineFor(8)).toMatchObject({
 			count: 8,
 			detail: "players answered today",
 		});
 	});
 
 	it("drops the plural for a room of one", () => {
-		expect(communityLineFor(1)).toEqual({
+		expect(communityLineFor(1)).toMatchObject({
 			count: 1,
 			detail: "player answered today",
+		});
+	});
+
+	it("names how many are at the next gate or ahead", () => {
+		expect(communityLineFor(38, { count: 4, gate: 3 })).toMatchObject({
+			ahead: 4,
+			aheadDetail: "at Thunder or ahead",
 		});
 	});
 
@@ -260,26 +332,41 @@ describe(communityLineFor, () => {
 
 describe(shopAsideFor, () => {
 	it("opens the shop only while the gate is paying out", () => {
-		expect(shopAsideFor(createMockRunView({ status: "rewarding" })).open).toBe(
-			true
+		expect(
+			shopAsideFor(createMockRunView({ status: "rewarding" }), SHUT).open
+		).toBe(true);
+	});
+
+	it("says the shop stays open until the gate starts", () => {
+		const shop = shopAsideFor(createMockRunView({ status: "rewarding" }), SHUT);
+
+		expect(shop.detail).toBe("open until you start");
+		expect(shop.highlighted).toBe(false);
+	});
+
+	it("puts the shop forward with the balance to spend while the day waits", () => {
+		const shop = shopAsideFor(
+			createMockRunView({
+				status: "rewarding",
+				pollsExhausted: true,
+				storage: 106,
+			}),
+			SHUT
 		);
+
+		expect(shop.detail).toBe("spend 106 KB");
+		expect(shop.highlighted).toBe(true);
 	});
 
 	it("shuts the shop mid-gate and names itself plus the reason, for the label", () => {
-		const shop = shopAsideFor(createMockRunView({ status: "answering" }));
+		const shop = shopAsideFor(createMockRunView({ status: "answering" }), SHUT);
 
 		expect(shop.open).toBe(false);
 		expect(shop.hint).toBe("Shop · the shop opens when you clear a gate");
 	});
 
-	it("leaves an open shop without a hint, so its own word names it", () => {
-		expect(
-			shopAsideFor(createMockRunView({ status: "rewarding" })).hint
-		).toBeUndefined();
-	});
-
 	it("shuts the shop before a run is open", () => {
-		expect(shopAsideFor(null).open).toBe(false);
+		expect(shopAsideFor(null, SHUT).open).toBe(false);
 	});
 });
 

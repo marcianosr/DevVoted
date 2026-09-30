@@ -55,7 +55,7 @@ export const Tooltip = ({
 	if (hint === undefined) return <>{children}</>;
 
 	return (
-		<span className={WRAP}>
+		<span className={WRAP} onMouseLeave={() => setHeld(false)}>
 			<button
 				type="button"
 				aria-label={label}

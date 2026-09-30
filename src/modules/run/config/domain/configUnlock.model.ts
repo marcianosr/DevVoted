@@ -10,7 +10,16 @@ export const ONE_SHOT_METRICS = [
 	"free-rung-gate-four",
 	"banked-256-one-run",
 	"finished-holding-a-dealt-config",
-	"bare-build-clear",
+	"first-poll-correct",
+	"won-every-answer-correct",
+	"audited-clear-ok",
+	"ten-unit-answer",
+	"gate-over-full",
+	"cleared-after-two-misses",
+	"eight-configs-held",
+	"install-after-three-rebuilds",
+	"storage-418",
+	"refused-shaky-peel",
 ] as const;
 
 export type OneShotMetric = (typeof ONE_SHOT_METRICS)[number];
@@ -84,7 +93,7 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 	js: free(),
 	ts: free(),
 	css: free(),
-	eslint: free(),
+	linter: free(),
 	"unit-tests": free(),
 	"code-coverage": free(),
 	"indexed-db": free(),
@@ -102,13 +111,6 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"Answer 10 React polls correctly",
 		"answered 10 React polls correctly",
 		50
-	),
-	stylelint: earned(
-		"category-correct:css",
-		10,
-		"Answer 10 CSS polls correctly",
-		"answered 10 CSS polls correctly",
-		75
 	),
 	telemetry: earned(
 		"community-peeks",
@@ -349,6 +351,13 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		875
 	),
 	lgtm: earned("gates-cleared", 45, "Clear 45 gates", "cleared 45 gates", 900),
+	"npm-audit": earned(
+		"audited-gates-cleared",
+		3,
+		"Clear 3 audited gates",
+		"cleared 3 audited gates",
+		250
+	),
 };
 
 export const FREE_CONFIG_IDS: readonly string[] = Object.entries(CONFIG_UNLOCKS)

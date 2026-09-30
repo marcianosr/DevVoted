@@ -27,7 +27,9 @@ export type RegistryControlData = {
 };
 
 export type RegistryControlState =
-	{ locked?: false; price?: string } | { locked: true; unlock: string };
+	| { locked?: false; carried?: true; price?: string }
+	| { locked: true; unlock: string }
+	| { locked?: false; carried: false; carry: string };
 
 type RegistryControlChrome = {
 	layout?: RegistryControlLayout;
@@ -41,7 +43,7 @@ export type RegistryControlProps = RegistryControlData &
 	RegistryControlChrome;
 
 export type UnlockedRegistryControlProps = RegistryControlData &
-	Extract<RegistryControlState, { locked?: false }> &
+	Exclude<RegistryControlState, { locked: true } | { carried: false }> &
 	RegistryControlChrome;
 
 const Trailing = (props: RegistryControlProps) => {
@@ -51,6 +53,9 @@ const Trailing = (props: RegistryControlProps) => {
 				{`${UNLOCK_WORD} ${SEPARATOR} ${props.unlock}`}
 			</span>
 		);
+	}
+	if (props.carried === false) {
+		return <span className={UNLOCK}>{props.carry}</span>;
 	}
 	if (props.refusal !== undefined) {
 		return (
@@ -90,7 +95,11 @@ const hintOf = ({ title, price, refusal }: UnlockedRegistryControlProps) =>
 export const RegistryControl = (props: RegistryControlProps) => {
 	const boxed = (props.layout ?? "box") === "box";
 
-	if (props.locked === true || props.onPress === undefined) {
+	if (
+		props.locked === true ||
+		props.carried === false ||
+		props.onPress === undefined
+	) {
 		return (
 			<div className={clsx(ROW, boxed && BOX)}>
 				<Body {...props} />

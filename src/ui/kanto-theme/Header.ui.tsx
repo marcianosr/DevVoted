@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
@@ -6,7 +8,9 @@ import { Badge } from "./Badge.ui";
 import { Balance, type BalanceProps } from "./Balance.ui";
 import { CoverageBar, type CoverageBarProps } from "./CoverageBar.ui";
 import { CoverageRing, type CoverageRingProps } from "./CoverageRing.ui";
+import type { FoldBadge } from "./Fold.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
+import { RunReadout, type RunReadoutProps } from "./RunReadout.ui";
 import { Swatch, type SwatchFill, type SwatchState } from "./Swatch.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
@@ -18,11 +22,13 @@ const SPAN = "w-full";
 const PINNED =
 	"w-full md:sticky md:top-0 md:z-20 md:-mx-8 md:-mt-6 md:-mb-3 md:w-auto md:border-b md:border-theme-faint md:bg-theme-faint md:px-8 md:pt-6 md:pb-3";
 const ROWS = "flex min-w-0 flex-1 flex-col gap-4";
-const TITLE_ROW = "flex items-center gap-3";
+const TITLE_ROW = "flex flex-wrap items-center gap-3";
+const TITLE_TRACK = "flex shrink-0";
 const TITLE_END = "ml-auto flex shrink-0 items-center gap-2";
 const HELD =
 	"flex shrink-0 items-center gap-1.5 rounded-md border border-theme-faint bg-theme-raised px-2 py-1 text-xs font-bold text-theme-soft";
 const HELD_MARK = "text-theme";
+const FUNDS_OFF_PHONE = "hidden md:flex";
 const HELD_TRAIL = "text-theme-muted";
 
 const HELD_COLOR = "cinnabar";
@@ -39,6 +45,15 @@ const COVERAGE_OF = "text-theme-muted";
 const SWATCH_SIZE = "small";
 
 const OF = "of";
+
+const FundsSeat = ({
+	offPhone,
+	children,
+}: {
+	offPhone: boolean;
+	children: ReactNode;
+}) =>
+	offPhone ? <span className={FUNDS_OFF_PHONE}>{children}</span> : children;
 
 export const gateTitleOf = (swatch: GateSwatch): string =>
 	`#${swatch.gate} - ${swatch.gateName} Gate`;
@@ -62,47 +77,76 @@ type HeaderReading =
 	| { bar: CoverageBarProps; ring?: never; coverage?: never }
 	| { coverage?: HeaderCoverage; ring?: never; bar?: never };
 
+const hasTitleEnd = (
+	held: string | undefined,
+	funds: BalanceProps | undefined,
+	readout: RunReadoutProps | undefined
+): boolean => [held, funds, readout].some((part) => part !== undefined);
+
+const hasTrackRow = (
+	note: string | undefined,
+	coverage: HeaderCoverage | undefined
+): boolean => note !== undefined || coverage !== undefined;
+
 export type HeaderProps = {
 	swatch: GateSwatch;
 	swatches: readonly SwatchFill[];
 	funds?: BalanceProps;
+	readout?: RunReadoutProps;
 	title?: string;
 	subtitle?: string;
-	badge?: string;
+	badges?: readonly FoldBadge[];
 	held?: string;
 	swatchState?: SwatchState;
+	marked?: boolean;
 	note?: string;
 	noteAt?: NotePlacement;
 	pinned?: boolean;
+	fundsOffPhone?: boolean;
 } & HeaderReading;
 
 export const Header = ({
 	swatch,
 	swatches,
 	funds,
+	readout,
 	title,
 	subtitle,
-	badge,
+	badges = [],
 	held,
 	swatchState = "discovered",
+	marked = false,
 	note,
 	noteAt = "end",
 	pinned = false,
+	fundsOffPhone = false,
 	...reading
 }: HeaderProps) => {
 	const seat = pinned ? PINNED : SPAN;
 
 	const titleRow = (
 		<div className={TITLE_ROW}>
-			<Swatch state={swatchState} swatch={swatch} size={SWATCH_SIZE} />
+			<Swatch
+				state={swatchState}
+				swatch={swatch}
+				marked={marked}
+				size={SWATCH_SIZE}
+			/>
 			<Typography variant="title">{title ?? gateTitleOf(swatch)}</Typography>
 			{subtitle === undefined ? null : (
 				<Typography variant="hint" as="span">
 					{subtitle}
 				</Typography>
 			)}
-			{badge === undefined ? null : <Badge>{badge}</Badge>}
-			{held === undefined && funds === undefined ? null : (
+			{badges.map((badge) => (
+				<Badge key={badge.label} color={badge.color}>
+					{badge.label}
+				</Badge>
+			))}
+			<span className={TITLE_TRACK}>
+				<SwatchTrack swatches={swatches} size={SWATCH_SIZE} />
+			</span>
+			{hasTitleEnd(held, funds, readout) ? (
 				<span className={TITLE_END}>
 					{held === undefined ? null : (
 						<span data-screen-theme={HELD_COLOR} className={HELD}>
@@ -113,17 +157,19 @@ export const Header = ({
 							<span className={HELD_TRAIL}>{HELD_WORD}</span>
 						</span>
 					)}
+					{readout === undefined ? null : <RunReadout {...readout} />}
 					{funds === undefined ? null : (
-						<Balance {...funds} layout={pinned ? "inline" : "stacked"} />
+						<FundsSeat offPhone={fundsOffPhone}>
+							<Balance {...funds} layout={pinned ? "inline" : "stacked"} />
+						</FundsSeat>
 					)}
 				</span>
-			)}
+			) : null}
 		</div>
 	);
 
-	const trackRow = (
+	const trackRow = !hasTrackRow(note, reading.coverage) ? null : (
 		<div className={TRACK_ROW}>
-			<SwatchTrack swatches={swatches} size={SWATCH_SIZE} />
 			{note === undefined ? null : (
 				<span className={clsx(NOTE, PLACEMENT[noteAt])}>{note}</span>
 			)}

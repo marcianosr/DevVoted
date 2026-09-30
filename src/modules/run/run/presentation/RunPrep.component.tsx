@@ -7,6 +7,7 @@ import { NEW_POLLS_IN } from "~/shared/lib/copy";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
+import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 
 const SHOP_PHASE = "rewarding";
 const OPENING_PHASE = "configuring";
@@ -14,6 +15,7 @@ const ANSWERING = "answering";
 
 export const RunPrep = () => {
 	const { view } = useTodaysRun();
+	const runNumber = useRunNumber();
 	const { send, sendWith, commit, busy } = useRunActions();
 	const navigate = useNavigate();
 	const countdown = useNextPollsCountdown();
@@ -49,6 +51,7 @@ export const RunPrep = () => {
 
 	return (
 		<PrepView
+			runNumber={runNumber.view}
 			view={view}
 			onStart={startGate}
 			onBackToShop={back}

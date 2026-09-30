@@ -113,7 +113,7 @@ describe("CoverageBar", () => {
 		it("marks only the line it actually asks for", () => {
 			render(<CoverageBar {...PALLET} held={2.5} />);
 
-			expect(screen.queryByText("survive")).not.toBeInTheDocument();
+			expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 			expect(screen.queryByText("OK")).not.toBeInTheDocument();
 			expect(screen.getByText("HEALTHY 5%")).toBeInTheDocument();
 		});
@@ -134,7 +134,7 @@ describe("CoverageBar", () => {
 	it("names each boundary under the track, the gate's line with its figure", () => {
 		render(<CoverageBar {...VOLCANO} held={70} />);
 
-		expect(screen.getByText("survive")).toBeInTheDocument();
+		expect(screen.getByText("SHAKY")).toBeInTheDocument();
 		expect(screen.getByText("OK")).toBeInTheDocument();
 		expect(screen.getByText("HEALTHY 80%")).toBeInTheDocument();
 	});
@@ -142,7 +142,7 @@ describe("CoverageBar", () => {
 	it("stands each mark where its boundary falls", () => {
 		render(<CoverageBar {...VOLCANO} held={70} />);
 
-		expect(screen.getByText("survive")).toHaveStyle({ left: "55%" });
+		expect(screen.getByText("SHAKY")).toHaveStyle({ left: "55%" });
 		expect(screen.getByText("HEALTHY 80%")).toHaveStyle({ left: "80%" });
 	});
 
@@ -209,73 +209,11 @@ describe("CoverageBar", () => {
 
 		expect(ours).toContain("transition: none;");
 	});
-	describe("spoken in units", () => {
-		const PALLET_LINE = { floor: 0, ok: 40, healthy: 60 };
-		const TWO_RIGHT = { held: 2.1, healthy: 3 };
-		const pinOf = (container: HTMLElement) =>
-			container.querySelector(".coverage-bar-pin");
-		const countOf = (container: HTMLElement) =>
-			container.querySelector(".coverage-bar-count");
+	it("heads a panel with the percent held, then the band", () => {
+		render(<CoverageReading floor={0} ok={40} healthy={60} held={42} />);
 
-		it("reads the units held against the gate's line, with no percent in it", () => {
-			render(<CoverageBar {...PALLET_LINE} held={42} units={TWO_RIGHT} />);
-
-			expect(
-				screen.getByRole("img", { name: "2.1 of 3 needed · OK" })
-			).toBeInTheDocument();
-		});
-
-		it("heads a panel with the units against the line, then the band", () => {
-			render(<CoverageReading {...PALLET_LINE} held={42} units={TWO_RIGHT} />);
-
-			expect(screen.getByText("2.1 of 3")).toBeInTheDocument();
-			expect(screen.getByText("OK")).toBeInTheDocument();
-		});
-
-		it("marks the gate's line in the units it asks for, where the ratio puts it", () => {
-			render(<CoverageBar {...PALLET_LINE} held={42} units={TWO_RIGHT} />);
-
-			expect(screen.getByText("HEALTHY 3")).toHaveStyle({ left: "60%" });
-		});
-
-		it("keeps the track in percent whatever it speaks", () => {
-			const { container } = render(
-				<CoverageBar {...PALLET_LINE} held={42} units={TWO_RIGHT} />
-			);
-
-			expect(heldOf(container)).toBe("42");
-			expect(zonesOf(container).map(basisOf)).toEqual(["0", "40", "20", "40"]);
-		});
-
-		it("pins the units a closed gate held, to the hundredth the receipts use", () => {
-			const { container } = render(
-				<CoverageBar
-					{...PALLET_LINE}
-					held={27}
-					units={{ held: 1.35, healthy: 3 }}
-					pin
-				/>
-			);
-
-			expect(pinOf(container)).toHaveTextContent("1.35");
-			expect(pinOf(container)).not.toHaveTextContent("%");
-		});
-
-		it("announces a move in units and counts the pin up in whole ones", () => {
-			const { container, rerender } = render(
-				<CoverageBar
-					{...PALLET_LINE}
-					held={20}
-					units={{ held: 1, healthy: 3 }}
-				/>
-			);
-			rerender(<CoverageBar {...PALLET_LINE} held={42} units={TWO_RIGHT} />);
-
-			expect(screen.getByRole("status")).toHaveTextContent("2.1");
-			expect(screen.getByRole("status")).not.toHaveTextContent("%");
-			expect(countOf(container)).toHaveStyle({ "--coverage-count": "2" });
-			expect(pinOf(container)).not.toHaveTextContent("%");
-		});
+		expect(screen.getByText("42%")).toBeInTheDocument();
+		expect(screen.getByText("OK")).toBeInTheDocument();
 	});
 
 	describe("the pin that marks where the run landed", () => {
@@ -349,7 +287,7 @@ describe("CoverageBar", () => {
 				rows.findIndex((row) => row.querySelector(".coverage-bar-pin"))
 			).toBeLessThan(trackAt);
 			expect(
-				rows.findIndex((row) => row.textContent?.includes("survive"))
+				rows.findIndex((row) => row.textContent?.includes("SHAKY"))
 			).toBeGreaterThan(trackAt);
 		});
 	});
@@ -558,11 +496,39 @@ describe("boundary labels that would otherwise collide", () => {
 	it("grows each label away from its neighbours", () => {
 		render(<CoverageBar {...VOLCANO} held={70} />);
 
-		expect(screen.getByText("survive")).toHaveClass("-translate-x-full");
+		expect(screen.getByText("SHAKY")).toHaveClass("-translate-x-full");
 		expect(screen.getByText("OK")).toHaveClass("-translate-x-1/2");
 		expect(screen.getByText("HEALTHY 80%")).not.toHaveClass(
 			"-translate-x-1/2",
 			"-translate-x-full"
 		);
+	});
+});
+
+describe("CoverageBar with a pointer instead of the pin", () => {
+	const pinOf = (container: HTMLElement) =>
+		container.querySelector(".coverage-bar-pin");
+
+	it("points at the reading in the band it stands in, with no figure on it", () => {
+		const { container } = render(
+			<CoverageBar {...VOLCANO} held={70} pointer />
+		);
+
+		expect(pinOf(container)).toHaveAttribute("data-shown", "true");
+		expect(pinOf(container)).toHaveStyle({ left: "70%" });
+		expect(pinOf(container)).toHaveTextContent("");
+		expect(themeOf(pinOf(container))).toBe(COVERAGE_BAND_COLOR.ok);
+	});
+
+	it("names no boundary under the track", () => {
+		render(<CoverageBar {...VOLCANO} held={70} pointer />);
+
+		expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
+	});
+
+	it("still reads the whole state aloud", () => {
+		render(<CoverageBar {...VOLCANO} held={70} pointer />);
+
+		expect(screen.getByRole("img")).toHaveAccessibleName(/OK/);
 	});
 });

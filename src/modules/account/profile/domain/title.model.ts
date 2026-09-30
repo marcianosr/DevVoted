@@ -9,10 +9,15 @@ import {
 	type CategoryCode,
 } from "~/shared/lib/categories";
 
+type CategoryPollMetric =
+	`category-seen:${CategoryCode}` | `category-mastered:${CategoryCode}`;
+
+type TitleMetric = ObjectiveMetric | CategoryPollMetric;
+
 export type TitleEarn =
 	| {
 			readonly kind: "threshold";
-			readonly metric: ObjectiveMetric;
+			readonly metric: TitleMetric;
 			readonly target: number;
 	  }
 	| { readonly kind: "granted" };
@@ -24,8 +29,7 @@ export type Title = {
 	readonly earn: TitleEarn;
 };
 
-const CATEGORY_CORRECT_TARGET = 25;
-const CATEGORY_ANSWERED_TARGET = 10;
+const CATEGORY_POLLS_TARGET = 50;
 
 const CATEGORY_TITLE_NAMES = {
 	html: { entry: "HTML Hobbyist", mastery: "Markup Master" },
@@ -42,25 +46,25 @@ const CATEGORY_TITLE_NAMES = {
 	vue: { entry: "Point of Vue", mastery: "Vue Virtuoso" },
 } as const satisfies Record<CategoryCode, { entry: string; mastery: string }>;
 
-const answeredTitleFor = (code: CategoryCode): Title => ({
+const seenTitleFor = (code: CategoryCode): Title => ({
 	id: `title-answered-${code}`,
 	name: CATEGORY_TITLE_NAMES[code].entry,
-	earnedWhen: `${CATEGORY_ANSWERED_TARGET} ${CATEGORY_METADATA[code].name} polls answered`,
+	earnedWhen: `${CATEGORY_POLLS_TARGET} distinct ${CATEGORY_METADATA[code].name} polls answered`,
 	earn: {
 		kind: "threshold",
-		metric: `category-answered:${code}`,
-		target: CATEGORY_ANSWERED_TARGET,
+		metric: `category-seen:${code}`,
+		target: CATEGORY_POLLS_TARGET,
 	},
 });
 
-const correctTitleFor = (code: CategoryCode): Title => ({
+const masteredTitleFor = (code: CategoryCode): Title => ({
 	id: `title-maintainer-${code}`,
 	name: CATEGORY_TITLE_NAMES[code].mastery,
-	earnedWhen: `${CATEGORY_CORRECT_TARGET} correct ${CATEGORY_METADATA[code].name} answers`,
+	earnedWhen: `${CATEGORY_POLLS_TARGET} distinct ${CATEGORY_METADATA[code].name} polls answered correctly`,
 	earn: {
 		kind: "threshold",
-		metric: `category-correct:${code}`,
-		target: CATEGORY_CORRECT_TARGET,
+		metric: `category-mastered:${code}`,
+		target: CATEGORY_POLLS_TARGET,
 	},
 });
 
@@ -78,41 +82,41 @@ const once = (
 ): BehaviourTitle => ({ name, earnedWhen, metric, target: 1 });
 
 const BEHAVIOUR_TITLES: readonly BehaviourTitle[] = [
-	once("Vanilla JS", "Clear a gate with nothing installed", "bare-build-clear"),
-	once("Tree Shaken", "Reach gate 4 under 16 KB", "lean-gate-four"),
 	once(
-		"Breaking Change",
-		"Clear a gate holding two upgraded configs",
-		"double-v2-clear"
-	),
-	{
-		name: "Peer Dependency",
-		earnedWhen: "Vendor-lock 3 configs",
-		metric: "configs-vendor-locked",
-		target: 3,
-	},
-	once(
-		"Works On My Machine",
-		"A perfect window past gate 3",
-		"perfect-window-deep"
+		"Hello, World!",
+		"Answer a run's first poll exactly right",
+		"first-poll-correct"
 	),
 	once(
-		"Ship It",
-		"Finish a run still holding a config you were dealt",
-		"finished-holding-a-dealt-config"
+		"And now it's green!",
+		"Win a run with every answer exactly right",
+		"won-every-answer-correct"
 	),
-	{
-		name: "Bikeshedder",
-		earnedWhen: "Reorder the gates 25 times",
-		metric: "gates-reordered",
-		target: 25,
-	},
-	{
-		name: "Stack Overflow",
-		earnedWhen: "Peek at the room 50 times",
-		metric: "community-peeks",
-		target: 50,
-	},
+	once("It Compiles", "Win a run", "runs-won"),
+	once("Ship It", "Clear an audited gate at OK", "audited-clear-ok"),
+	once(
+		"10x Engineer",
+		"Earn 10 coverage units with one answer",
+		"ten-unit-answer"
+	),
+	once("Stack Overflow", "Clear a gate past full coverage", "gate-over-full"),
+	once(
+		"Tested in Production",
+		"Clear a gate after missing its first two polls",
+		"cleared-after-two-misses"
+	),
+	once("Dependency Hell", "Hold eight configs at once", "eight-configs-held"),
+	once(
+		"Clean Install",
+		"Rebuild the registry three times in one shop, then install",
+		"install-after-three-rebuilds"
+	),
+	once("I'm a Teapot", "Hold exactly 418 KB", "storage-418"),
+	once(
+		"WONTFIX",
+		"Refuse a SHAKY gate instead of paying its peel",
+		"refused-shaky-peel"
+	),
 ];
 
 const kebab = (name: string): string =>
@@ -145,8 +149,8 @@ const pollCountTitles: readonly Title[] = RANK_RUNGS.map((rung) => ({
 export const TITLES: readonly Title[] = [
 	...pollCountTitles,
 	...CATEGORY_CODES.flatMap((code) => [
-		answeredTitleFor(code),
-		correctTitleFor(code),
+		seenTitleFor(code),
+		masteredTitleFor(code),
 	]),
 	...BEHAVIOUR_TITLES.map(behaviourTitleOf),
 	{

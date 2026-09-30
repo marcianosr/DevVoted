@@ -7,20 +7,26 @@ import {
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import {
+	GATE_COUNT,
+	MIN_WINDOW_UNITS,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
 import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 
 import {
 	answersOwedFor,
-	bandOutcomesFor,
 	bandOutcomesPropsFor,
 	BAND_OUTCOMES_NOTE,
 	ESCROW_NOTE,
 	FREE_MISS_NOTE,
 	clearingRungFor,
 	coverageRungsFor,
+	ladderFor,
+	metaFor,
 	objectivesFor,
+	standingLineFor,
 	type BandOutcomesFrame,
 } from "./bandOutcomes.viewmodel";
 
@@ -48,14 +54,20 @@ const frameFor = (
 	ladder: MID,
 	coverageGainPercent: 4,
 	peelKb: 64,
+	answeredThisGate: 0,
 	payout: (correct) => correct * 32,
 	...over,
 });
 
+const rungOf = (frame: BandOutcomesFrame, band: string) =>
+	ladderFor(frame).rungs.find((rung) => rung.band === band);
+
 const clearOf = (frame: BandOutcomesFrame) =>
 	objectivesFor(frame).objectives[0];
-const swatchRowOf = (frame: BandOutcomesFrame) =>
+const minimumRowOf = (frame: BandOutcomesFrame) =>
 	objectivesFor(frame).objectives[1];
+const swatchRowOf = (frame: BandOutcomesFrame) =>
+	objectivesFor(frame).objectives[2];
 
 describe("the rungs a gate's ladder has room for", () => {
 	it("draws four rungs at the calibration gate, which has no floor to fall under", () => {
@@ -87,26 +99,42 @@ describe("the rungs a gate's ladder has room for", () => {
 		expect(bandsOf(MID)[0]).toBe("perfect");
 		expect(bandsOf(MID).at(-1)).toBe("danger");
 	});
+
+	it("cuts each rung where the next one begins, so the zones share their edges", () => {
+		const [perfect, healthy, ok, shaky, danger] = coverageRungsFor(MID);
+
+		expect(perfect).toEqual({ band: "perfect", from: 100, to: 100 });
+		expect(healthy.to).toBe(100);
+		expect(ok.to).toBe(healthy.from);
+		expect(shaky.to).toBe(ok.from);
+		expect(danger).toEqual({ band: "danger", from: 0, to: shaky.from });
+	});
 });
 
 describe("the lowest landing that still clears", () => {
 	it("is OK at a gate that draws one", () => {
-		expect(clearingRungFor(MID).band).toBe("ok");
+		expect(clearingRungFor(MID, 4).band).toBe("ok");
 	});
 
 	it("is OK at the calibration gate too, since ADR-094 gave it room", () => {
-		expect(clearingRungFor(CALIBRATION).band).toBe("ok");
+		expect(clearingRungFor(CALIBRATION, 0).band).toBe("ok");
+	});
+
+	it("is HEALTHY at the Champion, where OK does not win", () => {
+		expect(clearingRungFor(ladderAt(VICTORY_GATE), VICTORY_GATE).band).toBe(
+			"healthy"
+		);
 	});
 
 	it("promotes to HEALTHY when an audit squeezes OK out", () => {
-		expect(clearingRungFor(SQUEEZED).band).toBe("healthy");
+		expect(clearingRungFor(SQUEEZED, 4).band).toBe("healthy");
 	});
 
 	it("never names a band the table below it does not draw, at any gate", () => {
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
 			const ladder = ladderAt(gate);
 
-			expect(bandsOf(ladder)).toContain(clearingRungFor(ladder).band);
+			expect(bandsOf(ladder)).toContain(clearingRungFor(ladder, gate).band);
 		}
 	});
 });
@@ -153,12 +181,12 @@ describe("the objective that clears the gate", () => {
 		);
 	});
 
-	it("quotes the figure its own table row quotes, so the two cannot drift", () => {
+	it("quotes the figure the ladder's own rung quotes, so the two cannot drift", () => {
 		const frame = frameFor();
-		const row = bandOutcomesFor(frame).find((outcome) => outcome.band === "ok");
+		const rung = rungOf(frame, "ok");
 
-		expect(row?.pays).toBeDefined();
-		expect(leadTextOf(clearOf(frame).earns)).toContain(row?.pays);
+		expect(rung?.pays).toBeDefined();
+		expect(leadTextOf(clearOf(frame).earns)).toContain(rung?.pays);
 	});
 
 	it("prices the figure in the band that pays it", () => {
@@ -184,6 +212,10 @@ describe("the objective that earns the swatch", () => {
 		expect(leadTextOf(swatchRowOf(frameFor()).statement)).toBe(
 			"Answer all 5 right"
 		);
+	});
+
+	it("badges the five, like every count the screen states", () => {
+		expect(swatchRowOf(frameFor()).statement).toContainEqual({ figure: "5" });
 	});
 
 	it("never asks for a coverage band, which is a different test entirely", () => {
@@ -218,25 +250,38 @@ describe("what the column no longer states", () => {
 		}
 	});
 
-	it("states two objectives and no section labels around them", () => {
-		expect(objectivesFor(frameFor()).objectives).toHaveLength(2);
+	it("states three objectives and no section labels around them", () => {
+		expect(objectivesFor(frameFor()).objectives).toHaveLength(3);
 		expect(objectivesFor(frameFor())).toEqual({
 			objectives: expect.any(Array),
 		});
 	});
+
+	it("states the window's own minimum between the clear and the swatch", () => {
+		const stated = leadTextOf(minimumRowOf(frameFor()).statement);
+
+		expect(stated).toBe(`Score at least ${MIN_WINDOW_UNITS} units this window`);
+		expect(leadTextOf(minimumRowOf(frameFor()).earns)).toContain(
+			"partials count"
+		);
+	});
 });
 
-describe("the band table", () => {
-	it("lists exactly the rungs the ladder draws", () => {
-		expect(bandOutcomesFor(frameFor()).map((row) => row.band)).toEqual(
-			bandsOf(MID)
+describe("the ladder", () => {
+	it("lists exactly the rungs the gate draws, worst first", () => {
+		expect(ladderFor(frameFor()).rungs.map((rung) => rung.band)).toEqual(
+			[...bandsOf(MID)].reverse()
 		);
 	});
 
+	it("carries the reading the pin stands on", () => {
+		expect(ladderFor(frameFor({ held: 50 })).held).toBe(50);
+	});
+
 	it("never pays a thin clear what it pays a healthy one", () => {
-		const paid = bandOutcomesFor(frameFor({ coverageGainPercent: 15 }));
+		const frame = frameFor({ coverageGainPercent: 15 });
 		const kbOf = (band: string) =>
-			Number(paid.find((row) => row.band === band)?.pays.match(/(\d+)/)?.[1]);
+			Number(rungOf(frame, band)?.pays.match(/(\d+)/)?.[1]);
 
 		expect(kbOf("healthy")).toBeGreaterThan(kbOf("ok"));
 		expect(kbOf("perfect")).toBeGreaterThan(kbOf("ok"));
@@ -244,43 +289,86 @@ describe("the band table", () => {
 	});
 
 	it("ends the run under the floor rather than quoting it a figure", () => {
-		expect(bandOutcomesFor(frameFor()).at(-1)?.pays).toBe("the run ends");
+		expect(ladderFor(frameFor()).rungs[0].pays).toBe("the run ends");
+	});
+});
+
+describe("the standing line", () => {
+	const text = (over: Partial<BandOutcomesFrame> = {}) =>
+		leadTextOf(standingLineFor(frameFor(over)));
+
+	it("prices the units to the next band up and counts the polls left", () => {
+		expect(text()).toBe("+12 units to SHAKY · 5 polls left");
+		expect(text({ held: 50 })).toBe("+1.5 units to OK · 5 polls left");
+		expect(text({ held: 62 })).toBe("+9.5 units to PERFECT · 5 polls left");
+	});
+
+	it("badges the units in the band they reach, and the polls left as a count", () => {
+		const line = standingLineFor(frameFor({ held: 50 }));
+
+		expect(line).toContainEqual({ figure: "+1.5", band: "ok" });
+		expect(line).toContainEqual({ band: "ok" });
+		expect(line).toContainEqual({ figure: "5" });
+	});
+
+	it("reads a single unit and a single poll in the singular", () => {
+		expect(text({ held: 58 })).toBe("+1 unit to HEALTHY · 5 polls left");
+		expect(text({ answeredThisGate: 4 })).toContain("1 poll left");
+	});
+
+	it("counts down the window as it is answered", () => {
+		expect(text({ answeredThisGate: 3 })).toBe(
+			"+12 units to SHAKY · 2 polls left"
+		);
+	});
+
+	it("names no band above a full bar", () => {
+		expect(text({ held: 100 })).toBe("5 polls left");
+	});
+
+	it("aims at OK from the calibration gate's floorless start", () => {
+		expect(text({ gate: 0, ladder: CALIBRATION })).toBe(
+			"+2 units to OK · 5 polls left"
+		);
+	});
+});
+
+describe("the panel's heading", () => {
+	it("names the gate and badges its number", () => {
+		expect(leadTextOf(metaFor(frameFor()))).toBe("Lavender · gate 4");
+		expect(metaFor(frameFor())).toContainEqual({ figure: "4" });
 	});
 });
 
 describe("the prep table warns before the window, not after it", () => {
 	it("names the rollback while the build holds an escrowing config", () => {
-		const props = bandOutcomesPropsFor(frameFor({ escrows: true }), "ok");
+		const props = bandOutcomesPropsFor(frameFor({ escrows: true }));
 
 		expect(props.note).toContain(ESCROW_NOTE);
 	});
 
 	it("says nothing about transactions a build cannot open", () => {
-		const props = bandOutcomesPropsFor(frameFor(), "ok");
+		const props = bandOutcomesPropsFor(frameFor());
 
 		expect(props.note).toBe(BAND_OUTCOMES_NOTE);
 	});
 
 	it("owes nothing at a gate that peels nothing, instead of a peel it never takes", () => {
-		const props = bandOutcomesPropsFor(frameFor({ peelKb: 0 }), "ok");
+		const props = bandOutcomesPropsFor(frameFor({ peelKb: 0 }));
 
 		expect(props.note).toBe(FREE_MISS_NOTE);
 		expect(props.note).not.toContain("owe a peel");
 	});
 
 	it("still names the rollback at a gate that peels nothing", () => {
-		const props = bandOutcomesPropsFor(
-			frameFor({ peelKb: 0, escrows: true }),
-			"ok"
-		);
+		const props = bandOutcomesPropsFor(frameFor({ peelKb: 0, escrows: true }));
 
 		expect(props.note).toBe(`${FREE_MISS_NOTE} ${ESCROW_NOTE}`);
 	});
 });
 
 describe("the SHAKY row reads what the gate takes on a miss", () => {
-	const shakyRow = (frame: BandOutcomesFrame) =>
-		bandOutcomesFor(frame).find((row) => row.band === "shaky");
+	const shakyRow = (frame: BandOutcomesFrame) => rungOf(frame, "shaky");
 
 	it("quotes the peel as a negative figure where the gate takes one", () => {
 		expect(shakyRow(frameFor())?.pays).toBe("−64 KB peel");
@@ -293,9 +381,26 @@ describe("the SHAKY row reads what the gate takes on a miss", () => {
 	});
 });
 
+describe("the Champion's OK row reads a miss", () => {
+	const champion = frameFor({
+		swatch: GATE_SWATCHES[VICTORY_GATE],
+		gate: VICTORY_GATE,
+		ladder: ladderAt(VICTORY_GATE),
+	});
+
+	it("quotes the peel on OK, since only HEALTHY or better wins", () => {
+		expect(rungOf(champion, "ok")?.pays).toBe("−64 KB peel");
+	});
+
+	it("asks for HEALTHY or better in the clear objective", () => {
+		expect(leadTextOf(clearOf(champion).statement)).toBe(
+			"Finish at HEALTHY or better"
+		);
+	});
+});
+
 describe("the DANGER row reads the catch standing behind it", () => {
-	const dangerRow = (frame: BandOutcomesFrame) =>
-		bandOutcomesFor(frame).find((row) => row.band === "danger");
+	const dangerRow = (frame: BandOutcomesFrame) => rungOf(frame, "danger");
 
 	it("says the run ends when nothing stands between it and the floor", () => {
 		expect(dangerRow(frameFor())?.pays).toBe("the run ends");

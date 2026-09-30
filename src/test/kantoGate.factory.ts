@@ -1,11 +1,11 @@
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 import {
 	CONFIGS,
 	CONFIG_LIST,
 } from "~/modules/run/config/domain/configRoster.model";
 import {
 	type Config,
-	describeConfig,
 	faucetKbPerCorrect,
 	maxLevelOf,
 	sellRefund,
@@ -77,14 +77,6 @@ export {
 import { KANTO_RUN_PAYOUTS } from "~/test/kantoPoll.factory";
 import { pollPayoutRows } from "~/test/swatchTrack.factory";
 
-const CLEARING_BANDS = {
-	perfect: true,
-	healthy: true,
-	ok: true,
-	shaky: false,
-	danger: false,
-} as const;
-
 export type GateOutcomeFixture = Omit<
 	GateOutcomeFrame,
 	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb" | "swatchGates"
@@ -114,7 +106,7 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 	const { openingHeld: _openingHeld, ...frame } = fixture;
 	const ratio = heldRatioOf(fixture);
 	const band = bandFor(ratio, fixture.gate).id;
-	const clears = CLEARING_BANDS[band] && fixture.heldBy !== "floor";
+	const clears = clearsAt(band, fixture.gate) && fixture.heldBy !== "unscored";
 	const payoutKb = clears
 		? gatePayoutKb(
 				ratio,
@@ -226,7 +218,7 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 
 const LAVENDER_BUILD: readonly Config[] = [
 	CONFIGS.cache,
-	CONFIGS.deprecated,
+	{ ...CONFIGS.deprecated, coverageMultiplier: 0.5 },
 	CONFIGS.indexedDb,
 	{ ...CONFIGS.telemetry, level: 2 },
 ];
@@ -293,7 +285,7 @@ export const SHAKY_ANSWERS = outcomesAt(
 	52
 );
 
-export const FLOOR_HELD_ANSWERS = outcomesAt(
+export const UNSCORED_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "wrong", "wrong"],
 	12
 );
@@ -315,16 +307,18 @@ const outcomeFrame = (
 	auditIds: ["cost-overrun"],
 	unlocked: [
 		{
-			config: { ...CONFIGS.telemetry, level: 2 },
-			detail: "earned: peeked the community split 5 times",
+			config: CONFIGS.coldStart,
+			detail: "Earned: peeked the community split 5 times",
 		},
 	],
-	faded: [
+	titles: [{ name: "CSS Carrier", detail: "50 distinct CSS polls answered" }],
+	upgraded: [
 		{
-			config: CONFIGS.deprecated,
-			detail: `${describeConfig(CONFIGS.deprecated)} · deleted in 2 clears`,
+			config: { ...CONFIGS.telemetry, level: 2 },
+			detail: "upgraded by Dependabot",
 		},
 	],
+	removed: [{ config: CONFIGS.css, detail: "its deprecation ran out" }],
 	paid: [{ config: CONFIGS.indexedDb, detail: "4 correct answers", kb: 32 }],
 	payouts: {
 		rows: pollPayoutRows(KANTO_RUN_PAYOUTS.slice(0, OUTCOME_GATE + 1)),
@@ -343,15 +337,16 @@ export const kantoGateOk = (): GateOutcomeScreenProps =>
 
 export const kantoGateShaky = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
-		outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 12 })
+		outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 28 })
 	);
 
-export const kantoGateHeldByFloor = (): GateOutcomeScreenProps =>
+export const kantoGateHeldUnscored = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
 		outcomeFrame({
-			answers: FLOOR_HELD_ANSWERS,
+			answers: UNSCORED_ANSWERS,
 			openingHeld: 58,
-			heldBy: "floor",
+			heldBy: "unscored",
+			scoredUnits: 1,
 			balanceBeforeKb: 12,
 		})
 	);
@@ -436,7 +431,9 @@ export const kantoGateZero = (): GateOutcomeScreenProps =>
 			streak: 5,
 			auditIds: [],
 			unlocked: [],
-			faded: [],
+			titles: [],
+			upgraded: [],
+			removed: [],
 			paid: [],
 		})
 	);

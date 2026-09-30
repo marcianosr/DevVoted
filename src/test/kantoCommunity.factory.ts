@@ -88,11 +88,11 @@ const standingAt = (
 		swatch: gateSwatchAt(gate),
 		coverage: { ...baseGateLadderAt(gate), held },
 	},
-	weight: "7 of 8 weight",
+	weight: "7 / 8",
 	build: YOUR_CHIPS,
 	freeSlots: 1,
 	stats: [
-		{ label: "run storage", value: "512 KB" },
+		{ label: "run storage", value: "512 KB", color: "saffron" },
 		{ label: "streak", value: "3" },
 		{ label: "best", value: "TypeScript" },
 	],
@@ -111,6 +111,7 @@ const cardFor = (
 	perfect: climber.mark === "perfect",
 	shaky: climber.mark === "shaky",
 	rescued: climber.rescued,
+	theme: "pallet",
 	standing: standingAt(CLEARED_GATE, 40),
 	...over,
 });
@@ -121,11 +122,11 @@ const withCard = (
 ): LadderClimber => ({ ...climber, card: cardFor(climber, over) });
 
 const MISTY_STANDING = standingAt(3, 70, {
-	weight: "9 of 12 weight",
+	weight: "9 / 12",
 	build: RIVAL_CHIPS,
 	freeSlots: 3,
 	stats: [
-		{ label: "run storage", value: "896 KB" },
+		{ label: "run storage", value: "896 KB", color: "saffron" },
 		{ label: "streak", value: "6" },
 		{ label: "best", value: "JavaScript" },
 	],
@@ -144,7 +145,8 @@ const LADDER_STANDING: Readonly<Record<number, LadderClimber[]>> = {
 	],
 	3: [
 		withCard(ladderChip(misty, { rival: true, mark: "perfect" }), {
-			title: "Heavy Pipeline",
+			titles: ["Heavy Pipeline", "Legacy Tester"],
+			theme: "cascade",
 			standing: MISTY_STANDING,
 		}),
 	],
@@ -200,7 +202,8 @@ export const kantoClimberCard = (
 	over: Partial<ClimberCardProps> = {}
 ): ClimberCardProps =>
 	cardFor(ladderChip(misty, { rival: true, mark: "perfect" }), {
-		title: "Heavy Pipeline",
+		titles: ["Heavy Pipeline", "Legacy Tester"],
+		theme: "cascade",
 		standing: MISTY_STANDING,
 		...over,
 	});

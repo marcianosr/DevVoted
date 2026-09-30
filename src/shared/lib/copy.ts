@@ -16,6 +16,7 @@ export const MOST_CORRECT = (correct: number) => `${correct} correct`;
 export const NO_TITLE_YET = "no title yet";
 
 export const NEW_POLLS_IN = (remaining: string) => `New polls in ${remaining}`;
+export const POLLS_SPENT = "Today's five are spent";
 
 export const NOTHING_TO_COMPARE_YET =
 	"Nothing to see yet — answer some of today’s polls first.";

@@ -319,7 +319,7 @@ describe("PollScreen", () => {
 			.closest<HTMLElement>("header");
 		if (head === null) throw new Error("Coverage heads no panel");
 
-		expect(within(head).getByText("35 of 40")).toBeInTheDocument();
+		expect(within(head).getByText("70%")).toBeInTheDocument();
 		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
 	});
 
@@ -340,20 +340,13 @@ describe("PollScreen", () => {
 		expect(screen.queryByText("Score")).toBeNull();
 	});
 
-	it("still explains what a poll pays while the meter is down", () => {
-		render(<PollScreen {...props} coverage={{ locked: true }} />);
-
-		expect(
-			screen.getByRole("button", { name: "How a correct answer is counted" })
-		).toBeInTheDocument();
-	});
-
-	it("explains what a correct answer is worth, for a reader and on hover", () => {
+	it("leaves what a poll pays to prep, with no tooltip on the coverage panel", () => {
 		render(<PollScreen {...props} />);
 
 		expect(
-			screen.getByRole("button", { name: "How a correct answer is counted" })
-		).toHaveTextContent("what a poll pays");
+			screen.queryByRole("button", { name: "How a correct answer is counted" })
+		).toBeNull();
+		expect(screen.queryByText("what a poll pays")).toBeNull();
 	});
 
 	it("says what the run has scored and what the gate scores it out of", () => {

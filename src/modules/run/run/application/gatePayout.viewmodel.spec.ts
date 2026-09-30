@@ -43,7 +43,7 @@ describe("gatePayoutFor", () => {
 	it("hands over why the gate held, and nothing on a clear", () => {
 		const held = failGate({ ...started(["js"]), gatesCleared: 4 });
 
-		expect(gatePayoutFor(held).heldBy).toBe("floor");
+		expect(gatePayoutFor(held).heldBy).toBe("unscored");
 		expect(gatePayoutFor(clearGate(started([]))).heldBy).toBeNull();
 	});
 });

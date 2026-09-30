@@ -26,7 +26,7 @@ const kantoPoll = (index: number): RunPoll => {
 };
 
 const POLLS = [kantoPoll(0), kantoPoll(1), kantoPoll(2)];
-const HANDED = [CONFIGS.js, CONFIGS.eslint];
+const HANDED = [CONFIGS.js, CONFIGS.linter];
 
 const baseState = createRun(POLLS, HANDED);
 
@@ -43,6 +43,7 @@ const stateVariants: Record<string, RunState> = {
 			correct: 2,
 			answered: 2,
 			unitsEarned: 2.4,
+			baseUnits: 2.4,
 			byCategory: { js: { seen: 2, correct: 2 } },
 			budget: 3,
 		},
@@ -62,6 +63,12 @@ const stateVariants: Record<string, RunState> = {
 		draftedThisGate: [CONFIGS.agentsMd.id],
 		rebuildsUsed: 1,
 		gatesCleared: 1,
+	},
+	"configuring, warm-booted": {
+		...baseState,
+		storage: 128,
+		peakStorageKb: 128,
+		warmBoot: { storageKb: 128, serviceIds: ["pin"], archiveBytes: 393216 },
 	},
 };
 
@@ -83,21 +90,27 @@ describe("runSnapshot codec", () => {
 		const stored = JSON.parse(JSON.stringify(toRunSnapshot(state)));
 		expect(hydrateRunState(stored, state.polls)).toEqual(state);
 	});
+
+	it("keeps the run-long lint count through a JSON round-trip", () => {
+		const state = { ...stateVariants["mid-gate answering"], lintsThisRun: 3 };
+		const stored = JSON.parse(JSON.stringify(toRunSnapshot(state)));
+		expect(hydrateRunState(stored, state.polls).lintsThisRun).toBe(3);
+	});
 });
 
 describe("hydrateRunState — the roster is authoritative", () => {
 	it("swaps a stale embedded config for its current roster version", () => {
-		const staleEslint = {
-			...CONFIGS.eslint,
-			description: "Disables one wrong answer on JS/TS polls.",
+		const staleLinter = {
+			...CONFIGS.linter,
+			description: "Disables one wrong answer on any poll.",
 			check: undefined,
 		};
 		const state: RunState = {
 			...baseState,
-			build: { ...baseState.build, configs: [staleEslint] },
+			build: { ...baseState.build, configs: [staleLinter] },
 		};
 		const rehydrated = hydrateRunState(toRunSnapshot(state), state.polls);
-		expect(rehydrated.build.configs[0]).toEqual(CONFIGS.eslint);
+		expect(rehydrated.build.configs[0]).toEqual(CONFIGS.linter);
 	});
 
 	it("keeps the player's earned level while refreshing everything else", () => {
@@ -311,5 +324,21 @@ describe("hydrateRunState — a snapshot written before the sealed audit (ADR-11
 		);
 
 		expect(hydrated.heldAudit).toBeUndefined();
+	});
+});
+
+describe("hydrateRunState — a snapshot written before the warm boot (ADR-153)", () => {
+	const booted = toRunSnapshot(stateVariants["configuring, warm-booted"]);
+
+	it("opens a run saved without the field as one that never booted", () => {
+		const { warmBoot: _warmBoot, ...legacy } = booted;
+
+		expect(hydrateRunState(legacy, POLLS).warmBoot).toBeUndefined();
+	});
+
+	it("keeps what a booted run carried in", () => {
+		expect(hydrateRunState(booted, POLLS).warmBoot?.serviceIds).toEqual([
+			"pin",
+		]);
 	});
 });

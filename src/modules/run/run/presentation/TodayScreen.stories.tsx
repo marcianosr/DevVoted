@@ -11,37 +11,89 @@ import {
 
 const noop = () => {};
 
-const CLOCK = "New polls in 7h 23m";
-const RUNGS = [
-	{ band: "ok", label: "OK", at: "40%" },
-	{ band: "healthy", label: "HEALTHY", at: "60%" },
-] as const;
+const RUN_SO_FAR = {
+	banked: "+64 KB",
+	rows: [
+		{
+			gate: 0,
+			swatch: gateSwatchAt(0),
+			band: { id: "perfect", label: "PERFECT" },
+			kb: "+32 KB",
+		},
+		{
+			gate: 1,
+			swatch: gateSwatchAt(1),
+			band: { id: "healthy", label: "HEALTHY" },
+			kb: "+19 KB",
+		},
+		{
+			gate: 2,
+			swatch: gateSwatchAt(2),
+			band: { id: "ok", label: "OK" },
+			kb: "+13 KB",
+		},
+	],
+	next: {
+		gate: 3,
+		swatch: gateSwatchAt(3),
+		band: { id: "ok", label: "OK" },
+		share: "40%",
+		kb: "+40 KB",
+	},
+} satisfies TodayScreenProps["runSoFar"];
+
+const BUILD = {
+	rows: [
+		{ id: "code-coverage", name: "Code Coverage", slots: 2, version: 2 },
+		{ id: "ts", name: ".ts", slots: 1, version: 1 },
+		{ id: "build-artifacts", name: "Build Artifacts", slots: 1, version: 1 },
+	],
+	weight: "4 / 6",
+	free: 2,
+	shopHref: "/run/shop",
+} satisfies TodayScreenProps["build"];
 
 const base: TodayScreenProps = {
-	swatch: gateSwatchAt(4),
+	swatch: gateSwatchAt(3),
+	strip: {
+		swatches: swatchTrackFor([0, 1, 2], 3),
+		runNumber: 14,
+		gate: 3,
+		gates: 12,
+		storage: 106,
+	},
 	press: {
-		label: "Resume Lavender",
-		note: `Poll 3 out of 5 · ${CLOCK}`,
-		pollsLeft: 3,
+		label: "Continue to Thunder",
+		note: "5 polls ready · prep first",
+		pollsLeft: 5,
 		onPress: noop,
 	},
 	shop: {
 		label: "Shop",
-		hint: "Shop · the shop opens when you clear a gate",
-		open: false,
+		open: true,
+		detail: "open until you start",
+		highlighted: false,
 		onPress: noop,
 	},
-	standing: {
-		swatches: swatchTrackFor([1, 2, 3], 4),
-		line: "gate 4 of 12 · 296 KB stored · 3 of today’s 5 left · they do not carry to tomorrow",
-	},
-	coverage: { held: 42, demand: 60, rungs: RUNGS },
+	incidents: [],
+	runSoFar: RUN_SO_FAR,
+	build: BUILD,
 	community: {
-		count: 8,
+		count: 38,
 		detail: "players answered today",
+		ahead: 4,
+		aheadDetail: "at Thunder or ahead",
 		href: "/run/community",
 	},
 };
+
+const INCIDENT = {
+	id: "not-found",
+	code: 404,
+	name: "Not Found",
+	cue: "waits at Thunder · it replaces one audit",
+	sender: "@erika",
+} as const;
 
 const meta: Meta<typeof TodayScreen> = {
 	component: TodayScreen,
@@ -52,67 +104,78 @@ export default meta;
 
 type Story = StoryObj<typeof TodayScreen>;
 
+export const Ready: Story = {
+	render: () => <TodayScreen {...base} />,
+};
+
+export const Waiting: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			press={{
+				label: "Thunder opens in 11h 16m",
+				note: "today’s polls are done · come back tomorrow",
+				pollsLeft: 5,
+			}}
+			shop={{ ...base.shop, detail: "spend 106 KB", highlighted: true }}
+		/>
+	),
+};
+
+export const WithIncident: Story = {
+	render: () => <TodayScreen {...base} incidents={[INCIDENT]} />,
+};
+
+export const MidGate: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			press={{
+				label: "Continue to Thunder",
+				note: "Poll 3 out of 5",
+				pollsLeft: 3,
+				onPress: noop,
+			}}
+			shop={{
+				label: "Shop",
+				hint: "Shop · the shop opens when you clear a gate",
+				open: false,
+				highlighted: false,
+				onPress: noop,
+			}}
+			build={{ ...BUILD, shopHref: undefined }}
+		/>
+	),
+};
+
 export const FreshPlayer: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
 			swatch={gateSwatchAt(0)}
+			strip={null}
 			press={{
 				label: "Start today’s climb",
-				note: CLOCK,
+				note: "New polls in 7h 23m",
 				pollsLeft: 5,
 				onPress: noop,
 			}}
-			standing={null}
-			coverage={null}
+			shop={{
+				label: "Shop",
+				hint: "Shop · the shop opens when you clear a gate",
+				open: false,
+				highlighted: false,
+				onPress: noop,
+			}}
+			runSoFar={null}
+			build={null}
 			community={{
 				count: 1,
 				detail: "player answered today",
+				ahead: null,
+				aheadDetail: null,
 				href: "/run/community",
 			}}
-		/>
-	),
-};
-
-export const PollsReady: Story = {
-	render: () => (
-		<TodayScreen
-			{...base}
-			press={{
-				...base.press,
-				note: `Poll 1 out of 5 · ${CLOCK}`,
-				pollsLeft: 5,
-			}}
-			coverage={{ held: 0, demand: 60, rungs: RUNGS }}
-		/>
-	),
-};
-
-export const PartAnsweredDay: Story = {
-	render: () => <TodayScreen {...base} />,
-};
-
-export const AtAGate: Story = {
-	render: () => (
-		<TodayScreen
-			{...base}
-			press={{
-				label: "Resume Lavender",
-				note: `Poll 5 out of 5 · ${CLOCK}`,
-				pollsLeft: 0,
-				onPress: noop,
-			}}
-			shop={{ label: "Shop", open: true, onPress: noop }}
-			coverage={{ held: 64, demand: 60, rungs: RUNGS }}
-		/>
-	),
-};
-
-export const WaitingOnMidnight: Story = {
-	render: () => (
-		<TodayScreen
-			{...base}
-			press={{ label: CLOCK, note: "Poll 4 out of 5", pollsLeft: 0 }}
 		/>
 	),
 };
@@ -123,32 +186,19 @@ export const RunOver: Story = {
 			{...base}
 			press={{
 				label: "Start today’s climb",
-				note: CLOCK,
+				note: "New polls in 7h 23m",
 				pollsLeft: 5,
 				onPress: noop,
 			}}
-			standing={{
-				swatches: swatchTrackFor([1, 2, 3, 4]),
-				line: "gate 4 of 12 · 296 KB banked · today’s 5 polls are ready",
-			}}
-			coverage={null}
-		/>
-	),
-};
-
-export const RefusedStart: Story = {
-	render: () => (
-		<TodayScreen
-			{...base}
-			press={{
-				label: "Start today’s climb",
-				note: CLOCK,
-				pollsLeft: 5,
+			shop={{
+				label: "Shop",
+				hint: "Shop · the shop opens when you clear a gate",
+				open: false,
+				highlighted: false,
 				onPress: noop,
 			}}
-			standing={null}
-			coverage={null}
-			refusal="You already have a run going today."
+			runSoFar={{ ...RUN_SO_FAR, next: null }}
+			build={null}
 		/>
 	),
 };

@@ -44,7 +44,7 @@ describe("the lint fee", () => {
 			),
 			handed
 		);
-		for (const configId of ["eslint", "ts", "css"])
+		for (const configId of ["linter", "ts", "css"])
 			state = runReducer(state, { type: "install", configId });
 		state = runReducer(state, { type: "start" });
 		return { ...state, storage: 100 };
@@ -104,27 +104,81 @@ describe("the lint fee", () => {
 		expect(runReducer(state, { type: "lint-poll" }).storage).toBe(76);
 	});
 
-	it("resets the ladder at the next gate, so the linter never gets permanently expensive", () => {
+	const atVersion = (state: RunState, level: number): RunState => ({
+		...state,
+		build: {
+			...state.build,
+			configs: state.build.configs.map((config) =>
+				config.id === "linter" ? { ...config, level } : config
+			),
+		},
+	});
+
+	const redoAfterLinting = (state: RunState, lints: number): RunState => {
+		let next = failGate(state);
+		while (next.peelSlotsRemaining > 0)
+			next = runReducer(next, {
+				type: "strip",
+				configIds: [next.build.configs[next.build.configs.length - 1].id],
+			});
+		return runReducer(
+			{
+				...next,
+				lintsThisRun: lints,
+				window: { ...next.window, linted: lints },
+			},
+			{ type: "resume-climb" }
+		);
+	};
+
+	it("carries the ladder across a clear at v1, so the linter gets dearer for the whole run", () => {
 		let state = runReducer(lintableRun(), { type: "lint-poll" });
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.clearedGate).toBe(0);
+		expect(state.window.linted).toBe(0);
+		expect(state.lintsThisRun).toBe(1);
+		expect(lintFeeFor(state)).toBe(16);
+	});
+
+	it("carries the ladder across a redo at v1", () => {
+		const state = redoAfterLinting(lintableRun(), 3);
+		expect(state.window.linted).toBe(0);
+		expect(lintFeeFor(state)).toBe(64);
+	});
+
+	it("resets the ladder at the next gate at v2, so the linter never gets permanently expensive", () => {
+		let state = runReducer(atVersion(lintableRun(), 2), { type: "lint-poll" });
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
 		expect(state.window.linted).toBe(0);
 		expect(lintFeeFor(state)).toBe(8);
 	});
 
-	it("resets the ladder for a redo, not only for a clear", () => {
-		let state = failGate(lintableRun());
-		while (state.peelSlotsRemaining > 0)
-			state = runReducer(state, {
-				type: "strip",
-				configIds: [state.build.configs[state.build.configs.length - 1].id],
-			});
-		state = runReducer(
-			{ ...state, window: { ...state.window, linted: 3 } },
-			{ type: "resume-climb" }
-		);
+	it("resets the ladder for a redo at v2, not only for a clear", () => {
+		const state = redoAfterLinting(atVersion(lintableRun(), 2), 3);
 		expect(state.window.linted).toBe(0);
 		expect(lintFeeFor(state)).toBe(8);
+	});
+
+	it("halves every rung at v3", () => {
+		let state = atVersion(lintableRun(), 3);
+		expect(lintFeeFor(state)).toBe(4);
+		state = runReducer(state, { type: "lint-poll" });
+		expect(state.storage).toBe(96);
+		expect(lintFeeFor(state)).toBe(8);
+	});
+
+	it("reads a v3 Linter at v1 under 510 Not Extended: full price, and the ladder carries", () => {
+		const flattened = audited(atVersion(lintableRun(), 3), 3, "not-extended");
+		expect(lintFeeFor(flattened)).toBe(8);
+		const carried = { ...flattened, lintsThisRun: 2 };
+		expect(lintFeeFor(carried)).toBe(32);
+		expect(lintFeeFor(runReducer(carried, { type: "lint-poll" }))).toBe(64);
+	});
+
+	it("prices from the window's ladder when no poll is on deck", () => {
+		const state = lintableRun();
+		expect(lintFeeFor({ ...state, currentIndex: state.polls.length })).toBe(8);
 	});
 });
 
@@ -225,7 +279,7 @@ describe("buying back a redacted answer (451)", () => {
 			handed,
 			8
 		);
-		for (const configId of ["eslint", "ts", "css"])
+		for (const configId of ["linter", "ts", "css"])
 			state = runReducer(state, { type: "install", configId });
 		state = runReducer(state, { type: "start" });
 		return {

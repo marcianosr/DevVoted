@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: normal
 created_at: 2026-09-24T18:25:34Z
-updated_at: 2026-09-25T11:00:14Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-z2r2
 ---
 
@@ -214,3 +214,7 @@ another registry action to be paid. Pays only on completion.
   exclude-the-rebuild-count-from-the-seed rule.
 - DVTD-406l keeps Repackage as a control.
 - DVTD-st9e would add a fourth row to the taxonomy if a "Next run" section lands.
+
+### Reversed 2026-09-29 (ADR-153)
+
+The two scopes collapsed into one shape: every service is unlocked once (ADR-116), carried into a run on the new run screen for an archive price or free (Rebuild, Skip shop, kill -9), then pressed in the shop for run KB at its ladder or applied at start. Boot Cache (DVTD-8as9) and the tag's carry (DVTD-plrc) are built; DVTD-0now is the warm boot itself. The profile shelf and the `user_run_services` table are dead. `scope` left the roster.

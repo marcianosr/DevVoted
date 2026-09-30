@@ -62,9 +62,9 @@ import {
 	upkeepForSpace,
 	roundToOneDecimal,
 	roundToTwoDecimals,
+	MIN_WINDOW_UNITS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
-	FLOOR_CORRECT,
 	INCIDENT_SURVIVAL_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -82,8 +82,10 @@ import {
 import {
 	addStorage,
 	auditsOf,
+	closesOf,
 	freshWindow,
 	incidentsAt,
+	type LastClose,
 	liveConfigsOf,
 	type RunState,
 	scheduleOf,
@@ -114,12 +116,12 @@ const settleUpkeep = (build: Build, balanceKb: number): UpkeepSettlement => {
 const missedLineFor = (
 	ruling: GateRuling,
 	gateNumber: number,
-	correct: number,
+	scored: number,
 	heldCoverage: number,
 	demand: number
 ): string =>
-	ruling.closing === "held" && ruling.heldBy === "floor"
-		? `Gate ${gateNumber} failed: ${correct} of ${SLICE_WINDOW} right, ${FLOOR_CORRECT} needed.`
+	ruling.closing === "held" && ruling.heldBy === "unscored"
+		? `Gate ${gateNumber} failed: the window scored ${scored} of ${MIN_WINDOW_UNITS} units.`
 		: `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
 
 export const gateWindowComplete = (state: RunState): boolean =>
@@ -166,19 +168,23 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		build: state.build,
 		bankedUnits: state.bankedUnits,
 		unitsThisGate,
+		baseUnitsThisGate: state.window.baseUnits,
 		correctThisGate: state.window.correct,
 		gatesCleared: state.gatesCleared,
 		schedule,
 	};
 	const ruling = gateRulingFor(close);
 	const closingBand = bandAtClose(close);
-	const recordedClose = {
-		lastClose: {
-			gate: gateNumber,
-			band: closingBand.id,
-			cleared: ruling.closing === "cleared",
-		},
+	const lastClose: LastClose = {
+		gate: gateNumber,
+		band: closingBand.id,
+		cleared: ruling.closing === "cleared",
 	};
+	const recordClose = (kb: number) => ({
+		lastClose,
+		closes: [...closesOf(state), { ...lastClose, kb }],
+	});
+	const recordedClose = recordClose(0);
 	const heldCoverage = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
 
 	if (ruling.closing !== "cleared") {
@@ -211,7 +217,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		const missed = missedLineFor(
 			ruling,
 			gateNumber,
-			state.window.correct,
+			state.window.baseUnits,
 			heldCoverage,
 			demand
 		);
@@ -263,6 +269,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 			status: "awaiting-strip",
 			autoUpgradeProgress: 0,
 			gateAttempts: attempts + 1,
+			storageBeforeClearKb: state.storage,
 			heldBy: ruling.heldBy,
 			peelRefundKb: 0,
 			peelSlotsRemaining: owed,
@@ -317,7 +324,7 @@ const closeWindow = (state: RunState, nextIndex: number): RunState => {
 		...state,
 		...settledCommitments,
 		...settledSwatch,
-		...recordedClose,
+		...recordClose(reward),
 		window: freshWindow(
 			state.polls,
 			nextIndex,
@@ -586,6 +593,9 @@ const applyAnswer = (
 				0,
 				state.window.unitsEarned + ledger.earnedCoverage - ledger.coverageLoss
 			)
+		),
+		baseUnits: roundToTwoDecimals(
+			state.window.baseUnits + (ledger.factors?.correct ?? 0)
 		),
 		byCategory: {
 			...state.window.byCategory,

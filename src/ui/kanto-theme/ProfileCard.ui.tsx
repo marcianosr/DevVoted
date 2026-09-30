@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { clsx } from "clsx";
 
 import { Climber } from "./Climber.ui";
+import { Contribution, type ContributionProps } from "./Contribution.ui";
 import { Link } from "./Link.ui";
 import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
@@ -25,6 +26,7 @@ export type ProfileCardProps = {
 	borderUrl?: string;
 	titles?: readonly string[];
 	rank?: string;
+	contribution?: ContributionProps;
 	you?: boolean;
 	href?: string;
 	trailing?: ReactNode;
@@ -51,6 +53,7 @@ export const ProfileCard = ({
 	borderUrl,
 	titles = [],
 	rank,
+	contribution,
 	you = false,
 	href,
 	trailing,
@@ -71,6 +74,7 @@ export const ProfileCard = ({
 				)}
 				{rank === undefined ? null : <span className={RANK}>{rank}</span>}
 				<WornTitles titles={titles} />
+				{contribution === undefined ? null : <Contribution {...contribution} />}
 			</span>
 			{trailing === undefined ? null : (
 				<span className={TRAILING}>{trailing}</span>

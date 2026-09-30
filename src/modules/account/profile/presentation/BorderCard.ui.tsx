@@ -1,84 +1,98 @@
 import { clsx } from "clsx";
 
 import { formatStorage } from "~/shared/lib/storage";
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 
 export const COPY = {
 	tryOn: (name: string) => `Try on ${name}`,
-	unequip: "Take off",
-	equip: "Wear",
-	buy: "Buy",
-	locked: "Locked",
-	worn: "worn",
+	pick: (name: string) => `Wear ${name}`,
+	owned: "owned",
+	buy: (cost: number) => `Buy · ${formatStorage(cost)}`,
 } as const;
 
+const COST_COLOR = "saffron";
+
 const CARD =
-	"flex flex-col gap-2 rounded-lg border border-theme-faint bg-theme-raised p-3";
-const CARD_WORN = "ring-2 ring-viridian";
+	"flex flex-col items-center gap-2 rounded-lg border border-theme-faint bg-theme-raised p-3";
+const CARD_PICKED = "ring-2 ring-viridian";
 const CARD_TRYING_ON =
 	"outline-2 outline-offset-2 outline-dashed outline-fuchsia";
-const FRAME =
-	"flex aspect-square cursor-pointer items-center justify-center rounded-md bg-theme-faint focus:outline-none focus-visible:ring-2";
+const PRESS =
+	"flex w-full cursor-pointer flex-col items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2";
+const FRAME = "flex aspect-square w-20 items-center justify-center";
+const FRAME_LOCKED = "opacity-50";
 const IMAGE = "max-h-full max-w-full";
-const NAME = "truncate text-xs font-bold text-theme-soft";
-const PRESS = "mt-auto flex";
+const NAME = "w-full text-center text-xs font-bold";
+const NAME_OWNED = "text-theme-soft";
+const NAME_LOCKED = "text-theme-muted";
+const OWNED = "text-xs font-bold text-viridian";
 
 export type BorderCardProps = {
 	name: string;
 	image: string;
 	cost: number;
 	owned: boolean;
-	equipped: boolean;
+	picked: boolean;
 	canAfford: boolean;
 	isMutating: boolean;
 	tryingOn: boolean;
 	onPress: () => void;
-	onTryOn: () => void;
+	onBuy: () => void;
 };
 
-export const labelFor = ({
-	owned,
-	equipped,
-	canAfford,
+type StandingProps = Pick<
+	BorderCardProps,
+	"cost" | "owned" | "canAfford" | "isMutating" | "tryingOn" | "onBuy"
+>;
+
+const Standing = ({
 	cost,
-}: Pick<BorderCardProps, "owned" | "equipped" | "canAfford" | "cost">) => {
-	if (owned) return equipped ? COPY.unequip : COPY.equip;
-	return `${canAfford ? COPY.buy : COPY.locked} · ${formatStorage(cost)}`;
+	owned,
+	canAfford,
+	isMutating,
+	tryingOn,
+	onBuy,
+}: StandingProps) => {
+	if (owned) return <span className={OWNED}>{COPY.owned}</span>;
+	if (!tryingOn) return <Badge color={COST_COLOR}>{formatStorage(cost)}</Badge>;
+	return (
+		<Button
+			size="sm"
+			tone="action"
+			label={COPY.buy(cost)}
+			onPress={onBuy}
+			disabled={isMutating || !canAfford}
+		/>
+	);
 };
 
 export const BorderCard = ({
 	name,
 	image,
-	cost,
 	owned,
-	equipped,
-	canAfford,
-	isMutating,
+	picked,
 	tryingOn,
 	onPress,
-	onTryOn,
+	...standing
 }: BorderCardProps) => (
 	<div
-		className={clsx(CARD, equipped && CARD_WORN, tryingOn && CARD_TRYING_ON)}
+		className={clsx(CARD, picked && CARD_PICKED, tryingOn && CARD_TRYING_ON)}
 	>
 		<button
 			type="button"
-			className={FRAME}
-			aria-label={COPY.tryOn(name)}
-			aria-pressed={tryingOn}
-			onClick={onTryOn}
+			className={PRESS}
+			aria-label={owned ? COPY.pick(name) : COPY.tryOn(name)}
+			aria-pressed={owned ? picked : tryingOn}
+			onClick={onPress}
 		>
-			<img src={image} alt="" className={IMAGE} />
+			<span className={clsx(FRAME, !owned && FRAME_LOCKED)}>
+				<img src={image} alt="" className={IMAGE} />
+			</span>
+			<span className={clsx(NAME, owned ? NAME_OWNED : NAME_LOCKED)}>
+				{name}
+			</span>
 		</button>
-		<span className={NAME}>{name}</span>
-		<span className={PRESS}>
-			<Button
-				size="sm"
-				tone={equipped ? "ambient" : "action"}
-				label={labelFor({ owned, equipped, canAfford, cost })}
-				onPress={onPress}
-				disabled={isMutating || (!owned && !canAfford)}
-			/>
-		</span>
+		<Standing owned={owned} tryingOn={tryingOn} {...standing} />
 	</div>
 );

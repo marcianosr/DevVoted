@@ -20,12 +20,6 @@ import {
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
 import { getServiceUnlocks } from "~/modules/run/shop/application/serviceUnlock.serverfn";
-import {
-	DEX_CARDS_OPEN,
-	discloseAll,
-	disclosedIn,
-	toggleDisclosure,
-} from "~/shared/lib/disclosure";
 import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
 import { DexAudits } from "~/ui/kanto-theme/DexAudits.ui";
 import { DexConfigs } from "~/ui/kanto-theme/DexConfigs.ui";
@@ -39,10 +33,22 @@ type DexProps = {
 	activeId: DexTabId;
 };
 
+const POLLS_TAB: DexTabId = "polls";
+const CONFIGS_TAB: DexTabId = "configs";
+const CONTROLS_TAB: DexTabId = "controls";
+const AUDITS_TAB: DexTabId = "audits";
+const SWATCHES_TAB: DexTabId = "swatches";
+const RUNS_TAB: DexTabId = "runs";
+
 export const Dex = ({ userId, activeId }: DexProps) => {
-	const [configFlips, setConfigFlips] = useState<ReadonlySet<string>>(
-		new Set()
-	);
+	const [picks, setPicks] = useState<Partial<Record<DexTabId, string>>>({});
+	const [filters, setFilters] = useState<Partial<Record<DexTabId, string>>>({});
+
+	const pickIn = (tab: DexTabId) => (id: string) =>
+		setPicks({ ...picks, [tab]: id });
+
+	const filterIn = (tab: DexTabId) => (filter: string) =>
+		setFilters({ ...filters, [tab]: filter });
 
 	const polldex = useQuery({
 		queryKey: pollQueryKeys.polldex(userId),
@@ -83,46 +89,62 @@ export const Dex = ({ userId, activeId }: DexProps) => {
 
 	const gates = gatedex(ownedSwatchIds);
 
-	const configs = dexConfigsFor(configEntries);
-	const configIds = configs.groups.flatMap((group) =>
-		group.chips.map((card) => card.id)
+	const polls = dexPollsFor(entries, filters[POLLS_TAB], picks[POLLS_TAB]);
+
+	const configs = dexConfigsFor(
+		configEntries,
+		filters[CONFIGS_TAB],
+		picks[CONFIGS_TAB]
 	);
-
-	const configsOpen = disclosedIn(configIds, configFlips, DEX_CARDS_OPEN);
-
-	const toggleConfig = (configId: string) =>
-		setConfigFlips(toggleDisclosure(configFlips, configId));
-
-	const toggleAllConfigs = () =>
-		setConfigFlips(
-			discloseAll(
-				configIds,
-				configsOpen.size < configIds.length,
-				DEX_CARDS_OPEN
-			)
-		);
 
 	return (
 		<>
-			{activeId === "polls" ? <DexPolls {...dexPollsFor(entries)} /> : null}
+			{activeId === "polls" ? (
+				<DexPolls
+					{...polls}
+					onSelect={pickIn(POLLS_TAB)}
+					onFilter={filterIn(POLLS_TAB)}
+				/>
+			) : null}
 			{activeId === "configs" ? (
 				<DexConfigs
 					{...configs}
-					openInfo={configsOpen}
-					onToggleInfo={toggleConfig}
-					onToggleAll={toggleAllConfigs}
+					onSelect={pickIn(CONFIGS_TAB)}
+					onFilter={filterIn(CONFIGS_TAB)}
 				/>
 			) : null}
 			{activeId === "controls" ? (
-				<DexControls {...dexControlsFor(controldex(unlockedServiceIds))} />
+				<DexControls
+					{...dexControlsFor(
+						controldex(unlockedServiceIds),
+						picks[CONTROLS_TAB]
+					)}
+					onSelect={pickIn(CONTROLS_TAB)}
+				/>
 			) : null}
 			{activeId === "audits" ? (
-				<DexAudits {...dexAuditsFor(auditdex(gates))} />
+				<DexAudits
+					{...dexAuditsFor(
+						auditdex(gates),
+						filters[AUDITS_TAB],
+						picks[AUDITS_TAB]
+					)}
+					onSelect={pickIn(AUDITS_TAB)}
+					onFilter={filterIn(AUDITS_TAB)}
+				/>
 			) : null}
 			{activeId === "swatches" ? (
-				<DexSwatches {...dexSwatchesFor(gates)} />
+				<DexSwatches
+					{...dexSwatchesFor(gates, picks[SWATCHES_TAB])}
+					onSelect={pickIn(SWATCHES_TAB)}
+				/>
 			) : null}
-			{activeId === "runs" ? <DexRuns {...dexRunsFor(history)} /> : null}
+			{activeId === "runs" ? (
+				<DexRuns
+					{...dexRunsFor(history, picks[RUNS_TAB])}
+					onSelect={pickIn(RUNS_TAB)}
+				/>
+			) : null}
 		</>
 	);
 };

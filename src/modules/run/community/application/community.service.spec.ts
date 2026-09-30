@@ -156,20 +156,20 @@ const consumedForViewer = [
 const standing = (
 	over: {
 		handle?: string;
-		title?: string;
+		titles?: readonly string[];
 		coverageUnits?: number;
 		streak?: number;
 		storageKb?: number;
 	} = {}
 ) => ({
 	handle: null,
-	title: null,
+	titles: [],
+	theme: "pallet" as const,
 	coverageUnits: 0,
 	streak: 0,
 	storageKb: 0,
 	...over,
 	...(over.handle === undefined ? {} : { handle: over.handle }),
-	...(over.title === undefined ? {} : { title: over.title }),
 });
 
 const RED_AT = { gate: 6, pollsIntoGate: 3 };
@@ -194,7 +194,11 @@ const CLIMBERS = [
 		build: RED_BUILD,
 		closingBand: "shaky" as const,
 		startedAtGate: 0,
-		...standing({ handle: "red", title: "Completionist", coverageUnits: 24 }),
+		...standing({
+			handle: "red",
+			titles: ["Completionist"],
+			coverageUnits: 24,
+		}),
 	},
 	{
 		userId: BLUE,
@@ -559,6 +563,8 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 0,
 				coveragePercent: 0,
 				streak: 0,
+				titles: [],
+				theme: "pallet",
 				storageKb: 0,
 			},
 			{
@@ -572,7 +578,8 @@ describe("getRunCommunityService climb map", () => {
 				build: RED_BUILD,
 				closingBand: "shaky",
 				startedAtGate: 0,
-				title: "Completionist",
+				titles: ["Completionist"],
+				theme: "pallet",
 				coveragePercent: 69,
 				streak: 0,
 				storageKb: 0,
@@ -591,6 +598,8 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 5,
 				coveragePercent: 0,
 				streak: 6,
+				titles: [],
+				theme: "pallet",
 				storageKb: 896,
 			},
 		]);
@@ -684,6 +693,8 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 0,
 				coveragePercent: 0,
 				streak: 0,
+				titles: [],
+				theme: "pallet",
 				storageKb: 130,
 				lootKb: 100,
 				lootedById: null,
@@ -701,6 +712,8 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 3,
 				coveragePercent: 0,
 				streak: 0,
+				titles: [],
+				theme: "pallet",
 				storageKb: 100,
 				lootKb: 42,
 				lootedById: RED,
@@ -743,7 +756,7 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.data.climb?.viewer.hasLiveRun).toBe(false);
 	});
 
-	it("reads a climber's standing: their title, streak and storage", async () => {
+	it("reads a climber's standing: their titles, streak and storage", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
@@ -755,7 +768,7 @@ describe("getRunCommunityService climb map", () => {
 		);
 		expect(blue).toMatchObject({ streak: 6, storageKb: 896 });
 		const you = result.data.climb?.climbers.find((climber) => climber.you);
-		expect(you).toMatchObject({ title: "Completionist" });
+		expect(you).toMatchObject({ titles: ["Completionist"] });
 	});
 
 	it("states coverage as a percentage of what the gate scores against, not as units", async () => {
@@ -793,7 +806,7 @@ describe("getRunCommunityService climb map", () => {
 		expect(green).not.toHaveProperty("bestCategory");
 	});
 
-	it("carries no GitHub handle, and no title for an account wearing none", async () => {
+	it("carries no GitHub handle, and no titles for an account wearing none", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
@@ -804,7 +817,7 @@ describe("getRunCommunityService climb map", () => {
 			(climber) => climber.id === GREEN
 		);
 		expect(green).not.toHaveProperty("handle");
-		expect(green).not.toHaveProperty("title");
+		expect(green?.titles).toEqual([]);
 	});
 
 	it("carries the viewer's deepest finished run as their best", async () => {

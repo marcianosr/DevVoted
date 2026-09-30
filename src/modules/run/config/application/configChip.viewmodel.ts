@@ -181,6 +181,17 @@ export const chipFor = (config: Config, note?: string) =>
 export const settledChipFor = (config: Config) =>
 	chipWith(config, settledFactsFor(config));
 
+export const refundChipFor = (config: Config, refundKb: number) =>
+	chipWith(
+		config,
+		refundKb === 0
+			? factsOf(config)
+			: { ...factsOf(config), sellPrice: kbLabel(refundKb) }
+	);
+
+export const nextUpgradeCostOf = (config: Config): number =>
+	upgradeStorageCost(config.level ?? FIRST_VERSION);
+
 const HERE = "here";
 const IDLE = "idle this poll";
 const ONLY = "only";

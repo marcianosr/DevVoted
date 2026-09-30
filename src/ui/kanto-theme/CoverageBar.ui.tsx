@@ -8,7 +8,6 @@ import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
-	survive: "survive",
 	of: "of",
 } as const;
 
@@ -27,11 +26,13 @@ const PIN =
 const PIN_BAND = "flex items-center gap-1";
 const PIN_STEM = "h-1.5 w-0.5 bg-theme";
 const PIN_COUNT = "coverage-bar-count";
+const POINTERS = "relative h-2 w-full";
+const POINTER =
+	"coverage-bar-pin absolute bottom-0 size-0 -translate-x-1/2 border-x-[6px] border-t-[7px] border-x-transparent border-t-theme";
 const ANNOUNCE = "sr-only";
 
 const FULL = 100;
 const TENTHS = 10;
-const HUNDREDTHS = 100;
 
 export const COVERAGE_PIN_HOLD_MS = 1800;
 
@@ -69,9 +70,6 @@ export const COVERAGE_BAND_WORD = {
 const toTenth = (value: number) =>
 	Math.round(Math.max(0, value) * TENTHS) / TENTHS;
 
-const toHundredth = (value: number) =>
-	Math.round(Math.max(0, value) * HUNDREDTHS) / HUNDREDTHS;
-
 const clamped = (value: number) =>
 	Number.isFinite(value) ? Math.min(FULL, Math.max(0, value)) : 0;
 
@@ -106,58 +104,27 @@ const bandOf = (
 	return "danger";
 };
 
-export type CoverageUnits = { held: number; healthy: number };
-
 type SpokenFigures = {
-	headline: string;
 	held: string;
 	needed: string;
 	count: number;
-	countSuffix: string;
 };
 
-const figuresInPercent = (held: number, healthy: number): SpokenFigures => {
-	const figure = `${toTenth(held)}${PERCENT}`;
-
-	return {
-		headline: figure,
-		held: figure,
-		needed: `${toTenth(healthy)}${PERCENT}`,
-		count: Math.round(clamped(held)),
-		countSuffix: PERCENT,
-	};
-};
-
-const figuresInUnits = ({ held, healthy }: CoverageUnits): SpokenFigures => {
-	const figure = `${toHundredth(held)}`;
-	const needed = `${toHundredth(healthy)}`;
-
-	return {
-		headline: `${figure} ${COPY.of} ${needed}`,
-		held: figure,
-		needed,
-		count: Math.round(Math.max(0, held)),
-		countSuffix: "",
-	};
-};
-
-const figuresOf = (
-	held: number,
-	healthy: number,
-	units: CoverageUnits | undefined
-): SpokenFigures =>
-	units === undefined ? figuresInPercent(held, healthy) : figuresInUnits(units);
+const spokenFiguresOf = (held: number, healthy: number): SpokenFigures => ({
+	held: `${toTenth(held)}${PERCENT}`,
+	needed: `${toTenth(healthy)}${PERCENT}`,
+	count: Math.round(clamped(held)),
+});
 
 export const CoverageReading = ({
 	held,
-	units,
 	...ladder
-}: CoverageLadder & Pick<CoverageBarProps, "held" | "units">) => {
+}: CoverageLadder & Pick<CoverageBarProps, "held">) => {
 	const band = coverageBandOf(held, ladder);
 
 	return (
 		<>
-			<Badge>{figuresOf(held, rungsOf(ladder).healthy, units).headline}</Badge>
+			<Badge>{spokenFiguresOf(held, rungsOf(ladder).healthy).held}</Badge>
 			<Badge color={COVERAGE_BAND_COLOR[band]}>
 				{COVERAGE_BAND_WORD[band]}
 			</Badge>
@@ -184,7 +151,12 @@ const boundaryMarksOf = (
 ): readonly Mark[] =>
 	(
 		[
-			{ at: floor, label: COPY.survive, anchor: "end", room: ok - floor },
+			{
+				at: floor,
+				label: COVERAGE_BAND_WORD.shaky,
+				anchor: "end",
+				room: ok - floor,
+			},
 			{
 				at: ok,
 				label: COVERAGE_BAND_WORD.ok,
@@ -249,8 +221,8 @@ export type CoverageBarProps = {
 	healthy: number;
 	marks?: CoverageMarks;
 	pin?: boolean;
+	pointer?: boolean;
 	note?: string;
-	units?: CoverageUnits;
 };
 
 export const CoverageBar = ({
@@ -260,13 +232,13 @@ export const CoverageBar = ({
 	healthy,
 	marks = "boundaries",
 	pin = false,
+	pointer = false,
 	note,
-	units,
 }: CoverageBarProps) => {
 	const ladder = rungsOf({ floor, ok, healthy });
 	const reading = clamped(held);
 	const band = bandOf(reading, ladder);
-	const spoken = figuresOf(held, ladder.healthy, units);
+	const spoken = spokenFiguresOf(held, ladder.healthy);
 
 	const [settled, setSettled] = useState(reading);
 	const [moved, setMoved] = useState(false);
@@ -306,49 +278,63 @@ export const CoverageBar = ({
 			{note === undefined ? null : (
 				<Typography variant="hint">{note}</Typography>
 			)}
-			<span aria-hidden className={PINS}>
-				<span
-					data-screen-theme={COVERAGE_BAND_COLOR[band]}
-					data-shown={shown}
-					style={{ left: `${reading}${PERCENT}` }}
-					className={PIN}
-				>
-					<Badge color={COVERAGE_BAND_COLOR[band]}>
-						<span className={PIN_BAND}>
-							{pin ? (
-								spoken.held
-							) : (
-								<>
-									<span
-										className={PIN_COUNT}
-										style={countStyle(spoken.count)}
-									/>
-									{spoken.countSuffix}
-								</>
-							)}
-							{COVERAGE_BAND_WORD[band]}
-						</span>
-					</Badge>
-					<span className={PIN_STEM} />
+			{pointer ? (
+				<span aria-hidden className={POINTERS}>
+					<span
+						data-screen-theme={COVERAGE_BAND_COLOR[band]}
+						data-shown
+						style={{ left: `${reading}${PERCENT}` }}
+						className={POINTER}
+					/>
 				</span>
-			</span>
+			) : (
+				<span aria-hidden className={PINS}>
+					<span
+						data-screen-theme={COVERAGE_BAND_COLOR[band]}
+						data-shown={shown}
+						style={{ left: `${reading}${PERCENT}` }}
+						className={PIN}
+					>
+						<Badge color={COVERAGE_BAND_COLOR[band]}>
+							<span className={PIN_BAND}>
+								{pin ? (
+									spoken.held
+								) : (
+									<>
+										<span
+											className={PIN_COUNT}
+											style={countStyle(spoken.count)}
+										/>
+										{PERCENT}
+									</>
+								)}
+								<span>{SEPARATOR}</span>
+								{COVERAGE_BAND_WORD[band]}
+							</span>
+						</Badge>
+						<span className={PIN_STEM} />
+					</span>
+				</span>
+			)}
 			{pin ? null : (
 				<span role="status" className={ANNOUNCE}>
 					{spoken.held}
 				</span>
 			)}
 			{track}
-			<span aria-hidden className={MARKS}>
-				{marksOf(ladder, marks, spoken).map((mark) => (
-					<span
-						key={mark.label}
-						style={{ left: `${mark.at}${PERCENT}` }}
-						className={clsx(MARK, ANCHOR_CLASS[mark.anchor ?? "center"])}
-					>
-						{mark.label}
-					</span>
-				))}
-			</span>
+			{pointer ? null : (
+				<span aria-hidden className={MARKS}>
+					{marksOf(ladder, marks, spoken).map((mark) => (
+						<span
+							key={mark.label}
+							style={{ left: `${mark.at}${PERCENT}` }}
+							className={clsx(MARK, ANCHOR_CLASS[mark.anchor ?? "center"])}
+						>
+							{mark.label}
+						</span>
+					))}
+				</span>
+			)}
 		</div>
 	);
 };

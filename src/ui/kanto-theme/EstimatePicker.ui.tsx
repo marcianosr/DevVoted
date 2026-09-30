@@ -2,6 +2,10 @@ import { Badge } from "./Badge.ui";
 import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
+const COPY = {
+	pick: "press a number to call it",
+} as const;
+
 const ROW = "flex w-full min-w-0 items-center gap-3";
 const FLOOR = "min-w-0 flex-1";
 
@@ -40,6 +44,11 @@ const Card = ({
 	);
 };
 
+const isCalling = (
+	committed: number | null,
+	onPick: ((count: number) => void) | undefined
+): boolean => committed === null && onPick !== undefined;
+
 export const EstimatePicker = ({
 	label,
 	hint,
@@ -49,7 +58,10 @@ export const EstimatePicker = ({
 	refusal,
 }: EstimatePickerProps) => (
 	<Panel>
-		<Panel.Header label={label} />
+		<Panel.Header
+			label={label}
+			meta={isCalling(committed, onPick) ? COPY.pick : undefined}
+		/>
 
 		<Panel.Body>
 			<Typography variant="hint">{hint}</Typography>

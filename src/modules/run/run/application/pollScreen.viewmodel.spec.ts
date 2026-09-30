@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { healthyUnitsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -17,11 +16,20 @@ import {
 	runPaidFor,
 	categoryLeaderFor,
 	pollCoverageFor,
+	pollCommitFor,
+	nextPollMarkFor,
+	pollStepFor,
+	PICK_ONE,
+	PICK_EVERY,
+	ENTER_ANSWERS,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
-import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type {
+	AnsweredPoll,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { createMockPollView, createMockRunView } from "~/test/runView.factory";
 import type { CategoryCode } from "~/shared/lib/categories";
@@ -68,11 +76,15 @@ const viewOf = (...args: Parameters<typeof runWith>) =>
 
 const JS_GATE: readonly CategoryCode[] = ["js", "js", "js", "js", "js"];
 const CSS_GATE: readonly CategoryCode[] = ["css", "css", "css", "css", "css"];
+const NARROW_LINTER = {
+	...CONFIGS.linter,
+	eliminatesWrongOptionsFor: ["js", "ts"] as const,
+};
 
 describe("buildCountsOf", () => {
 	it("never counts one config in two buckets", () => {
 		const view = viewOf(
-			[CONFIGS.eslint, CONFIGS.telemetry, CONFIGS.intellisense, CONFIGS.js],
+			[CONFIGS.linter, CONFIGS.telemetry, CONFIGS.intellisense, CONFIGS.js],
 			JS_GATE
 		);
 		const counts = buildCountsOf(view);
@@ -82,19 +94,26 @@ describe("buildCountsOf", () => {
 		);
 	});
 
-	it("counts ESLint ready on a JS poll and only applying on a CSS poll", () => {
-		expect(buildCountsOf(viewOf([CONFIGS.eslint], JS_GATE))).toMatchObject({
+	it("counts Linter ready on a JS poll and on a CSS poll alike", () => {
+		expect(buildCountsOf(viewOf([CONFIGS.linter], JS_GATE))).toMatchObject({
 			ready: 1,
 			applies: 0,
 		});
-		expect(buildCountsOf(viewOf([CONFIGS.eslint], CSS_GATE))).toMatchObject({
+		expect(buildCountsOf(viewOf([CONFIGS.linter], CSS_GATE))).toMatchObject({
+			ready: 1,
+			applies: 0,
+		});
+	});
+
+	it("counts a linter sitting the poll out as neither ready nor applying", () => {
+		expect(buildCountsOf(viewOf([NARROW_LINTER], CSS_GATE))).toMatchObject({
 			ready: 0,
 			applies: 0,
 		});
 	});
 
 	it("drops a press out of ready when the fee is out of reach", () => {
-		expect(buildCountsOf(viewOf([CONFIGS.eslint], JS_GATE, 0))).toMatchObject({
+		expect(buildCountsOf(viewOf([CONFIGS.linter], JS_GATE, 0))).toMatchObject({
 			ready: 0,
 		});
 	});
@@ -108,11 +127,11 @@ describe("buildCountsOf", () => {
 
 describe("pollPressesOf", () => {
 	it("sells no press for a linter sitting the poll out", () => {
-		expect(pollPressesOf(viewOf([CONFIGS.eslint], CSS_GATE))).toEqual([]);
+		expect(pollPressesOf(viewOf([NARROW_LINTER], CSS_GATE))).toEqual([]);
 	});
 
 	it("refuses a second lint once one wrong answer is left standing", () => {
-		const state = runWith([CONFIGS.eslint], JS_GATE);
+		const state = runWith([CONFIGS.linter], JS_GATE);
 		const [press] = pollPressesOf(
 			toRunView(runReducer(state, { type: "lint-poll" }))
 		);
@@ -122,7 +141,7 @@ describe("pollPressesOf", () => {
 	});
 
 	it("prices the lint off the gate's own ladder", () => {
-		const view = viewOf([CONFIGS.eslint], JS_GATE);
+		const view = viewOf([CONFIGS.linter], JS_GATE);
 
 		expect(pollPressesOf(view)[0].label).toBe("lint 8 KB");
 	});
@@ -134,13 +153,13 @@ describe("pollPressesOf", () => {
 
 describe("pollBuildFor", () => {
 	it("draws no press badge when the screen passes no handler", () => {
-		const build = pollBuildFor(viewOf([CONFIGS.eslint], JS_GATE));
+		const build = pollBuildFor(viewOf([CONFIGS.linter], JS_GATE));
 
 		expect(build.configs[0].badges).toEqual([]);
 	});
 
 	it("states a sitting-out linter's categories once, on its own badge", () => {
-		const build = pollBuildFor(viewOf([CONFIGS.eslint], CSS_GATE), {
+		const build = pollBuildFor(viewOf([NARROW_LINTER], CSS_GATE), {
 			onPress: () => {},
 		});
 
@@ -150,7 +169,7 @@ describe("pollBuildFor", () => {
 	});
 
 	it("disables a refused press and says why on the badge", () => {
-		const state = runWith([CONFIGS.eslint], JS_GATE);
+		const state = runWith([CONFIGS.linter], JS_GATE);
 		const build = pollBuildFor(
 			toRunView(runReducer(state, { type: "lint-poll" })),
 			{ onPress: () => {} }
@@ -166,7 +185,7 @@ describe("pollBuildFor", () => {
 	});
 
 	it("arms a press the player can afford", () => {
-		const build = pollBuildFor(viewOf([CONFIGS.eslint], JS_GATE), {
+		const build = pollBuildFor(viewOf([CONFIGS.linter], JS_GATE), {
 			onPress: () => {},
 		});
 
@@ -176,7 +195,7 @@ describe("pollBuildFor", () => {
 	});
 });
 
-const BARE: readonly Config[] = [CONFIGS.eslint];
+const BARE: readonly Config[] = [CONFIGS.linter];
 
 const answering = (state: RunState, right: boolean): RunState => {
 	const poll = state.polls[state.currentIndex];
@@ -235,18 +254,17 @@ describe("coverageLeadFor", () => {
 });
 
 describe("pollBarFor", () => {
-	it("speaks the units held against the gate's HEALTHY units, over a track drawn in percent", () => {
+	it("speaks the coverage held against the gate's bands, in percent", () => {
 		const view = toRunView(playing(JS_GATE, [true, true]));
 
 		expect(pollBarFor(view)).toEqual({
 			...view.gateStake.coverageLadder,
 			held: view.gateStake.coverageHeld,
 			pin: false,
-			units: { held: view.gateStake.unitsHeld, healthy: healthyUnitsAt(0) },
 		});
 	});
 
-	it("keeps the units a cleared gate banked while the line rises with the next gate", () => {
+	it("halves the coverage a cleared gate banked once the next gate doubles the codebase", () => {
 		const pallet = pollBarFor(
 			toRunView(playing(TWO_GATES, [true, true, true, false]))
 		);
@@ -254,9 +272,6 @@ describe("pollBarFor", () => {
 			toRunView(playing(TWO_GATES, [true, true, true, false, false]))
 		);
 
-		expect(pallet.units?.healthy).toBe(healthyUnitsAt(0));
-		expect(boulder.units?.healthy).toBe(healthyUnitsAt(1));
-		expect(boulder.units?.held).toBe(pallet.units?.held);
 		expect(boulder.held).toBeCloseTo(pallet.held / 2);
 	});
 });
@@ -330,7 +345,10 @@ const answeredIn = (state: RunState) => {
 	return last;
 };
 
-const JS_BUILD: readonly Config[] = [CONFIGS.js, CONFIGS.stylelint];
+const JS_BUILD: readonly Config[] = [
+	CONFIGS.js,
+	{ ...CONFIGS.linter, eliminatesWrongOptionsFor: ["css"] as const },
+];
 
 describe("pollBuildFor — what each config is worth on this poll", () => {
 	it("badges the multiplier a config is applying to the poll in hand", () => {
@@ -501,7 +519,7 @@ describe("the strict wager press", () => {
 	});
 
 	it("leaves a one-shot press with no pressed state to state", () => {
-		const [press] = pollPressesOf(viewOf([CONFIGS.eslint], JS_GATE));
+		const [press] = pollPressesOf(viewOf([CONFIGS.linter], JS_GATE));
 
 		expect(press.armed).toBeUndefined();
 	});
@@ -719,5 +737,52 @@ describe("pollCoverageFor", () => {
 		expect(coverage.bar).toBeUndefined();
 		expect(coverage.lead).toBeUndefined();
 		expect(coverage.paid).toBeUndefined();
+	});
+});
+
+describe("the lock-in press states its keyboard", () => {
+	const submit = () => {};
+
+	it("tells a player with nothing picked that the letters pick", () => {
+		expect(pollCommitFor("single", 0, submit).note).toBe(PICK_ONE);
+		expect(pollCommitFor("multiple", 0, submit).note).toBe(PICK_EVERY);
+		expect(pollCommitFor("single", 0, submit).onPress).toBeUndefined();
+	});
+
+	it("tells a player with an answer picked that Enter locks it in", () => {
+		const commit = pollCommitFor("multiple", 2, submit);
+
+		expect(commit.note).toBe(ENTER_ANSWERS);
+		expect(commit.label).toBe("Lock in 2 answers");
+	});
+});
+
+describe("the poll number on a press's mark", () => {
+	const answered = (id: string): AnsweredPoll => ({
+		id,
+		question: "typeof null === ?",
+		category: "js",
+		outcome: "correct",
+		picked: ["object"],
+	});
+
+	const viewAfter = (count: number) =>
+		createMockRunView({
+			answeredThisGate: Array.from({ length: count }, (_, index) =>
+				answered(`poll-${index}`)
+			),
+		});
+
+	it("numbers the poll being answered", () => {
+		expect(pollStepFor(viewAfter(0))).toBe(1);
+		expect(pollStepFor(viewAfter(2))).toBe(3);
+	});
+
+	it("numbers the revealed poll by the one just answered", () => {
+		expect(pollStepFor(viewAfter(2), true)).toBe(2);
+	});
+
+	it("counts the next poll on the continue press while its answer shows", () => {
+		expect(nextPollMarkFor(viewAfter(2)).count).toBe(3);
 	});
 });

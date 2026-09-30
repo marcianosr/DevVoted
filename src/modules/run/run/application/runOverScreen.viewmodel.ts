@@ -1,4 +1,4 @@
-import { COMMUNITY } from "~/shared/lib/copy";
+import { COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	type Config,
@@ -12,10 +12,10 @@ import {
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { swatchesEarnedFrom } from "~/modules/run/gate/domain/swatch.model";
+import { fundsOf } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { UnlockLine } from "~/modules/run/run/application/unlockNotes.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
-	GATE_COUNT,
 	roundToOneDecimal,
 	roundToTwoDecimals,
 	bankedKb,
@@ -36,6 +36,7 @@ import type {
 	PollScoreRow,
 	PollScoresProps,
 } from "~/ui/kanto-theme/PollScores.ui";
+import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 import type {
 	RunOverCategory,
@@ -53,7 +54,6 @@ export const COMMUNITY_LABEL = COMMUNITY;
 
 const NO_RETRY = "no retry, no peel";
 const HELD_WORD = "held";
-const SUMMITED = "summited";
 const EVERY_GATE = "every gate held";
 const FRESH_HAND = "a new run deals a fresh hand and starts at gate 0";
 
@@ -63,9 +63,6 @@ const NO_PAYING_GATE = "no gate paid";
 const BEST_WAS = "best was";
 
 const AGAINST_WINDOW = "against a window of";
-const NOTHING_EARNED = "nothing earned";
-const STOPPED_AT = "stopped at";
-const EARNED_WORD = "earned";
 
 const A_GATE = "a gate";
 const NO_UPKEEP = "The run never paid upkeep.";
@@ -111,6 +108,7 @@ export type RunOverFrame = {
 	readonly upkeepPaidKb: number;
 	readonly archiveAfterKb?: number;
 	readonly unlocked: readonly UnlockLine[];
+	readonly readout?: RunReadoutProps;
 };
 
 const weightLabel = (weight: number) => `${weight} weight`;
@@ -139,16 +137,6 @@ const subtitleOf = (frame: RunOverFrame): string => {
 		line,
 		NO_RETRY,
 	].join(SEPARATOR);
-};
-
-const captionOf = (frame: RunOverFrame): string => {
-	const earned = frame.swatchGates.length;
-	const tally = earned === 0 ? NOTHING_EARNED : `${earned} ${EARNED_WORD}`;
-	const place = frame.won
-		? SUMMITED
-		: `${STOPPED_AT} ${gateSwatchAt(frame.gate).gateName}`;
-
-	return [tally, place].join(SEPARATOR);
 };
 
 const coverageNoteOf = (frame: RunOverFrame): string => {
@@ -376,12 +364,10 @@ export const runOverPropsFor = (frame: RunOverFrame): RunOverScreenProps => ({
 		swatch: gateSwatchAt(frame.gate),
 		swatches: swatchTrackFor(frame.swatchGates, frame.gate),
 		title: frame.won ? SUMMIT_TITLE : RUN_OVER_TITLE,
-		subtitle: subtitleOf(frame),
-		figure: {
-			amount: plural(frame.gate, "gate"),
-			note: `of ${GATE_COUNT}`,
-		},
-		caption: captionOf(frame),
+		swatchState: "current",
+		note: subtitleOf(frame),
+		funds: fundsOf(frame.balanceKb, STORAGE_BALANCE),
+		readout: frame.readout,
 	},
 	bar: frame.bar,
 	coverage: {

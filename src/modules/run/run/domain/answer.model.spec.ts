@@ -306,7 +306,7 @@ describe("room comes from the build, never from the climb (ADR-098)", () => {
 	});
 });
 
-describe("the floor rule at the close (ADR-094)", () => {
+describe("the window's minimum at the close", () => {
 	const healthyHistory = (): RunState => ({
 		...started(["js"]),
 		gatesCleared: 4,
@@ -319,13 +319,15 @@ describe("the floor rule at the close (ADR-094)", () => {
 		const held = oneRightOfFive(healthyHistory());
 
 		expect(held.status).toBe("awaiting-strip");
-		expect(held.heldBy).toBe("floor");
-		expect(held.log.at(-1)).toContain("Gate 4 failed: 1 of 5 right, 2 needed");
+		expect(held.heldBy).toBe("unscored");
+		expect(held.log.at(-1)).toContain(
+			"Gate 4 failed: the window scored 1 of 2 units"
+		);
 	});
 
-	it("names the floor for a blank window and the band when the meter itself fell short", () => {
+	it("names the window for a blank one and the band when the meter itself fell short", () => {
 		expect(failGate({ ...started(["js"]), gatesCleared: 4 }).heldBy).toBe(
-			"floor"
+			"unscored"
 		);
 		expect(
 			[true, true, false, false, false].reduce(answerWith, {
@@ -342,7 +344,9 @@ describe("the floor rule at the close (ADR-094)", () => {
 		});
 
 		expect(retried.heldBy).toBeUndefined();
-		expect(clearGate({ ...retried, heldBy: "floor" }).heldBy).toBeUndefined();
+		expect(
+			clearGate({ ...retried, heldBy: "unscored" }).heldBy
+		).toBeUndefined();
 	});
 });
 
@@ -1812,6 +1816,26 @@ describe("a clear hands nothing, and every close leaves a record", () => {
 			gate: 0,
 			cleared: false,
 		});
+	});
+
+	it("keeps every close with the KB it banked, so the hub can list the run so far", () => {
+		const cleared = clearGate(started(["js"]));
+
+		expect(cleared.closes).toEqual([
+			{ gate: 0, band: "perfect", cleared: true, kb: cleared.gateRewardKb },
+		]);
+	});
+
+	it("keeps a held close at zero KB", () => {
+		expect(failGate(started(["js"])).closes).toEqual([
+			expect.objectContaining({ gate: 0, cleared: false, kb: 0 }),
+		]);
+	});
+
+	it("appends to a snapshot written before closes were kept", () => {
+		const { closes: _dropped, ...legacy } = started(["js"]);
+
+		expect(clearGate(legacy).closes).toHaveLength(1);
 	});
 });
 

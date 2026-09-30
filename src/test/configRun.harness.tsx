@@ -306,6 +306,7 @@ export const asShop = (state: RunState) => (
 		onSell={noop}
 		onUpgrade={noop}
 		onRebuild={noop}
+		onSkip={noop}
 		onExtend={noop}
 		onPlantPin={noop}
 		onAbandon={noop}

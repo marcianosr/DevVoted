@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	EXTEND_CARRY_BYTES,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 import {
 	createRun,
 	isAwaitingTomorrow,
@@ -38,7 +41,7 @@ import {
 describe("configuring", () => {
 	it("refuses to slot beyond the build's slots", () => {
 		let state = createRun(pool(60), handed);
-		for (const id of ["js", "eslint", "coverage-gain", "cold-start"])
+		for (const id of ["js", "html", "coverage-gain", "cold-start"])
 			state = runReducer(state, { type: "install", configId: id });
 		expect(state.build.configs).toHaveLength(3);
 	});
@@ -337,7 +340,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 			threeOption(`three-${index}`)
 		);
 		let base = createRun(polls, [...handed, CONFIGS.length]);
-		for (const configId of ["length", "js", "eslint"])
+		for (const configId of ["length", "js", "html"])
 			base = runReducer(base, { type: "install", configId });
 		base = runReducer(base, { type: "start" });
 
@@ -465,7 +468,7 @@ describe("the starting build", () => {
 		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
 
 		let state = runReducer(bare, { type: "install", configId: "js" });
-		state = runReducer(state, { type: "install", configId: "eslint" });
+		state = runReducer(state, { type: "install", configId: "linter" });
 		state = runReducer(state, { type: "start" });
 		expect(state.status).toBe("answering");
 	});
@@ -620,5 +623,34 @@ describe("looting a fallen run", () => {
 	it("refuses a take that would bill the run", () => {
 		const state = createRun(pool(60), handed);
 		expect(runReducer(state, { type: "loot", kb: -32 })).toBe(state);
+	});
+});
+
+describe("warm booting a run (ADR-153)", () => {
+	const boot = {
+		type: "warm-boot",
+		storageKb: 64,
+		serviceIds: ["extend"],
+		archiveBytes: EXTEND_CARRY_BYTES,
+	} as const;
+
+	it("banks the storage before the first gate and raises the high-water mark", () => {
+		const booted = runReducer(createRun(pool(60), handed), boot);
+
+		expect(booted.storage).toBe(64);
+		expect(booted.peakStorageKb).toBe(64);
+		expect(booted.warmBoot?.serviceIds).toEqual(["extend"]);
+	});
+
+	it("refuses a boot once the run has started", () => {
+		const running = started(["linter"]);
+
+		expect(runReducer(running, boot)).toBe(running);
+	});
+
+	it("refuses a second boot", () => {
+		const booted = runReducer(createRun(pool(60), handed), boot);
+
+		expect(runReducer(booted, boot)).toBe(booted);
 	});
 });

@@ -12,7 +12,6 @@ import {
 	type TitleLadder,
 	type TitleShelfView,
 	type TitleSpecial,
-	type WornSlot,
 } from "~/modules/account/profile/application/titleShelf.viewmodel";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
@@ -34,11 +33,6 @@ export const COPY = {
 		closest: "closest",
 	} satisfies Record<TitleFilter, string>,
 	held: (held: number, total: number) => `${held} of ${total}`,
-	emptySlot: "wear an earned title",
-	takeOff: (name: string) => `Take off ${name}`,
-	wear: "wear",
-	worn: "take off",
-	wearName: (name: string) => `Wear ${name}`,
 	redacted: "Title not yet earned",
 	sections: {
 		pollCount: "Poll count",
@@ -70,14 +64,6 @@ const FILTER_ITEMS = TITLE_FILTERS.map((value) => ({
 }));
 
 const EARNED_THEME = "viridian";
-
-const SLOTS = "grid grid-cols-1 gap-3 sm:grid-cols-3";
-const SLOT =
-	"flex h-11 min-w-0 items-center gap-3 rounded-md pr-1 pl-3 text-sm font-bold";
-const SLOT_FILLED = "ring-1 ring-inset ring-theme-soft text-theme-soft";
-const SLOT_EMPTY = "border border-dashed border-theme-faint text-theme-muted";
-const SLOT_INDEX = "text-xs font-normal text-theme-muted";
-const SLOT_NAME = "min-w-0 flex-1 truncate";
 
 const SECTION = "group/section border-t border-theme-faint";
 const SECTION_SUMMARY =
@@ -130,32 +116,11 @@ const CARD =
 const CARD_EARNED = "bg-theme/10 ring-theme-soft";
 
 const CLOSEST_ROW = "flex min-w-0 flex-1 flex-col gap-1";
-const ERROR = "text-sm text-cinnabar";
 
 export type TitleShelfProps = TitleShelfView & {
-	isMutating: boolean;
-	error?: string;
-	onToggle: (titleId: string, worn: boolean) => void;
 	onFilter: (filter: TitleFilter) => void;
 	onMoreCategories: () => void;
 };
-
-type Wearing = Pick<TitleShelfProps, "isMutating" | "onToggle">;
-
-const WearPress = ({
-	title,
-	isMutating,
-	onToggle,
-}: Wearing & { title: ShelfTitle }) => (
-	<Button
-		size="sm"
-		tone={title.worn ? "ambient" : "action"}
-		label={title.worn ? COPY.worn : COPY.wear}
-		hint={title.locked ? undefined : COPY.wearName(title.name)}
-		onPress={() => onToggle(title.id, title.worn)}
-		disabled={isMutating || title.blocked}
-	/>
-);
 
 const TitleName = ({ title }: { title: ShelfTitle }) =>
 	title.locked ? (
@@ -177,61 +142,12 @@ const Progress = ({ title }: { title: ShelfTitle }) => (
 	</span>
 );
 
-const EarnedProgress = ({
-	title,
-	...wearing
-}: Wearing & { title: ShelfTitle }) => (
+const EarnedProgress = ({ title }: { title: ShelfTitle }) => (
 	<span className={PROGRESS}>
 		<span className={METER}>
 			<Meter value={title.target} max={title.target} />
 		</span>
-		<WearPress title={title} {...wearing} />
 	</span>
-);
-
-const WornSlotView = ({
-	slot,
-	index,
-	isMutating,
-	onToggle,
-}: Wearing & { slot: WornSlot; index: number }) => {
-	if (slot === null)
-		return (
-			<span className={clsx(SLOT, SLOT_EMPTY)}>
-				<span className={SLOT_INDEX}>{index + 1}</span>
-				{COPY.emptySlot}
-			</span>
-		);
-	return (
-		<span className={clsx(SLOT, SLOT_FILLED)}>
-			<span className={SLOT_INDEX}>{index + 1}</span>
-			<span className={SLOT_NAME}>{slot.name}</span>
-			<Button
-				size="sm"
-				tone="bare"
-				label={COPY.takeOff(slot.name)}
-				glyph="×"
-				onPress={() => onToggle(slot.id, true)}
-				disabled={isMutating}
-			/>
-		</span>
-	);
-};
-
-const WornSlots = ({
-	worn,
-	...wearing
-}: Wearing & { worn: readonly WornSlot[] }) => (
-	<div className={SLOTS}>
-		{worn.map((slot, index) => (
-			<WornSlotView
-				key={slot?.id ?? `empty-${index}`}
-				slot={slot}
-				index={index}
-				{...wearing}
-			/>
-		))}
-	</div>
 );
 
 const Section = ({
@@ -301,62 +217,49 @@ const NextRung = ({ next }: Pick<TitleLadder, "next">) =>
 		</div>
 	);
 
-const EarnedRungs = ({
-	earned,
-	...wearing
-}: Wearing & { earned: readonly ShelfTitle[] }) =>
+const EarnedRungs = ({ earned }: { earned: readonly ShelfTitle[] }) =>
 	earned.length === 0 ? null : (
 		<div className={CHIPS}>
 			{earned.map((title) => (
 				<span key={title.id} className={CHIP}>
 					<TitleName title={title} />
-					<WearPress title={title} {...wearing} />
 				</span>
 			))}
 		</div>
 	);
 
-const PollCountSection = ({
-	ladder,
-	...wearing
-}: Wearing & { ladder: TitleLadder }) => (
+const PollCountSection = ({ ladder }: { ladder: TitleLadder }) => (
 	<Section
 		title={COPY.sections.pollCount}
 		meta={COPY.pollMeta(ladder.held, ladder.total, ladder.pollsAnswered)}
 	>
 		<LadderTrack ladder={ladder} />
 		<NextRung next={ladder.next} />
-		<EarnedRungs earned={ladder.earned} {...wearing} />
+		<EarnedRungs earned={ladder.earned} />
 	</Section>
 );
 
-const CategoryCell = ({
-	title,
-	...wearing
-}: Wearing & { title: ShelfTitle }) => (
+const CategoryCell = ({ title }: { title: ShelfTitle }) => (
 	<div
 		data-screen-theme={title.earned ? EARNED_THEME : undefined}
 		className={clsx(CELL, title.earned && CELL_EARNED)}
 	>
 		<TitleName title={title} />
 		{title.earned ? (
-			<EarnedProgress title={title} {...wearing} />
+			<EarnedProgress title={title} />
 		) : (
 			<Progress title={title} />
 		)}
 	</div>
 );
 
-const CategoryTableRow = ({
-	row,
-	...wearing
-}: Wearing & { row: CategoryRow }) => (
+const CategoryTableRow = ({ row }: { row: CategoryRow }) => (
 	<div className={TABLE_ROW}>
 		<div className={LABEL_CELL}>
 			<Badge>{row.label}</Badge>
 		</div>
-		<CategoryCell title={row.answered} {...wearing} />
-		<CategoryCell title={row.correct} {...wearing} />
+		<CategoryCell title={row.answered} />
+		<CategoryCell title={row.correct} />
 	</div>
 );
 
@@ -406,8 +309,7 @@ const NoneEarned = () => (
 const CategorySection = ({
 	categories,
 	onMoreCategories,
-	...wearing
-}: Wearing & {
+}: {
 	categories: TitleCategories;
 	onMoreCategories: () => void;
 }) => {
@@ -423,7 +325,7 @@ const CategorySection = ({
 				<div className={TABLE}>
 					<CategoryTableHead first={first} />
 					{categories.rows.map((row) => (
-						<CategoryTableRow key={row.code} row={row} {...wearing} />
+						<CategoryTableRow key={row.code} row={row} />
 					))}
 					<MoreCategories
 						categories={categories}
@@ -435,10 +337,7 @@ const CategorySection = ({
 	);
 };
 
-const SpecialCard = ({
-	title,
-	...wearing
-}: Wearing & { title: ShelfTitle }) => (
+const SpecialCard = ({ title }: { title: ShelfTitle }) => (
 	<div
 		data-screen-theme={title.earned ? EARNED_THEME : undefined}
 		className={clsx(CARD, title.earned && CARD_EARNED)}
@@ -447,15 +346,11 @@ const SpecialCard = ({
 		<Typography variant="hint" as="p">
 			{title.earnedWhen}
 		</Typography>
-		{title.earned ? <WearPress title={title} {...wearing} /> : null}
 		{!title.earned && title.target > 1 ? <Progress title={title} /> : null}
 	</div>
 );
 
-const SpecialSection = ({
-	special,
-	...wearing
-}: Wearing & { special: TitleSpecial }) => (
+const SpecialSection = ({ special }: { special: TitleSpecial }) => (
 	<Section
 		title={COPY.sections.special}
 		meta={COPY.held(special.held, special.total)}
@@ -465,7 +360,7 @@ const SpecialSection = ({
 		) : (
 			<div className={CARDS}>
 				{special.titles.map((title) => (
-					<SpecialCard key={title.id} title={title} {...wearing} />
+					<SpecialCard key={title.id} title={title} />
 				))}
 			</div>
 		)}
@@ -502,49 +397,37 @@ export const TitleShelf = ({
 	filter,
 	held,
 	total,
-	worn,
 	ladder,
 	categories,
 	special,
 	closest,
-	isMutating,
-	error,
-	onToggle,
 	onFilter,
 	onMoreCategories,
-}: TitleShelfProps) => {
-	const wearing = { isMutating, onToggle };
-	return (
-		<Panel>
-			<Panel.Header
-				label={COPY.label}
-				meta={<Badge>{COPY.held(held, total)}</Badge>}
-				trailing={
-					<Segmented
-						label={COPY.filterLabel}
-						items={FILTER_ITEMS}
-						value={filter}
-						onSelect={onFilter}
-					/>
-				}
-			/>
-			<Panel.Body>
-				<WornSlots worn={worn} {...wearing} />
-				{error === undefined ? null : <span className={ERROR}>{error}</span>}
-			</Panel.Body>
-			{filter === "closest" ? (
-				<ClosestList closest={closest} />
-			) : (
-				<>
-					<PollCountSection ladder={ladder} {...wearing} />
-					<CategorySection
-						categories={categories}
-						onMoreCategories={onMoreCategories}
-						{...wearing}
-					/>
-					<SpecialSection special={special} {...wearing} />
-				</>
-			)}
-		</Panel>
-	);
-};
+}: TitleShelfProps) => (
+	<Panel>
+		<Panel.Header
+			label={COPY.label}
+			meta={<Badge>{COPY.held(held, total)}</Badge>}
+			trailing={
+				<Segmented
+					label={COPY.filterLabel}
+					items={FILTER_ITEMS}
+					value={filter}
+					onSelect={onFilter}
+				/>
+			}
+		/>
+		{filter === "closest" ? (
+			<ClosestList closest={closest} />
+		) : (
+			<>
+				<PollCountSection ladder={ladder} />
+				<CategorySection
+					categories={categories}
+					onMoreCategories={onMoreCategories}
+				/>
+				<SpecialSection special={special} />
+			</>
+		)}
+	</Panel>
+);

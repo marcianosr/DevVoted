@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-24T10:30:43Z
-updated_at: 2026-09-25T11:00:14Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-u35m
 ---
 
@@ -139,3 +139,5 @@ What that settles for this bean:
 
 Equipping happens before the run, not here. Selling and equipping are different
 moments, and the Dex's shop tab only *states* a licence's price — it never sells.
+
+2026-09-29 (ADR-153): the profile no longer sells run services; the warm boot on the new run screen does. Borders are this page's whole stock, so the "second shelf" section below is dead. Point 1 (nothing links to it) still stands.

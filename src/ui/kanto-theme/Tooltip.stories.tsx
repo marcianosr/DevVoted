@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Panel } from "./Panel.ui";
-import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
 import { Screen } from "./Screen.ui";
 import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
+
+const RULE_LABEL = "How a correct answer is counted";
+const RULE_HINT =
+	"A single answer pays 1 unit. A multiple answer pays up to 2, by the share you got right.";
 
 const meta: Meta<typeof Tooltip> = {
 	component: Tooltip,
@@ -15,14 +18,14 @@ export default meta;
 
 type Story = StoryObj<typeof Tooltip>;
 
-export const TheScoringRule: Story = {
+export const WithAHint: Story = {
 	render: () => (
 		<Screen theme="cerulean" width="narrow">
 			<Panel>
 				<Panel.Header
 					label="Coverage"
 					meta={
-						<Tooltip label={SCORING_RULE_LABEL} hint={<ScoringRule />}>
+						<Tooltip label={RULE_LABEL} hint={RULE_HINT}>
 							34/55 correct
 						</Tooltip>
 					}
@@ -43,7 +46,7 @@ export const NothingToExplain: Story = {
 			<Panel>
 				<Panel.Header
 					label="Coverage"
-					meta={<Tooltip label={SCORING_RULE_LABEL}>34/55 correct</Tooltip>}
+					meta={<Tooltip label={RULE_LABEL}>34/55 correct</Tooltip>}
 				/>
 				<Panel.Body>
 					<Typography variant="hint">

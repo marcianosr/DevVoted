@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	type PlayerCardView,
 	type PlayerRun,
 	playerCardFor,
 	standingFor,
@@ -40,7 +41,7 @@ describe("standingFor", () => {
 	it("counts the weight left free in the build", () => {
 		const standing = standingFor(RUN);
 
-		expect(standing.weight).toMatch(/^3 of \d+ weight$/);
+		expect(standing.weight).toMatch(/^3 \/ \d+$/);
 		expect(standing.freeSlots).toBeGreaterThanOrEqual(0);
 	});
 
@@ -57,40 +58,75 @@ describe("standingFor", () => {
 
 	it("tiles run storage, streak and best category by name", () => {
 		expect(standingFor(RUN).stats).toEqual([
-			{ label: "run storage", value: "896 KB" },
+			{ label: "run storage", value: "896 KB", color: "saffron" },
 			{ label: "streak", value: "4" },
 			{ label: "best", value: "CSS" },
 		]);
 	});
 });
 
+const LOOK = { titles: [], theme: "pallet" } as const satisfies Pick<
+	PlayerCardView,
+	"titles" | "theme"
+>;
+
 describe("playerCardFor", () => {
-	it("draws a player with no open run as a face and a name only, linking nothing", () => {
-		expect(playerCardFor({ userId: "misty", displayName: "misty" })).toEqual({
-			name: "misty",
-		});
+	it("draws a player with no open run as a face, a name and their look only, linking nothing", () => {
+		expect(
+			playerCardFor({ ...LOOK, userId: "misty", displayName: "misty" })
+		).toEqual({ name: "misty", ...LOOK });
 	});
 
-	it("carries the worn title, the photo and the border through", () => {
+	it("carries the worn titles, the swatch, the photo and the border through", () => {
 		expect(
 			playerCardFor({
 				userId: "misty",
 				displayName: "misty",
 				photoUrl: "/editors/misty.png",
 				borderUrl: "/borders/border-css-cerulean.svg",
-				title: "Ship It",
+				titles: ["Ship It", "Legacy Tester"],
+				theme: "cascade",
 			})
 		).toMatchObject({
 			photoUrl: "/editors/misty.png",
 			borderUrl: "/borders/border-css-cerulean.svg",
-			title: "Ship It",
+			titles: ["Ship It", "Legacy Tester"],
+			theme: "cascade",
 		});
 	});
 
 	it("adds the standing when the player has a run open", () => {
 		expect(
-			playerCardFor({ userId: "misty", displayName: "misty", run: RUN })
-				.standing
+			playerCardFor({
+				...LOOK,
+				userId: "misty",
+				displayName: "misty",
+				run: RUN,
+			}).standing
 		).toEqual(standingFor(RUN));
+	});
+
+	it("states a contributing author's role, polls published and answers drawn", () => {
+		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
+
+		expect(
+			playerCardFor({
+				...LOOK,
+				userId: "misty",
+				displayName: "misty",
+				authorship,
+			}).contribution
+		).toEqual(authorship);
+	});
+
+	it("states no contribution for a player who has published no poll", () => {
+		expect(
+			playerCardFor({
+				...LOOK,
+				userId: "misty",
+				displayName: "misty",
+				authorship: { role: "Admin", published: 0, answers: 0 },
+			})
+		).not.toHaveProperty("contribution");
 	});
 });

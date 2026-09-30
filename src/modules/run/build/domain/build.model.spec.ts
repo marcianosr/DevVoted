@@ -9,6 +9,7 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
 	Build,
 	emptySlotCreditOf,
@@ -35,6 +36,11 @@ const buildOf = (configs: Config[]): Build => ({
 	id: "hyrule-ci",
 	configs,
 });
+
+const NARROW_LINTER = {
+	...CONFIGS.linter,
+	eliminatesWrongOptionsFor: ["js", "ts"] as const,
+};
 
 describe("the build space the run rents (ADR-098)", () => {
 	it("opens every run on the free four", () => {
@@ -231,11 +237,16 @@ describe("extraPickPayoutFor", () => {
 
 describe("canLint", () => {
 	it("is true only for a linter that covers the poll's category", () => {
-		expect(canLint([CONFIGS.eslint], "js")).toBe(true);
-		expect(canLint([CONFIGS.eslint], "ts")).toBe(true);
-		expect(canLint([CONFIGS.eslint], "css")).toBe(false);
-		expect(canLint([CONFIGS.stylelint], "css")).toBe(true);
+		expect(canLint([NARROW_LINTER], "js")).toBe(true);
+		expect(canLint([NARROW_LINTER], "ts")).toBe(true);
+		expect(canLint([NARROW_LINTER], "css")).toBe(false);
 		expect(canLint([CONFIGS.js, CONFIGS.agentsMd], "js")).toBe(false);
+	});
+
+	it("is true on every category for the roster's Linter", () => {
+		CATEGORY_CODES.forEach((category) =>
+			expect(canLint([CONFIGS.linter], category)).toBe(true)
+		);
 	});
 });
 
@@ -243,8 +254,8 @@ describe("stripConfig and isBare", () => {
 	it("peels a config and reports bareness", () => {
 		expect(isBare(buildWith([]))).toBe(true);
 		const stripped = stripConfig(
-			buildWith([CONFIGS.js, CONFIGS.eslint]),
-			"eslint"
+			buildWith([CONFIGS.js, CONFIGS.linter]),
+			"linter"
 		);
 		expect(stripped.configs.map((config) => config.id)).toEqual(["js"]);
 	});

@@ -43,10 +43,32 @@ describe("ClimberCard", () => {
 		expect(screen.getAllByText("Yusuf").length).toBeGreaterThan(0);
 	});
 
-	it("badges the title they wear under their name", () => {
-		render(<ClimberCard {...card({ title: "Heavy Pipeline" })} />);
+	it("badges every title they wear under their name, the first in their swatch", () => {
+		render(
+			<ClimberCard {...card({ titles: ["Heavy Pipeline", "Legacy Tester"] })} />
+		);
 
-		expect(screen.getByText("Heavy Pipeline")).toBeInTheDocument();
+		expect(screen.getByText("Heavy Pipeline")).not.toHaveAttribute(
+			"data-screen-theme"
+		);
+		expect(screen.getByText("Legacy Tester")).toHaveAttribute(
+			"data-screen-theme",
+			"pewter"
+		);
+	});
+
+	it("wears the swatch the player chose across its head", () => {
+		render(<ClimberCard {...card({ theme: "cascade" })} />);
+
+		expect(
+			screen.getByText("Heavy Pipeline").closest("[data-gate-theme]")
+		).toHaveAttribute("data-gate-theme", "cascade");
+	});
+
+	it("keeps the swatch off the standing, which wears the page", () => {
+		render(<ClimberCard {...card({ theme: "cascade" })} />);
+
+		expect(screen.getByText("Webpack").closest("[data-gate-theme]")).toBeNull();
 	});
 
 	it("draws where they stand when they have a run open", () => {
@@ -56,7 +78,7 @@ describe("ClimberCard", () => {
 		expect(screen.getByText("Webpack")).toBeInTheDocument();
 	});
 
-	it("names the gate once, in the head beside the face", () => {
+	it("names the gate once, in the standing", () => {
 		render(<ClimberCard {...card()} />);
 
 		expect(screen.getAllByText("gate 3")).toHaveLength(1);

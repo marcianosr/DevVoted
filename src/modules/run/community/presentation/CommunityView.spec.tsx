@@ -261,7 +261,7 @@ describe("CommunityView", () => {
 
 		expect(screen.getByText(".ts")).toBeInTheDocument();
 		expect(screen.getByRole("img", { name: /^40% of / })).toBeInTheDocument();
-		expect(screen.getByText("1 of 4 weight")).toBeInTheDocument();
+		expect(screen.getByText("1 / 4")).toBeInTheDocument();
 	});
 
 	it("refuses the way back while today's polls are spent", async () => {

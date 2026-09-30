@@ -39,8 +39,10 @@ export const CARD = "flex w-full flex-col rounded-xl border bg-theme/5 text-sm";
 
 export const CARD_FLOW =
 	"grid-cols-[repeat(auto-fill,minmax(20rem,1fr))] items-start";
-export const CHIP =
-	"inline-flex items-center gap-1.5 rounded-lg border bg-theme/5 px-4 py-2 text-sm whitespace-nowrap";
+const CHIP_SHAPE =
+	"inline-flex items-center gap-1.5 rounded-lg border bg-theme/5 text-sm whitespace-nowrap";
+export const CHIP = clsx(CHIP_SHAPE, "px-4 py-2");
+const COMPACT_CHIP = clsx(CHIP_SHAPE, "px-1.5 py-1");
 const BARE_WIDTH = "w-fit max-w-full";
 export const EDGE = "border-theme-faint";
 const EDGE_LIT = "border-theme";
@@ -58,6 +60,9 @@ const NAME_LIMIT = "break-words";
 const TAG_LINE = "flex w-full flex-wrap items-center gap-1.5";
 const DETAIL = "min-w-0 text-xs text-theme-muted";
 const BARE_DETAIL = "min-w-0 flex-1 truncate text-xs text-theme-muted";
+const PEEKED_NAME = "flex flex-1 flex-col";
+const PEEKED_NAME_TEXT = "font-extrabold";
+const PEEK = "w-0 min-w-full truncate text-xs text-theme-muted";
 const TRAILING = "flex shrink-0 items-center gap-1.5";
 const RULE = "border-t border-theme-faint";
 const BODY = "flex flex-col gap-1.5 px-4 py-3";
@@ -97,6 +102,8 @@ export type ConfigChipBadge =
 			hint?: string;
 	  };
 
+export type ChipQuote = "install" | "upgrade" | "uninstall";
+
 export type ChipInstall = {
 	onPress?: () => void;
 	label?: string;
@@ -126,9 +133,11 @@ type ConfigChipSecrets = {
 	credited?: boolean;
 	onHover?: () => void;
 	onLeave?: () => void;
+	onQuote?: (quote?: ChipQuote) => void;
 };
 
 type ConfigChipStated = {
+	compact?: boolean;
 	slots?: number;
 	unlock?: readonly ConfigUnlockPath[];
 	infoOpen?: boolean;
@@ -179,9 +188,17 @@ type UninstallPressProps = {
 	name: string;
 	refund?: string;
 	onPress: () => void;
+	onHover?: () => void;
+	onLeave?: () => void;
 };
 
-const UninstallPress = ({ name, refund, onPress }: UninstallPressProps) => {
+const UninstallPress = ({
+	name,
+	refund,
+	onPress,
+	onHover,
+	onLeave,
+}: UninstallPressProps) => {
 	if (refund === undefined)
 		return (
 			<Button
@@ -189,6 +206,8 @@ const UninstallPress = ({ name, refund, onPress }: UninstallPressProps) => {
 				label={COPY.uninstall}
 				hint={uninstallHintOf(name)}
 				onPress={onPress}
+				onHover={onHover}
+				onLeave={onLeave}
 			/>
 		);
 
@@ -206,6 +225,8 @@ const UninstallPress = ({ name, refund, onPress }: UninstallPressProps) => {
 			capColor={REFUND_COLOR}
 			hint={uninstallHintOf(name, refund)}
 			onPress={onPress}
+			onHover={onHover}
+			onLeave={onLeave}
 		/>
 	);
 };
@@ -300,7 +321,13 @@ export const ConfigChip = (props: ConfigChipProps) => {
 	if (props.locked) {
 		if (props.slots === undefined && props.unlock === undefined) {
 			return (
-				<span className={clsx(CHIP, BARE_WIDTH, EDGE)}>
+				<span
+					className={clsx(
+						props.compact === true ? COMPACT_CHIP : CHIP,
+						BARE_WIDTH,
+						EDGE
+					)}
+				>
 					<span className={NAME}>
 						<Redaction label={LOCKED_CONFIG} />
 					</span>
@@ -334,6 +361,8 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		credited = false,
 		onHover,
 		onLeave,
+		onQuote,
+		compact = false,
 	} = props;
 
 	const offered =
@@ -359,6 +388,8 @@ export const ConfigChip = (props: ConfigChipProps) => {
 
 	const headBadges = stated ? [] : decorative;
 
+	const peek = stated ? undefined : info?.description;
+
 	const footerVersion = info?.version ?? version;
 	const footerStated =
 		footerVersion !== undefined ||
@@ -373,6 +404,11 @@ export const ConfigChip = (props: ConfigChipProps) => {
 			{name}
 		</span>
 	);
+
+	const quoting = (quote: ChipQuote) => ({
+		onHover: onQuote === undefined ? undefined : () => onQuote(quote),
+		onLeave: onQuote === undefined ? undefined : () => onQuote(),
+	});
 
 	const trailing = (
 		<span className={TRAILING}>
@@ -389,6 +425,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					hint={upgradeHintOf(name, offered)}
 					expanded={upgradesOpen}
 					onPress={onToggleUpgrades}
+					{...quoting("upgrade")}
 				/>
 			)}
 			{install === undefined ? null : (
@@ -414,6 +451,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					disabled={install.disabled ?? install.onPress === undefined}
 					pressed={arming !== undefined}
 					onPress={install.onPress}
+					{...quoting("install")}
 				/>
 			)}
 			{onUninstall === undefined ? null : (
@@ -421,6 +459,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					name={name}
 					refund={info?.sellPrice}
 					onPress={onUninstall}
+					{...quoting("uninstall")}
 				/>
 			)}
 		</span>
@@ -450,7 +489,12 @@ export const ConfigChip = (props: ConfigChipProps) => {
 				data-config={name}
 				data-credited={credit}
 				{...hovers}
-				className={clsx(CHIP, BARE_WIDTH, edge, skipped && SKIPPED_CHIP)}
+				className={clsx(
+					compact ? COMPACT_CHIP : CHIP,
+					BARE_WIDTH,
+					edge,
+					skipped && SKIPPED_CHIP
+				)}
 			>
 				{pick === undefined ? null : <Pick {...pick} />}
 				{slots === undefined ? null : <Weight slots={slots} />}
@@ -492,7 +536,14 @@ export const ConfigChip = (props: ConfigChipProps) => {
 					)}
 					{pick === undefined ? null : <Pick {...pick} />}
 					{slots === undefined ? null : <Weight slots={slots} />}
-					{nameSeated(CARD_NAME)}
+					{peek === undefined ? (
+						nameSeated(CARD_NAME)
+					) : (
+						<span className={PEEKED_NAME}>
+							{nameSeated(PEEKED_NAME_TEXT)}
+							<span className={PEEK}>{peek}</span>
+						</span>
+					)}
 					{trailing}
 				</div>
 

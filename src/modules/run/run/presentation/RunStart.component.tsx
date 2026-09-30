@@ -2,48 +2,48 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
-import {
-	gateSwatchAt,
-	swatchTrackFor,
-} from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { resumeTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
-import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
+	climbersAtOrPast,
 	communityLineFor,
-	coverageReadingFor,
+	hubBuildFor,
+	hubStripFor,
+	incomingIncidentsFor,
+	runSoFarFor,
 	shopAsideFor,
-	standingFor,
 	todayPressFor,
 	type TodayPress,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
+import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
-import {
-	TodayScreen,
-	type TodayStandingProps,
-} from "~/modules/run/run/presentation/TodayScreen.ui";
+import { TodayScreen } from "~/modules/run/run/presentation/TodayScreen.ui";
 
 const COMMUNITY_ROUTE = "/run/community";
 const SHOP_ROUTE = "/run/shop";
 
-const standingPropsFor = (view: RunView | null): TodayStandingProps | null =>
-	view === null
-		? null
-		: {
-				swatches: swatchTrackFor(view.swatchGates, view.gatesCleared),
-				line: standingFor(view),
-			};
-
 export const RunStart = () => {
 	const navigate = useNavigate();
 	const { view } = useTodaysRun();
+	const runNumber = useRunNumber();
 	const { start } = useRunActions();
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
 
 	const press = todayPressFor(view, countdown);
-	const shop = shopAsideFor(view);
-	const room = communityLineFor(community.view?.totalPlayers);
+	const shop = shopAsideFor(view, countdown);
+	const build = hubBuildFor(view);
+	const climbers = community.view?.climb?.climbers;
+	const room = communityLineFor(
+		community.view?.totalPlayers,
+		view === null || view.isOver || climbers === undefined
+			? undefined
+			: {
+					count: climbersAtOrPast(climbers, view.gatesCleared),
+					gate: view.gatesCleared,
+				}
+	);
 
 	const startAndEnter = () =>
 		start.mutate(undefined, {
@@ -63,6 +63,7 @@ export const RunStart = () => {
 	return (
 		<TodayScreen
 			swatch={gateSwatchAt(view?.gatesCleared ?? 0)}
+			strip={hubStripFor(view, runNumber.view)}
 			press={{
 				label: press.label,
 				note: press.note,
@@ -70,8 +71,13 @@ export const RunStart = () => {
 				onPress: pressHandlerFor(press.kind),
 			}}
 			shop={{ ...shop, onPress: () => navigate({ to: SHOP_ROUTE }) }}
-			standing={standingPropsFor(view)}
-			coverage={coverageReadingFor(view)}
+			incidents={incomingIncidentsFor(view)}
+			runSoFar={runSoFarFor(view)}
+			build={
+				build === null
+					? null
+					: { ...build, shopHref: shop.open ? SHOP_ROUTE : undefined }
+			}
 			community={room === null ? null : { ...room, href: COMMUNITY_ROUTE }}
 			refusal={start.data?.success === false ? start.data.error : undefined}
 		/>

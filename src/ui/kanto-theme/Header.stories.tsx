@@ -38,7 +38,7 @@ export const WithCoverage: Story = {
 	args: {
 		note: "2 of 5 answered",
 		noteAt: "track",
-		badge: "3 audits",
+		badges: [{ label: "3 audits" }],
 		funds: fundsAt(1946),
 		coverage: {
 			label: "coverage",

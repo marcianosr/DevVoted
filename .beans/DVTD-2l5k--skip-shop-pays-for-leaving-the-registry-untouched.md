@@ -1,11 +1,11 @@
 ---
 # DVTD-2l5k
 title: Skip shop pays for leaving the Registry untouched
-status: todo
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-25T11:00:09Z
-updated_at: 2026-09-25T18:06:12Z
+updated_at: 2026-09-30T11:04:06Z
 parent: DVTD-r2k9
 ---
 
@@ -15,11 +15,11 @@ parent: DVTD-r2k9
 
 ## Done when
 
-- [ ] From the first shop, Skip shop sits beside Rebuild
-- [ ] Leaving with no registry action pays a flat amount of storage
-- [ ] The first registry action of the visit locks it for that visit
-- [ ] The payout never beats the cheapest draft
-- [ ] The Dex row states it
+- [x] From the first shop, Skip shop sits beside Rebuild
+- [x] Leaving with no registry action pays a flat amount of storage
+- [x] The first registry action of the visit locks it for that visit
+- [x] The payout never beats the cheapest draft
+- [x] The Dex row states it
 
 ## Notes
 
@@ -33,3 +33,12 @@ parent: DVTD-r2k9
 2026-09-25 (ADR-116): Skip shop is a **starter** service beside Rebuild; no objective, no grant row.
 
 2026-09-25, later (ADR-115 D10): a starter enters the roster when its press exists, so Skip shop is not on the roster or in the Dex until this bean builds it; the Dex reads 1 of 8 without it.
+
+2026-09-29 (ADR-153): a starter service carries free, so Skip shop needs no row on the warm boot panel; it enters the roster with its press as before.
+
+## Summary of Changes
+
+- Named **Skip the shop**; pays `SKIP_SHOP_KB` = 16 KB (below `CHEAPEST_DRAFT_COST_KB`, asserted in a spec).
+- `RunState.shopVisit` (`touched` | `skipped`), reset by `finishReward`. `runAction.model.ts` marks a visit touched in one place: any `REGISTRY_TOUCHES` action that changes state while rewarding. A skipped visit refuses those actions, so skip-then-back-from-prep cannot draft. `vendor-lock` is excluded so a skip never soft-locks prep.
+- New `skip-shop` action (bare wire schema, part of `SHOP_WRITES` so an audit-closed shop refuses it). The shop row pays and navigates to prep; it shows `registry touched` once shut and is inert while the build is over space or owes a vendor lock.
+- Roster entry `skipShop` (starter, first shop); Dex reads 2 of 9. Wiki, ADR-115 D4, CONTEXT.md and CHANGELOG updated.

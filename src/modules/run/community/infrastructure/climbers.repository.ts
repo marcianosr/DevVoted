@@ -9,7 +9,8 @@ import {
 	usersTable,
 } from "~/database/schema";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
-import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
+import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
+import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
 import { localDayRange } from "~/shared/lib/dateUtils";
 
 import type { GateWindow } from "~/modules/run/config/domain/effect.model";
@@ -24,6 +25,7 @@ import type { LastClose } from "~/modules/run/run/domain/run.model";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 const stateKey = <K extends keyof RunSnapshot>(key: K) => sql.raw(`'${key}'`);
 const windowKey = <K extends keyof GateWindow>(key: K) => sql.raw(`'${key}'`);
@@ -69,7 +71,8 @@ export type ClimberRow = {
 	closingBand: CoverageBandId | null;
 	startedAtGate: number;
 	handle: string | null;
-	title: string | null;
+	titles: readonly string[];
+	theme: SwatchTheme;
 	coverageUnits: number;
 	streak: number;
 	storageKb: number;
@@ -87,6 +90,8 @@ const CLIMBER_COLUMNS = {
 	startedAtGate: startedAtGateColumn,
 	handle: usersTable.github_username,
 	titleIds: usersTable.equipped_title_ids,
+	equippedSwatchId: usersTable.equipped_swatch_id,
+	ownedSwatchIds: usersTable.owned_swatch_ids,
 	coverageUnits: runStatesTable.coverage,
 	streak: streakColumn,
 	storageKb: storageColumn,
@@ -94,12 +99,14 @@ const CLIMBER_COLUMNS = {
 
 type ClimberSelection = Omit<
 	ClimberRow,
-	"borderUrl" | "build" | "closingBand" | "title"
+	"borderUrl" | "build" | "closingBand" | "titles" | "theme"
 > & {
 	equippedBorderId: string | null;
 	build: StoredPublicBuild;
 	lastClose: LastClose | null;
 	titleIds: string[];
+	equippedSwatchId: string | null;
+	ownedSwatchIds: string[];
 };
 
 const toClimberRow = ({
@@ -107,13 +114,16 @@ const toClimberRow = ({
 	build,
 	lastClose,
 	titleIds,
+	equippedSwatchId,
+	ownedSwatchIds,
 	...row
 }: ClimberSelection): ClimberRow => ({
 	...row,
 	borderUrl: borderUrlOf(equippedBorderId),
 	build: publicBuildOf(build),
 	closingBand: lastClose?.band ?? null,
-	title: primaryTitleName(titleIds),
+	titles: wornTitleNames(titleIds),
+	theme: profileThemeFor(equippedSwatchId, ownedSwatchIds),
 });
 
 const isLiveSessionRun = and(

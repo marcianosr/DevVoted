@@ -110,8 +110,8 @@ describe("offerCount", () => {
 
 describe("rollDraft with shop controls", () => {
 	it("keeps a locked offer in the draft and leads with it", () => {
-		const offered = ids(rollDraft(7, [], ["eslint"]));
-		expect(offered[0]).toBe("eslint");
+		const offered = ids(rollDraft(7, [], ["linter"]));
+		expect(offered[0]).toBe("linter");
 		expect(offered).toHaveLength(DRAFT_SIZE);
 	});
 
@@ -123,19 +123,19 @@ describe("rollDraft with shop controls", () => {
 	});
 
 	it("still rerolls everything the lock does not hold", () => {
-		const first = ids(rollDraft(0, [], ["eslint"]));
-		const second = ids(rollDraft(1, [], ["eslint"]));
+		const first = ids(rollDraft(0, [], ["linter"]));
+		const second = ids(rollDraft(1, [], ["linter"]));
 		expect(second.slice(1)).not.toEqual(first.slice(1));
 	});
 
 	it("offers no duplicate of the locked config", () => {
-		const offered = ids(rollDraft(3, [], ["eslint"]));
-		expect(offered.filter((id) => id === "eslint")).toHaveLength(1);
+		const offered = ids(rollDraft(3, [], ["linter"]));
+		expect(offered.filter((id) => id === "linter")).toHaveLength(1);
 	});
 
 	it("drops a locked id the player has since installed", () => {
-		const offered = ids(rollDraft(3, [CONFIGS.eslint], ["eslint"]));
-		expect(offered).not.toContain("eslint");
+		const offered = ids(rollDraft(3, [CONFIGS.linter], ["linter"]));
+		expect(offered).not.toContain("linter");
 		expect(offered).toHaveLength(DRAFT_SIZE);
 	});
 
@@ -209,7 +209,7 @@ describe("rollDraft under WTFPL", () => {
 	});
 
 	it("keeps a previously held offer at the front of the catalog", () => {
-		expect(ids(rollDraft(0, [CONFIGS.wtfpl], ["eslint"]))[0]).toBe("eslint");
+		expect(ids(rollDraft(0, [CONFIGS.wtfpl], ["linter"]))[0]).toBe("linter");
 	});
 });
 
@@ -235,7 +235,7 @@ describe("draftSeed", () => {
 	});
 
 	it("never re-offers a config the player cannot version up", () => {
-		expect(seenAcrossSeeds([CONFIGS.eslint])).not.toContain("eslint");
+		expect(seenAcrossSeeds([CONFIGS.agentsMd])).not.toContain("agents-md");
 	});
 
 	it("re-offers an owned config only above the version held, never past its cap", () => {
@@ -338,7 +338,7 @@ describe("upgradeOfferFor", () => {
 	});
 
 	it("withholds an offer when nothing in the build can be upgraded", () => {
-		expect(acrossSeeds([CONFIGS.eslint]).every((c) => c === undefined)).toBe(
+		expect(acrossSeeds([CONFIGS.agentsMd]).every((c) => c === undefined)).toBe(
 			true
 		);
 	});

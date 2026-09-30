@@ -27,9 +27,9 @@ describe("RunOverScreen", () => {
 		render(<RunOverScreen {...DEAD} />);
 
 		expect(
-			screen.getByRole("heading", { level: 1, name: RUN_OVER_TITLE })
+			screen.getByRole("heading", { name: RUN_OVER_TITLE })
 		).toBeInTheDocument();
-		expect(screen.getByText(/stopped at Lavender/)).toBeInTheDocument();
+		expect(screen.getByText(/Lavender held/)).toBeInTheDocument();
 	});
 
 	it("turns the screen red on a death and keeps the gate's colour on a summit", () => {
@@ -169,8 +169,8 @@ describe("RunOverScreen", () => {
 		render(<RunOverScreen {...kantoRunSummit()} />);
 
 		expect(
-			screen.getByRole("heading", { level: 1, name: SUMMIT_TITLE })
+			screen.getByRole("heading", { name: SUMMIT_TITLE })
 		).toBeInTheDocument();
-		expect(screen.getByText(/summited/)).toBeInTheDocument();
+		expect(screen.getByText(/every gate held/)).toBeInTheDocument();
 	});
 });

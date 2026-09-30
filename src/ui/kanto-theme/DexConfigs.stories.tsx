@@ -3,14 +3,14 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
-	DEX_CARDS_OPEN,
-	discloseAll,
-	disclosedIn,
-	toggleDisclosure,
-} from "~/shared/lib/disclosure";
-import { dexConfigGroups, dexConfigsProps } from "~/test/dexRegistry.factory";
+	dexConfigCards,
+	dexConfigDetail,
+	dexConfigFilters,
+	dexConfigRow,
+	dexConfigsProps,
+} from "~/test/dexRegistry.factory";
 
-import { DexConfigs, type DexWeightGroup } from "./DexConfigs.ui";
+import { DexConfigs, type DexConfigCard } from "./DexConfigs.ui";
 import { Screen } from "./Screen.ui";
 
 const meta: Meta<typeof DexConfigs> = {
@@ -29,84 +29,91 @@ export default meta;
 
 type Story = StoryObj<typeof DexConfigs>;
 
-const [heavy, light] = dexConfigGroups;
+const ALL = "all";
 
-const cardNamed = (name: string) => {
-	const card = [...heavy.chips, ...light.chips].find(
-		(candidate) => candidate.name === name
-	);
+const cardNamed = (name: string): DexConfigCard => {
+	const card = dexConfigCards.find((candidate) => candidate.name === name);
 	if (card === undefined) throw new Error(`no fixture card named ${name}`);
 	return card;
 };
 
-const lockedCard = () => {
-	const card = light.chips.find((candidate) => candidate.locked === true);
-	if (card === undefined) throw new Error("no locked fixture card");
+const cardWithId = (id: string): DexConfigCard => {
+	const card = dexConfigCards.find((candidate) => candidate.id === id);
+	if (card === undefined) throw new Error(`no fixture card ${id}`);
 	return card;
 };
 
-const groupOf = (
-	group: DexWeightGroup,
-	chips: DexWeightGroup["chips"]
-): DexWeightGroup => ({ ...group, chips });
+const slotsOf = (card: DexConfigCard) => card.slots ?? 1;
 
-const Tab = ({ groups }: { groups: readonly DexWeightGroup[] }) => {
-	const [flips, setFlips] = useState<ReadonlySet<string>>(new Set());
+const keptBy = (filter: string) =>
+	filter === ALL
+		? dexConfigCards
+		: dexConfigCards.filter((card) => String(slotsOf(card)) === filter);
 
-	const ids = groups.flatMap((group) => group.chips.map((card) => card.id));
-	const open = disclosedIn(ids, flips, DEX_CARDS_OPEN);
+const Tab = ({ start }: { start: DexConfigCard }) => {
+	const [filter, setFilter] = useState(ALL);
+	const [pick, setPick] = useState(start.id);
+
+	const shown = keptBy(filter);
+	const picked = shown.find((card) => card.id === pick) ?? shown[0];
 
 	return (
 		<DexConfigs
-			{...dexConfigsProps({ groups })}
-			openInfo={open}
-			onToggleInfo={(id) => setFlips(toggleDisclosure(flips, id))}
-			onToggleAll={() =>
-				setFlips(discloseAll(ids, open.size < ids.length, DEX_CARDS_OPEN))
-			}
+			{...dexConfigsProps({
+				filters: dexConfigFilters(),
+				filter,
+				rows: shown.map(dexConfigRow),
+				selectedId: picked === undefined ? null : picked.id,
+				detail: picked === undefined ? null : dexConfigDetail(picked),
+			})}
+			onSelect={setPick}
+			onFilter={setFilter}
 		/>
 	);
 };
 
-export const Collapsed: Story = {
-	render: () => <Tab groups={dexConfigGroups} />,
-};
-
 export const GrantedWithLadder: Story = {
-	render: () => <Tab groups={[groupOf(light, [cardNamed(".js")])]} />,
+	render: () => <Tab start={cardNamed(".js")} />,
 };
 
 export const GrantedFlat: Story = {
-	render: () => <Tab groups={[groupOf(light, [cardNamed("ESLint")])]} />,
+	render: () => <Tab start={cardNamed("ESLint")} />,
 };
 
 export const Earned: Story = {
-	render: () => (
-		<Tab groups={[groupOf(heavy, [cardNamed("Regression Test")])]} />
-	),
+	render: () => <Tab start={cardNamed("Regression Test")} />,
 };
 
 export const Met: Story = {
-	render: () => (
-		<Tab groups={[groupOf(heavy, [cardNamed("Planning Poker")])]} />
-	),
+	render: () => <Tab start={cardNamed("Planning Poker")} />,
 };
 
 export const Locked: Story = {
-	render: () => <Tab groups={[groupOf(light, [lockedCard()])]} />,
+	render: () => <Tab start={cardWithId("lock")} />,
 };
 
-export const EveryStateOpen: Story = {
+export const Narrowed: Story = {
 	render: () => (
 		<DexConfigs
-			{...dexConfigsProps()}
-			openInfo={
-				new Set(
-					dexConfigGroups.flatMap((group) => group.chips.map((card) => card.id))
-				)
-			}
-			onToggleInfo={() => {}}
-			onToggleAll={() => {}}
+			{...dexConfigsProps({
+				filter: "1",
+				rows: keptBy("1").map(dexConfigRow),
+				selectedId: "html",
+				detail: dexConfigDetail(cardWithId("html")),
+			})}
+		/>
+	),
+};
+
+export const NothingAtThisWeight: Story = {
+	render: () => (
+		<DexConfigs
+			{...dexConfigsProps({
+				filter: "8",
+				rows: [],
+				selectedId: null,
+				detail: null,
+			})}
 		/>
 	),
 };

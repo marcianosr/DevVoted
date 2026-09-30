@@ -5,6 +5,8 @@
 Accepted — 2026-09-29 (Marciano, DVTD-9rw9). Reverses DVTD-4nkm's "a tap never
 opens a popup", for hover only. Replaces the click-opens-a-dialog plan from
 2026-09-28. Replaces [ADR-125](125-a-player-has-one-page-and-one-card.md) D6.
+D1 and D5 amended by [ADR-150](150-the-player-card-wears-the-players-look.md): the
+card wears the player's look and the standing has one shape.
 
 ## Context
 

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { runActionSchema } from "~/modules/run/run/application/run.validation";
+import {
+	runActionSchema,
+	warmBootPickSchema,
+} from "~/modules/run/run/application/run.validation";
 
 describe("runActionSchema", () => {
 	it("accepts every engine action shape", () => {
@@ -103,5 +106,40 @@ describe("the band a promise names", () => {
 		expect(runActionSchema.safeParse({ type: "commit-band" }).success).toBe(
 			false
 		);
+	});
+});
+
+describe("warmBootPickSchema (ADR-153)", () => {
+	it("refuses a warm boot off the wire: the server mints it", () => {
+		expect(
+			runActionSchema.safeParse({
+				type: "warm-boot",
+				storageKb: 256,
+				serviceIds: [],
+				archiveBytes: 0,
+			}).success
+		).toBe(false);
+	});
+
+	it("takes a rung and roster ids, or nothing at all", () => {
+		expect(
+			warmBootPickSchema.safeParse({
+				bootCacheRung: 1,
+				serviceIds: ["extend", "pin"],
+			}).success
+		).toBe(true);
+		expect(warmBootPickSchema.safeParse({ serviceIds: [] }).success).toBe(true);
+	});
+
+	it("rejects a rung past the ladder, an unknown id and a smuggled grant", () => {
+		expect(
+			warmBootPickSchema.safeParse({ bootCacheRung: 3, serviceIds: [] }).success
+		).toBe(false);
+		expect(
+			warmBootPickSchema.safeParse({ serviceIds: ["upgrade"] }).success
+		).toBe(false);
+		expect(
+			warmBootPickSchema.safeParse({ serviceIds: [], storageKb: 999 }).success
+		).toBe(false);
 	});
 });

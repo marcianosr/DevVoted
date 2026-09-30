@@ -97,7 +97,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("ends the run when the peel takes the whole build", () => {
-		const base = started(["unit-tests", "eslint"]);
+		const base = started(["unit-tests", "html"]);
 		const state = failGate({
 			...base,
 			gatesCleared: 1,
@@ -131,7 +131,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("spares a one-config build at the Pallet gate (ADR-057)", () => {
-		const base = started(["unit-tests", "eslint"]);
+		const base = started(["unit-tests", "html"]);
 		const state = failGate({
 			...base,
 			build: { ...base.build, configs: base.build.configs.slice(0, 1) },
@@ -155,13 +155,13 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 	});
 
 	it("refuses the sell that would empty the build", () => {
-		let state = started(["eslint"]);
+		let state = started(["html"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		const oneConfig = {
 			...state,
-			build: { ...state.build, configs: [CONFIGS.eslint] },
+			build: { ...state.build, configs: [CONFIGS.html] },
 		};
-		expect(runReducer(oneConfig, { type: "sell", configId: "eslint" })).toBe(
+		expect(runReducer(oneConfig, { type: "sell", configId: "html" })).toBe(
 			oneConfig
 		);
 	});
@@ -169,7 +169,7 @@ describe("failure model (ADR-037: a miss peels, then re-runs the loop)", () => {
 
 describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 	const awaitingStrip = (quota: number): RunState => {
-		let state = started(["unit-tests", "eslint"]);
+		let state = started(["unit-tests", "html"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		return {
 			...state,
@@ -180,12 +180,12 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 	it("routes the peeled build through the shop before the replay", () => {
 		let state = awaitingStrip(1);
-		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
+		state = runReducer(state, { type: "strip", configIds: ["html"] });
 		expect(state.peelSlotsRemaining).toBe(0);
 		state = runReducer(state, { type: "resume-climb" });
 		expect(state.status).toBe("rewarding");
 		expect(state.redoGate).toBe(0);
-		expect(configIds(state)).not.toContain("eslint");
+		expect(configIds(state)).not.toContain("html");
 		state = runReducer(state, { type: "finish-reward" });
 		expect(state.status).toBe("answering");
 		expect(state.gatesCleared).toBe(0);
@@ -193,7 +193,7 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 	it("ignores a strip once the quota is met", () => {
 		let state = awaitingStrip(1);
-		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
+		state = runReducer(state, { type: "strip", configIds: ["html"] });
 		const afterQuota = runReducer(state, { type: "strip", configIds: ["ts"] });
 		expect(afterQuota).toBe(state);
 	});
@@ -201,10 +201,10 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 	it("keeps the surplus config when one press overshoots the quota", () => {
 		const state = runReducer(awaitingStrip(1), {
 			type: "strip",
-			configIds: ["eslint", "unit-tests"],
+			configIds: ["html", "unit-tests"],
 		});
 		expect(state.peelSlotsRemaining).toBe(0);
-		expect(configIds(state)).not.toContain("eslint");
+		expect(configIds(state)).not.toContain("html");
 		expect(configIds(state)).toContain("unit-tests");
 		expect(state.configsLost).toBe(1);
 	});
@@ -219,7 +219,7 @@ describe("the strip plumbing (strip audits, DVTD-gre4)", () => {
 
 describe("configs lost (DVTD-wii3: a run statistic, currently unread)", () => {
 	const awaitingStrip = (quota: number): RunState => {
-		let state = started(["unit-tests", "eslint"]);
+		let state = started(["unit-tests", "html"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		return {
 			...state,
@@ -231,14 +231,14 @@ describe("configs lost (DVTD-wii3: a run statistic, currently unread)", () => {
 	it("counts a peeled config as lost", () => {
 		const state = runReducer(awaitingStrip(1), {
 			type: "strip",
-			configIds: ["eslint"],
+			configIds: ["html"],
 		});
 		expect(state.configsLost).toBe(1);
 	});
 
 	it("accumulates across strips on top of an earlier tally", () => {
 		let state: RunState = { ...awaitingStrip(8), configsLost: 3 };
-		state = runReducer(state, { type: "strip", configIds: ["eslint"] });
+		state = runReducer(state, { type: "strip", configIds: ["html"] });
 		state = runReducer(state, { type: "strip", configIds: ["ts"] });
 		expect(state.configsLost).toBe(5);
 	});
@@ -264,7 +264,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 		quota: number,
 		storage = 0
 	): RunState => {
-		const base = started(["unit-tests", "eslint"]);
+		const base = started(["unit-tests", "html"]);
 		return {
 			...base,
 			build: { ...base.build, configs },
@@ -385,7 +385,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 	});
 
 	it("pays nothing on a fatal miss, which never reaches the strip screen", () => {
-		const base = started(["unit-tests", "eslint"]);
+		const base = started(["unit-tests", "html"]);
 		const state = failGate({
 			...base,
 			gatesCleared: 1,
@@ -396,7 +396,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 	});
 
 	it("cannot be in the build a peel kills", () => {
-		const base = started(["unit-tests", "eslint"]);
+		const base = started(["unit-tests", "html"]);
 		const state = failGate({
 			...base,
 			gatesCleared: 12,
@@ -408,7 +408,7 @@ describe("Garbage Collection (DVTD-2k9m: a dropped config pays its sell value)",
 
 describe("settling the peel from storage (DVTD-cx1p)", () => {
 	const held = (quota: number, storage: number): RunState => {
-		let state = started(["unit-tests", "eslint"]);
+		let state = started(["unit-tests", "html"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, false);
 		return {
 			...state,
@@ -431,15 +431,15 @@ describe("settling the peel from storage (DVTD-cx1p)", () => {
 	it("covers only what the dropped configs left owed", () => {
 		const build = held(3, 10 * PEEL_KB_PER_SLOT);
 		const freed = slotsOf(
-			build.build.configs.find((config) => config.id === "eslint")!
+			build.build.configs.find((config) => config.id === "html")!
 		);
-		const state = settle(build, ["eslint"]);
+		const state = settle(build, ["html"]);
 		expect(state.peelSlotsRemaining).toBe(0);
 		expect(state.storage).toBe((10 - (3 - freed)) * PEEL_KB_PER_SLOT);
 	});
 
 	it("charges nothing when the drops already settled the quota", () => {
-		const state = settle(held(1, 10 * PEEL_KB_PER_SLOT), ["eslint"]);
+		const state = settle(held(1, 10 * PEEL_KB_PER_SLOT), ["html"]);
 		expect(state.peelSlotsRemaining).toBe(0);
 		expect(state.storage).toBe(10 * PEEL_KB_PER_SLOT);
 	});
@@ -459,7 +459,7 @@ describe("settling the peel from storage (DVTD-cx1p)", () => {
 	it("leaves the balance alone when storage was not offered", () => {
 		const state = runReducer(held(2, 10 * PEEL_KB_PER_SLOT), {
 			type: "strip",
-			configIds: ["eslint"],
+			configIds: ["html"],
 		});
 		expect(state.storage).toBe(10 * PEEL_KB_PER_SLOT);
 	});

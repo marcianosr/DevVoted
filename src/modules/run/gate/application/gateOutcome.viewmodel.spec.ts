@@ -7,6 +7,7 @@ import {
 	gateOutcomePropsFor,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
@@ -15,30 +16,47 @@ const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };
 
 describe("closedBarFor", () => {
 	it("leaves a genuine clear's reading untouched", () => {
-		expect(closedBarFor("cleared", GATE_4_LADDER, 30).held).toBe(30);
-		expect(closedBarFor("cleared", GATE_0_LADDER, 100).held).toBe(100);
+		expect(closedBarFor("cleared", 4, GATE_4_LADDER, 30).held).toBe(30);
+		expect(closedBarFor("cleared", 0, GATE_0_LADDER, 100).held).toBe(100);
 	});
 
 	it("never lifts a flawless opening gate onto its healthy line", () => {
-		expect(closedBarFor("cleared", GATE_0_LADDER, 100).held).not.toBe(
+		expect(closedBarFor("cleared", 0, GATE_0_LADDER, 100).held).not.toBe(
 			GATE_0_LADDER.healthy
 		);
 	});
 
 	it("holds a missed gate inside the band its verdict names", () => {
-		expect(closedBarFor("held", GATE_4_LADDER, 30).held).toBeLessThan(
+		expect(closedBarFor("held", 4, GATE_4_LADDER, 30).held).toBeLessThan(
 			GATE_4_LADDER.ok
 		);
-		expect(closedBarFor("held", GATE_4_LADDER, 30, "band").held).toBeLessThan(
-			GATE_4_LADDER.ok
-		);
-		expect(closedBarFor("fatal", GATE_4_LADDER, 30).held).toBeLessThan(
+		expect(
+			closedBarFor("held", 4, GATE_4_LADDER, 30, "band").held
+		).toBeLessThan(GATE_4_LADDER.ok);
+		expect(closedBarFor("fatal", 4, GATE_4_LADDER, 30).held).toBeLessThan(
 			GATE_4_LADDER.floor
 		);
 	});
 
-	it("keeps the honest reading when the floor rule held the gate, not the meter", () => {
-		expect(closedBarFor("held", GATE_4_LADDER, 30, "floor").held).toBe(30);
+	it("keeps an OK reading on a Champion held by the band, since OK is not enough there", () => {
+		const onOk = GATE_4_LADDER.ok + 5;
+
+		expect(
+			closedBarFor("held", VICTORY_GATE, GATE_4_LADDER, onOk, "band").held
+		).toBe(onOk);
+	});
+
+	it("lifts a won Champion onto its healthy line, never onto OK", () => {
+		expect(
+			closedBarFor("cleared", VICTORY_GATE, GATE_4_LADDER, GATE_4_LADDER.ok)
+				.held
+		).toBe(GATE_4_LADDER.healthy);
+	});
+
+	it("keeps the honest reading when the window held the gate, not the meter", () => {
+		expect(closedBarFor("held", 4, GATE_4_LADDER, 30, "unscored").held).toBe(
+			30
+		);
 	});
 });
 
@@ -75,18 +93,35 @@ const frameOf = (
 const CLEARED = 30;
 const SHORT = 10;
 
-const heldByFloor = (): GateOutcomeFrame => ({
+const heldByUnscored = (): GateOutcomeFrame => ({
 	...frameOf([], CLEARED),
-	heldBy: "floor",
+	heldBy: "unscored",
+	scoredUnits: 1,
 	answers: [
 		answerAt("correct"),
 		...Array.from({ length: 4 }, () => answerAt("wrong")),
 	],
 });
 
-describe("a gate the floor rule held on a good meter (ADR-094)", () => {
+describe("a Champion that closed on OK", () => {
+	const championOnOk = (): GateOutcomeFrame => ({
+		...frameOf([], GATE_4_LADDER.ok + 5),
+		gate: VICTORY_GATE,
+		heldBy: "band",
+	});
+
+	it("reads as a hold with the peel choice, not as a summit", () => {
+		const props = gateOutcomePropsFor(championOnOk());
+
+		expect(props.header.title).toBe("Champion holds");
+		expect(props.tail?.choice).toBeDefined();
+		expect(props.tail?.ending).toBeUndefined();
+	});
+});
+
+describe("a gate the window minimum held on a good meter", () => {
 	it("reads as a hold with the peel choice, whatever the bar says", () => {
-		const props = gateOutcomePropsFor(heldByFloor());
+		const props = gateOutcomePropsFor(heldByUnscored());
 
 		expect(props.header.title).toBe("Lavender holds");
 		expect(props.tail?.choice).toBeDefined();
@@ -101,7 +136,7 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 	};
 
 	const peeling = (chosen: readonly string[]): GateOutcomeFrame => ({
-		...heldByFloor(),
+		...heldByUnscored(),
 		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
 		chosen,
 	});
@@ -133,23 +168,30 @@ describe("a gate the floor rule held on a good meter (ADR-094)", () => {
 		);
 	});
 
-	it("says the day came up short, not the meter", () => {
-		const props = gateOutcomePropsFor(heldByFloor());
+	it("says the window came up short, not the meter", () => {
+		const props = gateOutcomePropsFor(heldByUnscored());
 
-		expect(props.header.subtitle).toContain("1 of 5 right, 2 needed");
-		expect(props.header.subtitle).not.toContain("the meter fell short");
-		expect(props.coverage.badges?.[1]?.label).toBe("1 of 5 right");
+		expect(props.header.note).toContain("scored 1 of 2 units");
+		expect(props.header.note).not.toContain("the meter fell short");
+		expect(props.coverageHold).toBe("scored 1 of 2 units");
+	});
+
+	it("keeps the meter's own honest band beside the reason it held", () => {
+		const props = gateOutcomePropsFor(heldByUnscored());
+
+		expect(props.outcome).toBe("shaky");
+		expect(props.bar.held).toBe(CLEARED);
 	});
 
 	it("leaves the bar reading where the run actually stands", () => {
-		expect(gateOutcomePropsFor(heldByFloor()).bar.held).toBe(CLEARED);
+		expect(gateOutcomePropsFor(heldByUnscored()).bar.held).toBe(CLEARED);
 	});
 
-	it("still states what the gate itself gained, beside the shortfall", () => {
-		const badges = gateOutcomePropsFor(heldByFloor()).coverage.badges;
+	it("states the gate's gain with no coverage shortfall, since there is none", () => {
+		const badges = gateOutcomePropsFor(heldByUnscored()).coverage.badges;
 
 		expect(badges?.[0]?.label).toMatch(/^[+-]\d/);
-		expect(badges).toHaveLength(2);
+		expect(badges).toHaveLength(1);
 	});
 });
 
@@ -181,21 +223,30 @@ describe("the By category panel", () => {
 
 describe("gateOutcomePropsFor and the swatch", () => {
 	it("hands the swatch to a flawless window even where the gate only holds", () => {
-		const header = gateOutcomePropsFor(frameOf([GATE], SHORT)).header;
+		const props = gateOutcomePropsFor(frameOf([GATE], SHORT));
 
-		expect(header.earned).toBe(true);
-		expect(header.chips).toContainEqual(
-			expect.objectContaining({ label: "swatch earned" })
-		);
+		expect(props.header.swatchState).toBe("discovered");
+		expect(props.earned?.rows.map((row) => row.name)).toEqual([
+			"Lavender swatch earned",
+		]);
 	});
 
 	it("withholds the swatch from a clear the window did not earn", () => {
-		const header = gateOutcomePropsFor(frameOf([], CLEARED)).header;
+		const props = gateOutcomePropsFor(frameOf([], CLEARED));
 
-		expect(header.earned).toBe(false);
-		expect(header.chips).not.toContainEqual(
-			expect.objectContaining({ label: "swatch earned" })
-		);
+		expect(props.header.swatchState).toBe("current");
+		expect(props.earned?.rows.map((row) => row.name)).toEqual([
+			"Lavender swatch missed",
+		]);
+	});
+
+	it("states the swatch only in the Earned panel, never as a header line", () => {
+		expect(
+			gateOutcomePropsFor(frameOf([], CLEARED)).header.note
+		).toBeUndefined();
+		expect(
+			gateOutcomePropsFor(frameOf([GATE], CLEARED)).header.note
+		).toBeUndefined();
 	});
 
 	it("never says 'earned' in a headline that only reports the clear", () => {
@@ -234,7 +285,7 @@ describe("the storage ledger names Database's transaction", () => {
 	it("gives a committed transaction its own row on a clear", () => {
 		const row = rowNamed(
 			{ ...frameOf([], CLEARED), escrowCommittedKb: 16 },
-			"transaction committed"
+			"Transaction committed"
 		);
 
 		expect(row?.figures).toContainEqual(
@@ -262,10 +313,10 @@ describe("the storage ledger names Database's transaction", () => {
 	it("names a rolled-back transaction on a held gate, and what it would have paid", () => {
 		const row = rowNamed(
 			{ ...frameOf([], SHORT), escrowRolledBackKb: 40 },
-			"transaction rolled back"
+			"Transaction rolled back"
 		);
 
-		expect(row?.detail).toBe("· 80 KB unpaid");
+		expect(row?.notes).toEqual(["80 KB unpaid"]);
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "nothing paid" })
 		);
@@ -283,10 +334,10 @@ describe("the storage ledger names Database's transaction", () => {
 
 	it("draws no transaction row for a build without Database", () => {
 		expect(labelsOf(frameOf([], CLEARED))).not.toContain(
-			"transaction committed"
+			"Transaction committed"
 		);
 		expect(labelsOf(frameOf([], SHORT))).not.toContain(
-			"transaction rolled back"
+			"Transaction rolled back"
 		);
 	});
 });
@@ -319,18 +370,29 @@ describe("a clear whose parts are known", () => {
 	});
 
 	it("names the surplus sold past the full bar", () => {
-		expect(rowNamed(itemised(), "surplus")?.figures).toContainEqual(
+		expect(rowNamed(itemised(), "Surplus")?.figures).toContainEqual(
 			expect.objectContaining({ label: "+53 KB" })
 		);
 	});
 
-	it("counts every payout row in the strip", () => {
-		expect(gateOutcomePropsFor(itemised()).storage.summary).toBe(
-			"3 payouts, 0 bills"
-		);
+	it("counts every payout row in the strip and leaves out bills it never sent", () => {
+		expect(gateOutcomePropsFor(itemised()).storage.summary).toBe("3 payouts");
 	});
 
-	it("reads the balance it moved from, landed on, and the step between", () => {
+	it("names the bill beside the payouts when the build sent one", () => {
+		expect(
+			gateOutcomePropsFor({ ...itemised(), billKb: 8 }).storage.summary
+		).toBe("3 payouts, 1 bill");
+	});
+
+	it("states the bill once, as its figure, with no rate note under the row", () => {
+		const row = rowNamed({ ...itemised(), billKb: 8 }, "Storage plan");
+
+		expect(row?.notes).toBeUndefined();
+		expect(row?.figures).toEqual([{ label: "−8 KB", color: "cinnabar" }]);
+	});
+
+	it("reads the balance it moved from and landed on, leaving the step to the fold's badge", () => {
 		const row = rowNamed(itemised(), STORAGE_BALANCE);
 
 		expect(row?.total).toBe(true);
@@ -340,15 +402,21 @@ describe("a clear whose parts are known", () => {
 		expect(row?.figures?.[1]).toEqual(
 			expect.objectContaining({ label: expect.stringContaining("KB") })
 		);
-		expect(row?.figures?.[2]).toEqual(
-			expect.objectContaining({ label: expect.stringMatching(/^[+-]/) })
-		);
+		expect(row?.figures).toHaveLength(2);
 	});
 
 	it("badges the landing rather than spelling it in a bare span", () => {
 		const row = rowNamed(itemised(), STORAGE_BALANCE);
 
 		expect(row?.figures?.[1]).not.toHaveProperty("tone");
+	});
+
+	it("badges the landing green with the floppy, like the header balance", () => {
+		const row = rowNamed(itemised(), STORAGE_BALANCE);
+
+		expect(row?.figures?.[1]).toEqual(
+			expect.objectContaining({ color: "viridian", icon: "floppy" })
+		);
 	});
 
 	it("keeps the whole payout on the gate's row when the parts are unknown", () => {
@@ -372,14 +440,14 @@ describe("a clear whose parts are known", () => {
 describe("a caught gate reads as a hold that owes its reason", () => {
 	const caught = (): GateOutcomeFrame => ({
 		...frameOf([], SHORT),
-		bar: closedBarFor("held", GATE_4_LADDER, 2, "catch"),
+		bar: closedBarFor("held", 4, GATE_4_LADDER, 2, "catch"),
 		heldBy: "catch",
 		caughtFatalBy: "Try/Catch",
 	});
 
 	it("keeps the sub-floor reading the run actually had", () => {
-		expect(closedBarFor("held", GATE_4_LADDER, 2, "catch").held).toBe(2);
-		expect(closedBarFor("held", GATE_4_LADDER, 2, "band").held).toBe(
+		expect(closedBarFor("held", 4, GATE_4_LADDER, 2, "catch").held).toBe(2);
+		expect(closedBarFor("held", 4, GATE_4_LADDER, 2, "band").held).toBe(
 			GATE_4_LADDER.floor
 		);
 	});
@@ -388,19 +456,19 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 		expect(gateOutcomePropsFor(caught()).header.title).toBe("Lavender holds");
 	});
 
-	it("names the catch in the subtitle rather than leaving the hold unexplained", () => {
-		expect(gateOutcomePropsFor(caught()).header.subtitle).toContain("caught");
+	it("names the catch in the note rather than leaving the hold unexplained", () => {
+		expect(gateOutcomePropsFor(caught()).header.note).toContain("caught");
 	});
 
 	it("chips what spent itself saving the run", () => {
-		expect(gateOutcomePropsFor(caught()).header.chips).toContainEqual(
+		expect(gateOutcomePropsFor(caught()).header.badges).toContainEqual(
 			expect.objectContaining({ label: "Try/Catch caught" })
 		);
 	});
 
 	it("chips nothing on a hold that nothing caught", () => {
 		expect(
-			gateOutcomePropsFor(frameOf([], SHORT)).header.chips
+			gateOutcomePropsFor(frameOf([], SHORT)).header.badges
 		).not.toContainEqual(
 			expect.objectContaining({ label: "Try/Catch caught" })
 		);
@@ -418,7 +486,7 @@ describe("what surviving a rival's audits paid, and the heldAudit the clear arme
 		gateOutcomePropsFor(frame).storage.rows.find((row) => row.label === label);
 
 	it("gives the survival bonus its own row and keeps the gate's row to the clear", () => {
-		expect(rowNamed(survived(), "audits survived")?.figures).toContainEqual(
+		expect(rowNamed(survived(), "Audits survived")?.figures).toContainEqual(
 			expect.objectContaining({ label: "+64 KB" })
 		);
 		expect(rowNamed(survived(), "Gate cleared")?.figures).toContainEqual(
@@ -427,13 +495,13 @@ describe("what surviving a rival's audits paid, and the heldAudit the clear arme
 	});
 
 	it("draws no survival row on a gate nobody attacked", () => {
-		expect(rowNamed(frameOf([], CLEARED), "audits survived")).toBeUndefined();
+		expect(rowNamed(frameOf([], CLEARED), "Audits survived")).toBeUndefined();
 	});
 
 	it("chips nothing earned: a clear is paid in KB, never in ammunition", () => {
 		const props = gateOutcomePropsFor(frameOf([], CLEARED));
 
-		expect(props.header.chips).not.toContainEqual(
+		expect(props.header.badges).not.toContainEqual(
 			expect.objectContaining({ label: "audit earned" })
 		);
 	});

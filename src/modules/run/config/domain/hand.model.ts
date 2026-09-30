@@ -11,7 +11,7 @@ export const STARTER_POOL: readonly Config[] = [
 	CONFIGS.js,
 	CONFIGS.ts,
 	CONFIGS.css,
-	CONFIGS.eslint,
+	CONFIGS.linter,
 	CONFIGS.unitTests,
 	CONFIGS.codeCoverage,
 	CONFIGS.indexedDb,

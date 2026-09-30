@@ -10,7 +10,7 @@ import {
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
 import {
-	FLOOR_CORRECT,
+	MIN_WINDOW_UNITS,
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import {
@@ -214,14 +214,14 @@ describe("the gate settling an estimate", () => {
 		const GATE = 4;
 		const SHORT_OF_OK = 3;
 		const underTheLine: RunState = {
-			...answering(FLOOR_CORRECT),
+			...answering(MIN_WINDOW_UNITS),
 			gatesCleared: GATE,
 			bankedUnits: okAt(GATE) * scoringSlotsAt(GATE) - SHORT_OF_OK,
 		};
-		const withBet = answerGate(underTheLine, FLOOR_CORRECT);
+		const withBet = answerGate(underTheLine, MIN_WINDOW_UNITS);
 		const withoutBet = answerGate(
 			{ ...underTheLine, estimatedCorrect: undefined },
-			FLOOR_CORRECT
+			MIN_WINDOW_UNITS
 		);
 
 		expect(withBet.status).toBe("rewarding");

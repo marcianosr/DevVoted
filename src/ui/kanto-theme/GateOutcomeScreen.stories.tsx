@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	kantoGateDanger,
 	kantoGateHealthy,
-	kantoGateHeldByFloor,
+	kantoGateHeldUnscored,
 	kantoGateOk,
 	kantoGateOutcomeAt,
 	kantoGateOutcomeBuild,
@@ -47,7 +47,7 @@ export const Shaky: Story = { args: kantoGateShaky() };
 
 export const ShakyFunded: Story = { args: kantoGateShakyFunded() };
 
-export const HeldByFloor: Story = { args: kantoGateHeldByFloor() };
+export const HeldUnscored: Story = { args: kantoGateHeldUnscored() };
 
 export const ShakyPartlyPaid: Story = { args: kantoGateShakyPicking() };
 

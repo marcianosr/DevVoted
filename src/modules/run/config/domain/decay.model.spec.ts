@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { decayOnClear } from "~/modules/run/config/domain/decay.model";
+import {
+	clearsUntilDeleted,
+	decayOnClear,
+} from "~/modules/run/config/domain/decay.model";
 
 describe("decayOnClear", () => {
 	it("fades a decaying config's multiplier by its step", () => {
@@ -57,5 +60,21 @@ describe("decayOnClear", () => {
 			build = decayOnClear(build).configs;
 		}
 		expect(ladder).toEqual([3, 2.5, 2, 1.5, 1, 0.5]);
+	});
+});
+
+describe("clearsUntilDeleted", () => {
+	it("counts six clears for a fresh ×3 fading ×0.5", () => {
+		expect(clearsUntilDeleted(CONFIGS.deprecated)).toBe(6);
+	});
+
+	it("counts one clear once the multiplier sits at the last step", () => {
+		expect(
+			clearsUntilDeleted({ ...CONFIGS.deprecated, coverageMultiplier: 0.5 })
+		).toBe(1);
+	});
+
+	it("returns undefined for a config that never decays", () => {
+		expect(clearsUntilDeleted(CONFIGS.js)).toBeUndefined();
 	});
 });

@@ -21,7 +21,7 @@ const renderOwn = (props: Partial<Parameters<typeof ProfileScreen>[0]> = {}) =>
 			tabs={TABS}
 			activeId="polls"
 			onSelect={noop}
-			theme="cerulean"
+			theme="pallet"
 			archive="8.2 MB archive"
 			{...props}
 		>
@@ -55,12 +55,12 @@ describe("ProfileScreen", () => {
 		expect(screen.getByRole("tabpanel")).toHaveTextContent("the polls panel");
 	});
 
-	it("wears the colour of the tab being read", () => {
-		const { container } = renderOwn({ theme: "lavender" });
+	it("wears the swatch it was handed", () => {
+		const { container } = renderOwn({ theme: "volcano" });
 
 		expect(container.querySelector("section")).toHaveAttribute(
-			"data-screen-theme",
-			"lavender"
+			"data-gate-theme",
+			"volcano"
 		);
 	});
 
@@ -79,7 +79,7 @@ describe("ProfileScreen, seen by a visitor", () => {
 		render(
 			<ProfileScreen
 				card={CARD}
-				theme="cerulean"
+				theme="pallet"
 				sections={<p>9 of 96 polls</p>}
 			/>
 		);

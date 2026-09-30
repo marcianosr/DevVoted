@@ -9,6 +9,7 @@ import {
 	type PlayerCardView,
 	playerCardFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
+import { DEFAULT_PROFILE_THEME } from "~/modules/account/profile/domain/profileTheme.model";
 import { profilePathFor } from "~/shared/lib/profilePath";
 import { kbLabel } from "~/shared/lib/storage";
 import {
@@ -150,7 +151,8 @@ export const playerCardViewOf = (
 	displayName: entry.displayName,
 	...(entry.photoUrl == null ? {} : { photoUrl: entry.photoUrl }),
 	...(entry.borderUrl == null ? {} : { borderUrl: entry.borderUrl }),
-	...(entry.title === undefined ? {} : { title: entry.title }),
+	titles: entry.titles ?? [],
+	theme: entry.theme ?? DEFAULT_PROFILE_THEME,
 	...(entry.build === undefined
 		? {}
 		: {

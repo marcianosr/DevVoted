@@ -1,5 +1,5 @@
 import type { CategoryCode } from "~/shared/lib/categories";
-import { getCategoryMetadata } from "~/shared/lib/categories";
+import { CATEGORY_CODES, getCategoryMetadata } from "~/shared/lib/categories";
 
 export type AbArm = "coverage" | "storage";
 
@@ -54,6 +54,7 @@ export type Config = {
 	readonly catchesFatal?: boolean;
 	readonly commitsBand?: boolean;
 	readonly submitsCrowdPick?: boolean;
+	readonly revealsOutageTargets?: boolean;
 };
 
 export const minifiedMultiplier = (
@@ -132,7 +133,10 @@ export const isUpgradable = (config: Config): boolean => {
 		config.storageInterestPct !== undefined ||
 		config.peeksCommunitySplit === true ||
 		config.reordersGatePolls === true ||
-		config.autoUpgradeAfterCorrect !== undefined;
+		config.autoUpgradeAfterCorrect !== undefined ||
+		config.coverageAdd !== undefined ||
+		config.revealsUpcomingCategories === true ||
+		config.eliminatesWrongOptionsFor !== undefined;
 	return upgradable && (config.level ?? 1) < maxLevelOf(config);
 };
 
@@ -161,6 +165,25 @@ const ANSWER_TYPE_LEVEL = 2;
 export const showsAnswerTypes = (config: Config): boolean =>
 	(config.level ?? 1) >= ANSWER_TYPE_LEVEL;
 
+const POLL_SHAPE_LEVEL = 2;
+
+export const showsPollShape = (config: Config): boolean =>
+	(config.level ?? 1) >= POLL_SHAPE_LEVEL;
+
+const LINT_RESET_LEVEL = 2;
+
+export const lintResetsEachGate = (config: Config): boolean =>
+	(config.level ?? 1) >= LINT_RESET_LEVEL;
+
+const LINT_HALF_PRICE_LEVEL = 3;
+const HALF_PRICE = 0.5;
+
+export const lintsAtHalfPrice = (config: Config): boolean =>
+	(config.level ?? 1) >= LINT_HALF_PRICE_LEVEL;
+
+export const lintFeeFactorOf = (config: Config): number =>
+	lintsAtHalfPrice(config) ? HALF_PRICE : 1;
+
 export const interestPctOf = (config: Config): number =>
 	minifiedAmount(
 		config,
@@ -172,8 +195,55 @@ export const storageOnClearOf = (config: Config): number | undefined =>
 		? undefined
 		: minifiedAmount(config, config.storageOnClear * (config.level ?? 1));
 
+const HUNDREDTHS = 100;
+
+export const coverageAddOf = (config: Config): number | undefined =>
+	config.coverageAdd === undefined
+		? undefined
+		: minifiedUnits(
+				config,
+				Math.round(config.coverageAdd * (config.level ?? 1) * HUNDREDTHS) /
+					HUNDREDTHS
+			);
+
 const categoryNames = (codes: readonly CategoryCode[]): string =>
 	codes.map((code) => getCategoryMetadata(code).name).join(" / ");
+
+const ANY_POLL = "any poll";
+
+const lintsEveryCategory = (codes: readonly CategoryCode[]): boolean =>
+	CATEGORY_CODES.every((code) => codes.includes(code));
+
+const lintScopeOf = (codes: readonly CategoryCode[]): string =>
+	lintsEveryCategory(codes) ? ANY_POLL : `${categoryNames(codes)} polls`;
+
+const LINT_FEE_RULES = {
+	carries: "a fee that doubles each use and never resets",
+	resets: "a fee that doubles each use and resets each gate",
+	half: "half the fee, doubling each use and resetting each gate",
+} as const;
+
+const LINT_RULE_WORDS = {
+	carries: "fee never resets",
+	resets: "fee resets each gate",
+	half: "half the fee",
+} as const;
+
+type LintFeeRule = keyof typeof LINT_FEE_RULES;
+
+const lintFeeRuleOf = (config: Config): LintFeeRule => {
+	if (lintsAtHalfPrice(config)) return "half";
+	if (lintResetsEachGate(config)) return "resets";
+	return "carries";
+};
+
+const POLL_SHAPE_WORDS = {
+	polls: "categories",
+	shape: "with option counts and answer types",
+} as const;
+
+const pollShapeWordOf = (config: Config): string =>
+	showsPollShape(config) ? POLL_SHAPE_WORDS.shape : POLL_SHAPE_WORDS.polls;
 
 export const describeConfig = (config: Config): string => {
 	if (config.wagersAnswer !== undefined)
@@ -191,7 +261,14 @@ export const describeConfig = (config: Config): string => {
 	if (config.storageOnClear !== undefined)
 		return `+${storageOnClearOf(config)}KB storage on gate clear.`;
 	if (config.eliminatesWrongOptionsFor !== undefined)
-		return `Cross out a wrong answer on ${categoryNames(config.eliminatesWrongOptionsFor)} polls for an escalating fee.`;
+		return `Cross out a wrong answer on ${lintScopeOf(config.eliminatesWrongOptionsFor)} for ${LINT_FEE_RULES[lintFeeRuleOf(config)]}.`;
+	if (config.revealsUpcomingCategories === true)
+		return showsPollShape(config)
+			? "Shows the category, option count and answer type of every poll left this gate, plus all of the next gate's categories."
+			: "Shows the category of every poll left this gate, plus all of the next gate's categories.";
+	const add = coverageAddOf(config);
+	if (add !== undefined)
+		return `Every correct answer pays +${add} units of coverage, flat: no multiplier amplifies it.`;
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls earn ${focusMultiplierOf(config)}× coverage.`;
@@ -254,6 +331,25 @@ export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
 						to: `${focusMultiplierOf(next)}×`,
 					},
 				]),
+		...(config.coverageAdd === undefined
+			? []
+			: [
+					{
+						from: `+${coverageAddOf(config)} units`,
+						to: `+${coverageAddOf(next)} units`,
+					},
+				]),
+		...(config.revealsUpcomingCategories === true
+			? [{ from: pollShapeWordOf(config), to: pollShapeWordOf(next) }]
+			: []),
+		...(config.eliminatesWrongOptionsFor === undefined
+			? []
+			: [
+					{
+						from: LINT_RULE_WORDS[lintFeeRuleOf(config)],
+						to: LINT_RULE_WORDS[lintFeeRuleOf(next)],
+					},
+				]),
 	].filter((change) => change.from !== change.to);
 };
 
@@ -273,11 +369,8 @@ export const headlineFigureOf = (config: Config): ConfigFigure | undefined => {
 			kind: "multiplier",
 			value: minifiedMultiplier(config, config.coverageMultiplier),
 		};
-	if (config.coverageAdd !== undefined)
-		return {
-			kind: "coverage",
-			value: minifiedUnits(config, config.coverageAdd),
-		};
+	const add = coverageAddOf(config);
+	if (add !== undefined) return { kind: "coverage", value: add };
 	if (config.storagePerCorrect !== undefined)
 		return {
 			kind: "kb",
@@ -325,7 +418,13 @@ export const givesOf = (config: Config): string | undefined => {
 	if (config.storageOnClear !== undefined)
 		return `+${storageOnClearOf(config)}KB on clear`;
 	if (config.eliminatesWrongOptionsFor !== undefined)
-		return `Cross out a wrong answer on ${categoryNames(config.eliminatesWrongOptionsFor)} polls`;
+		return `Cross out a wrong answer on ${lintScopeOf(config.eliminatesWrongOptionsFor)}`;
+	if (config.revealsUpcomingCategories === true)
+		return showsPollShape(config)
+			? "The categories, option counts and answer types of this gate's remaining polls, and the next gate's categories"
+			: "The categories of this gate's remaining polls, and the next gate's";
+	const add = coverageAddOf(config);
+	if (add !== undefined) return `+${add} units on every correct answer`;
 	if (!config.focusCategory) return config.gives;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;

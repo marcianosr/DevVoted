@@ -41,7 +41,8 @@ describe("configGroupOf", () => {
 	});
 
 	it("reads a config that reveals or narrows a poll as answer help", () => {
-		expect(configGroupOf(CONFIGS.eslint)).toBe("answerHelp");
+		expect(configGroupOf(CONFIGS.linter)).toBe("answerHelp");
+		expect(configGroupOf(CONFIGS.npmAudit)).toBe("answerHelp");
 		expect(configGroupOf(CONFIGS.telemetry)).toBe("answerHelp");
 		expect(configGroupOf(CONFIGS.prefetch)).toBe("answerHelp");
 	});

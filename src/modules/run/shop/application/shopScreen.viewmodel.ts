@@ -6,13 +6,17 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import {
 	type BuildUpgradeDeal,
-	chipFor,
 	infoFor,
+	nextUpgradeCostOf,
+	refundChipFor,
 	registryUpgradesFor,
 	rollOddsLabel,
 	upgradesFor,
 } from "~/modules/run/config/application/configChip.viewmodel";
-import { offerOddsOf } from "~/modules/run/shop/domain/draft.model";
+import {
+	offerOddsOf,
+	sellRefundIn,
+} from "~/modules/run/shop/domain/draft.model";
 import {
 	type VendorLockChip,
 	vendorChipFor,
@@ -30,10 +34,11 @@ import {
 	auditAt,
 	auditLabelOf,
 } from "~/modules/run/gate/domain/audit.model";
-import { kbLabel } from "~/shared/lib/storage";
+import { kbLabel, formatStorage } from "~/shared/lib/storage";
 
 import type {
 	ChipInstall,
+	ChipQuote,
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
@@ -47,28 +52,49 @@ import {
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
 
 const SHORT_TRAIL = "short";
+const NEW_RUN_WORD = "new run";
+const CARRY_SEPARATOR = "·";
 const CLEARED_TRAIL = "cleared";
 const SHOP_WORD = "Shop";
-const AFTER_INSTALL = "after install";
-const AFTER_INSTALL_COLOR: KantoColor = "vermillion";
+const AFTER_COPY = {
+	install: "after install",
+	upgrade: "after upgrade",
+	uninstall: "after uninstall",
+} as const satisfies Record<ChipQuote, string>;
+
+const SPEND_COLOR: KantoColor = "vermillion";
+const REFUND_COLOR: KantoColor = "viridian";
 
 export const shortfallOf = (priceKb: number, balanceKb: number): string =>
 	`${kbLabel(priceKb - balanceKb)} ${SHORT_TRAIL}`;
+
+export type PointedPrice = { label: string; deltaKb: number };
+
+type PointHandler = (pointed?: PointedPrice) => void;
+
+const quotingOf = (
+	deltas: Partial<Record<ChipQuote, number>>,
+	onPoint?: PointHandler
+) => {
+	if (onPoint === undefined) return {};
+
+	return {
+		onQuote: (quote?: ChipQuote) => {
+			const deltaKb = quote === undefined ? undefined : deltas[quote];
+			if (deltaKb === undefined || quote === undefined) return onPoint();
+			return onPoint({ label: AFTER_COPY[quote], deltaKb });
+		},
+	};
+};
 
 export type OfferDeal = {
 	priceKb: number;
 	affordable: boolean;
 	onInstall?: () => void;
-	onHover?: () => void;
-	onLeave?: () => void;
+	onPoint?: PointHandler;
 	scale?: InstallScale | null;
 	armed?: boolean;
 };
-
-const pointersOf = ({ onHover, onLeave }: OfferDeal) => ({
-	...(onHover === undefined ? {} : { onHover }),
-	...(onLeave === undefined ? {} : { onLeave }),
-});
 
 const offerInstallFor = ({
 	priceKb,
@@ -93,13 +119,13 @@ export const offerChipFor = (
 	skipped: !deal.affordable,
 	install: offerInstallFor(deal),
 	info: infoFor(config),
-	...pointersOf(deal),
+	...quotingOf({ install: -deal.priceKb }, deal.onPoint),
 });
 
 export const upgradeChipFor = (
 	offer: Config,
 	heldLevel: number,
-	{ priceKb, affordable, onInstall }: OfferDeal
+	{ priceKb, affordable, onInstall, onPoint }: OfferDeal
 ): ConfigChipProps => {
 	const share = offerOddsOf(heldLevel, offer);
 
@@ -116,22 +142,42 @@ export const upgradeChipFor = (
 			onBuy: onInstall,
 		}),
 		info: infoFor(offer),
+		...quotingOf({ upgrade: -priceKb }, onPoint),
 	};
 };
 
+export type BuildChipOptions = {
+	installed: readonly Config[];
+	onUninstall?: () => void;
+	vendorLock?: VendorLockChip;
+	deal?: BuildUpgradeDeal;
+	onPoint?: PointHandler;
+};
+
+const buildDeltasOf = (
+	config: Config,
+	refundKb: number
+): Partial<Record<ChipQuote, number>> => ({
+	...(refundKb === 0 ? {} : { uninstall: refundKb }),
+	upgrade: -nextUpgradeCostOf(config),
+});
+
 export const buildChipFor = (
 	config: Config,
-	onUninstall?: () => void,
-	vendorLock?: VendorLockChip,
-	deal?: BuildUpgradeDeal
-): ConfigChipProps => ({
-	name: config.label,
-	...chipFor(config),
-	...(deal === undefined || !isUpgradable(config)
-		? {}
-		: { upgrades: upgradesFor(config, deal) }),
-	...vendorChipFor(vendorLock, onUninstall),
-});
+	{ installed, onUninstall, vendorLock, deal, onPoint }: BuildChipOptions
+): ConfigChipProps => {
+	const refundKb = sellRefundIn(installed, config);
+
+	return {
+		name: config.label,
+		...refundChipFor(config, refundKb),
+		...(deal === undefined || !isUpgradable(config)
+			? {}
+			: { upgrades: upgradesFor(config, deal) }),
+		...vendorChipFor(vendorLock, onUninstall),
+		...quotingOf(buildDeltasOf(config, refundKb), onPoint),
+	};
+};
 
 export const controlRowFor = (
 	glyph: string,
@@ -154,17 +200,18 @@ const shopTitleFor = (cleared: number): string => {
 	return next === undefined ? SHOP_WORD : `${next.gateName} ${SHOP_WORD}`;
 };
 
-const afterInstallOf = (
+const afterOf = (
 	balanceKb: number,
-	priceKb: number | undefined
+	pointed: PointedPrice | undefined
 ): BalancePreview | undefined => {
-	if (priceKb === undefined) return undefined;
-	if (priceKb > balanceKb) return undefined;
+	if (pointed === undefined) return undefined;
+	const after = balanceKb + pointed.deltaKb;
+	if (after < 0) return undefined;
 
 	return {
-		label: AFTER_INSTALL,
-		figure: kbLabel(balanceKb - priceKb),
-		color: AFTER_INSTALL_COLOR,
+		label: pointed.label,
+		figure: kbLabel(after),
+		color: pointed.deltaKb < 0 ? SPEND_COLOR : REFUND_COLOR,
 	};
 };
 
@@ -172,10 +219,10 @@ export const shopHeaderFor = (
 	cleared: number,
 	balanceKb: number,
 	swatchGates: readonly number[] = [],
-	pointedPriceKb?: number,
+	pointed?: PointedPrice,
 	heldAudit?: AuditId
 ): HeaderProps => {
-	const preview = afterInstallOf(balanceKb, pointedPriceKb);
+	const preview = afterOf(balanceKb, pointed);
 
 	return {
 		...(heldAudit === undefined
@@ -202,6 +249,8 @@ const INCIDENT_COPY = {
 	refresh: "Refresh",
 	refreshDetail: "deals another incident · doubles this shop",
 	shopClosed: "the shop is read-only this gate",
+	deskShut: "the desk is not dealing",
+	reachUnknown: "reach unknown",
 } as const;
 
 export type IncidentDeal = {
@@ -220,8 +269,8 @@ export type IncidentDeal = {
 };
 
 const buyRefusalOf = (deal: IncidentDeal): string | undefined => {
-	if (deal.onBuy === undefined) return INCIDENT_COPY.shopClosed;
 	if (deal.shopLocked) return INCIDENT_COPY.shopClosed;
+	if (deal.onBuy === undefined) return INCIDENT_COPY.deskShut;
 	if (deal.rivalsInReach === 0) return INCIDENT_COPY.noReach;
 	if (deal.balanceKb < deal.costKb)
 		return shortfallOf(deal.costKb, deal.balanceKb);
@@ -229,12 +278,17 @@ const buyRefusalOf = (deal: IncidentDeal): string | undefined => {
 };
 
 const refreshRefusalOf = (deal: IncidentDeal): string | undefined => {
-	if (deal.onRefresh === undefined) return INCIDENT_COPY.shopClosed;
 	if (deal.shopLocked) return INCIDENT_COPY.shopClosed;
+	if (deal.onRefresh === undefined) return INCIDENT_COPY.deskShut;
 	if (deal.balanceKb < deal.refreshCostKb)
 		return shortfallOf(deal.refreshCostKb, deal.balanceKb);
 	return undefined;
 };
+
+export const shopAuditsFor = (
+	audits: readonly { readonly id: AuditId }[],
+	gate: number
+): readonly AuditProps[] => audits.map(({ id }) => auditPropsOf(id, gate));
 
 const auditPropsOf = (id: AuditId, gate: number): AuditProps => {
 	const audit = auditAt(id, gate);
@@ -269,8 +323,10 @@ export const incidentDeskFor = (deal: IncidentDeal): IncidentDeskProps => {
 		rule: INCIDENT_COPY.rule,
 		reach:
 			deal.rivalsInReach === null
-				? INCIDENT_COPY.noReach
-				: INCIDENT_COPY.reach(deal.rivalsInReach),
+				? INCIDENT_COPY.reachUnknown
+				: deal.rivalsInReach === 0
+					? INCIDENT_COPY.noReach
+					: INCIDENT_COPY.reach(deal.rivalsInReach),
 		refresh: {
 			label: INCIDENT_COPY.refresh,
 			price: kbLabel(deal.refreshCostKb),
@@ -283,3 +339,6 @@ export const incidentDeskFor = (deal: IncidentDeal): IncidentDeskProps => {
 		},
 	};
 };
+
+export const carryLabelOf = (bytes: number): string =>
+	`${NEW_RUN_WORD} ${CARRY_SEPARATOR} ${formatStorage(bytes)}`;

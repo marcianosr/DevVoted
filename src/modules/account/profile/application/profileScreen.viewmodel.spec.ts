@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	appearancePreviewFor,
 	isOwnerTabId,
 	isProfileTabId,
 	OWNER_TAB_IDS,
@@ -10,13 +9,13 @@ import {
 	profileClimbingFor,
 	profileCollectionFor,
 	profileRecordFor,
-	profileThemeOf,
 	triedOnBorderOf,
 	type ProfileIdentity,
 	type ProfileRecord,
 	type ProfileStanding,
 	type ProfileTotals,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
 import { borders } from "~/modules/account/profile/domain/border.model";
 import { DEX_TABS } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { standingFor } from "~/modules/run/community/application/playerCard.viewmodel";
@@ -29,6 +28,7 @@ const IDENTITY: ProfileIdentity = {
 	borderUrl: "/borders/border-ts-lavender.svg",
 	wornTitles: ["Git GOAT", "Summit"],
 	pollsAnswered: 120,
+	authorship: NO_AUTHORSHIP,
 };
 
 const BARE: ProfileIdentity = {
@@ -38,6 +38,7 @@ const BARE: ProfileIdentity = {
 	borderUrl: null,
 	wornTitles: [],
 	pollsAnswered: 0,
+	authorship: NO_AUTHORSHIP,
 };
 
 describe("PROFILE_TABS", () => {
@@ -47,10 +48,11 @@ describe("PROFILE_TABS", () => {
 		for (const tab of DEX_TABS) expect(ids).toContain(tab.id);
 	});
 
-	it("adds one appearance tab the owner equips from, behind the collection", () => {
+	it("leads with the appearance tab and shelves borders and titles behind the collection", () => {
 		const ids = PROFILE_TABS.map((tab) => tab.id);
 
-		expect(ids.slice(-1)).toEqual(["appearance"]);
+		expect(ids[0]).toBe("appearance");
+		expect(ids.slice(-2)).toEqual(["borders", "titles"]);
 	});
 
 	it("names each tab once, because the id is what the press reads", () => {
@@ -59,8 +61,8 @@ describe("PROFILE_TABS", () => {
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
-	it("opens on a Dex tab, not on a shelf", () => {
-		expect(isOwnerTabId(PROFILE_TABS[0].id)).toBe(false);
+	it("opens on the owner's appearance tab", () => {
+		expect(isOwnerTabId(PROFILE_TABS[0].id)).toBe(true);
 	});
 });
 
@@ -73,9 +75,9 @@ describe("isProfileTabId", () => {
 		expect(isProfileTabId("appearance")).toBe(true);
 	});
 
-	it("refuses the retired shelf ids, so an old press cannot set a dead tab", () => {
-		expect(isProfileTabId("borders")).toBe(false);
-		expect(isProfileTabId("titles")).toBe(false);
+	it("accepts the borders and titles tabs the appearance panel links to", () => {
+		expect(isProfileTabId("borders")).toBe(true);
+		expect(isProfileTabId("titles")).toBe(true);
 	});
 
 	it("refuses anything else, so a stale press cannot set a dead tab", () => {
@@ -84,25 +86,9 @@ describe("isProfileTabId", () => {
 });
 
 describe("isOwnerTabId", () => {
-	it("names only the appearance tab, which a visitor never sees", () => {
+	it("names only the owner's tabs, which a visitor never sees", () => {
 		expect(OWNER_TAB_IDS.every(isOwnerTabId)).toBe(true);
 		expect(isOwnerTabId("polls")).toBe(false);
-	});
-});
-
-describe("profileThemeOf", () => {
-	it("wears the colour of the tab being read", () => {
-		expect(profileThemeOf("swatches")).toBe("lavender");
-	});
-
-	it("gives the appearance tab a colour no Dex tab wears", () => {
-		const dexColors = DEX_TABS.map((tab) => tab.color);
-
-		expect(dexColors).not.toContain(profileThemeOf("appearance"));
-	});
-
-	it("falls back to the first tab's colour for an id nothing claims", () => {
-		expect(profileThemeOf("nowhere")).toBe(PROFILE_TABS[0].color);
 	});
 });
 
@@ -284,7 +270,7 @@ describe("profileClimbingFor", () => {
 		expect(
 			profileClimbingFor({ ...STANDING, bestCategory: "css" }).standing?.stats
 		).toEqual([
-			{ label: "run storage", value: kbLabel(4_300) },
+			{ label: "run storage", value: kbLabel(4_300), color: "saffron" },
 			{ label: "streak", value: "7" },
 			{ label: "best", value: "CSS" },
 		]);
@@ -324,49 +310,16 @@ describe("triedOnBorderOf", () => {
 	});
 });
 
-describe("appearancePreviewFor", () => {
-	it("draws the visitor's card, never marked as yours", () => {
-		expect(appearancePreviewFor(IDENTITY).card).toEqual(
-			profileCardFor(IDENTITY, false)
+describe("profileCardFor contribution", () => {
+	it("states the author's role, polls published and answers drawn", () => {
+		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
+
+		expect(profileCardFor({ ...BARE, authorship }, false).contribution).toEqual(
+			authorship
 		);
 	});
 
-	it("wears the same face and border on the byline and the climber card", () => {
-		const { byline, climber } = appearancePreviewFor(IDENTITY);
-
-		expect(byline).toMatchObject({
-			photoUrl: "/editors/misty.png",
-			borderUrl: "/borders/border-ts-lavender.svg",
-		});
-		expect(climber).toMatchObject({
-			name: "marciano_schildmeijer",
-			photoUrl: "/editors/misty.png",
-			borderUrl: "/borders/border-ts-lavender.svg",
-		});
-	});
-
-	it("shows the first worn title on the surfaces that seat only one", () => {
-		const { byline, climber } = appearancePreviewFor(IDENTITY);
-
-		expect(byline.title).toBe("Git GOAT");
-		expect(climber.title).toBe("Git GOAT");
-	});
-
-	it("credits the byline to the GitHub handle", () => {
-		expect(appearancePreviewFor(IDENTITY).byline.handle).toBe("marciano");
-	});
-
-	it("credits the byline to the display name when there is no handle", () => {
-		expect(appearancePreviewFor(BARE).byline.handle).toBe("Brock");
-	});
-
-	it("withholds a title, photo and border the player does not have", () => {
-		const { byline, climber } = appearancePreviewFor(BARE);
-
-		for (const surface of [byline, climber]) {
-			expect(surface).not.toHaveProperty("title");
-			expect(surface).not.toHaveProperty("photoUrl");
-			expect(surface).not.toHaveProperty("borderUrl");
-		}
+	it("states nothing for a player who has published no poll", () => {
+		expect(profileCardFor(BARE, false)).not.toHaveProperty("contribution");
 	});
 });

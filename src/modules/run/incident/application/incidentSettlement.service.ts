@@ -7,10 +7,14 @@ import {
 	markSurvived,
 } from "~/modules/run/incident/infrastructure/incident.repository";
 import {
+	incidentsAt,
+	isPrepPhase,
 	isRunOver,
 	type RunState,
+	scheduleOf,
 	withGateAudits,
 } from "~/modules/run/run/domain/run.model";
+import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import type {
 	RunSettlement,
@@ -47,6 +51,26 @@ const lockGateInFront = async (
 	return withGateAudits(after, gate, date, outcome.locked);
 };
 
+const backfillGateAudits = (state: RunState, date: string): RunState => {
+	const gate = state.gatesCleared;
+
+	if (gate > VICTORY_GATE) return state;
+	if (!isPrepPhase(state)) return state;
+	if (scheduleOf(state)[gate] !== undefined) return state;
+
+	return {
+		...state,
+		auditSchedule: {
+			...scheduleOf(state),
+			[gate]: gateAuditsFor(
+				gate,
+				date,
+				incidentsAt(state, gate).map((incident) => incident.auditId)
+			),
+		},
+	};
+};
+
 export const settleIncidents =
 	(runId: number, date: string): RunSettlement =>
 	async (tx, before, after) => {
@@ -54,7 +78,7 @@ export const settleIncidents =
 		if (cleared) await markSurvived(tx, runId, before.gatesCleared);
 		const settled = cleared
 			? await lockGateInFront(tx, runId, date, after)
-			: after;
+			: backfillGateAudits(after, date);
 
 		if (isRunOver(after.status) && !isRunOver(before.status))
 			await endIncidentsForRun(runId, tx);

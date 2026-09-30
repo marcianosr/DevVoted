@@ -51,6 +51,7 @@ import {
 	boardsFor,
 } from "~/modules/run/run/domain/categoryLeader.model";
 import { fetchCategoryBoards } from "~/modules/run/run/infrastructure/categoryLeader.repository";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 
 export type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 
@@ -95,7 +96,8 @@ export type RunCommunityPoll = {
 };
 
 export type ClimbStanding = {
-	title?: string;
+	titles?: readonly string[];
+	theme?: SwatchTheme;
 	coveragePercent?: number;
 	streak?: number;
 	storageKb?: number;
@@ -295,7 +297,8 @@ const standingOf = (
 	row: ClimberRow,
 	bestCategory: string | undefined
 ): ClimbStanding => ({
-	...(row.title === null ? {} : { title: row.title }),
+	titles: row.titles,
+	theme: row.theme,
 	coveragePercent: Math.round(
 		percentOf(runCoverageOf(row.coverageUnits, row.gate))
 	),

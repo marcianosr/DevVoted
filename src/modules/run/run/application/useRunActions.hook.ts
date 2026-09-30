@@ -4,9 +4,15 @@ import {
 	abandonRun,
 	dispatchRunAction,
 	startRun,
+	warmBootRun,
 } from "~/modules/run/run/application/run.serverfn";
 import type { WireRunAction } from "~/modules/run/run/application/run.validation";
-import { userQueryKeys } from "~/shared/queryKeys";
+import type { WarmBootPick } from "~/modules/run/run/domain/warmBoot.model";
+import {
+	archiveQueryKeys,
+	sessionRunQueryKeys,
+	userQueryKeys,
+} from "~/shared/queryKeys";
 
 import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
 import { attackTargetsQueryKey } from "~/modules/run/incident/application/useAttackTargets.hook";
@@ -56,7 +62,21 @@ export const useRunActions = () => {
 	const start = useMutation({
 		mutationFn: () => startRun(),
 		onSuccess: (result) => {
-			if (result.success) queryClient.setQueryData(queryKey, result);
+			if (!result.success) return;
+			queryClient.setQueryData(queryKey, result);
+			queryClient.invalidateQueries({
+				queryKey: sessionRunQueryKeys.runNumber(),
+			});
+		},
+	});
+
+	const warmBoot = useMutation({
+		mutationFn: (pick: WarmBootPick) =>
+			warmBootRun({ data: { ...pick, serviceIds: [...pick.serviceIds] } }),
+		onSuccess: (result) => {
+			if (!result.success) return;
+			queryClient.setQueryData(queryKey, result);
+			queryClient.invalidateQueries({ queryKey: archiveQueryKeys.all });
 		},
 	});
 
@@ -69,5 +89,13 @@ export const useRunActions = () => {
 		},
 	});
 
-	return { send, sendWith, commit, busy: dispatch.isPending, start, abandon };
+	return {
+		send,
+		sendWith,
+		commit,
+		busy: dispatch.isPending,
+		start,
+		warmBoot,
+		abandon,
+	};
 };

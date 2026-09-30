@@ -1,4 +1,5 @@
 import { AB_ARMS, type Config } from "~/modules/run/config/domain/config.model";
+import { CATEGORY_CODES } from "~/shared/lib/categories";
 
 export const CONFIGS = {
 	js: {
@@ -74,23 +75,6 @@ export const CONFIGS = {
 		description: "+32KB storage on gate clear.",
 		storageOnClear: 32,
 	},
-	eslint: {
-		id: "eslint",
-		label: "ESLint",
-		description:
-			"Cross out a wrong answer on JavaScript / TypeScript polls for an escalating fee.",
-		gives: "Cross out a wrong answer on JavaScript / TypeScript polls",
-		costs: "The fee doubles each use, and resets each gate",
-		eliminatesWrongOptionsFor: ["js", "ts"],
-	},
-	stylelint: {
-		id: "stylelint",
-		label: "Stylelint",
-		description: "Cross out a wrong answer on CSS polls for an escalating fee.",
-		gives: "Cross out a wrong answer on CSS polls",
-		costs: "The fee doubles each use, and resets each gate",
-		eliminatesWrongOptionsFor: ["css"],
-	},
 	intellisense: {
 		id: "intellisense",
 		label: "Intellisense",
@@ -111,8 +95,9 @@ export const CONFIGS = {
 		id: "code-coverage",
 		label: "Code Coverage",
 		slots: 2,
-		description: "Every correct answer is worth 10% more coverage.",
-		gives: "Correct answers pay +10% coverage",
+		description:
+			"Every correct answer pays +0.1 units of coverage, flat: no multiplier amplifies it.",
+		gives: "+0.1 units on every correct answer",
 		coverageAdd: 0.1,
 	},
 	indexedDb: {
@@ -244,10 +229,10 @@ export const CONFIGS = {
 		id: "prefetch",
 		label: "Prefetch",
 		slots: 4,
+		maxLevel: 2,
 		description:
-			"Shows the category and option count of every poll left this gate and how many of them take more than one answer, plus all of the next gate's categories.",
-		gives:
-			"The categories, option counts and answer types of this gate's remaining polls, and the next gate's categories",
+			"Shows the category of every poll left this gate, plus all of the next gate's categories. v2 adds each poll's option count and answer type.",
+		gives: "The categories of this gate's remaining polls, and the next gate's",
 		revealsUpcomingCategories: true,
 	},
 	gitRebase: {
@@ -408,6 +393,26 @@ export const CONFIGS = {
 		costs:
 			"You approve off the category alone, a wrong approval bleeds like any other wrong answer, and a select-all poll can only land a partial",
 		submitsCrowdPick: true,
+	},
+	linter: {
+		id: "linter",
+		label: "Linter",
+		slots: 2,
+		maxLevel: 3,
+		description:
+			"Cross out a wrong answer on any poll for a fee that doubles each use and never resets.",
+		gives: "Cross out a wrong answer on any poll",
+		costs: "The fee doubles each use; v2 resets it each gate, v3 halves it",
+		eliminatesWrongOptionsFor: CATEGORY_CODES,
+	},
+	npmAudit: {
+		id: "npm-audit",
+		label: "npm audit",
+		slots: 2,
+		description:
+			"In prep, names the config in your build each outage audit will take offline, poll by poll where the pick moves.",
+		gives: "Prep names which config each outage audit takes offline",
+		revealsOutageTargets: true,
 	},
 } as const satisfies Record<string, Config>;
 

@@ -1,86 +1,131 @@
-import { CARD_FLOW, ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
-import { DexPanel } from "./DexPanel.ui";
-import { discloseAllFor } from "./DiscloseAll.ui";
+import { LOCKED_CONFIG } from "~/shared/lib/copy";
+
+import { Badge } from "./Badge.ui";
+import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
+import { DexBrowser, DexDetail } from "./DexBrowser.ui";
 import { Panel } from "./Panel.ui";
-import { Typography } from "./Typography.ui";
+import { Redaction, type Redactable } from "./Redaction.ui";
+import { Segmented, type SegmentedItem } from "./Segmented.ui";
+import { Version } from "./Version.ui";
 import { Weight } from "./Weight.ui";
 
-const SECTION = "flex w-full flex-col gap-3";
-const HEADING = "flex items-center gap-2";
-const RULE = "min-w-8 flex-1 border-t border-theme-faint";
-const LIST = `grid w-full gap-3 ${CARD_FLOW}`;
+const NAME = "min-w-0 flex-1 truncate text-sm font-bold text-theme-faint";
+const NOTHING = "text-xs text-theme-muted";
+
+const FILTER_LABEL = "Weight";
+const NOTHING_HERE = "No config at this weight yet.";
 
 export type DexConfigCard = ConfigChipProps & { id: string };
 
-export type DexWeightGroup = {
-	weight: number;
+export type DexConfigRow = { id: string; slots: number } & Redactable<{
+	name: string;
+	figure?: string;
+	version?: number;
+}>;
+
+export type DexConfigDetail = {
 	label: string;
-	held: string;
-	chips: readonly DexConfigCard[];
+	card: DexConfigCard;
 };
 
 export type DexConfigsData = {
-	groups: readonly DexWeightGroup[];
+	filters: readonly SegmentedItem<string>[];
+	filter: string;
+	rows: readonly DexConfigRow[];
+	selectedId: string | null;
+	detail: DexConfigDetail | null;
 	count: string;
 	meta: string;
 	note: string;
 };
 
 export type DexConfigsProps = DexConfigsData & {
-	openInfo?: ReadonlySet<string>;
-	onToggleInfo?: (id: string) => void;
-	onToggleAll?: () => void;
+	onSelect?: (id: string) => void;
+	onFilter?: (filter: string) => void;
 };
 
-const cardCountOf = (groups: readonly DexWeightGroup[]) =>
-	groups.reduce((total, group) => total + group.chips.length, 0);
+const Trailing = ({ row }: { row: DexConfigRow }) => {
+	if (row.locked) return <span className={NOTHING}>—</span>;
+
+	return (
+		<>
+			{row.figure === undefined ? null : (
+				<Badge color="viridian">{row.figure}</Badge>
+			)}
+			{row.version === undefined ? null : <Version version={row.version} />}
+		</>
+	);
+};
+
+type ConfigRowProps = {
+	row: DexConfigRow;
+	picked: boolean;
+	onSelect?: (id: string) => void;
+};
+
+const ConfigRow = ({ row, picked, onSelect }: ConfigRowProps) => (
+	<Panel.Row
+		picked={picked}
+		onPress={onSelect === undefined ? undefined : () => onSelect(row.id)}
+		trailing={<Trailing row={row} />}
+	>
+		<Weight slots={row.slots} />
+		{row.locked ? (
+			<Redaction label={LOCKED_CONFIG} />
+		) : (
+			<span className={NAME}>{row.name}</span>
+		)}
+	</Panel.Row>
+);
+
+const Detail = ({ detail }: { detail: DexConfigDetail | null }) => {
+	if (detail === null) return <DexDetail label="—">{NOTHING_HERE}</DexDetail>;
+
+	const { id, ...card } = detail.card;
+
+	return (
+		<DexDetail label={detail.label}>
+			<ConfigChip key={id} {...card} />
+		</DexDetail>
+	);
+};
 
 export const DexConfigs = ({
-	groups,
+	filters,
+	filter,
+	rows,
+	selectedId,
+	detail,
 	count,
 	meta,
 	note,
-	openInfo,
-	onToggleInfo,
-	onToggleAll,
+	onSelect,
+	onFilter,
 }: DexConfigsProps) => (
-	<DexPanel
+	<DexBrowser
 		label="configs"
 		count={count}
 		meta={meta}
 		note={note}
-		trailing={discloseAllFor({ openInfo, onToggleAll }, cardCountOf(groups))}
-	>
-		<Panel.Body>
-			{groups.map((group) => (
-				<div key={group.weight} className={SECTION}>
-					<div className={HEADING}>
-						<Weight slots={group.weight} />
-						<Typography variant="subtitle" as="span">
-							{group.label}
-						</Typography>
-						<Typography variant="hint" as="span">
-							{group.held}
-						</Typography>
-						<span aria-hidden className={RULE} />
-					</div>
-
-					<div className={LIST}>
-						{group.chips.map(({ id, ...card }) => (
-							<ConfigChip
-								key={id}
-								{...card}
-								infoOpen={openInfo?.has(id) ?? false}
-								onToggleInfo={
-									onToggleInfo === undefined
-										? undefined
-										: () => onToggleInfo(id)
-								}
-							/>
-						))}
-					</div>
-				</div>
-			))}
-		</Panel.Body>
-	</DexPanel>
+		filter={
+			onFilter === undefined ? undefined : (
+				<Segmented
+					label={FILTER_LABEL}
+					look="loose"
+					items={filters}
+					value={filter}
+					onSelect={onFilter}
+				/>
+			)
+		}
+		rows={rows.map((row) => (
+			<ConfigRow
+				key={row.id}
+				row={row}
+				picked={row.id === selectedId}
+				onSelect={onSelect}
+			/>
+		))}
+		detail={<Detail detail={detail} />}
+	/>
 );

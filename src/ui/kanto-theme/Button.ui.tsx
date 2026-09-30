@@ -159,6 +159,8 @@ export type ButtonProps = {
 	size?: ButtonSize;
 	width?: ButtonWidth;
 	hint?: string;
+	onHover?: () => void;
+	onLeave?: () => void;
 } & (Press | Anchor) &
 	(Glyph | Capped | Plain);
 
@@ -238,6 +240,8 @@ export const Button = ({
 	expanded,
 	hint,
 	href,
+	onHover,
+	onLeave,
 	...shape
 }: ButtonProps) => {
 	const className = clsx(
@@ -251,6 +255,12 @@ export const Button = ({
 	);
 	const name = accessibleNameOf(label, shape.glyph, shape.detail, hint);
 	const content = <Content label={label} size={size} shape={shape} />;
+	const hovers = {
+		onMouseEnter: onHover,
+		onMouseLeave: onLeave,
+		onFocus: onHover,
+		onBlur: onLeave,
+	};
 
 	if (href !== undefined)
 		return (
@@ -259,6 +269,7 @@ export const Button = ({
 				data-screen-theme={toneThemeOf(tone, false)}
 				aria-label={name}
 				className={className}
+				{...hovers}
 			>
 				{content}
 			</a>
@@ -274,6 +285,7 @@ export const Button = ({
 			disabled={disabled}
 			onClick={onPress}
 			className={className}
+			{...hovers}
 		>
 			{content}
 		</button>

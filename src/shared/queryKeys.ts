@@ -25,6 +25,7 @@ export const sessionRunQueryKeys = {
 		[...sessionRunQueryKeys.all, "recap", runId] as const,
 	upcomingCategories: (date: string) =>
 		[...sessionRunQueryKeys.all, "upcoming", date] as const,
+	runNumber: () => [...sessionRunQueryKeys.all, "run-number"] as const,
 };
 
 export const pollQueryKeys = {
@@ -49,6 +50,7 @@ const USERS = ["users"] as const;
 export const userQueryKeys = {
 	all: USERS,
 	profile: (userId: string) => [...USERS, userId, "profile"] as const,
+	authorship: (userId: string) => [...USERS, userId, "authorship"] as const,
 	swatchesAll: [...USERS, "swatches"] as const,
 	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
 	unlocksAll: [...USERS, "unlocks"] as const,

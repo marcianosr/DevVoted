@@ -35,7 +35,8 @@ same dial.
 3. **Blue is a fill state, not a zone.** "Over the goal" is the existing PERFECT
    band at 100%, not a new threshold between HEALTHY and full. Inventing a fifth
    line would have meant a number no rule uses, and HEALTHY has no upper bound to
-   split.
+   split. Prep's ladder ([ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md)) draws PERFECT as a fixed cap
+   after the scale; the bar itself is unchanged.
 
 4. **The colour map lives in the `.ui` file.** `COVERAGE_BAND_COLOR` sits beside
    the component the way `VERDICT_COLOR` does in `Verdict.ui.tsx`, and the band

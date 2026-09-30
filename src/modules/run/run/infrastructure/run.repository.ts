@@ -1,9 +1,20 @@
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+	and,
+	count,
+	countDistinct,
+	desc,
+	eq,
+	inArray,
+	isNull,
+	sql,
+	gte,
+} from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
+	pollsTable,
 	runStatesTable,
 	runsTable,
 	userConfigUnlocksTable,
@@ -34,6 +45,10 @@ import {
 } from "~/modules/run/shop/domain/registryControl.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
 import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
+import {
+	closesAGate,
+	recordGains,
+} from "~/modules/run/run/domain/closeGains.model";
 
 import {
 	archiveCreditBytes,
@@ -278,6 +293,30 @@ const awardTitles = async (
 	return rows.map((row) => row.title_id);
 };
 
+export const fetchCategoryPollCounts = async (
+	userId: string,
+	executor: Pick<typeof db, "select"> = db
+): Promise<readonly ObjectiveCount[]> => {
+	const rows = await executor
+		.select({
+			categoryCode: pollsTable.category_code,
+			seen: countDistinct(pollResponsesTable.poll_id),
+			mastered:
+				sql<number>`count(distinct ${pollResponsesTable.poll_id}) filter (where ${pollResponsesTable.outcome} = 'correct')`.mapWith(
+					Number
+				),
+		})
+		.from(pollResponsesTable)
+		.innerJoin(pollsTable, eq(pollsTable.id, pollResponsesTable.poll_id))
+		.where(eq(pollResponsesTable.user_id, userId))
+		.groupBy(pollsTable.category_code);
+
+	return rows.flatMap((row) => [
+		{ metric: `category-seen:${row.categoryCode}`, count: row.seen },
+		{ metric: `category-mastered:${row.categoryCode}`, count: row.mastered },
+	]);
+};
+
 const grantEarnedTitles = async (
 	tx: Pick<typeof db, "select" | "insert">,
 	userId: string
@@ -294,7 +333,8 @@ const grantEarnedTitles = async (
 				inArray(userObjectiveProgressTable.metric, [...TITLE_METRICS])
 			)
 		);
-	const earned = titlesEarnedBy(counts);
+	const categoryPollCounts = await fetchCategoryPollCounts(userId, tx);
+	const earned = titlesEarnedBy([...counts, ...categoryPollCounts]);
 	if (earned.length === 0) return [];
 	return awardTitles(tx, userId, earned);
 };
@@ -466,6 +506,24 @@ export const fetchArchivedStorageKb = async (
 	return Math.round((row?.bytes ?? 0) / STORAGE_UNITS.KB);
 };
 
+export const debitArchivedStorage = async (
+	tx: RunTx,
+	userId: string,
+	bytes: number
+): Promise<number | null> => {
+	const [row] = await tx
+		.update(usersTable)
+		.set({
+			archived_storage: sql`${usersTable.archived_storage} - ${bytes}`,
+		})
+		.where(
+			and(eq(usersTable.id, userId), gte(usersTable.archived_storage, bytes))
+		)
+		.returning({ archivedStorage: usersTable.archived_storage });
+
+	return row?.archivedStorage ?? null;
+};
+
 export const abandonSessionRun = async (
 	runId: number,
 	userId: string
@@ -539,6 +597,14 @@ export const fetchStorageWatermark = async (
 		.where(eq(usersTable.id, userId))
 		.limit(1);
 	return row?.peakStorageKb ?? 0;
+};
+
+export const countSessionRuns = async (userId: string): Promise<number> => {
+	const [row] = await db
+		.select({ runs: count().mapWith(Number) })
+		.from(runsTable)
+		.where(and(eq(runsTable.user_id, userId), eq(runsTable.mode, "session")));
+	return row?.runs ?? 0;
 };
 
 export const fetchOwnedSwatchIds = async (
@@ -646,20 +712,25 @@ export const applyActionToRun = async (args: {
 			configsNewlyInstalled(state, settled)
 		);
 
+		const earnedTitleIds =
+			closesAGate(state, settled) || isRunOver(settled.status)
+				? await grantEarnedTitles(tx, args.userId)
+				: [];
+		const recorded = recordGains(state, settled, {
+			unlockedConfigIds,
+			earnedTitleIds,
+		});
+
 		await tx
 			.update(runStatesTable)
 			.set({
-				state: toRunSnapshot(settled),
+				state: toRunSnapshot(recorded),
 				engine_status: settled.status,
 				gates_cleared: settled.gatesCleared,
 				coverage: settled.coverage,
 				polls_answered: settled.currentIndex,
 			})
 			.where(eq(runStatesTable.run_id, args.runId));
-
-		const earnedTitleIds = isRunOver(settled.status)
-			? await grantEarnedTitles(tx, args.userId)
-			: [];
 
 		if (isRunOver(settled.status)) {
 			await finishSessionRun(tx, args.runId, args.userId, settled);
@@ -668,6 +739,6 @@ export const applyActionToRun = async (args: {
 		if ((settled.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
 			await raiseStorageWatermark(tx, args.userId, settled.peakStorageKb ?? 0);
 
-		return { state: settled, unlockedConfigIds, earnedTitleIds };
+		return { state: recorded, unlockedConfigIds, earnedTitleIds };
 	});
 };

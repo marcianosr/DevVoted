@@ -24,25 +24,32 @@ import {
 	kantoGateShakyPicking,
 	kantoGateZero,
 	kantoGateHealthyLine,
-	kantoGateHeldByFloor,
+	kantoGateHeldUnscored,
 } from "~/test/kantoGate.factory";
 
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
-import { GateOutcomeScreen } from "./GateOutcomeScreen.ui";
+import {
+	GateOutcomeScreen,
+	type GateOutcomeScreenProps,
+} from "./GateOutcomeScreen.ui";
 
 const headingOf = (name: string | RegExp) =>
 	screen.getByRole("heading", { name });
 
 const foldOf = (title: string) => headingOf(title).closest("details");
 
-const heroOf = (container: HTMLElement) => container.querySelector(".size-10");
+const markOf = (container: HTMLElement) =>
+	container.querySelector("header [data-swatch-theme]");
 
 const figureOf = () =>
-	headingOf(/Lavender|Pallet|Run over/)
-		.closest("header")!
-		.querySelector("[data-screen-theme]");
+	within(screen.getAllByRole("banner")[0]).getByText(STORAGE_BALANCE)
+		.parentElement;
+
+const balanceKbOf = (props: GateOutcomeScreenProps) =>
+	props.header.funds?.kb ?? 0;
 
 const bodyOrderOf = (container: HTMLElement) =>
 	[...container.querySelector("section > div")!.children].map((child) =>
@@ -87,18 +94,15 @@ describe("GateOutcomeScreen", () => {
 			).toBeInTheDocument();
 		});
 
-		it("opens on coverage alone, the rest of the strips carrying the reading", () => {
-			const { container } = render(
-				<GateOutcomeScreen {...kantoGateHealthy()} />
-			);
+		it("opens coverage and every fold with news, the ledgers folded to their strips", () => {
+			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
 
-			const [coverage, ...rest] = [...container.querySelectorAll("details")];
-
-			expect(coverage).toHaveTextContent("Coverage");
-			expect(coverage).toHaveAttribute("open");
-			for (const fold of rest) {
-				expect(fold).not.toHaveAttribute("open");
-			}
+			expect(foldOf("Coverage")).toHaveAttribute("open");
+			expect(foldOf("Earned")).toHaveAttribute("open");
+			expect(foldOf("Build changes")).toHaveAttribute("open");
+			expect(foldOf("By category")).not.toHaveAttribute("open");
+			expect(foldOf("Payout")).not.toHaveAttribute("open");
+			expect(foldOf("The five answers")).not.toHaveAttribute("open");
 		});
 
 		it("stands the score beside the takings, the answers across the foot", () => {
@@ -146,7 +150,7 @@ describe("GateOutcomeScreen", () => {
 
 			expect(headingOf("Lavender perfect")).toBeInTheDocument();
 			expect(
-				screen.getByText(/You earned the Lavender Swatch!/)
+				within(foldOf("Earned")!).getByText("Lavender swatch earned")
 			).toBeInTheDocument();
 		});
 
@@ -163,18 +167,18 @@ describe("GateOutcomeScreen", () => {
 				<GateOutcomeScreen {...kantoGatePerfect()} />
 			);
 
-			expect(heroOf(container)).toHaveClass("bg-theme", "legendary-ring");
-			expect(heroOf(container)).toHaveAttribute(
+			expect(markOf(container)).toHaveClass("bg-theme", "legendary-ring");
+			expect(markOf(container)).toHaveAttribute(
 				"data-swatch-theme",
 				"lavender"
 			);
 		});
 
-		it("names the swatch on a chip, since the title only reports the clear", () => {
+		it("counts the window on the header and the swatch row alike", () => {
 			render(<GateOutcomeScreen {...kantoGatePerfect()} />);
 
-			expect(screen.getByText("swatch earned")).toBeInTheDocument();
 			expect(screen.getByText("5 of 5 right")).toBeInTheDocument();
+			expect(within(foldOf("Earned")!).getByText("5 of 5")).toBeInTheDocument();
 		});
 
 		it("leads with coverage, and prices the perfect bonus inside it", () => {
@@ -202,8 +206,9 @@ describe("GateOutcomeScreen", () => {
 
 			expect(headingOf("Lavender cleared")).toBeInTheDocument();
 			expect(
-				screen.getByText(/You didn't earn the Lavender swatch/)
+				within(foldOf("Earned")!).getByText("Lavender swatch missed")
 			).toBeInTheDocument();
+			expect(screen.queryByText(/didn't earn/)).not.toBeInTheDocument();
 		});
 
 		it("leaves the swatch behind, since a partial broke the window", () => {
@@ -211,9 +216,11 @@ describe("GateOutcomeScreen", () => {
 				<GateOutcomeScreen {...kantoGateHealthy()} />
 			);
 
-			expect(heroOf(container)).toHaveClass("border-dashed");
-			expect(heroOf(container)).not.toHaveClass("bg-theme");
-			expect(screen.queryByText("swatch earned")).not.toBeInTheDocument();
+			expect(markOf(container)).toHaveClass("border-dashed");
+			expect(markOf(container)).not.toHaveClass("bg-theme");
+			expect(
+				screen.queryByText("Lavender swatch earned")
+			).not.toBeInTheDocument();
 		});
 
 		it("keeps the streak it arrived with", () => {
@@ -260,7 +267,7 @@ describe("GateOutcomeScreen", () => {
 		it("keeps the swatch out of reach, since the clear is not the prize", () => {
 			const { container } = render(<GateOutcomeScreen {...kantoGateOk()} />);
 
-			expect(heroOf(container)).toHaveClass("border-dashed");
+			expect(markOf(container)).toHaveClass("border-dashed");
 			expect(screen.queryByText("swatch earned")).not.toBeInTheDocument();
 		});
 
@@ -271,22 +278,24 @@ describe("GateOutcomeScreen", () => {
 		});
 
 		it("pays less than the same build cleared healthy", () => {
-			const thin = kantoGateOk().header.balance.kb;
-			const full = kantoGateHealthy().header.balance.kb;
+			const thin = balanceKbOf(kantoGateOk());
+			const full = balanceKbOf(kantoGateHealthy());
 
 			expect(thin).not.toBe(full);
 		});
 	});
 
 	describe("a shaky close", () => {
-		it("holds on the day's own count while the bar still reads HEALTHY (ADR-094)", () => {
-			render(<GateOutcomeScreen {...kantoGateHeldByFloor()} />);
+		it("holds a window under the minimum while the bar still reads HEALTHY", () => {
+			render(<GateOutcomeScreen {...kantoGateHeldUnscored()} />);
 
 			expect(headingOf("Lavender holds")).toBeInTheDocument();
 			expect(
 				screen.getByLabelText("70% of 62% needed \u00b7 HEALTHY")
 			).toBeInTheDocument();
-			expect(screen.getByText(/1 of 5 right, 2 needed/)).toBeInTheDocument();
+			expect(
+				screen.getByText(/scored 1 of 2 units · 5 fresh polls on the retry/)
+			).toBeInTheDocument();
 			expect(headingOf("Settle the peel to retry")).toBeInTheDocument();
 		});
 
@@ -294,8 +303,8 @@ describe("GateOutcomeScreen", () => {
 			const { container } = render(<GateOutcomeScreen {...kantoGateShaky()} />);
 
 			expect(headingOf("Lavender holds")).toBeInTheDocument();
-			expect(heroOf(container)).toHaveClass("border-dashed");
-			expect(heroOf(container)).not.toHaveClass("bg-theme");
+			expect(markOf(container)).toHaveClass("border-dashed");
+			expect(markOf(container)).not.toHaveClass("bg-theme");
 		});
 
 		it("offers both exits, priced, rather than only the retry", () => {
@@ -359,8 +368,8 @@ describe("GateOutcomeScreen", () => {
 			rerender(<GateOutcomeScreen {...kantoGateShakyCollected()} />);
 
 			const refunded =
-				kantoGateShakyCollected().header.balance.kb -
-				kantoGateShakyCollecting().header.balance.kb;
+				balanceKbOf(kantoGateShakyCollected()) -
+				balanceKbOf(kantoGateShakyCollecting());
 
 			expect(refunded).toBeGreaterThan(0);
 			expect(screen.getByRole("status")).toHaveTextContent(
@@ -463,7 +472,7 @@ describe("GateOutcomeScreen", () => {
 
 			expect(figureOf()).toContainElement(
 				screen.getByRole("img", {
-					name: kbLabel(kantoGateDanger().header.balance.kb),
+					name: kbLabel(balanceKbOf(kantoGateDanger())),
 				})
 			);
 			expect(screen.getByLabelText(/^20% of/)).toBeInTheDocument();
@@ -514,7 +523,7 @@ describe("GateOutcomeScreen", () => {
 		it("draws the ladder it actually has rather than assuming five bands", () => {
 			render(<GateOutcomeScreen {...kantoGateZero()} />);
 
-			expect(screen.queryByText("survive")).not.toBeInTheDocument();
+			expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 			expect(
 				screen.getByText(`HEALTHY ${kantoGateHealthyLine(0)}%`)
 			).toBeInTheDocument();
@@ -526,13 +535,22 @@ describe("GateOutcomeScreen", () => {
 			expect(headingOf("Pallet perfect")).toBeInTheDocument();
 		});
 
-		it("answers for an unmoved build instead of opening on a blank fold", () => {
+		it("folds an unmoved build to one line that says nothing moved", () => {
 			render(<GateOutcomeScreen {...kantoGateZero()} />);
 
 			const changes = foldOf("Build changes");
 
-			expect(changes).not.toBeNull();
-			expect(within(changes!).getByText("none")).toBeInTheDocument();
+			expect(changes).not.toHaveAttribute("open");
+			expect(within(changes!).getByText("nothing moved")).toBeInTheDocument();
+		});
+
+		it("folds a quiet Earned panel to what the swatch counted", () => {
+			render(<GateOutcomeScreen {...kantoGateZero()} />);
+
+			expect(foldOf("Earned")).not.toHaveAttribute("open");
+			expect(
+				within(foldOf("Earned")!).getByText("nothing new · swatch 5 of 5")
+			).toBeInTheDocument();
 		});
 	});
 });

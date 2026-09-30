@@ -30,3 +30,10 @@ export const decayOnClear = (configs: readonly Config[]): Decay => {
 		deleted: faded.filter(isSpent),
 	};
 };
+
+export const clearsUntilDeleted = (config: Config): number | undefined =>
+	isDecaying(config)
+		? Math.ceil(
+				(config.coverageMultiplier ?? 0) / (config.coverageDecayPerClear ?? 1)
+			)
+		: undefined;

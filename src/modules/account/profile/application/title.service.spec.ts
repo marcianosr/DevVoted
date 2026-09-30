@@ -13,9 +13,11 @@ const {
 	fetchLegacyBonusBytes,
 	fetchUserTitleState,
 	fetchObjectiveProgressByUser,
+	fetchCategoryPollCounts,
 } = vi.hoisted(() => ({
 	fetchUserTitleState: vi.fn(),
 	fetchObjectiveProgressByUser: vi.fn(),
+	fetchCategoryPollCounts: vi.fn(),
 	fetchUnannouncedTitleIds: vi.fn(),
 	markTitlesAnnounced: vi.fn(),
 	fetchArchivedRunStartedAt: vi.fn(),
@@ -31,6 +33,10 @@ vi.mock("~/modules/account/profile/infrastructure/title.repository", () => ({
 
 vi.mock("~/modules/collection/dex/infrastructure/configdex.repository", () => ({
 	fetchObjectiveProgressByUser,
+}));
+
+vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
+	fetchCategoryPollCounts,
 }));
 
 vi.mock("~/modules/account/profile/infrastructure/legacy.repository", () => ({
@@ -55,16 +61,18 @@ describe("getTitleStateService", () => {
 		vi.clearAllMocks();
 	});
 
-	it("hands the shelf every counted metric, so a category bar can read its own count", async () => {
-		const counts = [
-			{ metric: "polls-answered", count: 34 },
-			{ metric: "category-correct:css", count: 14 },
+	it("hands the shelf every counted metric and the distinct category polls, so a category bar can read its own count", async () => {
+		const counters = [{ metric: "polls-answered", count: 34 }];
+		const categoryPolls = [
+			{ metric: "category-seen:css", count: 20 },
+			{ metric: "category-mastered:css", count: 14 },
 		];
 		fetchUserTitleState.mockResolvedValueOnce({
 			ownedTitleIds: [],
 			equippedTitleIds: [],
 		});
-		fetchObjectiveProgressByUser.mockResolvedValueOnce(counts);
+		fetchObjectiveProgressByUser.mockResolvedValueOnce(counters);
+		fetchCategoryPollCounts.mockResolvedValueOnce(categoryPolls);
 
 		expect(await getTitleStateService(RED)).toEqual({
 			success: true,
@@ -72,7 +80,7 @@ describe("getTitleStateService", () => {
 				ownedTitleIds: [],
 				equippedTitleIds: [],
 				pollsAnswered: 34,
-				counts,
+				counts: [...counters, ...categoryPolls],
 			},
 		});
 	});

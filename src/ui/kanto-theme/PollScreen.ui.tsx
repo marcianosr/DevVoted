@@ -18,16 +18,13 @@ import { PollFacts, type PollFactsProps } from "./PollFacts.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Question, questionFactsOf, type QuestionProps } from "./Question.ui";
 import { Redaction, type Redactable } from "./Redaction.ui";
-import { SCORING_RULE_LABEL, ScoringRule } from "./ScoringRule.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
-import type { SwatchFill } from "./Swatch.ui";
+import type { SwatchMark } from "./Swatch.ui";
 import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
-import { Tooltip } from "./Tooltip.ui";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
 	coverage: "Coverage",
-	rule: "what a poll pays",
 	wrongCost: "wrong costs",
 	readingDown: "Coverage reading unavailable",
 	readingDownHint: "The meter is down. Answers still score.",
@@ -35,7 +32,6 @@ const COPY = {
 
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
-const META_LINE = "flex justify-end sm:ml-2";
 const POLL_ROW =
 	"grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]";
 const DARK_TRACK =
@@ -55,7 +51,6 @@ const COMMIT_REGION =
 const COMMIT_GROUND = "border-t border-theme-faint bg-theme-faint";
 
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
-const HOLDS_COLOR: KantoColor = "cerulean";
 const CREDIT_SIZE: AuthorSize = "sm";
 
 export type PollReadout = {
@@ -87,6 +82,7 @@ export type PollScreenProps = {
 	hint?: string;
 	author?: AuthorProps;
 	commit?: PollCommit;
+	step?: number;
 	categoryLeader?: CategoryLeaderProps;
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
@@ -145,21 +141,9 @@ const CoveragePanel = (coverage: PollCoverage) => (
 		<Panel.Header
 			label={COPY.coverage}
 			meta={
-				<>
-					{coverage.locked === true ? null : (
-						<CoverageReading {...coverage.bar} />
-					)}
-					<span className={META_LINE}>
-						<Tooltip
-							label={SCORING_RULE_LABEL}
-							hint={<ScoringRule />}
-							align="end"
-							width="wide"
-						>
-							{COPY.rule}
-						</Tooltip>
-					</span>
-				</>
+				coverage.locked === true ? undefined : (
+					<CoverageReading {...coverage.bar} />
+				)
 			}
 		/>
 		{coverage.locked === true ? <DarkReading /> : <LiveReading {...coverage} />}
@@ -188,7 +172,7 @@ const PollSend = ({ commit, footer, swatch, measure }: PollSendProps) => {
 };
 
 type PollSendProps = Pick<PollScreenProps, "commit" | "footer"> & {
-	swatch?: SwatchFill;
+	swatch?: SwatchMark;
 	measure: (bar: HTMLElement | null) => void;
 };
 
@@ -229,9 +213,7 @@ const PollPanel = ({
 			</Typography>
 			{holds === undefined && wrongCost === undefined ? null : (
 				<span className={META_TRAILING}>
-					{holds === undefined ? null : (
-						<Badge color={HOLDS_COLOR}>{holds}</Badge>
-					)}
+					{holds === undefined ? null : <Badge>{holds}</Badge>}
 					{wrongCost === undefined ? null : (
 						<span className={META_ROW}>
 							<Typography variant="hint" as="span">
@@ -267,6 +249,7 @@ export const PollScreen = ({
 	coverage,
 	buildFooter,
 	audits = [],
+	step,
 	width = "wide",
 	ground = "bare",
 	...poll
@@ -298,7 +281,7 @@ export const PollScreen = ({
 			<div className={POLL_ROW}>
 				<PollPanel
 					{...poll}
-					swatch={{ state: "current", swatch: header.swatch }}
+					swatch={{ state: "current", swatch: header.swatch, count: step }}
 					measure={measureSend}
 				/>
 				<CoveragePanel {...coverage} />

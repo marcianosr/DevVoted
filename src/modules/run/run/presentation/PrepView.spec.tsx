@@ -51,7 +51,7 @@ describe("PrepView", () => {
 		it("bills the holding band a peel drawn from the gate's own stake", () => {
 			render(<PrepView {...props} view={laddered} />);
 
-			expect(screen.getByText(/peel$/)).toHaveTextContent(/^−\d/);
+			expect(screen.getByText(/^−\d+ KB peel$/)).toBeInTheDocument();
 		});
 
 		it("ends the run under the floor rather than quoting it a payout", () => {

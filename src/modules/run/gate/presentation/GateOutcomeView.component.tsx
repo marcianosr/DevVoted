@@ -1,7 +1,9 @@
 import { useState } from "react";
 
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
+import { gainsOfGate } from "~/modules/run/gate/application/gateGains.viewmodel";
 import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import type {
@@ -24,6 +26,7 @@ export type GateVerdict = "cleared" | "held" | "fatal" | "won";
 
 export type GateOutcomeViewProps = {
 	view: RunView;
+	runNumber?: number | null;
 	verdict: GateVerdict;
 	onReview: () => void;
 	onNext: () => void;
@@ -82,6 +85,30 @@ const heldFor = (view: RunView, verdict: GateVerdict): number =>
 		? view.gateStake.coverageHeld
 		: view.gatePayout.clearedCoverageHeld;
 
+const DELETED_DETAIL = "its deprecation ran out";
+const LAPSED_DETAIL = "its subscription went unpaid";
+
+const upgradedRowsFor = (view: RunView) =>
+	view.gatePayout.autoUpgradedConfig === null
+		? []
+		: [
+				{
+					config: view.gatePayout.autoUpgradedConfig,
+					detail: `upgraded by ${view.gatePayout.autoUpgradedByConfig?.label ?? "the build"}`,
+				},
+			];
+
+const removedRowsFor = (view: RunView) => [
+	...view.gatePayout.deletedConfigs.map((config) => ({
+		config,
+		detail: DELETED_DETAIL,
+	})),
+	...view.gatePayout.lapsedConfigs.map((config) => ({
+		config,
+		detail: LAPSED_DETAIL,
+	})),
+];
+
 const paidRowsFor = (view: RunView) =>
 	view.gatePayout.autoUpgradedConfig === null
 		? []
@@ -103,7 +130,8 @@ export type GatePeelPicks = {
 export const gateOutcomeFrameOf = (
 	view: RunView,
 	verdict: GateVerdict,
-	picks: GatePeelPicks
+	picks: GatePeelPicks,
+	runNumber: number | null = null
 ): GateOutcomeFrame => {
 	const cleared = verdict === "cleared" || verdict === "won";
 	const gate = gateNumberFor(view, verdict);
@@ -111,15 +139,17 @@ export const gateOutcomeFrameOf = (
 	return {
 		gate,
 		answers: gateAnswersOf(view.answeredThisGate, gate),
+		scoredUnits: view.scoredThisGate,
+		peelSlotsRemaining: view.peelSlotsRemaining,
 		swatchGates: view.swatchGates,
+		readout: runReadoutFor(view, runNumber),
 		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
 		configs: view.configs,
 		buildSpace: view.buildSpace.space,
 		streak: view.gatePayout.streakAtClose ?? undefined,
-		faded: view.gatePayout.lapsedConfigs.map((config) => ({
-			config,
-			detail: "lapsed on this gate",
-		})),
+		...gainsOfGate(view, gate),
+		upgraded: upgradedRowsFor(view),
+		removed: removedRowsFor(view),
 		paid: paidRowsFor(view),
 		payouts: runPaidFor(view),
 		auditIds: view.gateStake.audits.map((audit) => audit.id),
@@ -134,6 +164,7 @@ export const gateOutcomeFrameOf = (
 		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
 		bar: closedBarFor(
 			CLOSING_OF[verdict],
+			gate,
 			ladderFor(view, verdict),
 			heldFor(view, verdict),
 			heldByFor(view, verdict)
@@ -170,6 +201,7 @@ const refusing = (
 
 export const GateOutcomeView = ({
 	view,
+	runNumber = null,
 	verdict,
 	onReview,
 	onNext,
@@ -188,12 +220,17 @@ export const GateOutcomeView = ({
 		);
 
 	const props = gateOutcomePropsFor(
-		gateOutcomeFrameOf(view, verdict, {
-			chosen,
-			onToggle: toggle,
-			fromStorage,
-			onToggleStorage: () => setFromStorage((paying) => !paying),
-		})
+		gateOutcomeFrameOf(
+			view,
+			verdict,
+			{
+				chosen,
+				onToggle: toggle,
+				fromStorage,
+				onToggleStorage: () => setFromStorage((paying) => !paying),
+			},
+			runNumber
+		)
 	);
 	const settles = verdict === "held" && onRemove !== undefined;
 	const commits = props.footer.action.onPress !== undefined;

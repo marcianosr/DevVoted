@@ -4,10 +4,10 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Config,
 	cacheUnitsFor,
+	coverageAddOf,
 	focusMultiplierOf,
 	interestPctOf,
 	minifiedMultiplier,
-	minifiedUnits,
 	storageOnClearOf,
 	topUpUnitsFor,
 } from "~/modules/run/config/domain/config.model";
@@ -21,6 +21,7 @@ export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
 	readonly unitsEarned: number;
+	readonly baseUnits: number;
 	readonly byCategory: Readonly<Record<string, CategoryTally>>;
 	readonly peeked?: number;
 	readonly linted?: number;
@@ -31,6 +32,7 @@ export const EMPTY_WINDOW: GateWindow = {
 	correct: 0,
 	answered: 0,
 	unitsEarned: 0,
+	baseUnits: 0,
 	byCategory: {},
 	peeked: 0,
 	linted: 0,
@@ -89,7 +91,7 @@ const coverageOf = (config: Config): Effect["coverage"] => {
 				? minifiedFactor(config, config.openerCoverageMultiplier ?? 1)
 				: minifiedFactor(config, config.throttleCoverageMultiplier ?? 1)),
 		add:
-			minifiedUnits(config, config.coverageAdd ?? 0) +
+			(coverageAddOf(config) ?? 0) +
 			cacheUnitsFor(config, cachedHits) +
 			topUpUnitsFor(config, creditedUnits),
 	});

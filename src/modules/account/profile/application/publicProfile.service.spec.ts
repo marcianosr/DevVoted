@@ -4,6 +4,7 @@ import { getPublicProfileService } from "~/modules/account/profile/application/p
 
 const {
 	fetchPublicProfile,
+	fetchPublishedPollCounts,
 	fetchPublishedPollsForDex,
 	fetchSeenCountsByUser,
 	fetchConfigUnlocksByUser,
@@ -15,6 +16,7 @@ const {
 	fetchBestCategories,
 } = vi.hoisted(() => ({
 	fetchPublicProfile: vi.fn(),
+	fetchPublishedPollCounts: vi.fn(),
 	fetchPublishedPollsForDex: vi.fn(),
 	fetchSeenCountsByUser: vi.fn(),
 	fetchConfigUnlocksByUser: vi.fn(),
@@ -28,6 +30,7 @@ const {
 
 vi.mock("~/modules/account/profile/infrastructure/profile.repository", () => ({
 	fetchPublicProfile,
+	fetchPublishedPollCounts,
 }));
 
 vi.mock("~/modules/account/profile/infrastructure/title.repository", () => ({
@@ -68,10 +71,11 @@ const PROFILE = {
 	photoUrl: "/editors/misty.png",
 	githubUsername: "marciano",
 	equippedBorderId: null,
-	equippedTitleIds: ["title-bikeshedder", "title-ship-it"],
+	equippedTitleIds: ["title-it-compiles", "title-ship-it"],
 	archivedStorage: 8_388_608,
 	ownedSwatchIds: ["swatch-pallet", "swatch-boulder"],
 	equippedSwatchId: null,
+	role: "user",
 };
 
 const pollsNumbering = (count: number) =>
@@ -109,6 +113,7 @@ describe("getPublicProfileService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		fetchPublicProfile.mockResolvedValue(PROFILE);
+		fetchPublishedPollCounts.mockResolvedValue({ published: 0, answers: 0 });
 		fetchObjectiveProgressByUser.mockResolvedValue([
 			{ metric: "polls-answered", count: 120 },
 		]);
@@ -118,10 +123,10 @@ describe("getPublicProfileService", () => {
 			{ pollId: 2, timesSeen: 1 },
 		]);
 		fetchConfigUnlocksByUser.mockResolvedValue([
-			{ configId: "stylelint", viaMetric: "polls-correct" },
+			{ configId: "telemetry", viaMetric: "polls-correct" },
 		]);
 		fetchOwnedTitleIds.mockResolvedValue([
-			"title-bikeshedder",
+			"title-it-compiles",
 			"title-ship-it",
 		]);
 		fetchGateRunsByUser.mockResolvedValue([
@@ -154,8 +159,20 @@ describe("getPublicProfileService", () => {
 		).toMatchObject({
 			displayName: "marciano_schildmeijer",
 			githubUsername: "marciano",
-			wornTitles: ["Bikeshedder", "Ship It"],
+			wornTitles: ["It Compiles", "Ship It"],
 		});
+	});
+
+	it("credits an admin with the polls they published and the answers drawn", async () => {
+		fetchPublicProfile.mockResolvedValue({ ...PROFILE, role: "admin" });
+		fetchPublishedPollCounts.mockResolvedValue({ published: 3, answers: 40 });
+
+		const response = await getPublicProfileService(RED);
+
+		expect(
+			unwrap<{ identity: { authorship: unknown } }>(response).identity
+				.authorship
+		).toEqual({ role: "Admin", published: 3, answers: 40 });
 	});
 
 	it("resolves the equipped border to a picture the card can draw", async () => {
@@ -218,7 +235,7 @@ describe("getPublicProfileService", () => {
 		).totals.configsHeld;
 
 		fetchConfigUnlocksByUser.mockResolvedValue([
-			{ configId: "stylelint", viaMetric: "polls-correct" },
+			{ configId: "telemetry", viaMetric: "polls-correct" },
 		]);
 		const withOne = unwrap<{ totals: { configsHeld: number } }>(
 			await getPublicProfileService(RED)

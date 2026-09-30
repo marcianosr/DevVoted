@@ -35,6 +35,7 @@ const answered: readonly AnsweredPoll[] = [
 ];
 
 const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };
+const PEEL_SLOTS_OWED = 1;
 
 const viewAt = (
 	verdict: GateVerdict,
@@ -45,6 +46,7 @@ const viewAt = (
 		configs: [CONFIGS.js, CONFIGS.unitTests],
 		gatesCleared: 4,
 		storage: 640,
+		peelSlotsRemaining: verdict === "held" ? PEEL_SLOTS_OWED : 0,
 		gateStake: createMockGateStake({
 			gateNumber: 4,
 			coverageLadder: GATE_4_LADDER,
@@ -72,7 +74,7 @@ const renderAt = (verdict: GateVerdict, props = {}) =>
 	);
 
 describe("GateOutcomeView", () => {
-	it("keeps a floor-held gate's HEALTHY reading and says why it held", () => {
+	it("keeps a window-held gate's HEALTHY reading and says why it held", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("held", {
@@ -86,7 +88,8 @@ describe("GateOutcomeView", () => {
 						coverageLadder: GATE_4_LADDER,
 						coverageHeld: 30,
 					}),
-					gatePayout: createMockGatePayout({ heldBy: "floor" }),
+					gatePayout: createMockGatePayout({ heldBy: "unscored" }),
+					scoredThisGate: 1,
 				})}
 				verdict="held"
 				onReview={() => {}}
@@ -101,7 +104,9 @@ describe("GateOutcomeView", () => {
 		expect(
 			screen.getByLabelText("30% of 25% needed \u00b7 HEALTHY")
 		).toBeInTheDocument();
-		expect(screen.getByText(/1 of 5 right, 2 needed/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/scored 1 of 2 units · 5 fresh polls on the retry/)
+		).toBeInTheDocument();
 	});
 
 	it("reports a cleared gate as cleared, not as a hold", () => {
@@ -322,7 +327,7 @@ describe("rivals' audits at the close (ADR-099)", () => {
 			/>
 		);
 
-		expect(screen.getByText("audits survived")).toBeInTheDocument();
+		expect(screen.getByText("Audits survived")).toBeInTheDocument();
 		expect(screen.queryByText("audit earned")).not.toBeInTheDocument();
 	});
 });

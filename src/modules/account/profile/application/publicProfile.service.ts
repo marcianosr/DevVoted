@@ -5,6 +5,7 @@ import type {
 	ProfileStanding,
 	ProfileTotals,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { authorshipOf } from "~/modules/account/profile/domain/authorship.model";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
 import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
@@ -12,7 +13,10 @@ import {
 	visibleTitles,
 	wornTitleNames,
 } from "~/modules/account/profile/domain/title.model";
-import { fetchPublicProfile } from "~/modules/account/profile/infrastructure/profile.repository";
+import {
+	fetchPublicProfile,
+	fetchPublishedPollCounts,
+} from "~/modules/account/profile/infrastructure/profile.repository";
 import { fetchOwnedTitleIds } from "~/modules/account/profile/infrastructure/title.repository";
 import {
 	configdex,
@@ -113,6 +117,17 @@ const recordOf = ({
 	recentRuns: entries.slice(0, RECENT_RUNS_SHOWN),
 });
 
+export const getAuthorshipService = async (userId: string) =>
+	handleApiOperation(async () => {
+		const [profile, pollCounts] = await Promise.all([
+			fetchPublicProfile(userId),
+			fetchPublishedPollCounts(userId),
+		]);
+		if (!profile) throw new Error("User not found");
+
+		return authorshipOf(profile.role, pollCounts);
+	}, "getAuthorship");
+
 export const getPublicProfileService = async (userId: string) =>
 	handleApiOperation(async () => {
 		const profile = await fetchPublicProfile(userId);
@@ -127,6 +142,7 @@ export const getPublicProfileService = async (userId: string) =>
 			boards,
 			climber,
 			progress,
+			pollCounts,
 		] = await Promise.all([
 			fetchPublishedPollsForDex(),
 			fetchSeenCountsByUser(userId),
@@ -136,6 +152,7 @@ export const getPublicProfileService = async (userId: string) =>
 			fetchCategoryBoards(userId),
 			fetchActiveClimberFor(userId),
 			fetchObjectiveProgressByUser(userId),
+			fetchPublishedPollCounts(userId),
 		]);
 		const bestCategories = await fetchBestCategories([userId]);
 
@@ -151,6 +168,7 @@ export const getPublicProfileService = async (userId: string) =>
 				borderUrl: borderUrlOf(profile.equippedBorderId),
 				wornTitles: wornTitleNames(profile.equippedTitleIds),
 				pollsAnswered: pollsAnsweredIn(progress),
+				authorship: authorshipOf(profile.role, pollCounts),
 			},
 			theme: profileThemeFor(profile.equippedSwatchId, profile.ownedSwatchIds),
 			record: recordOf({

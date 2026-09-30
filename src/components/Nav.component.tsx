@@ -53,7 +53,7 @@ export const Nav = ({ user }: NavProps) => {
 
 	return (
 		<AppNav
-			homeHref={HOME}
+			homeHref={user === null ? HOME : RUN}
 			signInHref={SIGN_IN}
 			run={{
 				href: RUN,

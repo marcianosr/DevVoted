@@ -30,7 +30,8 @@ const helpsAnswer = (config: Config): boolean =>
 	config.revealsUpcomingCategories !== undefined ||
 	config.reordersGatePolls !== undefined ||
 	config.projectsGateOutcome !== undefined ||
-	config.submitsCrowdPick !== undefined;
+	config.submitsCrowdPick !== undefined ||
+	config.revealsOutageTargets !== undefined;
 
 const commitsBeforeKnowing = (config: Config): boolean =>
 	config.wagersAnswer !== undefined ||

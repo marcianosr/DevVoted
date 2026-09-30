@@ -88,6 +88,23 @@ describe("Fold", () => {
 		);
 	});
 
+	it("reads a meta line on the strip, its figures badged and its words bare", () => {
+		render(
+			<Fold
+				title="Scoring"
+				meta={[{ figure: "25 slots" }, " 1 unit ", { figure: "+4%" }]}
+			>
+				<p>ladders</p>
+			</Fold>
+		);
+
+		expect(screen.getByText("25 slots")).toHaveClass("badge-theme");
+		expect(screen.getByText("+4%")).toHaveClass("badge-theme");
+		expect(screen.getByText("25 slots").closest("summary")).toHaveTextContent(
+			"25 slots 1 unit +4%"
+		);
+	});
+
 	it("wears the same chrome as the panels it sits beside", () => {
 		const { container } = render(
 			<Fold title="Coverage by category">

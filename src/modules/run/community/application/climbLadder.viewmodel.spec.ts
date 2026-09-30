@@ -46,7 +46,8 @@ describe("ladderFor", () => {
 				build: BLUE_BUILD,
 				closingBand: "perfect",
 				startedAtGate: 1,
-				title: "Completionist",
+				titles: ["Completionist"],
+				theme: "cascade",
 				coveragePercent: 42,
 				streak: 6,
 				storageKb: 896,
@@ -132,13 +133,14 @@ describe("ladderFor", () => {
 		expect(red).not.toHaveProperty("card");
 	});
 
-	it("links the card to the climber's in-game page and badges their worn title", () => {
+	it("links the card to the climber's in-game page and wears their titles and swatch", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
 		expect(blue?.card).toMatchObject({
 			profileHref: "/profile/blue",
-			title: "Completionist",
+			titles: ["Completionist"],
+			theme: "cascade",
 		});
 	});
 
@@ -157,7 +159,7 @@ describe("ladderFor", () => {
 		const gates = ladderFor(climb);
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
-		expect(blue?.card?.standing?.weight).toBe("5 of 4 weight");
+		expect(blue?.card?.standing?.weight).toBe("5 / 4");
 	});
 
 	it("tiles the run storage, the streak and the best category", () => {
@@ -165,7 +167,7 @@ describe("ladderFor", () => {
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
 		expect(blue?.card?.standing?.stats).toEqual([
-			{ label: "run storage", value: "896 KB" },
+			{ label: "run storage", value: "896 KB", color: "saffron" },
 			{ label: "streak", value: "6" },
 			{ label: "best", value: "JavaScript" },
 		]);

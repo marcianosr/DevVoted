@@ -1,10 +1,15 @@
 import {
 	DEX_TABS,
 	RUNS_NOTE,
+	runDetailFor,
 	runRowFor,
 	runTrackFor,
 	type DexTab,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
+import {
+	type Authorship,
+	isContributor,
+} from "~/modules/account/profile/domain/authorship.model";
 import type { RunHistoryEntry } from "~/modules/collection/dex/domain/runHistory.model";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
@@ -21,8 +26,6 @@ import {
 	type Border,
 } from "~/modules/account/profile/domain/border.model";
 import { rankFor } from "~/modules/account/profile/domain/rank.model";
-import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { AppearancePreviewProps } from "~/modules/account/profile/presentation/AppearancePreview.ui";
 import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 import type { ProfileClimbingProps } from "~/ui/kanto-theme/ProfileClimbing.ui";
 import type { ProfileCollectionProps } from "~/ui/kanto-theme/ProfileCollection.ui";
@@ -39,24 +42,28 @@ export type ProfileTabId = DexTab["id"] | OwnerTabId;
 
 export type ProfileTab = Omit<DexTab, "id"> & { id: ProfileTabId };
 
-const OWNER_TABS = [
-	{ id: "appearance", label: "appearance", color: "fuchsia" },
-	{ id: "borders", label: "borders", color: "vermillion" },
-	{ id: "titles", label: "titles", color: "celadon" },
+const APPEARANCE_TAB = {
+	id: "appearance",
+	label: "Appearance",
+	color: "fuchsia",
+} as const satisfies ProfileTab;
+
+const SHELF_TABS = [
+	{ id: "borders", label: "Borders", color: "vermillion" },
+	{ id: "titles", label: "Titles", color: "celadon" },
 ] as const satisfies readonly ProfileTab[];
 
-export const PROFILE_TABS: readonly ProfileTab[] = [...DEX_TABS, ...OWNER_TABS];
+export const PROFILE_TABS: readonly ProfileTab[] = [
+	APPEARANCE_TAB,
+	...DEX_TABS,
+	...SHELF_TABS,
+];
 
 export const isProfileTabId = (value: string): value is ProfileTabId =>
 	PROFILE_TABS.some((tab) => tab.id === value);
 
-const FALLBACK_TAB = PROFILE_TABS[0];
-
 export const isOwnerTabId = (value: string): value is OwnerTabId =>
 	OWNER_TAB_IDS.some((id) => id === value);
-
-export const profileThemeOf = (activeId: string): KantoColor =>
-	(PROFILE_TABS.find((tab) => tab.id === activeId) ?? FALLBACK_TAB).color;
 
 export type ProfileIdentity = {
 	readonly displayName: string;
@@ -65,6 +72,7 @@ export type ProfileIdentity = {
 	readonly borderUrl: string | null;
 	readonly wornTitles: readonly string[];
 	readonly pollsAnswered: number;
+	readonly authorship: Authorship;
 };
 
 export const profileCardFor = (
@@ -75,31 +83,14 @@ export const profileCardFor = (
 	titles: identity.wornTitles,
 	rank: rankFor(identity.pollsAnswered),
 	you,
+	...(isContributor(identity.authorship)
+		? { contribution: identity.authorship }
+		: {}),
 	...(identity.githubUsername === null
 		? {}
 		: { handle: identity.githubUsername }),
 	...(identity.photoUrl === null ? {} : { photoUrl: identity.photoUrl }),
 	...(identity.borderUrl === null ? {} : { borderUrl: identity.borderUrl }),
-});
-
-const faceOf = (identity: ProfileIdentity) => {
-	const [primaryTitle] = identity.wornTitles;
-	return {
-		...(primaryTitle === undefined ? {} : { title: primaryTitle }),
-		...(identity.photoUrl === null ? {} : { photoUrl: identity.photoUrl }),
-		...(identity.borderUrl === null ? {} : { borderUrl: identity.borderUrl }),
-	};
-};
-
-export const appearancePreviewFor = (
-	identity: ProfileIdentity
-): Omit<AppearancePreviewProps, "tryingOn"> => ({
-	card: profileCardFor(identity, false),
-	byline: {
-		handle: identity.githubUsername ?? identity.displayName,
-		...faceOf(identity),
-	},
-	climber: { name: identity.displayName, ...faceOf(identity) },
 });
 
 export const triedOnBorderOf = (
@@ -209,12 +200,23 @@ export const profileRecordFor = (
 	note: RECORD.note,
 });
 
-export const profileRunsFor = (record: ProfileRecord): DexRunsProps => ({
-	rows: record.recentRuns.map(runRowFor),
-	count: plural(record.recentRuns.length, "run"),
-	meta: RUNS.meta,
-	note: RUNS_NOTE,
-});
+export const profileRunsFor = (
+	record: ProfileRecord,
+	selectedId?: string
+): DexRunsProps => {
+	const picked =
+		record.recentRuns.find((entry) => String(entry.runId) === selectedId) ??
+		record.recentRuns[0];
+
+	return {
+		rows: record.recentRuns.map(runRowFor),
+		selectedId: picked === undefined ? null : String(picked.runId),
+		detail: picked === undefined ? null : runDetailFor(picked),
+		count: plural(record.recentRuns.length, "run"),
+		meta: RUNS.meta,
+		note: RUNS_NOTE,
+	};
+};
 
 export const profileClimbingFor = (
 	standing: ProfileStanding | null

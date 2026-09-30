@@ -1,8 +1,8 @@
 import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
+import { clsx } from "clsx";
+
 import { Badge } from "./Badge.ui";
-import { Balance, type BalanceProps } from "./Balance.ui";
 import type { KantoColor } from "./colors";
-import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import {
 	COVERAGE_BAND_COLOR,
 	COVERAGE_BAND_WORD,
@@ -13,6 +13,7 @@ import {
 } from "./CoverageBar.ui";
 import { Audit, type AuditProps } from "./Audit.ui";
 import { Figures } from "./Figures.ui";
+import { Header, type HeaderProps } from "./Header.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
@@ -21,42 +22,31 @@ import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
-import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
-import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+import { Version } from "./Version.ui";
 
 const COPY = {
 	coverage: "Coverage",
 	whatHappened: "What happened",
 } as const;
 
-const HEADER = "flex w-full flex-col gap-4";
-const TITLE_ROW = "flex w-full items-start gap-4";
-const NAMING = "flex min-w-0 flex-col gap-1";
-const CHIPS = "flex w-full flex-wrap items-center gap-2";
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const RECAP = "flex w-full flex-col gap-3";
-
-const SWATCH_SIZE = "hero";
-const TRACK_SIZE = "small";
+const LEAD =
+	"badge-theme inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold tabular-nums";
+const NAMING = "flex min-w-0 grow flex-col gap-1";
+const NAME_LINE = "flex flex-wrap items-center gap-2";
+const DETAIL = "text-xs text-theme-muted";
+const MARKS = "flex items-center gap-1";
+const EDGED = "border-l-2 border-l-theme bg-theme/5";
+const ROW_ROOM = "py-3";
+const VERSION_ARROW = "→";
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
+const HOLD_COLOR: KantoColor = "cinnabar";
 const RUN_OVER_COLOR: KantoColor = "cinnabar";
-const MARKED_BAND: CoverageBandId = "perfect";
-
-export type GateOutcomeChip = { label: string; color?: KantoColor };
-
-export type GateOutcomeHeader = {
-	swatch: GateSwatch;
-	earned: boolean;
-	swatches: readonly SwatchFill[];
-	title: string;
-	subtitle: string;
-	balance: BalanceProps;
-	chips: readonly GateOutcomeChip[];
-};
 
 export type GateOutcomePanel = {
 	title: string;
@@ -71,10 +61,27 @@ export type GateOutcomeLedgerPanel = GateOutcomePanel & {
 
 export type GateOutcomeBonusPanel = GateOutcomePanel & { detail: string };
 
-export type GateOutcomeBuildPanel = GateOutcomePanel & {
-	changes: readonly ConfigChipProps[];
-	note?: string;
-	emptyLabel?: string;
+export type GateOutcomeLead =
+	| { weight: number; glyph?: never; swatch?: never; color?: KantoColor }
+	| { glyph: string; weight?: never; swatch?: never; color?: KantoColor }
+	| { swatch: SwatchFill; weight?: never; glyph?: never; color?: never };
+
+export type GateOutcomeVersions = { from?: number; to: number };
+
+export type GateOutcomeRow = {
+	lead: GateOutcomeLead;
+	name: string;
+	versions?: GateOutcomeVersions;
+	verb?: string;
+	detail?: string;
+	marks?: readonly SwatchFill[];
+	badge: FoldBadge;
+	edge?: KantoColor;
+};
+
+export type GateOutcomeRowsPanel = GateOutcomePanel & {
+	rows: readonly GateOutcomeRow[];
+	hint?: string;
 };
 
 export type GateOutcomeAnswersPanel = GateOutcomeLedgerPanel;
@@ -86,13 +93,16 @@ export type GateOutcomeTail =
 	| { ending: GateEnding; choice?: never };
 
 export type GateOutcomeScreenProps = {
-	header: GateOutcomeHeader;
+	header: HeaderProps;
 	bar: CoverageBarProps;
+	outcome: CoverageBandId;
+	coverageHold?: string;
 	bonus?: GateOutcomeBonusPanel;
 	payouts?: PollScoresProps;
 	coverage: GateOutcomeLedgerPanel;
 	storage: GateOutcomeLedgerPanel;
-	changes?: GateOutcomeBuildPanel;
+	earned?: GateOutcomeRowsPanel;
+	changes?: GateOutcomeRowsPanel;
 	answers: GateOutcomeAnswersPanel;
 	audits?: readonly AuditProps[];
 	tail?: GateOutcomeTail;
@@ -100,56 +110,10 @@ export type GateOutcomeScreenProps = {
 	width?: ScreenWidth;
 };
 
-const GateOutcomeHeading = ({
-	band,
-	swatch,
-	earned,
-	swatches,
-	title,
-	subtitle,
-	balance,
-	chips,
-}: GateOutcomeHeader & { band: CoverageBandId }) => (
-	<header className={HEADER}>
-		<div className={TITLE_ROW}>
-			{earned ? (
-				<Swatch
-					state="discovered"
-					swatch={swatch}
-					marked={band === MARKED_BAND}
-					size={SWATCH_SIZE}
-				/>
-			) : (
-				<Swatch state="current" swatch={swatch} size={SWATCH_SIZE} />
-			)}
-			<span className={NAMING}>
-				<Typography variant="headline" as="h1">
-					{title}
-				</Typography>
-				<Typography variant="hint" as="span">
-					{subtitle}
-				</Typography>
-			</span>
-			<Balance {...balance} color={COVERAGE_BAND_COLOR[band]} />
-		</div>
-
-		<SwatchTrack swatches={swatches} size={TRACK_SIZE} />
-
-		{chips.length === 0 ? null : (
-			<div className={CHIPS}>
-				{chips.map((chip) => (
-					<Badge key={chip.label} color={chip.color}>
-						{chip.label}
-					</Badge>
-				))}
-			</div>
-		)}
-	</header>
-);
-
 type CoveragePanelProps = {
 	bar: CoverageBarProps;
-	band: CoverageBandId;
+	meter: CoverageBandId;
+	hold?: string;
 	bonus?: GateOutcomeBonusPanel;
 	payouts?: PollScoresProps;
 	open?: boolean;
@@ -157,7 +121,8 @@ type CoveragePanelProps = {
 
 const CoveragePanel = ({
 	bar,
-	band,
+	meter,
+	hold,
 	bonus,
 	payouts,
 	open = true,
@@ -167,7 +132,8 @@ const CoveragePanel = ({
 		summary={bonus?.summary}
 		badges={[
 			...(bonus?.badges ?? []),
-			{ label: COVERAGE_BAND_WORD[band], color: COVERAGE_BAND_COLOR[band] },
+			{ label: COVERAGE_BAND_WORD[meter], color: COVERAGE_BAND_COLOR[meter] },
+			...(hold === undefined ? [] : [{ label: hold, color: HOLD_COLOR }]),
 		]}
 		open={open}
 	>
@@ -192,20 +158,76 @@ const LedgerPanel = ({ rows, ...panel }: GateOutcomeLedgerPanel) => (
 	</Fold>
 );
 
-const ChangesPanel = ({
-	changes,
-	note,
-	emptyLabel,
-	...panel
-}: GateOutcomeBuildPanel) => (
-	<Fold {...panel}>
-		{changes.length > 0 || emptyLabel === undefined ? null : (
-			<Typography variant="hint">{emptyLabel}</Typography>
+const LeadTile = ({ lead }: { lead: GateOutcomeLead }) => {
+	if (lead.swatch !== undefined)
+		return <Swatch size="large" {...lead.swatch} />;
+
+	return (
+		<span aria-hidden data-screen-theme={lead.color} className={LEAD}>
+			{lead.weight ?? lead.glyph}
+		</span>
+	);
+};
+
+const Versions = ({ from, to }: GateOutcomeVersions) => (
+	<>
+		{from === undefined ? null : (
+			<>
+				<Version version={from} />
+				<span aria-hidden>{VERSION_ARROW}</span>
+			</>
 		)}
-		{changes.map((change, index) => (
-			<ConfigChip key={index} {...change} />
-		))}
-		{note === undefined ? null : <Typography variant="hint">{note}</Typography>}
+		<Version version={to} />
+	</>
+);
+
+const OutcomeRow = ({ row }: { row: GateOutcomeRow }) => (
+	<Panel.Row
+		theme={row.edge}
+		className={clsx(ROW_ROOM, row.edge !== undefined && EDGED)}
+		trailing={<Badge color={row.badge.color}>{row.badge.label}</Badge>}
+	>
+		<LeadTile lead={row.lead} />
+		<span className={NAMING}>
+			<span className={NAME_LINE}>
+				<Typography variant="subtitle" as="span">
+					{row.name}
+				</Typography>
+				{row.versions === undefined ? null : <Versions {...row.versions} />}
+				{row.verb === undefined ? null : (
+					<Typography variant="subtitle" as="span">
+						{row.verb}
+					</Typography>
+				)}
+			</span>
+			{row.detail === undefined ? null : (
+				<span className={DETAIL}>{row.detail}</span>
+			)}
+			{row.marks === undefined ? null : (
+				<span aria-hidden className={MARKS}>
+					{row.marks.map((mark, index) => (
+						<Swatch key={index} size="small" {...mark} />
+					))}
+				</span>
+			)}
+		</span>
+	</Panel.Row>
+);
+
+const RowsPanel = ({ rows, hint, ...panel }: GateOutcomeRowsPanel) => (
+	<Fold {...panel} flush>
+		<Panel.Rows>
+			{rows.map((row, index) => (
+				<OutcomeRow key={index} row={row} />
+			))}
+		</Panel.Rows>
+		{hint === undefined ? null : (
+			<Panel.Footer>
+				<Typography variant="hint" as="span">
+					{hint}
+				</Typography>
+			</Panel.Footer>
+		)}
 	</Fold>
 );
 
@@ -229,10 +251,13 @@ const EndingPanel = ({ title, detail }: GateEnding) => (
 export const GateOutcomeScreen = ({
 	header,
 	bar,
+	outcome,
+	coverageHold,
 	bonus,
 	payouts,
 	coverage,
 	storage,
+	earned,
 	changes,
 	answers,
 	audits = [],
@@ -240,7 +265,7 @@ export const GateOutcomeScreen = ({
 	footer,
 	width = "default",
 }: GateOutcomeScreenProps) => {
-	const band = coverageBandOf(bar.held, bar);
+	const meter = coverageBandOf(bar.held, bar);
 	const settling = tail?.choice !== undefined;
 
 	const shut = <T extends GateOutcomePanel>(panel: T): T =>
@@ -249,7 +274,8 @@ export const GateOutcomeScreen = ({
 	const coveragePanel = (
 		<CoveragePanel
 			bar={bar}
-			band={band}
+			meter={meter}
+			hold={coverageHold}
 			bonus={bonus}
 			payouts={payouts}
 			open={!settling}
@@ -257,13 +283,15 @@ export const GateOutcomeScreen = ({
 	);
 	const coverageLedger = <LedgerPanel {...shut(coverage)} />;
 	const storageLedger = <LedgerPanel {...shut(storage)} />;
+	const earnedPanel =
+		earned === undefined ? null : <RowsPanel {...shut(earned)} />;
 	const changesPanel =
-		changes === undefined ? null : <ChangesPanel {...shut(changes)} />;
+		changes === undefined ? null : <RowsPanel {...shut(changes)} />;
 	const answersPanel = <AnswersPanel {...shut(answers)} />;
 
 	const body = (
 		<>
-			<GateOutcomeHeading band={band} {...header} />
+			<Header {...header} pinned />
 
 			{audits.length === 0 ? null : (
 				<div className={AUDITS}>
@@ -282,6 +310,7 @@ export const GateOutcomeScreen = ({
 					</Typography>
 					<div className={COLUMN}>
 						{coveragePanel}
+						{earnedPanel}
 						{coverageLedger}
 						{storageLedger}
 						{changesPanel}
@@ -293,6 +322,7 @@ export const GateOutcomeScreen = ({
 					<div className={COLUMNS}>
 						<div className={COLUMN}>
 							{coveragePanel}
+							{earnedPanel}
 							{coverageLedger}
 						</div>
 
@@ -312,7 +342,7 @@ export const GateOutcomeScreen = ({
 		</>
 	);
 
-	if (band === RUN_OVER_BAND) {
+	if (outcome === RUN_OVER_BAND) {
 		return (
 			<Screen theme={RUN_OVER_COLOR} width={width} ground="bare">
 				{body}

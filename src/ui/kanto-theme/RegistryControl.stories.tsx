@@ -40,9 +40,21 @@ export const Locked: Story = {
 	args: {
 		glyph: "+",
 		title: "Extend the registry",
-		detail: "one more offer, now and every shop after",
+		detail: "add extra offers throughout the run, against a price",
 		locked: true,
 		unlock: "Reach Cascade",
+		onPress: undefined,
+	},
+};
+
+export const Uncarried: Story = {
+	args: {
+		glyph: "⚑",
+		title: "git tag",
+		detail:
+			"save your last checkpoint once; each gate asks a higher price to activate it",
+		carried: false,
+		carry: "new run · 128 KB",
 		onPress: undefined,
 	},
 };

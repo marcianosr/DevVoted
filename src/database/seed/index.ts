@@ -39,6 +39,7 @@ import {
 	SEED_PLAYERS,
 } from "~/database/seed/cast";
 import { SEED_QUESTIONS } from "~/database/seed/questions";
+import { SEED_OWNER_HANDLE, seedOwner } from "~/database/seed/owner";
 import { hashOf } from "~/database/seed/random";
 import {
 	seedArchivedRuns,
@@ -465,6 +466,13 @@ const seedDatabase = async (): Promise<void> => {
 
 	const players = await seedPlayers();
 	console.info(`👤 ${players} playable accounts`);
+
+	const owner = await seedOwner();
+	console.info(
+		owner === null
+			? `🙋 no local account for ${SEED_OWNER_HANDLE}; log in once, then seed again`
+			: `🙋 ${owner.displayName} owns a spread of swatches`
+	);
 
 	const climbers = await seedClimbers();
 	console.info(`🧗 ${climbers} community climbers`);

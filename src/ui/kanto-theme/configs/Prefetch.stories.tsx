@@ -32,3 +32,19 @@ export const ReadsAheadInPrep: Story = {
 			)
 		),
 };
+
+const PREFETCH_V2 = { ...CONFIGS.prefetch, level: 2 };
+
+export const ReadsTheShapeOnThePollAtV2: Story = {
+	render: () => asPoll(runWith([PREFETCH_V2], MIXED_GATE)),
+};
+
+export const ReadsTheShapeInPrepAtV2: Story = {
+	render: () =>
+		asPrep(
+			afterAnswers(
+				runWith([PREFETCH_V2], [...MIXED_GATE, ...JS_GATE]),
+				ALL_RIGHT
+			)
+		),
+};

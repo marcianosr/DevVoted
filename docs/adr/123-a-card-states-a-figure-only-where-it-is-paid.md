@@ -67,6 +67,8 @@ anything handed to it either shrinks to nothing or grows without limit.
   carried by which provenance the domain returned.
 - A shut card in every weight group is now the same height, so the flow grid
   fills its rows.
-- The shop still quotes the undiscounted `sellRefund` while paying the
-  discount-aware `sellRefundIn`, which decision 1 does not settle. Tracked on
-  `DVTD-ea7h`.
+- The shop quoted the undiscounted `sellRefund` while paying the discount-aware
+  `sellRefundIn`, which decision 1 did not settle. Closed by
+  [ADR-152](152-every-price-previews-the-balance-it-leaves.md) decision 3: a
+  build card quotes `sellRefundIn` against the installed build, and states no
+  refund at all where that is zero.

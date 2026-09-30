@@ -41,10 +41,12 @@ import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
 import {
+	isCarriedService,
 	REGISTRY_CONTROL_IDS,
 	REGISTRY_CONTROL_LIST,
 	type RegistryControlId,
 } from "~/modules/run/shop/domain/registryControl.model";
+import { bootRun } from "~/modules/run/run/domain/warmBoot.model";
 import { controldex } from "~/modules/collection/dex/domain/controldex.model";
 import { dexControlsFor } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
@@ -499,7 +501,14 @@ const RunGame = ({
 			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS),
 			startAtGate
 		);
-		return startAtGate === 0 ? { ...fresh, storage: PROTO_START_KB } : fresh;
+		const booted = bootRun(fresh, {
+			storageKb: 0,
+			serviceIds: REGISTRY_CONTROL_LIST.filter(isCarriedService).map(
+				(control) => control.id
+			),
+			archiveBytes: 0,
+		});
+		return startAtGate === 0 ? { ...booted, storage: PROTO_START_KB } : booted;
 	});
 	const grantStorage = () =>
 		setState((current) => ({
@@ -700,6 +709,7 @@ const RunGame = ({
 					onSell={(id) => dispatch({ type: "sell", configId: id })}
 					onUpgrade={(id) => dispatch({ type: "upgrade", configId: id })}
 					onRebuild={() => dispatch({ type: "rebuild-draft" })}
+					onSkip={() => dispatch({ type: "skip-shop" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
 					onAbandon={() => undefined}

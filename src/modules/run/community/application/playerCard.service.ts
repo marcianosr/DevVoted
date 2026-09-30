@@ -1,6 +1,11 @@
+import { authorshipOf } from "~/modules/account/profile/domain/authorship.model";
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
-import { primaryTitleName } from "~/modules/account/profile/domain/title.model";
-import { fetchPublicProfile } from "~/modules/account/profile/infrastructure/profile.repository";
+import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
+import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
+import {
+	fetchPublicProfile,
+	fetchPublishedPollCounts,
+} from "~/modules/account/profile/infrastructure/profile.repository";
 import {
 	percentOf,
 	runCoverageOf,
@@ -37,22 +42,24 @@ export const getPlayerCardService = async (
 	userId: string
 ): Promise<ApiResponse<PlayerCardView>> =>
 	handleApiOperation(async () => {
-		const [profile, climber, bestCategories] = await Promise.all([
+		const [profile, climber, bestCategories, pollCounts] = await Promise.all([
 			fetchPublicProfile(userId),
 			fetchActiveClimberFor(userId),
 			fetchBestCategories([userId]),
+			fetchPublishedPollCounts(userId),
 		]);
 		if (!profile) throw new Error("User not found");
 
 		const borderUrl = borderUrlOf(profile.equippedBorderId);
-		const title = primaryTitleName(profile.equippedTitleIds);
 
 		return {
 			userId,
 			displayName: profile.displayName,
 			...(profile.photoUrl === null ? {} : { photoUrl: profile.photoUrl }),
 			...(borderUrl === null ? {} : { borderUrl }),
-			...(title === null ? {} : { title }),
+			titles: wornTitleNames(profile.equippedTitleIds),
+			theme: profileThemeFor(profile.equippedSwatchId, profile.ownedSwatchIds),
+			authorship: authorshipOf(profile.role, pollCounts),
 			...(climber === null
 				? {}
 				: { run: runOf(climber, bestCategories.get(userId)) }),

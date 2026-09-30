@@ -1,5 +1,6 @@
 import { clsx } from "clsx";
 
+import type { KantoColor } from "./colors";
 import { Icon, type IconName } from "./Icon.ui";
 import { Swatch, type SwatchMark, type SwatchSize } from "./Swatch.ui";
 
@@ -26,6 +27,15 @@ const accessibleNameOf = (label: string, note?: string) =>
 	note === undefined ? label : `${label}${SEPARATOR}${note}`;
 
 export type ActionMark = "dashed";
+export type ActionTone = "action" | "commit";
+
+const COMMIT_COLOR: KantoColor = "saffron";
+
+const toneColorOf = (
+	tone: ActionTone,
+	refused: boolean
+): KantoColor | undefined =>
+	tone === "commit" && !refused ? COMMIT_COLOR : undefined;
 
 export type ActionProps = {
 	label: string;
@@ -33,6 +43,7 @@ export type ActionProps = {
 	swatch?: SwatchMark;
 	icon?: IconName;
 	mark?: ActionMark;
+	tone?: ActionTone;
 	onPress?: () => void;
 };
 
@@ -62,6 +73,7 @@ export const Action = ({
 	swatch,
 	icon,
 	mark,
+	tone = "action",
 	onPress,
 }: ActionProps) => {
 	const refused = onPress === undefined;
@@ -70,6 +82,7 @@ export const Action = ({
 		<button
 			type="button"
 			aria-label={accessibleNameOf(label, note)}
+			data-screen-theme={toneColorOf(tone, refused)}
 			disabled={refused}
 			onClick={onPress}
 			className={clsx(PRESS, refused ? REFUSED : LIVE)}

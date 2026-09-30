@@ -449,7 +449,7 @@ describe("ConfigChip states and controls", () => {
 		expect(onToggleInfo).toHaveBeenCalledOnce();
 	});
 
-	it("withholds the effect, the weight and the price while collapsed", () => {
+	it("peeks the effect on one truncated line and withholds the weight and the price while collapsed", () => {
 		render(
 			<ConfigChip
 				name="Cache"
@@ -459,8 +459,36 @@ describe("ConfigChip states and controls", () => {
 			/>
 		);
 
-		expect(screen.queryByText(INFO.description)).not.toBeInTheDocument();
+		expect(screen.getByText(INFO.description)).toHaveClass("truncate");
 		expect(screen.queryByText("uninstalls for")).not.toBeInTheDocument();
+	});
+
+	it("stops peeking once expanded, stating the effect only once", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(screen.getAllByText(INFO.description)).toHaveLength(1);
+		expect(screen.getByText(INFO.description)).not.toHaveClass("truncate");
+	});
+
+	it("peeks without the peek claiming width, so the name keeps its own floor", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(screen.getByText(INFO.description)).toHaveClass("w-0", "min-w-full");
 	});
 
 	it("states itself where no panel wired a fold, rather than hiding behind one", () => {
@@ -867,9 +895,12 @@ describe("ConfigChip's width", () => {
 		);
 
 		const name = screen.getByText("Code Coverage");
+		const seat = name.parentElement;
 
-		expect(name).toHaveClass("break-words", "flex-1");
+		expect(name).toHaveClass("break-words");
+		expect(seat).toHaveClass("flex-1");
 		expect(name).not.toHaveClass("min-w-0");
+		expect(seat).not.toHaveClass("min-w-0");
 	});
 
 	it("seats the name and the presses in one row", () => {
@@ -883,7 +914,7 @@ describe("ConfigChip's width", () => {
 			/>
 		);
 
-		const row = screen.getByText("Code Coverage").parentElement;
+		const row = screen.getByText("Code Coverage").parentElement?.parentElement;
 
 		expect(row).toHaveClass("flex-wrap");
 		expect(row).toContainElement(
@@ -905,7 +936,7 @@ describe("ConfigChip's width", () => {
 		const tagLine = screen.getByText(
 			"JavaScript or TypeScript only"
 		).parentElement;
-		const row = screen.getByText("Code Coverage").parentElement;
+		const row = screen.getByText("Code Coverage").parentElement?.parentElement;
 
 		expect(tagLine).toHaveClass("w-full");
 		expect(tagLine).not.toContainElement(screen.getByText("Code Coverage"));
@@ -1222,5 +1253,99 @@ describe("ConfigChip's highlight", () => {
 				screen.getByText("Telemetry").parentElement?.childElementCount
 			).toBe(1);
 		});
+	});
+});
+
+describe("a chip naming which of its prices is pointed at", () => {
+	const CHIP = { name: "Cache", slots: 4, badges: [] };
+
+	it("names the install press, so the header can price the draft", async () => {
+		const onQuote = vi.fn();
+		render(
+			<ConfigChip
+				{...CHIP}
+				install={{ onPress: vi.fn(), price: "64 KB" }}
+				onQuote={onQuote}
+			/>
+		);
+
+		await userEvent.hover(
+			screen.getByRole("button", { name: "Install Cache · 64 KB" })
+		);
+
+		expect(onQuote).toHaveBeenCalledWith("install");
+	});
+
+	it("names the uninstall press, which pays rather than charges", async () => {
+		const onQuote = vi.fn();
+		render(
+			<ConfigChip
+				{...CHIP}
+				info={INFO}
+				onUninstall={vi.fn()}
+				onQuote={onQuote}
+			/>
+		);
+
+		await userEvent.hover(
+			screen.getByRole("button", { name: /^Uninstall Cache/ })
+		);
+
+		expect(onQuote).toHaveBeenCalledWith("uninstall");
+	});
+
+	it("names the upgrade press, so a card carrying two prices cannot confuse them", async () => {
+		const onQuote = vi.fn();
+		render(
+			<ConfigChip
+				{...CHIP}
+				info={INFO}
+				upgrades={UPGRADES}
+				onUninstall={vi.fn()}
+				onToggleUpgrades={vi.fn()}
+				onQuote={onQuote}
+			/>
+		);
+
+		await userEvent.hover(
+			screen.getByRole("button", { name: /^Upgrade Cache to v2/ })
+		);
+
+		expect(onQuote).toHaveBeenCalledWith("upgrade");
+	});
+
+	it("names nothing once the pointer leaves the price", async () => {
+		const onQuote = vi.fn();
+		render(
+			<ConfigChip
+				{...CHIP}
+				install={{ onPress: vi.fn(), price: "64 KB" }}
+				onQuote={onQuote}
+			/>
+		);
+
+		const press = screen.getByRole("button", { name: "Install Cache · 64 KB" });
+		await userEvent.hover(press);
+		await userEvent.unhover(press);
+
+		expect(onQuote).toHaveBeenLastCalledWith();
+	});
+
+	it("leaves the card's own hover alone, which the weight track still needs", async () => {
+		const onHover = vi.fn();
+		const onQuote = vi.fn();
+		render(
+			<ConfigChip
+				{...CHIP}
+				install={{ onPress: vi.fn(), price: "64 KB" }}
+				onHover={onHover}
+				onQuote={onQuote}
+			/>
+		);
+
+		await userEvent.hover(screen.getByText("Cache"));
+
+		expect(onHover).toHaveBeenCalledTimes(1);
+		expect(onQuote).not.toHaveBeenCalled();
 	});
 });

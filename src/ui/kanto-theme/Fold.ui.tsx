@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { Lead, type LeadLine } from "./Lead.ui";
 import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography, type TypographyVariant } from "./Typography.ui";
 import { Verdict, type VerdictOutcome } from "./Verdict.ui";
@@ -16,6 +17,7 @@ const CARET =
 const NAMING = "grow";
 const META = "flex flex-wrap items-center gap-2";
 const BODY = "flex w-full flex-col gap-4 px-4 py-4";
+const FLUSH_BODY = "flex w-full flex-col";
 
 const CARET_GLYPH = "›";
 
@@ -35,9 +37,18 @@ export type FoldProps = {
 	heading?: FoldHeading;
 	summary?: string;
 	badges?: readonly FoldBadge[];
+	meta?: LeadLine;
 	open?: boolean;
+	flush?: boolean;
 	children: ReactNode;
 };
+
+const hasStrip = ({
+	summary,
+	badges,
+	meta,
+}: Pick<FoldProps, "summary" | "badges" | "meta">) =>
+	summary !== undefined || (badges ?? []).length > 0 || meta !== undefined;
 
 export const Fold = ({
 	title,
@@ -46,7 +57,9 @@ export const Fold = ({
 	heading = "section",
 	summary,
 	badges = [],
+	meta,
 	open = false,
+	flush = false,
 	children,
 }: FoldProps) => (
 	<details open={open} className={clsx(PANEL_SURFACE, FOLD)}>
@@ -60,7 +73,7 @@ export const Fold = ({
 					{title}
 				</Typography>
 			</span>
-			{summary === undefined && badges.length === 0 ? null : (
+			{hasStrip({ summary, badges, meta }) ? (
 				<span className={META}>
 					{summary === undefined ? null : (
 						<Typography variant="hint" as="span">
@@ -72,9 +85,10 @@ export const Fold = ({
 							{badge.label}
 						</Badge>
 					))}
+					{meta === undefined ? null : <Lead line={meta} as="span" />}
 				</span>
-			)}
+			) : null}
 		</summary>
-		<div className={BODY}>{children}</div>
+		<div className={flush ? FLUSH_BODY : BODY}>{children}</div>
 	</details>
 );

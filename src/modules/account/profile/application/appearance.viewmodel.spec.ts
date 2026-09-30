@@ -11,13 +11,14 @@ import {
 	borders,
 	findBorderById,
 } from "~/modules/account/profile/domain/border.model";
+import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
 
 const STACK_TRACE = "border-00b9a62e";
 const MERGE_CONFLICT = "border-0a006140";
 const NEWBIE = "title-rank-poll-newbie";
 const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
-const BIKESHEDDER = "title-bikeshedder";
+const BIKESHEDDER = "title-it-compiles";
 
 const IDENTITY: ProfileIdentity = {
 	displayName: "misty_cerulean",
@@ -26,6 +27,7 @@ const IDENTITY: ProfileIdentity = {
 	borderUrl: null,
 	wornTitles: [],
 	pollsAnswered: 34,
+	authorship: NO_AUTHORSHIP,
 };
 
 const INPUT: AppearanceInput = {

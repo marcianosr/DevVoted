@@ -1,5 +1,7 @@
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
-import { gateSwatchAt } from "./swatchTrack.viewmodel";
+import { fundsOf } from "~/modules/run/run/application/prepScreen.viewmodel";
+import { gateSwatchAt, swatchTrackFor } from "./swatchTrack.viewmodel";
 import {
 	answerTallyOf,
 	categoryName,
@@ -18,6 +20,7 @@ import type {
 	ReviewRow,
 	ReviewScreenProps,
 } from "~/ui/kanto-theme/ReviewScreen.ui";
+import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 
 const noop = () => {};
 
@@ -75,12 +78,18 @@ export type ReviewFrame = {
 	gate: number;
 	answers: readonly GateAnswer[];
 	open?: boolean;
+	swatchGates?: readonly number[];
+	balanceKb?: number;
+	readout?: RunReadoutProps;
 };
 
 export const reviewPropsFor = ({
 	gate,
 	answers,
 	open,
+	swatchGates = [],
+	balanceKb,
+	readout,
 }: ReviewFrame): ReviewScreenProps => {
 	const swatch = gateSwatchAt(gate);
 
@@ -88,7 +97,14 @@ export const reviewPropsFor = ({
 		header: {
 			swatch,
 			title: `${REVIEW_LEAD} ${REVIEW_SEPARATOR} ${swatch.gateName}`,
-			subtitle: `gate ${gate} ${REVIEW_SEPARATOR} ${plural(answers.length, "poll")}`,
+			swatchState: "discovered",
+			swatches: swatchTrackFor(swatchGates, gate),
+			note: plural(answers.length, "poll"),
+			readout,
+			funds:
+				balanceKb === undefined
+					? undefined
+					: fundsOf(balanceKb, STORAGE_BALANCE),
 			badges: [
 				...answerTallyOf(answers),
 				{

@@ -29,14 +29,8 @@ pairs are the pre-DevVoted names unchanged; five categories are newly named.
 
 ## Decision 2: a category has two rungs
 
-One for answering polls in a subject, one for getting them right:
-`category-answered:<code>` at 10 and `category-correct:<code>` at 25.
-
-This is the shape the old roster already had — a participation award beside a
-mastery award — and it is the shape the names come in pairs for. The entry rung
-is 10 rather than "your first", which is what `docs/old-beans/DVTD-vje6`
-sketched: at one, all twelve land inside two runs and the announcement notice
-becomes a wall.
+Replaced by [ADR-145](145-a-category-title-counts-distinct-polls.md): both rungs
+count distinct polls, at 50.
 
 ## Decision 3: the ids do not move
 
@@ -59,25 +53,7 @@ that row a title. Nothing here reopens it.
 
 ## Decision 5: a second roster names how you play, unflattering entries included
 
-Trimmed to eight by [ADR-140](140-the-shelf-holds-the-rank-ladder.md) Decision 4.
-
-Twenty-nine titles beyond the categories, over builds (`node_modules`, `Vanilla JS`,
-`Serverless`), volume (`Green Build`, `Touch Grass`), and behaviour
-(`Works On My Machine`, `Bikeshedder`, `Stack Overflow`, `Off By One`, `Heisenbug`).
-
-They cost almost nothing because the engine was already counting. Before this,
-`objectiveIncrementsFor` emitted twenty-four metrics for every player, for life, and
-exactly two of them fed a title; the rest existed only to unlock configs. Naming them
-is a row in `TITLES`, not new plumbing. Only three needed a new emission:
-`bare-build-clear` and the two run-streak bars.
-
-**Six are unflattering** and are earned, held and worn like any other. The register is
-developer-native self-deprecation, and the shelf is opt-in: nothing is ever worn
-without being chosen, so an unkind title is a joke its holder gets to tell.
-
-A one-shot metric is no longer exclusively an unlock's. `ONE_SHOT_METRICS` is now a
-shared vocabulary, so the completeness guard that asserted every one-shot belonged to
-a config or service moved to the title spec, where both consumers are visible.
+Replaced by [ADR-146](146-the-special-roster-names-moments-of-a-run.md).
 
 ## Decision 6: the rank ladder is derived, and is not a title
 

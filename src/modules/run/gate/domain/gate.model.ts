@@ -8,17 +8,21 @@ import {
 } from "~/modules/run/build/domain/build.model";
 import {
 	SLICE_WINDOW,
+	VICTORY_GATE,
 	failPeelShareFor,
-	meetsGateFloor,
+	meetsWindowMinimum,
 	peelQuotaSlotsFor,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
+	BASE_UNIT,
 	type CoverageBand,
+	type CoverageBandId,
 	atLeastBand,
 	bandOf,
 	floorAt,
 	healthyAt,
+	meetsBand,
 	okAt,
 	percentOf,
 	runCoverageOf,
@@ -124,7 +128,7 @@ export const peelConfigRangeFor = (
 
 export type GateClosing = "cleared" | "held" | "fatal";
 
-export type GateHoldReason = "bare" | "floor" | "band" | "catch";
+export type GateHoldReason = "bare" | "unscored" | "band" | "catch";
 
 export type GateRuling =
 	| { readonly closing: "cleared" }
@@ -135,6 +139,7 @@ export type GateClose = {
 	readonly build: Build;
 	readonly bankedUnits: number;
 	readonly unitsThisGate: number;
+	readonly baseUnitsThisGate: number;
 	readonly correctThisGate: number;
 	readonly gatesCleared: number;
 	readonly schedule: AuditSchedule;
@@ -146,8 +151,8 @@ export const runCoverageAtClose = (close: GateClose): number =>
 export const isFlawlessGate = (close: GateClose): boolean =>
 	close.correctThisGate >= SLICE_WINDOW;
 
-export const clearsGateFloor = (close: GateClose): boolean =>
-	meetsGateFloor(close.correctThisGate);
+export const windowScored = (close: GateClose): boolean =>
+	meetsWindowMinimum(close.baseUnitsThisGate);
 
 export const bandAtClose = (close: GateClose): CoverageBand => {
 	const ladder = gateLadderFor(
@@ -169,6 +174,12 @@ const closingBandFor = (close: GateClose): CoverageBand =>
 		? atLeastBand(bandAtClose(close), "shaky")
 		: bandAtClose(close);
 
+const lowestClearingBandAt = (gate: number): CoverageBandId =>
+	gate >= VICTORY_GATE ? "healthy" : "ok";
+
+export const clearsAt = (band: CoverageBandId, gate: number): boolean =>
+	meetsBand(bandOf(band), lowestClearingBandAt(gate));
+
 export const gateRulingFor = (close: GateClose): GateRuling => {
 	if (isBare(close.build)) return { closing: "held", heldBy: "bare" };
 
@@ -178,8 +189,9 @@ export const gateRulingFor = (close: GateClose): GateRuling => {
 		return catcherFor(close.build.configs) === undefined
 			? { closing: "fatal" }
 			: { closing: "held", heldBy: "catch" };
-	if (!clearsGateFloor(close)) return { closing: "held", heldBy: "floor" };
-	if (band.id === "shaky") return { closing: "held", heldBy: "band" };
+	if (!windowScored(close)) return { closing: "held", heldBy: "unscored" };
+	if (!clearsAt(band.id, close.gatesCleared))
+		return { closing: "held", heldBy: "band" };
 	return { closing: "cleared" };
 };
 
@@ -200,6 +212,7 @@ export type GateProjection = {
 
 export const gateProjectionFor = (
 	units: number,
+	baseUnits: number,
 	preview: PerAnswerPreview,
 	gate: number,
 	demand: number
@@ -214,7 +227,7 @@ export const gateProjectionFor = (
 		demand,
 		pass,
 		miss: held,
-		passClears: pass >= demand,
-		missClears: held >= demand,
+		passClears: pass >= demand && meetsWindowMinimum(baseUnits + BASE_UNIT),
+		missClears: held >= demand && meetsWindowMinimum(baseUnits),
 	};
 };

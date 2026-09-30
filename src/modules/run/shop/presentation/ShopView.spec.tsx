@@ -15,11 +15,17 @@ import { ShopView } from "./ShopView.component";
 
 const noop = () => {};
 
+const BALANCES = 2;
+
+const showLockedServices = () =>
+	userEvent.click(screen.getByRole("button", { name: /locked service/ }));
+
 const handlers = {
 	onDraft: noop,
 	onSell: noop,
 	onUpgrade: noop,
 	onRebuild: noop,
+	onSkip: noop,
 	onExtend: noop,
 	onPlantPin: noop,
 	onAbandon: noop,
@@ -33,7 +39,7 @@ const view = createMockRunView({
 	slots: 6,
 	slotsUsed: 2,
 	offers: [
-		createMockShopOffer(CONFIGS.eslint, { priceKb: 64, installable: true }),
+		createMockShopOffer(CONFIGS.linter, { priceKb: 64, installable: true }),
 		createMockShopOffer(CONFIGS.ts, { priceKb: 4096, installable: false }),
 	],
 	gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
@@ -48,8 +54,10 @@ describe("ShopView", () => {
 	it("stands the build beside the registry", () => {
 		render(<ShopView view={view} {...handlers} />);
 
-		expect(screen.getByText("Build")).toBeInTheDocument();
-		expect(screen.getByText("Registry")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Build" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Registry" })
+		).toBeInTheDocument();
 	});
 
 	it("names the shop for the gate it is stocking for, not the one cleared", () => {
@@ -64,16 +72,16 @@ describe("ShopView", () => {
 		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Install ESLint/ })
+			screen.getByRole("button", { name: /Install Linter/ })
 		);
-		expect(onDraft).toHaveBeenCalledWith(CONFIGS.eslint.id);
+		expect(onDraft).toHaveBeenCalledWith(CONFIGS.linter.id);
 	});
 
 	it("prices the install on the button rather than in a badge beside it", () => {
 		render(<ShopView view={view} {...handlers} />);
 
 		const install = screen.getByRole("button", {
-			name: "Install ESLint \u00b7 64 KB",
+			name: "Install Linter \u00b7 64 KB",
 		});
 
 		expect(install).toHaveTextContent("Install");
@@ -85,11 +93,11 @@ describe("ShopView", () => {
 		render(<ShopView view={view} {...handlers} />);
 
 		await user.hover(
-			screen.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
+			screen.getByRole("button", { name: "Install Linter \u00b7 64 KB" })
 		);
 
-		expect(screen.getByText(/after install/)).toBeInTheDocument();
-		expect(screen.getByText("448 KB")).toBeInTheDocument();
+		expect(screen.getAllByText(/after install/)).toHaveLength(BALANCES);
+		expect(screen.getAllByText("448 KB")).toHaveLength(BALANCES);
 	});
 
 	it("drops the preview once the pointer leaves the offer", async () => {
@@ -97,7 +105,7 @@ describe("ShopView", () => {
 		render(<ShopView view={view} {...handlers} />);
 
 		const press = screen.getByRole("button", {
-			name: "Install ESLint \u00b7 64 KB",
+			name: "Install Linter \u00b7 64 KB",
 		});
 		await user.hover(press);
 		await user.unhover(press);
@@ -110,11 +118,11 @@ describe("ShopView", () => {
 
 		act(() => {
 			screen
-				.getByRole("button", { name: "Install ESLint \u00b7 64 KB" })
+				.getByRole("button", { name: "Install Linter \u00b7 64 KB" })
 				.focus();
 		});
 
-		expect(screen.getByText("448 KB")).toBeInTheDocument();
+		expect(screen.getAllByText("448 KB")).toHaveLength(BALANCES);
 	});
 
 	it("previews nothing for an offer the balance cannot cover", async () => {
@@ -124,6 +132,28 @@ describe("ShopView", () => {
 		await user.hover(screen.getByRole("button", { name: /^Install \.ts/ }));
 
 		expect(screen.queryByText(/after install/)).not.toBeInTheDocument();
+	});
+
+	it("previews what an uninstall would hand back, counting the balance up", async () => {
+		const user = userEvent.setup();
+		render(<ShopView view={view} {...handlers} />);
+
+		await user.hover(screen.getByRole("button", { name: /^Uninstall \.js/ }));
+
+		expect(screen.getAllByText(/after uninstall/)).toHaveLength(BALANCES);
+		expect(screen.getAllByText("528 KB")).toHaveLength(BALANCES);
+	});
+
+	it("previews the upgrade rather than the uninstall on the same card", async () => {
+		const user = userEvent.setup();
+		render(<ShopView view={view} {...handlers} />);
+
+		await user.hover(
+			screen.getByRole("button", { name: /^Upgrade \.js to v2/ })
+		);
+
+		expect(screen.getAllByText(/after upgrade/)).toHaveLength(BALANCES);
+		expect(screen.queryByText(/after uninstall/)).not.toBeInTheDocument();
 	});
 
 	it("refuses the install of an offer the run cannot afford", () => {
@@ -142,6 +172,29 @@ describe("ShopView", () => {
 			screen.getByRole("button", { name: /Rebuild the registry/ })
 		);
 		expect(onRebuild).toHaveBeenCalled();
+	});
+
+	it("skips the shop from its control beside Rebuild", async () => {
+		const onSkip = vi.fn();
+		render(<ShopView view={view} {...handlers} onSkip={onSkip} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Skip the shop/ })
+		);
+		expect(onSkip).toHaveBeenCalled();
+	});
+
+	it("shuts the skip once the registry was touched", () => {
+		const touched = {
+			...view,
+			shopControls: { ...view.shopControls, canSkip: false },
+		};
+		render(<ShopView view={touched} {...handlers} />);
+
+		expect(screen.getByText("registry touched")).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /Skip the shop/ })
+		).not.toBeInTheDocument();
 	});
 
 	it("leaves for prep from the footer", async () => {
@@ -196,10 +249,10 @@ describe("ShopView", () => {
 		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Install ESLint/ })
+			screen.getByRole("button", { name: /Install Linter/ })
 		);
 
-		expect(onDraft).toHaveBeenCalledWith("eslint");
+		expect(onDraft).toHaveBeenCalledWith("linter");
 	});
 
 	it("arms an install that crosses a rung, and commits it on the second press", async () => {
@@ -207,7 +260,7 @@ describe("ShopView", () => {
 		const crossing = createMockRunView({
 			...view,
 			offers: [
-				createMockShopOffer(CONFIGS.eslint, {
+				createMockShopOffer(CONFIGS.linter, {
 					priceKb: 64,
 					installable: true,
 					scale: { from: 4, to: 6, perGateKb: 16 },
@@ -217,26 +270,26 @@ describe("ShopView", () => {
 		render(<ShopView view={crossing} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Install ESLint/ })
+			screen.getByRole("button", { name: /Install Linter/ })
 		);
 		expect(onDraft).not.toHaveBeenCalled();
 		expect(screen.getByText("Build space scales 4 → 6")).toBeInTheDocument();
 
 		const confirm = screen.getByRole("button", {
-			name: /Confirm installing ESLint/,
+			name: /Confirm installing Linter/,
 		});
 		expect(confirm).toHaveTextContent("Confirm");
 		expect(confirm).toHaveAttribute("data-screen-theme", "saffron");
 
 		await userEvent.click(confirm);
-		expect(onDraft).toHaveBeenCalledWith("eslint");
+		expect(onDraft).toHaveBeenCalledWith("linter");
 	});
 
 	it("says what the crossing costs every gate, not only what it costs once", async () => {
 		const crossing = createMockRunView({
 			...view,
 			offers: [
-				createMockShopOffer(CONFIGS.eslint, {
+				createMockShopOffer(CONFIGS.linter, {
 					priceKb: 64,
 					installable: true,
 					scale: { from: 4, to: 6, perGateKb: 16 },
@@ -246,7 +299,7 @@ describe("ShopView", () => {
 		render(<ShopView view={crossing} {...handlers} />);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: /Install ESLint/ })
+			screen.getByRole("button", { name: /Install Linter/ })
 		);
 
 		expect(
@@ -427,6 +480,7 @@ describe("ShopView services (ADR-116)", () => {
 	const gateFour = createMockRunView({
 		storage: 512,
 		gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
+		warmBoot: { storageKb: 0, serviceIds: ["extend", "pin"], archiveBytes: 0 },
 		shopControls: createMockShopControls({
 			rebuildAvailable: true,
 			canRebuild: true,
@@ -437,10 +491,11 @@ describe("ShopView services (ADR-116)", () => {
 		}),
 	});
 
-	it("names a service the account has not earned, with the line that earns it and no press", () => {
+	it("names a service the account has not earned, with the line that earns it and no press", async () => {
 		render(
 			<ShopView view={{ ...gateFour, unlockedServiceIds: [] }} {...handlers} />
 		);
+		await showLockedServices();
 
 		expect(screen.getByText("Extend the registry")).toBeVisible();
 		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
@@ -448,6 +503,30 @@ describe("ShopView services (ADR-116)", () => {
 		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
 		expect(
 			screen.queryByRole("button", { name: /Extend the registry/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("names an unlocked service the run did not carry in, says where it is carried, and takes no press (ADR-153)", () => {
+		render(
+			<ShopView
+				view={{
+					...gateFour,
+					unlockedServiceIds: ["extend", "pin"],
+					warmBoot: null,
+				}}
+				{...handlers}
+			/>
+		);
+
+		expect(screen.getByText("Extend the registry")).toBeVisible();
+		expect(screen.getByText("new run · 64 KB")).toBeVisible();
+		expect(screen.getByText("git tag")).toBeVisible();
+		expect(screen.getByText("new run · 128 KB")).toBeVisible();
+		expect(
+			screen.queryByRole("button", { name: /Extend the registry/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /git tag/ })
 		).not.toBeInTheDocument();
 	});
 
@@ -461,13 +540,14 @@ describe("ShopView services (ADR-116)", () => {
 		).toBeEnabled();
 	});
 
-	it("sells an earned service like any other, with no press on the locked ones", () => {
+	it("sells an earned service like any other, with no press on the locked ones", async () => {
 		render(
 			<ShopView
 				view={{ ...gateFour, unlockedServiceIds: ["extend"] }}
 				{...handlers}
 			/>
 		);
+		await showLockedServices();
 
 		expect(
 			screen.getByRole("button", { name: /Extend the registry/ })
@@ -511,10 +591,11 @@ describe("ShopView kill -9", () => {
 		}),
 	});
 
-	it("reads its unlock line until gate 5 is cleared", () => {
+	it("reads its unlock line until gate 5 is cleared", async () => {
 		render(
 			<ShopView view={{ ...gateSix, unlockedServiceIds: [] }} {...handlers} />
 		);
+		await showLockedServices();
 
 		expect(screen.getByText("kill -9")).toBeVisible();
 		expect(screen.getByText("unlock · Clear gate 5")).toBeVisible();

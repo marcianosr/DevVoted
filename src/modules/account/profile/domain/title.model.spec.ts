@@ -32,39 +32,47 @@ const idsOf = (titles: readonly { id: string }[]) =>
 	titles.map((title) => title.id);
 
 describe("titlesEarnedBy", () => {
-	it("grants the category mastery title once the correct count reaches its target", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-correct:git": 25 }));
+	it("grants the category mastery title at fifty distinct polls answered correctly", () => {
+		const earned = titlesEarnedBy(countsFor({ "category-mastered:git": 50 }));
 
 		expect(idsOf(earned)).toContain("title-maintainer-git");
 	});
 
-	it("withholds the mastery title one correct answer short of the target", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-correct:git": 24 }));
+	it("withholds the mastery title one distinct correct poll short of the target", () => {
+		const earned = titlesEarnedBy(countsFor({ "category-mastered:git": 49 }));
 
 		expect(idsOf(earned)).not.toContain("title-maintainer-git");
 	});
 
 	it("keeps the mastery title granted past its target, because a title is permanent", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-correct:git": 900 }));
+		const earned = titlesEarnedBy(countsFor({ "category-mastered:git": 900 }));
 
 		expect(idsOf(earned)).toContain("title-maintainer-git");
 	});
 
-	it("grants the entry title at ten answered, whether or not any were right", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-answered:css": 10 }));
+	it("grants the entry title at fifty distinct polls seen, whether or not any were right", () => {
+		const earned = titlesEarnedBy(countsFor({ "category-seen:css": 50 }));
 
 		expect(idsOf(earned)).toEqual(["title-answered-css"]);
 	});
 
-	it("withholds the entry title one poll short of the target", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-answered:css": 9 }));
+	it("withholds the entry title one distinct poll short of the target", () => {
+		const earned = titlesEarnedBy(countsFor({ "category-seen:css": 49 }));
+
+		expect(idsOf(earned)).toEqual([]);
+	});
+
+	it("grants no category title for answering the same polls over and over", () => {
+		const earned = titlesEarnedBy(
+			countsFor({ "category-answered:css": 900, "category-correct:css": 900 })
+		);
 
 		expect(idsOf(earned)).toEqual([]);
 	});
 
 	it("grants both rungs of a category to a record that clears both bars", () => {
 		const earned = titlesEarnedBy(
-			countsFor({ "category-answered:react": 40, "category-correct:react": 25 })
+			countsFor({ "category-seen:react": 60, "category-mastered:react": 50 })
 		);
 
 		expect(idsOf(earned)).toEqual([
@@ -73,8 +81,45 @@ describe("titlesEarnedBy", () => {
 		]);
 	});
 
+	it.each([
+		["first-poll-correct", "title-hello-world"],
+		["won-every-answer-correct", "title-and-now-it-s-green"],
+		["runs-won", "title-it-compiles"],
+		["audited-clear-ok", "title-ship-it"],
+		["ten-unit-answer", "title-10x-engineer"],
+		["gate-over-full", "title-stack-overflow"],
+		["cleared-after-two-misses", "title-tested-in-production"],
+		["eight-configs-held", "title-dependency-hell"],
+		["install-after-three-rebuilds", "title-clean-install"],
+		["storage-418", "title-i-m-a-teapot"],
+		["refused-shaky-peel", "title-wontfix"],
+	])(
+		"grants the special title %s earns the first time it counts",
+		(metric, titleId) => {
+			expect(idsOf(titlesEarnedBy(countsFor({ [metric]: 1 })))).toEqual([
+				titleId,
+			]);
+		}
+	);
+
+	it("grants no special title for the metrics the retired roster read", () => {
+		const earned = titlesEarnedBy(
+			countsFor({
+				"gates-reordered": 900,
+				"community-peeks": 900,
+				"configs-vendor-locked": 900,
+				"lean-gate-four": 1,
+				"double-v2-clear": 1,
+				"perfect-window-deep": 1,
+				"finished-holding-a-dealt-config": 1,
+			})
+		);
+
+		expect(idsOf(earned)).toEqual([]);
+	});
+
 	it("grants only the category that was answered", () => {
-		const earned = titlesEarnedBy(countsFor({ "category-correct:git": 25 }));
+		const earned = titlesEarnedBy(countsFor({ "category-mastered:git": 50 }));
 
 		expect(idsOf(earned)).not.toContain("title-maintainer-css");
 	});
@@ -185,8 +230,8 @@ describe("the title catalogue", () => {
 			"configs-vendor-locked",
 			"slas-met",
 			...CATEGORY_CODES.flatMap((code) => [
-				`category-correct:${code}`,
-				`category-answered:${code}`,
+				`category-seen:${code}`,
+				`category-mastered:${code}`,
 			]),
 		]);
 		const orphans = TITLES.filter(
@@ -222,10 +267,10 @@ describe("the title catalogue", () => {
 
 	it("reads a different metric for each rung, so turning up is not getting it right", () => {
 		expect(findTitleById("title-answered-ts")?.earn).toMatchObject({
-			metric: "category-answered:ts",
+			metric: "category-seen:ts",
 		});
 		expect(findTitleById("title-maintainer-ts")?.earn).toMatchObject({
-			metric: "category-correct:ts",
+			metric: "category-mastered:ts",
 		});
 	});
 
@@ -240,10 +285,10 @@ describe("the title catalogue", () => {
 	});
 
 	it("lists every metric a title reads, so the grant path knows when to look", () => {
-		expect(TITLE_METRICS).toContain("category-correct:git");
-		expect(TITLE_METRICS).toContain("category-answered:git");
+		expect(TITLE_METRICS).toContain("category-mastered:git");
+		expect(TITLE_METRICS).toContain("category-seen:git");
 		expect(TITLE_METRICS).toContain("polls-answered");
-		expect(TITLE_METRICS).toContain("gates-reordered");
+		expect(TITLE_METRICS).toContain("storage-418");
 	});
 
 	it("names no metric twice, since the read is one IN clause", () => {
@@ -267,7 +312,7 @@ describe("titleGroupOf", () => {
 	});
 
 	it("files a behaviour title and a granted title under special", () => {
-		const behaviour = findTitleById("title-bikeshedder");
+		const behaviour = findTitleById("title-it-compiles");
 		const granted = findTitleById("title-legacy-tester");
 
 		expect(behaviour && titleGroupOf(behaviour)).toBe("special");
@@ -276,19 +321,19 @@ describe("titleGroupOf", () => {
 
 	it("names a poll-count rung and a special title only once earned, a category title always", () => {
 		const newbie = findTitleById("title-rank-poll-newbie");
-		const bikeshedder = findTitleById("title-bikeshedder");
+		const itCompiles = findTitleById("title-it-compiles");
 		const git = findTitleById("title-maintainer-git");
 
 		expect(newbie && isNamedOnlyWhenEarned(newbie)).toBe(true);
-		expect(bikeshedder && isNamedOnlyWhenEarned(bikeshedder)).toBe(true);
+		expect(itCompiles && isNamedOnlyWhenEarned(itCompiles)).toBe(true);
 		expect(git && isNamedOnlyWhenEarned(git)).toBe(false);
 	});
 });
 
 describe("progressOf", () => {
 	const COUNTS = new Map([
-		["gates-reordered", 30],
-		["category-correct:css", 14],
+		["runs-won", 3],
+		["category-mastered:css", 14],
 	]);
 	const countOf = (metric: string) => COUNTS.get(metric) ?? 0;
 
@@ -297,16 +342,16 @@ describe("progressOf", () => {
 
 		expect(connoisseur && progressOf(connoisseur, countOf)).toEqual({
 			count: 14,
-			target: 25,
+			target: 50,
 		});
 	});
 
 	it("caps the count at the target once the bar is passed", () => {
-		const bikeshedder = findTitleById("title-bikeshedder");
+		const itCompiles = findTitleById("title-it-compiles");
 
-		expect(bikeshedder && progressOf(bikeshedder, countOf)).toEqual({
-			count: 25,
-			target: 25,
+		expect(itCompiles && progressOf(itCompiles, countOf)).toEqual({
+			count: 1,
+			target: 1,
 		});
 	});
 
@@ -338,7 +383,7 @@ describe("visibleTitles", () => {
 	});
 
 	it("keeps an unearned threshold title listed, because its line is the bar", () => {
-		expect(idsOf(visibleTitles([]))).toContain("title-bikeshedder");
+		expect(idsOf(visibleTitles([]))).toContain("title-it-compiles");
 	});
 
 	it("hides only the granted titles, so the roster is otherwise whole", () => {
@@ -351,31 +396,31 @@ describe("visibleTitles", () => {
 });
 
 const OWNED = [
-	"title-bikeshedder",
+	"title-it-compiles",
 	"title-ship-it",
-	"title-tree-shaken",
+	"title-hello-world",
 	"title-stack-overflow",
 ] as const;
 
 describe("wearTitle", () => {
 	it("wears a title the account owns", () => {
-		expect(wearTitle([], "title-bikeshedder", OWNED)).toEqual({
+		expect(wearTitle([], "title-it-compiles", OWNED)).toEqual({
 			kind: "worn",
-			worn: ["title-bikeshedder"],
+			worn: ["title-it-compiles"],
 		});
 	});
 
 	it("appends behind what is already worn, so the first stays primary", () => {
-		const decision = wearTitle(["title-bikeshedder"], "title-ship-it", OWNED);
+		const decision = wearTitle(["title-it-compiles"], "title-ship-it", OWNED);
 
 		expect(decision).toEqual({
 			kind: "worn",
-			worn: ["title-bikeshedder", "title-ship-it"],
+			worn: ["title-it-compiles", "title-ship-it"],
 		});
 	});
 
 	it("refuses a title the account has not earned", () => {
-		expect(wearTitle([], "title-bikeshedder", [])).toEqual({
+		expect(wearTitle([], "title-it-compiles", [])).toEqual({
 			kind: "refused",
 			reason: "not-owned",
 		});
@@ -390,7 +435,7 @@ describe("wearTitle", () => {
 
 	it("refuses a title already worn, so the worn set never repeats one", () => {
 		expect(
-			wearTitle(["title-bikeshedder"], "title-bikeshedder", OWNED)
+			wearTitle(["title-it-compiles"], "title-it-compiles", OWNED)
 		).toEqual({
 			kind: "refused",
 			reason: "already-worn",
@@ -407,38 +452,38 @@ describe("wearTitle", () => {
 	});
 
 	it("leaves the worn set untouched when it refuses", () => {
-		const worn = ["title-bikeshedder"];
+		const worn = ["title-it-compiles"];
 		wearTitle(worn, "title-ship-it", []);
 
-		expect(worn).toEqual(["title-bikeshedder"]);
+		expect(worn).toEqual(["title-it-compiles"]);
 	});
 });
 
 describe("removeTitle", () => {
 	it("takes off a worn title", () => {
-		expect(removeTitle(["title-bikeshedder"], "title-bikeshedder")).toEqual([]);
+		expect(removeTitle(["title-it-compiles"], "title-it-compiles")).toEqual([]);
 	});
 
 	it("keeps the order of the titles still worn", () => {
-		const worn = ["title-bikeshedder", "title-ship-it", "title-tree-shaken"];
+		const worn = ["title-it-compiles", "title-ship-it", "title-hello-world"];
 
 		expect(removeTitle(worn, "title-ship-it")).toEqual([
-			"title-bikeshedder",
-			"title-tree-shaken",
+			"title-it-compiles",
+			"title-hello-world",
 		]);
 	});
 
 	it("promotes the second title to primary when the first comes off", () => {
-		const worn = ["title-bikeshedder", "title-ship-it"];
+		const worn = ["title-it-compiles", "title-ship-it"];
 
-		expect(removeTitle(worn, "title-bikeshedder")[0]).toBe("title-ship-it");
+		expect(removeTitle(worn, "title-it-compiles")[0]).toBe("title-ship-it");
 	});
 
 	it("changes nothing when the title is not worn", () => {
-		const worn = ["title-bikeshedder"];
+		const worn = ["title-it-compiles"];
 
-		expect(removeTitle(worn, "title-tree-shaken")).toEqual([
-			"title-bikeshedder",
+		expect(removeTitle(worn, "title-hello-world")).toEqual([
+			"title-it-compiles",
 		]);
 	});
 });
@@ -446,35 +491,35 @@ describe("removeTitle", () => {
 describe("wearEach", () => {
 	const owned = [
 		"title-maintainer-git",
-		"title-bikeshedder",
+		"title-it-compiles",
 		"title-ship-it",
-		"title-tree-shaken",
+		"title-hello-world",
 	];
 
 	it("wears every listed title there is room for, in the order listed", () => {
-		expect(wearEach([], ["title-bikeshedder", "title-ship-it"], owned)).toEqual(
-			["title-bikeshedder", "title-ship-it"]
+		expect(wearEach([], ["title-it-compiles", "title-ship-it"], owned)).toEqual(
+			["title-it-compiles", "title-ship-it"]
 		);
 	});
 
 	it("stops at the cap and leaves the rest unworn rather than swapping", () => {
 		expect(
 			wearEach(
-				["title-maintainer-git", "title-bikeshedder"],
-				["title-ship-it", "title-tree-shaken"],
+				["title-maintainer-git", "title-it-compiles"],
+				["title-ship-it", "title-hello-world"],
 				owned
 			)
-		).toEqual(["title-maintainer-git", "title-bikeshedder", "title-ship-it"]);
+		).toEqual(["title-maintainer-git", "title-it-compiles", "title-ship-it"]);
 	});
 
 	it("skips a title already worn and carries on", () => {
 		expect(
 			wearEach(
-				["title-bikeshedder"],
-				["title-bikeshedder", "title-ship-it"],
+				["title-it-compiles"],
+				["title-it-compiles", "title-ship-it"],
 				owned
 			)
-		).toEqual(["title-bikeshedder", "title-ship-it"]);
+		).toEqual(["title-it-compiles", "title-ship-it"]);
 	});
 
 	it("wears nothing the account has not earned", () => {
@@ -486,7 +531,7 @@ describe("isGrantedTitleId", () => {
 	it("knows a granted title from an earned one", () => {
 		expect(isGrantedTitleId("title-legacy-tester")).toBe(true);
 		expect(isGrantedTitleId("title-legacy-active")).toBe(true);
-		expect(isGrantedTitleId("title-bikeshedder")).toBe(false);
+		expect(isGrantedTitleId("title-it-compiles")).toBe(false);
 	});
 
 	it("treats an id no catalogue entry claims as not granted", () => {

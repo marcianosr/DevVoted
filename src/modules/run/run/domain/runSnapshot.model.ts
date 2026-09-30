@@ -30,8 +30,9 @@ export type StoredSnapshot = Omit<
 	"bankedUnits" | "window" | "heldAudit"
 > & {
 	readonly bankedUnits?: number;
-	readonly window: Omit<GateWindow, "unitsEarned"> & {
+	readonly window: Omit<GateWindow, "unitsEarned" | "baseUnits"> & {
 		readonly unitsEarned?: number;
+		readonly baseUnits?: number;
 	};
 	readonly heldAudit?: StoredHeldAudit;
 	readonly offeredAudit?: StoredHeldAudit;
@@ -91,6 +92,13 @@ const unitsEarnedOf = (window: StoredSnapshot["window"]): number => {
 	return legacyUnitsOf(window) ?? 0;
 };
 
+const baseUnitsOf = (window: StoredSnapshot["window"]): number => {
+	const stored = window.baseUnits;
+	if (stored !== undefined && Number.isFinite(stored)) return stored;
+
+	return finite(window.correct, 0);
+};
+
 const bankedUnitsOf = (
 	snapshot: StoredSnapshot,
 	unitsEarned: number
@@ -106,6 +114,7 @@ export const hydrateRunState = (
 	polls: readonly RunPoll[]
 ): RunState => {
 	const unitsEarned = unitsEarnedOf(snapshot.window);
+	const baseUnits = baseUnitsOf(snapshot.window);
 	const {
 		attack: _attack,
 		attackEarnedAtGate: _attackEarnedAtGate,
@@ -122,7 +131,7 @@ export const hydrateRunState = (
 		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
 		coverage: finite(snapshot.coverage, 0),
 		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
-		window: { ...snapshot.window, unitsEarned },
+		window: { ...snapshot.window, unitsEarned, baseUnits },
 	};
 
 	return {

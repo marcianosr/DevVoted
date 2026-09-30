@@ -1,7 +1,15 @@
 import { z } from "zod";
 
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	BOOT_CACHE_RUNGS,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
+import {
+	isRegistryControlId,
+	REGISTRY_CONTROL_IDS,
+	type RegistryControlId,
+} from "~/modules/run/shop/domain/registryControl.model";
 
 const configActionSchema = <T extends string>(type: T) =>
 	z
@@ -88,6 +96,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("extend-offers"),
 	bareActionSchema("plant-pin"),
 	bareActionSchema("finish-reward"),
+	bareActionSchema("skip-shop"),
 	configActionSchema("sell"),
 	configActionSchema("drop"),
 	configActionSchema("minify"),
@@ -100,7 +109,7 @@ export type WireRunAction = z.infer<typeof runActionSchema>;
 type SchemaAction = WireRunAction;
 type Assert<T extends true> = T;
 
-export type ServerMintedAction = "loot";
+export type ServerMintedAction = "loot" | "warm-boot";
 
 type ClientAction = Exclude<RunAction["type"], ServerMintedAction>;
 
@@ -118,3 +127,23 @@ export type SchemaAddsNoAction = Assert<
 export type SchemaPayloadsMatchEngine = Assert<
 	SchemaAction extends RunAction ? true : false
 >;
+
+const registryControlIdSchema = z.custom<RegistryControlId>(
+	(value) => typeof value === "string" && isRegistryControlId(value)
+);
+
+export const warmBootPickSchema = z
+	.object({
+		bootCacheRung: z
+			.number()
+			.int()
+			.min(0)
+			.max(BOOT_CACHE_RUNGS.length - 1)
+			.optional(),
+		serviceIds: z
+			.array(registryControlIdSchema)
+			.max(REGISTRY_CONTROL_IDS.length),
+	})
+	.strict();
+
+export type WireWarmBootPick = z.infer<typeof warmBootPickSchema>;

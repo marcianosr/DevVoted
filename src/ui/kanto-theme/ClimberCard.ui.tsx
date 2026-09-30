@@ -1,9 +1,12 @@
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
 import { Button, type ButtonTone } from "./Button.ui";
 import { Climber } from "./Climber.ui";
+import { Contribution, type ContributionProps } from "./Contribution.ui";
 import { Link } from "./Link.ui";
+import type { KantoColor } from "./colors";
 import {
 	COPY as STANDING_COPY,
-	GateTag,
 	Standing,
 	type StandingProps,
 	type StandingStat,
@@ -28,7 +31,7 @@ const CARD =
 	"flex max-h-[70vh] w-full flex-col overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised";
 
 const HEAD =
-	"flex w-full items-center gap-3 border-b border-theme-faint px-4 py-3";
+	"flex w-full items-center gap-4 border-b border-theme-faint bg-linear-to-br from-theme/20 via-theme/5 to-transparent px-4 py-4";
 const BODY = "flex w-full flex-col gap-3 px-4 py-3";
 const PRESS_ROW =
 	"flex items-center justify-between gap-2 border-t border-theme-faint pt-3";
@@ -36,8 +39,10 @@ const PRESS_NOTE = "text-xs font-bold text-theme-muted";
 const FACING = "flex shrink-0 flex-col items-center gap-1";
 const RESCUE = "w-16 text-center text-xxs leading-tight text-theme-muted";
 const NAMING = "flex min-w-0 flex-col items-start gap-1.5";
-const NAME = "truncate text-base font-bold text-theme-soft";
-const TRAILING = "ml-auto flex shrink-0 items-start gap-3";
+const NAME = "truncate text-lg font-extrabold text-theme-soft";
+const TRAILING = "ml-auto flex shrink-0 self-start";
+
+const QUIET_TITLE: KantoColor = "pewter";
 
 export type ClimberCardStat = StandingStat;
 
@@ -54,7 +59,9 @@ export type ClimberCardFile = ClimberCardLoot & { refusal?: string };
 export type ClimberCardProps = {
 	name: string;
 	profileHref?: string;
-	title?: string;
+	titles?: readonly string[];
+	contribution?: ContributionProps;
+	theme: SwatchTheme;
 	photoUrl?: string;
 	borderUrl?: string;
 	you?: boolean;
@@ -127,8 +134,11 @@ const Face = ({ profileHref, ...climber }: FaceProps) => {
 const Naming = ({
 	profileHref,
 	name,
-	title,
-}: Pick<ClimberCardProps, "profileHref" | "name" | "title">) => (
+	titles,
+	contribution,
+}: Pick<ClimberCardProps, "profileHref" | "name" | "contribution"> & {
+	titles: readonly string[];
+}) => (
 	<span className={NAMING}>
 		<span className={NAME}>
 			{profileHref === undefined ? (
@@ -137,7 +147,10 @@ const Naming = ({
 				<Link href={profileHref}>{name}</Link>
 			)}
 		</span>
-		{title === undefined ? null : <WornTitles titles={[title]} />}
+		{titles.length === 0 ? null : (
+			<WornTitles titles={titles} rest={QUIET_TITLE} />
+		)}
+		{contribution === undefined ? null : <Contribution {...contribution} />}
 	</span>
 );
 
@@ -147,13 +160,15 @@ const Body = ({ standing }: Pick<ClimberCardProps, "standing">) =>
 			{COPY.noOpenRun}
 		</Typography>
 	) : (
-		<Standing {...standing} namesGate={false} />
+		<Standing {...standing} />
 	);
 
 export const ClimberCard = ({
 	name,
 	profileHref,
-	title,
+	titles = [],
+	contribution,
+	theme,
 	photoUrl,
 	borderUrl,
 	you = false,
@@ -167,7 +182,7 @@ export const ClimberCard = ({
 	onClose,
 }: ClimberCardProps) => (
 	<div className={CARD}>
-		<div className={HEAD}>
+		<div data-gate-theme={theme} className={HEAD}>
 			<Face
 				profileHref={profileHref}
 				name={name}
@@ -179,18 +194,22 @@ export const ClimberCard = ({
 				shaky={shaky}
 				rescued={rescued}
 			/>
-			<Naming profileHref={profileHref} name={name} title={title} />
-			<span className={TRAILING}>
-				{standing === undefined ? null : <GateTag {...standing.gate} />}
-				{onClose === undefined ? null : (
+			<Naming
+				profileHref={profileHref}
+				name={name}
+				titles={titles}
+				contribution={contribution}
+			/>
+			{onClose === undefined ? null : (
+				<span className={TRAILING}>
 					<Button
 						tone="ambient"
 						glyph={CLOSE_GLYPH}
 						label={`${COPY.close} ${name}`}
 						onPress={onClose}
 					/>
-				)}
-			</span>
+				</span>
+			)}
 		</div>
 
 		<div className={BODY}>

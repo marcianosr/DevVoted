@@ -119,7 +119,8 @@ where the roll has not been reached yet, so naming a casualty there would be a
 spoiler: those screens name the audit and leave the victim to the gate. For the
 same reason the stake receipt's per-answer preview prices the whole build, since
 Flaky Build and Rolling Outage move every poll and no pre-gate number could be
-honest about them.
+honest about them. npm audit is the one config that names the casualty at prep
+(ADR-158).
 
 ## Decision 6: a mirrored response records which question was asked
 

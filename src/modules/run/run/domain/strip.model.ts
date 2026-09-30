@@ -166,6 +166,7 @@ export const resumeClimb = (state: RunState): RunState => {
 			slaUpliftKb: undefined,
 			peelRefundKb: 0,
 			heldBy: undefined,
+			storageBeforeClearKb: undefined,
 			draftOptions: shopDraft(
 				state,
 				draftSeed(state.gatesCleared, (state.allAnswered ?? []).length)

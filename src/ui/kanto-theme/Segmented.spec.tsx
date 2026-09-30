@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 
 import { Segmented, type SegmentedItem } from "./Segmented.ui";
 
+const WEIGHTS: readonly SegmentedItem<"all" | "one" | "two">[] = [
+	{ value: "all", label: "everything" },
+	{ value: "one", label: "5 of 19", mark: "1" },
+	{ value: "two", label: "3 of 13", mark: "2" },
+];
+
 const STATUSES: readonly SegmentedItem<"all" | "published" | "draft">[] = [
 	{ value: "all", label: "all", count: 96 },
 	{ value: "published", label: "published", count: 92 },
@@ -28,6 +34,21 @@ describe("Segmented", () => {
 		expect(screen.getByRole("radio", { checked: true })).toHaveAccessibleName(
 			"published · 92"
 		);
+	});
+
+	it("fills the picked item with the contrast-paired segment fill, so a pale theme keeps its ink", () => {
+		render(
+			<Segmented
+				label="Status"
+				items={STATUSES}
+				value="published"
+				onSelect={vi.fn()}
+			/>
+		);
+
+		const picked = screen.getByRole("radio", { checked: true });
+		expect(picked).toHaveClass("segment-theme");
+		expect(picked).not.toHaveClass("bg-theme", "text-theme-faint");
 	});
 
 	it("folds the count into the name and keeps the figure out of the label", () => {
@@ -108,5 +129,34 @@ describe("Segmented", () => {
 		expect(screen.getByRole("radio", { name: "draft · 3" })).toHaveClass(
 			"ring-1"
 		);
+	});
+
+	it("speaks its mark before its label, and draws the mark as a leading badge", async () => {
+		render(
+			<Segmented
+				label="Weight"
+				items={WEIGHTS}
+				value="all"
+				onSelect={vi.fn()}
+			/>
+		);
+
+		const weightOne = screen.getByRole("radio", { name: "1 · 5 of 19" });
+
+		expect(weightOne).toHaveTextContent("15 of 19");
+		expect(weightOne.firstElementChild).toHaveClass("badge-theme");
+	});
+
+	it("names an item by its label alone when it carries neither mark nor count", () => {
+		render(
+			<Segmented
+				label="Weight"
+				items={WEIGHTS}
+				value="all"
+				onSelect={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByRole("radio", { name: "everything" })).toBeVisible();
 	});
 });

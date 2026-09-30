@@ -19,6 +19,7 @@ import {
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
 import { isVendorLocked } from "~/modules/run/build/domain/vendorLock.model";
+import { carries } from "~/modules/run/run/domain/warmBoot.model";
 import {
 	draftCostIn,
 	draftSeed,
@@ -38,6 +39,7 @@ import {
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
 	pinCostFor,
+	SKIP_SHOP_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	addStorage,
@@ -182,12 +184,16 @@ export const switchAbArm = (state: RunState, configId: string): RunState => {
 	);
 };
 
-const pinSoldAt = (gatesCleared: number): boolean =>
-	gatesCleared >= PIN_FROM_GATE && gatesCleared <= PIN_UNTIL_GATE;
+const pinSoldAt = (
+	state: Pick<RunState, "gatesCleared" | "warmBoot">
+): boolean =>
+	carries(state, "pin") &&
+	state.gatesCleared >= PIN_FROM_GATE &&
+	state.gatesCleared <= PIN_UNTIL_GATE;
 
 export const plantPin = (state: RunState): RunState => {
 	if (state.pinPlantedAtGate !== undefined) return state;
-	if (!pinSoldAt(state.gatesCleared)) return state;
+	if (!pinSoldAt(state)) return state;
 	const cost = pinCostFor(state.gatesCleared);
 	if (state.storage < cost) return state;
 	return {
@@ -203,11 +209,11 @@ export const plantPin = (state: RunState): RunState => {
 
 export const canPlantPin = (state: RunState): boolean =>
 	state.pinPlantedAtGate === undefined &&
-	pinSoldAt(state.gatesCleared) &&
+	pinSoldAt(state) &&
 	state.storage >= pinCostFor(state.gatesCleared);
 
 export const pinAvailable = (state: RunState): boolean =>
-	state.pinPlantedAtGate === undefined && pinSoldAt(state.gatesCleared);
+	state.pinPlantedAtGate === undefined && pinSoldAt(state);
 
 export const finishReward = (state: RunState): RunState => {
 	return {
@@ -215,6 +221,7 @@ export const finishReward = (state: RunState): RunState => {
 		draftOptions: [],
 		rebuildsUsed: 0,
 		soldThisShop: 0,
+		shopVisit: undefined,
 		draftedThisGate: [],
 		answeredThisGate: [],
 		faucetThisGateKb: 0,
@@ -239,6 +246,22 @@ export const finishReward = (state: RunState): RunState => {
 	};
 };
 
+export const skipShopAvailable = (state: RunState): boolean =>
+	state.shopVisit === undefined;
+
+export const skipShop = (state: RunState): RunState =>
+	skipShopAvailable(state)
+		? {
+				...state,
+				storage: addStorage(state.storage, SKIP_SHOP_KB),
+				shopVisit: "skipped",
+				log: withLog(
+					state,
+					`Skipped the shop (+${SKIP_SHOP_KB}KB); the registry stays shut this visit.`
+				),
+			}
+		: state;
+
 export const canRebuild = (state: RunState): boolean =>
 	state.storage >= rebuildCost(state.rebuildsUsed);
 
@@ -253,6 +276,7 @@ export const canLock = (state: RunState): boolean =>
 	state.storage >= LOCK_COST_KB;
 
 export const extendAvailable = (state: RunState): boolean =>
+	carries(state, "extend") &&
 	state.gatesCleared >= EXTEND_FROM_GATE &&
 	(state.extensionsBought ?? 0) < MAX_EXTENSIONS &&
 	!shopOffersFullRoster(state.build.configs);

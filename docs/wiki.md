@@ -34,7 +34,7 @@ the code wins and the wiki is wrong.
 
 DevVoted is a developer quiz game wrapped in a CI/CD-pipeline metaphor. You answer
 real programming polls; your **build** of installed **configs** (dev tools like
-`.js`, ESLint, Copilot) decides how richly each correct answer pays, while your
+`.js`, Linter, Copilot) decides how richly each correct answer pays, while your
 **gates** decide what the run demands of you.
 
 It borrows from roguelites without being one. It takes: run-based structure, builds
@@ -42,7 +42,7 @@ assembled from collectible items, escalating stakes, and meta-progression that
 outlives a run. It leaves behind procedural generation (polls are hand-written and
 the daily seed is shared by every player), session-length play (a run spans calendar
 days, one gate per day), and permadeath as the default (an ordinary miss costs a
-config and hands the run back; only a build that runs out of configs dies).
+peel and hands the run back; only a DANGER close ends it).
 
 The point is a daily learning ritual that happens to keep score: short polls spark
 curiosity and hand you a topic to dig into afterwards.
@@ -73,9 +73,13 @@ appended.
 
 Runs persist across days and never expire; a partly answered gate fills up across
 the day boundary, and yesterday's unplayed polls are dropped rather than failed. The
-hub says so once a day is part-answered — "3 of today's 5 left · they do not carry to
-tomorrow" — because stopping early is a choice, not an accident, and the forfeit used
-to be silent. A flawless summit takes 13 calendar days, and every gate held in SHAKY
+hub's press says so once a day is part-answered — "3 of today's 5 left · they do not
+carry to tomorrow" — because stopping early is a choice, not an accident, and the
+forfeit used to be silent. The hub (ADR-147) leads with a strip (run number, gate, balance);
+the pinned header on poll, prep, shop, new run, gate result, review and run over repeats the run number and gate. Under the hub strip sits the press: **Continue to <gate>** while polls are ready, **<gate> opens in Xh Ym**
+once the day is spent, when the shop becomes the live press. Under it, **Run so far**
+lists each closed gate's grade and banked KB and projects the next gate, and **Build**
+lists the installed configs with the weight still free. A flawless summit takes 13 calendar days, and every gate held in SHAKY
 adds one, because the retry waits on tomorrow's polls.
 
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
@@ -98,11 +102,9 @@ slots at Pallet, ten at Boulder, sixty-five at the Champion
 
 So clearing a gate opens the next gate's five slots and the same score is divided by a
 bigger number: Pallet at 42% reads 21% at Boulder having lost nothing. The units did
-not move, the ruler did. That is why the poll screen reads the meter in units against
-the gate's line, `2.1 of 3` at Pallet and `2.1 of 6` at Boulder, so the line rises
-rather than the figure falling (ADR-106); the debrief names the slots ahead, and
-prep draws every opened slot as **the codebase** and says in one line that the same
-units read yesterday's percent and today's (ADR-139). A
+not move, the ruler did. The poll screen's bar reads the percent like every other bar,
+and its lead line counts the units against the slots (ADR-156); the debrief names the slots ahead, and
+prep's Scoring fold counts **the codebase** and says what one unit is worth there (ADR-149). A
 failed attempt banks nothing, so a retry replays the window against the same
 denominator.
 
@@ -114,9 +116,9 @@ gate moves the run on; a window answered 5 of 5 awards that gate's **swatch**
 ([6.3](#63-swatches)), whether or not the gate cleared.
 
 Nothing is decided until the window's 5th poll is answered. What happens then is
-the **band** the meter closes in: PERFECT, HEALTHY and OK all clear the gate, SHAKY
-holds it and owes a peel, and DANGER ends the run — and a day that lands fewer than
-two of its five right holds the gate whatever the band.
+the **band** the meter closes in: PERFECT, HEALTHY and OK all clear the gate
+(at the Champion only HEALTHY or PERFECT do, ADR-159), SHAKY holds it and owes a peel, and DANGER ends the run — and a window that scores less
+than the minimum holds the gate whatever the band.
 [2.6](#26-how-a-gate-closes) owns that rule and prices every exit.
 
 **Farming is priced out, not forbidden.** The payout scales with window correctness
@@ -129,7 +131,7 @@ low-effort attempt rarely meets the meter at all.
 
 An audit is a rule a gate carries, stated on the stake receipt before you walk in.
 **The count is the curve**: gates 0 to 2 carry none, gates 3 to 7 carry one, 8 to 10
-carry two, Elite and the Champion three. The same curve the peel has. A gate draws
+carry two, Elite and the Champion three. A gate draws
 that many from its tier's pool, **seeded on the date**, so everyone climbing today at
 gate 6 meets the same gauntlet (ADR-138).
 
@@ -174,7 +176,7 @@ broke**.
 | **405 Method Not Allowed**            | The shop _before_ this gate is read-only: nothing bought, sold, upgraded or switched.                                                                                                                                                                                                   |
 | **408 Request Timeout**               | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked.                                                                                                                                                                                 |
 | **409 Conflict**                      | Your highest-version config takes a breaking change and is switched off for the attempt.                                                                                                                                                                                                |
-| **410 Gone**                          | Deepens the peel: 10 points at Elite, 15 at the Champion, where a rival lands it.                                                                                                                                                                                                       |
+| **410 Gone**                          | Deepens the peel: 10 points at Elite, 15 at the Champion.                                                                                                                                                                                                                               |
 | **413 Payload Too Large**             | Every slot past the 12th leaks 8 KB a poll, so a wide build pays to carry itself.                                                                                                                                                                                                       |
 | **424 Failed Dependency**             | One config is offline for the whole attempt.                                                                                                                                                                                                                                            |
 | **425 Too Early**                     | Your configs do not contribute to the window's opening poll. That poll's ordinary base credit still scores, so an opener build such as Overclock loses its one big answer and still pays the throttle that bought it.                                                                   |
@@ -196,7 +198,9 @@ The five offline audits differ only in which config they take and for how long. 
 roll at random (seeded, so a reload never re-rolls one); 409 aims at whatever
 you levelled furthest and 426 at whatever you levelled least. Whatever is down reads `offline` on the build track while you
 answer, struck through and blamed on the audit by name, and nowhere else, since shop
-and prep sit before the gate and naming a casualty early would be a spoiler.
+and prep sit before the gate and naming a casualty early would be a spoiler. The one
+exception is paid for: with **npm audit** installed, prep names the config each outage
+will take offline (ADR-158).
 
 Two audits tighten with depth rather than repeating: **408** clocks 3 polls at 30s
 below gate 10, 3 at 25s at gates 10 and 11, and 5 at 20s at the Champion; **410** adds
@@ -213,9 +217,10 @@ trap rather than a rule.
 only: the poll is graded against its own key, so a true single is still right on exactly
 one pick and wrong on two. What it costs you is the premium — a select-all normally pays
 double, and under 207 it pays the same as a pick-one, because a difficulty you were never
-shown is not one you can be rewarded for aiming at. It makes **.length** unusually strong,
-since the gate's total correct count tells you how many of the five polls are really
-singles, and Prefetch and `git rebase -i` v2 keep naming the types outright.
+shown is not one you can be rewarded for aiming at. Prefetch v2 and `git rebase -i` v2 keep
+naming the types outright, and **.length** will join them once its reveal reaches the poll
+screen: the gate's total correct count tells you how many of the five polls are really
+singles.
 
 **451's redaction is blind to correctness**, so `?????` is never a tell: which answers are
 sealed is drawn from the poll's identity, never from which one is right. The linter will
@@ -246,25 +251,10 @@ React, Vue, Git, Java, Python, Ruby, General Frontend, General Backend. Categori
 whatever screen it sits on. The Kanto palette belongs to the gates ([6.3](#63-swatches)).
 
 Every category carries two **living records**, both bounded to a single run: the
-longest unbroken run of correct answers anyone has strung together in it inside one
-run, and the most correct answers anyone has given in it inside one run (ADR-131).
-Each is the best such run, all time, across finished and open runs. Answers given
-outside a run do not count towards either.
-
-A wrong answer breaks a streak; a **partial neither breaks nor extends** one, the same
-rule the streak bonus follows ([2.5](#25-coverage-scoring)). Clearing a gate does not
-break it either, even though the run's own streak resets there. Mirrored answers
-([2.3](#23-audits)) are excluded — they graded a different question. Whoever holds a
-category's record is its **leader**, carrying no title beyond the seat itself
-(ADR-103). Under each board's floor — **3 in a row**, **4 correct** — the seat is
-**open**, and says so: a seat earned by two right answers devalues every one earned
-honestly.
-
-The records are stated three times — once on the poll screen for the category being
-played, which states the streak alone ([8](#8-interface)), and once per category on
-each of the community board's two leader boards
-([7.3](#73-category-leaders)). Every figure is a best, never a current streak, so a
-seat is never lost by missing — only taken by somebody going further.
+longest streak of correct answers in it, and the most correct answers in it
+(ADR-131). Whoever holds one is that category's **leader**. The rules live in
+[7.3](#73-category-leaders); the poll screen states the streak one
+([8](#8-interface)).
 
 🟡 Planned: more poll types (**Rapid fire**, three quick yes/no questions;
 **Guessers**, "Name 10 HTML tags" at ±0.1% coverage per guess; **Puzzle grids**, nine
@@ -278,7 +268,7 @@ Angular and Next.js, Backend frameworks), and category draw weights that configs
 every slot the run has opened, the only number a gate judges, see
 [2.2](#22-gates)) and the **career totals** (a percentage per category plus a run
 total). The career totals feed the leaderboard and Focus upgrades
-([3](#3-your-build)) — they gate no gate.
+([4.4](#44-upgrades)) — they gate no gate.
 
 A correct answer earns `base × share × credit × mults + adds`:
 
@@ -287,17 +277,18 @@ A correct answer earns `base × share × credit × mults + adds`:
 | `base`   | **One unit**. Flat: the gate number and the option count do not touch it (ADR-073). What a unit is worth as a percentage depends on the gate; the arithmetic is in `coverageRatio.model.ts`. |
 | `share`  | The fraction of the answer key that landed. 1 for a single-answer poll answered correctly, and one of three rungs for a partial (ADR-079).                                                   |
 | `credit` | **×2 on a multiple-choice poll**, ×1 on a single (ADR-081). The one term the poll type sets.                                                                                                 |
-| `adds`   | **Flat units**, added after the multipliers and never amplified by them, alongside the streak step (ADR-083). Code Coverage +0.1 a correct answer; Cache +0.25 a cached hit.                 |
-| `mults`  | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at L1), plus the opener and throttle terms a config carries.                                                     |
+| `adds`   | **Flat units**, added after the multipliers and never amplified by them, alongside the streak step (ADR-083). Code Coverage +0.1 a correct answer per version; Cache +0.25 a cached hit.     |
+| `mults`  | Product of config multipliers (AGENTS.md ×2, Intellisense ×1.5, Focus ×1.25 at v1), plus the opener and throttle terms a config carries.                                                     |
 
 **The streak pays into both meters.** Every correct answer after the first adds a
 flat `STREAK_UNIT_STEP` of +0.1 units to the earn, outside the multipliers and
 never multiplied by them. Separately it multiplies the gate's KB payout:
-`1 + 0.1 × streak` consecutive correct answers, capped at ×2 (10 steps,
-`BASE_STREAK_STEPS`; the run-start gate panel states the ceiling). One streak
-drives both, and a gate clear resets
-it to zero after the payout is read, so a window starts cold however well the
-last one went.
+`1 + 0.1 × streak` consecutive correct answers. The code caps it at ×2 (10 steps,
+`BASE_STREAK_STEPS`), but a gate clear resets the streak to zero after the payout is
+read, so a window after a clear starts cold however well the last one went and its
+own clear reads at most five (×1.5). A held gate does not reset it, so only a streak
+carried through a hold into the retry can climb towards the cap
+([2.6](#26-how-a-gate-closes)). One streak drives both meters.
 
 **Multi-answer share** lands on one of three rungs: **1/4, 1/2 or 3/4** (ADR-079).
 It starts as `(correct picks − wrong picks) ÷ total correct`, then rounds to the
@@ -371,20 +362,22 @@ is one day's HEALTHY step, and the OK band is always under five answers wide,
 so a single window can carry a run across it at every gate. Pallet has no floor
 to fall under and draws four bands; every gate from Boulder draws all five.
 
-Whatever the meter says, **a day that lands fewer than two of its five right
-holds the gate** (`FLOOR_CORRECT`). Yesterday's cushion cannot clear today on
-its own; the debrief then reads "1 of 5 right, 2 needed" over a bar that keeps
-its honest reading. The floor rule only withholds a clear: a DANGER close still
-ends the run. Live numbers are `GATE_RUNGS` in `coverageRatio.model.ts`.
+Whatever the meter says, **a window that scores fewer than `MIN_WINDOW_UNITS`
+units holds the gate**. Yesterday's cushion cannot clear today on its own; the
+debrief then reads "scored 1 of 2 units" over a bar that keeps its honest
+reading. The minimum is counted **before the build touches it** — the raw share
+each answer was worth, so partials add up and no multiplier can buy past it
+(ADR-157). It only withholds a clear: a DANGER close still ends the run. Live
+numbers are `GATE_RUNGS` in `coverageRatio.model.ts`.
 
 | Band                                                                                        | The gate                                             | The swatch                           | The streak | The payout                  |
 | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------ | ---------- | --------------------------- |
-| **PERFECT** — a full bar                                                                    | Cleared                                              | Only if 5 of 5                       | Kept       | Full, times `PERFECT_BONUS` |
-| **HEALTHY** — at or over the line                                                           | Cleared                                              | Only if 5 of 5                       | Kept       | Full                        |
-| **OK** — under the line by the gate's OK drop (one answer at Pallet, three at the Champion) | Cleared, thin                                        | Only if 5 of 5                       | **Broken** | Full                        |
-| **SHAKY** — down to the floor, which is yesterday's HEALTHY line                            | **Held**: pay the peel and retry, or refuse the gate | Only if 5 of 5                       | Broken     | Nothing                     |
+| **PERFECT** — a full bar                                                                    | Cleared                                              | Only if 5 of 5                       | Reset      | Full, times `PERFECT_BONUS` |
+| **HEALTHY** — at or over the line                                                           | Cleared                                              | Only if 5 of 5                       | Reset      | Full                        |
+| **OK** — under the line by the gate's OK drop (one answer at Pallet, three at the Champion) | Cleared, thin; **held** at the Champion (ADR-159)    | Only if 5 of 5                       | Reset      | Full                        |
+| **SHAKY** — down to the floor, which is yesterday's HEALTHY line                            | **Held**: pay the peel and retry, or refuse the gate | Only if 5 of 5                       | Carried    | Nothing                     |
 | **DANGER** — under the floor (Pallet has none)                                              | **The run ends**                                     | Not won                              | —          | Nothing                     |
-| **Fewer than 2 of 5 right today**, whatever the band                                        | **Held**, as SHAKY                                   | Never (a flawless day is five right) | Broken     | Nothing                     |
+| **A window under `MIN_WINDOW_UNITS`**, whatever the band                                    | **Held**, as SHAKY                                   | Never (a flawless day is five right) | Carried    | Nothing                     |
 
 **The swatch column reads the window, not the band** (ADR-080). Clearing and
 earning the badge are two prizes on one window and either can land without the
@@ -393,17 +386,18 @@ comfortable clear can carry a miss. DANGER is the one row that can never pay it,
 because a flawless window is **clamped** to SHAKY at worst (`closingBandFor`): five
 right answers can hold a gate but can never end a run, whatever the meter reads.
 
-**OK costs the streak, and only the streak.** ADR-076 designed it to be paid
-`coverage ÷ the gate's line` as well, so that a thin clear paid thinly — but that
-cut is **designed and not built** (DVTD-tjc7), and every clearing band pays the
-same KB today. The one thing that makes a better band worth more is **SLA**
+**The streak column is the engine's, not the band's.** Every clear resets the
+streak after its payout is read; a held gate leaves it alone, so an unbroken
+streak carries into the retry. **OK costs nothing today.** ADR-076 designed a thin
+clear to be paid `coverage ÷ the gate's line`, but that cut is **designed and not
+built** (DVTD-tjc7), and every clearing band pays the same KB. The one thing that makes a better band worth more is **SLA**
 ([4.3](#43-roster)), which pays a percentage on a band you promised in advance.
 
 **A shaky gate is a choice, and both exits are priced on the debrief.**
 
 - **Pay the peel and retry.** The peel is a quota of your occupied slots: 20% at
   the early gates rising to 35% from Elite, never more than half the build before
-  gate 3, and +10 or +15 points on top wherever a rival landed **410 Gone**.
+  gate 3, and +10 or +15 points on top wherever the gate carries **410 Gone**.
   **Every retry at the same gate peels half again as much** (`escalatedPeelShare`),
   so a 20% share bills 30% on the second attempt and 40% on the third: a gate you
   keep failing gets more expensive, not less. It is billed in KB at half a slot's
@@ -426,12 +420,12 @@ faucet KB earned inside the window is the retry's whole budget — _unless the
 build holds **Database**, whose KB is escrowed rather than earned and is rolled
 back by the same close (ADR-091), leaving the retry to pay its peel in configs_. **Planning
 Poker** is the one config that pays regardless, since it settles a prediction
-rather than rewarding a clear, so calling your own 2 of 5 pays what calling a 5
-of 5 would. The recurring bills collect on a clear only, so a retry is free of
+rather than rewarding a clear: a bet the window met pays its coverage units
+whether the gate cleared or held. The recurring bills collect on a clear only, so a retry is free of
 them.
 
 **Every attempt burns 5 of the day's finite sequence**, so a retry costs real
-time, and audits charge again: Volcano leaks every attempt, a 408 re-clocks, an
+time, and audits charge again: 507 leaks every attempt, a 408 re-clocks, an
 outage re-rolls.
 
 **Death is a DANGER close.** The peel no longer runs a build to nothing, because
@@ -475,21 +469,21 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 
 <!-- BEGIN GENERATED:GATE_LADDER -->
 
-| Gate | Swatch   | Coverage in its window | A clear pays | A miss peels | Audits it carries | Also unlocks             |
-| ---- | -------- | ---------------------- | ------------ | ------------ | ----------------- | ------------------------ |
-| 0    | Pallet   | 60% (3)                | 32 KB        | **nothing**  | none              | Shop, **Rebuild**        |
-| 1    | Boulder  | 60% (6)                | 64 KB        | 20%          | none              | —                        |
-| 2    | Cascade  | 60% (9)                | 96 KB        | 20%          | none              | —                        |
-| 3    | Thunder  | 60% (12)               | 128 KB       | 25%          | 1 from pool A     | **Extend**               |
-| 4    | Lavender | 62% (15.5)             | 160 KB       | 25%          | 1 from pool A     | —                        |
-| 5    | Rainbow  | 65% (19.5)             | 192 KB       | 25%          | 1 from pool A     | —                        |
-| 6    | Soul     | 68.6% (24)             | 224 KB       | 25%          | 1 from pool A     | —                        |
-| 7    | Marsh    | 72.5% (29)             | 256 KB       | 30%          | 1 from pool A     | —                        |
-| 8    | Seafoam  | 76.7% (34.5)           | 288 KB       | 30%          | 2 from pool B     | —                        |
-| 9    | Volcano  | 80% (40)               | 320 KB       | 30%          | 2 from pool B     | —                        |
-| 10   | Earth    | 83.6% (46)             | 352 KB       | 30%          | 2 from pool B     | —                        |
-| 11   | Elite    | 86.7% (52)             | 384 KB       | 35%          | 3 from pool C     | —                        |
-| 12   | Champion | 90% (58.5)             | 416 KB       | 35%          | 3 from pool C     | Clearing it wins the run |
+| Gate | Swatch   | Coverage in its window | A clear pays | A miss peels | Audits it carries | Also unlocks                                  |
+| ---- | -------- | ---------------------- | ------------ | ------------ | ----------------- | --------------------------------------------- |
+| 0    | Pallet   | 60% (3)                | 32 KB        | **nothing**  | none              | Shop, **Rebuild**                             |
+| 1    | Boulder  | 60% (6)                | 64 KB        | 20%          | none              | —                                             |
+| 2    | Cascade  | 60% (9)                | 96 KB        | 20%          | none              | —                                             |
+| 3    | Thunder  | 60% (12)               | 128 KB       | 25%          | 1 from pool A     | **Extend**                                    |
+| 4    | Lavender | 62% (15.5)             | 160 KB       | 25%          | 1 from pool A     | —                                             |
+| 5    | Rainbow  | 65% (19.5)             | 192 KB       | 25%          | 1 from pool A     | —                                             |
+| 6    | Soul     | 68.6% (24)             | 224 KB       | 25%          | 1 from pool A     | —                                             |
+| 7    | Marsh    | 72.5% (29)             | 256 KB       | 30%          | 1 from pool A     | —                                             |
+| 8    | Seafoam  | 76.7% (34.5)           | 288 KB       | 30%          | 2 from pool B     | —                                             |
+| 9    | Volcano  | 80% (40)               | 320 KB       | 30%          | 2 from pool B     | —                                             |
+| 10   | Earth    | 83.6% (46)             | 352 KB       | 30%          | 2 from pool B     | —                                             |
+| 11   | Elite    | 86.7% (52)             | 384 KB       | 35%          | 3 from pool C     | —                                             |
+| 12   | Champion | 90% (58.5)             | 416 KB       | 35%          | 3 from pool C     | Clearing it on HEALTHY or better wins the run |
 
 <!-- END GENERATED:GATE_LADDER -->
 
@@ -497,10 +491,9 @@ The clear column is what a flawless window pays before build multipliers and bef
 the streak.
 
 The coverage column is the gate's HEALTHY line, the units in `GATE_RUNGS` over
-the slots the run has opened. A
-bare build earns at most 25% in a five-poll gate at every gate alike, so the
-ladder outruns it by design and multipliers stop being optional around gate 3
-(ADR-073). A clear pays the KB in this column times the streak multiplier.
+the slots the run has opened. The ladder outruns a bare build by design from
+Marsh on ([2.7](#27-victory-and-run-end), ADR-073). A clear pays the KB in the clear
+column times the streak multiplier.
 
 The audits column is both the count a gate **draws**, date-seeded, and the ceiling it
 will carry — never two of one family (ADR-138). A rival's incident replaces one of the
@@ -530,7 +523,7 @@ score reads lower at each gate you clear ([2.2](#22-gates)). What a single _wind
 owes toward it is priced in answers rather than percent. The unlock column names no
 width at all: build space is derived from the build, never bought
 ([5.1](#51-storage-kb)). The peel column is a share, so it already scales with the
-build it hits — and a rival's **410 Gone** adds 10 points at Elite and 15 at the
+build it hits — and **410 Gone** adds 10 points at Elite and 15 at the
 Champion on top of it.
 
 **Pallet is the calibration gate** (ADR-057, amended by ADR-094). It asks the same
@@ -542,8 +535,9 @@ Nothing ends a run at gate 0 — even a bare build only holds the gate. From **B
 on, the peel column applies as written.
 
 The payout column is `GATE_REWARD_KB × (gate + 1)` for a **bare build on a perfect
-window**. It scales with correctness, so a 3-of-5 clear pays 60% of the row and a
-0-of-5 clear pays nothing at all — an all-skip build can climb without banking a kilobyte.
+window**. It scales with correctness, so a 3-of-5 clear pays 60% of the row. A window
+carried by partials alone clears on coverage and pays nothing, because the payout
+counts exact answers while the gate's minimum counts the work.
 Reward multipliers and flat clear payouts (Build Artifacts' +32) apply on top.
 
 Deliberately **not** on this axis: Focus levels (staged by category coverage), Build
@@ -564,49 +558,10 @@ Your build holds **slots**, and a config takes as many as its size says: 1, 2, 4
 a KB figure beside them.
 
 **Where the room comes from.** Every run opens on **4 weight of free build space**,
-and the build rents the rest by growing into it (ADR-098). Gates hand over nothing and
-the shop sells nothing: your build occupies the smallest rung it fits in, and pays that
-rung at every gate close.
-
-<!-- BEGIN GENERATED:BUILD_SPACE -->
-
-| Build space | 4    | 6   | 8   | 12  | 16  | 24  | 32  |
-| ----------- | ---- | --- | --- | --- | --- | --- | --- |
-| KB a gate   | free | 16  | 32  | 64  | 128 | 256 | 512 |
-
-<!-- END GENERATED:BUILD_SPACE -->
-
-**The rung is not a thing you pick.** There is no ladder to shop, because holding room
-you have not filled never bought anything — the only thing a wider rung is good for is
-installing something, and installing is when you get it. Nothing is refused for room
-below 32, the top of the ladder: a build that does not fit its rung rents the one above.
-
-**You still pay for room you have not filled, because the rungs are coarse.** A
-9-weight build sits on the 12 rung and bills 64 KB a gate. That gap is the whole
-pressure: crossing from 4 to 5 weight costs 16 KB at every gate for the rest of the run,
-so the question is never "can I afford this config" but "can I afford it every gate".
-
-**YAGNI is the one config that touches the bill** ([4.3](#43-roster)). It takes **8 KB
-a gate off the rent for every slot the build leaves empty**, so the 9-weight build above
-pays 40 rather than 64. Eight is deliberately less than a rung is worth: crossing up is
-still always a loss and stepping back down is still always a saving, so the pressure
-above survives the discount rather than being cancelled by it (ADR-122). While it is
-held, every install arms — an install inside the rung you already rent now raises the
-bill too, by eating an empty slot, so the press states the new figure before it commits.
-
-**Crossing a rung asks twice.** An install that widens the rung arms instead of
-committing: the press opens with `Build space scales 4 → 6` and `Upkeep becomes 16 KB a
-gate`, and installs on a second press. An install that fits the rung you already rent is
-one press and says nothing. Selling back down narrows the rung again, immediately.
-
-**A bill you cannot pay is not fatal.** The run pays for the widest rung its balance
-covers, and is held to that space until the build fits it: the shop will not let you
-leave until you sell or drop the difference. It is the only lock on the shop door. The
-free rung costs nothing, so there is always a floor.
-
-**Minify.** Halves a config's slots and halves what it gives, one way only. It is how a
-16 fits a build that has never been sixteen wide. A 1-slot config cannot be
-minified: one slot is the floor.
+and the build rents the rest by growing into it (ADR-098): it occupies the smallest
+rung it fits in and pays that rung at every gate close. The ladder, what crossing a
+rung costs, YAGNI's discount and what an unpaid bill does are all in
+[5.1](#51-storage-kb).
 
 Every build surface draws the same track: a bar per config as wide as its slots, one
 **dashed** box per slot still open, and a **hatched** stub one slot wide at the end for
@@ -615,20 +570,21 @@ slot standing open that a config can go into now, hatching is room still for sal
 The **Build** panel carries the bill: its header reads the recurring figure
 (`↻ 32 KB a gate`), and pressing it opens the whole rung ladder — every weight the
 build can rent and what each one bills — with the rung the build stands on marked.
-The configs held and the room left read on the line under it
-(`5 configs · 7 of 8 weight · 1 free`).
 
-That line carries one reading at a time: the room the config under the pointer takes
-(".ts takes 1 of 8 weight"), otherwise the invitation to hover.
-The room count itself sits on the line under the header — "5 configs · 7 of 8 weight ·
-1 free" — so the totals are readable with no pointer at all. It reads "over by 2" only where an unpaid bill has capped the run under its own
-build ([5.1](#51-storage-kb)), which is the one way a build can sit over its space. On a phone, where there is no hover, a config's own
-chip stands in for it: opening a chip's panel lights its box on the track and prices it
-on the line. Width carries no swatch: badges come from flawless windows.
+The line under the header reads the totals with no pointer at all
+(`5 configs · 7 of 8 weight · 1 free`), and while a config is under the pointer it
+reads the room that config takes instead (".ts takes 1 of 8 weight"). It reads
+"over by 2" only where an unpaid bill has capped the run under its own build, which
+is the one way a build can sit over its space. On a phone, where there is no hover, a
+config's own chip stands in for it: opening a chip's panel lights its box on the track
+and prices it on the line. Width carries no swatch: badges come from flawless windows.
 
-**Managing configs.** Click any config chip for its popover: **Install**, **Sell**
-(refunds half the draft cost in KB), **Minify**, or **Upgrade**. Anything can be
-sold except your last config, since a bare build never clears.
+**Managing configs.** Click any config chip for its popover: **Install**, **Sell**,
+**Minify**, or **Upgrade**. A sell refunds half the draft cost in KB, halved again
+while Freemium discounts the draft and zeroed entirely while WTFPL is installed;
+the press quotes whichever of those the run would actually pay, and states no
+figure at all where that is nothing. Anything can be sold except your last config,
+since a bare build never clears.
 
 **Starting a run.** The run deals a **hand of five** configs from the starter
 pool — seeded per player per day — and picks **nothing** for you. **Two** are
@@ -642,11 +598,11 @@ Nothing in a build is ever locked or mandatory. The run opens on the free
 four and rents nothing before it starts; the ladder opens at the Boulder gate.
 Nothing in the opening build is paid for, so taking one back out refunds
 nothing, and the screen quotes no refund: the shop is the only place an
-uninstall pays ([5.4](#54-the-shop)).
+uninstall pays ([5.2](#52-the-shop)).
 
 The deal is shaped, not just shuffled (ADR-062). Three rules hold on every seed:
-nothing larger than your opening slots is dealt (so a card is always installable,
-though one that exactly fills the budget still is), the **smallest three** dealt
+nothing larger than your opening slots is dealt (so every card is installable,
+including one that exactly fills the budget), the **smallest three** dealt
 configs fit those slots together (so a three-config build is always reachable),
 and the hand holds **one or two focus configs** with the count varying by seed
 (so it is never five category bets and never none). The starter pool is the eight
@@ -681,9 +637,10 @@ never a demand. See §2.5.
 **Volkswagen CI reads the audits** (ADR-028). The defeat device is the one config
 aimed at a gate's own rules: installed, it reports the gate's **first** audit as
 passing, struck through on the stake receipt, so the fraud is visible and never
-silent. Which audit that is becomes a real decision once gates stack three: at Elite
-it cancels the deepened peel and leaves the mirror standing, at Champion it stops the
-leak and leaves the strip.
+silent. Gates draw their audits date-seeded ([2.3](#23-audits)), so which one it lifts
+changes with the day: at Elite and the Champion, where a gate carries three, it may
+cancel **410**'s deeper peel and leave **300**'s mirror standing, or stop **507**'s leak
+and leave the rest.
 
 ### 4.2 Size
 
@@ -709,7 +666,7 @@ Its **draft price is 32 KB a slot**, so size names both prices at once:
 <!-- END GENERATED:CONFIG_SIZES -->
 
 A config can carry its own price where the rate is wrong for it: WTFPL is tagged at
-512 KB, Freemium at nothing (its whole cost is the bill).
+512 KB, Volkswagen CI at 384 KB, Freemium at nothing (its whole cost is the bill).
 
 12 and 16 are on the ladder but no config uses them yet — they are there for a config
 worth half a maxed build. The Dex's Configs tab orders the roster by size.
@@ -749,14 +706,13 @@ last and holds only the configs whose whole effect is a commitment.
 | Build Artifacts                                                     | 1     | +32 KB × level storage on gate clear                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Moore's Law                                                         | 1     | On each gate clear, +2% × level of held storage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | YAGNI                                                               | 1     | Every slot the build leaves **empty** takes **8 KB a gate** off the build space rent, so a 9-weight build on the 12 rung pays 40 rather than 64. The one config that touches the bill. It fills a slot itself, so installing it into a build already flush with its rung tips the build into the next rung and the bill goes **up** — it is worth most to a build sitting low in a wide rung, and nothing at all on the free four. Eight is less than a rung is worth on purpose: crossing up stays a loss and stepping back down stays a saving (ADR-122)                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ESLint                                                              | 1     | Cross out one wrong answer on JavaScript / TypeScript polls, fee doubling from 8 KB per gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| Stylelint                                                           | 1     | Cross out one wrong answer on CSS polls, fee doubling from 8 KB per gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Linter                                                              | 2     | Cross out one wrong answer on any poll, fee doubling from 8 KB. v1's ladder climbs for the whole run, redo included; v2 resets it at every clear; v3 halves every rung. One wrong answer always stands (ADR-158)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `.lock`                                                             | 1     | Lock shop offers for 16 KB each ([5.2](#52-the-shop)); a locked offer leads every shop until installed or released, and every lock releases if `.lock` leaves the build                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| Planning Poker                                                      | 1     | On the prep screen before every gate, bet how many of its 5 polls you will answer correctly — **the gate will not open until you have**, and no bet can cost you anything. The number is a **floor**: answer at least that many and it pays `k x (gates cleared + 1) x 0.25` coverage units, a constant 5% of the gate's line per point bet; fall short and it pays nothing. The units land inside the window, so a won bet can lift a gate over its own line. Locks the moment you answer, and settles on a missed gate as readily as a cleared one                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Planning Poker                                                      | 1     | On the prep screen before every gate, bet how many of its 5 polls you will answer correctly — **the gate will not open until you have**, and no bet can cost you anything. The number is a **floor**: answer at least that many and it pays `k x (gates cleared + 1) x 0.25` coverage units, a constant 5% of the codebase per point bet; fall short and it pays nothing. The units land inside the window, so a won bet can lift a gate over its own line. Locks the moment you answer, and settles on a missed gate as readily as a cleared one                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `strict: true`                                                      | 1     | Armed before you answer: an exact answer pays **+0.5 units**, and a partial, a miss or a timeout takes 0.5 units off the gate window (clamped at 0). It disarms after every answer. The one config that can make an answer cost coverage (ADR-089)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Regression Test                                                     | 2     | A poll this account has answered before without getting it fully right pays ×2. A partial counts as a miss: a regression test covers a case that did not pass. The set is read fresh every time the sequence is loaded and never stored, so it shrinks as you learn — getting a poll right retires its test. It reads on any category, since a miss is not a subject                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Cold Start                                                          | 2     | The gate's first answer pays nothing; every answer after it rewards ×1.5. The cold one is the slow one, so the config front-loads the cost rather than the payout — it is Overclock read backwards, and averages the same ×1.2 across a full window                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| Code Coverage                                                       | 2     | +0.1 units of coverage per correct answer, flat: no multiplier amplifies it (ADR-083)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Code Coverage                                                       | 2     | +0.1 units of coverage per correct answer per version, so +0.5 at v5, flat: no multiplier amplifies it (ADR-083, ADR-158)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | IndexedDB                                                           | 2     | +8 KB storage per correct answer, capped at 320 KB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Database                                                            | 2     | Each exact answer opens an **8 KB transaction** instead of paying it. Clearing the gate — on any band, OK included — commits it at **×2**; SHAKY or DANGER rolls the whole thing back. Shares IndexedDB's 320 KB run cap, metered on what it **commits** rather than what it holds, so a rollback costs no cap room. The only earner a gate can take back, which also means a held gate leaves no faucet KB to pay its peel with (ADR-091)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Telemetry                                                           | 2     | Paid peek at how everyone ever answered this poll ([4.5](#45-paid-actions-lint-peek-and-buy-back))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -767,18 +723,19 @@ last and holds only the configs whose whole effect is a commitment.
 | `Math.ceil()`                                                       | 2     | A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1 and three quarters pays 2. The top-up is flat, so no multiplier amplifies it — which is what keeps a near-miss behind a full answer in any build above a bare one (ADR-086)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | SLA                                                                 | 2     | On the prep screen before every gate, promise **OK**, **HEALTHY** or **PERFECT** — **the gate will not open until you have**, and no promise can cost you anything. Close in that band or better and the gate's own payout rises **+10%**, **+25%** or **+50%**. The rate is read off the band you _promised_, never the one you landed in, so promising PERFECT and closing HEALTHY pays nothing where a promise of OK would have paid. A floor, like Planning Poker's: beating your own promise still pays, and missing it costs nothing beyond the uplift you did not get. The one thing in the game that makes a better clearing band worth more KB — the base payout is the same at OK as at PERFECT (ADR-096)                                                                                                                                                                                                                                            |
 | LGTM                                                                | 2     | On the prep screen before every gate, approve **one** of its five polls without reading it. When that poll comes up its options are inert and the only press is LGTM: the answer submitted is whatever the community has picked most on it, counted over every honest answer the poll has ever taken (mirror-gate answers excluded, the same pool Telemetry reads). A poll needs **2** prior answers before it can be approved, and the row says so without ever naming the count — sample size is Telemetry's own upgrade. Grading is untouched, so a wrong approval bleeds exactly like a wrong answer. Approving is optional and never holds the gate: unlike Planning Poker and SLA, declining is a real option, because the room is worse than you on a category you know. Refused outright under **300 Multiple Choices**, which inverts what a majority means; under **404** the categories read `?????` and the approval is blind twice over (ADR-127) |
+| npm audit                                                           | 2     | On the prep screen, names the config each outage audit will take offline: one name when every poll agrees, the play order when the pick moves, the whole build on poll 1 for 425. Unlocks after 3 audited gates cleared (ADR-158)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `&&`                                                                | 4     | Correct answers **chain**. The first link pays **1 KB** and every link after it pays **double** the last (1, 2, 4, 8, 16, 32, 64, 128, 256), so nine in a row empties the run faucet on its own. Any wrong answer short-circuits the chain back to its first link; a partial neither extends nor breaks it. The chain **survives a gate clear**, where the engine's own streak resets — which is what makes it a second number rather than a second reading of the same one. It shares IndexedDB's 320 KB run cap, so it is an opening-game plan the way Freemium is, and its row on the poll screen states what the next link pays before you answer (ADR-121)                                                                                                                                                                                                                                                                                                |
 | Try/Catch                                                           | 4     | A gate that would close in **DANGER** holds instead, owing its peel — the one exception to "no retry, no peel, no choice". The catch is spent doing it and **deletes itself**, and its own 4 weight is the first thing that peel takes, so it settles 4 slots of the debt on its way out. It handles the exception rather than undoing it: you still owe the peel and still have to re-run the gate. A caught gate can never then die to its own peel. Re-drafting it later buys a second catch at full price (ADR-096)                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | vendor lock-in                                                      | 4     | Names one config in the build as the run's vendor. That config keeps its weight and keeps paying its effect, but the build space you rent is measured as though it were not there, so the room it frees is a rung you no longer have to pay for. In exchange it cannot be sold or dropped for the rest of the run. It asks for its target the moment it joins the build — in the opening build or in the shop — and the screen holds until you name one, so the weight can never be spent on nobody. It cannot name itself, and it only pays on a config heavier than its own 4 — the thing worth exempting is the thing you would least like to be stuck with. A peel can still take the locked config, and selling vendor lock-in releases the lock (ADR-087)                                                                                                                                                                                                |
 | Intellisense                                                        | 4     | All coverage ×1.5                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Deprecated                                                          | 4     | All coverage ×3, fading ×0.5 each gate clear, through ×1 and on into ×0.5, where it cuts coverage rather than paying it; deleted from the build at ×0. Six gates of service, the last of them a liability you have to notice and drop                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Cache                                                               | 4     | Correct answers warm their category for the rest of the run: each cached hit pays +0.25 units of coverage there, capped at one unit (4 hits). A wrong answer in the category flushes it cold; a partial neither warms nor flushes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Prefetch                                                            | 4     | Shows, for every poll left this gate, its category, how many options it offers (in play order), and how many of the polls take more than one answer, plus all of the next gate's categories. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — the questions stay sealed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| git rebase -i                                                       | 4     | Before a gate starts, names its 5 polls by **category** and moves any of them up or down the queue. **v2** also names which of them take more than one answer. The order locks the moment the first answer lands. Prefetch stays the richer read (option counts, next gate); rebase owns the order instead, and it is the only config that touches poll sequence — which is what Cold Start, Overclock, Cache and Dependabot all quietly depend on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Prefetch                                                            | 4     | v1 shows the category of every poll left this gate plus all of the next gate's categories; v2 adds how many options each offers (in play order) and how many of them take more than one answer. Asking for polls not yet dealt rolls tomorrow's shared seed a day early — the questions stay sealed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| git rebase -i                                                       | 4     | Before a gate starts, names its 5 polls by **category** and moves any of them up or down the queue. **v2** also names which of them take more than one answer. The order locks the moment the first answer lands. Prefetch stays the richer read (the next gate at v1, option counts at v2); rebase owns the order instead, and it is the only config that touches poll sequence — which is what Cold Start, Overclock, Cache and Dependabot all quietly depend on                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Overclock                                                           | 4     | The gate's first answer earns ×4 coverage; every answer after it runs hot at ×0.5, cooling off at the clear. Miss the opener and the gate is nearly dead — the buy is variance, not magnitude (×1.2 average, honestly under Intellisense)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | AGENTS.md                                                           | 8     | All coverage ×2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Volkswagen CI                                                       | 8     | Reports the gate's first audit as passing; costs 384 KB to draft                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| Dependabot                                                          | 8     | Counts correct answers: **5 in a row** (4 at L2) upgrades a random installed config, free, then the count restarts. A wrong answer or a failed gate starts it over, so it pays for a clean streak rather than for time. Its row on the poll screen shows the countdown ("bump in 3"). The pick ignores the Focus coverage gate the shop enforces, so a merge lands without review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Dependabot                                                          | 8     | Counts correct answers: **5 in a row** (4 at v2) upgrades a random installed config, free, then the count restarts. A wrong answer or a failed gate starts it over, so it pays for a clean streak rather than for time. Its row on the poll screen shows the countdown ("bump in 3"). The pick ignores the Focus coverage gate the shop enforces, so a merge lands without review                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | WTFPL                                                               | 8     | Every shop offers the entire roster; costs 512 KB, every sell refunds 0 KB while it is installed (its own included), and Rebuild/Lock/Extend retire                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Freemium                                                            | 8     | **Free to draft.** Every config drafts at half price while it is installed, and refunds drop to half of that discounted price. Each gate cleared bills 8 KB × 2^gate (8, 16, 32, 64, 128, 256…), charged after the clear pays; a bill the balance cannot cover lapses the config and frees its eight slots                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
@@ -814,7 +771,7 @@ ship; the original check designs stay in the beans.
 | --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Vite config           | 1     | Not built. +0.25 units of coverage on JavaScript / TypeScript polls answered under 35 s                                                                                                                      |
 | `.every()`            | 1     | Not built. +0.1 units of coverage when a category you have 5-streaked appears                                                                                                                                |
-| Semver                | 1     | Coverage ×1.2 for each Focus config at L2 or higher                                                                                                                                                          |
+| Semver                | 1     | Coverage ×1.2 for each Focus config at v2 or higher                                                                                                                                                          |
 | Weekend Project       | 1     | Saturday and Sunday gates pay +50% storage                                                                                                                                                                   |
 | Benchmark             | 2     | See your paired ghost's answer before you commit                                                                                                                                                             |
 | `.tsx`                | 2     | TypeScript and React polls reward ×1.25                                                                                                                                                                      |
@@ -822,7 +779,6 @@ ship; the original check designs stay in the beans.
 | Watch                 | 2     | Pick a category at draft: its polls get double draw weight                                                                                                                                                   |
 | `--save-exact`        | 2     | Every future draft costs 20% less                                                                                                                                                                            |
 | Snapshot Testing      | 4     | Polls you have already seen reward ×2                                                                                                                                                                        |
-| Hotfix                | 4     | A failed gate still opens the shop                                                                                                                                                                           |
 | Replication           | 4     | All storage gains ×2. Its cost clause named the free storage plan, which ADR-082 deleted; the natural replacement is holding the build to the free 4-weight rung, but that is a redesign and not yet decided |
 | Continuous Deployment | 4     | +64 KB every gate clear, but you never enter the shop again                                                                                                                                                  |
 
@@ -843,7 +799,7 @@ coverage. Ship `.tsx` and `Node.js` first and pool the rest.
 ⚪ **Parked**: **rm -rf** (strip-all with
 2× refund), **localStorage** (storage burst). Two former configs became gate audits
 instead, since a clock or a mirror is something a gate does to you rather than something
-you buy: **Mirrored Check** is now Marsh's Mirror, **Speed Check** is now Timeout.
+you buy: **Mirrored Check** is now **300 Multiple Choices**, **Speed Check** is now **408 Request Timeout**.
 
 Open: General Backend has no Focus config yet, and it should not get a solo one.
 `Node.js` (JavaScript + General Backend) in the dual-focus pool above is the
@@ -854,25 +810,33 @@ Next as readily as by any server.
 
 ### 4.4 Upgrades
 
-Upgrades cap at **level 5** (the 5-poll window is the natural ceiling); Telemetry and
-git rebase -i are the exceptions at level 2. Every upgrade costs
-`32 KB × the level bought`.
+**Most configs have no version ladder at all.** Nineteen of the roster carry one —
+the eleven Focus configs, Build Artifacts, Moore's Law, Telemetry, git rebase -i,
+Dependabot, Code Coverage, Prefetch and Linter (`isUpgradable`); everything else is a flat effect, and its chip
+offers no upgrade press. A build usually holds exactly one config you can version
+up, which is why the shop so often shows a single ladder.
 
-- **Focus configs** answer to two gates (ADR-039): level N to N+1 needs `5% × N` career
+Versions cap at **v5** (the 5-poll window is the natural ceiling); Telemetry,
+git rebase -i, Dependabot and Prefetch are the exceptions and stop at v2, and Linter
+stops at v3. Every upgrade
+costs `32 KB × the version bought`, and there is **no cap on how many you may buy
+in one shop** — only what you can pay for and what the coverage gate allows.
+
+- **Focus configs** answer to two gates (ADR-039): vN to vN+1 needs `5% × N` career
   coverage in that category **and** the storage. Coverage is permission, KB is the
   price, and neither substitutes for the other, so an earned level can be unaffordable
-  and a funded one unearned. Each level raises the payout (`1 + 0.25 × level`).
-- **Build Artifacts** buys +32 KB payout per level on clear. Storage only, no coverage gate.
-- **Moore's Law** buys +2% interest per level, up to 10% at L5, spending the very
+  and a funded one unearned. Each version raises the payout (`1 + 0.25 × version`).
+- **Build Artifacts** buys +32 KB payout per version on clear. Storage only, no coverage gate.
+- **Moore's Law** buys +2% interest per version, up to 10% at v5, spending the very
   principal the interest then earns against.
-- **Telemetry** upgrades once, for 64 KB, and buys honesty rather than power: L1 hands
+- **Telemetry** upgrades once, for 64 KB, and buys honesty rather than power: v1 hands
   over percentages with no denominator, so 100% of two players and 100% of a hundred
-  look identical and the config can talk you into a wrong answer; L2 adds the line that
-  separates them ("based on 127 answers"). The number is withheld server-side, so L1
+  look identical and the config can talk you into a wrong answer; v2 adds the line that
+  separates them ("based on 127 answers"). The number is withheld server-side, so v1
   blindness survives a devtools tab.
-- **git rebase -i** upgrades once and buys information, not power: L1 lists the gate's
-  polls by category, L2 also names which of them take more than one answer. Answer
-  types are Prefetch's headline reveal and multiple choice pays double, so the level is
+- **git rebase -i** upgrades once and buys information, not power: v1 lists the gate's
+  polls by category, v2 also names which of them take more than one answer. Answer
+  types are Prefetch v2's headline reveal and multiple choice pays double, so the version is
   what buys the overlap.
 
 The shop's Upgrade button sits on the config's chip in the Build panel and carries the
@@ -889,8 +853,7 @@ landed on ("1 in 4 rolls"). It swaps the installed config rather than taking a s
 slot, and cannot be kept for the next shop. Dependabot's free bump is not a roll: it
 always lands exactly one rung up. The stake receipt
 states what rides on top of the base: the Focus multiplier when the poll matches, and
-the streak step, which every correct answer takes (one correct answer is already a
-streak of one).
+the streak step, which every correct answer after the first in a window takes.
 
 ### 4.5 Paid actions: lint, peek and buy-back
 
@@ -899,17 +862,17 @@ fee. Both hang off the selling config's own build row, so a build's powers read 
 one place. The third is sold by a **gate** rather than a config, and sits on the answer
 it unseals.
 
-**Lint.** With a linter covering the poll's category equipped, pay to gray out one
-wrong option: 8, 16, 32, 64, 128, 256 KB. Run it as often as the poll's options allow;
-the ladder is the only thing metering it, and it climbs across the whole gate,
-resetting at the clear. Linted polls never reveal their correct answer in community
-views and may reappear in a later seed.
+**Lint.** With Linter equipped, pay to gray out one wrong option on any poll: 8, 16,
+32, 64, 128, 256 KB. Run it as often as the poll's options allow; the ladder is the only
+thing metering it. At v1 it climbs for the whole run, redo included; v2 resets it at
+the clear; v3 halves every rung (ADR-158). Linted polls never reveal their correct
+answer in community views and may reappear in a later seed.
 
 **Peek** (Telemetry). Pay to see how the community voted on the poll in front of you,
 drawn as a gray bar per option: 32, 64, 128, 256, 512 KB, doubling per use and
 resetting **each gate** rather than each poll, because a peek buys the whole poll where
 a lint buys one option. One peek per poll. The pool is every answer that poll has ever
-taken across both loops, minus anyone who answered it at a Mirror gate, since they were
+taken across both loops, minus anyone who answered it under **300 Multiple Choices**, since they were
 asked for the incorrect options and would invert the signal you are buying.
 
 Correctness never travels with a peek: the server hands over option ids and
@@ -965,8 +928,10 @@ threshold — not the draft price — the real cost of a config.
 
 **Crossing a rung arms the install press.** An offer that would widen the rung states
 `Build space scales 4 → 6` and `Upkeep becomes 16 KB a gate` on the first press, and
-installs on the second. An install that fits the rung already rented is one press.
-Selling narrows the rung again immediately, and refunds half the draft cost.
+installs on the second. An install that fits the rung already rented is one press,
+unless **YAGNI** is held: its discount is paid per empty slot ([4.3](#43-roster)), so
+every install then arms and states the new bill before it commits. Selling narrows the rung again immediately, and refunds what the build is owed —
+half the draft cost, or less where a config discounts or zeroes it.
 
 Weight both earns and bills. A heavier build scores more coverage per answer and so
 earns more per gate, while costing more per gate to run; the whole question of a run is
@@ -1002,18 +967,26 @@ shop is a legal loop while waiting on tomorrow's polls; prep carries the way bac
 holds ([3](#3-your-build)), which is a state rather than a verdict — and one an unpaid
 bill put you in, since there is no ladder to step down.
 
-| Action       | Cost                                                 | Notes                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Draft**    | 32 to 512 KB by size                                 | One of 5 offered configs, new ones only. The offer's **Install** press carries the spend on it (`Install · 64 KB`), the same press the opening hand deals with; it greys and refuses while the room or the balance is short, price still showing.                                                                                                                                                                 |
-| **Rebuild**  | 4, 8, 16, … 512 KB                                   | Re-rolls the offer, doubling per rebuild within the same shop.                                                                                                                                                                                                                                                                                                                                                    |
-| **Lock**     | 16 KB a lock                                         | Requires **`.lock`** in the build (ADR-054); without it the registry shows no padlock at all. Pins any number of offers: rebuilds skip them and every later shop leads with them, until each is installed or released. Releasing is free and refunds nothing, and every lock releases if `.lock` leaves the build. A pinned offer occupies one of the registry's slots, so locking the whole registry freezes it. |
-| **Minify**   | free                                                 | Halves a config's slots and halves what it gives, one way only. The only way to fit a 16 into a build narrower than sixteen. A 1-slot config cannot be minified.                                                                                                                                                                                                                                                  |
-| **Extend**   | 48, then 96 KB                                       | One more config on the table, in this shop and every shop after. Two per run. From gate 3.                                                                                                                                                                                                                                                                                                                        |
-| **Incident** | 32 KB to buy, 8/16/32/64 … KB to refresh             | One shop in three from gate 3 deals a single revealed audit at the **Incident desk**. Buying takes it into hand, replacing whatever you already hold; **Refresh** deals another and doubles its own price for the rest of that shop. The buy refuses when no rival is in reach of that audit ([7.4](#74-interference)).                                                                                           |
-| **git tag**  | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 | A cross-run checkpoint: after a death, your next run checks out there instead of gate 1. One per run, burnt by the run it rescues.                                                                                                                                                                                                                                                                                |
-| **kill -9**  | free                                                 | Ends the run on a second press, the first arming it; banks nothing. A service earned by clearing gate 5 (ADR-115 D11), then in every shop.                                                                                                                                                                                                                                                                        |
-| **Sell**     | refunds half the draft cost                          | Never your last config.                                                                                                                                                                                                                                                                                                                                                                                           |
-| **Upgrade**  | `32 KB × the level bought`                           | Focus configs also need the coverage ([4.4](#44-upgrades)).                                                                                                                                                                                                                                                                                                                                                       |
+**Every price previews the balance it leaves** (ADR-152). Pointing at a price —
+by hover or by keyboard focus — names the figure that press would land on above
+the balance: `after install 378 KB` in vermillion for a spend, `after uninstall
+442 KB` in viridian for a refund. The preview belongs to the press, not the card,
+so a card carrying both an upgrade and an uninstall answers for the one pointed
+at, and an offer the balance cannot cover previews nothing.
+
+| Action            | Cost                                                 | Notes                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Draft**         | 32 to 512 KB by size                                 | One of 5 offered configs, new ones only. The offer's **Install** press carries the spend on it (`Install · 64 KB`), the same press the opening hand deals with; it greys and refuses while the room or the balance is short, price still showing.                                                                                                                                                                 |
+| **Rebuild**       | 4, 8, 16, … 512 KB                                   | Re-rolls the offer, doubling per rebuild within the same shop.                                                                                                                                                                                                                                                                                                                                                    |
+| **Skip the shop** | pays 16 KB                                           | Leave the shop without a single registry action and get paid. Any draft, rebuild, lock, sell, upgrade or other registry press this visit shuts it (`registry touched`), and pressing it shuts the registry until the next shop. Always below the cheapest draft (DVTD-2l5k, ADR-115 D4). A starter, in every shop.                                                                                                |
+| **Lock**          | 16 KB a lock                                         | Requires **`.lock`** in the build (ADR-054); without it the registry shows no padlock at all. Pins any number of offers: rebuilds skip them and every later shop leads with them, until each is installed or released. Releasing is free and refunds nothing, and every lock releases if `.lock` leaves the build. A pinned offer occupies one of the registry's slots, so locking the whole registry freezes it. |
+| **Minify**        | free                                                 | Halves a config's slots and halves what it gives, one way only. The only way to fit a 16 into a build narrower than sixteen. A 1-slot config cannot be minified.                                                                                                                                                                                                                                                  |
+| **Extend**        | 48, then 96 KB                                       | One more config on the table, in this shop and every shop after. Two per run. From gate 3. Sold only to a run that carried it in at new run for 64 KB of archive (ADR-153); a run that did not sees the row named with `new run · 64 KB` and no press.                                                                                                                                                            |
+| **Incident**      | 32 KB to buy, 8/16/32/64 … KB to refresh             | One shop in three from gate 3 deals a single revealed audit at the **Incident desk**. Buying takes it into hand, replacing whatever you already hold; **Refresh** deals another and doubles its own price for the rest of that shop. The buy refuses when no rival is in reach of that audit ([7.4](#74-interference)).                                                                                           |
+| **git tag**       | 128 KB at gate 4, +64 KB per gate, 512 KB at gate 10 | A cross-run checkpoint: after a death, your next run checks out there instead of gate 0. One per run, burnt by the run it rescues. Sold only to a run that carried one in at new run for 128 KB of archive (ADR-153); otherwise the row reads `new run · 128 KB` and takes no press.                                                                                                                              |
+| **kill -9**       | free                                                 | Ends the run on a second press, the first arming it; banks nothing. A service earned by clearing gate 5 (ADR-115 D11), then in every shop.                                                                                                                                                                                                                                                                        |
+| **Sell**          | refunds half the draft cost                          | Never your last config.                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Upgrade**       | `32 KB × the version bought`                         | Focus configs also need the coverage ([4.4](#44-upgrades)).                                                                                                                                                                                                                                                                                                                                                       |
 
 A tag-rescued run starts at the pinned gate with a 32 KB-per-gate stipend, everything
 else fresh, and its death credit counts only the gates it actually climbed. It opens on
@@ -1023,13 +996,8 @@ deeper, a rescue would resume a starter build into stacked audits and a half-bui
 peel.
 
 An offer is refused for **price**, and for **room** only at the top of the ladder
-(ADR-098) — below 32 weight a build that does not fit its rung rents the one above,
-so room has nothing to refuse. The badge says which: `Needs 4 slots, 1 free` is a
+([5.1](#51-storage-kb)). The badge says which: `Needs 4 slots, 1 free` is a
 different problem from `Costs 128 KB, you have 90`.
-
-**Build space is not a shop action any more.** The rung follows the build, so the price
-of widening rides the install that widens it: an offer that crosses a rung arms, stating
-the scale and the new standing bill, and commits on a second press ([5.1](#51-storage-kb)).
 
 The shop always shows _why_ a locked action is locked: not enough storage against
 unmet coverage are different problems and read differently.
@@ -1042,19 +1010,25 @@ unmet coverage are different problems and read differently.
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
 (100% victory, proportional on death, 0% on abandon). It is the account's one
-persistent wallet, and it buys two things (ADR-112):
+persistent wallet, and it buys two things (ADR-112, ADR-153):
 
 - **Appearance** — profile borders, 256 KB to 32 MB, bought on the profile.
-- 🟡 **Run services** — Boot Cache (starting storage), Docker Image (one config from
-  your last finished build guaranteed as an offer) and the git tag's deposit
-  ([5.2](#52-the-shop)); bought once per run, before it, and consumed with it.
-  Decided in ADR-115, not yet built (DVTD-0now).
+- **A warm boot** — on the new run screen, while the run is still being configured
+  ([8](#8-interface)). **Boot Cache** banks run storage at two archived KB per KB, in
+  three rungs (128 → 64, 256 → 128, 512 → 256 KB); pick one. **Extend** and the
+  **git tag** are carried in for a flat archive price (64 KB and 128 KB) and only
+  then sold by the shop, for run storage at their usual ladders ([5.2](#52-the-shop)).
+  Hot Reload, Return Policy and Docker Image take a carry price when their presses
+  ship. Picked as a draft, paid once by the start press, consumed with the run.
 
-Nothing inside a run spends it (ADR-112 D4). It **cannot** open a run wider — ADR-082
-deleted the start-slot ladder, so every run opens on the same free four and grows by
-renting ([5.1](#51-storage-kb)) — and it never buys a config unlock (ADR-050: unlocks
-are achievement only). The balance reads on the profile, in the Dex header, and as a
-before → after step on the gate and run-over screens.
+Nothing past the start action spends it (ADR-112 D4). It **cannot** open a run wider —
+ADR-082 deleted the start-slot ladder and ADR-153 refused a slot a third time, so every
+run opens on the same free four and grows by renting ([5.1](#51-storage-kb)); the
+storage Boot Cache banks pays that rent, which is the brake — and it never buys a config
+unlock (ADR-050: unlocks are achievement only). The balance reads on the profile, in the
+Dex header, on the warm boot panel, and as a before → after step on the gate and run-over
+screens. Banked Boot Cache storage is run storage: whatever is left banks back at the
+outcome rate, so a round trip returns half at best.
 
 The archive **carries across the 2.0 cutover at face value**: it was banked by real
 play under a rule that already said it persists, so ADR-051's no-backfill line does
@@ -1066,12 +1040,12 @@ titles ([6.6](#66-titles)).
 ### 6.2 Unlocks
 
 Configs are exposed on the **Reveal / Grant / Stage** model (ADR-050/051). Grant
-gates the starting hand only — the shop's registry always offers the whole
-roster. The set granted at signup ([4.3](#43-roster) counts the roster against it):
+will gate the starting hand only (DVTD-p9ah, below); today every hand still deals
+from the starter eight, and the shop's registry always offers the whole roster. The set granted at signup ([4.3](#43-roster) counts the roster against it):
 
 <!-- BEGIN GENERATED:STARTER_POOL -->
 
-`.js`, `.ts`, `.css`, ESLint, Build Artifacts, Code Coverage, IndexedDB, Cold Start
+`.js`, `.ts`, `.css`, Linter, Build Artifacts, Code Coverage, IndexedDB, Cold Start
 
 <!-- END GENERATED:STARTER_POOL -->
 
@@ -1092,15 +1066,18 @@ each on the same ledger, granted in the same transaction, recorded as a row in
 `user_service_unlocks`. Rebuild is a starter; Extend unlocks the first time you
 reach Cascade and the git tag the first time you reach gate 4, both off a
 `reached-gate:N` metric that ticks for every gate a clear reaches. A locked
-service reads named in the shop and the Dex, a `?` for its glyph and the line
-that earns it where its price would go, and an unlocked one is still sold only
-from its gate ([5.2](#52-the-shop)). Nothing is backfilled: a depth reached
-before the ledger existed has to be reached again. Hot Reload (rebuild 5 times),
-Return Policy (sell 5 configs), kill -9 (clear gate 5), Boot Cache (bank 256 KB
-from one run, a one-shot at run end off the archive credit) and Docker Image
-(finish a run still holding a config from the dealt hand, likewise) count
-already. 🟡 Their presses and purchases are DVTD-r2fg, DVTD-rte1 and DVTD-0now;
-until then an earned one reads _not for sale yet_ in the Dex.
+service reads named in the shop, the Dex and the warm boot panel, a `?` for its
+glyph and the line that earns it where its price would go. An unlocked one is
+then **carried into a run** at new run for an archive price, or free for Rebuild,
+Skip the shop and kill -9 ([6.1](#61-archived-storage), ADR-153), and is still sold only from
+its gate ([5.2](#52-the-shop)). Nothing is backfilled: a depth reached before
+the ledger existed has to be reached again. Hot Reload (rebuild 5 times), Return
+Policy (sell 5 configs), kill -9 (clear gate 5), Boot Cache (bank 256 KB from
+one run, a one-shot at run end off the archive credit) and Docker Image (finish
+a run still holding a config from the dealt hand, likewise) count already. 🟡
+Hot Reload, Return Policy and Docker Image have no press yet (DVTD-r2fg,
+DVTD-rte1, DVTD-oc69); until then an earned one reads _not for sale yet_ in the
+Dex.
 
 A grant announces itself where it fires — a saffron "unlocked" alert line on
 the reveal, poll or shop surface — then again in the gate clear's "What
@@ -1142,8 +1119,9 @@ theme is a lightened indigo and the Champion wears fuchsia, both for readability
 the celadon/cinnabar pass-fail moods still override the gate theme on reward and strip
 screens.
 
-Swatches surface in the run log's clear line, the Configuring stat row, the end-of-run
-summary, and the Dex's Swatches tab.
+Swatches surface on the swatch track of every pinned run header, as a row in the gate
+debrief's Earned panel (ADR-154), on the run-over screen, on a visitor's record
+([6.7](#67-your-profile)), and in the Dex's Swatches and Runs tabs.
 
 🟡 **Collect Swatches** (DVTD-g8ty): a _per-category_ cosmetic chip earned through
 mastery, a separate collection that reuses the name deliberately.
@@ -1152,44 +1130,58 @@ mastery, a separate collection that reuses the name deliberately.
 
 The Pokédex of DevVoted, titled **Dex** — the word the navigation already uses.
 **Registry** is reserved for the shop's in-run offer list and never names this
-screen. Eight tabs, each colouring the whole screen after the collection you
+screen. Nine tabs, each colouring the whole screen after the collection you
 opened.
 
 The Dex is not a page of its own: it is the lower half of **your profile**, at
 `/profile/$userId`, under the card that names you ([6.7](#67-your-profile)).
-`/dex` redirects there. Six of the seven tabs are the collection — polls,
-configs, services, audits, swatches, runs — and the last, **appearance**, holds the
-border and title shelves you equip from; it is drawn on your own page only
-(ADR-125, ADR-142).
+`/dex` redirects there. Six of the nine tabs are the collection — polls,
+configs, services, audits, swatches, runs. Behind them sit three owner tabs:
+**appearance**, where you settle your look, **borders**, the border shop, and
+**titles**, the title shelf. They are drawn on your own page only (ADR-125,
+ADR-144).
 
-**Polls** tracks every poll you have been dealt, with its repeats and its
-fully-correct record ("answered ×4", "3/4"). A poll you have never been dealt
-gives up nothing at all: its category and its question both read `???`. The row
-says _answered_, not _seen_: nothing in the session engine writes
-`polls_history`, so a dealt-but-unanswered count does not exist yet.
+Every tab reads the same way: the collection on the left, complete and never
+truncated, and a panel on the right drawing whatever row you picked (ADR-151).
+Above the list sits one row of chips narrowing it along that tab's own axis —
+weight, category, scope, gate — with **all** checked when you arrive, so the
+whole collection is what you meet and hiding part of it is a choice you make.
+Each chip counts its own held against its own total. The panel is headed by the
+thing's own name, or by the identity it already carries: a poll by its dex
+number, an audit by its HTTP code, a run by the day it ended. On a phone the two
+stack, the list first. An entry you do not hold yet spends that panel saying how
+it is earned.
 
-**Configs** is the unlock checklist, read as the same config card the run
-screens draw (ADR-119, ADR-120), grouped by weight, heaviest first. Each group
-is headed by a labelled bar: the weight block, the weight named ("weight 2"),
-how much of it you hold ("4 of 14"), then a rule. Inside a group what you hold
-reads before what you owe. The tab arrives collapsed, with one press in the
-panel header to open every card.
+**Polls** tracks every poll you have been dealt. A row leads with its dex number
+(`#001`), then the question, its repeats and its fully-correct record ("answered
+×4", "3/4"); the list reads in dex number order. The chips are the categories
+present, each counting its own seen ("8 of 14"), which is what lets you name a
+subject to finish. A poll you have never been dealt hides its question behind
+`???` but keeps its number and its category, so it still counts towards that
+chip. The panel adds how often it was dealt and your accuracy. The row says
+_answered_, not _seen_: nothing in the session engine writes `polls_history`, so
+a dealt-but-unanswered count does not exist yet.
 
-Shut, a granted card is its weight block, its name and the effect's headline
-figure as a badge ("×1.25", "+8 KB"). Open, the effect reads as a sentence in
-the card's body, and under it how the config came to you and the rung an install
-gives you: "Starter config · v1 of 5", or "Earned: peeked the community split 5
+**Configs** is the unlock checklist. A row is the weight block, the name, the
+effect's headline figure as a badge ("×1.25", "+8 KB") and the ceiling of its
+version ladder as a pennant ("v5"). The chips are the weights present, lightest
+first, each counting its own held ("5 of 19"); the list reads lightest first too,
+and inside a weight what you hold reads before what you owe.
+
+The panel draws the same config card the run screens draw (ADR-119, ADR-120),
+open, with no chevron. The effect reads as a sentence in the card's body, and
+under it how the config came to you and the rung an install gives you: "Starter config · v1 of 5", or "Earned: peeked the community split 5
 times · v1 of 2" (off `via_metric`). The footer carries the ceiling of the
 version ladder as a pennant ("v5") beside the badge. The pennant names how far
 the config can climb, never a version you hold: versions are bought with storage
-inside a run and lost with it ([5.4](#54-the-shop)), and most of the roster has
+inside a run and lost with it ([5.2](#52-the-shop)), and most of the roster has
 no ladder and wears no pennant. A config whose effect has no figure (Telemetry's
 peek) wears no badge. What a further version costs and how often the registry
 rolls one is stated in the shop, where it is bought, not here (ADR-108).
 
 A locked config is a dashed card showing only its weight and a `???` where the
 name goes; the dashed edge reads as an empty socket in the checklist that play
-already underway fills. Opening it states both unlock paths with live progress:
+already underway fills. The panel states both unlock paths with live progress:
 the requirement with its count ("Peek the community split 5 times", 3/5) and the
 alternative as a bar with its own count ("or", 43/100), naming itself to a
 screen reader, which the bar cannot (ADR-051; one-shot objectives carry no
@@ -1198,13 +1190,15 @@ paths are stated, the name and the effect withheld. ADR-050's middle state, met
 but not earned, has a card and no data yet (below).
 
 **Services** lists every service the roster knows in one section (ADR-115
-D10), registry services first: Rebuild, Extend, Hot Reload, Return Policy and
-kill -9, then the git tag, Boot Cache and Docker Image. Each row names where it
-is bought and how long the purchase lasts (`Registry · this visit`, `Run ·
-carries into your next run`, `Next run · consumed on start`) and ends in its
-price or, for a service the account has not earned, `unlock · …` with a `?`
-for its glyph. A service is **unlocked once per account** (ADR-116) and the
-same row, named the same way, stands in the shop: Rebuild is a starter, Extend
+D10), in roster order: Rebuild, Skip the shop, Extend, Hot Reload, Return Policy, kill -9, the
+git tag, Boot Cache and Docker Image. Each row names where it is pressed and
+how long the purchase lasts (`Every shop · this visit`, `Shop from Cascade ·
+rest of the run`, `New run · banked at the start`) and ends in what it costs —
+the shop's ladder for a service pressed straight away, `new run · 64 KB` for one
+carried in at new run (ADR-153), whose panel then states the shop ladder its
+press charges — or, for a service the account has not earned, `unlock · …` with
+a `?` for its glyph. There is no scope filter: nine rows need none. A service is **unlocked once per account** (ADR-116) and the
+same row, named the same way, stands in the shop: Rebuild and Skip the shop are starters, Extend
 unlocks the first time you reach Cascade, the git tag the first time you reach
 gate 4, kill -9 when you clear gate 5. The unlock says whether; the gate still
 says when (Extend from gate 3, the tag in gates 4 to 10), and the Dex no longer
@@ -1216,18 +1210,24 @@ DVTD-0now, and the Hot Reload and Return Policy presses are DVTD-r2fg and
 DVTD-rte1.
 
 **Audits** lists every audit as met or unmet (`???` until met), each with the
-gates it can land on. It carries no counts yet, though it now could on one side:
+gates it can land on. The chips are the gates, and an audit that fires across a
+span appears under each of them, which is what a filter can do and a grouping
+cannot. An audit you have not met spends its panel naming where it can still
+catch you. It carries no counts yet, though it now could on one side:
 every rival attack is a durable `audit_incidents` row (ADR-099), so audits
 **received** are countable per run and per day. Audits **sent** are not — the row
 records who fired it but not which of their runs did, so "attacks this climb" has
 nothing to read. 🟡 Wiring the received counts to the tab is DVTD-gvc9.
 
-**Swatches** is the gate ladder as a grid — one card per gate, earned ones
-filled and marked "swept", the next gate dashed, the rest empty sockets.
+**Swatches** is the gate ladder — one row per gate, earned ones filled and marked
+"swept", the rest by their gate number. The panel draws the swatch large and
+states the rule: answering all five polls of that gate is what mints it, and
+clearing the gate alone does not.
 
 **Runs** is the archive of finished climbs, newest first: the date, the ladder
 showing the gates that run swept, the gate that held it, and its final coverage
-with the band that coverage falls in. Coverage is read as a share of the slots
+with the band that coverage falls in. The row is a press now, so the permalink
+into that run's archive moved to the panel. Coverage is read as a share of the slots
 the run opened, never as the raw units `run_states.coverage` stores.
 
 🟡 Planned: collection stats, per-poll community success rates,
@@ -1237,9 +1237,10 @@ audit-firing counts (DVTD-gvc9).
 
 ### 6.5 Borders and seasons
 
-Avatar borders are decorative unlockables bought on your profile's appearance tab
-([6.7](#67-your-profile)) and worn on your card. Pressing a border tries it on in the
-tab's preview first; buying and wearing are separate presses (ADR-142). An equipped border is worn wherever the game draws you, including the
+Avatar borders are decorative unlockables bought on your profile's borders tab
+([6.7](#67-your-profile)) and worn on your card. Pressing a locked border tries it
+on your card first and turns its price into a buy press; a bought border joins
+your draft look, and **Save look** on the appearance tab wears it (ADR-144). An equipped border is worn wherever the game draws you, including the
 byline crediting a poll you wrote ([8](#8-interface)), which is where other players
 meet it; 🟡 rarity-based border unlocks via meta-progression are planned. Runs and
 leaderboards live inside **seasons** (upcoming, active, finished, archived), the
@@ -1250,27 +1251,33 @@ temporal container for competitive resets.
 A **title** is earned identity. Where a border is bought and a role is assigned, a
 title is the one label that says what you have done (ADR-109).
 
-Titles are **permanent**. Each is a threshold on your own record — `25 correct Git
-answers`, `500 polls answered`, `reorder the gates 25 times` — never a
+Titles are **permanent**. Each is a threshold on your own record — `50 distinct Git
+polls answered correctly`, `576 polls answered` — never a
 comparison against other players, which is what the category seat
 ([7.3](#73-category-leaders)) is for and why the two stay separate. Crossing the bar
 writes the title to your account and the check is never run again, so a record that
 later stops being true never costs you the title.
 
 Every category carries **two**, and both are named rather than derived from the
-category (ADR-134). One is for turning up — ten polls answered in that subject,
-right or wrong — and one for getting it right, at twenty-five correct. So Git
-answers earn **Git Contributor** and then **Git GOAT**, and HTML earns **HTML
-Hobbyist** and then **Markup Master**. Most of the names are older than the run
+category (ADR-134), and both count distinct polls (ADR-145). One is for breadth: fifty distinct polls in that subject
+answered at least once, right or wrong. The other is for knowing them: fifty
+distinct polls answered correctly at least once. Answering the same poll again
+counts nothing towards either, so a title states how much of a subject you have
+met, not how often you replayed it. So Git earns **Git Contributor** and then
+**Git GOAT**, and HTML earns **HTML Hobbyist** and then **Markup Master**.
+
+🟡 The bar is fifty for every subject, whatever the bank holds. A subject with
+fewer than fifty polls cannot award its titles until the bank grows past fifty. Most of the names are older than the run
 game: they were the awards of the calendar-era app, where each went to whoever had
 the _most_ of something. The names carried over, the comparison did not.
 
 You may hold many and **wear up to three at once**, in the order you put them on
-(ADR-125). Your card shows every title you wear ([6.7](#67-your-profile)); everywhere
-else shows the **first** one — your open build when a rival inspects it
-([7.1](#71-the-community-board)), and the byline of a poll you wrote
-([8](#8-interface)). Compact climb chips stay avatar-only. Titles are settled when a
-run ends, and a title you have not been shown yet is announced in a notice the next
+(ADR-125). Your card shows every title you wear ([6.7](#67-your-profile)),
+and so do the climber and hover card ([7.1](#71-the-community-board)) and the
+navigation menu. The byline of a poll you wrote shows only the **first**
+([8](#8-interface)). Compact climb chips stay avatar-only. Titles are settled at every
+gate close and again when a run ends (ADR-154); the gate debrief's Earned panel lists
+the ones that close granted, and a title you have not been shown yet is announced in a notice the next
 time you open the game — once, and never again. A granted title's notice also states
 the archive credit that came with it ([6.1](#61-archived-storage)).
 
@@ -1281,8 +1288,9 @@ the rebuild landed and closed it. A granted title is invisible to everybody outs
 that cohort — it is not listed, locked, or hinted at on their shelf, because there is
 no bar they could work towards.
 
-The shelf leads with your three worn slots and splits the rest into three groups:
-**poll count**, **category** and **special** (ADR-143). A filter narrows it to what
+The shelf, on your profile's titles tab, is for progress: it splits every title into
+three groups, **poll count**, **category** and **special** (ADR-143). You put titles
+on from the appearance tab ([6.7](#67-your-profile), ADR-144). A filter narrows it to what
 you have **earned**, or to the five titles **closest** to done.
 
 **Poll count** is the rank ladder held as titles: **Poll Newbie** for your first poll,
@@ -1293,18 +1301,31 @@ the early rungs have room, and states the next rung's threshold and how many pol
 it still wants. A rung you have not reached shows its bar but not its name.
 
 **Category** is a table: each subject's answered title beside its correct title,
-each with its bar.
+each with its bar counting distinct polls towards fifty.
 
-**Special** names **how** you play rather than what you know: **Vanilla JS** for
-clearing a gate with nothing installed, **Tree Shaken** for reaching gate 4 under
-16 KB, **Works On My Machine**, **Ship It**. A few are not compliments.
-**Bikeshedder** is for reordering the gates over and over, **Stack Overflow** for
-leaning on the room. They are earned, held and worn exactly like the rest: nothing is
-ever worn without being chosen, so an unkind title is a joke you get to tell about
-yourself. Until you earn one, its name reads `???`, but its condition is always
-stated. The two granted titles sit here too.
+**Special** names a moment of a run rather than what you know. Each is earned the
+first time it happens:
 
-🟡 The roster is forty-eight titles and is expected to grow.
+| Title                | Earned by                                                        |
+| -------------------- | ---------------------------------------------------------------- |
+| Hello, World!        | a run's first answer, exactly right                              |
+| And now it's green!  | winning a run with every answer exactly right                    |
+| It Compiles          | winning a run                                                    |
+| Ship It              | clearing an audited gate at exactly OK                           |
+| 10x Engineer         | one answer earning 10 coverage units                             |
+| Stack Overflow       | clearing a gate past full coverage, paid as overflow             |
+| Tested in Production | clearing a gate after missing its first two polls                |
+| Dependency Hell      | holding eight configs at once                                    |
+| Clean Install        | rebuilding the registry three times in one shop, then installing |
+| I'm a Teapot         | holding exactly 418 KB                                           |
+| WONTFIX              | refusing a SHAKY gate instead of paying its peel                 |
+
+A few are not compliments. They are earned, held and worn exactly like the rest:
+nothing is ever worn without being chosen, so an unkind title is a joke you get to
+tell about yourself. Until you earn one, its name reads `???`, but its condition is
+always stated. The two granted titles sit here too (ADR-146).
+
+🟡 The roster is fifty-one titles. Five more special titles are planned (DVTD-vdxt).
 
 Your card also carries your current **rank**, one line worked out fresh from the same
 count every time the card is drawn.
@@ -1317,14 +1338,13 @@ the same component wherever the game shows a player, so you recognise somebody f
 their page before you have read the name (ADR-125).
 
 **Your own page** carries the whole Dex under the card — the six collection tabs
-plus **appearance**, where you equip borders and titles
-([6.4](#64-the-dex)). The archive balance rides the collection heading, because
+plus **appearance**, **borders** and **titles** ([6.4](#64-the-dex)). The archive balance rides the collection heading, because
 that is what the borders cost. "Edit profile" on the card opens the appearance tab:
 your name and your photo come from the account you signed in with, so what you
-wear is the whole of what you can change. The tab leads with **how others see
-you**: your card as a visitor opens it, your byline on a poll you wrote, and your
-card on the climb map, all redrawn as you change what you wear. A border you press
-is tried on there before you spend anything on it (ADR-142).
+wear is the whole of what you can change. The tab draws your card once, then the
+borders you own and the titles you have earned. Picking one changes only a draft,
+which your card at the top of the page wears too; **Save look** writes border and
+titles together (ADR-144).
 
 **Somebody else's page** reads as four bands under the card, and never as tabs
 (ADR-129).
@@ -1332,7 +1352,7 @@ is tried on there before you spend anything on it (ADR-142).
 **Record** leads: how deep they have ever been, the swatches they have won, how
 many runs they have finished, and the streak seats they hold, with the whole
 gate ladder drawn beneath as a swatch track. Depth and swatches are two
-different readings — a swatch needs a flawless window ([6.2](#62-gates)), so a
+different readings — a swatch needs a flawless window ([6.3](#63-swatches)), so a
 player who reached gate 9 sloppily owns none — and each is stated once. An open
 run counts towards depth, because it is still the furthest they have been.
 Beside those two figures the page states your own, faintly, so the number has a
@@ -1361,6 +1381,13 @@ the climb map card. Hover or focus a face and the player's **card** shows first,
 a read-only tooltip (ADR-141). Nothing beside a face goes to GitHub any more; the
 GitHub handle is stated once, on the player's own page.
 
+A player who has published a poll carries one more line under their titles, on both
+their page's card and the hover card: their role when they hold one, the polls they
+have published, and every answer those polls have drawn, from anyone, in any mode
+("Poll editor · 12 polls published · 1,842 answers"). A player with no published poll
+shows no line; a role alone does not earn it. The climb map card leaves it off, because
+it is drawn from the ladder rather than fetched per player.
+
 ---
 
 ## 7. Community
@@ -1370,8 +1397,8 @@ polls on the same day.
 
 ### 7.1 The community board
 
-After every shop visit the climb detours through `/run/community`, and a run locked for
-the day lands here too, with "Back to your run" disabled until local midnight and the
+The board sits at `/run/community`, one press from prep; a run locked mid-gate for
+the day lands here, with "Back to your run" disabled until local midnight and the
 countdown beside it. The page wears the terminal-theme kit (`CommunityScreen.ui.tsx`),
 one panel per section: turnout, the map, the two leader boards, then the polls. What
 the board has to say about the day (still loading, could not be loaded, nothing to
@@ -1395,13 +1422,15 @@ lives in `climbMap.model.ts`, one unit: polls, counted `gate * 5 + pollsIntoGate
 Press any chip — climber or fallen — and their **card** opens: a foldout on a phone, a
 panel under the track on a wider screen. The map is the one place a press opens the
 card rather than the profile, because the card is where **Loot** and **File** live and a
-phone has no hover (ADR-141). The card is the same one a hover shows anywhere else: the
-face and name, both linking to their page, and the title they wear as a badge; then the
-gate block (the gate's swatch and name, `gate N`, a badge of the coverage held and its
-band, and the coverage bar against that gate's unaudited ladder); then **Build**, the
-weight carried against the space rented, the config chips with the vendor-locked one
-badged and the weight still free as an empty slot; then three tiles: run storage,
-streak, and the category they have been right in most often. What a run knows that you
+phone has no hover (ADR-141). The card is the same one a hover shows anywhere else: a
+head that fades from the swatch the player wears on their profile (pallet when none),
+with the face and name, both linking to their page, and every title they wear as a
+badge, the first in the swatch colour (ADR-150); then the gate row (the gate's swatch
+and name, `gate N`, and a badge of the coverage held and its band) over the coverage
+bar against that gate's unaudited ladder, a pointer marking the reading; then
+**Build**, `used / space` weight, the compact config chips with the vendor-locked one
+badged and the weight still free as a dashed free slot; then three tiles: run storage,
+streak, and the category they have been right in most often, each badged. What a run knows that you
 do not stays private (ADR-101 §2, narrowed 2026-09-26). 🟡 Climbers folded behind `+N`
 have no chip to press.
 
@@ -1440,19 +1469,23 @@ correct answers in one run · all-time") and a count of held seats ("9 of 12 sea
 The two boards are ranked independently, so the same category can have a different
 holder on each. Answers given outside a run do not count towards either.
 
-Each board has its own floor: **3 in a row** and **4 correct**. Below it the seat is
-open and says what claims it in that board's own figure. The footer states how a seat
+Each board has its own floor: **3 in a row** and **4 correct**, because a seat earned
+by two right answers devalues every one earned honestly. Below it the seat is
+**unranked** and says what claims it in that board's own figure ("unranked · 3 in a
+row claims it"). The footer states how a seat
 moves: _a seat changes hands when somebody beats it_. A seat cannot be lost by missing,
 because the figure is a best and not a live streak.
 
-A record's streak breaks on a wrong answer and on nothing else. Clearing a gate resets
-the run's own streak ([2.2](#22-gates)) but not this one: the engine counts no
+A record's streak breaks on a wrong answer and on nothing else: a **partial neither
+breaks nor extends** it, the same rule the streak bonus follows, and mirrored answers
+([2.3](#23-audits)) are excluded because they graded a different question. Clearing a
+gate resets the run's own streak ([2.5](#25-coverage-scoring)) but not this one: the engine counts no
 per-category streak, so there is no figure on screen for the board to mirror, and a
 record may therefore span a gate boundary
 ([ADR-131](adr/131-a-record-belongs-to-one-run.md)).
 
 The poll screen states one leader on one line, and it is the streak one
-([2.4](#24-polls-and-categories)). Two figures in two registers, held by two people,
+([8](#8-interface)). Two figures in two registers, held by two people,
 would make that line need reading rather than glancing.
 
 No title comes with a seat. The category and the word "leader" already name it, and a
@@ -1518,75 +1551,81 @@ limit. The pool is the day's dead, identical for everyone.
 
 The game leans hard into its CI metaphor.
 
-- **Run HUD**: storage as a **balance** — "320 KB" over the word `balance`, and no
-  bar. Nothing caps storage ([5.1](#51-storage-kb)), so there is no ceiling to draw
-  against: a bar would need a full mark it does not have, and read as a tank emptying
-  besides. **The balance names every change it makes** (ADR-124): the figure counts to
-  its new reading, tints green on a gain and red on a spend, and a signed pill above it
-  says what moved. Several changes landing close together queue and play in order, one
-  at a time, so none is overwritten before it can be read. Then the gate, polls
-  answered, streak, and total coverage. The gate is
-  named in the title — "Gate 0 · Pallet" — over a **pip bar** that doubles as the badge
-  collection: one pip per
-  gate in that gate's swatch colour, gates behind you solid, the gate underway filling
-  with polls answered, the rest dimmed. A pewter rim marks the gate you stand on and
-  nothing else. Every pip is a control: hover or tap it to name that gate's badge and
-  standing ("clear gate 7 to earn it"). It carries no coverage; the total is the gate's
-  own stake, on the Build Summary's "To pass" line. There is no "gate 0 / 12" counter
-  beside it any more (ADR-084): the title names the gate and the pip bar counts them,
-  so a third copy of the same fact was only noise.
+- **Run header**: every run screen but the hub pins one header row (ADR-132): the
+  gate's swatch mark, the title ("#0 - Pallet Gate"), the run readout (run number
+  and gate) and the balance, over a **swatch track** of all thirteen gates: the
+  ones you have swept filled, the one underway marked, the rest undiscovered. The
+  hub leads with its own strip instead ([2.1](#21-shape-of-a-run)). Storage reads
+  as a **balance**, "320 KB" over the word `balance`, and no bar. Nothing caps
+  storage ([5.1](#51-storage-kb)), so there is no ceiling to draw against: a bar
+  would need a full mark it does not have, and read as a tank emptying besides.
+  **The balance names every change it makes** (ADR-124): the figure counts to its
+  new reading, tints green on a gain and red on a spend, and a signed pill above it
+  says what moved. Several changes landing close together queue and play in order,
+  one at a time, so none is overwritten before it can be read.
+- **Shop page** (ADR-155): from `md`, the build, the incident desk and the
+  services stand on the left and the registry alone on the right. On a phone a
+  row of tabs (Registry, Build, Services, Desk) shows one panel at a time and
+  opens on the registry; the balance moves into the footer beside the press,
+  because the header pins only from `md`. Services count what is ready and fold
+  the locked ones behind one row. A collapsed config card peeks its effect on one
+  truncated line.
 - **New run page**: where a run is opened. Two columns in the shop's order: the
   build on the left — its readout, the slot track, the configs installed, the room
-  for sale and the rung after it, quoted but not yet on offer — and the **registry**
-  on the right, listing the hand you were dealt. The registry prices the deal
-  _free_: a starting config costs room, never storage. It prices no band: the
-  footer says prep states what the gate asks (ADR-078).
+  for sale and the rung after it, quoted but not yet on offer — with the **Warm
+  boot** panel under it, and the **registry** on the right, listing the hand you
+  were dealt. The registry prices the deal _free_: a starting config costs room,
+  never storage. It prices no band: the footer says prep states what the gate asks
+  (ADR-078). The warm boot panel (ADR-153) heads with the archive balance and lists
+  Boot Cache's three rungs, each stating the archive it costs and the storage it
+  banks, then every service that can be carried in with its archive price, each
+  with a checkbox; a locked one is named with the line that earns it. Ticking
+  turns the start press saffron and appends what it spends — `Pallet gate prep ·
+384 KB archive` — and the panel's heading states the balance after. Nothing is
+  paid until the press; once paid, the panel reads back what the run carries with
+  no checkboxes, and the header balance shows the storage banked.
 - **Prep page**: the last screen before a gate opens, and the first screen of a new
-  run after the build is dealt. Two columns. On the left, **At stake**: two objectives,
-  each stating a demand and then the reward it pays — **finish at the lowest clearing
-  band or better**, which earns the next gate by name and the KB that band pays _or
-  more_, and **answer all 5 right**, which earns the gate's swatch. Neither is ticked:
-  the window's answers under them already say where the run stands (ADR-136). Then a
-  row per band reading band, coverage and what it pays — one figure each, a negative
-  for SHAKY's peel (`no peel` at Pallet, which takes none, and the note under the
-  table then says a miss owes nothing), `the run ends` for DANGER. The row the run is standing in is edged
-  in its own band colour, read off the same numbers the coverage bar draws, so the
-  accent and the pin can never name different bands. The band badged on the clearing
-  objective is always one the table below it draws, OK at every gate Pallet included.
-  The swatch is asked for as a flawless window, which is the rule that actually stamps
-  a gate (ADR-080) — not as PERFECT coverage, which is a different test. Under At
-  stake, **What a poll pays** (ADR-139): the codebase as one square per slot, coloured
-  by the gate that opened it, covered squares filled and today's five dashed; from the
-  second gate on, a line saying the codebase grew and that the same units read
-  yesterday's percent and today's; the coverage bar with its rungs numbered (0, the
-  floor, the clearing line, the line the gate asks, 100); what the clearing band still
-  asks, in units; and a row per answer shape — a single answer, a single in each
-  installed focus config, a multiple answer — priced in units and as a signed share of
-  the codebase. Last in the column, **Gate strictness** folds shut: two statements read
-  off the rung table, and a row each for the first, second, current and last gate with
-  its slots, what one unit pays and the HEALTHY line.
-  On the right, **the five polls** (sealed unless a
-  prefetcher is installed), the gate's **audits** with the bill a clear will settle and
-  the player who fired each one, and **Your audit** — the rivals an armed audit may be
-  aimed at ([7.4](#74-interference)). Both audit panels draw shut until gate 3,
-  naming the gate that opens them (ADR-105). The build is not on it (ADR-078). The footer leaves for the community board or back
-  where you came from, and starts the gate.
-- **Size**: the slots a config fills, written in words ("4 slots") ahead of the
-  config's name on every surface that lists configs, and in the row's last figures
-  column where there is room. Fixed-width, so the name column stays flush. There is no
-  grade, no colour ramp and no glyph: the bar's width on the build track is the visual,
-  and the words are the label. Hovering it says what it costs against the width you
-  hold ("takes 8 of your 12 slots"), which is why no row spells the shortfall out a
-  second time: a config you have no room for greys its price and names the gap on the
-  press. The ladder is taught in the Dex ([4.2](#42-size)).
-- **Config level**: a segmented track after the name, beside the upgrade press. It
-  _does_ draw its empty segments, unlike the grade cluster, because a level is a
-  distance along a known ladder and the room left is what you are buying.
-- **An opened config**: the description, then one facts line — level, rate, and what it
-  sells for in this build. Shared by every surface that lists configs, ruled and
-  indented under the row it belongs to. The grade is not among them: the row's own
-  cluster states it. A config with no upgrade path states no level; the deal states no
-  refund, since nothing has been bought yet.
+  run after the build is dealt. Two columns. On the left, **At stake**, headed by the
+  gate's name and number: two objectives, each stating a demand and then the reward it
+  pays — **finish at the lowest clearing band or better**, which earns the next gate by
+  name and the KB that band pays _or more_, and **answer all 5 right**, which earns the
+  gate's swatch. Neither is ticked (ADR-136). Then today's gate's answers as a row of
+  five squares, and the coverage drawn as a **ladder** (ADR-149): the coverage bar at
+  true scale with the pin and each line numbered, so the room each band has at this gate
+  shows, then one row per band, worst first, naming the band, its range and what
+  finishing there pays — a negative for SHAKY's peel (`no peel` at Pallet, which takes
+  none, and the footnote then says a miss owes nothing), `the run ends` for DANGER —
+  with PERFECT last at 100 and the row the run stands in ringed. Under the ladder one line
+  states the units to the next band up and the polls left in the window; the footnote
+  says where a pay lands and what a peel is settled in. The swatch is asked for as a
+  flawless window, which is the rule that actually stamps a gate (ADR-080), not as
+  PERFECT coverage. On the right, **Scoring** folds shut, its strip stating the
+  codebase and what one unit pays there: a single answer pays 0 or 1 unit, a multiple
+  answer 0 to 2 by share, two statements say why a unit moves the bar less each gate,
+  and a table lists slots, one unit's worth and the HEALTHY line for every gate reached,
+  the next gate and the last — the gates ahead keep their names and hide their figures
+  (ADR-149). Then **the five polls**, counting which of three facts (answer types,
+  options each, categories) are revealed: `0 of 3` until a prefetcher is installed,
+  which reveals all three and is named. Then the gate's **audits** with the bill a
+  clear will settle, naming the rival who filed any incident among them; an
+  incident is filed from the community board ([7.4](#74-interference)). The audits
+  panel draws shut until gate 3, naming the gate that opens it (ADR-105). The build is
+  not on it (ADR-078). The footer leaves for the community board or back where you came
+  from, and starts the gate.
+- **Size**: the slots a config fills, stated as a figure in its **weight block**
+  ahead of the name on every chip and build row ([4.2](#42-size)); lists and legends
+  say it in words ("4 slots"). Fixed-width, so the name column stays flush. The
+  bar's width on the build track is the visual. Hovering it says what it costs
+  against the width you hold ("takes 8 of your 12 slots"), which is why no row spells
+  the shortfall out a second time: a config you have no room for greys its price and
+  names the gap on the press.
+- **Config version**: a segmented track after the name, beside the upgrade press.
+  It draws its empty segments, because a version is a distance along a known ladder
+  and the room left is what you are buying.
+- **An opened config**: the description, then one facts line — version, rate, and
+  what it sells for in this build. Shared by every surface that lists configs, ruled
+  and indented under the row it belongs to. A config with no upgrade path states no
+  version; the deal states no refund, since nothing has been bought yet.
 - **Build rail**: in the shop, configs hang off a rail, carrying each config's
   paid actions. They list with no status, since a status needs a poll to be true of.
   Prep does not draw the build at all: it was reviewed a screen earlier and locks the
@@ -1608,8 +1647,8 @@ The game leans hard into its CI metaphor.
   run is scored on stands beside it — a banded bar in a coverage panel of its own
   (ADR-070), in a column to the right of the poll on a wide screen and under it on a
   phone, following the answers down the page rather than scrolling away above them.
-  The panel is headed by the reading it draws — "35 of 40 SHAKY", units held against the gate's HEALTHY units
-  (ADR-106), so a cleared gate raises the line instead of shrinking the figure — beside
+  The panel is headed by the reading it draws — "70% SHAKY", the percent held and its band
+  (ADR-156) — beside
   a hover panel titled **what a poll pays**,
   a two-row table of the rungs an answer can land on: 0 or 1 for a single answer,
   0 / 0.5 / 1 / 1.5 / 2 for a multiple, stated as the figures before the build
@@ -1627,7 +1666,8 @@ The game leans hard into its CI metaphor.
   figure is explained. Coverage is
   stated once per screen, so the header stays quiet here; what is being done to
   this gate lives in its own audits panel, one alert per audit; and what the poll costs
-  lives in the poll panel's own head, beside the category badge — "wrong costs 0.5".
+  lives in the poll panel's own head, beside the category badge — "wrong costs 0.5", shown only while `strict: true` is
+  armed, since nothing else makes a miss cost units ([2.5](#25-coverage-scoring)).
   None of the three folds: a screen you answer on should not be able to hide the terms.
   The send sits inside the poll panel, between the question and the byline, and is the
   top of a stack of two pinned bars (ADR-114): the build sheet rides the bottom of the
@@ -1635,7 +1675,7 @@ The game leans hard into its CI metaphor.
   own place in the page scrolls into view — the send above the byline, the sheet at the
   end. The send is seated off the sheet's measured height, so opening the build fold
   lifts it rather than burying it.
-- **A poll states its own record** (ADR-094): between the poll panel's head and the
+- **A poll states its own record** (ADR-093): between the poll panel's head and the
   question sit two ruled fact rows, read before the question is. The first is how the
   room fares on it — a band word and the figure behind it, "brutal 31% got it right
   first time" — counting each player once, on the deal they took before the reveal
@@ -1652,14 +1692,14 @@ The game leans hard into its CI metaphor.
   207 Multi-Status keeps what it sells. The whole band is optional: withholding it
   puts the option count back in the panel head, which is the seam a config or an
   audit would later use.
-- **The answers are one framed box** (ADR-094): the choices rule against each other
+- **The answers are one framed box** (ADR-093): the choices rule against each other
   inside a single bordered list rather than floating as separate rows, rounding only
   at the ends so a picked fill stays inside the frame. The keycap still carries the
   answer type in its shape — round for a single, square for a select-all.
-- **The poll is one column of panels**: the gate header, then a coverage panel, an
-  audits panel, the poll panel and the build, all sharing one width and one left edge,
-  the button as wide as the options it commits to. Nothing on the screen is wider than
-  the question. The poll panel's head names the step out loud — "Poll 4 out of 5" —
+- **The poll screen stacks its panels**: the gate header, the audits, the poll panel
+  and the build share one width and one left edge, the button as wide as the options
+  it commits to. On a wide screen the coverage panel takes its own column to the right
+  of the poll; narrower, it stacks under it. The poll panel's head names the step out loud — "Poll 4 out of 5" —
   rather than drawing a row of crumbs for it.
 - **A link is white and underlined**: not blue, not the gate's colour. Every hue in
   the kit already means something — a gate's swatch, a figure's sign, an audit's alarm
@@ -1675,22 +1715,27 @@ The game leans hard into its CI metaphor.
   unsigned figure takes the screen's own. One hero readout per screen — the headline
   gain, the balance closing a ledger — is the single exemption, because if every number
   is boxed then none of them is the answer to "what did I just earn". A slot count is
-  not a figure: the weight block already owns that (ADR-047, ADR-060). A fatal gate states the whole run as the cost ("The run ends here") instead
+  not a figure: the weight block already owns that (ADR-047, ADR-060). A count the screen states — a gate number, polls left, a rung — is badged too (ADR-148); only the hero readout and the build's slot counts stay bare. A fatal gate states the whole run as the cost ("The run ends here") instead
   of counting configs. Two vocabularies badge alongside the figures: a band word
   (DANGER…PERFECT) in the ladder's own colour, and a poll category in no colour at
   all. Both are matched case-sensitively, which is what keeps an ordinary word out.
-- **Reward report**: a debrief you unfold. The header states the whole result — the
-  gate just cleared and the one ahead in the gate's own colour, the storage gained over
-  the new balance, and a chip row for answers right, streak and any audit that fired.
-  The title reports the close and only the close ("Pallet cleared", "cleared, thin",
+- **Reward report**: a debrief you unfold. It wears the same pinned header as every
+  run screen (ADR-132): the gate's mark, the title, the run readout and the balance in
+  the band's colour, with a badge each for answers right, streak and any audit that
+  fired. The title reports the close and only the close ("Pallet cleared", "cleared, thin",
   "holds", "perfect"); the swatch is the window's separate prize (ADR-080), so it
-  arrives as a **swatch earned** chip and fills the hero square only where all five
+  arrives as a row in the Earned panel and fills the mark only where all five
   landed. The track beside it fills the gates the run played clean, never the gates it
-  merely walked past, and draws the gate in hand open. Under it sit **four panels,
-  all shut by default**: coverage by category, storage bonus, build changes and the
-  five answers. Each states its own tally on its strip — "4 categories · +62.4%",
-  "3 payouts, 1 bill · +208 KB", "1 unlocked · 1 faded", "4 passed · 1 failed" — so the
-  screen is readable without opening anything, and opening one is a choice to see the
+  merely walked past, and draws the gate in hand open. Under it sit the panels:
+  coverage, **Earned**, by category, payout, build changes and the five answers
+  (ADR-154). Earned lists the configs unlocked and titles earned on this gate, then the
+  swatch, earned or missed with its count. Build changes gives each config a row with its
+  reason: expiring (the next clear deletes it), upgraded (`v1 → v2`) or removed. Both
+  open when they have rows and otherwise fold to one line ("nothing new · swatch 3 of 5",
+  "nothing moved"). The ledgers stay shut and state their tally on the strip:
+  "4 categories · +62.4%", "3 payouts, 1 bill · +208 KB" (no bills clause when none was
+  sent), "4 passed · 1 failed". So the screen is readable without opening them, and
+  opening one is a choice to see the
   arithmetic. Answers read as a test runner: **PASS / PART / FAIL** as words, never
   a tick. The footer leaves for the shop and says how long it stays open.
 - **Poll review**: a test-runner reporter. One **fold per poll**, wearing the same panel
@@ -1716,12 +1761,10 @@ The game leans hard into its CI metaphor.
   ([6.6](#66-titles)) — earned through play, so it is a different claim and gets its
   own line. With no photo on file the handle's first letter stands in.
 - **The category leader**: under the byline, one line states who leads the poll's
-  category on **streak** ([2.4](#24-polls-and-categories)) — the category badge, the
-  word "leader", the leader's avatar and handle, and the record in the row's own
-  trailing cell ("17 in a row"), so it stays on the line however narrow the screen.
-  The correct-answers record is not stated here: two figures in two registers, held by
-  two people, would make the line need reading rather than glancing (ADR-131).
-  Holding it yourself rings the avatar and greens the figure. A seat nobody holds reads
+  category on **streak** ([7.3](#73-category-leaders) says why streak only) — the
+  category badge, the word "leader", the leader's avatar and handle, and the record in
+  the row's own trailing cell ("17 in a row"), so it stays on the line however narrow
+  the screen. Holding it yourself rings the avatar and greens the figure. A seat nobody holds reads
   "unranked · 3 in a row claims it". It is drawn on the question, not on the reveal,
   and a gate that hides the category ([2.3](#23-audits)) withholds the whole line
   rather than naming the category in it.
@@ -1744,40 +1787,39 @@ The game leans hard into its CI metaphor.
 
 ## 9. Glossary
 
-| Term                    | Meaning                                                                                                                                                                                                                                                                                                                               |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Run / Climb**         | One playthrough, spanning multiple real days.                                                                                                                                                                                                                                                                                         |
-| **Gate**                | A checkpoint auditing a 5-poll window: its coverage demand plus its audits.                                                                                                                                                                                                                                                           |
-| **Gate number**         | Counts from 0: a run opens on gate 0 and summits on gate 12.                                                                                                                                                                                                                                                                          |
-| **Codebase**            | Every slot the run has opened, `5 × (gate + 1)`: 5 at Pallet, 65 at the Champion. A unit covers one slot; coverage is units over the codebase. A clear opens five more, which is why the same units read a lower percent the next day. Prep draws it (ADR-139).                                                                       |
-| **Gate meter**          | The run's coverage, the only score a gate judges. Cumulative: units banked over every slot the run has opened.                                                                                                                                                                                                                        |
-| **Audit**               | A rule a gate carries (a mirror, a leak, a clock, a shut shop, a config knocked offline). Every one was fired at you by a rival and locked in before the gate opened; the stake receipt names it and its sender. Gates 3–7 have room for one, 8–10 two, 11–12 three.                                                                  |
-| **Incident**            | One rival's attack: queued at your next gate, locked when you clear the one before it, survived when you clear under it. Public on the Incidents page.                                                                                                                                                                                |
-| **Attack**              | What a HEALTHY-or-better clear arms: one shot, aimed from prep at one of three offered rivals, held for the run until fired. PERFECT rolls two payloads to choose between.                                                                                                                                                            |
-| **410 Gone**            | An audit that deepens the peel by 10 points at Elite and 15 at the Champion, where a rival lands it.                                                                                                                                                                                                                                  |
-| **Peel**                | What a missed gate takes: configs of your choosing, before the same gate runs again.                                                                                                                                                                                                                                                  |
-| **Build**               | Your active setup: the track of config slots. Shown as **Your Build**. Public: any other player can read yours (ADR-101).                                                                                                                                                                                                             |
-| **Slot**                | One unit of room in the build, also called weight. A config takes as many as its size says: 1, 2, 4, 8, 12 or 16. Four are free; the rest are rented by the gate. Opens no gates.                                                                                                                                                     |
-| **Minify**              | Halving a config's slots and its bonus, one way.                                                                                                                                                                                                                                                                                      |
-| **Config**              | An installable dev-tool item: an effect with a price, demanding nothing.                                                                                                                                                                                                                                                              |
-| **Coverage**            | The score: a percentage per category plus a run total (career), and the gate meter (cumulative across the run). In fiction: **knowledge coverage**.                                                                                                                                                                                   |
-| **Storage**             | The in-run currency, in KB. Nothing caps what you can hold.                                                                                                                                                                                                                                                                           |
-| **Build space**         | The room the run rents, always a rung of the ladder: 4 free, then 6, 8, 12, 16, 24, 32. Derived from the build — the smallest rung its weight fits in — never picked (ADR-098).                                                                                                                                                       |
-| **Build space ladder**  | What each rung bills a gate: free, 16, 32, 64, 128, 256, 512 KB, charged on every clear. Crossing a rung arms the install that crosses it. Fall behind and the run is capped at the space its balance covered until the build fits.                                                                                                   |
-| **Archived storage**    | Persistent cross-run storage: the meta-progression currency.                                                                                                                                                                                                                                                                          |
-| **Faucet**              | Any per-correct-answer storage income (for example IndexedDB).                                                                                                                                                                                                                                                                        |
-| **Draft / Rebuild**     | Buying a shop config / re-rolling the offer at a doubling cost.                                                                                                                                                                                                                                                                       |
-| **Lint**                | Paying a fee that doubles across the gate to disable one wrong option (needs a linter config).                                                                                                                                                                                                                                        |
-| **Peek**                | Paying an escalating fee to see how the community voted (needs Telemetry).                                                                                                                                                                                                                                                            |
-| **git tag**             | A shop-bought cross-run checkpoint, priced by the gate it marks, burnt by the run it rescues. 🟡 Becomes a run service: a deposit before the run, placement in the shop (ADR-115).                                                                                                                                                    |
-| **kill -9**             | The service that abandons a run: free, two presses, banks nothing, earned by clearing gate 5 (ADR-115 D11).                                                                                                                                                                                                                           |
-| **Service**             | What the shop and the archive sell beside configs, unlocked once per account (ADR-116). A registry service is bought in the shop with run storage; a run service is bought once per run from the archive before it starts (ADR-115). Where each is sold is a roster fact, and the Dex lists all of them in one section (ADR-115 D10). |
-| **Seed**                | The shared per-day poll sequence every player climbs.                                                                                                                                                                                                                                                                                 |
-| **Segment**             | One day's 5-poll chunk appended to a persistent run.                                                                                                                                                                                                                                                                                  |
-| **Swatch**              | A gate's collectible badge (Pallet to Champion), earned by answering its 5 polls right and kept across runs. Its colour themes the app while that gate is played.                                                                                                                                                                     |
-| **Kanto colours**       | The palette, keyed to gates via their swatches, never to categories.                                                                                                                                                                                                                                                                  |
-| **The Dex**             | The collection screen, titled Dex (Polls, Configs, Services, Audits, Swatches, Runs).                                                                                                                                                                                                                                                 |
-| **Water-cooler moment** | The design north star: same polls, same day, compare answers.                                                                                                                                                                                                                                                                         |
+| Term                    | Meaning                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Run / Climb**         | One playthrough, spanning multiple real days.                                                                                                                                                                                                                                                                                                      |
+| **Gate**                | A checkpoint auditing a 5-poll window: its coverage demand plus its audits.                                                                                                                                                                                                                                                                        |
+| **Gate number**         | Counts from 0: a run opens on gate 0 and summits on gate 12.                                                                                                                                                                                                                                                                                       |
+| **Codebase**            | Every slot the run has opened, `5 × (gate + 1)`: 5 at Pallet, 65 at the Champion. A unit covers one slot; coverage is units over the codebase. A clear opens five more, which is why the same units read a lower percent the next day. Prep's Scoring fold counts it (ADR-149).                                                                    |
+| **Gate meter**          | The run's coverage, the only score a gate judges. Cumulative: units banked over every slot the run has opened.                                                                                                                                                                                                                                     |
+| **Audit**               | A rule a gate carries (a mirror, a leak, a clock, a shut shop, a config knocked offline). A gate draws its audits date-seeded from its tier's pool, so everyone at that gate today meets the same ones; a rival's incident replaces one draw, and the stake receipt names it and its sender. Gates 3–7 carry one, 8–10 two, 11–12 three (ADR-138). |
+| **Incident**            | An audit bought at the shop's Incident desk and filed against a rival: queued at their next gate, locked when they clear the one before it, survived when they clear under it. Listed on the community board's Incidents panel.                                                                                                                    |
+| **410 Gone**            | An audit that deepens the peel by 10 points at Elite and 15 at the Champion.                                                                                                                                                                                                                                                                       |
+| **Peel**                | What a held gate owes before it runs again: a share of the occupied slots, paid by dropping configs and then in storage for whatever the drops left owed (ADR-126).                                                                                                                                                                                |
+| **Build**               | Your active setup: the track of config slots. Shown as **Your Build**. Public: any other player can read yours (ADR-101).                                                                                                                                                                                                                          |
+| **Slot**                | One unit of room in the build, also called weight. A config takes as many as its size says: 1, 2, 4, 8, 12 or 16. Four are free; the build rents the rest by growing into them.                                                                                                                                                                    |
+| **Minify**              | Halving a config's slots and its bonus, one way.                                                                                                                                                                                                                                                                                                   |
+| **Config**              | An installable dev-tool item: an effect with a price, demanding nothing.                                                                                                                                                                                                                                                                           |
+| **Coverage**            | The score: a percentage per category plus a run total (career), and the gate meter (cumulative across the run). In fiction: **knowledge coverage**.                                                                                                                                                                                                |
+| **Storage**             | The in-run currency, in KB. Nothing caps what you can hold.                                                                                                                                                                                                                                                                                        |
+| **Build space**         | The room the run rents, always a rung of the ladder: 4 free, then 6, 8, 12, 16, 24, 32. Derived from the build — the smallest rung its weight fits in — never picked (ADR-098).                                                                                                                                                                    |
+| **Build space ladder**  | What each rung bills a gate: free, 16, 32, 64, 128, 256, 512 KB, charged on every clear. Crossing a rung arms the install that crosses it. Fall behind and the run is capped at the space its balance covered until the build fits.                                                                                                                |
+| **Archived storage**    | Persistent cross-run storage: the meta-progression currency.                                                                                                                                                                                                                                                                                       |
+| **Faucet**              | Any per-correct-answer storage income (for example IndexedDB).                                                                                                                                                                                                                                                                                     |
+| **Draft / Rebuild**     | Buying a shop config / re-rolling the offer at a doubling cost.                                                                                                                                                                                                                                                                                    |
+| **Lint**                | Paying a fee that doubles each use to disable one wrong option (needs Linter; v1 never resets, v2 resets each gate, v3 halves it).                                                                                                                                                                                                                 |
+| **Peek**                | Paying an escalating fee to see how the community voted (needs Telemetry).                                                                                                                                                                                                                                                                         |
+| **git tag**             | A cross-run checkpoint: carried in at new run for 128 KB of archive (ADR-153), planted in the shop for run storage priced by the gate it marks, burnt by the run it rescues.                                                                                                                                                                       |
+| **kill -9**             | The service that abandons a run: free, two presses, banks nothing, earned by clearing gate 5 (ADR-115 D11).                                                                                                                                                                                                                                        |
+| **Service**             | What the shop sells beside configs, unlocked once per account (ADR-116). A service is carried into a run at new run for an archive price or free, then pressed in the shop for run storage at its ladder, or applied at the start (ADR-153). Where each is sold is a roster fact, and the Dex lists all of them in one section (ADR-115 D10).      |
+| **Seed**                | The shared per-day poll sequence every player climbs.                                                                                                                                                                                                                                                                                              |
+| **Segment**             | One day's 5-poll chunk appended to a persistent run.                                                                                                                                                                                                                                                                                               |
+| **Swatch**              | A gate's collectible badge (Pallet to Champion), earned by answering its 5 polls right and kept across runs. Its colour themes the app while that gate is played.                                                                                                                                                                                  |
+| **Kanto colours**       | The palette, keyed to gates via their swatches, never to categories.                                                                                                                                                                                                                                                                               |
+| **The Dex**             | The collection screen, titled Dex: six collection tabs (Polls, Configs, Services, Audits, Swatches, Runs) plus the owner tabs Appearance, Borders and Titles on your own page.                                                                                                                                                                     |
+| **Water-cooler moment** | The design north star: same polls, same day, compare answers.                                                                                                                                                                                                                                                                                      |
 
 ---
 
@@ -1793,7 +1835,7 @@ applies. `rules.model.ts` holds most of it.
 | `SLICE_WINDOW`                | 5 polls per gate window, so per day. A **window** is always these five; the **slots** a score is measured against are cumulative (`scoringSlotsAt`)                                                                              |
 | `VICTORY_GATE` / `GATE_COUNT` | 12 / 13 (gates 0 to 12)                                                                                                                                                                                                          |
 | `GATE_RUNGS`                  | HEALTHY units / OK drop per gate: 3/1 · 6/1 · 9/1 · 12/1.5 · 15.5/1.5 · 19.5/2 · 24/2 · 29/2 · 34.5/2.5 · 40/2.5 · 46/3 · 52/3 · 58.5/3 (`coverageRatio.model.ts`). The floor is the previous gate's HEALTHY units, 0 at Pallet. |
-| `FLOOR_CORRECT`               | 2 right answers a gate asks of its own window, counted before multipliers; fewer holds the gate whatever the band                                                                                                                |
+| `MIN_WINDOW_UNITS`            | 2 units a gate asks of its own window, counted before the build touches them, so partials add up and no multiplier buys past it; fewer holds the gate whatever the band                                                          |
 | `failPeelShareFor`            | 0% / 20% × 2 / 25% × 4 / 30% × 4 / 35% × 2 of the occupied slots, plus strip audits; capped at half the build before gate 3                                                                                                      |
 | `escalatedPeelShare`          | `share × (1 + 0.5 × attempts)`: each retry at the same gate peels half again as much                                                                                                                                             |
 | Incident desk                 | `INCIDENT_OFFER_ONE_IN` 3 shops from gate 3 · `INCIDENT_KB` 32 to buy · `INCIDENT_REFRESH_COST_KB` 8/16/32/64/128/256, per shop · hold 1                                                                                         |
@@ -1803,17 +1845,17 @@ applies. `rules.model.ts` holds most of it.
 
 **Scoring**
 
-| Constant                            | Value                                                                                                                                                |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `BASE_UNIT`                         | 1 unit a correct answer, flat at every gate (ADR-073)                                                                                                |
-| `SINGLE_CREDIT` / `MULTIPLE_CREDIT` | ×1 / ×2 by poll type, on coverage only (ADR-081)                                                                                                     |
-| `scoringSlotsAt`                    | `5 × (gate + 1)`, the denominator: every slot the run has opened, 5 at Pallet to 65 at the Champion                                                  |
-| `STREAK_UNIT_STEP`                  | +0.1 units flat on every correct answer after the first in a window. Added after the multipliers and never multiplied by them                        |
-| `coverageAdd` / `cacheHitStep`      | Code Coverage +0.1 units a correct answer · Cache +0.25 units a cached hit, capped at 4 hits (one unit). Flat, added after the multipliers (ADR-083) |
-| `minifiedUnits`                     | Halves a coverage add when a config is minified. `minifiedAmount` floors and is for whole KB only                                                    |
-| `STREAK_COVERAGE_BONUS`             | 0.1 per consecutive correct answer, capped at 10 steps (×2). Multiplies the gate's KB payout, not the meter                                          |
-| `gateRewardMultiplier`              | `gatesCleared + 1` (×1 at Pallet to ×13 at the Champion) on the KB reward only, frozen while a gate is redone                                        |
-| Focus payout / upgrade gate         | `1 + 0.25 × level` / `5% × level` career coverage                                                                                                    |
+| Constant                            | Value                                                                                                                                                                                |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `BASE_UNIT`                         | 1 unit a correct answer, flat at every gate (ADR-073)                                                                                                                                |
+| `SINGLE_CREDIT` / `MULTIPLE_CREDIT` | ×1 / ×2 by poll type, on coverage only (ADR-081)                                                                                                                                     |
+| `scoringSlotsAt`                    | `5 × (gate + 1)`, the denominator: every slot the run has opened, 5 at Pallet to 65 at the Champion                                                                                  |
+| `STREAK_UNIT_STEP`                  | +0.1 units flat on every correct answer after the first in a window. Added after the multipliers and never multiplied by them                                                        |
+| `coverageAdd` / `cacheHitStep`      | Code Coverage +0.1 units a correct answer × version · Cache +0.25 units a cached hit, capped at 4 hits (one unit). Flat, added after the multipliers (ADR-083)                       |
+| `minifiedUnits`                     | Halves a coverage add when a config is minified. `minifiedAmount` floors and is for whole KB only                                                                                    |
+| `STREAK_COVERAGE_BONUS`             | 0.1 per consecutive correct answer, capped at 10 steps (×2), though a clear resets the streak so a fresh window reaches ×1.5 at most. Multiplies the gate's KB payout, not the meter |
+| `gateRewardMultiplier`              | `gatesCleared + 1` (×1 at Pallet to ×13 at the Champion) on the KB reward only, frozen while a gate is redone                                                                        |
+| Focus payout / upgrade gate         | `1 + 0.25 × version` / `5% × version` career coverage                                                                                                                                |
 
 **Storage**
 
@@ -1842,8 +1884,10 @@ applies. `rules.model.ts` holds most of it.
 | Rebuild / `LOCK_COST_KB` / Extend       | 4…512 KB doubling / 16 flat / 48 then 96                                                                                                                                    |
 | Service staging                         | Lock requires `.lock` in the build (ADR-054); Extend from gate 3 (`draft.model.ts`); Hot Reload, Return Policy and kill -9 from the first shop (`registryControl.model.ts`) |
 | `pinCostFor`                            | 128 KB at gate 4, +64 per gate, 512 at gate 10; stipend 32 KB × gate                                                                                                        |
-| Lint / peek fees                        | 8…256 KB per poll / 32…512 KB per gate                                                                                                                                      |
-| Max config level / upgrade cost         | 5 (Telemetry and git rebase -i 2) / `32 KB × (level + 1)`                                                                                                                   |
+| `BOOT_CACHE_RUNGS` / `BOOT_CACHE_RATE`  | 64, 128, 256 KB banked for 128, 256, 512 KB of archive — two archived KB per KB (ADR-153), one rung a run                                                                   |
+| `*_CARRY_BYTES`                         | `EXTEND_CARRY_BYTES` 64 KB, `PIN_CARRY_BYTES` 128 KB of archive to carry Extend or the git tag into a run; Rebuild and kill -9 carry free                                   |
+| Lint / peek fees                        | 8…256 KB (per run at v1, per gate at v2, halved at v3) / 32…512 KB per gate                                                                                                 |
+| Max config version / upgrade cost       | v5 (Telemetry, git rebase -i, Dependabot and Prefetch v2; Linter v3) / `32 KB × (version + 1)`                                                                              |
 | `UPGRADE_OFFER_ONE_IN`                  | ~1 shop in 8 rolls a newer version of an owned config into the registry, at registry price whatever the version, no coverage gate (ADR-053)                                 |
 | `CLIMB_ONE_IN`                          | a rolled upgrade starts one rung up and climbs on a 1-in-2 flip per further rung until the ladder ends; from v1: v2 ½ · v3 ¼ · v4 ⅛ · v5 ⅛ (ADR-097)                        |
 

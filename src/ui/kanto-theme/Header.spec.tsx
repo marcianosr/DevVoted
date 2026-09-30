@@ -260,9 +260,35 @@ describe("Header", () => {
 	});
 
 	it("badges what the gate carries with it", () => {
-		render(<Header {...props} badge="1 audit" />);
+		render(<Header {...props} badges={[{ label: "1 audit" }]} />);
 
 		expect(screen.getByText("1 audit")).toHaveClass("badge-theme");
+	});
+
+	it("badges each outcome in its own colour, one pill apiece", () => {
+		render(
+			<Header
+				{...props}
+				badges={[
+					{ label: "3 of 5 right" },
+					{ label: "swatch earned", color: "viridian" },
+				]}
+			/>
+		);
+
+		expect(screen.getByText("3 of 5 right")).toHaveClass("badge-theme");
+		expect(screen.getByText("swatch earned")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("rings the lead swatch when a perfect close marked it", () => {
+		const { container } = render(<Header {...props} marked />);
+
+		expect(container.querySelector("header [data-swatch-theme]")).toHaveClass(
+			"legendary-ring"
+		);
 	});
 
 	it("outlines the lead swatch of a gate not yet cleared", () => {
@@ -601,12 +627,10 @@ describe("Header, pinned", () => {
 		expect(bar).toContainElement(screen.getByRole("img", { name: "843 KB" }));
 	});
 
-	it("sheds the track, which is reference rather than a price", () => {
+	it("carries the track in the pinned row, beside the gate it counts", () => {
 		const { container } = render(<Header {...props} pinned />);
-		const bar = headerIn(container);
 
-		expect(bar).not.toContainElement(trackIn());
-		expect(bar?.nextElementSibling).toContainElement(trackIn());
+		expect(headerIn(container)).toContainElement(trackIn());
 	});
 
 	it("keeps the track inside the header where nothing pins it", () => {
@@ -618,14 +642,28 @@ describe("Header, pinned", () => {
 	it("compacts the balance into the bar, and leaves it stacked otherwise", () => {
 		const { container } = render(<Header {...props} funds={FUNDS} pinned />);
 
-		expect(container.querySelector(".balance-readout")).toHaveClass("border");
+		expect(container.querySelector(".balance-readout")).toHaveClass(
+			"badge-theme"
+		);
 	});
 
 	it("leaves the balance stacked where nothing pins the header", () => {
 		const { container } = render(<Header {...props} funds={FUNDS} />);
 
 		expect(container.querySelector(".balance-readout")).not.toHaveClass(
-			"border"
+			"badge-theme"
 		);
+	});
+
+	it("keeps the funds off a phone when the footer states them there", () => {
+		render(<Header {...props} funds={FUNDS} fundsOffPhone />);
+
+		expect(figureOf().closest(".hidden")).toHaveClass("md:flex");
+	});
+
+	it("states the funds at every width by default", () => {
+		render(<Header {...props} funds={FUNDS} />);
+
+		expect(figureOf().closest(".hidden")).toBeNull();
 	});
 });

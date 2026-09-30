@@ -1,13 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { sellRefund } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { nextUpgradeCostOf } from "~/modules/run/config/application/configChip.viewmodel";
+import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import {
 	buildChipFor,
 	incidentDeskFor,
 	shopHeaderFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
+import { kbLabel } from "~/shared/lib/storage";
 import { kantoIncidentDeal } from "~/test/kantoIncidentDesk.factory";
+import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
 
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
@@ -38,6 +44,21 @@ describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 		expect(deal.onInstall).toHaveBeenCalledTimes(1);
 	});
 
+	it("points at the rolled upgrade's price, which the registry never priced before", () => {
+		const onPoint = vi.fn();
+		const pointed = upgradeChipFor({ ...CONFIGS.js, level: 3 }, 1, {
+			...deal,
+			onPoint,
+		});
+
+		pointed.onQuote?.("upgrade");
+
+		expect(onPoint).toHaveBeenCalledWith({
+			label: "after upgrade",
+			deltaKb: -32,
+		});
+	});
+
 	it("dims a rolled upgrade the balance cannot cover, like any offer", () => {
 		const broke = upgradeChipFor({ ...CONFIGS.js, level: 2 }, 1, {
 			...deal,
@@ -51,9 +72,10 @@ describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 
 describe("buildChipFor (ADR-097 decision 6)", () => {
 	const deal = { storageKb: 512, coveragePct: 100 };
+	const alone = (config: Config) => ({ installed: [config], deal });
 
 	it("sells an installed config its own next version", () => {
-		const chip = buildChipFor(CONFIGS.mooresLaw, undefined, undefined, deal);
+		const chip = buildChipFor(CONFIGS.mooresLaw, alone(CONFIGS.mooresLaw));
 		const offered = chip.upgrades?.rungs.find(
 			(rung) => rung.state === "offered"
 		);
@@ -64,29 +86,96 @@ describe("buildChipFor (ADR-097 decision 6)", () => {
 
 	it("offers nothing on a config that has no version ladder", () => {
 		expect(
-			buildChipFor(CONFIGS.codeCoverage, undefined, undefined, deal).upgrades
+			buildChipFor(CONFIGS.agentsMd, alone(CONFIGS.agentsMd)).upgrades
 		).toBeUndefined();
 	});
 
 	it("offers nothing on a config already at its ceiling", () => {
-		expect(
-			buildChipFor(
-				{ ...CONFIGS.telemetry, level: 2 },
-				undefined,
-				undefined,
-				deal
-			).upgrades
-		).toBeUndefined();
+		const capped = { ...CONFIGS.telemetry, level: 2 };
+
+		expect(buildChipFor(capped, alone(capped)).upgrades).toBeUndefined();
 	});
 
 	it("carries no panel at all where no deal is on the table", () => {
-		expect(buildChipFor(CONFIGS.mooresLaw).upgrades).toBeUndefined();
+		expect(
+			buildChipFor(CONFIGS.mooresLaw, { installed: [CONFIGS.mooresLaw] })
+				.upgrades
+		).toBeUndefined();
 	});
 });
 
-describe("shopHeaderFor, previewing an install", () => {
+describe("buildChipFor, quoting the refund the run actually pays", () => {
+	const refundOf = (chip: ConfigChipProps) => chip.info?.sellPrice;
+
+	it("quotes half the draft cost for a build with nothing discounting it", () => {
+		const chip = buildChipFor(CONFIGS.codeCoverage, {
+			installed: [CONFIGS.codeCoverage],
+		});
+
+		expect(refundOf(chip)).toBe(kbLabel(sellRefund(CONFIGS.codeCoverage)));
+	});
+
+	it("halves the quote again where Freemium discounts what a draft costs", () => {
+		const installed = [CONFIGS.codeCoverage, CONFIGS.freemium];
+		const chip = buildChipFor(CONFIGS.codeCoverage, { installed });
+
+		expect(sellRefundIn(installed, CONFIGS.codeCoverage)).toBe(
+			sellRefund(CONFIGS.codeCoverage) / 2
+		);
+		expect(refundOf(chip)).toBe(
+			kbLabel(sellRefundIn(installed, CONFIGS.codeCoverage))
+		);
+	});
+
+	it("quotes nothing at all where WTFPL means nothing sells back", () => {
+		const installed = [CONFIGS.codeCoverage, CONFIGS.wtfpl];
+
+		expect(sellRefundIn(installed, CONFIGS.codeCoverage)).toBe(0);
+		expect(refundOf(buildChipFor(CONFIGS.codeCoverage, { installed }))).toBe(
+			undefined
+		);
+	});
+
+	it("points at no refund it does not quote", () => {
+		const onPoint = vi.fn();
+		const chip = buildChipFor(CONFIGS.codeCoverage, {
+			installed: [CONFIGS.codeCoverage, CONFIGS.wtfpl],
+			onPoint,
+		});
+
+		chip.onQuote?.("uninstall");
+
+		expect(onPoint).toHaveBeenCalledWith();
+	});
+
+	it("points at the refund as a gain, and the upgrade as a spend", () => {
+		const onPoint = vi.fn();
+		const chip = buildChipFor(CONFIGS.mooresLaw, {
+			installed: [CONFIGS.mooresLaw],
+			onPoint,
+		});
+
+		chip.onQuote?.("uninstall");
+		chip.onQuote?.("upgrade");
+
+		expect(onPoint).toHaveBeenNthCalledWith(1, {
+			label: "after uninstall",
+			deltaKb: sellRefund(CONFIGS.mooresLaw),
+		});
+		expect(onPoint).toHaveBeenNthCalledWith(2, {
+			label: "after upgrade",
+			deltaKb: -nextUpgradeCostOf(CONFIGS.mooresLaw),
+		});
+	});
+});
+
+describe("shopHeaderFor, previewing what a price would leave", () => {
 	const CLEARED = 3;
 	const BALANCE_KB = 410;
+	const spending = (deltaKb: number) => ({
+		label: "after install",
+		deltaKb: -deltaKb,
+	});
 
 	it("leaves the balance alone when nothing is pointed at", () => {
 		const header = shopHeaderFor(CLEARED, BALANCE_KB);
@@ -96,7 +185,7 @@ describe("shopHeaderFor, previewing an install", () => {
 	});
 
 	it("states what the pointed offer would leave behind", () => {
-		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], 32);
+		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], spending(32));
 
 		expect(header.funds?.preview).toEqual({
 			label: "after install",
@@ -106,21 +195,34 @@ describe("shopHeaderFor, previewing an install", () => {
 	});
 
 	it("keeps the balance itself unchanged, so the preview cannot be mistaken for it", () => {
-		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], 32);
+		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], spending(32));
 
 		expect(header.funds?.kb).toBe(BALANCE_KB);
 	});
 
 	it("states no after for an offer the balance cannot cover", () => {
-		const header = shopHeaderFor(CLEARED, 16, [], 64);
+		const header = shopHeaderFor(CLEARED, 16, [], spending(64));
 
 		expect(header.funds?.preview).toBeUndefined();
 	});
 
 	it("still states the after for an offer that spends the balance exactly", () => {
-		const header = shopHeaderFor(CLEARED, 64, [], 64);
+		const header = shopHeaderFor(CLEARED, 64, [], spending(64));
 
 		expect(header.funds?.preview?.figure).toBe("0 B");
+	});
+
+	it("counts a refund up rather than down, and tints it as a gain", () => {
+		const header = shopHeaderFor(CLEARED, BALANCE_KB, [], {
+			label: "after uninstall",
+			deltaKb: 32,
+		});
+
+		expect(header.funds?.preview).toEqual({
+			label: "after uninstall",
+			figure: "442 KB",
+			color: "viridian",
+		});
 	});
 });
 

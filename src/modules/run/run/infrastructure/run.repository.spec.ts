@@ -31,6 +31,8 @@ import {
 	abandonSessionRun,
 	applyActionToRun,
 	createSessionRunWithState,
+	debitArchivedStorage,
+	fetchCategoryPollCounts,
 } from "~/modules/run/run/infrastructure/run.repository";
 
 const mock = vi.hoisted((): DrizzleMockState => ({
@@ -149,11 +151,78 @@ describe("applyActionToRun", () => {
 		);
 	});
 
+	it("debits the archive inside the run's own transaction on a warm boot (ADR-153)", async () => {
+		const bytes = 131072;
+		mock.results.push([stateRow(createRun([], [CONFIGS.js]))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ archivedStorage: 0 }]);
+		mock.results.unshift([{ poll_id: 1 }]);
+
+		const result = await applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action: {
+				type: "warm-boot",
+				storageKb: 64,
+				serviceIds: [],
+				archiveBytes: bytes,
+			},
+			settle: async (tx, _before, after) => {
+				expect(
+					await debitArchivedStorage(tx, "red-from-pallet-town", bytes)
+				).toBe(0);
+				return after;
+			},
+		});
+
+		expect(result.state.storage).toBe(64);
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls[0]).toHaveProperty("archived_storage");
+	});
+
+	it("reads null off a guarded debit the balance cannot cover, so the caller can roll back", async () => {
+		mock.results.push([stateRow(createRun([], [CONFIGS.js]))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([]);
+		mock.results.unshift([{ poll_id: 1 }]);
+
+		await expect(
+			applyActionToRun({
+				runId: 64,
+				userId: "red-from-pallet-town",
+				today: TEST_DATES.birthday,
+				action: {
+					type: "warm-boot",
+					storageKb: 64,
+					serviceIds: [],
+					archiveBytes: 131072,
+				},
+				settle: async (tx, _before, after) => {
+					const left = await debitArchivedStorage(
+						tx,
+						"red-from-pallet-town",
+						131072
+					);
+					if (left === null) throw new Error("short");
+					return after;
+				},
+			})
+		).rejects.toThrow("short");
+
+		expect(mock.updateTables).not.toContain(runStatesTable);
+	});
+
 	it("writes the planted gate to the user row", async () => {
 		const rewarding: RunState = {
 			...createRun([], [CONFIGS.js], PIN_FROM_GATE),
 			status: "rewarding",
 			storage: pinCostFor(PIN_FROM_GATE),
+			warmBoot: { storageKb: 0, serviceIds: ["pin"], archiveBytes: 0 },
 		};
 		mock.results.push([stateRow(rewarding)]);
 		mock.results.push(segmentRow());
@@ -265,6 +334,7 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
+				baseUnits: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -290,7 +360,10 @@ describe("applyActionToRun", () => {
 		expect(db.update).toHaveBeenCalledTimes(5);
 	});
 
-	const summitDispatchWith = (counts: readonly unknown[]) => {
+	const summitDispatchWith = (
+		counts: readonly unknown[],
+		categoryPolls: readonly unknown[] = []
+	) => {
 		const summitReady = answeringState({
 			storage: 100,
 			coverage: 400,
@@ -301,6 +374,7 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
+				baseUnits: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -310,8 +384,8 @@ describe("applyActionToRun", () => {
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([]);
-		mock.results.push([]);
 		mock.results.push(counts);
+		mock.results.push(categoryPolls);
 		return dispatch({ type: "close-gate" });
 	};
 
@@ -333,12 +407,24 @@ describe("applyActionToRun", () => {
 		);
 	});
 
-	it("writes a maintainer earned mid-run when the run it was crossed in ends", async () => {
-		await summitDispatchWith([{ metric: "category-correct:git", count: 25 }]);
+	it("writes a maintainer once fifty distinct git polls were answered correctly", async () => {
+		await summitDispatchWith(
+			[],
+			[{ categoryCode: "git", seen: 50, mastered: 50 }]
+		);
 
 		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
 			"title-maintainer-git"
 		);
+	});
+
+	it("writes no maintainer for twenty-five correct answers to the same few git polls", async () => {
+		await summitDispatchWith(
+			[{ metric: "category-correct:git", count: 25 }],
+			[{ categoryCode: "git", seen: 3, mastered: 3 }]
+		);
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
 	});
 
 	it("writes no title row when the ledger satisfies none", async () => {
@@ -386,6 +472,7 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
+				baseUnits: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -423,6 +510,7 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW - 1,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW - 1,
+				baseUnits: SLICE_WINDOW - 1,
 				byCategory: {
 					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
 				},
@@ -440,6 +528,40 @@ describe("applyActionToRun", () => {
 		expect(mock.setCalls.some((call) => "owned_swatch_ids" in call)).toBe(
 			false
 		);
+	});
+
+	it("writes the titles a mid-run gate clear satisfies and records them on its close", async () => {
+		const closing = answeringState({
+			coverage: 10,
+			build: { id: "build", configs: [CONFIGS.js] },
+			window: {
+				correct: SLICE_WINDOW - 1,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW - 1,
+				baseUnits: SLICE_WINDOW - 1,
+				byCategory: {
+					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
+				},
+			},
+		});
+		mock.results.push([stateRow(closing)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+		mock.results.push([{ title_id: "title-rank-poll-newbie" }]);
+
+		const { state: next, earnedTitleIds } = await dispatch({
+			type: "close-gate",
+		});
+
+		expect(next.status).not.toBe("won");
+		expect(earnedTitleIds).toEqual(["title-rank-poll-newbie"]);
+		expect(next.closes?.at(-1)?.earnedTitleIds).toEqual([
+			"title-rank-poll-newbie",
+		]);
 	});
 
 	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {
@@ -556,6 +678,7 @@ describe("applyActionToRun", () => {
 				correct: 1,
 				answered: 1,
 				unitsEarned: 0,
+				baseUnits: 0,
 				byCategory: { js: { seen: 1, correct: 1 } },
 			},
 		});
@@ -637,6 +760,11 @@ describe("applyActionToRun", () => {
 			{
 				user_id: "red-from-pallet-town",
 				metric: "category-answered:js",
+				count: 1,
+			},
+			{
+				user_id: "red-from-pallet-town",
+				metric: "first-poll-correct",
 				count: 1,
 			},
 			{ user_id: "red-from-pallet-town", metric: "polls-correct", count: 1 },
@@ -735,6 +863,7 @@ describe("applyActionToRun", () => {
 				correct: 0,
 				answered: SLICE_WINDOW,
 				unitsEarned: 0,
+				baseUnits: 0,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: 0 } },
 			},
 		};
@@ -807,6 +936,33 @@ describe("first install stamp (ADR-064)", () => {
 		});
 
 		expect(mock.updateTables).not.toContain(userConfigUnlocksTable);
+	});
+});
+
+describe("fetchCategoryPollCounts", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	it("reads each category as distinct polls seen and distinct polls answered correctly", async () => {
+		mock.results.push([
+			{ categoryCode: "css", seen: 12, mastered: 7 },
+			{ categoryCode: "git", seen: 3, mastered: 0 },
+		]);
+
+		expect(await fetchCategoryPollCounts("red-from-pallet-town")).toEqual([
+			{ metric: "category-seen:css", count: 12 },
+			{ metric: "category-mastered:css", count: 7 },
+			{ metric: "category-seen:git", count: 3 },
+			{ metric: "category-mastered:git", count: 0 },
+		]);
+	});
+
+	it("reads nothing for an account that never answered", async () => {
+		mock.results.push([]);
+
+		expect(await fetchCategoryPollCounts("red-from-pallet-town")).toEqual([]);
 	});
 });
 

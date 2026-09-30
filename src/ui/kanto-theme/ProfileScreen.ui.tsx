@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { KantoColor } from "./colors";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
 import { Figures } from "./Figures.ui";
 import { Screen } from "./Screen.ui";
 import { Tabs, type TabItem } from "./Tabs.ui";
@@ -19,7 +20,7 @@ export const EDIT_PROFILE = "edit profile";
 
 export type ProfileScreenProps = {
 	card: ReactNode;
-	theme: KantoColor;
+	theme: SwatchTheme;
 	sections?: ReactNode;
 	tabs?: readonly TabItem[];
 	activeId?: string;
@@ -77,7 +78,7 @@ export const ProfileScreen = ({
 	archive,
 	children,
 }: ProfileScreenProps) => (
-	<Screen theme={theme} width="wide" ground="bare">
+	<Screen gate={theme} width="wide" ground="bare">
 		{card}
 		{sections === undefined ? null : <div className={SECTIONS}>{sections}</div>}
 		{tabs === undefined ||

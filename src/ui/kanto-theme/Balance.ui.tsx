@@ -8,13 +8,16 @@ import { Icon } from "./Icon.ui";
 const READOUT =
 	"balance-readout relative ml-auto flex shrink-0 flex-col items-end gap-0.5";
 const READOUT_INLINE =
-	"balance-readout relative ml-auto flex shrink-0 items-center gap-1.5 rounded-md border border-theme-faint bg-theme-raised px-2 py-1";
+	"balance-readout badge-theme relative ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5";
 const FIGURE =
 	"balance-figure flex items-baseline gap-1 font-bold text-theme tabular-nums";
+const FIGURE_INLINE =
+	"balance-figure flex items-baseline gap-1 font-bold text-theme-soft tabular-nums";
 const AMOUNT = "text-display leading-none";
 const AMOUNT_INLINE = "text-sm leading-none";
 const COUNT = "balance-count";
 const UNIT = "text-xs text-theme-muted";
+const UNIT_INLINE = "text-xs";
 const LABEL = "flex items-center gap-1 text-xs font-bold text-theme";
 const HIDDEN = "sr-only";
 const PREVIEW = "flex items-center gap-1 text-xs text-theme-muted";
@@ -28,6 +31,7 @@ export const BALANCE_PILL_HOLD_MS = 1800;
 
 const GAIN: KantoColor = "viridian";
 const LOSS: KantoColor = "cinnabar";
+const INLINE_COLOR: KantoColor = "viridian";
 
 export type BalancePreview = {
 	label: string;
@@ -149,7 +153,7 @@ export const Balance = ({
 		<span
 			role="img"
 			aria-label={`${amount} ${unit}`}
-			className={FIGURE}
+			className={inline ? FIGURE_INLINE : FIGURE}
 			data-screen-theme={tone}
 		>
 			<span className={inline ? AMOUNT_INLINE : AMOUNT}>
@@ -160,7 +164,7 @@ export const Balance = ({
 				/>
 				{fraction === undefined ? null : `.${fraction}`}
 			</span>
-			<span className={UNIT}>{unit}</span>
+			<span className={inline ? UNIT_INLINE : UNIT}>{unit}</span>
 		</span>
 	);
 
@@ -176,7 +180,10 @@ export const Balance = ({
 
 	if (inline)
 		return (
-			<span className={READOUT_INLINE} data-screen-theme={color}>
+			<span
+				className={READOUT_INLINE}
+				data-screen-theme={color ?? INLINE_COLOR}
+			>
 				{change}
 				<Icon name="floppy" />
 				<span className={HIDDEN}>{label}</span>

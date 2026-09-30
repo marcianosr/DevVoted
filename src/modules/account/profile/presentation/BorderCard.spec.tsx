@@ -9,64 +9,72 @@ import {
 } from "~/modules/account/profile/presentation/BorderCard.ui";
 
 const NAME = "Stack Trace";
+const COST = 256 * 1024;
 
 const renderCard = (props: Partial<BorderCardProps> = {}) => {
 	const onPress = vi.fn();
-	const onTryOn = vi.fn();
+	const onBuy = vi.fn();
 	render(
 		<BorderCard
 			name={NAME}
 			image="/borders/stack-trace.png"
-			cost={256}
+			cost={COST}
 			owned={false}
-			equipped={false}
+			picked={false}
 			canAfford
 			isMutating={false}
 			tryingOn={false}
 			onPress={onPress}
-			onTryOn={onTryOn}
+			onBuy={onBuy}
 			{...props}
 		/>
 	);
-	return { onPress, onTryOn };
+	return { onPress, onBuy };
 };
 
 describe("BorderCard", () => {
-	it("tries the border on when the frame is pressed, without buying it", async () => {
-		const { onPress, onTryOn } = renderCard();
+	it("tries a locked border on from its frame, without buying it", async () => {
+		const { onPress, onBuy } = renderCard();
 
 		await userEvent.click(
 			screen.getByRole("button", { name: COPY.tryOn(NAME) })
 		);
-
-		expect(onTryOn).toHaveBeenCalledOnce();
-		expect(onPress).not.toHaveBeenCalled();
-	});
-
-	it("lets a border the player cannot afford still be tried on", async () => {
-		const { onTryOn } = renderCard({ canAfford: false });
-
-		await userEvent.click(
-			screen.getByRole("button", { name: COPY.tryOn(NAME) })
-		);
-
-		expect(onTryOn).toHaveBeenCalledOnce();
-	});
-
-	it("marks the frame pressed while the border is being tried on", () => {
-		renderCard({ tryingOn: true });
-
-		expect(
-			screen.getByRole("button", { name: COPY.tryOn(NAME) })
-		).toHaveAttribute("aria-pressed", "true");
-	});
-
-	it("buys the border from its price press", async () => {
-		const { onPress, onTryOn } = renderCard();
-
-		await userEvent.click(screen.getByRole("button", { name: /Buy/ }));
 
 		expect(onPress).toHaveBeenCalledOnce();
-		expect(onTryOn).not.toHaveBeenCalled();
+		expect(onBuy).not.toHaveBeenCalled();
+	});
+
+	it("states a locked border's price and offers no buy press until it is tried on", () => {
+		renderCard();
+
+		expect(screen.getByText("256 KB")).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: COPY.buy(COST) })
+		).not.toBeInTheDocument();
+	});
+
+	it("buys a border while it is being tried on", async () => {
+		const { onBuy } = renderCard({ tryingOn: true });
+
+		await userEvent.click(screen.getByRole("button", { name: COPY.buy(COST) }));
+
+		expect(onBuy).toHaveBeenCalledOnce();
+	});
+
+	it("refuses the buy press when the archive cannot pay for it", () => {
+		renderCard({ tryingOn: true, canAfford: false });
+
+		expect(screen.getByRole("button", { name: COPY.buy(COST) })).toBeDisabled();
+	});
+
+	it("marks an owned border owned and wears it from its frame", async () => {
+		const { onPress } = renderCard({ owned: true, picked: true });
+
+		const frame = screen.getByRole("button", { name: COPY.pick(NAME) });
+		await userEvent.click(frame);
+
+		expect(screen.getByText(COPY.owned)).toBeInTheDocument();
+		expect(frame).toHaveAttribute("aria-pressed", "true");
+		expect(onPress).toHaveBeenCalledOnce();
 	});
 });

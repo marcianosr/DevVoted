@@ -29,10 +29,10 @@ const offerOf = (name: string) =>
 	dealt().querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 describe("NewRunScreen", () => {
-	it("pins its header, so the archive stays with the hand", () => {
+	it("pins its header, so the balance stays with the hand", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getByText("archive").closest("header")).toHaveClass(
+		expect(screen.getByText("Storage balance").closest("header")).toHaveClass(
 			"md:sticky"
 		);
 	});
@@ -80,11 +80,21 @@ describe("NewRunScreen", () => {
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
 
-	it("reads the archive as the purse the header holds", () => {
+	it("reads the archive on the warm boot panel under the build, never in the header (ADR-153)", () => {
 		render(<NewRunScreen {...props} />);
 
-		expect(screen.getByRole("img", { name: "512 KB" })).toBeInTheDocument();
-		expect(screen.getByText("archive")).toBeInTheDocument();
+		expect(screen.getByText("Warm boot")).toBeInTheDocument();
+		expect(screen.getByText("512 KB archived")).toBeInTheDocument();
+		expect(screen.queryByText("archive")).not.toBeInTheDocument();
+		expect(columns(document.body)[0]).toContainElement(
+			screen.getByText("Warm boot")
+		);
+	});
+
+	it("draws no warm boot panel when none is given", () => {
+		render(<NewRunScreen {...props} warmBoot={undefined} />);
+
+		expect(screen.queryByText("Warm boot")).not.toBeInTheDocument();
 	});
 
 	it("titles itself the new run, under the gate it is about to run", () => {
@@ -169,7 +179,7 @@ describe("the deal the registry lists", () => {
 		expect(
 			within(screen.getByRole("group", { name: "Answer help" })).getByRole(
 				"button",
-				{ name: "Install ESLint" }
+				{ name: "Install Linter" }
 			)
 		).toBeInTheDocument();
 	});

@@ -14,6 +14,7 @@ import {
 	kantoClosedShopProps,
 	kantoFirstShopProps,
 	kantoLateShopProps,
+	kantoLockedService,
 	kantoLockedRegistryOffers,
 	kantoShopBuild,
 	kantoShopWeight,
@@ -125,6 +126,20 @@ export const WithFooter: Story = {
 					icon: "gate",
 					onPress: () => {},
 				},
+			}}
+		/>
+	),
+};
+
+export const OnAPhone: Story = {
+	parameters: { viewport: { defaultViewport: "mobile1" } },
+	render: () => (
+		<ShopScreen
+			{...props}
+			controls={[...(props.controls ?? []), kantoLockedService]}
+			footer={{
+				action: { label: "To prep", onPress: () => {} },
+				note: "4 configs · 8/8 weight",
 			}}
 		/>
 	),

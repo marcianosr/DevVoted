@@ -1,3 +1,4 @@
+import { carries } from "~/modules/run/run/domain/warmBoot.model";
 import { COMMUNITY, WEIGHT } from "~/shared/lib/copy";
 import {
 	INSTALLED_CARDS_OPEN,
@@ -10,14 +11,18 @@ import { useState } from "react";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { DRAFT_COST_PER_SLOT_KB } from "~/modules/run/config/domain/config.model";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	buildChipFor,
 	controlRowFor,
 	incidentDeskFor,
 	offerChipFor,
+	type PointedPrice,
+	shopAuditsFor,
 	shopHeaderFor,
 	upgradeChipFor,
+	carryLabelOf,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
 import { buildReadingOf } from "~/modules/run/build/application/newRunScreen.viewmodel";
@@ -34,6 +39,8 @@ import {
 	unlockCaptionOf,
 	type ShopSoldId,
 	type ShopSoldSpec,
+	isCarriedService,
+	type CarriedServiceSpec,
 } from "~/modules/run/shop/domain/registryControl.model";
 import { kbLabel } from "~/shared/lib/storage";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
@@ -44,10 +51,12 @@ import {
 
 export type ShopViewProps = {
 	view: RunView;
+	runNumber?: number | null;
 	onDraft: (configId: string) => void;
 	onSell: (configId: string) => void;
 	onUpgrade: (configId: string) => void;
 	onRebuild: () => void;
+	onSkip: () => void;
 	onExtend: () => void;
 	onPlantPin: () => void;
 	onAbandon: () => void;
@@ -61,6 +70,7 @@ export type ShopViewProps = {
 
 const {
 	rebuild: REBUILD,
+	skipShop: SKIP,
 	extend: EXTEND,
 	abandon: ABANDON,
 	pin: PIN,
@@ -71,13 +81,14 @@ const ABANDON_CONFIRM = "press again to end the run";
 const SEPARATOR = "·";
 const OVER_MARK = "over the";
 const OVER_REMEDY = "the bill covered · sell or drop to fit it";
+const REGISTRY_TOUCHED = "registry touched";
 
 const offersOf = (
 	view: RunView,
 	onDraft: (id: string) => void,
 	armedId: string | undefined,
 	arm: (configId: string) => void,
-	point: (configId: string | undefined) => void
+	onPoint: (pointed?: PointedPrice) => void
 ): readonly ConfigChipProps[] =>
 	view.offers.map((offer) => {
 		const armed = armedId === offer.config.id;
@@ -86,8 +97,7 @@ const offersOf = (
 			affordable: offer.installable && offer.refusal === null,
 			scale: offer.scale,
 			armed,
-			onHover: () => point(offer.config.id),
-			onLeave: () => point(undefined),
+			onPoint,
 			onInstall:
 				offer.scale === null || armed
 					? () => onDraft(offer.config.id)
@@ -105,8 +115,9 @@ const focusCoverageOf = (view: RunView, config: Config): number =>
 
 type ServiceHandlers = Pick<
 	ShopViewProps,
-	"onRebuild" | "onExtend" | "onPlantPin" | "onAbandon"
+	"onRebuild" | "onSkip" | "onExtend" | "onPlantPin" | "onAbandon"
 > & {
+	leaveBlocked: boolean;
 	abandonArmed: boolean;
 	onArmAbandon: () => void;
 };
@@ -133,6 +144,18 @@ const stagedRowFor = (
 						),
 					}
 				: undefined,
+		skipShop: () => ({
+			id: SKIP.id,
+			glyph: SKIP.glyph,
+			title: SKIP.title,
+			detail: SKIP.detail,
+			price: `+${kbLabel(shopControls.skipPayoutKb)}`,
+			refusal: shopControls.canSkip ? undefined : REGISTRY_TOUCHED,
+			onPress:
+				shopControls.canSkip && !handlers.leaveBlocked
+					? handlers.onSkip
+					: undefined,
+		}),
 		extend: () =>
 			shopControls.extendAvailable
 				? {
@@ -190,23 +213,44 @@ const lockedRowFor = (control: ShopSoldSpec): ShopServiceRow | undefined => {
 			};
 };
 
+const uncarriedRowFor = (control: CarriedServiceSpec): ShopServiceRow => ({
+	id: control.id,
+	carried: false,
+	carry: carryLabelOf(control.carryBytes),
+	glyph: control.glyph,
+	title: control.title,
+	detail: control.detail,
+});
+
+const serviceRowFor = (
+	control: ShopSoldSpec,
+	view: RunView,
+	handlers: ServiceHandlers
+): ShopServiceRow | undefined => {
+	if (!isServiceUnlocked(control, view.unlockedServiceIds))
+		return lockedRowFor(control);
+	if (isCarriedService(control) && !carries(view, control.id))
+		return uncarriedRowFor(control);
+	return stagedRowFor(control, view, handlers);
+};
+
 const controlsOf = (
 	view: RunView,
 	handlers: ServiceHandlers
 ): readonly ShopServiceRow[] =>
 	REGISTRY_CONTROL_LIST.filter(isSoldInShop).flatMap((control) => {
-		const row = isServiceUnlocked(control, view.unlockedServiceIds)
-			? stagedRowFor(control, view, handlers)
-			: lockedRowFor(control);
+		const row = serviceRowFor(control, view, handlers);
 		return row === undefined ? [] : [row];
 	});
 
 export const ShopView = ({
 	view,
+	runNumber = null,
 	onDraft,
 	onSell,
 	onUpgrade,
 	onRebuild,
+	onSkip,
 	onExtend,
 	onPlantPin,
 	onAbandon,
@@ -224,7 +268,7 @@ export const ShopView = ({
 		undefined
 	);
 	const [armedId, setArmedId] = useState<string | undefined>(undefined);
-	const [pointedId, setPointedId] = useState<string | undefined>(undefined);
+	const [pointed, setPointed] = useState<PointedPrice | undefined>(undefined);
 
 	const buildNames = view.configs.map((config) => config.label);
 	const offerNames = view.offers.map((offer) => offer.config.label);
@@ -260,7 +304,6 @@ export const ShopView = ({
 		setOpenUpgrades(name === openUpgrades ? undefined : name);
 
 	const armed = view.offers.find((offer) => offer.config.id === armedId);
-	const pointed = view.offers.find((offer) => offer.config.id === pointedId);
 	const disarming = (press: () => void) => () => {
 		setAbandonArmed(false);
 		press();
@@ -270,12 +313,19 @@ export const ShopView = ({
 
 	return (
 		<ShopScreen
-			header={shopHeaderFor(
-				view.gatePayout.clearedGateNumber,
-				view.storage,
-				view.swatchGates,
-				pointed?.priceKb,
-				view.heldAudit?.auditId
+			header={{
+				...shopHeaderFor(
+					view.gatePayout.clearedGateNumber,
+					view.storage,
+					view.swatchGates,
+					pointed,
+					view.heldAudit?.auditId
+				),
+				readout: runReadoutFor(view, runNumber),
+			}}
+			audits={shopAuditsFor(
+				view.gateStake.audits.filter((audit) => !audit.suppressed),
+				view.gatesCleared
 			)}
 			{...(view.incidentOffer === null
 				? {}
@@ -301,6 +351,8 @@ export const ShopView = ({
 					})}
 			controls={controlsOf(view, {
 				onRebuild: disarming(onRebuild),
+				onSkip: disarming(onSkip),
+				leaveBlocked: overSpace || needsVendor,
 				onExtend: disarming(onExtend),
 				onPlantPin: disarming(onPlantPin),
 				onAbandon,
@@ -309,22 +361,23 @@ export const ShopView = ({
 			})}
 			build={{
 				configs: view.configs.map((config) =>
-					buildChipFor(
-						config,
-						() => onSell(config.id),
-						{
+					buildChipFor(config, {
+						installed: view.configs,
+						onUninstall: () => onSell(config.id),
+						vendorLock: {
 							locked: view.vendorLock.lockedConfigId === config.id,
 							onLock:
 								view.vendorLock.offered && config.vendorLocks !== true
 									? () => onVendorLock(config.id)
 									: undefined,
 						},
-						{
+						deal: {
 							storageKb: view.storage,
 							coveragePct: focusCoverageOf(view, config),
 							onBuy: () => onUpgrade(config.id),
-						}
-					)
+						},
+						onPoint: setPointed,
+					})
 				),
 				weight: {
 					held: view.buildSpace.space,
@@ -347,7 +400,7 @@ export const ShopView = ({
 				onToggleUpgrades: toggleUpgrades,
 			}}
 			registry={{
-				offers: offersOf(view, onDraft, armedId, setArmedId, setPointedId),
+				offers: offersOf(view, onDraft, armedId, setArmedId, setPointed),
 				slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
 				openInfo: offersOpen,
 				onToggleInfo: toggleOffer,

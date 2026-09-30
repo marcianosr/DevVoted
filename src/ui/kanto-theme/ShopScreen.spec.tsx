@@ -1,6 +1,7 @@
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import {
 	createKantoHeaderProps,
@@ -8,6 +9,7 @@ import {
 	kantoClosedShopProps,
 	kantoLockedService,
 	kantoRegistryControls,
+	kantoUncarriedService,
 } from "~/test/kantoPoll.factory";
 
 import { ShopScreen } from "./ShopScreen.ui";
@@ -31,7 +33,9 @@ const panelOf = (name: string): HTMLElement => {
 };
 
 const headOf = (label: string): HTMLElement => {
-	const head = screen.getByText(label).closest<HTMLElement>("header");
+	const head = screen
+		.getByRole("heading", { name: label })
+		.closest<HTMLElement>("header");
 
 	if (head === null) throw new Error(`"${label}" heads no panel`);
 
@@ -50,8 +54,10 @@ describe("ShopScreen", () => {
 	it("stands the build beside the registry", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getByText("Build")).toBeInTheDocument();
-		expect(screen.getByText("Registry")).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Build" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { name: "Registry" })
+		).toBeInTheDocument();
 	});
 
 	it("counts the room the build has left", () => {
@@ -194,7 +200,7 @@ describe("ShopScreen", () => {
 		expect(row?.querySelector(".bg-theme-raised.rounded-lg")).toBeNull();
 	});
 
-	it("names a locked service and states its unlock line in place of a price", () => {
+	it("names a locked service and states its unlock line in place of a price, once shown", async () => {
 		render(
 			<ShopScreen
 				{...props}
@@ -205,17 +211,98 @@ describe("ShopScreen", () => {
 						locked: true,
 						glyph: "⚑",
 						title: "git tag",
-						detail: "if this run dies, the next resumes here",
+						detail:
+							"save your last checkpoint once; each gate asks a higher price to activate it",
 						unlock: "Reach gate 4",
 					},
 				]}
 			/>
 		);
 
+		await userEvent.click(
+			screen.getByRole("button", { name: /2 locked services/ })
+		);
+
 		expect(screen.getByText("Extend the registry")).toBeVisible();
 		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
 		expect(screen.getByText("git tag")).toBeVisible();
 		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
+		expect(screen.queryByRole("button", { name: /git tag/ })).toBeNull();
+	});
+
+	it("folds the locked services behind one row, counting them", () => {
+		render(<ShopScreen {...props} controls={[kantoLockedService]} />);
+
+		expect(
+			screen.getByRole("button", { name: /^1 locked service/ })
+		).toBeInTheDocument();
+		expect(screen.queryByText("Extend the registry")).not.toBeInTheDocument();
+	});
+
+	it("counts the services ready to buy in the panel's head", () => {
+		render(
+			<ShopScreen
+				{...props}
+				controls={[...kantoRegistryControls, kantoLockedService]}
+			/>
+		);
+
+		expect(
+			within(headOf("Services")).getByText(`${kantoRegistryControls.length}`)
+		).toBeInTheDocument();
+		expect(within(headOf("Services")).getByText("ready")).toBeInTheDocument();
+	});
+
+	it("opens on the registry, the shop's own decision, with every panel counted", () => {
+		render(<ShopScreen {...props} />);
+
+		const tabs = screen.getAllByRole("tab");
+
+		expect(tabs[0]).toHaveAccessibleName("Registry 5");
+		expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+		expect(screen.getByRole("tab", { name: "Build 7/8" })).toBeInTheDocument();
+	});
+
+	it("shows one panel at a time on a phone, the rest hidden until picked", async () => {
+		render(<ShopScreen {...props} />);
+
+		const paneOf = (name: string) =>
+			panelOf(name).closest<HTMLElement>("[role=tabpanel]");
+
+		expect(paneOf("Registry")).toHaveClass("flex", "md:flex");
+		expect(paneOf("Build")).toHaveClass("hidden", "md:flex");
+
+		await userEvent.click(screen.getByRole("tab", { name: /^Build/ }));
+
+		expect(paneOf("Build")).toHaveClass("flex");
+		expect(paneOf("Registry")).toHaveClass("hidden");
+	});
+
+	it("tabs no desk when no rival is in reach to buy from", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(screen.queryByRole("tab", { name: "Desk" })).not.toBeInTheDocument();
+	});
+
+	it("carries the balance into the footer on a phone, where the header does not pin", () => {
+		render(
+			<ShopScreen
+				{...props}
+				footer={{ action: { label: "To prep", onPress: () => {} } }}
+			/>
+		);
+
+		const [pinned, footer] = screen.getAllByRole("img", { name: "96 KB" });
+
+		expect(pinned.closest(".hidden")).toHaveClass("md:flex");
+		expect(footer.closest(".md\\:hidden")).not.toBeNull();
+	});
+
+	it("names a service the run did not carry in, with where it is carried in place of a price (ADR-153)", () => {
+		render(<ShopScreen {...props} controls={[kantoUncarriedService]} />);
+
+		expect(screen.getByText("git tag")).toBeVisible();
+		expect(screen.getByText("new run · 128 KB")).toBeVisible();
 		expect(screen.queryByRole("button", { name: /git tag/ })).toBeNull();
 	});
 

@@ -7,10 +7,8 @@ import { Build, configCountOf, type BuildProps } from "./Build.ui";
 import type { KantoColor } from "./colors";
 import { Fold, type FoldBadge } from "./Fold.ui";
 
-const FOOTER = "build-footer mt-auto w-full";
+const FOOTER = "build-footer mt-2 w-full";
 const PINNED = "sticky z-20";
-
-const DESKTOP = "(min-width: 640px)";
 
 export const BUILD_FLASH_HOLD_MS = 1200;
 
@@ -38,11 +36,6 @@ const badgesOf = (counts: BuildCounts): readonly FoldBadge[] =>
 		color: reading.color,
 	}));
 
-const startsOpen = (): boolean =>
-	typeof window === "undefined" ||
-	typeof window.matchMedia !== "function" ||
-	window.matchMedia(DESKTOP).matches;
-
 export type BuildFooterProps = {
 	build: BuildProps;
 	counts: BuildCounts;
@@ -58,7 +51,6 @@ export const BuildFooter = ({
 	flash,
 	seat,
 }: BuildFooterProps) => {
-	const [defaultOpen] = useState(startsOpen);
 	const [credited, setCredited] = useState(flash);
 	const [lit, setLit] = useState(false);
 
@@ -86,7 +78,7 @@ export const BuildFooter = ({
 				title={BUILD}
 				summary={configCountOf(total)}
 				badges={badgesOf(counts)}
-				open={open ?? defaultOpen}
+				open={open}
 			>
 				<Build {...build} heading={false} />
 			</Fold>

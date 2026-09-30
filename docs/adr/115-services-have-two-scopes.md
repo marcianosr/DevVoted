@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted — 2026-09-25 (Marciano, DVTD-r2k9). Replaces
+Accepted — 2026-09-25 (Marciano, DVTD-r2k9). Decisions 1, 3 and 10 amended by
+[ADR-153](153-the-new-run-screen-is-the-warm-boot.md). Replaces
 [ADR-110](README.md#retired), which is deleted. Amends
 [ADR-112](112-the-archive-carries-and-buys-appearance.md) Decision 1 and
 [ADR-036](036-the-git-tag.md) Decision 1. Overrules
@@ -21,18 +22,9 @@ buys the run scope once per run, before the run.
 
 ## Decision 1: two scopes, one roster
 
-| Scope | Bought where | Wallet | Available | Lasts | Repeatable |
-| --- | --- | --- | --- | --- | --- |
-| Registry service | in the shop | run KB | once unlocked (ADR-116), then once its gate opens | the visit, the run, or one placement | yes, at its ladder |
-| Run service | before the run, on the profile | archived KB (bytes) | once unlocked (ADR-116), any account with the balance | consumed with the run | once per run |
-
-Registry services: Rebuild, Skip shop, Extend, Hot Reload, Return Policy,
-kill -9 (Decision 11), Repackage (DVTD-406l, unchanged). Run services: Boot
-Cache, Docker Image, git tag. Configs are untouched.
-
-One roster table carries a `scope` field and, since Decision 10, a `soldIn`
-field; the shop and the Dex both read it, and nothing else in code tells the
-scopes apart.
+Amended by [ADR-153](153-the-new-run-screen-is-the-warm-boot.md) Decision 3:
+one shape, carried in at new run from the archive, then pressed in the shop for
+run KB. `scope` left the roster; `soldIn` (Decision 10) stays.
 
 ## Decision 2: a run service is consumed with the run
 
@@ -42,19 +34,20 @@ every one is owned.
 
 ## Decision 3: the git tag is a run service, deposit then placement
 
-A flat archive deposit before the run carries one unplaced tag in. Placing it
-at a gate 4 to 10 shop charges `pinCostFor(gate)` from run storage, as today,
-and burns on use (ADR-036 Decisions 2 and 3 stand). The placement price is the
-tag's worth; the deposit is the right to hold one.
-
-**A run that did not bring one is never sold a tag.** A first run with an empty
-archive has none. The deposit is priced knowing that.
+Generalised to every carried service by ADR-153 Decision 3. The deposit is the
+carry, picked on the new run screen; placement still charges `pinCostFor(gate)`
+from run storage and burns on use (ADR-036 Decisions 2 and 3 stand). A run that
+did not carry one is never sold a tag.
 
 ## Decision 4: Skip shop pays for leaving the Registry untouched
 
 From the first shop, beside Rebuild. Leaving with no registry action pays a
 flat `SKIP_SHOP_KB`; the first registry action of the visit locks it. The
 payout sits below the cheapest draft so it never beats buying.
+
+Built as "Skip the shop" (DVTD-2l5k): 16 KB. Pressing it shuts the registry for
+the rest of the visit, so a player cannot take the payout and come back from
+prep to draft. The vendor lock is not a registry action and stays open.
 
 ## Decision 5: Hot Reload replaces one chosen offer, for run KB
 
@@ -95,11 +88,11 @@ states; no Dex tab has ever sold anything. One roster table, read by both.
 
 Players are not asked to learn registry services and run services as two
 systems. Where a service is bought is a roster fact, `soldIn: "shop" |
-"archive"`: the shop lists the registry services and the tag's placement, the
-profile lists Boot Cache and Docker Image, and the Dex lists all of them in one
-section, each row naming where it is bought and how long it lasts, then its
-price or the line that earns it. Filter chips only if the roster passes twenty;
-eight does not need them.
+"archive"`: the shop lists what it presses, the new run screen lists what a run
+carries (ADR-153 replaced the profile shelf), and the Dex lists all of them in
+one section, each row naming where it is pressed and how long it lasts, then
+what the carry costs or the line that earns it. Filter chips only if the roster
+passes twenty; eight does not need them.
 
 An earned service enters the roster when its counter ticks, so the ledger
 starts counting; a starter enters when its press exists. An earned service

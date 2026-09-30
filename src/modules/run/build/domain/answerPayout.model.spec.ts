@@ -422,7 +422,7 @@ describe("the receipt one answer carries", () => {
 	});
 
 	it("excludes configs with no coverage effect on the category", () => {
-		expect(breakdownOf([CONFIGS.eslint, CONFIGS.js], at("css"), 1)).toEqual({
+		expect(breakdownOf([CONFIGS.linter, CONFIGS.js], at("css"), 1)).toEqual({
 			base: BASE,
 			streakBonus: 0,
 			configBonuses: [],

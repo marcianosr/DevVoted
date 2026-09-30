@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-22T18:49:30Z
-updated_at: 2026-09-26T17:06:54Z
+updated_at: 2026-09-29T14:09:53Z
 parent: DVTD-cb52
 ---
 
@@ -14,7 +14,7 @@ parent: DVTD-cb52
 **Why:** The kit demos an affordance the game does not have: the whole flow lives in a story.
 
 ## Done when
-- [ ] What an uninstall refunds is decided, and matches what the shop actually pays
+- [x] What an uninstall refunds is decided, and matches what the shop actually pays
 - [ ] The shop offers uninstall, backed by the real balance, slots and capacity
 - [ ] What freeing a slot does to rented build space is decided
 - [ ] Specs run against the live viewmodel, not the demo factory
@@ -74,3 +74,14 @@ Fixing it means threading the installed build into `offerChipFor` /
 `buildChipFor`, which today take a config and a deal and know nothing about the
 rest of the build. That is the 'decide the refund rule' box above, not a
 separate concern.
+
+## The quote now matches the payout (2026-09-29, DVTD-6hqm)
+
+Settled under ADR-152 decision 3. `buildChipFor` takes the installed build and
+quotes `sellRefundIn` — the figure `sell` pays — instead of `infoFor`'s
+undiscounted `sellRefund`. Where that is zero the card states no refund at all,
+so the press reads a bare `Uninstall` rather than `+0 B`.
+
+Threading the build in cost nothing in the end: `view.configs` **is** the
+installed build, so no change to `RunView` was needed. The rest of this bean —
+what freeing a slot does to rented build space under ADR-082 — is untouched.

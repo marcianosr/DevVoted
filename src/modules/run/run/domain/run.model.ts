@@ -36,8 +36,11 @@ import {
 	offlineConfigsFor,
 	type OfflinePair,
 	offlinePairsFor,
+	type OutageTarget,
+	outageTargetsFor,
 } from "~/modules/run/gate/domain/audit.model";
 import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
+import type { RegistryControlId } from "~/modules/run/shop/domain/registryControl.model";
 import type { GateHoldReason } from "~/modules/run/gate/domain/gate.model";
 import {
 	PIN_START_KB_PER_GATE,
@@ -62,6 +65,12 @@ export type LastClose = {
 	readonly cleared: boolean;
 };
 
+export type RecordedClose = LastClose & {
+	readonly kb: number;
+	readonly unlockedConfigIds?: readonly string[];
+	readonly earnedTitleIds?: readonly string[];
+};
+
 export type IncidentSender = {
 	readonly id: string;
 	readonly name: string;
@@ -74,6 +83,14 @@ export type LockedIncident = {
 	readonly sentBy: IncidentSender;
 };
 
+export type WarmBoot = {
+	readonly storageKb: number;
+	readonly serviceIds: readonly RegistryControlId[];
+	readonly archiveBytes: number;
+};
+
+export type ShopVisit = "touched" | "skipped";
+
 export type RunState = {
 	readonly status: RunStatus;
 	readonly build: Build;
@@ -81,6 +98,7 @@ export type RunState = {
 	readonly draftOptions: readonly Config[];
 	readonly rebuildsUsed: number;
 	readonly soldThisShop?: number;
+	readonly shopVisit?: ShopVisit;
 	readonly rebasedThisGate?: true;
 	readonly configsLost?: number;
 	readonly lockedOfferIds?: readonly string[];
@@ -95,6 +113,7 @@ export type RunState = {
 	readonly manualDisabled: readonly string[];
 	readonly strictArmed?: boolean;
 	readonly peekedPollIds?: readonly string[];
+	readonly lintsThisRun?: number;
 	readonly approvedPollId?: string;
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
@@ -138,12 +157,15 @@ export type RunState = {
 	readonly subscriptionBillKb?: number;
 	readonly pinPlantedAtGate?: number;
 	readonly startedAtGate?: number;
+	readonly warmBoot?: WarmBoot;
 	readonly auditSchedule?: AuditSchedule;
 	readonly heldAudit?: HeldAudit;
 	readonly incidentOffer?: AuditId;
 	readonly incidentRefreshes?: number;
 	readonly incidentWindowIndex?: number;
 	readonly lastClose?: LastClose;
+	readonly closes?: readonly RecordedClose[];
+	readonly unlockedSinceClose?: readonly string[];
 	readonly incidents?: readonly LockedIncident[];
 	readonly incidentSurvivalKb?: number;
 	readonly log: readonly string[];
@@ -247,6 +269,10 @@ export const createRun = (
 	log: [],
 });
 
+export const closesOf = (
+	state: Pick<RunState, "closes">
+): readonly RecordedClose[] => state.closes ?? [];
+
 export const isPrepPhase = (state: Pick<RunState, "status">): boolean =>
 	state.status === "configuring" || state.status === "rewarding";
 
@@ -343,6 +369,14 @@ export const offlinePairsOf = (state: RunState): readonly OfflinePair[] =>
 		auditsOf(state),
 		windowStartIndex(state),
 		state.window.answered
+	);
+
+export const outageTargetsOf = (state: RunState): readonly OutageTarget[] =>
+	outageTargetsFor(
+		state.build.configs,
+		auditsOf(state),
+		windowStartIndex(state),
+		SLICE_WINDOW
 	);
 
 export const standingConfigsOf = (state: RunState): readonly Config[] =>

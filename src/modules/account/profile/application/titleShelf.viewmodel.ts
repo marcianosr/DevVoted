@@ -1,12 +1,10 @@
 import type { ObjectiveCount } from "~/modules/run/config/domain/configUnlock.model";
 import { RANK_RUNGS } from "~/modules/account/profile/domain/rank.model";
 import {
-	findTitleById,
 	isNamedOnlyWhenEarned,
 	progressOf,
 	titleGroupOf,
 	visibleTitles,
-	WORN_TITLE_CAP,
 	type Title,
 	type TitleGroup,
 } from "~/modules/account/profile/domain/title.model";
@@ -35,13 +33,9 @@ type ShelfTitleStated = {
 	count: number;
 	target: number;
 	earned: boolean;
-	worn: boolean;
-	blocked: boolean;
 };
 
 export type ShelfTitle = Redactable<{ name: string }, ShelfTitleStated>;
-
-export type WornSlot = { id: string; name: string } | null;
 
 export type LadderRung = {
 	id: string;
@@ -87,7 +81,6 @@ export type TitleShelfView = {
 	filter: TitleFilter;
 	held: number;
 	total: number;
-	worn: readonly WornSlot[];
 	ladder: TitleLadder;
 	categories: TitleCategories;
 	special: TitleSpecial;
@@ -96,7 +89,6 @@ export type TitleShelfView = {
 
 export type TitleShelfInput = {
 	ownedTitleIds: readonly string[];
-	equippedTitleIds: readonly string[];
 	counts: readonly ObjectiveCount[];
 	filter: TitleFilter;
 	moreCategories: boolean;
@@ -121,14 +113,6 @@ const isStarted = (title: ShelfTitle) => !title.earned && title.count > 0;
 
 const heldIn = (titles: readonly ShelfTitle[]) =>
 	titles.filter((title) => title.earned).length;
-
-const wornSlotsOf = (
-	equippedTitleIds: readonly string[]
-): readonly WornSlot[] =>
-	Array.from({ length: WORN_TITLE_CAP }, (_, index) => {
-		const title = findTitleById(equippedTitleIds[index] ?? "");
-		return title ? { id: title.id, name: title.name } : null;
-	});
 
 const categoryRowOf =
 	(shelfTitleOf: (titleId: string) => ShelfTitle) =>
@@ -217,14 +201,11 @@ const closestOf = (
 
 export const titleShelfFor = ({
 	ownedTitleIds,
-	equippedTitleIds,
 	counts,
 	filter,
 	moreCategories,
 }: TitleShelfInput): TitleShelfView => {
 	const owned = new Set(ownedTitleIds);
-	const worn = new Set(equippedTitleIds);
-	const atCap = worn.size >= WORN_TITLE_CAP;
 	const countByMetric = new Map(counts.map((row) => [row.metric, row.count]));
 	const countOf = (metric: string) => countByMetric.get(metric) ?? 0;
 	const roster = visibleTitles(ownedTitleIds);
@@ -235,8 +216,6 @@ export const titleShelfFor = ({
 			earnedWhen: title.earnedWhen,
 			...progressOf(title, countOf),
 			earned: owned.has(title.id),
-			worn: worn.has(title.id),
-			blocked: atCap && !worn.has(title.id),
 		};
 		return isNamedOnlyWhenEarned(title) && !stated.earned
 			? { ...stated, locked: true }
@@ -267,7 +246,6 @@ export const titleShelfFor = ({
 		filter,
 		held: heldIn(shelfTitles),
 		total: shelfTitles.length,
-		worn: wornSlotsOf(equippedTitleIds),
 		ladder,
 		categories: categoriesOf(categoryRows, filter, moreCategories),
 		special: specialOf(specialTitles, filter),

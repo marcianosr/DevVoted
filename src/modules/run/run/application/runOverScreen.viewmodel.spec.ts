@@ -16,27 +16,28 @@ const propsFor = (overrides = {}) => runOverPropsFor(runOverFrame(overrides));
 
 describe("runOverPropsFor", () => {
 	describe("the header", () => {
-		it("counts the gates held against the whole ladder", () => {
-			const { header } = propsFor();
+		it("pins the bar every run screen wears: the readout it is handed and the balance left", () => {
+			const readout = { runNumber: 7, gate: 4, gates: GATE_COUNT };
+			const { header } = propsFor({ readout, balanceKb: 96 });
 
-			expect(header.figure.amount).toBe("4 gates");
-			expect(header.figure.note).toBe(`of ${GATE_COUNT}`);
+			expect(header.readout).toEqual(readout);
+			expect(header.funds?.kb).toBe(96);
 		});
 
 		it("names the gate that stopped the run and the line it missed", () => {
 			const { header } = propsFor();
 
 			expect(header.title).toBe("Run over");
-			expect(header.subtitle).toContain("Lavender held");
-			expect(header.subtitle).toContain("no retry, no peel");
+			expect(header.note).toContain("Lavender held");
+			expect(header.note).toContain("no retry, no peel");
 		});
 
 		it("measures a death against the floor, not the healthy line", () => {
 			const frame = runOverFrame();
 			const { header } = runOverPropsFor(frame);
 
-			expect(header.subtitle).toContain(`line of ${frame.bar.floor}%`);
-			expect(header.subtitle).not.toContain(`line of ${frame.bar.healthy}%`);
+			expect(header.note).toContain(`line of ${frame.bar.floor}%`);
+			expect(header.note).not.toContain(`line of ${frame.bar.healthy}%`);
 		});
 
 		it("measures a summit against the healthy line it cleared", () => {
@@ -48,8 +49,8 @@ describe("runOverPropsFor", () => {
 			const { header } = runOverPropsFor(frame);
 
 			expect(header.title).toBe("The climb is done");
-			expect(header.subtitle).toContain("line of 90%");
-			expect(header.subtitle).toContain("every gate held");
+			expect(header.note).toContain("line of 90%");
+			expect(header.note).toContain("every gate held");
 		});
 
 		it("fills the track with swatches earned, not with gates reached", () => {
@@ -60,12 +61,6 @@ describe("runOverPropsFor", () => {
 			expect(states[1]).toBe("undiscovered");
 			expect(states[2]).toBe("discovered");
 			expect(states[SAMPLE_GATE]).toBe("current");
-		});
-
-		it("says nothing was earned rather than printing a zero", () => {
-			expect(propsFor({ swatchGates: [] }).header.caption).toContain(
-				"nothing earned"
-			);
 		});
 	});
 

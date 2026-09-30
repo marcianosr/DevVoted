@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — 2026-08-17 (Marciano, DVTD-taxo). Decision 1's flat price replaced 2026-08-18 by a per-gate curve with a gate-10 ceiling (DVTD-yx92). Depends on ADR-035's death model (strip audits) — a checkpoint is only worth buying once gates can kill again. Amends ADR-011's fresh-start assumption (a rescued run opens mid-ladder) and the storage-credit rule of the run-end economy (only gates actually climbed count). Decision 1 amended by ADR-115: an archive deposit before the run carries the tag in; placement in the shop is unchanged.
+Accepted — 2026-08-17 (Marciano, DVTD-taxo). Decision 1's flat price replaced 2026-08-18 by a per-gate curve with a gate-10 ceiling (DVTD-yx92). Depends on ADR-035's death model (strip audits) — a checkpoint is only worth buying once gates can kill again. Amends ADR-011's fresh-start assumption (a rescued run opens mid-ladder) and the storage-credit rule of the run-end economy (only gates actually climbed count). Decision 1 amended by ADR-115 and ADR-153: the tag is carried in on the new run screen for an archive price; placement in the shop is unchanged.
 
 ## Context
 

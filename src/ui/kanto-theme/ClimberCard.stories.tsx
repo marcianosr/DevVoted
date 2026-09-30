@@ -55,11 +55,12 @@ export const ClimbingBare: Story = {
 			<ClimberCard
 				{...kantoClimberCard()}
 				name="Oak"
-				title={undefined}
+				titles={[]}
+				theme="pallet"
 				standing={kantoStanding({
 					build: [],
 					freeSlots: 4,
-					weight: "0 of 4 weight",
+					weight: "0 / 4",
 				})}
 			/>
 		),
@@ -71,7 +72,8 @@ const fallen = () => {
 	return {
 		...kantoClimberCard(),
 		name: "Blaine",
-		title: undefined,
+		titles: ["Stack Overflow"],
+		theme: "volcano" as const,
 		rival: false,
 		perfect: false,
 		shaky: true,
@@ -112,6 +114,9 @@ export const YourOwnCard: Story = {
 			<ClimberCard
 				{...kantoClimberCard()}
 				name="Marciano"
+				titles={["Ship It"]}
+				theme="pallet"
+				onClose={() => {}}
 				you
 				rival={false}
 				rescued
@@ -127,4 +132,16 @@ export const NoRunOpen: Story = {
 export const AsAHoverCard: Story = {
 	render: () =>
 		on(<ClimberCard {...kantoClimberCard()} profileHref={undefined} />),
+};
+
+export const WearingThunder: Story = {
+	render: () =>
+		on(
+			<ClimberCard
+				{...kantoClimberCard()}
+				theme="thunder"
+				titles={["Box Model", "CSS Carrier", "Legacy Tester"]}
+				onClose={() => {}}
+			/>
+		),
 };

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { Modal } from "./Modal.ui";
 import { Panel } from "./Panel.ui";
@@ -254,6 +255,49 @@ describe("Panel", () => {
 			"bg-theme-faint",
 			"border-theme-faint",
 			"rounded-2xl"
+		);
+	});
+
+	it("becomes a press when given a handler, and marks the picked row as current", async () => {
+		const onPress = vi.fn();
+
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row onPress={onPress} picked>
+						.js
+					</Panel.Row>
+					<Panel.Row onPress={vi.fn()}>.ts</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		const picked = screen.getByRole("button", { name: ".js" });
+
+		expect(picked).toHaveAttribute("aria-current", "true");
+		expect(picked).toHaveClass("ring-1");
+		expect(screen.getByRole("button", { name: ".ts" })).toHaveAttribute(
+			"aria-current",
+			"false"
+		);
+
+		await userEvent.click(picked);
+
+		expect(onPress).toHaveBeenCalledOnce();
+	});
+
+	it("stays a link when given an href, so a permalink still opens in a new tab", () => {
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row href="/runs/7">run 7</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		expect(screen.getByRole("link", { name: "run 7" })).toHaveAttribute(
+			"href",
+			"/runs/7"
 		);
 	});
 });

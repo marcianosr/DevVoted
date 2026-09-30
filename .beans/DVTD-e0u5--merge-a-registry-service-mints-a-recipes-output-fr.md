@@ -5,13 +5,15 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-27T17:34:00Z
-updated_at: 2026-09-27T17:34:27Z
+updated_at: 2026-09-30T09:15:46Z
 parent: DVTD-72d9
 ---
 
 **What:** A shop service that consumes two installed configs named by an authored recipe and mints the recipe's output at version 1.
 
 **Why:** Buys back build weight and replaces ten near-identical draftable linters with one generic Linter plus tools the player builds.
+
+⚠️ Linter shipped on its own on 2026-09-30 (ADR-158): draftable, weight 2, free seat, ladder from 8 KB that carries at v1, resets at v2 and halves at v3. ESLint and Stylelint are deleted from the roster, not merge-only. The 32 KB two-rungs-up ladder below is superseded; recipes would re-mint the specialised linters. Check before starting.
 
 ## Done when
 - [ ] The shop sells Merge as a repeatable service, priced at 64 KB per weight removed by the merge

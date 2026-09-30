@@ -5,7 +5,9 @@
 Accepted — 2026-09-25 (Marciano, DVTD-yqy4). Names a carve-out to
 [ADR-051](051-configs-unlock-on-individual-objectives.md)'s no-backfill line.
 Decision 1 amended by [ADR-115](115-services-have-two-scopes.md): the archive
-buys run services, not licences.
+buys run services, not licences. Decisions 1 and 4 amended by
+[ADR-153](153-the-new-run-screen-is-the-warm-boot.md): the sink is the new run
+screen.
 
 ## Context
 
@@ -25,9 +27,10 @@ run is holding, including one that tells the player the archive does not carry.
 ## Decision 1: the archive is the account's one persistent wallet
 
 It buys **appearance** — borders, 256 KB to 32 MB in `border.model.ts` — and,
-since ADR-115, **run services**, once per run and before it. It never buys a
-config (ADR-050 D4, ADR-051 D1) and never buys width (ADR-082). The "never buys
-power" line and the licence half are dead: ADR-115.
+since ADR-115, a run's **warm boot** on the new run screen (ADR-153): Boot
+Cache's storage and the services a run carries in. It never buys a config
+(ADR-050 D4, ADR-051 D1) and never buys width (ADR-082, ADR-153 D5). The "never
+buys power" line and the licence half are dead: ADR-115.
 
 ## Decision 2: balances carry at face value
 
@@ -65,7 +68,7 @@ job it exists for.
 Idempotence is a `legacy_bonus_bytes` column on `users`: null means unpaid, and
 the credit and the marker are written in one statement, so they cannot drift.
 
-## Decision 4: nothing inside a run spends the archive
+## Decision 4: nothing past the start action spends the archive (ADR-153)
 
 The peel settles from **run storage**. The gate-hold screen's bribe already reads
 `balanceBeforeKb + payout − bill` and only its label said otherwise.
@@ -73,7 +76,8 @@ The peel settles from **run storage**. The gate-hold screen's bribe already read
 This keeps ADR-082 whole: if the archive could settle a peel, an account with a
 long history would buy its way past a gate that a new account has to answer, which
 is progression bought outside the run trading against the run — the thing ADR-029
-refused. A run service is bought before the run, so this holds (ADR-115).
+refused. The warm boot commits while the run is configuring, before the start
+action, so this holds (ADR-115, ADR-153).
 
 ## Consequences
 

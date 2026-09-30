@@ -18,6 +18,7 @@ import {
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
 import { fetchObjectiveProgressByUser } from "~/modules/collection/dex/infrastructure/configdex.repository";
+import { fetchCategoryPollCounts } from "~/modules/run/run/infrastructure/run.repository";
 
 const NO_SUCH_USER = "User not found";
 
@@ -30,16 +31,17 @@ const REFUSAL_MESSAGE: Record<WearRefusal, string> = {
 
 export const getTitleStateService = async (userId: string) =>
 	handleApiOperation(async () => {
-		const [state, progress] = await Promise.all([
+		const [state, progress, categoryPolls] = await Promise.all([
 			fetchUserTitleState(userId),
 			fetchObjectiveProgressByUser(userId),
+			fetchCategoryPollCounts(userId),
 		]);
 		if (!state) throw new Error(NO_SUCH_USER);
 
 		return {
 			...state,
 			pollsAnswered: pollsAnsweredIn(progress),
-			counts: progress,
+			counts: [...progress, ...categoryPolls],
 		};
 	}, "getTitleState");
 

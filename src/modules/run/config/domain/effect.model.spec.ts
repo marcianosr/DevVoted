@@ -26,6 +26,11 @@ const answering = (
 	previouslyMissed: false,
 });
 
+const NARROW_LINTER = {
+	...CONFIGS.linter,
+	eliminatesWrongOptionsFor: ["js", "ts"] as const,
+};
+
 describe("effectOf — Focus", () => {
 	it("pays its multiplier in-category and 1× outside it", () => {
 		const effect = effectOf(CONFIGS.js);
@@ -220,15 +225,24 @@ describe("effectOf — storage benefits", () => {
 
 describe("effectOf — linters", () => {
 	it("masks wrong options only in its categories", () => {
-		const mask = effectOf(CONFIGS.eslint).maskWrongOn;
+		const mask = effectOf(NARROW_LINTER).maskWrongOn;
 		expect(mask?.("js")).toBe(true);
 		expect(mask?.("css")).toBe(false);
 	});
 
-	it("Stylelint reads only CSS", () => {
-		const mask = effectOf(CONFIGS.stylelint).maskWrongOn;
+	it("a CSS-only linter reads only CSS", () => {
+		const mask = effectOf({
+			...CONFIGS.linter,
+			eliminatesWrongOptionsFor: ["css"] as const,
+		}).maskWrongOn;
 		expect(mask?.("css")).toBe(true);
 		expect(mask?.("js")).toBe(false);
+	});
+
+	it("the roster's Linter masks every category", () => {
+		const mask = effectOf(CONFIGS.linter).maskWrongOn;
+		expect(mask?.("css")).toBe(true);
+		expect(mask?.("java")).toBe(true);
 	});
 });
 
@@ -277,7 +291,7 @@ describe("configStatusFor — coverage on the online arm", () => {
 	});
 
 	it("leaves the coverage off a config online for some other reason", () => {
-		expect(configStatusFor(CONFIGS.eslint, onPoll("ts"))).toEqual({
+		expect(configStatusFor(CONFIGS.linter, onPoll("ts"))).toEqual({
 			kind: "online",
 		});
 	});
@@ -312,12 +326,25 @@ describe("configStatusFor — online", () => {
 	});
 
 	it("puts a linter online on the categories it can cross out in", () => {
-		expect(configStatusFor(CONFIGS.eslint, onPoll("ts"))).toEqual({
+		expect(configStatusFor(NARROW_LINTER, onPoll("ts"))).toEqual({
 			kind: "online",
 		});
-		expect(configStatusFor(CONFIGS.eslint, onPoll("css"))).toEqual({
+		expect(configStatusFor(NARROW_LINTER, onPoll("css"))).toEqual({
 			kind: "skipped",
 			why: { kind: "otherCategories", categories: ["js", "ts"] },
+		});
+	});
+
+	it("puts the roster's Linter online on every poll", () => {
+		expect(configStatusFor(CONFIGS.linter, onPoll("css"))).toEqual({
+			kind: "online",
+		});
+	});
+
+	it("sits npm audit out of the poll, since it works in prep", () => {
+		expect(configStatusFor(CONFIGS.npmAudit, onPoll("css"))).toEqual({
+			kind: "skipped",
+			why: { kind: "inPrep" },
 		});
 	});
 

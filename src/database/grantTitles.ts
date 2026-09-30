@@ -12,7 +12,7 @@ const TESTBED_TITLE_IDS = [
 	"title-maintainer-js",
 	"title-maintainer-react",
 	"title-rank-poll-newbie",
-	"title-bikeshedder",
+	"title-it-compiles",
 ];
 
 const resolveTitle = (titleId: string): Title => {

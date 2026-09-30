@@ -45,6 +45,14 @@ Note what is *not* rejected here: ADR-044's rule that width needs a brake
 measured in something the score cannot inflate. Upkeep is that brake, charged in
 KB against a build measured in weight.
 
+**An archive-bought weight slot at run start** (asked 2026-09-29, refused by
+ADR-153 Decision 5)
+The third time width was offered for sale, this time from the archive on the
+new run screen. Boot Cache already buys width through rent: the run storage it
+banks pays the 6 rung for eight gates, and every gate asks the question again.
+A slot bought once skips that brake. What is lost is opening the hand at five
+weight at Pallet, a gate with no shop.
+
 **Paying a perfect gate by raising the overshoot cap** (an ADR-075 draft)
 Instead of a bonus, let `payoutRatioFor` run past `PAYOUT_RATIO_CAP` at 100%.
 It pays nothing where it is needed: the cap only binds at the early gates, so at
@@ -273,3 +281,4 @@ Full reasoning sits with the decision it explains.
   and the profile is the one page that spends the archive.
 - **A permanent right to a service**, ADR-115: it would be the licence again; a
   run service is consumed with the run.
+- **A legend line under the prep ladder**, ADR-149: it is the band table again.

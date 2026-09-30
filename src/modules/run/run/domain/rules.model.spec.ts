@@ -19,7 +19,10 @@ import {
 	STREAK_UNIT_STEP,
 	GATE_COUNT,
 	VICTORY_GATE,
+	BOOT_CACHE_RUNGS,
+	bootCacheRungAt,
 } from "~/modules/run/run/domain/rules.model";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 describe("the streak bonus", () => {
 	it("stops the streak bonus compounding past ×2", () => {
@@ -226,5 +229,25 @@ describe("the build space ladder (ADR-074)", () => {
 
 	it("never falls below the free rung, so a spent run still carries a build", () => {
 		expect(highestAffordableSpace(-50)).toBe(4);
+	});
+});
+
+describe("the Boot Cache rungs (ADR-153)", () => {
+	it("prices every rung at two archived KB per KB banked", () => {
+		expect(
+			BOOT_CACHE_RUNGS.map((rung) => [
+				rung.archiveBytes / STORAGE_UNITS.KB,
+				rung.storageKb,
+			])
+		).toEqual([
+			[128, 64],
+			[256, 128],
+			[512, 256],
+		]);
+	});
+
+	it("has no rung past the third", () => {
+		expect(bootCacheRungAt(2)?.storageKb).toBe(256);
+		expect(bootCacheRungAt(3)).toBeUndefined();
 	});
 });

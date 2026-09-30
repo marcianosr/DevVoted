@@ -2,8 +2,9 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import type { IconName } from "./Icon.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
-import { Redaction, type Redactable } from "./Redaction.ui";
+import { type Redactable, SealedFigure } from "./Redaction.ui";
 import { TABLE_DIVIDER, TABLE_ROW } from "./PanelTable.ui";
 import type { SwatchFill } from "./Swatch.ui";
 import { SwatchChip } from "./SwatchChip.ui";
@@ -23,8 +24,6 @@ const NOTES = "w-full list-none text-xs text-theme-muted";
 const NOTE = "flex gap-1.5";
 
 const FIGURES = "ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2";
-const SEALED =
-	"inline-flex items-center rounded-md border border-dashed border-theme-faint px-2 py-0.5 text-xs";
 const QUIET = "text-sm tabular-nums text-theme-muted";
 const HEADLINE = "text-lg font-bold tabular-nums text-theme-faint";
 
@@ -38,6 +37,7 @@ export type FigureTone = "badge" | "quiet" | "headline";
 export type LedgerFigure = Redactable<{
 	label: string;
 	color?: KantoColor;
+	icon?: IconName;
 	swatch?: SwatchFill;
 	tone?: FigureTone;
 }>;
@@ -45,6 +45,7 @@ export type LedgerFigure = Redactable<{
 export type LedgerTag = { label: string; color?: KantoColor };
 
 export type LedgerRow = {
+	lead?: string;
 	label?: string;
 	verdict?: VerdictOutcome;
 	share?: number;
@@ -63,14 +64,10 @@ const Figure = ({
 	short: boolean;
 }) => {
 	if (figure.locked === true) {
-		return (
-			<span className={SEALED}>
-				<Redaction label={SEALED_LABEL} short={short} />
-			</span>
-		);
+		return <SealedFigure label={SEALED_LABEL} short={short} />;
 	}
 
-	const { label, color, swatch, tone = "badge" } = figure;
+	const { label, color, icon, swatch, tone = "badge" } = figure;
 
 	if (swatch !== undefined) {
 		return <SwatchChip swatch={swatch} label={label} />;
@@ -79,7 +76,11 @@ const Figure = ({
 	if (tone === "quiet") return <span className={QUIET}>{label}</span>;
 	if (tone === "headline") return <span className={HEADLINE}>{label}</span>;
 
-	return <Badge color={color}>{label}</Badge>;
+	return (
+		<Badge color={color} icon={icon}>
+			{label}
+		</Badge>
+	);
 };
 
 const Row = ({
@@ -107,6 +108,7 @@ const Row = ({
 				<Verdict outcome={row.verdict} share={row.share} />
 			)}
 			<span className={IDENTITY}>
+				{row.lead === undefined ? null : <Badge>{row.lead}</Badge>}
 				{row.label === undefined ? null : (
 					<span className={row.total === true ? LABEL_TOTAL : LABEL}>
 						{row.label}

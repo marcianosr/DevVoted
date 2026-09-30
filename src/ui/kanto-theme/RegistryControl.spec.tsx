@@ -17,7 +17,7 @@ const props = {
 const lockedProps = {
 	glyph: "+",
 	title: "Extend the registry",
-	detail: "one more offer, now and every shop after",
+	detail: "add extra offers throughout the run, against a price",
 	locked: true,
 	unlock: "Reach Cascade",
 } satisfies RegistryControlProps;
@@ -102,7 +102,7 @@ describe("RegistryControl", () => {
 
 		expect(screen.getByText("Extend the registry")).toBeVisible();
 		expect(
-			screen.getByText("one more offer, now and every shop after")
+			screen.getByText("add extra offers throughout the run, against a price")
 		).toBeVisible();
 		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
 		expect(screen.queryByText(/KB/)).not.toBeInTheDocument();
@@ -142,5 +142,23 @@ describe("RegistryControl", () => {
 
 		expect(row).toBeDisabled();
 		expect(onPress).not.toHaveBeenCalled();
+	});
+
+	it("names a service the run did not carry in, says where it is carried, and takes no press", () => {
+		render(
+			<RegistryControl
+				glyph="+"
+				title="Extend the registry"
+				detail="add extra offers throughout the run, against a price"
+				carried={false}
+				carry="new run · 64 KB"
+				onPress={() => {}}
+			/>
+		);
+
+		expect(screen.getByText("Extend the registry")).toBeInTheDocument();
+		expect(screen.getByText("new run · 64 KB")).toBeInTheDocument();
+		expect(screen.getByText("+")).toBeInTheDocument();
+		expect(screen.queryByRole("button")).not.toBeInTheDocument();
 	});
 });

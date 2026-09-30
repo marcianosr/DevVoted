@@ -1,49 +1,44 @@
-import { useState } from "react";
-
-import {
-	appearancePreviewFor,
-	triedOnBorderOf,
-	type ProfileIdentity,
-} from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { appearanceFor } from "~/modules/account/profile/application/appearance.viewmodel";
+import type { ProfileIdentity } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
+import type { LookDraft } from "~/modules/account/profile/application/useLookDraft.hook";
+import { useTitleState } from "~/modules/account/profile/application/useTitleState.hook";
 import { Appearance as AppearanceUI } from "~/modules/account/profile/presentation/Appearance.ui";
-import { AppearancePreview } from "~/modules/account/profile/presentation/AppearancePreview.ui";
-import { BorderShop } from "~/modules/account/profile/presentation/BorderShop.component";
-import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
 
 type AppearanceProps = {
 	userId: string;
 	identity: ProfileIdentity;
-	equippedBorderId: string | null;
+	draft: LookDraft;
+	onOpenBorders: () => void;
+	onOpenTitles: () => void;
 };
 
 export const Appearance = ({
 	userId,
 	identity,
-	equippedBorderId,
+	draft,
+	onOpenBorders,
+	onOpenTitles,
 }: AppearanceProps) => {
-	const [tryingOnId, setTryingOnId] = useState<string | null>(null);
-	const triedOn = triedOnBorderOf(tryingOnId, equippedBorderId);
-	const shown =
-		triedOn === undefined
-			? identity
-			: { ...identity, borderUrl: triedOn.image };
+	const { data: archive } = useArchiveState(userId);
+	const { data: titles } = useTitleState(userId);
 
 	return (
 		<AppearanceUI
-			preview={
-				<AppearancePreview
-					{...appearancePreviewFor(shown)}
-					tryingOn={triedOn?.name}
-				/>
-			}
-			borders={
-				<BorderShop
-					userId={userId}
-					tryingOnId={tryingOnId}
-					onTryOn={setTryingOnId}
-				/>
-			}
-			titles={<TitleShelf userId={userId} />}
+			{...appearanceFor({
+				identity,
+				look: draft.look,
+				tryingOnId: draft.tryingOnId,
+				ownedBorderIds: archive?.ownedBorderIds ?? [],
+				ownedTitleIds: titles?.ownedTitleIds ?? [],
+			})}
+			canSave={draft.isDirty && !draft.isSaving}
+			error={draft.error}
+			onPickBorder={draft.pickBorder}
+			onToggleTitle={draft.toggleTitle}
+			onMoreBorders={onOpenBorders}
+			onMoreTitles={onOpenTitles}
+			onSave={draft.save}
 		/>
 	);
 };

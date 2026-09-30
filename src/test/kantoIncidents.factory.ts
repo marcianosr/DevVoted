@@ -33,7 +33,7 @@ const MISTY_BUILD = publicBuildOf({
 	vendorLockedConfigId: "cache",
 });
 const BROCK_BUILD = publicBuildOf({
-	configs: [held("eslint", 2), held("telemetry")],
+	configs: [held("linter", 2), held("telemetry")],
 	vendorLockedConfigId: null,
 });
 const BARE_BUILD = publicBuildOf({ configs: [], vendorLockedConfigId: null });

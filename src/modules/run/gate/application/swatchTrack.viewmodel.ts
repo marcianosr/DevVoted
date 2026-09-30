@@ -7,7 +7,7 @@ import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 
 export const gateSwatchAt = (gate: number): GateSwatch => GATE_SWATCHES[gate];
 
-const GATE_WORD = "gate";
+export const GATE_WORD = "gate";
 
 export const gateNumberLabelOf = (gate: number): string =>
 	`${GATE_WORD} ${gate}`;

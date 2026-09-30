@@ -21,6 +21,12 @@ import {
 } from "~/modules/run/run/domain/runPoll.model";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
+const TEN_X_UNITS = 10;
+const DEPENDENCY_HELL_CONFIGS = 8;
+const CLEAN_INSTALL_REBUILDS = 3;
+const TEAPOT_KB = 418;
+const MISSES_BEFORE_CLEAR = 2;
+
 const lastLanded = (
 	state: RunState,
 	next: RunState
@@ -62,9 +68,14 @@ const answerMetrics = (
 	const settled = state.window.answered + 1 >= SLICE_WINDOW;
 	const perfect =
 		settled && windowCorrectAfter(state, correct) === SLICE_WINDOW;
+	const firstOfRun = (state.allAnswered ?? []).length === 0;
 	return [
 		"polls-answered",
 		`category-answered:${landed.category}`,
+		...(correct && firstOfRun ? (["first-poll-correct"] as const) : []),
+		...((landed.coverageEarned ?? 0) >= TEN_X_UNITS
+			? (["ten-unit-answer"] as const)
+			: []),
 		...(correct
 			? (["polls-correct", `category-correct:${landed.category}`] as const)
 			: []),
@@ -83,6 +94,21 @@ const answerMetrics = (
 	];
 };
 
+const missedTheOpening = (state: RunState): boolean => {
+	const opening = state.answeredThisGate.slice(0, MISSES_BEFORE_CLEAR);
+	return (
+		opening.length === MISSES_BEFORE_CLEAR &&
+		opening.every((poll) => poll.outcome !== "correct")
+	);
+};
+
+const everyAnswerCorrect = (state: RunState): boolean => {
+	const answers = state.allAnswered ?? [];
+	return (
+		answers.length > 0 && answers.every((poll) => poll.outcome === "correct")
+	);
+};
+
 const clearMetrics = (
 	state: RunState,
 	next: RunState
@@ -96,13 +122,17 @@ const clearMetrics = (
 		"gates-cleared",
 		...gatesReached(state, next),
 		...(preAudits.length > 0 ? (["audited-gates-cleared"] as const) : []),
+		...(preAudits.length > 0 && next.lastClose?.band === "ok"
+			? (["audited-clear-ok"] as const)
+			: []),
+		...((next.overflowThisGateKb ?? 0) > 0
+			? (["gate-over-full"] as const)
+			: []),
+		...(missedTheOpening(state) ? (["cleared-after-two-misses"] as const) : []),
 		...(mirrorsPolls(preAudits) && noMiss
 			? (["mirror-clear-no-miss"] as const)
 			: []),
 		...(freeSlots(state.build) === 0 ? (["full-build-clear"] as const) : []),
-		...(state.build.configs.length === 0
-			? (["bare-build-clear"] as const)
-			: []),
 		...(holdsTwoUpgraded(state) ? (["double-v2-clear"] as const) : []),
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)
@@ -132,6 +162,9 @@ const endMetrics = (
 		...(holdsADealtConfig(next)
 			? (["finished-holding-a-dealt-config"] as const)
 			: []),
+		...(next.status === "won" && everyAnswerCorrect(next)
+			? (["won-every-answer-correct"] as const)
+			: []),
 	];
 };
 
@@ -155,8 +188,35 @@ const actionMetrics = (
 			: ["configs-sold"];
 	}
 	if (action.type === "rebuild-draft") return ["rebuilds"];
+	if (action.type === "refuse-gate") {
+		return state.lastClose?.band === "shaky" ? ["refused-shaky-peel"] : [];
+	}
+	if (action.type === "draft") {
+		const installed =
+			next.draftedThisGate.length > state.draftedThisGate.length;
+		return installed && state.rebuildsUsed >= CLEAN_INSTALL_REBUILDS
+			? ["install-after-three-rebuilds"]
+			: [];
+	}
 	return [];
 };
+
+const crossed = (before: boolean, after: boolean): boolean => !before && after;
+
+const holdingMetrics = (
+	state: RunState,
+	next: RunState
+): readonly ObjectiveMetric[] => [
+	...(crossed(
+		state.build.configs.length >= DEPENDENCY_HELL_CONFIGS,
+		next.build.configs.length >= DEPENDENCY_HELL_CONFIGS
+	)
+		? (["eight-configs-held"] as const)
+		: []),
+	...(crossed(state.storage === TEAPOT_KB, next.storage === TEAPOT_KB)
+		? (["storage-418"] as const)
+		: []),
+];
 
 export const objectiveIncrementsFor = (
 	state: RunState,
@@ -169,5 +229,6 @@ export const objectiveIncrementsFor = (
 		...clearMetrics(state, next),
 		...endMetrics(state, next),
 		...actionMetrics(state, next, action),
+		...holdingMetrics(state, next),
 	];
 };

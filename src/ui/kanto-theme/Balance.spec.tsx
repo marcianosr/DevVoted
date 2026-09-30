@@ -30,12 +30,32 @@ describe("Balance, inline", () => {
 		expect(readoutIn(container)).not.toHaveClass("flex-col");
 	});
 
-	it("wears its own edge, so the figure reads as a chip on a busy bar", () => {
+	it("wears the green badge by default, so the figure reads as a chip on a busy bar", () => {
 		const { container } = render(
 			<Balance label={STORAGE_BALANCE} kb={10} layout="inline" />
 		);
 
-		expect(readoutIn(container)).toHaveClass("rounded-md", "border");
+		expect(readoutIn(container)).toHaveClass("badge-theme");
+		expect(readoutIn(container)).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("wears a colour it is handed over the default green", () => {
+		const { container } = render(
+			<Balance
+				label={STORAGE_BALANCE}
+				kb={10}
+				layout="inline"
+				color="saffron"
+			/>
+		);
+
+		expect(readoutIn(container)).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
 	});
 
 	it("stays the ground its change pill stands on", () => {

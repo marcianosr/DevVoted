@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-25T11:00:10Z
-updated_at: 2026-09-25T18:06:09Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-r2k9
 ---
 
@@ -31,3 +31,5 @@ parent: DVTD-r2k9
 2026-09-25 (ADR-116): **unlock: Rebuild the Registry 5 times** — the `rebuilds` metric already ticks on every `rebuild-draft`, target 5; redacted until then with that line. Marciano's shop mock names the row **Hot reload one offer · reroll a single card, keep the rest · 12 KB** (a flat 12 KB would undercut Rebuild's 16 KB fourth press; keep the constraint above).
 
 2026-09-25, later (DVTD-lm8p): roster row and counter built: `hotReload`, caption `Rebuild 5 times`, sold in the shop from the first shop, listed locked in the shop and the Dex; once earned it reads *not for sale yet* in the Dex and the shop shows nothing until this bean adds the press. Marciano's table adds **cost doubles per use during the visit**, opening at the mock's 12 KB; 12 sits below Rebuild's 16 KB fourth press, so the doubling has to start from Rebuild's rung or the constraint above gives. Settle here.
+
+2026-09-29 (ADR-153): when the press ships, give the roster row a `carryBytes` price; `CarriedServiceId` then forces the Dex's press-price table, and the new run panel and the shop's uncarried row follow from `isCarriedService`. The press still costs run KB in the shop.

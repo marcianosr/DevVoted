@@ -199,6 +199,15 @@ export const UpkeepBadge = ({
 	</Tooltip>
 );
 
+export const buildTallyOf = (props: BuildProps): string => {
+	const { configs, skipped = [] } = props;
+	if (props.weight !== undefined)
+		return `${weightOf(fillsOf(configs, skipped))}/${props.weight.held}`;
+	if (props.slots !== undefined)
+		return `${props.slots.used}/${props.slots.capacity}`;
+	return `${configs.length + skipped.length}`;
+};
+
 export const buildHeadOf = (props: BuildProps): ReactNode =>
 	props.weight === undefined ? (
 		buildSummaryOf(props)

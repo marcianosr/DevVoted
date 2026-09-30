@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-08-25T15:19:30Z
-updated_at: 2026-09-24T12:49:08Z
+updated_at: 2026-09-29T17:02:47Z
 parent: DVTD-u35m
 ---
 
@@ -62,3 +62,5 @@ Does "Start fresh" keep the tag, or does every fresh start still burn it? Recomm
 - `src/modules/run/run/application/useRunActions.hook.ts` (`start`)
 - `src/modules/run/run/presentation/RunStart.component.tsx`, `RunOver.component.tsx`
 - `docs/adr/036-the-git-tag.md`
+
+2026-09-29 (ADR-152): the deposit side is built — a run gets a tag to plant by carrying one in on the new run screen. This bean keeps the checkout side: what a fresh start does with a tag already planted (`consumePinnedGate` still fires on every start).

@@ -23,6 +23,8 @@ const ROWS = "flex w-full flex-col";
 const ROW =
 	"flex w-full items-center gap-3 border-t border-theme-faint px-4 py-2 first:border-t-0";
 const ROW_LINK = "transition-colors hover:bg-theme-raised";
+const ROW_PRESS = `${ROW_LINK} cursor-pointer text-left`;
+const ROW_PICKED = "bg-theme-raised ring-1 ring-theme ring-inset";
 const FOOTER =
 	"flex flex-wrap items-center gap-3 border-t border-theme-faint px-4 py-3";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
@@ -112,6 +114,8 @@ export type PanelRowProps = {
 	theme?: KantoColor;
 	className?: string;
 	href?: string;
+	onPress?: () => void;
+	picked?: boolean;
 };
 
 const PanelRow = ({
@@ -120,6 +124,8 @@ const PanelRow = ({
 	theme,
 	className,
 	href,
+	onPress,
+	picked,
 }: PanelRowProps) => {
 	const content = (
 		<>
@@ -129,6 +135,24 @@ const PanelRow = ({
 			)}
 		</>
 	);
+
+	if (onPress !== undefined)
+		return (
+			<button
+				type="button"
+				aria-current={picked === true}
+				onClick={onPress}
+				data-screen-theme={theme}
+				className={clsx(
+					ROW,
+					ROW_PRESS,
+					picked === true && ROW_PICKED,
+					className
+				)}
+			>
+				{content}
+			</button>
+		);
 
 	if (href === undefined)
 		return (

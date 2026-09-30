@@ -33,16 +33,20 @@ import {
 	type AnswerTypeSplit,
 	answerTypesOf,
 	canStart,
+	closesOf,
 	overflowWeightOf,
 	roomToCapOf,
 	isAwaitingTomorrow,
 	hiddenOptionIdsOf,
 	isRunOver,
 	offlinePairsOf,
+	outageTargetsOf,
+	type RecordedClose,
 	type RunState,
 	type RunStatus,
 	liveConfigsOf,
 	scheduleOf,
+	type WarmBoot,
 } from "~/modules/run/run/domain/run.model";
 import { strictStakeOf } from "~/modules/run/run/domain/strict.model";
 import {
@@ -80,6 +84,7 @@ import {
 	type Config,
 	canMinify,
 	minifySavingSlots,
+	showsPollShape,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { billLedger } from "~/modules/run/config/domain/subscription.model";
@@ -116,7 +121,9 @@ import {
 } from "~/modules/run/build/domain/answerPayout.model";
 import {
 	type BuildModifiers,
+	auditorFor,
 	budgeterFor,
+	gateClearPayout,
 	occupiedSlots,
 	prefetcherFor,
 	projectorFor,
@@ -178,6 +185,11 @@ export type EstimateControl = {
 export type OfflineConfig = {
 	readonly config: Config;
 	readonly audit: string;
+};
+
+export type OutageTargetView = {
+	readonly auditId: AuditId;
+	readonly targets: readonly (readonly string[])[];
 };
 
 export type OfferRefusal =
@@ -258,10 +270,12 @@ export type RunView = {
 	readonly sla: SlaControl | null;
 	readonly slaBand: CommittableBand | null;
 	readonly correctThisGate: number;
+	readonly scoredThisGate: number;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly answerTypesThisGate: AnswerTypeSplit | null;
 	readonly optionCountsThisGate: readonly number[] | null;
+	readonly outageTargets: readonly OutageTargetView[] | null;
 	readonly shopControls: ShopControls;
 	readonly gatePayout: GatePayout;
 	readonly heldAudit: HeldAudit | null;
@@ -284,6 +298,8 @@ export type RunView = {
 	readonly clearedGate: number | null;
 	readonly swatchGates: readonly number[];
 	readonly victoryGate: number;
+	readonly closes: readonly RecordedClose[];
+	readonly fullClearKb: number;
 
 	readonly atMinimumWidth: boolean;
 
@@ -301,6 +317,7 @@ export type RunView = {
 	readonly unlockedThisRun: readonly RunUnlock[];
 	readonly earnedTitleIds: readonly string[];
 	readonly unlockedServiceIds: readonly string[];
+	readonly warmBoot: WarmBoot | null;
 };
 
 export type RunUnlock = {
@@ -493,6 +510,7 @@ export const toRunView = (
 	const audits = auditViewsFor(state);
 	const configStatuses = configStatusesFor(state, current, offline, liveAudits);
 	const liveConfigs = liveConfigsOf(state);
+	const prefetcher = prefetcherFor(liveConfigs);
 
 	return {
 		status: state.status,
@@ -515,6 +533,7 @@ export const toRunView = (
 		unlockedThisRun,
 		earnedTitleIds,
 		unlockedServiceIds,
+		warmBoot: state.warmBoot ?? null,
 		peelSlotsRemaining: state.peelSlotsRemaining,
 		peelRefundKb: state.peelRefundKb ?? 0,
 		poll:
@@ -553,8 +572,9 @@ export const toRunView = (
 		sla: slaControlFor(state),
 		slaBand: state.slaBand ?? null,
 		correctThisGate: state.window.correct,
+		scoredThisGate: state.window.baseUnits,
 		upcomingCategories:
-			prefetcherFor(liveConfigs) === undefined
+			prefetcher === undefined
 				? null
 				: state.polls
 						.slice(
@@ -563,7 +583,7 @@ export const toRunView = (
 						)
 						.map((poll) => poll.category),
 		nextGateCategories:
-			prefetcherFor(liveConfigs) === undefined
+			prefetcher === undefined
 				? null
 				: state.polls
 						.slice(
@@ -572,7 +592,7 @@ export const toRunView = (
 						)
 						.map((poll) => poll.category),
 		answerTypesThisGate:
-			prefetcherFor(liveConfigs) === undefined
+			prefetcher === undefined || !showsPollShape(prefetcher)
 				? null
 				: answerTypesOf(
 						state.polls.slice(
@@ -581,7 +601,7 @@ export const toRunView = (
 						)
 					),
 		optionCountsThisGate:
-			prefetcherFor(liveConfigs) === undefined
+			prefetcher === undefined || !showsPollShape(prefetcher)
 				? null
 				: state.polls
 						.slice(
@@ -589,6 +609,15 @@ export const toRunView = (
 							state.currentIndex - state.window.answered + SLICE_WINDOW
 						)
 						.map((poll) => poll.options.length),
+		outageTargets:
+			auditorFor(state.build.configs) === undefined
+				? null
+				: outageTargetsOf(state).map((target) => ({
+						auditId: target.audit.id,
+						targets: target.targets.map((configs) =>
+							configs.map((config) => config.label)
+						),
+					})),
 		shopControls: shopControlsFor(state),
 		gatePayout: gatePayoutFor(state),
 		heldAudit: state.heldAudit ?? null,
@@ -634,6 +663,7 @@ export const toRunView = (
 					? undefined
 					: gateProjectionFor(
 							carriedUnits,
+							state.window.baseUnits,
 							perAnswer,
 							state.gatesCleared,
 							coverageLadder.healthy
@@ -654,6 +684,12 @@ export const toRunView = (
 		clearedGate: state.clearedGate ?? null,
 		swatchGates: state.swatchGatesEarned ?? [],
 		victoryGate: VICTORY_GATE,
+		closes: closesOf(state),
+		fullClearKb: gateClearPayout(
+			state.build.configs,
+			SLICE_WINDOW,
+			state.gatesCleared
+		),
 		atMinimumWidth: atMinimumWidth(state.build.configs.length),
 		pollsAnswered: state.window.answered,
 		pollsPerGate: SLICE_WINDOW,

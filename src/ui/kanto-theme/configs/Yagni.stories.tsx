@@ -11,7 +11,7 @@ export default meta;
 
 type Story = StoryObj;
 
-const PADDING = [CONFIGS.js, CONFIGS.ts, CONFIGS.css, CONFIGS.eslint];
+const PADDING = [CONFIGS.js, CONFIGS.ts, CONFIGS.css, CONFIGS.html];
 
 export const LowInAWideRung: Story = {
 	render: () =>

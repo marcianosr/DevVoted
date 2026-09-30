@@ -211,7 +211,7 @@ describe("startingHand guarantees", () => {
 			CONFIGS.gitRebase,
 			CONFIGS.js,
 			CONFIGS.unitTests,
-			CONFIGS.eslint,
+			CONFIGS.linter,
 		];
 
 		seeds(50).forEach((seed) =>
@@ -273,7 +273,7 @@ describe("STARTER_POOL", () => {
 				"code-coverage",
 				"cold-start",
 				"css",
-				"eslint",
+				"linter",
 				"indexed-db",
 				"js",
 				"ts",

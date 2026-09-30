@@ -67,11 +67,13 @@ fails the build rather than quietly disappearing into it.
 ## Decision 4: the groups a hand does not hold do not appear
 
 A dealt hand of five touches three groups at most. Only the groups with cards in
-them are rendered, and the help row above them is withheld entirely when the
+them are rendered, and the filter above them is withheld entirely when the
 whole hand pays into one group, where there is nothing to choose between.
 
-The help row's chips cut the list to one group. Their counts are read from the
-unfiltered groups, so a cut list never rewrites the chips that cut it.
+The filter is one-of-N: **All** leads, then one item per group, and picking one
+cuts the list to that group. Its counts are read from the unfiltered groups, so a
+cut list never rewrites the filter that cut it. It cannot be hidden: a row of
+five words costs less room than the press that took it away.
 
 ## Decision 5: nothing is advised
 

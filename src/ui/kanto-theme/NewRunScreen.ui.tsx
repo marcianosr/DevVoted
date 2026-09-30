@@ -5,19 +5,27 @@ import { Header, type HeaderProps } from "./Header.ui";
 import { Lead, type LeadLine } from "./Lead.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
-import { RegistryHelp, type RegistryHelpProps } from "./RegistryHelp.ui";
+import { Segmented, type SegmentedProps } from "./Segmented.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { WarmBoot, type WarmBootProps } from "./WarmBoot.ui";
+
+const COPY = {
+	filter: "Config groups",
+} as const;
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
+
+export type RegistryFilter = Omit<SegmentedProps<string>, "label" | "look">;
 
 export type NewRunScreenProps = {
 	header: HeaderProps;
 	build: BuildProps;
 	registry: RegistryProps;
 	footer: ScreenFooterProps;
-	help?: RegistryHelpProps;
+	warmBoot?: WarmBootProps;
+	filter?: RegistryFilter;
 	buildNote?: LeadLine;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
@@ -28,7 +36,8 @@ export const NewRunScreen = ({
 	build,
 	registry,
 	footer,
-	help,
+	warmBoot,
+	filter,
 	buildNote,
 	width,
 	ground = "bare",
@@ -60,6 +69,7 @@ export const NewRunScreen = ({
 							</Panel.Footer>
 						)}
 					</Panel>
+					{warmBoot === undefined ? null : <WarmBoot {...warmBoot} />}
 				</div>
 
 				<div className={COLUMN}>
@@ -75,7 +85,9 @@ export const NewRunScreen = ({
 							trailing={discloseAllFor(registry, registry.offers.length)}
 						/>
 						<Panel.Body>
-							{help === undefined ? null : <RegistryHelp {...help} />}
+							{filter === undefined ? null : (
+								<Segmented {...filter} label={COPY.filter} look="loose" />
+							)}
 							<Registry {...registry} heading={false} />
 						</Panel.Body>
 					</Panel>

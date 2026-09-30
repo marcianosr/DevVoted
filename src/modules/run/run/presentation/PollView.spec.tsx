@@ -103,7 +103,9 @@ describe("PollView", () => {
 		const { rerender } = render(<PollView {...props} onSubmit={onSubmit} />);
 
 		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
-		expect(screen.getByText("pick an answer first")).toBeInTheDocument();
+		expect(
+			screen.getByText("pick an answer, or press its letter")
+		).toBeInTheDocument();
 
 		rerender(
 			<PollView {...props} selectedOptionIds={["a"]} onSubmit={onSubmit} />
@@ -122,7 +124,9 @@ describe("PollView", () => {
 		);
 
 		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
-		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
+		expect(
+			screen.getByText("pick every answer that fits, or press their letters")
+		).toBeInTheDocument();
 
 		rerender(
 			<PollView
@@ -133,7 +137,9 @@ describe("PollView", () => {
 			/>
 		);
 
-		expect(screen.getByText("2 picked")).toBeInTheDocument();
+		expect(
+			screen.getByText("you can also press Enter to answer")
+		).toBeInTheDocument();
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /^Lock in 2 answers/ })

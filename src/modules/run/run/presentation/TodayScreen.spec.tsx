@@ -11,32 +11,68 @@ import {
 	type TodayScreenProps,
 } from "~/modules/run/run/presentation/TodayScreen.ui";
 
+const BUILD = {
+	rows: [{ id: "code-coverage", name: "Code Coverage", slots: 2, version: 2 }],
+	weight: "4 / 6",
+	free: 2,
+	shopHref: "/run/shop",
+};
+
 const props = (
 	overrides: Partial<TodayScreenProps> = {}
 ): TodayScreenProps => ({
-	swatch: gateSwatchAt(4),
+	swatch: gateSwatchAt(3),
+	strip: {
+		swatches: swatchTrackFor([0, 1, 2], 3),
+		runNumber: 14,
+		gate: 3,
+		gates: 12,
+		storage: 106,
+	},
 	press: {
-		label: "Resume Lavender",
-		note: "Poll 3 out of 5 · New polls in 7h 23m",
-		pollsLeft: 3,
+		label: "Continue to Thunder",
+		note: "5 polls ready · prep first",
+		pollsLeft: 5,
 		onPress: () => {},
 	},
-	shop: { label: "Shop", open: true, onPress: () => {} },
-	standing: {
-		swatches: swatchTrackFor([1, 2], 4),
-		line: "gate 4 of 12 · 296 KB stored · 3 of today’s 5 left · they do not carry to tomorrow",
+	shop: {
+		label: "Shop",
+		open: true,
+		detail: "open until you start",
+		highlighted: false,
+		onPress: () => {},
 	},
-	coverage: {
-		held: 42,
-		demand: 60,
-		rungs: [
-			{ band: "ok", label: "OK", at: "40%" },
-			{ band: "healthy", label: "HEALTHY", at: "60%" },
+	incidents: [],
+	runSoFar: {
+		banked: "+64 KB",
+		rows: [
+			{
+				gate: 0,
+				swatch: gateSwatchAt(0),
+				band: { id: "perfect", label: "PERFECT" },
+				kb: "+32 KB",
+			},
+			{
+				gate: 1,
+				swatch: gateSwatchAt(1),
+				band: { id: "healthy", label: "HEALTHY" },
+				kb: "+19 KB",
+			},
 		],
+		next: {
+			gate: 3,
+			swatch: gateSwatchAt(3),
+			band: { id: "ok", label: "OK" },
+			share: "40%",
+			kb: "+40 KB",
+		},
 	},
+	build: BUILD,
 	community: {
-		count: 8,
+		count: 38,
 		detail: "players answered today",
+		ahead: 4,
+		aheadDetail: "at Thunder or ahead",
 		href: "/run/community",
 	},
 	...overrides,
@@ -45,148 +81,194 @@ const props = (
 const press = (name: RegExp) => screen.getByRole("button", { name });
 
 describe("TodayScreen", () => {
-	it("leads with a press that names the gate it resumes onto", () => {
-		render(<TodayScreen {...props()} />);
+	describe("the strip", () => {
+		it("states the run, the gate and the balance above the press", () => {
+			render(<TodayScreen {...props()} />);
 
-		expect(press(/Resume Lavender/)).toBeEnabled();
-	});
+			expect(screen.getByText("#14")).toBeInTheDocument();
+			expect(screen.getByText("12")).toBeInTheDocument();
+			expect(screen.getByRole("img", { name: "106 KB" })).toBeInTheDocument();
+			expect(
+				screen.getByRole("img", { name: /swatches discovered/ })
+			).toBeInTheDocument();
+		});
 
-	it("resumes the run when the leading press is taken", async () => {
-		const onPress = vi.fn();
-		render(
-			<TodayScreen {...props({ press: { ...props().press, onPress } })} />
-		);
+		it("drops the strip for a player with no run yet", () => {
+			render(<TodayScreen {...props({ strip: null })} />);
 
-		await userEvent.click(press(/Resume Lavender/));
-
-		expect(onPress).toHaveBeenCalledOnce();
-	});
-
-	it("states the run's position and the clock inside the press itself", () => {
-		render(<TodayScreen {...props()} />);
-
-		expect(
-			press(/Resume Lavender · Poll 3 out of 5 · New polls in 7h 23m/)
-		).toBeInTheDocument();
-	});
-
-	it("shuts the leading press when it is given nowhere to go", () => {
-		render(
-			<TodayScreen
-				{...props({
-					press: {
-						label: "New polls in 7h 23m",
-						note: "today’s 5 polls are answered",
-						pollsLeft: 0,
-					},
-				})}
-			/>
-		);
-
-		expect(press(/New polls in 7h 23m/)).toBeDisabled();
-	});
-
-	it("keeps the swatch ladder and the run's standing under the press", () => {
-		render(<TodayScreen {...props()} />);
-
-		expect(
-			screen.getByText(/gate 4 of 12 · 296 KB stored/)
-		).toBeInTheDocument();
-		expect(
-			screen.getByRole("img", { name: /swatches discovered/ })
-		).toBeInTheDocument();
-	});
-
-	it("drops the standing row for a player with no run yet", () => {
-		render(<TodayScreen {...props({ standing: null })} />);
-
-		expect(
-			screen.queryByRole("img", { name: /swatches discovered/ })
-		).toBeNull();
-	});
-
-	it("opens the shop beside the press while a gate is paying out", async () => {
-		const onPress = vi.fn();
-		render(<TodayScreen {...props({ shop: { ...props().shop, onPress } })} />);
-
-		await userEvent.click(press(/Shop/));
-
-		expect(onPress).toHaveBeenCalledOnce();
-	});
-
-	it("refuses the shop mid-gate and names the reason without printing it", () => {
-		render(
-			<TodayScreen
-				{...props({
-					shop: {
-						label: "Shop",
-						hint: "Shop · the shop opens when you clear a gate",
-						open: false,
-						onPress: () => {},
-					},
-				})}
-			/>
-		);
-
-		expect(press(/Shop · the shop opens when you clear a gate/)).toBeDisabled();
-		expect(
-			screen.queryByText(/the shop opens when you clear a gate/)
-		).toBeNull();
-	});
-
-	it("reads coverage held against what the gate needs", () => {
-		render(<TodayScreen {...props()} />);
-
-		expect(screen.getByText("Coverage so far")).toBeInTheDocument();
-		expect(
-			screen.getByRole("img", { name: "42% of 60% needed" })
-		).toBeInTheDocument();
-	});
-
-	it("draws the coverage arc against a full circle, not against the rung", () => {
-		const { container } = render(<TodayScreen {...props()} />);
-
-		expect(container.querySelector(".coverage-arc")).toHaveStyle({
-			strokeDashoffset: "58",
+			expect(
+				screen.queryByRole("img", { name: /swatches discovered/ })
+			).toBeNull();
 		});
 	});
 
-	it("badges a rung's percentage in its own band's colour, not in ambient grey", () => {
-		render(<TodayScreen {...props()} />);
-
-		for (const [figure, theme] of [
-			["OK", "saffron"],
-			["40%", "saffron"],
-			["HEALTHY", "viridian"],
-			["60%", "viridian"],
-		])
-			expect(screen.getByText(figure)).toHaveAttribute(
-				"data-screen-theme",
-				theme
+	describe("the press", () => {
+		it("continues to the next gate when its polls are ready", async () => {
+			const onPress = vi.fn();
+			render(
+				<TodayScreen {...props({ press: { ...props().press, onPress } })} />
 			);
+
+			await userEvent.click(
+				press(/Continue to Thunder · 5 polls ready · prep first/)
+			);
+
+			expect(onPress).toHaveBeenCalledOnce();
+		});
+
+		it("shuts while the day waits for the gate to open", () => {
+			render(
+				<TodayScreen
+					{...props({
+						press: {
+							label: "Thunder opens in 11h 16m",
+							note: "today’s polls are done · come back tomorrow",
+							pollsLeft: 5,
+						},
+					})}
+				/>
+			);
+
+			expect(press(/Thunder opens in 11h 16m/)).toBeDisabled();
+		});
 	});
 
-	it("says nothing about coverage before a run is open", () => {
-		render(<TodayScreen {...props({ coverage: null })} />);
+	describe("the shop", () => {
+		it("opens beside the press and says it stays open until you start", async () => {
+			const onPress = vi.fn();
+			render(
+				<TodayScreen {...props({ shop: { ...props().shop, onPress } })} />
+			);
 
-		expect(screen.queryByText("Coverage so far")).toBeNull();
+			await userEvent.click(press(/Shop/));
+
+			expect(onPress).toHaveBeenCalledOnce();
+			expect(screen.getByText(/open until you start/)).toBeInTheDocument();
+		});
+
+		it("names what there is to spend while the day waits", () => {
+			render(
+				<TodayScreen
+					{...props({
+						shop: {
+							...props().shop,
+							detail: "spend 106 KB",
+							highlighted: true,
+						},
+					})}
+				/>
+			);
+
+			expect(screen.getByText(/spend 106 KB/)).toBeInTheDocument();
+		});
+
+		it("refuses mid-gate and names the reason without printing it", () => {
+			render(
+				<TodayScreen
+					{...props({
+						shop: {
+							label: "Shop",
+							hint: "Shop · the shop opens when you clear a gate",
+							open: false,
+							highlighted: false,
+							onPress: () => {},
+						},
+					})}
+				/>
+			);
+
+			expect(
+				press(/Shop · the shop opens when you clear a gate/)
+			).toBeDisabled();
+		});
 	});
 
-	it("badges the room's count and opens the board", () => {
-		render(<TodayScreen {...props()} />);
+	describe("an incoming incident", () => {
+		it("shows as an audit row with who filed it", () => {
+			render(
+				<TodayScreen
+					{...props({
+						incidents: [
+							{
+								id: "not-found",
+								code: 404,
+								name: "Not Found",
+								cue: "waits at Thunder · it replaces one audit",
+								sender: "@erika",
+							},
+						],
+					})}
+				/>
+			);
 
-		expect(screen.getByText("8")).toBeInTheDocument();
-		expect(screen.getByText("players answered today")).toBeInTheDocument();
-		expect(screen.getByRole("link", { name: /Community/ })).toHaveAttribute(
-			"href",
-			"/run/community"
-		);
+			expect(screen.getByText("404")).toBeInTheDocument();
+			expect(
+				screen.getByText("waits at Thunder · it replaces one audit")
+			).toBeInTheDocument();
+			expect(screen.getByText(/@erika/)).toBeInTheDocument();
+		});
 	});
 
-	it("holds the community card back until the room has been counted", () => {
-		render(<TodayScreen {...props({ community: null })} />);
+	describe("the run so far", () => {
+		it("lists each closed gate with its grade and what it banked", () => {
+			render(<TodayScreen {...props()} />);
 
-		expect(screen.queryByText("Community")).toBeNull();
+			expect(screen.getByText("Pallet")).toBeInTheDocument();
+			expect(screen.getByText("PERFECT")).toHaveAttribute(
+				"data-screen-theme",
+				"cerulean"
+			);
+			expect(screen.getByText("+32 KB")).toBeInTheDocument();
+			expect(screen.getByText("+64 KB")).toBeInTheDocument();
+		});
+
+		it("projects the next gate with its share of coverage", () => {
+			render(<TodayScreen {...props()} />);
+
+			expect(screen.getByText("Thunder · next")).toBeInTheDocument();
+			expect(screen.getByText("OK 40%")).toBeInTheDocument();
+			expect(screen.getByText("+40 KB")).toBeInTheDocument();
+		});
+	});
+
+	describe("the build", () => {
+		it("lists each config with its weight and version, and the weight free", () => {
+			render(<TodayScreen {...props()} />);
+
+			expect(screen.getByText("Code Coverage")).toBeInTheDocument();
+			expect(screen.getByText("4 / 6")).toBeInTheDocument();
+			expect(screen.getByText("weight free")).toBeInTheDocument();
+			expect(
+				screen.getByRole("link", { name: /change in shop/ })
+			).toHaveAttribute("href", "/run/shop");
+		});
+
+		it("offers no way to the shop while the shop is shut", () => {
+			render(
+				<TodayScreen {...props({ build: { ...BUILD, shopHref: undefined } })} />
+			);
+
+			expect(screen.queryByRole("link", { name: /change in shop/ })).toBeNull();
+		});
+	});
+
+	describe("the community strip", () => {
+		it("badges the room's count and who is at the gate or ahead", () => {
+			render(<TodayScreen {...props()} />);
+
+			expect(screen.getByText("38")).toBeInTheDocument();
+			expect(screen.getByText("at Thunder or ahead")).toBeInTheDocument();
+			expect(screen.getByRole("link", { name: /Community/ })).toHaveAttribute(
+				"href",
+				"/run/community"
+			);
+		});
+
+		it("holds back until the room has been counted", () => {
+			render(<TodayScreen {...props({ community: null })} />);
+
+			expect(screen.queryByText("Community")).toBeNull();
+		});
 	});
 
 	it("states a refused start rather than dropping it", () => {

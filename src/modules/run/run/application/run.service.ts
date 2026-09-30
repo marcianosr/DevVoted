@@ -3,6 +3,7 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
+import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
@@ -24,6 +25,7 @@ import {
 	loadRunState,
 	findActiveSessionRun,
 	findSessionRunById,
+	countSessionRuns,
 	fetchOwnedSwatchIds,
 	findSessionRunByDate,
 	type SessionRunRecord,
@@ -132,17 +134,27 @@ export const startRunService = async ({
 			throw new Error("No polls left for a run today");
 		}
 
-		const [pinnedGate, unlockedConfigIds] = await Promise.all([
-			consumePinnedGate(userId),
-			fetchUnlockedConfigIds(userId),
-		]);
+		const [pinnedGate, unlockedConfigIds, archiveAfterKb, unlockedServiceIds] =
+			await Promise.all([
+				consumePinnedGate(userId),
+				fetchUnlockedConfigIds(userId),
+				fetchArchivedStorageKb(userId),
+				fetchUnlockedServiceIds(userId),
+			]);
 		const state = createRun(
 			polls,
 			startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
-			pinnedGate
+			pinnedGate,
+			{ [pinnedGate]: gateAuditsFor(pinnedGate, date, []) }
 		);
 		await createSessionRunWithState(userId, date, state);
-		return withPollReads(toRunView(state), userId);
+		return withPollReads(
+			{
+				...toRunView(state, [], [], [], unlockedServiceIds),
+				archiveAfterKb,
+			},
+			userId
+		);
 	}, "startRun");
 
 export const getRunRecapService = async ({
@@ -219,6 +231,13 @@ export const dispatchRunActionService = async ({
 			userId
 		);
 	}, "dispatchRunAction");
+
+export const getRunNumberService = async ({
+	userId,
+}: {
+	userId: string;
+}): Promise<ApiResponse<number>> =>
+	handleApiOperation(() => countSessionRuns(userId), "getRunNumber");
 
 export const getOwnedSwatchesService = async ({
 	userId,

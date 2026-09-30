@@ -16,7 +16,8 @@ const MISTY_CARD = {
 	data: {
 		userId: "misty-id",
 		displayName: "misty",
-		title: "Ship It",
+		titles: ["Ship It"],
+		theme: "pallet",
 		run: {
 			gate: 2,
 			coveragePercent: 40,

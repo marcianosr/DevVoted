@@ -25,6 +25,11 @@ import {
 } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
+const NARROW_LINTER = {
+	...CONFIGS.linter,
+	eliminatesWrongOptionsFor: ["js", "ts"] as const,
+};
+
 describe("draftCost", () => {
 	it("prices a config at 32 KB for every slot it fills", () => {
 		expect(draftCost(CONFIGS.js)).toBe(32);
@@ -221,9 +226,24 @@ describe("isUpgradable", () => {
 
 	it("refuses configs with nothing that scales per level", () => {
 		expect(isUpgradable(CONFIGS.agentsMd)).toBe(false);
-		expect(isUpgradable(CONFIGS.codeCoverage)).toBe(false);
-		expect(isUpgradable(CONFIGS.eslint)).toBe(false);
+		expect(isUpgradable(CONFIGS.npmAudit)).toBe(false);
 		expect(isUpgradable(CONFIGS.deprecated)).toBe(false);
+	});
+
+	it("allows Code Coverage up to the shared cap, since its add scales", () => {
+		expect(isUpgradable(CONFIGS.codeCoverage)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.codeCoverage, level: 5 })).toBe(false);
+	});
+
+	it("allows Linter two upgrades — the reset, then the price", () => {
+		expect(isUpgradable(CONFIGS.linter)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.linter, level: 2 })).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.linter, level: 3 })).toBe(false);
+	});
+
+	it("allows Prefetch exactly one upgrade — the poll shape", () => {
+		expect(isUpgradable(CONFIGS.prefetch)).toBe(true);
+		expect(isUpgradable({ ...CONFIGS.prefetch, level: 2 })).toBe(false);
 	});
 
 	it("allows Telemetry exactly one upgrade — its own cap, not the shared 5", () => {
@@ -280,14 +300,52 @@ describe("describeConfig", () => {
 	});
 
 	it("names a linter's categories in full, never abbreviated", () => {
-		expect(describeConfig(CONFIGS.eslint)).toBe(
-			"Cross out a wrong answer on JavaScript / TypeScript polls for an escalating fee."
+		expect(describeConfig(NARROW_LINTER)).toBe(
+			"Cross out a wrong answer on JavaScript / TypeScript polls for a fee that doubles each use and never resets."
 		);
 	});
 
 	it("states a single-category linter without a separator", () => {
-		expect(describeConfig(CONFIGS.stylelint)).toBe(
-			"Cross out a wrong answer on CSS polls for an escalating fee."
+		expect(
+			describeConfig({
+				...CONFIGS.linter,
+				eliminatesWrongOptionsFor: ["css"] as const,
+			})
+		).toBe(
+			"Cross out a wrong answer on CSS polls for a fee that doubles each use and never resets."
+		);
+	});
+
+	it("says any poll for a linter covering every category, never twelve names", () => {
+		expect(describeConfig(CONFIGS.linter)).toBe(
+			"Cross out a wrong answer on any poll for a fee that doubles each use and never resets."
+		);
+	});
+
+	it("states Linter's reset at v2 and its half price at v3", () => {
+		expect(describeConfig({ ...CONFIGS.linter, level: 2 })).toBe(
+			"Cross out a wrong answer on any poll for a fee that doubles each use and resets each gate."
+		);
+		expect(describeConfig({ ...CONFIGS.linter, level: 3 })).toBe(
+			"Cross out a wrong answer on any poll for half the fee, doubling each use and resetting each gate."
+		);
+	});
+
+	it("states Prefetch's categories at v1 and the poll shape at v2", () => {
+		expect(describeConfig(CONFIGS.prefetch)).toBe(
+			"Shows the category of every poll left this gate, plus all of the next gate's categories."
+		);
+		expect(describeConfig({ ...CONFIGS.prefetch, level: 2 })).toBe(
+			"Shows the category, option count and answer type of every poll left this gate, plus all of the next gate's categories."
+		);
+	});
+
+	it("states Code Coverage's flat add for its version", () => {
+		expect(describeConfig(CONFIGS.codeCoverage)).toBe(
+			"Every correct answer pays +0.1 units of coverage, flat: no multiplier amplifies it."
+		);
+		expect(describeConfig({ ...CONFIGS.codeCoverage, level: 3 })).toBe(
+			"Every correct answer pays +0.3 units of coverage, flat: no multiplier amplifies it."
 		);
 	});
 
@@ -340,8 +398,29 @@ describe("givesOf", () => {
 	});
 
 	it("names both of a linter's categories in full", () => {
-		expect(givesOf(CONFIGS.eslint)).toBe(
+		expect(givesOf(NARROW_LINTER)).toBe(
 			"Cross out a wrong answer on JavaScript / TypeScript polls"
+		);
+	});
+
+	it("says any poll for the roster's Linter", () => {
+		expect(givesOf(CONFIGS.linter)).toBe(
+			"Cross out a wrong answer on any poll"
+		);
+	});
+
+	it("grows Prefetch's gives with the poll shape at v2", () => {
+		expect(givesOf(CONFIGS.prefetch)).toBe(
+			"The categories of this gate's remaining polls, and the next gate's"
+		);
+		expect(givesOf({ ...CONFIGS.prefetch, level: 2 })).toBe(
+			"The categories, option counts and answer types of this gate's remaining polls, and the next gate's categories"
+		);
+	});
+
+	it("states Code Coverage's add for its version", () => {
+		expect(givesOf({ ...CONFIGS.codeCoverage, level: 2 })).toBe(
+			"+0.2 units on every correct answer"
 		);
 	});
 
@@ -379,6 +458,27 @@ describe("headlineFigureOf", () => {
 		});
 	});
 
+	it("scales the adder by version, landing on 0.3 exactly at v3", () => {
+		expect(headlineFigureOf({ ...CONFIGS.codeCoverage, level: 2 })).toEqual({
+			kind: "coverage",
+			value: 0.2,
+		});
+		expect(headlineFigureOf({ ...CONFIGS.codeCoverage, level: 3 })).toEqual({
+			kind: "coverage",
+			value: 0.3,
+		});
+		expect(headlineFigureOf({ ...CONFIGS.codeCoverage, level: 5 })).toEqual({
+			kind: "coverage",
+			value: 0.5,
+		});
+	});
+
+	it("halves the scaled adder when minified", () => {
+		expect(
+			headlineFigureOf(minify({ ...CONFIGS.codeCoverage, level: 3 }))
+		).toEqual({ kind: "coverage", value: 0.15 });
+	});
+
 	it("reads a per-answer storage payout in KB", () => {
 		expect(headlineFigureOf(CONFIGS.indexedDb)).toEqual({
 			kind: "kb",
@@ -394,7 +494,7 @@ describe("headlineFigureOf", () => {
 	});
 
 	it("withholds a figure where the config prices in something else", () => {
-		expect(headlineFigureOf(CONFIGS.eslint)).toBeUndefined();
+		expect(headlineFigureOf(CONFIGS.linter)).toBeUndefined();
 	});
 });
 
@@ -428,7 +528,28 @@ describe("upgradePreview", () => {
 	});
 
 	it("promises nothing for a config with no axis to upgrade", () => {
-		expect(upgradePreview(CONFIGS.eslint)).toEqual([]);
+		expect(upgradePreview(CONFIGS.agentsMd)).toEqual([]);
+	});
+
+	it("previews Code Coverage's next add in units", () => {
+		expect(upgradePreview(CONFIGS.codeCoverage)).toEqual([
+			{ from: "+0.1 units", to: "+0.2 units" },
+		]);
+	});
+
+	it("previews Prefetch's upgrade as buying the poll shape", () => {
+		expect(upgradePreview(CONFIGS.prefetch)).toEqual([
+			{ from: "categories", to: "with option counts and answer types" },
+		]);
+	});
+
+	it("previews Linter's reset at v2 and its half price at v3", () => {
+		expect(upgradePreview(CONFIGS.linter)).toEqual([
+			{ from: "fee never resets", to: "fee resets each gate" },
+		]);
+		expect(upgradePreview({ ...CONFIGS.linter, level: 2 })).toEqual([
+			{ from: "fee resets each gate", to: "half the fee" },
+		]);
 	});
 });
 

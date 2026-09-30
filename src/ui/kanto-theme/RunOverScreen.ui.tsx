@@ -3,22 +3,14 @@ import type { KantoColor } from "./colors";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { CoverageBar, type CoverageBarProps } from "./CoverageBar.ui";
 import { Figures } from "./Figures.ui";
+import { Header, type HeaderProps } from "./Header.ui";
 import { Meter } from "./Meter.ui";
 import { Panel } from "./Panel.ui";
 import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
-import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
-import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
-
-const HEADER = "flex w-full flex-col gap-4";
-const TITLE_ROW = "flex w-full items-start gap-4";
-const NAMING = "flex min-w-0 flex-col gap-1";
-const FIGURE = "ml-auto flex shrink-0 flex-col items-end gap-1";
-const FIGURE_AMOUNT = "text-2xl font-extrabold tabular-nums text-theme";
-const FIGURE_NOTE = "text-xs text-theme-muted";
 
 const COLUMNS = "grid w-full gap-6 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
@@ -31,8 +23,6 @@ const UNLOCK_NAMING = "flex min-w-0 flex-wrap items-baseline gap-x-2";
 const UNLOCK_DETAIL = "text-xs text-theme-muted";
 const SPENT_ROW = "opacity-60";
 
-const SWATCH_SIZE = "hero";
-const TRACK_SIZE = "small";
 const MARK_SIZE = "small";
 
 const RUN_OVER_COLOR: KantoColor = "cinnabar";
@@ -45,17 +35,6 @@ const STORAGE_TITLE = "storage";
 const UNLOCKED_TITLE = "unlocked";
 
 const TOTAL_LABEL = "total";
-
-export type RunOverFigure = { amount: string; note: string };
-
-export type RunOverHeader = {
-	swatch: GateSwatch;
-	swatches: readonly SwatchFill[];
-	title: string;
-	subtitle: string;
-	figure: RunOverFigure;
-	caption: string;
-};
 
 export type RunOverCoverage = {
 	meta: string;
@@ -120,7 +99,7 @@ export type RunOverUnlocked = {
 };
 
 export type RunOverScreenProps = {
-	header: RunOverHeader;
+	header: HeaderProps;
 	bar: CoverageBarProps;
 	coverage: RunOverCoverage;
 	gates: RunOverGates;
@@ -142,37 +121,6 @@ const Meta = ({ reading, badge }: { reading?: string; badge?: MetaBadge }) => (
 			<Badge color={badge.color}>{badge.label}</Badge>
 		)}
 	</>
-);
-
-const RunOverHeading = ({
-	swatch,
-	swatches,
-	title,
-	subtitle,
-	figure,
-	caption,
-}: RunOverHeader) => (
-	<header className={HEADER}>
-		<div className={TITLE_ROW}>
-			<Swatch state="current" swatch={swatch} size={SWATCH_SIZE} />
-			<span className={NAMING}>
-				<Typography variant="headline" as="h1">
-					{title}
-				</Typography>
-				<Typography variant="hint" as="span">
-					{subtitle}
-				</Typography>
-			</span>
-			<span className={FIGURE}>
-				<span className={FIGURE_AMOUNT}>{figure.amount}</span>
-				<span className={FIGURE_NOTE}>{figure.note}</span>
-			</span>
-		</div>
-
-		<SwatchTrack swatches={swatches} size={TRACK_SIZE} />
-
-		<Typography variant="hint">{caption}</Typography>
-	</header>
 );
 
 const CoveragePanel = ({
@@ -338,7 +286,7 @@ export const RunOverScreen = ({
 }: RunOverScreenProps) => {
 	const body = (
 		<>
-			<RunOverHeading {...header} />
+			<Header {...header} pinned />
 
 			<CoveragePanel bar={bar} {...coverage} />
 

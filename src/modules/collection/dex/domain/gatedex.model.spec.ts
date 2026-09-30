@@ -100,6 +100,7 @@ describe("gatedex", () => {
 		expect(everyUnlockLabel()).toEqual(
 			expect.arrayContaining([
 				"rebuild",
+				"skipShop",
 				"extend",
 				"hotReload",
 				"returnPolicy",
@@ -107,7 +108,7 @@ describe("gatedex", () => {
 				"pin",
 			])
 		);
-		expect(everyUnlockLabel()).toHaveLength(6);
+		expect(everyUnlockLabel()).toHaveLength(7);
 	});
 
 	it("hangs a shop action one gate below its gatesCleared floor", () => {

@@ -233,9 +233,19 @@ describe("Ledger", () => {
 	});
 
 	it("credits what is answering for its rows", () => {
-		render(<Ledger title="The five polls" badge="Prefetch" rows={ROWS} />);
+		render(
+			<Ledger
+				title="The five polls"
+				meta={[{ figure: "3 of 3" }, " revealed by ", { figure: "Prefetch" }]}
+				rows={ROWS}
+			/>
+		);
 
 		expect(screen.getByText("Prefetch")).toHaveClass("badge-theme");
+		expect(screen.getByText("3 of 3")).toHaveClass("badge-theme");
+		expect(screen.getByText("Prefetch").closest("header")).toHaveTextContent(
+			"3 of 3 revealed by Prefetch"
+		);
 	});
 
 	it("carries a bar when the rows describe a climb toward something", () => {

@@ -20,7 +20,6 @@ import {
 	createKantoQuestionProps,
 	kantoPollOptions,
 	kantoAudits,
-	kantoCoverageUnitsOf,
 	kantoRunningConfigs,
 } from "~/test/kantoPoll.factory";
 import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
@@ -240,7 +239,7 @@ export const MultipleAnswers: Story = {
 		footer: undefined,
 		commit: {
 			label: `${LOCK_IN} 2 answers`,
-			note: "2 picked",
+			note: "you can also press Enter to answer",
 			onPress: noop,
 		},
 	},
@@ -256,7 +255,10 @@ export const NothingPicked: Story = {
 		}),
 		wrongCost: undefined,
 		footer: undefined,
-		commit: { label: LOCK_IN, note: "pick every answer that fits" },
+		commit: {
+			label: LOCK_IN,
+			note: "pick every answer that fits, or press their letters",
+		},
 	},
 };
 
@@ -322,7 +324,6 @@ export const Answered: Story = {
 			bar: createKantoCoverageBarProps({
 				held: ANSWERED_HELD,
 				pin: true,
-				units: kantoCoverageUnitsOf(ANSWERED_HELD),
 			}),
 			paid: answeredPaidFor(),
 		},

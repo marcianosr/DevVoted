@@ -10,6 +10,7 @@ import {
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import type { RegistryControlId } from "~/modules/run/shop/domain/registryControl.model";
 import { gateLadderFor } from "~/modules/run/gate/domain/gate.model";
 import {
 	ratioOf,
@@ -41,7 +42,8 @@ export const handed = [
 	CONFIGS.js,
 	CONFIGS.ts,
 	CONFIGS.css,
-	CONFIGS.eslint,
+	CONFIGS.linter,
+	CONFIGS.html,
 	CONFIGS.coldStart,
 	CONFIGS.indexedDb,
 	CONFIGS.codeCoverage,
@@ -124,7 +126,7 @@ export const payPeel = (state: RunState): RunState => {
 	return runReducer(next, { type: "resume-climb" });
 };
 
-export const FILLER_IDS = ["ts", "css", "js", "eslint"];
+export const FILLER_IDS = ["ts", "css", "js", "html"];
 
 export const started = (slotIds: string[], size = 60): RunState => {
 	let state = createRun(pool(size), handed);
@@ -133,3 +135,11 @@ export const started = (slotIds: string[], size = 60): RunState => {
 		state = runReducer(state, { type: "install", configId });
 	return runReducer(state, { type: "start" });
 };
+
+export const carrying = (
+	state: RunState,
+	...serviceIds: RegistryControlId[]
+): RunState => ({
+	...state,
+	warmBoot: { storageKb: 0, serviceIds, archiveBytes: 0 },
+});

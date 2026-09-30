@@ -9,6 +9,8 @@ import {
 	liveConfigsOf,
 	pickBudgetFor,
 	type RunState,
+	offlinePairsOf,
+	outageTargetsOf,
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -18,6 +20,7 @@ import {
 	handed,
 	poll,
 	started,
+	audited,
 } from "~/modules/run/run/domain/run.factory";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
@@ -61,7 +64,7 @@ describe(".length's pick budget", () => {
 
 	const uncounted = (polls: RunPoll[] = mixedPool()): RunState => {
 		let state = createRun(polls, handed);
-		for (const configId of ["eslint", "ts", "css"])
+		for (const configId of ["linter", "ts", "css"])
 			state = runReducer(state, { type: "install", configId });
 		return runReducer(state, { type: "start" });
 	};
@@ -199,5 +202,20 @@ describe("510 Not Extended", () => {
 		expect(
 			versionsScored(atVersion(atGateWithBuild(11, 3, "not-found"), 4))
 		).toEqual([4, 4, 4]);
+	});
+});
+
+describe("outageTargetsOf", () => {
+	it("names for each poll position what the gate will take offline", () => {
+		let state = audited(started(["linter", "ts", "css"]), 4, "flaky-build");
+		const [target] = outageTargetsOf(state);
+
+		expect(target.audit.id).toBe("flaky-build");
+		for (let position = 0; position < SLICE_WINDOW; position++) {
+			expect(target.targets[position].map((config) => config.id)).toEqual(
+				offlinePairsOf(state).map((pair) => pair.config.id)
+			);
+			state = answerWith(state, true);
+		}
 	});
 });

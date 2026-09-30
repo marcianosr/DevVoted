@@ -98,7 +98,7 @@ describe("BuildFooter", () => {
 		render(<BuildFooter {...props} open />);
 
 		expect(screen.getAllByText("Cache").length).toBeGreaterThan(0);
-		expect(screen.getAllByText("ESLint").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("Linter").length).toBeGreaterThan(0);
 		expect(
 			screen.getByText(`${kantoSkippedConfigs.length} skipped`, {
 				exact: false,
@@ -113,11 +113,12 @@ describe("BuildFooter", () => {
 		expect(screen.getAllByText(`${TOTAL} configs`)).toHaveLength(1);
 	});
 
-	it("sits in the flow at the screen's floor while the press beneath it is unmeasured", () => {
+	it("sits in the flow just under the content, not pushed to the screen's floor", () => {
 		const { container } = render(<BuildFooter {...props} />);
 
 		expect(container.firstChild).not.toHaveClass("sticky");
-		expect(container.firstChild).toHaveClass("mt-auto");
+		expect(container.firstChild).not.toHaveClass("mt-auto");
+		expect(container.firstChild).toHaveClass("mt-2");
 		expect(container.firstElementChild).not.toHaveAttribute("style");
 	});
 
