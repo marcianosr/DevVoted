@@ -4,7 +4,10 @@ import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { GateCloseView } from "~/modules/run/run/application/gateClose.viewmodel";
+import type { RunStatus } from "~/modules/run/run/domain/run.model";
 import {
+	createMockGateClose,
 	createMockGatePayout,
 	createMockGateStake,
 	createMockRunView,
@@ -14,7 +17,7 @@ import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { clearGate, started } from "~/modules/run/run/domain/run.factory";
 
-import { GateOutcomeView, type GateVerdict } from "./GateOutcomeView.component";
+import { GateOutcomeView } from "./GateOutcomeView.component";
 
 const answer = (
 	overrides: Partial<AnsweredPoll> & Pick<AnsweredPoll, "id" | "category">
@@ -37,11 +40,42 @@ const answered: readonly AnsweredPoll[] = [
 const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };
 const PEEL_SLOTS_OWED = 1;
 
+type Verdict = "cleared" | "held" | "fatal" | "won";
+
+const STATUS_OF = {
+	cleared: "rewarding",
+	won: "won",
+	held: "awaiting-strip",
+	fatal: "dead",
+} satisfies Record<Verdict, RunStatus>;
+
+const CLOSE_OF = {
+	cleared: { closing: "cleared", cleared: true, band: "healthy", held: 30 },
+	won: { closing: "cleared", cleared: true, band: "healthy", held: 30 },
+	held: {
+		closing: "held",
+		cleared: false,
+		band: "shaky",
+		held: 10,
+		heldBy: "band",
+	},
+	fatal: { closing: "fatal", cleared: false, band: "danger", held: 2 },
+} satisfies Record<Verdict, Partial<GateCloseView>>;
+
+const closeAt = (verdict: Verdict, over: Partial<GateCloseView> = {}) =>
+	createMockGateClose({
+		gate: 4,
+		ladder: GATE_4_LADDER,
+		...CLOSE_OF[verdict],
+		...over,
+	});
+
 const viewAt = (
-	verdict: GateVerdict,
+	verdict: Verdict,
 	overrides: Parameters<typeof createMockRunView>[0] = {}
 ) =>
 	createMockRunView({
+		status: STATUS_OF[verdict],
 		answeredThisGate: answered,
 		configs: [CONFIGS.js, CONFIGS.unitTests],
 		gatesCleared: 4,
@@ -52,21 +86,19 @@ const viewAt = (
 			coverageLadder: GATE_4_LADDER,
 			coverageHeld: verdict === "cleared" || verdict === "won" ? 30 : 10,
 		}),
+		lastClose: closeAt(verdict),
 		gatePayout: createMockGatePayout({
 			clearedGateNumber: 4,
-			clearedGateLadder: GATE_4_LADDER,
-			clearedCoverageHeld: 30,
 			gateRewardPaidKb: 256,
 			storageBeforeClearKb: 384,
 		}),
 		...overrides,
 	});
 
-const renderAt = (verdict: GateVerdict, props = {}) =>
+const renderAt = (verdict: Verdict, props = {}) =>
 	render(
 		<GateOutcomeView
 			view={viewAt(verdict)}
-			verdict={verdict}
 			onReview={() => {}}
 			onNext={() => {}}
 			{...props}
@@ -88,10 +120,12 @@ describe("GateOutcomeView", () => {
 						coverageLadder: GATE_4_LADDER,
 						coverageHeld: 30,
 					}),
-					gatePayout: createMockGatePayout({ heldBy: "unscored" }),
-					scoredThisGate: 1,
+					lastClose: closeAt("held", {
+						heldBy: "unscored",
+						band: "healthy",
+						held: 30,
+					}),
 				})}
-				verdict="held"
 				onReview={() => {}}
 				onNext={() => {}}
 				onRemove={() => {}}
@@ -105,7 +139,7 @@ describe("GateOutcomeView", () => {
 			screen.getByLabelText("30% of 25% needed \u00b7 HEALTHY")
 		).toBeInTheDocument();
 		expect(
-			screen.getByText(/scored 1 of 2 units · 5 fresh polls on the retry/)
+			screen.getByText(/the window came up short · 5 fresh polls on the retry/)
 		).toBeInTheDocument();
 	});
 
@@ -189,13 +223,12 @@ describe("GateOutcomeView", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
-					gatePayout: createMockGatePayout({
-						clearedGateNumber: 4,
-						clearedGateLadder: { floor: 0, ok: 0, healthy: 60 },
-						clearedCoverageHeld: 200,
+					lastClose: closeAt("cleared", {
+						ladder: { floor: 0, ok: 0, healthy: 60 },
+						held: 200,
+						band: "perfect",
 					}),
 				})}
-				verdict="cleared"
 				onReview={() => {}}
 				onNext={() => {}}
 			/>
@@ -218,13 +251,13 @@ describe("GateOutcomeView", () => {
 		render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
-					gatePayout: createMockGatePayout({
-						clearedGateNumber: 0,
-						clearedGateLadder: { floor: 0, ok: 40, healthy: 60 },
-						clearedCoverageHeld: 100,
+					lastClose: closeAt("cleared", {
+						gate: 0,
+						ladder: { floor: 0, ok: 40, healthy: 60 },
+						held: 100,
+						band: "perfect",
 					}),
 				})}
-				verdict="cleared"
 				onReview={() => {}}
 				onNext={() => {}}
 			/>
@@ -238,7 +271,7 @@ describe("GateOutcomeView", () => {
 	it("states the gate's earn as a share of the window, not as raw units", () => {
 		renderAt("cleared");
 
-		expect(screen.getAllByText("+8%").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("+22.2%").length).toBeGreaterThan(0);
 		expect(screen.queryByText("+2%")).not.toBeInTheDocument();
 	});
 
@@ -246,45 +279,44 @@ describe("GateOutcomeView", () => {
 		render(
 			<GateOutcomeView
 				view={toRunView(clearGate(started([])))}
-				verdict="cleared"
 				onReview={() => {}}
 				onNext={() => {}}
 			/>
 		);
 
 		expect(
-			screen.getByLabelText("100% of 60% needed \u00b7 PERFECT")
+			screen.getByLabelText("100% of 40% needed \u00b7 PERFECT")
 		).toBeInTheDocument();
 		expect(
-			screen.queryByLabelText(/^60% of 60% needed/)
+			screen.queryByLabelText(/^40% of 40% needed/)
 		).not.toBeInTheDocument();
 	});
 
-	it("names the slots the next gate scores out of, so the re-base is no surprise", () => {
+	it("lists what a single and a multiple choice are worth at the next gate, so the re-base is no surprise", () => {
 		render(
 			<GateOutcomeView
 				view={toRunView(clearGate(started([])))}
-				verdict="cleared"
 				onReview={() => {}}
 				onNext={() => {}}
 			/>
 		);
 
-		expect(
-			screen.getByText("Boulder scores out of 10 slots.")
-		).toBeInTheDocument();
+		const list = screen.getByText("At Boulder").nextElementSibling;
+
+		expect(list).toHaveTextContent("single choice+11.1%");
+		expect(list).toHaveTextContent("multiple choice+22.2%");
 	});
 
 	it("points at no gate beyond the summit", () => {
 		renderAt("won");
 
-		expect(screen.queryByText(/scores out of/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/single choice/)).not.toBeInTheDocument();
 	});
 
 	it("keeps quiet about the next gate on a gate that did not clear", () => {
 		renderAt("held", { onRemove: () => {} });
 
-		expect(screen.queryByText(/scores out of/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/single choice/)).not.toBeInTheDocument();
 	});
 
 	it("opens the answer review from the panel", async () => {
@@ -313,15 +345,12 @@ describe("rivals' audits at the close (ADR-099)", () => {
 				view={viewAt("cleared", {
 					gatePayout: createMockGatePayout({
 						clearedGateNumber: 4,
-						clearedGateLadder: GATE_4_LADDER,
-						clearedCoverageHeld: 30,
 						gateRewardPaidKb: 256,
 						storageBeforeClearKb: 384,
 						clearThisGateKb: 192,
 						incidentSurvivalKb: 64,
 					}),
 				})}
-				verdict="cleared"
 				onReview={() => {}}
 				onNext={() => {}}
 			/>

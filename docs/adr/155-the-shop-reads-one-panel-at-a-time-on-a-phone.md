@@ -43,3 +43,6 @@ from the header into the footer, beside the press, where it stays in view.
 
 The Services head reads `3 ready`. Locked services fold behind one row,
 `3 locked services · show`.
+
+> Superseded 2026-10-02 by [ADR-173](173-hidden-until-it-matters-new-until-met.md):
+> the shop lists no locked service, so the fold is gone.

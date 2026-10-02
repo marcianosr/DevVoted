@@ -1,107 +1,113 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
-import * as pollRepository from "~/modules/polls/poll/infrastructure/poll.repository";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-	getAllPollsService,
-	getPollByIdWithOptionsService,
-} from "./poll.service";
-import { createMockPoll, createMockPollArray } from "../domain/poll.factory";
-import { createMockPollOptionArray } from "../domain/pollOption.factory";
+	listPollsFor,
+	pollDetailFor,
+} from "~/modules/polls/poll/application/poll.service";
+import {
+	createMockPoll,
+	createMockPollArray,
+} from "~/modules/polls/poll/domain/poll.factory";
+import { ACCESS_DENIED } from "~/modules/polls/poll/domain/pollAccess.model";
+import { createMockPollOptionArray } from "~/modules/polls/poll/domain/pollOption.factory";
+import * as pollRepository from "~/modules/polls/poll/infrastructure/poll.repository";
 
 vi.mock("~/modules/polls/poll/infrastructure/poll.repository", () => ({
-	fetchAllPolls: vi.fn(),
+	fetchPollsIn: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
-	fetchPollsByUser: vi.fn(),
-	fetchPollCreators: vi.fn(),
-	hasUserAnsweredPoll: vi.fn(),
 }));
 
-const BLAINE_ID = "123e4567-e89b-12d3-a456-426614174000";
-const POLL_ID = 2;
+const BROCK = "11111111-1111-4111-8111-111111111111";
+const MISTY = "22222222-2222-4222-8222-222222222222";
+const POLL_ID = 74;
+
+const brock = { userId: BROCK, isAdmin: false };
+const oak = { userId: MISTY, isAdmin: true };
 
 beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-describe("getAllPollsService", () => {
-	it("returns every poll the repository yields", async () => {
-		const polls = createMockPollArray(10);
-		vi.mocked(pollRepository.fetchAllPolls).mockResolvedValue(polls);
+describe("listPollsFor", () => {
+	it("asks a player's list for only the polls they authored", async () => {
+		const polls = createMockPollArray(2);
+		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue(polls);
 
-		expect(await getAllPollsService()).toEqual({ success: true, data: polls });
+		const result = await listPollsFor(brock);
+
+		expect(pollRepository.fetchPollsIn).toHaveBeenCalledWith({
+			kind: "authoredBy",
+			authorId: BROCK,
+		});
+		expect(result).toEqual({
+			success: true,
+			data: { polls, canAdminister: false },
+		});
 	});
 
-	it("succeeds with an empty list when there are no polls", async () => {
-		vi.mocked(pollRepository.fetchAllPolls).mockResolvedValue([]);
+	it("asks an admin's list for every poll and says they administer", async () => {
+		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue([]);
 
-		expect(await getAllPollsService()).toEqual({ success: true, data: [] });
+		const result = await listPollsFor(oak);
+
+		expect(pollRepository.fetchPollsIn).toHaveBeenCalledWith({ kind: "every" });
+		expect(result).toEqual({
+			success: true,
+			data: { polls: [], canAdminister: true },
+		});
 	});
 });
 
-describe("getPollByIdWithOptionsService", () => {
-	const poll = createMockPoll({ id: POLL_ID });
+describe("pollDetailFor", () => {
 	const options = createMockPollOptionArray(POLL_ID);
 
-	const repositoryReturnsPoll = () =>
-		vi
-			.mocked(pollRepository.fetchPollByIdWithOptions)
-			.mockResolvedValue({ poll, options });
-
-	it("reports hasAnswered false when the user has not answered today", async () => {
-		repositoryReturnsPoll();
-		vi.mocked(pollRepository.hasUserAnsweredPoll).mockResolvedValue(false);
-
-		const result = await getPollByIdWithOptionsService({
-			id: POLL_ID,
-			userId: BLAINE_ID,
+	const repositoryReturns = (createdBy: string) =>
+		vi.mocked(pollRepository.fetchPollByIdWithOptions).mockResolvedValue({
+			poll: createMockPoll({ id: POLL_ID, createdBy }),
+			options,
 		});
 
-		expect(pollRepository.hasUserAnsweredPoll).toHaveBeenCalledWith(
-			POLL_ID,
-			BLAINE_ID
-		);
-		expect(result).toEqual({
-			success: true,
-			data: { poll, options, hasAnswered: false },
-		});
-	});
+	it("hands a player their own poll without admin rights", async () => {
+		repositoryReturns(BROCK);
 
-	it("reports hasAnswered true when the user has already answered", async () => {
-		repositoryReturnsPoll();
-		vi.mocked(pollRepository.hasUserAnsweredPoll).mockResolvedValue(true);
-
-		const result = await getPollByIdWithOptionsService({
-			id: POLL_ID,
-			userId: BLAINE_ID,
-		});
+		const result = await pollDetailFor(brock, POLL_ID);
 
 		expect(result).toEqual({
 			success: true,
-			data: { poll, options, hasAnswered: true },
+			data: {
+				poll: createMockPoll({ id: POLL_ID, createdBy: BROCK }),
+				options,
+				canAdminister: false,
+			},
 		});
 	});
 
-	it("skips the answered lookup entirely when no userId is given", async () => {
-		repositoryReturnsPoll();
+	it("refuses a player a poll someone else authored", async () => {
+		repositoryReturns(MISTY);
 
-		const result = await getPollByIdWithOptionsService({ id: POLL_ID });
-
-		expect(pollRepository.hasUserAnsweredPoll).not.toHaveBeenCalled();
-		expect(result).toEqual({
-			success: true,
-			data: { poll, options, hasAnswered: false },
+		expect(await pollDetailFor(brock, POLL_ID)).toEqual({
+			success: false,
+			error: ACCESS_DENIED,
 		});
 	});
 
-	it("returns a failure when the poll does not exist", async () => {
+	it("hands an admin someone else's poll with admin rights", async () => {
+		repositoryReturns(BROCK);
+
+		const result = await pollDetailFor(oak, POLL_ID);
+
+		expect(result.success && result.data.canAdminister).toBe(true);
+	});
+
+	it("fails when the poll does not exist", async () => {
 		vi.mocked(pollRepository.fetchPollByIdWithOptions).mockRejectedValue(
 			new Error("Poll not found")
 		);
 
-		const result = await getPollByIdWithOptionsService({ id: 123 });
-
+		expect(await pollDetailFor(oak, 123)).toEqual({
+			success: false,
+			error: "Poll not found",
+		});
 		expect(pollRepository.fetchPollByIdWithOptions).toHaveBeenCalledWith(123);
-		expect(result).toEqual({ success: false, error: "Poll not found" });
 	});
 });

@@ -1,18 +1,33 @@
-import { COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
+import {
+	CHOICE_LABEL,
+	COMMUNITY,
+	NEW,
+	NEW_BADGE,
+	NOTHING_NEW,
+	STORAGE_BALANCE,
+} from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
+	catcherFor,
 	flatClearPayoutsOf,
 	occupiedSlots,
 } from "~/modules/run/build/domain/build.model";
-import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { clearsUntilDeleted } from "~/modules/run/config/domain/decay.model";
-import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
-import type { Config } from "~/modules/run/config/domain/config.model";
-import { auditAt } from "~/modules/run/gate/domain/audit.model";
-import { clearsAt } from "~/modules/run/gate/domain/gate.model";
+import { gainsOfGate } from "~/modules/run/gate/application/gateGains.viewmodel";
+import type { GateCloseView } from "~/modules/run/run/application/gateClose.viewmodel";
+import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type {
+	AnsweredPoll,
+	AnswerType,
+} from "~/modules/run/run/domain/runPoll.model";
+import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
+import { auditAt } from "~/modules/run/gate/domain/audit.model";
+import type {
+	GateClosing,
 	GateHoldReason,
-	GateLadder,
 } from "~/modules/run/gate/domain/gate.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
@@ -23,23 +38,23 @@ import {
 	ESCROW_COMMIT_MULTIPLIER,
 	GATE_COUNT,
 	INCIDENT_SURVIVAL_KB,
-	MIN_WINDOW_UNITS,
 	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
 	roundToOneDecimal,
 	roundToTwoDecimals,
-	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 import { peelRefundIn } from "~/modules/run/run/domain/strip.model";
-import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import {
+	AS_PERCENT,
+	coverageGainPercentFor,
+	MULTIPLE_CREDIT,
 	PERFECT_BONUS,
-	scoringSlotsAt,
+	SINGLE_CREDIT,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -47,7 +62,6 @@ import {
 	COVERAGE_BAND_COLOR,
 	type CoverageBandId,
 	type CoverageBarProps,
-	coverageBandOf,
 } from "~/ui/kanto-theme/CoverageBar.ui";
 import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
 import type {
@@ -67,8 +81,8 @@ import type {
 	GateOutcomeRowsPanel,
 	GateOutcomeScreenProps,
 	GateOutcomeTail,
+	NextGateRates,
 } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
-import { swatchFillsFor } from "~/ui/kanto-theme/Swatch.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import type { LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
@@ -94,6 +108,9 @@ const DROP_TITLE = "Or drop configs";
 const BRIBE_TITLE = "Pay from storage";
 const BRIBE_SPENT = "Nothing left for storage to cover";
 const BRIBE_NOTHING = "the drops already settle the peel";
+const CATCH_FIRST = "drop first";
+const CATCH_TITLE = "Drop the catch first";
+const CATCH_NOTE = "it saved the run · pays its weight · refunds nothing";
 const FROM_STORAGE = "from storage";
 const FROM_DROPS = "from dropped configs";
 const OVERPAID = "overpaid · lost";
@@ -117,15 +134,13 @@ const ROLLBACK_ROW = "Transaction rolled back";
 
 const EARNED_TITLE = "Earned";
 const EARNED_HINT = "Dex and Appearance update right away.";
-const NEW_WORD = "new";
-const NOTHING_NEW = "nothing new";
 const UNLOCKED_VERB = "unlocked";
 const NEW_CONFIG = "new config";
 const NEW_TITLE = "new title";
 const TITLE_GLYPH = "✦";
 const SWATCH_EARNED_NAME = "swatch earned";
 const SWATCH_MISSED_NAME = "swatch missed";
-const SWATCH_NEEDS = `needs all ${SLICE_WINDOW} right`;
+const SWATCH_NEEDS = "needs 100% coverage";
 const SWATCH_WORD = "swatch";
 
 const DEPRECATED_VERB = "deprecated";
@@ -138,14 +153,11 @@ const NOTHING_MOVED = "nothing moved";
 const NOT_PAID = "not paid";
 const ROLLED_BACK = "nothing paid";
 const NOTHING_PAID = "nothing paid";
-const STREAK_BROKEN = "streak broken";
 
 const BAR_FILLED = "the bar filled";
 const PAYOUT_CUT = "the payout is cut";
 const METER_SHORT = "the meter fell short";
-const SCORED_LEAD = "scored";
-const OF_WORD = "of";
-const UNITS_WORD = "units";
+const WINDOW_SHORT = "the window came up short";
 const CAUGHT_REASON = "the meter never reached the floor — caught";
 const CAUGHT_CHIP = "caught";
 const METER_NEVER = "the meter never reached the floor";
@@ -168,7 +180,7 @@ export const REFUND_NOTE =
 	"Garbage Collection is installed, so every config you drop here also refunds its sell value.";
 
 const GAIN_COLOR = "viridian" as const;
-const NEW_COLOR = "cerulean" as const;
+const NEW_COLOR = NEW_BADGE.color;
 const BALANCE_ICON = "floppy" as const;
 const LOSS_COLOR = "cinnabar" as const;
 const TERM_COLOR = "saffron" as const;
@@ -176,45 +188,6 @@ const TERM_COLOR = "saffron" as const;
 const STORAGE_COLOR = "saffron" as const;
 const DROP_COLOR = "cerulean" as const;
 const OVER_COLOR = "vermillion" as const;
-
-export type GateClosing = "cleared" | "held" | "fatal";
-
-const BAND_TICK = 0.1;
-
-const within = (value: number, low: number, high: number) =>
-	Math.min(high, Math.max(low, value));
-
-export const closedBarFor = (
-	closing: GateClosing,
-	gate: number,
-	ladder: GateLadder,
-	held: number,
-	heldBy?: GateHoldReason
-): CoverageBarProps => ({
-	...ladder,
-	held: closedHeldFor(closing, gate, ladder, held, heldBy),
-});
-
-const clearingLineOf = (gate: number, { ok, healthy }: GateLadder): number =>
-	clearsAt("ok", gate) ? ok : healthy;
-
-const closedHeldFor = (
-	closing: GateClosing,
-	gate: number,
-	ladder: GateLadder,
-	held: number,
-	heldBy: GateHoldReason | undefined
-): number => {
-	const clearingLine = clearingLineOf(gate, ladder);
-
-	if (closing === "cleared") return Math.max(clearingLine, held);
-	if (closing === "held" && heldBy === "unscored") return within(held, 0, 100);
-	if (closing === "held" && heldBy === "catch") return within(held, 0, 100);
-	if (closing === "held")
-		return within(held, ladder.floor, clearingLine - BAND_TICK);
-
-	return within(held, 0, Math.max(0, ladder.floor - BAND_TICK));
-};
 
 export type GateAnswer = {
 	category: CategoryCode;
@@ -234,13 +207,13 @@ export type GateAnswer = {
 
 export type GateOutcomeFrame = {
 	gate: number;
+	closing: GateClosing;
 	answers: readonly GateAnswer[];
 	swatchGates: readonly number[];
 	readout?: RunReadoutProps;
 	balanceBeforeKb: number;
 	configs: readonly Config[];
 	buildSpace?: number;
-	streak?: number;
 	unlocked?: readonly { config: Config; detail: string }[];
 	titles?: readonly { name: string; detail: string }[];
 	paid?: readonly { config: Config; detail: string; kb: number }[];
@@ -254,7 +227,6 @@ export type GateOutcomeFrame = {
 	won?: boolean;
 	open?: boolean;
 	heldBy?: GateHoldReason;
-	scoredUnits?: number;
 	peelSlotsRemaining?: number;
 	caughtFatalBy?: string;
 	slaUpliftKb?: number;
@@ -335,35 +307,22 @@ const coverageRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 const heldByUnscored = (frame: GateOutcomeFrame): boolean =>
 	frame.heldBy === "unscored";
 
-const scoredLineOf = (frame: GateOutcomeFrame): string =>
-	`${SCORED_LEAD} ${frame.scoredUnits ?? 0} ${OF_WORD} ${MIN_WINDOW_UNITS} ${UNITS_WORD}`;
-
 const heldByCatch = (frame: GateOutcomeFrame): boolean =>
 	frame.heldBy === "catch";
 
-const readsAsHeld = (frame: GateOutcomeFrame, band: CoverageBandId): boolean =>
-	band !== RUN_OVER_BAND && !clearsAt(band, frame.gate);
+const isCleared = (frame: GateOutcomeFrame): boolean =>
+	frame.closing === "cleared";
 
 const bandOf = (frame: GateOutcomeFrame): CoverageBandId => {
-	const band = coverageBandOf(frame.bar.held, frame.bar);
-
-	return heldByUnscored(frame) || heldByCatch(frame) || readsAsHeld(frame, band)
-		? SHAKY_BAND
-		: band;
+	if (frame.closing === "fatal") return RUN_OVER_BAND;
+	if (frame.closing === "held") return SHAKY_BAND;
+	return frame.bar.band;
 };
 
 const swatchEarnedIn = (frame: GateOutcomeFrame): boolean =>
 	frame.swatchGates.includes(frame.gate);
 
 const SWATCH_BANDS = {
-	perfect: true,
-	healthy: true,
-	ok: false,
-	shaky: false,
-	danger: false,
-} satisfies Record<CoverageBandId, boolean>;
-
-const STREAK_HOLDS = {
 	perfect: true,
 	healthy: true,
 	ok: false,
@@ -379,8 +338,21 @@ const OUTCOME_SUFFIX = {
 	danger: "",
 } satisfies Record<CoverageBandId, string>;
 
-const SCORES_OUT_OF = "scores out of";
-const SLOTS_WORD = "slots";
+const NEXT_GATE_LEAD = "At";
+
+const choiceGainOf = (credit: number, gate: number) =>
+	`+${roundToOneDecimal(coverageGainPercentFor(credit, gate))}%`;
+
+export const nextGateRatesOf = (
+	gateName: string,
+	gate: number
+): NextGateRates => ({
+	title: `${NEXT_GATE_LEAD} ${gateName}`,
+	rates: [
+		{ label: CHOICE_LABEL.single, gain: choiceGainOf(SINGLE_CREDIT, gate) },
+		{ label: CHOICE_LABEL.multiple, gain: choiceGainOf(MULTIPLE_CREDIT, gate) },
+	],
+});
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const PERFECT_BAND: CoverageBandId = "perfect";
@@ -393,7 +365,7 @@ const titleOf = (band: CoverageBandId, gateName: string) =>
 
 const holdReasonOf = (frame: GateOutcomeFrame): string => {
 	if (heldByCatch(frame)) return CAUGHT_REASON;
-	if (heldByUnscored(frame)) return scoredLineOf(frame);
+	if (heldByUnscored(frame)) return WINDOW_SHORT;
 	return METER_SHORT;
 };
 
@@ -411,13 +383,13 @@ const shortfallBadgeOf = (shortBy: number): FoldBadge => ({
 	color: LOSS_COLOR,
 });
 
-const payoutOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	clearsAt(band, frame.gate) ? frame.payoutKb : 0;
+const payoutOf = (frame: GateOutcomeFrame) =>
+	isCleared(frame) ? frame.payoutKb : 0;
 
 const faucetOf = (frame: GateOutcomeFrame) => frame.faucetKb;
 
-const billOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	clearsAt(band, frame.gate) ? frame.billKb : 0;
+const billOf = (frame: GateOutcomeFrame) =>
+	isCleared(frame) ? frame.billKb : 0;
 
 const peelBillSlotsOf = (frame: GateOutcomeFrame) =>
 	frame.peelSlotsRemaining ??
@@ -430,6 +402,19 @@ const peelBillSlotsOf = (frame: GateOutcomeFrame) =>
 const chosenIn = (frame: GateOutcomeFrame) =>
 	frame.configs.filter((config) => (frame.chosen ?? []).includes(config.id));
 
+const caughtCatcherOf = (frame: GateOutcomeFrame): Config | undefined =>
+	frame.caughtFatalBy === undefined ? undefined : catcherFor(frame.configs);
+
+const unpickedCatcherOf = (frame: GateOutcomeFrame): Config | undefined => {
+	const catcher = caughtCatcherOf(frame);
+	return catcher !== undefined && !(frame.chosen ?? []).includes(catcher.id)
+		? catcher
+		: undefined;
+};
+
+const refundableIn = (frame: GateOutcomeFrame): readonly Config[] =>
+	chosenIn(frame).filter((config) => config !== caughtCatcherOf(frame));
+
 export const peelSlotsOf = (configs: readonly Config[]) =>
 	configs.reduce((sum, config) => sum + slotsOf(config), 0);
 
@@ -441,13 +426,16 @@ const collectsOnDrop = (configs: readonly Config[]) =>
 const peelRefundFor = (configs: readonly Config[], chosen: readonly Config[]) =>
 	chosen.reduce((sum, config) => sum + peelRefundIn(configs, config), 0);
 
-const balanceOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
+const balanceChangeOf = (frame: GateOutcomeFrame) =>
+	balanceOf(frame) - frame.balanceBeforeKb;
+
+const balanceOf = (frame: GateOutcomeFrame) =>
 	frame.balanceBeforeKb +
-	payoutOf(frame, band) +
-	(clearsAt(band, frame.gate)
+	payoutOf(frame) +
+	(isCleared(frame)
 		? (frame.paid ?? []).reduce((sum, row) => sum + row.kb, 0)
-		: peelRefundFor(frame.configs, chosenIn(frame))) -
-	billOf(frame, band);
+		: peelRefundFor(frame.configs, refundableIn(frame))) -
+	billOf(frame);
 
 const auditsOf = (frame: GateOutcomeFrame): readonly AuditProps[] =>
 	(frame.auditIds ?? []).map((id) => {
@@ -460,16 +448,6 @@ const auditsOf = (frame: GateOutcomeFrame): readonly AuditProps[] =>
 		};
 	});
 
-const streakChipOf = (
-	streak: number | undefined,
-	band: CoverageBandId
-): readonly FoldBadge[] => {
-	if (streak === undefined) return [];
-	if (STREAK_HOLDS[band]) return [{ label: `streak ${streak}` }];
-
-	return [{ label: STREAK_BROKEN }];
-};
-
 const outcomeChips = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
@@ -477,9 +455,7 @@ const outcomeChips = (
 	{
 		label: `${correctCount(frame.answers)} of ${frame.answers.length} right`,
 	},
-	...(band === RUN_OVER_BAND
-		? [{ label: `${frame.gate} gates held` }]
-		: streakChipOf(frame.streak, band)),
+	...(band === RUN_OVER_BAND ? [{ label: `${frame.gate} gates held` }] : []),
 	...(frame.caughtFatalBy === undefined
 		? []
 		: [
@@ -501,10 +477,11 @@ const INTEREST_NOTE = "on the balance held";
 const EXTRA_PICKS_ROW = "Extra picks";
 const EXTRA_PICKS_NOTE = "answers past the window";
 const FLAT_CLEAR_NOTE = "on the clear";
-const STREAK_WORD = "streak";
+
+type GainIdentity = Pick<LedgerRow, "label" | "config">;
 
 const gainRow = (
-	label: string,
+	identity: GainIdentity,
 	note: string,
 	kb: number
 ): readonly LedgerRow[] =>
@@ -512,19 +489,20 @@ const gainRow = (
 		? []
 		: [
 				{
-					label,
+					...identity,
 					notes: [note],
 					figures: [{ label: signedKbLabel(kb), color: GAIN_COLOR }],
 				},
 			];
 
-const clearedNotesOf = (frame: GateOutcomeFrame): readonly string[] => {
-	const streak = frame.streak ?? 0;
-
-	return streak === 0
-		? []
-		: [`${STREAK_WORD} ×${roundToTwoDecimals(streakMultiplier(streak))}`];
-};
+const configIdentityOf = (config: Config): GainIdentity => ({
+	config: {
+		name: config.label,
+		slots: slotsOf(config),
+		version: config.level ?? 1,
+		badges: [],
+	},
+});
 
 const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 	if (frame.clearKb === undefined) return { clear: whole, rows: [] };
@@ -536,11 +514,15 @@ const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 		clear: frame.clearKb - flatKb,
 		rows: [
 			...flat.flatMap((payout) =>
-				gainRow(payout.config.label, FLAT_CLEAR_NOTE, payout.kb)
+				gainRow(configIdentityOf(payout.config), FLAT_CLEAR_NOTE, payout.kb)
 			),
-			...gainRow(SURPLUS_ROW, SURPLUS_NOTE, frame.overflowKb ?? 0),
-			...gainRow(INTEREST_ROW, INTEREST_NOTE, frame.interestKb ?? 0),
-			...gainRow(EXTRA_PICKS_ROW, EXTRA_PICKS_NOTE, frame.extraPickKb ?? 0),
+			...gainRow({ label: SURPLUS_ROW }, SURPLUS_NOTE, frame.overflowKb ?? 0),
+			...gainRow({ label: INTEREST_ROW }, INTEREST_NOTE, frame.interestKb ?? 0),
+			...gainRow(
+				{ label: EXTRA_PICKS_ROW },
+				EXTRA_PICKS_NOTE,
+				frame.extraPickKb ?? 0
+			),
 		],
 	};
 };
@@ -557,11 +539,8 @@ const storageSummaryOf = (rows: readonly LedgerRow[], bill: number): string =>
 		...(bill === 0 ? [] : [plural(1, "bill")]),
 	].join(", ");
 
-const balanceRow = (
-	frame: GateOutcomeFrame,
-	band: CoverageBandId
-): LedgerRow => {
-	const after = balanceOf(frame, band);
+const balanceRow = (frame: GateOutcomeFrame): LedgerRow => {
+	const after = balanceOf(frame);
 
 	return {
 		label: BALANCE,
@@ -577,12 +556,12 @@ const clearedStorageRows = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
 ): readonly LedgerRow[] => {
-	const payout = payoutOf(frame, band);
+	const payout = payoutOf(frame);
 	const bonus = band === PERFECT_BAND ? frame.bonusKb : 0;
 	const committed = frame.escrowCommittedKb ?? 0;
 	const uplift = frame.slaUpliftKb ?? 0;
 	const survival = frame.incidentSurvivalKb ?? 0;
-	const bill = billOf(frame, band);
+	const bill = billOf(frame);
 	const parts = rewardPartsOf(
 		frame,
 		payout - bonus - committed - uplift - survival
@@ -591,12 +570,11 @@ const clearedStorageRows = (
 	return [
 		{
 			label: CLEARED_ROW,
-			notes: clearedNotesOf(frame),
 			figures: [{ label: signedKbLabel(parts.clear), color: GAIN_COLOR }],
 		},
 		...parts.rows,
-		...gainRow(SLA_ROW, SLA_NOTE, uplift),
-		...gainRow(SURVIVED_ROW, SURVIVED_NOTE, survival),
+		...gainRow({ label: SLA_ROW }, SLA_NOTE, uplift),
+		...gainRow({ label: SURVIVED_ROW }, SURVIVED_NOTE, survival),
 		...(committed === 0
 			? []
 			: [
@@ -628,16 +606,13 @@ const clearedStorageRows = (
 						figures: [{ label: signedKbLabel(-bill), color: LOSS_COLOR }],
 					},
 				]),
-		balanceRow(frame, band),
+		balanceRow(frame),
 	];
 };
 
-const heldStorageRows = (
-	frame: GateOutcomeFrame,
-	band: CoverageBandId
-): readonly LedgerRow[] => {
+const heldStorageRows = (frame: GateOutcomeFrame): readonly LedgerRow[] => {
 	const faucet = faucetOf(frame);
-	const refund = peelRefundFor(frame.configs, chosenIn(frame));
+	const refund = peelRefundFor(frame.configs, refundableIn(frame));
 	const rolledBack = frame.escrowRolledBackKb ?? 0;
 
 	return [
@@ -670,14 +645,12 @@ const heldStorageRows = (
 						figures: [{ label: signedKbLabel(refund), color: GAIN_COLOR }],
 					},
 				]),
-		balanceRow(frame, band),
+		balanceRow(frame),
 	];
 };
 
 const storageRowsOf = (frame: GateOutcomeFrame, band: CoverageBandId) =>
-	clearsAt(band, frame.gate)
-		? clearedStorageRows(frame, band)
-		: heldStorageRows(frame, band);
+	isCleared(frame) ? clearedStorageRows(frame, band) : heldStorageRows(frame);
 
 const answerRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 	answers.map((answer) => ({
@@ -693,17 +666,29 @@ const answerRows = (answers: readonly GateAnswer[]): readonly LedgerRow[] =>
 		],
 	}));
 
-const dropChip = (
-	config: Config,
-	configs: readonly Config[],
-	chosen: boolean,
-	settled: boolean,
-	onToggle: () => void
-): ConfigChipProps => {
-	const refund = peelRefundIn(configs, config);
-	const spent = settled && !chosen;
+type DropChipFrame = {
+	config: Config;
+	configs: readonly Config[];
+	chosen: boolean;
+	locked: boolean;
+	first: boolean;
+	caught: boolean;
+	onToggle: () => void;
+};
+
+const dropChip = ({
+	config,
+	configs,
+	chosen,
+	locked,
+	first,
+	caught,
+	onToggle,
+}: DropChipFrame): ConfigChipProps => {
+	const refund = caught ? 0 : peelRefundIn(configs, config);
 
 	const badges: ConfigChipBadge[] = [
+		...(first ? [{ label: CATCH_FIRST, color: LOSS_COLOR }] : []),
 		{ label: kbLabel(peelValueKbOf(config)), color: TERM_COLOR },
 		...(refund === 0
 			? []
@@ -719,7 +704,7 @@ const dropChip = (
 		pick: {
 			label: `${chosen ? "Keep" : "Drop"} ${config.label}`,
 			checked: chosen,
-			disabled: spent,
+			disabled: locked,
 			onToggle,
 		},
 		info: settledFactsFor(config),
@@ -761,7 +746,7 @@ export type PeelSettlement = {
 
 export const peelSettlementOf = (frame: GateOutcomeFrame): PeelSettlement => {
 	const billSlots = peelBillSlotsOf(frame);
-	const balanceKb = balanceOf(frame, SHAKY_BAND);
+	const balanceKb = balanceOf(frame);
 	const droppedSlots = peelSlotsOf(chosenIn(frame));
 	const counted = Math.min(droppedSlots, billSlots);
 	const affordable = Math.floor(balanceKb / PEEL_KB_PER_SLOT);
@@ -791,28 +776,46 @@ const sourcesOf = (settlement: PeelSettlement): readonly GatePeelSource[] =>
 		{ label: OVERPAID, slots: settlement.overSlots, color: OVER_COLOR },
 	].filter((source) => source.slots > 0);
 
+const bribeNoteOf = (
+	catcher: Config | undefined,
+	nothingToPay: boolean,
+	leftKb: number
+): string => {
+	if (catcher !== undefined) return `drop ${catcher.label} first`;
+	return nothingToPay
+		? BRIBE_NOTHING
+		: `storage drops to ${kbLabel(leftKb)} · your build stays intact`;
+};
+
 const bribeOf = (
 	settlement: PeelSettlement,
 	frame: GateOutcomeFrame
 ): GatePeelBribe => {
 	const { storageKb, balanceKb } = settlement;
 	const nothingToPay = storageKb === 0;
+	const catcher = unpickedCatcherOf(frame);
 
 	return {
 		title: BRIBE_TITLE,
 		balance: `you have ${kbLabel(balanceKb)}`,
 		label: nothingToPay ? BRIBE_SPENT : `Pay ${kbLabel(storageKb)} of the peel`,
-		note: nothingToPay
-			? BRIBE_NOTHING
-			: `storage drops to ${kbLabel(balanceKb - storageKb)} · your build stays intact`,
+		note: bribeNoteOf(catcher, nothingToPay, balanceKb - storageKb),
 		cost: signedKbLabel(-storageKb),
 		pick: {
 			label: BRIBE_LABEL,
 			checked: frame.fromStorage === true,
-			disabled: nothingToPay,
+			disabled: nothingToPay || catcher !== undefined,
 			onToggle: () => frame.onToggleStorage?.(),
 		},
 	};
+};
+
+const dropNoteOf = (
+	frame: GateOutcomeFrame,
+	catcher: Config | undefined
+): string => {
+	if (catcher !== undefined) return `opens once ${catcher.label} is dropped`;
+	return collectsOnDrop(frame.configs) ? REFUND_NOTE : NO_REFUND_NOTE;
 };
 
 const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
@@ -820,6 +823,20 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 	const { billSlots, owedKb, paidKb, balanceKb } = settlement;
 	const bill = billSlots * PEEL_KB_PER_SLOT;
 	const chosen = chosenIn(frame);
+	const catcher = unpickedCatcherOf(frame);
+	const caught = caughtCatcherOf(frame);
+	const lockedFor = (config: Config, picked: boolean): boolean =>
+		catcher === undefined ? owedKb === 0 && !picked : config.id !== catcher.id;
+	const chipOf = (config: Config): ConfigChipProps =>
+		dropChip({
+			config,
+			configs: frame.configs,
+			chosen: chosen.includes(config),
+			locked: lockedFor(config, chosen.includes(config)),
+			first: config.id === catcher?.id,
+			caught: config === caught,
+			onToggle: () => frame.onToggle?.(config.id),
+		});
 
 	return {
 		peel: {
@@ -830,19 +847,17 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 			tally: peelTallyOf(bill, paidKb),
 			bill: billSlots,
 			sources: sourcesOf(settlement),
+			catch:
+				caught === undefined
+					? undefined
+					: { title: CATCH_TITLE, note: CATCH_NOTE, config: chipOf(caught) },
 			bribe: bribeOf(settlement, frame),
 			drop: {
 				title: DROP_TITLE,
-				note: collectsOnDrop(frame.configs) ? REFUND_NOTE : NO_REFUND_NOTE,
-				configs: frame.configs.map((config) =>
-					dropChip(
-						config,
-						frame.configs,
-						chosen.includes(config),
-						owedKb === 0,
-						() => frame.onToggle?.(config.id)
-					)
-				),
+				note: dropNoteOf(frame, catcher),
+				configs: frame.configs
+					.filter((config) => config !== caught)
+					.map(chipOf),
 			},
 		},
 		refusal: {
@@ -856,7 +871,7 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 
 const endingOf = (frame: GateOutcomeFrame, band: CoverageBandId) => ({
 	title: band === RUN_OVER_BAND ? ENDING_TITLE : SUMMIT_TITLE,
-	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame, band))} unspent. The swatches you earned stay on your profile. The build does not carry; how much of the unspent storage banks into your archive is set by how far you climbed.`,
+	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame))} unspent. The swatches you earned stay on your profile. The build does not carry; how much of the unspent storage banks into your archive is set by how far you climbed.`,
 });
 
 const footerOf = (
@@ -897,7 +912,7 @@ const footerOf = (
 	};
 };
 
-const bonusPanelOf = (frame: GateOutcomeFrame, gateName: string) => ({
+const bonusPanelOf = (frame: GateOutcomeFrame) => ({
 	title: BONUS_TITLE,
 	summary: BAR_FILLED,
 	badges: [
@@ -907,7 +922,7 @@ const bonusPanelOf = (frame: GateOutcomeFrame, gateName: string) => ({
 		},
 	],
 	open: frame.open,
-	detail: `A full bar multiplies the gate's payout by ×${PERFECT_BONUS}, and the ${gateName} swatch is marked for it. Perfect does not carry: the next gate still starts at zero.`,
+	detail: `A full bar pays the clear ×${PERFECT_BONUS}. A tenth of what ran past the bar opens the next gate.`,
 });
 
 const unlockRowOf = ({
@@ -938,7 +953,7 @@ const titleRowOf = ({
 });
 
 const swatchCountOf = (frame: GateOutcomeFrame): string =>
-	`${correctCount(frame.answers)} of ${SLICE_WINDOW}`;
+	`${roundToOneDecimal(Math.min(AS_PERCENT, frame.bar.held))}%`;
 
 const swatchRowOf = (
 	frame: GateOutcomeFrame,
@@ -957,7 +972,6 @@ const swatchRowOf = (
 		lead: { swatch: { state: "current", swatch } },
 		name: `${swatch.gateName} ${SWATCH_MISSED_NAME}`,
 		detail: SWATCH_NEEDS,
-		marks: swatchFillsFor(swatch, correctCount(frame.answers), SLICE_WINDOW),
 		badge: { label: count },
 	};
 };
@@ -989,7 +1003,7 @@ const earnedPanelOf = (
 		badges:
 			gains.length === 0
 				? []
-				: [{ label: `${gains.length} ${NEW_WORD}`, color: NEW_COLOR }],
+				: [{ label: `${gains.length} ${NEW}`, color: NEW_COLOR }],
 		open: frame.open ?? gains.length > 0,
 		rows: [...gains, ...swatchRows],
 		hint: gains.length === 0 ? undefined : EARNED_HINT,
@@ -1078,7 +1092,7 @@ const headerBalanceOf = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
 ): BalanceProps => ({
-	kb: balanceOf(frame, band),
+	kb: balanceOf(frame),
 	label: BALANCE_WORD,
 	color: COVERAGE_BAND_COLOR[band],
 });
@@ -1104,19 +1118,16 @@ export const gateOutcomePropsFor = (
 	const demand = roundToOneDecimal(frame.bar.healthy);
 	const held = roundToOneDecimal(frame.bar.held);
 	const shortBy = roundToOneDecimal(Math.max(0, demand - held));
-	const cleared = clearsAt(band, gate);
+	const cleared = isCleared(frame);
 	const earned = earnedPanelOf(frame, band, swatch);
 	const gainBadge = {
 		label: signedPercent(totalCoverage(answers)),
 		color: GAIN_COLOR,
 	};
-	const bar =
+	const nextGate =
 		cleared && !frame.won && next !== undefined
-			? {
-					...frame.bar,
-					note: `${next.gateName} ${SCORES_OUT_OF} ${scoringSlotsAt(next.gate)} ${SLOTS_WORD}.`,
-				}
-			: frame.bar;
+			? { nextGate: nextGateRatesOf(next.gateName, next.gate) }
+			: {};
 
 	return {
 		header: {
@@ -1130,13 +1141,14 @@ export const gateOutcomePropsFor = (
 			readout: frame.readout,
 			badges: outcomeChips(frame, band),
 		},
-		bar,
+		bar: frame.bar,
+		...nextGate,
 		outcome: band,
-		...(heldByUnscored(frame) ? { coverageHold: scoredLineOf(frame) } : {}),
+		...(heldByUnscored(frame) ? { coverageHold: WINDOW_SHORT } : {}),
 		...(frame.payouts === undefined ? {} : { payouts: frame.payouts }),
 		audits: auditsOf(frame),
 		...(band === PERFECT_BAND && frame.bonusKb > 0
-			? { bonus: bonusPanelOf(frame, swatch.gateName) }
+			? { bonus: bonusPanelOf(frame) }
 			: {}),
 		...(earned === undefined ? {} : { earned }),
 		coverage: {
@@ -1154,12 +1166,9 @@ export const gateOutcomePropsFor = (
 		},
 		storage: {
 			title: STORAGE_TITLE,
-			summary: storageSummaryOf(
-				storageRowsOf(frame, band),
-				billOf(frame, band)
-			),
+			summary: storageSummaryOf(storageRowsOf(frame, band), billOf(frame)),
 			badges: cleared
-				? [{ label: signedKbLabel(payoutOf(frame, band)), color: GAIN_COLOR }]
+				? [{ label: signedKbLabel(balanceChangeOf(frame)), color: GAIN_COLOR }]
 				: [{ label: NOTHING_PAID, color: TERM_COLOR }],
 			open: frame.open,
 			rows: storageRowsOf(frame, band),
@@ -1175,5 +1184,190 @@ export const gateOutcomePropsFor = (
 		},
 		tail: tailOf(frame, band),
 		footer: footerOf(frame, band, next?.gateName),
+	};
+};
+
+const coverageOf = (answer: AnsweredPoll): number =>
+	answer.coverageEarned ?? -(answer.coverageLost ?? 0);
+
+export const gateAnswersOf = (
+	answered: readonly AnsweredPoll[],
+	gate: number
+): readonly GateAnswer[] =>
+	answered.map((answer) => ({
+		category: answer.category,
+		question: answer.question,
+		outcome: answer.outcome,
+		share: answer.coverageFactors?.correct,
+		coverage: coverageGainPercentFor(coverageOf(answer), gate),
+		units: coverageOf(answer),
+		answerType: answer.answerType ?? "single",
+		options: answer.options ?? [...answer.picked, ...(answer.correct ?? [])],
+		picked: answer.picked,
+		correct: answer.correct ?? [],
+		explanation: answer.explanation,
+		codeBlock: answer.codeBlock,
+	}));
+
+const DELETED_DETAIL = "its deprecation ran out";
+const LAPSED_DETAIL = "its subscription went unpaid";
+
+const upgradedByOf = (view: RunView): string =>
+	`upgraded by ${view.gatePayout.autoUpgradedByConfig?.label ?? "the build"}`;
+
+const upgradedRowsFor = (view: RunView) =>
+	view.gatePayout.autoUpgradedConfig === null
+		? []
+		: [
+				{
+					config: view.gatePayout.autoUpgradedConfig,
+					detail: upgradedByOf(view),
+				},
+			];
+
+const removedRowsFor = (view: RunView) => [
+	...view.gatePayout.deletedConfigs.map((config) => ({
+		config,
+		detail: DELETED_DETAIL,
+	})),
+	...view.gatePayout.lapsedConfigs.map((config) => ({
+		config,
+		detail: LAPSED_DETAIL,
+	})),
+];
+
+const paidRowsFor = (view: RunView) =>
+	view.gatePayout.autoUpgradedConfig === null
+		? []
+		: [
+				{
+					config: view.gatePayout.autoUpgradedConfig,
+					detail: upgradedByOf(view),
+					kb: 0,
+				},
+			];
+
+export type GatePeelPicks = {
+	chosen: readonly string[];
+	onToggle: (configId: string) => void;
+	fromStorage: boolean;
+	onToggleStorage: () => void;
+};
+
+export const gateOutcomeFrameOf = (
+	view: RunView,
+	close: GateCloseView,
+	picks: GatePeelPicks,
+	runNumber: number | null = null
+): GateOutcomeFrame => {
+	const cleared = close.closing === "cleared";
+	const { gate } = close;
+
+	return {
+		gate,
+		closing: close.closing,
+		answers: gateAnswersOf(view.answeredThisGate, gate),
+		peelSlotsRemaining: view.peelSlotsRemaining,
+		swatchGates: view.swatchGates,
+		readout: runReadoutFor(view, runNumber),
+		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
+		configs: view.configs,
+		buildSpace: view.buildSpace.space,
+		...gainsOfGate(view, gate),
+		upgraded: upgradedRowsFor(view),
+		removed: removedRowsFor(view),
+		paid: paidRowsFor(view),
+		payouts: runPaidFor(view),
+		auditIds: view.gateStake.audits.map((audit) => audit.id),
+		chosen: picks.chosen,
+		onToggle: picks.onToggle,
+		fromStorage: picks.fromStorage,
+		onToggleStorage: picks.onToggleStorage,
+		won: view.status === "won",
+		heldBy: close.heldBy ?? undefined,
+		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
+		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
+		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
+		bar: { ...close.ladder, held: close.held, band: close.band },
+		payoutKb: cleared ? view.gatePayout.gateRewardPaidKb : 0,
+		clearKb: cleared ? view.gatePayout.clearThisGateKb : 0,
+		overflowKb: cleared ? view.gatePayout.overflowThisGateKb : 0,
+		interestKb: cleared ? view.gatePayout.interestThisGateKb : 0,
+		extraPickKb: cleared ? view.gatePayout.extraPickThisGateKb : 0,
+		bonusKb: cleared ? view.gatePayout.perfectBonusThisGateKb : 0,
+		faucetKb: view.gatePayout.faucetThisGateKb,
+		escrowCommittedKb: cleared ? view.gatePayout.escrowCommittedKb : 0,
+		escrowRolledBackKb: cleared ? 0 : view.gatePayout.escrowRolledBackKb,
+		billKb: view.gatePayout.subscriptionBillKb + view.gatePayout.upkeepBilledKb,
+	};
+};
+
+export type GateOutcomeScreenHandlers = {
+	onReview: () => void;
+	onNext: () => void;
+	onCommunity?: () => void;
+	onRemove?: (configIds: readonly string[], fromStorage: boolean) => void;
+	onRefuse?: () => void;
+};
+
+export type GateOutcomeScreenFrame = {
+	view: RunView;
+	close: GateCloseView;
+	runNumber?: number | null;
+	picks: GatePeelPicks;
+	on: GateOutcomeScreenHandlers;
+};
+
+const refusing = (
+	tail: GateOutcomeTail | undefined,
+	onRefuse: (() => void) | undefined
+): GateOutcomeTail | undefined => {
+	if (tail?.choice === undefined || onRefuse === undefined) return tail;
+
+	return {
+		choice: {
+			...tail.choice,
+			refusal: {
+				...tail.choice.refusal,
+				action: { ...tail.choice.refusal.action, onPress: onRefuse },
+			},
+		},
+	};
+};
+
+export const gateOutcomeScreenPropsFor = ({
+	view,
+	close,
+	runNumber = null,
+	picks,
+	on,
+}: GateOutcomeScreenFrame): GateOutcomeScreenProps => {
+	const props = gateOutcomePropsFor(
+		gateOutcomeFrameOf(view, close, picks, runNumber)
+	);
+	const settles = close.closing === "held" && on.onRemove !== undefined;
+	const commits = props.footer.action.onPress !== undefined;
+	const onRemove = on.onRemove;
+
+	return {
+		...props,
+		tail: refusing(props.tail, on.onRefuse),
+		footer: {
+			...props.footer,
+			action: {
+				...props.footer.action,
+				...(settles && onRemove !== undefined
+					? {
+							onPress: commits
+								? () => onRemove(picks.chosen, picks.fromStorage)
+								: undefined,
+						}
+					: { onPress: on.onNext }),
+			},
+			asides: (props.footer.asides ?? []).map((aside) => ({
+				...aside,
+				onPress: aside.icon === "review" ? on.onReview : on.onCommunity,
+			})),
+		},
 	};
 };

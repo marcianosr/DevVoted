@@ -235,23 +235,33 @@ describe("Choice", () => {
 	});
 });
 
-describe("Choice with a verdict", () => {
-	it("colours a right pick green and names it for a reader", () => {
+describe("Choice once the poll is answered", () => {
+	it("colours a right answer green on a dark green ground and names it for a reader", () => {
 		render(
-			<Choice letter="A" picked verdict="right">
+			<Choice letter="A" picked state="right">
+				at(-1)
+			</Choice>
+		);
+		const row = screen.getByText("at(-1)").closest("[data-screen-theme]");
+
+		expect(row).toHaveAttribute("data-screen-theme", "viridian");
+		expect(row).toHaveClass("bg-theme-dim");
+		expect(screen.getByText("right")).toBeInTheDocument();
+	});
+
+	it("lights a right answer's cap in the gain colour with dark ink", () => {
+		render(
+			<Choice letter="A" state="right">
 				at(-1)
 			</Choice>
 		);
 
-		expect(
-			screen.getByText("at(-1)").closest("[data-screen-theme]")
-		).toHaveAttribute("data-screen-theme", "viridian");
-		expect(screen.getByText("right")).toBeInTheDocument();
+		expect(screen.getByText("A")).toHaveClass("bg-theme-lit", "text-zinc-950");
 	});
 
-	it("colours a wrong pick red", () => {
+	it("colours a wrong answer cinnabar with a white letter on its cap", () => {
 		render(
-			<Choice letter="B" picked verdict="wrong">
+			<Choice letter="B" picked state="wrong">
 				pop()
 			</Choice>
 		);
@@ -259,21 +269,46 @@ describe("Choice with a verdict", () => {
 		expect(
 			screen.getByText("pop()").closest("[data-screen-theme]")
 		).toHaveAttribute("data-screen-theme", "cinnabar");
+		expect(screen.getByText("B")).toHaveClass("bg-theme", "text-white");
 		expect(screen.getByText("wrong")).toBeInTheDocument();
 	});
 
-	it("lights the cap of the answer that was missed without filling its row", () => {
+	it("marks the right answer the player did not pick the same as one they did", () => {
 		render(
-			<Choice letter="C" verdict="missed">
+			<Choice letter="C" state="right">
 				slice(-1)
 			</Choice>
 		);
-		const row = screen.getByText("slice(-1)").closest("[data-screen-theme]");
 
-		expect(row).toHaveAttribute("data-screen-theme", "celadon");
-		expect(row).not.toHaveClass("bg-theme-soft");
-		expect(screen.getByText("C")).toHaveClass("border-theme");
-		expect(screen.getByText("the answer")).toBeInTheDocument();
+		expect(
+			screen.getByText("slice(-1)").closest("[data-screen-theme]")
+		).toHaveAttribute("data-screen-theme", "viridian");
+		expect(screen.getByText("right")).toBeInTheDocument();
+	});
+
+	it("flashes an answered row in its verdict colour and pops its mark in", () => {
+		render(
+			<Choice letter="B" picked state="wrong">
+				pop()
+			</Choice>
+		);
+
+		expect(
+			screen.getByText("pop()").closest("[data-screen-theme]")
+		).toHaveClass("answer-verdict");
+		expect(screen.getByText("✗")).toHaveClass("reveal-pop");
+	});
+
+	it("plays no verdict flash before the poll is answered", () => {
+		render(
+			<Choice letter="A" picked>
+				at(-1)
+			</Choice>
+		);
+
+		expect(screen.getByText("at(-1)").closest("div")).not.toHaveClass(
+			"answer-verdict"
+		);
 	});
 
 	it("wears no theme at all before the poll is answered", () => {

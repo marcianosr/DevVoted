@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — 2026-09-29 (Marciano, DVTD-euw1). Supersedes the `FLOOR_CORRECT`
+Superseded by [ADR-161](161-accuracy-multiplies-the-gate.md) §6 (2026-10-01): the
+window minimum is removed and a capped head start guards the empty window.
+Previously: Accepted — 2026-09-29 (Marciano, DVTD-euw1). Supersedes the `FLOOR_CORRECT`
 half of [ADR-076](076-the-closing-band-decides-what-it-costs.md); the band
 ladder in that ADR is untouched. Built the same day.
 

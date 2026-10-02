@@ -1,49 +1,48 @@
-import type {
-	ProfileIdentity,
-	ProfileRecord,
-	ProfileSeat,
-	ProfileStanding,
-	ProfileTotals,
-} from "~/modules/account/profile/application/profileScreen.viewmodel";
-import { authorshipOf } from "~/modules/account/profile/domain/authorship.model";
-import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
-import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
-import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
 import {
-	visibleTitles,
-	wornTitleNames,
-} from "~/modules/account/profile/domain/title.model";
+	profileFaceOf,
+	type ProfileRecord,
+	type ProfileSeat,
+	type PublicProfile,
+} from "~/modules/account/profile/domain/profile.model";
+import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
 import {
 	fetchPublicProfile,
 	fetchPublishedPollCounts,
 } from "~/modules/account/profile/infrastructure/profile.repository";
 import { fetchOwnedTitleIds } from "~/modules/account/profile/infrastructure/title.repository";
-import {
-	configdex,
-	grantedCountIn,
-} from "~/modules/collection/dex/domain/configdex.model";
+import { configdex } from "~/modules/collection/dex/domain/configdex.model";
 import {
 	gatedex,
 	type GatedexEntry,
 } from "~/modules/collection/dex/domain/gatedex.model";
+import {
+	timesSeenOf,
+	type PollSighting,
+} from "~/modules/collection/dex/domain/polldex.model";
 import {
 	deepestGateIn,
 	runHistory,
 	type RunHistoryEntry,
 } from "~/modules/collection/dex/domain/runHistory.model";
 import {
+	configTallyOf,
+	pollTallyOf,
+	titleTallyOf,
+} from "~/modules/collection/dex/domain/tally.model";
+import {
 	fetchConfigUnlocksByUser,
 	fetchObjectiveProgressByUser,
 } from "~/modules/collection/dex/infrastructure/configdex.repository";
 import {
-	fetchPublishedPollsForDex,
+	fetchAnsweredCountsByUser,
+	fetchPublishedPollCategories,
 	fetchSeenCountsByUser,
+	type PolldexAnsweredRow,
+	type PolldexCategoryRow,
+	type PolldexSeenRow,
 } from "~/modules/collection/dex/infrastructure/polldex.repository";
 import { fetchGateRunsByUser } from "~/modules/collection/dex/infrastructure/runHistory.repository";
-import {
-	percentOf,
-	runCoverageOf,
-} from "~/modules/run/build/domain/coverageRatio.model";
+import { standingOf } from "~/modules/run/community/domain/standing.model";
 import {
 	fetchActiveClimberFor,
 	fetchBestCategories,
@@ -51,18 +50,9 @@ import {
 } from "~/modules/run/community/infrastructure/climbers.repository";
 import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
 import { fetchCategoryBoards } from "~/modules/run/run/infrastructure/categoryLeader.repository";
-import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 const RECENT_RUNS_SHOWN = 5;
-
-export type PublicProfile = {
-	readonly identity: ProfileIdentity;
-	readonly record: ProfileRecord;
-	readonly standing: ProfileStanding | null;
-	readonly totals: ProfileTotals;
-	readonly theme: SwatchTheme;
-};
 
 const seatsHeldBy = (
 	userId: string,
@@ -73,24 +63,6 @@ const seatsHeldBy = (
 		if (leader === undefined || leader.userId !== userId) return [];
 		return [{ category: seat.category, streak: leader.best }];
 	});
-
-const standingOf = (
-	climber: ClimberRow | null,
-	bestCategory: string | undefined
-): ProfileStanding | null =>
-	climber === null
-		? null
-		: {
-				...(bestCategory === undefined ? {} : { bestCategory }),
-				gate: climber.gate,
-				band: climber.closingBand,
-				coveragePercent: Math.round(
-					percentOf(runCoverageOf(climber.coverageUnits, climber.gate))
-				),
-				streak: climber.streak,
-				storageKb: climber.storageKb,
-				build: climber.build,
-			};
 
 type RecordSources = {
 	userId: string;
@@ -117,25 +89,33 @@ const recordOf = ({
 	recentRuns: entries.slice(0, RECENT_RUNS_SHOWN),
 });
 
-export const getAuthorshipService = async (userId: string) =>
-	handleApiOperation(async () => {
-		const [profile, pollCounts] = await Promise.all([
-			fetchPublicProfile(userId),
-			fetchPublishedPollCounts(userId),
-		]);
-		if (!profile) throw new Error("User not found");
-
-		return authorshipOf(profile.role, pollCounts);
-	}, "getAuthorship");
+const pollSightingsOf = (
+	polls: readonly PolldexCategoryRow[],
+	seenRows: readonly PolldexSeenRow[],
+	answeredRows: readonly PolldexAnsweredRow[]
+): readonly PollSighting[] => {
+	const viewsByPoll = new Map(
+		seenRows.map((row) => [row.pollId, row.timesSeen])
+	);
+	const answersByPoll = new Map(
+		answeredRows.map((row) => [row.pollId, row.answeredCount])
+	);
+	return polls.map((poll) => ({
+		categoryCode: poll.categoryCode,
+		timesSeen: timesSeenOf(
+			viewsByPoll.get(poll.id) ?? 0,
+			answersByPoll.get(poll.id) ?? 0
+		),
+	}));
+};
 
 export const getPublicProfileService = async (userId: string) =>
 	handleApiOperation(async () => {
-		const profile = await fetchPublicProfile(userId);
-		if (!profile) throw new Error("User not found");
-
 		const [
+			profile,
 			polls,
 			seenRows,
+			answeredRows,
 			unlocks,
 			ownedTitleIds,
 			runRows,
@@ -143,9 +123,12 @@ export const getPublicProfileService = async (userId: string) =>
 			climber,
 			progress,
 			pollCounts,
+			bestCategories,
 		] = await Promise.all([
-			fetchPublishedPollsForDex(),
+			fetchPublicProfile(userId),
+			fetchPublishedPollCategories(),
 			fetchSeenCountsByUser(userId),
+			fetchAnsweredCountsByUser(userId),
 			fetchConfigUnlocksByUser(userId),
 			fetchOwnedTitleIds(userId),
 			fetchGateRunsByUser(userId),
@@ -153,39 +136,29 @@ export const getPublicProfileService = async (userId: string) =>
 			fetchActiveClimberFor(userId),
 			fetchObjectiveProgressByUser(userId),
 			fetchPublishedPollCounts(userId),
+			fetchBestCategories([userId]),
 		]);
-		const bestCategories = await fetchBestCategories([userId]);
+		if (!profile) throw new Error("User not found");
 
-		const configs = configdex(unlocks, []);
-		const gates = gatedex(profile.ownedSwatchIds);
 		const entries = runHistory(runRows);
 
 		return {
-			identity: {
-				displayName: profile.displayName,
-				githubUsername: profile.githubUsername,
-				photoUrl: profile.photoUrl,
-				borderUrl: borderUrlOf(profile.equippedBorderId),
-				wornTitles: wornTitleNames(profile.equippedTitleIds),
-				pollsAnswered: pollsAnsweredIn(progress),
-				authorship: authorshipOf(profile.role, pollCounts),
-			},
-			theme: profileThemeFor(profile.equippedSwatchId, profile.ownedSwatchIds),
+			...profileFaceOf(profile, pollCounts, pollsAnsweredIn(progress)),
 			record: recordOf({
 				userId,
 				entries,
-				gates,
+				gates: gatedex(profile.ownedSwatchIds),
 				seats: boards.streak,
 				climber,
 			}),
-			standing: standingOf(climber, bestCategories.get(userId)),
+			standing:
+				climber === null
+					? null
+					: standingOf(climber, bestCategories.get(userId)),
 			totals: {
-				pollsSeen: seenRows.length,
-				pollsTotal: polls.length,
-				configsHeld: grantedCountIn(configs),
-				configsTotal: configs.length,
-				titlesOwned: ownedTitleIds.length,
-				titlesTotal: visibleTitles(ownedTitleIds).length,
+				polls: pollTallyOf(pollSightingsOf(polls, seenRows, answeredRows)),
+				configs: configTallyOf(configdex(unlocks, [])),
+				titles: titleTallyOf(ownedTitleIds),
 				archivedStorage: profile.archivedStorage,
 			},
 		} satisfies PublicProfile;

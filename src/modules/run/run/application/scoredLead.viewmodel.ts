@@ -1,47 +1,25 @@
-import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	roundToOneDecimal,
-	roundToTwoDecimals,
-} from "~/modules/run/run/domain/rules.model";
+import { roundToOneDecimal } from "~/modules/run/run/domain/rules.model";
 
 import {
-	type CoverageLadder,
-	coverageBandOf,
-} from "~/ui/kanto-theme/CoverageBar.ui";
+	bandAtLadder,
+	type GateLadder,
+} from "~/modules/run/gate/domain/gate.model";
+
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 
-const SCORED_LEAD = "You have scored ";
-const SCORED_JOIN = " units across ";
-const SCORED_JOIN_ONE = " unit across ";
-const SCORED_TRAIL = " slots, which is ";
+const SCORED_LEAD = "You hold ";
 const SCORED_CLOSE = " coverage.";
 
 export type ScoredFrame = {
-	gate: number;
-	unitsHeld: number;
 	held: number;
-	ladder: CoverageLadder;
+	ladder: GateLadder;
 };
 
 const coveragePercent = (held: number): string =>
 	`${roundToOneDecimal(held).toFixed(1)}%`;
 
-export const scoredLeadFor = ({
-	gate,
-	unitsHeld,
-	held,
-	ladder,
-}: ScoredFrame): LeadLine => {
-	const units = roundToTwoDecimals(unitsHeld);
-	const band = coverageBandOf(held, ladder);
+export const scoredLeadFor = ({ held, ladder }: ScoredFrame): LeadLine => {
+	const band = bandAtLadder(held, ladder).id;
 
-	return [
-		SCORED_LEAD,
-		{ figure: `${units}`, band },
-		units === 1 ? SCORED_JOIN_ONE : SCORED_JOIN,
-		{ figure: `${scoringSlotsAt(gate)}` },
-		SCORED_TRAIL,
-		{ figure: coveragePercent(held), band },
-		SCORED_CLOSE,
-	];
+	return [SCORED_LEAD, { figure: coveragePercent(held), band }, SCORED_CLOSE];
 };

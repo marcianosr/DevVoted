@@ -140,6 +140,11 @@ export const appearsAtGates = (id: AuditId): readonly number[] =>
 		.flatMap((tier) => tier.gates)
 		.sort((a, b) => a - b);
 
+export const isAuditFacedIn = (
+	id: AuditId,
+	clearedGates: readonly number[]
+): boolean => appearsAtGates(id).some((gate) => clearedGates.includes(gate));
+
 const deniedWith = (id: AuditId, taken: readonly AuditId[]): boolean =>
 	DENY_PAIRS.some(
 		([one, other]) =>

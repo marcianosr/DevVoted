@@ -14,7 +14,7 @@ import {
 	kantoClosedShopProps,
 	kantoFirstShopProps,
 	kantoLateShopProps,
-	kantoLockedService,
+	kantoNewService,
 	kantoLockedRegistryOffers,
 	kantoShopBuild,
 	kantoShopWeight,
@@ -136,7 +136,7 @@ export const OnAPhone: Story = {
 	render: () => (
 		<ShopScreen
 			{...props}
-			controls={[...(props.controls ?? []), kantoLockedService]}
+			controls={[...(props.controls ?? []), kantoNewService]}
 			footer={{
 				action: { label: "To prep", onPress: () => {} },
 				note: "4 configs · 8/8 weight",

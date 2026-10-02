@@ -10,7 +10,7 @@ import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
 import {
 	type CoverageBandId,
 	percentOf,
-	runCoverageOf,
+	runShareOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 import {
@@ -46,6 +46,12 @@ import {
 	findSessionRunByDate,
 } from "~/modules/run/run/infrastructure/run.repository";
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
+import {
+	type CommunityDayTurnout,
+	type DayRun,
+	dayRecordsOf,
+	outcomesOf,
+} from "~/modules/run/community/domain/dayRecords.model";
 import {
 	type CategoryBoard,
 	boardsFor,
@@ -140,6 +146,7 @@ export type ClimbTodayView = {
 	fallen: ClimbFallen[];
 	bestPosition: number | null;
 	viewer: ClimbViewer;
+	turnout: CommunityDayTurnout;
 };
 
 export type RunCommunityView = {
@@ -300,7 +307,7 @@ const standingOf = (
 	titles: row.titles,
 	theme: row.theme,
 	coveragePercent: Math.round(
-		percentOf(runCoverageOf(row.coverageUnits, row.gate))
+		percentOf(runShareOf(row.coverageUnits, row.gate))
 	),
 	streak: row.streak,
 	storageKb: row.storageKb,
@@ -324,6 +331,61 @@ const fallenOf =
 		...closeOf(row),
 		...standingOf(row, bestCategories.get(row.userId)),
 	});
+
+const dayRunOf =
+	(fallen: boolean) =>
+	(row: ClimberRow): DayRun => ({
+		userId: row.userId,
+		fallen,
+		closes: row.closes,
+		build: row.build,
+		auditSchedule: row.auditSchedule,
+		startedAtGate: row.startedAtGate,
+		warmBootKb: row.warmBootKb,
+		storageKb: row.storageKb,
+	});
+
+const turnoutOf = (
+	active: readonly ClimberRow[],
+	fallen: readonly ClimberRow[],
+	userId: string
+): CommunityDayTurnout => {
+	const voters = new Map(
+		[...fallen, ...active].map((row): [string, CommunityVoter] => [
+			row.userId,
+			{
+				id: row.userId,
+				displayName: row.displayName ?? row.userId,
+				photoUrl: row.photoUrl,
+				borderUrl: row.borderUrl,
+				you: row.userId === userId,
+			},
+		])
+	);
+	const votersOf = (ids: readonly string[]): CommunityVoter[] =>
+		viewerFirst(
+			ids.flatMap((id) => {
+				const voter = voters.get(id);
+				return voter === undefined ? [] : [voter];
+			})
+		);
+	const runs = [...active.map(dayRunOf(false)), ...fallen.map(dayRunOf(true))];
+	const { perfect, healthy, ok, shaky, danger } = outcomesOf(runs);
+
+	return {
+		outcomes: {
+			perfect: votersOf(perfect),
+			healthy: votersOf(healthy),
+			ok: votersOf(ok),
+			shaky: votersOf(shaky),
+			danger: votersOf(danger),
+		},
+		records: dayRecordsOf(runs).map((record) => ({
+			record,
+			holders: votersOf(record.holderIds),
+		})),
+	};
+};
 
 const buildClimbToday = async ({
 	userId,
@@ -380,6 +442,7 @@ const buildClimbToday = async ({
 		fallen: fallen.map(fallenOf(bestCategories)),
 		bestPosition,
 		viewer: { id: userId, hasLiveRun: viewerRow !== undefined },
+		turnout: turnoutOf(active, fallen, userId),
 	};
 };
 

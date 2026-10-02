@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { appearanceFor } from "~/modules/account/profile/application/appearance.viewmodel";
+import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
 import {
 	Appearance,
 	type AppearanceProps,
@@ -17,10 +18,12 @@ const MISTY = appearanceFor({
 		borderUrl: null,
 		wornTitles: [],
 		pollsAnswered: 120,
+		authorship: NO_AUTHORSHIP,
 	},
 	look: {
 		borderId: "border-00b9a62e",
 		titleIds: ["title-rank-poll-newbie", "title-legacy-tester"],
+		swatchId: "swatch-cascade",
 	},
 	tryingOnId: null,
 	ownedBorderIds: ["border-00b9a62e", "border-0a006140"],
@@ -29,6 +32,7 @@ const MISTY = appearanceFor({
 		"title-legacy-tester",
 		"title-answered-css",
 	],
+	ownedSwatchIds: ["swatch-boulder", "swatch-cascade"],
 });
 
 const ARGS: AppearanceProps = {
@@ -36,6 +40,7 @@ const ARGS: AppearanceProps = {
 	canSave: false,
 	onPickBorder: noop,
 	onToggleTitle: noop,
+	onPickSwatch: noop,
 	onMoreBorders: noop,
 	onMoreTitles: noop,
 	onSave: noop,

@@ -1,5 +1,5 @@
 import { appearanceFor } from "~/modules/account/profile/application/appearance.viewmodel";
-import type { ProfileIdentity } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import type { ProfileIdentity } from "~/modules/account/profile/domain/profile.model";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import type { LookDraft } from "~/modules/account/profile/application/useLookDraft.hook";
 import { useTitleState } from "~/modules/account/profile/application/useTitleState.hook";
@@ -20,8 +20,8 @@ export const Appearance = ({
 	onOpenBorders,
 	onOpenTitles,
 }: AppearanceProps) => {
-	const { data: archive } = useArchiveState(userId);
-	const { data: titles } = useTitleState(userId);
+	const { view: archive } = useArchiveState(userId);
+	const { view: titles } = useTitleState(userId);
 
 	return (
 		<AppearanceUI
@@ -31,11 +31,13 @@ export const Appearance = ({
 				tryingOnId: draft.tryingOnId,
 				ownedBorderIds: archive?.ownedBorderIds ?? [],
 				ownedTitleIds: titles?.ownedTitleIds ?? [],
+				ownedSwatchIds: archive?.ownedSwatchIds ?? [],
 			})}
 			canSave={draft.isDirty && !draft.isSaving}
 			error={draft.error}
 			onPickBorder={draft.pickBorder}
 			onToggleTitle={draft.toggleTitle}
+			onPickSwatch={draft.pickSwatch}
 			onMoreBorders={onOpenBorders}
 			onMoreTitles={onOpenTitles}
 			onSave={draft.save}

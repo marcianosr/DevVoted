@@ -14,25 +14,31 @@ const skipped = (why: SkipReason) => pollNoteFor({ kind: "skipped", why });
 describe("pollNoteFor — a config that is doing something", () => {
 	it("badges a multiplier as the factor it is applying here", () => {
 		expect(
-			pollNoteFor({ kind: "online", coverage: { mult: 1.25, add: 0 } })
+			pollNoteFor({
+				kind: "online",
+				coverage: { mult: 1.25, add: 0, boost: 1 },
+			})
 		).toEqual({ badge: { label: "×1.25 here", color: "viridian" } });
 	});
 
 	it("badges a flat adder as the units it is contributing here", () => {
 		expect(
-			pollNoteFor({ kind: "online", coverage: { mult: 1, add: 0.1 } })
+			pollNoteFor({ kind: "online", coverage: { mult: 1, add: 0.1, boost: 1 } })
 		).toEqual({ badge: { label: "+0.1 here", color: "viridian" } });
 	});
 
 	it("states both when a config multiplies and adds on the same answer", () => {
 		expect(
-			pollNoteFor({ kind: "online", coverage: { mult: 2, add: 0.25 } })
+			pollNoteFor({
+				kind: "online",
+				coverage: { mult: 2, add: 0.25, boost: 1 },
+			})
 		).toEqual({ badge: { label: "×2 +0.25 here", color: "viridian" } });
 	});
 
 	it("badges a throttle in the red it costs", () => {
 		expect(
-			pollNoteFor({ kind: "online", coverage: { mult: 0.5, add: 0 } })
+			pollNoteFor({ kind: "online", coverage: { mult: 0.5, add: 0, boost: 1 } })
 		).toEqual({ badge: { label: "×0.5 here", color: "cinnabar" } });
 	});
 
@@ -56,7 +62,11 @@ describe("pollNoteFor — a config counting down to something", () => {
 
 	it("leads with the coverage a counting config would also pay", () => {
 		expect(
-			pollNoteFor({ kind: "online", coverage: { mult: 2, add: 0 }, bumpIn: 3 })
+			pollNoteFor({
+				kind: "online",
+				coverage: { mult: 2, add: 0, boost: 1 },
+				bumpIn: 3,
+			})
 		).toEqual({ badge: { label: "×2 here", color: "viridian" } });
 	});
 });
@@ -87,6 +97,7 @@ describe("pollNoteFor — a config sitting this poll out", () => {
 			{ kind: "inPrep" },
 			{ kind: "noAuditToSuppress" },
 			{ kind: "runCapReached" },
+			{ kind: "nothingToUpgrade" },
 			{ kind: "notThisPoll" },
 		];
 		const words = reasons.map((why) => skipped(why).badge?.label);

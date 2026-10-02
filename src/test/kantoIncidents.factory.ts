@@ -3,6 +3,7 @@ import type { AttackOffer } from "~/modules/run/incident/domain/incident.model";
 import { publicBuildOf } from "~/modules/run/build/domain/publicBuild.model";
 import { type AuditId, auditAt } from "~/modules/run/gate/domain/audit.model";
 import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import { auditsPanelFor } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { IncidentSender } from "~/modules/run/run/domain/run.model";
@@ -120,6 +121,9 @@ export const kantoIncidentsQuiet = (): IncidentsPanelProps =>
 	incidentsPanelFor([]);
 
 const AUDIT_BILL = { bill: "bills −32 KB on a clear" };
+const VETERAN = {
+	clearedGates: ALL_SWATCHES.map((swatch) => swatch.gate),
+};
 
 const firedAt = (
 	gate: number,
@@ -140,19 +144,21 @@ const firedAt = (
 
 export const kantoAudits = (): AuditsPanelProps =>
 	auditsPanelFor(
-		OPEN_GATE,
 		[
 			firedAt(OPEN_GATE, "memory-leak", { id: "koga", name: "Koga" }),
 			firedAt(OPEN_GATE, "too-many-requests", { id: "erika", name: "Erika" }),
 		],
-		AUDIT_BILL
+		{ ...AUDIT_BILL, ...VETERAN }
 	);
 
 export const kantoAuditsNoSender = (): AuditsPanelProps =>
-	auditsPanelFor(OPEN_GATE, [firedAt(OPEN_GATE, "memory-leak")], AUDIT_BILL);
+	auditsPanelFor([firedAt(OPEN_GATE, "memory-leak")], {
+		...AUDIT_BILL,
+		...VETERAN,
+	});
 
 export const kantoAuditsQuiet = (): AuditsPanelProps =>
-	auditsPanelFor(OPEN_GATE, [], {});
+	auditsPanelFor([], VETERAN);
 
-export const kantoAuditsLocked = (): AuditsPanelProps =>
-	auditsPanelFor(AUDITS_FROM_GATE - 1, [], {});
+export const kantoAuditsNew = (): AuditsPanelProps =>
+	auditsPanelFor([firedAt(OPEN_GATE, "not-found")], AUDIT_BILL);

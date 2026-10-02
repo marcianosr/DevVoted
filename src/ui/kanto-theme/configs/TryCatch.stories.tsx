@@ -23,7 +23,7 @@ const ALL_WRONG = [false, false, false, false, false];
 
 const deep = (): RunState => ({
 	...runWith([CONFIGS.tryCatch, CONFIGS.intellisense], MIXED_GATE, 6),
-	bankedUnits: 0,
+	headStartUnits: 0,
 });
 
 const caught = (): RunState =>
@@ -34,5 +34,5 @@ export const TheDangerRowReadsTheCatch: Story = {
 };
 
 export const CaughtInsteadOfEndingTheRun: Story = {
-	render: () => asGateOutcome(caught(), "held"),
+	render: () => asGateOutcome(caught()),
 };

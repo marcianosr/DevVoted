@@ -92,8 +92,17 @@ describe("CommunityScreen", () => {
 		render(<CommunityScreen {...props} />);
 
 		expect(
-			within(sectionOf("Who showed up")).getByText("+1,035")
+			within(sectionOf("Who cleared what")).getByText("+601")
 		).toBeInTheDocument();
+	});
+
+	it("draws the day's records below the outcomes, each with its figure", () => {
+		render(<CommunityScreen {...props} />);
+		const turnout = within(sectionOf("Who cleared what"));
+
+		expect(turnout.getByText("today's records")).toBeInTheDocument();
+		expect(turnout.getByText("comeback")).toBeInTheDocument();
+		expect(turnout.getByText("14 slots")).toBeInTheDocument();
 	});
 
 	it("draws the whole ladder, with the viewer standing on their own gate", () => {
@@ -226,7 +235,7 @@ describe("CommunityScreen, before the day's polls", () => {
 		render(<CommunityScreen {...kantoCommunityBeforePolls()} />);
 
 		expect(
-			within(sectionOf("Who showed up")).getByText("1,041")
+			within(sectionOf("Who cleared what")).getByText("604")
 		).toBeInTheDocument();
 	});
 });

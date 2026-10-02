@@ -8,7 +8,7 @@ import {
 } from "~/shared/lib/codeSpans";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
-import { Choice, type ChoiceSeal, type ChoiceVerdict } from "./Choice.ui";
+import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Typography } from "./Typography.ui";
 
@@ -31,7 +31,7 @@ export type QuestionOption = {
 	label?: ReactNode;
 	seal?: ChoiceSeal;
 	crossedOut?: boolean;
-	verdict?: ChoiceVerdict;
+	state?: ChoiceState;
 };
 
 export type QuestionProps = {
@@ -43,7 +43,7 @@ export type QuestionProps = {
 	onPick?: (id: string) => void;
 };
 
-const Prose = ({ text }: { text: string }) => (
+const CodeSpans = ({ text }: { text: string }) => (
 	<span className={PROSE}>
 		{splitCodeSpans(text).map((span, index) =>
 			span.kind === "code" ? (
@@ -73,7 +73,7 @@ const QuestionText = ({ question }: { question: string }) => {
 						variant="headline"
 						as={index === heading ? "h1" : "p"}
 					>
-						<Prose text={part.text} />
+						<CodeSpans text={part.text} />
 					</Typography>
 				)
 			)}
@@ -119,7 +119,7 @@ export const Question = ({
 						answerType={answerType}
 						picked={picked}
 						crossedOut={option.crossedOut}
-						verdict={option.verdict}
+						state={option.state}
 						onPick={pick}
 					>
 						{option.label}

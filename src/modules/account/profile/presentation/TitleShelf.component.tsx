@@ -8,7 +8,7 @@ import { useTitleState } from "~/modules/account/profile/application/useTitleSta
 import { TitleShelf as TitleShelfUI } from "~/modules/account/profile/presentation/TitleShelf.ui";
 
 export const TitleShelf = ({ userId }: { userId: string }) => {
-	const { data: state } = useTitleState(userId);
+	const { view: state } = useTitleState(userId);
 	const [filter, setFilter] = useState<TitleFilter>("all");
 	const [moreCategories, setMoreCategories] = useState(false);
 

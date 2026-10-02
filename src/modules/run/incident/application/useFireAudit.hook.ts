@@ -1,22 +1,16 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 import type { FireAuditInput } from "~/modules/run/incident/application/incident.validation";
 import { fireAudit } from "~/modules/run/incident/application/incident.serverfn";
-import { attackTargetsQueryKey } from "~/modules/run/incident/application/useAttackTargets.hook";
-import { incidentsFeedQueryKey } from "~/modules/run/incident/application/useIncidentsFeed.hook";
-import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
+import { useRunCommit } from "~/modules/run/run/application/useRunCommit.hook";
 
 export const useFireAudit = () => {
-	const queryClient = useQueryClient();
+	const { commit } = useRunCommit();
 
 	return useMutation({
 		mutationFn: (data: FireAuditInput) => fireAudit({ data }),
 		onSuccess: (result) => {
-			if (result.success) queryClient.setQueryData(todaysRunQueryKey(), result);
-		},
-		onSettled: () => {
-			queryClient.invalidateQueries({ queryKey: attackTargetsQueryKey() });
-			queryClient.invalidateQueries({ queryKey: incidentsFeedQueryKey() });
+			if (result.success) commit(result);
 		},
 	});
 };

@@ -1,3 +1,4 @@
+import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import { describe, expect, it } from "vitest";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
@@ -11,17 +12,25 @@ import {
 	pollDifficultyFor,
 	pollFactsFor,
 	pollHistoryFor,
-	pollPaidFor,
+	accuracyTrackFor,
+	answeredOptionsFor,
+	gainFigureOf,
+	pollFlightFor,
+	pollShakeFor,
 	pollPressesOf,
 	runPaidFor,
 	categoryLeaderFor,
 	pollCoverageFor,
+	pollClockFor,
 	pollCommitFor,
-	nextPollMarkFor,
+	SKIP_LABEL,
+	SKIP_NOTE,
+	approvalCommitFor,
 	pollStepFor,
-	PICK_ONE,
 	PICK_EVERY,
-	ENTER_ANSWERS,
+	pollKeysHintFor,
+	SINGLE_KEYS,
+	MULTIPLE_KEYS,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
@@ -30,7 +39,10 @@ import type {
 	AnsweredPoll,
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import {
+	floorAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import { createMockPollView, createMockRunView } from "~/test/runView.factory";
 import type { CategoryCode } from "~/shared/lib/categories";
 
@@ -222,34 +234,33 @@ const textOf = (line: ReturnType<typeof coverageLeadFor>): string =>
 	line.map((part) => (typeof part === "string" ? part : part.figure)).join("");
 
 describe("coverageLeadFor", () => {
-	it("states the units scored against the slots the run has opened", () => {
+	it("states the coverage the window guarantees as a share of the bar", () => {
 		const run = playing(JS_GATE, [true]);
 
 		expect(textOf(coverageLeadFor(toRunView(run)))).toBe(
-			`You have scored 1 unit across ${SLICE_WINDOW} slots, which is 20.0% coverage.`
+			"You hold 12.0% coverage."
 		);
 	});
 
-	it("pluralises past one unit, because a multiple pays two into one slot", () => {
+	it("speaks in coverage, never in units or the gate's changes", () => {
 		const run = playing(JS_GATE, [true, true]);
+		const text = textOf(coverageLeadFor(toRunView(run)));
 
-		expect(textOf(coverageLeadFor(toRunView(run)))).toContain("units across");
+		expect(text).not.toContain("unit");
+		expect(text).not.toMatch(/\bchanges?\b/i);
 	});
 
-	it("bands the score by how the run is doing, and leaves the slot count plain", () => {
-		const [, score, , slots] = coverageLeadFor(
-			toRunView(runWith(BARE, JS_GATE))
-		);
+	it("bands the score by how the run is doing", () => {
+		const [, score] = coverageLeadFor(toRunView(runWith(BARE, JS_GATE)));
 
-		expect(score).toEqual({ figure: "0", band: "shaky" });
-		expect(slots).toEqual({ figure: `${SLICE_WINDOW}` });
+		expect(score).toEqual({ figure: "0.0%", band: "shaky" });
 	});
 
 	it("badges the same score as coverage, the denomination the gate judges", () => {
 		const run = playing(JS_GATE, [true]);
 		const coverage = coverageLeadFor(toRunView(run)).at(-2);
 
-		expect(coverage).toEqual({ figure: "20.0%", band: "shaky" });
+		expect(coverage).toEqual({ figure: "12.0%", band: "shaky" });
 	});
 });
 
@@ -260,19 +271,20 @@ describe("pollBarFor", () => {
 		expect(pollBarFor(view)).toEqual({
 			...view.gateStake.coverageLadder,
 			held: view.gateStake.coverageHeld,
-			pin: false,
+			band: bandAtLadder(
+				view.gateStake.coverageHeld,
+				view.gateStake.coverageLadder
+			).id,
 		});
 	});
 
-	it("halves the coverage a cleared gate banked once the next gate doubles the codebase", () => {
-		const pallet = pollBarFor(
-			toRunView(playing(TWO_GATES, [true, true, true, false]))
-		);
+	it("opens the next gate on no more than its floor, never on the whole bar", () => {
 		const boulder = pollBarFor(
-			toRunView(playing(TWO_GATES, [true, true, true, false, false]))
+			toRunView(playing(TWO_GATES, [true, true, true, true, true]))
 		);
 
-		expect(boulder.held).toBeCloseTo(pallet.held / 2);
+		expect(boulder.held).toBeGreaterThan(0);
+		expect(boulder.held).toBeLessThanOrEqual(percentOf(floorAt(1)));
 	});
 });
 
@@ -282,60 +294,170 @@ describe("runPaidFor", () => {
 
 		expect(runPaidFor(cleared).rows).toHaveLength(1);
 	});
-});
 
-describe("pollPaidFor", () => {
-	it("gives one row only: the gate being played, not the run's history", () => {
-		const paid = pollPaidFor(toRunView(playing(TWO_GATES, CLEARED)));
+	it("states the accuracy multiplier the closed gate landed", () => {
+		const [pallet] = runPaidFor(toRunView(playing(TWO_GATES, CLEARED))).rows;
 
-		expect(paid.rows).toHaveLength(1);
-		expect(paid.rows[0].swatch.gateName).toBe("Boulder");
+		expect(pallet.payouts?.multiplier).toBe("×2");
 	});
 
-	it("pays every answer what it earned, and a miss nothing", () => {
-		const [row] = pollPaidFor(toRunView(playing(JS_GATE, [true, false]))).rows;
-
-		expect(row.payouts?.slots[0]).toMatchObject({
-			figure: "1",
-			color: "viridian",
-		});
-		expect(row.payouts?.slots[1]).toMatchObject({
-			figure: "0",
-			color: "cinnabar",
-		});
-	});
-
-	it("hands every chip the receipt for its own poll, not just the last one", () => {
-		const [row] = pollPaidFor(
-			toRunView(playing(JS_GATE, [true, false], JS_BUILD))
+	it("states no multiplier for the gate still being answered", () => {
+		const [pallet] = runPaidFor(
+			toRunView(playing(TWO_GATES, [true, true]))
 		).rows;
 
-		expect(row.payouts?.slots[0]?.receipt?.at(-1)).toMatchObject({
-			label: "paid",
-			total: true,
+		expect(pallet.payouts?.multiplier).toBeUndefined();
+	});
+});
+
+const lastAnswerOf = (state: RunState): AnsweredPoll => {
+	const last = toRunView(state).answeredThisGate.at(-1);
+	if (last === undefined) throw new Error("nothing answered yet");
+	return last;
+};
+
+describe("accuracyTrackFor", () => {
+	it("opens on ×1 sure, up to ×2, the bar empty and the best case full", () => {
+		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [])));
+
+		expect(track).toMatchObject({
+			figure: "×1 · up to ×2",
+			sure: 0,
+			best: 1,
 		});
-		expect(row.payouts?.slots[1]?.receipt?.at(-1)?.figures?.[0]).toMatchObject({
-			label: "0",
+	});
+
+	it("reads the multiplier the window is sure of and the best still open", () => {
+		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, true])));
+
+		expect(track.figure).toBe(`×1.19 · up to ×2`);
+		expect(track.sure).toBeCloseTo(2 ** (2 / 8) - 1);
+		expect(track.best).toBeCloseTo(1);
+	});
+
+	it("lowers the best case on a miss and keeps what is sure", () => {
+		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, false])));
+
+		expect(track.figure).toBe("×1.09 · up to ×1.83");
+	});
+
+	it("names the multiplier aloud for a reader", () => {
+		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, false])));
+
+		expect(track.label).toBe("Accuracy ×1.09, up to ×1.83");
+	});
+
+	it("draws no per-poll segment, so five boxes never read as five polls", () => {
+		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true])));
+
+		expect(Object.keys(track)).not.toContain("segments");
+	});
+
+	it("pulses the bar while a right answer lands", () => {
+		const run = playing(JS_GATE, [false, true]);
+		const answered = lastAnswerOf(run);
+
+		expect(accuracyTrackFor(toRunView(run), answered).pulse).toEqual({
+			key: answered.id,
 		});
 	});
 
-	it("leaves a slot still to come empty rather than paying it zero", () => {
-		const [row] = pollPaidFor(toRunView(playing(JS_GATE, [true]))).rows;
+	it("pulses nothing for a wrong answer", () => {
+		const run = playing(JS_GATE, [true, false]);
 
-		expect(row.payouts?.slots).toHaveLength(SLICE_WINDOW);
-		expect(row.payouts?.slots[1]).toBeUndefined();
+		expect(
+			accuracyTrackFor(toRunView(run), lastAnswerOf(run)).pulse
+		).toBeUndefined();
+	});
+});
+
+describe("gainFigureOf", () => {
+	it("signs what an answer added to the bar, to the tenth", () => {
+		expect(gainFigureOf(24, 36.04)).toBe("+12%");
+		expect(gainFigureOf(10, 21.16)).toBe("+11.2%");
 	});
 
-	it("totals the row in the units the sentence above it counts", () => {
-		const [row] = pollPaidFor(toRunView(playing(JS_GATE, [true, false]))).rows;
+	it("names no gain when the bar did not rise", () => {
+		expect(gainFigureOf(36, 36)).toBeUndefined();
+		expect(gainFigureOf(36, 30)).toBeUndefined();
+		expect(gainFigureOf(36, 36.02)).toBeUndefined();
+	});
+});
 
-		expect(row.payouts?.total).toBe("1");
+describe("pollFlightFor", () => {
+	const before = playing(JS_GATE, [true]);
+	const right = playing(JS_GATE, [true, true]);
+	const wrong = playing(JS_GATE, [true, false]);
+
+	it("flies a right answer's gain to where the bar will stand", () => {
+		const view = toRunView(right);
+		const flight = pollFlightFor(toRunView(before), view, lastAnswerOf(right));
+
+		expect(flight).toEqual({
+			figure: gainFigureOf(
+				toRunView(before).gateStake.coverageHeld,
+				view.gateStake.coverageHeld
+			),
+			id: lastAnswerOf(right).id,
+			fromHeld: toRunView(before).gateStake.coverageHeld,
+			toHeld: view.gateStake.coverageHeld,
+		});
 	});
 
-	it("marks the one row it draws as the gate in hand", () => {
-		const paid = pollPaidFor(toRunView(playing(TWO_GATES, CLEARED)));
+	it("sends nothing after a wrong answer", () => {
+		expect(
+			pollFlightFor(toRunView(before), toRunView(wrong), lastAnswerOf(wrong))
+		).toBeUndefined();
+	});
 
-		expect(paid.rows[0].current).toBe(true);
+	it("sends nothing while no poll is landing", () => {
+		expect(
+			pollFlightFor(toRunView(before), toRunView(right), undefined)
+		).toBeUndefined();
+	});
+
+	it("sends nothing when the meter is down, since the bar is not drawn", () => {
+		expect(
+			pollFlightFor(
+				toRunView(before),
+				{ ...toRunView(right), meterHidden: true },
+				lastAnswerOf(right)
+			)
+		).toBeUndefined();
+	});
+});
+
+describe("pollShakeFor", () => {
+	it("shakes the card for a wrong answer, keyed to that answer", () => {
+		const answered = lastAnswerOf(playing(JS_GATE, [false]));
+
+		expect(pollShakeFor(answered)).toBe(answered.id);
+	});
+
+	it("holds the card still for a right answer", () => {
+		expect(
+			pollShakeFor(lastAnswerOf(playing(JS_GATE, [true])))
+		).toBeUndefined();
+	});
+});
+
+describe("answeredOptionsFor", () => {
+	const answered = (picked: readonly string[]): AnsweredPoll => ({
+		...lastAnswerOf(playing(JS_GATE, [true])),
+		options: ["at(-1)", "pop()", "slice(-1)"],
+		picked,
+		correct: ["at(-1)"],
+	});
+
+	const statesOf = (poll: AnsweredPoll) =>
+		answeredOptionsFor(poll).map((option) => option.state);
+
+	it("marks a right pick right and leaves the rest idle", () => {
+		expect(statesOf(answered(["at(-1)"]))).toEqual(["right", "idle", "idle"]);
+	});
+
+	it("marks a wrong pick wrong and still shows the right answer as right", () => {
+		expect(statesOf(answered(["pop()"]))).toEqual(["right", "wrong", "idle"]);
 	});
 });
 
@@ -433,11 +555,9 @@ describe("pollBreakdownFor", () => {
 
 		expect(paid).toMatchObject({ label: "paid", total: true });
 		expect(paid?.figures?.[0]).toMatchObject({ label: "1.25" });
-		expect(pollPaidFor(toRunView(run)).rows[0].payouts?.slots[0]).toMatchObject(
-			{
-				figure: "1.25",
-			}
-		);
+		expect(runPaidFor(toRunView(run)).rows[0].payouts?.slots[0]).toMatchObject({
+			figure: "1.25",
+		});
 	});
 
 	it("states a flat adder in units, with no tag repeating them", () => {
@@ -736,28 +856,93 @@ describe("pollCoverageFor", () => {
 		expect(coverage.locked).toBe(true);
 		expect(coverage.bar).toBeUndefined();
 		expect(coverage.lead).toBeUndefined();
-		expect(coverage.paid).toBeUndefined();
+		expect(coverage.accuracy).toBeUndefined();
 	});
 });
 
-describe("the lock-in press states its keyboard", () => {
+describe("a single answer is one tap", () => {
+	const submit = () => {};
+	const skip = () => {};
+
+	it("offers no lock-in on a single-answer poll, picked or not", () => {
+		expect(pollCommitFor("single", 0, submit, skip).lock).toBeUndefined();
+		expect(pollCommitFor("single", 1, submit, skip).lock).toBeUndefined();
+	});
+
+	it("still offers the skip on a single-answer poll", () => {
+		expect(pollCommitFor("single", 0, submit, skip).skip?.onPress).toBe(skip);
+	});
+});
+
+describe("the lock-in press on a multi-answer poll", () => {
 	const submit = () => {};
 
-	it("tells a player with nothing picked that the letters pick", () => {
-		expect(pollCommitFor("single", 0, submit).note).toBe(PICK_ONE);
-		expect(pollCommitFor("multiple", 0, submit).note).toBe(PICK_EVERY);
-		expect(pollCommitFor("single", 0, submit).onPress).toBeUndefined();
+	it("asks for every answer that fits and refuses while nothing is picked", () => {
+		const { lock } = pollCommitFor("multiple", 0, submit);
+
+		expect(lock?.note).toBe(PICK_EVERY);
+		expect(lock?.onPress).toBeUndefined();
 	});
 
-	it("tells a player with an answer picked that Enter locks it in", () => {
-		const commit = pollCommitFor("multiple", 2, submit);
+	it("counts the picks and locks them in once something is picked", () => {
+		const { lock } = pollCommitFor("multiple", 2, submit);
 
-		expect(commit.note).toBe(ENTER_ANSWERS);
-		expect(commit.label).toBe("Lock in 2 answers");
+		expect(lock?.label).toBe("Lock in 2 answers");
+		expect(lock?.note).toBeUndefined();
+		expect(lock?.onPress).toBe(submit);
 	});
 });
 
-describe("the poll number on a press's mark", () => {
+describe("the keyboard tip states the keys for the answer type", () => {
+	it("tells a single-answer player a letter answers", () => {
+		expect(pollKeysHintFor("single")).toBe(SINGLE_KEYS);
+	});
+
+	it("tells a multi-answer player letters pick and Enter locks in", () => {
+		expect(pollKeysHintFor("multiple")).toBe(MULTIPLE_KEYS);
+	});
+});
+
+describe("the skip press states what a skip costs (ADR-169)", () => {
+	const submit = () => {};
+	const skip = () => {};
+
+	it("offers a skip beside the lock-in, picked or not", () => {
+		expect(pollCommitFor("multiple", 0, submit, skip).skip).toEqual({
+			label: SKIP_LABEL,
+			note: SKIP_NOTE,
+			onPress: skip,
+		});
+		expect(pollCommitFor("multiple", 1, submit, skip).skip?.onPress).toBe(skip);
+	});
+
+	it("offers no skip where the screen wires none", () => {
+		expect(pollCommitFor("single", 0, submit).skip).toBeUndefined();
+	});
+
+	it("offers no skip on a poll the room answers", () => {
+		expect(approvalCommitFor(() => {}).skip).toBeUndefined();
+	});
+});
+
+describe("the LGTM press states what the room does", () => {
+	const approve = () => {};
+
+	it("tells the player the room answers an approved poll", () => {
+		expect(approvalCommitFor(approve).lock?.note).toBe(
+			"the room answers this one for you"
+		);
+	});
+
+	it("states the refusal in place of the promise when the room could not answer", () => {
+		const { lock } = approvalCommitFor(approve, "Not enough approvals yet");
+
+		expect(lock?.note).toBe("Not enough approvals yet");
+		expect(lock?.onPress).toBe(approve);
+	});
+});
+
+describe("the poll number on the card's mark", () => {
 	const answered = (id: string): AnsweredPoll => ({
 		id,
 		question: "typeof null === ?",
@@ -781,8 +966,43 @@ describe("the poll number on a press's mark", () => {
 	it("numbers the revealed poll by the one just answered", () => {
 		expect(pollStepFor(viewAfter(2), true)).toBe(2);
 	});
+});
 
-	it("counts the next poll on the continue press while its answer shows", () => {
-		expect(nextPollMarkFor(viewAfter(2)).count).toBe(3);
+describe("the poll clock states what the time is worth (ADR-169)", () => {
+	const VITE_CLOCK = { label: "Vite", withinMs: 15_000, fast: 1.5, slow: 0.75 };
+
+	it("counts down Vite's window while ×1.5 still pays", () => {
+		const view = createMockRunView({ fastAnswer: VITE_CLOCK });
+
+		expect(pollClockFor(view, 3_200)).toEqual({
+			label: "Vite ×1.5 · 12s",
+			color: "viridian",
+		});
+	});
+
+	it("says Vite pays ×0.75 once the window has passed", () => {
+		const view = createMockRunView({ fastAnswer: VITE_CLOCK });
+
+		expect(pollClockFor(view, 15_500)).toEqual({
+			label: "Vite ×0.75",
+			color: "pewter",
+		});
+	});
+
+	it("counts down a 408 limit ahead of Vite, since running out fails the answer", () => {
+		const view = createMockRunView({
+			pollTimeLimitMs: 10_000,
+			fastAnswer: VITE_CLOCK,
+		});
+
+		expect(pollClockFor(view, 4_000)).toEqual({
+			label: "6s left",
+			color: "saffron",
+		});
+		expect(pollClockFor(view, 7_000)?.color).toBe("cinnabar");
+	});
+
+	it("shows no clock where nothing is timed", () => {
+		expect(pollClockFor(createMockRunView(), 1_000)).toBeUndefined();
 	});
 });

@@ -58,7 +58,7 @@ const answered = (state: RunState, count: number, correct = true): RunState => {
 
 const demandMet = (state: RunState): RunState => ({
 	...state,
-	bankedUnits: SLICE_WINDOW * state.gatesCleared,
+	headStartUnits: SLICE_WINDOW * state.gatesCleared,
 });
 
 const prepped = (extras: readonly Config[], installIds: string[]): RunState => {
@@ -240,7 +240,7 @@ describe("estimates", () => {
 	});
 
 	it("pays the met estimate even when the gate ends the run", () => {
-		let state = answerWith(audited(estimating(1), 6), true);
+		let state = answerWith(audited(estimating(1), 9), true);
 		state = answered(state, SLICE_WINDOW - 2, false);
 		const answeredOut = runReducer(state, answerAction(state, false));
 		expect(runReducer(answeredOut, CLOSE).status).toBe("dead");
@@ -633,6 +633,20 @@ describe("special titles", () => {
 			],
 		};
 		expect(clearedAt(recovering, "ok")).toContain("cleared-after-two-misses");
+	});
+
+	it("counts no recovery after skipping the opening, which misses nothing", () => {
+		const skipping = {
+			...base,
+			answeredThisGate: [
+				landing("skipped"),
+				landing("skipped"),
+				landing("correct"),
+				landing("correct"),
+				landing("correct"),
+			],
+		};
+		expect(clearedAt(skipping, "ok")).not.toContain("cleared-after-two-misses");
 	});
 
 	it("counts no recovery when only the first poll missed", () => {

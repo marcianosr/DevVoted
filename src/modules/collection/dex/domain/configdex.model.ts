@@ -76,6 +76,3 @@ export const configdex = (
 		};
 	});
 };
-
-export const grantedCountIn = (entries: readonly ConfigdexEntry[]): number =>
-	entries.filter((entry) => entry.state === "granted").length;

@@ -29,54 +29,7 @@ export const BUILD_SPACE_RUNGS: readonly BuildSpaceRung[] = [
 	{ weight: 32, kb: 512 },
 ];
 
-export const FREE_BUILD_SPACE_RUNG = 0;
-export const TOP_BUILD_SPACE_RUNG = BUILD_SPACE_RUNGS.length - 1;
-
-export const buildSpaceRungAt = (index: number): BuildSpaceRung =>
-	BUILD_SPACE_RUNGS[
-		Math.min(Math.max(FREE_BUILD_SPACE_RUNG, index), TOP_BUILD_SPACE_RUNG)
-	];
-
-export const buildSpaceFor = (index: number): number =>
-	buildSpaceRungAt(index).weight;
-
-export const rungIndexForSpace = (space: number): number => {
-	const passed = BUILD_SPACE_RUNGS.filter((rung) => rung.weight <= space);
-	return passed.length === 0 ? FREE_BUILD_SPACE_RUNG : passed.length - 1;
-};
-
-export const spaceRungFor = (space: number): BuildSpaceRung =>
-	buildSpaceRungAt(rungIndexForSpace(space));
-
-export const upkeepForSpace = (space: number): number => spaceRungFor(space).kb;
-
-export const rungIndexFitting = (weight: number): number => {
-	const index = BUILD_SPACE_RUNGS.findIndex((rung) => rung.weight >= weight);
-	return index === -1 ? TOP_BUILD_SPACE_RUNG : index;
-};
-
-export const spaceFitting = (weight: number): number =>
-	buildSpaceFor(rungIndexFitting(weight));
-
-export const upkeepFitting = (weight: number): number =>
-	buildSpaceRungAt(rungIndexFitting(weight)).kb;
-
-export const rungAfterFitting = (weight: number): BuildSpaceRung | undefined =>
-	BUILD_SPACE_RUNGS[rungIndexFitting(weight) + 1];
-
-export const affordableRungIndex = (balanceKb: number): number => {
-	const affordable = BUILD_SPACE_RUNGS.filter(
-		(rung) => rung.kb <= Math.max(0, balanceKb)
-	);
-	return affordable.length === 0
-		? FREE_BUILD_SPACE_RUNG
-		: affordable.length - 1;
-};
-
-export const highestAffordableSpace = (balanceKb: number): number =>
-	buildSpaceFor(affordableRungIndex(balanceKb));
-
-export const BASE_SLOTS = buildSpaceFor(FREE_BUILD_SPACE_RUNG);
+export const BASE_SLOTS = BUILD_SPACE_RUNGS[0].weight;
 
 export const FAUCET_CAP_KB = 320;
 
@@ -111,23 +64,6 @@ export const unbankedKb = (
 	gatesCleared: number,
 	won: boolean
 ): number => heldKb - bankedKb(heldKb, gatesCleared, won);
-
-const STREAK_COVERAGE_BONUS = 0.1;
-
-export const BASE_STREAK_STEPS = 10;
-
-export const streakMultiplier = (streak: number): number =>
-	1 + STREAK_COVERAGE_BONUS * Math.min(streak, BASE_STREAK_STEPS);
-
-export const STREAK_UNIT_STEP = 0.1;
-
-export const streakUnitBonus = (streakBefore: number): number =>
-	streakBefore < 1 ? 0 : STREAK_UNIT_STEP;
-
-export const MIN_WINDOW_UNITS = 2;
-
-export const meetsWindowMinimum = (baseUnits: number): boolean =>
-	baseUnits >= MIN_WINDOW_UNITS;
 
 export const gateRewardMultiplier = (gatesCleared: number): number =>
 	gatesCleared + 1;

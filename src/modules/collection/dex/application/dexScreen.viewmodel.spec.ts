@@ -9,7 +9,6 @@ import {
 	dexPollsFor,
 	dexRunsFor,
 	dexSwatchesFor,
-	dexThemeOf,
 	isDexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { auditdex } from "~/modules/collection/dex/domain/auditdex.model";
@@ -39,6 +38,15 @@ const poll = (overrides: Partial<PolldexEntry> = {}): PolldexEntry => ({
 	...overrides,
 });
 
+const NEVER_DEALT = {
+	seen: false,
+	question: null,
+	timesSeen: 0,
+	answeredCount: 0,
+	correctCount: 0,
+	accuracy: null,
+} as const satisfies Partial<PolldexEntry>;
+
 const climb = (overrides: Partial<RunHistoryRow> = {}): RunHistoryRow => ({
 	runId: 1,
 	gatesCleared: 4,
@@ -51,24 +59,9 @@ const climb = (overrides: Partial<RunHistoryRow> = {}): RunHistoryRow => ({
 });
 
 describe("DEX_TABS", () => {
-	it("gives every tab its own colour, so the screen reads as the tab opened", () => {
-		const colors = DEX_TABS.map((tab) => tab.color);
-
-		expect(new Set(colors).size).toBe(DEX_TABS.length);
-	});
-
 	it("narrows a known tab id and rejects anything else", () => {
 		expect(isDexTabId("swatches")).toBe(true);
 		expect(isDexTabId("gates")).toBe(false);
-	});
-
-	it("falls back to the first tab's colour for an id it does not know", () => {
-		expect(dexThemeOf("swatches")).toBe("lavender");
-		expect(dexThemeOf("nonsense")).toBe(DEX_TABS[0].color);
-	});
-
-	it("keeps configs on a colour that does not tint the ground it badges on", () => {
-		expect(dexThemeOf("configs")).toBe("pallet");
 	});
 });
 
@@ -80,8 +73,7 @@ describe("dexPollsFor", () => {
 			id: 3,
 			pollNumber: 3,
 			categoryCode: "css",
-			seen: false,
-			question: null,
+			...NEVER_DEALT,
 		}),
 	];
 
@@ -200,7 +192,10 @@ describe("dexPollsFor", () => {
 	});
 
 	it("counts seen against the whole roster", () => {
-		const props = dexPollsFor([poll({ id: 1 }), poll({ id: 2, seen: false })]);
+		const props = dexPollsFor([
+			poll({ id: 1 }),
+			poll({ id: 2, ...NEVER_DEALT }),
+		]);
 
 		expect(props.count).toBe("1 of 2");
 	});
@@ -476,15 +471,15 @@ describe("dexControlsFor", () => {
 		expect(propsFor(["extend", "pin"]).count).toBe("4 of 9");
 	});
 
-	it("states where a service is pressed and how long the purchase lasts", () => {
+	it("states where a service is pressed, read off the roster, and how long the purchase lasts", () => {
 		expect(rowFor([], "rebuild").detail).toBe("Every shop · this visit");
-		expect(rowFor([], "extend").detail).toBe(
-			"Shop from Cascade · rest of the run"
+		expect(rowFor(["extend"], "extend").detail).toBe(
+			"Shop from Thunder · rest of the run"
 		);
-		expect(rowFor([], "pin").detail).toBe(
+		expect(rowFor(["pin"], "pin").detail).toBe(
 			"Shop, gates 4–10 · carries into your next run"
 		);
-		expect(rowFor([], "bootCache").detail).toBe(
+		expect(rowFor(["bootCache"], "bootCache").detail).toBe(
 			"New run · banked at the start"
 		);
 	});
@@ -529,13 +524,28 @@ describe("dexControlsFor", () => {
 		expect(priceOf(["abandon"], "abandon")).toBe("free");
 	});
 
-	it("names a locked service and says how to earn it, in place of a price", () => {
+	it("redacts a locked service and says how to earn it, in place of a price", () => {
 		const row = rowFor([], "extend");
 
-		expect(row.title).toBe("Extend the registry");
+		expect(row.title).toBe("???");
+		expect(row.detail).toBe("???");
 		expect(row.locked).toBe(true);
 		expect(unlockOf([], "extend")).toBe("Reach Cascade");
 		expect(priceOf([], "extend")).toBeUndefined();
+	});
+
+	it("withholds a locked service's name and sale terms from the panel too", () => {
+		const { detail } = dexControlsFor(controldex([]), "extend");
+
+		expect(detail?.label).toBe("???");
+		expect(detail?.availability).toBe("Reach Cascade to unlock it.");
+	});
+
+	it("names an unlocked service in full", () => {
+		const row = rowFor(["extend"], "extend");
+
+		expect(row.title).toBe("Extend the registry");
+		expect(row.locked).toBeFalsy();
 	});
 
 	it("keeps one footer for the whole roster", () => {
@@ -600,13 +610,15 @@ describe("dexSwatchesFor", () => {
 	it("states how an unearned swatch is minted, which is its whole rule", () => {
 		const detail = dexSwatchesFor(gatedex([]), "7").detail;
 
-		expect(detail?.rule).toContain("Answer all five polls");
+		expect(detail?.rule).toBe(
+			"Reach 100% coverage at this gate to mint it. Clearing the gate alone does not."
+		);
 	});
 
 	it("says a swept gate has already minted its swatch", () => {
 		const detail = dexSwatchesFor(gatedex(["swatch-pallet"]), "0").detail;
 
-		expect(detail?.rule).toContain("Minted");
+		expect(detail?.rule).toBe("Minted. You reached 100% coverage.");
 	});
 
 	it("has nothing to read when there is no gate roster at all", () => {
@@ -618,10 +630,10 @@ describe("dexSwatchesFor", () => {
 });
 
 describe("dexRunsFor", () => {
-	it("reads coverage as a percentage of the run's own window", () => {
+	it("reads coverage as a percentage of every codebase the run played", () => {
 		const [row] = dexRunsFor(runHistory([climb()])).rows;
 
-		expect(row.coverage).toBe("56%");
+		expect(row.coverage).toBe("31%");
 	});
 
 	it("keeps the permalink on the panel, where a row is now a press", () => {

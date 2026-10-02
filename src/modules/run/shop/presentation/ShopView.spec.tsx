@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { COMMUNITY } from "~/shared/lib/copy";
@@ -16,9 +16,6 @@ import { ShopView } from "./ShopView.component";
 const noop = () => {};
 
 const BALANCES = 2;
-
-const showLockedServices = () =>
-	userEvent.click(screen.getByRole("button", { name: /locked service/ }));
 
 const handlers = {
 	onDraft: noop,
@@ -65,6 +62,20 @@ describe("ShopView", () => {
 
 		expect(screen.getByText(/Shop$/)).toBeInTheDocument();
 		expect(screen.queryByText(/^Shop ·/)).not.toBeInTheDocument();
+	});
+
+	it("shuts the registry after a skip and says so", () => {
+		const skipped = {
+			...view,
+			shopControls: { ...view.shopControls, canSkip: false, shopSkipped: true },
+		};
+		render(<ShopView view={skipped} {...handlers} />);
+
+		expect(screen.getByText(/You skipped this shop/)).toBeVisible();
+		expect(
+			screen.getByRole("button", { name: /Install Linter/ }).closest("[inert]")
+		).not.toBeNull();
+		expect(screen.getByText("skipped")).toBeInTheDocument();
 	});
 
 	it("installs an offer the run can afford", async () => {
@@ -491,19 +502,33 @@ describe("ShopView services (ADR-116)", () => {
 		}),
 	});
 
-	it("names a service the account has not earned, with the line that earns it and no press", async () => {
+	it("hides a service the account has not earned", () => {
 		render(
 			<ShopView view={{ ...gateFour, unlockedServiceIds: [] }} {...handlers} />
 		);
-		await showLockedServices();
 
-		expect(screen.getByText("Extend the registry")).toBeVisible();
-		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
-		expect(screen.getByText("git tag")).toBeVisible();
-		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
+		expect(screen.queryByText("Extend the registry")).not.toBeInTheDocument();
+		expect(screen.queryByText("git tag")).not.toBeInTheDocument();
+		expect(screen.queryByText(/locked service/)).not.toBeInTheDocument();
+	});
+
+	it("marks a service unlocked during this run as new", () => {
+		render(
+			<ShopView
+				view={{
+					...gateFour,
+					unlockedServiceIds: ["extend"],
+					unlockedServiceIdsThisRun: ["extend"],
+				}}
+				{...handlers}
+			/>
+		);
+
 		expect(
-			screen.queryByRole("button", { name: /Extend the registry/ })
-		).not.toBeInTheDocument();
+			within(
+				screen.getByRole("button", { name: /Extend the registry/ })
+			).getByText("new")
+		).toBeInTheDocument();
 	});
 
 	it("names an unlocked service the run did not carry in, says where it is carried, and takes no press (ADR-153)", () => {
@@ -540,20 +565,19 @@ describe("ShopView services (ADR-116)", () => {
 		).toBeEnabled();
 	});
 
-	it("sells an earned service like any other, with no press on the locked ones", async () => {
+	it("sells an earned service like any other, and leaves the unearned ones out", () => {
 		render(
 			<ShopView
 				view={{ ...gateFour, unlockedServiceIds: ["extend"] }}
 				{...handlers}
 			/>
 		);
-		await showLockedServices();
 
 		expect(
 			screen.getByRole("button", { name: /Extend the registry/ })
 		).toBeEnabled();
-		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
-		expect(screen.getAllByRole("button", { name: /registry/ })).toHaveLength(2);
+		expect(screen.queryByText("git tag")).not.toBeInTheDocument();
+		expect(screen.queryByText("new")).not.toBeInTheDocument();
 	});
 
 	it("lists only what the shop sells: an archive service never appears, earned or not", () => {
@@ -591,17 +615,12 @@ describe("ShopView kill -9", () => {
 		}),
 	});
 
-	it("reads its unlock line until gate 5 is cleared", async () => {
+	it("stays out of the shop until gate 5 is cleared", () => {
 		render(
 			<ShopView view={{ ...gateSix, unlockedServiceIds: [] }} {...handlers} />
 		);
-		await showLockedServices();
 
-		expect(screen.getByText("kill -9")).toBeVisible();
-		expect(screen.getByText("unlock · Clear gate 5")).toBeVisible();
-		expect(
-			screen.queryByRole("button", { name: /kill -9/ })
-		).not.toBeInTheDocument();
+		expect(screen.queryByText("kill -9")).not.toBeInTheDocument();
 	});
 
 	it("ends the run on the second press only, the first arming the row", async () => {

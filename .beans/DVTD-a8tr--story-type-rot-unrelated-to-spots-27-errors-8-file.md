@@ -1,11 +1,11 @@
 ---
 # DVTD-a8tr
 title: Story type-rot unrelated to spots (27 errors, 8 files)
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-08-27T20:08:13Z
-updated_at: 2026-08-27T20:08:13Z
+updated_at: 2026-10-01T15:39:19Z
 ---
 
 Stories are excluded from `tsconfig.json`, so `npm run build` never typechecks them — but Storybook does run (`npm run storybook`, port 6006), so these are broken or wrong-rendering stories in a surface that gets opened.
@@ -29,3 +29,7 @@ Worth considering as part of this: the exclusion is what let all of it accumulat
 
 - [ ] Fix the eight files
 - [ ] Decide whether stories join the typechecked set, so this cannot silently recur
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. Seven of the nine named story files are deleted and the two kanto survivors carry none of the named rot. Typechecking stories stays open in DVTD-la8l / DVTD-6yug.

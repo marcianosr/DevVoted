@@ -32,7 +32,6 @@ import {
 	applyActionToRun,
 	createSessionRunWithState,
 	debitArchivedStorage,
-	fetchCategoryPollCounts,
 } from "~/modules/run/run/infrastructure/run.repository";
 
 const mock = vi.hoisted((): DrizzleMockState => ({
@@ -81,6 +80,9 @@ const stateRow = (state: RunState) => ({
 const segmentRow = (segment_date: string = TEST_DATES.birthday) => [
 	{ segment_date },
 ];
+
+const stateRowWritten = () =>
+	mock.setCalls.find((call) => "engine_status" in call);
 
 describe("applyActionToRun", () => {
 	beforeEach(() => {
@@ -315,12 +317,12 @@ describe("applyActionToRun", () => {
 
 		expect(next.status).toBe("answering");
 		expect(next.currentIndex).toBe(1);
-		expect(mock.setCalls[0]).toMatchObject({
+		expect(stateRowWritten()).toMatchObject({
 			engine_status: "answering",
 			gates_cleared: 0,
 			polls_answered: 1,
 		});
-		expect(mock.setCalls[0].state).not.toHaveProperty("polls");
+		expect(stateRowWritten()?.state).not.toHaveProperty("polls");
 	});
 
 	it("finishes the run and credits leftover storage on victory", async () => {
@@ -329,12 +331,13 @@ describe("applyActionToRun", () => {
 			coverage: 400,
 			build: { id: "build", configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
-			bankedUnits: SLICE_WINDOW * VICTORY_GATE,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
 			window: {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
-				baseUnits: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -349,14 +352,14 @@ describe("applyActionToRun", () => {
 
 		expect(next.status).toBe("won");
 		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
-		expect(mock.setCalls[1]).toMatchObject({ engine_status: "won" });
-		expect(mock.setCalls[2]).toMatchObject({
+		expect(mock.setCalls[1]).toHaveProperty("peak_storage_kb");
+		expect(mock.setCalls[2]).toMatchObject({ engine_status: "won" });
+		expect(mock.setCalls[3]).toMatchObject({
 			status: "finished",
 			completion_reason: "victory",
 		});
-		expect(mock.setCalls[2].victory_achieved_at).toBeInstanceOf(Date);
-		expect(mock.setCalls[3]).toHaveProperty("archived_storage");
-		expect(mock.setCalls[4]).toHaveProperty("peak_storage_kb");
+		expect(mock.setCalls[3].victory_achieved_at).toBeInstanceOf(Date);
+		expect(mock.setCalls[4]).toHaveProperty("archived_storage");
 		expect(db.update).toHaveBeenCalledTimes(5);
 	});
 
@@ -369,12 +372,13 @@ describe("applyActionToRun", () => {
 			coverage: 400,
 			build: { id: "build", configs: [CONFIGS.js] },
 			gatesCleared: VICTORY_GATE,
-			bankedUnits: SLICE_WINDOW * VICTORY_GATE,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
 			window: {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
-				baseUnits: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -383,6 +387,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
 		mock.results.push([]);
 		mock.results.push(counts);
 		mock.results.push(categoryPolls);
@@ -464,7 +469,7 @@ describe("applyActionToRun", () => {
 		expect(mock.updateTables).not.toContain(usersTable);
 	});
 
-	it("earns the swatch of a flawless window, written before the state row", async () => {
+	it("earns the swatch of a full bar, written before the state row", async () => {
 		const closing = answeringState({
 			coverage: 10,
 			build: { id: "build", configs: [CONFIGS.js] },
@@ -472,7 +477,8 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW,
-				baseUnits: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
 			},
 		});
@@ -510,7 +516,8 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW - 1,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW - 1,
-				baseUnits: SLICE_WINDOW - 1,
+				accuracyEarned: SLICE_WINDOW - 1,
+				accuracyAvailable: SLICE_WINDOW - 1,
 				byCategory: {
 					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
 				},
@@ -538,7 +545,8 @@ describe("applyActionToRun", () => {
 				correct: SLICE_WINDOW - 1,
 				answered: SLICE_WINDOW,
 				unitsEarned: SLICE_WINDOW - 1,
-				baseUnits: SLICE_WINDOW - 1,
+				accuracyEarned: SLICE_WINDOW - 1,
+				accuracyAvailable: SLICE_WINDOW - 1,
 				byCategory: {
 					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
 				},
@@ -549,6 +557,7 @@ describe("applyActionToRun", () => {
 		mock.results.push([dbPoll(1)]);
 		mock.results.push(dbOptions(1));
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
 		mock.results.push([{ metric: "polls-answered", count: 1 }]);
 		mock.results.push([]);
 		mock.results.push([{ title_id: "title-rank-poll-newbie" }]);
@@ -578,7 +587,7 @@ describe("applyActionToRun", () => {
 		});
 
 		expect(next.status).toBe("answering");
-		expect(mock.setCalls[0]).toMatchObject({ engine_status: "answering" });
+		expect(stateRowWritten()).toMatchObject({ engine_status: "answering" });
 		expect(db.update).toHaveBeenCalledTimes(2);
 	});
 
@@ -593,7 +602,7 @@ describe("applyActionToRun", () => {
 		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
 
 		expect(mock.updateTables).toContain(usersTable);
-		expect(mock.setCalls.at(-1)).toHaveProperty("peak_storage_kb");
+		expect(mock.setCalls.some((call) => "peak_storage_kb" in call)).toBe(true);
 	});
 
 	it("leaves the account's KB mark alone when the balance sets no record", async () => {
@@ -678,7 +687,8 @@ describe("applyActionToRun", () => {
 				correct: 1,
 				answered: 1,
 				unitsEarned: 0,
-				baseUnits: 0,
+				accuracyEarned: 0,
+				accuracyAvailable: 0,
 				byCategory: { js: { seen: 1, correct: 1 } },
 			},
 		});
@@ -863,7 +873,8 @@ describe("applyActionToRun", () => {
 				correct: 0,
 				answered: SLICE_WINDOW,
 				unitsEarned: 0,
-				baseUnits: 0,
+				accuracyEarned: 0,
+				accuracyAvailable: 0,
 				byCategory: { js: { seen: SLICE_WINDOW, correct: 0 } },
 			},
 		};
@@ -939,70 +950,28 @@ describe("first install stamp (ADR-064)", () => {
 	});
 });
 
-describe("fetchCategoryPollCounts", () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		resetDrizzleMock(mock);
-	});
-
-	it("reads each category as distinct polls seen and distinct polls answered correctly", async () => {
-		mock.results.push([
-			{ categoryCode: "css", seen: 12, mastered: 7 },
-			{ categoryCode: "git", seen: 3, mastered: 0 },
-		]);
-
-		expect(await fetchCategoryPollCounts("red-from-pallet-town")).toEqual([
-			{ metric: "category-seen:css", count: 12 },
-			{ metric: "category-mastered:css", count: 7 },
-			{ metric: "category-seen:git", count: 3 },
-			{ metric: "category-mastered:git", count: 0 },
-		]);
-	});
-
-	it("reads nothing for an account that never answered", async () => {
-		mock.results.push([]);
-
-		expect(await fetchCategoryPollCounts("red-from-pallet-town")).toEqual([]);
-	});
-});
-
 describe("abandonSessionRun", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		resetDrizzleMock(mock);
 	});
 
-	it("finishes the run as abandoned without banking any storage", async () => {
-		mock.results.push([
-			{ state: toRunSnapshot(answeringState({ storage: 229 })) },
-		]);
+	it("finishes the run as abandoned and banks nothing, reading no state", async () => {
 		mock.results.push([{ id: 64 }]);
 
-		await abandonSessionRun(64, "red-from-pallet-town");
+		await abandonSessionRun(64);
 
 		expect(mock.setCalls[0]).toMatchObject({
 			status: "finished",
 			completion_reason: "abandoned",
 		});
 		expect(db.update).toHaveBeenCalledTimes(1);
+		expect(db.select).not.toHaveBeenCalled();
 	});
 
 	it("throws when the run is already finished", async () => {
-		mock.results.push([{ state: toRunSnapshot(answeringState({})) }]);
 		mock.results.push([]);
 
-		await expect(abandonSessionRun(64, "red-from-pallet-town")).rejects.toThrow(
-			"Run is already over"
-		);
-	});
-
-	it("abandons a corrupt run (no state row) with zero credit", async () => {
-		mock.results.push([]);
-		mock.results.push([{ id: 64 }]);
-
-		await abandonSessionRun(64, "red-from-pallet-town");
-
-		expect(mock.setCalls[0]).toMatchObject({ completion_reason: "abandoned" });
-		expect(db.update).toHaveBeenCalledTimes(1);
+		await expect(abandonSessionRun(64)).rejects.toThrow("Run is already over");
 	});
 });

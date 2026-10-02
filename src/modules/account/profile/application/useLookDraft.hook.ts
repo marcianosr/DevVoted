@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { saveLook } from "~/modules/account/profile/application/look.serverfn";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
@@ -10,35 +10,50 @@ import {
 	toggleTitleIn,
 	type Look,
 } from "~/modules/account/profile/domain/look.model";
-import { archiveQueryKeys, titleQueryKeys } from "~/shared/queryKeys";
+import { storedSwatchIdOf } from "~/modules/account/profile/domain/profileTheme.model";
+import { useApiMutation } from "~/shared/hooks/useApiMutation.hook";
+import {
+	archiveQueryKeys,
+	titleQueryKeys,
+	userQueryKeys,
+} from "~/shared/queryKeys";
 
-const useSaveLook = (userId: string) => {
+export const useSaveLook = (userId: string) => {
 	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: async (look: Look) => {
-			const response = await saveLook({
-				data: { borderId: look.borderId, titleIds: [...look.titleIds] },
-			});
-			if (!response.success) throw new Error(response.error);
-			return response.data;
-		},
-		onSuccess: () =>
-			Promise.all([
+	return useApiMutation({
+		mutationFn: (look: Look) =>
+			saveLook({
+				data: {
+					borderId: look.borderId,
+					titleIds: [...look.titleIds],
+					swatchId: look.swatchId,
+				},
+			}),
+		onSuccess: async (result) => {
+			if (!result.success) return;
+			await Promise.all([
 				queryClient.invalidateQueries({
 					queryKey: archiveQueryKeys.state(userId),
 				}),
 				queryClient.invalidateQueries({
 					queryKey: titleQueryKeys.state(userId),
 				}),
-			]),
+				queryClient.invalidateQueries({
+					queryKey: userQueryKeys.profile(userId),
+				}),
+				queryClient.invalidateQueries({
+					queryKey: userQueryKeys.card(userId),
+				}),
+			]);
+		},
 	});
 };
 
 export type LookDraft = ReturnType<typeof useLookDraft>;
 
 export const useLookDraft = (userId: string) => {
-	const { data: archive } = useArchiveState(userId);
-	const { data: titles } = useTitleState(userId);
+	const { view: archive } = useArchiveState(userId);
+	const { view: titles } = useTitleState(userId);
 	const save = useSaveLook(userId);
 	const [draft, setDraft] = useState<Look | null>(null);
 	const [tryingOnId, setTryingOnId] = useState<string | null>(null);
@@ -46,6 +61,7 @@ export const useLookDraft = (userId: string) => {
 	const saved: Look = {
 		borderId: archive?.equippedBorderId ?? null,
 		titleIds: titles?.equippedTitleIds ?? [],
+		swatchId: archive?.equippedSwatchId ?? null,
 	};
 	const look = draft ?? saved;
 
@@ -54,14 +70,21 @@ export const useLookDraft = (userId: string) => {
 		tryingOnId,
 		isDirty: !isSameLook(look, saved),
 		isSaving: save.isPending,
-		error: save.error?.message,
+		error: save.errorMessage ?? undefined,
 		pickBorder: (borderId: string | null) => {
 			setTryingOnId(null);
 			setDraft({ ...look, borderId });
 		},
+		pickSwatch: (swatchId: string) =>
+			setDraft({ ...look, swatchId: storedSwatchIdOf(swatchId) }),
 		toggleTitle: (titleId: string) =>
 			setDraft(toggleTitleIn(look, titleId, titles?.ownedTitleIds ?? [])),
 		tryOn: setTryingOnId,
-		save: () => save.mutate(look, { onSuccess: () => setDraft(null) }),
+		save: () =>
+			save.mutate(look, {
+				onSuccess: (result) => {
+					if (result.success) setDraft(null);
+				},
+			}),
 	};
 };

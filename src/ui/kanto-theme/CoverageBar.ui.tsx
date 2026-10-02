@@ -1,5 +1,6 @@
+import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import { NEEDED } from "~/shared/lib/copy";
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useRef } from "react";
 
 import { clsx } from "clsx";
 
@@ -11,21 +12,34 @@ const COPY = {
 	of: "of",
 } as const;
 
-const LAYOUT = "coverage-bar flex w-full flex-col gap-1.5";
-const TRACK =
-	"relative flex h-6 w-full overflow-hidden rounded-md bg-theme-raised";
-const ZONE = "coverage-bar-zone h-full bg-theme/25";
-const FILL =
-	"coverage-bar-fill absolute inset-y-0 left-0 min-w-0.5 bg-white/10";
-const EDGE = "absolute inset-y-0 right-0 w-0.5 bg-theme";
-const MARKS = "relative h-3 w-full";
+const LAYOUT = "coverage-bar @container flex w-full flex-col gap-1.5";
+const GAUGE = "relative block h-7.5 w-full";
+const LAYER = "grid h-full w-full overflow-hidden rounded-lg";
+const DIM_LAYER = "relative";
+const LIT_LAYER = "coverage-bar-lit absolute inset-0";
+const ZONE_SEAM = "border-l-2 border-black first:border-l-0";
+const DIM_ZONE = `coverage-bar-zone h-full bg-theme-dim ${ZONE_SEAM}`;
+const LIT_ZONE = `h-full bg-theme-lit ${ZONE_SEAM}`;
+const CAP =
+	"coverage-bar-cap absolute inset-y-0 right-0 w-2 border-l-2 border-black";
+const DIM_CAP = `${CAP} bg-theme-dim`;
+const LIT_CAP = `${CAP} bg-theme-lit`;
+const MARKER =
+	"coverage-bar-marker absolute -inset-y-1.5 w-[3px] -translate-x-px rounded-xs bg-pallet";
+const GHOST =
+	"coverage-bar-ghost absolute -inset-y-1 w-0 border-l-2 border-dashed border-pewter";
+const MARKS = "relative h-4 w-full";
+const TICKS = "relative h-8 w-full @max-[500px]:h-4";
 const MARK = "absolute text-xxs whitespace-nowrap text-theme-muted";
+const TICK =
+	"absolute flex flex-col text-xxs whitespace-nowrap text-theme-muted";
+const TICK_FIGURE = "text-xs font-bold text-theme-faint";
+const TICK_WORD = "@max-[500px]:hidden";
 const PINS = "relative h-7 w-full";
 const PIN =
 	"coverage-bar-pin absolute bottom-0 flex -translate-x-1/2 flex-col items-center gap-0.5";
 const PIN_BAND = "flex items-center gap-1";
 const PIN_STEM = "h-1.5 w-0.5 bg-theme";
-const PIN_COUNT = "coverage-bar-count";
 const POINTERS = "relative h-2 w-full";
 const POINTER =
 	"coverage-bar-pin absolute bottom-0 size-0 -translate-x-1/2 border-x-[6px] border-t-[7px] border-x-transparent border-t-theme";
@@ -34,22 +48,20 @@ const ANNOUNCE = "sr-only";
 const FULL = 100;
 const TENTHS = 10;
 
-export const COVERAGE_PIN_HOLD_MS = 1800;
-
 type MarkAnchor = "start" | "center" | "end";
 
 const ANCHOR_CLASS = {
-	start: "",
-	center: "-translate-x-1/2",
-	end: "-translate-x-full",
+	start: "items-start",
+	center: "-translate-x-1/2 items-center",
+	end: "-translate-x-full items-end",
 } satisfies Record<MarkAnchor, string>;
 
-type Mark = { at: number; label: string; anchor?: MarkAnchor };
+type Mark = { at: number; label: string; word?: string; anchor?: MarkAnchor };
 
 const PERCENT = "%";
 const SEPARATOR = "·";
 
-export type CoverageBandId = "danger" | "shaky" | "ok" | "healthy" | "perfect";
+export type { CoverageBandId };
 
 export const COVERAGE_BAND_COLOR = {
 	danger: "cinnabar",
@@ -73,16 +85,12 @@ const toTenth = (value: number) =>
 const clamped = (value: number) =>
 	Number.isFinite(value) ? Math.min(FULL, Math.max(0, value)) : 0;
 
-type CountStyle = CSSProperties & Record<"--coverage-count", number>;
-
-const countStyle = (whole: number): CountStyle => ({
-	"--coverage-count": whole,
-});
+const percentOf = (value: number) => `${value}${PERCENT}`;
 
 type HeldStyle = CSSProperties & Record<"--coverage-held", string>;
 
 const heldStyle = (percent: number): HeldStyle => ({
-	"--coverage-held": `${percent}${PERCENT}`,
+	"--coverage-held": percentOf(percent),
 });
 
 export type CoverageLadder = { floor: number; ok: number; healthy: number };
@@ -93,35 +101,21 @@ const rungsOf = ({ floor, ok, healthy }: CoverageLadder): CoverageLadder => ({
 	healthy: clamped(Math.max(ok, healthy)),
 });
 
-const bandOf = (
-	held: number,
-	{ floor, ok, healthy }: CoverageLadder
-): CoverageBandId => {
-	if (held >= FULL) return "perfect";
-	if (held >= healthy) return "healthy";
-	if (held >= ok) return "ok";
-	if (held >= floor) return "shaky";
-	return "danger";
-};
-
 type SpokenFigures = {
 	held: string;
 	needed: string;
-	count: number;
 };
 
 const spokenFiguresOf = (held: number, healthy: number): SpokenFigures => ({
-	held: `${toTenth(held)}${PERCENT}`,
-	needed: `${toTenth(healthy)}${PERCENT}`,
-	count: Math.round(clamped(held)),
+	held: percentOf(toTenth(held)),
+	needed: percentOf(toTenth(healthy)),
 });
 
 export const CoverageReading = ({
 	held,
+	band,
 	...ladder
-}: CoverageLadder & Pick<CoverageBarProps, "held">) => {
-	const band = coverageBandOf(held, ladder);
-
+}: CoverageLadder & Pick<CoverageBarProps, "held" | "band">) => {
 	return (
 		<>
 			<Badge>{spokenFiguresOf(held, rungsOf(ladder).healthy).held}</Badge>
@@ -132,11 +126,6 @@ export const CoverageReading = ({
 	);
 };
 
-export const coverageBandOf = (
-	held: number,
-	ladder: CoverageLadder
-): CoverageBandId => bandOf(clamped(held), rungsOf(ladder));
-
 const zonesOf = ({ floor, ok, healthy }: CoverageLadder) =>
 	[
 		{ band: "danger", width: floor },
@@ -145,34 +134,45 @@ const zonesOf = ({ floor, ok, healthy }: CoverageLadder) =>
 		{ band: "healthy", width: FULL - healthy },
 	] satisfies readonly { band: CoverageBandId; width: number }[];
 
-const boundaryMarksOf = (
-	{ floor, ok, healthy }: CoverageLadder,
-	{ needed }: SpokenFigures
-): readonly Mark[] =>
+const bandGridOf = (ladder: CoverageLadder): CSSProperties => ({
+	gridTemplateColumns: zonesOf(ladder)
+		.map((zone) => `${zone.width}fr`)
+		.join(" "),
+});
+
+const boundaryMarksOf = ({
+	floor,
+	ok,
+	healthy,
+}: CoverageLadder): readonly Mark[] =>
 	(
 		[
 			{
 				at: floor,
-				label: COVERAGE_BAND_WORD.shaky,
+				word: COVERAGE_BAND_WORD.shaky,
 				anchor: "end",
 				room: ok - floor,
 			},
 			{
 				at: ok,
-				label: COVERAGE_BAND_WORD.ok,
+				word: COVERAGE_BAND_WORD.ok,
 				anchor: "center",
 				room: healthy - ok,
 			},
 			{
 				at: healthy,
-				label: `${COVERAGE_BAND_WORD.healthy} ${needed}`,
+				word: COVERAGE_BAND_WORD.healthy,
 				anchor: "start",
 				room: FULL - healthy,
 			},
-		] satisfies readonly (Mark & { room: number })[]
+			{ at: FULL, word: COVERAGE_BAND_WORD.perfect, anchor: "end", room: FULL },
+		] satisfies readonly (Omit<Mark, "label"> & { room: number })[]
 	)
 		.filter((mark) => mark.at > 0 && mark.room > 0)
-		.map(({ room: _room, ...mark }) => mark);
+		.map(({ room: _room, ...mark }) => ({
+			...mark,
+			label: percentOf(toTenth(mark.at)),
+		}));
 
 const bandMarksOf = (ladder: CoverageLadder): readonly Mark[] => {
 	let start = 0;
@@ -198,24 +198,30 @@ const MARKS_OF = {
 	bands: bandMarksOf,
 	boundaries: boundaryMarksOf,
 	rungs: rungMarksOf,
-} satisfies Record<
-	CoverageMarks,
-	(ladder: CoverageLadder, spoken: SpokenFigures) => readonly Mark[]
->;
-
-const marksOf = (
-	ladder: CoverageLadder,
-	marks: CoverageMarks,
-	spoken: SpokenFigures
-) => MARKS_OF[marks](ladder, spoken);
+} satisfies Record<CoverageMarks, (ladder: CoverageLadder) => readonly Mark[]>;
 
 const readingOf = ({ held, needed }: SpokenFigures, band: CoverageBandId) =>
 	`${held} ${COPY.of} ${needed} ${NEEDED} ${SEPARATOR} ${COVERAGE_BAND_WORD[band]}`;
+
+const useSettle = (settleKey: string | undefined) => {
+	const gauge = useRef<HTMLSpanElement>(null);
+
+	useEffect(() => {
+		if (settleKey === undefined) return;
+		gauge.current?.getAnimations?.().forEach((animation) => {
+			animation.cancel();
+			animation.play();
+		});
+	}, [settleKey]);
+
+	return gauge;
+};
 
 export type CoverageMarks = "boundaries" | "bands" | "rungs";
 
 export type CoverageBarProps = {
 	held: number;
+	band: CoverageBandId;
 	floor: number;
 	ok: number;
 	healthy: number;
@@ -223,10 +229,92 @@ export type CoverageBarProps = {
 	pin?: boolean;
 	pointer?: boolean;
 	note?: string;
+	ghostAt?: number;
+	settleKey?: string;
 };
+
+const MarkRow = ({
+	marks,
+	ladder,
+}: {
+	marks: CoverageMarks;
+	ladder: CoverageLadder;
+}) => (
+	<span aria-hidden className={marks === "boundaries" ? TICKS : MARKS}>
+		{MARKS_OF[marks](ladder).map((mark) => (
+			<span
+				key={mark.label}
+				style={{ left: percentOf(mark.at) }}
+				className={clsx(
+					mark.word === undefined ? MARK : TICK,
+					ANCHOR_CLASS[mark.anchor ?? "center"]
+				)}
+			>
+				{mark.word === undefined ? (
+					mark.label
+				) : (
+					<>
+						<span className={TICK_FIGURE}>{mark.label}</span>
+						<span className={TICK_WORD}>{mark.word}</span>
+					</>
+				)}
+			</span>
+		))}
+	</span>
+);
+
+const Pin = ({
+	band,
+	spoken,
+}: {
+	band: CoverageBandId;
+	spoken: SpokenFigures;
+}) => (
+	<span aria-hidden className={PINS}>
+		<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={PIN}>
+			<Badge color={COVERAGE_BAND_COLOR[band]}>
+				<span className={PIN_BAND}>
+					{spoken.held}
+					<span>{SEPARATOR}</span>
+					{COVERAGE_BAND_WORD[band]}
+				</span>
+			</Badge>
+			<span className={PIN_STEM} />
+		</span>
+	</span>
+);
+
+const Pointer = ({ band }: { band: CoverageBandId }) => (
+	<span aria-hidden className={POINTERS}>
+		<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={POINTER} />
+	</span>
+);
+
+const BandLayer = ({
+	ladder,
+	lit,
+}: {
+	ladder: CoverageLadder;
+	lit: boolean;
+}) => (
+	<>
+		{zonesOf(ladder).map((zone) => (
+			<span
+				key={zone.band}
+				data-screen-theme={COVERAGE_BAND_COLOR[zone.band]}
+				className={lit ? LIT_ZONE : DIM_ZONE}
+			/>
+		))}
+		<span
+			data-screen-theme={COVERAGE_BAND_COLOR.perfect}
+			className={lit ? LIT_CAP : DIM_CAP}
+		/>
+	</>
+);
 
 export const CoverageBar = ({
 	held,
+	band,
 	floor,
 	ok,
 	healthy,
@@ -234,107 +322,53 @@ export const CoverageBar = ({
 	pin = false,
 	pointer = false,
 	note,
+	ghostAt,
+	settleKey,
 }: CoverageBarProps) => {
 	const ladder = rungsOf({ floor, ok, healthy });
-	const reading = clamped(held);
-	const band = bandOf(reading, ladder);
 	const spoken = spokenFiguresOf(held, ladder.healthy);
-
-	const [settled, setSettled] = useState(reading);
-	const [moved, setMoved] = useState(false);
-
-	if (settled !== reading) {
-		setSettled(reading);
-		setMoved(true);
-	}
-
-	useEffect(() => {
-		if (!moved) return;
-
-		const hold = setTimeout(() => setMoved(false), COVERAGE_PIN_HOLD_MS);
-		return () => clearTimeout(hold);
-	}, [moved, settled]);
-
-	const shown = pin || moved;
-
-	const track = (
-		<span role="img" aria-label={readingOf(spoken, band)} className={TRACK}>
-			{zonesOf(ladder).map((zone) => (
-				<span
-					key={zone.band}
-					data-screen-theme={COVERAGE_BAND_COLOR[zone.band]}
-					style={{ flexBasis: `${zone.width}${PERCENT}` }}
-					className={ZONE}
-				/>
-			))}
-			<span data-screen-theme={COVERAGE_BAND_COLOR[band]} className={FILL}>
-				<span className={EDGE} />
-			</span>
-		</span>
-	);
+	const gauge = useSettle(settleKey);
+	const grid = bandGridOf(ladder);
 
 	return (
-		<div style={heldStyle(reading)} className={LAYOUT}>
+		<div style={heldStyle(clamped(held))} className={LAYOUT}>
 			{note === undefined ? null : (
 				<Typography variant="hint">{note}</Typography>
 			)}
-			{pointer ? (
-				<span aria-hidden className={POINTERS}>
-					<span
-						data-screen-theme={COVERAGE_BAND_COLOR[band]}
-						data-shown
-						style={{ left: `${reading}${PERCENT}` }}
-						className={POINTER}
-					/>
-				</span>
-			) : (
-				<span aria-hidden className={PINS}>
-					<span
-						data-screen-theme={COVERAGE_BAND_COLOR[band]}
-						data-shown={shown}
-						style={{ left: `${reading}${PERCENT}` }}
-						className={PIN}
-					>
-						<Badge color={COVERAGE_BAND_COLOR[band]}>
-							<span className={PIN_BAND}>
-								{pin ? (
-									spoken.held
-								) : (
-									<>
-										<span
-											className={PIN_COUNT}
-											style={countStyle(spoken.count)}
-										/>
-										{PERCENT}
-									</>
-								)}
-								<span>{SEPARATOR}</span>
-								{COVERAGE_BAND_WORD[band]}
-							</span>
-						</Badge>
-						<span className={PIN_STEM} />
-					</span>
-				</span>
-			)}
+			{pointer ? <Pointer band={band} /> : null}
+			{pin && !pointer ? <Pin band={band} spoken={spoken} /> : null}
 			{pin ? null : (
 				<span role="status" className={ANNOUNCE}>
 					{spoken.held}
 				</span>
 			)}
-			{track}
-			{pointer ? null : (
-				<span aria-hidden className={MARKS}>
-					{marksOf(ladder, marks, spoken).map((mark) => (
-						<span
-							key={mark.label}
-							style={{ left: `${mark.at}${PERCENT}` }}
-							className={clsx(MARK, ANCHOR_CLASS[mark.anchor ?? "center"])}
-						>
-							{mark.label}
-						</span>
-					))}
+			<span
+				ref={gauge}
+				className={clsx(
+					GAUGE,
+					settleKey !== undefined && "coverage-bar-settle"
+				)}
+			>
+				<span
+					role="img"
+					aria-label={readingOf(spoken, band)}
+					style={grid}
+					className={clsx(LAYER, DIM_LAYER)}
+				>
+					<BandLayer ladder={ladder} lit={false} />
 				</span>
-			)}
+				<span aria-hidden style={grid} className={clsx(LAYER, LIT_LAYER)}>
+					<BandLayer ladder={ladder} lit />
+				</span>
+				<span
+					aria-hidden
+					data-shown={ghostAt !== undefined}
+					style={{ left: percentOf(clamped(ghostAt ?? 0)) }}
+					className={GHOST}
+				/>
+				<span aria-hidden className={MARKER} />
+			</span>
+			{pointer ? null : <MarkRow marks={marks} ladder={ladder} />}
 		</div>
 	);
 };

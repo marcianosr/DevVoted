@@ -3,8 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
 	autoUpgradeOnAnswer,
 	autoUpgradeRemaining,
+	hasUpgradeLeft,
 } from "~/modules/run/config/domain/autoUpgrade.model";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	maxLevelOf,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 
 const PICKS_FIRST = "beta";
@@ -74,6 +78,17 @@ describe("autoUpgradeOnAnswer", () => {
 		);
 		expect(wrong.progress).toBe(0);
 		expect(wrong.bumped).toBeUndefined();
+	});
+
+	it("starts the count over on a skipped poll, which is not a right answer", () => {
+		const four = answerCorrectly(build, 4, PICKS_SECOND);
+		const skipped = autoUpgradeOnAnswer(
+			four.configs,
+			four.progress,
+			"skipped",
+			PICKS_SECOND
+		);
+		expect(skipped.progress).toBe(0);
 	});
 
 	it("leaves the count alone on a partial answer — it neither advances nor resets", () => {
@@ -161,5 +176,27 @@ describe("autoUpgradeRemaining", () => {
 
 	it("stays undefined for a build with nothing that auto-upgrades", () => {
 		expect(autoUpgradeRemaining([CONFIGS.js], 0)).toBeUndefined();
+	});
+});
+
+describe("Dependabot with nothing left to upgrade", () => {
+	const maxed = (config: Config): Config => ({
+		...config,
+		level: maxLevelOf(config),
+	});
+	const spent = [maxed(CONFIGS.dependabot), CONFIGS.css, CONFIGS.unitTests].map(
+		(config) => (config.id === "dependabot" ? config : maxed(config))
+	);
+
+	it("knows a build of maxed configs has nothing left to upgrade", () => {
+		expect(hasUpgradeLeft(spent)).toBe(false);
+		expect(hasUpgradeLeft(build)).toBe(true);
+	});
+
+	it("stops counting, so no streak reads as a bump that never comes", () => {
+		const result = answerCorrectly(spent, NEEDED, PICKS_FIRST);
+
+		expect(result.progress).toBe(0);
+		expect(result.bumps).toEqual([]);
 	});
 });

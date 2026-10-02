@@ -3,6 +3,7 @@ import { Button } from "./Button.ui";
 import { Climber } from "./Climber.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
+import { NewBadge } from "./NewBadge.ui";
 import { Panel, type PanelBadge } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
@@ -39,6 +40,7 @@ export type AuditsRow = {
 	code: number;
 	name: string;
 	cue: string;
+	isNew?: boolean;
 	target?: string;
 	sender?: AuditSender;
 	respond?: AuditRespond;
@@ -119,6 +121,7 @@ export const AuditsPanel = ({
 								cue={row.cue}
 								layout="row"
 							/>
+							{row.isNew === true ? <NewBadge /> : null}
 							{row.target === undefined ? null : (
 								<Typography variant="hint">{row.target}</Typography>
 							)}

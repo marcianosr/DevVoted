@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+
+import { createTestQueryClient } from "~/test/queryClient.harness";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
@@ -11,9 +13,7 @@ type Board = { readonly trainer: string };
 const BROCK: Board = { trainer: "Brock" };
 
 const renderApiQuery = (queryFn: () => Promise<ApiResponse<Board>>) => {
-	const queryClient = new QueryClient({
-		defaultOptions: { queries: { retry: false } },
-	});
+	const queryClient = createTestQueryClient();
 	const wrapper = ({ children }: { children: ReactNode }) => (
 		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 	);

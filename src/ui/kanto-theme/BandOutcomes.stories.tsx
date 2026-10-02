@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { kantoAtStakeAt } from "~/test/kantoPoll.factory";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
+import { kantoAtStakeAt, kantoPrepLadder } from "~/test/kantoPoll.factory";
 
 import { BandOutcomes } from "./BandOutcomes.ui";
 import { Screen } from "./Screen.ui";
@@ -14,6 +18,22 @@ const FULL = 100;
 
 const atStake = (gate: number, coverageHeld: number) =>
 	kantoAtStakeAt({ gate, configs: [], coverageHeld });
+
+const SWEEP = "grid w-full gap-8 xl:grid-cols-2";
+
+const SWEEP_CONFIGS: readonly Config[] = [
+	CONFIGS.js,
+	CONFIGS.ts,
+	CONFIGS.codeCoverage,
+	CONFIGS.indexedDb,
+];
+
+const justClearingAt = (gate: number) =>
+	kantoAtStakeAt({
+		gate,
+		configs: SWEEP_CONFIGS,
+		coverageHeld: kantoPrepLadder(gate).ok,
+	});
 
 const meta: Meta<typeof BandOutcomes> = {
 	component: BandOutcomes,
@@ -56,5 +76,17 @@ export const InHalfAScreen: Story = {
 				<div />
 			</div>
 		</Screen>
+	),
+};
+
+export const EveryGate: Story = {
+	render: () => (
+		<div className={SWEEP}>
+			{ALL_SWATCHES.map((swatch) => (
+				<Screen key={swatch.gate} gate={swatch.theme} width="narrow" floor="0">
+					<BandOutcomes {...justClearingAt(swatch.gate)} />
+				</Screen>
+			))}
+		</div>
 	),
 };

@@ -19,7 +19,8 @@ import { Typography } from "./Typography.ui";
 
 const HEADER = "flex w-full flex-col gap-4";
 const CONTROL_ROW = "flex w-full flex-wrap items-center gap-3";
-const CONTROLS = "ml-auto flex shrink-0 flex-wrap items-center gap-3";
+const CONTROLS =
+	"grid w-full auto-cols-fr grid-flow-col gap-3 sm:ml-auto sm:flex sm:w-auto sm:shrink-0";
 const TITLE_ROW = "flex w-full items-start gap-4";
 const NAMING = "flex min-w-0 flex-col gap-1";
 const STATS = "flex flex-wrap items-center gap-2";
@@ -33,12 +34,16 @@ const POLLS = "flex w-full flex-col gap-2";
 
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
+const TURNOUT_LABEL = "flex min-w-0 flex-col";
+const RECORDS_HEADING = "flex-1";
 const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
+const CONTROL_WIDTH = "full";
 
 export const COPY = {
 	mapHint: "tap an avatar",
 	boards: "which board",
+	records: "today's records",
 } as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
@@ -63,6 +68,7 @@ export type CommunityHeader = {
 
 export type TurnoutBand = {
 	label: string;
+	caption?: string;
 	count: string;
 	color?: KantoColor;
 	climbers: readonly ClimberProps[];
@@ -73,6 +79,7 @@ export type CommunityTurnout = {
 	title: string;
 	when: string;
 	bands: readonly TurnoutBand[];
+	records?: readonly TurnoutBand[];
 };
 
 export type CommunityLeaders = {
@@ -142,6 +149,7 @@ const CommunityHeading = ({
 				{shop === undefined ? null : (
 					<Button
 						size={CONTROL_SIZE}
+						width={CONTROL_WIDTH}
 						icon="shop"
 						label={shop.label}
 						disabled={shop.onPress === undefined}
@@ -150,6 +158,7 @@ const CommunityHeading = ({
 				)}
 				<Button
 					size={CONTROL_SIZE}
+					width={CONTROL_WIDTH}
 					tone="action"
 					icon="gate"
 					label={prep.label}
@@ -186,30 +195,52 @@ const CommunityHeading = ({
 	</header>
 );
 
-const Turnout = ({ title, when, bands }: CommunityTurnout) => (
+const TurnoutRow = ({ band }: { band: TurnoutBand }) => (
+	<Panel.Row
+		trailing={
+			<>
+				<Badge color={band.color}>{band.count}</Badge>
+				<ClimberStack
+					climbers={band.climbers}
+					overflow={band.overflow}
+					size={CLIMBER_SIZE}
+				/>
+			</>
+		}
+	>
+		<span className={TURNOUT_LABEL}>
+			<Typography variant="subtitle" as="span">
+				{band.label}
+			</Typography>
+			{band.caption === undefined ? null : (
+				<Typography variant="hint" as="span">
+					{band.caption}
+				</Typography>
+			)}
+		</span>
+	</Panel.Row>
+);
+
+const Turnout = ({ title, when, bands, records = [] }: CommunityTurnout) => (
 	<Panel>
 		<Panel.Header label={title} meta={when} />
 		<Panel.Rows>
 			{bands.map((band) => (
-				<Panel.Row
-					key={band.label}
-					trailing={
-						<>
-							<Badge color={band.color}>{band.count}</Badge>
-							<ClimberStack
-								climbers={band.climbers}
-								overflow={band.overflow}
-								size={CLIMBER_SIZE}
-							/>
-						</>
-					}
-				>
-					<Typography variant="subtitle" as="span">
-						{band.label}
-					</Typography>
-				</Panel.Row>
+				<TurnoutRow key={band.label} band={band} />
 			))}
 		</Panel.Rows>
+		{records.length === 0 ? null : (
+			<>
+				<Panel.Columns
+					columns={[{ label: COPY.records, width: RECORDS_HEADING }]}
+				/>
+				<Panel.Rows>
+					{records.map((record) => (
+						<TurnoutRow key={record.label} band={record} />
+					))}
+				</Panel.Rows>
+			</>
+		)}
 	</Panel>
 );
 

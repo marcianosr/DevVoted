@@ -1,29 +1,18 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-import { getTodayDateString } from "~/shared/lib/dateUtils";
-import { sessionRunQueryKeys } from "~/shared/queryKeys";
-
 import { lootFallenRun } from "~/modules/run/community/application/community.serverfn";
+import { useApiMutation } from "~/shared/hooks/useApiMutation.hook";
+import { useRunCommit } from "~/modules/run/run/application/useRunCommit.hook";
 
 export const useLootFallenRun = () => {
-	const queryClient = useQueryClient();
-	const date = getTodayDateString();
+	const { refresh } = useRunCommit();
 
-	const claim = useMutation({
+	const claim = useApiMutation({
 		mutationFn: (runId: number) => lootFallenRun({ data: { runId } }),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: sessionRunQueryKeys.community(date),
-			});
-			queryClient.invalidateQueries({
-				queryKey: sessionRunQueryKeys.today(date),
-			});
-		},
+		onSuccess: refresh,
 	});
 
 	return {
 		onLoot: (runId: number) => claim.mutate(runId),
 		pendingRunId: claim.isPending ? claim.variables : undefined,
-		errorMessage: claim.data?.success === false ? claim.data.error : null,
+		errorMessage: claim.errorMessage,
 	};
 };

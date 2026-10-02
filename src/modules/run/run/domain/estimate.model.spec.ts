@@ -9,11 +9,9 @@ import {
 	estimatePayoutUnits,
 	estimatorFor,
 } from "~/modules/run/run/domain/estimate.model";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
-	MIN_WINDOW_UNITS,
-	SLICE_WINDOW,
-} from "~/modules/run/run/domain/rules.model";
-import {
+	HEAD_START_SHARE,
 	floorAt,
 	okAt,
 	scoringSlotsAt,
@@ -164,6 +162,8 @@ describe("an estimate crossing the start of a gate", () => {
 	});
 });
 
+const TWO_RIGHT = 2;
+
 describe("the gate settling an estimate", () => {
 	it("pays the cleared gate in coverage, on top of its own reward", () => {
 		const settled = answerGate(answering(5), SLICE_WINDOW);
@@ -171,28 +171,30 @@ describe("the gate settling an estimate", () => {
 		expect(settled.estimateThisGateUnits).toBe(1.25);
 	});
 
-	it("banks the won bet as coverage where the gate has room for it", () => {
+	it("carries a won bet past the full bar into the next gate as a tenth, like any overshoot", () => {
 		const GATE = 4;
 		const bet = {
 			...answering(5),
 			gatesCleared: GATE,
-			bankedUnits: floorAt(GATE) * scoringSlotsAt(GATE),
+			headStartUnits: floorAt(GATE) * scoringSlotsAt(GATE),
 		};
 		const withBet = answerGate(bet, SLICE_WINDOW);
 		const noBet = answerGate(
 			{ ...bet, estimatedCorrect: undefined },
 			SLICE_WINDOW
 		);
-		expect(withBet.bankedUnits - noBet.bankedUnits).toBe(6.25);
+		expect(withBet.headStartUnits - noBet.headStartUnits).toBeCloseTo(
+			6.25 * HEAD_START_SHARE,
+			1
+		);
 	});
 
-	it("spills a bet past the gate line into storage instead of wasting it", () => {
+	it("pays a bet past the full bar in storage instead of wasting it", () => {
 		const withBet = answerGate(answering(5), SLICE_WINDOW);
 		const noBet = answerGate(
 			{ ...answering(5), estimatedCorrect: undefined },
 			SLICE_WINDOW
 		);
-		expect(withBet.bankedUnits).toBe(noBet.bankedUnits);
 		expect(withBet.storage).toBeGreaterThan(noBet.storage);
 	});
 
@@ -202,7 +204,7 @@ describe("the gate settling an estimate", () => {
 		const start: RunState = {
 			...answering(1),
 			gatesCleared: MISSED_GATE,
-			bankedUnits:
+			headStartUnits:
 				floorAt(MISSED_GATE) * scoringSlotsAt(MISSED_GATE) - UNDER_THE_LINE,
 		};
 		const settled = answerGate(start, 1);
@@ -214,14 +216,14 @@ describe("the gate settling an estimate", () => {
 		const GATE = 4;
 		const SHORT_OF_OK = 3;
 		const underTheLine: RunState = {
-			...answering(MIN_WINDOW_UNITS),
+			...answering(TWO_RIGHT),
 			gatesCleared: GATE,
-			bankedUnits: okAt(GATE) * scoringSlotsAt(GATE) - SHORT_OF_OK,
+			headStartUnits: okAt(GATE) * scoringSlotsAt(GATE) - SHORT_OF_OK,
 		};
-		const withBet = answerGate(underTheLine, MIN_WINDOW_UNITS);
+		const withBet = answerGate(underTheLine, TWO_RIGHT);
 		const withoutBet = answerGate(
 			{ ...underTheLine, estimatedCorrect: undefined },
-			MIN_WINDOW_UNITS
+			TWO_RIGHT
 		);
 
 		expect(withBet.status).toBe("rewarding");

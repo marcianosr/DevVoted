@@ -1,11 +1,11 @@
 ---
 # DVTD-xl63
 title: Decide the gate-level correctness floor on its own terms
-status: todo
+status: scrapped
 type: task
 priority: high
 created_at: 2026-09-14T13:49:37Z
-updated_at: 2026-09-14T13:49:37Z
+updated_at: 2026-10-01T15:39:18Z
 ---
 
 `gateClosingFor` (gate.model.ts) carries a TODO proposing that a run answering
@@ -27,3 +27,7 @@ the screen never states a rule the engine does not enforce.
 - [ ] Decide it, and either amend rejected.md or delete the TODO
 - [ ] If it lands: wire `gateClosingFor`, green the two specs
 - [ ] If it lands: the clear objective states both conditions
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. ADR-157 deleted FLOOR_CORRECT and meetsGateFloor; the gate asks the window for a minimum instead.

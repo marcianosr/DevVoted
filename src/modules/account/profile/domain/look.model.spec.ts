@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	isSameLook,
 	lookRefusalOf,
+	storedSwatchOf,
 	toggleTitleIn,
 	type Look,
 	type LookOwnership,
@@ -15,12 +16,21 @@ const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
 const BIKESHEDDER = "title-it-compiles";
 
+const VOLCANO = "swatch-volcano";
+const EARTH = "swatch-earth";
+const PALLET = "swatch-pallet";
+
 const OWNED: LookOwnership = {
 	ownedBorderIds: [GREEN_BUILD],
 	ownedTitleIds: [SHIP_IT, TESTER, CSS_CARRIER, BIKESHEDDER],
+	ownedSwatchIds: [VOLCANO],
 };
 
-const WORN: Look = { borderId: GREEN_BUILD, titleIds: [SHIP_IT, TESTER] };
+const WORN: Look = {
+	borderId: GREEN_BUILD,
+	titleIds: [SHIP_IT, TESTER],
+	swatchId: VOLCANO,
+};
 
 describe("lookRefusalOf", () => {
 	it("accepts a look made only of owned things within the cap", () => {
@@ -28,7 +38,9 @@ describe("lookRefusalOf", () => {
 	});
 
 	it("accepts the default border and no titles", () => {
-		expect(lookRefusalOf({ borderId: null, titleIds: [] }, OWNED)).toBeNull();
+		expect(
+			lookRefusalOf({ borderId: null, titleIds: [], swatchId: null }, OWNED)
+		).toBeNull();
 	});
 
 	it("refuses a border the player has not bought", () => {
@@ -47,6 +59,28 @@ describe("lookRefusalOf", () => {
 		const titleIds = [SHIP_IT, TESTER, CSS_CARRIER, BIKESHEDDER];
 
 		expect(lookRefusalOf({ ...WORN, titleIds }, OWNED)).toBe("over-cap");
+	});
+
+	it("refuses a swatch the player has not earned", () => {
+		expect(lookRefusalOf({ ...WORN, swatchId: EARTH }, OWNED)).toBe(
+			"swatch-not-owned"
+		);
+	});
+
+	it("refuses an id that names no swatch", () => {
+		expect(lookRefusalOf({ ...WORN, swatchId: "swatch-mew" }, OWNED)).toBe(
+			"swatch-not-owned"
+		);
+	});
+
+	it("accepts the pallet swatch without owning it, since it is everyone's", () => {
+		expect(lookRefusalOf({ ...WORN, swatchId: PALLET }, OWNED)).toBeNull();
+	});
+
+	it("refuses a title listed twice", () => {
+		expect(
+			lookRefusalOf({ ...WORN, titleIds: [SHIP_IT, SHIP_IT] }, OWNED)
+		).toBe("title-repeated");
 	});
 });
 
@@ -70,11 +104,25 @@ describe("toggleTitleIn", () => {
 	});
 });
 
+describe("storedSwatchOf", () => {
+	it("stores an owned swatch as itself", () => {
+		expect(storedSwatchOf(WORN)).toBe(VOLCANO);
+	});
+
+	it("stores pallet as nothing worn, so the default needs no row", () => {
+		expect(storedSwatchOf({ ...WORN, swatchId: PALLET })).toBeNull();
+	});
+});
+
 describe("isSameLook", () => {
 	it("reads a reordered title list as a different look", () => {
 		expect(isSameLook(WORN, { ...WORN, titleIds: [TESTER, SHIP_IT] })).toBe(
 			false
 		);
+	});
+
+	it("reads a different swatch as a different look", () => {
+		expect(isSameLook(WORN, { ...WORN, swatchId: null })).toBe(false);
 	});
 
 	it("reads an identical look as the same", () => {

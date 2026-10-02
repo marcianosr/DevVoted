@@ -7,8 +7,8 @@ import {
 	COVERAGE_BAND_COLOR,
 	COVERAGE_BAND_WORD,
 	CoverageBar,
+	type CoverageBandId,
 	type CoverageLadder,
-	coverageBandOf,
 } from "./CoverageBar.ui";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Swatch } from "./Swatch.ui";
@@ -50,7 +50,10 @@ const TILE =
 
 export type StandingStat = { label: string; value: string; color?: KantoColor };
 
-export type StandingCoverage = CoverageLadder & { held: number };
+export type StandingCoverage = CoverageLadder & {
+	held: number;
+	band: CoverageBandId;
+};
 
 export type StandingGate = {
 	name: string;
@@ -67,8 +70,7 @@ export type StandingProps = {
 	stats: readonly StandingStat[];
 };
 
-const readingOf = ({ held, ...ladder }: StandingCoverage) => {
-	const band = coverageBandOf(held, ladder);
+const readingOf = ({ held, band }: StandingCoverage) => {
 	return {
 		label: `${held}${PERCENT}${SEPARATOR}${COVERAGE_BAND_WORD[band]}`,
 		color: COVERAGE_BAND_COLOR[band],

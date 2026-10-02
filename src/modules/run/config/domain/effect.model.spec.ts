@@ -34,14 +34,22 @@ const NARROW_LINTER = {
 describe("effectOf — Focus", () => {
 	it("pays its multiplier in-category and 1× outside it", () => {
 		const effect = effectOf(CONFIGS.js);
-		expect(effect.coverage?.(answering("js"))).toEqual({ mult: 1.25, add: 0 });
-		expect(effect.coverage?.(answering("css"))).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(answering("js"))).toEqual({
+			mult: 1.25,
+			add: 0,
+			boost: 1,
+		});
+		expect(effect.coverage?.(answering("css"))).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1,
+		});
 	});
 
 	it("scales with level", () => {
 		expect(
 			effectOf({ ...CONFIGS.js, level: 2 }).coverage?.(answering("js"))
-		).toEqual({ mult: 1.5, add: 0 });
+		).toEqual({ mult: 1.5, add: 0, boost: 1 });
 	});
 
 	it("focuses nothing when the poll's category is not known yet", () => {
@@ -50,7 +58,7 @@ describe("effectOf — Focus", () => {
 				...answering("js"),
 				category: undefined,
 			})
-		).toEqual({ mult: 1, add: 0 });
+		).toEqual({ mult: 1, add: 0, boost: 1 });
 	});
 
 	it("contributes no faucet or mask", () => {
@@ -63,7 +71,11 @@ describe("effectOf — Focus", () => {
 describe("effectOf — coverage amplifiers", () => {
 	it("Intellisense multiplies ALL coverage instead of storage rewards", () => {
 		const effect = effectOf(CONFIGS.intellisense);
-		expect(effect.coverage?.(answering("java"))).toEqual({ mult: 1.5, add: 0 });
+		expect(effect.coverage?.(answering("java"))).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1.5,
+		});
 		expect(effect.rewardMultiplier).toBeUndefined();
 	});
 
@@ -71,13 +83,15 @@ describe("effectOf — coverage amplifiers", () => {
 		expect(effectOf(CONFIGS.codeCoverage).coverage?.(answering("js"))).toEqual({
 			mult: 1,
 			add: 0.1,
+			boost: 1,
 		});
 	});
 
 	it("AGENTS.md doubles all coverage, no strings attached (ADR-035)", () => {
 		expect(effectOf(CONFIGS.agentsMd).coverage?.(answering("css"))).toEqual({
-			mult: 2,
+			mult: 1,
 			add: 0,
+			boost: 2,
 		});
 	});
 });
@@ -90,14 +104,23 @@ describe("effectOf — Cache", () => {
 
 	it("pays nothing cold and a quarter unit more per cached hit", () => {
 		const effect = effectOf(CONFIGS.cache);
-		expect(effect.coverage?.(warm("js", 0))).toEqual({ mult: 1, add: 0 });
-		expect(effect.coverage?.(warm("js", 2))).toEqual({ mult: 1, add: 0.5 });
+		expect(effect.coverage?.(warm("js", 0))).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1,
+		});
+		expect(effect.coverage?.(warm("js", 2))).toEqual({
+			mult: 1,
+			add: 0.5,
+			boost: 1,
+		});
 	});
 
 	it("tops out at one unit however warm the category runs", () => {
 		expect(effectOf(CONFIGS.cache).coverage?.(warm("js", 9))).toEqual({
 			mult: 1,
 			add: 1,
+			boost: 1,
 		});
 	});
 
@@ -118,19 +141,29 @@ describe("effectOf — .prettierrc", () => {
 		expect(effectOf(CONFIGS.prettierrc).coverage?.(onMultiple(), 0.5)).toEqual({
 			mult: 1,
 			add: 0.5,
+			boost: 1,
 		});
 	});
 
 	it("adds nothing to a figure that is already whole", () => {
 		const effect = effectOf(CONFIGS.prettierrc);
-		expect(effect.coverage?.(onMultiple(), 1)).toEqual({ mult: 1, add: 0 });
-		expect(effect.coverage?.(onMultiple(), 2)).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(onMultiple(), 1)).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1,
+		});
+		expect(effect.coverage?.(onMultiple(), 2)).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1,
+		});
 	});
 
 	it("adds nothing when no answer has been scored yet", () => {
 		expect(effectOf(CONFIGS.prettierrc).coverage?.(onMultiple())).toEqual({
 			mult: 1,
 			add: 0,
+			boost: 1,
 		});
 	});
 
@@ -144,20 +177,30 @@ describe("effectOf — .prettierrc", () => {
 describe("effectOf — Cold Start", () => {
 	it("pays nothing for the window's opener and ×1.5 for every answer after", () => {
 		const effect = effectOf(CONFIGS.coldStart);
-		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 0, add: 0 });
+		expect(effect.coverage?.(answering("js", 0))).toEqual({
+			mult: 0,
+			add: 0,
+			boost: 1,
+		});
 		expect(effect.coverage?.(answering("js", 1))).toEqual({
 			mult: 1.5,
 			add: 0,
+			boost: 1,
 		});
 		expect(effect.rewardMultiplier).toBeUndefined();
 	});
 
 	it("keeps the dead opener dead when minified, since a cost is never halved", () => {
 		const effect = effectOf(minify(CONFIGS.coldStart));
-		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 0, add: 0 });
+		expect(effect.coverage?.(answering("js", 0))).toEqual({
+			mult: 0,
+			add: 0,
+			boost: 1,
+		});
 		expect(effect.coverage?.(answering("js", 1))).toEqual({
 			mult: 1.25,
 			add: 0,
+			boost: 1,
 		});
 	});
 });
@@ -170,33 +213,59 @@ describe("effectOf — Regression Test", () => {
 
 	it("doubles a poll this account has missed before, and only that poll", () => {
 		const effect = effectOf(CONFIGS.regressionTest);
-		expect(effect.coverage?.(missed("js"))).toEqual({ mult: 2, add: 0 });
-		expect(effect.coverage?.(answering("js"))).toEqual({ mult: 1, add: 0 });
+		expect(effect.coverage?.(missed("js"))).toEqual({
+			mult: 2,
+			add: 0,
+			boost: 1,
+		});
+		expect(effect.coverage?.(answering("js"))).toEqual({
+			mult: 1,
+			add: 0,
+			boost: 1,
+		});
 	});
 
 	it("halves the bonus when minified, since the doubling is what it pays", () => {
 		const effect = effectOf(minify(CONFIGS.regressionTest));
-		expect(effect.coverage?.(missed("js"))).toEqual({ mult: 1.5, add: 0 });
+		expect(effect.coverage?.(missed("js"))).toEqual({
+			mult: 1.5,
+			add: 0,
+			boost: 1,
+		});
 	});
 
 	it("reads on any category, since a miss is not a subject", () => {
 		const effect = effectOf(CONFIGS.regressionTest);
-		expect(effect.coverage?.(missed("css"))).toEqual({ mult: 2, add: 0 });
-		expect(effect.coverage?.(missed("java"))).toEqual({ mult: 2, add: 0 });
+		expect(effect.coverage?.(missed("css"))).toEqual({
+			mult: 2,
+			add: 0,
+			boost: 1,
+		});
+		expect(effect.coverage?.(missed("java"))).toEqual({
+			mult: 2,
+			add: 0,
+			boost: 1,
+		});
 	});
 });
 
 describe("effectOf — Overclock", () => {
 	it("quadruples the window's opener and throttles every answer after it", () => {
 		const effect = effectOf(CONFIGS.overclock);
-		expect(effect.coverage?.(answering("js", 0))).toEqual({ mult: 4, add: 0 });
+		expect(effect.coverage?.(answering("js", 0))).toEqual({
+			mult: 4,
+			add: 0,
+			boost: 1,
+		});
 		expect(effect.coverage?.(answering("js", 1))).toEqual({
 			mult: 0.5,
 			add: 0,
+			boost: 1,
 		});
 		expect(effect.coverage?.(answering("js", 4))).toEqual({
 			mult: 0.5,
 			add: 0,
+			boost: 1,
 		});
 		expect(effect.rewardMultiplier).toBeUndefined();
 	});
@@ -279,14 +348,14 @@ describe("configStatusFor — coverage on the online arm", () => {
 	it("carries the multiplier a Focus config is applying to this poll", () => {
 		expect(configStatusFor(CONFIGS.js, onPoll("js"))).toEqual({
 			kind: "online",
-			coverage: { mult: 1.25, add: 0 },
+			coverage: { mult: 1.25, add: 0, boost: 1 },
 		});
 	});
 
 	it("carries the units a flat adder is contributing", () => {
 		expect(configStatusFor(CONFIGS.codeCoverage, onPoll("css"))).toEqual({
 			kind: "online",
-			coverage: { mult: 1, add: 0.1 },
+			coverage: { mult: 1, add: 0.1, boost: 1 },
 		});
 	});
 
@@ -491,10 +560,19 @@ describe("configStatusFor — skipped", () => {
 		).toEqual({ kind: "online", bumpIn: 2 });
 	});
 
+	it("sits Dependabot out once nothing in the build can still be upgraded", () => {
+		expect(
+			configStatusFor(
+				CONFIGS.dependabot,
+				onPoll("js", 1, { autoUpgradeProgress: 2, nothingToUpgrade: true })
+			)
+		).toEqual({ kind: "skipped", why: { kind: "nothingToUpgrade" } });
+	});
+
 	it("leaves a config that bumps nothing without a count", () => {
 		expect(
 			configStatusFor(CONFIGS.js, onPoll("js", 1, { autoUpgradeProgress: 3 }))
-		).toEqual({ kind: "online", coverage: { mult: 1.25, add: 0 } });
+		).toEqual({ kind: "online", coverage: { mult: 1.25, add: 0, boost: 1 } });
 	});
 
 	it("leads with Freemium's bill rather than its shop discount", () => {

@@ -1,7 +1,3 @@
-import {
-	SLICE_WINDOW,
-	streakMultiplier,
-} from "~/modules/run/run/domain/rules.model";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 export const BASE_UNIT = 1;
@@ -10,6 +6,7 @@ export const MULTIPLE_CREDIT = 2;
 export const KB_PER_PROVEN_SLOT = 32;
 export const PAYOUT_RATIO_CAP = 1.5;
 export const PERFECT_BONUS = 1.5;
+export const KB_PER_EXTRA_BAR = 16;
 
 const FLOAT_TOLERANCE = 1e-9;
 
@@ -23,40 +20,52 @@ export const percentOf = (ratio: number): number => ratio * AS_PERCENT;
 export const ratioOf = (percent: number): number => percent / AS_PERCENT;
 
 export type GateRung = {
+	readonly slots: number;
+	readonly floor: number;
+	readonly ok: number;
 	readonly healthy: number;
-	readonly okDrop: number;
 };
 
 export const GATE_RUNGS: readonly GateRung[] = [
-	{ healthy: 3, okDrop: 1 },
-	{ healthy: 6, okDrop: 1 },
-	{ healthy: 9, okDrop: 1 },
-	{ healthy: 12, okDrop: 1.5 },
-	{ healthy: 15.5, okDrop: 1.5 },
-	{ healthy: 19.5, okDrop: 2 },
-	{ healthy: 24, okDrop: 2 },
-	{ healthy: 29, okDrop: 2 },
-	{ healthy: 34.5, okDrop: 2.5 },
-	{ healthy: 40, okDrop: 2.5 },
-	{ healthy: 46, okDrop: 3 },
-	{ healthy: 52, okDrop: 3 },
-	{ healthy: 58.5, okDrop: 3 },
+	{ slots: 9, floor: 0, ok: 20, healthy: 40 },
+	{ slots: 9, floor: 5, ok: 25, healthy: 44 },
+	{ slots: 9, floor: 11, ok: 29, healthy: 47 },
+	{ slots: 9, floor: 16, ok: 34, healthy: 51 },
+	{ slots: 9, floor: 22, ok: 38, healthy: 55 },
+	{ slots: 10, floor: 27, ok: 43, healthy: 58 },
+	{ slots: 10, floor: 33, ok: 47, healthy: 62 },
+	{ slots: 10, floor: 38, ok: 52, healthy: 65 },
+	{ slots: 10, floor: 44, ok: 56, healthy: 69 },
+	{ slots: 11, floor: 49, ok: 61, healthy: 73 },
+	{ slots: 11, floor: 55, ok: 65, healthy: 76 },
+	{ slots: 11, floor: 60, ok: 70, healthy: 80 },
+	{ slots: 11, floor: 65, ok: 74, healthy: 84 },
 ];
+
+export const HEAD_START_SHARE = 0.1;
 
 export const rungAt = (gate: number): GateRung =>
 	GATE_RUNGS[Math.min(Math.max(0, gate), GATE_RUNGS.length - 1)];
 
-export const healthyUnitsAt = (gate: number): number => rungAt(gate).healthy;
-
-export const okDropAt = (gate: number): number => rungAt(gate).okDrop;
-
-export const floorUnitsAt = (gate: number): number =>
-	gate <= 0 ? 0 : healthyUnitsAt(gate - 1);
-
 const asRatio = (value: number): number => Math.min(1, Math.max(0, value));
 
-export const scoringSlotsAt = (gate: number): number =>
-	SLICE_WINDOW * (Math.max(0, gate) + 1);
+export type AccuracyTally = {
+	readonly earned: number;
+	readonly available: number;
+};
+
+export const accuracyMultiplierFor = ({
+	earned,
+	available,
+}: AccuracyTally): number =>
+	available <= 0 ? 1 : 2 ** (Math.max(0, earned) / available);
+
+export const gateOutputOf = (
+	pollOutput: number,
+	accuracy: AccuracyTally
+): number => pollOutput * accuracyMultiplierFor(accuracy);
+
+export const scoringSlotsAt = (gate: number): number => rungAt(gate).slots;
 
 export const unitsToRatio = (units: number, gate: number): number =>
 	units / scoringSlotsAt(gate);
@@ -64,29 +73,38 @@ export const unitsToRatio = (units: number, gate: number): number =>
 export const runCoverageOf = (units: number, gate: number): number =>
 	asRatio(unitsToRatio(units, gate));
 
+const codebaseThrough = (gate: number): number =>
+	GATE_RUNGS.slice(0, Math.max(0, gate) + 1).reduce(
+		(sum, rung) => sum + rung.slots,
+		0
+	);
+
+export const runShareOf = (lifetimeUnits: number, gate: number): number =>
+	asRatio(lifetimeUnits / codebaseThrough(gate));
+
 export const coverageGainPercentFor = (units: number, gate: number): number =>
 	percentOf(unitsToRatio(units, gate));
-
-export const bankableUnits = (units: number, gate: number): number =>
-	Math.min(Math.max(0, units), scoringSlotsAt(gate));
 
 export const surplusUnits = (units: number, gate: number): number =>
 	Math.max(0, units - scoringSlotsAt(gate));
 
 export const surplusPayoutKb = (units: number, gate: number): number =>
-	Math.round(surplusUnits(units, gate) * KB_PER_PROVEN_SLOT);
+	Math.round(unitsToRatio(surplusUnits(units, gate), gate) * KB_PER_EXTRA_BAR);
 
-export const healthyAt = (gate: number): number =>
-	unitsToRatio(healthyUnitsAt(gate), gate);
+export const headStartFor = (units: number, gate: number): number =>
+	Math.min(
+		surplusUnits(units, gate) * HEAD_START_SHARE,
+		floorAt(gate + 1) * scoringSlotsAt(gate + 1)
+	);
 
-export const okUnitsAt = (gate: number): number =>
-	healthyUnitsAt(gate) - okDropAt(gate);
+export const healthyAt = (gate: number): number => ratioOf(rungAt(gate).healthy);
 
-export const okAt = (gate: number): number =>
-	unitsToRatio(okUnitsAt(gate), gate);
+export const okAt = (gate: number): number => ratioOf(rungAt(gate).ok);
 
-export const floorAt = (gate: number): number =>
-	unitsToRatio(floorUnitsAt(gate), gate);
+export const floorAt = (gate: number): number => ratioOf(rungAt(gate).floor);
+
+export const healthyUnitsAt = (gate: number): number =>
+	healthyAt(gate) * scoringSlotsAt(gate);
 
 export type CoverageConfigBonus = {
 	readonly configId: string;
@@ -96,7 +114,7 @@ export type CoverageConfigBonus = {
 
 export type CoverageBreakdown = {
 	readonly base: number;
-	readonly streakBonus: number;
+	readonly streakBonus?: number;
 	readonly configBonuses: readonly CoverageConfigBonus[];
 };
 
@@ -126,6 +144,9 @@ const isPerfect = (ratio: number): boolean => ratio + FLOAT_TOLERANCE >= 1;
 
 export const perfectBonusFor = (ratio: number): number =>
 	isPerfect(ratio) ? PERFECT_BONUS : 1;
+
+export const perfectBonusKbFor = (band: CoverageBand, clearKb: number): number =>
+	band.id === "perfect" ? Math.round(clearKb * (PERFECT_BONUS - 1)) : 0;
 
 export const bandFor = (ratio: number, gate: number): CoverageBand => {
 	if (isPerfect(ratio)) return BAND.perfect;
@@ -170,14 +191,12 @@ export const payoutRatioFor = (ratio: number, gate: number): number =>
 export const gatePayoutKb = (
 	ratio: number,
 	gate: number,
-	weight: number,
-	streak: number
+	weight: number
 ): number =>
 	Math.round(
 		payoutRatioFor(ratio, gate) *
 			perfectBonusFor(ratio) *
 			weight *
-			KB_PER_PROVEN_SLOT *
-			streakMultiplier(streak)
+			KB_PER_PROVEN_SLOT
 	);
 

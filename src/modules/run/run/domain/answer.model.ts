@@ -3,43 +3,19 @@ import {
 	escrowKbPerCorrect,
 	chainKbFor,
 	faucetKbPerCorrect,
-	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { autoUpgradeOnAnswer } from "~/modules/run/config/domain/autoUpgrade.model";
-import { decayOnClear } from "~/modules/run/config/domain/decay.model";
-import { billSubscriptionsOnClear } from "~/modules/run/config/domain/subscription.model";
 import {
 	type AnswerContext,
 	type GateWindow,
 } from "~/modules/run/config/domain/effect.model";
 import { answerPayoutFor } from "~/modules/run/build/domain/answerPayout.model";
-import {
-	type Build,
-	billableSlotsOf,
-	catcherFor,
-	extraPickPayoutFor,
-	gateClearPayout,
-	occupiedSlots,
-	upkeepAfterCreditOf,
-	storageInterestFor,
-	stripConfig,
-} from "~/modules/run/build/domain/build.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import {
 	type CoverageBreakdown,
 	type CoverageFactors,
-	bankableUnits,
-	percentOf,
-	surplusPayoutKb,
+	creditFor,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	type GateClose,
-	bandAtClose,
-	failPeelQuotaFor,
-	type GateRuling,
-	gateRulingFor,
-	gateDemandFor,
-	runCoverageAtClose,
-} from "~/modules/run/gate/domain/gate.model";
 import {
 	type Audit,
 	auditBurnKb,
@@ -48,24 +24,12 @@ import {
 	auditTimeLimitMs,
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
-import { estimatePayoutUnits } from "~/modules/run/run/domain/estimate.model";
-import { slaUpliftKb } from "~/modules/run/run/domain/sla.model";
-import { dealIncidentOffer } from "~/modules/run/run/domain/heldAudit.model";
+import { approvedPollOf } from "~/modules/run/run/domain/approval.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
-import { draftSeed } from "~/modules/run/shop/domain/draft.model";
 import {
-	escrowCommitKb,
 	faucetRemainingKb,
-	highestAffordableSpace,
-	isPeelFatal,
-	upkeepForSpace,
 	roundToOneDecimal,
 	roundToTwoDecimals,
-	MIN_WINDOW_UNITS,
-	SLICE_WINDOW,
-	VICTORY_GATE,
-	INCIDENT_SURVIVAL_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type AnsweredPoll,
@@ -82,348 +46,16 @@ import {
 import {
 	addStorage,
 	auditsOf,
-	closesOf,
-	freshWindow,
-	incidentsAt,
-	type LastClose,
 	liveConfigsOf,
 	type RunState,
-	scheduleOf,
-	shopDraft,
 	withLog,
 	withBuild,
 } from "~/modules/run/run/domain/run.model";
 
-const clearLine = (gateNumber: number, reward: number): string => {
-	const swatch = swatchForGate(gateNumber);
-	const earned = swatch ? `, ${swatch.name} earned` : "";
-	return `Gate ${gateNumber} cleared! +${reward}KB${earned}.`;
-};
-
-type UpkeepSettlement = {
-	readonly paidKb: number;
-	readonly droppedTo?: number;
-};
-
-const settleUpkeep = (build: Build, balanceKb: number): UpkeepSettlement => {
-	const owed = upkeepAfterCreditOf(build);
-	if (owed <= balanceKb) return { paidKb: owed };
-
-	const affordable = highestAffordableSpace(balanceKb);
-	return { paidKb: upkeepForSpace(affordable), droppedTo: affordable };
-};
-
-const missedLineFor = (
-	ruling: GateRuling,
-	gateNumber: number,
-	scored: number,
-	heldCoverage: number,
-	demand: number
-): string =>
-	ruling.closing === "held" && ruling.heldBy === "unscored"
-		? `Gate ${gateNumber} failed: the window scored ${scored} of ${MIN_WINDOW_UNITS} units.`
-		: `Gate ${gateNumber} failed: the run reads ${heldCoverage}% of ${demand}%.`;
-
-export const gateWindowComplete = (state: RunState): boolean =>
-	state.window.answered >= SLICE_WINDOW;
-
-const closeWindow = (state: RunState, nextIndex: number): RunState => {
-	const gateNumber = state.gatesCleared;
-
-	const schedule = scheduleOf(state);
-	const committed = state.estimatedCorrect;
-	const estimateUnits = estimatePayoutUnits(
-		state.build.configs,
-		committed,
-		state.window.correct,
-		state.gatesCleared
-	);
-	const settledCommitments = {
-		estimatedCorrect: undefined,
-		estimateThisGateUnits: committed === undefined ? undefined : estimateUnits,
-		approvedPollId: undefined,
-	};
-
-	const promised = state.slaBand;
-	const droppedSla = { slaBand: undefined, slaUpliftKb: undefined };
-
-	const unitsThisGate = state.window.unitsEarned + estimateUnits;
-
-	const swatchGates = state.swatchGatesEarned ?? [];
-	const settledSwatch = {
-		swatchGatesEarned:
-			state.window.correct >= SLICE_WINDOW && !swatchGates.includes(gateNumber)
-				? [...swatchGates, gateNumber]
-				: swatchGates,
-	};
-
-	const pending = state.pendingKb ?? 0;
-	const rolledBackEscrow = {
-		pendingKb: 0,
-		escrowCommittedKb: 0,
-		escrowRolledBackKb: pending,
-	};
-
-	const close: GateClose = {
-		build: state.build,
-		bankedUnits: state.bankedUnits,
-		unitsThisGate,
-		baseUnitsThisGate: state.window.baseUnits,
-		correctThisGate: state.window.correct,
-		gatesCleared: state.gatesCleared,
-		schedule,
-	};
-	const ruling = gateRulingFor(close);
-	const closingBand = bandAtClose(close);
-	const lastClose: LastClose = {
-		gate: gateNumber,
-		band: closingBand.id,
-		cleared: ruling.closing === "cleared",
-	};
-	const recordClose = (kb: number) => ({
-		lastClose,
-		closes: [...closesOf(state), { ...lastClose, kb }],
-	});
-	const recordedClose = recordClose(0);
-	const heldCoverage = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
-
-	if (ruling.closing !== "cleared") {
-		const attempts = state.gateAttempts ?? 0;
-		const quota = failPeelQuotaFor(
-			state.build.configs,
-			gateNumber,
-			schedule,
-			attempts
-		);
-		const occupied = occupiedSlots(state.build.configs);
-		const caughtBy =
-			ruling.closing === "held" && ruling.heldBy === "catch"
-				? catcherFor(state.build.configs)
-				: undefined;
-		const caught =
-			caughtBy === undefined
-				? undefined
-				: {
-						build: stripConfig(state.build, caughtBy.id),
-						owed: Math.max(0, quota - slotsOf(caughtBy)),
-						deletedConfigs: [caughtBy],
-						caughtFatalBy: caughtBy.label,
-					};
-		const demand = gateDemandFor(
-			state.build.configs,
-			state.gatesCleared,
-			schedule
-		);
-		const missed = missedLineFor(
-			ruling,
-			gateNumber,
-			state.window.baseUnits,
-			heldCoverage,
-			demand
-		);
-
-		if (ruling.closing === "fatal")
-			return {
-				...state,
-				...settledCommitments,
-				...settledSwatch,
-				...rolledBackEscrow,
-				...droppedSla,
-				...recordedClose,
-				currentIndex: nextIndex,
-				status: "dead",
-				log: withLog(state, `${missed} The gate shut on it. Run over.`),
-			};
-
-		if (caught === undefined && isPeelFatal(quota, occupied))
-			return {
-				...state,
-				...settledCommitments,
-				...settledSwatch,
-				...rolledBackEscrow,
-				...droppedSla,
-				...recordedClose,
-				currentIndex: nextIndex,
-				status: "dead",
-				log: withLog(
-					state,
-					`${missed} It peels ${quota} — the build fills ${occupied}. Run over.`
-				),
-			};
-		const owed = caught?.owed ?? quota;
-		return {
-			...state,
-			...settledCommitments,
-			...settledSwatch,
-			...rolledBackEscrow,
-			...droppedSla,
-			...recordedClose,
-			...(caught === undefined
-				? {}
-				: {
-						build: caught.build,
-						deletedConfigs: caught.deletedConfigs,
-						caughtFatalBy: caught.caughtFatalBy,
-					}),
-			currentIndex: nextIndex,
-			status: "awaiting-strip",
-			autoUpgradeProgress: 0,
-			gateAttempts: attempts + 1,
-			storageBeforeClearKb: state.storage,
-			heldBy: ruling.heldBy,
-			peelRefundKb: 0,
-			peelSlotsRemaining: owed,
-			log: withLog(
-				state,
-				...(caught === undefined
-					? []
-					: [
-							`${caught.caughtFatalBy} caught it — the gate holds instead of ending the run, and the catch is spent.`,
-						]),
-				owed === 0
-					? `${missed} This gate takes nothing — read it back, then shop and run it again.`
-					: `${missed} Free up ${owed} slot${owed > 1 ? "s" : ""} and run it again.`
-			),
-		};
-	}
-
-	const interest = storageInterestFor(state.build.configs, state.storage);
-	const extraPicks = (state.window.budget ?? 0) - state.window.answered;
-	const extraPickKb = extraPickPayoutFor(state.build.configs, extraPicks);
-	const totalUnits = state.bankedUnits + unitsThisGate;
-	const banked = roundToTwoDecimals(
-		bankableUnits(totalUnits, state.gatesCleared)
-	);
-	const overflowKb = surplusPayoutKb(totalUnits, state.gatesCleared);
-	const clearKb = gateClearPayout(
-		state.build.configs,
-		state.window.correct,
-		state.gatesCleared,
-		state.streak
-	);
-	const committedKb = escrowCommitKb(pending, state.faucetEarnedKb ?? 0);
-	const upliftKb = slaUpliftKb(
-		state.build.configs,
-		promised,
-		closingBand,
-		clearKb
-	);
-	const survivalKb =
-		INCIDENT_SURVIVAL_KB * incidentsAt(state, gateNumber).length;
-	const reward =
-		clearKb +
-		interest +
-		extraPickKb +
-		overflowKb +
-		committedKb +
-		upliftKb +
-		survivalKb;
-	const rewarded = addStorage(state.storage, reward);
-	const bill = settleUpkeep(state.build, rewarded);
-	const cleared: RunState = {
-		...state,
-		...settledCommitments,
-		...settledSwatch,
-		...recordClose(reward),
-		window: freshWindow(
-			state.polls,
-			nextIndex,
-			state.build.configs,
-			state.gatesCleared + 1,
-			scheduleOf(state)
-		),
-		manualDisabled: [],
-		bankedUnits: banked,
-		streak: 0,
-		gateAttempts: 0,
-		heldBy: undefined,
-		gatesCleared: state.gatesCleared + 1,
-		clearedGate: gateNumber,
-		redoGate: undefined,
-		storage: Math.max(0, rewarded - bill.paidKb),
-		upkeepBilledKb: bill.paidKb,
-		upkeepPaidKb: (state.upkeepPaidKb ?? 0) + bill.paidKb,
-		gateRewardKb: reward,
-		clearThisGateKb: clearKb,
-		overflowThisGateKb: overflowKb,
-		streakAtClose: state.streak,
-		storageBeforeClearKb: state.storage,
-		interestThisGateKb: interest,
-		extraPickThisGateKb: extraPickKb,
-		faucetEarnedKb: (state.faucetEarnedKb ?? 0) + committedKb,
-		pendingKb: 0,
-		escrowCommittedKb: committedKb,
-		escrowRolledBackKb: 0,
-		slaBand: undefined,
-		slaUpliftKb: promised === undefined ? undefined : upliftKb,
-		incidentSurvivalKb: survivalKb,
-		currentIndex: nextIndex,
-	};
-
-	if (gateNumber >= VICTORY_GATE)
-		return {
-			...cleared,
-			status: "won",
-			log: withLog(state, `${clearLine(gateNumber, reward)} You summited!`),
-		};
-
-	const settled = decayOnClear(cleared.build.configs);
-	const billed = billSubscriptionsOnClear(
-		settled.configs,
-		cleared.storage,
-		gateNumber
-	);
-	const finalBuild =
-		billed.configs === cleared.build.configs
-			? cleared.build
-			: withBuild(cleared.build, billed.configs);
-
-	const overCovered =
-		bill.droppedTo !== undefined &&
-		billableSlotsOf(finalBuild) > bill.droppedTo;
-
-	return dealIncidentOffer(
-		{
-			...cleared,
-			build: finalBuild,
-			spaceDroppedTo: overCovered ? bill.droppedTo : undefined,
-			storage: cleared.storage - billed.paidKb,
-			subscriptionBillKb: billed.paidKb,
-			deletedConfigs: settled.deleted.length > 0 ? settled.deleted : undefined,
-			lapsedConfigs: billed.lapsed.length > 0 ? billed.lapsed : undefined,
-			configsLost:
-				(state.configsLost ?? 0) +
-				settled.deleted.length +
-				billed.lapsed.length,
-			draftOptions: shopDraft(state, draftSeed(gateNumber, 0)),
-			rebuildsUsed: 0,
-			soldThisShop: 0,
-			draftedThisGate: [],
-			status: "rewarding",
-			log: withLog(
-				state,
-				`${clearLine(gateNumber, reward)} Spend it in the shop.`,
-				...settled.deleted.map(
-					(config) => `${config.label} faded to ×1 — deleted from the build.`
-				),
-				...(bill.paidKb > 0 ? [`Build space billed (-${bill.paidKb}KB).`] : []),
-				...(overCovered
-					? [
-							`The space went unpaid — the bill covered ${bill.droppedTo}. Sell or drop to fit it before the shop lets you out.`,
-						]
-					: []),
-				...(billed.paidKb > 0
-					? [`Subscriptions billed (-${billed.paidKb}KB).`]
-					: []),
-				...billed.lapsed.map(
-					(config) => `${config.label} went unpaid — the plan lapsed.`
-				)
-			),
-		},
-		cleared.gatesCleared,
-		nextIndex
-	);
-};
+import {
+	settleGate,
+	gateWindowComplete,
+} from "~/modules/run/run/domain/gateClose.model";
 
 type AnswerGrade = {
 	readonly audits: readonly Audit[];
@@ -433,6 +65,7 @@ type AnswerGrade = {
 	readonly timedOut: boolean;
 	readonly auditedShare: number;
 	readonly streak: number;
+	readonly elapsedMs?: number;
 };
 
 export const gradedPollFor = (state: RunState, poll: RunPoll): RunPoll =>
@@ -440,9 +73,12 @@ export const gradedPollFor = (state: RunState, poll: RunPoll): RunPoll =>
 
 export const creditedAnswerTypeFor = (
 	state: RunState,
-	poll: RunPoll
+	graded: Pick<RunPoll, "answerType">
 ): AnswerType =>
-	auditsHideAnswerType(auditsOf(state)) ? "single" : poll.answerType;
+	auditsHideAnswerType(auditsOf(state)) ? "single" : graded.answerType;
+
+export const pollCreditFor = (state: RunState, poll: RunPoll): number =>
+	creditFor(creditedAnswerTypeFor(state, gradedPollFor(state, poll)));
 
 const gradeAnswer = (
 	state: RunState,
@@ -469,6 +105,7 @@ const gradeAnswer = (
 		timedOut,
 		auditedShare,
 		streak: nextStreak(state.streak, outcome),
+		elapsedMs,
 	};
 };
 
@@ -484,18 +121,20 @@ type AnswerLedger = {
 
 export const answerContextFor = (
 	state: RunState,
-	poll: RunPoll
+	poll: RunPoll,
+	elapsedMs?: number
 ): AnswerContext => ({
 	category: poll.category,
 	answerType: creditedAnswerTypeFor(state, poll),
 	answeredBefore: state.window.answered,
 	cachedHits: cachedHitsFor(state.allAnswered ?? [], poll.category),
 	previouslyMissed: poll.missedBefore === true,
+	...(elapsedMs === undefined ? {} : { elapsedMs }),
 });
 
 const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 	const { audits, configs, auditedShare } = grade;
-	const answerContext = answerContextFor(state, grade.graded);
+	const answerContext = answerContextFor(state, grade.graded, grade.elapsedMs);
 	const wager = strictSettlementFor(
 		configs,
 		state.strictArmed === true,
@@ -514,7 +153,6 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 		configs,
 		answerContext,
 		auditedShare,
-		state.streak,
 		wager.bonus
 	);
 	return {
@@ -568,6 +206,9 @@ const answeredPollFrom = (
 	timedOut: grade.timedOut ? true : undefined,
 });
 
+const accuracyEarnedOf = (ledger: AnswerLedger, credit: number): number =>
+	(ledger.factors?.correct ?? 0) * credit;
+
 const applyAnswer = (
 	state: RunState,
 	poll: RunPoll,
@@ -585,6 +226,7 @@ const applyAnswer = (
 		correct: 0,
 	};
 
+	const credit = pollCreditFor(state, poll);
 	const window: GateWindow = {
 		correct: state.window.correct + (correct ? 1 : 0),
 		answered: state.window.answered + 1,
@@ -594,9 +236,9 @@ const applyAnswer = (
 				state.window.unitsEarned + ledger.earnedCoverage - ledger.coverageLoss
 			)
 		),
-		baseUnits: roundToTwoDecimals(
-			state.window.baseUnits + (ledger.factors?.correct ?? 0)
-		),
+		accuracyEarned:
+			state.window.accuracyEarned + accuracyEarnedOf(ledger, credit),
+		accuracyAvailable: state.window.accuracyAvailable + credit,
 		byCategory: {
 			...state.window.byCategory,
 			[poll.category]: {
@@ -683,17 +325,84 @@ export const answer = (
 		elapsedMs
 	);
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
-	const counted = countAutoUpgrade(applied, state, grade.outcome);
+	return advancedPast(countAutoUpgrade(applied, state, grade.outcome), state);
+};
 
-	if (gateWindowComplete(counted)) return counted;
+const skippedPollFrom = (
+	poll: RunPoll,
+	graded: RunPoll,
+	gate: number
+): AnsweredPoll => ({
+	id: poll.id,
+	question: poll.question,
+	category: poll.category,
+	outcome: "skipped",
+	picked: [],
+	correct: graded.options
+		.filter((option) => option.correct)
+		.map((option) => option.label),
+	codeBlock: poll.codeBlock,
+	explanation: poll.explanation,
+	author: poll.author,
+	options: poll.options.map((option) => option.label),
+	answerType: graded.answerType,
+	gate,
+	coverageEarned: 0,
+});
+
+const applySkip = (
+	state: RunState,
+	poll: RunPoll,
+	skipped: AnsweredPoll
+): RunState => {
+	const tally = state.window.byCategory[poll.category] ?? {
+		seen: 0,
+		correct: 0,
+	};
+
 	return {
-		...counted,
-		currentIndex: state.currentIndex + 1,
-		status: "answering",
+		...state,
+		window: {
+			...state.window,
+			answered: state.window.answered + 1,
+			byCategory: {
+				...state.window.byCategory,
+				[poll.category]: { ...tally, seen: tally.seen + 1 },
+			},
+		},
+		manualDisabled: [],
+		strictArmed: undefined,
+		rebasedThisGate: undefined,
+		streak: nextStreak(state.streak, "skipped"),
+		answeredThisGate: [...state.answeredThisGate, skipped],
+		allAnswered: [...(state.allAnswered ?? []), skipped],
 	};
 };
 
+const advancedPast = (counted: RunState, before: RunState): RunState =>
+	gateWindowComplete(counted)
+		? counted
+		: {
+				...counted,
+				currentIndex: before.currentIndex + 1,
+				status: "answering",
+			};
+
+export const skip = (state: RunState): RunState => {
+	if (gateWindowComplete(state)) return state;
+	const poll = state.polls[state.currentIndex];
+	if (!poll) return state;
+	if (approvedPollOf(state) !== undefined) return state;
+
+	const skipped = skippedPollFrom(
+		poll,
+		gradedPollFor(state, poll),
+		state.gatesCleared
+	);
+	const applied = applySkip(state, poll, skipped);
+
+	return advancedPast(countAutoUpgrade(applied, state, "skipped"), state);
+};
+
 export const closeGate = (state: RunState): RunState =>
-	gateWindowComplete(state)
-		? closeWindow(state, state.currentIndex + 1)
-		: state;
+	gateWindowComplete(state) ? settleGate(state, state.currentIndex + 1) : state;

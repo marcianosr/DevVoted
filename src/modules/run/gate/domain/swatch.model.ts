@@ -73,3 +73,10 @@ export const swatchesEarnedFrom = (
 	gates: readonly number[]
 ): readonly GateSwatch[] =>
 	ALL_SWATCHES.filter((swatch) => gates.includes(swatch.gate));
+
+export const gatesClearedBy = (
+	ownedSwatchIds: readonly string[]
+): readonly number[] =>
+	ALL_SWATCHES.filter((swatch) => ownedSwatchIds.includes(swatch.id)).map(
+		(swatch) => swatch.gate
+	);

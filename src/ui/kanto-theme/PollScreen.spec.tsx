@@ -1,5 +1,5 @@
 import { describe, expect, it, afterEach, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 
 import {
 	createKantoBuildFooterProps,
@@ -16,9 +16,11 @@ import { stubResizeObserver } from "~/test/resizeObserver.harness";
 
 import { PollScreen } from "./PollScreen.ui";
 
+type FakeAnimation = { onfinish: (() => void) | null; cancel: () => void };
+
 const props = createKantoPollScreenProps();
 
-const LOCK_IN = { label: "Lock in", note: "pick an answer first" };
+const LOCK_IN = { lock: { label: "Lock in", note: "pick an answer first" } };
 
 const sendRow = () =>
 	screen.getByRole("button", { name: /^Lock in/ }).parentElement;
@@ -294,7 +296,7 @@ describe("PollScreen", () => {
 	it("stands the poll and the coverage readout in one row, poll first", () => {
 		render(<PollScreen {...props} />);
 
-		const row = pollCategory().closest("section")?.parentElement;
+		const row = pollCategory().closest("section")?.parentElement?.parentElement;
 		const panels = Array.from(row?.children ?? []);
 
 		expect(panels).toHaveLength(2);
@@ -320,7 +322,7 @@ describe("PollScreen", () => {
 		if (head === null) throw new Error("Coverage heads no panel");
 
 		expect(within(head).getByText("70%")).toBeInTheDocument();
-		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
+		expect(within(head).getByText("OK")).toBeInTheDocument();
 	});
 
 	it("keeps the panel and drops the reading when the meter is down", () => {
@@ -336,8 +338,8 @@ describe("PollScreen", () => {
 		).toBeInTheDocument();
 		expect(within(panel).queryByText("35 of 40")).toBeNull();
 		expect(within(panel).queryByText("SHAKY")).toBeNull();
-		expect(screen.queryByText(/You have scored/)).toBeNull();
-		expect(screen.queryByText("Score")).toBeNull();
+		expect(screen.queryByText(/You hold/)).toBeNull();
+		expect(screen.queryByText("Accuracy")).toBeNull();
 	});
 
 	it("leaves what a poll pays to prep, with no tooltip on the coverage panel", () => {
@@ -349,81 +351,41 @@ describe("PollScreen", () => {
 		expect(screen.queryByText("what a poll pays")).toBeNull();
 	});
 
-	it("says what the run has scored and what the gate scores it out of", () => {
+	it("says what the run holds as a share of the bar, never the gate's codebase", () => {
 		render(<PollScreen {...props} />);
 
 		expect(
 			screen.getByText(
-				(_, node) =>
-					node?.textContent ===
-					"You have scored 35 units across 50 slots, which is 70.0% coverage."
+				(_, node) => node?.textContent === "You hold 70.0% coverage."
 			)
+		).toBeInTheDocument();
+		expect(screen.queryByText(/\bchanges?\b/i)).toBeNull();
+	});
+
+	it("draws this gate's accuracy as one multiplier bar, under the coverage bar", () => {
+		render(<PollScreen {...props} />);
+
+		expect(screen.getByText("Accuracy")).toBeInTheDocument();
+		expect(
+			screen.getByRole("img", { name: "Accuracy ×1.32, up to ×1.74" })
 		).toBeInTheDocument();
 	});
 
-	it("shows what this gate's polls paid, and no earlier gate's", () => {
+	it("says what accuracy does beside the multiplier it reads", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.getByText("Score")).toBeInTheDocument();
-		expect(screen.queryByLabelText(/^Pallet/)).toBeNull();
+		const note = screen.getByText("multiplies the bar when the gate closes");
+
+		expect(note.closest("section")).toHaveTextContent("×1.32 · up to ×1.74");
 	});
 
-	it("leaves the explainer out when a call site has nothing to explain", () => {
+	it("leaves the track out when a call site has nothing to track", () => {
 		render(
 			<PollScreen {...props} coverage={{ bar: kantoPollReadout().bar }} />
 		);
 
-		expect(screen.queryByText("Score")).toBeNull();
-		expect(screen.queryByText(/You have scored/)).toBeNull();
-	});
-
-	it("accounts for an answer on the chip that paid it, not in a region of its own", () => {
-		render(
-			<PollScreen
-				{...props}
-				coverage={{
-					...kantoPollReadout(),
-					paid: {
-						rows: [
-							{
-								swatch: gateSwatchAt(0),
-								correct: 1,
-								polls: 5,
-								current: true,
-								payouts: {
-									total: "1.25",
-									slots: [
-										{
-											figure: "1.25",
-											color: "viridian",
-											receipt: [
-												{
-													label: ".js",
-													tags: [{ label: "×1.25" }],
-													detail: "matches JavaScript",
-													figures: [{ label: "+0.25" }],
-												},
-												{
-													label: "paid",
-													figures: [{ label: "1.25" }],
-													total: true,
-												},
-											],
-										},
-									],
-								},
-							},
-						],
-					},
-				}}
-			/>
-		);
-
-		expect(screen.queryByText("what this answer paid")).toBeNull();
-		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
-		expect(
-			screen.getByRole("button", { name: "poll 1 — paid 1.25" })
-		).toBeInTheDocument();
+		expect(screen.queryByText("Accuracy")).toBeNull();
+		expect(screen.queryByText(/You hold/)).toBeNull();
 	});
 
 	it("states coverage exactly once, so no row says it again", () => {
@@ -449,9 +411,11 @@ describe("PollScreen", () => {
 					pickedIds: ["option-1", "option-2"],
 				})}
 				commit={{
-					label: "Lock in 2 answers",
-					note: "2 picked",
-					onPress: () => {},
+					lock: {
+						label: "Lock in 2 answers",
+						note: "2 picked",
+						onPress: () => {},
+					},
 				}}
 			/>
 		);
@@ -465,12 +429,30 @@ describe("PollScreen", () => {
 		expect(screen.getByText("2 picked")).toBeInTheDocument();
 	});
 
+	it("draws a skip press under the lock-in that states its cost", () => {
+		const onSkip = vi.fn();
+		render(
+			<PollScreen
+				{...props}
+				commit={{
+					...LOCK_IN,
+					skip: { label: "Skip", note: "covers nothing", onPress: onSkip },
+				}}
+			/>
+		);
+
+		screen.getByRole("button", { name: "Skip" }).click();
+
+		expect(onSkip).toHaveBeenCalledOnce();
+		expect(screen.getByText("covers nothing")).toBeInTheDocument();
+	});
+
 	it("pins the send, and stands it above the credit rather than under it", () => {
 		render(
 			<PollScreen
 				{...props}
 				author={{ handle: "marciano", userId: "marciano-id" }}
-				commit={{ label: "Lock in", note: "pick an answer first" }}
+				commit={LOCK_IN}
 			/>
 		);
 
@@ -550,7 +532,9 @@ describe("PollScreen", () => {
 					answerType: "multiple",
 					pickedIds: [],
 				})}
-				commit={{ label: "Lock in", note: "pick every answer that fits" }}
+				commit={{
+					lock: { label: "Lock in", note: "pick every answer that fits" },
+				}}
 			/>
 		);
 
@@ -614,13 +598,45 @@ describe("PollScreen's fact band", () => {
 		expect(screen.getByText("seen before")).toBeInTheDocument();
 	});
 
-	it("states the poll's shape on a line of its own, beside its category", () => {
-		render(<PollScreen {...createKantoPollScreenProps()} />);
+	it("leads the poll's own line with its number, then its category", () => {
+		render(<PollScreen {...createKantoPollScreenProps({ step: 3 })} />);
 
 		const meta = pollMeta();
 
-		expect(meta.firstElementChild).toHaveTextContent("TypeScript");
+		expect(meta.firstElementChild).toHaveTextContent("3");
+		expect(meta.children[1]).toHaveTextContent("TypeScript");
 		expect(meta.previousElementSibling).toBeNull();
+	});
+
+	it("states the keyboard tip on the poll's line for a mouse player only", () => {
+		render(
+			<PollScreen
+				{...createKantoPollScreenProps({
+					keysHint: "press a letter to answer",
+				})}
+			/>
+		);
+
+		const tip = screen.getByText("press a letter to answer");
+
+		expect(pollMeta()).toContainElement(tip);
+		expect(tip.parentElement).toHaveClass("hidden", "pointer-fine:inline");
+	});
+
+	it("draws no lock-in when the poll answers on the tap", () => {
+		render(
+			<PollScreen
+				{...props}
+				commit={{
+					skip: { label: "Skip", note: "covers nothing", onPress: () => {} },
+				}}
+			/>
+		);
+
+		expect(
+			screen.queryByRole("button", { name: /^Lock in/ })
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
 	});
 
 	it("keeps that line when the band is withheld: the poll's shape is not the band's", () => {
@@ -651,5 +667,108 @@ describe("PollScreen's fact band", () => {
 			.closest("section");
 
 		expect(panel).toHaveClass("bg-theme-faint");
+	});
+});
+
+describe("the poll clock (ADR-169)", () => {
+	it("badges the clock beside the poll's facts", () => {
+		render(
+			<PollScreen
+				{...createKantoPollScreenProps()}
+				clock={{ label: "Vite ×1.5 · 12s", color: "viridian" }}
+			/>
+		);
+
+		expect(screen.getByText("Vite ×1.5 · 12s")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+});
+
+describe("PollScreen while an answer lands", () => {
+	const rightAnswer = createKantoQuestionProps({
+		pickedIds: ["option-1"],
+		options: createKantoQuestionProps().options.map((option, index) => ({
+			...option,
+			state: index === 0 ? "right" : "idle",
+		})),
+	});
+
+	const answered = () =>
+		screen.getByText(POLL_SHAPE).closest("section")?.parentElement;
+
+	it("shakes the poll card after a wrong answer", () => {
+		render(<PollScreen {...props} shake="poll-1" />);
+
+		expect(answered()).toHaveClass("answer-shake");
+	});
+
+	it("holds the card still otherwise", () => {
+		render(<PollScreen {...props} />);
+
+		expect(answered()).not.toHaveClass("answer-shake");
+	});
+
+	it("pops the gain beside the answer, lands it on the bar, then rides it to the new fill", () => {
+		const onFlightLanded = vi.fn();
+		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };
+		const animate = vi.fn(() => animation);
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			value: animate,
+			configurable: true,
+		});
+
+		render(
+			<PollScreen
+				{...props}
+				question={rightAnswer}
+				flight={{ figure: "+12%", id: "poll-1", fromHeld: 24, toHeld: 36 }}
+				onFlightLanded={onFlightLanded}
+			/>
+		);
+
+		expect(screen.getByText("+12%")).toBeInTheDocument();
+		expect(animate).toHaveBeenLastCalledWith(expect.any(Array), {
+			duration: 1040,
+			fill: "forwards",
+		});
+		expect(onFlightLanded).not.toHaveBeenCalled();
+
+		act(() => animation.onfinish?.());
+
+		expect(onFlightLanded).toHaveBeenCalledTimes(1);
+		expect(screen.getByText("+12%")).toBeInTheDocument();
+		expect(animate).toHaveBeenLastCalledWith(expect.any(Array), {
+			duration: 750,
+		});
+
+		act(() => animation.onfinish?.());
+
+		expect(onFlightLanded).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText("+12%")).toBeNull();
+		Reflect.deleteProperty(HTMLElement.prototype, "animate");
+	});
+
+	it("lands at once, with no chip, for a player who asked for less motion", () => {
+		const onFlightLanded = vi.fn();
+		vi.stubGlobal("matchMedia", () => ({ matches: true }));
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			value: vi.fn(),
+			configurable: true,
+		});
+
+		render(
+			<PollScreen
+				{...props}
+				question={rightAnswer}
+				flight={{ figure: "+12%", id: "poll-1", fromHeld: 24, toHeld: 36 }}
+				onFlightLanded={onFlightLanded}
+			/>
+		);
+
+		expect(onFlightLanded).toHaveBeenCalledTimes(1);
+		expect(screen.queryByText("+12%")).toBeNull();
+		Reflect.deleteProperty(HTMLElement.prototype, "animate");
 	});
 });

@@ -2,9 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
+	BOOT_CACHE_RUNGS,
 	EXTEND_CARRY_BYTES,
 	PIN_CARRY_BYTES,
+	PIN_FROM_GATE,
+	SKIP_SHOP_KB,
+	pinCostFor,
 } from "~/modules/run/run/domain/rules.model";
+import {
+	EXTEND_COST_KB,
+	rebuildCost,
+} from "~/modules/run/shop/domain/draft.model";
 import {
 	ABANDON_FROM_GATE,
 	CASCADE_GATE,
@@ -33,6 +41,64 @@ describe("REGISTRY_CONTROLS", () => {
 			["extend", EXTEND_CARRY_BYTES],
 			["pin", PIN_CARRY_BYTES],
 		]);
+	});
+
+	it("states how long each service's purchase lasts", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.map((control) => [control.id, control.lasts])
+		).toEqual([
+			["rebuild", "visit"],
+			["skipShop", "visit"],
+			["extend", "run"],
+			["hotReload", "visit"],
+			["returnPolicy", "visit"],
+			["abandon", "endsRun"],
+			["pin", "nextRun"],
+			["bootCache", "atStart"],
+			["dockerImage", "firstShop"],
+		]);
+	});
+
+	it("prices each service by the ladder its press actually charges", () => {
+		expect(REGISTRY_CONTROLS.rebuild.price).toEqual({
+			kind: "doubling",
+			fromKb: rebuildCost(0),
+		});
+		expect(REGISTRY_CONTROLS.skipShop.price).toEqual({
+			kind: "pays",
+			kb: SKIP_SHOP_KB,
+		});
+		expect(REGISTRY_CONTROLS.extend.price).toEqual({
+			kind: "steps",
+			kbs: EXTEND_COST_KB,
+		});
+		expect(REGISTRY_CONTROLS.pin.price).toEqual({
+			kind: "rising",
+			fromKb: pinCostFor(PIN_FROM_GATE),
+		});
+		expect(REGISTRY_CONTROLS.bootCache.price).toEqual({
+			kind: "rungs",
+			rungs: BOOT_CACHE_RUNGS,
+		});
+		expect(REGISTRY_CONTROLS.abandon.price).toEqual({ kind: "free" });
+	});
+
+	it("marks the earned services no screen sells yet as unsold", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.filter(
+				(control) => control.price.kind === "unsold"
+			).map((control) => control.id)
+		).toEqual(["hotReload", "returnPolicy", "dockerImage"]);
+	});
+
+	it("gives every service carried in at new run a press price in the shop", () => {
+		const PRESS_KINDS = ["doubling", "steps", "rising"];
+
+		expect(
+			REGISTRY_CONTROL_LIST.filter(isCarriedService).every((control) =>
+				PRESS_KINDS.includes(control.price.kind)
+			)
+		).toBe(true);
 	});
 
 	it("lets Rebuild and kill -9 into every run free, with no carry to pick", () => {

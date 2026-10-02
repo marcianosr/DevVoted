@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+
+import { createTestQueryClient } from "~/test/queryClient.harness";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +10,17 @@ import {
 	dispatchRunAction,
 	startRun,
 } from "~/modules/run/run/application/run.serverfn";
+import { submitCrowdPick } from "~/modules/run/community/application/community.serverfn";
 import { createMockRunView } from "~/test/runView.factory";
-import { userQueryKeys } from "~/shared/queryKeys";
+import { sessionRunQueryKeys, userQueryKeys } from "~/shared/queryKeys";
 
-import { runCommunityQueryKey } from "~/modules/run/community/application/useRunCommunity.hook";
-import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
-import { todaysRunQueryKey } from "~/modules/run/run/application/useTodaysRun.hook";
+import {
+	type RunActionResult,
+	useRunActions,
+} from "~/modules/run/run/application/useRunActions.hook";
+
+const todaysRunQueryKey = sessionRunQueryKeys.todaysRun;
+const runCommunityQueryKey = sessionRunQueryKeys.todaysCommunity;
 
 vi.mock("~/modules/run/run/application/run.serverfn", () => ({
 	getTodaysRun: vi.fn(),
@@ -22,10 +29,12 @@ vi.mock("~/modules/run/run/application/run.serverfn", () => ({
 	dispatchRunAction: vi.fn(),
 }));
 
+vi.mock("~/modules/run/community/application/community.serverfn", () => ({
+	submitCrowdPick: vi.fn(),
+}));
+
 const setup = () => {
-	const queryClient = new QueryClient({
-		defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-	});
+	const queryClient = createTestQueryClient();
 	const wrapper = ({ children }: { children: ReactNode }) => (
 		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 	);
@@ -81,6 +90,39 @@ describe("useRunActions", () => {
 
 		await waitFor(() => expect(onResult).toHaveBeenCalledWith(staged));
 		expect(queryClient.getQueryData(todaysRunQueryKey())).toBeUndefined();
+	});
+
+	it("sendThen commits first and only then hands the caller the new view", async () => {
+		const advanced = {
+			success: true as const,
+			data: createMockRunView({ status: "rewarding" }),
+		};
+		vi.mocked(dispatchRunAction).mockResolvedValue(advanced);
+		const { queryClient, result } = setup();
+		const onCommitted = vi.fn(() =>
+			queryClient.getQueryData(todaysRunQueryKey())
+		);
+
+		act(() => result.current.sendThen({ type: "skip-shop" }, onCommitted));
+
+		await waitFor(() =>
+			expect(onCommitted).toHaveBeenCalledWith(advanced.data)
+		);
+		expect(onCommitted).toHaveReturnedWith(advanced);
+	});
+
+	it("sendThen never calls back on a refused action", async () => {
+		vi.mocked(dispatchRunAction).mockResolvedValue({
+			success: false,
+			error: "Not today",
+		});
+		const { result } = setup();
+		const onCommitted = vi.fn();
+
+		act(() => result.current.sendThen({ type: "skip-shop" }, onCommitted));
+
+		await waitFor(() => expect(result.current.busy).toBe(false));
+		expect(onCommitted).not.toHaveBeenCalled();
 	});
 
 	it("commit writes a staged result into today's cache", () => {
@@ -150,6 +192,62 @@ describe("useRunActions", () => {
 			expect(
 				queryClient.getQueryState(todaysRunQueryKey())?.isInvalidated
 			).toBe(true)
+		);
+	});
+
+	it("sendCrowdPickWith hands the room's answer to the caller without committing", async () => {
+		const staged = { success: true as const, data: createMockRunView() };
+		vi.mocked(submitCrowdPick).mockResolvedValue(staged);
+		const { queryClient, result } = setup();
+		const onResult = vi.fn();
+
+		act(() => result.current.sendCrowdPickWith(onResult));
+
+		await waitFor(() => expect(onResult).toHaveBeenCalledWith(staged));
+		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
+		expect(queryClient.getQueryData(todaysRunQueryKey())).toBeUndefined();
+	});
+
+	it("sendCrowdPickWith holds every other run press while the room answers", async () => {
+		let answer: (value: RunActionResult) => void = () => {};
+		vi.mocked(submitCrowdPick).mockReturnValue(
+			new Promise((resolve) => {
+				answer = resolve;
+			})
+		);
+		const { result } = setup();
+
+		act(() => result.current.sendCrowdPickWith(() => {}));
+
+		await waitFor(() => expect(result.current.busy).toBe(true));
+		act(() => answer({ success: false, error: "Not enough approvals" }));
+		await waitFor(() => expect(result.current.busy).toBe(false));
+	});
+
+	it("sendCrowdPickWith hands a refusal to the caller so it can be stated", async () => {
+		const refused = { success: false as const, error: "Not enough approvals" };
+		vi.mocked(submitCrowdPick).mockResolvedValue(refused);
+		const { result } = setup();
+		const onResult = vi.fn();
+
+		act(() => result.current.sendCrowdPickWith(onResult));
+
+		await waitFor(() => expect(onResult).toHaveBeenCalledWith(refused));
+	});
+
+	it("start states a refused start as errorMessage", async () => {
+		vi.mocked(startRun).mockResolvedValue({
+			success: false,
+			error: "Today's run is already over",
+		});
+		const { result } = setup();
+
+		act(() => result.current.start.mutate());
+
+		await waitFor(() =>
+			expect(result.current.start.errorMessage).toBe(
+				"Today's run is already over"
+			)
 		);
 	});
 });

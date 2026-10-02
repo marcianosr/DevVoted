@@ -160,7 +160,7 @@ export const seedArchivedRuns = async (
 				gatesCleared: entry.gatesCleared,
 				coverage: entry.coverage,
 				currentIndex: answered,
-				bankedUnits: entry.coverage,
+				headStartUnits: 0,
 				build: { ...blank.build, configs: CONFIG_LIST.slice(0, 4) },
 			},
 			engine_status: entry.status,

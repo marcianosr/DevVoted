@@ -59,7 +59,7 @@ const armedAtPrep = (): RunState => {
 	const cleared = clearGate({
 		...started(["js"]),
 		gatesCleared: 5,
-		bankedUnits: 20,
+		headStartUnits: 20,
 	});
 	return { ...cleared, heldAudit: { auditId: HELD } };
 };

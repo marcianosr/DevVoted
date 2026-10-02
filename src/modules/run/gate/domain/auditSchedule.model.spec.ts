@@ -14,6 +14,7 @@ import {
 	eligibleFor,
 	familyOf,
 	gateAuditsFor,
+	isAuditFacedIn,
 	poolForGate,
 	rankAudits,
 	tierForGate,
@@ -162,6 +163,26 @@ describe("what the Dex can state without a run", () => {
 	it("reads an audit's reach off the tiers whose pool holds it", () => {
 		expect(appearsAtGates("feature-freeze")).toEqual([11, VICTORY_GATE]);
 		expect(appearsAtGates("not-found")).toEqual([3, 4, 5, 6, 7, 8, 9, 10]);
+	});
+});
+
+describe("an audit is new until a gate that can hold it is cleared", () => {
+	it("is not faced by a player who has cleared no gate", () => {
+		expect(isAuditFacedIn("not-found", [])).toBe(false);
+	});
+
+	it("is not faced when the cleared gates sit before its reach", () => {
+		expect(isAuditFacedIn("not-found", [0, 1, 2])).toBe(false);
+	});
+
+	it("is faced once any gate in its reach has been cleared", () => {
+		expect(isAuditFacedIn("not-found", [0, 1, 2, 3])).toBe(true);
+	});
+
+	it("stays unfaced when the cleared gates hold other audits only", () => {
+		expect(isAuditFacedIn("feature-freeze", [3, 4, 5, 6, 7, 8, 9, 10])).toBe(
+			false
+		);
 	});
 });
 

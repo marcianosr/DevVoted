@@ -42,17 +42,3 @@ export const redactPoll = (
 		label: hiddenOptionIds.includes(option.id) ? REDACTED_LABEL : option.label,
 	})),
 });
-
-export const revealedPoll = (
-	poll: PollView,
-	labels: readonly string[] | undefined
-): PollView => {
-	if (!labels) return poll;
-	return {
-		...poll,
-		options: poll.options.map((option, index) => ({
-			...option,
-			label: labels[index] ?? option.label,
-		})),
-	};
-};

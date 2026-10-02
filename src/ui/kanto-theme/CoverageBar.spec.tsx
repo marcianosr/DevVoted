@@ -1,14 +1,13 @@
 import { readFileSync } from "node:fs";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 
 import {
 	COVERAGE_BAND_COLOR,
-	COVERAGE_PIN_HOLD_MS,
 	CoverageBar,
+	type CoverageBandId,
 	CoverageReading,
-	coverageBandOf,
 } from "./CoverageBar.ui";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
@@ -16,14 +15,48 @@ const appCss = readFileSync("src/styles/app.css", "utf8");
 const VOLCANO = { floor: 55, ok: 65, healthy: 80 };
 const PALLET = { floor: 0, ok: 0, healthy: 5 };
 
+type Ladder = { floor: number; ok: number; healthy: number };
+
+const bandOnLadder = (
+	held: number,
+	{ floor, ok, healthy }: Ladder
+): CoverageBandId => {
+	if (held >= 100) return "perfect";
+	if (held >= healthy) return "healthy";
+	if (held >= ok) return "ok";
+	if (held >= floor) return "shaky";
+	return "danger";
+};
+
+const volcano = (held: number) => ({
+	...VOLCANO,
+	held,
+	band: bandOnLadder(held, VOLCANO),
+});
+
+const pallet = (held: number) => ({
+	...PALLET,
+	held,
+	band: bandOnLadder(held, PALLET),
+});
+
 const zonesOf = (container: HTMLElement) =>
 	Array.from(container.querySelectorAll(".coverage-bar-zone"));
 
-const fillOf = (container: HTMLElement) =>
-	container.querySelector(".coverage-bar-fill");
+const litZonesOf = (container: HTMLElement) =>
+	Array.from(
+		container.querySelectorAll(
+			".coverage-bar-lit > span:not(.coverage-bar-cap)"
+		)
+	);
 
-const basisOf = (zone: Element) =>
-	zone.getAttribute("style")?.match(/flex-basis:\s*([\d.]+)%/)?.[1];
+const columnsOf = (layer: Element | null) =>
+	layer
+		?.getAttribute("style")
+		?.match(/grid-template-columns:\s*([^;]+)/)?.[1]
+		.trim()
+		.split(/\s+/)
+		.map((column) => column.replace("fr", ""));
 
 const themeOf = (node: Element | null) =>
 	node?.getAttribute("data-screen-theme");
@@ -34,24 +67,46 @@ const heldOf = (container: HTMLElement) =>
 		?.getAttribute("style")
 		?.match(/--coverage-held:\s*([\d.]+)%/)?.[1];
 
+const ruleOf = (selector: string) => {
+	const start = appCss.indexOf(`${selector} {`);
+	return appCss.slice(start, appCss.indexOf("}", start));
+};
+
+const reducedMotionGuards = () =>
+	appCss.match(/@media \(prefers-reduced-motion: reduce\) \{[^}]*\}[^}]*\}/g) ??
+	[];
+
 describe("CoverageBar", () => {
 	it("cuts the track into the four rungs the gate asks for", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
+		render(<CoverageBar {...volcano(70)} />);
 
-		expect(zonesOf(container).map(basisOf)).toEqual(["55", "10", "15", "20"]);
+		expect(columnsOf(screen.getByRole("img"))).toEqual([
+			"55",
+			"10",
+			"15",
+			"20",
+		]);
+	});
+
+	it("lays the lit layer on the same band grid as the track", () => {
+		const { container } = render(<CoverageBar {...volcano(70)} />);
+
+		expect(columnsOf(container.querySelector(".coverage-bar-lit"))).toEqual(
+			columnsOf(screen.getByRole("img"))
+		);
 	});
 
 	it.each([NaN, Infinity, -Infinity])(
 		"reads a non-finite %s as nothing rather than looping",
 		(held) => {
-			const { container } = render(<CoverageBar {...PALLET} held={held} />);
+			const { container } = render(<CoverageBar {...pallet(held)} />);
 
 			expect(heldOf(container)).toBe("0");
 		}
 	);
 
-	it("paints each rung the colour its band answers to", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
+	it("paints each rung of the track the colour its band answers to", () => {
+		const { container } = render(<CoverageBar {...volcano(70)} />);
 
 		expect(zonesOf(container).map(themeOf)).toEqual([
 			COVERAGE_BAND_COLOR.danger,
@@ -61,93 +116,90 @@ describe("CoverageBar", () => {
 		]);
 	});
 
-	it("fills to the share of the build that is covered", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
+	it("caps the end of both layers in PERFECT's colour, since PERFECT is the full bar and has no width", () => {
+		const { container } = render(<CoverageBar {...volcano(70)} />);
+
+		const caps = Array.from(container.querySelectorAll(".coverage-bar-cap"));
+
+		expect(caps.map(themeOf)).toEqual([
+			COVERAGE_BAND_COLOR.perfect,
+			COVERAGE_BAND_COLOR.perfect,
+		]);
+		expect(
+			container.querySelector(".coverage-bar-lit .coverage-bar-cap")
+		).not.toBeNull();
+	});
+
+	it("lights each band it has reached in that band's own colour", () => {
+		const { container } = render(<CoverageBar {...volcano(70)} />);
+
+		expect(litZonesOf(container).map(themeOf)).toEqual(
+			zonesOf(container).map(themeOf)
+		);
+	});
+
+	it("hands the sheet the share of the build that is covered", () => {
+		const { container } = render(<CoverageBar {...volcano(70)} />);
 
 		expect(heldOf(container)).toBe("70");
 	});
 
-	it("keeps the fill on the track when the reading runs past full", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={140} />);
+	it("keeps the reading on the track when it runs past full", () => {
+		const { container } = render(<CoverageBar {...volcano(140)} />);
 
 		expect(heldOf(container)).toBe("100");
 	});
 
-	it("empties the fill rather than running it backwards off the track", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={-20} />);
+	it("empties the reading rather than running it backwards off the track", () => {
+		const { container } = render(<CoverageBar {...volcano(-20)} />);
 
 		expect(heldOf(container)).toBe("0");
 	});
 
-	describe("the band the fill wears", () => {
-		const bandAt = (held: number) => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={held} />);
-			return themeOf(fillOf(container));
-		};
-
-		it("reads danger below the floor", () => {
-			expect(bandAt(40)).toBe(COVERAGE_BAND_COLOR.danger);
-		});
-
-		it("reads shaky from the floor up to the ok line", () => {
-			expect(bandAt(55)).toBe(COVERAGE_BAND_COLOR.shaky);
-			expect(bandAt(64.9)).toBe(COVERAGE_BAND_COLOR.shaky);
-		});
-
-		it("reads ok from the ok line up to the gate's own line", () => {
-			expect(bandAt(65)).toBe(COVERAGE_BAND_COLOR.ok);
-			expect(bandAt(79.9)).toBe(COVERAGE_BAND_COLOR.ok);
-		});
-
-		it("reads healthy once the gate's line is met", () => {
-			expect(bandAt(80)).toBe(COVERAGE_BAND_COLOR.healthy);
-		});
-
-		it("turns blue only at a fully covered build", () => {
-			expect(bandAt(99.9)).toBe(COVERAGE_BAND_COLOR.healthy);
-			expect(bandAt(100)).toBe(COVERAGE_BAND_COLOR.perfect);
-		});
-	});
-
 	describe("a gate with no floor", () => {
-		it("marks only the line it actually asks for", () => {
-			render(<CoverageBar {...PALLET} held={2.5} />);
+		it("marks only the lines it actually asks for", () => {
+			render(<CoverageBar {...pallet(2.5)} />);
 
 			expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 			expect(screen.queryByText("OK")).not.toBeInTheDocument();
-			expect(screen.getByText("HEALTHY 5%")).toBeInTheDocument();
+			expect(screen.getByText("HEALTHY")).toBeInTheDocument();
+			expect(screen.getByText("5%")).toBeInTheDocument();
 		});
 
 		it("collapses the rungs it has no room for rather than dropping them", () => {
-			const { container } = render(<CoverageBar {...PALLET} held={2.5} />);
+			render(<CoverageBar {...pallet(2.5)} />);
 
-			expect(zonesOf(container).map(basisOf)).toEqual(["0", "0", "5", "95"]);
-		});
-
-		it("cannot read as danger, since nothing answered can close it", () => {
-			const { container } = render(<CoverageBar {...PALLET} held={0} />);
-
-			expect(themeOf(fillOf(container))).not.toBe(COVERAGE_BAND_COLOR.danger);
+			expect(columnsOf(screen.getByRole("img"))).toEqual(["0", "0", "5", "95"]);
 		});
 	});
 
-	it("names each boundary under the track, the gate's line with its figure", () => {
-		render(<CoverageBar {...VOLCANO} held={70} />);
+	it("ticks each boundary under the track with its figure and its band", () => {
+		render(<CoverageBar {...volcano(70)} />);
 
-		expect(screen.getByText("SHAKY")).toBeInTheDocument();
-		expect(screen.getByText("OK")).toBeInTheDocument();
-		expect(screen.getByText("HEALTHY 80%")).toBeInTheDocument();
+		["55%", "SHAKY", "65%", "OK", "80%", "HEALTHY", "100%", "PERFECT"].forEach(
+			(text) => expect(screen.getByText(text)).toBeInTheDocument()
+		);
 	});
 
-	it("stands each mark where its boundary falls", () => {
-		render(<CoverageBar {...VOLCANO} held={70} />);
+	it("stands each tick where its boundary falls", () => {
+		render(<CoverageBar {...volcano(70)} />);
 
-		expect(screen.getByText("SHAKY")).toHaveStyle({ left: "55%" });
-		expect(screen.getByText("HEALTHY 80%")).toHaveStyle({ left: "80%" });
+		expect(screen.getByText("55%").parentElement).toHaveStyle({ left: "55%" });
+		expect(screen.getByText("80%").parentElement).toHaveStyle({ left: "80%" });
+		expect(screen.getByText("100%").parentElement).toHaveStyle({
+			left: "100%",
+		});
+	});
+
+	it("drops the band words from a narrow bar, keeping the figures", () => {
+		render(<CoverageBar {...volcano(70)} />);
+
+		expect(screen.getByText("SHAKY")).toHaveClass("@max-[500px]:hidden");
+		expect(screen.getByText("55%")).not.toHaveClass("@max-[500px]:hidden");
 	});
 
 	it("reads the whole state aloud, since the bands are only colour", () => {
-		render(<CoverageBar {...VOLCANO} held={70} />);
+		render(<CoverageBar {...volcano(70)} />);
 
 		expect(
 			screen.getByRole("img", { name: "70% of 80% needed · OK" })
@@ -155,132 +207,195 @@ describe("CoverageBar", () => {
 	});
 
 	it("keeps a fractional reading exact in what it announces", () => {
-		render(<CoverageBar {...VOLCANO} held={12.5} />);
+		render(<CoverageBar {...volcano(12.5)} />);
 
 		expect(
 			screen.getByRole("img", { name: "12.5% of 80% needed · DANGER" })
 		).toBeInTheDocument();
 	});
 
-	it("draws the bare track when nothing is given to caption it", () => {
-		render(<CoverageBar {...VOLCANO} held={70} />);
+	it("announces a running reading, since the marker is drawn for the eye", () => {
+		render(<CoverageBar {...volcano(47.5)} />);
 
-		expect(screen.queryByText(/Coverage starts/)).not.toBeInTheDocument();
+		expect(screen.getByRole("status")).toHaveTextContent("47.5%");
 	});
 
 	it("carries its caption above the track when one is given", () => {
-		render(<CoverageBar {...VOLCANO} held={70} note="Five polls to go." />);
+		render(<CoverageBar {...volcano(70)} note="Five polls to go." />);
 
 		expect(screen.getByText("Five polls to go.")).toBeInTheDocument();
 	});
 
-	it("holds the band colours rather than wearing the screen's", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
-
-		expect(zonesOf(container)).toHaveLength(4);
-		expect(zonesOf(container).map(themeOf)).not.toContain(null);
-	});
-
-	it("resolves its fill to an animation app.css declares", () => {
-		expect(appCss).toContain(".coverage-bar-fill {");
-		expect(appCss).toContain("--coverage-bar-duration");
-	});
-
-	it("leaves the fill's width to the sheet, so a starting style can outrank it", () => {
-		const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
-
-		expect(fillOf(container)).not.toHaveAttribute("style");
-		expect(appCss).toContain("width: var(--coverage-held");
-	});
-
-	it("animates on arrival, so the first paint is not already settled", () => {
-		const rule = appCss.indexOf("width: var(--coverage-held");
-		const starting = appCss.indexOf("@starting-style {", rule);
-
-		expect(appCss.slice(starting)).toContain(".coverage-bar-fill");
-		expect(starting).toBeGreaterThan(rule);
-	});
-
-	it("stops for a player who asked for less motion", () => {
-		const guards = appCss.match(
-			/@media \(prefers-reduced-motion: reduce\) \{[^}]*\}[^}]*\}/g
-		);
-		const ours = guards?.find((guard) => guard.includes(".coverage-bar-fill"));
-
-		expect(ours).toContain("transition: none;");
-	});
 	it("heads a panel with the percent held, then the band", () => {
-		render(<CoverageReading floor={0} ok={40} healthy={60} held={42} />);
+		render(
+			<CoverageReading floor={0} ok={40} healthy={60} held={42} band="ok" />
+		);
 
 		expect(screen.getByText("42%")).toBeInTheDocument();
 		expect(screen.getByText("OK")).toBeInTheDocument();
 	});
 
-	describe("the pin that marks where the run landed", () => {
+	describe("the ghost of an earlier reading", () => {
+		const ghostOf = (container: HTMLElement) =>
+			container.querySelector(".coverage-bar-ghost");
+
+		it("stays out of sight when no earlier reading is given", () => {
+			const { container } = render(<CoverageBar {...volcano(70)} />);
+
+			expect(ghostOf(container)).toHaveAttribute("data-shown", "false");
+		});
+
+		it("fades in where the earlier reading stood", () => {
+			const { container } = render(
+				<CoverageBar {...volcano(70)} ghostAt={42} />
+			);
+
+			expect(ghostOf(container)).toHaveAttribute("data-shown", "true");
+			expect(ghostOf(container)).toHaveStyle({ left: "42%" });
+		});
+
+		it("stays on the track when the earlier reading ran past full", () => {
+			const { container } = render(
+				<CoverageBar {...volcano(70)} ghostAt={130} />
+			);
+
+			expect(ghostOf(container)).toHaveStyle({ left: "100%" });
+		});
+	});
+
+	describe("settling on a reading", () => {
+		const gaugeOf = (container: HTMLElement) =>
+			container.querySelector(".coverage-bar-lit")?.parentElement;
+
+		it("does not bounce a bar that was never told to settle", () => {
+			const { container } = render(<CoverageBar {...volcano(70)} />);
+
+			expect(gaugeOf(container)).not.toHaveClass("coverage-bar-settle");
+		});
+
+		it("bounces when given a settle key", () => {
+			const { container } = render(
+				<CoverageBar {...volcano(70)} settleKey="close-4" />
+			);
+
+			expect(gaugeOf(container)).toHaveClass("coverage-bar-settle");
+		});
+
+		it("replays the bounce each time the settle key moves", () => {
+			const { container, rerender } = render(
+				<CoverageBar {...volcano(70)} settleKey="one" />
+			);
+			const play = vi.fn();
+			const cancel = vi.fn();
+			const gauge = gaugeOf(container)!;
+			Object.defineProperty(gauge, "getAnimations", {
+				value: () => [{ play, cancel }],
+			});
+
+			rerender(<CoverageBar {...volcano(70)} settleKey="two" />);
+
+			expect(cancel).toHaveBeenCalledTimes(1);
+			expect(play).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe("the motion app.css gives it", () => {
+		it("registers the shown reading so the browser can tween it", () => {
+			expect(appCss).toContain("@property --coverage-shown");
+			expect(ruleOf("@property --coverage-shown")).toContain(
+				'syntax: "<percentage>"'
+			);
+		});
+
+		it("tweens the shown reading toward the held one", () => {
+			expect(ruleOf(".coverage-bar")).toContain(
+				"--coverage-shown: var(--coverage-held"
+			);
+			expect(ruleOf(".coverage-bar")).toContain(
+				"transition: --coverage-shown 550ms cubic-bezier(0.3, 0.7, 0.2, 1)"
+			);
+		});
+
+		it("clips the lit layer back to the shown reading", () => {
+			expect(ruleOf(".coverage-bar-lit")).toContain(
+				"clip-path: inset(0 calc(100% - var(--coverage-shown)) 0 0 round 8px)"
+			);
+		});
+
+		it("rides the marker on the same reading as the clip", () => {
+			expect(appCss).toContain(
+				".coverage-bar-marker,\n.coverage-bar-pin {\n\tleft: var(--coverage-shown);"
+			);
+		});
+
+		it("sweeps up from empty on arrival", () => {
+			const rule = appCss.indexOf(".coverage-bar {");
+			const starting = appCss.indexOf("@starting-style {", rule);
+
+			expect(appCss.slice(starting, starting + 80)).toContain(
+				"--coverage-shown: 0%"
+			);
+		});
+
+		it("settles through the gauge-settle keyframe", () => {
+			expect(ruleOf(".coverage-bar-settle")).toContain(
+				"animation: gauge-settle 500ms"
+			);
+		});
+
+		it("jumps straight to its reading for a player who asked for less motion", () => {
+			const ours = reducedMotionGuards().find((guard) =>
+				guard.includes(".coverage-bar,")
+			);
+
+			expect(ours).toContain("transition: none;");
+		});
+
+		it("does not bounce for a player who asked for less motion", () => {
+			const ours = reducedMotionGuards().find((guard) =>
+				guard.includes(".coverage-bar-settle")
+			);
+
+			expect(ours).toContain("animation: none;");
+		});
+
+		it("leaves the ring's duration to the ring, whose spec counts its uses", () => {
+			expect(appCss.match(/var\(--coverage-duration\)/g)).toHaveLength(2);
+		});
+	});
+
+	describe("the pin that marks where a closed gate landed", () => {
 		const pinOf = (container: HTMLElement) =>
 			container.querySelector(".coverage-bar-pin");
 
-		it("stays out of sight while the meter is still running", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} />);
+		it("draws no pin while the meter is still running", () => {
+			const { container } = render(<CoverageBar {...volcano(70)} />);
 
-			expect(pinOf(container)).toHaveAttribute("data-shown", "false");
+			expect(pinOf(container)).toBeNull();
 		});
 
-		it("holds itself up for good once the gate has closed on it", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
-
-			expect(pinOf(container)).toHaveAttribute("data-shown", "true");
-		});
-
-		it("names the band it stands in, in that band's colour", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
-
-			expect(pinOf(container)).toHaveTextContent("70%");
-			expect(pinOf(container)).toHaveTextContent("OK");
-			expect(
-				pinOf(container)?.querySelector("[data-screen-theme]")
-			).toHaveAttribute("data-screen-theme", COVERAGE_BAND_COLOR.ok);
-		});
-
-		it("stands where the reading closed", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
-
-			expect(pinOf(container)).toHaveStyle({ left: "70%" });
-		});
-
-		it("states the figure it stands on", () => {
-			const { container } = render(
-				<CoverageBar {...VOLCANO} held={72.35} pin />
-			);
+		it("names the reading and the band it stands in, in that band's colour", () => {
+			const { container } = render(<CoverageBar {...volcano(72.35)} pin />);
 
 			expect(pinOf(container)).toHaveTextContent("72.4%");
-		});
-
-		it("wears the band it closed in, not the band above it", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
-
+			expect(pinOf(container)).toHaveTextContent("OK");
 			expect(themeOf(pinOf(container))).toBe(COVERAGE_BAND_COLOR.ok);
 		});
 
-		it("comes to rest on the track when the reading ran past full", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={140} pin />);
-
-			expect(pinOf(container)).toHaveStyle({ left: "100%" });
-		});
-
 		it("says nothing aloud, since the track already reads the figure", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
+			const { container } = render(<CoverageBar {...volcano(70)} pin />);
 
 			expect(pinOf(container)?.closest("[aria-hidden]")).not.toBeNull();
+			expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		});
 
-		it("leaves the boundary marks their own row underneath the track", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={70} pin />);
+		it("leaves the ticks their own row underneath the track", () => {
+			const { container } = render(<CoverageBar {...volcano(70)} pin />);
 			const rows = Array.from(
 				container.querySelector(".coverage-bar")!.children
 			);
 			const trackAt = rows.findIndex((row) =>
-				row.querySelector(".coverage-bar-fill")
+				row.querySelector(".coverage-bar-lit")
 			);
 
 			expect(
@@ -291,215 +406,32 @@ describe("CoverageBar", () => {
 			).toBeGreaterThan(trackAt);
 		});
 	});
-
-	describe("the pin while the meter is running", () => {
-		const pinOf = (container: HTMLElement) =>
-			container.querySelector(".coverage-bar-pin");
-
-		const countOf = (container: HTMLElement) =>
-			container.querySelector(".coverage-bar-count");
-
-		const shown = (container: HTMLElement) =>
-			pinOf(container)?.getAttribute("data-shown");
-
-		beforeEach(() => {
-			vi.useFakeTimers();
-		});
-
-		afterEach(() => {
-			vi.useRealTimers();
-		});
-
-		const settle = () => {
-			act(() => {
-				vi.advanceTimersByTime(COVERAGE_PIN_HOLD_MS);
-			});
-		};
-
-		it("says nothing about a bar that has only just arrived", () => {
-			const { container } = render(<CoverageBar {...VOLCANO} held={42} />);
-
-			expect(shown(container)).toBe("false");
-		});
-
-		it("calls out the reading the answer moved it to", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={47} />);
-
-			expect(shown(container)).toBe("true");
-			expect(countOf(container)).toHaveStyle({ "--coverage-count": "47" });
-		});
-
-		it("rides the fill's leading edge rather than standing still", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={47} />);
-
-			expect(pinOf(container)).toHaveStyle({ left: "47%" });
-			expect(heldOf(container)).toBe("47");
-		});
-
-		it("counts a miss down as readily as it counts a correct answer up", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={47} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={42} />);
-
-			expect(shown(container)).toBe("true");
-			expect(countOf(container)).toHaveStyle({ "--coverage-count": "42" });
-		});
-
-		it("counts in whole percent, since a frozen tenth would read as a stuck digit", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={72.35} />);
-
-			expect(countOf(container)).toHaveStyle({ "--coverage-count": "72" });
-		});
-
-		it("wears the band it moved into, not the one it left", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={60} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={70} />);
-
-			expect(themeOf(pinOf(container))).toBe(COVERAGE_BAND_COLOR.ok);
-		});
-
-		it("drops back out of sight once the hold is spent", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={47} />);
-			settle();
-
-			expect(shown(container)).toBe("false");
-		});
-
-		it("restarts the hold when a second answer lands before the first fades", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={47} />);
-
-			act(() => {
-				vi.advanceTimersByTime(COVERAGE_PIN_HOLD_MS - 100);
-			});
-			rerender(<CoverageBar {...VOLCANO} held={52} />);
-			act(() => {
-				vi.advanceTimersByTime(COVERAGE_PIN_HOLD_MS - 100);
-			});
-
-			expect(shown(container)).toBe("true");
-		});
-
-		it("stays put when a rerender changes nothing about the reading", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={42} note="one" />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={42} note="two" />);
-
-			expect(shown(container)).toBe("false");
-		});
-
-		it("ignores a move it has already clamped away", () => {
-			const { container, rerender } = render(
-				<CoverageBar {...VOLCANO} held={140} />
-			);
-			rerender(<CoverageBar {...VOLCANO} held={180} />);
-
-			expect(shown(container)).toBe("false");
-		});
-
-		it("announces the new reading, since the pin itself is drawn for the eye", () => {
-			const { rerender } = render(<CoverageBar {...VOLCANO} held={42} />);
-			rerender(<CoverageBar {...VOLCANO} held={47.5} />);
-
-			expect(screen.getByRole("status")).toHaveTextContent("47.5%");
-		});
-
-		it("leaves a closed gate's pin to state its own tenth", () => {
-			const { container } = render(
-				<CoverageBar {...VOLCANO} held={72.35} pin />
-			);
-
-			expect(countOf(container)).toBeNull();
-			expect(screen.queryByRole("status")).not.toBeInTheDocument();
-		});
-	});
-
-	describe("the animation the moving pin resolves to", () => {
-		it("counts its digits through an animation app.css declares", () => {
-			expect(appCss).toContain("@property --coverage-count");
-			expect(appCss).toContain(".coverage-bar-count {");
-			expect(appCss).toContain(".coverage-bar-pin {");
-		});
-
-		it("runs the digits off the fill's own duration, so neither lands early", () => {
-			const count = appCss.slice(appCss.indexOf(".coverage-bar-count {"));
-
-			expect(count).toContain("var(--coverage-bar-duration)");
-		});
-
-		it("leaves the ring's duration to the ring, whose spec counts its uses", () => {
-			const durations = appCss.match(/var\(--coverage-duration\)/g);
-
-			expect(durations).toHaveLength(2);
-		});
-
-		it("stops the digits and the fade for a player who asked for less motion", () => {
-			const guards = appCss.match(
-				/@media \(prefers-reduced-motion: reduce\) \{[^}]*\}[^}]*\}/g
-			);
-			const ours = guards?.find((guard) =>
-				guard.includes(".coverage-bar-fill")
-			);
-
-			expect(ours).toContain(".coverage-bar-count");
-			expect(ours).toContain(".coverage-bar-pin");
-			expect(ours).toContain("transition: none;");
-		});
-	});
-
-	describe("coverageBandOf", () => {
-		it("answers with the same band the fill wears", () => {
-			expect(coverageBandOf(40, VOLCANO)).toBe("danger");
-			expect(coverageBandOf(55, VOLCANO)).toBe("shaky");
-			expect(coverageBandOf(65, VOLCANO)).toBe("ok");
-			expect(coverageBandOf(80, VOLCANO)).toBe("healthy");
-			expect(coverageBandOf(100, VOLCANO)).toBe("perfect");
-		});
-
-		it("clamps the reading rather than answering off the scale", () => {
-			expect(coverageBandOf(140, VOLCANO)).toBe("perfect");
-			expect(coverageBandOf(-20, VOLCANO)).toBe("danger");
-		});
-
-		it("cannot read danger at a gate with no floor to fall through", () => {
-			expect(coverageBandOf(0, PALLET)).not.toBe("danger");
-		});
-	});
 });
 
-describe("boundary labels that would otherwise collide", () => {
-	it("drops the OK label where OK has collapsed onto the gate's line", () => {
-		render(<CoverageBar floor={0} ok={20} healthy={20} held={0} />);
+describe("boundary ticks that would otherwise collide", () => {
+	it("drops the OK tick where OK has collapsed onto the gate's line", () => {
+		render(
+			<CoverageBar floor={0} ok={20} healthy={20} held={0} band="shaky" />
+		);
 
 		expect(screen.queryByText("OK")).not.toBeInTheDocument();
-		expect(screen.getByText("HEALTHY 20%")).toBeInTheDocument();
+		expect(screen.getByText("HEALTHY")).toBeInTheDocument();
 	});
 
-	it("grows each label away from its neighbours", () => {
-		render(<CoverageBar {...VOLCANO} held={70} />);
+	it("grows each tick away from its neighbours", () => {
+		render(<CoverageBar {...volcano(70)} />);
 
-		expect(screen.getByText("SHAKY")).toHaveClass("-translate-x-full");
-		expect(screen.getByText("OK")).toHaveClass("-translate-x-1/2");
-		expect(screen.getByText("HEALTHY 80%")).not.toHaveClass(
+		expect(screen.getByText("SHAKY").parentElement).toHaveClass(
+			"-translate-x-full"
+		);
+		expect(screen.getByText("OK").parentElement).toHaveClass(
+			"-translate-x-1/2"
+		);
+		expect(screen.getByText("HEALTHY").parentElement).not.toHaveClass(
 			"-translate-x-1/2",
+			"-translate-x-full"
+		);
+		expect(screen.getByText("PERFECT").parentElement).toHaveClass(
 			"-translate-x-full"
 		);
 	});
@@ -510,24 +442,20 @@ describe("CoverageBar with a pointer instead of the pin", () => {
 		container.querySelector(".coverage-bar-pin");
 
 	it("points at the reading in the band it stands in, with no figure on it", () => {
-		const { container } = render(
-			<CoverageBar {...VOLCANO} held={70} pointer />
-		);
+		const { container } = render(<CoverageBar {...volcano(70)} pointer />);
 
-		expect(pinOf(container)).toHaveAttribute("data-shown", "true");
-		expect(pinOf(container)).toHaveStyle({ left: "70%" });
 		expect(pinOf(container)).toHaveTextContent("");
 		expect(themeOf(pinOf(container))).toBe(COVERAGE_BAND_COLOR.ok);
 	});
 
 	it("names no boundary under the track", () => {
-		render(<CoverageBar {...VOLCANO} held={70} pointer />);
+		render(<CoverageBar {...volcano(70)} pointer />);
 
 		expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 	});
 
 	it("still reads the whole state aloud", () => {
-		render(<CoverageBar {...VOLCANO} held={70} pointer />);
+		render(<CoverageBar {...volcano(70)} pointer />);
 
 		expect(screen.getByRole("img")).toHaveAccessibleName(/OK/);
 	});

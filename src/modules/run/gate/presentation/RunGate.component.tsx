@@ -1,35 +1,33 @@
-import { useNavigate } from "@tanstack/react-router";
-
 import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView.component";
+import {
+	COMMUNITY_ROUTE,
+	nextFrom,
+	RUN_ROUTES,
+} from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
+import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
 export const RunGate = () => {
 	const { view } = useTodaysRun();
 	const runNumber = useRunNumber();
-	const { send, sendWith, commit, busy } = useRunActions();
-	const navigate = useNavigate();
+	const { send, sendThen, busy } = useRunActions();
+	const goTo = useRunNavigation();
 
 	if (!view) return null;
 
 	const held = view.status === "awaiting-strip";
 
 	const resumeToShop = () =>
-		sendWith({ type: "resume-climb" }, (result) => {
-			if (!result.success) return;
-			commit(result);
-			navigate({ to: "/run/shop" });
-		});
+		sendThen({ type: "resume-climb" }, (next) => goTo(nextFrom("gate", next)));
 
 	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		if (busy) return;
 		if (configIds.length === 0 && !fromStorage) return resumeToShop();
 
-		sendWith({ type: "strip", configIds, fromStorage }, (result) => {
-			if (!result.success) return;
-			commit(result);
-			if (result.data.peelSlotsRemaining === 0) resumeToShop();
+		sendThen({ type: "strip", configIds, fromStorage }, (next) => {
+			if (next.peelSlotsRemaining === 0) resumeToShop();
 		});
 	};
 
@@ -37,10 +35,9 @@ export const RunGate = () => {
 		<GateOutcomeView
 			runNumber={runNumber.view}
 			view={view}
-			verdict={held ? "held" : "cleared"}
-			onReview={() => navigate({ to: "/run/review" })}
-			onNext={() => navigate({ to: held ? "/run/review" : "/run/shop" })}
-			onCommunity={held ? undefined : () => navigate({ to: "/run/community" })}
+			onReview={() => goTo(RUN_ROUTES.review)}
+			onNext={() => goTo(nextFrom("gate", view))}
+			onCommunity={held ? undefined : () => goTo(COMMUNITY_ROUTE)}
 			onRemove={held ? payPeel : undefined}
 			onRefuse={held ? () => send({ type: "refuse-gate" }) : undefined}
 		/>

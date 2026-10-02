@@ -7,13 +7,13 @@ import {
 } from "~/modules/run/build/domain/answerPayout.model";
 import { BASE_UNIT } from "~/modules/run/build/domain/coverageRatio.model";
 import { CONFIGS, CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { focusMultiplierOf } from "~/modules/run/config/domain/config.model";
 import type {
 	AnswerContext,
 	PayoutContext,
 } from "~/modules/run/config/domain/effect.model";
 import {
 	roundToTwoDecimals,
-	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
 
 const BASE = BASE_UNIT;
@@ -33,9 +33,8 @@ const at = (
 const earnedBy = (
 	configs: Parameters<typeof answerPayoutFor>[0],
 	context: PayoutContext,
-	share: number,
-	streakBefore = 0
-): number => answerPayoutFor(configs, context, share, streakBefore).earned;
+	share: number
+): number => answerPayoutFor(configs, context, share).earned;
 
 describe("the preview is the payout", () => {
 	const moments = [0, 1].flatMap((answeredBefore) =>
@@ -106,12 +105,7 @@ describe("perAnswerPreviewFor", () => {
 			coveragePerWrong: 0,
 			storageKbPerCorrect: 0,
 			matchingConfigMultiplier: undefined,
-			streakStepMultiplier: streakMultiplier(1),
 		});
-	});
-
-	it("carries the streak step, since even the first correct answer rides one", () => {
-		expect(perAnswerPreviewFor([], later).streakStepMultiplier).toBe(1.1);
 	});
 
 	it("previews a multiple-choice poll at double, multiplied by the build before the flat add", () => {
@@ -206,28 +200,10 @@ describe("what one answer pays", () => {
 		expect(earnedBy([], at("js", 1, "multiple"), share)).toBe(units);
 	});
 
-	it("doubles before the build multiplies, and before the streak adds", () => {
+	it("doubles before the build multiplies", () => {
 		expect(earnedBy([CONFIGS.agentsMd], at("js", 1, "multiple"), 1)).toBe(
 			pays(4)
 		);
-		expect(earnedBy([], at("js", 1, "multiple"), 1, 1)).toBeCloseTo(
-			BASE * 2 + 0.1
-		);
-	});
-
-	it("adds the streak step after the multipliers, never inside them", () => {
-		expect(earnedBy([], at("js"), 1, 1)).toBeCloseTo(BASE + 0.1);
-		expect(earnedBy([CONFIGS.agentsMd], at("js"), 1, 1)).toBeCloseTo(
-			BASE * 2 + 0.1
-		);
-	});
-
-	it("pays no streak step on the window's opening answer", () => {
-		expect(earnedBy([], at("js"), 1, 0)).toBe(BASE);
-	});
-
-	it("pays the same flat step however long the streak runs", () => {
-		expect(earnedBy([], at("js"), 1, 9)).toBeCloseTo(earnedBy([], at("js"), 1, 1));
 	});
 
 	it("pays 1.25x in a Focus category, 1x outside it", () => {
@@ -308,12 +284,11 @@ describe("what one answer pays", () => {
 
 	it("folds an armed wager's win into the figure paid, rounded once more on top", () => {
 		const context = at("js");
-		const bare = earnedBy([CONFIGS.agentsMd, CONFIGS.codeCoverage], context, 1, 1);
+		const bare = earnedBy([CONFIGS.agentsMd, CONFIGS.codeCoverage], context, 1);
 		expect(
 			answerPayoutFor(
 				[CONFIGS.strict, CONFIGS.agentsMd, CONFIGS.codeCoverage],
 				context,
-				1,
 				1,
 				0.5
 			).earned
@@ -326,14 +301,16 @@ describe("the receipt one answer carries", () => {
 		configs: Parameters<typeof answerPayoutFor>[0],
 		context: PayoutContext,
 		share: number,
-		streakBefore = 0,
 		wagerUnits = 0
-	) => answerPayoutFor(configs, context, share, streakBefore, wagerUnits).breakdown;
+	) => answerPayoutFor(configs, context, share, wagerUnits).breakdown;
+
+	it("carries no streak row, since a streak adds no coverage (ADR-169)", () => {
+		expect(breakdownOf([], at("js"), 1)).not.toHaveProperty("streakBonus");
+	});
 
 	it("gives a bare correct answer the flat base with no bonuses", () => {
 		expect(breakdownOf([], at("js"), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [],
 		});
 	});
@@ -341,7 +318,6 @@ describe("the receipt one answer carries", () => {
 	it("states the doubled figure as the base on a multiple-choice poll", () => {
 		expect(breakdownOf([], at("js", 1, "multiple"), 1)).toEqual({
 			base: BASE * 2,
-			streakBonus: 0,
 			configBonuses: [],
 		});
 	});
@@ -349,34 +325,13 @@ describe("the receipt one answer carries", () => {
 	it("splits an Amplify multiplier into its own config chip", () => {
 		expect(breakdownOf([CONFIGS.agentsMd], at("js"), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [{ configId: "agents-md", value: BASE, factor: 2 }],
 		});
-	});
-
-	it("reads the streak step on its own row, not as a config chip", () => {
-		expect(breakdownOf([], at("js"), 1, 3)).toEqual({
-			base: BASE,
-			streakBonus: 0.1,
-			configBonuses: [],
-		});
-	});
-
-	it("keeps the rows summing to the paid total once the streak is running", () => {
-		const build = [CONFIGS.agentsMd];
-		const breakdown = breakdownOf(build, at("js"), 1, 3);
-		const rows =
-			breakdown.base +
-			breakdown.streakBonus +
-			breakdown.configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
-
-		expect(rows).toBeCloseTo(earnedBy(build, at("js"), 1, 3));
 	});
 
 	it("splits a flat coverage add into its own config chip", () => {
 		expect(breakdownOf([CONFIGS.codeCoverage], at("js"), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [{ configId: "code-coverage", value: BASE * 0.1 }],
 		});
 	});
@@ -384,12 +339,10 @@ describe("the receipt one answer carries", () => {
 	it("chips Cold Start's dead opener as a loss and its throttle as a gain", () => {
 		expect(breakdownOf([CONFIGS.coldStart], at("js", 0), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [{ configId: "cold-start", value: -BASE, factor: 0 }],
 		});
 		expect(breakdownOf([CONFIGS.coldStart], at("js", 1), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [
 				{ configId: "cold-start", value: BASE * 0.5, factor: 1.5 },
 			],
@@ -399,12 +352,10 @@ describe("the receipt one answer carries", () => {
 	it("chips Overclock's throttle as a negative bonus off the opener", () => {
 		expect(breakdownOf([CONFIGS.overclock], at("js", 0), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [{ configId: "overclock", value: BASE * 3, factor: 4 }],
 		});
 		expect(breakdownOf([CONFIGS.overclock], at("js", 1), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [
 				{ configId: "overclock", value: -BASE * 0.5, factor: 0.5 },
 			],
@@ -414,7 +365,6 @@ describe("the receipt one answer carries", () => {
 	it("names the streak step in the equation once one is running", () => {
 		expect(breakdownOf([CONFIGS.js], at("js"), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [
 				{ configId: "js", value: roundToTwoDecimals(BASE * 0.25), factor: 1.25 },
 			],
@@ -424,7 +374,6 @@ describe("the receipt one answer carries", () => {
 	it("excludes configs with no coverage effect on the category", () => {
 		expect(breakdownOf([CONFIGS.linter, CONFIGS.js], at("css"), 1)).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [],
 		});
 	});
@@ -434,7 +383,6 @@ describe("the receipt one answer carries", () => {
 			breakdownOf([CONFIGS.prettierrc], at("js", 1, "multiple"), 0.25)
 		).toEqual({
 			base: 0.5,
-			streakBonus: 0,
 			configBonuses: [{ configId: "prettierrc", value: 0.5 }],
 		});
 	});
@@ -442,7 +390,7 @@ describe("the receipt one answer carries", () => {
 	it("hides .prettierrc on a half catch, which was already a whole unit", () => {
 		expect(
 			breakdownOf([CONFIGS.prettierrc], at("js", 1, "multiple"), 0.5)
-		).toEqual({ base: 1, streakBonus: 0, configBonuses: [] });
+		).toEqual({ base: 1, configBonuses: [] });
 	});
 
 	it("sums .prettierrc's row with a multiplier's to the figure that was paid", () => {
@@ -452,7 +400,6 @@ describe("the receipt one answer carries", () => {
 
 		expect(breakdown).toEqual({
 			base: 0.5,
-			streakBonus: 0,
 			configBonuses: [
 				{ configId: "prettierrc", value: 0.5 },
 				{ configId: "agents-md", value: 0.5, factor: 2 },
@@ -467,7 +414,6 @@ describe("the receipt one answer carries", () => {
 	it("carries a miss as a flat nothing: the slot is the cost, not a bleed", () => {
 		expect(breakdownOf([CONFIGS.agentsMd], at("js"), 0, 3)).toEqual({
 			base: 0,
-			streakBonus: 0,
 			configBonuses: [],
 		});
 	});
@@ -477,7 +423,6 @@ describe("the receipt one answer carries", () => {
 			breakdownOf([CONFIGS.agentsMd, CONFIGS.codeCoverage], at("js"), 1)
 		).toEqual({
 			base: BASE,
-			streakBonus: 0,
 			configBonuses: [
 				{ configId: "code-coverage", value: 0.1 },
 				{ configId: "agents-md", value: BASE, factor: 2 },
@@ -506,12 +451,11 @@ describe("the receipt one answer carries", () => {
 		).toEqual([{ configId: "overclock", value: -BASE * 0.5, factor: 0.5 }]);
 	});
 
-	it("keeps base + streak + configs summing to the engine's earned coverage", () => {
+	it("keeps base + configs summing to the engine's earned coverage", () => {
 		const configs = [CONFIGS.agentsMd, CONFIGS.codeCoverage];
 		const breakdown = breakdownOf(configs, at("js"), 1);
 		const sum =
 			breakdown.base +
-			breakdown.streakBonus +
 			breakdown.configBonuses.reduce((total, bonus) => total + bonus.value, 0);
 		expect(roundToTwoDecimals(sum)).toBe(earnedBy(configs, at("js"), 1));
 	});
@@ -521,7 +465,7 @@ describe("the receipt one answer carries", () => {
 
 		it("names the wager as its own row, so the chip that paid lights up", () => {
 			expect(
-				breakdownOf([CONFIGS.strict], context, 1, 0, 0.5).configBonuses
+				breakdownOf([CONFIGS.strict], context, 1, 0.5).configBonuses
 			).toEqual([{ configId: "strict", value: 0.5 }]);
 		});
 
@@ -530,12 +474,10 @@ describe("the receipt one answer carries", () => {
 				[CONFIGS.strict, CONFIGS.agentsMd],
 				context,
 				1,
-				0,
 				0.5
 			);
 			const rows =
 				breakdown.base +
-				breakdown.streakBonus +
 				breakdown.configBonuses.reduce((sum, bonus) => sum + bonus.value, 0);
 
 			expect(rows).toBe(2.5);
@@ -575,5 +517,87 @@ describe("the factors one answer reports", () => {
 
 	it("hands back nothing at all for a wrong answer", () => {
 		expect(factorsOf([CONFIGS.js], at("js"), 0)).toBeUndefined();
+	});
+});
+
+describe("Vite pays for a fast answer (ADR-169)", () => {
+	const timed = (elapsedMs?: number): PayoutContext => ({
+		...at("js"),
+		...(elapsedMs === undefined ? {} : { elapsedMs }),
+	});
+
+	it("pays ×1.5 for an answer inside 15 seconds", () => {
+		expect(earnedBy([CONFIGS.vite], timed(14_000), 1)).toBe(BASE * 1.5);
+		expect(earnedBy([CONFIGS.vite], timed(15_000), 1)).toBe(BASE * 1.5);
+	});
+
+	it("pays ×0.75 for a slower one", () => {
+		expect(earnedBy([CONFIGS.vite], timed(16_000), 1)).toBe(BASE * 0.75);
+	});
+
+	it("pays the answer as it stands when no time came with it", () => {
+		expect(earnedBy([CONFIGS.vite], timed(), 1)).toBe(BASE);
+	});
+
+	it("costs 2 weight", () => {
+		expect(CONFIGS.vite.slots).toBe(2);
+	});
+});
+
+describe("all-coverage multipliers add, they do not compound (ADR-172)", () => {
+	const DEPRECATED_AT = (multiplier: number) => ({
+		...CONFIGS.deprecated,
+		coverageMultiplier: multiplier,
+	});
+
+	it("pays ×2.5 for AGENTS.md and Intellisense, their bonuses added", () => {
+		expect(
+			earnedBy([CONFIGS.agentsMd, CONFIGS.intellisense], at("react"), 1)
+		).toBe(2.5);
+	});
+
+	it("pays ×4 for AGENTS.md beside a fresh Deprecated, not ×6", () => {
+		expect(earnedBy([CONFIGS.agentsMd, DEPRECATED_AT(3)], at("react"), 1)).toBe(
+			4
+		);
+	});
+
+	it("still compounds a category focus with the pooled bonus", () => {
+		const focus = focusMultiplierOf(CONFIGS.js);
+
+		expect(
+			earnedBy([CONFIGS.js, CONFIGS.agentsMd, CONFIGS.intellisense], at("js"), 1)
+		).toBe(roundToTwoDecimals(focus * 2.5));
+	});
+
+	it("lets a Deprecated decayed under ×1 take from the pool rather than halve it", () => {
+		expect(
+			earnedBy([CONFIGS.agentsMd, DEPRECATED_AT(0.5)], at("react"), 1)
+		).toBe(1.5);
+	});
+
+	it("never pays less than nothing when the pool runs negative", () => {
+		expect(
+			earnedBy([DEPRECATED_AT(0.25), DEPRECATED_AT(0.25)], at("react"), 1)
+		).toBe(0);
+	});
+
+	it("itemises each config's share of the pool, the rows summing to what was paid", () => {
+		const paid = answerPayoutFor(
+			[CONFIGS.agentsMd, CONFIGS.intellisense],
+			at("react"),
+			1
+		);
+		const rows = paid.breakdown.configBonuses.map((row) => row.value);
+
+		expect(rows).toEqual([1, 0.5]);
+		expect(paid.breakdown.base + rows[0] + rows[1]).toBe(paid.earned);
+	});
+
+	it("reports the pooled build multiplier in the factors", () => {
+		expect(
+			answerPayoutFor([CONFIGS.agentsMd, CONFIGS.intellisense], at("react"), 1)
+				.factors?.build
+		).toBe(2.5);
 	});
 });

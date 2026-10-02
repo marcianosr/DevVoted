@@ -19,24 +19,20 @@ import {
 	createKantoPollScreenProps,
 	createKantoQuestionProps,
 	kantoPollOptions,
+	kantoPollReadout,
 	kantoAudits,
 	kantoRunningConfigs,
 } from "~/test/kantoPoll.factory";
 import { gateRoster, gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
 import type { AuditProps } from "./Audit.ui";
-import type { ChoiceVerdict } from "./Choice.ui";
-import type { FigureTone, LedgerRow } from "./LedgerRows.ui";
-import type { PollScoresProps } from "./PollScores.ui";
+import type { ChoiceState } from "./Choice.ui";
 import { PollScreen } from "./PollScreen.ui";
 import { REDACTED } from "./Redaction.ui";
 import type { QuestionOption } from "./Question.ui";
 
 const LOCK_IN = "Lock in";
-const NEXT_LABEL = "Next poll";
 const ANSWERED_HELD = 62;
-const QUIET: FigureTone = "quiet";
-const GAIN = "viridian" as const;
 
 const noop = () => {};
 
@@ -237,11 +233,8 @@ export const MultipleAnswers: Story = {
 		}),
 		wrongCost: undefined,
 		footer: undefined,
-		commit: {
-			label: `${LOCK_IN} 2 answers`,
-			note: "you can also press Enter to answer",
-			onPress: noop,
-		},
+		keysHint: "press letters, then Enter",
+		commit: { lock: { label: `${LOCK_IN} 2 answers`, onPress: noop } },
 	},
 };
 
@@ -255,97 +248,145 @@ export const NothingPicked: Story = {
 		}),
 		wrongCost: undefined,
 		footer: undefined,
-		commit: {
-			label: LOCK_IN,
-			note: "pick every answer that fits, or press their letters",
-		},
+		keysHint: "press letters, then Enter",
+		commit: { lock: { label: LOCK_IN, note: "pick every answer that fits" } },
 	},
 };
 
-const ANSWER_RECEIPT = [
-	{
-		label: "right answer",
-		detail: "base",
-		figures: [{ label: "1.00", tone: QUIET }],
-	},
-	{
-		label: ".ts",
-		tags: [{ label: "×1.25" }],
-		detail: "matches TypeScript",
-		figures: [{ label: "+0.25", tone: QUIET }],
-	},
-	{
-		label: "Code Coverage",
-		figures: [{ label: "+0.10", tone: QUIET }],
-	},
-	{
-		label: "paid",
-		figures: [{ label: "1.35", color: GAIN }],
-		total: true,
-	},
-] as const satisfies readonly LedgerRow[];
-
-const answeredPaidFor = (): PollScoresProps => {
-	const { paid } = createKantoPollScreenProps().coverage;
-	const [row] = paid?.rows ?? [];
-
-	return {
-		rows: [
-			{
-				...row,
-				payouts: {
-					total: "4.85",
-					slots:
-						row.payouts?.slots.map((slot, position) =>
-							position === 3
-								? {
-										figure: "1.35",
-										color: GAIN,
-										receipt: ANSWER_RECEIPT,
-									}
-								: slot
-						) ?? [],
-				},
-			},
-		],
-	};
-};
-
-const ANSWERED_VERDICTS: Record<string, ChoiceVerdict> = {
+const ANSWERED_VERDICTS: Record<string, ChoiceState> = {
 	"option-1": "right",
 	"option-2": "wrong",
-	"option-3": "missed",
+	"option-3": "right",
 };
 
 export const Answered: Story = {
 	args: {
 		coverage: {
-			...createKantoPollScreenProps().coverage,
-			bar: createKantoCoverageBarProps({
-				held: ANSWERED_HELD,
-				pin: true,
-			}),
-			paid: answeredPaidFor(),
+			...kantoPollReadout(),
+			bar: createKantoCoverageBarProps({ held: ANSWERED_HELD }),
+			accuracy: {
+				label: "2 out of 5 right",
+				segments: ["right", "wrong", "right", { partial: 0.5 }, "open"],
+			},
 		},
 		question: createKantoQuestionProps({
 			answerType: "multiple",
 			pickedIds: ["option-1", "option-2"],
 			options: kantoPollOptions.map((option) => ({
 				...option,
-				verdict: ANSWERED_VERDICTS[option.id],
+				state: ANSWERED_VERDICTS[option.id],
 			})),
 		}),
 		wrongCost: undefined,
+		commit: undefined,
 		hint: "Partial<T> and Maybe<T> were the key; Optional<T> is not a built-in.",
-		footer: {
-			action: {
-				label: NEXT_LABEL,
-				swatch: { state: "current", swatch: gateSwatchAt(FIRST_GATE) },
-				onPress: noop,
-			},
-			note: "Or click ENTER",
-		},
 	},
+};
+
+const withStates = (
+	states: readonly ChoiceState[]
+): readonly QuestionOption[] =>
+	kantoPollOptions.map((option, index) => ({
+		...option,
+		state: states[index] ?? "idle",
+	}));
+
+const RIGHT_ANSWER = createKantoQuestionProps({
+	pickedIds: ["option-1"],
+	options: withStates(["right"]),
+});
+
+const WRONG_ANSWER = createKantoQuestionProps({
+	pickedIds: ["option-2"],
+	options: withStates(["right", "wrong"]),
+});
+
+const LANDING_HELD = { before: 24, after: 36 };
+
+const RightAnswerLanding = () => {
+	const [flights, setFlights] = useState(0);
+	const [landed, setLanded] = useState(false);
+	const flightId = `flight-${flights}`;
+
+	return (
+		<PollScreen
+			{...createKantoPollScreenProps()}
+			question={RIGHT_ANSWER}
+			commit={{
+				lock: {
+					label: "Answer again",
+					note: "replays the chip",
+					onPress: () => {
+						setLanded(false);
+						setFlights((count) => count + 1);
+					},
+				},
+			}}
+			coverage={{
+				...kantoPollReadout(),
+				bar: createKantoCoverageBarProps({
+					held: landed ? LANDING_HELD.after : LANDING_HELD.before,
+				}),
+				accuracy: {
+					label: "3 out of 5 right",
+					segments: ["right", "wrong", "right", "right", "open"],
+					pulse: { at: 3, key: flightId },
+				},
+			}}
+			flight={
+				flights === 0
+					? undefined
+					: {
+							figure: "+12%",
+							id: flightId,
+							fromHeld: LANDING_HELD.before,
+							toHeld: LANDING_HELD.after,
+						}
+			}
+			onFlightLanded={() => setLanded(true)}
+		/>
+	);
+};
+
+export const RightAnswer: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => <RightAnswerLanding />,
+};
+
+const WrongAnswerLanding = () => {
+	const [shake, setShake] = useState<string | undefined>("miss-0");
+
+	const missAgain = () => {
+		setShake(undefined);
+		requestAnimationFrame(() => setShake(`miss-${Date.now()}`));
+	};
+
+	return (
+		<PollScreen
+			{...createKantoPollScreenProps()}
+			question={WRONG_ANSWER}
+			commit={{
+				lock: {
+					label: "Miss again",
+					note: "replays the shake",
+					onPress: missAgain,
+				},
+			}}
+			coverage={{
+				...kantoPollReadout(),
+				accuracy: {
+					label: "2 out of 5 right",
+					segments: ["right", "wrong", "right", "wrong", "open"],
+				},
+			}}
+			shake={shake}
+		/>
+	);
+};
+
+export const WrongAnswer: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => <WrongAnswerLanding />,
 };
 
 export const AnsweredWithTheBuildFlashing: Story = {

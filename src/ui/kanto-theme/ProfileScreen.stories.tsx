@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	dexAuditsProps,
-	dexConfigGroups,
 	dexConfigsProps,
 	dexControlsProps,
 	dexPollsProps,
@@ -50,6 +49,7 @@ const TABS = [
 
 const PANELS: Record<string, ReactNode> = {
 	polls: <DexPolls {...dexPollsProps()} />,
+	configs: <DexConfigs {...dexConfigsProps()} />,
 	controls: <DexControls {...dexControlsProps()} />,
 	audits: <DexAudits {...dexAuditsProps()} />,
 	swatches: <DexSwatches {...dexSwatchesProps()} />,
@@ -58,32 +58,6 @@ const PANELS: Record<string, ReactNode> = {
 
 const BORDER = "/borders/border-ts-lavender.svg";
 const NAME = "marciano_schildmeijer";
-
-const ConfigsPanel = () => {
-	const [openInfo, setOpenInfo] = useState<ReadonlySet<string>>(new Set());
-
-	const toggle = (id: string) => {
-		const next = new Set(openInfo);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		setOpenInfo(next);
-	};
-
-	const everyId = dexConfigGroups.flatMap((group) =>
-		group.chips.map((chip) => chip.id)
-	);
-
-	return (
-		<DexConfigs
-			{...dexConfigsProps()}
-			openInfo={openInfo}
-			onToggleInfo={toggle}
-			onToggleAll={() =>
-				setOpenInfo(new Set(openInfo.size === 0 ? everyId : []))
-			}
-		/>
-	);
-};
 
 const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 	const [activeId, setActiveId] = useState(start);
@@ -104,7 +78,7 @@ const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 			theme="pallet"
 			archive="8.2 MB archive"
 		>
-			{activeId === "configs" ? <ConfigsPanel /> : PANELS[activeId]}
+			{PANELS[activeId]}
 		</ProfileScreen>
 	);
 };

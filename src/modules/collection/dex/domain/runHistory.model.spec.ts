@@ -32,14 +32,14 @@ describe("runHistory", () => {
 		expect(entries.map((entry) => entry.runId)).toEqual([1, 2]);
 	});
 
-	it("reads coverage as a share of the slots the run opened, not as raw units", () => {
-		const [entry] = runHistory([row({ coverage: 14, gatesCleared: 4 })]);
+	it("reads coverage as a share of every codebase the run played, not as raw units", () => {
+		const [entry] = runHistory([row({ coverage: 22.5, gatesCleared: 4 })]);
 
-		expect(entry.coverage).toBeCloseTo(0.56);
+		expect(entry.coverage).toBeCloseTo(0.5);
 	});
 
 	it("bands the reading, so units are never mistaken for a percentage", () => {
-		const [entry] = runHistory([row({ coverage: 16, gatesCleared: 4 })]);
+		const [entry] = runHistory([row({ coverage: 27, gatesCleared: 4 })]);
 
 		expect(entry.band).toBe("healthy");
 	});

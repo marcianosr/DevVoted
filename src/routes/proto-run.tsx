@@ -25,10 +25,8 @@ import {
 } from "~/modules/run/config/domain/hand.model";
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
-import {
-	occupiedSlots,
-	spaceForBuild,
-} from "~/modules/run/build/domain/build.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
@@ -40,6 +38,12 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
+import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
+import {
+	type CommunityDayTurnout,
+	EMPTY_DAY_TURNOUT,
+} from "~/modules/run/community/domain/dayRecords.model";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import {
 	isCarriedService,
 	REGISTRY_CONTROL_IDS,
@@ -308,7 +312,16 @@ const protoClimbFor = (
 	fallen: [],
 	bestPosition: null,
 	viewer: { id: "you", hasLiveRun: true },
+	turnout: EMPTY_DAY_TURNOUT,
 });
+
+const voterOf = (trainer: SimTrainer): CommunityVoter => ({
+	id: trainer.id,
+	displayName: trainer.displayName,
+	you: false,
+});
+
+const YOU_VOTER: CommunityVoter = { id: "you", displayName: "You", you: true };
 
 const simulateCommunityScreen = (
 	view: RunView,
@@ -382,21 +395,27 @@ const simulateCommunityScreen = (
 			return poll !== undefined && rightsOn(poll).includes(trainer);
 		}).length,
 	}));
-	const bandOf = (low: number, high: number) =>
-		rightsPerTrainer
-			.filter(({ rights }) => rights >= low && rights <= high)
-			.map(({ trainer }) => climberOf(trainer));
-
 	const window = view.pollsPerGate;
-	const clean = bandOf(window, window);
-	const middling = bandOf(Math.ceil(window / 2), window - 1);
-	const struggling = bandOf(0, Math.ceil(window / 2) - 1);
-	const yourBand =
-		yourRights === window
-			? clean
-			: yourRights >= window / 2
-				? middling
-				: struggling;
+	const votersRighting = (low: number, high: number, yours: boolean) => [
+		...(yours ? [YOU_VOTER] : []),
+		...rightsPerTrainer
+			.filter(({ rights }) => rights >= low && rights <= high)
+			.map(({ trainer }) => voterOf(trainer)),
+	];
+	const half = Math.ceil(window / 2);
+	const simulatedTurnout: CommunityDayTurnout = {
+		...EMPTY_DAY_TURNOUT,
+		outcomes: {
+			...EMPTY_DAY_TURNOUT.outcomes,
+			perfect: votersRighting(window, window, yourRights === window),
+			ok: votersRighting(
+				half,
+				window - 1,
+				yourRights >= half && yourRights < window
+			),
+			shaky: votersRighting(0, half - 1, yourRights < half),
+		},
+	};
 
 	return {
 		header: {
@@ -425,30 +444,11 @@ const simulateCommunityScreen = (
 			shop: { label: "Back to the shop", onPress: press.onShop },
 			prep: { label: "On to prep", onPress: press.onPrep },
 		},
-		turnout: {
-			title: "Who cleared what",
-			when: "today",
-			bands: [
-				{
-					label: `all ${window} right`,
-					count: `${clean.length + (yourRights === window ? 1 : 0)}`,
-					color: "viridian",
-					climbers: yourBand === clean ? [YOU, ...clean] : clean,
-				},
-				{
-					label: "most right",
-					count: `${middling.length + (yourBand === middling ? 1 : 0)}`,
-					color: "saffron",
-					climbers: yourBand === middling ? [YOU, ...middling] : middling,
-				},
-				{
-					label: "held back",
-					count: `${struggling.length + (yourBand === struggling ? 1 : 0)}`,
-					color: "cinnabar",
-					climbers: yourBand === struggling ? [YOU, ...struggling] : struggling,
-				},
-			],
-		},
+		turnout: turnoutFor(simulatedTurnout, "today", {
+			label: "answered today",
+			count: String(climbers),
+			climbers: [YOU, ...TRAINERS.map(climberOf)],
+		}),
 		map: {
 			title: CLIMB_MAP_TITLE,
 			track: {
@@ -583,7 +583,7 @@ const RunGame = ({
 		: undefined;
 	const pollClock = usePollClock(
 		settled ? null : (view.poll?.id ?? null),
-		view.pollTimeLimitMs
+		view.pollTimeLimitMs ?? view.fastAnswer?.withinMs ?? null
 	);
 	const answer = (optionIds: readonly string[]) => {
 		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
@@ -607,15 +607,12 @@ const RunGame = ({
 			}
 			return next;
 		});
-	const onSelect = (optionId: string) => {
-		if (view.poll?.answerType !== "multiple") return setSelected([optionId]);
-
+	const onSelect = (optionId: string) =>
 		setSelected((current) =>
 			current.includes(optionId)
 				? current.filter((id) => id !== optionId)
 				: [...current, optionId]
 		);
-	};
 	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		setRewardStep("shop");
 		setState((current) =>
@@ -663,8 +660,13 @@ const RunGame = ({
 					view={view}
 					answered={settled}
 					selectedOptionIds={selected}
+					clockMs={pollClock.shownMs}
 					onSelect={onSelect}
-					onSubmit={() => answer(selected)}
+					onAnswer={answer}
+					onSkip={() => {
+						dispatch({ type: "skip" });
+						setPinned(true);
+					}}
 					onNext={() => {
 						dispatch({ type: "close-gate" });
 						setPinned(false);
@@ -685,7 +687,6 @@ const RunGame = ({
 			{!settled && state.status === "rewarding" && rewardStep === "summary" && (
 				<GateOutcomeView
 					view={view}
-					verdict="cleared"
 					onReview={() => setRewardStep("review")}
 					onCommunity={() => setRewardStep("community")}
 					onNext={() => setRewardStep("shop")}
@@ -750,7 +751,6 @@ const RunGame = ({
 				stripStep === "removal" && (
 					<GateOutcomeView
 						view={view}
-						verdict="held"
 						onReview={() => setStripStep("review")}
 						onNext={() => setStripStep("review")}
 						onRemove={payPeel}
@@ -889,7 +889,7 @@ const RunGame = ({
 				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
 					<span className="mr-1 font-semibold uppercase tracking-wide">
 						Configs {occupiedSlots(state.build.configs)}/
-						{spaceForBuild(state.build)}
+						{buildSpaceOf(state).space}
 					</span>
 					{CONFIG_LIST.map((config) => {
 						const held = state.build.configs.some(

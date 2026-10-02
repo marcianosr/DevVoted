@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 
-import { getAllPolls } from "~/modules/polls/poll/application/poll.serverfn";
+import { getPublishedPollCount } from "~/modules/polls/poll/application/poll.serverfn";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { getCategories } from "~/shared/lib/categories";
 import { pollQueryKeys } from "~/shared/queryKeys";
 import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
@@ -11,13 +11,11 @@ declare const __LAST_COMMIT_DATE__: string;
 declare const __LAST_COMMIT_AUTHOR__: string;
 
 export const Footer = () => {
-	const { data, isLoading } = useQuery({
-		queryKey: pollQueryKeys.list(),
-		queryFn: () => getAllPolls(),
+	const { view: pollCount } = useApiQuery({
+		queryKey: pollQueryKeys.publishedCount(),
+		queryFn: () => getPublishedPollCount(),
 		staleTime: 1000 * 60 * 30,
 	});
-
-	const pollCount = !isLoading && data?.success ? data.data.length : null;
 
 	return (
 		<AppFooter

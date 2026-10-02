@@ -8,8 +8,13 @@ export const LOCKED_CONFIG = "Locked config";
 export const WHAT_EACH_POLL_PAID = "Score";
 export const STORAGE_BALANCE = "Storage balance";
 export const COMMUNITY = "Community";
+export const NEW = "new";
+export const NOTHING_NEW = "nothing new";
+export const NEW_BADGE = { label: NEW, color: "cerulean" } as const;
 
 export const IN_A_ROW = (streak: number) => `${streak} in a row`;
+
+export const HELD_OF = (held: number, total: number) => `${held} of ${total}`;
 
 export const MOST_CORRECT = (correct: number) => `${correct} correct`;
 
@@ -28,3 +33,10 @@ export const ANSWER_TYPE_LABEL = {
 	single: "single answer",
 	multiple: "multiple answers",
 } as const;
+
+export const CHOICE_LABEL = {
+	single: "single choice",
+	multiple: "multiple choice",
+} as const;
+
+export const NEW_RUN_PRICE = (storage: string) => `new run · ${storage}`;

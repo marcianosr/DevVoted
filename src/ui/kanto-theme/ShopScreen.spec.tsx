@@ -7,7 +7,7 @@ import {
 	createKantoHeaderProps,
 	createKantoShopScreenProps,
 	kantoClosedShopProps,
-	kantoLockedService,
+	kantoNewService,
 	kantoRegistryControls,
 	kantoUncarriedService,
 } from "~/test/kantoPoll.factory";
@@ -49,6 +49,24 @@ describe("ShopScreen", () => {
 		expect(screen.getByText(STORAGE_BALANCE).closest("header")).toHaveClass(
 			"md:sticky"
 		);
+	});
+
+	it("states why a shut shop takes no presses and leaves its panels inert", () => {
+		const shut = "you skipped this shop";
+		render(<ShopScreen {...props} shut={shut} />);
+
+		expect(screen.getByText(shut)).toBeVisible();
+		expect(
+			screen.getByRole("heading", { name: "Registry" }).closest("[inert]")
+		).not.toBeNull();
+	});
+
+	it("leaves an open shop's panels pressable", () => {
+		render(<ShopScreen {...props} />);
+
+		expect(
+			screen.getByRole("heading", { name: "Registry" }).closest("[inert]")
+		).toBeNull();
 	});
 
 	it("stands the build beside the registry", () => {
@@ -200,55 +218,27 @@ describe("ShopScreen", () => {
 		expect(row?.querySelector(".bg-theme-raised.rounded-lg")).toBeNull();
 	});
 
-	it("names a locked service and states its unlock line in place of a price, once shown", async () => {
-		render(
-			<ShopScreen
-				{...props}
-				controls={[
-					kantoLockedService,
-					{
-						id: "pin",
-						locked: true,
-						glyph: "⚑",
-						title: "git tag",
-						detail:
-							"save your last checkpoint once; each gate asks a higher price to activate it",
-						unlock: "Reach gate 4",
-					},
-				]}
-			/>
-		);
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /2 locked services/ })
-		);
-
-		expect(screen.getByText("Extend the registry")).toBeVisible();
-		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
-		expect(screen.getByText("git tag")).toBeVisible();
-		expect(screen.getByText("unlock · Reach gate 4")).toBeVisible();
-		expect(screen.queryByRole("button", { name: /git tag/ })).toBeNull();
-	});
-
-	it("folds the locked services behind one row, counting them", () => {
-		render(<ShopScreen {...props} controls={[kantoLockedService]} />);
+	it("marks a service unlocked during this run as new", () => {
+		render(<ShopScreen {...props} controls={[kantoNewService]} />);
 
 		expect(
-			screen.getByRole("button", { name: /^1 locked service/ })
-		).toBeInTheDocument();
-		expect(screen.queryByText("Extend the registry")).not.toBeInTheDocument();
+			within(headOf("Services")).queryByText("new")
+		).not.toBeInTheDocument();
+		expect(screen.getByText("new")).toBeInTheDocument();
 	});
 
 	it("counts the services ready to buy in the panel's head", () => {
 		render(
 			<ShopScreen
 				{...props}
-				controls={[...kantoRegistryControls, kantoLockedService]}
+				controls={[...kantoRegistryControls, kantoNewService]}
 			/>
 		);
 
 		expect(
-			within(headOf("Services")).getByText(`${kantoRegistryControls.length}`)
+			within(headOf("Services")).getByText(
+				`${kantoRegistryControls.length + 1}`
+			)
 		).toBeInTheDocument();
 		expect(within(headOf("Services")).getByText("ready")).toBeInTheDocument();
 	});

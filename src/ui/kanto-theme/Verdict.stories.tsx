@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Screen } from "./Screen.ui";
 import { Verdict } from "./Verdict.ui";
 
-const OUTCOMES = ["correct", "partial", "wrong"] as const;
+const OUTCOMES = ["correct", "partial", "wrong", "skipped"] as const;
 
 const COLUMN = "flex flex-col gap-2";
 const ROW = "flex items-center gap-3 text-sm text-theme-muted";

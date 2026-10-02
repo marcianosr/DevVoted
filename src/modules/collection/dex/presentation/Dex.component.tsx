@@ -1,14 +1,5 @@
 import { useState } from "react";
 
-import { useQuery } from "@tanstack/react-query";
-
-import { auditdex } from "~/modules/collection/dex/domain/auditdex.model";
-import { configdex } from "~/modules/collection/dex/domain/configdex.model";
-import { controldex } from "~/modules/collection/dex/domain/controldex.model";
-import { gatedex } from "~/modules/collection/dex/domain/gatedex.model";
-import { getConfigdex } from "~/modules/collection/dex/application/configdex.serverfn";
-import { getGateRuns } from "~/modules/collection/dex/application/runHistory.serverfn";
-import { getPolldex } from "~/modules/collection/dex/application/polldex.serverfn";
 import {
 	dexAuditsFor,
 	dexConfigsFor,
@@ -18,9 +9,7 @@ import {
 	dexSwatchesFor,
 	type DexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import { getOwnedSwatches } from "~/modules/run/run/application/run.serverfn";
-import { getServiceUnlocks } from "~/modules/run/shop/application/serviceUnlock.serverfn";
-import { pollQueryKeys, userQueryKeys } from "~/shared/queryKeys";
+import { useDex } from "~/modules/collection/dex/application/useDex.hook";
 import { DexAudits } from "~/ui/kanto-theme/DexAudits.ui";
 import { DexConfigs } from "~/ui/kanto-theme/DexConfigs.ui";
 import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
@@ -29,7 +18,7 @@ import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
 import { DexSwatches } from "~/ui/kanto-theme/DexSwatches.ui";
 
 type DexProps = {
-	userId: string;
+	viewerId: string;
 	activeId: DexTabId;
 };
 
@@ -40,7 +29,7 @@ const AUDITS_TAB: DexTabId = "audits";
 const SWATCHES_TAB: DexTabId = "swatches";
 const RUNS_TAB: DexTabId = "runs";
 
-export const Dex = ({ userId, activeId }: DexProps) => {
+export const Dex = ({ viewerId, activeId }: DexProps) => {
 	const [picks, setPicks] = useState<Partial<Record<DexTabId, string>>>({});
 	const [filters, setFilters] = useState<Partial<Record<DexTabId, string>>>({});
 
@@ -50,85 +39,33 @@ export const Dex = ({ userId, activeId }: DexProps) => {
 	const filterIn = (tab: DexTabId) => (filter: string) =>
 		setFilters({ ...filters, [tab]: filter });
 
-	const polldex = useQuery({
-		queryKey: pollQueryKeys.polldex(userId),
-		queryFn: () => getPolldex(),
-	});
-
-	const swatches = useQuery({
-		queryKey: userQueryKeys.swatches(userId),
-		queryFn: () => getOwnedSwatches(),
-	});
-
-	const gateRuns = useQuery({
-		queryKey: userQueryKeys.gateRuns(userId),
-		queryFn: () => getGateRuns(),
-	});
-
-	const unlocks = useQuery({
-		queryKey: userQueryKeys.unlocks(userId),
-		queryFn: () => getConfigdex(),
-	});
-
-	const serviceUnlocks = useQuery({
-		queryKey: userQueryKeys.serviceUnlocks(userId),
-		queryFn: () => getServiceUnlocks(),
-	});
-
-	const entries = polldex.data?.success ? polldex.data.data.entries : [];
-	const ownedSwatchIds = swatches.data?.success
-		? swatches.data.data.ownedSwatchIds
-		: [];
-	const history = gateRuns.data?.success ? gateRuns.data.data.history : [];
-	const unlockedServiceIds = serviceUnlocks.data?.success
-		? serviceUnlocks.data.data.unlockedServiceIds
-		: [];
-	const configEntries = unlocks.data?.success
-		? configdex(unlocks.data.data.unlocks, unlocks.data.data.progress)
-		: [];
-
-	const gates = gatedex(ownedSwatchIds);
-
-	const polls = dexPollsFor(entries, filters[POLLS_TAB], picks[POLLS_TAB]);
-
-	const configs = dexConfigsFor(
-		configEntries,
-		filters[CONFIGS_TAB],
-		picks[CONFIGS_TAB]
-	);
+	const { polls, configs, controls, gates, audits, runs } = useDex(viewerId);
 
 	return (
 		<>
 			{activeId === "polls" ? (
 				<DexPolls
-					{...polls}
+					{...dexPollsFor(polls, filters[POLLS_TAB], picks[POLLS_TAB])}
 					onSelect={pickIn(POLLS_TAB)}
 					onFilter={filterIn(POLLS_TAB)}
 				/>
 			) : null}
 			{activeId === "configs" ? (
 				<DexConfigs
-					{...configs}
+					{...dexConfigsFor(configs, filters[CONFIGS_TAB], picks[CONFIGS_TAB])}
 					onSelect={pickIn(CONFIGS_TAB)}
 					onFilter={filterIn(CONFIGS_TAB)}
 				/>
 			) : null}
 			{activeId === "controls" ? (
 				<DexControls
-					{...dexControlsFor(
-						controldex(unlockedServiceIds),
-						picks[CONTROLS_TAB]
-					)}
+					{...dexControlsFor(controls, picks[CONTROLS_TAB])}
 					onSelect={pickIn(CONTROLS_TAB)}
 				/>
 			) : null}
 			{activeId === "audits" ? (
 				<DexAudits
-					{...dexAuditsFor(
-						auditdex(gates),
-						filters[AUDITS_TAB],
-						picks[AUDITS_TAB]
-					)}
+					{...dexAuditsFor(audits, filters[AUDITS_TAB], picks[AUDITS_TAB])}
 					onSelect={pickIn(AUDITS_TAB)}
 					onFilter={filterIn(AUDITS_TAB)}
 				/>
@@ -141,7 +78,7 @@ export const Dex = ({ userId, activeId }: DexProps) => {
 			) : null}
 			{activeId === "runs" ? (
 				<DexRuns
-					{...dexRunsFor(history, picks[RUNS_TAB])}
+					{...dexRunsFor(runs, picks[RUNS_TAB])}
 					onSelect={pickIn(RUNS_TAB)}
 				/>
 			) : null}

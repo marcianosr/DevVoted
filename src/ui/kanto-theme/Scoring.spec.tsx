@@ -4,7 +4,14 @@ import { render, screen, within } from "@testing-library/react";
 import { SCORING_TITLE, Scoring, type ScoringProps } from "./Scoring.ui";
 
 const props: ScoringProps = {
-	meta: [{ figure: "25 slots" }, " 1 unit ", { figure: "+4%", gain: true }],
+	meta: [
+		"single ",
+		{ figure: "+11.1%", gain: true },
+		" · multiple up to ",
+		{ figure: "+22.2%", gain: true },
+		" · accuracy up to ",
+		{ figure: "×2" },
+	],
 	prices: [
 		{
 			label: "single answer",
@@ -25,15 +32,15 @@ const props: ScoringProps = {
 		},
 	],
 	hint: [
-		"units per poll · all right pays ",
+		"credit per poll · a multiple counts ",
 		{ figure: "2" },
 		" · configs add on top",
 	],
 	statements: [
 		[
-			"The codebase grows. Every gate adds ",
-			{ figure: "5" },
-			" slots, so a unit moves the bar less.",
+			"Right answers multiply what the window covered: ",
+			{ figure: "5 ×2" },
+			". A multiple counts as two.",
 		],
 		[
 			"The line rises. ",
@@ -44,14 +51,13 @@ const props: ScoringProps = {
 		],
 	],
 	rows: [
-		{ gate: 0, name: "Pallet", slots: "5", unit: "+20%", healthy: "60%" },
-		{ gate: 1, name: "Boulder", slots: "10", unit: "+10%", healthy: "60%" },
-		{ gate: 2, name: "Cascade", slots: "15", unit: "+6.67%", healthy: "60%" },
-		{ gate: 3, name: "Thunder", slots: "20", unit: "+5%", healthy: "60%" },
+		{ gate: 0, name: "Pallet", unit: "+20%", healthy: "60%" },
+		{ gate: 1, name: "Boulder", unit: "+10%", healthy: "60%" },
+		{ gate: 2, name: "Cascade", unit: "+6.67%", healthy: "60%" },
+		{ gate: 3, name: "Thunder", unit: "+5%", healthy: "60%" },
 		{
 			gate: 4,
 			name: "Lavender",
-			slots: "25",
 			unit: "+4%",
 			healthy: "62%",
 			current: true,
@@ -79,19 +85,19 @@ describe("Scoring", () => {
 		).toBeInTheDocument();
 	});
 
-	it("states the codebase and a unit's worth on the strip, both badged", () => {
+	it("states what a single, a multiple and accuracy add on the strip, the gains in green", () => {
 		const { container } = render(<Scoring {...props} />);
 
 		const strip = within(container.querySelector("summary") as HTMLElement);
 
 		expect(container.querySelector("summary")).toHaveTextContent(
-			"25 slots 1 unit +4%"
+			"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
 		);
-		expect(strip.getByText("25 slots")).toHaveClass("badge-theme");
-		expect(strip.getByText("+4%")).toHaveAttribute(
+		expect(strip.getByText("+11.1%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);
+		expect(strip.getByText("×2")).toHaveClass("badge-theme");
 	});
 
 	it("prices a single answer as nothing or a unit, red then green", () => {
@@ -124,13 +130,13 @@ describe("Scoring", () => {
 		expect(steps[4]).toHaveAttribute("data-screen-theme", "viridian");
 	});
 
-	it("hints the units per poll with the credit badged", () => {
+	it("hints the credit a poll pays with the multiple's credit badged", () => {
 		render(<Scoring {...props} />);
 
 		const hint = screen.getByText(/configs add on top/).closest("p");
 
 		expect(hint).toHaveTextContent(
-			"units per poll · all right pays 2 · configs add on top"
+			"credit per poll · a multiple counts 2 · configs add on top"
 		);
 		expect(within(hint as HTMLElement).getByText("2")).toHaveClass(
 			"badge-theme"
@@ -140,13 +146,15 @@ describe("Scoring", () => {
 	it("numbers its two statements and badges the figures inside them", () => {
 		render(<Scoring {...props} />);
 
-		const grows = screen.getByText(/moves the bar less/).closest("div");
+		const curve = screen
+			.getByText(/multiply what the window covered/)
+			.closest("div");
 		const rises = screen.getByText(/gates after/).closest("div");
 
-		expect(within(grows as HTMLElement).getByText("1")).toHaveClass(
+		expect(within(curve as HTMLElement).getByText("1")).toHaveClass(
 			"badge-theme"
 		);
-		expect(within(grows as HTMLElement).getByText("5")).toHaveClass(
+		expect(within(curve as HTMLElement).getByText("5 ×2")).toHaveClass(
 			"badge-theme"
 		);
 		expect(within(rises as HTMLElement).getByText("2")).toHaveClass(
@@ -158,24 +166,23 @@ describe("Scoring", () => {
 		);
 	});
 
-	it("heads the table gate, slots, 1 unit and HEALTHY", () => {
+	it("heads the table gate, single choice and HEALTHY", () => {
 		const { container } = render(<Scoring {...props} />);
 
 		const headings = within(
 			container.querySelector(".bg-theme-raised") as HTMLElement
 		);
 
-		for (const heading of ["gate", "slots", "1 unit", "HEALTHY"]) {
+		for (const heading of ["gate", "single choice", "HEALTHY"]) {
 			expect(headings.getByText(heading)).toBeInTheDocument();
 		}
 	});
 
-	it("badges every figure on a reached row, the slot count included", () => {
+	it("badges every figure on a reached row, the single's gain in green", () => {
 		render(<Scoring {...props} />);
 
 		const lavender = within(rowOf("Lavender"));
 
-		expect(lavender.getByText("25")).toHaveClass("badge-theme");
 		expect(lavender.getByText("+4%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
@@ -199,12 +206,12 @@ describe("Scoring", () => {
 
 		const rainbow = within(rowOf("Rainbow"));
 
-		expect(rainbow.getAllByText("???")).toHaveLength(3);
+		expect(rainbow.getAllByText("???")).toHaveLength(2);
 		expect(
 			rainbow.getAllByText("Sealed until the run reaches this gate")
 		).toHaveLength(1);
 		expect(rainbow.queryByText(/%/)).toBeNull();
-		expect(within(rowOf("Champion")).getAllByText("???")).toHaveLength(3);
+		expect(within(rowOf("Champion")).getAllByText("???")).toHaveLength(2);
 	});
 
 	it("marks the gates it skips between the next one and the last with a gap", () => {

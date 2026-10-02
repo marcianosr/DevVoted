@@ -1,26 +1,27 @@
+import { getTodayDateString } from "~/shared/lib/dateUtils";
+
 export const runQueryKeys = {
 	all: ["runs"] as const,
-	active: (userId: string | undefined) =>
-		[...runQueryKeys.all, "active", userId] as const,
-	withCategoryXp: (runId: number) =>
-		[...runQueryKeys.all, runId, "categoryCoverage"] as const,
-	lastRun: (userId: string | undefined) =>
-		[...runQueryKeys.all, "last", userId] as const,
 };
 
 export const sessionRunQueryKeys = {
 	all: [...runQueryKeys.all, "session"] as const,
 	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
+	todaysRun: () => sessionRunQueryKeys.today(getTodayDateString()),
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
+	todaysCommunity: () => sessionRunQueryKeys.community(getTodayDateString()),
 	attackTargets: (date: string) =>
 		[...sessionRunQueryKeys.all, "attack-targets", date] as const,
+	todaysAttackTargets: () =>
+		sessionRunQueryKeys.attackTargets(getTodayDateString()),
 	incidents: (date: string) =>
 		[...sessionRunQueryKeys.all, "incidents", date] as const,
-	pollSplit: (pollId: number) =>
-		[...sessionRunQueryKeys.all, "split", pollId] as const,
+	todaysIncidents: () => sessionRunQueryKeys.incidents(getTodayDateString()),
 	approvalSlots: (date: string) =>
 		[...sessionRunQueryKeys.all, "approval-slots", date] as const,
+	todaysApprovalSlots: () =>
+		sessionRunQueryKeys.approvalSlots(getTodayDateString()),
 	recap: (runId: number) =>
 		[...sessionRunQueryKeys.all, "recap", runId] as const,
 	upcomingCategories: (date: string) =>
@@ -31,18 +32,12 @@ export const sessionRunQueryKeys = {
 export const pollQueryKeys = {
 	all: ["polls"] as const,
 	detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
-	withOptions: (pollId: number, userId: string | undefined) =>
-		[...pollQueryKeys.all, pollId, "options", userId] as const,
-	daily: (userId: string | undefined) =>
-		[...pollQueryKeys.all, "daily", userId] as const,
-	seenInRun: (runId: number | undefined) =>
-		[...pollQueryKeys.all, "seenInRun", runId] as const,
+	polldexAll: () => [...pollQueryKeys.all, "polldex"] as const,
 	polldex: (userId: string | undefined) =>
-		[...pollQueryKeys.all, "polldex", userId] as const,
-	list: () => [...pollQueryKeys.all, "list"] as const,
+		[...pollQueryKeys.polldexAll(), userId] as const,
+	publishedCount: () => [...pollQueryKeys.all, "publishedCount"] as const,
 	authored: () => [...pollQueryKeys.all, "authored"] as const,
 	creators: () => [...pollQueryKeys.all, "creators"] as const,
-	adminAccess: () => [...pollQueryKeys.all, "adminAccess"] as const,
 };
 
 const USERS = ["users"] as const;
@@ -50,7 +45,6 @@ const USERS = ["users"] as const;
 export const userQueryKeys = {
 	all: USERS,
 	profile: (userId: string) => [...USERS, userId, "profile"] as const,
-	authorship: (userId: string) => [...USERS, userId, "authorship"] as const,
 	swatchesAll: [...USERS, "swatches"] as const,
 	swatches: (userId: string) => [...userQueryKeys.swatchesAll, userId] as const,
 	unlocksAll: [...USERS, "unlocks"] as const,
@@ -74,4 +68,9 @@ export const titleQueryKeys = {
 		[...titleQueryKeys.all, userId] as const,
 	announcement: (userId: string | undefined) =>
 		[...titleQueryKeys.all, "announcement", userId] as const,
+};
+
+export const adminQueryKeys = {
+	all: ["admin"] as const,
+	dashboard: () => [...adminQueryKeys.all, "dashboard"] as const,
 };

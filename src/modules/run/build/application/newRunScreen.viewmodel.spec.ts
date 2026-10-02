@@ -7,6 +7,7 @@ import {
 	EMPTY_WARM_BOOT_DRAFT,
 	type HandCard,
 	bootedPanelFor,
+	CARRIED_NOTE,
 	draftPickOf,
 	newRunFooterFor,
 	newRunGroupsFor,
@@ -15,6 +16,7 @@ import {
 	type WarmBootDeal,
 	warmBootPanelFor,
 	warmBootSpendOf,
+	WARM_BOOT_NOTE,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
 
 const noop = () => {};
@@ -269,7 +271,26 @@ describe("the warm boot panel (ADR-153)", () => {
 		]);
 		expect(panel.rows.every((row) => row.pick === undefined)).toBe(true);
 		expect(panel.meta).toBe("spent 384 KB · 128 KB archived");
-		expect(panel.note).toBeUndefined();
+	});
+
+	it("says a carried service is bought in the run's own shop", () => {
+		const panel = bootedPanelFor(
+			{ storageKb: 0, serviceIds: ["extend", "pin"], archiveBytes: 196608 },
+			0
+		);
+
+		expect(panel.note).toBe(CARRIED_NOTE);
+	});
+
+	it("adds no note to a boot that only banked storage", () => {
+		expect(
+			bootedPanelFor({ storageKb: 64, serviceIds: [], archiveBytes: 131072 }, 0)
+				.note
+		).toBeUndefined();
+	});
+
+	it("tells the player before the start that a carried service is sold in the run", () => {
+		expect(WARM_BOOT_NOTE).toContain("this run's shop");
 	});
 
 	it("lists no rung row for a boot that carried services only", () => {

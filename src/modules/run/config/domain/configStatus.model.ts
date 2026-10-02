@@ -37,6 +37,7 @@ export type SkipReason =
 	| { readonly kind: "noAuditToSuppress" }
 	| { readonly kind: "armedForFatal" }
 	| { readonly kind: "runCapReached" }
+	| { readonly kind: "nothingToUpgrade" }
 	| { readonly kind: "selectAllOnly" }
 	| { readonly kind: "paysOnPartial" }
 	| { readonly kind: "notThisPoll" };
@@ -48,6 +49,7 @@ export type PollStatusContext = AnswerContext & {
 	readonly offlineAudit?: string;
 	readonly faucetRemainingKb: number;
 	readonly autoUpgradeProgress: number;
+	readonly nothingToUpgrade?: boolean;
 	readonly chainLength: number;
 	readonly pendingKb: number;
 	readonly approvedThisPoll?: boolean;
@@ -59,7 +61,9 @@ const coverageOnPoll = (
 ): Coverage | undefined => {
 	const coverage = effectOf(config).coverage?.(context);
 	if (coverage === undefined) return undefined;
-	return coverage.mult === 1 && coverage.add === 0 ? undefined : coverage;
+	return coverage.mult === 1 && coverage.boost === 1 && coverage.add === 0
+		? undefined
+		: coverage;
 };
 
 const drawsOnFaucet = (config: Config): boolean =>
@@ -76,7 +80,6 @@ const paysOnThisAnswer = (
 
 const sellsSomethingHere = (config: Config, category: CategoryCode): boolean =>
 	config.peeksCommunitySplit === true ||
-	config.projectsGateOutcome === true ||
 	effectOf(config).maskWrongOn?.(category) === true;
 
 const readsAnswerType = (config: Config): boolean =>
@@ -86,8 +89,12 @@ const readsAhead = (config: Config): boolean =>
 	config.revealsUpcomingCategories === true ||
 	config.revealsCorrectCount === true;
 
-const countsThisAnswer = (config: Config): boolean =>
-	config.autoUpgradeAfterCorrect !== undefined;
+const countsThisAnswer = (
+	config: Config,
+	context: PollStatusContext
+): boolean =>
+	config.autoUpgradeAfterCorrect !== undefined &&
+	context.nothingToUpgrade !== true;
 
 const wagersThisAnswer = (config: Config): boolean =>
 	config.wagersAnswer !== undefined;
@@ -104,7 +111,7 @@ const isOnline = (
 	paysOnThisAnswer(config, context) ||
 	sellsSomethingHere(config, context.category) ||
 	readsAhead(config) ||
-	countsThisAnswer(config) ||
+	countsThisAnswer(config, context) ||
 	wagersThisAnswer(config) ||
 	answersThisPoll(config, context) ||
 	(config.suppressesAudit === true && context.suppressingAudit);
@@ -155,6 +162,10 @@ const SKIP_REASONS: readonly ((
 		config.suppressesAudit === true ? { kind: "noAuditToSuppress" } : undefined,
 	(config) =>
 		config.catchesFatal === true ? { kind: "armedForFatal" } : undefined,
+	(config) =>
+		config.autoUpgradeAfterCorrect !== undefined
+			? { kind: "nothingToUpgrade" }
+			: undefined,
 	(config) =>
 		config.storageOnClear !== undefined ||
 		config.storageInterestPct !== undefined ||

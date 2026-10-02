@@ -1,10 +1,11 @@
 ---
 # DVTD-3els
 title: 'Hydration error: Tooltip content nests div/p inside Paragraph <p> (ConfigChip)'
-status: todo
+status: scrapped
 type: bug
+priority: normal
 created_at: 2026-07-31T14:20:22Z
-updated_at: 2026-07-31T14:20:22Z
+updated_at: 2026-10-01T15:39:18Z
 ---
 
 Seen on /proto-run configuring screen (browser console), but the broken markup is in Tier-1 UI, so it affects every screen rendering ConfigChip tooltips.
@@ -18,3 +19,7 @@ Likely fix: Tooltip's wrapper should not be a Paragraph/<p> (use a span-based su
 - [ ] Reproduce: open /proto-run, check console on the configuring screen
 - [ ] Fix nesting in Tooltip/ConfigChip (Tier 1, src/ui)
 - [ ] Confirm hydration error gone on /proto-run and /run
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. No Paragraph component is left in src, kanto Tooltip.ui renders spans only, and ConfigChip.ui no longer uses Tooltip.

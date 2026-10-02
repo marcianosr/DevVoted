@@ -72,9 +72,9 @@ describe("the roster partition", () => {
 	});
 
 	it("holds the roster at the counts each group is designed for", () => {
-		expect(idsIn("coverage")).toHaveLength(21);
+		expect(idsIn("coverage")).toHaveLength(22);
 		expect(idsIn("storage")).toHaveLength(8);
-		expect(idsIn("answerHelp")).toHaveLength(8);
+		expect(idsIn("answerHelp")).toHaveLength(7);
 		expect(idsIn("risk")).toHaveLength(5);
 	});
 

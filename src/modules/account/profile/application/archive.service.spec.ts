@@ -1,63 +1,88 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { equipSwatchService } from "~/modules/account/profile/application/archive.service";
+import {
+	getArchiveStateService,
+	purchaseBorderService,
+} from "~/modules/account/profile/application/archive.service";
 
-const { fetchUserArchiveState, setEquippedSwatch } = vi.hoisted(() => ({
+const { fetchUserArchiveState, purchaseBorderTx } = vi.hoisted(() => ({
 	fetchUserArchiveState: vi.fn(),
-	setEquippedSwatch: vi.fn(),
+	purchaseBorderTx: vi.fn(),
 }));
 
 vi.mock("~/modules/account/profile/infrastructure/profile.repository", () => ({
 	fetchUserArchiveState,
-	setEquippedSwatch,
-	purchaseBorderTx: vi.fn(),
-	setEquippedBorder: vi.fn(),
+	purchaseBorderTx,
 }));
 
 const RED = "red-from-pallet-town";
-const VOLCANO = "swatch-volcano";
+const GREEN_BUILD = "border-00b9a62e";
 
-const archiveOwning = (ownedSwatchIds: string[]) => ({
+const archiveOwning = (ownedBorderIds: string[]) => ({
 	archivedStorage: 0,
-	ownedBorderIds: [],
+	ownedBorderIds,
 	equippedBorderId: null,
-	ownedSwatchIds,
+	ownedSwatchIds: [],
 	equippedSwatchId: null,
 });
 
-describe("equipSwatchService", () => {
+describe("purchaseBorderService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
 
-	it("wears a swatch the player earned", async () => {
-		fetchUserArchiveState.mockResolvedValueOnce(archiveOwning([VOLCANO]));
-		setEquippedSwatch.mockResolvedValueOnce({
-			...archiveOwning([VOLCANO]),
-			equippedSwatchId: VOLCANO,
+	it("buys a catalogue border at the cost the catalogue lists", async () => {
+		purchaseBorderTx.mockResolvedValueOnce(archiveOwning([GREEN_BUILD]));
+
+		expect(await purchaseBorderService(RED, GREEN_BUILD)).toEqual({
+			success: true,
+			data: archiveOwning([GREEN_BUILD]),
 		});
-
-		const response = await equipSwatchService(RED, VOLCANO);
-
-		expect(response.success).toBe(true);
-		expect(setEquippedSwatch).toHaveBeenCalledWith(RED, VOLCANO);
+		expect(purchaseBorderTx).toHaveBeenCalledExactlyOnceWith(
+			RED,
+			GREEN_BUILD,
+			expect.any(Number)
+		);
 	});
 
-	it("refuses a swatch the player has not earned and writes nothing", async () => {
-		fetchUserArchiveState.mockResolvedValueOnce(archiveOwning([]));
-
-		const response = await equipSwatchService(RED, VOLCANO);
-
-		expect(response.success).toBe(false);
-		expect(setEquippedSwatch).not.toHaveBeenCalled();
+	it("refuses a border the catalogue does not list, writing nothing", async () => {
+		expect(await purchaseBorderService(RED, "border-nope")).toEqual({
+			success: false,
+			error: "Border border-nope not found",
+		});
+		expect(purchaseBorderTx).not.toHaveBeenCalled();
 	});
 
-	it("stores pallet as nothing worn", async () => {
-		fetchUserArchiveState.mockResolvedValueOnce(archiveOwning([]));
-		setEquippedSwatch.mockResolvedValueOnce(archiveOwning([]));
+	it("reports a purchase the archive could not cover or already holds", async () => {
+		purchaseBorderTx.mockResolvedValueOnce(null);
 
-		await equipSwatchService(RED, "swatch-pallet");
+		expect(await purchaseBorderService(RED, GREEN_BUILD)).toEqual({
+			success: false,
+			error: "Purchase failed: insufficient archive or already owned",
+		});
+	});
+});
 
-		expect(setEquippedSwatch).toHaveBeenCalledWith(RED, null);
+describe("getArchiveStateService", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("hands back the archive it read", async () => {
+		fetchUserArchiveState.mockResolvedValueOnce(archiveOwning([GREEN_BUILD]));
+
+		expect(await getArchiveStateService(RED)).toEqual({
+			success: true,
+			data: archiveOwning([GREEN_BUILD]),
+		});
+	});
+
+	it("refuses a player who does not exist", async () => {
+		fetchUserArchiveState.mockResolvedValueOnce(null);
+
+		expect(await getArchiveStateService(RED)).toEqual({
+			success: false,
+			error: "User not found",
+		});
 	});
 });

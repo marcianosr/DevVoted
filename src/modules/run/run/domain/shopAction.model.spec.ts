@@ -17,12 +17,11 @@ import {
 	MAX_EXTENSIONS,
 	offerCount,
 } from "~/modules/run/shop/domain/draft.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import {
-	hasRoomFor,
-	occupiedSlots,
-	spaceForBuild,
-	upkeepForBuild,
-} from "~/modules/run/build/domain/build.model";
+	buildSpaceOf,
+	fitsBuildSpace,
+} from "~/modules/run/build/domain/buildSpace.model";
 import {
 	BASE_SLOTS,
 	PIN_FROM_GATE,
@@ -30,13 +29,8 @@ import {
 	SKIP_SHOP_KB,
 	SLICE_WINDOW,
 	pinCostFor,
-	streakMultiplier,
 } from "~/modules/run/run/domain/rules.model";
-import {
-	createRun,
-	overflowWeightOf,
-	type RunState,
-} from "~/modules/run/run/domain/run.model";
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
 import {
 	pinAvailable,
 	skipShopAvailable,
@@ -139,7 +133,7 @@ describe("shop controls (DVTD-5lt6)", () => {
 			.find(
 				(config) =>
 					draftCost(config) <= state.storage &&
-					hasRoomFor(state.build, slotsOf(config))
+					fitsBuildSpace(state, slotsOf(config))
 			)?.id ?? firstOffer(state);
 
 	const lockFirstOffer = (state: RunState): RunState =>
@@ -411,7 +405,7 @@ describe("the git tag (ADR-036)", () => {
 		const state = createRun(pool(20), handed, 7);
 		expect(state.gatesCleared).toBe(7);
 		expect(state.startedAtGate).toBe(7);
-		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
+		expect(buildSpaceOf(state).space).toBe(BASE_SLOTS);
 		expect(state.storage).toBe(32 * 7);
 		expect(state.coverage).toBe(0);
 	});
@@ -441,11 +435,12 @@ describe("the git tag (ADR-036)", () => {
 		expect(state.gatesCleared).toBe(0);
 		expect(state.startedAtGate).toBe(0);
 		expect(state.storage).toBe(0);
-		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
+		expect(buildSpaceOf(state).space).toBe(BASE_SLOTS);
 	});
 });
 
-const FLAWLESS_OVERFLOW_KB = 13;
+const FLAWLESS_OVERFLOW_KB = 2;
+const FLAWLESS_PERFECT_BONUS_KB = 16;
 
 describe("economy", () => {
 	it("earns storage from the IndexedDB faucet on correct answers only", () => {
@@ -461,7 +456,7 @@ describe("economy", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 
 		expect(state.storage).toBe(
-			2000 + 32 * streakMultiplier(SLICE_WINDOW) + FLAWLESS_OVERFLOW_KB
+			2000 + 32 + FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
 		);
 	});
 
@@ -543,8 +538,8 @@ describe("build space follows the build (ADR-098)", () => {
 	it("opens every run on four weight of free room", () => {
 		const state = createRun(pool(10), handed);
 
-		expect(spaceForBuild(state.build)).toBe(BASE_SLOTS);
-		expect(upkeepForBuild(state.build)).toBe(0);
+		expect(buildSpaceOf(state).space).toBe(BASE_SLOTS);
+		expect(buildSpaceOf(state).upkeepKb).toBe(0);
 	});
 
 	const grownBy = (state: RunState, ...configs: Config[]): RunState => ({
@@ -556,26 +551,26 @@ describe("build space follows the build (ADR-098)", () => {
 		const free = shopAfter(1);
 		const grown = grownBy(free, CONFIGS.strict);
 
-		expect(spaceForBuild(free.build)).toBe(BASE_SLOTS);
-		expect(upkeepForBuild(free.build)).toBe(0);
-		expect(spaceForBuild(grown.build)).toBe(6);
-		expect(upkeepForBuild(grown.build)).toBe(16);
+		expect(buildSpaceOf(free).space).toBe(BASE_SLOTS);
+		expect(buildSpaceOf(free).upkeepKb).toBe(0);
+		expect(buildSpaceOf(grown).space).toBe(6);
+		expect(buildSpaceOf(grown).upkeepKb).toBe(16);
 	});
 
 	it("gives the room back when the build sheds the weight it rented for", () => {
 		const grown = grownBy(shopAfter(1), CONFIGS.strict);
 		const sold = runReducer(grown, { type: "sell", configId: "strict" });
 
-		expect(spaceForBuild(grown.build)).toBe(6);
-		expect(spaceForBuild(sold.build)).toBe(BASE_SLOTS);
-		expect(upkeepForBuild(sold.build)).toBe(0);
+		expect(buildSpaceOf(grown).space).toBe(6);
+		expect(buildSpaceOf(sold).space).toBe(BASE_SLOTS);
+		expect(buildSpaceOf(sold).upkeepKb).toBe(0);
 	});
 
 	it("charges nothing at the counter — the standing bill is the whole price", () => {
 		const grown = grownBy({ ...shopAfter(2), storage: 300 }, CONFIGS.strict);
 
 		expect(grown.storage).toBe(300);
-		expect(upkeepForBuild(grown.build)).toBe(16);
+		expect(buildSpaceOf(grown).upkeepKb).toBe(16);
 	});
 
 	it("bills the rung the build sits in at the close", () => {
@@ -606,10 +601,24 @@ describe("build space follows the build (ADR-098)", () => {
 			storage: 0,
 		});
 
-		expect(upkeepForBuild(heavy.build)).toBe(512);
-		expect(cleared.upkeepBilledKb).toBe(256);
-		expect(cleared.spaceDroppedTo).toBe(24);
-		expect(overflowWeightOf(cleared)).toBe(4);
+		expect(buildSpaceOf(heavy).upkeepKb).toBe(512);
+		expect(cleared.upkeepBilledKb).toBe(64);
+		expect(cleared.spaceDroppedTo).toBe(12);
+		expect(buildSpaceOf(cleared).overflow).toBe(16);
+	});
+
+	it("refuses a draft past the space the balance covered, as the shop screen does", () => {
+		const capped: RunState = {
+			...shopAfter(1),
+			storage: 1000,
+			spaceDroppedTo: BASE_SLOTS,
+			draftOptions: [CONFIGS.strict],
+		};
+
+		const drafted = runReducer(capped, { type: "draft", configId: "strict" });
+
+		expect(configIds(drafted)).not.toContain("strict");
+		expect(drafted.storage).toBe(1000);
 	});
 
 	it("leaves no cap behind when the bill was paid in full", () => {
@@ -617,7 +626,7 @@ describe("build space follows the build (ADR-098)", () => {
 		const cleared = clearGate(runReducer(held, { type: "finish-reward" }));
 
 		expect(cleared.spaceDroppedTo).toBeUndefined();
-		expect(overflowWeightOf(cleared)).toBe(0);
+		expect(buildSpaceOf(cleared).overflow).toBe(0);
 	});
 });
 
@@ -806,7 +815,7 @@ describe("YAGNI takes the empty room off the bill at the close", () => {
 	});
 
 	it("keeps a run solvent that the undiscounted bill would have capped", () => {
-		const TIGHT = 230;
+		const TIGHT = 380;
 		const heavy = (...extra: Config[]) =>
 			runReducer(
 				withConfigs(

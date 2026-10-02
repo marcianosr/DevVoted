@@ -6,6 +6,7 @@ import {
 import {
 	AUDIT_RANK,
 	appearsAtGates,
+	isAuditFacedIn,
 } from "~/modules/run/gate/domain/auditSchedule.model";
 
 import type {
@@ -50,11 +51,12 @@ const ROSTER: readonly AuditFacts[] = AUDIT_RANK.map(factsOf)
 	.map((ranked) => ranked.facts);
 
 const tierFor = (
-	gates: readonly number[],
+	facts: AuditFacts,
+	clearedGates: readonly number[],
 	stateByGate: ReadonlyMap<number, GatedexState>
 ): AuditdexTier => {
-	if (gates.some((gate) => stateByGate.get(gate) === "cleared")) return "faced";
-	return gates.some((gate) => stateByGate.get(gate) === "next")
+	if (isAuditFacedIn(facts.id, clearedGates)) return "faced";
+	return facts.gates.some((gate) => stateByGate.get(gate) === "next")
 		? "unlocked"
 		: "unseen";
 };
@@ -63,10 +65,13 @@ export const auditdex = (
 	gates: readonly GatedexEntry[]
 ): readonly AuditdexEntry[] => {
 	const stateByGate = new Map(gates.map((entry) => [entry.gate, entry.state]));
+	const clearedGates = gates
+		.filter((entry) => entry.state === "cleared")
+		.map((entry) => entry.gate);
 
 	return ROSTER.map((facts) => ({
 		...facts,
-		tier: tierFor(facts.gates, stateByGate),
+		tier: tierFor(facts, clearedGates, stateByGate),
 	}));
 };
 

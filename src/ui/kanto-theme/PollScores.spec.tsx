@@ -136,17 +136,37 @@ describe("PollScores", () => {
 			[1, 0.5, 0, 1.5, undefined],
 		]);
 
-		it("counts the polls the gate has answered instead of naming it again", () => {
-			render(<PollScores rows={PAID} />);
+		it("counts the right answers, the figure the gate's headline states", () => {
+			render(<PollScores rows={[PAID[0]]} />);
 
-			expect(screen.getByText("5 out of 5")).toBeInTheDocument();
-			expect(screen.getByText("4 out of 5")).toBeInTheDocument();
+			expect(screen.getByText("3 of 5 right")).toBeInTheDocument();
 		});
 
-		it("drops the gate name, which the screen above the table already states", () => {
+		it("drops the gate name on a single row, which the screen above already states", () => {
+			render(<PollScores rows={[PAID[0]]} />);
+
+			expect(screen.queryByText(new RegExp(gateRoster[0].gateName))).toBeNull();
+		});
+
+		it("names each gate once the table holds more than one", () => {
 			render(<PollScores rows={PAID} />);
 
-			expect(screen.queryByText(gateRoster[0].gateName)).toBeNull();
+			expect(
+				screen.getByText(`${gateRoster[0].gateName} · 3 of 5 right`)
+			).toBeInTheDocument();
+			expect(
+				screen.getByText(`${gateRoster[1].gateName} · 3 of 5 right`)
+			).toBeInTheDocument();
+		});
+
+		it("states the accuracy multiplier a closed gate landed beside its total", () => {
+			const closed = {
+				...PAID[0],
+				payouts: { ...PAID[0].payouts!, multiplier: "×1.52" },
+			};
+			render(<PollScores rows={[closed]} />);
+
+			expect(screen.getByText("×1.52")).toBeInTheDocument();
 		});
 
 		it("boxes what every poll paid rather than whether it was right", () => {
@@ -166,7 +186,7 @@ describe("PollScores", () => {
 		it("names what the closing figure counts, a bare number naming nothing", () => {
 			render(<PollScores rows={PAID} />);
 
-			expect(screen.getAllByText("Total units")).toHaveLength(PAID.length);
+			expect(screen.getAllByText("Covered")).toHaveLength(PAID.length);
 		});
 
 		it("greens a full answer, ambers a part and reddens a miss", () => {

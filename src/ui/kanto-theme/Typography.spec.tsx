@@ -15,6 +15,7 @@ const VARIANTS = [
 	"caption",
 	"label",
 	"hint",
+	"prose",
 	"accent",
 ] as const satisfies readonly TypographyVariant[];
 
@@ -29,6 +30,7 @@ describe("Typography", () => {
 		["caption", "SPAN"],
 		["label", "SPAN"],
 		["hint", "P"],
+		["prose", "P"],
 		["accent", "SPAN"],
 	] as const)("emits a %s as a %s by default", (variant, tag) => {
 		const { container } = render(
@@ -46,6 +48,7 @@ describe("Typography", () => {
 		["caption", ["text-sm", "font-normal"]],
 		["label", ["text-xs", "font-bold"]],
 		["hint", ["text-xs", "font-normal"]],
+		["prose", ["text-xs", "leading-relaxed", "font-normal"]],
 		["accent", ["text-sm", "font-bold"]],
 	] as const)("dresses a %s in its own grouped style", (variant, classes) => {
 		const { container } = render(
@@ -168,6 +171,7 @@ describe("Typography", () => {
 		["caption", "text-theme-soft"],
 		["label", "text-theme-soft"],
 		["hint", "text-theme-muted"],
+		["prose", "text-theme-muted"],
 		["accent", "text-theme"],
 	] as const)(
 		"gives %s a tone of its own, not the shared one",
@@ -204,6 +208,22 @@ describe("Typography", () => {
 		expect(label.firstChild).toHaveClass("text-xs", "font-bold");
 		expect(hint.firstChild).toHaveClass("text-xs", "font-normal");
 		expect(label.firstChild).not.toHaveClass("text-theme-muted");
+	});
+
+	it("separates prose from a hint by the room between its lines alone", () => {
+		const { container: prose } = render(
+			<Typography variant="prose">
+				Every correct answer pays +0.1 units of coverage.
+			</Typography>
+		);
+		const { container: hint } = render(
+			<Typography variant="hint">press to buy v3</Typography>
+		);
+
+		expect(prose.firstChild).toHaveClass("leading-relaxed");
+		expect(hint.firstChild).not.toHaveClass("leading-relaxed");
+		expect(prose.firstChild).toHaveClass("text-xs", "text-theme-muted");
+		expect(hint.firstChild).toHaveClass("text-xs", "text-theme-muted");
 	});
 
 	it("hands accent the theme colour at full strength", () => {

@@ -20,7 +20,7 @@ export type PrepScreenProps = {
 	scores: PollScoresProps;
 	scoring: ScoringProps;
 	polls: LedgerProps;
-	audits: AuditsPanelProps;
+	audits?: AuditsPanelProps;
 	subscriptions?: LedgerProps;
 	estimate?: EstimatePickerProps;
 	sla?: SlaPickerProps;
@@ -62,7 +62,7 @@ export const PrepScreen = ({
 			<div className={COLUMN}>
 				<Scoring {...scoring} />
 				<Ledger {...polls} />
-				<AuditsPanel {...audits} />
+				{audits === undefined ? null : <AuditsPanel {...audits} />}
 				{subscriptions === undefined ? null : <Ledger {...subscriptions} />}
 			</div>
 		</div>

@@ -9,7 +9,7 @@ import {
 } from "~/test/configRun.harness";
 
 const meta: Meta = {
-	title: "Kanto/Configs/&&",
+	title: "Kanto/Configs/&& (andAnd)",
 	parameters: { layout: "fullscreen" },
 };
 export default meta;

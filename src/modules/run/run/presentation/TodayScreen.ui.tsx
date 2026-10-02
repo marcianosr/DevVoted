@@ -28,8 +28,9 @@ import { Weight } from "~/ui/kanto-theme/Weight.ui";
 export const COPY = {
 	storage: "Storage",
 	runSoFar: "Run so far",
-	banked: "banked",
+	earned: "earned",
 	next: "next",
+	notStarted: "not started",
 	build: "Build",
 	weight: "weight",
 	weightFree: "weight free",
@@ -158,14 +159,14 @@ const RunSoFarRowFigures = ({
 	</span>
 );
 
-const RunSoFarPanel = ({ banked, rows, next }: RunSoFar) => (
+const RunSoFarPanel = ({ earned, rows, next }: RunSoFar) => (
 	<Panel>
 		<Panel.Header
 			label={COPY.runSoFar}
 			meta={
 				<span className={HEADER_META}>
-					<Badge>{banked}</Badge>
-					<span>{COPY.banked}</span>
+					<Badge>{earned}</Badge>
+					<span>{COPY.earned}</span>
 				</span>
 			}
 		/>
@@ -186,11 +187,18 @@ const RunSoFarPanel = ({ banked, rows, next }: RunSoFar) => (
 			{next === null ? null : (
 				<Panel.Row
 					trailing={
-						<RunSoFarRowFigures
-							band={next.band}
-							kb={next.kb}
-							share={next.share}
-						/>
+						next.started ? (
+							<RunSoFarRowFigures
+								band={next.band}
+								kb={next.kb}
+								share={next.share}
+							/>
+						) : (
+							<span className={FIGURES}>
+								<Badge>{COPY.notStarted}</Badge>
+								<Badge>{next.kb}</Badge>
+							</span>
+						)
 					}
 				>
 					<Swatch

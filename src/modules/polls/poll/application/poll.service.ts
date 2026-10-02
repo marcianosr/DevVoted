@@ -1,31 +1,60 @@
+import type { Poll } from "~/modules/polls/poll/domain/poll.model";
 import {
-	fetchAllPolls,
+	ACCESS_DENIED,
+	canAdministerPolls,
+	maySeePoll,
+	pollScopeOf,
+	type PollViewer,
+} from "~/modules/polls/poll/domain/pollAccess.model";
+import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
+import {
 	fetchPollByIdWithOptions,
-	fetchPollCreators,
-	fetchPollsByUser,
-	hasUserAnsweredPoll,
+	fetchPollsIn,
 } from "~/modules/polls/poll/infrastructure/poll.repository";
-import { handleApiOperation } from "~/shared/utils/errorHandling";
+import {
+	createErrorResponse,
+	createSuccessResponse,
+	handleApiOperation,
+	type ApiResponse,
+} from "~/shared/utils/errorHandling";
 
-export const getPollByIdWithOptionsService = async ({
-	id,
-	userId,
-}: {
-	id: number;
-	userId?: string;
-}) =>
-	handleApiOperation(async () => {
-		const { poll, options } = await fetchPollByIdWithOptions(id);
-		const hasAnswered = userId ? await hasUserAnsweredPoll(id, userId) : false;
+export type PollListData = {
+	readonly polls: Poll[];
+	readonly canAdminister: boolean;
+};
 
-		return { poll, options, hasAnswered };
-	}, "getPollByIdWithOptions");
+export type PollDetailData = {
+	readonly poll: Poll;
+	readonly options: PollOption[];
+	readonly canAdminister: boolean;
+};
 
-export const getAllPollsService = async () =>
-	handleApiOperation(async () => fetchAllPolls(), "getAllPolls");
+export const listPollsFor = async (
+	viewer: PollViewer
+): Promise<ApiResponse<PollListData>> =>
+	handleApiOperation(
+		async () => ({
+			polls: await fetchPollsIn(pollScopeOf(viewer)),
+			canAdminister: canAdministerPolls(viewer),
+		}),
+		"listPollsFor"
+	);
 
-export const getPollsByUserService = async (userId: string) =>
-	handleApiOperation(async () => fetchPollsByUser(userId), "getPollsByUser");
+export const pollDetailFor = async (
+	viewer: PollViewer,
+	pollId: number
+): Promise<ApiResponse<PollDetailData>> => {
+	const found = await handleApiOperation(
+		() => fetchPollByIdWithOptions(pollId),
+		"pollDetailFor"
+	);
+	if (!found.success) return found;
+	if (!maySeePoll(viewer, found.data.poll)) {
+		return createErrorResponse(new Error(ACCESS_DENIED));
+	}
 
-export const getPollCreatorsService = async () =>
-	handleApiOperation(async () => fetchPollCreators(), "getPollCreators");
+	return createSuccessResponse({
+		...found.data,
+		canAdminister: canAdministerPolls(viewer),
+	});
+};

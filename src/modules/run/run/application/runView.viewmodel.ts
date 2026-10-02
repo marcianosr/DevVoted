@@ -21,6 +21,8 @@ import {
 
 import {
 	type AuditView,
+	accuracyViewFor,
+	guaranteedWindowOutputOf,
 	auditViewsFor,
 	type GateStake,
 } from "~/modules/run/run/application/gateStake.viewmodel";
@@ -34,8 +36,6 @@ import {
 	answerTypesOf,
 	canStart,
 	closesOf,
-	overflowWeightOf,
-	roomToCapOf,
 	isAwaitingTomorrow,
 	hiddenOptionIdsOf,
 	isRunOver,
@@ -59,8 +59,11 @@ import {
 	answerContextFor,
 	creditedAnswerTypeFor,
 	gradedPollFor,
-	gateWindowComplete,
 } from "~/modules/run/run/domain/answer.model";
+import {
+	gateWindowComplete,
+	missPeelFor,
+} from "~/modules/run/run/domain/gateClose.model";
 import {
 	type ConfigStatus,
 	configStatusFor,
@@ -93,9 +96,7 @@ import {
 	isUpgradeOffer,
 } from "~/modules/run/shop/domain/draft.model";
 import {
-	failPeelQuotaFor,
 	gateLadderFor,
-	gateProjectionFor,
 	peelConfigRangeFor,
 	peelShareFor,
 } from "~/modules/run/gate/domain/gate.model";
@@ -120,18 +121,23 @@ import {
 	perAnswerPreviewFor,
 } from "~/modules/run/build/domain/answerPayout.model";
 import {
-	type BuildModifiers,
 	auditorFor,
 	budgeterFor,
+	buildModifiersFor,
 	gateClearPayout,
 	occupiedSlots,
 	prefetcherFor,
-	projectorFor,
-	buildModifiersFor,
-	spaceForBuild,
-	upkeepAfterCreditOf,
+	type BuildModifiers,
 } from "~/modules/run/build/domain/build.model";
+import {
+	buildSpaceOf,
+	fitsBuildSpace,
+} from "~/modules/run/build/domain/buildSpace.model";
 import { canVendorLock } from "~/modules/run/build/domain/vendorLock.model";
+import {
+	type GateCloseView,
+	gateCloseViewOf,
+} from "~/modules/run/run/application/gateClose.viewmodel";
 import {
 	percentOf,
 	runCoverageOf,
@@ -139,7 +145,10 @@ import {
 	SLA_UPLIFT,
 	bandOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import { autoUpgradeRemaining } from "~/modules/run/config/domain/autoUpgrade.model";
+import {
+	autoUpgradeRemaining,
+	hasUpgradeLeft,
+} from "~/modules/run/config/domain/autoUpgrade.model";
 import {
 	atMinimumWidth,
 	faucetRemainingKb,
@@ -152,6 +161,8 @@ import {
 export type BuildSpaceView = {
 	readonly space: number;
 	readonly weight: number;
+	readonly freeWeight: number;
+	readonly emptyCreditKb: number;
 	readonly perGateKb: number;
 	readonly coveredSpace: number | null;
 };
@@ -232,6 +243,28 @@ export type ShopOffer = {
 	readonly previewPerAnswer: PerAnswerPreview;
 };
 
+export type FastAnswerClock = {
+	readonly label: string;
+	readonly withinMs: number;
+	readonly fast: number;
+	readonly slow: number;
+};
+
+const fastAnswerClockOf = (
+	configs: readonly Config[]
+): FastAnswerClock | null => {
+	const timed = configs.find(
+		(config) => config.fastAnswerWithinMs !== undefined
+	);
+	if (timed?.fastAnswerWithinMs === undefined) return null;
+	return {
+		label: timed.label,
+		withinMs: timed.fastAnswerWithinMs,
+		fast: timed.fastCoverageMultiplier ?? 1,
+		slow: timed.slowCoverageMultiplier ?? 1,
+	};
+};
+
 export type RunView = {
 	readonly status: RunStatus;
 	readonly slots: number;
@@ -260,6 +293,7 @@ export type RunView = {
 	readonly categoryHidden: boolean;
 	readonly meterHidden: boolean;
 	readonly pollTimeLimitMs: number | null;
+	readonly fastAnswer: FastAnswerClock | null;
 	readonly currentPollPeeked: boolean;
 	readonly correctAnswersThisGate: number | null;
 	readonly correctCountSource: string | null;
@@ -270,7 +304,6 @@ export type RunView = {
 	readonly sla: SlaControl | null;
 	readonly slaBand: CommittableBand | null;
 	readonly correctThisGate: number;
-	readonly scoredThisGate: number;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
 	readonly answerTypesThisGate: AnswerTypeSplit | null;
@@ -299,6 +332,7 @@ export type RunView = {
 	readonly swatchGates: readonly number[];
 	readonly victoryGate: number;
 	readonly closes: readonly RecordedClose[];
+	readonly lastClose: GateCloseView | null;
 	readonly fullClearKb: number;
 
 	readonly atMinimumWidth: boolean;
@@ -317,6 +351,8 @@ export type RunView = {
 	readonly unlockedThisRun: readonly RunUnlock[];
 	readonly earnedTitleIds: readonly string[];
 	readonly unlockedServiceIds: readonly string[];
+	readonly unlockedServiceIdsThisRun: readonly string[];
+	readonly ownedSwatchIds: readonly string[];
 	readonly warmBoot: WarmBoot | null;
 };
 
@@ -358,12 +394,15 @@ const estimateControlFor = (state: RunState): EstimateControl | null => {
 const offerRefusal = (
 	state: RunState,
 	config: Config,
-	free: number,
 	upgrades: boolean
 ): OfferRefusal | null => {
 	const slots = slotsOf(config);
-	if (!upgrades && slots > free)
-		return { reason: "no-room", slots, freeSlots: free };
+	if (!upgrades && !fitsBuildSpace(state, slots))
+		return {
+			reason: "no-room",
+			slots,
+			freeSlots: buildSpaceOf(state).roomLeft,
+		};
 	const priceKb = draftCostIn(state.build.configs, config);
 	if (state.storage < priceKb)
 		return { reason: "too-expensive", priceKb, storageKb: state.storage };
@@ -374,26 +413,23 @@ const scaleFor = (
 	state: RunState,
 	withIt: readonly Config[]
 ): InstallScale | null => {
-	const after = { ...state.build, configs: withIt };
-	const from = spaceForBuild(state.build);
-	const to = spaceForBuild(after);
-	const perGateKb = upkeepAfterCreditOf(after);
-	if (to === from && perGateKb === upkeepAfterCreditOf(state.build))
+	const before = buildSpaceOf(state);
+	const after = buildSpaceOf({ build: { ...state.build, configs: withIt } });
+	if (after.space === before.space && after.upkeepKb === before.upkeepKb)
 		return null;
 
-	return { from, to, perGateKb };
+	return { from: before.space, to: after.space, perGateKb: after.upkeepKb };
 };
 
 const offersFor = (state: RunState): readonly ShopOffer[] => {
 	const installed = state.build.configs;
-	const free = roomToCapOf(state);
 	const locked = state.lockedOfferIds ?? [];
 
 	return state.draftOptions.map((config) => {
 		const upgrades = isUpgradeOffer(installed, config);
 		const held = installed.find((slotted) => slotted.id === config.id);
 		const owned = !upgrades && held !== undefined;
-		const refusal = offerRefusal(state, config, free, upgrades);
+		const refusal = offerRefusal(state, config, upgrades);
 		const withIt = upgrades
 			? installed.map((slotted) =>
 					slotted.id === config.id ? config : slotted
@@ -418,12 +454,17 @@ const offersFor = (state: RunState): readonly ShopOffer[] => {
 	});
 };
 
-const buildSpaceViewFor = (state: RunState): BuildSpaceView => ({
-	space: spaceForBuild(state.build),
-	weight: occupiedSlots(state.build.configs),
-	perGateKb: upkeepAfterCreditOf(state.build),
-	coveredSpace: state.spaceDroppedTo ?? null,
-});
+const buildSpaceViewFor = (state: RunState): BuildSpaceView => {
+	const held = buildSpaceOf(state);
+	return {
+		space: held.space,
+		weight: occupiedSlots(state.build.configs),
+		freeWeight: held.freeWeight,
+		emptyCreditKb: held.emptyCreditKb,
+		perGateKb: held.upkeepKb,
+		coveredSpace: state.spaceDroppedTo ?? null,
+	};
+};
 
 const configStatusesFor = (
 	state: RunState,
@@ -446,6 +487,7 @@ const configStatusesFor = (
 		answerTypeHidden: auditsHideAnswerType(liveAudits),
 		faucetRemainingKb: faucetRemainingKb(state.faucetEarnedKb ?? 0),
 		autoUpgradeProgress: state.autoUpgradeProgress ?? 0,
+		nothingToUpgrade: !hasUpgradeLeft(state.build.configs),
 		chainLength: chainLengthOf(state.allAnswered ?? []),
 		pendingKb: state.pendingKb ?? 0,
 		approvedThisPoll: approvedPollOf(state) !== undefined,
@@ -483,13 +525,9 @@ export const toRunView = (
 				? (strictStakeOf(liveConfigsOf(state)) ?? 0)
 				: 0,
 	});
-	const carriedUnits = state.bankedUnits + state.window.unitsEarned;
+	const carriedUnits = state.headStartUnits + guaranteedWindowOutputOf(state);
 	const schedule = scheduleOf(state);
-	const peelSlots = failPeelQuotaFor(
-		state.build.configs,
-		state.gatesCleared,
-		schedule
-	);
+	const peelSlots = missPeelFor(state);
 	const coverageLadder = gateLadderFor(
 		state.build.configs,
 		state.gatesCleared,
@@ -511,13 +549,14 @@ export const toRunView = (
 	const configStatuses = configStatusesFor(state, current, offline, liveAudits);
 	const liveConfigs = liveConfigsOf(state);
 	const prefetcher = prefetcherFor(liveConfigs);
+	const held = buildSpaceOf(state);
 
 	return {
 		status: state.status,
-		slots: spaceForBuild(state.build),
+		slots: held.space,
 		slotsUsed: occupiedSlots(state.build.configs),
-		slotsFree: roomToCapOf(state),
-		overflowSlots: overflowWeightOf(state),
+		slotsFree: held.roomLeft,
+		overflowSlots: held.overflow,
 		configs: state.build.configs,
 		installed: state.build.configs.map((config) => ({
 			config,
@@ -533,6 +572,8 @@ export const toRunView = (
 		unlockedThisRun,
 		earnedTitleIds,
 		unlockedServiceIds,
+		unlockedServiceIdsThisRun: [],
+		ownedSwatchIds: [],
 		warmBoot: state.warmBoot ?? null,
 		peelSlotsRemaining: state.peelSlotsRemaining,
 		peelRefundKb: state.peelRefundKb ?? 0,
@@ -558,6 +599,7 @@ export const toRunView = (
 		meterHidden: auditsHideMeter(liveAudits, state.window.answered),
 		pollTimeLimitMs:
 			auditTimeLimitMs(liveAudits, state.window.answered) ?? null,
+		fastAnswer: fastAnswerClockOf(liveConfigs),
 		currentPollPeeked:
 			current !== undefined && (state.peekedPollIds ?? []).includes(current.id),
 		correctAnswersThisGate:
@@ -572,7 +614,6 @@ export const toRunView = (
 		sla: slaControlFor(state),
 		slaBand: state.slaBand ?? null,
 		correctThisGate: state.window.correct,
-		scoredThisGate: state.window.baseUnits,
 		upcomingCategories:
 			prefetcher === undefined
 				? null
@@ -634,9 +675,8 @@ export const toRunView = (
 				percentOf(runCoverageOf(carriedUnits, state.gatesCleared))
 			),
 			coverageAtOpen: roundToOneDecimal(
-				percentOf(runCoverageOf(state.bankedUnits, state.gatesCleared))
+				percentOf(runCoverageOf(state.headStartUnits, state.gatesCleared))
 			),
-			unitsHeld: carriedUnits,
 			audits,
 			peelSlotsOnFailure: peelSlots,
 			peelConfigsOnFailure: peelConfigRangeFor(state.build.configs, peelSlots),
@@ -653,21 +693,12 @@ export const toRunView = (
 				configs: state.build.configs,
 				gate: state.gatesCleared,
 				storageKb: state.storage,
-				spaceWeight: spaceForBuild(state.build),
-				spaceBillKb: upkeepAfterCreditOf(state.build),
+				spaceWeight: held.space,
+				spaceBillKb: held.upkeepKb,
 			}),
 			modifiers,
 			perAnswer,
-			projection:
-				projectorFor(state.build.configs) === undefined
-					? undefined
-					: gateProjectionFor(
-							carriedUnits,
-							state.window.baseUnits,
-							perAnswer,
-							state.gatesCleared,
-							coverageLadder.healthy
-						),
+			accuracy: accuracyViewFor(state),
 		},
 		canStart: canStart(state.build),
 		isOver: isRunOver(state.status),
@@ -685,6 +716,7 @@ export const toRunView = (
 		swatchGates: state.swatchGatesEarned ?? [],
 		victoryGate: VICTORY_GATE,
 		closes: closesOf(state),
+		lastClose: gateCloseViewOf(state),
 		fullClearKb: gateClearPayout(
 			state.build.configs,
 			SLICE_WINDOW,

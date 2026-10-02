@@ -88,7 +88,7 @@ describe("reportHandledFailure", () => {
 	});
 
 	it("passes context through as extra when given", () => {
-		reportHandledFailure(new Error("denied"), "ensureAuthorizedUser", {
+		reportHandledFailure(new Error("denied"), "readSession", {
 			requestedUserId: brock.name,
 		});
 

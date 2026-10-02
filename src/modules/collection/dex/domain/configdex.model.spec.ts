@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
 	configdex,
 	type ConfigdexEntry,
-	grantedCountIn,
 } from "~/modules/collection/dex/domain/configdex.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
@@ -108,15 +107,5 @@ describe(configdex, () => {
 	it("exposes no config on a locked entry", () => {
 		const locked = entryOf(configdex([], []), "telemetry");
 		expect(locked.config).toBeUndefined();
-	});
-});
-
-describe(grantedCountIn, () => {
-	it("counts the granted entries only", () => {
-		const entries = configdex(
-			[{ configId: "telemetry", viaMetric: "community-peeks" }],
-			[]
-		);
-		expect(grantedCountIn(entries)).toBe(FREE_CONFIG_IDS.length + 1);
 	});
 });

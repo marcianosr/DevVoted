@@ -1,14 +1,10 @@
-import { and, count, eq, gte } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import {
-	pollOptionsTable,
-	pollResponsesTable,
-	pollsTable,
-	usersTable,
-} from "~/database/schema";
+import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
 import type { Poll, PollCreator } from "~/modules/polls/poll/domain/poll.model";
+import type { PollScope } from "~/modules/polls/poll/domain/pollAccess.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
@@ -65,23 +61,28 @@ export const fetchPollByIdWithOptions = async (
 	return { poll, options: records.map(toPollOption) };
 };
 
-export const fetchAllPolls = async (): Promise<Poll[]> => {
+const scopeFilterOf = (scope: PollScope) =>
+	scope.kind === "every"
+		? undefined
+		: eq(pollsTable.created_by, scope.authorId);
+
+export const fetchPollsIn = async (scope: PollScope): Promise<Poll[]> => {
 	const records = await db
 		.select()
 		.from(pollsTable)
+		.where(scopeFilterOf(scope))
 		.orderBy(pollsTable.created_at);
 
 	return records.map(toPoll);
 };
 
-export const fetchPollsByUser = async (userId: string): Promise<Poll[]> => {
-	const records = await db
-		.select()
+export const countPublishedPolls = async (): Promise<number> => {
+	const [result] = await db
+		.select({ total: count() })
 		.from(pollsTable)
-		.where(eq(pollsTable.created_by, userId))
-		.orderBy(pollsTable.created_at);
+		.where(eq(pollsTable.status, "published"));
 
-	return records.map(toPoll);
+	return result?.total ?? 0;
 };
 
 export const fetchPollCreators = async (): Promise<PollCreator[]> =>
@@ -97,25 +98,3 @@ export const fetchPollCreators = async (): Promise<PollCreator[]> =>
 		.innerJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
 		.groupBy(usersTable.id, usersTable.display_name)
 		.orderBy(usersTable.display_name);
-
-export const hasUserAnsweredPoll = async (
-	pollId: number,
-	userId: string
-): Promise<boolean> => {
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-
-	const responses = await db
-		.select()
-		.from(pollResponsesTable)
-		.where(
-			and(
-				eq(pollResponsesTable.poll_id, pollId),
-				eq(pollResponsesTable.user_id, userId),
-				eq(pollResponsesTable.mode, "calendar"),
-				gte(pollResponsesTable.created_at, today)
-			)
-		);
-
-	return responses.length > 0;
-};

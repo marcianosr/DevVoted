@@ -16,7 +16,7 @@ export const rebuildCost = (rebuildsUsed: number): number =>
 
 export const LOCK_COST_KB = 16;
 
-const EXTEND_COST_KB = [48, 96];
+export const EXTEND_COST_KB: readonly number[] = [48, 96];
 
 export const MAX_EXTENSIONS = EXTEND_COST_KB.length;
 

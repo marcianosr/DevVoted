@@ -13,7 +13,10 @@ import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+import type {
+	AccuracyView,
+	AuditView,
+} from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	BALANCE_WORD,
 	fundsOf,
@@ -22,6 +25,8 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 import {
 	difficultyBandOf,
 	type DifficultyBand,
@@ -30,7 +35,10 @@ import {
 	type PollStats,
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
-import type { CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	type CoverageConfigBonus,
+	accuracyMultiplierFor,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
@@ -46,17 +54,30 @@ import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { BuildCounts } from "~/ui/kanto-theme/BuildFooter.ui";
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { ChoiceVerdict } from "~/ui/kanto-theme/Choice.ui";
+import type { AccuracyTrackProps } from "~/ui/kanto-theme/AccuracyTrack.ui";
+import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { PollFact, PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
+import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
 import { gateTitleOf, type HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 
 import { scoredLeadFor } from "./scoredLead.viewmodel";
-import type { PollCommit, PollCoverage } from "~/ui/kanto-theme/PollScreen.ui";
-import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
+import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
+import type {
+	PollCommit,
+	PollLock,
+	PollSkip,
+	PollCoverage,
+	PollFlight,
+	PollScreenProps,
+} from "~/ui/kanto-theme/PollScreen.ui";
+import type {
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
 import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
 import type {
 	FigureTone,
@@ -119,7 +140,44 @@ const PAID_COLOR = {
 	correct: "viridian",
 	partial: "saffron",
 	wrong: "cinnabar",
-} as const;
+	skipped: "pewter",
+} as const satisfies Record<AnswerOutcome, string>;
+
+const SECOND_MS = 1000;
+const URGENT_SECONDS = 3;
+const SECONDS_LEFT = "s left";
+const SECONDS = "s";
+const CLOCK_JOIN = " · ";
+
+export type PollClock = { label: string; color: KantoColor };
+
+const secondsLeft = (limitMs: number, elapsedMs: number): number =>
+	Math.max(0, Math.ceil((limitMs - elapsedMs) / SECOND_MS));
+
+export const pollClockFor = (
+	view: RunView,
+	elapsedMs: number
+): PollClock | undefined => {
+	if (view.pollTimeLimitMs !== null) {
+		const left = secondsLeft(view.pollTimeLimitMs, elapsedMs);
+		return {
+			label: `${left}${SECONDS_LEFT}`,
+			color: left <= URGENT_SECONDS ? "cinnabar" : "saffron",
+		};
+	}
+
+	const clock = view.fastAnswer;
+	if (clock === null) return undefined;
+	if (elapsedMs > clock.withinMs)
+		return { label: `${clock.label} ×${clock.slow}`, color: "pewter" };
+	return {
+		label: `${clock.label} ×${clock.fast}${CLOCK_JOIN}${secondsLeft(clock.withinMs, elapsedMs)}${SECONDS}`,
+		color: "viridian",
+	};
+};
+
+const clockOf = (clock: PollClock | undefined): { clock?: PollClock } =>
+	clock === undefined ? {} : { clock };
 
 export const pollHoldsFor = (view: RunView): string | undefined => {
 	const count = view.correctAnswersThisGate;
@@ -223,35 +281,49 @@ export const categoryLeaderFor = (
 
 const LOCK_IN = "Lock in";
 const ANSWER_WORD = "answer";
-export const PICK_ONE = "pick an answer, or press its letter";
-export const PICK_EVERY = "pick every answer that fits, or press their letters";
-export const ENTER_ANSWERS = "you can also press Enter to answer";
+export const PICK_EVERY = "pick every answer that fits";
+export const SINGLE_KEYS = "press a letter to answer";
+export const MULTIPLE_KEYS = "press letters, then Enter";
+
+export const SKIP_LABEL = "Skip";
+export const SKIP_NOTE =
+	"covers nothing · keeps your multiplier · breaks the streak";
+
+const skipOf = (onSkip?: () => void): { skip?: PollSkip } =>
+	onSkip === undefined
+		? {}
+		: { skip: { label: SKIP_LABEL, note: SKIP_NOTE, onPress: onSkip } };
+
+export const pollKeysHintFor = (answerType: AnswerType): string =>
+	answerType === "multiple" ? MULTIPLE_KEYS : SINGLE_KEYS;
+
+const lockInFor = (picked: number, onSubmit: () => void): PollLock =>
+	picked === 0
+		? { label: LOCK_IN, note: PICK_EVERY }
+		: { label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`, onPress: onSubmit };
 
 export const pollCommitFor = (
 	answerType: AnswerType,
 	picked: number,
-	onSubmit: () => void
-): PollCommit => {
-	if (picked === 0)
-		return {
-			label: LOCK_IN,
-			note: answerType === "multiple" ? PICK_EVERY : PICK_ONE,
-		};
-
-	return {
-		label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`,
-		note: ENTER_ANSWERS,
-		onPress: onSubmit,
-	};
-};
+	onSubmit: () => void,
+	onSkip?: () => void
+): PollCommit =>
+	answerType === "multiple"
+		? { lock: lockInFor(picked, onSubmit), ...skipOf(onSkip) }
+		: skipOf(onSkip);
 
 const APPROVE_LABEL = "LGTM";
 const APPROVE_NOTE = "the room answers this one for you";
 
-export const approvalCommitFor = (onApprove: () => void): PollCommit => ({
-	label: APPROVE_LABEL,
-	note: APPROVE_NOTE,
-	onPress: onApprove,
+export const approvalCommitFor = (
+	onApprove: () => void,
+	refusal?: string
+): PollCommit => ({
+	lock: {
+		label: APPROVE_LABEL,
+		note: refusal ?? APPROVE_NOTE,
+		onPress: onApprove,
+	},
 });
 
 export const pollStepFor = (view: RunView, revealing = false): number => {
@@ -265,20 +337,10 @@ export const pollStepFor = (view: RunView, revealing = false): number => {
 export const pollLabelFor = (view: RunView, revealing = false): string =>
 	`${POLL_WORD} ${pollStepFor(view, revealing)} ${OUT_OF} ${view.pollsPerGate}`;
 
-export const nextPollMarkFor = (view: RunView): SwatchMark => ({
-	...gateMarkFor(view.gateStake.gateNumber),
-	count: pollStepFor(view),
-});
-
-const verdictOf = (
-	label: string,
-	answered: AnsweredPoll
-): ChoiceVerdict | undefined => {
-	if (answered.correct === undefined) return undefined;
-	const picked = answered.picked.includes(label);
-	const correct = answered.correct.includes(label);
-	if (picked) return correct ? "right" : "wrong";
-	return correct ? "missed" : undefined;
+const stateOf = (label: string, answered: AnsweredPoll): ChoiceState => {
+	if (answered.correct === undefined) return "idle";
+	if (answered.correct.includes(label)) return "right";
+	return answered.picked.includes(label) ? "wrong" : "idle";
 };
 
 export const answeredOptionsFor = (
@@ -292,7 +354,7 @@ export const answeredOptionsFor = (
 		id: label,
 		letter: letterAt(index),
 		label,
-		verdict: verdictOf(label, answered),
+		state: stateOf(label, answered),
 	}));
 };
 
@@ -303,8 +365,6 @@ export const pollKeysFor = (view: RunView): readonly PollKey[] =>
 
 export const coverageLeadFor = (view: RunView): LeadLine =>
 	scoredLeadFor({
-		gate: view.gateStake.gateNumber,
-		unitsHeld: view.gateStake.unitsHeld,
 		held: view.gateStake.coverageHeld,
 		ladder: view.gateStake.coverageLadder,
 	});
@@ -321,6 +381,24 @@ const paidOf = (view: RunView, poll: AnsweredPoll): PollPaid => {
 
 const answeredIn = (row: PollScoreRow): number =>
 	row.payouts?.slots.filter((paid) => paid !== undefined).length ?? 0;
+
+const withMultiplier = (multiplier: string | undefined) =>
+	multiplier === undefined ? {} : { multiplier };
+
+const multiplierLandedAt = (
+	view: RunView,
+	gate: number,
+	answers: readonly AnsweredPoll[],
+	polls: number
+): string | undefined => {
+	if (answers.length < polls) return undefined;
+	const accuracy = view.closes
+		.filter((close) => close.gate === gate)
+		.at(-1)?.accuracy;
+	return accuracy === undefined
+		? undefined
+		: `×${roundToTwoDecimals(accuracyMultiplierFor(accuracy))}`;
+};
 
 const payoutRowFor = (
 	view: RunView,
@@ -340,6 +418,7 @@ const payoutRowFor = (
 		total: `${roundToTwoDecimals(
 			answers.reduce((sum, poll) => sum + (poll.coverageEarned ?? 0), 0)
 		)}`,
+		...withMultiplier(multiplierLandedAt(view, gate, answers, polls)),
 	},
 	...(current ? { current: true } : {}),
 });
@@ -356,28 +435,89 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 	};
 };
 
-export const pollPaidFor = (view: RunView): PollScoresProps => {
-	const gate = view.gateStake.gateNumber;
-	const answers = answersPerGate(view.allAnswered, gate)[gate] ?? [];
+const ACCURACY_WORD = "Accuracy";
+const UP_TO = "up to";
+const FIGURE_JOIN = " · ";
+const LABEL_JOIN = ", ";
+const TOP_MULTIPLIER = 2;
+
+const multiplierLabel = (multiplier: number): string =>
+	`×${roundToTwoDecimals(multiplier)}`;
+
+const shareOfTop = (multiplier: number): number =>
+	(multiplier - 1) / (TOP_MULTIPLIER - 1);
+
+const readingsOf = ({ guaranteed, best }: AccuracyView): readonly string[] =>
+	roundToTwoDecimals(guaranteed) === roundToTwoDecimals(best)
+		? [multiplierLabel(guaranteed)]
+		: [multiplierLabel(guaranteed), `${UP_TO} ${multiplierLabel(best)}`];
+
+const pulseOf = (
+	answered: AnsweredPoll | undefined
+): Pick<AccuracyTrackProps, "pulse"> =>
+	answered?.outcome === CORRECT_OUTCOME ? { pulse: { key: answered.id } } : {};
+
+export const accuracyTrackFor = (
+	view: RunView,
+	answered?: AnsweredPoll
+): AccuracyTrackProps => {
+	const accuracy = view.gateStake.accuracy;
+	const readings = readingsOf(accuracy);
 
 	return {
-		rows: [payoutRowFor(view, answers, gate, true, view.pollsPerGate)],
+		label: `${ACCURACY_WORD} ${readings.join(LABEL_JOIN)}`,
+		figure: readings.join(FIGURE_JOIN),
+		sure: shareOfTop(accuracy.guaranteed),
+		best: shareOfTop(accuracy.best),
+		...pulseOf(answered),
 	};
 };
 
-export const pollBarFor = (view: RunView, pin = false): CoverageBarProps => ({
-	...view.gateStake.coverageLadder,
-	held: view.gateStake.coverageHeld,
-	pin,
-});
+const TENTHS = 10;
 
-export const pollCoverageFor = (view: RunView, pin = false): PollCoverage =>
+export const gainFigureOf = (
+	before: number,
+	after: number
+): string | undefined => {
+	const gain = Math.round((after - before) * TENTHS) / TENTHS;
+	return gain > 0 ? `+${gain}%` : undefined;
+};
+
+export const pollFlightFor = (
+	before: RunView | undefined,
+	view: RunView,
+	answered: AnsweredPoll | undefined
+): PollFlight | undefined => {
+	if (answered === undefined || before === undefined || view.meterHidden)
+		return undefined;
+	if (answered.outcome === "wrong") return undefined;
+	const fromHeld = before.gateStake.coverageHeld;
+	const toHeld = view.gateStake.coverageHeld;
+	const figure = gainFigureOf(fromHeld, toHeld);
+
+	return figure === undefined
+		? undefined
+		: { figure, id: answered.id, fromHeld, toHeld };
+};
+
+export const pollShakeFor = (
+	answered: AnsweredPoll | undefined
+): string | undefined =>
+	answered?.outcome === "wrong" ? answered.id : undefined;
+
+export const pollBarFor = (view: RunView): CoverageBarProps =>
+	stakeBarFor(view.gateStake);
+
+export const pollCoverageFor = (
+	view: RunView,
+	{ shown = view, answered }: { shown?: RunView; answered?: AnsweredPoll } = {}
+): PollCoverage =>
 	view.meterHidden
 		? { locked: true }
 		: {
-				bar: pollBarFor(view, pin),
-				lead: coverageLeadFor(view),
-				paid: pollPaidFor(view),
+				bar: pollBarFor(shown),
+				lead: coverageLeadFor(shown),
+				accuracy: accuracyTrackFor(view, answered),
 			};
 
 const offlineIdsOf = (view: RunView): ReadonlySet<string> =>
@@ -577,6 +717,7 @@ const BASE_LABEL = {
 	correct: "right answer",
 	partial: "partial answer",
 	wrong: "wrong answer",
+	skipped: "skipped",
 } as const satisfies Record<AnswerOutcome, string>;
 
 const BASE_DETAIL = "base";
@@ -637,7 +778,7 @@ export const pollBreakdownFor = (
 	const breakdown = answered.coverageBreakdown;
 	if (breakdown === undefined) return [];
 
-	const { base, streakBonus, configBonuses } = breakdown;
+	const { base, streakBonus = 0, configBonuses } = breakdown;
 	const lost = answered.coverageLost ?? 0;
 	const paid = roundToTwoDecimals(
 		base +
@@ -669,4 +810,233 @@ export const pollBreakdownFor = (
 			total: true,
 		},
 	];
+};
+
+type LivePoll = NonNullable<RunView["poll"]>;
+
+const wrongCostOf = (view: RunView): string | undefined => {
+	const cost = view.gateStake.perAnswer.coveragePerWrong;
+	return cost === 0 ? undefined : `${Math.abs(cost).toFixed(1)}`;
+};
+
+const optionsOf = (
+	poll: LivePoll,
+	view: RunView,
+	onUnseal: ((optionId: string) => void) | undefined
+): readonly QuestionOption[] =>
+	poll.options.map((option, index) =>
+		view.hiddenOptionIds.includes(option.id)
+			? {
+					id: option.id,
+					letter: letterAt(index),
+					seal: {
+						price: kbLabel(view.buyBack.costKb),
+						onUnseal:
+							onUnseal === undefined || !view.buyBack.ready
+								? undefined
+								: () => onUnseal(option.id),
+					},
+				}
+			: {
+					id: option.id,
+					letter: letterAt(index),
+					label: option.label,
+					crossedOut: view.disabledOptionIds.includes(option.id),
+				}
+	);
+
+const liveQuestionFor = (
+	view: RunView,
+	poll: LivePoll,
+	selectedOptionIds: readonly string[],
+	onSelect: (optionId: string) => void,
+	onUnseal: ((optionId: string) => void) | undefined
+): QuestionProps => ({
+	answerType: poll.answerType,
+	question: poll.question,
+	options: optionsOf(poll, view, onUnseal),
+	codeBlock: poll.codeBlock,
+	pickedIds: selectedOptionIds,
+	onPick: onSelect,
+});
+
+const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
+	answerType: answered.answerType ?? "single",
+	question: answered.question,
+	options: answeredOptionsFor(answered),
+	codeBlock: answered.codeBlock,
+	pickedIds: answered.picked,
+});
+
+const authorOf = (poll: LivePoll): AuthorProps | undefined =>
+	poll.author === undefined
+		? undefined
+		: {
+				handle: poll.author.handle,
+				userId: poll.author.userId,
+				role: poll.author.role,
+				title: poll.author.title,
+				photoUrl: poll.author.avatarUrl,
+				borderUrl: poll.author.borderUrl,
+			};
+
+export const enterActionFor = (
+	revealing: boolean,
+	picked: boolean,
+	onSubmit: () => void
+): (() => void) | undefined => (picked && !revealing ? onSubmit : undefined);
+
+type PollMood = Pick<
+	PollScreenProps,
+	| "question"
+	| "category"
+	| "categoryColor"
+	| "wrongCost"
+	| "hint"
+	| "author"
+	| "commit"
+	| "keysHint"
+	| "categoryLeader"
+	| "footer"
+>;
+
+const answeredMoodFor = (view: RunView, answered: AnsweredPoll): PollMood => ({
+	question: answeredQuestionFor(answered),
+	category: categoryNameOf(view, answered.category),
+	hint: answered.explanation,
+});
+
+const wasApprovedUnread = (view: RunView, poll: LivePoll): boolean =>
+	view.approvedPollId !== null && view.approvedPollId === poll.id;
+
+const approvedQuestionFor = (
+	view: RunView,
+	poll: LivePoll,
+	onUnseal: ((optionId: string) => void) | undefined
+): QuestionProps => ({
+	answerType: poll.answerType,
+	question: poll.question,
+	options: optionsOf(poll, view, onUnseal),
+	codeBlock: poll.codeBlock,
+	pickedIds: [],
+});
+
+const withShake = (shake: string | undefined) =>
+	shake === undefined ? {} : { shake };
+
+export type PollScreenHandlers = {
+	onSelect: (optionId: string) => void;
+	onSubmit: () => void;
+	onSkip?: () => void;
+	onNext: () => void;
+	onLanded?: () => void;
+	onPress?: (action: PressAction, configId: string) => void;
+	onUnseal?: (optionId: string) => void;
+	onApprove?: () => void;
+	approveRefusal?: string;
+};
+
+const liveMoodFor = (
+	view: RunView,
+	poll: LivePoll,
+	selectedOptionIds: readonly string[],
+	on: PollScreenHandlers
+): PollMood => {
+	const shared = {
+		category: categoryNameOf(view, poll.category),
+		wrongCost: wrongCostOf(view),
+		author: authorOf(poll),
+		categoryLeader: categoryLeaderFor(view, poll),
+	};
+
+	if (wasApprovedUnread(view, poll) && on.onApprove !== undefined)
+		return {
+			...shared,
+			question: approvedQuestionFor(view, poll, on.onUnseal),
+			commit: approvalCommitFor(on.onApprove, on.approveRefusal),
+		};
+
+	return {
+		...shared,
+		question: liveQuestionFor(
+			view,
+			poll,
+			selectedOptionIds,
+			on.onSelect,
+			on.onUnseal
+		),
+		keysHint: pollKeysHintFor(poll.answerType),
+		commit: pollCommitFor(
+			poll.answerType,
+			selectedOptionIds.length,
+			on.onSubmit,
+			on.onSkip
+		),
+	};
+};
+
+export type PollScreenFrame = {
+	view: RunView;
+	runNumber?: number | null;
+	answered?: AnsweredPoll;
+	before?: RunView;
+	landed?: boolean;
+	selectedOptionIds: readonly string[];
+	on: PollScreenHandlers;
+	ui: { build: Disclosure; clockMs?: number };
+};
+
+export const pollScreenPropsFor = ({
+	view,
+	runNumber = null,
+	answered,
+	before,
+	landed = false,
+	selectedOptionIds,
+	on,
+	ui,
+}: PollScreenFrame): PollScreenProps | null => {
+	const live = view.poll ?? undefined;
+	const flight = pollFlightFor(before, view, answered);
+	const mood =
+		answered !== undefined
+			? answeredMoodFor(view, answered)
+			: live === undefined
+				? undefined
+				: liveMoodFor(view, live, selectedOptionIds, on);
+	if (mood === undefined) return null;
+
+	return {
+		...mood,
+		header: {
+			...pollHeaderFor(view),
+			readout: runReadoutFor(view, runNumber),
+		},
+		step: pollStepFor(view, answered !== undefined),
+		coverage: pollCoverageFor(view, {
+			shown: flight !== undefined && !landed ? before : view,
+			answered,
+		}),
+		...(flight === undefined ? {} : { flight, onFlightLanded: on.onLanded }),
+		...withShake(pollShakeFor(answered)),
+		holds: pollHoldsFor(view),
+		...(answered === undefined && ui.clockMs !== undefined
+			? clockOf(pollClockFor(view, ui.clockMs))
+			: {}),
+		facts: pollFactsFor(live),
+		audits: auditPropsOf(view.audits),
+		buildFooter: {
+			build: pollBuildFor(
+				view,
+				{
+					openInfo: ui.build.open,
+					onToggleInfo: ui.build.toggle,
+					onPress: on.onPress,
+				},
+				answered
+			),
+			counts: buildCountsOf(view),
+			flash: answered?.id,
+		},
+	};
 };

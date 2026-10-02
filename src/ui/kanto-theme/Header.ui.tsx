@@ -22,7 +22,7 @@ const SPAN = "w-full";
 const PINNED =
 	"w-full md:sticky md:top-0 md:z-20 md:-mx-8 md:-mt-6 md:-mb-3 md:w-auto md:border-b md:border-theme-faint md:bg-theme-faint md:px-8 md:pt-6 md:pb-3";
 const ROWS = "flex min-w-0 flex-1 flex-col gap-4";
-const TITLE_ROW = "flex flex-wrap items-center gap-3";
+const TITLE_ROW = "flex flex-wrap items-center gap-3 lg:flex-nowrap";
 const TITLE_TRACK = "flex shrink-0";
 const TITLE_END = "ml-auto flex shrink-0 items-center gap-2";
 const HELD =

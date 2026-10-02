@@ -1,4 +1,14 @@
-import { AUDITS, COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
+import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
+import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
+import {
+	AUDITS,
+	COMMUNITY,
+	NEW_BADGE,
+	POLLS_SPENT,
+	STORAGE_BALANCE,
+} from "~/shared/lib/copy";
 import {
 	type Config,
 	escrowKbPerCorrect,
@@ -7,28 +17,37 @@ import {
 import {
 	crowdSubmitterFor,
 	catcherFor,
+	gateClearPayout,
+	perfectBonusOnClear,
 	prefetcherFor,
 } from "~/modules/run/build/domain/build.model";
 import {
 	billLedger,
 	type BillLedger,
 } from "~/modules/run/config/domain/subscription.model";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
+import {
+	gatesClearedBy,
+	swatchForGate,
+} from "~/modules/run/gate/domain/swatch.model";
 import { bandOutcomesPropsFor } from "~/modules/run/gate/application/bandOutcomes.viewmodel";
 import { scoringFor } from "./scoring.viewmodel";
-import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 import {
-	gateNumberLabelOf,
+	AUDITS_FROM_GATE,
+	isAuditFacedIn,
+} from "~/modules/run/gate/domain/auditSchedule.model";
+import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
+	PEEL_KB_PER_SLOT,
 	roundToOneDecimal,
 	SLICE_WINDOW,
-	spaceRungFor,
 } from "~/modules/run/run/domain/rules.model";
 import {
 	type CommittableBand,
+	type CoverageBandId,
+	bandOf,
 	coverageGainPercentFor,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
@@ -39,6 +58,7 @@ import type { AuditView } from "~/modules/run/run/application/gateStake.viewmode
 import type {
 	EstimateControl,
 	OutageTargetView,
+	RunView,
 	SlaControl,
 } from "~/modules/run/run/application/runView.viewmodel";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
@@ -104,8 +124,8 @@ const [
 	NEXT_GATE_LABEL,
 ] = WINDOW_LABELS;
 const POLL_FACTS = 2;
-const REVEALED = " revealed";
-const REVEALED_BY = " revealed by ";
+const REVEALED = " facts revealed";
+const REVEALED_BY = " facts revealed by ";
 const REVEAL_NOTE = "Some configs reveal these before you answer.";
 const SHAPE_REVEAL_TRAIL = "v2 reveals the answer types and option counts too.";
 const TARGET_LEAD = "takes";
@@ -119,10 +139,8 @@ const BILL_TRAIL = "on a clear";
 const BILL_TOTAL = "Every gate";
 const BILL_COLOR: KantoColor = "cinnabar";
 const SUBSCRIPTIONS_TITLE = "Subscriptions";
-const LOCK_COLOR: KantoColor = "pewter";
 const NO_AUDITS = "none this gate";
 const AUDIT_COUNT_TRAIL = "firing this gate";
-const AUDITS_SHUT = `Audits are unlocked at ${gateNumberLabelOf(AUDITS_FROM_GATE)}`;
 const CORRECT_OUTCOME = "correct";
 
 const ESTIMATE_HINT =
@@ -445,11 +463,13 @@ export const targetLinesFor = (
 
 const auditRowFor = (
 	audit: AuditView,
-	target: string | undefined
+	target: string | undefined,
+	clearedGates: readonly number[]
 ): AuditsRow => ({
 	code: audit.code,
 	name: audit.name,
 	cue: audit.answerCue ?? audit.description,
+	isNew: !isAuditFacedIn(audit.id, clearedGates),
 	...(target === undefined ? {} : { target }),
 	...(audit.sentBy === undefined
 		? {}
@@ -459,46 +479,30 @@ const auditRowFor = (
 const auditsMetaOf = (count: number) =>
 	count === 0 ? NO_AUDITS : `${count} ${AUDIT_COUNT_TRAIL}`;
 
-export const auditsPanelFor = (
-	gate: number,
-	audits: readonly AuditView[],
-	bill: { bill?: string; note?: string } = {},
-	targetLines: TargetLines = {}
-): AuditsPanelProps => {
-	if (gate < AUDITS_FROM_GATE)
-		return {
-			title: AUDITS,
-			badge: {
-				label: gateNumberLabelOf(AUDITS_FROM_GATE),
-				color: LOCK_COLOR,
-			},
-			meta: AUDITS_SHUT,
-			rows: [],
-			...bill,
-		};
+export type AuditsPanelExtras = {
+	bill?: string;
+	note?: string;
+	targetLines?: TargetLines;
+	clearedGates?: readonly number[];
+};
 
+export const auditsPanelFor = (
+	audits: readonly AuditView[],
+	{ targetLines = {}, clearedGates = [], ...bill }: AuditsPanelExtras = {}
+): AuditsPanelProps => {
+	const rows = audits.map((audit) =>
+		auditRowFor(audit, targetLines[audit.id], clearedGates)
+	);
 	return {
 		title: AUDITS,
 		meta: auditsMetaOf(audits.length),
-		rows: audits.map((audit) => auditRowFor(audit, targetLines[audit.id])),
+		rows,
+		...(rows.some((row) => row.isNew === true) ? { badge: NEW_BADGE } : {}),
 		...bill,
 	};
 };
 
-const ledgerFor = (
-	configs: readonly Config[],
-	gate: number,
-	storageKb: number,
-	space: number,
-	spaceBillKb: number
-): BillLedger =>
-	billLedger({
-		configs,
-		gate,
-		storageKb,
-		spaceWeight: spaceRungFor(space).weight,
-		spaceBillKb,
-	});
+const isAuditedGate = (gate: number): boolean => gate >= AUDITS_FROM_GATE;
 
 export const subscriptionsLedgerFor = (
 	ledger: BillLedger
@@ -532,7 +536,6 @@ export const subscriptionsLedgerFor = (
 export type PrepFrame = {
 	gate: number;
 	answeredPolls: readonly AnsweredPoll[];
-	scoredThisGate?: number;
 	configs: readonly Config[];
 	audits?: readonly AuditView[];
 	balanceKb: number;
@@ -542,7 +545,7 @@ export type PrepFrame = {
 	bar: CoverageBarProps;
 	coverageGainPercent: number;
 	peelKb: number;
-	payout: (correct: number) => number;
+	payout: (correct: number, band: CoverageBandId) => number;
 	estimate?: EstimateControl | null;
 	estimatedCorrect?: number | null;
 	sla?: SlaControl | null;
@@ -552,13 +555,13 @@ export type PrepFrame = {
 	approvedPollId?: string | null;
 	swatchGates?: readonly number[];
 	outageTargets?: readonly OutageTargetView[] | null;
+	clearedGates?: readonly number[];
 	readout?: RunReadoutProps;
 };
 
 export const prepPropsFor = ({
 	gate,
 	answeredPolls,
-	scoredThisGate,
 	configs,
 	audits = [],
 	balanceKb,
@@ -578,11 +581,18 @@ export const prepPropsFor = ({
 	approvedPollId = null,
 	swatchGates = [],
 	outageTargets = null,
+	clearedGates = [],
 	readout,
 }: PrepFrame): PrepScreenProps => {
 	const swatch = gateSwatchAt(gate);
 	const prefetcher = prefetcherFor(configs);
-	const bills = ledgerFor(configs, gate, balanceKb, buildSpace, spaceBillKb);
+	const bills = billLedger({
+		configs,
+		gate,
+		storageKb: balanceKb,
+		spaceWeight: buildSpace,
+		spaceBillKb,
+	});
 	const subscriptions = subscriptionsLedgerFor(bills);
 
 	return {
@@ -609,7 +619,6 @@ export const prepPropsFor = ({
 			coverageGainPercent,
 			peelKb,
 			answeredThisGate: answeredThisGateOf(answeredPolls, gate),
-			scoredThisGate,
 			escrows: escrowKbPerCorrect(configs) > 0,
 			catchesFatal: catcherFor(configs) !== undefined,
 			payout,
@@ -621,12 +630,14 @@ export const prepPropsFor = ({
 		approval: approvalListFor(configs, approval, approvedPollId),
 		scores: pollScoresFor(gate, answeredPolls),
 		polls: pollsLedgerFor(gate, window, prefetcher),
-		audits: auditsPanelFor(
-			gate,
-			audits,
-			{},
-			targetLinesFor(outageTargets ?? [], configs.length)
-		),
+		...(isAuditedGate(gate)
+			? {
+					audits: auditsPanelFor(audits, {
+						targetLines: targetLinesFor(outageTargets ?? [], configs.length),
+						clearedGates,
+					}),
+				}
+			: {}),
 		...(subscriptions === undefined ? {} : { subscriptions }),
 		footer: {
 			asides: [
@@ -637,6 +648,145 @@ export const prepPropsFor = ({
 				swatch: { state: "current", swatch, count: SLICE_WINDOW },
 				onPress: noop,
 			},
+		},
+	};
+};
+
+const BACK_TO_SHOP = "Back to the shop";
+
+export type PrepScreenHandlers = {
+	onStart: () => void;
+	onBackToShop?: () => void;
+	onCommunity?: () => void;
+	onEstimate?: (count: number) => void;
+	onCommitBand?: (band: string) => void;
+	onRebase?: (from: number, to: number) => void;
+	onApprove?: (pollId: string) => void;
+};
+
+export type PrepScreenFrame = {
+	view: RunView;
+	runNumber?: number | null;
+	backLabel?: string;
+	startRefusal?: string;
+	approval?: ApprovalBoard | null;
+	on: PrepScreenHandlers;
+};
+
+const windowOf = (view: RunView): PrepWindow => ({
+	answerTypes: view.answerTypesThisGate ?? { single: 0, multiple: 0 },
+	optionCounts: view.optionCountsThisGate ?? [],
+	categories: view.upcomingCategories ?? [],
+	nextCategories: view.nextGateCategories ?? [],
+});
+
+const asideHandlerFor = (
+	{ onCommunity }: PrepScreenHandlers,
+	label: string
+): (() => void) | undefined =>
+	label === PREP_COMMUNITY_LABEL ? onCommunity : undefined;
+
+const asidesFor = (
+	frame: PrepScreenFrame,
+	offered: readonly FooterAction[]
+): readonly FooterAction[] => [
+	...(frame.on.onBackToShop === undefined
+		? []
+		: [
+				{
+					label: frame.backLabel ?? BACK_TO_SHOP,
+					icon: "back" as const,
+					iconAt: "lead" as const,
+					onPress: frame.on.onBackToShop,
+				},
+			]),
+	...offered.flatMap((exit) => {
+		const onPress = asideHandlerFor(frame.on, exit.label);
+		return onPress === undefined ? [] : [{ ...exit, onPress }];
+	}),
+];
+
+const startRefusalFor = (
+	view: RunView,
+	stated: string | undefined
+): string | undefined => {
+	if (stated !== undefined) return stated;
+	if (view.pollsExhausted) return POLLS_SPENT;
+	if (view.vendorLock.offered) return VENDOR_REMEDY;
+	return commitmentRemedy(view);
+};
+
+export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
+	const { view, runNumber = null, on } = frame;
+	const { gateStake } = view;
+	const refusal = startRefusalFor(view, frame.startRefusal);
+	const screen = prepPropsFor({
+		gate: gateStake.gateNumber,
+		answeredPolls: view.allAnswered,
+		configs: view.configs,
+		audits: gateStake.audits,
+		balanceKb: view.storage,
+		buildSpace: view.buildSpace.space,
+		spaceBillKb: view.buildSpace.perGateKb,
+		window: windowOf(view),
+		bar: stakeBarFor(gateStake),
+		coverageGainPercent: coverageGainPercentFor(
+			gateStake.perAnswer.coveragePerCorrect,
+			gateStake.gateNumber
+		),
+		peelKb: gateStake.peelSlotsOnFailure * PEEL_KB_PER_SLOT,
+		payout: (correct, band) => {
+			const clearKb = gateClearPayout(
+				view.configs,
+				correct,
+				gateStake.gateNumber
+			);
+			return clearKb + perfectBonusOnClear(view.configs, bandOf(band), clearKb);
+		},
+		estimate: view.estimate,
+		estimatedCorrect: view.estimatedCorrect,
+		sla: view.sla,
+		slaBand: view.slaBand,
+		rebaseSlots: view.rebaseSlots,
+		approval: frame.approval ?? null,
+		approvedPollId: view.approvedPollId,
+		swatchGates: view.swatchGates,
+		outageTargets: view.outageTargets,
+		clearedGates: gatesClearedBy(view.ownedSwatchIds),
+		readout: runReadoutFor(view, runNumber),
+	});
+
+	return {
+		...screen,
+		sla:
+			screen.sla === undefined
+				? undefined
+				: { ...screen.sla, onPick: on.onCommitBand },
+		estimate:
+			screen.estimate === undefined
+				? undefined
+				: { ...screen.estimate, onPick: on.onEstimate },
+		rebase:
+			screen.rebase === undefined
+				? undefined
+				: { ...screen.rebase, onMove: on.onRebase },
+		approval:
+			screen.approval === undefined
+				? undefined
+				: {
+						...screen.approval,
+						...(screen.approval.refusal === undefined
+							? { onApprove: on.onApprove }
+							: {}),
+					},
+		footer: {
+			...screen.footer,
+			action: {
+				...screen.footer.action,
+				onPress: refusal === undefined ? on.onStart : undefined,
+			},
+			asides: asidesFor(frame, screen.footer.asides ?? []),
+			...(refusal === undefined ? {} : { refusal }),
 		},
 	};
 };

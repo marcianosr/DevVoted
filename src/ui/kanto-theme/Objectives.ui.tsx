@@ -5,6 +5,7 @@ const RULED = "border-t border-theme-faint";
 const OBJECTIVE = "flex w-full flex-col gap-1";
 
 const STATEMENT_VARIANT = "title";
+const EARNS_VARIANT = "prose";
 
 export type Objective = {
 	statement: LeadLine;
@@ -28,7 +29,7 @@ export const Objectives = ({ objectives }: ObjectivesProps) => (
 						variant={STATEMENT_VARIANT}
 						as="span"
 					/>
-					<Lead line={objective.earns} />
+					<Lead line={objective.earns} variant={EARNS_VARIANT} />
 				</div>
 			</Panel.Body>
 		))}

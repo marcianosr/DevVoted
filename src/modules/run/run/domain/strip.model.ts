@@ -7,6 +7,7 @@ import {
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import {
+	catcherFor,
 	isBare,
 	locksSurviving,
 	stripConfig,
@@ -83,6 +84,19 @@ const stripOne = (state: RunState, configId: string): RunState => {
 	};
 };
 
+export const pendingCatcherOf = (state: RunState): Config | undefined =>
+	state.caughtFatalBy === undefined
+		? undefined
+		: catcherFor(state.build.configs);
+
+const dropCatcher = (state: RunState, catcher: Config): RunState =>
+	paid(
+		state,
+		stripConfig(state.build, catcher.id),
+		slotsOf(catcher),
+		`Dropped ${catcher.label}, the catch it spent, freeing ${slotsOf(catcher)}.`
+	);
+
 const settledSlotsFor = (state: RunState): number =>
 	Math.min(
 		state.peelSlotsRemaining,
@@ -109,13 +123,24 @@ export const strip = (
 	configIds: readonly string[],
 	fromStorage = false
 ): RunState => {
-	const dropped = configIds.reduce(stripOne, state);
+	const catcher = pendingCatcherOf(state);
+	if (catcher !== undefined && !configIds.includes(catcher.id)) return state;
+	const caughtPaid =
+		catcher === undefined ? state : dropCatcher(state, catcher);
+	const dropped = configIds
+		.filter((configId) => configId !== catcher?.id)
+		.reduce(stripOne, caughtPaid);
 	return fromStorage ? settleFromStorage(dropped) : dropped;
 };
 
 export const minifyForPeel = (state: RunState, configId: string): RunState => {
 	const target = state.build.configs.find((config) => config.id === configId);
-	if (!target || state.peelSlotsRemaining <= 0 || !canMinify(target))
+	if (
+		!target ||
+		state.peelSlotsRemaining <= 0 ||
+		!canMinify(target) ||
+		pendingCatcherOf(state) !== undefined
+	)
 		return state;
 	const freed = minifySavingSlots(target);
 	return paid(

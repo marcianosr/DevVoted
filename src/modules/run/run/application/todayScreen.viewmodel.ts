@@ -1,9 +1,8 @@
 import {
-	bandFor,
 	bandOf,
 	type CoverageBandId,
-	ratioOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import {
 	gateSwatchAt,
@@ -148,11 +147,12 @@ export type RunSoFarRow = {
 };
 
 export type RunSoFarNext = RunSoFarRow & {
+	readonly started: boolean;
 	readonly share: string;
 };
 
 export type RunSoFar = {
-	readonly banked: string;
+	readonly earned: string;
 	readonly rows: readonly RunSoFarRow[];
 	readonly next: RunSoFarNext | null;
 };
@@ -183,7 +183,8 @@ const nextRowOf = (view: RunView): RunSoFarNext => {
 	return {
 		gate: view.gatesCleared,
 		swatch: gateSwatchAt(view.gatesCleared),
-		band: hubBandOf(bandFor(ratioOf(held), view.gatesCleared).id),
+		band: hubBandOf(bandAtLadder(held, view.gateStake.coverageLadder).id),
+		started: view.answeredThisGate.length > 0,
 		share: `${roundToOneDecimal(held)}${PERCENT}`,
 		kb: kbGained(view.fullClearKb),
 	};
@@ -195,7 +196,7 @@ export const runSoFarFor = (view: RunView | null): RunSoFar | null => {
 	const closes = lastClosePerGate(view.closes);
 
 	return {
-		banked: kbGained(closes.reduce((total, close) => total + close.kb, 0)),
+		earned: kbGained(closes.reduce((total, close) => total + close.kb, 0)),
 		rows: closes.map(closedRowOf),
 		next: view.isOver ? null : nextRowOf(view),
 	};
@@ -304,6 +305,7 @@ export const communityLineFor = (
 const SHOP = "Shop";
 const SHOP_SHUT = "the shop opens when you clear a gate";
 const OPEN_UNTIL_START = "open until you start";
+const SHOP_SKIPPED = "skipped";
 
 export type TodayShop = {
 	readonly label: string;
@@ -323,6 +325,14 @@ export const shopAsideFor = (
 			open: false,
 			highlighted: false,
 			hint: `${SHOP}${DIVIDER}${SHOP_SHUT}`,
+		};
+
+	if (view.shopControls.shopSkipped)
+		return {
+			label: SHOP,
+			open: true,
+			detail: SHOP_SKIPPED,
+			highlighted: false,
 		};
 
 	if (isWaiting(view, clock))

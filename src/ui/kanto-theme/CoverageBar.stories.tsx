@@ -4,7 +4,13 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Button } from "./Button.ui";
 import { KANTO_COLORS } from "./colors";
-import { CoverageBar } from "./CoverageBar.ui";
+import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
+
+import {
+	COVERAGE_BAND_WORD,
+	CoverageBar,
+	type CoverageBandId,
+} from "./CoverageBar.ui";
 import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 
@@ -20,6 +26,14 @@ const VOLCANO = { floor: 55, ok: 65, healthy: 80 };
 const PALLET = { floor: 0, ok: 40, healthy: 60 };
 const CHAMPION = { floor: 70, ok: 80, healthy: 95 };
 
+const VOLCANO_RUNGS: readonly { held: number; band: CoverageBandId }[] = [
+	{ held: 40, band: "danger" },
+	{ held: 58, band: "shaky" },
+	{ held: 70, band: "ok" },
+	{ held: 84, band: "healthy" },
+	{ held: 100, band: "perfect" },
+];
+
 const meta: Meta<typeof CoverageBar> = {
 	component: CoverageBar,
 	title: "Kanto/CoverageBar",
@@ -29,15 +43,17 @@ const meta: Meta<typeof CoverageBar> = {
 		ok: { control: { type: "range", min: 0, max: 100 } },
 		healthy: { control: { type: "range", min: 0, max: 100 } },
 		marks: { control: "inline-radio", options: ["boundaries", "bands"] },
+		ghostAt: { control: { type: "range", min: 0, max: 100, step: 0.1 } },
 	},
 	args: {
 		...VOLCANO,
 		held: 70,
+		band: "ok",
 		note: "Coverage starts at zero. Five polls to prove the build again.",
 	},
 	render: (args) => (
 		<Screen theme="vermillion" width="narrow">
-			<CoverageBar {...args} />
+			<CoverageBar {...args} band={bandAtLadder(args.held, args).id} />
 		</Screen>
 	),
 };
@@ -47,8 +63,51 @@ type Story = StoryObj<typeof CoverageBar>;
 
 export const OnTheOkRung: Story = {};
 
-export const Untouched: Story = {
+export const Empty: Story = {
 	args: { held: 0, note: "Nothing proved at this gate yet." },
+};
+
+export const MidBand: Story = {
+	args: { held: 60, note: "Halfway up the shaky band." },
+};
+
+export const Full: Story = {
+	args: { held: 100, note: "Every band lit." },
+};
+
+export const WithGhost: Story = {
+	args: {
+		held: 84,
+		ghostAt: 52,
+		note: "The dashed line is where the bar stood before.",
+	},
+};
+
+const Settling = () => {
+	const [settles, setSettles] = useState(0);
+
+	return (
+		<Screen theme="vermillion" width="narrow">
+			<CoverageBar
+				{...VOLCANO}
+				held={72}
+				band="ok"
+				settleKey={`${settles}`}
+				note="Press settle to replay the bounce."
+			/>
+			<div className={ANSWERS}>
+				<Button
+					label="Settle"
+					onPress={() => setSettles((count) => count + 1)}
+				/>
+			</div>
+		</Screen>
+	);
+};
+
+export const Settle: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => <Settling />,
 };
 
 export const Danger: Story = {
@@ -61,10 +120,6 @@ export const Shaky: Story = {
 
 export const Healthy: Story = {
 	args: { held: 84, note: "The gate's line is met." },
-};
-
-export const Perfect: Story = {
-	args: { held: 100, note: "Fully covered, and over the goal." },
 };
 
 export const Landed: Story = {
@@ -88,16 +143,12 @@ export const PinnedLadder: Story = {
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
 			<div className={LADDER}>
-				{[
-					{ held: 40, band: "DANGER" },
-					{ held: 58, band: "SHAKY" },
-					{ held: 70, band: "OK" },
-					{ held: 84, band: "HEALTHY" },
-					{ held: 100, band: "PERFECT" },
-				].map((rung) => (
+				{VOLCANO_RUNGS.map((rung) => (
 					<div key={rung.band} className={RUNG}>
-						<Typography variant="label">{rung.band}</Typography>
-						<CoverageBar {...VOLCANO} held={rung.held} pin />
+						<Typography variant="label">
+							{COVERAGE_BAND_WORD[rung.band]}
+						</Typography>
+						<CoverageBar {...VOLCANO} held={rung.held} band={rung.band} pin />
 					</div>
 				))}
 			</div>
@@ -110,16 +161,12 @@ export const BandLadder: Story = {
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
 			<div className={LADDER}>
-				{[
-					{ held: 40, band: "DANGER" },
-					{ held: 58, band: "SHAKY" },
-					{ held: 70, band: "OK" },
-					{ held: 84, band: "HEALTHY" },
-					{ held: 100, band: "PERFECT" },
-				].map((rung) => (
+				{VOLCANO_RUNGS.map((rung) => (
 					<div key={rung.band} className={RUNG}>
-						<Typography variant="label">{rung.band}</Typography>
-						<CoverageBar {...VOLCANO} held={rung.held} />
+						<Typography variant="label">
+							{COVERAGE_BAND_WORD[rung.band]}
+						</Typography>
+						<CoverageBar {...VOLCANO} held={rung.held} band={rung.band} />
 					</div>
 				))}
 			</div>
@@ -152,6 +199,7 @@ export const AcrossThemes: Story = {
 					<CoverageBar
 						{...VOLCANO}
 						held={70}
+						band="ok"
 						note={`The bands hold their own colours on ${theme}`}
 					/>
 				</Screen>
@@ -170,7 +218,8 @@ const Answering = () => {
 			<CoverageBar
 				{...VOLCANO}
 				held={held}
-				note="Answer a poll and the pin rides the fill to the new figure."
+				band={bandAtLadder(held, VOLCANO).id}
+				note="Answer a poll and the marker rides the lit edge to the new figure."
 			/>
 			<div className={ANSWERS}>
 				<Button label="Correct" tone="action" onPress={() => move(GAIN)} />

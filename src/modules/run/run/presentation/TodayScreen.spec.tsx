@@ -44,7 +44,7 @@ const props = (
 	},
 	incidents: [],
 	runSoFar: {
-		banked: "+64 KB",
+		earned: "+64 KB",
 		rows: [
 			{
 				gate: 0,
@@ -63,6 +63,7 @@ const props = (
 			gate: 3,
 			swatch: gateSwatchAt(3),
 			band: { id: "ok", label: "OK" },
+			started: true,
 			share: "40%",
 			kb: "+40 KB",
 		},
@@ -210,7 +211,7 @@ describe("TodayScreen", () => {
 	});
 
 	describe("the run so far", () => {
-		it("lists each closed gate with its grade and what it banked", () => {
+		it("lists each closed gate with its grade and what it earned", () => {
 			render(<TodayScreen {...props()} />);
 
 			expect(screen.getByText("Pallet")).toBeInTheDocument();

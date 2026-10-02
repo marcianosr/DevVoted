@@ -14,7 +14,7 @@ import { lootFallenRunService } from "~/modules/run/community/application/loot.s
 
 export const getRunCommunity = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			getRunCommunityService({ userId, date: getTodayDateString() })
 		)
 );
@@ -22,19 +22,19 @@ export const getRunCommunity = createServerFn({ method: "GET" }).handler(
 export const getPollSplit = createServerFn({ method: "GET" })
 	.validator(z.object({ pollId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			getPollSplitService({ userId, pollId: data.pollId })
 		)
 	);
 
 export const getApprovalSlots = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) => getApprovalSlotsService({ userId }))
+		withAuthenticatedUser(({ userId }) => getApprovalSlotsService({ userId }))
 );
 
 export const submitCrowdPick = createServerFn({ method: "POST" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			submitCrowdPickService({ userId, date: getTodayDateString() })
 		)
 );
@@ -42,7 +42,7 @@ export const submitCrowdPick = createServerFn({ method: "POST" }).handler(
 export const lootFallenRun = createServerFn({ method: "POST" })
 	.validator(z.object({ runId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			lootFallenRunService({
 				userId,
 				date: getTodayDateString(),

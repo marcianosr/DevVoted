@@ -1,3 +1,6 @@
+import type { AccuracyTrackProps } from "~/ui/kanto-theme/AccuracyTrack.ui";
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
+import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { OFFERED_CARDS_OPEN, disclosedIn } from "~/shared/lib/disclosure";
 
@@ -26,10 +29,8 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { lintCost, peekCost } from "~/modules/run/run/domain/paidAction.model";
 import {
 	BASE_SLOTS,
-	spaceRungFor,
 	BUILD_SPACE_RUNGS,
 	MAX_PARTIAL_SHARE,
-	upkeepForSpace,
 	MIN_PARTIAL_SHARE,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
@@ -59,6 +60,7 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import { kbLabel, STORAGE_UNITS } from "~/shared/lib/storage";
 
+import { scoredLeadFor } from "~/modules/run/run/application/scoredLead.viewmodel";
 import { scoringFor } from "~/modules/run/run/application/scoring.viewmodel";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -105,11 +107,7 @@ import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 import type { CoverageRingProps } from "~/ui/kanto-theme/CoverageRing.ui";
 
 import { createMockDataFactory } from "~/test/createMockDataFactory";
-import {
-	gateSwatchAt,
-	pollPayoutRows,
-	trackTo,
-} from "~/test/swatchTrack.factory";
+import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 
 const SAMPLE_GATE = 9;
 const BALANCE_KB = 1843;
@@ -328,12 +326,16 @@ export const createKantoCoverageRingProps =
 	});
 
 export const KANTO_COVERAGE_BAR_HELD = 70;
+const KANTO_BAR_LADDER = {
+	floor: percentOf(floorAt(SAMPLE_GATE)),
+	ok: percentOf(okAt(SAMPLE_GATE)),
+	healthy: percentOf(healthyAt(SAMPLE_GATE)),
+};
 export const createKantoCoverageBarProps =
 	createMockDataFactory<CoverageBarProps>({
 		held: KANTO_COVERAGE_BAR_HELD,
-		floor: percentOf(floorAt(SAMPLE_GATE)),
-		ok: percentOf(okAt(SAMPLE_GATE)),
-		healthy: percentOf(healthyAt(SAMPLE_GATE)),
+		band: bandAtLadder(KANTO_COVERAGE_BAR_HELD, KANTO_BAR_LADDER).id,
+		...KANTO_BAR_LADDER,
 	});
 
 export const KANTO_RUN_PAYOUTS = [
@@ -349,20 +351,8 @@ export const KANTO_RUN_PAYOUTS = [
 	[1, 2, 0.5, undefined, undefined],
 ] as const satisfies readonly (readonly (number | undefined)[])[];
 
-const KANTO_UNITS_HELD = KANTO_RUN_PAYOUTS.flat().reduce<number>(
-	(sum, paid) => sum + (paid ?? 0),
-	0
-);
-
-export const kantoCoverageLead = (): LeadLine => [
-	"You have scored ",
-	{ figure: `${KANTO_UNITS_HELD}`, gain: true },
-	" units across ",
-	{ figure: `${scoringSlotsAt(SAMPLE_GATE)}` },
-	" slots, which is ",
-	{ figure: `${KANTO_COVERAGE_BAR_HELD.toFixed(1)}%`, gain: true },
-	" coverage.",
-];
+export const kantoCoverageLead = (): LeadLine =>
+	scoredLeadFor({ held: KANTO_COVERAGE_BAR_HELD, ladder: KANTO_BAR_LADDER });
 
 export const createKantoPollFactsProps = createMockDataFactory<
 	Omit<PollFactsProps, "trailing">
@@ -380,12 +370,17 @@ export const createKantoPollFactsProps = createMockDataFactory<
 	},
 });
 
+export const kantoAccuracyTrack = (): AccuracyTrackProps => ({
+	label: "Accuracy ×1.32, up to ×1.74",
+	figure: "×1.32 · up to ×1.74",
+	sure: 0.32,
+	best: 0.74,
+});
+
 export const kantoPollReadout = (): PollReadout => ({
 	bar: createKantoCoverageBarProps(),
 	lead: kantoCoverageLead(),
-	paid: {
-		rows: pollPayoutRows(KANTO_RUN_PAYOUTS).slice(-1),
-	},
+	accuracy: kantoAccuracyTrack(),
 });
 
 export const createKantoPollScreenProps =
@@ -400,7 +395,7 @@ export const createKantoPollScreenProps =
 		audits: kantoAudits,
 		facts: createKantoPollFactsProps(),
 		hint: "tap any config to open it · press A, B or C to answer",
-		commit: { label: "Lock in", note: "pick an answer first" },
+		commit: { lock: { label: "Lock in", note: "pick an answer first" } },
 	});
 
 const SEPARATOR = "·";
@@ -567,13 +562,14 @@ export const kantoShopControlsAt = (
 
 export const kantoRegistryControls = kantoShopControlsAt();
 
-export const kantoLockedService: ShopServiceRow = {
+export const kantoNewService: ShopServiceRow = {
 	id: "extend",
-	locked: true,
+	isNew: true,
 	glyph: "+",
 	title: "Extend the registry",
 	detail: "add extra offers throughout the run, against a price",
-	unlock: "Reach Cascade",
+	price: "16 KB",
+	onPress: () => {},
 };
 
 export const kantoUncarriedService: ShopServiceRow = {
@@ -649,7 +645,7 @@ export const createKantoRegistryProps = createMockDataFactory<RegistryProps>({
 
 export const kantoShopWeight = (): BuildWeight => ({
 	held: KANTO_BUILD_SPACE,
-	perGateKb: upkeepForSpace(KANTO_BUILD_SPACE),
+	perGateKb: rungFitting(KANTO_BUILD_SPACE).kb,
 	rungs: BUILD_SPACE_RUNGS,
 });
 
@@ -926,7 +922,10 @@ import {
 	offerChipFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
-import { failPeelQuotaFor } from "~/modules/run/gate/domain/gate.model";
+import {
+	bandAtLadder,
+	failPeelQuotaFor,
+} from "~/modules/run/gate/domain/gate.model";
 import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
 import {
 	gateClearPayout,
@@ -966,7 +965,6 @@ export {
 const LAVENDER_GATE = 4;
 const LAVENDER_BALANCE_KB = 102;
 const LAVENDER_BUILD_SPACE = 8;
-const LAVENDER_STREAK = 6;
 
 const JS_V2 = { ...CONFIGS.js, level: 2 };
 const TELEMETRY_V2 = { ...CONFIGS.telemetry, level: 2 };
@@ -995,9 +993,8 @@ const prepLadderAt = (gate: number) => ({
 });
 
 const prepPayoutAt =
-	(gate: number, configs: readonly Config[], streak: number) =>
-	(correct: number) =>
-		gateClearPayout(configs, correct, gate, streak);
+	(gate: number, configs: readonly Config[]) => (correct: number) =>
+		gateClearPayout(configs, correct, gate);
 
 const prepPeelKbAt = (
 	gate: number,
@@ -1072,10 +1069,10 @@ export type KantoPrepFrame = {
 	coverageHeld: number;
 	buildSpace: number;
 	window: PrepWindow;
-	streak?: number;
 	answered?: number;
 	audits?: readonly AuditId[];
 	outageTargets?: readonly OutageTargetView[];
+	clearedGates?: readonly number[];
 };
 
 export const kantoPrepAt = ({
@@ -1085,10 +1082,10 @@ export const kantoPrepAt = ({
 	coverageHeld,
 	buildSpace,
 	window,
-	streak = 0,
 	answered = 0,
 	audits = [],
 	outageTargets = [],
+	clearedGates = [],
 }: KantoPrepFrame): PrepScreenProps =>
 	prepPropsFor({
 		gate,
@@ -1096,23 +1093,28 @@ export const kantoPrepAt = ({
 		configs,
 		audits: audits.map((id, position) => prepAuditViewAt(gate, id, position)),
 		outageTargets,
+		clearedGates,
 		balanceKb,
 		buildSpace,
 		spaceBillKb: Math.max(
 			0,
-			spaceRungFor(buildSpace).kb -
+			rungFitting(buildSpace).kb -
 				emptySlotCreditPerSlotKb(configs) *
 					Math.max(0, buildSpace - occupiedSlots(configs))
 		),
 		window,
-		bar: { ...prepLadderAt(gate), held: coverageHeld },
+		bar: {
+			...prepLadderAt(gate),
+			held: coverageHeld,
+			band: bandAtLadder(coverageHeld, prepLadderAt(gate)).id,
+		},
 		coverageGainPercent: coverageGainPercentFor(
 			perAnswerPreviewFor(configs, { answeredBefore: answered })
 				.coveragePerCorrect,
 			gate
 		),
 		peelKb: prepPeelKbAt(gate, configs, audits),
-		payout: prepPayoutAt(gate, configs, streak),
+		payout: prepPayoutAt(gate, configs),
 		readout: kantoReadoutAt(gate),
 	});
 
@@ -1128,7 +1130,7 @@ export const kantoNewRunAt = (
 	warmBoot: kantoWarmBootPanel(archiveKb),
 	build: {
 		configs: kantoNewRunBuild(installedIds),
-		weight: { held: BASE_SLOTS, perGateKb: upkeepForSpace(BASE_SLOTS) },
+		weight: { held: BASE_SLOTS, perGateKb: rungFitting(BASE_SLOTS).kb },
 		emptyLabel: EMPTY_LABEL,
 		onToggleInfo: noop,
 		onToggleAll: noop,
@@ -1156,7 +1158,6 @@ export const kantoPrepSealed = (): PrepScreenProps =>
 		coverageHeld: 0,
 		buildSpace: LAVENDER_BUILD_SPACE,
 		window: LAVENDER_WINDOW,
-		streak: LAVENDER_STREAK,
 		audits: LAVENDER_AUDITS,
 	});
 
@@ -1168,7 +1169,6 @@ export const kantoPrepPrefetchedAtV1 = (): PrepScreenProps =>
 		coverageHeld: 0,
 		buildSpace: LAVENDER_BUILD_SPACE,
 		window: LAVENDER_WINDOW,
-		streak: LAVENDER_STREAK,
 	});
 
 export const kantoPrepPrefetched = (): PrepScreenProps =>
@@ -1179,12 +1179,10 @@ export const kantoPrepPrefetched = (): PrepScreenProps =>
 		coverageHeld: 0,
 		buildSpace: LAVENDER_BUILD_SPACE,
 		window: LAVENDER_WINDOW,
-		streak: LAVENDER_STREAK,
 	});
 
 const CHAMPION_BALANCE_KB = 1945;
 const CHAMPION_BUILD_SPACE = 16;
-const CHAMPION_STREAK = 10;
 
 const CHAMPION_CONFIGS: readonly Config[] = [
 	JS_V2,
@@ -1213,7 +1211,6 @@ export const kantoPrepChampion = (): PrepScreenProps =>
 		coverageHeld: 92.5,
 		buildSpace: CHAMPION_BUILD_SPACE,
 		window: CHAMPION_WINDOW,
-		streak: CHAMPION_STREAK,
 		answered: 2,
 		audits: KANTO_CHAMPION_AUDITS,
 	});
@@ -1255,8 +1252,22 @@ export const kantoPrepSecondGate = (): PrepScreenProps =>
 		window: LAVENDER_WINDOW,
 	});
 
+export const kantoPrepFirstAudit = (
+	clearedGates: readonly number[]
+): PrepScreenProps =>
+	kantoPrepAt({
+		gate: AUDITS_FROM_GATE,
+		configs: [CONFIGS.js],
+		balanceKb: 0,
+		coverageHeld: 0,
+		buildSpace: BASE_SLOTS,
+		window: LAVENDER_WINDOW,
+		audits: ["not-found"],
+		clearedGates,
+	});
+
 const CASCADE_GATE = 2;
-const CASCADE_THIN_COVERAGE = 53.3;
+const CASCADE_THIN_COVERAGE = 40;
 
 export const kantoPrepCascadeThin = (): PrepScreenProps =>
 	kantoPrepAt({

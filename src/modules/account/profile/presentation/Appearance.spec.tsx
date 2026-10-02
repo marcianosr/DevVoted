@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	Appearance,
 	COPY,
@@ -16,8 +17,12 @@ const handlers = {
 	onToggleTitle: vi.fn(),
 	onMoreBorders: vi.fn(),
 	onMoreTitles: vi.fn(),
+	onPickSwatch: vi.fn(),
 	onSave: vi.fn(),
 };
+
+const PALLET = swatchForGate(0);
+const CASCADE = swatchForGate(2);
 
 const PROPS: AppearanceProps = {
 	face: { name: "misty_cerulean", titles: ["Legacy Tester"] },
@@ -36,6 +41,34 @@ const PROPS: AppearanceProps = {
 		{ id: CSS_CARRIER, name: "CSS Carrier", wornAt: null, blocked: false },
 	],
 	titleTally: { held: 2, total: 46 },
+	swatches: [
+		...(PALLET === undefined
+			? []
+			: [
+					{
+						id: PALLET.id,
+						name: PALLET.name,
+						state: "owned" as const,
+						fill: { state: "discovered" as const, swatch: PALLET },
+					},
+				]),
+		...(CASCADE === undefined
+			? []
+			: [
+					{
+						id: CASCADE.id,
+						name: CASCADE.name,
+						state: "worn" as const,
+						fill: { state: "discovered" as const, swatch: CASCADE },
+					},
+				]),
+		{
+			id: "swatch-earth",
+			name: "Earth Swatch",
+			state: "locked",
+			fill: { state: "undiscovered" },
+		},
+	],
 	canSave: false,
 	...handlers,
 };
@@ -46,6 +79,45 @@ const renderAppearance = (props: Partial<AppearanceProps> = {}) =>
 describe("Appearance", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+	});
+
+	describe("the swatch row", () => {
+		it("presses the worn swatch down and names it", () => {
+			renderAppearance();
+
+			expect(
+				screen.getByRole("button", { name: "Wear Cascade Swatch" })
+			).toHaveAttribute("aria-pressed", "true");
+		});
+
+		it("drafts an earned swatch when pressed", async () => {
+			renderAppearance();
+
+			await userEvent.click(
+				screen.getByRole("button", { name: "Wear Pallet Swatch" })
+			);
+
+			expect(handlers.onPickSwatch).toHaveBeenCalledWith("swatch-pallet");
+		});
+
+		it("withholds an unearned swatch's name and refuses the press", () => {
+			renderAppearance();
+
+			expect(screen.queryByText("Earth Swatch")).not.toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: COPY.lockedSwatch })
+			).toBeDisabled();
+		});
+	});
+
+	it("badges every figure in the title and border tally", () => {
+		renderAppearance({
+			titleTally: { held: 41, total: 49 },
+			borderTally: { held: 17, total: 32 },
+		});
+
+		for (const figure of ["41", "49", "17", "32"])
+			expect(screen.getByText(figure, { selector: "span" })).toBeVisible();
 	});
 
 	it("holds the save press back while the look is unchanged", () => {

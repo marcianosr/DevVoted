@@ -1,13 +1,37 @@
-import type { InstallScale } from "~/modules/run/run/application/runView.viewmodel";
+import { COMMUNITY, NEW_BADGE, NEW_RUN_PRICE, WEIGHT } from "~/shared/lib/copy";
+import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
+import type {
+	InstallScale,
+	RunView,
+} from "~/modules/run/run/application/runView.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
+	DRAFT_COST_PER_SLOT_KB,
 	isUpgradable,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
+import { buildReadingOf } from "~/modules/run/build/application/newRunScreen.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import { carries } from "~/modules/run/run/domain/warmBoot.model";
+import {
+	BUILD_SPACE_RUNGS,
+	INCIDENT_REFRESH_COST_KB,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	type CarriedServiceSpec,
+	isCarriedService,
+	isServiceUnlocked,
+	isSoldInShop,
+	REGISTRY_CONTROL_LIST,
+	REGISTRY_CONTROLS,
+	type ShopSoldId,
+	type ShopSoldSpec,
+} from "~/modules/run/shop/domain/registryControl.model";
 import {
 	type BuildUpgradeDeal,
 	infoFor,
 	nextUpgradeCostOf,
+	idleUpgraderBadgesFor,
 	refundChipFor,
 	registryUpgradesFor,
 	rollOddsLabel,
@@ -18,6 +42,7 @@ import {
 	sellRefundIn,
 } from "~/modules/run/shop/domain/draft.model";
 import {
+	VENDOR_REMEDY,
 	type VendorLockChip,
 	vendorChipFor,
 } from "~/modules/run/build/application/vendorChip.viewmodel";
@@ -34,13 +59,15 @@ import {
 	auditAt,
 	auditLabelOf,
 } from "~/modules/run/gate/domain/audit.model";
-import { kbLabel, formatStorage } from "~/shared/lib/storage";
+import { kbLabel, formatStorage, shortfallOf } from "~/shared/lib/storage";
 
 import type {
 	ChipInstall,
 	ChipQuote,
+	ConfigChipBadge,
 	ConfigChipProps,
 } from "~/ui/kanto-theme/ConfigChip.ui";
+import { RECURRING_GLYPH, upkeepLabelOf } from "~/ui/kanto-theme/upkeep";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { BalancePreview } from "~/ui/kanto-theme/Balance.ui";
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -50,10 +77,11 @@ import {
 	type IncidentDeskProps,
 } from "~/ui/kanto-theme/IncidentDesk.ui";
 import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+import type {
+	ShopScreenProps,
+	ShopServiceRow,
+} from "~/ui/kanto-theme/ShopScreen.ui";
 
-const SHORT_TRAIL = "short";
-const NEW_RUN_WORD = "new run";
-const CARRY_SEPARATOR = "·";
 const CLEARED_TRAIL = "cleared";
 const SHOP_WORD = "Shop";
 const AFTER_COPY = {
@@ -65,8 +93,7 @@ const AFTER_COPY = {
 const SPEND_COLOR: KantoColor = "vermillion";
 const REFUND_COLOR: KantoColor = "viridian";
 
-export const shortfallOf = (priceKb: number, balanceKb: number): string =>
-	`${kbLabel(priceKb - balanceKb)} ${SHORT_TRAIL}`;
+export { shortfallOf };
 
 export type PointedPrice = { label: string; deltaKb: number };
 
@@ -93,7 +120,28 @@ export type OfferDeal = {
 	onInstall?: () => void;
 	onPoint?: PointHandler;
 	scale?: InstallScale | null;
+	upkeepNowKb?: number;
 	armed?: boolean;
+	isNew?: boolean;
+};
+
+const BILL_COLOR: KantoColor = "saffron";
+
+const raisedBillOf = ({ scale, upkeepNowKb = 0 }: OfferDeal): number =>
+	scale === null || scale === undefined
+		? 0
+		: Math.max(0, scale.perGateKb - upkeepNowKb);
+
+const billBadgesOf = (deal: OfferDeal): ConfigChipBadge[] => {
+	const raised = raisedBillOf(deal);
+	return raised === 0
+		? []
+		: [
+				{
+					label: `${RECURRING_GLYPH} +${upkeepLabelOf(raised)}`,
+					color: BILL_COLOR,
+				},
+			];
 };
 
 const offerInstallFor = ({
@@ -115,7 +163,10 @@ export const offerChipFor = (
 ): ConfigChipProps => ({
 	name: config.label,
 	slots: slotsOf(config),
-	badges: [],
+	badges: [
+		...(deal.isNew === true ? [{ ...NEW_BADGE }] : []),
+		...billBadgesOf(deal),
+	],
 	skipped: !deal.affordable,
 	install: offerInstallFor(deal),
 	info: infoFor(config),
@@ -167,6 +218,7 @@ export const buildChipFor = (
 	{ installed, onUninstall, vendorLock, deal, onPoint }: BuildChipOptions
 ): ConfigChipProps => {
 	const refundKb = sellRefundIn(installed, config);
+	const vendor = vendorChipFor(vendorLock, onUninstall);
 
 	return {
 		name: config.label,
@@ -174,7 +226,8 @@ export const buildChipFor = (
 		...(deal === undefined || !isUpgradable(config)
 			? {}
 			: { upgrades: upgradesFor(config, deal) }),
-		...vendorChipFor(vendorLock, onUninstall),
+		...vendor,
+		badges: [...vendor.badges, ...idleUpgraderBadgesFor(config, installed)],
 		...quotingOf(buildDeltasOf(config, refundKb), onPoint),
 	};
 };
@@ -341,4 +394,361 @@ export const incidentDeskFor = (deal: IncidentDeal): IncidentDeskProps => {
 };
 
 export const carryLabelOf = (bytes: number): string =>
-	`${NEW_RUN_WORD} ${CARRY_SEPARATOR} ${formatStorage(bytes)}`;
+	NEW_RUN_PRICE(formatStorage(bytes));
+
+const {
+	rebuild: REBUILD,
+	skipShop: SKIP,
+	extend: EXTEND,
+	abandon: ABANDON,
+	pin: PIN,
+} = REGISTRY_CONTROLS;
+
+const TO_PREP = "To prep";
+const ABANDON_CONFIRM = "press again to end the run";
+const SEPARATOR = "·";
+const OVER_MARK = "over the";
+const OVER_REMEDY = "the bill covered · sell or drop to fit it";
+const REGISTRY_TOUCHED = "registry touched";
+const SHOP_SKIPPED = "skipped";
+const SKIPPED_SHUT =
+	"You skipped this shop. The registry stays shut until the next one.";
+
+export type ShopScreenHandlers = {
+	onDraft: (configId: string) => void;
+	onSell: (configId: string) => void;
+	onUpgrade: (configId: string) => void;
+	onRebuild: () => void;
+	onSkip: () => void;
+	onExtend: () => void;
+	onPlantPin: () => void;
+	onAbandon: () => void;
+	onVendorLock: (configId: string) => void;
+	onBuyIncident?: () => void;
+	onRefreshIncident?: () => void;
+	onContinue: () => void;
+	onCommunity?: () => void;
+};
+
+export type ShopScreenUi = {
+	build: Disclosure;
+	offers: Disclosure;
+	openUpgrades?: string;
+	onToggleUpgrades: (name: string) => void;
+	armedId?: string;
+	onArm: (configId: string) => void;
+	pointed?: PointedPrice;
+	onPoint: (pointed?: PointedPrice) => void;
+	abandonArmed: boolean;
+	onArmAbandon: () => void;
+	onDisarm: () => void;
+};
+
+export type ShopScreenFrame = {
+	view: RunView;
+	runNumber?: number | null;
+	rivalsInReach?: number | null;
+	on: ShopScreenHandlers;
+	ui: ShopScreenUi;
+};
+
+const isUnlockedThisRun = (view: RunView, configId: string): boolean =>
+	view.unlockedThisRun.some((unlock) => unlock.configId === configId);
+
+const offersOf = (
+	view: RunView,
+	onDraft: (id: string) => void,
+	armedId: string | undefined,
+	arm: (configId: string) => void,
+	onPoint: (pointed?: PointedPrice) => void
+): readonly ConfigChipProps[] =>
+	view.offers.map((offer) => {
+		const armed = armedId === offer.config.id;
+		const deal = {
+			priceKb: offer.priceKb,
+			affordable: offer.installable && offer.refusal === null,
+			scale: offer.scale,
+			upkeepNowKb: view.buildSpace.perGateKb,
+			armed,
+			onPoint,
+			isNew: isUnlockedThisRun(view, offer.config.id),
+			onInstall:
+				offer.scale === null || armed
+					? () => onDraft(offer.config.id)
+					: () => arm(offer.config.id),
+		};
+		return offer.heldLevel === null
+			? offerChipFor(offer.config, deal)
+			: upgradeChipFor(offer.config, offer.heldLevel, deal);
+	});
+
+const focusCoverageOf = (view: RunView, config: Config): number =>
+	config.focusCategory === undefined
+		? 0
+		: (view.coverageByCategory[config.focusCategory] ?? 0);
+
+type ServiceHandlers = Pick<
+	ShopScreenHandlers,
+	"onRebuild" | "onSkip" | "onExtend" | "onPlantPin" | "onAbandon"
+> & {
+	leaveBlocked: boolean;
+	abandonArmed: boolean;
+	onArmAbandon: () => void;
+};
+
+const stagedRowFor = (
+	control: ShopSoldSpec,
+	view: RunView,
+	handlers: ServiceHandlers
+): ShopServiceRow | undefined => {
+	const { shopControls, storage } = view;
+	const cleared = view.gatePayout.clearedGateNumber;
+	const rows: Record<ShopSoldId, () => ShopServiceRow | undefined> = {
+		rebuild: () =>
+			shopControls.rebuildAvailable
+				? {
+						id: REBUILD.id,
+						...controlRowFor(
+							REBUILD.glyph,
+							REBUILD.title,
+							REBUILD.detail,
+							shopControls.rebuildCost,
+							storage,
+							shopControls.canRebuild ? handlers.onRebuild : undefined
+						),
+					}
+				: undefined,
+		skipShop: () => ({
+			id: SKIP.id,
+			glyph: SKIP.glyph,
+			title: SKIP.title,
+			detail: SKIP.detail,
+			price: `+${kbLabel(shopControls.skipPayoutKb)}`,
+			refusal: skipRefusalOf(shopControls),
+			onPress:
+				shopControls.canSkip && !handlers.leaveBlocked
+					? handlers.onSkip
+					: undefined,
+		}),
+		extend: () =>
+			shopControls.extendAvailable
+				? {
+						id: EXTEND.id,
+						...controlRowFor(
+							EXTEND.glyph,
+							EXTEND.title,
+							EXTEND.detail,
+							shopControls.extendCost,
+							storage,
+							shopControls.canExtend ? handlers.onExtend : undefined
+						),
+					}
+				: undefined,
+		hotReload: () => undefined,
+		returnPolicy: () => undefined,
+		abandon: () => ({
+			id: ABANDON.id,
+			glyph: ABANDON.glyph,
+			title: ABANDON.title,
+			detail: handlers.abandonArmed ? ABANDON_CONFIRM : ABANDON.detail,
+			onPress: handlers.abandonArmed
+				? handlers.onAbandon
+				: handlers.onArmAbandon,
+		}),
+		pin: () =>
+			shopControls.pinAvailable
+				? {
+						id: PIN.id,
+						...controlRowFor(
+							PIN.glyph,
+							`${PIN.title} ${SEPARATOR} gate ${cleared + 1}`,
+							PIN.detail,
+							shopControls.pinCost,
+							storage,
+							shopControls.canPin ? handlers.onPlantPin : undefined
+						),
+					}
+				: undefined,
+	};
+	return rows[control.id]();
+};
+
+const uncarriedRowFor = (control: CarriedServiceSpec): ShopServiceRow => ({
+	id: control.id,
+	carried: false,
+	carry: carryLabelOf(control.carryBytes),
+	glyph: control.glyph,
+	title: control.title,
+	detail: control.detail,
+});
+
+const serviceRowFor = (
+	control: ShopSoldSpec,
+	view: RunView,
+	handlers: ServiceHandlers
+): ShopServiceRow | undefined => {
+	if (!isServiceUnlocked(control, view.unlockedServiceIds)) return undefined;
+	if (isCarriedService(control) && !carries(view, control.id))
+		return uncarriedRowFor(control);
+	const row = stagedRowFor(control, view, handlers);
+	if (row === undefined) return undefined;
+	return view.unlockedServiceIdsThisRun.includes(control.id)
+		? { ...row, isNew: true }
+		: row;
+};
+
+const skipRefusalOf = ({
+	canSkip,
+	shopSkipped,
+}: RunView["shopControls"]): string | undefined => {
+	if (shopSkipped) return SHOP_SKIPPED;
+	return canSkip ? undefined : REGISTRY_TOUCHED;
+};
+
+const controlsOf = (
+	view: RunView,
+	handlers: ServiceHandlers
+): readonly ShopServiceRow[] =>
+	REGISTRY_CONTROL_LIST.filter(isSoldInShop).flatMap((control) => {
+		const row = serviceRowFor(control, view, handlers);
+		return row === undefined ? [] : [row];
+	});
+
+export const shopScreenPropsFor = ({
+	view,
+	runNumber = null,
+	rivalsInReach = null,
+	on,
+	ui,
+}: ShopScreenFrame): ShopScreenProps => {
+	const armed = view.offers.find((offer) => offer.config.id === ui.armedId);
+	const disarming = (press: () => void) => () => {
+		ui.onDisarm();
+		press();
+	};
+	const overSpace = view.overflowSlots > 0;
+	const needsVendor = view.vendorLock.offered;
+
+	return {
+		...(view.shopControls.shopSkipped ? { shut: SKIPPED_SHUT } : {}),
+		header: {
+			...shopHeaderFor(
+				view.gatePayout.clearedGateNumber,
+				view.storage,
+				view.swatchGates,
+				ui.pointed,
+				view.heldAudit?.auditId
+			),
+			readout: runReadoutFor(view, runNumber),
+		},
+		audits: shopAuditsFor(
+			view.gateStake.audits.filter((audit) => !audit.suppressed),
+			view.gatesCleared
+		),
+		...(view.incidentOffer === null
+			? {}
+			: {
+					incidents: incidentDeskFor({
+						offer: view.incidentOffer,
+						gate: view.gatesCleared,
+						heldAudit: view.heldAudit?.auditId ?? null,
+						rivalsInReach,
+						balanceKb: view.storage,
+						costKb: view.shopControls.incidentCost,
+						refreshCostKb: view.shopControls.incidentRefreshCost,
+						refreshRungsKb: INCIDENT_REFRESH_COST_KB,
+						refreshes: view.incidentRefreshes,
+						shopLocked: view.shopControls.shopLocked,
+						...(on.onBuyIncident === undefined
+							? {}
+							: { onBuy: disarming(on.onBuyIncident) }),
+						...(on.onRefreshIncident === undefined
+							? {}
+							: { onRefresh: disarming(on.onRefreshIncident) }),
+					}),
+				}),
+		controls: controlsOf(view, {
+			onRebuild: disarming(on.onRebuild),
+			onSkip: disarming(on.onSkip),
+			leaveBlocked: overSpace || needsVendor,
+			onExtend: disarming(on.onExtend),
+			onPlantPin: disarming(on.onPlantPin),
+			onAbandon: on.onAbandon,
+			abandonArmed: ui.abandonArmed,
+			onArmAbandon: ui.onArmAbandon,
+		}),
+		build: {
+			configs: view.configs.map((config) =>
+				buildChipFor(config, {
+					installed: view.configs,
+					onUninstall: () => on.onSell(config.id),
+					vendorLock: {
+						locked: view.vendorLock.lockedConfigId === config.id,
+						onLock:
+							view.vendorLock.offered && config.vendorLocks !== true
+								? () => on.onVendorLock(config.id)
+								: undefined,
+					},
+					deal: {
+						storageKb: view.storage,
+						coveragePct: focusCoverageOf(view, config),
+						onBuy: () => on.onUpgrade(config.id),
+					},
+					onPoint: ui.onPoint,
+				})
+			),
+			weight: {
+				held: view.buildSpace.space,
+				perGateKb: view.buildSpace.perGateKb,
+				rungs: BUILD_SPACE_RUNGS,
+				...(armed?.scale == null
+					? {}
+					: {
+							preview: {
+								weight: view.buildSpace.weight + armed.slots,
+								held: armed.scale.to,
+								perGateKb: armed.scale.perGateKb,
+							},
+						}),
+			},
+			openInfo: ui.build.open,
+			onToggleInfo: ui.build.toggle,
+			onToggleAll: ui.build.toggleAll,
+			openUpgrades: ui.openUpgrades,
+			onToggleUpgrades: ui.onToggleUpgrades,
+		},
+		registry: {
+			offers: offersOf(view, on.onDraft, ui.armedId, ui.onArm, ui.onPoint),
+			slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+			openInfo: ui.offers.open,
+			onToggleInfo: ui.offers.toggle,
+			onToggleAll: ui.offers.toggleAll,
+			openUpgrades: ui.openUpgrades,
+			onToggleUpgrades: ui.onToggleUpgrades,
+		},
+		footer: {
+			asides:
+				on.onCommunity === undefined
+					? []
+					: [{ label: COMMUNITY, icon: "community", onPress: on.onCommunity }],
+			action: {
+				label: TO_PREP,
+				swatch: {
+					state: "current",
+					swatch: gateSwatchAt(view.gatePayout.clearedGateNumber + 1),
+				},
+				onPress: overSpace || needsVendor ? undefined : on.onContinue,
+			},
+			note: buildReadingOf({
+				configs: view.configs.length,
+				held: view.buildSpace.weight,
+				slots: view.buildSpace.space,
+			}),
+			refusal: overSpace
+				? `${view.overflowSlots} ${WEIGHT} ${OVER_MARK} ${view.buildSpace.coveredSpace} ${OVER_REMEDY}`
+				: needsVendor
+					? VENDOR_REMEDY
+					: undefined,
+		},
+	};
+};

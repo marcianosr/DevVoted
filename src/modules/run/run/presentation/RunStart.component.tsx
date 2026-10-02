@@ -1,9 +1,11 @@
-import { useNavigate } from "@tanstack/react-router";
-
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import { resumeTarget } from "~/modules/run/run/application/runRoutes.viewmodel";
+import {
+	COMMUNITY_ROUTE,
+	resumeTarget,
+	RUN_ROUTES,
+} from "~/modules/run/run/application/runRoutes.viewmodel";
 import {
 	climbersAtOrPast,
 	communityLineFor,
@@ -16,15 +18,13 @@ import {
 	type TodayPress,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
+import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { TodayScreen } from "~/modules/run/run/presentation/TodayScreen.ui";
 
-const COMMUNITY_ROUTE = "/run/community";
-const SHOP_ROUTE = "/run/shop";
-
 export const RunStart = () => {
-	const navigate = useNavigate();
+	const goTo = useRunNavigation();
 	const { view } = useTodaysRun();
 	const runNumber = useRunNumber();
 	const { start } = useRunActions();
@@ -48,7 +48,7 @@ export const RunStart = () => {
 	const startAndEnter = () =>
 		start.mutate(undefined, {
 			onSuccess: (result) => {
-				if (result.success) navigate({ to: resumeTarget(result.data) });
+				if (result.success) goTo(resumeTarget(result.data));
 			},
 		});
 
@@ -57,7 +57,7 @@ export const RunStart = () => {
 		if (kind === "start") return start.isPending ? undefined : startAndEnter;
 		if (view === null) return undefined;
 
-		return () => navigate({ to: resumeTarget(view) });
+		return () => goTo(resumeTarget(view));
 	};
 
 	return (
@@ -70,16 +70,16 @@ export const RunStart = () => {
 				pollsLeft: press.pollsLeft,
 				onPress: pressHandlerFor(press.kind),
 			}}
-			shop={{ ...shop, onPress: () => navigate({ to: SHOP_ROUTE }) }}
+			shop={{ ...shop, onPress: () => goTo(RUN_ROUTES.shop) }}
 			incidents={incomingIncidentsFor(view)}
 			runSoFar={runSoFarFor(view)}
 			build={
 				build === null
 					? null
-					: { ...build, shopHref: shop.open ? SHOP_ROUTE : undefined }
+					: { ...build, shopHref: shop.open ? RUN_ROUTES.shop : undefined }
 			}
 			community={room === null ? null : { ...room, href: COMMUNITY_ROUTE }}
-			refusal={start.data?.success === false ? start.data.error : undefined}
+			refusal={start.errorMessage ?? undefined}
 		/>
 	);
 };

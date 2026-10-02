@@ -1,34 +1,34 @@
 import { describe, expect, it } from "vitest";
 
-import type { PerAnswerPreview } from "~/modules/run/build/domain/answerPayout.model";
-import { Build, projectorFor } from "~/modules/run/build/domain/build.model";
+import { Build } from "~/modules/run/build/domain/build.model";
 import { Config } from "~/modules/run/config/domain/config.model";
 import {
 	CONFIG_LIST,
 	CONFIGS,
 } from "~/modules/run/config/domain/configRoster.model";
-import { touchesCoverage } from "~/modules/run/config/domain/effect.model";
 import {
+	bandFor,
 	floorAt,
 	healthyAt,
 	okAt,
+	ratioOf,
 	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
-	MIN_WINDOW_UNITS,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
 import { EMPTY_AUDIT_SCHEDULE } from "~/modules/run/gate/domain/audit.model";
 import {
+	bandAtLadder,
 	baseGateLadderAt,
 	clearsAt,
+	coversEveryChange,
 	type GateClose,
 	gateClosingFor,
 	gateLadderFor,
 	gatePassed,
 	gateRulingFor,
-	gateProjectionFor,
 	peelConfigRangeFor,
 } from "~/modules/run/gate/domain/gate.model";
 
@@ -41,9 +41,8 @@ const unitsFor = (ratio: number, gate: number): number =>
 
 const closing = (partial: Partial<GateClose>): GateClose => ({
 	build: buildWith([CONFIGS.js]),
-	bankedUnits: 0,
+	headStartUnits: 0,
 	unitsThisGate: 0,
-	baseUnitsThisGate: SLICE_WINDOW,
 	correctThisGate: SLICE_WINDOW,
 	gatesCleared: 0,
 	schedule: EMPTY_AUDIT_SCHEDULE,
@@ -86,14 +85,14 @@ describe("the gate closes on the run, not on its own five answers", () => {
 	it("counts the gates behind it, so history carries the close", () => {
 		const banked = unitsFor(healthyAt(9), 9) - SLICE_WINDOW;
 
-		expect(gatePassed(closing({ gatesCleared: 9, bankedUnits: banked }))).toBe(
-			false
-		);
+		expect(
+			gatePassed(closing({ gatesCleared: 9, headStartUnits: banked }))
+		).toBe(false);
 		expect(
 			gatePassed(
 				closing({
 					gatesCleared: 9,
-					bankedUnits: banked,
+					headStartUnits: banked,
 					unitsThisGate: SLICE_WINDOW,
 				})
 			)
@@ -106,7 +105,7 @@ describe("the gate closes on the run, not on its own five answers", () => {
 		expect(gatePassed(closing({ gatesCleared: 1, unitsThisGate: units }))).toBe(
 			true
 		);
-		expect(gatePassed(closing({ gatesCleared: 2, unitsThisGate: units }))).toBe(
+		expect(gatePassed(closing({ gatesCleared: 6, unitsThisGate: units }))).toBe(
 			false
 		);
 	});
@@ -124,8 +123,8 @@ describe("a flawless gate is never fatal", () => {
 			gateClosingFor(
 				closing({
 					gatesCleared: 9,
-					bankedUnits: 27,
-					unitsThisGate: SLICE_WINDOW,
+					headStartUnits: 0,
+					unitsThisGate: 4,
 					correctThisGate: SLICE_WINDOW,
 				})
 			)
@@ -137,7 +136,7 @@ describe("a flawless gate is never fatal", () => {
 			gateClosingFor(
 				closing({
 					gatesCleared: 9,
-					bankedUnits: 27,
+					headStartUnits: 0,
 					unitsThisGate: 4,
 					correctThisGate: 4,
 				})
@@ -146,81 +145,71 @@ describe("a flawless gate is never fatal", () => {
 	});
 });
 
-describe("the window's own minimum", () => {
-	const onAFullBank = (partial: Partial<GateClose>): GateClose =>
-		closing({ gatesCleared: 5, bankedUnits: unitsFor(1, 4), ...partial });
+describe("the swatch asks for every change covered", () => {
+	const BOULDER = 1;
 
-	it("holds a gate the bank alone would clear, since yesterday cannot clear today", () => {
+	it("earns on a full bar carrying a miss", () => {
 		expect(
-			gateClosingFor(
-				onAFullBank({
-					unitsThisGate: 0,
-					baseUnitsThisGate: 0,
-					correctThisGate: 0,
+			coversEveryChange(
+				closing({
+					gatesCleared: BOULDER,
+					unitsThisGate: scoringSlotsAt(BOULDER),
+					correctThisGate: SLICE_WINDOW - 1,
 				})
 			)
-		).toBe("held");
+		).toBe(true);
 	});
 
-	it("holds on one right answer, which is under the minimum", () => {
+	it("counts the head start toward the full bar", () => {
 		expect(
-			gateClosingFor(
-				onAFullBank({
-					unitsThisGate: 1,
-					baseUnitsThisGate: 1,
-					correctThisGate: 1,
+			coversEveryChange(
+				closing({
+					gatesCleared: BOULDER,
+					headStartUnits: 1,
+					unitsThisGate: scoringSlotsAt(BOULDER) - 1,
 				})
 			)
-		).toBe("held");
+		).toBe(true);
 	});
 
-	it("clears on two right answers, the bands deciding the rest", () => {
+	it("refuses five right that leave a change uncovered", () => {
 		expect(
-			gateClosingFor(
-				onAFullBank({
-					unitsThisGate: MIN_WINDOW_UNITS,
-					baseUnitsThisGate: MIN_WINDOW_UNITS,
-					correctThisGate: MIN_WINDOW_UNITS,
+			coversEveryChange(
+				closing({
+					gatesCleared: BOULDER,
+					unitsThisGate: scoringSlotsAt(BOULDER) - 1,
+					correctThisGate: SLICE_WINDOW,
 				})
 			)
-		).toBe("cleared");
+		).toBe(false);
 	});
+});
 
-	it("counts partials toward it, which the old right-answer floor never did", () => {
+describe("coverage alone decides the gate", () => {
+	it("clears on one right answer when the build's output reaches the band", () => {
 		expect(
 			gateClosingFor(
-				onAFullBank({
-					unitsThisGate: 1.5,
-					baseUnitsThisGate: 0.75 * 3,
-					correctThisGate: 0,
-				})
-			)
-		).toBe("cleared");
-	});
-
-	it("counts the answers before multipliers, so a big build cannot buy past it", () => {
-		expect(
-			gateClosingFor(
-				onAFullBank({
+				closing({
 					build: buildWith([CONFIGS.agentsMd]),
-					unitsThisGate: 2 * MIN_WINDOW_UNITS,
-					baseUnitsThisGate: 1,
+					gatesCleared: 4,
+					unitsThisGate: unitsFor(healthyAt(4), 4),
 					correctThisGate: 1,
 				})
 			)
-		).toBe("held");
+		).toBe("cleared");
 	});
 
-	it("names the window as the reason, so the debrief can say it", () => {
+	it("holds a blank window on its band, never on a count of right answers", () => {
 		expect(
 			gateRulingFor(
-				onAFullBank({
+				closing({
+					gatesCleared: 5,
+					headStartUnits: unitsFor(floorAt(5), 5),
 					unitsThisGate: 0,
-					baseUnitsThisGate: 0,
 					correctThisGate: 0,
 				})
 			)
-		).toEqual({ closing: "held", heldBy: "unscored" });
+		).toEqual({ closing: "held", heldBy: "band" });
 	});
 
 	it("names the band when the meter itself fell short", () => {
@@ -351,109 +340,9 @@ describe("the peel quota read as a number of configs", () => {
 	});
 });
 
-const previewOf = (
-	partial: Partial<PerAnswerPreview> = {}
-): PerAnswerPreview => ({
-	coveragePerCorrect: 12,
-	coveragePerWrong: -6,
-	storageKbPerCorrect: 0,
-	streakStepMultiplier: 1,
-	...partial,
-});
-
-describe("gateProjectionFor (Dry Run)", () => {
-	const GATE = 4;
-
-	const PAYS_TWO = previewOf({ coveragePerCorrect: 2 });
-	const SCORED = MIN_WINDOW_UNITS;
-	const UNDER = MIN_WINDOW_UNITS - 1;
-
-	it("lands a right answer above where the run stands", () => {
-		const projection = gateProjectionFor(10, SCORED, PAYS_TWO, GATE, 50);
-
-		expect(projection.held).toBe(40);
-		expect(projection.pass).toBe(48);
-		expect(projection.passClears).toBe(false);
-	});
-
-	it("leaves a wrong answer exactly where the run already stands", () => {
-		const projection = gateProjectionFor(10, SCORED, PAYS_TWO, GATE, 50);
-
-		expect(projection.miss).toBe(projection.held);
-		expect(projection.missClears).toBe(false);
-	});
-
-	it("says a miss still clears when the run is already past the demand", () => {
-		const projection = gateProjectionFor(14, SCORED, PAYS_TWO, GATE, 50);
-
-		expect(projection.missClears).toBe(true);
-		expect(projection.passClears).toBe(true);
-	});
-
-	it("clears on meeting the demand exactly, not only on beating it", () => {
-		const projection = gateProjectionFor(
-			11.5,
-			SCORED,
-			previewOf({ coveragePerCorrect: 1 }),
-			GATE,
-			50
-		);
-
-		expect(projection.pass).toBe(50);
-		expect(projection.passClears).toBe(true);
-	});
-
-	it("never reads past a full bar", () => {
-		const projection = gateProjectionFor(
-			24,
-			SCORED,
-			previewOf({ coveragePerCorrect: 8 }),
-			GATE,
-			50
-		);
-
-		expect(projection.pass).toBe(100);
-	});
-
-	it("carries the demand through untouched", () => {
-		expect(gateProjectionFor(10, SCORED, PAYS_TWO, GATE, 50).demand).toBe(50);
-	});
-
-	it("refuses a miss under the window's minimum, however good the meter", () => {
-		const projection = gateProjectionFor(14, UNDER, PAYS_TWO, GATE, 50);
-
-		expect(projection.missClears).toBe(false);
-		expect(projection.passClears).toBe(true);
-	});
-
-	it("refuses both when even the right answer leaves the window short", () => {
-		const projection = gateProjectionFor(14, 0, PAYS_TWO, GATE, 50);
-
-		expect(projection.missClears).toBe(false);
-		expect(projection.passClears).toBe(false);
-	});
-});
-
-describe("Dry Run in the roster", () => {
-	it("is found by projectorFor when installed, and only then", () => {
-		expect(projectorFor([CONFIGS.dryRun])).toBe(CONFIGS.dryRun);
-		expect(projectorFor([CONFIGS.js, CONFIGS.indexedDb])).toBeUndefined();
-	});
-
-	it("is the roster's only projector, so the reading can never double", () => {
-		const projectors = CONFIG_LIST.filter(
-			(config) => config.projectsGateOutcome === true
-		);
-
-		expect(projectors).toHaveLength(1);
-	});
-
-	it("sits last in the roster, since fixtures slice it positionally", () => {
-		expect(CONFIG_LIST.at(-1)).toBe(CONFIGS.npmAudit);
-	});
-
-	it("sells information rather than coverage, so it stacks with anything", () => {
-		expect(touchesCoverage(CONFIGS.dryRun)).toBe(false);
+describe("the roster's order", () => {
+	it("ends on Vite, since fixtures slice it positionally", () => {
+		expect(CONFIG_LIST.at(-1)).toBe(CONFIGS.vite);
 	});
 });
 
@@ -473,5 +362,42 @@ describe("baseGateLadderAt", () => {
 		expect(floor).toBeLessThanOrEqual(ok);
 		expect(ok).toBeLessThanOrEqual(healthy);
 		expect(healthy).toBeLessThanOrEqual(100);
+	});
+});
+
+describe("bandAtLadder", () => {
+	it("cuts the same bands as the ratio classifier on every unaudited gate", () => {
+		for (let gate = 0; gate <= VICTORY_GATE; gate++) {
+			const ladder = baseGateLadderAt(gate);
+			const readings = [
+				0,
+				ladder.floor / 2,
+				(ladder.floor + ladder.ok) / 2,
+				(ladder.ok + ladder.healthy) / 2,
+				(ladder.healthy + 100) / 2,
+				100,
+				140,
+			];
+			for (const held of readings) {
+				expect(bandAtLadder(held, ladder).id).toBe(
+					bandFor(ratioOf(held), gate).id
+				);
+			}
+		}
+	});
+
+	it("reads each rung from its own line up", () => {
+		const ladder = { floor: 55, ok: 65, healthy: 80 };
+
+		expect(bandAtLadder(54.9, ladder).id).toBe("danger");
+		expect(bandAtLadder(55, ladder).id).toBe("shaky");
+		expect(bandAtLadder(65, ladder).id).toBe("ok");
+		expect(bandAtLadder(80, ladder).id).toBe("healthy");
+		expect(bandAtLadder(99.9, ladder).id).toBe("healthy");
+		expect(bandAtLadder(100, ladder).id).toBe("perfect");
+	});
+
+	it("cannot read danger at a gate with no floor to fall through", () => {
+		expect(bandAtLadder(0, baseGateLadderAt(0)).id).not.toBe("danger");
 	});
 });

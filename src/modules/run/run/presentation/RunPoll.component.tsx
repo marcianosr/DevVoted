@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { useSubmitCrowdPick } from "~/modules/run/community/presentation/useSubmitCrowdPick.hook";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import type { PressAction } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
@@ -24,22 +23,35 @@ const PRESS_ACTIONS = {
 export const RunPoll = () => {
 	const { view } = useTodaysRun();
 	const runNumber = useRunNumber();
-	const { send, sendWith, commit, busy } = useRunActions();
-	const approval = useSubmitCrowdPick();
+	const { send, sendWith, sendCrowdPickWith, commit, busy } = useRunActions();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
 	const [reveal, setReveal] = useState<RunActionSuccess | null>(null);
+	const [approveRefusal, setApproveRefusal] = useState<string>();
+	const unread = useRef<RunActionSuccess | null>(null);
+
+	const stage = (result: RunActionSuccess | null) => {
+		unread.current = result;
+		setReveal(result);
+	};
+
+	useEffect(
+		() => () => {
+			if (unread.current) commit(unread.current);
+		},
+		[commit]
+	);
 
 	const clock = usePollClock(
 		view?.poll?.id ?? null,
-		view?.pollTimeLimitMs ?? null
+		view?.pollTimeLimitMs ?? view?.fastAnswer?.withinMs ?? null
 	);
 	useEffect(() => {
 		setSelected([]);
+		setApproveRefusal(undefined);
 	}, [view?.poll?.id]);
 
 	if (!view?.poll) return null;
-	const poll = view.poll;
 
 	const submit = (optionIds: readonly string[]) => {
 		if (busy || reveal || optionIds.length === 0) return;
@@ -50,17 +62,24 @@ export const RunPoll = () => {
 				elapsedMs: Math.min(clock.elapsedMs(), MAX_ELAPSED_MS),
 			},
 			(result) => {
-				if (result.success) setReveal(result);
+				if (result.success) stage(result);
 			}
 		);
 	};
 
+	const skipThePoll = () => {
+		if (busy || reveal) return;
+		sendWith({ type: "skip" }, (result) => {
+			if (result.success) stage(result);
+		});
+	};
+
 	const approveWithTheRoom = () => {
-		if (busy || reveal || approval.isPending) return;
-		approval.mutate(undefined, {
-			onSuccess: (result) => {
-				if (result.success) setReveal(result);
-			},
+		if (busy || reveal) return;
+		sendCrowdPickWith((result) => {
+			if (!result.success) return setApproveRefusal(result.error);
+			setApproveRefusal(undefined);
+			stage(result);
 		});
 	};
 
@@ -68,12 +87,11 @@ export const RunPoll = () => {
 		if (!reveal) return;
 		commit(reveal);
 		if (reveal.data.gateComplete) send({ type: "close-gate" });
-		setReveal(null);
+		stage(null);
 	};
 
 	const onSelect = (optionId: string) => {
 		if (reveal) return;
-		if (poll.answerType === "single") return setSelected([optionId]);
 
 		setSelected((current) =>
 			current.includes(optionId)
@@ -88,12 +106,15 @@ export const RunPoll = () => {
 			view={reveal?.data ?? view}
 			answered={reveal?.data.answeredThisGate.at(-1)}
 			selectedOptionIds={selected}
+			clockMs={clock.shownMs}
 			onSelect={onSelect}
-			onSubmit={() => submit(selected)}
+			onAnswer={submit}
+			onSkip={skipThePoll}
 			onNext={advanceFromReveal}
 			onPress={(action, configId) => send(PRESS_ACTIONS[action](configId))}
 			onUnseal={(optionId) => send({ type: "buy-back-option", optionId })}
 			onApprove={approveWithTheRoom}
+			approveRefusal={approveRefusal}
 		/>
 	);
 };

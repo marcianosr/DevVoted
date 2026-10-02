@@ -1,13 +1,13 @@
 ---
 # DVTD-du7y
 title: 'Config: freeze what a wrong answer costs'
-status: todo
+status: scrapped
 type: feature
 priority: normal
 tags:
     - config
 created_at: 2026-09-05T09:06:42Z
-updated_at: 2026-09-24T12:49:11Z
+updated_at: 2026-10-01T15:39:18Z
 parent: DVTD-72d9
 ---
 
@@ -66,3 +66,7 @@ Hedge, inversion, insurance is a clean division, and each is legible on its own.
 - Specs: frozen across a gate clear, unaffected by later installs, correct interaction with the audited-share zeroing
 - Decide the family question against DVTD-w0ul and DVTD-zvcv
 - Wiki roster entry
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. A wrong answer subtracts nothing (wiki §2.5, ADR-157); wrongLossShareFor and coveragePerCorrectRaw are deleted, so there is no miss price to freeze.

@@ -2,14 +2,18 @@ import {
 	type Authorship,
 	isContributor,
 } from "~/modules/account/profile/domain/authorship.model";
-import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+import type { ProfileFace } from "~/modules/account/profile/domain/profile.model";
+import type { Standing } from "~/modules/run/community/domain/standing.model";
 import {
 	publicSpaceOf,
 	publicWeightOf,
 } from "~/modules/run/build/domain/publicBuild.model";
 import { publicBuildChipsFor } from "~/modules/run/build/application/publicBuild.viewmodel";
 import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
-import { baseGateLadderAt } from "~/modules/run/gate/domain/gate.model";
+import {
+	bandAtLadder,
+	baseGateLadderAt,
+} from "~/modules/run/gate/domain/gate.model";
 import {
 	gateNumberLabelOf,
 	gateSwatchAt,
@@ -25,15 +29,6 @@ import {
 
 const STORAGE_COLOR: KantoColor = "saffron";
 
-export type PlayerRun = {
-	readonly gate: number;
-	readonly coveragePercent: number;
-	readonly streak: number;
-	readonly storageKb: number;
-	readonly bestCategory?: string;
-	readonly build: PublicBuild;
-};
-
 export type PlayerCardView = {
 	readonly userId: string;
 	readonly displayName: string;
@@ -42,16 +37,32 @@ export type PlayerCardView = {
 	readonly titles: readonly string[];
 	readonly theme: SwatchTheme;
 	readonly authorship?: Authorship;
-	readonly run?: PlayerRun;
+	readonly run?: Standing;
 };
+
+export const playerCardViewFor = (
+	userId: string,
+	{ identity, theme }: ProfileFace,
+	run: Standing | null
+): PlayerCardView => ({
+	userId,
+	displayName: identity.displayName,
+	...(identity.photoUrl === null ? {} : { photoUrl: identity.photoUrl }),
+	...(identity.borderUrl === null ? {} : { borderUrl: identity.borderUrl }),
+	titles: identity.wornTitles,
+	theme,
+	authorship: identity.authorship,
+	...(run === null ? {} : { run }),
+});
 
 const categoryNameOf = (code: string | undefined): string =>
 	code === undefined || !isCategoryCode(code)
 		? CARD_COPY.none
 		: getCategoryMetadata(code).name;
 
-export const standingFor = (run: PlayerRun): ClimberCardStanding => {
+export const standingFor = (run: Standing): ClimberCardStanding => {
 	const swatch = gateSwatchAt(run.gate);
+	const ladder = baseGateLadderAt(run.gate);
 	const weight = publicWeightOf(run.build);
 	const space = publicSpaceOf(run.build);
 
@@ -60,7 +71,11 @@ export const standingFor = (run: PlayerRun): ClimberCardStanding => {
 			name: swatch.gateName,
 			label: gateNumberLabelOf(run.gate),
 			swatch,
-			coverage: { ...baseGateLadderAt(run.gate), held: run.coveragePercent },
+			coverage: {
+				...ladder,
+				held: run.coveragePercent,
+				band: bandAtLadder(run.coveragePercent, ladder).id,
+			},
 		},
 		weight: `${weight} / ${space}`,
 		build: publicBuildChipsFor(run.build),

@@ -12,18 +12,24 @@ export type PolldexEntry = {
 	accuracy: number | null;
 };
 
+export type PollSighting = {
+	readonly categoryCode: string;
+	readonly timesSeen: number;
+};
+
+export const timesSeenOf = (viewCount: number, answeredCount: number): number =>
+	Math.max(viewCount, answeredCount);
+
+export const isSeenPoll = (
+	sighting: Pick<PollSighting, "timesSeen">
+): boolean => sighting.timesSeen > 0;
+
 export type PolldexCategoryFilter = CategoryCode | "all";
 
 export type PolldexFilter = "all" | "seen" | "mastered" | "fumbled";
 
 export const MASTERED_ACCURACY = 70;
 export const FUMBLED_ACCURACY = 40;
-
-export type PolldexCoverage = {
-	seen: number;
-	total: number;
-	percent: number;
-};
 
 const matchesCategory = (
 	entry: PolldexEntry,
@@ -67,13 +73,6 @@ export const polldexTallies = (
 
 export const unmetCount = (entries: PolldexEntry[]): number =>
 	entries.filter((entry) => !entry.seen).length;
-
-export const polldexCoverage = (entries: PolldexEntry[]): PolldexCoverage => {
-	const total = entries.length;
-	const seen = entries.filter((entry) => entry.seen).length;
-	const percent = total > 0 ? Math.round((seen / total) * 100) : 0;
-	return { seen, total, percent };
-};
 
 export const dexNumber = (
 	entry: Pick<PolldexEntry, "pollNumber" | "id">

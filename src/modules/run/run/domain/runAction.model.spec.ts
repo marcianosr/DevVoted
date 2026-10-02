@@ -18,6 +18,7 @@ import {
 	runReducer,
 } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	answerWith,
 	atGateWithBuild,
@@ -652,5 +653,96 @@ describe("warm booting a run (ADR-153)", () => {
 		const booted = runReducer(createRun(pool(60), handed), boot);
 
 		expect(runReducer(booted, boot)).toBe(booted);
+	});
+});
+
+describe("the balance the whole engine holds (ADR-161)", () => {
+	const RUNS = 300;
+	const STEPS_PER_RUN = 400;
+	const LEAN = [CONFIGS.js, CONFIGS.ts, CONFIGS.css, CONFIGS.html];
+	const TRIPLED = [CONFIGS.agentsMd, CONFIGS.intellisense];
+	const STACKED = [CONFIGS.agentsMd, CONFIGS.intellisense, CONFIGS.deprecated];
+
+	const seededRolls = (seed: number) => {
+		let state = seed;
+		return () => {
+			state = (state * 1664525 + 1013904223) % 4294967296;
+			return state / 4294967296;
+		};
+	};
+
+	const CATEGORIES: readonly CategoryCode[] = [
+		"react",
+		"js",
+		"ts",
+		"css",
+		"html",
+	];
+	const spreadPool: readonly RunPoll[] = Array.from(
+		{ length: STEPS_PER_RUN },
+		(_, index) =>
+			poll(`spread-${index}`, true, CATEGORIES[index % CATEGORIES.length])
+	);
+
+	const summits = (
+		configs: readonly Config[],
+		accuracy: number,
+		roll: () => number
+	): boolean => {
+		const base = started([], STEPS_PER_RUN);
+		let state: RunState = {
+			...base,
+			polls: spreadPool,
+			build: { ...base.build, configs },
+		};
+		for (let step = 0; step < STEPS_PER_RUN; step++) {
+			if (state.status === "won") return true;
+			if (state.status === "answering")
+				state = answerWith(state, roll() < accuracy);
+			else if (state.status === "rewarding")
+				state = runReducer(state, { type: "finish-reward" });
+			else if (state.status === "awaiting-strip") {
+				const settled = payPeel(state);
+				if (settled === state) return false;
+				state = settled;
+			} else return false;
+		}
+		return false;
+	};
+
+	const winRate = (configs: readonly Config[], accuracy: number): number => {
+		const roll = seededRolls(Math.round(accuracy * 1000));
+		const wins = Array.from({ length: RUNS }, () =>
+			summits(configs, accuracy, roll)
+		).filter(Boolean).length;
+		return wins / RUNS;
+	};
+
+	it("walls a lean build at poor accuracy", () => {
+		expect(winRate(LEAN, 0.6)).toBeLessThan(0.05);
+	});
+
+	it("lets knowledge alone summit more often than not", () => {
+		expect(winRate(LEAN, 0.9)).toBeGreaterThan(0.5);
+	});
+
+	it("opens the run for the average player who buys a multiplier", () => {
+		expect(winRate([CONFIGS.agentsMd], 0.7)).toBeGreaterThan(
+			winRate(LEAN, 0.7) * 5
+		);
+	});
+
+	it("stops paying for stacking once decay and rent take it back", () => {
+		expect(
+			Math.abs(winRate(STACKED, 0.7) - winRate(TRIPLED, 0.7))
+		).toBeLessThan(0.1);
+	});
+
+	it("cannot be carried by stacking alone at a coin flip", () => {
+		expect(winRate(STACKED, 0.5)).toBeLessThan(0.3);
+	});
+
+	it("still asks for accuracy once the multipliers are there", () => {
+		expect(winRate(TRIPLED, 0.9)).toBeGreaterThan(winRate(TRIPLED, 0.6));
 	});
 });

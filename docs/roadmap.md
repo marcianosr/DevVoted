@@ -66,7 +66,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Authentication (GitHub)
 [x] CI/CD and Deployment
 [x] Test daily poll cycle
-[] Check RLS
+[x] Check RLS: on for every public table, no policies (DVTD-5kak)
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
 [x] Show github images

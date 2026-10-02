@@ -2,6 +2,7 @@ import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
+import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import {
 	COVERAGE_BAND_COLOR,
@@ -9,7 +10,6 @@ import {
 	CoverageBar,
 	type CoverageBandId,
 	type CoverageBarProps,
-	coverageBandOf,
 } from "./CoverageBar.ui";
 import { Audit, type AuditProps } from "./Audit.ui";
 import { Figures } from "./Figures.ui";
@@ -20,7 +20,11 @@ import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
-import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
+import {
+	type FooterAction,
+	ScreenActions,
+	type ScreenFooterProps,
+} from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 import { Version } from "./Version.ui";
@@ -34,6 +38,7 @@ const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const RECAP = "flex w-full flex-col gap-3";
+const RECAP_ASIDES = "flex w-full flex-wrap gap-3";
 const LEAD =
 	"badge-theme inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold tabular-nums";
 const NAMING = "flex min-w-0 grow flex-col gap-1";
@@ -43,6 +48,11 @@ const MARKS = "flex items-center gap-1";
 const EDGED = "border-l-2 border-l-theme bg-theme/5";
 const ROW_ROOM = "py-3";
 const VERSION_ARROW = "→";
+const NEXT_GATE = "flex flex-col gap-2 border-t border-theme-faint pt-3";
+const RATES = "flex flex-col gap-1.5";
+const RATE = "flex items-center justify-between gap-3";
+
+const RATE_COLOR: KantoColor = "viridian";
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const HOLD_COLOR: KantoColor = "cinnabar";
@@ -92,9 +102,17 @@ export type GateOutcomeTail =
 	| { choice: GateChoiceProps; ending?: never }
 	| { ending: GateEnding; choice?: never };
 
+export type NextGateRate = { label: string; gain: string };
+
+export type NextGateRates = {
+	title: string;
+	rates: readonly NextGateRate[];
+};
+
 export type GateOutcomeScreenProps = {
 	header: HeaderProps;
 	bar: CoverageBarProps;
+	nextGate?: NextGateRates;
 	outcome: CoverageBandId;
 	coverageHold?: string;
 	bonus?: GateOutcomeBonusPanel;
@@ -112,6 +130,7 @@ export type GateOutcomeScreenProps = {
 
 type CoveragePanelProps = {
 	bar: CoverageBarProps;
+	nextGate?: NextGateRates;
 	meter: CoverageBandId;
 	hold?: string;
 	bonus?: GateOutcomeBonusPanel;
@@ -119,8 +138,23 @@ type CoveragePanelProps = {
 	open?: boolean;
 };
 
+const NextGate = ({ title, rates }: NextGateRates) => (
+	<div className={NEXT_GATE}>
+		<Typography variant="hint">{title}</Typography>
+		<ul aria-label={title} className={RATES}>
+			{rates.map((rate) => (
+				<li key={rate.label} className={RATE}>
+					<Typography variant="caption">{rate.label}</Typography>
+					<Badge color={RATE_COLOR}>{rate.gain}</Badge>
+				</li>
+			))}
+		</ul>
+	</div>
+);
+
 const CoveragePanel = ({
 	bar,
+	nextGate,
 	meter,
 	hold,
 	bonus,
@@ -138,11 +172,12 @@ const CoveragePanel = ({
 		open={open}
 	>
 		{bonus === undefined ? null : (
-			<Typography variant="paragraph">
+			<Typography variant="prose">
 				<Figures text={bonus.detail} />
 			</Typography>
 		)}
 		<CoverageBar {...bar} pin />
+		{nextGate === undefined ? null : <NextGate {...nextGate} />}
 		{payouts === undefined ? null : (
 			<>
 				<Typography variant="hint">{WHAT_EACH_POLL_PAID}</Typography>
@@ -248,9 +283,28 @@ const EndingPanel = ({ title, detail }: GateEnding) => (
 	</Panel>
 );
 
+const RecapAsides = ({ asides = [] }: { asides?: readonly FooterAction[] }) =>
+	asides.length === 0 ? null : (
+		<div className={RECAP_ASIDES}>
+			{asides.map((aside) => (
+				<Button
+					key={aside.label}
+					size="lg"
+					tone="ambient"
+					label={aside.label}
+					icon={aside.icon}
+					iconAt={aside.iconAt}
+					disabled={aside.onPress === undefined}
+					onPress={aside.onPress}
+				/>
+			))}
+		</div>
+	);
+
 export const GateOutcomeScreen = ({
 	header,
 	bar,
+	nextGate,
 	outcome,
 	coverageHold,
 	bonus,
@@ -265,7 +319,7 @@ export const GateOutcomeScreen = ({
 	footer,
 	width = "default",
 }: GateOutcomeScreenProps) => {
-	const meter = coverageBandOf(bar.held, bar);
+	const meter = bar.band;
 	const settling = tail?.choice !== undefined;
 
 	const shut = <T extends GateOutcomePanel>(panel: T): T =>
@@ -274,6 +328,7 @@ export const GateOutcomeScreen = ({
 	const coveragePanel = (
 		<CoveragePanel
 			bar={bar}
+			nextGate={nextGate}
 			meter={meter}
 			hold={coverageHold}
 			bonus={bonus}
@@ -301,7 +356,12 @@ export const GateOutcomeScreen = ({
 				</div>
 			)}
 
-			{tail?.choice === undefined ? null : <GateChoice {...tail.choice} />}
+			{tail?.choice === undefined ? null : (
+				<GateChoice
+					{...tail.choice}
+					retry={{ ...footer.action, note: footer.note }}
+				/>
+			)}
 
 			{settling ? (
 				<section className={RECAP}>
@@ -316,6 +376,7 @@ export const GateOutcomeScreen = ({
 						{changesPanel}
 						{answersPanel}
 					</div>
+					<RecapAsides asides={footer.asides} />
 				</section>
 			) : (
 				<>
@@ -338,7 +399,7 @@ export const GateOutcomeScreen = ({
 
 			{tail?.ending === undefined ? null : <EndingPanel {...tail.ending} />}
 
-			<ScreenActions {...footer} />
+			{settling ? null : <ScreenActions {...footer} />}
 		</>
 	);
 

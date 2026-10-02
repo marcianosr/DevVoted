@@ -1,11 +1,11 @@
 ---
 # DVTD-fnuc
 title: An armed upgrade drops the designed version badge, and green text is hard to read
-status: todo
+status: scrapped
 type: feature
 priority: normal
 created_at: 2026-09-03T09:45:30Z
-updated_at: 2026-09-24T12:49:07Z
+updated_at: 2026-10-01T15:39:19Z
 parent: DVTD-cb52
 ---
 
@@ -55,3 +55,7 @@ Do the two tone names keep their current meaning, or does `viridian` become fill
 - Update the specs that assert on `text-viridian`
 - One line in the theme's own notes on what viridian and celadon each mean now
 - Verify: `npm run lint`, `npm run build`, stories tsconfig, `npm test`
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. IconButton, PriceTag, StatusBadge and ShopScreen.versionTag are gone; upgrades render Version badges (Upgrades.ui) and no green text classes remain.

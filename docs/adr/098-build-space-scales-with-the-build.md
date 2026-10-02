@@ -9,28 +9,27 @@ restates its decision 4. The ladder and its prices are untouched.
 ## Context
 
 ADR-082 Decision 1 made the bill the rung you *hold* rather than the weight you
-*use*, and argued it this way: a bill that only charges for room you have filled
-makes the empty half of a rung free, so there is never a reason to step back
-down, and widening stops being a decision.
+*use*, because a bill that only charges for filled room makes the empty half of
+a rung free, so there is never a reason to step back down and widening stops
+being a decision.
 
 The reasoning is sound. Its premise is not. It assumes headroom is worth
-something — that a player might rationally hold an 8 while using 5. Nothing in
+something, that a player might rationally hold an 8 while using 5. Nothing in
 the game pays for that. Rungs carry no perks, no prepayment discount and no
 commitment term, and the only thing a wider rung buys is the right to install
-something you have not installed yet, which you can buy at the moment you
-install it instead.
+something later, which you can buy at the moment you install it instead.
 
-So the dominant strategy at every shop is the same: hold the smallest rung that
-fits. Six gates of play never deviated from it. What the panel actually asked
-the player to do was perform that arithmetic by hand, every visit, and be
-punished for forgetting. That is a chore wearing the costume of a decision.
+So the dominant strategy at every shop is to hold the smallest rung that fits.
+Six gates of play never deviated from it. The panel asked the player to do that
+arithmetic by hand every visit and punished them for forgetting: a chore
+wearing the costume of a decision.
 
-Two alternatives were weighed before this one. A second billing mode
-(`serverless.yml` — pay per occupied weight at a higher rate) was drafted and
-dropped: a flat rate cannot sit above a doubling ladder at every size, so it
-made serverless strictly better from weight 16 up and reserved pointless. Giving
-rungs real perks was the other, and it adds a second axis of content to balance
-in exchange for keeping a panel nobody wanted to think about.
+Two alternatives were weighed. A second billing mode (`serverless.yml`, pay per
+occupied weight at a higher rate) was drafted and dropped: a flat rate cannot
+sit above a doubling ladder at every size, so it made serverless strictly
+better from weight 16 up and reserved pointless. Giving rungs real perks adds a
+second axis of content to balance in exchange for keeping a panel nobody wanted
+to think about.
 
 ## Decision
 
@@ -52,15 +51,14 @@ in exchange for keeping a panel nobody wanted to think about.
    actually made.
 
 2. **Crossing a rung arms the install press.** An offer that would widen the
-   rung states what it does before it commits: the press arms on the first
-   press, opens `Build space scales 4 → 6` / `Upkeep becomes 16 KB a gate`, and
-   installs on the second. An install that lands inside the rung already rented
-   is a single press with no panel.
+   rung arms on the first press, opens `Build space scales 4 → 6` / `Upkeep
+   becomes 16 KB a gate`, and installs on the second. An install that lands
+   inside the rung already rented is a single press with no panel.
 
    This is the whole cost of Decision 1. The player no longer opts into the bill
    by picking a rung, so the thing that creates the bill has to say so. A price
    on a button is what a config costs once; the rung it rents is what it costs
-   every gate after, and only the first of those fits on a button.
+   every gate after, and only the first fits on a button.
 
 3. **Room refuses nothing below the top rung.** `hasRoomFor` measures against
    the top of the ladder (32), because a build that does not fit its rung rents
@@ -70,14 +68,14 @@ in exchange for keeping a panel nobody wanted to think about.
 
 4. **A bill the balance cannot cover caps the build until it fits.** The run
    pays for the widest rung it can afford, and that space becomes a cap the shop
-   door holds it to — drop weight, or sell it — cleared when the run leaves the
+   door holds it to (drop weight, or sell it), cleared when the run leaves the
    shop. Never fatal: the free rung costs nothing.
 
    This is ADR-082 Decision 4 restated for a derived rung. Its original wording
-   drops the run to a cheaper rung, which is no longer a thing that can be done
-   to a run: the rung *is* the build. So the shortfall becomes the cap instead,
-   and ADR-082 Decision 3's door — the one lock on the exit — is what enforces
-   it. The player still chooses what comes off, and selling refunds half.
+   drops the run to a cheaper rung, which can no longer be done to a run: the
+   rung *is* the build. So the shortfall becomes the cap, and ADR-082 Decision
+   3's door, the one lock on the exit, enforces it. The player still chooses
+   what comes off, and selling refunds half.
 
 5. **`BUILD_SPACE_FROM_GATE` is deleted.** The ladder is no longer something the
    shop stocks, so there is no gate for it to open at. ADR-082 Decision 5 held
@@ -87,31 +85,30 @@ in exchange for keeping a panel nobody wanted to think about.
 
 ## Consequences
 
-**`Build.slots` is deleted rather than redefined.** ADR-082 changed its meaning
-from slots-bought to space-held; there is now no stored space at all, so nothing
-can drift from the build. `spaceForBuild` and `upkeepForBuild` live in
-`build.model.ts`, which already imported the ladder, so no new module edge.
-`RunState` is a JSON blob, so a saved run carrying a stale `slots` key is ignored
-with no migration.
+**`Build.slots` is deleted rather than redefined.** There is no stored space at
+all, so nothing can drift from the build. `spaceForBuild` and `upkeepForBuild`
+live in `build.model.ts`, which already imported the ladder, so no new module
+edge. `RunState` is a JSON blob, so a saved run carrying a stale `slots` key is
+ignored with no migration.
 
 **Vendor lock-in (ADR-087) keeps working with no new code.** The derivation reads
 `billableSlotsOf`, which already excludes the locked config, so the exemption
-still lowers the rung — and now lowers it visibly, since the rung follows.
+still lowers the rung, and now visibly.
 
 **The bill cannot be dodged.** It is assessed in `closeWindow`, and the shop is
-only open in `rewarding`, so there is no point between the last answer and the
-close at which a build can be sold down. The bill lands on the build the gate was
-actually run with, which is a more honest charge than reserved room ever was.
+only open in `rewarding`, so no build can be sold down between the last answer
+and the close. The bill lands on the build the gate was actually run with, a
+more honest charge than reserved room ever was.
 
 **The shortfall is measured after the subscriptions settle**, because a lapsed
-config sheds weight too — a build the lapse already shrank into the covered space
+config sheds weight too: a build the lapse already shrank into the covered space
 owes nothing further.
 
 **`BuildSpace.ui.tsx` is deleted**, with its story and spec, and the Build panel
 takes over the bill: its header reads `5 configs · 7 of 8 weight · 1 free before
-the bill becomes 64 KB · ↻ 32 KB a gate`. One surface owns the figure, as it did
-before. `upkeepLabelOf` moves to its own `upkeep.ts` — both the Build header and
-the weight track read it, and `Build.ui` imports `WeightTrack.ui`, so either
+the bill becomes 64 KB · ↻ 32 KB a gate`. One surface owns the figure.
+`upkeepLabelOf` moves to its own `upkeep.ts`: both the Build header and the
+weight track read it, and `Build.ui` imports `WeightTrack.ui`, so either home
 would have been a cycle.
 
 **New in the kit:** `InstallScale.ui.tsx` (the armed press's panel, which rides

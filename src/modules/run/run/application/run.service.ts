@@ -39,10 +39,26 @@ import {
 	fetchUnlockedConfigIds,
 	fetchUnlocksSince,
 } from "~/modules/run/config/infrastructure/configUnlock.repository";
-import { fetchUnlockedServiceIds } from "~/modules/run/shop/infrastructure/serviceUnlock.repository";
+import {
+	fetchServiceUnlocksSince,
+	fetchUnlockedServiceIds,
+} from "~/modules/run/shop/infrastructure/serviceUnlock.repository";
+
+const runStartOf = (run: SessionRunRecord): Date =>
+	run.started_at ?? new Date(0);
 
 const unlocksDuring = (run: SessionRunRecord) =>
-	fetchUnlocksSince(run.user_id, run.started_at ?? new Date(0));
+	fetchUnlocksSince(run.user_id, runStartOf(run));
+
+const accountReadsFor = async (run: SessionRunRecord) => {
+	const [archiveAfterKb, ownedSwatchIds, unlockedServiceIdsThisRun] =
+		await Promise.all([
+			fetchArchivedStorageKb(run.user_id),
+			fetchOwnedSwatchIds(run.user_id),
+			fetchServiceUnlocksSince(run.user_id, runStartOf(run)),
+		]);
+	return { archiveAfterKb, ownedSwatchIds, unlockedServiceIdsThisRun };
+};
 
 const withPollReads = async (
 	view: RunView,
@@ -59,17 +75,17 @@ const withPollReads = async (
 };
 
 const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
-	const [state, unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
+	const [state, unlockedThisRun, accountReads, unlockedServiceIds] =
 		await Promise.all([
 			loadRunState(run.id),
 			unlocksDuring(run),
-			fetchArchivedStorageKb(run.user_id),
+			accountReadsFor(run),
 			fetchUnlockedServiceIds(run.user_id),
 		]);
 	return withPollReads(
 		{
 			...toRunView(state, [], unlockedThisRun, [], unlockedServiceIds),
-			archiveAfterKb,
+			...accountReads,
 		},
 		run.user_id
 	);
@@ -91,7 +107,7 @@ const findResumableRun = async (
 	const snapshot = await fetchRunSnapshot(active.id);
 	if (snapshot) return active;
 
-	await abandonSessionRun(active.id, userId);
+	await abandonSessionRun(active.id);
 	await endIncidentsForRun(active.id);
 	return null;
 };
@@ -180,7 +196,7 @@ export const abandonRunService = async ({
 		const run = await findActiveSessionRun(userId);
 		if (!run) throw new Error("No active run");
 
-		await abandonSessionRun(run.id, userId);
+		await abandonSessionRun(run.id);
 		await endIncidentsForRun(run.id);
 		return { abandoned: true as const };
 	}, "abandonRun");
@@ -211,10 +227,10 @@ export const dispatchRunActionService = async ({
 			action,
 			settle: settle?.(run.id) ?? settleIncidents(run.id, date),
 		});
-		const [unlockedThisRun, archiveAfterKb, unlockedServiceIds] =
+		const [unlockedThisRun, accountReads, unlockedServiceIds] =
 			await Promise.all([
 				unlocksDuring(run),
-				fetchArchivedStorageKb(userId),
+				accountReadsFor(run),
 				fetchUnlockedServiceIds(userId),
 			]);
 		return withPollReads(
@@ -226,7 +242,7 @@ export const dispatchRunActionService = async ({
 					earnedTitleIds,
 					unlockedServiceIds
 				),
-				archiveAfterKb,
+				...accountReads,
 			},
 			userId
 		);

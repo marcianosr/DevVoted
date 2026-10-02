@@ -14,8 +14,7 @@ const ROW = "flex w-full flex-wrap items-center gap-2";
 const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
 const TRACK = "flex shrink-0 items-center gap-1";
 const TAG = "shrink-0";
-const SCORE =
-	"ml-auto flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto";
+const SCORE = "ml-auto flex shrink-0 items-center justify-end gap-2";
 const EMPTY =
 	"inline-flex items-center justify-center rounded-md border-dashed px-2 py-0.5 text-xs font-bold tabular-nums";
 const WAITING = "border border-theme-faint text-theme-muted";
@@ -24,9 +23,11 @@ const CURRENT = "border-2 border-theme bg-theme-raised text-theme-faint";
 const SWATCH_SIZE = "small";
 const CORRECT_WORD = "correct";
 const PAID_WORD = "paid";
-const OUT_OF = "out of";
+const OF_WORD = "of";
+const RIGHT_WORD = "right";
+const NAME_JOIN = " · ";
 const POLL_WORD = "poll";
-const TOTAL_WORD = "Total units";
+const TOTAL_WORD = "Covered";
 
 export type PollPaid = {
 	figure: string;
@@ -37,6 +38,7 @@ export type PollPaid = {
 export type PollPayouts = {
 	slots: readonly (PollPaid | undefined)[];
 	total: string;
+	multiplier?: string;
 };
 
 export type PollScoreTag = { label: string; color?: KantoColor };
@@ -55,15 +57,16 @@ export type PollScoresProps = {
 	rows: readonly PollScoreRow[];
 };
 
-const answeredOf = (payouts: PollPayouts): number =>
-	payouts.slots.filter((paid) => paid !== undefined).length;
+const rightOf = (row: PollScoreRow): string =>
+	`${row.correct} ${OF_WORD} ${row.polls} ${RIGHT_WORD}`;
 
-const labelOf = (row: PollScoreRow): string => {
+const labelOf = (row: PollScoreRow, named: boolean): string => {
 	if (row.label !== undefined) return row.label;
+	if (row.payouts === undefined) return row.swatch.gateName;
 
-	return row.payouts === undefined
-		? row.swatch.gateName
-		: `${answeredOf(row.payouts)} ${OUT_OF} ${row.polls}`;
+	return named
+		? `${row.swatch.gateName}${NAME_JOIN}${rightOf(row)}`
+		: rightOf(row);
 };
 
 const scoreOf = (row: PollScoreRow): string =>
@@ -150,7 +153,7 @@ const Track = ({ row }: { row: PollScoreRow }) => {
 	);
 };
 
-const Row = ({ row }: { row: PollScoreRow }) => (
+const Row = ({ row, named }: { row: PollScoreRow; named: boolean }) => (
 	<div
 		data-gate-theme={row.swatch.theme}
 		aria-label={`${row.swatch.gateName} — ${readingOf(row)}`}
@@ -159,7 +162,7 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 		<Swatch size={SWATCH_SIZE} {...markFor(row)} />
 
 		<span className={LABEL}>
-			<Typography variant="caption">{labelOf(row)}</Typography>
+			<Typography variant="caption">{labelOf(row, named)}</Typography>
 		</span>
 
 		<span
@@ -182,6 +185,9 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 				</Typography>
 			)}
 			<Badge>{scoreOf(row)}</Badge>
+			{row.payouts?.multiplier === undefined ? null : (
+				<Badge>{row.payouts.multiplier}</Badge>
+			)}
 		</span>
 	</div>
 );
@@ -189,7 +195,7 @@ const Row = ({ row }: { row: PollScoreRow }) => (
 export const PollScores = ({ rows }: PollScoresProps) => (
 	<div className={COLUMN}>
 		{rows.map((row) => (
-			<Row key={row.swatch.gateName} row={row} />
+			<Row key={row.swatch.gateName} row={row} named={rows.length > 1} />
 		))}
 	</div>
 );

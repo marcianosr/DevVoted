@@ -1,18 +1,20 @@
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 
-export type VerdictOutcome = "correct" | "partial" | "wrong";
+export type VerdictOutcome = "correct" | "partial" | "wrong" | "skipped";
 
 export const VERDICT_COLOR = {
 	correct: "viridian",
 	partial: "saffron",
 	wrong: "cinnabar",
+	skipped: "pewter",
 } satisfies Record<VerdictOutcome, KantoColor>;
 
 const VERDICT_WORD = {
 	correct: "PASS",
 	partial: "PART",
 	wrong: "FAIL",
+	skipped: "SKIP",
 } satisfies Record<VerdictOutcome, string>;
 
 const RUNG_FIGURE = new Map([

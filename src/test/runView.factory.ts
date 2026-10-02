@@ -14,6 +14,7 @@ import type {
 	ShopOffer,
 } from "~/modules/run/run/application/runView.viewmodel";
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type { GateCloseView } from "~/modules/run/run/application/gateClose.viewmodel";
 import type { GatePayout } from "~/modules/run/run/application/gatePayout.viewmodel";
 import type { ShopControls } from "~/modules/run/run/application/shopControls.viewmodel";
 import type { PaidActions } from "~/modules/run/run/application/paidActions.viewmodel";
@@ -74,7 +75,6 @@ export const createMockShopOffer = (
 		coveragePerCorrect: 2,
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
-		streakStepMultiplier: 1.1,
 	},
 	...overrides,
 });
@@ -91,6 +91,7 @@ export const createMockShopControls = createMockDataFactory<ShopControls>({
 	extendCost: 48,
 	canExtend: false,
 	shopLocked: false,
+	shopSkipped: false,
 	skipPayoutKb: 16,
 	canSkip: true,
 	pinAvailable: false,
@@ -114,21 +115,32 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	spaceDroppedTo: null,
 	gateRewardPaidKb: 0,
 	clearThisGateKb: 0,
+	perfectBonusThisGateKb: 0,
 	overflowThisGateKb: 0,
-	streakAtClose: null,
 	storageBeforeClearKb: null,
 	faucetThisGateKb: 0,
 	escrowCommittedKb: 0,
 	escrowRolledBackKb: 0,
-	heldBy: null,
 	caughtFatalBy: null,
 	slaUpliftKb: 0,
 	incidentSurvivalKb: 0,
 	interestThisGateKb: 0,
 	extraPickThisGateKb: 0,
 	clearedGateNumber: 0,
-	clearedGateLadder: { floor: 0, ok: 0, healthy: 5 },
-	clearedCoverageHeld: 0,
+});
+
+export const createMockGateClose = createMockDataFactory<GateCloseView>({
+	gate: 0,
+	closing: "cleared",
+	heldBy: null,
+	band: "healthy",
+	cleared: true,
+	held: 30,
+	ladder: { floor: 5, ok: 15, healthy: 25 },
+	correct: 5,
+	kb: 0,
+	unlockedConfigIds: [],
+	earnedTitleIds: [],
 });
 
 export const createMockPaidActions = createMockDataFactory<PaidActions>({
@@ -154,7 +166,13 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 	coverageLadder: { floor: 0, ok: 0, healthy: 5 },
 	coverageHeld: 0,
 	coverageAtOpen: 0,
-	unitsHeld: 0,
+	accuracy: {
+		polls: [],
+		pending: 5,
+		available: null,
+		guaranteed: 1,
+		best: 2,
+	},
 	audits: [],
 	peelSlotsOnFailure: 1,
 	peelConfigsOnFailure: { fewest: 1, most: 1 },
@@ -170,7 +188,6 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 		coveragePerCorrect: 2,
 		coveragePerWrong: -0.3,
 		storageKbPerCorrect: 0,
-		streakStepMultiplier: 1.1,
 	},
 });
 
@@ -190,6 +207,8 @@ const createRunView = createMockDataFactory<RunView>({
 	unlockedThisRun: [],
 	earnedTitleIds: [],
 	unlockedServiceIds: [...REGISTRY_CONTROL_IDS],
+	unlockedServiceIdsThisRun: [],
+	ownedSwatchIds: [],
 	warmBoot: null,
 	peelSlotsRemaining: 0,
 	peelRefundKb: 0,
@@ -207,6 +226,7 @@ const createRunView = createMockDataFactory<RunView>({
 	categoryHidden: false,
 	meterHidden: false,
 	pollTimeLimitMs: null,
+	fastAnswer: null,
 	currentPollPeeked: false,
 	correctAnswersThisGate: null,
 	correctCountSource: null,
@@ -217,7 +237,6 @@ const createRunView = createMockDataFactory<RunView>({
 	sla: null,
 	slaBand: null,
 	correctThisGate: 0,
-	scoredThisGate: 0,
 	upcomingCategories: null,
 	nextGateCategories: null,
 	answerTypesThisGate: null,
@@ -244,6 +263,7 @@ const createRunView = createMockDataFactory<RunView>({
 	swatchGates: [],
 	victoryGate: 12,
 	closes: [],
+	lastClose: null,
 	fullClearKb: 40,
 	atMinimumWidth: false,
 	pollsAnswered: 0,
@@ -255,6 +275,8 @@ const createRunView = createMockDataFactory<RunView>({
 	buildSpace: {
 		space: BASE_SLOTS,
 		weight: 0,
+		freeWeight: BASE_SLOTS,
+		emptyCreditKb: 0,
 		perGateKb: 0,
 		coveredSpace: null,
 	},

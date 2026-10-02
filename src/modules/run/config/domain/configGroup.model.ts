@@ -29,7 +29,6 @@ const helpsAnswer = (config: Config): boolean =>
 	config.revealsCorrectCount !== undefined ||
 	config.revealsUpcomingCategories !== undefined ||
 	config.reordersGatePolls !== undefined ||
-	config.projectsGateOutcome !== undefined ||
 	config.submitsCrowdPick !== undefined ||
 	config.revealsOutageTargets !== undefined;
 

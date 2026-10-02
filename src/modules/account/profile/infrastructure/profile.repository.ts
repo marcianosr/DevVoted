@@ -1,4 +1,4 @@
-import { and, count, countDistinct, eq, inArray, sql } from "drizzle-orm";
+import { and, count, countDistinct, eq, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { pollResponsesTable, pollsTable, usersTable } from "~/database/schema";
@@ -15,29 +15,6 @@ export const fetchUserDisplayName = async (
 		.limit(1);
 
 	return user?.displayName ?? null;
-};
-
-export type PublicUser = {
-	id: string;
-	displayName: string;
-	photoUrl: string | null;
-	githubUsername: string | null;
-};
-
-export const fetchUsersByDisplayNames = async (
-	displayNames: string[]
-): Promise<PublicUser[]> => {
-	const users = await db
-		.select({
-			id: usersTable.id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			githubUsername: usersTable.github_username,
-		})
-		.from(usersTable)
-		.where(inArray(usersTable.display_name, displayNames));
-
-	return users;
 };
 
 export type PublicProfileRow = {
@@ -157,19 +134,6 @@ export const purchaseBorderTx = async (
 		return row ?? null;
 	});
 
-export const setEquippedBorder = async (
-	userId: string,
-	borderId: string | null
-): Promise<UserArchiveState | null> => {
-	const [row] = await db
-		.update(usersTable)
-		.set({ equipped_border_id: borderId })
-		.where(eq(usersTable.id, userId))
-		.returning(archiveColumns);
-
-	return row ?? null;
-};
-
 export const setEquippedLook = async (
 	userId: string,
 	look: Look
@@ -179,25 +143,14 @@ export const setEquippedLook = async (
 		.set({
 			equipped_border_id: look.borderId,
 			equipped_title_ids: [...look.titleIds],
+			equipped_swatch_id: look.swatchId,
 		})
 		.where(eq(usersTable.id, userId))
 		.returning({
 			borderId: usersTable.equipped_border_id,
 			titleIds: usersTable.equipped_title_ids,
+			swatchId: usersTable.equipped_swatch_id,
 		});
-
-	return row ?? null;
-};
-
-export const setEquippedSwatch = async (
-	userId: string,
-	swatchId: string | null
-): Promise<UserArchiveState | null> => {
-	const [row] = await db
-		.update(usersTable)
-		.set({ equipped_swatch_id: swatchId })
-		.where(eq(usersTable.id, userId))
-		.returning(archiveColumns);
 
 	return row ?? null;
 };

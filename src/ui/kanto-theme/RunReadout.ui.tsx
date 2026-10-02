@@ -21,7 +21,7 @@ export const RunReadout = ({ runNumber, gate, gates }: RunReadoutProps) => (
 			<>
 				{COPY.run}
 				<Badge>{`#${runNumber}`}</Badge>
-				{COPY.divider}
+				<span aria-hidden>{COPY.divider}</span>
 			</>
 		)}
 		{COPY.gate}

@@ -1,3 +1,4 @@
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 import {
@@ -16,7 +17,6 @@ import {
 	VICTORY_GATE,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
-	upkeepForSpace,
 	BASE_SLOTS,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
@@ -79,7 +79,13 @@ import { pollPayoutRows } from "~/test/swatchTrack.factory";
 
 export type GateOutcomeFixture = Omit<
 	GateOutcomeFrame,
-	"bar" | "payoutKb" | "bonusKb" | "faucetKb" | "billKb" | "swatchGates"
+	| "bar"
+	| "payoutKb"
+	| "bonusKb"
+	| "faucetKb"
+	| "billKb"
+	| "swatchGates"
+	| "closing"
 > & {
 	openingHeld?: number;
 };
@@ -106,14 +112,14 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 	const { openingHeld: _openingHeld, ...frame } = fixture;
 	const ratio = heldRatioOf(fixture);
 	const band = bandFor(ratio, fixture.gate).id;
-	const clears = clearsAt(band, fixture.gate) && fixture.heldBy !== "unscored";
+	const clears = clearsAt(band, fixture.gate) && fixture.heldBy === undefined;
+	const closing = clears
+		? "cleared"
+		: band === "danger" && fixture.heldBy === undefined
+			? "fatal"
+			: "held";
 	const payoutKb = clears
-		? gatePayoutKb(
-				ratio,
-				fixture.gate,
-				occupiedSlots(fixture.configs),
-				fixture.streak ?? 0
-			)
+		? gatePayoutKb(ratio, fixture.gate, occupiedSlots(fixture.configs))
 		: 0;
 	const correct = fixture.answers.filter(
 		(answer) => answer.outcome === "correct"
@@ -121,12 +127,13 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 
 	return {
 		...frame,
+		closing,
 		swatchGates: correct >= SLICE_WINDOW ? [fixture.gate] : [],
-		bar: ladderBarFor(fixture),
+		bar: { ...ladderBarFor(fixture), band },
 		payoutKb,
 		bonusKb: payoutKb - Math.round(payoutKb / PERFECT_BONUS),
 		faucetKb: faucetKbPerCorrect(fixture.configs) * correct,
-		billKb: clears ? upkeepForSpace(fixture.buildSpace ?? BASE_SLOTS) : 0,
+		billKb: clears ? rungFitting(fixture.buildSpace ?? BASE_SLOTS).kb : 0,
 	};
 };
 
@@ -277,12 +284,12 @@ export const HEALTHY_ANSWERS = outcomesAt(
 
 export const OK_ANSWERS = outcomesAt(
 	["correct", "correct", "wrong", "partial", "correct"],
-	58
+	46
 );
 
 export const SHAKY_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "partial", "correct"],
-	52
+	30
 );
 
 export const UNSCORED_ANSWERS = outcomesAt(
@@ -303,7 +310,6 @@ const outcomeFrame = (
 	balanceBeforeKb: 102,
 	buildSpace: 1,
 	configs: LAVENDER_BUILD,
-	streak: 3,
 	auditIds: ["cost-overrun"],
 	unlocked: [
 		{
@@ -327,7 +333,7 @@ const outcomeFrame = (
 });
 
 export const kantoGatePerfect = (): GateOutcomeScreenProps =>
-	kantoGateOutcomeAt(outcomeFrame({ answers: PERFECT_ANSWERS, streak: 4 }));
+	kantoGateOutcomeAt(outcomeFrame({ answers: PERFECT_ANSWERS }));
 
 export const kantoGateHealthy = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(outcomeFrame());
@@ -346,7 +352,6 @@ export const kantoGateHeldUnscored = (): GateOutcomeScreenProps =>
 			answers: UNSCORED_ANSWERS,
 			openingHeld: 58,
 			heldBy: "unscored",
-			scoredUnits: 1,
 			balanceBeforeKb: 12,
 		})
 	);
@@ -417,6 +422,34 @@ export const kantoGateDanger = (): GateOutcomeScreenProps =>
 		outcomeFrame({ answers: DANGER_ANSWERS, balanceBeforeKb: 41 })
 	);
 
+const CAUGHT_BUILD: readonly Config[] = [CONFIGS.tryCatch, ...LAVENDER_BUILD];
+
+const caughtFrame = (chosen: readonly string[] = []): GateOutcomeFixture =>
+	outcomeFrame({
+		answers: DANGER_ANSWERS,
+		balanceBeforeKb: 192,
+		configs: CAUGHT_BUILD,
+		heldBy: "catch",
+		caughtFatalBy: CONFIGS.tryCatch.label,
+		peelSlotsRemaining: Math.max(
+			peelQuotaSlotsFor(
+				occupiedSlots(CAUGHT_BUILD),
+				failPeelShareFor(OUTCOME_GATE),
+				OUTCOME_GATE
+			),
+			slotsOf(CONFIGS.tryCatch)
+		),
+		chosen,
+	});
+
+export const kantoGateCaught = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(caughtFrame());
+
+export const kantoGateCaughtDropped = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(caughtFrame([CONFIGS.tryCatch.id]));
+
+export const kantoGateCaughtFrame = caughtFrame;
+
 export const kantoGateOutcomeOpen = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(outcomeFrame({ open: true }));
 
@@ -428,7 +461,6 @@ export const kantoGateZero = (): GateOutcomeScreenProps =>
 			balanceBeforeKb: 0,
 			buildSpace: 0,
 			configs: [CONFIGS.js, CONFIGS.unitTests],
-			streak: 5,
 			auditIds: [],
 			unlocked: [],
 			titles: [],
@@ -446,7 +478,6 @@ export const kantoGateWon = (): GateOutcomeScreenProps =>
 			balanceBeforeKb: 4096,
 			buildSpace: 3,
 			configs: CONFIG_LIST.slice(0, 4),
-			streak: 12,
 			auditIds: [],
 			won: true,
 		})
@@ -459,7 +490,6 @@ export const kantoGateSummit = (): GateOutcomeScreenProps =>
 			balanceBeforeKb: 1024,
 			buildSpace: 3,
 			configs: CONFIG_LIST.slice(0, 4),
-			streak: 9,
 			auditIds: ["timeout"],
 		})
 	);

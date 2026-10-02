@@ -7,9 +7,11 @@ ladder that [ADR-076](076-the-closing-band-decides-what-it-costs.md) now owns.
 Decision 3's "the swatch is untouched" consequence is reversed there: a perfect
 clear marks its swatch.
 
-**Stated, not routed**: the prep and gate-outcome screens name the outcome and
-the payout is live, but `survivesGate` still answers with one boolean and
-nothing reads the band to resolve a gate.
+**Routed 2026-10-01** (DVTD-y1hw): the close pays `perfectBonusOnClear`, half
+the clear again on a PERFECT band, leaving out what configs pay flat on a clear.
+It rides in `gateRewardKb` as `perfectBonusThisGateKb`, prep's PERFECT row quotes
+it, and the gate result's bonus panel shows it. The `gatePayoutKb` formula in
+Decision 2 has no production caller; only test fixtures still use it.
 
 ## Context
 

@@ -1,5 +1,3 @@
-import { useNavigate } from "@tanstack/react-router";
-
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import {
 	INCIDENTS_DEALING,
@@ -8,6 +6,7 @@ import {
 } from "~/modules/run/incident/application/incident.viewmodel";
 import { useIncidentsFeed } from "~/modules/run/incident/application/useIncidentsFeed.hook";
 import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
+import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import type { FileHand } from "~/modules/run/community/application/climbLadder.viewmodel";
@@ -37,7 +36,7 @@ const EMPTY_COMMUNITY: RunCommunityView = {
 };
 
 export const RunCommunity = () => {
-	const navigate = useNavigate();
+	const goTo = useRunNavigation();
 	const { view: run } = useTodaysRun();
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
@@ -51,7 +50,7 @@ export const RunCommunity = () => {
 	const backTarget = returnFromCommunity(run ?? null);
 	const back = {
 		label: backTarget.label,
-		onBack: () => navigate({ to: backTarget.path }),
+		onBack: () => goTo(backTarget.path),
 		disabled: waitingForTomorrow,
 		hint: waitingForTomorrow ? SPENT_HINT : undefined,
 	};

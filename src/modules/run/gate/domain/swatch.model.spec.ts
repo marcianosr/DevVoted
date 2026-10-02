@@ -4,6 +4,7 @@ import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import {
 	ALL_SWATCHES,
 	GATE_SWATCHES,
+	gatesClearedBy,
 	hasThemeColor,
 	swatchesEarnedFrom,
 	swatchForGate,
@@ -101,7 +102,7 @@ describe("swatchesEarnedFrom", () => {
 		expect(swatchesEarnedFrom([])).toEqual([]);
 	});
 
-	it("names the swatch of every gate the run answered flawlessly", () => {
+	it("names the swatch of every gate the run closed on a full bar", () => {
 		expect(swatchesEarnedFrom([0]).map((swatch) => swatch.name)).toEqual([
 			"Pallet Swatch",
 		]);
@@ -124,5 +125,22 @@ describe("swatchesEarnedFrom", () => {
 		const everyGate = ALL_SWATCHES.map((swatch) => swatch.gate);
 
 		expect(swatchesEarnedFrom(everyGate)).toHaveLength(GATE_COUNT);
+	});
+});
+
+describe("gatesClearedBy", () => {
+	it("reads no gate off a player who owns no swatch", () => {
+		expect(gatesClearedBy([])).toEqual([]);
+	});
+
+	it("reads each owned swatch back to its gate, in climb order", () => {
+		const owned = [swatchForGate(3), swatchForGate(0)].flatMap((swatch) =>
+			swatch === undefined ? [] : [swatch.id]
+		);
+		expect(gatesClearedBy(owned)).toEqual([0, 3]);
+	});
+
+	it("ignores an id that names no swatch", () => {
+		expect(gatesClearedBy(["not-a-swatch"])).toEqual([]);
 	});
 });

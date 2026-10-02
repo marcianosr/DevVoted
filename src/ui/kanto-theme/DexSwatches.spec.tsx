@@ -81,7 +81,7 @@ describe("DexSwatches", () => {
 
 		expect(
 			within(detail(container)).getByText(
-				"Answer all five polls of this gate to mint it."
+				"Cover every change this gate ships to mint it."
 			)
 		).toBeVisible();
 	});
@@ -90,7 +90,7 @@ describe("DexSwatches", () => {
 		const { container } = render(<DexSwatches {...dexSwatchesProps()} />);
 
 		expect(
-			within(detail(container)).getByText("Minted. You answered all five.")
+			within(detail(container)).getByText("Minted. You covered every change.")
 		).toBeVisible();
 	});
 

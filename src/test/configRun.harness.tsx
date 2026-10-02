@@ -15,10 +15,7 @@ import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import { StartView } from "~/modules/run/build/presentation/StartView.component";
-import {
-	GateOutcomeView,
-	type GateVerdict,
-} from "~/modules/run/gate/presentation/GateOutcomeView.component";
+import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView.component";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { PrepView } from "~/modules/run/run/presentation/PrepView.component";
 import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
@@ -245,7 +242,7 @@ export const asPoll = (state: RunState) => {
 			view={view}
 			selectedOptionIds={[]}
 			onSelect={noop}
-			onSubmit={noop}
+			onAnswer={noop}
 			onNext={noop}
 			onPress={noop}
 			onUnseal={noop}
@@ -263,7 +260,7 @@ export const asAnswered = (state: RunState) => {
 			answered={answered}
 			selectedOptionIds={[]}
 			onSelect={noop}
-			onSubmit={noop}
+			onAnswer={noop}
 			onNext={noop}
 		/>
 	);
@@ -315,13 +312,14 @@ export const asShop = (state: RunState) => (
 	/>
 );
 
-export const asGateOutcome = (
-	state: RunState,
-	verdict: GateVerdict = "cleared"
-) => (
+const closedIfFull = (state: RunState): RunState =>
+	state.status === "answering"
+		? runReducer(state, { type: "close-gate" })
+		: state;
+
+export const asGateOutcome = (state: RunState) => (
 	<GateOutcomeView
-		view={toRunView(state)}
-		verdict={verdict}
+		view={toRunView(closedIfFull(state))}
 		onReview={noop}
 		onNext={noop}
 	/>

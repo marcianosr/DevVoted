@@ -15,72 +15,66 @@ only.
 
 ADR-072 put the stakes first and the build away, which was right. It then spent
 the whole page saying so: a coverage bar across the header, a five-row table
-under it whose third column ran to a sentence per row, and a two-row ledger
-pricing a single answer. Read end to end, prep said the same thing in three
-registers before the player could act on any of it.
+whose third column ran to a sentence per row, and a two-row ledger pricing a
+single answer. Prep said the same thing in three registers before the player
+could act on any of it.
 
-New run had the same problem from the other end. It drew the build twice — a
-readout with no list beside a list with no readout — stacked a dashed box per
-free slot under a track that already drew them, and then closed on the same band
-table prep opens with, for a gate whose build was still being assembled.
+New run drew the build twice, a readout with no list beside a list with no
+readout, stacked a dashed box per free slot under a track that already drew
+them, and closed on the same band table prep opens with.
 
-Both screens are header, two columns, footer. Neither needs to say a thing twice
-to get there.
+Both screens are header, two columns, footer. Neither needs to say a thing twice.
 
 ## Decision
 
 1. **Prep is two columns.** Objectives and rewards on the left, the five polls
-   and the gate's audits on the right. The same grid the New run screen uses, so
-   the two screens either side of a gate do not re-teach their layout.
+   and the gate's audits on the right. The same grid New run uses, so the two
+   screens either side of a gate do not re-teach their layout.
 
 2. **The band table is three columns: band, coverage, pays.** Superseded by
    [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md): the ladder's zones carry the band and its figure.
 
 3. **What the table cannot say per row it says once, above and below.** A lead
-   line names the bands that win the gate and the bands that cost; a footnote
-   says where a pay lands and what a peel is settled in. Two sentences replace
-   five.
+   line and a footnote replace the per-row prose. Superseded by
+   [ADR-136](136-the-stakes-column-leads-with-the-reward.md).
 
 4. **Every band quotes one figure, not a range.** SHAKY quotes the peel as a
    negative, per ADR-076 decision 6, and DANGER says `the run ends` rather than
-   being paid `Nothing` — a nil payout and a finished run are different facts
+   being paid `Nothing`: a nil payout and a finished run are different facts
    and the column was collapsing them.
 
 5. **The bar moves off the header into the outcomes panel.** Superseded by
    [ADR-149](149-prep-reads-the-stakes-as-a-ladder-and-seals-the-gates-ahead.md): At stake draws the ladder itself.
 
-6. **The band table is prep's alone.** The New run screen drew the same five rows
-   one screen earlier, for a gate whose build was still being assembled and whose
-   polls had not been dealt. Two screens in a row opening on the same table made
-   the second one furniture. New run states what it is for — pick a build — and
-   its footer names where the stakes are read: *Prep shows what Pallet asks
-   before anything is locked.*
+6. **The band table is prep's alone.** New run drew the same five rows one
+   screen earlier, for a gate whose build was still being assembled and whose
+   polls had not been dealt, which made the second screen furniture. New run
+   states what it is for, pick a build, and its footer names where the stakes
+   are read: *Prep shows what Pallet asks before anything is locked.*
 
 7. **New run is the same two columns, in the shop's order: the build left, the
-   deal right.** It drew the build twice, once as a readout without its list and
-   once as a list without its readout, which is what put an empty box column under
+   deal right.** Drawing the build twice is what put an empty box column under
    one and a bare "nothing installed yet" under the other.
 
    The deal is listed by the shop's `Registry`, titled **Registry**, and `Hand` is
-   deleted. The two sections had one job — offer configs you can install — in two
-   components with mirrored column positions, so a player crossing from New run to
-   the shop had to relearn where the offers live. The registry prices New run's
-   deal *free*, because the hand costs room and not storage; the shop's own
-   per-slot price is unchanged.
+   deleted. Both offered configs to install, in two components with mirrored
+   column positions, so a player crossing from New run to the shop had to
+   relearn where the offers live. The registry prices New run's deal *free*,
+   because the hand costs room and not storage; the shop's per-slot price is
+   unchanged.
 
 8. **A slot that is merely empty gets no row.** The track already draws free room
-   as dashed segments, so a stack of `empty slot` boxes says the same thing
-   twice, the second time at four times the height. The one box that carries the
-   refund press survives, because a press is not a reading. `Build` takes
-   `emptySlots` for this, and `configCount` for the readout: where the chips are
-   listed directly underneath, counting them in the heading is the same
-   doubling.
+   as dashed segments, so `empty slot` boxes say it twice at four times the
+   height. The one box that carries the refund press survives, because a press
+   is not a reading. `Build` takes `emptySlots` for this, and `configCount` for
+   the readout: where the chips are listed directly underneath, counting them in
+   the heading is the same doubling.
 
 9. **The ladder quotes the rung after the one it sells.** Under the buyable
-   offer sits the next slot and its price, dimmed, unhatched and unpressable —
-   `SlotOffer`'s `locked` form, the shape `WeightOffer` already had. Buying is one
-   rung at a time and the ladder steps, so the price after this one is the thing
-   a player wants before spending.
+   offer sits the next slot and its price, dimmed, unhatched and unpressable:
+   `SlotOffer`'s `locked` form, the shape `WeightOffer` already had. Buying is
+   one rung at a time, so the price after this one is what a player wants
+   before spending.
 
 10. **"What it takes" comes off the screen.** Superseded by [ADR-139](139-prep-prices-a-poll-and-draws-the-codebase.md): prep
    prices a single, a focus and a multiple answer again, in units and as a
@@ -96,23 +90,21 @@ to get there.
 
 **Two bands can quote the same figure.** `gateClearPayout` scales on correct
 answers, not on coverage, so a build strong enough to clear HEALTHY on one right
-answer pays OK and HEALTHY the same. That is the engine telling the truth: at
-that build there is nothing to choose between the two landings. It also means
-ADR-076 decision 3 — "OK is priced by `payoutRatioFor`, so closing at 30%
-against a 40% line already pays 0.75x" — describes an engine nothing pays
+answer pays OK and HEALTHY the same. That is the engine telling the truth. It
+also means ADR-076 decision 3 ("OK is priced by `payoutRatioFor`, so closing at
+30% against a 40% line already pays 0.75x") describes an engine nothing pays
 through. `payoutRatioFor` and `gatePayoutKb` exist in `coverageRatio.model.ts`
 and no run reaches them. **Unresolved**: either the live payout moves onto
 coverage, or ADR-076 decision 3 is rewritten to say what `gateClearPayout` does.
 
 **New run and prep each have one job.** New run picks a build; prep prices the
-gate. The pair used to overlap on the band table and on the build readout, and a
-player walking New run → prep met the same five rows twice in a row. The handoff
-is now a sentence in New run's footer rather than a repeat of prep's opener.
+gate. The handoff is a sentence in New run's footer rather than a repeat of
+prep's opener.
 
-**Prep has its shop link back, so ADR-032 is whole again.** 072 left this open:
-its screen dropped "← Back to shop" while ADR-032 rested on it. `PrepView`
-supplies the aside, and names it for wherever the player came from — the build
-before the first gate, the shop after every later one.
+**Prep has its shop link back, so ADR-032 is whole again.** 072's screen dropped
+"← Back to shop" while ADR-032 rested on it. `PrepView` supplies the aside, and
+names it for wherever the player came from: the build before the first gate,
+the shop after every later one.
 
 **A new run walks through prep.** `/proto-run` holds a `startStep` of its own
 and shows prep between the build and the first five polls, which is what lets

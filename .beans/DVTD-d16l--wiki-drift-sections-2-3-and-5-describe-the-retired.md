@@ -1,11 +1,11 @@
 ---
 # DVTD-d16l
 title: 'Wiki drift: sections 2, 3 and 5 describe the retired model'
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-09-12T12:58:47Z
-updated_at: 2026-09-14T17:08:51Z
+updated_at: 2026-10-01T15:39:19Z
 ---
 
 `docs/wiki.md` states the current rules, and after ADR-071, ADR-073 and ADR-074
@@ -52,3 +52,7 @@ A grep for `slot ladder`, `storage plan`, `buy a slot`, `cash a slot`,
 `24 slots` and `over capacity` now returns one deliberate historical mention.
 
 Still open: sections 2 and 5 drift that is NOT about width (this bean's other half).
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. Wiki §2.6 has been rewritten as How a gate closes (ADR-157/159/161), and the future rules this bean listed were superseded themselves.

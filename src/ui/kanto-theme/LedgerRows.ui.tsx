@@ -2,6 +2,7 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import type { IconName } from "./Icon.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
 import { type Redactable, SealedFigure } from "./Redaction.ui";
@@ -47,6 +48,7 @@ export type LedgerTag = { label: string; color?: KantoColor };
 export type LedgerRow = {
 	lead?: string;
 	label?: string;
+	config?: ConfigChipProps;
 	verdict?: VerdictOutcome;
 	share?: number;
 	tags?: readonly LedgerTag[];
@@ -109,6 +111,9 @@ const Row = ({
 			)}
 			<span className={IDENTITY}>
 				{row.lead === undefined ? null : <Badge>{row.lead}</Badge>}
+				{row.config === undefined ? null : (
+					<ConfigChip {...row.config} compact />
+				)}
 				{row.label === undefined ? null : (
 					<span className={row.total === true ? LABEL_TOTAL : LABEL}>
 						{row.label}

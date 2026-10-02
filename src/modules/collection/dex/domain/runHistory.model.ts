@@ -1,6 +1,6 @@
 import {
 	bandFor,
-	runCoverageOf,
+	runShareOf,
 	type CoverageBandId,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
@@ -28,7 +28,7 @@ export type RunHistoryEntry = {
 };
 
 const readingOf = (row: RunHistoryRow): number =>
-	runCoverageOf(row.coverage, row.gatesCleared);
+	runShareOf(row.coverage, row.gatesCleared);
 
 const heldByFor = (row: RunHistoryRow, won: boolean): string | null =>
 	won ? null : (swatchForGate(row.gatesCleared)?.gateName ?? null);

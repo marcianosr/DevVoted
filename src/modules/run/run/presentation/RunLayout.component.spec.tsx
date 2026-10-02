@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+
+import { createTestQueryClient } from "~/test/queryClient.harness";
 import {
 	createMemoryHistory,
 	createRootRoute,
@@ -84,9 +86,7 @@ const renderRunRoutes = (initialPath: string) => {
 		]),
 		history: createMemoryHistory({ initialEntries: [initialPath] }),
 	});
-	const queryClient = new QueryClient({
-		defaultOptions: { queries: { retry: false } },
-	});
+	const queryClient = createTestQueryClient();
 	render(
 		<QueryClientProvider client={queryClient}>
 			<RouterProvider router={router} />

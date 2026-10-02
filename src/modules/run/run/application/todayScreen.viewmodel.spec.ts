@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
+import {
+	createMockGateStake,
+	createMockRunView,
+	createMockShopControls,
+} from "~/test/runView.factory";
 import {
 	climbersAtOrPast,
 	communityLineFor,
@@ -165,7 +169,7 @@ describe(runSoFarFor, () => {
 		{ gate: 2, band: "ok", cleared: true, kb: 13 },
 	] as const;
 
-	it("lists every closed gate with its grade and what it banked", () => {
+	it("lists every closed gate with its grade and what it earned", () => {
 		const soFar = runSoFarFor(createMockRunView({ gatesCleared: 3, closes }));
 
 		expect(
@@ -175,7 +179,7 @@ describe(runSoFarFor, () => {
 			["Boulder", "HEALTHY", "+19 KB"],
 			["Cascade", "OK", "+13 KB"],
 		]);
-		expect(soFar?.banked).toBe("+64 KB");
+		expect(soFar?.earned).toBe("+64 KB");
 	});
 
 	it("shows a held gate once, by the close that finally cleared it", () => {
@@ -197,13 +201,29 @@ describe(runSoFarFor, () => {
 		const soFar = runSoFarFor(
 			createMockRunView({
 				gatesCleared: 3,
+				answeredThisGate: [answered(0)],
 				fullClearKb: 40,
 				gateStake: createMockGateStake({ coverageHeld: 40 }),
 			})
 		);
 
-		expect(soFar?.next).toMatchObject({ share: "40%", kb: "+40 KB" });
+		expect(soFar?.next).toMatchObject({
+			started: true,
+			share: "40%",
+			kb: "+40 KB",
+		});
 		expect(soFar?.next?.swatch.gateName).toBe("Thunder");
+	});
+
+	it("reads the next gate as not started until its first poll is answered", () => {
+		const soFar = runSoFarFor(
+			createMockRunView({
+				answeredThisGate: [],
+				gateStake: createMockGateStake({ coverageHeld: 0.9 }),
+			})
+		);
+
+		expect(soFar?.next?.started).toBe(false);
 	});
 
 	it("drops the next gate once the run is over", () => {
@@ -341,6 +361,20 @@ describe(shopAsideFor, () => {
 		const shop = shopAsideFor(createMockRunView({ status: "rewarding" }), SHUT);
 
 		expect(shop.detail).toBe("open until you start");
+		expect(shop.highlighted).toBe(false);
+	});
+
+	it("stops putting a skipped shop forward, since its registry is shut", () => {
+		const shop = shopAsideFor(
+			createMockRunView({
+				status: "rewarding",
+				pollsExhausted: true,
+				shopControls: createMockShopControls({ shopSkipped: true }),
+			}),
+			SHUT
+		);
+
+		expect(shop.detail).toBe("skipped");
 		expect(shop.highlighted).toBe(false);
 	});
 

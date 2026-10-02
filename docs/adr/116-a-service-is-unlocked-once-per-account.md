@@ -54,6 +54,10 @@ no press. The Dex is a catalogue, and a name you cannot read is a row you cannot
 aim at. The Dex no longer derives "met" from the deepest gate reached: for
 services, Reveal collapses into Grant.
 
+> Amended 2026-10-02 by [ADR-173](173-hidden-until-it-matters-new-until-met.md):
+> the shop no longer shows a locked service, and the Dex redacts it (D4 there),
+> keeping only the glyph and the line that earns it.
+
 ## Decision 4: staging stays on top
 
 An unlocked service is still sold only from its gate: Extend from gate 3, the

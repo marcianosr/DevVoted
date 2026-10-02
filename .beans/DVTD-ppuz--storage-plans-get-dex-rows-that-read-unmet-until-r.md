@@ -1,11 +1,11 @@
 ---
 # DVTD-ppuz
 title: Storage plans get Dex rows that read unmet until reached
-status: todo
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-09-24T18:26:51Z
-updated_at: 2026-09-24T18:26:51Z
+updated_at: 2026-10-01T15:39:19Z
 parent: DVTD-z2r2
 ---
 
@@ -32,3 +32,7 @@ player who keeps dying at gate 3 should still learn that the ladder goes to 10.
 
 Which gate each plan arrives at is already authored in the domain, so the Dex
 fold reads it rather than repeating it, in the same shape as the controls fold.
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. Storage plans were deleted by ADR-082; STORAGE_PLANS has no hits.

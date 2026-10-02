@@ -32,7 +32,7 @@ the tab, or buying or wearing any border, drops it.
 
 ## Consequences
 
-- The byline preview credits your display name, because the owner's identity
-  has no GitHub handle loaded. A real byline credits the handle.
+- The owner's identity is the public profile's ([ADR-166](166-a-player-face-and-a-collection-count-have-one-owner.md)),
+  so your card carries the GitHub handle a visitor sees.
 - The climber card preview states no standing; the preview is about what you
   wear, not where you stand.

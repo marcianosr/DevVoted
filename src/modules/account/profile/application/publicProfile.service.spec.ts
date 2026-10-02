@@ -5,8 +5,9 @@ import { getPublicProfileService } from "~/modules/account/profile/application/p
 const {
 	fetchPublicProfile,
 	fetchPublishedPollCounts,
-	fetchPublishedPollsForDex,
+	fetchPublishedPollCategories,
 	fetchSeenCountsByUser,
+	fetchAnsweredCountsByUser,
 	fetchConfigUnlocksByUser,
 	fetchObjectiveProgressByUser,
 	fetchOwnedTitleIds,
@@ -17,8 +18,9 @@ const {
 } = vi.hoisted(() => ({
 	fetchPublicProfile: vi.fn(),
 	fetchPublishedPollCounts: vi.fn(),
-	fetchPublishedPollsForDex: vi.fn(),
+	fetchPublishedPollCategories: vi.fn(),
 	fetchSeenCountsByUser: vi.fn(),
+	fetchAnsweredCountsByUser: vi.fn(),
 	fetchConfigUnlocksByUser: vi.fn(),
 	fetchObjectiveProgressByUser: vi.fn(),
 	fetchOwnedTitleIds: vi.fn(),
@@ -38,8 +40,9 @@ vi.mock("~/modules/account/profile/infrastructure/title.repository", () => ({
 }));
 
 vi.mock("~/modules/collection/dex/infrastructure/polldex.repository", () => ({
-	fetchPublishedPollsForDex,
+	fetchPublishedPollCategories,
 	fetchSeenCountsByUser,
+	fetchAnsweredCountsByUser,
 }));
 
 vi.mock("~/modules/collection/dex/infrastructure/configdex.repository", () => ({
@@ -81,9 +84,7 @@ const PROFILE = {
 const pollsNumbering = (count: number) =>
 	Array.from({ length: count }, (_, index) => ({
 		id: index + 1,
-		pollNumber: index + 1,
 		categoryCode: "js",
-		question: `question ${index + 1}`,
 	}));
 
 const endedRun = (runId: number, gatesCleared: number) => ({
@@ -117,11 +118,12 @@ describe("getPublicProfileService", () => {
 		fetchObjectiveProgressByUser.mockResolvedValue([
 			{ metric: "polls-answered", count: 120 },
 		]);
-		fetchPublishedPollsForDex.mockResolvedValue(pollsNumbering(96));
+		fetchPublishedPollCategories.mockResolvedValue(pollsNumbering(96));
 		fetchSeenCountsByUser.mockResolvedValue([
 			{ pollId: 1, timesSeen: 3 },
 			{ pollId: 2, timesSeen: 1 },
 		]);
+		fetchAnsweredCountsByUser.mockResolvedValue([]);
 		fetchConfigUnlocksByUser.mockResolvedValue([
 			{ configId: "telemetry", viaMetric: "polls-correct" },
 		]);
@@ -206,42 +208,80 @@ describe("getPublicProfileService", () => {
 		expect(unwrap<{ theme: string }>(response).theme).toBe("boulder");
 	});
 
-	it("counts the collections as held of total", async () => {
-		const response = await getPublicProfileService(RED);
+	describe("the collection", () => {
+		type Tally = { held: number; total: number };
+		const totals = async () =>
+			unwrap<{
+				totals: {
+					polls: Tally;
+					configs: Tally;
+					titles: Tally;
+					archivedStorage: number;
+				};
+			}>(await getPublicProfileService(RED)).totals;
 
-		expect(
-			unwrap<{ totals: Record<string, number> }>(response).totals
-		).toMatchObject({
-			pollsSeen: 2,
-			pollsTotal: 96,
-			titlesOwned: 2,
-			archivedStorage: 8_388_608,
+		it("counts polls seen against the polls the Dex lists, with the archive beside them", async () => {
+			expect(await totals()).toMatchObject({
+				polls: { held: 2, total: 96 },
+				archivedStorage: 8_388_608,
+			});
 		});
-	});
 
-	it("counts only the titles the account could ever see on a shelf", async () => {
-		const response = await getPublicProfileService(RED);
-		const { titlesOwned, titlesTotal } = unwrap<{
-			totals: { titlesOwned: number; titlesTotal: number };
-		}>(response).totals;
+		it("sees a poll the account answered though nothing recorded it being dealt", async () => {
+			fetchAnsweredCountsByUser.mockResolvedValue([
+				{ pollId: 3, answeredCount: 1 },
+			]);
 
-		expect(titlesOwned).toBeLessThanOrEqual(titlesTotal);
-	});
+			expect((await totals()).polls).toEqual({ held: 3, total: 96 });
+		});
 
-	it("counts an unlocked config on top of the starters everybody holds", async () => {
-		fetchConfigUnlocksByUser.mockResolvedValue([]);
-		const starters = unwrap<{ totals: { configsHeld: number } }>(
-			await getPublicProfileService(RED)
-		).totals.configsHeld;
+		it("counts a seen poll once however often history and answers both name it", async () => {
+			fetchAnsweredCountsByUser.mockResolvedValue([
+				{ pollId: 1, answeredCount: 2 },
+			]);
 
-		fetchConfigUnlocksByUser.mockResolvedValue([
-			{ configId: "telemetry", viaMetric: "polls-correct" },
-		]);
-		const withOne = unwrap<{ totals: { configsHeld: number } }>(
-			await getPublicProfileService(RED)
-		).totals.configsHeld;
+			expect((await totals()).polls.held).toBe(2);
+		});
 
-		expect(withOne).toBe(starters + 1);
+		it("leaves out history for a poll no longer published, so held never passes the total", async () => {
+			fetchSeenCountsByUser.mockResolvedValue([
+				{ pollId: 1, timesSeen: 1 },
+				{ pollId: 999, timesSeen: 4 },
+			]);
+
+			expect((await totals()).polls).toEqual({ held: 1, total: 96 });
+		});
+
+		it("leaves a poll outside every Dex category out of both sides", async () => {
+			fetchPublishedPollCategories.mockResolvedValue([
+				{ id: 1, categoryCode: "js" },
+				{ id: 2, categoryCode: "cobol" },
+			]);
+
+			expect((await totals()).polls).toEqual({ held: 1, total: 1 });
+		});
+
+		it("never counts a retired title id as held", async () => {
+			fetchOwnedTitleIds.mockResolvedValue([
+				"title-it-compiles",
+				"title-retired-long-ago",
+			]);
+			const { titles } = await totals();
+
+			expect(titles.held).toBe(1);
+			expect(titles.held).toBeLessThanOrEqual(titles.total);
+		});
+
+		it("counts an unlocked config on top of the starters everybody holds", async () => {
+			fetchConfigUnlocksByUser.mockResolvedValue([]);
+			const starters = (await totals()).configs.held;
+
+			fetchConfigUnlocksByUser.mockResolvedValue([
+				{ configId: "telemetry", viaMetric: "polls-correct" },
+			]);
+
+			expect((await totals()).configs.held).toBe(starters + 1);
+		});
 	});
 
 	it("reports nothing for an account that does not exist", async () => {
@@ -352,7 +392,6 @@ describe("getPublicProfileService", () => {
 
 			expect(await standing()).toMatchObject({
 				gate: 6,
-				band: "healthy",
 				streak: 7,
 				storageKb: 4_300,
 			});

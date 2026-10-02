@@ -35,27 +35,32 @@ const standingOf = (container: HTMLElement) =>
 		(row) => row.getAttribute("aria-current") === "true"
 	);
 
-const zonesOf = (container: HTMLElement) => [
-	...container.querySelectorAll<HTMLElement>(".coverage-bar-zone"),
-];
-
 describe("BandLadder", () => {
 	it("draws the bar at true scale, so each band is as wide as the coverage it spans", () => {
 		const { container } = render(
-			<BandLadder held={0} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder
+				held={0}
+				band="danger"
+				lines={LAVENDER_LINES}
+				rungs={LAVENDER}
+			/>
 		);
 
-		expect(zonesOf(container).map((zone) => zone.style.flexBasis)).toEqual([
-			"48%",
-			"8%",
-			"6%",
-			"38%",
-		]);
+		expect(
+			container
+				.querySelector<HTMLElement>('[role="img"]')
+				?.style.gridTemplateColumns.split(" ")
+		).toEqual(["48fr", "8fr", "6fr", "38fr"]);
 	});
 
 	it("lists a row per rung, worst first, with the full bar last", () => {
 		const { container } = render(
-			<BandLadder held={0} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder
+				held={0}
+				band="danger"
+				lines={LAVENDER_LINES}
+				rungs={LAVENDER}
+			/>
 		);
 
 		expect(rowsOf(container).map(themeOf)).toEqual([
@@ -67,21 +72,31 @@ describe("BandLadder", () => {
 		]);
 	});
 
-	it("writes each band's range out, so the room between the lines reads as numbers", () => {
+	it("states each band by the line it starts at, so no boundary belongs to two bands", () => {
 		const { container } = render(
-			<BandLadder held={0} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder
+				held={0}
+				band="danger"
+				lines={LAVENDER_LINES}
+				rungs={LAVENDER}
+			/>
 		);
 
 		const [danger, shaky, , , perfect] = rowsOf(container);
 
-		expect(within(danger).getByText("0 – 48")).toBeInTheDocument();
-		expect(within(shaky).getByText("48 – 56")).toBeInTheDocument();
-		expect(within(perfect).getByText("100")).toBeInTheDocument();
+		expect(within(danger).getByText("under 48%")).toBeInTheDocument();
+		expect(within(shaky).getByText("48%+")).toBeInTheDocument();
+		expect(within(perfect).getByText("100%")).toBeInTheDocument();
 	});
 
 	it("badges each band's name and what finishing there pays", () => {
 		const { container } = render(
-			<BandLadder held={0} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder
+				held={0}
+				band="danger"
+				lines={LAVENDER_LINES}
+				rungs={LAVENDER}
+			/>
 		);
 
 		const ok = within(rowsOf(container)[2]);
@@ -92,7 +107,7 @@ describe("BandLadder", () => {
 
 	it("rings the rung the run stands in and no other", () => {
 		const { container } = render(
-			<BandLadder held={58} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder held={58} band="ok" lines={LAVENDER_LINES} rungs={LAVENDER} />
 		);
 
 		expect(standingOf(container)).toHaveLength(1);
@@ -102,7 +117,12 @@ describe("BandLadder", () => {
 
 	it("rings the full bar at a full bar", () => {
 		const { container } = render(
-			<BandLadder held={100} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder
+				held={100}
+				band="perfect"
+				lines={LAVENDER_LINES}
+				rungs={LAVENDER}
+			/>
 		);
 
 		expect(themeOf(standingOf(container)[0])).toBe(COVERAGE_BAND_COLOR.perfect);
@@ -110,18 +130,22 @@ describe("BandLadder", () => {
 
 	it("pins the reading on the bar where the run stands", () => {
 		const { container } = render(
-			<BandLadder held={59} lines={LAVENDER_LINES} rungs={LAVENDER} />
+			<BandLadder held={59} band="ok" lines={LAVENDER_LINES} rungs={LAVENDER} />
 		);
 
 		const pin = container.querySelector<HTMLElement>(".coverage-bar-pin");
 
-		expect(pin).toHaveStyle({ left: "59%" });
+		expect(
+			container
+				.querySelector<HTMLElement>(".coverage-bar")
+				?.style.getPropertyValue("--coverage-held")
+		).toBe("59%");
 		expect(pin).toHaveTextContent("OK");
 	});
 
 	it("lists neither DANGER nor a floor at a gate with nothing under it", () => {
 		const { container } = render(
-			<BandLadder held={0} lines={PALLET_LINES} rungs={PALLET} />
+			<BandLadder held={0} band="shaky" lines={PALLET_LINES} rungs={PALLET} />
 		);
 
 		expect(rowsOf(container)).toHaveLength(4);

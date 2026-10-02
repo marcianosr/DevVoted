@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import {
 	kantoAudits,
-	kantoAuditsLocked,
+	kantoAuditsNew,
 	kantoAuditsNoSender,
 	kantoAuditsQuiet,
 } from "~/test/kantoIncidents.factory";
@@ -30,6 +30,6 @@ export const Quiet: Story = {
 	render: () => <AuditsPanel {...kantoAuditsQuiet()} />,
 };
 
-export const Locked: Story = {
-	render: () => <AuditsPanel {...kantoAuditsLocked()} />,
+export const FirstFaced: Story = {
+	render: () => <AuditsPanel {...kantoAuditsNew()} />,
 };

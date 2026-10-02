@@ -7,10 +7,11 @@ import {
 	formatDexNumber,
 	FUMBLED_ACCURACY,
 	MASTERED_ACCURACY,
-	polldexCoverage,
+	isSeenPoll,
 	polldexTallies,
 	presentCategories,
 	sortByDexNumber,
+	timesSeenOf,
 	unmetCount,
 	type PolldexEntry,
 } from "~/modules/collection/dex/domain/polldex.model";
@@ -160,23 +161,23 @@ describe("unmetCount", () => {
 	});
 });
 
-describe("polldexCoverage", () => {
-	it("counts seen entries and rounds the coverage percentage", () => {
-		const entries = [
-			entry({ id: 1, seen: true }),
-			entry({ id: 2, seen: true }),
-			unseen({ id: 3 }),
-		];
-
-		expect(polldexCoverage(entries)).toEqual({
-			seen: 2,
-			total: 3,
-			percent: 67,
-		});
+describe("timesSeenOf", () => {
+	it("reads the answers when nothing recorded the poll being dealt", () => {
+		expect(timesSeenOf(0, 2)).toBe(2);
 	});
 
-	it("reports zero coverage for an empty set without dividing by zero", () => {
-		expect(polldexCoverage([])).toEqual({ seen: 0, total: 0, percent: 0 });
+	it("reads the deals when the poll was dealt more often than answered", () => {
+		expect(timesSeenOf(4, 1)).toBe(4);
+	});
+});
+
+describe("isSeenPoll", () => {
+	it("sees a poll dealt or answered once", () => {
+		expect(isSeenPoll({ timesSeen: 1 })).toBe(true);
+	});
+
+	it("does not see a poll never dealt", () => {
+		expect(isSeenPoll({ timesSeen: 0 })).toBe(false);
 	});
 });
 

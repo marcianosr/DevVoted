@@ -15,19 +15,25 @@ const USER = "red-from-pallet-town";
 const response = (
 	responseId: number,
 	pollId: number,
-	{ correct }: { correct: boolean }
+	{ correct, mirrored = false }: { correct: boolean; mirrored?: boolean }
 ): PolldexCorrectnessRow[] => [
 	{
 		responseId,
 		pollId,
+		mirrored,
+		answerType: "single",
+		optionId: 100,
 		optionCorrect: true,
-		optionSelected: correct ? 100 + responseId : null,
+		optionSelected: correct ? 100 : null,
 	},
 	{
 		responseId,
 		pollId,
+		mirrored,
+		answerType: "single",
+		optionId: 200,
 		optionCorrect: false,
-		optionSelected: correct ? null : 200 + responseId,
+		optionSelected: correct ? null : 200,
 	},
 ];
 
@@ -118,6 +124,23 @@ describe("getPolldexService", () => {
 
 		expect(entry.correctCount).toBe(2);
 		expect(entry.answeredCount).toBe(3);
+	});
+
+	it("grades a mirrored answer against the flipped key, as the run and the board do", async () => {
+		mockQueries({
+			polls: [
+				{ id: 7, pollNumber: 7, question: "Box model?", categoryCode: "css" },
+			],
+			correctness: [
+				...response(1, 7, { correct: false, mirrored: true }),
+				...response(2, 7, { correct: true, mirrored: true }),
+			],
+		});
+
+		const [entry] = await unwrap();
+
+		expect(entry.correctCount).toBe(1);
+		expect(entry.accuracy).toBe(50);
 	});
 
 	it("marks a poll seen via views alone, with null accuracy when never answered", async () => {

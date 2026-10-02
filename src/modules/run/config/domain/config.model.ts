@@ -27,6 +27,9 @@ export type Config = {
 	readonly openerCoverageMultiplier?: number;
 	readonly missedPollMultiplier?: number;
 	readonly throttleCoverageMultiplier?: number;
+	readonly fastAnswerWithinMs?: number;
+	readonly fastCoverageMultiplier?: number;
+	readonly slowCoverageMultiplier?: number;
 	readonly cacheHitStep?: number;
 	readonly chainStartKb?: number;
 	readonly emptySlotDiscountKb?: number;
@@ -43,7 +46,6 @@ export type Config = {
 	readonly revealsUpcomingCategories?: boolean;
 	readonly reordersGatePolls?: boolean;
 	readonly revealsCorrectCount?: boolean;
-	readonly projectsGateOutcome?: boolean;
 	readonly draftCostFactor?: number;
 	readonly refundsPeeledConfigs?: boolean;
 	readonly subscriptionKb?: number;
@@ -249,7 +251,7 @@ export const describeConfig = (config: Config): string => {
 	if (config.wagersAnswer !== undefined)
 		return `Arm it before you answer. An exact answer earns +${config.wagersAnswer} units; a partial, a miss or a timeout takes ${config.wagersAnswer} units off the gate. It disarms after every answer.`;
 	if (config.coverageDecayPerClear !== undefined)
-		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0.`;
+		return `All coverage earns ×${config.coverageMultiplier}, fading ×${config.coverageDecayPerClear} each gate clear. ${POOLED_BONUS_NOTE} Below ×1 it cuts coverage instead of paying it. Deleted at ×0.`;
 	if (config.autoUpgradeAfterCorrect !== undefined)
 		return `${autoUpgradeAfterCorrectOf(config)} correct answers in a row upgrade a random config in your build, free. A wrong answer or a failed gate starts the count over.`;
 	if (config.peeksCommunitySplit)
@@ -268,7 +270,7 @@ export const describeConfig = (config: Config): string => {
 			: "Shows the category of every poll left this gate, plus all of the next gate's categories.";
 	const add = coverageAddOf(config);
 	if (add !== undefined)
-		return `Every correct answer pays +${add} units of coverage, flat: no multiplier amplifies it.`;
+		return `Every correct answer pays +${add} units of coverage. No other config multiplies it; only the gate's accuracy does.`;
 	if (!config.focusCategory) return config.description;
 	const name = getCategoryMetadata(config.focusCategory).name;
 	return `${name} polls earn ${focusMultiplierOf(config)}× coverage.`;
@@ -430,6 +432,9 @@ export const givesOf = (config: Config): string | undefined => {
 	return `${name} polls reward ×${focusMultiplierOf(config)} coverage`;
 };
 
+export const POOLED_BONUS_NOTE =
+	"Adds to other all-coverage bonuses, never multiplies them.";
+
 const AB_COVERAGE_MULTIPLIER = 1.25;
 const AB_STORAGE_PER_CORRECT = 8;
 
@@ -437,7 +442,7 @@ export const AB_ARMS = {
 	coverage: {
 		coverageMultiplier: AB_COVERAGE_MULTIPLIER,
 		storagePerCorrect: undefined,
-		description: `Arm A is live — all coverage earns ×${AB_COVERAGE_MULTIPLIER}. Arm B holds +${AB_STORAGE_PER_CORRECT}KB per correct answer.`,
+		description: `Arm A is live — all coverage earns ×${AB_COVERAGE_MULTIPLIER}. ${POOLED_BONUS_NOTE} Arm B holds +${AB_STORAGE_PER_CORRECT}KB per correct answer.`,
 		gives: `Arm A — all coverage earns ×${AB_COVERAGE_MULTIPLIER}`,
 	},
 	storage: {

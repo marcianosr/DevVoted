@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	billableSlotsOf,
 	occupiedSlots,
-	spaceForBuild,
 	stripConfig,
-	upkeepForBuild,
 } from "~/modules/run/build/domain/build.model";
+import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import {
 	canVendorLock,
 	isVendorLocked,
@@ -45,7 +43,7 @@ describe("vendor-lock-in", () => {
 		expect(occupiedSlots(after.build.configs)).toBe(
 			VENDOR_LOCK_WEIGHT + AGENTS_MD_WEIGHT
 		);
-		expect(billableSlotsOf(after.build)).toBe(VENDOR_LOCK_WEIGHT);
+		expect(buildSpaceOf(after).weight).toBe(VENDOR_LOCK_WEIGHT);
 	});
 
 	it("leaves the weight a build carries untouched, so only the rent moves", () => {
@@ -59,12 +57,12 @@ describe("vendor-lock-in", () => {
 
 	it("drops the run to the rung the exempt build fits, and the bill with it", () => {
 		const state = inShopHolding("vendor-lock-in", "agents-md");
-		expect(spaceForBuild(state.build)).toBe(12);
-		expect(upkeepForBuild(state.build)).toBe(64);
+		expect(buildSpaceOf(state).space).toBe(12);
+		expect(buildSpaceOf(state).upkeepKb).toBe(64);
 
 		const after = locked(state, "agents-md").build;
-		expect(spaceForBuild(after)).toBe(VENDOR_LOCK_WEIGHT);
-		expect(upkeepForBuild(after)).toBe(0);
+		expect(buildSpaceOf({ build: after }).space).toBe(VENDOR_LOCK_WEIGHT);
+		expect(buildSpaceOf({ build: after }).upkeepKb).toBe(0);
 	});
 
 	it("refuses to lock the vendor to itself", () => {
@@ -141,7 +139,7 @@ describe("vendor-lock-in", () => {
 		});
 
 		expect(sold.build.vendorLockedConfigId).toBeUndefined();
-		expect(billableSlotsOf(sold.build)).toBe(occupiedSlots(sold.build.configs));
+		expect(buildSpaceOf(sold).weight).toBe(occupiedSlots(sold.build.configs));
 	});
 
 	it("releases the lock when the locked config leaves by a peel", () => {
@@ -215,7 +213,7 @@ describe("vendor-lock-in", () => {
 		});
 
 		expect(out.build.vendorLockedConfigId).toBeUndefined();
-		expect(billableSlotsOf(out.build)).toBe(AGENTS_MD_WEIGHT);
+		expect(buildSpaceOf(out).weight).toBe(AGENTS_MD_WEIGHT);
 	});
 
 	it("holds the run shut while the vendor names nobody", () => {

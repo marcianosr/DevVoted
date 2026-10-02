@@ -3,11 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { sellRefund } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { maxLevelOf } from "~/modules/run/config/domain/config.model";
 import { nextUpgradeCostOf } from "~/modules/run/config/application/configChip.viewmodel";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import {
 	buildChipFor,
 	incidentDeskFor,
+	offerChipFor,
 	shopHeaderFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
@@ -15,6 +17,22 @@ import { kbLabel } from "~/shared/lib/storage";
 import { kantoIncidentDeal } from "~/test/kantoIncidentDesk.factory";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import { offeredRungOf } from "~/ui/kanto-theme/Upgrades.ui";
+
+describe("offerChipFor, marking a config met for the first time", () => {
+	const DEAL = { priceKb: 32, affordable: true };
+	const badgesOf = (chip: ConfigChipProps) =>
+		"badges" in chip ? chip.badges : [];
+
+	it("badges an offer unlocked during this run as new", () => {
+		expect(
+			badgesOf(offerChipFor(CONFIGS.js, { ...DEAL, isNew: true }))
+		).toEqual([{ label: "new", color: "cerulean" }]);
+	});
+
+	it("leaves an offer the account already held unbadged", () => {
+		expect(badgesOf(offerChipFor(CONFIGS.js, DEAL))).toEqual([]);
+	});
+});
 
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 	const deal = { priceKb: 32, affordable: true, onInstall: vi.fn() };
@@ -290,5 +308,51 @@ describe("incidentDeskFor, the shop's incident on offer", () => {
 		const desk = incidentDeskFor(kantoIncidentDeal({ refreshes: 99 }));
 
 		expect(desk.refresh?.atRung).toBe((desk.refresh?.rungs.length ?? 0) - 1);
+	});
+});
+
+describe("Dependabot in a build with nothing left to upgrade", () => {
+	const maxed = { ...CONFIGS.css, level: maxLevelOf(CONFIGS.css) };
+	const bot = { ...CONFIGS.dependabot, level: maxLevelOf(CONFIGS.dependabot) };
+
+	it("says so on its shop chip, so the player knows to sell it", () => {
+		const chip = buildChipFor(bot, { installed: [bot, maxed] });
+
+		expect(chip.badges).toContainEqual({
+			label: "nothing left to upgrade",
+			color: "pewter",
+		});
+	});
+
+	it("says nothing while a config can still be upgraded", () => {
+		const chip = buildChipFor(bot, { installed: [bot, CONFIGS.css] });
+
+		expect((chip.badges ?? []).map((badge) => badge.label)).not.toContain(
+			"nothing left to upgrade"
+		);
+	});
+});
+
+describe("an offer that raises the build-space bill", () => {
+	const deal = {
+		priceKb: 64,
+		affordable: true,
+		upkeepNowKb: 16,
+		scale: { from: 6, to: 8, perGateKb: 32 },
+	};
+
+	it("states the extra upkeep on the offer before any press", () => {
+		expect(offerChipFor(CONFIGS.css, deal).badges).toContainEqual({
+			label: "↻ +16 KB a gate",
+			color: "saffron",
+		});
+	});
+
+	it("states no bill for an offer that fits the rung already rented", () => {
+		const chip = offerChipFor(CONFIGS.css, { ...deal, scale: null });
+
+		expect(
+			(chip.badges ?? []).some((badge) => badge.label.startsWith("↻"))
+		).toBe(false);
 	});
 });

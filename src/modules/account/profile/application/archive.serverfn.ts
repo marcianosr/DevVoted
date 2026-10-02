@@ -2,31 +2,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
-	equipBorderService,
-	equipSwatchService,
 	getArchiveStateService,
 	purchaseBorderService,
 } from "~/modules/account/profile/application/archive.service";
-import { getAuthenticatedUserId } from "~/shared/utils/authorization";
+import { withAuthenticatedUser } from "~/shared/utils/authorization";
 
-export const getArchiveState = createServerFn({ method: "GET" }).handler(
-	async () => getArchiveStateService(await getAuthenticatedUserId())
+export const getArchiveState = createServerFn({ method: "GET" }).handler(() =>
+	withAuthenticatedUser(({ userId }) => getArchiveStateService(userId))
 );
 
 export const purchaseBorder = createServerFn({ method: "POST" })
 	.validator(z.object({ borderId: z.string().min(1) }))
-	.handler(async ({ data }) =>
-		purchaseBorderService(await getAuthenticatedUserId(), data.borderId)
-	);
-
-export const equipBorder = createServerFn({ method: "POST" })
-	.validator(z.object({ borderId: z.string().min(1).nullable() }))
-	.handler(async ({ data }) =>
-		equipBorderService(await getAuthenticatedUserId(), data.borderId)
-	);
-
-export const equipSwatch = createServerFn({ method: "POST" })
-	.validator(z.object({ swatchId: z.string().min(1).nullable() }))
-	.handler(async ({ data }) =>
-		equipSwatchService(await getAuthenticatedUserId(), data.swatchId)
+	.handler(({ data }) =>
+		withAuthenticatedUser(({ userId }) =>
+			purchaseBorderService(userId, data.borderId)
+		)
 	);

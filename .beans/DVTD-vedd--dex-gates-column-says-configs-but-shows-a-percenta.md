@@ -1,11 +1,11 @@
 ---
 # DVTD-vedd
 title: Dex Gates column says configs but shows a percentage
-status: todo
+status: scrapped
 type: bug
 priority: normal
 created_at: 2026-09-04T15:20:57Z
-updated_at: 2026-09-04T15:20:57Z
+updated_at: 2026-10-01T15:39:18Z
 ---
 
 `src/ui/modern-theme/screens/GatesPanel.ui.tsx` legend (line ~85) labels the column **"configs a miss peels"**, but the value it renders is a **percentage share**: `GatesView.component.tsx:60` maps `peels: Math.round(entry.peelShare * 100)`.
@@ -21,3 +21,7 @@ The wiki's own gate table (§2.8) states this column as a **share** ("20%"), whi
 - [ ] If share: relabel to "share a miss peels" and render `{peels}%`; keep "none" at 0
 - [ ] Update `GatesPanel.spec.tsx` — "writes the peel count as a loss, with a minus sign not a hyphen" (pins `"−2"`), "reddens only the peel counts an audit inflated", and the legend-label assertion at :122
 - [ ] Check `GatesPanel.stories.tsx:68` still reads correctly
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. src/ui/modern-theme and its GatesPanel are deleted; no Dex surface renders the column.

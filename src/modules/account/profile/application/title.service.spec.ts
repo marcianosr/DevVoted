@@ -28,14 +28,13 @@ vi.mock("~/modules/account/profile/infrastructure/title.repository", () => ({
 	fetchUnannouncedTitleIds,
 	markTitlesAnnounced,
 	fetchUserTitleState,
-	setEquippedTitles: vi.fn(),
 }));
 
 vi.mock("~/modules/collection/dex/infrastructure/configdex.repository", () => ({
 	fetchObjectiveProgressByUser,
 }));
 
-vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
+vi.mock("~/modules/run/run/infrastructure/accountGrant.repository", () => ({
 	fetchCategoryPollCounts,
 }));
 
@@ -119,26 +118,25 @@ describe("getTitleAnnouncementService", () => {
 		});
 	});
 
-	it("leaves the archive and the credit out of an earned title's announcement", async () => {
+	it("announces nothing when only an earned title waits, since the debrief already showed it", async () => {
 		fetchUnannouncedTitleIds.mockResolvedValue([SUMMIT]);
 
 		expect(await getTitleAnnouncementService(RED)).toEqual({
 			success: true,
-			data: { ...NOTHING, titleIds: [SUMMIT] },
+			data: NOTHING,
 		});
 		expect(fetchArchivedRunStartedAt).not.toHaveBeenCalled();
 		expect(fetchLegacyBonusBytes).not.toHaveBeenCalled();
 	});
 
-	it("still reads the legacy rows when a granted title waits beside an earned one", async () => {
+	it("announces only the granted title when an earned one waits beside it", async () => {
 		fetchUnannouncedTitleIds.mockResolvedValue([SUMMIT, TESTER]);
 		fetchLegacyBonusBytes.mockResolvedValue(PLAYED_CREDIT);
 
-		const response = await getTitleAnnouncementService(RED);
-
-		expect(response.success && response.data.legacyBonusBytes).toBe(
-			PLAYED_CREDIT
-		);
+		expect(await getTitleAnnouncementService(RED)).toEqual({
+			success: true,
+			data: { ...NOTHING, titleIds: [TESTER], legacyBonusBytes: PLAYED_CREDIT },
+		});
 	});
 
 	it("reports a null credit for a legacy account the migration never paid", async () => {

@@ -1,11 +1,11 @@
 ---
 # DVTD-ziss
 title: Playtest the gate-4 strip cliff (ESCALATION_CAP needs no change)
-status: todo
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-08-06T15:30:17Z
-updated_at: 2026-09-12T12:57:01Z
+updated_at: 2026-10-01T15:39:19Z
 blocked_by:
     - DVTD-iq13
 ---
@@ -100,3 +100,7 @@ model moves the bare-build death from gate 6 to gate 7.
 ESCALATION_CAP and the strip quota are not the levers any more.
 
 Recommend scrapping in favour of the ladder work in DVTD-gv0v.
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. ESCALATION_CAP, dropCount and HEALTHY_LADDER are deleted; gates close on bands (ADR-157/161).

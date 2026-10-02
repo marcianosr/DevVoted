@@ -17,9 +17,9 @@ resolve:
 > upside and drafting is never a hard choice.
 
 Thirty-seven configs in, every one is upside with a fee or a condition attached
-to its own payout. Freemium bills you, Deprecated decays, Overclock throttles
-after the opener. None of them costs the player an option. Drafting is therefore
-a question of what you can afford, never of what you are willing to give up.
+to its own payout (Freemium bills you, Deprecated decays, Overclock throttles
+after the opener). None costs the player an option, so drafting is a question
+of what you can afford, never of what you are willing to give up.
 
 ## Decision 1: one config in the build can stop counting against the rent
 
@@ -29,9 +29,11 @@ measured as though it were not there.
 
 This is deliberately not a bill discount. [ADR-082](082-build-space-is-rented-by-the-gate.md)
 made the bill a function of the rung held, and `settleUpkeep` never sees the
-configs, so a per-config term could not reach it even if we wanted one. What the
-exemption does is stop the locked config consuming the rung, which the player
-banks by renting one rung lower or by fitting more into the rung they hold.
+configs, so a per-config term could not reach it even if we wanted one.
+(Amended by [ADR-122](122-a-config-can-discount-the-build-space-bill.md), which
+lets a config discount the bill.) The exemption stops the locked config
+consuming the rung, which the player banks by renting one rung lower or by
+fitting more into the rung they hold.
 
 `occupiedSlots` keeps meaning total weight. A new `billableSlotsOf(build)` is
 what `freeSlots`, `hasRoomFor`, `overflowSlots` and `isOverCapacity` measure, so
@@ -57,15 +59,15 @@ rest of the run, and its uninstall press is gone rather than silently inert.
 ### Amendment (2026-09-22, DVTD-hs04): "at install" is enforced, not assumed
 
 The first build shipped the pick as an optional press that existed only while
-`status === "rewarding"`. Naming was therefore skippable and, in the opening
-build, impossible — a player could pay 4 weight and exempt nothing for a whole
-run without the screen ever saying so. An affordance withheld in silence reads
-as a mechanic that does not exist, which is the opposite of pillar 2.
+`status === "rewarding"`, so naming was skippable and, in the opening build,
+impossible: a player could pay 4 weight and exempt nothing for a whole run
+without the screen saying so. An affordance withheld in silence reads as a
+mechanic that does not exist, the opposite of pillar 2.
 
 Three things close it:
 
 - `canVendorLock` reads `isPrepPhase`, so the pick is legal wherever a config
-  can join the build — the opening build and the shop alike.
+  can join the build: the opening build and the shop alike.
 - Both prep screens hold their exit press while the vendor names nobody, and
   state the bargain in the footer's refusal rather than grey out in silence.
   `start` refuses the same condition, so the engine holds even if a screen
@@ -74,10 +76,10 @@ Three things close it:
   unreachable while naming was shop-only; it is not any more.
 
 The hold needs one carve-out. A build holding nothing but the locker has no
-legal target, because Decision 4 forbids self-targeting — so `canVendorLock`
+legal target, because Decision 4 forbids self-targeting, so `canVendorLock`
 also asks whether any other config is present. Without that clause the exit is
-held on a pick that cannot be made, and the player is stranded. The offer
-returns the moment a second config joins.
+held on a pick that cannot be made. The offer returns the moment a second
+config joins.
 
 Escaping an unwanted vendor is still the existing door: sell it in the shop, or
 uninstall it in the opening build. Neither is guarded, and both release the lock
@@ -103,8 +105,8 @@ be stuck with. Numbers live in `configRoster.model.ts` and the rung ladder in
 ## Decision 4: it cannot lock itself
 
 Self-targeting would be four free weight for the install price with no option
-given up, which is the purchasable free weight ADR-082 retired when it deleted
-the free-weight subscription as "two ways to buy the same thing". This config is
+given up: the purchasable free weight ADR-082 retired when it deleted the
+free-weight subscription as "two ways to buy the same thing". This config is
 not a third way to buy room: it is not priced by the KB, it rides one config, it
 is bounded by that config's size, and it is paid for in flexibility. The retired
 `freeWeightOf` and `upkeepAt` names are not revived.

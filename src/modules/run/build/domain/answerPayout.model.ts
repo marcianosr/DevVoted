@@ -16,11 +16,7 @@ import {
 	type PayoutContext,
 	effectOf,
 } from "~/modules/run/config/domain/effect.model";
-import {
-	roundToTwoDecimals,
-	streakMultiplier,
-	streakUnitBonus,
-} from "~/modules/run/run/domain/rules.model";
+import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 export type AnswerPayout = {
@@ -41,11 +37,26 @@ const coveredBy = (
 		return cover === undefined ? [] : [{ config, cover }];
 	});
 
-const buildMultiplierOf = (covered: readonly Covered[]): number =>
+const compoundedOf = (covered: readonly Covered[]): number =>
 	covered.reduce((product, { cover }) => product * cover.mult, 1);
+
+const pooledBoostOf = (covered: readonly Covered[]): number =>
+	Math.max(
+		0,
+		covered.reduce((pool, { cover }) => pool + cover.boost - 1, 1)
+	);
+
+const buildMultiplierOf = (covered: readonly Covered[]): number =>
+	compoundedOf(covered) * pooledBoostOf(covered);
 
 const flatUnitsOf = (covered: readonly Covered[]): number =>
 	covered.reduce((sum, { cover }) => sum + cover.add, 0);
+
+const pooledShareOf = (covered: readonly Covered[], cover: Coverage): number => {
+	const raw = covered.reduce((pool, entry) => pool + entry.cover.boost - 1, 0);
+	const capped = pooledBoostOf(covered) - 1;
+	return raw === 0 ? 0 : ((cover.boost - 1) * capped) / raw;
+};
 
 type BonusWalk = {
 	readonly rows: readonly CoverageConfigBonus[];
@@ -58,35 +69,41 @@ const bonusRowsOf = (
 	wagerer: Config | undefined,
 	wagerUnits: number
 ): readonly CoverageConfigBonus[] => {
-	const ordered = [
-		...covered.filter(({ cover }) => cover.mult === 1),
-		...covered.filter(({ cover }) => cover.mult !== 1),
-	];
+	const flatRows = covered
+		.filter(({ cover }) => cover.add !== 0)
+		.map(({ config, cover }) => ({
+			configId: config.id,
+			value: roundToTwoDecimals(cover.add),
+		}));
 	const start: BonusWalk = { rows: [], subtotal: creditedUnits };
-	const { rows } = ordered.reduce<BonusWalk>(
-		({ rows, subtotal }, { config, cover }) =>
-			cover.mult === 1
-				? {
-						rows: [
-							...rows,
-							{ configId: config.id, value: roundToTwoDecimals(cover.add) },
-						],
-						subtotal,
-					}
-				: {
-						rows: [
-							...rows,
-							{
-								configId: config.id,
-								value: roundToTwoDecimals(subtotal * (cover.mult - 1)),
-								factor: cover.mult,
-							},
-						],
-						subtotal: subtotal * cover.mult,
+	const compounded = covered
+		.filter(({ cover }) => cover.mult !== 1)
+		.reduce<BonusWalk>(
+			({ rows, subtotal }, { config, cover }) => ({
+				rows: [
+					...rows,
+					{
+						configId: config.id,
+						value: roundToTwoDecimals(subtotal * (cover.mult - 1)),
+						factor: cover.mult,
 					},
-		start
+				],
+				subtotal: subtotal * cover.mult,
+			}),
+			start
+		);
+	const pooledRows = covered
+		.filter(({ cover }) => cover.boost !== 1)
+		.map(({ config, cover }) => ({
+			configId: config.id,
+			value: roundToTwoDecimals(
+				compounded.subtotal * pooledShareOf(covered, cover)
+			),
+			factor: cover.boost,
+		}));
+	const paid = [...flatRows, ...compounded.rows, ...pooledRows].filter(
+		(row) => row.value !== 0
 	);
-	const paid = rows.filter((row) => row.value !== 0);
 	return wagerer === undefined
 		? paid
 		: [...paid, { configId: wagerer.id, value: wagerUnits }];
@@ -94,7 +111,6 @@ const bonusRowsOf = (
 
 const NOTHING_PAID: CoverageBreakdown = {
 	base: 0,
-	streakBonus: 0,
 	configBonuses: [],
 };
 
@@ -102,7 +118,6 @@ export const answerPayoutFor = (
 	configs: readonly Config[],
 	context: PayoutContext,
 	share: number,
-	streakBefore = 0,
 	wagerUnits = 0
 ): AnswerPayout => {
 	if (share <= 0)
@@ -111,9 +126,8 @@ export const answerPayoutFor = (
 	const creditedUnits = BASE_UNIT * share * creditFor(context.answerType);
 	const covered = coveredBy(configs, context, creditedUnits);
 	const build = buildMultiplierOf(covered);
-	const streakBonus = streakUnitBonus(streakBefore);
 	const coverage = roundToTwoDecimals(
-		creditedUnits * build + flatUnitsOf(covered) + streakBonus
+		creditedUnits * build + flatUnitsOf(covered)
 	);
 	const earned = roundToTwoDecimals(coverage + wagerUnits);
 	const configBonuses = bonusRowsOf(
@@ -127,8 +141,7 @@ export const answerPayoutFor = (
 	return {
 		earned,
 		breakdown: {
-			base: roundToTwoDecimals(earned - bonusTotal - streakBonus),
-			streakBonus,
+			base: roundToTwoDecimals(earned - bonusTotal),
 			configBonuses,
 		},
 		factors: { correct: share, build },
@@ -140,7 +153,6 @@ export type PerAnswerPreview = {
 	readonly coveragePerWrong: number;
 	readonly storageKbPerCorrect: number;
 	readonly matchingConfigMultiplier?: number;
-	readonly streakStepMultiplier: number;
 };
 
 export type PreviewFacts = {
@@ -169,12 +181,11 @@ export const perAnswerPreviewFor = (
 		.filter((config) => config.focusCategory !== undefined)
 		.map(focusMultiplierOf);
 	return {
-		coveragePerCorrect: answerPayoutFor(configs, previewContextFor(facts), 1, 0)
+		coveragePerCorrect: answerPayoutFor(configs, previewContextFor(facts), 1)
 			.earned,
 		coveragePerWrong: wagerUnits === 0 ? 0 : -wagerUnits,
 		storageKbPerCorrect: faucetKbPerCorrect(configs),
 		matchingConfigMultiplier:
 			focusMultipliers.length > 0 ? Math.max(...focusMultipliers) : undefined,
-		streakStepMultiplier: streakMultiplier(1),
 	};
 };

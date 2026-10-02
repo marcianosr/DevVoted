@@ -16,16 +16,15 @@ dealt count. Decision 3's mechanics and everything else here stand.
 
 ## Context
 
-Marciano's list arrived as "debuffs", with one instruction attached: they should
-escalate as the run gets deeper. Two already existed as audits, which made the
-question a vocabulary one before it was a mechanical one.
+Marciano's list arrived as "debuffs" that should escalate as the run gets
+deeper. Two already existed as audits, so the question was one of vocabulary
+before it was mechanical.
 
 ## Decision 1: they are audits, not a second concept
 
-One word. `Audit` keeps its name, the receipt keeps its "Audit" section, and
-every new rule is a roster entry. A parallel "debuff" system would have meant
-two types, two sections and a permanent question about which one a new rule
-belongs to.
+`Audit` keeps its name, the receipt keeps its "Audit" section, and every new
+rule is a roster entry. A parallel "debuff" system would mean two types, two
+sections and a permanent question about where a new rule belongs.
 
 The Burn is renamed **Memory Leak** because it names a real thing where "the
 Burn" named a vibe.
@@ -56,45 +55,42 @@ sorted by roster rank (ADR-056 Decision 5), which keeps this property.
 | Memory Leak | `burnKb` | KB drains per poll, more on a miss. |
 
 **The four offline audits are one mechanism with four pickers.** They differ
-only in which config they choose and how long it stays down, so
-`offlineConfigsFor` folds them together and `OfflinePick` names the flavours.
+only in which config they choose and for how long, so `offlineConfigsFor` folds
+them together and `OfflinePick` names the flavours.
 
-Every pick is **derived, never stored**. The seeds are the window's own start
-index and the poll's place in it, so a pick is stable for exactly as long as it
-should last, different on the next attempt, and identical after a reload. No
-migration, and no chance of drifting from a rehydrated window. All four sort by
-config id first, so they answer to what is installed rather than to purchase
-order.
+Every pick is **derived, never stored**. The seeds are the window's start index
+and the poll's place in it, so a pick is stable for exactly as long as it should
+last, different on the next attempt, and identical after a reload. No migration,
+and no drift from a rehydrated window. All four sort by config id first, so they
+answer to what is installed rather than to purchase order.
 
-Three are outright random rolls; Breaking Change is not. It takes the config
-levelled furthest and rolls only among those tied for it, because ties are the
-common case (most builds have nothing upgraded) and taking "the first" there
-would quietly always mean the same config.
+Breaking Change is not an outright roll. It takes the config levelled furthest
+and rolls only among those tied for it, because ties are the common case (most
+builds have nothing upgraded) and "the first" would always mean the same config.
 
-The defeat device's suppression is decided at the door, before any of this, so a
-config going offline inside the window cannot un-suppress what the receipt
-showed as passing.
+The defeat device's suppression is decided at the door, so a config going
+offline inside the window cannot un-suppress what the receipt showed as passing.
 
 **A timed-out answer is a miss whatever was picked**, and it short-circuits the
 mirror rather than feeding it: timing out must never be the way to score.
-Nothing auto-submits — running out means the answer will not count, which the
-clock says in place. `AnsweredPoll.timedOut` keeps the review honest, since the
-outcome beside it now reads "wrong" for an answer that was right.
+Nothing auto-submits; the clock says in place that the answer will not count.
+`AnsweredPoll.timedOut` keeps the review honest, since the outcome beside it now
+reads "wrong" for an answer that was right.
 
 ## Decision 4: the Mirror flips the poll, not the score
 
-ADR-035's mirror inverted the *share*, so a wrong answer scored as if right.
-That made "pick any wrong option" the whole skill on a single-answer poll, and
+ADR-035's mirror inverted the *share*, so a wrong answer scored as right. That
+made "pick any wrong option" the whole skill on a single-answer poll, and
 because a mirrored answer forfeited its streak the gate needed a demand discount
 to stay clearable.
 
-It is replaced by a mirror that rewrites the **question**: every option's
-correctness flips, so the poll asks for the incorrect options and asks for *all*
-of them. A four-option single-answer poll becomes a three-option select-all,
-which takes the same knowledge and rather more precision.
+The new mirror rewrites the **question**: every option's correctness flips, so
+the poll asks for *all* the incorrect options. A four-option single-answer poll
+becomes a three-option select-all, which takes the same knowledge and more
+precision.
 
 Everything downstream then grades normally, which is the point. Outcome, partial
-credit, streaks and the difficulty bonus all work unchanged,
+credit, streaks and the difficulty bonus work unchanged,
 `answeredThisGate.correct` holds the mirrored expectation so the reveal and the
 review agree with the score, and the gate charges its **full demand**.
 `.length`'s reveal counts the wrong options at a mirrored gate, since those are
@@ -106,21 +102,20 @@ to pick, and an unanswerable poll is a soft-lock rather than a debuff.
 ## Decision 5: an offline config says so, and stops selling
 
 The row dims, its effect strikes through, and an `offline` badge sits on the
-chip. It **keeps its slot**, because the build is unchanged and the effect just
-does nothing; removing the row would misreport the build. The row also opens
-itself, since a struck-out promise folded away communicates nothing, and its
-paid action disappears, since a switched-off Telemetry would otherwise charge a
-peek fee for data it can no longer read. `liveConfigsOf` is the one place that
-subtracts the offline set, and `lintApplies`/`peekApplies` read it, so a hidden
-button and a refusing reducer can never disagree.
+chip. It **keeps its slot**, because the build is unchanged and only the effect
+does nothing; removing the row would misreport the build. The row opens itself,
+since a struck-out promise folded away communicates nothing, and its paid action
+disappears, since a switched-off Telemetry would otherwise charge a peek fee for
+data it can no longer read. `liveConfigsOf` is the one place that subtracts the
+offline set, and `lintApplies`/`peekApplies` read it, so a hidden button and a
+refusing reducer can never disagree.
 
-**Only the answering screen shows this.** The shop and prep run before the gate,
-where the roll has not been reached yet, so naming a casualty there would be a
-spoiler: those screens name the audit and leave the victim to the gate. For the
-same reason the stake receipt's per-answer preview prices the whole build, since
-Flaky Build and Rolling Outage move every poll and no pre-gate number could be
-honest about them. npm audit is the one config that names the casualty at prep
-(ADR-158).
+**Only the answering screen shows this.** The shop and prep run before the roll,
+so naming a casualty there would be a spoiler: they name the audit and leave the
+victim to the gate. For the same reason the stake receipt's per-answer preview
+prices the whole build, since Flaky Build and Rolling Outage move every poll and
+no pre-gate number could be honest about them. npm audit is the one config that
+names the casualty at prep (ADR-158).
 
 ## Decision 6: a mirrored response records which question was asked
 
@@ -136,9 +131,8 @@ one, and the two readers of session answers need opposite things from that fact:
   expectation. Naming every wrong option proves the same knowledge as naming the
   right one.
 
-That is what makes the two treatments consistent rather than arbitrary: **the
-board counts knowledge, the split reports opinion.** Knowledge composes across
-mirrored and plain answers; opinion does not.
+**The board counts knowledge, the split reports opinion.** Knowledge composes
+across mirrored and plain answers; opinion does not.
 
 Per-option `isRight` stays the poll's own truth on the board. The mirror changes
 what was asked of one player, never what is true.
@@ -150,8 +144,7 @@ what was asked of one player, never what is true.
   gate grades). A determined player can lie to it; the same was already true of
   the fastest-answer standout, and the stake is a poll rather than a leaderboard.
 - Playtest-first numbers, all in `audit.model.ts`. The clocks are the loudest
-  guesses in the roster, since a rhyming question with a code block is not a
-  20-second read.
+  guesses, since a rhyming question with a code block is not a 20-second read.
 - The legacy calendar-loop stats filter `mode = 'calendar'`, so no session answer
   has ever reached the daily loop's awards or correct-rates. The `mirrored`
   default of `false` keeps it that way.

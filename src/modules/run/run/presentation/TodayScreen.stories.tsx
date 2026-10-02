@@ -12,7 +12,7 @@ import {
 const noop = () => {};
 
 const RUN_SO_FAR = {
-	banked: "+64 KB",
+	earned: "+64 KB",
 	rows: [
 		{
 			gate: 0,
@@ -37,6 +37,7 @@ const RUN_SO_FAR = {
 		gate: 3,
 		swatch: gateSwatchAt(3),
 		band: { id: "ok", label: "OK" },
+		started: true,
 		share: "40%",
 		kb: "+40 KB",
 	},

@@ -342,10 +342,10 @@ describe("describeConfig", () => {
 
 	it("states Code Coverage's flat add for its version", () => {
 		expect(describeConfig(CONFIGS.codeCoverage)).toBe(
-			"Every correct answer pays +0.1 units of coverage, flat: no multiplier amplifies it."
+			"Every correct answer pays +0.1 units of coverage. No other config multiplies it; only the gate's accuracy does."
 		);
 		expect(describeConfig({ ...CONFIGS.codeCoverage, level: 3 })).toBe(
-			"Every correct answer pays +0.3 units of coverage, flat: no multiplier amplifies it."
+			"Every correct answer pays +0.3 units of coverage. No other config multiplies it; only the gate's accuracy does."
 		);
 	});
 
@@ -372,12 +372,12 @@ describe("describeConfig", () => {
 
 	it("reads Deprecated's live multiplier, so the chip fades with the config", () => {
 		expect(describeConfig(CONFIGS.deprecated)).toBe(
-			"All coverage earns ×3, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
+			"All coverage earns ×3, fading ×0.5 each gate clear. Adds to other all-coverage bonuses, never multiplies them. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
 		);
 		expect(
 			describeConfig({ ...CONFIGS.deprecated, coverageMultiplier: 2.5 })
 		).toBe(
-			"All coverage earns ×2.5, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
+			"All coverage earns ×2.5, fading ×0.5 each gate clear. Adds to other all-coverage bonuses, never multiplies them. Below ×1 it cuts coverage instead of paying it. Deleted at ×0."
 		);
 	});
 });

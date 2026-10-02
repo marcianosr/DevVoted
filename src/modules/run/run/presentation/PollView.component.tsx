@@ -1,225 +1,28 @@
 import { useState } from "react";
 
-import {
-	INSTALLED_CARDS_OPEN,
-	disclosedIn,
-	toggleDisclosure,
-} from "~/shared/lib/disclosure";
+import { useDisclosure } from "~/shared/hooks/useDisclosure.hook";
+import { useScrollToTopOnSmallScreen } from "~/shared/hooks/useScrollToTopOnSmallScreen.hook";
+import { INSTALLED_CARDS_OPEN } from "~/shared/lib/disclosure";
 
 import {
-	answeredOptionsFor,
-	auditPropsOf,
-	buildCountsOf,
-	categoryNameOf,
-	type PressAction,
-	letterAt,
-	pollCoverageFor,
-	pollFactsFor,
-	categoryLeaderFor,
-	pollHoldsFor,
-	pollBuildFor,
-	gateLabelFor,
-	gateMarkFor,
-	nextPollMarkFor,
-	pollHeaderFor,
-	pollStepFor,
+	enterActionFor,
+	type PollScreenHandlers,
 	pollKeysFor,
-	pollCommitFor,
-	approvalCommitFor,
+	pollScreenPropsFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
-import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import { kbLabel } from "~/shared/lib/storage";
-import {
-	PollScreen,
-	type PollScreenProps,
-} from "~/ui/kanto-theme/PollScreen.ui";
-import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
-import type {
-	QuestionOption,
-	QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
+import { useAnswerFeedback } from "~/modules/run/run/presentation/useAnswerFeedback.hook";
+import { PollScreen } from "~/ui/kanto-theme/PollScreen.ui";
 
-export type PollViewProps = {
+export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
+	onAnswer: (optionIds: readonly string[]) => void;
 	view: RunView;
 	runNumber?: number | null;
 	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
-	onSelect: (optionId: string) => void;
-	onSubmit: () => void;
-	onNext: () => void;
-	onPress?: (action: PressAction, configId: string) => void;
-	onUnseal?: (optionId: string) => void;
-	onApprove?: () => void;
-};
-
-type LivePoll = NonNullable<RunView["poll"]>;
-
-const NEXT_LABEL = "Next poll";
-const ENTER_CONTINUES = "Or click ENTER";
-
-const wrongCostOf = (view: RunView): string | undefined => {
-	const cost = view.gateStake.perAnswer.coveragePerWrong;
-	return cost === 0 ? undefined : `${Math.abs(cost).toFixed(1)}`;
-};
-
-const optionsOf = (
-	poll: LivePoll,
-	view: RunView,
-	onUnseal: ((optionId: string) => void) | undefined
-): readonly QuestionOption[] =>
-	poll.options.map((option, index) =>
-		view.hiddenOptionIds.includes(option.id)
-			? {
-					id: option.id,
-					letter: letterAt(index),
-					seal: {
-						price: kbLabel(view.buyBack.costKb),
-						onUnseal:
-							onUnseal === undefined || !view.buyBack.ready
-								? undefined
-								: () => onUnseal(option.id),
-					},
-				}
-			: {
-					id: option.id,
-					letter: letterAt(index),
-					label: option.label,
-					crossedOut: view.disabledOptionIds.includes(option.id),
-				}
-	);
-
-const liveQuestionFor = (
-	view: RunView,
-	poll: LivePoll,
-	selectedOptionIds: readonly string[],
-	onSelect: (optionId: string) => void,
-	onUnseal: ((optionId: string) => void) | undefined
-): QuestionProps => ({
-	answerType: poll.answerType,
-	question: poll.question,
-	options: optionsOf(poll, view, onUnseal),
-	codeBlock: poll.codeBlock,
-	pickedIds: selectedOptionIds,
-	onPick: onSelect,
-});
-
-const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
-	answerType: answered.answerType ?? "single",
-	question: answered.question,
-	options: answeredOptionsFor(answered),
-	codeBlock: answered.codeBlock,
-	pickedIds: answered.picked,
-});
-
-const authorOf = (poll: LivePoll): AuthorProps | undefined =>
-	poll.author === undefined
-		? undefined
-		: {
-				handle: poll.author.handle,
-				userId: poll.author.userId,
-				role: poll.author.role,
-				title: poll.author.title,
-				photoUrl: poll.author.avatarUrl,
-				borderUrl: poll.author.borderUrl,
-			};
-
-const enterActionFor = (
-	revealing: boolean,
-	picked: boolean,
-	onSubmit: () => void,
-	onNext: () => void
-): (() => void) | undefined => {
-	if (revealing) return onNext;
-	return picked ? onSubmit : undefined;
-};
-
-type PollMood = Pick<
-	PollScreenProps,
-	| "question"
-	| "category"
-	| "categoryColor"
-	| "wrongCost"
-	| "hint"
-	| "author"
-	| "commit"
-	| "categoryLeader"
-	| "footer"
->;
-
-const answeredMoodFor = (
-	view: RunView,
-	answered: AnsweredPoll,
-	onNext: () => void
-): PollMood => ({
-	question: answeredQuestionFor(answered),
-	category: categoryNameOf(view, answered.category),
-	hint: answered.explanation,
-	footer: {
-		action: {
-			label: view.gateComplete
-				? gateLabelFor(view.gateStake.gateNumber)
-				: NEXT_LABEL,
-			swatch: view.gateComplete
-				? gateMarkFor(view.gateStake.gateNumber)
-				: nextPollMarkFor(view),
-			onPress: onNext,
-		},
-		note: ENTER_CONTINUES,
-	},
-});
-
-const wasApprovedUnread = (view: RunView, poll: LivePoll): boolean =>
-	view.approvedPollId !== null && view.approvedPollId === poll.id;
-
-const approvedQuestionFor = (
-	view: RunView,
-	poll: LivePoll,
-	onUnseal: ((optionId: string) => void) | undefined
-): QuestionProps => ({
-	answerType: poll.answerType,
-	question: poll.question,
-	options: optionsOf(poll, view, onUnseal),
-	codeBlock: poll.codeBlock,
-	pickedIds: [],
-});
-
-const liveMoodFor = (
-	view: RunView,
-	poll: LivePoll,
-	selectedOptionIds: readonly string[],
-	onSelect: (optionId: string) => void,
-	onSubmit: () => void,
-	onUnseal: ((optionId: string) => void) | undefined,
-	onApprove: (() => void) | undefined
-): PollMood => {
-	const shared = {
-		category: categoryNameOf(view, poll.category),
-		wrongCost: wrongCostOf(view),
-		author: authorOf(poll),
-		categoryLeader: categoryLeaderFor(view, poll),
-	};
-
-	if (wasApprovedUnread(view, poll) && onApprove !== undefined)
-		return {
-			...shared,
-			question: approvedQuestionFor(view, poll, onUnseal),
-			commit: approvalCommitFor(onApprove),
-		};
-
-	return {
-		...shared,
-		question: liveQuestionFor(
-			view,
-			poll,
-			selectedOptionIds,
-			onSelect,
-			onUnseal
-		),
-		commit: pollCommitFor(poll.answerType, selectedOptionIds.length, onSubmit),
-	};
+	clockMs?: number;
 };
 
 export const PollView = ({
@@ -227,75 +30,48 @@ export const PollView = ({
 	runNumber = null,
 	answered,
 	selectedOptionIds,
-	onSelect,
-	onSubmit,
-	onNext,
-	onPress,
-	onUnseal,
-	onApprove,
+	clockMs = 0,
+	onAnswer,
+	...handlers
 }: PollViewProps) => {
-	const [buildFlips, setBuildFlips] = useState<ReadonlySet<string>>(new Set());
+	const build = useDisclosure(
+		view.configs.map((config) => config.label),
+		INSTALLED_CARDS_OPEN
+	);
 	const revealing = answered !== undefined;
+	const [before, setBefore] = useState(view);
+	if (!revealing && before !== view) setBefore(view);
+	const feedback = useAnswerFeedback(answered, handlers.onNext);
+	useScrollToTopOnSmallScreen(view.poll?.id);
+	const on = {
+		...handlers,
+		onSelect:
+			view.poll?.answerType === "multiple"
+				? handlers.onSelect
+				: (optionId: string) => onAnswer([optionId]),
+		onSubmit: () => onAnswer(selectedOptionIds),
+	};
 
 	usePollKeyboard({
 		keys: revealing ? [] : pollKeysFor(view),
-		onPick: revealing ? undefined : onSelect,
+		onPick: revealing ? undefined : on.onSelect,
 		onEnter: enterActionFor(
 			revealing,
 			selectedOptionIds.length > 0,
-			onSubmit,
-			onNext
+			on.onSubmit
 		),
 	});
 
-	const live = view.poll ?? undefined;
-	const mood =
-		answered !== undefined
-			? answeredMoodFor(view, answered, onNext)
-			: live === undefined
-				? undefined
-				: liveMoodFor(
-						view,
-						live,
-						selectedOptionIds,
-						onSelect,
-						onSubmit,
-						onUnseal,
-						onApprove
-					);
+	const props = pollScreenPropsFor({
+		view,
+		runNumber,
+		answered,
+		before,
+		landed: feedback.landed,
+		selectedOptionIds,
+		on: { ...on, onLanded: feedback.land },
+		ui: { build, clockMs },
+	});
 
-	if (mood === undefined) return null;
-
-	return (
-		<PollScreen
-			{...mood}
-			header={{
-				...pollHeaderFor(view),
-				readout: runReadoutFor(view, runNumber),
-			}}
-			step={pollStepFor(view, revealing)}
-			coverage={pollCoverageFor(view, answered !== undefined)}
-			holds={pollHoldsFor(view)}
-			facts={pollFactsFor(live)}
-			audits={auditPropsOf(view.audits)}
-			buildFooter={{
-				build: pollBuildFor(
-					view,
-					{
-						openInfo: disclosedIn(
-							view.configs.map((config) => config.label),
-							buildFlips,
-							INSTALLED_CARDS_OPEN
-						),
-						onToggleInfo: (name) =>
-							setBuildFlips(toggleDisclosure(buildFlips, name)),
-						onPress,
-					},
-					answered
-				),
-				counts: buildCountsOf(view),
-				flash: answered?.id,
-			}}
-		/>
-	);
+	return props === null ? null : <PollScreen {...props} />;
 };

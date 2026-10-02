@@ -3,62 +3,19 @@ import { describe, expect, it } from "vitest";
 import {
 	type GateAnswer,
 	type GateOutcomeFrame,
-	closedBarFor,
 	gateOutcomePropsFor,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
+import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	roundToOneDecimal,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
-const GATE_0_LADDER = { floor: 0, ok: 40, healthy: 60 };
 const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };
-
-describe("closedBarFor", () => {
-	it("leaves a genuine clear's reading untouched", () => {
-		expect(closedBarFor("cleared", 4, GATE_4_LADDER, 30).held).toBe(30);
-		expect(closedBarFor("cleared", 0, GATE_0_LADDER, 100).held).toBe(100);
-	});
-
-	it("never lifts a flawless opening gate onto its healthy line", () => {
-		expect(closedBarFor("cleared", 0, GATE_0_LADDER, 100).held).not.toBe(
-			GATE_0_LADDER.healthy
-		);
-	});
-
-	it("holds a missed gate inside the band its verdict names", () => {
-		expect(closedBarFor("held", 4, GATE_4_LADDER, 30).held).toBeLessThan(
-			GATE_4_LADDER.ok
-		);
-		expect(
-			closedBarFor("held", 4, GATE_4_LADDER, 30, "band").held
-		).toBeLessThan(GATE_4_LADDER.ok);
-		expect(closedBarFor("fatal", 4, GATE_4_LADDER, 30).held).toBeLessThan(
-			GATE_4_LADDER.floor
-		);
-	});
-
-	it("keeps an OK reading on a Champion held by the band, since OK is not enough there", () => {
-		const onOk = GATE_4_LADDER.ok + 5;
-
-		expect(
-			closedBarFor("held", VICTORY_GATE, GATE_4_LADDER, onOk, "band").held
-		).toBe(onOk);
-	});
-
-	it("lifts a won Champion onto its healthy line, never onto OK", () => {
-		expect(
-			closedBarFor("cleared", VICTORY_GATE, GATE_4_LADDER, GATE_4_LADDER.ok)
-				.held
-		).toBe(GATE_4_LADDER.healthy);
-	});
-
-	it("keeps the honest reading when the window held the gate, not the meter", () => {
-		expect(closedBarFor("held", 4, GATE_4_LADDER, 30, "unscored").held).toBe(
-			30
-		);
-	});
-});
 
 const GATE = 4;
 
@@ -79,11 +36,14 @@ const frameOf = (
 	held: number
 ): GateOutcomeFrame => ({
 	gate: GATE,
+	closing: clearsAt(bandAtLadder(held, GATE_4_LADDER).id, GATE)
+		? "cleared"
+		: "held",
 	answers: Array.from({ length: 5 }, () => answerAt("correct")),
 	swatchGates,
 	balanceBeforeKb: 64,
 	configs: [],
-	bar: { ...GATE_4_LADDER, held },
+	bar: { ...GATE_4_LADDER, held, band: bandAtLadder(held, GATE_4_LADDER).id },
 	payoutKb: 32,
 	bonusKb: 0,
 	faucetKb: 0,
@@ -95,8 +55,8 @@ const SHORT = 10;
 
 const heldByUnscored = (): GateOutcomeFrame => ({
 	...frameOf([], CLEARED),
+	closing: "held",
 	heldBy: "unscored",
-	scoredUnits: 1,
 	answers: [
 		answerAt("correct"),
 		...Array.from({ length: 4 }, () => answerAt("wrong")),
@@ -107,6 +67,7 @@ describe("a Champion that closed on OK", () => {
 	const championOnOk = (): GateOutcomeFrame => ({
 		...frameOf([], GATE_4_LADDER.ok + 5),
 		gate: VICTORY_GATE,
+		closing: "held",
 		heldBy: "band",
 	});
 
@@ -119,7 +80,7 @@ describe("a Champion that closed on OK", () => {
 	});
 });
 
-describe("a gate the window minimum held on a good meter", () => {
+describe("a close recorded under the old window minimum", () => {
 	it("reads as a hold with the peel choice, whatever the bar says", () => {
 		const props = gateOutcomePropsFor(heldByUnscored());
 
@@ -171,9 +132,9 @@ describe("a gate the window minimum held on a good meter", () => {
 	it("says the window came up short, not the meter", () => {
 		const props = gateOutcomePropsFor(heldByUnscored());
 
-		expect(props.header.note).toContain("scored 1 of 2 units");
+		expect(props.header.note).toContain("the window came up short");
 		expect(props.header.note).not.toContain("the meter fell short");
-		expect(props.coverageHold).toBe("scored 1 of 2 units");
+		expect(props.coverageHold).toBe("the window came up short");
 	});
 
 	it("keeps the meter's own honest band beside the reason it held", () => {
@@ -222,7 +183,7 @@ describe("the By category panel", () => {
 });
 
 describe("gateOutcomePropsFor and the swatch", () => {
-	it("hands the swatch to a flawless window even where the gate only holds", () => {
+	it("reads the swatch off the run's record, not off the band it closed in", () => {
 		const props = gateOutcomePropsFor(frameOf([GATE], SHORT));
 
 		expect(props.header.swatchState).toBe("discovered");
@@ -256,6 +217,53 @@ describe("gateOutcomePropsFor and the swatch", () => {
 		expect(gateOutcomePropsFor(frameOf([GATE], SHORT)).header.title).toBe(
 			"Lavender holds"
 		);
+	});
+
+	it("asks a missed swatch for a full bar and badges the coverage held", () => {
+		const row = gateOutcomePropsFor(frameOf([], CLEARED)).earned?.rows.at(-1);
+
+		expect(row?.detail).toBe("needs 100% coverage");
+		expect(row?.badge).toEqual({ label: "30%" });
+		expect(row?.marks).toBeUndefined();
+	});
+
+	it("caps the earned swatch's badge at a full bar", () => {
+		const row = gateOutcomePropsFor(frameOf([GATE], 130)).earned?.rows.at(-1);
+
+		expect(row?.badge?.label).toBe("100%");
+	});
+
+	it("never names the gate's codebase on the bar, the Earned panel or the next gate's note", () => {
+		for (const frame of [frameOf([], CLEARED), frameOf([GATE], 100)]) {
+			const props = gateOutcomePropsFor(frame);
+			const stated = [
+				props.bar.note ?? "",
+				props.earned?.summary ?? "",
+				...(props.earned?.rows ?? []).flatMap((row) => [
+					row.name,
+					row.detail ?? "",
+					row.badge?.label ?? "",
+				]),
+			].join(" ");
+
+			expect(stated).not.toMatch(/\bchanges?\b/i);
+		}
+	});
+
+	it("lists what a single and a multiple choice are worth at the gate a clear opens", () => {
+		expect(gateOutcomePropsFor(frameOf([], CLEARED)).nextGate).toEqual({
+			title: "At Rainbow",
+			rates: [
+				{
+					label: "single choice",
+					gain: `+${roundToOneDecimal(coverageGainPercentFor(1, GATE + 1))}%`,
+				},
+				{
+					label: "multiple choice",
+					gain: `+${roundToOneDecimal(coverageGainPercentFor(2, GATE + 1))}%`,
+				},
+			],
+		});
 	});
 
 	it("fills only the gates the run played clean on the track", () => {
@@ -349,23 +357,26 @@ describe("a clear whose parts are known", () => {
 		payoutKb: 121,
 		clearKb: 68,
 		overflowKb: 53,
-		streak: 4,
 	});
 	const rowNamed = (frame: GateOutcomeFrame, label: string) =>
 		gateOutcomePropsFor(frame).storage.rows.find((row) => row.label === label);
 
-	it("keeps the gate's own row to the base and names the streak it paid on", () => {
+	it("keeps the gate's own row to the base with no streak note", () => {
 		const row = rowNamed(itemised(), "Gate cleared");
 
-		expect(row?.notes).toEqual(["streak ×1.4"]);
+		expect(row?.notes).toBeUndefined();
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+36 KB" })
 		);
 	});
 
-	it("gives a flat clear payout its own row under the config that pays it", () => {
-		expect(rowNamed(itemised(), "Build Artifacts")?.figures).toContainEqual(
-			expect.objectContaining({ label: "+32 KB" })
+	it("gives a flat clear payout its own row, led by the chip of the config that pays it", () => {
+		expect(gateOutcomePropsFor(itemised()).storage.rows).toContainEqual(
+			expect.objectContaining({
+				config: expect.objectContaining({ name: "Build Artifacts" }),
+				notes: ["on the clear"],
+				figures: [expect.objectContaining({ label: "+32 KB" })],
+			})
 		);
 	});
 
@@ -422,7 +433,7 @@ describe("a clear whose parts are known", () => {
 	it("keeps the whole payout on the gate's row when the parts are unknown", () => {
 		const row = rowNamed(frameOf([], CLEARED), "Gate cleared");
 
-		expect(row?.notes).toEqual([]);
+		expect(row?.notes).toBeUndefined();
 		expect(row?.figures).toContainEqual(
 			expect.objectContaining({ label: "+32 KB" })
 		);
@@ -440,16 +451,14 @@ describe("a clear whose parts are known", () => {
 describe("a caught gate reads as a hold that owes its reason", () => {
 	const caught = (): GateOutcomeFrame => ({
 		...frameOf([], SHORT),
-		bar: closedBarFor("held", 4, GATE_4_LADDER, 2, "catch"),
+		closing: "held",
+		bar: { ...GATE_4_LADDER, held: 2, band: "danger" },
 		heldBy: "catch",
 		caughtFatalBy: "Try/Catch",
 	});
 
 	it("keeps the sub-floor reading the run actually had", () => {
-		expect(closedBarFor("held", 4, GATE_4_LADDER, 2, "catch").held).toBe(2);
-		expect(closedBarFor("held", 4, GATE_4_LADDER, 2, "band").held).toBe(
-			GATE_4_LADDER.floor
-		);
+		expect(gateOutcomePropsFor(caught()).bar.held).toBe(2);
 	});
 
 	it("titles it as a hold, not as the run ending", () => {
@@ -464,6 +473,92 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 		expect(gateOutcomePropsFor(caught()).header.badges).toContainEqual(
 			expect.objectContaining({ label: "Try/Catch caught" })
 		);
+	});
+
+	const peelingCaught = (chosen: readonly string[]): GateOutcomeFrame => ({
+		...caught(),
+		configs: [CONFIGS.tryCatch, CONFIGS.js],
+		peelSlotsRemaining: 6,
+		balanceBeforeKb: 10_000,
+		chosen,
+	});
+
+	const peelOf = (frame: GateOutcomeFrame) =>
+		gateOutcomePropsFor(frame).tail?.choice?.peel;
+
+	const chipFor = (frame: GateOutcomeFrame, name: string) => {
+		const peel = peelOf(frame);
+		const chips = [
+			...(peel?.catch === undefined ? [] : [peel.catch.config]),
+			...(peel?.drop.configs ?? []),
+		];
+		return chips.find((config) => config.name === name);
+	};
+
+	it("lifts the catch out of the drops into a step of its own", () => {
+		const peel = peelOf(peelingCaught([]));
+
+		expect(peel?.catch?.config.name).toBe(CONFIGS.tryCatch.label);
+		expect(peel?.drop.configs.map((config) => config.name)).not.toContain(
+			CONFIGS.tryCatch.label
+		);
+	});
+
+	it("tells the locked drops what they wait for", () => {
+		expect(peelOf(peelingCaught([]))?.drop.note).toBe(
+			"opens once Try/Catch is dropped"
+		);
+	});
+
+	it("keeps the catch step on screen once it is picked, struck through", () => {
+		expect(
+			peelOf(peelingCaught([CONFIGS.tryCatch.id]))?.catch?.config.lost
+		).toBe(true);
+	});
+
+	it("offers the catch as the only drop until it is picked", () => {
+		const frame = peelingCaught([]);
+
+		expect(chipFor(frame, CONFIGS.tryCatch.label)?.pick?.disabled).toBe(false);
+		expect(chipFor(frame, CONFIGS.js.label)?.pick?.disabled).toBe(true);
+	});
+
+	it("badges the catch as the drop that comes first", () => {
+		expect(
+			chipFor(peelingCaught([]), CONFIGS.tryCatch.label)?.badges
+		).toContainEqual(expect.objectContaining({ label: "drop first" }));
+	});
+
+	it("keeps storage shut until the catch is picked", () => {
+		const bribe = gateOutcomePropsFor(peelingCaught([])).tail?.choice?.peel
+			.bribe;
+
+		expect(bribe?.pick.disabled).toBe(true);
+		expect(bribe?.note).toBe("drop Try/Catch first");
+	});
+
+	it("opens the rest of the peel once the catch is picked", () => {
+		const frame = peelingCaught([CONFIGS.tryCatch.id]);
+
+		expect(chipFor(frame, CONFIGS.js.label)?.pick?.disabled).toBe(false);
+		expect(
+			gateOutcomePropsFor(frame).tail?.choice?.peel.bribe.pick.disabled
+		).toBe(false);
+	});
+
+	it("quotes no refund on the catch, since the catch pays none", () => {
+		const frame = {
+			...peelingCaught([CONFIGS.tryCatch.id]),
+			configs: [CONFIGS.tryCatch, CONFIGS.garbageCollection],
+		};
+
+		expect(chipFor(frame, CONFIGS.tryCatch.label)?.badges).toHaveLength(1);
+	});
+
+	it("has no catch step on a hold that nothing caught", () => {
+		expect(
+			gateOutcomePropsFor(frameOf([], SHORT)).tail?.choice?.peel.catch
+		).toBeUndefined();
 	});
 
 	it("chips nothing on a hold that nothing caught", () => {
@@ -504,5 +599,38 @@ describe("what surviving a rival's audits paid, and the heldAudit the clear arme
 		expect(props.header.badges).not.toContainEqual(
 			expect.objectContaining({ label: "audit earned" })
 		);
+	});
+});
+
+describe("the storage fold's headline", () => {
+	it("states the balance change, the bill already taken off", () => {
+		const billed: GateOutcomeFrame = {
+			...frameOf([], CLEARED),
+			payoutKb: 85,
+			billKb: 16,
+		};
+
+		expect(gateOutcomePropsFor(billed).storage.badges?.[0]?.label).toBe(
+			"+69 KB"
+		);
+	});
+});
+
+describe("a PERFECT close states its bonus (ADR-075)", () => {
+	const perfect = (bonusKb: number): GateOutcomeFrame => ({
+		...frameOf([GATE], 100),
+		payoutKb: 48,
+		bonusKb,
+	});
+
+	it("opens a bonus panel with the KB it paid", () => {
+		const { bonus } = gateOutcomePropsFor(perfect(16));
+
+		expect(bonus?.badges?.[0].label).toBe("+16 KB");
+		expect(bonus?.detail).toContain("×1.5");
+	});
+
+	it("leaves the panel out when the bonus paid nothing", () => {
+		expect(gateOutcomePropsFor(perfect(0)).bonus).toBeUndefined();
 	});
 });

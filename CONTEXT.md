@@ -32,39 +32,45 @@ boundary, so this table is the map an architecture review reads first.
 |---|---|---|
 | Run / Climb | `run/domain` | `RunState`, `RunStatus`, `createRun`, and the primitives every transition edits state through: `withLog`, `withBuild`, `addStorage`, `freshWindow`, `shopDraft`, plus the audit lens `auditsOf` / `liveConfigsOf` / `offlineConfigsOf` / `offlinePairsOf` (`run.model.ts`). Holds no transitions and no reducer: it is the bottom of the run-domain graph |
 | Run action | `run/domain` | `RunAction`, `runReducer`, `isShopLocked`, and the configuring transitions `install` / `uninstall` / `pick-stack` / `start` (`runAction.model.ts`); the top of the graph, so it is the one file that may import every other |
-| Answer / Scoring | `run/domain` | `answer`, `closeWindow` (`answer.model.ts`); one poll scored, and the gate verdict, payout and settle when the window fills |
+| Answer / Scoring | `run/domain` | `answer`, `pollCreditFor` (`answer.model.ts`); one poll scored and the accuracy credit it carries |
+| Gate close | `run/domain` | `settleGate`, `missPeelFor`, `gateProjectionFor` (`gateClose.model.ts`); the gate verdict, payout and settle when the window fills, and the rules a preview of it asks (ADR-168) |
 | Shop action | `run/domain` | `draft`, `upgrade`, `sell`, `drop`, `setBuildSpace`, `plantPin`, `finishReward`, the ADR-029 controls `rebuildDraft` / `lockOffer` / `extendOffers`, `skipShop` (the visit is marked touched in `runAction.model.ts`) and their `can*` / `*Available` predicates (`shopAction.model.ts`); pricing and rolling stay in `shop/domain/draft.model.ts` |
 | Paid action | `run/domain` | lint and peek: `lintFeeFor`, `peekFeeFor`, `lintApplies`, `canRunLinter`, `spendLint`, `peekApplies`, `canBuyPeek`, `spendPeek` (`paidAction.model.ts`) |
 | Strip / Peel | `run/domain` | `strip`, `minifyForPeel`, `peelRefundIn`, `resumeClimb` (`strip.model.ts`); the ADR-037 way out of a missed gate |
 | Run fixtures | `run/domain` | `started`, `answerWith`, `clearGate`, `failGate`, `payPeel`, `handed`, `poll`, `pool` (`run.factory.ts`); the shared spec fixtures for the run engine |
 | Run status | `run/domain` | `RunStatus` = `configuring \| answering \| awaiting-strip \| rewarding \| won \| dead` |
 | Run poll / Grading | `run/domain` | `RunPoll`, `RunOption`, `AnswerType`, `AnswerOutcome`, `AnsweredPoll`, `answerOutcome`, `coverageShare`, `mirrorPoll`, `mirrorGrading`, `nextStreak` (`runPoll.model.ts`); the run's own projection of a poll plus the one grading rule, shared with the community board. The authored `Poll` stays with the `polls` context (ADR-002 §2) |
+| Gate close record | `run/domain` | `LastClose`, `RecordedClose`, `closesOf` (`run.model.ts`); what the gate decided, written once by `settleGate` on every exit (ADR-160): gate, band, cleared, closing, hold reason, held percent, audited ladder, correct count, then KB and the grants the repository stamps. Never re-derived |
 | Run snapshot | `run/domain` | `RunSnapshot`, `toRunSnapshot`, `hydrateRunState` (`runSnapshot.model.ts`); what persists to `run_states.state` |
 | Run rules | `run/domain` | `SLICE_WINDOW`, `VICTORY_GATE`, `BASE_SLOTS`, `failPeelShareFor`, `peelQuotaSlotsFor`, `isPeelFatal`, `atMinimumWidth` (`rules.model.ts`) |
-| Build space | `run/domain` | `BUILD_SPACE_RUNGS`, `buildSpaceFor`, `rungIndexFitting`, `spaceFitting`, `upkeepFitting`, `rungAfterFitting`, `upkeepForSpace`, `highestAffordableSpace` (`rules.model.ts`) — the ladder. The rung a build occupies is derived in `build/domain` (`spaceForBuild`, `upkeepForBuild`), never stored or picked (ADR-098) |
+| Build space | `build/domain` | `buildSpaceOf`, `fitsBuildSpace`, `settleUpkeep`, `rungFitting` (`buildSpace.model.ts`); the space a build holds, its cap, the upkeep owed, what a close settles, and the one refusal rule (ADR-167). The ladder data `BUILD_SPACE_RUNGS` and `BASE_SLOTS` stays in `rules.model.ts`. The rung is derived from the build, never stored or picked (ADR-098) |
 | Seed / Segment | `run/domain` | `rollDailySeedSequence` (`seed.model.ts`); pure, so it is a model not a service |
 | Run view | `run/application` | `RunView`, `toRunView` (`runView.viewmodel.ts`); the single projection every screen reads, composed from the slices below. Also the trust boundary (DVTD-ay5e): the client receives this and never `RunState` |
-| Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object — the subject of `GateStakeReceipt` |
+| Gate stake | `run/application` | `GateStake`, `AuditView`, `auditViewsFor`, `stakeBarFor` (`gateStake.viewmodel.ts`); what the coming gate demands and pays, as one object, and the one way it becomes a coverage bar |
+| Gate close view | `run/application` | `GateCloseView`, `gateCloseViewOf` (`gateClose.viewmodel.ts`); the close record as a screen reads it (`RunView.lastClose`), filling a snapshot written before the record carried its ladder. The debrief and the run-over screen read it; nothing re-rules |
 | Poll view | `run/application` | `PollView`, `redactPoll` (`pollView.viewmodel.ts`); the redaction that strips `correct` flags before a poll reaches the client |
 | Paid actions | `run/application` | `PaidActions`, `paidActionsFor` (`paidActions.viewmodel.ts`); lint and peek as the answering screen sees them |
 | Shop controls | `run/application` | `ShopControls`, `shopControlsFor` (`shopControls.viewmodel.ts`); ADR-029's rebuild / lock / extend plus the git tag |
-| Gate payout | `run/application` | `GatePayout`, `gatePayoutFor` (`gatePayout.viewmodel.ts`); what the cleared gate paid and took back |
+| Gate payout | `run/application` | `GatePayout`, `gatePayoutFor` (`gatePayout.viewmodel.ts`); what the cleared gate paid and took back. The verdict, the meter and the ladder are the close record's, not this |
 | Run orchestration | `run/application` | `run.service.ts` (was `handlers.ts`), `run.serverfn.ts` (was `api/run.ts`), `run.validation.ts` |
-| Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, one write. Never split across aggregates |
+| Run cache | `run/application` | `useRunCommit` (`useRunCommit.hook.ts`): `commit(result)` writes the returned view into today's run and stales every side view an action can move; `refresh()` stales today's run too. `useRunActions` (`send`, `sendThen`, `sendWith`, `start`, `warmBoot`, `abandon`), `useFireAudit` and `useLootFallenRun` all go through it; the date-bound keys live in `~/shared/queryKeys.ts` (`sessionRunQueryKeys.todays*`) |
+| Run write path | `run/infrastructure` | `applyActionToRun` in `run.repository.ts`; one `SELECT ... FOR UPDATE` on `run_states`, one reducer, the `settle` seam, one grant pass, one write. Never split across aggregates. `abandonSessionRun` only finishes the run: an abandoned run banks nothing (`storageCreditRate`), so it reads no state |
+| Account grant | `run/domain` + `run/infrastructure` | `objectiveGrantsFor` (configs + services off one set of counts) and `accountGrantsOf` (swatches, first installs, the planted pin, the storage watermark, whether titles are due) in `accountGrant.model.ts`: what an action earned the account, computed from before and after. `accountGrant.repository.ts` takes the caller's `tx` and writes it: `applyObjectiveGrants`, `applyAccountGrants`, `grantEarnedTitles`, plus `fetchCategoryPollCounts`. `countsReader` in `configUnlock.model.ts` is the one way any fold reads a metric |
 | Poll sequence | `run/infrastructure` | `runPolls.repository.ts` owns every statement against `daily_run_seeds` / `daily_run_polls` / `run_polls`: `getOrCreateDailyRunSeed`, `fetchRunPollsForRun`, `rollSegmentForward`. Takes the caller's `tx`, so the write path stays one transaction |
-| Run screens | `run/presentation` | `RunLayout` plus one Tier-2 component per route (`RunNew`, `RunPrep`, `RunPoll`, `RunGate`, `RunReview`, `RunShop`, `RunOver`, `RunStart`, `RunRecap`) and the kanto adapters they mount (`StartView`, `PrepView`, `PollView`, `GateOutcomeView`, `ReviewView`, `ShopView`, `RunOverView`). No HUD: each kanto screen carries its own header and footer (ADR-088) |
-| Build | `build/domain` | `Build` = `{ id, configs, vendorLockedConfigId? }` (`build.model.ts`); carries no space of its own — `spaceForBuild` derives it (ADR-098) |
+| Run screens | `run/presentation` | `RunLayout` plus one Tier-2 component per route (`RunNew`, `RunPrep`, `RunPoll`, `RunGate`, `RunReview`, `RunShop`, `RunOver`, `RunStart`, `RunRecap`) and the kanto adapters they mount (`StartView`, `PrepView`, `PollView`, `GateOutcomeView`, `ReviewView`, `ShopView`, `RunOverView`). An adapter is wiring only: hooks, local state and one call to its screen's props builder (below). No HUD: each kanto screen carries its own header and footer (ADR-088) |
+| Screen props | `{aggregate}/application` | One builder per screen, `{screen}ScreenPropsFor({ view, on, ui })`, in the sibling viewmodel: `shopScreenPropsFor`, `pollScreenPropsFor`, `prepScreenPropsFor`, `gateOutcomeScreenPropsFor`, `runOverScreenPropsFor`, `newRunScreenPropsFor`, `communityScreenPropsFor`. `view` is the `RunView` (or `RunCommunityView`), `on` every handler, `ui` the local state as plain values and callbacks (a `Disclosure` from `useDisclosure`, an armed id, a draft). The frame types the kanto factories drive (`GateOutcomeFrame`, `PrepFrame`, `RunOverFrame`) sit under these builders |
+| Build | `build/domain` | `Build` = `{ id, configs, vendorLockedConfigId? }` (`build.model.ts`); carries no space of its own — `buildSpaceOf` derives it (ADR-098) |
 | Public build | `build/domain` | `PublicBuild`, `publicBuildOf`, `publicWeightOf` (`publicBuild.model.ts`); a build as any other player may read it — configs, versions, weight, the vendor lock — refreshed from the roster (ADR-101). Display only: no check reads it |
-| Slot | `build/domain` | `occupiedSlots`, `billableSlotsOf`, `freeSlots`, `hasRoomFor`, `overflowSlots`, `isOverCapacity`, `MAX_BUILD_WEIGHT` (`build.model.ts`); the space a run rents is **derived** from its weight (`spaceForBuild`), and the ladder lives in `run/domain/rules.model.ts`. `hasRoomFor` measures against the top rung only (ADR-098); `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
+| Slot | `build/domain` | `occupiedSlots` (`build.model.ts`); the space a run rents, its cap and whether a config fits are **derived** from its weight in `buildSpace.model.ts` (ADR-098, ADR-167); `slotsOf` / `canMinify` / `minify` live on the config (`config.model.ts`) |
 | Answer payout | `build/domain` | `answerPayoutFor`, `AnswerPayout`, `previewContextFor`, `perAnswerPreviewFor`, `PerAnswerPreview` (`answerPayout.model.ts`) and `PayoutContext` (`config/domain/effect.model.ts`); the one walk that prices a right answer and attributes it, and the preview is that same walk with no category, so a quote can never disagree with a payout. Run totals held on `RunState.coverage` / `coverageByCategory` |
 | Lint | `build/domain` | `linterFor`, `canLint`; the fee is `lintCost` in `run/domain/paidAction.model.ts` |
 | Build screen | `build/presentation` | `RunNew`, `StartView` |
-| Gate | `gate/domain` | `currentRequirement`, `checkStatuses`, `gatePassed` (`gate.model.ts`) |
+| Gate | `gate/domain` | `GateLadder`, `gateLadderFor`, `gateDemandFor`, `GateClose`, `gateRulingFor`, `clearsAt`, `gatePassed`, and the one band classifier `bandAtLadder` with its close readers `bandAtClose` / `closingBandFor` / `heldAtClose` / `ladderAtClose` (`gate.model.ts`). The kit's coverage bar takes its band from here and never cuts one itself (ADR-160) |
 | Gate reward | `gate/domain` | `gateRewardRows`, `gateStorageGained` (`gateReward.model.ts`) |
 | Gate ladder | `gate/domain` | `gateLadder.model.ts`; what unlocks at which gate |
 | Swatch | `gate/domain` | `GateSwatch`, `SwatchTheme`, `swatchForGate` (`swatch.model.ts`); app theming is the `[data-swatch-theme]` / `[data-gate-theme]` palette in `src/styles/app.css` (ADR-020) |
 | Config role | `gate/domain` | `roleOf`, `roleRows` (`configRole.model.ts`); how a config reads on a gate report |
-| Gate screens | `gate/presentation` | `RunGate`, `GateOutcomeView`; one screen, two verdicts (ADR-076), so one route (ADR-088) |
+| Gate screens | `gate/presentation` | `RunGate`, `GateOutcomeView`; one screen that draws the close record (ADR-160), so one route (ADR-088). No close, no screen |
 | Config | `config/domain` | `Config`, `ConfigSize`, `CONFIG_SIZES` (`config.model.ts`) |
 | Config roster | `config/domain` | `CONFIGS`, `CONFIG_LIST` (`configRoster.model.ts`); the content catalogue |
 | Effect | `config/domain` | `Effect`, `effectOf` (`effect.model.ts`); the benefit half of a config |
@@ -74,22 +80,23 @@ boundary, so this table is the map an architecture review reads first.
 | Config visuals | `src/ui/kanto-theme` | `ConfigChip` and friends; the module's own `presentation/` folder is gone with old-theme |
 | Draft / Rebuild / Lock / Extend | `shop/domain` | `rollDraft`, `rebuildCost`, `extendCost`, `offerCount`, and the rolled upgrade's climb `upgradeOfferFor` / `CLIMB_ONE_IN` / `versionOddsFor` (`draft.model.ts`) |
 | Registry control roster | `shop/domain` | `REGISTRY_CONTROLS`, `REGISTRY_CONTROL_LIST`, `openingGateOf`, `closingGateOf`, `isSoldInShop`, `ShopSoldId` (`registryControl.model.ts`) — the one table naming the eight services (the player's word since ADR-115; the code says control), each with where it is sold, shop or archive (ADR-115 D10), what it costs to carry into a run (`carryBytes`, `CarriedServiceId`, `isCarriedService`, ADR-153), its unlock objective (`servicesUnlockedBy`, `isServiceUnlocked`, ADR-116) and, for a shop service, the gate it opens on; the shop and the Dex both read it |
-| Service unlocks | `shop/infrastructure` + `shop/application` | `fetchUnlockedServiceIds` (`serviceUnlock.repository.ts`), `getServiceUnlocks` (`serviceUnlock.serverfn.ts`) — the account's earned services (`user_service_unlocks`), read by the run view and the Dex; granted at the objective seam in `run.repository.ts` |
+| Service unlocks | `shop/infrastructure` + `shop/application` | `fetchUnlockedServiceIds` (`serviceUnlock.repository.ts`), `getServiceUnlocks` (`serviceUnlock.serverfn.ts`) — the account's earned services (`user_service_unlocks`), read by the run view and the Dex; granted by `applyObjectiveGrants` in `run/infrastructure/accountGrant.repository.ts` |
 | Shop screen | `shop/presentation` | `RunShop`, `ShopView`; the Registry is a panel on it, and on New run |
 | Category leader / Seat | `run/domain` | `CategoryLeader`, `CategorySeat`, `seatsFor`, `MIN_LEADER_STREAK` (`categoryLeader.model.ts`); one seat per category, read by the poll screen and by the community board. The row both surfaces draw is `categoryLeaderRowFor` (`run/application`) |
 | Voter | `community/domain` | `CommunityVoter` (`voter.model.ts`); a player as the board draws them |
 | Climb map | `community/domain` | `ClimbMarker`, `trackPosition` (`climbMap.model.ts`); the shared per-day position track, read only by the community board |
 | Climb ladder | `community/application` | `ladderFor`, `LadderGate`, `LadderClimber`, `LadderFallen`, `ClimberMark` (`climbLadder.viewmodel.ts`); the map's gates with everyone standing under them, the fallen keyed by run, each chip's rival ring, close mark and rescue tag, and the `ClimberCard` a chip opens |
 | Community board | `community/application` | `getRunCommunityService` and its view types (`community.service.ts`), `community.serverfn.ts` |
+| Standing | `community/domain` | `Standing`, `standingOf` (`standing.model.ts`); an open run as the profile's "Climbing now" and the hover card both state it: gate, coverage percent, streak, storage, best category, build (ADR-166) |
 | Climb standing | `community/application` | `ClimbStanding` (`community.service.ts`); how a run is doing as anyone may read it — handle, worn title, coverage percent, streak, storage, best category. ADR-101 §2 says what is never on it |
 | Community reads | `community/infrastructure` | `community.repository.ts`, `climbers.repository.ts` |
-| Community screen | `community/presentation` | `RunCommunity`, `CommunityView`, `useNextPollsCountdown` |
+| Community screen | `community/presentation` + `community/application` | `RunCommunity`, `CommunityView` (`useNextPollsCountdown` is a shared hook); `communityScreen.viewmodel.ts` owns `communityScreenPropsFor`, `pollResultsFor`, `defaultOpenIndex` and the screen's copy |
 | Incident / Attack | `incident/domain` | `RivalCandidate`, `AttackOffer`, `QueuedIncident`, `eligibleRivals`, `offersFor`, `lockIncidents` (`incident.model.ts`); the run-side vocabulary `Attack`, `LastClose`, `LockedIncident` lives on `RunState` (`run.model.ts`) with `armAttack` / `fireAudit` in `attack.model.ts`, so nothing in `run/domain` imports the aggregate |
 | Incident settlement | `incident/application` | `settleIncidents` (`incidentSettlement.service.ts`), the one writer of a gate's audits, handed to `applyActionToRun` as its `settle` seam; `attackTargets.service.ts`, `fireAudit.service.ts`, `incidentsFeed.service.ts`, `incident.serverfn.ts`, `incident.viewmodel.ts`, the three hooks |
 | Incident queue | `incident/infrastructure` | `incident.repository.ts` owns every statement against `audit_incidents` |
 | Incidents feed | `src/ui/kanto-theme` | `AttackPanel` (prep) and `IncidentsPanel`, which the community board composes. The aggregate has no `presentation/` layer: the feed has no screen of its own |
 | Public build chips | `build/application` | `publicBuildChipsFor`, `publicConfigChipFor` (`publicBuild.viewmodel.ts`); the one way another player's build becomes chips, drawn by the prep attack rows and by the climb map |
-| Public build space | `build/domain` | `publicSpaceOf` (`publicBuild.model.ts`); the rung another player's build rents, vendor lock exempt, mirroring `spaceForBuild` |
+| Public build space | `build/domain` | `publicSpaceOf` (`publicBuild.model.ts`); the rung another player's build rents, vendor lock exempt, read off `rungFitting` |
 | Poll answering visuals | `poll/presentation` | `PollMarkdown`, `PollQuestionHeading`; the rest moved into the kanto `PollScreen` |
 
 A screen belongs to the aggregate whose concept it is about, which is why
@@ -101,14 +108,15 @@ run's way of drawing one.
 
 | Concept | Aggregate | Key symbols | Today |
 |---|---|---|---|
-| Poll | `poll` | `Poll`, `PollOption`, `evaluatePollAnswer` (`poll.model.ts`, `pollOption.model.ts`, `pollAnswer.model.ts`) | `modules/polls/poll/` |
+| Poll | `poll` | `Poll`, `PollOption` (`poll.model.ts`, `pollOption.model.ts`). Grading is not here: the run's `answerOutcome` / `mirrorGrading` (`run/domain/runPoll.model.ts`) is the one rule, and the Dex grades with it too (2026-09-30; `evaluatePollAnswer` deleted) | `modules/polls/poll/` |
 | Poll authoring | `authoring` | Admin CRUD plus the four `/polls/*` screens (`PollList`, `PollDetail`, `PollForm`, `PollEdit`) | `modules/polls/authoring/` |
 
 ### Context `collection`
 
 | Concept | Lives in | Key symbols |
 |---|---|---|
-| Polldex | `dex/domain` | `PolldexEntry`, `filterPolldexEntries`, `polldexCoverage` (`polldex.model.ts`) |
+| Polldex | `dex/domain` | `PolldexEntry`, `filterPolldexEntries`, `PollSighting`, `timesSeenOf`, `isSeenPoll` (`polldex.model.ts`); a poll is **seen** once dealt or answered (ADR-166) |
+| Tally | `dex/domain` | `Tally`, `tallyOf`, `pollTallyOf`, `configTallyOf`, `titleTallyOf` (`tally.model.ts`); held of total for every collection, the one rule the profile and the Dex both count with, so held never passes total (ADR-166). `HELD_OF` in `~/shared/lib/copy.ts` states it |
 | Dex reads | `dex/application` + `dex/infrastructure` | `getPolldexService` (`polldex.service.ts`), `getPolldex` (`polldex.serverfn.ts`), `polldex.repository.ts` |
 | The Dex | `dex/presentation` + `dex/application` | Tab shell plus the six tabs (`Dex.component`, `dexScreen.viewmodel`, `DexScreen`, `DexPolls`, `DexConfigs`, `DexControls`, `DexAudits`, `DexSwatches`, `DexRuns`); the services tab is one section listing every service, named locked or not |
 | Controldex | `dex/domain` | `ControldexEntry`, `controldex` (`controldex.model.ts`) — every roster service with whether the account has unlocked it, read from the service grants (ADR-116) |
@@ -120,8 +128,10 @@ run's way of drawing one.
 |---|---|---|
 | Login, signup, session | `auth` | `modules/account/auth/` |
 | User, dev card, awards | `profile` | `modules/account/profile/`, `routes/_authed/profile.$userId.tsx` |
+| Profile face | `profile` | `profile.model.ts` (`ProfileIdentity`, `ProfileFace`, `profileFaceOf`, `ProfileRecord`, `ProfileTotals`, `PublicProfile`); who a player is — name, handle, photo, border, worn titles, rank count, authorship, theme — built once for the public profile, your own profile and the hover card (ADR-166). `getPublicProfile` is the one read; your own page uses it too |
+| Look | `profile` | `look.model.ts` (`Look`, `LookOwnership`, `LookRefusal`, `lookRefusalOf`, `toggleTitleIn`, `isSameLook`), `look.service.ts` (`saveLookService`), `look.serverfn.ts`, `useLookDraft.hook.ts` (`useLookDraft`, `useSaveLook`). The one write path for `equipped_border_id` + `equipped_title_ids` (ADR-144): the appearance tab's save press and the title announcement both go through it, and `lookRefusalOf` is the one rule that refuses an unowned border, an unearned or repeated title, or more than the cap. The press-to-wear border and swatch paths were deleted 2026-09-30; the swatch joins the look under DVTD-su6a |
 | Archive + borders | `profile` | `border.model.ts` (catalogue + `findBorderById`), `archive.service.ts`, `useArchiveState.hook.ts`, `BorderShop`, `ArchiveSummary`. All three columns (`archived_storage`, `owned_border_ids`, `equipped_border_id`) sit on `users`, so one aggregate owns one table |
-| Title | `profile` | `title.model.ts` (`Title`, `TitleEarn`, `TITLES`, `findTitleById`, `isExclusive`, `TITLE_METRICS`, `titlesEarnedBy`), `title.repository.ts`, `title.service.ts`, `useTitleState.hook.ts`, `TitleShelf`. Earned identity, permanent, one worn (ADR-109). Owned titles are rows in `user_titles`; `users.equipped_title_id` is only which one is on show. Not to be confused with an account **role** (`Poll editor`, `Admin`), which is authority and lives on `users.role` |
+| Title | `profile` | `title.model.ts` (`Title`, `TitleEarn`, `TITLES`, `findTitleById`, `isExclusive`, `TITLE_METRICS`, `titlesEarnedBy`, and the wear rule `wearTitle` / `wearEach` / `WORN_TITLE_CAP`), `title.repository.ts`, `title.service.ts`, `useTitleState.hook.ts`, `TitleShelf`. Earned identity, permanent, up to three worn (ADR-109, ADR-144). Titles are worn only through the **Look** (below); no per-title write path exists. Owned titles are rows in `user_titles`; `users.equipped_title_ids` is only which are on show. Not to be confused with an account **role** (`Poll editor`, `Admin`), which is authority and lives on `users.role` |
 
 ### Context `ops`
 
@@ -133,6 +143,7 @@ taken by configs in the roster.
 |---|---|---|
 | Visit | `pulse/domain` | `Visit`, `DeviceClass`, `KNOWN_ROUTE_IDS`, `isKnownRouteId`, `deviceClassOf`, `referrerHostOf`, `countryOf` (`visit.model.ts`); one visitor's day on one screen, never a page view |
 | Visitor identity | `pulse/infrastructure` | `visitorHashOf`, `readVisitorContext`, `isSameOriginRequest` (`visitor.repository.ts`); the only reader of the incoming request. The hash is keyed to the date, so it rotates at midnight and nothing links a visitor across days — which is why the app shows no consent banner |
+| Admin panel | `admin/application` + `admin/infrastructure` + `admin/presentation` | `getAdminDashboardService`, `sendReminderEmailService`, `AdminDashboard` (`admin.service.ts`), `getAdminDashboard`, `sendReminderEmail` (`admin.serverfn.ts`, both behind `withAdminUser`), `adminPanelDataFor` (`adminPanel.viewmodel.ts`), the reads in `admin.repository.ts`, `AdminPanel.component` + `AdminPanel.ui`. The route `/_authed/admin` mounts the component and nothing else |
 | Visit write path | `pulse/application` + `pulse/infrastructure` | `recordVisit` / `recordScreen` (`visit.serverfn.ts`), `recordVisitService` (`visit.service.ts`), `upsertVisit` (`visit.repository.ts`) |
 
 ### `src/domains/` is gone
@@ -158,7 +169,7 @@ Where the two differ, use the code name in code and the player name in copy.
 | Strip | `RunAction` `strip`, `RunState.stripsRemaining` |
 | Faucet | `Config.storagePerCorrect`, `RunState.faucetEarnedKb`, `FAUCET_CAP_KB` |
 | Storage plan | `StoragePlan`, `STORAGE_PLANS`, `storagePlanFor` — a rung rents the KB cap and nothing else (ADR-046) |
-| Build space ladder | `BUILD_SPACE_RUNGS`, `spaceForBuild`, `upkeepForBuild` — room is rented by the gate and the rung follows the build, never picked (ADR-098) |
+| Build space ladder | `BUILD_SPACE_RUNGS`, `buildSpaceOf` — room is rented by the gate and the rung follows the build, never picked (ADR-098, ADR-167) |
 | Version | `Config.level`, `maxLevelOf`, `levelUp`, `ShopOffer.heldLevel`; the kit says version (`Version.ui`, `VersionState`, `version` props). An unreconciled pair, recorded here rather than renamed (ADR-060, ADR-097) |
 
 ---
@@ -170,6 +181,7 @@ meant two things at once.
 
 | Retired | Why | Use instead |
 |---|---|---|
+| `getAuthenticatedUserId` / `ensureAuthorizedUser` / `requireUser` / `ensureAdminAccess` / `checkAdminAccess` | Five ways to read one session, three of them deciding admin authority on their own; a signed-out call through the inline one escaped as a raw 500 (deleted 2026-09-30) | `withAuthenticatedUser` and `withAdminUser` in `~/shared/utils/authorization.ts`; the callback receives `Session = { userId, isAdmin }` |
 | `ladderSummaryFor` / `trackBuildFor` / `rivalChipFor` | The map stated a one-line count while it was a placeholder, and a public build became chips in two places | `ladderFor` for the map; `publicBuildChipsFor` for the chips |
 | Pipeline | Retired as the container word (ADR-048): it read as the thing judging you, which is the gate | **Build** for the player's setup; **Gate** for the judgement |
 | Board | Never the container word | **Build** |

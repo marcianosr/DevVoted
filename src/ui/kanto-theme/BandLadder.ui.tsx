@@ -18,10 +18,15 @@ const BAND = "flex w-20 shrink-0";
 const RANGE = "min-w-0 flex-1 text-xs tabular-nums text-theme-muted";
 const PAYS = "ml-auto shrink-0";
 
-const FULL = 100;
 const TENTHS = 10;
 const PERFECT: CoverageBandId = "perfect";
-const RANGE_JOIN = " – ";
+const DANGER: CoverageBandId = "danger";
+
+const COPY = {
+	under: "under ",
+	percent: "%",
+	andUp: "%+",
+} as const;
 
 export type LadderRung = {
 	band: CoverageBandId;
@@ -32,31 +37,19 @@ export type LadderRung = {
 
 export type BandLadderProps = {
 	held: number;
+	band: CoverageBandId;
 	lines: CoverageLadder;
 	rungs: readonly LadderRung[];
 };
 
 const toTenth = (value: number) => Math.round(value * TENTHS) / TENTHS;
 
-const clamped = (value: number) =>
-	Number.isFinite(value) ? Math.min(FULL, Math.max(0, value)) : 0;
-
-const isCap = (rung: LadderRung) => rung.band === PERFECT;
-
-const standingRungOf = (
-	rungs: readonly LadderRung[],
-	held: number
-): LadderRung | undefined => {
-	if (held >= FULL) return rungs.find(isCap) ?? rungs.at(-1);
-	return rungs.find(
-		(rung) => !isCap(rung) && held >= rung.from && held < rung.to
-	);
+const rangeOf = (rung: LadderRung): string => {
+	if (rung.band === PERFECT) return `${toTenth(rung.from)}${COPY.percent}`;
+	if (rung.band === DANGER)
+		return `${COPY.under}${toTenth(rung.to)}${COPY.percent}`;
+	return `${toTenth(rung.from)}${COPY.andUp}`;
 };
-
-const rangeOf = (rung: LadderRung): string =>
-	isCap(rung)
-		? `${toTenth(rung.from)}`
-		: `${toTenth(rung.from)}${RANGE_JOIN}${toTenth(rung.to)}`;
 
 const Rung = ({ rung, standing }: { rung: LadderRung; standing: boolean }) => {
 	const color = COVERAGE_BAND_COLOR[rung.band];
@@ -78,13 +71,12 @@ const Rung = ({ rung, standing }: { rung: LadderRung; standing: boolean }) => {
 	);
 };
 
-export const BandLadder = ({ held, lines, rungs }: BandLadderProps) => {
-	const reading = clamped(held);
-	const standing = standingRungOf(rungs, reading);
+export const BandLadder = ({ held, band, lines, rungs }: BandLadderProps) => {
+	const standing = rungs.find((rung) => rung.band === band);
 
 	return (
 		<div className={LAYOUT}>
-			<CoverageBar held={held} {...lines} marks="rungs" pin />
+			<CoverageBar held={held} band={band} {...lines} marks="rungs" pin />
 			<ul className={ROWS}>
 				{rungs.map((rung) => (
 					<Rung key={rung.band} rung={rung} standing={rung === standing} />

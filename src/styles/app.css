@@ -533,6 +533,16 @@ body[data-screen-theme] {
 @utility bg-theme-strong {
 	background-color: oklch(from var(--theme-color) l c h / 0.28);
 }
+/* An outcome's two rungs, after the gate-reveal prototype. `dim` is the dark
+   ground a band's track and an answered option sit on; `lit` is the band once
+   reached, and the keycap of a right answer. Both carry real chroma, unlike
+   bg-theme-raised, because the hue is the reading. */
+@utility bg-theme-dim {
+	background-color: oklch(from var(--theme-color) 0.27 calc(c * 0.3) h);
+}
+@utility bg-theme-lit {
+	background-color: oklch(from var(--theme-color) 0.7 calc(c * 0.5) h);
+}
 @utility text-theme-muted {
 	color: oklch(from var(--theme-color) 0.68 calc(c* 0.35) h);
 }
@@ -1248,28 +1258,78 @@ meter::-webkit-meter-optimum-value {
 	animation: score-bump 200ms ease-out;
 }
 
+/* The bar bouncing as it takes a reading it was told to settle on. A keyframe
+   rather than a transition because the reading may not change at all: the
+   bounce is the cue, replayed by the bar itself whenever its settle key moves. */
 @keyframes gauge-settle {
-	from {
-		transform: scaleY(0);
+	30% {
+		transform: scaleY(1.18);
 	}
-	to {
-		transform: scaleY(1);
+	60% {
+		transform: scaleY(0.94);
 	}
 }
 
-.gauge-earned {
-	transform-origin: bottom;
-	animation: gauge-settle 520ms ease-out both;
+.coverage-bar-settle {
+	animation: gauge-settle 500ms;
 }
 
-.gauge-lost {
-	transform-origin: bottom;
-	animation: gauge-settle 520ms ease-out reverse both;
+/* A wrong answer shakes the card it was given on. Small and fast: it marks the
+   miss, it does not punish it. */
+@keyframes answer-shake {
+	25% {
+		transform: translateX(-6px);
+	}
+	50% {
+		transform: translateX(5px);
+	}
+	75% {
+		transform: translateX(-3px);
+	}
+}
+
+.answer-shake {
+	animation: answer-shake 220ms;
+}
+
+/* A right answer pulses its accuracy segment, glowing in the segment's own
+   hue so the pulse and the fill read as one mark. */
+@keyframes accuracy-pulse {
+	40% {
+		box-shadow: 0 0 12px var(--theme-color);
+	}
+}
+
+.accuracy-pulse {
+	animation: accuracy-pulse 350ms;
+}
+
+/* An answered row rings and glows in its verdict hue, then settles to its dim
+   ground. It is the one cue that sits on the option itself, where the eye
+   already is when the answer lands. */
+@keyframes answer-verdict {
+	0% {
+		box-shadow:
+			inset 0 0 0 2px var(--theme-color),
+			0 0 18px var(--theme-color);
+	}
+	100% {
+		box-shadow:
+			inset 0 0 0 0 var(--theme-color),
+			0 0 0 transparent;
+	}
+}
+
+.answer-verdict {
+	animation: answer-verdict 600ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.gauge-earned,
-	.gauge-lost {
+	.coverage-bar-settle,
+	.answer-shake,
+	.answer-verdict,
+	.reveal-pop,
+	.accuracy-pulse {
 		animation: none;
 	}
 }
@@ -1363,8 +1423,7 @@ meter::-webkit-meter-optimum-value {
 	counter-reset: coverage var(--coverage-count);
 }
 
-.coverage-count::after,
-.coverage-bar-count::after {
+.coverage-count::after {
 	content: counter(coverage);
 }
 
@@ -1406,69 +1465,60 @@ meter::-webkit-meter-optimum-value {
 @media (prefers-reduced-motion: reduce) {
 	.coverage-arc,
 	.coverage-count,
-	.coverage-bar-count,
-	.coverage-bar-fill,
-	.coverage-bar-pin,
 	.figure-count {
 		transition: none;
 	}
 }
 
-/* The banded bar. Its own duration rather than the ring's --coverage-duration:
-   CoverageRing.spec counts that name across the whole sheet to prove the arc
-   and the digits cannot desync, and a third user would break the proof rather
-   than the property. A transition for the same reason the arc has one, since a
-   wrong answer bleeds the fill back down. */
+/* The banded bar. The reading arrives as --coverage-held, set inline on the bar
+   root, and the sheet copies it into the registered --coverage-shown. Two names
+   because an inline declaration outranks @starting-style: the copy is what lets
+   the bar sweep up from empty on arrival as well as travel on every change.
+   Registered as a percentage so the browser interpolates it, which moves the
+   lit layer's clip, the marker and the pin off one value with no rAF loop. */
+@property --coverage-shown {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 0%;
+}
+
 .coverage-bar {
-	--coverage-bar-duration: 700ms;
+	--coverage-shown: var(--coverage-held, 0%);
+	transition: --coverage-shown 550ms cubic-bezier(0.3, 0.7, 0.2, 1);
 }
 
-/* The reading rides an inherited custom property set on the bar root rather
-   than an inline width on the fill itself. An inline declaration outranks
-   @starting-style, so a fill that carried its own width would arrive already
-   drawn and only ever animate on the second reading. */
-.coverage-bar-fill {
-	width: var(--coverage-held, 0%);
-	transition: width var(--coverage-bar-duration) ease-out;
-}
-
-/* After the rule it overrides, not before: @starting-style carries the
-   specificity of its own selector, so an earlier block would lose to the
-   width above. */
 @starting-style {
-	.coverage-bar-fill {
-		width: 0;
+	.coverage-bar {
+		--coverage-shown: 0%;
 	}
 }
 
-/* The pin rides the fill's leading edge, so its left runs off the fill's own
-   duration: a label that arrives after the edge it points at has stopped
-   moving is pointing at nothing. A closed gate holds its pin up permanently;
-   a running meter shows the same element only while the figure is moving,
-   which is why the fade is a state on the pin rather than a second widget.
-   Appearing and leaving get their own, shorter pair: they are not the same
-   gesture as travelling. */
+/* Two layers on one band grid: the dim track shows the whole ladder, the lit
+   copy above it is cut back to the reading, so every band the run has reached
+   lights in its own colour rather than the fill wearing one band's. */
+.coverage-bar-lit {
+	clip-path: inset(0 calc(100% - var(--coverage-shown)) 0 0 round 8px);
+}
+
+.coverage-bar-marker,
 .coverage-bar-pin {
+	left: var(--coverage-shown);
+}
+
+.coverage-bar-ghost {
 	opacity: 0;
-	transition:
-		opacity 260ms ease-out,
-		left var(--coverage-bar-duration) ease-out;
+	transition: opacity 300ms;
 }
 
-.coverage-bar-pin[data-shown="true"] {
-	opacity: 1;
-	transition:
-		opacity 140ms ease-out,
-		left var(--coverage-bar-duration) ease-out;
+.coverage-bar-ghost[data-shown="true"] {
+	opacity: 0.8;
 }
 
-/* The ring's registered property, reused rather than re-registered: it does
-   not inherit and the counter is reset per element, so two bars on one screen
-   each count their own. The duration is the bar's, not the ring's, which is
-   what keeps the digits and the fill from landing apart. */
-.coverage-bar-count {
-	transition: --coverage-count var(--coverage-bar-duration) ease-out;
-	counter-reset: coverage var(--coverage-count);
+@media (prefers-reduced-motion: reduce) {
+	.coverage-bar,
+	.coverage-bar-ghost {
+		transition: none;
+	}
 }
 
 /* The credited flash: which config just paid into the answer. It hangs off the

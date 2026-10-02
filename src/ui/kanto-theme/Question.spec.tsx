@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import type { ChoiceVerdict } from "./Choice.ui";
+import type { ChoiceState } from "./Choice.ui";
 import { Question, type QuestionOption } from "./Question.ui";
 
 const OPTIONS = [
@@ -133,26 +133,26 @@ describe("Question's crossed-out options", () => {
 	});
 });
 
-const VERDICT_BY_ID: Record<string, ChoiceVerdict> = {
+const STATE_BY_ID: Record<string, ChoiceState> = {
 	"option-1": "wrong",
-	"option-2": "missed",
+	"option-2": "right",
 };
 
 describe("Question after the reveal", () => {
-	it("hands each option's verdict to its choice", () => {
+	it("hands each option's state to its choice", () => {
 		render(
 			<Question
 				{...props}
 				pickedIds={["option-1"]}
 				options={OPTIONS.map((option) => ({
 					...option,
-					verdict: VERDICT_BY_ID[option.id],
+					state: STATE_BY_ID[option.id],
 				}))}
 			/>
 		);
 
 		expect(screen.getByText("wrong")).toBeInTheDocument();
-		expect(screen.getByText("the answer")).toBeInTheDocument();
+		expect(screen.getByText("right")).toBeInTheDocument();
 		expect(
 			screen.getByText("Maybe<T>").closest("[data-screen-theme]")
 		).toBeNull();

@@ -65,6 +65,9 @@ export const answerWith = (state: RunState, correct: boolean): RunState => {
 	return runReducer(answered, { type: "close-gate" });
 };
 
+export const skipWith = (state: RunState): RunState =>
+	runReducer(runReducer(state, { type: "skip" }), { type: "close-gate" });
+
 export const clearGate = (state: RunState): RunState => {
 	let next = state;
 	for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, true);
@@ -110,7 +113,7 @@ export const failGate = (state: RunState): RunState => {
 	const held = ratioOf((ladder.floor + ladder.ok) / 2);
 	let next: RunState = {
 		...state,
-		bankedUnits: held * scoringSlotsAt(state.gatesCleared),
+		headStartUnits: held * scoringSlotsAt(state.gatesCleared),
 	};
 	for (let i = 0; i < SLICE_WINDOW; i++) next = answerWith(next, false);
 	return next;

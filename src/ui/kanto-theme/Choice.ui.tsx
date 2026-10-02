@@ -6,7 +6,7 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
-import { Keycap } from "./Keycap.ui";
+import { type AnswerState, Keycap } from "./Keycap.ui";
 import { Typography } from "./Typography.ui";
 
 const ROW =
@@ -31,27 +31,27 @@ const PRICE_COLOR = "viridian";
 
 const SEAL_WIDTHS = ["w-16", "w-28", "w-20", "w-24"] as const;
 
-export type ChoiceVerdict = "right" | "wrong" | "missed";
+export type ChoiceState = AnswerState;
+
+type ChoiceVerdict = Exclude<ChoiceState, "idle">;
 
 const VERDICT_COLOR = {
 	right: "viridian",
 	wrong: "cinnabar",
-	missed: "celadon",
 } satisfies Record<ChoiceVerdict, KantoColor>;
 
 const VERDICT_GLYPH = {
 	right: "✓",
 	wrong: "✗",
-	missed: "✓",
 } satisfies Record<ChoiceVerdict, string>;
 
 const VERDICT_NAME = {
 	right: "right",
 	wrong: "wrong",
-	missed: "the answer",
 } satisfies Record<ChoiceVerdict, string>;
 
-const VERDICT_MARK = "text-theme-soft";
+const VERDICT_MARK = "reveal-pop text-theme-soft";
+const ANSWERED = "answer-verdict bg-theme-dim";
 
 const VerdictMark = ({ verdict }: { verdict: ChoiceVerdict }) => (
 	<span className={TRAILING}>
@@ -61,6 +61,9 @@ const VerdictMark = ({ verdict }: { verdict: ChoiceVerdict }) => (
 		<span className={READER_ONLY}>{VERDICT_NAME[verdict]}</span>
 	</span>
 );
+
+const isAnswered = (state: ChoiceState): state is ChoiceVerdict =>
+	state !== "idle";
 
 const sealWidthFor = (letter: string) =>
 	SEAL_WIDTHS[letter.charCodeAt(0) % SEAL_WIDTHS.length] ?? SEAL_WIDTHS[0];
@@ -74,7 +77,7 @@ export type ChoiceProps = {
 	letter: string;
 	answerType?: AnswerType;
 	picked?: boolean;
-	verdict?: ChoiceVerdict;
+	state?: ChoiceState;
 	onPick?: () => void;
 } & (
 	| { children: ReactNode; crossedOut?: boolean; seal?: never }
@@ -85,18 +88,20 @@ export const Choice = ({
 	letter,
 	answerType = "single",
 	picked = false,
-	verdict,
+	state = "idle",
 	onPick,
 	children,
 	crossedOut = false,
 	seal,
 }: ChoiceProps) => {
-	const theme = verdict === undefined ? undefined : VERDICT_COLOR[verdict];
+	const answered = isAnswered(state);
+	const theme = answered ? VERDICT_COLOR[state] : undefined;
 	const cap = (
 		<Keycap
 			letter={letter}
 			answerType={answerType}
-			lit={picked || verdict === "missed"}
+			lit={picked}
+			state={state}
 		/>
 	);
 
@@ -118,7 +123,7 @@ export const Choice = ({
 				) : (
 					text
 				)}
-				{verdict === undefined ? null : <VerdictMark verdict={verdict} />}
+				{answered ? <VerdictMark verdict={state} /> : null}
 			</>
 		);
 
@@ -126,7 +131,13 @@ export const Choice = ({
 			return (
 				<div
 					data-screen-theme={theme}
-					className={clsx(ROW, picked && PICKED, crossedOut && RULED_OUT)}
+					data-answer={state}
+					data-picked={picked}
+					className={clsx(
+						ROW,
+						answered ? ANSWERED : picked && PICKED,
+						crossedOut && RULED_OUT
+					)}
 				>
 					{body}
 				</div>

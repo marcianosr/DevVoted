@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import { useQuery } from "@tanstack/react-query";
-
 import {
 	EMPTY_FILTER,
 	PAGE_SIZE,
@@ -18,8 +16,9 @@ import {
 } from "~/modules/polls/authoring/presentation/PollList.ui";
 import {
 	getPollCreators,
-	getUserPollsOrAll,
+	getPollList,
 } from "~/modules/polls/poll/application/poll.serverfn";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
 import { pollQueryKeys } from "~/shared/queryKeys";
 
@@ -27,33 +26,25 @@ export const PollList = () => {
 	const [filter, setFilter] = useState<PollListFilter>(EMPTY_FILTER);
 	const [shown, setShown] = useState(PAGE_SIZE);
 
-	const polls = useQuery({
+	const list = useApiQuery({
 		queryKey: pollQueryKeys.authored(),
-		queryFn: () => getUserPollsOrAll(),
+		queryFn: () => getPollList(),
 	});
+	const canAdminister = list.view?.canAdminister ?? false;
 
-	const isAdmin = polls.data?.isAdmin ?? false;
-
-	const creators = useQuery({
+	const creators = useApiQuery({
 		queryKey: pollQueryKeys.creators(),
 		queryFn: () => getPollCreators(),
-		enabled: isAdmin,
+		enabled: canAdminister,
 	});
 
-	if (polls.isLoading) return <PollListLoading />;
-	if (polls.error || !polls.data?.success) {
-		return (
-			<PollListError
-				message={
-					polls.data?.success === false ? polls.data.error : String(polls.error)
-				}
-			/>
-		);
+	if (list.isPending) return <PollListLoading />;
+	if (!list.view) {
+		return <PollListError message={list.errorMessage ?? "Polls not found"} />;
 	}
 
-	const all = polls.data.data;
-	const known =
-		isAdmin && creators.data?.success ? creators.data.data : undefined;
+	const all = list.view.polls;
+	const known = canAdminister ? (creators.view ?? undefined) : undefined;
 	const page = windowOf(pollRowsOf(visiblePollsOf(all, filter), known), shown);
 
 	const changeFilter = (next: PollListFilter) => {
@@ -63,7 +54,7 @@ export const PollList = () => {
 
 	return (
 		<PollListUI
-			admin={isAdmin}
+			admin={canAdminister}
 			total={all.length}
 			matching={page.total}
 			shown={page.shown}

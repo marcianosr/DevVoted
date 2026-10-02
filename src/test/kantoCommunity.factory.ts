@@ -12,7 +12,10 @@ import type {
 	LadderGate,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import { baseGateLadderAt } from "~/modules/run/gate/domain/gate.model";
+import {
+	bandAtLadder,
+	baseGateLadderAt,
+} from "~/modules/run/gate/domain/gate.model";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 import { kantoIncidents } from "./kantoIncidents.factory";
@@ -86,7 +89,11 @@ const standingAt = (
 		name: gateSwatchAt(gate).gateName,
 		label: `gate ${gate}`,
 		swatch: gateSwatchAt(gate),
-		coverage: { ...baseGateLadderAt(gate), held },
+		coverage: {
+			...baseGateLadderAt(gate),
+			held,
+			band: bandAtLadder(held, baseGateLadderAt(gate)).id,
+		},
 	},
 	weight: "7 / 8",
 	build: YOUR_CHIPS,
@@ -214,24 +221,81 @@ export const kantoStanding = (
 
 const bands = (): TurnoutBand[] => [
 	{
-		label: "Answered all five",
-		count: "1,041",
+		label: "PERFECT",
+		caption: "finished at 100%",
+		count: "212",
+		color: "cerulean",
+		climbers: [you, brock, misty],
+		overflow: 209,
+	},
+	{
+		label: "HEALTHY",
+		caption: "comfortably cleared",
+		count: "604",
 		color: "viridian",
-		climbers: [you, brock, misty, surge, erika, koga],
-		overflow: 1035,
+		climbers: [surge, erika, koga],
+		overflow: 601,
 	},
 	{
-		label: "Partway through",
-		count: "106",
+		label: "OK",
+		caption: "narrowly cleared",
+		count: "225",
 		color: "saffron",
-		climbers: [sabrina, blaine, giovanni],
-		overflow: 103,
+		climbers: [sabrina],
+		overflow: 224,
 	},
 	{
-		label: "Not started",
+		label: "SHAKY",
+		caption: "gate held them",
+		count: "106",
+		color: "vermillion",
+		climbers: [blaine, giovanni],
+		overflow: 104,
+	},
+	{
+		label: "DANGER",
+		caption: "run ended",
 		count: "57",
+		color: "cinnabar",
 		climbers: [oak, { name: "Mr. Fuji" }],
 		overflow: 55,
+	},
+];
+
+const records = (): TurnoutBand[] => [
+	{ label: "biggest build", count: "14 slots", climbers: [giovanni] },
+	{ label: "lightest build", count: "2 slots", climbers: [misty] },
+	{
+		label: "comeback",
+		caption: "held at this gate before, cleared it today",
+		count: "3",
+		climbers: [brock, erika, koga],
+	},
+	{
+		label: "most audits",
+		caption: "in one run",
+		count: "6",
+		climbers: [blaine],
+	},
+	{
+		label: "most installed",
+		caption: ".ts",
+		count: "812 players",
+		climbers: [you, surge, sabrina],
+		overflow: 809,
+	},
+	{ label: "most expensive build", count: "1.4 MB", climbers: [giovanni] },
+	{
+		label: "KB generated today",
+		caption: "top earner",
+		count: "2.1 MB",
+		climbers: [surge],
+	},
+	{
+		label: "KB spent today",
+		caption: "biggest spender",
+		count: "1.6 MB",
+		climbers: [giovanni],
 	},
 ];
 
@@ -499,7 +563,12 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		shop: { label: COMMUNITY_SHOP_LABEL, onPress: () => {} },
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },
 	},
-	turnout: { title: "Who showed up", when: "Today", bands: bands() },
+	turnout: {
+		title: "Who cleared what",
+		when: "Today",
+		bands: bands(),
+		records: records(),
+	},
 	map: { title: COMMUNITY_MAP_TITLE, track: kantoClimbMap() },
 	incidents: kantoIncidents(),
 	leaders: [

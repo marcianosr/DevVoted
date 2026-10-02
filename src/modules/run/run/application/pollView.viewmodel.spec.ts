@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
 	redactPoll,
 	REDACTED_LABEL,
-	revealedPoll,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 
@@ -47,30 +46,5 @@ describe(redactPoll, () => {
 			"c",
 		]);
 		expect(redactPoll(poll, ["a"]).options[0].label).toBe(REDACTED_LABEL);
-	});
-});
-
-describe(revealedPoll, () => {
-	it("puts the real text back once the answer is in", () => {
-		const sealed = redactPoll(poll, ["a", "c"]);
-		const shown = revealedPoll(
-			sealed,
-			poll.options.map((option) => option.label)
-		);
-		expect(shown.options.map((option) => option.label)).toEqual([
-			"Array.prototype.map",
-			"Array.prototype.forEach",
-			"Array.prototype.push",
-		]);
-	});
-
-	it("leaves the poll alone when the answer carried no labels", () => {
-		const sealed = redactPoll(poll, ["a"]);
-		expect(revealedPoll(sealed, undefined)).toBe(sealed);
-	});
-
-	it("keeps every option id, so the reveal marks still land", () => {
-		const shown = revealedPoll(redactPoll(poll, ["a"]), ["X", "Y", "Z"]);
-		expect(shown.options.map((option) => option.id)).toEqual(["a", "b", "c"]);
 	});
 });

@@ -1,5 +1,4 @@
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
-import type { PerAnswerPreview } from "~/modules/run/build/domain/answerPayout.model";
 import {
 	Build,
 	catcherFor,
@@ -10,17 +9,17 @@ import {
 	SLICE_WINDOW,
 	VICTORY_GATE,
 	failPeelShareFor,
-	meetsWindowMinimum,
 	peelQuotaSlotsFor,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import {
-	BASE_UNIT,
+	type AccuracyTally,
 	type CoverageBand,
 	type CoverageBandId,
 	atLeastBand,
 	bandOf,
 	floorAt,
+	gateOutputOf,
 	healthyAt,
 	meetsBand,
 	okAt,
@@ -33,6 +32,7 @@ import {
 	type AuditSchedule,
 	liveAuditsFor,
 } from "~/modules/run/gate/domain/audit.model";
+import type { GateWindow } from "~/modules/run/config/domain/effect.model";
 
 export type GateLadder = {
 	readonly floor: number;
@@ -137,31 +137,29 @@ export type GateRuling =
 
 export type GateClose = {
 	readonly build: Build;
-	readonly bankedUnits: number;
+	readonly headStartUnits: number;
 	readonly unitsThisGate: number;
-	readonly baseUnitsThisGate: number;
 	readonly correctThisGate: number;
 	readonly gatesCleared: number;
 	readonly schedule: AuditSchedule;
 };
 
 export const runCoverageAtClose = (close: GateClose): number =>
-	runCoverageOf(close.bankedUnits + close.unitsThisGate, close.gatesCleared);
+	runCoverageOf(close.headStartUnits + close.unitsThisGate, close.gatesCleared);
 
 export const isFlawlessGate = (close: GateClose): boolean =>
 	close.correctThisGate >= SLICE_WINDOW;
 
-export const windowScored = (close: GateClose): boolean =>
-	meetsWindowMinimum(close.baseUnitsThisGate);
+export const ladderAtClose = (close: GateClose): GateLadder =>
+	gateLadderFor(close.build.configs, close.gatesCleared, close.schedule);
 
-export const bandAtClose = (close: GateClose): CoverageBand => {
-	const ladder = gateLadderFor(
-		close.build.configs,
-		close.gatesCleared,
-		close.schedule
-	);
-	const held = roundToOneDecimal(percentOf(runCoverageAtClose(close)));
+export const heldAtClose = (close: GateClose): number =>
+	roundToOneDecimal(percentOf(runCoverageAtClose(close)));
 
+export const bandAtLadder = (
+	held: number,
+	ladder: GateLadder
+): CoverageBand => {
 	if (held >= percentOf(1)) return bandOf("perfect");
 	if (held >= ladder.healthy) return bandOf("healthy");
 	if (held >= ladder.ok) return bandOf("ok");
@@ -169,12 +167,18 @@ export const bandAtClose = (close: GateClose): CoverageBand => {
 	return bandOf("danger");
 };
 
-const closingBandFor = (close: GateClose): CoverageBand =>
+export const bandAtClose = (close: GateClose): CoverageBand =>
+	bandAtLadder(heldAtClose(close), ladderAtClose(close));
+
+export const coversEveryChange = (close: GateClose): boolean =>
+	bandAtClose(close).id === "perfect";
+
+export const closingBandFor = (close: GateClose): CoverageBand =>
 	isFlawlessGate(close)
 		? atLeastBand(bandAtClose(close), "shaky")
 		: bandAtClose(close);
 
-const lowestClearingBandAt = (gate: number): CoverageBandId =>
+const lowestClearingBandAt = (gate: number): "ok" | "healthy" =>
 	gate >= VICTORY_GATE ? "healthy" : "ok";
 
 export const clearsAt = (band: CoverageBandId, gate: number): boolean =>
@@ -189,7 +193,6 @@ export const gateRulingFor = (close: GateClose): GateRuling => {
 		return catcherFor(close.build.configs) === undefined
 			? { closing: "fatal" }
 			: { closing: "held", heldBy: "catch" };
-	if (!windowScored(close)) return { closing: "held", heldBy: "unscored" };
 	if (!clearsAt(band.id, close.gatesCleared))
 		return { closing: "held", heldBy: "band" };
 	return { closing: "cleared" };
@@ -201,33 +204,15 @@ export const gateClosingFor = (close: GateClose): GateClosing =>
 export const gatePassed = (close: GateClose): boolean =>
 	gateClosingFor(close) === "cleared";
 
-export type GateProjection = {
-	readonly held: number;
-	readonly demand: number;
-	readonly pass: number;
-	readonly miss: number;
-	readonly passClears: boolean;
-	readonly missClears: boolean;
-};
+export type WindowTally = Pick<
+	GateWindow,
+	"unitsEarned" | "accuracyEarned" | "accuracyAvailable"
+>;
 
-export const gateProjectionFor = (
-	units: number,
-	baseUnits: number,
-	preview: PerAnswerPreview,
-	gate: number,
-	demand: number
-): GateProjection => {
-	const asHeld = (carried: number): number =>
-		roundToOneDecimal(percentOf(runCoverageOf(carried, gate)));
-	const held = asHeld(units);
-	const pass = asHeld(units + preview.coveragePerCorrect);
+export const accuracyOf = (window: WindowTally): AccuracyTally => ({
+	earned: window.accuracyEarned,
+	available: window.accuracyAvailable,
+});
 
-	return {
-		held,
-		demand,
-		pass,
-		miss: held,
-		passClears: pass >= demand && meetsWindowMinimum(baseUnits + BASE_UNIT),
-		missClears: held >= demand && meetsWindowMinimum(baseUnits),
-	};
-};
+export const windowOutputOf = (window: WindowTally): number =>
+	gateOutputOf(window.unitsEarned, accuracyOf(window));

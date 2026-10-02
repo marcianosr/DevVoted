@@ -10,11 +10,13 @@ import {
 	profileCollectionFor,
 	profileRecordFor,
 	triedOnBorderOf,
-	type ProfileIdentity,
-	type ProfileRecord,
-	type ProfileStanding,
-	type ProfileTotals,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import type {
+	ProfileIdentity,
+	ProfileRecord,
+	ProfileTotals,
+} from "~/modules/account/profile/domain/profile.model";
+import type { Standing } from "~/modules/run/community/domain/standing.model";
 import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
 import { borders } from "~/modules/account/profile/domain/border.model";
 import { DEX_TABS } from "~/modules/collection/dex/application/dexScreen.viewmodel";
@@ -133,12 +135,9 @@ describe("profileCardFor", () => {
 
 describe("profileCollectionFor", () => {
 	const TOTALS: ProfileTotals = {
-		pollsSeen: 9,
-		pollsTotal: 96,
-		configsHeld: 4,
-		configsTotal: 30,
-		titlesOwned: 2,
-		titlesTotal: 16,
+		polls: { held: 9, total: 96 },
+		configs: { held: 4, total: 30 },
+		titles: { held: 2, total: 16 },
 		archivedStorage: 8_388_608,
 	};
 
@@ -153,9 +152,9 @@ describe("profileCollectionFor", () => {
 	it("states a brand new account as zero rather than leaving it blank", () => {
 		const fresh = profileCollectionFor({
 			...TOTALS,
-			pollsSeen: 0,
-			configsHeld: 0,
-			titlesOwned: 0,
+			polls: { held: 0, total: 96 },
+			configs: { held: 0, total: 30 },
+			titles: { held: 0, total: 16 },
 		});
 
 		expect(fresh.counts[0].figure).toBe("0 of 96");
@@ -242,9 +241,8 @@ describe("profileRecordFor", () => {
 });
 
 describe("profileClimbingFor", () => {
-	const STANDING: ProfileStanding = {
+	const STANDING: Standing = {
 		gate: 6,
-		band: "healthy",
 		coveragePercent: 68,
 		streak: 7,
 		storageKb: 4_300,

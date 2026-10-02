@@ -22,13 +22,13 @@ import {
 
 export const getTodaysRun = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			getTodaysRunService({ userId, date: getTodayDateString() })
 		)
 );
 
 export const startRun = createServerFn({ method: "POST" }).handler(async () =>
-	withAuthenticatedUser((userId) =>
+	withAuthenticatedUser(({ userId }) =>
 		startRunService({ userId, date: getTodayDateString() })
 	)
 );
@@ -36,19 +36,19 @@ export const startRun = createServerFn({ method: "POST" }).handler(async () =>
 export const warmBootRun = createServerFn({ method: "POST" })
 	.validator(warmBootPickSchema)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			warmBootRunService({ userId, date: getTodayDateString(), pick: data })
 		)
 	);
 
 export const abandonRun = createServerFn({ method: "POST" }).handler(async () =>
-	withAuthenticatedUser((userId) => abandonRunService({ userId }))
+	withAuthenticatedUser(({ userId }) => abandonRunService({ userId }))
 );
 
 export const dispatchRunAction = createServerFn({ method: "POST" })
 	.validator(z.object({ action: runActionSchema }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			dispatchRunActionService({
 				userId,
 				date: getTodayDateString(),
@@ -60,21 +60,24 @@ export const dispatchRunAction = createServerFn({ method: "POST" })
 export const getRunRecap = createServerFn({ method: "GET" })
 	.validator(z.object({ runId: z.number().int().positive() }).strict())
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			getRunRecapService({ userId, runId: data.runId })
 		)
 	);
 
 export const getUpcomingCategories = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) => getUpcomingCategoriesService({ userId }))
+		withAuthenticatedUser(({ userId }) =>
+			getUpcomingCategoriesService({ userId })
+		)
 );
 
 export const getOwnedSwatches = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) => getOwnedSwatchesService({ userId }))
+		withAuthenticatedUser(({ userId }) => getOwnedSwatchesService({ userId }))
 );
 
 export const getRunNumber = createServerFn({ method: "GET" }).handler(
-	async () => withAuthenticatedUser((userId) => getRunNumberService({ userId }))
+	async () =>
+		withAuthenticatedUser(({ userId }) => getRunNumberService({ userId }))
 );

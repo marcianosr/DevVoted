@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -11,6 +11,8 @@ import {
 } from "~/test/runView.factory";
 
 import { PollView } from "./PollView.component";
+
+type FakeAnimation = { onfinish: (() => void) | null; cancel: () => void };
 
 const poll = createMockPollView({
 	id: "js-1",
@@ -54,7 +56,7 @@ const props = {
 	view,
 	selectedOptionIds: [],
 	onSelect: () => {},
-	onSubmit: () => {},
+	onAnswer: () => {},
 	onNext: () => {},
 };
 
@@ -88,63 +90,78 @@ describe("PollView", () => {
 		expect(screen.getByText("JavaScript")).toBeInTheDocument();
 	});
 
-	it("reports the pick on a single-answer poll rather than answering it", async () => {
+	it("answers a single-answer poll with the tapped option", async () => {
 		const onSelect = vi.fn();
-		const onSubmit = vi.fn();
-		render(<PollView {...props} onSelect={onSelect} onSubmit={onSubmit} />);
+		const onAnswer = vi.fn();
+		render(<PollView {...props} onSelect={onSelect} onAnswer={onAnswer} />);
 
 		await userEvent.click(screen.getByText("at(-1)"));
+
+		expect(onAnswer).toHaveBeenCalledWith(["a"]);
+		expect(onSelect).not.toHaveBeenCalled();
+	});
+
+	it("answers a single-answer poll with the letter pressed", () => {
+		const onAnswer = vi.fn();
+		render(<PollView {...props} onAnswer={onAnswer} />);
+
+		act(() => {
+			window.dispatchEvent(new KeyboardEvent("keydown", { key: "b" }));
+		});
+
+		expect(onAnswer).toHaveBeenCalledWith(["b"]);
+	});
+
+	it("offers no lock-in on a single-answer poll", () => {
+		render(<PollView {...props} />);
+
+		expect(
+			screen.queryByRole("button", { name: /^Lock in/ })
+		).not.toBeInTheDocument();
+		expect(screen.getByText("press a letter to answer")).toBeInTheDocument();
+	});
+
+	it("reports the pick on a select-all poll rather than answering it", async () => {
+		const onSelect = vi.fn();
+		const onAnswer = vi.fn();
+		render(
+			<PollView
+				{...props}
+				view={multipleView}
+				onSelect={onSelect}
+				onAnswer={onAnswer}
+			/>
+		);
+
+		await userEvent.click(screen.getByText("Partial"));
+
 		expect(onSelect).toHaveBeenCalledWith("a");
-		expect(onSubmit).not.toHaveBeenCalled();
+		expect(onAnswer).not.toHaveBeenCalled();
 	});
 
-	it("submits a single-answer poll only once something is picked", async () => {
-		const onSubmit = vi.fn();
-		const { rerender } = render(<PollView {...props} onSubmit={onSubmit} />);
-
-		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
-		expect(
-			screen.getByText("pick an answer, or press its letter")
-		).toBeInTheDocument();
-
-		rerender(
-			<PollView {...props} selectedOptionIds={["a"]} onSubmit={onSubmit} />
-		);
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /^Lock in 1 answer/ })
-		);
-		expect(onSubmit).toHaveBeenCalled();
-	});
-
-	it("asks a select-all poll for every answer that fits, not for one", async () => {
-		const onSubmit = vi.fn();
+	it("asks a select-all poll for every answer that fits, then locks the picks in", async () => {
+		const onAnswer = vi.fn();
 		const { rerender } = render(
-			<PollView {...props} view={multipleView} onSubmit={onSubmit} />
+			<PollView {...props} view={multipleView} onAnswer={onAnswer} />
 		);
 
 		expect(screen.getByRole("button", { name: /^Lock in/ })).toBeDisabled();
-		expect(
-			screen.getByText("pick every answer that fits, or press their letters")
-		).toBeInTheDocument();
+		expect(screen.getByText("pick every answer that fits")).toBeInTheDocument();
+		expect(screen.getByText("press letters, then Enter")).toBeInTheDocument();
 
 		rerender(
 			<PollView
 				{...props}
 				view={multipleView}
 				selectedOptionIds={["a", "b"]}
-				onSubmit={onSubmit}
+				onAnswer={onAnswer}
 			/>
 		);
-
-		expect(
-			screen.getByText("you can also press Enter to answer")
-		).toBeInTheDocument();
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /^Lock in 2 answers/ })
 		);
-		expect(onSubmit).toHaveBeenCalled();
+		expect(onAnswer).toHaveBeenCalledWith(["a", "b"]);
 	});
 
 	it("keeps the build in a footer under the poll", () => {
@@ -162,14 +179,12 @@ describe("PollView", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("keeps the coverage pin down while the answer is still open", () => {
+	it("rides the running bar on a marker, with no pin", () => {
 		const { container } = render(<PollView {...props} />);
 
 		expect(container.querySelector("header")).toBeInTheDocument();
-		expect(container.querySelector(".coverage-bar-pin")).toHaveAttribute(
-			"data-shown",
-			"false"
-		);
+		expect(container.querySelector(".coverage-bar-marker")).toBeInTheDocument();
+		expect(container.querySelector(".coverage-bar-pin")).toBeNull();
 	});
 });
 
@@ -180,15 +195,6 @@ describe("PollView once the answer has landed", () => {
 	});
 
 	const settled = { ...props, view: answeredView, answered };
-
-	it("pins the coverage bar where the answer landed", () => {
-		const { container } = render(<PollView {...settled} />);
-
-		expect(container.querySelector(".coverage-bar-pin")).toHaveAttribute(
-			"data-shown",
-			"true"
-		);
-	});
 
 	it("holds the answered poll on screen without taking a new pick", () => {
 		render(<PollView {...settled} />);
@@ -203,28 +209,101 @@ describe("PollView once the answer has landed", () => {
 		).toBeInTheDocument();
 	});
 
-	it("moves on from the footer", async () => {
-		const onNext = vi.fn();
-		render(<PollView {...settled} onNext={onNext} />);
+	describe("the hold before the next poll", () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
 
-		await userEvent.click(screen.getByRole("button", { name: /Next poll/ }));
-		expect(onNext).toHaveBeenCalled();
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		const missed: AnsweredPoll = {
+			...answered,
+			outcome: "wrong",
+			picked: ["pop()"],
+		};
+
+		it("moves on by itself 650ms after a right answer", () => {
+			const onNext = vi.fn();
+			render(<PollView {...settled} onNext={onNext} />);
+
+			act(() => vi.advanceTimersByTime(649));
+			expect(onNext).not.toHaveBeenCalled();
+
+			act(() => vi.advanceTimersByTime(1));
+			expect(onNext).toHaveBeenCalledTimes(1);
+		});
+
+		it("holds a wrong answer longer, 900ms, so the right one can be read", () => {
+			const onNext = vi.fn();
+			render(<PollView {...settled} answered={missed} onNext={onNext} />);
+
+			act(() => vi.advanceTimersByTime(899));
+			expect(onNext).not.toHaveBeenCalled();
+
+			act(() => vi.advanceTimersByTime(1));
+			expect(onNext).toHaveBeenCalledTimes(1);
+		});
+
+		it("moves on once per answer, however often the screen redraws", () => {
+			const onNext = vi.fn();
+			const { rerender } = render(<PollView {...settled} onNext={onNext} />);
+
+			rerender(<PollView {...settled} onNext={onNext} />);
+			act(() => vi.advanceTimersByTime(2000));
+
+			expect(onNext).toHaveBeenCalledTimes(1);
+		});
+
+		it("offers no press to skip the hold", () => {
+			render(<PollView {...settled} />);
+
+			expect(
+				screen.queryByRole("button", { name: /Next poll/ })
+			).not.toBeInTheDocument();
+		});
+
+		it("takes no answer while the feedback plays", () => {
+			const onSelect = vi.fn();
+			const onAnswer = vi.fn();
+			render(<PollView {...settled} onSelect={onSelect} onAnswer={onAnswer} />);
+
+			act(() => {
+				window.dispatchEvent(new KeyboardEvent("keydown", { key: "b" }));
+				window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+			});
+
+			expect(onSelect).not.toHaveBeenCalled();
+			expect(onAnswer).not.toHaveBeenCalled();
+			expect(
+				screen.queryByRole("button", { name: /pop\(\)/ })
+			).not.toBeInTheDocument();
+		});
+
+		it("shakes the card after a wrong answer", () => {
+			render(<PollView {...settled} answered={missed} />);
+
+			expect(document.querySelector(".answer-shake")).toBeInTheDocument();
+		});
 	});
 
-	it("names the gate on the footer once its last poll has been answered", () => {
+	it("marks the right answer and the wrong pick once a miss lands", () => {
 		render(
 			<PollView
 				{...settled}
-				view={createMockRunView({ ...view, gateComplete: true })}
+				answered={{ ...answered, outcome: "wrong", picked: ["pop()"] }}
 			/>
 		);
 
-		expect(
-			screen.getByRole("button", { name: /#4 - Lavender Gate/ })
-		).toBeInTheDocument();
-		expect(
-			screen.queryByRole("button", { name: /Next poll/ })
-		).not.toBeInTheDocument();
+		expect(screen.getByText("at(-1)").closest("[data-answer]")).toHaveAttribute(
+			"data-answer",
+			"right"
+		);
+		expect(screen.getByText("pop()").closest("[data-answer]")).toHaveAttribute(
+			"data-answer",
+			"wrong"
+		);
 	});
 
 	it("still reads the gate that asked the poll, not the one it is about to open", () => {
@@ -242,11 +321,12 @@ describe("PollView once the answer has landed", () => {
 
 	it("keeps the bar it was already drawing, so the fill travels rather than restarting", () => {
 		const { container, rerender } = render(<PollView {...props} />);
-		const fill = container.querySelector(".coverage-bar-fill");
+		const bar = container.querySelector(".coverage-bar");
 
 		rerender(<PollView {...settled} />);
 
-		expect(container.querySelector(".coverage-bar-fill")).toBe(fill);
+		expect(bar).not.toBeNull();
+		expect(container.querySelector(".coverage-bar")).toBe(bar);
 	});
 });
 
@@ -264,5 +344,60 @@ describe("PollView once a linter has crossed an answer off", () => {
 
 		expect(screen.getByRole("button", { name: /at\(-1\)/ })).toBeEnabled();
 		expect(screen.getByRole("button", { name: /last\(\)/ })).toBeEnabled();
+	});
+});
+
+describe("PollView while a right answer's gain flies", () => {
+	const at = (coverageHeld: number) =>
+		createMockRunView({
+			...view,
+			gateStake: createMockGateStake({
+				...view.gateStake,
+				coverageHeld,
+			}),
+		});
+
+	const liveAt24 = { ...props, view: at(24) };
+	const landedAt36 = {
+		...props,
+		view: createMockRunView({ ...at(36), answeredThisGate: [answered] }),
+		answered,
+	};
+
+	const heldOf = (container: HTMLElement) =>
+		container
+			.querySelector(".coverage-bar")
+			?.getAttribute("style")
+			?.match(/--coverage-held:\s*([\d.]+)%/)?.[1];
+
+	afterEach(() => {
+		Reflect.deleteProperty(HTMLElement.prototype, "animate");
+	});
+
+	it("holds the bar where it stood until the chip lands, then moves it", () => {
+		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			value: () => animation,
+			configurable: true,
+		});
+		const { container, rerender } = render(<PollView {...liveAt24} />);
+
+		rerender(<PollView {...landedAt36} />);
+
+		expect(screen.getByText("+12%")).toBeInTheDocument();
+		expect(heldOf(container)).toBe("24");
+
+		act(() => animation.onfinish?.());
+
+		expect(heldOf(container)).toBe("36");
+		expect(screen.queryByText("+12%")).toBeNull();
+	});
+
+	it("moves the bar at once where no chip can fly", () => {
+		const { container, rerender } = render(<PollView {...liveAt24} />);
+
+		rerender(<PollView {...landedAt36} />);
+
+		expect(heldOf(container)).toBe("36");
 	});
 });

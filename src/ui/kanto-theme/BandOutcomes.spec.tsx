@@ -14,10 +14,26 @@ const NOTE =
 const props: BandOutcomesProps = {
 	title: TITLE,
 	meta: ["Lavender · gate ", { figure: "4" }],
+	brief: {
+		statement: [
+			"single choice ",
+			{ figure: "+11.1%", gain: true },
+			" · multiple choice ",
+			{ figure: "+22.2%", gain: true },
+		],
+		hint: ["accuracy and configs add more"],
+	},
 	objectives: {
 		objectives: [
 			{
-				statement: ["Finish at ", { band: "ok" }, " or better"],
+				statement: [
+					"Finish at ",
+					{ band: "ok" },
+					" (",
+					{ figure: "56%", band: "ok" },
+					")",
+					" or better",
+				],
 				earns: [
 					"earns ",
 					{ figure: "advance to Rainbow" },
@@ -26,7 +42,7 @@ const props: BandOutcomesProps = {
 				],
 			},
 			{
-				statement: ["Answer all ", { figure: "5" }, " right"],
+				statement: ["Reach ", { figure: "100%", band: "perfect" }, " coverage"],
 				earns: [
 					"earns ",
 					{ swatch: gateSwatchAt(LAVENDER_GATE), label: "Lavender swatch" },
@@ -46,6 +62,7 @@ const props: BandOutcomesProps = {
 	},
 	ladder: {
 		held: 58,
+		band: "ok",
 		lines: { floor: 48, ok: 56, healthy: 62 },
 		rungs: [
 			{ band: "danger", from: 0, to: 48, pays: "the run ends" },
@@ -56,8 +73,8 @@ const props: BandOutcomesProps = {
 		],
 	},
 	standing: [
-		{ figure: "+1", band: "healthy" },
-		" unit to ",
+		{ figure: "+4%", gain: true },
+		" to reach ",
 		{ band: "healthy" },
 		" · ",
 		{ figure: "2" },
@@ -85,15 +102,43 @@ describe("BandOutcomes", () => {
 		expect(within(header).getByText("4")).toHaveClass("badge-theme");
 	});
 
-	it("reads the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
+	it("lists what a single and a multiple choice cover, the gains in green", () => {
+		render(<BandOutcomes {...props} />);
+
+		const statement = screen.getByText(
+			(_, element) =>
+				element?.tagName === "P" &&
+				element.textContent === "single choice +11.1% · multiple choice +22.2%"
+		);
+
+		for (const gain of ["+11.1%", "+22.2%"]) {
+			expect(within(statement).getByText(gain)).toHaveAttribute(
+				"data-screen-theme",
+				"viridian"
+			);
+		}
+		expect(
+			screen.getByText("accuracy and configs add more")
+		).toBeInTheDocument();
+	});
+
+	it("draws no brief when handed none", () => {
+		render(<BandOutcomes {...props} brief={undefined} />);
+
+		expect(screen.queryByText(/single choice/)).toBeNull();
+	});
+
+	it("reads the brief, the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
 		const { container } = render(<BandOutcomes {...props} />);
 
+		const brief = screen.getByText(/single choice/);
 		const objective = screen.getByText("Finish at");
 		const scores = screen.getByLabelText(/^Lavender —/);
 		const ladder = container.querySelector(".band-ladder") as HTMLElement;
 		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
 		const note = screen.getByText(NOTE);
 
+		expect(follows(brief, objective)).toBe(true);
 		expect(follows(objective, scores)).toBe(true);
 		expect(follows(scores, ladder)).toBe(true);
 		expect(follows(ladder, standing)).toBe(true);
@@ -103,11 +148,12 @@ describe("BandOutcomes", () => {
 	it("draws the ladder inside the panel with no column headings around it", () => {
 		const { container } = render(<BandOutcomes {...props} />);
 
-		expect(sectionOf(container)).toContainElement(
-			container.querySelector(".band-ladder")
-		);
-		expect(screen.queryByText("coverage")).toBeNull();
-		expect(screen.queryByText("pays")).toBeNull();
+		const ladder = container.querySelector(".band-ladder") as HTMLElement;
+		const around = within(ladder.parentElement as HTMLElement);
+
+		expect(sectionOf(container)).toContainElement(ladder);
+		expect(around.queryByText("coverage")).toBeNull();
+		expect(around.queryByText("pays")).toBeNull();
 	});
 
 	it("rings the rung the run stands in, read off the ladder's own numbers", () => {
@@ -124,10 +170,10 @@ describe("BandOutcomes", () => {
 
 		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
 
-		expect(standing).toHaveTextContent("+1 unit to HEALTHY · 2 polls left");
-		expect(within(standing).getByText("+1")).toHaveAttribute(
+		expect(standing).toHaveTextContent("+4% to reach HEALTHY · 2 polls left");
+		expect(within(standing).getByText("+4%")).toHaveAttribute(
 			"data-screen-theme",
-			COVERAGE_BAND_COLOR.healthy
+			"viridian"
 		);
 		expect(within(standing).getByText("2")).toHaveClass("badge-theme");
 	});

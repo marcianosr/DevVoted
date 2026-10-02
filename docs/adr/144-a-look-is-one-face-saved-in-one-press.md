@@ -2,6 +2,8 @@
 
 ## Status
 
+> Amended 2026-10-02 by [ADR-174](174-the-worn-swatch-is-part-of-the-look.md): the look also carries the worn swatch.
+
 Accepted, 2026-09-29 (Marciano, DVTD-fdmd). Amends
 [ADR-142](142-the-profile-shows-what-others-see.md) D1 to D3 and
 [ADR-143](143-the-shelf-reads-as-a-ladder-a-table-and-a-grid.md) on the worn slots.

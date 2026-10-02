@@ -8,60 +8,12 @@ import {
 	storageCreditRate,
 	bankedKb,
 	unbankedKb,
-	buildSpaceFor,
-	highestAffordableSpace,
-	rungIndexForSpace,
-	upkeepForSpace,
-	BUILD_SPACE_RUNGS,
-	FREE_BUILD_SPACE_RUNG,
-	streakMultiplier,
-	streakUnitBonus,
-	STREAK_UNIT_STEP,
 	GATE_COUNT,
 	VICTORY_GATE,
 	BOOT_CACHE_RUNGS,
 	bootCacheRungAt,
 } from "~/modules/run/run/domain/rules.model";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
-
-describe("the streak bonus", () => {
-	it("stops the streak bonus compounding past ×2", () => {
-		expect(streakMultiplier(5)).toBe(1.5);
-		expect(streakMultiplier(10)).toBe(2);
-		expect(streakMultiplier(11)).toBe(2);
-		expect(streakMultiplier(65)).toBe(2);
-	});
-
-	it("never takes the bonus back once it is earned", () => {
-		const steps = Array.from({ length: 40 }, (_, i) => streakMultiplier(i));
-
-		steps.forEach((step, index) => {
-			if (index > 0) expect(step).toBeGreaterThanOrEqual(steps[index - 1]);
-		});
-	});
-});
-
-describe("the streak unit step", () => {
-	it("pays nothing on the window's opening answer", () => {
-		expect(streakUnitBonus(0)).toBe(0);
-	});
-
-	it("stays flat at every streak length", () => {
-		expect(streakUnitBonus(1)).toBe(STREAK_UNIT_STEP);
-		expect(streakUnitBonus(4)).toBe(STREAK_UNIT_STEP);
-		expect(streakUnitBonus(40)).toBe(STREAK_UNIT_STEP);
-	});
-
-	it("pays a clean window 0.4 units of step", () => {
-		const window = [0, 1, 2, 3, 4];
-		const paid = window.reduce(
-			(sum, before) => sum + streakUnitBonus(before),
-			0
-		);
-
-		expect(paid).toBeCloseTo(0.4);
-	});
-});
 
 describe("storageCreditRate", () => {
 	it("banks everything on a victory", () => {
@@ -175,60 +127,6 @@ describe("isPeelFatal", () => {
 	it("is fatal once the peel takes every occupied slot", () => {
 		expect(isPeelFatal(4, 4)).toBe(true);
 		expect(isPeelFatal(5, 4)).toBe(true);
-	});
-});
-
-describe("the build space ladder (ADR-074)", () => {
-	it("opens every run on four weight of free room", () => {
-		expect(buildSpaceFor(FREE_BUILD_SPACE_RUNG)).toBe(4);
-		expect(upkeepForSpace(4)).toBe(0);
-	});
-
-	it("bills the rung the space sits on, not the weight in use", () => {
-		expect(upkeepForSpace(8)).toBe(32);
-	});
-
-	it("steps to the highest rung at or below the space rather than interpolating", () => {
-		expect(upkeepForSpace(9)).toBe(32);
-		expect(upkeepForSpace(11)).toBe(32);
-		expect(upkeepForSpace(12)).toBe(64);
-	});
-
-	it("reads a legacy save whose bought slot count is not a rung weight", () => {
-		expect(rungIndexForSpace(7)).toBe(1);
-		expect(upkeepForSpace(7)).toBe(16);
-	});
-
-	it("charges nothing below the first rung", () => {
-		expect(upkeepForSpace(0)).toBe(0);
-		expect(upkeepForSpace(3)).toBe(0);
-	});
-
-	it("holds the top rung for a space heavier than the ladder", () => {
-		expect(upkeepForSpace(64)).toBe(512);
-	});
-
-	it("clamps a rung index to the ladder at both ends", () => {
-		expect(buildSpaceFor(-3)).toBe(4);
-		expect(buildSpaceFor(99)).toBe(32);
-	});
-
-	it("doubles the bill at every billed rung, so room is never cheap twice", () => {
-		const billed = BUILD_SPACE_RUNGS.filter((rung) => rung.kb > 0);
-
-		billed.slice(1).forEach((rung, index) => {
-			expect(rung.kb).toBe(billed[index].kb * 2);
-		});
-	});
-
-	it("drops to the widest rung the balance covers when the bill outruns it", () => {
-		expect(highestAffordableSpace(512)).toBe(32);
-		expect(highestAffordableSpace(100)).toBe(12);
-		expect(highestAffordableSpace(0)).toBe(4);
-	});
-
-	it("never falls below the free rung, so a spent run still carries a build", () => {
-		expect(highestAffordableSpace(-50)).toBe(4);
 	});
 });
 

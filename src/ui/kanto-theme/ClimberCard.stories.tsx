@@ -1,3 +1,4 @@
+import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
@@ -81,7 +82,11 @@ const fallen = () => {
 			...standing,
 			gate: {
 				...standing.gate,
-				coverage: { ...standing.gate.coverage, held: 18 },
+				coverage: {
+					...standing.gate.coverage,
+					held: 18,
+					band: bandAtLadder(18, standing.gate.coverage).id,
+				},
 			},
 		},
 	};

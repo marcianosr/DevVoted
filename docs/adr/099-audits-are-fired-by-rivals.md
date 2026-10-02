@@ -11,6 +11,10 @@ survive and now govern what a rival's audit may land beside. Narrows
 [ADR-035](035-gates-are-auditors.md) Decision 4 again: a gate has no
 personality of its own; it carries what the community did to your climb.
 
+**Decisions 1 and 3 superseded by [ADR-138](138-the-gate-draws-its-audits-and-a-rival-buys-one.md)**
+(2026-09-28), which also amends Decisions 2, 4 and 5 and reinstates ADR-056
+Decision 2.
+
 Built the same day. `AUDIT_TIERS` in `auditSchedule.model.ts` owns the
 capacity and the pools; `incident.model.ts` owns eligibility, offers and the
 lock; `incidentSettlement.service.ts` is the one writer of a gate's audits;
@@ -18,47 +22,39 @@ lock; `incidentSettlement.service.ts` is the one writer of a gate's audits;
 
 ## Context
 
-Under ADR-056 every gate from 3 dealt a fixed number of audits, drawn from a
-pool seeded on the date, so everyone climbing on a day faced the same gauntlet.
-Two things had moved since. The coverage bands (ADR-073, ADR-094) became a
-dependable difficulty curve in their own right, so the audits stopped being the
-only escalation. And the roster's fifteen rules were still spent on a
-seventeen-slot schedule: a player who had seen gate 9 had seen every gate 9.
+Under ADR-056 every gate from 3 dealt a fixed number of audits from a
+date-seeded pool, so everyone climbing on a day faced the same gauntlet. Two
+things had moved since. The coverage bands (ADR-073, ADR-094) became a
+dependable difficulty curve, so the audits stopped being the only escalation.
+And the roster's fifteen rules were still spent on a seventeen-slot schedule: a
+player who had seen gate 9 had seen every gate 9.
 
-The bean's framing was Mario Kart. The leading racer might dodge every blue
-shell or get mugged on the final straight, and that variance is what makes a
-race a shared story rather than a time trial. An audit becomes a shell: something
-a rival did to your journey, not something the calendar dealt.
+The bean's framing was Mario Kart: the leader might dodge every blue shell or
+get mugged on the final straight, and that variance makes a race a shared story
+rather than a time trial. An audit becomes a shell: something a rival did to
+your journey, not something the calendar dealt.
 
 ## Decision
 
 ### 1. No gate deals an audit. A rival fires one.
 
-Every audit a gate carries from gate 3 upward is one a rival aimed at it. A gate
-nobody attacked is clean. There is **no floor**: the date-seeded draw is gone,
-and with it the two authored gates. 402 stops being the guaranteed introduction
-at gate 3 and the Champion's handcrafted trio goes; both gates follow the same
-rule as every other.
-
-`RunState.auditSchedule` stays the one funnel. It starts empty and is filled
-gate by gate as incidents lock (Decision 5), so every engine read, the stake
-receipt and the Dex work unchanged.
+Every audit from gate 3 upward was a rival's, with no date-seeded floor and no
+authored gates. Superseded by [ADR-138](138-the-gate-draws-its-audits-and-a-rival-buys-one.md)
+Decision 1: the gate draws its own audits again.
 
 ### 2. The ADR-038 count curve is the capacity
 
-Gates 0–2 take nothing, gates 3–7 take one incident, 8–10 two, 11–12 three.
-That is ADR-038's curve read as a ceiling rather than a dealt count. The pools
-survive as **what a rival's payload is drawn from**: gates 3–7 from pool A, 8–10
-from pool B, 11–12 from pool C, with 410 Gone joining pool C now that nothing
-pins it to gate 11. `AUDIT_TIERS` states all three.
+Gates 0–2 take nothing, gates 3–7 take one incident, 8–10 two, 11–12 three:
+ADR-038's curve read as a ceiling rather than a dealt count. The pools survive
+as **what a rival's payload is drawn from**: gates 3–7 from pool A, 8–10 from
+pool B, 11–12 from pool C, with 410 Gone joining pool C now that nothing pins it
+to gate 11. `AUDIT_TIERS` states all three.
 
 ### 3. A HEALTHY or PERFECT clear arms one attack, held for the run
 
-A gate that **clears** in HEALTHY arms a single-payload attack; PERFECT arms a
-choice between two rolled payloads. OK arms nothing: a thin clear is not
-ammunition. A run holds **at most one** attack, it lasts until fired or the run
-ends, and a later clear can only upgrade HEALTHY to PERFECT — never stack a
-second, never downgrade. Strong players would otherwise stockpile shells.
+A HEALTHY clear armed one payload and PERFECT a choice of two, at most one
+attack held per run. Superseded by [ADR-138](138-the-gate-draws-its-audits-and-a-rival-buys-one.md)
+Decision 3: an incident is bought at the shop's Incident desk, not earned.
 
 ### 4. Who may be aimed at
 
@@ -85,14 +81,14 @@ rules, ranks them by `AUDIT_RANK` so the defeat device stays predictable, and
 writes them into `auditSchedule` **before the snapshot persists**. Anything that
 did not fit carries to the following gate, or lapses past the summit.
 
-This is what keeps ADR-042 pillar 2: the slots lock before the Registry opens,
-so the stake receipt names every audit, and its sender, before the player walks
-in. Nothing sent after the lock can reach that gate.
+This keeps ADR-042 pillar 2: the slots lock before the Registry opens, so the
+stake receipt names every audit, and its sender, before the player walks in.
+Nothing sent after the lock can reach that gate.
 
 The lock-time capacity is the law. The offer screen checks capacity as a
-courtesy, but no cross-row lock is taken when firing: two attackers filling a
-last slot at once would otherwise deadlock on each other's `run_states` rows,
-and the overflow simply carries forward.
+courtesy, but firing takes no cross-row lock: two attackers filling a last slot
+at once would otherwise deadlock on each other's `run_states` rows, and the
+overflow simply carries forward.
 
 ### 6. Surviving pays; the attacker never profits from a death
 
@@ -114,8 +110,8 @@ is readable by everyone on the community board, with the viewer's own rows ringe
   for the polls; the audits are personal now. A posted result compares coverage,
   not audits.
 - **A solo climb meets no audits.** At current player counts that is most climbs.
-  This was chosen with eyes open over a drawn-audit floor (see rejected.md): a
-  calm day is a real outcome, and a floor would put the date back in charge.
+  This was chosen over a drawn-audit floor (see rejected.md): a calm day is a
+  real outcome, and a floor would put the date back in charge.
 - Live runs migrate gate by gate: the gate in front keeps the schedule it was
   dealt, and each clear overwrites the next gate with locked incidents. No
   snapshot migration.

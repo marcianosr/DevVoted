@@ -1,4 +1,6 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+
+import { createTestQueryClient } from "~/test/queryClient.harness";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,7 +33,7 @@ const MISTY_CARD = {
 
 const renderFace = () =>
 	render(
-		<QueryClientProvider client={new QueryClient()}>
+		<QueryClientProvider client={createTestQueryClient()}>
 			<PlayerHover>
 				<Climber userId="misty-id" name="misty" />
 			</PlayerHover>

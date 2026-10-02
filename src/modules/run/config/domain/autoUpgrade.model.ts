@@ -38,6 +38,9 @@ export const autoUpgradeRemaining = (
 const upgradeCandidates = (configs: readonly Config[]): readonly Config[] =>
 	configs.filter(isUpgradable);
 
+export const hasUpgradeLeft = (configs: readonly Config[]): boolean =>
+	upgradeCandidates(configs).length > 0;
+
 export const autoUpgradeOnAnswer = (
 	configs: readonly Config[],
 	progress: number,
@@ -45,9 +48,9 @@ export const autoUpgradeOnAnswer = (
 	seed: string
 ): AutoUpgrade => {
 	const bot = autoUpgraderOf(configs);
-	if (!bot) return { configs, progress: 0 };
-	if (outcome === "wrong") return { configs, progress: 0 };
-	if (outcome !== "correct") return { configs, progress };
+	if (!bot || !hasUpgradeLeft(configs)) return { configs, progress: 0 };
+	if (outcome === "partial") return { configs, progress };
+	if (outcome !== "correct") return { configs, progress: 0 };
 
 	const needed = autoUpgradeAfterCorrectOf(bot);
 	const counted = progress + 1;

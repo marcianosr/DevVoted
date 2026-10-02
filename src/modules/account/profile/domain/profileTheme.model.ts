@@ -22,6 +22,11 @@ export const profileThemeFor = (
 	return findSwatchById(wornSwatchId)?.theme ?? DEFAULT_PROFILE_THEME;
 };
 
+export const storedSwatchIdOf = (swatchId: string | null): string | null => {
+	const swatch = swatchId === null ? undefined : findSwatchById(swatchId);
+	return swatch === undefined || isDefaultSwatch(swatch) ? null : swatch.id;
+};
+
 export type SwatchWearRefusal = "unknown" | "not-owned";
 
 export type SwatchWearDecision =

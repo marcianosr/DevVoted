@@ -3,21 +3,18 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import {
 	Config,
 	minifiedAmount,
-	emptySlotCreditPerSlotKb,
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { effectOf } from "~/modules/run/config/domain/effect.model";
 import {
+	type CoverageBand,
+	perfectBonusKbFor,
+} from "~/modules/run/build/domain/coverageRatio.model";
+import {
 	GATE_REWARD_KB,
 	GATE_REWARD_MULTIPLIER_CAP,
 	SLICE_WINDOW,
-	TOP_BUILD_SPACE_RUNG,
-	buildSpaceFor,
 	gateRewardMultiplier,
-	rungAfterFitting,
-	spaceFitting,
-	streakMultiplier,
-	upkeepFitting,
 } from "~/modules/run/run/domain/rules.model";
 
 export type Build = {
@@ -28,40 +25,6 @@ export type Build = {
 
 export const occupiedSlots = (configs: readonly Config[]): number =>
 	configs.reduce((total, config) => total + slotsOf(config), 0);
-
-export const billableSlotsOf = (build: Build): number =>
-	occupiedSlots(
-		build.configs.filter((config) => config.id !== build.vendorLockedConfigId)
-	);
-
-export const spaceForBuild = (build: Build): number =>
-	spaceFitting(billableSlotsOf(build));
-
-export const upkeepForBuild = (build: Build): number =>
-	upkeepFitting(billableSlotsOf(build));
-
-export const rungAfterBuild = (build: Build) =>
-	rungAfterFitting(billableSlotsOf(build));
-
-export const freeSlots = (build: Build): number =>
-	Math.max(0, spaceForBuild(build) - billableSlotsOf(build));
-
-export const emptySlotCreditOf = (build: Build): number =>
-	emptySlotCreditPerSlotKb(build.configs) * freeSlots(build);
-
-export const upkeepAfterCreditOf = (build: Build): number =>
-	Math.max(0, upkeepForBuild(build) - emptySlotCreditOf(build));
-
-export const MAX_BUILD_WEIGHT = buildSpaceFor(TOP_BUILD_SPACE_RUNG);
-
-export const hasRoomFor = (build: Build, slots: number): boolean =>
-	billableSlotsOf(build) + slots <= MAX_BUILD_WEIGHT;
-
-export const overflowSlots = (build: Build): number =>
-	Math.max(0, billableSlotsOf(build) - MAX_BUILD_WEIGHT);
-
-export const isOverCapacity = (build: Build): boolean =>
-	overflowSlots(build) > 0;
 
 export const isBare = (build: Build): boolean =>
 	build.configs.length === 0;
@@ -127,16 +90,20 @@ export const buildModifiersFor = (
 export const gateClearPayout = (
 	configs: readonly Config[],
 	correct: number,
-	gatesCleared: number,
-	streak = 0
+	gatesCleared: number
 ): number =>
 	Math.round(
 		GATE_REWARD_KB *
 			Math.min(gateRewardMultiplier(gatesCleared), GATE_REWARD_MULTIPLIER_CAP) *
 			rewardMultiplierFor(configs) *
-			streakMultiplier(streak) *
 			(correct / SLICE_WINDOW)
 	) + storageOnClearFor(configs);
+
+export const perfectBonusOnClear = (
+	configs: readonly Config[],
+	band: CoverageBand,
+	clearKb: number
+): number => perfectBonusKbFor(band, clearKb - storageOnClearFor(configs));
 
 export const wagererFor = (
 	configs: readonly Config[]
@@ -171,8 +138,6 @@ export const prefetcherFor = (configs: readonly Config[]): Config | undefined =>
 export const auditorFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.revealsOutageTargets === true);
 
-export const projectorFor = (configs: readonly Config[]): Config | undefined =>
-	configs.find((config) => config.projectsGateOutcome === true);
 
 export const lockerFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.locksOffers === true);

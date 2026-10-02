@@ -51,23 +51,18 @@ describe("scoringRowsFor", () => {
 		]);
 	});
 
-	it("states slots, one unit's worth and the line for every gate reached", () => {
+	it("states what a right single adds and the line for every gate reached", () => {
 		const [pallet, boulder, , , lavender] = scoringRowsFor(LAVENDER);
 
-		expect([pallet.slots, boulder.slots, lavender.slots]).toEqual([
-			"5",
-			"10",
-			"25",
-		]);
 		expect([pallet.unit, boulder.unit, lavender.unit]).toEqual([
-			"+20%",
-			"+10%",
-			"+4%",
+			"+11.1%",
+			"+11.1%",
+			"+11.1%",
 		]);
 		expect([pallet.healthy, boulder.healthy, lavender.healthy]).toEqual([
-			"60%",
-			"60%",
-			"62%",
+			"40%",
+			"44%",
+			"55%",
 		]);
 	});
 
@@ -78,7 +73,6 @@ describe("scoringRowsFor", () => {
 
 		expect(sealed).toHaveLength(2);
 		for (const row of sealed) {
-			expect(row.slots).toBeUndefined();
 			expect(row.unit).toBeUndefined();
 			expect(row.healthy).toBeUndefined();
 		}
@@ -110,8 +104,22 @@ describe("scoringRowsFor", () => {
 });
 
 describe("scoringMetaFor", () => {
-	it("states the codebase and what one unit pays there", () => {
-		expect(leadTextOf(scoringMetaFor(LAVENDER))).toBe("25 slots 1 unit +4%");
+	it("states what a single and a multiple add and what accuracy can multiply", () => {
+		expect(leadTextOf(scoringMetaFor(LAVENDER))).toBe(
+			"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
+		);
+	});
+
+	it("badges the points as gains and the multiplier as a figure", () => {
+		expect(scoringMetaFor(LAVENDER)).toContainEqual({
+			figure: "+11.1%",
+			gain: true,
+		});
+		expect(scoringMetaFor(LAVENDER)).toContainEqual({
+			figure: "+22.2%",
+			gain: true,
+		});
+		expect(scoringMetaFor(LAVENDER)).toContainEqual({ figure: "×2" });
 	});
 });
 
@@ -146,13 +154,13 @@ describe("pricesFor", () => {
 describe("lineStatementFor", () => {
 	it("says the line rises without quoting the gates ahead", () => {
 		expect(leadTextOf(lineStatementFor(THUNDER))).toBe(
-			"The line rises. HEALTHY asks 60% at Thunder and more at the gates after."
+			"The line rises. HEALTHY asks 51% at Thunder and more at the gates after."
 		);
 	});
 
 	it("tops out at the summit", () => {
 		expect(leadTextOf(lineStatementFor(CHAMPION))).toBe(
-			"The line goes no higher. HEALTHY asks 90% at Champion, the last gate."
+			"The line goes no higher. HEALTHY asks 84% at Champion, the last gate."
 		);
 	});
 
@@ -160,7 +168,7 @@ describe("lineStatementFor", () => {
 		for (let gate = PALLET; gate < CHAMPION; gate += 1) {
 			const text = leadTextOf(lineStatementFor(gate));
 
-			expect(text).not.toContain("90%");
+			expect(text).not.toContain("84%");
 			for (let later = gate + 1; later <= CHAMPION; later += 1) {
 				expect(text).not.toContain(gateSwatchAt(later).gateName);
 			}
@@ -171,16 +179,27 @@ describe("lineStatementFor", () => {
 describe("scoringFor", () => {
 	const scoring = scoringFor(LAVENDER);
 
-	it("states the growth of the codebase with the five badged", () => {
-		expect(leadTextOf(scoring.statements[0])).toBe(
-			"The codebase grows. Every gate adds 5 slots, so a unit moves the bar less."
-		);
-		expect(scoring.statements[0]).toContainEqual({ figure: "5" });
+	it("states two things: the multiplier curve, then the line", () => {
+		expect(scoring.statements).toHaveLength(2);
 	});
 
-	it("hints what a poll pays in units, the credit badged", () => {
+	it("states the whole multiplier curve, each step badged", () => {
+		expect(leadTextOf(scoring.statements[0])).toBe(
+			"Right answers multiply what the window covered: 0 ×1 1 ×1.15 2 ×1.32 3 ×1.52 4 ×1.74 5 ×2. A multiple counts as two."
+		);
+		expect(scoring.statements[0]).toContainEqual({ figure: "3 ×1.52" });
+		expect(scoring.statements[0]).toContainEqual({ figure: "5 ×2" });
+	});
+
+	it("states the line last", () => {
+		expect(leadTextOf(scoring.statements[1])).toBe(
+			leadTextOf(lineStatementFor(LAVENDER))
+		);
+	});
+
+	it("hints what a poll pays in credit, the multiple's credit badged", () => {
 		expect(leadTextOf(scoring.hint)).toBe(
-			"units per poll · all right pays 2 · configs add on top"
+			"credit per poll · a multiple counts 2 · configs add on top"
 		);
 		expect(scoring.hint).toContainEqual({ figure: "2" });
 	});
@@ -188,5 +207,16 @@ describe("scoringFor", () => {
 	it("carries two prices and the sealed table", () => {
 		expect(scoring.prices).toHaveLength(2);
 		expect(scoring.rows).toHaveLength(7);
+	});
+
+	it("never names the gate's codebase on any line it states, at any gate", () => {
+		for (let gate = PALLET; gate <= CHAMPION; gate += 1) {
+			const stated = scoringFor(gate);
+			const text = [stated.meta, stated.hint, ...stated.statements]
+				.map(leadTextOf)
+				.join(" ");
+
+			expect(text).not.toMatch(/\bchanges?\b/i);
+		}
 	});
 });

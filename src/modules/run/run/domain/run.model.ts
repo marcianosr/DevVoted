@@ -5,17 +5,16 @@ import {
 
 import {
 	isBare,
-	MAX_BUILD_WEIGHT,
-	billableSlotsOf,
-	isOverCapacity,
 	withVendorLockSurviving,
 	Build,
 } from "~/modules/run/build/domain/build.model";
+import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import {
 	atFirstVersion,
 	Config,
 } from "~/modules/run/config/domain/config.model";
 import type {
+	AccuracyTally,
 	CommittableBand,
 	CoverageBandId,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -41,7 +40,11 @@ import {
 } from "~/modules/run/gate/domain/audit.model";
 import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import type { RegistryControlId } from "~/modules/run/shop/domain/registryControl.model";
-import type { GateHoldReason } from "~/modules/run/gate/domain/gate.model";
+import type {
+	GateClosing,
+	GateHoldReason,
+	GateLadder,
+} from "~/modules/run/gate/domain/gate.model";
 import {
 	PIN_START_KB_PER_GATE,
 	SLICE_WINDOW,
@@ -63,6 +66,12 @@ export type LastClose = {
 	readonly gate: number;
 	readonly band: CoverageBandId;
 	readonly cleared: boolean;
+	readonly closing?: GateClosing;
+	readonly heldBy?: GateHoldReason;
+	readonly held?: number;
+	readonly ladder?: GateLadder;
+	readonly correct?: number;
+	readonly accuracy?: AccuracyTally;
 };
 
 export type RecordedClose = LastClose & {
@@ -118,7 +127,7 @@ export type RunState = {
 	readonly boughtBackOptionIds?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
-	readonly bankedUnits: number;
+	readonly headStartUnits: number;
 	readonly gateAttempts?: number;
 	readonly heldBy?: GateHoldReason;
 	readonly coverage: number;
@@ -132,8 +141,8 @@ export type RunState = {
 	readonly escrowRolledBackKb?: number;
 	readonly gateRewardKb?: number;
 	readonly clearThisGateKb?: number;
+	readonly perfectBonusThisGateKb?: number;
 	readonly overflowThisGateKb?: number;
-	readonly streakAtClose?: number;
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
 	readonly peelRefundKb?: number;
@@ -256,7 +265,7 @@ export const createRun = (
 	startedAtGate: startAtGate,
 	auditSchedule,
 	streak: 0,
-	bankedUnits: 0,
+	headStartUnits: 0,
 	coverage: 0,
 	coverageByCategory: {},
 	storage: PIN_START_KB_PER_GATE * startAtGate,
@@ -394,16 +403,7 @@ export const liveConfigsOf = (state: RunState): readonly Config[] => {
 };
 
 export const canStart = (build: Build): boolean =>
-	!isBare(build) && !isOverCapacity(build);
-
-export const spaceCapOf = (state: RunState): number =>
-	state.spaceDroppedTo ?? MAX_BUILD_WEIGHT;
-
-export const overflowWeightOf = (state: RunState): number =>
-	Math.max(0, billableSlotsOf(state.build) - spaceCapOf(state));
-
-export const roomToCapOf = (state: RunState): number =>
-	Math.max(0, spaceCapOf(state) - billableSlotsOf(state.build));
+	!isBare(build) && buildSpaceOf({ build }).overflow === 0;
 
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";

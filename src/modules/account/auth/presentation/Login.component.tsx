@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
@@ -17,12 +17,14 @@ const SIGN_UP_INSTEAD = "Sign up instead?";
 
 export const Login = () => {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const [githubPending, setGithubPending] = useState(false);
 
 	const loginMutation = useMutation({
 		mutationFn: loginFn,
 		onSuccess: async (data) => {
 			if (!data?.error) {
+				queryClient.clear();
 				await router.invalidate();
 				router.navigate({ to: "/" });
 			}

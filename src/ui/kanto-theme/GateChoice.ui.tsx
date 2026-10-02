@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Action, type ActionProps } from "./Action.ui";
 import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
@@ -55,6 +56,12 @@ export type GateDrop = {
 	configs: readonly ConfigChipProps[];
 };
 
+export type GateCatch = {
+	title: string;
+	note: string;
+	config: ConfigChipProps;
+};
+
 export type GatePeelArm = {
 	title: string;
 	note: string;
@@ -63,6 +70,7 @@ export type GatePeelArm = {
 	tally: string;
 	bill: number;
 	sources: readonly GatePeelSource[];
+	catch?: GateCatch;
 	bribe: GatePeelBribe;
 	drop: GateDrop;
 };
@@ -83,6 +91,7 @@ export type GateRefusalArm = {
 export type GateChoiceProps = {
 	peel: GatePeelArm;
 	refusal: GateRefusalArm;
+	retry?: ActionProps;
 };
 
 const fillsOf = (
@@ -138,6 +147,8 @@ const BribeRow = ({ label, note, cost, pick }: GatePeelBribe) => (
 	</div>
 );
 
+type PeelArmProps = GatePeelArm & { retry?: ActionProps };
+
 const PeelArm = ({
 	title,
 	note,
@@ -146,9 +157,11 @@ const PeelArm = ({
 	tally,
 	bill,
 	sources,
+	catch: caught,
 	bribe,
 	drop,
-}: GatePeelArm) => (
+	retry,
+}: PeelArmProps) => (
 	<Panel>
 		<Panel.Header label={title} meta={<Figures text={note} />} />
 
@@ -167,6 +180,12 @@ const PeelArm = ({
 			<SlotTrack fills={fillsOf(sources)} capacity={bill} caption={false} />
 			{sources.length === 0 ? null : <Legend sources={sources} />}
 
+			{caught === undefined ? null : (
+				<Section title={caught.title} note={caught.note}>
+					<ConfigChip {...caught.config} />
+				</Section>
+			)}
+
 			<Section title={bribe.title} note={bribe.balance}>
 				<BribeRow {...bribe} />
 			</Section>
@@ -178,6 +197,8 @@ const PeelArm = ({
 					))}
 				</div>
 			</Section>
+
+			{retry === undefined ? null : <Action {...retry} />}
 		</Panel.Body>
 	</Panel>
 );
@@ -205,9 +226,9 @@ const RefusalArm = ({ title, price, note, action }: GateRefusalArm) => (
 	</Panel>
 );
 
-export const GateChoice = ({ peel, refusal }: GateChoiceProps) => (
+export const GateChoice = ({ peel, refusal, retry }: GateChoiceProps) => (
 	<section className={CHOICE}>
-		<PeelArm {...peel} />
+		<PeelArm {...peel} retry={retry} />
 		<RefusalArm {...refusal} />
 	</section>
 );

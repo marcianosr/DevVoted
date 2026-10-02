@@ -168,6 +168,9 @@ const standing = (
 	coverageUnits: 0,
 	streak: 0,
 	storageKb: 0,
+	closes: [],
+	auditSchedule: {},
+	warmBootKb: 0,
 	...over,
 	...(over.handle === undefined ? {} : { handle: over.handle }),
 });
@@ -580,7 +583,7 @@ describe("getRunCommunityService climb map", () => {
 				startedAtGate: 0,
 				titles: ["Completionist"],
 				theme: "pallet",
-				coveragePercent: 69,
+				coveragePercent: 37,
 				streak: 0,
 				storageKb: 0,
 				bestCategory: "js",
@@ -779,7 +782,7 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		const you = result.data.climb?.climbers.find((climber) => climber.you);
-		expect(you?.coveragePercent).toBe(69);
+		expect(you?.coveragePercent).toBe(37);
 	});
 
 	it("names the category a climber has answered right most often", async () => {
@@ -828,6 +831,54 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		expect(result.data.climb?.bestPosition).toBe(31);
+	});
+
+	it("files each player under today's gate outcome, the fallen under danger", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValueOnce([
+			{
+				...CLIMBERS[0],
+				closes: [{ gate: 5, band: "perfect", cleared: true, kb: 120 }],
+			},
+			...CLIMBERS.slice(1),
+		]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const outcomes = result.data.climb?.turnout.outcomes;
+		expect(outcomes?.perfect).toEqual([
+			expect.objectContaining({ id: RED, you: true }),
+		]);
+		expect(outcomes?.danger.map((voter) => voter.id)).toEqual([
+			"koga",
+			"misty",
+		]);
+	});
+
+	it("names the top earner of the day's KB with the faces of the run", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValueOnce([
+			{
+				...CLIMBERS[0],
+				closes: [{ gate: 5, band: "ok", cleared: true, kb: 120 }],
+			},
+			...CLIMBERS.slice(1),
+		]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		expect(
+			result.data.climb?.turnout.records.find(
+				({ record }) => record.id === "kb-generated"
+			)
+		).toMatchObject({
+			record: { figure: 120 },
+			holders: [{ id: RED, displayName: "Red" }],
+		});
 	});
 
 	it("builds the map on a day with nothing answered yet", async () => {

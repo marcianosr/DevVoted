@@ -1,10 +1,10 @@
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 import {
+	accuracyMultiplierFor,
 	coverageGainPercentFor,
 	healthyAt,
 	MULTIPLE_CREDIT,
 	percentOf,
-	scoringSlotsAt,
 	SINGLE_CREDIT,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
@@ -26,12 +26,15 @@ import type {
 	ScoringTone,
 } from "~/ui/kanto-theme/Scoring.ui";
 
-const SLOTS_WORD = "slots";
-const UNIT_IS = " 1 unit ";
-const HINT_LEAD = "units per poll · all right pays ";
+const SINGLE_LABEL = "single ";
+const MULTIPLE_LABEL = " · multiple up to ";
+const ACCURACY_LABEL = " · accuracy up to ";
+const HINT_LEAD = "credit per poll · a multiple counts ";
 const HINT_TRAIL = " · configs add on top";
-const GROWS_LEAD = "The codebase grows. Every gate adds ";
-const GROWS_TRAIL = " slots, so a unit moves the bar less.";
+const CURVE_LEAD = "Right answers multiply what the window covered: ";
+const CURVE_JOIN = " ";
+const CURVE_TRAIL = ". A multiple counts as two.";
+const POINTS = "%";
 const RISES_LEAD = "The line rises. ";
 const HOLDS_LEAD = "The line holds. ";
 const TOPS_LEAD = "The line goes no higher. ";
@@ -41,6 +44,10 @@ const AND_MORE_AFTER = " and more at the gates after.";
 const AND_EVERY_AFTER = " and at every gate after.";
 const THE_LAST_GATE = ", the last gate.";
 
+const RIGHT_COUNTS: readonly number[] = Array.from(
+	{ length: SLICE_WINDOW + 1 },
+	(_, right) => right
+);
 const SINGLE_STEP = 1;
 const MULTIPLE_STEP = 0.25;
 const HEALTHY_BAND: CoverageBandId = "healthy";
@@ -52,15 +59,18 @@ const GATES: readonly number[] = Array.from(
 const gateNameOf = (gate: number) => gateSwatchAt(gate).gateName;
 
 const shareLabel = (units: number, gate: number) =>
-	`+${roundToTwoDecimals(coverageGainPercentFor(units, gate))}%`;
+	`+${roundToOneDecimal(coverageGainPercentFor(units, gate))}${POINTS}`;
 
 const healthyPercentAt = (gate: number) =>
 	roundToOneDecimal(percentOf(healthyAt(gate)));
 
 export const scoringMetaFor = (gate: number): LeadLine => [
-	{ figure: `${scoringSlotsAt(gate)} ${SLOTS_WORD}` },
-	UNIT_IS,
-	{ figure: shareLabel(1, gate), gain: true },
+	SINGLE_LABEL,
+	{ figure: shareLabel(SINGLE_CREDIT, gate), gain: true },
+	MULTIPLE_LABEL,
+	{ figure: shareLabel(MULTIPLE_CREDIT, gate), gain: true },
+	ACCURACY_LABEL,
+	{ figure: `×${multiplierAt(SLICE_WINDOW)}` },
 ];
 
 const toneOf = (units: number, credit: number): ScoringTone => {
@@ -91,10 +101,18 @@ export const SCORING_HINT: LeadLine = [
 	HINT_TRAIL,
 ];
 
-const growsStatement = (): LeadLine => [
-	GROWS_LEAD,
-	{ figure: `${SLICE_WINDOW}` },
-	GROWS_TRAIL,
+const multiplierAt = (right: number) =>
+	roundToTwoDecimals(
+		accuracyMultiplierFor({ earned: right, available: SLICE_WINDOW })
+	);
+
+const curveStatement = (): LeadLine => [
+	CURVE_LEAD,
+	...RIGHT_COUNTS.flatMap((right): LeadPart[] => [
+		...(right === 0 ? [] : [CURVE_JOIN]),
+		{ figure: `${right} ×${multiplierAt(right)}` },
+	]),
+	CURVE_TRAIL,
 ];
 
 const risesAfter = (gate: number): boolean =>
@@ -131,7 +149,6 @@ export const scoringRowsFor = (gate: number): readonly ScoringGateRow[] =>
 		if (scheduled > gate) return { locked: true, ...stated };
 		return {
 			...stated,
-			slots: `${scoringSlotsAt(scheduled)}`,
 			unit: shareLabel(1, scheduled),
 			healthy: `${healthyPercentAt(scheduled)}%`,
 			...(scheduled === gate ? { current: true } : {}),
@@ -142,6 +159,6 @@ export const scoringFor = (gate: number): ScoringProps => ({
 	meta: scoringMetaFor(gate),
 	prices: pricesFor(),
 	hint: SCORING_HINT,
-	statements: [growsStatement(), lineStatementFor(gate)],
+	statements: [curveStatement(), lineStatementFor(gate)],
 	rows: scoringRowsFor(gate),
 });

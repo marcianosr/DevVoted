@@ -1,3 +1,5 @@
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
+import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	floorAt,
@@ -97,6 +99,12 @@ const ladderAt = (gate: number) => ({
 	healthy: percentOf(healthyAt(gate)),
 });
 
+const barAt = (gate: number, held: number) => ({
+	...ladderAt(gate),
+	held,
+	band: bandAtLadder(held, ladderAt(gate)).id,
+});
+
 export const runOverFrame = (
 	overrides: Partial<RunOverFrame> = {}
 ): RunOverFrame => ({
@@ -104,8 +112,7 @@ export const runOverFrame = (
 	won: false,
 	answers: runAnswers(SAMPLE_PAID),
 	payouts: { rows: runPayoutRows(SAMPLE_PAID) },
-	bar: { ...ladderAt(SAMPLE_GATE), held: 24 },
-	unitsHeld: 14,
+	bar: barAt(SAMPLE_GATE, 18),
 	swatchGates: [0, 1, 2, 3],
 	configs: [
 		CONFIGS.js,
@@ -114,8 +121,10 @@ export const runOverFrame = (
 		CONFIGS.indexedDb,
 		CONFIGS.cache,
 	],
-	space: 12,
 	weight: 9,
+	freeWeight: 3,
+	emptyCreditKb: 0,
+	upkeepKb: rungFitting(12).kb,
 	balanceKb: 512,
 	upkeepPaidKb: 96,
 	unlocked: [
@@ -133,7 +142,6 @@ export const kantoRunSummit = (): RunOverScreenProps =>
 	kantoRunOver({
 		gate: 12,
 		won: true,
-		bar: { ...ladderAt(12), held: 93 },
-		unitsHeld: 60.5,
+		bar: barAt(12, 93),
 		swatchGates: [0, 1, 2, 3, 5, 7, 9],
 	});

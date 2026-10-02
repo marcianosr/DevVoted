@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import {
+	editPoll,
+	suggestPoll,
+} from "~/modules/polls/authoring/application/authoring.service";
 import * as authoringRepository from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import { createMockPoll } from "~/modules/polls/poll/domain/poll.factory";
-
-import { createPollService } from "./authoring.service";
+import { ADMIN_REQUIRED } from "~/shared/utils/authorization";
 
 vi.mock(
 	"~/modules/polls/authoring/infrastructure/authoring.repository",
@@ -13,12 +16,16 @@ vi.mock(
 	})
 );
 
-const BROCK = "123e4567-e89b-12d3-a456-426614174000";
+const BROCK = "11111111-1111-4111-8111-111111111111";
+const OAK = "22222222-2222-4222-8222-222222222222";
+
+const brock = { userId: BROCK, isAdmin: false };
+const oak = { userId: OAK, isAdmin: true };
 
 const suggestion = {
 	poll: {
 		question: "What does `flex: 1` expand to?",
-		status: "draft" as const,
+		status: "published" as const,
 		answerType: "single" as const,
 		categoryCode: "css",
 		explanation: "`flex: 1` is `1 1 0%`.",
@@ -30,50 +37,62 @@ const suggestion = {
 	],
 };
 
+const edit = {
+	id: 74,
+	poll: { question: "What does `flex: 1` expand to in CSS?" },
+	options: [
+		{ id: 1, option: "1 1 0%", correct: true },
+		{ option: "1 1 auto", correct: false },
+		{ option: "1 0 0%", correct: false },
+	],
+};
+
 beforeEach(() => {
 	vi.clearAllMocks();
 	vi.mocked(authoringRepository.createPollWithOptions).mockResolvedValue(
 		createMockPoll()
 	);
+	vi.mocked(authoringRepository.updatePollWithOptions).mockResolvedValue(
+		createMockPoll({ id: 74 })
+	);
 });
 
-describe("createPollService", () => {
+describe("suggestPoll", () => {
+	it("writes the suggestion as a draft by its author, whatever status it was sent with", async () => {
+		await suggestPoll(brock, suggestion);
+
+		expect(authoringRepository.createPollWithOptions).toHaveBeenCalledWith(
+			{ ...suggestion.poll, status: "draft", createdBy: BROCK },
+			suggestion.options
+		);
+	});
+
 	it("hands the explanation to the repository", async () => {
-		await createPollService({ ...suggestion, createdBy: BROCK });
+		await suggestPoll(brock, suggestion);
 
 		expect(authoringRepository.createPollWithOptions).toHaveBeenCalledWith(
-			expect.objectContaining({
-				explanation: "`flex: 1` is `1 1 0%`.",
-				createdBy: BROCK,
-			}),
+			expect.objectContaining({ explanation: "`flex: 1` is `1 1 0%`." }),
 			suggestion.options
 		);
 	});
+});
 
-	it("writes no explanation as null", async () => {
-		await createPollService({
-			...suggestion,
-			poll: { ...suggestion.poll, explanation: undefined },
-			createdBy: BROCK,
-		});
+describe("editPoll", () => {
+	it("refuses a player before the repository sees the edit", async () => {
+		const result = await editPoll(brock, edit);
 
-		expect(authoringRepository.createPollWithOptions).toHaveBeenCalledWith(
-			expect.objectContaining({ explanation: null }),
-			suggestion.options
-		);
+		expect(result).toEqual({ success: false, error: ADMIN_REQUIRED });
+		expect(authoringRepository.updatePollWithOptions).not.toHaveBeenCalled();
 	});
 
-	it("refuses a suggestion with no right answer before the repository sees it", async () => {
-		const result = await createPollService({
-			...suggestion,
-			options: suggestion.options.map((option) => ({
-				...option,
-				correct: false,
-			})),
-			createdBy: BROCK,
-		});
+	it("writes an admin's edit with the options as sent", async () => {
+		const result = await editPoll(oak, edit);
 
-		expect(result.success).toBe(false);
-		expect(authoringRepository.createPollWithOptions).not.toHaveBeenCalled();
+		expect(authoringRepository.updatePollWithOptions).toHaveBeenCalledWith(
+			74,
+			edit.poll,
+			edit.options
+		);
+		expect(result).toEqual({ success: true, data: createMockPoll({ id: 74 }) });
 	});
 });

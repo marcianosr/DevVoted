@@ -44,7 +44,12 @@ export const CommittedOnTheClear: Story = {
 export const RolledBackOnAHeldGate: Story = {
 	render: () =>
 		asGateOutcome(
-			{ ...holding(), pendingKb: 0, escrowRolledBackKb: 24 },
-			"held"
+			afterAnswers(runWith([CONFIGS.database], MIXED_GATE), [
+				true,
+				false,
+				false,
+				false,
+				false,
+			])
 		),
 };

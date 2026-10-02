@@ -35,23 +35,6 @@ export const fetchUserTitleState = async (
 	};
 };
 
-export const setEquippedTitles = async (
-	userId: string,
-	titleIds: readonly string[]
-): Promise<UserTitleState | null> => {
-	const ownedTitleIds = await fetchOwnedTitleIds(userId);
-	if (titleIds.some((titleId) => !ownedTitleIds.includes(titleId))) return null;
-
-	const [row] = await db
-		.update(usersTable)
-		.set({ equipped_title_ids: [...titleIds] })
-		.where(eq(usersTable.id, userId))
-		.returning({ equippedTitleIds: usersTable.equipped_title_ids });
-
-	if (!row) return null;
-	return { ownedTitleIds, equippedTitleIds: row.equippedTitleIds };
-};
-
 export const fetchUnannouncedTitleIds = async (
 	userId: string
 ): Promise<readonly string[]> => {

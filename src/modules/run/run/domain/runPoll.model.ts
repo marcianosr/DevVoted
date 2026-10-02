@@ -71,7 +71,9 @@ const gradeOf = <Id>(
 	};
 };
 
-export type AnswerOutcome = "correct" | "partial" | "wrong";
+export type GradedOutcome = "correct" | "partial" | "wrong";
+
+export type AnswerOutcome = GradedOutcome | "skipped";
 
 export const coverageShare = <Id>(
 	poll: GradedPoll<Id>,
@@ -88,7 +90,7 @@ export const coverageShare = <Id>(
 export const answerOutcome = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
-): AnswerOutcome => {
+): GradedOutcome => {
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return "correct";
 	if (poll.answerType === "single") return "wrong";
@@ -126,8 +128,8 @@ export const mirrorGrading = <Id>(poll: GradedPoll<Id>): GradedPoll<Id> => {
 
 export const nextStreak = (current: number, outcome: AnswerOutcome): number => {
 	if (outcome === "correct") return current + 1;
-	if (outcome === "wrong") return 0;
-	return current;
+	if (outcome === "partial") return current;
+	return 0;
 };
 
 export type AnsweredPoll = {
@@ -183,8 +185,8 @@ export const answersPerGate = (
 export const chainLengthOf = (answered: readonly AnsweredPoll[]): number =>
 	answered.reduce((links, poll) => {
 		if (poll.outcome === "correct") return links + 1;
-		if (poll.outcome === "wrong") return 0;
-		return links;
+		if (poll.outcome === "partial") return links;
+		return 0;
 	}, 0);
 
 export const cachedHitsFor = (

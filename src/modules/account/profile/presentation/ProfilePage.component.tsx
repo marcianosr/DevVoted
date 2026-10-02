@@ -10,16 +10,12 @@ import {
 	profileCollectionFor,
 	profileRecordFor,
 	profileRunsFor,
-	type ProfileIdentity,
 	type ProfileTabId,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
-import { useAuthorship } from "~/modules/account/profile/application/useAuthorship.hook";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import { useLookDraft } from "~/modules/account/profile/application/useLookDraft.hook";
 import { usePublicProfile } from "~/modules/account/profile/application/usePublicProfile.hook";
-import { useTitleState } from "~/modules/account/profile/application/useTitleState.hook";
-import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
-import { DEFAULT_PROFILE_THEME } from "~/modules/account/profile/domain/profileTheme.model";
+import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
 import { Appearance } from "~/modules/account/profile/presentation/Appearance.component";
 import { BorderShop } from "~/modules/account/profile/presentation/BorderShop.component";
 import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
@@ -37,11 +33,7 @@ const APPEARANCE_TAB: ProfileTabId = "appearance";
 const BORDERS_TAB: ProfileTabId = "borders";
 const TITLES_TAB: ProfileTabId = "titles";
 
-type Viewer = {
-	id: string;
-	displayName?: string | null;
-	photoUrl?: string | null;
-};
+type Viewer = { id: string };
 
 type ProfilePageProps = {
 	userId: string;
@@ -51,24 +43,17 @@ type ProfilePageProps = {
 const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 	const [activeId, setActiveId] = useState<ProfileTabId>(APPEARANCE_TAB);
 
-	const { data: archive } = useArchiveState(viewer.id);
-	const { data: titles } = useTitleState(viewer.id);
-	const { data: authorship } = useAuthorship(viewer.id);
+	const { view: profile } = usePublicProfile(viewer.id);
+	const { view: archive } = useArchiveState(viewer.id);
 	const draft = useLookDraft(viewer.id);
 
 	const selectTab = (id: string) => {
 		if (isProfileTabId(id)) setActiveId(id);
 	};
 
-	const identity: ProfileIdentity = {
-		displayName: viewer.displayName ?? viewer.id,
-		githubUsername: null,
-		photoUrl: viewer.photoUrl ?? null,
-		borderUrl: null,
-		wornTitles: [],
-		pollsAnswered: titles?.pollsAnswered ?? 0,
-		authorship: authorship ?? NO_AUTHORSHIP,
-	};
+	if (!profile) return null;
+
+	const { identity } = profile;
 	const looked = lookedIdentityOf(identity, draft.look, draft.tryingOnId);
 
 	const card = (
@@ -91,11 +76,14 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 			tabs={PROFILE_TABS}
 			activeId={activeId}
 			onSelect={selectTab}
-			theme={DEFAULT_PROFILE_THEME}
+			theme={profileThemeFor(
+				draft.look.swatchId,
+				archive?.ownedSwatchIds ?? []
+			)}
 			archive={archiveLabel(archive?.archivedStorage ?? 0)}
 		>
 			{isOwnerTabId(activeId) ? null : (
-				<Dex userId={viewer.id} activeId={activeId} />
+				<Dex viewerId={viewer.id} activeId={activeId} />
 			)}
 			{activeId === APPEARANCE_TAB ? (
 				<Appearance
@@ -121,8 +109,8 @@ const VisitedProfile = ({
 	userId: string;
 	viewerId: string | undefined;
 }) => {
-	const { data: profile } = usePublicProfile(userId);
-	const { data: viewer } = usePublicProfile(viewerId);
+	const { view: profile } = usePublicProfile(userId);
+	const { view: viewer } = usePublicProfile(viewerId);
 	const [pickedRun, setPickedRun] = useState<string | undefined>(undefined);
 
 	if (!profile) return null;

@@ -1,51 +1,43 @@
-import {
-	createPollWithOptionsSchema,
-	updatePollSchema,
-	type CreatePollWithOptionsInput,
-	type UpdatePollInput,
+import type {
+	CreatePollWithOptionsInput,
+	UpdatePollInput,
 } from "~/modules/polls/authoring/application/poll.validation";
 import {
 	createPollWithOptions,
 	updatePollWithOptions,
 } from "~/modules/polls/authoring/infrastructure/authoring.repository";
-import { handleApiOperation } from "~/shared/utils/errorHandling";
+import type { Poll } from "~/modules/polls/poll/domain/poll.model";
+import {
+	canAdministerPolls,
+	type PollViewer,
+} from "~/modules/polls/poll/domain/pollAccess.model";
+import { ADMIN_REQUIRED } from "~/shared/utils/authorization";
+import {
+	createErrorResponse,
+	handleApiOperation,
+	type ApiResponse,
+} from "~/shared/utils/errorHandling";
 
-export const createPollService = async (
-	data: CreatePollWithOptionsInput & { createdBy: string }
-) =>
-	handleApiOperation(async () => {
-		const validated = createPollWithOptionsSchema.parse(data);
+export const suggestPoll = async (
+	author: PollViewer,
+	{ poll, options }: CreatePollWithOptionsInput
+): Promise<ApiResponse<Poll>> =>
+	handleApiOperation(
+		() =>
+			createPollWithOptions(
+				{ ...poll, status: "draft", createdBy: author.userId },
+				options
+			),
+		"suggestPoll"
+	);
 
-		return createPollWithOptions(
-			{
-				question: validated.poll.question,
-				status: validated.poll.status,
-				answerType: validated.poll.answerType,
-				createdBy: data.createdBy,
-				categoryCode: validated.poll.categoryCode,
-				codeBlock: validated.poll.codeBlock ?? null,
-				codeSandboxExample: validated.poll.codeSandboxExample ?? null,
-				explanation: validated.poll.explanation ?? null,
-			},
-			validated.options
-		);
-	}, "createPoll");
-
-export const updatePollService = async (data: UpdatePollInput) =>
-	handleApiOperation(async () => {
-		const validated = updatePollSchema.parse(data);
-
-		return updatePollWithOptions(
-			validated.id,
-			{
-				question: validated.poll.question,
-				status: validated.poll.status,
-				answerType: validated.poll.answerType,
-				categoryCode: validated.poll.categoryCode,
-				codeBlock: validated.poll.codeBlock,
-				codeSandboxExample: validated.poll.codeSandboxExample,
-				explanation: validated.poll.explanation,
-			},
-			validated.options
-		);
-	}, "updatePoll");
+export const editPoll = async (
+	viewer: PollViewer,
+	{ id, poll, options }: UpdatePollInput
+): Promise<ApiResponse<Poll>> =>
+	canAdministerPolls(viewer)
+		? handleApiOperation(
+				() => updatePollWithOptions(id, poll, options),
+				"editPoll"
+			)
+		: createErrorResponse(new Error(ADMIN_REQUIRED));

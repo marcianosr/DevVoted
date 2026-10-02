@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import { render, screen } from "@testing-library/react";
@@ -9,10 +10,10 @@ import type {
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
 import {
-	CommunityView,
 	defaultOpenIndex,
 	pollResultsFor,
-} from "~/modules/run/community/presentation/CommunityView.component";
+} from "~/modules/run/community/application/communityScreen.viewmodel";
+import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
 const answered = (
@@ -171,6 +172,7 @@ describe("CommunityView", () => {
 			fallen: [],
 			bestPosition: null,
 			viewer: { id: "red", hasLiveRun: true },
+			turnout: EMPTY_DAY_TURNOUT,
 		},
 	};
 
@@ -215,6 +217,7 @@ describe("CommunityView", () => {
 						fallen: [],
 						bestPosition: null,
 						viewer: { id: "red", hasLiveRun: true },
+						turnout: EMPTY_DAY_TURNOUT,
 					},
 				}}
 				swatch={gateSwatchAt(1)}
@@ -253,6 +256,7 @@ describe("CommunityView", () => {
 					fallen: [],
 					bestPosition: null,
 					viewer: { id: "red", hasLiveRun: true },
+					turnout: EMPTY_DAY_TURNOUT,
 				},
 			})
 		);

@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 import * as React from "react";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
 	HeadContent,
 	Outlet,
 	Scripts,
-	createRootRoute,
+	createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
@@ -25,7 +25,9 @@ import {
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{
+	queryClient: QueryClient;
+}>()({
 	head: () => ({
 		meta: [
 			{
@@ -81,8 +83,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-	const queryClient = new QueryClient();
-	const { user } = Route.useRouteContext();
+	const { queryClient, user } = Route.useRouteContext();
 
 	return (
 		<RootDocument>

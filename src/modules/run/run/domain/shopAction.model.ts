@@ -12,12 +12,12 @@ import {
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import {
-	hasRoomFor,
 	type Build,
 	lockerFor,
 	locksSurviving,
 	stripConfig,
 } from "~/modules/run/build/domain/build.model";
+import { fitsBuildSpace } from "~/modules/run/build/domain/buildSpace.model";
 import { isVendorLocked } from "~/modules/run/build/domain/vendorLock.model";
 import { carries } from "~/modules/run/run/domain/warmBoot.model";
 import {
@@ -94,7 +94,7 @@ export const draft = (state: RunState, configId: string): RunState => {
 		return state.storage < cost ? state : draftUpgrade(state, chosen, cost);
 	if (
 		alreadyOwned ||
-		!hasRoomFor(state.build, slotsOf(chosen)) ||
+		!fitsBuildSpace(state, slotsOf(chosen)) ||
 		state.storage < cost
 	)
 		return state;

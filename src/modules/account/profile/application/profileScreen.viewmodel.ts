@@ -6,18 +6,16 @@ import {
 	runTrackFor,
 	type DexTab,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import {
-	type Authorship,
-	isContributor,
-} from "~/modules/account/profile/domain/authorship.model";
-import type { RunHistoryEntry } from "~/modules/collection/dex/domain/runHistory.model";
-import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
-import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
-import {
-	getCategoryMetadata,
-	type CategoryCode,
-} from "~/shared/lib/categories";
-import { IN_A_ROW } from "~/shared/lib/copy";
+import { isContributor } from "~/modules/account/profile/domain/authorship.model";
+import type {
+	ProfileIdentity,
+	ProfileRecord,
+	ProfileTotals,
+} from "~/modules/account/profile/domain/profile.model";
+import type { Tally } from "~/modules/collection/dex/domain/tally.model";
+import type { Standing } from "~/modules/run/community/domain/standing.model";
+import { getCategoryMetadata } from "~/shared/lib/categories";
+import { HELD_OF, IN_A_ROW } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import { archiveLabel } from "~/shared/lib/storage";
 import type { DexRunsProps } from "~/ui/kanto-theme/DexRuns.ui";
@@ -45,12 +43,11 @@ export type ProfileTab = Omit<DexTab, "id"> & { id: ProfileTabId };
 const APPEARANCE_TAB = {
 	id: "appearance",
 	label: "Appearance",
-	color: "fuchsia",
 } as const satisfies ProfileTab;
 
 const SHELF_TABS = [
-	{ id: "borders", label: "Borders", color: "vermillion" },
-	{ id: "titles", label: "Titles", color: "celadon" },
+	{ id: "borders", label: "Borders" },
+	{ id: "titles", label: "Titles" },
 ] as const satisfies readonly ProfileTab[];
 
 export const PROFILE_TABS: readonly ProfileTab[] = [
@@ -64,16 +61,6 @@ export const isProfileTabId = (value: string): value is ProfileTabId =>
 
 export const isOwnerTabId = (value: string): value is OwnerTabId =>
 	OWNER_TAB_IDS.some((id) => id === value);
-
-export type ProfileIdentity = {
-	readonly displayName: string;
-	readonly githubUsername: string | null;
-	readonly photoUrl: string | null;
-	readonly borderUrl: string | null;
-	readonly wornTitles: readonly string[];
-	readonly pollsAnswered: number;
-	readonly authorship: Authorship;
-};
 
 export const profileCardFor = (
 	identity: ProfileIdentity,
@@ -101,40 +88,6 @@ export const triedOnBorderOf = (
 		? undefined
 		: findBorderById(tryingOnId);
 
-export type ProfileSeat = {
-	readonly category: CategoryCode;
-	readonly streak: number;
-};
-
-export type ProfileRecord = {
-	readonly deepestGate: number;
-	readonly gatesTotal: number;
-	readonly clearedGates: readonly number[];
-	readonly runsFinished: number;
-	readonly seats: readonly ProfileSeat[];
-	readonly recentRuns: readonly RunHistoryEntry[];
-};
-
-export type ProfileStanding = {
-	readonly gate: number;
-	readonly band: CoverageBandId | null;
-	readonly coveragePercent: number;
-	readonly streak: number;
-	readonly storageKb: number;
-	readonly bestCategory?: string;
-	readonly build: PublicBuild;
-};
-
-export type ProfileTotals = {
-	readonly pollsSeen: number;
-	readonly pollsTotal: number;
-	readonly configsHeld: number;
-	readonly configsTotal: number;
-	readonly titlesOwned: number;
-	readonly titlesTotal: number;
-	readonly archivedStorage: number;
-};
-
 const RECORD = {
 	deepestGate: "deepest gate",
 	swatches: "swatches",
@@ -159,8 +112,6 @@ const CLIMBING = {
 
 const RUNS = { meta: "most recent" } as const;
 
-const heldOf = (held: number, total: number): string => `${held} of ${total}`;
-
 const figureOf = (
 	label: string,
 	held: number,
@@ -168,8 +119,10 @@ const figureOf = (
 	yours: number | undefined
 ): RecordFigure => ({
 	label,
-	figure: heldOf(held, total),
-	...(yours === undefined ? {} : { yours: RECORD.yours(heldOf(yours, total)) }),
+	figure: HELD_OF(held, total),
+	...(yours === undefined
+		? {}
+		: { yours: RECORD.yours(HELD_OF(yours, total)) }),
 });
 
 export const profileRecordFor = (
@@ -219,46 +172,26 @@ export const profileRunsFor = (
 };
 
 export const profileClimbingFor = (
-	standing: ProfileStanding | null
+	standing: Standing | null
 ): ProfileClimbingProps =>
 	standing === null
 		? { meta: CLIMBING.none }
-		: {
-				meta: CLIMBING.open,
-				standing: standingFor({
-					gate: standing.gate,
-					coveragePercent: standing.coveragePercent,
-					streak: standing.streak,
-					storageKb: standing.storageKb,
-					build: standing.build,
-					...(standing.bestCategory === undefined
-						? {}
-						: { bestCategory: standing.bestCategory }),
-				}),
-			};
+		: { meta: CLIMBING.open, standing: standingFor(standing) };
+
+const countOf = (label: string, { held, total }: Tally) => ({
+	label,
+	figure: HELD_OF(held, total),
+	held,
+	total,
+});
 
 export const profileCollectionFor = (
 	totals: ProfileTotals
 ): ProfileCollectionProps => ({
 	counts: [
-		{
-			label: COLLECTION.polls,
-			figure: heldOf(totals.pollsSeen, totals.pollsTotal),
-			held: totals.pollsSeen,
-			total: totals.pollsTotal,
-		},
-		{
-			label: COLLECTION.configs,
-			figure: heldOf(totals.configsHeld, totals.configsTotal),
-			held: totals.configsHeld,
-			total: totals.configsTotal,
-		},
-		{
-			label: COLLECTION.titles,
-			figure: heldOf(totals.titlesOwned, totals.titlesTotal),
-			held: totals.titlesOwned,
-			total: totals.titlesTotal,
-		},
+		countOf(COLLECTION.polls, totals.polls),
+		countOf(COLLECTION.configs, totals.configs),
+		countOf(COLLECTION.titles, totals.titles),
 	],
 	meta: `${COLLECTION.meta} · ${archiveLabel(totals.archivedStorage)}`,
 	note: COLLECTION.note,

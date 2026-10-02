@@ -1,11 +1,11 @@
 ---
 # DVTD-vban
 title: The gate-hold bribe press does nothing
-status: todo
+status: completed
 type: bug
 priority: normal
 created_at: 2026-09-25T09:08:36Z
-updated_at: 2026-09-25T09:08:36Z
+updated_at: 2026-10-01T15:39:17Z
 parent: DVTD-z2r2
 ---
 
@@ -34,3 +34,7 @@ missing is the action, not the arithmetic.
 Whether a peel should be payable in cash at all is the open design question. Dropping
 configs is the costly route and is built; a cash settle is strictly easier, so it may
 need a premium or may not belong at all. Decide that before wiring it.
+
+## Summary of Changes
+
+Closed in the 2026-10-01 stale-bean sweep: the code already does this. The storage settle is wired from GateOutcomeView.component through RunGate to settleFromStorage in strip.model (ADR-126), and the press is disabled when nothing can be paid (gateOutcome.viewmodel).

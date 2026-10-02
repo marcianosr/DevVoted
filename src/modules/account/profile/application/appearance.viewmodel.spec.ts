@@ -6,12 +6,13 @@ import {
 	lookedIdentityOf,
 	type AppearanceInput,
 } from "~/modules/account/profile/application/appearance.viewmodel";
-import type { ProfileIdentity } from "~/modules/account/profile/application/profileScreen.viewmodel";
+import type { ProfileIdentity } from "~/modules/account/profile/domain/profile.model";
 import {
 	borders,
 	findBorderById,
 } from "~/modules/account/profile/domain/border.model";
 import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
 const STACK_TRACE = "border-00b9a62e";
 const MERGE_CONFLICT = "border-0a006140";
@@ -19,6 +20,7 @@ const NEWBIE = "title-rank-poll-newbie";
 const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
 const BIKESHEDDER = "title-it-compiles";
+const CASCADE = "swatch-cascade";
 
 const IDENTITY: ProfileIdentity = {
 	displayName: "misty_cerulean",
@@ -32,10 +34,11 @@ const IDENTITY: ProfileIdentity = {
 
 const INPUT: AppearanceInput = {
 	identity: IDENTITY,
-	look: { borderId: STACK_TRACE, titleIds: [TESTER] },
+	look: { borderId: STACK_TRACE, titleIds: [TESTER], swatchId: CASCADE },
 	tryingOnId: null,
 	ownedBorderIds: [STACK_TRACE],
 	ownedTitleIds: [NEWBIE, TESTER, CSS_CARRIER],
+	ownedSwatchIds: [CASCADE],
 };
 
 const imageOf = (borderId: string) => findBorderById(borderId)?.image;
@@ -56,6 +59,28 @@ describe("lookedIdentityOf", () => {
 });
 
 describe("appearanceFor", () => {
+	it("offers every swatch, wearing the drafted one and withholding the unearned", () => {
+		const { swatches } = appearanceFor(INPUT);
+		const stateOf = (id: string) =>
+			swatches.find((swatch) => swatch.id === id)?.state;
+
+		expect(swatches).toHaveLength(ALL_SWATCHES.length);
+		expect(stateOf(CASCADE)).toBe("worn");
+		expect(stateOf("swatch-pallet")).toBe("owned");
+		expect(stateOf("swatch-earth")).toBe("locked");
+	});
+
+	it("wears the pallet swatch when the draft wears none", () => {
+		const { swatches } = appearanceFor({
+			...INPUT,
+			look: { ...INPUT.look, swatchId: null },
+		});
+
+		expect(swatches.find((swatch) => swatch.state === "worn")?.id).toBe(
+			"swatch-pallet"
+		);
+	});
+
 	it("offers the default border first, then only the borders the player owns", () => {
 		const { borders: picks } = appearanceFor(INPUT);
 
@@ -111,5 +136,24 @@ describe("appearanceFor", () => {
 			held: 1,
 			total: borders.length,
 		});
+	});
+
+	it("never tallies a retired border id as owned", () => {
+		expect(
+			appearanceFor({
+				...INPUT,
+				ownedBorderIds: [STACK_TRACE, "border-retired"],
+			}).borderTally.held
+		).toBe(1);
+	});
+
+	it("tallies titles by the collection's rule, so a retired title is never held", () => {
+		const tally = appearanceFor({
+			...INPUT,
+			ownedTitleIds: [NEWBIE, "title-retired-long-ago"],
+		}).titleTally;
+
+		expect(tally.held).toBe(1);
+		expect(tally.held).toBeLessThanOrEqual(tally.total);
 	});
 });

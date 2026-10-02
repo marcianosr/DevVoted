@@ -1,9 +1,9 @@
-import { useNavigate } from "@tanstack/react-router";
-
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
+import { nextFrom } from "~/modules/run/run/application/runRoutes.viewmodel";
+import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useRunRecap } from "~/modules/run/run/application/useRunRecap.hook";
 
 export type RunRecapProps = {
@@ -12,7 +12,7 @@ export type RunRecapProps = {
 
 export const RunRecap = ({ runId }: RunRecapProps) => {
 	const { view, isPending, errorMessage } = useRunRecap(runId);
-	const navigate = useNavigate();
+	const goTo = useRunNavigation();
 
 	if (isPending) {
 		return (
@@ -37,7 +37,7 @@ export const RunRecap = ({ runId }: RunRecapProps) => {
 		<RunOverView
 			view={view}
 			archiveAfterKb={view.archiveAfterKb ?? undefined}
-			onNewRun={() => navigate({ to: "/run" })}
+			onNewRun={() => goTo(nextFrom("over", view))}
 		/>
 	);
 };

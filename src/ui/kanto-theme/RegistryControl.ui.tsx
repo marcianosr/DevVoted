@@ -1,6 +1,8 @@
 import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
+import { NewBadge } from "./NewBadge.ui";
+import { Prose } from "./Prose.ui";
 import { Typography } from "./Typography.ui";
 
 const ROW = "flex w-full items-center gap-4 text-left";
@@ -10,6 +12,7 @@ const PRESSABLE =
 const CAP =
 	"badge-theme flex size-8 shrink-0 items-center justify-center rounded-md text-sm";
 const BODY = "flex min-w-0 flex-col";
+const TITLE_ROW = "flex flex-wrap items-center gap-2";
 const PRICE = "ml-auto shrink-0";
 const UNLOCK = "ml-auto min-w-0 text-right text-xs text-theme-muted";
 
@@ -35,6 +38,7 @@ type RegistryControlChrome = {
 	layout?: RegistryControlLayout;
 	refusal?: string;
 	disabled?: boolean;
+	isNew?: boolean;
 	onPress?: () => void;
 };
 
@@ -78,12 +82,13 @@ const Body = (props: RegistryControlProps) => (
 			{props.locked === true ? LOCKED_GLYPH : props.glyph}
 		</span>
 		<span className={BODY}>
-			<Typography variant="subtitle" as="span">
-				{props.title}
-			</Typography>
-			<Typography variant="hint" as="span">
-				{props.detail}
-			</Typography>
+			<span className={TITLE_ROW}>
+				<Typography variant="subtitle" as="span">
+					{props.title}
+				</Typography>
+				{props.isNew === true ? <NewBadge /> : null}
+			</span>
+			<Prose as="span" text={props.detail} />
 		</span>
 		<Trailing {...props} />
 	</>

@@ -1,9 +1,9 @@
+import { Typography } from "./Typography.ui";
 import { Weight } from "./Weight.ui";
 
 const BOX =
-	"flex w-full items-center gap-2 rounded-lg border border-dashed border-theme-faint px-4 py-2 text-sm";
+	"flex w-full items-center gap-2 rounded-lg border border-dashed border-theme-faint px-4 py-2";
 
-const EMPTY_WORDS = "text-theme-muted";
 const ROOM = "ml-auto";
 const READER_ONLY = "sr-only";
 
@@ -17,7 +17,9 @@ export type SlotBoxProps = {
 
 export const SlotBox = ({ label = EMPTY_LABEL, slots }: SlotBoxProps) => (
 	<div className={BOX}>
-		<span className={EMPTY_WORDS}>{label}</span>
+		<Typography variant="hint" as="span">
+			{label}
+		</Typography>
 
 		{slots === undefined ? null : (
 			<span className={ROOM}>

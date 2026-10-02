@@ -184,23 +184,30 @@ type ApiResponse<T> =
 
 ### Authorization (server functions) — security-critical
 
-Never trust a client-provided `userId`. Extract it from the authenticated session.
+Never trust a client-provided `userId`. Every server function that reads or
+writes a player's own data runs inside `withAuthenticatedUser`, which reads the
+Supabase session once and hands the operation a `Session = { userId, isAdmin }`.
+`withAdminUser` is the same wrapper that refuses a non-admin before the
+operation runs. Both live in `~/shared/utils/authorization.ts`, return the shared
+`ApiResponse<T>` envelope, and turn a signed-out call into
+`{ success: false, error: "Not authenticated" }` instead of a thrown 500.
 (WRONG: `.validator(z.object({ userId }))` then `fetchUserData(data.userId)` — auth bypass.
-RIGHT: `const userId = await getAuthenticatedUserId()`.)
+RIGHT: `withAuthenticatedUser(({ userId }) => fetchUserData(userId))`.)
 
-Utilities — `~/shared/utils/authorization.ts`:
-- `getAuthenticatedUserId()` — userId from the Supabase session
-- `ensureAuthorizedUser(authenticatedUserId, requestedUserId)` — validates access
-
-Accept `userId` as a parameter ONLY for public read-only data (profiles, leaderboards),
-and always validate it exists. Never for writes.
+Accept `userId` as a parameter ONLY for public read-only data (profiles, player
+cards, leaderboards), and always validate it exists. Never for writes. Anything
+a screen needs to know about the caller (`isAdmin`) travels INSIDE `data`, never
+beside the envelope. The pre-session functions (`loginFn`, `signupFn`,
+`fetchUser`) and the visit counter (`findAuthenticatedUserId`) are the only
+server functions outside the wrapper.
 
 Checklist for a new server function:
-- [ ] Modifies user data? → `getAuthenticatedUserId()`
-- [ ] Reads sensitive user data? → `getAuthenticatedUserId()`
+- [ ] Modifies user data? → `withAuthenticatedUser`
+- [ ] Reads sensitive user data? → `withAuthenticatedUser`
+- [ ] Admin only? → `withAdminUser`
 - [ ] Public read-only? → `userId` param allowed, with validation
-- [ ] Test that unauthorized access fails
-
+- [ ] Returns `ApiResponse<T>`; the client unwraps with `useApiQuery` or checks `success`
+- [ ] Test the rule in `authorization.spec.ts`, not per function (`@tanstack/react-start` is not importable under vitest)
 
 
 ### Database Migrations (ADR-012)
@@ -218,6 +225,7 @@ Checklist for a new server function:
 - Database schema is defined in `src/database/schema.ts` with comprehensive documentation
 - Test setup includes jsdom environment and jest-dom matchers
 - Development server runs on port 3005 (configured in vite.config.ts)
+- One `QueryClient`, created in `getRouter()` and handed to routes as `context.queryClient`; never `new QueryClient()` in a component. Sign-in, sign-up, the auth callback and logout call `queryClient.clear()` because most run keys carry a date, not an account. After a run action, `useRunCommit` is the one owner of what gets written and what gets staled
 - Architecture Decision Records are stored in `docs/adr/` (index + conventions: `docs/adr/README.md`)
 - Every bean you create or edit follows [ADR-107](docs/adr/107-a-bean-states-what-and-why-first.md): `**What:**` and `**Why:**` (one line each, blank line between), then `## Done when` with 2-6 outcome checkboxes, then everything else under `## Notes`. No code symbols, file paths or ADR numbers above Notes. Never delete detail to make a bean shorter.
 - If I disagree with something, please write this down in an ADR file

@@ -372,8 +372,8 @@ export const dexSwatchDetail = (row: DexSwatchRow): DexSwatchDetail => ({
 	note: `gate ${row.id}`,
 	rule:
 		row.swatch.state === "discovered"
-			? "Minted. You answered all five."
-			: "Answer all five polls of this gate to mint it.",
+			? "Minted. You covered every change."
+			: "Cover every change this gate ships to mint it.",
 });
 
 export const dexSwatchesProps = (
@@ -384,7 +384,7 @@ export const dexSwatchesProps = (
 	detail: dexSwatchDetail(dexSwatchRows()[0]),
 	count: "4 of 13",
 	meta: "one a gate, swept",
-	note: "A swatch is earned by answering all five polls of its gate.",
+	note: "A swatch is earned by covering every change its gate ships.",
 	onSelect: () => {},
 	...overrides,
 });

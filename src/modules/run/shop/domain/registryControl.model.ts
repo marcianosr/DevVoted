@@ -1,16 +1,25 @@
-import type {
-	ObjectiveCount,
-	ObjectiveMetric,
-	ThematicObjective,
+import {
+	countsReader,
+	type ObjectiveCount,
+	type ObjectiveMetric,
+	type ThematicObjective,
 } from "~/modules/run/config/domain/configUnlock.model";
 import {
 	BOOT_CACHE_BANK_KB,
+	BOOT_CACHE_RUNGS,
+	type BootCacheRung,
 	EXTEND_CARRY_BYTES,
 	PIN_CARRY_BYTES,
 	PIN_FROM_GATE,
 	PIN_UNTIL_GATE,
+	SKIP_SHOP_KB,
+	pinCostFor,
 } from "~/modules/run/run/domain/rules.model";
-import { EXTEND_FROM_GATE } from "~/modules/run/shop/domain/draft.model";
+import {
+	EXTEND_COST_KB,
+	EXTEND_FROM_GATE,
+	rebuildCost,
+} from "~/modules/run/shop/domain/draft.model";
 import { kbLabel } from "~/shared/lib/storage";
 
 export type RegistryControlId =
@@ -36,12 +45,26 @@ export type ServiceSale =
 	  }
 	| { readonly soldIn: "archive" };
 
+export type ServiceLasts =
+	"visit" | "run" | "endsRun" | "nextRun" | "atStart" | "firstShop";
+
+export type ServicePrice =
+	| { readonly kind: "doubling"; readonly fromKb: number }
+	| { readonly kind: "steps"; readonly kbs: readonly number[] }
+	| { readonly kind: "rising"; readonly fromKb: number }
+	| { readonly kind: "pays"; readonly kb: number }
+	| { readonly kind: "rungs"; readonly rungs: readonly BootCacheRung[] }
+	| { readonly kind: "free" }
+	| { readonly kind: "unsold" };
+
 export type RegistryControlSpec = {
 	readonly id: RegistryControlId;
 	readonly glyph: string;
 	readonly title: string;
 	readonly detail: string;
 	readonly unlock: ServiceUnlock;
+	readonly lasts: ServiceLasts;
+	readonly price: ServicePrice;
 	readonly carryBytes?: number;
 } & ServiceSale;
 
@@ -80,6 +103,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "↻",
 		title: "Rebuild the registry",
 		detail: "deals a fresh set of offers",
+		lasts: "visit",
+		price: { kind: "doubling", fromKb: rebuildCost(0) },
 		unlock: { kind: "starter" },
 		soldIn: "shop",
 		opensAfterGates: REBUILD_FROM_GATE,
@@ -89,6 +114,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "⏭",
 		title: "Skip the shop",
 		detail: "leave without touching the registry; paid a little storage",
+		lasts: "visit",
+		price: { kind: "pays", kb: SKIP_SHOP_KB },
 		unlock: { kind: "starter" },
 		soldIn: "shop",
 		opensAfterGates: REBUILD_FROM_GATE,
@@ -98,6 +125,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "+",
 		title: "Extend the registry",
 		detail: "add extra offers throughout the run, against a price",
+		lasts: "run",
+		price: { kind: "steps", kbs: EXTEND_COST_KB },
 		unlock: reached(CASCADE_GATE, "Reach Cascade", "reached Cascade"),
 		soldIn: "shop",
 		opensAfterGates: EXTEND_FROM_GATE,
@@ -108,6 +137,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "⇋",
 		title: "Hot reload one offer",
 		detail: "reroll a single card, keep the rest",
+		lasts: "visit",
+		price: { kind: "unsold" },
 		unlock: earned(
 			"rebuilds",
 			UNLOCK_TARGET,
@@ -122,6 +153,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "↩",
 		title: "Return policy",
 		detail: "sell a drafted config back at full price",
+		lasts: "visit",
+		price: { kind: "unsold" },
 		unlock: earned(
 			"configs-sold",
 			UNLOCK_TARGET,
@@ -136,6 +169,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "✕",
 		title: "kill -9",
 		detail: "end this run now; nothing banks",
+		lasts: "endsRun",
+		price: { kind: "free" },
 		unlock: reached(
 			ABANDON_FROM_GATE,
 			`Clear gate ${ABANDON_FROM_GATE - 1}`,
@@ -150,6 +185,8 @@ export const REGISTRY_CONTROLS = {
 		title: "git tag",
 		detail:
 			"save your last checkpoint once; each gate asks a higher price to activate it",
+		lasts: "nextRun",
+		price: { kind: "rising", fromKb: pinCostFor(PIN_FROM_GATE) },
 		unlock: reached(
 			PIN_FROM_GATE,
 			`Reach gate ${PIN_FROM_GATE}`,
@@ -165,6 +202,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "▮",
 		title: "Boot Cache",
 		detail: "start the next run with storage already banked",
+		lasts: "atStart",
+		price: { kind: "rungs", rungs: BOOT_CACHE_RUNGS },
 		unlock: earned(
 			"banked-256-one-run",
 			1,
@@ -178,6 +217,8 @@ export const REGISTRY_CONTROLS = {
 		glyph: "⧉",
 		title: "Docker Image",
 		detail: "one config from your last build, offered again at its price",
+		lasts: "firstShop",
+		price: { kind: "unsold" },
 		unlock: earned(
 			"finished-holding-a-dealt-config",
 			1,
@@ -259,13 +300,11 @@ export const unlockCaptionOf = (
 export const servicesUnlockedBy = (
 	counts: readonly ObjectiveCount[]
 ): readonly ServiceUnlockGrant[] => {
-	const countByMetric = new Map(
-		counts.map((row) => [row.metric, row.count] as const)
-	);
+	const countOf = countsReader(counts);
 	return REGISTRY_CONTROL_LIST.flatMap((control) => {
 		if (control.unlock.kind === "starter") return [];
 		const { metric, target } = control.unlock.objective;
-		return (countByMetric.get(metric) ?? 0) >= target
+		return countOf(metric) >= target
 			? [{ serviceId: control.id, viaMetric: metric }]
 			: [];
 	});

@@ -1,54 +1,24 @@
-import {
-	and,
-	count,
-	countDistinct,
-	desc,
-	eq,
-	inArray,
-	isNull,
-	sql,
-	gte,
-} from "drizzle-orm";
+import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
 	pollResponseOptionsTable,
 	pollResponsesTable,
-	pollsTable,
 	runStatesTable,
 	runsTable,
-	userConfigUnlocksTable,
-	userServiceUnlocksTable,
-	userObjectiveProgressTable,
 	usersTable,
-	userTitlesTable,
 } from "~/database/schema";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
-import { storageCreditRate } from "~/modules/run/run/domain/rules.model";
-
-import {
-	type Title,
-	TITLE_METRICS,
-	titlesEarnedBy,
-} from "~/modules/account/profile/domain/title.model";
-
-import {
-	configsUnlockedBy,
-	type ObjectiveCount,
-	type ObjectiveMetric,
-	type UnlockGrant,
-} from "~/modules/run/config/domain/configUnlock.model";
-import {
-	servicesUnlockedBy,
-	type ServiceUnlockGrant,
-} from "~/modules/run/shop/domain/registryControl.model";
+import { accountGrantsOf } from "~/modules/run/run/domain/accountGrant.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
 import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
+import { recordGains } from "~/modules/run/run/domain/closeGains.model";
 import {
-	closesAGate,
-	recordGains,
-} from "~/modules/run/run/domain/closeGains.model";
+	applyAccountGrants,
+	applyObjectiveGrants,
+	grantEarnedTitles,
+} from "~/modules/run/run/infrastructure/accountGrant.repository";
 
 import {
 	archiveCreditBytes,
@@ -73,7 +43,6 @@ import {
 	liveAuditsFor,
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
-import { swatchForGate } from "~/modules/run/gate/domain/swatch.model";
 import {
 	fetchRunPollsForRun,
 	getOrCreateDailyRunSeed,
@@ -158,212 +127,6 @@ export const fetchRunSnapshot = async (
 		.where(eq(runStatesTable.run_id, runId))
 		.limit(1);
 	return row?.state ?? null;
-};
-
-const configsNewlyInstalled = (
-	before: Pick<RunState, "build">,
-	after: Pick<RunState, "build">
-): readonly string[] => {
-	const held = new Set(before.build.configs.map((config) => config.id));
-	return after.build.configs
-		.map((config) => config.id)
-		.filter((configId) => !held.has(configId));
-};
-
-const stampFirstInstalls = async (
-	tx: Pick<typeof db, "update">,
-	userId: string,
-	configIds: readonly string[]
-): Promise<void> => {
-	if (configIds.length === 0) return;
-	await tx
-		.update(userConfigUnlocksTable)
-		.set({ first_installed_at: sql`now()` })
-		.where(
-			and(
-				eq(userConfigUnlocksTable.user_id, userId),
-				inArray(userConfigUnlocksTable.config_id, configIds),
-				isNull(userConfigUnlocksTable.first_installed_at)
-			)
-		);
-};
-
-const gatesNewlyEarned = (
-	before: Pick<RunState, "swatchGatesEarned">,
-	after: Pick<RunState, "swatchGatesEarned">
-): readonly number[] => {
-	const held = before.swatchGatesEarned ?? [];
-	return (after.swatchGatesEarned ?? []).filter((gate) => !held.includes(gate));
-};
-
-const awardGateSwatch = async (
-	tx: Pick<typeof db, "update">,
-	userId: string,
-	gate: number
-): Promise<void> => {
-	const swatch = swatchForGate(gate);
-	if (!swatch) return;
-	await tx
-		.update(usersTable)
-		.set({
-			owned_swatch_ids: sql`array_append(${usersTable.owned_swatch_ids}, ${swatch.id})`,
-		})
-		.where(
-			and(
-				eq(usersTable.id, userId),
-				sql`NOT (${usersTable.owned_swatch_ids} @> ARRAY[${swatch.id}]::text[])`
-			)
-		);
-};
-
-const recordObjectiveProgress = async (
-	tx: Pick<typeof db, "insert">,
-	userId: string,
-	metrics: readonly ObjectiveMetric[]
-): Promise<readonly ObjectiveCount[]> =>
-	tx
-		.insert(userObjectiveProgressTable)
-		.values(metrics.map((metric) => ({ user_id: userId, metric, count: 1 })))
-		.onConflictDoUpdate({
-			target: [
-				userObjectiveProgressTable.user_id,
-				userObjectiveProgressTable.metric,
-			],
-			set: {
-				count: sql`${userObjectiveProgressTable.count} + 1`,
-				updated_at: new Date(),
-			},
-		})
-		.returning({
-			metric: userObjectiveProgressTable.metric,
-			count: userObjectiveProgressTable.count,
-		});
-
-const awardConfigUnlocks = async (
-	tx: Pick<typeof db, "insert">,
-	userId: string,
-	grants: readonly UnlockGrant[]
-): Promise<readonly string[]> => {
-	const rows = await tx
-		.insert(userConfigUnlocksTable)
-		.values(
-			grants.map((grant) => ({
-				user_id: userId,
-				config_id: grant.configId,
-				via_metric: grant.viaMetric,
-			}))
-		)
-		.onConflictDoNothing()
-		.returning({ config_id: userConfigUnlocksTable.config_id });
-	return rows.map((row) => row.config_id);
-};
-
-const awardServiceUnlocks = async (
-	tx: Pick<typeof db, "insert">,
-	userId: string,
-	grants: readonly ServiceUnlockGrant[]
-): Promise<void> => {
-	await tx
-		.insert(userServiceUnlocksTable)
-		.values(
-			grants.map((grant) => ({
-				user_id: userId,
-				service_id: grant.serviceId,
-				via_metric: grant.viaMetric,
-			}))
-		)
-		.onConflictDoNothing();
-};
-
-const awardTitles = async (
-	tx: Pick<typeof db, "insert">,
-	userId: string,
-	titles: readonly Title[]
-): Promise<readonly string[]> => {
-	const rows = await tx
-		.insert(userTitlesTable)
-		.values(
-			titles.map((title) => ({
-				user_id: userId,
-				title_id: title.id,
-			}))
-		)
-		.onConflictDoNothing()
-		.returning({ title_id: userTitlesTable.title_id });
-	return rows.map((row) => row.title_id);
-};
-
-export const fetchCategoryPollCounts = async (
-	userId: string,
-	executor: Pick<typeof db, "select"> = db
-): Promise<readonly ObjectiveCount[]> => {
-	const rows = await executor
-		.select({
-			categoryCode: pollsTable.category_code,
-			seen: countDistinct(pollResponsesTable.poll_id),
-			mastered:
-				sql<number>`count(distinct ${pollResponsesTable.poll_id}) filter (where ${pollResponsesTable.outcome} = 'correct')`.mapWith(
-					Number
-				),
-		})
-		.from(pollResponsesTable)
-		.innerJoin(pollsTable, eq(pollsTable.id, pollResponsesTable.poll_id))
-		.where(eq(pollResponsesTable.user_id, userId))
-		.groupBy(pollsTable.category_code);
-
-	return rows.flatMap((row) => [
-		{ metric: `category-seen:${row.categoryCode}`, count: row.seen },
-		{ metric: `category-mastered:${row.categoryCode}`, count: row.mastered },
-	]);
-};
-
-const grantEarnedTitles = async (
-	tx: Pick<typeof db, "select" | "insert">,
-	userId: string
-): Promise<readonly string[]> => {
-	const counts = await tx
-		.select({
-			metric: userObjectiveProgressTable.metric,
-			count: userObjectiveProgressTable.count,
-		})
-		.from(userObjectiveProgressTable)
-		.where(
-			and(
-				eq(userObjectiveProgressTable.user_id, userId),
-				inArray(userObjectiveProgressTable.metric, [...TITLE_METRICS])
-			)
-		);
-	const categoryPollCounts = await fetchCategoryPollCounts(userId, tx);
-	const earned = titlesEarnedBy([...counts, ...categoryPollCounts]);
-	if (earned.length === 0) return [];
-	return awardTitles(tx, userId, earned);
-};
-
-const grantObjectiveUnlocks = async (
-	tx: Pick<typeof db, "insert">,
-	userId: string,
-	metrics: readonly ObjectiveMetric[]
-): Promise<readonly string[]> => {
-	const counts = await recordObjectiveProgress(tx, userId, metrics);
-	const grants = configsUnlockedBy(counts);
-	const unlocked =
-		grants.length === 0 ? [] : await awardConfigUnlocks(tx, userId, grants);
-	const services = servicesUnlockedBy(counts);
-	if (services.length > 0) await awardServiceUnlocks(tx, userId, services);
-	return unlocked;
-};
-
-const raiseStorageWatermark = async (
-	tx: Pick<typeof db, "update">,
-	userId: string,
-	peakKb: number
-): Promise<void> => {
-	await tx
-		.update(usersTable)
-		.set({
-			peak_storage_kb: sql`GREATEST(${usersTable.peak_storage_kb}, ${peakKb})`,
-		})
-		.where(eq(usersTable.id, userId));
 };
 
 export const createSessionRunWithState = async (
@@ -524,52 +287,17 @@ export const debitArchivedStorage = async (
 	return row?.archivedStorage ?? null;
 };
 
-export const abandonSessionRun = async (
-	runId: number,
-	userId: string
-): Promise<void> =>
-	db.transaction(async (tx) => {
-		const [stateRow] = await tx
-			.select({ state: runStatesTable.state })
-			.from(runStatesTable)
-			.where(eq(runStatesTable.run_id, runId))
-			.for("update");
-
-		const updated = await tx
-			.update(runsTable)
-			.set({
-				status: "finished",
-				finished_at: new Date(),
-				completion_reason: "abandoned",
-			})
-			.where(and(eq(runsTable.id, runId), eq(runsTable.status, "active")))
-			.returning({ id: runsTable.id });
-		if (updated.length === 0) throw new Error("Run is already over");
-
-		const creditBytes = Math.round(
-			(stateRow?.state.storage ?? 0) *
-				STORAGE_UNITS.KB *
-				storageCreditRate("abandoned", stateRow?.state.gatesCleared ?? 0)
-		);
-		if (creditBytes > 0) {
-			await tx
-				.update(usersTable)
-				.set({
-					archived_storage: sql`${usersTable.archived_storage} + ${creditBytes}`,
-				})
-				.where(eq(usersTable.id, userId));
-		}
-	});
-
-const persistPinnedGate = async (
-	tx: Pick<typeof db, "update">,
-	userId: string,
-	pinnedGate: number
-): Promise<void> => {
-	await tx
-		.update(usersTable)
-		.set({ pinned_gate: pinnedGate })
-		.where(eq(usersTable.id, userId));
+export const abandonSessionRun = async (runId: number): Promise<void> => {
+	const updated = await db
+		.update(runsTable)
+		.set({
+			status: "finished",
+			finished_at: new Date(),
+			completion_reason: "abandoned",
+		})
+		.where(and(eq(runsTable.id, runId), eq(runsTable.status, "active")))
+		.returning({ id: runsTable.id });
+	if (updated.length === 0) throw new Error("Run is already over");
 };
 
 export const consumePinnedGate = async (userId: string): Promise<number> =>
@@ -667,7 +395,7 @@ export const applyActionToRun = async (args: {
 		const unlockedConfigIds =
 			touched.length === 0
 				? []
-				: await grantObjectiveUnlocks(tx, args.userId, touched);
+				: await applyObjectiveGrants(tx, args.userId, touched);
 
 		if (args.action.type === "rebase")
 			await rewriteRunPollOrder(
@@ -694,28 +422,13 @@ export const applyActionToRun = async (args: {
 			);
 		}
 
-		for (const gate of gatesNewlyEarned(state, next))
-			await awardGateSwatch(tx, args.userId, gate);
-
-		if (
-			next.pinPlantedAtGate !== undefined &&
-			next.pinPlantedAtGate !== state.pinPlantedAtGate
-		)
-			await persistPinnedGate(tx, args.userId, next.pinPlantedAtGate);
-
 		const settled =
 			args.settle === undefined ? next : await args.settle(tx, state, next);
-
-		await stampFirstInstalls(
-			tx,
-			args.userId,
-			configsNewlyInstalled(state, settled)
-		);
-
-		const earnedTitleIds =
-			closesAGate(state, settled) || isRunOver(settled.status)
-				? await grantEarnedTitles(tx, args.userId)
-				: [];
+		const grants = accountGrantsOf(state, settled);
+		await applyAccountGrants(tx, args.userId, grants);
+		const earnedTitleIds = grants.titlesDue
+			? await grantEarnedTitles(tx, args.userId)
+			: [];
 		const recorded = recordGains(state, settled, {
 			unlockedConfigIds,
 			earnedTitleIds,
@@ -735,9 +448,6 @@ export const applyActionToRun = async (args: {
 		if (isRunOver(settled.status)) {
 			await finishSessionRun(tx, args.runId, args.userId, settled);
 		}
-
-		if ((settled.peakStorageKb ?? 0) > (state.peakStorageKb ?? 0))
-			await raiseStorageWatermark(tx, args.userId, settled.peakStorageKb ?? 0);
 
 		return { state: recorded, unlockedConfigIds, earnedTitleIds };
 	});

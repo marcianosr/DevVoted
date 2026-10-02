@@ -11,7 +11,6 @@ import * as ColdStart from "./ColdStart.stories";
 import * as Database from "./Database.stories";
 import * as Dependabot from "./Dependabot.stories";
 import * as Deprecated from "./Deprecated.stories";
-import * as DryRun from "./DryRun.stories";
 import * as FocusFamily from "./FocusFamily.stories";
 import * as Freemium from "./Freemium.stories";
 import * as GarbageCollection from "./GarbageCollection.stories";
@@ -47,7 +46,6 @@ const PAGES = {
 	Database,
 	Dependabot,
 	Deprecated,
-	DryRun,
 	FocusFamily,
 	Freemium,
 	GarbageCollection,

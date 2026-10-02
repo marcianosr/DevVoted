@@ -1,7 +1,8 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-import { freeSlots } from "~/modules/run/build/domain/build.model";
+import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import type { ObjectiveMetric } from "~/modules/run/config/domain/configUnlock.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { mirrorsPolls } from "~/modules/run/gate/domain/audit.model";
 import {
 	BOOT_CACHE_BANK_KB,
@@ -26,6 +27,7 @@ const DEPENDENCY_HELL_CONFIGS = 8;
 const CLEAN_INSTALL_REBUILDS = 3;
 const TEAPOT_KB = 418;
 const MISSES_BEFORE_CLEAR = 2;
+const FAST_ANSWER_MS = CONFIGS.vite.fastAnswerWithinMs;
 
 const lastLanded = (
 	state: RunState,
@@ -63,7 +65,7 @@ const answerMetrics = (
 	next: RunState
 ): readonly ObjectiveMetric[] => {
 	const landed = lastLanded(state, next);
-	if (!landed) return [];
+	if (!landed || landed.outcome === "skipped") return [];
 	const correct = landed.outcome === "correct";
 	const settled = state.window.answered + 1 >= SLICE_WINDOW;
 	const perfect =
@@ -80,6 +82,11 @@ const answerMetrics = (
 			? (["polls-correct", `category-correct:${landed.category}`] as const)
 			: []),
 		...(landed.outcome === "partial" ? (["partials-paid"] as const) : []),
+		...(correct &&
+		landed.elapsedMs !== undefined &&
+		landed.elapsedMs <= FAST_ANSWER_MS
+			? (["fast-correct"] as const)
+			: []),
 		...(correct && cachePays(state, landed.category)
 			? (["cache-hits"] as const)
 			: []),
@@ -98,7 +105,9 @@ const missedTheOpening = (state: RunState): boolean => {
 	const opening = state.answeredThisGate.slice(0, MISSES_BEFORE_CLEAR);
 	return (
 		opening.length === MISSES_BEFORE_CLEAR &&
-		opening.every((poll) => poll.outcome !== "correct")
+		opening.every(
+			(poll) => poll.outcome === "wrong" || poll.outcome === "partial"
+		)
 	);
 };
 
@@ -132,7 +141,9 @@ const clearMetrics = (
 		...(mirrorsPolls(preAudits) && noMiss
 			? (["mirror-clear-no-miss"] as const)
 			: []),
-		...(freeSlots(state.build) === 0 ? (["full-build-clear"] as const) : []),
+		...(buildSpaceOf(state).freeWeight === 0
+			? (["full-build-clear"] as const)
+			: []),
 		...(holdsTwoUpgraded(state) ? (["double-v2-clear"] as const) : []),
 		...(next.gatesCleared === 4 && (next.storageBeforeClearKb ?? 0) < 16
 			? (["lean-gate-four"] as const)

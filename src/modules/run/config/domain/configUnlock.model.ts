@@ -43,6 +43,7 @@ export type CumulativeMetric =
 	| "cache-hits"
 	| "gates-reordered"
 	| "partials-paid"
+	| "fast-correct"
 	| "configs-vendor-locked"
 	| "slas-met";
 
@@ -294,13 +295,6 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"answered 25 polls correctly",
 		150
 	),
-	"dry-run": earned(
-		"gates-cleared",
-		30,
-		"Clear 30 gates",
-		"cleared 30 gates",
-		700
-	),
 	prettierrc: earned(
 		"partials-paid",
 		10,
@@ -358,6 +352,13 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 		"cleared 3 audited gates",
 		250
 	),
+	vite: earned(
+		"fast-correct",
+		25,
+		"Answer 25 polls correctly within 15 seconds",
+		"answered 25 polls correctly within 15 seconds",
+		400
+	),
 };
 
 export const FREE_CONFIG_IDS: readonly string[] = Object.entries(CONFIG_UNLOCKS)
@@ -378,13 +379,19 @@ export const isUnlockSatisfied = (
 	return countOf("polls-answered") >= unlock.fallbackPollsAnswered;
 };
 
-export const configsUnlockedBy = (
+export const countsReader = (
 	counts: readonly ObjectiveCount[]
-): readonly UnlockGrant[] => {
+): ((metric: string) => number) => {
 	const countByMetric = new Map(
 		counts.map((row) => [row.metric, row.count] as const)
 	);
-	const countOf = (metric: string): number => countByMetric.get(metric) ?? 0;
+	return (metric) => countByMetric.get(metric) ?? 0;
+};
+
+export const configsUnlockedBy = (
+	counts: readonly ObjectiveCount[]
+): readonly UnlockGrant[] => {
+	const countOf = countsReader(counts);
 	return Object.entries(CONFIG_UNLOCKS).flatMap(([configId, unlock]) => {
 		if (unlock.kind === "free") return [];
 		if (countOf(unlock.objective.metric) >= unlock.objective.target) {

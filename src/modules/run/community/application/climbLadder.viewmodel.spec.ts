@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 import {
 	fileOf,
@@ -74,6 +75,7 @@ describe("ladderFor", () => {
 		],
 		bestPosition: 16,
 		viewer: { id: "red", hasLiveRun: true },
+		turnout: EMPTY_DAY_TURNOUT,
 	};
 
 	const koga = (over: Partial<ClimbFallen> = {}): ClimbTodayView => ({

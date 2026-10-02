@@ -55,7 +55,7 @@ const standingLineOf = () =>
 		.closest("p") as HTMLElement;
 
 const CLEAR_LEAD = "Finish at";
-const SWATCH_LEAD = "Answer all";
+const SWATCH_LEAD = "Reach";
 const SWATCH_REWARD = "Lavender swatch";
 
 const objectiveBlockFor = (statement: string): HTMLElement => {
@@ -72,7 +72,7 @@ describe("PrepScreen", () => {
 
 		const pin = container.querySelector(".coverage-bar-pin");
 
-		expect(pin).toHaveAttribute("data-shown", "true");
+		expect(pin).toBeInTheDocument();
 		expect(pin).toHaveTextContent(/%/);
 		expect(pin?.getAttribute("data-screen-theme")).toBe(
 			ringedRowOf().getAttribute("data-screen-theme")
@@ -147,14 +147,14 @@ describe("PrepScreen", () => {
 			);
 		});
 
-		it("writes each band's range beside it, so the room between lines reads as numbers", () => {
+		it("states each band by the line it starts at", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(rowOf("SHAKY")).getByText(`${ladder.floor} – ${ladder.ok}`)
+				within(rowOf("SHAKY")).getByText(`${ladder.floor}%+`)
 			).toBeInTheDocument();
 			expect(
-				within(rowOf("HEALTHY")).getByText(`${ladder.healthy} – 100`)
+				within(rowOf("HEALTHY")).getByText(`${ladder.healthy}%+`)
 			).toBeInTheDocument();
 		});
 	});
@@ -178,7 +178,7 @@ describe("PrepScreen", () => {
 		it("draws no band table, the ladder having taken its rows", () => {
 			render(<PrepScreen {...props} />);
 
-			const panel = within(sectionOf(BAND_OUTCOMES_TITLE));
+			const panel = within(ladderOf().parentElement as HTMLElement);
 
 			for (const heading of ["band", "coverage", "pays"]) {
 				expect(panel.queryByText(heading)).not.toBeInTheDocument();
@@ -196,15 +196,15 @@ describe("PrepScreen", () => {
 			expect(within(header).getByText("4")).toHaveClass("badge-theme");
 		});
 
-		it("states the units to the next band up and the polls left, every figure badged", () => {
+		it("states the points to the next band up and the polls left, every figure badged", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(standingLineOf()).toHaveTextContent(
-				"+12 units to SHAKY · 5 polls left"
+				"+22% to reach SHAKY · 5 polls left"
 			);
-			expect(within(standingLineOf()).getByText("+12")).toHaveAttribute(
+			expect(within(standingLineOf()).getByText("+22%")).toHaveAttribute(
 				"data-screen-theme",
-				"vermillion"
+				"viridian"
 			);
 			expect(within(standingLineOf()).getByText("5")).toHaveClass(
 				"badge-theme"
@@ -215,7 +215,7 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...kantoPrepCascadeThin()} />);
 
 			expect(standingLineOf()).toHaveTextContent(
-				"+1 unit to HEALTHY · 5 polls left"
+				"+7% to reach HEALTHY · 5 polls left"
 			);
 		});
 
@@ -242,7 +242,7 @@ describe("PrepScreen", () => {
 				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 			});
 
-			it("earns the swatch on a flawless window, not on a coverage band", () => {
+			it("earns the swatch on a full bar, not on a band or a count of right", () => {
 				const block = (() => {
 					render(<PrepScreen {...props} />);
 					return within(objectiveBlockFor(SWATCH_LEAD));
@@ -271,13 +271,38 @@ describe("PrepScreen", () => {
 				).not.toBeInTheDocument();
 			});
 
-			it("asks for all five with the count badged", () => {
+			it("asks for a full bar with the figure badged in PERFECT's colour", () => {
 				render(<PrepScreen {...props} />);
 
 				const block = objectiveBlockFor(SWATCH_LEAD);
 
-				expect(block).toHaveTextContent("Answer all 5 right");
-				expect(within(block).getByText("5")).toHaveClass("badge-theme");
+				expect(block).toHaveTextContent("Reach 100% coverage");
+				expect(within(block).getByText("100%")).toHaveAttribute(
+					"data-screen-theme",
+					"cerulean"
+				);
+			});
+
+			it("lists what a single and a multiple choice cover above the objectives, and draws no box per change", () => {
+				render(<PrepScreen {...props} />);
+
+				const panel = within(sectionOf(BAND_OUTCOMES_TITLE));
+				const brief = panel.getByText(/single choice/);
+
+				expect(panel.getByText(/multiple choice/)).toBeInTheDocument();
+				expect(
+					brief.compareDocumentPosition(panel.getByText(CLEAR_LEAD)) &
+						Node.DOCUMENT_POSITION_FOLLOWING
+				).toBeTruthy();
+				expect(panel.queryByRole("img", { name: /covered$/ })).toBeNull();
+			});
+
+			it("never names the gate's codebase anywhere in At stake", () => {
+				render(<PrepScreen {...props} />);
+
+				expect(sectionOf(BAND_OUTCOMES_TITLE)).not.toHaveTextContent(
+					/\bchanges?\b/i
+				);
 			});
 
 			it("promises no next gate at the summit, where there is not one", () => {
@@ -367,9 +392,9 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(
-				within(rowOf("SHAKY")).getByText(/^−\d+ KB peel$/)
+				within(rowOf("SHAKY")).getByText(/^gate held · −\d+ KB peel$/)
 			).toBeInTheDocument();
-			expect(paysOf(props, "shaky")).toMatch(/^−\d+ KB peel$/);
+			expect(paysOf(props, "shaky")).toMatch(/^gate held · −\d+ KB peel$/);
 		});
 
 		it("ends the run under the floor rather than quoting a figure", () => {
@@ -391,12 +416,12 @@ describe("PrepScreen", () => {
 	});
 
 	describe("scoring", () => {
-		it("folds the scoring shut at the top of the right column, the codebase and a unit's worth on the strip", () => {
+		it("folds the scoring shut at the top of the right column, what a single, a multiple and accuracy add on the strip", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(scoringFold()).not.toHaveAttribute("open");
 			expect(scoringFold().querySelector("summary")).toHaveTextContent(
-				"25 slots 1 unit +4%"
+				"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
 			);
 		});
 
@@ -410,7 +435,7 @@ describe("PrepScreen", () => {
 			}
 			expect(fold.getByText("Rainbow")).toBeInTheDocument();
 			expect(fold.getByText("Champion")).toBeInTheDocument();
-			expect(fold.getAllByText("???")).toHaveLength(6);
+			expect(fold.getAllByText("???")).toHaveLength(4);
 			expect(fold.getAllByText("⋮")).toHaveLength(1);
 		});
 
@@ -450,7 +475,7 @@ describe("PrepScreen", () => {
 			const polls = within(sectionOf(PREP_POLLS_TITLE));
 
 			expect(polls.getByText("0 of 4")).toHaveClass("badge-theme");
-			expect(polls.getByText("revealed")).toBeInTheDocument();
+			expect(polls.getByText("facts revealed")).toBeInTheDocument();
 			expect(
 				polls.getByText("Some configs reveal these before you answer.")
 			).toBeInTheDocument();
@@ -464,7 +489,7 @@ describe("PrepScreen", () => {
 			expect(within(polls).getByText("Prefetch")).toHaveClass("badge-theme");
 			expect(within(polls).getByText("4 of 4")).toHaveClass("badge-theme");
 			expect(polls.querySelector("header")).toHaveTextContent(
-				"4 of 4 revealed by Prefetch"
+				"4 of 4 facts revealed by Prefetch"
 			);
 			expect(screen.getByText("1 single")).toBeInTheDocument();
 			expect(screen.getByText("4 multiple")).toBeInTheDocument();
@@ -516,14 +541,11 @@ describe("PrepScreen", () => {
 			expect(screen.queryByText("bills")).not.toBeInTheDocument();
 		});
 
-		it("states the lock once, on the Audits panel alone", () => {
+		it("draws no audits panel before the first audited gate", () => {
 			render(<PrepScreen {...kantoPrepCalibration()} />);
 
-			expect(
-				screen.getByText("Audits are unlocked at gate 3")
-			).toBeInTheDocument();
-			expect(screen.getAllByText("gate 3")).toHaveLength(1);
-			expect(screen.queryByText("Your audit")).not.toBeInTheDocument();
+			expect(screen.queryByText("Audits")).not.toBeInTheDocument();
+			expect(screen.queryByText("gate 3")).not.toBeInTheDocument();
 		});
 	});
 

@@ -23,6 +23,26 @@ describe("LedgerRows", () => {
 		expect(screen.getByText("matches JavaScript")).toBeInTheDocument();
 	});
 
+	it("leads a row with the config chip that earned it, its weight beside the name", () => {
+		const { container } = render(
+			<LedgerRows
+				rows={[
+					{
+						config: { name: "Build Artifacts", slots: 2, badges: [] },
+						notes: ["on the clear"],
+						figures: [{ label: "+32 KB" }],
+					},
+				]}
+			/>
+		);
+
+		expect(
+			container.querySelector('[data-config="Build Artifacts"]')
+		).toHaveTextContent("Build Artifacts");
+		expect(screen.getByText("on the clear")).toBeInTheDocument();
+		expect(screen.getByText("+32 KB")).toBeInTheDocument();
+	});
+
 	it("rules between every row by default, so a ledger reads as a list", () => {
 		const { container } = render(
 			<LedgerRows

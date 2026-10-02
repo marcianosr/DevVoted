@@ -88,7 +88,7 @@ export const usersTable = pgTable("users", {
 		.defaultNow()
 		.notNull(),
 	last_seen_at: timestamp("last_seen_at", { withTimezone: true }),
-});
+}).enableRLS();
 
 export const userConfigUnlocksTable = pgTable(
 	"user_config_unlocks",
@@ -106,7 +106,7 @@ export const userConfigUnlocksTable = pgTable(
 		}),
 	},
 	(table) => [primaryKey({ columns: [table.user_id, table.config_id] })]
-);
+).enableRLS();
 
 export const userServiceUnlocksTable = pgTable(
 	"user_service_unlocks",
@@ -121,7 +121,7 @@ export const userServiceUnlocksTable = pgTable(
 			.notNull(),
 	},
 	(table) => [primaryKey({ columns: [table.user_id, table.service_id] })]
-);
+).enableRLS();
 
 export const userObjectiveProgressTable = pgTable(
 	"user_objective_progress",
@@ -137,7 +137,7 @@ export const userObjectiveProgressTable = pgTable(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [primaryKey({ columns: [table.user_id, table.metric] })]
-);
+).enableRLS();
 
 export const userTitlesTable = pgTable(
 	"user_titles",
@@ -158,7 +158,7 @@ export const userTitlesTable = pgTable(
 			.on(table.title_id)
 			.where(sql`${table.exclusive}`),
 	]
-);
+).enableRLS();
 
 export const pollsTable = pgTable("polls", {
 	id: serial("id").primaryKey(),
@@ -181,7 +181,7 @@ export const pollsTable = pgTable("polls", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(),
-});
+}).enableRLS();
 
 export const dailyPollsTable = pgTable("daily_polls", {
 	id: serial("id").primaryKey(),
@@ -191,7 +191,7 @@ export const dailyPollsTable = pgTable("daily_polls", {
 	}),
 	category_weights: json("category_weights").$type<Record<string, number>>(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}).enableRLS();
 
 export const pollHistoryTable = pgTable(
 	"polls_history",
@@ -221,7 +221,7 @@ export const pollHistoryTable = pgTable(
 			runPollUnique: unique().on(table.run_id, table.poll_id),
 		};
 	}
-);
+).enableRLS();
 
 export const pollOptionsTable = pgTable("polls_options", {
 	id: serial("id").primaryKey().notNull(),
@@ -230,13 +230,13 @@ export const pollOptionsTable = pgTable("polls_options", {
 		.notNull(),
 	option: text("option").notNull(),
 	correct: boolean("correct").notNull().default(false),
-});
+}).enableRLS();
 
 export const pollCategoriesTable = pgTable("polls_categories", {
 	id: serial("id").primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
 	code: varchar("code", { length: 256 }).notNull().unique(),
-});
+}).enableRLS();
 
 export const pollResponseOptionsTable = pgTable("polls_response_options", {
 	id: serial("id").primaryKey().notNull(),
@@ -248,7 +248,7 @@ export const pollResponseOptionsTable = pgTable("polls_response_options", {
 	option_id: integer("option_id")
 		.references(() => pollOptionsTable.id, { onDelete: "cascade" })
 		.notNull(),
-});
+}).enableRLS();
 
 export const pollResponsesTable = pgTable(
 	"polls_responses",
@@ -289,7 +289,7 @@ export const pollResponsesTable = pgTable(
 			.on(table.run_id, table.poll_id)
 			.where(sql`${table.mode} = 'session'`),
 	})
-);
+).enableRLS();
 
 export const runsTable = pgTable("runs", {
 	id: serial("id").primaryKey(),
@@ -368,7 +368,7 @@ export const runsTable = pgTable("runs", {
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-});
+}).enableRLS();
 
 export const runStatesTable = pgTable("run_states", {
 	id: serial("id").primaryKey(),
@@ -390,7 +390,7 @@ export const runStatesTable = pgTable("run_states", {
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-});
+}).enableRLS();
 
 export const auditIncidentStatus = pgEnum("audit_incident_status", [
 	"queued",
@@ -431,14 +431,14 @@ export const auditIncidentsTable = pgTable(
 		),
 		index("audit_incidents_created_idx").on(table.created_at),
 	]
-);
+).enableRLS();
 
 export const dailyRunSeedsTable = pgTable("daily_run_seeds", {
 	id: serial("id").primaryKey(),
 	date: varchar("date", { length: 10 }).notNull().unique(),
 	seed: varchar("seed", { length: 64 }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}).enableRLS();
 
 export const dailyRunPollsTable = pgTable(
 	"daily_run_polls",
@@ -454,7 +454,7 @@ export const dailyRunPollsTable = pgTable(
 		unique().on(table.date, table.position),
 		unique().on(table.date, table.poll_id),
 	]
-);
+).enableRLS();
 
 export const runPollsTable = pgTable(
 	"run_polls",
@@ -470,7 +470,7 @@ export const runPollsTable = pgTable(
 		segment_date: varchar("segment_date", { length: 10 }).notNull(),
 	},
 	(table) => [unique().on(table.run_id, table.position)]
-);
+).enableRLS();
 
 export const runCategoryCoverageTable = pgTable(
 	"run_category_coverage",
@@ -503,7 +503,7 @@ export const runCategoryCoverageTable = pgTable(
 			runCategoryUnique: unique().on(table.run_id, table.category_code),
 		};
 	}
-);
+).enableRLS();
 export const seasonsTable = pgTable("seasons", {
 	id: serial("id").primaryKey(),
 	name: varchar("name", { length: 256 }).notNull(),
@@ -515,7 +515,7 @@ export const seasonsTable = pgTable("seasons", {
 	updated_at: timestamp("updated_at", { withTimezone: true })
 		.defaultNow()
 		.$onUpdate(() => new Date()),
-});
+}).enableRLS();
 
 export const leaderboardTable = pgTable("leaderboard", {
 	id: serial("id").primaryKey(),
@@ -537,7 +537,7 @@ export const leaderboardTable = pgTable("leaderboard", {
 	polls_answered: integer("polls_answered").notNull().default(0),
 	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}).enableRLS();
 
 export const runShopOfferingsTable = pgTable(
 	"run_shop_offerings",
@@ -559,7 +559,7 @@ export const runShopOfferingsTable = pgTable(
 			table.reroll_number
 		),
 	})
-);
+).enableRLS();
 
 export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 	id: serial("id").primaryKey(),
@@ -571,7 +571,7 @@ export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
 	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}).enableRLS();
 
 export const appVisitsTable = pgTable(
 	"app_visits",
@@ -605,4 +605,4 @@ export const appVisitsTable = pgTable(
 			.on(table.user_id, table.visit_date)
 			.where(sql`${table.user_id} is not null`),
 	]
-);
+).enableRLS();

@@ -1,15 +1,27 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
+
 import { kantoScoringAt } from "~/test/kantoPoll.factory";
 
 import { Scoring } from "./Scoring.ui";
 import { Screen } from "./Screen.ui";
+import { Typography } from "./Typography.ui";
 
 const PALLET_GATE = 0;
 const THUNDER_GATE = 3;
 const LAVENDER_GATE = 4;
 const ELITE_GATE = 11;
 const CHAMPION_GATE = 12;
+
+const SWEEP = "grid w-full gap-8 xl:grid-cols-2";
+const GATE_JOIN = " · gate ";
+
+const openEveryFold = ({ canvasElement }: { canvasElement: HTMLElement }) => {
+	canvasElement
+		.querySelectorAll("details")
+		.forEach((fold) => fold.setAttribute("open", ""));
+};
 
 const meta: Meta<typeof Scoring> = {
 	component: Scoring,
@@ -35,3 +47,19 @@ export const AtThunder: Story = { args: kantoScoringAt(THUNDER_GATE) };
 export const AtElite: Story = { args: kantoScoringAt(ELITE_GATE) };
 
 export const AtTheChampion: Story = { args: kantoScoringAt(CHAMPION_GATE) };
+
+export const EveryGate: Story = {
+	render: () => (
+		<div className={SWEEP}>
+			{ALL_SWATCHES.map((swatch) => (
+				<Screen key={swatch.gate} gate={swatch.theme} width="narrow" floor="0">
+					<Typography variant="caption">
+						{`${swatch.gateName}${GATE_JOIN}${swatch.gate}`}
+					</Typography>
+					<Scoring {...kantoScoringAt(swatch.gate)} />
+				</Screen>
+			))}
+		</div>
+	),
+	play: async ({ canvasElement }) => openEveryFold({ canvasElement }),
+};

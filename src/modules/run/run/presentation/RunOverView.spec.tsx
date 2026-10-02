@@ -3,9 +3,15 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { createMockGateStake, createMockRunView } from "~/test/runView.factory";
+import {
+	createMockGateClose,
+	createMockGateStake,
+	createMockRunView,
+} from "~/test/runView.factory";
 
-import { RunOverView, runOverFrameOf } from "./RunOverView.component";
+import { runOverFrameOf } from "~/modules/run/run/application/runOverScreen.viewmodel";
+
+import { RunOverView } from "./RunOverView.component";
 
 const deadView = () =>
 	createMockRunView({
@@ -19,7 +25,6 @@ const deadView = () =>
 			gateNumber: 4,
 			coverageLadder: { floor: 34, ok: 42, healthy: 50 },
 			coverageHeld: 22,
-			unitsHeld: 5.5,
 		}),
 	});
 
@@ -37,10 +42,63 @@ describe("runOverFrameOf", () => {
 		expect(frame.gate).toBe(12);
 	});
 
-	it("clamps a dead run's bar under the floor, so the band cannot disagree", () => {
+	it("draws the bar where the run stood when no gate closed it", () => {
 		const { bar } = runOverFrameOf(deadView());
 
-		expect(bar.held).toBeLessThan(bar.floor);
+		expect(bar).toEqual({
+			floor: 34,
+			ok: 42,
+			healthy: 50,
+			held: 22,
+			band: "danger",
+		});
+	});
+
+	it("draws the bar the gate really closed on, unclamped", () => {
+		const { bar } = runOverFrameOf(
+			createMockRunView({
+				...deadView(),
+				lastClose: createMockGateClose({
+					gate: 4,
+					closing: "fatal",
+					cleared: false,
+					band: "danger",
+					held: 3,
+					ladder: { floor: 34, ok: 42, healthy: 50 },
+				}),
+			})
+		);
+
+		expect(bar).toEqual({
+			floor: 34,
+			ok: 42,
+			healthy: 50,
+			held: 3,
+			band: "danger",
+		});
+	});
+
+	it("hands the build's figures over from the run view", () => {
+		const frame = runOverFrameOf(
+			createMockRunView({
+				...deadView(),
+				buildSpace: {
+					space: 8,
+					weight: 5,
+					freeWeight: 3,
+					emptyCreditKb: 24,
+					perGateKb: 40,
+					coveredSpace: null,
+				},
+			})
+		);
+
+		expect(frame).toMatchObject({
+			weight: 5,
+			freeWeight: 3,
+			emptyCreditKb: 24,
+			upkeepKb: 40,
+		});
 	});
 
 	it("leaves the account archive out unless a caller knows it", () => {

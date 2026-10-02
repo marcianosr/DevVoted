@@ -82,11 +82,11 @@ DANGER close.
 ### 6. A hold names its reason, and the debrief keeps the meter honest
 
 `gateRulingFor` returns `heldBy: "bare" | "floor" | "band"`, the reducer records
-it on `RunState.heldBy` for as long as the gate is held, and `GatePayout`
-carries it to the screen. The ADR-076 clamp that holds the bar inside the
-verdict's band is skipped for a floor hold, so a HEALTHY bar stays HEALTHY while
-the headline says "holds" and the subtitle says "1 of 5 right, 2 needed". A
-floor hold offers the same two exits as a band hold.
+it on `RunState.heldBy` for as long as the gate is held and on the close record
+(`LastClose.heldBy`, [ADR-160](160-the-gate-close-is-recorded-once.md)), which
+is what the screen reads. The ADR-076 clamp is gone for every hold, so a HEALTHY
+bar stays HEALTHY while the headline says "holds" and the subtitle says "1 of 5
+right, 2 needed". A floor hold offers the same two exits as a band hold.
 
 ### 7. Prep's clear objective is met only with the line and the floor
 

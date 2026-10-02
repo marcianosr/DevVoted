@@ -174,11 +174,14 @@ describe("GateOutcomeScreen", () => {
 			);
 		});
 
-		it("counts the window on the header and the swatch row alike", () => {
+		it("counts right answers on the header and coverage held on the swatch row", () => {
 			render(<GateOutcomeScreen {...kantoGatePerfect()} />);
 
 			expect(screen.getByText("5 of 5 right")).toBeInTheDocument();
-			expect(within(foldOf("Earned")!).getByText("5 of 5")).toBeInTheDocument();
+			expect(within(foldOf("Earned")!).getByText("100%")).toBeInTheDocument();
+			expect(
+				within(foldOf("Earned")!).getByText("needs 100% coverage")
+			).toBeInTheDocument();
 		});
 
 		it("leads with coverage, and prices the perfect bonus inside it", () => {
@@ -211,7 +214,7 @@ describe("GateOutcomeScreen", () => {
 			expect(screen.queryByText(/didn't earn/)).not.toBeInTheDocument();
 		});
 
-		it("leaves the swatch behind, since a partial broke the window", () => {
+		it("leaves the swatch behind, since a change went uncovered", () => {
 			const { container } = render(
 				<GateOutcomeScreen {...kantoGateHealthy()} />
 			);
@@ -223,11 +226,10 @@ describe("GateOutcomeScreen", () => {
 			).not.toBeInTheDocument();
 		});
 
-		it("keeps the streak it arrived with", () => {
+		it("leaves the streak to the receipt rather than a header chip", () => {
 			render(<GateOutcomeScreen {...kantoGateHealthy()} />);
 
-			expect(screen.getByText("streak 3")).toBeInTheDocument();
-			expect(screen.queryByText("streak broken")).not.toBeInTheDocument();
+			expect(screen.queryByText("streak 3")).not.toBeInTheDocument();
 		});
 
 		it("wears the gate's own colour, and paints the figure with the band", () => {
@@ -271,12 +273,6 @@ describe("GateOutcomeScreen", () => {
 			expect(screen.queryByText("swatch earned")).not.toBeInTheDocument();
 		});
 
-		it("breaks the streak, which is what separates it from healthy", () => {
-			render(<GateOutcomeScreen {...kantoGateOk()} />);
-
-			expect(screen.getByText("streak broken")).toBeInTheDocument();
-		});
-
 		it("pays less than the same build cleared healthy", () => {
 			const thin = balanceKbOf(kantoGateOk());
 			const full = balanceKbOf(kantoGateHealthy());
@@ -291,10 +287,12 @@ describe("GateOutcomeScreen", () => {
 
 			expect(headingOf("Lavender holds")).toBeInTheDocument();
 			expect(
-				screen.getByLabelText("70% of 62% needed \u00b7 HEALTHY")
+				screen.getByLabelText("70% of 55% needed \u00b7 HEALTHY")
 			).toBeInTheDocument();
 			expect(
-				screen.getByText(/scored 1 of 2 units · 5 fresh polls on the retry/)
+				screen.getByText(
+					/the window came up short · 5 fresh polls on the retry/
+				)
 			).toBeInTheDocument();
 			expect(headingOf("Settle the peel to retry")).toBeInTheDocument();
 		});
@@ -345,10 +343,14 @@ describe("GateOutcomeScreen", () => {
 		it("holds the gate shut until the peel is settled", () => {
 			render(<GateOutcomeScreen {...kantoGateShaky()} />);
 
+			const settlement = within(
+				headingOf("Settle the peel to retry").closest("section")!
+			);
+
 			expect(
-				screen.getByRole("button", { name: /^Retry gate 4/ })
+				settlement.getByRole("button", { name: /^Retry gate 4/ })
 			).toBeDisabled();
-			expect(screen.getByText(PEEL_REFUSAL)).toBeInTheDocument();
+			expect(settlement.getByText(PEEL_REFUSAL)).toBeInTheDocument();
 		});
 
 		it("counts a part payment down rather than restating the bill", () => {
@@ -524,8 +526,9 @@ describe("GateOutcomeScreen", () => {
 			render(<GateOutcomeScreen {...kantoGateZero()} />);
 
 			expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
+			expect(screen.getByText("HEALTHY")).toBeInTheDocument();
 			expect(
-				screen.getByText(`HEALTHY ${kantoGateHealthyLine(0)}%`)
+				screen.getByText(`${kantoGateHealthyLine(0)}%`)
 			).toBeInTheDocument();
 		});
 
@@ -544,12 +547,12 @@ describe("GateOutcomeScreen", () => {
 			expect(within(changes!).getByText("nothing moved")).toBeInTheDocument();
 		});
 
-		it("folds a quiet Earned panel to what the swatch counted", () => {
+		it("folds a quiet Earned panel to the coverage the swatch read", () => {
 			render(<GateOutcomeScreen {...kantoGateZero()} />);
 
 			expect(foldOf("Earned")).not.toHaveAttribute("open");
 			expect(
-				within(foldOf("Earned")!).getByText("nothing new · swatch 5 of 5")
+				within(foldOf("Earned")!).getByText("nothing new · swatch 100%")
 			).toBeInTheDocument();
 		});
 	});
@@ -567,5 +570,34 @@ describe("GateOutcomeScreen's payout history", () => {
 		render(<GateOutcomeScreen {...kantoGatePerfect()} payouts={undefined} />);
 
 		expect(screen.queryByText("Score")).toBeNull();
+	});
+});
+
+describe("GateOutcomeScreen — the gate a clear opens", () => {
+	const NEXT = {
+		title: "At Boulder",
+		rates: [
+			{ label: "single choice", gain: "+11.1%" },
+			{ label: "multiple choice", gain: "+22.2%" },
+		],
+	};
+
+	it("lists what each answer type earns there, one row each with its gain badged", () => {
+		render(<GateOutcomeScreen {...kantoGateHealthy()} nextGate={NEXT} />);
+
+		const rows = within(
+			screen.getByRole("list", { name: "At Boulder" })
+		).getAllByRole("listitem");
+
+		expect(rows.map((row) => row.textContent)).toEqual([
+			"single choice+11.1%",
+			"multiple choice+22.2%",
+		]);
+	});
+
+	it("draws no list when there is no next gate", () => {
+		render(<GateOutcomeScreen {...kantoGateHealthy()} />);
+
+		expect(screen.queryByText("At Boulder")).toBeNull();
 	});
 });

@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	kantoGateCaught,
+	kantoGateCaughtDropped,
 	kantoGateShaky,
 	kantoGateShakyCollected,
 	kantoGateShakyFromStorage,
@@ -50,3 +52,9 @@ export const DroppedAndToppedUp: Story = {
 };
 
 export const DropsRefund: Story = { args: choiceIn(kantoGateShakyCollected()) };
+
+export const CatchFirst: Story = { args: choiceIn(kantoGateCaught()) };
+
+export const CatchDropped: Story = {
+	args: choiceIn(kantoGateCaughtDropped()),
+};

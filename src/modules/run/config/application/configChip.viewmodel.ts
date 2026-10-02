@@ -21,6 +21,7 @@ import {
 import { kbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { hasUpgradeLeft } from "~/modules/run/config/domain/autoUpgrade.model";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { ConfigFactsProps } from "~/ui/kanto-theme/ConfigFacts.ui";
 import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
@@ -201,6 +202,7 @@ const BUMP_COLOR: KantoColor = "vermillion";
 const BUMP_WORD = "bump in";
 
 const SKIP_COLOR: KantoColor = "pewter";
+const NOTHING_TO_UPGRADE = "nothing left to upgrade";
 const CAP_COLOR: KantoColor = "saffron";
 const CAP_WORDS = "KB left";
 const HOLDING_COLOR: KantoColor = "saffron";
@@ -216,6 +218,7 @@ const SKIP_WORDS = {
 	billsAtGateClear: "bills at the clear",
 	inShop: "works in the shop",
 	inPrep: "works in prep",
+	nothingToUpgrade: NOTHING_TO_UPGRADE,
 	noAuditToSuppress: "no audit to suppress",
 	armedForFatal: "armed for a fatal close",
 	runCapReached: "run cap reached",
@@ -229,10 +232,14 @@ export const categoriesWord = (categories: readonly CategoryCode[]): string =>
 
 const figureOf = (value: number): string => `${roundToTwoDecimals(value)}`;
 
-const coverageWords = ({ mult, add }: Coverage): string =>
+const factorOf = ({ mult, boost }: Coverage): number => mult * boost;
+
+const coverageWords = (coverage: Coverage): string =>
 	[
-		...(mult === 1 ? [] : [`×${figureOf(mult)}`]),
-		...(add === 0 ? [] : [`${add > 0 ? "+" : ""}${figureOf(add)}`]),
+		...(factorOf(coverage) === 1 ? [] : [`×${figureOf(factorOf(coverage))}`]),
+		...(coverage.add === 0
+			? []
+			: [`${coverage.add > 0 ? "+" : ""}${figureOf(coverage.add)}`]),
 	].join(" ");
 
 const skipWords = (why: SkipReason): string =>
@@ -254,7 +261,7 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 		return {
 			badge: {
 				label: `${coverageWords(status.coverage)} ${HERE}`,
-				color: status.coverage.mult < 1 ? LOSS_COLOR : GAIN_COLOR,
+				color: factorOf(status.coverage) < 1 ? LOSS_COLOR : GAIN_COLOR,
 			},
 		};
 
@@ -283,3 +290,11 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 
 	return {};
 };
+
+export const idleUpgraderBadgesFor = (
+	config: Config,
+	installed: readonly Config[]
+): readonly ConfigChipBadge[] =>
+	config.autoUpgradeAfterCorrect !== undefined && !hasUpgradeLeft(installed)
+		? [{ label: NOTHING_TO_UPGRADE, color: SKIP_COLOR }]
+		: [];

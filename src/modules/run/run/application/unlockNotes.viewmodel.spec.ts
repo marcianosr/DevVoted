@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	justFiredLines,
-	unlockLinesFor,
-	unlockNotesFor,
-} from "~/modules/run/run/application/unlockNotes.viewmodel";
-import { createMockRunView } from "~/test/runView.factory";
+import { unlockLinesFor } from "~/modules/run/run/application/unlockNotes.viewmodel";
 
 describe(unlockLinesFor, () => {
 	it("maps a grant to its config and authored provenance", () => {
@@ -21,45 +16,5 @@ describe(unlockLinesFor, () => {
 		expect(
 			unlockLinesFor([{ configId: "missingno", viaMetric: null }])
 		).toEqual([]);
-	});
-});
-
-describe(justFiredLines, () => {
-	it("keeps only the grants the last dispatch fired", () => {
-		const view = createMockRunView({
-			unlockedConfigIds: ["telemetry"],
-			unlockedThisRun: [
-				{ configId: "html", viaMetric: "polls-answered" },
-				{ configId: "telemetry", viaMetric: "community-peeks" },
-			],
-		});
-		const lines = justFiredLines(view);
-		expect(lines).toHaveLength(1);
-		expect(lines[0].config.id).toBe("telemetry");
-	});
-
-	it("stays empty when the dispatch granted nothing", () => {
-		const view = createMockRunView({
-			unlockedThisRun: [{ configId: "html", viaMetric: "polls-answered" }],
-		});
-		expect(justFiredLines(view)).toEqual([]);
-	});
-});
-
-describe(unlockNotesFor, () => {
-	it("announces the just-fired grant with label and provenance", () => {
-		const view = createMockRunView({
-			unlockedConfigIds: ["html"],
-			unlockedThisRun: [{ configId: "html", viaMetric: "polls-answered" }],
-		});
-		expect(unlockNotesFor(view)).toEqual([
-			{
-				label: ".html",
-				detail: "Earned: answered 25 polls",
-				slots: 1,
-				version: 1,
-				maxVersion: 5,
-			},
-		]);
 	});
 });

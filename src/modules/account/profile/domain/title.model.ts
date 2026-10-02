@@ -1,6 +1,7 @@
-import type {
-	ObjectiveCount,
-	ObjectiveMetric,
+import {
+	countsReader,
+	type ObjectiveCount,
+	type ObjectiveMetric,
 } from "~/modules/run/config/domain/configUnlock.model";
 import { RANK_RUNGS } from "~/modules/account/profile/domain/rank.model";
 import {
@@ -287,9 +288,6 @@ const isSatisfied = (
 export const titlesEarnedBy = (
 	counts: readonly ObjectiveCount[]
 ): readonly Title[] => {
-	const countByMetric = new Map(
-		counts.map((row) => [row.metric, row.count] as const)
-	);
-	const countOf = (metric: string): number => countByMetric.get(metric) ?? 0;
+	const countOf = countsReader(counts);
 	return TITLES.filter((title) => isSatisfied(title.earn, countOf));
 };

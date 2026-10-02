@@ -10,20 +10,20 @@ import { getIncidentsFeedService } from "~/modules/run/incident/application/inci
 
 export const getAttackTargets = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) => getAttackTargetsService({ userId }))
+		withAuthenticatedUser(({ userId }) => getAttackTargetsService({ userId }))
 );
 
 export const fireAudit = createServerFn({ method: "POST" })
 	.validator(fireAuditSchema)
 	.handler(async ({ data }) =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			fireAuditService({ userId, date: getTodayDateString(), ...data })
 		)
 	);
 
 export const getIncidentsFeed = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) =>
+		withAuthenticatedUser(({ userId }) =>
 			getIncidentsFeedService({ userId, date: getTodayDateString() })
 		)
 );

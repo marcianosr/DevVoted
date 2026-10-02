@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	kantoGateCaught,
+	kantoGateCaughtFrame,
 	kantoGateDanger,
 	kantoGateHealthy,
 	kantoGateHeldUnscored,
@@ -19,6 +21,7 @@ import {
 	kantoGateWon,
 	kantoGateZero,
 	SHAKY_ANSWERS,
+	type GateOutcomeFixture,
 } from "~/test/kantoGate.factory";
 
 import { GateOutcomeScreen } from "./GateOutcomeScreen.ui";
@@ -55,6 +58,8 @@ export const ShakyCollected: Story = { args: kantoGateShakyCollected() };
 
 export const Danger: Story = { args: kantoGateDanger() };
 
+export const Caught: Story = { args: kantoGateCaught() };
+
 export const GateZero: Story = { args: kantoGateZero() };
 
 export const Summit: Story = { args: kantoGateSummit() };
@@ -63,7 +68,7 @@ export const Won: Story = { args: kantoGateWon() };
 
 export const AllOpen: Story = { args: kantoGateOutcomeOpen() };
 
-const ShakyWithPicks = ({ balanceBeforeKb }: { balanceBeforeKb: number }) => {
+const HeldWithPicks = ({ fixture }: { fixture: GateOutcomeFixture }) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
 	const [fromStorage, setFromStorage] = useState(false);
 
@@ -77,11 +82,7 @@ const ShakyWithPicks = ({ balanceBeforeKb }: { balanceBeforeKb: number }) => {
 	return (
 		<GateOutcomeScreen
 			{...kantoGateOutcomeAt({
-				gate: 4,
-				answers: SHAKY_ANSWERS,
-				balanceBeforeKb,
-				configs: kantoGateOutcomeBuild,
-				streak: 3,
+				...fixture,
 				chosen,
 				onToggle: toggle,
 				fromStorage,
@@ -91,10 +92,21 @@ const ShakyWithPicks = ({ balanceBeforeKb }: { balanceBeforeKb: number }) => {
 	);
 };
 
+const shakyAt = (balanceBeforeKb: number): GateOutcomeFixture => ({
+	gate: 4,
+	answers: SHAKY_ANSWERS,
+	balanceBeforeKb,
+	configs: kantoGateOutcomeBuild,
+});
+
 export const Picking: Story = {
-	render: () => <ShakyWithPicks balanceBeforeKb={12} />,
+	render: () => <HeldWithPicks fixture={shakyAt(12)} />,
 };
 
 export const PickingWithStorage: Story = {
-	render: () => <ShakyWithPicks balanceBeforeKb={512} />,
+	render: () => <HeldWithPicks fixture={shakyAt(512)} />,
+};
+
+export const CaughtPicking: Story = {
+	render: () => <HeldWithPicks fixture={kantoGateCaughtFrame()} />,
 };

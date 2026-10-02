@@ -6,5 +6,5 @@ import { getServiceUnlocksService } from "~/modules/run/shop/application/service
 
 export const getServiceUnlocks = createServerFn({ method: "GET" }).handler(
 	async () =>
-		withAuthenticatedUser((userId) => getServiceUnlocksService({ userId }))
+		withAuthenticatedUser(({ userId }) => getServiceUnlocksService({ userId }))
 );

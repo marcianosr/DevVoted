@@ -1,5 +1,7 @@
 import { Fragment } from "react";
 
+import { CHOICE_LABEL } from "~/shared/lib/copy";
+
 import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
@@ -19,8 +21,7 @@ import { Typography } from "./Typography.ui";
 const COPY = {
 	title: "Scoring",
 	gate: "gate",
-	slots: "slots",
-	unit: "1 unit",
+	unit: CHOICE_LABEL.single,
 	healthy: COVERAGE_BAND_WORD.healthy,
 	sealed: "Sealed until the run reaches this gate",
 } as const;
@@ -41,15 +42,13 @@ const GAP_ROW = "text-theme-muted";
 
 const COLUMNS = [
 	{ label: COPY.gate, width: "min-w-0 flex-1" },
-	{ label: COPY.slots, width: "w-14 shrink-0 text-right" },
-	{ label: COPY.unit, width: "w-20 shrink-0 text-right" },
+	{ label: COPY.unit, width: "w-24 shrink-0 text-right" },
 	{ label: COPY.healthy, width: "w-20 shrink-0 text-right" },
 ] as const satisfies readonly PanelTableColumn[];
 
-const [GATE_COLUMN, SLOTS_COLUMN, UNIT_COLUMN, HEALTHY_COLUMN] = COLUMNS;
+const [GATE_COLUMN, UNIT_COLUMN, HEALTHY_COLUMN] = COLUMNS;
 
 const GATE = GATE_COLUMN.width;
-const SLOTS = `flex justify-end ${SLOTS_COLUMN.width}`;
 const UNIT = `flex justify-end ${UNIT_COLUMN.width}`;
 const HEALTHY = `flex justify-end ${HEALTHY_COLUMN.width}`;
 
@@ -69,7 +68,6 @@ export type ScoringStep = { figure: string; tone: ScoringTone };
 export type ScoringPrice = { label: string; steps: readonly ScoringStep[] };
 
 export type ScoringGateFigures = {
-	slots: string;
 	unit: string;
 	healthy: string;
 };
@@ -108,7 +106,7 @@ const Price = ({ price }: { price: ScoringPrice }) => (
 const Statement = ({ line, number }: { line: LeadLine; number: number }) => (
 	<div className={STATEMENT}>
 		<Badge>{number}</Badge>
-		<Lead line={line} variant="paragraph" />
+		<Lead line={line} variant="prose" />
 	</div>
 );
 
@@ -116,11 +114,8 @@ const Figures = ({ row }: { row: ScoringGateRow }) => {
 	if (row.locked === true)
 		return (
 			<>
-				<span className={SLOTS}>
-					<SealedFigure label={COPY.sealed} />
-				</span>
 				<span className={UNIT}>
-					<SealedFigure />
+					<SealedFigure label={COPY.sealed} />
 				</span>
 				<span className={HEALTHY}>
 					<SealedFigure />
@@ -130,9 +125,6 @@ const Figures = ({ row }: { row: ScoringGateRow }) => {
 
 	return (
 		<>
-			<span className={SLOTS}>
-				<Badge>{row.slots}</Badge>
-			</span>
 			<span className={UNIT}>
 				<Badge color={UNIT_COLOR}>{row.unit}</Badge>
 			</span>

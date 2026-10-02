@@ -1,261 +1,46 @@
 import { useState } from "react";
 
-import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
-import { gainsOfGate } from "~/modules/run/gate/application/gateGains.viewmodel";
-import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
-import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import type {
-	GateHoldReason,
-	GateLadder,
-} from "~/modules/run/gate/domain/gate.model";
 import {
-	closedBarFor,
-	type GateAnswer,
-	type GateClosing,
-	type GateOutcomeFrame,
-	gateOutcomePropsFor,
+	type GateOutcomeScreenHandlers,
+	gateOutcomeScreenPropsFor,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
-import {
-	GateOutcomeScreen,
-	type GateOutcomeTail,
-} from "~/ui/kanto-theme/GateOutcomeScreen.ui";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { GateOutcomeScreen } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
 
-export type GateVerdict = "cleared" | "held" | "fatal" | "won";
-
-export type GateOutcomeViewProps = {
+export type GateOutcomeViewProps = GateOutcomeScreenHandlers & {
 	view: RunView;
 	runNumber?: number | null;
-	verdict: GateVerdict;
-	onReview: () => void;
-	onNext: () => void;
-	onCommunity?: () => void;
-	onRemove?: (configIds: readonly string[], fromStorage: boolean) => void;
-	onRefuse?: () => void;
-};
-
-const CLOSING_OF = {
-	cleared: "cleared",
-	won: "cleared",
-	held: "held",
-	fatal: "fatal",
-} satisfies Record<GateVerdict, GateClosing>;
-
-const coverageOf = (answer: AnsweredPoll): number =>
-	answer.coverageEarned ?? -(answer.coverageLost ?? 0);
-
-export const gateAnswersOf = (
-	answered: readonly AnsweredPoll[],
-	gate: number
-): readonly GateAnswer[] =>
-	answered.map((answer) => ({
-		category: answer.category,
-		question: answer.question,
-		outcome: answer.outcome,
-		share: answer.coverageFactors?.correct,
-		coverage: coverageGainPercentFor(coverageOf(answer), gate),
-		units: coverageOf(answer),
-		answerType: answer.answerType ?? "single",
-		options: answer.options ?? [...answer.picked, ...(answer.correct ?? [])],
-		picked: answer.picked,
-		correct: answer.correct ?? [],
-		explanation: answer.explanation,
-		codeBlock: answer.codeBlock,
-	}));
-
-const gateNumberFor = (view: RunView, verdict: GateVerdict): number =>
-	verdict === "held" || verdict === "fatal"
-		? view.gateStake.gateNumber
-		: view.gatePayout.clearedGateNumber;
-
-const ladderFor = (view: RunView, verdict: GateVerdict): GateLadder =>
-	verdict === "held" || verdict === "fatal"
-		? view.gateStake.coverageLadder
-		: view.gatePayout.clearedGateLadder;
-
-const heldByFor = (
-	view: RunView,
-	verdict: GateVerdict
-): GateHoldReason | undefined =>
-	verdict === "held" ? (view.gatePayout.heldBy ?? undefined) : undefined;
-
-const heldFor = (view: RunView, verdict: GateVerdict): number =>
-	verdict === "held" || verdict === "fatal"
-		? view.gateStake.coverageHeld
-		: view.gatePayout.clearedCoverageHeld;
-
-const DELETED_DETAIL = "its deprecation ran out";
-const LAPSED_DETAIL = "its subscription went unpaid";
-
-const upgradedRowsFor = (view: RunView) =>
-	view.gatePayout.autoUpgradedConfig === null
-		? []
-		: [
-				{
-					config: view.gatePayout.autoUpgradedConfig,
-					detail: `upgraded by ${view.gatePayout.autoUpgradedByConfig?.label ?? "the build"}`,
-				},
-			];
-
-const removedRowsFor = (view: RunView) => [
-	...view.gatePayout.deletedConfigs.map((config) => ({
-		config,
-		detail: DELETED_DETAIL,
-	})),
-	...view.gatePayout.lapsedConfigs.map((config) => ({
-		config,
-		detail: LAPSED_DETAIL,
-	})),
-];
-
-const paidRowsFor = (view: RunView) =>
-	view.gatePayout.autoUpgradedConfig === null
-		? []
-		: [
-				{
-					config: view.gatePayout.autoUpgradedConfig,
-					detail: `upgraded by ${view.gatePayout.autoUpgradedByConfig?.label ?? "the build"}`,
-					kb: 0,
-				},
-			];
-
-export type GatePeelPicks = {
-	chosen: readonly string[];
-	onToggle: (configId: string) => void;
-	fromStorage: boolean;
-	onToggleStorage: () => void;
-};
-
-export const gateOutcomeFrameOf = (
-	view: RunView,
-	verdict: GateVerdict,
-	picks: GatePeelPicks,
-	runNumber: number | null = null
-): GateOutcomeFrame => {
-	const cleared = verdict === "cleared" || verdict === "won";
-	const gate = gateNumberFor(view, verdict);
-
-	return {
-		gate,
-		answers: gateAnswersOf(view.answeredThisGate, gate),
-		scoredUnits: view.scoredThisGate,
-		peelSlotsRemaining: view.peelSlotsRemaining,
-		swatchGates: view.swatchGates,
-		readout: runReadoutFor(view, runNumber),
-		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
-		configs: view.configs,
-		buildSpace: view.buildSpace.space,
-		streak: view.gatePayout.streakAtClose ?? undefined,
-		...gainsOfGate(view, gate),
-		upgraded: upgradedRowsFor(view),
-		removed: removedRowsFor(view),
-		paid: paidRowsFor(view),
-		payouts: runPaidFor(view),
-		auditIds: view.gateStake.audits.map((audit) => audit.id),
-		chosen: picks.chosen,
-		onToggle: picks.onToggle,
-		fromStorage: picks.fromStorage,
-		onToggleStorage: picks.onToggleStorage,
-		won: verdict === "won",
-		heldBy: heldByFor(view, verdict),
-		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
-		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
-		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
-		bar: closedBarFor(
-			CLOSING_OF[verdict],
-			gate,
-			ladderFor(view, verdict),
-			heldFor(view, verdict),
-			heldByFor(view, verdict)
-		),
-		payoutKb: cleared ? view.gatePayout.gateRewardPaidKb : 0,
-		clearKb: cleared ? view.gatePayout.clearThisGateKb : 0,
-		overflowKb: cleared ? view.gatePayout.overflowThisGateKb : 0,
-		interestKb: cleared ? view.gatePayout.interestThisGateKb : 0,
-		extraPickKb: cleared ? view.gatePayout.extraPickThisGateKb : 0,
-		bonusKb: 0,
-		faucetKb: view.gatePayout.faucetThisGateKb,
-		escrowCommittedKb: cleared ? view.gatePayout.escrowCommittedKb : 0,
-		escrowRolledBackKb: cleared ? 0 : view.gatePayout.escrowRolledBackKb,
-		billKb: view.gatePayout.subscriptionBillKb + view.gatePayout.upkeepBilledKb,
-	};
-};
-
-const refusing = (
-	tail: GateOutcomeTail | undefined,
-	onRefuse: (() => void) | undefined
-): GateOutcomeTail | undefined => {
-	if (tail?.choice === undefined || onRefuse === undefined) return tail;
-
-	return {
-		choice: {
-			...tail.choice,
-			refusal: {
-				...tail.choice.refusal,
-				action: { ...tail.choice.refusal.action, onPress: onRefuse },
-			},
-		},
-	};
 };
 
 export const GateOutcomeView = ({
 	view,
 	runNumber = null,
-	verdict,
-	onReview,
-	onNext,
-	onCommunity,
-	onRemove,
-	onRefuse,
+	...on
 }: GateOutcomeViewProps) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
 	const [fromStorage, setFromStorage] = useState(false);
 
-	const toggle = (configId: string) =>
-		setChosen((held) =>
-			held.includes(configId)
-				? held.filter((id) => id !== configId)
-				: [...held, configId]
-		);
-
-	const props = gateOutcomePropsFor(
-		gateOutcomeFrameOf(
-			view,
-			verdict,
-			{
-				chosen,
-				onToggle: toggle,
-				fromStorage,
-				onToggleStorage: () => setFromStorage((paying) => !paying),
-			},
-			runNumber
-		)
-	);
-	const settles = verdict === "held" && onRemove !== undefined;
-	const commits = props.footer.action.onPress !== undefined;
+	if (view.lastClose === null) return null;
 
 	return (
 		<GateOutcomeScreen
-			{...props}
-			tail={refusing(props.tail, onRefuse)}
-			footer={{
-				...props.footer,
-				action: {
-					...props.footer.action,
-					...(settles
-						? {
-								onPress: commits
-									? () => onRemove(chosen, fromStorage)
-									: undefined,
-							}
-						: { onPress: onNext }),
+			{...gateOutcomeScreenPropsFor({
+				view,
+				close: view.lastClose,
+				runNumber,
+				on,
+				picks: {
+					chosen,
+					onToggle: (configId) =>
+						setChosen((held) =>
+							held.includes(configId)
+								? held.filter((id) => id !== configId)
+								: [...held, configId]
+						),
+					fromStorage,
+					onToggleStorage: () => setFromStorage((paying) => !paying),
 				},
-				asides: (props.footer.asides ?? []).map((aside) => ({
-					...aside,
-					onPress: aside.icon === "review" ? onReview : onCommunity,
-				})),
-			}}
+			})}
 		/>
 	);
 };

@@ -4,7 +4,9 @@
 
 Accepted 2026-09-14 (Marciano, DVTD-mrnr). Reverses the award rule in
 [ADR-019](019-depth-and-width-are-independent.md) Decision 3; the swatch roster,
-its colours and its ordering are untouched.
+its colours and its ordering are untouched. Decisions 1 and 2 superseded by
+[ADR-170](170-a-swatch-is-earned-by-covering-every-change.md): the swatch is the
+full bar.
 
 ## Context
 
@@ -22,18 +24,12 @@ was actually worth.
 
 ## Decision
 
-1. **A flawless window earns the gate's swatch.** All five polls of the window
-   answered right, graded on the exact-set rule, stamps the gate. Nothing else
-   does.
+1. Superseded by ADR-170: a full bar earns the swatch.
 
-2. **Clearing the gate and earning its swatch are separate prizes on one
-   window.** The clear reads cumulative run coverage against the gate's OK line
-   and moves the run on; the swatch reads this window alone and is kept for
-   good. Either can land without the other: a flawless window can still close
-   SHAKY on a bad history, and a comfortable clear can carry a miss.
+2. Superseded by ADR-170.
 
 3. **The stamp is the run's, and the run keeps a list of them.**
-   `RunState.swatchGatesEarned` collects each flawless gate in the order its
+   `RunState.swatchGatesEarned` collects each stamped gate in the order its
    window landed, so the run-over summary can say which badges the climb took
    and the repository can award exactly the fresh ones. A gate retried and
    played clean twice is stamped once.

@@ -1,12 +1,21 @@
+import { isAdminEmail } from "~/shared/utils/adminAuth";
 import {
 	type ApiResponse,
 	createErrorResponse,
+	createSuccessResponse,
 } from "~/shared/utils/errorHandling";
 import { reportHandledFailure } from "~/shared/utils/errorReporting";
+import { getSupabaseServerClient } from "~/shared/utils/supabase";
 
-import { getSupabaseServerClient } from "./supabase";
+export type Session = {
+	readonly userId: string;
+	readonly isAdmin: boolean;
+};
 
-export const getAuthenticatedUserId = async () => {
+export const NOT_AUTHENTICATED = "Not authenticated";
+export const ADMIN_REQUIRED = "Admin access required";
+
+const readSession = async (): Promise<ApiResponse<Session>> => {
 	const supabase = getSupabaseServerClient();
 	const {
 		data: { user },
@@ -14,14 +23,17 @@ export const getAuthenticatedUserId = async () => {
 	} = await supabase.auth.getUser();
 
 	if (error || !user) {
-		const authError = new Error("Not authenticated");
-		reportHandledFailure(authError, "getAuthenticatedUserId", {
+		const authError = new Error(NOT_AUTHENTICATED);
+		reportHandledFailure(authError, "readSession", {
 			supabaseError: error?.message,
 		});
-		throw authError;
+		return createErrorResponse(authError);
 	}
 
-	return user.id;
+	return createSuccessResponse({
+		userId: user.id,
+		isAdmin: isAdminEmail(user.email),
+	});
 };
 
 export const findAuthenticatedUserId = async (): Promise<string | null> => {
@@ -35,29 +47,30 @@ export const findAuthenticatedUserId = async (): Promise<string | null> => {
 	}
 };
 
-export const withAuthenticatedUser = async <T>(
-	operation: (userId: string) => Promise<ApiResponse<T>>
+const runAs = async <T>(
+	session: Session,
+	operation: (session: Session) => Promise<ApiResponse<T>>
 ): Promise<ApiResponse<T>> => {
 	try {
-		const userId = await getAuthenticatedUserId();
-		return await operation(userId);
+		return await operation(session);
 	} catch (error) {
+		reportHandledFailure(error, "withAuthenticatedUser");
 		return createErrorResponse(error);
 	}
 };
 
-export const ensureAuthorizedUser = (
-	authenticatedUserId: string,
-	requestedUserId: string
-) => {
-	if (authenticatedUserId !== requestedUserId) {
-		const authError = new Error(
-			"Unauthorized: Cannot access another user's data"
-		);
-		reportHandledFailure(authError, "ensureAuthorizedUser", {
-			authenticatedUserId,
-			requestedUserId,
-		});
-		throw authError;
-	}
+export const withAuthenticatedUser = async <T>(
+	operation: (session: Session) => Promise<ApiResponse<T>>
+): Promise<ApiResponse<T>> => {
+	const session = await readSession();
+	return session.success ? runAs(session.data, operation) : session;
 };
+
+export const withAdminUser = async <T>(
+	operation: (session: Session) => Promise<ApiResponse<T>>
+): Promise<ApiResponse<T>> =>
+	withAuthenticatedUser(async (session) =>
+		session.isAdmin
+			? operation(session)
+			: createErrorResponse(new Error(ADMIN_REQUIRED))
+	);

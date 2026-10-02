@@ -21,7 +21,12 @@ import {
 	type StoredPublicBuild,
 } from "~/modules/run/build/domain/publicBuild.model";
 import type { RunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
-import type { LastClose } from "~/modules/run/run/domain/run.model";
+import type {
+	LastClose,
+	RecordedClose,
+	WarmBoot,
+} from "~/modules/run/run/domain/run.model";
+import type { AuditSchedule } from "~/modules/run/gate/domain/audit.model";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
@@ -44,6 +49,12 @@ const startedAtGateColumn = sql<number>`coalesce((${runStatesTable.state}->>${st
 
 const streakColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("streak")})::int, 0)`;
 const storageColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("storage")})::int, 0)`;
+const closesColumn = sql<
+	RecordedClose[]
+>`coalesce(${runStatesTable.state}->${stateKey("closes")}, '[]'::json)`;
+const auditScheduleColumn = sql<AuditSchedule>`coalesce(${runStatesTable.state}->${stateKey("auditSchedule")}, '{}'::json)`;
+const warmBootKey = <K extends keyof WarmBoot>(key: K) => sql.raw(`'${key}'`);
+const warmBootKbColumn = sql<number>`coalesce((${runStatesTable.state}->${stateKey("warmBoot")}->>${warmBootKey("storageKb")})::int, 0)`;
 
 const buildPath = sql`${runStatesTable.state}->${stateKey("build")}`;
 
@@ -76,6 +87,9 @@ export type ClimberRow = {
 	coverageUnits: number;
 	streak: number;
 	storageKb: number;
+	closes: RecordedClose[];
+	auditSchedule: AuditSchedule;
+	warmBootKb: number;
 };
 
 const CLIMBER_COLUMNS = {
@@ -95,6 +109,9 @@ const CLIMBER_COLUMNS = {
 	coverageUnits: runStatesTable.coverage,
 	streak: streakColumn,
 	storageKb: storageColumn,
+	closes: closesColumn,
+	auditSchedule: auditScheduleColumn,
+	warmBootKb: warmBootKbColumn,
 };
 
 type ClimberSelection = Omit<

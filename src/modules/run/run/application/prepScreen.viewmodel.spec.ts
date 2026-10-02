@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	kantoPrepCalibration,
 	kantoPrepChampion,
+	kantoPrepFirstAudit,
 	kantoPrepPrefetched,
 	kantoPrepPrefetchedAtV1,
 	kantoPrepSealed,
@@ -18,7 +20,7 @@ describe("the five polls", () => {
 	it("counts nothing revealed while no config opens the window, and says what would", () => {
 		const { polls } = kantoPrepSealed();
 
-		expect(leadTextOf(polls.meta ?? [])).toBe("0 of 4 revealed");
+		expect(leadTextOf(polls.meta ?? [])).toBe("0 of 4 facts revealed");
 		expect(polls.note).toBe(REVEAL_NOTE);
 		expect(polls.rows).toHaveLength(4);
 		expect(
@@ -31,7 +33,9 @@ describe("the five polls", () => {
 	it("counts the window revealed and credits the config that opened it", () => {
 		const { polls } = kantoPrepPrefetched();
 
-		expect(leadTextOf(polls.meta ?? [])).toBe("4 of 4 revealed by Prefetch");
+		expect(leadTextOf(polls.meta ?? [])).toBe(
+			"4 of 4 facts revealed by Prefetch"
+		);
 		expect(polls.meta).toContainEqual({ figure: "Prefetch" });
 		expect(polls.note).toBeUndefined();
 		expect(polls.rows.map((row) => row.label)).toEqual([
@@ -45,7 +49,9 @@ describe("the five polls", () => {
 	it("counts two of four revealed by a v1 Prefetch and says what v2 adds", () => {
 		const { polls } = kantoPrepPrefetchedAtV1();
 
-		expect(leadTextOf(polls.meta ?? [])).toBe("2 of 4 revealed by Prefetch");
+		expect(leadTextOf(polls.meta ?? [])).toBe(
+			"2 of 4 facts revealed by Prefetch"
+		);
 		expect(polls.note).toBe(
 			"Prefetch v2 reveals the answer types and option counts too."
 		);
@@ -88,6 +94,29 @@ describe("today's answers", () => {
 
 		expect(scores.rows).toHaveLength(1);
 		expect(scores.rows[0].swatch.gateName).toBe("Champion");
+	});
+});
+
+describe("the audits panel", () => {
+	const firstAuditAt = (clearedGates: readonly number[]) =>
+		kantoPrepFirstAudit(clearedGates).audits;
+
+	it("draws no audits panel before the first audited gate", () => {
+		expect(kantoPrepCalibration().audits).toBeUndefined();
+	});
+
+	it("badges the panel and the row new on a player's first audit", () => {
+		const audits = firstAuditAt([0, 1, 2]);
+
+		expect(audits?.badge).toEqual({ label: "new", color: "cerulean" });
+		expect(audits?.rows.map((row) => row.isNew)).toEqual([true]);
+	});
+
+	it("drops the badge once the player has cleared a gate that holds the audit", () => {
+		const audits = firstAuditAt([0, 1, 2, 3]);
+
+		expect(audits?.badge).toBeUndefined();
+		expect(audits?.rows.map((row) => row.isNew)).toEqual([false]);
 	});
 });
 

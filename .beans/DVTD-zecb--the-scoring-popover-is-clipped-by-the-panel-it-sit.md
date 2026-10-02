@@ -1,11 +1,11 @@
 ---
 # DVTD-zecb
 title: The scoring popover is clipped by the panel it sits in
-status: todo
+status: scrapped
 type: bug
 priority: normal
 created_at: 2026-09-14T13:49:51Z
-updated_at: 2026-09-14T20:10:26Z
+updated_at: 2026-10-01T15:39:18Z
 ---
 
 `PollScreen.ui.tsx` puts `<Tooltip><ScoringRule /></Tooltip>` in `Panel.Header`'s
@@ -37,3 +37,7 @@ Not closed: neither change was seen in a browser. chrome-devtools MCP is held by
 stale profile and the claude-in-chrome extension is disconnected. Worth one look on
 a narrow viewport, where the wide panel is the remaining risk, and closing on the
 spot if it sits clear.
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. ScoringRule and the poll-screen Tooltip are gone, and Panel.ui has no overflow rule left to clip.

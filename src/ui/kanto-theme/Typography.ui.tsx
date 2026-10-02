@@ -8,6 +8,7 @@ export type TypographyVariant =
 	| "caption"
 	| "label"
 	| "hint"
+	| "prose"
 	| "accent";
 
 export type TypographyTag = "h1" | "h2" | "h3" | "p" | "span";
@@ -39,6 +40,11 @@ const VARIANT = {
 	caption: { style: "text-sm font-normal", tag: "span", tone: SOFT },
 	label: { style: "text-xs font-bold", tag: "span", tone: SOFT },
 	hint: { style: "text-xs font-normal", tag: "p", tone: MUTED },
+	prose: {
+		style: "text-xs leading-relaxed font-normal",
+		tag: "p",
+		tone: MUTED,
+	},
 	accent: { style: "text-sm font-bold", tag: "span", tone: FULL },
 } satisfies Record<TypographyVariant, VariantStyle>;
 

@@ -7,11 +7,17 @@ const {
 	fetchPublishedPollCounts,
 	fetchActiveClimberFor,
 	fetchBestCategories,
+	fetchObjectiveProgressByUser,
 } = vi.hoisted(() => ({
 	fetchPublicProfile: vi.fn(),
 	fetchPublishedPollCounts: vi.fn(),
 	fetchActiveClimberFor: vi.fn(),
 	fetchBestCategories: vi.fn(),
+	fetchObjectiveProgressByUser: vi.fn(),
+}));
+
+vi.mock("~/modules/collection/dex/infrastructure/configdex.repository", () => ({
+	fetchObjectiveProgressByUser,
 }));
 
 vi.mock("~/modules/account/profile/infrastructure/profile.repository", () => ({
@@ -55,6 +61,7 @@ describe("getPlayerCardService", () => {
 		fetchPublishedPollCounts.mockResolvedValue({ published: 0, answers: 0 });
 		fetchActiveClimberFor.mockResolvedValue(null);
 		fetchBestCategories.mockResolvedValue(new Map());
+		fetchObjectiveProgressByUser.mockResolvedValue([]);
 	});
 
 	it("refuses a player who does not exist", async () => {

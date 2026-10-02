@@ -18,7 +18,7 @@ export type PollFactsProps = {
 	trailing?: ReactNode;
 };
 
-const Prose = ({ children }: { children: ReactNode }) => (
+const FactText = ({ children }: { children: ReactNode }) => (
 	<Typography variant="hint" as="span">
 		{children}
 	</Typography>
@@ -32,13 +32,15 @@ const FactRow = ({
 	trailing?: ReactNode;
 }) => (
 	<Panel.Row
-		trailing={trailing === undefined ? undefined : <Prose>{trailing}</Prose>}
+		trailing={
+			trailing === undefined ? undefined : <FactText>{trailing}</FactText>
+		}
 	>
 		<Badge color={fact.tone}>{fact.badge}</Badge>
 		{fact.figure === undefined ? null : (
 			<Badge color={fact.tone}>{fact.figure}</Badge>
 		)}
-		<Prose>{fact.text}</Prose>
+		<FactText>{fact.text}</FactText>
 	</Panel.Row>
 );
 

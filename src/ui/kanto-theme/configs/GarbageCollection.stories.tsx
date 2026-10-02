@@ -32,7 +32,6 @@ export const RefundsWhatThePeelDrops: Story = {
 			afterAnswers(
 				runWith([CONFIGS.garbageCollection, CONFIGS.intellisense], MIXED_GATE),
 				ALL_WRONG
-			),
-			"held"
+			)
 		),
 };

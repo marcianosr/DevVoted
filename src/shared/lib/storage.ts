@@ -76,3 +76,8 @@ export const canAddToStorage = (
 	itemCost: number,
 	storageLimit: number
 ): boolean => currentUsed + itemCost <= storageLimit;
+
+const SHORT_TRAIL = "short";
+
+export const shortfallOf = (priceKb: number, balanceKb: number): string =>
+	`${kbLabel(priceKb - balanceKb)} ${SHORT_TRAIL}`;

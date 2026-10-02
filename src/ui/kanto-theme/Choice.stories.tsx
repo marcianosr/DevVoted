@@ -40,6 +40,7 @@ const meta: Meta<typeof Choice> = {
 	argTypes: {
 		picked: { control: "boolean" },
 		crossedOut: { control: "boolean" },
+		state: { control: "inline-radio", options: ["idle", "right", "wrong"] },
 	},
 	args: { letter: "A", children: "at(-1)" },
 	render: (args) => (
@@ -55,6 +56,14 @@ type Story = StoryObj<typeof Choice>;
 export const Default: Story = {};
 
 export const Picked: Story = { args: { picked: true } };
+
+export const Idle: Story = { args: { state: "idle" } };
+
+export const Right: Story = { args: { picked: true, state: "right" } };
+
+export const Wrong: Story = {
+	args: { letter: "B", children: "pop()", picked: true, state: "wrong" },
+};
 
 export const CrossedOut: Story = {
 	args: { children: "party.pop()", crossedOut: true, onPick: () => {} },

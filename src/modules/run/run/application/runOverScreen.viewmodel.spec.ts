@@ -44,7 +44,7 @@ describe("runOverPropsFor", () => {
 			const frame = runOverFrame({
 				won: true,
 				gate: 12,
-				bar: { floor: 10, ok: 60, healthy: 90, held: 93 },
+				bar: { floor: 10, ok: 60, healthy: 90, held: 93, band: "healthy" },
 			});
 			const { header } = runOverPropsFor(frame);
 
@@ -65,8 +65,21 @@ describe("runOverPropsFor", () => {
 	});
 
 	describe("the coverage reading", () => {
-		it("reports the units held against the window the run opened", () => {
-			expect(propsFor().coverage.meta).toBe("14 against a window of 25");
+		it("reports the coverage as held at the close", () => {
+			expect(propsFor().coverage.meta).toBe("held at the close");
+		});
+
+		it("never names the gate's codebase on the header, the coverage panel or the total", () => {
+			for (const props of [propsFor(), propsFor({ won: true })]) {
+				const stated = [
+					props.header.note ?? "",
+					props.coverage.meta ?? "",
+					props.coverage.note ?? "",
+					props.gates.total.score,
+				].join(" ");
+
+				expect(stated).not.toMatch(/\bchanges?\b/i);
+			}
 		});
 
 		it("states the shortfall against the line the run actually missed", () => {
@@ -128,10 +141,10 @@ describe("runOverPropsFor", () => {
 			expect(gates.payouts.rows[0].tag).toBeUndefined();
 		});
 
-		it("totals the run off the units held, so it cannot drift from the bar", () => {
+		it("totals the run off the final coverage, so it cannot drift from the bar", () => {
 			const { gates, coverage } = propsFor();
 
-			expect(gates.total.score).toBe("14 of 25");
+			expect(gates.total.score).toBe("final coverage");
 			expect(gates.total.badge.label).toBe(coverage.badge.label);
 		});
 	});
@@ -178,7 +191,7 @@ describe("runOverPropsFor", () => {
 
 	describe("the build at the end", () => {
 		it("bills the rung it held, not the weight it used", () => {
-			const { build } = propsFor({ space: 12, weight: 9 });
+			const { build } = propsFor({ weight: 9, freeWeight: 3 });
 
 			expect(build.meta).toBe("9 weight");
 			expect(build.badge.label).toBe("64 KB a gate");
@@ -192,7 +205,7 @@ describe("runOverPropsFor", () => {
 		});
 
 		it("says nothing about idle weight when the build filled its space", () => {
-			const { build } = propsFor({ space: 12, weight: 12 });
+			const { build } = propsFor({ weight: 12, freeWeight: 0 });
 
 			expect(build.note).not.toContain("never paid for itself");
 		});
@@ -296,14 +309,16 @@ describe("the build at the end, with YAGNI held", () => {
 	const withYagni = (overrides = {}) =>
 		runOverPropsFor(
 			runOverFrame({
-				space: 12,
 				weight: 9,
+				freeWeight: 3,
+				emptyCreditKb: 24,
+				upkeepKb: 40,
 				configs: [CONFIGS.yagni, CONFIGS.wtfpl],
 				...overrides,
 			})
 		);
 
-	it("bills the rung less the room the build never used", () => {
+	it("states the upkeep the run view already settled", () => {
 		expect(withYagni().build.badge.label).toBe("40 KB a gate");
 	});
 

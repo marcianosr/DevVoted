@@ -245,6 +245,8 @@ service.
 
 Full reasoning sits with the decision it explains.
 
+- **A carried accuracy meter**, ADR-169: simulated with caps per gate and a miss
+  penalty; it moves ×2 and ×3 together and saturates a strong player for most of a run.
 - **Account-level rerolls**, ADR-029: progression bought outside the run cannot
   trade off against the configs it competes with. ADR-115 overrules it for run
   services only.

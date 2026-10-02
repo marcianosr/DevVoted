@@ -1,4 +1,8 @@
-import { AB_ARMS, type Config } from "~/modules/run/config/domain/config.model";
+import {
+	AB_ARMS,
+	type Config,
+	POOLED_BONUS_NOTE,
+} from "~/modules/run/config/domain/config.model";
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 
 export const CONFIGS = {
@@ -79,7 +83,7 @@ export const CONFIGS = {
 		id: "intellisense",
 		label: "Intellisense",
 		slots: 4,
-		description: "All coverage earns ×1.5.",
+		description: `All coverage earns ×1.5. ${POOLED_BONUS_NOTE}`,
 		gives: "All coverage earns ×1.5",
 		coverageMultiplier: 1.5,
 	},
@@ -87,7 +91,7 @@ export const CONFIGS = {
 		id: "agents-md",
 		label: "AGENTS.md",
 		slots: 8,
-		description: "All coverage earns ×2.",
+		description: `All coverage earns ×2. ${POOLED_BONUS_NOTE}`,
 		gives: "All coverage earns ×2",
 		coverageMultiplier: 2,
 	},
@@ -96,7 +100,7 @@ export const CONFIGS = {
 		label: "Code Coverage",
 		slots: 2,
 		description:
-			"Every correct answer pays +0.1 units of coverage, flat: no multiplier amplifies it.",
+			"Every correct answer pays +0.1 units of coverage. No other config multiplies it; only the gate's accuracy does.",
 		gives: "+0.1 units on every correct answer",
 		coverageAdd: 0.1,
 	},
@@ -276,8 +280,7 @@ export const CONFIGS = {
 		id: "deprecated",
 		label: "Deprecated",
 		slots: 4,
-		description:
-			"All coverage earns ×3, fading ×0.5 each gate clear. Below ×1 it cuts coverage instead of paying it. Deleted at ×0.",
+		description: `All coverage earns ×3, fading ×0.5 each gate clear. ${POOLED_BONUS_NOTE} Below ×1 it cuts coverage instead of paying it. Deleted at ×0.`,
 		gives: "All coverage earns ×3, fading ×0.5 per clear",
 		costs: "Fades below ×1 into a coverage cut, and deletes itself at ×0",
 		coverageMultiplier: 3,
@@ -329,7 +332,7 @@ export const CONFIGS = {
 		label: "strict: true",
 		slots: 1,
 		description:
-			"Toggle it before you answer. An exact answer pays half a unit more; anything less takes half a unit off the gate.",
+			"Toggle it before you answer. An exact answer pays half a unit more; anything less takes half a unit off the gate. The gate's accuracy scales both.",
 		gives: "+0.5 units on an exact answer",
 		costs: "0.5 units on a partial, a miss or a timeout",
 		wagersAnswer: 0.5,
@@ -339,7 +342,7 @@ export const CONFIGS = {
 		label: "Math.ceil()",
 		slots: 2,
 		description:
-			"A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1, three quarters pays 2. The top-up is flat, so no multiplier amplifies it.",
+			"A partial select-all answer earns the fraction it needs to reach a whole unit: a quarter caught pays 1, three quarters pays 2. No other config multiplies the top-up; only the gate's accuracy does.",
 		gives: "Partial select-all answers top up to a whole unit",
 		roundsPartialUnitsUp: true,
 	},
@@ -359,9 +362,9 @@ export const CONFIGS = {
 		label: "Try/Catch",
 		slots: 4,
 		description:
-			"A gate that would end the run holds instead, owing its peel. The catch is spent doing it and deletes itself, paying its own weight into that peel.",
+			"A gate that would end the run holds instead, owing its peel. You drop the catch yourself as the first part of that peel, and its own weight pays it down.",
 		gives: "The gate that would end your run holds instead",
-		costs: "Deleted the moment it fires, and it only fires once",
+		costs: "You drop it the moment it fires, so it only fires once",
 		catchesFatal: true,
 	},
 	vendorLockIn: {
@@ -373,15 +376,6 @@ export const CONFIGS = {
 		gives: "One config stops counting against your build space",
 		costs: "That config cannot be sold or dropped for the rest of the run",
 		vendorLocks: true,
-	},
-	dryRun: {
-		id: "dry-run",
-		label: "Dry Run",
-		slots: 2,
-		description:
-			"Marks the gate meter with where this answer lands, right or wrong, before you submit it.",
-		gives: "The gate meter shows where a right and a wrong answer land",
-		projectsGateOutcome: true,
 	},
 	lgtm: {
 		id: "lgtm",
@@ -413,6 +407,18 @@ export const CONFIGS = {
 			"In prep, names the config in your build each outage audit will take offline, poll by poll where the pick moves.",
 		gives: "Prep names which config each outage audit takes offline",
 		revealsOutageTargets: true,
+	},
+	vite: {
+		id: "vite",
+		label: "Vite",
+		slots: 2,
+		description:
+			"A correct answer within 15s earns ×1.5 coverage. A slower one earns ×0.75.",
+		gives: "A correct answer within 15s earns ×1.5",
+		costs: "A slower correct answer earns ×0.75",
+		fastAnswerWithinMs: 15_000,
+		fastCoverageMultiplier: 1.5,
+		slowCoverageMultiplier: 0.75,
 	},
 } as const satisfies Record<string, Config>;
 

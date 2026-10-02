@@ -1,10 +1,11 @@
 ---
 # DVTD-7atd
 title: 'GatesPanel audits: reconcile GATE_AUDITS variants with audits.ts''s collapsed roster'
-status: todo
+status: scrapped
 type: task
+priority: normal
 created_at: 2026-08-23T19:19:23Z
-updated_at: 2026-08-23T19:19:23Z
+updated_at: 2026-10-01T15:39:19Z
 ---
 
 `GatesPanel`'s `DexGate.audits` is `readonly string[]` of display labels
@@ -21,3 +22,7 @@ collapse.
 - [ ] Decide how per-gate audit variants map to the player-facing entry
 - [ ] DexGate.audits becomes readonly AuditId[]
 - [ ] GatesPanel.stories reads GATE_AUDITS instead of hand-written labels
+
+## Reasons for Scrapping
+
+Closed in the 2026-10-01 stale-bean sweep: the premise is gone. GATE_AUDITS and the modern-theme GatesPanel no longer exist.

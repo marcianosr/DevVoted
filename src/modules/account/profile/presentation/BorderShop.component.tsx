@@ -13,7 +13,7 @@ type BorderShopProps = {
 };
 
 export const BorderShop = ({ userId, draft }: BorderShopProps) => {
-	const { data: archive } = useArchiveState(userId);
+	const { view: archive } = useArchiveState(userId);
 	const purchase = usePurchaseBorder(userId);
 
 	if (!archive) return null;
@@ -38,7 +38,9 @@ export const BorderShop = ({ userId, draft }: BorderShopProps) => {
 					: draft.tryOn(tryingOn ? null : border.id),
 			onBuy: () =>
 				purchase.mutate(border.id, {
-					onSuccess: () => draft.pickBorder(border.id),
+					onSuccess: (result) => {
+						if (result.success) draft.pickBorder(border.id);
+					},
 				}),
 		};
 	});
@@ -48,7 +50,7 @@ export const BorderShop = ({ userId, draft }: BorderShopProps) => {
 			cards={cards}
 			held={`${archive.ownedBorderIds.length} of ${borders.length}`}
 			archive={archiveLabel(archive.archivedStorage)}
-			error={purchase.error?.message}
+			error={purchase.errorMessage ?? undefined}
 		/>
 	);
 };

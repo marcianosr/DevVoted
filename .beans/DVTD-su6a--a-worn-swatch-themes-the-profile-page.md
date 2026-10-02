@@ -1,11 +1,11 @@
 ---
 # DVTD-su6a
 title: A worn swatch themes the profile page
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-09-29T09:55:27Z
-updated_at: 2026-09-29T10:06:04Z
+updated_at: 2026-10-02T10:41:34Z
 blocked_by:
     - DVTD-fdmd
 ---
@@ -15,10 +15,10 @@ blocked_by:
 **Why:** A flawless gate should be something other players can see, not only a collectible in your own Dex.
 
 ## Done when
-- [ ] The appearance tab lists every swatch; owned ones can be worn with one press, locked ones hide their colour
-- [ ] Your own profile page wears the worn swatch on every tab
-- [ ] A visitor sees the same colour on your page
-- [ ] With nothing worn, or a swatch you no longer own, the page is pallet
+- [x] The appearance tab lists every swatch; owned ones can be worn with one press, locked ones hide their colour
+- [x] Your own profile page wears the worn swatch on every tab
+- [x] A visitor sees the same colour on your page
+- [x] With nothing worn, or a swatch you no longer own, the page is pallet
 
 ## Notes
 Decisions (user, 2026-09-29): the worn swatch replaces the per-tab colours on the owner's page; press to wear, no try-on (it costs nothing). Plan: ~/.claude-work/plans/whats-also-important-is-jazzy-lampson.md
@@ -40,3 +40,11 @@ Left, after fdmd lands:
 - Look gains swatchId; the appearance tab draws a swatch row from swatchPicksFor; saveLook writes equipped_swatch_id
 - ProfileScreen takes gate: SwatchTheme; both owner and visitor branches pass the worn theme; delete VISITED_THEME and profileThemeOf. The tab colour field on DexTab/ProfileTab then has no reader, so propose deleting it.
 - ADR (amends 142 and 125), wiki 6.3 and 6.7, changelog, Story for the swatch row
+
+### 2026-09-30
+
+The press-to-wear swatch path (`equipSwatchService`, `equipSwatch` server function, `useEquipSwatch`, `setEquippedSwatch`) was deleted with DVTD-0ia7: it was voided by the decision above and had no caller. `wearSwatch` in `profileTheme.model.ts` stays for the look: `Look` gains `swatchId`, `lookRefusalOf` calls `wearSwatch`, `setEquippedLook` writes the third column, and `useLookDraft` gains `pickSwatch`.
+
+## Summary of Changes
+
+2026-10-02, ADR-174. `Look.swatchId`; `lookRefusalOf` refuses `swatch-not-owned`; `storedSwatchIdOf` stores pallet as null; `saveLook` writes `equipped_swatch_id` and invalidates the profile and card queries. The Appearance tab draws a swatch row from `swatchPicksFor` (unearned: undiscovered, redacted name, disabled). The owner page wears the drafted swatch; visitors and the hover card read the saved one. Left open: the unused tab `color` field on DexTab/ProfileTab. Not checked in a browser: every browser tool was held by another session.

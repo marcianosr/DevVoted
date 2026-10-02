@@ -27,12 +27,18 @@ type StoredHeldAudit = {
 
 export type StoredSnapshot = Omit<
 	RunSnapshot,
-	"bankedUnits" | "window" | "heldAudit"
+	"headStartUnits" | "window" | "heldAudit"
 > & {
+	readonly headStartUnits?: number;
 	readonly bankedUnits?: number;
-	readonly window: Omit<GateWindow, "unitsEarned" | "baseUnits"> & {
+	readonly window: Omit<
+		GateWindow,
+		"unitsEarned" | "accuracyEarned" | "accuracyAvailable"
+	> & {
 		readonly unitsEarned?: number;
 		readonly baseUnits?: number;
+		readonly accuracyEarned?: number;
+		readonly accuracyAvailable?: number;
 	};
 	readonly heldAudit?: StoredHeldAudit;
 	readonly offeredAudit?: StoredHeldAudit;
@@ -92,29 +98,25 @@ const unitsEarnedOf = (window: StoredSnapshot["window"]): number => {
 	return legacyUnitsOf(window) ?? 0;
 };
 
-const baseUnitsOf = (window: StoredSnapshot["window"]): number => {
+const legacyAccuracyEarnedOf = (window: StoredSnapshot["window"]): number => {
 	const stored = window.baseUnits;
 	if (stored !== undefined && Number.isFinite(stored)) return stored;
 
 	return finite(window.correct, 0);
 };
 
-const bankedUnitsOf = (
-	snapshot: StoredSnapshot,
-	unitsEarned: number
-): number => {
-	const stored = snapshot.bankedUnits;
-	if (stored !== undefined && Number.isFinite(stored)) return stored;
+const storedOr = (stored: number | undefined, fallback: number): number =>
+	stored !== undefined && Number.isFinite(stored) ? stored : fallback;
 
-	return Math.max(0, finite(snapshot.coverage, 0) - unitsEarned);
-};
+const headStartOf = (snapshot: StoredSnapshot): number =>
+	finite(snapshot.headStartUnits ?? 0, 0);
 
 export const hydrateRunState = (
 	snapshot: StoredSnapshot,
 	polls: readonly RunPoll[]
 ): RunState => {
 	const unitsEarned = unitsEarnedOf(snapshot.window);
-	const baseUnits = baseUnitsOf(snapshot.window);
+	const { baseUnits: _legacyBaseUnits, ...storedWindow } = snapshot.window;
 	const {
 		attack: _attack,
 		attackEarnedAtGate: _attackEarnedAtGate,
@@ -122,16 +124,28 @@ export const hydrateRunState = (
 		repackagedThisShop: _repackagedThisShop,
 		offeredAudit: _offeredAudit,
 		heldAudit: storedHeldAudit,
+		bankedUnits: _cumulativeBank,
 		...current
 	} = snapshot;
 	const heldAudit = keptPayloadOf(storedHeldAudit);
 	const healed: RunSnapshot = {
 		...current,
 		...(heldAudit === undefined ? {} : { heldAudit }),
-		bankedUnits: bankedUnitsOf(snapshot, unitsEarned),
+		headStartUnits: headStartOf(snapshot),
 		coverage: finite(snapshot.coverage, 0),
 		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
-		window: { ...snapshot.window, unitsEarned, baseUnits },
+		window: {
+			...storedWindow,
+			unitsEarned,
+			accuracyEarned: storedOr(
+				snapshot.window.accuracyEarned,
+				legacyAccuracyEarnedOf(snapshot.window)
+			),
+			accuracyAvailable: storedOr(
+				snapshot.window.accuracyAvailable,
+				finite(snapshot.window.answered, 0)
+			),
+		},
 	};
 
 	return {

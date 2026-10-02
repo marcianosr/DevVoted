@@ -1,26 +1,31 @@
-import { COMMUNITY, STORAGE_BALANCE } from "~/shared/lib/copy";
-import { plural } from "~/shared/lib/displayValue";
 import {
-	type Config,
-	emptySlotCreditPerSlotKb,
-	slotsOf,
-} from "~/modules/run/config/domain/config.model";
+	COMMUNITY,
+	NEW,
+	NOTHING_NEW,
+	STORAGE_BALANCE,
+} from "~/shared/lib/copy";
+import { plural } from "~/shared/lib/displayValue";
+import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
-import { scoringSlotsAt } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { swatchesEarnedFrom } from "~/modules/run/gate/domain/swatch.model";
+import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
+import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { fundsOf } from "~/modules/run/run/application/prepScreen.viewmodel";
-import type { UnlockLine } from "~/modules/run/run/application/unlockNotes.viewmodel";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import {
+	type UnlockLine,
+	unlockLinesFor,
+} from "~/modules/run/run/application/unlockNotes.viewmodel";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	roundToOneDecimal,
-	roundToTwoDecimals,
 	bankedKb,
 	unbankedKb,
-	upkeepForSpace,
 } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
@@ -30,7 +35,6 @@ import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
 import {
 	COVERAGE_BAND_COLOR,
 	type CoverageBarProps,
-	coverageBandOf,
 } from "~/ui/kanto-theme/CoverageBar.ui";
 import type {
 	PollScoreRow,
@@ -62,7 +66,8 @@ const LEAK_TAG = "leak";
 const NO_PAYING_GATE = "no gate paid";
 const BEST_WAS = "best was";
 
-const AGAINST_WINDOW = "against a window of";
+const FINAL_COVERAGE = "final coverage";
+const HELD_AT_CLOSE = "held at the close";
 
 const A_GATE = "a gate";
 const NO_UPKEEP = "The run never paid upkeep.";
@@ -81,8 +86,6 @@ const UNLOCK_ROW_BADGE = "registered";
 const SPENT_ROW_BADGE = "gone";
 const SPENT_ROW_LABEL = "The build and the run balance";
 const ON_PROFILE = "on your profile";
-const NEW_WORD = "new";
-const NOTHING_NEW = "nothing new";
 
 const GAIN_COLOR: KantoColor = "viridian";
 const LOSS_COLOR: KantoColor = "cinnabar";
@@ -99,11 +102,12 @@ export type RunOverFrame = {
 	readonly answers: readonly AnsweredPoll[];
 	readonly payouts: PollScoresProps;
 	readonly bar: CoverageBarProps;
-	readonly unitsHeld: number;
 	readonly swatchGates: readonly number[];
 	readonly configs: readonly Config[];
-	readonly space: number;
 	readonly weight: number;
+	readonly freeWeight: number;
+	readonly emptyCreditKb: number;
+	readonly upkeepKb: number;
 	readonly balanceKb: number;
 	readonly upkeepPaidKb: number;
 	readonly archiveAfterKb?: number;
@@ -118,14 +122,8 @@ const swatchCount = (count: number) =>
 
 const pct = (value: number) => `${roundToOneDecimal(value)}${PERCENT}`;
 
-const units = (value: number) => `${roundToTwoDecimals(value)}`;
-
-const bandOf = (bar: CoverageBarProps) => coverageBandOf(bar.held, bar);
-
 const lineOf = (frame: RunOverFrame) =>
 	frame.won ? frame.bar.healthy : frame.bar.floor;
-
-const windowOf = (gate: number) => scoringSlotsAt(gate);
 
 const subtitleOf = (frame: RunOverFrame): string => {
 	const line = `${pct(frame.bar.held)} against a line of ${pct(lineOf(frame))}`;
@@ -188,10 +186,10 @@ const gatesOf = (frame: RunOverFrame) => {
 				: `${BEST_WAS} ${gateSwatchAt(best).gateName}`,
 		payouts: { rows },
 		total: {
-			score: `${units(frame.unitsHeld)} of ${windowOf(frame.gate)}`,
+			score: FINAL_COVERAGE,
 			badge: {
 				label: pct(frame.bar.held),
-				color: COVERAGE_BAND_COLOR[bandOf(frame.bar)],
+				color: COVERAGE_BAND_COLOR[frame.bar.band],
 			},
 		},
 	};
@@ -264,21 +262,12 @@ const chipOf = (config: Config): ConfigChipProps => ({
 	info: settledFactsFor(config),
 });
 
-const spareWeightOf = (frame: RunOverFrame): number =>
-	Math.max(0, frame.space - frame.weight);
-
-const emptyCreditOf = (frame: RunOverFrame): number =>
-	emptySlotCreditPerSlotKb(frame.configs) * spareWeightOf(frame);
-
-const upkeepOf = (frame: RunOverFrame): number =>
-	Math.max(0, upkeepForSpace(frame.space) - emptyCreditOf(frame));
-
 const buildNoteOf = (frame: RunOverFrame): string => {
 	if (frame.configs.length === 0) return BARE_BUILD;
 	if (frame.upkeepPaidKb === 0) return NO_UPKEEP;
 
-	const spare = spareWeightOf(frame);
-	const credit = emptyCreditOf(frame);
+	const spare = frame.freeWeight;
+	const credit = frame.emptyCreditKb;
 	const spent = `Upkeep took ${kbLabel(frame.upkeepPaidKb)} across ${plural(frame.gate, "gate")}.`;
 
 	if (spare === 0) return spent;
@@ -291,7 +280,7 @@ const buildNoteOf = (frame: RunOverFrame): string => {
 const buildOf = (frame: RunOverFrame) => ({
 	meta: weightLabel(frame.weight),
 	badge: {
-		label: `${kbLabel(upkeepOf(frame))} ${A_GATE}`,
+		label: `${kbLabel(frame.upkeepKb)} ${A_GATE}`,
 		color: TERM_COLOR,
 	},
 	configs: frame.configs.map(chipOf),
@@ -354,7 +343,7 @@ const unlockedOf = (frame: RunOverFrame) => {
 	const kept = frame.swatchGates.length + frame.unlocked.length;
 
 	return {
-		badge: { label: kept === 0 ? NOTHING_NEW : `${kept} ${NEW_WORD}` },
+		badge: { label: kept === 0 ? NOTHING_NEW : `${kept} ${NEW}` },
 		rows: unlockRowsOf(frame),
 	};
 };
@@ -371,10 +360,10 @@ export const runOverPropsFor = (frame: RunOverFrame): RunOverScreenProps => ({
 	},
 	bar: frame.bar,
 	coverage: {
-		meta: `${units(frame.unitsHeld)} ${AGAINST_WINDOW} ${windowOf(frame.gate)}`,
+		meta: HELD_AT_CLOSE,
 		badge: {
 			label: pct(frame.bar.held),
-			color: COVERAGE_BAND_COLOR[bandOf(frame.bar)],
+			color: COVERAGE_BAND_COLOR[frame.bar.band],
 		},
 		note: coverageNoteOf(frame),
 	},
@@ -395,3 +384,74 @@ export const runOverPropsFor = (frame: RunOverFrame): RunOverScreenProps => ({
 	},
 	won: frame.won,
 });
+
+const closeBarFor = (view: RunView, gate: number): CoverageBarProps => {
+	const close = view.lastClose;
+
+	return close !== null && close.gate === gate
+		? { ...close.ladder, held: close.held, band: close.band }
+		: stakeBarFor(view.gateStake);
+};
+
+export const runOverFrameOf = (
+	view: RunView,
+	archiveAfterKb?: number,
+	runNumber: number | null = null
+): RunOverFrame => {
+	const won = view.status === "won";
+	const gate = won ? view.victoryGate : view.gateStake.gateNumber;
+
+	return {
+		gate,
+		won,
+		answers: view.allAnswered,
+		payouts: runPaidFor(view),
+		bar: closeBarFor(view, gate),
+		swatchGates: view.swatchGates,
+		configs: view.configs,
+		weight: view.buildSpace.weight,
+		freeWeight: view.buildSpace.freeWeight,
+		emptyCreditKb: view.buildSpace.emptyCreditKb,
+		upkeepKb: view.buildSpace.perGateKb,
+		balanceKb: view.storage,
+		upkeepPaidKb: view.upkeepPaidKb,
+		...(archiveAfterKb === undefined ? {} : { archiveAfterKb }),
+		unlocked: unlockLinesFor(view.unlockedThisRun),
+		readout: runReadoutFor(view, runNumber),
+	};
+};
+
+export type RunOverScreenHandlers = {
+	onNewRun: () => void;
+	onCommunity?: () => void;
+};
+
+export type RunOverScreenFrame = {
+	view: RunView;
+	runNumber?: number | null;
+	archiveAfterKb?: number;
+	on: RunOverScreenHandlers;
+};
+
+export const runOverScreenPropsFor = ({
+	view,
+	runNumber = null,
+	archiveAfterKb,
+	on,
+}: RunOverScreenFrame): RunOverScreenProps => {
+	const props = runOverPropsFor(
+		runOverFrameOf(view, archiveAfterKb, runNumber)
+	);
+
+	return {
+		...props,
+		footer: {
+			...props.footer,
+			action: { ...props.footer.action, onPress: on.onNewRun },
+			asides: (props.footer.asides ?? []).map((aside) => ({
+				...aside,
+				onPress: on.onCommunity,
+			})),
+		},
+	};
+};

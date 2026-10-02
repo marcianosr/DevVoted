@@ -47,7 +47,7 @@ export const Route = createFileRoute("/auth/callback")({
 		code: (search.code as string) || "",
 		error: (search.error as string) || undefined,
 	}),
-	beforeLoad: async ({ search }) => {
+	beforeLoad: async ({ search, context }) => {
 		if (search.error) {
 			throw redirect({
 				to: "/login",
@@ -70,6 +70,7 @@ export const Route = createFileRoute("/auth/callback")({
 			});
 		}
 
+		context.queryClient.clear();
 		throw redirect({
 			to: "/run",
 		});

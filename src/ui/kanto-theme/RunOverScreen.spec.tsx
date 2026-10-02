@@ -48,12 +48,13 @@ describe("RunOverScreen", () => {
 		).not.toBe(null);
 	});
 
-	it("reports the coverage held against the window the run opened", () => {
+	it("reports the coverage held at the close", () => {
 		render(<RunOverScreen {...DEAD} />);
 
 		const coverage = panelFor("coverage");
 
-		expect(coverage).toHaveTextContent("14 against a window of 25");
+		expect(coverage).toHaveTextContent("held at the close");
+		expect(coverage).not.toHaveTextContent(/\bchanges?\b/i);
 	});
 
 	it("names every gate the run played and totals them beneath", () => {
@@ -71,7 +72,7 @@ describe("RunOverScreen", () => {
 			expect(screen.getByText(name)).toBeInTheDocument();
 		}
 		expect(gates).toHaveTextContent("total");
-		expect(gates).toHaveTextContent("14 of 25");
+		expect(gates).toHaveTextContent("final coverage");
 	});
 
 	it("flags the gate that paid the most", () => {

@@ -1,7 +1,6 @@
 import {
 	profileCardFor,
 	triedOnBorderOf,
-	type ProfileIdentity,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
 import {
 	borders,
@@ -9,13 +8,22 @@ import {
 	findBorderById,
 } from "~/modules/account/profile/domain/border.model";
 import type { Look } from "~/modules/account/profile/domain/look.model";
+import type { ProfileIdentity } from "~/modules/account/profile/domain/profile.model";
 import {
 	findTitleById,
-	visibleTitles,
 	wornTitleNames,
 	WORN_TITLE_CAP,
 	type Title,
 } from "~/modules/account/profile/domain/title.model";
+import {
+	tallyOf,
+	titleTallyOf,
+	type Tally,
+} from "~/modules/collection/dex/domain/tally.model";
+import {
+	swatchPicksFor,
+	type SwatchPick,
+} from "~/modules/account/profile/application/swatchPick.viewmodel";
 import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 
 export type BorderPick = {
@@ -32,8 +40,6 @@ export type TitlePick = {
 	blocked: boolean;
 };
 
-export type Tally = { held: number; total: number };
-
 export type AppearanceView = {
 	face: ProfileCardProps;
 	tryingOn?: string;
@@ -41,6 +47,7 @@ export type AppearanceView = {
 	borderTally: Tally;
 	titles: readonly TitlePick[];
 	titleTally: Tally;
+	swatches: readonly SwatchPick[];
 };
 
 export type AppearanceInput = {
@@ -49,6 +56,7 @@ export type AppearanceInput = {
 	tryingOnId: string | null;
 	ownedBorderIds: readonly string[];
 	ownedTitleIds: readonly string[];
+	ownedSwatchIds: readonly string[];
 };
 
 export const DEFAULT_BORDER_NAME = "Default";
@@ -112,15 +120,18 @@ export const appearanceFor = ({
 	tryingOnId,
 	ownedBorderIds,
 	ownedTitleIds,
+	ownedSwatchIds,
 }: AppearanceInput): AppearanceView => {
 	const triedOn = triedOnBorderOf(tryingOnId, look.borderId);
-	const titleTotal = visibleTitles(ownedTitleIds).length;
 	return {
 		face: profileCardFor(lookedIdentityOf(identity, look, tryingOnId), false),
 		...(triedOn === undefined ? {} : { tryingOn: triedOn.name }),
 		borders: borderPicksOf(ownedBorderIds, look.borderId),
-		borderTally: { held: ownedBorderIds.length, total: borders.length },
+		borderTally: tallyOf(borders, (border) =>
+			ownedBorderIds.includes(border.id)
+		),
 		titles: titlePicksOf(ownedTitleIds, look.titleIds),
-		titleTally: { held: ownedTitleIds.length, total: titleTotal },
+		titleTally: titleTallyOf(ownedTitleIds),
+		swatches: swatchPicksFor(ownedSwatchIds, look.swatchId),
 	};
 };

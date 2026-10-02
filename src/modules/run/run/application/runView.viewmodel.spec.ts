@@ -14,11 +14,8 @@ import {
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
-import {
-	buildModifiersFor,
-	spaceForBuild,
-	upkeepForBuild,
-} from "~/modules/run/build/domain/build.model";
+import { buildModifiersFor } from "~/modules/run/build/domain/build.model";
+import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	failPeelQuotaFor,
@@ -43,6 +40,7 @@ import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	BASE_UNIT,
 	floorAt,
+	gateOutputOf,
 	MULTIPLE_CREDIT,
 	healthyAt,
 	okAt,
@@ -504,9 +502,8 @@ describe("the gate stake travels as one object", () => {
 			},
 			coverageHeld: state.window.unitsEarned,
 			coverageAtOpen: roundToOneDecimal(
-				percentOf(runCoverageOf(state.bankedUnits, 4))
+				percentOf(runCoverageOf(state.headStartUnits, 4))
 			),
-			unitsHeld: state.bankedUnits + state.window.unitsEarned,
 			audits: auditsForGate(4, scheduleOf(state)).map((audit) =>
 				expect.objectContaining({ id: audit.id, suppressed: false })
 			),
@@ -530,13 +527,20 @@ describe("the gate stake travels as one object", () => {
 				configs: state.build.configs,
 				gate: 4,
 				storageKb: state.storage,
-				spaceWeight: spaceForBuild(state.build),
-				spaceBillKb: upkeepForBuild(state.build),
+				spaceWeight: buildSpaceOf(state).space,
+				spaceBillKb: buildSpaceOf(state).upkeepKb,
 			}),
 			modifiers: buildModifiersFor(state.build.configs, 4),
 			perAnswer: perAnswerPreviewFor(state.build.configs, {
 				answeredBefore: state.window.answered,
 			}),
+			accuracy: {
+				polls: [],
+				pending: SLICE_WINDOW,
+				available: null,
+				guaranteed: 1,
+				best: 2,
+			},
 		});
 	});
 
@@ -566,10 +570,10 @@ describe("the gate stake travels as one object", () => {
 			coverage: 300,
 			window: {
 				...answeringWith([CONFIGS.js]).window,
-				unitsEarned: 7.5,
+				unitsEarned: 2,
 			},
 		};
-		expect(toRunView(state).gateStake.coverageHeld).toBe(50);
+		expect(toRunView(state).gateStake.coverageHeld).toBe(22.2);
 	});
 
 	it("prices the peel deeper at a strip-audit gate", () => {
@@ -882,6 +886,97 @@ describe("npm audit", () => {
 		expect(target.targets[0]).toEqual([".js", "npm audit"]);
 		expect(target.targets.slice(1).every((names) => names.length === 0)).toBe(
 			true
+		);
+	});
+});
+
+describe("the window's accuracy", () => {
+	const multi = (id: string): RunPoll => ({
+		id,
+		category: "ts",
+		question: `${id}?`,
+		answerType: "multiple",
+		options: [
+			{ id: `${id}-a`, label: "Partial", correct: true },
+			{ id: `${id}-b`, label: "Pick", correct: true },
+			{ id: `${id}-c`, label: "Banjo", correct: false },
+		],
+	});
+	const MIXED: RunPoll[] = [
+		poll("q0"),
+		multi("m1"),
+		poll("q2"),
+		multi("m3"),
+		poll("q4"),
+		poll("q5"),
+	];
+	const REBASE_V2 = { ...CONFIGS.gitRebase, level: 2 };
+	const RIGHT_ANSWERS: readonly string[][] = [
+		["q0-a"],
+		["m1-a", "m1-b"],
+		["q2-a"],
+		["m3-a"],
+		["q4-b"],
+	];
+
+	const answeredThrough = (state: RunState, count: number): RunState =>
+		RIGHT_ANSWERS.slice(0, count).reduce(
+			(next, optionIds) => runReducer(next, { type: "answer", optionIds }),
+			state
+		);
+
+	it("withholds what the window offers while its mix is unseen, reading ×1 sure and ×2 at best", () => {
+		const { accuracy } = toRunView(
+			answeringWith([CONFIGS.js], MIXED)
+		).gateStake;
+
+		expect(accuracy).toEqual({
+			polls: [],
+			pending: SLICE_WINDOW,
+			available: null,
+			guaranteed: 1,
+			best: 2,
+		});
+	});
+
+	it("draws each answered poll by its credit and what it earned", () => {
+		const state = answeredThrough(answeringWith([CONFIGS.js], MIXED), 2);
+
+		expect(toRunView(state).gateStake.accuracy.polls).toEqual([
+			{ credit: 1, earned: 1 },
+			{ credit: 2, earned: 2 },
+		]);
+		expect(toRunView(state).gateStake.accuracy.pending).toBe(3);
+	});
+
+	it("states what the window offers once git rebase -i v2 names the mix", () => {
+		const { accuracy } = toRunView(
+			answeringWith([CONFIGS.js, REBASE_V2], MIXED)
+		).gateStake;
+
+		expect(accuracy.available).toBe(7);
+		expect(accuracy.guaranteed).toBe(1);
+		expect(accuracy.best).toBe(2);
+	});
+
+	it("meets the sure and the best multiplier once every poll is answered", () => {
+		const state = answeredThrough(answeringWith([CONFIGS.js], MIXED), 5);
+		const { accuracy } = toRunView(state).gateStake;
+
+		expect(accuracy.available).toBe(7);
+		expect(accuracy.guaranteed).toBeCloseTo(2 ** (5 / 7));
+		expect(accuracy.best).toBeCloseTo(2 ** (5 / 7));
+	});
+
+	it("reads the live coverage as the floor the window guarantees, every unseen poll a missed multiple", () => {
+		const state = answeredThrough(answeringWith([CONFIGS.js], MIXED), 1);
+		const floor = gateOutputOf(state.window.unitsEarned, {
+			earned: state.window.accuracyEarned,
+			available: state.window.accuracyAvailable + 4 * MULTIPLE_CREDIT,
+		});
+
+		expect(toRunView(state).gateStake.coverageHeld).toBe(
+			roundToOneDecimal(percentOf(runCoverageOf(floor, state.gatesCleared)))
 		);
 	});
 });

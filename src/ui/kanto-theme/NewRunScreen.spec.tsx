@@ -80,13 +80,13 @@ describe("NewRunScreen", () => {
 		expect(screen.queryByText("empty slot")).not.toBeInTheDocument();
 	});
 
-	it("reads the archive on the warm boot panel under the build, never in the header (ADR-153)", () => {
+	it("reads the archive on the warm boot panel after the registry, never in the header (ADR-153)", () => {
 		render(<NewRunScreen {...props} />);
 
 		expect(screen.getByText("Warm boot")).toBeInTheDocument();
 		expect(screen.getByText("512 KB archived")).toBeInTheDocument();
 		expect(screen.queryByText("archive")).not.toBeInTheDocument();
-		expect(columns(document.body)[0]).toContainElement(
+		expect(columns(document.body).at(-1)).toContainElement(
 			screen.getByText("Warm boot")
 		);
 	});

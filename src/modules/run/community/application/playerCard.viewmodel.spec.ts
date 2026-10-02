@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 
+import { profileFaceOf } from "~/modules/account/profile/domain/profile.model";
 import {
 	type PlayerCardView,
-	type PlayerRun,
 	playerCardFor,
+	playerCardViewFor,
 	standingFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
-import { baseGateLadderAt } from "~/modules/run/gate/domain/gate.model";
+import type { Standing } from "~/modules/run/community/domain/standing.model";
+import {
+	bandAtLadder,
+	baseGateLadderAt,
+} from "~/modules/run/gate/domain/gate.model";
 
-const RUN: PlayerRun = {
+const RUN: Standing = {
 	gate: 3,
 	coveragePercent: 58,
 	streak: 4,
@@ -35,6 +40,7 @@ describe("standingFor", () => {
 		expect(standingFor(RUN).gate.coverage).toEqual({
 			...baseGateLadderAt(3),
 			held: 58,
+			band: bandAtLadder(58, baseGateLadderAt(3)).id,
 		});
 	});
 
@@ -128,5 +134,33 @@ describe("playerCardFor", () => {
 				authorship: { role: "Admin", published: 0, answers: 0 },
 			})
 		).not.toHaveProperty("contribution");
+	});
+});
+
+describe("playerCardViewFor", () => {
+	const MISTY = {
+		displayName: "misty",
+		githubUsername: "misty",
+		photoUrl: null,
+		equippedBorderId: null,
+		equippedTitleIds: ["title-ship-it"],
+		ownedSwatchIds: [],
+		equippedSwatchId: null,
+		role: "poll-editor",
+	} as const;
+	const face = profileFaceOf(MISTY, { published: 12, answers: 1842 }, 40);
+
+	it("draws the card from the same face the profile wears, never the GitHub handle", () => {
+		expect(playerCardViewFor("misty-id", face, null)).toEqual({
+			userId: "misty-id",
+			displayName: "misty",
+			titles: ["Ship It"],
+			theme: "pallet",
+			authorship: { role: "Poll editor", published: 12, answers: 1842 },
+		});
+	});
+
+	it("carries the open run's standing", () => {
+		expect(playerCardViewFor("misty-id", face, RUN).run).toEqual(RUN);
 	});
 });

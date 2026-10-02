@@ -12,10 +12,13 @@ const VARIANTS = [
 	"caption",
 	"label",
 	"hint",
+	"prose",
 	"accent",
 ] satisfies TypographyVariant[];
 
 const HINT = "tap any config to open it · press A, B or C to answer";
+const SENTENCE =
+	"Every correct answer pays +0.1 units of coverage. No other config multiplies it; only the gate's accuracy does.";
 
 const meta: Meta<typeof Typography> = {
 	component: Typography,
@@ -55,6 +58,7 @@ const Ramp = ({ theme }: { theme: KantoColor }) => (
 		<Typography variant="label">installed</Typography>
 		<Typography variant="accent">balance</Typography>
 		<Typography variant="hint">{HINT}</Typography>
+		<Typography variant="prose">{SENTENCE}</Typography>
 	</Screen>
 );
 
@@ -142,6 +146,20 @@ export const QuietestToLoudest: Story = {
 					<Typography variant="hint">{HINT}</Typography>
 					<Typography variant="caption">{name}</Typography>
 					<Typography variant="accent">balance</Typography>
+				</Screen>
+			))}
+		</div>
+	),
+};
+
+export const ProseBesideAHint: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<div className="[--screen-floor:14rem]">
+			{KANTO_COLORS.map((name) => (
+				<Screen key={name} theme={name} width="narrow">
+					<Typography variant="hint">{SENTENCE}</Typography>
+					<Typography variant="prose">{SENTENCE}</Typography>
 				</Screen>
 			))}
 		</div>

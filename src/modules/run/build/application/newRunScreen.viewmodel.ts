@@ -35,18 +35,23 @@ import {
 	type RegistryControlSpec,
 	registryControlOf,
 } from "~/modules/run/shop/domain/registryControl.model";
-import { shortfallOf } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { plural } from "~/shared/lib/displayValue";
 import {
 	archiveLabel,
 	formatStorage,
 	kbLabel,
+	shortfallOf,
 	STORAGE_UNITS,
 } from "~/shared/lib/storage";
 import {
+	VENDOR_REMEDY,
 	type VendorLockChip,
 	vendorChipFor,
 } from "~/modules/run/build/application/vendorChip.viewmodel";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
+import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
@@ -244,7 +249,9 @@ export const EMPTY_WARM_BOOT_DRAFT: WarmBootDraft = {
 };
 
 export const WARM_BOOT_NOTE =
-	"Picked here, paid from the archive when you start. Nothing is spent until then.";
+	"Picked here, paid from the archive when you start. A carried service is then sold in this run's shop at its usual price.";
+export const CARRIED_NOTE =
+	"Carried into this run: its shop sells them at their usual price.";
 const CARRY_WORD = "carry";
 const AFTER_WORD = "after";
 const SPENT_WORD = "spent";
@@ -389,9 +396,133 @@ export const bootedPanelFor = (
 
 	return {
 		rows: [...bootRows, ...serviceRows],
+		...(serviceRows.length === NOTHING ? {} : { note: CARRIED_NOTE }),
 		meta: `${SPENT_WORD} ${formatStorage(boot.archiveBytes)}${READING_JOIN}${archiveLabel(archiveKb * STORAGE_UNITS.KB)}`,
 	};
 };
 
 export const NEW_RUN_BALANCE_WORD = BALANCE_WORD;
 export type { NewRunScreenProps, RegistryProps };
+
+const NO_ARCHIVE_KB = 0;
+
+const toggledIn = (
+	serviceIds: readonly RegistryControlId[],
+	id: RegistryControlId
+): readonly RegistryControlId[] =>
+	serviceIds.includes(id)
+		? serviceIds.filter((carried) => carried !== id)
+		: [...serviceIds, id];
+
+export type NewRunScreenHandlers = {
+	onToggle: (configId: string) => void;
+	onVendorLock: (configId: string) => void;
+	onStart: () => void;
+	onWarmBoot?: (pick: WarmBootPick) => void;
+};
+
+export type NewRunScreenUi = {
+	build: Disclosure;
+	offers: Disclosure;
+	pickedGroup?: string;
+	onPickGroup: (group: string | undefined) => void;
+	draft: WarmBootDraft;
+	onDraft: (draft: WarmBootDraft) => void;
+};
+
+export type NewRunScreenFrame = {
+	view: RunView;
+	runNumber?: number | null;
+	bootRefusal?: string;
+	booting?: boolean;
+	on: NewRunScreenHandlers;
+	ui: NewRunScreenUi;
+};
+
+export const newRunScreenPropsFor = ({
+	view,
+	runNumber = null,
+	bootRefusal,
+	booting = false,
+	on,
+	ui,
+}: NewRunScreenFrame): NewRunScreenProps => {
+	const held = new Set(view.configs.map((config) => config.id));
+	const free = view.slots - occupiedSlots(view.configs);
+	const needsVendor = view.vendorLock.offered;
+
+	const vendorLockFor = (configId: string) => ({
+		locked: view.vendorLock.lockedConfigId === configId,
+		onLock:
+			needsVendor &&
+			view.configs.find((config) => config.id === configId)?.vendorLocks !==
+				true
+				? () => on.onVendorLock(configId)
+				: undefined,
+	});
+
+	const groups = newRunGroupsFor(
+		view.available.map((config) => ({
+			config,
+			held: held.has(config.id),
+			fits: slotsOf(config) <= free,
+			onPress: () => on.onToggle(config.id),
+		}))
+	);
+
+	const archiveKb = view.archiveAfterKb ?? NO_ARCHIVE_KB;
+	const warmBoot =
+		view.warmBoot !== null
+			? bootedPanelFor(view.warmBoot, archiveKb)
+			: on.onWarmBoot === undefined
+				? undefined
+				: warmBootPanelFor({
+						archiveKb,
+						unlockedServiceIds: view.unlockedServiceIds,
+						draft: ui.draft,
+						onPickRung: (rung) => ui.onDraft({ ...ui.draft, rung }),
+						onToggleService: (id) =>
+							ui.onDraft({
+								...ui.draft,
+								serviceIds: toggledIn(ui.draft.serviceIds, id),
+							}),
+					});
+	const drafted = view.warmBoot === null && isDrafted(ui.draft);
+	const canPress = view.canStart && !needsVendor && !booting;
+	const onWarmBoot = on.onWarmBoot;
+	const press = !canPress
+		? undefined
+		: drafted && onWarmBoot !== undefined
+			? () => onWarmBoot(draftPickOf(ui.draft))
+			: on.onStart;
+
+	return {
+		header: {
+			...newRunHeaderFor(view.storage),
+			readout: runReadoutFor(view, runNumber),
+		},
+		build: newRunBuildFor(view.configs, view.slots, on.onToggle, vendorLockFor, {
+			openInfo: ui.build.open,
+			onToggleInfo: ui.build.toggle,
+			onToggleAll: ui.build.toggleAll,
+		}),
+		registry: newRunRegistryFor(groups, ui.pickedGroup, {
+			openInfo: ui.offers.open,
+			onToggleInfo: ui.offers.toggle,
+			onToggleAll: ui.offers.toggleAll,
+		}),
+		filter: newRunFilterFor(groups, ui.pickedGroup, ui.onPickGroup),
+		buildNote: NEW_RUN_BUILD_NOTE,
+		warmBoot,
+		footer: newRunFooterFor(
+			press,
+			needsVendor ? VENDOR_REMEDY : bootRefusal,
+			{
+				configs: view.configs.length,
+				held: occupiedSlots(view.configs),
+				slots: view.slots,
+			},
+			drafted ? warmBootSpendOf(ui.draft) : undefined
+		),
+	};
+};

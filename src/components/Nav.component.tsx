@@ -43,9 +43,9 @@ export const Nav = ({ user }: NavProps) => {
 					name: user.displayName || user.email,
 					photoUrl: user.photoUrl ?? undefined,
 					borderUrl:
-						borderUrlOf(archive.data?.equippedBorderId ?? null) ?? undefined,
-					titles: wornTitleNames(titles.data?.equippedTitleIds ?? []),
-					archivedStorage: archive.data?.archivedStorage ?? 0,
+						borderUrlOf(archive.view?.equippedBorderId ?? null) ?? undefined,
+					titles: wornTitleNames(titles.view?.equippedTitleIds ?? []),
+					archivedStorage: archive.view?.archivedStorage ?? 0,
 					profileHref: profileHrefOf(user.id),
 					suggestedHref: POLLS_PATH,
 					signOutHref: SIGN_OUT,

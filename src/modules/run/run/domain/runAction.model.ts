@@ -1,6 +1,6 @@
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { auditsCloseShop } from "~/modules/run/gate/domain/audit.model";
-import { hasRoomFor } from "~/modules/run/build/domain/build.model";
+import { fitsBuildSpace } from "~/modules/run/build/domain/buildSpace.model";
 import { approve } from "~/modules/run/run/domain/approval.model";
 import {
 	spendLint,
@@ -16,7 +16,7 @@ import {
 	withBuild,
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
-import { answer, closeGate } from "~/modules/run/run/domain/answer.model";
+import { answer, closeGate, skip } from "~/modules/run/run/domain/answer.model";
 import {
 	commitEstimate,
 	estimateOwed,
@@ -75,6 +75,7 @@ export type RunAction =
 			readonly elapsedMs?: number;
 	  }
 	| { readonly type: "close-gate" }
+	| { readonly type: "skip" }
 	| { readonly type: "lint-poll" }
 	| { readonly type: "peek-poll" }
 	| { readonly type: "arm-strict" }
@@ -113,8 +114,7 @@ const installConfig = (state: RunState, configId: string): RunState => {
 	const built = state.build.configs.some(
 		(candidate) => candidate.id === configId
 	);
-	if (!config || built || !hasRoomFor(state.build, slotsOf(config)))
-		return state;
+	if (!config || built || !fitsBuildSpace(state, slotsOf(config))) return state;
 	return {
 		...state,
 		build: withBuild(state.build, [...state.build.configs, config]),
@@ -273,6 +273,11 @@ const RULES: readonly ActionRule[] = [
 		type: "answer",
 		when: inStatus("answering"),
 		run: (state, action) => answer(state, action.optionIds, action.elapsedMs),
+	}),
+	on({
+		type: "skip",
+		when: inStatus("answering"),
+		run: (state) => skip(state),
 	}),
 	on({
 		type: "close-gate",

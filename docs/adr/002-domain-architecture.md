@@ -11,17 +11,15 @@ modelled on connect-portal ADR-083. This **reverses** the previous stance
 ("deliberately not tactical DDD, layered by convention"). See
 [§8 What changed and why](#8-what-changed-and-why).
 
-> **Read this if you are new to the codebase.** §5 is the decision tree for
-> "where does my file go?". §4 is the closed suffix allowlist. Everything else
-> explains the two.
+> **New to the codebase?** §5 is the decision tree for "where does my file go?",
+> §4 the closed suffix allowlist.
 
 ---
 
 ## 1. Context
 
-The convention-based layout worked while modules were small. It stopped working
-once `run` grew past a hundred files, for one structural reason: the module
-split on two axes at the same level and then repeated one of them.
+The convention-based layout stopped working once `run` grew past a hundred
+files: the module split on two axes at the same level, then repeated one.
 
 ```
 run/
@@ -31,13 +29,13 @@ run/
       presentation/run/ game/ screens/                  ← three names for one thing
 ```
 
-`gate`, `configs` and `community` each lived in two folders. Changing the gate
-meant touching `run/gate/`, `run/presentation/gate/`, `run/presentation/screens/`
-and `run/view/runView.viewmodel.ts`. `pipeline/` and `draft/` had no UI folder at
-all; their visuals were scattered through the other three.
+`gate`, `configs` and `community` each lived in two folders, so changing the gate
+touched `run/gate/`, `run/presentation/gate/`, `run/presentation/screens/` and
+`run/view/runView.viewmodel.ts`. `pipeline/` and `draft/` had no UI folder; their
+visuals were scattered through the other three.
 
-The fix is to **nest the axes instead of letting them compete**: concept at the
-top, layers inside each concept.
+The fix **nests the axes instead of letting them compete**: concept at the top,
+layers inside each concept.
 
 ## 2. Structure
 
@@ -52,7 +50,7 @@ src/modules/
 ```
 
 **The four-layer split happens at the aggregate level, not the context level.**
-A context is a folder and nothing more; it holds no files of its own.
+A context is only a folder; it holds no files of its own.
 
 ### DevVoted's contexts and aggregates
 
@@ -71,24 +69,23 @@ A context is a folder and nothing more; it holds no files of its own.
 | `account` | `auth` | Login, signup, session |
 | | `profile` | User, dev card, awards, plus the archive balance and the border catalogue — all three are columns on `users` |
 
-Screens belong to the aggregate whose concept they are about, not to a shared
+A screen belongs to the aggregate whose concept it is about, not to a shared
 screens bucket: `ShopScreen` is shop's, `RewardScreen` and `StripScreen` are
 gate's, `ConfiguringScreen` is pipeline's. Cross-aggregate
-`presentation → presentation` is allowed, so a screen composing pieces from
-three aggregates is legal.
+`presentation → presentation` is allowed, so a screen may compose pieces from
+three aggregates.
 
 ## 3. The four layers
 
 - **`domain/`** — game concepts. Types, rules and invariants that survive a UI,
   transport or framework rewrite: `RunState`, `Pipeline`, `Gate`, `Config`,
-  `Effect`, `Coverage`. Unlike a frontend-only DDD codebase, DevVoted's domain
-  layer is **not anemic**: this app owns its rules, so `runReducer` and the gate
-  engine are the real thing, not a projection of someone else's backend. That is
-  why ADR-007's "pure engine first" holds: the domain layer is where the game
-  actually lives.
+  `Effect`, `Coverage`. The domain layer is **not anemic**: this app owns its
+  rules, so `runReducer` and the gate engine are the real thing, not a
+  projection of someone else's backend. That is why ADR-007's "pure engine
+  first" holds.
 - **`application/`** — orchestration and UI-state shaping. Server functions,
-  services, hooks, viewmodels, Zod schemas. Things that exist because of the UI
-  or the transport, but do not render.
+  services, hooks, viewmodels, Zod schemas: things that exist because of the UI
+  or the transport but do not render.
 - **`infrastructure/`** — adapters to external systems. Drizzle repositories.
   Anything that talks to Postgres, Supabase or a browser API.
 - **`presentation/`** — React. Both tiers of ADR-010 live here: `.ui.tsx`
@@ -112,24 +109,22 @@ three aggregates is legal.
 | `infrastructure/` | `domain/`, `src/database/`, `src/shared/` | `application/`, `presentation/` |
 | `domain/` | other `domain/` code (own or another aggregate's), `src/shared/lib/` | everything else |
 
-Type-only imports across layers stay allowed. Types are contracts, not coupling;
-the rules bite on runtime imports.
+Type-only imports across layers stay allowed: types are contracts, not
+coupling, so the rules bite on runtime imports.
 
 ### Cross-aggregate rules
 
 An aggregate's `domain/` must not reach into another aggregate's `application/`
-or `infrastructure/`. This is what stops a domain type leaking through a
-viewmodel in a different aggregate.
-
-Cross-aggregate `presentation → presentation`, `application → application` and
-`domain → domain` are allowed. A public entry-point pattern between aggregates
-is out of scope.
+or `infrastructure/`, which stops a domain type leaking through a viewmodel in a
+different aggregate. Cross-aggregate `presentation → presentation`,
+`application → application` and `domain → domain` are allowed. A public
+entry-point pattern between aggregates is out of scope.
 
 ### Route boundary
 
 - **`src/routes/` may import only from `<aggregate>/presentation/`**, plus
   `src/ui/` and `src/shared/`. A route that needs data mounts a presentation
-  component that uses an application hook, same as every other consumer.
+  component that uses an application hook.
 - **`src/modules/` may not import from `src/routes/`.** If something is needed
   by both, it belongs in `src/shared/`.
 
@@ -145,15 +140,14 @@ everything else in shared is app-side and off-limits to `domain/`.
 `src/ui/` stays where it is as the design-system half of shared. Folding it into
 `src/shared/ui/` would rewrite a hundred imports for no boundary gain; the
 constraint that matters (`src/ui/` may take only type imports from modules) is
-already enforced and already passing.
+already enforced.
 
 That constraint also settles where a visual goes when two modules want it. A
-Tier 1 component that **draws a game concept** — `ConfigChip` draws a `Config`,
-`SwatchChips` draws a `GateSwatch` — cannot move to `src/ui/`, because rendering
-it needs the concept's runtime values, not just its type. It stays in the
-aggregate that owns the concept, and other aggregates import it directly
-(cross-aggregate `presentation → presentation`, allowed above). `src/ui/` is for
-primitives that know nothing about the game: `Badge`, `Meter`, `Screen`.
+Tier 1 component that **draws a game concept** (`ConfigChip` draws a `Config`,
+`SwatchChips` a `GateSwatch`) needs the concept's runtime values, so it cannot
+move to `src/ui/`. It stays in the aggregate that owns the concept, and other
+aggregates import it directly. `src/ui/` is for primitives that know nothing
+about the game: `Badge`, `Meter`, `Screen`.
 
 ## 4. File suffixes
 
@@ -177,7 +171,7 @@ One role per suffix. If a file does not match a suffix, it does not get one.
 | `.spec.ts` / `.spec.tsx` | Tests, colocated with their subject | any |
 
 **No bare filenames.** Every `.ts` / `.tsx` under `modules/` uses a suffix from
-this list. The suffix is what makes the role machine-checkable.
+this list; the suffix makes the role machine-checkable.
 
 **Filename casing:** PascalCase for `.ui.tsx`, `.component.tsx`, `.stories.tsx`;
 `use`-prefixed camelCase for `.hook.ts(x)`; camelCase for everything else.
@@ -197,21 +191,20 @@ this list. The suffix is what makes the role machine-checkable.
 
 ### 4.3 `.model.ts` vs `.viewmodel.ts`
 
-The test is the layer test in §3: *would this concept survive a UI rewrite?*
-Yes → `.model.ts` in `domain/`. No → `.viewmodel.ts` in `application/`.
+The §3 layer test: *would this concept survive a UI rewrite?* Yes →
+`.model.ts` in `domain/`. No → `.viewmodel.ts` in `application/`. `Gate` and
+`Config` survive; `RunView` (a 61-field flattened projection so screens take
+plain props) does not. The filename encodes the answer so tooling can verify
+placement without inferring intent.
 
-`Gate` and `Config` survive; `RunView` (a 61-field flattened projection that
-exists so screens take plain props) does not. Encoding the answer in the
-filename is what lets tooling verify placement without inferring intent.
-
-We do not use `.value.ts` or `.entity.ts`. The value-object/entity distinction is
-real but does not earn its weight in a structurally-typed language.
+No `.value.ts` or `.entity.ts`: the value-object/entity distinction is real but
+does not earn its weight in a structurally-typed language.
 
 ### 4.4 No barrel `index.ts` files under `src/modules/`
 
 Import directly from the file that owns the symbol. Barrels obscure the
-dependency graph (every consumer looks like it depends on every re-export) and
-make the §3 rules unreadable at a glance.
+dependency graph (every consumer seems to depend on every re-export) and make
+the §3 rules unreadable.
 
 ## 5. Decision tree: where does my file go?
 
@@ -272,20 +265,18 @@ START: a new file under modules/<context>/<aggregate>/
 - **An action** ("the daily rollover") → `.service.ts` in `application/`.
 
 If the file does more than one of these, split it. `.service.ts` is reserved for
-orchestration; it is not a junk drawer for "logic that is not UI".
+orchestration, not a junk drawer for "logic that is not UI".
 
-Worked example from the 2026-08-12 migration: `seed.service.ts` was a pure
-hash + PRNG + shuffle producing the day's poll sequence. No collaborators, no
-side effects. Deleting it would lose *a concept*, not an action, so it became
-`run/domain/seed.model.ts`. The misclassification only surfaced because
-`infrastructure-stays-below` fired on the repository that imported it: a
-service in `application/` that infrastructure needs is almost always a model.
+A service in `application/` that infrastructure needs is almost always a model.
+In the 2026-08-12 migration `seed.service.ts`, a pure hash + PRNG + shuffle with
+no collaborators, surfaced only when `infrastructure-stays-below` fired on the
+repository importing it; it became `run/domain/seed.model.ts`.
 
 ## 6. The TanStack Start adaptation
 
-connect-portal has a separate backend, so its `infrastructure/` means one thing:
-an HTTP client calling a remote API. DevVoted is full-stack in one process, and
-today's `api/` folder is three different things. They split as follows.
+connect-portal has a separate backend, so its `infrastructure/` means an HTTP
+client calling a remote API. DevVoted is full-stack in one process, and its
+`api/` folder was three different things:
 
 | Was | Is | Layer | Why |
 |---|---|---|---|
@@ -293,16 +284,15 @@ today's `api/` folder is three different things. They split as follows.
 | `api/handlers.ts` | `foo.service.ts` | `application/` | `handleApiOperation`, auth checks, orchestration. |
 | `api/{domain}.ts` | `foo.serverfn.ts` | `application/` | `createServerFn`. See below. |
 
-The server function looks like transport, so `infrastructure/` is the instinct.
-It is wrong: putting it there creates an `infrastructure → application` arrow,
-which §3 forbids. The correct reading is that `createServerFn` is a transport
-decoration on an application service. The only external system in the picture is
-Postgres, and only the repository touches it. Every arrow stays legal.
+The server function looks like transport, so `infrastructure/` is the instinct,
+but that creates an `infrastructure → application` arrow, which §3 forbids.
+`createServerFn` is a transport decoration on an application service. The only
+external system is Postgres, and only the repository touches it.
 
-`.serverfn.ts` earns a suffix of its own rather than folding into `.service.ts`
-for a reason specific to this repo: it is exactly the set of files where the
-authorization rule applies (never trust a client-provided `userId`, extract it
-from the session). A distinct suffix makes that lintable.
+`.serverfn.ts` earns its own suffix rather than folding into `.service.ts`
+because it is exactly the set of files where the authorization rule applies
+(never trust a client-provided `userId`, extract it from the session). A
+distinct suffix makes that lintable.
 
 ```typescript
 // application/dailyPoll.serverfn.ts — the RPC seam
@@ -329,18 +319,17 @@ export const findPollById = async (id: number): Promise<Poll> => {
 };
 ```
 
-Why the three-way split: server functions are hard to unit test (auth mocking);
-services are isolated from framework concerns, so they test with a mocked
-repository; repositories isolate DB access. That reasoning predates this ADR and
-is unchanged.
+Why the three-way split (unchanged from before this ADR): server functions are
+hard to unit test (auth mocking); services are free of framework concerns, so
+they test with a mocked repository; repositories isolate DB access.
 
 **One aggregate, one transaction.** The `run` aggregate's repository holds
 `applyActionToRun`: a single `SELECT ... FOR UPDATE` on `run_states`, hydrate,
 `runReducer`, write back. `run_states.state` is one JSON column, so the whole Run
 is one document with one write path. Do not split that write across aggregate
-repositories; a `gate.repository.ts` and a `pipeline.repository.ts` racing for
-the same row lock is the failure this note exists to prevent. Other aggregates
-read through the `run` aggregate's repository or through their own read-only ones.
+repositories: a `gate.repository.ts` and a `pipeline.repository.ts` racing for
+the same row lock is the failure this prevents. Other aggregates read through
+the `run` aggregate's repository or their own read-only ones.
 
 ## 7. Top-level structure
 
@@ -363,30 +352,30 @@ src/
 
 ## 8. What changed and why
 
-The previous version of this ADR said: *"deliberately not tactical DDD, no
-aggregates, repositories, or ports, layered by convention inside each module."*
-That is reversed. Three things forced it:
+The previous version said: *"deliberately not tactical DDD, no aggregates,
+repositories, or ports, layered by convention inside each module."* Three things
+reversed it:
 
 1. **Convention did not survive scale.** `run` reached ~150 files and the two
-   axes collided (§1). Convention has no answer for "which of the two `gate`
-   folders", because both were conventional.
+   axes collided (§1). Convention cannot say "which of the two `gate` folders"
+   when both were conventional.
 2. **The layer folders were doing a concept's job.** `view/`, `services/` and
-   `validation/` each held one or two files that belonged to a specific concept,
-   while `presentation/` held 114 of 150 files. The split had stopped describing
-   the code.
+   `validation/` each held one or two files belonging to a specific concept,
+   while `presentation/` held 114 of 150. The split no longer described the
+   code.
 3. **A worked precedent exists.** connect-portal ADR-083 solves the same problem
-   with the same constraints (TypeScript, React, dependency-cruiser) and has a
+   under the same constraints (TypeScript, React, dependency-cruiser) with a
    decision tree that survives onboarding. Copying a proven layout beats
-   inventing a third one.
+   inventing a third.
 
-What did **not** change: the dependency rule's direction, the domain layer's
-framework-freedom, ADR-010's per-file tier split, and the reasoning behind
-separating server function from orchestration from DB access.
+Unchanged: the dependency rule's direction, the domain layer's framework-freedom,
+ADR-010's per-file tier split, and the reasoning for separating server function,
+orchestration and DB access.
 
 ## 9. Enforcement
 
 `npm run lint:arch` (dependency-cruiser, `.dependency-cruiser.cjs`) fails on
-violations. The rules encoded there:
+violations of:
 
 - The §3 layer table, per aggregate.
 - Cross-aggregate: no `domain/` → another aggregate's `application/` or `infrastructure/`.
@@ -394,24 +383,24 @@ violations. The rules encoded there:
 - `src/shared/` and `src/ui/` may not import from `src/modules/` at runtime.
 - Suffix-to-layer placement from §4.1.
 
-Two rules stay review-enforced because they are not expressible as a dependency
-graph: "no HTML or Tailwind in `.component.tsx`", and "`.serverfn.ts` extracts
-`userId` from the session". Both are candidates for a custom oxlint rule.
+Two rules stay review-enforced because a dependency graph cannot express them:
+"no HTML or Tailwind in `.component.tsx`", and "`.serverfn.ts` extracts `userId`
+from the session". Both are candidates for a custom oxlint rule.
 
 ## 10. When to deviate
 
-Don't. Every aggregate uses the four folders. Uniformity is what makes §5 an
-answer rather than the start of a debate. If an aggregate feels too small for
-four folders, create them anyway; empty folders cost nothing and the next
-contributor never has to ask whether this one is a snowflake.
+Don't. Every aggregate uses the four folders, because uniformity makes §5 an
+answer rather than a debate. An aggregate that feels too small gets them anyway:
+empty folders cost nothing, and nobody has to ask whether this one is a
+snowflake.
 
 Two standing exceptions, both listed in `.dependency-cruiser.cjs`:
 
 1. **The dev rig**, `src/routes/proto-run.tsx`. It drives the run engine
    directly to exercise gates and screens without a server round-trip, so it
    imports domain models at runtime, which `routes-only-into-presentation`
-   otherwise forbids. It is a test environment, not an app route, and it stays.
-   The exclusion is scoped to that one filename so it cannot spread.
+   otherwise forbids. It is a test environment, not an app route, and the
+   exclusion is scoped to that one filename so it cannot spread.
 2. **`src/routes/__root.tsx`**, whose `beforeLoad` builds the router context
    before any component exists, so it cannot reach its data by mounting one.
 

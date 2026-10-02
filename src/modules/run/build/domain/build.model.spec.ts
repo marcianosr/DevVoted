@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	BASE_SLOTS,
-	TOP_BUILD_SPACE_RUNG,
-	buildSpaceFor,
 	SLICE_WINDOW,
 	VICTORY_GATE,
 } from "~/modules/run/run/domain/rules.model";
@@ -12,20 +9,11 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import {
 	Build,
-	emptySlotCreditOf,
-	freeSlots,
 	gateClearPayout,
 	canLint,
 	extraPickPayoutFor,
-	hasRoomFor,
 	isBare,
-	isOverCapacity,
 	occupiedSlots,
-	rungAfterBuild,
-	spaceForBuild,
-	upkeepAfterCreditOf,
-	upkeepForBuild,
-	overflowSlots,
 	buildModifiersFor,
 	rewardMultiplierFor,
 	storageInterestFor,
@@ -42,60 +30,12 @@ const NARROW_LINTER = {
 	eliminatesWrongOptionsFor: ["js", "ts"] as const,
 };
 
-describe("the build space the run rents (ADR-098)", () => {
-	it("opens every run on the free four", () => {
-		expect(BASE_SLOTS).toBe(4);
-	});
-
-	it("tops out at 32, the widest rung on the ladder", () => {
-		expect(buildSpaceFor(TOP_BUILD_SPACE_RUNG)).toBe(32);
-	});
-
-	it("rents the smallest rung the build fits in", () => {
-		expect(spaceForBuild(buildOf([CONFIGS.js]))).toBe(4);
-		expect(spaceForBuild(buildOf([CONFIGS.wtfpl]))).toBe(8);
-		expect(spaceForBuild(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(12);
-	});
-
-	it("bills a weight one over a rung for the whole rung above it", () => {
-		expect(upkeepForBuild(buildOf([CONFIGS.js]))).toBe(0);
-		expect(upkeepForBuild(buildOf([CONFIGS.wtfpl]))).toBe(32);
-		expect(upkeepForBuild(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(64);
-	});
-
-	it("names the rung ahead, and nothing once the ladder runs out", () => {
-		expect(rungAfterBuild(buildOf([CONFIGS.js]))?.weight).toBe(6);
-		expect(
-			rungAfterBuild(buildOf(Array.from({ length: 4 }, () => CONFIGS.wtfpl)))
-		).toBeUndefined();
-	});
-});
-
 describe("what fills the build (ADR-044)", () => {
 	it("charges each config the slots its size names", () => {
 		expect(occupiedSlots([CONFIGS.js])).toBe(1);
 		expect(occupiedSlots([CONFIGS.indexedDb])).toBe(2);
 		expect(occupiedSlots([CONFIGS.wtfpl])).toBe(8);
 		expect(occupiedSlots([CONFIGS.js, CONFIGS.indexedDb])).toBe(3);
-	});
-
-	it("leaves free only the room inside the rung it rents", () => {
-		expect(freeSlots(buildOf([CONFIGS.indexedDb]))).toBe(2);
-		expect(freeSlots(buildOf([CONFIGS.wtfpl]))).toBe(0);
-	});
-
-	it("refuses only what the top rung cannot hold", () => {
-		expect(hasRoomFor(buildOf([CONFIGS.indexedDb]), 16)).toBe(true);
-
-		const brimming = buildOf(Array.from({ length: 4 }, () => CONFIGS.wtfpl));
-		expect(hasRoomFor(brimming, 1)).toBe(false);
-	});
-
-	it("reports an overflow only past the top of the ladder", () => {
-		const over = buildOf(Array.from({ length: 5 }, () => CONFIGS.wtfpl));
-
-		expect(isOverCapacity(over)).toBe(true);
-		expect(overflowSlots(over)).toBe(8);
 	});
 });
 
@@ -261,63 +201,3 @@ describe("stripConfig and isBare", () => {
 	});
 });
 
-describe("YAGNI discounts the bill for the room the build is not using", () => {
-	it("leaves the bill alone when it is not installed", () => {
-		expect(upkeepAfterCreditOf(buildOf([CONFIGS.wtfpl]))).toBe(32);
-		expect(emptySlotCreditOf(buildOf([CONFIGS.wtfpl, CONFIGS.js]))).toBe(0);
-	});
-
-	it("credits nothing when the build fills its rung exactly", () => {
-		const flush = buildOf([
-			CONFIGS.yagni,
-			CONFIGS.wtfpl,
-			CONFIGS.js,
-			CONFIGS.indexedDb,
-		]);
-		expect(freeSlots(flush)).toBe(0);
-		expect(upkeepAfterCreditOf(flush)).toBe(64);
-	});
-
-	it("credits 8 KB for a single empty slot", () => {
-		const oneSpare = buildOf([CONFIGS.yagni, CONFIGS.wtfpl, CONFIGS.indexedDb]);
-		expect(freeSlots(oneSpare)).toBe(1);
-		expect(emptySlotCreditOf(oneSpare)).toBe(8);
-		expect(upkeepAfterCreditOf(oneSpare)).toBe(56);
-	});
-
-	it("credits every empty slot, so a build low in a wide rung pays least", () => {
-		const threeSpare = buildOf([CONFIGS.yagni, CONFIGS.wtfpl]);
-		expect(freeSlots(threeSpare)).toBe(3);
-		expect(emptySlotCreditOf(threeSpare)).toBe(24);
-		expect(upkeepAfterCreditOf(threeSpare)).toBe(40);
-	});
-
-	it("never credits past the bill, so the free rung still pays nothing", () => {
-		const tiny = buildOf([CONFIGS.yagni, CONFIGS.js]);
-		expect(freeSlots(tiny)).toBe(2);
-		expect(upkeepForBuild(tiny)).toBe(0);
-		expect(upkeepAfterCreditOf(tiny)).toBe(0);
-	});
-
-	it("costs more than it saves when it tips a flush build into a wider rung", () => {
-		const flush = buildOf([CONFIGS.wtfpl]);
-		const tipped = buildOf([CONFIGS.wtfpl, CONFIGS.yagni]);
-		expect(upkeepAfterCreditOf(flush)).toBe(32);
-		expect(upkeepAfterCreditOf(tipped)).toBe(40);
-	});
-
-	it("counts the room a vendor lock frees as empty too", () => {
-		const locked: Build = {
-			id: "hyrule-ci",
-			configs: [
-				CONFIGS.vendorLockIn,
-				CONFIGS.yagni,
-				CONFIGS.agentsMd,
-				CONFIGS.indexedDb,
-			],
-			vendorLockedConfigId: CONFIGS.agentsMd.id,
-		};
-		expect(freeSlots(locked)).toBe(1);
-		expect(upkeepAfterCreditOf(locked)).toBe(24);
-	});
-});

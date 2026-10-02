@@ -5,7 +5,11 @@ const TICK_MS = 250;
 export const usePollClock = (
 	pollId: string | null,
 	limitMs: number | null
-): { elapsedMs: () => number; remainingMs: number | null } => {
+): {
+	elapsedMs: () => number;
+	shownMs: number;
+	remainingMs: number | null;
+} => {
 	const startedAt = useRef(performance.now());
 	const [now, setNow] = useState(startedAt.current);
 
@@ -22,6 +26,7 @@ export const usePollClock = (
 
 	return {
 		elapsedMs: () => Math.round(performance.now() - startedAt.current),
+		shownMs: now - startedAt.current,
 		remainingMs:
 			limitMs === null
 				? null

@@ -14,8 +14,11 @@ const COPY = {
 	filter: "Config groups",
 } as const;
 
-const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
-const COLUMN = "flex w-full min-w-0 flex-col gap-6";
+const COLUMNS =
+	"grid w-full items-start gap-8 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-6";
+const LEFT = "flex w-full min-w-0 flex-col md:col-start-1";
+const RIGHT =
+	"flex w-full min-w-0 flex-col md:col-start-2 md:row-span-2 md:row-start-1";
 
 export type RegistryFilter = Omit<SegmentedProps<string>, "label" | "look">;
 
@@ -54,7 +57,7 @@ export const NewRunScreen = ({
 			<Header {...header} pinned />
 
 			<div className={COLUMNS}>
-				<div className={COLUMN}>
+				<div className={LEFT}>
 					<Panel>
 						<Panel.Header
 							label={BUILD}
@@ -69,10 +72,9 @@ export const NewRunScreen = ({
 							</Panel.Footer>
 						)}
 					</Panel>
-					{warmBoot === undefined ? null : <WarmBoot {...warmBoot} />}
 				</div>
 
-				<div className={COLUMN}>
+				<div className={RIGHT}>
 					<Panel>
 						<Panel.Header
 							label={REGISTRY}
@@ -92,6 +94,12 @@ export const NewRunScreen = ({
 						</Panel.Body>
 					</Panel>
 				</div>
+
+				{warmBoot === undefined ? null : (
+					<div className={LEFT}>
+						<WarmBoot {...warmBoot} />
+					</div>
+				)}
 			</div>
 
 			<ScreenActions {...footer} />

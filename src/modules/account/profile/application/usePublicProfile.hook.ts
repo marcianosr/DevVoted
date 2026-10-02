@@ -1,17 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-
 import { getPublicProfile } from "~/modules/account/profile/application/profile.serverfn";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { userQueryKeys } from "~/shared/queryKeys";
 
 export const usePublicProfile = (userId: string | undefined) =>
-	useQuery({
+	useApiQuery({
 		queryKey: userQueryKeys.profile(userId ?? ""),
-		queryFn: async () => {
-			const response = await getPublicProfile({
-				data: { userId: userId ?? "" },
-			});
-			if (!response.success) throw new Error(response.error);
-			return response.data;
-		},
+		queryFn: () => getPublicProfile({ data: { userId: userId ?? "" } }),
 		enabled: !!userId,
 	});

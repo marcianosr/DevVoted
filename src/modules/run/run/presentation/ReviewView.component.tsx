@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { reviewPropsFor } from "~/modules/run/gate/application/gateReview.viewmodel";
-import { gateAnswersOf } from "~/modules/run/gate/presentation/GateOutcomeView.component";
+import { gateAnswersOf } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { ReviewScreen } from "~/ui/kanto-theme/ReviewScreen.ui";

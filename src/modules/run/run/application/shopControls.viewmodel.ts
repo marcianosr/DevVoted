@@ -39,6 +39,7 @@ export type ShopControls = {
 	readonly extendCost: number;
 	readonly canExtend: boolean;
 	readonly shopLocked: boolean;
+	readonly shopSkipped: boolean;
 	readonly skipPayoutKb: number;
 	readonly canSkip: boolean;
 	readonly pinAvailable: boolean;
@@ -63,6 +64,7 @@ export const shopControlsFor = (state: RunState): ShopControls => ({
 	extendCost: extendCost(state.extensionsBought ?? 0),
 	canExtend: canExtend(state),
 	shopLocked: isShopLocked(state),
+	shopSkipped: state.shopVisit === "skipped",
 	skipPayoutKb: SKIP_SHOP_KB,
 	canSkip: skipShopAvailable(state) && !isShopLocked(state),
 	pinAvailable: pinAvailable(state),

@@ -50,7 +50,7 @@ describe("settleIncidents", () => {
 	});
 
 	it("locks what rivals queued for the gate in front, up to its capacity, ranked", async () => {
-		const before = { ...started(["js"]), gatesCleared: 8, bankedUnits: 40 };
+		const before = { ...started(["js"]), gatesCleared: 8, headStartUnits: 40 };
 		const after = clearGate(before);
 		expect(after.gatesCleared).toBe(9);
 		fetched.mockResolvedValue([
@@ -70,7 +70,7 @@ describe("settleIncidents", () => {
 	});
 
 	it("marks the incidents on the gate just cleared as survived", async () => {
-		const before = { ...started(["js"]), gatesCleared: 8, bankedUnits: 40 };
+		const before = { ...started(["js"]), gatesCleared: 8, headStartUnits: 40 };
 		await settleIncidents(RUN_ID, DATE)(tx, before, clearGate(before));
 
 		expect(survived).toHaveBeenCalledWith(tx, RUN_ID, 8);
@@ -89,7 +89,7 @@ describe("settleIncidents", () => {
 		const before = {
 			...started(["js"]),
 			gatesCleared: VICTORY_GATE,
-			bankedUnits: 60,
+			headStartUnits: 60,
 		};
 		const won = clearGate(before);
 		expect(won.status).toBe("won");

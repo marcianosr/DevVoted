@@ -1,6 +1,7 @@
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
 import { Badge } from "./Badge.ui";
+import { Figures } from "./Figures.ui";
 import {
 	COVERAGE_BAND_COLOR,
 	COVERAGE_BAND_WORD,
@@ -91,7 +92,7 @@ export const Lead = ({ line, variant = DEFAULT_VARIANT, as }: LeadProps) => (
 	<Typography variant={variant} as={as}>
 		{line.map((part, index) =>
 			typeof part === "string" ? (
-				<span key={`${part}-${index}`}>{part}</span>
+				<Figures key={`${part}-${index}`} text={part} />
 			) : (
 				<Mark key={`${textOf(part)}-${index}`} part={part} />
 			)

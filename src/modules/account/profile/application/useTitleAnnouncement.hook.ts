@@ -1,28 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
 	acknowledgeTitles,
 	getTitleAnnouncement,
 } from "~/modules/account/profile/application/title.serverfn";
 import type { TitleAnnouncement } from "~/modules/account/profile/application/title.service";
+import { useApiMutation } from "~/shared/hooks/useApiMutation.hook";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { titleQueryKeys } from "~/shared/queryKeys";
+import type { ApiResponse } from "~/shared/utils/errorHandling";
 
 const ANNOUNCEMENT_STALE_MS = 1000 * 60 * 30;
 
-const NOTHING_PENDING: TitleAnnouncement = {
-	titleIds: [],
-	archivedRunStartedAt: null,
-	legacyBonusBytes: null,
+const NOTHING_PENDING: ApiResponse<TitleAnnouncement> = {
+	success: true,
+	data: {
+		titleIds: [],
+		archivedRunStartedAt: null,
+		legacyBonusBytes: null,
+	},
 };
 
 export const useTitleAnnouncement = (userId: string | undefined) =>
-	useQuery({
+	useApiQuery({
 		queryKey: titleQueryKeys.announcement(userId),
-		queryFn: async () => {
-			const response = await getTitleAnnouncement();
-			if (!response.success) throw new Error(response.error);
-			return response.data;
-		},
+		queryFn: () => getTitleAnnouncement(),
 		enabled: !!userId,
 		staleTime: ANNOUNCEMENT_STALE_MS,
 	});
@@ -30,15 +32,11 @@ export const useTitleAnnouncement = (userId: string | undefined) =>
 export const useAcknowledgeTitles = (userId: string | undefined) => {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (titleIds: readonly string[]) => {
-			const response = await acknowledgeTitles({
-				data: { titleIds: [...titleIds] },
-			});
-			if (!response.success) throw new Error(response.error);
-			return response.data;
-		},
-		onSuccess: () => {
+	return useApiMutation({
+		mutationFn: (titleIds: readonly string[]) =>
+			acknowledgeTitles({ data: { titleIds: [...titleIds] } }),
+		onSuccess: (result) => {
+			if (!result.success) return;
 			queryClient.setQueryData(
 				titleQueryKeys.announcement(userId),
 				NOTHING_PENDING

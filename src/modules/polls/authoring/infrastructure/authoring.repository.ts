@@ -14,19 +14,42 @@ type UpdatePollOption = NewPollOption & {
 	id?: number;
 };
 
-type NewPollData = {
+type PollContent = {
 	question: string;
 	status: PollStatus;
 	answerType: Poll["answerType"];
-	createdBy: string;
 	categoryCode: string;
 	codeBlock?: string | null;
 	codeSandboxExample?: string | null;
 	explanation?: string | null;
 };
 
+type NewPoll = PollContent & { createdBy: string };
+
+type PollColumns<Content extends Partial<PollContent>> = {
+	question: Content["question"];
+	status: Content["status"];
+	answer_type: Content["answerType"];
+	category_code: Content["categoryCode"];
+	code_block: Content["codeBlock"];
+	code_sandbox_example: Content["codeSandboxExample"];
+	explanation: Content["explanation"];
+};
+
+const pollColumnsOf = <Content extends Partial<PollContent>>(
+	content: Content
+): PollColumns<Content> => ({
+	question: content.question,
+	status: content.status,
+	answer_type: content.answerType,
+	category_code: content.categoryCode,
+	code_block: content.codeBlock,
+	code_sandbox_example: content.codeSandboxExample,
+	explanation: content.explanation,
+});
+
 export const createPollWithOptions = async (
-	pollData: NewPollData,
+	poll: NewPoll,
 	options: NewPollOption[]
 ): Promise<Poll> =>
 	db.transaction(async (tx) => {
@@ -38,14 +61,8 @@ export const createPollWithOptions = async (
 		const [record] = await tx
 			.insert(pollsTable)
 			.values({
-				question: pollData.question,
-				status: pollData.status,
-				answer_type: pollData.answerType,
-				created_by: pollData.createdBy,
-				category_code: pollData.categoryCode,
-				code_block: pollData.codeBlock ?? null,
-				code_sandbox_example: pollData.codeSandboxExample ?? null,
-				explanation: pollData.explanation ?? null,
+				...pollColumnsOf(poll),
+				created_by: poll.createdBy,
 				opening_time: new Date(),
 				closing_time: new Date(),
 				poll_number: nextPollNumber,
@@ -76,28 +93,13 @@ const isExistingOption = (option: UpdatePollOption): option is ExistingOption =>
 
 export const updatePollWithOptions = async (
 	pollId: number,
-	pollData: Partial<NewPollData>,
+	content: Partial<PollContent>,
 	options: UpdatePollOption[]
 ): Promise<Poll> =>
 	db.transaction(async (tx) => {
-		const updateValues: Record<string, unknown> = {};
-		if (pollData.question !== undefined)
-			updateValues.question = pollData.question;
-		if (pollData.status !== undefined) updateValues.status = pollData.status;
-		if (pollData.answerType !== undefined)
-			updateValues.answer_type = pollData.answerType;
-		if (pollData.categoryCode !== undefined)
-			updateValues.category_code = pollData.categoryCode;
-		if (pollData.codeBlock !== undefined)
-			updateValues.code_block = pollData.codeBlock;
-		if (pollData.codeSandboxExample !== undefined)
-			updateValues.code_sandbox_example = pollData.codeSandboxExample;
-		if (pollData.explanation !== undefined)
-			updateValues.explanation = pollData.explanation;
-
 		const [record] = await tx
 			.update(pollsTable)
-			.set(updateValues)
+			.set(pollColumnsOf(content))
 			.where(eq(pollsTable.id, pollId))
 			.returning();
 
@@ -124,7 +126,12 @@ export const updatePollWithOptions = async (
 			await tx
 				.update(pollOptionsTable)
 				.set({ option: option.option, correct: option.correct })
-				.where(eq(pollOptionsTable.id, option.id));
+				.where(
+					and(
+						eq(pollOptionsTable.id, option.id),
+						eq(pollOptionsTable.poll_id, pollId)
+					)
+				);
 		}
 
 		if (newOptions.length > 0) {

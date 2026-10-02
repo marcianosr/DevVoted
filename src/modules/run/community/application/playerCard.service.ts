@@ -1,21 +1,16 @@
-import { authorshipOf } from "~/modules/account/profile/domain/authorship.model";
-import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
-import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
-import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
+import { profileFaceOf } from "~/modules/account/profile/domain/profile.model";
+import { pollsAnsweredIn } from "~/modules/account/profile/domain/rank.model";
 import {
 	fetchPublicProfile,
 	fetchPublishedPollCounts,
 } from "~/modules/account/profile/infrastructure/profile.repository";
+import { fetchObjectiveProgressByUser } from "~/modules/collection/dex/infrastructure/configdex.repository";
 import {
-	percentOf,
-	runCoverageOf,
-} from "~/modules/run/build/domain/coverageRatio.model";
-import type {
-	PlayerCardView,
-	PlayerRun,
+	type PlayerCardView,
+	playerCardViewFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
+import { standingOf } from "~/modules/run/community/domain/standing.model";
 import {
-	type ClimberRow,
 	fetchActiveClimberFor,
 	fetchBestCategories,
 } from "~/modules/run/community/infrastructure/climbers.repository";
@@ -24,44 +19,23 @@ import {
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
-const runOf = (
-	climber: ClimberRow,
-	bestCategory: string | undefined
-): PlayerRun => ({
-	gate: climber.gate,
-	coveragePercent: Math.round(
-		percentOf(runCoverageOf(climber.coverageUnits, climber.gate))
-	),
-	streak: climber.streak,
-	storageKb: climber.storageKb,
-	build: climber.build,
-	...(bestCategory === undefined ? {} : { bestCategory }),
-});
-
 export const getPlayerCardService = async (
 	userId: string
 ): Promise<ApiResponse<PlayerCardView>> =>
 	handleApiOperation(async () => {
-		const [profile, climber, bestCategories, pollCounts] = await Promise.all([
-			fetchPublicProfile(userId),
-			fetchActiveClimberFor(userId),
-			fetchBestCategories([userId]),
-			fetchPublishedPollCounts(userId),
-		]);
+		const [profile, pollCounts, progress, climber, bestCategories] =
+			await Promise.all([
+				fetchPublicProfile(userId),
+				fetchPublishedPollCounts(userId),
+				fetchObjectiveProgressByUser(userId),
+				fetchActiveClimberFor(userId),
+				fetchBestCategories([userId]),
+			]);
 		if (!profile) throw new Error("User not found");
 
-		const borderUrl = borderUrlOf(profile.equippedBorderId);
-
-		return {
+		return playerCardViewFor(
 			userId,
-			displayName: profile.displayName,
-			...(profile.photoUrl === null ? {} : { photoUrl: profile.photoUrl }),
-			...(borderUrl === null ? {} : { borderUrl }),
-			titles: wornTitleNames(profile.equippedTitleIds),
-			theme: profileThemeFor(profile.equippedSwatchId, profile.ownedSwatchIds),
-			authorship: authorshipOf(profile.role, pollCounts),
-			...(climber === null
-				? {}
-				: { run: runOf(climber, bestCategories.get(userId)) }),
-		};
+			profileFaceOf(profile, pollCounts, pollsAnsweredIn(progress)),
+			climber === null ? null : standingOf(climber, bestCategories.get(userId))
+		);
 	}, "getPlayerCard");

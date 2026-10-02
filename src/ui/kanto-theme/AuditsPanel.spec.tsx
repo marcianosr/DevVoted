@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 
 import {
 	kantoAudits,
-	kantoAuditsLocked,
+	kantoAuditsNew,
 	kantoAuditsNoSender,
 	kantoAuditsQuiet,
 } from "~/test/kantoIncidents.factory";
@@ -46,13 +46,16 @@ describe("AuditsPanel", () => {
 		expect(screen.getByText("none this gate")).toBeInTheDocument();
 	});
 
-	it("draws itself shut below the gate a rival could reach", () => {
-		render(<AuditsPanel {...kantoAuditsLocked()} />);
+	it("marks an audit the player has never faced as new, on the row and the header", () => {
+		render(<AuditsPanel {...kantoAuditsNew()} />);
 
-		expect(
-			screen.getByText("Audits are unlocked at gate 3")
-		).toBeInTheDocument();
-		expect(screen.getByText("gate 3")).toBeInTheDocument();
+		expect(screen.getAllByText("new")).toHaveLength(2);
+	});
+
+	it("marks nothing new for a player who has faced the audit before", () => {
+		render(<AuditsPanel {...kantoAudits()} />);
+
+		expect(screen.queryByText("new")).not.toBeInTheDocument();
 	});
 
 	describe("answering the sender", () => {

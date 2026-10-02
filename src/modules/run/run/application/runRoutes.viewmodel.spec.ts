@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	nextFrom,
+	prepBackOf,
+	prepDepartureOf,
+	REVIEW_BACK,
 	returnFromCommunity,
 	syncTarget,
 } from "~/modules/run/run/application/runRoutes.viewmodel";
@@ -373,5 +377,130 @@ describe("returnFromCommunity", () => {
 			).toBeNull();
 		});
 		expect(syncTarget(returnFromCommunity(null).path, null, false)).toBeNull();
+	});
+});
+
+describe("nextFrom", () => {
+	it("sends the build to prep once it is drafted", () => {
+		expect(
+			nextFrom("new", climbing({ status: "configuring", gatesCleared: 0 }))
+		).toBe("/run/prep");
+	});
+
+	it("sends prep to the poll once the gate is being answered", () => {
+		expect(
+			nextFrom("prep", climbing({ status: "answering", gatesCleared: 2 }))
+		).toBe("/run/poll");
+	});
+
+	it("keeps prep in place while the gate still has to be opened", () => {
+		expect(
+			nextFrom("prep", climbing({ status: "configuring", gatesCleared: 0 }))
+		).toBeNull();
+		expect(
+			nextFrom("prep", climbing({ status: "rewarding", gatesCleared: 1 }))
+		).toBeNull();
+	});
+
+	it("sends a held gate to its review and a paid-out gate to the shop", () => {
+		expect(
+			nextFrom("gate", climbing({ status: "awaiting-strip", gatesCleared: 2 }))
+		).toBe("/run/review");
+		expect(
+			nextFrom("gate", climbing({ status: "rewarding", gatesCleared: 2 }))
+		).toBe("/run/shop");
+	});
+
+	it("sends the shop on to prep", () => {
+		expect(
+			nextFrom("shop", climbing({ status: "rewarding", gatesCleared: 1 }))
+		).toBe("/run/prep");
+	});
+
+	it("sends a finished run back to the hub, with or without a view", () => {
+		expect(
+			nextFrom("over", climbing({ status: "dead", gatesCleared: 4 }))
+		).toBe("/run");
+		expect(nextFrom("over", null)).toBe("/run");
+	});
+
+	it("lands every forward press where the sync leaves it alone", () => {
+		const presses = [
+			["new", climbing({ status: "configuring", gatesCleared: 0 })],
+			["prep", climbing({ status: "answering", gatesCleared: 0 })],
+			["prep", climbing({ status: "answering", gatesCleared: 3 })],
+			["gate", climbing({ status: "rewarding", gatesCleared: 1 })],
+			["gate", climbing({ status: "awaiting-strip", gatesCleared: 2 })],
+			["shop", climbing({ status: "rewarding", gatesCleared: 1 })],
+			[
+				"shop",
+				climbing({ status: "rewarding", gatesCleared: 1, redoingGate: 1 }),
+			],
+		] as const;
+
+		presses.forEach(([screen, view]) => {
+			const target = nextFrom(screen, view);
+			expect(target).not.toBeNull();
+			expect(syncTarget(target ?? "", view, false)).toBeNull();
+		});
+	});
+});
+
+describe("prepBackOf", () => {
+	it("returns prep to the build before the first gate", () => {
+		expect(
+			prepBackOf(climbing({ status: "configuring", gatesCleared: 0 }))
+		).toEqual({ path: "/run/new", label: "← Back to the build" });
+	});
+
+	it("returns prep to the shop while a gate is being paid out", () => {
+		expect(
+			prepBackOf(climbing({ status: "rewarding", gatesCleared: 1 }))
+		).toEqual({ path: "/run/shop", label: "Back to the shop" });
+	});
+
+	it("offers no way back from prep once the gate is being answered", () => {
+		expect(
+			prepBackOf(climbing({ status: "answering", gatesCleared: 2 }))
+		).toBeNull();
+	});
+
+	it("returns the review to the gate it reviews", () => {
+		expect(REVIEW_BACK).toEqual({
+			path: "/run/gate",
+			label: "Back to the gate",
+		});
+	});
+
+	it("lands every back press from prep where the sync leaves it alone", () => {
+		const views = [
+			climbing({ status: "configuring", gatesCleared: 0 }),
+			climbing({ status: "rewarding", gatesCleared: 1 }),
+			climbing({ status: "rewarding", gatesCleared: 1, redoingGate: 1 }),
+		];
+
+		views.forEach((view) => {
+			expect(syncTarget(prepBackOf(view)?.path ?? "", view, false)).toBeNull();
+		});
+	});
+});
+
+describe("prepDepartureOf", () => {
+	it("starts the run when prep is left before the first gate", () => {
+		expect(
+			prepDepartureOf(climbing({ status: "configuring", gatesCleared: 0 }))
+		).toEqual({ type: "start" });
+	});
+
+	it("finishes the reward when prep is left after a paid-out gate", () => {
+		expect(
+			prepDepartureOf(climbing({ status: "rewarding", gatesCleared: 1 }))
+		).toEqual({ type: "finish-reward" });
+	});
+
+	it("needs no action once the gate is already being answered", () => {
+		expect(
+			prepDepartureOf(climbing({ status: "answering", gatesCleared: 2 }))
+		).toBeNull();
 	});
 });

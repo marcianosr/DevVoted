@@ -16,7 +16,6 @@ import {
 import { discloseAllFor } from "./DiscloseAll.ui";
 import { IncidentDesk, type IncidentDeskProps } from "./IncidentDesk.ui";
 import { Header, type HeaderProps } from "./Header.ui";
-import { Icon } from "./Icon.ui";
 import { Panel } from "./Panel.ui";
 import { Registry, RegistrySummary, type RegistryProps } from "./Registry.ui";
 import {
@@ -26,27 +25,23 @@ import {
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Tabs, type TabItem } from "./Tabs.ui";
+import { Typography } from "./Typography.ui";
 
 const COPY = {
 	controlsTitle: "Services",
 	tabs: "Shop panels",
 	desk: "Desk",
 	ready: "ready",
-	lockedServices: (count: number) =>
-		`${count} locked ${count === 1 ? "service" : "services"}`,
-	show: "show",
-	hide: "hide",
 } as const;
 
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const TABS = "w-full md:hidden";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
+const COLUMNS_SHUT = "opacity-60";
 const COLUMN = "contents md:flex md:w-full md:min-w-0 md:flex-col md:gap-6";
 const PANE = "w-full min-w-0 flex-col md:flex";
 const PANE_SHOWN = "flex";
 const PANE_HIDDEN = "hidden";
-const FOLD = "flex items-center gap-2 text-sm text-theme-muted";
-const FOLD_PRESS = "flex items-center gap-1 text-xs text-theme-muted";
 
 const CONTROL_LAYOUT = "row";
 
@@ -66,9 +61,8 @@ export type ShopScreenProps = {
 	footer?: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
+	shut?: string;
 };
-
-const isLocked = (row: ShopServiceRow) => row.locked === true;
 
 const isReady = (row: ShopServiceRow) =>
 	row.locked !== true && row.carried !== false;
@@ -125,41 +119,19 @@ const ServiceRow = ({ control }: { control: RegistryControlProps }) => (
 	</Panel.Row>
 );
 
-const Services = ({ controls }: { controls: readonly ShopServiceRow[] }) => {
-	const [lockedShown, setLockedShown] = useState(false);
-	const open = controls.filter((row) => !isLocked(row));
-	const locked = controls.filter(isLocked);
-
-	return (
-		<Panel>
-			<Panel.Header
-				label={COPY.controlsTitle}
-				meta={<ReadyCount count={controls.filter(isReady).length} />}
-			/>
-			<Panel.Rows>
-				{[...open, ...(lockedShown ? locked : [])].map(({ id, ...control }) => (
-					<ServiceRow key={id} control={control} />
-				))}
-				{locked.length === 0 ? null : (
-					<Panel.Row
-						onPress={() => setLockedShown((shown) => !shown)}
-						trailing={
-							<span className={FOLD_PRESS}>
-								{lockedShown ? COPY.hide : COPY.show}
-								<Icon name="chevron" />
-							</span>
-						}
-					>
-						<span className={FOLD}>
-							<Icon name="lock" />
-							{COPY.lockedServices(locked.length)}
-						</span>
-					</Panel.Row>
-				)}
-			</Panel.Rows>
-		</Panel>
-	);
-};
+const Services = ({ controls }: { controls: readonly ShopServiceRow[] }) => (
+	<Panel>
+		<Panel.Header
+			label={COPY.controlsTitle}
+			meta={<ReadyCount count={controls.filter(isReady).length} />}
+		/>
+		<Panel.Rows>
+			{controls.map(({ id, ...control }) => (
+				<ServiceRow key={id} control={control} />
+			))}
+		</Panel.Rows>
+	</Panel>
+);
 
 export const ShopScreen = ({
 	build,
@@ -171,6 +143,7 @@ export const ShopScreen = ({
 	footer,
 	width,
 	ground = "bare",
+	shut,
 }: ShopScreenProps) => {
 	const [shown, setShown] = useState<ShopTab>(FIRST_TAB);
 	const fundsInFooter = footer !== undefined && header.funds !== undefined;
@@ -187,6 +160,14 @@ export const ShopScreen = ({
 				</div>
 			)}
 
+			{shut === undefined ? null : (
+				<Panel>
+					<Panel.Body>
+						<Typography variant="prose">{shut}</Typography>
+					</Panel.Body>
+				</Panel>
+			)}
+
 			<div className={TABS}>
 				<Tabs
 					look="pill"
@@ -199,7 +180,10 @@ export const ShopScreen = ({
 				/>
 			</div>
 
-			<div className={COLUMNS}>
+			<div
+				inert={shut !== undefined}
+				className={clsx(COLUMNS, shut !== undefined && COLUMNS_SHUT)}
+			>
 				<div className={COLUMN}>
 					<Pane tab="build" shown={shown}>
 						<Panel>

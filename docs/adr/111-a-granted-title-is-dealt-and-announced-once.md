@@ -86,6 +86,14 @@ has not been seen, and stamping it would bury it behind a modal already closed.
 It mounts on the `_authed` layout rather than the run hub: every login path ends
 at `/run`, but a player who lands deeper still deserves the notice.
 
+**Amended 2026-10-02 (DVTD-ozcv):** the modal announces granted titles only.
+[ADR-154](154-the-debrief-states-what-you-earned-and-why-the-build-moved.md) grants
+earned titles at every gate close and lists them in the debrief's Earned panel, so the
+modal opened its "you played before the rebuild" copy over a debrief that already
+named the title, to players who never played before the rebuild. An earned title is
+now written with `announced_at` already set, and the announcement read filters to
+granted ids, which also silences earned rows written before the fix.
+
 ## Consequences
 
 - `completion_reason` gains a fourth value, `archived`. No typed reader sees it:

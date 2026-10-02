@@ -31,6 +31,7 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	ensureTodaysSegment: vi.fn(),
 	fetchAnsweredPollIdsForDay: vi.fn(),
 	fetchArchivedStorageKb: vi.fn().mockResolvedValue(0),
+	fetchOwnedSwatchIds: vi.fn().mockResolvedValue([]),
 	fetchStorageWatermark: vi.fn().mockResolvedValue(0),
 	loadRunState: vi.fn(),
 	fetchRunSnapshot: vi.fn(),
@@ -67,6 +68,7 @@ vi.mock(
 
 vi.mock("~/modules/run/shop/infrastructure/serviceUnlock.repository", () => ({
 	fetchUnlockedServiceIds: vi.fn().mockResolvedValue([]),
+	fetchServiceUnlocksSince: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("~/modules/run/config/infrastructure/configUnlock.repository", () => ({
@@ -244,7 +246,7 @@ describe("getTodaysRunService", () => {
 
 		expect(result.success).toBe(true);
 		if (result.success) expect(result.data).toBeNull();
-		expect(queries.abandonSessionRun).toHaveBeenCalledWith(64, USER);
+		expect(queries.abandonSessionRun).toHaveBeenCalledWith(64);
 	});
 });
 
@@ -403,7 +405,7 @@ describe("abandonRunService", () => {
 		const result = await abandonRunService({ userId: USER });
 
 		expect(result.success).toBe(true);
-		expect(queries.abandonSessionRun).toHaveBeenCalledWith(64, USER);
+		expect(queries.abandonSessionRun).toHaveBeenCalledWith(64);
 	});
 
 	it("errors when there is nothing to abandon", async () => {
@@ -509,6 +511,33 @@ describe("dispatchRunActionService", () => {
 			expect(result.data.unlockedThisRun).toEqual([
 				{ configId: "telemetry", viaMetric: "community-peeks" },
 			]);
+		}
+	});
+
+	it("rides the owned swatches and this run's service unlocks on the view", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(
+			sessionRunRecord()
+		);
+		vi.mocked(queries.applyActionToRun).mockResolvedValue({
+			state: { ...configuringState(), status: "answering" },
+			unlockedConfigIds: [],
+			earnedTitleIds: [],
+		});
+		vi.mocked(queries.fetchOwnedSwatchIds).mockResolvedValueOnce(["pallet"]);
+		vi.mocked(serviceQueries.fetchServiceUnlocksSince).mockResolvedValueOnce([
+			"extend",
+		]);
+
+		const result = await dispatchRunActionService({
+			userId: USER,
+			date: DATE,
+			action: { type: "peek-poll" },
+		});
+
+		expect(result.success).toBe(true);
+		if (result.success) {
+			expect(result.data.ownedSwatchIds).toEqual(["pallet"]);
+			expect(result.data.unlockedServiceIdsThisRun).toEqual(["extend"]);
 		}
 	});
 });

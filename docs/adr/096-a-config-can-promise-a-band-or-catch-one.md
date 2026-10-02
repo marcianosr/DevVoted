@@ -6,7 +6,8 @@ Accepted (2026-09-22, Marciano, DVTD-owif and DVTD-s9v4). Adds two configs, `sla
 and `try-catch`. Amends [ADR-076](076-the-closing-band-decides-what-it-costs.md)
 Decision 5, whose "no retry, no peel, no choice" now has exactly one exception,
 and records that the same ADR's Decision 3 describes a cut the engine does not
-make. Supersedes nothing.
+make. Supersedes nothing. Decision 2's spending is amended by
+[ADR-177](177-the-catch-is-peeled-by-hand.md): the player drops the catch by hand.
 
 ## Context
 

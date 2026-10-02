@@ -71,6 +71,7 @@ export const runActionSchema = z.discriminatedUnion("type", [
 	bareActionSchema("buy-incident"),
 	bareActionSchema("refresh-incident"),
 	bareActionSchema("close-gate"),
+	bareActionSchema("skip"),
 	bareActionSchema("lint-poll"),
 	bareActionSchema("peek-poll"),
 	bareActionSchema("arm-strict"),

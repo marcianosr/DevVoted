@@ -21,7 +21,8 @@ export type GateWindow = {
 	readonly correct: number;
 	readonly answered: number;
 	readonly unitsEarned: number;
-	readonly baseUnits: number;
+	readonly accuracyEarned: number;
+	readonly accuracyAvailable: number;
 	readonly byCategory: Readonly<Record<string, CategoryTally>>;
 	readonly peeked?: number;
 	readonly linted?: number;
@@ -32,13 +33,18 @@ export const EMPTY_WINDOW: GateWindow = {
 	correct: 0,
 	answered: 0,
 	unitsEarned: 0,
-	baseUnits: 0,
+	accuracyEarned: 0,
+	accuracyAvailable: 0,
 	byCategory: {},
 	peeked: 0,
 	linted: 0,
 };
 
-export type Coverage = { readonly mult: number; readonly add: number };
+export type Coverage = {
+	readonly mult: number;
+	readonly add: number;
+	readonly boost: number;
+};
 
 export type AnswerContext = {
 	readonly category: CategoryCode;
@@ -46,6 +52,7 @@ export type AnswerContext = {
 	readonly answeredBefore: number;
 	readonly cachedHits: number;
 	readonly previouslyMissed: boolean;
+	readonly elapsedMs?: number;
 };
 
 export type PayoutContext = Omit<AnswerContext, "category"> & {
@@ -67,29 +74,39 @@ export const touchesCoverage = (config: Config): boolean =>
 	config.coverageAdd !== undefined ||
 	config.openerCoverageMultiplier !== undefined ||
 	config.throttleCoverageMultiplier !== undefined ||
+	config.fastAnswerWithinMs !== undefined ||
 	config.cacheHitStep !== undefined ||
 	config.roundsPartialUnitsUp !== undefined;
 
 const minifiedFactor = (config: Config, factor: number): number =>
 	factor >= 1 ? minifiedMultiplier(config, factor) : factor;
 
+const speedFactorOf = (config: Config, elapsedMs?: number): number => {
+	if (config.fastAnswerWithinMs === undefined || elapsedMs === undefined)
+		return 1;
+	return elapsedMs <= config.fastAnswerWithinMs
+		? minifiedFactor(config, config.fastCoverageMultiplier ?? 1)
+		: minifiedFactor(config, config.slowCoverageMultiplier ?? 1);
+};
+
 const coverageOf = (config: Config): Effect["coverage"] => {
 	if (!touchesCoverage(config)) return undefined;
 	return (
-		{ category, answeredBefore, cachedHits, previouslyMissed },
+		{ category, answeredBefore, cachedHits, previouslyMissed, elapsedMs },
 		creditedUnits = 0
 	) => ({
 		mult:
 			(config.focusCategory !== undefined && config.focusCategory === category
 				? focusMultiplierOf(config)
 				: 1) *
-			minifiedMultiplier(config, config.coverageMultiplier ?? 1) *
 			(previouslyMissed
 				? minifiedFactor(config, config.missedPollMultiplier ?? 1)
 				: 1) *
 			(answeredBefore === 0
 				? minifiedFactor(config, config.openerCoverageMultiplier ?? 1)
-				: minifiedFactor(config, config.throttleCoverageMultiplier ?? 1)),
+				: minifiedFactor(config, config.throttleCoverageMultiplier ?? 1)) *
+			speedFactorOf(config, elapsedMs),
+		boost: minifiedMultiplier(config, config.coverageMultiplier ?? 1),
 		add:
 			(coverageAddOf(config) ?? 0) +
 			cacheUnitsFor(config, cachedHits) +

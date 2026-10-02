@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import {
 	BRIBE_LABEL,
 	REFUSAL_LABEL,
+	kantoGateCaught,
 	kantoGatePeelBillKb,
 	kantoGatePeelBillSlots,
 	kantoGatePeelValues,
@@ -63,6 +64,43 @@ describe("GateChoice", () => {
 		render(<GateChoice {...choiceIn(kantoGateShaky())} />);
 
 		expect(screen.getByRole("button", { name: REFUSAL_LABEL })).toBeEnabled();
+	});
+
+	it("seats the retry under the settlement it waits for", () => {
+		render(
+			<GateChoice
+				{...choiceIn(kantoGateShaky())}
+				retry={{ label: "Retry gate 4", note: "settle first" }}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /^Retry gate 4/ })
+		).toBeDisabled();
+	});
+
+	describe("a caught gate", () => {
+		it("asks for the catch before any other way to pay", () => {
+			render(<GateChoice {...choiceIn(kantoGateCaught())} />);
+
+			const headings = screen
+				.getAllByRole("heading", { level: 3 })
+				.map((heading) => heading.textContent);
+
+			expect(headings.indexOf("Drop the catch first")).toBeGreaterThan(-1);
+			expect(headings.indexOf("Drop the catch first")).toBeLessThan(
+				headings.indexOf("Pay from storage")
+			);
+		});
+
+		it("offers the catch as the one drop that is open", () => {
+			render(<GateChoice {...choiceIn(kantoGateCaught())} />);
+
+			expect(
+				screen.getByRole("checkbox", { name: "Drop Try/Catch" })
+			).toBeEnabled();
+			expect(bribeBox()).toBeDisabled();
+		});
 	});
 
 	describe("the settlement bar", () => {

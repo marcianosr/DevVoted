@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	coverageGainPercentFor,
 	floorAt,
 	healthyAt,
 	okAt,
@@ -9,8 +10,8 @@ import {
 import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import {
 	GATE_COUNT,
-	MIN_WINDOW_UNITS,
 	VICTORY_GATE,
+	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
 import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
@@ -18,6 +19,7 @@ import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 import {
 	answersOwedFor,
 	bandOutcomesPropsFor,
+	briefFor,
 	BAND_OUTCOMES_NOTE,
 	ESCROW_NOTE,
 	FREE_MISS_NOTE,
@@ -64,11 +66,8 @@ const rungOf = (frame: BandOutcomesFrame, band: string) =>
 
 const clearOf = (frame: BandOutcomesFrame) =>
 	objectivesFor(frame).objectives[0];
-const minimumRowOf = (frame: BandOutcomesFrame) =>
-	objectivesFor(frame).objectives[1];
 const swatchRowOf = (frame: BandOutcomesFrame) =>
-	objectivesFor(frame).objectives[2];
-
+	objectivesFor(frame).objectives[1];
 describe("the rungs a gate's ladder has room for", () => {
 	it("draws four rungs at the calibration gate, which has no floor to fall under", () => {
 		expect(bandsOf(CALIBRATION)).toEqual(["perfect", "healthy", "ok", "shaky"]);
@@ -147,7 +146,12 @@ describe("the answers a window owes", () => {
 
 	it("rounds a part answer up, since half an answer buys nothing", () => {
 		expect(answersOwedFor(42, 34, 4)).toBe(2);
-		expect(answersOwedFor(42, 33, 4)).toBe(3);
+		expect(answersOwedFor(42, 31, 4)).toBe(3);
+	});
+
+	it("counts the accuracy multiplier, so two right land Boulder's OK", () => {
+		expect(answersOwedFor(25, 0, 100 / 9)).toBe(2);
+		expect(answersOwedFor(44, 0, 100 / 9)).toBe(3);
 	});
 
 	it("refuses a line five right answers cannot reach", () => {
@@ -170,9 +174,15 @@ describe("the objective that clears the gate", () => {
 	});
 
 	it("states the demand as a band, and nothing about what the band is for", () => {
+		const okFrom = clearingRungFor(MID, 4).from;
+
 		expect(leadTextOf(clearOf(frameFor()).statement)).toBe(
-			"Finish at OK or better"
+			`Finish at OK (${okFrom}%) or better`
 		);
+		expect(clearOf(frameFor()).statement).toContainEqual({
+			figure: `${okFrom}%`,
+			band: "ok",
+		});
 	});
 
 	it("names the gate that clearing opens", () => {
@@ -208,14 +218,27 @@ describe("the objective that clears the gate", () => {
 });
 
 describe("the objective that earns the swatch", () => {
-	it("asks for a flawless window, which is what stamps a gate (ADR-080)", () => {
+	it("asks for a full bar, which is what stamps it (ADR-170)", () => {
 		expect(leadTextOf(swatchRowOf(frameFor()).statement)).toBe(
-			"Answer all 5 right"
+			"Reach 100% coverage"
 		);
 	});
 
-	it("badges the five, like every count the screen states", () => {
-		expect(swatchRowOf(frameFor()).statement).toContainEqual({ figure: "5" });
+	it("badges the full bar in the band it reaches", () => {
+		expect(swatchRowOf(frameFor()).statement).toContainEqual({
+			figure: "100%",
+			band: "perfect",
+		});
+	});
+
+	it("reads the same 100% at every gate, whatever its codebase", () => {
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			expect(
+				leadTextOf(
+					swatchRowOf(frameFor({ gate, ladder: ladderAt(gate) })).statement
+				)
+			).toBe("Reach 100% coverage");
+		}
 	});
 
 	it("never asks for a coverage band, which is a different test entirely", () => {
@@ -236,6 +259,83 @@ describe("the objective that earns the swatch", () => {
 	});
 });
 
+describe("the brief on what a right answer covers", () => {
+	const BOULDER = 1;
+	const singleAt = coverageGainPercentFor(1, BOULDER);
+	const boulder = (over: Partial<BandOutcomesFrame> = {}) =>
+		frameFor({
+			swatch: GATE_SWATCHES[BOULDER],
+			gate: BOULDER,
+			ladder: SECOND,
+			coverageGainPercent: singleAt,
+			...over,
+		});
+
+	it("lists what a right single choice and a right multiple choice cover, in points gained", () => {
+		expect(briefFor(boulder()).statement).toEqual([
+			"single choice ",
+			{ figure: "+11.1%", gain: true },
+			" · multiple choice ",
+			{ figure: "+22.2%", gain: true },
+		]);
+	});
+
+	it("hints that accuracy and configs add on top", () => {
+		expect(briefFor(boulder()).hint).toEqual(["accuracy and configs add more"]);
+	});
+
+	it("counts what a config adds to a right single choice", () => {
+		expect(
+			briefFor(
+				boulder({ coverageGainPercent: coverageGainPercentFor(1.5, BOULDER) })
+			).statement
+		).toContainEqual({ figure: "+16.7%", gain: true });
+	});
+
+	it("rides on the panel", () => {
+		expect(bandOutcomesPropsFor(boulder()).brief).toEqual(briefFor(boulder()));
+	});
+});
+
+describe("the panel never names the gate's codebase", () => {
+	const linesOf = (frame: BandOutcomesFrame) => {
+		const props = bandOutcomesPropsFor(frame);
+
+		return [
+			props.meta,
+			props.brief?.statement ?? [],
+			props.brief?.hint ?? [],
+			props.standing,
+			...(props.objectives?.objectives ?? []).flatMap((objective) => [
+				objective.statement,
+				objective.earns,
+			]),
+		]
+			.map(leadTextOf)
+			.concat(
+				props.ladder.rungs.map((rung) => rung.pays),
+				props.note ?? ""
+			)
+			.join(" ");
+	};
+
+	it("speaks in coverage and points at every gate, never in changes", () => {
+		for (let gate = 0; gate < GATE_COUNT; gate++) {
+			expect(
+				linesOf(
+					frameFor({
+						gate,
+						swatch: GATE_SWATCHES[gate],
+						ladder: ladderAt(gate),
+						coverageGainPercent: coverageGainPercentFor(1, gate),
+						held: 30,
+					})
+				)
+			).not.toMatch(/\bchanges?\b/i);
+		}
+	});
+});
+
 describe("what the column no longer states", () => {
 	it("says nothing about an audit at any gate", () => {
 		for (let gate = 0; gate < GATE_COUNT; gate++) {
@@ -250,20 +350,15 @@ describe("what the column no longer states", () => {
 		}
 	});
 
-	it("states three objectives and no section labels around them", () => {
-		expect(objectivesFor(frameFor()).objectives).toHaveLength(3);
+	it("states two objectives and no section labels around them", () => {
+		expect(objectivesFor(frameFor()).objectives).toHaveLength(2);
 		expect(objectivesFor(frameFor())).toEqual({
 			objectives: expect.any(Array),
 		});
 	});
 
-	it("states the window's own minimum between the clear and the swatch", () => {
-		const stated = leadTextOf(minimumRowOf(frameFor()).statement);
-
-		expect(stated).toBe(`Score at least ${MIN_WINDOW_UNITS} units this window`);
-		expect(leadTextOf(minimumRowOf(frameFor()).earns)).toContain(
-			"partials count"
-		);
+	it("states no count of right answers, only the clear and the swatch", () => {
+		expect(objectivesFor(frameFor()).objectives).toHaveLength(2);
 	});
 });
 
@@ -288,6 +383,14 @@ describe("the ladder", () => {
 		expect(kbOf("perfect")).toBeGreaterThanOrEqual(kbOf("healthy"));
 	});
 
+	it("quotes PERFECT with the bonus a full bar adds (ADR-075)", () => {
+		const frame = frameFor({
+			payout: (correct, band) => correct * 32 + (band === "perfect" ? 80 : 0),
+		});
+
+		expect(rungOf(frame, "perfect")?.pays).toBe("+240 KB");
+	});
+
 	it("ends the run under the floor rather than quoting it a figure", () => {
 		expect(ladderFor(frameFor()).rungs[0].pays).toBe("the run ends");
 	});
@@ -297,28 +400,39 @@ describe("the standing line", () => {
 	const text = (over: Partial<BandOutcomesFrame> = {}) =>
 		leadTextOf(standingLineFor(frameFor(over)));
 
-	it("prices the units to the next band up and counts the polls left", () => {
-		expect(text()).toBe("+12 units to SHAKY · 5 polls left");
-		expect(text({ held: 50 })).toBe("+1.5 units to OK · 5 polls left");
-		expect(text({ held: 62 })).toBe("+9.5 units to PERFECT · 5 polls left");
+	const fromOf = (ladder: CoverageLadder, band: string) =>
+		coverageRungsFor(ladder).find((rung) => rung.band === band)?.from ?? 0;
+	const pointsTo = (ladder: CoverageLadder, band: string, held: number) =>
+		`+${roundToOneDecimal(fromOf(ladder, band) - held)}%`;
+
+	it("prices the points to the next band up and counts the polls left", () => {
+		expect(text()).toBe(
+			`${pointsTo(MID, "shaky", 0)} to reach SHAKY · 5 polls left`
+		);
+		expect(text({ held: 30 })).toBe(
+			`${pointsTo(MID, "ok", 30)} to reach OK · 5 polls left`
+		);
+		expect(text({ held: 62 })).toBe("+38% to reach PERFECT · 5 polls left");
 	});
 
-	it("badges the units in the band they reach, and the polls left as a count", () => {
-		const line = standingLineFor(frameFor({ held: 50 }));
+	it("badges the points as a gain, the band it reaches, and the polls left as a count", () => {
+		const line = standingLineFor(frameFor({ held: 30 }));
 
-		expect(line).toContainEqual({ figure: "+1.5", band: "ok" });
+		expect(line).toContainEqual({
+			figure: pointsTo(MID, "ok", 30),
+			gain: true,
+		});
 		expect(line).toContainEqual({ band: "ok" });
 		expect(line).toContainEqual({ figure: "5" });
 	});
 
-	it("reads a single unit and a single poll in the singular", () => {
-		expect(text({ held: 58 })).toBe("+1 unit to HEALTHY · 5 polls left");
+	it("reads a single poll in the singular", () => {
 		expect(text({ answeredThisGate: 4 })).toContain("1 poll left");
 	});
 
 	it("counts down the window as it is answered", () => {
 		expect(text({ answeredThisGate: 3 })).toBe(
-			"+12 units to SHAKY · 2 polls left"
+			`${pointsTo(MID, "shaky", 0)} to reach SHAKY · 2 polls left`
 		);
 	});
 
@@ -328,7 +442,7 @@ describe("the standing line", () => {
 
 	it("aims at OK from the calibration gate's floorless start", () => {
 		expect(text({ gate: 0, ladder: CALIBRATION })).toBe(
-			"+2 units to OK · 5 polls left"
+			`${pointsTo(CALIBRATION, "ok", 0)} to reach OK · 5 polls left`
 		);
 	});
 });
@@ -371,13 +485,13 @@ describe("the SHAKY row reads what the gate takes on a miss", () => {
 	const shakyRow = (frame: BandOutcomesFrame) => rungOf(frame, "shaky");
 
 	it("quotes the peel as a negative figure where the gate takes one", () => {
-		expect(shakyRow(frameFor())?.pays).toBe("−64 KB peel");
+		expect(shakyRow(frameFor())?.pays).toBe("gate held · −64 KB peel");
 	});
 
 	it("says no peel at Pallet, which takes none (ADR-057), never a zero figure", () => {
 		expect(
 			shakyRow(frameFor({ gate: 0, ladder: CALIBRATION, peelKb: 0 }))?.pays
-		).toBe("no peel");
+		).toBe("gate held · no peel");
 	});
 });
 
@@ -389,12 +503,17 @@ describe("the Champion's OK row reads a miss", () => {
 	});
 
 	it("quotes the peel on OK, since only HEALTHY or better wins", () => {
-		expect(rungOf(champion, "ok")?.pays).toBe("−64 KB peel");
+		expect(rungOf(champion, "ok")?.pays).toBe("gate held · −64 KB peel");
 	});
 
 	it("asks for HEALTHY or better in the clear objective", () => {
+		const healthyFrom = clearingRungFor(
+			ladderAt(VICTORY_GATE),
+			VICTORY_GATE
+		).from;
+
 		expect(leadTextOf(clearOf(champion).statement)).toBe(
-			"Finish at HEALTHY or better"
+			`Finish at HEALTHY (${healthyFrom}%) or better`
 		);
 	});
 });

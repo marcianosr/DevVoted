@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-09-29T09:57:41Z
-updated_at: 2026-09-29T10:53:51Z
+updated_at: 2026-09-30T16:15:20Z
 ---
 
 **What:** The appearance tab shows one face with your owned borders and titles under it, and a single press saves the look. Borders and titles get their own tabs to browse and buy.
@@ -23,4 +23,4 @@ updated_at: 2026-09-29T10:53:51Z
 Plan: /Users/marciano/.claude-work/plans/extrtact-the-border-shop-shimmering-wilkes.md
 Amends ADR-142.
 
-Open: the refusal rule in look.model (lookRefusalOf) is left to Marciano; its four specs fail until it lands. ADR-144.
+The refusal rule in look.model (lookRefusalOf) landed 2026-09-30 (see the DVTD-0ia7 summary); its specs pass. ADR-144.

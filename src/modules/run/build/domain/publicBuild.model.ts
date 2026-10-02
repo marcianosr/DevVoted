@@ -1,5 +1,5 @@
 import { slotsOf } from "~/modules/run/config/domain/config.model";
-import { spaceFitting } from "~/modules/run/run/domain/rules.model";
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 
 export type InstalledConfigRef = {
@@ -62,8 +62,8 @@ export const publicWeightOf = (build: PublicBuild): number =>
 	build.configs.reduce((total, config) => total + config.slots, 0);
 
 export const publicSpaceOf = (build: PublicBuild): number =>
-	spaceFitting(
+	rungFitting(
 		build.configs
 			.filter((config) => config.id !== build.vendorLockedConfigId)
 			.reduce((total, config) => total + config.slots, 0)
-	);
+	).weight;

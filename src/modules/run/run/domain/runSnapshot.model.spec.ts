@@ -43,7 +43,8 @@ const stateVariants: Record<string, RunState> = {
 			correct: 2,
 			answered: 2,
 			unitsEarned: 2.4,
-			baseUnits: 2.4,
+			accuracyEarned: 2.4,
+			accuracyAvailable: 2,
 			byCategory: { js: { seen: 2, correct: 2 } },
 			budget: 3,
 		},
@@ -146,7 +147,7 @@ describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
 			coverage,
 		});
 		const { unitsEarned: _renamed, ...window } = snapshot.window;
-		const { bankedUnits: _absent, ...rest } = snapshot;
+		const { headStartUnits: _absent, ...rest } = snapshot;
 
 		return {
 			...rest,
@@ -159,14 +160,14 @@ describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
 		expect(hydrated.window.unitsEarned).toBe(2);
 	});
 
-	it("reconstructs the banked units rather than zeroing the run", () => {
+	it("opens the gate with no head start, since the old bank was cumulative", () => {
 		const hydrated = hydrateRunState(preRenameSnapshot(9.4, 2), POLLS);
-		expect(hydrated.bankedUnits).toBeCloseTo(7.4);
+		expect(hydrated.headStartUnits).toBe(0);
 	});
 
 	it("never hands the coverage bar a figure it cannot settle", () => {
 		const hydrated = hydrateRunState(preRenameSnapshot(0, 0), POLLS);
-		expect(Number.isFinite(hydrated.bankedUnits)).toBe(true);
+		expect(Number.isFinite(hydrated.headStartUnits)).toBe(true);
 		expect(Number.isFinite(hydrated.window.unitsEarned)).toBe(true);
 		expect(Number.isFinite(hydrated.coverage)).toBe(true);
 	});
@@ -174,13 +175,52 @@ describe("hydrateRunState — a pre-rename snapshot (DVTD-znsu)", () => {
 	it("leaves a current snapshot exactly as it found it", () => {
 		const current = toRunSnapshot({
 			...baseState,
-			bankedUnits: 12,
+			headStartUnits: 12,
 			coverage: 13.5,
 			window: { ...baseState.window, unitsEarned: 1.5 },
 		});
 		const hydrated = hydrateRunState(current, POLLS);
-		expect(hydrated.bankedUnits).toBe(12);
+		expect(hydrated.headStartUnits).toBe(12);
 		expect(hydrated.window.unitsEarned).toBe(1.5);
+	});
+});
+
+describe("hydrateRunState — a window written before accuracy was weighted", () => {
+	const unweighted = () => {
+		const snapshot = toRunSnapshot(baseState);
+		const {
+			accuracyEarned: _earned,
+			accuracyAvailable: _available,
+			...window
+		} = snapshot.window;
+		return { ...snapshot, window };
+	};
+
+	it("reads every answered poll as a single, which never over-counts", () => {
+		const { window } = hydrateRunState(unweighted(), POLLS);
+
+		expect(window.accuracyEarned).toBe(baseState.window.correct);
+		expect(window.accuracyAvailable).toBe(baseState.window.answered);
+	});
+});
+
+describe("hydrateRunState — a snapshot written under the cumulative meter", () => {
+	const cumulativeSnapshot = () => {
+		const { headStartUnits: _absent, ...rest } = toRunSnapshot({
+			...baseState,
+			gatesCleared: 4,
+		});
+		return { ...rest, bankedUnits: 20 };
+	};
+
+	it("drops the cumulative bank, which would fill a per-gate codebase on its own", () => {
+		expect(hydrateRunState(cumulativeSnapshot(), POLLS).headStartUnits).toBe(0);
+	});
+
+	it("carries no legacy bank field into the run", () => {
+		expect(
+			Reflect.has(hydrateRunState(cumulativeSnapshot(), POLLS), "bankedUnits")
+		).toBe(false);
 	});
 });
 

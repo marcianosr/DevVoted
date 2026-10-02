@@ -28,6 +28,9 @@ Not only when the run ends. The unlocks and titles of a close are stamped on tha
 close's entry in the run's close record (ADR-147), so the debrief reads them after
 a reload. Unlocks fired mid-gate are held until the close.
 
+The Earned panel is an earned title's only announcement: it is written already
+announced, and the ADR-111 modal is left to granted titles (amended 2026-10-02).
+
 ## Decision 3: the swatch has one home
 
 The header line ("You didn't earn the Pallet swatch") and the **swatch earned**

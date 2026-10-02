@@ -1,11 +1,9 @@
+import { HELD_OF, NEW_RUN_PRICE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import { CATEGORY_METADATA, isCategoryCode } from "~/shared/lib/categories";
 
 import type { AuditdexEntry } from "~/modules/collection/dex/domain/auditdex.model";
-import {
-	grantedCountIn,
-	type ConfigdexEntry,
-} from "~/modules/collection/dex/domain/configdex.model";
+import type { ConfigdexEntry } from "~/modules/collection/dex/domain/configdex.model";
 import type { ControldexEntry } from "~/modules/collection/dex/domain/controldex.model";
 import type { GatedexEntry } from "~/modules/collection/dex/domain/gatedex.model";
 import {
@@ -15,11 +13,15 @@ import {
 import {
 	filterPolldexEntries,
 	formatDexNumber,
-	polldexCoverage,
 	presentCategories,
 	sortByDexNumber,
 	type PolldexEntry,
 } from "~/modules/collection/dex/domain/polldex.model";
+import {
+	configTallyOf,
+	pollTallyOf,
+	type Tally,
+} from "~/modules/collection/dex/domain/tally.model";
 import {
 	baseSlotsOf,
 	givesOf,
@@ -28,25 +30,17 @@ import {
 	type Config,
 } from "~/modules/run/config/domain/config.model";
 import { figureLabel } from "~/modules/run/config/application/configChip.viewmodel";
-import { extendCost, rebuildCost } from "~/modules/run/shop/domain/draft.model";
 import {
-	type CarriedServiceId,
 	isCarriedService,
-	REGISTRY_CONTROLS,
 	unlockCaptionOf,
-	type RegistryControlId,
 	type RegistryControlSpec,
+	type ServiceLasts,
+	type ServicePrice,
 } from "~/modules/run/shop/domain/registryControl.model";
-import { carryLabelOf } from "~/modules/run/shop/application/shopScreen.viewmodel";
-import {
-	BOOT_CACHE_RUNGS,
-	PIN_FROM_GATE,
-	SKIP_SHOP_KB,
-	PIN_UNTIL_GATE,
-	pinCostFor,
-} from "~/modules/run/run/domain/rules.model";
+import type { BootCacheRung } from "~/modules/run/run/domain/rules.model";
 import { formatStorage, kbLabel } from "~/shared/lib/storage";
 import type { UnlockPathCaption } from "~/modules/run/config/domain/unlockCaption.model";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 import { percentOf } from "~/modules/run/build/domain/coverageRatio.model";
 
@@ -96,26 +90,21 @@ import type { TabItem } from "~/ui/kanto-theme/Tabs.ui";
 export type DexTabId =
 	"polls" | "configs" | "controls" | "audits" | "swatches" | "runs";
 
-export type DexTab = TabItem & { id: DexTabId; color: KantoColor };
+export type DexTab = TabItem & { id: DexTabId };
 
 export const DEX_TABS = [
-	{ id: "polls", label: "Polls", color: "cerulean" },
-	{ id: "configs", label: "Configs", color: "pallet" },
-	{ id: "controls", label: "Services", color: "seafoam" },
-	{ id: "audits", label: "Audits", color: "saffron" },
-	{ id: "swatches", label: "Swatches", color: "lavender" },
-	{ id: "runs", label: "Runs", color: "pewter" },
+	{ id: "polls", label: "Polls" },
+	{ id: "configs", label: "Configs" },
+	{ id: "controls", label: "Services" },
+	{ id: "audits", label: "Audits" },
+	{ id: "swatches", label: "Swatches" },
+	{ id: "runs", label: "Runs" },
 ] as const satisfies readonly DexTab[];
-
-const FALLBACK_TAB = DEX_TABS[0];
 
 export const isDexTabId = (value: string): value is DexTabId =>
 	DEX_TABS.some((tab) => tab.id === value);
 
-export const dexThemeOf = (activeId: string): KantoColor =>
-	(DEX_TABS.find((tab) => tab.id === activeId) ?? FALLBACK_TAB).color;
-
-const heldOf = (held: number, total: number): string => `${held} of ${total}`;
+const tallyLabelOf = ({ held, total }: Tally): string => HELD_OF(held, total);
 
 const POLLS_NOTE =
 	"A poll enters the dex the first time it is dealt to you. Repeats show how often and how you did.";
@@ -159,12 +148,12 @@ const categoryFiltersFor = (
 ): readonly SegmentedItem<string>[] => [
 	{ value: ALL_FILTER, label: ALL_FILTER },
 	...presentCategories([...entries]).map((code) => {
-		const coverage = polldexCoverage(filterPolldexEntries([...entries], code));
+		const tally = pollTallyOf(filterPolldexEntries([...entries], code));
 
 		return {
 			value: code,
 			mark: CATEGORY_METADATA[code].name,
-			label: heldOf(coverage.seen, coverage.total),
+			label: tallyLabelOf(tally),
 		};
 	}),
 ];
@@ -175,7 +164,6 @@ export const dexPollsFor = (
 	selectedId?: string
 ): DexPollsData => {
 	const categories = presentCategories([...entries]);
-	const coverage = polldexCoverage([...entries]);
 	const shown = sortByDexNumber(
 		filterPolldexEntries([...entries], isCategoryCode(filter) ? filter : "all")
 	);
@@ -188,7 +176,7 @@ export const dexPollsFor = (
 		rows: shown.map(pollRowFor),
 		selectedId: picked === undefined ? null : String(picked.id),
 		detail: picked === undefined ? null : pollDetailFor(picked),
-		count: heldOf(coverage.seen, coverage.total),
+		count: tallyLabelOf(pollTallyOf(entries)),
 		meta: plural(categories.length, "category", "categories"),
 		note: POLLS_NOTE,
 	};
@@ -281,7 +269,7 @@ const lightestFirst = (
 	);
 
 const heldAmong = (entries: readonly ConfigdexEntry[]): string =>
-	heldOf(entries.filter(isGranted).length, entries.length);
+	tallyLabelOf(configTallyOf(entries));
 
 const atWeight = (
 	entries: readonly ConfigdexEntry[],
@@ -343,7 +331,7 @@ export const dexConfigsFor = (
 		rows: shown.map(rowFor),
 		selectedId: picked === undefined ? null : idOf(picked),
 		detail: picked === undefined ? null : detailFor(picked),
-		count: heldOf(grantedCountIn(entries), entries.length),
+		count: heldAmong(entries),
 		meta: CONFIGS_META,
 		note: CONFIGS_NOTE,
 	};
@@ -355,43 +343,73 @@ const SERVICES_META = "earned once · carried per run";
 const NOT_YET_SOLD = "not for sale yet";
 const FREE = "free";
 
-const SERVICE_LINES: Record<RegistryControlId, string> = {
-	rebuild: "Every shop · this visit",
-	skipShop: "Every shop · this visit",
-	extend: "Shop from Cascade · rest of the run",
-	hotReload: "Every shop · this visit",
-	returnPolicy: "Every shop · this visit",
-	abandon: "Every shop · ends the run",
-	pin: `Shop, gates ${PIN_FROM_GATE}–${PIN_UNTIL_GATE} · carries into your next run`,
-	bootCache: "New run · banked at the start",
-	dockerImage: "New run · offered in the first shop",
+const LASTS_WORDS: Record<ServiceLasts, string> = {
+	visit: "this visit",
+	run: "rest of the run",
+	endsRun: "ends the run",
+	nextRun: "carries into your next run",
+	atStart: "banked at the start",
+	firstShop: "offered in the first shop",
 };
 
-const rungBytes = BOOT_CACHE_RUNGS.map((rung) => rung.archiveBytes);
+const EVERY_SHOP = "Every shop";
+const NEW_RUN = "New run";
+const LINE_JOIN = " · ";
+const STEP_JOIN = ", then ";
 
-const CONTROL_PRICES: Record<RegistryControlId, string> = {
-	rebuild: `from ${kbLabel(rebuildCost(0))}, doubling`,
-	skipShop: `pays ${kbLabel(SKIP_SHOP_KB)}`,
-	extend: carryLabelOf(REGISTRY_CONTROLS.extend.carryBytes),
-	hotReload: NOT_YET_SOLD,
-	returnPolicy: NOT_YET_SOLD,
-	abandon: FREE,
-	pin: carryLabelOf(REGISTRY_CONTROLS.pin.carryBytes),
-	bootCache: `${carryLabelOf(Math.min(...rungBytes))} to ${formatStorage(Math.max(...rungBytes))}`,
-	dockerImage: NOT_YET_SOLD,
+const soldWhere = (control: RegistryControlSpec): string => {
+	if (control.soldIn === "archive") return NEW_RUN;
+	if (control.closesAfterGates !== undefined) {
+		return `Shop, gates ${control.opensAfterGates}–${control.closesAfterGates}`;
+	}
+	if (control.opensAfterGates > 1) {
+		return `Shop from ${gateSwatchAt(control.opensAfterGates).gateName}`;
+	}
+	return EVERY_SHOP;
 };
 
-const PRESS_PRICES: Record<CarriedServiceId, string> = {
-	extend: `${kbLabel(extendCost(0))}, then ${kbLabel(extendCost(1))}`,
-	pin: `from ${kbLabel(pinCostFor(PIN_FROM_GATE))}, rising with depth`,
+const serviceLineOf = (control: RegistryControlSpec): string =>
+	`${soldWhere(control)}${LINE_JOIN}${LASTS_WORDS[control.lasts]}`;
+
+const archiveRangeOf = (rungs: readonly BootCacheRung[]): string => {
+	const bytes = rungs.map((rung) => rung.archiveBytes);
+	return `${NEW_RUN_PRICE(formatStorage(Math.min(...bytes)))} to ${formatStorage(Math.max(...bytes))}`;
 };
+
+const priceLabelOf = (price: ServicePrice): string => {
+	switch (price.kind) {
+		case "doubling":
+			return `from ${kbLabel(price.fromKb)}, doubling`;
+		case "steps":
+			return price.kbs.map((kb) => kbLabel(kb)).join(STEP_JOIN);
+		case "rising":
+			return `from ${kbLabel(price.fromKb)}, rising with depth`;
+		case "pays":
+			return `pays ${kbLabel(price.kb)}`;
+		case "rungs":
+			return archiveRangeOf(price.rungs);
+		case "free":
+			return FREE;
+		case "unsold":
+			return NOT_YET_SOLD;
+	}
+};
+
+const rowPriceOf = (control: RegistryControlSpec): string =>
+	isCarriedService(control)
+		? NEW_RUN_PRICE(formatStorage(control.carryBytes))
+		: priceLabelOf(control.price);
 
 const FROM_FIRST_SHOP = "On sale in every shop from the first gate.";
 const FROM_ARCHIVE = "Carried in at new run, from the archive.";
-const BOOT_CACHE_LINE = `Carried in at new run: ${BOOT_CACHE_RUNGS.map(
-	(rung) =>
-		`${formatStorage(rung.archiveBytes)} of archive banks ${kbLabel(rung.storageKb)}`
-).join(", ")}.`;
+
+const rungsLine = (rungs: readonly BootCacheRung[]): string =>
+	`Carried in at new run: ${rungs
+		.map(
+			(rung) =>
+				`${formatStorage(rung.archiveBytes)} of archive banks ${kbLabel(rung.storageKb)}`
+		)
+		.join(", ")}.`;
 
 type ShopSale = Extract<RegistryControlSpec, { soldIn: "shop" }>;
 type ArchiveSale = Extract<RegistryControlSpec, { soldIn: "archive" }>;
@@ -407,44 +425,62 @@ const shopLine = (control: ShopSale): string =>
 		: `${opensLine(control.opensAfterGates)} It stops being offered after gate ${control.closesAfterGates}.`;
 
 const archiveLine = (control: ArchiveSale): string =>
-	control.id === REGISTRY_CONTROLS.bootCache.id
-		? BOOT_CACHE_LINE
+	control.price.kind === "rungs"
+		? rungsLine(control.price.rungs)
 		: FROM_ARCHIVE;
 
 const carriedLine = (bytes: number): string =>
 	`Carried in at new run for ${formatStorage(bytes)} of archive.`;
 
-const pressedLine = (id: CarriedServiceId): string =>
-	`Pressed in the shop for ${PRESS_PRICES[id]} of run storage.`;
+const pressedLine = (price: ServicePrice): string =>
+	`Pressed in the shop for ${priceLabelOf(price)} of run storage.`;
 
 const availabilityOf = (control: RegistryControlSpec): string => {
 	if (control.soldIn === "archive") return archiveLine(control);
 	if (isCarriedService(control))
-		return `${carriedLine(control.carryBytes)} ${shopLine(control)} ${pressedLine(control.id)}`;
+		return `${carriedLine(control.carryBytes)} ${shopLine(control)} ${pressedLine(control.price)}`;
 	return shopLine(control);
 };
 
-const controlRowFor = ({
+const lockedUnlockOf = ({
 	control,
 	unlocked,
-}: ControldexEntry): DexControlRow => {
-	const row = {
+}: ControldexEntry): string | undefined =>
+	unlocked ? undefined : unlockCaptionOf(control);
+
+const controlRowFor = (entry: ControldexEntry): DexControlRow => {
+	const { control } = entry;
+	const unlock = lockedUnlockOf(entry);
+	if (unlock !== undefined)
+		return {
+			id: control.id,
+			glyph: control.glyph,
+			title: REDACTED,
+			detail: REDACTED,
+			locked: true,
+			unlock,
+		};
+
+	return {
 		id: control.id,
 		glyph: control.glyph,
 		title: control.title,
-		detail: SERVICE_LINES[control.id],
+		detail: serviceLineOf(control),
+		price: rowPriceOf(control),
 	};
-	const unlock = unlockCaptionOf(control);
-	return unlocked || unlock === undefined
-		? { ...row, price: CONTROL_PRICES[control.id] }
-		: { ...row, locked: true, unlock };
 };
 
-const controlDetailFor = (entry: ControldexEntry): DexControlDetail => ({
-	label: entry.control.title,
-	control: controlRowFor(entry),
-	availability: availabilityOf(entry.control),
-});
+const controlDetailFor = (entry: ControldexEntry): DexControlDetail => {
+	const unlock = lockedUnlockOf(entry);
+	return {
+		label: unlock === undefined ? entry.control.title : REDACTED,
+		control: controlRowFor(entry),
+		availability:
+			unlock === undefined
+				? availabilityOf(entry.control)
+				: `${unlock} to unlock it.`,
+	};
+};
 
 export const dexControlsFor = (
 	entries: readonly ControldexEntry[],
@@ -457,7 +493,7 @@ export const dexControlsFor = (
 		rows: entries.map(controlRowFor),
 		selectedId: picked === undefined ? null : picked.control.id,
 		detail: picked === undefined ? null : controlDetailFor(picked),
-		count: heldOf(
+		count: HELD_OF(
 			entries.filter((entry) => entry.unlocked).length,
 			entries.length
 		),
@@ -510,7 +546,7 @@ const gateFiltersFor = (
 			return {
 				value: String(gate),
 				mark: String(gate),
-				label: heldOf(
+				label: HELD_OF(
 					firing.filter((entry) => entry.tier !== "unseen").length,
 					firing.length
 				),
@@ -535,7 +571,7 @@ export const dexAuditsFor = (
 		rows: shown.map(auditRowFor),
 		selectedId: picked === undefined ? null : picked.id,
 		detail: picked === undefined ? null : auditDetailFor(picked),
-		count: heldOf(
+		count: HELD_OF(
 			entries.filter((entry) => entry.tier !== "unseen").length,
 			entries.length
 		),
@@ -545,12 +581,12 @@ export const dexAuditsFor = (
 };
 
 const SWATCHES_NOTE =
-	"A swatch is earned by answering all five polls of its gate. Clearing the gate alone does not mint it.";
+	"A swatch is earned by reaching 100% coverage at its gate. Clearing the gate alone does not mint it.";
 const SWATCHES_META = "one a gate, swept";
 
 const SWATCH_RULE =
-	"Answer all five polls of this gate to mint it. Clearing the gate alone does not.";
-const SWATCH_EARNED = "Minted. You answered all five.";
+	"Reach 100% coverage at this gate to mint it. Clearing the gate alone does not.";
+const SWATCH_EARNED = "Minted. You reached 100% coverage.";
 
 const swatchFillFor = (entry: GatedexEntry): SwatchFill => {
 	if (entry.state === "cleared") {
@@ -586,7 +622,7 @@ export const dexSwatchesFor = (
 		rows: entries.map(swatchRowFor),
 		selectedId: picked === undefined ? null : String(picked.gate),
 		detail: picked === undefined ? null : swatchDetailFor(picked),
-		count: heldOf(
+		count: HELD_OF(
 			entries.filter((entry) => entry.state === "cleared").length,
 			entries.length
 		),
