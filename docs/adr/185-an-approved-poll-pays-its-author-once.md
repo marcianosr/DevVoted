@@ -34,5 +34,18 @@ ADR-051's no-backfill rule. Republishing one of them pays nothing.
 ## Decision 4: the reward is stated where a player suggests
 
 The nav's suggest link reads **Suggest a poll · +16 KB**, and *Your suggested polls*
-states what a published poll banks. Admin-authored polls pay too: excluding them is a
-rule with no player it protects.
+states what a published poll banks. ~~Admin-authored polls pay too: excluding them is a
+rule with no player it protects.~~ Superseded by Decision 5.
+
+## Decision 5: an admin's own poll pays nothing (amended 2026-10-04)
+
+Marciano disagreed with the last line of Decision 4. The admin writes and publishes most
+of the polls (414 at the time), so paying them turns the reward into a private faucet
+the admin cannot help opening, and the **+16 KB** in the nav advertises a payout to the
+one account that would never act on it.
+
+- The first publish of an admin's poll is still stamped, so it can never pay later; the
+  archive credit skips an author whose email is an admin address.
+- The admin's nav states **Suggest a poll** with no reward. *Your suggested polls*
+  already hid the reward line from admins.
+- Everyone else sees the reward as a green badge beside **Suggest a poll**.

@@ -12,6 +12,7 @@ import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftTod
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { POLLS_PATH, SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
+import { isAdminEmail } from "~/shared/utils/adminAuth";
 import { AppNav, type NavViewer } from "~/ui/kanto-theme/AppNav.ui";
 import type { NavRunReading } from "~/ui/kanto-theme/useNavRun.hook";
 
@@ -73,7 +74,7 @@ export const Nav = ({ user, published }: NavProps) => {
 			suggest={{
 				href: SUGGEST_POLL_PATH,
 				active: pathname === SUGGEST_POLL_PATH,
-				reward: APPROVED_POLL_REWARD,
+				reward: isAdminEmail(user?.email) ? undefined : APPROVED_POLL_REWARD,
 			}}
 			viewer={viewer}
 			reading={published ?? navRunFor(view)}

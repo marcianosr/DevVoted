@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- **The reward for suggesting a poll wears a badge.** The **Suggest a poll** link in the nav shows **+16 KB** as a green badge instead of trailing text.
 - **The new run screen states the build's weight limit at the top.** *Install configs up to 4 weight units* now sits under the Build header, before the configs, instead of at the bottom of the panel.
 
 ### Fixed

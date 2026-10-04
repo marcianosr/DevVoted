@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, not, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, not, notInArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
@@ -9,6 +9,7 @@ import {
 } from "~/modules/polls/poll/domain/poll.model";
 import { toPoll } from "~/modules/polls/poll/infrastructure/poll.repository";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
+import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
 
 type Updater = Pick<typeof db, "update">;
 
@@ -176,12 +177,18 @@ export const payAuthorOnFirstPublish = async (
 
 	if (!paid) return null;
 
-	await tx
+	const [credited] = await tx
 		.update(usersTable)
 		.set({
 			archived_storage: sql`${usersTable.archived_storage} + ${APPROVED_POLL_ARCHIVE_BYTES}`,
 		})
-		.where(eq(usersTable.id, paid.author));
+		.where(
+			and(
+				eq(usersTable.id, paid.author),
+				notInArray(usersTable.email, [...ADMIN_EMAILS])
+			)
+		)
+		.returning({ id: usersTable.id });
 
-	return paid.author;
+	return credited?.id ?? null;
 };

@@ -1079,8 +1079,8 @@ unmet coverage are different problems and read differently.
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
 (100% victory, proportional on death, 0% on abandon). A suggested poll pays into it too:
-the first time an admin publishes it, its author banks a flat **16 KB**, once per poll
-(ADR-185). It is the account's one persistent wallet, and it buys two things
+the first time an admin publishes it, its author banks a flat **16 KB**, once per poll,
+unless the author is an admin (ADR-185 D5). It is the account's one persistent wallet, and it buys two things
 (ADR-112, ADR-153):
 
 - **Appearance** — profile borders, 256 KB to 48 MB, bought on the profile (and the

@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe("payAuthorOnFirstPublish", () => {
 	it("stamps the poll paid and credits its author's archive on the first publish", async () => {
-		mock.results.push([{ author: BROCK }]);
+		mock.results.push([{ author: BROCK }], [{ id: BROCK }]);
 
 		const paid = await payAuthorOnFirstPublish(db, POLL_ID);
 
@@ -40,6 +40,15 @@ describe("payAuthorOnFirstPublish", () => {
 		expect(mock.updateTables).toEqual([pollsTable, usersTable]);
 		expect(mock.setCalls[0]).toHaveProperty("author_paid_at");
 		expect(mock.setCalls[1]).toHaveProperty("archived_storage");
+	});
+
+	it("stamps the poll but credits nothing when its author is an admin", async () => {
+		mock.results.push([{ author: BROCK }], []);
+
+		const paid = await payAuthorOnFirstPublish(db, POLL_ID);
+
+		expect(paid).toBeNull();
+		expect(mock.setCalls[0]).toHaveProperty("author_paid_at");
 	});
 
 	it("credits nothing when the poll is not published or was already paid", async () => {

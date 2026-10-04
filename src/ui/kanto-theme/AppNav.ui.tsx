@@ -39,6 +39,7 @@ export const COPY = {
 
 const AVATAR_THEME = "vermillion";
 const BADGE_THEME = "saffron";
+const REWARD_THEME = "viridian";
 const SEPARATOR = " · ";
 
 const WRAP = "flex items-center gap-2 bg-black px-2 py-1.5";
@@ -67,8 +68,13 @@ const MENU_HEAD = "flex items-start gap-3 px-4 py-3";
 const MENU_NAMING = "flex min-w-0 flex-col gap-1.5";
 const MENU_NAME = "break-all";
 const STANDING = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
-const MENU_ROW =
-	"block px-4 py-2 text-sm text-theme-soft transition-colors hover:bg-theme-raised";
+const MENU_ROW_LOOK =
+	"px-4 py-2 text-sm text-theme-soft transition-colors hover:bg-theme-raised";
+const MENU_ROW = clsx("block", MENU_ROW_LOOK);
+const MENU_ROW_BADGED = clsx(
+	"flex items-center gap-2 md:hidden",
+	MENU_ROW_LOOK
+);
 const HIDDEN = "sr-only";
 
 const TAB_BAR =
@@ -132,8 +138,15 @@ export type NavRun = NavTarget & { pollsLeft?: number };
 
 export type NavSuggest = NavTarget & { reward?: string };
 
-const suggestLabelOf = ({ reward }: NavSuggest): string =>
-	reward === undefined ? COPY.suggest : COPY.suggestFor(reward);
+const suggestNameOf = ({ reward }: NavSuggest): string | undefined =>
+	reward === undefined ? undefined : COPY.suggestFor(reward);
+
+const SuggestLabel = ({ reward }: Pick<NavSuggest, "reward">) => (
+	<>
+		<span className={ITEM_LABEL}>{COPY.suggest}</span>
+		{reward === undefined ? null : <Badge color={REWARD_THEME}>{reward}</Badge>}
+	</>
+);
 
 export type AppNavProps = {
 	homeHref: string;
@@ -277,10 +290,11 @@ const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
 			</NavAnchor>
 			<NavAnchor
 				href={suggest.href}
-				className={clsx(MENU_ROW, "md:hidden")}
+				label={suggestNameOf(suggest)}
+				className={MENU_ROW_BADGED}
 				onNavigate={onNavigate}
 			>
-				{suggestLabelOf(suggest)}
+				<SuggestLabel reward={suggest.reward} />
 			</NavAnchor>
 
 			<NavDivider />
@@ -336,12 +350,14 @@ export const AppNav = ({
 						label={COPY.community}
 						onNavigate={onNavigate}
 					/>
-					<NavItem
+					<NavAnchor
 						href={suggest.href}
-						active={suggest.active}
-						label={suggestLabelOf(suggest)}
+						label={suggestNameOf(suggest)}
+						className={clsx(ITEM, suggest.active ? ITEM_HERE : ITEM_ELSEWHERE)}
 						onNavigate={onNavigate}
-					/>
+					>
+						<SuggestLabel reward={suggest.reward} />
+					</NavAnchor>
 				</nav>
 			)}
 			{viewer === undefined || reading === undefined ? null : (

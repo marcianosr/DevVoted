@@ -139,6 +139,19 @@ describe("AppNav", () => {
 			expect(links).toHaveLength(2);
 			expect(links[0]).toHaveAttribute("href", SUGGEST);
 		});
+
+		it("draws the reward as a green badge on every suggest link", () => {
+			drawBar({
+				viewer: VIEWER,
+				suggest: { href: SUGGEST, active: false, reward: "+16 KB" },
+			});
+
+			const rewards = screen.getAllByText("+16 KB");
+			expect(rewards).toHaveLength(2);
+			rewards.forEach((reward) =>
+				expect(reward).toHaveAttribute("data-screen-theme", "viridian")
+			);
+		});
 	});
 
 	describe("the count", () => {
