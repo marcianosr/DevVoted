@@ -209,7 +209,7 @@ const nextRowOf = (view: RunView): RunSoFarNext => {
 		gate: view.gatesCleared,
 		swatch: gateSwatchAt(view.gatesCleared),
 		band: hubBandOf(bandAtLadder(held, view.gateStake.coverageLadder).id),
-		started: view.answeredThisGate.length > 0,
+		started: view.pollsAnswered > 0,
 		share: `${roundToOneDecimal(held)}${PERCENT}`,
 		kb: kbGained(view.fullClearKb),
 	};

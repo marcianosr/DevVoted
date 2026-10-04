@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The new run screen states the build's weight limit at the top.** *Install configs up to 4 weight units* now sits under the Build header, before the configs, instead of at the bottom of the panel.
 
 ### Fixed
+- **The hub no longer reads a gate you just cleared as the next one started.** Between clearing a gate and visiting the shop, **Run so far** showed the next gate at *DANGER 0%*. It now reads *not started* until you answer its first poll.
 - **Wear the title works again for every player.** On some accounts, pressing **Wear the title** in the *Thank you for playing* window did nothing and showed *Cannot wear a border you don't own*, because the border they already had on was checked as if they were buying it. Keeping the border you wear no longer blocks putting on a title.
 
 ## 2.0.0 - 2026-10-04

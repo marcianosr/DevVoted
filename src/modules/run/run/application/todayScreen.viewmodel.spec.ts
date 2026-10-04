@@ -251,7 +251,7 @@ describe(runSoFarFor, () => {
 		const soFar = runSoFarFor(
 			createMockRunView({
 				gatesCleared: 3,
-				answeredThisGate: [answered(0)],
+				pollsAnswered: 1,
 				fullClearKb: 40,
 				gateStake: createMockGateStake({ coverageHeld: 40 }),
 			})
@@ -268,8 +268,20 @@ describe(runSoFarFor, () => {
 	it("reads the next gate as not started until its first poll is answered", () => {
 		const soFar = runSoFarFor(
 			createMockRunView({
-				answeredThisGate: [],
+				pollsAnswered: 0,
 				gateStake: createMockGateStake({ coverageHeld: 0.9 }),
+			})
+		);
+
+		expect(soFar?.next?.started).toBe(false);
+	});
+
+	it("reads the next gate as not started while the cleared gate's answers wait for the shop", () => {
+		const soFar = runSoFarFor(
+			createMockRunView({
+				gatesCleared: 1,
+				answeredThisGate: [0, 1, 2, 3, 4].map(answered),
+				pollsAnswered: 0,
 			})
 		);
 
