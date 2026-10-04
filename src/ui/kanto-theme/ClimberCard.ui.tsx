@@ -3,6 +3,7 @@ import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
 import { Button, type ButtonTone } from "./Button.ui";
 import { Climber } from "./Climber.ui";
 import { Contribution, type ContributionProps } from "./Contribution.ui";
+import { Icon } from "./Icon.ui";
 import { Link } from "./Link.ui";
 import type { KantoColor } from "./colors";
 import type { SwatchFill } from "./Swatch.ui";
@@ -24,7 +25,7 @@ export const COPY = {
 	profileOf: (name: string) => `${name}'s profile`,
 } as const;
 
-const CLOSE_GLYPH = "×";
+const CLOSE_ICON = "size-4 stroke-[1.5]";
 
 const CARD =
 	"flex max-h-[70vh] w-full flex-col overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised";
@@ -37,8 +38,8 @@ const PRESS_ROW =
 const PRESS_NOTE = "flex items-center gap-2 text-xs font-bold text-theme-muted";
 const FACING = "flex shrink-0 flex-col items-center gap-1";
 const RESCUE = "w-16 text-center text-xxs leading-tight text-theme-muted";
-const NAMING = "flex min-w-0 flex-col items-start gap-1.5";
-const NAME = "truncate text-lg font-extrabold text-theme-soft";
+const NAMING = "flex min-w-0 flex-1 flex-col items-start gap-1.5";
+const NAME = "max-w-full truncate text-lg font-extrabold text-theme-soft";
 const TRAILING = "ml-auto flex shrink-0 self-start";
 
 const QUIET_TITLE: KantoColor = "pewter";
@@ -229,7 +230,7 @@ export const ClimberCard = ({
 				<span className={TRAILING}>
 					<Button
 						tone="ambient"
-						glyph={CLOSE_GLYPH}
+						glyph={<Icon name="close" className={CLOSE_ICON} />}
 						label={`${COPY.close} ${name}`}
 						onPress={onClose}
 					/>
