@@ -74,14 +74,14 @@ export const NewRunScreen = ({
 								label={BUILD}
 								trailing={discloseAllFor(dealt, dealt.configs.length)}
 							/>
+							{buildNote === undefined ? null : (
+								<Panel.Body>
+									<Lead line={buildNote} />
+								</Panel.Body>
+							)}
 							<Panel.Body>
 								<Build {...dealt} />
 							</Panel.Body>
-							{buildNote === undefined ? null : (
-								<Panel.Footer>
-									<Lead line={buildNote} />
-								</Panel.Footer>
-							)}
 						</Panel>
 					</div>
 
