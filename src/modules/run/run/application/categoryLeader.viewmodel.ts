@@ -23,17 +23,16 @@ const FIGURE = {
 
 const HEADING = {
 	streak: {
-		title: "Streak leaders",
+		title: "streak",
 		summary: "longest run of correct answers in one run · all-time",
 	},
 	correct: {
-		title: "Correct leaders",
+		title: "correct",
 		summary: "most correct answers in one run · all-time",
 	},
 } satisfies Record<CategoryMeasure, { title: string; summary: string }>;
 
 const SEATS_CHANGE_HANDS = "A seat changes hands when somebody beats it.";
-const SEATED = (held: number, total: number) => `${held} of ${total} seated`;
 
 const CLAIMS_IT = (measure: CategoryMeasure) =>
 	`${FIGURE[measure](MIN_LEADER[measure])} claims it`;
@@ -73,10 +72,6 @@ export const categoryBoardFor = ({
 }: CategoryBoard): CommunityLeaders => ({
 	title: HEADING[measure].title,
 	summary: HEADING[measure].summary,
-	seated: SEATED(
-		seats.filter(({ leader }) => leader !== undefined).length,
-		seats.length
-	),
 	seats: seats.map((seat) => categoryLeaderRowFor(measure, seat)),
 	footer: seatsFooterFor(seats),
 });

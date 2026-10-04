@@ -1119,7 +1119,7 @@ export const kantoPrepAt = ({
 	});
 
 export const newRunBuildNote = (): LeadLine => [
-	`The first ${numberWord(BASE_SLOTS)} weight is free. Past that the build bills you at every gate close, and the shop rents more room from the Cascade gate on.`,
+	`The first ${numberWord(BASE_SLOTS)} weight is free. Past that the build bills you at every gate close, and the shop rents more room from the Cerulean gate on.`,
 ];
 
 export const kantoNewRunAt = (
@@ -1266,15 +1266,15 @@ export const kantoPrepFirstAudit = (
 		clearedGates,
 	});
 
-const CASCADE_GATE = 2;
-const CASCADE_THIN_COVERAGE = 40;
+const CERULEAN_GATE = 2;
+const CERULEAN_THIN_COVERAGE = 61;
 
-export const kantoPrepCascadeThin = (): PrepScreenProps =>
+export const kantoPrepCeruleanThin = (): PrepScreenProps =>
 	kantoPrepAt({
-		gate: CASCADE_GATE,
+		gate: CERULEAN_GATE,
 		configs: [CONFIGS.ts],
 		balanceKb: 121,
-		coverageHeld: CASCADE_THIN_COVERAGE,
+		coverageHeld: CERULEAN_THIN_COVERAGE,
 		buildSpace: BASE_SLOTS,
 		window: LAVENDER_WINDOW,
 	});
@@ -1308,4 +1308,5 @@ export const kantoAtStakeAt = ({
 		answered,
 	}).outcomes;
 
-export const kantoScoringAt = (gate: number): ScoringProps => scoringFor(gate);
+export const kantoScoringAt = (gate: number, accuracyBonus = 0): ScoringProps =>
+	scoringFor(gate, accuracyBonus);

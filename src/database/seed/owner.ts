@@ -10,13 +10,13 @@ export const SEED_OWNER_HANDLE = "marciano_schildmeijer";
 
 const SEED_OWNER_SWATCH_IDS = [
 	"swatch-pallet",
-	"swatch-boulder",
-	"swatch-cascade",
-	"swatch-thunder",
+	"swatch-pewter",
+	"swatch-cerulean",
+	"swatch-vermilion",
 	"swatch-lavender",
 	"swatch-seafoam",
-	"swatch-volcano",
-	"swatch-elite",
+	"swatch-cinnabar",
+	"swatch-indigo-elite",
 ] as const;
 
 const authUserSchema = z.object({

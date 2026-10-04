@@ -14,6 +14,7 @@ export type RunActionResult = Awaited<ReturnType<typeof dispatchRunAction>>;
 export type RunActionSuccess = Extract<RunActionResult, { success: true }>;
 
 const sideViewKeysOf = () => [
+	sessionRunQueryKeys.todaysPollsLeft(),
 	sessionRunQueryKeys.todaysCommunity(),
 	sessionRunQueryKeys.todaysAttackTargets(),
 	sessionRunQueryKeys.todaysIncidents(),

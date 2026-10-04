@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { ProfileCard } from "./ProfileCard.ui";
 import { ProfileScreen } from "./ProfileScreen.ui";
 
 const TABS = [
@@ -12,16 +11,16 @@ const TABS = [
 
 const noop = () => {};
 
-const CARD = <ProfileCard name="marciano_schildmeijer" />;
+const HERO = <h1>marciano_schildmeijer</h1>;
 
 const renderOwn = (props: Partial<Parameters<typeof ProfileScreen>[0]> = {}) =>
 	render(
 		<ProfileScreen
-			card={CARD}
+			hero={HERO}
 			tabs={TABS}
 			activeId="polls"
 			onSelect={noop}
-			theme="pallet"
+			theme="gate-pallet"
 			archive="8.2 MB archive"
 			{...props}
 		>
@@ -30,7 +29,7 @@ const renderOwn = (props: Partial<Parameters<typeof ProfileScreen>[0]> = {}) =>
 	);
 
 describe("ProfileScreen", () => {
-	it("heads with the player's card", () => {
+	it("heads with the player's hero", () => {
 		renderOwn();
 
 		expect(screen.getByText("marciano_schildmeijer")).toBeVisible();
@@ -56,12 +55,18 @@ describe("ProfileScreen", () => {
 	});
 
 	it("wears the swatch it was handed", () => {
-		const { container } = renderOwn({ theme: "volcano" });
+		const { container } = renderOwn({ theme: "gate-cinnabar" });
 
 		expect(container.querySelector("section")).toHaveAttribute(
 			"data-gate-theme",
-			"volcano"
+			"gate-cinnabar"
 		);
+	});
+
+	it("lays the highlights out between the hero and the Dex", () => {
+		renderOwn({ highlights: <p>best run</p> });
+
+		expect(screen.getByText("best run")).toBeVisible();
 	});
 
 	it("passes a tab press up", async () => {
@@ -78,19 +83,19 @@ describe("ProfileScreen, seen by a visitor", () => {
 	const renderVisited = () =>
 		render(
 			<ProfileScreen
-				card={CARD}
-				theme="pallet"
+				hero={HERO}
+				theme="gate-pallet"
 				sections={<p>9 of 96 polls</p>}
 			/>
 		);
 
-	it("heads with the card all the same", () => {
+	it("heads with the hero all the same", () => {
 		renderVisited();
 
 		expect(screen.getByText("marciano_schildmeijer")).toBeVisible();
 	});
 
-	it("draws the sections it was handed under the card", () => {
+	it("draws the sections it was handed under the hero", () => {
 		renderVisited();
 
 		expect(screen.getByText("9 of 96 polls")).toBeVisible();

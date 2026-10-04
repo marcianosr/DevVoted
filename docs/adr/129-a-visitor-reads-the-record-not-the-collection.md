@@ -4,7 +4,9 @@
 
 Accepted — 2026-09-27 (Marciano, DVTD-e8rm). Narrows
 [ADR-125](125-a-player-has-one-page-and-one-card.md) D4, which gave a visitor
-the card and four counts and nothing else. Built the same day.
+the card and four counts and nothing else. Built the same day. D1 and D5
+superseded by [ADR-180](180-the-profile-is-a-trophy-page-the-owner-sees-too.md):
+a hero leads, and the owner sees the same showcase.
 
 ## Context
 

@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { kantoIncidentsQuiet } from "~/test/kantoIncidents.factory";
 import {
 	COMMUNITY_CORRECT_TITLE,
+	COMMUNITY_MAP_TITLE,
+	COMMUNITY_POLLS_TALLY,
 	COMMUNITY_STREAK_TITLE,
 	COMMUNITY_PREP_LABEL,
 	COMMUNITY_SHOP_LABEL,
@@ -16,6 +19,8 @@ import {
 import { COPY, CommunityScreen } from "./CommunityScreen.ui";
 
 const props = kantoCommunity();
+const TURNOUT_TITLE = props.turnout.title;
+const POLLS_TITLE = props.polls.title;
 
 const SEATED_CATEGORIES = ["JavaScript", "CSS", "TypeScript", "Git"];
 const LEADER_FACE = { name: /'s profile$/ };
@@ -29,11 +34,23 @@ const sectionOf = (title: string): HTMLElement => {
 };
 
 const boardOf = async (title: string): Promise<HTMLElement> => {
-	await userEvent.click(screen.getByRole("tab", { name: title }));
-	return sectionOf(title);
+	await userEvent.click(screen.getByRole("radio", { name: title }));
+	return sectionOf(COPY.leaders);
 };
 
 describe("CommunityScreen", () => {
+	it("states a quiet day in the incidents heading rather than drawing an empty body", () => {
+		render(
+			<CommunityScreen {...props} incidents={{ ...kantoIncidentsQuiet() }} />
+		);
+		const incidents = sectionOf("Incidents");
+
+		expect(
+			within(incidents).getByText(kantoIncidentsQuiet().empty)
+		).toBeInTheDocument();
+		expect(incidents.children).toHaveLength(1);
+	});
+
 	it("carries the day's incidents, so no press stands between them and the board", () => {
 		render(<CommunityScreen {...kantoCommunity()} />);
 
@@ -48,7 +65,7 @@ describe("CommunityScreen", () => {
 
 		expect(container.firstElementChild).toHaveAttribute(
 			"data-gate-theme",
-			"lavender"
+			"gate-lavender"
 		);
 	});
 
@@ -62,13 +79,13 @@ describe("CommunityScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("sends the viewer on to Rainbow, the gate that actually follows Lavender", () => {
+	it("sends the viewer on to Celadon, the gate that actually follows Lavender", () => {
 		render(<CommunityScreen {...props} />);
 
 		expect(
 			screen.getByRole("button", { name: COMMUNITY_PREP_LABEL })
 		).toBeInTheDocument();
-		expect(screen.queryByText(/Vermilion/)).toBeNull();
+		expect(screen.queryByText(/Prep for Vermilion/)).toBeNull();
 	});
 
 	it("offers the way back to the shop", () => {
@@ -92,17 +109,33 @@ describe("CommunityScreen", () => {
 		render(<CommunityScreen {...props} />);
 
 		expect(
-			within(sectionOf("Who cleared what")).getByText("+601")
+			within(sectionOf(TURNOUT_TITLE)).getByText("+601")
 		).toBeInTheDocument();
 	});
 
-	it("draws the day's records below the outcomes, each with its figure", () => {
+	it("lists the day's records in the same rows as the outcomes, each with its figure", () => {
 		render(<CommunityScreen {...props} />);
-		const turnout = within(sectionOf("Who cleared what"));
+		const turnout = within(sectionOf(TURNOUT_TITLE));
 
-		expect(turnout.getByText("today's records")).toBeInTheDocument();
+		expect(turnout.queryByText("today's records")).toBeNull();
 		expect(turnout.getByText("comeback")).toBeInTheDocument();
 		expect(turnout.getByText("14 slots")).toBeInTheDocument();
+	});
+
+	it("puts the map before the polls, and the polls before the records", () => {
+		render(<CommunityScreen {...props} />);
+		const order = [COMMUNITY_MAP_TITLE, POLLS_TITLE, TURNOUT_TITLE].map(
+			(title) => screen.getByRole("heading", { name: title })
+		);
+
+		expect(
+			order[0].compareDocumentPosition(order[1]) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+		expect(
+			order[1].compareDocumentPosition(order[2]) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
 	});
 
 	it("draws the whole ladder, with the viewer standing on their own gate", () => {
@@ -140,24 +173,25 @@ describe("CommunityScreen", () => {
 		}
 	});
 
-	it("shows one board at a time and switches on the press of its tab", async () => {
+	it("picks one board at a time with a filter inside the leaders panel", async () => {
 		render(<CommunityScreen {...props} />);
-
-		expect(sectionOf(COMMUNITY_STREAK_TITLE)).toBeInTheDocument();
-		expect(
-			screen.queryByRole("heading", { name: COMMUNITY_CORRECT_TITLE })
-		).toBeNull();
-
-		await boardOf(COMMUNITY_CORRECT_TITLE);
+		const filter = within(sectionOf(COPY.leaders)).getByRole("radiogroup");
 
 		expect(
-			screen.queryByRole("heading", { name: COMMUNITY_STREAK_TITLE })
-		).toBeNull();
+			within(filter).getByRole("radio", { name: COMMUNITY_STREAK_TITLE })
+		).toHaveAttribute("aria-checked", "true");
+
+		const board = await boardOf(COMMUNITY_CORRECT_TITLE);
+
+		expect(
+			within(filter).getByRole("radio", { name: COMMUNITY_CORRECT_TITLE })
+		).toHaveAttribute("aria-checked", "true");
+		expect(within(board).queryByText("21 in a row")).toBeNull();
 	});
 
 	it("names the category every seat is held for", () => {
 		render(<CommunityScreen {...props} />);
-		const leaders = sectionOf(COMMUNITY_STREAK_TITLE);
+		const leaders = sectionOf(COPY.leaders);
 
 		for (const category of SEATED_CATEGORIES) {
 			expect(within(leaders).getByText(category)).toBeInTheDocument();
@@ -187,14 +221,12 @@ describe("CommunityScreen", () => {
 		}
 	});
 
-	it("counts the seats that are held on each board", async () => {
+	it("counts how many of the revealed polls the viewer got right beside the heading", () => {
 		render(<CommunityScreen {...props} />);
 
-		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
-			expect(
-				within(await boardOf(title)).getByText("9 of 12 seated")
-			).toBeInTheDocument();
-		}
+		expect(
+			within(sectionOf(POLLS_TITLE)).getByText(COMMUNITY_POLLS_TALLY)
+		).toBeInTheDocument();
 	});
 
 	it("draws all five polls", () => {
@@ -224,7 +256,7 @@ describe("CommunityScreen, before the day's polls", () => {
 
 	it("withholds the categories, since the polls may be dealt again", () => {
 		render(<CommunityScreen {...kantoCommunityBeforePolls()} />);
-		const polls = sectionOf("The five polls");
+		const polls = sectionOf(POLLS_TITLE);
 
 		expect(within(polls).queryByText("CSS")).toBeNull();
 		expect(within(polls).queryByText("TypeScript")).toBeNull();
@@ -235,7 +267,7 @@ describe("CommunityScreen, before the day's polls", () => {
 		render(<CommunityScreen {...kantoCommunityBeforePolls()} />);
 
 		expect(
-			within(sectionOf("Who cleared what")).getByText("604")
+			within(sectionOf(TURNOUT_TITLE)).getByText("604")
 		).toBeInTheDocument();
 	});
 });

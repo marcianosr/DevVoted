@@ -20,10 +20,12 @@ import {
 	BASE_SLOTS,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
+import type { OutcomeRevealData } from "~/ui/kanto-theme/OutcomeReveal.ui";
 import {
 	type GateAnswer,
 	type GateOutcomeFrame,
 	gateOutcomePropsFor,
+	outcomeRevealOf,
 	PEEL_KB_PER_SLOT,
 	totalCoverage,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
@@ -47,13 +49,10 @@ import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
 export {
 	answerTallyOf,
-	peelHeadlineOf,
 	peelSlotsOf,
 	peelTallyOf,
-	retryActionOf,
 	type GateAnswer,
 	type GateOutcomeFrame,
-	type RetryAction,
 	ONLY_BANKED_CARRIES,
 	BRIBE_LABEL,
 	GATE_COMMUNITY_LABEL,
@@ -61,11 +60,8 @@ export {
 	GATE_SHOP_LABEL,
 	NEW_RUN_LABEL,
 	NO_REFUND_NOTE,
-	PEEL_PAID,
-	PEEL_REFUSAL,
 	REFUND_NOTE,
 	REFUSAL_LABEL,
-	REFUSAL_NOTE,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 
 export {
@@ -279,17 +275,17 @@ export const PERFECT_ANSWERS = outcomesAt(
 
 export const HEALTHY_ANSWERS = outcomesAt(
 	["correct", "correct", "partial", "correct", "correct"],
-	72
+	83
 );
 
 export const OK_ANSWERS = outcomesAt(
 	["correct", "correct", "wrong", "partial", "correct"],
-	46
+	68
 );
 
 export const SHAKY_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "partial", "correct"],
-	30
+	58
 );
 
 export const UNSCORED_ANSWERS = outcomesAt(
@@ -299,7 +295,7 @@ export const UNSCORED_ANSWERS = outcomesAt(
 
 export const DANGER_ANSWERS = outcomesAt(
 	["correct", "wrong", "wrong", "partial", "wrong"],
-	20
+	52
 );
 
 const outcomeFrame = (
@@ -350,18 +346,9 @@ export const kantoGateHeldUnscored = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
 		outcomeFrame({
 			answers: UNSCORED_ANSWERS,
-			openingHeld: 58,
+			openingHeld: 63,
 			heldBy: "unscored",
 			balanceBeforeKb: 12,
-		})
-	);
-
-export const kantoGateShakyPicking = (): GateOutcomeScreenProps =>
-	kantoGateOutcomeAt(
-		outcomeFrame({
-			answers: SHAKY_ANSWERS,
-			balanceBeforeKb: 12,
-			chosen: [CONFIGS.indexedDb.id],
 		})
 	);
 
@@ -377,25 +364,6 @@ export const kantoGateShakyPaid = (): GateOutcomeScreenProps =>
 export const kantoGateShakyFunded = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(
 		outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 512 })
-	);
-
-export const kantoGateShakyFromStorage = (): GateOutcomeScreenProps =>
-	kantoGateOutcomeAt(
-		outcomeFrame({
-			answers: SHAKY_ANSWERS,
-			balanceBeforeKb: 512,
-			fromStorage: true,
-		})
-	);
-
-export const kantoGateShakyMixed = (): GateOutcomeScreenProps =>
-	kantoGateOutcomeAt(
-		outcomeFrame({
-			answers: SHAKY_ANSWERS,
-			balanceBeforeKb: 512,
-			chosen: [CONFIGS.indexedDb.id],
-			fromStorage: true,
-		})
 	);
 
 export const kantoGateShakyCollecting = (): GateOutcomeScreenProps =>
@@ -415,6 +383,51 @@ export const kantoGateShakyCollected = (): GateOutcomeScreenProps =>
 			configs: COLLECTED_BUILD,
 			chosen: [CONFIGS.cache.id],
 		})
+	);
+
+const SMALL_BUILD: readonly Config[] = [
+	CONFIGS.indexedDb,
+	{ ...CONFIGS.telemetry, level: 2 },
+];
+
+const SMALL_BUILD_BILL_SLOTS = 3;
+
+const smallBuildFrame = (
+	frame: Partial<GateOutcomeFixture>
+): GateOutcomeFixture =>
+	outcomeFrame({
+		answers: SHAKY_ANSWERS,
+		configs: SMALL_BUILD,
+		peelSlotsRemaining: SMALL_BUILD_BILL_SLOTS,
+		...frame,
+	});
+
+export const kantoGateShakyFundedDropping = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		outcomeFrame({
+			answers: SHAKY_ANSWERS,
+			balanceBeforeKb: 512,
+			chosen: [CONFIGS.cache.id],
+		})
+	);
+
+export const kantoGateShakyStorageOnly = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(smallBuildFrame({ balanceBeforeKb: 512 }));
+
+export const kantoGateShakyMix = (
+	chosen: readonly string[] = [],
+	fromStorage = false
+): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		smallBuildFrame({ balanceBeforeKb: 28, chosen, fromStorage })
+	);
+
+export const kantoGateShakyMixSettled = (): GateOutcomeScreenProps =>
+	kantoGateShakyMix([CONFIGS.indexedDb.id], true);
+
+export const kantoGateShakyStuck = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt(
+		smallBuildFrame({ balanceBeforeKb: 0, configs: [CONFIGS.indexedDb] })
 	);
 
 export const kantoGateDanger = (): GateOutcomeScreenProps =>
@@ -448,7 +461,32 @@ export const kantoGateCaught = (): GateOutcomeScreenProps =>
 export const kantoGateCaughtDropped = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(caughtFrame([CONFIGS.tryCatch.id]));
 
+export const kantoGateCaughtOwing = (): GateOutcomeScreenProps =>
+	kantoGateOutcomeAt({
+		...caughtFrame([CONFIGS.tryCatch.id]),
+		peelSlotsRemaining: slotsOf(CONFIGS.tryCatch) + 3,
+	});
+
 export const kantoGateCaughtFrame = caughtFrame;
+
+export const kantoRevealCleared = (): OutcomeRevealData =>
+	outcomeRevealOf(settle(outcomeFrame()));
+
+export const kantoRevealPerfect = (): OutcomeRevealData =>
+	outcomeRevealOf(settle(outcomeFrame({ answers: PERFECT_ANSWERS })));
+
+export const kantoRevealShaky = (): OutcomeRevealData =>
+	outcomeRevealOf(
+		settle(outcomeFrame({ answers: SHAKY_ANSWERS, balanceBeforeKb: 28 }))
+	);
+
+export const kantoRevealCaught = (): OutcomeRevealData =>
+	outcomeRevealOf(settle(caughtFrame()));
+
+export const kantoRevealEnded = (): OutcomeRevealData =>
+	outcomeRevealOf(
+		settle(outcomeFrame({ answers: DANGER_ANSWERS, balanceBeforeKb: 41 }))
+	);
 
 export const kantoGateOutcomeOpen = (): GateOutcomeScreenProps =>
 	kantoGateOutcomeAt(outcomeFrame({ open: true }));

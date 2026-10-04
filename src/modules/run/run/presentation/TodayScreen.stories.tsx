@@ -64,7 +64,7 @@ const base: TodayScreenProps = {
 		storage: 106,
 	},
 	press: {
-		label: "Continue to Thunder",
+		label: "Continue to Vermilion",
 		note: "5 polls ready · prep first",
 		pollsLeft: 5,
 		onPress: noop,
@@ -83,7 +83,7 @@ const base: TodayScreenProps = {
 		count: 38,
 		detail: "players answered today",
 		ahead: 4,
-		aheadDetail: "at Thunder or ahead",
+		aheadDetail: "at Vermilion or ahead",
 		href: "/run/community",
 	},
 };
@@ -92,7 +92,7 @@ const INCIDENT = {
 	id: "not-found",
 	code: 404,
 	name: "Not Found",
-	cue: "waits at Thunder · it replaces one audit",
+	cue: "waits at Vermilion · it replaces one audit",
 	sender: "@erika",
 } as const;
 
@@ -114,7 +114,7 @@ export const Waiting: Story = {
 		<TodayScreen
 			{...base}
 			press={{
-				label: "Thunder opens in 11h 16m",
+				label: "Vermilion opens in 11h 16m",
 				note: "today’s polls are done · come back tomorrow",
 				pollsLeft: 5,
 			}}
@@ -132,7 +132,7 @@ export const MidGate: Story = {
 		<TodayScreen
 			{...base}
 			press={{
-				label: "Continue to Thunder",
+				label: "Continue to Vermilion",
 				note: "Poll 3 out of 5",
 				pollsLeft: 3,
 				onPress: noop,

@@ -31,12 +31,13 @@ import type {
 } from "~/modules/run/gate/domain/gate.model";
 import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
+	gateLabelOf,
+	gateNumberLabelOf,
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	ESCROW_COMMIT_MULTIPLIER,
-	GATE_COUNT,
 	INCIDENT_SURVIVAL_KB,
 	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
@@ -60,6 +61,7 @@ import {
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import {
 	COVERAGE_BAND_COLOR,
+	COVERAGE_BAND_WORD,
 	type CoverageBandId,
 	type CoverageBarProps,
 } from "~/ui/kanto-theme/CoverageBar.ui";
@@ -71,7 +73,11 @@ import type {
 import type { FoldBadge } from "~/ui/kanto-theme/Fold.ui";
 import type {
 	GateChoiceProps,
+	GatePeelBadge,
 	GatePeelBribe,
+	GatePeelMix,
+	GatePeelOption,
+	GatePeelRadio,
 	GatePeelSource,
 } from "~/ui/kanto-theme/GateChoice.ui";
 import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
@@ -84,6 +90,12 @@ import type {
 	NextGateRates,
 } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+import { revealKindOf } from "~/modules/run/gate/domain/outcomeReveal.model";
+import type {
+	OutcomeRevealCatcher,
+	OutcomeRevealData,
+	OutcomeRevealNext,
+} from "~/ui/kanto-theme/OutcomeReveal.ui";
 import type { LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 
@@ -101,7 +113,6 @@ const CHANGES_TITLE = "Build changes";
 const ANSWERS_TITLE = "The five answers";
 
 const BONUS_TITLE = "Perfect bonus";
-const SETTLE_TITLE = "Settle the peel to retry";
 const ENDING_TITLE = "The run ends here";
 const SUMMIT_TITLE = "The climb is done";
 const DROP_TITLE = "Or drop configs";
@@ -111,11 +122,15 @@ const BRIBE_NOTHING = "the drops already settle the peel";
 const CATCH_FIRST = "drop first";
 const CATCH_TITLE = "Drop the catch first";
 const CATCH_NOTE = "it saved the run · pays its weight · refunds nothing";
+const CATCH_OPENS = "the other moves open once it is dropped";
 const FROM_STORAGE = "from storage";
 const FROM_DROPS = "from dropped configs";
 const OVERPAID = "overpaid · lost";
 const NOTHING_COVERED = "nothing covered yet";
-const REFUSAL_TITLE = "End the run here";
+const STORAGE_OPTION = "Storage";
+const PEEL_OPTIONS = "Ways to pay the peel";
+const PICK_A_CONFIG = "Pick a config";
+const NOTHING_COVERS = "Nothing covers the peel";
 const RUN_OVER_TITLE = "Run over";
 
 const BALANCE = STORAGE_BALANCE;
@@ -168,11 +183,7 @@ const PEEL_SETTLED = "the peel is settled";
 export const BRIBE_LABEL = "Pay the peel from storage";
 export const REFUSAL_LABEL = "End the run";
 export const NEW_RUN_LABEL = "New run";
-export const PEEL_REFUSAL =
-	"The gate stays shut until the peel is paid in full.";
-export const PEEL_PAID = "The peel is paid. Five fresh polls on the retry.";
 export const ONLY_BANKED_CARRIES = "only what banked carries into your archive";
-export const REFUSAL_NOTE = "No peel, no retry.";
 export const REFUSAL_TAIL = "Swatches you earned stay on your profile.";
 export const NO_REFUND_NOTE =
 	"A drop settles its own sell value and refunds nothing. Whatever you overpay is simply gone.";
@@ -224,6 +235,7 @@ export type GateOutcomeFrame = {
 	onToggle?: (configId: string) => void;
 	fromStorage?: boolean;
 	onToggleStorage?: () => void;
+	onPick?: (chosen: readonly string[], fromStorage: boolean) => void;
 	won?: boolean;
 	open?: boolean;
 	heldBy?: GateHoldReason;
@@ -721,18 +733,6 @@ export const peelTallyOf = (billKb: number, paidKb: number): string => {
 	return `${kbLabel(paidKb)} of ${kbLabel(billKb)} covered`;
 };
 
-export const peelHeadlineOf = (billKb: number, paidKb: number): string =>
-	paidKb >= billKb
-		? `${kbLabel(paidKb)} settled`
-		: `${kbLabel(billKb - paidKb)} owed`;
-
-export type RetryAction = { label: string; onPress?: () => void };
-
-export const retryActionOf = (gate: number, owedKb: number): RetryAction =>
-	owedKb > 0
-		? { label: `Retry gate ${gate}` }
-		: { label: `Retry gate ${gate}`, onPress: noop };
-
 export type PeelSettlement = {
 	billSlots: number;
 	droppedSlots: number;
@@ -764,6 +764,110 @@ export const peelSettlementOf = (frame: GateOutcomeFrame): PeelSettlement => {
 		balanceKb,
 	};
 };
+
+export type PeelMove = { kind: "storage" } | { kind: "config"; config: Config };
+
+export type PeelPlan =
+	| { kind: "settled" }
+	| {
+			kind: "single";
+			storage: boolean;
+			singles: readonly Config[];
+			move?: PeelMove;
+	  }
+	| { kind: "mix" }
+	| { kind: "stuck" };
+
+export type PeelPicks = { chosen: readonly string[]; fromStorage: boolean };
+
+const catchSlotsOf = (frame: GateOutcomeFrame): number => {
+	const catcher = caughtCatcherOf(frame);
+	return catcher === undefined ? 0 : slotsOf(catcher);
+};
+
+const owedAfterCatchKbOf = (frame: GateOutcomeFrame): number =>
+	Math.max(0, peelBillSlotsOf(frame) - catchSlotsOf(frame)) * PEEL_KB_PER_SLOT;
+
+const looseConfigsOf = (frame: GateOutcomeFrame): readonly Config[] =>
+	frame.configs.filter((config) => config !== caughtCatcherOf(frame));
+
+const storageCoversKb = (frame: GateOutcomeFrame, owedKb: number): boolean =>
+	Math.floor(Math.max(0, frame.balanceBeforeKb) / PEEL_KB_PER_SLOT) *
+		PEEL_KB_PER_SLOT >=
+	owedKb;
+
+const reachKbOf = (frame: GateOutcomeFrame): number => {
+	const loose = looseConfigsOf(frame);
+
+	return (
+		Math.max(0, frame.balanceBeforeKb) +
+		peelRefundFor(frame.configs, loose) +
+		peelSlotsOf(loose) * PEEL_KB_PER_SLOT
+	);
+};
+
+const pickedIn = (frame: GateOutcomeFrame, config: Config): boolean =>
+	(frame.chosen ?? []).includes(config.id);
+
+const moveOf = (
+	frame: GateOutcomeFrame,
+	storage: boolean,
+	singles: readonly Config[]
+): PeelMove | undefined => {
+	const picked = singles.find((config) => pickedIn(frame, config));
+	if (picked !== undefined) return { kind: "config", config: picked };
+
+	return storage ? { kind: "storage" } : undefined;
+};
+
+export const peelPlanOf = (frame: GateOutcomeFrame): PeelPlan => {
+	const owedKb = owedAfterCatchKbOf(frame);
+	if (owedKb === 0) return { kind: "settled" };
+
+	const storage = storageCoversKb(frame, owedKb);
+	const singles = looseConfigsOf(frame).filter(
+		(config) => peelValueKbOf(config) >= owedKb
+	);
+
+	if (storage || singles.length > 0)
+		return {
+			kind: "single",
+			storage,
+			singles,
+			move: moveOf(frame, storage, singles),
+		};
+
+	return reachKbOf(frame) >= owedKb ? { kind: "mix" } : { kind: "stuck" };
+};
+
+const keptCatchIdsOf = (frame: GateOutcomeFrame): readonly string[] => {
+	const catcher = caughtCatcherOf(frame);
+	return catcher !== undefined && pickedIn(frame, catcher) ? [catcher.id] : [];
+};
+
+export const peelPicksOf = (frame: GateOutcomeFrame): PeelPicks => {
+	if (unpickedCatcherOf(frame) !== undefined)
+		return { chosen: [], fromStorage: false };
+
+	const plan = peelPlanOf(frame);
+	const kept = keptCatchIdsOf(frame);
+
+	if (plan.kind === "settled") return { chosen: kept, fromStorage: false };
+	if (plan.kind === "single")
+		return {
+			chosen:
+				plan.move?.kind === "config" ? [...kept, plan.move.config.id] : kept,
+			fromStorage: plan.move?.kind === "storage",
+		};
+
+	return {
+		chosen: frame.chosen ?? [],
+		fromStorage: frame.fromStorage === true,
+	};
+};
+
+const pickedFrameOf = (frame: GateOutcomeFrame): GateOutcomeFrame =>
+	frame.closing === "held" ? { ...frame, ...peelPicksOf(frame) } : frame;
 
 const sourcesOf = (settlement: PeelSettlement): readonly GatePeelSource[] =>
 	[
@@ -818,52 +922,207 @@ const dropNoteOf = (
 	return collectsOnDrop(frame.configs) ? REFUND_NOTE : NO_REFUND_NOTE;
 };
 
-const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
-	const settlement = peelSettlementOf(frame);
-	const { billSlots, owedKb, paidKb, balanceKb } = settlement;
-	const bill = billSlots * PEEL_KB_PER_SLOT;
-	const chosen = chosenIn(frame);
-	const catcher = unpickedCatcherOf(frame);
-	const caught = caughtCatcherOf(frame);
-	const lockedFor = (config: Config, picked: boolean): boolean =>
-		catcher === undefined ? owedKb === 0 && !picked : config.id !== catcher.id;
-	const chipOf = (config: Config): ConfigChipProps =>
-		dropChip({
+const chipFor =
+	(frame: GateOutcomeFrame, owedKb: number) =>
+	(config: Config): ConfigChipProps => {
+		const catcher = unpickedCatcherOf(frame);
+		const picked = pickedIn(frame, config);
+		const locked =
+			catcher === undefined
+				? owedKb === 0 && !picked
+				: config.id !== catcher.id;
+
+		return dropChip({
 			config,
 			configs: frame.configs,
-			chosen: chosen.includes(config),
-			locked: lockedFor(config, chosen.includes(config)),
+			chosen: picked,
+			locked,
 			first: config.id === catcher?.id,
-			caught: config === caught,
+			caught: config === caughtCatcherOf(frame),
 			onToggle: () => frame.onToggle?.(config.id),
 		});
+	};
+
+const mixOf = (frame: GateOutcomeFrame): GatePeelMix => {
+	const settlement = peelSettlementOf(frame);
 
 	return {
-		peel: {
-			title: SETTLE_TITLE,
-			note: `${plural(SLICE_WINDOW, "fresh poll")} on the retry`,
-			owed: peelHeadlineOf(bill, paidKb),
-			owedColor: owedKb > 0 ? LOSS_COLOR : GAIN_COLOR,
-			tally: peelTallyOf(bill, paidKb),
-			bill: billSlots,
-			sources: sourcesOf(settlement),
-			catch:
-				caught === undefined
-					? undefined
-					: { title: CATCH_TITLE, note: CATCH_NOTE, config: chipOf(caught) },
-			bribe: bribeOf(settlement, frame),
-			drop: {
-				title: DROP_TITLE,
-				note: dropNoteOf(frame, catcher),
-				configs: frame.configs
-					.filter((config) => config !== caught)
-					.map(chipOf),
-			},
+		kind: "mix",
+		bill: settlement.billSlots,
+		sources: sourcesOf(settlement),
+		bribe: bribeOf(settlement, frame),
+		drop: {
+			title: DROP_TITLE,
+			note: dropNoteOf(frame, unpickedCatcherOf(frame)),
+			configs: looseConfigsOf(frame).map(chipFor(frame, settlement.owedKb)),
 		},
+	};
+};
+
+const valueBadgesOf = (
+	frame: GateOutcomeFrame,
+	config: Config
+): readonly GatePeelBadge[] => {
+	const refund = peelRefundIn(frame.configs, config);
+
+	return [
+		{ label: kbLabel(peelValueKbOf(config)), color: TERM_COLOR },
+		...(refund === 0
+			? []
+			: [{ label: signedKbLabel(refund), color: GAIN_COLOR }]),
+	];
+};
+
+const lossOf = (move: PeelMove | undefined, owedKb: number) => {
+	if (move?.kind !== "config") return undefined;
+
+	const valueKb = peelValueKbOf(move.config);
+	return valueKb > owedKb
+		? `${kbLabel(valueKb)} for ${kbLabel(owedKb)} · ${signedKbLabel(owedKb - valueKb)} lost`
+		: undefined;
+};
+
+const radioOf = (
+	frame: GateOutcomeFrame,
+	plan: Extract<PeelPlan, { kind: "single" }>
+): GatePeelRadio => {
+	const owedKb = owedAfterCatchKbOf(frame);
+	const locked = unpickedCatcherOf(frame) !== undefined;
+	const kept = keptCatchIdsOf(frame);
+	const storageRow: GatePeelOption = {
+		name: STORAGE_OPTION,
+		badges: [{ label: kbLabel(owedKb), color: TERM_COLOR }],
+		pick: {
+			label: BRIBE_LABEL,
+			checked: !locked && plan.move?.kind === "storage",
+			disabled: locked,
+			onToggle: () => frame.onPick?.(kept, true),
+		},
+	};
+	const configRow = (config: Config): GatePeelOption => ({
+		name: config.label,
+		badges: valueBadgesOf(frame, config),
+		pick: {
+			label: `Drop ${config.label}`,
+			checked:
+				!locked && plan.move?.kind === "config" && plan.move.config === config,
+			disabled: locked,
+			onToggle: () => frame.onPick?.([...kept, config.id], false),
+		},
+	});
+	const loss = lossOf(plan.move, owedKb);
+
+	return {
+		kind: "radio",
+		label: PEEL_OPTIONS,
+		rows: [
+			...(plan.storage ? [storageRow] : []),
+			...plan.singles.map(configRow),
+		],
+		...(loss === undefined ? {} : { loss }),
+	};
+};
+
+const optionsOf = (
+	frame: GateOutcomeFrame,
+	plan: PeelPlan
+): GatePeelRadio | GatePeelMix | undefined => {
+	if (plan.kind === "single") return radioOf(frame, plan);
+	if (plan.kind === "mix") return mixOf(frame);
+	return undefined;
+};
+
+const freshPolls = plural(SLICE_WINDOW, "fresh poll");
+
+const shortNoteOf = (haveKb: number, owedKb: number) =>
+	`you have ${kbLabel(haveKb)} · ${kbLabel(owedKb - haveKb)} short`;
+
+const retryLabelOf = (gate: number) => `Retry gate ${gate}`;
+
+const movePressOf = (
+	frame: GateOutcomeFrame,
+	move: PeelMove | undefined,
+	owedKb: number
+): PeelPress => {
+	const balanceKb = frame.balanceBeforeKb;
+
+	if (move === undefined)
+		return { label: PICK_A_CONFIG, note: shortNoteOf(balanceKb, owedKb) };
+
+	if (move.kind === "storage")
+		return {
+			label: BRIBE_TITLE,
+			note: `${kbLabel(balanceKb)} → ${kbLabel(balanceKb - owedKb)} · ${freshPolls}`,
+			onPress: noop,
+		};
+
+	const refund = peelRefundIn(frame.configs, move.config);
+	return {
+		label: `Drop ${move.config.label}`,
+		note:
+			refund === 0
+				? freshPolls
+				: `${freshPolls} · ${signedKbLabel(refund)} back`,
+		onPress: noop,
+	};
+};
+
+type PeelPress = { label: string; note: string; onPress?: () => void };
+
+const peelPressOf = (frame: GateOutcomeFrame): PeelPress => {
+	const catcher = unpickedCatcherOf(frame);
+	if (catcher !== undefined)
+		return { label: `Drop ${catcher.label} first`, note: CATCH_OPENS };
+
+	const plan = peelPlanOf(frame);
+	const owedKb = owedAfterCatchKbOf(frame);
+
+	if (plan.kind === "settled")
+		return { label: retryLabelOf(frame.gate), note: freshPolls, onPress: noop };
+	if (plan.kind === "single") return movePressOf(frame, plan.move, owedKb);
+	if (plan.kind === "stuck")
+		return {
+			label: NOTHING_COVERS,
+			note: shortNoteOf(reachKbOf(frame), owedKb),
+		};
+
+	const { billSlots, paidKb, owedKb: leftKb } = peelSettlementOf(frame);
+	return {
+		label: retryLabelOf(frame.gate),
+		note: peelTallyOf(billSlots * PEEL_KB_PER_SLOT, paidKb),
+		...(leftKb === 0 ? { onPress: noop } : {}),
+	};
+};
+
+const owedOf = (frame: GateOutcomeFrame): string | undefined => {
+	const owedKb =
+		unpickedCatcherOf(frame) === undefined
+			? owedAfterCatchKbOf(frame)
+			: peelBillSlotsOf(frame) * PEEL_KB_PER_SLOT;
+
+	return owedKb === 0 ? undefined : kbLabel(owedKb);
+};
+
+const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
+	const caught = caughtCatcherOf(frame);
+	const options = optionsOf(frame, peelPlanOf(frame));
+	const owed = owedOf(frame);
+
+	return {
+		meta: `Gate ${frame.gate} held · ${COVERAGE_BAND_WORD[frame.bar.band]}`,
+		...(owed === undefined ? {} : { owed }),
+		...(caught === undefined
+			? {}
+			: {
+					catch: {
+						title: CATCH_TITLE,
+						note: CATCH_NOTE,
+						config: chipFor(frame, owedAfterCatchKbOf(frame))(caught),
+					},
+				}),
+		...(options === undefined ? {} : { options }),
 		refusal: {
-			title: REFUSAL_TITLE,
-			price: `Banks gate ${frame.gate} of ${GATE_COUNT} and archives ${signedKbLabel(balanceKb)}.`,
-			note: `${REFUSAL_NOTE} ${REFUSAL_TAIL}`,
+			note: `no retry, keep ${kbLabel(frame.balanceBeforeKb)}`,
 			action: { label: REFUSAL_LABEL, onPress: noop },
 		},
 	};
@@ -890,12 +1149,12 @@ const footerOf = (
 		};
 
 	if (band === SHAKY_BAND) {
-		const { owedKb } = peelSettlementOf(frame);
+		const { note, ...action } = peelPressOf(frame);
 
 		return {
 			asides: [{ label: GATE_REVIEW_LABEL, icon: "review", onPress: noop }],
-			note: owedKb > 0 ? PEEL_REFUSAL : PEEL_PAID,
-			action: retryActionOf(frame.gate, owedKb),
+			note,
+			action,
 		};
 	}
 
@@ -1109,8 +1368,9 @@ const tailOf = (
 };
 
 export const gateOutcomePropsFor = (
-	frame: GateOutcomeFrame
+	unpicked: GateOutcomeFrame
 ): GateOutcomeScreenProps => {
+	const frame = pickedFrameOf(unpicked);
 	const { gate, answers } = frame;
 	const band = bandOf(frame);
 	const swatch = gateSwatchAt(gate);
@@ -1252,6 +1512,7 @@ export type GatePeelPicks = {
 	onToggle: (configId: string) => void;
 	fromStorage: boolean;
 	onToggleStorage: () => void;
+	onPick: (chosen: readonly string[], fromStorage: boolean) => void;
 };
 
 export const gateOutcomeFrameOf = (
@@ -1278,11 +1539,12 @@ export const gateOutcomeFrameOf = (
 		removed: removedRowsFor(view),
 		paid: paidRowsFor(view),
 		payouts: runPaidFor(view),
-		auditIds: view.gateStake.audits.map((audit) => audit.id),
+		auditIds: close.auditIds,
 		chosen: picks.chosen,
 		onToggle: picks.onToggle,
 		fromStorage: picks.fromStorage,
 		onToggleStorage: picks.onToggleStorage,
+		onPick: picks.onPick,
 		won: view.status === "won",
 		heldBy: close.heldBy ?? undefined,
 		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
@@ -1342,9 +1604,9 @@ export const gateOutcomeScreenPropsFor = ({
 	picks,
 	on,
 }: GateOutcomeScreenFrame): GateOutcomeScreenProps => {
-	const props = gateOutcomePropsFor(
-		gateOutcomeFrameOf(view, close, picks, runNumber)
-	);
+	const frame = gateOutcomeFrameOf(view, close, picks, runNumber);
+	const props = gateOutcomePropsFor(frame);
+	const paying = peelPicksOf(frame);
 	const settles = close.closing === "held" && on.onRemove !== undefined;
 	const commits = props.footer.action.onPress !== undefined;
 	const onRemove = on.onRemove;
@@ -1359,7 +1621,7 @@ export const gateOutcomeScreenPropsFor = ({
 				...(settles && onRemove !== undefined
 					? {
 							onPress: commits
-								? () => onRemove(picks.chosen, picks.fromStorage)
+								? () => onRemove(paying.chosen, paying.fromStorage)
 								: undefined,
 						}
 					: { onPress: on.onNext }),
@@ -1371,3 +1633,93 @@ export const gateOutcomeScreenPropsFor = ({
 		},
 	};
 };
+
+const NEXT_WORD = "Next:";
+const CATCHER_DETAIL = "caught a run-ending gate";
+const UNSPENT_WORD = "unspent";
+const LOCAL_RUN = "local";
+
+const revealNextOf = (
+	frame: GateOutcomeFrame
+): { next?: OutcomeRevealNext } => {
+	const next = gateSwatchAt(frame.gate + 1);
+	if (!isCleared(frame) || frame.won === true || next === undefined) return {};
+
+	return {
+		next: {
+			swatch: next,
+			label: `${NEXT_WORD} ${next.gateName}`,
+			detail: gateNumberLabelOf(next.gate),
+		},
+	};
+};
+
+const revealCatcherOf = (
+	frame: GateOutcomeFrame
+): { catcher?: OutcomeRevealCatcher } =>
+	frame.caughtFatalBy === undefined
+		? {}
+		: { catcher: { name: frame.caughtFatalBy, detail: CATCHER_DETAIL } };
+
+const archiveOf = (frame: GateOutcomeFrame): readonly string[] => [
+	RUN_OVER_TITLE,
+	gateLabelOf(frame.gate),
+	`${kbLabel(balanceOf(frame))} ${UNSPENT_WORD}`,
+	REFUSAL_TAIL,
+];
+
+export const outcomeRevealOf = (frame: GateOutcomeFrame): OutcomeRevealData => {
+	const band = bandOf(frame);
+	const swatch = gateSwatchAt(frame.gate);
+	const kind = revealKindOf({
+		closing: frame.closing,
+		band: frame.bar.band,
+		heldBy: frame.heldBy,
+	});
+	const note = noteOf(frame, band);
+
+	return {
+		kind,
+		swatch,
+		title: titleOf(band, swatch.gateName),
+		stamp: kind === "caught" ? frame.bar.band : band,
+		bar: frame.bar,
+		balance: {
+			label: BALANCE_WORD,
+			fromKb: frame.balanceBeforeKb,
+			toKb: balanceOf(frame),
+		},
+		...(note === undefined ? {} : { note }),
+		...revealNextOf(frame),
+		...revealCatcherOf(frame),
+		...(kind === "ended" ? { archive: archiveOf(frame) } : {}),
+	};
+};
+
+const NO_PICKS: GatePeelPicks = {
+	chosen: [],
+	onToggle: noop,
+	fromStorage: false,
+	onToggleStorage: noop,
+	onPick: noop,
+};
+
+export type OutcomeRevealFrame = {
+	view: RunView;
+	close: GateCloseView;
+	runNumber?: number | null;
+};
+
+export const outcomeRevealFor = ({
+	view,
+	close,
+	runNumber = null,
+}: OutcomeRevealFrame): OutcomeRevealData =>
+	outcomeRevealOf(gateOutcomeFrameOf(view, close, NO_PICKS, runNumber));
+
+export const outcomeRevealKeyOf = ({
+	view,
+	close,
+	runNumber = null,
+}: OutcomeRevealFrame): string =>
+	`${runNumber ?? LOCAL_RUN}:${view.closes.length}:${close.gate}`;

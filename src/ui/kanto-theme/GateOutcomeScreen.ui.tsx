@@ -359,7 +359,7 @@ export const GateOutcomeScreen = ({
 			{tail?.choice === undefined ? null : (
 				<GateChoice
 					{...tail.choice}
-					retry={{ ...footer.action, note: footer.note }}
+					press={{ ...footer.action, note: footer.note }}
 				/>
 			)}
 

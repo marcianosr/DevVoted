@@ -29,7 +29,6 @@ const EMPTY_COMMUNITY: RunCommunityView = {
 	date: "",
 	totalPlayers: 0,
 	players: [],
-	topPercent: null,
 	leaders: [],
 	polls: [],
 	climb: null,
@@ -79,6 +78,7 @@ export const RunCommunity = () => {
 					...(fire.isPending && fire.variables !== undefined
 						? { pendingRunId: fire.variables.targetRunId }
 						: {}),
+					...(fire.refused === undefined ? {} : { refused: fire.refused }),
 				};
 	const shared = {
 		swatch,

@@ -322,105 +322,105 @@
 	--theme-ground-chroma: 0.25;
 
 	/* A floor, because the factor above has nothing to scale on an achromatic
-	   theme: pewter's chroma is 0.006, so Boulder's ground came out at 0.0015 and
+	   theme: pewter's chroma is 0.006, so Pewter's ground came out at 0.0015 and
 	   the screen was pure black with no gate colour in it at all. Scaling cannot
 	   fix that — only a minimum can. Set just under the ~0.03 the chromatic gates
-	   land on, so Boulder stays the quietest screen without being unthemed. */
+	   land on, so Pewter stays the quietest screen without being unthemed. */
 	--theme-ground-floor: 0.02;
 }
 
-/* Gate swatches, colored by their home Kanto location (gate/swatch.model.ts):
-   Pallet, the eight gym badges, then the two gym-less landmarks, and the summit
-   pair. elite keeps indigo for Indigo Plateau even though indigo is the app
-   background — its "plate" finish adds a rim so it reads, and its name falls back
-   to zinc. champion sets no --theme-color at all: it wears the Kanto gradient. */
-[data-swatch-theme="pallet"] {
+/* Gate swatches, each colored by the Kanto place its gate is named after
+   (gate/swatch.model.ts), in route order. Indigo Elite keeps indigo for Indigo
+   Plateau even though indigo is the app background — its "plate" finish adds a
+   rim so it reads, and its name falls back to zinc. Champion sets no
+   --theme-color at all: it wears the Kanto gradient. */
+[data-swatch-theme="gate-pallet"] {
 	--theme-color: var(--color-pallet);
 }
-[data-swatch-theme="boulder"] {
+[data-swatch-theme="gate-pewter"] {
 	--theme-color: var(--color-pewter);
 }
-[data-swatch-theme="cascade"] {
+[data-swatch-theme="gate-cerulean"] {
 	--theme-color: var(--color-cerulean);
 }
-[data-swatch-theme="thunder"] {
+[data-swatch-theme="gate-vermilion"] {
 	--theme-color: var(--color-vermillion);
 }
-[data-swatch-theme="rainbow"] {
+[data-swatch-theme="gate-celadon"] {
 	--theme-color: var(--color-celadon);
 }
-[data-swatch-theme="soul"] {
+[data-swatch-theme="gate-fuchsia"] {
 	--theme-color: var(--color-fuchsia);
 }
-[data-swatch-theme="marsh"] {
+[data-swatch-theme="gate-saffron"] {
 	--theme-color: var(--color-saffron);
 }
-[data-swatch-theme="volcano"] {
+[data-swatch-theme="gate-cinnabar"] {
 	--theme-color: var(--color-cinnabar);
 }
-[data-swatch-theme="earth"] {
+[data-swatch-theme="gate-viridian"] {
 	--theme-color: var(--color-viridian);
 }
-[data-swatch-theme="lavender"] {
+[data-swatch-theme="gate-lavender"] {
 	--theme-color: var(--color-lavender);
 }
-[data-swatch-theme="seafoam"] {
+[data-swatch-theme="gate-seafoam"] {
 	--theme-color: var(--color-seafoam);
 }
-[data-swatch-theme="elite"] {
+[data-swatch-theme="gate-indigo-elite"] {
 	--theme-color: var(--color-indigo);
 }
 
 /* Ambient run theme (ADR-020) — what the whole page wears while a gate is being
    played (Screen.ui mirrors it onto <body>). Chip colors live under
-   [data-swatch-theme] above; this table deviates only at the summit: elite
+   [data-swatch-theme] above; this table deviates only at the summit: Indigo Elite
    lightens indigo so text/accents read on the near-black page (the chip itself
    stays true indigo), and champion — gradient-only as a chip — gets fuchsia as
    its one designated solid. */
-[data-gate-theme="pallet"] {
+[data-gate-theme="gate-pallet"] {
 	--theme-color: var(--color-pallet);
 }
-[data-gate-theme="boulder"] {
+[data-gate-theme="gate-pewter"] {
 	--theme-color: var(--color-pewter);
 }
-[data-gate-theme="cascade"] {
+[data-gate-theme="gate-cerulean"] {
 	--theme-color: var(--color-cerulean);
 	--theme-ground-chroma: 0.12;
 }
-[data-gate-theme="thunder"] {
+[data-gate-theme="gate-vermilion"] {
 	--theme-color: var(--color-vermillion);
 	--theme-ground-chroma: 0.12;
 }
-[data-gate-theme="rainbow"] {
+[data-gate-theme="gate-celadon"] {
 	--theme-color: var(--color-celadon);
 	--theme-ground-chroma: 0.18;
 }
-[data-gate-theme="soul"] {
+[data-gate-theme="gate-fuchsia"] {
 	--theme-color: var(--color-fuchsia);
 	--theme-ground-chroma: 0.18;
 }
-[data-gate-theme="marsh"] {
+[data-gate-theme="gate-saffron"] {
 	--theme-color: var(--color-saffron);
 }
-[data-gate-theme="volcano"] {
+[data-gate-theme="gate-cinnabar"] {
 	--theme-color: var(--color-cinnabar);
 	--theme-ground-chroma: 0.12;
 }
-[data-gate-theme="earth"] {
+[data-gate-theme="gate-viridian"] {
 	--theme-color: var(--color-viridian);
 	--theme-ground-chroma: 0.18;
 }
-[data-gate-theme="lavender"] {
+[data-gate-theme="gate-lavender"] {
 	--theme-color: var(--color-lavender);
 	--theme-ground-chroma: 0.18;
 }
-[data-gate-theme="seafoam"] {
+[data-gate-theme="gate-seafoam"] {
 	--theme-color: var(--color-seafoam);
 }
-[data-gate-theme="elite"] {
+[data-gate-theme="gate-indigo-elite"] {
 	--theme-color: oklch(from var(--color-indigo) 0.7 c h);
 }
-[data-gate-theme="champion"] {
+[data-gate-theme="gate-champion"] {
 	--theme-color: var(--color-fuchsia);
 	--theme-ground-chroma: 0.18;
 }
@@ -1597,6 +1597,324 @@ meter::-webkit-meter-optimum-value {
 @media (prefers-reduced-motion: reduce) {
 	.balance-figure,
 	.balance-count[data-counts="true"] {
+		transition: none;
+	}
+}
+
+/* The gate outcome reveal (OutcomeReveal.ui.tsx). Every rule below is written
+   so the element's resting style IS the final frame and the keyframe only
+   plays the way in. That is what makes reduced motion free: drop the
+   animation and the player sees where the reveal would have landed, with no
+   second set of end-state rules to keep in step. The two exits (the card
+   powering off, the catcher shattering) are the exception, because their final
+   frame is "gone", so their resting style hides them outright. */
+.outcome-overlay {
+	background:
+		radial-gradient(
+			90% 60% at 50% -10%,
+			oklch(from var(--theme-color) l c h / 0.22),
+			transparent 70%
+		),
+		oklch(0.12 0.02 270 / 0.94);
+	transition: background 800ms;
+	animation: outcome-fade 200ms ease-out both;
+}
+
+@keyframes outcome-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+/* Steps rather than a width tween so the title types a glyph at a time.
+   clip-path rather than width because the display face is proportional: a ch
+   width would cut letters in half. */
+.outcome-type {
+	display: inline-block;
+	animation: outcome-type calc(var(--outcome-chars) * 35ms)
+		steps(var(--outcome-chars)) both;
+}
+
+@keyframes outcome-type {
+	from {
+		clip-path: inset(0 100% 0 0);
+	}
+	to {
+		clip-path: inset(0 0 0 0);
+	}
+}
+
+.outcome-stamp {
+	transform: rotate(-4deg);
+	animation: outcome-stamp 420ms both;
+}
+
+.outcome-stamp[data-stamp="shaky"] {
+	transform: rotate(-6deg);
+	animation:
+		outcome-stamp 420ms both,
+		outcome-wobble 500ms 420ms;
+}
+
+/* PERFECT wears a turning ring instead of a flat border. The angle is a
+   registered property so the conic gradient can rotate with no rAF loop. */
+@property --outcome-ring {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 0deg;
+}
+
+.outcome-stamp[data-stamp="perfect"] {
+	border-color: transparent;
+	background:
+		linear-gradient(var(--color-black), var(--color-black)) padding-box,
+		conic-gradient(
+				from var(--outcome-ring),
+				var(--color-cerulean),
+				var(--color-lavender),
+				var(--color-viridian),
+				var(--color-saffron),
+				var(--color-cerulean)
+			)
+			border-box;
+	animation:
+		outcome-stamp 420ms both,
+		outcome-ring 2400ms linear infinite;
+}
+
+@keyframes outcome-stamp {
+	0% {
+		opacity: 0;
+		transform: scale(3) rotate(-14deg);
+	}
+	70% {
+		opacity: 1;
+		transform: scale(0.92) rotate(-4deg);
+	}
+}
+
+@keyframes outcome-wobble {
+	25% {
+		transform: rotate(-8deg) translateX(-4px);
+	}
+	50% {
+		transform: rotate(1deg) translateX(3px);
+	}
+}
+
+@keyframes outcome-ring {
+	to {
+		--outcome-ring: 360deg;
+	}
+}
+
+.outcome-glitch {
+	display: inline-block;
+	animation: outcome-glitch 500ms steps(2) 2;
+}
+
+@keyframes outcome-glitch {
+	0% {
+		text-shadow:
+			3px 0 var(--color-cinnabar),
+			-3px 0 var(--color-cerulean);
+		clip-path: inset(0 0 55% 0);
+	}
+	25% {
+		text-shadow:
+			-3px 0 var(--color-cinnabar),
+			3px 0 var(--color-cerulean);
+		clip-path: inset(40% 0 0 0);
+		transform: translateX(3px);
+	}
+	50% {
+		transform: translateX(-2px);
+	}
+}
+
+.outcome-gate-discovered {
+	display: inline-flex;
+	animation: reveal-pop 450ms;
+}
+
+.outcome-gate-current {
+	display: inline-flex;
+	animation: outcome-blink 350ms 3;
+}
+
+@keyframes outcome-blink {
+	50% {
+		opacity: 0.25;
+		transform: scale(1.15);
+	}
+}
+
+/* PERFECT repaints every lit band cerulean and runs a light across the fill.
+   The sheen hangs off the lit layer so its clip trims the light to the fill. */
+.outcome-bar[data-sweep="true"] .coverage-bar-lit > * {
+	background-color: var(--color-cerulean);
+	transition: background-color 300ms;
+}
+
+.outcome-bar[data-sweep="true"] .coverage-bar-lit::after {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	left: 110%;
+	width: 30%;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		oklch(1 0 0 / 0.65),
+		transparent
+	);
+	animation: outcome-sheen 800ms ease-in-out;
+}
+
+@keyframes outcome-sheen {
+	from {
+		left: -40%;
+	}
+}
+
+.outcome-bar[data-fall="true"] .coverage-bar-marker {
+	opacity: 0;
+	animation: outcome-fall 550ms cubic-bezier(0.5, 0, 0.9, 0.4);
+}
+
+@keyframes outcome-fall {
+	from {
+		opacity: 1;
+		transform: translateX(-1px);
+	}
+	80% {
+		opacity: 0.9;
+	}
+	to {
+		opacity: 0;
+		transform: translate(-1px, 90px) rotate(30deg);
+	}
+}
+
+.outcome-rise {
+	animation: outcome-rise 400ms ease-out both;
+}
+
+@keyframes outcome-rise {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+}
+
+.outcome-catcher {
+	z-index: 3;
+	animation: outcome-catch 350ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.outcome-catcher[data-hit="true"] {
+	animation: outcome-hit 300ms;
+}
+
+.outcome-catcher[data-gone="true"] {
+	visibility: hidden;
+}
+
+@keyframes outcome-catch {
+	from {
+		opacity: 0;
+		transform: translateY(40px);
+	}
+}
+
+@keyframes outcome-hit {
+	40% {
+		transform: translateY(6px) scale(1.04);
+		box-shadow: 0 0 22px var(--theme-color);
+	}
+}
+
+.outcome-flip {
+	z-index: 4;
+	animation: outcome-flip 500ms both;
+}
+
+@keyframes outcome-flip {
+	from {
+		opacity: 0;
+		transform: rotateY(90deg);
+	}
+}
+
+.outcome-flash {
+	opacity: 0;
+	animation: outcome-flash 350ms;
+}
+
+@keyframes outcome-flash {
+	30% {
+		opacity: 0.25;
+	}
+}
+
+.outcome-card[data-crt="true"] {
+	visibility: hidden;
+	animation: outcome-crt 700ms both;
+}
+
+@keyframes outcome-crt {
+	0% {
+		visibility: visible;
+		filter: brightness(1);
+	}
+	30% {
+		visibility: visible;
+		transform: scaleY(0.008);
+		filter: brightness(4);
+	}
+	70% {
+		visibility: visible;
+		transform: scale(0.004, 0.008);
+		filter: brightness(6);
+	}
+	100% {
+		visibility: hidden;
+		transform: scale(0, 0);
+	}
+}
+
+.outcome-terminal {
+	animation: outcome-fade 300ms both;
+}
+
+.outcome-line {
+	animation: outcome-type calc(var(--outcome-chars) * 22ms)
+		calc(var(--outcome-line) * 450ms) steps(var(--outcome-chars)) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.outcome-overlay,
+	.outcome-type,
+	.outcome-stamp,
+	.outcome-stamp[data-stamp],
+	.outcome-glitch,
+	.outcome-gate-discovered,
+	.outcome-gate-current,
+	.outcome-bar[data-sweep="true"] .coverage-bar-lit::after,
+	.outcome-bar[data-fall="true"] .coverage-bar-marker,
+	.outcome-rise,
+	.outcome-catcher,
+	.outcome-catcher[data-hit="true"],
+	.outcome-flip,
+	.outcome-flash,
+	.outcome-card[data-crt="true"],
+	.outcome-terminal,
+	.outcome-line {
+		animation: none;
+	}
+
+	.outcome-overlay,
+	.outcome-bar[data-sweep="true"] .coverage-bar-lit > * {
 		transition: none;
 	}
 }

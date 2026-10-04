@@ -120,6 +120,21 @@ describe("RunOverView", () => {
 		expect(onNewRun).toHaveBeenCalledOnce();
 	});
 
+	it("refuses the new-run press out loud when the day is spent, saying when polls return", () => {
+		render(
+			<RunOverView
+				view={deadView()}
+				onNewRun={vi.fn()}
+				startRefusal="New polls in 7h 23m"
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /^Start new run/ })
+		).toBeDisabled();
+		expect(screen.getByText("New polls in 7h 23m")).toBeInTheDocument();
+	});
+
 	it("refuses the community door when nothing is listening behind it", () => {
 		render(<RunOverView view={deadView()} onNewRun={vi.fn()} />);
 

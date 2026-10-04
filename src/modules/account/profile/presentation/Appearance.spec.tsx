@@ -22,7 +22,7 @@ const handlers = {
 };
 
 const PALLET = swatchForGate(0);
-const CASCADE = swatchForGate(2);
+const CERULEAN = swatchForGate(2);
 
 const PROPS: AppearanceProps = {
 	face: { name: "misty_cerulean", titles: ["Legacy Tester"] },
@@ -52,19 +52,19 @@ const PROPS: AppearanceProps = {
 						fill: { state: "discovered" as const, swatch: PALLET },
 					},
 				]),
-		...(CASCADE === undefined
+		...(CERULEAN === undefined
 			? []
 			: [
 					{
-						id: CASCADE.id,
-						name: CASCADE.name,
+						id: CERULEAN.id,
+						name: CERULEAN.name,
 						state: "worn" as const,
-						fill: { state: "discovered" as const, swatch: CASCADE },
+						fill: { state: "discovered" as const, swatch: CERULEAN },
 					},
 				]),
 		{
-			id: "swatch-earth",
-			name: "Earth Swatch",
+			id: "swatch-viridian",
+			name: "Viridian Swatch",
 			state: "locked",
 			fill: { state: "undiscovered" },
 		},
@@ -86,7 +86,7 @@ describe("Appearance", () => {
 			renderAppearance();
 
 			expect(
-				screen.getByRole("button", { name: "Wear Cascade Swatch" })
+				screen.getByRole("button", { name: "Wear Cerulean Swatch" })
 			).toHaveAttribute("aria-pressed", "true");
 		});
 
@@ -103,7 +103,7 @@ describe("Appearance", () => {
 		it("withholds an unearned swatch's name and refuses the press", () => {
 			renderAppearance();
 
-			expect(screen.queryByText("Earth Swatch")).not.toBeInTheDocument();
+			expect(screen.queryByText("Viridian Swatch")).not.toBeInTheDocument();
 			expect(
 				screen.getByRole("button", { name: COPY.lockedSwatch })
 			).toBeDisabled();

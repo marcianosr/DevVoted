@@ -7,7 +7,7 @@ const meta: Meta<typeof Meter> = {
 	component: Meter,
 	title: "Kanto/Meter",
 	render: (args) => (
-		<Screen gate="lavender" width="narrow">
+		<Screen gate="gate-lavender" width="narrow">
 			<Meter {...args} />
 		</Screen>
 	),

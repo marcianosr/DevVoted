@@ -196,6 +196,36 @@ describe("incident.repository", () => {
 	});
 
 	describe("fetchIncidentsForDate", () => {
+		it("carries each party's photo and border, leaving out what a player never set", async () => {
+			const createdAt = new Date(`${TEST_DATES.birthday}T09:00:00`);
+			mock.results.push([
+				{
+					id: 5,
+					senderId: "red",
+					senderName: "Red",
+					senderPhotoUrl: "/editors/red.png",
+					senderBorderId: "border-00b9a62e",
+					targetId: "misty",
+					targetName: "Misty",
+					targetPhotoUrl: null,
+					targetBorderId: null,
+					targetGate: 7,
+					auditId: "not-found",
+					status: "queued",
+					createdAt,
+				},
+			]);
+
+			const [row] = await fetchIncidentsForDate(TEST_DATES.birthday);
+
+			expect(row?.sentBy).toMatchObject({
+				id: "red",
+				photoUrl: "/editors/red.png",
+			});
+			expect(row?.sentBy.borderUrl).toContain("00b9a62e");
+			expect(row?.target).toEqual({ id: "misty", name: "Misty" });
+		});
+
 		it("names both parties of every incident filed that day", async () => {
 			const createdAt = new Date(`${TEST_DATES.birthday}T09:00:00`);
 			mock.results.push([

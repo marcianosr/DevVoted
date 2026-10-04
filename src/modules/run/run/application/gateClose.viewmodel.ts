@@ -2,6 +2,7 @@ import {
 	type CoverageBandId,
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
 import {
 	type GateClosing,
 	type GateHoldReason,
@@ -27,6 +28,7 @@ export type GateCloseView = {
 	readonly kb: number;
 	readonly unlockedConfigIds: readonly string[];
 	readonly earnedTitleIds: readonly string[];
+	readonly auditIds: readonly AuditId[];
 };
 
 const latestCloseOf = (state: RunState): RecordedClose | undefined =>
@@ -83,5 +85,6 @@ export const gateCloseViewOf = (state: RunState): GateCloseView | null => {
 		kb: close.kb,
 		unlockedConfigIds: close.unlockedConfigIds ?? [],
 		earnedTitleIds: close.earnedTitleIds ?? [],
+		auditIds: scheduleOf(state)[close.gate] ?? [],
 	};
 };

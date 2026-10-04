@@ -61,6 +61,22 @@ describe("PollResult, revealed", () => {
 		);
 	});
 
+	it("states the category and the room's share under the question", () => {
+		render(<PollResult {...REVEALED} />);
+
+		expect(within(summary()).getByText("CSS · 22% right")).toBeInTheDocument();
+	});
+
+	it("marks the right option as the answer rather than toning its share", () => {
+		render(<PollResult {...REVEALED} />);
+		const right = screen.getByText("justify-content").closest("[data-option]");
+		if (!(right instanceof HTMLElement))
+			throw new Error("the right option drew no row");
+
+		expect(within(right).getByText("answer")).toBeInTheDocument();
+		expect(screen.getAllByText("answer")).toHaveLength(1);
+	});
+
 	it("marks the option the viewer picked", () => {
 		render(<PollResult {...REVEALED} />);
 
@@ -108,6 +124,12 @@ describe("PollResult, sealed", () => {
 		const { container } = render(<PollResult {...SEALED} />);
 
 		expect(container.querySelector("details")).toBeNull();
+	});
+
+	it("draws as a row of its parent panel, with no surface of its own", () => {
+		const { container } = render(<PollResult {...SEALED} />);
+
+		expect(container.firstElementChild).not.toHaveClass("rounded-2xl");
 	});
 
 	it("draws no voters", () => {

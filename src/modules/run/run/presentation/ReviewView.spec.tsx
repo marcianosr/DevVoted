@@ -64,13 +64,13 @@ describe("ReviewView", () => {
 	it("costs a wrong answer coverage rather than crediting it", () => {
 		render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText("-11.1%")).toBeInTheDocument();
+		expect(screen.getByText("-14.3%")).toBeInTheDocument();
 	});
 
 	it("states an answer's earn as a share of the gate, not as the raw unit", () => {
 		render(<ReviewView view={view} back={back} />);
 
-		expect(screen.getByText("+11.1%")).toBeInTheDocument();
+		expect(screen.getByText("+14.3%")).toBeInTheDocument();
 		expect(screen.queryByText("+1%")).not.toBeInTheDocument();
 	});
 

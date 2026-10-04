@@ -6,7 +6,9 @@ Accepted — 2026-09-23 (Marciano, DVTD-zptd). Retires
 [ADR-065](README.md#retired) and [ADR-067](README.md#retired); collapses
 [ADR-100](100-a-category-has-a-living-record.md) decisions 2 and 4. Decision 1
 superseded and Decision 2 amended by [ADR-131](131-a-record-belongs-to-one-run.md); Decisions 3, 4, 5 and 6
-stand, and Decision 4 is reaffirmed there.
+stand, and Decision 4 is reaffirmed there. Amended 2026-10-03 (DVTD-ah7g): the two
+boards are one Leaders panel with a `streak | correct` filter in its head, every seat
+shows, and the held-seat count and the row's "leader" word are gone.
 
 ## Context
 

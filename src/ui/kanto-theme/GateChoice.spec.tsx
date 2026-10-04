@@ -1,232 +1,201 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import {
 	BRIBE_LABEL,
 	REFUSAL_LABEL,
 	kantoGateCaught,
+	kantoGateCaughtDropped,
 	kantoGatePeelBillKb,
-	kantoGatePeelBillSlots,
 	kantoGatePeelValues,
 	kantoGateShaky,
 	kantoGateShakyCollected,
-	kantoGateShakyFromStorage,
 	kantoGateShakyFunded,
-	kantoGateShakyMixed,
-	kantoGateShakyPaid,
-	kantoGateShakyPicking,
-	peelHeadlineOf,
+	kantoGateShakyFundedDropping,
+	kantoGateShakyMix,
+	kantoGateShakyMixSettled,
+	kantoGateShakyStorageOnly,
+	kantoGateShakyStuck,
 	peelTallyOf,
 } from "~/test/kantoGate.factory";
+import type { GateOutcomeScreenProps } from "./GateOutcomeScreen.ui";
 
 import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 
-const choiceIn = (props: { tail?: { choice?: GateChoiceProps } }) =>
-	props.tail!.choice!;
+const choiceOf = (props: GateOutcomeScreenProps): GateChoiceProps => ({
+	...props.tail!.choice!,
+	press: { ...props.footer.action, note: props.footer.note },
+});
 
-const bribeBox = () => screen.getByRole("checkbox", { name: BRIBE_LABEL });
+const radios = () =>
+	within(screen.getByRole("radiogroup")).getAllByRole("radio");
+
+const press = (name: RegExp) => screen.getByRole("button", { name });
 
 describe("GateChoice", () => {
-	it("heads the panel with the work it asks for, not with the verdict", () => {
-		render(<GateChoice {...choiceIn(kantoGateShaky())} />);
+	it("heads the panel with the price of the retry", () => {
+		render(<GateChoice {...choiceOf(kantoGateShaky())} />);
 
-		expect(
-			screen.getByRole("heading", { name: "Settle the peel to retry" })
-		).toBeInTheDocument();
+		expect(screen.getByRole("heading")).toHaveTextContent("Pay 48 KB to retry");
 	});
 
-	it("leads with what is owed, in the colour a debt wears", () => {
-		render(<GateChoice {...choiceIn(kantoGateShaky())} />);
+	it("names the gate and the band it held on", () => {
+		render(<GateChoice {...choiceOf(kantoGateShaky())} />);
 
-		expect(screen.getByText("48 KB owed")).toHaveAttribute(
-			"data-screen-theme",
-			"cinnabar"
-		);
+		expect(screen.getByText(/Gate 4 held/)).toBeInTheDocument();
 	});
 
-	it("turns the headline over to what was settled once it is paid", () => {
-		render(<GateChoice {...choiceIn(kantoGateShakyPaid())} />);
-
-		expect(screen.getByText("64 KB settled")).toHaveAttribute(
-			"data-screen-theme",
-			"viridian"
-		);
-	});
-
-	it("prices refusing the gate in what it banks, not in what it costs", () => {
-		render(<GateChoice {...choiceIn(kantoGateShaky())} />);
-
-		expect(screen.getByText(/Banks gate 4 of 13/)).toBeInTheDocument();
-	});
-
-	it("lets the player walk away whatever the peel stands at", () => {
-		render(<GateChoice {...choiceIn(kantoGateShaky())} />);
+	it("lets the player walk away whatever the peel stands at, keeping the balance", () => {
+		render(<GateChoice {...choiceOf(kantoGateShaky())} />);
 
 		expect(screen.getByRole("button", { name: REFUSAL_LABEL })).toBeEnabled();
-	});
-
-	it("seats the retry under the settlement it waits for", () => {
-		render(
-			<GateChoice
-				{...choiceIn(kantoGateShaky())}
-				retry={{ label: "Retry gate 4", note: "settle first" }}
-			/>
+		expect(screen.getByText(/no retry, keep/).parentElement).toHaveTextContent(
+			"no retry, keep 28 KB"
 		);
-
-		expect(
-			screen.getByRole("button", { name: /^Retry gate 4/ })
-		).toBeDisabled();
 	});
 
-	describe("a caught gate", () => {
-		it("asks for the catch before any other way to pay", () => {
-			render(<GateChoice {...choiceIn(kantoGateCaught())} />);
+	describe("when storage and a single config can each pay", () => {
+		it("offers both, with storage picked first", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyFunded())} />);
 
-			const headings = screen
-				.getAllByRole("heading", { level: 3 })
-				.map((heading) => heading.textContent);
+			expect(screen.getByRole("radio", { name: BRIBE_LABEL })).toBeChecked();
+			expect(
+				screen.getByRole("radio", { name: "Drop Cache" })
+			).not.toBeChecked();
+			expect(press(/^Pay from storage/)).toBeEnabled();
+		});
 
-			expect(headings.indexOf("Drop the catch first")).toBeGreaterThan(-1);
-			expect(headings.indexOf("Drop the catch first")).toBeLessThan(
-				headings.indexOf("Pay from storage")
+		it("states the balance the storage move leaves", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyFunded())} />);
+
+			expect(press(/^Pay from storage/)).toHaveAccessibleName(
+				"Pay from storage · 512 KB → 464 KB · 5 fresh polls"
 			);
 		});
 
-		it("offers the catch as the one drop that is open", () => {
-			render(<GateChoice {...choiceIn(kantoGateCaught())} />);
+		it("renames the press for the config picked and names the overpay", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyFundedDropping())} />);
 
-			expect(
-				screen.getByRole("checkbox", { name: "Drop Try/Catch" })
-			).toBeEnabled();
-			expect(bribeBox()).toBeDisabled();
-		});
-	});
-
-	describe("the settlement bar", () => {
-		it("names no source while nothing has been paid", () => {
-			render(<GateChoice {...choiceIn(kantoGateShaky())} />);
-
-			expect(screen.queryByText("from storage")).not.toBeInTheDocument();
-			expect(
-				screen.queryByText("from dropped configs")
-			).not.toBeInTheDocument();
-			expect(screen.queryByText("overpaid · lost")).not.toBeInTheDocument();
+			expect(press(/^Drop Cache/)).toBeEnabled();
+			expect(screen.getByText(/lost/).parentElement).toHaveTextContent(
+				"64 KB for 48 KB · −16 KB lost"
+			);
 		});
 
-		it("names only storage when storage settled the whole bill", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyFromStorage())} />);
+		it("lists only the moves that pay the peel alone", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyFunded())} />);
 
-			expect(screen.getByText("from storage")).toBeInTheDocument();
+			expect(radios()).toHaveLength(3);
 			expect(
-				screen.queryByText("from dropped configs")
+				screen.queryByRole("radio", { name: "Drop IndexedDB" })
 			).not.toBeInTheDocument();
 		});
 
-		it("names both sources when a drop and storage each paid a part", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyMixed())} />);
-
-			expect(screen.getByText("from storage")).toBeInTheDocument();
-			expect(screen.getByText("from dropped configs")).toBeInTheDocument();
-		});
-
-		it("names the overpay, because the waste is the cost", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyPaid())} />);
-
-			expect(screen.getByText("overpaid · lost")).toBeInTheDocument();
-		});
-	});
-
-	describe("paying from storage", () => {
-		it("offers only the slots the balance can reach", () => {
-			render(<GateChoice {...choiceIn(kantoGateShaky())} />);
-
-			expect(screen.getByText("Pay 16 KB of the peel")).toBeInTheDocument();
-		});
-
-		it("offers the whole bill once the balance covers it", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyFunded())} />);
-
-			expect(screen.getByText("Pay 48 KB of the peel")).toBeInTheDocument();
-		});
-
-		it("offers only what the drops left owed", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyMixed())} />);
-
-			expect(screen.getByText("Pay 16 KB of the peel")).toBeInTheDocument();
-		});
-
-		it("shuts itself when the drops already settled the peel", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyPaid())} />);
-
-			expect(bribeBox()).toBeDisabled();
-			expect(
-				screen.getByText("the drops already settle the peel")
-			).toBeInTheDocument();
-		});
-
-		it("states the balance it leaves behind", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyFunded())} />);
-
-			expect(
-				screen.getByText(/storage drops to/).parentElement
-			).toHaveTextContent("storage drops to 464 KB · your build stays intact");
-		});
-
-		it("carries the toggle the screen hands it", async () => {
-			const onToggleStorage = vi.fn();
-			const choice = choiceIn(kantoGateShakyFunded());
+		it("hands the screen the whole move a radio picks", async () => {
+			const onToggle = vi.fn();
+			const choice = choiceOf(kantoGateShakyFunded());
+			const options = choice.options;
+			if (options?.kind !== "radio") throw new Error("expected a radio");
 
 			render(
 				<GateChoice
 					{...choice}
-					peel={{
-						...choice.peel,
-						bribe: {
-							...choice.peel.bribe,
-							pick: { ...choice.peel.bribe.pick, onToggle: onToggleStorage },
-						},
+					options={{
+						...options,
+						rows: options.rows.map((row) => ({
+							...row,
+							pick: { ...row.pick, onToggle },
+						})),
 					}}
 				/>
 			);
-			await userEvent.click(bribeBox());
+			await userEvent.click(screen.getByRole("radio", { name: "Drop Cache" }));
 
-			expect(onToggleStorage).toHaveBeenCalledOnce();
+			expect(onToggle).toHaveBeenCalledOnce();
 		});
 	});
 
-	describe("dropping configs", () => {
-		it("prices every config in what dropping it settles", () => {
-			render(<GateChoice {...choiceIn(kantoGateShaky())} />);
+	describe("when only storage can pay", () => {
+		it("offers storage as the one move", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyStorageOnly())} />);
 
-			for (const value of kantoGatePeelValues) {
-				expect(screen.getAllByText(`${value} KB`).length).toBeGreaterThan(0);
-			}
+			expect(radios()).toHaveLength(1);
+			expect(press(/^Pay from storage/)).toBeEnabled();
+		});
+	});
+
+	describe("when only a config can pay", () => {
+		it("waits for a pick and says how short storage is", () => {
+			render(<GateChoice {...choiceOf(kantoGateShaky())} />);
+
+			expect(press(/^Pick a config/)).toBeDisabled();
+			expect(press(/^Pick a config/)).toHaveAccessibleName(
+				"Pick a config · you have 28 KB · 20 KB short"
+			);
+			expect(
+				screen.queryByRole("radio", { name: BRIBE_LABEL })
+			).not.toBeInTheDocument();
 		});
 
-		it("picks a config with a checkbox rather than a badge", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyPicking())} />);
+		it("badges each config with what dropping it pays", () => {
+			render(<GateChoice {...choiceOf(kantoGateShaky())} />);
+
+			expect(screen.getAllByText("64 KB")).toHaveLength(2);
+		});
+
+		it("badges the refund a drop pays back under Garbage Collection", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyCollected())} />);
+
+			expect(screen.getByText(/^\+\d+ KB$/)).toBeInTheDocument();
+		});
+	});
+
+	describe("when nothing pays the peel alone", () => {
+		it("falls back to combining drops and storage with checkboxes", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyMix())} />);
+
+			expect(screen.queryByRole("radiogroup")).not.toBeInTheDocument();
+			expect(
+				screen.getByRole("checkbox", { name: "Drop IndexedDB" })
+			).toBeEnabled();
+			expect(screen.getByRole("checkbox", { name: BRIBE_LABEL })).toBeEnabled();
+			expect(press(/^Retry gate 4/)).toBeDisabled();
+		});
+
+		it("opens the retry once a drop and storage settle it together", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyMixSettled())} />);
+
+			expect(press(/^Retry gate 4/)).toBeEnabled();
+		});
+	});
+
+	describe("when nothing can pay the peel", () => {
+		it("refuses the retry and leaves only the way out", () => {
+			render(<GateChoice {...choiceOf(kantoGateShakyStuck())} />);
+
+			expect(press(/^Nothing covers the peel/)).toBeDisabled();
+			expect(screen.getByRole("button", { name: REFUSAL_LABEL })).toBeEnabled();
+		});
+	});
+
+	describe("a caught gate", () => {
+		it("asks for the catch before the retry opens", () => {
+			render(<GateChoice {...choiceOf(kantoGateCaught())} />);
 
 			expect(
-				screen.getByRole("checkbox", { name: "Keep IndexedDB" })
+				screen.getByRole("checkbox", { name: "Drop Try/Catch" })
+			).toBeEnabled();
+			expect(press(/^Drop Try\/Catch first/)).toBeDisabled();
+		});
+
+		it("opens the retry once the catch alone covers the peel", () => {
+			render(<GateChoice {...choiceOf(kantoGateCaughtDropped())} />);
+
+			expect(
+				screen.getByRole("checkbox", { name: "Keep Try/Catch" })
 			).toBeChecked();
-			expect(
-				screen.getByRole("checkbox", { name: "Drop Cache" })
-			).not.toBeChecked();
-		});
-
-		it("warns that the overpay is gone when nothing collects it", () => {
-			render(<GateChoice {...choiceIn(kantoGateShaky())} />);
-
-			expect(screen.getByText(/refunds nothing/)).toBeInTheDocument();
-		});
-
-		it("says a drop pays twice when Garbage Collection is installed", () => {
-			render(<GateChoice {...choiceIn(kantoGateShakyCollected())} />);
-
-			expect(
-				screen.getByText(/Garbage Collection is installed/)
-			).toBeInTheDocument();
+			expect(press(/^Retry gate 4/)).toBeEnabled();
 		});
 	});
 });
@@ -249,16 +218,6 @@ describe("peelTallyOf", () => {
 	});
 });
 
-describe("peelHeadlineOf", () => {
-	it("leads with the debt while any of it stands", () => {
-		expect(peelHeadlineOf(48, 32)).toBe("16 KB owed");
-	});
-
-	it("leads with what was paid once the debt is gone", () => {
-		expect(peelHeadlineOf(48, 64)).toBe("64 KB settled");
-	});
-});
-
 describe("the outcome fixture's build", () => {
 	it("cannot settle its peel exactly, which is the whole tension", () => {
 		const sums = kantoGatePeelValues.flatMap((value, index) => [
@@ -268,22 +227,5 @@ describe("the outcome fixture's build", () => {
 
 		expect(kantoGatePeelBillKb).toBe(48);
 		expect(sums).not.toContain(kantoGatePeelBillKb);
-	});
-
-	it("lets storage buy the exact change the build cannot make", () => {
-		const mixed = choiceIn(kantoGateShakyMixed());
-
-		expect(mixed.peel.bill).toBe(kantoGatePeelBillSlots);
-		expect(mixed.peel.owed).toBe("48 KB settled");
-		expect(
-			mixed.peel.sources.find((source) => source.label === "overpaid · lost")
-		).toBeUndefined();
-	});
-
-	it("clears the retry once a drop covers the bill", () => {
-		expect(choiceIn(kantoGateShakyPaid()).peel.tally).toBe(
-			"the peel is settled · 16 KB over"
-		);
-		expect(choiceIn(kantoGateShakyPicking()).peel.tally).toContain("covered");
 	});
 });

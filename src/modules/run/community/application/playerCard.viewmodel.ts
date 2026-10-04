@@ -1,6 +1,7 @@
 import {
 	type Authorship,
 	isContributor,
+	NO_AUTHORSHIP,
 } from "~/modules/account/profile/domain/authorship.model";
 import type { ProfileFace } from "~/modules/account/profile/domain/profile.model";
 import type { Standing } from "~/modules/run/community/domain/standing.model";
@@ -17,10 +18,12 @@ import {
 import {
 	gateNumberLabelOf,
 	gateSwatchAt,
+	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { getCategoryMetadata, isCategoryCode } from "~/shared/lib/categories";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { kbLabel } from "~/shared/lib/storage";
+import type { ContributionProps } from "~/ui/kanto-theme/Contribution.ui";
 import {
 	COPY as CARD_COPY,
 	type ClimberCardProps,
@@ -37,12 +40,15 @@ export type PlayerCardView = {
 	readonly titles: readonly string[];
 	readonly theme: SwatchTheme;
 	readonly authorship?: Authorship;
+	readonly pollsAnswered?: number;
+	readonly swatchGates?: readonly number[];
 	readonly run?: Standing;
 };
 
 export const playerCardViewFor = (
 	userId: string,
 	{ identity, theme }: ProfileFace,
+	swatchGates: readonly number[],
 	run: Standing | null
 ): PlayerCardView => ({
 	userId,
@@ -52,6 +58,8 @@ export const playerCardViewFor = (
 	titles: identity.wornTitles,
 	theme,
 	authorship: identity.authorship,
+	pollsAnswered: identity.pollsAnswered,
+	swatchGates,
 	...(run === null ? {} : { run }),
 });
 
@@ -92,10 +100,13 @@ export const standingFor = (run: Standing): ClimberCardStanding => {
 	};
 };
 
-const isContributing = (
-	authorship: Authorship | undefined
-): authorship is Authorship =>
-	authorship !== undefined && isContributor(authorship);
+export const contributionOf = (
+	authorship: Authorship,
+	pollsAnswered: number
+): ContributionProps => ({
+	answered: pollsAnswered,
+	...(isContributor(authorship) ? { authored: authorship } : {}),
+});
 
 export const playerCardFor = (view: PlayerCardView): ClimberCardProps => ({
 	name: view.displayName,
@@ -103,6 +114,16 @@ export const playerCardFor = (view: PlayerCardView): ClimberCardProps => ({
 	...(view.borderUrl === undefined ? {} : { borderUrl: view.borderUrl }),
 	titles: view.titles,
 	theme: view.theme,
-	...(isContributing(view.authorship) ? { contribution: view.authorship } : {}),
+	...(view.pollsAnswered === undefined
+		? {}
+		: {
+				contribution: contributionOf(
+					view.authorship ?? NO_AUTHORSHIP,
+					view.pollsAnswered
+				),
+			}),
+	...(view.swatchGates === undefined
+		? {}
+		: { swatches: swatchTrackFor(view.swatchGates) }),
 	...(view.run === undefined ? {} : { standing: standingFor(view.run) }),
 });

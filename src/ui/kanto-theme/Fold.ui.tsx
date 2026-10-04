@@ -14,11 +14,13 @@ const SUMMARY =
 	"flex cursor-pointer list-none flex-wrap items-center gap-3 border-theme-faint px-4 py-3 select-none group-open/fold:border-b [&::-webkit-details-marker]:hidden";
 const CARET =
 	"inline-block shrink-0 text-theme-muted transition-transform group-open/fold:rotate-90";
-const NAMING = "grow";
+const NAMING = "flex grow flex-col gap-1.5";
 const META = "flex flex-wrap items-center gap-2";
+const META_LINES = "flex flex-col items-start gap-1";
 const BODY = "flex w-full flex-col gap-4 px-4 py-4";
 const FLUSH_BODY = "flex w-full flex-col";
 
+const CARET_ON_TITLE = "self-start leading-6";
 const CARET_GLYPH = "›";
 
 export type FoldBadge = { label: string; color?: KantoColor };
@@ -37,18 +39,14 @@ export type FoldProps = {
 	heading?: FoldHeading;
 	summary?: string;
 	badges?: readonly FoldBadge[];
-	meta?: LeadLine;
+	meta?: readonly LeadLine[];
 	open?: boolean;
 	flush?: boolean;
 	children: ReactNode;
 };
 
-const hasStrip = ({
-	summary,
-	badges,
-	meta,
-}: Pick<FoldProps, "summary" | "badges" | "meta">) =>
-	summary !== undefined || (badges ?? []).length > 0 || meta !== undefined;
+const hasStrip = ({ summary, badges }: Pick<FoldProps, "summary" | "badges">) =>
+	summary !== undefined || (badges ?? []).length > 0;
 
 export const Fold = ({
 	title,
@@ -64,7 +62,10 @@ export const Fold = ({
 }: FoldProps) => (
 	<details open={open} className={clsx(PANEL_SURFACE, FOLD)}>
 		<summary className={SUMMARY}>
-			<span aria-hidden className={CARET}>
+			<span
+				aria-hidden
+				className={clsx(CARET, meta !== undefined && CARET_ON_TITLE)}
+			>
 				{CARET_GLYPH}
 			</span>
 			{lead === undefined ? null : <Verdict outcome={lead} share={leadShare} />}
@@ -72,8 +73,17 @@ export const Fold = ({
 				<Typography variant={HEADING[heading]} as="h3">
 					{title}
 				</Typography>
+				{meta === undefined ? null : (
+					<ul className={META_LINES}>
+						{meta.map((line, index) => (
+							<li key={index}>
+								<Lead line={line} as="span" />
+							</li>
+						))}
+					</ul>
+				)}
 			</span>
-			{hasStrip({ summary, badges, meta }) ? (
+			{hasStrip({ summary, badges }) ? (
 				<span className={META}>
 					{summary === undefined ? null : (
 						<Typography variant="hint" as="span">
@@ -85,7 +95,6 @@ export const Fold = ({
 							{badge.label}
 						</Badge>
 					))}
-					{meta === undefined ? null : <Lead line={meta} as="span" />}
 				</span>
 			) : null}
 		</summary>

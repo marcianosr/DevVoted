@@ -247,13 +247,13 @@ const OPEN_SEAT_CATEGORY: CategoryCode = "git";
 
 const PROTO_BOARDS = [
 	{
-		title: "Streak leaders",
+		title: "streak",
 		summary: "longest run of correct answers in one run · all-time",
 		figure: (index: number) => `${24 - index * 2} in a row`,
 		claim: "3 in a row claims it",
 	},
 	{
-		title: "Correct leaders",
+		title: "correct",
 		summary: "most correct answers in one run · all-time",
 		figure: (index: number) => `${61 - index * 5} correct`,
 		claim: "4 correct claims it",
@@ -444,7 +444,7 @@ const simulateCommunityScreen = (
 			shop: { label: "Back to the shop", onPress: press.onShop },
 			prep: { label: "On to prep", onPress: press.onPrep },
 		},
-		turnout: turnoutFor(simulatedTurnout, "today", {
+		turnout: turnoutFor(simulatedTurnout, {
 			label: "answered today",
 			count: String(climbers),
 			climbers: [YOU, ...TRAINERS.map(climberOf)],
@@ -460,7 +460,6 @@ const simulateCommunityScreen = (
 		leaders: PROTO_BOARDS.map(({ title, summary, figure, claim }) => ({
 			title,
 			summary,
-			seated: `${SEATED_CATEGORIES} of ${CATEGORY_CODES.length} seated`,
 			seats: CATEGORY_CODES.map((code, index) => ({
 				category: getCategoryMetadata(code).name,
 				...(index < SEATED_CATEGORIES
@@ -476,7 +475,6 @@ const simulateCommunityScreen = (
 		})),
 		polls: {
 			title: "The day's polls",
-			summary: `${results.length} answered`,
 			polls: results,
 		},
 	};
@@ -663,10 +661,6 @@ const RunGame = ({
 					clockMs={pollClock.shownMs}
 					onSelect={onSelect}
 					onAnswer={answer}
-					onSkip={() => {
-						dispatch({ type: "skip" });
-						setPinned(true);
-					}}
 					onNext={() => {
 						dispatch({ type: "close-gate" });
 						setPinned(false);

@@ -9,7 +9,7 @@ import {
 	KANTO_PREP_GATE,
 	KANTO_PREP_SUMMIT_GATE,
 	kantoPrepCalibration,
-	kantoPrepCascadeThin,
+	kantoPrepCeruleanThin,
 	kantoPrepChampion,
 	kantoPrepFatal,
 	kantoPrepLadder,
@@ -106,7 +106,7 @@ describe("PrepScreen", () => {
 
 		expect(container.firstElementChild).toHaveAttribute(
 			"data-gate-theme",
-			"lavender"
+			"gate-lavender"
 		);
 	});
 
@@ -200,9 +200,9 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(standingLineOf()).toHaveTextContent(
-				"+22% to reach SHAKY · 5 polls left"
+				"+53% to reach SHAKY · 5 polls left"
 			);
-			expect(within(standingLineOf()).getByText("+22%")).toHaveAttribute(
+			expect(within(standingLineOf()).getByText("+53%")).toHaveAttribute(
 				"data-screen-theme",
 				"viridian"
 			);
@@ -212,7 +212,7 @@ describe("PrepScreen", () => {
 		});
 
 		it("aims the standing line at HEALTHY from inside OK", () => {
-			render(<PrepScreen {...kantoPrepCascadeThin()} />);
+			render(<PrepScreen {...kantoPrepCeruleanThin()} />);
 
 			expect(standingLineOf()).toHaveTextContent(
 				"+7% to reach HEALTHY · 5 polls left"
@@ -237,7 +237,7 @@ describe("PrepScreen", () => {
 				const block = within(requiredBlock());
 
 				expect(block.getByText("OK")).toBeInTheDocument();
-				expect(block.getByText("advance to Rainbow")).toBeInTheDocument();
+				expect(block.getByText("advance to Celadon")).toBeInTheDocument();
 				expect(block.queryByText("to clear the gate")).not.toBeInTheDocument();
 				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 			});
@@ -281,20 +281,6 @@ describe("PrepScreen", () => {
 					"data-screen-theme",
 					"cerulean"
 				);
-			});
-
-			it("lists what a single and a multiple choice cover above the objectives, and draws no box per change", () => {
-				render(<PrepScreen {...props} />);
-
-				const panel = within(sectionOf(BAND_OUTCOMES_TITLE));
-				const brief = panel.getByText(/single choice/);
-
-				expect(panel.getByText(/multiple choice/)).toBeInTheDocument();
-				expect(
-					brief.compareDocumentPosition(panel.getByText(CLEAR_LEAD)) &
-						Node.DOCUMENT_POSITION_FOLLOWING
-				).toBeTruthy();
-				expect(panel.queryByRole("img", { name: /covered$/ })).toBeNull();
 			});
 
 			it("never names the gate's codebase anywhere in At stake", () => {
@@ -420,9 +406,17 @@ describe("PrepScreen", () => {
 			render(<PrepScreen {...props} />);
 
 			expect(scoringFold()).not.toHaveAttribute("open");
-			expect(scoringFold().querySelector("summary")).toHaveTextContent(
-				"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
+			const strip = within(
+				scoringFold().querySelector("summary") as HTMLElement
 			);
+
+			expect(
+				strip.getAllByRole("listitem").map((line) => line.textContent)
+			).toEqual([
+				"single +14.3%",
+				"multiple up to +28.6%",
+				"accuracy up to ×1.08",
+			]);
 		});
 
 		it("seals the figures of the gates ahead but keeps their names", () => {
@@ -430,10 +424,10 @@ describe("PrepScreen", () => {
 
 			const fold = within(scoringFold());
 
-			for (const reached of ["Pallet", "Boulder", "Cascade", "Thunder"]) {
+			for (const reached of ["Pallet", "Pewter", "Cerulean", "Vermilion"]) {
 				expect(fold.getByText(reached)).toBeInTheDocument();
 			}
-			expect(fold.getByText("Rainbow")).toBeInTheDocument();
+			expect(fold.getByText("Celadon")).toBeInTheDocument();
 			expect(fold.getByText("Champion")).toBeInTheDocument();
 			expect(fold.getAllByText("???")).toHaveLength(4);
 			expect(fold.getAllByText("⋮")).toHaveLength(1);
@@ -632,7 +626,7 @@ describe("PrepScreen", () => {
 			expect(
 				screen
 					.getByRole("button", { name: /^Start Lavender/ })
-					.querySelector("[data-swatch-theme='lavender']")
+					.querySelector("[data-swatch-theme='gate-lavender']")
 			).not.toBeNull();
 			expect(
 				screen

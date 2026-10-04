@@ -230,10 +230,29 @@ export const endIncidentsForRun = async (
 		);
 };
 
+export type IncidentParty = IncidentSender & {
+	readonly photoUrl?: string;
+	readonly borderUrl?: string;
+};
+
+const partyOf = (
+	id: string,
+	name: string | null,
+	photoUrl: string | null,
+	borderId: string | null
+): IncidentParty => {
+	const borderUrl = borderUrlOf(borderId);
+	return {
+		...senderOf(id, name),
+		...(photoUrl === null ? {} : { photoUrl }),
+		...(borderUrl === null ? {} : { borderUrl }),
+	};
+};
+
 export type IncidentFeedRow = {
 	readonly id: number;
-	readonly sentBy: IncidentSender;
-	readonly target: IncidentSender;
+	readonly sentBy: IncidentParty;
+	readonly target: IncidentParty;
 	readonly targetGate: number;
 	readonly auditId: AuditId;
 	readonly status: IncidentStatus;
@@ -251,8 +270,12 @@ export const fetchIncidentsForDate = async (
 			id: auditIncidentsTable.id,
 			senderId: auditIncidentsTable.sent_by_user_id,
 			senderName: sender.display_name,
+			senderPhotoUrl: sender.photo_url,
+			senderBorderId: sender.equipped_border_id,
 			targetId: auditIncidentsTable.target_user_id,
 			targetName: target.display_name,
+			targetPhotoUrl: target.photo_url,
+			targetBorderId: target.equipped_border_id,
 			targetGate: auditIncidentsTable.target_gate,
 			auditId: auditIncidentsTable.audit_id,
 			status: auditIncidentsTable.status,
@@ -271,8 +294,18 @@ export const fetchIncidentsForDate = async (
 
 	return rows.map((row) => ({
 		id: row.id,
-		sentBy: senderOf(row.senderId, row.senderName),
-		target: senderOf(row.targetId, row.targetName),
+		sentBy: partyOf(
+			row.senderId,
+			row.senderName,
+			row.senderPhotoUrl ?? null,
+			row.senderBorderId ?? null
+		),
+		target: partyOf(
+			row.targetId,
+			row.targetName,
+			row.targetPhotoUrl ?? null,
+			row.targetBorderId ?? null
+		),
 		targetGate: row.targetGate,
 		auditId: row.auditId,
 		status: row.status,

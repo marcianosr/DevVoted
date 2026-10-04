@@ -1,17 +1,19 @@
-export type SwatchTheme =
+type GatePlace =
 	| "pallet"
-	| "boulder"
-	| "cascade"
-	| "thunder"
-	| "rainbow"
-	| "soul"
-	| "marsh"
-	| "volcano"
-	| "earth"
+	| "pewter"
+	| "cerulean"
+	| "vermilion"
 	| "lavender"
+	| "celadon"
+	| "fuchsia"
+	| "saffron"
 	| "seafoam"
-	| "elite"
+	| "cinnabar"
+	| "viridian"
+	| "indigo-elite"
 	| "champion";
+
+export type SwatchTheme = `gate-${GatePlace}`;
 
 export type SwatchFinish = "flat" | "plate" | "fill";
 
@@ -35,30 +37,30 @@ export const themeColorOf = (
 const swatch = (
 	gate: number,
 	gateName: string,
-	theme: SwatchTheme,
+	place: GatePlace,
 	finish: SwatchFinish = "flat"
 ): GateSwatch => ({
-	id: `swatch-${theme}`,
+	id: `swatch-${place}`,
 	gate,
 	gateName,
 	name: `${gateName} Swatch`,
-	theme,
+	theme: `gate-${place}`,
 	finish,
 });
 
 export const GATE_SWATCHES: Readonly<Record<number, GateSwatch>> = {
 	0: swatch(0, "Pallet", "pallet"),
-	1: swatch(1, "Boulder", "boulder"),
-	2: swatch(2, "Cascade", "cascade"),
-	3: swatch(3, "Thunder", "thunder"),
+	1: swatch(1, "Pewter", "pewter"),
+	2: swatch(2, "Cerulean", "cerulean"),
+	3: swatch(3, "Vermilion", "vermilion"),
 	4: swatch(4, "Lavender", "lavender"),
-	5: swatch(5, "Rainbow", "rainbow"),
-	6: swatch(6, "Soul", "soul"),
-	7: swatch(7, "Marsh", "marsh"),
+	5: swatch(5, "Celadon", "celadon"),
+	6: swatch(6, "Fuchsia", "fuchsia"),
+	7: swatch(7, "Saffron", "saffron"),
 	8: swatch(8, "Seafoam", "seafoam"),
-	9: swatch(9, "Volcano", "volcano"),
-	10: swatch(10, "Earth", "earth"),
-	11: swatch(11, "Elite", "elite", "plate"),
+	9: swatch(9, "Cinnabar", "cinnabar"),
+	10: swatch(10, "Viridian", "viridian"),
+	11: swatch(11, "Indigo Elite", "indigo-elite", "plate"),
 	12: swatch(12, "Champion", "champion", "fill"),
 };
 

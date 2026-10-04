@@ -14,6 +14,7 @@ import {
 	abandonRunService,
 	dispatchRunActionService,
 	getOwnedSwatchesService,
+	getPollsLeftTodayService,
 	getRunNumberService,
 	getRunRecapService,
 	getTodaysRunService,
@@ -24,6 +25,13 @@ export const getTodaysRun = createServerFn({ method: "GET" }).handler(
 	async () =>
 		withAuthenticatedUser(({ userId }) =>
 			getTodaysRunService({ userId, date: getTodayDateString() })
+		)
+);
+
+export const getPollsLeftToday = createServerFn({ method: "GET" }).handler(
+	async () =>
+		withAuthenticatedUser(({ userId }) =>
+			getPollsLeftTodayService({ userId, date: getTodayDateString() })
 		)
 );
 

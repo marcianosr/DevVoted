@@ -20,8 +20,10 @@ import {
 	type PollSighting,
 } from "~/modules/collection/dex/domain/polldex.model";
 import {
+	bestRunIn,
 	deepestGateIn,
 	runHistory,
+	runsWonIn,
 	type RunHistoryEntry,
 } from "~/modules/collection/dex/domain/runHistory.model";
 import {
@@ -85,6 +87,8 @@ const recordOf = ({
 		.filter((gate) => gate.state === "cleared")
 		.map((gate) => gate.gate),
 	runsFinished: entries.length,
+	runsWon: runsWonIn(entries),
+	bestRun: bestRunIn(entries),
 	seats: seatsHeldBy(userId, seats),
 	recentRuns: entries.slice(0, RECENT_RUNS_SHOWN),
 });

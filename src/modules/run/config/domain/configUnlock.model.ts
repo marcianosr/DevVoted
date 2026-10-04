@@ -221,8 +221,8 @@ export const CONFIG_UNLOCKS: Readonly<Record<string, ConfigUnlock>> = {
 	"volkswagen-ci": earned(
 		"mirror-clear-no-miss",
 		1,
-		"Clear Marsh's Mirror audit without a miss",
-		"cleared Marsh's Mirror audit without a miss",
+		"Clear Saffron's Mirror audit without a miss",
+		"cleared Saffron's Mirror audit without a miss",
 		475
 	),
 	freemium: earned(

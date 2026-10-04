@@ -58,10 +58,23 @@ Connect: `psql "$SUPABASE_DB_URL"` (from `.env`). Find the user: `select id from
 ```sql
 update runs set seed_date = to_char(seed_date::date - 1, 'YYYY-MM-DD')
   where user_id = :uid and seed_date is not null;
-update poll_responses set answer_date = to_char(answer_date::date - 1, 'YYYY-MM-DD')
+update polls_responses set answer_date = to_char(answer_date::date - 1, 'YYYY-MM-DD')
   where user_id = :uid;
 ```
 Tomorrow's poll sequence is created lazily (`getOrCreateDailyRunSeed`).
+This does NOT open a second gate the same real day: `rollSegmentForward` deals today's seeded sequence minus polls the run already answered, and that is the set you just played. To play another gate today, append unanswered polls instead:
+```sql
+insert into run_polls (run_id, position, poll_id, segment_date)
+select :run, :currentIndex - 1 + row_number() over (), id, to_char(current_date, 'YYYY-MM-DD') from (
+  select id from polls where status = 'published'
+    and id not in (select poll_id from polls_responses where run_id = :run)
+    and id not in (select poll_id from run_polls where run_id = :run)
+  order by id desc limit 5) x;
+```
+**Positions must be packed.** The engine reads `polls[currentIndex]` from the run's `run_polls` ordered by position, not by position number. If you raise `currentIndex`/`gatesCleared` by SQL, pad the skipped positions with past-dated filler rows or the day reads as spent.
+**Setting `status: "rewarding"` by SQL opens an empty registry**: only the gate-close reducer rolls `draftOptions`. Copy a draft from another rewarding run, or press Rebuild once in the shop.
+**Status `configuring` is the new-run build screen** (`/run/new`), not prep. A rigged gate's audits only appear after a dispatched action in prep (`backfillGateAudits` runs on settle), e.g. one install/uninstall.
+**Two logins at once:** when the browser MCPs are busy, a headless playwright-core script with one saved `storageState` per login works; Agatha's legacy modal needs "Later" pressed first.
 
 **Shape a run** (gate, storage, build): edit `run_states.state` (the snapshot JSON) and its mirrored columns `gates_cleared`, `coverage` (stored in UNITS), `polls_answered` together, or the screens disagree. Copy the overrides `seedClimberRuns` uses in `src/database/seed/runs.ts` (`status`, `gatesCleared`, `storage`, `currentIndex`, `build.configs`, `window`, `lastClose`). Prefer proto-run or Lorelei's pin before reaching for this.
 

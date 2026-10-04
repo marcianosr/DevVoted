@@ -88,11 +88,11 @@ describe("Fold", () => {
 		);
 	});
 
-	it("reads a meta line on the strip, its figures badged and its words bare", () => {
+	it("lists its meta lines on the strip, its figures badged and its words bare", () => {
 		render(
 			<Fold
 				title="Scoring"
-				meta={[{ figure: "25 slots" }, " 1 unit ", { figure: "+4%" }]}
+				meta={[[{ figure: "25 slots" }, " 1 unit ", { figure: "+4%" }]]}
 			>
 				<p>ladders</p>
 			</Fold>
@@ -100,8 +100,34 @@ describe("Fold", () => {
 
 		expect(screen.getByText("25 slots")).toHaveClass("badge-theme");
 		expect(screen.getByText("+4%")).toHaveClass("badge-theme");
-		expect(screen.getByText("25 slots").closest("summary")).toHaveTextContent(
+		expect(screen.getByText("25 slots").closest("li")).toHaveTextContent(
 			"25 slots 1 unit +4%"
+		);
+	});
+
+	it("stacks its meta lines under the title, left-aligned, rather than beside it", () => {
+		render(
+			<Fold title="Scoring" meta={[[{ figure: "+11.1%" }], [{ figure: "×2" }]]}>
+				<p>ladders</p>
+			</Fold>
+		);
+		const lines = screen.getByText("+11.1%").closest("ul");
+
+		expect(lines?.parentElement).toContainElement(
+			screen.getByRole("heading", { name: "Scoring" })
+		);
+		expect(lines).toHaveClass("items-start");
+	});
+
+	it("levels its caret with the title when meta lines stack underneath", () => {
+		const { container } = render(
+			<Fold title="Scoring" meta={[[{ figure: "×2" }]]}>
+				<p>ladders</p>
+			</Fold>
+		);
+
+		expect(container.querySelector("summary > [aria-hidden]")).toHaveClass(
+			"self-start"
 		);
 	});
 

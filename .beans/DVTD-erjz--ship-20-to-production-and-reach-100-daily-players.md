@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: critical
 created_at: 2026-09-30T18:50:26Z
-updated_at: 2026-10-02T15:41:24Z
+updated_at: 2026-10-03T15:50:57Z
 parent: DVTD-u35m
 ---
 
@@ -30,7 +30,7 @@ Goal: 100 DUA by the end of 2026 (about 3 months from 2026-09-30). The branch is
 3. **Rehearse the cutover** on a copy of prod: all 26 pending migrations in order, the legacy grants (titles, archive bonus, category backfill) are idempotent, `mode='calendar'` history survives, and there's a written rollback note. The rest of DVTD-n1dn: a major-version path in `release-decision.ts`, a readable 2.0 changelog (DVTD-d1ei), and `docs/production-release.md` matching `main.yaml`.
 4. **A spent day breaks the loop:** DVTD-ecjo, DVTD-3q07, DVTD-p0db.
 5. **Legal minimum:** a privacy page (it says the analytics are first-party and use no cookies), terms, and account deletion (GDPR).
-6. **See day one:** finish DVTD-0c8e (server Sentry) and DVTD-k8rp (post-deploy checks). Set `VISIT_HASH_SECRET` in prod, or visits are silently dropped.
+6. **See day one:** finish DVTD-0c8e (server Sentry) and DVTD-k8rp (post-deploy checks). `VISIT_HASH_SECRET` and the Sentry DSN are set in prod (confirmed 2026-10-03).
 7. **Housekeeping:** delete the Firebase admin key in `scripts/` and drop the `firebase-admin` dependency (the polls are already imported).
 
 ### P1: soft launch to existing players, Kabisa and warm intros (target 30-50 DUA)
@@ -57,3 +57,6 @@ New config beans (~40), marketplace, team runs, packs and monetization, the deep
 
 ### Sequencing
 P0, then merge, then soft launch, then P1 funnel, then the HN/Reddit spike, then measure D1/D7. Retention, not the spike, decides whether this reaches 100.
+
+### Status 2026-10-03
+Checked against the code: P0 #2, #3, #4 and #6 are still open; #1 is done. #5 (legal) and #7 (Firebase key) are skipped at Marciano's call. Risk accepted: GDPR deletion requests become manual SQL, and the Firebase key stays in git history unless it is revoked in GCP.

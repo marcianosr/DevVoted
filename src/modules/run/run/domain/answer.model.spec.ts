@@ -35,6 +35,7 @@ import {
 	INCIDENT_SURVIVAL_KB,
 } from "~/modules/run/run/domain/rules.model";
 import {
+	ACCURACY_GAIN_PER_GATE,
 	BASE_UNIT,
 	PERFECT_BONUS,
 	MULTIPLE_CREDIT,
@@ -67,7 +68,7 @@ import {
 	started,
 } from "~/modules/run/run/domain/run.factory";
 
-const FLAWLESS_OVERFLOW_KB = 2;
+const FLAWLESS_OVERFLOW_KB = 1;
 const FLAWLESS_PERFECT_BONUS_KB = 16;
 
 describe("what one answer is worth at the opening gate", () => {
@@ -77,13 +78,13 @@ describe("what one answer is worth at the opening gate", () => {
 		expect(state.window.unitsEarned).toBe(BASE_UNIT);
 	});
 
-	it("asks forty percent at the calibration gate, and a fifth clears it thin", () => {
+	it("asks sixty-four percent at the calibration gate, and fifty-two clears it thin", () => {
 		const state = started([]);
 		const ladder = gateLadderFor(state.build.configs, 0, scheduleOf(state));
 
 		expect(ladder.healthy).toBe(percentOf(healthyAt(0)));
-		expect(ladder.healthy).toBe(40);
-		expect(ladder.ok).toBe(20);
+		expect(ladder.healthy).toBe(64);
+		expect(ladder.ok).toBe(52);
 		expect(ladder.floor).toBe(0);
 	});
 });
@@ -99,7 +100,7 @@ describe("the gate holds until its last answer has been read", () => {
 	};
 
 	const filledWindow = (): RunState =>
-		[true, false, false, true, false].reduce(scoreOnly, started([]));
+		[true, true, false, true, true].reduce(scoreOnly, started([]));
 
 	const flawlessWindow = (): RunState =>
 		[true, true, true, true, true].reduce(scoreOnly, started([]));
@@ -108,7 +109,8 @@ describe("the gate holds until its last answer has been read", () => {
 		roundToOneDecimal(
 			percentOf(
 				runCoverageOf(
-					state.headStartUnits + windowOutputOf(state.window),
+					state.headStartUnits +
+						windowOutputOf(state.window, state.accuracyBonus),
 					state.gatesCleared
 				)
 			)
@@ -122,7 +124,7 @@ describe("the gate holds until its last answer has been read", () => {
 	});
 
 	it("reads the window's output times its accuracy against the gate that asked it", () => {
-		expect(heldPercent(filledWindow())).toBe(29.3);
+		expect(heldPercent(filledWindow())).toBe(84.5);
 	});
 
 	it("opens the next gate empty after a close under a full bar", () => {
@@ -137,8 +139,8 @@ describe("the gate holds until its last answer has been read", () => {
 		const closed = runReducer(flawlessWindow(), { type: "close-gate" });
 
 		expect(closed.gatesCleared).toBe(1);
-		expect(closed.headStartUnits).toBe(0.1);
-		expect(heldPercent(closed)).toBe(1.1);
+		expect(closed.headStartUnits).toBeCloseTo(0.04);
+		expect(heldPercent(closed)).toBe(0.8);
 	});
 
 	it("refuses a sixth answer into a window that is already full", () => {
@@ -168,7 +170,9 @@ describe("gates and rewards", () => {
 	it("pays the flat Unit Tests payout on top of the gate reward", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
-		expect(state.storage).toBe(66 + FLAWLESS_PERFECT_BONUS_KB);
+		expect(state.storage).toBe(
+			64 + FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
+		);
 	});
 
 	it("resets the shop's sale tally on a gate clear", () => {
@@ -222,7 +226,9 @@ describe("gates and rewards", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(34 + FLAWLESS_PERFECT_BONUS_KB);
+		expect(state.storage).toBe(
+			32 + FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
+		);
 
 		state = runReducer(state, { type: "upgrade", configId: "js" });
 		expect(state.build.configs[0].level ?? 1).toBe(1);
@@ -246,12 +252,16 @@ describe("gates and rewards", () => {
 		let state = started(["unit-tests", "js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.storage).toBe(66 + FLAWLESS_PERFECT_BONUS_KB);
+		expect(state.storage).toBe(
+			64 + FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
+		);
 
 		state = runReducer(state, { type: "upgrade", configId: "unit-tests" });
 		const unit = state.build.configs.find((c) => c.id === "unit-tests")!;
 		expect(unit.level).toBe(2);
-		expect(state.storage).toBe(2 + FLAWLESS_PERFECT_BONUS_KB);
+		expect(state.storage).toBe(
+			FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
+		);
 
 		const broke = runReducer(state, {
 			type: "upgrade",
@@ -325,8 +335,8 @@ describe("room comes from the build, never from the climb (ADR-098)", () => {
 });
 
 describe("coverage alone decides the close", () => {
-	it("clears Pallet on two right answers once their coverage reaches OK", () => {
-		const cleared = [true, true, false, false, false].reduce(
+	it("clears Pallet on three right answers once their coverage reaches OK", () => {
+		const cleared = [true, true, true, false, false].reduce(
 			answerWith,
 			started([])
 		);
@@ -353,11 +363,12 @@ describe("coverage alone decides the close", () => {
 });
 
 describe("the gate's window meter (ADR-035)", () => {
-	it("clears Elite on a perfect window alone, since accuracy doubles it", () => {
+	it("clears Indigo Elite on a perfect window alone once a flawless climb carried its accuracy there", () => {
 		const state = clearGate({
 			...started(["js"]),
 			gatesCleared: 11,
 			headStartUnits: 0,
+			accuracyBonus: 11 * ACCURACY_GAIN_PER_GATE,
 		});
 		expect(state.status).toBe("rewarding");
 		expect(state.gatesCleared).toBe(12);
@@ -420,7 +431,7 @@ describe("the gate's window meter (ADR-035)", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 		expect(state.clearedGate).toBe(0);
-		expect(percentOf(healthyAt(0))).toBe(40);
+		expect(percentOf(healthyAt(0))).toBe(64);
 	});
 });
 
@@ -574,7 +585,7 @@ describe("Dependabot's counter", () => {
 		const short: RunState = {
 			...base,
 			autoUpgradeProgress: 3,
-			headStartUnits: 3.6,
+			headStartUnits: 4.6,
 			window: {
 				...base.window,
 				answered: SLICE_WINDOW - 1,
@@ -597,7 +608,9 @@ describe("depth and width are independent (ADR-019)", () => {
 		expect(state.status).toBe("rewarding");
 		expect(state.gatesCleared).toBe(1);
 		expect(state.clearedGate).toBe(0);
-		expect(state.storage).toBe(34 + FLAWLESS_PERFECT_BONUS_KB);
+		expect(state.storage).toBe(
+			32 + FLAWLESS_OVERFLOW_KB + FLAWLESS_PERFECT_BONUS_KB
+		);
 	});
 
 	it("names the badge the clear earned in the log", () => {
@@ -1933,7 +1946,7 @@ describe("SLA pays for holding to the band it promised (ADR-096)", () => {
 	it("pays nothing on a gate that cleared but fell short of its promise", () => {
 		const short = [true, true, true, false, false].reduce(
 			answerWith,
-			promising("perfect", { gatesCleared: 4, headStartUnits: 0 })
+			promising("perfect", { gatesCleared: 4, headStartUnits: 3 })
 		);
 
 		expect(short.status).toBe("rewarding");
@@ -1993,6 +2006,7 @@ describe("a clear hands nothing, and every close leaves a record", () => {
 			ladder: gateLadderFor(opening.build.configs, 0, scheduleOf(opening)),
 			correct: SLICE_WINDOW,
 			accuracy: { earned: SLICE_WINDOW, available: SLICE_WINDOW },
+			multiplier: 1 + ACCURACY_GAIN_PER_GATE,
 		});
 		expect(failGate(opening).lastClose).toMatchObject({
 			gate: 0,

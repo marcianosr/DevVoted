@@ -1,8 +1,4 @@
-import { CHOICE_LABEL } from "~/shared/lib/copy";
-import {
-	gateOutputOf,
-	MULTIPLE_CREDIT,
-} from "~/modules/run/build/domain/coverageRatio.model";
+import { gateOutputOf } from "~/modules/run/build/domain/coverageRatio.model";
 import { GATE_WORD } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
 import {
@@ -19,10 +15,7 @@ import type {
 	BandLadderProps,
 	LadderRung,
 } from "~/ui/kanto-theme/BandLadder.ui";
-import type {
-	BandBrief,
-	BandOutcomesProps,
-} from "~/ui/kanto-theme/BandOutcomes.ui";
+import type { BandOutcomesProps } from "~/ui/kanto-theme/BandOutcomes.ui";
 import type {
 	CoverageBandId,
 	CoverageLadder,
@@ -37,9 +30,8 @@ const AS_PERCENT = 100;
 const ROOM = 1;
 
 export const BAND_OUTCOMES_TITLE = "At stake";
-const PAID_WHEN = "Paid when the gate shuts.";
-export const BAND_OUTCOMES_NOTE = `${PAID_WHEN} Miss it and you owe a peel, settled in KB or in configs.`;
-export const FREE_MISS_NOTE = `${PAID_WHEN} Miss it and you owe nothing: the same gate runs again on ${SLICE_WINDOW} fresh polls.`;
+export const FREE_MISS_NOTE = "Received at the end of the gate.";
+export const BAND_OUTCOMES_NOTE = `${FREE_MISS_NOTE} Miss it and you owe a peel, settled in KB or in configs.`;
 
 export const ESCROW_NOTE =
 	"An open transaction only pays on a clear: SHAKY or DANGER rolls back every KB this window held.";
@@ -47,15 +39,14 @@ export const ESCROW_NOTE =
 const CLEAR_LEAD = "Finish at ";
 const CLEAR_TRAIL = " or better";
 const EARNS = "earns ";
+const EARNS_THE = "earns the ";
+const AND = " and ";
 const ADVANCE_LEAD = "advance to ";
 const OR_MORE = " or more";
 const CLEAR_LINE_OPEN = " (";
 const CLEAR_LINE_CLOSE = ")";
 const REACH_LEAD = "Reach ";
 const COVERAGE_TRAIL = " coverage";
-const SINGLE_LEAD = `${CHOICE_LABEL.single} `;
-const MULTIPLE_LEAD = ` · ${CHOICE_LABEL.multiple} `;
-const ADDS_MORE = "accuracy and configs add more";
 const POINTS = "%";
 const SWATCH_WORD = "swatch";
 const META_JOIN = " · ";
@@ -125,24 +116,38 @@ const RIGHT_COUNTS: readonly number[] = Array.from(
 	(_, right) => right
 );
 
-const gainOfRight = (right: number, gainPercent: number): number =>
-	gateOutputOf(right * gainPercent, { earned: right, available: SLICE_WINDOW });
+const gainOfRight = (
+	right: number,
+	gainPercent: number,
+	accuracyBonus: number
+): number =>
+	gateOutputOf(right * gainPercent, accuracyBonus, {
+		earned: right,
+		available: SLICE_WINDOW,
+	});
 
 export const answersOwedFor = (
 	line: number,
 	held: number,
-	gainPercent: number
+	gainPercent: number,
+	accuracyBonus: number
 ): number | undefined => {
 	const owed = roundToOneDecimal(Math.max(0, line - held));
 
 	if (owed === 0) return 0;
 	if (gainPercent <= 0) return undefined;
 
-	return RIGHT_COUNTS.find((right) => gainOfRight(right, gainPercent) >= owed);
+	return RIGHT_COUNTS.find(
+		(right) => gainOfRight(right, gainPercent, accuracyBonus) >= owed
+	);
 };
 
-const answersToLand = (line: number, gainPercent: number): number =>
-	answersOwedFor(line, 0, gainPercent) ?? SLICE_WINDOW;
+const answersToLand = (
+	line: number,
+	gainPercent: number,
+	accuracyBonus: number
+): number =>
+	answersOwedFor(line, 0, gainPercent, accuracyBonus) ?? SLICE_WINDOW;
 
 export type BandOutcomesFrame = {
 	swatch: GateSwatch;
@@ -150,6 +155,7 @@ export type BandOutcomesFrame = {
 	held: number;
 	ladder: CoverageLadder;
 	coverageGainPercent: number;
+	accuracyBonus?: number;
 	peelKb: number;
 	answeredThisGate: number;
 	escrows?: boolean;
@@ -170,15 +176,22 @@ const paysOf = (rung: CoverageRung, frame: BandOutcomesFrame) => {
 			: `${GATE_HELD}${signedKbLabel(-frame.peelKb)} ${PEEL_TRAIL}`;
 
 	return signedKbLabel(
-		frame.payout(answersToLand(rung.from, frame.coverageGainPercent), rung.band)
+		frame.payout(
+			answersToLand(
+				rung.from,
+				frame.coverageGainPercent,
+				frame.accuracyBonus ?? 0
+			),
+			rung.band
+		)
 	);
 };
 
 const advancePartsFor = (gate: number): readonly LeadPart[] => {
 	const next = swatchForGate(gate + 1);
 
-	if (next === undefined) return [];
-	return [{ figure: `${ADVANCE_LEAD}${next.gateName}` }];
+	if (next === undefined) return [EARNS];
+	return [EARNS_THE, { figure: `${ADVANCE_LEAD}${next.gateName}` }, AND];
 };
 
 const clearObjectiveFor = (
@@ -186,7 +199,6 @@ const clearObjectiveFor = (
 	frame: BandOutcomesFrame
 ): Objective => {
 	const earns: LeadLine = [
-		EARNS,
 		...advancePartsFor(frame.gate),
 		{ figure: paysOf(rung, frame), band: rung.band },
 		OR_MORE,
@@ -205,13 +217,18 @@ const clearObjectiveFor = (
 	};
 };
 
-const swatchObjectiveFor = ({ swatch }: BandOutcomesFrame): Objective => ({
+const swatchObjectiveFor = (frame: BandOutcomesFrame): Objective => ({
 	statement: [
 		REACH_LEAD,
 		{ figure: `${AS_PERCENT}%`, band: PERFECT_RUNG.band },
 		COVERAGE_TRAIL,
 	],
-	earns: [EARNS, { swatch, label: `${swatch.gateName} ${SWATCH_WORD}` }],
+	earns: [
+		EARNS,
+		{ swatch: frame.swatch, label: `${frame.swatch.gateName} ${SWATCH_WORD}` },
+		AND,
+		{ figure: paysOf(PERFECT_RUNG, frame), band: PERFECT_RUNG.band },
+	],
 });
 
 export const objectivesFor = (frame: BandOutcomesFrame): ObjectivesProps => ({
@@ -269,18 +286,6 @@ export const standingLineFor = (frame: BandOutcomesFrame): LeadLine => {
 	];
 };
 
-export const briefFor = ({
-	coverageGainPercent,
-}: BandOutcomesFrame): BandBrief => ({
-	statement: [
-		SINGLE_LEAD,
-		pointsOf(coverageGainPercent),
-		MULTIPLE_LEAD,
-		pointsOf(coverageGainPercent * MULTIPLE_CREDIT),
-	],
-	hint: [ADDS_MORE],
-});
-
 const noteFor = (frame: BandOutcomesFrame): string => {
 	const lead = peelsNothing(frame) ? FREE_MISS_NOTE : BAND_OUTCOMES_NOTE;
 
@@ -292,7 +297,6 @@ export const bandOutcomesPropsFor = (
 ): BandOutcomesProps => ({
 	title: BAND_OUTCOMES_TITLE,
 	meta: metaFor(frame),
-	brief: briefFor(frame),
 	objectives: objectivesFor(frame),
 	ladder: ladderFor(frame),
 	standing: standingLineFor(frame),

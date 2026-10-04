@@ -8,6 +8,9 @@ export const sessionRunQueryKeys = {
 	all: [...runQueryKeys.all, "session"] as const,
 	today: (date: string) => [...sessionRunQueryKeys.all, date] as const,
 	todaysRun: () => sessionRunQueryKeys.today(getTodayDateString()),
+	pollsLeft: (date: string) =>
+		[...sessionRunQueryKeys.all, "polls-left", date] as const,
+	todaysPollsLeft: () => sessionRunQueryKeys.pollsLeft(getTodayDateString()),
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
 	todaysCommunity: () => sessionRunQueryKeys.community(getTodayDateString()),

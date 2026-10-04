@@ -11,7 +11,7 @@ const RED: ProfileSource = {
 	photoUrl: "/editors/red.png",
 	equippedBorderId: null,
 	equippedTitleIds: ["title-it-compiles", "title-ship-it"],
-	ownedSwatchIds: ["swatch-pallet", "swatch-boulder"],
+	ownedSwatchIds: ["swatch-pallet", "swatch-pewter"],
 	equippedSwatchId: null,
 	role: "user",
 };
@@ -63,26 +63,26 @@ describe("profileFaceOf", () => {
 	});
 
 	it("wears pallet when the player wears no swatch", () => {
-		expect(profileFaceOf(RED, NO_POLLS, 0).theme).toBe("pallet");
+		expect(profileFaceOf(RED, NO_POLLS, 0).theme).toBe("gate-pallet");
 	});
 
 	it("wears the swatch the player owns and wears", () => {
 		const face = profileFaceOf(
-			{ ...RED, equippedSwatchId: "swatch-boulder" },
+			{ ...RED, equippedSwatchId: "swatch-pewter" },
 			NO_POLLS,
 			0
 		);
 
-		expect(face.theme).toBe("boulder");
+		expect(face.theme).toBe("gate-pewter");
 	});
 
 	it("falls back to pallet for a worn swatch the player does not own", () => {
 		const face = profileFaceOf(
-			{ ...RED, equippedSwatchId: "swatch-cascade" },
+			{ ...RED, equippedSwatchId: "swatch-cerulean" },
 			NO_POLLS,
 			0
 		);
 
-		expect(face.theme).toBe("pallet");
+		expect(face.theme).toBe("gate-pallet");
 	});
 });

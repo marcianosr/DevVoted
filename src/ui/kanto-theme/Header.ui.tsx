@@ -8,6 +8,7 @@ import { Badge } from "./Badge.ui";
 import { Balance, type BalanceProps } from "./Balance.ui";
 import { CoverageBar, type CoverageBarProps } from "./CoverageBar.ui";
 import { CoverageRing, type CoverageRingProps } from "./CoverageRing.ui";
+import { Figures } from "./Figures.ui";
 import type { FoldBadge } from "./Fold.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
 import { RunReadout, type RunReadoutProps } from "./RunReadout.ui";
@@ -101,6 +102,7 @@ export type HeaderProps = {
 	marked?: boolean;
 	note?: string;
 	noteAt?: NotePlacement;
+	noteFigures?: boolean;
 	pinned?: boolean;
 	fundsOffPhone?: boolean;
 } & HeaderReading;
@@ -118,6 +120,7 @@ export const Header = ({
 	marked = false,
 	note,
 	noteAt = "end",
+	noteFigures = false,
 	pinned = false,
 	fundsOffPhone = false,
 	...reading
@@ -171,7 +174,9 @@ export const Header = ({
 	const trackRow = !hasTrackRow(note, reading.coverage) ? null : (
 		<div className={TRACK_ROW}>
 			{note === undefined ? null : (
-				<span className={clsx(NOTE, PLACEMENT[noteAt])}>{note}</span>
+				<span className={clsx(NOTE, PLACEMENT[noteAt])}>
+					{noteFigures ? <Figures text={note} /> : note}
+				</span>
 			)}
 			{reading.coverage === undefined ? null : (
 				<span className={COVERAGE}>

@@ -6,7 +6,7 @@ import {
 } from "~/modules/account/profile/application/swatchPick.viewmodel";
 import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
-const VOLCANO = "swatch-volcano";
+const CINNABAR = "swatch-cinnabar";
 const PALLET = "swatch-pallet";
 
 const pickOf = (picks: readonly SwatchPick[], id: string) =>
@@ -26,14 +26,14 @@ describe("swatchPicksFor", () => {
 	});
 
 	it("marks the worn swatch and leaves pallet pickable", () => {
-		const picks = swatchPicksFor([VOLCANO], VOLCANO);
+		const picks = swatchPicksFor([CINNABAR], CINNABAR);
 
-		expect(pickOf(picks, VOLCANO)?.state).toBe("worn");
+		expect(pickOf(picks, CINNABAR)?.state).toBe("worn");
 		expect(pickOf(picks, PALLET)?.state).toBe("owned");
 	});
 
 	it("locks an unearned swatch and withholds its colour", () => {
-		const locked = pickOf(swatchPicksFor([], null), VOLCANO);
+		const locked = pickOf(swatchPicksFor([], null), CINNABAR);
 
 		expect(locked?.state).toBe("locked");
 		expect(locked?.fill).toEqual({ state: "undiscovered" });

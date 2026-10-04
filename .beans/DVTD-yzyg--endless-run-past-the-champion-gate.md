@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-08-25T10:54:18Z
-updated_at: 2026-09-24T12:49:45Z
+updated_at: 2026-10-03T17:53:58Z
 parent: DVTD-kulw
 ---
 
@@ -101,3 +101,13 @@ problem: what a gate-13 build costs to run, against a payout whose
 `healthyAt` also clamps at 12.
 
 Still the same shape of problem, on a different table.
+
+## Naming update (2026-10-03)
+
+Gate 2 becomes "Cerulean" (DVTD-ef7i), so Cerulean Cave would put one word on both the easiest gate and the endless stretch. That rules it out.
+
+Candidates for the endless stretch, which the player stays in until the run dies:
+
+- **Battle Tower** (recommended): in the games you stay in the Battle Tower until you lose, with your streak as the score, which is this mode exactly. Floors count upward (3F, 4F…), which matches the game's climbing language. Downside: it comes from Johto (Pokémon Crystal), not Kanto.
+- **Unknown Dungeon**: Cerulean Cave's other name. It is Kanto postgame and clashes with nothing, but its floors count downward (B1F, B2F), against the climb.
+- Rejected: Hall of Fame (a record of a win, not a place you stay in; better as the win screen's name), Cave of Ordeals (not Pokémon).

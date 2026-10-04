@@ -6,7 +6,7 @@ import { Action } from "./Action.ui";
 import { Screen } from "./Screen.ui";
 
 const PALLET = GATE_SWATCHES[0];
-const VOLCANO = GATE_SWATCHES[9];
+const CINNABAR = GATE_SWATCHES[9];
 
 const noop = () => undefined;
 
@@ -46,7 +46,7 @@ export const NothingPicked: Story = {
 export const AGateAlreadyCleared: Story = {
 	args: {
 		label: "Next gate",
-		note: "Boulder gate opens tomorrow",
+		note: "Pewter gate opens tomorrow",
 		swatch: { state: "discovered", swatch: PALLET },
 	},
 };
@@ -75,11 +75,11 @@ export const Unmarked: Story = {
 
 export const TheLoudestHue: Story = {
 	args: {
-		label: `${VOLCANO.gateName} gate prep`,
-		swatch: { state: "current", swatch: VOLCANO },
+		label: `${CINNABAR.gateName} gate prep`,
+		swatch: { state: "current", swatch: CINNABAR },
 	},
 	render: (args) => (
-		<Screen gate={VOLCANO.theme} width="narrow" ground="bare">
+		<Screen gate={CINNABAR.theme} width="narrow" ground="bare">
 			<Action {...args} />
 		</Screen>
 	),

@@ -6,6 +6,7 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import type { DetailReveal } from "./Button.ui";
 import { CARD_FLOW, ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Lead, type LeadLine } from "./Lead.ui";
 import { SlotBox } from "./SlotBox.ui";
@@ -20,6 +21,8 @@ import {
 	type WeightPreview,
 	type WeightTrackFill,
 } from "./WeightTrack.ui";
+
+const PRICE_ON: DetailReveal = "always";
 
 const COPY = {
 	occupancyName: "build",
@@ -285,6 +288,7 @@ const Chip = ({
 	return (
 		<ConfigChip
 			{...config}
+			priceOn={PRICE_ON}
 			infoOpen={openInfo?.has(config.name) === true}
 			onToggleInfo={
 				onToggleInfo === undefined ? undefined : () => onToggleInfo(config.name)

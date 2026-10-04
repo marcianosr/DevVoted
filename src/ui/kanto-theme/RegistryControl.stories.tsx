@@ -42,7 +42,7 @@ export const Locked: Story = {
 		title: "Extend the registry",
 		detail: "add extra offers throughout the run, against a price",
 		locked: true,
-		unlock: "Reach Cascade",
+		unlock: "Reach Cerulean",
 		onPress: undefined,
 	},
 };

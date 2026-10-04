@@ -7,14 +7,15 @@ import { Panel } from "./Panel.ui";
 import { Screen } from "./Screen.ui";
 
 const PALLET = gateSwatchAt(0);
-const THUNDER = gateSwatchAt(3);
+const VERMILION = gateSwatchAt(3);
 const CHAMPION = gateSwatchAt(12);
 
 const CLEAR: Objective = {
 	statement: ["Finish at ", { band: "ok" }, " or better"],
 	earns: [
-		"earns ",
-		{ figure: "advance to Boulder" },
+		"earns the ",
+		{ figure: "advance to Pewter" },
+		" and ",
 		{ figure: "+13 KB", band: "ok" },
 		" or more",
 	],
@@ -22,7 +23,12 @@ const CLEAR: Objective = {
 
 const SWATCH: Objective = {
 	statement: ["Answer all 5 right"],
-	earns: ["earns ", { swatch: PALLET, label: "Pallet swatch" }],
+	earns: [
+		"earns ",
+		{ swatch: PALLET, label: "Pallet swatch" },
+		" and ",
+		{ figure: "+48 KB", band: "perfect" },
+	],
 };
 
 const meta: Meta<typeof Objectives> = {
@@ -30,7 +36,7 @@ const meta: Meta<typeof Objectives> = {
 	title: "Kanto/Objectives",
 	parameters: { controls: { disable: true } },
 	render: (args) => (
-		<Screen gate="pallet" width="narrow">
+		<Screen gate="gate-pallet" width="narrow">
 			<Panel>
 				<Objectives {...args} />
 			</Panel>
@@ -46,7 +52,7 @@ export const OnTheCalibrationGate: Story = {};
 
 export const OnAnAuditedGate: Story = {
 	render: (args) => (
-		<Screen gate="thunder" width="narrow">
+		<Screen gate="gate-vermilion" width="narrow">
 			<Panel>
 				<Objectives {...args} />
 			</Panel>
@@ -57,15 +63,21 @@ export const OnAnAuditedGate: Story = {
 			{
 				statement: ["Finish at ", { band: "ok" }, " or better"],
 				earns: [
-					"earns ",
+					"earns the ",
 					{ figure: "advance to Lavender" },
+					" and ",
 					{ figure: "+40 KB", band: "ok" },
 					" or more",
 				],
 			},
 			{
 				statement: ["Answer all 5 right"],
-				earns: ["earns ", { swatch: THUNDER, label: "Thunder swatch" }],
+				earns: [
+					"earns ",
+					{ swatch: VERMILION, label: "Vermilion swatch" },
+					" and ",
+					{ figure: "+96 KB", band: "perfect" },
+				],
 			},
 		],
 	},
@@ -77,8 +89,9 @@ export const WhereTheLadderAsksHealthy: Story = {
 			{
 				statement: ["Finish at ", { band: "healthy" }, " or better"],
 				earns: [
-					"earns ",
-					{ figure: "advance to Elite" },
+					"earns the ",
+					{ figure: "advance to Indigo Elite" },
+					" and ",
 					{ figure: "+312 KB", band: "healthy" },
 					" or more",
 				],
@@ -90,7 +103,7 @@ export const WhereTheLadderAsksHealthy: Story = {
 
 export const AtTheSummit: Story = {
 	render: (args) => (
-		<Screen gate="champion" width="narrow">
+		<Screen gate="gate-champion" width="narrow">
 			<Panel>
 				<Objectives {...args} />
 			</Panel>
@@ -104,7 +117,12 @@ export const AtTheSummit: Story = {
 			},
 			{
 				statement: ["Answer all 5 right"],
-				earns: ["earns ", { swatch: CHAMPION, label: "Champion swatch" }],
+				earns: [
+					"earns ",
+					{ swatch: CHAMPION, label: "Champion swatch" },
+					" and ",
+					{ figure: "+1408 KB", band: "perfect" },
+				],
 			},
 		],
 	},

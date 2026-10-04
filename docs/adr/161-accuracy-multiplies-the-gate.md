@@ -8,6 +8,10 @@ Accepted — 2026-09-30 (Marciano, DVTD-emp3). Built the same day. Supersedes th
 Supersedes the window minimum of [ADR-157](157-a-gate-asks-the-window-for-a-minimum.md) (§6)
 and the Champion rule of [ADR-159](159-the-champion-takes-no-thin-clear.md).
 
+**Superseded in part 2026-10-03 by [ADR-181](181-accuracy-is-a-bonus-the-run-carries.md):**
+Decision 1's per-gate curve is replaced by a bonus the run carries, and §6's
+`GATE_RUNGS` codebase and lines are retuned to it.
+
 ## Context
 
 Each poll pays `credit × matching config multipliers + flat`, and a window sums

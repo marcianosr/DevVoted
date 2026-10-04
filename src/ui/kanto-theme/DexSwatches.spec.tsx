@@ -43,11 +43,10 @@ describe("DexSwatches", () => {
 		);
 	});
 
-	it("uses the gym-badge names the run screens use, not colour names", () => {
+	it("names each swatch after the Kanto city its gate is named for", () => {
 		const { container } = render(<DexSwatches {...dexSwatchesProps()} />);
 
-		expect(within(list(container)).getByText("Thunder")).toBeVisible();
-		expect(screen.queryByText("Vermilion")).not.toBeInTheDocument();
+		expect(within(list(container)).getByText("Vermilion")).toBeVisible();
 	});
 
 	it("marks an earned gate swept and an unearned one by its number", () => {
@@ -63,7 +62,7 @@ describe("DexSwatches", () => {
 			<DexSwatches {...dexSwatchesProps({ onSelect })} />
 		);
 
-		await userEvent.click(rowNamed(container, "Thunder"));
+		await userEvent.click(rowNamed(container, "Vermilion"));
 
 		expect(onSelect).toHaveBeenCalledWith("3");
 	});

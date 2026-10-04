@@ -234,7 +234,7 @@ export const LinkedRows: Story = {
 						11 Sep · Lavender held
 					</Panel.Row>
 					<Panel.Row href="/runs/2" trailing={<Badge>34%</Badge>}>
-						28 Aug · Thunder held
+						28 Aug · Vermilion held
 					</Panel.Row>
 					<Panel.Row trailing={<Badge>—</Badge>}>
 						22 Jul · run in progress

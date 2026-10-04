@@ -77,7 +77,8 @@ hub's press says so once a day is part-answered — "3 of today's 5 left · they
 carry to tomorrow" — because stopping early is a choice, not an accident, and the
 forfeit used to be silent. The hub (ADR-147) leads with a strip (run number, gate, balance);
 the pinned header on poll, prep, shop, new run, gate result, review and run over repeats the run number and gate. Under the hub strip sits the press: **Continue to <gate>** while polls are ready, **<gate> opens in Xh Ym**
-once the day is spent, when the shop becomes the live press. Under it, **Run so far**
+once the day is spent, when the shop becomes the live press. With no run open, a spent day reads **New polls in Xh Ym**
+instead of a start press: whether the day is spent is counted from every poll the player answered today, across all runs, never from one run's list. Under it, **Run so far**
 lists each closed gate's grade and earned KB and projects the next gate (**not started** until its first poll is answered), and **Build**
 lists the installed configs with the weight still free. A flawless summit takes 13 calendar days, and every gate held in SHAKY
 adds one, because the retry waits on tomorrow's polls.
@@ -96,22 +97,28 @@ serves only polls you have not answered yet, and abandoning banks nothing.
 
 A gate deals a window of 5 polls. Its one demand is the **coverage meter**, and the
 meter reads **this gate only** (ADR-161): the window's output over the gate's own
-**codebase**: 9 scoring slots at Pallet up to 11 at the Champion
+**codebase**: 5 scoring slots at Pallet up to 10 at the Champion
 ([2.8](#28-what-unlocks-when)). The codebase is a balance divisor and the player never
 sees it: every screen states coverage in percent and gains in points, a right single
-+11.1% at Pallet down to +9.1 at the Champion (ADR-171).
++20% at Pallet down to +10 at the Champion (ADR-171).
 
 The window's output is its polls' units **times an accuracy multiplier**,
-`2 ^ (earned ÷ available)`. Each poll offers its credit (a single 1, a multiple 2, every
-poll 1 under 207) and earns its share of it, so a perfect window is exactly ×2 whatever
-its mix: ×1.149 a right single in five singles, ×1.104 a unit when two of the five are
-multiples. No config touches the multiplier, so a build amplifies what you know and
-never replaces it. The mix stays hidden: the multiplier is only stated once it is known
-(all five answered, or Prefetch v2 / `git rebase -i` v2), and the live bar reads the
-guaranteed floor: the multiplier as if every poll still ahead were a missed multiple,
-so it only rises and reads what the close pays on the fifth answer (ADR-161). The poll screen draws it as one
-**accuracy bar** from ×1 to ×2: solid to the multiplier the window is sure of, faint to
-the best case still open ("×1.32 · up to ×2", ADR-170).
+`1 + accuracy bonus`, and **the run carries the bonus** (ADR-181). Each poll offers its
+credit (a single 1, a multiple 2, every poll 1 under 207) and earns its share of it;
+a window moves the bonus by `0.08 × share − 0.04 × (1 − share)`, never below 0. Over five
+singles that is +0.016 a right answer and −0.008 a miss, so the bonus grows slowly and
+is hard to lose: a perfect Pallet multiplies ×1.08, and a flawless run reaches ×2.04 at
+the Champion. There is no top. A skip moves nothing. The bonus is only kept when the gate
+clears: a held gate's window, and its delta, are thrown away. Each gate's codebase is
+sized to the output a flawless bare player brings to it, `floor(5 × (1 + 0.08 × (gate +
+1)))`, so knowing every answer always fills the bar. No config touches the bonus, so a
+build amplifies what you know and never replaces it. The mix stays hidden: the
+multiplier is only stated once it is known (all five answered, or Prefetch v2 / `git
+rebase -i` v2), and the live bar reads the guaranteed floor: the multiplier as if every
+poll still ahead were a missed multiple, so it only rises and reads what the close pays
+on the fifth answer. The poll screen draws it as one **accuracy bar** from ×1 to the next
+whole multiplier above the best case: solid to the multiplier the window is sure of, faint
+to the best case still open ("×1.3 · up to ×1.34", ADR-170).
 
 The bar caps at a full codebase. Overshoot pays `KB_PER_EXTRA_BAR` for every full bar
 past the demand, and a tenth of it (`HEAD_START_SHARE`) opens the next gate as a head
@@ -145,13 +152,13 @@ low-effort attempt rarely meets the meter at all.
 
 An audit is a rule a gate carries, stated on the stake receipt before you walk in.
 **The count is the curve**: gates 0 to 2 carry none, gates 3 to 7 carry one, 8 to 10
-carry two, Elite and the Champion three. A gate draws
+carry two, Indigo Elite and the Champion three. A gate draws
 that many from its tier's pool, **seeded on the date**, so everyone climbing today at
 gate 6 meets the same gauntlet (ADR-138).
 
 **What a rival changes.** A rival's incident **replaces** one of the audits your gate
 drew — it never adds to them. Gate 8 normally draws two; if someone files an incident,
-one of those two becomes the audit they sent. The gate's readable limit never moves:
+one of those two becomes the audit they sent. It takes the seat of the drawn audit it clashes with, or else the last one drawn, and the rest of the day's draw stays put; an incident the gate already drew changes nothing. The gate's readable limit never moves:
 rivalry changes _which_ problem you face, not how many rules are piled on you.
 
 **How one reaches you.** From gate 3, one shop in three deals a single **revealed**
@@ -190,7 +197,7 @@ broke**.
 | **405 Method Not Allowed**            | The shop _before_ this gate is read-only: nothing bought, sold, upgraded or switched.                                                                                                                                                                                                   |
 | **408 Request Timeout**               | The window's first polls are on a clock; an answer over the limit scores as a miss whatever you picked.                                                                                                                                                                                 |
 | **409 Conflict**                      | Your highest-version config takes a breaking change and is switched off for the attempt.                                                                                                                                                                                                |
-| **410 Gone**                          | Deepens the peel: 10 points at Elite, 15 at the Champion.                                                                                                                                                                                                                               |
+| **410 Gone**                          | Deepens the peel: 10 points at Indigo Elite, 15 at the Champion.                                                                                                                                                                                                                        |
 | **413 Payload Too Large**             | Every slot past the 12th leaks 8 KB a poll, so a wide build pays to carry itself.                                                                                                                                                                                                       |
 | **424 Failed Dependency**             | One config is offline for the whole attempt.                                                                                                                                                                                                                                            |
 | **425 Too Early**                     | Your configs do not contribute to the window's opening poll. That poll's ordinary base credit still scores, so an opener build such as Overclock loses its one big answer and still pays the throttle that bought it.                                                                   |
@@ -218,7 +225,7 @@ will take offline (ADR-158).
 
 Two audits tighten with depth rather than repeating: **408** clocks 3 polls at 30s
 below gate 10, 3 at 25s at gates 10 and 11, and 5 at 20s at the Champion; **410** adds
-10 points to the peel at Elite and 15 at the Champion.
+10 points to the peel at Indigo Elite and 15 at the Champion.
 
 A gate never draws two audits that do the same job, so 402/403/429 never stack, and no
 two of the five offline rules share a gate. Nor do any two of **207, 300, 404 and 451**, which
@@ -301,9 +308,11 @@ for right answers. The run still counts it, because configs read it (`&&`, Depen
 Cache) and the records board ranks it. A gate clear resets it; a held gate does not
 ([2.6](#26-how-a-gate-closes)).
 
-**A poll can be skipped** (ADR-169). A skip covers nothing and is left out of the
+**A poll can be skipped** (ADR-169), but **the poll screen offers no Skip press for
+now** (2026-10-03): a player could not tell when a skip beats an answer. The rule
+below stays in the reducer so the press can return. A skip covers nothing and is left out of the
 accuracy multiplier: it adds to neither what the window earned nor what it offered,
-so four right and a skip still close at ×2. It breaks the streak, the `&&` chain,
+so four right and a skip move the carried bonus like a perfect window (ADR-181). It breaks the streak, the `&&` chain,
 Cache's run and Dependabot's count, writes no poll response,
 and still spends one of the day's five polls. A poll approved for LGTM cannot be
 skipped.
@@ -371,7 +380,7 @@ answer`, `press letters, then Enter`) sits at its right end for a mouse or track
 only.
 
 **How an answer lands** (ADR-170). A right answer lights its option green, pulses the
-**accuracy bar** under the coverage bar, and flies its gain (`+11.1%`) into the
+**accuracy bar** under the coverage bar, and flies its gain (`+20%` at Pallet) into the
 bar, which moves when it lands. A wrong answer turns its option cinnabar, marks the right
 one, and shakes the card. Each answered option rings and glows once in its verdict colour and
 its ✓ or ✗ pops in. The poll screen then moves on by itself: 650ms after a right
@@ -390,10 +399,10 @@ Category coverage past 100% rolls over into **levels**: 110% in JavaScript reads
 
 A gate resolves on the **band** its coverage meter closes in, not on a single
 threshold (ADR-076). The lines are a share of the gate's codebase, one row per gate
-(ADR-161): forgiving early, hard late. Pallet has no DANGER and SHAKY runs to 20%;
-at Elite DANGER runs to 60% and SHAKY and OK are ten points each; the Champion asks
-84% for HEALTHY. `PERFECT` is a full bar at 100%. Pallet has no floor to fall under
-and draws four bands; every gate from Boulder draws all five.
+(ADR-161, retuned by ADR-181): forgiving early, hard late. Pallet has no DANGER and
+SHAKY runs to 52%; at Indigo Elite DANGER runs to 76% and SHAKY and OK are six points each; the
+Champion asks 90% for HEALTHY. `PERFECT` is a full bar at 100%. Pallet has no floor to fall under
+and draws four bands; every gate from Pewter draws all five.
 
 **Coverage alone decides the gate.** The window minimum of ADR-157 is gone (ADR-161
 §6): a rule counted in right answers is one no config can touch, and it stopped binding
@@ -426,7 +435,7 @@ built** (DVTD-tjc7), and every clearing band pays the same KB. The one thing tha
 **A shaky gate is a choice, and both exits are priced on the debrief.**
 
 - **Pay the peel and retry.** The peel is a quota of your occupied slots: 20% at
-  the early gates rising to 35% from Elite, never more than half the build before
+  the early gates rising to 35% from Indigo Elite, never more than half the build before
   gate 3, and +10 or +15 points on top wherever the gate carries **410 Gone**.
   **Every retry at the same gate peels half again as much** (`escalatedPeelShare`),
   so a 20% share bills 30% on the second attempt and 40% on the third: a gate you
@@ -465,6 +474,14 @@ the fatal one in red.
 
 The bands above read `coverageRatio.model.ts`, the one live engine (ADR-073).
 
+**The close plays before the result.** A short reveal plays over the result screen,
+one of five: cleared (HEALTHY or OK), PERFECT, SHAKY (any hold but the catch),
+caught (a catcher held a run-ending gate) and run over. The close decides which one:
+`fatal` plays run over, a hold by the catch plays caught, any other hold plays SHAKY,
+and a clear plays PERFECT or cleared by its band (`outcomeReveal.model.ts`). It plays
+once per close in a session, a tap or Escape skips it to its last frame, and reduced
+motion shows only that frame. It states nothing the result screen does not.
+
 ### 2.7 Victory and run end
 
 Clear all **13** gates (0 through 12) to win. A run ends four ways (ADR-076): the
@@ -479,12 +496,12 @@ victory banks **100%**, death banks **gatesCleared ÷ 13** (die having cleared 6
 🟡 Continue-past-victory is confirmed but unbuilt. The victory _reward_ is undecided,
 under one constraint: it must not be claimable by a zero-effort farm run.
 
-**Balance baseline.** A bare build earns one unit a right answer, and a perfect
-window doubles it to 10. The guard is `runAction.model.spec.ts`, which plays whole runs
+**Balance baseline.** A bare build earns one unit a right answer, times the accuracy
+the run has carried (ADR-181). The guard is `runAction.model.spec.ts`, which plays whole runs
 through the real reducer on polls spread over five categories, so decay, rent and the
-peel all count: a lean build summits about 67% of runs at 90% accuracy and 19% at 80%,
-a ×2 build 71% at 80%, AGENTS.md with Intellisense (×2.5 since ADR-172 pooled
-their bonuses) 24% at 60% and 57% at 70%, and stacking Deprecated on top buys
+peel all count: a lean build summits about 69% of runs at 90% accuracy and 13% at 80%,
+a ×2 build 75% at 80% and 29% at 70%, AGENTS.md with Intellisense (×2.5 since ADR-172 pooled
+their bonuses) 21% at 60% and 65% at 70%, and stacking Deprecated on top buys
 nothing because it decays and rents. The codebase and the lines in
 `GATE_RUNGS` are the difficulty dial (ADR-161).
 
@@ -500,21 +517,21 @@ shop before it sells, since a shop runs on the clear that precedes its gate.
 
 <!-- BEGIN GENERATED:GATE_LADDER -->
 
-| Gate | Swatch   | Coverage in its window | A clear pays | A miss peels | Audits it carries | Also unlocks                                  |
-| ---- | -------- | ---------------------- | ------------ | ------------ | ----------------- | --------------------------------------------- |
-| 0    | Pallet   | 40% (3.6)              | 32 KB        | **nothing**  | none              | Shop, **Rebuild**                             |
-| 1    | Boulder  | 44% (4.0)              | 64 KB        | 20%          | none              | —                                             |
-| 2    | Cascade  | 47% (4.2)              | 96 KB        | 20%          | none              | —                                             |
-| 3    | Thunder  | 51% (4.6)              | 128 KB       | 25%          | 1 from pool A     | **Extend**                                    |
-| 4    | Lavender | 55.0% (5.0)            | 160 KB       | 25%          | 1 from pool A     | —                                             |
-| 5    | Rainbow  | 58.0% (5.8)            | 192 KB       | 25%          | 1 from pool A     | —                                             |
-| 6    | Soul     | 62% (6.2)              | 224 KB       | 25%          | 1 from pool A     | —                                             |
-| 7    | Marsh    | 65% (6.5)              | 256 KB       | 30%          | 1 from pool A     | —                                             |
-| 8    | Seafoam  | 69% (6.9)              | 288 KB       | 30%          | 2 from pool B     | —                                             |
-| 9    | Volcano  | 73% (8.0)              | 320 KB       | 30%          | 2 from pool B     | —                                             |
-| 10   | Earth    | 76% (8.4)              | 352 KB       | 30%          | 2 from pool B     | —                                             |
-| 11   | Elite    | 80% (8.8)              | 384 KB       | 35%          | 3 from pool C     | —                                             |
-| 12   | Champion | 84% (9.2)              | 416 KB       | 35%          | 3 from pool C     | Clearing it on HEALTHY or better wins the run |
+| Gate | Swatch       | Coverage in its window | A clear pays | A miss peels | Audits it carries | Also unlocks                                  |
+| ---- | ------------ | ---------------------- | ------------ | ------------ | ----------------- | --------------------------------------------- |
+| 0    | Pallet       | 64% (3.2)              | 32 KB        | **nothing**  | none              | Shop, **Rebuild**                             |
+| 1    | Pewter       | 66% (3.3)              | 64 KB        | 20%          | none              | —                                             |
+| 2    | Cerulean     | 68% (4.1)              | 96 KB        | 20%          | none              | —                                             |
+| 3    | Vermilion    | 71% (4.3)              | 128 KB       | 25%          | 1 from pool A     | **Extend**                                    |
+| 4    | Lavender     | 73% (5.1)              | 160 KB       | 25%          | 1 from pool A     | —                                             |
+| 5    | Celadon      | 75% (5.3)              | 192 KB       | 25%          | 1 from pool A     | —                                             |
+| 6    | Fuchsia      | 77% (5.4)              | 224 KB       | 25%          | 1 from pool A     | —                                             |
+| 7    | Saffron      | 79% (6.3)              | 256 KB       | 30%          | 1 from pool A     | —                                             |
+| 8    | Seafoam      | 81% (6.5)              | 288 KB       | 30%          | 2 from pool B     | —                                             |
+| 9    | Cinnabar     | 84% (7.6)              | 320 KB       | 30%          | 2 from pool B     | —                                             |
+| 10   | Viridian     | 86% (7.7)              | 352 KB       | 30%          | 2 from pool B     | —                                             |
+| 11   | Indigo Elite | 88% (7.9)              | 384 KB       | 35%          | 3 from pool C     | —                                             |
+| 12   | Champion     | 90% (9)                | 416 KB       | 35%          | 3 from pool C     | Clearing it on HEALTHY or better wins the run |
 
 <!-- END GENERATED:GATE_LADDER -->
 
@@ -522,8 +539,8 @@ The clear column is what a flawless window pays before build multipliers.
 
 The coverage column is the gate's HEALTHY line and, in brackets, the output it asks
 for: the line times that gate's codebase in `GATE_RUNGS`. A bare build answering all
-five produces 10, so it can reach every HEALTHY line up to the Champion but never the
-last PERFECT ([2.7](#27-victory-and-run-end), ADR-161).
+five at every gate fills every bar, PERFECT included, because each codebase is sized to
+the accuracy a flawless run has carried there ([2.7](#27-victory-and-run-end), ADR-181).
 
 The audits column is both the count a gate **draws**, date-seeded, and the ceiling it
 will carry — never two of one family (ADR-138). A rival's incident replaces one of the
@@ -540,26 +557,26 @@ draws rather than adding to them, and can only be filed at a gate whose pool hol
 <!-- END GENERATED:AUDIT_POOLS -->
 
 425 and 510 answer to how hard they hit: 425 costs about a fifth of a window's config
-value and waits for pool B, 510 has the highest ceiling of the three and is Elite-tier
+value and waits for pool B, 510 has the highest ceiling of the three and is Indigo Elite-tier
 only. 500 takes nothing away, so it is drawn from gate 3 on.
 
 409 and 426 read a config's level, so they wait for pool B where upgrades exist; 413
-needs a build past 12 slots to bite; 403 and 410 are Elite-tier only; 402 is absent
+needs a build past 12 slots to bite; 403 and 410 are Indigo Elite-tier only; 402 is absent
 from pool A so the early gates teach the other rules first.
 
 The coverage column is **per gate**: that gate's window against that gate's
 codebase, with only the head start carried in ([2.2](#22-gates)). The unlock column names no
 width at all: build space is derived from the build, never bought
 ([5.1](#51-storage-kb)). The peel column is a share, so it already scales with the
-build it hits — and **410 Gone** adds 10 points at Elite and 15 at the
+build it hits — and **410 Gone** adds 10 points at Indigo Elite and 15 at the
 Champion on top of it.
 
 **Pallet is the calibration gate** (ADR-057, amended by ADR-094). It asks the same
-40% of a 9-change codebase: a lean build needs four right to fill the bar and a multiplier build three, so the last polls still matter. What makes
+64% of a 5-change codebase for HEALTHY: a bare build needs four right to clear it and five to fill the bar, so the last polls still matter. What makes
 it calibration is that it is the one gate with **no floor beneath it and no peel**: a
 miss costs nothing and cannot end a run, so the first failure teaches the loop for
 free. You read your answers back, shop, and run the same gate again on 5 fresh polls.
-Nothing ends a run at gate 0 — even a bare build only holds the gate. From **Boulder**
+Nothing ends a run at gate 0 — even a bare build only holds the gate. From **Pewter**
 on, the peel column applies as written.
 
 The payout column is `GATE_REWARD_KB × (gate + 1)` for a **bare build on a perfect
@@ -623,7 +640,7 @@ spare room is a legal opening. The opening build is hard-capped at the free four
 card that does not fit is refused rather than rented — so nothing can start
 over-capacity, and picking nothing at all is the only thing that holds the button.
 Nothing in a build is ever locked or mandatory. The run opens on the free
-four and rents nothing before it starts; the ladder opens at the Boulder gate.
+four and rents nothing before it starts; the ladder opens at the Pewter gate.
 Nothing in the opening build is paid for, so taking one back out refunds
 nothing, and the screen quotes no refund: the shop is the only place an
 uninstall pays ([5.2](#52-the-shop)).
@@ -666,7 +683,7 @@ never a demand. See §2.5.
 aimed at a gate's own rules: installed, it reports the gate's **first** audit as
 passing, struck through on the stake receipt, so the fraud is visible and never
 silent. Gates draw their audits date-seeded ([2.3](#23-audits)), so which one it lifts
-changes with the day: at Elite and the Champion, where a gate carries three, it may
+changes with the day: at Indigo Elite and the Champion, where a gate carries three, it may
 cancel **410**'s deeper peel and leave **300**'s mirror standing, or stop **507**'s leak
 and leave the rest.
 
@@ -1092,7 +1109,7 @@ buys one (the archived-storage pull, DVTD-9d7o, is rejected).
 **Services unlock the same way, once per account** (ADR-116): one objective
 each on the same ledger, granted in the same transaction, recorded as a row in
 `user_service_unlocks`. Rebuild is a starter; Extend unlocks the first time you
-reach Cascade and the git tag the first time you reach gate 4, both off a
+reach Cerulean and the git tag the first time you reach gate 4, both off a
 `reached-gate:N` metric that ticks for every gate a clear reaches. A locked
 service reads named in the shop, the Dex and the warm boot panel, a `?` for its
 glyph and the line that earns it where its price would go. An unlocked one is
@@ -1123,26 +1140,28 @@ mastered polls correctly.
 
 ### 6.3 Swatches
 
-**Gate swatches** are thirteen badges, one per gate, earned by **reaching 100%
+**Gate swatches** are thirteen, one per gate, earned by **reaching 100%
 coverage** at the gate, a full bar (ADR-170): you beat the leader clean, you get the
-badge. Clearing the gate moves the run on and pays it; only a full bar takes the
-badge home. The ladder reads Pallet, Boulder, Cascade, Thunder,
-Lavender, Rainbow, Soul, Marsh, Seafoam, Volcano, Earth, Elite, Champion: gate 0 is
-**Pallet** where every journey starts, the eight gen-1 gym badges run in strict
-trainer-card order, the two Kanto landmarks that never had a gym sit where the games
-actually walk you through them (**Lavender** out of Rock Tunnel, **Seafoam** on Route
-20), and the summit pair close it at Indigo Plateau.
+swatch. Clearing the gate moves the run on and pays it; only a full bar takes the
+swatch home. Every gate and its swatch carry one name, the Kanto city the gate stands
+for (ADR-182): Pallet, Pewter, Cerulean, Vermilion, Lavender, Celadon, Fuchsia,
+Saffron, Seafoam, Cinnabar, Viridian, Indigo Elite, Champion. Gate 0 is **Pallet**
+where every journey starts, the eight gym cities run in strict gym order, the two
+towns that never had a gym sit where the games actually walk you through them
+(**Lavender** out of Rock Tunnel, **Seafoam** on Route 20), and the summit pair close
+it at Indigo Plateau. Gym badges survive only as flavour ("win the Boulder Badge at
+Pewter"), never as a gate's name.
 
 A full bar in any run earns that gate's swatch **permanently and
-account-wide**; earning it again is a no-op, so the collection only grows. Colours come from each name's home
-location in the Kanto palette and live in `app.css` under `[data-swatch-theme]`, never
+account-wide**; earning it again is a no-op, so the collection only grows. Colours come from each city
+in the Kanto palette and live in `app.css` under `[data-swatch-theme]`, never
 duplicated in TypeScript. The palette runs out at 13 gates against 12 colours, one of
-them the app background, so the summit pair are drawn apart: **Elite** keeps indigo
+them the app background, so the summit pair are drawn apart: **Indigo Elite** keeps indigo
 (it _is_ Indigo Plateau) with a rim so it reads, and the **Champion** alone wears the
 Kanto gradient.
 
 **The gate themes the run** (ADR-020): the swatch of the gate being played sets the
-whole app's accent colour, so climbing feels like travelling Kanto. Elite's ambient
+whole app's accent colour, so climbing feels like travelling Kanto. Indigo Elite's ambient
 theme is a lightened indigo and the Champion wears fuchsia, both for readability, and
 the celadon/cinnabar pass-fail moods still override the gate theme on reward and strip
 screens.
@@ -1220,7 +1239,7 @@ but not earned, has a card and no data yet (below).
 **Services** lists every service the roster knows in one section (ADR-115
 D10), in roster order: Rebuild, Skip the shop, Extend, Hot Reload, Return Policy, kill -9, the
 git tag, Boot Cache and Docker Image. Each row names where it is pressed and
-how long the purchase lasts (`Every shop · this visit`, `Shop from Cascade ·
+how long the purchase lasts (`Every shop · this visit`, `Shop from Cerulean ·
 rest of the run`, `New run · banked at the start`) and ends in what it costs —
 the shop's ladder for a service pressed straight away, `new run · 64 KB` for one
 carried in at new run (ADR-153), whose panel then states the shop ladder its
@@ -1229,7 +1248,7 @@ and line, `unlock · …` where its price would go and a `?` for its glyph; its 
 says only what unlocks it (ADR-173 D4). There is no scope filter: nine rows need none. A service is **unlocked once per account** (ADR-116). The
 shop lists only the services you have unlocked, and one unlocked during this run
 wears a **new** badge (ADR-173): Rebuild and Skip the shop are starters, Extend
-unlocks the first time you reach Cascade, the git tag the first time you reach
+unlocks the first time you reach Cerulean, the git tag the first time you reach
 gate 4, kill -9 when you clear gate 5. The unlock says whether; the gate still
 says when (Extend from gate 3, the tag in gates 4 to 10), and the Dex no longer
 lists the gates. An earned service nobody sells yet reads _not for sale yet_.
@@ -1363,54 +1382,41 @@ count every time the card is drawn.
 
 ### 6.7 Your profile
 
-Every player has one page, at `/profile/$userId`, and it opens with one **card**:
-the border you wear, your avatar, your name, and the titles you wear. That card is
-the same component wherever the game shows a player, so you recognise somebody from
-their page before you have read the name (ADR-125).
-
-**Your own page** carries the whole Dex under the card — the six collection tabs
-plus **appearance**, **borders** and **titles** ([6.4](#64-the-dex)). The archive balance rides the collection heading, because
-that is what the borders cost. "Edit profile" on the card opens the appearance tab:
-your name and your photo come from the account you signed in with, so what you
-wear is the whole of what you can change. The tab draws your card once, then the
-borders you own, every swatch, and the titles you have earned. Picking one changes
-only a draft, which your card at the top of the page wears too, and a picked swatch
-recolours your whole page, Dex tabs included. **Save look** writes border, titles and
-swatch together (ADR-144, ADR-174). The saved swatch is what visitors and your hover
-card wear. An unearned swatch is drawn blank and cannot be picked; pallet is worn
-when nothing else is.
-
-**Somebody else's page** reads as four bands under the card, and never as tabs
-(ADR-129).
-
-**Record** leads: how deep they have ever been, the swatches they have won, how
-many runs they have finished, and the streak seats they hold, with the whole
-gate ladder drawn beneath as a swatch track. Depth and swatches are two
-different readings — a swatch needs a full bar ([6.3](#63-swatches)), so a
-player who reached gate 9 sloppily owns none — and each is stated once. An open
+Every player has one page, at `/profile/$userId`, and it opens with a **hero**
+(ADR-180): the border you wear, your avatar drawn large, your name as the page's
+heading, your handle, rank and the titles you wear. Under them stand three
+**trophies**: the **deepest gate** you have reached and the **swatches** you have
+minted, each out of 13, and the **runs won** (Champion clears). The whole gate
+ladder follows as a swatch track, with one line saying what mints one. Depth and
+swatches are two different readings: a swatch needs a full bar
+([6.3](#63-swatches)), so a player who reached gate 9 sloppily owns none. An open
 run counts towards depth, because it is still the furthest they have been.
-Beside those two figures the page states your own, faintly, so the number has a
-scale.
+Everywhere else (bylines, hover cards, the board) a player is the smaller **card**,
+the same component each time, so you recognise somebody from their page before
+you have read the name (ADR-125).
 
-**Run history** follows, the last few finished runs with the date, the gates
-swept, how the run ended and its coverage. The rows do not open: a run's page
-states its answers.
+**The page is the hero** (ADR-180, amended 2026-10-03): the look leads, and nothing
+is stacked under it. Best run, climbing now, category seats, run history and the
+collection counts are gone from the page. The record a visitor wants travels on the
+hover card instead: the swatch track, the poll counts and the open run.
 
-**Climbing now** states the run they have open today — its gate, the coverage
-it has banked and the band that coverage sits in, its streak, the weight it
-carries against the space it rents, its storage, and its whole build as config
-chips. All of that is already public ([7.1](#71-the-community-board)), so the
-profile is simply where it stops being a popover. A player with no run open says
-so rather than dropping the section.
+**Your own page** draws the same hero a visitor sees, then the tabs: **appearance**
+(the one it opens on), **borders**, **titles** and the six Dex collections
+([6.4](#64-the-dex)). The archive balance rides the collection heading,
+because that is what the borders cost. "Edit profile" in the hero opens the
+appearance tab. Your name and photo come from the account you signed in with, so
+what you wear is the whole of what you can change. The tab draws your card once,
+then the borders you own, every swatch, and the titles you have earned. Picking
+one changes only a draft, which the hero at the top of the page wears too, and a
+picked swatch recolours your whole page, Dex tabs included. **Save look** writes
+border, titles and swatch together (ADR-144, ADR-174). The saved swatch is what
+visitors and your hover card wear. An unearned swatch is drawn blank and cannot be
+picked; pallet is worn when nothing else is.
 
-**Collection** closes, as counts only — polls seen, configs held, titles earned,
-with the archive on the heading. Each is counted by the same rule as the Dex
-(ADR-166): a poll is seen once it has been dealt or answered, and only polls the
-Dex lists count on either side; a title counts only while it is on the shelf, so
-no count can pass its total. The collection itself is your own record of
-what the game has shown you, and a visitor reading your unanswered polls would
-be reading ahead. Answers, unanswered polls and prefetch stay private; the card no
-longer says so in prose, it simply never carries them.
+**Somebody else's page** is the hero alone, with no tabs. Under each of the two
+climbing trophies it states your own figure faintly (`you 6`), so the number has a
+scale (ADR-129). Their collection stays private, as before: a visitor reading your
+unanswered polls would be reading ahead.
 
 You reach another player's page by pressing their **face** or the **name** beside
 it: on a poll byline, on a category seat, among a poll's voters, in the turnout, on
@@ -1418,12 +1424,14 @@ the climb map card. Hover or focus a face and the player's **card** shows first,
 a read-only tooltip (ADR-141). Nothing beside a face goes to GitHub any more; the
 GitHub handle is stated once, on the player's own page.
 
-A player who has published a poll carries one more line under their titles, on both
-their page's card and the hover card: their role when they hold one, the polls they
-have published, and every answer those polls have drawn, from anyone, in any mode
-("Poll editor · 12 polls published · 1,842 answers"). A player with no published poll
-shows no line; a role alone does not earn it. The climb map card leaves it off, because
-it is drawn from the ladder rather than fetched per player.
+Every player carries one more line under their titles, on both their page's hero and
+the hover card: the polls they have answered ("412 polls answered"). A player who has
+published a poll leads that line with their role when they hold one, the polls they
+have published and every answer those polls have drawn, from anyone, in any mode
+("Poll editor · 12 polls published · 1,842 answers · 412 polls answered"); a role alone
+does not earn that half. The hover card also draws the player's **swatch track**, all
+13 gates with the ones they have minted filled. The climb map card leaves both off,
+because it is drawn from the ladder rather than fetched per player.
 
 ---
 
@@ -1436,26 +1444,32 @@ polls on the same day.
 
 The board sits at `/run/community`, one press from prep; a run locked mid-gate for
 the day lands here, with "Back to your run" disabled until local midnight and the
-countdown beside it. The page wears the terminal-theme kit (`CommunityScreen.ui.tsx`),
-one panel per section: turnout, the map, the two leader boards, then the polls. What
+countdown beside it. The page wears the Kanto kit (`CommunityScreen.ui.tsx`), one
+panel per section. The map spans the page under the header; below it, on a wide
+screen, the day's polls take the left column and today's records, incidents and the
+leaders stack on the right. On a phone they stack in that order. What
 the board has to say about the day (still loading, could not be loaded, nothing to
 compare yet) reads as the subtitle under the board's title. Every avatar chip on the
 page — leaders, climbers, fallen — wears the player's equipped border over a GitHub
 photo or a two-letter-initials fallback.
 
-**Who cleared what** is the turnout panel. Each player who closed a gate today sits in
+**Today's records** is the turnout panel. It opens on **answered today**: every player who
+answered a poll today, with their face, whatever their gate did (ADR-176, amended). Each live run that closed a gate today sits in
 one row: **PERFECT** (finished at 100%), **HEALTHY** (comfortably cleared), **OK**
-(narrowly cleared), **SHAKY** (the gate held them) or **DANGER** (the run ended today).
-The row comes from the run's latest close: a clear on any band below healthy is OK, a
-hold is SHAKY whatever its band. Until somebody closes a gate, the panel shows how many
-answered today instead. Under a `today's records` strip it names the day's record
-holders: biggest and lightest build, comeback (cleared a gate the same run was held
+(narrowly cleared) or **SHAKY** (the gate held them). **DANGER** (the run ended today)
+lists every player whose run fell today, even one who started again, so a player can
+sit in DANGER and in their live run's row. Pressing a face in DANGER opens that run's
+card, the same one the climb map opens, so the corpse can be looted from here
+(ADR-176, amended). The row comes from the run's latest close: a clear on any band below healthy is OK, a
+hold is SHAKY whatever its band. The same list then names the day's record holders: biggest and lightest build, comeback (cleared a gate the same run was held
 at), most audits, most installed config, most expensive build, KB generated and KB
 spent. KB figures are derived from each run's closes and balance, not a ledger
-(ADR-176).
+(ADR-176). A row draws three faces; its `+N` is a press that opens the rest in a
+popover, each face linking to its player, and so does a poll option's voter stack.
 
 **Category leaders** ([7.3](#73-category-leaders)) is the board's own section: two
-boards of twelve rows, one row per category, one board showing at a time behind a tab.
+boards of twelve rows, one row per category, one board showing at a time, picked with a
+`streak | correct` filter in the panel's head. Every row shows; nothing folds.
 
 **The climb today** is a horizontal track of the 13 numbered gate swatches with each
 live run's avatar chip stacked _beneath_ its gate. Your chip is ringed and titled
@@ -1482,16 +1496,16 @@ streak, and the category they have been right in most often, each badged. What a
 do not stays private (ADR-101 §2, narrowed 2026-09-26). 🟡 Climbers folded behind `+N`
 have no chip to press.
 
-**Today's polls** is a selector of five numbered chips — one per slot in the day's
-seed — with one poll open at a time. A chip is disabled while its poll is sealed or
-not yet reached. The open poll shows its category badge, the share who got it right
-("22% got it"), the question, and one row per option: letter, label, a distribution
-bar with its percentage, a ✓ on the right answer and a "you" badge on your pick (the
-right answer's bar fills viridian; a wrong pick of yours, vermillion). A mirrored
-answer counts as right when it named every wrong option, since it proves the same
-knowledge. The section header counts the day's players and the screen header keeps the
-"top X% of players today" percentile. **Redaction keeps it fair**: polls you have not
-reached never appear, and linted or missed polls stay sealed behind a disabled chip.
+**The day's polls** is one panel of five rows, one per slot in the day's seed. Its
+head counts how many of the revealed polls you got right (`you 2 of 4`). A revealed
+row states your verdict, the question, the category and the share who got it right
+(`CSS · 22% right`), and the share again as a toned badge; the latest revealed poll
+stands open, and any row opens to one line per option: letter, label, a distribution
+bar, an **answer** badge on the right option, a **You** badge on your pick, the faces
+who picked it and the vote count. A mirrored answer counts as right when it named
+every wrong option, since it proves the same knowledge. **Redaction keeps it fair**:
+a poll you have reached but not answered shows only its question, and a slot not yet
+dealt reads `Poll 5 · not dealt yet`; neither names its category.
 
 ### 7.2 Leaderboards
 
@@ -1507,12 +1521,13 @@ is one run's number rather than the best any run ever reached.
 states the longest run of correct answers anyone has strung together inside a single
 run; **Correct leaders** states the most correct answers anyone has given in one
 category inside a single run. Both are the best such run, all time, over finished and
-open runs alike. One board shows at a time, full width, chosen with a tab above it.
+open runs alike. One board shows at a time, chosen with a `streak | correct` filter in
+the Leaders panel's head.
 
-A row states the category, the word "leader", the holder's avatar and handle, and their
-figure ("21 in a row", "58 correct"); the seat you hold rings the avatar, greens the
-figure and themes the row. Each panel head carries its own scope ("longest run of
-correct answers in one run · all-time") and a count of held seats ("9 of 12 seated").
+A row states the category on the left and, on the right, the holder's avatar, handle
+and figure ("21 in a row", "58 correct"); the seat you hold rings the avatar, greens
+the figure and themes the row. The panel head carries the picked board's scope
+("longest run of correct answers in one run · all-time").
 
 The two boards are ranked independently, so the same category can have a different
 holder on each. Answers given outside a run do not count towards either.
@@ -1574,7 +1589,8 @@ carries, with the sender named on the ones a rival filed. Before gate 3 there is
 panel at all. An audit you meet for the first time (no gate that can hold it cleared
 yet) wears a **new** badge on its row and the panel's head (ADR-173). The community board carries an
 **Incidents** panel listing everyone's incidents filed today, queued / locked /
-survived / failed, with your own rows ringed.
+survived / failed, with your own rows ringed. Each row shows both players' faces,
+each linking to their profile.
 
 🟡 A board row for the most wanted and the survivor, and a run-over tally of incidents
 faced, are not built. A **Force push** (reorder a rival's gate) would ride the same
@@ -1637,24 +1653,23 @@ The game leans hard into its CI metaphor.
   no checkboxes, and the header balance shows the storage banked.
 - **Prep page**: the last screen before a gate opens, and the first screen of a new
   run after the build is dealt. Two columns. On the left, **At stake**, headed by the
-  gate's name and number. It opens on what an answer adds ("single choice +11.1% · multiple
-  choice +22.2%", then "accuracy and configs add more", ADR-171). Then two objectives, each stating a demand and then the reward it
+  gate's name and number. It opens on two objectives, each stating a demand and then the reward it
   pays — **finish at the lowest clearing band or better**, stated with its line
-  ("Finish at OK (25%) or better"), which earns the next gate by
+  ("Finish at OK (25%) or better"), which earns the advance to the next gate by
   name and the KB that band pays _or more_, and **reach 100% coverage**, which earns the
-  gate's swatch. Neither is ticked (ADR-136). Then today's gate's answers as a row of
+  gate's swatch and the KB PERFECT pays. Neither is ticked (ADR-136). Then today's gate's answers as a row of
   five squares, and the coverage drawn as a **ladder** (ADR-149): the coverage bar at
   true scale with the pin and each line numbered, so the room each band has at this gate
   shows, then one row per band, worst first, naming the band, its range and what
   finishing there pays — a negative for SHAKY's peel (`no peel` at Pallet, which takes
-  none, and the footnote then says a miss owes nothing), `the run ends` for DANGER —
+  none), `the run ends` for DANGER —
   with PERFECT last at 100 and the row the run stands in ringed. Under the ladder one line
   states the points to the next band up and the polls left in the window ("+9.9% to
   reach OK · 3 polls left"); the footnote
-  says where a pay lands and what a peel is settled in. On the right, **Scoring** folds shut, its strip stating
-  what an answer pays there ("single +11.1% · multiple up to +22.2% · accuracy up
-  to ×2"): a single answer pays 0 or 1 credit, a multiple
-  answer 0 to 2 by share, two statements give the multiplier curve and the line,
+  says the pay is received at the end of the gate and what a peel is settled in. On the right, **Scoring** folds shut, its strip listing
+  what an answer pays there, one line each (single +20%, multiple up to +40%, accuracy up
+  to ×1.08 on a fresh run): a single answer pays 0 or 1 credit, a multiple
+  answer 0 to 2 by share, two statements give the multiplier curve from the bonus the run carries (one step per count of right answers, under its sentence) and the line,
   and a table lists a right single's points and the HEALTHY line for every gate reached,
   the next gate and the last — the gates ahead keep their names and hide their figures
   (ADR-149). Then **the five polls**, counting which of three facts (answer types,
@@ -1791,12 +1806,15 @@ The game leans hard into its CI metaphor.
   opening one is a choice to see the
   arithmetic. Answers read as a test runner: **PASS / PART / FAIL** as words, never
   a tick. The footer leaves for the shop and says how long it stays open.
-  A held gate turns this around (ADR-126): the **Settle the peel to retry** panel
+  A held gate turns this around (ADR-126, ADR-179): the **Pay 48 KB to retry** panel
   leads, the recap folds shut under "What happened", and there is no footer. The
-  **Retry** press sits at the foot of the settle panel, locked until nothing is owed,
-  and Review answers sits under the recap. On a caught gate (ADR-177) the panel's first
-  section is **Drop the catch first**, holding Try/Catch alone; Pay from storage and the
-  other drops sit below it, locked, until it is picked.
+  panel's one press names the move that pays the peel and is the retry: **Pay from
+  storage**, **Drop Cache**, or **Pick a config** while storage is short. When storage
+  or a single config pays alone the moves are radio rows, storage picked first; only
+  when nothing pays alone does it fall back to config checkboxes plus a storage top-up.
+  **End the run** is the panel's footer, and Review answers sits under the recap. On a
+  caught gate (ADR-177) the panel's first section is **Drop the catch first**, holding
+  Try/Catch alone; the moves below it stay locked and unpicked until it is picked.
 - **Poll review**: a test-runner reporter. One **fold per poll**, wearing the same panel
   chrome the reward report's panels do, its strip reading PASS / PART / FAIL badge, the
   question, the category and the coverage earned. Fumbles open on arrival and passes stay
@@ -1838,7 +1856,8 @@ The game leans hard into its CI metaphor.
   at the end** (the configs held, the rung's bill, and what upkeep cost across the
   climb), **storage** (what banks, what burns), and **unlocked** (swatches kept, configs
   registered, and the build and balance that do not carry forward). It exits on
-  **Start new run**, with the community board beside it.
+  **Start new run**, with the community board beside it. On a spent day that press is
+  refused and states **New polls in Xh Ym** beside it.
 - 🟡 **Learn Home**: a Duolingo-style path/hub planned as both the start point and the
   "no polls left today" destination (DVTD-jhgg).
 
@@ -1855,7 +1874,7 @@ The game leans hard into its CI metaphor.
 | **Gate meter**          | The run's coverage, the only score a gate judges. Cumulative: units banked over every slot the run has opened.                                                                                                                                                                                                                                     |
 | **Audit**               | A rule a gate carries (a mirror, a leak, a clock, a shut shop, a config knocked offline). A gate draws its audits date-seeded from its tier's pool, so everyone at that gate today meets the same ones; a rival's incident replaces one draw, and the stake receipt names it and its sender. Gates 3–7 carry one, 8–10 two, 11–12 three (ADR-138). |
 | **Incident**            | An audit bought at the shop's Incident desk and filed against a rival: queued at their next gate, locked when they clear the one before it, survived when they clear under it. Listed on the community board's Incidents panel.                                                                                                                    |
-| **410 Gone**            | An audit that deepens the peel by 10 points at Elite and 15 at the Champion.                                                                                                                                                                                                                                                                       |
+| **410 Gone**            | An audit that deepens the peel by 10 points at Indigo Elite and 15 at the Champion.                                                                                                                                                                                                                                                                |
 | **Peel**                | What a held gate owes before it runs again: a share of the occupied slots, paid by dropping configs and then in storage for whatever the drops left owed (ADR-126).                                                                                                                                                                                |
 | **Build**               | Your active setup: the track of config slots. Shown as **Your Build**. Public: any other player can read yours (ADR-101).                                                                                                                                                                                                                          |
 | **Slot**                | One unit of room in the build, also called weight. A config takes as many as its size says: 1, 2, 4, 8, 12 or 16. Four are free; the build rents the rest by growing into them.                                                                                                                                                                    |

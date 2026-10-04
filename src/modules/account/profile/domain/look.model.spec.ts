@@ -16,20 +16,20 @@ const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
 const BIKESHEDDER = "title-it-compiles";
 
-const VOLCANO = "swatch-volcano";
-const EARTH = "swatch-earth";
+const CINNABAR = "swatch-cinnabar";
+const VIRIDIAN = "swatch-viridian";
 const PALLET = "swatch-pallet";
 
 const OWNED: LookOwnership = {
 	ownedBorderIds: [GREEN_BUILD],
 	ownedTitleIds: [SHIP_IT, TESTER, CSS_CARRIER, BIKESHEDDER],
-	ownedSwatchIds: [VOLCANO],
+	ownedSwatchIds: [CINNABAR],
 };
 
 const WORN: Look = {
 	borderId: GREEN_BUILD,
 	titleIds: [SHIP_IT, TESTER],
-	swatchId: VOLCANO,
+	swatchId: CINNABAR,
 };
 
 describe("lookRefusalOf", () => {
@@ -62,7 +62,7 @@ describe("lookRefusalOf", () => {
 	});
 
 	it("refuses a swatch the player has not earned", () => {
-		expect(lookRefusalOf({ ...WORN, swatchId: EARTH }, OWNED)).toBe(
+		expect(lookRefusalOf({ ...WORN, swatchId: VIRIDIAN }, OWNED)).toBe(
 			"swatch-not-owned"
 		);
 	});
@@ -106,7 +106,7 @@ describe("toggleTitleIn", () => {
 
 describe("storedSwatchOf", () => {
 	it("stores an owned swatch as itself", () => {
-		expect(storedSwatchOf(WORN)).toBe(VOLCANO);
+		expect(storedSwatchOf(WORN)).toBe(CINNABAR);
 	});
 
 	it("stores pallet as nothing worn, so the default needs no row", () => {

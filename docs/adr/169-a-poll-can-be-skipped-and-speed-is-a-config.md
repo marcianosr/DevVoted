@@ -5,6 +5,14 @@
 Accepted — 2026-10-01 (Marciano). Amends [ADR-161](161-accuracy-multiplies-the-gate.md):
 a skipped poll is left out of the multiplier, and a streak no longer adds coverage.
 
+Amended 2026-10-03 (Marciano): the **Skip press is withdrawn** from the poll screen.
+The poll screen stated the rule ("covers nothing · keeps your multiplier · breaks the
+streak") but never the stakes, and the stakes are the whole point: a skip is worth
+almost nothing early in a bad window and protects ×2 late in a clean one. Until the
+screen can show what right, wrong and skip each do to this window's multiplier, the
+press reads as a trap. D1's rule stays in the reducer and the action schema, so
+restoring the press is a presentation change only.
+
 ## Context
 
 We checked four scoring ideas from other quiz games against ADR-161: streak

@@ -439,7 +439,7 @@ describe("the git tag (ADR-036)", () => {
 	});
 });
 
-const FLAWLESS_OVERFLOW_KB = 2;
+const FLAWLESS_OVERFLOW_KB = 1;
 const FLAWLESS_PERFECT_BONUS_KB = 16;
 
 describe("economy", () => {

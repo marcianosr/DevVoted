@@ -87,15 +87,9 @@ export const outcomeOf = (run: DayRun): DayOutcome | null => {
 export const outcomesOf = (
 	runs: readonly DayRun[]
 ): Readonly<Record<DayOutcome, readonly string[]>> => {
-	const live = new Set(
-		runs.filter((run) => !run.fallen).map((run) => run.userId)
-	);
-	const counted = runs.filter((run) => !run.fallen || !live.has(run.userId));
 	const holdersOf = (outcome: DayOutcome) => [
 		...new Set(
-			counted
-				.filter((run) => outcomeOf(run) === outcome)
-				.map((run) => run.userId)
+			runs.filter((run) => outcomeOf(run) === outcome).map((run) => run.userId)
 		),
 	];
 	return {

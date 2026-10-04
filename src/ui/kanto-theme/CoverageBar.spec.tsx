@@ -12,7 +12,7 @@ import {
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
-const VOLCANO = { floor: 55, ok: 65, healthy: 80 };
+const CINNABAR = { floor: 55, ok: 65, healthy: 80 };
 const PALLET = { floor: 0, ok: 0, healthy: 5 };
 
 type Ladder = { floor: number; ok: number; healthy: number };
@@ -28,10 +28,10 @@ const bandOnLadder = (
 	return "danger";
 };
 
-const volcano = (held: number) => ({
-	...VOLCANO,
+const cinnabar = (held: number) => ({
+	...CINNABAR,
 	held,
-	band: bandOnLadder(held, VOLCANO),
+	band: bandOnLadder(held, CINNABAR),
 });
 
 const pallet = (held: number) => ({
@@ -78,7 +78,7 @@ const reducedMotionGuards = () =>
 
 describe("CoverageBar", () => {
 	it("cuts the track into the four rungs the gate asks for", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(columnsOf(screen.getByRole("img"))).toEqual([
 			"55",
@@ -89,7 +89,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("lays the lit layer on the same band grid as the track", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(columnsOf(container.querySelector(".coverage-bar-lit"))).toEqual(
 			columnsOf(screen.getByRole("img"))
@@ -106,7 +106,7 @@ describe("CoverageBar", () => {
 	);
 
 	it("paints each rung of the track the colour its band answers to", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(zonesOf(container).map(themeOf)).toEqual([
 			COVERAGE_BAND_COLOR.danger,
@@ -117,7 +117,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("caps the end of both layers in PERFECT's colour, since PERFECT is the full bar and has no width", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 		const caps = Array.from(container.querySelectorAll(".coverage-bar-cap"));
 
@@ -131,7 +131,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("lights each band it has reached in that band's own colour", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(litZonesOf(container).map(themeOf)).toEqual(
 			zonesOf(container).map(themeOf)
@@ -139,19 +139,19 @@ describe("CoverageBar", () => {
 	});
 
 	it("hands the sheet the share of the build that is covered", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(heldOf(container)).toBe("70");
 	});
 
 	it("keeps the reading on the track when it runs past full", () => {
-		const { container } = render(<CoverageBar {...volcano(140)} />);
+		const { container } = render(<CoverageBar {...cinnabar(140)} />);
 
 		expect(heldOf(container)).toBe("100");
 	});
 
 	it("empties the reading rather than running it backwards off the track", () => {
-		const { container } = render(<CoverageBar {...volcano(-20)} />);
+		const { container } = render(<CoverageBar {...cinnabar(-20)} />);
 
 		expect(heldOf(container)).toBe("0");
 	});
@@ -174,7 +174,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("ticks each boundary under the track with its figure and its band", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		["55%", "SHAKY", "65%", "OK", "80%", "HEALTHY", "100%", "PERFECT"].forEach(
 			(text) => expect(screen.getByText(text)).toBeInTheDocument()
@@ -182,7 +182,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("stands each tick where its boundary falls", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(screen.getByText("55%").parentElement).toHaveStyle({ left: "55%" });
 		expect(screen.getByText("80%").parentElement).toHaveStyle({ left: "80%" });
@@ -192,14 +192,14 @@ describe("CoverageBar", () => {
 	});
 
 	it("drops the band words from a narrow bar, keeping the figures", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(screen.getByText("SHAKY")).toHaveClass("@max-[500px]:hidden");
 		expect(screen.getByText("55%")).not.toHaveClass("@max-[500px]:hidden");
 	});
 
 	it("reads the whole state aloud, since the bands are only colour", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(
 			screen.getByRole("img", { name: "70% of 80% needed · OK" })
@@ -207,7 +207,7 @@ describe("CoverageBar", () => {
 	});
 
 	it("keeps a fractional reading exact in what it announces", () => {
-		render(<CoverageBar {...volcano(12.5)} />);
+		render(<CoverageBar {...cinnabar(12.5)} />);
 
 		expect(
 			screen.getByRole("img", { name: "12.5% of 80% needed · DANGER" })
@@ -215,13 +215,13 @@ describe("CoverageBar", () => {
 	});
 
 	it("announces a running reading, since the marker is drawn for the eye", () => {
-		render(<CoverageBar {...volcano(47.5)} />);
+		render(<CoverageBar {...cinnabar(47.5)} />);
 
 		expect(screen.getByRole("status")).toHaveTextContent("47.5%");
 	});
 
 	it("carries its caption above the track when one is given", () => {
-		render(<CoverageBar {...volcano(70)} note="Five polls to go." />);
+		render(<CoverageBar {...cinnabar(70)} note="Five polls to go." />);
 
 		expect(screen.getByText("Five polls to go.")).toBeInTheDocument();
 	});
@@ -240,14 +240,14 @@ describe("CoverageBar", () => {
 			container.querySelector(".coverage-bar-ghost");
 
 		it("stays out of sight when no earlier reading is given", () => {
-			const { container } = render(<CoverageBar {...volcano(70)} />);
+			const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 			expect(ghostOf(container)).toHaveAttribute("data-shown", "false");
 		});
 
 		it("fades in where the earlier reading stood", () => {
 			const { container } = render(
-				<CoverageBar {...volcano(70)} ghostAt={42} />
+				<CoverageBar {...cinnabar(70)} ghostAt={42} />
 			);
 
 			expect(ghostOf(container)).toHaveAttribute("data-shown", "true");
@@ -256,7 +256,7 @@ describe("CoverageBar", () => {
 
 		it("stays on the track when the earlier reading ran past full", () => {
 			const { container } = render(
-				<CoverageBar {...volcano(70)} ghostAt={130} />
+				<CoverageBar {...cinnabar(70)} ghostAt={130} />
 			);
 
 			expect(ghostOf(container)).toHaveStyle({ left: "100%" });
@@ -268,14 +268,14 @@ describe("CoverageBar", () => {
 			container.querySelector(".coverage-bar-lit")?.parentElement;
 
 		it("does not bounce a bar that was never told to settle", () => {
-			const { container } = render(<CoverageBar {...volcano(70)} />);
+			const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 			expect(gaugeOf(container)).not.toHaveClass("coverage-bar-settle");
 		});
 
 		it("bounces when given a settle key", () => {
 			const { container } = render(
-				<CoverageBar {...volcano(70)} settleKey="close-4" />
+				<CoverageBar {...cinnabar(70)} settleKey="close-4" />
 			);
 
 			expect(gaugeOf(container)).toHaveClass("coverage-bar-settle");
@@ -283,7 +283,7 @@ describe("CoverageBar", () => {
 
 		it("replays the bounce each time the settle key moves", () => {
 			const { container, rerender } = render(
-				<CoverageBar {...volcano(70)} settleKey="one" />
+				<CoverageBar {...cinnabar(70)} settleKey="one" />
 			);
 			const play = vi.fn();
 			const cancel = vi.fn();
@@ -292,7 +292,7 @@ describe("CoverageBar", () => {
 				value: () => [{ play, cancel }],
 			});
 
-			rerender(<CoverageBar {...volcano(70)} settleKey="two" />);
+			rerender(<CoverageBar {...cinnabar(70)} settleKey="two" />);
 
 			expect(cancel).toHaveBeenCalledTimes(1);
 			expect(play).toHaveBeenCalledTimes(1);
@@ -369,13 +369,13 @@ describe("CoverageBar", () => {
 			container.querySelector(".coverage-bar-pin");
 
 		it("draws no pin while the meter is still running", () => {
-			const { container } = render(<CoverageBar {...volcano(70)} />);
+			const { container } = render(<CoverageBar {...cinnabar(70)} />);
 
 			expect(pinOf(container)).toBeNull();
 		});
 
 		it("names the reading and the band it stands in, in that band's colour", () => {
-			const { container } = render(<CoverageBar {...volcano(72.35)} pin />);
+			const { container } = render(<CoverageBar {...cinnabar(72.35)} pin />);
 
 			expect(pinOf(container)).toHaveTextContent("72.4%");
 			expect(pinOf(container)).toHaveTextContent("OK");
@@ -383,14 +383,14 @@ describe("CoverageBar", () => {
 		});
 
 		it("says nothing aloud, since the track already reads the figure", () => {
-			const { container } = render(<CoverageBar {...volcano(70)} pin />);
+			const { container } = render(<CoverageBar {...cinnabar(70)} pin />);
 
 			expect(pinOf(container)?.closest("[aria-hidden]")).not.toBeNull();
 			expect(screen.queryByRole("status")).not.toBeInTheDocument();
 		});
 
 		it("leaves the ticks their own row underneath the track", () => {
-			const { container } = render(<CoverageBar {...volcano(70)} pin />);
+			const { container } = render(<CoverageBar {...cinnabar(70)} pin />);
 			const rows = Array.from(
 				container.querySelector(".coverage-bar")!.children
 			);
@@ -419,7 +419,7 @@ describe("boundary ticks that would otherwise collide", () => {
 	});
 
 	it("grows each tick away from its neighbours", () => {
-		render(<CoverageBar {...volcano(70)} />);
+		render(<CoverageBar {...cinnabar(70)} />);
 
 		expect(screen.getByText("SHAKY").parentElement).toHaveClass(
 			"-translate-x-full"
@@ -442,20 +442,20 @@ describe("CoverageBar with a pointer instead of the pin", () => {
 		container.querySelector(".coverage-bar-pin");
 
 	it("points at the reading in the band it stands in, with no figure on it", () => {
-		const { container } = render(<CoverageBar {...volcano(70)} pointer />);
+		const { container } = render(<CoverageBar {...cinnabar(70)} pointer />);
 
 		expect(pinOf(container)).toHaveTextContent("");
 		expect(themeOf(pinOf(container))).toBe(COVERAGE_BAND_COLOR.ok);
 	});
 
 	it("names no boundary under the track", () => {
-		render(<CoverageBar {...volcano(70)} pointer />);
+		render(<CoverageBar {...cinnabar(70)} pointer />);
 
 		expect(screen.queryByText("SHAKY")).not.toBeInTheDocument();
 	});
 
 	it("still reads the whole state aloud", () => {
-		render(<CoverageBar {...volcano(70)} pointer />);
+		render(<CoverageBar {...cinnabar(70)} pointer />);
 
 		expect(screen.getByRole("img")).toHaveAccessibleName(/OK/);
 	});

@@ -19,7 +19,7 @@ const lockedProps = {
 	title: "Extend the registry",
 	detail: "add extra offers throughout the run, against a price",
 	locked: true,
-	unlock: "Reach Cascade",
+	unlock: "Reach Cerulean",
 } satisfies RegistryControlProps;
 
 describe("RegistryControl", () => {
@@ -104,7 +104,7 @@ describe("RegistryControl", () => {
 		expect(
 			screen.getByText("add extra offers throughout the run, against a price")
 		).toBeVisible();
-		expect(screen.getByText("unlock · Reach Cascade")).toBeVisible();
+		expect(screen.getByText("unlock · Reach Cerulean")).toBeVisible();
 		expect(screen.queryByText(/KB/)).not.toBeInTheDocument();
 	});
 

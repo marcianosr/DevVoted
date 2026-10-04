@@ -145,7 +145,9 @@ describe("Ledger", () => {
 		);
 
 		const chip = screen.getByText("Lavender swatch");
-		expect(chip.querySelector("[data-swatch-theme='lavender']")).not.toBeNull();
+		expect(
+			chip.querySelector("[data-swatch-theme='gate-lavender']")
+		).not.toBeNull();
 	});
 
 	it("tags a row beside its label rather than out among the figures", () => {

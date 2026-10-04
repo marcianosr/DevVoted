@@ -1,4 +1,5 @@
 import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
+import { swatchTrackFor } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
@@ -57,7 +58,7 @@ export const ClimbingBare: Story = {
 				{...kantoClimberCard()}
 				name="Oak"
 				titles={[]}
-				theme="pallet"
+				theme="gate-pallet"
 				standing={kantoStanding({
 					build: [],
 					freeSlots: 4,
@@ -74,7 +75,7 @@ const fallen = () => {
 		...kantoClimberCard(),
 		name: "Blaine",
 		titles: ["Stack Overflow"],
-		theme: "volcano" as const,
+		theme: "gate-cinnabar" as const,
 		rival: false,
 		perfect: false,
 		shaky: true,
@@ -120,7 +121,7 @@ export const YourOwnCard: Story = {
 				{...kantoClimberCard()}
 				name="Marciano"
 				titles={["Ship It"]}
-				theme="pallet"
+				theme="gate-pallet"
 				onClose={() => {}}
 				you
 				rival={false}
@@ -136,15 +137,25 @@ export const NoRunOpen: Story = {
 
 export const AsAHoverCard: Story = {
 	render: () =>
-		on(<ClimberCard {...kantoClimberCard()} profileHref={undefined} />),
+		on(
+			<ClimberCard
+				{...kantoClimberCard()}
+				profileHref={undefined}
+				contribution={{
+					answered: 412,
+					authored: { role: "Poll editor", published: 12, answers: 1842 },
+				}}
+				swatches={swatchTrackFor([0, 1, 2, 4])}
+			/>
+		),
 };
 
-export const WearingThunder: Story = {
+export const WearingVermilion: Story = {
 	render: () =>
 		on(
 			<ClimberCard
 				{...kantoClimberCard()}
-				theme="thunder"
+				theme="gate-vermilion"
 				titles={["Box Model", "CSS Carrier", "Legacy Tester"]}
 				onClose={() => {}}
 			/>

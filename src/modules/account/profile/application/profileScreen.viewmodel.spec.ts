@@ -7,8 +7,11 @@ import {
 	PROFILE_TABS,
 	profileCardFor,
 	profileClimbingFor,
+	profileBestRunFor,
 	profileCollectionFor,
-	profileRecordFor,
+	profileHeroFor,
+	profileRunsFor,
+	profileSeatsFor,
 	triedOnBorderOf,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
 import type {
@@ -16,12 +19,17 @@ import type {
 	ProfileRecord,
 	ProfileTotals,
 } from "~/modules/account/profile/domain/profile.model";
+import type { RunHistoryEntry } from "~/modules/collection/dex/domain/runHistory.model";
 import type { Standing } from "~/modules/run/community/domain/standing.model";
 import { NO_AUTHORSHIP } from "~/modules/account/profile/domain/authorship.model";
 import { borders } from "~/modules/account/profile/domain/border.model";
-import { DEX_TABS } from "~/modules/collection/dex/application/dexScreen.viewmodel";
+import {
+	DEX_TABS,
+	runDetailFor,
+} from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { standingFor } from "~/modules/run/community/application/playerCard.viewmodel";
 import { kbLabel } from "~/shared/lib/storage";
+import { TEST_DATES } from "~/test/kanto";
 
 const IDENTITY: ProfileIdentity = {
 	displayName: "marciano_schildmeijer",
@@ -178,50 +186,70 @@ describe("profileCollectionFor", () => {
 	});
 });
 
-describe("profileRecordFor", () => {
-	const RECORD: ProfileRecord = {
-		deepestGate: 9,
-		gatesTotal: 13,
-		clearedGates: [1, 2, 3, 4, 6],
-		runsFinished: 24,
-		seats: [{ category: "css", streak: 21 }],
-		recentRuns: [],
-	};
+const RECORD: ProfileRecord = {
+	deepestGate: 9,
+	gatesTotal: 13,
+	clearedGates: [1, 2, 3, 4, 6],
+	runsFinished: 24,
+	runsWon: 2,
+	bestRun: null,
+	seats: [{ category: "css", streak: 21 }],
+	recentRuns: [],
+};
 
-	it("leads with how deep they reached and how many gates they swept", () => {
-		expect(profileRecordFor(RECORD).figures).toMatchObject([
-			{ label: "deepest gate", figure: "9 of 13" },
-			{ label: "swatches", figure: "5 of 13" },
-			{ label: "runs finished", figure: "24" },
+const CINNABAR_RUN: RunHistoryEntry = {
+	runId: 42,
+	endedAt: new Date(TEST_DATES.christmas),
+	gatesCleared: 9,
+	swatchGates: [1, 2],
+	coverage: 0.11,
+	band: "danger",
+	won: false,
+	heldBy: "Cinnabar",
+};
+
+describe("profileHeroFor", () => {
+	it("wears the same face the card wears", () => {
+		expect(profileHeroFor(IDENTITY, RECORD, true)).toMatchObject(
+			profileCardFor(IDENTITY, true)
+		);
+	});
+
+	it("leads with depth, swatches and Champion clears, each against its ceiling", () => {
+		expect(profileHeroFor(IDENTITY, RECORD, false).trophies).toEqual([
+			{ label: "deepest gate", figure: "9", outOf: "/ 13" },
+			{ label: "swatches", figure: "5", outOf: "/ 13" },
+			{ label: "runs won", figure: "2" },
 		]);
 	});
 
-	it("states the viewer's own figure beside the two headline ones", () => {
+	it("states a visitor's own figure under the two climbing trophies", () => {
 		const yours: ProfileRecord = {
 			...RECORD,
 			deepestGate: 6,
 			clearedGates: [1, 2, 3],
+			runsWon: 0,
 		};
 
-		const [deepest, swatches] = profileRecordFor(RECORD, yours).figures;
+		const [deepest, swatches, won] = profileHeroFor(
+			IDENTITY,
+			RECORD,
+			false,
+			yours
+		).trophies;
 
-		expect(deepest.yours).toBe("you 6 of 13");
-		expect(swatches.yours).toBe("you 3 of 13");
+		expect(deepest.yours).toBe("you 6");
+		expect(swatches.yours).toBe("you 3");
+		expect(won).not.toHaveProperty("yours");
 	});
 
-	it("withholds the comparison when there is no viewer to compare against", () => {
-		for (const figure of profileRecordFor(RECORD).figures)
-			expect(figure).not.toHaveProperty("yours");
+	it("compares nothing on your own page", () => {
+		for (const trophy of profileHeroFor(IDENTITY, RECORD, true).trophies)
+			expect(trophy).not.toHaveProperty("yours");
 	});
 
-	it("leaves the run count uncompared, because it rewards playing, not climbing", () => {
-		const [, , runs] = profileRecordFor(RECORD, RECORD).figures;
-
-		expect(runs).not.toHaveProperty("yours");
-	});
-
-	it("draws a swatch for every gate, filling only the ones they swept", () => {
-		const { swatches } = profileRecordFor(RECORD);
+	it("draws a swatch for every gate, filling only the ones they minted", () => {
+		const { swatches } = profileHeroFor(IDENTITY, RECORD, false);
 
 		expect(swatches).toHaveLength(13);
 		expect(swatches.filter((fill) => fill.state === "discovered")).toHaveLength(
@@ -229,14 +257,48 @@ describe("profileRecordFor", () => {
 		);
 	});
 
+	it("says what mints a swatch, because the track is the page's signature", () => {
+		expect(profileHeroFor(IDENTITY, RECORD, false).note).toBe(
+			"A swatch is a gate taken at 100% coverage."
+		);
+	});
+});
+
+describe("profileBestRunFor", () => {
+	it("draws the best run the way the run history draws it", () => {
+		expect(
+			profileBestRunFor({ ...RECORD, bestRun: CINNABAR_RUN })?.run
+		).toEqual(runDetailFor(CINNABAR_RUN));
+	});
+
+	it("names the gate the best run reached on the heading", () => {
+		expect(profileBestRunFor({ ...RECORD, bestRun: CINNABAR_RUN })?.meta).toBe(
+			"reached gate 9"
+		);
+	});
+
+	it("draws no best run before a run has finished", () => {
+		expect(profileBestRunFor(RECORD)).toBeNull();
+	});
+});
+
+describe("profileSeatsFor", () => {
 	it("names each seat they hold and the streak that holds it", () => {
-		expect(profileRecordFor(RECORD).seats).toEqual([
+		expect(profileSeatsFor(RECORD)?.seats).toEqual([
 			{ category: "CSS", figure: "21 in a row" },
 		]);
 	});
 
-	it("holds no seats without inventing one", () => {
-		expect(profileRecordFor({ ...RECORD, seats: [] }).seats).toEqual([]);
+	it("draws no seats panel for a player who leads nothing", () => {
+		expect(profileSeatsFor({ ...RECORD, seats: [] })).toBeNull();
+	});
+});
+
+describe("profileRunsFor", () => {
+	it("counts every finished run, not just the recent few it lists", () => {
+		const record: ProfileRecord = { ...RECORD, recentRuns: [CINNABAR_RUN] };
+
+		expect(profileRunsFor(record).count).toBe("24 runs");
 	});
 });
 
@@ -250,23 +312,19 @@ describe("profileClimbingFor", () => {
 	};
 
 	it("draws the coverage the open run holds against its gate", () => {
-		const { standing } = profileClimbingFor(STANDING);
-
-		expect(standing?.gate).toMatchObject({
+		expect(profileClimbingFor(STANDING)?.gate).toMatchObject({
 			label: "gate 6",
 			coverage: { held: 68 },
 		});
 	});
 
 	it("draws the same standing the hover card draws", () => {
-		expect(profileClimbingFor(STANDING).standing).toEqual(
-			standingFor(STANDING)
-		);
+		expect(profileClimbingFor(STANDING)).toEqual(standingFor(STANDING));
 	});
 
 	it("tiles run storage, streak and best category", () => {
 		expect(
-			profileClimbingFor({ ...STANDING, bestCategory: "css" }).standing?.stats
+			profileClimbingFor({ ...STANDING, bestCategory: "css" })?.stats
 		).toEqual([
 			{ label: "run storage", value: kbLabel(4_300), color: "saffron" },
 			{ label: "streak", value: "7" },
@@ -274,11 +332,8 @@ describe("profileClimbingFor", () => {
 		]);
 	});
 
-	it("draws no standing when no run is open, and says so on the heading", () => {
-		const climbing = profileClimbingFor(null);
-
-		expect(climbing.standing).toBeUndefined();
-		expect(climbing.meta).toBe("nothing open");
+	it("draws no climbing panel when no run is open", () => {
+		expect(profileClimbingFor(null)).toBeNull();
 	});
 });
 
@@ -309,15 +364,17 @@ describe("triedOnBorderOf", () => {
 });
 
 describe("profileCardFor contribution", () => {
-	it("states the author's role, polls published and answers drawn", () => {
+	it("states the author's role, polls published and answers drawn beside the polls answered", () => {
 		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
 
 		expect(profileCardFor({ ...BARE, authorship }, false).contribution).toEqual(
-			authorship
+			{ answered: BARE.pollsAnswered, authored: authorship }
 		);
 	});
 
-	it("states nothing for a player who has published no poll", () => {
-		expect(profileCardFor(BARE, false)).not.toHaveProperty("contribution");
+	it("states only the polls answered for a player who has published no poll", () => {
+		expect(profileCardFor(BARE, false).contribution).toEqual({
+			answered: BARE.pollsAnswered,
+		});
 	});
 });

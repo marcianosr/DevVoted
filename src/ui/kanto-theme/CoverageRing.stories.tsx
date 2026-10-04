@@ -18,7 +18,7 @@ const meta: Meta<typeof CoverageRing> = {
 	args: {
 		held: 148,
 		demand: 210,
-		title: "Coverage toward Volcano",
+		title: "Coverage toward Cinnabar",
 		note: "Pick an answer to see where it puts you.",
 	},
 	render: (args) => (
@@ -31,7 +31,7 @@ export default meta;
 
 type Story = StoryObj<typeof CoverageRing>;
 
-export const TowardVolcano: Story = {};
+export const TowardCinnabar: Story = {};
 
 export const Untouched: Story = {
 	args: { held: 0, note: "Nothing banked at this gate yet." },

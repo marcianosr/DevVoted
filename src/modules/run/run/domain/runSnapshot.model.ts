@@ -27,9 +27,10 @@ type StoredHeldAudit = {
 
 export type StoredSnapshot = Omit<
 	RunSnapshot,
-	"headStartUnits" | "window" | "heldAudit"
+	"headStartUnits" | "accuracyBonus" | "window" | "heldAudit"
 > & {
 	readonly headStartUnits?: number;
+	readonly accuracyBonus?: number;
 	readonly bankedUnits?: number;
 	readonly window: Omit<
 		GateWindow,
@@ -132,6 +133,7 @@ export const hydrateRunState = (
 		...current,
 		...(heldAudit === undefined ? {} : { heldAudit }),
 		headStartUnits: headStartOf(snapshot),
+		accuracyBonus: finite(snapshot.accuracyBonus ?? 0, 0),
 		coverage: finite(snapshot.coverage, 0),
 		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
 		window: {

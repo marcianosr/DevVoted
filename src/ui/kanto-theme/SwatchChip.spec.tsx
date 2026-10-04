@@ -15,7 +15,9 @@ describe("SwatchChip", () => {
 		render(<SwatchChip swatch={EARNED} label={LABEL} />);
 
 		const chip = screen.getByText(LABEL);
-		expect(chip.querySelector("[data-swatch-theme='lavender']")).not.toBeNull();
+		expect(
+			chip.querySelector("[data-swatch-theme='gate-lavender']")
+		).not.toBeNull();
 	});
 
 	it("stays quieter than one of the kit's badges", () => {

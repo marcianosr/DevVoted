@@ -4,7 +4,11 @@ import {
 	type GateAnswer,
 	type GateOutcomeFrame,
 	gateOutcomePropsFor,
+	outcomeRevealOf,
+	peelPicksOf,
+	peelPlanOf,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
+import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
 import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
@@ -89,44 +93,78 @@ describe("a close recorded under the old window minimum", () => {
 		expect(props.storage.badges?.[0]?.label).toBe("nothing paid");
 	});
 
-	const dropPickFor = (frame: GateOutcomeFrame, name: string) => {
-		const chip = gateOutcomePropsFor(
-			frame
-		).tail?.choice?.peel.drop.configs.find((config) => config.name === name);
-		return chip?.pick;
-	};
-
-	const peeling = (chosen: readonly string[]): GateOutcomeFrame => ({
+	const peeling = (frame: Partial<GateOutcomeFrame>): GateOutcomeFrame => ({
 		...heldByUnscored(),
-		configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
-		chosen,
+		configs: [CONFIGS.cache, CONFIGS.indexedDb],
+		peelSlotsRemaining: 3,
+		balanceBeforeKb: 0,
+		...frame,
 	});
 
-	it("keeps every drop live while the peel is still owed", () => {
-		const pick = dropPickFor(peeling([]), CONFIGS.js.label);
+	const pressOf = (frame: GateOutcomeFrame) =>
+		gateOutcomePropsFor(frame).footer.action;
 
-		expect(pick).toEqual(
-			expect.objectContaining({ checked: false, disabled: false })
+	it("offers storage and every config that pays alone, storage picked first", () => {
+		const frame = peeling({ balanceBeforeKb: 512 });
+
+		expect(peelPlanOf(frame)).toEqual({
+			kind: "single",
+			storage: true,
+			singles: [CONFIGS.cache],
+			move: { kind: "storage" },
+		});
+		expect(peelPicksOf(frame)).toEqual({ chosen: [], fromStorage: true });
+		expect(pressOf(frame).label).toBe("Pay from storage");
+	});
+
+	it("lets a picked config replace storage as the move", () => {
+		const frame = peeling({
+			balanceBeforeKb: 512,
+			chosen: [CONFIGS.cache.id],
+			fromStorage: true,
+		});
+
+		expect(peelPicksOf(frame)).toEqual({
+			chosen: [CONFIGS.cache.id],
+			fromStorage: false,
+		});
+		expect(pressOf(frame).label).toBe("Drop Cache");
+	});
+
+	it("ignores a picked config that cannot pay the peel alone", () => {
+		const frame = peeling({
+			balanceBeforeKb: 512,
+			chosen: [CONFIGS.indexedDb.id],
+		});
+
+		expect(peelPicksOf(frame)).toEqual({ chosen: [], fromStorage: true });
+	});
+
+	it("waits for a config when storage falls short", () => {
+		const frame = peeling({ balanceBeforeKb: 8 });
+
+		expect(pressOf(frame)).toEqual({ label: "Pick a config" });
+		expect(gateOutcomePropsFor(frame).footer.note).toBe(
+			"you have 8 KB · 40 KB short"
 		);
 	});
 
-	it("spends no config the peel did not ask for, once it is settled", () => {
-		const settled = peeling([CONFIGS.js.id]);
-
-		expect(dropPickFor(settled, CONFIGS.ts.label)).toEqual(
-			expect.objectContaining({ disabled: true })
-		);
-		expect(dropPickFor(settled, CONFIGS.css.label)).toEqual(
-			expect.objectContaining({ disabled: true })
-		);
+	it("combines drops and storage only when no single move pays", () => {
+		expect(
+			peelPlanOf(
+				peeling({
+					configs: [CONFIGS.indexedDb, CONFIGS.telemetry],
+					balanceBeforeKb: 16,
+				})
+			)
+		).toEqual({ kind: "mix" });
 	});
 
-	it("lets a config already dropping be taken back after the bill is met", () => {
-		const pick = dropPickFor(peeling([CONFIGS.js.id]), CONFIGS.js.label);
+	it("leaves only the way out when everything together falls short", () => {
+		const frame = peeling({ configs: [CONFIGS.indexedDb] });
 
-		expect(pick).toEqual(
-			expect.objectContaining({ checked: true, disabled: false })
-		);
+		expect(peelPlanOf(frame)).toEqual({ kind: "stuck" });
+		expect(pressOf(frame).onPress).toBeUndefined();
 	});
 
 	it("says the window came up short, not the meter", () => {
@@ -252,7 +290,7 @@ describe("gateOutcomePropsFor and the swatch", () => {
 
 	it("lists what a single and a multiple choice are worth at the gate a clear opens", () => {
 		expect(gateOutcomePropsFor(frameOf([], CLEARED)).nextGate).toEqual({
-			title: "At Rainbow",
+			title: "At Celadon",
 			rates: [
 				{
 					label: "single choice",
@@ -477,73 +515,78 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 
 	const peelingCaught = (chosen: readonly string[]): GateOutcomeFrame => ({
 		...caught(),
-		configs: [CONFIGS.tryCatch, CONFIGS.js],
-		peelSlotsRemaining: 6,
+		configs: [CONFIGS.tryCatch, CONFIGS.cache],
+		peelSlotsRemaining: slotsOf(CONFIGS.tryCatch) + 3,
 		balanceBeforeKb: 10_000,
 		chosen,
 	});
 
-	const peelOf = (frame: GateOutcomeFrame) =>
-		gateOutcomePropsFor(frame).tail?.choice?.peel;
+	const choiceOf = (frame: GateOutcomeFrame) =>
+		gateOutcomePropsFor(frame).tail?.choice;
 
-	const chipFor = (frame: GateOutcomeFrame, name: string) => {
-		const peel = peelOf(frame);
-		const chips = [
-			...(peel?.catch === undefined ? [] : [peel.catch.config]),
-			...(peel?.drop.configs ?? []),
-		];
-		return chips.find((config) => config.name === name);
+	const rowsOf = (frame: GateOutcomeFrame) => {
+		const options = choiceOf(frame)?.options;
+		return options?.kind === "radio" ? options.rows : [];
 	};
 
-	it("lifts the catch out of the drops into a step of its own", () => {
-		const peel = peelOf(peelingCaught([]));
+	it("lifts the catch out of the moves into a step of its own", () => {
+		const frame = peelingCaught([]);
 
-		expect(peel?.catch?.config.name).toBe(CONFIGS.tryCatch.label);
-		expect(peel?.drop.configs.map((config) => config.name)).not.toContain(
+		expect(choiceOf(frame)?.catch?.config.name).toBe(CONFIGS.tryCatch.label);
+		expect(rowsOf(frame).map((row) => row.name)).not.toContain(
 			CONFIGS.tryCatch.label
 		);
 	});
 
-	it("tells the locked drops what they wait for", () => {
-		expect(peelOf(peelingCaught([]))?.drop.note).toBe(
-			"opens once Try/Catch is dropped"
+	it("refuses the press until the catch is picked", () => {
+		expect(gateOutcomePropsFor(peelingCaught([])).footer.action).toEqual({
+			label: "Drop Try/Catch first",
+		});
+	});
+
+	it("keeps every move shut and unpicked until the catch is picked", () => {
+		for (const row of rowsOf(peelingCaught([])))
+			expect(row.pick).toEqual(
+				expect.objectContaining({ disabled: true, checked: false })
+			);
+	});
+
+	it("badges the catch as the drop that comes first", () => {
+		expect(choiceOf(peelingCaught([]))?.catch?.config.badges).toContainEqual(
+			expect.objectContaining({ label: "drop first" })
 		);
 	});
 
 	it("keeps the catch step on screen once it is picked, struck through", () => {
 		expect(
-			peelOf(peelingCaught([CONFIGS.tryCatch.id]))?.catch?.config.lost
+			choiceOf(peelingCaught([CONFIGS.tryCatch.id]))?.catch?.config.lost
 		).toBe(true);
 	});
 
-	it("offers the catch as the only drop until it is picked", () => {
-		const frame = peelingCaught([]);
-
-		expect(chipFor(frame, CONFIGS.tryCatch.label)?.pick?.disabled).toBe(false);
-		expect(chipFor(frame, CONFIGS.js.label)?.pick?.disabled).toBe(true);
-	});
-
-	it("badges the catch as the drop that comes first", () => {
-		expect(
-			chipFor(peelingCaught([]), CONFIGS.tryCatch.label)?.badges
-		).toContainEqual(expect.objectContaining({ label: "drop first" }));
-	});
-
-	it("keeps storage shut until the catch is picked", () => {
-		const bribe = gateOutcomePropsFor(peelingCaught([])).tail?.choice?.peel
-			.bribe;
-
-		expect(bribe?.pick.disabled).toBe(true);
-		expect(bribe?.note).toBe("drop Try/Catch first");
-	});
-
-	it("opens the rest of the peel once the catch is picked", () => {
+	it("asks only for what the catch left owed once it is picked", () => {
 		const frame = peelingCaught([CONFIGS.tryCatch.id]);
 
-		expect(chipFor(frame, CONFIGS.js.label)?.pick?.disabled).toBe(false);
-		expect(
-			gateOutcomePropsFor(frame).tail?.choice?.peel.bribe.pick.disabled
-		).toBe(false);
+		expect(choiceOf(frame)?.owed).toBe("48 KB");
+		for (const row of rowsOf(frame)) expect(row.pick.disabled).toBe(false);
+	});
+
+	it("keeps the catch in the drop whichever move pays the rest", () => {
+		const frame = peelingCaught([CONFIGS.tryCatch.id, CONFIGS.cache.id]);
+
+		expect(peelPicksOf(frame)).toEqual({
+			chosen: [CONFIGS.tryCatch.id, CONFIGS.cache.id],
+			fromStorage: false,
+		});
+	});
+
+	it("opens the retry when the catch alone covers the peel", () => {
+		const frame = {
+			...peelingCaught([CONFIGS.tryCatch.id]),
+			peelSlotsRemaining: slotsOf(CONFIGS.tryCatch),
+		};
+
+		expect(gateOutcomePropsFor(frame).footer.action.label).toBe("Retry gate 4");
+		expect(choiceOf(frame)?.owed).toBeUndefined();
 	});
 
 	it("quotes no refund on the catch, since the catch pays none", () => {
@@ -552,13 +595,11 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 			configs: [CONFIGS.tryCatch, CONFIGS.garbageCollection],
 		};
 
-		expect(chipFor(frame, CONFIGS.tryCatch.label)?.badges).toHaveLength(1);
+		expect(choiceOf(frame)?.catch?.config.badges).toHaveLength(1);
 	});
 
 	it("has no catch step on a hold that nothing caught", () => {
-		expect(
-			gateOutcomePropsFor(frameOf([], SHORT)).tail?.choice?.peel.catch
-		).toBeUndefined();
+		expect(choiceOf(frameOf([], SHORT))?.catch).toBeUndefined();
 	});
 
 	it("chips nothing on a hold that nothing caught", () => {
@@ -632,5 +673,66 @@ describe("a PERFECT close states its bonus (ADR-075)", () => {
 
 	it("leaves the panel out when the bonus paid nothing", () => {
 		expect(gateOutcomePropsFor(perfect(0)).bonus).toBeUndefined();
+	});
+});
+
+describe("outcomeRevealOf", () => {
+	const PERFECT = 100;
+
+	it("plays a clear that counts the balance up by the payout and names the next gate", () => {
+		const reveal = outcomeRevealOf(frameOf([], CLEARED));
+
+		expect(reveal.kind).toBe("cleared");
+		expect(reveal.stamp).toBe("healthy");
+		expect(reveal.balance).toEqual({
+			label: STORAGE_BALANCE,
+			fromKb: 64,
+			toKb: 96,
+		});
+		expect(reveal.next?.label).toBe("Next: Celadon");
+		expect(reveal.archive).toBeUndefined();
+	});
+
+	it("plays perfect for a full bar and stamps PERFECT", () => {
+		const reveal = outcomeRevealOf(frameOf([GATE], PERFECT));
+
+		expect(reveal.kind).toBe("perfect");
+		expect(reveal.stamp).toBe("perfect");
+	});
+
+	it("plays shaky for a held gate, keeps the balance and names no next gate", () => {
+		const reveal = outcomeRevealOf(frameOf([], SHORT));
+
+		expect(reveal.kind).toBe("shaky");
+		expect(reveal.stamp).toBe("shaky");
+		expect(reveal.balance.toKb).toBe(reveal.balance.fromKb);
+		expect(reveal.next).toBeUndefined();
+		expect(reveal.note).toContain("fresh polls on the retry");
+	});
+
+	it("plays the catch with the catcher's name and stamps the danger the bar read", () => {
+		const reveal = outcomeRevealOf({
+			...frameOf([], 2),
+			closing: "held",
+			heldBy: "catch",
+			caughtFatalBy: "Try/Catch",
+		});
+
+		expect(reveal.kind).toBe("caught");
+		expect(reveal.stamp).toBe("danger");
+		expect(reveal.catcher?.name).toBe("Try/Catch");
+	});
+
+	it("plays the end with an archive line naming the gate and what is left unspent", () => {
+		const reveal = outcomeRevealOf({ ...frameOf([], 2), closing: "fatal" });
+
+		expect(reveal.kind).toBe("ended");
+		expect(reveal.title).toBe("Run over");
+		expect(reveal.archive).toEqual([
+			"Run over",
+			"gate 4 · Lavender",
+			"64 KB unspent",
+			"Swatches you earned stay on your profile.",
+		]);
 	});
 });

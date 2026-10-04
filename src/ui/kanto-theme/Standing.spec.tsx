@@ -9,14 +9,14 @@ describe("Standing", () => {
 	it("names the gate the run stands at, apart from its number", () => {
 		render(<Standing {...kantoStanding()} />);
 
-		expect(screen.getByText("Thunder")).toBeVisible();
+		expect(screen.getByText("Vermilion")).toBeVisible();
 		expect(screen.getByText("gate 3")).toBeVisible();
 	});
 
 	it("reads the coverage held and its band beside the gate", () => {
 		render(<Standing {...kantoStanding()} />);
 
-		expect(screen.getByText("70% · HEALTHY")).toBeVisible();
+		expect(screen.getByText("70% · OK")).toBeVisible();
 	});
 
 	it("points at the coverage on the bar rather than labelling its boundaries", () => {

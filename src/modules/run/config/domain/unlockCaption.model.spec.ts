@@ -30,7 +30,7 @@ describe(thematicCaptionFor, () => {
 	it("renders a one-shot objective as a checkbox, done at its target", () => {
 		expect(thematicCaptionFor(earnedUnlock("volkswagen-ci"), 0)).toEqual({
 			kind: "one-shot",
-			text: "Clear Marsh's Mirror audit without a miss",
+			text: "Clear Saffron's Mirror audit without a miss",
 			done: false,
 		});
 		expect(thematicCaptionFor(earnedUnlock("volkswagen-ci"), 1)).toMatchObject({
@@ -57,7 +57,7 @@ describe(provenanceOf, () => {
 
 	it("prints the authored past tense for a thematic grant", () => {
 		expect(provenanceOf("volkswagen-ci", "mirror-clear-no-miss")).toBe(
-			"Earned: cleared Marsh's Mirror audit without a miss"
+			"Earned: cleared Saffron's Mirror audit without a miss"
 		);
 	});
 

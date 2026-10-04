@@ -63,7 +63,7 @@ describe("the pools stage what a rival can throw at you", () => {
 		expect(earlyPool().has("upgrade-required")).toBe(false);
 	});
 
-	it("keeps the Elite-tier rules out of the early gates", () => {
+	it("keeps the Indigo Elite-tier rules out of the early gates", () => {
 		expect(earlyPool().has("feature-freeze")).toBe(false);
 		expect(earlyPool().has("strip")).toBe(false);
 	});
@@ -232,6 +232,38 @@ describe("a gate draws its own audits, and an incident replaces one", () => {
 		const withIncident = gateAuditsFor(9, birthday, ["legal-hold"]);
 		expect(withIncident).toHaveLength(auditCapacityFor(9));
 		expect(withIncident).toContain("legal-hold");
+	});
+
+	it("swaps exactly one drawn audit when an incident lands on every day and gate", () => {
+		for (let day = 1; day <= 28; day++)
+			for (const gate of [8, 9, 10, 11, VICTORY_GATE]) {
+				const date = `2026-09-${String(day).padStart(2, "0")}`;
+				const drawn = gateAuditsFor(gate, date, []);
+				const incident = poolForGate(gate).find((id) => !drawn.includes(id));
+				if (incident === undefined) continue;
+				const kept = gateAuditsFor(gate, date, [incident]).filter(
+					(id) => id !== incident
+				);
+				expect(kept.filter((id) => drawn.includes(id))).toHaveLength(
+					auditCapacityFor(gate) - 1
+				);
+			}
+	});
+
+	it("changes nothing when the incident is an audit the gate already drew", () => {
+		const drawn = gateAuditsFor(VICTORY_GATE, birthday, []);
+		expect(gateAuditsFor(VICTORY_GATE, birthday, [drawn[0]])).toEqual(drawn);
+	});
+
+	it("never draws two audits of one family even without an incident", () => {
+		for (let day = 1; day <= 28; day++) {
+			const seated = gateAuditsFor(
+				VICTORY_GATE,
+				`2026-09-${String(day).padStart(2, "0")}`,
+				[]
+			);
+			expect(new Set(seated.map(familyOf)).size).toBe(seated.length);
+		}
 	});
 
 	it("leaves a one-slot gate carrying nothing but the incident", () => {

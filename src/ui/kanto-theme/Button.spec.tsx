@@ -55,7 +55,7 @@ describe("Button", () => {
 	});
 
 	it("spans the row on a phone and shrink-wraps from sm when told to", () => {
-		render(<Button label="Boulder gate prep" width="full" onPress={vi.fn()} />);
+		render(<Button label="Pewter gate prep" width="full" onPress={vi.fn()} />);
 
 		const button = screen.getByRole("button");
 		expect(button).toHaveClass("flex", "w-full", "sm:inline-flex", "sm:w-fit");

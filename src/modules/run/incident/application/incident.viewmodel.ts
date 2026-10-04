@@ -11,6 +11,7 @@ import type {
 } from "~/modules/run/incident/domain/incident.model";
 import type {
 	IncidentFeedRow,
+	IncidentParty,
 	IncidentStatus,
 } from "~/modules/run/incident/infrastructure/incident.repository";
 import type {
@@ -34,10 +35,26 @@ export type AttackOfferView = RivalFace & {
 	readonly audit: PayloadView;
 };
 
+export type IncidentFaceView = {
+	readonly userId: string;
+	readonly name: string;
+	readonly photoUrl?: string;
+	readonly borderUrl?: string;
+	readonly you: boolean;
+};
+
+const faceOf = (party: IncidentParty, viewerId: string): IncidentFaceView => ({
+	userId: party.id,
+	name: party.name,
+	...(party.photoUrl === undefined ? {} : { photoUrl: party.photoUrl }),
+	...(party.borderUrl === undefined ? {} : { borderUrl: party.borderUrl }),
+	you: party.id === viewerId,
+});
+
 export type IncidentFeedRowView = {
 	readonly id: number;
-	readonly sentBy: string;
-	readonly target: string;
+	readonly sentBy: IncidentFaceView;
+	readonly target: IncidentFaceView;
 	readonly code: number;
 	readonly name: string;
 	readonly gate: number;
@@ -74,8 +91,8 @@ export const incidentFeedRowFor = (
 	const audit = auditAt(row.auditId, row.targetGate);
 	return {
 		id: row.id,
-		sentBy: row.sentBy.name,
-		target: row.target.name,
+		sentBy: faceOf(row.sentBy, viewerId),
+		target: faceOf(row.target, viewerId),
 		code: audit.code,
 		name: audit.name,
 		gate: row.targetGate,

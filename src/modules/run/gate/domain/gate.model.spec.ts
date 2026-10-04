@@ -146,14 +146,14 @@ describe("a flawless gate is never fatal", () => {
 });
 
 describe("the swatch asks for every change covered", () => {
-	const BOULDER = 1;
+	const PEWTER = 1;
 
 	it("earns on a full bar carrying a miss", () => {
 		expect(
 			coversEveryChange(
 				closing({
-					gatesCleared: BOULDER,
-					unitsThisGate: scoringSlotsAt(BOULDER),
+					gatesCleared: PEWTER,
+					unitsThisGate: scoringSlotsAt(PEWTER),
 					correctThisGate: SLICE_WINDOW - 1,
 				})
 			)
@@ -164,9 +164,9 @@ describe("the swatch asks for every change covered", () => {
 		expect(
 			coversEveryChange(
 				closing({
-					gatesCleared: BOULDER,
+					gatesCleared: PEWTER,
 					headStartUnits: 1,
-					unitsThisGate: scoringSlotsAt(BOULDER) - 1,
+					unitsThisGate: scoringSlotsAt(PEWTER) - 1,
 				})
 			)
 		).toBe(true);
@@ -176,8 +176,8 @@ describe("the swatch asks for every change covered", () => {
 		expect(
 			coversEveryChange(
 				closing({
-					gatesCleared: BOULDER,
-					unitsThisGate: scoringSlotsAt(BOULDER) - 1,
+					gatesCleared: PEWTER,
+					unitsThisGate: scoringSlotsAt(PEWTER) - 1,
 					correctThisGate: SLICE_WINDOW,
 				})
 			)

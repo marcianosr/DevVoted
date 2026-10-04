@@ -35,10 +35,7 @@ import {
 	type PollStats,
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
-import {
-	type CoverageConfigBonus,
-	accuracyMultiplierFor,
-} from "~/modules/run/build/domain/coverageRatio.model";
+import { type CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
@@ -69,7 +66,6 @@ import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
 import type {
 	PollCommit,
 	PollLock,
-	PollSkip,
 	PollCoverage,
 	PollFlight,
 	PollScreenProps,
@@ -285,15 +281,6 @@ export const PICK_EVERY = "pick every answer that fits";
 export const SINGLE_KEYS = "press a letter to answer";
 export const MULTIPLE_KEYS = "press letters, then Enter";
 
-export const SKIP_LABEL = "Skip";
-export const SKIP_NOTE =
-	"covers nothing · keeps your multiplier · breaks the streak";
-
-const skipOf = (onSkip?: () => void): { skip?: PollSkip } =>
-	onSkip === undefined
-		? {}
-		: { skip: { label: SKIP_LABEL, note: SKIP_NOTE, onPress: onSkip } };
-
 export const pollKeysHintFor = (answerType: AnswerType): string =>
 	answerType === "multiple" ? MULTIPLE_KEYS : SINGLE_KEYS;
 
@@ -305,12 +292,9 @@ const lockInFor = (picked: number, onSubmit: () => void): PollLock =>
 export const pollCommitFor = (
 	answerType: AnswerType,
 	picked: number,
-	onSubmit: () => void,
-	onSkip?: () => void
+	onSubmit: () => void
 ): PollCommit =>
-	answerType === "multiple"
-		? { lock: lockInFor(picked, onSubmit), ...skipOf(onSkip) }
-		: skipOf(onSkip);
+	answerType === "multiple" ? { lock: lockInFor(picked, onSubmit) } : {};
 
 const APPROVE_LABEL = "LGTM";
 const APPROVE_NOTE = "the room answers this one for you";
@@ -392,12 +376,12 @@ const multiplierLandedAt = (
 	polls: number
 ): string | undefined => {
 	if (answers.length < polls) return undefined;
-	const accuracy = view.closes
+	const multiplier = view.closes
 		.filter((close) => close.gate === gate)
-		.at(-1)?.accuracy;
-	return accuracy === undefined
+		.at(-1)?.multiplier;
+	return multiplier === undefined
 		? undefined
-		: `×${roundToTwoDecimals(accuracyMultiplierFor(accuracy))}`;
+		: `×${roundToTwoDecimals(multiplier)}`;
 };
 
 const payoutRowFor = (
@@ -439,13 +423,16 @@ const ACCURACY_WORD = "Accuracy";
 const UP_TO = "up to";
 const FIGURE_JOIN = " · ";
 const LABEL_JOIN = ", ";
-const TOP_MULTIPLIER = 2;
+const FIRST_TRACK_SCALE = 2;
 
 const multiplierLabel = (multiplier: number): string =>
 	`×${roundToTwoDecimals(multiplier)}`;
 
-const shareOfTop = (multiplier: number): number =>
-	(multiplier - 1) / (TOP_MULTIPLIER - 1);
+const trackScaleFor = (best: number): number =>
+	Math.max(FIRST_TRACK_SCALE, Math.ceil(best));
+
+const shareOfScale = (multiplier: number, scale: number): number =>
+	(multiplier - 1) / (scale - 1);
 
 const readingsOf = ({ guaranteed, best }: AccuracyView): readonly string[] =>
 	roundToTwoDecimals(guaranteed) === roundToTwoDecimals(best)
@@ -467,8 +454,8 @@ export const accuracyTrackFor = (
 	return {
 		label: `${ACCURACY_WORD} ${readings.join(LABEL_JOIN)}`,
 		figure: readings.join(FIGURE_JOIN),
-		sure: shareOfTop(accuracy.guaranteed),
-		best: shareOfTop(accuracy.best),
+		sure: shareOfScale(accuracy.guaranteed, trackScaleFor(accuracy.best)),
+		best: shareOfScale(accuracy.best, trackScaleFor(accuracy.best)),
 		...pulseOf(answered),
 	};
 };
@@ -927,7 +914,6 @@ const withShake = (shake: string | undefined) =>
 export type PollScreenHandlers = {
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
-	onSkip?: () => void;
 	onNext: () => void;
 	onLanded?: () => void;
 	onPress?: (action: PressAction, configId: string) => void;
@@ -969,8 +955,7 @@ const liveMoodFor = (
 		commit: pollCommitFor(
 			poll.answerType,
 			selectedOptionIds.length,
-			on.onSubmit,
-			on.onSkip
+			on.onSubmit
 		),
 	};
 };

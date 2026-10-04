@@ -76,4 +76,10 @@ describe("Verdict", () => {
 			expect(screen.getByText(WORD[outcome])).toBeInTheDocument();
 		}
 	);
+
+	it("takes only its badge's width when asked to fit", () => {
+		const { container } = render(<Verdict outcome="wrong" width="fit" />);
+
+		expect(container.firstElementChild).not.toHaveClass("w-24");
+	});
 });

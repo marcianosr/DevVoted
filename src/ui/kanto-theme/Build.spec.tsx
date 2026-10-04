@@ -237,6 +237,16 @@ describe("Build", () => {
 		expect(onToggleUpgrades).toHaveBeenCalledWith("Cache");
 	});
 
+	it("states an installed config's upgrade price without a hover, so the press never widens under the pointer", () => {
+		render(<Build configs={UPGRADABLE} onToggleUpgrades={vi.fn()} />);
+
+		const price = within(
+			screen.getByRole("button", { name: /Upgrade Cache to v2/ })
+		).getByText(/64 KB/);
+
+		expect(price).not.toHaveClass("hidden");
+	});
+
 	it("reaches the Buy press once an installed config's panel is open", async () => {
 		const onBuy = vi.fn();
 		render(

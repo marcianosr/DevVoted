@@ -101,19 +101,10 @@ describe("categoryBoardFor", () => {
 		const streak = categoryBoardFor({ measure: "streak", seats: [GIT_SEAT] });
 		const correct = categoryBoardFor({ measure: "correct", seats: [GIT_SEAT] });
 
-		expect(streak.title).toBe("Streak leaders");
+		expect(streak.title).toBe("streak");
 		expect(streak.summary).toContain("in one run");
-		expect(correct.title).toBe("Correct leaders");
+		expect(correct.title).toBe("correct");
 		expect(correct.summary).toContain("in one run");
-	});
-
-	it("counts the held seats against the whole board", () => {
-		const board = categoryBoardFor({
-			measure: "streak",
-			seats: [GIT_SEAT, { category: "vue" }, { category: "ruby" }],
-		});
-
-		expect(board.seated).toBe("1 of 3 seated");
 	});
 
 	it("draws every seat it was handed, held or open", () => {

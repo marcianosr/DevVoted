@@ -108,9 +108,9 @@ describe("runOverPropsFor", () => {
 
 			expect(gates.payouts.rows.map((row) => row.label)).toEqual([
 				"Pallet",
-				"Boulder",
-				"Cascade",
-				"Thunder",
+				"Pewter",
+				"Cerulean",
+				"Vermilion",
 				"Lavender",
 			]);
 		});

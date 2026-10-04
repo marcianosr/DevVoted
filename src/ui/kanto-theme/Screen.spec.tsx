@@ -97,12 +97,15 @@ describe("Screen", () => {
 
 	it("wears a gate's own theme when given a gate rather than a colour", () => {
 		const { container } = render(
-			<Screen gate="boulder">
+			<Screen gate="gate-pewter">
 				<span />
 			</Screen>
 		);
 
-		expect(container.firstChild).toHaveAttribute("data-gate-theme", "boulder");
+		expect(container.firstChild).toHaveAttribute(
+			"data-gate-theme",
+			"gate-pewter"
+		);
 		expect(container.firstChild).not.toHaveAttribute("data-screen-theme");
 	});
 
@@ -193,14 +196,14 @@ describe("the page under a Screen", () => {
 	});
 
 	it("hands its gate to the shell", () => {
-		drawInShell(<Screen gate="elite">body</Screen>);
+		drawInShell(<Screen gate="gate-indigo-elite">body</Screen>);
 
-		expect(shellTheme()).toEqual([null, "elite"]);
+		expect(shellTheme()).toEqual([null, "gate-indigo-elite"]);
 	});
 
 	it("never leaves both live, because a mood silently beats a gate", () => {
-		const { rerender } = drawInShell(<Screen gate="boulder">body</Screen>);
-		expect(shellTheme()).toEqual([null, "boulder"]);
+		const { rerender } = drawInShell(<Screen gate="gate-pewter">body</Screen>);
+		expect(shellTheme()).toEqual([null, "gate-pewter"]);
 
 		rerender(
 			<Shell>
@@ -218,8 +221,10 @@ describe("the page under a Screen", () => {
 	});
 
 	it("hands the shell back to pewter when the screen leaves", () => {
-		const { rerender } = drawInShell(<Screen gate="elite">body</Screen>);
-		expect(shellTheme()).toEqual([null, "elite"]);
+		const { rerender } = drawInShell(
+			<Screen gate="gate-indigo-elite">body</Screen>
+		);
+		expect(shellTheme()).toEqual([null, "gate-indigo-elite"]);
 
 		rerender(<Shell>{null}</Shell>);
 

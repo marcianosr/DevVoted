@@ -254,7 +254,7 @@ describe("451 Unavailable For Legal Reasons", () => {
 });
 
 describe("410 Gone", () => {
-	it("deepens the peel more at the Champion than at Elite", () => {
+	it("deepens the peel more at the Champion than at Indigo Elite", () => {
 		expect(auditAt("strip", 11).peelShareOnFail).toBe(0.1);
 		expect(auditAt("strip", VICTORY_GATE).peelShareOnFail).toBe(0.15);
 	});

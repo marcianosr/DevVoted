@@ -9,20 +9,11 @@ import { COVERAGE_BAND_COLOR } from "./CoverageBar.ui";
 const LAVENDER_GATE = 4;
 const TITLE = "At stake";
 const NOTE =
-	"Paid when the gate shuts. Miss it and you owe a peel, settled in KB or in configs.";
+	"Received at the end of the gate. Miss it and you owe a peel, settled in KB or in configs.";
 
 const props: BandOutcomesProps = {
 	title: TITLE,
 	meta: ["Lavender · gate ", { figure: "4" }],
-	brief: {
-		statement: [
-			"single choice ",
-			{ figure: "+11.1%", gain: true },
-			" · multiple choice ",
-			{ figure: "+22.2%", gain: true },
-		],
-		hint: ["accuracy and configs add more"],
-	},
 	objectives: {
 		objectives: [
 			{
@@ -35,8 +26,9 @@ const props: BandOutcomesProps = {
 					" or better",
 				],
 				earns: [
-					"earns ",
-					{ figure: "advance to Rainbow" },
+					"earns the ",
+					{ figure: "advance to Celadon" },
+					" and ",
 					{ figure: "+40 KB", band: "ok" },
 					" or more",
 				],
@@ -46,6 +38,8 @@ const props: BandOutcomesProps = {
 				earns: [
 					"earns ",
 					{ swatch: gateSwatchAt(LAVENDER_GATE), label: "Lavender swatch" },
+					" and ",
+					{ figure: "+96 KB", band: "perfect" },
 				],
 			},
 		],
@@ -102,43 +96,15 @@ describe("BandOutcomes", () => {
 		expect(within(header).getByText("4")).toHaveClass("badge-theme");
 	});
 
-	it("lists what a single and a multiple choice cover, the gains in green", () => {
-		render(<BandOutcomes {...props} />);
-
-		const statement = screen.getByText(
-			(_, element) =>
-				element?.tagName === "P" &&
-				element.textContent === "single choice +11.1% · multiple choice +22.2%"
-		);
-
-		for (const gain of ["+11.1%", "+22.2%"]) {
-			expect(within(statement).getByText(gain)).toHaveAttribute(
-				"data-screen-theme",
-				"viridian"
-			);
-		}
-		expect(
-			screen.getByText("accuracy and configs add more")
-		).toBeInTheDocument();
-	});
-
-	it("draws no brief when handed none", () => {
-		render(<BandOutcomes {...props} brief={undefined} />);
-
-		expect(screen.queryByText(/single choice/)).toBeNull();
-	});
-
-	it("reads the brief, the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
+	it("reads the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
 		const { container } = render(<BandOutcomes {...props} />);
 
-		const brief = screen.getByText(/single choice/);
 		const objective = screen.getByText("Finish at");
 		const scores = screen.getByLabelText(/^Lavender —/);
 		const ladder = container.querySelector(".band-ladder") as HTMLElement;
 		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
 		const note = screen.getByText(NOTE);
 
-		expect(follows(brief, objective)).toBe(true);
 		expect(follows(objective, scores)).toBe(true);
 		expect(follows(scores, ladder)).toBe(true);
 		expect(follows(ladder, standing)).toBe(true);

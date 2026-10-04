@@ -19,7 +19,6 @@ import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 import {
 	answersOwedFor,
 	bandOutcomesPropsFor,
-	briefFor,
 	BAND_OUTCOMES_NOTE,
 	ESCROW_NOTE,
 	FREE_MISS_NOTE,
@@ -140,26 +139,28 @@ describe("the lowest landing that still clears", () => {
 
 describe("the answers a window owes", () => {
 	it("owes nothing against a line the run already stands on", () => {
-		expect(answersOwedFor(42, 42, 4)).toBe(0);
-		expect(answersOwedFor(42, 50, 4)).toBe(0);
+		expect(answersOwedFor(42, 42, 4, 0)).toBe(0);
+		expect(answersOwedFor(42, 50, 4, 0)).toBe(0);
 	});
 
 	it("rounds a part answer up, since half an answer buys nothing", () => {
-		expect(answersOwedFor(42, 34, 4)).toBe(2);
-		expect(answersOwedFor(42, 31, 4)).toBe(3);
+		expect(answersOwedFor(42, 34, 4, 0)).toBe(2);
+		expect(answersOwedFor(42, 31, 4, 0)).toBe(3);
 	});
 
-	it("counts the accuracy multiplier, so two right land Boulder's OK", () => {
-		expect(answersOwedFor(25, 0, 100 / 9)).toBe(2);
-		expect(answersOwedFor(44, 0, 100 / 9)).toBe(3);
+	it("counts the carried accuracy multiplier, so two right land Pewter's OK on a run carrying ×1.4", () => {
+		const pewterUnit = coverageGainPercentFor(1, 1);
+
+		expect(answersOwedFor(SECOND.ok, 0, pewterUnit, 0.4)).toBe(2);
+		expect(answersOwedFor(SECOND.ok, 0, pewterUnit, 0)).toBe(3);
 	});
 
 	it("refuses a line five right answers cannot reach", () => {
-		expect(answersOwedFor(42, 0, 4)).toBeUndefined();
+		expect(answersOwedFor(42, 0, 4, 0)).toBeUndefined();
 	});
 
 	it("refuses any line at all for a build that gains nothing", () => {
-		expect(answersOwedFor(42, 41, 0)).toBeUndefined();
+		expect(answersOwedFor(42, 41, 0, 0)).toBeUndefined();
 	});
 });
 
@@ -185,9 +186,9 @@ describe("the objective that clears the gate", () => {
 		});
 	});
 
-	it("names the gate that clearing opens", () => {
-		expect(leadTextOf(clearOf(frameFor()).earns)).toContain(
-			"advance to Rainbow"
+	it("names the gate that clearing opens, then the KB beside it", () => {
+		expect(leadTextOf(clearOf(frameFor()).earns)).toMatch(
+			/^earns the advance to Celadon and \+.+ KB or more$/
 		);
 	});
 
@@ -213,7 +214,7 @@ describe("the objective that clears the gate", () => {
 		);
 
 		expect(summit).not.toContain("advance to");
-		expect(summit).toContain("or more");
+		expect(summit).toMatch(/^earns \+.+ KB or more$/);
 	});
 });
 
@@ -251,49 +252,23 @@ describe("the objective that earns the swatch", () => {
 		}
 	});
 
+	it("pays the KB a full bar pays, quoted off the ladder's PERFECT rung", () => {
+		const frame = frameFor();
+
+		expect(swatchRowOf(frame).earns).toContainEqual({
+			figure: rungOf(frame, "perfect")?.pays,
+			band: "perfect",
+		});
+		expect(leadTextOf(swatchRowOf(frame).earns)).toBe(
+			`earns Lavender swatch and ${rungOf(frame, "perfect")?.pays}`
+		);
+	});
+
 	it("marks the reward with the gate's own swatch", () => {
 		expect(swatchRowOf(frameFor()).earns).toContainEqual({
 			swatch: GATE_SWATCHES[4],
 			label: "Lavender swatch",
 		});
-	});
-});
-
-describe("the brief on what a right answer covers", () => {
-	const BOULDER = 1;
-	const singleAt = coverageGainPercentFor(1, BOULDER);
-	const boulder = (over: Partial<BandOutcomesFrame> = {}) =>
-		frameFor({
-			swatch: GATE_SWATCHES[BOULDER],
-			gate: BOULDER,
-			ladder: SECOND,
-			coverageGainPercent: singleAt,
-			...over,
-		});
-
-	it("lists what a right single choice and a right multiple choice cover, in points gained", () => {
-		expect(briefFor(boulder()).statement).toEqual([
-			"single choice ",
-			{ figure: "+11.1%", gain: true },
-			" · multiple choice ",
-			{ figure: "+22.2%", gain: true },
-		]);
-	});
-
-	it("hints that accuracy and configs add on top", () => {
-		expect(briefFor(boulder()).hint).toEqual(["accuracy and configs add more"]);
-	});
-
-	it("counts what a config adds to a right single choice", () => {
-		expect(
-			briefFor(
-				boulder({ coverageGainPercent: coverageGainPercentFor(1.5, BOULDER) })
-			).statement
-		).toContainEqual({ figure: "+16.7%", gain: true });
-	});
-
-	it("rides on the panel", () => {
-		expect(bandOutcomesPropsFor(boulder()).brief).toEqual(briefFor(boulder()));
 	});
 });
 
@@ -303,8 +278,6 @@ describe("the panel never names the gate's codebase", () => {
 
 		return [
 			props.meta,
-			props.brief?.statement ?? [],
-			props.brief?.hint ?? [],
 			props.standing,
 			...(props.objectives?.objectives ?? []).flatMap((objective) => [
 				objective.statement,
@@ -409,17 +382,17 @@ describe("the standing line", () => {
 		expect(text()).toBe(
 			`${pointsTo(MID, "shaky", 0)} to reach SHAKY · 5 polls left`
 		);
-		expect(text({ held: 30 })).toBe(
-			`${pointsTo(MID, "ok", 30)} to reach OK · 5 polls left`
+		expect(text({ held: 55 })).toBe(
+			`${pointsTo(MID, "ok", 55)} to reach OK · 5 polls left`
 		);
-		expect(text({ held: 62 })).toBe("+38% to reach PERFECT · 5 polls left");
+		expect(text({ held: 75 })).toBe("+25% to reach PERFECT · 5 polls left");
 	});
 
 	it("badges the points as a gain, the band it reaches, and the polls left as a count", () => {
-		const line = standingLineFor(frameFor({ held: 30 }));
+		const line = standingLineFor(frameFor({ held: 55 }));
 
 		expect(line).toContainEqual({
-			figure: pointsTo(MID, "ok", 30),
+			figure: pointsTo(MID, "ok", 55),
 			gain: true,
 		});
 		expect(line).toContainEqual({ band: "ok" });

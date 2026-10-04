@@ -3,7 +3,11 @@
 ## Status
 
 Accepted — 2026-10-02 (Marciano, DVTD-06o0). Replaces the single "Who showed up"
-row of the community board's turnout panel.
+row of the community board's turnout panel. Amended 2026-10-03 (DVTD-ah7g): the
+panel is titled "Today's records", and outcomes and records share one list with no
+divider between them. Decision 1 amended 2026-10-03 (Marciano, DVTD-ah7g): a fallen
+run stays in DANGER after its player starts again, and "answered today" always
+leads the panel — see the amendments below.
 
 ## Context
 
@@ -27,8 +31,8 @@ Each player who closed a gate today sits in exactly one row:
 SHAKY and DANGER describe what happened, not the coverage band. A clear on a shaky
 band files under OK, because the gate let it through. A player who fell and started
 a new run counts by the live run. A live run that has not closed a gate yet sits in
-no row. Until somebody closes a gate, the panel falls back to the old
-"answered today" row. `outcomeOf` in `dayRecords.model.ts` owns the mapping.
+no row. The old "answered today" row leads the panel, above the outcomes (see the
+second amendment). `outcomeOf` in `dayRecords.model.ts` owns the mapping.
 
 ## Decision 2: records sit under the outcomes in the same panel
 
@@ -49,6 +53,24 @@ state the community total, with the top player's face.
 
 "Today" is every live session run plus every session run that fell today. A live
 run started yesterday counts in full.
+
+## Amendment (2026-10-03): the dead stay in DANGER
+
+Decision 1 counted a player who fell and started again by the live run only, so their
+corpse left the panel. Marciano disagreed: DANGER is where a climber looks for runs
+to loot (ADR-135), and a corpse is lootable whether or not its owner climbs again.
+DANGER now lists every player with a run that fell today, once each, and a player can
+also sit in their live run's row. A DANGER face opens that run's card, the one the
+climb map opens, which carries the Loot press. The other four rows still read live
+runs only.
+
+## Amendment (2026-10-03): who showed up leads the panel
+
+Decision 1 drew "answered today" only until the first close, so once anybody closed a
+gate the faces of everyone who played vanished from the board. Marciano disagreed: that
+row is the one place that shows who played today, whatever their gate did, and its faces
+are what make the board recognisable. The row now always leads the panel, with every
+player who answered today wearing their border, and the outcome rows follow it.
 
 ## Rejected
 

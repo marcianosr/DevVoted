@@ -6,7 +6,10 @@ import { Screen } from "./Screen.ui";
 const meta: Meta<typeof Contribution> = {
 	component: Contribution,
 	title: "Kanto/Contribution",
-	args: { role: "Poll editor", published: 12, answers: 1842 },
+	args: {
+		answered: 412,
+		authored: { role: "Poll editor", published: 12, answers: 1842 },
+	},
 	render: (args) => (
 		<Screen theme="cerulean" width="narrow">
 			<Contribution {...args} />
@@ -20,5 +23,9 @@ type Story = StoryObj<typeof Contribution>;
 export const Editor: Story = {};
 
 export const PlayerAuthor: Story = {
-	args: { role: undefined, published: 1, answers: 1 },
+	args: { answered: 30, authored: { published: 1, answers: 1 } },
+};
+
+export const Player: Story = {
+	args: { answered: 30, authored: undefined },
 };

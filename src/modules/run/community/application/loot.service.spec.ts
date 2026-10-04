@@ -62,7 +62,7 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 	startedAtGate: 0,
 	handle: null,
 	titles: [],
-	theme: "pallet",
+	theme: "gate-pallet",
 	coverageUnits: 0,
 	streak: 0,
 	storageKb: HELD_KB,

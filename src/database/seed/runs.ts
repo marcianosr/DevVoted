@@ -161,6 +161,7 @@ export const seedArchivedRuns = async (
 				coverage: entry.coverage,
 				currentIndex: answered,
 				headStartUnits: 0,
+				accuracyBonus: 0,
 				build: { ...blank.build, configs: CONFIG_LIST.slice(0, 4) },
 			},
 			engine_status: entry.status,

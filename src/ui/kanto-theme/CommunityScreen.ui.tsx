@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 
@@ -14,36 +14,35 @@ import { Panel } from "./Panel.ui";
 import { PollResult, type PollResultProps } from "./PollResult.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { Swatch } from "./Swatch.ui";
-import { Tabs } from "./Tabs.ui";
+import { Segmented } from "./Segmented.ui";
 import { Typography } from "./Typography.ui";
 
-const HEADER = "flex w-full flex-col gap-4";
-const CONTROL_ROW = "flex w-full flex-wrap items-center gap-3";
+const HEADER = "flex w-full flex-col gap-4 sm:flex-row sm:items-start";
 const CONTROLS =
 	"grid w-full auto-cols-fr grid-flow-col gap-3 sm:ml-auto sm:flex sm:w-auto sm:shrink-0";
-const TITLE_ROW = "flex w-full items-start gap-4";
-const NAMING = "flex min-w-0 flex-col gap-1";
+const TITLE_ROW = "flex min-w-0 flex-1 items-start gap-4";
+const NAMING = "flex min-w-0 flex-col gap-2";
 const STATS = "flex flex-wrap items-center gap-2";
 const STAT = "flex items-center gap-1.5 text-theme-muted";
 
-const SECTION = "flex w-full flex-col gap-3";
-const BOARDS = "flex w-full flex-col gap-3";
-const SECTION_HEAD = "flex flex-wrap items-baseline gap-3";
-
-const POLLS = "flex w-full flex-col gap-2";
+const COLUMNS =
+	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]";
+const SIDE = "flex w-full min-w-0 flex-col gap-6";
+const ROW_LABEL = "flex min-w-0 flex-wrap items-center gap-x-2";
+const TALLY = "flex items-center gap-2";
 
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
-const TURNOUT_LABEL = "flex min-w-0 flex-col";
-const RECORDS_HEADING = "flex-1";
+const ROW_FACES = 3;
 const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 const CONTROL_WIDTH = "full";
 
 export const COPY = {
 	mapHint: "tap an avatar",
+	leaders: "Leaders",
 	boards: "which board",
-	records: "today's records",
+	you: "you",
 } as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
@@ -77,7 +76,6 @@ export type TurnoutBand = {
 
 export type CommunityTurnout = {
 	title: string;
-	when: string;
 	bands: readonly TurnoutBand[];
 	records?: readonly TurnoutBand[];
 };
@@ -85,14 +83,13 @@ export type CommunityTurnout = {
 export type CommunityLeaders = {
 	title: string;
 	summary?: string;
-	seated?: string;
 	seats: readonly CategoryLeaderProps[];
 	footer?: string;
 };
 
 export type CommunityPolls = {
 	title: string;
-	summary?: string;
+	tally?: string;
 	polls: readonly PollResultProps[];
 };
 
@@ -107,23 +104,18 @@ export type CommunityScreenProps = {
 	ground?: ScreenGround;
 };
 
-const SectionHead = ({
-	title,
-	summary,
-}: {
-	title: string;
-	summary?: string;
-}) => (
-	<div className={SECTION_HEAD}>
-		<Typography variant="title" as="h3">
-			{title}
-		</Typography>
-		{summary === undefined ? null : (
-			<Typography variant="hint" as="span">
-				{summary}
-			</Typography>
-		)}
-	</div>
+const Stat = ({
+	icon,
+	label,
+	hint,
+	color,
+}: CommunityStat & { color?: KantoColor }) => (
+	<span className={STAT}>
+		<span role="img" aria-label={hint}>
+			<Icon name={icon} />
+		</span>
+		<Badge color={color}>{label}</Badge>
+	</span>
 );
 
 const CommunityHeading = ({
@@ -138,36 +130,6 @@ const CommunityHeading = ({
 	prep,
 }: CommunityHeader) => (
 	<header className={HEADER}>
-		<div className={CONTROL_ROW}>
-			<span className={STAT}>
-				<span role="img" aria-label={countdownHint}>
-					<Icon name="clock" />
-				</span>
-				<Badge color={countdownColor}>{countdown}</Badge>
-			</span>
-			<span className={CONTROLS}>
-				{shop === undefined ? null : (
-					<Button
-						size={CONTROL_SIZE}
-						width={CONTROL_WIDTH}
-						icon="shop"
-						label={shop.label}
-						disabled={shop.onPress === undefined}
-						onPress={shop.onPress}
-					/>
-				)}
-				<Button
-					size={CONTROL_SIZE}
-					width={CONTROL_WIDTH}
-					tone="action"
-					icon="gate"
-					label={prep.label}
-					disabled={prep.onPress === undefined}
-					onPress={prep.onPress}
-				/>
-			</span>
-		</div>
-
 		<div className={TITLE_ROW}>
 			<Swatch state="discovered" swatch={swatch} size={SWATCH_SIZE} />
 			<span className={NAMING}>
@@ -179,23 +141,50 @@ const CommunityHeading = ({
 						{subtitle}
 					</Typography>
 				)}
+				<span className={STATS}>
+					<Stat
+						icon="clock"
+						label={countdown}
+						hint={countdownHint}
+						color={countdownColor}
+					/>
+					{stats.map((stat) => (
+						<Stat key={stat.hint} {...stat} />
+					))}
+				</span>
 			</span>
 		</div>
-
-		<div className={STATS}>
-			{stats.map((stat) => (
-				<span key={stat.hint} className={STAT}>
-					<span role="img" aria-label={stat.hint}>
-						<Icon name={stat.icon} />
-					</span>
-					<Badge>{stat.label}</Badge>
-				</span>
-			))}
-		</div>
+		<span className={CONTROLS}>
+			{shop === undefined ? null : (
+				<Button
+					size={CONTROL_SIZE}
+					width={CONTROL_WIDTH}
+					icon="shop"
+					label={shop.label}
+					disabled={shop.onPress === undefined}
+					onPress={shop.onPress}
+				/>
+			)}
+			<Button
+				size={CONTROL_SIZE}
+				width={CONTROL_WIDTH}
+				tone="action"
+				icon="gate"
+				label={prep.label}
+				disabled={prep.onPress === undefined}
+				onPress={prep.onPress}
+			/>
+		</span>
 	</header>
 );
 
-const TurnoutRow = ({ band }: { band: TurnoutBand }) => (
+const TurnoutRow = ({
+	band,
+	label,
+}: {
+	band: TurnoutBand;
+	label: ReactNode;
+}) => (
 	<Panel.Row
 		trailing={
 			<>
@@ -203,15 +192,14 @@ const TurnoutRow = ({ band }: { band: TurnoutBand }) => (
 				<ClimberStack
 					climbers={band.climbers}
 					overflow={band.overflow}
+					shown={ROW_FACES}
 					size={CLIMBER_SIZE}
 				/>
 			</>
 		}
 	>
-		<span className={TURNOUT_LABEL}>
-			<Typography variant="subtitle" as="span">
-				{band.label}
-			</Typography>
+		<span className={ROW_LABEL}>
+			{label}
 			{band.caption === undefined ? null : (
 				<Typography variant="hint" as="span">
 					{band.caption}
@@ -221,26 +209,29 @@ const TurnoutRow = ({ band }: { band: TurnoutBand }) => (
 	</Panel.Row>
 );
 
-const Turnout = ({ title, when, bands, records = [] }: CommunityTurnout) => (
+const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
 	<Panel>
-		<Panel.Header label={title} meta={when} />
+		<Panel.Header label={title} />
 		<Panel.Rows>
 			{bands.map((band) => (
-				<TurnoutRow key={band.label} band={band} />
+				<TurnoutRow
+					key={band.label}
+					band={band}
+					label={<Badge color={band.color}>{band.label}</Badge>}
+				/>
+			))}
+			{records.map((record) => (
+				<TurnoutRow
+					key={record.label}
+					band={record}
+					label={
+						<Typography variant="subtitle" as="span">
+							{record.label}
+						</Typography>
+					}
+				/>
 			))}
 		</Panel.Rows>
-		{records.length === 0 ? null : (
-			<>
-				<Panel.Columns
-					columns={[{ label: COPY.records, width: RECORDS_HEADING }]}
-				/>
-				<Panel.Rows>
-					{records.map((record) => (
-						<TurnoutRow key={record.label} band={record} />
-					))}
-				</Panel.Rows>
-			</>
-		)}
 	</Panel>
 );
 
@@ -262,41 +253,6 @@ const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
 	</Panel>
 );
 
-const CategoryLeaders = ({
-	title,
-	summary,
-	seated,
-	seats,
-	footer,
-}: CommunityLeaders) => (
-	<Panel>
-		<Panel.Header
-			label={title}
-			summary={summary}
-			meta={seated === undefined ? undefined : <Badge>{seated}</Badge>}
-		/>
-		{seats.length === 0 ? null : (
-			<Panel.Rows>
-				{seats.map((seat) => (
-					<Panel.Row
-						key={seat.category}
-						theme={seat.leader?.you === true ? YOUR_SEAT_COLOR : undefined}
-					>
-						<CategoryLeader {...seat} />
-					</Panel.Row>
-				))}
-			</Panel.Rows>
-		)}
-		{footer === undefined ? null : (
-			<Panel.Footer>
-				<Typography variant="hint" as="span">
-					{footer}
-				</Typography>
-			</Panel.Footer>
-		)}
-	</Panel>
-);
-
 const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
 	const [showing, setShowing] = useState<string | undefined>(undefined);
 	const board = boards.find(({ title }) => title === showing) ?? boards[0];
@@ -304,29 +260,66 @@ const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
 	if (board === undefined) return null;
 
 	return (
-		<section className={BOARDS}>
-			{boards.length < 2 ? null : (
-				<Tabs
-					label={COPY.boards}
-					items={boards.map(({ title }) => ({ id: title, label: title }))}
-					activeId={board.title}
-					onSelect={setShowing}
-				/>
+		<Panel>
+			<Panel.Header
+				label={COPY.leaders}
+				summary={board.summary}
+				trailing={
+					boards.length < 2 ? undefined : (
+						<Segmented
+							label={COPY.boards}
+							items={boards.map(({ title }) => ({
+								value: title,
+								label: title,
+							}))}
+							value={board.title}
+							onSelect={setShowing}
+						/>
+					)
+				}
+			/>
+			{board.seats.length === 0 ? null : (
+				<Panel.Rows>
+					{board.seats.map((seat) => (
+						<Panel.Row
+							key={seat.category}
+							theme={seat.leader?.you === true ? YOUR_SEAT_COLOR : undefined}
+						>
+							<CategoryLeader {...seat} />
+						</Panel.Row>
+					))}
+				</Panel.Rows>
 			)}
-			<CategoryLeaders {...board} />
-		</section>
+			{board.footer === undefined ? null : (
+				<Panel.Footer>
+					<Typography variant="hint" as="span">
+						{board.footer}
+					</Typography>
+				</Panel.Footer>
+			)}
+		</Panel>
 	);
 };
 
-const FivePolls = ({ title, summary, polls }: CommunityPolls) => (
-	<section className={SECTION}>
-		<SectionHead title={title} summary={summary} />
-		<div className={POLLS}>
+const FivePolls = ({ title, tally, polls }: CommunityPolls) => (
+	<Panel>
+		<Panel.Header
+			label={title}
+			meta={
+				tally === undefined ? undefined : (
+					<span className={TALLY}>
+						{COPY.you}
+						<Badge>{tally}</Badge>
+					</span>
+				)
+			}
+		/>
+		<Panel.Rows>
 			{polls.map((poll) => (
 				<PollResult key={poll.index} {...poll} />
 			))}
-		</div>
-	</section>
+		</Panel.Rows>
+	</Panel>
 );
 
 export const CommunityScreen = ({
@@ -336,15 +329,19 @@ export const CommunityScreen = ({
 	incidents,
 	leaders,
 	polls,
-	width,
+	width = "wide",
 	ground = "bare",
 }: CommunityScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
 		<CommunityHeading {...header} />
-		<Turnout {...turnout} />
 		<WhereEveryoneIs {...map} />
-		{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
-		<LeaderBoards boards={leaders} />
-		<FivePolls {...polls} />
+		<div className={COLUMNS}>
+			<FivePolls {...polls} />
+			<div className={SIDE}>
+				<Turnout {...turnout} />
+				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
+				<LeaderBoards boards={leaders} />
+			</div>
+		</div>
 	</Screen>
 );

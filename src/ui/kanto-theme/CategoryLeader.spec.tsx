@@ -13,11 +13,11 @@ const SABRINA: CategorySeatLeader = {
 };
 
 describe("CategoryLeader", () => {
-	it("names the category the seat is held for", () => {
+	it("names the category the seat is held for, with no label word beside it", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
 		expect(screen.getByText(CATEGORY)).toBeVisible();
-		expect(screen.getByText("leader")).toBeVisible();
+		expect(screen.queryByText("leader")).toBeNull();
 	});
 
 	it("states the run the leader is being credited for", () => {
@@ -70,6 +70,16 @@ describe("CategoryLeader", () => {
 		expect(facts).not.toContainElement(trailing);
 		expect(trailing).not.toHaveClass("ml-auto");
 		expect(facts?.parentElement).toHaveClass("grid-cols-[1fr_auto]");
+	});
+
+	it("seats the face and handle beside the figure, away from the category", () => {
+		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
+
+		const trailing = screen.getByText("17 in a row").parentElement;
+
+		expect(trailing).toContainElement(
+			screen.getByRole("link", { name: "@sabrina" })
+		);
 	});
 
 	it("rings the avatar and greens the figure when the seat is your own", () => {

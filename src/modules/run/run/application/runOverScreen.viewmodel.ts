@@ -430,6 +430,7 @@ export type RunOverScreenFrame = {
 	view: RunView;
 	runNumber?: number | null;
 	archiveAfterKb?: number;
+	startRefusal?: string;
 	on: RunOverScreenHandlers;
 };
 
@@ -437,6 +438,7 @@ export const runOverScreenPropsFor = ({
 	view,
 	runNumber = null,
 	archiveAfterKb,
+	startRefusal,
 	on,
 }: RunOverScreenFrame): RunOverScreenProps => {
 	const props = runOverPropsFor(
@@ -447,7 +449,11 @@ export const runOverScreenPropsFor = ({
 		...props,
 		footer: {
 			...props.footer,
-			action: { ...props.footer.action, onPress: on.onNewRun },
+			refusal: startRefusal,
+			action: {
+				...props.footer.action,
+				onPress: startRefusal === undefined ? on.onNewRun : undefined,
+			},
 			asides: (props.footer.asides ?? []).map((aside) => ({
 				...aside,
 				onPress: on.onCommunity,

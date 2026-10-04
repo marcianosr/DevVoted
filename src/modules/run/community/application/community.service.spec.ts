@@ -164,7 +164,7 @@ const standing = (
 ) => ({
 	handle: null,
 	titles: [],
-	theme: "pallet" as const,
+	theme: "gate-pallet" as const,
 	coverageUnits: 0,
 	streak: 0,
 	storageKb: 0,
@@ -329,7 +329,6 @@ describe("getRunCommunityService", () => {
 		expect(result.success).toBe(true);
 		if (result.success) {
 			expect(result.data.polls).toEqual([]);
-			expect(result.data.topPercent).toBeNull();
 		}
 	});
 
@@ -448,7 +447,7 @@ describe("getRunCommunityService", () => {
 		expect(JSON.stringify(missed)).not.toContain("Pallet Town");
 	});
 
-	it("computes the day percentile against everyone who climbed", async () => {
+	it("counts everyone who climbed today", async () => {
 		arrange();
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
@@ -457,7 +456,6 @@ describe("getRunCommunityService", () => {
 		if (!result.success) return;
 
 		expect(result.data.totalPlayers).toBe(3);
-		expect(result.data.topPercent).toBe(67);
 	});
 
 	it("seats all twelve categories on each board, held first", async () => {
@@ -567,7 +565,7 @@ describe("getRunCommunityService climb map", () => {
 				coveragePercent: 0,
 				streak: 0,
 				titles: [],
-				theme: "pallet",
+				theme: "gate-pallet",
 				storageKb: 0,
 			},
 			{
@@ -582,8 +580,8 @@ describe("getRunCommunityService climb map", () => {
 				closingBand: "shaky",
 				startedAtGate: 0,
 				titles: ["Completionist"],
-				theme: "pallet",
-				coveragePercent: 37,
+				theme: "gate-pallet",
+				coveragePercent: 56,
 				streak: 0,
 				storageKb: 0,
 				bestCategory: "js",
@@ -602,7 +600,7 @@ describe("getRunCommunityService climb map", () => {
 				coveragePercent: 0,
 				streak: 6,
 				titles: [],
-				theme: "pallet",
+				theme: "gate-pallet",
 				storageKb: 896,
 			},
 		]);
@@ -697,7 +695,7 @@ describe("getRunCommunityService climb map", () => {
 				coveragePercent: 0,
 				streak: 0,
 				titles: [],
-				theme: "pallet",
+				theme: "gate-pallet",
 				storageKb: 130,
 				lootKb: 100,
 				lootedById: null,
@@ -716,7 +714,7 @@ describe("getRunCommunityService climb map", () => {
 				coveragePercent: 0,
 				streak: 0,
 				titles: [],
-				theme: "pallet",
+				theme: "gate-pallet",
 				storageKb: 100,
 				lootKb: 42,
 				lootedById: RED,
@@ -782,7 +780,7 @@ describe("getRunCommunityService climb map", () => {
 		expect(result.success).toBe(true);
 		if (!result.success) return;
 		const you = result.data.climb?.climbers.find((climber) => climber.you);
-		expect(you?.coveragePercent).toBe(37);
+		expect(you?.coveragePercent).toBe(56);
 	});
 
 	it("names the category a climber has answered right most often", async () => {

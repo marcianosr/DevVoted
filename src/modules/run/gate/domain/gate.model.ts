@@ -214,5 +214,8 @@ export const accuracyOf = (window: WindowTally): AccuracyTally => ({
 	available: window.accuracyAvailable,
 });
 
-export const windowOutputOf = (window: WindowTally): number =>
-	gateOutputOf(window.unitsEarned, accuracyOf(window));
+export const windowOutputOf = (
+	window: WindowTally,
+	accuracyBonus: number
+): number =>
+	gateOutputOf(window.unitsEarned, accuracyBonus, accuracyOf(window));

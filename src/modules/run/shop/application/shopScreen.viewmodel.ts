@@ -281,7 +281,7 @@ export const shopHeaderFor = (
 		...(heldAudit === undefined
 			? {}
 			: { held: auditLabelOf(heldAudit, cleared) }),
-		swatch: gateSwatchAt(cleared),
+		swatch: gateSwatchAt(cleared + 1),
 		swatches: swatchTrackFor(swatchGates, cleared + 1),
 		funds: {
 			...fundsOf(balanceKb, BALANCE_WORD),

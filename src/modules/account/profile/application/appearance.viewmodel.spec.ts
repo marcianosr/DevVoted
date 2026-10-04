@@ -20,7 +20,7 @@ const NEWBIE = "title-rank-poll-newbie";
 const TESTER = "title-legacy-tester";
 const CSS_CARRIER = "title-answered-css";
 const BIKESHEDDER = "title-it-compiles";
-const CASCADE = "swatch-cascade";
+const CERULEAN = "swatch-cerulean";
 
 const IDENTITY: ProfileIdentity = {
 	displayName: "misty_cerulean",
@@ -34,11 +34,11 @@ const IDENTITY: ProfileIdentity = {
 
 const INPUT: AppearanceInput = {
 	identity: IDENTITY,
-	look: { borderId: STACK_TRACE, titleIds: [TESTER], swatchId: CASCADE },
+	look: { borderId: STACK_TRACE, titleIds: [TESTER], swatchId: CERULEAN },
 	tryingOnId: null,
 	ownedBorderIds: [STACK_TRACE],
 	ownedTitleIds: [NEWBIE, TESTER, CSS_CARRIER],
-	ownedSwatchIds: [CASCADE],
+	ownedSwatchIds: [CERULEAN],
 };
 
 const imageOf = (borderId: string) => findBorderById(borderId)?.image;
@@ -65,9 +65,9 @@ describe("appearanceFor", () => {
 			swatches.find((swatch) => swatch.id === id)?.state;
 
 		expect(swatches).toHaveLength(ALL_SWATCHES.length);
-		expect(stateOf(CASCADE)).toBe("worn");
+		expect(stateOf(CERULEAN)).toBe("worn");
 		expect(stateOf("swatch-pallet")).toBe("owned");
-		expect(stateOf("swatch-earth")).toBe("locked");
+		expect(stateOf("swatch-viridian")).toBe("locked");
 	});
 
 	it("wears the pallet swatch when the draft wears none", () => {

@@ -13,7 +13,7 @@ const meta: Meta<typeof Pick> = {
 	parameters: { controls: { disable: true } },
 	args: { label: "Drop ESLint", checked: false, onToggle: () => {} },
 	render: (args) => (
-		<Screen gate="lavender" width="narrow">
+		<Screen gate="gate-lavender" width="narrow">
 			<span className={ROW}>
 				<Pick {...args} />
 				<Typography variant="caption" as="span">
@@ -37,7 +37,7 @@ const Toggling = () => {
 	const [checked, setChecked] = useState(false);
 
 	return (
-		<Screen gate="lavender" width="narrow">
+		<Screen gate="gate-lavender" width="narrow">
 			<span className={ROW}>
 				<Pick
 					label="Drop ESLint"

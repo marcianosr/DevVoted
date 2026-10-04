@@ -544,6 +544,7 @@ export type PrepFrame = {
 	window: PrepWindow;
 	bar: CoverageBarProps;
 	coverageGainPercent: number;
+	accuracyBonus?: number;
 	peelKb: number;
 	payout: (correct: number, band: CoverageBandId) => number;
 	estimate?: EstimateControl | null;
@@ -570,6 +571,7 @@ export const prepPropsFor = ({
 	window,
 	bar,
 	coverageGainPercent,
+	accuracyBonus = 0,
 	peelKb,
 	payout,
 	estimate = null,
@@ -617,13 +619,14 @@ export const prepPropsFor = ({
 			held: bar.held,
 			ladder: bar,
 			coverageGainPercent,
+			accuracyBonus,
 			peelKb,
 			answeredThisGate: answeredThisGateOf(answeredPolls, gate),
 			escrows: escrowKbPerCorrect(configs) > 0,
 			catchesFatal: catcherFor(configs) !== undefined,
 			payout,
 		}),
-		scoring: scoringFor(gate),
+		scoring: scoringFor(gate, accuracyBonus),
 		estimate: estimatePickerFor(gate, estimate, estimatedCorrect),
 		sla: slaPickerFor(sla, slaBand),
 		rebase: rebaseListFor(configs, rebaseSlots),
@@ -734,6 +737,7 @@ export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
 			gateStake.perAnswer.coveragePerCorrect,
 			gateStake.gateNumber
 		),
+		accuracyBonus: gateStake.accuracy.carried,
 		peelKb: gateStake.peelSlotsOnFailure * PEEL_KB_PER_SLOT,
 		payout: (correct, band) => {
 			const clearKb = gateClearPayout(

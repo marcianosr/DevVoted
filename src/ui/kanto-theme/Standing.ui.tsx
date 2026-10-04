@@ -68,6 +68,7 @@ export type StandingProps = {
 	build: readonly ConfigChipProps[];
 	freeSlots: number;
 	stats: readonly StandingStat[];
+	withBuild?: boolean;
 };
 
 const readingOf = ({ held, band }: StandingCoverage) => {
@@ -138,13 +139,16 @@ export const Standing = ({
 	build,
 	freeSlots,
 	stats,
+	withBuild = true,
 }: StandingProps) => (
 	<div className={STANDING}>
 		<div className={SECTION}>
 			<GateHeading {...gate} />
 			<CoverageBar {...gate.coverage} pointer />
 		</div>
-		<BuildBlock weight={weight} build={build} freeSlots={freeSlots} />
+		{withBuild ? (
+			<BuildBlock weight={weight} build={build} freeSlots={freeSlots} />
+		) : null}
 		{stats.length === 0 ? null : (
 			<div className={TILES}>
 				{stats.map((stat) => (

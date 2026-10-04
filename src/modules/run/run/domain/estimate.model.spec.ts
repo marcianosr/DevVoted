@@ -214,7 +214,7 @@ describe("the gate settling an estimate", () => {
 
 	it("lets a won bet lift a gate over its own line, which is what settling it inside the window is for", () => {
 		const GATE = 4;
-		const SHORT_OF_OK = 3;
+		const SHORT_OF_OK = 2.5;
 		const underTheLine: RunState = {
 			...answering(TWO_RIGHT),
 			gatesCleared: GATE,

@@ -75,7 +75,7 @@ export type ServiceUnlockGrant = {
 
 const REBUILD_FROM_GATE = 1;
 
-export const CASCADE_GATE = 2;
+export const CERULEAN_GATE = 2;
 
 export const ABANDON_FROM_GATE = 6;
 
@@ -127,7 +127,7 @@ export const REGISTRY_CONTROLS = {
 		detail: "add extra offers throughout the run, against a price",
 		lasts: "run",
 		price: { kind: "steps", kbs: EXTEND_COST_KB },
-		unlock: reached(CASCADE_GATE, "Reach Cascade", "reached Cascade"),
+		unlock: reached(CERULEAN_GATE, "Reach Cerulean", "reached Cerulean"),
 		soldIn: "shop",
 		opensAfterGates: EXTEND_FROM_GATE,
 		carryBytes: EXTEND_CARRY_BYTES,

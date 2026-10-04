@@ -1,4 +1,10 @@
-import type { FocusEvent, MouseEvent, ReactNode } from "react";
+import {
+	type CSSProperties,
+	type FocusEvent,
+	type MouseEvent,
+	type ReactNode,
+	useId,
+} from "react";
 
 import { clsx } from "clsx";
 
@@ -9,13 +15,14 @@ import {
 } from "~/shared/hooks/usePlayerHover.hook";
 import { profilePathFor } from "~/shared/lib/profilePath";
 
-export type ClimberSize = "sm" | "md" | "lg";
+export type ClimberSize = "sm" | "md" | "lg" | "xl";
 
 const CHIP = "relative inline-block shrink-0";
 const SIZE = {
 	sm: "size-7",
 	md: "size-9",
 	lg: "size-16",
+	xl: "size-24",
 } satisfies Record<ClimberSize, string>;
 
 const FACE =
@@ -24,6 +31,7 @@ const FACE_TEXT = {
 	sm: "text-[10px]",
 	md: "text-xs",
 	lg: "text-xl",
+	xl: "text-3xl",
 } satisfies Record<ClimberSize, string>;
 
 const PHOTO = "size-full object-cover";
@@ -42,12 +50,20 @@ const TAG_WORD = "tag";
 
 const STACK = "flex items-center -space-x-1.5";
 const OVERFLOW = "pl-3 text-xs text-theme-muted tabular-nums";
+const MORE =
+	"ml-1.5 cursor-pointer rounded-md px-1.5 py-0.5 text-xs text-theme-muted tabular-nums ring-1 ring-inset ring-theme-faint hover:text-theme-soft focus-visible:outline-2 focus-visible:outline-theme";
+const MORE_PANEL =
+	"popover-anchored rounded-xl border border-theme-faint bg-theme-raised p-3 text-xs text-theme-muted shadow-lg";
+const MORE_FACES = "flex max-h-64 max-w-xs flex-wrap gap-1 overflow-y-auto";
+const MORE_REST = "mt-2 block";
 
 const FACE_LINK =
 	"inline-flex shrink-0 rounded-md focus:outline-none focus-visible:ring-2";
 
 export const COPY = {
 	profileOf: (name: string) => `${name}'s profile`,
+	showMore: (count: number) => `show ${count.toLocaleString()} more players`,
+	andMore: (count: number) => `and ${count.toLocaleString()} more`,
 } as const;
 
 const YOU_NAME = "you";
@@ -73,6 +89,7 @@ export type ClimberProps = {
 	dimmed?: boolean;
 	size?: ClimberSize;
 	userId?: string;
+	onPress?: () => void;
 };
 
 const anchorOf = (element: Element): PlayerAnchor => {
@@ -160,32 +177,109 @@ const Face = ({
 	</span>
 );
 
-export const Climber = ({ userId, ...face }: ClimberProps) =>
-	userId === undefined ? (
+const PressableFace = ({
+	onPress,
+	...face
+}: Omit<ClimberProps, "userId"> & { onPress: () => void }) => (
+	<button
+		type="button"
+		aria-label={face.name}
+		className={FACE_LINK}
+		onClick={onPress}
+	>
+		<Face {...face} titled />
+	</button>
+);
+
+export const Climber = ({ userId, onPress, ...face }: ClimberProps) => {
+	if (onPress !== undefined)
+		return <PressableFace {...face} onPress={onPress} />;
+
+	return userId === undefined ? (
 		<Face {...face} titled />
 	) : (
 		<PlayerFaceLink userId={userId} name={face.name}>
 			<Face {...face} titled={false} />
 		</PlayerFaceLink>
 	);
+};
 
 export type ClimberStackProps = {
 	climbers: readonly ClimberProps[];
 	overflow?: number;
+	shown?: number;
 	size?: ClimberSize;
+};
+
+const popoverAnchorOf = (id: string) => `--more-${id.replaceAll(":", "")}`;
+
+const MorePlayers = ({
+	hidden,
+	overflow,
+	size,
+}: {
+	hidden: readonly ClimberProps[];
+	overflow: number;
+	size: ClimberSize;
+}) => {
+	const id = useId();
+	const anchor = popoverAnchorOf(id);
+	const count = hidden.length + overflow;
+	const trigger: CSSProperties = { anchorName: anchor };
+	const panel: CSSProperties = { positionAnchor: anchor };
+
+	return (
+		<>
+			<button
+				type="button"
+				popoverTarget={id}
+				aria-label={COPY.showMore(count)}
+				style={trigger}
+				className={MORE}
+			>
+				{`+${count.toLocaleString()}`}
+			</button>
+			<div id={id} popover="auto" style={panel} className={MORE_PANEL}>
+				<span className={MORE_FACES}>
+					{hidden.map((climber) => (
+						<Climber
+							key={climber.userId ?? climber.name}
+							{...climber}
+							size={size}
+						/>
+					))}
+				</span>
+				{overflow === 0 ? null : (
+					<span className={MORE_REST}>{COPY.andMore(overflow)}</span>
+				)}
+			</div>
+		</>
+	);
 };
 
 export const ClimberStack = ({
 	climbers,
 	overflow = 0,
+	shown = climbers.length,
 	size = "sm",
-}: ClimberStackProps) => (
-	<span className={STACK}>
-		{climbers.map((climber) => (
-			<Climber key={climber.userId ?? climber.name} {...climber} size={size} />
-		))}
-		{overflow === 0 ? null : (
-			<span className={OVERFLOW}>{`+${overflow.toLocaleString()}`}</span>
-		)}
-	</span>
-);
+}: ClimberStackProps) => {
+	const hidden = climbers.slice(shown);
+
+	return (
+		<span className={STACK}>
+			{climbers.slice(0, shown).map((climber) => (
+				<Climber
+					key={climber.userId ?? climber.name}
+					{...climber}
+					size={size}
+				/>
+			))}
+			{hidden.length === 0 ? null : (
+				<MorePlayers hidden={hidden} overflow={overflow} size={size} />
+			)}
+			{hidden.length === 0 && overflow > 0 ? (
+				<span className={OVERFLOW}>{`+${overflow.toLocaleString()}`}</span>
+			) : null}
+		</span>
+	);
+};

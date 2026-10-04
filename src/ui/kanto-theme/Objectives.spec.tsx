@@ -15,7 +15,7 @@ const CLEAR: Objective = {
 	statement: ["Finish at ", { band: "ok" }, " or better"],
 	earns: [
 		"earns ",
-		{ figure: "advance to Boulder" },
+		{ figure: "advance to Pewter" },
 		{ figure: "+13 KB", band: "ok" },
 		" or more",
 	],
@@ -36,7 +36,7 @@ describe("Objectives", () => {
 		expect(screen.getByText("Finish at")).toBeInTheDocument();
 		expect(screen.getByText("OK")).toBeInTheDocument();
 		expect(screen.getByText("or better")).toBeInTheDocument();
-		expect(screen.getByText("advance to Boulder")).toBeInTheDocument();
+		expect(screen.getByText("advance to Pewter")).toBeInTheDocument();
 		expect(screen.getByText("+13 KB")).toBeInTheDocument();
 	});
 
@@ -63,7 +63,7 @@ describe("Objectives", () => {
 
 		expect(screen.getByText("Pallet swatch")).toBeInTheDocument();
 		expect(
-			container.querySelector('[data-swatch-theme="pallet"]')
+			container.querySelector('[data-swatch-theme="gate-pallet"]')
 		).not.toBeNull();
 	});
 

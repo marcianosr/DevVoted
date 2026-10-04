@@ -15,9 +15,5 @@ export default meta;
 type Story = StoryObj<typeof ProfileClimbing>;
 
 export const ARunIsOpen: Story = {
-	args: { standing: kantoStanding(), meta: "a run is open" },
-};
-
-export const NothingOpen: Story = {
-	args: { meta: "nothing open" },
+	args: kantoStanding(),
 };

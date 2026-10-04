@@ -1,11 +1,11 @@
 ---
 # DVTD-3q07
 title: Start new run does nothing when today's polls are spent
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-22T18:49:00Z
-updated_at: 2026-09-24T12:49:37Z
+updated_at: 2026-10-03T15:47:02Z
 parent: DVTD-0x5c
 blocking:
     - DVTD-ecjo
@@ -16,9 +16,9 @@ blocking:
 **Why:** Today the press does nothing at all: no error, no countdown, no explanation.
 
 ## Done when
-- [ ] Pressing Start new run on a spent day says why, and when polls return
-- [ ] An open day still starts a run from that screen
-- [ ] A spec covers both cases
+- [x] Pressing Start new run on a spent day says why, and when polls return
+- [x] An open day still starts a run from that screen
+- [x] A spec covers both cases
 
 ## Notes
 
@@ -72,3 +72,7 @@ Worth fixing together — one rule about when the day is spent, applied at every
 - Refuse the press on `/run/over` when the window is spent, stating the countdown
 - Decide whether the refusal needs a `RunOverScreen.ui` prop or rides `onPress`
 - Spec: exhausted window shows the countdown, open window still starts a run
+
+## Summary of Changes (2026-10-03)
+
+`runOverScreenPropsFor` takes a `startRefusal`: the press goes dead and the footer states the refusal, which the footer already supported, so no kit change. `RunOver` fills it from `startRefusalFor` (the same day-spent rule as the hub), falls back to the server's refusal, and on success navigates with `resumeTarget` like the hub does.

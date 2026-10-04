@@ -77,7 +77,7 @@ describe(configdex, () => {
 		if (locked.state !== "locked") throw new Error("expected locked");
 		expect(locked.thematic).toEqual({
 			kind: "one-shot",
-			text: "Clear Marsh's Mirror audit without a miss",
+			text: "Clear Saffron's Mirror audit without a miss",
 			done: false,
 		});
 	});

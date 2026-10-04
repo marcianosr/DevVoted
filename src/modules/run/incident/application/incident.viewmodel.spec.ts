@@ -28,14 +28,33 @@ describe("incidentFeedRowFor", () => {
 	it("names both parties, the audit and the gate it lands on", () => {
 		expect(incidentFeedRowFor(row, "brock")).toEqual({
 			id: 5,
-			sentBy: "Red",
-			target: "Misty",
+			sentBy: { userId: "red", name: "Red", you: false },
+			target: { userId: "misty", name: "Misty", you: false },
 			code: 404,
 			name: "Not Found",
 			gate: 6,
 			status: "locked",
 			own: false,
 		});
+	});
+
+	it("hands over each party's face, and marks the viewer's own", () => {
+		const faced = incidentFeedRowFor(
+			{
+				...row,
+				sentBy: { ...row.sentBy, photoUrl: "/editors/red.png" },
+				target: { ...row.target, borderUrl: "/borders/gold.png" },
+			},
+			"red"
+		);
+
+		expect(faced.sentBy).toEqual({
+			userId: "red",
+			name: "Red",
+			photoUrl: "/editors/red.png",
+			you: true,
+		});
+		expect(faced.target.borderUrl).toBe("/borders/gold.png");
 	});
 
 	it("rings a row the viewer fired or was hit by", () => {

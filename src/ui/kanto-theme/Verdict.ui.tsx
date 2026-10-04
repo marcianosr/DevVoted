@@ -23,18 +23,27 @@ const RUNG_FIGURE = new Map([
 	[0.75, "¾"],
 ]);
 
-const COLUMN = "flex w-24 shrink-0 justify-start";
+const WIDTH = {
+	column: "flex w-24 shrink-0 justify-start",
+	fit: "flex shrink-0",
+} satisfies Record<VerdictWidth, string>;
 
 const rungFigureFor = (share: number | undefined): string | undefined =>
 	share === undefined ? undefined : RUNG_FIGURE.get(share);
 
-export type VerdictProps = { outcome: VerdictOutcome; share?: number };
+export type VerdictWidth = "column" | "fit";
 
-export const Verdict = ({ outcome, share }: VerdictProps) => {
+export type VerdictProps = {
+	outcome: VerdictOutcome;
+	share?: number;
+	width?: VerdictWidth;
+};
+
+export const Verdict = ({ outcome, share, width = "column" }: VerdictProps) => {
 	const rung = outcome === "partial" ? rungFigureFor(share) : undefined;
 
 	return (
-		<span className={COLUMN}>
+		<span className={WIDTH[width]}>
 			<Badge color={VERDICT_COLOR[outcome]}>
 				{rung === undefined
 					? VERDICT_WORD[outcome]

@@ -11,7 +11,7 @@ import { SwatchTrack } from "./SwatchTrack.ui";
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
 const PALLET = gateSwatchAt(0);
-const ELITE = gateSwatchAt(11);
+const INDIGO_ELITE = gateSwatchAt(11);
 const CHAMPION = gateSwatchAt(12);
 
 const swatchesIn = (container: HTMLElement) =>
@@ -61,10 +61,15 @@ describe("Swatch", () => {
 		expect(container.firstChild).not.toHaveClass("bg-theme");
 	});
 
-	it("rings the Elite plate so indigo reads against the page", () => {
-		const { container } = render(<Swatch state="discovered" swatch={ELITE} />);
+	it("rings the Indigo Elite plate so indigo reads against the page", () => {
+		const { container } = render(
+			<Swatch state="discovered" swatch={INDIGO_ELITE} />
+		);
 
-		expect(container.firstChild).toHaveAttribute("data-swatch-theme", "elite");
+		expect(container.firstChild).toHaveAttribute(
+			"data-swatch-theme",
+			"gate-indigo-elite"
+		);
 		expect(container.firstChild).toHaveClass(
 			"bg-theme",
 			"ring-1",
@@ -121,9 +126,9 @@ describe("Swatch", () => {
 			expect(container.firstChild).not.toHaveClass("bg-legendary");
 		});
 
-		it("rings the Elite plate on top of the plate, not instead of it", () => {
+		it("rings the Indigo Elite plate on top of the plate, not instead of it", () => {
 			const { container } = render(
-				<Swatch state="discovered" swatch={ELITE} marked />
+				<Swatch state="discovered" swatch={INDIGO_ELITE} marked />
 			);
 
 			expect(container.firstChild).toHaveClass(

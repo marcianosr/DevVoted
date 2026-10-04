@@ -30,7 +30,7 @@ const props = (
 		storage: 106,
 	},
 	press: {
-		label: "Continue to Thunder",
+		label: "Continue to Vermilion",
 		note: "5 polls ready · prep first",
 		pollsLeft: 5,
 		onPress: () => {},
@@ -73,7 +73,7 @@ const props = (
 		count: 38,
 		detail: "players answered today",
 		ahead: 4,
-		aheadDetail: "at Thunder or ahead",
+		aheadDetail: "at Vermilion or ahead",
 		href: "/run/community",
 	},
 	...overrides,
@@ -111,7 +111,7 @@ describe("TodayScreen", () => {
 			);
 
 			await userEvent.click(
-				press(/Continue to Thunder · 5 polls ready · prep first/)
+				press(/Continue to Vermilion · 5 polls ready · prep first/)
 			);
 
 			expect(onPress).toHaveBeenCalledOnce();
@@ -122,7 +122,7 @@ describe("TodayScreen", () => {
 				<TodayScreen
 					{...props({
 						press: {
-							label: "Thunder opens in 11h 16m",
+							label: "Vermilion opens in 11h 16m",
 							note: "today’s polls are done · come back tomorrow",
 							pollsLeft: 5,
 						},
@@ -130,7 +130,7 @@ describe("TodayScreen", () => {
 				/>
 			);
 
-			expect(press(/Thunder opens in 11h 16m/)).toBeDisabled();
+			expect(press(/Vermilion opens in 11h 16m/)).toBeDisabled();
 		});
 	});
 
@@ -194,7 +194,7 @@ describe("TodayScreen", () => {
 								id: "not-found",
 								code: 404,
 								name: "Not Found",
-								cue: "waits at Thunder · it replaces one audit",
+								cue: "waits at Vermilion · it replaces one audit",
 								sender: "@erika",
 							},
 						],
@@ -204,7 +204,7 @@ describe("TodayScreen", () => {
 
 			expect(screen.getByText("404")).toBeInTheDocument();
 			expect(
-				screen.getByText("waits at Thunder · it replaces one audit")
+				screen.getByText("waits at Vermilion · it replaces one audit")
 			).toBeInTheDocument();
 			expect(screen.getByText(/@erika/)).toBeInTheDocument();
 		});
@@ -226,7 +226,7 @@ describe("TodayScreen", () => {
 		it("projects the next gate with its share of coverage", () => {
 			render(<TodayScreen {...props()} />);
 
-			expect(screen.getByText("Thunder · next")).toBeInTheDocument();
+			expect(screen.getByText("Vermilion · next")).toBeInTheDocument();
 			expect(screen.getByText("OK 40%")).toBeInTheDocument();
 			expect(screen.getByText("+40 KB")).toBeInTheDocument();
 		});
@@ -258,7 +258,7 @@ describe("TodayScreen", () => {
 			render(<TodayScreen {...props()} />);
 
 			expect(screen.getByText("38")).toBeInTheDocument();
-			expect(screen.getByText("at Thunder or ahead")).toBeInTheDocument();
+			expect(screen.getByText("at Vermilion or ahead")).toBeInTheDocument();
 			expect(screen.getByRole("link", { name: /Community/ })).toHaveAttribute(
 				"href",
 				"/run/community"

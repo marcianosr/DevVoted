@@ -98,7 +98,7 @@ describe("applyAccountGrants", () => {
 	it("appends each swatch to the account without repeating one it holds", async () => {
 		await applyAccountGrants(db, RED, {
 			...NOTHING_GRANTED,
-			swatchIds: ["swatch-pallet", "swatch-boulder"],
+			swatchIds: ["swatch-pallet", "swatch-pewter"],
 		});
 
 		expect(mock.updateTables).toEqual([usersTable, usersTable]);

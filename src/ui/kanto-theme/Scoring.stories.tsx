@@ -9,9 +9,9 @@ import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 
 const PALLET_GATE = 0;
-const THUNDER_GATE = 3;
+const VERMILION_GATE = 3;
 const LAVENDER_GATE = 4;
-const ELITE_GATE = 11;
+const INDIGO_ELITE_GATE = 11;
 const CHAMPION_GATE = 12;
 
 const SWEEP = "grid w-full gap-8 xl:grid-cols-2";
@@ -42,9 +42,11 @@ export const AtLavender: Story = {};
 
 export const AtPallet: Story = { args: kantoScoringAt(PALLET_GATE) };
 
-export const AtThunder: Story = { args: kantoScoringAt(THUNDER_GATE) };
+export const AtVermilion: Story = { args: kantoScoringAt(VERMILION_GATE) };
 
-export const AtElite: Story = { args: kantoScoringAt(ELITE_GATE) };
+export const AtIndigoElite: Story = {
+	args: kantoScoringAt(INDIGO_ELITE_GATE),
+};
 
 export const AtTheChampion: Story = { args: kantoScoringAt(CHAMPION_GATE) };
 

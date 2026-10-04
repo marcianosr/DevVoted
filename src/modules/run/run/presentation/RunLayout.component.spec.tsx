@@ -117,7 +117,7 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
-		expect(await screen.findByText("#1 - Boulder Gate")).toBeVisible();
+		expect(await screen.findByText("#1 - Pewter Gate")).toBeVisible();
 	});
 
 	it("sends a day without a run to the start screen", async () => {
@@ -191,7 +191,6 @@ describe("run route sync", () => {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
 				players: [],
-				topPercent: null,
 				leaders: [],
 				polls: [],
 				climb: null,
@@ -222,7 +221,6 @@ describe("run route sync", () => {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
 				players: [],
-				topPercent: null,
 				leaders: [],
 				polls: [],
 				climb: null,
@@ -255,7 +253,6 @@ describe("run route sync", () => {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
 				players: [],
-				topPercent: null,
 				leaders: [],
 				polls: [],
 				climb: null,
@@ -290,7 +287,7 @@ describe("run route sync", () => {
 
 		const router = renderRunRoutes("/run/prep");
 		await user.click(
-			await screen.findByRole("button", { name: /Start Boulder/ })
+			await screen.findByRole("button", { name: /Start Pewter/ })
 		);
 
 		await waitFor(() =>
@@ -370,7 +367,6 @@ describe("run route sync", () => {
 				date: TEST_DATES.birthday,
 				totalPlayers: 3,
 				players: [],
-				topPercent: null,
 				leaders: [],
 				polls: [],
 				climb: null,

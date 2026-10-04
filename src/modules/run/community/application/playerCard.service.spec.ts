@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPlayerCardService } from "~/modules/run/community/application/playerCard.service";
+import { ALL_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
 
 const {
 	fetchPublicProfile,
@@ -83,10 +84,23 @@ describe("getPlayerCardService", () => {
 				displayName: "misty",
 				photoUrl: "/editors/misty.png",
 				titles: ["Ship It"],
-				theme: "pallet",
+				theme: "gate-pallet",
 				authorship: { published: 0, answers: 0 },
+				pollsAnswered: 0,
+				swatchGates: [],
 			},
 		});
+	});
+
+	it("carries the gates whose swatch the player owns", async () => {
+		fetchPublicProfile.mockResolvedValue({
+			...PROFILE,
+			ownedSwatchIds: [ALL_SWATCHES[0].id, ALL_SWATCHES[4].id],
+		});
+
+		const response = await getPlayerCardService(MISTY);
+
+		expect(response.success && response.data.swatchGates).toEqual([0, 4]);
 	});
 
 	it("credits a poll editor with the polls they published and the answers drawn", async () => {
@@ -122,24 +136,24 @@ describe("getPlayerCardService", () => {
 	it("wears the swatch the player owns and wears", async () => {
 		fetchPublicProfile.mockResolvedValue({
 			...PROFILE,
-			ownedSwatchIds: ["swatch-cascade"],
-			equippedSwatchId: "swatch-cascade",
+			ownedSwatchIds: ["swatch-cerulean"],
+			equippedSwatchId: "swatch-cerulean",
 		});
 
 		const response = await getPlayerCardService(MISTY);
 
-		expect(response.success && response.data.theme).toBe("cascade");
+		expect(response.success && response.data.theme).toBe("gate-cerulean");
 	});
 
 	it("falls back to pallet for a worn swatch the player does not own", async () => {
 		fetchPublicProfile.mockResolvedValue({
 			...PROFILE,
-			equippedSwatchId: "swatch-cascade",
+			equippedSwatchId: "swatch-cerulean",
 		});
 
 		const response = await getPlayerCardService(MISTY);
 
-		expect(response.success && response.data.theme).toBe("pallet");
+		expect(response.success && response.data.theme).toBe("gate-pallet");
 	});
 
 	it("carries no run when the player has none open", async () => {

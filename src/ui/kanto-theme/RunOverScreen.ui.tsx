@@ -133,10 +133,10 @@ const CoveragePanel = ({
 		<Panel.Header
 			label={COVERAGE_TITLE}
 			meta={<Meta reading={meta} badge={badge} />}
+			summary={<Figures text={note} />}
 		/>
 		<Panel.Body>
 			<CoverageBar {...bar} pin marks="rungs" />
-			<Typography variant="hint">{note}</Typography>
 		</Panel.Body>
 	</Panel>
 );
@@ -167,9 +167,7 @@ const CategoryRow = ({ row }: { row: RunOverCategory }) => (
 		theme={row.theme}
 		trailing={
 			<>
-				<Typography variant="hint" as="span">
-					{row.score}
-				</Typography>
+				<Badge>{row.score}</Badge>
 				{row.tag === undefined ? null : (
 					<Badge color={row.tag.color}>{row.tag.label}</Badge>
 				)}
@@ -187,7 +185,10 @@ const CategoryRow = ({ row }: { row: RunOverCategory }) => (
 
 const CategoriesPanel = ({ meta, rows }: RunOverCategories) => (
 	<Panel>
-		<Panel.Header label={CATEGORIES_TITLE} meta={<Meta reading={meta} />} />
+		<Panel.Header
+			label={CATEGORIES_TITLE}
+			meta={<Meta badge={{ label: meta }} />}
+		/>
 		<Panel.Rows>
 			{rows.map((row) => (
 				<CategoryRow key={row.name} row={row} />
@@ -286,7 +287,7 @@ export const RunOverScreen = ({
 }: RunOverScreenProps) => {
 	const body = (
 		<>
-			<Header {...header} pinned />
+			<Header {...header} noteFigures pinned />
 
 			<CoveragePanel bar={bar} {...coverage} />
 

@@ -6,6 +6,7 @@ import { useTitleState } from "~/modules/account/profile/application/useTitleSta
 import { borderUrlOf } from "~/modules/account/profile/domain/border.model";
 import { wornTitleNames } from "~/modules/account/profile/domain/title.model";
 import { pollsBadgeFor } from "~/modules/run/run/application/todayScreen.viewmodel";
+import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftToday.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { POLLS_PATH, SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
@@ -32,6 +33,7 @@ export const Nav = ({ user }: NavProps) => {
 	});
 
 	const { view } = useTodaysRun(user !== null);
+	const pollsLeftToday = usePollsLeftToday(user !== null);
 	const countdown = useNextPollsCountdown();
 	const archive = useArchiveState(user?.id);
 	const titles = useTitleState(user?.id);
@@ -57,7 +59,7 @@ export const Nav = ({ user }: NavProps) => {
 			signInHref={SIGN_IN}
 			run={{
 				href: RUN,
-				pollsLeft: pollsBadgeFor(view, countdown),
+				pollsLeft: pollsBadgeFor(view, countdown, pollsLeftToday.view),
 				active: isInTheRun(pathname),
 			}}
 			community={{ href: COMMUNITY, active: pathname === COMMUNITY }}

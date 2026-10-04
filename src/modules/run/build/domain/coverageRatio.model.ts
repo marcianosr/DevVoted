@@ -27,19 +27,19 @@ export type GateRung = {
 };
 
 export const GATE_RUNGS: readonly GateRung[] = [
-	{ slots: 9, floor: 0, ok: 20, healthy: 40 },
-	{ slots: 9, floor: 5, ok: 25, healthy: 44 },
-	{ slots: 9, floor: 11, ok: 29, healthy: 47 },
-	{ slots: 9, floor: 16, ok: 34, healthy: 51 },
-	{ slots: 9, floor: 22, ok: 38, healthy: 55 },
-	{ slots: 10, floor: 27, ok: 43, healthy: 58 },
-	{ slots: 10, floor: 33, ok: 47, healthy: 62 },
-	{ slots: 10, floor: 38, ok: 52, healthy: 65 },
-	{ slots: 10, floor: 44, ok: 56, healthy: 69 },
-	{ slots: 11, floor: 49, ok: 61, healthy: 73 },
-	{ slots: 11, floor: 55, ok: 65, healthy: 76 },
-	{ slots: 11, floor: 60, ok: 70, healthy: 80 },
-	{ slots: 11, floor: 65, ok: 74, healthy: 84 },
+	{ slots: 5, floor: 0, ok: 52, healthy: 64 },
+	{ slots: 5, floor: 43, ok: 55, healthy: 66 },
+	{ slots: 6, floor: 47, ok: 57, healthy: 68 },
+	{ slots: 6, floor: 50, ok: 60, healthy: 71 },
+	{ slots: 7, floor: 53, ok: 63, healthy: 73 },
+	{ slots: 7, floor: 56, ok: 66, healthy: 75 },
+	{ slots: 7, floor: 60, ok: 68, healthy: 77 },
+	{ slots: 8, floor: 63, ok: 71, healthy: 79 },
+	{ slots: 8, floor: 66, ok: 74, healthy: 81 },
+	{ slots: 9, floor: 69, ok: 77, healthy: 84 },
+	{ slots: 9, floor: 73, ok: 79, healthy: 86 },
+	{ slots: 9, floor: 76, ok: 82, healthy: 88 },
+	{ slots: 10, floor: 79, ok: 84, healthy: 90 },
 ];
 
 export const HEAD_START_SHARE = 0.1;
@@ -54,16 +54,30 @@ export type AccuracyTally = {
 	readonly available: number;
 };
 
-export const accuracyMultiplierFor = ({
-	earned,
-	available,
-}: AccuracyTally): number =>
-	available <= 0 ? 1 : 2 ** (Math.max(0, earned) / available);
+export const ACCURACY_GAIN_PER_GATE = 0.08;
+export const ACCURACY_LOSS_PER_GATE = 0.04;
+
+export const accuracyBonusAfter = (
+	bonus: number,
+	{ earned, available }: AccuracyTally
+): number => {
+	if (available <= 0) return bonus;
+	const share = asRatio(earned / available);
+	const delta =
+		ACCURACY_GAIN_PER_GATE * share - ACCURACY_LOSS_PER_GATE * (1 - share);
+	return Math.max(0, bonus + delta);
+};
+
+export const accuracyMultiplierFor = (
+	bonus: number,
+	accuracy: AccuracyTally
+): number => 1 + accuracyBonusAfter(bonus, accuracy);
 
 export const gateOutputOf = (
 	pollOutput: number,
+	bonus: number,
 	accuracy: AccuracyTally
-): number => pollOutput * accuracyMultiplierFor(accuracy);
+): number => pollOutput * accuracyMultiplierFor(bonus, accuracy);
 
 export const scoringSlotsAt = (gate: number): number => rungAt(gate).slots;
 

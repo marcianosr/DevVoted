@@ -12,7 +12,10 @@ import {
 	accuracyOf,
 	windowOutputOf,
 } from "~/modules/run/gate/domain/gate.model";
-import { accuracyMultiplierFor } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	ACCURACY_GAIN_PER_GATE,
+	accuracyMultiplierFor,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answerWith,
 	audited,
@@ -71,14 +74,23 @@ const answeredRight = (state: RunState): RunState => {
 	return runReducer(state, { type: "answer", optionIds: [right.id] });
 };
 
+const CARRIED_BONUS = 0.4;
+
+const carrying = (): RunState => ({
+	...started(["js"]),
+	accuracyBonus: CARRIED_BONUS,
+});
+
 const heldAfter = (state: RunState): number =>
 	toRunView(state).gateStake.coverageHeld;
 
 describe("the meter holds the guaranteed floor", () => {
 	it("prices the polls ahead as missed multiples while the mix is unseen", () => {
-		const twoRight = answerWith(answerWith(started(["js"]), true), true);
+		const twoRight = answerWith(answerWith(carrying(), true), true);
 
-		expect(guaranteedWindowOutputOf(twoRight)).toBeCloseTo(2 * 2 ** (2 / 8));
+		expect(guaranteedWindowOutputOf(twoRight)).toBeCloseTo(
+			2 * accuracyMultiplierFor(CARRIED_BONUS, { earned: 2, available: 8 })
+		);
 	});
 
 	it("reads what the close pays once the fifth answer is in", () => {
@@ -86,7 +98,9 @@ describe("the meter holds the guaranteed floor", () => {
 		for (let i = 0; i < 4; i++) state = answerWith(state, true);
 		const fifth = answeredRight(state);
 
-		expect(guaranteedWindowOutputOf(fifth)).toBe(windowOutputOf(fifth.window));
+		expect(guaranteedWindowOutputOf(fifth)).toBe(
+			windowOutputOf(fifth.window, fifth.accuracyBonus)
+		);
 		expect(heldAfter(fifth)).toBe(100);
 	});
 
@@ -108,7 +122,7 @@ describe("the meter holds the guaranteed floor", () => {
 	});
 
 	it("rises on a skip, because a skip keeps the multiplier", () => {
-		const oneRight = answerWith(started(["js"]), true);
+		const oneRight = answerWith(carrying(), true);
 		const skipped = runReducer(oneRight, { type: "skip" });
 
 		expect(guaranteedWindowOutputOf(skipped)).toBeGreaterThan(
@@ -118,11 +132,11 @@ describe("the meter holds the guaranteed floor", () => {
 });
 
 describe("the accuracy reading", () => {
-	it("reads ×1 sure and ×2 at best on an empty window", () => {
+	it("reads ×1 sure and one plus the gain at best on a fresh run's empty window", () => {
 		const fresh = started(["js"]);
 
 		expect(guaranteedMultiplierOf(fresh)).toBe(1);
-		expect(bestMultiplierOf(fresh)).toBe(2);
+		expect(bestMultiplierOf(fresh)).toBe(1 + ACCURACY_GAIN_PER_GATE);
 	});
 
 	it("never raises the best case on a miss", () => {
@@ -138,7 +152,10 @@ describe("the accuracy reading", () => {
 		let state = started(["js"]);
 		for (let i = 0; i < 4; i++) state = answerWith(state, i !== 1);
 		const fifth = answeredRight(state);
-		const closes = accuracyMultiplierFor(accuracyOf(fifth.window));
+		const closes = accuracyMultiplierFor(
+			fifth.accuracyBonus,
+			accuracyOf(fifth.window)
+		);
 
 		expect(guaranteedMultiplierOf(fifth)).toBeCloseTo(closes);
 		expect(bestMultiplierOf(fifth)).toBeCloseTo(closes);

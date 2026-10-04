@@ -14,6 +14,8 @@ import {
 	settleUpkeep,
 } from "~/modules/run/build/domain/buildSpace.model";
 import {
+	accuracyBonusAfter,
+	accuracyMultiplierFor,
 	headStartFor,
 	surplusPayoutKb,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -88,7 +90,8 @@ const gateCloseAt = (
 	build: state.build,
 	headStartUnits: state.headStartUnits,
 	unitsThisGate:
-		windowOutputOf(window) + estimateUnitsAt(state, correctThisGate),
+		windowOutputOf(window, state.accuracyBonus) +
+		estimateUnitsAt(state, correctThisGate),
 	correctThisGate,
 	gatesCleared: state.gatesCleared,
 	schedule: scheduleOf(state),
@@ -146,6 +149,10 @@ export const settleGate = (state: RunState, nextIndex: number): RunState => {
 		ladder: ladderAtClose(close),
 		correct: state.window.correct,
 		accuracy: accuracyOf(state.window),
+		multiplier: accuracyMultiplierFor(
+			state.accuracyBonus,
+			accuracyOf(state.window)
+		),
 	};
 	const recordClose = (kb: number) => ({
 		lastClose,
@@ -282,6 +289,10 @@ export const settleGate = (state: RunState, nextIndex: number): RunState => {
 		),
 		manualDisabled: [],
 		headStartUnits: banked,
+		accuracyBonus: accuracyBonusAfter(
+			state.accuracyBonus,
+			accuracyOf(state.window)
+		),
 		streak: 0,
 		gateAttempts: 0,
 		heldBy: undefined,

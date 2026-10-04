@@ -150,7 +150,7 @@ describe("ShopScreen", () => {
 	it("reads as the shop of the gate it cleared, counting that gate off", () => {
 		render(<ShopScreen {...props} />);
 
-		expect(screen.getByText("Shop · cleared Volcano")).toBeInTheDocument();
+		expect(screen.getByText("Shop · cleared Cinnabar")).toBeInTheDocument();
 		expect(screen.getByText("gate 9 cleared")).toBeInTheDocument();
 	});
 

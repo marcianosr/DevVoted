@@ -30,7 +30,7 @@ const RUN: Standing = {
 describe("standingFor", () => {
 	it("names the gate, its number and its swatch apart", () => {
 		expect(standingFor(RUN).gate).toMatchObject({
-			name: "Thunder",
+			name: "Vermilion",
 			label: "gate 3",
 			swatch: { gate: 3 },
 		});
@@ -71,7 +71,7 @@ describe("standingFor", () => {
 	});
 });
 
-const LOOK = { titles: [], theme: "pallet" } as const satisfies Pick<
+const LOOK = { titles: [], theme: "gate-pallet" } as const satisfies Pick<
 	PlayerCardView,
 	"titles" | "theme"
 >;
@@ -91,13 +91,13 @@ describe("playerCardFor", () => {
 				photoUrl: "/editors/misty.png",
 				borderUrl: "/borders/border-css-cerulean.svg",
 				titles: ["Ship It", "Legacy Tester"],
-				theme: "cascade",
+				theme: "gate-cerulean",
 			})
 		).toMatchObject({
 			photoUrl: "/editors/misty.png",
 			borderUrl: "/borders/border-css-cerulean.svg",
 			titles: ["Ship It", "Legacy Tester"],
-			theme: "cascade",
+			theme: "gate-cerulean",
 		});
 	});
 
@@ -112,7 +112,7 @@ describe("playerCardFor", () => {
 		).toEqual(standingFor(RUN));
 	});
 
-	it("states a contributing author's role, polls published and answers drawn", () => {
+	it("states a contributing author's role, polls published and answers drawn beside the polls they answered", () => {
 		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
 
 		expect(
@@ -121,19 +121,43 @@ describe("playerCardFor", () => {
 				userId: "misty",
 				displayName: "misty",
 				authorship,
+				pollsAnswered: 412,
 			}).contribution
-		).toEqual(authorship);
+		).toEqual({ answered: 412, authored: authorship });
 	});
 
-	it("states no contribution for a player who has published no poll", () => {
+	it("states only the polls answered for a player who has published no poll", () => {
 		expect(
 			playerCardFor({
 				...LOOK,
 				userId: "misty",
 				displayName: "misty",
 				authorship: { role: "Admin", published: 0, answers: 0 },
-			})
+				pollsAnswered: 30,
+			}).contribution
+		).toEqual({ answered: 30 });
+	});
+
+	it("states no contribution where the card does not know the polls answered, as on the climb map", () => {
+		expect(
+			playerCardFor({ ...LOOK, userId: "misty", displayName: "misty" })
 		).not.toHaveProperty("contribution");
+	});
+
+	it("draws the whole swatch track with the earned gates filled", () => {
+		const swatches = playerCardFor({
+			...LOOK,
+			userId: "misty",
+			displayName: "misty",
+			swatchGates: [0, 4],
+		}).swatches;
+
+		expect(swatches).toHaveLength(13);
+		expect(
+			swatches?.flatMap((fill, gate) =>
+				fill.state === "discovered" ? [gate] : []
+			)
+		).toEqual([0, 4]);
 	});
 });
 
@@ -151,16 +175,18 @@ describe("playerCardViewFor", () => {
 	const face = profileFaceOf(MISTY, { published: 12, answers: 1842 }, 40);
 
 	it("draws the card from the same face the profile wears, never the GitHub handle", () => {
-		expect(playerCardViewFor("misty-id", face, null)).toEqual({
+		expect(playerCardViewFor("misty-id", face, [0, 1], null)).toEqual({
 			userId: "misty-id",
 			displayName: "misty",
 			titles: ["Ship It"],
-			theme: "pallet",
+			theme: "gate-pallet",
 			authorship: { role: "Poll editor", published: 12, answers: 1842 },
+			pollsAnswered: 40,
+			swatchGates: [0, 1],
 		});
 	});
 
 	it("carries the open run's standing", () => {
-		expect(playerCardViewFor("misty-id", face, RUN).run).toEqual(RUN);
+		expect(playerCardViewFor("misty-id", face, [], RUN).run).toEqual(RUN);
 	});
 });

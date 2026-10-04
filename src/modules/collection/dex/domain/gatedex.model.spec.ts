@@ -60,12 +60,12 @@ describe("gatedex", () => {
 	});
 
 	it("points 'next' at a gap rather than shifting the rows below it", () => {
-		const skippedBoulder = swatchIdsUpTo(3).filter(
+		const skippedPewter = swatchIdsUpTo(3).filter(
 			(id) => id !== ALL_SWATCHES[1].id
 		);
 
-		expect(rowFor(1, skippedBoulder).state).toBe("next");
-		expect(rowFor(3, skippedBoulder).state).toBe("cleared");
+		expect(rowFor(1, skippedPewter).state).toBe("next");
+		expect(rowFor(3, skippedPewter).state).toBe("cleared");
 	});
 
 	it("counts the cleared rows, which is the tab's numerator", () => {

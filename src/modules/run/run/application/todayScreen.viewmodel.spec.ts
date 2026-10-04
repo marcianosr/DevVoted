@@ -14,6 +14,7 @@ import {
 	pollsBadgeFor,
 	runSoFarFor,
 	shopAsideFor,
+	startRefusalFor,
 	todayPressFor,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
@@ -31,10 +32,12 @@ const answered = (index: number): AnsweredPoll => ({
 
 const OPEN = { isOpen: true, remaining: "0m" };
 const SHUT = { isOpen: false, remaining: "7h 23m" };
+const UNKNOWN = null;
+const DAY_SPENT = 0;
 
 describe(todayPressFor, () => {
 	it("offers a fresh start when no run is open", () => {
-		const press = todayPressFor(null, SHUT);
+		const press = todayPressFor(null, SHUT, UNKNOWN);
 
 		expect(press.kind).toBe("start");
 		expect(press.label).toBe("Start today’s climb");
@@ -42,23 +45,64 @@ describe(todayPressFor, () => {
 	});
 
 	it("offers a fresh start once the last run is over", () => {
-		const press = todayPressFor(createMockRunView({ isOver: true }), SHUT);
+		const press = todayPressFor(
+			createMockRunView({ isOver: true }),
+			SHUT,
+			UNKNOWN
+		);
 
 		expect(press.kind).toBe("start");
 		expect(press.label).toBe("Start today’s climb");
 	});
 
+	it("refuses a fresh start and says when polls return once the day is spent with no run open", () => {
+		const press = todayPressFor(null, SHUT, DAY_SPENT);
+
+		expect(press.kind).toBe("locked");
+		expect(press.label).toBe("New polls in 7h 23m");
+		expect(press.note).toBe("today’s polls are done · come back tomorrow");
+		expect(press.pollsLeft).toBe(0);
+	});
+
+	it("refuses a fresh start once a finished run spent the day", () => {
+		const press = todayPressFor(
+			createMockRunView({ isOver: true, pollsExhausted: false }),
+			SHUT,
+			DAY_SPENT
+		);
+
+		expect(press.kind).toBe("locked");
+	});
+
+	it("counts what the day has left on a fresh start after a part-spent day", () => {
+		const press = todayPressFor(createMockRunView({ isOver: true }), SHUT, 2);
+
+		expect(press.kind).toBe("start");
+		expect(press.pollsLeft).toBe(2);
+	});
+
+	it("offers a fresh start on a spent day once the clock rolls over", () => {
+		const press = todayPressFor(null, OPEN, DAY_SPENT);
+
+		expect(press.kind).toBe("start");
+	});
+
 	it("names the gate it continues to", () => {
-		const press = todayPressFor(createMockRunView({ gatesCleared: 3 }), SHUT);
+		const press = todayPressFor(
+			createMockRunView({ gatesCleared: 3 }),
+			SHUT,
+			UNKNOWN
+		);
 
 		expect(press.kind).toBe("resume");
-		expect(press.label).toBe("Continue to Thunder");
+		expect(press.label).toBe("Continue to Vermilion");
 	});
 
 	it("sends the player to prep first while the gate has not started", () => {
 		const press = todayPressFor(
 			createMockRunView({ status: "rewarding", answeredThisGate: [] }),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.note).toBe("5 polls ready · prep first");
@@ -67,7 +111,8 @@ describe(todayPressFor, () => {
 	it("reads the poll's position once the gate is being answered", () => {
 		const press = todayPressFor(
 			createMockRunView({ status: "answering", answeredThisGate: [] }),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.note).toBe("Poll 1 out of 5");
@@ -80,7 +125,8 @@ describe(todayPressFor, () => {
 				answeredThisGate: [answered(0), answered(1)],
 				pollsLeftToday: 3,
 			}),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.note).toBe(
@@ -95,7 +141,8 @@ describe(todayPressFor, () => {
 				answeredThisGate: [answered(0), answered(1)],
 				pollsLeftToday: 96,
 			}),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.pollsLeft).toBe(3);
@@ -107,7 +154,7 @@ describe(todayPressFor, () => {
 			pollsPerGate: 5,
 			answeredThisGate: [answered(0), answered(1)],
 		});
-		const press = todayPressFor(view, SHUT);
+		const press = todayPressFor(view, SHUT, UNKNOWN);
 
 		expect(press.note).toContain("Poll 3 out of 5");
 		expect(press.pollsLeft).toBe(3);
@@ -119,7 +166,8 @@ describe(todayPressFor, () => {
 				pollsPerGate: 5,
 				answeredThisGate: Array.from({ length: 6 }, answered),
 			}),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.pollsLeft).toBe(0);
@@ -132,18 +180,20 @@ describe(todayPressFor, () => {
 				pollsExhausted: true,
 				pollsLeftToday: 0,
 			}),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
 		expect(press.kind).toBe("locked");
-		expect(press.label).toBe("Thunder opens in 7h 23m");
+		expect(press.label).toBe("Vermilion opens in 7h 23m");
 		expect(press.note).toBe("today’s polls are done · come back tomorrow");
 	});
 
 	it("reopens the moment the clock runs out, without a reload", () => {
 		const press = todayPressFor(
 			createMockRunView({ pollsExhausted: true, pollsLeftToday: 0 }),
-			OPEN
+			OPEN,
+			UNKNOWN
 		);
 
 		expect(press.kind).toBe("resume");
@@ -176,8 +226,8 @@ describe(runSoFarFor, () => {
 			soFar?.rows.map((row) => [row.swatch.gateName, row.band.label, row.kb])
 		).toEqual([
 			["Pallet", "PERFECT", "+32 KB"],
-			["Boulder", "HEALTHY", "+19 KB"],
-			["Cascade", "OK", "+13 KB"],
+			["Pewter", "HEALTHY", "+19 KB"],
+			["Cerulean", "OK", "+13 KB"],
 		]);
 		expect(soFar?.earned).toBe("+64 KB");
 	});
@@ -212,7 +262,7 @@ describe(runSoFarFor, () => {
 			share: "40%",
 			kb: "+40 KB",
 		});
-		expect(soFar?.next?.swatch.gateName).toBe("Thunder");
+		expect(soFar?.next?.swatch.gateName).toBe("Vermilion");
 	});
 
 	it("reads the next gate as not started until its first poll is answered", () => {
@@ -284,7 +334,7 @@ describe(incomingIncidentsFor, () => {
 				id: "not-found",
 				code: 404,
 				name: "Not Found",
-				cue: "waits at Thunder · it replaces one audit",
+				cue: "waits at Vermilion · it replaces one audit",
 				sender: "@erika",
 			},
 		]);
@@ -341,7 +391,7 @@ describe(communityLineFor, () => {
 	it("names how many are at the next gate or ahead", () => {
 		expect(communityLineFor(38, { count: 4, gate: 3 })).toMatchObject({
 			ahead: 4,
-			aheadDetail: "at Thunder or ahead",
+			aheadDetail: "at Vermilion or ahead",
 		});
 	});
 
@@ -406,13 +456,13 @@ describe(shopAsideFor, () => {
 
 describe(pollsBadgeFor, () => {
 	it("counts the whole day before a run is open", () => {
-		expect(pollsBadgeFor(null, SHUT)).toBe(SLICE_WINDOW);
+		expect(pollsBadgeFor(null, SHUT, UNKNOWN)).toBe(SLICE_WINDOW);
 	});
 
 	it("counts the whole day again once the run is over", () => {
-		expect(pollsBadgeFor(createMockRunView({ isOver: true }), SHUT)).toBe(
-			SLICE_WINDOW
-		);
+		expect(
+			pollsBadgeFor(createMockRunView({ isOver: true }), SHUT, UNKNOWN)
+		).toBe(SLICE_WINDOW);
 	});
 
 	it("counts down what the gate has left, not the whole run's pool", () => {
@@ -421,7 +471,7 @@ describe(pollsBadgeFor, () => {
 			pollsLeftToday: 96,
 		});
 
-		expect(pollsBadgeFor(view, SHUT)).toBe(3);
+		expect(pollsBadgeFor(view, SHUT, UNKNOWN)).toBe(3);
 	});
 
 	it("counts one on the gate's last poll", () => {
@@ -429,7 +479,7 @@ describe(pollsBadgeFor, () => {
 			answeredThisGate: [answered(0), answered(1), answered(2), answered(3)],
 		});
 
-		expect(pollsBadgeFor(view, SHUT)).toBe(1);
+		expect(pollsBadgeFor(view, SHUT, UNKNOWN)).toBe(1);
 	});
 
 	it("states nothing rather than a nought once the gate is answered out", () => {
@@ -443,18 +493,42 @@ describe(pollsBadgeFor, () => {
 			],
 		});
 
-		expect(pollsBadgeFor(view, SHUT)).toBeUndefined();
+		expect(pollsBadgeFor(view, SHUT, UNKNOWN)).toBeUndefined();
 	});
 
 	it("states nothing once the day has no polls left", () => {
 		const view = createMockRunView({ pollsExhausted: true });
 
-		expect(pollsBadgeFor(view, SHUT)).toBeUndefined();
+		expect(pollsBadgeFor(view, SHUT, UNKNOWN)).toBeUndefined();
+	});
+
+	it("states nothing when no run is open and the day is spent", () => {
+		expect(pollsBadgeFor(null, SHUT, DAY_SPENT)).toBeUndefined();
 	});
 
 	it("goes back to counting the moment the day rolls over", () => {
 		const view = createMockRunView({ pollsExhausted: true });
 
-		expect(pollsBadgeFor(view, OPEN)).toBe(SLICE_WINDOW);
+		expect(pollsBadgeFor(view, OPEN, UNKNOWN)).toBe(SLICE_WINDOW);
+	});
+});
+
+describe(startRefusalFor, () => {
+	it("refuses a new run with when polls return once the day is spent", () => {
+		expect(
+			startRefusalFor(createMockRunView({ isOver: true }), SHUT, DAY_SPENT)
+		).toBe("New polls in 7h 23m");
+	});
+
+	it("lets a new run start while the day has polls left", () => {
+		expect(
+			startRefusalFor(createMockRunView({ isOver: true }), SHUT, 3)
+		).toBeUndefined();
+	});
+
+	it("lets a new run start while the day's count is still loading", () => {
+		expect(
+			startRefusalFor(createMockRunView({ isOver: true }), SHUT, UNKNOWN)
+		).toBeUndefined();
 	});
 });

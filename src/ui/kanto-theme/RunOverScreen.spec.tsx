@@ -44,7 +44,7 @@ describe("RunOverScreen", () => {
 		const summit = render(<RunOverScreen {...kantoRunSummit()} />);
 
 		expect(
-			summit.container.querySelector("[data-gate-theme='champion']")
+			summit.container.querySelector("[data-gate-theme='gate-champion']")
 		).not.toBe(null);
 	});
 
@@ -57,6 +57,49 @@ describe("RunOverScreen", () => {
 		expect(coverage).not.toHaveTextContent(/\bchanges?\b/i);
 	});
 
+	it("states the coverage shortfall under the panel's header, with its figures badged", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const header = panelFor("coverage").querySelector("header");
+
+		expect(header).toHaveTextContent(/short of the .* line at Lavender/);
+		expect(
+			[...(header?.querySelectorAll(".badge-theme") ?? [])].map(
+				(badge) => badge.textContent
+			)
+		).toEqual(expect.arrayContaining([expect.stringMatching(/%$/)]));
+	});
+
+	it("badges the figures in the header note", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const note = screen.getByText(/against a line of/).parentElement;
+
+		expect(
+			[...(note?.querySelectorAll(".badge-theme") ?? [])].map(
+				(badge) => badge.textContent
+			)
+		).toEqual([
+			expect.stringMatching(/^[\d.]+%$/),
+			expect.stringMatching(/^[\d.]+%$/),
+		]);
+	});
+
+	it("badges each category score and the categories tally", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const badges = [
+			...panelFor("by category").querySelectorAll(".badge-theme"),
+		].map((badge) => badge.textContent);
+
+		expect(badges).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/^\d+ of \d+$/),
+				expect.stringMatching(/^\d+\/\d+$/),
+			])
+		);
+	});
+
 	it("names every gate the run played and totals them beneath", () => {
 		render(<RunOverScreen {...DEAD} />);
 
@@ -64,9 +107,9 @@ describe("RunOverScreen", () => {
 
 		for (const name of [
 			"Pallet",
-			"Boulder",
-			"Cascade",
-			"Thunder",
+			"Pewter",
+			"Cerulean",
+			"Vermilion",
 			"Lavender",
 		]) {
 			expect(screen.getByText(name)).toBeInTheDocument();

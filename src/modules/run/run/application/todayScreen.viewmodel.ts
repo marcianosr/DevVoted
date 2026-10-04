@@ -52,19 +52,40 @@ export type TodayPress = {
 const pollsLeftInGate = (view: RunView): number =>
 	Math.max(0, view.pollsPerGate - view.answeredThisGate.length);
 
-const pollsLeftFor = (view: RunView | null): number =>
-	view === null ? SLICE_WINDOW : pollsLeftInGate(view);
+const isLiveRun = (view: RunView | null): view is RunView =>
+	view !== null && !view.isOver;
 
-const noPollsLeftToday = (view: RunView | null, clock: TodayClock): boolean =>
-	view !== null && view.pollsExhausted && !clock.isOpen;
+const pollsLeftFor = (
+	view: RunView | null,
+	pollsLeftToday: number | null
+): number =>
+	isLiveRun(view) ? pollsLeftInGate(view) : (pollsLeftToday ?? SLICE_WINDOW);
+
+const isDaySpent = (
+	view: RunView | null,
+	clock: TodayClock,
+	pollsLeftToday: number | null
+): boolean => {
+	if (clock.isOpen) return false;
+
+	return isLiveRun(view) ? view.pollsExhausted : pollsLeftToday === 0;
+};
+
+export const startRefusalFor = (
+	view: RunView | null,
+	clock: TodayClock,
+	pollsLeftToday: number | null
+): string | undefined =>
+	isDaySpent(view, clock, pollsLeftToday) ? clockLabel(clock) : undefined;
 
 export const pollsBadgeFor = (
 	view: RunView | null,
-	clock: TodayClock
+	clock: TodayClock,
+	pollsLeftToday: number | null
 ): number | undefined => {
-	if (noPollsLeftToday(view, clock)) return undefined;
+	if (isDaySpent(view, clock, pollsLeftToday)) return undefined;
 
-	const left = pollsLeftFor(view);
+	const left = pollsLeftFor(view, pollsLeftToday);
 
 	return left > 0 ? left : undefined;
 };
@@ -94,14 +115,18 @@ const isWaiting = (view: RunView, clock: TodayClock): boolean =>
 
 export const todayPressFor = (
 	view: RunView | null,
-	clock: TodayClock
+	clock: TodayClock,
+	pollsLeftToday: number | null
 ): TodayPress => {
-	const pollsLeft = pollsLeftFor(view);
+	const pollsLeft = pollsLeftFor(view, pollsLeftToday);
+	const spent = isDaySpent(view, clock, pollsLeftToday);
 
-	if (view === null || view.isOver)
-		return { kind: "start", label: START, note: clockLabel(clock), pollsLeft };
+	if (!isLiveRun(view))
+		return spent
+			? { kind: "locked", label: clockLabel(clock), note: DAY_DONE, pollsLeft }
+			: { kind: "start", label: START, note: clockLabel(clock), pollsLeft };
 
-	if (isWaiting(view, clock))
+	if (spent)
 		return {
 			kind: "locked",
 			label: `${gateNameOf(view)} opens in ${clock.remaining}`,

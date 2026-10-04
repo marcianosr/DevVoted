@@ -99,10 +99,10 @@ describe("the opening build (ADR-057)", () => {
 });
 
 describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
-	const atMarsh = (): RunState => audited(started(["js"]), 7, "mirrored");
+	const atSaffron = (): RunState => audited(started(["js"]), 7, "mirrored");
 
 	it("pays the wrong option at the mirror, streak and all", () => {
-		let state = answerWith(atMarsh(), false);
+		let state = answerWith(atSaffron(), false);
 		expect(state.window.unitsEarned).toBe(BASE_UNIT);
 		expect(state.streak).toBe(1);
 		state = answerWith(state, false);
@@ -111,7 +111,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 
 	it("bleeds the meter on the poll's own correct option", () => {
 		let state: RunState = {
-			...atMarsh(),
+			...atSaffron(),
 			coverage: 100,
 			coverageByCategory: { react: 100 },
 		};
@@ -154,7 +154,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 	});
 
 	it("marks the mirrored expectation as the answer to beat", () => {
-		const state = answerWith(atMarsh(), false);
+		const state = answerWith(atSaffron(), false);
 		const answered = state.answeredThisGate.at(-1);
 		expect(answered?.correct).toEqual(["No"]);
 	});
@@ -174,7 +174,7 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		expect(state.status).toBe("answering");
 	});
 
-	it("ends an Elite run whose build cannot pay the deepened peel", () => {
+	it("ends an Indigo Elite run whose build cannot pay the deepened peel", () => {
 		const state = failGate(atGateWithBuild(11, 1, "strip"));
 		expect(state.status).toBe("dead");
 		expect(state.log.at(-1)).toContain("Run over");
@@ -319,8 +319,8 @@ describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
 		expect(toRunView(state).pollTimeLimitMs).toBeNull();
 	});
 
-	it("charges Marsh its full demand — the mirror no longer discounts it", () => {
-		expect(toRunView(atMarsh()).gateStake.coverageLadder.healthy).toBe(
+	it("charges Saffron its full demand — the mirror no longer discounts it", () => {
+		expect(toRunView(atSaffron()).gateStake.coverageLadder.healthy).toBe(
 			percentOf(healthyAt(7))
 		);
 	});
@@ -552,6 +552,17 @@ describe("the incident desk lives in the shop", () => {
 		const armed = holding(clearGate(started(["js"])));
 
 		expect(runReducer(armed, { type: "fire-audit" }).heldAudit).toBeUndefined();
+	});
+
+	it("files what is held from the build screen too, since the server accepts it there", () => {
+		const building: RunState = {
+			...holding(clearGate(started(["js"]))),
+			status: "configuring",
+		};
+
+		expect(
+			runReducer(building, { type: "fire-audit" }).heldAudit
+		).toBeUndefined();
 	});
 });
 

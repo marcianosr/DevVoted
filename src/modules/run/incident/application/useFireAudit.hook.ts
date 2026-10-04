@@ -7,10 +7,20 @@ import { useRunCommit } from "~/modules/run/run/application/useRunCommit.hook";
 export const useFireAudit = () => {
 	const { commit } = useRunCommit();
 
-	return useMutation({
+	const mutation = useMutation({
 		mutationFn: (data: FireAuditInput) => fireAudit({ data }),
 		onSuccess: (result) => {
 			if (result.success) commit(result);
 		},
 	});
+
+	const refused =
+		mutation.data?.success === false && mutation.variables !== undefined
+			? {
+					targetRunId: mutation.variables.targetRunId,
+					reason: mutation.data.error,
+				}
+			: undefined;
+
+	return { ...mutation, refused };
 };

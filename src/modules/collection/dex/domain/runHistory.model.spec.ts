@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	bestRunIn,
 	deepestGateIn,
 	runHistory,
+	runsWonIn,
 	type RunHistoryRow,
 } from "./runHistory.model";
 
@@ -33,7 +35,7 @@ describe("runHistory", () => {
 	});
 
 	it("reads coverage as a share of every codebase the run played, not as raw units", () => {
-		const [entry] = runHistory([row({ coverage: 22.5, gatesCleared: 4 })]);
+		const [entry] = runHistory([row({ coverage: 14.5, gatesCleared: 4 })]);
 
 		expect(entry.coverage).toBeCloseTo(0.5);
 	});
@@ -91,5 +93,42 @@ describe("deepestGateIn", () => {
 
 	it("reports zero when nothing has been climbed", () => {
 		expect(deepestGateIn([])).toBe(0);
+	});
+});
+
+describe("bestRunIn", () => {
+	it("picks the run that reached the deepest gate", () => {
+		const entries = runHistory([
+			row({ runId: 1, gatesCleared: 2 }),
+			row({ runId: 2, gatesCleared: 9 }),
+			row({ runId: 3, gatesCleared: 5 }),
+		]);
+
+		expect(bestRunIn(entries)?.runId).toBe(2);
+	});
+
+	it("breaks a tie on depth with the higher coverage", () => {
+		const entries = runHistory([
+			row({ runId: 1, gatesCleared: 6, coverage: 10 }),
+			row({ runId: 2, gatesCleared: 6, coverage: 40 }),
+		]);
+
+		expect(bestRunIn(entries)?.runId).toBe(2);
+	});
+
+	it("names no best run when nothing has been climbed", () => {
+		expect(bestRunIn([])).toBeNull();
+	});
+});
+
+describe("runsWonIn", () => {
+	it("counts only the runs that took the Champion", () => {
+		const entries = runHistory([
+			row({ runId: 1, engineStatus: "won" }),
+			row({ runId: 2 }),
+			row({ runId: 3, engineStatus: "won" }),
+		]);
+
+		expect(runsWonIn(entries)).toBe(2);
 	});
 });

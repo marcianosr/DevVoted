@@ -118,7 +118,7 @@ describe("DexRuns", () => {
 		const panel = within(detail(container));
 
 		expect(panel.getByRole("heading", { name: "22 Jul" })).toBeVisible();
-		expect(panel.getByText("Boulder held")).toBeVisible();
+		expect(panel.getByText("Pewter held")).toBeVisible();
 	});
 
 	it("says so plainly when there is no run to read", () => {

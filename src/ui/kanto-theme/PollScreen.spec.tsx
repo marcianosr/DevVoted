@@ -46,7 +46,10 @@ describe("PollScreen", () => {
 	it("takes its colour from the gate it is running, not from a prop", () => {
 		const { container } = render(<PollScreen {...props} />);
 
-		expect(container.firstChild).toHaveAttribute("data-gate-theme", "volcano");
+		expect(container.firstChild).toHaveAttribute(
+			"data-gate-theme",
+			"gate-cinnabar"
+		);
 		expect(container.firstChild).not.toHaveAttribute("data-screen-theme");
 	});
 
@@ -58,13 +61,16 @@ describe("PollScreen", () => {
 			/>
 		);
 
-		expect(container.firstChild).toHaveAttribute("data-gate-theme", "elite");
+		expect(container.firstChild).toHaveAttribute(
+			"data-gate-theme",
+			"gate-indigo-elite"
+		);
 	});
 
 	it("leads with the gate, its track and the run's balance", () => {
 		render(<PollScreen {...props} />);
 
-		expect(screen.getByText("#9 - Volcano Gate")).toBeInTheDocument();
+		expect(screen.getByText("#9 - Cinnabar Gate")).toBeInTheDocument();
 		expect(screen.getByRole("img", { name: "1.8 MB" })).toBeInTheDocument();
 	});
 
@@ -322,7 +328,7 @@ describe("PollScreen", () => {
 		if (head === null) throw new Error("Coverage heads no panel");
 
 		expect(within(head).getByText("70%")).toBeInTheDocument();
-		expect(within(head).getByText("OK")).toBeInTheDocument();
+		expect(within(head).getByText("SHAKY")).toBeInTheDocument();
 	});
 
 	it("keeps the panel and drops the reading when the meter is down", () => {
@@ -427,24 +433,6 @@ describe("PollScreen", () => {
 			"Which utility type makes every property optional?"
 		);
 		expect(screen.getByText("2 picked")).toBeInTheDocument();
-	});
-
-	it("draws a skip press under the lock-in that states its cost", () => {
-		const onSkip = vi.fn();
-		render(
-			<PollScreen
-				{...props}
-				commit={{
-					...LOCK_IN,
-					skip: { label: "Skip", note: "covers nothing", onPress: onSkip },
-				}}
-			/>
-		);
-
-		screen.getByRole("button", { name: "Skip" }).click();
-
-		expect(onSkip).toHaveBeenCalledOnce();
-		expect(screen.getByText("covers nothing")).toBeInTheDocument();
 	});
 
 	it("pins the send, and stands it above the credit rather than under it", () => {
@@ -624,19 +612,11 @@ describe("PollScreen's fact band", () => {
 	});
 
 	it("draws no lock-in when the poll answers on the tap", () => {
-		render(
-			<PollScreen
-				{...props}
-				commit={{
-					skip: { label: "Skip", note: "covers nothing", onPress: () => {} },
-				}}
-			/>
-		);
+		render(<PollScreen {...props} commit={{}} />);
 
 		expect(
 			screen.queryByRole("button", { name: /^Lock in/ })
 		).not.toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
 	});
 
 	it("keeps that line when the band is withheld: the poll's shape is not the band's", () => {

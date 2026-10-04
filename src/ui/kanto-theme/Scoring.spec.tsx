@@ -5,12 +5,9 @@ import { SCORING_TITLE, Scoring, type ScoringProps } from "./Scoring.ui";
 
 const props: ScoringProps = {
 	meta: [
-		"single ",
-		{ figure: "+11.1%", gain: true },
-		" · multiple up to ",
-		{ figure: "+22.2%", gain: true },
-		" · accuracy up to ",
-		{ figure: "×2" },
+		["single ", { figure: "+11.1%", gain: true }],
+		["multiple up to ", { figure: "+22.2%", gain: true }],
+		["accuracy up to ", { figure: "×2" }],
 	],
 	prices: [
 		{
@@ -31,17 +28,17 @@ const props: ScoringProps = {
 			],
 		},
 	],
-	hint: [
-		"credit per poll · a multiple counts ",
-		{ figure: "2" },
-		" · configs add on top",
-	],
-	statements: [
-		[
-			"Right answers multiply what the window covered: ",
-			{ figure: "5 ×2" },
-			". A multiple counts as two.",
+	curve: {
+		statement: [
+			"Right answers multiply what the window covered. A multiple counts as two.",
 		],
+		steps: [
+			{ right: "0", multiplier: "×1" },
+			{ right: "1", multiplier: "×1.15" },
+			{ right: "5", multiplier: "×2" },
+		],
+	},
+	statements: [
 		[
 			"The line rises. ",
 			{ band: "healthy" },
@@ -52,9 +49,9 @@ const props: ScoringProps = {
 	],
 	rows: [
 		{ gate: 0, name: "Pallet", unit: "+20%", healthy: "60%" },
-		{ gate: 1, name: "Boulder", unit: "+10%", healthy: "60%" },
-		{ gate: 2, name: "Cascade", unit: "+6.67%", healthy: "60%" },
-		{ gate: 3, name: "Thunder", unit: "+5%", healthy: "60%" },
+		{ gate: 1, name: "Pewter", unit: "+10%", healthy: "60%" },
+		{ gate: 2, name: "Cerulean", unit: "+6.67%", healthy: "60%" },
+		{ gate: 3, name: "Vermilion", unit: "+5%", healthy: "60%" },
 		{
 			gate: 4,
 			name: "Lavender",
@@ -62,7 +59,7 @@ const props: ScoringProps = {
 			healthy: "62%",
 			current: true,
 		},
-		{ locked: true, gate: 5, name: "Rainbow" },
+		{ locked: true, gate: 5, name: "Celadon" },
 		{ locked: true, gate: 12, name: "Champion" },
 	],
 };
@@ -85,14 +82,14 @@ describe("Scoring", () => {
 		).toBeInTheDocument();
 	});
 
-	it("states what a single, a multiple and accuracy add on the strip, the gains in green", () => {
+	it("lists what a single, a multiple and accuracy add on the strip, the gains in green", () => {
 		const { container } = render(<Scoring {...props} />);
 
 		const strip = within(container.querySelector("summary") as HTMLElement);
 
-		expect(container.querySelector("summary")).toHaveTextContent(
-			"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
-		);
+		expect(
+			strip.getAllByRole("listitem").map((line) => line.textContent)
+		).toEqual(["single +11.1%", "multiple up to +22.2%", "accuracy up to ×2"]);
 		expect(strip.getByText("+11.1%")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
@@ -130,17 +127,18 @@ describe("Scoring", () => {
 		expect(steps[4]).toHaveAttribute("data-screen-theme", "viridian");
 	});
 
-	it("hints the credit a poll pays with the multiple's credit badged", () => {
+	it("states no credit hint under the prices", () => {
 		render(<Scoring {...props} />);
 
-		const hint = screen.getByText(/configs add on top/).closest("p");
+		expect(screen.queryByText(/configs add on top/)).toBeNull();
+	});
 
-		expect(hint).toHaveTextContent(
-			"credit per poll · a multiple counts 2 · configs add on top"
-		);
-		expect(within(hint as HTMLElement).getByText("2")).toHaveClass(
-			"badge-theme"
-		);
+	it("labels each price in small print that keeps to one line", () => {
+		render(<Scoring {...props} />);
+		const label = screen.getByText(props.prices[1].label);
+
+		expect(label).toHaveClass("text-xs");
+		expect(label.parentElement).toHaveClass("whitespace-nowrap");
 	});
 
 	it("numbers its two statements and badges the figures inside them", () => {
@@ -148,13 +146,10 @@ describe("Scoring", () => {
 
 		const curve = screen
 			.getByText(/multiply what the window covered/)
-			.closest("div");
-		const rises = screen.getByText(/gates after/).closest("div");
+			.closest("div.items-start");
+		const rises = screen.getByText(/gates after/).closest("div.items-start");
 
-		expect(within(curve as HTMLElement).getByText("1")).toHaveClass(
-			"badge-theme"
-		);
-		expect(within(curve as HTMLElement).getByText("5 ×2")).toHaveClass(
+		expect(within(curve as HTMLElement).getAllByText("1")[0]).toHaveClass(
 			"badge-theme"
 		);
 		expect(within(rises as HTMLElement).getByText("2")).toHaveClass(
@@ -164,6 +159,22 @@ describe("Scoring", () => {
 			"data-screen-theme",
 			"viridian"
 		);
+	});
+
+	it("steps the multiplier curve under its sentence, each count of right over its multiplier badged", () => {
+		render(<Scoring {...props} />);
+
+		const curve = screen
+			.getByText(/multiply what the window covered/)
+			.closest("div.items-start") as HTMLElement;
+		const steps = within(curve).getAllByRole("listitem");
+
+		expect(steps.map((step) => step.textContent)).toEqual([
+			"0×1",
+			"1×1.15",
+			"5×2",
+		]);
+		expect(within(steps[2]).getByText("×2")).toHaveClass("badge-theme");
 	});
 
 	it("heads the table gate, single choice and HEALTHY", () => {
@@ -198,19 +209,19 @@ describe("Scoring", () => {
 
 		expect(rowOf("Lavender")).toHaveClass("border-l-2");
 		expect(rowOf("Pallet")).not.toHaveClass("border-l-2");
-		expect(rowOf("Rainbow")).not.toHaveClass("border-l-2");
+		expect(rowOf("Celadon")).not.toHaveClass("border-l-2");
 	});
 
 	it("seals the figures of a gate ahead but keeps its name, named once for a reader", () => {
 		render(<Scoring {...props} />);
 
-		const rainbow = within(rowOf("Rainbow"));
+		const celadon = within(rowOf("Celadon"));
 
-		expect(rainbow.getAllByText("???")).toHaveLength(2);
+		expect(celadon.getAllByText("???")).toHaveLength(2);
 		expect(
-			rainbow.getAllByText("Sealed until the run reaches this gate")
+			celadon.getAllByText("Sealed until the run reaches this gate")
 		).toHaveLength(1);
-		expect(rainbow.queryByText(/%/)).toBeNull();
+		expect(celadon.queryByText(/%/)).toBeNull();
 		expect(within(rowOf("Champion")).getAllByText("???")).toHaveLength(2);
 	});
 
@@ -218,8 +229,8 @@ describe("Scoring", () => {
 		render(<Scoring {...props} />);
 
 		expect(screen.getAllByText("⋮")).toHaveLength(1);
-		expect(rowOf("Rainbow").nextElementSibling).toHaveTextContent("⋮");
-		expect(rowOf("Thunder").nextElementSibling).toBe(rowOf("Lavender"));
+		expect(rowOf("Celadon").nextElementSibling).toHaveTextContent("⋮");
+		expect(rowOf("Vermilion").nextElementSibling).toBe(rowOf("Lavender"));
 	});
 
 	it("closes on the table, with no note under it", () => {

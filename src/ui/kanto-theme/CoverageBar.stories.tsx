@@ -22,11 +22,11 @@ const GAIN = 5;
 const LOSS = 2.5;
 const OPENING = 42;
 
-const VOLCANO = { floor: 55, ok: 65, healthy: 80 };
+const CINNABAR = { floor: 55, ok: 65, healthy: 80 };
 const PALLET = { floor: 0, ok: 40, healthy: 60 };
 const CHAMPION = { floor: 70, ok: 80, healthy: 95 };
 
-const VOLCANO_RUNGS: readonly { held: number; band: CoverageBandId }[] = [
+const CINNABAR_RUNGS: readonly { held: number; band: CoverageBandId }[] = [
 	{ held: 40, band: "danger" },
 	{ held: 58, band: "shaky" },
 	{ held: 70, band: "ok" },
@@ -46,7 +46,7 @@ const meta: Meta<typeof CoverageBar> = {
 		ghostAt: { control: { type: "range", min: 0, max: 100, step: 0.1 } },
 	},
 	args: {
-		...VOLCANO,
+		...CINNABAR,
 		held: 70,
 		band: "ok",
 		note: "Coverage starts at zero. Five polls to prove the build again.",
@@ -89,7 +89,7 @@ const Settling = () => {
 	return (
 		<Screen theme="vermillion" width="narrow">
 			<CoverageBar
-				{...VOLCANO}
+				{...CINNABAR}
 				held={72}
 				band="ok"
 				settleKey={`${settles}`}
@@ -143,12 +143,12 @@ export const PinnedLadder: Story = {
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
 			<div className={LADDER}>
-				{VOLCANO_RUNGS.map((rung) => (
+				{CINNABAR_RUNGS.map((rung) => (
 					<div key={rung.band} className={RUNG}>
 						<Typography variant="label">
 							{COVERAGE_BAND_WORD[rung.band]}
 						</Typography>
-						<CoverageBar {...VOLCANO} held={rung.held} band={rung.band} pin />
+						<CoverageBar {...CINNABAR} held={rung.held} band={rung.band} pin />
 					</div>
 				))}
 			</div>
@@ -161,12 +161,12 @@ export const BandLadder: Story = {
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
 			<div className={LADDER}>
-				{VOLCANO_RUNGS.map((rung) => (
+				{CINNABAR_RUNGS.map((rung) => (
 					<div key={rung.band} className={RUNG}>
 						<Typography variant="label">
 							{COVERAGE_BAND_WORD[rung.band]}
 						</Typography>
-						<CoverageBar {...VOLCANO} held={rung.held} band={rung.band} />
+						<CoverageBar {...CINNABAR} held={rung.held} band={rung.band} />
 					</div>
 				))}
 			</div>
@@ -197,7 +197,7 @@ export const AcrossThemes: Story = {
 			{KANTO_COLORS.map((theme) => (
 				<Screen key={theme} theme={theme} width="narrow">
 					<CoverageBar
-						{...VOLCANO}
+						{...CINNABAR}
 						held={70}
 						band="ok"
 						note={`The bands hold their own colours on ${theme}`}
@@ -216,9 +216,9 @@ const Answering = () => {
 	return (
 		<Screen theme="vermillion" width="narrow">
 			<CoverageBar
-				{...VOLCANO}
+				{...CINNABAR}
 				held={held}
-				band={bandAtLadder(held, VOLCANO).id}
+				band={bandAtLadder(held, CINNABAR).id}
 				note="Answer a poll and the marker rides the lit edge to the new figure."
 			/>
 			<div className={ANSWERS}>

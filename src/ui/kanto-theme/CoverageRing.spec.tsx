@@ -7,7 +7,7 @@ import { CoverageRing } from "./CoverageRing.ui";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
-const TITLE = "Coverage toward Volcano";
+const TITLE = "Coverage toward Cinnabar";
 const NOTE = "Pick an answer to see where it puts you.";
 
 const arcOf = (container: HTMLElement) =>

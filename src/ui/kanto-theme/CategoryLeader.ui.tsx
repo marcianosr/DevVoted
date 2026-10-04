@@ -7,11 +7,9 @@ import { Typography } from "./Typography.ui";
 
 const LINE = "grid w-full min-w-0 grid-cols-[1fr_auto] items-center gap-2";
 const FACTS = "flex min-w-0 flex-wrap items-center gap-2";
-const NAME = "flex min-w-0 items-center gap-2";
-const TRAILING = "shrink-0";
+const TRAILING = "flex min-w-0 shrink-0 items-center gap-2";
 
 const COPY = {
-	leader: "leader",
 	unranked: "unranked",
 };
 
@@ -49,18 +47,6 @@ const Face = (leader: CategorySeatLeader) => (
 	/>
 );
 
-const Held = (leader: CategorySeatLeader) => (
-	<>
-		<Typography variant="hint" as="span">
-			{COPY.leader}
-		</Typography>
-		<span className={NAME}>
-			<Face {...leader} />
-			<LeaderName {...leader} />
-		</span>
-	</>
-);
-
 const Open = () => (
 	<Typography variant="hint" as="span">
 		{COPY.unranked}
@@ -92,9 +78,15 @@ export const CategoryLeader = ({
 	<div className={LINE}>
 		<span className={FACTS}>
 			<Badge>{category}</Badge>
-			{leader === undefined ? <Open /> : <Held {...leader} />}
+			{leader === undefined ? <Open /> : null}
 		</span>
 		<span className={TRAILING}>
+			{leader === undefined ? null : (
+				<>
+					<Face {...leader} />
+					<LeaderName {...leader} />
+				</>
+			)}
 			<Figure leader={leader} claim={claim} />
 		</span>
 	</div>

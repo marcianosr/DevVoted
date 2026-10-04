@@ -15,7 +15,7 @@ import {
 } from "~/modules/run/shop/domain/draft.model";
 import {
 	ABANDON_FROM_GATE,
-	CASCADE_GATE,
+	CERULEAN_GATE,
 	isCarriedService,
 	isRegistryControlId,
 	isServiceUnlocked,
@@ -143,13 +143,13 @@ describe("REGISTRY_CONTROLS", () => {
 		expect(isServiceUnlocked(REGISTRY_CONTROLS.rebuild, [])).toBe(true);
 	});
 
-	it("earns Extend by reaching Cascade, which is the gate the caption names", () => {
-		expect(gateSwatchAt(CASCADE_GATE)?.gateName).toBe("Cascade");
+	it("earns Extend by reaching Cerulean, which is the gate the caption names", () => {
+		expect(gateSwatchAt(CERULEAN_GATE)?.gateName).toBe("Cerulean");
 		expect(REGISTRY_CONTROLS.extend.unlock).toMatchObject({
 			kind: "earned",
-			objective: { metric: `reached-gate:${CASCADE_GATE}`, target: 1 },
+			objective: { metric: `reached-gate:${CERULEAN_GATE}`, target: 1 },
 		});
-		expect(unlockCaptionOf(REGISTRY_CONTROLS.extend)).toBe("Reach Cascade");
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.extend)).toBe("Reach Cerulean");
 	});
 
 	it("earns the git tag by reaching the gate that first sells it", () => {

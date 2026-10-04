@@ -23,8 +23,6 @@ import {
 	pollCoverageFor,
 	pollClockFor,
 	pollCommitFor,
-	SKIP_LABEL,
-	SKIP_NOTE,
 	approvalCommitFor,
 	pollStepFor,
 	PICK_EVERY,
@@ -40,6 +38,7 @@ import type {
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 import {
+	ACCURACY_GAIN_PER_GATE,
 	floorAt,
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -230,6 +229,17 @@ const playing = (
 const TWO_GATES: readonly CategoryCode[] = [...JS_GATE, ...CSS_GATE];
 const CLEARED = [true, true, true, true, true];
 
+const CARRIED_BONUS = 0.4;
+
+const carrying = (
+	rights: readonly boolean[],
+	accuracyBonus = CARRIED_BONUS
+): RunState =>
+	rights.reduce(answering, {
+		...runWith(BARE, JS_GATE),
+		accuracyBonus,
+	});
+
 const textOf = (line: ReturnType<typeof coverageLeadFor>): string =>
 	line.map((part) => (typeof part === "string" ? part : part.figure)).join("");
 
@@ -238,7 +248,7 @@ describe("coverageLeadFor", () => {
 		const run = playing(JS_GATE, [true]);
 
 		expect(textOf(coverageLeadFor(toRunView(run)))).toBe(
-			"You hold 12.0% coverage."
+			"You hold 20.0% coverage."
 		);
 	});
 
@@ -260,7 +270,7 @@ describe("coverageLeadFor", () => {
 		const run = playing(JS_GATE, [true]);
 		const coverage = coverageLeadFor(toRunView(run)).at(-2);
 
-		expect(coverage).toEqual({ figure: "12.0%", band: "shaky" });
+		expect(coverage).toEqual({ figure: "20.0%", band: "shaky" });
 	});
 });
 
@@ -279,12 +289,12 @@ describe("pollBarFor", () => {
 	});
 
 	it("opens the next gate on no more than its floor, never on the whole bar", () => {
-		const boulder = pollBarFor(
+		const pewter = pollBarFor(
 			toRunView(playing(TWO_GATES, [true, true, true, true, true]))
 		);
 
-		expect(boulder.held).toBeGreaterThan(0);
-		expect(boulder.held).toBeLessThanOrEqual(percentOf(floorAt(1)));
+		expect(pewter.held).toBeGreaterThan(0);
+		expect(pewter.held).toBeLessThanOrEqual(percentOf(floorAt(1)));
 	});
 });
 
@@ -298,7 +308,7 @@ describe("runPaidFor", () => {
 	it("states the accuracy multiplier the closed gate landed", () => {
 		const [pallet] = runPaidFor(toRunView(playing(TWO_GATES, CLEARED))).rows;
 
-		expect(pallet.payouts?.multiplier).toBe("×2");
+		expect(pallet.payouts?.multiplier).toBe("×1.08");
 	});
 
 	it("states no multiplier for the gate still being answered", () => {
@@ -317,34 +327,41 @@ const lastAnswerOf = (state: RunState): AnsweredPoll => {
 };
 
 describe("accuracyTrackFor", () => {
-	it("opens on ×1 sure, up to ×2, the bar empty and the best case full", () => {
+	it("opens a fresh run on ×1 sure, up to one plus the gain, on a track that reads to ×2", () => {
 		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [])));
 
 		expect(track).toMatchObject({
-			figure: "×1 · up to ×2",
+			figure: "×1 · up to ×1.08",
 			sure: 0,
-			best: 1,
 		});
+		expect(track.best).toBeCloseTo(ACCURACY_GAIN_PER_GATE);
 	});
 
 	it("reads the multiplier the window is sure of and the best still open", () => {
-		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, true])));
+		const track = accuracyTrackFor(toRunView(carrying([true, true])));
 
-		expect(track.figure).toBe(`×1.19 · up to ×2`);
-		expect(track.sure).toBeCloseTo(2 ** (2 / 8) - 1);
-		expect(track.best).toBeCloseTo(1);
+		expect(track.figure).toBe(`×1.39 · up to ×1.48`);
+		expect(track.sure).toBeCloseTo(0.39);
+		expect(track.best).toBeCloseTo(0.48);
 	});
 
 	it("lowers the best case on a miss and keeps what is sure", () => {
-		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, false])));
+		const track = accuracyTrackFor(toRunView(carrying([true, false])));
 
-		expect(track.figure).toBe("×1.09 · up to ×1.83");
+		expect(track.figure).toBe("×1.38 · up to ×1.47");
 	});
 
 	it("names the multiplier aloud for a reader", () => {
-		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [true, false])));
+		const track = accuracyTrackFor(toRunView(carrying([true, false])));
 
-		expect(track.label).toBe("Accuracy ×1.09, up to ×1.83");
+		expect(track.label).toBe("Accuracy ×1.38, up to ×1.47");
+	});
+
+	it("stretches the track to the next whole multiplier once the best passes ×2", () => {
+		const track = accuracyTrackFor(toRunView(carrying([], 1)));
+
+		expect(track.figure).toBe("×1.96 · up to ×2.08");
+		expect(track.best).toBeCloseTo(1.08 / 2);
 	});
 
 	it("draws no per-poll segment, so five boxes never read as five polls", () => {
@@ -862,15 +879,10 @@ describe("pollCoverageFor", () => {
 
 describe("a single answer is one tap", () => {
 	const submit = () => {};
-	const skip = () => {};
 
 	it("offers no lock-in on a single-answer poll, picked or not", () => {
-		expect(pollCommitFor("single", 0, submit, skip).lock).toBeUndefined();
-		expect(pollCommitFor("single", 1, submit, skip).lock).toBeUndefined();
-	});
-
-	it("still offers the skip on a single-answer poll", () => {
-		expect(pollCommitFor("single", 0, submit, skip).skip?.onPress).toBe(skip);
+		expect(pollCommitFor("single", 0, submit).lock).toBeUndefined();
+		expect(pollCommitFor("single", 1, submit).lock).toBeUndefined();
 	});
 });
 
@@ -903,25 +915,17 @@ describe("the keyboard tip states the keys for the answer type", () => {
 	});
 });
 
-describe("the skip press states what a skip costs (ADR-169)", () => {
+describe("the poll screen offers no skip while the press is withdrawn", () => {
 	const submit = () => {};
-	const skip = () => {};
 
-	it("offers a skip beside the lock-in, picked or not", () => {
-		expect(pollCommitFor("multiple", 0, submit, skip).skip).toEqual({
-			label: SKIP_LABEL,
-			note: SKIP_NOTE,
-			onPress: skip,
+	it("offers only the lock-in on a multi-answer poll", () => {
+		expect(pollCommitFor("multiple", 1, submit)).toEqual({
+			lock: expect.objectContaining({ label: "Lock in 1 answer" }),
 		});
-		expect(pollCommitFor("multiple", 1, submit, skip).skip?.onPress).toBe(skip);
 	});
 
-	it("offers no skip where the screen wires none", () => {
-		expect(pollCommitFor("single", 0, submit).skip).toBeUndefined();
-	});
-
-	it("offers no skip on a poll the room answers", () => {
-		expect(approvalCommitFor(() => {}).skip).toBeUndefined();
+	it("offers no press at all on a single-answer poll", () => {
+		expect(pollCommitFor("single", 0, submit)).toEqual({});
 	});
 });
 

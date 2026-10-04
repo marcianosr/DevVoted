@@ -84,6 +84,7 @@ export type AccuracyView = {
 	readonly available: number | null;
 	readonly guaranteed: number;
 	readonly best: number;
+	readonly carried: number;
 };
 
 const answeredAccuracyOf = (
@@ -138,13 +139,13 @@ const pendingCreditOf = (state: RunState): number =>
 	windowAvailableOf(state) - state.window.accuracyAvailable;
 
 export const guaranteedMultiplierOf = (state: RunState): number =>
-	accuracyMultiplierFor({
+	accuracyMultiplierFor(state.accuracyBonus, {
 		earned: state.window.accuracyEarned,
 		available: windowAvailableOf(state),
 	});
 
 export const bestMultiplierOf = (state: RunState): number =>
-	accuracyMultiplierFor({
+	accuracyMultiplierFor(state.accuracyBonus, {
 		earned: state.window.accuracyEarned + pendingCreditOf(state),
 		available: windowAvailableOf(state),
 	});
@@ -160,6 +161,7 @@ export const accuracyViewFor = (state: RunState): AccuracyView => ({
 	available: knownAvailableOf(state),
 	guaranteed: guaranteedMultiplierOf(state),
 	best: bestMultiplierOf(state),
+	carried: state.accuracyBonus,
 });
 
 export const auditViewsFor = (state: RunState): readonly AuditView[] => {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -148,46 +148,46 @@ describe("GateOutcomeView", () => {
 
 		expect(screen.queryByText(/Run over/)).not.toBeInTheDocument();
 		expect(
-			screen.queryByRole("heading", { name: /Settle the peel/ })
+			screen.queryByRole("heading", { name: /to retry/ })
 		).not.toBeInTheDocument();
 	});
 
-	it("asks a held gate to pay its peel before the retry opens", () => {
+	it("offers a held gate storage as the first way to pay its peel", () => {
 		renderAt("held", { onRemove: () => {} });
 
 		expect(
-			screen.getByRole("heading", { name: /Settle the peel/ })
-		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: /^Retry gate/ })).toBeDisabled();
+			screen.getByRole("heading", { level: 3, name: /to retry/ })
+		).toHaveTextContent("Pay 16 KB to retry");
+		expect(
+			screen.getByRole("radio", { name: "Pay the peel from storage" })
+		).toBeChecked();
 	});
 
-	it("pays the peel in dropped configs, which opens the retry", async () => {
-		const onRemove = vi.fn();
-		renderAt("held", { onRemove });
-
-		const drops = screen.getAllByRole("checkbox", { name: /^Drop / });
-		for (const drop of drops) await userEvent.click(drop);
-
-		const retry = screen.getByRole("button", { name: /^Retry gate/ });
-		expect(retry).toBeEnabled();
-
-		await userEvent.click(retry);
-		expect(onRemove).toHaveBeenCalledWith(expect.any(Array), false);
-	});
-
-	it("opens the retry on storage alone, dropping nothing", async () => {
+	it("pays the peel from storage, dropping nothing", async () => {
 		const onRemove = vi.fn();
 		renderAt("held", { onRemove });
 
 		await userEvent.click(
-			screen.getByRole("checkbox", { name: /^Pay the peel from storage/ })
+			screen.getByRole("button", { name: /^Pay from storage/ })
 		);
 
-		const retry = screen.getByRole("button", { name: /^Retry gate/ });
-		expect(retry).toBeEnabled();
-
-		await userEvent.click(retry);
 		expect(onRemove).toHaveBeenCalledWith([], true);
+	});
+
+	it("pays the peel with the one config picked instead", async () => {
+		const onRemove = vi.fn();
+		renderAt("held", { onRemove });
+
+		await userEvent.click(
+			screen.getByRole("radio", { name: `Drop ${CONFIGS.js.label}` })
+		);
+		await userEvent.click(
+			screen.getByRole("button", {
+				name: new RegExp(`^Drop ${CONFIGS.js.label}`),
+			})
+		);
+
+		expect(onRemove).toHaveBeenCalledWith([CONFIGS.js.id], false);
 	});
 
 	it("ends the run from the refusal arm of a held gate", async () => {
@@ -271,7 +271,7 @@ describe("GateOutcomeView", () => {
 	it("states the gate's earn as a share of the window, not as raw units", () => {
 		renderAt("cleared");
 
-		expect(screen.getAllByText("+22.2%").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("+28.6%").length).toBeGreaterThan(0);
 		expect(screen.queryByText("+2%")).not.toBeInTheDocument();
 	});
 
@@ -285,10 +285,10 @@ describe("GateOutcomeView", () => {
 		);
 
 		expect(
-			screen.getByLabelText("100% of 40% needed \u00b7 PERFECT")
+			screen.getByLabelText("100% of 64% needed \u00b7 PERFECT")
 		).toBeInTheDocument();
 		expect(
-			screen.queryByLabelText(/^40% of 40% needed/)
+			screen.queryByLabelText(/^64% of 64% needed/)
 		).not.toBeInTheDocument();
 	});
 
@@ -301,10 +301,10 @@ describe("GateOutcomeView", () => {
 			/>
 		);
 
-		const list = screen.getByText("At Boulder").nextElementSibling;
+		const list = screen.getByText("At Pewter").nextElementSibling;
 
-		expect(list).toHaveTextContent("single choice+11.1%");
-		expect(list).toHaveTextContent("multiple choice+22.2%");
+		expect(list).toHaveTextContent("single choice+20%");
+		expect(list).toHaveTextContent("multiple choice+40%");
 	});
 
 	it("points at no gate beyond the summit", () => {
@@ -358,5 +358,73 @@ describe("rivals' audits at the close (ADR-099)", () => {
 
 		expect(screen.getByText("Audits survived")).toBeInTheDocument();
 		expect(screen.queryByText("audit earned")).not.toBeInTheDocument();
+	});
+});
+
+describe("the audits a closed gate names", () => {
+	it("names the audit the gate just ran, never the one waiting at the next gate", () => {
+		render(
+			<GateOutcomeView
+				view={viewAt("cleared", {
+					lastClose: closeAt("cleared", { auditIds: ["legal-hold"] }),
+					gateStake: createMockGateStake({
+						gateNumber: 5,
+						audits: [
+							{
+								id: "memory-leak",
+								code: 507,
+								name: "Insufficient Storage",
+								description: "Storage leaks every poll.",
+								suppressed: false,
+							},
+						],
+					}),
+				})}
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(screen.getAllByText(/451/).length).toBeGreaterThan(0);
+		expect(screen.queryByText(/507/)).not.toBeInTheDocument();
+	});
+});
+
+describe("GateOutcomeView's outcome reveal", () => {
+	beforeEach(() => {
+		window.sessionStorage.clear();
+	});
+
+	it("plays the reveal over the screen when a gate has just closed", () => {
+		renderAt("cleared");
+
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+	});
+
+	it("does not replay the reveal for the same close after a remount", () => {
+		renderAt("cleared").unmount();
+		renderAt("cleared");
+
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+	});
+
+	it("skips to the final frame on the first press and dismisses on the second", async () => {
+		const user = userEvent.setup();
+		renderAt("fatal");
+
+		await user.click(screen.getByRole("button", { name: "Skip" }));
+		await user.click(screen.getByRole("button", { name: "Continue" }));
+
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+	});
+
+	it("dismisses on Escape once the reveal has reached its final frame", async () => {
+		const user = userEvent.setup();
+		renderAt("held");
+
+		await user.keyboard("{Escape}");
+		await user.keyboard("{Escape}");
+
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 	});
 });

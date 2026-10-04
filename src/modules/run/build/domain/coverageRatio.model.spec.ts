@@ -16,6 +16,9 @@ import {
 	PAYOUT_RATIO_CAP,
 	PERFECT_BONUS,
 	SINGLE_CREDIT,
+	ACCURACY_GAIN_PER_GATE,
+	ACCURACY_LOSS_PER_GATE,
+	accuracyBonusAfter,
 	accuracyMultiplierFor,
 	atLeastBand,
 	bandFor,
@@ -41,7 +44,7 @@ import { answerPayoutFor, previewContextFor } from "./answerPayout.model";
 import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 
 const EARLY = 2;
-const ELITE = 11;
+const INDIGO_ELITE = 11;
 const BARE: readonly never[] = [];
 const GATES = Array.from({ length: VICTORY_GATE + 1 }, (_, gate) => gate);
 
@@ -65,9 +68,9 @@ const buildMultiplierOf = (configs: readonly Config[]): number =>
 		.factors?.build ?? 1;
 
 describe("the codebase each gate asks for", () => {
-	it("ships nine changes at Pallet and eleven at the Champion", () => {
-		expect(scoringSlotsAt(0)).toBe(9);
-		expect(scoringSlotsAt(VICTORY_GATE)).toBe(11);
+	it("ships five changes at Pallet and ten at the Champion", () => {
+		expect(scoringSlotsAt(0)).toBe(5);
+		expect(scoringSlotsAt(VICTORY_GATE)).toBe(10);
 	});
 
 	it("carries one rung per gate", () => {
@@ -88,20 +91,20 @@ describe("the codebase each gate asks for", () => {
 });
 
 describe("the band lines", () => {
-	it("draws no DANGER at Pallet and SHAKY up to a fifth", () => {
+	it("draws no DANGER at Pallet and SHAKY up to fifty-two percent", () => {
 		expect(floorAt(0)).toBe(0);
-		expect(okAt(0)).toBeCloseTo(0.2);
-		expect(healthyAt(0)).toBeCloseTo(0.4);
+		expect(okAt(0)).toBeCloseTo(0.52);
+		expect(healthyAt(0)).toBeCloseTo(0.64);
 	});
 
-	it("ends DANGER at sixty percent at Elite, with ten-point SHAKY and OK bands", () => {
-		expect(floorAt(ELITE)).toBeCloseTo(0.6);
-		expect(okAt(ELITE)).toBeCloseTo(0.7);
-		expect(healthyAt(ELITE)).toBeCloseTo(0.8);
+	it("ends DANGER at seventy-six percent at Indigo Elite, with six-point SHAKY and OK bands", () => {
+		expect(floorAt(INDIGO_ELITE)).toBeCloseTo(0.76);
+		expect(okAt(INDIGO_ELITE)).toBeCloseTo(0.82);
+		expect(healthyAt(INDIGO_ELITE)).toBeCloseTo(0.88);
 	});
 
-	it("asks eighty-four percent for HEALTHY at the Champion", () => {
-		expect(healthyAt(VICTORY_GATE)).toBeCloseTo(0.84);
+	it("asks ninety percent for HEALTHY at the Champion", () => {
+		expect(healthyAt(VICTORY_GATE)).toBeCloseTo(0.9);
 	});
 
 	it("draws a DANGER band at every gate after Pallet", () => {
@@ -145,18 +148,23 @@ describe("the band lines", () => {
 		expect(crossed).toHaveLength(0);
 	});
 
-	it("lets a bare build that answers all five reach HEALTHY at the Champion", () => {
+	it("lets a bare build that carried a flawless run reach HEALTHY at the Champion", () => {
+		const carried = GATES.slice(0, VICTORY_GATE).reduce(
+			(bonus) => accuracyBonusAfter(bonus, singles(SLICE_WINDOW)),
+			0
+		);
 		const perfectBareWindow =
-			SLICE_WINDOW * BASE_UNIT * accuracyMultiplierFor(singles(SLICE_WINDOW));
+			SLICE_WINDOW *
+			BASE_UNIT *
+			accuracyMultiplierFor(carried, singles(SLICE_WINDOW));
 
 		expect(
 			runCoverageOf(perfectBareWindow, VICTORY_GATE)
 		).toBeGreaterThanOrEqual(healthyAt(VICTORY_GATE));
-		expect(runCoverageOf(perfectBareWindow, VICTORY_GATE)).toBeLessThan(1);
 	});
 
 	it("states the HEALTHY line in units of the gate's codebase", () => {
-		expect(healthyUnitsAt(ELITE)).toBeCloseTo(0.8 * scoringSlotsAt(ELITE));
+		expect(healthyUnitsAt(INDIGO_ELITE)).toBeCloseTo(0.88 * scoringSlotsAt(INDIGO_ELITE));
 	});
 });
 
@@ -165,71 +173,98 @@ const singles = (count: number) => ({
 	available: SLICE_WINDOW * SINGLE_CREDIT,
 });
 
-describe(accuracyMultiplierFor, () => {
-	it("leaves a window with no right answers at one", () => {
-		expect(accuracyMultiplierFor(singles(0))).toBe(1);
+const GAIN_PER_RIGHT = ACCURACY_GAIN_PER_GATE / SLICE_WINDOW;
+const LOSS_PER_MISS = ACCURACY_LOSS_PER_GATE / SLICE_WINDOW;
+
+describe(accuracyBonusAfter, () => {
+	it("grows a fresh run's bonus by the whole gain on a perfect window", () => {
+		expect(accuracyBonusAfter(0, singles(5))).toBeCloseTo(
+			ACCURACY_GAIN_PER_GATE
+		);
 	});
 
-	it("leaves a window with nothing available at one", () => {
-		expect(accuracyMultiplierFor({ earned: 0, available: 0 })).toBe(1);
+	it("adds a fifth of the gain per right single and takes a fifth of the loss per miss", () => {
+		expect(accuracyBonusAfter(0.4, singles(3))).toBeCloseTo(
+			0.4 + 3 * GAIN_PER_RIGHT - 2 * LOSS_PER_MISS
+		);
 	});
 
-	it("doubles a perfect window whatever its mix of singles and multiples", () => {
-		const mixes = [5, 6, 7, 10];
-
-		expect(
-			mixes.map((available) =>
-				accuracyMultiplierFor({ earned: available, available })
-			)
-		).toEqual([2, 2, 2, 2]);
+	it("takes the whole loss from a carried bonus on a window with no right answers", () => {
+		expect(accuracyBonusAfter(0.4, singles(0))).toBeCloseTo(
+			0.4 - ACCURACY_LOSS_PER_GATE
+		);
 	});
 
-	it("shrinks the step for one full unit as multiples raise what is available", () => {
-		const stepAt = (available: number) =>
-			accuracyMultiplierFor({ earned: 1, available });
+	it("loses half as fast as it gains, so a miss costs less than a right answer earns", () => {
+		expect(LOSS_PER_MISS).toBeCloseTo(GAIN_PER_RIGHT / 2);
+	});
 
-		expect(stepAt(5)).toBeCloseTo(1.149);
-		expect(stepAt(6)).toBeCloseTo(1.122);
-		expect(stepAt(7)).toBeCloseTo(1.104);
-		expect(stepAt(10)).toBeCloseTo(1.072);
+	it("never takes the bonus below zero", () => {
+		expect(accuracyBonusAfter(0, singles(0))).toBe(0);
+		expect(accuracyBonusAfter(ACCURACY_LOSS_PER_GATE / 2, singles(0))).toBe(0);
+	});
+
+	it("leaves the bonus where it stood when nothing was available, as when every poll was skipped", () => {
+		expect(accuracyBonusAfter(0.4, { earned: 0, available: 0 })).toBe(0.4);
 	});
 
 	it("reads a mixed window by what it earned of what it offered", () => {
-		const window = [
-			{ earned: 1, credit: SINGLE_CREDIT },
-			{ earned: 2, credit: MULTIPLE_CREDIT },
-			{ earned: 1, credit: MULTIPLE_CREDIT },
-			{ earned: 0, credit: SINGLE_CREDIT },
-			{ earned: 1, credit: SINGLE_CREDIT },
-		];
-		const tally = {
-			earned: window.reduce((sum, poll) => sum + poll.earned, 0),
-			available: window.reduce((sum, poll) => sum + poll.credit, 0),
-		};
+		const share = 5 / 7;
 
-		expect(tally).toEqual({ earned: 5, available: 7 });
-		expect(accuracyMultiplierFor(tally)).toBeCloseTo(1.64, 2);
+		expect(accuracyBonusAfter(0, { earned: 5, available: 7 })).toBeCloseTo(
+			ACCURACY_GAIN_PER_GATE * share - ACCURACY_LOSS_PER_GATE * (1 - share)
+		);
+	});
+
+	it("needs a whole run of perfect gates to come near doubling", () => {
+		const carried = GATES.reduce(
+			(bonus) => accuracyBonusAfter(bonus, singles(SLICE_WINDOW)),
+			0
+		);
+
+		expect(1 + carried).toBeCloseTo(1 + GATES.length * ACCURACY_GAIN_PER_GATE);
+		expect(1 + carried).toBeLessThan(2.1);
+	});
+});
+
+describe(accuracyMultiplierFor, () => {
+	it("multiplies a perfect first window by one plus the gain", () => {
+		expect(accuracyMultiplierFor(0, singles(SLICE_WINDOW))).toBeCloseTo(
+			1 + ACCURACY_GAIN_PER_GATE
+		);
+	});
+
+	it("leaves a fresh run's window with no right answers at one", () => {
+		expect(accuracyMultiplierFor(0, singles(0))).toBe(1);
+	});
+
+	it("counts the window it closes on top of the carried bonus", () => {
+		expect(accuracyMultiplierFor(0.4, singles(SLICE_WINDOW))).toBeCloseTo(
+			1.4 + ACCURACY_GAIN_PER_GATE
+		);
 	});
 });
 
 describe(gateOutputOf, () => {
-	it("multiplies the summed poll output by the window's accuracy", () => {
-		expect(gateOutputOf(12, { earned: 5, available: 7 })).toBeCloseTo(
-			12 * 2 ** (5 / 7)
+	it("multiplies the summed poll output by the carried accuracy", () => {
+		expect(gateOutputOf(12, 0.4, singles(SLICE_WINDOW))).toBeCloseTo(
+			12 * (1.4 + ACCURACY_GAIN_PER_GATE)
 		);
 	});
 
-	it("pays a window with no right answers only what its polls produced", () => {
-		expect(gateOutputOf(0.3, singles(0))).toBeCloseTo(0.3);
+	it("pays a fresh window with no right answers only what its polls produced", () => {
+		expect(gateOutputOf(0.3, 0, singles(0))).toBeCloseTo(0.3);
 	});
 
 	it("lets a build amplify accuracy without ever replacing it", () => {
 		const doubledTwoRight = gateOutputOf(
 			2 * unitsPerCorrect(DOUBLER, "single"),
+			0,
 			singles(2)
 		);
 		const bareTwoRight = gateOutputOf(
 			2 * unitsPerCorrect(BARE, "single"),
+			0,
 			singles(2)
 		);
 
@@ -271,21 +306,21 @@ describe(runShareOf, () => {
 });
 
 describe("what a unit moves the bar by", () => {
-	it("is a ninth of the bar at Pallet, where the gate ships nine changes", () => {
-		expect(coverageGainPercentFor(BASE_UNIT, 0)).toBeCloseTo(11.11);
+	it("is a fifth of the bar at Pallet, where the gate ships five changes", () => {
+		expect(coverageGainPercentFor(BASE_UNIT, 0)).toBeCloseTo(20);
 	});
 
-	it("fills Pallet's bar only on a flawless bare window", () => {
+	it("fills Pallet's bar for a bare build only on a flawless window, since a fresh run carries no bonus", () => {
 		const bareWindow = (right: number) =>
-			gateOutputOf(right * BASE_UNIT, singles(right));
+			gateOutputOf(right * BASE_UNIT, 0, singles(right));
 
-		expect(bandFor(runCoverageOf(bareWindow(3), 0), 0).id).toBe("healthy");
+		expect(bandFor(runCoverageOf(bareWindow(3), 0), 0).id).toBe("ok");
 		expect(bandFor(runCoverageOf(bareWindow(4), 0), 0).id).toBe("healthy");
 		expect(bandFor(runCoverageOf(bareWindow(5), 0), 0).id).toBe("perfect");
 	});
 
 	it("shrinks as the codebase grows, the unit itself never changing", () => {
-		expect(coverageGainPercentFor(BASE_UNIT, VICTORY_GATE)).toBeCloseTo(9.09);
+		expect(coverageGainPercentFor(BASE_UNIT, VICTORY_GATE)).toBeCloseTo(10);
 	});
 
 	it("scales with the build, so AGENTS.md and Intellisense move the bar 2.5 times as far", () => {
@@ -404,6 +439,7 @@ describe("the balance this model exists to hold", () => {
 		for (let trial = 0; trial < TRIALS; trial++) {
 			let gate = 0;
 			let headStart = 0;
+			let accuracyBonus = 0;
 			let holds = 0;
 			let alive = true;
 
@@ -420,7 +456,7 @@ describe("the balance this model exists to hold", () => {
 					units += unitsPerCorrect(configs, multiple ? "multiple" : "single");
 				}
 
-				const output = headStart + gateOutputOf(units, tally);
+				const output = headStart + gateOutputOf(units, accuracyBonus, tally);
 				const band = bandFor(runCoverageOf(output, gate), gate).id;
 
 				if (band === "danger" && gate > 0) {
@@ -430,6 +466,7 @@ describe("the balance this model exists to hold", () => {
 					alive = holds <= HOLDS_BEFORE_THE_RUN_ENDS;
 				} else {
 					headStart = headStartFor(output, gate);
+					accuracyBonus = accuracyBonusAfter(accuracyBonus, tally);
 					holds = 0;
 					gate++;
 				}

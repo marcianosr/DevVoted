@@ -9,15 +9,23 @@ export type RunOverViewProps = RunOverScreenHandlers & {
 	view: RunView;
 	runNumber?: number | null;
 	archiveAfterKb?: number;
+	startRefusal?: string;
 };
 
 export const RunOverView = ({
 	view,
 	runNumber = null,
 	archiveAfterKb,
+	startRefusal,
 	...on
 }: RunOverViewProps) => (
 	<RunOverScreen
-		{...runOverScreenPropsFor({ view, runNumber, archiveAfterKb, on })}
+		{...runOverScreenPropsFor({
+			view,
+			runNumber,
+			archiveAfterKb,
+			startRefusal,
+			on,
+		})}
 	/>
 );

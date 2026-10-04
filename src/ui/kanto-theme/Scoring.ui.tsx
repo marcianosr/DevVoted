@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { CHOICE_LABEL } from "~/shared/lib/copy";
 
@@ -32,10 +32,13 @@ const GAP_GLYPH = "⋮";
 
 const PRICES = "flex flex-col gap-3";
 const PRICE = "flex flex-wrap items-center gap-3";
-const PRICE_LABEL = "w-28 shrink-0";
+const PRICE_LABEL = "w-28 shrink-0 whitespace-nowrap";
 const STEPS = "flex flex-wrap items-center gap-1.5";
 const STATEMENTS = "flex flex-col gap-3 border-t border-theme-faint pt-4";
 const STATEMENT = "flex items-start gap-3";
+const STATEMENT_BODY = "flex min-w-0 flex-col gap-2";
+const CURVE = "grid grid-cols-6 gap-1.5";
+const CURVE_STEP = "flex flex-col items-center gap-1";
 const ROW = "items-center gap-3";
 const ACCENT = "border-l-2 border-theme";
 const GAP_ROW = "text-theme-muted";
@@ -80,10 +83,17 @@ export type ScoringGateStated = {
 
 export type ScoringGateRow = Redactable<ScoringGateFigures, ScoringGateStated>;
 
+export type ScoringCurveStep = { right: string; multiplier: string };
+
+export type ScoringCurve = {
+	statement: LeadLine;
+	steps: readonly ScoringCurveStep[];
+};
+
 export type ScoringProps = {
-	meta: LeadLine;
+	meta: readonly LeadLine[];
 	prices: readonly ScoringPrice[];
-	hint: LeadLine;
+	curve: ScoringCurve;
 	statements: readonly LeadLine[];
 	rows: readonly ScoringGateRow[];
 };
@@ -91,7 +101,9 @@ export type ScoringProps = {
 const Price = ({ price }: { price: ScoringPrice }) => (
 	<div className={PRICE}>
 		<span className={PRICE_LABEL}>
-			<Typography variant="caption">{price.label}</Typography>
+			<Typography variant="hint" as="span">
+				{price.label}
+			</Typography>
 		</span>
 		<span className={STEPS}>
 			{price.steps.map((step, index) => (
@@ -103,11 +115,35 @@ const Price = ({ price }: { price: ScoringPrice }) => (
 	</div>
 );
 
-const Statement = ({ line, number }: { line: LeadLine; number: number }) => (
+const Statement = ({
+	line,
+	number,
+	children,
+}: {
+	line: LeadLine;
+	number: number;
+	children?: ReactNode;
+}) => (
 	<div className={STATEMENT}>
 		<Badge>{number}</Badge>
-		<Lead line={line} variant="prose" />
+		<div className={STATEMENT_BODY}>
+			<Lead line={line} variant="prose" />
+			{children}
+		</div>
 	</div>
+);
+
+const CurveSteps = ({ steps }: { steps: readonly ScoringCurveStep[] }) => (
+	<ul className={CURVE}>
+		{steps.map((step) => (
+			<li key={step.right} className={CURVE_STEP}>
+				<Typography variant="caption" as="span">
+					{step.right}
+				</Typography>
+				<Badge>{step.multiplier}</Badge>
+			</li>
+		))}
+	</ul>
 );
 
 const Figures = ({ row }: { row: ScoringGateRow }) => {
@@ -157,7 +193,7 @@ const skipsGatesBefore = (rows: readonly ScoringGateRow[], index: number) =>
 export const Scoring = ({
 	meta,
 	prices,
-	hint,
+	curve,
 	statements,
 	rows,
 }: ScoringProps) => (
@@ -166,11 +202,13 @@ export const Scoring = ({
 			{prices.map((price) => (
 				<Price key={price.label} price={price} />
 			))}
-			<Lead line={hint} />
 		</div>
 		<div className={STATEMENTS}>
+			<Statement line={curve.statement} number={1}>
+				<CurveSteps steps={curve.steps} />
+			</Statement>
 			{statements.map((line, index) => (
-				<Statement key={index} line={line} number={index + 1} />
+				<Statement key={index} line={line} number={index + 2} />
 			))}
 		</div>
 		<PanelTable columns={COLUMNS} bleed="sides">

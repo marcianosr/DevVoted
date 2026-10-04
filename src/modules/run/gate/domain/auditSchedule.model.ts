@@ -174,7 +174,13 @@ export const drawPayloads = (
 	seed: string,
 	count: number
 ): readonly AuditId[] =>
-	shuffleSeeded(eligibleFor(pool, taken), seed).slice(0, count);
+	shuffleSeeded(pool, seed).reduce<readonly AuditId[]>(
+		(drawn, id) =>
+			drawn.length < count && eligibleFor([id], [...taken, ...drawn]).length
+				? [...drawn, id]
+				: drawn,
+		[]
+	);
 
 export const gateDrawSeed = (date: string, gate: number): string =>
 	`${date}:${gate}:gate`;

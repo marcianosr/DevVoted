@@ -6,6 +6,7 @@ import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
 
 import type {
+	ClimbFallen,
 	RunCommunityPoll,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
@@ -36,18 +37,15 @@ import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 
 const LETTERS = "ABCDEFGH";
 
-const TURNOUT_FACES = 10;
-
 const COPY = {
-	turnoutTitle: "Who cleared what",
+	turnoutTitle: "Today’s records",
 	answeredToday: "answered today",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
 	pollsTitle: "The day’s polls",
-	notDealtYet: "Not dealt yet",
+	notDealtYet: (index: number) => `Poll ${index + 1} · not dealt yet`,
 	countdownHint: "until the next five polls are dealt",
 	pollsOpen: "polls are open",
-	standing: "your standing today",
 	whereYouStand: "where your run stands",
 } as const;
 
@@ -115,8 +113,8 @@ const recordRowOf = (
 const facesOf = (
 	voters: readonly CommunityVoter[]
 ): Pick<TurnoutBand, "climbers" | "overflow"> => ({
-	climbers: voters.slice(0, TURNOUT_FACES).map(climberOf),
-	overflow: Math.max(0, voters.length - TURNOUT_FACES),
+	climbers: voters.map(climberOf),
+	overflow: 0,
 });
 
 export const showedUpBand = (
@@ -128,29 +126,42 @@ export const showedUpBand = (
 	...facesOf(view.players),
 });
 
+export type FallenPress = (userId: string) => (() => void) | undefined;
+
+const pressableOf =
+	(pressFallen: FallenPress) =>
+	(climber: ClimberProps): ClimberProps => {
+		const onPress =
+			climber.userId === undefined ? undefined : pressFallen(climber.userId);
+		return onPress === undefined ? climber : { ...climber, onPress };
+	};
+
 export const turnoutFor = (
 	turnout: CommunityDayTurnout | undefined,
-	when: string,
-	fallback: TurnoutBand
+	showedUp: TurnoutBand,
+	pressFallen: FallenPress = () => undefined
 ): CommunityTurnout => {
 	const outcomes = DAY_OUTCOMES.filter(
 		(outcome) => (turnout?.outcomes[outcome].length ?? 0) > 0
 	).map((outcome): TurnoutBand => {
 		const voters = turnout?.outcomes[outcome] ?? [];
 		const band = bandOf(outcome);
+		const faces = facesOf(voters);
 		return {
 			label: band.label,
 			caption: OUTCOME_CAPTION[outcome],
 			count: String(voters.length),
 			color: band.colour,
-			...facesOf(voters),
+			...faces,
+			...(outcome === "danger"
+				? { climbers: faces.climbers.map(pressableOf(pressFallen)) }
+				: {}),
 		};
 	});
 
 	return {
 		title: COPY.turnoutTitle,
-		when,
-		bands: outcomes.length === 0 ? [fallback] : outcomes,
+		bands: [showedUp, ...outcomes],
 		records: (turnout?.records ?? []).map(({ record, holders }) => ({
 			...recordRowOf(record),
 			...facesOf(holders),
@@ -166,6 +177,16 @@ export const defaultOpenIndex = (
 ): number | undefined =>
 	polls.filter((poll) => poll.detail !== null).at(-1)?.index;
 
+export const pollTallyFor = (
+	polls: readonly RunCommunityPoll[]
+): string | undefined => {
+	const revealed = polls.filter((poll) => poll.detail !== null);
+	if (revealed.length === 0) return undefined;
+
+	const right = revealed.filter((poll) => poll.outcome === "correct").length;
+	return `${right} of ${revealed.length}`;
+};
+
 export const pollResultsFor = (
 	polls: readonly RunCommunityPoll[]
 ): PollResultProps[] => {
@@ -175,7 +196,7 @@ export const pollResultsFor = (
 	return Array.from({ length: SLICE_WINDOW }, (_, index): PollResultProps => {
 		const poll = polls.find((entry) => entry.index === index);
 		if (poll === undefined)
-			return { state: "sealed", index, question: COPY.notDealtYet };
+			return { state: "sealed", index, question: COPY.notDealtYet(index) };
 		if (poll.detail === null)
 			return { state: "sealed", index, question: poll.question };
 
@@ -203,6 +224,17 @@ export const pollResultsFor = (
 		};
 	});
 };
+
+const fallenPressFor =
+	(
+		fallen: readonly ClimbFallen[],
+		onInspect: ((id: string) => void) | undefined
+	): FallenPress =>
+	(userId) => {
+		const run = fallen.find((entry) => entry.id === userId);
+		if (run === undefined || onInspect === undefined) return undefined;
+		return () => onInspect(String(run.runId));
+	};
 
 export type CommunityScreenFrame = {
 	view: RunCommunityView;
@@ -253,15 +285,6 @@ export const communityScreenPropsFor = ({
 					label: plural(view.totalPlayers, "player"),
 					hint: COPY.answeredToday,
 				},
-				...(view.topPercent === null
-					? []
-					: [
-							{
-								icon: "review" as const,
-								label: `top ${view.topPercent}%`,
-								hint: COPY.standing,
-							},
-						]),
 				{
 					icon: "gate",
 					label: `gate ${swatch.gate} · ${swatch.gateName}`,
@@ -273,7 +296,11 @@ export const communityScreenPropsFor = ({
 				onPress: back.disabled === true ? undefined : back.onBack,
 			},
 		},
-		turnout: turnoutFor(view.climb?.turnout, view.date, showedUpBand(view)),
+		turnout: turnoutFor(
+			view.climb?.turnout,
+			showedUpBand(view),
+			fallenPressFor(view.climb?.fallen ?? [], onInspectClimber)
+		),
 		map: {
 			title: COPY.mapTitle,
 			...(view.climb === null
@@ -292,7 +319,7 @@ export const communityScreenPropsFor = ({
 		leaders: view.leaders.map(categoryBoardFor),
 		polls: {
 			title: COPY.pollsTitle,
-			summary: `${plural(view.totalPlayers, "player")} answered`,
+			tally: pollTallyFor(view.polls),
 			polls: pollResultsFor(view.polls),
 		},
 	};

@@ -76,7 +76,7 @@ const PROFILE = {
 	equippedBorderId: null,
 	equippedTitleIds: ["title-it-compiles", "title-ship-it"],
 	archivedStorage: 8_388_608,
-	ownedSwatchIds: ["swatch-pallet", "swatch-boulder"],
+	ownedSwatchIds: ["swatch-pallet", "swatch-pewter"],
 	equippedSwatchId: null,
 	role: "user",
 };
@@ -194,18 +194,18 @@ describe("getPublicProfileService", () => {
 	it("wears pallet on the page when the player wears no swatch", async () => {
 		const response = await getPublicProfileService(RED);
 
-		expect(unwrap<{ theme: string }>(response).theme).toBe("pallet");
+		expect(unwrap<{ theme: string }>(response).theme).toBe("gate-pallet");
 	});
 
 	it("wears the theme of the swatch the player wears", async () => {
 		fetchPublicProfile.mockResolvedValue({
 			...PROFILE,
-			equippedSwatchId: "swatch-boulder",
+			equippedSwatchId: "swatch-pewter",
 		});
 
 		const response = await getPublicProfileService(RED);
 
-		expect(unwrap<{ theme: string }>(response).theme).toBe("boulder");
+		expect(unwrap<{ theme: string }>(response).theme).toBe("gate-pewter");
 	});
 
 	describe("the collection", () => {
@@ -348,6 +348,26 @@ describe("getPublicProfileService", () => {
 
 			expect(held.runsFinished).toBe(3);
 			expect(held.recentRuns).toHaveLength(3);
+		});
+
+		it("names the best run from every finished run, even one older than the recent few", async () => {
+			fetchGateRunsByUser.mockResolvedValueOnce([
+				...[7, 6, 5, 4, 3].map((runId) => endedRun(runId, 2)),
+				endedRun(1, 10),
+			]);
+
+			const held = await record();
+
+			expect(held.bestRun).toMatchObject({ runId: 1, gatesCleared: 10 });
+		});
+
+		it("counts the runs that took the Champion", async () => {
+			fetchGateRunsByUser.mockResolvedValueOnce([
+				{ ...endedRun(2, 13), engineStatus: "won" },
+				endedRun(1, 4),
+			]);
+
+			expect(await record()).toMatchObject({ runsWon: 1 });
 		});
 
 		it("keeps only the seats this player holds, never the whole board", async () => {

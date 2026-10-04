@@ -10,7 +10,7 @@ import type { ApiResponse } from "~/shared/utils/errorHandling";
 
 type Badge = { readonly gym: string };
 
-const BOULDER: Badge = { gym: "Pewter" };
+const PEWTER: Badge = { gym: "Pewter" };
 
 const renderApiMutation = (mutationFn: () => Promise<ApiResponse<Badge>>) => {
 	const queryClient = createTestQueryClient();
@@ -24,7 +24,7 @@ describe("useApiMutation", () => {
 	it("reports no error before the press and after a success", async () => {
 		const { result } = renderApiMutation(async () => ({
 			success: true,
-			data: BOULDER,
+			data: PEWTER,
 		}));
 		expect(result.current.errorMessage).toBeNull();
 

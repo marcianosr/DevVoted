@@ -28,48 +28,48 @@ describe("GATE_SWATCHES", () => {
 		expect(swatchForGate(VICTORY_GATE)?.name).toBe("Champion Swatch");
 	});
 
-	it("names the Elite gate just below the summit", () => {
-		expect(swatchForGate(VICTORY_GATE - 1)?.name).toBe("Elite Swatch");
+	it("names the Indigo Elite gate just below the summit", () => {
+		expect(swatchForGate(VICTORY_GATE - 1)?.name).toBe("Indigo Elite Swatch");
 	});
 
 	it("keeps the eight gym badges in trainer-card order", () => {
 		const badges = ALL_SWATCHES.filter(({ gateName }) =>
 			[
-				"Boulder",
-				"Cascade",
-				"Thunder",
-				"Rainbow",
-				"Soul",
-				"Marsh",
-				"Volcano",
-				"Earth",
+				"Pewter",
+				"Cerulean",
+				"Vermilion",
+				"Celadon",
+				"Fuchsia",
+				"Saffron",
+				"Cinnabar",
+				"Viridian",
 			].includes(gateName)
 		);
 		expect(badges.map(({ gateName }) => gateName)).toEqual([
-			"Boulder",
-			"Cascade",
-			"Thunder",
-			"Rainbow",
-			"Soul",
-			"Marsh",
-			"Volcano",
-			"Earth",
+			"Pewter",
+			"Cerulean",
+			"Vermilion",
+			"Celadon",
+			"Fuchsia",
+			"Saffron",
+			"Cinnabar",
+			"Viridian",
 		]);
 	});
 
 	it("walks the two non-gym landmarks where Kanto actually walks them", () => {
 		expect(swatchForGate(4)?.gateName).toBe("Lavender");
 		expect(swatchForGate(8)?.gateName).toBe("Seafoam");
-		expect(swatchForGate(3)?.gateName).toBe("Thunder");
-		expect(swatchForGate(5)?.gateName).toBe("Rainbow");
-		expect(swatchForGate(9)?.gateName).toBe("Volcano");
-		expect(swatchForGate(10)?.gateName).toBe("Earth");
+		expect(swatchForGate(3)?.gateName).toBe("Vermilion");
+		expect(swatchForGate(5)?.gateName).toBe("Celadon");
+		expect(swatchForGate(9)?.gateName).toBe("Cinnabar");
+		expect(swatchForGate(10)?.gateName).toBe("Viridian");
 	});
 
 	it("draws only the summit pair off the flat palette", () => {
 		const special = ALL_SWATCHES.filter((swatch) => swatch.finish !== "flat");
 		expect(special.map(({ name, finish }) => [name, finish])).toEqual([
-			["Elite Swatch", "plate"],
+			["Indigo Elite Swatch", "plate"],
 			["Champion Swatch", "fill"],
 		]);
 		expect(ALL_SWATCHES.filter((s) => s.finish === "flat")).toHaveLength(
@@ -90,9 +90,11 @@ describe("GATE_SWATCHES", () => {
 		expect(themes.size).toBe(ALL_SWATCHES.length);
 	});
 
-	it("keys the persisted id off the theme so a rename is a visible break", () => {
+	it("names the stored id and the theme after the same Kanto place", () => {
 		expect(
-			Object.values(GATE_SWATCHES).every((s) => s.id === `swatch-${s.theme}`)
+			Object.values(GATE_SWATCHES).every(
+				(s) => s.id.replace("swatch-", "") === s.theme.replace("gate-", "")
+			)
 		).toBe(true);
 	});
 });
@@ -110,14 +112,14 @@ describe("swatchesEarnedFrom", () => {
 
 	it("returns them in climb order, not in the order the windows landed", () => {
 		expect(swatchesEarnedFrom([2, 0, 1]).map((swatch) => swatch.theme)).toEqual(
-			["pallet", "boulder", "cascade"]
+			["gate-pallet", "gate-pewter", "gate-cerulean"]
 		);
 	});
 
 	it("skips a cleared gate that dropped a poll", () => {
 		expect(swatchesEarnedFrom([0, 2]).map((swatch) => swatch.theme)).toEqual([
-			"pallet",
-			"cascade",
+			"gate-pallet",
+			"gate-cerulean",
 		]);
 	});
 

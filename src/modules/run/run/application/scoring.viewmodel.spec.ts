@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import {
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 
@@ -12,10 +16,11 @@ import {
 } from "./scoring.viewmodel";
 
 const PALLET = 0;
-const THUNDER = 3;
+const VERMILION = 3;
 const LAVENDER = 4;
-const ELITE = 11;
+const INDIGO_ELITE = 11;
 const CHAMPION = 12;
+const CHAMPION_HEALTHY = `${percentOf(healthyAt(CHAMPION))}%`;
 
 describe("scoringRowsFor", () => {
 	it("lists every gate reached, the next one and the summit, sealing the two ahead", () => {
@@ -24,11 +29,11 @@ describe("scoringRowsFor", () => {
 		expect(rows.map((row) => row.gate)).toEqual([0, 1, 2, 3, 4, 5, 12]);
 		expect(rows.map((row) => row.name)).toEqual([
 			"Pallet",
-			"Boulder",
-			"Cascade",
-			"Thunder",
+			"Pewter",
+			"Cerulean",
+			"Vermilion",
 			"Lavender",
-			"Rainbow",
+			"Celadon",
 			"Champion",
 		]);
 		expect(rows.map((row) => row.locked)).toEqual([
@@ -52,17 +57,17 @@ describe("scoringRowsFor", () => {
 	});
 
 	it("states what a right single adds and the line for every gate reached", () => {
-		const [pallet, boulder, , , lavender] = scoringRowsFor(LAVENDER);
+		const [pallet, pewter, , , lavender] = scoringRowsFor(LAVENDER);
 
-		expect([pallet.unit, boulder.unit, lavender.unit]).toEqual([
-			"+11.1%",
-			"+11.1%",
-			"+11.1%",
+		expect([pallet.unit, pewter.unit, lavender.unit]).toEqual([
+			"+20%",
+			"+20%",
+			"+14.3%",
 		]);
-		expect([pallet.healthy, boulder.healthy, lavender.healthy]).toEqual([
-			"40%",
-			"44%",
-			"55%",
+		expect([pallet.healthy, pewter.healthy, lavender.healthy]).toEqual([
+			"64%",
+			"66%",
+			"73%",
 		]);
 	});
 
@@ -86,8 +91,8 @@ describe("scoringRowsFor", () => {
 		expect(rows[0].current).toBe(true);
 	});
 
-	it("skips no gate at Elite, where the next gate is the summit", () => {
-		const rows = scoringRowsFor(ELITE);
+	it("skips no gate at Indigo Elite, where the next gate is the summit", () => {
+		const rows = scoringRowsFor(INDIGO_ELITE);
 
 		expect(rows).toHaveLength(13);
 		expect(rows.filter((row) => row.locked === true)).toHaveLength(1);
@@ -104,22 +109,20 @@ describe("scoringRowsFor", () => {
 });
 
 describe("scoringMetaFor", () => {
-	it("states what a single and a multiple add and what accuracy can multiply", () => {
-		expect(leadTextOf(scoringMetaFor(LAVENDER))).toBe(
-			"single +11.1% · multiple up to +22.2% · accuracy up to ×2"
-		);
+	it("lists what a single and a multiple add and what accuracy can multiply, one line each", () => {
+		expect(scoringMetaFor(LAVENDER, 0).map(leadTextOf)).toEqual([
+			"single +14.3%",
+			"multiple up to +28.6%",
+			"accuracy up to ×1.08",
+		]);
 	});
 
 	it("badges the points as gains and the multiplier as a figure", () => {
-		expect(scoringMetaFor(LAVENDER)).toContainEqual({
-			figure: "+11.1%",
-			gain: true,
-		});
-		expect(scoringMetaFor(LAVENDER)).toContainEqual({
-			figure: "+22.2%",
-			gain: true,
-		});
-		expect(scoringMetaFor(LAVENDER)).toContainEqual({ figure: "×2" });
+		const [single, multiple, accuracy] = scoringMetaFor(LAVENDER, 0);
+
+		expect(single).toContainEqual({ figure: "+14.3%", gain: true });
+		expect(multiple).toContainEqual({ figure: "+28.6%", gain: true });
+		expect(accuracy).toContainEqual({ figure: "×1.08" });
 	});
 });
 
@@ -153,14 +156,14 @@ describe("pricesFor", () => {
 
 describe("lineStatementFor", () => {
 	it("says the line rises without quoting the gates ahead", () => {
-		expect(leadTextOf(lineStatementFor(THUNDER))).toBe(
-			"The line rises. HEALTHY asks 51% at Thunder and more at the gates after."
+		expect(leadTextOf(lineStatementFor(VERMILION))).toBe(
+			"The line rises. HEALTHY asks 71% at Vermilion and more at the gates after."
 		);
 	});
 
 	it("tops out at the summit", () => {
 		expect(leadTextOf(lineStatementFor(CHAMPION))).toBe(
-			"The line goes no higher. HEALTHY asks 84% at Champion, the last gate."
+			"The line goes no higher. HEALTHY asks 90% at Champion, the last gate."
 		);
 	});
 
@@ -168,7 +171,7 @@ describe("lineStatementFor", () => {
 		for (let gate = PALLET; gate < CHAMPION; gate += 1) {
 			const text = leadTextOf(lineStatementFor(gate));
 
-			expect(text).not.toContain("84%");
+			expect(text).not.toContain(CHAMPION_HEALTHY);
 			for (let later = gate + 1; later <= CHAMPION; later += 1) {
 				expect(text).not.toContain(gateSwatchAt(later).gateName);
 			}
@@ -177,31 +180,30 @@ describe("lineStatementFor", () => {
 });
 
 describe("scoringFor", () => {
-	const scoring = scoringFor(LAVENDER);
+	const scoring = scoringFor(LAVENDER, 0);
 
-	it("states two things: the multiplier curve, then the line", () => {
-		expect(scoring.statements).toHaveLength(2);
-	});
-
-	it("states the whole multiplier curve, each step badged", () => {
-		expect(leadTextOf(scoring.statements[0])).toBe(
-			"Right answers multiply what the window covered: 0 ×1 1 ×1.15 2 ×1.32 3 ×1.52 4 ×1.74 5 ×2. A multiple counts as two."
+	it("states the multiplier curve in a sentence, its steps apart from it", () => {
+		expect(leadTextOf(scoring.curve.statement)).toBe(
+			"Right answers multiply what the window covered, and the multiplier carries to the next gate. A miss takes a little back. A multiple counts as two."
 		);
-		expect(scoring.statements[0]).toContainEqual({ figure: "3 ×1.52" });
-		expect(scoring.statements[0]).toContainEqual({ figure: "5 ×2" });
 	});
 
-	it("states the line last", () => {
-		expect(leadTextOf(scoring.statements[1])).toBe(
+	it("steps the whole curve, one multiplier per count of right answers", () => {
+		expect(scoring.curve.steps).toEqual([
+			{ right: "0", multiplier: "×1" },
+			{ right: "1", multiplier: "×1" },
+			{ right: "2", multiplier: "×1.01" },
+			{ right: "3", multiplier: "×1.03" },
+			{ right: "4", multiplier: "×1.06" },
+			{ right: "5", multiplier: "×1.08" },
+		]);
+	});
+
+	it("states the line after the curve", () => {
+		expect(scoring.statements).toHaveLength(1);
+		expect(leadTextOf(scoring.statements[0])).toBe(
 			leadTextOf(lineStatementFor(LAVENDER))
 		);
-	});
-
-	it("hints what a poll pays in credit, the multiple's credit badged", () => {
-		expect(leadTextOf(scoring.hint)).toBe(
-			"credit per poll · a multiple counts 2 · configs add on top"
-		);
-		expect(scoring.hint).toContainEqual({ figure: "2" });
 	});
 
 	it("carries two prices and the sealed table", () => {
@@ -211,8 +213,12 @@ describe("scoringFor", () => {
 
 	it("never names the gate's codebase on any line it states, at any gate", () => {
 		for (let gate = PALLET; gate <= CHAMPION; gate += 1) {
-			const stated = scoringFor(gate);
-			const text = [stated.meta, stated.hint, ...stated.statements]
+			const stated = scoringFor(gate, 0);
+			const text = [
+				...stated.meta,
+				stated.curve.statement,
+				...stated.statements,
+			]
 				.map(leadTextOf)
 				.join(" ");
 

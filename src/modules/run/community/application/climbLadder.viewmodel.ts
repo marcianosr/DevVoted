@@ -53,6 +53,7 @@ export type FileHand = {
 	readonly targetRunIdByUserId: ReadonlyMap<string, number>;
 	readonly onFile: (targetRunId: number) => void;
 	readonly pendingRunId?: number;
+	readonly refused?: { readonly targetRunId: number; readonly reason: string };
 };
 
 export type ClimberMark = "perfect" | "shaky";
@@ -136,6 +137,8 @@ export const fileOf = (
 	const targetRunId = hand.targetRunIdByUserId.get(userId);
 	if (targetRunId === undefined)
 		return { label, refusal: FILE_COPY.outOfReach(hand.audit) };
+	if (hand.refused?.targetRunId === targetRunId)
+		return { label, refusal: hand.refused.reason };
 
 	return {
 		label,

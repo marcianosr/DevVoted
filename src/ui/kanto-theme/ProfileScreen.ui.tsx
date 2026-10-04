@@ -11,6 +11,7 @@ const TITLE_ROW = "flex w-full flex-wrap items-baseline gap-x-3 gap-y-1";
 const SUBTITLE = "text-sm text-theme-muted";
 const ARCHIVE = "ml-auto text-sm text-theme-muted";
 const TABBED = "flex w-full flex-col";
+const HIGHLIGHTS = "grid w-full items-start gap-6 lg:grid-cols-2";
 const SECTIONS = "flex w-full flex-col gap-6";
 
 export const DEX_TITLE = "Dex";
@@ -19,8 +20,9 @@ export const DEX_TABLIST_LABEL = "Dex collections";
 export const EDIT_PROFILE = "edit profile";
 
 export type ProfileScreenProps = {
-	card: ReactNode;
+	hero: ReactNode;
 	theme: SwatchTheme;
+	highlights?: ReactNode;
 	sections?: ReactNode;
 	tabs?: readonly TabItem[];
 	activeId?: string;
@@ -69,8 +71,9 @@ const Collections = ({
 );
 
 export const ProfileScreen = ({
-	card,
+	hero,
 	theme,
+	highlights,
 	sections,
 	tabs,
 	activeId,
@@ -79,7 +82,10 @@ export const ProfileScreen = ({
 	children,
 }: ProfileScreenProps) => (
 	<Screen gate={theme} width="wide" ground="bare">
-		{card}
+		{hero}
+		{highlights === undefined ? null : (
+			<div className={HIGHLIGHTS}>{highlights}</div>
+		)}
 		{sections === undefined ? null : <div className={SECTIONS}>{sections}</div>}
 		{tabs === undefined ||
 		activeId === undefined ||

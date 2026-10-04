@@ -10,6 +10,7 @@ import {
 	playerCardViewFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
 import { standingOf } from "~/modules/run/community/domain/standing.model";
+import { gatesClearedBy } from "~/modules/run/gate/domain/swatch.model";
 import {
 	fetchActiveClimberFor,
 	fetchBestCategories,
@@ -36,6 +37,7 @@ export const getPlayerCardService = async (
 		return playerCardViewFor(
 			userId,
 			profileFaceOf(profile, pollCounts, pollsAnsweredIn(progress)),
+			gatesClearedBy(profile.ownedSwatchIds),
 			climber === null ? null : standingOf(climber, bestCategories.get(userId))
 		);
 	}, "getPlayerCard");

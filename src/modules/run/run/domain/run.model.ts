@@ -72,6 +72,7 @@ export type LastClose = {
 	readonly ladder?: GateLadder;
 	readonly correct?: number;
 	readonly accuracy?: AccuracyTally;
+	readonly multiplier?: number;
 };
 
 export type RecordedClose = LastClose & {
@@ -128,6 +129,7 @@ export type RunState = {
 	readonly gatesCleared: number;
 	readonly streak: number;
 	readonly headStartUnits: number;
+	readonly accuracyBonus: number;
 	readonly gateAttempts?: number;
 	readonly heldBy?: GateHoldReason;
 	readonly coverage: number;
@@ -266,6 +268,7 @@ export const createRun = (
 	auditSchedule,
 	streak: 0,
 	headStartUnits: 0,
+	accuracyBonus: 0,
 	coverage: 0,
 	coverageByCategory: {},
 	storage: PIN_START_KB_PER_GATE * startAtGate,

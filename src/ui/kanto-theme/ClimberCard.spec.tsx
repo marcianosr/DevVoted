@@ -58,15 +58,15 @@ describe("ClimberCard", () => {
 	});
 
 	it("wears the swatch the player chose across its head", () => {
-		render(<ClimberCard {...card({ theme: "cascade" })} />);
+		render(<ClimberCard {...card({ theme: "gate-cerulean" })} />);
 
 		expect(
 			screen.getByText("Heavy Pipeline").closest("[data-gate-theme]")
-		).toHaveAttribute("data-gate-theme", "cascade");
+		).toHaveAttribute("data-gate-theme", "gate-cerulean");
 	});
 
 	it("keeps the swatch off the standing, which wears the page", () => {
-		render(<ClimberCard {...card({ theme: "cascade" })} />);
+		render(<ClimberCard {...card({ theme: "gate-cerulean" })} />);
 
 		expect(screen.getByText("Webpack").closest("[data-gate-theme]")).toBeNull();
 	});
@@ -74,7 +74,7 @@ describe("ClimberCard", () => {
 	it("draws where they stand when they have a run open", () => {
 		render(<ClimberCard {...card()} />);
 
-		expect(screen.getByText("Thunder")).toBeInTheDocument();
+		expect(screen.getByText("Vermilion")).toBeInTheDocument();
 		expect(screen.getByText("Webpack")).toBeInTheDocument();
 	});
 

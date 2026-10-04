@@ -8,7 +8,7 @@ import type {
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 
 import { Climber } from "./Climber.ui";
-import { CARD_PANEL, ClimberCard } from "./ClimberCard.ui";
+import { ClimberCard } from "./ClimberCard.ui";
 import { Typography } from "./Typography.ui";
 
 export const COPY = {
@@ -16,7 +16,7 @@ export const COPY = {
 	you: "you",
 	rival: "rival",
 	fallen: "fallen",
-	pb: "your pb",
+	dismiss: "Dismiss",
 } as const;
 
 const STAR = "★";
@@ -44,6 +44,10 @@ const FALLEN_LANE =
 const CHIP_PRESS = "rounded-md focus:outline-none focus-visible:ring-2";
 
 const ROOT = "relative flex w-full flex-col gap-2";
+
+const OVERLAY = "fixed inset-0 z-50 flex items-center justify-center p-4";
+const SCRIM = "absolute inset-0 cursor-default bg-black/70";
+const DIALOG = "relative w-112 max-w-full";
 
 const LEGEND = "flex w-full flex-wrap items-center gap-x-4 gap-y-1 pt-1";
 const LEGEND_ITEM = "flex items-center gap-1.5 text-xs text-theme-muted";
@@ -132,10 +136,6 @@ const Legend = () => (
 		<LegendDot className="bg-viridian" word={COPY.you} />
 		<LegendDot className="bg-vermillion" word={COPY.rival} />
 		<LegendDot className="bg-pewter" word={COPY.fallen} />
-		<span className={clsx(LEGEND_ITEM, "text-saffron")}>
-			<span aria-hidden>{STAR}</span>
-			{COPY.pb}
-		</span>
 	</div>
 );
 
@@ -229,13 +229,26 @@ export const ClimbMap = ({ gates, openId, onInspect }: ClimbMapProps) => {
 				})}
 			</ul>
 			{opened?.climber.card === undefined ? null : (
-				<div className={CARD_PANEL}>
-					<ClimberCard
-						{...opened.climber.card}
-						{...(onInspect === undefined
-							? {}
-							: { onClose: () => onInspect(openId ?? "") })}
+				<div className={OVERLAY}>
+					<button
+						type="button"
+						aria-label={COPY.dismiss}
+						className={SCRIM}
+						onClick={() => onInspect?.(openId ?? "")}
 					/>
+					<div
+						role="dialog"
+						aria-modal="true"
+						aria-label={opened.climber.name}
+						className={DIALOG}
+					>
+						<ClimberCard
+							{...opened.climber.card}
+							{...(onInspect === undefined
+								? {}
+								: { onClose: () => onInspect(openId ?? "") })}
+						/>
+					</div>
 				</div>
 			)}
 			<Legend />

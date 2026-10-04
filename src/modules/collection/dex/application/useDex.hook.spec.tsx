@@ -57,7 +57,7 @@ const CERULEAN_RUN: RunHistoryEntry = {
 	heldBy: null,
 };
 
-const OWNED_SWATCHES = ["swatch-pallet", "swatch-boulder"];
+const OWNED_SWATCHES = ["swatch-pallet", "swatch-pewter"];
 const UNLOCKS = [{ configId: "eslint", viaMetric: null }];
 const PROGRESS = [{ metric: "rebuilds", count: 3 }];
 

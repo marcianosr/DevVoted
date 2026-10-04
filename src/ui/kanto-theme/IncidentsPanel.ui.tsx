@@ -2,14 +2,13 @@ import { clsx } from "clsx";
 
 import { Audit } from "./Audit.ui";
 import { Badge } from "./Badge.ui";
+import { Climber, type ClimberProps } from "./Climber.ui";
 import type { KantoColor } from "./colors";
 import { Panel } from "./Panel.ui";
-import { Typography } from "./Typography.ui";
 
-const PARTIES = "flex min-w-0 flex-wrap items-baseline gap-2 text-sm";
-const SENDER = "font-bold text-theme-soft";
+const PARTIES = "flex min-w-0 flex-wrap items-center gap-2 text-sm";
+const PARTY = "flex items-center gap-1.5 font-bold text-theme-soft";
 const ARROW = "text-theme-muted";
-const TARGET = "font-bold text-theme-soft";
 const ROW = "flex w-full flex-col gap-2";
 const OWN_ROW = "ring-1 ring-inset ring-theme-soft";
 
@@ -24,10 +23,22 @@ const STATUS_COLOR = {
 	lapsed: "pewter",
 } satisfies Record<IncidentStatusLabel, KantoColor>;
 
+export type IncidentParty = Pick<
+	ClimberProps,
+	"userId" | "name" | "photoUrl" | "borderUrl" | "you"
+>;
+
+const Party = ({ party }: { party: IncidentParty }) => (
+	<span className={PARTY}>
+		<Climber {...party} />
+		{party.name}
+	</span>
+);
+
 export type IncidentRowProps = {
 	id: number;
-	sentBy: string;
-	target: string;
+	sentBy: IncidentParty;
+	target: IncidentParty;
 	code: number;
 	name: string;
 	gate: string;
@@ -57,11 +68,11 @@ const IncidentRow = ({
 	>
 		<div className={ROW}>
 			<span className={PARTIES}>
-				<span className={SENDER}>{sentBy}</span>
+				<Party party={sentBy} />
 				<span className={ARROW} aria-hidden>
 					→
 				</span>
-				<span className={TARGET}>{target}</span>
+				<Party party={target} />
 			</span>
 			<Audit code={code} name={name} cue={gate} layout="row" />
 		</div>
@@ -75,12 +86,8 @@ export const IncidentsPanel = ({
 	empty,
 }: IncidentsPanelProps) => (
 	<Panel>
-		<Panel.Header label={title} meta={summary} />
-		{rows.length === 0 ? (
-			<Panel.Body>
-				<Typography variant="hint">{empty}</Typography>
-			</Panel.Body>
-		) : (
+		<Panel.Header label={title} summary={rows.length === 0 ? empty : summary} />
+		{rows.length === 0 ? null : (
 			<Panel.Rows>
 				{rows.map((row) => (
 					<IncidentRow key={row.id} {...row} />

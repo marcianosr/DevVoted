@@ -122,7 +122,7 @@ describe("NewRunScreen", () => {
 
 		expect(container.firstElementChild).toHaveAttribute(
 			"data-gate-theme",
-			"pallet"
+			"gate-pallet"
 		);
 		expect(container.firstElementChild).not.toHaveAttribute(
 			"data-screen-theme"

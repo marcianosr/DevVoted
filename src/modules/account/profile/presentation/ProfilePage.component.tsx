@@ -5,11 +5,7 @@ import {
 	isOwnerTabId,
 	isProfileTabId,
 	PROFILE_TABS,
-	profileCardFor,
-	profileClimbingFor,
-	profileCollectionFor,
-	profileRecordFor,
-	profileRunsFor,
+	profileHeroFor,
 	type ProfileTabId,
 } from "~/modules/account/profile/application/profileScreen.viewmodel";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
@@ -22,11 +18,7 @@ import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.co
 import { Dex } from "~/modules/collection/dex/presentation/Dex.component";
 import { archiveLabel } from "~/shared/lib/storage";
 import { Button } from "~/ui/kanto-theme/Button.ui";
-import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
-import { ProfileCard } from "~/ui/kanto-theme/ProfileCard.ui";
-import { ProfileClimbing } from "~/ui/kanto-theme/ProfileClimbing.ui";
-import { ProfileCollection } from "~/ui/kanto-theme/ProfileCollection.ui";
-import { ProfileRecord } from "~/ui/kanto-theme/ProfileRecord.ui";
+import { ProfileHero } from "~/ui/kanto-theme/ProfileHero.ui";
 import { EDIT_PROFILE, ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
 
 const APPEARANCE_TAB: ProfileTabId = "appearance";
@@ -56,9 +48,9 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 	const { identity } = profile;
 	const looked = lookedIdentityOf(identity, draft.look, draft.tryingOnId);
 
-	const card = (
-		<ProfileCard
-			{...profileCardFor(looked, true)}
+	const hero = (
+		<ProfileHero
+			{...profileHeroFor(looked, profile.record, true)}
 			trailing={
 				<Button
 					size="sm"
@@ -72,7 +64,7 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 
 	return (
 		<ProfileScreen
-			card={card}
+			hero={hero}
 			tabs={PROFILE_TABS}
 			activeId={activeId}
 			onSelect={selectTab}
@@ -111,27 +103,22 @@ const VisitedProfile = ({
 }) => {
 	const { view: profile } = usePublicProfile(userId);
 	const { view: viewer } = usePublicProfile(viewerId);
-	const [pickedRun, setPickedRun] = useState<string | undefined>(undefined);
 
 	if (!profile) return null;
 
 	return (
 		<ProfileScreen
-			card={<ProfileCard {...profileCardFor(profile.identity, false)} />}
-			theme={profile.theme}
-			sections={
-				<>
-					<ProfileRecord
-						{...profileRecordFor(profile.record, viewer?.record)}
-					/>
-					<DexRuns
-						{...profileRunsFor(profile.record, pickedRun)}
-						onSelect={setPickedRun}
-					/>
-					<ProfileClimbing {...profileClimbingFor(profile.standing)} />
-					<ProfileCollection {...profileCollectionFor(profile.totals)} />
-				</>
+			hero={
+				<ProfileHero
+					{...profileHeroFor(
+						profile.identity,
+						profile.record,
+						false,
+						viewer?.record
+					)}
+				/>
 			}
+			theme={profile.theme}
 		/>
 	);
 };

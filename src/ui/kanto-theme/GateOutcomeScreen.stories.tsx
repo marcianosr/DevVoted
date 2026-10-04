@@ -16,7 +16,7 @@ import {
 	kantoGateShaky,
 	kantoGateShakyCollected,
 	kantoGateShakyFunded,
-	kantoGateShakyPicking,
+	kantoGateShakyMix,
 	kantoGateSummit,
 	kantoGateWon,
 	kantoGateZero,
@@ -52,7 +52,7 @@ export const ShakyFunded: Story = { args: kantoGateShakyFunded() };
 
 export const HeldUnscored: Story = { args: kantoGateHeldUnscored() };
 
-export const ShakyPartlyPaid: Story = { args: kantoGateShakyPicking() };
+export const ShakyMix: Story = { args: kantoGateShakyMix() };
 
 export const ShakyCollected: Story = { args: kantoGateShakyCollected() };
 

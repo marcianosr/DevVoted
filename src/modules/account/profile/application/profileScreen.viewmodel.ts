@@ -6,7 +6,6 @@ import {
 	runTrackFor,
 	type DexTab,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
-import { isContributor } from "~/modules/account/profile/domain/authorship.model";
 import type {
 	ProfileIdentity,
 	ProfileRecord,
@@ -27,11 +26,13 @@ import { rankFor } from "~/modules/account/profile/domain/rank.model";
 import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 import type { ProfileClimbingProps } from "~/ui/kanto-theme/ProfileClimbing.ui";
 import type { ProfileCollectionProps } from "~/ui/kanto-theme/ProfileCollection.ui";
-import type {
-	ProfileRecordProps,
-	RecordFigure,
-} from "~/ui/kanto-theme/ProfileRecord.ui";
-import { standingFor } from "~/modules/run/community/application/playerCard.viewmodel";
+import type { ProfileBestRunProps } from "~/ui/kanto-theme/ProfileBestRun.ui";
+import type { ProfileHeroProps, Trophy } from "~/ui/kanto-theme/ProfileHero.ui";
+import type { ProfileSeatsProps } from "~/ui/kanto-theme/ProfileSeats.ui";
+import {
+	contributionOf,
+	standingFor,
+} from "~/modules/run/community/application/playerCard.viewmodel";
 
 export const OWNER_TAB_IDS = ["appearance", "borders", "titles"] as const;
 
@@ -70,9 +71,7 @@ export const profileCardFor = (
 	titles: identity.wornTitles,
 	rank: rankFor(identity.pollsAnswered),
 	you,
-	...(isContributor(identity.authorship)
-		? { contribution: identity.authorship }
-		: {}),
+	contribution: contributionOf(identity.authorship, identity.pollsAnswered),
 	...(identity.githubUsername === null
 		? {}
 		: { handle: identity.githubUsername }),
@@ -88,13 +87,21 @@ export const triedOnBorderOf = (
 		? undefined
 		: findBorderById(tryingOnId);
 
-const RECORD = {
+const HERO = {
 	deepestGate: "deepest gate",
 	swatches: "swatches",
-	runs: "runs finished",
-	yours: (figure: string) => `you ${figure}`,
-	meta: (deepestGate: number) => `reached gate ${deepestGate}`,
-	note: "Where they have been, and the gates they took without a wrong answer.",
+	runsWon: "runs won",
+	outOf: (total: number) => `/ ${total}`,
+	yours: (figure: number) => `you ${figure}`,
+	note: "A swatch is a gate taken at 100% coverage.",
+} as const;
+
+const BEST_RUN = {
+	meta: (gatesCleared: number) => `reached gate ${gatesCleared}`,
+} as const;
+
+const SEATS = {
+	meta: (count: number) => `${plural(count, "seat")} held`,
 } as const;
 
 const COLLECTION = {
@@ -105,53 +112,68 @@ const COLLECTION = {
 	note: "Which polls they have seen, and the answers they gave, stay private.",
 } as const;
 
-const CLIMBING = {
-	open: "a run is open",
-	none: "nothing open",
-} as const;
-
 const RUNS = { meta: "most recent" } as const;
 
-const figureOf = (
+const trophyOf = (
 	label: string,
 	held: number,
 	total: number,
 	yours: number | undefined
-): RecordFigure => ({
+): Trophy => ({
 	label,
-	figure: HELD_OF(held, total),
-	...(yours === undefined
-		? {}
-		: { yours: RECORD.yours(HELD_OF(yours, total)) }),
+	figure: String(held),
+	outOf: HERO.outOf(total),
+	...(yours === undefined ? {} : { yours: HERO.yours(yours) }),
 });
 
-export const profileRecordFor = (
+export const profileHeroFor = (
+	identity: ProfileIdentity,
 	record: ProfileRecord,
+	you: boolean,
 	yours?: ProfileRecord
-): ProfileRecordProps => ({
-	figures: [
-		figureOf(
-			RECORD.deepestGate,
+): ProfileHeroProps => ({
+	...profileCardFor(identity, you),
+	trophies: [
+		trophyOf(
+			HERO.deepestGate,
 			record.deepestGate,
 			record.gatesTotal,
 			yours?.deepestGate
 		),
-		figureOf(
-			RECORD.swatches,
+		trophyOf(
+			HERO.swatches,
 			record.clearedGates.length,
 			record.gatesTotal,
 			yours?.clearedGates.length
 		),
-		{ label: RECORD.runs, figure: String(record.runsFinished) },
+		{ label: HERO.runsWon, figure: String(record.runsWon) },
 	],
 	swatches: runTrackFor(record.clearedGates),
-	seats: record.seats.map((seat) => ({
-		category: getCategoryMetadata(seat.category).name,
-		figure: IN_A_ROW(seat.streak),
-	})),
-	meta: RECORD.meta(record.deepestGate),
-	note: RECORD.note,
+	note: HERO.note,
 });
+
+export const profileBestRunFor = ({
+	bestRun,
+}: ProfileRecord): ProfileBestRunProps | null =>
+	bestRun === null
+		? null
+		: {
+				run: runDetailFor(bestRun),
+				meta: BEST_RUN.meta(bestRun.gatesCleared),
+			};
+
+export const profileSeatsFor = ({
+	seats,
+}: ProfileRecord): ProfileSeatsProps | null =>
+	seats.length === 0
+		? null
+		: {
+				seats: seats.map((seat) => ({
+					category: getCategoryMetadata(seat.category).name,
+					figure: IN_A_ROW(seat.streak),
+				})),
+				meta: SEATS.meta(seats.length),
+			};
 
 export const profileRunsFor = (
 	record: ProfileRecord,
@@ -165,7 +187,7 @@ export const profileRunsFor = (
 		rows: record.recentRuns.map(runRowFor),
 		selectedId: picked === undefined ? null : String(picked.runId),
 		detail: picked === undefined ? null : runDetailFor(picked),
-		count: plural(record.recentRuns.length, "run"),
+		count: plural(record.runsFinished, "run"),
 		meta: RUNS.meta,
 		note: RUNS_NOTE,
 	};
@@ -173,10 +195,8 @@ export const profileRunsFor = (
 
 export const profileClimbingFor = (
 	standing: Standing | null
-): ProfileClimbingProps =>
-	standing === null
-		? { meta: CLIMBING.none }
-		: { meta: CLIMBING.open, standing: standingFor(standing) };
+): ProfileClimbingProps | null =>
+	standing === null ? null : standingFor(standing);
 
 const countOf = (label: string, { held, total }: Tally) => ({
 	label,

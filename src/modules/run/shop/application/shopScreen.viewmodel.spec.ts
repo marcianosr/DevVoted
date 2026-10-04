@@ -1,9 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Config } from "~/modules/run/config/domain/config.model";
-import { sellRefund } from "~/modules/run/config/domain/config.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import type { RunState } from "~/modules/run/run/domain/run.model";
+import { clearGate, started } from "~/modules/run/run/domain/run.factory";
+import {
+	type RunAction,
+	runReducer,
+} from "~/modules/run/run/domain/runAction.model";
+
+import {
+	type Config,
+	maxLevelOf,
+	sellRefund,
+} from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { maxLevelOf } from "~/modules/run/config/domain/config.model";
 import { nextUpgradeCostOf } from "~/modules/run/config/application/configChip.viewmodel";
 import { sellRefundIn } from "~/modules/run/shop/domain/draft.model";
 import {
@@ -11,6 +21,7 @@ import {
 	incidentDeskFor,
 	offerChipFor,
 	shopHeaderFor,
+	shopScreenPropsFor,
 	upgradeChipFor,
 } from "~/modules/run/shop/application/shopScreen.viewmodel";
 import { kbLabel } from "~/shared/lib/storage";
@@ -187,6 +198,15 @@ describe("buildChipFor, quoting the refund the run actually pays", () => {
 	});
 });
 
+describe("shopHeaderFor, naming the gate the shop leads into", () => {
+	it("wears the swatch of the gate it opens onto, the one its title names", () => {
+		const header = shopHeaderFor(2, 240);
+
+		expect(header.title).toBe("Vermilion Shop");
+		expect(header.swatch?.theme).toBe("gate-vermilion");
+	});
+});
+
 describe("shopHeaderFor, previewing what a price would leave", () => {
 	const CLEARED = 3;
 	const BALANCE_KB = 410;
@@ -354,5 +374,68 @@ describe("an offer that raises the build-space bill", () => {
 		expect(
 			(chip.badges ?? []).some((badge) => badge.label.startsWith("↻"))
 		).toBe(false);
+	});
+});
+
+describe("the skip press once the registry is touched", () => {
+	const shut = {
+		open: new Set<string>(),
+		toggle: () => {},
+		toggleAll: () => {},
+	};
+	const skipRowAfter = (actions: readonly RunAction[]) => {
+		const shopping: RunState = {
+			...clearGate(started(["ts"])),
+			storage: 500,
+			draftOptions: [CONFIGS.indexedDb],
+		};
+		const state = actions.reduce(runReducer, shopping);
+		const props = shopScreenPropsFor({
+			view: toRunView(state),
+			on: {
+				onDraft: () => {},
+				onSell: () => {},
+				onUpgrade: () => {},
+				onRebuild: () => {},
+				onSkip: () => {},
+				onExtend: () => {},
+				onPlantPin: () => {},
+				onAbandon: () => {},
+				onVendorLock: () => {},
+				onContinue: () => {},
+			},
+			ui: {
+				build: shut,
+				offers: shut,
+				onToggleUpgrades: () => {},
+				onArm: () => {},
+				onPoint: () => {},
+				abandonArmed: false,
+				onArmAbandon: () => {},
+				onDisarm: () => {},
+			},
+		});
+		return props.controls?.find((row) => row.id === "skipShop");
+	};
+
+	it("offers the skip on an untouched visit", () => {
+		const skip = skipRowAfter([]);
+
+		expect(skip?.onPress).toBeDefined();
+		expect(skip?.refusal).toBeUndefined();
+	});
+
+	it("refuses the skip after a draft", () => {
+		const skip = skipRowAfter([{ type: "draft", configId: "indexed-db" }]);
+
+		expect(skip?.onPress).toBeUndefined();
+		expect(skip?.refusal).toBe("registry touched");
+	});
+
+	it("refuses the skip after an uninstall", () => {
+		const skip = skipRowAfter([{ type: "sell", configId: "ts" }]);
+
+		expect(skip?.onPress).toBeUndefined();
+		expect(skip?.refusal).toBe("registry touched");
 	});
 });

@@ -6,9 +6,9 @@ import { BandLadder } from "./BandLadder.ui";
 import { Screen } from "./Screen.ui";
 
 const PALLET_GATE = 0;
-const CASCADE_GATE = 2;
+const CERULEAN_GATE = 2;
 const LAVENDER_GATE = 4;
-const CASCADE_THIN = 53.3;
+const CERULEAN_THIN = 53.3;
 const FULL = 100;
 
 const ladderAt = (gate: number, coverageHeld: number) =>
@@ -32,7 +32,7 @@ type Story = StoryObj<typeof BandLadder>;
 export const UnderTheFloor: Story = {};
 
 export const StandingInOk: Story = {
-	args: ladderAt(CASCADE_GATE, CASCADE_THIN),
+	args: ladderAt(CERULEAN_GATE, CERULEAN_THIN),
 };
 
 export const AtPallet: Story = { args: ladderAt(PALLET_GATE, 0) };

@@ -12,19 +12,11 @@ import { PollScores, type PollScoresProps } from "./PollScores.ui";
 import { Typography } from "./Typography.ui";
 
 const RULED = "border-t border-theme-faint";
-const BRIEF = "flex flex-col gap-1";
-
-export type BandBrief = {
-	statement: LeadLine;
-	hint: LeadLine;
-};
-
 export type { LeadBand, LeadFigure, LeadLine, LeadPart };
 
 export type BandOutcomesProps = {
 	title: string;
 	meta: LeadLine;
-	brief?: BandBrief;
 	objectives?: ObjectivesProps;
 	scores?: PollScoresProps;
 	ladder: BandLadderProps;
@@ -32,17 +24,9 @@ export type BandOutcomesProps = {
 	note?: string;
 };
 
-const Brief = ({ statement, hint }: BandBrief) => (
-	<Panel.Body className={BRIEF}>
-		<Lead line={statement} variant="subtitle" as="p" />
-		<Lead line={hint} variant="hint" as="p" />
-	</Panel.Body>
-);
-
 export const BandOutcomes = ({
 	title,
 	meta,
-	brief,
 	objectives,
 	scores,
 	ladder,
@@ -51,7 +35,6 @@ export const BandOutcomes = ({
 }: BandOutcomesProps) => (
 	<Panel>
 		<Panel.Header label={title} meta={<Lead line={meta} as="span" />} />
-		{brief === undefined ? null : <Brief {...brief} />}
 		{objectives === undefined ? null : <Objectives {...objectives} />}
 		{scores === undefined ? null : (
 			<Panel.Body className={RULED}>

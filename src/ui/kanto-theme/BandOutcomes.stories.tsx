@@ -10,9 +10,9 @@ import { BandOutcomes } from "./BandOutcomes.ui";
 import { Screen } from "./Screen.ui";
 
 const PALLET_GATE = 0;
-const CASCADE_GATE = 2;
+const CERULEAN_GATE = 2;
 const LAVENDER_GATE = 4;
-const CASCADE_THIN = 53.3;
+const CERULEAN_THIN = 53.3;
 const HEALTHY_HELD = 70;
 const FULL = 100;
 
@@ -53,7 +53,7 @@ type Story = StoryObj<typeof BandOutcomes>;
 export const UnderTheFloor: Story = {};
 
 export const StandingInOk: Story = {
-	args: atStake(CASCADE_GATE, CASCADE_THIN),
+	args: atStake(CERULEAN_GATE, CERULEAN_THIN),
 };
 
 export const StandingInHealthy: Story = {

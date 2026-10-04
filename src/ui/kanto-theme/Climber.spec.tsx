@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { PlayerHoverContext } from "~/shared/hooks/usePlayerHover.hook";
@@ -116,6 +116,11 @@ describe("Climber", () => {
 	});
 });
 
+const GYM = ["brock", "misty", "surge", "erika", "koga"].map((id) => ({
+	userId: id,
+	name: id,
+}));
+
 describe("ClimberStack", () => {
 	it("draws every climber it was handed", () => {
 		render(<ClimberStack climbers={[{ name: "Brock" }, { name: "Misty" }]} />);
@@ -134,6 +139,50 @@ describe("ClimberStack", () => {
 		render(<ClimberStack climbers={[{ name: "Brock" }]} />);
 
 		expect(screen.queryByText(/^\+/)).toBeNull();
+	});
+
+	it("draws only the faces it has room for and offers the rest behind a press", () => {
+		const { container } = render(<ClimberStack climbers={GYM} shown={3} />);
+		const more = screen.getByRole("button", { name: "show 2 more players" });
+
+		expect(more).toHaveTextContent("+2");
+		expect(
+			container.firstElementChild?.querySelectorAll(
+				":scope > [title], :scope > a"
+			)
+		).toHaveLength(3);
+	});
+
+	it("opens the folded faces as links to their players", () => {
+		render(<ClimberStack climbers={GYM} shown={3} />);
+		const more = screen.getByRole("button", { name: "show 2 more players" });
+		const panel = document.getElementById(
+			more.getAttribute("popovertarget") ?? ""
+		);
+		if (panel === null) throw new Error("the press targets no popover");
+
+		expect(panel).toHaveAttribute("popover", "auto");
+		expect(
+			within(panel)
+				.getAllByRole("link", { hidden: true })
+				.map((link) => link.getAttribute("href"))
+		).toEqual(["/profile/erika", "/profile/koga"]);
+	});
+
+	it("counts the players it has no face for in the press and in the panel", () => {
+		render(<ClimberStack climbers={GYM} shown={3} overflow={624} />);
+
+		expect(
+			screen.getByRole("button", { name: "show 626 more players" })
+		).toHaveTextContent("+626");
+		expect(screen.getByText("and 624 more")).toBeInTheDocument();
+	});
+
+	it("keeps the count as plain text when there is no face to open", () => {
+		render(<ClimberStack climbers={[{ name: "Brock" }]} overflow={12} />);
+
+		expect(screen.queryByRole("button")).toBeNull();
+		expect(screen.getByText("+12")).toBeInTheDocument();
 	});
 });
 

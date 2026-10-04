@@ -23,7 +23,7 @@ const MISTY = appearanceFor({
 	look: {
 		borderId: "border-00b9a62e",
 		titleIds: ["title-rank-poll-newbie", "title-legacy-tester"],
-		swatchId: "swatch-cascade",
+		swatchId: "swatch-cerulean",
 	},
 	tryingOnId: null,
 	ownedBorderIds: ["border-00b9a62e", "border-0a006140"],
@@ -32,7 +32,7 @@ const MISTY = appearanceFor({
 		"title-legacy-tester",
 		"title-answered-css",
 	],
-	ownedSwatchIds: ["swatch-boulder", "swatch-cascade"],
+	ownedSwatchIds: ["swatch-pewter", "swatch-cerulean"],
 });
 
 const ARGS: AppearanceProps = {

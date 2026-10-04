@@ -6,7 +6,7 @@ import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
 import { BALANCE_PILL_HOLD_MS } from "./Balance.ui";
 import { Header } from "./Header.ui";
 
-const VOLCANO = gateSwatchAt(9);
+const CINNABAR = gateSwatchAt(9);
 
 const FUNDS = { label: "balance", kb: 843 } as const;
 
@@ -28,7 +28,7 @@ const COVERAGE = {
 } as const;
 
 const props = {
-	swatch: VOLCANO,
+	swatch: CINNABAR,
 	swatches: trackTo(9),
 } as const;
 
@@ -40,7 +40,7 @@ describe("Header", () => {
 
 		const ring = screen.getByRole("img", { name: /148% of 210% needed/ });
 		expect(container.querySelector("header")).toContainElement(ring);
-		expect(screen.getByText(/Volcano/)).toBeInTheDocument();
+		expect(screen.getByText(/Cinnabar/)).toBeInTheDocument();
 	});
 
 	it("draws no ring when the header is given no coverage to read", () => {
@@ -63,14 +63,14 @@ describe("Header", () => {
 	it("names the gate from the roster rather than a passed-in string", () => {
 		render(<Header {...props} />);
 
-		expect(screen.getByText("#9 - Volcano Gate")).toBeInTheDocument();
+		expect(screen.getByText("#9 - Cinnabar Gate")).toBeInTheDocument();
 	});
 
 	it("leads with a swatch already filled in the gate's own colour", () => {
 		const { container } = render(<Header {...props} />);
 
 		const lead = container.querySelector("header > div > span");
-		expect(lead).toHaveAttribute("data-swatch-theme", "volcano");
+		expect(lead).toHaveAttribute("data-swatch-theme", "gate-cinnabar");
 		expect(lead).toHaveClass("bg-theme");
 	});
 
@@ -105,7 +105,7 @@ describe("Header", () => {
 	it("titles at 16px, with no margin to offset the swatch", () => {
 		render(<Header {...props} />);
 
-		const title = screen.getByText("#9 - Volcano Gate");
+		const title = screen.getByText("#9 - Cinnabar Gate");
 		expect(title).toHaveClass("text-base", "font-extrabold");
 		expect(title).not.toHaveClass("mb-5");
 	});
@@ -217,10 +217,10 @@ describe("Header", () => {
 	});
 
 	it("lets a screen rename the title without touching the gate", () => {
-		render(<Header {...props} title="Shop · cleared Volcano" />);
+		render(<Header {...props} title="Shop · cleared Cinnabar" />);
 
-		expect(screen.getByText("Shop · cleared Volcano")).toBeInTheDocument();
-		expect(screen.queryByText("#9 - Volcano Gate")).not.toBeInTheDocument();
+		expect(screen.getByText("Shop · cleared Cinnabar")).toBeInTheDocument();
+		expect(screen.queryByText("#9 - Cinnabar Gate")).not.toBeInTheDocument();
 	});
 
 	it("says nothing beside the track unless the screen gives it a note", () => {
@@ -230,12 +230,11 @@ describe("Header", () => {
 	});
 
 	it("carries the note a screen hands it, and only that", () => {
-		render(<Header {...props} note="next gate 10 · Earth · to pass 250%" />);
+		render(<Header {...props} note="next gate 10 · Viridian · to pass 250%" />);
 
-		expect(screen.getByText("next gate 10 · Earth · to pass 250%")).toHaveClass(
-			"opacity-60",
-			"ml-auto"
-		);
+		expect(
+			screen.getByText("next gate 10 · Viridian · to pass 250%")
+		).toHaveClass("opacity-60", "ml-auto");
 	});
 
 	it("keeps a note at the row's end by default", () => {
@@ -351,7 +350,7 @@ describe("Header", () => {
 });
 
 describe("Header funds, as the balance moves", () => {
-	const props = { swatch: VOLCANO, swatches: trackTo(9) };
+	const props = { swatch: CINNABAR, swatches: trackTo(9) };
 
 	const fundsAt = (kb: number) => ({ label: "balance", kb });
 
@@ -623,7 +622,7 @@ describe("Header, pinned", () => {
 		const { container } = render(<Header {...props} funds={FUNDS} pinned />);
 		const bar = headerIn(container);
 
-		expect(bar).toHaveTextContent(/Volcano/);
+		expect(bar).toHaveTextContent(/Cinnabar/);
 		expect(bar).toContainElement(screen.getByRole("img", { name: "843 KB" }));
 	});
 

@@ -23,8 +23,8 @@ describe("IncidentsPanel", () => {
 
 		const first = kantoIncidents().rows[0]!;
 
-		expect(screen.getAllByText(first.sentBy).length).toBeGreaterThan(0);
-		expect(screen.getAllByText(first.target).length).toBeGreaterThan(0);
+		expect(screen.getAllByText(first.sentBy.name).length).toBeGreaterThan(0);
+		expect(screen.getAllByText(first.target.name).length).toBeGreaterThan(0);
 		expect(screen.getAllByText(first.gate).length).toBeGreaterThan(0);
 	});
 
@@ -42,11 +42,32 @@ describe("IncidentsPanel", () => {
 		);
 	});
 
+	it("draws both parties' faces, each a way into their profile", () => {
+		render(<IncidentsPanel {...kantoIncidents()} />);
+
+		expect(
+			screen.getByRole("link", { name: "Erika's profile" })
+		).toHaveAttribute("href", "/profile/erika");
+		expect(
+			screen.getByRole("link", { name: "Koga's profile" })
+		).toHaveAttribute("href", "/profile/koga");
+	});
+
+	it("states the day's count under the heading, left-aligned, not wrapped at the right", () => {
+		render(<IncidentsPanel {...kantoIncidents()} />);
+
+		expect(screen.getByText(kantoIncidents().summary)).toHaveClass(
+			"basis-full"
+		);
+	});
+
 	it("calls a quiet day an outcome rather than drawing an empty list", () => {
 		const quiet = kantoIncidentsQuiet();
 		const { container } = render(<IncidentsPanel {...quiet} />);
 
-		expect(screen.getByText(quiet.empty)).toBeInTheDocument();
+		expect(container.querySelector("header")).toHaveTextContent(quiet.empty);
+		expect(screen.getByText(quiet.empty)).toHaveClass("basis-full");
+		expect(container.querySelector("section")?.children).toHaveLength(1);
 		expect(within(container).queryByText("survived")).toBeNull();
 	});
 });

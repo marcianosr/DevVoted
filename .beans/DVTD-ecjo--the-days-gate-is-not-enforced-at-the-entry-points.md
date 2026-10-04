@@ -1,11 +1,11 @@
 ---
 # DVTD-ecjo
 title: A spent day still offers Start, then fails with a raw error
-status: todo
+status: in-progress
 type: bug
 priority: critical
 created_at: 2026-09-19T18:52:15Z
-updated_at: 2026-09-24T12:49:38Z
+updated_at: 2026-10-03T15:47:02Z
 parent: DVTD-0x5c
 blocking:
     - DVTD-6vw2
@@ -16,10 +16,10 @@ blocking:
 **Why:** The hub advertises five polls ready on a spent day, and the press dies on a raw server error.
 
 ## Done when
-- [ ] The hub says how many of today's polls are actually left
-- [ ] Start is refused in plain words when the day is spent, never with a raw error
+- [x] The hub says how many of today's polls are actually left
+- [x] Start is refused in plain words when the day is spent, never with a raw error
 - [ ] A retry cannot spend a second day's polls on the same date
-- [ ] Specs cover: no run with the day spent, and a finished run with the day part spent
+- [x] Specs cover: no run with the day spent, and a finished run with the day part spent
 
 ## Notes
 
@@ -104,3 +104,9 @@ point read that.
   **missed gate**; paying within a day is the distinction DVTD-uret must state.
 - ADR-014 (the rule), ADR-011 (rollover), ADR-009 (the shared daily seed),
   ADR-076 (a retry costs a day).
+
+## Summary of Changes (2026-10-03)
+
+The server now counts the day once: `getPollsLeftTodayService` (today's seed minus every poll the player answered today, any run), served by `getPollsLeftToday` and `usePollsLeftToday`, staled by `useRunCommit` after every run action. `todayPressFor` and `pollsBadgeFor` take that count: with no live run, a spent day turns the press into a locked **New polls in Xh Ym** and drops the nav badge; a live run still reads its own `pollsExhausted`, which is right in production because `rollSegmentForward` trims a run to today's segment. `startRunService` returns `POLLS_SPENT` as a plain refusal instead of throwing, so it no longer reports to Sentry.
+
+Still open: the retry item. Same-day retries are safe by construction (`rollSegmentForward` only appends polls when the last segment is from an earlier date), but no spec pins it.

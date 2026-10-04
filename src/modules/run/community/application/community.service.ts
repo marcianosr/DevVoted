@@ -153,7 +153,6 @@ export type RunCommunityView = {
 	date: string;
 	totalPlayers: number;
 	players: readonly CommunityVoter[];
-	topPercent: number | null;
 	leaders: readonly CategoryBoard[];
 	polls: RunCommunityPoll[];
 	climb: ClimbTodayView | null;
@@ -237,34 +236,6 @@ const buildPollDetail = (
 	};
 };
 
-const topPercentFor = (
-	viewerId: string,
-	polls: CommunityPollRecord[],
-	answers: CommunityAnswer[]
-): number | null => {
-	const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
-	const correctByUser = new Map<string, number>();
-	for (const answer of answers) {
-		const poll = pollsById.get(answer.pollId);
-		if (!poll) continue;
-		const isCorrect =
-			answerOutcome(
-				answer.mirrored ? mirrorGrading(poll) : poll,
-				answer.optionIds
-			) === "correct";
-		correctByUser.set(
-			answer.user.id,
-			(correctByUser.get(answer.user.id) ?? 0) + (isCorrect ? 1 : 0)
-		);
-	}
-	const viewerScore = correctByUser.get(viewerId);
-	if (viewerScore === undefined) return null;
-
-	const scores = [...correctByUser.values()];
-	const better = scores.filter((score) => score > viewerScore).length;
-	return Math.max(1, Math.ceil(((better + 1) / scores.length) * 100));
-};
-
 const EMPTY_VIEW = (
 	date: string,
 	climb: ClimbTodayView | null,
@@ -274,7 +245,6 @@ const EMPTY_VIEW = (
 	date,
 	totalPlayers: players.length,
 	players,
-	topPercent: null,
 	leaders,
 	polls: [],
 	climb,
@@ -519,7 +489,6 @@ export const getRunCommunityService = async ({
 			date,
 			totalPlayers: players.length,
 			players,
-			topPercent: topPercentFor(userId, polls, answers),
 			leaders,
 			polls: views,
 			climb,

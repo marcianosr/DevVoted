@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { Lead, type LeadLine, leadTextOf } from "./Lead.ui";
 
-const THUNDER = gateSwatchAt(3);
+const VERMILION = gateSwatchAt(3);
 
 const draw = (line: LeadLine, variant?: "paragraph") =>
 	render(<Lead line={line} {...(variant === undefined ? {} : { variant })} />);
@@ -67,19 +67,19 @@ describe("Lead sets figures inside a sentence", () => {
 	it("marks a swatch figure with the gate's own square", () => {
 		const { container } = draw([
 			"earns ",
-			{ swatch: THUNDER, label: "Thunder swatch" },
+			{ swatch: VERMILION, label: "Vermilion swatch" },
 		]);
 
-		expect(screen.getByText("Thunder swatch")).toBeInTheDocument();
+		expect(screen.getByText("Vermilion swatch")).toBeInTheDocument();
 		expect(
-			container.querySelector('[data-swatch-theme="thunder"]')
+			container.querySelector('[data-swatch-theme="gate-vermilion"]')
 		).not.toBeNull();
 	});
 
 	it("reads a swatch figure back as its label, so a key and a screen reader agree", () => {
 		expect(
-			leadTextOf(["earns ", { swatch: THUNDER, label: "Thunder swatch" }])
-		).toBe("earns Thunder swatch");
+			leadTextOf(["earns ", { swatch: VERMILION, label: "Vermilion swatch" }])
+		).toBe("earns Vermilion swatch");
 	});
 
 	it("takes the tag a call site asks for, so a statement need not be a heading", () => {

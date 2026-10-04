@@ -4,7 +4,7 @@ import {
 	type SwatchTheme,
 } from "~/modules/run/gate/domain/swatch.model";
 
-export const DEFAULT_PROFILE_THEME: SwatchTheme = "pallet";
+export const DEFAULT_PROFILE_THEME: SwatchTheme = "gate-pallet";
 
 const findSwatchById = (swatchId: string): GateSwatch | undefined =>
 	ALL_SWATCHES.find((swatch) => swatch.id === swatchId);

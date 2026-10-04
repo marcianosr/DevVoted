@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type {
@@ -12,6 +12,7 @@ import type {
 import {
 	defaultOpenIndex,
 	pollResultsFor,
+	pollTallyFor,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
@@ -80,6 +81,23 @@ const climber = (
 const revealed = (poll: ReturnType<typeof pollResultsFor>[number]) =>
 	poll.state === "revealed" ? poll : undefined;
 
+describe("pollTallyFor", () => {
+	it("counts the viewer's right answers among the polls already revealed", () => {
+		expect(
+			pollTallyFor([
+				answered(10, 0),
+				answered(11, 1, { outcome: "wrong" }),
+				answered(12, 2, { outcome: "partial" }),
+				sealed(13, 3),
+			])
+		).toBe("1 of 3");
+	});
+
+	it("states no tally before any poll is revealed", () => {
+		expect(pollTallyFor([sealed(10, 0)])).toBeUndefined();
+	});
+});
+
 describe("pollResultsFor", () => {
 	it("deals five rows: revealed, sealed and not yet dealt", () => {
 		const rows = pollResultsFor([answered(10, 0), sealed(11, 1)]);
@@ -94,7 +112,7 @@ describe("pollResultsFor", () => {
 		expect(rows[2]).toEqual({
 			state: "sealed",
 			index: 2,
-			question: "Not dealt yet",
+			question: "Poll 3 · not dealt yet",
 		});
 	});
 
@@ -148,7 +166,6 @@ describe("CommunityView", () => {
 	const view: RunCommunityView = {
 		date: "2026-05-13",
 		totalPlayers: 3,
-		topPercent: 18,
 		players: [],
 		leaders: [
 			{
@@ -195,12 +212,11 @@ describe("CommunityView", () => {
 		expect(open[0]).toHaveTextContent("Question 11?");
 	});
 
-	it("shows the whole board: the seats, the day's count and the viewer's chip", () => {
+	it("shows the whole board: the seats and the day's count", () => {
 		render(board());
 
 		expect(screen.getByText("13 in a row")).toBeInTheDocument();
-		expect(screen.getByText("3 players answered")).toBeInTheDocument();
-		expect(screen.getAllByText("top 18%")).toHaveLength(1);
+		expect(screen.getByText("3 players")).toBeInTheDocument();
 	});
 
 	it("places every climber under their gate, and rings today's rivals", () => {
@@ -266,6 +282,47 @@ describe("CommunityView", () => {
 		expect(screen.getByText(".ts")).toBeInTheDocument();
 		expect(screen.getByRole("img", { name: /^40% of / })).toBeInTheDocument();
 		expect(screen.getByText("1 / 4")).toBeInTheDocument();
+	});
+
+	it("opens a fallen run's card from its face in today's records, so it can be looted there", async () => {
+		const user = userEvent.setup();
+		render(
+			board({
+				climb: {
+					climbers: [climber("red", 1, 2, true)],
+					fallen: [
+						{
+							...climber("misty", 3, 1),
+							runId: 7,
+							build: { configs: [{ id: "ts", label: ".ts", slots: 1 }] },
+							coveragePercent: 40,
+							streak: 3,
+							startedAtGate: 0,
+							lootKb: 64,
+							lootedById: null,
+							lootedByName: null,
+						},
+					],
+					bestPosition: null,
+					viewer: { id: "red", hasLiveRun: true },
+					turnout: {
+						...EMPTY_DAY_TURNOUT,
+						outcomes: {
+							...EMPTY_DAY_TURNOUT.outcomes,
+							danger: [{ id: "misty", displayName: "misty", you: false }],
+						},
+					},
+				},
+			})
+		);
+		const records = screen
+			.getByRole("heading", { name: "Today’s records" })
+			.closest("section");
+		if (records === null) throw new Error("no records panel drawn");
+
+		await user.click(within(records).getByRole("button", { name: "misty" }));
+
+		expect(screen.getByRole("dialog", { name: "misty" })).toBeInTheDocument();
 	});
 
 	it("refuses the way back while today's polls are spent", async () => {

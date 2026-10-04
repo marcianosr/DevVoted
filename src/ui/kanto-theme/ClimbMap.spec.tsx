@@ -11,7 +11,7 @@ import type { StandingProps } from "./Standing.ui";
 
 const gate = (over: Partial<LadderGate> & { gate: number }): LadderGate => ({
 	name: `Gate ${over.gate}`,
-	theme: "pallet",
+	theme: "gate-pallet",
 	finish: "flat",
 	current: false,
 	uncharted: false,
@@ -48,12 +48,12 @@ const GATES: LadderGate[] = [
 	gate({ gate: 0, name: "Pallet" }),
 	gate({
 		gate: 1,
-		name: "Boulder",
+		name: "Pewter",
 		climbers: [chip("Koga"), chip("Brock", { rival: true })],
 	}),
 	gate({
 		gate: 2,
-		name: "Cascade",
+		name: "Cerulean",
 		current: true,
 		climbers: [chip("Marciano", { you: true })],
 		fallen: [
@@ -64,7 +64,7 @@ const GATES: LadderGate[] = [
 			},
 		],
 	}),
-	gate({ gate: 3, name: "Thunder", best: true }),
+	gate({ gate: 3, name: "Vermilion", best: true }),
 	gate({ gate: 4, name: "Lavender", uncharted: true }),
 ];
 
@@ -82,7 +82,7 @@ describe("ClimbMap", () => {
 
 		const current = container.querySelectorAll("[data-current]");
 		expect(current).toHaveLength(1);
-		expect(current[0]).toHaveTextContent("Cascade");
+		expect(current[0]).toHaveTextContent("Cerulean");
 	});
 
 	it("dims the gates nobody has charted yet", () => {
@@ -153,7 +153,7 @@ describe("ClimbMap", () => {
 				gates={[
 					gate({
 						gate: 6,
-						name: "Soul",
+						name: "Fuchsia",
 						climbers: [chip("Misty", { card: cardFor("Misty") })],
 					}),
 				]}
@@ -170,13 +170,13 @@ describe("ClimbMap", () => {
 		);
 	});
 
-	it("hangs the card off the map rather than inside the scrolling track", () => {
-		const { container } = render(
+	it("opens the card as a dialog outside the scrolling track", () => {
+		render(
 			<ClimbMap
 				gates={[
 					gate({
 						gate: 6,
-						name: "Soul",
+						name: "Fuchsia",
 						climbers: [chip("Misty", { card: cardFor("Misty") })],
 					}),
 				]}
@@ -185,9 +185,30 @@ describe("ClimbMap", () => {
 			/>
 		);
 
-		const panel = container.querySelector(".sm\\:absolute");
-		expect(panel).toHaveClass("inset-x-4", "bottom-4");
-		expect(panel?.closest("ul")).toBeNull();
+		const dialog = screen.getByRole("dialog", { name: "Misty" });
+		expect(dialog.closest("ul")).toBeNull();
+	});
+
+	it("closes the open card when the backdrop outside it is pressed", async () => {
+		const user = userEvent.setup();
+		const onInspect = vi.fn();
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 6,
+						name: "Fuchsia",
+						climbers: [chip("Misty", { card: cardFor("Misty") })],
+					}),
+				]}
+				openId="misty"
+				onInspect={onInspect}
+			/>
+		);
+
+		await user.click(screen.getByRole("button", { name: COPY.dismiss }));
+
+		expect(onInspect).toHaveBeenCalledWith("misty");
 	});
 
 	it("draws no card for a climber the map knows nothing more about", () => {

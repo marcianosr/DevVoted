@@ -22,14 +22,14 @@ const MISTY = "misty-cerulean-city";
 const STARMIE = "border-00b9a62e";
 const TESTER = "title-legacy-tester";
 
-const CASCADE = "swatch-cascade";
+const CERULEAN = "swatch-cerulean";
 const PALLET = "swatch-pallet";
 
-const LOOK = { borderId: STARMIE, titleIds: [TESTER], swatchId: CASCADE };
+const LOOK = { borderId: STARMIE, titleIds: [TESTER], swatchId: CERULEAN };
 
 const ownerOf = (
 	ownedBorderIds: string[],
-	ownedSwatchIds: string[] = [CASCADE]
+	ownedSwatchIds: string[] = [CERULEAN]
 ) => ({
 	archivedStorage: 0,
 	ownedBorderIds,

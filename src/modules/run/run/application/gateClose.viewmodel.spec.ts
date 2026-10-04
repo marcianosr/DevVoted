@@ -32,6 +32,23 @@ describe("gateCloseViewOf", () => {
 		expect(close?.ladder).toEqual(cleared.lastClose?.ladder);
 	});
 
+	it("names the audits the closed gate ran, not the ones waiting at the next gate", () => {
+		const closedAtGate8 = {
+			...started(["js"]),
+			gatesCleared: 9,
+			lastClose: { gate: 8, band: "perfect" as const, cleared: true },
+			auditSchedule: {
+				8: ["legal-hold", "too-many-requests"] as const,
+				9: ["breaking-change", "too-early"] as const,
+			},
+		};
+
+		expect(gateCloseViewOf(closedAtGate8)?.auditIds).toEqual([
+			"legal-hold",
+			"too-many-requests",
+		]);
+	});
+
 	it("names the gate that closed, one behind the count it advanced", () => {
 		const first = clearGate(started([]));
 		const second = clearGate(runReducer(first, { type: "finish-reward" }));

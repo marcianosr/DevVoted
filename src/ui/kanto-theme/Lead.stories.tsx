@@ -25,7 +25,7 @@ const meta: Meta<typeof Lead> = {
 	title: "Kanto/Lead",
 	parameters: { controls: { disable: true } },
 	render: (args) => (
-		<Screen gate="cascade" width="narrow" ground="bare">
+		<Screen gate="gate-cerulean" width="narrow" ground="bare">
 			<Panel>
 				<Panel.Header label="Coverage" />
 				<Panel.Body>

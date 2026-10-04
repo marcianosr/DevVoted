@@ -58,3 +58,22 @@ export const deepestGateIn = (
 	climbs: readonly { readonly gatesCleared: number }[]
 ): number =>
 	climbs.reduce((deepest, climb) => Math.max(deepest, climb.gatesCleared), 0);
+
+const isBetterRun = (
+	candidate: RunHistoryEntry,
+	best: RunHistoryEntry
+): boolean =>
+	candidate.gatesCleared === best.gatesCleared
+		? candidate.coverage > best.coverage
+		: candidate.gatesCleared > best.gatesCleared;
+
+export const bestRunIn = (
+	entries: readonly RunHistoryEntry[]
+): RunHistoryEntry | null =>
+	entries.reduce<RunHistoryEntry | null>(
+		(best, entry) => (best === null || isBetterRun(entry, best) ? entry : best),
+		null
+	);
+
+export const runsWonIn = (entries: readonly RunHistoryEntry[]): number =>
+	entries.filter((entry) => entry.won).length;

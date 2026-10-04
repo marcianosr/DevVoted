@@ -22,10 +22,11 @@ import { kantoIncidents } from "./kantoIncidents.factory";
 import { gateSwatchAt } from "./swatchTrack.factory";
 
 export const COMMUNITY_SHOP_LABEL = "Back to the shop";
-export const COMMUNITY_PREP_LABEL = "Prep for Rainbow";
+export const COMMUNITY_PREP_LABEL = "Prep for Celadon";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
-export const COMMUNITY_STREAK_TITLE = "Streak leaders";
-export const COMMUNITY_CORRECT_TITLE = "Correct leaders";
+export const COMMUNITY_STREAK_TITLE = "streak";
+export const COMMUNITY_CORRECT_TITLE = "correct";
+export const COMMUNITY_POLLS_TALLY = "2 of 4";
 
 const CLEARED_GATE = 4;
 
@@ -118,7 +119,7 @@ const cardFor = (
 	perfect: climber.mark === "perfect",
 	shaky: climber.mark === "shaky",
 	rescued: climber.rescued,
-	theme: "pallet",
+	theme: "gate-pallet",
 	standing: standingAt(CLEARED_GATE, 40),
 	...over,
 });
@@ -153,7 +154,7 @@ const LADDER_STANDING: Readonly<Record<number, LadderClimber[]>> = {
 	3: [
 		withCard(ladderChip(misty, { rival: true, mark: "perfect" }), {
 			titles: ["Heavy Pipeline", "Legacy Tester"],
-			theme: "cascade",
+			theme: "gate-cerulean",
 			standing: MISTY_STANDING,
 		}),
 	],
@@ -210,7 +211,7 @@ export const kantoClimberCard = (
 ): ClimberCardProps =>
 	cardFor(ladderChip(misty, { rival: true, mark: "perfect" }), {
 		titles: ["Heavy Pipeline", "Legacy Tester"],
-		theme: "cascade",
+		theme: "gate-cerulean",
 		standing: MISTY_STANDING,
 		...over,
 	});
@@ -281,8 +282,8 @@ const records = (): TurnoutBand[] => [
 		label: "most installed",
 		caption: ".ts",
 		count: "812 players",
-		climbers: [you, surge, sabrina],
-		overflow: 809,
+		climbers: [you, surge, sabrina, erika, koga, misty],
+		overflow: 806,
 	},
 	{ label: "most expensive build", count: "1.4 MB", climbers: [giovanni] },
 	{
@@ -564,8 +565,7 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },
 	},
 	turnout: {
-		title: "Who cleared what",
-		when: "Today",
+		title: "Today’s records",
 		bands: bands(),
 		records: records(),
 	},
@@ -575,7 +575,6 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		{
 			title: COMMUNITY_STREAK_TITLE,
 			summary: "longest run of correct answers in one run · all-time",
-			seated: "9 of 12 seated",
 			seats: streakSeats(),
 			footer:
 				"A seat changes hands when somebody beats it. 3 seats still open.",
@@ -583,15 +582,14 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		{
 			title: COMMUNITY_CORRECT_TITLE,
 			summary: "most correct answers in one run · all-time",
-			seated: "9 of 12 seated",
 			seats: correctSeats(),
 			footer:
 				"A seat changes hands when somebody beats it. 3 seats still open.",
 		},
 	],
 	polls: {
-		title: "The five polls",
-		summary: "Percentage is how much of the room got it right",
+		title: "The day’s polls",
+		tally: COMMUNITY_POLLS_TALLY,
 		polls: polls(),
 	},
 });
@@ -601,8 +599,7 @@ export const kantoCommunityBeforePolls = (): CommunityScreenProps => {
 	return {
 		...base,
 		polls: {
-			...base.polls,
-			summary: "Answer them to see how the room found them",
+			title: base.polls.title,
 			polls: base.polls.polls.map((poll, index) => ({
 				state: "sealed",
 				index,
@@ -618,7 +615,6 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 		...base,
 		leaders: base.leaders.map((board) => ({
 			...board,
-			seated: "0 of 12 seated",
 			seats: board.seats.map(({ category }) =>
 				open(
 					board.title === COMMUNITY_STREAK_TITLE ? STREAK_CLAIM : CORRECT_CLAIM,

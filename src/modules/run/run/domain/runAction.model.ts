@@ -256,7 +256,7 @@ const RULES: readonly ActionRule[] = [
 	}),
 	on({
 		type: "fire-audit",
-		when: inStatus("rewarding"),
+		when: isPrepPhase,
 		run: (state) => fireAudit(state),
 	}),
 	on({

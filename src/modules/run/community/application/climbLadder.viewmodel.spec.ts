@@ -48,7 +48,7 @@ describe("ladderFor", () => {
 				closingBand: "perfect",
 				startedAtGate: 1,
 				titles: ["Completionist"],
-				theme: "cascade",
+				theme: "gate-cerulean",
 				coveragePercent: 42,
 				streak: 6,
 				storageKb: 896,
@@ -142,7 +142,7 @@ describe("ladderFor", () => {
 		expect(blue?.card).toMatchObject({
 			profileHref: "/profile/blue",
 			titles: ["Completionist"],
-			theme: "cascade",
+			theme: "gate-cerulean",
 		});
 	});
 
@@ -151,7 +151,7 @@ describe("ladderFor", () => {
 
 		const blue = gates[1].climbers.find((entry) => entry.id === "blue");
 		expect(blue?.card?.standing?.gate).toMatchObject({
-			name: "Boulder",
+			name: "Pewter",
 			label: "gate 1",
 			coverage: { held: 42 },
 		});
@@ -348,6 +348,25 @@ describe("the incident you hold, offered on a climber's card", () => {
 
 		expect(press?.onPress).toBeUndefined();
 		expect(press?.refusal).toBe("409 Conflict cannot reach them");
+	});
+
+	it("states why the server refused a filing at that rival, in place of the press", () => {
+		const press = fileOf(
+			MISTY,
+			hand({ refused: { targetRunId: 7, reason: "That rival has moved on" } })
+		);
+
+		expect(press?.onPress).toBeUndefined();
+		expect(press?.refusal).toBe("That rival has moved on");
+	});
+
+	it("keeps the press on other rivals after one filing was refused", () => {
+		const press = fileOf(
+			MISTY,
+			hand({ refused: { targetRunId: 9, reason: "That rival has moved on" } })
+		);
+
+		expect(press?.onPress).toBeDefined();
 	});
 
 	it("holds the press while a filing at that rival is in flight", () => {

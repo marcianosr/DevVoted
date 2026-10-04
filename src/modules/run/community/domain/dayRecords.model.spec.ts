@@ -82,14 +82,23 @@ describe("outcomeOf", () => {
 });
 
 describe("outcomesOf", () => {
-	it("counts a player who fell and climbs again by the live run only", () => {
+	it("files a player who fell and climbs again under danger and under the live run, so the corpse stays in reach", () => {
 		const outcomes = outcomesOf([
 			run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
 			run({ userId: "sabrina", closes: [cleared(1, "healthy")] }),
 		]);
 
 		expect(outcomes.healthy).toEqual(["sabrina"]);
-		expect(outcomes.danger).toEqual([]);
+		expect(outcomes.danger).toEqual(["sabrina"]);
+	});
+
+	it("files a player who fell twice under danger once", () => {
+		const outcomes = outcomesOf([
+			run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
+			run({ userId: "sabrina", fallen: true, closes: [held(4)] }),
+		]);
+
+		expect(outcomes.danger).toEqual(["sabrina"]);
 	});
 });
 

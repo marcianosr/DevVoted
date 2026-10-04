@@ -70,7 +70,7 @@ const meta: Meta<typeof Ledger> = {
 	title: "Kanto/Ledger",
 	parameters: { controls: { disable: true } },
 	render: (args) => (
-		<Screen gate="lavender" width="narrow">
+		<Screen gate="gate-lavender" width="narrow">
 			<Ledger {...args} />
 		</Screen>
 	),

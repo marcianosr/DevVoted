@@ -1,3 +1,4 @@
+import { POLLS_SPENT } from "~/shared/lib/copy";
 import {
 	type ApiResponse,
 	handleApiOperation,
@@ -131,47 +132,74 @@ export const getTodaysRunService = async ({
 		return viewOfRun(startedToday);
 	}, "getTodaysRun");
 
+const unansweredPollsToday = async (userId: string, date: string) => {
+	const [answeredToday, polls] = await Promise.all([
+		fetchAnsweredPollIdsForDay(userId, date),
+		fetchRunPollsForDate(date),
+	]);
+	return polls.filter((poll) => !answeredToday.has(Number(poll.id)));
+};
+
+export const getPollsLeftTodayService = async ({
+	userId,
+	date,
+}: {
+	userId: string;
+	date: string;
+}): Promise<ApiResponse<number>> =>
+	handleApiOperation(
+		async () => (await unansweredPollsToday(userId, date)).length,
+		"getPollsLeftToday"
+	);
+
+const openTodaysRun = async (
+	userId: string,
+	date: string
+): Promise<RunView | null> => {
+	const active = await findResumableRun(userId);
+	if (active) return continueActiveRun(active, date);
+
+	const polls = await unansweredPollsToday(userId, date);
+	if (polls.length === 0) return null;
+
+	const [pinnedGate, unlockedConfigIds, archiveAfterKb, unlockedServiceIds] =
+		await Promise.all([
+			consumePinnedGate(userId),
+			fetchUnlockedConfigIds(userId),
+			fetchArchivedStorageKb(userId),
+			fetchUnlockedServiceIds(userId),
+		]);
+	const state = createRun(
+		polls,
+		startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
+		pinnedGate,
+		{ [pinnedGate]: gateAuditsFor(pinnedGate, date, []) }
+	);
+	await createSessionRunWithState(userId, date, state);
+	return withPollReads(
+		{
+			...toRunView(state, [], [], [], unlockedServiceIds),
+			archiveAfterKb,
+		},
+		userId
+	);
+};
+
 export const startRunService = async ({
 	userId,
 	date,
 }: {
 	userId: string;
 	date: string;
-}): Promise<ApiResponse<RunView>> =>
-	handleApiOperation(async () => {
-		const active = await findResumableRun(userId);
-		if (active) return continueActiveRun(active, date);
-
-		const answeredToday = await fetchAnsweredPollIdsForDay(userId, date);
-		const polls = (await fetchRunPollsForDate(date)).filter(
-			(poll) => !answeredToday.has(Number(poll.id))
-		);
-		if (polls.length === 0) {
-			throw new Error("No polls left for a run today");
-		}
-
-		const [pinnedGate, unlockedConfigIds, archiveAfterKb, unlockedServiceIds] =
-			await Promise.all([
-				consumePinnedGate(userId),
-				fetchUnlockedConfigIds(userId),
-				fetchArchivedStorageKb(userId),
-				fetchUnlockedServiceIds(userId),
-			]);
-		const state = createRun(
-			polls,
-			startingHand(poolFor(unlockedConfigIds), `${userId}:${date}`, BASE_SLOTS),
-			pinnedGate,
-			{ [pinnedGate]: gateAuditsFor(pinnedGate, date, []) }
-		);
-		await createSessionRunWithState(userId, date, state);
-		return withPollReads(
-			{
-				...toRunView(state, [], [], [], unlockedServiceIds),
-				archiveAfterKb,
-			},
-			userId
-		);
-	}, "startRun");
+}): Promise<ApiResponse<RunView>> => {
+	const started = await handleApiOperation(
+		() => openTodaysRun(userId, date),
+		"startRun"
+	);
+	if (!started.success) return started;
+	if (started.data === null) return { success: false, error: POLLS_SPENT };
+	return { success: true, data: started.data };
+};
 
 export const getRunRecapService = async ({
 	userId,

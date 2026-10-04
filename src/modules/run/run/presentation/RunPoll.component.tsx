@@ -67,13 +67,6 @@ export const RunPoll = () => {
 		);
 	};
 
-	const skipThePoll = () => {
-		if (busy || reveal) return;
-		sendWith({ type: "skip" }, (result) => {
-			if (result.success) stage(result);
-		});
-	};
-
 	const approveWithTheRoom = () => {
 		if (busy || reveal) return;
 		sendCrowdPickWith((result) => {
@@ -109,7 +102,6 @@ export const RunPoll = () => {
 			clockMs={clock.shownMs}
 			onSelect={onSelect}
 			onAnswer={submit}
-			onSkip={skipThePoll}
 			onNext={advanceFromReveal}
 			onPress={(action, configId) => send(PRESS_ACTIONS[action](configId))}
 			onUnseal={(optionId) => send({ type: "buy-back-option", optionId })}

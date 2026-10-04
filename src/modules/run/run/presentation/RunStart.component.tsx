@@ -19,6 +19,7 @@ import {
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
+import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftToday.hook";
 import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { TodayScreen } from "~/modules/run/run/presentation/TodayScreen.ui";
@@ -30,8 +31,9 @@ export const RunStart = () => {
 	const { start } = useRunActions();
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
+	const pollsLeftToday = usePollsLeftToday();
 
-	const press = todayPressFor(view, countdown);
+	const press = todayPressFor(view, countdown, pollsLeftToday.view);
 	const shop = shopAsideFor(view, countdown);
 	const build = hubBuildFor(view);
 	const climbers = community.view?.climb?.climbers;

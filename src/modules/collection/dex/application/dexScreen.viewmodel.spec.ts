@@ -474,7 +474,7 @@ describe("dexControlsFor", () => {
 	it("states where a service is pressed, read off the roster, and how long the purchase lasts", () => {
 		expect(rowFor([], "rebuild").detail).toBe("Every shop · this visit");
 		expect(rowFor(["extend"], "extend").detail).toBe(
-			"Shop from Thunder · rest of the run"
+			"Shop from Vermilion · rest of the run"
 		);
 		expect(rowFor(["pin"], "pin").detail).toBe(
 			"Shop, gates 4–10 · carries into your next run"
@@ -530,7 +530,7 @@ describe("dexControlsFor", () => {
 		expect(row.title).toBe("???");
 		expect(row.detail).toBe("???");
 		expect(row.locked).toBe(true);
-		expect(unlockOf([], "extend")).toBe("Reach Cascade");
+		expect(unlockOf([], "extend")).toBe("Reach Cerulean");
 		expect(priceOf([], "extend")).toBeUndefined();
 	});
 
@@ -538,7 +538,7 @@ describe("dexControlsFor", () => {
 		const { detail } = dexControlsFor(controldex([]), "extend");
 
 		expect(detail?.label).toBe("???");
-		expect(detail?.availability).toBe("Reach Cascade to unlock it.");
+		expect(detail?.availability).toBe("Reach Cerulean to unlock it.");
 	});
 
 	it("names an unlocked service in full", () => {
@@ -557,9 +557,9 @@ describe("dexControlsFor", () => {
 describe("dexAuditsFor", () => {
 	const CLIMBED = [
 		"swatch-pallet",
-		"swatch-boulder",
-		"swatch-cascade",
-		"swatch-thunder",
+		"swatch-pewter",
+		"swatch-cerulean",
+		"swatch-vermilion",
 	];
 	const props = dexAuditsFor(auditdex(gatedex(CLIMBED)));
 
@@ -597,7 +597,7 @@ describe("dexSwatchesFor", () => {
 	it("names gates by their badge, the same name the run screens show", () => {
 		const rows = dexSwatchesFor(gatedex([])).rows;
 
-		expect(rows[3].name).toBe("Thunder");
+		expect(rows[3].name).toBe("Vermilion");
 	});
 
 	it("reads the first gate when nothing has been picked", () => {
@@ -633,7 +633,7 @@ describe("dexRunsFor", () => {
 	it("reads coverage as a percentage of every codebase the run played", () => {
 		const [row] = dexRunsFor(runHistory([climb()])).rows;
 
-		expect(row.coverage).toBe("31%");
+		expect(row.coverage).toBe("48%");
 	});
 
 	it("keeps the permalink on the panel, where a row is now a press", () => {

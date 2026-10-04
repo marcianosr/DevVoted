@@ -38,7 +38,9 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
+	ACCURACY_GAIN_PER_GATE,
 	BASE_UNIT,
+	accuracyMultiplierFor,
 	floorAt,
 	gateOutputOf,
 	MULTIPLE_CREDIT,
@@ -227,12 +229,12 @@ describe("toRunView", () => {
 	});
 
 	it("themes the run after the gate being played", () => {
-		expect(toRunView(answering()).gateTheme).toBe("pallet");
+		expect(toRunView(answering()).gateTheme).toBe("gate-pallet");
 		expect(toRunView({ ...answering(), gatesCleared: 11 }).gateTheme).toBe(
-			"elite"
+			"gate-indigo-elite"
 		);
 		expect(toRunView({ ...answering(), gatesCleared: 12 }).gateTheme).toBe(
-			"champion"
+			"gate-champion"
 		);
 	});
 
@@ -539,7 +541,8 @@ describe("the gate stake travels as one object", () => {
 				pending: SLICE_WINDOW,
 				available: null,
 				guaranteed: 1,
-				best: 2,
+				best: 1 + ACCURACY_GAIN_PER_GATE,
+				carried: 0,
 			},
 		});
 	});
@@ -573,7 +576,7 @@ describe("the gate stake travels as one object", () => {
 				unitsEarned: 2,
 			},
 		};
-		expect(toRunView(state).gateStake.coverageHeld).toBe(22.2);
+		expect(toRunView(state).gateStake.coverageHeld).toBe(33.3);
 	});
 
 	it("prices the peel deeper at a strip-audit gate", () => {
@@ -925,7 +928,7 @@ describe("the window's accuracy", () => {
 			state
 		);
 
-	it("withholds what the window offers while its mix is unseen, reading ×1 sure and ×2 at best", () => {
+	it("withholds what the window offers while its mix is unseen, reading ×1 sure and one plus the gain at best", () => {
 		const { accuracy } = toRunView(
 			answeringWith([CONFIGS.js], MIXED)
 		).gateStake;
@@ -935,7 +938,8 @@ describe("the window's accuracy", () => {
 			pending: SLICE_WINDOW,
 			available: null,
 			guaranteed: 1,
-			best: 2,
+			best: 1 + ACCURACY_GAIN_PER_GATE,
+			carried: 0,
 		});
 	});
 
@@ -956,7 +960,7 @@ describe("the window's accuracy", () => {
 
 		expect(accuracy.available).toBe(7);
 		expect(accuracy.guaranteed).toBe(1);
-		expect(accuracy.best).toBe(2);
+		expect(accuracy.best).toBe(1 + ACCURACY_GAIN_PER_GATE);
 	});
 
 	it("meets the sure and the best multiplier once every poll is answered", () => {
@@ -964,13 +968,15 @@ describe("the window's accuracy", () => {
 		const { accuracy } = toRunView(state).gateStake;
 
 		expect(accuracy.available).toBe(7);
-		expect(accuracy.guaranteed).toBeCloseTo(2 ** (5 / 7));
-		expect(accuracy.best).toBeCloseTo(2 ** (5 / 7));
+		const closing = accuracyMultiplierFor(0, { earned: 5, available: 7 });
+
+		expect(accuracy.guaranteed).toBeCloseTo(closing);
+		expect(accuracy.best).toBeCloseTo(closing);
 	});
 
 	it("reads the live coverage as the floor the window guarantees, every unseen poll a missed multiple", () => {
 		const state = answeredThrough(answeringWith([CONFIGS.js], MIXED), 1);
-		const floor = gateOutputOf(state.window.unitsEarned, {
+		const floor = gateOutputOf(state.window.unitsEarned, state.accuracyBonus, {
 			earned: state.window.accuracyEarned,
 			available: state.window.accuracyAvailable + 4 * MULTIPLE_CREDIT,
 		});

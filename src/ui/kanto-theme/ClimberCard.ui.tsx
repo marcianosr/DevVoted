@@ -5,6 +5,8 @@ import { Climber } from "./Climber.ui";
 import { Contribution, type ContributionProps } from "./Contribution.ui";
 import { Link } from "./Link.ui";
 import type { KantoColor } from "./colors";
+import type { SwatchFill } from "./Swatch.ui";
+import { SwatchTrack } from "./SwatchTrack.ui";
 import {
 	COPY as STANDING_COPY,
 	Standing,
@@ -23,9 +25,6 @@ export const COPY = {
 } as const;
 
 const CLOSE_GLYPH = "×";
-
-export const CARD_PANEL =
-	"fixed inset-x-4 bottom-4 z-30 sm:absolute sm:inset-x-auto sm:top-full sm:left-1/2 sm:mt-2 sm:w-112 sm:-translate-x-1/2";
 
 const CARD =
 	"flex max-h-[70vh] w-full flex-col overflow-y-auto rounded-2xl border border-theme-faint bg-theme-raised";
@@ -61,6 +60,7 @@ export type ClimberCardProps = {
 	profileHref?: string;
 	titles?: readonly string[];
 	contribution?: ContributionProps;
+	swatches?: readonly SwatchFill[];
 	theme: SwatchTheme;
 	photoUrl?: string;
 	borderUrl?: string;
@@ -136,7 +136,11 @@ const Naming = ({
 	name,
 	titles,
 	contribution,
-}: Pick<ClimberCardProps, "profileHref" | "name" | "contribution"> & {
+	swatches,
+}: Pick<
+	ClimberCardProps,
+	"profileHref" | "name" | "contribution" | "swatches"
+> & {
 	titles: readonly string[];
 }) => (
 	<span className={NAMING}>
@@ -151,6 +155,9 @@ const Naming = ({
 			<WornTitles titles={titles} rest={QUIET_TITLE} />
 		)}
 		{contribution === undefined ? null : <Contribution {...contribution} />}
+		{swatches === undefined ? null : (
+			<SwatchTrack swatches={swatches} size="small" />
+		)}
 	</span>
 );
 
@@ -168,6 +175,7 @@ export const ClimberCard = ({
 	profileHref,
 	titles = [],
 	contribution,
+	swatches,
 	theme,
 	photoUrl,
 	borderUrl,
@@ -199,6 +207,7 @@ export const ClimberCard = ({
 				name={name}
 				titles={titles}
 				contribution={contribution}
+				swatches={swatches}
 			/>
 			{onClose === undefined ? null : (
 				<span className={TRAILING}>

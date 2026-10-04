@@ -10,7 +10,6 @@ import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
 import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
-import { Button } from "./Button.ui";
 import { useBarHeight } from "./useBarHeight.hook";
 import type { KantoColor } from "./colors";
 import { CoverageBar, CoverageReading } from "./CoverageBar.ui";
@@ -76,7 +75,6 @@ const KEYS_HINT = "hidden pointer-fine:inline";
 const COMMIT_REGION =
 	"sticky bottom-0 z-10 flex w-full flex-col gap-3 px-4 py-3 last:rounded-b-2xl";
 const COMMIT_GROUND = "border-t border-theme-faint bg-theme-faint";
-const SKIP_ROW = "flex flex-wrap items-center gap-3";
 
 const WRONG_COST_COLOR: KantoColor = "cinnabar";
 const CREDIT_SIZE: AuthorSize = "sm";
@@ -96,12 +94,6 @@ export type PollFlight = {
 
 export type PollCoverage = Redactable<PollReadout>;
 
-export type PollSkip = {
-	label: string;
-	note: string;
-	onPress: () => void;
-};
-
 export type PollLock = {
 	label: string;
 	note?: string;
@@ -110,7 +102,6 @@ export type PollLock = {
 
 export type PollCommit = {
 	lock?: PollLock;
-	skip?: PollSkip;
 };
 
 export type PollClockBadge = { label: string; color: KantoColor };
@@ -362,14 +353,6 @@ const PollSend = ({ commit, footer, measure }: PollSendProps) => {
 		>
 			{footer === undefined ? null : <ScreenFooter {...footer} rule={false} />}
 			{commit?.lock === undefined ? null : <Action {...commit.lock} />}
-			{commit?.skip === undefined ? null : (
-				<div className={SKIP_ROW}>
-					<Button label={commit.skip.label} onPress={commit.skip.onPress} />
-					<Typography variant="hint" as="span">
-						{commit.skip.note}
-					</Typography>
-				</div>
-			)}
 		</div>
 	);
 };

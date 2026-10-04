@@ -12,10 +12,12 @@ import { PIN_START_KB_PER_GATE } from "~/modules/run/run/domain/rules.model";
 import {
 	abandonRunService,
 	dispatchRunActionService,
+	getPollsLeftTodayService,
 	getRunRecapService,
 	getTodaysRunService,
 	startRunService,
 } from "~/modules/run/run/application/run.service";
+import { POLLS_SPENT } from "~/shared/lib/copy";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
 import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
 import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
@@ -390,6 +392,19 @@ describe("startRunService", () => {
 		expect(result.success).toBe(false);
 		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
 	});
+
+	it("refuses in plain words when today's polls are all answered, and creates no run", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
+			new Set([0, 1])
+		);
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+
+		const result = await startRunService({ userId: USER, date: DATE });
+
+		expect(result).toEqual({ success: false, error: POLLS_SPENT });
+		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
+	});
 });
 
 describe("abandonRunService", () => {
@@ -609,5 +624,32 @@ describe("the poll's own history on the view (ADR-093)", () => {
 
 		expect(vi.mocked(statsQueries.fetchPollStats)).not.toHaveBeenCalled();
 		expect(vi.mocked(leaderQueries.fetchCategoryLeader)).not.toHaveBeenCalled();
+	});
+});
+
+describe("getPollsLeftTodayService", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
+	});
+
+	it("counts today's polls the player has not answered in any run", async () => {
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
+			new Set([0])
+		);
+
+		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
+
+		expect(result).toEqual({ success: true, data: 1 });
+	});
+
+	it("reads zero once every one of today's polls is answered", async () => {
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
+			new Set([0, 1])
+		);
+
+		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
+
+		expect(result).toEqual({ success: true, data: 0 });
 	});
 });

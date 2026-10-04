@@ -141,6 +141,7 @@ export const createMockGateClose = createMockDataFactory<GateCloseView>({
 	kb: 0,
 	unlockedConfigIds: [],
 	earnedTitleIds: [],
+	auditIds: [],
 });
 
 export const createMockPaidActions = createMockDataFactory<PaidActions>({
@@ -171,7 +172,8 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 		pending: 5,
 		available: null,
 		guaranteed: 1,
-		best: 2,
+		best: 1.2,
+		carried: 0,
 	},
 	audits: [],
 	peelSlotsOnFailure: 1,
@@ -257,7 +259,7 @@ const createRunView = createMockDataFactory<RunView>({
 	autoUpgradeRemaining: null,
 	gatesCleared: 0,
 	gateComplete: false,
-	gateTheme: "pallet",
+	gateTheme: "gate-pallet",
 	redoingGate: null,
 	clearedGate: null,
 	swatchGates: [],

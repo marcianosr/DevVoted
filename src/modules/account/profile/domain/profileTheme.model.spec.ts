@@ -6,35 +6,35 @@ import {
 	wearSwatch,
 } from "~/modules/account/profile/domain/profileTheme.model";
 
-const VOLCANO = "swatch-volcano";
+const CINNABAR = "swatch-cinnabar";
 const PALLET = "swatch-pallet";
 
 describe("profileThemeFor", () => {
 	it("wears pallet when nothing is worn", () => {
-		expect(profileThemeFor(null, [VOLCANO])).toBe("pallet");
-		expect(DEFAULT_PROFILE_THEME).toBe("pallet");
+		expect(profileThemeFor(null, [CINNABAR])).toBe("gate-pallet");
+		expect(DEFAULT_PROFILE_THEME).toBe("gate-pallet");
 	});
 
 	it("wears the theme of an owned swatch", () => {
-		expect(profileThemeFor(VOLCANO, [VOLCANO])).toBe("volcano");
+		expect(profileThemeFor(CINNABAR, [CINNABAR])).toBe("gate-cinnabar");
 	});
 
 	it("falls back to pallet for a worn swatch the player does not own", () => {
-		expect(profileThemeFor(VOLCANO, [])).toBe("pallet");
+		expect(profileThemeFor(CINNABAR, [])).toBe("gate-pallet");
 	});
 
 	it("falls back to pallet for an id no swatch carries", () => {
 		expect(profileThemeFor("swatch-retired", ["swatch-retired"])).toBe(
-			"pallet"
+			"gate-pallet"
 		);
 	});
 });
 
 describe("wearSwatch", () => {
 	it("wears an owned swatch", () => {
-		expect(wearSwatch(VOLCANO, [VOLCANO])).toEqual({
+		expect(wearSwatch(CINNABAR, [CINNABAR])).toEqual({
 			kind: "worn",
-			worn: VOLCANO,
+			worn: CINNABAR,
 		});
 	});
 
@@ -48,7 +48,7 @@ describe("wearSwatch", () => {
 	});
 
 	it("refuses a swatch the player has not earned", () => {
-		expect(wearSwatch(VOLCANO, [])).toEqual({
+		expect(wearSwatch(CINNABAR, [])).toEqual({
 			kind: "refused",
 			reason: "not-owned",
 		});
