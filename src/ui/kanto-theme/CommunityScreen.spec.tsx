@@ -141,7 +141,7 @@ describe("CommunityScreen", () => {
 	it("draws the whole ladder, with the viewer standing on their own gate", () => {
 		const { container } = render(<CommunityScreen {...props} />);
 
-		expect(screen.getByText(COPY.mapHint)).toBeInTheDocument();
+		expect(screen.queryByText("tap an avatar")).not.toBeInTheDocument();
 		expect(container.querySelectorAll("[data-current]")).toHaveLength(1);
 	});
 
@@ -159,7 +159,6 @@ describe("CommunityScreen", () => {
 		expect(
 			screen.getByText("start a run to place yourself")
 		).toBeInTheDocument();
-		expect(screen.queryByText(COPY.mapHint)).toBeNull();
 	});
 
 	it("seats one row per category on each board, held or not", async () => {

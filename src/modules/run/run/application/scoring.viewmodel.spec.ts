@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+
 import { accuracyFor, gainsFor, scoringFor } from "./scoring.viewmodel";
 
 const PALLET = 0;
@@ -32,6 +34,29 @@ describe("gainsFor", () => {
 		expect(Number.parseFloat(bestCoverageOf(pallet))).toBeGreaterThan(
 			Number.parseFloat(bestCoverageOf(champion))
 		);
+	});
+});
+
+describe("the steps read with your build", () => {
+	it("states what each step earns with a build that lifts every poll", () => {
+		const [single] = gainsFor(LAVENDER, [CONFIGS.intellisense]);
+
+		expect(single?.steps?.map((step) => step.built)).toEqual(["0", "1.5"]);
+	});
+
+	it("leaves the build reading off when the build lifts no poll alike", () => {
+		const [single, multiple] = gainsFor(LAVENDER, [CONFIGS.js]);
+
+		expect(single?.steps?.every((step) => step.built === undefined)).toBe(true);
+		expect(multiple?.steps?.every((step) => step.built === undefined)).toBe(
+			true
+		);
+	});
+
+	it("leaves the build reading off with no build at all", () => {
+		const [single] = gainsFor(LAVENDER);
+
+		expect(single?.steps?.every((step) => step.built === undefined)).toBe(true);
 	});
 });
 

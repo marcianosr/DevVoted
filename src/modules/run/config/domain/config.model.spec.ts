@@ -17,6 +17,7 @@ import {
 	largestSizeFitting,
 	minify,
 	minifiedUnits,
+	openerClashFor,
 	sellRefund,
 	showsSampleSize,
 	switchArm,
@@ -29,6 +30,24 @@ const NARROW_LINTER = {
 	...CONFIGS.linter,
 	eliminatesWrongOptionsFor: ["js", "ts"] as const,
 };
+
+describe("openerClashFor", () => {
+	it("names an installed config whose first-answer effect would multiply with this one", () => {
+		expect(openerClashFor(CONFIGS.overclock, [CONFIGS.coldStart])).toBe(
+			CONFIGS.coldStart
+		);
+	});
+
+	it("finds no clash for a config without a first-answer effect", () => {
+		expect(openerClashFor(CONFIGS.js, [CONFIGS.coldStart])).toBeUndefined();
+	});
+
+	it("never clashes a config with itself", () => {
+		expect(
+			openerClashFor(CONFIGS.coldStart, [CONFIGS.coldStart])
+		).toBeUndefined();
+	});
+});
 
 describe("draftCost", () => {
 	it("prices a config at 32 KB for every slot it fills", () => {

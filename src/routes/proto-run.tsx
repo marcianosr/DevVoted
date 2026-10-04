@@ -258,13 +258,13 @@ const OPEN_SEAT_CATEGORY: CategoryCode = "git";
 const PROTO_BOARDS = [
 	{
 		title: "streak",
-		summary: "longest run of correct answers in one run · all-time",
+		summary: "All-time longest run streak",
 		figure: (index: number) => `${24 - index * 2} in a row`,
 		claim: "3 in a row claims it",
 	},
 	{
 		title: "correct",
-		summary: "most correct answers in one run · all-time",
+		summary: "All-time longest run of correct answers",
 		figure: (index: number) => `${61 - index * 5} correct`,
 		claim: "4 correct claims it",
 	},

@@ -87,7 +87,7 @@ const START_LABEL = `${gateSwatchAt(START_GATE).gateName} gate prep`;
 const CONFIG_WORD = "config";
 const WEIGHT_WORD = "weight";
 export const NEW_RUN_BUILD_NOTE: LeadLine = [
-	"Select configs up to ",
+	"Install configs up to ",
 	{ figure: `${BASE_SLOTS}` },
 	` ${WEIGHT_WORD} units`,
 ];
@@ -130,6 +130,7 @@ export const handCardFor = ({
 	install: held
 		? { label: INSTALLED_LABEL, disabled: true }
 		: { onPress, disabled: !fits },
+	installWhenFolded: true,
 	info: settledFactsFor(config),
 });
 

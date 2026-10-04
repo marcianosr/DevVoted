@@ -12,10 +12,9 @@ export const roleLabelFor = (role: AuthorRole | null): string | undefined =>
 export type Authorship = {
 	readonly role?: string;
 	readonly published: number;
-	readonly answers: number;
 };
 
-export const NO_AUTHORSHIP: Authorship = { published: 0, answers: 0 };
+export const NO_AUTHORSHIP: Authorship = { published: 0 };
 
 export const authorshipOf = (
 	role: AuthorRole,

@@ -17,7 +17,7 @@ const COPY = {
 const LAYOUT = "grid w-full gap-6 md:grid-cols-2 md:gap-x-8";
 const TOP_LEFT = "min-w-0 md:col-start-1 md:row-start-1 md:self-center";
 const TOP_RIGHT =
-	"order-last min-w-0 md:order-none md:col-start-2 md:row-start-1 md:self-center";
+	"sticky bottom-[var(--tab-bar,0px)] z-20 order-last min-w-0 md:static md:order-none md:col-start-2 md:row-start-1 md:self-center";
 const COLUMNS =
 	"grid w-full items-start gap-8 md:col-span-2 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-6";
 const LEFT = "flex w-full min-w-0 flex-col md:col-start-1";

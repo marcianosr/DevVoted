@@ -5,7 +5,7 @@ const FOCUS =
 
 const IDLE = "text-theme-muted hover:text-theme-soft";
 
-export type TabsLook = "folder" | "pill";
+export type TabsLook = "folder" | "pill" | "ghost";
 
 const LOOKS = {
 	folder: {
@@ -19,6 +19,12 @@ const LOOKS = {
 		tab: `inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-md py-1 pr-1 pl-3 text-sm font-bold whitespace-nowrap ring-1 ring-inset ring-theme-faint transition-colors ${FOCUS}`,
 		active: "segment-theme",
 		uncounted: "pr-3",
+	},
+	ghost: {
+		bar: "flex flex-wrap items-center gap-1",
+		tab: `cursor-pointer rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap transition-colors ${FOCUS}`,
+		active: "bg-theme-raised text-theme-soft",
+		uncounted: undefined,
 	},
 } satisfies Record<
 	TabsLook,

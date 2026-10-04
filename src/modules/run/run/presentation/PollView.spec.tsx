@@ -411,7 +411,7 @@ describe("PollView while a right answer's gain flies", () => {
 		Reflect.deleteProperty(HTMLElement.prototype, "animate");
 	});
 
-	it("holds the bar where it stood until the chip lands, then moves it", () => {
+	it("holds the bar where it stood until the chip lands, then moves it and lets the chip go once it has ridden", () => {
 		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };
 		Object.defineProperty(HTMLElement.prototype, "animate", {
 			value: () => animation,
@@ -427,6 +427,10 @@ describe("PollView while a right answer's gain flies", () => {
 		act(() => animation.onfinish?.());
 
 		expect(heldOf(container)).toBe("36");
+		expect(screen.getByText("+12%")).toBeInTheDocument();
+
+		act(() => animation.onfinish?.());
+
 		expect(screen.queryByText("+12%")).toBeNull();
 	});
 

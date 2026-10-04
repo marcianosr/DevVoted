@@ -172,6 +172,9 @@ it before proposing one again.**
 | [183](183-the-nav-carries-the-run.md) | **The nav carries the run, the page carries its title** | Accepted — swatch track and KB balance move to the nav (screens publish theirs, previews included); headers are a headline title over one line of subtext; no lead swatch, no readout, nothing pinned |
 | [184](184-a-summit-is-entered-in-the-hall-of-fame.md) | **A summit is entered in the Hall of Fame** | Accepted — only a win from Pallet counts; the community page holds the reigning champion's card and every win since; the Champion border is earned or bought for 10 TB; the Champion gate is prismatic in its accents |
 | [185](185-an-approved-poll-pays-its-author-once.md) | **An approved poll pays its author once** | Accepted — the first publish banks the author 16 KB of archive, stamped on the poll so a republish pays nothing; not retroactive; the nav and Your suggested polls state it |
+| [186](186-the-hero-is-the-preview-and-the-save-bar-floats.md) | **The hero is the preview, and the save bar floats** | Accepted — the hero rings saffron and reads preview · not saved; a floating Unsaved look · discard · Save look bar on every tab; Appearance is one picker panel; no trophies on your own hero |
+| [187](187-the-polls-dex-is-a-box-and-a-poll-is-caught-when-answered-right.md) | **The polls Dex is a box, and a poll is caught when answered right** | Accepted — unseen / seen / caught; category strip with meters, seen list beside the entry, a numbered box of every poll; amends ADR-151 for polls |
+| [188](188-a-phone-navigates-from-a-bottom-tab-bar.md) | **A phone navigates from a bottom tab bar** | Accepted — Daily Run · Community · Profile fixed at the bottom below md; start presses stick just above it via --tab-bar |
 
 ## Retired
 

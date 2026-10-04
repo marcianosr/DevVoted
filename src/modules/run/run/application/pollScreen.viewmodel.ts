@@ -895,6 +895,7 @@ export type PollScreenHandlers = {
 	onSubmit: () => void;
 	onNext: () => void;
 	onLanded?: () => void;
+	onSettled?: () => void;
 	onPress?: (action: PressAction, configId: string) => void;
 	onUnseal?: (optionId: string) => void;
 	onApprove?: () => void;
@@ -980,7 +981,13 @@ export const pollScreenPropsFor = ({
 			shown: flight !== undefined && !landed ? before : view,
 			answered,
 		}),
-		...(flight === undefined ? {} : { flight, onFlightLanded: on.onLanded }),
+		...(flight === undefined
+			? {}
+			: {
+					flight,
+					onFlightLanded: on.onLanded,
+					onFlightSettled: on.onSettled,
+				}),
 		...withShake(pollShakeFor(answered)),
 		...withCombo(pollComboFor(view, answered)),
 		pollKey: answered?.id ?? live?.id,

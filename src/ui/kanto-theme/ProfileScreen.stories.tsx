@@ -1,3 +1,4 @@
+import { swatchTrackFor } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { useState, type ReactNode } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react";
@@ -13,7 +14,6 @@ import {
 import { kantoStanding } from "~/test/kantoCommunity.factory";
 import { trackFor } from "~/test/swatchTrack.factory";
 
-import { Button } from "./Button.ui";
 import { DexAudits } from "./DexAudits.ui";
 import { DexConfigs } from "./DexConfigs.ui";
 import { DexControls } from "./DexControls.ui";
@@ -23,8 +23,8 @@ import { DexSwatches } from "./DexSwatches.ui";
 import { ProfileBestRun } from "./ProfileBestRun.ui";
 import { ProfileClimbing } from "./ProfileClimbing.ui";
 import { ProfileCollection } from "./ProfileCollection.ui";
-import { ProfileHero, type Trophy } from "./ProfileHero.ui";
-import { EDIT_PROFILE, ProfileScreen } from "./ProfileScreen.ui";
+import { ProfileHero, type HeroRecord } from "./ProfileHero.ui";
+import { ProfileScreen } from "./ProfileScreen.ui";
 import { ProfileSeats } from "./ProfileSeats.ui";
 import type { StandingProps } from "./Standing.ui";
 
@@ -60,21 +60,21 @@ const PANELS: Record<string, ReactNode> = {
 const BORDER = "/borders/border-ts-lavender.svg";
 const NAME = "marciano_schildmeijer";
 
-const trophies = (yours: boolean): Trophy[] => [
-	{
-		label: "deepest gate",
-		figure: "9",
-		outOf: "/ 13",
-		...(yours ? { yours: "you 6" } : {}),
-	},
-	{
+const RECORD: HeroRecord = {
+	stats: [
+		{ label: "deepest gate", value: "9 / 13" },
+		{ label: "runs played", value: "24" },
+		{ label: "runs won", value: "2" },
+		{ label: "best streak", value: "21 in a row" },
+		{ label: "best category", value: "CSS" },
+		{ label: "archived", value: "8.2 MB", color: "saffron" },
+	],
+	swatches: {
 		label: "swatches",
-		figure: "5",
-		outOf: "/ 13",
-		...(yours ? { yours: "you 3" } : {}),
+		value: "5 / 13",
+		fills: swatchTrackFor([0, 1, 2, 4, 6]),
 	},
-	{ label: "runs won", figure: "2" },
-];
+};
 
 const highlights = (standing?: StandingProps) => (
 	<>
@@ -111,8 +111,7 @@ const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 					borderUrl={BORDER}
 					titles={titles}
 					you
-					trailing={<Button size="sm" tone="ambient" label={EDIT_PROFILE} />}
-					trophies={trophies(false)}
+					preview="preview · not saved"
 				/>
 			}
 			highlights={highlights(kantoStanding())}
@@ -163,7 +162,7 @@ const VISITED_HERO = (
 		photoUrl="/editors/misty.png"
 		borderUrl={BORDER}
 		titles={["Completer", "Flawless"]}
-		trophies={trophies(true)}
+		record={RECORD}
 	/>
 );
 

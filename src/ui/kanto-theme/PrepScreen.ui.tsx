@@ -9,10 +9,11 @@ import { ApprovalList, type ApprovalListProps } from "./ApprovalList.ui";
 import { RebaseList, type RebaseListProps } from "./RebaseList.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { Scoring, type ScoringProps } from "./Scoring.ui";
-import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
+const PRESS_COLUMN = `${COLUMN} max-md:contents`;
 
 export type PrepScreenProps = {
 	header: HeaderProps;
@@ -57,12 +58,12 @@ export const PrepScreen = ({
 				{sla === undefined ? null : <SlaPicker {...sla} />}
 			</div>
 
-			<div className={COLUMN}>
+			<div className={PRESS_COLUMN}>
 				<Scoring {...scoring} />
 				<PollTiles {...polls} />
 				{audits === undefined ? null : <AuditsPanel {...audits} />}
 				{subscriptions === undefined ? null : <Ledger {...subscriptions} />}
-				<ScreenFooter {...footer} asidesAt="after" rule={false} />
+				<ScreenActions {...footer} asidesAt="after" />
 			</div>
 		</div>
 	</Screen>

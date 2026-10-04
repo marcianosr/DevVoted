@@ -24,6 +24,19 @@ export const isSeenPoll = (
 	sighting: Pick<PollSighting, "timesSeen">
 ): boolean => sighting.timesSeen > 0;
 
+export type PollEntryState = "unseen" | "seen" | "caught";
+
+export const entryStateOf = (
+	entry: Pick<PolldexEntry, "seen" | "correctCount">
+): PollEntryState => {
+	if (!entry.seen) return "unseen";
+	return entry.correctCount > 0 ? "caught" : "seen";
+};
+
+export const isCaughtPoll = (
+	entry: Pick<PolldexEntry, "seen" | "correctCount">
+): boolean => entryStateOf(entry) === "caught";
+
 export type PolldexCategoryFilter = CategoryCode | "all";
 
 export type PolldexFilter = "all" | "seen" | "mastered" | "fumbled";

@@ -51,7 +51,11 @@ import {
 	type ClimberRow,
 } from "~/modules/run/community/infrastructure/climbers.repository";
 import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
-import { fetchCategoryBoards } from "~/modules/run/run/infrastructure/categoryLeader.repository";
+import { isCategoryCode } from "~/shared/lib/categories";
+import {
+	fetchBestStreakOf,
+	fetchCategoryBoards,
+} from "~/modules/run/run/infrastructure/categoryLeader.repository";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 const RECENT_RUNS_SHOWN = 5;
@@ -72,6 +76,8 @@ type RecordSources = {
 	gates: readonly GatedexEntry[];
 	seats: readonly CategorySeat[];
 	climber: ClimberRow | null;
+	bestStreak: number;
+	bestCategory: string | undefined;
 };
 
 const recordOf = ({
@@ -80,6 +86,8 @@ const recordOf = ({
 	gates,
 	seats,
 	climber,
+	bestStreak,
+	bestCategory,
 }: RecordSources): ProfileRecord => ({
 	deepestGate: Math.max(deepestGateIn(entries), climber?.gate ?? 0),
 	gatesTotal: gates.length,
@@ -88,6 +96,11 @@ const recordOf = ({
 		.map((gate) => gate.gate),
 	runsFinished: entries.length,
 	runsWon: runsWonIn(entries),
+	bestStreak,
+	bestCategory:
+		bestCategory !== undefined && isCategoryCode(bestCategory)
+			? bestCategory
+			: null,
 	bestRun: bestRunIn(entries),
 	seats: seatsHeldBy(userId, seats),
 	recentRuns: entries.slice(0, RECENT_RUNS_SHOWN),
@@ -128,6 +141,7 @@ export const getPublicProfileService = async (userId: string) =>
 			progress,
 			pollCounts,
 			bestCategories,
+			bestStreak,
 		] = await Promise.all([
 			fetchPublicProfile(userId),
 			fetchPublishedPollCategories(),
@@ -141,6 +155,7 @@ export const getPublicProfileService = async (userId: string) =>
 			fetchObjectiveProgressByUser(userId),
 			fetchPublishedPollCounts(userId),
 			fetchBestCategories([userId]),
+			fetchBestStreakOf(userId),
 		]);
 		if (!profile) throw new Error("User not found");
 
@@ -154,6 +169,8 @@ export const getPublicProfileService = async (userId: string) =>
 				gates: gatedex(profile.ownedSwatchIds),
 				seats: boards.streak,
 				climber,
+				bestStreak,
+				bestCategory: bestCategories.get(userId),
 			}),
 			standing:
 				climber === null

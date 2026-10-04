@@ -301,6 +301,8 @@ describe("CommunityView", () => {
 							lootKb: 64,
 							lootedById: null,
 							lootedByName: null,
+							lootedByPhotoUrl: null,
+							lootedByBorderUrl: null,
 						},
 					],
 					bestPosition: null,

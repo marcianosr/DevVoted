@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 import {
+	entryStateOf,
 	filterPolldexEntries,
 	formatDexNumber,
 	FUMBLED_ACCURACY,
+	isCaughtPoll,
 	MASTERED_ACCURACY,
 	isSeenPoll,
 	polldexTallies,
@@ -216,5 +218,37 @@ describe("presentCategories", () => {
 
 		const expected: CategoryCode[] = ["css", "js"];
 		expect(presentCategories(entries)).toEqual(expected);
+	});
+});
+
+describe("entryStateOf", () => {
+	it("reads a poll never dealt to you as unseen", () => {
+		expect(entryStateOf(unseen())).toBe("unseen");
+	});
+
+	it("reads a poll dealt but never answered as seen", () => {
+		expect(
+			entryStateOf(entry({ answeredCount: 0, correctCount: 0, accuracy: null }))
+		).toBe("seen");
+	});
+
+	it("reads a poll only ever answered wrong as seen", () => {
+		expect(
+			entryStateOf(entry({ answeredCount: 3, correctCount: 0, accuracy: 0 }))
+		).toBe("seen");
+	});
+
+	it("reads a poll answered right once as caught, even after later misses", () => {
+		expect(
+			entryStateOf(entry({ answeredCount: 4, correctCount: 1, accuracy: 25 }))
+		).toBe("caught");
+	});
+});
+
+describe("isCaughtPoll", () => {
+	it("holds a caught poll and nothing short of it", () => {
+		expect(isCaughtPoll(entry())).toBe(true);
+		expect(isCaughtPoll(entry({ correctCount: 0, accuracy: 0 }))).toBe(false);
+		expect(isCaughtPoll(unseen())).toBe(false);
 	});
 });

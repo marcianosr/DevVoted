@@ -1,8 +1,24 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Button } from "./Button.ui";
-import { ProfileHero } from "./ProfileHero.ui";
-import { EDIT_PROFILE } from "./ProfileScreen.ui";
+import { swatchTrackFor } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+
+import { ProfileHero, type HeroRecord } from "./ProfileHero.ui";
+
+const RECORD: HeroRecord = {
+	stats: [
+		{ label: "deepest gate", value: "9 / 13" },
+		{ label: "runs played", value: "24" },
+		{ label: "runs won", value: "2" },
+		{ label: "best streak", value: "21 in a row" },
+		{ label: "best category", value: "CSS" },
+		{ label: "archived", value: "8.2 MB", color: "saffron" },
+	],
+	swatches: {
+		label: "swatches",
+		value: "5 / 13",
+		fills: swatchTrackFor([0, 1, 2, 4, 6]),
+	},
+};
 
 const meta: Meta<typeof ProfileHero> = {
 	component: ProfileHero,
@@ -22,12 +38,7 @@ export const YourOwn: Story = {
 		titles: ["Git Maintainer", "Summit"],
 		rank: "Senior",
 		you: true,
-		trailing: <Button size="sm" tone="ambient" label={EDIT_PROFILE} />,
-		trophies: [
-			{ label: "deepest gate", figure: "9", outOf: "/ 13" },
-			{ label: "swatches", figure: "5", outOf: "/ 13" },
-			{ label: "runs won", figure: "2" },
-		],
+		preview: "preview · not saved",
 	},
 };
 
@@ -37,21 +48,12 @@ export const SeenByAVisitor: Story = {
 		handle: "misty",
 		photoUrl: "/editors/misty.png",
 		titles: ["Completer"],
-		trophies: [
-			{ label: "deepest gate", figure: "9", outOf: "/ 13", yours: "you 6" },
-			{ label: "swatches", figure: "5", outOf: "/ 13", yours: "you 3" },
-			{ label: "runs won", figure: "0" },
-		],
+		record: RECORD,
 	},
 };
 
 export const BrandNew: Story = {
 	args: {
 		name: "Brock",
-		trophies: [
-			{ label: "deepest gate", figure: "0", outOf: "/ 13" },
-			{ label: "swatches", figure: "0", outOf: "/ 13" },
-			{ label: "runs won", figure: "0" },
-		],
 	},
 };

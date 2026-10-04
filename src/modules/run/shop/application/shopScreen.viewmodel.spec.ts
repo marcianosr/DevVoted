@@ -45,6 +45,34 @@ describe("offerChipFor, marking a config met for the first time", () => {
 	});
 });
 
+describe("a config whose first answer clashes with the build", () => {
+	const CLASH = { label: "clashes with Cold Start", color: "saffron" };
+	const badgesOf = (chip: ConfigChipProps) =>
+		"badges" in chip ? chip.badges : [];
+
+	it("warns on the offer before it is installed", () => {
+		expect(
+			badgesOf(
+				offerChipFor(CONFIGS.overclock, {
+					priceKb: 32,
+					affordable: true,
+					installed: [CONFIGS.coldStart],
+				})
+			)
+		).toContainEqual(CLASH);
+	});
+
+	it("keeps warning on the card once both stand in the build", () => {
+		expect(
+			badgesOf(
+				buildChipFor(CONFIGS.overclock, {
+					installed: [CONFIGS.coldStart, CONFIGS.overclock],
+				})
+			)
+		).toContainEqual(CLASH);
+	});
+});
+
 describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 	const deal = { priceKb: 32, affordable: true, onInstall: vi.fn() };
 	const chip = upgradeChipFor({ ...CONFIGS.js, level: 3 }, 1, deal);

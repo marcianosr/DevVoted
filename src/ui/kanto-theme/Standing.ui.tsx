@@ -11,6 +11,7 @@ import {
 	type CoverageLadder,
 } from "./CoverageBar.ui";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
+import { StatTiles, type StatTile } from "./StatTiles.ui";
 import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 import { Weight } from "./Weight.ui";
@@ -44,11 +45,7 @@ const FREE_CHIP =
 	"inline-flex items-center gap-1.5 rounded-lg border border-dashed border-theme-faint px-1.5 py-1 text-sm text-theme-muted opacity-60";
 const READER_ONLY = "sr-only";
 
-const TILES = "grid grid-cols-3 rounded-xl border border-theme-faint";
-const TILE =
-	"flex min-w-0 flex-col items-start gap-1 border-l border-theme-faint px-3 py-2 first:border-l-0";
-
-export type StandingStat = { label: string; value: string; color?: KantoColor };
+export type StandingStat = StatTile;
 
 export type StandingCoverage = CoverageLadder & {
 	held: number;
@@ -149,17 +146,6 @@ export const Standing = ({
 		{withBuild ? (
 			<BuildBlock weight={weight} build={build} freeSlots={freeSlots} />
 		) : null}
-		{stats.length === 0 ? null : (
-			<div className={TILES}>
-				{stats.map((stat) => (
-					<div key={stat.label} className={TILE}>
-						<Typography variant="hint" as="span">
-							{stat.label}
-						</Typography>
-						<Badge color={stat.color ?? NEUTRAL}>{stat.value}</Badge>
-					</div>
-				))}
-			</div>
-		)}
+		{stats.length === 0 ? null : <StatTiles stats={stats} />}
 	</div>
 );

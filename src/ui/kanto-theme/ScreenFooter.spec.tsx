@@ -410,12 +410,12 @@ describe("ScreenFooter", () => {
 });
 
 describe("ScreenActions", () => {
-	it("pins the screen's press to the bottom of a phone, and lets it go on a desktop", () => {
+	it("pins the screen's press above the phone's tab bar, and lets it go on a desktop", () => {
 		const { container } = render(<ScreenActions {...props} />);
 
 		expect(container.firstElementChild).toHaveClass(
 			"sticky",
-			"bottom-0",
+			"bottom-[var(--tab-bar,0px)]",
 			"md:static"
 		);
 	});

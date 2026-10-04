@@ -47,12 +47,16 @@ describe("AccuracyTrack", () => {
 		expect(screen.getByText("×1.19")).toHaveClass("badge-theme");
 	});
 
-	it("writes the ceiling on the end of the bar", () => {
+	it("writes the ceiling on its own line below the bar", () => {
 		const { container } = render(<AccuracyTrack {...TWO_RIGHT} />);
+		const bar = fillOf(container, "best")?.parentElement;
+		const ceiling = screen.getByText("up to ×2");
+		if (!bar) throw new Error("no accuracy bar");
 
-		expect(screen.getByText("up to ×2").parentElement).toBe(
-			fillOf(container, "best")?.parentElement
-		);
+		expect(bar.contains(ceiling)).toBe(false);
+		expect(
+			bar.compareDocumentPosition(ceiling) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
 	});
 
 	it("writes no ceiling when the best is already sure", () => {

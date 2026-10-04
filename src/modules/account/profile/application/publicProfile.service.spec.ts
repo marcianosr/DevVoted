@@ -15,6 +15,7 @@ const {
 	fetchCategoryBoards,
 	fetchActiveClimberFor,
 	fetchBestCategories,
+	fetchBestStreakOf,
 } = vi.hoisted(() => ({
 	fetchPublicProfile: vi.fn(),
 	fetchPublishedPollCounts: vi.fn(),
@@ -28,6 +29,7 @@ const {
 	fetchCategoryBoards: vi.fn(),
 	fetchActiveClimberFor: vi.fn(),
 	fetchBestCategories: vi.fn(),
+	fetchBestStreakOf: vi.fn(),
 }));
 
 vi.mock("~/modules/account/profile/infrastructure/profile.repository", () => ({
@@ -59,6 +61,7 @@ vi.mock(
 
 vi.mock("~/modules/run/run/infrastructure/categoryLeader.repository", () => ({
 	fetchCategoryBoards,
+	fetchBestStreakOf,
 }));
 
 vi.mock("~/modules/run/community/infrastructure/climbers.repository", () => ({
@@ -114,7 +117,7 @@ describe("getPublicProfileService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		fetchPublicProfile.mockResolvedValue(PROFILE);
-		fetchPublishedPollCounts.mockResolvedValue({ published: 0, answers: 0 });
+		fetchPublishedPollCounts.mockResolvedValue({ published: 0 });
 		fetchObjectiveProgressByUser.mockResolvedValue([
 			{ metric: "polls-answered", count: 120 },
 		]);
@@ -150,7 +153,18 @@ describe("getPublicProfileService", () => {
 			],
 		});
 		fetchActiveClimberFor.mockResolvedValue(null);
-		fetchBestCategories.mockResolvedValue(new Map());
+		fetchBestCategories.mockResolvedValue(new Map([[RED, "css"]]));
+		fetchBestStreakOf.mockResolvedValue(21);
+	});
+
+	it("carries the player's best streak and best category on the record", async () => {
+		const response = await getPublicProfileService(RED);
+
+		expect(
+			unwrap<{ record: { bestStreak: number; bestCategory: string | null } }>(
+				response
+			).record
+		).toMatchObject({ bestStreak: 21, bestCategory: "css" });
 	});
 
 	it("names the player and every title they wear", async () => {
@@ -167,14 +181,14 @@ describe("getPublicProfileService", () => {
 
 	it("credits an admin with the polls they published and the answers drawn", async () => {
 		fetchPublicProfile.mockResolvedValue({ ...PROFILE, role: "admin" });
-		fetchPublishedPollCounts.mockResolvedValue({ published: 3, answers: 40 });
+		fetchPublishedPollCounts.mockResolvedValue({ published: 3 });
 
 		const response = await getPublicProfileService(RED);
 
 		expect(
 			unwrap<{ identity: { authorship: unknown } }>(response).identity
 				.authorship
-		).toEqual({ role: "Admin", published: 3, answers: 40 });
+		).toEqual({ role: "Admin", published: 3 });
 	});
 
 	it("resolves the equipped border to a picture the card can draw", async () => {

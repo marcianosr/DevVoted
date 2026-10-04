@@ -170,6 +170,24 @@ describe("the loot a fallen card offers", () => {
 		expect(screen.queryByRole("button", { name: /looted by/ })).toBeNull();
 	});
 
+	it("shows the looter's face beside the note on a spent run", () => {
+		const { container } = render(
+			<ClimberCard
+				{...card({
+					loot: {
+						label: "looted by Misty · 67 KB",
+						looter: { name: "Misty", photoUrl: "/editors/misty.png" },
+					},
+				})}
+			/>
+		);
+
+		const note = screen.getByText("looted by Misty · 67 KB");
+
+		expect(note.querySelector('img[src="/editors/misty.png"]')).not.toBeNull();
+		expect(container).toContainElement(note);
+	});
+
 	it("leaves a living climber's card without a loot row", () => {
 		render(<ClimberCard {...card()} />);
 

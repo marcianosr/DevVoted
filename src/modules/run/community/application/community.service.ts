@@ -134,6 +134,8 @@ export type ClimbFallen = ClimbMarker &
 		lootKb: number;
 		lootedById: string | null;
 		lootedByName: string | null;
+		lootedByPhotoUrl: string | null;
+		lootedByBorderUrl: string | null;
 	};
 
 export type ClimbViewer = {
@@ -298,6 +300,8 @@ const fallenOf =
 		lootKb: lootableKbOf(row),
 		lootedById: row.lootedById,
 		lootedByName: row.lootedByName,
+		lootedByPhotoUrl: row.lootedByPhotoUrl,
+		lootedByBorderUrl: row.lootedByBorderUrl,
 		...closeOf(row),
 		...standingOf(row, bestCategories.get(row.userId)),
 	});

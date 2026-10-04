@@ -1,7 +1,7 @@
-import { and, count, countDistinct, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import { pollResponsesTable, pollsTable, usersTable } from "~/database/schema";
+import { pollsTable, usersTable } from "~/database/schema";
 import type { AuthorRole } from "~/modules/account/profile/domain/authorship.model";
 import type { Look } from "~/modules/account/profile/domain/look.model";
 
@@ -55,26 +55,20 @@ export const fetchPublicProfile = async (
 
 export type PublishedPollCounts = {
 	published: number;
-	answers: number;
 };
 
 export const fetchPublishedPollCounts = async (
 	userId: string
 ): Promise<PublishedPollCounts> => {
 	const [row] = await db
-		.select({
-			published: countDistinct(pollsTable.id),
-			answers: count(pollResponsesTable.response_id),
-		})
+		.select({ published: count(pollsTable.id) })
 		.from(pollsTable)
-		.leftJoin(pollResponsesTable, eq(pollResponsesTable.poll_id, pollsTable.id))
 		.where(
 			and(eq(pollsTable.created_by, userId), eq(pollsTable.status, "published"))
 		);
 
 	return {
 		published: Number(row?.published ?? 0),
-		answers: Number(row?.answers ?? 0),
 	};
 };
 

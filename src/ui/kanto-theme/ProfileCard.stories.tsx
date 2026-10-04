@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import { Button } from "./Button.ui";
 import { ProfileCard } from "./ProfileCard.ui";
-import { EDIT_PROFILE } from "./ProfileScreen.ui";
 import { Screen } from "./Screen.ui";
 
 const meta: Meta<typeof ProfileCard> = {
@@ -22,7 +21,7 @@ type Story = StoryObj<typeof ProfileCard>;
 const BORDER = "/borders/border-ts-lavender.svg";
 const PHOTO = "/editors/misty.png";
 
-const EDIT = <Button size="sm" tone="ambient" label={EDIT_PROFILE} />;
+const EDIT = <Button size="sm" tone="ambient" label="edit profile" />;
 
 export const NoTitleYet: Story = {
 	args: { borderUrl: BORDER, trailing: EDIT },

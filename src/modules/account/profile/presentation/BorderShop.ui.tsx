@@ -40,6 +40,7 @@ export const BorderShop = ({
 			}
 		/>
 		<Panel.Body>
+			<Typography variant="hint">{COPY.note}</Typography>
 			<div className={GRID}>
 				{cards.map(({ id, ...card }) => (
 					<BorderCard key={id} {...card} />
@@ -47,8 +48,5 @@ export const BorderShop = ({
 			</div>
 			{error === undefined ? null : <span className={ERROR}>{error}</span>}
 		</Panel.Body>
-		<Panel.Footer>
-			<Typography variant="hint">{COPY.note}</Typography>
-		</Panel.Footer>
 	</Panel>
 );

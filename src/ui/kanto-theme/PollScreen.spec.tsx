@@ -782,6 +782,31 @@ describe("PollScreen while an answer lands", () => {
 		Reflect.deleteProperty(HTMLElement.prototype, "animate");
 	});
 
+	it("reports the chip settled only once it has ridden to the new fill", () => {
+		const onFlightSettled = vi.fn();
+		const animation: FakeAnimation = { onfinish: null, cancel: vi.fn() };
+		Object.defineProperty(HTMLElement.prototype, "animate", {
+			value: () => animation,
+			configurable: true,
+		});
+
+		render(
+			<PollScreen
+				{...props}
+				question={rightAnswer}
+				flight={{ figure: "+12%", id: "poll-1", fromHeld: 24, toHeld: 36 }}
+				onFlightSettled={onFlightSettled}
+			/>
+		);
+
+		act(() => animation.onfinish?.());
+		expect(onFlightSettled).not.toHaveBeenCalled();
+
+		act(() => animation.onfinish?.());
+		expect(onFlightSettled).toHaveBeenCalledTimes(1);
+		Reflect.deleteProperty(HTMLElement.prototype, "animate");
+	});
+
 	it("lands at once, with no chip, for a player who asked for less motion", () => {
 		const onFlightLanded = vi.fn();
 		vi.stubGlobal("matchMedia", () => ({ matches: true }));

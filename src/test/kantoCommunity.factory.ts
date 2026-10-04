@@ -575,14 +575,14 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 	leaders: [
 		{
 			title: COMMUNITY_STREAK_TITLE,
-			summary: "longest run of correct answers in one run · all-time",
+			summary: "All-time longest run streak",
 			seats: streakSeats(),
 			footer:
 				"A seat changes hands when somebody beats it. 3 seats still open.",
 		},
 		{
 			title: COMMUNITY_CORRECT_TITLE,
-			summary: "most correct answers in one run · all-time",
+			summary: "All-time longest run of correct answers",
 			seats: correctSeats(),
 			footer:
 				"A seat changes hands when somebody beats it. 3 seats still open.",

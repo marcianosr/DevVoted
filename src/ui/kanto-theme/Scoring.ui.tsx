@@ -9,6 +9,7 @@ import { Typography } from "./Typography.ui";
 
 const COPY = {
 	title: "Scoring",
+	withBuild: "with your build",
 } as const;
 
 export const SCORING_TITLE = COPY.title;
@@ -33,6 +34,7 @@ const TONE_COLOR = {
 
 export type ScoringStep = {
 	figure: string;
+	built?: string;
 	coverage: string;
 	tone: ScoringTone;
 };
@@ -49,31 +51,47 @@ export type ScoringProps = {
 	track?: AccuracyTrackProps;
 };
 
+const readsBuild = (steps: readonly ScoringStep[]): boolean =>
+	steps.some((step) => step.built !== undefined);
+
 const Steps = ({ steps }: { steps: readonly ScoringStep[] }) => {
 	const [held, setHeld] = useState(false);
+	const build = readsBuild(steps);
 
 	return (
-		<button
-			type="button"
-			aria-pressed={held}
-			className={STEPS}
-			onClick={(event) => {
-				event.currentTarget.focus();
-				setHeld((shown) => !shown);
-			}}
-			onBlur={() => setHeld(false)}
-		>
-			{steps.map((step, index) => (
-				<Badge key={index} color={TONE_COLOR[step.tone]}>
-					<span className={held ? UNITS_HIDDEN : UNITS_SHOWN}>
-						{step.figure}
-					</span>
-					<span className={held ? COVERAGE_HELD : COVERAGE_SHOWN}>
-						{step.coverage}
-					</span>
-				</Badge>
-			))}
-		</button>
+		<>
+			<button
+				type="button"
+				aria-pressed={held}
+				className={STEPS}
+				onClick={(event) => {
+					event.currentTarget.focus();
+					setHeld((shown) => !shown);
+				}}
+				onBlur={() => setHeld(false)}
+			>
+				{steps.map((step, index) => (
+					<Badge key={index} color={TONE_COLOR[step.tone]}>
+						<span className={held ? UNITS_HIDDEN : UNITS_SHOWN}>
+							{step.figure}
+						</span>
+						{step.built === undefined ? null : (
+							<span className={held ? UNITS_SHOWN : UNITS_HIDDEN}>
+								{step.built}
+							</span>
+						)}
+						<span className={held && !build ? COVERAGE_HELD : COVERAGE_SHOWN}>
+							{step.coverage}
+						</span>
+					</Badge>
+				))}
+			</button>
+			{held && build ? (
+				<Typography variant="hint" as="span">
+					{COPY.withBuild}
+				</Typography>
+			) : null}
+		</>
 	);
 };
 

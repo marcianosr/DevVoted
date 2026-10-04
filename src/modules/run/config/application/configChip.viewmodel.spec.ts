@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import {
+	openerClashBadgesFor,
 	pollNoteFor,
 	registryUpgradesFor,
 	rollOddsLabel,
@@ -294,5 +295,17 @@ describe("pollNoteFor — a faucet draining its run cap", () => {
 		expect(pollNoteFor({ kind: "online", capLeftKb: 96, bumpIn: 2 })).toEqual({
 			badge: { count: 96, label: "KB left", color: "saffron" },
 		});
+	});
+});
+
+describe("openerClashBadgesFor", () => {
+	it("warns in saffron which installed config the first answer would multiply with", () => {
+		expect(
+			openerClashBadgesFor(CONFIGS.overclock, [CONFIGS.coldStart])
+		).toEqual([{ label: "clashes with Cold Start", color: "saffron" }]);
+	});
+
+	it("warns nothing without a clash", () => {
+		expect(openerClashBadgesFor(CONFIGS.overclock, [CONFIGS.js])).toEqual([]);
 	});
 });

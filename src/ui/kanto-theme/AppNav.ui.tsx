@@ -29,6 +29,8 @@ export const COPY = {
 	signIn: "Sign in",
 	signOut: "Sign out",
 	profile: "Profile & Dex",
+	profileTab: "Profile",
+	tabs: "Main",
 	suggested: YOUR_SUGGESTED_POLLS,
 	account: "Your account",
 	runStorage: "run",
@@ -42,8 +44,7 @@ const SEPARATOR = " · ";
 const WRAP = "flex items-center gap-2 bg-black px-2 py-1.5";
 const BAR =
 	"flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-theme-faint bg-theme-faint px-3 py-1.5";
-const GROUP = "flex min-w-0 items-center gap-1";
-const DESKTOP = "hidden md:inline-flex";
+const GROUP = "hidden min-w-0 items-center gap-1 md:flex";
 const TRACK = "hidden shrink-0 lg:flex";
 const FUNDS = "ml-auto flex shrink-0";
 const TRACK_SIZE = "small";
@@ -69,6 +70,11 @@ const STANDING = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
 const MENU_ROW =
 	"block px-4 py-2 text-sm text-theme-soft transition-colors hover:bg-theme-raised";
 const HIDDEN = "sr-only";
+
+const TAB_BAR =
+	"fixed inset-x-0 bottom-0 z-30 grid h-15 grid-cols-3 gap-1 border-t border-theme-faint bg-black px-2 py-1.5 md:hidden";
+const TAB =
+	"flex min-w-0 items-center justify-center gap-1.5 rounded-lg text-sm font-bold transition-colors";
 
 const opensHere = (event: MouseEvent<HTMLAnchorElement>): boolean =>
 	event.button === 0 &&
@@ -131,6 +137,7 @@ const suggestLabelOf = ({ reward }: NavSuggest): string =>
 
 export type AppNavProps = {
 	homeHref: string;
+	profileActive?: boolean;
 	signInHref: string;
 	run: NavRun;
 	community: NavTarget;
@@ -143,7 +150,6 @@ export type AppNavProps = {
 type NavItemProps = NavTarget & {
 	label: string;
 	count?: number;
-	desktopOnly?: boolean;
 	onNavigate?: (href: string) => void;
 };
 
@@ -152,28 +158,58 @@ const countedNameOf = (label: string, count?: number): string | undefined =>
 		? undefined
 		: `${label}${SEPARATOR}${COPY.pollsLeft(count)}`;
 
-const NavItem = ({
-	href,
-	active,
-	label,
-	count,
-	desktopOnly = false,
-	onNavigate,
-}: NavItemProps) => (
+const NavItem = ({ href, active, label, count, onNavigate }: NavItemProps) => (
 	<NavAnchor
 		href={href}
 		label={countedNameOf(label, count)}
-		className={clsx(
-			ITEM,
-			active ? ITEM_HERE : ITEM_ELSEWHERE,
-			desktopOnly && DESKTOP
-		)}
+		className={clsx(ITEM, active ? ITEM_HERE : ITEM_ELSEWHERE)}
 		onNavigate={onNavigate}
 	>
 		<span className={ITEM_LABEL}>{label}</span>
 		{count === undefined ? null : <Badge color={BADGE_THEME}>{count}</Badge>}
 	</NavAnchor>
 );
+
+type TabBarProps = {
+	run: NavRun;
+	community: NavTarget;
+	profile: NavTarget;
+	onNavigate?: (href: string) => void;
+};
+
+type Tab = NavTarget & { label: string; count?: number };
+
+const TabBar = ({ run, community, profile, onNavigate }: TabBarProps) => {
+	const tabs: readonly Tab[] = [
+		{
+			href: run.href,
+			active: run.active,
+			label: COPY.run,
+			count: run.pollsLeft,
+		},
+		{ ...community, label: COPY.community },
+		{ ...profile, label: COPY.profileTab },
+	];
+
+	return (
+		<nav aria-label={COPY.tabs} className={TAB_BAR}>
+			{tabs.map(({ href, active, label, count }) => (
+				<NavAnchor
+					key={label}
+					href={href}
+					label={countedNameOf(label, count)}
+					className={clsx(TAB, active ? ITEM_HERE : ITEM_ELSEWHERE)}
+					onNavigate={onNavigate}
+				>
+					<span className={ITEM_LABEL}>{label}</span>
+					{count === undefined ? null : (
+						<Badge color={BADGE_THEME}>{count}</Badge>
+					)}
+				</NavAnchor>
+			))}
+		</nav>
+	);
+};
 
 const Mark = ({ viewer, size }: { viewer: NavViewer; size: "sm" | "md" }) => (
 	<span data-screen-theme={AVATAR_THEME}>
@@ -197,17 +233,11 @@ const Standing = ({ viewer }: { viewer: NavViewer }) => (
 
 type AccountMenuProps = {
 	viewer: NavViewer;
-	community: NavTarget;
 	suggest: NavSuggest;
 	onNavigate?: (href: string) => void;
 };
 
-const AccountMenu = ({
-	viewer,
-	community,
-	suggest,
-	onNavigate,
-}: AccountMenuProps) => (
+const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
 	<NavDisclosure
 		summary={
 			<>
@@ -246,13 +276,6 @@ const AccountMenu = ({
 				{COPY.suggested}
 			</NavAnchor>
 			<NavAnchor
-				href={community.href}
-				className={clsx(MENU_ROW, "md:hidden")}
-				onNavigate={onNavigate}
-			>
-				{COPY.community}
-			</NavAnchor>
-			<NavAnchor
 				href={suggest.href}
 				className={clsx(MENU_ROW, "md:hidden")}
 				onNavigate={onNavigate}
@@ -271,6 +294,7 @@ const AccountMenu = ({
 
 export const AppNav = ({
 	homeHref,
+	profileActive = false,
 	signInHref,
 	run,
 	community,
@@ -310,14 +334,12 @@ export const AppNav = ({
 					<NavItem
 						{...community}
 						label={COPY.community}
-						desktopOnly
 						onNavigate={onNavigate}
 					/>
 					<NavItem
 						href={suggest.href}
 						active={suggest.active}
 						label={suggestLabelOf(suggest)}
-						desktopOnly
 						onNavigate={onNavigate}
 					/>
 				</nav>
@@ -341,12 +363,19 @@ export const AppNav = ({
 		</header>
 
 		{viewer === undefined ? null : (
-			<AccountMenu
-				viewer={viewer}
-				community={community}
-				suggest={suggest}
-				onNavigate={onNavigate}
-			/>
+			<>
+				<AccountMenu
+					viewer={viewer}
+					suggest={suggest}
+					onNavigate={onNavigate}
+				/>
+				<TabBar
+					run={run}
+					community={community}
+					profile={{ href: viewer.profileHref, active: profileActive }}
+					onNavigate={onNavigate}
+				/>
+			</>
 		)}
 	</div>
 );

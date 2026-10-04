@@ -115,6 +115,34 @@ describe("Scoring", () => {
 		expect(rowOf("Single choice").getByText("1")).not.toHaveClass("hidden");
 	});
 
+	it("swaps every step for what it earns with your build on a tap, and back on the next", async () => {
+		const built: ScoringProps = {
+			...props,
+			gains: [
+				{
+					label: "Single choice",
+					steps: [
+						{ ...step("0", "+0%", "none"), built: "0" },
+						{ ...step("1", "+20%", "full"), built: "1.5" },
+					],
+				},
+			],
+		};
+		render(<Scoring {...built} />);
+
+		await userEvent.click(pressOf("Single choice"));
+
+		expect(rowOf("Single choice").getByText("1.5")).not.toHaveClass("hidden");
+		expect(rowOf("Single choice").getByText("1")).toHaveClass("hidden");
+		expect(screen.getByText("with your build")).toBeInTheDocument();
+
+		await userEvent.click(pressOf("Single choice"));
+
+		expect(rowOf("Single choice").getByText("1")).not.toHaveClass("hidden");
+		expect(rowOf("Single choice").getByText("1.5")).toHaveClass("hidden");
+		expect(screen.queryByText("with your build")).not.toBeInTheDocument();
+	});
+
 	it("steps a single, nothing or a unit, red then green", () => {
 		render(<Scoring {...props} />);
 

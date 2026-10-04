@@ -59,6 +59,14 @@ describe("newRunGroupsFor", () => {
 		]);
 	});
 
+	it("shows each hand card's install press while the card is folded", () => {
+		const offers = newRunGroupsFor(MIXED).flatMap((group) => group.offers);
+
+		expect(offers.every((offer) => offer.installWhenFolded === true)).toBe(
+			true
+		);
+	});
+
 	it("leaves out a group the hand has nothing for", () => {
 		const groups = newRunGroupsFor(dealt(CONFIGS.ts, CONFIGS.unitTests));
 

@@ -159,4 +159,34 @@ describe("Segmented", () => {
 
 		expect(screen.getByRole("radio", { name: "everything" })).toBeVisible();
 	});
+
+	it("stacks each item's mark over its label and meter when laid out as a strip", () => {
+		render(
+			<Segmented
+				label="Category"
+				look="strip"
+				items={[
+					{
+						value: "all",
+						mark: "all",
+						label: "5 of 96",
+						meter: { value: 5, max: 96 },
+					},
+					{
+						value: "js",
+						mark: "JavaScript",
+						label: "0 of 8",
+						meter: { value: 0, max: 8 },
+					},
+				]}
+				value="all"
+				onSelect={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByRole("radio", { name: "all · 5 of 96" })).toBeChecked();
+		expect(
+			screen.getByRole("radio", { name: "JavaScript · 0 of 8" })
+		).toHaveClass("opacity-50");
+	});
 });

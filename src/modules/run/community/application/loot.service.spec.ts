@@ -71,6 +71,8 @@ const corpse = (over: Partial<FallenRow> = {}): FallenRow => ({
 	warmBootKb: 0,
 	lootedById: null,
 	lootedByName: null,
+	lootedByPhotoUrl: null,
+	lootedByBorderUrl: null,
 	lootedKb: null,
 	...over,
 });

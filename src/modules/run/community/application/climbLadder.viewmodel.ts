@@ -15,6 +15,7 @@ import { kbLabel } from "~/shared/lib/storage";
 import {
 	type ClimberCardFile,
 	type ClimberCardLoot,
+	type ClimberCardLooter,
 	type ClimberCardProps,
 } from "~/ui/kanto-theme/ClimberCard.ui";
 import {
@@ -100,6 +101,16 @@ const takenLabelOf = (fallen: ClimbFallen, viewer: ClimbViewer): string => {
 		: LOOT_COPY.takenBy(fallen.lootedByName ?? LOOT_COPY.someone, figure);
 };
 
+const looterOf = (fallen: ClimbFallen): ClimberCardLooter => ({
+	name: fallen.lootedByName ?? LOOT_COPY.someone,
+	...(fallen.lootedByPhotoUrl === null
+		? {}
+		: { photoUrl: fallen.lootedByPhotoUrl }),
+	...(fallen.lootedByBorderUrl === null
+		? {}
+		: { borderUrl: fallen.lootedByBorderUrl }),
+});
+
 export const lootOf = (
 	fallen: ClimbFallen,
 	viewer: ClimbViewer,
@@ -115,7 +126,10 @@ export const lootOf = (
 	);
 
 	if (refusal === "already-looted")
-		return { label: takenLabelOf(fallen, viewer) };
+		return {
+			label: takenLabelOf(fallen, viewer),
+			looter: looterOf(fallen),
+		};
 	if (refusal === "nothing-left") return { label: LOOT_COPY.empty };
 	if (refusal !== null || hand === undefined)
 		return { label: LOOT_COPY.unbanked(kbLabel(fallen.lootKb)) };

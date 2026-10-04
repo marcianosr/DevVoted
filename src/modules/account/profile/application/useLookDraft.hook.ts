@@ -80,6 +80,10 @@ export const useLookDraft = (userId: string) => {
 		toggleTitle: (titleId: string) =>
 			setDraft(toggleTitleIn(look, titleId, titles?.ownedTitleIds ?? [])),
 		tryOn: setTryingOnId,
+		discard: () => {
+			setDraft(null);
+			setTryingOnId(null);
+		},
 		save: () =>
 			save.mutate(look, {
 				onSuccess: (result) => {

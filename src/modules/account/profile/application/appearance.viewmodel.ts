@@ -1,7 +1,4 @@
-import {
-	profileCardFor,
-	triedOnBorderOf,
-} from "~/modules/account/profile/application/profileScreen.viewmodel";
+import { triedOnBorderOf } from "~/modules/account/profile/application/profileScreen.viewmodel";
 import {
 	borders,
 	borderUrlOf,
@@ -24,7 +21,6 @@ import {
 	swatchPicksFor,
 	type SwatchPick,
 } from "~/modules/account/profile/application/swatchPick.viewmodel";
-import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 
 export type BorderPick = {
 	id: string | null;
@@ -41,8 +37,6 @@ export type TitlePick = {
 };
 
 export type AppearanceView = {
-	face: ProfileCardProps;
-	tryingOn?: string;
 	borders: readonly BorderPick[];
 	borderTally: Tally;
 	titles: readonly TitlePick[];
@@ -51,15 +45,29 @@ export type AppearanceView = {
 };
 
 export type AppearanceInput = {
-	identity: ProfileIdentity;
 	look: Look;
-	tryingOnId: string | null;
 	ownedBorderIds: readonly string[];
 	ownedTitleIds: readonly string[];
 	ownedSwatchIds: readonly string[];
 };
 
 export const DEFAULT_BORDER_NAME = "Default";
+
+const NOT_SAVED = "not saved";
+const PREVIEW_DIVIDER = " · ";
+const PREVIEW_LABEL = `preview${PREVIEW_DIVIDER}${NOT_SAVED}`;
+const tryingOnLabelOf = (name: string) =>
+	`trying on ${name}${PREVIEW_DIVIDER}${NOT_SAVED}`;
+
+export const previewLabelFor = (
+	look: Look,
+	tryingOnId: string | null,
+	isDirty: boolean
+): string | undefined => {
+	const triedOn = triedOnBorderOf(tryingOnId, look.borderId);
+	if (triedOn !== undefined) return tryingOnLabelOf(triedOn.name);
+	return isDirty ? PREVIEW_LABEL : undefined;
+};
 
 export const lookedIdentityOf = (
 	identity: ProfileIdentity,
@@ -115,23 +123,14 @@ const titlePicksOf = (
 };
 
 export const appearanceFor = ({
-	identity,
 	look,
-	tryingOnId,
 	ownedBorderIds,
 	ownedTitleIds,
 	ownedSwatchIds,
-}: AppearanceInput): AppearanceView => {
-	const triedOn = triedOnBorderOf(tryingOnId, look.borderId);
-	return {
-		face: profileCardFor(lookedIdentityOf(identity, look, tryingOnId), false),
-		...(triedOn === undefined ? {} : { tryingOn: triedOn.name }),
-		borders: borderPicksOf(ownedBorderIds, look.borderId),
-		borderTally: tallyOf(borders, (border) =>
-			ownedBorderIds.includes(border.id)
-		),
-		titles: titlePicksOf(ownedTitleIds, look.titleIds),
-		titleTally: titleTallyOf(ownedTitleIds),
-		swatches: swatchPicksFor(ownedSwatchIds, look.swatchId),
-	};
-};
+}: AppearanceInput): AppearanceView => ({
+	borders: borderPicksOf(ownedBorderIds, look.borderId),
+	borderTally: tallyOf(borders, (border) => ownedBorderIds.includes(border.id)),
+	titles: titlePicksOf(ownedTitleIds, look.titleIds),
+	titleTally: titleTallyOf(ownedTitleIds),
+	swatches: swatchPicksFor(ownedSwatchIds, look.swatchId),
+});

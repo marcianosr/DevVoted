@@ -128,6 +128,19 @@ const DEFAULT_MAX_LEVEL = 5;
 export const maxLevelOf = (config: Config): number =>
 	config.maxLevel ?? DEFAULT_MAX_LEVEL;
 
+const hasOpenerEffect = (config: Config): boolean =>
+	config.openerCoverageMultiplier !== undefined;
+
+export const openerClashFor = (
+	config: Config,
+	installed: readonly Config[]
+): Config | undefined =>
+	hasOpenerEffect(config)
+		? installed.find(
+				(other) => other.id !== config.id && hasOpenerEffect(other)
+			)
+		: undefined;
+
 export const isUpgradable = (config: Config): boolean => {
 	const upgradable =
 		config.focusCategory !== undefined ||

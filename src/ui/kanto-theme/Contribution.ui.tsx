@@ -16,17 +16,15 @@ export const COPY = {
 		counted(count, "poll answered", "polls answered"),
 	published: (count: number) =>
 		counted(count, "poll published", "polls published"),
-	answers: (count: number) => counted(count, "answer", "answers"),
 } as const;
 
 const CONTRIBUTION =
-	"flex flex-wrap items-center gap-x-2 gap-y-1 text-xs uppercase tracking-wide text-theme-faint";
+	"flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-theme-faint";
 const PART = "inline-flex items-center gap-1.5";
 
 export type Authored = {
 	role?: string;
 	published: number;
-	answers: number;
 };
 
 export type ContributionProps = {
@@ -36,10 +34,9 @@ export type ContributionProps = {
 
 type Part = Count | { words: string };
 
-const authoredParts = ({ role, published, answers }: Authored): Part[] => [
+const authoredParts = ({ role, published }: Authored): Part[] => [
 	...(role === undefined ? [] : [{ words: role }]),
 	COPY.published(published),
-	COPY.answers(answers),
 ];
 
 const PartReading = ({ part }: { part: Part }) => (

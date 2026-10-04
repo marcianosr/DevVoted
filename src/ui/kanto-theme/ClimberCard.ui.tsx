@@ -34,7 +34,7 @@ const HEAD =
 const BODY = "flex w-full flex-col gap-3 px-4 py-3";
 const PRESS_ROW =
 	"flex items-center justify-between gap-2 border-t border-theme-faint pt-3";
-const PRESS_NOTE = "text-xs font-bold text-theme-muted";
+const PRESS_NOTE = "flex items-center gap-2 text-xs font-bold text-theme-muted";
 const FACING = "flex shrink-0 flex-col items-center gap-1";
 const RESCUE = "w-16 text-center text-xxs leading-tight text-theme-muted";
 const NAMING = "flex min-w-0 flex-col items-start gap-1.5";
@@ -47,13 +47,22 @@ export type ClimberCardStat = StandingStat;
 
 export type ClimberCardStanding = StandingProps;
 
+export type ClimberCardLooter = {
+	name: string;
+	photoUrl?: string;
+	borderUrl?: string;
+};
+
 export type ClimberCardLoot = {
 	label: string;
 	onPress?: () => void;
 	pending?: boolean;
+	looter?: ClimberCardLooter;
 };
 
-export type ClimberCardFile = ClimberCardLoot & { refusal?: string };
+export type ClimberCardFile = Omit<ClimberCardLoot, "looter"> & {
+	refusal?: string;
+};
 
 export type ClimberCardProps = {
 	name: string;
@@ -75,7 +84,10 @@ export type ClimberCardProps = {
 	onClose?: () => void;
 };
 
-type CardPressProps = ClimberCardFile & { tone: ButtonTone };
+type CardPressProps = ClimberCardFile & {
+	tone: ButtonTone;
+	looter?: ClimberCardLooter;
+};
 
 const CardPress = ({
 	label,
@@ -83,10 +95,14 @@ const CardPress = ({
 	pending = false,
 	refusal,
 	tone,
+	looter,
 }: CardPressProps) => (
 	<div className={PRESS_ROW}>
 		{onPress === undefined ? (
-			<span className={PRESS_NOTE}>{refusal ?? label}</span>
+			<span className={PRESS_NOTE}>
+				{looter === undefined ? null : <Climber {...looter} size="sm" />}
+				{refusal ?? label}
+			</span>
 		) : (
 			<Button
 				tone={tone}

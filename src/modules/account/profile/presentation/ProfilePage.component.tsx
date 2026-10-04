@@ -1,6 +1,9 @@
 import { useState } from "react";
 
-import { lookedIdentityOf } from "~/modules/account/profile/application/appearance.viewmodel";
+import {
+	lookedIdentityOf,
+	previewLabelFor,
+} from "~/modules/account/profile/application/appearance.viewmodel";
 import {
 	isOwnerTabId,
 	isProfileTabId,
@@ -14,12 +17,12 @@ import { usePublicProfile } from "~/modules/account/profile/application/usePubli
 import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
 import { Appearance } from "~/modules/account/profile/presentation/Appearance.component";
 import { BorderShop } from "~/modules/account/profile/presentation/BorderShop.component";
+import { LookSaveBar } from "~/modules/account/profile/presentation/LookSaveBar.ui";
 import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
 import { Dex } from "~/modules/collection/dex/presentation/Dex.component";
 import { archiveLabel } from "~/shared/lib/storage";
-import { Button } from "~/ui/kanto-theme/Button.ui";
 import { ProfileHero } from "~/ui/kanto-theme/ProfileHero.ui";
-import { EDIT_PROFILE, ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
+import { ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
 
 const APPEARANCE_TAB: ProfileTabId = "appearance";
 const BORDERS_TAB: ProfileTabId = "borders";
@@ -50,17 +53,24 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 
 	const hero = (
 		<ProfileHero
-			{...profileHeroFor(looked, profile.record, true)}
-			trailing={
-				<Button
-					size="sm"
-					tone="ambient"
-					label={EDIT_PROFILE}
-					onPress={() => setActiveId(APPEARANCE_TAB)}
-				/>
-			}
+			{...profileHeroFor(
+				looked,
+				profile.record,
+				true,
+				profile.totals.archivedStorage
+			)}
+			preview={previewLabelFor(draft.look, draft.tryingOnId, draft.isDirty)}
 		/>
 	);
+
+	const saveBar = draft.isDirty ? (
+		<LookSaveBar
+			canSave={!draft.isSaving}
+			error={draft.error}
+			onSave={draft.save}
+			onDiscard={draft.discard}
+		/>
+	) : undefined;
 
 	return (
 		<ProfileScreen
@@ -73,6 +83,7 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 				archive?.ownedSwatchIds ?? []
 			)}
 			archive={archiveLabel(archive?.archivedStorage ?? 0)}
+			footer={saveBar}
 		>
 			{isOwnerTabId(activeId) ? null : (
 				<Dex viewerId={viewer.id} activeId={activeId} />
@@ -80,7 +91,6 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 			{activeId === APPEARANCE_TAB ? (
 				<Appearance
 					userId={viewer.id}
-					identity={identity}
 					draft={draft}
 					onOpenBorders={() => setActiveId(BORDERS_TAB)}
 					onOpenTitles={() => setActiveId(TITLES_TAB)}
@@ -94,15 +104,8 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 	);
 };
 
-const VisitedProfile = ({
-	userId,
-	viewerId,
-}: {
-	userId: string;
-	viewerId: string | undefined;
-}) => {
+const VisitedProfile = ({ userId }: { userId: string }) => {
 	const { view: profile } = usePublicProfile(userId);
-	const { view: viewer } = usePublicProfile(viewerId);
 
 	if (!profile) return null;
 
@@ -114,7 +117,7 @@ const VisitedProfile = ({
 						profile.identity,
 						profile.record,
 						false,
-						viewer?.record
+						profile.totals.archivedStorage
 					)}
 				/>
 			}
@@ -127,5 +130,5 @@ export const ProfilePage = ({ userId, viewer }: ProfilePageProps) =>
 	viewer?.id === userId ? (
 		<OwnProfile viewer={viewer} />
 	) : (
-		<VisitedProfile userId={userId} viewerId={viewer?.id} />
+		<VisitedProfile userId={userId} />
 	);

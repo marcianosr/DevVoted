@@ -22,41 +22,45 @@ describe("Contribution", () => {
 		const { container } = render(
 			<Contribution
 				answered={412}
-				authored={{ role: "Poll editor", published: 12, answers: 1842 }}
+				authored={{ role: "Poll editor", published: 12 }}
 			/>
 		);
 
-		expect(badgesOf(container)).toEqual(["12", "1,842", "412"]);
+		expect(badgesOf(container)).toEqual(["12", "412"]);
 	});
 
-	it("leads an author with the role, the polls published and the answers they drew, then the polls answered", () => {
+	it("leads an author with the role and the polls published, then the polls answered", () => {
 		const { container } = render(
 			<Contribution
 				answered={412}
-				authored={{ role: "Poll editor", published: 12, answers: 1842 }}
+				authored={{ role: "Poll editor", published: 12 }}
 			/>
 		);
 
 		expect(readingOf(container)).toBe(
-			"Poll editor·12polls published·1,842answers·412polls answered"
+			"Poll editor·12polls published·412polls answered"
 		);
 	});
 
 	it("drops the role for an author who holds none", () => {
 		const { container } = render(
-			<Contribution answered={50} authored={{ published: 3, answers: 40 }} />
+			<Contribution answered={50} authored={{ published: 3 }} />
 		);
 
-		expect(readingOf(container)).toBe(
-			"3polls published·40answers·50polls answered"
-		);
+		expect(readingOf(container)).toBe("3polls published·50polls answered");
 	});
 
-	it("speaks of one poll and one answer in the singular", () => {
+	it("speaks of one poll in the singular", () => {
 		const { container } = render(
-			<Contribution answered={1} authored={{ published: 1, answers: 1 }} />
+			<Contribution answered={1} authored={{ published: 1 }} />
 		);
 
-		expect(readingOf(container)).toBe("1poll published·1answer·1poll answered");
+		expect(readingOf(container)).toBe("1poll published·1poll answered");
+	});
+
+	it("reads in lowercase, as written", () => {
+		const { container } = render(<Contribution answered={3} />);
+
+		expect(container.firstElementChild).not.toHaveClass("uppercase");
 	});
 });

@@ -24,11 +24,11 @@ const FIGURE = {
 const HEADING = {
 	streak: {
 		title: "streak",
-		summary: "longest run of correct answers in one run · all-time",
+		summary: "All-time longest run streak",
 	},
 	correct: {
 		title: "correct",
-		summary: "most correct answers in one run · all-time",
+		summary: "All-time longest run of correct answers",
 	},
 } satisfies Record<CategoryMeasure, { title: string; summary: string }>;
 

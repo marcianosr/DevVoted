@@ -1516,6 +1516,54 @@ describe("ConfigChip's card presses and fold", () => {
 		expect(fold).toHaveAttribute("data-open", "true");
 	});
 
+	it("seats the install press in a folded card's head when asked to", async () => {
+		const onPress = vi.fn();
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[]}
+				info={INFO}
+				onToggleInfo={noop}
+				install={{ onPress }}
+				installWhenFolded
+			/>
+		);
+
+		await userEvent.click(screen.getByRole("button", { name: /^Install/ }));
+
+		expect(onPress).toHaveBeenCalledOnce();
+	});
+
+	it("keeps the install press in the fold of a folded card by default", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[]}
+				info={INFO}
+				onToggleInfo={noop}
+				install={{ onPress: noop }}
+			/>
+		);
+
+		expect(screen.queryByRole("button", { name: /^Install/ })).toBeNull();
+	});
+
+	it("moves the install press back into the fold once the card is open", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				install={{ onPress: noop }}
+				installWhenFolded
+			/>
+		);
+
+		expect(screen.getAllByRole("button", { name: /^Install/ })).toHaveLength(1);
+	});
+
 	it("upgrades through a prismatic press beside uninstall", () => {
 		render(
 			<ConfigChip

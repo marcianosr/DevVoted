@@ -16,6 +16,7 @@ import type { DbReader } from "~/modules/run/run/infrastructure/runPolls.reposit
 
 type Scope = {
 	readonly category?: CategoryCode;
+	readonly userId?: string;
 };
 
 const answersIn = (reader: DbReader, scope: Scope) =>
@@ -40,7 +41,10 @@ const answersIn = (reader: DbReader, scope: Scope) =>
 				isNotNull(pollResponsesTable.outcome),
 				scope.category === undefined
 					? undefined
-					: eq(pollsTable.category_code, scope.category)
+					: eq(pollsTable.category_code, scope.category),
+				scope.userId === undefined
+					? undefined
+					: eq(pollResponsesTable.user_id, scope.userId)
 			)
 		)
 		.as("answers");
@@ -255,4 +259,19 @@ export const fetchCategoryBoards = async (
 		streak: seatsOf(rows, "streak", userId),
 		correct: seatsOf(rows, "correct", userId),
 	};
+};
+
+export const fetchBestStreakOf = async (
+	userId: string,
+	reader: DbReader = db
+): Promise<number> => {
+	const runBests = runBestsIn(reader, { userId });
+
+	const [row] = await reader
+		.select({
+			best: sql<string | null>`max(${runBests.runStreak})`.as("best"),
+		})
+		.from(runBests);
+
+	return countOf(row?.best);
 };

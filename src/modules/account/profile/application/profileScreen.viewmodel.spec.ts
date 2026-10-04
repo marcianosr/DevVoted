@@ -188,6 +188,8 @@ const RECORD: ProfileRecord = {
 	clearedGates: [1, 2, 3, 4, 6],
 	runsFinished: 24,
 	runsWon: 2,
+	bestStreak: 21,
+	bestCategory: "css",
 	bestRun: null,
 	seats: [{ category: "css", streak: 21 }],
 	recentRuns: [],
@@ -205,50 +207,56 @@ const CINNABAR_RUN: RunHistoryEntry = {
 };
 
 describe("profileHeroFor", () => {
+	const ARCHIVED = 8 * 1024 * 1024;
+
 	it("wears the same face the card wears", () => {
-		expect(profileHeroFor(IDENTITY, RECORD, true)).toMatchObject(
+		expect(profileHeroFor(IDENTITY, RECORD, true, ARCHIVED)).toMatchObject(
 			profileCardFor(IDENTITY, true)
 		);
 	});
 
-	it("leads with depth, swatches and Champion clears, each against its ceiling", () => {
-		expect(profileHeroFor(IDENTITY, RECORD, false).trophies).toEqual([
-			{ label: "deepest gate", figure: "9", outOf: "/ 13" },
-			{ label: "swatches", figure: "5", outOf: "/ 13" },
-			{ label: "runs won", figure: "2" },
+	it("states a visitor's record as six tiles", () => {
+		expect(
+			profileHeroFor(IDENTITY, RECORD, false, ARCHIVED).record?.stats
+		).toEqual([
+			{ label: "deepest gate", value: "9 / 13" },
+			{ label: "runs played", value: "24" },
+			{ label: "runs won", value: "2" },
+			{ label: "best streak", value: "21 in a row" },
+			{ label: "best category", value: "CSS" },
+			{ label: "archived", value: "8 MB", color: "saffron" },
 		]);
 	});
 
-	it("states a visitor's own figure under the two climbing trophies", () => {
-		const yours: ProfileRecord = {
-			...RECORD,
-			deepestGate: 6,
-			clearedGates: [1, 2, 3],
-			runsWon: 0,
-		};
+	it("dashes a best streak and best category the player has not set", () => {
+		const stats =
+			profileHeroFor(
+				IDENTITY,
+				{ ...RECORD, bestStreak: 0, bestCategory: null },
+				false,
+				0
+			).record?.stats ?? [];
 
-		const [deepest, swatches, won] = profileHeroFor(
-			IDENTITY,
-			RECORD,
-			false,
-			yours
-		).trophies;
-
-		expect(deepest.yours).toBe("you 6");
-		expect(swatches.yours).toBe("you 3");
-		expect(won).not.toHaveProperty("yours");
+		expect(stats.find((stat) => stat.label === "best streak")?.value).toBe("—");
+		expect(stats.find((stat) => stat.label === "best category")?.value).toBe(
+			"—"
+		);
 	});
 
-	it("compares nothing on your own page", () => {
-		for (const trophy of profileHeroFor(IDENTITY, RECORD, true).trophies)
-			expect(trophy).not.toHaveProperty("yours");
+	it("counts the swatches held and draws every gate's swatch", () => {
+		const swatches = profileHeroFor(IDENTITY, RECORD, false, ARCHIVED).record
+			?.swatches;
+
+		expect(swatches?.value).toBe("5 / 13");
+		expect(
+			swatches?.fills.filter((fill) => fill.state === "discovered")
+		).toHaveLength(5);
 	});
 
-	it("hands the hero no swatch track and no note on what mints one", () => {
-		const hero = profileHeroFor(IDENTITY, RECORD, false);
-
-		expect(hero).not.toHaveProperty("swatches");
-		expect(hero).not.toHaveProperty("note");
+	it("draws no record on your own page, which is where you dress", () => {
+		expect(profileHeroFor(IDENTITY, RECORD, true, ARCHIVED)).not.toHaveProperty(
+			"record"
+		);
 	});
 });
 
@@ -353,7 +361,7 @@ describe("triedOnBorderOf", () => {
 
 describe("profileCardFor contribution", () => {
 	it("states the author's role, polls published and answers drawn beside the polls answered", () => {
-		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
+		const authorship = { role: "Poll editor", published: 12 };
 
 		expect(profileCardFor({ ...BARE, authorship }, false).contribution).toEqual(
 			{ answered: BARE.pollsAnswered, authored: authorship }

@@ -16,7 +16,7 @@ const RED: ProfileSource = {
 	role: "user",
 };
 
-const NO_POLLS = { published: 0, answers: 0 };
+const NO_POLLS = { published: 0 };
 
 describe("profileFaceOf", () => {
 	it("names the player by their in-game name and keeps the GitHub handle beside it", () => {
@@ -49,16 +49,11 @@ describe("profileFaceOf", () => {
 	});
 
 	it("credits an admin with the polls they published and the answers drawn", () => {
-		const face = profileFaceOf(
-			{ ...RED, role: "admin" },
-			{ published: 3, answers: 40 },
-			0
-		);
+		const face = profileFaceOf({ ...RED, role: "admin" }, { published: 3 }, 0);
 
 		expect(face.identity.authorship).toEqual({
 			role: "Admin",
 			published: 3,
-			answers: 40,
 		});
 	});
 

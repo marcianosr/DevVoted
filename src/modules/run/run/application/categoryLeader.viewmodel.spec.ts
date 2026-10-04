@@ -102,9 +102,9 @@ describe("categoryBoardFor", () => {
 		const correct = categoryBoardFor({ measure: "correct", seats: [GIT_SEAT] });
 
 		expect(streak.title).toBe("streak");
-		expect(streak.summary).toContain("in one run");
+		expect(streak.summary).toBe("All-time longest run streak");
 		expect(correct.title).toBe("correct");
-		expect(correct.summary).toContain("in one run");
+		expect(correct.summary).toBe("All-time longest run of correct answers");
 	});
 
 	it("draws every seat it was handed, held or open", () => {

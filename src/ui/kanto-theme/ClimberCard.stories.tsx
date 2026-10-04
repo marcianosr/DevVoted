@@ -143,7 +143,7 @@ export const AsAHoverCard: Story = {
 				profileHref={undefined}
 				contribution={{
 					answered: 412,
-					authored: { role: "Poll editor", published: 12, answers: 1842 },
+					authored: { role: "Poll editor", published: 12 },
 				}}
 				swatches={swatchTrackFor([0, 1, 2, 4])}
 			/>

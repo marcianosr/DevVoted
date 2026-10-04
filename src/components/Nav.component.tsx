@@ -62,6 +62,7 @@ export const Nav = ({ user, published }: NavProps) => {
 	return (
 		<AppNav
 			homeHref={user === null ? HOME : RUN}
+			profileActive={user !== null && pathname === profileHrefOf(user.id)}
 			signInHref={SIGN_IN}
 			run={{
 				href: RUN,

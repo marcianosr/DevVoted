@@ -8,20 +8,18 @@ import type {
 import type { SwatchPick } from "~/modules/account/profile/application/swatchPick.viewmodel";
 import type { Tally } from "~/modules/collection/dex/domain/tally.model";
 import { WORN_TITLE_CAP } from "~/modules/account/profile/domain/title.model";
+import { HELD_OF } from "~/shared/lib/copy";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { ProfileCard } from "~/ui/kanto-theme/ProfileCard.ui";
 import { Redaction } from "~/ui/kanto-theme/Redaction.ui";
 import { Swatch } from "~/ui/kanto-theme/Swatch.ui";
 
 const missingOf = ({ held, total }: Tally) => total - held;
 
 export const COPY = {
-	label: "Appearance",
-	tryingOn: (name: string) => `trying on ${name}`,
 	border: "Border",
-	borderMeta: ({ held, total }: Tally) => `${held} of ${total} owned`,
+	owned: "owned",
 	defaultFrame: "–",
 	moreBorders: (tally: Tally) => `+${missingOf(tally)}`,
 	moreBordersCaption: "in Dex",
@@ -29,57 +27,48 @@ export const COPY = {
 		`${missingOf(tally)} more borders in the Dex`,
 	pickBorder: (name: string) => `Wear ${name}`,
 	swatch: "Swatch",
-	swatchSummary: "Tap to change your theme on your profile and dev card",
+	swatchMeta: "sets the colour of your card",
 	pickSwatch: (name: string) => `Wear ${name}`,
 	lockedSwatch: "Unearned swatch",
 	titles: "Titles",
-	titlesMeta: `tap to wear · up to ${WORN_TITLE_CAP} · first shows everywhere`,
-	moreTitles: (tally: Tally) => `+ ${missingOf(tally)} to earn →`,
-	of: "of",
-	titlesWord: "titles",
-	bordersWord: "borders",
-	divider: "·",
-	seeAll: "see all in Dex →",
-	save: "Save look",
+	titlesMeta: `up to ${WORN_TITLE_CAP} · the first shows everywhere`,
+	moreTitles: (tally: Tally) => `+${missingOf(tally)} to earn`,
 } as const;
 
-const TRYING_ON_COLOR = "fuchsia";
-
-const STAGE =
-	"flex justify-center rounded-2xl bg-hatched-theme-fine px-4 py-6 ring-1 ring-inset ring-theme-faint";
-const STAGE_CARD = "w-full max-w-md";
 const TILES = "flex flex-wrap gap-4";
 const TILE = "flex w-20 flex-col items-center gap-2 disabled:opacity-40";
 const FRAME =
 	"flex size-20 items-center justify-center rounded-lg bg-theme-raised ring-1 ring-inset ring-theme-faint";
-const FRAME_PICKED = "ring-2 ring-theme";
+const FRAME_PICKED = "ring-2 ring-theme-soft";
 const FRAME_MORE =
-	"border border-dashed border-theme-faint bg-transparent ring-0 text-sm font-bold text-theme";
+	"border border-dashed border-theme-faint bg-transparent ring-0 text-sm font-bold text-theme-muted";
 const FRAME_IMAGE = "max-h-full max-w-full";
 const FRAME_EMPTY = "text-theme-muted";
 const CAPTION = "w-full truncate text-center text-xs text-theme-muted";
 const CAPTION_PICKED = "font-bold text-theme-soft";
+const SWATCHES = "grid grid-cols-[repeat(auto-fill,minmax(6rem,1fr))] gap-2";
 const SWATCH_TILE =
-	"flex w-20 flex-col items-center gap-2 rounded-lg p-2 ring-1 ring-inset ring-transparent enabled:hover:ring-theme-faint disabled:cursor-not-allowed disabled:opacity-40";
-const SWATCH_WORN = "ring-theme";
-const CHIPS = "flex flex-wrap items-center gap-2";
+	"flex flex-col items-center gap-2 rounded-xl p-3 transition-colors enabled:hover:bg-theme-raised disabled:cursor-not-allowed disabled:opacity-40";
+const SWATCH_TILE_WORN = "bg-theme-raised";
+const SWATCH_RING = "flex rounded-xl p-0.5 ring-2";
+const SWATCH_RING_IDLE = "ring-transparent";
+const SWATCH_RING_WORN = "ring-theme";
+const CHIPS = "flex flex-wrap items-center gap-3";
 const CHIP =
-	"flex h-9 items-center gap-2 rounded-md px-3 text-sm font-bold ring-1 ring-inset ring-theme-faint text-theme-muted enabled:hover:ring-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
-const CHIP_WORN = "bg-theme/10 ring-theme text-theme-soft";
+	"flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-bold ring-inset disabled:cursor-not-allowed disabled:opacity-40";
+const CHIP_IDLE =
+	"ring-1 ring-theme-faint text-theme-muted enabled:hover:ring-theme-soft";
+const CHIP_WORN = "ring-2 ring-theme text-theme-soft";
 const CHIP_INDEX =
-	"flex size-5 items-center justify-center rounded-sm bg-theme text-xs text-theme-faint";
-const ERROR = "text-sm text-cinnabar";
-const TALLY = "flex flex-wrap items-center gap-1.5 text-xs text-theme-muted";
+	"flex size-6 items-center justify-center rounded-md bg-theme text-xs text-theme-faint";
+const OWNED = "flex items-center gap-2 text-sm text-theme-muted";
 
 export type AppearanceProps = AppearanceView & {
-	canSave: boolean;
-	error?: string;
 	onPickBorder: (borderId: string | null) => void;
 	onToggleTitle: (titleId: string) => void;
 	onPickSwatch: (swatchId: string) => void;
 	onMoreBorders: () => void;
 	onMoreTitles: () => void;
-	onSave: () => void;
 };
 
 const BorderTile = ({
@@ -123,13 +112,20 @@ const SwatchTile = ({
 	return (
 		<button
 			type="button"
-			className={clsx(SWATCH_TILE, worn && SWATCH_WORN)}
+			className={clsx(SWATCH_TILE, worn && SWATCH_TILE_WORN)}
 			aria-label={locked ? COPY.lockedSwatch : COPY.pickSwatch(pick.name)}
 			aria-pressed={worn}
 			disabled={locked}
 			onClick={() => onPick(pick.id)}
 		>
-			<Swatch {...pick.fill} size="hero" />
+			<span
+				className={clsx(
+					SWATCH_RING,
+					worn ? SWATCH_RING_WORN : SWATCH_RING_IDLE
+				)}
+			>
+				<Swatch {...pick.fill} size="hero" />
+			</span>
 			<span className={clsx(CAPTION, worn && CAPTION_PICKED)}>
 				{locked ? <Redaction /> : pick.name}
 			</span>
@@ -164,7 +160,7 @@ const TitleChip = ({
 }) => (
 	<button
 		type="button"
-		className={clsx(CHIP, pick.wornAt !== null && CHIP_WORN)}
+		className={clsx(CHIP, pick.wornAt === null ? CHIP_IDLE : CHIP_WORN)}
 		aria-pressed={pick.wornAt !== null}
 		disabled={pick.blocked}
 		onClick={() => onToggle(pick.id)}
@@ -176,66 +172,22 @@ const TitleChip = ({
 	</button>
 );
 
-const TallyCount = ({ tally, word }: { tally: Tally; word: string }) => (
-	<>
-		<Badge>{tally.held}</Badge>
-		<span>{COPY.of}</span>
-		<Badge>{tally.total}</Badge>
-		<span>{word}</span>
-	</>
-);
-
 export const Appearance = ({
-	face,
-	tryingOn,
 	borders,
 	borderTally,
 	titles,
 	titleTally,
 	swatches,
-	canSave,
-	error,
 	onPickBorder,
 	onToggleTitle,
 	onPickSwatch,
 	onMoreBorders,
 	onMoreTitles,
-	onSave,
 }: AppearanceProps) => (
 	<Panel>
-		<Panel.Header
-			label={COPY.label}
-			badge={
-				tryingOn === undefined
-					? undefined
-					: { label: COPY.tryingOn(tryingOn), color: TRYING_ON_COLOR }
-			}
-		/>
+		<Panel.Header label={COPY.swatch} meta={COPY.swatchMeta} />
 		<Panel.Body>
-			<div className={STAGE}>
-				<div className={STAGE_CARD}>
-					<ProfileCard {...face} />
-				</div>
-			</div>
-		</Panel.Body>
-		<Panel.Header label={COPY.border} meta={COPY.borderMeta(borderTally)} />
-		<Panel.Body>
-			<div className={TILES}>
-				{borders.map((pick) => (
-					<BorderTile
-						key={pick.id ?? "default"}
-						pick={pick}
-						onPick={onPickBorder}
-					/>
-				))}
-				{missingOf(borderTally) === 0 ? null : (
-					<MoreBordersTile tally={borderTally} onPress={onMoreBorders} />
-				)}
-			</div>
-		</Panel.Body>
-		<Panel.Header label={COPY.swatch} summary={COPY.swatchSummary} />
-		<Panel.Body>
-			<div className={TILES}>
+			<div className={SWATCHES}>
 				{swatches.map((pick) => (
 					<SwatchTile key={pick.id} pick={pick} onPick={onPickSwatch} />
 				))}
@@ -257,29 +209,28 @@ export const Appearance = ({
 				)}
 			</div>
 		</Panel.Body>
-		<Panel.Footer
-			trailing={
-				<Button
-					size="md"
-					tone="action"
-					label={COPY.save}
-					onPress={onSave}
-					disabled={!canSave}
-				/>
+		<Panel.Header
+			label={COPY.border}
+			meta={
+				<span className={OWNED}>
+					<Badge>{HELD_OF(borderTally.held, borderTally.total)}</Badge>
+					{COPY.owned}
+				</span>
 			}
-		>
-			<span className={TALLY}>
-				<TallyCount tally={titleTally} word={COPY.titlesWord} />
-				<span aria-hidden>{COPY.divider}</span>
-				<TallyCount tally={borderTally} word={COPY.bordersWord} />
-			</span>
-			<Button
-				size="sm"
-				tone="bare"
-				label={COPY.seeAll}
-				onPress={onMoreBorders}
-			/>
-			{error === undefined ? null : <span className={ERROR}>{error}</span>}
-		</Panel.Footer>
+		/>
+		<Panel.Body>
+			<div className={TILES}>
+				{borders.map((pick) => (
+					<BorderTile
+						key={pick.id ?? "default"}
+						pick={pick}
+						onPick={onPickBorder}
+					/>
+				))}
+				{missingOf(borderTally) === 0 ? null : (
+					<MoreBordersTile tally={borderTally} onPress={onMoreBorders} />
+				)}
+			</div>
+		</Panel.Body>
 	</Panel>
 );

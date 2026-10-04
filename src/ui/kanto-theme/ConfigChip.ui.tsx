@@ -156,6 +156,7 @@ type ConfigChipSecrets = {
 	lost?: boolean;
 	skipped?: boolean;
 	install?: ChipInstall;
+	installWhenFolded?: boolean;
 	onUninstall?: () => void;
 	info?: ConfigFactsProps;
 	upgrades?: UpgradesProps;
@@ -427,6 +428,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 		lost = false,
 		skipped = false,
 		install,
+		installWhenFolded = false,
 		onUninstall,
 		info,
 		unlock,
@@ -774,6 +776,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 							/>
 						)}
 						<FoldedFigure figure={foldedFigure} />
+						{installWhenFolded && !stated ? installPress(false) : null}
 					</span>
 				</div>
 

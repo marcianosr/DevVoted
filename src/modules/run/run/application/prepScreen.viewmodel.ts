@@ -519,7 +519,7 @@ export const prepPropsFor = ({
 			catchesFatal: catcherFor(configs) !== undefined,
 			payout,
 		}),
-		scoring: scoringFor(gate, accuracyBonus),
+		scoring: scoringFor(gate, accuracyBonus, configs),
 		estimate: estimatePickerFor(gate, estimate, estimatedCorrect),
 		sla: slaPickerFor(sla, slaBand),
 		rebase: rebaseListFor(configs, rebaseSlots),

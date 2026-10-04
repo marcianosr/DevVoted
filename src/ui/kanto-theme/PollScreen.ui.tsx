@@ -138,6 +138,7 @@ export type PollScreenProps = {
 	revealed?: boolean;
 	flight?: PollFlight;
 	onFlightLanded?: () => void;
+	onFlightSettled?: () => void;
 };
 
 type PollCreditProps = Pick<PollScreenProps, "hint" | "author">;
@@ -286,19 +287,31 @@ type GainFlightProps = {
 	card: RefObject<HTMLDivElement | null>;
 	gauge: RefObject<HTMLDivElement | null>;
 	onLanded?: () => void;
+	onSettled?: () => void;
 };
 
-const GainFlight = ({ flight, card, gauge, onLanded }: GainFlightProps) => {
+const GainFlight = ({
+	flight,
+	card,
+	gauge,
+	onLanded,
+	onSettled,
+}: GainFlightProps) => {
 	const chip = useRef<HTMLSpanElement>(null);
 	const landed = useRef(onLanded);
+	const settled = useRef(onSettled);
 	const [settledId, setSettledId] = useState<string>();
 
 	useEffect(() => {
 		landed.current = onLanded;
-	}, [onLanded]);
+		settled.current = onSettled;
+	}, [onLanded, onSettled]);
 
 	useEffect(() => {
-		const settle = () => setSettledId(flight.id);
+		const settle = () => {
+			setSettledId(flight.id);
+			settled.current?.();
+		};
 		const text = originIn(card.current);
 		const track = trackIn(gauge.current);
 		const node = chip.current;
@@ -454,6 +467,7 @@ export const PollScreen = ({
 	revealed = false,
 	flight,
 	onFlightLanded,
+	onFlightSettled,
 	...poll
 }: PollScreenProps) => {
 	const [measureSend, sendHeight] = useBarHeight();
@@ -518,6 +532,7 @@ export const PollScreen = ({
 					card={card}
 					gauge={gauge}
 					onLanded={onFlightLanded}
+					onSettled={onFlightSettled}
 				/>
 			)}
 

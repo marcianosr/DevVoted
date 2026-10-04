@@ -71,6 +71,8 @@ describe("ladderFor", () => {
 				lootKb: 67,
 				lootedById: null,
 				lootedByName: null,
+				lootedByPhotoUrl: null,
+				lootedByBorderUrl: null,
 			},
 		],
 		bestPosition: 16,
@@ -284,11 +286,21 @@ describe("ladderFor", () => {
 			});
 		});
 
-		it("names who got there first once a run is spent", () => {
-			const spent = koga({ lootedById: "blue", lootedByName: "Blue" });
+		it("names and shows the face of who got there first once a run is spent", () => {
+			const spent = koga({
+				lootedById: "blue",
+				lootedByName: "Blue",
+				lootedByPhotoUrl: "/editors/blue.png",
+				lootedByBorderUrl: "/borders/blue.svg",
+			});
 
 			expect(lootPressOn(spent, hand)).toEqual({
 				label: LOOT_COPY.takenBy("Blue", "67 KB"),
+				looter: {
+					name: "Blue",
+					photoUrl: "/editors/blue.png",
+					borderUrl: "/borders/blue.svg",
+				},
 			});
 		});
 
@@ -297,6 +309,7 @@ describe("ladderFor", () => {
 
 			expect(lootPressOn(mine, hand)).toEqual({
 				label: LOOT_COPY.takenByYou("67 KB"),
+				looter: { name: "Red" },
 			});
 		});
 
@@ -305,6 +318,7 @@ describe("ladderFor", () => {
 
 			expect(lootPressOn(spent, hand)).toEqual({
 				label: LOOT_COPY.takenBy(LOOT_COPY.someone, "67 KB"),
+				looter: { name: LOOT_COPY.someone },
 			});
 		});
 

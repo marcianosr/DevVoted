@@ -8,7 +8,7 @@ const meta: Meta<typeof Contribution> = {
 	title: "Kanto/Contribution",
 	args: {
 		answered: 412,
-		authored: { role: "Poll editor", published: 12, answers: 1842 },
+		authored: { role: "Poll editor", published: 12 },
 	},
 	render: (args) => (
 		<Screen theme="cerulean" width="narrow">
@@ -23,7 +23,7 @@ type Story = StoryObj<typeof Contribution>;
 export const Editor: Story = {};
 
 export const PlayerAuthor: Story = {
-	args: { answered: 30, authored: { published: 1, answers: 1 } },
+	args: { answered: 30, authored: { published: 1 } },
 };
 
 export const Player: Story = {

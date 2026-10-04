@@ -75,48 +75,61 @@ describe("dexPollsFor", () => {
 			categoryCode: "css",
 			...NEVER_DEALT,
 		}),
+		poll({
+			id: 4,
+			pollNumber: 4,
+			categoryCode: "css",
+			correctCount: 0,
+			accuracy: 0,
+		}),
 	];
 
-	it("lists every poll it was given, holding none back", () => {
-		expect(dexPollsFor(ROSTER).rows).toHaveLength(3);
-	});
-
-	it("reads in dex number order rather than the order it was handed", () => {
-		const shuffled = dexPollsFor([ROSTER[2], ROSTER[0], ROSTER[1]]);
+	it("lists only the polls you have seen, in dex number order", () => {
+		const shuffled = dexPollsFor([ROSTER[3], ROSTER[2], ROSTER[1], ROSTER[0]]);
 
 		expect(shuffled.rows.map((row) => row.number)).toEqual([
 			"#001",
 			"#002",
-			"#003",
+			"#004",
 		]);
 	});
 
-	it("pads a dex number so the column reads as a roster", () => {
+	it("pads a row's dex number, falling back to the poll's own id", () => {
 		expect(dexPollsFor([poll({ pollNumber: 7 })]).rows[0].number).toBe("#007");
-	});
-
-	it("falls back to the poll's own id when it has no roster number", () => {
 		expect(
 			dexPollsFor([poll({ id: 42, pollNumber: null })]).rows[0].number
 		).toBe("#042");
 	});
 
-	it("carries the raw correct count, not a rounded percentage", () => {
-		const [row] = dexPollsFor([poll()]).rows;
+	it("carries a row's raw score and whether it is caught", () => {
+		const { rows } = dexPollsFor(ROSTER);
 
-		expect(row.locked).toBeUndefined();
-		expect(row.correct).toBe(3);
-		expect(row.answered).toBe(4);
+		expect(rows[0]).toMatchObject({ correct: 3, answered: 4, state: "caught" });
+		expect(rows[2]).toMatchObject({ correct: 0, state: "seen" });
 	});
 
-	it("withholds the question of a poll never dealt to you", () => {
-		const [row] = dexPollsFor([poll({ seen: false, question: null })]).rows;
+	it("grids every poll in the filter, unseen included, by its bare number", () => {
+		const { grid } = dexPollsFor(ROSTER, "css");
 
-		expect(row.locked).toBe(true);
-		expect(row.question).toBeUndefined();
+		expect(grid.tiles.map((tile) => [tile.number, tile.state])).toEqual([
+			["1", "caught"],
+			["3", "unseen"],
+			["4", "seen"],
+		]);
 	});
 
-	it("offers one chip a present category, plus one that shows everything", () => {
+	it("labels the grid with the filter and its size, and counts its seen", () => {
+		expect(dexPollsFor(ROSTER).grid).toMatchObject({
+			label: "all 4 polls",
+			seen: "3 seen",
+		});
+		expect(dexPollsFor(ROSTER, "css").grid).toMatchObject({
+			label: "CSS 3 polls",
+			seen: "2 seen",
+		});
+	});
+
+	it("offers one strip item a present category, plus one that shows everything", () => {
 		const { filters } = dexPollsFor(ROSTER);
 
 		expect(filters.map((item) => item.value)).toEqual([
@@ -127,61 +140,56 @@ describe("dexPollsFor", () => {
 		expect(filters[1].mark).toBe("CSS");
 	});
 
-	it("counts a chip's own seen against that category alone", () => {
+	it("fills each strip item's meter with that slice's seen against its total", () => {
 		const { filters } = dexPollsFor(ROSTER);
 
-		expect(filters[1].label).toBe("1 of 2");
-		expect(filters[2].label).toBe("1 of 1");
+		expect(filters[0]).toMatchObject({
+			label: "3 of 4",
+			meter: { value: 3, max: 4 },
+		});
+		expect(filters[1]).toMatchObject({
+			label: "2 of 3",
+			meter: { value: 2, max: 3 },
+		});
 	});
 
 	it("leaves out a category holding no polls at all", () => {
 		expect(dexPollsFor([poll({ categoryCode: "ts" })]).filters).toHaveLength(2);
 	});
 
-	it("shows only the chosen category once a chip is picked", () => {
-		const css = dexPollsFor(ROSTER, "css");
-
-		expect(css.rows.map((row) => row.id)).toEqual(["1", "3"]);
-	});
-
 	it("shows everything again for a filter value that names no category", () => {
-		expect(dexPollsFor(ROSTER, ALL_FILTER).rows).toHaveLength(3);
+		expect(dexPollsFor(ROSTER, "nonsense").grid.tiles).toHaveLength(4);
 	});
 
-	it("reads the first row when nothing has been picked", () => {
-		const props = dexPollsFor(ROSTER);
+	it("reads the first seen poll when nothing has been picked", () => {
+		const props = dexPollsFor([ROSTER[2], ROSTER[3]]);
 
-		expect(props.selectedId).toBe("1");
-		expect(props.detail?.number).toBe("#001");
+		expect(props.selectedId).toBe("4");
 	});
 
-	it("falls back to the first row when the pick is not in the chosen category", () => {
-		const css = dexPollsFor(ROSTER, "css", "2");
-
-		expect(css.selectedId).toBe("1");
-	});
-
-	it("names the category of the poll the panel is reading", () => {
-		expect(dexPollsFor(ROSTER, ALL_FILTER, "2").detail?.category).toBe(
-			"TypeScript"
-		);
-	});
-
-	it("keeps a poll you have not been dealt in its real category, so a target has a place", () => {
+	it("reads an unseen poll picked from the grid, keeping its category", () => {
 		const detail = dexPollsFor(ROSTER, ALL_FILTER, "3").detail;
 
 		expect(detail?.locked).toBe(true);
 		expect(detail?.category).toBe("CSS");
-		expect(detail?.question).toBeUndefined();
+		expect(detail?.state).toBe("unseen");
 	});
 
-	it("carries the whole record of a poll the panel is reading", () => {
+	it("falls back to the first seen poll when the pick is outside the filter", () => {
+		expect(dexPollsFor(ROSTER, "css", "2").selectedId).toBe("1");
+	});
+
+	it("carries the whole record of the poll the entry is reading", () => {
 		const detail = dexPollsFor([poll()], ALL_FILTER).detail;
 
-		expect(detail?.timesSeen).toBe(4);
-		expect(detail?.answered).toBe(4);
-		expect(detail?.correct).toBe(3);
-		expect(detail?.accuracy).toBe(75);
+		expect(detail).toMatchObject({
+			number: "#001",
+			category: "TypeScript",
+			state: "caught",
+			timesSeen: 4,
+			answered: 4,
+			correct: 3,
+		});
 	});
 
 	it("has nothing to read when the roster is empty", () => {
@@ -189,22 +197,7 @@ describe("dexPollsFor", () => {
 
 		expect(empty.selectedId).toBeNull();
 		expect(empty.detail).toBeNull();
-	});
-
-	it("counts seen against the whole roster", () => {
-		const props = dexPollsFor([
-			poll({ id: 1 }),
-			poll({ id: 2, ...NEVER_DEALT }),
-		]);
-
-		expect(props.count).toBe("1 of 2");
-	});
-
-	it("says how many categories are present, in the plural that fits", () => {
-		expect(dexPollsFor([poll()]).meta).toBe("1 category");
-		expect(
-			dexPollsFor([poll({ id: 1 }), poll({ id: 2, categoryCode: "css" })]).meta
-		).toBe("2 categories");
+		expect(empty.rows).toEqual([]);
 	});
 });
 
@@ -548,9 +541,10 @@ describe("dexControlsFor", () => {
 		expect(row.locked).toBeFalsy();
 	});
 
-	it("keeps one footer for the whole roster", () => {
-		expect(propsFor([]).note).toContain("unlocked once");
-		expect(propsFor([]).note).toContain("picked at new run");
+	it("states one note for the whole roster without naming the free services", () => {
+		expect(propsFor([]).note).toContain("unlocks once");
+		expect(propsFor([]).note).toContain("at new run");
+		expect(propsFor([]).note).not.toContain("free");
 	});
 });
 

@@ -63,3 +63,11 @@ by itself.
   waiting on a click, which is what the prototype set out to remove.
 - **A segment mode on the payout row.** Plain segments and receipt chips share
   almost nothing; one component would carry two jobs.
+
+## Amendment 2026-10-04: a flying gain chip holds the advance
+
+The gain chip's pop, hold and ride (about 1.8s) outlived the 650ms hold, so the next
+poll cut it off before it landed. A right answer whose chip flies now leaves only
+once the chip has ridden into the bar, and never before the 650ms hold; a 3s
+fallback moves on if the chip never settles. Wrong answers, zero-gain answers and
+reduced motion keep the fixed holds.

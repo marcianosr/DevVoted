@@ -113,7 +113,7 @@ describe("playerCardFor", () => {
 	});
 
 	it("states a contributing author's role, polls published and answers drawn beside the polls they answered", () => {
-		const authorship = { role: "Poll editor", published: 12, answers: 1842 };
+		const authorship = { role: "Poll editor", published: 12 };
 
 		expect(
 			playerCardFor({
@@ -132,7 +132,7 @@ describe("playerCardFor", () => {
 				...LOOK,
 				userId: "misty",
 				displayName: "misty",
-				authorship: { role: "Admin", published: 0, answers: 0 },
+				authorship: { role: "Admin", published: 0 },
 				pollsAnswered: 30,
 			}).contribution
 		).toEqual({ answered: 30 });
@@ -172,7 +172,7 @@ describe("playerCardViewFor", () => {
 		equippedSwatchId: null,
 		role: "poll-editor",
 	} as const;
-	const face = profileFaceOf(MISTY, { published: 12, answers: 1842 }, 40);
+	const face = profileFaceOf(MISTY, { published: 12 }, 40);
 
 	it("draws the card from the same face the profile wears, never the GitHub handle", () => {
 		expect(playerCardViewFor("misty-id", face, [0, 1], null)).toEqual({
@@ -180,7 +180,7 @@ describe("playerCardViewFor", () => {
 			displayName: "misty",
 			titles: ["Ship It"],
 			theme: "gate-pallet",
-			authorship: { role: "Poll editor", published: 12, answers: 1842 },
+			authorship: { role: "Poll editor", published: 12 },
 			pollsAnswered: 40,
 			swatchGates: [0, 1],
 		});

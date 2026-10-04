@@ -10,16 +10,6 @@ import {
 
 import { DexPolls } from "./DexPolls.ui";
 
-const paneAt = (container: HTMLElement, index: number) => {
-	const pane = container.querySelectorAll("section")[index];
-	if (!(pane instanceof HTMLElement)) throw new Error(`no pane at ${index}`);
-
-	return pane;
-};
-
-const list = (container: HTMLElement) => paneAt(container, 0);
-const detail = (container: HTMLElement) => paneAt(container, 1);
-
 const pollNumbered = (number: string) => {
 	const poll = dexPollFixtures.find((entry) => entry.number === number);
 	if (poll === undefined) throw new Error(`no fixture poll ${number}`);
@@ -27,33 +17,25 @@ const pollNumbered = (number: string) => {
 	return poll;
 };
 
-const rowNumbered = (container: HTMLElement, number: string) => {
-	const row = within(list(container)).getByText(number).closest("button");
+const grid = () => screen.getByRole("group", { name: "Every poll" });
+
+const rowNumbered = (number: string) => {
+	const row = screen
+		.getAllByText(number)
+		.map((cell) => cell.closest("button"))
+		.find((button) => button?.hasAttribute("aria-current"));
 	if (!(row instanceof HTMLElement)) throw new Error(`no row ${number}`);
 
 	return row;
 };
 
+const detailHeading = () => screen.getByRole("heading", { level: 2 });
+
 describe("DexPolls", () => {
-	it("names the collection and counts it against the roster", () => {
+	it("offers one strip item a category, each counting its own seen against its own total", () => {
 		render(<DexPolls {...dexPollsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "Polls seen" })).toBeVisible();
-		expect(screen.getByText("187 of 423")).toBeVisible();
-	});
-
-	it("lists every poll it was given, holding none back", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
-
-		expect(within(list(container)).getAllByRole("button")).toHaveLength(
-			dexPollFixtures.length
-		);
-	});
-
-	it("offers one chip a category, each counting its own seen against its own total", () => {
-		render(<DexPolls {...dexPollsProps()} />);
-
-		expect(screen.getByRole("radio", { name: "all" })).toBeChecked();
+		expect(screen.getByRole("radio", { name: "all · 3 of 4" })).toBeChecked();
 		expect(
 			screen.getByRole("radio", { name: "TypeScript · 1 of 2" })
 		).toBeVisible();
@@ -70,93 +52,126 @@ describe("DexPolls", () => {
 		expect(onFilter).toHaveBeenCalledWith("js");
 	});
 
-	it("leads a row with its dex number, so the list reads as a roster", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
+	it("lists only the polls you have seen, each with its number and question", () => {
+		render(<DexPolls {...dexPollsProps()} />);
 
-		expect(rowNumbered(container, "#001").firstElementChild).toHaveTextContent(
-			"#001"
+		expect(rowNumbered("#001")).toHaveTextContent(
+			dexPollFixtures[0].question ?? ""
 		);
+		expect(screen.queryByText("#004")).not.toBeInTheDocument();
 	});
 
-	it("shows a seen poll's repeats and score on its row", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
-		const row = rowNumbered(container, "#001");
+	it("scores a caught poll green and a merely seen one yellow", () => {
+		render(
+			<DexPolls
+				{...dexPollsProps({
+					rows: [
+						{
+							id: "1",
+							number: "#001",
+							question: "q1",
+							answered: 1,
+							correct: 1,
+							state: "caught",
+						},
+						{
+							id: "3",
+							number: "#003",
+							question: "q3",
+							answered: 1,
+							correct: 0,
+							state: "seen",
+						},
+					],
+				})}
+			/>
+		);
 
-		expect(row).toHaveTextContent("answered ×4");
-		expect(row).toHaveTextContent("3/4");
-	});
-
-	it("withholds a poll never dealt to you behind ??? alone, with no prose", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
-
-		expect(
-			within(list(container)).getByText("Unseen poll")
-		).toBeInTheDocument();
-		expect(screen.queryByText(/not shown to you/)).not.toBeInTheDocument();
-	});
-
-	it("scores a flawless record apart from a patchy one", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
-
-		expect(within(list(container)).getByText("2/2")).toHaveAttribute(
+		expect(screen.getByText("1/1")).toHaveAttribute(
 			"data-screen-theme",
 			"viridian"
 		);
-		expect(within(list(container)).getByText("3/4")).toHaveAttribute(
+		expect(screen.getByText("0/1")).toHaveAttribute(
 			"data-screen-theme",
 			"saffron"
 		);
 	});
 
 	it("reports nothing for a poll seen but never answered", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
+		render(<DexPolls {...dexPollsProps()} />);
 
-		expect(within(list(container)).getAllByText("—")).toHaveLength(2);
+		expect(rowNumbered("#003")).toHaveTextContent("—");
 	});
 
-	it("marks the picked row as the one the panel is reading", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
+	it("marks the picked row as the one the entry is reading", () => {
+		render(<DexPolls {...dexPollsProps()} />);
 
-		expect(rowNumbered(container, "#001")).toHaveAttribute(
-			"aria-current",
-			"true"
-		);
-		expect(rowNumbered(container, "#002")).toHaveAttribute(
-			"aria-current",
-			"false"
-		);
+		expect(rowNumbered("#001")).toHaveAttribute("aria-current", "true");
+		expect(rowNumbered("#002")).toHaveAttribute("aria-current", "false");
 	});
 
-	it("reports which row was pressed rather than moving the panel itself", async () => {
+	it("reports which row was pressed rather than moving the entry itself", async () => {
 		const onSelect = vi.fn();
-		const { container } = render(<DexPolls {...dexPollsProps({ onSelect })} />);
+		render(<DexPolls {...dexPollsProps({ onSelect })} />);
 
-		await userEvent.click(rowNumbered(container, "#002"));
+		await userEvent.click(rowNumbered("#002"));
 
 		expect(onSelect).toHaveBeenCalledWith("2");
 	});
 
-	it("heads the panel with the poll's own dex number", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
+	it("draws every poll in the grid under a label that counts the seen", () => {
+		render(<DexPolls {...dexPollsProps()} />);
+
+		expect(within(grid()).getAllByRole("button")).toHaveLength(
+			dexPollFixtures.length
+		);
+		expect(screen.getByText("all 4 polls")).toBeVisible();
+		expect(screen.getByText("3 seen")).toBeVisible();
+	});
+
+	it("names each grid tile by its number and whether it is caught, seen or unseen", () => {
+		render(<DexPolls {...dexPollsProps()} />);
 
 		expect(
-			within(detail(container)).getByRole("heading", { name: "#001" })
-		).toBeVisible();
+			within(grid()).getByRole("button", { name: "#1 caught" })
+		).toHaveAttribute("data-screen-theme", "viridian");
+		expect(
+			within(grid()).getByRole("button", { name: "#3 seen" })
+		).toHaveAttribute("data-screen-theme", "saffron");
+		expect(
+			within(grid()).getByRole("button", { name: "#4 unseen" })
+		).not.toHaveAttribute("data-screen-theme");
 	});
 
-	it("states a seen poll's question, category and whole record", () => {
-		const { container } = render(<DexPolls {...dexPollsProps()} />);
-		const panel = within(detail(container));
+	it("opens an unseen poll from the grid, since the list never shows it", async () => {
+		const onSelect = vi.fn();
+		render(<DexPolls {...dexPollsProps({ onSelect })} />);
 
-		expect(panel.getByText(dexPollFixtures[0].question ?? "")).toBeVisible();
-		expect(panel.getByText("TypeScript")).toBeVisible();
-		expect(panel.getByText("dealt ×5")).toBeVisible();
-		expect(panel.getByText("75%")).toBeVisible();
+		await userEvent.click(
+			within(grid()).getByRole("button", { name: "#4 unseen" })
+		);
+
+		expect(onSelect).toHaveBeenCalledWith("4");
 	});
 
-	it("names the category of a poll you have not been dealt, so a target has a place", () => {
+	it("heads the entry with the poll's number and category, then its question and record", () => {
+		render(<DexPolls {...dexPollsProps()} />);
+
+		expect(detailHeading()).toHaveTextContent("#001 · TypeScript");
+		expect(screen.getAllByText(dexPollFixtures[0].question ?? "")).toHaveLength(
+			2
+		);
+		expect(screen.getByText("dealt ×5")).toBeVisible();
+		expect(screen.getByText("answered ×4")).toBeVisible();
+		expect(screen.getByText("right · 3/4")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("keeps an unseen poll's category but withholds its question", () => {
 		const unseen = pollNumbered("#004");
-		const { container } = render(
+		render(
 			<DexPolls
 				{...dexPollsProps({
 					selectedId: unseen.id,
@@ -164,30 +179,20 @@ describe("DexPolls", () => {
 				})}
 			/>
 		);
-		const panel = within(detail(container));
 
-		expect(panel.getByText("TypeScript")).toBeVisible();
-		expect(panel.getByText("Unseen poll")).toBeInTheDocument();
-		expect(panel.queryByText("dealt ×5")).not.toBeInTheDocument();
+		expect(detailHeading()).toHaveTextContent("#004 · TypeScript");
+		expect(screen.getByText("Unseen poll")).toBeInTheDocument();
+		expect(screen.queryByText("dealt ×5")).not.toBeInTheDocument();
 	});
 
-	it("says so plainly when the chosen category holds nothing", () => {
-		const { container } = render(
+	it("says so plainly when nothing in the category has been seen", () => {
+		render(
 			<DexPolls
 				{...dexPollsProps({ rows: [], selectedId: null, detail: null })}
 			/>
 		);
 
-		expect(
-			within(detail(container)).getByText("No poll in this category yet.")
-		).toBeVisible();
-	});
-
-	it("states how a poll enters the dex", () => {
-		render(
-			<DexPolls {...dexPollsProps({ note: "A poll enters when dealt." })} />
-		);
-
-		expect(screen.getByText("A poll enters when dealt.")).toBeVisible();
+		expect(screen.getByText("Nothing seen here yet.")).toBeVisible();
+		expect(screen.getByText("No poll in this category yet.")).toBeVisible();
 	});
 });

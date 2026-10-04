@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
@@ -38,6 +38,9 @@ const BAR: AppNavProps = {
 
 const drawBar = (props: Partial<AppNavProps> = {}) =>
 	render(<AppNav {...BAR} {...props} />);
+
+const header = () => within(screen.getByRole("banner"));
+const tabs = () => within(screen.getByRole("navigation", { name: COPY.tabs }));
 
 describe("AppNav", () => {
 	it("scrolls away with the page rather than pinning itself to the top", () => {
@@ -81,7 +84,7 @@ describe("AppNav", () => {
 				run: { href: RUN, pollsLeft: 3, active: false },
 			});
 
-			const press = screen.getByRole("link", { name: /Daily Run/ });
+			const press = header().getByRole("link", { name: /Daily Run/ });
 
 			expect(press).toHaveAttribute("href", RUN);
 			expect(press).toHaveTextContent("3");
@@ -145,7 +148,7 @@ describe("AppNav", () => {
 				run: { href: RUN, pollsLeft: 3, active: true },
 			});
 
-			expect(screen.getByText("3")).toBeInTheDocument();
+			expect(header().getByText("3")).toBeInTheDocument();
 		});
 
 		it("names the count for a reader that cannot see a bare figure", () => {
@@ -155,24 +158,28 @@ describe("AppNav", () => {
 			});
 
 			expect(
-				screen.getByRole("link", { name: "Daily Run · 3 polls left" })
+				header().getByRole("link", { name: "Daily Run · 3 polls left" })
 			).toBeInTheDocument();
 		});
 
 		it("says nothing at all once the day has no polls left", () => {
 			drawBar({ viewer: VIEWER, run: { href: RUN, active: true } });
 
-			expect(screen.getByRole("link", { name: COPY.run })).toBeInTheDocument();
+			expect(
+				header().getByRole("link", { name: COPY.run })
+			).toBeInTheDocument();
 			expect(screen.queryByText(/^\d+$/)).not.toBeInTheDocument();
 		});
 
-		it("keeps the count at every width, unlike the two links beside it", () => {
+		it("carries the count onto the phone's tab bar too", () => {
 			drawBar({
 				viewer: VIEWER,
 				run: { href: RUN, pollsLeft: 3, active: true },
 			});
 
-			expect(screen.getByText("3")).not.toHaveClass("hidden");
+			expect(
+				tabs().getByRole("link", { name: "Daily Run · 3 polls left" })
+			).toHaveTextContent("3");
 		});
 	});
 
@@ -183,23 +190,45 @@ describe("AppNav", () => {
 				community: { href: COMMUNITY, active: true },
 			});
 
-			expect(
-				screen.getAllByRole("link", { name: COPY.community })[0]
-			).toHaveClass("bg-theme-raised");
-			expect(screen.getByRole("link", { name: /Daily Run/ })).not.toHaveClass(
+			expect(header().getByRole("link", { name: COPY.community })).toHaveClass(
+				"bg-theme-raised"
+			);
+			expect(header().getByRole("link", { name: /Daily Run/ })).not.toHaveClass(
 				"bg-theme-raised"
 			);
 		});
 
-		it("drops the two wide links to the account menu on a narrow screen", () => {
+		it("moves the destinations to a tab bar at the bottom of a phone", () => {
 			drawBar({ viewer: VIEWER });
 
 			expect(
-				screen.getAllByRole("link", { name: COPY.community })[0]
-			).toHaveClass("hidden");
+				header().getByRole("link", { name: COPY.community }).parentElement
+			).toHaveClass("hidden", "md:flex");
+			expect(screen.getByRole("navigation", { name: COPY.tabs })).toHaveClass(
+				"fixed",
+				"md:hidden"
+			);
 			expect(
-				screen.getAllByRole("link", { name: COPY.community })[1]
-			).toHaveClass("md:hidden");
+				tabs()
+					.getAllByRole("link")
+					.map((link) => link.getAttribute("href"))
+			).toEqual([RUN, COMMUNITY, PROFILE]);
+		});
+
+		it("raises the profile tab while you stand on your own page", () => {
+			drawBar({ viewer: VIEWER, profileActive: true });
+
+			expect(tabs().getByRole("link", { name: COPY.profileTab })).toHaveClass(
+				"bg-theme-raised"
+			);
+		});
+
+		it("draws no tab bar for a signed-out visitor", () => {
+			drawBar();
+
+			expect(
+				screen.queryByRole("navigation", { name: COPY.tabs })
+			).not.toBeInTheDocument();
 		});
 	});
 
@@ -224,7 +253,7 @@ describe("AppNav", () => {
 		it("raises the destination you stand on with the theme, not a zinc step", () => {
 			drawBar({ viewer: VIEWER, run: { href: RUN, active: true } });
 
-			const here = screen.getByRole("link", { name: /Daily Run/ });
+			const here = header().getByRole("link", { name: /Daily Run/ });
 
 			expect(here).toHaveClass("bg-theme-raised", "ring-theme-soft");
 			expect(here.className).not.toMatch(/bg-surface|ring-edge/);
@@ -330,7 +359,7 @@ describe("AppNav", () => {
 			const onNavigate = vi.fn();
 			drawBar({ viewer: VIEWER, onNavigate });
 
-			fireEvent.click(screen.getByRole("link", { name: /Daily Run/ }));
+			fireEvent.click(header().getByRole("link", { name: /Daily Run/ }));
 
 			expect(onNavigate).toHaveBeenCalledWith(RUN);
 		});
@@ -339,7 +368,7 @@ describe("AppNav", () => {
 			const onNavigate = vi.fn();
 			drawBar({ viewer: VIEWER, onNavigate });
 
-			fireEvent.click(screen.getByRole("link", { name: /Daily Run/ }), {
+			fireEvent.click(header().getByRole("link", { name: /Daily Run/ }), {
 				metaKey: true,
 			});
 
@@ -350,7 +379,7 @@ describe("AppNav", () => {
 			const onNavigate = vi.fn();
 			drawBar({ viewer: VIEWER, onNavigate });
 
-			fireEvent.click(screen.getByRole("link", { name: /Daily Run/ }), {
+			fireEvent.click(header().getByRole("link", { name: /Daily Run/ }), {
 				button: 1,
 			});
 
@@ -360,7 +389,7 @@ describe("AppNav", () => {
 		it("falls back to the plain link when no router is listening", () => {
 			drawBar({ viewer: VIEWER });
 
-			expect(screen.getByRole("link", { name: /Daily Run/ })).toHaveAttribute(
+			expect(header().getByRole("link", { name: /Daily Run/ })).toHaveAttribute(
 				"href",
 				RUN
 			);

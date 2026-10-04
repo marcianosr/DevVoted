@@ -184,7 +184,7 @@ export const OnTheBoard: Story = {
 		<Screen theme="viridian" width="narrow">
 			<BoardPanel
 				label="Streak leaders"
-				meta="longest run of correct answers in one run · all-time"
+				meta="All-time longest run streak"
 				rows={STREAK_BOARD}
 				openCategory="Vue"
 				claim="3 in a row claims it"
@@ -198,7 +198,7 @@ export const OnTheCorrectBoard: Story = {
 		<Screen theme="viridian" width="narrow">
 			<BoardPanel
 				label="Correct leaders"
-				meta="most correct answers in one run · all-time"
+				meta="All-time longest run of correct answers"
 				rows={CORRECT_BOARD}
 				openCategory="Vue"
 				claim="4 correct claims it"

@@ -6,6 +6,7 @@ import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
 	ANSWER_HOLD_MS,
 	CARD_LEAVE_MS,
+	FLIGHT_FALLBACK_MS,
 	useAnswerFeedback,
 } from "./useAnswerFeedback.hook";
 
@@ -55,6 +56,45 @@ describe("useAnswerFeedback", () => {
 			vi.advanceTimersByTime(ANSWER_HOLD_MS.wrong - ANSWER_HOLD_MS.right)
 		);
 		expect(result.current.leaving).toBe(true);
+	});
+
+	it("holds the card while the gain chip flies, then sends it away once it settles", () => {
+		const onDone = vi.fn();
+		const { result } = renderHook(() =>
+			useAnswerFeedback(answeredWith("correct"), onDone, true)
+		);
+
+		act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.right * 2));
+		expect(result.current.leaving).toBe(false);
+
+		act(() => result.current.settle());
+		expect(result.current.leaving).toBe(true);
+		expect(onDone).not.toHaveBeenCalled();
+
+		act(() => vi.advanceTimersByTime(CARD_LEAVE_MS));
+		expect(onDone).toHaveBeenCalledOnce();
+	});
+
+	it("keeps the whole hold when the chip settles at once", () => {
+		const onDone = vi.fn();
+		const { result } = renderHook(() =>
+			useAnswerFeedback(answeredWith("correct"), onDone, true)
+		);
+
+		act(() => result.current.settle());
+		act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.right - CARD_LEAVE_MS - 1));
+		expect(result.current.leaving).toBe(false);
+
+		act(() => vi.advanceTimersByTime(CARD_LEAVE_MS + 1));
+		expect(onDone).toHaveBeenCalledOnce();
+	});
+
+	it("moves on anyway when the chip never settles", () => {
+		const onDone = vi.fn();
+		renderHook(() => useAnswerFeedback(answeredWith("correct"), onDone, true));
+
+		act(() => vi.advanceTimersByTime(FLIGHT_FALLBACK_MS));
+		expect(onDone).toHaveBeenCalledOnce();
 	});
 
 	it("keeps a live poll's card in place", () => {

@@ -32,9 +32,9 @@ export const DexPanel = ({
 			}
 			trailing={trailing}
 		/>
-		{children}
-		<Panel.Footer>
+		<Panel.Body>
 			<Typography variant="hint">{note}</Typography>
-		</Panel.Footer>
+		</Panel.Body>
+		{children}
 	</Panel>
 );

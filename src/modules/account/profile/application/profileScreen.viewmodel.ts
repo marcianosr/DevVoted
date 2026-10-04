@@ -12,10 +12,11 @@ import type {
 } from "~/modules/account/profile/domain/profile.model";
 import type { Tally } from "~/modules/collection/dex/domain/tally.model";
 import type { Standing } from "~/modules/run/community/domain/standing.model";
+import { swatchTrackFor } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { HELD_OF, IN_A_ROW } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
-import { archiveLabel } from "~/shared/lib/storage";
+import { archiveLabel, formatStorage } from "~/shared/lib/storage";
 import type { DexRunsProps } from "~/ui/kanto-theme/DexRuns.ui";
 import {
 	findBorderById,
@@ -25,7 +26,11 @@ import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 import type { ProfileClimbingProps } from "~/ui/kanto-theme/ProfileClimbing.ui";
 import type { ProfileCollectionProps } from "~/ui/kanto-theme/ProfileCollection.ui";
 import type { ProfileBestRunProps } from "~/ui/kanto-theme/ProfileBestRun.ui";
-import type { ProfileHeroProps, Trophy } from "~/ui/kanto-theme/ProfileHero.ui";
+import type { KantoColor } from "~/ui/kanto-theme/colors";
+import type {
+	HeroRecord,
+	ProfileHeroProps,
+} from "~/ui/kanto-theme/ProfileHero.ui";
 import type { ProfileSeatsProps } from "~/ui/kanto-theme/ProfileSeats.ui";
 import {
 	contributionOf,
@@ -87,10 +92,16 @@ export const triedOnBorderOf = (
 const HERO = {
 	deepestGate: "deepest gate",
 	swatches: "swatches",
+	runsPlayed: "runs played",
 	runsWon: "runs won",
-	outOf: (total: number) => `/ ${total}`,
-	yours: (figure: number) => `you ${figure}`,
+	bestStreak: "best streak",
+	bestCategory: "best category",
+	archive: "archived",
+	none: "—",
+	outOf: (held: number, total: number) => `${held} / ${total}`,
 } as const;
+
+const ARCHIVE_COLOR: KantoColor = "saffron";
 
 const BEST_RUN = {
 	meta: (gatesCleared: number) => `reached gate ${gatesCleared}`,
@@ -110,40 +121,49 @@ const COLLECTION = {
 
 const RUNS = { meta: "most recent" } as const;
 
-const trophyOf = (
-	label: string,
-	held: number,
-	total: number,
-	yours: number | undefined
-): Trophy => ({
-	label,
-	figure: String(held),
-	outOf: HERO.outOf(total),
-	...(yours === undefined ? {} : { yours: HERO.yours(yours) }),
+const bestCategoryNameOf = (code: ProfileRecord["bestCategory"]): string =>
+	code === null ? HERO.none : getCategoryMetadata(code).name;
+
+const heroRecordOf = (
+	record: ProfileRecord,
+	archivedStorage: number
+): HeroRecord => ({
+	stats: [
+		{
+			label: HERO.deepestGate,
+			value: HERO.outOf(record.deepestGate, record.gatesTotal),
+		},
+		{ label: HERO.runsPlayed, value: String(record.runsFinished) },
+		{ label: HERO.runsWon, value: String(record.runsWon) },
+		{
+			label: HERO.bestStreak,
+			value: record.bestStreak === 0 ? HERO.none : IN_A_ROW(record.bestStreak),
+		},
+		{
+			label: HERO.bestCategory,
+			value: bestCategoryNameOf(record.bestCategory),
+		},
+		{
+			label: HERO.archive,
+			value: formatStorage(archivedStorage),
+			color: ARCHIVE_COLOR,
+		},
+	],
+	swatches: {
+		label: HERO.swatches,
+		value: HERO.outOf(record.clearedGates.length, record.gatesTotal),
+		fills: swatchTrackFor(record.clearedGates),
+	},
 });
 
 export const profileHeroFor = (
 	identity: ProfileIdentity,
 	record: ProfileRecord,
 	you: boolean,
-	yours?: ProfileRecord
+	archivedStorage: number
 ): ProfileHeroProps => ({
 	...profileCardFor(identity, you),
-	trophies: [
-		trophyOf(
-			HERO.deepestGate,
-			record.deepestGate,
-			record.gatesTotal,
-			yours?.deepestGate
-		),
-		trophyOf(
-			HERO.swatches,
-			record.clearedGates.length,
-			record.gatesTotal,
-			yours?.clearedGates.length
-		),
-		{ label: HERO.runsWon, figure: String(record.runsWon) },
-	],
+	...(you ? {} : { record: heroRecordOf(record, archivedStorage) }),
 });
 
 export const profileBestRunFor = ({

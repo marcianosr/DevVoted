@@ -7,11 +7,18 @@ const HERO: ProfileHeroProps = {
 	name: "Misty",
 	handle: "misty",
 	titles: ["Completer"],
-	trophies: [
-		{ label: "deepest gate", figure: "9", outOf: "/ 13", yours: "you 6" },
-		{ label: "swatches", figure: "5", outOf: "/ 13" },
-		{ label: "runs won", figure: "2" },
-	],
+	record: {
+		stats: [
+			{ label: "deepest gate", value: "9 / 13" },
+			{ label: "runs played", value: "24" },
+			{ label: "archived", value: "8 MB", color: "saffron" },
+		],
+		swatches: {
+			label: "swatches",
+			value: "5 / 13",
+			fills: [{ state: "undiscovered" }],
+		},
+	},
 };
 
 describe("ProfileHero", () => {
@@ -23,35 +30,43 @@ describe("ProfileHero", () => {
 		).toBeVisible();
 	});
 
-	it("states each trophy with its label and figure", () => {
+	it("states the record as tiles, each a label over its figure", () => {
 		render(<ProfileHero {...HERO} />);
 
 		expect(screen.getByText("deepest gate")).toBeVisible();
-		expect(screen.getByText("9")).toBeVisible();
-		expect(screen.getByText("runs won")).toBeVisible();
-		expect(screen.getByText("2")).toBeVisible();
+		expect(screen.getByText("9 / 13")).toBeVisible();
+		expect(screen.getByText("8 MB")).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
 	});
 
-	it("states a visitor's own figure under the trophy it compares", () => {
+	it("closes the record with the swatches held and their track", () => {
 		render(<ProfileHero {...HERO} />);
 
-		expect(screen.getByText("you 6")).toBeVisible();
+		expect(screen.getByText("swatches")).toBeVisible();
+		expect(screen.getByText("5 / 13")).toBeVisible();
 	});
 
-	it("draws no swatch track, leaving the count to its trophy", () => {
-		render(<ProfileHero {...HERO} />);
+	it("rings the hero and labels it a preview while the look is unsaved", () => {
+		const { container } = render(
+			<ProfileHero {...HERO} preview="preview · not saved" />
+		);
 
-		expect(
-			screen.queryByRole("img", { name: /swatches discovered/ })
-		).not.toBeInTheDocument();
-		expect(
-			screen.queryByText("A swatch is a gate taken at 100% coverage.")
-		).not.toBeInTheDocument();
+		expect(screen.getByText("preview · not saved")).toBeVisible();
+		expect(container.firstElementChild).toHaveClass("ring-saffron");
 	});
 
-	it("seats the owner's press in the corner", () => {
-		render(<ProfileHero {...HERO} trailing={<button>edit profile</button>} />);
+	it("draws no preview label for a saved look", () => {
+		const { container } = render(<ProfileHero {...HERO} />);
 
-		expect(screen.getByRole("button", { name: "edit profile" })).toBeVisible();
+		expect(screen.queryByText(/not saved/)).not.toBeInTheDocument();
+		expect(container.firstElementChild).not.toHaveClass("ring-saffron");
+	});
+
+	it("draws no record when it is handed none", () => {
+		render(<ProfileHero {...HERO} record={undefined} />);
+
+		expect(screen.queryByText("deepest gate")).not.toBeInTheDocument();
 	});
 });

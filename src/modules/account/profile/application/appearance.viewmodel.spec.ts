@@ -4,6 +4,7 @@ import {
 	appearanceFor,
 	DEFAULT_BORDER_NAME,
 	lookedIdentityOf,
+	previewLabelFor,
 	type AppearanceInput,
 } from "~/modules/account/profile/application/appearance.viewmodel";
 import type { ProfileIdentity } from "~/modules/account/profile/domain/profile.model";
@@ -33,9 +34,7 @@ const IDENTITY: ProfileIdentity = {
 };
 
 const INPUT: AppearanceInput = {
-	identity: IDENTITY,
 	look: { borderId: STACK_TRACE, titleIds: [TESTER], swatchId: CERULEAN },
-	tryingOnId: null,
 	ownedBorderIds: [STACK_TRACE],
 	ownedTitleIds: [NEWBIE, TESTER, CSS_CARRIER],
 	ownedSwatchIds: [CERULEAN],
@@ -125,10 +124,15 @@ describe("appearanceFor", () => {
 		).toEqual([BIKESHEDDER]);
 	});
 
-	it("names the border being tried on", () => {
-		expect(
-			appearanceFor({ ...INPUT, tryingOnId: MERGE_CONFLICT }).tryingOn
-		).toBe("Merge Conflict");
+	it("labels the hero a preview only while the look is unsaved", () => {
+		expect(previewLabelFor(INPUT.look, null, false)).toBeUndefined();
+		expect(previewLabelFor(INPUT.look, null, true)).toBe("preview · not saved");
+	});
+
+	it("names the border being tried on in the hero's label", () => {
+		expect(previewLabelFor(INPUT.look, MERGE_CONFLICT, false)).toBe(
+			"trying on Merge Conflict · not saved"
+		);
 	});
 
 	it("tallies owned borders against the whole roster", () => {

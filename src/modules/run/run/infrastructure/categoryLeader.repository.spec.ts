@@ -6,6 +6,7 @@ import {
 } from "~/test/drizzleMock.factory";
 
 import {
+	fetchBestStreakOf,
 	fetchCategoryBoards,
 	fetchCategoryLeader,
 } from "~/modules/run/run/infrastructure/categoryLeader.repository";
@@ -298,5 +299,23 @@ describe("fetchCategoryBoards", () => {
 			false,
 			true,
 		]);
+	});
+});
+
+describe("fetchBestStreakOf", () => {
+	beforeEach(() => {
+		resetDrizzleMock(mock);
+	});
+
+	it("reads the longest run streak the player holds in any category", async () => {
+		mock.results = [[{ best: "21" }]];
+
+		expect(await fetchBestStreakOf(ME)).toBe(21);
+	});
+
+	it("reads zero for a player with no run answers", async () => {
+		mock.results = [[{ best: null }]];
+
+		expect(await fetchBestStreakOf(ME)).toBe(0);
 	});
 });

@@ -1,5 +1,11 @@
 import { CHOICE_LABEL } from "~/shared/lib/copy";
 import {
+	answerPayoutFor,
+	previewContextFor,
+} from "~/modules/run/build/domain/answerPayout.model";
+import type { Config } from "~/modules/run/config/domain/config.model";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
+import {
 	accuracyMultiplierFor,
 	coverageGainPercentFor,
 	MULTIPLE_CREDIT,
@@ -37,24 +43,60 @@ const toneOf = (units: number, credit: number): ScoringTone => {
 	return units === credit ? "full" : "partial";
 };
 
-const stepsOf = (credit: number, step: number, gate: number): ScoringStep[] =>
-	Array.from({ length: Math.round(1 / step) + 1 }, (_, index) => {
-		const units = roundToTwoDecimals(index * step * credit);
+const ANSWERED_BEFORE_TYPICAL = 1;
+
+const builtUnitsOf = (
+	configs: readonly Config[],
+	answerType: AnswerType,
+	share: number
+): number =>
+	answerPayoutFor(
+		configs,
+		previewContextFor({ answeredBefore: ANSWERED_BEFORE_TYPICAL, answerType }),
+		share
+	).earned;
+
+const stepsOf = (
+	credit: number,
+	step: number,
+	gate: number,
+	built: (share: number) => number
+): ScoringStep[] => {
+	const steps = Array.from({ length: Math.round(1 / step) + 1 }, (_, index) => {
+		const share = index * step;
+		const units = roundToTwoDecimals(share * credit);
 		return {
-			figure: `${units}`,
-			coverage: shareLabel(units, gate),
-			tone: toneOf(units, credit),
+			units,
+			builtUnits: roundToTwoDecimals(built(share)),
+			step: {
+				figure: `${units}`,
+				coverage: shareLabel(units, gate),
+				tone: toneOf(units, credit),
+			},
 		};
 	});
+	const buildLifts = steps.some((entry) => entry.builtUnits !== entry.units);
 
-export const gainsFor = (gate: number): readonly ScoringFigure[] => [
+	return steps.map((entry) =>
+		buildLifts ? { ...entry.step, built: `${entry.builtUnits}` } : entry.step
+	);
+};
+
+export const gainsFor = (
+	gate: number,
+	configs: readonly Config[] = []
+): readonly ScoringFigure[] => [
 	{
 		label: capitalised(CHOICE_LABEL.single),
-		steps: stepsOf(SINGLE_CREDIT, SINGLE_STEP, gate),
+		steps: stepsOf(SINGLE_CREDIT, SINGLE_STEP, gate, (share) =>
+			builtUnitsOf(configs, "single", share)
+		),
 	},
 	{
 		label: `${capitalised(CHOICE_LABEL.multiple)} ${UP_TO}`,
-		steps: stepsOf(MULTIPLE_CREDIT, MULTIPLE_STEP, gate),
+		steps: stepsOf(MULTIPLE_CREDIT, MULTIPLE_STEP, gate, (share) =>
+			builtUnitsOf(configs, "multiple", share)
+		),
 	},
 ];
 
@@ -73,8 +115,9 @@ export const accuracyFor = (accuracyBonus: number): ScoringFigure => ({
 
 export const scoringFor = (
 	gate: number,
-	accuracyBonus: number
+	accuracyBonus: number,
+	configs: readonly Config[] = []
 ): ScoringProps => ({
-	gains: gainsFor(gate),
+	gains: gainsFor(gate, configs),
 	accuracy: accuracyFor(accuracyBonus),
 });

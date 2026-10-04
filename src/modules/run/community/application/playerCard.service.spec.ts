@@ -59,7 +59,7 @@ describe("getPlayerCardService", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		fetchPublicProfile.mockResolvedValue(PROFILE);
-		fetchPublishedPollCounts.mockResolvedValue({ published: 0, answers: 0 });
+		fetchPublishedPollCounts.mockResolvedValue({ published: 0 });
 		fetchActiveClimberFor.mockResolvedValue(null);
 		fetchBestCategories.mockResolvedValue(new Map());
 		fetchObjectiveProgressByUser.mockResolvedValue([]);
@@ -85,7 +85,7 @@ describe("getPlayerCardService", () => {
 				photoUrl: "/editors/misty.png",
 				titles: ["Ship It"],
 				theme: "gate-pallet",
-				authorship: { published: 0, answers: 0 },
+				authorship: { published: 0 },
 				pollsAnswered: 0,
 				swatchGates: [],
 			},
@@ -107,7 +107,6 @@ describe("getPlayerCardService", () => {
 		fetchPublicProfile.mockResolvedValue({ ...PROFILE, role: "poll-editor" });
 		fetchPublishedPollCounts.mockResolvedValue({
 			published: 12,
-			answers: 1842,
 		});
 
 		const response = await getPlayerCardService(MISTY);
@@ -115,7 +114,6 @@ describe("getPlayerCardService", () => {
 		expect(response.success && response.data.authorship).toEqual({
 			role: "Poll editor",
 			published: 12,
-			answers: 1842,
 		});
 	});
 

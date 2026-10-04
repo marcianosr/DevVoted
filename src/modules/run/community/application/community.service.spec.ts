@@ -237,6 +237,8 @@ const spoils = (
 ) => ({
 	lootedById: null,
 	lootedByName: null,
+	lootedByPhotoUrl: null,
+	lootedByBorderUrl: null,
 	lootedKb: null,
 	...over,
 });
@@ -700,6 +702,8 @@ describe("getRunCommunityService climb map", () => {
 				lootKb: 100,
 				lootedById: null,
 				lootedByName: null,
+				lootedByPhotoUrl: null,
+				lootedByBorderUrl: null,
 			},
 			{
 				runId: 12,
@@ -719,6 +723,8 @@ describe("getRunCommunityService climb map", () => {
 				lootKb: 42,
 				lootedById: RED,
 				lootedByName: "Red",
+				lootedByPhotoUrl: null,
+				lootedByBorderUrl: null,
 			},
 		]);
 	});

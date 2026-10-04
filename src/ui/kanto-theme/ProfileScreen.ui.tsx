@@ -7,17 +7,15 @@ import { Screen } from "./Screen.ui";
 import { Tabs, type TabItem } from "./Tabs.ui";
 import { Typography } from "./Typography.ui";
 
-const TITLE_ROW = "flex w-full flex-wrap items-baseline gap-x-3 gap-y-1";
-const SUBTITLE = "text-sm text-theme-muted";
+const TITLE_ROW = "flex w-full flex-wrap items-center gap-x-6 gap-y-2";
 const ARCHIVE = "ml-auto text-sm text-theme-muted";
-const TABBED = "flex w-full flex-col";
+const TABBED = "flex w-full flex-col gap-4";
+const FOOTER_ROOM = "h-24";
 const HIGHLIGHTS = "grid w-full items-start gap-6 lg:grid-cols-2";
 const SECTIONS = "flex w-full flex-col gap-6";
 
 export const DEX_TITLE = "Dex";
-export const DEX_SUBTITLE = "everything the game has shown you";
 export const DEX_TABLIST_LABEL = "Dex collections";
-export const EDIT_PROFILE = "edit profile";
 
 export type ProfileScreenProps = {
 	hero: ReactNode;
@@ -28,6 +26,7 @@ export type ProfileScreenProps = {
 	activeId?: string;
 	onSelect?: (id: string) => void;
 	archive?: string;
+	footer?: ReactNode;
 	children?: ReactNode;
 };
 
@@ -46,28 +45,26 @@ const Collections = ({
 	archive,
 	children,
 }: CollectionsProps) => (
-	<>
+	<div className={TABBED}>
 		<div className={TITLE_ROW}>
 			<Typography variant="headline" as="h1">
 				{DEX_TITLE}
 			</Typography>
-			<span className={SUBTITLE}>{DEX_SUBTITLE}</span>
+			<Tabs
+				items={tabs}
+				activeId={activeId}
+				onSelect={onSelect}
+				label={DEX_TABLIST_LABEL}
+				look="ghost"
+			/>
 			{archive === undefined ? null : (
 				<span className={ARCHIVE}>
 					<Figures text={archive} />
 				</span>
 			)}
 		</div>
-		<div className={TABBED}>
-			<Tabs
-				items={tabs}
-				activeId={activeId}
-				onSelect={onSelect}
-				label={DEX_TABLIST_LABEL}
-			/>
-			<div role="tabpanel">{children}</div>
-		</div>
-	</>
+		<div role="tabpanel">{children}</div>
+	</div>
 );
 
 export const ProfileScreen = ({
@@ -79,6 +76,7 @@ export const ProfileScreen = ({
 	activeId,
 	onSelect,
 	archive,
+	footer,
 	children,
 }: ProfileScreenProps) => (
 	<Screen gate={theme} width="wide" ground="bare">
@@ -98,6 +96,12 @@ export const ProfileScreen = ({
 			>
 				{children}
 			</Collections>
+		)}
+		{footer === undefined ? null : (
+			<>
+				<div aria-hidden className={FOOTER_ROOM} />
+				{footer}
+			</>
 		)}
 	</Screen>
 );

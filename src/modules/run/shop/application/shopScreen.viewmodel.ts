@@ -32,6 +32,7 @@ import {
 	infoFor,
 	nextUpgradeCostOf,
 	idleUpgraderBadgesFor,
+	openerClashBadgesFor,
 	refundChipFor,
 	registryUpgradesFor,
 	rollOddsLabel,
@@ -124,6 +125,7 @@ export type OfferDeal = {
 	armed?: boolean;
 	onCancel?: () => void;
 	isNew?: boolean;
+	installed?: readonly Config[];
 };
 
 const BILL_COLOR: KantoColor = "saffron";
@@ -168,6 +170,7 @@ export const offerChipFor = (
 	badges: [
 		...(deal.isNew === true ? [{ ...NEW_BADGE }] : []),
 		...billBadgesOf(deal),
+		...openerClashBadgesFor(config, deal.installed ?? []),
 	],
 	skipped: !deal.affordable,
 	install: offerInstallFor(deal),
@@ -230,7 +233,11 @@ export const buildChipFor = (
 			? {}
 			: { upgrades: upgradesFor(config, deal) }),
 		...vendor,
-		badges: [...vendor.badges, ...idleUpgraderBadgesFor(config, installed)],
+		badges: [
+			...vendor.badges,
+			...idleUpgraderBadgesFor(config, installed),
+			...openerClashBadgesFor(config, installed),
+		],
 		...quotingOf(buildDeltasOf(config, refundKb), onPoint),
 	};
 };
@@ -470,6 +477,7 @@ const offersOf = (
 			onCancel: () => arm(),
 			onPoint,
 			isNew: isUnlockedThisRun(view, offer.config.id),
+			installed: view.configs,
 			onInstall:
 				offer.scale === null || armed
 					? () => onDraft(offer.config.id)

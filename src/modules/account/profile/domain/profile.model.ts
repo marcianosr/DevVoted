@@ -68,6 +68,8 @@ export type ProfileRecord = {
 	readonly clearedGates: readonly number[];
 	readonly runsFinished: number;
 	readonly runsWon: number;
+	readonly bestStreak: number;
+	readonly bestCategory: CategoryCode | null;
 	readonly bestRun: RunHistoryEntry | null;
 	readonly seats: readonly ProfileSeat[];
 	readonly recentRuns: readonly RunHistoryEntry[];

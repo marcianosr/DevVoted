@@ -188,6 +188,8 @@ export type FallenRow = ClimberRow & {
 	runId: number;
 	lootedById: string | null;
 	lootedByName: string | null;
+	lootedByPhotoUrl: string | null;
+	lootedByBorderUrl: string | null;
 	lootedKb: number | null;
 };
 
@@ -195,22 +197,29 @@ const FALLEN_COLUMNS = {
 	runId: runsTable.id,
 	lootedById: runsTable.looted_by_user_id,
 	lootedByName: looterTable.display_name,
+	lootedByPhotoUrl: looterTable.photo_url,
+	lootedByBorderId: looterTable.equipped_border_id,
 	lootedKb: runsTable.loot_amount,
 	...CLIMBER_COLUMNS,
 };
 
-type FallenSelection = Omit<FallenRow, keyof ClimberRow> & ClimberSelection;
+type FallenSelection = Omit<FallenRow, keyof ClimberRow | "lootedByBorderUrl"> &
+	ClimberSelection & { lootedByBorderId: string | null };
 
 const toFallenRow = ({
 	runId,
 	lootedById,
 	lootedByName,
+	lootedByPhotoUrl,
+	lootedByBorderId,
 	lootedKb,
 	...row
 }: FallenSelection): FallenRow => ({
 	runId,
 	lootedById,
 	lootedByName,
+	lootedByPhotoUrl,
+	lootedByBorderUrl: borderUrlOf(lootedByBorderId),
 	lootedKb,
 	...toClimberRow(row),
 });

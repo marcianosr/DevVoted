@@ -11,6 +11,8 @@ import {
 	type RunHistoryEntry,
 } from "~/modules/collection/dex/domain/runHistory.model";
 import {
+	dexNumber,
+	entryStateOf,
 	filterPolldexEntries,
 	formatDexNumber,
 	presentCategories,
@@ -66,6 +68,7 @@ import type {
 import type {
 	DexPollDetail,
 	DexPollRow,
+	DexPollTile,
 	DexPollsData,
 } from "~/ui/kanto-theme/DexPolls.ui";
 import {
@@ -106,29 +109,38 @@ export const isDexTabId = (value: string): value is DexTabId =>
 
 const tallyLabelOf = ({ held, total }: Tally): string => HELD_OF(held, total);
 
-const POLLS_NOTE =
-	"A poll enters the dex the first time it is dealt to you. Repeats show how often and how you did.";
+const ALL_POLLS_WORD = "polls";
+const SEEN_SUFFIX = " seen";
 
-const pollRowFor = (entry: PolldexEntry): DexPollRow => {
-	const number = formatDexNumber(entry);
+type CategoryCode = PolldexEntry["categoryCode"];
 
-	if (!entry.seen || entry.question === null) {
-		return { id: String(entry.id), number, locked: true };
-	}
+const pollRowsFor = (entries: readonly PolldexEntry[]): DexPollRow[] =>
+	entries.flatMap((entry) =>
+		entry.seen && entry.question !== null
+			? [
+					{
+						id: String(entry.id),
+						number: formatDexNumber(entry),
+						question: entry.question,
+						answered: entry.answeredCount,
+						correct: entry.correctCount,
+						state: entryStateOf(entry),
+					},
+				]
+			: []
+	);
 
-	return {
-		id: String(entry.id),
-		number,
-		question: entry.question,
-		answered: entry.answeredCount,
-		correct: entry.correctCount,
-	};
-};
+const pollTileFor = (entry: PolldexEntry): DexPollTile => ({
+	id: String(entry.id),
+	number: String(dexNumber(entry)),
+	state: entryStateOf(entry),
+});
 
 const pollDetailFor = (entry: PolldexEntry): DexPollDetail => {
 	const head = {
 		number: formatDexNumber(entry),
 		category: CATEGORY_METADATA[entry.categoryCode].name,
+		state: entryStateOf(entry),
 	};
 
 	if (!entry.seen || entry.question === null) return { ...head, locked: true };
@@ -139,46 +151,64 @@ const pollDetailFor = (entry: PolldexEntry): DexPollDetail => {
 		timesSeen: entry.timesSeen,
 		answered: entry.answeredCount,
 		correct: entry.correctCount,
-		accuracy: entry.accuracy,
+	};
+};
+
+const seenFilterFor = (
+	value: string,
+	mark: string,
+	entries: readonly PolldexEntry[]
+): SegmentedItem<string> => {
+	const tally = pollTallyOf(entries);
+
+	return {
+		value,
+		mark,
+		label: tallyLabelOf(tally),
+		meter: { value: tally.held, max: tally.total },
 	};
 };
 
 const categoryFiltersFor = (
 	entries: readonly PolldexEntry[]
 ): readonly SegmentedItem<string>[] => [
-	{ value: ALL_FILTER, label: ALL_FILTER },
-	...presentCategories([...entries]).map((code) => {
-		const tally = pollTallyOf(filterPolldexEntries([...entries], code));
-
-		return {
-			value: code,
-			mark: CATEGORY_METADATA[code].name,
-			label: tallyLabelOf(tally),
-		};
-	}),
+	seenFilterFor(ALL_FILTER, ALL_FILTER, entries),
+	...presentCategories([...entries]).map((code) =>
+		seenFilterFor(
+			code,
+			CATEGORY_METADATA[code].name,
+			filterPolldexEntries([...entries], code)
+		)
+	),
 ];
+
+const filterNameOf = (filter: CategoryCode | "all"): string =>
+	filter === "all" ? ALL_FILTER : CATEGORY_METADATA[filter].name;
 
 export const dexPollsFor = (
 	entries: readonly PolldexEntry[],
 	filter: string = ALL_FILTER,
 	selectedId?: string
 ): DexPollsData => {
-	const categories = presentCategories([...entries]);
-	const shown = sortByDexNumber(
-		filterPolldexEntries([...entries], isCategoryCode(filter) ? filter : "all")
-	);
+	const category = isCategoryCode(filter) ? filter : "all";
+	const shown = sortByDexNumber(filterPolldexEntries([...entries], category));
+	const rows = pollRowsFor(shown);
 	const picked =
-		shown.find((entry) => String(entry.id) === selectedId) ?? shown[0];
+		shown.find((entry) => String(entry.id) === selectedId) ??
+		shown.find((entry) => String(entry.id) === rows[0]?.id) ??
+		shown[0];
 
 	return {
 		filters: categoryFiltersFor(entries),
 		filter,
-		rows: shown.map(pollRowFor),
+		rows,
+		grid: {
+			label: `${filterNameOf(category)} ${shown.length} ${ALL_POLLS_WORD}`,
+			seen: `${pollTallyOf(shown).held}${SEEN_SUFFIX}`,
+			tiles: shown.map(pollTileFor),
+		},
 		selectedId: picked === undefined ? null : String(picked.id),
 		detail: picked === undefined ? null : pollDetailFor(picked),
-		count: tallyLabelOf(pollTallyOf(entries)),
-		meta: plural(categories.length, "category", "categories"),
-		note: POLLS_NOTE,
 	};
 };
 
@@ -338,7 +368,7 @@ export const dexConfigsFor = (
 };
 
 const SERVICES_NOTE =
-	"A service is unlocked once, for good. What a run carries is picked at new run and paid from the archive; a carried service is then pressed in the shop for the run's own storage, at its ladder. Boot Cache banks its storage at the start. Rebuild, Skip the shop and kill -9 ride along free.";
+	"A service unlocks once, for good. Pick what a run carries at new run, paid from your archive, then press it in the shop with run storage. Boot Cache banks its storage at the start.";
 const SERVICES_META = "earned once · carried per run";
 const NOT_YET_SOLD = "not for sale yet";
 const FREE = "free";

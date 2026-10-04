@@ -9,6 +9,7 @@ import {
 	describeConfig,
 	headlineFigureOf,
 	maxLevelOf,
+	openerClashFor,
 	sellRefund,
 	slotsOf,
 	upgradeCoverageRequired,
@@ -209,6 +210,8 @@ const BUMP_WORD = "bump in";
 
 const SKIP_COLOR: KantoColor = "pewter";
 const NOTHING_TO_UPGRADE = "nothing left to upgrade";
+const CLASH_COLOR: KantoColor = "saffron";
+const clashesWith = (label: string) => `clashes with ${label}`;
 const CAP_COLOR: KantoColor = "saffron";
 const CAP_WORDS = "KB left";
 const HOLDING_COLOR: KantoColor = "saffron";
@@ -295,6 +298,16 @@ export const pollNoteFor = (status: ConfigStatus | undefined): PollNote => {
 		};
 
 	return {};
+};
+
+export const openerClashBadgesFor = (
+	config: Config,
+	installed: readonly Config[]
+): readonly ConfigChipBadge[] => {
+	const clash = openerClashFor(config, installed);
+	return clash === undefined
+		? []
+		: [{ label: clashesWith(clash.label), color: CLASH_COLOR }];
 };
 
 export const idleUpgraderBadgesFor = (

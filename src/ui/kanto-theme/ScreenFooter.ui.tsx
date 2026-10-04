@@ -168,7 +168,7 @@ export const ScreenFooter = ({
 };
 
 const BAR =
-	"sticky bottom-0 z-20 -mx-4 flex flex-col px-4 py-3 sm:-mx-8 sm:px-8 md:static md:mx-0 md:px-4 md:py-4";
+	"sticky bottom-[var(--tab-bar,0px)] z-20 -mx-4 flex flex-col px-4 py-3 sm:-mx-8 sm:px-8 md:static md:mx-0 md:px-4 md:py-4";
 const BAR_GROUND =
 	"border-t border-theme-faint bg-theme-faint md:rounded-2xl md:border";
 

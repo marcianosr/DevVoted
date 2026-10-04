@@ -21,6 +21,7 @@ import type {
 import type {
 	DexPollDetail,
 	DexPollRow,
+	DexPollTile,
 	DexPollsProps,
 } from "~/ui/kanto-theme/DexPolls.ui";
 import type {
@@ -45,7 +46,6 @@ type PollFixture = {
 	timesSeen?: number;
 	answered?: number;
 	correct?: number;
-	accuracy?: number | null;
 };
 
 export const dexPollFixtures: readonly PollFixture[] = [
@@ -57,7 +57,6 @@ export const dexPollFixtures: readonly PollFixture[] = [
 		timesSeen: 5,
 		answered: 4,
 		correct: 3,
-		accuracy: 75,
 	},
 	{ id: "4", number: "#004", category: "TypeScript" },
 	{
@@ -68,7 +67,6 @@ export const dexPollFixtures: readonly PollFixture[] = [
 		timesSeen: 2,
 		answered: 2,
 		correct: 2,
-		accuracy: 100,
 	},
 	{
 		id: "3",
@@ -78,42 +76,66 @@ export const dexPollFixtures: readonly PollFixture[] = [
 		timesSeen: 1,
 		answered: 0,
 		correct: 0,
-		accuracy: null,
 	},
 ];
 
-export const dexPollRow = (poll: PollFixture): DexPollRow =>
+const fixtureStateOf = (poll: PollFixture): DexPollTile["state"] => {
+	if (poll.question === undefined) return "unseen";
+	return (poll.correct ?? 0) > 0 ? "caught" : "seen";
+};
+
+export const dexPollTile = (poll: PollFixture): DexPollTile => ({
+	id: poll.id,
+	number: poll.number.replace(/^#0*/, ""),
+	state: fixtureStateOf(poll),
+});
+
+export const dexPollRow = (poll: PollFixture): DexPollRow[] =>
 	poll.question === undefined
-		? { id: poll.id, number: poll.number, locked: true }
-		: {
-				id: poll.id,
-				number: poll.number,
-				question: poll.question,
-				answered: poll.answered ?? 0,
-				correct: poll.correct ?? 0,
-			};
+		? []
+		: [
+				{
+					id: poll.id,
+					number: poll.number,
+					question: poll.question,
+					answered: poll.answered ?? 0,
+					correct: poll.correct ?? 0,
+					state: fixtureStateOf(poll),
+				},
+			];
 
 export const dexPollDetail = (poll: PollFixture): DexPollDetail =>
 	poll.question === undefined
 		? {
 				number: poll.number,
 				category: poll.category,
+				state: fixtureStateOf(poll),
 				locked: true,
 			}
 		: {
 				number: poll.number,
 				category: poll.category,
+				state: fixtureStateOf(poll),
 				question: poll.question,
 				timesSeen: poll.timesSeen ?? 0,
 				answered: poll.answered ?? 0,
 				correct: poll.correct ?? 0,
-				accuracy: poll.accuracy ?? null,
 			};
 
 export const dexPollFilters: readonly SegmentedItem<string>[] = [
-	{ value: "all", label: "all" },
-	{ value: "ts", mark: "TypeScript", label: "1 of 2" },
-	{ value: "js", mark: "JavaScript", label: "2 of 2" },
+	{ value: "all", mark: "all", label: "3 of 4", meter: { value: 3, max: 4 } },
+	{
+		value: "ts",
+		mark: "TypeScript",
+		label: "1 of 2",
+		meter: { value: 1, max: 2 },
+	},
+	{
+		value: "js",
+		mark: "JavaScript",
+		label: "2 of 2",
+		meter: { value: 2, max: 2 },
+	},
 ];
 
 export const dexPollsProps = (
@@ -121,12 +143,14 @@ export const dexPollsProps = (
 ): DexPollsProps => ({
 	filters: dexPollFilters,
 	filter: "all",
-	rows: dexPollFixtures.map(dexPollRow),
+	rows: dexPollFixtures.flatMap(dexPollRow),
+	grid: {
+		label: "all 4 polls",
+		seen: "3 seen",
+		tiles: dexPollFixtures.map(dexPollTile),
+	},
 	selectedId: dexPollFixtures[0].id,
 	detail: dexPollDetail(dexPollFixtures[0]),
-	count: "187 of 423",
-	meta: "12 categories",
-	note: "A poll enters the dex the first time it is dealt to you.",
 	onSelect: () => {},
 	onFilter: () => {},
 	...overrides,

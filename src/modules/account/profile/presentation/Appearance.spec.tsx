@@ -18,14 +18,12 @@ const handlers = {
 	onMoreBorders: vi.fn(),
 	onMoreTitles: vi.fn(),
 	onPickSwatch: vi.fn(),
-	onSave: vi.fn(),
 };
 
 const PALLET = swatchForGate(0);
 const CERULEAN = swatchForGate(2);
 
 const PROPS: AppearanceProps = {
-	face: { name: "misty_cerulean", titles: ["Legacy Tester"] },
 	borders: [
 		{ id: null, name: "Default", picked: false },
 		{
@@ -69,7 +67,6 @@ const PROPS: AppearanceProps = {
 			fill: { state: "undiscovered" },
 		},
 	],
-	canSave: false,
 	...handlers,
 };
 
@@ -82,17 +79,10 @@ describe("Appearance", () => {
 	});
 
 	describe("the swatch row", () => {
-		it("says what a swatch does beneath its heading", () => {
+		it("says what a swatch does beside its heading", () => {
 			renderAppearance();
 
-			expect(
-				screen.getByText(
-					"Tap to change your theme on your profile and dev card"
-				)
-			).toHaveClass("basis-full");
-			expect(
-				screen.queryByText("tap to wear · themes your profile")
-			).not.toBeInTheDocument();
+			expect(screen.getByText(COPY.swatchMeta)).toBeVisible();
 		});
 
 		it("presses the worn swatch down and names it", () => {
@@ -123,28 +113,25 @@ describe("Appearance", () => {
 		});
 	});
 
-	it("badges every figure in the title and border tally", () => {
-		renderAppearance({
-			titleTally: { held: 41, total: 49 },
-			borderTally: { held: 17, total: 32 },
-		});
-
-		for (const figure of ["41", "49", "17", "32"])
-			expect(screen.getByText(figure, { selector: "span" })).toBeVisible();
-	});
-
-	it("holds the save press back while the look is unchanged", () => {
+	it("reads swatch, then titles, then border, in one panel", () => {
 		renderAppearance();
 
-		expect(screen.getByRole("button", { name: COPY.save })).toBeDisabled();
+		expect(
+			screen.getAllByRole("heading").map((heading) => heading.textContent)
+		).toEqual([COPY.swatch, COPY.titles, COPY.border]);
 	});
 
-	it("saves the look once something changed", async () => {
-		renderAppearance({ canSave: true });
+	it("counts owned borders against the roster beside the border heading", () => {
+		renderAppearance({ borderTally: { held: 17, total: 32 } });
 
-		await userEvent.click(screen.getByRole("button", { name: COPY.save }));
+		expect(screen.getByText("17 of 32")).toBeVisible();
+		expect(screen.getByText(COPY.owned)).toBeVisible();
+	});
 
-		expect(handlers.onSave).toHaveBeenCalledOnce();
+	it("says how many titles are left to earn", () => {
+		renderAppearance({ titleTally: { held: 41, total: 49 } });
+
+		expect(screen.getByRole("button", { name: "+8 to earn" })).toBeVisible();
 	});
 
 	it("picks the default border to wear none", async () => {
@@ -193,13 +180,5 @@ describe("Appearance", () => {
 		});
 
 		expect(screen.getByRole("button", { name: "CSS Carrier" })).toBeDisabled();
-	});
-
-	it("names the border being tried on", () => {
-		renderAppearance({ tryingOn: "Merge Conflict" });
-
-		expect(
-			screen.getByText(COPY.tryingOn("Merge Conflict"))
-		).toBeInTheDocument();
 	});
 });

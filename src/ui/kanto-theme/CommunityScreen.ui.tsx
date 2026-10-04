@@ -40,7 +40,6 @@ const CONTROL_SIZE = "md";
 const CONTROL_WIDTH = "full";
 
 export const COPY = {
-	mapHint: "tap an avatar",
 	leaders: "Leaders",
 	boards: "which board",
 	you: "you",
@@ -239,10 +238,7 @@ const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
 
 const WhereEveryoneIs = ({ title, track, empty }: CommunityMap) => (
 	<Panel>
-		<Panel.Header
-			label={title}
-			meta={track === undefined ? undefined : COPY.mapHint}
-		/>
+		<Panel.Header label={title} />
 		<Panel.Body>
 			{track === undefined ? (
 				<Typography variant="hint" as="span">

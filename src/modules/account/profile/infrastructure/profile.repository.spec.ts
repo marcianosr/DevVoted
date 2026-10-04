@@ -29,21 +29,19 @@ describe("fetchPublishedPollCounts", () => {
 		resetDrizzleMock(mock);
 	});
 
-	it("reports the polls an author published and the answers they drew", async () => {
-		mock.results.push([{ published: 12, answers: 1842 }]);
+	it("reports the polls an author published", async () => {
+		mock.results.push([{ published: 12 }]);
 
 		expect(await fetchPublishedPollCounts(BROCK)).toEqual({
 			published: 12,
-			answers: 1842,
 		});
 	});
 
 	it("reads a count that arrives as a string as a number", async () => {
-		mock.results.push([{ published: "3", answers: "40" }]);
+		mock.results.push([{ published: "3" }]);
 
 		expect(await fetchPublishedPollCounts(BROCK)).toEqual({
 			published: 3,
-			answers: 40,
 		});
 	});
 
@@ -52,7 +50,6 @@ describe("fetchPublishedPollCounts", () => {
 
 		expect(await fetchPublishedPollCounts(BROCK)).toEqual({
 			published: 0,
-			answers: 0,
 		});
 	});
 });

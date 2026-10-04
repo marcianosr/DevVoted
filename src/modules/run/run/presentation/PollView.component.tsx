@@ -8,6 +8,7 @@ import { INSTALLED_CARDS_OPEN } from "~/shared/lib/disclosure";
 import {
 	enterActionFor,
 	type PollScreenHandlers,
+	pollFlightFor,
 	pollKeysFor,
 	pollScreenPropsFor,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
@@ -40,7 +41,11 @@ export const PollView = ({
 	const revealing = answered !== undefined;
 	const [before, setBefore] = useState(view);
 	if (!revealing && before !== view) setBefore(view);
-	const feedback = useAnswerFeedback(answered, handlers.onNext);
+	const feedback = useAnswerFeedback(
+		answered,
+		handlers.onNext,
+		pollFlightFor(before, view, answered) !== undefined
+	);
 	useScrollToTopOnSmallScreen(view.poll?.id);
 	const small = useIsSmallScreen();
 	const on = {
@@ -69,7 +74,7 @@ export const PollView = ({
 		landed: feedback.landed,
 		leaving: feedback.leaving,
 		selectedOptionIds,
-		on: { ...on, onLanded: feedback.land },
+		on: { ...on, onLanded: feedback.land, onSettled: feedback.settle },
 		ui: { build, clockMs, buildOpen: !small },
 	});
 
