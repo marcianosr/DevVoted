@@ -1,6 +1,7 @@
 import type {
 	AdminPanelData,
 	AdminUser,
+	AdminVisit,
 } from "~/modules/ops/admin/application/adminPanel.viewmodel";
 
 const COPY = {
@@ -35,6 +36,17 @@ const COPY = {
 	sending: "Sending...",
 	sent: "Sent ✓",
 	sendReminder: "Send reminder",
+	visits: (count: number) => `Visits (${count}, last seen first)`,
+	noVisits: "No visits yet.",
+	visitor: "Visitor",
+	lastSeen: "Last seen",
+	firstSeen: "First seen",
+	date: "Date",
+	route: "Route",
+	hits: "Hits",
+	device: "Device",
+	country: "Country",
+	referrer: "Referrer",
 } as const;
 
 const PAGE = "container mx-auto px-4 py-8";
@@ -42,6 +54,8 @@ const CARD = " rounded-lg shadow-md p-6";
 const CARD_TITLE = "text-xl font-semibold mb-4 text-white";
 const GRID = "grid grid-cols-1 lg:grid-cols-2 gap-8";
 const TH = "text-left py-2 px-3 font-medium text-white";
+const TD = "py-2 px-3 text-white text-xs whitespace-nowrap";
+const AVATAR = "size-8 shrink-0 rounded-full bg-gray-700 object-cover";
 const ERROR_BOX = "mb-6 p-4 bg-red-50 border border-red-200 rounded-lg";
 const MESSAGE_BOX = {
 	success:
@@ -137,12 +151,67 @@ const UserGroup = ({
 	</div>
 );
 
+const VisitorCell = ({ visit }: { visit: AdminVisit }) => (
+	<div className="flex items-center gap-2">
+		{visit.avatarUrl === null ? (
+			<span className={AVATAR} aria-hidden="true" />
+		) : (
+			<img src={visit.avatarUrl} alt="" className={AVATAR} />
+		)}
+		<div className="min-w-0">
+			<p className="text-sm font-medium text-white truncate">{visit.name}</p>
+			<p className="text-xs text-gray-400 font-mono">{visit.visitor}</p>
+		</div>
+	</div>
+);
+
+const VisitsTable = ({ visits }: { visits: readonly AdminVisit[] }) => (
+	<div className="overflow-x-auto">
+		<table className="w-full text-sm">
+			<thead>
+				<tr className="border-b border-gray-600">
+					<th className={TH}>{COPY.visitor}</th>
+					<th className={TH}>{COPY.lastSeen}</th>
+					<th className={TH}>{COPY.firstSeen}</th>
+					<th className={TH}>{COPY.date}</th>
+					<th className={TH}>{COPY.route}</th>
+					<th className={TH}>{COPY.hits}</th>
+					<th className={TH}>{COPY.device}</th>
+					<th className={TH}>{COPY.country}</th>
+					<th className={TH}>{COPY.referrer}</th>
+				</tr>
+			</thead>
+			<tbody>
+				{visits.map((visit) => (
+					<tr
+						key={visit.id}
+						className="border-b border-gray-700 hover:bg-gray-800"
+					>
+						<td className="py-2 px-3">
+							<VisitorCell visit={visit} />
+						</td>
+						<td className={TD}>{visit.lastSeen}</td>
+						<td className={TD}>{visit.firstSeen}</td>
+						<td className={TD}>{visit.date}</td>
+						<td className={TD}>{visit.route}</td>
+						<td className={TD}>{visit.hits}</td>
+						<td className={TD}>{visit.device}</td>
+						<td className={TD}>{visit.country}</td>
+						<td className={TD}>{visit.referrer}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	</div>
+);
+
 export const AdminPanel = ({
 	stats,
 	activePolls,
 	recentResponses,
 	pastPolls,
 	users,
+	visits,
 	message,
 	sendingTo,
 	sentTo,
@@ -240,6 +309,15 @@ export const AdminPanel = ({
 					<p className="text-white">{COPY.noResponses}</p>
 				)}
 			</div>
+		</div>
+
+		<div className={`mt-8${CARD}`}>
+			<h2 className={CARD_TITLE}>{COPY.visits(visits.length)}</h2>
+			{visits.length > 0 ? (
+				<VisitsTable visits={visits} />
+			) : (
+				<p className="text-white">{COPY.noVisits}</p>
+			)}
 		</div>
 
 		<div className={`mt-8${CARD}`}>

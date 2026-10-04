@@ -46,6 +46,36 @@ const DASHBOARD: AdminDashboard = {
 		},
 	],
 	users: [BROCK, MISTY],
+	visits: [
+		{
+			id: 3,
+			visitDate: "2026-05-13",
+			visitorHash: "a1b2c3",
+			routeId: "/run",
+			hits: 4,
+			device: "mobile",
+			country: "NL",
+			referrerHost: null,
+			firstSeenAt: new Date("2026-05-13T08:00:00Z"),
+			lastSeenAt: new Date("2026-05-13T09:30:00Z"),
+			displayName: "Brock",
+			photoUrl: "https://pewter.gym/brock.png",
+		},
+		{
+			id: 2,
+			visitDate: "2026-05-13",
+			visitorHash: "d4e5f6",
+			routeId: "/",
+			hits: 1,
+			device: "desktop",
+			country: null,
+			referrerHost: "github.com",
+			firstSeenAt: new Date("2026-05-13T07:00:00Z"),
+			lastSeenAt: new Date("2026-05-13T07:00:00Z"),
+			displayName: null,
+			photoUrl: null,
+		},
+	],
 	stats: { totalUsers: 2, activeRuns: 1 },
 };
 
@@ -74,6 +104,41 @@ describe("adminPanelDataFor", () => {
 		const [poll] = adminPanelDataFor(DASHBOARD).activePolls;
 
 		expect(poll.opens).toMatch(/^05\/13\/2026 \d\d:00:00$/);
+	});
+});
+
+describe("adminPanelDataFor visits", () => {
+	it("keeps the visits in the order they were last seen", () => {
+		const { visits } = adminPanelDataFor(DASHBOARD);
+
+		expect(visits.map((visit) => visit.id)).toEqual([3, 2]);
+	});
+
+	it("names a signed-in visitor and shows their avatar", () => {
+		const [visit] = adminPanelDataFor(DASHBOARD).visits;
+
+		expect(visit).toMatchObject({
+			name: "Brock",
+			avatarUrl: "https://pewter.gym/brock.png",
+			route: "/run",
+			hits: 4,
+			device: "mobile",
+			country: "NL",
+			referrer: "—",
+		});
+		expect(visit.lastSeen).toMatch(/^05\/13\/2026 \d\d:30:00$/);
+	});
+
+	it("states a visitor with no account as anonymous with their hash and no avatar", () => {
+		const [, visit] = adminPanelDataFor(DASHBOARD).visits;
+
+		expect(visit).toMatchObject({
+			name: "Anonymous",
+			avatarUrl: null,
+			visitor: "d4e5f6",
+			country: "—",
+			referrer: "github.com",
+		});
 	});
 });
 

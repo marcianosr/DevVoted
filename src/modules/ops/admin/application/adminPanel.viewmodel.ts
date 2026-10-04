@@ -4,10 +4,13 @@ import type {
 	AdminDashboard,
 	ReminderRecipient,
 } from "~/modules/ops/admin/application/admin.service";
-import type { AdminUserRow } from "~/modules/ops/admin/infrastructure/admin.repository";
+import type {
+	AdminUserRow,
+	AdminVisitRow,
+} from "~/modules/ops/admin/infrastructure/admin.repository";
 
 const STAMP_FORMAT = "MM/dd/yyyy HH:mm:ss";
-const NO_STAMP = "—";
+const NO_VALUE = "—";
 const ANONYMOUS = "Anonymous";
 const DATE_JOIN = ", ";
 
@@ -45,16 +48,47 @@ export type AdminPanelData = {
 		readonly inRun: readonly AdminUser[];
 		readonly idle: readonly AdminUser[];
 	};
+	readonly visits: readonly AdminVisit[];
+};
+
+export type AdminVisit = {
+	readonly id: number;
+	readonly name: string;
+	readonly avatarUrl: string | null;
+	readonly visitor: string;
+	readonly date: string;
+	readonly route: string;
+	readonly hits: number;
+	readonly device: string;
+	readonly country: string;
+	readonly referrer: string;
+	readonly firstSeen: string;
+	readonly lastSeen: string;
 };
 
 const stampOf = (at: Date | null): string =>
-	at === null ? NO_STAMP : format(at, STAMP_FORMAT);
+	at === null ? NO_VALUE : format(at, STAMP_FORMAT);
 
 const userOf = (row: AdminUserRow): AdminUser => ({
 	id: row.id,
 	displayName: row.displayName,
 	email: row.email,
 	pollsSubmitted: row.pollsSubmitted,
+});
+
+const visitOf = (row: AdminVisitRow): AdminVisit => ({
+	id: row.id,
+	name: row.displayName ?? ANONYMOUS,
+	avatarUrl: row.photoUrl,
+	visitor: row.visitorHash,
+	date: row.visitDate,
+	route: row.routeId,
+	hits: row.hits,
+	device: row.device,
+	country: row.country ?? NO_VALUE,
+	referrer: row.referrerHost ?? NO_VALUE,
+	firstSeen: stampOf(row.firstSeenAt),
+	lastSeen: stampOf(row.lastSeenAt),
 });
 
 export const adminPanelDataFor = (
@@ -88,6 +122,7 @@ export const adminPanelDataFor = (
 		inRun: dashboard.users.filter((user) => user.runId !== null).map(userOf),
 		idle: dashboard.users.filter((user) => user.runId === null).map(userOf),
 	},
+	visits: dashboard.visits.map(visitOf),
 });
 
 export const reminderFailureFor = (email: string): string =>

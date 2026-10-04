@@ -5,9 +5,11 @@ import {
 	type AdminPollRow,
 	type AdminResponseRow,
 	type AdminUserRow,
+	type AdminVisitRow,
 	countActiveRuns,
 	fetchPastDailyPolls,
 	fetchRecentResponses,
+	fetchRecentVisits,
 	fetchTodaysDailyPolls,
 	fetchUsersWithActiveRun,
 } from "~/modules/ops/admin/infrastructure/admin.repository";
@@ -19,19 +21,21 @@ export type AdminDashboard = {
 	readonly pastPolls: readonly AdminPastPollRow[];
 	readonly recentResponses: readonly AdminResponseRow[];
 	readonly users: readonly AdminUserRow[];
+	readonly visits: readonly AdminVisitRow[];
 	readonly stats: { readonly totalUsers: number; readonly activeRuns: number };
 };
 
 export const getAdminDashboardService = () =>
 	handleApiOperation(async (): Promise<AdminDashboard> => {
 		const today = getTodayDateString();
-		const [activePolls, pastPolls, recentResponses, users, activeRuns] =
+		const [activePolls, pastPolls, recentResponses, users, activeRuns, visits] =
 			await Promise.all([
 				fetchTodaysDailyPolls(today),
 				fetchPastDailyPolls(today),
 				fetchRecentResponses(),
 				fetchUsersWithActiveRun(),
 				countActiveRuns(),
+				fetchRecentVisits(),
 			]);
 
 		return {
@@ -39,6 +43,7 @@ export const getAdminDashboardService = () =>
 			pastPolls,
 			recentResponses,
 			users,
+			visits,
 			stats: { totalUsers: users.length, activeRuns },
 		};
 	}, "getAdminDashboard");

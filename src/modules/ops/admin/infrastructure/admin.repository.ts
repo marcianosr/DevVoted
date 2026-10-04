@@ -2,6 +2,7 @@ import { and, count, desc, eq, lt, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
+	appVisitsTable,
 	dailyPollsTable,
 	pollResponsesTable,
 	pollsTable,
@@ -10,6 +11,7 @@ import {
 } from "~/database/schema";
 
 const RECENT_RESPONSES = 20;
+const RECENT_VISITS = 200;
 
 export type AdminPollRow = {
 	readonly id: number;
@@ -43,6 +45,21 @@ export type AdminUserRow = {
 	readonly email: string;
 	readonly pollsSubmitted: number;
 	readonly runId: number | null;
+};
+
+export type AdminVisitRow = {
+	readonly id: number;
+	readonly visitDate: string;
+	readonly visitorHash: string;
+	readonly routeId: string;
+	readonly hits: number;
+	readonly device: string;
+	readonly country: string | null;
+	readonly referrerHost: string | null;
+	readonly firstSeenAt: Date;
+	readonly lastSeenAt: Date;
+	readonly displayName: string | null;
+	readonly photoUrl: string | null;
 };
 
 export const fetchTodaysDailyPolls = async (
@@ -121,3 +138,24 @@ export const countActiveRuns = async (): Promise<number> => {
 
 	return row?.active ?? 0;
 };
+
+export const fetchRecentVisits = async (): Promise<AdminVisitRow[]> =>
+	db
+		.select({
+			id: appVisitsTable.id,
+			visitDate: appVisitsTable.visit_date,
+			visitorHash: appVisitsTable.visitor_hash,
+			routeId: appVisitsTable.route_id,
+			hits: appVisitsTable.hits,
+			device: appVisitsTable.device,
+			country: appVisitsTable.country,
+			referrerHost: appVisitsTable.referrer_host,
+			firstSeenAt: appVisitsTable.first_seen_at,
+			lastSeenAt: appVisitsTable.last_seen_at,
+			displayName: usersTable.display_name,
+			photoUrl: usersTable.photo_url,
+		})
+		.from(appVisitsTable)
+		.leftJoin(usersTable, eq(appVisitsTable.user_id, usersTable.id))
+		.orderBy(desc(appVisitsTable.last_seen_at))
+		.limit(RECENT_VISITS);
