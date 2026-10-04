@@ -14,15 +14,20 @@ const AuthedLayout = () => {
 	);
 };
 
+const NOT_AUTHENTICATED = "Not authenticated";
+
+const isNotAuthenticated = (error: unknown) =>
+	error instanceof Error && error.message === NOT_AUTHENTICATED;
+
 export const Route = createFileRoute("/_authed")({
 	beforeLoad: ({ context }) => {
 		if (!context.user) {
-			throw new Error("Not authenticated");
+			throw new Error(NOT_AUTHENTICATED);
 		}
 	},
 	component: AuthedLayout,
 	errorComponent: ({ error }) => {
-		if (error.message === "Not authenticated") {
+		if (isNotAuthenticated(error)) {
 			return <Login />;
 		}
 
