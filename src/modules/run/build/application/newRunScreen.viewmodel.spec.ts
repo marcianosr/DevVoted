@@ -11,6 +11,7 @@ import {
 	draftPickOf,
 	newRunFooterFor,
 	newRunGroupsFor,
+	newRunHeaderFor,
 	newRunFilterFor,
 	newRunRegistryFor,
 	type WarmBootDeal,
@@ -37,6 +38,15 @@ const MIXED = dealt(
 	CONFIGS.strict,
 	CONFIGS.dependabot
 );
+
+describe("newRunHeaderFor", () => {
+	it("reads New run over a line of subtext", () => {
+		const header = newRunHeaderFor(320);
+
+		expect(header.title).toBe("New run");
+		expect(header.subtitle).toBe("Shades of your career await!");
+	});
+});
 
 describe("newRunGroupsFor", () => {
 	it("reads the groups in their teaching order, not in the order dealt", () => {
@@ -280,6 +290,15 @@ describe("the warm boot panel (ADR-153)", () => {
 		);
 
 		expect(panel.note).toBe(CARRIED_NOTE);
+	});
+
+	it("quotes no archive price on a carried service, because the shop sells it", () => {
+		const panel = bootedPanelFor(
+			{ storageKb: 0, serviceIds: ["extend", "pin"], archiveBytes: 196608 },
+			0
+		);
+
+		expect(panel.rows.some((row) => "price" in row)).toBe(false);
 	});
 
 	it("adds no note to a boot that only banked storage", () => {

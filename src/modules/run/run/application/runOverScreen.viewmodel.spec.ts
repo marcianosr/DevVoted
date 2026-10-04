@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
-import { GATE_COUNT } from "~/modules/run/run/domain/rules.model";
 import {
 	runAnswers,
 	runOverFrame,
@@ -16,11 +15,9 @@ const propsFor = (overrides = {}) => runOverPropsFor(runOverFrame(overrides));
 
 describe("runOverPropsFor", () => {
 	describe("the header", () => {
-		it("pins the bar every run screen wears: the readout it is handed and the balance left", () => {
-			const readout = { runNumber: 7, gate: 4, gates: GATE_COUNT };
-			const { header } = propsFor({ readout, balanceKb: 96 });
+		it("hands the nav the balance left", () => {
+			const { header } = propsFor({ balanceKb: 96 });
 
-			expect(header.readout).toEqual(readout);
 			expect(header.funds?.kb).toBe(96);
 		});
 
@@ -225,6 +222,16 @@ describe("runOverPropsFor", () => {
 			expect(archived.figure).toBe("+158 KB");
 			expect(lost.figure).toBe("354 KB");
 			expect(lost.spent).toBe(true);
+		});
+
+		it("states what a win banked beneath the title, where it is read first", () => {
+			const { header } = propsFor({ won: true, gate: 12, balanceKb: 512 });
+
+			expect(header.subtitle).toBe("+512 KB banked into your archive");
+		});
+
+		it("states nothing banked beneath the title of a run that died", () => {
+			expect(propsFor({ won: false }).header.subtitle).toBeUndefined();
 		});
 
 		it("banks every kilobyte a summit earned", () => {

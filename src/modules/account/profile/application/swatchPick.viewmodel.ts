@@ -39,7 +39,7 @@ export const swatchPicksFor = (
 		const state = pickStateOf(swatch, worn, ownedSwatchIds);
 		return {
 			id: swatch.id,
-			name: swatch.name,
+			name: swatch.gateName,
 			state,
 			fill:
 				state === "locked"

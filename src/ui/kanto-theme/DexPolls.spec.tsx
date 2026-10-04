@@ -38,7 +38,7 @@ describe("DexPolls", () => {
 	it("names the collection and counts it against the roster", () => {
 		render(<DexPolls {...dexPollsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "polls seen" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Polls seen" })).toBeVisible();
 		expect(screen.getByText("187 of 423")).toBeVisible();
 	});
 

@@ -94,8 +94,7 @@ export const NearlyEmpty: Story = { args: { fills: NEARLY_EMPTY } };
 export const PreviewingAnInstallThatCrossesARung: Story = {
 	args: {
 		held: 8,
-		perGateKb: 32,
-		preview: { weight: 10, held: 12, perGateKb: 64 },
+		preview: { name: "AGENTS.md", slots: 2, held: 12 },
 	},
 };
 

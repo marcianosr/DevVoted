@@ -12,6 +12,7 @@ import {
 
 import { leadTextOf } from "./Lead.ui";
 import { NewRunScreen } from "./NewRunScreen.ui";
+import { navRunOf, renderWithNavRun } from "~/test/navRun.harness";
 
 const props = createKantoNewRunScreenProps();
 
@@ -19,9 +20,9 @@ const sentence = (text: string) =>
 	screen.getAllByText((_, element) => element?.textContent === text).at(-1);
 
 const columns = (root: ParentNode): HTMLElement[] =>
-	[...(root.querySelector<HTMLElement>("div.grid")?.children ?? [])].filter(
-		(node): node is HTMLElement => node instanceof HTMLElement
-	);
+	[
+		...(root.querySelector<HTMLElement>("div.grid > div.grid")?.children ?? []),
+	].filter((node): node is HTMLElement => node instanceof HTMLElement);
 
 const dealt = () => columns(document.body)[1];
 
@@ -29,11 +30,11 @@ const offerOf = (name: string) =>
 	dealt().querySelector<HTMLElement>(`[data-config="${name}"]`);
 
 describe("NewRunScreen", () => {
-	it("pins its header, so the balance stays with the hand", () => {
-		render(<NewRunScreen {...props} />);
+	it("hands the nav its balance, so the balance stays with the hand", () => {
+		const { container } = renderWithNavRun(<NewRunScreen {...props} />);
 
-		expect(screen.getByText("Storage balance").closest("header")).toHaveClass(
-			"md:sticky"
+		expect(navRunOf(container)).toContainElement(
+			screen.getByText("Run storage")
 		);
 	});
 

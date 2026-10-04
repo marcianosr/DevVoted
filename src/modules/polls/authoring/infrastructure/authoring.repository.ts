@@ -1,9 +1,18 @@
-import { and, eq, inArray, not, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, not, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import { pollOptionsTable, pollsTable } from "~/database/schema";
-import type { Poll, PollStatus } from "~/modules/polls/poll/domain/poll.model";
+import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
+import {
+	APPROVED_POLL_ARCHIVE_KB,
+	type Poll,
+	type PollStatus,
+} from "~/modules/polls/poll/domain/poll.model";
 import { toPoll } from "~/modules/polls/poll/infrastructure/poll.repository";
+import { STORAGE_UNITS } from "~/shared/lib/storage";
+
+type Updater = Pick<typeof db, "update">;
+
+const APPROVED_POLL_ARCHIVE_BYTES = APPROVED_POLL_ARCHIVE_KB * STORAGE_UNITS.KB;
 
 type NewPollOption = {
 	option: string;
@@ -144,5 +153,35 @@ export const updatePollWithOptions = async (
 			);
 		}
 
+		await payAuthorOnFirstPublish(tx, pollId);
+
 		return toPoll(record);
 	});
+
+export const payAuthorOnFirstPublish = async (
+	tx: Updater,
+	pollId: number
+): Promise<string | null> => {
+	const [paid] = await tx
+		.update(pollsTable)
+		.set({ author_paid_at: new Date() })
+		.where(
+			and(
+				eq(pollsTable.id, pollId),
+				eq(pollsTable.status, "published"),
+				isNull(pollsTable.author_paid_at)
+			)
+		)
+		.returning({ author: pollsTable.created_by });
+
+	if (!paid) return null;
+
+	await tx
+		.update(usersTable)
+		.set({
+			archived_storage: sql`${usersTable.archived_storage} + ${APPROVED_POLL_ARCHIVE_BYTES}`,
+		})
+		.where(eq(usersTable.id, paid.author));
+
+	return paid.author;
+};

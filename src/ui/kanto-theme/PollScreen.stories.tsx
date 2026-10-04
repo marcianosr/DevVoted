@@ -127,6 +127,8 @@ export const BuildFolded: Story = {
 	args: { buildFooter: createKantoBuildFooterProps({ open: false }) },
 };
 
+export const Combo: Story = { args: { combo: "3 in a row!" } };
+
 export const NoAudits: Story = { args: { audits: [] } };
 
 export const OneAudit: Story = { args: { audits: [kantoAudits[0]] } };

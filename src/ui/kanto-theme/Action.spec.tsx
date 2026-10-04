@@ -67,7 +67,7 @@ describe("Action", () => {
 
 		expect(
 			container.querySelector("[data-swatch-theme='gate-pallet']")
-		).toHaveClass("bg-theme-raised");
+		).toHaveClass("border-dashed", "border-theme");
 	});
 
 	it("carries no mark for a press that stands outside a run", () => {
@@ -88,5 +88,19 @@ describe("Action", () => {
 			"border-current"
 		);
 		expect(container.querySelector("[data-swatch-theme]")).toBeNull();
+	});
+
+	it("glints only when asked to shine and still pressable", () => {
+		const { rerender } = render(
+			<Action label={LABEL} shine onPress={vi.fn()} />
+		);
+
+		expect(screen.getByRole("button")).toHaveClass("press-sheen");
+
+		rerender(<Action label={LABEL} shine />);
+		expect(screen.getByRole("button")).not.toHaveClass("press-sheen");
+
+		rerender(<Action label={LABEL} onPress={vi.fn()} />);
+		expect(screen.getByRole("button")).not.toHaveClass("press-sheen");
 	});
 });

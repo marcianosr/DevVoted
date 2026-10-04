@@ -69,3 +69,10 @@ Best run, seats, run history and the collection counts are no longer rendered. T
 components and viewmodel functions stay in the tree for now: they are uncommitted
 work from the session that built this ADR, and deleting untracked files cannot be
 undone. Removing them is a follow-up.
+
+## Amendment 2026-10-04: the hero draws no swatch track
+
+The hero's swatch track and its "a gate taken at 100% coverage" line are gone. The
+swatches trophy already states the count, and the Appearance tab shows every swatch
+by name (Pallet, Pewter, …, no "Swatch" suffix) under one line on what wearing one
+does: "Tap to change your theme on your profile and dev card".

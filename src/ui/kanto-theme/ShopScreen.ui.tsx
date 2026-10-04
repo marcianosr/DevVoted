@@ -34,6 +34,9 @@ const COPY = {
 	ready: "ready",
 } as const;
 
+const TOP = "contents md:flex md:w-full md:items-center md:gap-8";
+const TOP_TITLE = "min-w-0 md:flex-1";
+const TOP_PRESS = "order-last min-w-0 md:order-none md:flex-1";
 const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const TABS = "w-full md:hidden";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
@@ -146,11 +149,19 @@ export const ShopScreen = ({
 	shut,
 }: ShopScreenProps) => {
 	const [shown, setShown] = useState<ShopTab>(FIRST_TAB);
-	const fundsInFooter = footer !== undefined && header.funds !== undefined;
 
 	return (
 		<Screen gate={header.swatch.theme} width={width} ground={ground}>
-			<Header {...header} pinned fundsOffPhone={fundsInFooter} />
+			<div className={TOP}>
+				<div className={TOP_TITLE}>
+					<Header {...header} />
+				</div>
+				{footer === undefined ? null : (
+					<div className={TOP_PRESS}>
+						<ScreenActions {...footer} />
+					</div>
+				)}
+			</div>
 
 			{audits.length === 0 ? null : (
 				<div className={AUDITS}>
@@ -232,13 +243,6 @@ export const ShopScreen = ({
 					</Pane>
 				</div>
 			</div>
-
-			{footer === undefined ? null : (
-				<ScreenActions
-					{...footer}
-					phoneFunds={fundsInFooter ? header.funds : undefined}
-				/>
-			)}
 		</Screen>
 	);
 };

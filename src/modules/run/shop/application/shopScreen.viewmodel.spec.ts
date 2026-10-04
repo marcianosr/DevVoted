@@ -88,6 +88,20 @@ describe("upgradeChipFor (ADR-053, ADR-097)", () => {
 		});
 	});
 
+	it("names what the leap changes, for the armed press to state", () => {
+		expect(chip.upgrades?.changes).toEqual([{ from: "1.25×", to: "1.75×" }]);
+	});
+
+	it("hands a growing build to the armed press, so it can state the rung it crosses", () => {
+		const scale = { from: 4, to: 6, perGateKb: 16 };
+
+		expect(
+			upgradeChipFor({ ...CONFIGS.js, level: 2 }, 1, { ...deal, scale })
+				.upgrades?.scale
+		).toEqual(scale);
+		expect(chip.upgrades?.scale).toBeUndefined();
+	});
+
 	it("dims a rolled upgrade the balance cannot cover, like any offer", () => {
 		const broke = upgradeChipFor({ ...CONFIGS.js, level: 2 }, 1, {
 			...deal,
@@ -198,12 +212,20 @@ describe("buildChipFor, quoting the refund the run actually pays", () => {
 	});
 });
 
-describe("shopHeaderFor, naming the gate the shop leads into", () => {
-	it("wears the swatch of the gate it opens onto, the one its title names", () => {
+describe("shopHeaderFor, naming the page and the gate it leads into", () => {
+	it("reads Registry over a line of subtext", () => {
 		const header = shopHeaderFor(2, 240);
 
-		expect(header.title).toBe("Vermilion Shop");
-		expect(header.swatch?.theme).toBe("gate-vermilion");
+		expect(header.title).toBe("Registry");
+		expect(header.subtitle).toBe("Improve your build this run!");
+	});
+
+	it("counts no cleared gate under the title", () => {
+		expect(shopHeaderFor(2, 240).note).toBeUndefined();
+	});
+
+	it("wears the swatch of the gate it opens onto", () => {
+		expect(shopHeaderFor(2, 240).swatch?.theme).toBe("gate-vermilion");
 	});
 });
 

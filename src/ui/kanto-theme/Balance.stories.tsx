@@ -14,7 +14,7 @@ const BACK_TO_BACK_MS = 300;
 const meta: Meta<typeof Balance> = {
 	component: Balance,
 	title: "Kanto/Balance",
-	args: { label: "Storage balance", kb: 349 },
+	args: { label: "Run storage", kb: 349 },
 	render: (args) => (
 		<Screen theme="pewter" width="narrow" floor="8rem">
 			<Balance {...args} />
@@ -30,6 +30,10 @@ export const Default: Story = {};
 export const InMegabytes: Story = { args: { kb: 1843 } };
 
 export const Inline: Story = { args: { kb: 96, layout: "inline" } };
+
+export const InlineInTheNav: Story = {
+	args: { kb: 462, layout: "inline", tag: "run" },
+};
 
 export const InlinePreviewingAnInstall: Story = {
 	args: {
@@ -65,7 +69,7 @@ const MovingBalance = () => {
 
 	return (
 		<Screen theme="pewter" width="narrow" floor="12rem">
-			<Balance label="Storage balance" kb={kb} />
+			<Balance label="Run storage" kb={kb} />
 			<div className={CONTROLS}>
 				<button className={PRESS} onClick={() => setKb((held) => held + 32)}>
 					+32 KB payout

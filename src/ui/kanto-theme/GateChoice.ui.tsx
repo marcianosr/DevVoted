@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 
 import { Action, type ActionProps } from "./Action.ui";
 import { Badge } from "./Badge.ui";
-import { Button } from "./Button.ui";
+import { Button, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { Figures } from "./Figures.ui";
@@ -25,6 +25,9 @@ const SECTION = "flex w-full flex-col gap-2";
 const SECTION_HEAD = "flex w-full flex-wrap items-baseline gap-x-3 gap-y-1";
 const SECTION_NOTE = "min-w-0 sm:ml-auto";
 const ROWS = "flex w-full flex-col gap-2";
+const PRESS_ROW = "flex w-full flex-col gap-3 sm:flex-row";
+const PRESS_SEAT = "flex min-w-0 flex-1";
+const ASIDE_SEAT = "flex shrink-0";
 const OPTION =
 	"flex w-full items-center gap-3 rounded-xl px-4 py-3 ring-1 ring-inset";
 const OPTION_RESTING = "ring-theme-faint";
@@ -47,7 +50,9 @@ const COPY = {
 	paid: "The peel is paid",
 } as const;
 const REFUSAL_TONE = "danger";
-const REFUSAL_SIZE = "sm";
+const REFUSAL_SIZE = "lg";
+const ASIDE_SIZE = "lg";
+const ASIDE_TONE = "ambient";
 
 export type GatePeelBadge = { label: string; color: KantoColor };
 
@@ -102,6 +107,7 @@ export type GateCatch = {
 export type GateRefusalAction = {
 	label: string;
 	icon?: IconName;
+	iconAt?: IconPlacement;
 	onPress?: () => void;
 };
 
@@ -117,6 +123,7 @@ export type GateChoiceProps = {
 	options?: GatePeelRadio | GatePeelMix;
 	refusal: GateRefusal;
 	press?: ActionProps;
+	asides?: readonly GateRefusalAction[];
 };
 
 const fillsOf = (
@@ -241,6 +248,37 @@ const Owed = ({ owed }: { owed?: string }) => (
 const Options = ({ options }: { options: GatePeelRadio | GatePeelMix }) =>
 	options.kind === "radio" ? <Radio {...options} /> : <Mix {...options} />;
 
+const AsidePress = ({ aside }: { aside: GateRefusalAction }) => (
+	<span className={ASIDE_SEAT}>
+		<Button
+			size={ASIDE_SIZE}
+			tone={ASIDE_TONE}
+			label={aside.label}
+			icon={aside.icon}
+			iconAt={aside.iconAt}
+			disabled={aside.onPress === undefined}
+			onPress={aside.onPress}
+		/>
+	</span>
+);
+
+const PressRow = ({
+	press,
+	asides,
+}: {
+	press: ActionProps;
+	asides: readonly GateRefusalAction[];
+}) => (
+	<div className={PRESS_ROW}>
+		<span className={PRESS_SEAT}>
+			<Action {...press} />
+		</span>
+		{asides.map((aside) => (
+			<AsidePress key={aside.label} aside={aside} />
+		))}
+	</div>
+);
+
 const Refusal = ({ note, action }: GateRefusal) => (
 	<Panel.Footer
 		trailing={
@@ -267,6 +305,7 @@ export const GateChoice = ({
 	options,
 	refusal,
 	press,
+	asides = [],
 }: GateChoiceProps) => (
 	<section className={CHOICE}>
 		<Panel>
@@ -284,7 +323,9 @@ export const GateChoice = ({
 					</Section>
 				)}
 
-				{press === undefined ? null : <Action {...press} />}
+				{press === undefined ? null : (
+					<PressRow press={press} asides={asides} />
+				)}
 
 				{options === undefined ? null : <Options options={options} />}
 			</Panel.Body>

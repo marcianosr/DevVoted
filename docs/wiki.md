@@ -69,14 +69,16 @@ _Balatro_ (configs as Jokers, the equation reveal), _Banjo-Kazooie_'s Furnace Fu
 A run is a multi-day climb through numbered gates. Each calendar day one shared
 **daily seed** hands every player the same 5 polls: **1 gate = 1 day = 5 polls**.
 Answer them and the run locks until tomorrow, when a fresh 5-poll **segment** is
-appended.
+appended. A segment never repeats a poll the run has already answered: such a poll is
+replaced by the next one in that day's own shuffle of the poll pool, so everyone who
+needs a replacement that day gets the same one, and every day still deals five.
 
 Runs persist across days and never expire; a partly answered gate fills up across
 the day boundary, and yesterday's unplayed polls are dropped rather than failed. The
 hub's press says so once a day is part-answered — "3 of today's 5 left · they do not
 carry to tomorrow" — because stopping early is a choice, not an accident, and the
 forfeit used to be silent. The hub (ADR-147) leads with a strip (run number, gate, balance);
-the pinned header on poll, prep, shop, new run, gate result, review and run over repeats the run number and gate. Under the hub strip sits the press: **Continue to <gate>** while polls are ready, **<gate> opens in Xh Ym**
+the other run screens leave the run number and gate to the hub and carry the swatch track and balance in the nav (ADR-183). The nav names that balance **run** beside its figure (`💾 run 462 KB`), because the profile menu and the border shop state the other wallet, **archived** storage, on the same pages. Under the hub strip sits the press: **Continue to <gate>** while polls are ready, **<gate> opens in Xh Ym**
 once the day is spent, when the shop becomes the live press. With no run open, a spent day reads **New polls in Xh Ym**
 instead of a start press: whether the day is spent is counted from every poll the player answered today, across all runs, never from one run's list. Under it, **Run so far**
 lists each closed gate's grade and earned KB and projects the next gate (**not started** until its first poll is answered), and **Build**
@@ -125,8 +127,8 @@ past the demand, and a tenth of it (`HEAD_START_SHARE`) opens the next gate as a
 start, never more than that gate's floor, so a head start alone can only read SHAKY and
 never clears; nothing else carries. The poll screen's bar reads the percent like every other
 bar, and its lead line counts the units against the slots (ADR-156); the debrief
-names the slots ahead, and prep's Scoring fold counts **the codebase** and says what
-one unit is worth there (ADR-149). A failed attempt keeps the head start it opened
+names the slots ahead, and prep's Scoring says what a right
+answer adds there. A failed attempt keeps the head start it opened
 with, so a retry replays the window against the same demand.
 
 Configs demand nothing ([4.1](#41-what-a-config-is)): all friction lives on the gate.
@@ -384,7 +386,10 @@ only.
 bar, which moves when it lands. A wrong answer turns its option cinnabar, marks the right
 one, and shakes the card. Each answered option rings and glows once in its verdict colour and
 its ✓ or ✗ pops in. The poll screen then moves on by itself: 650ms after a right
-answer, 900ms after a wrong one. The bar is a dim band ladder with a lit copy clipped to
+answer, 900ms after a wrong one: the card slides away left for the last 180ms of
+that hold, the next poll slides in from the right and deals its options in one by one, and
+two or more right answers in a row in the gate pop **2 in a row!** over the card
+(DVTD-yp24). With reduced motion none of it moves. The bar is a dim band ladder with a lit copy clipped to
 the reading. The accuracy bar states the multiplier as a range, sure to best, both read
 with every unseen poll a multiple, so the sealed mix never shows.
 
@@ -493,8 +498,15 @@ victory banks **100%**, death banks **gatesCleared ÷ 13** (die having cleared 6
 **nothing**, so walking away mid-gate is never a cash-out. A tag-rescued run
 ([5.2](#52-the-shop)) banks only the gates it actually climbed.
 
-🟡 Continue-past-victory is confirmed but unbuilt. The victory _reward_ is undecided,
-under one constraint: it must not be claimable by a zero-effort farm run.
+**The victory reward** (ADR-184): a win from Pallet enters the **Hall of Fame** on the
+community board ([7.1](#71-the-community-board)) and grants the **Champion border**
+([6.5](#65-borders-and-seasons)). A run a git tag checked out higher still banks its
+credit but is not entered, so the reward cannot be had by climbing two gates. The
+Champion gate wears prismatic accents: its lit coverage, its start press and its panel
+glyphs carry the Kanto gradient over the usual dark ground.
+
+🟡 Continue-past-victory is confirmed but unbuilt: the gates past the summit are named
+**Champion+1, Champion+2, …** (DVTD-yzyg).
 
 **Balance baseline.** A bare build earns one unit a right answer, times the accuracy
 the run has carried (ADR-181). The guard is `runAction.model.spec.ts`, which plays whole runs
@@ -624,8 +636,16 @@ is the one way a build can sit over its space. On a phone, where there is no hov
 config's own chip stands in for it: opening a chip's panel lights its box on the track
 and prices it on the line. Width carries no swatch: badges come from full bars.
 
-**Managing configs.** Click any config chip for its popover: **Install**, **Sell**,
-**Minify**, or **Upgrade**. A sell refunds half the draft cost in KB, halved again
+**Managing configs.** A config card buys and sells through a full-width press at its foot,
+in the screen's colour and shimmering while it can be pressed: **Install · 64 KB** on an
+offer (grey and still, the whole card dimmed, when you cannot afford it) and **Uninstall**
+on your build, red, its refund on the press, with **↑ v2 · 64 KB** beside it in a drifting
+rainbow when an upgrade is offered. Folded, a card is one compact row: its weight, its name with
+the effect on one line under it, and on the right its version and its price or refund.
+Unfolding shows the description, the badges and the presses. Offers start unfolded,
+your build's configs folded. The fold
+opens and shuts smoothly, offers flip in as they are dealt, and the storage bar slides to
+its new shares as a config arrives, drawn still when the screen opens (DVTD-bjb4, DVTD-p806). A sell refunds half the draft cost in KB, halved again
 while Freemium discounts the draft and zeroed entirely while WTFPL is installed;
 the press quotes whichever of those the run would actually pay, and states no
 figure at all where that is nothing. Anything can be sold except your last config,
@@ -971,9 +991,12 @@ threshold — not the draft price — the real cost of a config.
 
 **Crossing a rung arms the install press.** Before any press, an offer that would
 raise the bill wears what it adds to it (`↻ +16 KB a gate`, saffron), so the bill is
-read while browsing, not only once a press is armed. The first press states
-`Build space scales 4 → 6` and `Upkeep becomes 16 KB a gate`, and the second
-installs. An install that fits the rung already rented is one press,
+read while browsing, not only once a press is armed. The first press rings the card in
+saffron and swaps its foot for a ledger: **Doesn't fit.** Installing grows your build,
+then `weight 4 → 6`, `pay now −64 KB` and `upkeep −16 KB every gate`, above a saffron
+`Install · 64 KB` and a `cancel`. The build's storage bar draws the config hatched in
+saffron after the rest (`preview · Linter takes 2 weight, the build grows to 6`). The
+second press installs; cancel stands it down. An install that fits the rung already rented is one press,
 unless **YAGNI** is held: its discount is paid per empty slot ([4.3](#43-roster)), so
 every install then arms and states the new bill before it commits. Selling narrows the rung again immediately, and refunds what the build is owed —
 half the draft cost, or less where a config discounts or zeroes it.
@@ -1054,10 +1077,13 @@ unmet coverage are different problems and read differently.
 ### 6.1 Archived storage
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
-(100% victory, proportional on death, 0% on abandon). It is the account's one
-persistent wallet, and it buys two things (ADR-112, ADR-153):
+(100% victory, proportional on death, 0% on abandon). A suggested poll pays into it too:
+the first time an admin publishes it, its author banks a flat **16 KB**, once per poll
+(ADR-185). It is the account's one persistent wallet, and it buys two things
+(ADR-112, ADR-153):
 
-- **Appearance** — profile borders, 256 KB to 32 MB, bought on the profile.
+- **Appearance** — profile borders, 256 KB to 32 MB, bought on the profile (and the
+  Champion border at a joke 10 TB, ADR-184).
 - **A warm boot** — on the new run screen, while the run is still being configured
   ([8](#8-interface)). **Boot Cache** banks run storage at two archived KB per KB, in
   three rungs (128 → 64, 256 → 128, 512 → 256 KB); pick one. **Extend** and the
@@ -1166,9 +1192,10 @@ theme is a lightened indigo and the Champion wears fuchsia, both for readability
 the celadon/cinnabar pass-fail moods still override the gate theme on reward and strip
 screens.
 
-Swatches surface on the swatch track of every pinned run header, as a row in the gate
-debrief's Earned panel (ADR-154), on the run-over screen, on a visitor's record
-([6.7](#67-your-profile)), and in the Dex's Swatches and Runs tabs.
+Swatches surface on the swatch track in the nav (ADR-183), as a row in the gate
+debrief's Earned panel (ADR-154), on the run-over screen, in the profile's Appearance
+tab, where each is named by its gate alone (Pallet, Pewter, …) and wearing one themes
+your profile and dev card, and in the Dex's Swatches and Runs tabs.
 
 🟡 **Collect Swatches** (DVTD-g8ty): a _per-category_ cosmetic chip earned through
 mastery, a separate collection that reuses the name deliberately.
@@ -1291,7 +1318,10 @@ Avatar borders are decorative unlockables bought on your profile's borders tab
 on your card first and turns its price into a buy press; a bought border joins
 your draft look, and **Save look** on the appearance tab wears it (ADR-144). An equipped border is worn wherever the game draws you, including the
 byline crediting a poll you wrote ([8](#8-interface)), which is where other players
-meet it; 🟡 rarity-based border unlocks via meta-progression are planned. Runs and
+meet it. The **Champion border** is the one border a run can earn: a win from Pallet
+puts it in your collection, and the shop also sells it for 10 TB, a price no account
+will reach (ADR-184); its card reads "win a run, or" above the price. 🟡 rarity-based
+border unlocks via meta-progression are planned. Runs and
 leaderboards live inside **seasons** (upcoming, active, finished, archived), the
 temporal container for competitive resets.
 
@@ -1386,8 +1416,7 @@ Every player has one page, at `/profile/$userId`, and it opens with a **hero**
 (ADR-180): the border you wear, your avatar drawn large, your name as the page's
 heading, your handle, rank and the titles you wear. Under them stand three
 **trophies**: the **deepest gate** you have reached and the **swatches** you have
-minted, each out of 13, and the **runs won** (Champion clears). The whole gate
-ladder follows as a swatch track, with one line saying what mints one. Depth and
+minted, each out of 13, and the **runs won** (Champion clears). Depth and
 swatches are two different readings: a swatch needs a full bar
 ([6.3](#63-swatches)), so a player who reached gate 9 sloppily owns none. An open
 run counts towards depth, because it is still the furthest they have been.
@@ -1442,12 +1471,13 @@ polls on the same day.
 
 ### 7.1 The community board
 
-The board sits at `/run/community`, one press from prep; a run locked mid-gate for
-the day lands here, with "Back to your run" disabled until local midnight and the
-countdown beside it. The page wears the Kanto kit (`CommunityScreen.ui.tsx`), one
+The board sits at `/run/community`, one press from the shop or the gate result; a run locked mid-gate for
+the day lands here, with "Back to your run" disabled until local midnight. The
+header is titled **Community** and carries one clock badge: **New polls in …** while
+the day's polls are spent, **polls are open** otherwise. The page wears the Kanto kit (`CommunityScreen.ui.tsx`), one
 panel per section. The map spans the page under the header; below it, on a wide
-screen, the day's polls take the left column and today's records, incidents and the
-leaders stack on the right. On a phone they stack in that order. What
+screen, the day's polls take the left column and the Hall of Fame, today's records,
+incidents and the leaders stack on the right. On a phone they stack in that order. What
 the board has to say about the day (still loading, could not be loaded, nothing to
 compare yet) reads as the subtitle under the board's title. Every avatar chip on the
 page — leaders, climbers, fallen — wears the player's equipped border over a GitHub
@@ -1466,6 +1496,14 @@ at), most audits, most installed config, most expensive build, KB generated and 
 spent. KB figures are derived from each run's closes and balance, not a ledger
 (ADR-176). A row draws three faces; its `+N` is a press that opens the rest in a
 popover, each face linking to its player, and so does a poll option's voter stack.
+
+**Hall of Fame** (ADR-184) heads the right column. It draws the reigning champion, the
+last player to win a run from Pallet, as the full player card, with a badge naming
+the date and time of the win (`Champion since 13 May 2026, 14:05`). Under it, **Every
+champion** lists each win newest first, one row per win, so a repeat champion appears
+once per summit, each with their face and the moment they won. Before anyone wins it
+reads "No one has summited yet". It does not change with the day, so it refetches only
+after a run action or every five minutes.
 
 **Category leaders** ([7.3](#73-category-leaders)) is the board's own section: two
 boards of twelve rows, one row per category, one board showing at a time, picked with a
@@ -1598,8 +1636,9 @@ queue if it is ever wanted.
 
 ### 7.5 Other social plans
 
-🟡 **Custom poll creation**: trusted players author their own polls and are rewarded
-for it, because writing a good rhyming poll is genuinely hard work.
+✅ **Custom poll creation**: any player suggests a poll, an admin publishes it, and the
+first publish banks its author 16 KB of archived storage (ADR-185). Pay per answer
+(DVTD-ofah) is still open.
 
 **Loot and fallen runs** (ADR-135): a run that died today carries whatever storage
 the archive credit left behind — `held − round(held × gates / 13)`, the same figure
@@ -1617,11 +1656,13 @@ limit. The pool is the day's dead, identical for everyone.
 
 The game leans hard into its CI metaphor.
 
-- **Run header**: every run screen but the hub pins one header row (ADR-132): the
-  gate's swatch mark, the title ("#0 - Pallet Gate"), the run readout (run number
-  and gate) and the balance, over a **swatch track** of all thirteen gates: the
-  ones you have swept filled, the one underway marked, the rest undiscovered. The
-  hub leads with its own strip instead ([2.1](#21-shape-of-a-run)). Storage reads
+- **Run header** (ADR-183): every run screen but the hub opens on a headline
+  title (the gate, "Pallet Gate", or the page's name: Registry, New run) over one
+  line of subtext. The run itself rides the **top nav** on every signed-in page: a
+  **swatch track** of all thirteen gates (the ones you have swept filled, the one
+  underway marked, the rest undiscovered) and the balance. A run screen hands the
+  nav its own reading, so the shop's "after install" preview shows there. The hub
+  leads with its own strip ([2.1](#21-shape-of-a-run)). Storage reads
   as a **balance**, "320 KB" over the word `balance`, and no bar. Nothing caps
   storage ([5.1](#51-storage-kb)), so there is no ceiling to draw against: a bar
   would need a full mark it does not have, and read as a tank emptying besides.
@@ -1657,29 +1698,28 @@ The game leans hard into its CI metaphor.
   pays — **finish at the lowest clearing band or better**, stated with its line
   ("Finish at OK (25%) or better"), which earns the advance to the next gate by
   name and the KB that band pays _or more_, and **reach 100% coverage**, which earns the
-  gate's swatch and the KB PERFECT pays. Neither is ticked (ADR-136). Then today's gate's answers as a row of
-  five squares, and the coverage drawn as a **ladder** (ADR-149): the coverage bar at
+  gate's swatch and the KB PERFECT pays. Neither is ticked (ADR-136). Then the coverage
+  drawn as a **ladder** (ADR-149): the coverage bar at
   true scale with the pin and each line numbered, so the room each band has at this gate
   shows, then one row per band, worst first, naming the band, its range and what
   finishing there pays — a negative for SHAKY's peel (`no peel` at Pallet, which takes
   none), `the run ends` for DANGER —
-  with PERFECT last at 100 and the row the run stands in ringed. Under the ladder one line
-  states the points to the next band up and the polls left in the window ("+9.9% to
-  reach OK · 3 polls left"); the footnote
-  says the pay is received at the end of the gate and what a peel is settled in. On the right, **Scoring** folds shut, its strip listing
-  what an answer pays there, one line each (single +20%, multiple up to +40%, accuracy up
-  to ×1.08 on a fresh run): a single answer pays 0 or 1 credit, a multiple
-  answer 0 to 2 by share, two statements give the multiplier curve from the bonus the run carries (one step per count of right answers, under its sentence) and the line,
-  and a table lists a right single's points and the HEALTHY line for every gate reached,
-  the next gate and the last — the gates ahead keep their names and hide their figures
-  (ADR-149). Then **the five polls**, counting which of three facts (answer types,
-  options each, categories) are revealed: `0 of 3` until a prefetcher is installed,
-  which reveals all three and is named. Then the gate's **audits** with the bill a
+  with PERFECT last at 100 and the row the run stands in ringed. The footnote
+  says the pay is received at the end of the gate and what a peel is settled in. On the
+  right, **Scoring** is three rows (DVTD-a99y): **Single choice** with what a right single
+  adds (+20% at Pallet) and its credit steps under it (0, 1), **Multiple choice up to**
+  with the best multiple (+40%) and its steps (0 to 2 by share), and **Accuracy Bonus**
+  with the multiplier a flawless window reaches from the bonus the run carries (up to
+  ×1.08 on a fresh run). Then **the five polls** as five dashed tiles in the gate's
+  colour that rattle left to right every five seconds: a `?` each, badged **sealed**,
+  until a prefetcher is installed; then each tile names its poll's category (v2 adds
+  its answer type and option count), the badge credits the config, and a **next gate**
+  row tallies the next gate's categories. Then the gate's **audits** with the bill a
   clear will settle, naming the rival who filed any incident among them; an
   incident is filed from the community board ([7.4](#74-interference)). The audits
   panel draws shut until gate 3, naming the gate that opens it (ADR-105). The build is
-  not on it (ADR-078). The footer leaves for the community board or back where you came
-  from, and starts the gate.
+  not on it (ADR-078). The right column closes on the start press, which glints on a
+  loop while it can be pressed, with the way back (to the build or the shop) under it.
 - **Size**: the slots a config fills, stated as a figure in its **weight block**
   ahead of the name on every chip and build row ([4.2](#42-size)); lists and legends
   say it in words ("4 slots"). Fixed-width, so the name column stays flush. The
@@ -1690,6 +1730,10 @@ The game leans hard into its CI metaphor.
 - **Config version**: a segmented track after the name, beside the upgrade press.
   It draws its empty segments, because a version is a distance along a known ladder
   and the room left is what you are buying.
+- **Upgrading** (ADR-123 amended): the upgrade press arms an inset in the card that
+  states what the next version changes, what it costs now and, for a registry
+  upgrade that grows the build, the weight and upkeep; confirm or cancel there. A
+  folded card glows its version tag while an affordable upgrade waits.
 - **An opened config**: the description, then one facts line — version, rate, and
   what it sells for in this build. Shared by every surface that lists configs, ruled
   and indented under the row it belongs to. A config with no upgrade path states no
@@ -1787,13 +1831,15 @@ The game leans hard into its CI metaphor.
   of counting configs. Two vocabularies badge alongside the figures: a band word
   (DANGER…PERFECT) in the ladder's own colour, and a poll category in no colour at
   all. Both are matched case-sensitively, which is what keeps an ordinary word out.
-- **Reward report**: a debrief you unfold. It wears the same pinned header as every
-  run screen (ADR-132): the gate's mark, the title, the run readout and the balance in
-  the band's colour, with a badge each for answers right, streak and any audit that
-  fired. The title reports the close and only the close ("Pallet cleared", "cleared, thin",
+- **Reward report**: a debrief you unfold. It wears the same header as every
+  run screen (ADR-183): the title, with a badge each for answers right, streak and
+  any audit that fired, while the nav's balance reads in the band's colour. The title reports the close and only the close ("Pallet cleared", "cleared, thin",
   "holds", "perfect"); the swatch is a separate prize (ADR-170), so it
   arrives as a row in the Earned panel, stating the coverage held against
-  the 100% it needs, and fills the mark only on a full bar. The track beside it fills the gates the run closed full, never the gates it
+  the 100% it needs. The Coverage panel stands in three sections, the bar, then
+  Accuracy, then Score; the bar's pin reads how far the close reached, past 100% on
+  a surplus ("112% · PERFECT"), while the fill stops at the full bar, and the Surplus
+  row says by how much ("12% past the full bar"). The nav's track fills the gates the run closed full, never the gates it
   merely walked past, and draws the gate in hand open. Under it sit the panels:
   coverage, **Earned**, by category, payout, build changes and the five answers
   (ADR-154). Earned lists the configs unlocked and titles earned on this gate, then the
@@ -1812,7 +1858,8 @@ The game leans hard into its CI metaphor.
   storage**, **Drop Cache**, or **Pick a config** while storage is short. When storage
   or a single config pays alone the moves are radio rows, storage picked first; only
   when nothing pays alone does it fall back to config checkboxes plus a storage top-up.
-  **End the run** is the panel's footer, and Review answers sits under the recap. On a
+  **End the run** is the panel's footer, stating what banks into the archive if you
+  take it ("no retry, bank 20 KB"), and Review answers sits under the recap. On a
   caught gate (ADR-177) the panel's first section is **Drop the catch first**, holding
   Try/Catch alone; the moves below it stay locked and unpicked until it is picked.
 - **Poll review**: a test-runner reporter. One **fold per poll**, wearing the same panel
@@ -1870,7 +1917,7 @@ The game leans hard into its CI metaphor.
 | **Run / Climb**         | One playthrough, spanning multiple real days.                                                                                                                                                                                                                                                                                                      |
 | **Gate**                | A checkpoint auditing a 5-poll window: its coverage demand plus its audits.                                                                                                                                                                                                                                                                        |
 | **Gate number**         | Counts from 0: a run opens on gate 0 and summits on gate 12.                                                                                                                                                                                                                                                                                       |
-| **Codebase**            | Every slot the run has opened, `5 × (gate + 1)`: 5 at Pallet, 65 at the Champion. A unit covers one slot; coverage is units over the codebase. A clear opens five more, which is why the same units read a lower percent the next day. Prep's Scoring fold counts it (ADR-149).                                                                    |
+| **Codebase**            | Every slot the run has opened, `5 × (gate + 1)`: 5 at Pallet, 65 at the Champion. A unit covers one slot; coverage is units over the codebase. A clear opens five more, which is why the same units read a lower percent the next day. Prep's Scoring states what a right answer adds against it.                                                  |
 | **Gate meter**          | The run's coverage, the only score a gate judges. Cumulative: units banked over every slot the run has opened.                                                                                                                                                                                                                                     |
 | **Audit**               | A rule a gate carries (a mirror, a leak, a clock, a shut shop, a config knocked offline). A gate draws its audits date-seeded from its tier's pool, so everyone at that gate today meets the same ones; a rival's incident replaces one draw, and the stake receipt names it and its sender. Gates 3–7 carry one, 8–10 two, 11–12 three (ADR-138). |
 | **Incident**            | An audit bought at the shop's Incident desk and filed against a rival: queued at their next gate, locked when they clear the one before it, survived when they clear under it. Listed on the community board's Incidents panel.                                                                                                                    |
@@ -1945,6 +1992,7 @@ applies. `rules.model.ts` holds most of it.
 | `chainKbFor` / `chainStartKb`                   | `1 KB × 2^(link − 1)`, the link being the run's correct answers since its last wrong one; drawn from `FAUCET_CAP_KB` (ADR-121)           |
 | `upkeepKb` / `emptySlotDiscountKb`              | the rung's KB less `8 × free weight`, floored at 0; 8 is the largest flat step at which crossing a rung is still a loss (ADR-122)        |
 | Archived-storage credit                         | 1 / `gates ÷ 13` / 0 for victory / death / abandon                                                                                       |
+| `APPROVED_POLL_ARCHIVE_KB`                      | 16, paid once on a poll's first publish (ADR-185)                                                                                        |
 
 **Build and shop**
 

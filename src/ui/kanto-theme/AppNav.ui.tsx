@@ -10,11 +10,14 @@ import { plural } from "~/shared/lib/displayValue";
 import { archiveLabel } from "~/shared/lib/storage";
 
 import { Badge } from "./Badge.ui";
+import { Balance } from "./Balance.ui";
 import { Climber } from "./Climber.ui";
 import { Figures } from "./Figures.ui";
 import { Logo } from "./Logo.ui";
 import { NavDisclosure, NavDivider } from "./NavDisclosure.ui";
+import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
+import type { NavRunReading } from "./useNavRun.hook";
 import { WornTitles } from "./WornTitles.ui";
 
 export const COPY = {
@@ -22,11 +25,13 @@ export const COPY = {
 	run: "Daily Run",
 	community: COMMUNITY,
 	suggest: SUGGEST_A_POLL,
+	suggestFor: (reward: string) => `${SUGGEST_A_POLL} · ${reward}`,
 	signIn: "Sign in",
 	signOut: "Sign out",
 	profile: "Profile & Dex",
 	suggested: YOUR_SUGGESTED_POLLS,
 	account: "Your account",
+	runStorage: "run",
 	pollsLeft: (count: number) => `${plural(count, "poll")} left`,
 } as const;
 
@@ -39,6 +44,9 @@ const BAR =
 	"flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-theme-faint bg-theme-faint px-3 py-1.5";
 const GROUP = "flex min-w-0 items-center gap-1";
 const DESKTOP = "hidden md:inline-flex";
+const TRACK = "hidden shrink-0 lg:flex";
+const FUNDS = "ml-auto flex shrink-0";
+const TRACK_SIZE = "small";
 
 const HOME = "shrink-0 rounded-md px-1 py-1 hover:brightness-110";
 
@@ -116,13 +124,19 @@ export type NavTarget = {
 
 export type NavRun = NavTarget & { pollsLeft?: number };
 
+export type NavSuggest = NavTarget & { reward?: string };
+
+const suggestLabelOf = ({ reward }: NavSuggest): string =>
+	reward === undefined ? COPY.suggest : COPY.suggestFor(reward);
+
 export type AppNavProps = {
 	homeHref: string;
 	signInHref: string;
 	run: NavRun;
 	community: NavTarget;
-	suggest: NavTarget;
+	suggest: NavSuggest;
 	viewer?: NavViewer;
+	reading?: NavRunReading;
 	onNavigate?: (href: string) => void;
 };
 
@@ -184,7 +198,7 @@ const Standing = ({ viewer }: { viewer: NavViewer }) => (
 type AccountMenuProps = {
 	viewer: NavViewer;
 	community: NavTarget;
-	suggest: NavTarget;
+	suggest: NavSuggest;
 	onNavigate?: (href: string) => void;
 };
 
@@ -243,7 +257,7 @@ const AccountMenu = ({
 				className={clsx(MENU_ROW, "md:hidden")}
 				onNavigate={onNavigate}
 			>
-				{COPY.suggest}
+				{suggestLabelOf(suggest)}
 			</NavAnchor>
 
 			<NavDivider />
@@ -262,6 +276,7 @@ export const AppNav = ({
 	community,
 	suggest,
 	viewer,
+	reading,
 	onNavigate,
 }: AppNavProps) => (
 	<div className={WRAP}>
@@ -299,12 +314,29 @@ export const AppNav = ({
 						onNavigate={onNavigate}
 					/>
 					<NavItem
-						{...suggest}
-						label={COPY.suggest}
+						href={suggest.href}
+						active={suggest.active}
+						label={suggestLabelOf(suggest)}
 						desktopOnly
 						onNavigate={onNavigate}
 					/>
 				</nav>
+			)}
+			{viewer === undefined || reading === undefined ? null : (
+				<>
+					<span className={TRACK}>
+						<SwatchTrack swatches={reading.swatches} size={TRACK_SIZE} />
+					</span>
+					{reading.funds === undefined ? null : (
+						<span className={FUNDS}>
+							<Balance
+								{...reading.funds}
+								layout="inline"
+								tag={COPY.runStorage}
+							/>
+						</span>
+					)}
+				</>
 			)}
 		</header>
 

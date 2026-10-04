@@ -8,7 +8,6 @@ import { PrepScreen } from "~/ui/kanto-theme/PrepScreen.ui";
 
 export type PrepViewProps = PrepScreenHandlers & {
 	view: RunView;
-	runNumber?: number | null;
 	backLabel?: string;
 	startRefusal?: string;
 	approval?: ApprovalBoard | null;
@@ -16,7 +15,6 @@ export type PrepViewProps = PrepScreenHandlers & {
 
 export const PrepView = ({
 	view,
-	runNumber = null,
 	backLabel,
 	startRefusal,
 	approval,
@@ -25,7 +23,6 @@ export const PrepView = ({
 	<PrepScreen
 		{...prepScreenPropsFor({
 			view,
-			runNumber,
 			backLabel,
 			startRefusal,
 			approval,

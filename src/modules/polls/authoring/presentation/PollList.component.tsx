@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import {
+	APPROVED_POLL_REWARD,
 	EMPTY_FILTER,
 	PAGE_SIZE,
 	pollListChoicesOf,
@@ -55,6 +56,7 @@ export const PollList = () => {
 	return (
 		<PollListUI
 			admin={canAdminister}
+			reward={APPROVED_POLL_REWARD}
 			total={all.length}
 			matching={page.total}
 			shown={page.shown}

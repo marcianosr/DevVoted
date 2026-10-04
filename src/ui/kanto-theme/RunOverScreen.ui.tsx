@@ -287,7 +287,7 @@ export const RunOverScreen = ({
 }: RunOverScreenProps) => {
 	const body = (
 		<>
-			<Header {...header} noteFigures pinned />
+			<Header {...header} noteFigures />
 
 			<CoveragePanel bar={bar} {...coverage} />
 

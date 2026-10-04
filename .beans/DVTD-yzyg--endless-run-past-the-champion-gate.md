@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: high
 created_at: 2026-08-25T10:54:18Z
-updated_at: 2026-10-03T17:53:58Z
+updated_at: 2026-10-04T11:23:34Z
 parent: DVTD-kulw
 ---
 
@@ -111,3 +111,7 @@ Candidates for the endless stretch, which the player stays in until the run dies
 - **Battle Tower** (recommended): in the games you stay in the Battle Tower until you lose, with your streak as the score, which is this mode exactly. Floors count upward (3F, 4F…), which matches the game's climbing language. Downside: it comes from Johto (Pokémon Crystal), not Kanto.
 - **Unknown Dungeon**: Cerulean Cave's other name. It is Kanto postgame and clashes with nothing, but its floors count downward (B1F, B2F), against the climb.
 - Rejected: Hall of Fame (a record of a win, not a place you stay in; better as the win screen's name), Cave of Ordeals (not Pokémon).
+
+## Naming decided (2026-10-04, Marciano)
+
+The gates past the summit are **Champion+1, Champion+2, …**, counting upward like the climb. This replaces the Battle Tower / Unknown Dungeon candidates above. The win itself is recorded at the Champion (ADR-184), so the stretch never has to pay for it.

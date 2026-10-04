@@ -25,7 +25,7 @@ const SIZE = {
 
 const FILL = {
 	discovered: "bg-theme",
-	current: "border border-dashed border-theme-faint bg-theme-raised",
+	current: "border border-dashed border-theme",
 	undiscovered: "bg-theme-raised",
 } satisfies Record<SwatchState, string>;
 

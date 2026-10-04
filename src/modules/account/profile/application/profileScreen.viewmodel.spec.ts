@@ -132,12 +132,8 @@ describe("profileCardFor", () => {
 		expect(profileCardFor(IDENTITY, true).you).toBe(true);
 	});
 
-	it("states the rank the answer count has reached", () => {
-		expect(profileCardFor(IDENTITY, false).rank).toBe("'Long Polling'");
-	});
-
-	it("puts an account that has answered nothing on the first rung", () => {
-		expect(profileCardFor(BARE, false).rank).toBe("Poll Newbie");
+	it("states no rank, because a poll-count rung is a title the player picks", () => {
+		expect(profileCardFor(IDENTITY, false)).not.toHaveProperty("rank");
 	});
 });
 
@@ -248,19 +244,11 @@ describe("profileHeroFor", () => {
 			expect(trophy).not.toHaveProperty("yours");
 	});
 
-	it("draws a swatch for every gate, filling only the ones they minted", () => {
-		const { swatches } = profileHeroFor(IDENTITY, RECORD, false);
+	it("hands the hero no swatch track and no note on what mints one", () => {
+		const hero = profileHeroFor(IDENTITY, RECORD, false);
 
-		expect(swatches).toHaveLength(13);
-		expect(swatches.filter((fill) => fill.state === "discovered")).toHaveLength(
-			5
-		);
-	});
-
-	it("says what mints a swatch, because the track is the page's signature", () => {
-		expect(profileHeroFor(IDENTITY, RECORD, false).note).toBe(
-			"A swatch is a gate taken at 100% coverage."
-		);
+		expect(hero).not.toHaveProperty("swatches");
+		expect(hero).not.toHaveProperty("note");
 	});
 });
 

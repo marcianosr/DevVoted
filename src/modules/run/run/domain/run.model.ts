@@ -69,6 +69,7 @@ export type LastClose = {
 	readonly closing?: GateClosing;
 	readonly heldBy?: GateHoldReason;
 	readonly held?: number;
+	readonly reached?: number;
 	readonly ladder?: GateLadder;
 	readonly correct?: number;
 	readonly accuracy?: AccuracyTally;
@@ -205,20 +206,6 @@ export const pickBudgetFor = (
 			0
 		);
 
-export type AnswerTypeSplit = {
-	readonly single: number;
-	readonly multiple: number;
-};
-
-export const answerTypesOf = (polls: readonly RunPoll[]): AnswerTypeSplit =>
-	polls.reduce(
-		(split, poll) => ({
-			single: split.single + (poll.answerType === "single" ? 1 : 0),
-			multiple: split.multiple + (poll.answerType === "multiple" ? 1 : 0),
-		}),
-		{ single: 0, multiple: 0 }
-	);
-
 export const windowStartIndex = (
 	state: Pick<RunState, "currentIndex" | "window">
 ): number => state.currentIndex - state.window.answered;
@@ -299,20 +286,24 @@ export const withGateAudits = (
 	gate: number,
 	date: string,
 	locked: readonly LockedIncident[]
-): RunState => {
-	const auditSchedule = {
-		...scheduleOf(state),
-		[gate]: gateAuditsFor(
+): RunState =>
+	withScheduledAudits(
+		{ ...state, incidents: [...(state.incidents ?? []), ...locked] },
+		gate,
+		gateAuditsFor(
 			gate,
 			date,
 			locked.map((incident) => incident.auditId)
-		),
-	};
-	const next = {
-		...state,
-		auditSchedule,
-		incidents: [...(state.incidents ?? []), ...locked],
-	};
+		)
+	);
+
+export const withScheduledAudits = (
+	state: RunState,
+	gate: number,
+	audits: readonly AuditId[]
+): RunState => {
+	const auditSchedule = { ...scheduleOf(state), [gate]: audits };
+	const next = { ...state, auditSchedule };
 	if (gate !== state.gatesCleared) return next;
 	return {
 		...next,
@@ -407,6 +398,9 @@ export const liveConfigsOf = (state: RunState): readonly Config[] => {
 
 export const canStart = (build: Build): boolean =>
 	!isBare(build) && buildSpaceOf({ build }).overflow === 0;
+
+export const entersHallOfFame = (state: RunState): boolean =>
+	state.status === "won" && (state.startedAtGate ?? 0) === 0;
 
 export const isRunOver = (status: RunStatus): boolean =>
 	status === "won" || status === "dead";

@@ -18,6 +18,7 @@ import {
 	type CoverageBandId,
 	atLeastBand,
 	bandOf,
+	coverageGainPercentFor,
 	floorAt,
 	gateOutputOf,
 	healthyAt,
@@ -155,6 +156,17 @@ export const ladderAtClose = (close: GateClose): GateLadder =>
 
 export const heldAtClose = (close: GateClose): number =>
 	roundToOneDecimal(percentOf(runCoverageAtClose(close)));
+
+export const reachedAtClose = (close: GateClose): number =>
+	roundToOneDecimal(
+		Math.max(
+			0,
+			coverageGainPercentFor(
+				close.headStartUnits + close.unitsThisGate,
+				close.gatesCleared
+			)
+		)
+	);
 
 export const bandAtLadder = (
 	held: number,

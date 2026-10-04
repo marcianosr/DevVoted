@@ -96,7 +96,12 @@ const OFFER =
 const shelf = Array.from({ length: 12 }, (_, row) => `Offer ${row + 1}`);
 
 export const Pinned: Story = {
-	args: { funds: fundsAt(96), title: "Vermilion Shop", note: "gate 2 cleared" },
+	args: {
+		funds: fundsAt(96),
+		title: "Registry",
+		subtitle: "Improve your build this run!",
+		note: "gate 2 cleared",
+	},
 	render: (args) => (
 		<Screen theme="pewter" width="narrow">
 			<Header {...args} pinned />

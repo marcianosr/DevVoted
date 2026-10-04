@@ -1,4 +1,5 @@
 import {
+	APPROVED_POLL_ARCHIVE_KB,
 	POLL_STATUSES,
 	type AnswerType,
 	type Poll,
@@ -19,6 +20,7 @@ import {
 } from "~/shared/lib/codeSpans";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 import { pollPathFor } from "~/shared/lib/pollPath";
+import { signedKbLabel } from "~/shared/lib/storage";
 
 const COPY = {
 	everyStatus: "all",
@@ -34,6 +36,8 @@ export const ALL = "all";
 type All = typeof ALL;
 
 export const PAGE_SIZE = 10;
+
+export const APPROVED_POLL_REWARD = signedKbLabel(APPROVED_POLL_ARCHIVE_KB);
 
 const ANSWER_TYPES = [
 	"single",

@@ -8,11 +8,7 @@ import {
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import {
-	GATE_COUNT,
-	VICTORY_GATE,
-	roundToOneDecimal,
-} from "~/modules/run/run/domain/rules.model";
+import { GATE_COUNT, VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import type { CoverageLadder } from "~/ui/kanto-theme/CoverageBar.ui";
 import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 
@@ -27,7 +23,6 @@ import {
 	ladderFor,
 	metaFor,
 	objectivesFor,
-	standingLineFor,
 	type BandOutcomesFrame,
 } from "./bandOutcomes.viewmodel";
 
@@ -55,7 +50,6 @@ const frameFor = (
 	ladder: MID,
 	coverageGainPercent: 4,
 	peelKb: 64,
-	answeredThisGate: 0,
 	payout: (correct) => correct * 32,
 	...over,
 });
@@ -278,7 +272,6 @@ describe("the panel never names the gate's codebase", () => {
 
 		return [
 			props.meta,
-			props.standing,
 			...(props.objectives?.objectives ?? []).flatMap((objective) => [
 				objective.statement,
 				objective.earns,
@@ -366,57 +359,6 @@ describe("the ladder", () => {
 
 	it("ends the run under the floor rather than quoting it a figure", () => {
 		expect(ladderFor(frameFor()).rungs[0].pays).toBe("the run ends");
-	});
-});
-
-describe("the standing line", () => {
-	const text = (over: Partial<BandOutcomesFrame> = {}) =>
-		leadTextOf(standingLineFor(frameFor(over)));
-
-	const fromOf = (ladder: CoverageLadder, band: string) =>
-		coverageRungsFor(ladder).find((rung) => rung.band === band)?.from ?? 0;
-	const pointsTo = (ladder: CoverageLadder, band: string, held: number) =>
-		`+${roundToOneDecimal(fromOf(ladder, band) - held)}%`;
-
-	it("prices the points to the next band up and counts the polls left", () => {
-		expect(text()).toBe(
-			`${pointsTo(MID, "shaky", 0)} to reach SHAKY · 5 polls left`
-		);
-		expect(text({ held: 55 })).toBe(
-			`${pointsTo(MID, "ok", 55)} to reach OK · 5 polls left`
-		);
-		expect(text({ held: 75 })).toBe("+25% to reach PERFECT · 5 polls left");
-	});
-
-	it("badges the points as a gain, the band it reaches, and the polls left as a count", () => {
-		const line = standingLineFor(frameFor({ held: 55 }));
-
-		expect(line).toContainEqual({
-			figure: pointsTo(MID, "ok", 55),
-			gain: true,
-		});
-		expect(line).toContainEqual({ band: "ok" });
-		expect(line).toContainEqual({ figure: "5" });
-	});
-
-	it("reads a single poll in the singular", () => {
-		expect(text({ answeredThisGate: 4 })).toContain("1 poll left");
-	});
-
-	it("counts down the window as it is answered", () => {
-		expect(text({ answeredThisGate: 3 })).toBe(
-			`${pointsTo(MID, "shaky", 0)} to reach SHAKY · 2 polls left`
-		);
-	});
-
-	it("names no band above a full bar", () => {
-		expect(text({ held: 100 })).toBe("5 polls left");
-	});
-
-	it("aims at OK from the calibration gate's floorless start", () => {
-		expect(text({ gate: 0, ladder: CALIBRATION })).toBe(
-			`${pointsTo(CALIBRATION, "ok", 0)} to reach OK · 5 polls left`
-		);
 	});
 });
 

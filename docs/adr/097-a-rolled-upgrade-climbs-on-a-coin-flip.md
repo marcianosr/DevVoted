@@ -97,3 +97,7 @@ made that misread worse (a v3 offer reading `↑ v4`), so the wiring is fixed he
   CONTEXT.md now records the pair rather than reconciling it.
 - `ShopOffer` carries `heldLevel`, so a presenter can state a jump without re-deriving
   the build.
+
+Amended 2026-10-04: a rolled upgrade is confirmed in its card before it drafts
+(ADR-123's armed inset), and is armed by config id rather than by name, so a build
+card and a registry offer for the same config never arm together.

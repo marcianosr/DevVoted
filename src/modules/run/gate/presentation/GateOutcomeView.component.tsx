@@ -9,6 +9,7 @@ import {
 import { useRevealOnce } from "~/modules/run/gate/application/useRevealOnce.hook";
 import type { GateCloseView } from "~/modules/run/run/application/gateClose.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
+import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { GateOutcomeScreen } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
 import { OutcomeReveal } from "~/ui/kanto-theme/OutcomeReveal.ui";
 
@@ -45,6 +46,7 @@ export const GateOutcomeView = ({
 }: GateOutcomeViewProps) => {
 	const [chosen, setChosen] = useState<readonly string[]>([]);
 	const [fromStorage, setFromStorage] = useState(false);
+	const countdown = useNextPollsCountdown();
 
 	if (view.lastClose === null) return null;
 
@@ -54,8 +56,10 @@ export const GateOutcomeView = ({
 				{...gateOutcomeScreenPropsFor({
 					view,
 					close: view.lastClose,
-					runNumber,
 					on,
+					...(view.pollsExhausted && !countdown.isOpen
+						? { nextPollsIn: countdown.remaining }
+						: {}),
 					picks: {
 						chosen,
 						onToggle: (configId) =>

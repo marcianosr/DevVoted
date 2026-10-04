@@ -8,6 +8,7 @@ import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
 import type { KantoColor } from "./colors";
+import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
 import { Icon, type IconName } from "./Icon.ui";
 import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
 import { Panel } from "./Panel.ui";
@@ -98,6 +99,7 @@ export type CommunityScreenProps = {
 	turnout: CommunityTurnout;
 	map: CommunityMap;
 	incidents?: IncidentsPanelProps;
+	hallOfFame?: HallOfFameProps;
 	leaders: readonly CommunityLeaders[];
 	polls: CommunityPolls;
 	width?: ScreenWidth;
@@ -327,6 +329,7 @@ export const CommunityScreen = ({
 	turnout,
 	map,
 	incidents,
+	hallOfFame,
 	leaders,
 	polls,
 	width = "wide",
@@ -338,6 +341,7 @@ export const CommunityScreen = ({
 		<div className={COLUMNS}>
 			<FivePolls {...polls} />
 			<div className={SIDE}>
+				{hallOfFame === undefined ? null : <HallOfFame {...hallOfFame} />}
 				<Turnout {...turnout} />
 				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
 				<LeaderBoards boards={leaders} />

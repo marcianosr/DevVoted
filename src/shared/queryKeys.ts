@@ -77,3 +77,7 @@ export const adminQueryKeys = {
 	all: ["admin"] as const,
 	dashboard: () => [...adminQueryKeys.all, "dashboard"] as const,
 };
+
+export const hallOfFameQueryKeys = {
+	all: ["hall-of-fame"] as const,
+};

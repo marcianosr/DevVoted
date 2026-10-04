@@ -31,7 +31,7 @@ describe("DexControls", () => {
 	it("heads one section with what the account has earned of the whole roster", () => {
 		render(<DexControls {...dexControlsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "services" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Services" })).toBeVisible();
 		expect(screen.getByText("1 of 8")).toBeVisible();
 		expect(screen.getByText("earned once · carried per run")).toBeVisible();
 	});

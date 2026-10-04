@@ -33,7 +33,7 @@ const meta: Meta<typeof AppNav> = {
 		signInHref: SIGN_IN,
 		run: { href: RUN, pollsLeft: 5, active: false },
 		community: { href: COMMUNITY, active: false },
-		suggest: { href: SUGGEST, active: false },
+		suggest: { href: SUGGEST, active: false, reward: "+16 KB" },
 	},
 };
 export default meta;
@@ -77,7 +77,7 @@ export const OnTheCommunity: Story = {
 export const OnTheSuggestion: Story = {
 	args: {
 		viewer: VIEWER,
-		suggest: { href: SUGGEST, active: true },
+		suggest: { href: SUGGEST, active: true, reward: "+16 KB" },
 	},
 };
 

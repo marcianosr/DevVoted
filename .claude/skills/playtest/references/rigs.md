@@ -23,6 +23,8 @@ Dev rig panel (bottom of page):
 - `✓ Answer right` / `✕ Answer wrong`: answer the current poll.
 - `⏩ All right → gate` / `⏩ All wrong → gate`: finish the window and close the gate.
 - `💾 +256 KB storage`: grant storage.
+- `🏆 Jump to the Champion gate`: restarts at gate 12 (Champion) on its prep screen with an 11-config, 16-weight build installed (six category configs, Intellisense, Code Coverage, Telemetry, Build Artifacts, Moore's Law) and the pin storage for gate 12.
+- `Audits on gate N`: toggles any audit onto the gate in front (`withScheduledAudits`), re-reading the pick budget; it shows on prep, poll and shop. Rigged gates start with no drawn audits, so this is the only way to see one in proto-run.
 - Services toggle: unlock any shop service.
 - Configs toggle: install any config into the build.
 - New run from the over screen restarts at the planted pin's gate.

@@ -39,8 +39,10 @@ cannot pay, the press reads **Nothing covers the peel** and only the way out is 
 
 ## Decision 4: the way out sits in the same panel
 
-**End the run** is the panel's footer, `no retry, keep 192 KB`. It no longer has a
-panel of its own.
+**End the run** is the panel's footer, `no retry, bank 59 KB`. It no longer has a
+panel of its own. The figure is what banks into the archive (unspent storage ×
+gates held ÷ 13, the run-over rule), not the run's balance: an earlier `keep 192 KB`
+promised storage the archive never pays (amended 2026-10-04).
 
 ## Consequences
 

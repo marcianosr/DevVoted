@@ -32,6 +32,23 @@ describe("gateCloseViewOf", () => {
 		expect(close?.ladder).toEqual(cleared.lastClose?.ladder);
 	});
 
+	it("carries how far past the full bar the close reached", () => {
+		const cleared = clearGate(started(["js"]));
+
+		expect(cleared.lastClose?.reached).toBeGreaterThanOrEqual(100);
+		expect(gateCloseViewOf(cleared)?.reached).toBe(cleared.lastClose?.reached);
+	});
+
+	it("reads an older close, recorded before the reach was, at its held figure", () => {
+		const closedAtGate8 = {
+			...started(["js"]),
+			gatesCleared: 9,
+			lastClose: { gate: 8, band: "ok" as const, cleared: true, held: 64 },
+		};
+
+		expect(gateCloseViewOf(closedAtGate8)?.reached).toBe(64);
+	});
+
 	it("names the audits the closed gate ran, not the ones waiting at the next gate", () => {
 		const closedAtGate8 = {
 			...started(["js"]),

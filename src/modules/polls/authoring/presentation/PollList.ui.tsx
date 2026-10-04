@@ -20,10 +20,12 @@ import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
 import { Select } from "~/ui/kanto-theme/Select.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
-const COPY = {
+export const COPY = {
 	adminHeading: "Polls",
 	ownHeading: YOUR_SUGGESTED_POLLS,
 	suggest: SUGGEST_A_POLL,
+	reward: (reward: string) =>
+		`Every poll we publish banks ${reward} in your archive.`,
 	search: "Search questions",
 	searchPlaceholder: "search questions…",
 	status: "Status",
@@ -151,6 +153,7 @@ export type PollListProps = {
 	filter: PollListFilter;
 	choices: PollListChoices;
 	suggestHref: string;
+	reward?: string;
 	onFilterChange: (filter: PollListFilter) => void;
 	onLoadMore?: () => void;
 };
@@ -164,6 +167,7 @@ export const PollList = ({
 	filter,
 	choices,
 	suggestHref,
+	reward,
 	onFilterChange,
 	onLoadMore,
 }: PollListProps) => (
@@ -184,6 +188,11 @@ export const PollList = ({
 				/>
 			</span>
 		</div>
+		{admin || reward === undefined ? null : (
+			<Typography variant="hint" as="p">
+				{COPY.reward(reward)}
+			</Typography>
+		)}
 
 		<Panel>
 			<Panel.Body>

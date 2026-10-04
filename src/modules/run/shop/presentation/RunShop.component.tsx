@@ -7,11 +7,9 @@ import {
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
-import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 
 export const RunShop = () => {
 	const { view } = useTodaysRun();
-	const runNumber = useRunNumber();
 	const { send, sendThen, abandon } = useRunActions();
 	const goTo = useRunNavigation();
 	const targets = useAttackTargets(view?.incidentOffer != null);
@@ -23,7 +21,6 @@ export const RunShop = () => {
 
 	return (
 		<ShopView
-			runNumber={runNumber.view}
 			view={view}
 			onDraft={(configId) => send({ type: "draft", configId })}
 			onSell={(configId) => send({ type: "sell", configId })}

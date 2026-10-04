@@ -15,6 +15,7 @@ import { gateSwatchAt } from "~/test/swatchTrack.factory";
 import { stubResizeObserver } from "~/test/resizeObserver.harness";
 
 import { PollScreen } from "./PollScreen.ui";
+import { navRunOf, renderWithNavRun } from "~/test/navRun.harness";
 
 type FakeAnimation = { onfinish: (() => void) | null; cancel: () => void };
 
@@ -67,11 +68,15 @@ describe("PollScreen", () => {
 		);
 	});
 
-	it("leads with the gate, its track and the run's balance", () => {
-		render(<PollScreen {...props} />);
+	it("leads with the gate and hands the nav its track and the run's balance", () => {
+		const { container } = renderWithNavRun(<PollScreen {...props} />);
 
-		expect(screen.getByText("#9 - Cinnabar Gate")).toBeInTheDocument();
-		expect(screen.getByRole("img", { name: "1.8 MB" })).toBeInTheDocument();
+		expect(screen.getByText("Cinnabar Gate")).toBeInTheDocument();
+		const nav = navRunOf(container);
+		expect(nav).toContainElement(
+			screen.getByRole("img", { name: /swatches discovered/ })
+		);
+		expect(nav).toContainElement(screen.getByRole("img", { name: "1.8 MB" }));
 	});
 
 	it("posts every audit the gate is running", () => {
@@ -288,7 +293,7 @@ describe("PollScreen", () => {
 		expect(screen.queryByText("leader")).not.toBeInTheDocument();
 	});
 
-	it("runs the screen as the pinned bar, its track, the poll row, then the build", () => {
+	it("runs the screen as the header, the poll row, then the build", () => {
 		const { container } = render(<PollScreen {...props} />);
 
 		const body = container.querySelector("section > div");
@@ -296,7 +301,7 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual(["header", "div", "section", "div", "footer"]);
+		expect(order).toEqual(["header", "section", "div", "footer"]);
 	});
 
 	it("stands the poll and the coverage readout in one row, poll first", () => {
@@ -561,7 +566,7 @@ describe("PollScreen", () => {
 			child.tagName.toLowerCase()
 		);
 
-		expect(order).toEqual(["header", "div", "section", "div", "footer"]);
+		expect(order).toEqual(["header", "section", "div", "footer"]);
 	});
 
 	it("pins the coverage bar where the answer landed", () => {
@@ -688,6 +693,53 @@ describe("PollScreen while an answer lands", () => {
 		render(<PollScreen {...props} />);
 
 		expect(answered()).not.toHaveClass("answer-shake");
+	});
+
+	it("slides a card in when it arrives and sends it away when it leaves", () => {
+		const { rerender } = render(<PollScreen {...props} pollKey="poll-1" />);
+
+		expect(answered()).toHaveClass("poll-card-enter");
+		expect(answered()).not.toHaveClass("poll-card-leave");
+
+		rerender(<PollScreen {...props} pollKey="poll-1" leaving />);
+		expect(answered()).toHaveClass("poll-card-leave");
+	});
+
+	it("marks a revealed card so its options stay put", () => {
+		const { rerender } = render(<PollScreen {...props} />);
+
+		expect(answered()).not.toHaveClass("poll-card-revealed");
+
+		rerender(<PollScreen {...props} revealed />);
+		expect(answered()).toHaveClass("poll-card-revealed");
+	});
+
+	it("deals a fresh card for the next poll, not the same one restyled", () => {
+		const { rerender } = render(<PollScreen {...props} pollKey="poll-1" />);
+		const first = answered();
+
+		rerender(<PollScreen {...props} pollKey="poll-1" />);
+		expect(answered()).toBe(first);
+
+		rerender(<PollScreen {...props} pollKey="poll-2" />);
+		expect(answered()).not.toBe(first);
+	});
+
+	it("pops a combo over the card in vermillion and announces it", () => {
+		render(<PollScreen {...props} combo="3 in a row!" />);
+
+		const combo = screen.getByText("3 in a row!");
+
+		expect(combo).toHaveAttribute("role", "status");
+		expect(combo).toHaveClass("poll-combo");
+		expect(combo).toHaveAttribute("data-screen-theme", "vermillion");
+		expect(answered()).toContainElement(combo);
+	});
+
+	it("pops no combo without one", () => {
+		const { container } = render(<PollScreen {...props} />);
+
+		expect(container.querySelector(".poll-combo")).toBeNull();
 	});
 
 	it("pops the gain beside the answer, lands it on the bar, then rides it to the new fill", () => {

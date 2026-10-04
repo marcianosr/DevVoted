@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { act, render, screen, within } from "@testing-library/react";
+
+import { renderWithNavRun } from "~/test/navRun.harness";
 import userEvent from "@testing-library/user-event";
 
 import { COMMUNITY } from "~/shared/lib/copy";
@@ -14,8 +16,6 @@ import {
 import { ShopView } from "./ShopView.component";
 
 const noop = () => {};
-
-const BALANCES = 2;
 
 const handlers = {
 	onDraft: noop,
@@ -49,19 +49,23 @@ const view = createMockRunView({
 
 describe("ShopView", () => {
 	it("stands the build beside the registry", () => {
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		expect(screen.getByRole("heading", { name: "Build" })).toBeInTheDocument();
-		expect(
-			screen.getByRole("heading", { name: "Registry" })
-		).toBeInTheDocument();
+		expect(screen.getAllByRole("heading", { name: "Registry" })).toHaveLength(
+			2
+		);
 	});
 
-	it("names the shop for the gate it is stocking for, not the one cleared", () => {
-		render(<ShopView view={view} {...handlers} />);
+	it("titles the page Registry, over what it is for", () => {
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
-		expect(screen.getByText(/Shop$/)).toBeInTheDocument();
-		expect(screen.queryByText(/^Shop ·/)).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", { level: 1, name: "Registry" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByText("Improve your build this run!")
+		).toBeInTheDocument();
 	});
 
 	it("shuts the registry after a skip and says so", () => {
@@ -69,7 +73,7 @@ describe("ShopView", () => {
 			...view,
 			shopControls: { ...view.shopControls, canSkip: false, shopSkipped: true },
 		};
-		render(<ShopView view={skipped} {...handlers} />);
+		renderWithNavRun(<ShopView view={skipped} {...handlers} />);
 
 		expect(screen.getByText(/You skipped this shop/)).toBeVisible();
 		expect(
@@ -80,7 +84,7 @@ describe("ShopView", () => {
 
 	it("installs an offer the run can afford", async () => {
 		const onDraft = vi.fn();
-		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Install Linter/ })
@@ -89,7 +93,7 @@ describe("ShopView", () => {
 	});
 
 	it("prices the install on the button rather than in a badge beside it", () => {
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		const install = screen.getByRole("button", {
 			name: "Install Linter \u00b7 64 KB",
@@ -101,19 +105,19 @@ describe("ShopView", () => {
 
 	it("previews what an install would leave when the offer is pointed at", async () => {
 		const user = userEvent.setup();
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		await user.hover(
 			screen.getByRole("button", { name: "Install Linter \u00b7 64 KB" })
 		);
 
-		expect(screen.getAllByText(/after install/)).toHaveLength(BALANCES);
-		expect(screen.getAllByText("448 KB")).toHaveLength(BALANCES);
+		expect(screen.getByText(/after install/)).toBeInTheDocument();
+		expect(screen.getByText("448 KB")).toBeInTheDocument();
 	});
 
 	it("drops the preview once the pointer leaves the offer", async () => {
 		const user = userEvent.setup();
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		const press = screen.getByRole("button", {
 			name: "Install Linter \u00b7 64 KB",
@@ -125,7 +129,7 @@ describe("ShopView", () => {
 	});
 
 	it("previews for a keyboard too, which never hovers anything", async () => {
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		act(() => {
 			screen
@@ -133,12 +137,12 @@ describe("ShopView", () => {
 				.focus();
 		});
 
-		expect(screen.getAllByText("448 KB")).toHaveLength(BALANCES);
+		expect(screen.getByText("448 KB")).toBeInTheDocument();
 	});
 
 	it("previews nothing for an offer the balance cannot cover", async () => {
 		const user = userEvent.setup();
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		await user.hover(screen.getByRole("button", { name: /^Install \.ts/ }));
 
@@ -147,28 +151,30 @@ describe("ShopView", () => {
 
 	it("previews what an uninstall would hand back, counting the balance up", async () => {
 		const user = userEvent.setup();
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
+		await user.click(screen.getByRole("button", { name: "Expand .js" }));
 		await user.hover(screen.getByRole("button", { name: /^Uninstall \.js/ }));
 
-		expect(screen.getAllByText(/after uninstall/)).toHaveLength(BALANCES);
-		expect(screen.getAllByText("528 KB")).toHaveLength(BALANCES);
+		expect(screen.getByText(/after uninstall/)).toBeInTheDocument();
+		expect(screen.getByText("528 KB")).toBeInTheDocument();
 	});
 
 	it("previews the upgrade rather than the uninstall on the same card", async () => {
 		const user = userEvent.setup();
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
+		await user.click(screen.getByRole("button", { name: "Expand .js" }));
 		await user.hover(
 			screen.getByRole("button", { name: /^Upgrade \.js to v2/ })
 		);
 
-		expect(screen.getAllByText(/after upgrade/)).toHaveLength(BALANCES);
+		expect(screen.getByText(/after upgrade/)).toBeInTheDocument();
 		expect(screen.queryByText(/after uninstall/)).not.toBeInTheDocument();
 	});
 
 	it("refuses the install of an offer the run cannot afford", () => {
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		expect(
 			screen.getByRole("button", { name: /^Install \.ts/ })
@@ -177,7 +183,9 @@ describe("ShopView", () => {
 
 	it("rebuilds the registry from its control", async () => {
 		const onRebuild = vi.fn();
-		render(<ShopView view={view} {...handlers} onRebuild={onRebuild} />);
+		renderWithNavRun(
+			<ShopView view={view} {...handlers} onRebuild={onRebuild} />
+		);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Rebuild the registry/ })
@@ -187,7 +195,7 @@ describe("ShopView", () => {
 
 	it("skips the shop from its control beside Rebuild", async () => {
 		const onSkip = vi.fn();
-		render(<ShopView view={view} {...handlers} onSkip={onSkip} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} onSkip={onSkip} />);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Skip the shop/ })
@@ -200,7 +208,7 @@ describe("ShopView", () => {
 			...view,
 			shopControls: { ...view.shopControls, canSkip: false },
 		};
-		render(<ShopView view={touched} {...handlers} />);
+		renderWithNavRun(<ShopView view={touched} {...handlers} />);
 
 		expect(screen.getByText("registry touched")).toBeInTheDocument();
 		expect(
@@ -210,7 +218,9 @@ describe("ShopView", () => {
 
 	it("leaves for prep from the footer", async () => {
 		const onContinue = vi.fn();
-		render(<ShopView view={view} {...handlers} onContinue={onContinue} />);
+		renderWithNavRun(
+			<ShopView view={view} {...handlers} onContinue={onContinue} />
+		);
 
 		await userEvent.click(screen.getByRole("button", { name: /To prep/ }));
 		expect(onContinue).toHaveBeenCalled();
@@ -218,14 +228,16 @@ describe("ShopView", () => {
 
 	it("offers the community board beside the exit to prep", async () => {
 		const onCommunity = vi.fn();
-		render(<ShopView view={view} {...handlers} onCommunity={onCommunity} />);
+		renderWithNavRun(
+			<ShopView view={view} {...handlers} onCommunity={onCommunity} />
+		);
 
 		await userEvent.click(screen.getByRole("button", { name: COMMUNITY }));
 		expect(onCommunity).toHaveBeenCalled();
 	});
 
 	it("withholds the community board when the shop was given no route to it", () => {
-		render(<ShopView view={view} {...handlers} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} />);
 
 		expect(screen.queryByRole("button", { name: COMMUNITY })).toBeNull();
 	});
@@ -249,7 +261,7 @@ describe("ShopView", () => {
 	});
 
 	it("sells no build space, because the rung follows the build", () => {
-		render(<ShopView view={createMockRunView(view)} {...handlers} />);
+		renderWithNavRun(<ShopView view={createMockRunView(view)} {...handlers} />);
 
 		expect(screen.queryByText("build space")).not.toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: /^8 weight/ })).toBeNull();
@@ -257,7 +269,7 @@ describe("ShopView", () => {
 
 	it("installs an offer that stays inside the rung on a single press", async () => {
 		const onDraft = vi.fn();
-		render(<ShopView view={view} {...handlers} onDraft={onDraft} />);
+		renderWithNavRun(<ShopView view={view} {...handlers} onDraft={onDraft} />);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Install Linter/ })
@@ -278,26 +290,31 @@ describe("ShopView", () => {
 				}),
 			],
 		});
-		render(<ShopView view={crossing} {...handlers} onDraft={onDraft} />);
+		renderWithNavRun(
+			<ShopView view={crossing} {...handlers} onDraft={onDraft} />
+		);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Install Linter/ })
 		);
 		expect(onDraft).not.toHaveBeenCalled();
-		expect(screen.getByText("Build space scales 4 → 6")).toBeInTheDocument();
+		expect(screen.getByText("Doesn't fit.")).toBeInTheDocument();
 
 		const confirm = screen.getByRole("button", {
 			name: /Confirm installing Linter/,
 		});
-		expect(confirm).toHaveTextContent("Confirm");
-		expect(confirm).toHaveAttribute("data-screen-theme", "saffron");
+		expect(confirm).toHaveTextContent("Install · 64 KB");
+		expect(confirm.closest("[data-screen-theme]")).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
 
 		await userEvent.click(confirm);
 		expect(onDraft).toHaveBeenCalledWith("linter");
 	});
 
-	it("says what the crossing costs every gate, not only what it costs once", async () => {
-		const crossing = createMockRunView({
+	const crossingView = () =>
+		createMockRunView({
 			...view,
 			offers: [
 				createMockShopOffer(CONFIGS.linter, {
@@ -307,7 +324,21 @@ describe("ShopView", () => {
 				}),
 			],
 		});
-		render(<ShopView view={crossing} {...handlers} />);
+
+	it("says what the crossing costs every gate, not only what it costs once", async () => {
+		renderWithNavRun(<ShopView view={crossingView()} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Install Linter/ })
+		);
+
+		expect(
+			screen.getByText("upkeep", { selector: "dt" }).nextElementSibling
+		).toHaveTextContent("−16 KBevery gate");
+	});
+
+	it("draws the armed config into the build bar before it is paid for", async () => {
+		renderWithNavRun(<ShopView view={crossingView()} {...handlers} />);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Install Linter/ })
@@ -315,11 +346,28 @@ describe("ShopView", () => {
 
 		expect(
 			screen.getByText(
-				(_, element) =>
-					element?.textContent === "Upkeep becomes 16 KB a gate" &&
-					element.tagName.toLowerCase() === "p"
+				/^preview · Linter takes \d+ weight, the build grows to 6$/
 			)
 		).toBeInTheDocument();
+	});
+
+	it("stands down on cancel, back to one press and no preview", async () => {
+		const onDraft = vi.fn();
+		renderWithNavRun(
+			<ShopView view={crossingView()} {...handlers} onDraft={onDraft} />
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Install Linter/ })
+		);
+		await userEvent.click(screen.getByRole("button", { name: "cancel" }));
+
+		expect(screen.queryByText("Doesn't fit.")).not.toBeInTheDocument();
+		expect(screen.queryByText(/^preview ·/)).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /Install Linter/ })
+		).toBeInTheDocument();
+		expect(onDraft).not.toHaveBeenCalled();
 	});
 });
 
@@ -330,7 +378,7 @@ describe("ShopView vendor lock-in", () => {
 	});
 
 	it("offers the lock on every config except the vendor itself", () => {
-		render(<ShopView view={holding} {...handlers} />);
+		renderWithNavRun(<ShopView view={holding} {...handlers} />);
 
 		expect(screen.getAllByRole("button", { name: "lock in" })).toHaveLength(1);
 	});
@@ -372,7 +420,7 @@ describe("ShopView vendor lock-in", () => {
 		expect(screen.queryByRole("button", { name: "lock in" })).toBeNull();
 	});
 
-	it("takes the uninstall press off the config it locked in", () => {
+	it("takes the uninstall press off the config it locked in", async () => {
 		render(
 			<ShopView
 				view={createMockRunView({
@@ -383,6 +431,12 @@ describe("ShopView vendor lock-in", () => {
 			/>
 		);
 
+		for (const name of ["AGENTS.md", "vendor lock-in"]) {
+			await userEvent.click(
+				screen.getByRole("button", { name: `Expand ${name}` })
+			);
+		}
+
 		expect(
 			screen.queryByRole("button", { name: /^Uninstall AGENTS\.md/ })
 		).toBeNull();
@@ -392,7 +446,7 @@ describe("ShopView vendor lock-in", () => {
 	});
 
 	it("shuts the exit while the vendor names nobody", () => {
-		render(<ShopView view={holding} {...handlers} />);
+		renderWithNavRun(<ShopView view={holding} {...handlers} />);
 
 		expect(screen.getByRole("button", { name: /To prep/ })).toBeDisabled();
 		expect(screen.getByText(/pick the config it exempts/)).toBeInTheDocument();
@@ -447,35 +501,142 @@ describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
 		gatePayout: createMockGatePayout({ clearedGateNumber: 4 }),
 	});
 
-	it("sells an installed config's next version through the upgrade action", async () => {
-		const onUpgrade = vi.fn();
-		render(<ShopView view={upgradable} {...handlers} onUpgrade={onUpgrade} />);
-
+	const armBuildUpgrade = async () => {
+		await userEvent.click(
+			screen.getByRole("button", { name: "Expand Moore's Law" })
+		);
 		await userEvent.click(
 			screen.getByRole("button", { name: /Upgrade Moore's Law to v2/ })
 		);
-		await userEvent.click(screen.getByRole("button", { name: /^Buy v2/ }));
+	};
+
+	it("sells an installed config's next version through the upgrade action", async () => {
+		const onUpgrade = vi.fn();
+		renderWithNavRun(
+			<ShopView view={upgradable} {...handlers} onUpgrade={onUpgrade} />
+		);
+
+		await armBuildUpgrade();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^Confirm upgrading Moore's Law/ })
+		);
 
 		expect(onUpgrade).toHaveBeenCalledWith("moores-law");
 	});
 
-	it("sells the registry's rolled upgrade through the draft action instead", async () => {
+	it("arms the build upgrade in the card, stating what v2 changes before it is paid for", async () => {
+		const onUpgrade = vi.fn();
+		renderWithNavRun(
+			<ShopView view={upgradable} {...handlers} onUpgrade={onUpgrade} />
+		);
+
+		await armBuildUpgrade();
+
+		expect(onUpgrade).not.toHaveBeenCalled();
+		expect(screen.getByText("Upgrade to v2.")).toBeInTheDocument();
+		expect(
+			screen.getByText("effect", { selector: "dt" }).nextElementSibling
+		).toHaveTextContent("+2%→+4%");
+	});
+
+	it("stands the armed upgrade down once it is bought", async () => {
+		renderWithNavRun(<ShopView view={upgradable} {...handlers} />);
+
+		await armBuildUpgrade();
+		await userEvent.click(
+			screen.getByRole("button", { name: /^Confirm upgrading Moore's Law/ })
+		);
+
+		expect(screen.queryByText("Upgrade to v2.")).not.toBeInTheDocument();
+	});
+
+	it("sells the registry's rolled upgrade through the draft action after it is confirmed", async () => {
 		const onDraft = vi.fn();
-		render(<ShopView view={upgradable} {...handlers} onDraft={onDraft} />);
+		renderWithNavRun(
+			<ShopView view={upgradable} {...handlers} onDraft={onDraft} />
+		);
 
 		await userEvent.click(
 			screen.getByRole("button", { name: /Upgrade Telemetry to v2/ })
 		);
-		await userEvent.click(screen.getByRole("button", { name: /^Buy v2/ }));
+		expect(onDraft).not.toHaveBeenCalled();
+		expect(
+			screen.getByText("effect", { selector: "dt" }).nextElementSibling
+		).toHaveTextContent("split only→with sample size");
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /^Confirm upgrading Telemetry/ })
+		);
 
 		expect(onDraft).toHaveBeenCalledWith("telemetry");
 	});
 
-	it("leaves a card's disclosure alone when its upgrade panel opens", async () => {
-		render(<ShopView view={upgradable} {...handlers} />);
+	it("stands the registry's upgrade down on cancel", async () => {
+		renderWithNavRun(<ShopView view={upgradable} {...handlers} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Upgrade Telemetry to v2/ })
+		);
+		await userEvent.click(screen.getByRole("button", { name: "cancel" }));
+
+		expect(screen.queryByText("Upgrade to v2.")).not.toBeInTheDocument();
+	});
+
+	it("arms only the card pressed when the build and the registry hold the same config", async () => {
+		renderWithNavRun(
+			<ShopView
+				view={createMockRunView({
+					...upgradable,
+					configs: [CONFIGS.telemetry],
+				})}
+				{...handlers}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Expand Telemetry" })
+		);
+		await userEvent.click(
+			screen.getAllByRole("button", { name: /Upgrade Telemetry to v2/ })[0]
+		);
+
+		expect(screen.getAllByText("Upgrade to v2.")).toHaveLength(1);
+	});
+
+	it("disarms a pending install when an upgrade arms, so one card asks at a time", async () => {
+		renderWithNavRun(
+			<ShopView
+				view={createMockRunView({
+					...upgradable,
+					offers: [
+						createMockShopOffer(CONFIGS.linter, {
+							priceKb: 64,
+							installable: true,
+							scale: { from: 4, to: 6, perGateKb: 16 },
+						}),
+					],
+				})}
+				{...handlers}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: /Install Linter/ })
+		);
+		expect(screen.getByText("Doesn't fit.")).toBeInTheDocument();
+
+		await armBuildUpgrade();
+
+		expect(screen.queryByText("Doesn't fit.")).not.toBeInTheDocument();
+		expect(screen.getByText("Upgrade to v2.")).toBeInTheDocument();
+	});
+
+	it("leaves a card's disclosure alone when its upgrade arms", async () => {
+		renderWithNavRun(<ShopView view={upgradable} {...handlers} />);
 
 		const chevron = () =>
 			screen.getByRole("button", { name: /(Expand|Collapse) Moore's Law/ });
+		await userEvent.click(chevron());
 		const before = chevron().getAttribute("aria-expanded");
 
 		await userEvent.click(
@@ -483,7 +644,9 @@ describe("ShopView — the two upgrade presses (ADR-097 decision 6)", () => {
 		);
 
 		expect(chevron()).toHaveAttribute("aria-expanded", before);
-		expect(screen.getByRole("button", { name: /^Buy v2/ })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^Confirm upgrading Moore's Law/ })
+		).toBeInTheDocument();
 	});
 });
 

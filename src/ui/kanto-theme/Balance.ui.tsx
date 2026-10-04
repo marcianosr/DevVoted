@@ -20,6 +20,7 @@ const UNIT = "text-xs text-theme-muted";
 const UNIT_INLINE = "text-xs";
 const LABEL = "flex items-center gap-1 text-xs font-bold text-theme";
 const HIDDEN = "sr-only";
+const TAG = "balance-tag text-xs text-theme-muted";
 const PREVIEW = "flex items-center gap-1 text-xs text-theme-muted";
 const PREVIEW_FIGURE = "font-bold tabular-nums text-theme";
 const PILL =
@@ -47,6 +48,7 @@ export type BalanceProps = {
 	color?: KantoColor;
 	preview?: BalancePreview;
 	layout?: BalanceLayout;
+	tag?: string;
 };
 
 type CountStyle = CSSProperties & Record<"--balance-count", number>;
@@ -116,6 +118,7 @@ export const Balance = ({
 	color,
 	preview,
 	layout = "stacked",
+	tag,
 }: BalanceProps) => {
 	const [landed, setLanded] = useState<Landing>(() => seededAt(kb));
 
@@ -187,6 +190,11 @@ export const Balance = ({
 				{change}
 				<Icon name="floppy" />
 				<span className={HIDDEN}>{label}</span>
+				{tag === undefined ? null : (
+					<span aria-hidden className={TAG}>
+						{tag}
+					</span>
+				)}
 				{figure}
 				{previewed}
 			</span>

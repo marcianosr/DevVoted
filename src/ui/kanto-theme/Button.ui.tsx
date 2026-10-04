@@ -55,6 +55,11 @@ const DANGER =
 	"ring-theme-soft text-theme-soft enabled:hover:bg-theme-soft enabled:hover:text-theme-faint";
 const BARE = "ring-transparent text-theme-muted enabled:hover:text-theme-faint";
 const BRIGHT = "segment-theme ring-transparent hover:brightness-110";
+const RAISED =
+	"segment-theme press-raised ring-transparent enabled:hover:brightness-110 enabled:active:press-sunk disabled:bg-none disabled:bg-theme-faint disabled:text-theme-muted disabled:shadow-none";
+const PRIMARY = `${RAISED} press-sheen`;
+const DESTRUCTIVE = RAISED;
+const PRISMATIC = `${RAISED} press-prismatic`;
 const SLOT =
 	"border border-dashed border-theme-faint ring-transparent text-theme-muted enabled:hover:border-theme-soft enabled:hover:text-theme-soft";
 
@@ -65,7 +70,16 @@ const ACTIVE_BRIGHT = "ring-theme";
 const SEPARATOR = " · ";
 
 export type ButtonTone =
-	"ambient" | "action" | "danger" | "commit" | "bare" | "bright" | "slot";
+	| "ambient"
+	| "action"
+	| "danger"
+	| "commit"
+	| "bare"
+	| "bright"
+	| "slot"
+	| "primary"
+	| "destructive"
+	| "prismatic";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonWidth = "auto" | "full" | "fill";
 
@@ -77,6 +91,9 @@ const TONE = {
 	bare: BARE,
 	bright: BRIGHT,
 	slot: SLOT,
+	primary: PRIMARY,
+	destructive: DESTRUCTIVE,
+	prismatic: PRISMATIC,
 } satisfies Record<ButtonTone, string>;
 
 const TONE_ACTIVE = {
@@ -87,6 +104,9 @@ const TONE_ACTIVE = {
 	bare: ACTIVE_BARE,
 	bright: ACTIVE_BRIGHT,
 	slot: ACTIVE_BARE,
+	primary: ACTIVE_BRIGHT,
+	destructive: ACTIVE_BRIGHT,
+	prismatic: ACTIVE_BRIGHT,
 } satisfies Record<ButtonTone, string>;
 
 const REFUSED_COLOR: KantoColor = "cinnabar";
@@ -99,6 +119,9 @@ const TONE_THEME = {
 	bare: undefined,
 	bright: "pallet",
 	slot: undefined,
+	primary: undefined,
+	destructive: "cinnabar",
+	prismatic: "lavender",
 } satisfies Record<ButtonTone, KantoColor | undefined>;
 
 const isRefusable = (tone: ButtonTone) =>

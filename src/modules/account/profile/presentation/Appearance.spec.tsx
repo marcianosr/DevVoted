@@ -47,7 +47,7 @@ const PROPS: AppearanceProps = {
 			: [
 					{
 						id: PALLET.id,
-						name: PALLET.name,
+						name: PALLET.gateName,
 						state: "owned" as const,
 						fill: { state: "discovered" as const, swatch: PALLET },
 					},
@@ -57,14 +57,14 @@ const PROPS: AppearanceProps = {
 			: [
 					{
 						id: CERULEAN.id,
-						name: CERULEAN.name,
+						name: CERULEAN.gateName,
 						state: "worn" as const,
 						fill: { state: "discovered" as const, swatch: CERULEAN },
 					},
 				]),
 		{
 			id: "swatch-viridian",
-			name: "Viridian Swatch",
+			name: "Viridian",
 			state: "locked",
 			fill: { state: "undiscovered" },
 		},
@@ -82,11 +82,24 @@ describe("Appearance", () => {
 	});
 
 	describe("the swatch row", () => {
+		it("says what a swatch does beneath its heading", () => {
+			renderAppearance();
+
+			expect(
+				screen.getByText(
+					"Tap to change your theme on your profile and dev card"
+				)
+			).toHaveClass("basis-full");
+			expect(
+				screen.queryByText("tap to wear · themes your profile")
+			).not.toBeInTheDocument();
+		});
+
 		it("presses the worn swatch down and names it", () => {
 			renderAppearance();
 
 			expect(
-				screen.getByRole("button", { name: "Wear Cerulean Swatch" })
+				screen.getByRole("button", { name: "Wear Cerulean" })
 			).toHaveAttribute("aria-pressed", "true");
 		});
 
@@ -94,7 +107,7 @@ describe("Appearance", () => {
 			renderAppearance();
 
 			await userEvent.click(
-				screen.getByRole("button", { name: "Wear Pallet Swatch" })
+				screen.getByRole("button", { name: "Wear Pallet" })
 			);
 
 			expect(handlers.onPickSwatch).toHaveBeenCalledWith("swatch-pallet");
@@ -103,7 +116,7 @@ describe("Appearance", () => {
 		it("withholds an unearned swatch's name and refuses the press", () => {
 			renderAppearance();
 
-			expect(screen.queryByText("Viridian Swatch")).not.toBeInTheDocument();
+			expect(screen.queryByText("Viridian")).not.toBeInTheDocument();
 			expect(
 				screen.getByRole("button", { name: COPY.lockedSwatch })
 			).toBeDisabled();

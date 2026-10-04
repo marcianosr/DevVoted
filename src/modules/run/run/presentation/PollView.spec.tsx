@@ -72,6 +72,40 @@ const answered: AnsweredPoll = {
 	explanation: "at(-1) reads from the end without copying the array.",
 };
 
+describe("the build under a poll", () => {
+	const narrowScreen = () =>
+		vi.stubGlobal(
+			"matchMedia",
+			(query: string) =>
+				({
+					matches: true,
+					media: query,
+					addEventListener: () => {},
+					removeEventListener: () => {},
+				}) satisfies Pick<
+					MediaQueryList,
+					"matches" | "media" | "addEventListener" | "removeEventListener"
+				>
+		);
+
+	afterEach(() => vi.unstubAllGlobals());
+
+	it("lies open on a wide screen", () => {
+		const { container } = render(<PollView {...props} />);
+
+		expect(container.querySelector("footer details")).toHaveAttribute("open");
+	});
+
+	it("folds shut on a phone", () => {
+		narrowScreen();
+		const { container } = render(<PollView {...props} />);
+
+		expect(container.querySelector("footer details")).not.toHaveAttribute(
+			"open"
+		);
+	});
+});
+
 describe("PollView", () => {
 	it("asks the poll's question and offers its answers", () => {
 		render(<PollView {...props} />);
@@ -87,7 +121,10 @@ describe("PollView", () => {
 	it("names the category the poll is drawn from", () => {
 		render(<PollView {...props} />);
 
-		expect(screen.getByText("JavaScript")).toBeInTheDocument();
+		const named = screen
+			.getAllByText("JavaScript", { ignore: "script, style, [inert] *" })
+			.filter((element) => element.closest("[data-config]") === null);
+		expect(named).toHaveLength(1);
 	});
 
 	it("answers a single-answer poll with the tapped option", async () => {
@@ -315,7 +352,7 @@ describe("PollView once the answer has landed", () => {
 		);
 
 		expect(
-			screen.getByRole("heading", { name: "#4 - Lavender Gate" })
+			screen.getByRole("heading", { name: "Lavender Gate" })
 		).toBeInTheDocument();
 	});
 

@@ -17,7 +17,6 @@ const HEAD = "flex w-full items-center gap-4 px-4 py-4";
 const NAMING = "flex min-w-0 flex-col gap-1.5";
 const NAME = "truncate text-lg font-extrabold text-theme-soft";
 const TRAILING = "ml-auto shrink-0";
-const RANK = "truncate text-xs uppercase tracking-wide text-theme-faint";
 
 export type ProfileCardProps = {
 	name: string;
@@ -25,7 +24,6 @@ export type ProfileCardProps = {
 	photoUrl?: string;
 	borderUrl?: string;
 	titles?: readonly string[];
-	rank?: string;
 	contribution?: ContributionProps;
 	you?: boolean;
 	href?: string;
@@ -52,7 +50,6 @@ export const ProfileCard = ({
 	photoUrl,
 	borderUrl,
 	titles = [],
-	rank,
 	contribution,
 	you = false,
 	href,
@@ -72,7 +69,6 @@ export const ProfileCard = ({
 				{handle === undefined ? null : (
 					<Handle handle={handle} linked={href === undefined} />
 				)}
-				{rank === undefined ? null : <span className={RANK}>{rank}</span>}
 				<WornTitles titles={titles} />
 				{contribution === undefined ? null : <Contribution {...contribution} />}
 			</span>

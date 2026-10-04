@@ -6,6 +6,7 @@ import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { ClimbMapProps } from "~/ui/kanto-theme/ClimbMap.ui";
 import type { ClimberCardProps } from "~/ui/kanto-theme/ClimberCard.ui";
+import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
 import type { StandingProps } from "~/ui/kanto-theme/Standing.ui";
 import type {
 	LadderClimber,
@@ -626,3 +627,36 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 		})),
 	};
 };
+
+export const kantoHallOfFame = (
+	over: Partial<HallOfFameProps> = {}
+): HallOfFameProps => ({
+	title: "Hall of Fame",
+	historyLabel: "Every champion",
+	empty: "No one has summited yet. The first win from Pallet takes this seat.",
+	champion: {
+		card: kantoClimberCard({
+			name: "Red",
+			profileHref: "/profile/red",
+			titles: ["Champion"],
+			theme: "gate-champion",
+			borderUrl: "/borders/border-champion-prismatic.svg",
+			rival: false,
+			perfect: false,
+		}),
+		since: "Champion since 13 May 2026, 14:05",
+	},
+	history: [
+		{
+			key: "3",
+			face: {
+				name: "Red",
+				borderUrl: "/borders/border-champion-prismatic.svg",
+			},
+			wonAt: "13 May 2026, 14:05",
+		},
+		{ key: "2", face: { name: "Blue" }, wonAt: "25 Dec 2025, 09:30" },
+		{ key: "1", face: { name: "Red" }, wonAt: "24 Dec 2025, 21:00" },
+	],
+	...over,
+});

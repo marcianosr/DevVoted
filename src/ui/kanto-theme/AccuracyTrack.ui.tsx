@@ -12,6 +12,8 @@ const FILL = "absolute inset-y-0 left-0 transition-[width] duration-300";
 const BEST_FILL = "bg-theme opacity-40";
 const SURE_FILL = "bg-theme-lit";
 const PULSE = "accuracy-pulse";
+const CEILING =
+	"absolute inset-y-0 right-1.5 flex items-center text-[0.625rem] leading-none font-bold text-theme-muted";
 
 const PERCENT = "%";
 const FILL_COLOR: KantoColor = "viridian";
@@ -21,6 +23,7 @@ export type AccuracyPulse = { key: string };
 export type AccuracyTrackProps = {
 	label: string;
 	figure: string;
+	ceiling?: string;
 	sure: number;
 	best: number;
 	pulse?: AccuracyPulse;
@@ -33,6 +36,7 @@ const widthOf = (share: number): CSSProperties => ({
 export const AccuracyTrack = ({
 	label,
 	figure,
+	ceiling,
 	sure,
 	best,
 	pulse,
@@ -53,6 +57,11 @@ export const AccuracyTrack = ({
 				style={widthOf(sure)}
 				className={clsx(FILL, SURE_FILL)}
 			/>
+			{ceiling === undefined ? null : (
+				<span aria-hidden className={CEILING}>
+					{ceiling}
+				</span>
+			)}
 		</span>
 		<Badge color={FILL_COLOR}>{figure}</Badge>
 	</span>

@@ -9,7 +9,6 @@ import {
 	useRunActions,
 } from "~/modules/run/run/application/useRunActions.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
-import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 
 const MAX_ELAPSED_MS = 600_000;
 
@@ -22,7 +21,6 @@ const PRESS_ACTIONS = {
 
 export const RunPoll = () => {
 	const { view } = useTodaysRun();
-	const runNumber = useRunNumber();
 	const { send, sendWith, sendCrowdPickWith, commit, busy } = useRunActions();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
@@ -95,7 +93,6 @@ export const RunPoll = () => {
 
 	return (
 		<PollView
-			runNumber={runNumber.view}
 			view={reveal?.data ?? view}
 			answered={reveal?.data.answeredThisGate.at(-1)}
 			selectedOptionIds={selected}

@@ -139,8 +139,7 @@ export const targetedConfigOf = (
 };
 
 export const INCIDENTS_TITLE = "Incidents";
-export const INCIDENTS_EMPTY =
-	"nobody has fired today — a quiet day is a real outcome";
+export const INCIDENTS_EMPTY = "Nobody sent out audits today";
 export const INCIDENTS_DEALING = "reading today's incidents…";
 export const INCIDENTS_UNREADABLE =
 	"couldn't read today's incidents — your run is unaffected, try again shortly";

@@ -3,6 +3,7 @@ export const STORAGE_UNITS = {
 	KB: 1024,
 	MB: 1024 * 1024,
 	GB: 1024 * 1024 * 1024,
+	TB: 1024 * 1024 * 1024 * 1024,
 } as const;
 
 const KB_PER_MB = 1024;
@@ -15,6 +16,11 @@ export function formatKb(kb: number): string {
 
 export function formatStorage(bytes: number): string {
 	if (bytes === 0) return "0 B";
+
+	if (bytes >= STORAGE_UNITS.TB) {
+		const tb = bytes / STORAGE_UNITS.TB;
+		return tb % 1 === 0 ? `${tb} TB` : `${tb.toFixed(1)} TB`;
+	}
 
 	if (bytes >= STORAGE_UNITS.GB) {
 		const gb = bytes / STORAGE_UNITS.GB;

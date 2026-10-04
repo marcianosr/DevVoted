@@ -31,7 +31,7 @@ describe("DexSwatches", () => {
 	it("names the collection and counts what has been swept", () => {
 		render(<DexSwatches {...dexSwatchesProps()} />);
 
-		expect(screen.getByRole("heading", { name: "swatches" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Swatches" })).toBeVisible();
 		expect(screen.getByText("4 of 13")).toBeVisible();
 	});
 

@@ -4,6 +4,7 @@ import {
 	kantoCommunity,
 	kantoCommunityBeforePolls,
 	kantoCommunityFirstClimb,
+	kantoHallOfFame,
 } from "~/test/kantoCommunity.factory";
 
 import { CommunityScreen } from "./CommunityScreen.ui";
@@ -19,6 +20,12 @@ type Story = StoryObj<typeof CommunityScreen>;
 
 export const AfterTheFive: Story = {
 	render: () => <CommunityScreen {...kantoCommunity()} />,
+};
+
+export const WithAChampion: Story = {
+	render: () => (
+		<CommunityScreen {...kantoCommunity()} hallOfFame={kantoHallOfFame()} />
+	),
 };
 
 export const BeforeTheFive: Story = {

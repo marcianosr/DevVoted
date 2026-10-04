@@ -551,6 +551,12 @@ describe("upgradePreview", () => {
 			{ from: "fee resets each gate", to: "half the fee" },
 		]);
 	});
+
+	it("previews the whole leap when a registry roll skips versions", () => {
+		expect(upgradePreview(CONFIGS.js, { ...CONFIGS.js, level: 3 })).toEqual([
+			{ from: "1.25×", to: "1.75×" },
+		]);
+	});
 });
 
 describe("chainKbFor", () => {

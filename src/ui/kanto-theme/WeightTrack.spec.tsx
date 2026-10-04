@@ -255,6 +255,68 @@ describe("the caption", () => {
 	});
 });
 
+describe("WeightTrack's preview", () => {
+	const PREVIEW = { name: "AGENTS.md", slots: 2, held: 12 };
+	const incomingOf = (container: HTMLElement) =>
+		trackOf(container)?.querySelector(".bg-hatched-theme");
+
+	it("draws the armed config hatched after the build, sized by its weight", () => {
+		const { container } = render(
+			<WeightTrack fills={FILLS} held={HELD} preview={PREVIEW} />
+		);
+
+		const incoming = incomingOf(container);
+		expect(incoming).toHaveAttribute("data-screen-theme", "saffron");
+		expect(growOf(incoming as Element)).toBe("2");
+		expect(segmentsOf(container)).toHaveLength(FILLS.length);
+	});
+
+	it("opens the room the grown build leaves after it", () => {
+		const { container } = render(
+			<WeightTrack fills={FILLS} held={HELD} preview={PREVIEW} />
+		);
+
+		expect(growOf(roomOf(container) as Element)).toBe("3");
+	});
+
+	it("says what the config takes and what the build grows to", () => {
+		render(<WeightTrack fills={FILLS} held={HELD} preview={PREVIEW} />);
+
+		expect(
+			screen.getByText(
+				"preview · AGENTS.md takes 2 weight, the build grows to 12"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("names no growth when the build keeps its space", () => {
+		render(
+			<WeightTrack
+				fills={[{ name: ".ts", slots: 1 }]}
+				held={HELD}
+				preview={{ ...PREVIEW, held: HELD }}
+			/>
+		);
+
+		expect(
+			screen.getByText("preview · AGENTS.md takes 2 weight")
+		).toBeInTheDocument();
+	});
+
+	it("still states the preview on a screen that asks for the bar alone", () => {
+		render(
+			<WeightTrack
+				fills={FILLS}
+				held={HELD}
+				preview={PREVIEW}
+				caption={false}
+			/>
+		);
+
+		expect(screen.getByText(/^preview · AGENTS.md/)).toBeInTheDocument();
+	});
+});
+
 describe("the segment ramp", () => {
 	it("gives neighbouring segments colours far enough apart to tell apart", () => {
 		const walked = KANTO_COLORS.map((_, index) => segmentColorOf(index));
@@ -311,5 +373,35 @@ describe("the segment's fill and ink", () => {
 	it("keeps chroma proportional so each hue stays itself", () => {
 		expect(body).toContain("calc(c* 0.65)");
 		expect(body).toContain("calc(c* 0.6)");
+	});
+
+	it("draws the build it opens on without slotting it in", () => {
+		const { container } = render(
+			<WeightTrack fills={FILLS.slice(0, 2)} held={HELD} />
+		);
+
+		expect(trackOf(container)).toHaveClass("weight-track");
+		expect(container.querySelector(".weight-fill-new")).toBeNull();
+	});
+
+	it("slots in only the config that arrives after the bar is drawn", () => {
+		const { container, rerender } = render(
+			<WeightTrack fills={FILLS.slice(0, 2)} held={HELD} />
+		);
+
+		rerender(<WeightTrack fills={FILLS.slice(0, 3)} held={HELD} />);
+
+		const arrived = segmentsOf(container).filter((segment) =>
+			segment.classList.contains("weight-fill-new")
+		);
+		expect(arrived).toHaveLength(1);
+		expect(arrived[0]).toHaveTextContent(FILLS[2].name);
+	});
+
+	it("slides its shares as the build changes", () => {
+		expect(appCss).toMatch(
+			/\.weight-track > li\s*\{[^}]*transition:\s*flex-grow/
+		);
+		expect(appCss).toMatch(/\.weight-fill-new\s*\{[^}]*animation:\s*slot-in/);
 	});
 });

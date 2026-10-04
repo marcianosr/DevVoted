@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-07-13T08:23:52Z
-updated_at: 2026-09-12T12:58:04Z
+updated_at: 2026-10-04T12:25:26Z
 parent: DVTD-615s
 ---
 
@@ -36,3 +36,7 @@ has to be stated, or this bean reopens a direction that was just closed.
 ADR-071 also adds a new reason the daily boundary matters: a gate that closes in
 OK or SHAKY repeats tomorrow, so "come back tomorrow" is now the price of a
 miss, not only the pace of a clear.
+
+## Notes (2026-10-04)
+
+The paid-revive lever conflicts with the monetization direction: tips buy cosmetics only, never power (see DVTD-ckbl). A paid revive is pay-to-win in a shared-seed game with leaderboards. Drop it or rework it into a non-paid mechanic.

@@ -37,5 +37,7 @@ export const POLL_LIMITS = {
 	answer: { max: 500 },
 } as const;
 
+export const APPROVED_POLL_ARCHIVE_KB = 16;
+
 export const isPollStatus = (value: string): value is PollStatus =>
 	(POLL_STATUSES as readonly string[]).includes(value);

@@ -67,6 +67,19 @@ describe("BorderCard", () => {
 		expect(screen.getByRole("button", { name: COPY.buy(COST) })).toBeDisabled();
 	});
 
+	it("states that a win earns a victory border beside its price", () => {
+		renderCard({ earnedByVictory: true });
+
+		expect(screen.getByText(COPY.orWinARun)).toBeInTheDocument();
+		expect(screen.getByText("256 KB")).toBeInTheDocument();
+	});
+
+	it("drops the win path once a victory border is owned", () => {
+		renderCard({ earnedByVictory: true, owned: true });
+
+		expect(screen.queryByText(COPY.orWinARun)).not.toBeInTheDocument();
+	});
+
 	it("marks an owned border owned and wears it from its frame", async () => {
 		const { onPress } = renderCard({ owned: true, picked: true });
 

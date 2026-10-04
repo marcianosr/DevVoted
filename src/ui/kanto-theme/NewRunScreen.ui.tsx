@@ -14,8 +14,12 @@ const COPY = {
 	filter: "Config groups",
 } as const;
 
+const LAYOUT = "grid w-full gap-6 md:grid-cols-2 md:gap-x-8";
+const TOP_LEFT = "min-w-0 md:col-start-1 md:row-start-1 md:self-center";
+const TOP_RIGHT =
+	"order-last min-w-0 md:order-none md:col-start-2 md:row-start-1 md:self-center";
 const COLUMNS =
-	"grid w-full items-start gap-8 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-6";
+	"grid w-full items-start gap-8 md:col-span-2 md:grid-cols-2 md:grid-rows-[auto_1fr] md:gap-y-6";
 const LEFT = "flex w-full min-w-0 flex-col md:col-start-1";
 const RIGHT =
 	"flex w-full min-w-0 flex-col md:col-start-2 md:row-span-2 md:row-start-1";
@@ -54,55 +58,61 @@ export const NewRunScreen = ({
 
 	return (
 		<Screen gate={header.swatch.theme} width={width} ground={ground}>
-			<Header {...header} pinned />
-
-			<div className={COLUMNS}>
-				<div className={LEFT}>
-					<Panel>
-						<Panel.Header
-							label={BUILD}
-							trailing={discloseAllFor(dealt, dealt.configs.length)}
-						/>
-						<Panel.Body>
-							<Build {...dealt} />
-						</Panel.Body>
-						{buildNote === undefined ? null : (
-							<Panel.Footer>
-								<Lead line={buildNote} />
-							</Panel.Footer>
-						)}
-					</Panel>
+			<div className={LAYOUT}>
+				<div className={TOP_LEFT}>
+					<Header {...header} />
 				</div>
 
-				<div className={RIGHT}>
-					<Panel>
-						<Panel.Header
-							label={REGISTRY}
-							meta={
-								<RegistrySummary
-									offers={registry.offers.length}
-									slotPrice={registry.slotPrice}
-								/>
-							}
-							trailing={discloseAllFor(registry, registry.offers.length)}
-						/>
-						<Panel.Body>
-							{filter === undefined ? null : (
-								<Segmented {...filter} label={COPY.filter} look="loose" />
-							)}
-							<Registry {...registry} heading={false} />
-						</Panel.Body>
-					</Panel>
+				<div className={TOP_RIGHT}>
+					<ScreenActions {...footer} />
 				</div>
 
-				{warmBoot === undefined ? null : (
+				<div className={COLUMNS}>
 					<div className={LEFT}>
-						<WarmBoot {...warmBoot} />
+						<Panel>
+							<Panel.Header
+								label={BUILD}
+								trailing={discloseAllFor(dealt, dealt.configs.length)}
+							/>
+							<Panel.Body>
+								<Build {...dealt} />
+							</Panel.Body>
+							{buildNote === undefined ? null : (
+								<Panel.Footer>
+									<Lead line={buildNote} />
+								</Panel.Footer>
+							)}
+						</Panel>
 					</div>
-				)}
-			</div>
 
-			<ScreenActions {...footer} />
+					<div className={RIGHT}>
+						<Panel>
+							<Panel.Header
+								label={REGISTRY}
+								meta={
+									<RegistrySummary
+										offers={registry.offers.length}
+										slotPrice={registry.slotPrice}
+									/>
+								}
+								trailing={discloseAllFor(registry, registry.offers.length)}
+							/>
+							<Panel.Body>
+								{filter === undefined ? null : (
+									<Segmented {...filter} label={COPY.filter} look="loose" />
+								)}
+								<Registry {...registry} heading={false} />
+							</Panel.Body>
+						</Panel>
+					</div>
+
+					{warmBoot === undefined ? null : (
+						<div className={LEFT}>
+							<WarmBoot {...warmBoot} />
+						</div>
+					)}
+				</div>
+			</div>
 		</Screen>
 	);
 };

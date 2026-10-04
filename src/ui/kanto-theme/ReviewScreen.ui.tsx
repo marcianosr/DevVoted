@@ -90,7 +90,7 @@ export const ReviewScreen = ({
 	ground = "bare",
 }: ReviewScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
-		<Header {...header} pinned />
+		<Header {...header} />
 
 		<div className={CONTROL_ROW}>
 			<Typography variant="hint" as="span">

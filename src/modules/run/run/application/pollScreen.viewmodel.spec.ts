@@ -1,6 +1,11 @@
 import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import { describe, expect, it } from "vitest";
 
+import {
+	accuracyTrackFor,
+	landedAccuracyTrackFor,
+} from "~/modules/run/run/application/accuracyTrack.viewmodel";
+
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
@@ -12,11 +17,11 @@ import {
 	pollDifficultyFor,
 	pollFactsFor,
 	pollHistoryFor,
-	accuracyTrackFor,
 	answeredOptionsFor,
 	gainFigureOf,
 	pollFlightFor,
 	pollShakeFor,
+	pollComboFor,
 	pollPressesOf,
 	runPaidFor,
 	categoryLeaderFor,
@@ -326,12 +331,34 @@ const lastAnswerOf = (state: RunState): AnsweredPoll => {
 	return last;
 };
 
+describe("landedAccuracyTrackFor", () => {
+	it("states no ceiling once the multiplier has landed", () => {
+		expect(landedAccuracyTrackFor(1.08).ceiling).toBeUndefined();
+	});
+
+	it("reads one landed multiplier, sure and best alike", () => {
+		const track = landedAccuracyTrackFor(1.08);
+
+		expect(track).toMatchObject({
+			label: "Accuracy ×1.08",
+			figure: "×1.08",
+		});
+		expect(track.sure).toBeCloseTo(0.08);
+		expect(track.best).toBe(track.sure);
+	});
+
+	it("stretches the track to the next whole multiplier past ×2", () => {
+		expect(landedAccuracyTrackFor(2.5).sure).toBeCloseTo(1.5 / 2);
+	});
+});
+
 describe("accuracyTrackFor", () => {
 	it("opens a fresh run on ×1 sure, up to one plus the gain, on a track that reads to ×2", () => {
 		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [])));
 
 		expect(track).toMatchObject({
-			figure: "×1 · up to ×1.08",
+			figure: "×1",
+			ceiling: "up to ×1.08",
 			sure: 0,
 		});
 		expect(track.best).toBeCloseTo(ACCURACY_GAIN_PER_GATE);
@@ -340,7 +367,8 @@ describe("accuracyTrackFor", () => {
 	it("reads the multiplier the window is sure of and the best still open", () => {
 		const track = accuracyTrackFor(toRunView(carrying([true, true])));
 
-		expect(track.figure).toBe(`×1.39 · up to ×1.48`);
+		expect(track.figure).toBe("×1.39");
+		expect(track.ceiling).toBe("up to ×1.48");
 		expect(track.sure).toBeCloseTo(0.39);
 		expect(track.best).toBeCloseTo(0.48);
 	});
@@ -348,7 +376,8 @@ describe("accuracyTrackFor", () => {
 	it("lowers the best case on a miss and keeps what is sure", () => {
 		const track = accuracyTrackFor(toRunView(carrying([true, false])));
 
-		expect(track.figure).toBe("×1.38 · up to ×1.47");
+		expect(track.figure).toBe("×1.38");
+		expect(track.ceiling).toBe("up to ×1.47");
 	});
 
 	it("names the multiplier aloud for a reader", () => {
@@ -360,7 +389,8 @@ describe("accuracyTrackFor", () => {
 	it("stretches the track to the next whole multiplier once the best passes ×2", () => {
 		const track = accuracyTrackFor(toRunView(carrying([], 1)));
 
-		expect(track.figure).toBe("×1.96 · up to ×2.08");
+		expect(track.figure).toBe("×1.96");
+		expect(track.ceiling).toBe("up to ×2.08");
 		expect(track.best).toBeCloseTo(1.08 / 2);
 	});
 
@@ -454,6 +484,38 @@ describe("pollShakeFor", () => {
 	it("holds the card still for a right answer", () => {
 		expect(
 			pollShakeFor(lastAnswerOf(playing(JS_GATE, [true])))
+		).toBeUndefined();
+	});
+});
+
+describe("pollComboFor", () => {
+	const comboAfter = (rights: readonly boolean[]) => {
+		const state = playing(JS_GATE, rights);
+
+		return pollComboFor(toRunView(state), lastAnswerOf(state));
+	};
+
+	it("pops nothing for a first right answer", () => {
+		expect(comboAfter([true])).toBeUndefined();
+	});
+
+	it("counts the right answers in a row once there are two", () => {
+		expect(comboAfter([true, true])).toBe("2 in a row!");
+		expect(comboAfter([true, true, true])).toBe("3 in a row!");
+	});
+
+	it("starts counting again after a miss", () => {
+		expect(comboAfter([true, true, false, true])).toBeUndefined();
+		expect(comboAfter([true, false, true, true])).toBe("2 in a row!");
+	});
+
+	it("pops nothing on the miss that breaks the run", () => {
+		expect(comboAfter([true, true, false])).toBeUndefined();
+	});
+
+	it("pops nothing while no answer is on the card", () => {
+		expect(
+			pollComboFor(toRunView(playing(JS_GATE, [true, true])), undefined)
 		).toBeUndefined();
 	});
 });

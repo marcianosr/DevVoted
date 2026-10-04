@@ -9,7 +9,8 @@ const appCss = readFileSync("src/styles/app.css", "utf8");
 
 const TWO_RIGHT: AccuracyTrackProps = {
 	label: "Accuracy ×1.19, up to ×2",
-	figure: "×1.19 · up to ×2",
+	figure: "×1.19",
+	ceiling: "up to ×2",
 	sure: 0.19,
 	best: 1,
 };
@@ -40,10 +41,24 @@ describe("AccuracyTrack", () => {
 		expect(fillOf(container, "best")).toHaveStyle({ width: "100%" });
 	});
 
-	it("states the multiplier beside the bar", () => {
+	it("states the sure multiplier beside the bar", () => {
 		render(<AccuracyTrack {...TWO_RIGHT} />);
 
-		expect(screen.getByText("×1.19 · up to ×2")).toBeInTheDocument();
+		expect(screen.getByText("×1.19")).toHaveClass("badge-theme");
+	});
+
+	it("writes the ceiling on the end of the bar", () => {
+		const { container } = render(<AccuracyTrack {...TWO_RIGHT} />);
+
+		expect(screen.getByText("up to ×2").parentElement).toBe(
+			fillOf(container, "best")?.parentElement
+		);
+	});
+
+	it("writes no ceiling when the best is already sure", () => {
+		render(<AccuracyTrack {...TWO_RIGHT} ceiling={undefined} />);
+
+		expect(screen.queryByText(/up to/)).toBeNull();
 	});
 
 	it("reads the multiplier aloud through its label", () => {

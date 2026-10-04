@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-09-05T08:45:44Z
-updated_at: 2026-09-24T12:49:08Z
+updated_at: 2026-10-04T12:43:34Z
 parent: DVTD-z2r2
 ---
 
@@ -13,7 +13,7 @@ parent: DVTD-z2r2
 
 **Why:** Writing polls should feed the account the same currency that runs do.
 
-⚠️ There is no way for a player to submit a poll at all: creation is admin-only. Decide whether this bean includes that flow or waits on it.
+Players can now suggest polls and an admin publishes them; the first publish already pays a flat 16 KB (DVTD-60nr, ADR-185). This bean is the per-answer pay on top.
 
 ## Done when
 - [ ] Decided: whether this includes the submission and moderation flow, or depends on it

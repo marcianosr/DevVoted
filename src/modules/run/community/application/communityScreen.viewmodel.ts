@@ -1,4 +1,5 @@
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
+import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
 
 import type { CategoryCode } from "~/shared/lib/categories";
 import { getCategoryMetadata } from "~/shared/lib/categories";
@@ -38,6 +39,8 @@ import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 const LETTERS = "ABCDEFGH";
 
 const COPY = {
+	title: "Community",
+	tagline: "What are other players doing?",
 	turnoutTitle: "Today’s records",
 	answeredToday: "answered today",
 	mapTitle: "Where everyone is",
@@ -247,12 +250,12 @@ export type CommunityScreenFrame = {
 	back: {
 		label: string;
 		disabled?: boolean;
-		hint?: string;
 		onBack: () => void;
 	};
 	incidents?: IncidentsPanelProps;
 	loot?: LootHand;
 	filing?: FileHand;
+	hallOfFame?: HallOfFameProps;
 };
 
 export const communityScreenPropsFor = ({
@@ -267,6 +270,7 @@ export const communityScreenPropsFor = ({
 	openClimberId,
 	onInspectClimber,
 	loot,
+	hallOfFame,
 }: CommunityScreenFrame): CommunityScreenProps => {
 	const empty = view.polls.length === 0;
 	const dayNote = note ?? (empty ? NOTHING_TO_COMPARE_YET : undefined);
@@ -274,8 +278,8 @@ export const communityScreenPropsFor = ({
 	return {
 		header: {
 			swatch,
-			title: `${swatch.gateName} · today’s climb`,
-			subtitle: dayNote ?? back.hint ?? view.date,
+			title: COPY.title,
+			subtitle: dayNote ?? COPY.tagline,
 			countdown: countdown ?? COPY.pollsOpen,
 			countdownColor: countdown === undefined ? "viridian" : undefined,
 			countdownHint: COPY.countdownHint,
@@ -316,6 +320,7 @@ export const communityScreenPropsFor = ({
 					}),
 		},
 		...(incidents === undefined ? {} : { incidents }),
+		...(hallOfFame === undefined ? {} : { hallOfFame }),
 		leaders: view.leaders.map(categoryBoardFor),
 		polls: {
 			title: COPY.pollsTitle,

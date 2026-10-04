@@ -47,7 +47,6 @@ const CLEAR_LINE_OPEN = " (";
 const CLEAR_LINE_CLOSE = ")";
 const REACH_LEAD = "Reach ";
 const COVERAGE_TRAIL = " coverage";
-const POINTS = "%";
 const SWATCH_WORD = "swatch";
 const META_JOIN = " · ";
 
@@ -56,12 +55,6 @@ const CAUGHT_INSTEAD = "caught · peel instead";
 const PEEL_TRAIL = "peel";
 const NO_PEEL = "no peel";
 const GATE_HELD = "gate held · ";
-
-const TO_REACH = " to reach ";
-const POLL_WORD = "poll";
-const POLLS_WORD = "polls";
-const LEFT = " left";
-const STANDING_JOIN = " · ";
 
 export type CoverageRung = {
 	readonly band: CoverageBandId;
@@ -104,12 +97,6 @@ export const clearingRungFor = (
 		(lowest, rung) => (clearsAt(rung.band, gate) ? rung : lowest),
 		PERFECT_RUNG
 	);
-
-const nextRungFor = (
-	ladder: CoverageLadder,
-	held: number
-): CoverageRung | undefined =>
-	[...coverageRungsFor(ladder)].reverse().find((rung) => rung.from > held);
 
 const RIGHT_COUNTS: readonly number[] = Array.from(
 	{ length: SLICE_WINDOW + 1 },
@@ -157,7 +144,6 @@ export type BandOutcomesFrame = {
 	coverageGainPercent: number;
 	accuracyBonus?: number;
 	peelKb: number;
-	answeredThisGate: number;
 	escrows?: boolean;
 	catchesFatal?: boolean;
 	payout: (correct: number, band: CoverageBandId) => number;
@@ -252,40 +238,6 @@ export const ladderFor = (frame: BandOutcomesFrame): BandLadderProps => ({
 		.map((rung): LadderRung => ({ ...rung, pays: paysOf(rung, frame) })),
 });
 
-const pointsOf = (points: number): LeadPart => ({
-	figure: `+${roundToOneDecimal(points)}${POINTS}`,
-	gain: true,
-});
-
-const wordOf = (count: number, one: string, many: string) =>
-	count === 1 ? one : many;
-
-const pollsLeftPartsFor = (frame: BandOutcomesFrame): readonly LeadPart[] => {
-	const left = SLICE_WINDOW - frame.answeredThisGate;
-
-	return [
-		{ figure: `${left}` },
-		` ${wordOf(left, POLL_WORD, POLLS_WORD)}${LEFT}`,
-	];
-};
-
-export const standingLineFor = (frame: BandOutcomesFrame): LeadLine => {
-	const next = nextRungFor(frame.ladder, frame.held);
-	const polls = pollsLeftPartsFor(frame);
-
-	if (next === undefined) return polls;
-
-	const owed = roundToOneDecimal(next.from - frame.held);
-
-	return [
-		pointsOf(owed),
-		TO_REACH,
-		{ band: next.band },
-		STANDING_JOIN,
-		...polls,
-	];
-};
-
 const noteFor = (frame: BandOutcomesFrame): string => {
 	const lead = peelsNothing(frame) ? FREE_MISS_NOTE : BAND_OUTCOMES_NOTE;
 
@@ -299,6 +251,5 @@ export const bandOutcomesPropsFor = (
 	meta: metaFor(frame),
 	objectives: objectivesFor(frame),
 	ladder: ladderFor(frame),
-	standing: standingLineFor(frame),
 	note: noteFor(frame),
 });

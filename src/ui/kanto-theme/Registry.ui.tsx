@@ -10,7 +10,7 @@ const COPY = {
 
 const COLUMN = "flex w-full flex-col gap-3";
 const TITLE_ROW = "flex items-baseline gap-3";
-const LIST = `grid w-full gap-3 ${CARD_FLOW}`;
+const LIST = `registry-deal grid w-full gap-3 ${CARD_FLOW}`;
 const GROUPS = "flex w-full flex-col gap-6";
 const GROUP = "flex w-full flex-col gap-3";
 const GROUP_HEADING = "flex items-center gap-2";

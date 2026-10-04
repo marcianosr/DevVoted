@@ -1,8 +1,9 @@
 import { WHAT_EACH_POLL_PAID } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
+import { Accuracy } from "./Accuracy.ui";
+import type { AccuracyTrackProps } from "./AccuracyTrack.ui";
 import { Badge } from "./Badge.ui";
-import { Button } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import {
 	COVERAGE_BAND_COLOR,
@@ -20,11 +21,7 @@ import { GateChoice, type GateChoiceProps } from "./GateChoice.ui";
 import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
 import { Panel } from "./Panel.ui";
 import { Screen, type ScreenWidth } from "./Screen.ui";
-import {
-	type FooterAction,
-	ScreenActions,
-	type ScreenFooterProps,
-} from "./ScreenFooter.ui";
+import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Swatch, type SwatchFill } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
 import { Version } from "./Version.ui";
@@ -38,7 +35,8 @@ const AUDITS = "flex w-full flex-wrap items-stretch gap-3";
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const RECAP = "flex w-full flex-col gap-3";
-const RECAP_ASIDES = "flex w-full flex-wrap gap-3";
+const FOLD_SECTION = "flex w-full flex-col gap-4 px-4 py-4";
+const FOLD_SECTION_RULED = "border-t border-theme-faint";
 const LEAD =
 	"badge-theme inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold tabular-nums";
 const NAMING = "flex min-w-0 grow flex-col gap-1";
@@ -48,11 +46,6 @@ const MARKS = "flex items-center gap-1";
 const EDGED = "border-l-2 border-l-theme bg-theme/5";
 const ROW_ROOM = "py-3";
 const VERSION_ARROW = "→";
-const NEXT_GATE = "flex flex-col gap-2 border-t border-theme-faint pt-3";
-const RATES = "flex flex-col gap-1.5";
-const RATE = "flex items-center justify-between gap-3";
-
-const RATE_COLOR: KantoColor = "viridian";
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const HOLD_COLOR: KantoColor = "cinnabar";
@@ -102,21 +95,14 @@ export type GateOutcomeTail =
 	| { choice: GateChoiceProps; ending?: never }
 	| { ending: GateEnding; choice?: never };
 
-export type NextGateRate = { label: string; gain: string };
-
-export type NextGateRates = {
-	title: string;
-	rates: readonly NextGateRate[];
-};
-
 export type GateOutcomeScreenProps = {
 	header: HeaderProps;
 	bar: CoverageBarProps;
-	nextGate?: NextGateRates;
 	outcome: CoverageBandId;
 	coverageHold?: string;
 	bonus?: GateOutcomeBonusPanel;
 	payouts?: PollScoresProps;
+	accuracy?: AccuracyTrackProps;
 	coverage: GateOutcomeLedgerPanel;
 	storage: GateOutcomeLedgerPanel;
 	earned?: GateOutcomeRowsPanel;
@@ -130,35 +116,21 @@ export type GateOutcomeScreenProps = {
 
 type CoveragePanelProps = {
 	bar: CoverageBarProps;
-	nextGate?: NextGateRates;
 	meter: CoverageBandId;
 	hold?: string;
 	bonus?: GateOutcomeBonusPanel;
 	payouts?: PollScoresProps;
+	accuracy?: AccuracyTrackProps;
 	open?: boolean;
 };
 
-const NextGate = ({ title, rates }: NextGateRates) => (
-	<div className={NEXT_GATE}>
-		<Typography variant="hint">{title}</Typography>
-		<ul aria-label={title} className={RATES}>
-			{rates.map((rate) => (
-				<li key={rate.label} className={RATE}>
-					<Typography variant="caption">{rate.label}</Typography>
-					<Badge color={RATE_COLOR}>{rate.gain}</Badge>
-				</li>
-			))}
-		</ul>
-	</div>
-);
-
 const CoveragePanel = ({
 	bar,
-	nextGate,
 	meter,
 	hold,
 	bonus,
 	payouts,
+	accuracy,
 	open = true,
 }: CoveragePanelProps) => (
 	<Fold
@@ -170,19 +142,28 @@ const CoveragePanel = ({
 			...(hold === undefined ? [] : [{ label: hold, color: HOLD_COLOR }]),
 		]}
 		open={open}
+		flush
 	>
-		{bonus === undefined ? null : (
-			<Typography variant="prose">
-				<Figures text={bonus.detail} />
-			</Typography>
+		<div className={FOLD_SECTION}>
+			{bonus === undefined ? null : (
+				<Typography variant="prose">
+					<Figures text={bonus.detail} />
+				</Typography>
+			)}
+			<CoverageBar {...bar} pin />
+		</div>
+		{accuracy === undefined ? null : (
+			<div className={clsx(FOLD_SECTION, FOLD_SECTION_RULED)}>
+				<Accuracy track={accuracy} landed />
+			</div>
 		)}
-		<CoverageBar {...bar} pin />
-		{nextGate === undefined ? null : <NextGate {...nextGate} />}
 		{payouts === undefined ? null : (
-			<>
-				<Typography variant="hint">{WHAT_EACH_POLL_PAID}</Typography>
+			<div className={clsx(FOLD_SECTION, FOLD_SECTION_RULED)}>
+				<Typography variant="title" as="h3">
+					{WHAT_EACH_POLL_PAID}
+				</Typography>
 				<PollScores {...payouts} />
-			</>
+			</div>
 		)}
 	</Fold>
 );
@@ -283,32 +264,14 @@ const EndingPanel = ({ title, detail }: GateEnding) => (
 	</Panel>
 );
 
-const RecapAsides = ({ asides = [] }: { asides?: readonly FooterAction[] }) =>
-	asides.length === 0 ? null : (
-		<div className={RECAP_ASIDES}>
-			{asides.map((aside) => (
-				<Button
-					key={aside.label}
-					size="lg"
-					tone="ambient"
-					label={aside.label}
-					icon={aside.icon}
-					iconAt={aside.iconAt}
-					disabled={aside.onPress === undefined}
-					onPress={aside.onPress}
-				/>
-			))}
-		</div>
-	);
-
 export const GateOutcomeScreen = ({
 	header,
 	bar,
-	nextGate,
 	outcome,
 	coverageHold,
 	bonus,
 	payouts,
+	accuracy,
 	coverage,
 	storage,
 	earned,
@@ -328,11 +291,11 @@ export const GateOutcomeScreen = ({
 	const coveragePanel = (
 		<CoveragePanel
 			bar={bar}
-			nextGate={nextGate}
 			meter={meter}
 			hold={coverageHold}
 			bonus={bonus}
 			payouts={payouts}
+			accuracy={accuracy}
 			open={!settling}
 		/>
 	);
@@ -346,7 +309,7 @@ export const GateOutcomeScreen = ({
 
 	const body = (
 		<>
-			<Header {...header} pinned />
+			<Header {...header} />
 
 			{audits.length === 0 ? null : (
 				<div className={AUDITS}>
@@ -360,6 +323,7 @@ export const GateOutcomeScreen = ({
 				<GateChoice
 					{...tail.choice}
 					press={{ ...footer.action, note: footer.note }}
+					asides={footer.asides}
 				/>
 			)}
 
@@ -376,7 +340,6 @@ export const GateOutcomeScreen = ({
 						{changesPanel}
 						{answersPanel}
 					</div>
-					<RecapAsides asides={footer.asides} />
 				</section>
 			) : (
 				<>

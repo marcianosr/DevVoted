@@ -7,11 +7,11 @@ import type { KantoColor } from "./colors";
 import { Typography } from "./Typography.ui";
 
 export const PANEL_SURFACE =
-	"flex flex-col rounded-2xl border border-theme-faint bg-theme-faint";
+	"panel-surface flex flex-col rounded-2xl border border-theme-faint bg-theme-faint";
 
 const HEADER =
 	"flex flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
-const GLYPH = "size-2.5 shrink-0 rounded-xs bg-theme-muted";
+const GLYPH = "panel-glyph size-2.5 shrink-0 rounded-xs bg-theme-muted";
 const HEADER_END = "ml-auto flex flex-wrap items-center justify-end gap-2";
 const META =
 	"flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
@@ -38,6 +38,9 @@ const Surface = ({ children, className }: PanelProps) => (
 	<section className={clsx(PANEL_SURFACE, className)}>{children}</section>
 );
 
+export const headingOf = (label: string): string =>
+	`${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+
 export type PanelBadge = { label: string; color?: KantoColor };
 
 export type PanelHeaderProps = {
@@ -58,7 +61,7 @@ const PanelHeader = ({
 	<header className={HEADER}>
 		<span aria-hidden className={GLYPH} />
 		<Typography variant="title" as="h3">
-			{label}
+			{headingOf(label)}
 		</Typography>
 		{badge === undefined ? null : (
 			<Badge color={badge.color}>{badge.label}</Badge>

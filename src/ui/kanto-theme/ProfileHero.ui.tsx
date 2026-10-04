@@ -7,8 +7,6 @@ import { Contribution } from "./Contribution.ui";
 import { Link } from "./Link.ui";
 import { PANEL_SURFACE } from "./Panel.ui";
 import type { ProfileCardProps } from "./ProfileCard.ui";
-import type { SwatchFill } from "./Swatch.ui";
-import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
 import { WornTitles } from "./WornTitles.ui";
 
@@ -18,7 +16,6 @@ const HERO = clsx(PANEL_SURFACE, "w-full");
 const HEAD = "flex w-full flex-wrap items-center gap-5 px-6 py-6";
 const NAMING = "flex min-w-0 flex-1 flex-col gap-2";
 const NAME = "text-2xl font-extrabold break-words text-theme-soft sm:text-4xl";
-const RANK = "truncate text-xs uppercase tracking-wide text-theme-faint";
 const TRAILING = "shrink-0 self-start";
 
 const TROPHIES = "grid w-full grid-cols-3 border-t border-theme-faint";
@@ -29,9 +26,6 @@ const FIGURE = "text-3xl font-extrabold tabular-nums text-theme sm:text-4xl";
 const OUT_OF = "text-sm font-bold tabular-nums text-theme-muted";
 const YOURS = "text-xs tabular-nums text-theme-faint";
 
-const SIGNATURE =
-	"flex w-full flex-col gap-3 border-t border-theme-faint px-6 py-5";
-
 export type Trophy = {
 	label: string;
 	figure: string;
@@ -41,8 +35,6 @@ export type Trophy = {
 
 export type ProfileHeroProps = Omit<ProfileCardProps, "href" | "trailing"> & {
 	trophies: readonly Trophy[];
-	swatches: readonly SwatchFill[];
-	note: string;
 	trailing?: ReactNode;
 };
 
@@ -65,13 +57,10 @@ export const ProfileHero = ({
 	photoUrl,
 	borderUrl,
 	titles = [],
-	rank,
 	contribution,
 	you = false,
 	trailing,
 	trophies,
-	swatches,
-	note,
 }: ProfileHeroProps) => (
 	<section className={HERO}>
 		<div className={HEAD}>
@@ -91,7 +80,6 @@ export const ProfileHero = ({
 						</Link>
 					</Typography>
 				)}
-				{rank === undefined ? null : <span className={RANK}>{rank}</span>}
 				<WornTitles titles={titles} />
 				{contribution === undefined ? null : <Contribution {...contribution} />}
 			</div>
@@ -103,10 +91,6 @@ export const ProfileHero = ({
 			{trophies.map((trophy) => (
 				<TrophyFigure key={trophy.label} {...trophy} />
 			))}
-		</div>
-		<div className={SIGNATURE}>
-			<SwatchTrack swatches={swatches} size="hero" />
-			<Typography variant="hint">{note}</Typography>
 		</div>
 	</section>
 );

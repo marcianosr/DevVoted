@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 import { AppNav, type AppNavProps, type NavViewer, COPY } from "./AppNav.ui";
@@ -86,6 +87,16 @@ describe("AppNav", () => {
 			expect(press).toHaveTextContent("3");
 		});
 
+		it("names the balance it carries as the run's storage, not the archive", () => {
+			drawBar({
+				viewer: VIEWER,
+				reading: { swatches: [], funds: { label: STORAGE_BALANCE, kb: 462 } },
+			});
+
+			expect(screen.getByText(COPY.runStorage)).toBeInTheDocument();
+			expect(screen.getByRole("img", { name: "462 KB" })).toBeInTheDocument();
+		});
+
 		it("wears the equipped border on the player's mark, beside the bar and in the menu", () => {
 			const { container } = drawBar({ viewer: VIEWER });
 
@@ -111,6 +122,19 @@ describe("AppNav", () => {
 			expect(
 				screen.getAllByRole("link", { name: COPY.suggest })[0]
 			).toHaveAttribute("href", SUGGEST);
+		});
+
+		it("states what an approved poll pays on every suggest link", () => {
+			drawBar({
+				viewer: VIEWER,
+				suggest: { href: SUGGEST, active: false, reward: "+16 KB" },
+			});
+
+			const links = screen.getAllByRole("link", {
+				name: COPY.suggestFor("+16 KB"),
+			});
+			expect(links).toHaveLength(2);
+			expect(links[0]).toHaveAttribute("href", SUGGEST);
 		});
 	});
 

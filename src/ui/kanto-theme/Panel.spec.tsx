@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { Fold } from "./Fold.ui";
 import { Modal } from "./Modal.ui";
 import { Panel } from "./Panel.ui";
 
@@ -33,7 +35,7 @@ describe("Panel", () => {
 	it("renders the header label beside its meta", () => {
 		render(<Full />);
 
-		expect(screen.getByRole("heading", { name: "build" })).toBeInTheDocument();
+		expect(screen.getByRole("heading", { name: "Build" })).toBeInTheDocument();
 		expect(screen.getByText("0 of 4 slots")).toBeInTheDocument();
 	});
 
@@ -298,6 +300,37 @@ describe("Panel", () => {
 		expect(screen.getByRole("link", { name: "run 7" })).toHaveAttribute(
 			"href",
 			"/runs/7"
+		);
+	});
+});
+
+describe("the Champion's panel edge", () => {
+	const appCss = readFileSync("src/styles/app.css", "utf8");
+
+	it("marks a panel and a fold as the one surface the Champion edge paints", () => {
+		const { container } = render(
+			<>
+				<Panel>
+					<Panel.Body>body</Panel.Body>
+				</Panel>
+				<Fold title="Storage bonus">folded</Fold>
+			</>
+		);
+
+		expect(container.querySelector("section")).toHaveClass("panel-surface");
+		expect(container.querySelector("details")).toHaveClass("panel-surface");
+	});
+
+	it("turns the prism around the panel edge only under the Champion gate", () => {
+		expect(appCss).toContain("@property --champion-border-angle");
+		expect(appCss).toMatch(
+			/\[data-gate-theme="gate-champion"\] \.panel-surface \{[^}]*animation: champion-border-turn/
+		);
+	});
+
+	it("holds the prism edge still when the player asks for reduced motion", () => {
+		expect(appCss).toMatch(
+			/prefers-reduced-motion: reduce\) \{\s*\[data-gate-theme="gate-champion"\] \.panel-surface \{\s*animation: none;/
 		);
 	});
 });

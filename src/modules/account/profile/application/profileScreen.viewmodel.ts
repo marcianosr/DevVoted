@@ -3,7 +3,6 @@ import {
 	RUNS_NOTE,
 	runDetailFor,
 	runRowFor,
-	runTrackFor,
 	type DexTab,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import type {
@@ -22,7 +21,6 @@ import {
 	findBorderById,
 	type Border,
 } from "~/modules/account/profile/domain/border.model";
-import { rankFor } from "~/modules/account/profile/domain/rank.model";
 import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
 import type { ProfileClimbingProps } from "~/ui/kanto-theme/ProfileClimbing.ui";
 import type { ProfileCollectionProps } from "~/ui/kanto-theme/ProfileCollection.ui";
@@ -69,7 +67,6 @@ export const profileCardFor = (
 ): ProfileCardProps => ({
 	name: identity.displayName,
 	titles: identity.wornTitles,
-	rank: rankFor(identity.pollsAnswered),
 	you,
 	contribution: contributionOf(identity.authorship, identity.pollsAnswered),
 	...(identity.githubUsername === null
@@ -93,7 +90,6 @@ const HERO = {
 	runsWon: "runs won",
 	outOf: (total: number) => `/ ${total}`,
 	yours: (figure: number) => `you ${figure}`,
-	note: "A swatch is a gate taken at 100% coverage.",
 } as const;
 
 const BEST_RUN = {
@@ -148,8 +144,6 @@ export const profileHeroFor = (
 		),
 		{ label: HERO.runsWon, figure: String(record.runsWon) },
 	],
-	swatches: runTrackFor(record.clearedGates),
-	note: HERO.note,
 });
 
 export const profileBestRunFor = ({

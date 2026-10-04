@@ -298,7 +298,7 @@ export const WithUpgrade: Story = {
 	),
 };
 
-export const UpgradeOpen: Story = {
+export const UpgradeArmed: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
 		<Screen theme="vermillion" width="narrow">
@@ -307,6 +307,22 @@ export const UpgradeOpen: Story = {
 				onUninstall={noop}
 				upgrades={{ ...MOORES_LAW.upgrades, onBuy: noop }}
 				upgradesOpen
+				onToggleUpgrades={noop}
+			/>
+		</Screen>
+	),
+};
+
+export const UpgradeReadyWhileFolded: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="vermillion" width="narrow">
+			<ConfigChip
+				{...MOORES_LAW}
+				onUninstall={noop}
+				onToggleInfo={noop}
+				upgrades={{ ...MOORES_LAW.upgrades, onBuy: noop }}
+				onToggleUpgrades={noop}
 			/>
 		</Screen>
 	),

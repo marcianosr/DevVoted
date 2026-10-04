@@ -129,7 +129,7 @@ describe("StartView", () => {
 		const onToggle = vi.fn();
 		render(<StartView view={view} {...handlers} onToggle={onToggle} />);
 
-		const install = screen.getAllByRole("button", { name: /install/i })[0];
+		const install = screen.getAllByRole("button", { name: /^Install / })[0];
 		await userEvent.click(install);
 		expect(onToggle).toHaveBeenCalled();
 	});
@@ -214,9 +214,12 @@ describe("StartView", () => {
 		expect(onVendorLock).toHaveBeenCalledWith(CONFIGS.agentsMd.id);
 	});
 
-	it("promises nothing back for an uninstall this screen does not pay", () => {
+	it("promises nothing back for an uninstall this screen does not pay", async () => {
 		render(<StartView view={view} {...handlers} />);
 
+		await userEvent.click(
+			screen.getByRole("button", { name: `Expand ${CONFIGS.js.label}` })
+		);
 		const press = screen.getByRole("button", {
 			name: `Uninstall ${CONFIGS.js.label}`,
 		});

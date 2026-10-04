@@ -48,8 +48,6 @@ import {
 	SINGLE_CREDIT,
 	healthyAt,
 	okAt,
-	ratioOf,
-	scoringSlotsAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	EXTEND_FROM_GATE,
@@ -294,7 +292,6 @@ export const createKantoHeaderProps = createMockDataFactory<HeaderProps>({
 	swatch: gateSwatchAt(SAMPLE_GATE),
 	swatches: trackTo(SAMPLE_GATE),
 	funds: fundsOf(BALANCE_KB, BALANCE_WORD),
-	readout: kantoReadoutAt(SAMPLE_GATE),
 });
 
 export const createKantoBuildProps = createMockDataFactory<BuildProps>({
@@ -589,7 +586,6 @@ export const kantoShopHeaderAt = (
 	swatch: gateSwatchAt(cleared),
 	swatches: trackTo(cleared + 1),
 	funds: fundsOf(balance, BALANCE_WORD),
-	readout: kantoReadoutAt(cleared + 1),
 	title: `Shop ${SEPARATOR} cleared ${gateSwatchAt(cleared).gateName}`,
 	note: `gate ${cleared} cleared`,
 });
@@ -816,7 +812,6 @@ export const kantoNewRunHeader = (
 	swatch: gateSwatchAt(START_GATE),
 	swatches: trackTo(START_GATE),
 	funds: fundsOf(storageKb, NEW_RUN_BALANCE_WORD),
-	readout: kantoReadoutAt(START_GATE),
 	title: "New run",
 	subtitle: `gate ${START_GATE} ${SEPARATOR} ${gateSwatchAt(START_GATE).gateName}`,
 });
@@ -934,14 +929,11 @@ import {
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	fundsOf,
-	PREP_COMMUNITY_LABEL,
 	PREP_POLLS_TITLE,
 	type PrepWindow,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { OutageTargetView } from "~/modules/run/run/application/runView.viewmodel";
-import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
-import type { CategoryCode } from "~/shared/lib/categories";
 import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
 import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
@@ -958,7 +950,6 @@ export {
 	type PrepWindow,
 	BAND_OUTCOMES_NOTE,
 	BAND_OUTCOMES_TITLE,
-	PREP_COMMUNITY_LABEL,
 	PREP_POLLS_TITLE,
 };
 
@@ -978,7 +969,7 @@ const LAVENDER_CONFIGS: readonly Config[] = [
 ];
 
 const LAVENDER_WINDOW: PrepWindow = {
-	answerTypes: { single: 1, multiple: 4 },
+	answerTypes: ["single", "multiple", "multiple", "multiple", "multiple"],
 	optionCounts: [4, 4, 5, 6, 4],
 	categories: ["ts", "ts", "ts", "js", "js"],
 	nextCategories: ["git", "git", "git", "git", "git"],
@@ -1031,37 +1022,6 @@ export const KANTO_CHAMPION_AUDITS: readonly AuditId[] = [
 	"payload-too-large",
 ];
 
-const ANSWERED_CATEGORY: CategoryCode = "js";
-
-const answeredPollAt = (index: number, right: boolean): AnsweredPoll => ({
-	id: `kanto-answered-${index}`,
-	question: `Poll ${index + 1}`,
-	category: ANSWERED_CATEGORY,
-	outcome: right ? "correct" : "wrong",
-	picked: [],
-});
-
-const spreadsEvenly = (index: number, right: number, total: number) =>
-	Math.floor((index * right) / total) <
-	Math.floor(((index + 1) * right) / total);
-
-export const kantoAnsweredThrough = (
-	gate: number,
-	coverageHeld: number
-): AnsweredPoll[] => {
-	const asked = SLICE_WINDOW * gate;
-	if (asked === 0) return [];
-
-	const right = kantoUnitsHeld(gate, coverageHeld);
-
-	return Array.from({ length: asked }, (_, index) =>
-		answeredPollAt(index, spreadsEvenly(index, right, asked))
-	);
-};
-
-export const kantoUnitsHeld = (gate: number, coverageHeld: number): number =>
-	Math.round(ratioOf(coverageHeld) * scoringSlotsAt(gate));
-
 export type KantoPrepFrame = {
 	gate: number;
 	configs: readonly Config[];
@@ -1089,7 +1049,6 @@ export const kantoPrepAt = ({
 }: KantoPrepFrame): PrepScreenProps =>
 	prepPropsFor({
 		gate,
-		answeredPolls: kantoAnsweredThrough(gate, coverageHeld),
 		configs,
 		audits: audits.map((id, position) => prepAuditViewAt(gate, id, position)),
 		outageTargets,
@@ -1115,7 +1074,6 @@ export const kantoPrepAt = ({
 		),
 		peelKb: prepPeelKbAt(gate, configs, audits),
 		payout: prepPayoutAt(gate, configs),
-		readout: kantoReadoutAt(gate),
 	});
 
 export const newRunBuildNote = (): LeadLine => [
@@ -1168,7 +1126,7 @@ export const kantoPrepPrefetchedAtV1 = (): PrepScreenProps =>
 		balanceKb: LAVENDER_BALANCE_KB,
 		coverageHeld: 0,
 		buildSpace: LAVENDER_BUILD_SPACE,
-		window: LAVENDER_WINDOW,
+		window: { ...LAVENDER_WINDOW, answerTypes: [], optionCounts: [] },
 	});
 
 export const kantoPrepPrefetched = (): PrepScreenProps =>
@@ -1197,7 +1155,7 @@ const CHAMPION_CONFIGS: readonly Config[] = [
 ];
 
 const CHAMPION_WINDOW: PrepWindow = {
-	answerTypes: { single: 1, multiple: 4 },
+	answerTypes: ["single", "multiple", "multiple", "multiple", "multiple"],
 	optionCounts: [4, 5, 6, 5, 6],
 	categories: ["js", "js", "css", "css", "java"],
 	nextCategories: [],
@@ -1264,19 +1222,6 @@ export const kantoPrepFirstAudit = (
 		window: LAVENDER_WINDOW,
 		audits: ["not-found"],
 		clearedGates,
-	});
-
-const CERULEAN_GATE = 2;
-const CERULEAN_THIN_COVERAGE = 61;
-
-export const kantoPrepCeruleanThin = (): PrepScreenProps =>
-	kantoPrepAt({
-		gate: CERULEAN_GATE,
-		configs: [CONFIGS.ts],
-		balanceKb: 121,
-		coverageHeld: CERULEAN_THIN_COVERAGE,
-		buildSpace: BASE_SLOTS,
-		window: LAVENDER_WINDOW,
 	});
 
 export const kantoPrepFatal = (): PrepScreenProps =>

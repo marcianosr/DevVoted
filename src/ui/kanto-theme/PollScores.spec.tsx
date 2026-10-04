@@ -142,6 +142,15 @@ describe("PollScores", () => {
 			expect(screen.getByText("3 of 5 right")).toBeInTheDocument();
 		});
 
+		it("breaks what each poll paid onto the line under the count", () => {
+			render(<PollScores rows={[PAID[0]]} />);
+
+			const count = screen.getByText("3 of 5 right").parentElement;
+			const lineBreak = count?.nextElementSibling;
+			expect(lineBreak).toHaveClass("basis-full");
+			expect(lineBreak?.nextElementSibling?.children).toHaveLength(5);
+		});
+
 		it("drops the gate name on a single row, which the screen above already states", () => {
 			render(<PollScores rows={[PAID[0]]} />);
 

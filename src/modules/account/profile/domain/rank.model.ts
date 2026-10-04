@@ -21,11 +21,6 @@ export const RANK_LADDER: readonly Rung[] = [
 
 export const TOP_RANK = "Polls Galore!";
 
-export const RANK_COUNT = RANK_LADDER.length + 1;
-
-export const rankFor = (pollsAnswered: number): string =>
-	RANK_LADDER.find((rung) => pollsAnswered <= rung.upTo)?.name ?? TOP_RANK;
-
 export const pollsAnsweredIn = (
 	counts: readonly { readonly metric: string; readonly count: number }[]
 ): number => counts.find((row) => row.metric === "polls-answered")?.count ?? 0;

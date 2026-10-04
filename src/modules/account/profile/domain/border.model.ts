@@ -9,9 +9,21 @@ export type Border = {
 	image: string;
 	cost: number;
 	rarity: BorderRarity;
+	earnedByVictory?: true;
 };
 
+export const CHAMPION_BORDER_ID = "border-champion";
+
 export const borders: Border[] = [
+	{
+		id: CHAMPION_BORDER_ID,
+		name: "Champion",
+		description: "Worn by those who cleared every gate from Pallet.",
+		image: "/borders/border-champion-prismatic.svg",
+		cost: 10 * STORAGE_UNITS.TB,
+		rarity: "legendary",
+		earnedByVictory: true,
+	},
 	{
 		id: "border-00b9a62e",
 		name: "Stack Trace",

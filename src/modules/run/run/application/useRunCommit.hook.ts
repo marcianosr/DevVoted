@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { dispatchRunAction } from "~/modules/run/run/application/run.serverfn";
 import {
 	archiveQueryKeys,
+	hallOfFameQueryKeys,
 	pollQueryKeys,
 	sessionRunQueryKeys,
 	titleQueryKeys,
@@ -24,6 +25,7 @@ const sideViewKeysOf = () => [
 	titleQueryKeys.all,
 	archiveQueryKeys.all,
 	pollQueryKeys.polldexAll(),
+	hallOfFameQueryKeys.all,
 ];
 
 export const useRunCommit = () => {

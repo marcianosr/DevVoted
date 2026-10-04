@@ -1,26 +1,29 @@
+import { useRef } from "react";
+
 import { OF, WEIGHT } from "~/shared/lib/copy";
 import { clsx } from "clsx";
 
 import type { KantoColor } from "./colors";
 import { leadTextOf, type LeadLine } from "./Lead.ui";
 import { Typography } from "./Typography.ui";
-import { upkeepLabelOf } from "./upkeep";
 
 const COPY = {
 	free: "free",
 	overBy: "over by",
-	current: "Current:",
-	afterInstall: "After install:",
+	preview: "preview",
+	takes: "takes",
+	grows: "the build grows to",
 } as const;
 
 const COLUMN = "flex w-full flex-col gap-1.5";
-const TRACK = "flex h-7.5 w-full";
+const TRACK = "weight-track flex h-7.5 w-full";
 const SEGMENT =
 	"flex min-w-0 basis-0 items-center justify-center gap-1.5 first:rounded-l-md last:rounded-r-md";
 const PADDED = "px-1.5";
 const DIMMED = "opacity-35";
 const ROOM = "rounded-r-md border border-dashed border-theme-faint";
-const PREVIEW_ROOM = "rounded-r-md border border-theme-soft bg-hatched-theme";
+const INCOMING = "border border-theme bg-hatched-theme text-theme";
+const INCOMING_COLOR: KantoColor = "saffron";
 
 const NAME = "truncate text-xs font-bold";
 const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
@@ -28,8 +31,7 @@ const FIGURE = "shrink-0 text-xs font-bold tabular-nums";
 const NAME_SHARE = 0.12;
 const FIGURE_SHARE = 0.05;
 const MIN_AXIS = 1;
-const NO_UPKEEP = 0;
-const PREVIEW_LINE = "block tabular-nums";
+const PREVIEW_CAPTION = "text-theme";
 
 const SEPARATOR = "·";
 
@@ -57,16 +59,15 @@ export type WeightTrackFill = {
 };
 
 export type WeightPreview = {
-	weight: number;
+	name: string;
+	slots: number;
 	held: number;
-	perGateKb: number;
 };
 
 export type WeightTrackProps = {
 	fills: readonly WeightTrackFill[];
 	held: number;
 	preview?: WeightPreview;
-	perGateKb?: number;
 	highlight?: string;
 	caption?: boolean;
 };
@@ -87,29 +88,33 @@ export const roomPartsOf = (weight: number, held: number): LeadLine => {
 export const roomLineOf = (weight: number, held: number): string =>
 	leadTextOf(roomPartsOf(weight, held));
 
-export const previewLinesOf = (
-	weight: number,
+export const previewLineOf = (
 	held: number,
-	perGateKb: number,
-	preview: WeightPreview
-): readonly string[] => [
-	`${COPY.current} ${weight} ${OF} ${held} ${SEPARATOR} ${upkeepLabelOf(perGateKb)}`,
-	`${COPY.afterInstall} ${preview.weight} ${OF} ${preview.held} ${SEPARATOR} ${upkeepLabelOf(preview.perGateKb)}`,
-];
+	{ name, slots, held: grownTo }: WeightPreview
+): string => {
+	const takes = `${COPY.preview} ${SEPARATOR} ${name} ${COPY.takes} ${slots} ${WEIGHT}`;
+	return grownTo === held ? takes : `${takes}, ${COPY.grows} ${grownTo}`;
+};
 
 const fillLineOf = ({ name, slots }: WeightTrackFill) =>
 	`${name} ${SEPARATOR} ${slots} ${WEIGHT}`;
+
+const ARRIVED = "weight-fill-new";
 
 const Segment = ({
 	fill,
 	share,
 	color,
-	dimmed,
+	dimmed = false,
+	arrived = false,
+	incoming = false,
 }: {
 	fill: WeightTrackFill;
 	share: number;
 	color: KantoColor;
-	dimmed: boolean;
+	dimmed?: boolean;
+	arrived?: boolean;
+	incoming?: boolean;
 }) => {
 	const figure = share >= FIGURE_SHARE;
 	const named = share >= NAME_SHARE;
@@ -120,7 +125,8 @@ const Segment = ({
 			data-screen-theme={color}
 			className={clsx(
 				SEGMENT,
-				"segment-theme",
+				incoming ? INCOMING : "segment-theme",
+				arrived && ARRIVED,
 				figure && PADDED,
 				dimmed && DIMMED
 			)}
@@ -144,13 +150,20 @@ export const WeightTrack = ({
 	fills,
 	held,
 	preview,
-	perGateKb = NO_UPKEEP,
 	highlight,
 	caption = true,
 }: WeightTrackProps) => {
 	const weight = weightOf(fills);
-	const axis = Math.max(held, weight, preview?.held ?? MIN_AXIS, MIN_AXIS);
+	const incoming = preview?.slots ?? 0;
+	const axis = Math.max(
+		held,
+		weight + incoming,
+		preview?.held ?? MIN_AXIS,
+		MIN_AXIS
+	);
+	const room = (preview?.held ?? held) - weight - incoming;
 	const highlighted = fills.find((fill) => fill.name === highlight);
+	const openedWith = useRef(new Set(fills.map((fill) => fill.name)));
 
 	return (
 		<div className={COLUMN}>
@@ -162,35 +175,29 @@ export const WeightTrack = ({
 						share={fill.slots / axis}
 						color={segmentColorOf(index)}
 						dimmed={highlighted !== undefined && fill.name !== highlight}
+						arrived={!openedWith.current.has(fill.name)}
 					/>
 				))}
 
-				{weight >= held ? null : (
-					<li
-						aria-hidden
-						style={{ flexGrow: held - weight }}
-						className={ROOM}
+				{preview === undefined ? null : (
+					<Segment
+						fill={preview}
+						share={preview.slots / axis}
+						color={INCOMING_COLOR}
+						incoming
 					/>
 				)}
 
-				{preview === undefined || axis <= held ? null : (
-					<li
-						aria-hidden
-						style={{ flexGrow: axis - Math.max(weight, held) }}
-						className={PREVIEW_ROOM}
-					/>
+				{room <= 0 ? null : (
+					<li aria-hidden style={{ flexGrow: room }} className={ROOM} />
 				)}
 			</ul>
 
-			{!caption ? null : preview !== undefined ? (
-				<Typography variant="hint">
-					{previewLinesOf(weight, held, perGateKb, preview).map((line) => (
-						<span key={line} className={PREVIEW_LINE}>
-							{line}
-						</span>
-					))}
-				</Typography>
-			) : (
+			{preview !== undefined ? (
+				<span data-screen-theme={INCOMING_COLOR} className={PREVIEW_CAPTION}>
+					<Typography variant="hint">{previewLineOf(held, preview)}</Typography>
+				</span>
+			) : !caption ? null : (
 				<Typography variant="hint">
 					{highlighted === undefined
 						? roomLineOf(weight, held)

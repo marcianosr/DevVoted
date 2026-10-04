@@ -3,6 +3,7 @@ import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 import type {
 	InstallScale,
 	RunView,
+	ShopOffer,
 } from "~/modules/run/run/application/runView.viewmodel";
 import type { Config } from "~/modules/run/config/domain/config.model";
 import {
@@ -11,7 +12,6 @@ import {
 	slotsOf,
 } from "~/modules/run/config/domain/config.model";
 import { buildReadingOf } from "~/modules/run/build/application/newRunScreen.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import { carries } from "~/modules/run/run/domain/warmBoot.model";
 import {
 	BUILD_SPACE_RUNGS,
@@ -82,8 +82,8 @@ import type {
 	ShopServiceRow,
 } from "~/ui/kanto-theme/ShopScreen.ui";
 
-const CLEARED_TRAIL = "cleared";
-const SHOP_WORD = "Shop";
+const REGISTRY_TITLE = "Registry";
+const REGISTRY_SUBTITLE = "Improve your build this run!";
 const AFTER_COPY = {
 	install: "after install",
 	upgrade: "after upgrade",
@@ -122,6 +122,7 @@ export type OfferDeal = {
 	scale?: InstallScale | null;
 	upkeepNowKb?: number;
 	armed?: boolean;
+	onCancel?: () => void;
 	isNew?: boolean;
 };
 
@@ -150,11 +151,12 @@ const offerInstallFor = ({
 	onInstall,
 	scale,
 	armed,
+	onCancel,
 }: OfferDeal): ChipInstall => ({
 	price: kbLabel(priceKb),
 	disabled: !affordable,
 	onPress: onInstall,
-	...(scale === null || scale === undefined ? {} : { scale, armed }),
+	...(scale === null || scale === undefined ? {} : { scale, armed, onCancel }),
 });
 
 export const offerChipFor = (
@@ -176,7 +178,7 @@ export const offerChipFor = (
 export const upgradeChipFor = (
 	offer: Config,
 	heldLevel: number,
-	{ priceKb, affordable, onInstall, onPoint }: OfferDeal
+	{ priceKb, affordable, onInstall, onPoint, scale }: OfferDeal
 ): ConfigChipProps => {
 	const share = offerOddsOf(heldLevel, offer);
 
@@ -191,6 +193,7 @@ export const upgradeChipFor = (
 			price: kbLabel(priceKb),
 			affordable,
 			onBuy: onInstall,
+			...(scale === null || scale === undefined ? {} : { scale }),
 		}),
 		info: infoFor(offer),
 		...quotingOf({ upgrade: -priceKb }, onPoint),
@@ -248,11 +251,6 @@ export const controlRowFor = (
 	onPress: priceKb <= balanceKb ? onPress : undefined,
 });
 
-const shopTitleFor = (cleared: number): string => {
-	const next = gateSwatchAt(cleared + 1);
-	return next === undefined ? SHOP_WORD : `${next.gateName} ${SHOP_WORD}`;
-};
-
 const afterOf = (
 	balanceKb: number,
 	pointed: PointedPrice | undefined
@@ -287,8 +285,8 @@ export const shopHeaderFor = (
 			...fundsOf(balanceKb, BALANCE_WORD),
 			...(preview === undefined ? {} : { preview }),
 		},
-		title: shopTitleFor(cleared),
-		note: `gate ${cleared} ${CLEARED_TRAIL}`,
+		title: REGISTRY_TITLE,
+		subtitle: REGISTRY_SUBTITLE,
 	};
 };
 
@@ -436,7 +434,7 @@ export type ShopScreenUi = {
 	openUpgrades?: string;
 	onToggleUpgrades: (name: string) => void;
 	armedId?: string;
-	onArm: (configId: string) => void;
+	onArm: (configId?: string) => void;
 	pointed?: PointedPrice;
 	onPoint: (pointed?: PointedPrice) => void;
 	abandonArmed: boolean;
@@ -446,7 +444,6 @@ export type ShopScreenUi = {
 
 export type ShopScreenFrame = {
 	view: RunView;
-	runNumber?: number | null;
 	rivalsInReach?: number | null;
 	on: ShopScreenHandlers;
 	ui: ShopScreenUi;
@@ -459,7 +456,7 @@ const offersOf = (
 	view: RunView,
 	onDraft: (id: string) => void,
 	armedId: string | undefined,
-	arm: (configId: string) => void,
+	arm: (configId?: string) => void,
 	onPoint: (pointed?: PointedPrice) => void
 ): readonly ConfigChipProps[] =>
 	view.offers.map((offer) => {
@@ -470,6 +467,7 @@ const offersOf = (
 			scale: offer.scale,
 			upkeepNowKb: view.buildSpace.perGateKb,
 			armed,
+			onCancel: () => arm(),
 			onPoint,
 			isNew: isUnlockedThisRun(view, offer.config.id),
 			onInstall:
@@ -479,8 +477,30 @@ const offersOf = (
 		};
 		return offer.heldLevel === null
 			? offerChipFor(offer.config, deal)
-			: upgradeChipFor(offer.config, offer.heldLevel, deal);
+			: upgradeChipFor(offer.config, offer.heldLevel, {
+					...deal,
+					onInstall: () => onDraft(offer.config.id),
+				});
 	});
+
+const isUpgradeOffer = (offer: ShopOffer): boolean => offer.heldLevel !== null;
+
+const upgradeOfferNamed = (
+	view: RunView,
+	name: string
+): ShopOffer | undefined =>
+	view.offers.find(
+		(offer) => isUpgradeOffer(offer) && offer.config.label === name
+	);
+
+const registryUpgradeToggleOf =
+	(view: RunView, armed: ShopOffer | undefined, arm: (id?: string) => void) =>
+	(name: string) => {
+		const pressed = upgradeOfferNamed(view, name);
+		arm(
+			pressed === undefined || pressed === armed ? undefined : pressed.config.id
+		);
+	};
 
 const focusCoverageOf = (view: RunView, config: Config): number =>
 	config.focusCategory === undefined
@@ -616,12 +636,13 @@ const controlsOf = (
 
 export const shopScreenPropsFor = ({
 	view,
-	runNumber = null,
 	rivalsInReach = null,
 	on,
 	ui,
 }: ShopScreenFrame): ShopScreenProps => {
 	const armed = view.offers.find((offer) => offer.config.id === ui.armedId);
+	const armedUpgrade =
+		armed !== undefined && isUpgradeOffer(armed) ? armed : undefined;
 	const disarming = (press: () => void) => () => {
 		ui.onDisarm();
 		press();
@@ -639,7 +660,6 @@ export const shopScreenPropsFor = ({
 				ui.pointed,
 				view.heldAudit?.auditId
 			),
-			readout: runReadoutFor(view, runNumber),
 		},
 		audits: shopAuditsFor(
 			view.gateStake.audits.filter((audit) => !audit.suppressed),
@@ -701,13 +721,13 @@ export const shopScreenPropsFor = ({
 				held: view.buildSpace.space,
 				perGateKb: view.buildSpace.perGateKb,
 				rungs: BUILD_SPACE_RUNGS,
-				...(armed?.scale == null
+				...(armed?.scale == null || armedUpgrade !== undefined
 					? {}
 					: {
 							preview: {
-								weight: view.buildSpace.weight + armed.slots,
+								name: armed.config.label,
+								slots: armed.slots,
 								held: armed.scale.to,
-								perGateKb: armed.scale.perGateKb,
 							},
 						}),
 			},
@@ -723,8 +743,8 @@ export const shopScreenPropsFor = ({
 			openInfo: ui.offers.open,
 			onToggleInfo: ui.offers.toggle,
 			onToggleAll: ui.offers.toggleAll,
-			openUpgrades: ui.openUpgrades,
-			onToggleUpgrades: ui.onToggleUpgrades,
+			openUpgrades: armedUpgrade?.config.label,
+			onToggleUpgrades: registryUpgradeToggleOf(view, armedUpgrade, ui.onArm),
 		},
 		footer: {
 			asides:

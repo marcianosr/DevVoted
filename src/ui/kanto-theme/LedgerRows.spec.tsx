@@ -127,6 +127,19 @@ describe("LedgerRows", () => {
 		expect(notes[1]).toHaveTextContent("streak ×1.5");
 	});
 
+	it("states a note bare, in the lighter weight, with no marker before it", () => {
+		render(
+			<LedgerRows
+				rows={[{ label: "Surplus", notes: ["12% past the full bar"] }]}
+			/>
+		);
+
+		const note = screen.getByRole("listitem");
+
+		expect(note.textContent).toBe("12% past the full bar");
+		expect(note.closest("ul")).toHaveClass("font-normal");
+	});
+
 	it("renders one row per entry, in the order the gate asked them", () => {
 		render(
 			<LedgerRows

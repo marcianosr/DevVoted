@@ -16,13 +16,11 @@ import { ShopScreen } from "~/ui/kanto-theme/ShopScreen.ui";
 
 export type ShopViewProps = ShopScreenHandlers & {
 	view: RunView;
-	runNumber?: number | null;
 	rivalsInReach?: number | null;
 };
 
 export const ShopView = ({
 	view,
-	runNumber = null,
 	rivalsInReach = null,
 	...on
 }: ShopViewProps) => {
@@ -43,17 +41,27 @@ export const ShopView = ({
 		<ShopScreen
 			{...shopScreenPropsFor({
 				view,
-				runNumber,
 				rivalsInReach,
-				on,
+				on: {
+					...on,
+					onUpgrade: (configId) => {
+						setOpenUpgrades(undefined);
+						on.onUpgrade(configId);
+					},
+				},
 				ui: {
 					build,
 					offers,
 					openUpgrades,
-					onToggleUpgrades: (name) =>
-						setOpenUpgrades(name === openUpgrades ? undefined : name),
+					onToggleUpgrades: (name) => {
+						setArmedId(undefined);
+						setOpenUpgrades(name === openUpgrades ? undefined : name);
+					},
 					armedId,
-					onArm: setArmedId,
+					onArm: (configId) => {
+						setOpenUpgrades(undefined);
+						setArmedId(configId);
+					},
 					pointed,
 					onPoint: setPointed,
 					abandonArmed,

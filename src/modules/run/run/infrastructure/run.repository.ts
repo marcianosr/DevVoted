@@ -9,6 +9,7 @@ import {
 	usersTable,
 } from "~/database/schema";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
+import { CHAMPION_BORDER_ID } from "~/modules/account/profile/domain/border.model";
 
 import { accountGrantsOf } from "~/modules/run/run/domain/accountGrant.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
@@ -22,6 +23,7 @@ import {
 
 import {
 	archiveCreditBytes,
+	entersHallOfFame,
 	isRunOver,
 	type RunState,
 	scheduleOf,
@@ -247,14 +249,21 @@ const finishSessionRun = async (
 		.where(eq(runsTable.id, runId));
 
 	const creditBytes = archiveCreditBytes(state);
-	if (creditBytes > 0) {
-		await tx
-			.update(usersTable)
-			.set({
-				archived_storage: sql`${usersTable.archived_storage} + ${creditBytes}`,
-			})
-			.where(eq(usersTable.id, userId));
-	}
+	const credit =
+		creditBytes > 0
+			? {
+					archived_storage: sql`${usersTable.archived_storage} + ${creditBytes}`,
+				}
+			: {};
+	const championBorder = entersHallOfFame(state)
+		? {
+				owned_border_ids: sql`array_append(array_remove(${usersTable.owned_border_ids}, ${CHAMPION_BORDER_ID}), ${CHAMPION_BORDER_ID})`,
+			}
+		: {};
+	const grants = { ...credit, ...championBorder };
+	if (Object.keys(grants).length === 0) return;
+
+	await tx.update(usersTable).set(grants).where(eq(usersTable.id, userId));
 };
 
 export const fetchArchivedStorageKb = async (

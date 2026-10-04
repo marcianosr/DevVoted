@@ -11,6 +11,7 @@ import {
 	kantoRegistryControls,
 	kantoUncarriedService,
 } from "~/test/kantoPoll.factory";
+import { navRunOf, renderWithNavRun } from "~/test/navRun.harness";
 
 import { ShopScreen } from "./ShopScreen.ui";
 
@@ -43,14 +44,6 @@ const headOf = (label: string): HTMLElement => {
 };
 
 describe("ShopScreen", () => {
-	it("pins its header, so the balance stays with the prices", () => {
-		render(<ShopScreen {...props} />);
-
-		expect(screen.getByText(STORAGE_BALANCE).closest("header")).toHaveClass(
-			"md:sticky"
-		);
-	});
-
 	it("states why a shut shop takes no presses and leaves its panels inert", () => {
 		const shut = "you skipped this shop";
 		render(<ShopScreen {...props} shut={shut} />);
@@ -140,18 +133,34 @@ describe("ShopScreen", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("names the balance its offers are priced against", () => {
-		render(<ShopScreen {...props} />);
+	it("hands the nav the balance its offers are priced against", () => {
+		const { container } = renderWithNavRun(<ShopScreen {...props} />);
 
-		const funds = screen.getByText(STORAGE_BALANCE).parentElement;
-		expect(funds).toContainElement(screen.getByRole("img", { name: "96 KB" }));
+		expect(navRunOf(container)).toContainElement(
+			screen.getByRole("img", { name: "96 KB" })
+		);
+		expect(screen.getByText(STORAGE_BALANCE)).toBeInTheDocument();
 	});
 
-	it("reads as the shop of the gate it cleared, counting that gate off", () => {
-		render(<ShopScreen {...props} />);
+	it("seats its press beside the title, above the panels", () => {
+		render(
+			<ShopScreen
+				{...props}
+				footer={{ action: { label: "To prep", onPress: () => {} } }}
+			/>
+		);
 
-		expect(screen.getByText("Shop · cleared Cinnabar")).toBeInTheDocument();
-		expect(screen.getByText("gate 9 cleared")).toBeInTheDocument();
+		const press = screen.getByRole("button", { name: /^To prep/ });
+		const title = screen.getByRole("heading", { level: 1 });
+		const top = title.closest("header")?.parentElement?.parentElement;
+
+		expect(top).toContainElement(press);
+		expect(press.closest(".order-last")).toHaveClass("md:order-none");
+		expect(
+			press.compareDocumentPosition(
+				screen.getByRole("heading", { name: "Build" })
+			)
+		).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 	});
 
 	it("stands its panels on the page, shedding the screen's own frame", () => {
@@ -272,20 +281,6 @@ describe("ShopScreen", () => {
 		render(<ShopScreen {...props} />);
 
 		expect(screen.queryByRole("tab", { name: "Desk" })).not.toBeInTheDocument();
-	});
-
-	it("carries the balance into the footer on a phone, where the header does not pin", () => {
-		render(
-			<ShopScreen
-				{...props}
-				footer={{ action: { label: "To prep", onPress: () => {} } }}
-			/>
-		);
-
-		const [pinned, footer] = screen.getAllByRole("img", { name: "96 KB" });
-
-		expect(pinned.closest(".hidden")).toHaveClass("md:flex");
-		expect(footer.closest(".md\\:hidden")).not.toBeNull();
 	});
 
 	it("names a service the run did not carry in, with where it is carried in place of a price (ADR-153)", () => {

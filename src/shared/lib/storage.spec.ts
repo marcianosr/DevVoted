@@ -51,6 +51,11 @@ describe("Storage utilities", () => {
 			expect(formatStorage(STORAGE_UNITS.GB)).toBe("1 GB");
 			expect(formatStorage(1.5 * STORAGE_UNITS.GB)).toBe("1.5 GB");
 		});
+
+		it("formats TB correctly", () => {
+			expect(formatStorage(10 * STORAGE_UNITS.TB)).toBe("10 TB");
+			expect(formatStorage(1.5 * STORAGE_UNITS.TB)).toBe("1.5 TB");
+		});
 	});
 
 	describe("getStorageUsagePercentage", () => {

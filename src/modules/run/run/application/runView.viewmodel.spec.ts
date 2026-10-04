@@ -848,6 +848,19 @@ describe("Prefetch by version", () => {
 		expect(v2.optionCountsThisGate).not.toBeNull();
 	});
 
+	it("states one answer type per poll at v2, in the order they are dealt", () => {
+		const v2 = toRunView(answeringWith([{ ...CONFIGS.prefetch, level: 2 }]));
+
+		expect(v2.answerTypesThisGate).toHaveLength(
+			v2.optionCountsThisGate?.length ?? -1
+		);
+		expect(v2.answerTypesThisGate).toEqual(
+			v2.answerTypesThisGate?.filter(
+				(type) => type === "single" || type === "multiple"
+			)
+		);
+	});
+
 	it("seals a v2 Prefetch's shape under 510 Not Extended, which reads every config at v1", () => {
 		const flattened = audited(
 			answeringWith([{ ...CONFIGS.prefetch, level: 2 }]),

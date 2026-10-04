@@ -1,10 +1,8 @@
 import { VENDOR_REMEDY } from "~/modules/run/build/application/vendorChip.viewmodel";
 import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { FooterAction } from "~/ui/kanto-theme/ScreenFooter.ui";
 import {
 	AUDITS,
-	COMMUNITY,
 	NEW_BADGE,
 	POLLS_SPENT,
 	STORAGE_BALANCE,
@@ -12,7 +10,6 @@ import {
 import {
 	type Config,
 	escrowKbPerCorrect,
-	showsPollShape,
 } from "~/modules/run/config/domain/config.model";
 import {
 	crowdSubmitterFor,
@@ -64,26 +61,17 @@ import type {
 import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
-import {
-	answersPerGate,
-	type AnsweredPoll,
-} from "~/modules/run/run/domain/runPoll.model";
-
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type {
 	AuditsPanelProps,
 	AuditsRow,
 } from "~/ui/kanto-theme/AuditsPanel.ui";
 import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
-import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
 import type { LedgerProps } from "~/ui/kanto-theme/Ledger.ui";
-import type { LedgerFigure, LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
-import type {
-	PollScoreRow,
-	PollScoresProps,
-} from "~/ui/kanto-theme/PollScores.ui";
+import type { LedgerFigure } from "~/ui/kanto-theme/LedgerRows.ui";
+import type { PollTile, PollTilesProps } from "~/ui/kanto-theme/PollTiles.ui";
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
 import type { EstimatePickerProps } from "~/ui/kanto-theme/EstimatePicker.ui";
 import type { SlaPickerProps } from "~/ui/kanto-theme/SlaPicker.ui";
@@ -92,6 +80,7 @@ import {
 	APPROVALS_NEEDED,
 	type ApprovalBoard,
 } from "~/modules/run/run/domain/approval.model";
+import { accuracyTrackFor } from "~/modules/run/run/application/accuracyTrack.viewmodel";
 import type { RebaseListProps } from "~/ui/kanto-theme/RebaseList.ui";
 
 export const BALANCE_WORD = STORAGE_BALANCE;
@@ -104,30 +93,16 @@ export const fundsOf = (kb: number, label: string): BalanceProps => ({
 });
 
 const SUMMIT_LINE = "the summit — nothing after this";
-const SEALED: LedgerFigure = { locked: true };
 
-export const PREP_COMMUNITY_LABEL = COMMUNITY;
+const PREP_SUBTITLE = "Look at what's at stake!";
 const START_LEAD = "Start";
 const READING_JOIN = " · ";
 
 export const PREP_POLLS_TITLE = "The five polls";
-const WINDOW_LABELS = [
-	"answer types",
-	"options each",
-	"categories",
-	"next gate",
-] as const;
-const [
-	ANSWER_TYPES_LABEL,
-	OPTIONS_EACH_LABEL,
-	CATEGORIES_LABEL,
-	NEXT_GATE_LABEL,
-] = WINDOW_LABELS;
-const POLL_FACTS = 2;
-const REVEALED = " facts revealed";
-const REVEALED_BY = " facts revealed by ";
-const REVEAL_NOTE = "Some configs reveal these before you answer.";
-const SHAPE_REVEAL_TRAIL = "v2 reveals the answer types and option counts too.";
+const SEALED_STATE = "sealed";
+const REVEALED_BY = "revealed by";
+const NEXT_GATE_LABEL = "next gate";
+const OPTIONS_WORD = "options";
 const TARGET_LEAD = "takes";
 const TARGET_TRAIL = "offline";
 const TARGET_PER_POLL_TRAIL = "offline, one a poll";
@@ -141,7 +116,6 @@ const BILL_COLOR: KantoColor = "cinnabar";
 const SUBSCRIPTIONS_TITLE = "Subscriptions";
 const NO_AUDITS = "none this gate";
 const AUDIT_COUNT_TRAIL = "firing this gate";
-const CORRECT_OUTCOME = "correct";
 
 const ESTIMATE_HINT =
 	"Call how many of the five you will get right. Meet the number and it pays; fall short and it pays nothing.";
@@ -270,33 +244,6 @@ const approvalListFor = (
 	};
 };
 
-const rightAnswersIn = (answered: readonly AnsweredPoll[]): number =>
-	answered.filter((poll) => poll.outcome === CORRECT_OUTCOME).length;
-
-const rightAnswersPerGate = (
-	answered: readonly AnsweredPoll[],
-	gate: number
-): number[] => answersPerGate(answered, gate).map(rightAnswersIn);
-
-const answeredThisGateOf = (
-	answered: readonly AnsweredPoll[],
-	gate: number
-): number => answersPerGate(answered, gate)[gate].length;
-
-export const pollScoresFor = (
-	gate: number,
-	answered: readonly AnsweredPoll[]
-): PollScoresProps => {
-	const row: PollScoreRow = {
-		swatch: gateSwatchAt(gate),
-		correct: rightAnswersPerGate(answered, gate)[gate],
-		polls: SLICE_WINDOW,
-		current: true,
-	};
-
-	return { rows: [row] };
-};
-
 const TIMES = "×";
 
 const categoryFigureLabel = (code: CategoryCode, count: number): string => {
@@ -316,29 +263,11 @@ const categoryTally = (codes: readonly CategoryCode[]): LedgerFigure[] => {
 		.map(([code, count]) => ({ label: categoryFigureLabel(code, count) }));
 };
 
-const answerTypeFigures = (split: {
-	single: number;
-	multiple: number;
-}): LedgerFigure[] =>
-	[
-		{ label: `${split.single} single`, count: split.single },
-		{ label: `${split.multiple} multiple`, count: split.multiple },
-	]
-		.filter((figure) => figure.count > 0)
-		.map(({ label }) => ({ label }));
-
 export type PrepWindow = {
-	answerTypes: { single: number; multiple: number };
+	answerTypes: readonly AnswerType[];
 	optionCounts: readonly number[];
 	categories: readonly CategoryCode[];
 	nextCategories: readonly CategoryCode[];
-};
-
-type PollReveal = "sealed" | "polls" | "shape";
-
-const pollRevealOf = (revealer: Config | undefined): PollReveal => {
-	if (revealer === undefined) return "sealed";
-	return showsPollShape(revealer) ? "shape" : "polls";
 };
 
 const nextGateFigures = (gate: number, window: PrepWindow): LedgerFigure[] =>
@@ -346,76 +275,46 @@ const nextGateFigures = (gate: number, window: PrepWindow): LedgerFigure[] =>
 		? [{ label: SUMMIT_LINE, tone: "quiet" }]
 		: categoryTally(window.nextCategories);
 
-const pollRowsFor = (
-	gate: number,
-	window: PrepWindow,
-	reveal: PollReveal
-): LedgerRow[] => {
-	const shape = reveal === "shape";
-	const sealed = reveal === "sealed";
+const shapeOf = (window: PrepWindow, index: number): string | undefined => {
+	const answerType = window.answerTypes[index];
+	const options = window.optionCounts[index];
+	if (answerType === undefined || options === undefined) return undefined;
 
-	return [
-		{
-			label: ANSWER_TYPES_LABEL,
-			figures: shape ? answerTypeFigures(window.answerTypes) : [SEALED],
-		},
-		{
-			label: OPTIONS_EACH_LABEL,
-			figures: shape
-				? window.optionCounts.map((count) => ({ label: `${count}` }))
-				: [SEALED],
-		},
-		{
-			label: CATEGORIES_LABEL,
-			figures: sealed
-				? window.categories.map(() => SEALED)
-				: categoryTally(window.categories),
-		},
-		{
-			label: NEXT_GATE_LABEL,
-			figures: sealed ? [SEALED] : nextGateFigures(gate, window),
-		},
-	];
+	return `${answerType}${READING_JOIN}${options} ${OPTIONS_WORD}`;
 };
 
-const REVEALED_FACTS: Record<PollReveal, number> = {
-	sealed: 0,
-	polls: POLL_FACTS,
-	shape: WINDOW_LABELS.length,
-};
+const revealedTilesFor = (window: PrepWindow): PollTile[] =>
+	window.categories.map((code, index) => {
+		const shape = shapeOf(window, index);
 
-const revealMetaFor = (
-	revealer: Config | undefined,
-	reveal: PollReveal
-): LeadLine => {
-	const shown = `${REVEALED_FACTS[reveal]} of ${WINDOW_LABELS.length}`;
+		return {
+			category: CATEGORY_METADATA[code].name,
+			...(shape === undefined ? {} : { shape }),
+		};
+	});
 
-	if (revealer === undefined) return [{ figure: shown }, REVEALED];
-	return [{ figure: shown }, REVEALED_BY, { figure: revealer.label }];
-};
+const SEALED_TILES: readonly PollTile[] = Array.from(
+	{ length: SLICE_WINDOW },
+	() => ({ locked: true })
+);
 
-const revealNoteFor = (
-	revealer: Config | undefined,
-	reveal: PollReveal
-): { note?: string } => {
-	if (revealer === undefined) return { note: REVEAL_NOTE };
-	if (reveal === "polls")
-		return { note: `${revealer.label} ${SHAPE_REVEAL_TRAIL}` };
-	return {};
-};
-
-const pollsLedgerFor = (
+export const pollTilesFor = (
 	gate: number,
 	window: PrepWindow,
 	revealer: Config | undefined
-): LedgerProps => {
-	const reveal = pollRevealOf(revealer);
+): PollTilesProps => {
+	if (revealer === undefined)
+		return {
+			title: PREP_POLLS_TITLE,
+			state: SEALED_STATE,
+			tiles: SEALED_TILES,
+		};
 
 	return {
 		title: PREP_POLLS_TITLE,
-		meta: revealMetaFor(revealer, reveal),
-		rows: pollRowsFor(gate, window, reveal),
-		...revealNoteFor(revealer, reveal),
+		state: `${REVEALED_BY} ${revealer.label}`,
+		tiles: revealedTilesFor(window),
+		after: [{ label: NEXT_GATE_LABEL, figures: nextGateFigures(gate, window) }],
 	};
 };
 
@@ -535,7 +434,6 @@ export const subscriptionsLedgerFor = (
 
 export type PrepFrame = {
 	gate: number;
-	answeredPolls: readonly AnsweredPoll[];
 	configs: readonly Config[];
 	audits?: readonly AuditView[];
 	balanceKb: number;
@@ -557,12 +455,10 @@ export type PrepFrame = {
 	swatchGates?: readonly number[];
 	outageTargets?: readonly OutageTargetView[] | null;
 	clearedGates?: readonly number[];
-	readout?: RunReadoutProps;
 };
 
 export const prepPropsFor = ({
 	gate,
-	answeredPolls,
 	configs,
 	audits = [],
 	balanceKb,
@@ -584,7 +480,6 @@ export const prepPropsFor = ({
 	swatchGates = [],
 	outageTargets = null,
 	clearedGates = [],
-	readout,
 }: PrepFrame): PrepScreenProps => {
 	const swatch = gateSwatchAt(gate);
 	const prefetcher = prefetcherFor(configs);
@@ -602,8 +497,7 @@ export const prepPropsFor = ({
 			swatch,
 			swatches: swatchTrackFor(swatchGates, gate),
 			funds: fundsOf(balanceKb, BALANCE_WORD),
-			readout,
-			swatchState: "current",
+			subtitle: PREP_SUBTITLE,
 			badges:
 				audits.length === 0
 					? []
@@ -621,7 +515,6 @@ export const prepPropsFor = ({
 			coverageGainPercent,
 			accuracyBonus,
 			peelKb,
-			answeredThisGate: answeredThisGateOf(answeredPolls, gate),
 			escrows: escrowKbPerCorrect(configs) > 0,
 			catchesFatal: catcherFor(configs) !== undefined,
 			payout,
@@ -631,8 +524,7 @@ export const prepPropsFor = ({
 		sla: slaPickerFor(sla, slaBand),
 		rebase: rebaseListFor(configs, rebaseSlots),
 		approval: approvalListFor(configs, approval, approvedPollId),
-		scores: pollScoresFor(gate, answeredPolls),
-		polls: pollsLedgerFor(gate, window, prefetcher),
+		polls: pollTilesFor(gate, window, prefetcher),
 		...(isAuditedGate(gate)
 			? {
 					audits: auditsPanelFor(audits, {
@@ -643,12 +535,10 @@ export const prepPropsFor = ({
 			: {}),
 		...(subscriptions === undefined ? {} : { subscriptions }),
 		footer: {
-			asides: [
-				{ label: PREP_COMMUNITY_LABEL, icon: "community", onPress: noop },
-			],
 			action: {
 				label: `${START_LEAD} ${swatch.gateName}`,
 				swatch: { state: "current", swatch, count: SLICE_WINDOW },
+				shine: true,
 				onPress: noop,
 			},
 		},
@@ -660,7 +550,6 @@ const BACK_TO_SHOP = "Back to the shop";
 export type PrepScreenHandlers = {
 	onStart: () => void;
 	onBackToShop?: () => void;
-	onCommunity?: () => void;
 	onEstimate?: (count: number) => void;
 	onCommitBand?: (band: string) => void;
 	onRebase?: (from: number, to: number) => void;
@@ -669,7 +558,6 @@ export type PrepScreenHandlers = {
 
 export type PrepScreenFrame = {
 	view: RunView;
-	runNumber?: number | null;
 	backLabel?: string;
 	startRefusal?: string;
 	approval?: ApprovalBoard | null;
@@ -677,37 +565,23 @@ export type PrepScreenFrame = {
 };
 
 const windowOf = (view: RunView): PrepWindow => ({
-	answerTypes: view.answerTypesThisGate ?? { single: 0, multiple: 0 },
+	answerTypes: view.answerTypesThisGate ?? [],
 	optionCounts: view.optionCountsThisGate ?? [],
 	categories: view.upcomingCategories ?? [],
 	nextCategories: view.nextGateCategories ?? [],
 });
 
-const asideHandlerFor = (
-	{ onCommunity }: PrepScreenHandlers,
-	label: string
-): (() => void) | undefined =>
-	label === PREP_COMMUNITY_LABEL ? onCommunity : undefined;
-
-const asidesFor = (
-	frame: PrepScreenFrame,
-	offered: readonly FooterAction[]
-): readonly FooterAction[] => [
-	...(frame.on.onBackToShop === undefined
+const asidesFor = (frame: PrepScreenFrame): readonly FooterAction[] =>
+	frame.on.onBackToShop === undefined
 		? []
 		: [
 				{
 					label: frame.backLabel ?? BACK_TO_SHOP,
-					icon: "back" as const,
-					iconAt: "lead" as const,
+					icon: "back",
+					iconAt: "lead",
 					onPress: frame.on.onBackToShop,
 				},
-			]),
-	...offered.flatMap((exit) => {
-		const onPress = asideHandlerFor(frame.on, exit.label);
-		return onPress === undefined ? [] : [{ ...exit, onPress }];
-	}),
-];
+			];
 
 const startRefusalFor = (
 	view: RunView,
@@ -720,12 +594,11 @@ const startRefusalFor = (
 };
 
 export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
-	const { view, runNumber = null, on } = frame;
+	const { view, on } = frame;
 	const { gateStake } = view;
 	const refusal = startRefusalFor(view, frame.startRefusal);
 	const screen = prepPropsFor({
 		gate: gateStake.gateNumber,
-		answeredPolls: view.allAnswered,
 		configs: view.configs,
 		audits: gateStake.audits,
 		balanceKb: view.storage,
@@ -757,11 +630,11 @@ export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
 		swatchGates: view.swatchGates,
 		outageTargets: view.outageTargets,
 		clearedGates: gatesClearedBy(view.ownedSwatchIds),
-		readout: runReadoutFor(view, runNumber),
 	});
 
 	return {
 		...screen,
+		scoring: { ...screen.scoring, track: accuracyTrackFor(view) },
 		sla:
 			screen.sla === undefined
 				? undefined
@@ -789,7 +662,7 @@ export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
 				...screen.footer.action,
 				onPress: refusal === undefined ? on.onStart : undefined,
 			},
-			asides: asidesFor(frame, screen.footer.asides ?? []),
+			asides: asidesFor(frame),
 			...(refusal === undefined ? {} : { refusal }),
 		},
 	};

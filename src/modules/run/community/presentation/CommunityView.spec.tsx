@@ -332,7 +332,7 @@ describe("CommunityView", () => {
 			<CommunityView
 				view={view}
 				swatch={gateSwatchAt(1)}
-				back={{ label: "Back", onBack, disabled: true, hint: "Spent" }}
+				back={{ label: "Back", onBack, disabled: true }}
 			/>
 		);
 
@@ -340,6 +340,22 @@ describe("CommunityView", () => {
 		expect(back).toBeDisabled();
 		await user.click(back);
 		expect(onBack).not.toHaveBeenCalled();
+	});
+
+	it("titles the board Community, whatever gate the run stands on", () => {
+		render(board());
+
+		expect(
+			screen.getByRole("heading", { level: 1, name: "Community" })
+		).toBeInTheDocument();
+	});
+
+	it("asks what the other players are doing under the title", () => {
+		render(board());
+
+		expect(
+			screen.getByText("What are other players doing?")
+		).toBeInTheDocument();
 	});
 
 	it("says there is nothing to compare before the day's first poll", () => {

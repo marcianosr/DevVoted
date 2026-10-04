@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { trackFor } from "~/test/swatchTrack.factory";
-
 import { Button } from "./Button.ui";
 import { ProfileHero } from "./ProfileHero.ui";
 import { EDIT_PROFILE } from "./ProfileScreen.ui";
@@ -15,8 +13,6 @@ const meta: Meta<typeof ProfileHero> = {
 export default meta;
 
 type Story = StoryObj<typeof ProfileHero>;
-
-const NOTE = "A swatch is a gate taken at 100% coverage.";
 
 export const YourOwn: Story = {
 	args: {
@@ -32,8 +28,6 @@ export const YourOwn: Story = {
 			{ label: "swatches", figure: "5", outOf: "/ 13" },
 			{ label: "runs won", figure: "2" },
 		],
-		swatches: trackFor([0, 1, 2, 3, 5]),
-		note: NOTE,
 	},
 };
 
@@ -48,8 +42,6 @@ export const SeenByAVisitor: Story = {
 			{ label: "swatches", figure: "5", outOf: "/ 13", yours: "you 3" },
 			{ label: "runs won", figure: "0" },
 		],
-		swatches: trackFor([0, 1, 2, 3, 5]),
-		note: NOTE,
 	},
 };
 
@@ -61,7 +53,5 @@ export const BrandNew: Story = {
 			{ label: "swatches", figure: "0", outOf: "/ 13" },
 			{ label: "runs won", figure: "0" },
 		],
-		swatches: trackFor([]),
-		note: NOTE,
 	},
 };

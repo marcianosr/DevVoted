@@ -29,7 +29,9 @@ import {
 	gateLadderFor,
 	gatePassed,
 	gateRulingFor,
+	heldAtClose,
 	peelConfigRangeFor,
+	reachedAtClose,
 } from "~/modules/run/gate/domain/gate.model";
 
 const buildWith = (configs: Config[]): Build => ({
@@ -114,6 +116,27 @@ describe("the gate closes on the run, not on its own five answers", () => {
 		expect(
 			gatePassed(closing({ build: buildWith([]), unitsThisGate: 999 }))
 		).toBe(false);
+	});
+});
+
+describe("how far past the full bar a close reached", () => {
+	it("reads past 100% where the held figure stops at the full bar", () => {
+		const close = closing({
+			gatesCleared: 2,
+			unitsThisGate: unitsFor(1.12, 2),
+		});
+
+		expect(heldAtClose(close)).toBe(100);
+		expect(reachedAtClose(close)).toBe(112);
+	});
+
+	it("agrees with the held figure short of the full bar", () => {
+		const close = closing({
+			gatesCleared: 2,
+			unitsThisGate: unitsFor(0.64, 2),
+		});
+
+		expect(reachedAtClose(close)).toBe(heldAtClose(close));
 	});
 });
 

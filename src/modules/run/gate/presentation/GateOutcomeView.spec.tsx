@@ -106,6 +106,19 @@ const renderAt = (verdict: Verdict, props = {}) =>
 	);
 
 describe("GateOutcomeView", () => {
+	it("tells a player held on a spent day when the next polls come", () => {
+		render(
+			<GateOutcomeView
+				view={viewAt("held", { pollsExhausted: true })}
+				onReview={() => {}}
+				onNext={() => {}}
+			/>
+		);
+
+		expect(screen.getAllByText(/new polls in/).length).toBeGreaterThan(0);
+		expect(screen.queryByText(/fresh polls/)).not.toBeInTheDocument();
+	});
+
 	it("keeps a window-held gate's HEALTHY reading and says why it held", () => {
 		render(
 			<GateOutcomeView
@@ -255,6 +268,7 @@ describe("GateOutcomeView", () => {
 						gate: 0,
 						ladder: { floor: 0, ok: 40, healthy: 60 },
 						held: 100,
+						reached: 100,
 						band: "perfect",
 					}),
 				})}
@@ -275,24 +289,27 @@ describe("GateOutcomeView", () => {
 		expect(screen.queryByText("+2%")).not.toBeInTheDocument();
 	});
 
-	it("renders a real flawless opening gate as a full window", () => {
+	it("renders a real flawless opening gate as a full window, read at how far it reached", () => {
+		const cleared = clearGate(started([]));
 		render(
 			<GateOutcomeView
-				view={toRunView(clearGate(started([])))}
+				view={toRunView(cleared)}
 				onReview={() => {}}
 				onNext={() => {}}
 			/>
 		);
 
 		expect(
-			screen.getByLabelText("100% of 64% needed \u00b7 PERFECT")
+			screen.getByLabelText(
+				`${cleared.lastClose?.reached}% of 64% needed \u00b7 PERFECT`
+			)
 		).toBeInTheDocument();
 		expect(
 			screen.queryByLabelText(/^64% of 64% needed/)
 		).not.toBeInTheDocument();
 	});
 
-	it("lists what a single and a multiple choice are worth at the next gate, so the re-base is no surprise", () => {
+	it("lists no answer rates for the next gate", () => {
 		render(
 			<GateOutcomeView
 				view={toRunView(clearGate(started([])))}
@@ -300,21 +317,6 @@ describe("GateOutcomeView", () => {
 				onNext={() => {}}
 			/>
 		);
-
-		const list = screen.getByText("At Pewter").nextElementSibling;
-
-		expect(list).toHaveTextContent("single choice+20%");
-		expect(list).toHaveTextContent("multiple choice+40%");
-	});
-
-	it("points at no gate beyond the summit", () => {
-		renderAt("won");
-
-		expect(screen.queryByText(/single choice/)).not.toBeInTheDocument();
-	});
-
-	it("keeps quiet about the next gate on a gate that did not clear", () => {
-		renderAt("held", { onRemove: () => {} });
 
 		expect(screen.queryByText(/single choice/)).not.toBeInTheDocument();
 	});

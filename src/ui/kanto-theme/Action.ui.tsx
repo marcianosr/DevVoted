@@ -9,6 +9,7 @@ const PRESS =
 
 const LIVE =
 	"segment-theme press-raised hover:brightness-110 active:press-sunk";
+const SHINE = "press-sheen";
 const REFUSED = "border border-theme-faint bg-theme-faint text-theme-muted";
 
 const LABEL = "text-base font-extrabold tracking-wide";
@@ -44,6 +45,7 @@ export type ActionProps = {
 	icon?: IconName;
 	mark?: ActionMark;
 	tone?: ActionTone;
+	shine?: boolean;
 	onPress?: () => void;
 };
 
@@ -74,6 +76,7 @@ export const Action = ({
 	icon,
 	mark,
 	tone = "action",
+	shine = false,
 	onPress,
 }: ActionProps) => {
 	const refused = onPress === undefined;
@@ -85,7 +88,11 @@ export const Action = ({
 			data-screen-theme={toneColorOf(tone, refused)}
 			disabled={refused}
 			onClick={onPress}
-			className={clsx(PRESS, refused ? REFUSED : LIVE)}
+			className={clsx(
+				PRESS,
+				refused ? REFUSED : LIVE,
+				shine && !refused && SHINE
+			)}
 		>
 			<Mark swatch={swatch} icon={icon} mark={mark} refused={refused} />
 			<span className={LINES}>

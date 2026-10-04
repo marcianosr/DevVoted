@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import {
+	APPROVED_POLL_REWARD,
 	EMPTY_FILTER,
 	PAGE_SIZE,
 	pollListChoicesOf,
@@ -118,6 +119,7 @@ const propsFor = (
 		filter,
 		choices: pollListChoicesOf(polls, filter, creators),
 		suggestHref: "#",
+		reward: APPROVED_POLL_REWARD,
 		onFilterChange: noop,
 		onLoadMore: page.more ? noop : undefined,
 	};

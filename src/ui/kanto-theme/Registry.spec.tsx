@@ -131,7 +131,7 @@ describe("Registry", () => {
 		expect(onToggleUpgrades).toHaveBeenCalledWith(".ts");
 	});
 
-	it("reaches the Buy press once the upgrade panel is open", async () => {
+	it("reaches the confirm press once the upgrade is armed", async () => {
 		const onBuy = vi.fn();
 		render(
 			<Registry
@@ -142,7 +142,9 @@ describe("Registry", () => {
 		);
 
 		await userEvent.click(
-			screen.getByRole("button", { name: "Buy v3 \u00b7 32 KB" })
+			screen.getByRole("button", {
+				name: "Confirm upgrading .ts to v3 \u00b7 32 KB",
+			})
 		);
 
 		expect(onBuy).toHaveBeenCalledOnce();
@@ -202,5 +204,13 @@ describe("Registry", () => {
 
 		const coverage = screen.getByRole("group", { name: "Coverage" });
 		expect(within(coverage).getByText("3")).toBeInTheDocument();
+	});
+
+	it("deals its offers into a grid that flips each card in", () => {
+		render(<Registry {...props} />);
+
+		const offer = screen.getAllByRole("button", { name: /^Install/ })[0];
+
+		expect(offer.closest(".registry-deal")).not.toBeNull();
 	});
 });

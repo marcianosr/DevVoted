@@ -46,12 +46,37 @@ describe("GateChoice", () => {
 		expect(screen.getByText(/Gate 4 held/)).toBeInTheDocument();
 	});
 
-	it("lets the player walk away whatever the peel stands at, keeping the balance", () => {
+	it("lets the player walk away whatever the peel stands at, naming what banks", () => {
 		render(<GateChoice {...choiceOf(kantoGateShaky())} />);
 
 		expect(screen.getByRole("button", { name: REFUSAL_LABEL })).toBeEnabled();
-		expect(screen.getByText(/no retry, keep/).parentElement).toHaveTextContent(
-			"no retry, keep 28 KB"
+		expect(screen.getByText(/no retry, bank/).parentElement).toHaveTextContent(
+			"no retry, bank 9 KB"
+		);
+	});
+
+	it("draws the walk-away press at the primary press's size", () => {
+		render(<GateChoice {...choiceOf(kantoGateShaky())} />);
+
+		expect(screen.getByRole("button", { name: REFUSAL_LABEL })).toHaveClass(
+			"min-h-14"
+		);
+	});
+
+	it("seats the answer review beside the retry press", () => {
+		const onReview = vi.fn();
+		render(
+			<GateChoice
+				{...choiceOf(kantoGateShaky())}
+				asides={[
+					{ label: "Review answers", icon: "review", onPress: onReview },
+				]}
+			/>
+		);
+
+		const review = screen.getByRole("button", { name: /Review answers/ });
+		expect(review.closest("div")).toContainElement(
+			screen.getByText(kantoGateShaky().footer.action.label)
 		);
 	});
 

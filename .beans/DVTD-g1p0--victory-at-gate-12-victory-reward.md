@@ -1,11 +1,11 @@
 ---
 # DVTD-g1p0
 title: Decide what winning actually pays, and whether you can climb past it
-status: draft
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-07-19T07:44:48Z
-updated_at: 2026-09-24T12:49:42Z
+updated_at: 2026-10-04T11:23:20Z
 parent: DVTD-kulw
 ---
 
@@ -16,7 +16,7 @@ parent: DVTD-kulw
 ⚠️ The gate-12 half of this bean already shipped. Only the reward and the endless mode are left.
 
 ## Done when
-- [ ] The victory reward is decided, and cannot be farmed by a run that scored nothing
+- [x] The victory reward is decided, and cannot be farmed by a run that scored nothing
 - [ ] Whether the climb continues past the summit is decided
 - [ ] Whatever is decided holds for the gates past the summit too
 
@@ -56,3 +56,11 @@ Still open, and why this bean stays alive:
   = 12 already exists for it, deliberately kept separate from VICTORY_GATE.
 
 Correction (same day): the summit needs all **14** slots, not 12 — MAX_SLOTS grew to 14 so that eleven swatch rungs could cover the eleven gate advances from gate 1 to gate 12. VICTORY_GATE is now derived as `MAX_SLOTS - BASE_SLOTS + 1`.
+
+## Decision (2026-10-04, Marciano, ADR-184)
+
+- Hall of Fame on the community page: the reigning champion's full card with date and time of the win, then every win newest first (one row per win).
+- Champion border: granted on a win, or bought for 10 TB as a joke price.
+- Champion gate turns prismatic in its accents; the ground stays dark.
+- Farm guard: only a run started at Pallet counts.
+- The stretch past the summit is DVTD-yzyg (named Champion+1, +2, …).

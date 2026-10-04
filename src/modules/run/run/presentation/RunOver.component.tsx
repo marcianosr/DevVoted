@@ -7,13 +7,11 @@ import { startRefusalFor } from "~/modules/run/run/application/todayScreen.viewm
 import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftToday.hook";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
-import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 
 export const RunOver = () => {
 	const { view } = useTodaysRun();
-	const runNumber = useRunNumber();
 	const { start } = useRunActions();
 	const goTo = useRunNavigation();
 	const countdown = useNextPollsCountdown();
@@ -23,7 +21,6 @@ export const RunOver = () => {
 
 	return (
 		<RunOverView
-			runNumber={runNumber.view}
 			view={view}
 			archiveAfterKb={view.archiveAfterKb ?? undefined}
 			startRefusal={

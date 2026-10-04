@@ -8,6 +8,7 @@ export const COPY = {
 	tryOn: (name: string) => `Try on ${name}`,
 	pick: (name: string) => `Wear ${name}`,
 	owned: "owned",
+	orWinARun: "win a run, or",
 	buy: (cost: number) => `Buy · ${formatStorage(cost)}`,
 } as const;
 
@@ -27,6 +28,7 @@ const NAME = "w-full text-center text-xs font-bold";
 const NAME_OWNED = "text-theme-soft";
 const NAME_LOCKED = "text-theme-muted";
 const OWNED = "text-xs font-bold text-viridian";
+const WIN_PATH = "text-xs text-theme-muted";
 
 export type BorderCardProps = {
 	name: string;
@@ -37,6 +39,7 @@ export type BorderCardProps = {
 	canAfford: boolean;
 	isMutating: boolean;
 	tryingOn: boolean;
+	earnedByVictory?: boolean;
 	onPress: () => void;
 	onBuy: () => void;
 };
@@ -73,6 +76,7 @@ export const BorderCard = ({
 	owned,
 	picked,
 	tryingOn,
+	earnedByVictory = false,
 	onPress,
 	...standing
 }: BorderCardProps) => (
@@ -93,6 +97,9 @@ export const BorderCard = ({
 				{name}
 			</span>
 		</button>
+		{earnedByVictory && !owned ? (
+			<span className={WIN_PATH}>{COPY.orWinARun}</span>
+		) : null}
 		<Standing owned={owned} tryingOn={tryingOn} {...standing} />
 	</div>
 );

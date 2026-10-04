@@ -59,8 +59,6 @@ const PANELS: Record<string, ReactNode> = {
 
 const BORDER = "/borders/border-ts-lavender.svg";
 const NAME = "marciano_schildmeijer";
-const SWATCH_NOTE = "A swatch is a gate taken at 100% coverage.";
-const SWATCHES = trackFor([0, 1, 2, 3, 5]);
 
 const trophies = (yours: boolean): Trophy[] => [
 	{
@@ -115,8 +113,6 @@ const Own = ({ start, titles }: { start: string; titles: string[] }) => {
 					you
 					trailing={<Button size="sm" tone="ambient" label={EDIT_PROFILE} />}
 					trophies={trophies(false)}
-					swatches={SWATCHES}
-					note={SWATCH_NOTE}
 				/>
 			}
 			highlights={highlights(kantoStanding())}
@@ -168,8 +164,6 @@ const VISITED_HERO = (
 		borderUrl={BORDER}
 		titles={["Completer", "Flawless"]}
 		trophies={trophies(true)}
-		swatches={SWATCHES}
-		note={SWATCH_NOTE}
 	/>
 );
 

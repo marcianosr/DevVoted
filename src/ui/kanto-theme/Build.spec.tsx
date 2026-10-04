@@ -714,7 +714,7 @@ describe("the build split across a screen's own columns", () => {
 		render(<Build configs={WEIGHED} weight={weight} list={false} />);
 
 		expect(
-			screen.getByText("1 configs · 1 of 8 weight · 7 free")
+			screen.getByText("1 config · 1 of 8 weight · 7 free")
 		).toBeInTheDocument();
 	});
 

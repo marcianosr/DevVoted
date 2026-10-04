@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { trackFor } from "~/test/swatchTrack.factory";
-
 import { ProfileHero, type ProfileHeroProps } from "./ProfileHero.ui";
 
 const HERO: ProfileHeroProps = {
@@ -14,8 +12,6 @@ const HERO: ProfileHeroProps = {
 		{ label: "swatches", figure: "5", outOf: "/ 13" },
 		{ label: "runs won", figure: "2" },
 	],
-	swatches: trackFor([0, 1, 2, 3, 5]),
-	note: "A swatch is a gate taken at 100% coverage.",
 };
 
 describe("ProfileHero", () => {
@@ -42,12 +38,15 @@ describe("ProfileHero", () => {
 		expect(screen.getByText("you 6")).toBeVisible();
 	});
 
-	it("draws the swatch track with how many are minted", () => {
+	it("draws no swatch track, leaving the count to its trophy", () => {
 		render(<ProfileHero {...HERO} />);
 
 		expect(
-			screen.getByRole("img", { name: "5 of 13 swatches discovered" })
-		).toBeVisible();
+			screen.queryByRole("img", { name: /swatches discovered/ })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("A swatch is a gate taken at 100% coverage.")
+		).not.toBeInTheDocument();
 	});
 
 	it("seats the owner's press in the corner", () => {

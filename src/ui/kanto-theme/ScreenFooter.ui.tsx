@@ -2,7 +2,6 @@ import { clsx } from "clsx";
 
 import { Action, type ActionMark, type ActionTone } from "./Action.ui";
 import { Badge } from "./Badge.ui";
-import { Balance, type BalanceProps } from "./Balance.ui";
 import { Button, type ButtonTone, type IconPlacement } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import type { IconName } from "./Icon.ui";
@@ -14,7 +13,6 @@ const FOOTER = "flex w-full flex-col gap-3";
 const PRESS_BLOCK = "flex w-full flex-col gap-3";
 const PRESS_BLOCK_INLINE = "sm:flex-row";
 const PRESS_SEAT = "flex w-full items-center gap-4";
-const PHONE_FUNDS = "flex shrink-0 md:hidden";
 const PRESS_BESIDE_ASIDE = "sm:min-w-0 sm:flex-1";
 const FOOTER_RULE = "border-t border-theme-faint pt-4";
 const STAKE_ROW = "flex w-full flex-wrap items-center justify-end gap-4";
@@ -48,16 +46,19 @@ export type FooterAction = {
 	iconAt?: IconPlacement;
 	mark?: ActionMark;
 	tone?: ActionTone;
+	shine?: boolean;
 };
+
+export type AsidePlacement = "before" | "after";
 
 export type ScreenFooterProps = {
 	stakes?: readonly Stake[];
 	action: FooterAction;
 	asides?: readonly FooterAction[];
+	asidesAt?: AsidePlacement;
 	refusal?: string;
 	note?: string;
 	rule?: boolean;
-	phoneFunds?: BalanceProps;
 };
 
 type FooterLines = { press?: string; above?: string };
@@ -97,14 +98,36 @@ export const ScreenFooter = ({
 	stakes = [],
 	action,
 	asides = [],
+	asidesAt = "before",
 	refusal,
 	note,
 	rule = true,
-	phoneFunds,
 }: ScreenFooterProps) => {
 	const lines = footerLinesOf(refusal, note, action.onPress !== undefined);
 	const alongside =
-		asides.length > 0 && asides.length <= ASIDES_BESIDE_THE_PRESS;
+		asidesAt === "before" &&
+		asides.length > 0 &&
+		asides.length <= ASIDES_BESIDE_THE_PRESS;
+
+	const asideRow =
+		asides.length === 0 ? null : (
+			<div className={clsx(ASIDE_ROW, alongside && ASIDE_ROW_INLINE)}>
+				{asides.map((aside) => (
+					<span key={aside.label} className={alongside ? ASIDE : ASIDE_SHARE}>
+						<Button
+							size={ASIDE_SIZE}
+							width={alongside ? "auto" : "fill"}
+							tone={ASIDE_TONE}
+							label={aside.label}
+							icon={aside.icon}
+							iconAt={aside.iconAt}
+							disabled={aside.onPress === undefined}
+							onPress={aside.onPress}
+						/>
+					</span>
+				))}
+			</div>
+		);
 
 	return (
 		<footer className={clsx(FOOTER, rule && FOOTER_RULE)}>
@@ -117,34 +140,8 @@ export const ScreenFooter = ({
 			)}
 
 			<div className={clsx(PRESS_BLOCK, alongside && PRESS_BLOCK_INLINE)}>
-				{asides.length === 0 ? null : (
-					<div className={clsx(ASIDE_ROW, alongside && ASIDE_ROW_INLINE)}>
-						{asides.map((aside) => (
-							<span
-								key={aside.label}
-								className={alongside ? ASIDE : ASIDE_SHARE}
-							>
-								<Button
-									size={ASIDE_SIZE}
-									width={alongside ? "auto" : "fill"}
-									tone={ASIDE_TONE}
-									label={aside.label}
-									icon={aside.icon}
-									iconAt={aside.iconAt}
-									disabled={aside.onPress === undefined}
-									onPress={aside.onPress}
-								/>
-							</span>
-						))}
-					</div>
-				)}
-
+				{asidesAt === "before" ? asideRow : null}
 				<div className={clsx(PRESS_SEAT, alongside && PRESS_BESIDE_ASIDE)}>
-					{phoneFunds === undefined ? null : (
-						<span className={PHONE_FUNDS}>
-							<Balance {...phoneFunds} layout="stacked" />
-						</span>
-					)}
 					<Action
 						label={action.label}
 						note={lines.press}
@@ -152,9 +149,11 @@ export const ScreenFooter = ({
 						icon={action.icon}
 						mark={action.mark}
 						tone={action.tone}
+						shine={action.shine}
 						onPress={action.onPress}
 					/>
 				</div>
+				{asidesAt === "after" ? asideRow : null}
 			</div>
 
 			{lines.above === undefined ? null : (

@@ -117,7 +117,7 @@ describe("run route sync", () => {
 		await waitFor(() =>
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
-		expect(await screen.findByText("#1 - Pewter Gate")).toBeVisible();
+		expect(await screen.findByText("Pewter Gate")).toBeVisible();
 	});
 
 	it("sends a day without a run to the start screen", async () => {
@@ -173,36 +173,6 @@ describe("run route sync", () => {
 			expect(router.state.location.pathname).toBe("/run/prep")
 		);
 		expect(vi.mocked(dispatchRunAction)).not.toHaveBeenCalled();
-	});
-
-	it("prep's community nudge reaches the community board", async () => {
-		const user = userEvent.setup();
-		vi.mocked(getTodaysRun).mockResolvedValue({
-			success: true,
-			data: createMockRunView({
-				status: "rewarding",
-				gatesCleared: 1,
-				poll: null,
-			}),
-		});
-		vi.mocked(getRunCommunity).mockResolvedValue({
-			success: true,
-			data: {
-				date: TEST_DATES.birthday,
-				totalPlayers: 3,
-				players: [],
-				leaders: [],
-				polls: [],
-				climb: null,
-			},
-		});
-
-		const router = renderRunRoutes("/run/prep");
-		await user.click(await screen.findByRole("button", { name: /Community/ }));
-
-		await waitFor(() =>
-			expect(router.state.location.pathname).toBe("/run/community")
-		);
 	});
 
 	it("the community board's back-to-run lands on gate prep, not the live poll", async () => {

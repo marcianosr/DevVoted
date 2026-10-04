@@ -13,10 +13,7 @@ import {
 	gateSwatchAt,
 	swatchTrackFor,
 } from "~/modules/run/gate/application/swatchTrack.viewmodel";
-import type {
-	AccuracyView,
-	AuditView,
-} from "~/modules/run/run/application/gateStake.viewmodel";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	BALANCE_WORD,
 	fundsOf,
@@ -25,7 +22,6 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 import {
 	difficultyBandOf,
@@ -42,6 +38,7 @@ import {
 	type AnswerOutcome,
 	type AnswerType,
 } from "~/modules/run/run/domain/runPoll.model";
+import { accuracyTrackFor } from "~/modules/run/run/application/accuracyTrack.viewmodel";
 import { roundToTwoDecimals } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_METADATA } from "~/shared/lib/categories";
 import { plural } from "~/shared/lib/displayValue";
@@ -51,7 +48,6 @@ import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
 import type { BuildCounts } from "~/ui/kanto-theme/BuildFooter.ui";
 import type { BuildProps } from "~/ui/kanto-theme/Build.ui";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
-import type { AccuracyTrackProps } from "~/ui/kanto-theme/AccuracyTrack.ui";
 import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
@@ -124,7 +120,6 @@ export const pollHeaderFor = (view: RunView): HeaderProps => {
 		title: gateLabelFor(gate),
 		swatches: swatchTrackFor(view.swatchGates, gate),
 		funds: fundsOf(view.storage, BALANCE_WORD),
-		swatchState: "current",
 	};
 };
 
@@ -419,47 +414,6 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 	};
 };
 
-const ACCURACY_WORD = "Accuracy";
-const UP_TO = "up to";
-const FIGURE_JOIN = " · ";
-const LABEL_JOIN = ", ";
-const FIRST_TRACK_SCALE = 2;
-
-const multiplierLabel = (multiplier: number): string =>
-	`×${roundToTwoDecimals(multiplier)}`;
-
-const trackScaleFor = (best: number): number =>
-	Math.max(FIRST_TRACK_SCALE, Math.ceil(best));
-
-const shareOfScale = (multiplier: number, scale: number): number =>
-	(multiplier - 1) / (scale - 1);
-
-const readingsOf = ({ guaranteed, best }: AccuracyView): readonly string[] =>
-	roundToTwoDecimals(guaranteed) === roundToTwoDecimals(best)
-		? [multiplierLabel(guaranteed)]
-		: [multiplierLabel(guaranteed), `${UP_TO} ${multiplierLabel(best)}`];
-
-const pulseOf = (
-	answered: AnsweredPoll | undefined
-): Pick<AccuracyTrackProps, "pulse"> =>
-	answered?.outcome === CORRECT_OUTCOME ? { pulse: { key: answered.id } } : {};
-
-export const accuracyTrackFor = (
-	view: RunView,
-	answered?: AnsweredPoll
-): AccuracyTrackProps => {
-	const accuracy = view.gateStake.accuracy;
-	const readings = readingsOf(accuracy);
-
-	return {
-		label: `${ACCURACY_WORD} ${readings.join(LABEL_JOIN)}`,
-		figure: readings.join(FIGURE_JOIN),
-		sure: shareOfScale(accuracy.guaranteed, trackScaleFor(accuracy.best)),
-		best: shareOfScale(accuracy.best, trackScaleFor(accuracy.best)),
-		...pulseOf(answered),
-	};
-};
-
 const TENTHS = 10;
 
 export const gainFigureOf = (
@@ -491,6 +445,28 @@ export const pollShakeFor = (
 	answered: AnsweredPoll | undefined
 ): string | undefined =>
 	answered?.outcome === "wrong" ? answered.id : undefined;
+
+const COMBO_FROM = 2;
+const COMBO_TRAIL = "in a row!";
+
+const rightAnswersInARow = (answered: readonly AnsweredPoll[]): number => {
+	const lastMiss = Math.max(
+		-1,
+		...answered.map((poll, index) => (poll.outcome === "correct" ? -1 : index))
+	);
+
+	return answered.length - 1 - lastMiss;
+};
+
+export const pollComboFor = (
+	view: RunView,
+	answered: AnsweredPoll | undefined
+): string | undefined => {
+	if (answered?.outcome !== "correct") return undefined;
+	const inARow = rightAnswersInARow(view.answeredThisGate);
+
+	return inARow < COMBO_FROM ? undefined : `${inARow} ${COMBO_TRAIL}`;
+};
 
 export const pollBarFor = (view: RunView): CoverageBarProps =>
 	stakeBarFor(view.gateStake);
@@ -911,6 +887,9 @@ const approvedQuestionFor = (
 const withShake = (shake: string | undefined) =>
 	shake === undefined ? {} : { shake };
 
+const withCombo = (combo: string | undefined) =>
+	combo === undefined ? {} : { combo };
+
 export type PollScreenHandlers = {
 	onSelect: (optionId: string) => void;
 	onSubmit: () => void;
@@ -962,21 +941,21 @@ const liveMoodFor = (
 
 export type PollScreenFrame = {
 	view: RunView;
-	runNumber?: number | null;
 	answered?: AnsweredPoll;
 	before?: RunView;
 	landed?: boolean;
+	leaving?: boolean;
 	selectedOptionIds: readonly string[];
 	on: PollScreenHandlers;
-	ui: { build: Disclosure; clockMs?: number };
+	ui: { build: Disclosure; clockMs?: number; buildOpen?: boolean };
 };
 
 export const pollScreenPropsFor = ({
 	view,
-	runNumber = null,
 	answered,
 	before,
 	landed = false,
+	leaving = false,
 	selectedOptionIds,
 	on,
 	ui,
@@ -995,7 +974,6 @@ export const pollScreenPropsFor = ({
 		...mood,
 		header: {
 			...pollHeaderFor(view),
-			readout: runReadoutFor(view, runNumber),
 		},
 		step: pollStepFor(view, answered !== undefined),
 		coverage: pollCoverageFor(view, {
@@ -1004,6 +982,10 @@ export const pollScreenPropsFor = ({
 		}),
 		...(flight === undefined ? {} : { flight, onFlightLanded: on.onLanded }),
 		...withShake(pollShakeFor(answered)),
+		...withCombo(pollComboFor(view, answered)),
+		pollKey: answered?.id ?? live?.id,
+		leaving,
+		revealed: answered !== undefined,
 		holds: pollHoldsFor(view),
 		...(answered === undefined && ui.clockMs !== undefined
 			? clockOf(pollClockFor(view, ui.clockMs))
@@ -1022,6 +1004,7 @@ export const pollScreenPropsFor = ({
 			),
 			counts: buildCountsOf(view),
 			flash: answered?.id,
+			...(ui.buildOpen === true ? { open: true } : {}),
 		},
 	};
 };

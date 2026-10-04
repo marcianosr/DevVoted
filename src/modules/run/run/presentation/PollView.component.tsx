@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useDisclosure } from "~/shared/hooks/useDisclosure.hook";
+import { useIsSmallScreen } from "~/shared/hooks/useIsSmallScreen.hook";
 import { useScrollToTopOnSmallScreen } from "~/shared/hooks/useScrollToTopOnSmallScreen.hook";
 import { INSTALLED_CARDS_OPEN } from "~/shared/lib/disclosure";
 
@@ -19,7 +20,6 @@ import { PollScreen } from "~/ui/kanto-theme/PollScreen.ui";
 export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
 	onAnswer: (optionIds: readonly string[]) => void;
 	view: RunView;
-	runNumber?: number | null;
 	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
 	clockMs?: number;
@@ -27,7 +27,6 @@ export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
 
 export const PollView = ({
 	view,
-	runNumber = null,
 	answered,
 	selectedOptionIds,
 	clockMs = 0,
@@ -43,6 +42,7 @@ export const PollView = ({
 	if (!revealing && before !== view) setBefore(view);
 	const feedback = useAnswerFeedback(answered, handlers.onNext);
 	useScrollToTopOnSmallScreen(view.poll?.id);
+	const small = useIsSmallScreen();
 	const on = {
 		...handlers,
 		onSelect:
@@ -64,13 +64,13 @@ export const PollView = ({
 
 	const props = pollScreenPropsFor({
 		view,
-		runNumber,
 		answered,
 		before,
 		landed: feedback.landed,
+		leaving: feedback.leaving,
 		selectedOptionIds,
 		on: { ...on, onLanded: feedback.land },
-		ui: { build, clockMs },
+		ui: { build, clockMs, buildOpen: !small },
 	});
 
 	return props === null ? null : <PollScreen {...props} />;

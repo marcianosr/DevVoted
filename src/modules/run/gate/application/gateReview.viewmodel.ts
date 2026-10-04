@@ -20,7 +20,6 @@ import type {
 	ReviewRow,
 	ReviewScreenProps,
 } from "~/ui/kanto-theme/ReviewScreen.ui";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 
 const noop = () => {};
 
@@ -80,7 +79,6 @@ export type ReviewFrame = {
 	open?: boolean;
 	swatchGates?: readonly number[];
 	balanceKb?: number;
-	readout?: RunReadoutProps;
 };
 
 export const reviewPropsFor = ({
@@ -89,7 +87,6 @@ export const reviewPropsFor = ({
 	open,
 	swatchGates = [],
 	balanceKb,
-	readout,
 }: ReviewFrame): ReviewScreenProps => {
 	const swatch = gateSwatchAt(gate);
 
@@ -97,10 +94,8 @@ export const reviewPropsFor = ({
 		header: {
 			swatch,
 			title: `${REVIEW_LEAD} ${REVIEW_SEPARATOR} ${swatch.gateName}`,
-			swatchState: "discovered",
 			swatches: swatchTrackFor(swatchGates, gate),
 			note: plural(answers.length, "poll"),
-			readout,
 			funds:
 				balanceKb === undefined
 					? undefined

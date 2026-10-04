@@ -4,6 +4,17 @@ import { Badge } from "./Badge.ui";
 import { Button, type ButtonTone } from "./Button.ui";
 import type { KantoColor } from "./colors";
 import { Figures } from "./Figures.ui";
+import {
+	type BuildGrowth,
+	PayNowRow,
+	ScaleArrow,
+	ScaleColumn,
+	ScaleLead,
+	ScaleLedger,
+	ScaleRow,
+	UpkeepRow,
+	WeightRow,
+} from "./InstallScale.ui";
 import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 import { Version, versionAccentOf, type VersionState } from "./Version.ui";
@@ -20,6 +31,8 @@ const PRESSABLE =
 	"cursor-pointer enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 const FIGURES = "flex items-center gap-2";
 const ARROW = "shrink-0 self-center text-theme-muted";
+const CHANGES = "flex flex-col gap-0.5 text-xs text-theme-muted";
+const CHANGED_TO = "font-bold text-theme-faint";
 
 const HELD_LABEL = "installed";
 const OFFER_LABEL = "next";
@@ -31,6 +44,14 @@ const BUY_LABEL = "Buy";
 const CLOSE_GLYPH = "×";
 const CLOSE_LABEL = "Close";
 const CLOSE_TONE: ButtonTone = "ambient";
+
+const SCALE_COPY = {
+	lead: (version: number) => `Upgrade to v${version}.`,
+	grows: "Upgrading grows your build.",
+	raises: "Upgrading raises what the build costs a gate.",
+	version: "version",
+	effect: "effect",
+} as const;
 
 const GAIN: KantoColor = "viridian";
 const REFUSAL: KantoColor = "cinnabar";
@@ -44,10 +65,17 @@ export type UpgradeRung = {
 	disabled?: boolean;
 };
 
+export type UpgradeChange = {
+	from: string;
+	to: string;
+};
+
 export type UpgradesProps = {
 	name: string;
 	description: string;
 	rungs: readonly UpgradeRung[];
+	changes?: readonly UpgradeChange[];
+	scale?: BuildGrowth;
 	refusal?: string;
 	onBuy?: (version: number) => void;
 	onClose?: () => void;
@@ -56,7 +84,7 @@ export type UpgradesProps = {
 export const offeredRungOf = (rungs: readonly UpgradeRung[]) =>
 	rungs.find((rung) => rung.state === "offered");
 
-const heldRungOf = (rungs: readonly UpgradeRung[]) =>
+export const heldRungOf = (rungs: readonly UpgradeRung[]) =>
 	rungs.find((rung) => rung.held === true);
 
 const noOfferLabelOf = (rungs: readonly UpgradeRung[]) =>
@@ -70,7 +98,30 @@ const buyLabelOf = ({ version, price }: UpgradeRung) =>
 const pennantStateOf = ({ state, disabled }: UpgradeRung): VersionState =>
 	state === "offered" && disabled === true ? "unaffordable" : state;
 
-const CardBody = ({ label, rung }: { label: string; rung: UpgradeRung }) => (
+export const ChangeLines = ({
+	changes,
+}: {
+	changes: readonly UpgradeChange[];
+}) =>
+	changes.length === 0 ? null : (
+		<span className={CHANGES}>
+			{changes.map(({ from, to }) => (
+				<span key={`${from}${to}`}>
+					{from} {ARROW_GLYPH} <span className={CHANGED_TO}>{to}</span>
+				</span>
+			))}
+		</span>
+	);
+
+const CardBody = ({
+	label,
+	rung,
+	changes = [],
+}: {
+	label: string;
+	rung: UpgradeRung;
+	changes?: readonly UpgradeChange[];
+}) => (
 	<>
 		<Typography variant="label">{label}</Typography>
 		<span className={FIGURES}>
@@ -78,14 +129,17 @@ const CardBody = ({ label, rung }: { label: string; rung: UpgradeRung }) => (
 			<Badge color={GAIN}>{rung.effect}</Badge>
 			{rung.price === undefined ? null : <Badge>{rung.price}</Badge>}
 		</span>
+		<ChangeLines changes={changes} />
 	</>
 );
 
 const Offer = ({
 	rung,
+	changes,
 	onBuy,
 }: {
 	rung: UpgradeRung;
+	changes?: readonly UpgradeChange[];
 	onBuy?: (version: number) => void;
 }) => {
 	const accent = versionAccentOf(pennantStateOf(rung));
@@ -93,7 +147,7 @@ const Offer = ({
 	if (onBuy === undefined) {
 		return (
 			<div data-screen-theme={accent} className={clsx(CARD, OFFER_CARD)}>
-				<CardBody label={OFFER_LABEL} rung={rung} />
+				<CardBody label={OFFER_LABEL} rung={rung} changes={changes} />
 			</div>
 		);
 	}
@@ -107,7 +161,7 @@ const Offer = ({
 			onClick={() => onBuy(rung.version)}
 			className={clsx(CARD, OFFER_CARD, PRESSABLE)}
 		>
-			<CardBody label={OFFER_LABEL} rung={rung} />
+			<CardBody label={OFFER_LABEL} rung={rung} changes={changes} />
 		</button>
 	);
 };
@@ -116,6 +170,7 @@ export const Upgrades = ({
 	name,
 	description,
 	rungs,
+	changes,
 	refusal,
 	onBuy,
 	onClose,
@@ -158,7 +213,7 @@ export const Upgrades = ({
 							<span aria-hidden className={ARROW}>
 								{ARROW_GLYPH}
 							</span>
-							<Offer rung={offered} onBuy={onBuy} />
+							<Offer rung={offered} changes={changes} onBuy={onBuy} />
 						</>
 					)}
 				</div>
@@ -172,3 +227,54 @@ export const Upgrades = ({
 		</Panel>
 	);
 };
+
+export type UpgradeScaleProps = {
+	from: number;
+	to: number;
+	changes?: readonly UpgradeChange[];
+	price?: string;
+	growth?: BuildGrowth;
+	refusal?: string;
+};
+
+const growthLeadOf = (growth?: BuildGrowth) => {
+	if (growth === undefined) return undefined;
+	return growth.from === growth.to ? SCALE_COPY.raises : SCALE_COPY.grows;
+};
+
+export const UpgradeScale = ({
+	from,
+	to,
+	changes = [],
+	price,
+	growth,
+	refusal,
+}: UpgradeScaleProps) => (
+	<ScaleColumn>
+		<ScaleLead bold={SCALE_COPY.lead(to)} rest={growthLeadOf(growth)} />
+		<ScaleLedger>
+			<ScaleRow label={SCALE_COPY.version}>
+				<Version version={from} />
+				<ScaleArrow />
+				<Version version={to} state="offered" />
+			</ScaleRow>
+			{changes.map((change) => (
+				<ScaleRow key={`${change.from}${change.to}`} label={SCALE_COPY.effect}>
+					<Badge>{change.from}</Badge>
+					<ScaleArrow />
+					<Badge color={GAIN}>{change.to}</Badge>
+				</ScaleRow>
+			))}
+			{growth === undefined || growth.from === growth.to ? null : (
+				<WeightRow from={growth.from} to={growth.to} />
+			)}
+			{price === undefined ? null : <PayNowRow price={price} />}
+			{growth === undefined ? null : <UpkeepRow perGateKb={growth.perGateKb} />}
+		</ScaleLedger>
+		{refusal === undefined ? null : (
+			<span data-screen-theme={REFUSAL}>
+				<Typography variant="hint">{refusal}</Typography>
+			</span>
+		)}
+	</ScaleColumn>
+);

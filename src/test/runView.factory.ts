@@ -136,6 +136,7 @@ export const createMockGateClose = createMockDataFactory<GateCloseView>({
 	band: "healthy",
 	cleared: true,
 	held: 30,
+	reached: 30,
 	ladder: { floor: 5, ok: 15, healthy: 25 },
 	correct: 5,
 	kb: 0,

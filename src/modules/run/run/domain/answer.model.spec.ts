@@ -2003,6 +2003,7 @@ describe("a clear hands nothing, and every close leaves a record", () => {
 			cleared: true,
 			closing: "cleared",
 			held: 100,
+			reached: 108,
 			ladder: gateLadderFor(opening.build.configs, 0, scheduleOf(opening)),
 			correct: SLICE_WINDOW,
 			accuracy: { earned: SLICE_WINDOW, available: SLICE_WINDOW },

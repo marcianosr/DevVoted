@@ -17,14 +17,12 @@ import { NewRunScreen } from "~/ui/kanto-theme/NewRunScreen.ui";
 
 export type StartViewProps = NewRunScreenHandlers & {
 	view: RunView;
-	runNumber?: number | null;
 	bootRefusal?: string;
 	booting?: boolean;
 };
 
 export const StartView = ({
 	view,
-	runNumber = null,
 	bootRefusal,
 	booting = false,
 	...on
@@ -44,7 +42,6 @@ export const StartView = ({
 		<NewRunScreen
 			{...newRunScreenPropsFor({
 				view,
-				runNumber,
 				bootRefusal,
 				booting,
 				on,

@@ -17,12 +17,6 @@ const CHAMPION_GATE = 12;
 const SWEEP = "grid w-full gap-8 xl:grid-cols-2";
 const GATE_JOIN = " · gate ";
 
-const openEveryFold = ({ canvasElement }: { canvasElement: HTMLElement }) => {
-	canvasElement
-		.querySelectorAll("details")
-		.forEach((fold) => fold.setAttribute("open", ""));
-};
-
 const meta: Meta<typeof Scoring> = {
 	component: Scoring,
 	title: "Kanto/Scoring",
@@ -63,5 +57,4 @@ export const EveryGate: Story = {
 			))}
 		</div>
 	),
-	play: async ({ canvasElement }) => openEveryFold({ canvasElement }),
 };

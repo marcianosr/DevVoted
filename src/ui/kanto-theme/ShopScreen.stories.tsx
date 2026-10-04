@@ -48,8 +48,11 @@ const ShopWithPanels = () => {
 	const buildNames = chips.map((chip) => chip.name ?? "");
 	const offerNames = props.registry.offers.map((offer) => offer.name ?? "");
 
+	const crossingIndex = props.registry.offers.findIndex(
+		(offer) => offer.install !== undefined && offer.install.disabled !== true
+	);
 	const offers = props.registry.offers.map((offer, index) =>
-		index !== 0 || offer.install === undefined
+		index !== crossingIndex || offer.install === undefined
 			? offer
 			: {
 					...offer,
@@ -59,9 +62,15 @@ const ShopWithPanels = () => {
 						armed: armed === offer.name,
 						onPress: () =>
 							setArmed(armed === offer.name ? undefined : offer.name),
+						onCancel: () => setArmed(undefined),
 					},
 				}
 	);
+
+	const armedOffer = offers.find(
+		(offer) => offer.name === armed && offer.slots !== undefined
+	);
+	const weight = kantoShopWeight();
 
 	const uninstall =
 		uninstalling === undefined ? undefined : kantoShopUninstalls[uninstalling];
@@ -72,7 +81,17 @@ const ShopWithPanels = () => {
 				{...props}
 				build={{
 					configs: chips,
-					weight: kantoShopWeight(),
+					weight:
+						armedOffer?.slots === undefined
+							? weight
+							: {
+									...weight,
+									preview: {
+										name: armedOffer.name,
+										slots: armedOffer.slots,
+										held: CROSSING.to,
+									},
+								},
 					openInfo: disclosedIn(buildNames, buildFlips, INSTALLED_CARDS_OPEN),
 					onToggleInfo: (name) =>
 						setBuildFlips(toggleDisclosure(buildFlips, name)),

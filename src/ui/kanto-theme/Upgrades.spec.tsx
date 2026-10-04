@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { Upgrades, type UpgradeRung } from "./Upgrades.ui";
+import { UpgradeScale, Upgrades, type UpgradeRung } from "./Upgrades.ui";
 
 const RUNGS = [
 	{ version: 1, effect: "+2%", state: "owned" },
@@ -279,5 +279,87 @@ describe("Upgrades", () => {
 		expect(
 			screen.queryByRole("button", { name: /^Close/ })
 		).not.toBeInTheDocument();
+	});
+
+	it("states what the next version changes inside the offer card", () => {
+		render(
+			<Upgrades
+				{...PANEL}
+				changes={[{ from: "+4%", to: "+6%" }]}
+				onBuy={vi.fn()}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: "Buy v3 · 96 KB" })
+		).toHaveTextContent("+4% → +6%");
+	});
+
+	it("adds no change line when the domain names no difference", () => {
+		render(<Upgrades {...PANEL} changes={[]} onBuy={vi.fn()} />);
+
+		expect(
+			screen.getByRole("button", { name: "Buy v3 · 96 KB" })
+		).not.toHaveTextContent("→");
+	});
+});
+
+describe("UpgradeScale", () => {
+	const valueOf = (label: string) =>
+		screen.getByText(label, { selector: "dt" }).nextElementSibling;
+
+	it("leads with the version it lands on and lists the step, the change and the price", () => {
+		render(
+			<UpgradeScale
+				from={1}
+				to={2}
+				changes={[{ from: "+2%", to: "+4%" }]}
+				price="64 KB"
+			/>
+		);
+
+		expect(screen.getByText("Upgrade to v2.")).toBeInTheDocument();
+		expect(valueOf("version")).toHaveTextContent("v1→v2");
+		expect(valueOf("effect")).toHaveTextContent("+2%→+4%");
+		expect(valueOf("pay now")).toHaveTextContent("−64 KB");
+	});
+
+	it("states neither weight nor upkeep for an upgrade that leaves the build as it is", () => {
+		render(<UpgradeScale from={1} to={2} price="64 KB" />);
+
+		expect(
+			screen.queryByText("weight", { selector: "dt" })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("upkeep", { selector: "dt" })
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("effect", { selector: "dt" })
+		).not.toBeInTheDocument();
+	});
+
+	it("states the growth and the bill when the upgrade crosses a rung", () => {
+		render(
+			<UpgradeScale
+				from={1}
+				to={2}
+				price="64 KB"
+				growth={{ from: 4, to: 6, perGateKb: 16 }}
+			/>
+		);
+
+		expect(
+			screen.getByText(/Upgrading grows your build\./)
+		).toBeInTheDocument();
+		expect(valueOf("weight")).toHaveTextContent("4→6");
+		expect(valueOf("upkeep")).toHaveTextContent("−16 KBevery gate");
+	});
+
+	it("states why the upgrade will not go through", () => {
+		render(
+			<UpgradeScale from={1} to={2} price="64 KB" refusal="32 KB short" />
+		);
+
+		expect(screen.getByText("32 KB short")).toBeInTheDocument();
 	});
 });

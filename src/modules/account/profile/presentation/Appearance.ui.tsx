@@ -29,7 +29,7 @@ export const COPY = {
 		`${missingOf(tally)} more borders in the Dex`,
 	pickBorder: (name: string) => `Wear ${name}`,
 	swatch: "Swatch",
-	swatchMeta: "tap to wear · themes your profile",
+	swatchSummary: "Tap to change your theme on your profile and dev card",
 	pickSwatch: (name: string) => `Wear ${name}`,
 	lockedSwatch: "Unearned swatch",
 	titles: "Titles",
@@ -233,7 +233,7 @@ export const Appearance = ({
 				)}
 			</div>
 		</Panel.Body>
-		<Panel.Header label={COPY.swatch} meta={COPY.swatchMeta} />
+		<Panel.Header label={COPY.swatch} summary={COPY.swatchSummary} />
 		<Panel.Body>
 			<div className={TILES}>
 				{swatches.map((pick) => (

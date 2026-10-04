@@ -144,6 +144,7 @@ describe("applyActionToRun", () => {
 		mock.results.push(segmentRow());
 		mock.results.push(ids.map(dbPoll));
 		mock.results.push(ids.flatMap(dbOptions));
+		mock.results.push(ids.map((_, position) => ({ position })));
 
 		await dispatch({ type: "rebase", from: 0, to: 2 });
 
@@ -360,7 +361,40 @@ describe("applyActionToRun", () => {
 		});
 		expect(mock.setCalls[3].victory_achieved_at).toBeInstanceOf(Date);
 		expect(mock.setCalls[4]).toHaveProperty("archived_storage");
+		expect(mock.setCalls[4]).toHaveProperty("owned_border_ids");
 		expect(db.update).toHaveBeenCalledTimes(5);
+	});
+
+	it("grants no Champion border to a win a git tag checked out high", async () => {
+		const rescuedSummit = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			startedAtGate: 10,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(rescuedSummit)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.status).toBe("won");
+		expect(mock.setCalls.some((call) => "owned_border_ids" in call)).toBe(
+			false
+		);
 	});
 
 	const summitDispatchWith = (
@@ -695,8 +729,10 @@ describe("applyActionToRun", () => {
 		mock.results.push([stateRow(state)]);
 		mock.results.push(segmentRow(TEST_DATES.christmasEve));
 		mock.results.push([{ poll_id: 1 }]);
+		mock.results.push([{ position: 0 }, { position: 1 }]);
 		mock.results.push(undefined);
 		mock.results.push([{ poll_id: 1 }, { poll_id: 2 }, { poll_id: 3 }]);
+		mock.results.push([{ id: 1 }, { id: 2 }, { id: 3 }]);
 		mock.results.push(undefined);
 		mock.results.push([dbPoll(1), dbPoll(2), dbPoll(3)]);
 		mock.results.push([1, 2, 3].flatMap(dbOptions));

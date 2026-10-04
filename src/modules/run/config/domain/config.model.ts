@@ -281,10 +281,11 @@ export type UpgradeChange = {
 	readonly to: string;
 };
 
-export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
-	const next = levelUp(config);
-
-	return [
+export const upgradePreview = (
+	config: Config,
+	next: Config = levelUp(config)
+): readonly UpgradeChange[] =>
+	[
 		...(config.autoUpgradeAfterCorrect === undefined
 			? []
 			: [
@@ -353,7 +354,6 @@ export const upgradePreview = (config: Config): readonly UpgradeChange[] => {
 					},
 				]),
 	].filter((change) => change.from !== change.to);
-};
 
 export type ConfigFigure =
 	| { readonly kind: "multiplier"; readonly value: number }

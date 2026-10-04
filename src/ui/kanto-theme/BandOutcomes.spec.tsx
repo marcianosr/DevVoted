@@ -44,16 +44,6 @@ const props: BandOutcomesProps = {
 			},
 		],
 	},
-	scores: {
-		rows: [
-			{
-				swatch: gateSwatchAt(LAVENDER_GATE),
-				correct: 3,
-				polls: 5,
-				current: true,
-			},
-		],
-	},
 	ladder: {
 		held: 58,
 		band: "ok",
@@ -66,14 +56,6 @@ const props: BandOutcomesProps = {
 			{ band: "perfect", from: 100, to: 100, pays: "+96 KB" },
 		],
 	},
-	standing: [
-		{ figure: "+4%", gain: true },
-		" to reach ",
-		{ band: "healthy" },
-		" · ",
-		{ figure: "2" },
-		" polls left",
-	],
 	note: NOTE,
 };
 
@@ -96,19 +78,22 @@ describe("BandOutcomes", () => {
 		expect(within(header).getByText("4")).toHaveClass("badge-theme");
 	});
 
-	it("reads the objectives, today's answers, the ladder, the standing and the note, in that order", () => {
+	it("reads the objectives, the ladder and the note, in that order", () => {
 		const { container } = render(<BandOutcomes {...props} />);
 
 		const objective = screen.getByText("Finish at");
-		const scores = screen.getByLabelText(/^Lavender —/);
 		const ladder = container.querySelector(".band-ladder") as HTMLElement;
-		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
 		const note = screen.getByText(NOTE);
 
-		expect(follows(objective, scores)).toBe(true);
-		expect(follows(scores, ladder)).toBe(true);
-		expect(follows(ladder, standing)).toBe(true);
-		expect(follows(standing, note)).toBe(true);
+		expect(follows(objective, ladder)).toBe(true);
+		expect(follows(ladder, note)).toBe(true);
+	});
+
+	it("states neither the gate's answers nor a standing line", () => {
+		render(<BandOutcomes {...props} />);
+
+		expect(screen.queryByLabelText(/^Lavender —/)).toBeNull();
+		expect(screen.queryByText(/polls left/)).toBeNull();
 	});
 
 	it("draws the ladder inside the panel with no column headings around it", () => {
@@ -131,23 +116,9 @@ describe("BandOutcomes", () => {
 		);
 	});
 
-	it("states the standing line under the ladder with its figures badged", () => {
-		render(<BandOutcomes {...props} />);
+	it("draws no note when handed none", () => {
+		render(<BandOutcomes {...props} note={undefined} />);
 
-		const standing = screen.getByText(/polls left/).closest("p") as HTMLElement;
-
-		expect(standing).toHaveTextContent("+4% to reach HEALTHY · 2 polls left");
-		expect(within(standing).getByText("+4%")).toHaveAttribute(
-			"data-screen-theme",
-			"viridian"
-		);
-		expect(within(standing).getByText("2")).toHaveClass("badge-theme");
-	});
-
-	it("draws neither answers nor a note when handed neither", () => {
-		render(<BandOutcomes {...props} scores={undefined} note={undefined} />);
-
-		expect(screen.queryByLabelText(/^Lavender —/)).toBeNull();
 		expect(screen.queryByText(NOTE)).toBeNull();
 	});
 

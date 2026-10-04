@@ -12,6 +12,7 @@ import {
 	sellRefund,
 	slotsOf,
 	upgradeCoverageRequired,
+	upgradePreview,
 	upgradeStorageCost,
 } from "~/modules/run/config/domain/config.model";
 import {
@@ -24,6 +25,7 @@ import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { hasUpgradeLeft } from "~/modules/run/config/domain/autoUpgrade.model";
 import type { ConfigChipBadge } from "~/ui/kanto-theme/ConfigChip.ui";
 import type { ConfigFactsProps } from "~/ui/kanto-theme/ConfigFacts.ui";
+import type { BuildGrowth } from "~/ui/kanto-theme/InstallScale.ui";
 import type { UpgradeRung, UpgradesProps } from "~/ui/kanto-theme/Upgrades.ui";
 import type { VersionState } from "~/ui/kanto-theme/Version.ui";
 
@@ -58,12 +60,13 @@ export type RegistryDeal = {
 	price: string;
 	affordable: boolean;
 	onBuy?: () => void;
+	scale?: BuildGrowth;
 };
 
 export const registryUpgradesFor = (
 	offer: Config,
 	heldLevel: number,
-	{ price, affordable, onBuy }: RegistryDeal
+	{ price, affordable, onBuy, scale }: RegistryDeal
 ): UpgradesProps => {
 	const offered = offer.level ?? FIRST_VERSION;
 
@@ -87,6 +90,8 @@ export const registryUpgradesFor = (
 		name: offer.label,
 		description: describeConfig(offer),
 		rungs,
+		changes: upgradePreview({ ...offer, level: heldLevel }, offer),
+		...(scale === undefined ? {} : { scale }),
 		onBuy: onBuy === undefined ? undefined : () => onBuy(),
 	};
 };
@@ -149,6 +154,7 @@ export const upgradesFor = (
 		name: config.label,
 		description: describeConfig(config),
 		rungs,
+		changes: held >= max ? [] : upgradePreview(config),
 		...(refusal === undefined ? {} : { refusal }),
 		...(onBuy === undefined ? {} : { onBuy: () => onBuy() }),
 	};

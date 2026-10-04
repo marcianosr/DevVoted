@@ -3,11 +3,9 @@ import { nextFrom } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useRunActions } from "~/modules/run/run/application/useRunActions.hook";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
-import { useRunNumber } from "~/modules/run/run/application/useRunNumber.hook";
 
 export const RunNew = () => {
 	const { view } = useTodaysRun();
-	const runNumber = useRunNumber();
 	const { send, warmBoot } = useRunActions();
 	const goTo = useRunNavigation();
 
@@ -17,7 +15,6 @@ export const RunNew = () => {
 
 	return (
 		<StartView
-			runNumber={runNumber.view}
 			view={view}
 			onToggle={(configId) =>
 				send({

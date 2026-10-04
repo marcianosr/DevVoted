@@ -7,14 +7,12 @@ import { RunOverScreen } from "~/ui/kanto-theme/RunOverScreen.ui";
 
 export type RunOverViewProps = RunOverScreenHandlers & {
 	view: RunView;
-	runNumber?: number | null;
 	archiveAfterKb?: number;
 	startRefusal?: string;
 };
 
 export const RunOverView = ({
 	view,
-	runNumber = null,
 	archiveAfterKb,
 	startRefusal,
 	...on
@@ -22,7 +20,6 @@ export const RunOverView = ({
 	<RunOverScreen
 		{...runOverScreenPropsFor({
 			view,
-			runNumber,
 			archiveAfterKb,
 			startRefusal,
 			on,

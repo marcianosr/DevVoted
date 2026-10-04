@@ -1,62 +1,27 @@
-import { Fragment, type ReactNode } from "react";
+import { useState } from "react";
 
-import { CHOICE_LABEL } from "~/shared/lib/copy";
-
-import { clsx } from "clsx";
-
+import { Accuracy } from "./Accuracy.ui";
+import type { AccuracyTrackProps } from "./AccuracyTrack.ui";
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
-import { COVERAGE_BAND_COLOR, COVERAGE_BAND_WORD } from "./CoverageBar.ui";
-import { Fold } from "./Fold.ui";
-import { Lead, type LeadLine } from "./Lead.ui";
-import {
-	PanelTable,
-	type PanelTableColumn,
-	TABLE_DIVIDER,
-	TABLE_ROW,
-} from "./PanelTable.ui";
-import { type Redactable, SealedFigure } from "./Redaction.ui";
+import { Panel } from "./Panel.ui";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
 	title: "Scoring",
-	gate: "gate",
-	unit: CHOICE_LABEL.single,
-	healthy: COVERAGE_BAND_WORD.healthy,
-	sealed: "Sealed until the run reaches this gate",
 } as const;
 
 export const SCORING_TITLE = COPY.title;
 
-const GAP_GLYPH = "⋮";
+const FIGURES = "flex flex-col items-end gap-1.5";
+const STEPS =
+	"group/steps flex cursor-pointer flex-wrap items-center justify-end gap-1.5";
+const UNITS_SHOWN = "group-hover/steps:hidden";
+const COVERAGE_SHOWN = "hidden group-hover/steps:inline";
+const UNITS_HIDDEN = "hidden";
+const COVERAGE_HELD = "inline";
 
-const PRICES = "flex flex-col gap-3";
-const PRICE = "flex flex-wrap items-center gap-3";
-const PRICE_LABEL = "w-28 shrink-0 whitespace-nowrap";
-const STEPS = "flex flex-wrap items-center gap-1.5";
-const STATEMENTS = "flex flex-col gap-3 border-t border-theme-faint pt-4";
-const STATEMENT = "flex items-start gap-3";
-const STATEMENT_BODY = "flex min-w-0 flex-col gap-2";
-const CURVE = "grid grid-cols-6 gap-1.5";
-const CURVE_STEP = "flex flex-col items-center gap-1";
-const ROW = "items-center gap-3";
-const ACCENT = "border-l-2 border-theme";
-const GAP_ROW = "text-theme-muted";
-
-const COLUMNS = [
-	{ label: COPY.gate, width: "min-w-0 flex-1" },
-	{ label: COPY.unit, width: "w-24 shrink-0 text-right" },
-	{ label: COPY.healthy, width: "w-20 shrink-0 text-right" },
-] as const satisfies readonly PanelTableColumn[];
-
-const [GATE_COLUMN, UNIT_COLUMN, HEALTHY_COLUMN] = COLUMNS;
-
-const GATE = GATE_COLUMN.width;
-const UNIT = `flex justify-end ${UNIT_COLUMN.width}`;
-const HEALTHY = `flex justify-end ${HEALTHY_COLUMN.width}`;
-
-const UNIT_COLOR: KantoColor = "viridian";
-const HEALTHY_COLOR = COVERAGE_BAND_COLOR.healthy;
+const GAIN_COLOR: KantoColor = "viridian";
 
 export type ScoringTone = "none" | "partial" | "full";
 
@@ -66,165 +31,83 @@ const TONE_COLOR = {
 	full: "viridian",
 } satisfies Record<ScoringTone, KantoColor>;
 
-export type ScoringStep = { figure: string; tone: ScoringTone };
-
-export type ScoringPrice = { label: string; steps: readonly ScoringStep[] };
-
-export type ScoringGateFigures = {
-	unit: string;
-	healthy: string;
+export type ScoringStep = {
+	figure: string;
+	coverage: string;
+	tone: ScoringTone;
 };
 
-export type ScoringGateStated = {
-	gate: number;
-	name: string;
-	current?: boolean;
-};
-
-export type ScoringGateRow = Redactable<ScoringGateFigures, ScoringGateStated>;
-
-export type ScoringCurveStep = { right: string; multiplier: string };
-
-export type ScoringCurve = {
-	statement: LeadLine;
-	steps: readonly ScoringCurveStep[];
+export type ScoringFigure = {
+	label: string;
+	figure?: string;
+	steps?: readonly ScoringStep[];
 };
 
 export type ScoringProps = {
-	meta: readonly LeadLine[];
-	prices: readonly ScoringPrice[];
-	curve: ScoringCurve;
-	statements: readonly LeadLine[];
-	rows: readonly ScoringGateRow[];
+	gains: readonly ScoringFigure[];
+	accuracy: ScoringFigure;
+	track?: AccuracyTrackProps;
 };
 
-const Price = ({ price }: { price: ScoringPrice }) => (
-	<div className={PRICE}>
-		<span className={PRICE_LABEL}>
-			<Typography variant="hint" as="span">
-				{price.label}
-			</Typography>
-		</span>
-		<span className={STEPS}>
-			{price.steps.map((step, index) => (
-				<Badge key={index} color={TONE_COLOR[step.tone]}>
-					{step.figure}
-				</Badge>
-			))}
-		</span>
-	</div>
-);
-
-const Statement = ({
-	line,
-	number,
-	children,
-}: {
-	line: LeadLine;
-	number: number;
-	children?: ReactNode;
-}) => (
-	<div className={STATEMENT}>
-		<Badge>{number}</Badge>
-		<div className={STATEMENT_BODY}>
-			<Lead line={line} variant="prose" />
-			{children}
-		</div>
-	</div>
-);
-
-const CurveSteps = ({ steps }: { steps: readonly ScoringCurveStep[] }) => (
-	<ul className={CURVE}>
-		{steps.map((step) => (
-			<li key={step.right} className={CURVE_STEP}>
-				<Typography variant="caption" as="span">
-					{step.right}
-				</Typography>
-				<Badge>{step.multiplier}</Badge>
-			</li>
-		))}
-	</ul>
-);
-
-const Figures = ({ row }: { row: ScoringGateRow }) => {
-	if (row.locked === true)
-		return (
-			<>
-				<span className={UNIT}>
-					<SealedFigure label={COPY.sealed} />
-				</span>
-				<span className={HEALTHY}>
-					<SealedFigure />
-				</span>
-			</>
-		);
+const Steps = ({ steps }: { steps: readonly ScoringStep[] }) => {
+	const [held, setHeld] = useState(false);
 
 	return (
-		<>
-			<span className={UNIT}>
-				<Badge color={UNIT_COLOR}>{row.unit}</Badge>
-			</span>
-			<span className={HEALTHY}>
-				<Badge color={HEALTHY_COLOR}>{row.healthy}</Badge>
-			</span>
-		</>
+		<button
+			type="button"
+			aria-pressed={held}
+			className={STEPS}
+			onClick={(event) => {
+				event.currentTarget.focus();
+				setHeld((shown) => !shown);
+			}}
+			onBlur={() => setHeld(false)}
+		>
+			{steps.map((step, index) => (
+				<Badge key={index} color={TONE_COLOR[step.tone]}>
+					<span className={held ? UNITS_HIDDEN : UNITS_SHOWN}>
+						{step.figure}
+					</span>
+					<span className={held ? COVERAGE_HELD : COVERAGE_SHOWN}>
+						{step.coverage}
+					</span>
+				</Badge>
+			))}
+		</button>
 	);
 };
 
-const Row = ({ row, ruled }: { row: ScoringGateRow; ruled: boolean }) => (
-	<div
-		className={clsx(
-			TABLE_ROW,
-			ROW,
-			ruled && TABLE_DIVIDER,
-			row.current === true && ACCENT
+const Figures = ({ line }: { line: ScoringFigure }) => (
+	<span className={FIGURES}>
+		{line.figure === undefined ? null : (
+			<Badge color={GAIN_COLOR}>{line.figure}</Badge>
 		)}
-	>
-		<span className={GATE}>
-			<Typography variant="caption">{row.name}</Typography>
-		</span>
-		<Figures row={row} />
-	</div>
+		{line.steps === undefined ? null : <Steps steps={line.steps} />}
+	</span>
 );
 
-const skipsGatesBefore = (rows: readonly ScoringGateRow[], index: number) =>
-	index > 0 && rows[index].gate - rows[index - 1].gate > 1;
+const FigureRow = ({ line }: { line: ScoringFigure }) => (
+	<Panel.Row trailing={<Figures line={line} />}>
+		<Typography variant="hint" as="span">
+			{line.label}
+		</Typography>
+	</Panel.Row>
+);
 
-export const Scoring = ({
-	meta,
-	prices,
-	curve,
-	statements,
-	rows,
-}: ScoringProps) => (
-	<Fold title={COPY.title} meta={meta}>
-		<div className={PRICES}>
-			{prices.map((price) => (
-				<Price key={price.label} price={price} />
+const TRACK = "border-t border-theme-faint";
+
+export const Scoring = ({ gains, accuracy, track }: ScoringProps) => (
+	<Panel>
+		<Panel.Header label={COPY.title} />
+		<Panel.Rows>
+			{[...gains, accuracy].map((line) => (
+				<FigureRow key={line.label} line={line} />
 			))}
-		</div>
-		<div className={STATEMENTS}>
-			<Statement line={curve.statement} number={1}>
-				<CurveSteps steps={curve.steps} />
-			</Statement>
-			{statements.map((line, index) => (
-				<Statement key={index} line={line} number={index + 2} />
-			))}
-		</div>
-		<PanelTable columns={COLUMNS} bleed="sides">
-			{rows.map((row, index) => (
-				<Fragment key={row.gate}>
-					{skipsGatesBefore(rows, index) ? (
-						<div
-							aria-hidden
-							className={clsx(TABLE_ROW, TABLE_DIVIDER, GAP_ROW)}
-						>
-							{GAP_GLYPH}
-						</div>
-					) : null}
-					<Row row={row} ruled={index > 0} />
-				</Fragment>
-			))}
-		</PanelTable>
-	</Fold>
+		</Panel.Rows>
+		{track === undefined ? null : (
+			<Panel.Body className={TRACK}>
+				<Accuracy track={track} />
+			</Panel.Body>
+		)}
+	</Panel>
 );

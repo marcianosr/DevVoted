@@ -481,20 +481,22 @@ describe("ScreenActions", () => {
 		expect(container.querySelector("footer")).not.toHaveClass("border-t");
 	});
 
-	it("states the balance beside the press on a phone only, where no header pins it", () => {
+	it("stacks the asides under the press when asked to put them after it", () => {
+		const back = { label: "Back to build", onPress: vi.fn() };
 		render(
-			<ScreenFooter {...props} phoneFunds={{ label: "run storage", kb: 327 }} />
+			<ScreenFooter
+				action={{ label: "Start Pallet", onPress: vi.fn() }}
+				asides={[back]}
+				asidesAt="after"
+			/>
 		);
 
-		const figure = screen.getByRole("img", { name: "327 KB" });
+		const start = screen.getByRole("button", { name: "Start Pallet" });
+		const aside = screen.getByRole("button", { name: "Back to build" });
 
-		expect(figure.closest(".md\\:hidden")).not.toBeNull();
-		expect(screen.getByText("run storage")).toBeInTheDocument();
-	});
-
-	it("states no balance when the screen hands it none", () => {
-		render(<ScreenFooter {...props} />);
-
-		expect(screen.queryByRole("img", { name: /KB$/ })).not.toBeInTheDocument();
+		expect(
+			start.compareDocumentPosition(aside) & Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+		expect(aside.closest(".sm\\:flex-row")).toBeNull();
 	});
 });

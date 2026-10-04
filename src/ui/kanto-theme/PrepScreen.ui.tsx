@@ -4,12 +4,12 @@ import { EstimatePicker, type EstimatePickerProps } from "./EstimatePicker.ui";
 import { SlaPicker, type SlaPickerProps } from "./SlaPicker.ui";
 import { Header, type HeaderProps } from "./Header.ui";
 import { Ledger, type LedgerProps } from "./Ledger.ui";
-import type { PollScoresProps } from "./PollScores.ui";
+import { PollTiles, type PollTilesProps } from "./PollTiles.ui";
 import { ApprovalList, type ApprovalListProps } from "./ApprovalList.ui";
 import { RebaseList, type RebaseListProps } from "./RebaseList.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { Scoring, type ScoringProps } from "./Scoring.ui";
-import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { ScreenFooter, type ScreenFooterProps } from "./ScreenFooter.ui";
 
 const COLUMNS = "grid w-full gap-8 md:grid-cols-2";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
@@ -17,9 +17,8 @@ const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 export type PrepScreenProps = {
 	header: HeaderProps;
 	outcomes: BandOutcomesProps;
-	scores: PollScoresProps;
 	scoring: ScoringProps;
-	polls: LedgerProps;
+	polls: PollTilesProps;
 	audits?: AuditsPanelProps;
 	subscriptions?: LedgerProps;
 	estimate?: EstimatePickerProps;
@@ -34,7 +33,6 @@ export type PrepScreenProps = {
 export const PrepScreen = ({
 	header,
 	outcomes,
-	scores,
 	scoring,
 	polls,
 	audits,
@@ -48,11 +46,11 @@ export const PrepScreen = ({
 	ground = "bare",
 }: PrepScreenProps) => (
 	<Screen gate={header.swatch.theme} width={width} ground={ground}>
-		<Header {...header} pinned />
+		<Header {...header} />
 
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
-				<BandOutcomes {...outcomes} scores={scores} />
+				<BandOutcomes {...outcomes} />
 				{rebase === undefined ? null : <RebaseList {...rebase} />}
 				{approval === undefined ? null : <ApprovalList {...approval} />}
 				{estimate === undefined ? null : <EstimatePicker {...estimate} />}
@@ -61,12 +59,11 @@ export const PrepScreen = ({
 
 			<div className={COLUMN}>
 				<Scoring {...scoring} />
-				<Ledger {...polls} />
+				<PollTiles {...polls} />
 				{audits === undefined ? null : <AuditsPanel {...audits} />}
 				{subscriptions === undefined ? null : <Ledger {...subscriptions} />}
+				<ScreenFooter {...footer} asidesAt="after" rule={false} />
 			</div>
 		</div>
-
-		<ScreenActions {...footer} />
 	</Screen>
 );

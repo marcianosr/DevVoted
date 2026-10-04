@@ -4,7 +4,8 @@ import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 
 import { AUDITS } from "~/shared/lib/copy";
-import { AccuracyTrack, type AccuracyTrackProps } from "./AccuracyTrack.ui";
+import { Accuracy } from "./Accuracy.ui";
+import type { AccuracyTrackProps } from "./AccuracyTrack.ui";
 import { Action } from "./Action.ui";
 import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
@@ -31,8 +32,6 @@ const COPY = {
 	wrongCost: "wrong costs",
 	readingDown: "Coverage reading unavailable",
 	readingDownHint: "The meter is down. Answers still score.",
-	accuracy: "Accuracy",
-	accuracyNote: "multiplies the bar when the gate closes",
 } as const;
 
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
@@ -44,9 +43,13 @@ const DARK_TRACK =
 const DARK_READOUT = "flex w-full flex-col gap-1.5";
 
 const PAID = "border-t border-theme-faint";
-const SCORE_BLOCK = "flex w-full flex-col gap-2";
-const ACCURACY_HEAD = "flex flex-wrap items-baseline justify-between gap-2";
 const SHAKE = "answer-shake";
+const CARD = "relative poll-card-enter";
+const LEAVING = "poll-card-leave";
+const REVEALED = "poll-card-revealed";
+const COMBO =
+	"poll-combo pointer-events-none absolute top-3 right-4 z-10 text-sm font-extrabold text-theme";
+const COMBO_COLOR: KantoColor = "vermillion";
 const FLIGHT =
 	"pointer-events-none fixed top-0 left-0 z-50 text-sm font-bold opacity-0";
 
@@ -129,6 +132,10 @@ export type PollScreenProps = {
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 	shake?: string;
+	combo?: string;
+	pollKey?: string;
+	leaving?: boolean;
+	revealed?: boolean;
 	flight?: PollFlight;
 	onFlightLanded?: () => void;
 };
@@ -178,17 +185,7 @@ const LiveReading = ({
 		</Panel.Body>
 		{accuracy === undefined ? null : (
 			<Panel.Body className={PAID}>
-				<div className={SCORE_BLOCK}>
-					<div className={ACCURACY_HEAD}>
-						<Typography variant="title" as="h3">
-							{COPY.accuracy}
-						</Typography>
-						<Typography variant="hint" as="span">
-							{COPY.accuracyNote}
-						</Typography>
-					</div>
-					<AccuracyTrack {...accuracy} />
-				</div>
+				<Accuracy track={accuracy} />
 			</Panel.Body>
 		)}
 	</>
@@ -451,6 +448,10 @@ export const PollScreen = ({
 	width = "wide",
 	ground = "bare",
 	shake,
+	combo,
+	pollKey,
+	leaving = false,
+	revealed = false,
 	flight,
 	onFlightLanded,
 	...poll
@@ -466,7 +467,7 @@ export const PollScreen = ({
 			ground={ground}
 			floor={POLL_FLOOR}
 		>
-			<Header {...header} pinned />
+			<Header {...header} />
 
 			{audits.length === 0 ? null : (
 				<Panel>
@@ -482,12 +483,30 @@ export const PollScreen = ({
 			)}
 
 			<div className={POLL_ROW}>
-				<div ref={card} className={clsx(shake !== undefined && SHAKE)}>
+				<div
+					key={pollKey}
+					ref={card}
+					className={clsx(
+						CARD,
+						shake !== undefined && SHAKE,
+						revealed && REVEALED,
+						leaving && LEAVING
+					)}
+				>
 					<PollPanel
 						{...poll}
 						swatch={{ state: "current", swatch: header.swatch, count: step }}
 						measure={measureSend}
 					/>
+					{combo === undefined ? null : (
+						<span
+							role="status"
+							data-screen-theme={COMBO_COLOR}
+							className={COMBO}
+						>
+							{combo}
+						</span>
+					)}
 				</div>
 				<CoveragePanel coverage={coverage} gauge={gauge} />
 			</div>

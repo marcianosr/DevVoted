@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 
 import { ConfigChip } from "./ConfigChip.ui";
 import { REDACTED } from "./Redaction.ui";
+import type { UpgradesProps } from "./Upgrades.ui";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
@@ -45,6 +46,8 @@ const declaration = (utility: string, property: string) => {
 		.find((row) => row.trim().startsWith(`${property}:`));
 	return line?.trim();
 };
+
+const SEEN = { ignore: "script, style, [inert] *" };
 
 describe("ConfigChip", () => {
 	it("names the config and its badge", () => {
@@ -449,7 +452,7 @@ describe("ConfigChip states and controls", () => {
 		expect(onToggleInfo).toHaveBeenCalledOnce();
 	});
 
-	it("peeks the effect on one truncated line and withholds the weight and the price while collapsed", () => {
+	it("summarises the effect on one truncated line while folded", () => {
 		render(
 			<ConfigChip
 				name="Cache"
@@ -459,8 +462,40 @@ describe("ConfigChip states and controls", () => {
 			/>
 		);
 
-		expect(screen.getByText(INFO.description)).toHaveClass("truncate");
-		expect(screen.queryByText("uninstalls for")).not.toBeInTheDocument();
+		expect(
+			screen.getByText(INFO.description, SEEN).closest(".truncate")
+		).toHaveClass("truncate", "w-0", "min-w-full");
+	});
+
+	it("rules the action row off from the card body when it carries a press", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				onUninstall={noop}
+			/>
+		);
+
+		expect(
+			screen.getByRole("button", { name: /Uninstall/ }).closest(".ml-auto")
+				?.parentElement
+		).toHaveClass("border-t");
+	});
+
+	it("badges the figures of the folded summary too", () => {
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={{ ...INFO, description: "+8KB storage per correct answer." }}
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(screen.getByText("+8KB", SEEN).closest(".truncate")).not.toBeNull();
 	});
 
 	it("stops peeking once expanded, stating the effect only once", () => {
@@ -478,17 +513,20 @@ describe("ConfigChip states and controls", () => {
 		expect(screen.getByText(INFO.description)).not.toHaveClass("truncate");
 	});
 
-	it("peeks without the peek claiming width, so the name keeps its own floor", () => {
+	it("keeps the version and the price in the folded row, the badges in the fold", () => {
 		render(
 			<ConfigChip
 				name="Cache"
-				badges={[...BADGES]}
-				info={INFO}
+				badges={[{ label: "+8 KB", color: "viridian" }]}
+				info={{ ...INFO, version: 2 }}
 				onToggleInfo={noop}
+				install={{ price: "32 KB", onPress: noop }}
 			/>
 		);
 
-		expect(screen.getByText(INFO.description)).toHaveClass("w-0", "min-w-full");
+		expect(screen.getByText("v2", SEEN)).toBeInTheDocument();
+		expect(screen.getByText("32 KB", SEEN)).toBeInTheDocument();
+		expect(screen.queryByText("+8 KB", SEEN)).toBeNull();
 	});
 
 	it("states itself where no panel wired a fold, rather than hiding behind one", () => {
@@ -811,15 +849,15 @@ describe("ConfigChip's uninstall", () => {
 				name="Cache"
 				badges={[...BADGES]}
 				info={INFO}
+				infoOpen
 				onToggleInfo={noop}
 				onUninstall={vi.fn()}
 			/>
 		);
 
-		expect(screen.getByText(`+${INFO.sellPrice}`)).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: "Uninstall Cache · +32 KB" })
-		).toBeInTheDocument();
+		).toHaveTextContent(`+${INFO.sellPrice}`);
 	});
 
 	it("leaves the refund off the footer once the press is quoting it", () => {
@@ -835,10 +873,12 @@ describe("ConfigChip's uninstall", () => {
 		);
 
 		expect(screen.queryByText("uninstalls for")).not.toBeInTheDocument();
-		expect(screen.getByText(`+${INFO.sellPrice}`)).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^Uninstall Cache/ })
+		).toHaveTextContent(`+${INFO.sellPrice}`);
 	});
 
-	it("trails the controls in the order the mock reads them", () => {
+	it("reads the head's controls, then uninstall before upgrade at the foot", () => {
 		render(
 			<ConfigChip
 				name="ESLint"
@@ -847,6 +887,7 @@ describe("ConfigChip's uninstall", () => {
 				]}
 				upgrades={UPGRADES}
 				info={INFO}
+				infoOpen
 				onToggleInfo={noop}
 				onUninstall={vi.fn()}
 			/>
@@ -855,10 +896,10 @@ describe("ConfigChip's uninstall", () => {
 		expect(
 			screen.getAllByRole("button").map((button) => button.ariaLabel)
 		).toStrictEqual([
-			"Expand ESLint",
+			"Collapse ESLint",
 			"ESLint · lint",
-			"Upgrade ESLint to v2 · 64 KB",
 			"Uninstall ESLint · +32 KB",
+			"Upgrade ESLint to v2 · 64 KB",
 		]);
 	});
 });
@@ -903,44 +944,45 @@ describe("ConfigChip's width", () => {
 		expect(seat).not.toHaveClass("min-w-0");
 	});
 
-	it("seats the name and the presses in one row", () => {
+	it("seats the uninstall press in its own row under the card, sized to its label and aligned right", () => {
 		render(
 			<ConfigChip
 				name="Code Coverage"
 				badges={[...BADGES]}
 				info={INFO}
+				infoOpen
 				onToggleInfo={noop}
 				onUninstall={noop}
 			/>
 		);
 
-		const row = screen.getByText("Code Coverage").parentElement?.parentElement;
+		const row = screen.getByText("Code Coverage").parentElement;
+		const uninstall = screen.getByRole("button", { name: /^Uninstall/ });
 
 		expect(row).toHaveClass("flex-wrap");
-		expect(row).toContainElement(
-			screen.getByRole("button", { name: /^Uninstall/ })
-		);
+		expect(row).not.toContainElement(uninstall);
+		expect(uninstall).not.toHaveClass("w-full");
+		expect(uninstall.parentElement).toHaveClass("justify-end");
 	});
 
-	it("seats a badge on its own row, where it cannot squeeze the name", () => {
+	it("seats a badge in the meta row at the foot, where it cannot squeeze the name", () => {
 		render(
 			<ConfigChip
 				name="Code Coverage"
 				badges={[{ label: "JavaScript or TypeScript only", color: "pewter" }]}
 				info={INFO}
+				infoOpen
 				onToggleInfo={noop}
-				infoOpen={false}
 			/>
 		);
 
-		const tagLine = screen.getByText(
-			"JavaScript or TypeScript only"
-		).parentElement;
-		const row = screen.getByText("Code Coverage").parentElement?.parentElement;
+		const badge = screen.getByText("JavaScript or TypeScript only", SEEN);
+		const row = screen.getByText("Code Coverage").parentElement;
 
-		expect(tagLine).toHaveClass("w-full");
-		expect(tagLine).not.toContainElement(screen.getByText("Code Coverage"));
-		expect(row?.parentElement).toContainElement(tagLine as HTMLElement);
+		expect(row).not.toContainElement(badge);
+		expect(row?.compareDocumentPosition(badge) ?? 0).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING
+		);
 	});
 });
 
@@ -1054,14 +1096,18 @@ describe("ConfigChip's footer", () => {
 				infoOpen
 				onToggleInfo={noop}
 			/>
-		).container.querySelectorAll(".border-t");
+		);
 
 	it("draws no footer for a card with no version, no price and no badge", () => {
-		expect(cardWith(FACTS)).toHaveLength(1);
+		cardWith(FACTS);
+
+		expect(screen.queryByText(/^v\d/)).toBeNull();
 	});
 
 	it("draws one as soon as there is a version to name", () => {
-		expect(cardWith({ ...FACTS, version: 2 })).toHaveLength(2);
+		cardWith({ ...FACTS, version: 2 });
+
+		expect(screen.getByText("v2", SEEN)).toBeInTheDocument();
 	});
 });
 
@@ -1139,12 +1185,11 @@ describe("ConfigChip's highlight", () => {
 		expect(onLeave).toHaveBeenCalledTimes(1);
 	});
 
-	it("hovers on the card itself rather than through the panel's wrapper", async () => {
+	it("hovers on the chip itself rather than through the sheet's wrapper", async () => {
 		const onHover = vi.fn();
 		const { container } = render(
 			<ConfigChip
 				{...CHIP}
-				info={INFO}
 				upgrades={UPGRADES}
 				upgradesOpen
 				onHover={onHover}
@@ -1347,5 +1392,441 @@ describe("a chip naming which of its prices is pointed at", () => {
 
 		expect(onHover).toHaveBeenCalledTimes(1);
 		expect(onQuote).not.toHaveBeenCalled();
+	});
+});
+
+describe("ConfigChip's card presses and fold", () => {
+	it("installs through a primary press naming the price, sized to its label", () => {
+		render(
+			<ConfigChip
+				name="IndexedDB"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				install={{ price: "32 KB", onPress: noop }}
+			/>
+		);
+
+		const install = screen.getByRole("button", {
+			name: "Install IndexedDB · 32 KB",
+		});
+
+		expect(install).toHaveTextContent("Install · 32 KB");
+		expect(install).toHaveClass("press-sheen", "segment-theme", "h-8");
+		expect(install).not.toHaveClass("w-full");
+	});
+
+	it("folds the press away with the description, like the mock's row", () => {
+		const { container } = render(
+			<ConfigChip
+				name="IndexedDB"
+				badges={[]}
+				info={INFO}
+				onToggleInfo={noop}
+				install={{ price: "32 KB", onPress: noop }}
+			/>
+		);
+
+		expect(screen.queryByRole("button", { name: /^Install/ })).toBeNull();
+		expect(container.querySelector(".config-fold")).toHaveTextContent(
+			"Install · 32 KB"
+		);
+	});
+
+	it("names the refund in the folded row of an installed config", () => {
+		render(
+			<ConfigChip
+				name=".js"
+				badges={[]}
+				info={{ ...INFO, sellPrice: "16 KB" }}
+				onToggleInfo={noop}
+				onUninstall={noop}
+			/>
+		);
+
+		expect(screen.getByText("+16 KB", SEEN)).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+	});
+
+	it("greys out an offer the player cannot afford, its press disabled", () => {
+		const { container } = render(
+			<ConfigChip
+				name="IndexedDB"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				skipped
+				install={{ price: "32 KB", onPress: noop, disabled: true }}
+			/>
+		);
+
+		expect(container.querySelector("[data-config]")).toHaveClass(
+			"opacity-60",
+			"grayscale"
+		);
+		expect(screen.getByRole("button", { name: /^Install/ })).toBeDisabled();
+	});
+
+	it("uninstalls through a red press that names the refund in its own dark text", () => {
+		render(
+			<ConfigChip
+				name=".css"
+				badges={[]}
+				info={{ ...INFO, sellPrice: "16 KB" }}
+				infoOpen
+				onToggleInfo={noop}
+				onUninstall={noop}
+			/>
+		);
+
+		const uninstall = screen.getByRole("button", { name: /^Uninstall .css/ });
+
+		expect(uninstall).toHaveTextContent(/^Uninstall · \+16 KB$/);
+		expect(uninstall.querySelector("[data-screen-theme]")).toBeNull();
+		expect(uninstall).toHaveAttribute("data-screen-theme", "cinnabar");
+		expect(uninstall).not.toHaveClass("press-sheen");
+	});
+
+	it("holds a folded card's details in an inert, hidden fold it can animate open", () => {
+		const { container, rerender } = render(
+			<ConfigChip name="Cache" badges={[]} info={INFO} onToggleInfo={noop} />
+		);
+
+		const fold = container.querySelector(".config-fold");
+
+		expect(fold).toHaveAttribute("inert");
+		expect(fold).toHaveAttribute("aria-hidden", "true");
+		expect(fold).not.toHaveAttribute("data-open");
+
+		rerender(
+			<ConfigChip
+				name="Cache"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+
+		expect(fold).not.toHaveAttribute("inert");
+		expect(fold).toHaveAttribute("data-open", "true");
+	});
+
+	it("upgrades through a prismatic press beside uninstall", () => {
+		render(
+			<ConfigChip
+				name=".css"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+				upgrades={UPGRADES}
+				onToggleUpgrades={noop}
+				onUninstall={noop}
+			/>
+		);
+
+		const uninstall = screen.getByRole("button", { name: /^Uninstall/ });
+		const upgrade = screen.getByRole("button", { name: /^Upgrade .css/ });
+
+		expect(upgrade).toHaveClass("press-prismatic");
+		expect(upgrade).not.toHaveClass("w-full");
+		expect(upgrade).toHaveTextContent(/^↑ v2 · /);
+		expect(upgrade.parentElement).toBe(uninstall.parentElement);
+	});
+
+	it("pads a folded row as much below as above, and tightens it once open", () => {
+		const { rerender } = render(
+			<ConfigChip name=".js" badges={[]} info={INFO} onToggleInfo={noop} />
+		);
+		const head = () =>
+			screen
+				.getByRole("button", { name: /(Expand|Collapse) \.js/ })
+				.closest(".pt-3");
+
+		expect(head()).toHaveClass("pb-3");
+
+		rerender(
+			<ConfigChip
+				name=".js"
+				badges={[]}
+				info={INFO}
+				infoOpen
+				onToggleInfo={noop}
+			/>
+		);
+		expect(head()).toHaveClass("pb-1");
+	});
+
+	it("seats the meta and the presses on one line at the foot", () => {
+		render(
+			<ConfigChip
+				name="IndexedDB"
+				badges={[]}
+				info={{ ...INFO, sellPrice: "16 KB" }}
+				infoOpen
+				onToggleInfo={noop}
+				install={{ price: "32 KB", onPress: noop }}
+			/>
+		);
+
+		const meta = screen.getByText("uninstalls for", SEEN);
+		const install = screen.getByRole("button", { name: /^Install/ });
+		const row = install.parentElement?.parentElement;
+
+		expect(row).toHaveClass("flex-wrap", "items-center");
+		expect(row).toContainElement(meta);
+	});
+});
+
+describe("ConfigChip's armed install", () => {
+	const SCALE = { from: 4, to: 12, perGateKb: 64 };
+	const armedCard = (onCancel = vi.fn(), infoOpen = true) =>
+		render(
+			<ConfigChip
+				name="AGENTS.md"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen={infoOpen}
+				onToggleInfo={noop}
+				install={{
+					price: "256 KB",
+					onPress: noop,
+					scale: SCALE,
+					armed: true,
+					onCancel,
+				}}
+			/>
+		);
+
+	it("states inside the card that the build does not fit, and what it costs", () => {
+		armedCard();
+
+		const card = cardOf("AGENTS.md");
+		expect(card).toHaveTextContent("Doesn't fit.");
+		expect(card).toHaveTextContent("pay now−256 KB");
+		expect(card).toHaveTextContent("upkeep−64 KBevery gate");
+		expect(card).toHaveClass("border-saffron");
+	});
+
+	it("installs from a saffron press that still names the confirmation", () => {
+		armedCard();
+
+		const press = screen.getByRole("button", {
+			name: /Confirm installing AGENTS.md/,
+		});
+		expect(press).toHaveTextContent("Install · 256 KB");
+		expect(press).toHaveClass("press-raised");
+		expect(press.closest("[data-screen-theme]")).toHaveAttribute(
+			"data-screen-theme",
+			"saffron"
+		);
+	});
+
+	it("disarms through cancel", async () => {
+		const onCancel = vi.fn();
+		armedCard(onCancel);
+
+		await userEvent.click(screen.getByRole("button", { name: "cancel" }));
+
+		expect(onCancel).toHaveBeenCalledOnce();
+	});
+
+	it("replaces the foot, so nothing else is offered while it asks", () => {
+		armedCard();
+
+		expect(screen.queryByText("uninstalls for", SEEN)).not.toBeInTheDocument();
+		expect(screen.getAllByRole("button", { name: /AGENTS.md/ })).toHaveLength(
+			2
+		);
+	});
+
+	it("keeps asking while the card is folded", () => {
+		armedCard(vi.fn(), false);
+
+		expect(screen.getByText("Doesn't fit.", SEEN)).toBeInTheDocument();
+	});
+
+	it("leaves a bare chip's warning in the sheet beside it", () => {
+		const { container } = render(
+			<ConfigChip
+				name=".js"
+				badges={[]}
+				install={{ price: "32 KB", onPress: noop, scale: SCALE, armed: true }}
+			/>
+		);
+
+		expect(panelOf(container)).toHaveTextContent("Doesn't fit.");
+		expect(
+			screen.getByRole("button", { name: /Confirm installing .js/ })
+		).toHaveTextContent("Confirm");
+	});
+
+	it("keeps a bare chip's upgrade sheet at its start", () => {
+		const { container } = render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				upgrades={UPGRADES}
+				upgradesOpen
+			/>
+		);
+
+		expect(panelOf(container)).toHaveClass("sm:left-0");
+	});
+});
+
+describe("ConfigChip's armed upgrade", () => {
+	const REFUSED = {
+		...UPGRADES,
+		refusal: "32 KB short",
+		rungs: UPGRADES.rungs.map((rung) =>
+			rung.state === "offered" ? { ...rung, disabled: true } : rung
+		),
+	};
+	const armedCard = ({
+		onBuy = vi.fn(),
+		onToggleUpgrades = vi.fn(),
+		upgrades = UPGRADES,
+		infoOpen = true,
+	} = {}) =>
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				infoOpen={infoOpen}
+				onToggleInfo={noop}
+				onUninstall={noop}
+				upgrades={{
+					...upgrades,
+					changes: [{ from: "×1.25", to: "×1.5" }],
+					onBuy,
+				}}
+				upgradesOpen
+				onToggleUpgrades={onToggleUpgrades}
+			/>
+		);
+
+	it("states inside the card what the upgrade changes and costs, rather than floating a sheet", () => {
+		const { container } = armedCard();
+
+		const card = cardOf("Cache");
+		expect(card).toHaveTextContent("Upgrade to v2.");
+		expect(card).toHaveTextContent("versionv1→v2");
+		expect(card).toHaveTextContent("effect×1.25→×1.5");
+		expect(card).toHaveTextContent("pay now−64 KB");
+		expect(card).toHaveClass("border-saffron");
+		expect(panelOf(container)).toBeNull();
+	});
+
+	it("upgrades from a prismatic press that names the confirmation", async () => {
+		const onBuy = vi.fn();
+		armedCard({ onBuy });
+
+		const press = screen.getByRole("button", {
+			name: "Confirm upgrading Cache to v2 · 64 KB",
+		});
+		expect(press).toHaveTextContent("Upgrade · 64 KB");
+		expect(press).toHaveClass("press-prismatic");
+
+		await userEvent.click(press);
+		expect(onBuy).toHaveBeenCalledWith(2);
+	});
+
+	it("disarms through cancel", async () => {
+		const onToggleUpgrades = vi.fn();
+		armedCard({ onToggleUpgrades });
+
+		await userEvent.click(screen.getByRole("button", { name: "cancel" }));
+
+		expect(onToggleUpgrades).toHaveBeenCalledOnce();
+	});
+
+	it("replaces the foot, so uninstall is not offered while it asks", () => {
+		armedCard();
+
+		expect(
+			screen.queryByRole("button", { name: /^Uninstall/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("keeps asking while the card is folded", () => {
+		armedCard({ infoOpen: false });
+
+		expect(screen.getByText("Upgrade to v2.", SEEN)).toBeInTheDocument();
+	});
+
+	it("states the refusal and holds the confirm press shut", () => {
+		armedCard({ upgrades: REFUSED });
+
+		expect(screen.getByText("32 KB short")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^Confirm upgrading Cache/ })
+		).toBeDisabled();
+	});
+});
+
+describe("ConfigChip's upgrade-ready pennant", () => {
+	const foldedCard = (
+		props: {
+			infoOpen?: boolean;
+			upgrades?: UpgradesProps;
+			upgradesOpen?: boolean;
+		} = {}
+	) =>
+		render(
+			<ConfigChip
+				name="Cache"
+				badges={[...BADGES]}
+				info={INFO}
+				onToggleInfo={noop}
+				upgrades={UPGRADES}
+				onToggleUpgrades={noop}
+				{...props}
+			/>
+		);
+	const glowOf = (container: HTMLElement) =>
+		container.querySelector(".version-glow");
+
+	it("glows the folded row's pennant when an upgrade is on offer and payable", () => {
+		const { container } = foldedCard();
+
+		expect(glowOf(container)).toHaveTextContent("v1");
+	});
+
+	it("stops glowing once the card is open, the press itself being in view", () => {
+		const { container } = foldedCard({ infoOpen: true });
+
+		expect(glowOf(container)).toBeNull();
+	});
+
+	it("stays still for an upgrade the player cannot take", () => {
+		const { container } = foldedCard({
+			upgrades: {
+				...UPGRADES,
+				rungs: UPGRADES.rungs.map((rung) =>
+					rung.state === "offered" ? { ...rung, disabled: true } : rung
+				),
+			},
+		});
+
+		expect(glowOf(container)).toBeNull();
+	});
+
+	it("stays still once every version is held", () => {
+		const { container } = foldedCard({ upgrades: OWNED_OUT });
+
+		expect(glowOf(container)).toBeNull();
+	});
+
+	it("stays still while the upgrade is armed, the card already asking", () => {
+		const { container } = foldedCard({ upgradesOpen: true });
+
+		expect(glowOf(container)).toBeNull();
 	});
 });

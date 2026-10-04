@@ -45,7 +45,7 @@ describe("DexAudits", () => {
 	it("names the collection and counts what has been met", () => {
 		render(<DexAudits {...dexAuditsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "audits" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Audits" })).toBeVisible();
 		expect(screen.getByText("7 of 16")).toBeVisible();
 	});
 

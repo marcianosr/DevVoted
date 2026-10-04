@@ -23,6 +23,7 @@ export type GateCloseView = {
 	readonly band: CoverageBandId;
 	readonly cleared: boolean;
 	readonly held: number;
+	readonly reached: number;
 	readonly ladder: GateLadder;
 	readonly correct: number;
 	readonly kb: number;
@@ -72,6 +73,7 @@ export const gateCloseViewOf = (state: RunState): GateCloseView | null => {
 	const ladder =
 		close.ladder ??
 		gateLadderFor(state.build.configs, close.gate, scheduleOf(state));
+	const held = close.held ?? LINE_OF_BAND[close.band](ladder);
 
 	return {
 		gate: close.gate,
@@ -79,7 +81,8 @@ export const gateCloseViewOf = (state: RunState): GateCloseView | null => {
 		heldBy: heldByOf(state, close, closing),
 		band: close.band,
 		cleared: close.cleared,
-		held: close.held ?? LINE_OF_BAND[close.band](ladder),
+		held,
+		reached: close.reached ?? held,
 		ladder,
 		correct: close.correct ?? correctOf(state),
 		kb: close.kb,

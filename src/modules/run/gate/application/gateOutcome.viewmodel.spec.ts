@@ -4,6 +4,7 @@ import {
 	type GateAnswer,
 	type GateOutcomeFrame,
 	gateOutcomePropsFor,
+	outcomeRevealFor,
 	outcomeRevealOf,
 	peelPicksOf,
 	peelPlanOf,
@@ -11,13 +12,10 @@ import {
 import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
-import { coverageGainPercentFor } from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	roundToOneDecimal,
-	VICTORY_GATE,
-} from "~/modules/run/run/domain/rules.model";
+import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
+import { createMockGateClose, createMockRunView } from "~/test/runView.factory";
 
 const GATE_4_LADDER = { floor: 5, ok: 15, healthy: 25 };
 
@@ -67,6 +65,21 @@ const heldByUnscored = (): GateOutcomeFrame => ({
 	],
 });
 
+describe("the accuracy the close landed", () => {
+	it("keeps the accuracy track on the outcome at the multiplier the gate closed on", () => {
+		const props = gateOutcomePropsFor({
+			...frameOf([], CLEARED),
+			accuracyMultiplier: 1.08,
+		});
+
+		expect(props.accuracy?.figure).toBe("×1.08");
+	});
+
+	it("draws no accuracy track when the close recorded no multiplier", () => {
+		expect(gateOutcomePropsFor(frameOf([], CLEARED)).accuracy).toBeUndefined();
+	});
+});
+
 describe("a Champion that closed on OK", () => {
 	const championOnOk = (): GateOutcomeFrame => ({
 		...frameOf([], GATE_4_LADDER.ok + 5),
@@ -81,6 +94,51 @@ describe("a Champion that closed on OK", () => {
 		expect(props.header.title).toBe("Champion holds");
 		expect(props.tail?.choice).toBeDefined();
 		expect(props.tail?.ending).toBeUndefined();
+	});
+});
+
+describe("a Champion that closed the run", () => {
+	const summit = (): GateOutcomeFrame => ({
+		...frameOf([VICTORY_GATE], 100),
+		gate: VICTORY_GATE,
+		won: true,
+	});
+
+	it("says every unspent kilobyte banks, since a win keeps it all", () => {
+		const detail = gateOutcomePropsFor(summit()).tail?.ending?.detail;
+
+		expect(detail).toContain(
+			"All of the unspent storage banks into your archive."
+		);
+		expect(detail).not.toContain("how far you climbed");
+	});
+});
+
+describe("a hold on a day whose five are spent", () => {
+	const spent = (): GateOutcomeFrame => ({
+		...heldByUnscored(),
+		nextPollsIn: "7h 23m",
+	});
+
+	it("says when the next polls come instead of promising fresh ones", () => {
+		const props = gateOutcomePropsFor(spent());
+
+		expect(props.header.subtitle).toContain("new polls in 7h 23m");
+		expect(props.header.subtitle).not.toContain("fresh polls");
+		expect(props.footer.note).toBe("new polls in 7h 23m");
+	});
+
+	it("tells the player a new run waits for the same polls", () => {
+		expect(gateOutcomePropsFor(spent()).tail?.choice?.refusal.note).toContain(
+			"a new run waits for them too"
+		);
+	});
+
+	it("keeps promising fresh polls while the day still has some", () => {
+		const props = gateOutcomePropsFor(heldByUnscored());
+
+		expect(props.header.subtitle).toContain("5 fresh polls on the retry");
+		expect(props.tail?.choice?.refusal.note).not.toContain("new run");
 	});
 });
 
@@ -170,8 +228,8 @@ describe("a close recorded under the old window minimum", () => {
 	it("says the window came up short, not the meter", () => {
 		const props = gateOutcomePropsFor(heldByUnscored());
 
-		expect(props.header.note).toContain("the window came up short");
-		expect(props.header.note).not.toContain("the meter fell short");
+		expect(props.header.subtitle).toContain("the window came up short");
+		expect(props.header.subtitle).not.toContain("the meter fell short");
 		expect(props.coverageHold).toBe("the window came up short");
 	});
 
@@ -224,7 +282,6 @@ describe("gateOutcomePropsFor and the swatch", () => {
 	it("reads the swatch off the run's record, not off the band it closed in", () => {
 		const props = gateOutcomePropsFor(frameOf([GATE], SHORT));
 
-		expect(props.header.swatchState).toBe("discovered");
 		expect(props.earned?.rows.map((row) => row.name)).toEqual([
 			"Lavender swatch earned",
 		]);
@@ -233,7 +290,6 @@ describe("gateOutcomePropsFor and the swatch", () => {
 	it("withholds the swatch from a clear the window did not earn", () => {
 		const props = gateOutcomePropsFor(frameOf([], CLEARED));
 
-		expect(props.header.swatchState).toBe("current");
 		expect(props.earned?.rows.map((row) => row.name)).toEqual([
 			"Lavender swatch missed",
 		]);
@@ -241,10 +297,10 @@ describe("gateOutcomePropsFor and the swatch", () => {
 
 	it("states the swatch only in the Earned panel, never as a header line", () => {
 		expect(
-			gateOutcomePropsFor(frameOf([], CLEARED)).header.note
+			gateOutcomePropsFor(frameOf([], CLEARED)).header.subtitle
 		).toBeUndefined();
 		expect(
-			gateOutcomePropsFor(frameOf([GATE], CLEARED)).header.note
+			gateOutcomePropsFor(frameOf([GATE], CLEARED)).header.subtitle
 		).toBeUndefined();
 	});
 
@@ -286,22 +342,6 @@ describe("gateOutcomePropsFor and the swatch", () => {
 
 			expect(stated).not.toMatch(/\bchanges?\b/i);
 		}
-	});
-
-	it("lists what a single and a multiple choice are worth at the gate a clear opens", () => {
-		expect(gateOutcomePropsFor(frameOf([], CLEARED)).nextGate).toEqual({
-			title: "At Celadon",
-			rates: [
-				{
-					label: "single choice",
-					gain: `+${roundToOneDecimal(coverageGainPercentFor(1, GATE + 1))}%`,
-				},
-				{
-					label: "multiple choice",
-					gain: `+${roundToOneDecimal(coverageGainPercentFor(2, GATE + 1))}%`,
-				},
-			],
-		});
 	});
 
 	it("fills only the gates the run played clean on the track", () => {
@@ -418,6 +458,12 @@ describe("a clear whose parts are known", () => {
 		);
 	});
 
+	it("states how far past the full bar the surplus ran", () => {
+		const past = { ...itemised(), bar: { ...itemised().bar, held: 112 } };
+
+		expect(rowNamed(past, "Surplus")?.notes).toEqual(["12% past the full bar"]);
+	});
+
 	it("names the surplus sold past the full bar", () => {
 		expect(rowNamed(itemised(), "Surplus")?.figures).toContainEqual(
 			expect.objectContaining({ label: "+53 KB" })
@@ -504,7 +550,7 @@ describe("a caught gate reads as a hold that owes its reason", () => {
 	});
 
 	it("names the catch in the note rather than leaving the hold unexplained", () => {
-		expect(gateOutcomePropsFor(caught()).header.note).toContain("caught");
+		expect(gateOutcomePropsFor(caught()).header.subtitle).toContain("caught");
 	});
 
 	it("chips what spent itself saving the run", () => {
@@ -668,11 +714,25 @@ describe("a PERFECT close states its bonus (ADR-075)", () => {
 		const { bonus } = gateOutcomePropsFor(perfect(16));
 
 		expect(bonus?.badges?.[0].label).toBe("+16 KB");
-		expect(bonus?.detail).toContain("×1.5");
+		expect(bonus?.detail).toBe("See an overview of your results.");
 	});
 
 	it("leaves the panel out when the bonus paid nothing", () => {
 		expect(gateOutcomePropsFor(perfect(0)).bonus).toBeUndefined();
+	});
+});
+
+describe("the bar a close is read on", () => {
+	it("pins how far past the full bar the close reached, not the capped 100%", () => {
+		const close = createMockGateClose({
+			band: "perfect",
+			held: 100,
+			reached: 112,
+		});
+
+		expect(
+			outcomeRevealFor({ view: createMockRunView(), close }).bar?.held
+		).toBe(112);
 	});
 });
 

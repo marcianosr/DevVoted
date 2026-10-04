@@ -12,88 +12,69 @@ import {
 	outageTargetLineFor,
 	subscriptionsLedgerFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
-import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
 
-const REVEAL_NOTE = "Some configs reveal these before you answer.";
+describe("the prep header", () => {
+	it("names the gate over a line of subtext", () => {
+		const { header } = kantoPrepSealed();
 
-describe("the five polls", () => {
-	it("counts nothing revealed while no config opens the window, and says what would", () => {
-		const { polls } = kantoPrepSealed();
-
-		expect(leadTextOf(polls.meta ?? [])).toBe("0 of 4 facts revealed");
-		expect(polls.note).toBe(REVEAL_NOTE);
-		expect(polls.rows).toHaveLength(4);
-		expect(
-			polls.rows.every((row) =>
-				(row.figures ?? []).every((figure) => figure.locked === true)
-			)
-		).toBe(true);
-	});
-
-	it("counts the window revealed and credits the config that opened it", () => {
-		const { polls } = kantoPrepPrefetched();
-
-		expect(leadTextOf(polls.meta ?? [])).toBe(
-			"4 of 4 facts revealed by Prefetch"
-		);
-		expect(polls.meta).toContainEqual({ figure: "Prefetch" });
-		expect(polls.note).toBeUndefined();
-		expect(polls.rows.map((row) => row.label)).toEqual([
-			"answer types",
-			"options each",
-			"categories",
-			"next gate",
-		]);
-	});
-
-	it("counts two of four revealed by a v1 Prefetch and says what v2 adds", () => {
-		const { polls } = kantoPrepPrefetchedAtV1();
-
-		expect(leadTextOf(polls.meta ?? [])).toBe(
-			"2 of 4 facts revealed by Prefetch"
-		);
-		expect(polls.note).toBe(
-			"Prefetch v2 reveals the answer types and option counts too."
-		);
-		const lockedRows = polls.rows.map((row) =>
-			(row.figures ?? []).every((figure) => figure.locked === true)
-		);
-		expect(lockedRows).toEqual([true, true, false, false]);
-	});
-
-	it("names a category by its proper name and tallies a repeat with a times sign", () => {
-		const { polls } = kantoPrepPrefetched();
-		const labelsOf = (row: number) =>
-			(polls.rows[row].figures ?? []).map((figure) =>
-				figure.locked === true ? "" : figure.label
-			);
-
-		expect(labelsOf(2)).toEqual(["TypeScript ×3", "JavaScript ×2"]);
-		expect(labelsOf(3)).toContain("Git ×5");
-		expect(
-			[...labelsOf(2), ...labelsOf(3)].some((label) => /×1$/.test(label))
-		).toBe(false);
-		expect(
-			[...labelsOf(2), ...labelsOf(3)].some((label) => /^[a-z]/.test(label))
-		).toBe(false);
+		expect(header.title).toBeUndefined();
+		expect(header.subtitle).toBe("Look at what's at stake!");
 	});
 });
 
-describe("today's answers", () => {
-	it("draws only the gate being prepped, as the current row", () => {
-		const { scores } = kantoPrepSealed();
+describe("the five polls", () => {
+	it("seals all five tiles while no config opens the window", () => {
+		const { polls } = kantoPrepSealed();
 
-		expect(scores.rows).toHaveLength(1);
-		expect(scores.rows[0].current).toBe(true);
-		expect(scores.rows[0].swatch.gateName).toBe("Lavender");
-		expect(scores.rows[0].polls).toBe(5);
+		expect(polls.state).toBe("sealed");
+		expect(polls.tiles).toHaveLength(5);
+		expect(polls.tiles.every((tile) => tile.locked === true)).toBe(true);
+		expect(polls.after).toBeUndefined();
 	});
 
-	it("keeps the summit's own row at the summit", () => {
-		const { scores } = kantoPrepChampion();
+	it("credits the config that opened the window", () => {
+		expect(kantoPrepPrefetched().polls.state).toBe("revealed by Prefetch");
+	});
 
-		expect(scores.rows).toHaveLength(1);
-		expect(scores.rows[0].swatch.gateName).toBe("Champion");
+	it("names each tile's category and, at v2, its answer type and option count", () => {
+		const { polls } = kantoPrepPrefetched();
+
+		expect(polls.tiles).toEqual([
+			{ category: "TypeScript", shape: "single · 4 options" },
+			{ category: "TypeScript", shape: "multiple · 4 options" },
+			{ category: "TypeScript", shape: "multiple · 5 options" },
+			{ category: "JavaScript", shape: "multiple · 6 options" },
+			{ category: "JavaScript", shape: "multiple · 4 options" },
+		]);
+	});
+
+	it("names the category alone at v1, the shape still hidden", () => {
+		const { polls } = kantoPrepPrefetchedAtV1();
+
+		expect(polls.tiles.every((tile) => tile.shape === undefined)).toBe(true);
+		expect(polls.tiles.map((tile) => tile.category)).toContain("TypeScript");
+	});
+
+	it("tallies the next gate's categories under the tiles, a repeat with a times sign", () => {
+		const { polls } = kantoPrepPrefetched();
+		const [next] = polls.after ?? [];
+
+		expect(next.label).toBe("next gate");
+		expect(
+			(next.figures ?? []).map((figure) =>
+				figure.locked === true ? "" : figure.label
+			)
+		).toEqual(["Git ×5"]);
+	});
+
+	it("states the summit instead of a next gate at the Champion", () => {
+		const [next] = kantoPrepChampion().polls.after ?? [];
+
+		expect(
+			(next?.figures ?? []).map((figure) =>
+				figure.locked === true ? "" : figure.label
+			)
+		).toEqual(["the summit — nothing after this"]);
 	});
 });
 

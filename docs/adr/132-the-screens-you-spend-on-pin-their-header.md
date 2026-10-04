@@ -2,6 +2,8 @@
 
 ## Status
 
+Superseded by [ADR-183](183-the-nav-carries-the-run.md) — nothing pins any more; the track and balance moved to the nav.
+
 Accepted — 2026-09-27 (Marciano, DVTD-aytv). Extends
 [ADR-130](130-the-bar-carries-what-every-screen-needs.md) with the seat the bar
 owes the page. Narrows

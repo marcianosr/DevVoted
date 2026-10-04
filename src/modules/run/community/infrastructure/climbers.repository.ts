@@ -45,7 +45,7 @@ const position = sql<number>`${runStatesTable.gates_cleared} * ${SLICE_WINDOW} +
 
 const lastCloseColumn = sql<LastClose | null>`${runStatesTable.state}->${stateKey("lastClose")}`;
 
-const startedAtGateColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("startedAtGate")})::int, 0)`;
+export const startedAtGateColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("startedAtGate")})::int, 0)`;
 
 const streakColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("streak")})::int, 0)`;
 const storageColumn = sql<number>`coalesce((${runStatesTable.state}->>${stateKey("storage")})::int, 0)`;

@@ -15,7 +15,6 @@ import { swatchesEarnedFrom } from "~/modules/run/gate/domain/swatch.model";
 import { stakeBarFor } from "~/modules/run/run/application/gateStake.viewmodel";
 import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { fundsOf } from "~/modules/run/run/application/prepScreen.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	type UnlockLine,
@@ -40,7 +39,6 @@ import type {
 	PollScoreRow,
 	PollScoresProps,
 } from "~/ui/kanto-theme/PollScores.ui";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 import type {
 	RunOverCategory,
@@ -59,6 +57,7 @@ export const COMMUNITY_LABEL = COMMUNITY;
 const NO_RETRY = "no retry, no peel";
 const HELD_WORD = "held";
 const EVERY_GATE = "every gate held";
+const BANKED_TRAIL = "banked into your archive";
 const FRESH_HAND = "a new run deals a fresh hand and starts at gate 0";
 
 const BEST_TAG = "best";
@@ -112,7 +111,6 @@ export type RunOverFrame = {
 	readonly upkeepPaidKb: number;
 	readonly archiveAfterKb?: number;
 	readonly unlocked: readonly UnlockLine[];
-	readonly readout?: RunReadoutProps;
 };
 
 const weightLabel = (weight: number) => `${weight} weight`;
@@ -353,10 +351,13 @@ export const runOverPropsFor = (frame: RunOverFrame): RunOverScreenProps => ({
 		swatch: gateSwatchAt(frame.gate),
 		swatches: swatchTrackFor(frame.swatchGates, frame.gate),
 		title: frame.won ? SUMMIT_TITLE : RUN_OVER_TITLE,
-		swatchState: "current",
+		...(frame.won
+			? {
+					subtitle: `${signedKbLabel(bankedKb(frame.balanceKb, frame.gate, true))} ${BANKED_TRAIL}`,
+				}
+			: {}),
 		note: subtitleOf(frame),
 		funds: fundsOf(frame.balanceKb, STORAGE_BALANCE),
-		readout: frame.readout,
 	},
 	bar: frame.bar,
 	coverage: {
@@ -395,8 +396,7 @@ const closeBarFor = (view: RunView, gate: number): CoverageBarProps => {
 
 export const runOverFrameOf = (
 	view: RunView,
-	archiveAfterKb?: number,
-	runNumber: number | null = null
+	archiveAfterKb?: number
 ): RunOverFrame => {
 	const won = view.status === "won";
 	const gate = won ? view.victoryGate : view.gateStake.gateNumber;
@@ -417,7 +417,6 @@ export const runOverFrameOf = (
 		upkeepPaidKb: view.upkeepPaidKb,
 		...(archiveAfterKb === undefined ? {} : { archiveAfterKb }),
 		unlocked: unlockLinesFor(view.unlockedThisRun),
-		readout: runReadoutFor(view, runNumber),
 	};
 };
 
@@ -428,7 +427,6 @@ export type RunOverScreenHandlers = {
 
 export type RunOverScreenFrame = {
 	view: RunView;
-	runNumber?: number | null;
 	archiveAfterKb?: number;
 	startRefusal?: string;
 	on: RunOverScreenHandlers;
@@ -436,14 +434,11 @@ export type RunOverScreenFrame = {
 
 export const runOverScreenPropsFor = ({
 	view,
-	runNumber = null,
 	archiveAfterKb,
 	startRefusal,
 	on,
 }: RunOverScreenFrame): RunOverScreenProps => {
-	const props = runOverPropsFor(
-		runOverFrameOf(view, archiveAfterKb, runNumber)
-	);
+	const props = runOverPropsFor(runOverFrameOf(view, archiveAfterKb));
 
 	return {
 		...props,

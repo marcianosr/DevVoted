@@ -32,8 +32,6 @@ import {
 } from "~/modules/run/run/application/pollView.viewmodel";
 import {
 	type HeldAudit,
-	type AnswerTypeSplit,
-	answerTypesOf,
 	canStart,
 	closesOf,
 	isAwaitingTomorrow,
@@ -50,6 +48,7 @@ import {
 } from "~/modules/run/run/domain/run.model";
 import { strictStakeOf } from "~/modules/run/run/domain/strict.model";
 import {
+	type AnswerType,
 	type AnsweredPoll,
 	chainLengthOf,
 	mirrorPoll,
@@ -306,7 +305,7 @@ export type RunView = {
 	readonly correctThisGate: number;
 	readonly upcomingCategories: readonly CategoryCode[] | null;
 	readonly nextGateCategories: readonly CategoryCode[] | null;
-	readonly answerTypesThisGate: AnswerTypeSplit | null;
+	readonly answerTypesThisGate: readonly AnswerType[] | null;
 	readonly optionCountsThisGate: readonly number[] | null;
 	readonly outageTargets: readonly OutageTargetView[] | null;
 	readonly shopControls: ShopControls;
@@ -635,12 +634,12 @@ export const toRunView = (
 		answerTypesThisGate:
 			prefetcher === undefined || !showsPollShape(prefetcher)
 				? null
-				: answerTypesOf(
-						state.polls.slice(
+				: state.polls
+						.slice(
 							state.currentIndex,
 							state.currentIndex - state.window.answered + SLICE_WINDOW
 						)
-					),
+						.map((poll) => poll.answerType),
 		optionCountsThisGate:
 			prefetcher === undefined || !showsPollShape(prefetcher)
 				? null

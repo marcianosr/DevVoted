@@ -6,6 +6,7 @@ import {
 	ProfileCollection,
 	type ProfileCollectionProps,
 } from "./ProfileCollection.ui";
+import { headingOf } from "./Panel.ui";
 
 const props = (
 	overrides: Partial<ProfileCollectionProps> = {}
@@ -24,7 +25,9 @@ describe("ProfileCollection", () => {
 	it("names the panel and rides the archive on its heading", () => {
 		render(<ProfileCollection {...props()} />);
 
-		expect(screen.getByRole("heading", { name: COPY.label })).toBeVisible();
+		expect(
+			screen.getByRole("heading", { name: headingOf(COPY.label) })
+		).toBeVisible();
 		expect(screen.getByText(/2.4 MB archive/)).toBeVisible();
 	});
 

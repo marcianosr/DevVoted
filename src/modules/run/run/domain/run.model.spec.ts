@@ -4,13 +4,15 @@ import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { GATE_COUNT, SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	archiveCreditBytes,
-	answerTypesOf,
 	createRun,
+	entersHallOfFame,
 	liveConfigsOf,
 	pickBudgetFor,
 	type RunState,
 	offlinePairsOf,
 	outageTargetsOf,
+	scheduleOf,
+	withScheduledAudits,
 } from "~/modules/run/run/domain/run.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -94,34 +96,6 @@ describe(".length's pick budget", () => {
 	});
 });
 
-describe("the window's answer types", () => {
-	const multiPoll = (id: string): RunPoll => ({
-		id,
-		category: "js",
-		question: `Which of ${id} are Kanto towns?`,
-		answerType: "multiple",
-		options: [
-			{ id: `${id}-a`, label: "Pewter", correct: true },
-			{ id: `${id}-b`, label: "Viridian", correct: true },
-			{ id: `${id}-c`, label: "Hyrule", correct: false },
-		],
-	});
-
-	it("splits the polls it is given into single and multiple answers", () => {
-		expect(
-			answerTypesOf([
-				poll("pallet", true),
-				multiPoll("cerulean"),
-				poll("pewter", true),
-			])
-		).toEqual({ single: 2, multiple: 1 });
-	});
-
-	it("counts nothing for a window with no polls left", () => {
-		expect(answerTypesOf([])).toEqual({ single: 0, multiple: 0 });
-	});
-});
-
 describe("archiveCreditBytes", () => {
 	const ended = (
 		status: "won" | "dead",
@@ -150,6 +124,31 @@ describe("archiveCreditBytes", () => {
 		expect(archiveCreditBytes(ended("dead", 8, 130, 6))).toBe(
 			archiveCreditBytes(ended("dead", 2, 130))
 		);
+	});
+});
+
+describe("entersHallOfFame", () => {
+	const ended = (status: "won" | "dead", startedAtGate?: number): RunState => ({
+		...started(["js"]),
+		status,
+		gatesCleared: 13,
+		startedAtGate,
+	});
+
+	it("enters a win climbed from Pallet", () => {
+		expect(entersHallOfFame(ended("won", 0))).toBe(true);
+	});
+
+	it("enters a win from a run that predates the start gate", () => {
+		expect(entersHallOfFame(ended("won"))).toBe(true);
+	});
+
+	it("leaves out a win from a run a git tag checked out higher", () => {
+		expect(entersHallOfFame(ended("won", 10))).toBe(false);
+	});
+
+	it("leaves out a run that died", () => {
+		expect(entersHallOfFame(ended("dead", 0))).toBe(false);
 	});
 });
 
@@ -217,5 +216,41 @@ describe("outageTargetsOf", () => {
 			);
 			state = answerWith(state, true);
 		}
+	});
+});
+
+describe("withScheduledAudits", () => {
+	const threeWide = (entry: RunPoll): RunPoll => ({
+		...entry,
+		options: [
+			...entry.options,
+			{ id: `${entry.id}-c`, label: "Maybe", correct: false },
+		],
+	});
+
+	it("seats exactly the named audits on the gate and keeps the other gates", () => {
+		const state = audited(started(["js"]), 4, "flaky-build");
+		const scheduled = withScheduledAudits(state, 6, ["timeout", "mirrored"]);
+
+		expect(scheduleOf(scheduled)[6]).toEqual(["timeout", "mirrored"]);
+		expect(scheduleOf(scheduled)[4]).toEqual(["flaky-build"]);
+	});
+
+	it("re-reads the pick budget when a mirror lands on the gate in front", () => {
+		const state = started(["js"]);
+		const wide = { ...state, polls: state.polls.map(threeWide) };
+
+		const mirrored = withScheduledAudits(wide, wide.gatesCleared, ["mirrored"]);
+
+		expect(wide.window.budget).toBe(SLICE_WINDOW);
+		expect(mirrored.window.budget).toBe(2 * SLICE_WINDOW);
+	});
+
+	it("leaves the open window alone when scheduling a later gate", () => {
+		const state = started(["js"]);
+
+		expect(withScheduledAudits(state, 3, ["mirrored"]).window).toBe(
+			state.window
+		);
 	});
 });

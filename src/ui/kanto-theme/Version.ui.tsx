@@ -8,6 +8,7 @@ const TAG =
 	"badge-theme inline-flex h-5 w-fit shrink-0 items-center gap-1.5 pr-2 pl-3.5 text-xs font-bold tabular-nums";
 const DOT = "size-1 shrink-0 rounded-full bg-theme-faint";
 const DIMMED = "opacity-60";
+const GLOW = "version-glow inline-flex shrink-0";
 
 export type VersionState = "owned" | "offered" | "unaffordable" | "future";
 
@@ -23,13 +24,22 @@ export const versionAccentOf = (state: VersionState) => ACCENT[state];
 export type VersionProps = {
 	version: number;
 	state?: VersionState;
+	glow?: boolean;
 };
 
-export const Version = ({ version, state = "owned" }: VersionProps) => (
-	<span
-		data-screen-theme={ACCENT[state]}
-		className={clsx(TAG, NOTCH, state === "future" && DIMMED)}
-	>
-		<span aria-hidden className={DOT} />v{version}
-	</span>
-);
+export const Version = ({
+	version,
+	state = "owned",
+	glow = false,
+}: VersionProps) => {
+	const tag = (
+		<span
+			data-screen-theme={ACCENT[state]}
+			className={clsx(TAG, NOTCH, state === "future" && DIMMED)}
+		>
+			<span aria-hidden className={DOT} />v{version}
+		</span>
+	);
+
+	return glow ? <span className={GLOW}>{tag}</span> : tag;
+};

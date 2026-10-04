@@ -37,7 +37,7 @@ describe("DexRuns", () => {
 	it("names the collection and counts the climbs", () => {
 		render(<DexRuns {...dexRunsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "run history" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Run history" })).toBeVisible();
 		expect(screen.getByText("3 runs")).toBeVisible();
 	});
 

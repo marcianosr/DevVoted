@@ -181,6 +181,7 @@ export const pollsTable = pgTable("polls", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(),
+	author_paid_at: timestamp("author_paid_at", { withTimezone: true }),
 }).enableRLS();
 
 export const dailyPollsTable = pgTable("daily_polls", {

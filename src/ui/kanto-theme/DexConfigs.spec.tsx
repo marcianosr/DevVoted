@@ -38,7 +38,7 @@ describe("DexConfigs", () => {
 	it("names the collection and counts the deck against the roster", () => {
 		render(<DexConfigs {...dexConfigsProps()} />);
 
-		expect(screen.getByRole("heading", { name: "configs" })).toBeVisible();
+		expect(screen.getByRole("heading", { name: "Configs" })).toBeVisible();
 		expect(screen.getByText("6 of 8")).toBeVisible();
 	});
 

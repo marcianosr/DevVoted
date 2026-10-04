@@ -4,12 +4,10 @@ import { render, screen, within } from "@testing-library/react";
 import {
 	BAND_OUTCOMES_NOTE,
 	BAND_OUTCOMES_TITLE,
-	PREP_COMMUNITY_LABEL,
 	PREP_POLLS_TITLE,
 	KANTO_PREP_GATE,
 	KANTO_PREP_SUMMIT_GATE,
 	kantoPrepCalibration,
-	kantoPrepCeruleanThin,
 	kantoPrepChampion,
 	kantoPrepFatal,
 	kantoPrepLadder,
@@ -20,6 +18,7 @@ import {
 
 import { PrepScreen, type PrepScreenProps } from "./PrepScreen.ui";
 import { SCORING_TITLE } from "./Scoring.ui";
+import { renderWithNavRun } from "~/test/navRun.harness";
 
 const props = kantoPrepSealed();
 const ladder = kantoPrepLadder(KANTO_PREP_GATE);
@@ -27,10 +26,10 @@ const ladder = kantoPrepLadder(KANTO_PREP_GATE);
 const sectionOf = (name: string) =>
 	screen.getByRole("heading", { name }).closest("section") as HTMLElement;
 
-const scoringFold = () =>
-	screen
-		.getByRole("heading", { name: SCORING_TITLE })
-		.closest("details") as HTMLDetailsElement;
+const scoringPanel = () => sectionOf(SCORING_TITLE);
+
+const startPress = () =>
+	screen.getByRole("button", { name: /^Start Lavender/ });
 
 const ladderOf = () =>
 	sectionOf(BAND_OUTCOMES_TITLE).querySelector(".band-ladder") as HTMLElement;
@@ -48,11 +47,6 @@ const rowOf = (word: string) =>
 
 const paysOf = (screenProps: PrepScreenProps, band: string) =>
 	screenProps.outcomes.ladder.rungs.find((rung) => rung.band === band)?.pays;
-
-const standingLineOf = () =>
-	within(sectionOf(BAND_OUTCOMES_TITLE))
-		.getByText(/polls left/)
-		.closest("p") as HTMLElement;
 
 const CLEAR_LEAD = "Finish at";
 const SWATCH_LEAD = "Reach";
@@ -79,12 +73,6 @@ describe("PrepScreen", () => {
 		);
 	});
 
-	it("pins its header, so the balance stays with what it buys back", () => {
-		const { container } = render(<PrepScreen {...props} />);
-
-		expect(container.querySelector("header")).toHaveClass("md:sticky");
-	});
-
 	it("opens on the stakes rather than on the build", () => {
 		render(<PrepScreen {...props} />);
 
@@ -97,7 +85,7 @@ describe("PrepScreen", () => {
 	it("reads as the gate about to be run, with what it carries", () => {
 		render(<PrepScreen {...props} />);
 
-		expect(screen.getByText("#4 - Lavender Gate")).toBeInTheDocument();
+		expect(screen.getByText("Lavender Gate")).toBeInTheDocument();
 		expect(screen.getByText("1 audit")).toBeInTheDocument();
 	});
 
@@ -117,9 +105,22 @@ describe("PrepScreen", () => {
 		const [left, right] = [...columns.children];
 
 		expect(left).toContainElement(sectionOf(BAND_OUTCOMES_TITLE));
-		expect(right.firstElementChild).toBe(scoringFold());
+		expect(right.firstElementChild).toBe(scoringPanel());
 		expect(right).toContainElement(sectionOf(PREP_POLLS_TITLE));
 		expect(right).toContainElement(sectionOf("Audits"));
+	});
+
+	it("closes the right column on the start press, under the polls and the audits", () => {
+		const { container } = render(<PrepScreen {...props} />);
+
+		const columns = container.querySelector(".md\\:grid-cols-2") as HTMLElement;
+		const right = columns.children[1];
+
+		expect(right.lastElementChild).toContainElement(startPress());
+		expect(
+			sectionOf("Audits").compareDocumentPosition(startPress()) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
 	});
 
 	describe("the ladder in At stake", () => {
@@ -137,7 +138,7 @@ describe("PrepScreen", () => {
 			const { container } = render(<PrepScreen {...props} />);
 
 			expect(container.querySelectorAll(".band-ladder")).toHaveLength(1);
-			expect(scoringFold()).not.toContainElement(ladderOf());
+			expect(scoringPanel()).not.toContainElement(ladderOf());
 			expect(container.querySelector("header")).not.toContainElement(
 				ladderOf()
 			);
@@ -194,29 +195,6 @@ describe("PrepScreen", () => {
 
 			expect(header).toHaveTextContent("Lavender · gate 4");
 			expect(within(header).getByText("4")).toHaveClass("badge-theme");
-		});
-
-		it("states the points to the next band up and the polls left, every figure badged", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(standingLineOf()).toHaveTextContent(
-				"+53% to reach SHAKY · 5 polls left"
-			);
-			expect(within(standingLineOf()).getByText("+53%")).toHaveAttribute(
-				"data-screen-theme",
-				"viridian"
-			);
-			expect(within(standingLineOf()).getByText("5")).toHaveClass(
-				"badge-theme"
-			);
-		});
-
-		it("aims the standing line at HEALTHY from inside OK", () => {
-			render(<PrepScreen {...kantoPrepCeruleanThin()} />);
-
-			expect(standingLineOf()).toHaveTextContent(
-				"+7% to reach HEALTHY · 5 polls left"
-			);
 		});
 
 		describe("the objectives", () => {
@@ -334,38 +312,11 @@ describe("PrepScreen", () => {
 			).not.toBeInTheDocument();
 		});
 
-		it("shows only today's gate's answers, inside the panel that asks for them", () => {
+		it("states neither the gate's answers nor a standing line", () => {
 			render(<PrepScreen {...props} />);
 
-			const outcomes = sectionOf(BAND_OUTCOMES_TITLE);
-			const scores = screen.getByLabelText(/^Lavender —/);
-
-			expect(screen.getAllByLabelText(/— \d of 5 correct$/)).toHaveLength(1);
-			expect(outcomes).toContainElement(scores);
-		});
-
-		it("stands the window's answers between the objectives and the ladder", () => {
-			render(<PrepScreen {...props} />);
-
-			const scores = screen.getByLabelText(/^Lavender —/);
-			const swatchObjective = screen.getByText(SWATCH_LEAD);
-			const bandRow = ladderOf();
-
-			expect(
-				swatchObjective.compareDocumentPosition(scores) &
-					Node.DOCUMENT_POSITION_FOLLOWING
-			).toBeTruthy();
-			expect(
-				scores.compareDocumentPosition(bandRow) &
-					Node.DOCUMENT_POSITION_FOLLOWING
-			).toBeTruthy();
-		});
-
-		it("marks the gate being prepped by its swatch, not by a word", () => {
-			render(<PrepScreen {...props} />);
-
-			expect(screen.queryByText("this gate")).toBeNull();
-			expect(screen.getByLabelText(/^Lavender —/)).toBeInTheDocument();
+			expect(screen.queryByLabelText(/^Lavender —/)).toBeNull();
+			expect(screen.queryByText(/polls left/)).toBeNull();
 		});
 
 		it("footnotes where a pay lands and what a peel is settled in", () => {
@@ -402,97 +353,59 @@ describe("PrepScreen", () => {
 	});
 
 	describe("scoring", () => {
-		it("folds the scoring shut at the top of the right column, what a single, a multiple and accuracy add on the strip", () => {
+		it("states the gate's gains and the accuracy bonus, and no table", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(scoringFold()).not.toHaveAttribute("open");
-			const strip = within(
-				scoringFold().querySelector("summary") as HTMLElement
-			);
+			const scoring = within(scoringPanel());
 
-			expect(
-				strip.getAllByRole("listitem").map((line) => line.textContent)
-			).toEqual([
-				"single +14.3%",
-				"multiple up to +28.6%",
-				"accuracy up to ×1.08",
-			]);
-		});
-
-		it("seals the figures of the gates ahead but keeps their names", () => {
-			render(<PrepScreen {...props} />);
-
-			const fold = within(scoringFold());
-
-			for (const reached of ["Pallet", "Pewter", "Cerulean", "Vermilion"]) {
-				expect(fold.getByText(reached)).toBeInTheDocument();
-			}
-			expect(fold.getByText("Celadon")).toBeInTheDocument();
-			expect(fold.getByText("Champion")).toBeInTheDocument();
-			expect(fold.getAllByText("???")).toHaveLength(4);
-			expect(fold.getAllByText("⋮")).toHaveLength(1);
-		});
-
-		it("seals nothing at the summit, where every gate has been reached", () => {
-			render(<PrepScreen {...kantoPrepChampion()} />);
-
-			const fold = within(scoringFold());
-
-			expect(fold.queryByText("???")).toBeNull();
-			expect(fold.queryByText("⋮")).toBeNull();
-			expect(fold.getByText("Champion")).toBeInTheDocument();
+			expect(scoring.getByText("Single choice")).toBeInTheDocument();
+			expect(scoring.getAllByText("+14.3%").length).toBeGreaterThan(0);
+			expect(scoring.getByText("Multiple choice up to")).toBeInTheDocument();
+			expect(scoring.getByText("+28.6%")).toBeInTheDocument();
+			expect(scoring.getByText("Accuracy Bonus")).toBeInTheDocument();
+			expect(scoring.getByText("up to ×1.08")).toBeInTheDocument();
+			expect(scoring.queryByText("Pallet")).toBeNull();
+			expect(scoring.queryByText("???")).toBeNull();
 		});
 	});
 
 	describe("the five polls", () => {
-		it("withholds the window while nothing reveals it", () => {
+		it("seals five tiles while nothing reveals them, and says so", () => {
 			render(<PrepScreen {...props} />);
 
 			const polls = within(sectionOf(PREP_POLLS_TITLE));
 
-			expect(polls.getAllByText("???")).toHaveLength(3);
 			expect(polls.getAllByText("?")).toHaveLength(5);
+			expect(polls.getAllByText("Sealed poll")).toHaveLength(5);
+			expect(polls.getByText("sealed")).toHaveClass("badge-theme");
+			expect(polls.queryByText("next gate")).toBeNull();
 		});
 
-		it("seals the next gate's row too while the window is sealed", () => {
-			render(<PrepScreen {...props} />);
+		it("staggers the tiles' wiggle, one step per tile", () => {
+			const { container } = render(<PrepScreen {...props} />);
 
-			const polls = within(sectionOf(PREP_POLLS_TITLE));
+			const tiles = [...container.querySelectorAll(".seal-wiggle")];
 
-			expect(polls.getByText("next gate")).toBeInTheDocument();
-			expect(polls.getAllByText("???")).toHaveLength(3);
-		});
-
-		it("counts nothing revealed and says what would reveal it", () => {
-			render(<PrepScreen {...props} />);
-
-			const polls = within(sectionOf(PREP_POLLS_TITLE));
-
-			expect(polls.getByText("0 of 4")).toHaveClass("badge-theme");
-			expect(polls.getByText("facts revealed")).toBeInTheDocument();
 			expect(
-				polls.getByText("Some configs reveal these before you answer.")
-			).toBeInTheDocument();
+				tiles.map((tile) =>
+					(tile as HTMLElement).style.getPropertyValue("--tile-index")
+				)
+			).toEqual(["0", "1", "2", "3", "4"]);
 		});
 
-		it("opens the whole window at once when Prefetch is in the build, counted and credited", () => {
+		it("names each poll on its tile when Prefetch is in the build, and the next gate under them", () => {
 			render(<PrepScreen {...kantoPrepPrefetched()} />);
 
-			const polls = sectionOf(PREP_POLLS_TITLE);
+			const polls = within(sectionOf(PREP_POLLS_TITLE));
 
-			expect(within(polls).getByText("Prefetch")).toHaveClass("badge-theme");
-			expect(within(polls).getByText("4 of 4")).toHaveClass("badge-theme");
-			expect(polls.querySelector("header")).toHaveTextContent(
-				"4 of 4 facts revealed by Prefetch"
+			expect(polls.getByText("revealed by Prefetch")).toHaveClass(
+				"badge-theme"
 			);
-			expect(screen.getByText("1 single")).toBeInTheDocument();
-			expect(screen.getByText("4 multiple")).toBeInTheDocument();
-			expect(screen.getByText("TypeScript ×3")).toBeInTheDocument();
-			expect(screen.getByText("Git ×5")).toBeInTheDocument();
-			expect(within(polls).queryByText("???")).not.toBeInTheDocument();
-			expect(
-				within(polls).queryByText(/Some configs reveal/)
-			).not.toBeInTheDocument();
+			expect(polls.getAllByText("TypeScript")).toHaveLength(3);
+			expect(polls.getByText("single · 4 options")).toBeInTheDocument();
+			expect(polls.getByText("next gate")).toBeInTheDocument();
+			expect(polls.getByText("Git ×5")).toBeInTheDocument();
+			expect(polls.queryByText("?")).toBeNull();
 		});
 	});
 
@@ -550,12 +463,16 @@ describe("PrepScreen", () => {
 			expect(screen.queryByText(/peels/)).not.toBeInTheDocument();
 		});
 
-		it("offers the community board without leaving the gate", () => {
+		it("offers no community board from the gate", () => {
 			render(<PrepScreen {...props} />);
 
-			expect(
-				screen.getByRole("button", { name: PREP_COMMUNITY_LABEL })
-			).toBeInTheDocument();
+			expect(screen.queryByRole("button", { name: /Community/ })).toBeNull();
+		});
+
+		it("glints on the start while it can be pressed", () => {
+			render(<PrepScreen {...props} />);
+
+			expect(startPress()).toHaveClass("press-sheen");
 		});
 
 		it("locks the start behind the countdown once today's polls are spent", () => {
@@ -581,8 +498,8 @@ describe("PrepScreen", () => {
 			}
 		});
 
-		it("reads the balance at whatever unit it has rolled to", () => {
-			render(<PrepScreen {...champion} />);
+		it("hands the nav the balance it holds", () => {
+			renderWithNavRun(<PrepScreen {...champion} />);
 
 			expect(screen.getByRole("img", { name: "1.9 MB" })).toBeInTheDocument();
 		});
@@ -620,20 +537,12 @@ describe("PrepScreen", () => {
 	});
 
 	describe("signing its presses", () => {
-		it("marks the start with the gate it starts, and the way out with an icon", () => {
-			const { container } = render(<PrepScreen {...props} />);
+		it("marks the start with the gate it starts", () => {
+			render(<PrepScreen {...props} />);
 
 			expect(
-				screen
-					.getByRole("button", { name: /^Start Lavender/ })
-					.querySelector("[data-swatch-theme='gate-lavender']")
+				startPress().querySelector("[data-swatch-theme='gate-lavender']")
 			).not.toBeNull();
-			expect(
-				screen
-					.getByRole("button", { name: PREP_COMMUNITY_LABEL })
-					.querySelector("svg")
-			).not.toBeNull();
-			expect(container).toBeInTheDocument();
 		});
 
 		it("starts the gate in the gate's own colour, not a stock green", () => {

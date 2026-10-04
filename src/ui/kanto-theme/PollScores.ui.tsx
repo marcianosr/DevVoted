@@ -13,6 +13,7 @@ const COLUMN = "flex w-full flex-col gap-2";
 const ROW = "flex w-full flex-wrap items-center gap-2";
 const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
 const TRACK = "flex shrink-0 items-center gap-1";
+const LINE_BREAK = "basis-full";
 const TAG = "shrink-0";
 const SCORE = "ml-auto flex shrink-0 items-center justify-end gap-2";
 const EMPTY =
@@ -164,6 +165,8 @@ const Row = ({ row, named }: { row: PollScoreRow; named: boolean }) => (
 		<span className={LABEL}>
 			<Typography variant="caption">{labelOf(row, named)}</Typography>
 		</span>
+
+		{row.payouts === undefined ? null : <span className={LINE_BREAK} />}
 
 		<span
 			aria-hidden={tracksReceipts(row) ? undefined : true}

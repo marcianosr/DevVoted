@@ -14,7 +14,7 @@ const view = createMockRunView({
 	gatesCleared: 4,
 	upcomingCategories: ["ts", "ts", "js", "css", "git"],
 	nextGateCategories: ["git", "git", "js", "js", "ts"],
-	answerTypesThisGate: { single: 4, multiple: 1 },
+	answerTypesThisGate: ["single", "single", "multiple", "single", "single"],
 	optionCountsThisGate: [3, 4, 4, 5, 3],
 	gateStake: createMockGateStake({
 		gateNumber: 4,
@@ -28,7 +28,7 @@ describe("PrepView", () => {
 	it("titles the window with the gate it is about to run", () => {
 		render(<PrepView {...props} />);
 
-		expect(screen.getByText("#4 - Lavender Gate")).toBeInTheDocument();
+		expect(screen.getByText("Lavender Gate")).toBeInTheDocument();
 	});
 
 	it("opens on what each band pays rather than on the build", () => {
@@ -115,8 +115,8 @@ describe("PrepView", () => {
 	it("seals the poll details while no prefetcher is installed", () => {
 		render(<PrepView {...props} />);
 
-		expect(screen.getByText("answer types")).toBeInTheDocument();
-		expect(screen.getByText("options each")).toBeInTheDocument();
+		expect(screen.getAllByText("Sealed poll")).toHaveLength(5);
+		expect(screen.queryByText("TypeScript")).toBeNull();
 	});
 
 	it("starts the gate from the footer", async () => {

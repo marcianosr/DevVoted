@@ -169,6 +169,9 @@ it before proposing one again.**
 | [180](180-the-profile-is-a-trophy-page-the-owner-sees-too.md) | **The profile is a trophy page the owner sees too** | Accepted — supersedes 129 D1 and D5: a hero leads (face, three trophies, swatch track), then best run, climbing (only while open, no build) and seats (only when held); the owner sees the same showcase above the Dex |
 | [181](181-accuracy-is-a-bonus-the-run-carries.md) | **Accuracy is a bonus the run carries** | Accepted — supersedes 161 D1 and retunes its §6 rungs: a bonus carried through the run (+0.08 × share − 0.04 × missed share per cleared gate, no cap), codebase follows a flawless carry (5 to 10), lines 40% toward 100 |
 | [182](182-every-gate-is-named-after-its-kanto-city.md) | **Every gate is named after its Kanto city** | Accepted — gates and swatches carry one name, the city (Pewter, Cerulean, Vermilion, …, Indigo Elite); badges are flavour only; ids follow as `swatch-<place>` and `gate-<place>` |
+| [183](183-the-nav-carries-the-run.md) | **The nav carries the run, the page carries its title** | Accepted — swatch track and KB balance move to the nav (screens publish theirs, previews included); headers are a headline title over one line of subtext; no lead swatch, no readout, nothing pinned |
+| [184](184-a-summit-is-entered-in-the-hall-of-fame.md) | **A summit is entered in the Hall of Fame** | Accepted — only a win from Pallet counts; the community page holds the reigning champion's card and every win since; the Champion border is earned or bought for 10 TB; the Champion gate is prismatic in its accents |
+| [185](185-an-approved-poll-pays-its-author-once.md) | **An approved poll pays its author once** | Accepted — the first publish banks the author 16 KB of archive, stamped on the poll so a republish pays nothing; not retroactive; the nav and Your suggested polls state it |
 
 ## Retired
 

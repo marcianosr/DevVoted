@@ -49,7 +49,6 @@ import {
 	vendorChipFor,
 } from "~/modules/run/build/application/vendorChip.viewmodel";
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
 
@@ -73,6 +72,7 @@ const START_GATE = 0;
 const FREE_UPKEEP = 0;
 
 const NEW_RUN_TITLE = "New run";
+const NEW_RUN_SUBTITLE = "Shades of your career await!";
 const FREE_PRICE = "free";
 export const EMPTY_LABEL = "nothing installed yet";
 export const INSTALLED_LABEL = "Installed";
@@ -107,6 +107,7 @@ export const newRunHeaderFor = (balanceKb: number): HeaderProps => ({
 	swatches: swatchTrackFor([], START_GATE),
 	funds: fundsOf(balanceKb, BALANCE_WORD),
 	title: NEW_RUN_TITLE,
+	subtitle: NEW_RUN_SUBTITLE,
 });
 
 export type HandCard = {
@@ -390,7 +391,6 @@ export const bootedPanelFor = (
 			glyph: control.glyph,
 			title: control.title,
 			detail: control.detail,
-			price: formatStorage(control.carryBytes ?? NOTHING),
 		};
 	});
 
@@ -432,7 +432,6 @@ export type NewRunScreenUi = {
 
 export type NewRunScreenFrame = {
 	view: RunView;
-	runNumber?: number | null;
 	bootRefusal?: string;
 	booting?: boolean;
 	on: NewRunScreenHandlers;
@@ -441,7 +440,6 @@ export type NewRunScreenFrame = {
 
 export const newRunScreenPropsFor = ({
 	view,
-	runNumber = null,
 	bootRefusal,
 	booting = false,
 	on,
@@ -499,7 +497,6 @@ export const newRunScreenPropsFor = ({
 	return {
 		header: {
 			...newRunHeaderFor(view.storage),
-			readout: runReadoutFor(view, runNumber),
 		},
 		build: newRunBuildFor(view.configs, view.slots, on.onToggle, vendorLockFor, {
 			openInfo: ui.build.open,

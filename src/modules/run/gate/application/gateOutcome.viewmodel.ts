@@ -1,10 +1,10 @@
 import {
-	CHOICE_LABEL,
 	COMMUNITY,
 	NEW,
 	NEW_BADGE,
 	NOTHING_NEW,
 	STORAGE_BALANCE,
+	NEW_POLLS_IN,
 } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import {
@@ -16,8 +16,8 @@ import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
 import { clearsUntilDeleted } from "~/modules/run/config/domain/decay.model";
 import { gainsOfGate } from "~/modules/run/gate/application/gateGains.viewmodel";
 import type { GateCloseView } from "~/modules/run/run/application/gateClose.viewmodel";
+import { landedAccuracyTrackFor } from "~/modules/run/run/application/accuracyTrack.viewmodel";
 import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
-import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type {
 	AnsweredPoll,
@@ -41,6 +41,7 @@ import {
 	INCIDENT_SURVIVAL_KB,
 	PEEL_KB_PER_SLOT,
 	SLICE_WINDOW,
+	bankedKb,
 	failPeelShareFor,
 	peelQuotaSlotsFor,
 	roundToOneDecimal,
@@ -53,9 +54,7 @@ import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 import {
 	AS_PERCENT,
 	coverageGainPercentFor,
-	MULTIPLE_CREDIT,
 	PERFECT_BONUS,
-	SINGLE_CREDIT,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -81,13 +80,11 @@ import type {
 	GatePeelSource,
 } from "~/ui/kanto-theme/GateChoice.ui";
 import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
-import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
 import type {
 	GateOutcomeRow,
 	GateOutcomeRowsPanel,
 	GateOutcomeScreenProps,
 	GateOutcomeTail,
-	NextGateRates,
 } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { revealKindOf } from "~/modules/run/gate/domain/outcomeReveal.model";
@@ -169,7 +166,6 @@ const NOT_PAID = "not paid";
 const ROLLED_BACK = "nothing paid";
 const NOTHING_PAID = "nothing paid";
 
-const BAR_FILLED = "the bar filled";
 const PAYOUT_CUT = "the payout is cut";
 const METER_SHORT = "the meter fell short";
 const WINDOW_SHORT = "the window came up short";
@@ -218,10 +214,10 @@ export type GateAnswer = {
 
 export type GateOutcomeFrame = {
 	gate: number;
+	nextPollsIn?: string;
 	closing: GateClosing;
 	answers: readonly GateAnswer[];
 	swatchGates: readonly number[];
-	readout?: RunReadoutProps;
 	balanceBeforeKb: number;
 	configs: readonly Config[];
 	buildSpace?: number;
@@ -245,6 +241,7 @@ export type GateOutcomeFrame = {
 	incidentSurvivalKb?: number;
 	bar: CoverageBarProps;
 	payouts?: PollScoresProps;
+	accuracyMultiplier?: number;
 	payoutKb: number;
 	clearKb?: number;
 	overflowKb?: number;
@@ -350,22 +347,6 @@ const OUTCOME_SUFFIX = {
 	danger: "",
 } satisfies Record<CoverageBandId, string>;
 
-const NEXT_GATE_LEAD = "At";
-
-const choiceGainOf = (credit: number, gate: number) =>
-	`+${roundToOneDecimal(coverageGainPercentFor(credit, gate))}%`;
-
-export const nextGateRatesOf = (
-	gateName: string,
-	gate: number
-): NextGateRates => ({
-	title: `${NEXT_GATE_LEAD} ${gateName}`,
-	rates: [
-		{ label: CHOICE_LABEL.single, gain: choiceGainOf(SINGLE_CREDIT, gate) },
-		{ label: CHOICE_LABEL.multiple, gain: choiceGainOf(MULTIPLE_CREDIT, gate) },
-	],
-});
-
 const RUN_OVER_BAND: CoverageBandId = "danger";
 const PERFECT_BAND: CoverageBandId = "perfect";
 const SHAKY_BAND: CoverageBandId = "shaky";
@@ -385,7 +366,9 @@ const noteOf = (frame: GateOutcomeFrame, band: CoverageBandId) => {
 	if (SWATCH_BANDS[band]) return undefined;
 	if (band === "ok") return `cleared on the OK band · ${PAYOUT_CUT}`;
 	if (band === "shaky")
-		return `${holdReasonOf(frame)} · ${plural(SLICE_WINDOW, "fresh poll")} on the retry`;
+		return frame.nextPollsIn === undefined
+			? `${holdReasonOf(frame)} · ${FRESH_POLLS} on the retry`
+			: `${holdReasonOf(frame)} · ${pollsNoteOf(frame)}`;
 
 	return `${METER_NEVER} · ${NO_RETRY}`;
 };
@@ -484,6 +467,10 @@ const outcomeChips = (
 
 const SURPLUS_ROW = "Surplus";
 const SURPLUS_NOTE = "past the full bar";
+const BONUS_DETAIL = "See an overview of your results.";
+const WON_BANKING = "All of the unspent storage banks into your archive.";
+const CLIMB_BANKING =
+	"how much of the unspent storage banks into your archive is set by how far you climbed.";
 const INTEREST_ROW = "Interest";
 const INTEREST_NOTE = "on the balance held";
 const EXTRA_PICKS_ROW = "Extra picks";
@@ -491,6 +478,11 @@ const EXTRA_PICKS_NOTE = "answers past the window";
 const FLAT_CLEAR_NOTE = "on the clear";
 
 type GainIdentity = Pick<LedgerRow, "label" | "config">;
+
+const surplusNoteOf = (frame: GateOutcomeFrame): string => {
+	const past = roundToOneDecimal(frame.bar.held - AS_PERCENT);
+	return past > 0 ? `${past}% ${SURPLUS_NOTE}` : SURPLUS_NOTE;
+};
 
 const gainRow = (
 	identity: GainIdentity,
@@ -528,7 +520,11 @@ const rewardPartsOf = (frame: GateOutcomeFrame, whole: number) => {
 			...flat.flatMap((payout) =>
 				gainRow(configIdentityOf(payout.config), FLAT_CLEAR_NOTE, payout.kb)
 			),
-			...gainRow({ label: SURPLUS_ROW }, SURPLUS_NOTE, frame.overflowKb ?? 0),
+			...gainRow(
+				{ label: SURPLUS_ROW },
+				surplusNoteOf(frame),
+				frame.overflowKb ?? 0
+			),
 			...gainRow({ label: INTEREST_ROW }, INTEREST_NOTE, frame.interestKb ?? 0),
 			...gainRow(
 				{ label: EXTRA_PICKS_ROW },
@@ -1032,7 +1028,23 @@ const optionsOf = (
 	return undefined;
 };
 
-const freshPolls = plural(SLICE_WINDOW, "fresh poll");
+const FRESH_POLLS = plural(SLICE_WINDOW, "fresh poll");
+const NEW_RUN_WAITS = "a new run waits for them too";
+
+const lowerFirst = (text: string) =>
+	`${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+
+const pollsNoteOf = (frame: GateOutcomeFrame): string =>
+	frame.nextPollsIn === undefined
+		? FRESH_POLLS
+		: lowerFirst(NEW_POLLS_IN(frame.nextPollsIn));
+
+const refusalNoteOf = (frame: GateOutcomeFrame): string => {
+	const banks = `no retry, bank ${kbLabel(bankedKb(frame.balanceBeforeKb, frame.gate, false))}`;
+	return frame.nextPollsIn === undefined
+		? banks
+		: `${banks} · ${NEW_RUN_WAITS}`;
+};
 
 const shortNoteOf = (haveKb: number, owedKb: number) =>
 	`you have ${kbLabel(haveKb)} · ${kbLabel(owedKb - haveKb)} short`;
@@ -1052,7 +1064,7 @@ const movePressOf = (
 	if (move.kind === "storage")
 		return {
 			label: BRIBE_TITLE,
-			note: `${kbLabel(balanceKb)} → ${kbLabel(balanceKb - owedKb)} · ${freshPolls}`,
+			note: `${kbLabel(balanceKb)} → ${kbLabel(balanceKb - owedKb)} · ${pollsNoteOf(frame)}`,
 			onPress: noop,
 		};
 
@@ -1061,8 +1073,8 @@ const movePressOf = (
 		label: `Drop ${move.config.label}`,
 		note:
 			refund === 0
-				? freshPolls
-				: `${freshPolls} · ${signedKbLabel(refund)} back`,
+				? pollsNoteOf(frame)
+				: `${pollsNoteOf(frame)} · ${signedKbLabel(refund)} back`,
 		onPress: noop,
 	};
 };
@@ -1078,7 +1090,11 @@ const peelPressOf = (frame: GateOutcomeFrame): PeelPress => {
 	const owedKb = owedAfterCatchKbOf(frame);
 
 	if (plan.kind === "settled")
-		return { label: retryLabelOf(frame.gate), note: freshPolls, onPress: noop };
+		return {
+			label: retryLabelOf(frame.gate),
+			note: pollsNoteOf(frame),
+			onPress: noop,
+		};
 	if (plan.kind === "single") return movePressOf(frame, plan.move, owedKb);
 	if (plan.kind === "stuck")
 		return {
@@ -1122,7 +1138,7 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 				}),
 		...(options === undefined ? {} : { options }),
 		refusal: {
-			note: `no retry, keep ${kbLabel(frame.balanceBeforeKb)}`,
+			note: refusalNoteOf(frame),
 			action: { label: REFUSAL_LABEL, onPress: noop },
 		},
 	};
@@ -1130,7 +1146,7 @@ const choiceOf = (frame: GateOutcomeFrame): GateChoiceProps => {
 
 const endingOf = (frame: GateOutcomeFrame, band: CoverageBandId) => ({
 	title: band === RUN_OVER_BAND ? ENDING_TITLE : SUMMIT_TITLE,
-	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame))} unspent. The swatches you earned stay on your profile. The build does not carry; how much of the unspent storage banks into your archive is set by how far you climbed.`,
+	detail: `${frame.gate} gates held, ${plural(frame.configs.length, "config")} built, ${kbLabel(balanceOf(frame))} unspent. The swatches you earned stay on your profile. The build does not carry; ${frame.won ? WON_BANKING : CLIMB_BANKING}`,
 });
 
 const footerOf = (
@@ -1173,7 +1189,6 @@ const footerOf = (
 
 const bonusPanelOf = (frame: GateOutcomeFrame) => ({
 	title: BONUS_TITLE,
-	summary: BAR_FILLED,
 	badges: [
 		{
 			label: signedKbLabel(frame.bonusKb),
@@ -1181,7 +1196,7 @@ const bonusPanelOf = (frame: GateOutcomeFrame) => ({
 		},
 	],
 	open: frame.open,
-	detail: `A full bar pays the clear ×${PERFECT_BONUS}. A tenth of what ran past the bar opens the next gate.`,
+	detail: BONUS_DETAIL,
 });
 
 const unlockRowOf = ({
@@ -1384,28 +1399,23 @@ export const gateOutcomePropsFor = (
 		label: signedPercent(totalCoverage(answers)),
 		color: GAIN_COLOR,
 	};
-	const nextGate =
-		cleared && !frame.won && next !== undefined
-			? { nextGate: nextGateRatesOf(next.gateName, next.gate) }
-			: {};
 
 	return {
 		header: {
 			swatch,
-			swatchState: swatchEarnedIn(frame) ? "discovered" : "current",
-			marked: band === PERFECT_BAND,
 			swatches: swatchTrackFor(frame.swatchGates, cleared ? gate + 1 : gate),
 			title: titleOf(band, swatch.gateName),
-			note: noteOf(frame, band),
+			subtitle: noteOf(frame, band),
 			funds: headerBalanceOf(frame, band),
-			readout: frame.readout,
 			badges: outcomeChips(frame, band),
 		},
 		bar: frame.bar,
-		...nextGate,
 		outcome: band,
 		...(heldByUnscored(frame) ? { coverageHold: WINDOW_SHORT } : {}),
 		...(frame.payouts === undefined ? {} : { payouts: frame.payouts }),
+		...(frame.accuracyMultiplier === undefined
+			? {}
+			: { accuracy: landedAccuracyTrackFor(frame.accuracyMultiplier) }),
 		audits: auditsOf(frame),
 		...(band === PERFECT_BAND && frame.bonusKb > 0
 			? { bonus: bonusPanelOf(frame) }
@@ -1518,8 +1528,7 @@ export type GatePeelPicks = {
 export const gateOutcomeFrameOf = (
 	view: RunView,
 	close: GateCloseView,
-	picks: GatePeelPicks,
-	runNumber: number | null = null
+	picks: GatePeelPicks
 ): GateOutcomeFrame => {
 	const cleared = close.closing === "cleared";
 	const { gate } = close;
@@ -1530,7 +1539,6 @@ export const gateOutcomeFrameOf = (
 		answers: gateAnswersOf(view.answeredThisGate, gate),
 		peelSlotsRemaining: view.peelSlotsRemaining,
 		swatchGates: view.swatchGates,
-		readout: runReadoutFor(view, runNumber),
 		balanceBeforeKb: view.gatePayout.storageBeforeClearKb ?? view.storage,
 		configs: view.configs,
 		buildSpace: view.buildSpace.space,
@@ -1539,6 +1547,8 @@ export const gateOutcomeFrameOf = (
 		removed: removedRowsFor(view),
 		paid: paidRowsFor(view),
 		payouts: runPaidFor(view),
+		accuracyMultiplier: view.closes.filter((past) => past.gate === gate).at(-1)
+			?.multiplier,
 		auditIds: close.auditIds,
 		chosen: picks.chosen,
 		onToggle: picks.onToggle,
@@ -1550,7 +1560,7 @@ export const gateOutcomeFrameOf = (
 		caughtFatalBy: view.gatePayout.caughtFatalBy ?? undefined,
 		slaUpliftKb: cleared ? view.gatePayout.slaUpliftKb : 0,
 		incidentSurvivalKb: cleared ? view.gatePayout.incidentSurvivalKb : 0,
-		bar: { ...close.ladder, held: close.held, band: close.band },
+		bar: { ...close.ladder, held: close.reached, band: close.band },
 		payoutKb: cleared ? view.gatePayout.gateRewardPaidKb : 0,
 		clearKb: cleared ? view.gatePayout.clearThisGateKb : 0,
 		overflowKb: cleared ? view.gatePayout.overflowThisGateKb : 0,
@@ -1575,9 +1585,9 @@ export type GateOutcomeScreenHandlers = {
 export type GateOutcomeScreenFrame = {
 	view: RunView;
 	close: GateCloseView;
-	runNumber?: number | null;
 	picks: GatePeelPicks;
 	on: GateOutcomeScreenHandlers;
+	nextPollsIn?: string;
 };
 
 const refusing = (
@@ -1600,11 +1610,14 @@ const refusing = (
 export const gateOutcomeScreenPropsFor = ({
 	view,
 	close,
-	runNumber = null,
 	picks,
 	on,
+	nextPollsIn,
 }: GateOutcomeScreenFrame): GateOutcomeScreenProps => {
-	const frame = gateOutcomeFrameOf(view, close, picks, runNumber);
+	const frame = {
+		...gateOutcomeFrameOf(view, close, picks),
+		...(nextPollsIn === undefined ? {} : { nextPollsIn }),
+	};
 	const props = gateOutcomePropsFor(frame);
 	const paying = peelPicksOf(frame);
 	const settles = close.closing === "held" && on.onRemove !== undefined;
@@ -1713,9 +1726,8 @@ export type OutcomeRevealFrame = {
 export const outcomeRevealFor = ({
 	view,
 	close,
-	runNumber = null,
 }: OutcomeRevealFrame): OutcomeRevealData =>
-	outcomeRevealOf(gateOutcomeFrameOf(view, close, NO_PICKS, runNumber));
+	outcomeRevealOf(gateOutcomeFrameOf(view, close, NO_PICKS));
 
 export const outcomeRevealKeyOf = ({
 	view,

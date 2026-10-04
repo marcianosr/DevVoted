@@ -1,7 +1,17 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 import { Version } from "./Version.ui";
+
+const appCss = readFileSync("src/styles/app.css", "utf8");
+
+const reducedMotionBlocks = () =>
+	appCss
+		.split("@media (prefers-reduced-motion: reduce)")
+		.slice(1)
+		.map((block) => block.slice(0, block.indexOf("\n}")));
 
 describe("Version", () => {
 	it("prefixes the number with v", () => {
@@ -84,5 +94,25 @@ describe("Version", () => {
 		render(<Version version={2} />);
 
 		expect(screen.getByText("v2")).toHaveClass("h-5");
+	});
+
+	it("glows outside its notch when an upgrade is ready, the clip being what would cut a ring off", () => {
+		render(<Version version={1} glow />);
+
+		const glow = screen.getByText("v1").parentElement;
+		expect(glow).toHaveClass("version-glow");
+		expect(glow?.className).not.toContain("clip-path");
+	});
+
+	it("draws no glow unless told an upgrade is ready", () => {
+		const { container } = render(<Version version={1} />);
+
+		expect(container.querySelector(".version-glow")).toBeNull();
+	});
+
+	it("stills the glow for a player who asked for less motion", () => {
+		expect(
+			reducedMotionBlocks().some((block) => block.includes(".version-glow"))
+		).toBe(true);
 	});
 });

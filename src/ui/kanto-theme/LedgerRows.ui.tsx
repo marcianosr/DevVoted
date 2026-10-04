@@ -21,14 +21,12 @@ const TAGS = "flex shrink-0 flex-wrap items-center gap-1.5 self-center";
 const LABEL = "whitespace-nowrap text-theme-soft";
 const LABEL_TOTAL = "font-bold whitespace-nowrap text-theme-faint";
 const DETAIL = "text-theme-muted";
-const NOTES = "w-full list-none text-xs text-theme-muted";
-const NOTE = "flex gap-1.5";
+const NOTES = "w-full list-none text-xs font-normal text-theme-muted";
 
 const FIGURES = "ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2";
 const QUIET = "text-sm tabular-nums text-theme-muted";
 const HEADLINE = "text-lg font-bold tabular-nums text-theme-faint";
 
-const NOTE_MARKER = "·";
 const SEALED_LABEL = "Withheld until something reveals it";
 const METER_ROW = "px-0 pt-1";
 const TABLED_METER_ROW = "px-4 pt-1 pb-2";
@@ -134,10 +132,7 @@ const Row = ({
 				{row.notes === undefined ? null : (
 					<ul className={NOTES}>
 						{row.notes.map((note) => (
-							<li key={note} className={NOTE}>
-								<span aria-hidden>{NOTE_MARKER}</span>
-								{note}
-							</li>
+							<li key={note}>{note}</li>
 						))}
 					</ul>
 				)}

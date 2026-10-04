@@ -8,6 +8,7 @@ import {
 	type PollRow,
 } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import {
+	COPY,
 	PollList,
 	type PollListProps,
 } from "~/modules/polls/authoring/presentation/PollList.ui";
@@ -90,6 +91,18 @@ describe("PollList", () => {
 		expect(screen.getByRole("heading", { level: 1 })).toHaveAccessibleName(
 			"Your suggested polls 96"
 		);
+	});
+
+	it("tells a player what each poll that gets published pays them", () => {
+		renderList({ admin: false, reward: "+16 KB" });
+
+		expect(screen.getByText(COPY.reward("+16 KB"))).toBeInTheDocument();
+	});
+
+	it("leaves the reward off the admin view", () => {
+		renderList({ admin: true, reward: "+16 KB" });
+
+		expect(screen.queryByText(COPY.reward("+16 KB"))).not.toBeInTheDocument();
 	});
 
 	it("reports a search as a filter change", async () => {

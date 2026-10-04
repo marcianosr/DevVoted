@@ -56,8 +56,9 @@ describe("Swatch", () => {
 		expect(container.firstChild).toHaveClass(
 			"border",
 			"border-dashed",
-			"border-theme-faint"
+			"border-theme"
 		);
+		expect(container.firstChild).not.toHaveClass("bg-theme-raised");
 		expect(container.firstChild).not.toHaveClass("bg-theme");
 	});
 

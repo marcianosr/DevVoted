@@ -32,6 +32,12 @@ describe("swatchPicksFor", () => {
 		expect(pickOf(picks, PALLET)?.state).toBe("owned");
 	});
 
+	it("names each swatch by its gate alone", () => {
+		expect(pickOf(swatchPicksFor([CINNABAR], null), CINNABAR)?.name).toBe(
+			"Cinnabar"
+		);
+	});
+
 	it("locks an unearned swatch and withholds its colour", () => {
 		const locked = pickOf(swatchPicksFor([], null), CINNABAR);
 

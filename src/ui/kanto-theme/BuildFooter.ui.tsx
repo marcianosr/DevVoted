@@ -8,7 +8,7 @@ import type { KantoColor } from "./colors";
 import { Fold, type FoldBadge } from "./Fold.ui";
 
 const FOOTER = "build-footer mt-2 w-full";
-const PINNED = "sticky z-20";
+const PINNED = "sticky z-20 md:static";
 
 export const BUILD_FLASH_HOLD_MS = 1200;
 

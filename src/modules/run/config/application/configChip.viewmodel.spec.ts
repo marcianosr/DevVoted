@@ -171,6 +171,19 @@ describe("registryUpgradesFor (ADR-097)", () => {
 		]);
 	});
 
+	it("states what the leap changes, from the held version to the rolled one", () => {
+		expect(jump.changes).toEqual([{ from: "1.25×", to: "1.75×" }]);
+	});
+
+	it("carries the build growth a minified catch would undo, for the armed press to state", () => {
+		const scale = { from: 4, to: 6, perGateKb: 16 };
+
+		expect(
+			registryUpgradesFor({ ...CONFIGS.js, level: 2 }, 1, { ...deal, scale })
+				.scale
+		).toEqual(scale);
+	});
+
 	it("routes the buy press to the deal", () => {
 		const onBuy = vi.fn();
 		const offered = registryUpgradesFor({ ...CONFIGS.js, level: 2 }, 1, {
@@ -241,6 +254,16 @@ describe("upgradesFor — the Build panel's own press", () => {
 		upgradesFor(CONFIGS.mooresLaw, { ...RICH, onBuy }).onBuy?.(2);
 
 		expect(onBuy).toHaveBeenCalledOnce();
+	});
+
+	it("states what the next version changes, derived from the domain's preview", () => {
+		expect(upgradesFor(CONFIGS.mooresLaw, RICH).changes).toEqual([
+			{ from: "+2%", to: "+4%" },
+		]);
+	});
+
+	it("states no change for a config already at its ceiling", () => {
+		expect(upgradesFor({ ...CONFIGS.telemetry, level: 2 }).changes).toEqual([]);
 	});
 
 	it("refuses nothing on a config already at its ceiling", () => {

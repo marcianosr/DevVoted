@@ -57,6 +57,27 @@ anything handed to it either shrinks to nothing or grows without limit.
    The price leaves the button's text and enters its cap, which is `aria-hidden`.
    The press keeps naming it because the hint already did: `Install Cache · 128 KB`.
 
+   **Amended 2026-10-04 (Marciano, DVTD-bjb4): decision 5 is superseded on cards.**
+   A card now buys and sells through a full-width primary press at its foot, in
+   the screen's colour and shimmering while it can be pressed. Install reads
+   `Install · 128 KB` as its label (the figure is back in the text, so no cap);
+   uninstall reads `Uninstall` and keeps its viridian refund cap. An offer you
+   cannot afford greys rather than reddens. The reason is feel: the mock's
+   loud, single buy press read clearer than a quiet head-row press, and the
+   price is the decision on an offer, so it sits on the press you make it with.
+   A bare chip keeps decision 5's ambient, capped presses.
+
+   **Amended again 2026-10-04 (DVTD-p806): the card takes the mock's shape.**
+   Folded, a card is the mock's compact row: chevron, weight, the name with its
+   effect on one truncated line, and on the right the version and the figure the
+   card is about (an offer's price, an installed config's `↶ +16 KB` refund).
+   Unfolding reveals the description, the badges and "uninstalls for", and the
+   press row. Offers open by default, so a card for sale still shows its press;
+   installed configs fold by default, as the mock's build rows do. Uninstall is always red (a raised
+   cinnabar press, no shimmer: it should not invite the press). Upgrade leaves
+   the head for the press row, beside Uninstall, as a prismatic press reading
+   `↑ v2 · 64 KB`; an upgrade-only offer's row holds that press alone.
+
 ## Consequences
 
 - The Dex's `starter` / `earned` tags are gone. The note states the provenance
@@ -72,3 +93,13 @@ anything handed to it either shrinks to nothing or grows without limit.
   [ADR-152](152-every-price-previews-the-balance-it-leaves.md) decision 3: a
   build card quotes `sellRefundIn` against the installed build, and states no
   refund at all where that is zero.
+
+## Amendment 2026-10-04: an upgrade asks first, like an install
+
+The upgrade press on a card (build or registry) no longer opens the floating
+Upgrades sheet. It arms an inset in the card, the same slot and style as the armed
+install: version v1 → v2, one row per effect the next version changes (from the
+domain's `upgradePreview`, never invented copy), weight and upkeep when a registry
+upgrade grows the build, pay now, then a confirm press and cancel. The sheet now
+belongs to bare chips only. A folded card whose upgrade is on offer and affordable
+glows its version pennant (held still under reduced motion).

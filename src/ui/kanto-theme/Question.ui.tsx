@@ -94,7 +94,7 @@ export const Question = ({
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 
-		<div className={CHOICES}>
+		<div data-choices className={CHOICES}>
 			{options.map((option) => {
 				const picked = pickedIds.includes(option.id);
 				const pick = onPick === undefined ? undefined : () => onPick(option.id);

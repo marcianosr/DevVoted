@@ -3,18 +3,40 @@ import { describe, expect, it } from "vitest";
 
 import { InstallScale } from "./InstallScale.ui";
 
-describe("InstallScale", () => {
-	it("states the rung it crosses and the bill that follows", () => {
-		render(<InstallScale from={4} to={6} perGateKb={16} />);
+const valueOf = (label: string) =>
+	screen.getByText(label, { selector: "dt" }).nextElementSibling;
 
-		expect(screen.getByText(/Build space scales 4 → 6/)).toBeInTheDocument();
-		expect(screen.getByText(/Upkeep becomes/)).toBeInTheDocument();
+describe("InstallScale", () => {
+	it("says the build does not fit and lists the growth, the price and the bill", () => {
+		render(<InstallScale from={4} to={12} perGateKb={64} price="256 KB" />);
+
+		expect(screen.getByText("Doesn't fit.")).toBeInTheDocument();
+		expect(valueOf("weight")).toHaveTextContent("4→12");
+		expect(valueOf("pay now")).toHaveTextContent("−256 KB");
+		expect(valueOf("upkeep")).toHaveTextContent("−64 KBevery gate");
 	});
 
-	it("states the bill alone when the rung does not move", () => {
-		render(<InstallScale from={12} to={12} perGateKb={48} />);
+	it("marks the upkeep free when the new rung costs nothing", () => {
+		render(<InstallScale from={2} to={4} perGateKb={0} price="32 KB" />);
 
-		expect(screen.queryByText(/Build space scales/)).not.toBeInTheDocument();
-		expect(screen.getByText(/Upkeep becomes/)).toBeInTheDocument();
+		expect(valueOf("upkeep")).toHaveTextContent("free");
+	});
+
+	it("leads with the bill alone when the rung does not move", () => {
+		render(<InstallScale from={12} to={12} perGateKb={48} price="32 KB" />);
+
+		expect(screen.getByText("Your bill rises.")).toBeInTheDocument();
+		expect(
+			screen.queryByText("weight", { selector: "dt" })
+		).not.toBeInTheDocument();
+		expect(valueOf("upkeep")).toHaveTextContent("−48 KBevery gate");
+	});
+
+	it("leaves out what to pay now when no price is given", () => {
+		render(<InstallScale from={4} to={6} perGateKb={16} />);
+
+		expect(
+			screen.queryByText("pay now", { selector: "dt" })
+		).not.toBeInTheDocument();
 	});
 });

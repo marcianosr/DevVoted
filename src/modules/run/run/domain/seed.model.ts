@@ -36,7 +36,38 @@ const shuffle = <T>(items: readonly T[], random: () => number): T[] => {
 	return shuffled;
 };
 
+export const rollDailyReserve = (
+	seed: string,
+	pollIds: readonly number[]
+): number[] => shuffle(pollIds, mulberry32(xmur3(seed)));
+
 export const rollDailySeedSequence = (
 	seed: string,
 	pollIds: readonly number[]
-): number[] => shuffle(pollIds, mulberry32(xmur3(seed))).slice(0, SEED_LENGTH);
+): number[] => rollDailyReserve(seed, pollIds).slice(0, SEED_LENGTH);
+
+const unansweredOf = (
+	pollIds: readonly number[],
+	answered: ReadonlySet<number>
+): number[] => pollIds.filter((pollId) => !answered.has(pollId));
+
+export const isDayShortOfFreshPolls = (
+	seed: readonly number[],
+	answered: ReadonlySet<number>
+): boolean => unansweredOf(seed, answered).length < SEED_LENGTH;
+
+export const dealDay = (
+	seed: readonly number[],
+	reserve: readonly number[],
+	answered: ReadonlySet<number>
+): number[] => {
+	const fresh = unansweredOf(seed, answered);
+	const shortBy = SEED_LENGTH - fresh.length;
+	if (shortBy <= 0) return fresh;
+
+	const dealt = new Set(fresh);
+	const topUp = unansweredOf(reserve, answered)
+		.filter((pollId) => !dealt.has(pollId))
+		.slice(0, shortBy);
+	return [...fresh, ...topUp];
+};

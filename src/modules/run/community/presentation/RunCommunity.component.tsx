@@ -1,4 +1,6 @@
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
+import { useHallOfFame } from "~/modules/run/community/application/useHallOfFame.hook";
+import { hallOfFameFor } from "~/modules/run/community/application/hallOfFame.viewmodel";
 import {
 	INCIDENTS_DEALING,
 	INCIDENTS_UNREADABLE,
@@ -19,8 +21,6 @@ import { NEW_POLLS_IN, NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import type { RunCommunityView } from "~/modules/run/community/application/community.service";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 
-const SPENT_HINT =
-	"Today’s polls are spent. Your run picks up when the next segment drops at midnight.";
 const LOADING = "Loading today’s comparison…";
 const LOAD_FAILED =
 	"Couldn’t load today’s comparison. Your run is unaffected — try again shortly.";
@@ -39,6 +39,7 @@ export const RunCommunity = () => {
 	const { view: run } = useTodaysRun();
 	const countdown = useNextPollsCountdown();
 	const community = useRunCommunity();
+	const hall = useHallOfFame();
 	const feed = useIncidentsFeed();
 	const loot = useLootFallenRun();
 	const targets = useAttackTargets(run?.heldAudit != null);
@@ -51,7 +52,6 @@ export const RunCommunity = () => {
 		label: backTarget.label,
 		onBack: () => goTo(backTarget.path),
 		disabled: waitingForTomorrow,
-		hint: waitingForTomorrow ? SPENT_HINT : undefined,
 	};
 	const timer = countdown.isOpen
 		? undefined
@@ -93,6 +93,7 @@ export const RunCommunity = () => {
 				: { pendingRunId: loot.pendingRunId }),
 		},
 		...(filing === undefined ? {} : { filing }),
+		...(hall.view === null ? {} : { hallOfFame: hallOfFameFor(hall.view) }),
 	};
 
 	if (community.isPending)

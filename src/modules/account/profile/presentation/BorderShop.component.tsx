@@ -27,6 +27,7 @@ export const BorderShop = ({ userId, draft }: BorderShopProps) => {
 			name: border.name,
 			image: border.image,
 			cost: border.cost,
+			earnedByVictory: border.earnedByVictory === true,
 			owned,
 			picked: draft.look.borderId === border.id,
 			canAfford: archive.archivedStorage >= border.cost,

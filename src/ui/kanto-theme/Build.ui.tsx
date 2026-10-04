@@ -21,6 +21,7 @@ import {
 	type WeightPreview,
 	type WeightTrackFill,
 } from "./WeightTrack.ui";
+import { plural } from "~/shared/lib/displayValue";
 
 const PRICE_ON: DetailReveal = "always";
 
@@ -89,7 +90,7 @@ type BuildCount =
 const roomOf = ({ used, capacity }: BuildSlots) =>
 	used > capacity ? `over by ${used - capacity}` : `${capacity - used} free`;
 
-export const configCountOf = (total: number) => `${total} configs`;
+export const configCountOf = (total: number) => plural(total, "config");
 
 const led = (total: number, counted: boolean) =>
 	counted ? [configCountOf(total)] : [];
@@ -338,7 +339,6 @@ export const Build = ({
 					fills={fills}
 					held={count.weight.held}
 					preview={count.weight.preview}
-					perGateKb={count.weight.perGateKb}
 					highlight={highlight}
 					caption={caption}
 				/>

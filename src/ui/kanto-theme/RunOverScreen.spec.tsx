@@ -11,12 +11,13 @@ import {
 	SUMMIT_TITLE,
 } from "~/test/kantoRunOver.factory";
 
+import { headingOf } from "./Panel.ui";
 import { RunOverScreen } from "./RunOverScreen.ui";
 
 const DEAD = kantoRunOver();
 
 const panelFor = (label: string): HTMLElement => {
-	const heading = screen.getByRole("heading", { name: label });
+	const heading = screen.getByRole("heading", { name: headingOf(label) });
 	const panel = heading.closest("section");
 	if (panel === null) throw new Error(`no panel around "${label}"`);
 	return panel;

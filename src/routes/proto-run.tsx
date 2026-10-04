@@ -4,9 +4,16 @@ import { useEffect, useState } from "react";
 import {
 	addStorage,
 	createRun,
+	type RunState,
+	scheduleOf,
 	withBuild,
+	withScheduledAudits,
 } from "~/modules/run/run/domain/run.model";
-import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import {
+	AUDIT_IDS,
+	type AuditId,
+	auditLabelOf,
+} from "~/modules/run/gate/domain/audit.model";
 import {
 	type IncidentFeedRowView,
 	incidentsPanelFor,
@@ -24,7 +31,10 @@ import {
 	startingHand,
 } from "~/modules/run/config/domain/hand.model";
 import { type Config, slotsOf } from "~/modules/run/config/domain/config.model";
-import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import {
+	CONFIG_LIST,
+	CONFIGS,
+} from "~/modules/run/config/domain/configRoster.model";
 import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import { buildSpaceOf } from "~/modules/run/build/domain/buildSpace.model";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
@@ -486,28 +496,79 @@ type StartStep = "build" | "prep";
 
 const BACK_TO_BUILD = "Back to the build";
 
+type RigStart = {
+	readonly gate: number;
+	readonly step: StartStep;
+	readonly build?: readonly Config[];
+};
+
+const FRESH_START: RigStart = { gate: 0, step: "build" };
+
+const CHAMPION_START: RigStart = {
+	gate: VICTORY_GATE,
+	step: "prep",
+	build: [
+		CONFIGS.js,
+		CONFIGS.ts,
+		CONFIGS.css,
+		CONFIGS.jsx,
+		CONFIGS.html,
+		CONFIGS.git,
+		CONFIGS.intellisense,
+		CONFIGS.codeCoverage,
+		CONFIGS.telemetry,
+		CONFIGS.unitTests,
+		CONFIGS.mooresLaw,
+	],
+};
+
+const toggledIn = <T,>(list: readonly T[], item: T): readonly T[] =>
+	list.includes(item)
+		? list.filter((candidate) => candidate !== item)
+		: [...list, item];
+
+const installedAll = (run: RunState, configs: readonly Config[]): RunState =>
+	configs.reduce(
+		(current, config) =>
+			runReducer(current, { type: "install", configId: config.id }),
+		run
+	);
+
+const rigRunFor = ({ gate, build }: RigStart): RunState => {
+	const fresh = createRun(
+		POOLS,
+		build ?? startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS),
+		gate
+	);
+	const booted = bootRun(fresh, {
+		storageKb: 0,
+		serviceIds: REGISTRY_CONTROL_LIST.filter(isCarriedService).map(
+			(control) => control.id
+		),
+		archiveBytes: 0,
+	});
+	const stocked = gate === 0 ? { ...booted, storage: PROTO_START_KB } : booted;
+	return installedAll(stocked, build ?? []);
+};
+
+const withAuditToggled = (run: RunState, auditId: AuditId): RunState =>
+	withScheduledAudits(
+		run,
+		run.gatesCleared,
+		toggledIn(scheduleOf(run)[run.gatesCleared] ?? [], auditId)
+	);
+
 const RunGame = ({
-	startAtGate,
+	start,
 	onRestart,
 }: {
-	startAtGate: number;
-	onRestart: (pinnedGate: number) => void;
+	start: RigStart;
+	onRestart: (start: RigStart) => void;
 }) => {
-	const [state, setState] = useState(() => {
-		const fresh = createRun(
-			POOLS,
-			startingHand(STARTER_POOL, `proto:${Date.now()}`, BASE_SLOTS),
-			startAtGate
-		);
-		const booted = bootRun(fresh, {
-			storageKb: 0,
-			serviceIds: REGISTRY_CONTROL_LIST.filter(isCarriedService).map(
-				(control) => control.id
-			),
-			archiveBytes: 0,
-		});
-		return startAtGate === 0 ? { ...booted, storage: PROTO_START_KB } : booted;
-	});
+	const [state, setState] = useState(() => rigRunFor(start));
+	const toggleAudit = (auditId: AuditId) =>
+		setState((current) => withAuditToggled(current, auditId));
+	const scheduledAudits = scheduleOf(state)[state.gatesCleared] ?? [];
 	const grantStorage = () =>
 		setState((current) => ({
 			...current,
@@ -545,10 +606,7 @@ const RunGame = ({
 	useEffect(() => {
 		setRewardStep("summary");
 	}, [state.gatesCleared]);
-	const [startStep, setStartStep] = useState<StartStep>("build");
-	useEffect(() => {
-		setStartStep("build");
-	}, [state.status]);
+	const [startStep, setStartStep] = useState<StartStep>(start.step);
 	const [stripStep, setStripStep] = useState<"removal" | "review">("removal");
 	useEffect(() => {
 		setStripStep("removal");
@@ -559,11 +617,7 @@ const RunGame = ({
 	const [unlockedServiceIds, setUnlockedServiceIds] =
 		useState<readonly RegistryControlId[]>(REGISTRY_CONTROL_IDS);
 	const toggleService = (id: RegistryControlId) =>
-		setUnlockedServiceIds((current) =>
-			current.includes(id)
-				? current.filter((candidate) => candidate !== id)
-				: [...current, id]
-		);
+		setUnlockedServiceIds((current) => toggledIn(current, id));
 	const climbMapPress = {
 		...(openClimberId === undefined ? {} : { openId: openClimberId }),
 		onInspect: (id: string) =>
@@ -707,8 +761,10 @@ const RunGame = ({
 					onSkip={() => dispatch({ type: "skip-shop" })}
 					onExtend={() => dispatch({ type: "extend-offers" })}
 					onPlantPin={() => dispatch({ type: "plant-pin" })}
-					onAbandon={() => undefined}
+					onAbandon={() => onRestart(FRESH_START)}
 					onVendorLock={(id) => dispatch({ type: "vendor-lock", configId: id })}
+					onBuyIncident={() => dispatch({ type: "buy-incident" })}
+					onRefreshIncident={() => dispatch({ type: "refresh-incident" })}
 					onContinue={() => setRewardStep("prep")}
 				/>
 			)}
@@ -767,7 +823,9 @@ const RunGame = ({
 				overStep === "summary" && (
 					<RunOverView
 						view={view}
-						onNewRun={() => onRestart(state.pinPlantedAtGate ?? 0)}
+						onNewRun={() =>
+							onRestart({ gate: state.pinPlantedAtGate ?? 0, step: "build" })
+						}
 						onCommunity={() => setOverStep("community")}
 					/>
 				)}
@@ -836,6 +894,33 @@ const RunGame = ({
 				>
 					💾 +{PROTO_GRANT_KB} KB storage
 				</button>
+				<button
+					type="button"
+					className="rounded bg-zinc-800 px-2 py-1 hover:bg-zinc-700"
+					onClick={() => onRestart(CHAMPION_START)}
+				>
+					🏆 Jump to the Champion gate
+				</button>
+				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
+					<span className="mr-1 font-semibold uppercase tracking-wide">
+						Audits on gate {state.gatesCleared}
+					</span>
+					{AUDIT_IDS.map((auditId) => (
+						<button
+							key={auditId}
+							type="button"
+							aria-pressed={scheduledAudits.includes(auditId)}
+							className={
+								scheduledAudits.includes(auditId)
+									? "rounded bg-cinnabar px-1.5 py-0.5 text-white"
+									: "rounded bg-zinc-800 px-1.5 py-0.5 hover:bg-zinc-700"
+							}
+							onClick={() => toggleAudit(auditId)}
+						>
+							{auditLabelOf(auditId, state.gatesCleared)}
+						</button>
+					))}
+				</div>
 				<div className="flex w-full flex-wrap items-center gap-1 border-t border-dashed border-zinc-700 pt-2">
 					<span className="mr-1 font-semibold uppercase tracking-wide">
 						Services {unlockedServiceIds.length}/{REGISTRY_CONTROL_IDS.length}
@@ -912,16 +997,16 @@ const RunGame = ({
 };
 
 function RouteComponent() {
-	const [run, setRun] = useState({ seed: 0, startAtGate: 0 });
+	const [run, setRun] = useState({ seed: 0, start: FRESH_START });
 	return (
 		<div className="flex flex-1 flex-col text-white [--screen-floor:0px] justify-center">
 			<RunGame
 				key={run.seed}
-				startAtGate={run.startAtGate}
-				onRestart={(pinnedGate) =>
+				start={run.start}
+				onRestart={(start) =>
 					setRun((current) => ({
 						seed: current.seed + 1,
-						startAtGate: pinnedGate,
+						start,
 					}))
 				}
 			/>

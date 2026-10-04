@@ -14,6 +14,9 @@ const TONES = [
 	"danger",
 	"bright",
 	"slot",
+	"primary",
+	"destructive",
+	"prismatic",
 ] as const satisfies ButtonTone[];
 
 const themedUtilitiesOf = (element: HTMLElement) =>
@@ -490,5 +493,75 @@ describe("a press that reports a pointer", () => {
 		await userEvent.hover(screen.getByRole("link"));
 
 		expect(onHover).toHaveBeenCalledTimes(1);
+	});
+
+	describe("the primary tone", () => {
+		it("raises and shimmers in the screen's own colour", () => {
+			render(
+				<Button label="Install · 32 KB" tone="primary" onPress={vi.fn()} />
+			);
+
+			const press = screen.getByRole("button");
+
+			expect(press).toHaveClass("segment-theme", "press-raised", "press-sheen");
+			expect(press).not.toHaveAttribute("data-screen-theme");
+		});
+
+		it("greys out a press the player cannot put through, rather than reddening it", () => {
+			render(
+				<Button
+					label="Install · 32 KB"
+					tone="primary"
+					disabled
+					onPress={vi.fn()}
+				/>
+			);
+
+			const press = screen.getByRole("button");
+
+			expect(press).toBeDisabled();
+			expect(press).not.toHaveAttribute("data-screen-theme");
+			expect(press).toHaveClass("disabled:bg-theme-faint");
+		});
+
+		it("stops shimmering while disabled", () => {
+			expect(appCss).toMatch(
+				/\.press-sheen:disabled::after\s*\{[^}]*display:\s*none/
+			);
+		});
+	});
+
+	describe("the destructive tone", () => {
+		it("is always red, raised and still", () => {
+			render(<Button label="Uninstall" tone="destructive" onPress={vi.fn()} />);
+
+			const press = screen.getByRole("button");
+
+			expect(press).toHaveAttribute("data-screen-theme", "cinnabar");
+			expect(press).toHaveClass("segment-theme", "press-raised");
+			expect(press).not.toHaveClass("press-sheen");
+		});
+	});
+
+	describe("the prismatic tone", () => {
+		it("wears the drifting Kanto gradient on a lavender plinth, apart from the screen", () => {
+			render(
+				<Button label="↑ v2 · 64 KB" tone="prismatic" onPress={vi.fn()} />
+			);
+
+			const press = screen.getByRole("button");
+
+			expect(press).toHaveClass("press-prismatic", "press-raised");
+			expect(press).toHaveAttribute("data-screen-theme", "lavender");
+			expect(appCss).toMatch(
+				/\.press-prismatic\s*\{[^}]*animation:\s*gradient-flow/
+			);
+		});
+
+		it("holds the gradient still under reduced motion", () => {
+			expect(appCss).toMatch(
+				/prefers-reduced-motion[\s\S]*\.press-prismatic\s*\{[^}]*animation:\s*none/
+			);
+		});
 	});
 });

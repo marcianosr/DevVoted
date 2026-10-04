@@ -22,6 +22,10 @@ import {
 	pageThemeAttributes,
 	type PageTheme,
 } from "~/ui/kanto-theme/usePageTheme.hook";
+import {
+	NavRunContext,
+	type NavRunReading,
+} from "~/ui/kanto-theme/useNavRun.hook";
 import appCss from "../styles/app.css?url";
 import { seo } from "~/shared/utils/seo";
 
@@ -84,16 +88,19 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
 	const { queryClient, user } = Route.useRouteContext();
+	const [navRun, setNavRun] = React.useState<NavRunReading>();
 
 	return (
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<PlayerHover>
-					<Nav user={user} />
-					<main className="flex flex-1 flex-col bg-zinc-950">
-						<Outlet />
-						<Footer />
-					</main>
+					<NavRunContext.Provider value={setNavRun}>
+						<Nav user={user} published={navRun} />
+						<main className="flex flex-1 flex-col bg-zinc-950">
+							<Outlet />
+							<Footer />
+						</main>
+					</NavRunContext.Provider>
 				</PlayerHover>
 			</QueryClientProvider>
 		</RootDocument>

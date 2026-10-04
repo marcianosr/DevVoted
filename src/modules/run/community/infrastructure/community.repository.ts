@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -32,21 +32,22 @@ export const fetchConsumedPollsForDay = async (
 	runId: number,
 	date: string,
 	currentIndex: number
-): Promise<ConsumedRunPoll[]> =>
-	db
+): Promise<ConsumedRunPoll[]> => {
+	const rows = await db
 		.select({
 			position: runPollsTable.position,
 			poll_id: runPollsTable.poll_id,
+			segment_date: runPollsTable.segment_date,
 		})
 		.from(runPollsTable)
-		.where(
-			and(
-				eq(runPollsTable.run_id, runId),
-				eq(runPollsTable.segment_date, date),
-				lt(runPollsTable.position, currentIndex)
-			)
-		)
+		.where(eq(runPollsTable.run_id, runId))
 		.orderBy(asc(runPollsTable.position));
+
+	return rows
+		.slice(0, currentIndex)
+		.filter((row) => row.segment_date === date)
+		.map(({ position, poll_id }) => ({ position, poll_id }));
+};
 
 export type CommunityPollRecord = {
 	id: number;
