@@ -1,0 +1,26 @@
+{
+	"name": "DevVoted",
+	"short_name": "DevVoted",
+	"description": "Daily polls with a competitive roguelite twist.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#080807",
+	"theme_color": "#080807",
+	"icons": [
+		{
+			"src": "/favicon-32x32.png",
+			"sizes": "32x32",
+			"type": "image/png"
+		},
+		{
+			"src": "/apple-touch-icon.png",
+			"sizes": "180x180",
+			"type": "image/png"
+		},
+		{
+			"src": "/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml"
+		}
+	]
+}

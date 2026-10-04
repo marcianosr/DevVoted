@@ -1,0 +1,221 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import {
+	COMMUNITY_LABEL,
+	kantoRunOver,
+	kantoRunSummit,
+	NEW_RUN_LABEL,
+	RUN_OVER_TITLE,
+	SUMMIT_TITLE,
+} from "~/test/kantoRunOver.factory";
+
+import { headingOf } from "./Panel.ui";
+import { RunOverScreen } from "./RunOverScreen.ui";
+
+const DEAD = kantoRunOver();
+
+const panelFor = (label: string): HTMLElement => {
+	const heading = screen.getByRole("heading", { name: headingOf(label) });
+	const panel = heading.closest("section");
+	if (panel === null) throw new Error(`no panel around "${label}"`);
+	return panel;
+};
+
+describe("RunOverScreen", () => {
+	it("names the run over and says where it stopped", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		expect(
+			screen.getByRole("heading", { name: RUN_OVER_TITLE })
+		).toBeInTheDocument();
+		expect(screen.getByText(/Lavender held/)).toBeInTheDocument();
+	});
+
+	it("turns the screen red on a death and keeps the gate's colour on a summit", () => {
+		const { container, unmount } = render(<RunOverScreen {...DEAD} />);
+
+		expect(container.querySelector("[data-screen-theme='cinnabar']")).not.toBe(
+			null
+		);
+
+		unmount();
+
+		const summit = render(<RunOverScreen {...kantoRunSummit()} />);
+
+		expect(
+			summit.container.querySelector("[data-gate-theme='gate-champion']")
+		).not.toBe(null);
+	});
+
+	it("reports the coverage held at the close", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const coverage = panelFor("coverage");
+
+		expect(coverage).toHaveTextContent("held at the close");
+		expect(coverage).not.toHaveTextContent(/\bchanges?\b/i);
+	});
+
+	it("states the coverage shortfall under the panel's header, with its figures badged", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const header = panelFor("coverage").querySelector("header");
+
+		expect(header).toHaveTextContent(/short of the .* line at Lavender/);
+		expect(
+			[...(header?.querySelectorAll(".badge-theme") ?? [])].map(
+				(badge) => badge.textContent
+			)
+		).toEqual(expect.arrayContaining([expect.stringMatching(/%$/)]));
+	});
+
+	it("badges the figures in the header note", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const note = screen.getByText(/against a line of/).parentElement;
+
+		expect(
+			[...(note?.querySelectorAll(".badge-theme") ?? [])].map(
+				(badge) => badge.textContent
+			)
+		).toEqual([
+			expect.stringMatching(/^[\d.]+%$/),
+			expect.stringMatching(/^[\d.]+%$/),
+		]);
+	});
+
+	it("badges each category score and the categories tally", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const badges = [
+			...panelFor("by category").querySelectorAll(".badge-theme"),
+		].map((badge) => badge.textContent);
+
+		expect(badges).toEqual(
+			expect.arrayContaining([
+				expect.stringMatching(/^\d+ of \d+$/),
+				expect.stringMatching(/^\d+\/\d+$/),
+			])
+		);
+	});
+
+	it("names every gate the run played and totals them beneath", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const gates = panelFor("gate by gate");
+
+		for (const name of [
+			"Pallet",
+			"Pewter",
+			"Cerulean",
+			"Vermilion",
+			"Lavender",
+		]) {
+			expect(screen.getByText(name)).toBeInTheDocument();
+		}
+		expect(gates).toHaveTextContent("total");
+		expect(gates).toHaveTextContent("final coverage");
+	});
+
+	it("flags the gate that paid the most", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		expect(panelFor("gate by gate")).toHaveTextContent("best was Pallet");
+	});
+
+	it("scores each category against the polls it was asked", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const categories = panelFor("by category");
+
+		expect(categories).toHaveTextContent("CSS");
+		expect(categories).toHaveTextContent("TypeScript");
+	});
+
+	it("says what the build cost to run across the whole climb", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const build = panelFor("the build at the end");
+
+		expect(build).toHaveTextContent("9 weight");
+		expect(build).toHaveTextContent("96 KB");
+		expect(build).toHaveTextContent("4 gates");
+	});
+
+	it("splits the run balance into what banks and what burns", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const storage = panelFor("storage");
+
+		expect(storage).toHaveTextContent("archived this run");
+		expect(storage).toHaveTextContent("run balance, lost");
+	});
+
+	it("leaves out the account archive until a caller knows it", () => {
+		const { unmount } = render(<RunOverScreen {...DEAD} />);
+
+		expect(screen.queryByText("archive after the run")).toBe(null);
+
+		unmount();
+		render(<RunOverScreen {...kantoRunOver({ archiveAfterKb: 8_400 })} />);
+
+		expect(screen.getByText("archive after the run")).toBeInTheDocument();
+	});
+
+	it("keeps the swatches and marks the build and balance as gone", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const unlocked = panelFor("unlocked");
+
+		expect(unlocked).toHaveTextContent("4 swatches on your profile");
+		expect(unlocked).toHaveTextContent("kept");
+		expect(unlocked).toHaveTextContent("The build and the run balance");
+		expect(unlocked).toHaveTextContent("gone");
+	});
+
+	it("names each registered config with its chip, not with bare text", () => {
+		render(<RunOverScreen {...DEAD} />);
+
+		const unlocked = panelFor("unlocked");
+
+		expect(unlocked).toHaveTextContent("Cache");
+		expect(unlocked).toHaveTextContent("Able to install in future builds");
+	});
+
+	it("offers a new run as the press and the community as the way out", async () => {
+		const onNewRun = vi.fn();
+		const onCommunity = vi.fn();
+
+		render(
+			<RunOverScreen
+				{...DEAD}
+				footer={{
+					...DEAD.footer,
+					action: { ...DEAD.footer.action, onPress: onNewRun },
+					asides: [{ label: COMMUNITY_LABEL, onPress: onCommunity }],
+				}}
+			/>
+		);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: new RegExp(`^${NEW_RUN_LABEL}`) })
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: COMMUNITY_LABEL })
+		);
+
+		expect(onNewRun).toHaveBeenCalledOnce();
+		expect(onCommunity).toHaveBeenCalledOnce();
+	});
+
+	it("titles a summited run as the climb finishing, not as a loss", () => {
+		render(<RunOverScreen {...kantoRunSummit()} />);
+
+		expect(
+			screen.getByRole("heading", { name: SUMMIT_TITLE })
+		).toBeInTheDocument();
+		expect(screen.getByText(/every gate held/)).toBeInTheDocument();
+	});
+});

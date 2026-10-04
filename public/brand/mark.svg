@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>devvoted</title>
+  <desc>An empty slot: a dashed cell, the mark of a spot you can fill. Ground #080807, mark #C5B18F (--color-brand-sand, oklch(76.9% 0.052 81)).</desc>
+  <rect width="64" height="64" fill="#080807"/>
+  <rect x="12" y="12" width="40" height="40" rx="9"
+        fill="none" stroke="#C5B18F" stroke-width="4"
+        stroke-dasharray="8.03 4.02" stroke-dashoffset="4.01"/>
+</svg>

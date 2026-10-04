@@ -1,0 +1,69 @@
+import { slotsOf } from "~/modules/run/config/domain/config.model";
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+
+export type InstalledConfigRef = {
+	readonly id: string;
+	readonly level: number | null;
+	readonly minified: boolean | null;
+};
+
+export type StoredPublicBuild = {
+	readonly configs: readonly InstalledConfigRef[];
+	readonly vendorLockedConfigId: string | null;
+};
+
+export type PublicConfig = {
+	readonly id: string;
+	readonly label: string;
+	readonly slots: number;
+	readonly level?: number;
+	readonly minified?: boolean;
+};
+
+export type PublicBuild = {
+	readonly configs: readonly PublicConfig[];
+	readonly vendorLockedConfigId?: string;
+};
+
+const publicConfigOf = (ref: InstalledConfigRef): PublicConfig | undefined => {
+	const current = CONFIG_LIST.find((config) => config.id === ref.id);
+	if (current === undefined) return undefined;
+	return {
+		id: current.id,
+		label: current.label,
+		slots: slotsOf({ ...current, minified: ref.minified === true }),
+		...(ref.level === null ? {} : { level: ref.level }),
+		...(ref.minified === true ? { minified: true } : {}),
+	};
+};
+
+const known = (configs: readonly InstalledConfigRef[]): PublicConfig[] =>
+	configs.flatMap((ref) => {
+		const config = publicConfigOf(ref);
+		return config === undefined ? [] : [config];
+	});
+
+export const publicBuildOf = ({
+	configs,
+	vendorLockedConfigId,
+}: StoredPublicBuild): PublicBuild => {
+	const installed = known(configs);
+	const lockStands =
+		vendorLockedConfigId !== null &&
+		installed.some((config) => config.id === vendorLockedConfigId);
+	return {
+		configs: installed,
+		...(lockStands ? { vendorLockedConfigId } : {}),
+	};
+};
+
+export const publicWeightOf = (build: PublicBuild): number =>
+	build.configs.reduce((total, config) => total + config.slots, 0);
+
+export const publicSpaceOf = (build: PublicBuild): number =>
+	rungFitting(
+		build.configs
+			.filter((config) => config.id !== build.vendorLockedConfigId)
+			.reduce((total, config) => total + config.slots, 0)
+	).weight;

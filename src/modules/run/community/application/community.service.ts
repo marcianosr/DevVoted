@@ -1,0 +1,500 @@
+import { isCategoryCode } from "~/shared/lib/categories";
+import {
+	type ApiResponse,
+	handleApiOperation,
+} from "~/shared/utils/errorHandling";
+
+import type { CategoryCode } from "~/shared/lib/categories";
+
+import type { PublicBuild } from "~/modules/run/build/domain/publicBuild.model";
+import {
+	type CoverageBandId,
+	percentOf,
+	runShareOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+
+import {
+	type ClimbMarker,
+	trackPosition,
+} from "~/modules/run/community/domain/climbMap.model";
+import { lootableKbOf } from "~/modules/run/community/application/loot.service";
+import {
+	answerOutcome,
+	type AnswerOutcome,
+	type AnswerType,
+	mirrorGrading,
+} from "~/modules/run/run/domain/runPoll.model";
+import {
+	type ClimberRow,
+	type FallenRow,
+	fetchActiveClimbers,
+	fetchBestCategories,
+	fetchClimbMarker,
+	fetchFallenToday,
+	fetchPersonalBestPosition,
+} from "~/modules/run/community/infrastructure/climbers.repository";
+import {
+	type CommunityPollRecord,
+	fetchConsumedPollsForDay,
+	fetchPollsWithOptions,
+	fetchRunProgress,
+	fetchSessionAnswersForDay,
+	type SessionAnswerRow,
+} from "~/modules/run/community/infrastructure/community.repository";
+import {
+	findActiveSessionRun,
+	findSessionRunByDate,
+} from "~/modules/run/run/infrastructure/run.repository";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
+import {
+	type CommunityDayTurnout,
+	type DayRun,
+	dayRecordsOf,
+	outcomesOf,
+} from "~/modules/run/community/domain/dayRecords.model";
+import {
+	type CategoryBoard,
+	boardsFor,
+} from "~/modules/run/run/domain/categoryLeader.model";
+import { fetchCategoryBoards } from "~/modules/run/run/infrastructure/categoryLeader.repository";
+import type { SwatchTheme } from "~/modules/run/gate/domain/swatch.model";
+
+export type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
+
+type Player = {
+	id: string;
+	displayName: string;
+	photoUrl: string | null;
+	borderUrl: string | null;
+};
+
+type CommunityAnswer = {
+	pollId: number;
+	user: Player;
+	optionIds: Set<number>;
+	mirrored: boolean;
+};
+
+export type CommunityOptionResult = {
+	label: string;
+	isRight: boolean;
+	count: number;
+	percent: number;
+	yours: boolean;
+	voters: CommunityVoter[];
+};
+
+export type RunCommunityPollDetail = {
+	answerType: AnswerType;
+	answeredCount: number;
+	gotItRightCount: number;
+	youGotItRight: boolean;
+	options: CommunityOptionResult[];
+};
+
+export type RunCommunityPoll = {
+	pollId: number;
+	index: number;
+	question: string;
+	category: CategoryCode | null;
+	outcome: AnswerOutcome | "missed";
+	detail: RunCommunityPollDetail | null;
+};
+
+export type ClimbStanding = {
+	titles?: readonly string[];
+	theme?: SwatchTheme;
+	coveragePercent?: number;
+	streak?: number;
+	storageKb?: number;
+	bestCategory?: string;
+};
+
+export type ClimbClimber = ClimbMarker & {
+	id: string;
+	displayName: string;
+	photoUrl?: string | null;
+	borderUrl?: string | null;
+	you: boolean;
+	build?: PublicBuild;
+	closingBand?: CoverageBandId;
+	startedAtGate?: number;
+} & ClimbStanding;
+
+export type ClimbFallen = ClimbMarker &
+	ClimbStanding & {
+		runId: number;
+		id: string;
+		displayName: string;
+		photoUrl?: string | null;
+		borderUrl?: string | null;
+		build: PublicBuild;
+		closingBand?: CoverageBandId;
+		startedAtGate: number;
+		lootKb: number;
+		lootedById: string | null;
+		lootedByName: string | null;
+		lootedByPhotoUrl: string | null;
+		lootedByBorderUrl: string | null;
+	};
+
+export type ClimbViewer = {
+	id: string;
+	hasLiveRun: boolean;
+};
+
+export type ClimbTodayView = {
+	climbers: ClimbClimber[];
+	fallen: ClimbFallen[];
+	bestPosition: number | null;
+	viewer: ClimbViewer;
+	turnout: CommunityDayTurnout;
+};
+
+export type RunCommunityView = {
+	date: string;
+	totalPlayers: number;
+	players: readonly CommunityVoter[];
+	leaders: readonly CategoryBoard[];
+	polls: RunCommunityPoll[];
+	climb: ClimbTodayView | null;
+};
+
+const groupAnswers = (rows: SessionAnswerRow[]): CommunityAnswer[] => {
+	const byResponse = new Map<number, CommunityAnswer>();
+	for (const row of rows) {
+		if (!row.userId) continue;
+		const answer = byResponse.get(row.responseId) ?? {
+			pollId: row.pollId,
+			user: {
+				id: row.userId,
+				displayName: row.displayName ?? row.userId,
+				photoUrl: row.photoUrl,
+				borderUrl: row.borderUrl,
+			},
+			optionIds: new Set<number>(),
+			mirrored: row.mirrored,
+		};
+		if (row.optionId !== null) answer.optionIds.add(row.optionId);
+		byResponse.set(row.responseId, answer);
+	}
+	return [...byResponse.values()];
+};
+
+const toPercent = (part: number, total: number): number =>
+	total === 0 ? 0 : Math.round((part / total) * 100);
+
+const viewerFirst = (voters: CommunityVoter[]): CommunityVoter[] =>
+	[...voters].sort((a, b) => Number(b.you) - Number(a.you));
+
+const playersOf = (
+	answers: readonly CommunityAnswer[],
+	userId: string
+): CommunityVoter[] =>
+	viewerFirst(
+		[...new Map(answers.map(({ user }) => [user.id, user])).values()].map(
+			(user) => ({ ...user, you: user.id === userId })
+		)
+	);
+
+const buildPollDetail = (
+	poll: CommunityPollRecord,
+	viewerAnswer: CommunityAnswer,
+	pollAnswers: CommunityAnswer[]
+): RunCommunityPollDetail => {
+	const gotItRight = pollAnswers.filter(
+		(answer) =>
+			answerOutcome(
+				answer.mirrored ? mirrorGrading(poll) : poll,
+				answer.optionIds
+			) === "correct"
+	);
+
+	return {
+		answerType: poll.answerType,
+		answeredCount: pollAnswers.length,
+		gotItRightCount: gotItRight.length,
+		youGotItRight: gotItRight.some(
+			(answer) => answer.user.id === viewerAnswer.user.id
+		),
+		options: poll.options.map((option): CommunityOptionResult => {
+			const pickers = pollAnswers.filter((answer) =>
+				answer.optionIds.has(option.id)
+			);
+			return {
+				label: option.label,
+				isRight: option.correct,
+				count: pickers.length,
+				percent: toPercent(pickers.length, pollAnswers.length),
+				yours: viewerAnswer.optionIds.has(option.id),
+				voters: viewerFirst(
+					pickers.map((answer) => ({
+						...answer.user,
+						you: answer.user.id === viewerAnswer.user.id,
+					}))
+				),
+			};
+		}),
+	};
+};
+
+const EMPTY_VIEW = (
+	date: string,
+	climb: ClimbTodayView | null,
+	leaders: readonly CategoryBoard[] = [],
+	players: readonly CommunityVoter[] = []
+): RunCommunityView => ({
+	date,
+	totalPlayers: players.length,
+	players,
+	leaders,
+	polls: [],
+	climb,
+});
+
+const deepestPerUser = (climbers: ClimbClimber[]): ClimbClimber[] => {
+	const byUser = new Map<string, ClimbClimber>();
+	for (const climber of climbers) {
+		const held = byUser.get(climber.id);
+		if (!held || trackPosition(climber) > trackPosition(held))
+			byUser.set(climber.id, climber);
+	}
+	return [...byUser.values()].sort(
+		(a, b) => trackPosition(a) - trackPosition(b)
+	);
+};
+
+const closeOf = ({
+	closingBand,
+	startedAtGate,
+}: Pick<ClimberRow, "closingBand" | "startedAtGate">) => ({
+	...(closingBand === null ? {} : { closingBand }),
+	startedAtGate,
+});
+
+const standingOf = (
+	row: ClimberRow,
+	bestCategory: string | undefined
+): ClimbStanding => ({
+	titles: row.titles,
+	theme: row.theme,
+	coveragePercent: Math.round(
+		percentOf(runShareOf(row.coverageUnits, row.gate))
+	),
+	streak: row.streak,
+	storageKb: row.storageKb,
+	...(bestCategory === undefined ? {} : { bestCategory }),
+});
+
+const fallenOf =
+	(bestCategories: Map<string, string>) =>
+	(row: FallenRow): ClimbFallen => ({
+		runId: row.runId,
+		id: row.userId,
+		displayName: row.displayName ?? row.userId,
+		photoUrl: row.photoUrl,
+		borderUrl: row.borderUrl,
+		gate: row.gate,
+		pollsIntoGate: row.pollsIntoGate,
+		build: row.build,
+		lootKb: lootableKbOf(row),
+		lootedById: row.lootedById,
+		lootedByName: row.lootedByName,
+		lootedByPhotoUrl: row.lootedByPhotoUrl,
+		lootedByBorderUrl: row.lootedByBorderUrl,
+		...closeOf(row),
+		...standingOf(row, bestCategories.get(row.userId)),
+	});
+
+const dayRunOf =
+	(fallen: boolean) =>
+	(row: ClimberRow): DayRun => ({
+		userId: row.userId,
+		fallen,
+		closes: row.closes,
+		build: row.build,
+		auditSchedule: row.auditSchedule,
+		startedAtGate: row.startedAtGate,
+		warmBootKb: row.warmBootKb,
+		storageKb: row.storageKb,
+	});
+
+const turnoutOf = (
+	active: readonly ClimberRow[],
+	fallen: readonly ClimberRow[],
+	userId: string
+): CommunityDayTurnout => {
+	const voters = new Map(
+		[...fallen, ...active].map((row): [string, CommunityVoter] => [
+			row.userId,
+			{
+				id: row.userId,
+				displayName: row.displayName ?? row.userId,
+				photoUrl: row.photoUrl,
+				borderUrl: row.borderUrl,
+				you: row.userId === userId,
+			},
+		])
+	);
+	const votersOf = (ids: readonly string[]): CommunityVoter[] =>
+		viewerFirst(
+			ids.flatMap((id) => {
+				const voter = voters.get(id);
+				return voter === undefined ? [] : [voter];
+			})
+		);
+	const runs = [...active.map(dayRunOf(false)), ...fallen.map(dayRunOf(true))];
+	const { perfect, healthy, ok, shaky, danger } = outcomesOf(runs);
+
+	return {
+		outcomes: {
+			perfect: votersOf(perfect),
+			healthy: votersOf(healthy),
+			ok: votersOf(ok),
+			shaky: votersOf(shaky),
+			danger: votersOf(danger),
+		},
+		records: dayRecordsOf(runs).map((record) => ({
+			record,
+			holders: votersOf(record.holderIds),
+		})),
+	};
+};
+
+const buildClimbToday = async ({
+	userId,
+	date,
+	viewerAt,
+}: {
+	userId: string;
+	date: string;
+	viewerAt: ClimbMarker;
+}): Promise<ClimbTodayView> => {
+	const [active, fallen, bestPosition] = await Promise.all([
+		fetchActiveClimbers(),
+		fetchFallenToday(date),
+		fetchPersonalBestPosition(userId),
+	]);
+	const bestCategories = await fetchBestCategories([
+		...new Set([...active, ...fallen].map((row) => row.userId)),
+	]);
+
+	const others = active
+		.filter((row) => row.userId !== userId)
+		.map((row): ClimbClimber => ({
+			id: row.userId,
+			displayName: row.displayName ?? row.userId,
+			photoUrl: row.photoUrl,
+			borderUrl: row.borderUrl,
+			gate: row.gate,
+			pollsIntoGate: row.pollsIntoGate,
+			you: false,
+			build: row.build,
+			...closeOf(row),
+			...standingOf(row, bestCategories.get(row.userId)),
+		}));
+
+	const viewerRow = active.find((row) => row.userId === userId);
+	const viewer: ClimbClimber = {
+		id: userId,
+		displayName: viewerRow?.displayName ?? "you",
+		photoUrl: viewerRow?.photoUrl,
+		borderUrl: viewerRow?.borderUrl,
+		...viewerAt,
+		you: true,
+		...(viewerRow === undefined
+			? {}
+			: {
+					build: viewerRow.build,
+					...closeOf(viewerRow),
+					...standingOf(viewerRow, bestCategories.get(userId)),
+				}),
+	};
+
+	return {
+		climbers: deepestPerUser([...others, viewer]),
+		fallen: fallen.map(fallenOf(bestCategories)),
+		bestPosition,
+		viewer: { id: userId, hasLiveRun: viewerRow !== undefined },
+		turnout: turnoutOf(active, fallen, userId),
+	};
+};
+
+export const getRunCommunityService = async ({
+	userId,
+	date,
+}: {
+	userId: string;
+	date: string;
+}): Promise<ApiResponse<RunCommunityView>> =>
+	handleApiOperation(async () => {
+		const run =
+			(await findActiveSessionRun(userId)) ??
+			(await findSessionRunByDate(userId, date));
+		if (!run) return EMPTY_VIEW(date, null);
+
+		const viewerAt = await fetchClimbMarker(run.id);
+		const climb = viewerAt
+			? await buildClimbToday({ userId, date, viewerAt })
+			: null;
+
+		const currentIndex = await fetchRunProgress(run.id);
+		const consumed = await fetchConsumedPollsForDay(run.id, date, currentIndex);
+
+		const answerRows = await fetchSessionAnswersForDay(date);
+		const answers = groupAnswers(answerRows);
+		const dayPollIds = [...new Set(answers.map((answer) => answer.pollId))];
+		const polls = await fetchPollsWithOptions([
+			...new Set([...consumed.map((entry) => entry.poll_id), ...dayPollIds]),
+		]);
+		const pollsById = new Map(polls.map((poll) => [poll.id, poll]));
+
+		const leaders = boardsFor(await fetchCategoryBoards(userId));
+		const players = playersOf(answers, userId);
+		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders, players);
+
+		const views = consumed.map((entry, index): RunCommunityPoll => {
+			const poll = pollsById.get(entry.poll_id);
+			if (!poll)
+				throw new Error(`Poll ${entry.poll_id} missing for community view`);
+
+			const pollAnswers = answers.filter(
+				(answer) => answer.pollId === entry.poll_id
+			);
+			const viewerAnswer = pollAnswers.find(
+				(answer) => answer.user.id === userId
+			);
+
+			if (!viewerAnswer) {
+				return {
+					pollId: poll.id,
+					index,
+					question: poll.question,
+					category: null,
+					outcome: "missed",
+					detail: null,
+				};
+			}
+
+			return {
+				pollId: poll.id,
+				index,
+				question: poll.question,
+				category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
+				outcome: answerOutcome(
+					viewerAnswer.mirrored ? mirrorGrading(poll) : poll,
+					viewerAnswer.optionIds
+				),
+				detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
+			};
+		});
+
+		return {
+			date,
+			totalPlayers: players.length,
+			players,
+			leaders,
+			polls: views,
+			climb,
+		};
+	}, "getRunCommunity");

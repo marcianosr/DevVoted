@@ -1,0 +1,759 @@
+import { describe, expect, it } from "vitest";
+
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import {
+	EXTEND_CARRY_BYTES,
+	SLICE_WINDOW,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	createRun,
+	isAwaitingTomorrow,
+	pickBudgetFor,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
+import {
+	isShopLocked,
+	runReducer,
+} from "~/modules/run/run/domain/runAction.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	answerWith,
+	atGateWithBuild,
+	audited,
+	clearGate,
+	configIds,
+	failGate,
+	handed,
+	payPeel,
+	poll,
+	pool,
+	started,
+} from "~/modules/run/run/domain/run.factory";
+import type { AuditId } from "~/modules/run/gate/domain/audit.model";
+import {
+	BASE_UNIT,
+	healthyAt,
+	percentOf,
+} from "~/modules/run/build/domain/coverageRatio.model";
+
+describe("configuring", () => {
+	it("refuses to slot beyond the build's slots", () => {
+		let state = createRun(pool(60), handed);
+		for (const id of ["js", "html", "coverage-gain", "cold-start"])
+			state = runReducer(state, { type: "install", configId: id });
+		expect(state.build.configs).toHaveLength(3);
+	});
+
+	it("keeps an installed config in the hand, so the deal reads as one list", () => {
+		const state = runReducer(createRun(pool(60), handed), {
+			type: "install",
+			configId: "js",
+		});
+
+		expect(configIds(state)).toEqual(["js"]);
+		expect(state.available.map((config) => config.id)).toContain("js");
+	});
+
+	it("refuses to install the same config twice", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "install", configId: "js" });
+		state = runReducer(state, { type: "install", configId: "js" });
+
+		expect(configIds(state)).toEqual(["js"]);
+	});
+
+	it("uninstalls without duplicating the card back into the hand", () => {
+		let state = runReducer(createRun(pool(60), handed), {
+			type: "install",
+			configId: "js",
+		});
+		state = runReducer(state, { type: "uninstall", configId: "js" });
+
+		expect(configIds(state)).toEqual([]);
+		expect(state.available.filter((config) => config.id === "js")).toHaveLength(
+			1
+		);
+	});
+});
+
+describe("the opening build (ADR-057)", () => {
+	it("opens empty — the deal decides nothing for the player", () => {
+		const state = createRun(pool(60), handed);
+
+		expect(configIds(state)).toEqual([]);
+		expect(state.available).toHaveLength(handed.length);
+	});
+
+	it("refuses to start until one config is picked, then allows it", () => {
+		const dealt = createRun(pool(60), handed);
+
+		expect(runReducer(dealt, { type: "start" }).status).toBe("configuring");
+
+		const picked = runReducer(dealt, { type: "install", configId: "js" });
+
+		expect(runReducer(picked, { type: "start" }).status).toBe("answering");
+	});
+});
+
+describe("the gate audits (ADR-035, drawn per ADR-056)", () => {
+	const atSaffron = (): RunState => audited(started(["js"]), 7, "mirrored");
+
+	it("pays the wrong option at the mirror, streak and all", () => {
+		let state = answerWith(atSaffron(), false);
+		expect(state.window.unitsEarned).toBe(BASE_UNIT);
+		expect(state.streak).toBe(1);
+		state = answerWith(state, false);
+		expect(state.streak).toBe(2);
+	});
+
+	it("bleeds the meter on the poll's own correct option", () => {
+		let state: RunState = {
+			...atSaffron(),
+			coverage: 100,
+			coverageByCategory: { react: 100 },
+		};
+		state = answerWith(state, true);
+		expect(state.window.unitsEarned).toBe(0);
+		expect(state.coverage).toBe(100);
+		expect(state.streak).toBe(0);
+	});
+
+	it("asks for every wrong option once a poll has more than one", () => {
+		const base = started(["js"]);
+		const poll: RunPoll = {
+			id: "multi",
+			category: "react",
+			question: "Which are hooks?",
+			answerType: "single",
+			options: [
+				{ id: "a", label: "useState", correct: true },
+				{ id: "b", label: "componentDidMount", correct: false },
+				{ id: "c", label: "render", correct: false },
+			],
+		};
+		const state: RunState = audited(
+			{
+				...base,
+				polls: [poll, ...base.polls.slice(1)],
+				currentIndex: 0,
+			},
+			7,
+			"mirrored"
+		);
+		const both = runReducer(state, {
+			type: "answer",
+			optionIds: ["b", "c"],
+		});
+		const half = runReducer(state, { type: "answer", optionIds: ["b"] });
+		expect(both.answeredThisGate.at(-1)?.outcome).toBe("correct");
+		expect(half.answeredThisGate.at(-1)?.outcome).toBe("partial");
+		expect(both.window.unitsEarned).toBeGreaterThan(half.window.unitsEarned);
+	});
+
+	it("marks the mirrored expectation as the answer to beat", () => {
+		const state = answerWith(atSaffron(), false);
+		const answered = state.answeredThisGate.at(-1);
+		expect(answered?.correct).toEqual(["No"]);
+	});
+
+	it("leaks storage every poll at a 507 gate, more on a miss", () => {
+		let state = audited({ ...started(["js"]), storage: 100 }, 9, "memory-leak");
+		state = answerWith(state, true);
+		expect(state.storage).toBe(84);
+		state = answerWith(state, false);
+		expect(state.storage).toBe(52);
+	});
+
+	it("floors the leak at 0 — insolvency stays non-lethal (ADR-046)", () => {
+		let state = audited({ ...started(["js"]), storage: 10 }, 9, "memory-leak");
+		state = answerWith(state, true);
+		expect(state.storage).toBe(0);
+		expect(state.status).toBe("answering");
+	});
+
+	it("ends an Indigo Elite run whose build cannot pay the deepened peel", () => {
+		const state = failGate(atGateWithBuild(11, 1, "strip"));
+		expect(state.status).toBe("dead");
+		expect(state.log.at(-1)).toContain("Run over");
+	});
+
+	it("refuses every shop write at a 405 Method Not Allowed gate, and none elsewhere", () => {
+		const base = started(["js"]);
+		const shopping = (gatesCleared: number, ...ids: AuditId[]): RunState =>
+			audited(
+				{
+					...base,
+					status: "rewarding",
+					storage: 1000,
+					draftOptions: [CONFIGS.indexedDb],
+				},
+				gatesCleared,
+				...ids
+			);
+		const readOnly = shopping(6, "read-only");
+		expect(isShopLocked(readOnly)).toBe(true);
+		expect(
+			runReducer(readOnly, { type: "draft", configId: "indexed-db" })
+		).toBe(readOnly);
+		expect(runReducer(readOnly, { type: "rebuild-draft" })).toBe(readOnly);
+
+		const open = shopping(4);
+		expect(isShopLocked(open)).toBe(false);
+		expect(
+			runReducer(open, { type: "draft", configId: "indexed-db" }).build.configs
+		).toHaveLength(base.build.configs.length + 1);
+	});
+
+	it("lets a Read-only run start its gate and drop a config", () => {
+		const readOnly: RunState = audited(
+			{ ...started(["js"]), status: "rewarding" },
+			5,
+			"read-only"
+		);
+		expect(runReducer(readOnly, { type: "finish-reward" }).status).toBe(
+			"answering"
+		);
+		expect(
+			runReducer(readOnly, { type: "drop", configId: "js" }).build.configs
+		).toHaveLength(3);
+	});
+
+	it("takes one config offline at a Dependency Outage gate", () => {
+		const outage = audited(started(["js"]), 4, "dependency-outage");
+		const view = toRunView(outage);
+		expect(view.offlineConfigs).toHaveLength(1);
+		expect(outage.build.configs).toContain(view.offlineConfigs[0].config);
+		expect(view.offlineConfigs[0].audit).toBe("424 Failed Dependency");
+	});
+
+	it("moves the flake from poll to poll at a Flaky Build gate", () => {
+		let state: RunState = audited(started(["js"]), 8, "flaky-build");
+		const seen = new Set<string>();
+		for (let i = 0; i < SLICE_WINDOW - 1; i++) {
+			seen.add(toRunView(state).offlineConfigs[0]?.config.id ?? "");
+			state = answerWith(state, true);
+		}
+		expect(seen.size).toBeGreaterThan(1);
+	});
+
+	it("switches off the most-upgraded config at a Breaking Change gate", () => {
+		const base = started(["js"]);
+		const levelled: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: base.build.configs.map((config, index) =>
+						index === 1 ? { ...config, level: 4 } : config
+					),
+				},
+			},
+			10,
+			"breaking-change"
+		);
+		expect(toRunView(levelled).offlineConfigs[0]?.config.id).toBe(
+			levelled.build.configs[1].id
+		);
+	});
+
+	it("keeps an offline config out of the answer it would have scored", () => {
+		const base = started(["js"]);
+		const build: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: [
+						...base.build.configs,
+						CONFIGS.agentsMd,
+						CONFIGS.intellisense,
+					],
+				},
+			},
+			4,
+			"dependency-outage"
+		);
+		const offlineId = toRunView(build).offlineConfigs[0]?.config.id;
+		const bonuses = answerWith(build, true)
+			.answeredThisGate.at(-1)
+			?.coverageBreakdown?.configBonuses.map((bonus) => bonus.configId);
+		expect(offlineId).toBeDefined();
+		expect(bonuses).not.toContain(offlineId);
+		expect(bonuses?.length).toBeGreaterThan(0);
+	});
+
+	it("scores an answer past the clock as a miss, whatever was picked", () => {
+		const timed = audited(started(["js"]), 8, "timeout");
+		const poll = timed.polls[timed.currentIndex];
+		const rightOption = poll.options.find((option) => option.correct);
+		const late = runReducer(timed, {
+			type: "answer",
+			optionIds: [rightOption?.id ?? ""],
+			elapsedMs: 31_000,
+		});
+		expect(late.window.unitsEarned).toBe(0);
+		expect(late.window.correct).toBe(0);
+		expect(late.streak).toBe(0);
+		expect(late.answeredThisGate.at(-1)?.timedOut).toBe(true);
+	});
+
+	it("leaves an answer inside the clock alone", () => {
+		const timed = audited(started(["js"]), 8, "timeout");
+		const poll = timed.polls[timed.currentIndex];
+		const rightOption = poll.options.find((option) => option.correct);
+		const inTime = runReducer(timed, {
+			type: "answer",
+			optionIds: [rightOption?.id ?? ""],
+			elapsedMs: 29_000,
+		});
+		expect(inTime.window.unitsEarned).toBeGreaterThan(0);
+		expect(inTime.answeredThisGate.at(-1)?.timedOut).toBeUndefined();
+	});
+
+	it("frees the polls past the clocked ones", () => {
+		let state: RunState = audited(started(["js"]), 8, "timeout");
+		for (let i = 0; i < 3; i++) state = answerWith(state, true);
+		expect(toRunView(state).pollTimeLimitMs).toBeNull();
+	});
+
+	it("charges Saffron its full demand — the mirror no longer discounts it", () => {
+		expect(toRunView(atSaffron()).gateStake.coverageLadder.healthy).toBe(
+			percentOf(healthyAt(7))
+		);
+	});
+
+	it("counts the picks a mirrored window actually wants", () => {
+		const threeOption = (id: string): RunPoll => ({
+			id,
+			category: "react",
+			question: `${id}?`,
+			answerType: "single",
+			options: [
+				{ id: `${id}-a`, label: "A", correct: true },
+				{ id: `${id}-b`, label: "B", correct: false },
+				{ id: `${id}-c`, label: "C", correct: false },
+			],
+		});
+		const polls = Array.from({ length: 20 }, (_, index) =>
+			threeOption(`three-${index}`)
+		);
+		let base = createRun(polls, [...handed, CONFIGS.length]);
+		for (const configId of ["length", "js", "html"])
+			base = runReducer(base, { type: "install", configId });
+		base = runReducer(base, { type: "start" });
+
+		expect(toRunView(base).correctAnswersThisGate).toBe(SLICE_WINDOW);
+		expect(pickBudgetFor(polls, 0, true)).toBe(SLICE_WINDOW * 2);
+
+		const reopened = runReducer(
+			audited(
+				{
+					...base,
+					status: "awaiting-strip" as const,
+					peelSlotsRemaining: 0,
+				},
+				7,
+				"mirrored"
+			),
+			{ type: "resume-climb" }
+		);
+		expect(toRunView(reopened).correctAnswersThisGate).toBe(SLICE_WINDOW * 2);
+	});
+
+	it("Volkswagen CI suppresses the mirror — normal scoring, full demand", () => {
+		const base = started(["js"]);
+		let state: RunState = audited(
+			{
+				...base,
+				build: {
+					...base.build,
+					configs: [...base.build.configs, CONFIGS.volkswagenCi],
+				},
+			},
+			7,
+			"mirrored"
+		);
+		const view = toRunView(state);
+		expect(view.gateStake.coverageLadder.healthy).toBe(percentOf(healthyAt(7)));
+		expect(view.gateStake.audits).toEqual([
+			expect.objectContaining({ id: "mirrored", suppressed: true }),
+		]);
+		state = answerWith(state, true);
+		expect(state.window.unitsEarned).toBeGreaterThan(0);
+	});
+});
+
+describe("the daily gate lock", () => {
+	it("stays answering when the day's polls run out mid-window", () => {
+		let state = started(["js"], 3);
+		for (let i = 0; i < 3; i++) state = answerWith(state, true);
+		expect(state.status).toBe("answering");
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+
+	it("ignores an answer while awaiting tomorrow's polls", () => {
+		let state = started(["js"], 1);
+		state = answerWith(state, true);
+		const locked = runReducer(state, {
+			type: "answer",
+			optionIds: ["ghost"],
+		});
+		expect(locked).toBe(state);
+	});
+
+	it("unlocks once the next day's segment appends polls", () => {
+		let state = started(["js"], 2);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+		expect(isAwaitingTomorrow(state)).toBe(true);
+		const rolled = {
+			...state,
+			polls: [...state.polls, poll("tomorrow-0", true)],
+		};
+		expect(isAwaitingTomorrow(rolled)).toBe(false);
+	});
+
+	it("opens the shop, not the lock, when the gate clears on the day's last poll", () => {
+		let state = started(["js"], SLICE_WINDOW);
+		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
+		expect(state.status).toBe("rewarding");
+		expect(isAwaitingTomorrow(state)).toBe(false);
+		state = runReducer(state, { type: "finish-reward" });
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+
+	it("locks the retry behind tomorrow when the day ends on a failed gate", () => {
+		let state = failGate(started(["unit-tests"], SLICE_WINDOW));
+		expect(state.status).toBe("awaiting-strip");
+		state = runReducer(payPeel(state), { type: "finish-reward" });
+		expect(isAwaitingTomorrow(state)).toBe(true);
+	});
+});
+
+describe("a two-polls-a-day player (ADR-014)", () => {
+	const dayPolls = (day: number, count = SLICE_WINDOW): RunPoll[] =>
+		Array.from({ length: count }, (_, index) =>
+			poll(`day${day}-${index}`, true)
+		);
+
+	const nextDay = (
+		state: RunState,
+		tomorrow: readonly RunPoll[]
+	): RunState => ({
+		...state,
+		polls: [...state.polls.slice(0, state.currentIndex), ...tomorrow],
+	});
+
+	it("carries a half-filled gate across the day boundary", () => {
+		let state = started(["js"], SLICE_WINDOW);
+		state = answerWith(state, true);
+		state = answerWith(state, true);
+
+		state = nextDay(state, dayPolls(2));
+
+		expect(state.window.answered).toBe(2);
+		expect(isAwaitingTomorrow(state)).toBe(false);
+	});
+});
+
+describe("the starting build", () => {
+	it("starts with empty slots — nothing is pre-installed", () => {
+		expect(configIds(createRun(pool(60), handed))).toEqual([]);
+	});
+
+	it("refuses to start bare, and starts with slots to spare", () => {
+		const bare = createRun(pool(60), handed);
+		expect(runReducer(bare, { type: "start" }).status).toBe("configuring");
+
+		let state = runReducer(bare, { type: "install", configId: "js" });
+		state = runReducer(state, { type: "install", configId: "linter" });
+		state = runReducer(state, { type: "start" });
+		expect(state.status).toBe("answering");
+	});
+
+	it("unslots any config while configuring — Unit Tests included", () => {
+		let state = createRun(pool(60), handed);
+		state = runReducer(state, { type: "install", configId: "unit-tests" });
+		state = runReducer(state, { type: "uninstall", configId: "unit-tests" });
+		expect(configIds(state)).toEqual([]);
+	});
+});
+
+describe("the storage high-water mark", () => {
+	it("records the best KB the run has held", () => {
+		const cleared = clearGate(started(["js"]));
+
+		expect(cleared.storage).toBeGreaterThan(0);
+		expect(cleared.peakStorageKb).toBe(cleared.storage);
+	});
+
+	it("holds the mark once the balance is spent back down", () => {
+		const rich = {
+			...clearGate(started(["js"])),
+			storage: 400,
+			peakStorageKb: 400,
+		};
+		const spent = runReducer(rich, { type: "rebuild-draft" });
+
+		expect(spent.storage).toBeLessThan(400);
+		expect(spent.peakStorageKb).toBe(400);
+	});
+});
+
+describe("the incident desk lives in the shop", () => {
+	const holding = (state: RunState): RunState => ({
+		...state,
+		heldAudit: { auditId: "not-found" },
+	});
+	const offering = (state: RunState): RunState => ({
+		...state,
+		incidentOffer: "not-found",
+		storage: 256,
+	});
+
+	it("buys the incident on offer once the gate has closed", () => {
+		const shop = offering(clearGate(started(["js"])));
+		expect(shop.status).toBe("rewarding");
+
+		expect(runReducer(shop, { type: "buy-incident" }).heldAudit).toEqual({
+			auditId: "not-found",
+		});
+	});
+
+	it("refuses to buy, refresh or file mid-window", () => {
+		const answering = offering(started(["js"]));
+
+		expect(runReducer(answering, { type: "buy-incident" })).toBe(answering);
+		expect(runReducer(answering, { type: "refresh-incident" })).toBe(answering);
+		const held = holding(answering);
+		expect(runReducer(held, { type: "fire-audit" })).toBe(held);
+	});
+
+	it("buying and refreshing are shop writes the 405 refuses", () => {
+		const cleared = clearGate(started(["js"]));
+		const closed = audited(
+			offering(cleared),
+			cleared.gatesCleared,
+			"read-only"
+		);
+
+		expect(runReducer(closed, { type: "buy-incident" })).toBe(closed);
+		expect(runReducer(closed, { type: "refresh-incident" })).toBe(closed);
+		expect(
+			runReducer(offering(cleared), { type: "refresh-incident" })
+				.incidentRefreshes
+		).toBe(1);
+	});
+
+	it("files what is held, from the shop", () => {
+		const armed = holding(clearGate(started(["js"])));
+
+		expect(runReducer(armed, { type: "fire-audit" }).heldAudit).toBeUndefined();
+	});
+
+	it("files what is held from the build screen too, since the server accepts it there", () => {
+		const building: RunState = {
+			...holding(clearGate(started(["js"]))),
+			status: "configuring",
+		};
+
+		expect(
+			runReducer(building, { type: "fire-audit" }).heldAudit
+		).toBeUndefined();
+	});
+});
+
+describe("a config that asks for a call in prep holds the gate", () => {
+	const owingAtGateZero = (): RunState =>
+		["planning-poker", "js", "ts", "css"].reduce(
+			(state, configId) => runReducer(state, { type: "install", configId }),
+			createRun(pool(40), [...handed, CONFIGS.planningPoker])
+		);
+
+	const owingAtALaterGate = (config: Config): RunState => {
+		const base = started(["js"]);
+		return {
+			...base,
+			status: "rewarding",
+			build: { ...base.build, configs: [...base.build.configs, config] },
+			estimatedCorrect: undefined,
+			slaBand: undefined,
+		};
+	};
+
+	it("refuses to open gate 0 while Planning Poker has no bet", () => {
+		const owing = owingAtGateZero();
+		expect(runReducer(owing, { type: "start" })).toBe(owing);
+	});
+
+	it("opens gate 0 once the bet is placed", () => {
+		const bet = runReducer(owingAtGateZero(), { type: "estimate", count: 3 });
+		expect(runReducer(bet, { type: "start" }).status).toBe("answering");
+	});
+
+	it("refuses to leave a later gate's prep while the bet is owed", () => {
+		const owing = owingAtALaterGate(CONFIGS.planningPoker);
+		expect(runReducer(owing, { type: "finish-reward" })).toBe(owing);
+	});
+
+	it("refuses to leave a later gate's prep while SLA has no promise", () => {
+		const owing = owingAtALaterGate(CONFIGS.sla);
+		expect(runReducer(owing, { type: "finish-reward" })).toBe(owing);
+	});
+
+	it("leaves a later gate's prep once the promise is made", () => {
+		const promised = runReducer(owingAtALaterGate(CONFIGS.sla), {
+			type: "commit-band",
+			band: "ok",
+		});
+		expect(runReducer(promised, { type: "finish-reward" })).not.toBe(promised);
+	});
+});
+
+describe("looting a fallen run", () => {
+	it("credits the take to the run's balance", () => {
+		const state = createRun(pool(60), handed);
+		const looted = runReducer(state, { type: "loot", kb: 67 });
+		expect(looted.storage).toBe(state.storage + 67);
+	});
+
+	it("raises the watermark the take pushes past", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: 67 }).peakStorageKb).toBe(
+			state.storage + 67
+		);
+	});
+
+	it("leaves the run untouched when there was nothing to take", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: 0 })).toBe(state);
+	});
+
+	it("refuses a take that would bill the run", () => {
+		const state = createRun(pool(60), handed);
+		expect(runReducer(state, { type: "loot", kb: -32 })).toBe(state);
+	});
+});
+
+describe("warm booting a run (ADR-153)", () => {
+	const boot = {
+		type: "warm-boot",
+		storageKb: 64,
+		serviceIds: ["extend"],
+		archiveBytes: EXTEND_CARRY_BYTES,
+	} as const;
+
+	it("banks the storage before the first gate and raises the high-water mark", () => {
+		const booted = runReducer(createRun(pool(60), handed), boot);
+
+		expect(booted.storage).toBe(64);
+		expect(booted.peakStorageKb).toBe(64);
+		expect(booted.warmBoot?.serviceIds).toEqual(["extend"]);
+	});
+
+	it("refuses a boot once the run has started", () => {
+		const running = started(["linter"]);
+
+		expect(runReducer(running, boot)).toBe(running);
+	});
+
+	it("refuses a second boot", () => {
+		const booted = runReducer(createRun(pool(60), handed), boot);
+
+		expect(runReducer(booted, boot)).toBe(booted);
+	});
+});
+
+describe("the balance the whole engine holds (ADR-161)", () => {
+	const RUNS = 300;
+	const STEPS_PER_RUN = 400;
+	const LEAN = [CONFIGS.js, CONFIGS.ts, CONFIGS.css, CONFIGS.html];
+	const TRIPLED = [CONFIGS.agentsMd, CONFIGS.intellisense];
+	const STACKED = [CONFIGS.agentsMd, CONFIGS.intellisense, CONFIGS.deprecated];
+
+	const seededRolls = (seed: number) => {
+		let state = seed;
+		return () => {
+			state = (state * 1664525 + 1013904223) % 4294967296;
+			return state / 4294967296;
+		};
+	};
+
+	const CATEGORIES: readonly CategoryCode[] = [
+		"react",
+		"js",
+		"ts",
+		"css",
+		"html",
+	];
+	const spreadPool: readonly RunPoll[] = Array.from(
+		{ length: STEPS_PER_RUN },
+		(_, index) =>
+			poll(`spread-${index}`, true, CATEGORIES[index % CATEGORIES.length])
+	);
+
+	const summits = (
+		configs: readonly Config[],
+		accuracy: number,
+		roll: () => number
+	): boolean => {
+		const base = started([], STEPS_PER_RUN);
+		let state: RunState = {
+			...base,
+			polls: spreadPool,
+			build: { ...base.build, configs },
+		};
+		for (let step = 0; step < STEPS_PER_RUN; step++) {
+			if (state.status === "won") return true;
+			if (state.status === "answering")
+				state = answerWith(state, roll() < accuracy);
+			else if (state.status === "rewarding")
+				state = runReducer(state, { type: "finish-reward" });
+			else if (state.status === "awaiting-strip") {
+				const settled = payPeel(state);
+				if (settled === state) return false;
+				state = settled;
+			} else return false;
+		}
+		return false;
+	};
+
+	const winRate = (configs: readonly Config[], accuracy: number): number => {
+		const roll = seededRolls(Math.round(accuracy * 1000));
+		const wins = Array.from({ length: RUNS }, () =>
+			summits(configs, accuracy, roll)
+		).filter(Boolean).length;
+		return wins / RUNS;
+	};
+
+	it("walls a lean build at poor accuracy", () => {
+		expect(winRate(LEAN, 0.6)).toBeLessThan(0.05);
+	});
+
+	it("lets knowledge alone summit more often than not", () => {
+		expect(winRate(LEAN, 0.9)).toBeGreaterThan(0.5);
+	});
+
+	it("opens the run for the average player who buys a multiplier", () => {
+		expect(winRate([CONFIGS.agentsMd], 0.7)).toBeGreaterThan(
+			winRate(LEAN, 0.7) * 5
+		);
+	});
+
+	it("stops paying for stacking once decay and rent take it back", () => {
+		expect(
+			Math.abs(winRate(STACKED, 0.7) - winRate(TRIPLED, 0.7))
+		).toBeLessThan(0.1);
+	});
+
+	it("cannot be carried by stacking alone at a coin flip", () => {
+		expect(winRate(STACKED, 0.5)).toBeLessThan(0.3);
+	});
+
+	it("still asks for accuracy once the multipliers are there", () => {
+		expect(winRate(TRIPLED, 0.9)).toBeGreaterThan(winRate(TRIPLED, 0.6));
+	});
+});

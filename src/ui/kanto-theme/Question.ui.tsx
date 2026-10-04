@@ -1,0 +1,131 @@
+import { Fragment, type ReactNode } from "react";
+
+import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
+import {
+	splitCodeBlocks,
+	splitCodeSpans,
+	stripCodeFence,
+} from "~/shared/lib/codeSpans";
+import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
+
+import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
+import { CodeBlock } from "./CodeBlock.ui";
+import { Typography } from "./Typography.ui";
+
+const BLOCK = "flex w-full flex-col gap-3";
+const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
+const PROSE = "whitespace-pre-line";
+const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
+
+const SEPARATOR = "·";
+
+export const questionFactsOf = ({
+	options,
+	answerType,
+}: Pick<QuestionProps, "options" | "answerType">) =>
+	`${options.length} options ${SEPARATOR} ${ANSWER_TYPE_LABEL[answerType]}`;
+
+export type QuestionOption = {
+	id: string;
+	letter: string;
+	label?: ReactNode;
+	seal?: ChoiceSeal;
+	crossedOut?: boolean;
+	state?: ChoiceState;
+};
+
+export type QuestionProps = {
+	answerType: AnswerType;
+	question: string;
+	options: readonly QuestionOption[];
+	codeBlock?: string;
+	pickedIds?: readonly string[];
+	onPick?: (id: string) => void;
+};
+
+const CodeSpans = ({ text }: { text: string }) => (
+	<span className={PROSE}>
+		{splitCodeSpans(text).map((span, index) =>
+			span.kind === "code" ? (
+				<code key={`${index}-${span.text}`} className={CODE}>
+					{stripCodeFence(span.text)}
+				</code>
+			) : (
+				<Fragment key={`${index}-${span.text}`}>{span.text}</Fragment>
+			)
+		)}
+	</span>
+);
+
+const QuestionText = ({ question }: { question: string }) => {
+	const parts = splitCodeBlocks(question);
+	const heading = parts.findIndex((part) => part.kind === "prose");
+	return (
+		<>
+			{parts.map((part, index) =>
+				part.kind === "block" ? (
+					<CodeBlock key={`${part.kind}-${index}`} lang={part.lang}>
+						{part.code}
+					</CodeBlock>
+				) : (
+					<Typography
+						key={`${part.kind}-${index}`}
+						variant="headline"
+						as={index === heading ? "h1" : "p"}
+					>
+						<CodeSpans text={part.text} />
+					</Typography>
+				)
+			)}
+		</>
+	);
+};
+
+export const Question = ({
+	answerType,
+	question,
+	options,
+	codeBlock,
+	pickedIds = [],
+	onPick,
+}: QuestionProps) => (
+	<section className={BLOCK}>
+		<QuestionText question={question} />
+
+		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
+
+		<div data-choices className={CHOICES}>
+			{options.map((option) => {
+				const picked = pickedIds.includes(option.id);
+				const pick = onPick === undefined ? undefined : () => onPick(option.id);
+
+				if (option.seal !== undefined) {
+					return (
+						<Choice
+							key={option.id}
+							letter={option.letter}
+							answerType={answerType}
+							picked={picked}
+							onPick={pick}
+							seal={option.seal}
+						/>
+					);
+				}
+
+				return (
+					<Choice
+						key={option.id}
+						letter={option.letter}
+						answerType={answerType}
+						picked={picked}
+						crossedOut={option.crossedOut}
+						state={option.state}
+						onPick={pick}
+					>
+						{option.label}
+					</Choice>
+				);
+			})}
+		</div>
+	</section>
+);

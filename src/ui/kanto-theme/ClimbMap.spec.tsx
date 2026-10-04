@@ -1,0 +1,269 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import type { LadderGate } from "~/modules/run/community/application/climbLadder.viewmodel";
+import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
+
+import { ClimbMap, COPY } from "./ClimbMap.ui";
+import { COPY as CARD_COPY, type ClimberCardProps } from "./ClimberCard.ui";
+import type { StandingProps } from "./Standing.ui";
+
+const gate = (over: Partial<LadderGate> & { gate: number }): LadderGate => ({
+	name: `Gate ${over.gate}`,
+	theme: "gate-pallet",
+	finish: "flat",
+	current: false,
+	uncharted: false,
+	best: false,
+	climbers: [],
+	fallen: [],
+	...over,
+});
+
+const chip = (name: string, over = {}) => ({
+	id: name.toLowerCase(),
+	name,
+	you: false,
+	rival: false,
+	rescued: false,
+	...over,
+});
+
+const MISTY_BUILD = [
+	{ name: ".ts", slots: 1, version: 4, badges: [] },
+	{ name: "Cache", slots: 4, badges: [] },
+];
+
+const cardFor = (
+	name: string,
+	build: StandingProps["build"] = MISTY_BUILD
+): ClimberCardProps =>
+	kantoClimberCard({
+		name,
+		standing: kantoStanding({ weight: "5 / 6", build }),
+	});
+
+const GATES: LadderGate[] = [
+	gate({ gate: 0, name: "Pallet" }),
+	gate({
+		gate: 1,
+		name: "Pewter",
+		climbers: [chip("Koga"), chip("Brock", { rival: true })],
+	}),
+	gate({
+		gate: 2,
+		name: "Cerulean",
+		current: true,
+		climbers: [chip("Marciano", { you: true })],
+		fallen: [
+			{
+				...chip("Blaine"),
+				runKey: "77",
+				card: cardFor("Blaine", []),
+			},
+		],
+	}),
+	gate({ gate: 3, name: "Vermilion", best: true }),
+	gate({ gate: 4, name: "Lavender", uncharted: true }),
+];
+
+describe("ClimbMap", () => {
+	it("draws every gate of the ladder by number and name", () => {
+		render(<ClimbMap gates={GATES} />);
+
+		expect(screen.getByText("Pallet")).toBeInTheDocument();
+		expect(screen.getByText("Lavender")).toBeInTheDocument();
+		expect(screen.getAllByRole("listitem")).toHaveLength(GATES.length);
+	});
+
+	it("stands the viewer on their own gate, so the track knows where to open", () => {
+		const { container } = render(<ClimbMap gates={GATES} />);
+
+		const current = container.querySelectorAll("[data-current]");
+		expect(current).toHaveLength(1);
+		expect(current[0]).toHaveTextContent("Cerulean");
+	});
+
+	it("dims the gates nobody has charted yet", () => {
+		const { container } = render(<ClimbMap gates={GATES} />);
+
+		const uncharted = container.querySelectorAll("[data-uncharted]");
+		expect(uncharted).toHaveLength(1);
+		expect(uncharted[0]).toHaveTextContent("Lavender");
+	});
+
+	it("stars the deepest gate the viewer ever finished on, and only that one", () => {
+		render(<ClimbMap gates={GATES} />);
+
+		const best = screen.getAllByTitle(COPY.best);
+		expect(best).toHaveLength(1);
+	});
+
+	it("stacks everyone standing at a gate under it", () => {
+		render(<ClimbMap gates={GATES} />);
+
+		expect(screen.getByTitle("Koga")).toBeInTheDocument();
+		expect(screen.getByTitle("Brock")).toBeInTheDocument();
+	});
+
+	it("counts the crowd it cannot draw rather than drawing every chip", () => {
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 0,
+						climbers: [
+							chip("A"),
+							chip("B"),
+							chip("C"),
+							chip("D"),
+							chip("E"),
+							chip("F"),
+						],
+					}),
+				]}
+			/>
+		);
+
+		expect(screen.getByText("+2")).toBeInTheDocument();
+		expect(screen.queryByTitle("F")).toBeNull();
+	});
+
+	it("parks the runs a gate killed today in a lane of their own", () => {
+		const { container } = render(<ClimbMap gates={GATES} />);
+		const fallen = container.querySelector("[data-fallen]");
+
+		expect(within(fallen as HTMLElement).getByTitle("Blaine")).toBeVisible();
+	});
+
+	it("opens a climber's build when their chip is pressed", async () => {
+		const user = userEvent.setup();
+		const onInspect = vi.fn();
+		render(<ClimbMap gates={GATES} onInspect={onInspect} />);
+
+		await user.click(screen.getByRole("button", { name: /Koga/ }));
+
+		expect(onInspect).toHaveBeenCalledWith("koga");
+	});
+
+	it("opens the climber's card when their chip is the open one", () => {
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 6,
+						name: "Fuchsia",
+						climbers: [chip("Misty", { card: cardFor("Misty") })],
+					}),
+				]}
+				openId="misty"
+				onInspect={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText(".ts")).toBeInTheDocument();
+		expect(screen.getByText("5 / 6")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Misty" })).toHaveAttribute(
+			"aria-pressed",
+			"true"
+		);
+	});
+
+	it("opens the card as a dialog outside the scrolling track", () => {
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 6,
+						name: "Fuchsia",
+						climbers: [chip("Misty", { card: cardFor("Misty") })],
+					}),
+				]}
+				openId="misty"
+				onInspect={vi.fn()}
+			/>
+		);
+
+		const dialog = screen.getByRole("dialog", { name: "Misty" });
+		expect(dialog.closest("ul")).toBeNull();
+	});
+
+	it("closes the open card when the backdrop outside it is pressed", async () => {
+		const user = userEvent.setup();
+		const onInspect = vi.fn();
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 6,
+						name: "Fuchsia",
+						climbers: [chip("Misty", { card: cardFor("Misty") })],
+					}),
+				]}
+				openId="misty"
+				onInspect={onInspect}
+			/>
+		);
+
+		await user.click(screen.getByRole("button", { name: COPY.dismiss }));
+
+		expect(onInspect).toHaveBeenCalledWith("misty");
+	});
+
+	it("draws no card for a climber the map knows nothing more about", () => {
+		render(
+			<ClimbMap
+				gates={[gate({ gate: 6, climbers: [chip("Misty")] })]}
+				openId="misty"
+				onInspect={vi.fn()}
+			/>
+		);
+
+		expect(
+			screen.queryByRole("button", { name: `${CARD_COPY.close} Misty` })
+		).toBeNull();
+	});
+
+	it("says so when the open climber runs nothing at all", () => {
+		render(
+			<ClimbMap
+				gates={[
+					gate({
+						gate: 0,
+						climbers: [chip("Oak", { card: cardFor("Oak", []) })],
+					}),
+				]}
+				openId="oak"
+				onInspect={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText(CARD_COPY.nothingInstalled)).toBeInTheDocument();
+	});
+
+	it("opens a fallen run's build by its own run, not by its player", async () => {
+		const user = userEvent.setup();
+		const onInspect = vi.fn();
+		render(<ClimbMap gates={GATES} onInspect={onInspect} />);
+
+		await user.click(screen.getByRole("button", { name: /Blaine/ }));
+
+		expect(onInspect).toHaveBeenCalledWith("77");
+	});
+
+	it("leaves the chips inert when nothing can open a build", () => {
+		render(<ClimbMap gates={GATES} />);
+
+		expect(screen.queryAllByRole("button")).toHaveLength(0);
+		expect(screen.getByTitle("Koga")).toBeInTheDocument();
+	});
+
+	it("names the colour every face on the track can wear", () => {
+		render(<ClimbMap gates={GATES} />);
+
+		expect(screen.getByText(COPY.you)).toBeInTheDocument();
+		expect(screen.getByText(COPY.rival)).toBeInTheDocument();
+		expect(screen.getByText(COPY.fallen)).toBeInTheDocument();
+	});
+});

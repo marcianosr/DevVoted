@@ -1,0 +1,36 @@
+<svg viewBox="0 0 140 140" width="224" height="224" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="top-half"><rect x="0" y="0" width="140" height="70"/></clipPath>
+    <clipPath id="bottom-half"><rect x="0" y="70" width="140" height="70"/></clipPath>
+    <symbol id="jiggy" viewBox="0 0 24 24">
+      <path d="M5 7h4.2a3 3 0 1 1 5.6 0H19v4.2a3 3 0 1 1 0 5.6V21h-4.2a3 3 0 1 0-5.6 0H5v-4.2a3 3 0 1 0 0-5.6Z" fill="#F4C430" stroke="#141221" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M8 10.5l2-1.5" stroke="#F7F7FB" stroke-width="1.4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="note" viewBox="0 0 24 24">
+      <path d="M10 18V5l9-2v4l-7 1.6V18" fill="#F4C430" stroke="#141221" stroke-width="1.6" stroke-linejoin="round"/>
+      <ellipse cx="7.5" cy="18.5" rx="4" ry="3.2" fill="#F4C430" stroke="#141221" stroke-width="1.6" transform="rotate(-20 7.5 18.5)"/>
+    </symbol>
+    <symbol id="honeycomb" viewBox="0 0 24 24">
+      <polygon points="12,2 21,7 21,17 12,22 3,17 3,7" fill="#FF6240" stroke="#141221" stroke-width="1.6" stroke-linejoin="round"/>
+      <polygon points="12,7 16.5,9.5 16.5,14.5 12,17 7.5,14.5 7.5,9.5" fill="#F4C430"/>
+    </symbol>
+    <symbol id="ball" viewBox="0 0 24 24">
+      <path d="M3 12a9 9 0 0 1 18 0Z" fill="#D9381E"/>
+      <path d="M3 12a9 9 0 0 0 18 0Z" fill="#F7F7FB"/>
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#141221" stroke-width="1.6"/>
+      <path d="M3 12h18" stroke="#141221" stroke-width="1.6"/>
+      <circle cx="12" cy="12" r="3" fill="#F7F7FB" stroke="#141221" stroke-width="1.6"/>
+    </symbol>
+  </defs>
+  <rect x="6" y="6" width="128" height="128" rx="9" fill="none" stroke="#141221" stroke-width="12"/>
+  <rect x="6" y="6" width="128" height="128" rx="9" fill="none" stroke="#D9381E" stroke-width="8" clip-path="url(#top-half)"/>
+  <rect x="6" y="6" width="128" height="128" rx="9" fill="none" stroke="#F7F7FB" stroke-width="8" clip-path="url(#bottom-half)"/>
+  <rect x="12.5" y="12.5" width="115" height="115" rx="4" fill="none" stroke="#F4C430" stroke-width="1.5"/>
+  <path d="M0 70h14M126 70h14" stroke="#141221" stroke-width="3"/>
+  <circle cx="6" cy="70" r="5" fill="#F7F7FB" stroke="#141221" stroke-width="2.5"/>
+  <circle cx="134" cy="70" r="5" fill="#F7F7FB" stroke="#141221" stroke-width="2.5"/>
+  <use href="#jiggy" x="-2" y="-2" width="30" height="30"/>
+  <use href="#note" x="112" y="-2" width="30" height="30"/>
+  <use href="#honeycomb" x="-2" y="112" width="30" height="30"/>
+  <use href="#ball" x="112" y="112" width="30" height="30"/>
+</svg>

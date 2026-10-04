@@ -1,1 +1,0 @@
-ALTER TABLE "leaderboard" DROP CONSTRAINT "leaderboard_run_id_unique";

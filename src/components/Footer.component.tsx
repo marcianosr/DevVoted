@@ -1,37 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 
-import { configs } from "~/domains/economy/data/configs";
-import { getAllPolls } from "~/domains/polls/api/polls";
-import { getCategories } from "~/domains/shared/categories";
-import { FooterUI } from "~/ui/FooterUI.component";
+import { getPublishedPollCount } from "~/modules/polls/poll/application/poll.serverfn";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
+import { getCategories } from "~/shared/lib/categories";
+import { pollQueryKeys } from "~/shared/queryKeys";
+import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
 
 declare const __LAST_COMMIT_DATE__: string;
+declare const __LAST_COMMIT_AUTHOR__: string;
 
-const Footer = () => {
-	const { data, isLoading } = useQuery({
-		queryKey: ["all-polls"],
-		queryFn: () => getAllPolls(),
+export const Footer = () => {
+	const { view: pollCount } = useApiQuery({
+		queryKey: pollQueryKeys.publishedCount(),
+		queryFn: () => getPublishedPollCount(),
 		staleTime: 1000 * 60 * 30,
 	});
 
-	const pollCount = !isLoading && data?.success ? data.data.length : null;
-
 	return (
-		<FooterUI
+		<AppFooter
 			pollCount={pollCount}
-			isLoading={isLoading}
 			categoryCount={getCategories().length}
-			configCount={configs.length}
+			configCount={CONFIG_LIST.length}
 			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
-			statsLink={
-				<Link to="/stats" className="underline">
-					See all game info stats
-				</Link>
-			}
+			lastCommitAuthor={__LAST_COMMIT_AUTHOR__}
 		/>
 	);
 };
-
-export default Footer;

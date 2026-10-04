@@ -1,0 +1,145 @@
+import { describe, expect, it } from "vitest";
+
+import {
+	runActionSchema,
+	warmBootPickSchema,
+} from "~/modules/run/run/application/run.validation";
+
+describe("runActionSchema", () => {
+	it("accepts every engine action shape", () => {
+		const actions = [
+			{ type: "install", configId: "js" },
+			{ type: "uninstall", configId: "js" },
+			{ type: "start" },
+			{ type: "answer", optionIds: ["64"] },
+			{ type: "lint-poll" },
+			{ type: "strip", configIds: ["eslint"] },
+			{ type: "resume-climb" },
+			{ type: "draft", configId: "agents-md" },
+			{ type: "upgrade", configId: "js" },
+			{ type: "rebuild-draft" },
+			{ type: "finish-reward" },
+			{ type: "sell", configId: "agents-md" },
+			{ type: "drop", configId: "agents-md" },
+			{ type: "commit-band", band: "healthy" },
+			{ type: "fire-audit" },
+			{ type: "buy-incident" },
+			{ type: "refresh-incident" },
+		];
+		actions.forEach((action) => {
+			expect(runActionSchema.safeParse(action).success).toBe(true);
+		});
+	});
+
+	it("rejects a client-named audit on a buy: the shop's offer is the server's", () => {
+		expect(
+			runActionSchema.safeParse({ type: "buy-incident", auditId: "not-found" })
+				.success
+		).toBe(false);
+		expect(
+			runActionSchema.safeParse({ type: "refresh-incident", seed: "1:x" })
+				.success
+		).toBe(false);
+	});
+
+	it("rejects unknown action types", () => {
+		const result = runActionSchema.safeParse({ type: "grant-victory" });
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects client-supplied state fields (anti-cheat)", () => {
+		const smuggled = runActionSchema.safeParse({
+			type: "answer",
+			optionIds: ["64"],
+			storage: 1024,
+		});
+		expect(smuggled.success).toBe(false);
+
+		const onBareAction = runActionSchema.safeParse({
+			type: "finish-reward",
+			gatesCleared: 5,
+		});
+		expect(onBareAction.success).toBe(false);
+	});
+
+	it("refuses a loot take off the wire — the server mints it (ADR-135)", () => {
+		expect(runActionSchema.safeParse({ type: "loot", kb: 999 }).success).toBe(
+			false
+		);
+		expect(runActionSchema.safeParse({ type: "loot" }).success).toBe(false);
+	});
+
+	it("rejects an answer without options", () => {
+		const result = runActionSchema.safeParse({ type: "answer", optionIds: [] });
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects config actions without a configId", () => {
+		const result = runActionSchema.safeParse({ type: "draft" });
+		expect(result.success).toBe(false);
+	});
+
+	it("rejects the retired stack pick (ADR-052)", () => {
+		const result = runActionSchema.safeParse({
+			type: "pick-stack",
+			stackId: "ship-it",
+		});
+		expect(result.success).toBe(false);
+	});
+});
+
+describe("the band a promise names", () => {
+	it("takes a band off the wire as a plain string", () => {
+		expect(
+			runActionSchema.safeParse({ type: "commit-band", band: "perfect" })
+				.success
+		).toBe(true);
+	});
+
+	it("leaves the engine to refuse a band nobody can promise", () => {
+		expect(
+			runActionSchema.safeParse({ type: "commit-band", band: "danger" }).success
+		).toBe(true);
+	});
+
+	it("rejects a promise carrying no band at all", () => {
+		expect(runActionSchema.safeParse({ type: "commit-band" }).success).toBe(
+			false
+		);
+	});
+});
+
+describe("warmBootPickSchema (ADR-153)", () => {
+	it("refuses a warm boot off the wire: the server mints it", () => {
+		expect(
+			runActionSchema.safeParse({
+				type: "warm-boot",
+				storageKb: 256,
+				serviceIds: [],
+				archiveBytes: 0,
+			}).success
+		).toBe(false);
+	});
+
+	it("takes a rung and roster ids, or nothing at all", () => {
+		expect(
+			warmBootPickSchema.safeParse({
+				bootCacheRung: 1,
+				serviceIds: ["extend", "pin"],
+			}).success
+		).toBe(true);
+		expect(warmBootPickSchema.safeParse({ serviceIds: [] }).success).toBe(true);
+	});
+
+	it("rejects a rung past the ladder, an unknown id and a smuggled grant", () => {
+		expect(
+			warmBootPickSchema.safeParse({ bootCacheRung: 3, serviceIds: [] }).success
+		).toBe(false);
+		expect(
+			warmBootPickSchema.safeParse({ serviceIds: ["upgrade"] }).success
+		).toBe(false);
+		expect(
+			warmBootPickSchema.safeParse({ serviceIds: [], storageKb: 999 }).success
+		).toBe(false);
+	});
+});

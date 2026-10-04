@@ -1,0 +1,1257 @@
+import type { AccuracyTrackProps } from "~/ui/kanto-theme/AccuracyTrack.ui";
+import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
+import { AUDITS_FROM_GATE } from "~/modules/run/gate/domain/auditSchedule.model";
+import { STORAGE_BALANCE } from "~/shared/lib/copy";
+import { OFFERED_CARDS_OPEN, disclosedIn } from "~/shared/lib/disclosure";
+
+import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	chipFor,
+	figureLabel,
+	infoFor,
+	settledChipFor,
+	upgradesFor,
+} from "~/modules/run/config/application/configChip.viewmodel";
+
+export { chipFor, infoFor, upgradesFor };
+import { type AuditId, auditAt } from "~/modules/run/gate/domain/audit.model";
+import {
+	AB_ARMS,
+	CONFIG_SIZES,
+	abArmLabel,
+	DRAFT_COST_PER_SLOT_KB,
+	draftCost,
+	emptySlotCreditPerSlotKb,
+	sellRefund,
+	slotsOf,
+} from "~/modules/run/config/domain/config.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import { lintCost, peekCost } from "~/modules/run/run/domain/paidAction.model";
+import {
+	BASE_SLOTS,
+	BUILD_SPACE_RUNGS,
+	MAX_PARTIAL_SHARE,
+	MIN_PARTIAL_SHARE,
+	PIN_FROM_GATE,
+	PIN_UNTIL_GATE,
+	SHARE_STEP,
+	SLICE_WINDOW,
+	VICTORY_GATE,
+	pinCostFor,
+	roundToOneDecimal,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	floorAt,
+	percentOf,
+	coverageGainPercentFor,
+	MULTIPLE_CREDIT,
+	SINGLE_CREDIT,
+	healthyAt,
+	okAt,
+} from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	EXTEND_FROM_GATE,
+	LOCK_COST_KB,
+	MAX_EXTENSIONS,
+	extendCost,
+	rebuildCost,
+} from "~/modules/run/shop/domain/draft.model";
+import { kbLabel, STORAGE_UNITS } from "~/shared/lib/storage";
+
+import { scoredLeadFor } from "~/modules/run/run/application/scoredLead.viewmodel";
+import { scoringFor } from "~/modules/run/run/application/scoring.viewmodel";
+
+import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
+import type { BandOutcomesProps } from "~/ui/kanto-theme/BandOutcomes.ui";
+import type { ScoringProps } from "~/ui/kanto-theme/Scoring.ui";
+import type { BuildProps, BuildWeight } from "~/ui/kanto-theme/Build.ui";
+import type { BuildFooterProps } from "~/ui/kanto-theme/BuildFooter.ui";
+import type {
+	ConfigChipBadge,
+	ConfigChipProps,
+} from "~/ui/kanto-theme/ConfigChip.ui";
+import type {
+	RegistryGroup,
+	RegistryProps,
+} from "~/ui/kanto-theme/Registry.ui";
+import type { SlotTrackFill } from "~/ui/kanto-theme/SlotTrack.ui";
+import type {
+	WeightTrackFill,
+	WeightTrackProps,
+} from "~/ui/kanto-theme/WeightTrack.ui";
+import type { UnlockedRegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+import type {
+	ShopScreenProps,
+	ShopServiceRow,
+} from "~/ui/kanto-theme/ShopScreen.ui";
+import type { UninstallProps } from "~/ui/kanto-theme/Uninstall.ui";
+import type { PrepScreenProps } from "~/ui/kanto-theme/PrepScreen.ui";
+import type {
+	NewRunScreenProps,
+	RegistryFilter,
+} from "~/ui/kanto-theme/NewRunScreen.ui";
+import type { ScreenFooterProps } from "~/ui/kanto-theme/ScreenFooter.ui";
+import type { PollFactsProps } from "~/ui/kanto-theme/PollFacts.ui";
+import type {
+	PollReadout,
+	PollScreenProps,
+} from "~/ui/kanto-theme/PollScreen.ui";
+import type {
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
+import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
+import type { LeadLine } from "~/ui/kanto-theme/Lead.ui";
+import type { CoverageRingProps } from "~/ui/kanto-theme/CoverageRing.ui";
+
+import { createMockDataFactory } from "~/test/createMockDataFactory";
+import { gateSwatchAt, trackTo } from "~/test/swatchTrack.factory";
+
+const SAMPLE_GATE = 9;
+const BALANCE_KB = 1843;
+
+const LEAK = auditAt("memory-leak", SAMPLE_GATE);
+const OUTAGE = auditAt("dependency-outage", SAMPLE_GATE);
+
+export const kantoAudits = [
+	{
+		code: LEAK.code,
+		name: LEAK.name,
+		cue: "leaking 16 KB a poll · 32 KB on a miss",
+	},
+	{
+		code: OUTAGE.code,
+		name: OUTAGE.name,
+		cue: "Intellisense is out this attempt",
+	},
+] satisfies AuditProps[];
+
+export const configSizes: readonly number[] = CONFIG_SIZES;
+
+export const LINT_USES = 2;
+export const PEEK_USES = 2;
+
+const noop = () => {};
+
+const UNINSTALL_BALANCE_KB = 704;
+const UNINSTALL_SLOTS_USED = 7;
+const UNINSTALL_CAPACITY = 10;
+
+export const uninstallFor = (config: Config): UninstallProps => {
+	const refund = sellRefund(config);
+	const slots = slotsOf(config);
+
+	return {
+		name: config.label,
+		slots,
+		prose: "Removing it frees its room and refunds half the draft price.",
+		figures: [
+			{ label: "refund", value: `+${kbLabel(refund)}`, color: "viridian" },
+			{
+				label: "balance",
+				value: `${UNINSTALL_BALANCE_KB} → ${kbLabel(UNINSTALL_BALANCE_KB + refund)}`,
+			},
+			{
+				label: "slots used",
+				value: `${UNINSTALL_SLOTS_USED} → ${UNINSTALL_SLOTS_USED - slots} of ${UNINSTALL_CAPACITY}`,
+			},
+		],
+	};
+};
+
+export const kantoRunningConfigs = [
+	{
+		name: ".ts",
+		badges: [{ label: "×2", color: "viridian" }],
+		...chipFor({ ...CONFIGS.ts, level: 4 }),
+	},
+	{
+		name: "AGENTS.md",
+		badges: [{ label: "×2", color: "viridian" }],
+		...chipFor(CONFIGS.agentsMd),
+	},
+	{
+		name: "Cache",
+		badges: [{ label: "×1.75", color: "viridian" }],
+		...chipFor(CONFIGS.cache),
+	},
+	{
+		name: "Code Coverage",
+		badges: [{ label: "+0.5", color: "viridian" }],
+		...chipFor({ ...CONFIGS.codeCoverage, level: 5 }),
+	},
+	{
+		name: "A/B Test",
+		badges: [
+			{
+				label: `arm ${abArmLabel("coverage")}`,
+				armed: true,
+				hint: `A/B Test · switch to arm ${abArmLabel("storage")}`,
+				onPress: noop,
+			},
+			{ label: "×1.25", color: "viridian" },
+		],
+		...chipFor(CONFIGS.abTest, AB_ARMS.coverage.gives),
+	},
+	{
+		name: "Deprecated",
+		badges: [{ label: "×2 fading", color: "vermillion" }],
+		...chipFor(
+			CONFIGS.deprecated,
+			"At ×2 now — deleted from the build two clears from here."
+		),
+	},
+	{
+		name: "Dependabot",
+		badges: [{ label: "bump in 2", color: "vermillion" }],
+		...chipFor(CONFIGS.dependabot),
+	},
+	{
+		name: "Linter",
+		badges: [
+			{
+				label: `lint ${kbLabel(lintCost(LINT_USES))}`,
+				hint: `Linter · cross out a wrong answer · ${kbLabel(lintCost(LINT_USES))}`,
+				onPress: noop,
+			},
+		],
+		...chipFor(CONFIGS.linter),
+	},
+	{
+		name: "Telemetry",
+		badges: [
+			{
+				label: `peek ${kbLabel(peekCost(PEEK_USES))}`,
+				hint: `Telemetry · see how the community answered · ${kbLabel(peekCost(PEEK_USES))}`,
+				onPress: noop,
+			},
+		],
+		...chipFor(
+			{ ...CONFIGS.telemetry, level: 2 },
+			"v2 names the sample size, so 100% of two cannot fool you."
+		),
+	},
+	{
+		name: "Intellisense",
+		badges: [{ label: "424", color: "cinnabar" }],
+		lost: true,
+		...chipFor(CONFIGS.intellisense),
+	},
+] satisfies ConfigChipProps[];
+
+export const kantoSkippedConfigs = [
+	{
+		name: "Cold Start",
+		badges: [{ label: "spent", color: "pewter" }],
+		skipped: true,
+		...chipFor(CONFIGS.coldStart, "the run's cap is spent"),
+	},
+	{
+		name: "IndexedDB",
+		badges: [{ label: "capped", color: "pewter" }],
+		skipped: true,
+		...chipFor(CONFIGS.indexedDb, "the faucet is capped for this gate"),
+	},
+	{
+		name: "Unit Tests",
+		badges: [{ label: "at the clear", color: "pewter" }],
+		skipped: true,
+		...chipFor({ ...CONFIGS.unitTests, level: 3 }, "pays at the gate clear"),
+	},
+	{
+		name: "Moore's Law",
+		badges: [{ label: "at the clear", color: "pewter" }],
+		skipped: true,
+		...chipFor({ ...CONFIGS.mooresLaw, level: 2 }, "pays at the gate clear"),
+	},
+	{
+		name: "npm audit",
+		badges: [{ label: "works in prep", color: "pewter" }],
+		skipped: true,
+		...chipFor(CONFIGS.npmAudit, "works in prep"),
+	},
+] satisfies ConfigChipProps[];
+
+export const kantoPollOptions = [
+	{ id: "option-1", letter: "A", label: "Partial<T>" },
+	{ id: "option-2", letter: "B", label: "Optional<T>" },
+	{ id: "option-3", letter: "C", label: "Maybe<T>" },
+] satisfies QuestionOption[];
+
+export const BALANCE_WORD = STORAGE_BALANCE;
+
+const SAMPLE_RUN_NUMBER = 2;
+
+export const kantoReadoutAt = (gate: number): RunReadoutProps => ({
+	runNumber: SAMPLE_RUN_NUMBER,
+	gate,
+	gates: VICTORY_GATE,
+});
+
+export const createKantoHeaderProps = createMockDataFactory<HeaderProps>({
+	swatch: gateSwatchAt(SAMPLE_GATE),
+	swatches: trackTo(SAMPLE_GATE),
+	funds: fundsOf(BALANCE_KB, BALANCE_WORD),
+});
+
+export const createKantoBuildProps = createMockDataFactory<BuildProps>({
+	configs: kantoRunningConfigs,
+	skipped: kantoSkippedConfigs,
+	skippedNote: "nothing to do on this poll",
+});
+
+export const createKantoBuildFooterProps =
+	createMockDataFactory<BuildFooterProps>({
+		build: createKantoBuildProps(),
+		counts: { ready: 2, applies: 7, offline: 1, changing: 2 },
+	});
+
+export const createKantoQuestionProps = createMockDataFactory<QuestionProps>({
+	answerType: "single",
+	question: "Which utility type makes every property optional?",
+	options: kantoPollOptions,
+});
+
+export const KANTO_COVERAGE_HELD = 74;
+
+export const createKantoCoverageRingProps =
+	createMockDataFactory<CoverageRingProps>({
+		held: KANTO_COVERAGE_HELD,
+		demand: percentOf(healthyAt(SAMPLE_GATE)),
+		title: `Coverage toward ${gateSwatchAt(SAMPLE_GATE).gateName}`,
+		note: "Pick an answer to see where it puts you.",
+	});
+
+export const KANTO_COVERAGE_BAR_HELD = 70;
+const KANTO_BAR_LADDER = {
+	floor: percentOf(floorAt(SAMPLE_GATE)),
+	ok: percentOf(okAt(SAMPLE_GATE)),
+	healthy: percentOf(healthyAt(SAMPLE_GATE)),
+};
+export const createKantoCoverageBarProps =
+	createMockDataFactory<CoverageBarProps>({
+		held: KANTO_COVERAGE_BAR_HELD,
+		band: bandAtLadder(KANTO_COVERAGE_BAR_HELD, KANTO_BAR_LADDER).id,
+		...KANTO_BAR_LADDER,
+	});
+
+export const KANTO_RUN_PAYOUTS = [
+	[1, 2, 0, 0, 1],
+	[1, 0.5, 0, 1.5, 0],
+	[2, 1, 0, 0, 1],
+	[1, 0, 2, 0.5, 0],
+	[2, 2, 0, 0, 0],
+	[1, 1, 0.5, 0, 1],
+	[2, 0, 1.5, 0, 0],
+	[1, 1, 1, 0, 0.5],
+	[0, 2, 0.5, 0, 0],
+	[1, 2, 0.5, undefined, undefined],
+] as const satisfies readonly (readonly (number | undefined)[])[];
+
+export const kantoCoverageLead = (): LeadLine =>
+	scoredLeadFor({ held: KANTO_COVERAGE_BAR_HELD, ladder: KANTO_BAR_LADDER });
+
+export const createKantoPollFactsProps = createMockDataFactory<
+	Omit<PollFactsProps, "trailing">
+>({
+	difficulty: {
+		badge: "brutal",
+		tone: "cinnabar",
+		figure: "31%",
+		text: "got it right first time",
+	},
+	history: {
+		badge: "seen before",
+		tone: "saffron",
+		text: "answered twice · you missed it both times, last on 4 Aug",
+	},
+});
+
+export const kantoAccuracyTrack = (): AccuracyTrackProps => ({
+	label: "Accuracy ×1.32, up to ×1.74",
+	figure: "×1.32 · up to ×1.74",
+	sure: 0.32,
+	best: 0.74,
+});
+
+export const kantoPollReadout = (): PollReadout => ({
+	bar: createKantoCoverageBarProps(),
+	lead: kantoCoverageLead(),
+	accuracy: kantoAccuracyTrack(),
+});
+
+export const createKantoPollScreenProps =
+	createMockDataFactory<PollScreenProps>({
+		header: createKantoHeaderProps(),
+		coverage: kantoPollReadout(),
+		category: "TypeScript",
+		categoryColor: "cinnabar",
+		wrongCost: "0.77",
+		buildFooter: createKantoBuildFooterProps(),
+		question: createKantoQuestionProps(),
+		audits: kantoAudits,
+		facts: createKantoPollFactsProps(),
+		hint: "tap any config to open it · press A, B or C to answer",
+		commit: { lock: { label: "Lock in", note: "pick an answer first" } },
+	});
+
+const SEPARATOR = "·";
+export const SHOP_BALANCE_KB = 96;
+export const SHOP_CAPACITY_SLOTS = 10;
+
+export const offerFor = (
+	config: Config,
+	balance: number = SHOP_BALANCE_KB
+): ConfigChipProps => {
+	const priceKb = draftCost(config);
+
+	return offerChipFor(config, {
+		priceKb,
+		affordable: priceKb <= balance,
+		onInstall: noop,
+	});
+};
+
+const FIRST_VERSION = 1;
+
+export const upgradeOfferFor = (
+	offer: Config,
+	balance: number = SHOP_BALANCE_KB,
+	heldLevel: number = FIRST_VERSION,
+	onInstall: () => void = noop
+): ConfigChipProps => {
+	const priceKb = draftCost(offer);
+
+	return upgradeChipFor(offer, heldLevel, {
+		priceKb,
+		affordable: priceKb <= balance,
+		onInstall,
+	});
+};
+
+export const kantoUpgradeOffer = (onBuy: () => void): ConfigChipProps =>
+	upgradeOfferFor({ ...CONFIGS.ts, level: 3 }, SHOP_BALANCE_KB, 1, onBuy);
+
+const offersAt = (balance: number): ConfigChipProps[] => [
+	offerFor(CONFIGS.intellisense, balance),
+	offerFor(CONFIGS.indexedDb, balance),
+	upgradeOfferFor({ ...CONFIGS.ts, level: 3 }, balance),
+	offerFor(CONFIGS.planningPoker, balance),
+	offerFor(CONFIGS.prefetch, balance),
+];
+
+export const kantoRegistryOffers: readonly ConfigChipProps[] =
+	offersAt(SHOP_BALANCE_KB);
+
+export const kantoShopBuild = [
+	{
+		name: ".ts",
+		badges: [{ label: "×1.5", color: "viridian" }],
+		onUninstall: noop,
+		...chipFor({ ...CONFIGS.ts, level: 2 }),
+	},
+	{
+		name: "Code Coverage",
+		badges: [{ label: "+0.5", color: "viridian" }],
+		onUninstall: noop,
+		...chipFor(CONFIGS.codeCoverage),
+	},
+	{
+		name: "Unit Tests",
+		badges: [{ label: "+96 KB", color: "viridian" }],
+		onUninstall: noop,
+		...chipFor({ ...CONFIGS.unitTests, level: 3 }),
+	},
+	{
+		name: "Moore's Law",
+		badges: [{ label: "+4%", color: "viridian" }],
+		onUninstall: noop,
+		...chipFor({ ...CONFIGS.mooresLaw, level: 2 }),
+	},
+	{
+		name: "Telemetry",
+		badges: [{ label: "with sample size", color: "viridian" }],
+		onUninstall: noop,
+		...chipFor({ ...CONFIGS.telemetry, level: 2 }),
+	},
+] satisfies ConfigChipProps[];
+
+export const usedSlotsOf = (configs: readonly ConfigChipProps[]) =>
+	configs.reduce((total, config) => total + (config.slots ?? 0), 0);
+
+export const kantoTrackFills: readonly SlotTrackFill[] = kantoShopBuild.map(
+	({ name, slots }) => ({ name, slots: slots ?? 0 })
+);
+
+export const kantoWeightFills: readonly WeightTrackFill[] = kantoTrackFills;
+
+export const KANTO_BUILD_SPACE = 8;
+
+export const createKantoWeightTrackProps =
+	createMockDataFactory<WeightTrackProps>({
+		fills: kantoWeightFills,
+		held: KANTO_BUILD_SPACE,
+	});
+
+export const baseSlots = BASE_SLOTS;
+
+const shortfallOf = (priceKb: number, balanceKb: number) =>
+	`${kbLabel(priceKb - balanceKb)} short`;
+
+export type KantoServiceRow = UnlockedRegistryControlProps & { id: string };
+
+const controlOf = (
+	id: string,
+	glyph: string,
+	title: string,
+	detail: string,
+	priceKb: number,
+	balance: number
+): KantoServiceRow => ({
+	id,
+	glyph,
+	title,
+	detail,
+	price: kbLabel(priceKb),
+	refusal: priceKb <= balance ? undefined : shortfallOf(priceKb, balance),
+	onPress: noop,
+});
+
+export const kantoShopControlsAt = (
+	cleared: number = SAMPLE_GATE,
+	balance: number = SHOP_BALANCE_KB,
+	extensionsBought = 0,
+	rebuildsUsed = 0
+): KantoServiceRow[] => [
+	controlOf(
+		"rebuild",
+		"↻",
+		"Rebuild the registry",
+		"deals a fresh set of offers",
+		rebuildCost(rebuildsUsed),
+		balance
+	),
+	...(cleared >= EXTEND_FROM_GATE && extensionsBought < MAX_EXTENSIONS
+		? [
+				controlOf(
+					"extend",
+					"+",
+					"Extend the registry",
+					"add extra offers throughout the run, against a price",
+					extendCost(extensionsBought),
+					balance
+				),
+			]
+		: []),
+	...(cleared >= PIN_FROM_GATE && cleared <= PIN_UNTIL_GATE
+		? [
+				controlOf(
+					"pin",
+					"⚑",
+					`git tag ${SEPARATOR} gate ${cleared + 1}`,
+					"save your last checkpoint once; each gate asks a higher price to activate it",
+					pinCostFor(cleared),
+					balance
+				),
+			]
+		: []),
+];
+
+export const kantoRegistryControls = kantoShopControlsAt();
+
+export const kantoNewService: ShopServiceRow = {
+	id: "extend",
+	isNew: true,
+	glyph: "+",
+	title: "Extend the registry",
+	detail: "add extra offers throughout the run, against a price",
+	price: "16 KB",
+	onPress: () => {},
+};
+
+export const kantoUncarriedService: ShopServiceRow = {
+	id: "pin",
+	carried: false,
+	glyph: "⚑",
+	title: "git tag",
+	detail:
+		"save your last checkpoint once; each gate asks a higher price to activate it",
+	carry: "new run · 128 KB",
+};
+
+export const kantoShopHeaderAt = (
+	cleared: number = SAMPLE_GATE,
+	balance: number = SHOP_BALANCE_KB
+): HeaderProps => ({
+	swatch: gateSwatchAt(cleared),
+	swatches: trackTo(cleared + 1),
+	funds: fundsOf(balance, BALANCE_WORD),
+	title: `Shop ${SEPARATOR} cleared ${gateSwatchAt(cleared).gateName}`,
+	note: `gate ${cleared} cleared`,
+});
+
+const openChip = (chip: ConfigChipProps) => {
+	if (chip.locked === true) throw new Error("fixture chips are never redacted");
+	return chip;
+};
+
+export const lockBadgeFor = (name: string, held = false): ConfigChipBadge => ({
+	label: `lock ${SEPARATOR} ${kbLabel(LOCK_COST_KB)}`,
+	armed: held,
+	hint: held
+		? `Release the lock on ${name}`
+		: `Hold ${name} for the next shop ${SEPARATOR} ${kbLabel(LOCK_COST_KB)}`,
+	onPress: noop,
+});
+
+export const withLockBadge = (
+	offer: ConfigChipProps,
+	held = false
+): ConfigChipProps => {
+	const open = openChip(offer);
+	return { ...open, badges: [lockBadgeFor(open.name, held), ...open.badges] };
+};
+
+export const kantoLockedRegistryOffers: readonly ConfigChipProps[] =
+	kantoRegistryOffers.map((offer, index) => {
+		const open = openChip(offer);
+		if (open.upgrades !== undefined) return open;
+		return withLockBadge(open, index === 0);
+	});
+
+export const kantoShopUninstalls: Readonly<Record<string, UninstallProps>> = {
+	".ts": uninstallFor({ ...CONFIGS.ts, level: 2 }),
+	"Code Coverage": uninstallFor(CONFIGS.codeCoverage),
+	"Unit Tests": uninstallFor({ ...CONFIGS.unitTests, level: 3 }),
+	"Moore's Law": uninstallFor({ ...CONFIGS.mooresLaw, level: 2 }),
+	Telemetry: uninstallFor({ ...CONFIGS.telemetry, level: 2 }),
+};
+
+export const createKantoRegistryProps = createMockDataFactory<RegistryProps>({
+	offers: kantoRegistryOffers,
+	slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+	openInfo: disclosedIn(
+		kantoRegistryOffers.map((offer) => offer.name ?? ""),
+		new Set(),
+		OFFERED_CARDS_OPEN
+	),
+	onToggleInfo: noop,
+	onToggleAll: noop,
+});
+
+export const kantoShopWeight = (): BuildWeight => ({
+	held: KANTO_BUILD_SPACE,
+	perGateKb: rungFitting(KANTO_BUILD_SPACE).kb,
+	rungs: BUILD_SPACE_RUNGS,
+});
+
+export const createKantoShopScreenProps =
+	createMockDataFactory<ShopScreenProps>({
+		header: kantoShopHeaderAt(),
+		controls: kantoRegistryControls,
+		build: {
+			configs: kantoShopBuild,
+			weight: kantoShopWeight(),
+			onToggleInfo: noop,
+			onToggleAll: noop,
+		},
+		registry: createKantoRegistryProps(),
+	});
+
+const READ_ONLY = auditAt("read-only", SAMPLE_GATE);
+
+export const kantoClosedShopAudit = {
+	code: READ_ONLY.code,
+	name: READ_ONLY.name,
+	cue: "nothing can be bought, sold or switched before this gate",
+} satisfies AuditProps;
+
+const inertBadge = (badge: ConfigChipBadge): ConfigChipBadge =>
+	"onPress" in badge ? { ...badge, disabled: true } : badge;
+
+const inertChip = (chip: ConfigChipProps): ConfigChipProps => {
+	const open = openChip(chip);
+	return {
+		...open,
+		badges: open.badges.map(inertBadge),
+		onUninstall: undefined,
+		install:
+			open.install === undefined
+				? undefined
+				: { ...open.install, disabled: true },
+		upgrades:
+			open.upgrades === undefined
+				? undefined
+				: { ...open.upgrades, onBuy: undefined },
+	};
+};
+
+export const kantoClosedShopProps = (): ShopScreenProps => {
+	return {
+		header: kantoShopHeaderAt(),
+		controls: kantoShopControlsAt().map((control) => ({
+			...control,
+			disabled: true,
+		})),
+		audits: [kantoClosedShopAudit],
+		build: {
+			configs: kantoShopBuild.map(inertChip),
+			weight: kantoShopWeight(),
+		},
+		registry: {
+			offers: kantoRegistryOffers.map(inertChip),
+			slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+		},
+	};
+};
+
+export const FIRST_SHOP_BALANCE_KB = 64;
+
+export const kantoFirstShopProps = (): ShopScreenProps => ({
+	header: kantoShopHeaderAt(0, FIRST_SHOP_BALANCE_KB),
+	controls: kantoShopControlsAt(0, FIRST_SHOP_BALANCE_KB),
+	build: {
+		configs: [],
+		weight: kantoShopWeight(),
+	},
+	registry: {
+		offers: [
+			offerFor(CONFIGS.intellisense, FIRST_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.indexedDb, FIRST_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.ts, FIRST_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.planningPoker, FIRST_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.prefetch, FIRST_SHOP_BALANCE_KB),
+		],
+		slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+	},
+});
+
+export const TAG_SHOP_BALANCE_KB = 160;
+
+export const kantoTagShopProps = (): ShopScreenProps => ({
+	header: kantoShopHeaderAt(4, TAG_SHOP_BALANCE_KB),
+	controls: kantoShopControlsAt(4, TAG_SHOP_BALANCE_KB),
+	build: {
+		configs: kantoShopBuild,
+		weight: kantoShopWeight(),
+	},
+	registry: {
+		offers: offersAt(TAG_SHOP_BALANCE_KB),
+		slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+	},
+});
+
+export const LATE_SHOP_BALANCE_KB = 704;
+
+export const kantoLateShopProps = (): ShopScreenProps => ({
+	header: kantoShopHeaderAt(11, LATE_SHOP_BALANCE_KB),
+	controls: kantoShopControlsAt(11, LATE_SHOP_BALANCE_KB, MAX_EXTENSIONS),
+	build: {
+		configs: kantoShopBuild,
+		weight: kantoShopWeight(),
+	},
+	registry: {
+		offers: [
+			...offersAt(LATE_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.cache, LATE_SHOP_BALANCE_KB),
+			offerFor(CONFIGS.agentsMd, LATE_SHOP_BALANCE_KB),
+		],
+		slotPrice: kbLabel(DRAFT_COST_PER_SLOT_KB),
+	},
+});
+
+export const NEW_RUN_ARCHIVE_KB = 512;
+const START_GATE = 0;
+
+const NUMBER_WORDS: Readonly<Record<number, string>> = {
+	1: "one",
+	2: "two",
+	3: "three",
+	4: "four",
+	5: "five",
+	12: "twelve",
+	13: "thirteen",
+};
+
+const numberWord = (count: number) => NUMBER_WORDS[count] ?? String(count);
+
+const NEW_RUN_STORAGE_KB = 0;
+const BOOTED_KB = 128;
+const BOOTED_ARCHIVE_KB = 384;
+
+export const kantoWarmBootPanel = (
+	archiveKb: number = NEW_RUN_ARCHIVE_KB,
+	draft: WarmBootDraft = EMPTY_WARM_BOOT_DRAFT,
+	unlockedServiceIds: readonly string[] = REGISTRY_CONTROL_IDS
+): WarmBootProps => {
+	const panel = warmBootPanelFor({
+		archiveKb,
+		unlockedServiceIds,
+		draft,
+		onPickRung: noop,
+		onToggleService: noop,
+	});
+	if (panel === undefined)
+		throw new Error("kantoWarmBootPanel needs an unlocked service");
+	return panel;
+};
+
+export const kantoBootedPanel = (): WarmBootProps =>
+	bootedPanelFor(
+		{
+			storageKb: BOOTED_KB,
+			serviceIds: ["pin"],
+			archiveBytes: BOOTED_ARCHIVE_KB * STORAGE_UNITS.KB,
+		},
+		NEW_RUN_ARCHIVE_KB - BOOTED_ARCHIVE_KB
+	);
+
+export const kantoNewRunHeader = (
+	storageKb: number = NEW_RUN_STORAGE_KB
+): HeaderProps => ({
+	swatch: gateSwatchAt(START_GATE),
+	swatches: trackTo(START_GATE),
+	funds: fundsOf(storageKb, NEW_RUN_BALANCE_WORD),
+	title: "New run",
+	subtitle: `gate ${START_GATE} ${SEPARATOR} ${gateSwatchAt(START_GATE).gateName}`,
+});
+
+const NEW_RUN_HAND: readonly Config[] = [
+	CONFIGS.js,
+	CONFIGS.codeCoverage,
+	CONFIGS.unitTests,
+	CONFIGS.coldStart,
+	CONFIGS.linter,
+];
+
+const kantoHand = (
+	installedIds: readonly string[],
+	capacity: number
+): readonly HandCard[] => {
+	const installed = new Set(installedIds);
+	const usedSlots = NEW_RUN_HAND.filter((config) =>
+		installed.has(config.id)
+	).reduce((total, config) => total + slotsOf(config), 0);
+
+	return NEW_RUN_HAND.map((config) => ({
+		config,
+		held: installed.has(config.id),
+		fits: slotsOf(config) <= capacity - usedSlots,
+		onPress: noop,
+	}));
+};
+
+export const kantoHandCards = (
+	installedIds: readonly string[] = [],
+	capacity: number = BASE_SLOTS
+): ConfigChipProps[] => kantoHand(installedIds, capacity).map(handCardFor);
+
+export const kantoNewRunGroups = (
+	installedIds: readonly string[] = [],
+	capacity: number = BASE_SLOTS
+): readonly RegistryGroup[] =>
+	newRunGroupsFor(kantoHand(installedIds, capacity));
+
+export const kantoNewRunRegistry = (
+	installedIds: readonly string[] = [],
+	capacity: number = BASE_SLOTS,
+	picked?: string
+): RegistryProps => {
+	const offers = kantoHandCards(installedIds, capacity);
+
+	return newRunRegistryFor(kantoNewRunGroups(installedIds, capacity), picked, {
+		openInfo: disclosedIn(
+			offers.map((offer) => offer.name ?? ""),
+			new Set(),
+			OFFERED_CARDS_OPEN
+		),
+		onToggleInfo: noop,
+		onToggleAll: noop,
+	});
+};
+
+export const kantoNewRunFilter = (
+	installedIds: readonly string[] = [],
+	capacity: number = BASE_SLOTS,
+	picked?: string
+): RegistryFilter | undefined =>
+	newRunFilterFor(kantoNewRunGroups(installedIds, capacity), picked, noop);
+
+export const kantoNewRunBuild = (
+	installedIds: readonly string[]
+): ConfigChipProps[] =>
+	NEW_RUN_HAND.filter((config) => installedIds.includes(config.id)).map(
+		(config) => ({
+			name: config.label,
+			badges: [{ label: figureLabel(config), color: "viridian" as const }],
+			onUninstall: noop,
+			...settledChipFor(config),
+		})
+	);
+
+export const kantoGateZeroFooter = (canStart = false): ScreenFooterProps =>
+	newRunFooterFor(canStart ? noop : undefined);
+
+import {
+	BAND_OUTCOMES_NOTE,
+	BAND_OUTCOMES_TITLE,
+} from "~/modules/run/gate/application/bandOutcomes.viewmodel";
+import {
+	EMPTY_LABEL,
+	type HandCard,
+	handCardFor,
+	newRunFooterFor,
+	newRunGroupsFor,
+	newRunFilterFor,
+	newRunRegistryFor,
+	bootedPanelFor,
+	EMPTY_WARM_BOOT_DRAFT,
+	NEW_RUN_BALANCE_WORD,
+	type WarmBootDraft,
+	warmBootPanelFor,
+} from "~/modules/run/build/application/newRunScreen.viewmodel";
+
+export { EMPTY_LABEL as NEW_RUN_EMPTY_LABEL };
+import { PEEL_KB_PER_SLOT } from "~/modules/run/gate/application/gateOutcome.viewmodel";
+import {
+	offerChipFor,
+	upgradeChipFor,
+} from "~/modules/run/shop/application/shopScreen.viewmodel";
+import {
+	bandAtLadder,
+	failPeelQuotaFor,
+} from "~/modules/run/gate/domain/gate.model";
+import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
+import {
+	gateClearPayout,
+	occupiedSlots,
+} from "~/modules/run/build/domain/build.model";
+import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
+import {
+	fundsOf,
+	PREP_POLLS_TITLE,
+	type PrepWindow,
+	prepPropsFor,
+} from "~/modules/run/run/application/prepScreen.viewmodel";
+import type { OutageTargetView } from "~/modules/run/run/application/runView.viewmodel";
+import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
+import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
+import { REGISTRY_CONTROL_IDS } from "~/modules/run/shop/domain/registryControl.model";
+import type { WarmBootProps } from "~/ui/kanto-theme/WarmBoot.ui";
+
+export const SCORING = {
+	single: SINGLE_CREDIT,
+	multiple: MULTIPLE_CREDIT,
+	partialRungs: [MIN_PARTIAL_SHARE, SHARE_STEP * 2, MAX_PARTIAL_SHARE] as const,
+};
+
+export {
+	fundsOf,
+	type PrepWindow,
+	BAND_OUTCOMES_NOTE,
+	BAND_OUTCOMES_TITLE,
+	PREP_POLLS_TITLE,
+};
+
+const LAVENDER_GATE = 4;
+const LAVENDER_BALANCE_KB = 102;
+const LAVENDER_BUILD_SPACE = 8;
+
+const JS_V2 = { ...CONFIGS.js, level: 2 };
+const TELEMETRY_V2 = { ...CONFIGS.telemetry, level: 2 };
+
+const LAVENDER_CONFIGS: readonly Config[] = [
+	JS_V2,
+	CONFIGS.linter,
+	CONFIGS.deprecated,
+	CONFIGS.agentsMd,
+	CONFIGS.ts,
+];
+
+const LAVENDER_WINDOW: PrepWindow = {
+	answerTypes: ["single", "multiple", "multiple", "multiple", "multiple"],
+	optionCounts: [4, 4, 5, 6, 4],
+	categories: ["ts", "ts", "ts", "js", "js"],
+	nextCategories: ["git", "git", "git", "git", "git"],
+};
+
+const roundedPercentOf = (ratio: number) => roundToOneDecimal(percentOf(ratio));
+
+const prepLadderAt = (gate: number) => ({
+	floor: roundedPercentOf(floorAt(gate)),
+	ok: roundedPercentOf(okAt(gate)),
+	healthy: roundedPercentOf(healthyAt(gate)),
+});
+
+const prepPayoutAt =
+	(gate: number, configs: readonly Config[]) => (correct: number) =>
+		gateClearPayout(configs, correct, gate);
+
+const prepPeelKbAt = (
+	gate: number,
+	configs: readonly Config[],
+	audits: readonly AuditId[]
+) => failPeelQuotaFor(configs, gate, { [gate]: audits }) * PEEL_KB_PER_SLOT;
+
+const PREP_SENDERS = [
+	{ id: "misty", name: "Misty" },
+	{ id: "koga", name: "Koga" },
+	{ id: "erika", name: "Erika" },
+] as const;
+
+const prepAuditViewAt = (
+	gate: number,
+	id: AuditId,
+	position = 0
+): AuditView => {
+	const audit = auditAt(id, gate);
+	return {
+		id,
+		code: audit.code,
+		name: audit.name,
+		description: audit.description,
+		answerCue: audit.answerCue,
+		suppressed: false,
+		sentBy: PREP_SENDERS[position % PREP_SENDERS.length],
+	};
+};
+
+export const KANTO_CHAMPION_AUDITS: readonly AuditId[] = [
+	"timeout",
+	"strip",
+	"payload-too-large",
+];
+
+export type KantoPrepFrame = {
+	gate: number;
+	configs: readonly Config[];
+	balanceKb: number;
+	coverageHeld: number;
+	buildSpace: number;
+	window: PrepWindow;
+	answered?: number;
+	audits?: readonly AuditId[];
+	outageTargets?: readonly OutageTargetView[];
+	clearedGates?: readonly number[];
+};
+
+export const kantoPrepAt = ({
+	gate,
+	configs,
+	balanceKb,
+	coverageHeld,
+	buildSpace,
+	window,
+	answered = 0,
+	audits = [],
+	outageTargets = [],
+	clearedGates = [],
+}: KantoPrepFrame): PrepScreenProps =>
+	prepPropsFor({
+		gate,
+		configs,
+		audits: audits.map((id, position) => prepAuditViewAt(gate, id, position)),
+		outageTargets,
+		clearedGates,
+		balanceKb,
+		buildSpace,
+		spaceBillKb: Math.max(
+			0,
+			rungFitting(buildSpace).kb -
+				emptySlotCreditPerSlotKb(configs) *
+					Math.max(0, buildSpace - occupiedSlots(configs))
+		),
+		window,
+		bar: {
+			...prepLadderAt(gate),
+			held: coverageHeld,
+			band: bandAtLadder(coverageHeld, prepLadderAt(gate)).id,
+		},
+		coverageGainPercent: coverageGainPercentFor(
+			perAnswerPreviewFor(configs, { answeredBefore: answered })
+				.coveragePerCorrect,
+			gate
+		),
+		peelKb: prepPeelKbAt(gate, configs, audits),
+		payout: prepPayoutAt(gate, configs),
+	});
+
+export const newRunBuildNote = (): LeadLine => [
+	`The first ${numberWord(BASE_SLOTS)} weight is free. Past that the build bills you at every gate close, and the shop rents more room from the Cerulean gate on.`,
+];
+
+export const kantoNewRunAt = (
+	installedIds: readonly string[],
+	archiveKb: number = NEW_RUN_ARCHIVE_KB
+): NewRunScreenProps => ({
+	header: kantoNewRunHeader(),
+	warmBoot: kantoWarmBootPanel(archiveKb),
+	build: {
+		configs: kantoNewRunBuild(installedIds),
+		weight: { held: BASE_SLOTS, perGateKb: rungFitting(BASE_SLOTS).kb },
+		emptyLabel: EMPTY_LABEL,
+		onToggleInfo: noop,
+		onToggleAll: noop,
+	},
+	registry: kantoNewRunRegistry(installedIds, BASE_SLOTS),
+	filter: kantoNewRunFilter(installedIds, BASE_SLOTS),
+	footer: kantoGateZeroFooter(installedIds.length > 0),
+	buildNote: newRunBuildNote(),
+});
+
+export const createKantoNewRunScreenProps =
+	createMockDataFactory<NewRunScreenProps>(kantoNewRunAt([]));
+
+export const kantoPrepLadder = prepLadderAt;
+export const KANTO_PREP_GATE = LAVENDER_GATE;
+export const KANTO_PREP_SUMMIT_GATE = VICTORY_GATE;
+
+const LAVENDER_AUDITS: readonly AuditId[] = ["not-found"];
+
+export const kantoPrepSealed = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: LAVENDER_GATE,
+		configs: LAVENDER_CONFIGS,
+		balanceKb: LAVENDER_BALANCE_KB,
+		coverageHeld: 0,
+		buildSpace: LAVENDER_BUILD_SPACE,
+		window: LAVENDER_WINDOW,
+		audits: LAVENDER_AUDITS,
+	});
+
+export const kantoPrepPrefetchedAtV1 = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: LAVENDER_GATE,
+		configs: [...LAVENDER_CONFIGS, CONFIGS.prefetch],
+		balanceKb: LAVENDER_BALANCE_KB,
+		coverageHeld: 0,
+		buildSpace: LAVENDER_BUILD_SPACE,
+		window: { ...LAVENDER_WINDOW, answerTypes: [], optionCounts: [] },
+	});
+
+export const kantoPrepPrefetched = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: LAVENDER_GATE,
+		configs: [...LAVENDER_CONFIGS, { ...CONFIGS.prefetch, level: 2 }],
+		balanceKb: LAVENDER_BALANCE_KB,
+		coverageHeld: 0,
+		buildSpace: LAVENDER_BUILD_SPACE,
+		window: LAVENDER_WINDOW,
+	});
+
+const CHAMPION_BALANCE_KB = 1945;
+const CHAMPION_BUILD_SPACE = 16;
+
+const CHAMPION_CONFIGS: readonly Config[] = [
+	JS_V2,
+	CONFIGS.ts,
+	CONFIGS.py,
+	CONFIGS.linter,
+	TELEMETRY_V2,
+	{ ...CONFIGS.prefetch, level: 2 },
+	CONFIGS.indexedDb,
+	CONFIGS.freemium,
+	CONFIGS.overclock,
+];
+
+const CHAMPION_WINDOW: PrepWindow = {
+	answerTypes: ["single", "multiple", "multiple", "multiple", "multiple"],
+	optionCounts: [4, 5, 6, 5, 6],
+	categories: ["js", "js", "css", "css", "java"],
+	nextCategories: [],
+};
+
+export const kantoPrepChampion = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: VICTORY_GATE,
+		configs: CHAMPION_CONFIGS,
+		balanceKb: CHAMPION_BALANCE_KB,
+		coverageHeld: 92.5,
+		buildSpace: CHAMPION_BUILD_SPACE,
+		window: CHAMPION_WINDOW,
+		answered: 2,
+		audits: KANTO_CHAMPION_AUDITS,
+	});
+
+const SPENT_NOTE = `today's ${SLICE_WINDOW} polls are spent`;
+const SPENT_REFUSAL = "Tomorrow's polls open in 7h 14m.";
+
+export const kantoPrepSpent = (): PrepScreenProps => {
+	const props = kantoPrepSealed();
+
+	return {
+		...props,
+		header: { ...props.header, note: SPENT_NOTE },
+		footer: {
+			...props.footer,
+			action: { label: props.footer.action.label },
+			refusal: SPENT_REFUSAL,
+		},
+	};
+};
+
+export const kantoPrepCalibration = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: 0,
+		configs: [CONFIGS.js, CONFIGS.codeCoverage],
+		balanceKb: 0,
+		coverageHeld: 0,
+		buildSpace: BASE_SLOTS,
+		window: LAVENDER_WINDOW,
+	});
+
+export const kantoPrepSecondGate = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: 1,
+		configs: [CONFIGS.js, CONFIGS.codeCoverage],
+		balanceKb: 121,
+		coverageHeld: 20,
+		buildSpace: BASE_SLOTS,
+		window: LAVENDER_WINDOW,
+	});
+
+export const kantoPrepFirstAudit = (
+	clearedGates: readonly number[]
+): PrepScreenProps =>
+	kantoPrepAt({
+		gate: AUDITS_FROM_GATE,
+		configs: [CONFIGS.js],
+		balanceKb: 0,
+		coverageHeld: 0,
+		buildSpace: BASE_SLOTS,
+		window: LAVENDER_WINDOW,
+		audits: ["not-found"],
+		clearedGates,
+	});
+
+export const kantoPrepFatal = (): PrepScreenProps =>
+	kantoPrepAt({
+		gate: VICTORY_GATE,
+		configs: [JS_V2],
+		balanceKb: CHAMPION_BALANCE_KB,
+		coverageHeld: 62,
+		buildSpace: CHAMPION_BUILD_SPACE,
+		window: CHAMPION_WINDOW,
+	});
+
+export const kantoAtStakeAt = ({
+	gate,
+	configs,
+	coverageHeld,
+	answered,
+}: Pick<
+	KantoPrepFrame,
+	"gate" | "configs" | "coverageHeld" | "answered"
+>): BandOutcomesProps =>
+	kantoPrepAt({
+		gate,
+		configs,
+		balanceKb: 0,
+		coverageHeld,
+		buildSpace: BASE_SLOTS,
+		window: LAVENDER_WINDOW,
+		answered,
+	}).outcomes;
+
+export const kantoScoringAt = (gate: number, accuracyBonus = 0): ScoringProps =>
+	scoringFor(gate, accuracyBonus);

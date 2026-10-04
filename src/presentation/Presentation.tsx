@@ -33,7 +33,6 @@ export const Presentation = ({ customSlides }: PresentationProps) => {
 
 			<SlideCounter current={currentIndex + 1} total={total} />
 
-			{/* Fullscreen toggle button */}
 			<button
 				onClick={toggleFullscreen}
 				className="fixed top-6 right-6 p-2 text-gray-500 hover:text-gray-300 transition-colors"

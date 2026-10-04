@@ -42,3 +42,6 @@ scripts/firebase-service-account.json
 firebase-backup*
 firebase-polls-backup-*.json
 storybook-static/
+
+# Playwright MCP page snapshots
+.playwright-mcp/

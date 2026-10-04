@@ -49,15 +49,12 @@ export const usePresentationKeys = ({
 
 	const toggleFullscreen = useCallback(() => {
 		if (!document.fullscreenElement) {
-			document.documentElement.requestFullscreen().catch(() => {
-				// Fullscreen request failed - browser may block it
-			});
+			document.documentElement.requestFullscreen().catch(() => {});
 		} else {
 			document.exitFullscreen();
 		}
 	}, []);
 
-	// Sync fullscreen state with browser
 	useEffect(() => {
 		const handleFullscreenChange = () => {
 			setIsFullscreen(Boolean(document.fullscreenElement));
@@ -70,7 +67,6 @@ export const usePresentationKeys = ({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
-			// Ignore if user is typing in an input
 			if (
 				event.target instanceof HTMLInputElement ||
 				event.target instanceof HTMLTextAreaElement

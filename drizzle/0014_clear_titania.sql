@@ -1,1 +1,0 @@
-ALTER TABLE "runs" ADD COLUMN "reroll_storage_used" integer DEFAULT 0 NOT NULL;

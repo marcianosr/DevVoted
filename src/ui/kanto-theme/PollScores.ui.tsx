@@ -1,0 +1,204 @@
+import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+
+import { clsx } from "clsx";
+
+import { Badge } from "./Badge.ui";
+import type { KantoColor } from "./colors";
+import { LedgerRows, type LedgerRow } from "./LedgerRows.ui";
+import { Swatch, type SwatchFill, swatchFillsFor } from "./Swatch.ui";
+import { Tooltip } from "./Tooltip.ui";
+import { Typography } from "./Typography.ui";
+
+const COLUMN = "flex w-full flex-col gap-2";
+const ROW = "flex w-full flex-wrap items-center gap-2";
+const LABEL = "shrink-0 whitespace-nowrap tabular-nums";
+const TRACK = "flex shrink-0 items-center gap-1";
+const LINE_BREAK = "basis-full";
+const TAG = "shrink-0";
+const SCORE = "ml-auto flex shrink-0 items-center justify-end gap-2";
+const EMPTY =
+	"inline-flex items-center justify-center rounded-md border-dashed px-2 py-0.5 text-xs font-bold tabular-nums";
+const WAITING = "border border-theme-faint text-theme-muted";
+const CURRENT = "border-2 border-theme bg-theme-raised text-theme-faint";
+
+const SWATCH_SIZE = "small";
+const CORRECT_WORD = "correct";
+const PAID_WORD = "paid";
+const OF_WORD = "of";
+const RIGHT_WORD = "right";
+const NAME_JOIN = " · ";
+const POLL_WORD = "poll";
+const TOTAL_WORD = "Covered";
+
+export type PollPaid = {
+	figure: string;
+	color: KantoColor;
+	receipt?: readonly LedgerRow[];
+};
+
+export type PollPayouts = {
+	slots: readonly (PollPaid | undefined)[];
+	total: string;
+	multiplier?: string;
+};
+
+export type PollScoreTag = { label: string; color?: KantoColor };
+
+export type PollScoreRow = {
+	swatch: GateSwatch;
+	correct: number;
+	polls: number;
+	current?: boolean;
+	payouts?: PollPayouts;
+	label?: string;
+	tag?: PollScoreTag;
+};
+
+export type PollScoresProps = {
+	rows: readonly PollScoreRow[];
+};
+
+const rightOf = (row: PollScoreRow): string =>
+	`${row.correct} ${OF_WORD} ${row.polls} ${RIGHT_WORD}`;
+
+const labelOf = (row: PollScoreRow, named: boolean): string => {
+	if (row.label !== undefined) return row.label;
+	if (row.payouts === undefined) return row.swatch.gateName;
+
+	return named
+		? `${row.swatch.gateName}${NAME_JOIN}${rightOf(row)}`
+		: rightOf(row);
+};
+
+const scoreOf = (row: PollScoreRow): string =>
+	row.payouts === undefined
+		? `${row.correct} of ${row.polls}`
+		: row.payouts.total;
+
+const readingOf = (row: PollScoreRow): string => {
+	const score =
+		row.payouts === undefined
+			? `${scoreOf(row)} ${CORRECT_WORD}`
+			: `${PAID_WORD} ${row.payouts.total}`;
+
+	return row.tag === undefined ? score : `${score} — ${row.tag.label}`;
+};
+
+const fillsFor = ({ swatch, correct, polls, current }: PollScoreRow) =>
+	swatchFillsFor(swatch, correct, polls, current);
+
+const markFor = ({ swatch, current = false }: PollScoreRow): SwatchFill =>
+	current ? { state: "current", swatch } : { state: "discovered", swatch };
+
+const receiptLabelOf = (paid: PollPaid, position: number): string =>
+	`${POLL_WORD} ${position + 1} — ${PAID_WORD} ${paid.figure}`;
+
+const tracksReceipts = ({ payouts }: PollScoreRow): boolean =>
+	payouts !== undefined &&
+	payouts.slots.some(
+		(paid) => paid !== undefined && paid.receipt !== undefined
+	);
+
+const PaidChip = ({ paid, position }: { paid: PollPaid; position: number }) => {
+	const chip = <Badge color={paid.color}>{paid.figure}</Badge>;
+
+	if (paid.receipt === undefined || paid.receipt.length === 0) return chip;
+
+	return (
+		<Tooltip
+			label={receiptLabelOf(paid, position)}
+			hint={<LedgerRows rows={paid.receipt} rules="total" />}
+			align="center"
+			side="top"
+			bare
+		>
+			{chip}
+		</Tooltip>
+	);
+};
+
+const currentSlotOf = (row: PollScoreRow): number | undefined => {
+	if (row.current !== true || row.payouts === undefined) return undefined;
+
+	const waiting = row.payouts.slots.findIndex((paid) => paid === undefined);
+	return waiting === -1 ? undefined : waiting;
+};
+
+const Track = ({ row }: { row: PollScoreRow }) => {
+	if (row.payouts === undefined)
+		return (
+			<>
+				{fillsFor(row).map((fill, position) => (
+					<Swatch key={position} size={SWATCH_SIZE} {...fill} />
+				))}
+			</>
+		);
+
+	const current = currentSlotOf(row);
+
+	return (
+		<>
+			{row.payouts.slots.map((paid, position) =>
+				paid === undefined ? (
+					<span
+						key={position}
+						className={clsx(EMPTY, position === current ? CURRENT : WAITING)}
+					>
+						{position + 1}
+					</span>
+				) : (
+					<PaidChip key={position} paid={paid} position={position} />
+				)
+			)}
+		</>
+	);
+};
+
+const Row = ({ row, named }: { row: PollScoreRow; named: boolean }) => (
+	<div
+		data-gate-theme={row.swatch.theme}
+		aria-label={`${row.swatch.gateName} — ${readingOf(row)}`}
+		className={ROW}
+	>
+		<Swatch size={SWATCH_SIZE} {...markFor(row)} />
+
+		<span className={LABEL}>
+			<Typography variant="caption">{labelOf(row, named)}</Typography>
+		</span>
+
+		{row.payouts === undefined ? null : <span className={LINE_BREAK} />}
+
+		<span
+			aria-hidden={tracksReceipts(row) ? undefined : true}
+			className={TRACK}
+		>
+			<Track row={row} />
+		</span>
+
+		{row.tag === undefined ? null : (
+			<span aria-hidden className={TAG}>
+				<Badge color={row.tag.color}>{row.tag.label}</Badge>
+			</span>
+		)}
+
+		<span aria-hidden className={SCORE}>
+			{row.payouts === undefined ? null : (
+				<Typography variant="hint" as="span">
+					{TOTAL_WORD}
+				</Typography>
+			)}
+			<Badge>{scoreOf(row)}</Badge>
+			{row.payouts?.multiplier === undefined ? null : (
+				<Badge>{row.payouts.multiplier}</Badge>
+			)}
+		</span>
+	</div>
+);
+
+export const PollScores = ({ rows }: PollScoresProps) => (
+	<div className={COLUMN}>
+		{rows.map((row) => (
+			<Row key={row.swatch.gateName} row={row} named={rows.length > 1} />
+		))}
+	</div>
+);

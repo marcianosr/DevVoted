@@ -1,0 +1,1013 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { db } from "~/database/db";
+import {
+	pollResponseOptionsTable,
+	pollResponsesTable,
+	runPollsTable,
+	runStatesTable,
+	userConfigUnlocksTable,
+	userObjectiveProgressTable,
+	userServiceUnlocksTable,
+	usersTable,
+	userTitlesTable,
+} from "~/database/schema";
+import { KANTO_QUIZ, TEST_DATES } from "~/test/kanto";
+
+import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
+import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
+import {
+	PIN_FROM_GATE,
+	pinCostFor,
+	SLICE_WINDOW,
+	VICTORY_GATE,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	type DrizzleMockState,
+	resetDrizzleMock,
+} from "~/test/drizzleMock.factory";
+import {
+	abandonSessionRun,
+	applyActionToRun,
+	createSessionRunWithState,
+	debitArchivedStorage,
+} from "~/modules/run/run/infrastructure/run.repository";
+
+const mock = vi.hoisted((): DrizzleMockState => ({
+	results: [],
+	setCalls: [],
+	valuesCalls: [],
+	insertTables: [],
+	updateTables: [],
+	deleteTables: [],
+}));
+
+vi.mock("~/database/db", async () => {
+	const { createMockDb } = await import("~/test/drizzleMock.factory");
+	return { db: createMockDb(mock) };
+});
+
+const quiz = KANTO_QUIZ[0];
+const dbPoll = (id: number) => ({
+	id,
+	question: quiz.question,
+	answerType: "single" as const,
+	categoryCode: "js",
+});
+const dbOptions = (pollId: number) =>
+	quiz.options.map((label, index) => ({
+		id: pollId * 10 + index,
+		poll_id: pollId,
+		option: label,
+		correct: label === quiz.correctAnswer,
+	}));
+const correctOptionId = (pollId: number) =>
+	String(pollId * 10 + quiz.options.indexOf(quiz.correctAnswer));
+const answeringState = (overrides: Partial<RunState>): RunState => ({
+	...createRun([], [CONFIGS.js]),
+	status: "answering",
+	...overrides,
+});
+
+const stateRow = (state: RunState) => ({
+	run_id: 64,
+	state: toRunSnapshot(state),
+	engine_status: state.status,
+	polls_answered: state.currentIndex,
+});
+
+const segmentRow = (segment_date: string = TEST_DATES.birthday) => [
+	{ segment_date },
+];
+
+const stateRowWritten = () =>
+	mock.setCalls.find((call) => "engine_status" in call);
+
+describe("applyActionToRun", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	const dispatch = (
+		action: Parameters<typeof applyActionToRun>[0]["action"]
+	) => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		return applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action,
+		});
+	};
+
+	it("throws when the run state row is missing", async () => {
+		mock.results.push([]);
+
+		await expect(dispatch({ type: "start" })).rejects.toThrow(
+			"Run state not found"
+		);
+	});
+
+	it("rejects actions on a finished run", async () => {
+		const won = answeringState({});
+		mock.results.push([{ ...stateRow(won), engine_status: "won" }]);
+
+		await expect(dispatch({ type: "start" })).rejects.toThrow(
+			"Run is already over"
+		);
+	});
+
+	it("skips persisting when the action is illegal for the current status", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		const result = await dispatch({ type: "draft", configId: "agents-md" });
+
+		expect(result.state.status).toBe("answering");
+		expect(result.unlockedConfigIds).toEqual([]);
+		expect(db.update).not.toHaveBeenCalled();
+	});
+
+	it("writes a rebased gate slice back to the run's poll sequence", async () => {
+		const base = createRun([], [CONFIGS.gitRebase]);
+		const prepping: RunState = {
+			...base,
+			status: "configuring",
+			build: { ...base.build, configs: [CONFIGS.gitRebase] },
+		};
+		const ids = [1, 2, 3, 4, 5];
+		mock.results.push([stateRow(prepping)]);
+		mock.results.push(segmentRow());
+		mock.results.push(ids.map(dbPoll));
+		mock.results.push(ids.flatMap(dbOptions));
+		mock.results.push(ids.map((_, position) => ({ position })));
+
+		await dispatch({ type: "rebase", from: 0, to: 2 });
+
+		expect(mock.updateTables).toContain(runPollsTable);
+		expect(mock.setCalls.slice(0, SLICE_WINDOW)).toEqual(
+			[2, 3, 1, 4, 5].map((poll_id) => ({ poll_id }))
+		);
+	});
+
+	it("debits the archive inside the run's own transaction on a warm boot (ADR-153)", async () => {
+		const bytes = 131072;
+		mock.results.push([stateRow(createRun([], [CONFIGS.js]))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ archivedStorage: 0 }]);
+		mock.results.unshift([{ poll_id: 1 }]);
+
+		const result = await applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action: {
+				type: "warm-boot",
+				storageKb: 64,
+				serviceIds: [],
+				archiveBytes: bytes,
+			},
+			settle: async (tx, _before, after) => {
+				expect(
+					await debitArchivedStorage(tx, "red-from-pallet-town", bytes)
+				).toBe(0);
+				return after;
+			},
+		});
+
+		expect(result.state.storage).toBe(64);
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls[0]).toHaveProperty("archived_storage");
+	});
+
+	it("reads null off a guarded debit the balance cannot cover, so the caller can roll back", async () => {
+		mock.results.push([stateRow(createRun([], [CONFIGS.js]))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([]);
+		mock.results.unshift([{ poll_id: 1 }]);
+
+		await expect(
+			applyActionToRun({
+				runId: 64,
+				userId: "red-from-pallet-town",
+				today: TEST_DATES.birthday,
+				action: {
+					type: "warm-boot",
+					storageKb: 64,
+					serviceIds: [],
+					archiveBytes: 131072,
+				},
+				settle: async (tx, _before, after) => {
+					const left = await debitArchivedStorage(
+						tx,
+						"red-from-pallet-town",
+						131072
+					);
+					if (left === null) throw new Error("short");
+					return after;
+				},
+			})
+		).rejects.toThrow("short");
+
+		expect(mock.updateTables).not.toContain(runStatesTable);
+	});
+
+	it("writes the planted gate to the user row", async () => {
+		const rewarding: RunState = {
+			...createRun([], [CONFIGS.js], PIN_FROM_GATE),
+			status: "rewarding",
+			storage: pinCostFor(PIN_FROM_GATE),
+			warmBoot: { storageKb: 0, serviceIds: ["pin"], archiveBytes: 0 },
+		};
+		mock.results.push([stateRow(rewarding)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		await dispatch({ type: "plant-pin" });
+
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls).toContainEqual({ pinned_gate: PIN_FROM_GATE });
+	});
+
+	it("leaves the user row alone for an action that plants no tag", async () => {
+		const rewarding: RunState = {
+			...createRun([], [CONFIGS.js], PIN_FROM_GATE),
+			status: "rewarding",
+			storage: pinCostFor(PIN_FROM_GATE),
+		};
+		mock.results.push([stateRow(rewarding)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		await dispatch({ type: "rebuild-draft" });
+
+		expect(mock.updateTables).toContain(runStatesTable);
+		expect(mock.updateTables).not.toContain(usersTable);
+	});
+
+	it("leaves the poll sequence alone for every action that is not a rebase", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(runPollsTable);
+	});
+
+	it("persists what the settlement hands back, not the bare reducer output", async () => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+		const settle = vi.fn(
+			async (_tx: unknown, _before: RunState, after: RunState) => ({
+				...after,
+				log: [...after.log, "settled"],
+			})
+		);
+
+		const { state } = await applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action: { type: "answer", optionIds: [correctOptionId(1)] },
+			settle,
+		});
+
+		expect(settle).toHaveBeenCalledWith(
+			db,
+			expect.objectContaining({ storage: 100 }),
+			expect.objectContaining({ currentIndex: 1 })
+		);
+		expect(state.log).toContain("settled");
+		const persisted = mock.setCalls.find((call) => "engine_status" in call);
+		expect(persisted?.state).toMatchObject({
+			log: expect.arrayContaining(["settled"]),
+		});
+	});
+
+	it("persists the reducer output with denormalized columns", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		const { state: next } = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+		});
+
+		expect(next.status).toBe("answering");
+		expect(next.currentIndex).toBe(1);
+		expect(stateRowWritten()).toMatchObject({
+			engine_status: "answering",
+			gates_cleared: 0,
+			polls_answered: 1,
+		});
+		expect(stateRowWritten()?.state).not.toHaveProperty("polls");
+	});
+
+	it("finishes the run and credits leftover storage on victory", async () => {
+		const summitReady = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(summitReady)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.status).toBe("won");
+		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+		expect(mock.setCalls[1]).toHaveProperty("peak_storage_kb");
+		expect(mock.setCalls[2]).toMatchObject({ engine_status: "won" });
+		expect(mock.setCalls[3]).toMatchObject({
+			status: "finished",
+			completion_reason: "victory",
+		});
+		expect(mock.setCalls[3].victory_achieved_at).toBeInstanceOf(Date);
+		expect(mock.setCalls[4]).toHaveProperty("archived_storage");
+		expect(mock.setCalls[4]).toHaveProperty("owned_border_ids");
+		expect(db.update).toHaveBeenCalledTimes(5);
+	});
+
+	it("grants no Champion border to a win a git tag checked out high", async () => {
+		const rescuedSummit = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			startedAtGate: 10,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(rescuedSummit)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.status).toBe("won");
+		expect(mock.setCalls.some((call) => "owned_border_ids" in call)).toBe(
+			false
+		);
+	});
+
+	const summitDispatchWith = (
+		counts: readonly unknown[],
+		categoryPolls: readonly unknown[] = []
+	) => {
+		const summitReady = answeringState({
+			storage: 100,
+			coverage: 400,
+			build: { id: "build", configs: [CONFIGS.js] },
+			gatesCleared: VICTORY_GATE,
+			headStartUnits: SLICE_WINDOW * VICTORY_GATE,
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(summitReady)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+		mock.results.push([]);
+		mock.results.push(counts);
+		mock.results.push(categoryPolls);
+		return dispatch({ type: "close-gate" });
+	};
+
+	const titleRowsWritten = () =>
+		mock.valuesCalls.find(
+			(payload): payload is { title_id: string }[] =>
+				Array.isArray(payload) &&
+				payload.some(
+					(row) => row && typeof row === "object" && "title_id" in row
+				)
+		) ?? [];
+
+	it("writes the titles the ledger satisfies when the run ends", async () => {
+		await summitDispatchWith([{ metric: "polls-answered", count: 1 }]);
+
+		expect(mock.insertTables).toContain(userTitlesTable);
+		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
+			"title-rank-poll-newbie"
+		);
+	});
+
+	it("writes a maintainer once fifty distinct git polls were answered correctly", async () => {
+		await summitDispatchWith(
+			[],
+			[{ categoryCode: "git", seen: 50, mastered: 50 }]
+		);
+
+		expect(titleRowsWritten().map((row) => row.title_id)).toContain(
+			"title-maintainer-git"
+		);
+	});
+
+	it("writes no maintainer for twenty-five correct answers to the same few git polls", async () => {
+		await summitDispatchWith(
+			[{ metric: "category-correct:git", count: 25 }],
+			[{ categoryCode: "git", seen: 3, mastered: 3 }]
+		);
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
+	});
+
+	it("writes no title row when the ledger satisfies none", async () => {
+		await summitDispatchWith([]);
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
+	});
+
+	it("leaves the title ledger alone while the run is still going", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+			elapsedMs: 1_200,
+		});
+
+		expect(mock.insertTables).not.toContain(userTitlesTable);
+	});
+
+	it("hands out no swatch at run start — Pallet is gate 0's reward", async () => {
+		mock.results.push([{ id: 64 }]);
+		mock.results.push(undefined);
+		mock.results.push(undefined);
+
+		await createSessionRunWithState(
+			"red-from-pallet-town",
+			TEST_DATES.birthday,
+			answeringState({ polls: [] })
+		);
+
+		expect(mock.updateTables).not.toContain(usersTable);
+	});
+
+	it("earns the swatch of a full bar, written before the state row", async () => {
+		const closing = answeringState({
+			coverage: 10,
+			build: { id: "build", configs: [CONFIGS.js] },
+			window: {
+				correct: SLICE_WINDOW,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW,
+				accuracyEarned: SLICE_WINDOW,
+				accuracyAvailable: SLICE_WINDOW,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW } },
+			},
+		});
+		mock.results.push([stateRow(closing)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.gatesCleared).toBe(1);
+		expect(mock.updateTables[0]).toBe(usersTable);
+		expect(mock.setCalls[0]).toHaveProperty("owned_swatch_ids");
+	});
+
+	it("earns no swatch when the action shuts no window", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(usersTable);
+	});
+
+	it("earns no swatch for a clear that carried a miss (ADR-080)", async () => {
+		const closing = answeringState({
+			coverage: 10,
+			build: { id: "build", configs: [CONFIGS.js] },
+			window: {
+				correct: SLICE_WINDOW - 1,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW - 1,
+				accuracyEarned: SLICE_WINDOW - 1,
+				accuracyAvailable: SLICE_WINDOW - 1,
+				byCategory: {
+					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
+				},
+			},
+		});
+		mock.results.push([stateRow(closing)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.gatesCleared).toBe(1);
+		expect(mock.setCalls.some((call) => "owned_swatch_ids" in call)).toBe(
+			false
+		);
+	});
+
+	it("writes the titles a mid-run gate clear satisfies and records them on its close", async () => {
+		const closing = answeringState({
+			coverage: 10,
+			build: { id: "build", configs: [CONFIGS.js] },
+			window: {
+				correct: SLICE_WINDOW - 1,
+				answered: SLICE_WINDOW,
+				unitsEarned: SLICE_WINDOW - 1,
+				accuracyEarned: SLICE_WINDOW - 1,
+				accuracyAvailable: SLICE_WINDOW - 1,
+				byCategory: {
+					js: { seen: SLICE_WINDOW, correct: SLICE_WINDOW - 1 },
+				},
+			},
+		});
+		mock.results.push([stateRow(closing)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+		mock.results.push([{ title_id: "title-rank-poll-newbie" }]);
+
+		const { state: next, earnedTitleIds } = await dispatch({
+			type: "close-gate",
+		});
+
+		expect(next.status).not.toBe("won");
+		expect(earnedTitleIds).toEqual(["title-rank-poll-newbie"]);
+		expect(next.closes?.at(-1)?.earnedTitleIds).toEqual([
+			"title-rank-poll-newbie",
+		]);
+	});
+
+	it("keeps the run active when the day's polls run out mid-window (ADR-014)", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 100 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		const { state: next } = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(1)],
+		});
+
+		expect(next.status).toBe("answering");
+		expect(stateRowWritten()).toMatchObject({ engine_status: "answering" });
+		expect(db.update).toHaveBeenCalledTimes(2);
+	});
+
+	it("raises the account's KB mark when the run reaches a new best", async () => {
+		mock.results.push([stateRow(answeringState({ storage: 400 }))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).toContain(usersTable);
+		expect(mock.setCalls.some((call) => "peak_storage_kb" in call)).toBe(true);
+	});
+
+	it("leaves the account's KB mark alone when the balance sets no record", async () => {
+		mock.results.push([
+			stateRow(answeringState({ storage: 100, peakStorageKb: 900 })),
+		]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.updateTables).not.toContain(usersTable);
+	});
+
+	it("writes the answer as a session polls_responses row with its picked options", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.insertTables).toContain(pollResponsesTable);
+		expect(mock.valuesCalls[1]).toMatchObject({
+			poll_id: 1,
+			user_id: "red-from-pallet-town",
+			run_id: 64,
+			mode: "session",
+			answer_date: TEST_DATES.birthday,
+			mirrored: false,
+		});
+		expect(mock.insertTables).toContain(pollResponseOptionsTable);
+		expect(mock.valuesCalls[2]).toEqual([
+			{ response_id: 900, option_id: Number(correctOptionId(1)) },
+		]);
+	});
+
+	it("records an answer given at a Mirror gate as mirrored", async () => {
+		mock.results.push([
+			stateRow(
+				answeringState({ gatesCleared: 7, auditSchedule: { 7: ["mirrored"] } })
+			),
+		]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.valuesCalls[1]).toMatchObject({ mirrored: true });
+	});
+
+	it("drops unknown option ids instead of failing the dispatch", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		const { state: next } = await dispatch({
+			type: "answer",
+			optionIds: ["missingno"],
+		});
+
+		expect(next.currentIndex).toBe(1);
+		expect(mock.insertTables).toContain(pollResponsesTable);
+		expect(mock.insertTables).not.toContain(pollResponseOptionsTable);
+	});
+
+	it("rolls the run over to today's segment when its newest segment is stale", async () => {
+		const state = answeringState({
+			currentIndex: 1,
+			window: {
+				correct: 1,
+				answered: 1,
+				unitsEarned: 0,
+				accuracyEarned: 0,
+				accuracyAvailable: 0,
+				byCategory: { js: { seen: 1, correct: 1 } },
+			},
+		});
+		mock.results.push([stateRow(state)]);
+		mock.results.push(segmentRow(TEST_DATES.christmasEve));
+		mock.results.push([{ poll_id: 1 }]);
+		mock.results.push([{ position: 0 }, { position: 1 }]);
+		mock.results.push(undefined);
+		mock.results.push([{ poll_id: 1 }, { poll_id: 2 }, { poll_id: 3 }]);
+		mock.results.push([{ id: 1 }, { id: 2 }, { id: 3 }]);
+		mock.results.push(undefined);
+		mock.results.push([dbPoll(1), dbPoll(2), dbPoll(3)]);
+		mock.results.push([1, 2, 3].flatMap(dbOptions));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		const { state: next } = await dispatch({
+			type: "answer",
+			optionIds: [correctOptionId(2)],
+		});
+
+		expect(mock.deleteTables).toContain(runPollsTable);
+		expect(mock.valuesCalls[0]).toEqual([
+			{
+				run_id: 64,
+				position: 1,
+				poll_id: 2,
+				segment_date: TEST_DATES.birthday,
+			},
+			{
+				run_id: 64,
+				position: 2,
+				poll_id: 3,
+				segment_date: TEST_DATES.birthday,
+			},
+		]);
+		expect(mock.valuesCalls[2]).toMatchObject({
+			poll_id: 2,
+			answer_date: TEST_DATES.birthday,
+			mode: "session",
+		});
+		expect(next.currentIndex).toBe(2);
+	});
+
+	it("writes no response row for advancing non-answer actions", async () => {
+		const base = createRun([], [CONFIGS.js]);
+		const configuring = {
+			...base,
+			build: {
+				...base.build,
+				configs: [CONFIGS.js, CONFIGS.ts, CONFIGS.css],
+			},
+			status: "configuring" as const,
+		};
+		mock.results.push([stateRow(configuring)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+
+		const { state: next } = await dispatch({ type: "start" });
+
+		expect(next.status).toBe("answering");
+		expect(mock.insertTables).not.toContain(pollResponsesTable);
+		expect(mock.insertTables).not.toContain(userObjectiveProgressTable);
+		expect(db.update).toHaveBeenCalled();
+	});
+
+	it("queues an answer's touched metrics in one batched upsert", async () => {
+		mock.results.push([stateRow(answeringState({}))]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1), dbPoll(2)]);
+		mock.results.push([...dbOptions(1), ...dbOptions(2)]);
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([{ response_id: 900 }]);
+
+		await dispatch({ type: "answer", optionIds: [correctOptionId(1)] });
+
+		expect(mock.insertTables).toContain(userObjectiveProgressTable);
+		expect(mock.valuesCalls[0]).toEqual([
+			{ user_id: "red-from-pallet-town", metric: "polls-answered", count: 1 },
+			{
+				user_id: "red-from-pallet-town",
+				metric: "category-answered:js",
+				count: 1,
+			},
+			{
+				user_id: "red-from-pallet-town",
+				metric: "first-poll-correct",
+				count: 1,
+			},
+			{ user_id: "red-from-pallet-town", metric: "polls-correct", count: 1 },
+			{
+				user_id: "red-from-pallet-town",
+				metric: "category-correct:js",
+				count: 1,
+			},
+		]);
+	});
+
+	const peekReady = () =>
+		answeringState({
+			storage: 100,
+			build: {
+				id: "build",
+				configs: [CONFIGS.telemetry, CONFIGS.js],
+			},
+		});
+
+	it("grants the config whose target the transaction crossed, with its provenance", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 5 }]);
+		mock.results.push([{ config_id: "telemetry" }]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userConfigUnlocksTable);
+		expect(mock.valuesCalls[1]).toEqual([
+			{
+				user_id: "red-from-pallet-town",
+				config_id: "telemetry",
+				via_metric: "community-peeks",
+			},
+		]);
+		expect(result.unlockedConfigIds).toEqual(["telemetry"]);
+	});
+
+	it("grants the service whose gate the transaction reached, off the same counts", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "reached-gate:2", count: 1 }]);
+		mock.results.push([]);
+
+		await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userServiceUnlocksTable);
+		expect(mock.insertTables).not.toContain(userConfigUnlocksTable);
+		expect(mock.valuesCalls[1]).toEqual([
+			{
+				user_id: "red-from-pallet-town",
+				service_id: "extend",
+				via_metric: "reached-gate:2",
+			},
+		]);
+	});
+
+	it("returns no unlock when the grant row already existed", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 6 }]);
+		mock.results.push([]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(result.unlockedConfigIds).toEqual([]);
+	});
+
+	it("writes no unlock row while every touched count sits below its targets", async () => {
+		mock.results.push([stateRow(peekReady())]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		mock.results.push([{ metric: "community-peeks", count: 2 }]);
+
+		const result = await dispatch({ type: "peek-poll" });
+
+		expect(mock.insertTables).toContain(userObjectiveProgressTable);
+		expect(mock.insertTables).not.toContain(userConfigUnlocksTable);
+		expect(result.unlockedConfigIds).toEqual([]);
+	});
+
+	it("marks a bare-build gate failure as dead without crediting empty storage", async () => {
+		const bare = {
+			...createRun([], []),
+			status: "answering" as const,
+			currentIndex: 4,
+			window: {
+				correct: 0,
+				answered: SLICE_WINDOW,
+				unitsEarned: 0,
+				accuracyEarned: 0,
+				accuracyAvailable: 0,
+				byCategory: { js: { seen: SLICE_WINDOW, correct: 0 } },
+			},
+		};
+		mock.results.push([stateRow(bare)]);
+		mock.results.push(segmentRow());
+		mock.results.push([1, 2, 3, 4, 5].map(dbPoll));
+		mock.results.push([1, 2, 3, 4, 5].flatMap(dbOptions));
+		mock.results.push([{ metric: "polls-answered", count: 1 }]);
+		mock.results.push([]);
+
+		const { state: next } = await dispatch({ type: "close-gate" });
+
+		expect(next.status).toBe("dead");
+		expect(mock.setCalls[1]).toMatchObject({
+			status: "finished",
+			completion_reason: "dead",
+		});
+		expect(db.update).toHaveBeenCalledTimes(2);
+	});
+});
+
+describe("first install stamp (ADR-064)", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	const configuringWith = (configs: RunState["build"]["configs"]): RunState => {
+		const base = createRun([], [CONFIGS.js, CONFIGS.gitRebase]);
+		return {
+			...base,
+			status: "configuring",
+			build: { ...base.build, configs },
+		};
+	};
+
+	const dispatchOn = (
+		state: RunState,
+		action: Parameters<typeof applyActionToRun>[0]["action"]
+	) => {
+		mock.results.unshift([{ poll_id: 1 }]);
+		mock.results.push([stateRow(state)]);
+		mock.results.push(segmentRow());
+		mock.results.push([dbPoll(1)]);
+		mock.results.push(dbOptions(1));
+		return applyActionToRun({
+			runId: 64,
+			userId: "red-from-pallet-town",
+			today: TEST_DATES.birthday,
+			action,
+		});
+	};
+
+	it("stamps the config the action just put into the build", async () => {
+		await dispatchOn(configuringWith([]), {
+			type: "install",
+			configId: CONFIGS.js.id,
+		});
+
+		expect(mock.updateTables).toContain(userConfigUnlocksTable);
+		expect(mock.setCalls).toContainEqual(
+			expect.objectContaining({ first_installed_at: expect.anything() })
+		);
+	});
+
+	it("stamps nothing when the action leaves the build untouched", async () => {
+		await dispatchOn(configuringWith([CONFIGS.js]), {
+			type: "uninstall",
+			configId: CONFIGS.js.id,
+		});
+
+		expect(mock.updateTables).not.toContain(userConfigUnlocksTable);
+	});
+});
+
+describe("abandonSessionRun", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	it("finishes the run as abandoned and banks nothing, reading no state", async () => {
+		mock.results.push([{ id: 64 }]);
+
+		await abandonSessionRun(64);
+
+		expect(mock.setCalls[0]).toMatchObject({
+			status: "finished",
+			completion_reason: "abandoned",
+		});
+		expect(db.update).toHaveBeenCalledTimes(1);
+		expect(db.select).not.toHaveBeenCalled();
+	});
+
+	it("throws when the run is already finished", async () => {
+		mock.results.push([]);
+
+		await expect(abandonSessionRun(64)).rejects.toThrow("Run is already over");
+	});
+});

@@ -1,0 +1,61 @@
+import type { Meta, StoryObj } from "@storybook/react";
+
+import {
+	kantoCommunity,
+	kantoCommunityBeforePolls,
+	kantoCommunityFirstClimb,
+	kantoHallOfFame,
+} from "~/test/kantoCommunity.factory";
+
+import { CommunityScreen } from "./CommunityScreen.ui";
+
+const meta: Meta<typeof CommunityScreen> = {
+	component: CommunityScreen,
+	title: "Kanto/Screens/CommunityScreen",
+	parameters: { controls: { disable: true } },
+};
+export default meta;
+
+type Story = StoryObj<typeof CommunityScreen>;
+
+export const AfterTheFive: Story = {
+	render: () => <CommunityScreen {...kantoCommunity()} />,
+};
+
+export const WithAChampion: Story = {
+	render: () => (
+		<CommunityScreen {...kantoCommunity()} hallOfFame={kantoHallOfFame()} />
+	),
+};
+
+export const BeforeTheFive: Story = {
+	render: () => <CommunityScreen {...kantoCommunityBeforePolls()} />,
+};
+
+export const FirstClimb: Story = {
+	render: () => <CommunityScreen {...kantoCommunityFirstClimb()} />,
+};
+
+export const AClimberOpen: Story = {
+	render: () => {
+		const board = kantoCommunity();
+
+		return (
+			<CommunityScreen
+				{...board}
+				map={{
+					...board.map,
+					...(board.map.track === undefined
+						? {}
+						: {
+								track: {
+									...board.map.track,
+									openId: "misty",
+									onInspect: () => {},
+								},
+							}),
+				}}
+			/>
+		);
+	},
+};

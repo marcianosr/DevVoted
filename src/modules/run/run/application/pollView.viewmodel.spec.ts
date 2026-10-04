@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+
+import {
+	redactPoll,
+	REDACTED_LABEL,
+} from "~/modules/run/run/application/pollView.viewmodel";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+
+const poll: RunPoll = {
+	id: "q1",
+	category: "js",
+	question: "Which one?",
+	answerType: "single",
+	options: [
+		{ id: "a", label: "Array.prototype.map", correct: true },
+		{ id: "b", label: "Array.prototype.forEach", correct: false },
+		{ id: "c", label: "Array.prototype.push", correct: false },
+	],
+};
+
+describe(redactPoll, () => {
+	it("strips correctness from every option", () => {
+		for (const option of redactPoll(poll).options)
+			expect("correct" in option).toBe(false);
+	});
+
+	it("serves every label when the gate sealed nothing", () => {
+		expect(redactPoll(poll).options.map((option) => option.label)).toEqual([
+			"Array.prototype.map",
+			"Array.prototype.forEach",
+			"Array.prototype.push",
+		]);
+	});
+
+	it("never puts a sealed option's text in the view", () => {
+		const view = redactPoll(poll, ["a", "c"]);
+		expect(JSON.stringify(view)).not.toContain("Array.prototype.map");
+		expect(JSON.stringify(view)).not.toContain("Array.prototype.push");
+		expect(JSON.stringify(view)).toContain("Array.prototype.forEach");
+	});
+
+	it("keeps a sealed option's id, so it stays pickable and buyable", () => {
+		expect(redactPoll(poll, ["a"]).options.map((option) => option.id)).toEqual([
+			"a",
+			"b",
+			"c",
+		]);
+		expect(redactPoll(poll, ["a"]).options[0].label).toBe(REDACTED_LABEL);
+	});
+});

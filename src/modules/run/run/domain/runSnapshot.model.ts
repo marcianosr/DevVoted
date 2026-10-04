@@ -1,0 +1,181 @@
+import type { Config } from "~/modules/run/config/domain/config.model";
+import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import {
+	type HeldAudit,
+	type RunState,
+	pickBudgetFor,
+	scheduleOf,
+	windowStartIndex,
+} from "~/modules/run/run/domain/run.model";
+import type { GateWindow } from "~/modules/run/config/domain/effect.model";
+import type {
+	AnsweredPoll,
+	RunPoll,
+} from "~/modules/run/run/domain/runPoll.model";
+import {
+	type AuditId,
+	liveAuditsFor,
+	mirrorsPolls,
+} from "~/modules/run/gate/domain/audit.model";
+
+export type RunSnapshot = Omit<RunState, "polls">;
+
+type StoredHeldAudit = {
+	readonly auditId?: AuditId;
+	readonly payload?: AuditId;
+};
+
+export type StoredSnapshot = Omit<
+	RunSnapshot,
+	"headStartUnits" | "accuracyBonus" | "window" | "heldAudit"
+> & {
+	readonly headStartUnits?: number;
+	readonly accuracyBonus?: number;
+	readonly bankedUnits?: number;
+	readonly window: Omit<
+		GateWindow,
+		"unitsEarned" | "accuracyEarned" | "accuracyAvailable"
+	> & {
+		readonly unitsEarned?: number;
+		readonly baseUnits?: number;
+		readonly accuracyEarned?: number;
+		readonly accuracyAvailable?: number;
+	};
+	readonly heldAudit?: StoredHeldAudit;
+	readonly offeredAudit?: StoredHeldAudit;
+	readonly attack?: { readonly band: string };
+	readonly attackEarnedAtGate?: number;
+	readonly auditHandedAtGate?: number;
+	readonly repackagedThisShop?: true;
+};
+
+const keptPayloadOf = (held?: StoredHeldAudit): HeldAudit | undefined => {
+	const auditId = held?.auditId ?? held?.payload;
+	return auditId === undefined ? undefined : { auditId };
+};
+
+export const toRunSnapshot = (state: RunState): RunSnapshot => {
+	const { polls: _polls, ...snapshot } = state;
+	return snapshot;
+};
+
+const refreshConfig = (config: Config): Config => {
+	const current = CONFIG_LIST.find((candidate) => candidate.id === config.id);
+	if (!current) return config;
+	if (config.level === undefined) return current;
+	return { ...current, level: config.level };
+};
+
+const refreshConfigs = (configs: readonly Config[]): readonly Config[] =>
+	configs.map(refreshConfig);
+
+const refreshAuthors = (
+	answered: readonly AnsweredPoll[],
+	polls: readonly RunPoll[]
+): readonly AnsweredPoll[] =>
+	answered.map((entry) => {
+		const author = polls.find((poll) => poll.id === entry.id)?.author;
+		if (author === undefined) {
+			const { author: _dropped, ...rest } = entry;
+			return rest;
+		}
+		return { ...entry, author };
+	});
+
+const legacyUnitsOf = (
+	window: StoredSnapshot["window"]
+): number | undefined => {
+	const renamed: unknown = Reflect.get(window, "coverageGained");
+	return typeof renamed === "number" ? renamed : undefined;
+};
+
+const finite = (value: number, fallback: number): number =>
+	Number.isFinite(value) ? value : fallback;
+
+const unitsEarnedOf = (window: StoredSnapshot["window"]): number => {
+	const stored = window.unitsEarned;
+	if (stored !== undefined && Number.isFinite(stored)) return stored;
+
+	return legacyUnitsOf(window) ?? 0;
+};
+
+const legacyAccuracyEarnedOf = (window: StoredSnapshot["window"]): number => {
+	const stored = window.baseUnits;
+	if (stored !== undefined && Number.isFinite(stored)) return stored;
+
+	return finite(window.correct, 0);
+};
+
+const storedOr = (stored: number | undefined, fallback: number): number =>
+	stored !== undefined && Number.isFinite(stored) ? stored : fallback;
+
+const headStartOf = (snapshot: StoredSnapshot): number =>
+	finite(snapshot.headStartUnits ?? 0, 0);
+
+export const hydrateRunState = (
+	snapshot: StoredSnapshot,
+	polls: readonly RunPoll[]
+): RunState => {
+	const unitsEarned = unitsEarnedOf(snapshot.window);
+	const { baseUnits: _legacyBaseUnits, ...storedWindow } = snapshot.window;
+	const {
+		attack: _attack,
+		attackEarnedAtGate: _attackEarnedAtGate,
+		auditHandedAtGate: _auditHandedAtGate,
+		repackagedThisShop: _repackagedThisShop,
+		offeredAudit: _offeredAudit,
+		heldAudit: storedHeldAudit,
+		bankedUnits: _cumulativeBank,
+		...current
+	} = snapshot;
+	const heldAudit = keptPayloadOf(storedHeldAudit);
+	const healed: RunSnapshot = {
+		...current,
+		...(heldAudit === undefined ? {} : { heldAudit }),
+		headStartUnits: headStartOf(snapshot),
+		accuracyBonus: finite(snapshot.accuracyBonus ?? 0, 0),
+		coverage: finite(snapshot.coverage, 0),
+		pendingKb: finite(snapshot.pendingKb ?? 0, 0),
+		window: {
+			...storedWindow,
+			unitsEarned,
+			accuracyEarned: storedOr(
+				snapshot.window.accuracyEarned,
+				legacyAccuracyEarnedOf(snapshot.window)
+			),
+			accuracyAvailable: storedOr(
+				snapshot.window.accuracyAvailable,
+				finite(snapshot.window.answered, 0)
+			),
+		},
+	};
+
+	return {
+		...healed,
+		build: {
+			...healed.build,
+			configs: refreshConfigs(healed.build.configs),
+		},
+		available: refreshConfigs(healed.available),
+		draftOptions: refreshConfigs(healed.draftOptions),
+		answeredThisGate: refreshAuthors(healed.answeredThisGate, polls),
+		...(healed.allAnswered === undefined
+			? {}
+			: { allAnswered: refreshAuthors(healed.allAnswered, polls) }),
+		window: {
+			...healed.window,
+			budget: pickBudgetFor(
+				polls,
+				windowStartIndex(healed),
+				mirrorsPolls(
+					liveAuditsFor(
+						healed.build.configs,
+						healed.gatesCleared,
+						scheduleOf(healed)
+					)
+				)
+			),
+		},
+		polls,
+	};
+};

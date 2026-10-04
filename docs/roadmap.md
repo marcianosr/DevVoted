@@ -66,7 +66,7 @@ Season 1: Core Loop ✅ ship this before anything else
 [x] Authentication (GitHub)
 [x] CI/CD and Deployment
 [x] Test daily poll cycle
-[] Check RLS
+[x] Check RLS: on for every public table, no policies (DVTD-5kak)
 [x] remove "correct/incorrect"
 [x] remove "home" and also from navigation
 [x] Show github images
@@ -227,7 +227,7 @@ BUGS:
 
 ### Season 2: Early Meta Layer (v1.0: within network of Kabisa)
 - [] Several configs broken:
-  - [] yarn.lock - nogt sure, but doesnt lock when installing
+  - [] `.lock` - nogt sure, but doesnt lock when installing
   - [] Prefetch - doesn't work
 - [] Linkify explanations
 - [] Poll difficulty? Possible with amount of answers it has?

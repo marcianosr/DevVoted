@@ -1,0 +1,247 @@
+import { describe, expect, it } from "vitest";
+
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import {
+	BOOT_CACHE_RUNGS,
+	EXTEND_CARRY_BYTES,
+	PIN_CARRY_BYTES,
+	PIN_FROM_GATE,
+	SKIP_SHOP_KB,
+	pinCostFor,
+} from "~/modules/run/run/domain/rules.model";
+import {
+	EXTEND_COST_KB,
+	rebuildCost,
+} from "~/modules/run/shop/domain/draft.model";
+import {
+	ABANDON_FROM_GATE,
+	CERULEAN_GATE,
+	isCarriedService,
+	isRegistryControlId,
+	isServiceUnlocked,
+	isSoldInShop,
+	openingGateOf,
+	REGISTRY_CONTROL_LIST,
+	REGISTRY_CONTROLS,
+	registryControlOf,
+	servicesUnlockedBy,
+	unlockCaptionOf,
+} from "~/modules/run/shop/domain/registryControl.model";
+
+const ROW_CAPTION_LIMIT = 40;
+
+describe("REGISTRY_CONTROLS", () => {
+	it("carries Extend and the git tag in at new run for an archive price, nothing else (ADR-153)", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.filter(isCarriedService).map((control) => [
+				control.id,
+				control.carryBytes,
+			])
+		).toEqual([
+			["extend", EXTEND_CARRY_BYTES],
+			["pin", PIN_CARRY_BYTES],
+		]);
+	});
+
+	it("states how long each service's purchase lasts", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.map((control) => [control.id, control.lasts])
+		).toEqual([
+			["rebuild", "visit"],
+			["skipShop", "visit"],
+			["extend", "run"],
+			["hotReload", "visit"],
+			["returnPolicy", "visit"],
+			["abandon", "endsRun"],
+			["pin", "nextRun"],
+			["bootCache", "atStart"],
+			["dockerImage", "firstShop"],
+		]);
+	});
+
+	it("prices each service by the ladder its press actually charges", () => {
+		expect(REGISTRY_CONTROLS.rebuild.price).toEqual({
+			kind: "doubling",
+			fromKb: rebuildCost(0),
+		});
+		expect(REGISTRY_CONTROLS.skipShop.price).toEqual({
+			kind: "pays",
+			kb: SKIP_SHOP_KB,
+		});
+		expect(REGISTRY_CONTROLS.extend.price).toEqual({
+			kind: "steps",
+			kbs: EXTEND_COST_KB,
+		});
+		expect(REGISTRY_CONTROLS.pin.price).toEqual({
+			kind: "rising",
+			fromKb: pinCostFor(PIN_FROM_GATE),
+		});
+		expect(REGISTRY_CONTROLS.bootCache.price).toEqual({
+			kind: "rungs",
+			rungs: BOOT_CACHE_RUNGS,
+		});
+		expect(REGISTRY_CONTROLS.abandon.price).toEqual({ kind: "free" });
+	});
+
+	it("marks the earned services no screen sells yet as unsold", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.filter(
+				(control) => control.price.kind === "unsold"
+			).map((control) => control.id)
+		).toEqual(["hotReload", "returnPolicy", "dockerImage"]);
+	});
+
+	it("gives every service carried in at new run a press price in the shop", () => {
+		const PRESS_KINDS = ["doubling", "steps", "rising"];
+
+		expect(
+			REGISTRY_CONTROL_LIST.filter(isCarriedService).every((control) =>
+				PRESS_KINDS.includes(control.price.kind)
+			)
+		).toBe(true);
+	});
+
+	it("lets Rebuild and kill -9 into every run free, with no carry to pick", () => {
+		expect(isCarriedService(REGISTRY_CONTROLS.rebuild)).toBe(false);
+		expect(isCarriedService(REGISTRY_CONTROLS.abandon)).toBe(false);
+	});
+
+	it("names every roster id and nothing else", () => {
+		expect(isRegistryControlId("extend")).toBe(true);
+		expect(isRegistryControlId("Extend")).toBe(false);
+		expect(registryControlOf("pin").title).toBe("git tag");
+	});
+
+	it("sells the registry services and the tag in the shop, the other two on the archive", () => {
+		expect(
+			REGISTRY_CONTROL_LIST.filter(isSoldInShop).map((control) => control.id)
+		).toEqual([
+			"rebuild",
+			"skipShop",
+			"extend",
+			"hotReload",
+			"returnPolicy",
+			"abandon",
+			"pin",
+		]);
+		expect(REGISTRY_CONTROLS.bootCache.soldIn).toBe("archive");
+		expect(REGISTRY_CONTROLS.dockerImage.soldIn).toBe("archive");
+	});
+
+	it("opens every shop service on the first shop, except Extend and the tag", () => {
+		expect(openingGateOf(REGISTRY_CONTROLS.rebuild)).toBe(0);
+		expect(openingGateOf(REGISTRY_CONTROLS.hotReload)).toBe(0);
+		expect(openingGateOf(REGISTRY_CONTROLS.returnPolicy)).toBe(0);
+		expect(openingGateOf(REGISTRY_CONTROLS.abandon)).toBe(0);
+		expect(openingGateOf(REGISTRY_CONTROLS.extend)).toBe(2);
+		expect(openingGateOf(REGISTRY_CONTROLS.pin)).toBe(3);
+	});
+
+	it("hands Rebuild to every account as a starter, with no line to earn it", () => {
+		expect(REGISTRY_CONTROLS.rebuild.unlock.kind).toBe("starter");
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.rebuild)).toBeUndefined();
+		expect(isServiceUnlocked(REGISTRY_CONTROLS.rebuild, [])).toBe(true);
+	});
+
+	it("earns Extend by reaching Cerulean, which is the gate the caption names", () => {
+		expect(gateSwatchAt(CERULEAN_GATE)?.gateName).toBe("Cerulean");
+		expect(REGISTRY_CONTROLS.extend.unlock).toMatchObject({
+			kind: "earned",
+			objective: { metric: `reached-gate:${CERULEAN_GATE}`, target: 1 },
+		});
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.extend)).toBe("Reach Cerulean");
+	});
+
+	it("earns the git tag by reaching the gate that first sells it", () => {
+		expect(REGISTRY_CONTROLS.pin.unlock).toMatchObject({
+			objective: {
+				metric: `reached-gate:${REGISTRY_CONTROLS.pin.opensAfterGates}`,
+			},
+		});
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.pin)).toBe("Reach gate 4");
+	});
+
+	it("earns kill -9 by clearing gate 5, which is standing at gate 6", () => {
+		expect(ABANDON_FROM_GATE).toBe(6);
+		expect(REGISTRY_CONTROLS.abandon.unlock).toMatchObject({
+			objective: { metric: "reached-gate:6", target: 1 },
+		});
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.abandon)).toBe("Clear gate 5");
+	});
+
+	it("earns Hot Reload and Return Policy off counters the ledger already keeps", () => {
+		expect(REGISTRY_CONTROLS.hotReload.unlock).toMatchObject({
+			objective: { metric: "rebuilds", target: 5 },
+		});
+		expect(REGISTRY_CONTROLS.returnPolicy.unlock).toMatchObject({
+			objective: { metric: "configs-sold", target: 5 },
+		});
+	});
+
+	it("earns Boot Cache and Docker Image off one-shot run-end counters", () => {
+		expect(REGISTRY_CONTROLS.bootCache.unlock).toMatchObject({
+			objective: { metric: "banked-256-one-run", target: 1 },
+		});
+		expect(unlockCaptionOf(REGISTRY_CONTROLS.bootCache)).toBe(
+			"Bank 256 KB in one run"
+		);
+		expect(REGISTRY_CONTROLS.dockerImage.unlock).toMatchObject({
+			objective: { metric: "finished-holding-a-dealt-config", target: 1 },
+		});
+	});
+
+	it("keeps every caption short enough for the slot a price takes", () => {
+		for (const control of REGISTRY_CONTROL_LIST) {
+			const caption = unlockCaptionOf(control);
+			if (caption !== undefined)
+				expect(caption.length).toBeLessThanOrEqual(ROW_CAPTION_LIMIT);
+		}
+	});
+
+	it("reads an earned service off the account's grant ledger", () => {
+		expect(isServiceUnlocked(REGISTRY_CONTROLS.extend, [])).toBe(false);
+		expect(isServiceUnlocked(REGISTRY_CONTROLS.extend, ["extend"])).toBe(true);
+	});
+});
+
+describe("servicesUnlockedBy", () => {
+	it("grants the service whose gate the counts say was reached, with its metric", () => {
+		expect(
+			servicesUnlockedBy([{ metric: "reached-gate:2", count: 1 }])
+		).toEqual([{ serviceId: "extend", viaMetric: "reached-gate:2" }]);
+	});
+
+	it("grants nothing off counts that reach no service's target", () => {
+		expect(
+			servicesUnlockedBy([
+				{ metric: "reached-gate:1", count: 3 },
+				{ metric: "gates-cleared", count: 40 },
+				{ metric: "rebuilds", count: 4 },
+			])
+		).toEqual([]);
+	});
+
+	it("grants Hot Reload on the fifth rebuild and kill -9 on reaching gate 6", () => {
+		expect(
+			servicesUnlockedBy([
+				{ metric: "rebuilds", count: 5 },
+				{ metric: "reached-gate:6", count: 1 },
+			]).map((grant) => grant.serviceId)
+		).toEqual(["hotReload", "abandon"]);
+	});
+
+	it("grants Boot Cache the moment its one-shot counter exists", () => {
+		expect(
+			servicesUnlockedBy([{ metric: "banked-256-one-run", count: 1 }])
+		).toEqual([{ serviceId: "bootCache", viaMetric: "banked-256-one-run" }]);
+	});
+
+	it("never grants a starter service, which has no row to write", () => {
+		const granted = servicesUnlockedBy([
+			{ metric: "reached-gate:2", count: 1 },
+			{ metric: "reached-gate:4", count: 1 },
+		]).map((grant) => grant.serviceId);
+
+		expect(granted).toEqual(["extend", "pin"]);
+	});
+});

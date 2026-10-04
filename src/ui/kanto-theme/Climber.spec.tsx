@@ -1,0 +1,246 @@
+import { describe, expect, it, vi } from "vitest";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { PlayerHoverContext } from "~/shared/hooks/usePlayerHover.hook";
+
+import { Climber, ClimberStack, initialsOf } from "./Climber.ui";
+
+const BORDER = "/borders/border-js-saffron.svg";
+
+describe("initialsOf", () => {
+	it("takes the first letter of each of the first two words", () => {
+		expect(initialsOf("Lt. Surge")).toBe("LS");
+	});
+
+	it("takes the first two letters of a single word", () => {
+		expect(initialsOf("Brock")).toBe("BR");
+	});
+
+	it("drops a leading handle marker", () => {
+		expect(initialsOf("@misty")).toBe("MI");
+	});
+
+	it("falls back to a mark when the name is blank", () => {
+		expect(initialsOf("   ")).toBe("?");
+	});
+});
+
+describe("Climber", () => {
+	it("draws the climber as their initials", () => {
+		render(<Climber name="Misty" />);
+
+		expect(screen.getByTitle("Misty")).toHaveTextContent("MI");
+	});
+
+	it("stands the face on a thick bottom edge, so the chip reads as a keycap", () => {
+		const { container } = render(<Climber name="Misty" />);
+
+		expect(container.querySelector("span > span")).toHaveClass("border-b-4");
+	});
+
+	it("lays the equipped border flush over the face rather than scaled past it", () => {
+		const { container } = render(<Climber name="Misty" borderUrl={BORDER} />);
+		const frame = container.querySelector("img");
+
+		expect(frame).toHaveAttribute("src", BORDER);
+		expect(frame).toHaveClass("inset-0");
+		expect(frame).not.toHaveClass("scale-120");
+	});
+
+	it("wears no frame when the climber has equipped no border", () => {
+		const { container } = render(<Climber name="Misty" />);
+
+		expect(container.querySelector("img")).toBeNull();
+	});
+
+	it("rings the viewer and names them 'you', so they stay findable in a stack", () => {
+		const { container } = render(<Climber name="Marciano" you />);
+
+		expect(screen.getByTitle("you")).toBeInTheDocument();
+		expect(container.querySelector("span > span")).toHaveClass("ring-viridian");
+	});
+
+	it("rings a rival in the colour the board marks a rival", () => {
+		const { container } = render(<Climber name="Misty" rival />);
+
+		expect(container.querySelector("span > span")).toHaveClass(
+			"ring-vermillion"
+		);
+	});
+
+	it("keeps the viewer's own ring when they are also a rival", () => {
+		const { container } = render(<Climber name="Marciano" you rival />);
+		const face = container.querySelector("span > span");
+
+		expect(face).toHaveClass("ring-viridian");
+		expect(face).not.toHaveClass("ring-vermillion");
+	});
+
+	it("rims a chip whose last gate closed perfect", () => {
+		const { container } = render(<Climber name="Misty" perfect />);
+
+		expect(container.querySelector("span > span")).toHaveClass("ring-theme");
+	});
+
+	it("flickers a chip whose last gate closed shaky", () => {
+		const { container } = render(<Climber name="Misty" shaky />);
+
+		expect(container.firstChild).toHaveClass("climber-flicker");
+	});
+
+	it("tags a run a git tag rescued", () => {
+		render(<Climber name="Misty" rescued />);
+
+		expect(screen.getByTitle("Misty")).toHaveTextContent("tag");
+	});
+
+	it("leaves an unmarked chip bare", () => {
+		const { container } = render(<Climber name="Misty" />);
+		const chip = container.firstChild;
+
+		expect(chip).not.toHaveClass("climber-flicker");
+		expect(chip).toHaveTextContent("MI");
+		expect(container.querySelector("span > span")).not.toHaveClass(
+			"ring-theme"
+		);
+	});
+
+	it("prefers a photo over initials", () => {
+		const { container } = render(
+			<Climber name="Misty" photoUrl="/misty.png" />
+		);
+
+		expect(container.querySelector("img")).toHaveAttribute("src", "/misty.png");
+		expect(screen.getByTitle("Misty")).not.toHaveTextContent("MI");
+	});
+});
+
+const GYM = ["brock", "misty", "surge", "erika", "koga"].map((id) => ({
+	userId: id,
+	name: id,
+}));
+
+describe("ClimberStack", () => {
+	it("draws every climber it was handed", () => {
+		render(<ClimberStack climbers={[{ name: "Brock" }, { name: "Misty" }]} />);
+
+		expect(screen.getByTitle("Brock")).toBeInTheDocument();
+		expect(screen.getByTitle("Misty")).toBeInTheDocument();
+	});
+
+	it("counts the rest rather than drawing a thousand chips", () => {
+		render(<ClimberStack climbers={[{ name: "Brock" }]} overflow={1035} />);
+
+		expect(screen.getByText("+1,035")).toBeInTheDocument();
+	});
+
+	it("says nothing about overflow when everyone fits", () => {
+		render(<ClimberStack climbers={[{ name: "Brock" }]} />);
+
+		expect(screen.queryByText(/^\+/)).toBeNull();
+	});
+
+	it("draws only the faces it has room for and offers the rest behind a press", () => {
+		const { container } = render(<ClimberStack climbers={GYM} shown={3} />);
+		const more = screen.getByRole("button", { name: "show 2 more players" });
+
+		expect(more).toHaveTextContent("+2");
+		expect(
+			container.firstElementChild?.querySelectorAll(
+				":scope > [title], :scope > a"
+			)
+		).toHaveLength(3);
+	});
+
+	it("opens the folded faces as links to their players", () => {
+		render(<ClimberStack climbers={GYM} shown={3} />);
+		const more = screen.getByRole("button", { name: "show 2 more players" });
+		const panel = document.getElementById(
+			more.getAttribute("popovertarget") ?? ""
+		);
+		if (panel === null) throw new Error("the press targets no popover");
+
+		expect(panel).toHaveAttribute("popover", "auto");
+		expect(
+			within(panel)
+				.getAllByRole("link", { hidden: true })
+				.map((link) => link.getAttribute("href"))
+		).toEqual(["/profile/erika", "/profile/koga"]);
+	});
+
+	it("counts the players it has no face for in the press and in the panel", () => {
+		render(<ClimberStack climbers={GYM} shown={3} overflow={624} />);
+
+		expect(
+			screen.getByRole("button", { name: "show 626 more players" })
+		).toHaveTextContent("+626");
+		expect(screen.getByText("and 624 more")).toBeInTheDocument();
+	});
+
+	it("keeps the count as plain text when there is no face to open", () => {
+		render(<ClimberStack climbers={[{ name: "Brock" }]} overflow={12} />);
+
+		expect(screen.queryByRole("button")).toBeNull();
+		expect(screen.getByText("+12")).toBeInTheDocument();
+	});
+});
+
+describe("Climber, as a way into a player", () => {
+	it("stays a plain face when it is handed no player", () => {
+		render(<Climber name="Misty" />);
+
+		expect(screen.queryByRole("link")).toBeNull();
+		expect(screen.getByTitle("Misty")).toBeInTheDocument();
+	});
+
+	it("links a player's face to their in-game page", () => {
+		render(<Climber name="Misty" userId="misty-id" />);
+
+		expect(
+			screen.getByRole("link", { name: "Misty's profile" })
+		).toHaveAttribute("href", "/profile/misty-id");
+	});
+
+	it("drops the browser's own tooltip, so it cannot cover the card", () => {
+		render(<Climber name="Misty" userId="misty-id" />);
+
+		expect(screen.queryByTitle("Misty")).toBeNull();
+	});
+
+	it("reports hover and focus to the card, and leaving to put it away", async () => {
+		const show = vi.fn();
+		const hide = vi.fn();
+		const user = userEvent.setup();
+		render(
+			<PlayerHoverContext.Provider value={{ show, hide }}>
+				<Climber name="Misty" userId="misty-id" />
+			</PlayerHoverContext.Provider>
+		);
+		const face = screen.getByRole("link", { name: "Misty's profile" });
+
+		await user.hover(face);
+		expect(show).toHaveBeenCalledWith(
+			"misty-id",
+			expect.objectContaining({ top: expect.any(Number) })
+		);
+
+		await user.unhover(face);
+		expect(hide).toHaveBeenCalled();
+	});
+
+	it("keys a stack of faces by player, so two players sharing a name both draw", () => {
+		render(
+			<ClimberStack
+				climbers={[
+					{ name: "Red", userId: "red-1" },
+					{ name: "Red", userId: "red-2" },
+				]}
+			/>
+		);
+
+		expect(screen.getAllByRole("link", { name: "Red's profile" })).toHaveLength(
+			2
+		);
+	});
+});

@@ -1,1 +1,0 @@
-ALTER TABLE "run_category_xp" ADD COLUMN "polls_answered" integer DEFAULT 0 NOT NULL;

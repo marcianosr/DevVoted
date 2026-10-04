@@ -15,7 +15,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import postgres from 'postgres';
-import type { PollStatus } from '../src/domains/polls/models/poll.model';
+import type { PollStatus } from '../src/modules/polls/poll/domain/poll.model';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

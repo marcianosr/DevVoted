@@ -1,1 +1,0 @@
-ALTER TYPE "public"."roles" ADD VALUE 'poll-editor' BEFORE 'admin';

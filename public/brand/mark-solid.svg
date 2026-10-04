@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>devvoted</title>
+  <desc>The small-size mark. Solid rather than dashed because a 4-unit dash pattern aliases away below 32px. Ground #080807, mark #C5B18F (--color-brand-sand).</desc>
+  <rect width="64" height="64" fill="#080807"/>
+  <rect x="12" y="12" width="40" height="40" rx="9" fill="#C5B18F"/>
+</svg>

@@ -8,10 +8,20 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-version:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
+      contents: read
       pull-requests: write
     steps:
       - name: Checkout code
@@ -29,40 +39,48 @@ jobs:
       - name: Check changelog for unreleased entries
         id: check_changelog
         run: |
-          OUTPUT=$(npm run release --silent -- --dry-run 2>&1)
-          echo "$OUTPUT"
-          if echo "$OUTPUT" | grep -q "Nothing in \[Unreleased\]"; then
-            echo "will_release=false" >> "$GITHUB_OUTPUT"
-          else
-            NEW_VERSION=$(echo "$OUTPUT" | grep "^New version" | awk '{print $NF}')
-            BUMP_TYPE=$(echo "$OUTPUT" | grep "^Bump type" | awk '{print $4}')
-            # Extract the [Unreleased] section: lines after its heading, up to the next release heading.
-            # Match both "## [Unreleased]" and the bracketless "## Unreleased" the tool emits after a release.
-            UNRELEASED=$(awk '/^## \[?Unreleased\]?/{started=1; next} started && /^## /{exit} started' CHANGELOG.md)
-            echo "will_release=true" >> "$GITHUB_OUTPUT"
-            echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
-            echo "bump_type=$BUMP_TYPE" >> "$GITHUB_OUTPUT"
-            echo "unreleased_content<<CHANGELOG_EOF" >> "$GITHUB_OUTPUT"
-            echo "$UNRELEASED" >> "$GITHUB_OUTPUT"
-            echo "CHANGELOG_EOF" >> "$GITHUB_OUTPUT"
-          fi
+          npm run release --silent -- --dry-run --json > release.json
+          jq -c 'del(.unreleased)' release.json
+          {
+            echo "will_release=$(jq -r '.willRelease' release.json)"
+            echo "new_version=$(jq -r '.newVersion // empty' release.json)"
+            echo "bump_type=$(jq -r '.bumpType // empty' release.json)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build release comment
+        if: steps.check_changelog.outputs.will_release == 'true'
+        env:
+          BUMP_TYPE: ${{ steps.check_changelog.outputs.bump_type }}
+          NEW_VERSION: ${{ steps.check_changelog.outputs.new_version }}
+          MAX_UNRELEASED_LENGTH: "20000"
+        run: |
+          jq -r '.unreleased // empty' release.json > unreleased.md
+          awk -v max="$MAX_UNRELEASED_LENGTH" \
+            'n + length($0) + 1 > max { exit } { print; n += length($0) + 1 }' \
+            unreleased.md > unreleased-excerpt.md
+          {
+            echo "After merge, a **new version** of the game will be published."
+            echo
+            echo "A **${BUMP_TYPE}** bump → version **${NEW_VERSION}**"
+            echo
+            echo "<details><summary>Unreleased changes</summary>"
+            echo
+            cat unreleased-excerpt.md
+            if ! cmp -s unreleased.md unreleased-excerpt.md; then
+              echo
+              echo "_Excerpt only: the \`Unreleased\` section is $(wc -c < unreleased.md | tr -d ' ') bytes, over the budget for a single comment. Read \`CHANGELOG.md\` for the rest._"
+            fi
+            echo
+            echo "</details>"
+          } > pr-comment.md
 
       - uses: mshick/add-pr-comment@v3
-        if: github.base_ref == 'main' && steps.check_changelog.outputs.will_release == 'true'
+        if: steps.check_changelog.outputs.will_release == 'true'
         with:
-          message: |
-            After merge, a **new version** of the game will be published.
-
-            A **${{ steps.check_changelog.outputs.bump_type }}** bump → version **${{ steps.check_changelog.outputs.new_version }}**
-
-            <details><summary>Unreleased changes</summary>
-
-            ${{ steps.check_changelog.outputs.unreleased_content }}
-
-            </details>
+          message-path: pr-comment.md
 
       - uses: mshick/add-pr-comment@v3
-        if: github.base_ref == 'main' && steps.check_changelog.outputs.will_release == 'false'
+        if: steps.check_changelog.outputs.will_release == 'false'
         with:
           message: |
             After merge, **no new version** of the game will be published.
@@ -89,18 +107,21 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      # Non-gating until DVTD-byvb clears the outstanding dependency findings.
+      - name: Dead code check
+        run: npm run lint:dead
+        continue-on-error: true
+
       - name: Check formatting
         run: npm run format:check
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Run tests
-        run: npm test -- --run
-        env:
-          NODE_ENV: test
+        run: npm test
 
       - name: Build application
-        run: npm run build
+        run: npx vite build
         env:
           NODE_ENV: production
