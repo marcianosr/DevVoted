@@ -34,6 +34,7 @@ export const saveLookService = async (userId: string, look: Look) =>
 			ownedBorderIds: archive.ownedBorderIds,
 			ownedTitleIds,
 			ownedSwatchIds: archive.ownedSwatchIds,
+			wornBorderId: archive.equippedBorderId,
 		});
 		if (refusal !== null) throw new Error(REFUSAL_MESSAGE[refusal]);
 

@@ -24,6 +24,7 @@ const OWNED: LookOwnership = {
 	ownedBorderIds: [GREEN_BUILD],
 	ownedTitleIds: [SHIP_IT, TESTER, CSS_CARRIER, BIKESHEDDER],
 	ownedSwatchIds: [CINNABAR],
+	wornBorderId: GREEN_BUILD,
 };
 
 const WORN: Look = {
@@ -47,6 +48,12 @@ describe("lookRefusalOf", () => {
 		expect(lookRefusalOf({ ...WORN, borderId: RUBBER_DUCK }, OWNED)).toBe(
 			"border-not-owned"
 		);
+	});
+
+	it("accepts a border already worn without being owned, so saving titles keeps it", () => {
+		const owned = { ...OWNED, wornBorderId: RUBBER_DUCK };
+
+		expect(lookRefusalOf({ ...WORN, borderId: RUBBER_DUCK }, owned)).toBeNull();
 	});
 
 	it("refuses a title the player has not earned", () => {

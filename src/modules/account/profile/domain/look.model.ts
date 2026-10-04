@@ -20,6 +20,7 @@ export type LookOwnership = {
 	readonly ownedBorderIds: readonly string[];
 	readonly ownedTitleIds: readonly string[];
 	readonly ownedSwatchIds: readonly string[];
+	readonly wornBorderId: string | null;
 };
 
 export type LookRefusal =
@@ -71,11 +72,19 @@ const titleRefusalOf = (
 	return refused === undefined ? null : TITLE_REFUSAL[refused.reason];
 };
 
+const mayWearBorder = (
+	borderId: string | null,
+	owned: LookOwnership
+): boolean =>
+	borderId === null ||
+	borderId === owned.wornBorderId ||
+	owned.ownedBorderIds.includes(borderId);
+
 export const lookRefusalOf = (
 	look: Look,
 	owned: LookOwnership
 ): LookRefusal | null => {
-	if (look.borderId !== null && !owned.ownedBorderIds.includes(look.borderId)) {
+	if (!mayWearBorder(look.borderId, owned)) {
 		return "border-not-owned";
 	}
 	if (wearSwatch(look.swatchId, owned.ownedSwatchIds).kind === "refused") {

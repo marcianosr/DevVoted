@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **Wear the title works again for every player.** On some accounts, pressing **Wear the title** in the *Thank you for playing* window did nothing and showed *Cannot wear a border you don't own*, because the border they already had on was checked as if they were buying it. Keeping the border you wear no longer blocks putting on a title.
 
 ## 2.0.0 - 2026-10-04
 ### Added
