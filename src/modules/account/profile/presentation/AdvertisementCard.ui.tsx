@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 
 import { clsx } from "clsx";
 
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import { Climber } from "~/ui/kanto-theme/Climber.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
@@ -15,6 +16,7 @@ export const COPY = {
 } as const;
 
 const THEME: KantoColor = "viridian";
+const PRICE_COLOR: KantoColor = "saffron";
 const DISMISS_GLYPH = "×";
 
 const CARD =
@@ -23,6 +25,7 @@ const CARD_SURFACE = "bg-theme-faint";
 const LEGEND =
 	"absolute -top-2 left-4 rounded-xs bg-theme-raised px-1.5 text-[10px] leading-4 font-bold tracking-widest text-theme-muted uppercase";
 const COOKIE = "flex size-9 shrink-0 items-center justify-center text-2xl";
+const TITLE_ROW = "flex flex-wrap items-center gap-2";
 const COPY_BLOCK = "flex min-w-0 flex-1 basis-48 flex-col gap-0.5";
 const ACTIONS = "ml-auto flex shrink-0 items-center gap-2";
 
@@ -48,6 +51,7 @@ export type AdvertisementVariant = "card" | "strip" | "banner";
 
 export type AdvertisementCardProps = {
 	title: string;
+	price?: string;
 	text: string;
 	icon: AdvertisementIcon;
 	cta: AdvertisementCta;
@@ -69,10 +73,14 @@ const Icon = ({ icon }: { icon: AdvertisementIcon }) =>
 		/>
 	);
 
-const Strip = ({ title, text, cta }: AdvertisementCardProps) => (
+const Price = ({ price }: Pick<AdvertisementCardProps, "price">) =>
+	price === undefined ? null : <Badge color={PRICE_COLOR}>{price}</Badge>;
+
+const Strip = ({ title, price, text, cta }: AdvertisementCardProps) => (
 	<aside aria-label={COPY.legend} data-screen-theme={THEME} className={STRIP}>
 		<span className={STRIP_LEGEND}>{COPY.legend}</span>
 		<span className={STRIP_TITLE}>{title}</span>
+		<Price price={price} />
 		<span className={STRIP_TEXT}>{text}</span>
 		<span className={STRIP_CTA}>
 			<Link href={cta.href}>{cta.label}</Link>
@@ -82,6 +90,7 @@ const Strip = ({ title, text, cta }: AdvertisementCardProps) => (
 
 const Card = ({
 	title,
+	price,
 	text,
 	icon,
 	cta,
@@ -96,9 +105,12 @@ const Card = ({
 		<span className={LEGEND}>{COPY.legend}</span>
 		<Icon icon={icon} />
 		<div className={COPY_BLOCK}>
-			<Typography variant="accent" as="p">
-				{title}
-			</Typography>
+			<span className={TITLE_ROW}>
+				<Typography variant="accent" as="p">
+					{title}
+				</Typography>
+				<Price price={price} />
+			</span>
 			<Typography variant="hint">{text}</Typography>
 		</div>
 		<div className={ACTIONS}>

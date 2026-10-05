@@ -176,7 +176,7 @@ describe("advertisementPropsFor", () => {
 		});
 	});
 
-	it("titles a border by its name and price, and shows it on the player's own face", () => {
+	it("titles a border by its name, badges its price, and shows it on the player's own face", () => {
 		const react = findBorderById("border-react");
 		if (react === undefined) throw new Error("border-react is missing");
 
@@ -187,7 +187,8 @@ describe("advertisementPropsFor", () => {
 		);
 
 		expect(props).toEqual({
-			title: "React Initiate · 256 KB",
+			title: "React Initiate border",
+			price: "256 KB",
 			text: react.description,
 			icon: {
 				kind: "face",

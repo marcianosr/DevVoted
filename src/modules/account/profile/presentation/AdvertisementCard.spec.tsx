@@ -93,4 +93,11 @@ describe("AdvertisementCard", () => {
 
 		expect(onDismiss).toHaveBeenCalledOnce();
 	});
+
+	it("badges the price beside the title when the offer has one", () => {
+		renderCard({ title: "Pelican Town border", price: "8 MB" });
+
+		expect(screen.getByText("Pelican Town border")).toBeInTheDocument();
+		expect(screen.getByText("8 MB")).toBeInTheDocument();
+	});
 });

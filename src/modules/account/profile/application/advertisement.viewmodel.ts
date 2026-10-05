@@ -15,7 +15,7 @@ export const COPY = {
 	suggestText: (reward: string) =>
 		`Approved polls earn ${reward} archived storage!`,
 	suggestCta: "Suggest a poll",
-	borderTitle: (name: string, price: string) => `${name} · ${price}`,
+	borderTitle: (name: string) => `${name} border`,
 	borderCta: "Open market",
 } as const;
 
@@ -135,10 +135,8 @@ export const advertisementPropsFor = (
 				cta: { label: COPY.suggestCta, href: SUGGEST_POLL_PATH },
 			}
 		: {
-				title: COPY.borderTitle(
-					advertisement.border.name,
-					formatStorage(advertisement.border.cost)
-				),
+				title: COPY.borderTitle(advertisement.border.name),
+				price: formatStorage(advertisement.border.cost),
 				text: advertisement.border.description,
 				icon: {
 					kind: "face",
