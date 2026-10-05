@@ -15,6 +15,7 @@ import { NotFound } from "~/components/NotFound.component";
 import { Footer } from "~/components/Footer.component";
 import { Nav } from "~/components/Nav.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
+import { ViewerContext } from "~/modules/account/auth/application/useViewer.hook";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
 import { PlayerHover } from "~/modules/run/community/presentation/PlayerHover.component";
 import {
@@ -93,21 +94,23 @@ function RootComponent() {
 	return (
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
-				<PlayerHover>
-					<NavRunContext.Provider value={setNavRun}>
-						<Nav user={user} published={navRun} />
-						<main
-							className={
-								user === null
-									? "flex flex-1 flex-col bg-zinc-950"
-									: "flex flex-1 flex-col bg-zinc-950 pb-[var(--tab-bar)] [--tab-bar:3.75rem] md:[--tab-bar:0px]"
-							}
-						>
-							<Outlet />
-							<Footer />
-						</main>
-					</NavRunContext.Provider>
-				</PlayerHover>
+				<ViewerContext.Provider value={user}>
+					<PlayerHover>
+						<NavRunContext.Provider value={setNavRun}>
+							<Nav user={user} published={navRun} />
+							<main
+								className={
+									user === null
+										? "flex flex-1 flex-col bg-zinc-950"
+										: "flex flex-1 flex-col bg-zinc-950 pb-[var(--tab-bar)] [--tab-bar:3.75rem] md:[--tab-bar:0px]"
+								}
+							>
+								<Outlet />
+								<Footer />
+							</main>
+						</NavRunContext.Provider>
+					</PlayerHover>
+				</ViewerContext.Provider>
 			</QueryClientProvider>
 		</RootDocument>
 	);

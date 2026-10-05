@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { BUILD, REGISTRY } from "~/shared/lib/copy";
 import { Build, type BuildProps } from "./Build.ui";
 import { discloseAllFor } from "./DiscloseAll.ui";
@@ -34,6 +36,7 @@ export type NewRunScreenProps = {
 	warmBoot?: WarmBootProps;
 	filter?: RegistryFilter;
 	buildNote?: LeadLine;
+	advertisement?: ReactNode;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
@@ -46,6 +49,7 @@ export const NewRunScreen = ({
 	warmBoot,
 	filter,
 	buildNote,
+	advertisement,
 	width,
 	ground = "bare",
 }: NewRunScreenProps) => {
@@ -110,6 +114,10 @@ export const NewRunScreen = ({
 						<div className={LEFT}>
 							<WarmBoot {...warmBoot} />
 						</div>
+					)}
+
+					{advertisement === undefined ? null : (
+						<div className={LEFT}>{advertisement}</div>
 					)}
 				</div>
 			</div>
