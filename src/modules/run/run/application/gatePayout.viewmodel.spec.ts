@@ -17,7 +17,7 @@ describe("gatePayoutFor", () => {
 		const payout = gatePayoutFor(clearGate(started([])));
 		const parts =
 			payout.clearThisGateKb +
-			payout.perfectBonusThisGateKb +
+			payout.bandBonusThisGateKb +
 			payout.overflowThisGateKb +
 			payout.interestThisGateKb +
 			payout.extraPickThisGateKb +

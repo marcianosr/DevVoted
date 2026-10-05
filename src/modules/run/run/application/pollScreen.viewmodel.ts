@@ -31,7 +31,10 @@ import {
 	type PollStats,
 } from "~/modules/run/run/domain/pollStats.model";
 import type { PaidRefusal } from "~/modules/run/run/domain/paidAction.model";
-import { type CoverageConfigBonus } from "~/modules/run/build/domain/coverageRatio.model";
+import {
+	coverageGainPercentFor,
+	type CoverageConfigBonus,
+} from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	answersPerGate,
 	type AnsweredPoll,
@@ -414,11 +417,8 @@ export const runPaidFor = (view: RunView): PollScoresProps => {
 
 const TENTHS = 10;
 
-export const gainFigureOf = (
-	before: number,
-	after: number
-): string | undefined => {
-	const gain = Math.round((after - before) * TENTHS) / TENTHS;
+export const gainFigureOf = (gainPercent: number): string | undefined => {
+	const gain = Math.round(gainPercent * TENTHS) / TENTHS;
 	return gain > 0 ? `+${gain}%` : undefined;
 };
 
@@ -432,7 +432,13 @@ export const pollFlightFor = (
 	if (answered.outcome === "wrong") return undefined;
 	const fromHeld = before.gateStake.coverageHeld;
 	const toHeld = view.gateStake.coverageHeld;
-	const figure = gainFigureOf(fromHeld, toHeld);
+	if (toHeld <= fromHeld) return undefined;
+	const figure = gainFigureOf(
+		coverageGainPercentFor(
+			answered.coverageEarned ?? 0,
+			view.gateStake.gateNumber
+		)
+	);
 
 	return figure === undefined
 		? undefined

@@ -178,12 +178,24 @@ describe("GateOutcomeScreen", () => {
 			expect(folds[0]).not.toHaveTextContent("the bar filled");
 		});
 
-		it("keeps the bonus off every other band", () => {
-			renderWithNavRun(<GateOutcomeScreen {...kantoGateHealthy()} />);
+		it("prices a band bonus inside coverage on a healthy close", () => {
+			const { container } = renderWithNavRun(
+				<GateOutcomeScreen {...kantoGateHealthy()} />
+			);
 
-			expect(
-				screen.queryByRole("heading", { name: "Perfect bonus" })
-			).not.toBeInTheDocument();
+			expect(container.querySelector("details")).toHaveTextContent(
+				"See an overview of your results."
+			);
+		});
+
+		it("keeps the band bonus off an OK close", () => {
+			const { container } = renderWithNavRun(
+				<GateOutcomeScreen {...kantoGateOk()} />
+			);
+
+			expect(container.querySelector("details")).not.toHaveTextContent(
+				"See an overview of your results."
+			);
 		});
 	});
 
@@ -237,12 +249,12 @@ describe("GateOutcomeScreen", () => {
 	});
 
 	describe("an ok close", () => {
-		it("clears the gate on its own band and says the payout was cut", () => {
+		it("clears the gate on its own band and says it earned no band bonus", () => {
 			renderWithNavRun(<GateOutcomeScreen {...kantoGateOk()} />);
 
 			expect(headingOf("Lavender cleared, thin")).toBeInTheDocument();
 			expect(
-				screen.getByText(/cleared on the OK band · the payout is cut/)
+				screen.getByText(/cleared on the OK band · no band bonus/)
 			).toBeInTheDocument();
 		});
 

@@ -2,6 +2,7 @@ import {
 	type CommittableBand,
 	type CoverageBand,
 	SLA_UPLIFT,
+	isCommittableBand,
 	meetsBand,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import type { Config } from "~/modules/run/config/domain/config.model";
@@ -23,9 +24,6 @@ export const bandOwed = (state: RunState): boolean =>
 	committerFor(state.build.configs) !== undefined &&
 	canCommitBand(state) &&
 	state.slaBand === undefined;
-
-const isCommittableBand = (band: string): band is CommittableBand =>
-	SLA_BANDS.some((candidate) => candidate === band);
 
 export const commitBand = (state: RunState, band: string): RunState => {
 	if (!canCommitBand(state)) return state;

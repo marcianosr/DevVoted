@@ -5,7 +5,7 @@ import {
 	catcherFor,
 	extraPickPayoutFor,
 	gateClearPayout,
-	perfectBonusOnClear,
+	bandBonusOnClear,
 	occupiedSlots,
 	storageInterestFor,
 } from "~/modules/run/build/domain/build.model";
@@ -252,7 +252,7 @@ export const settleGate = (state: RunState, nextIndex: number): RunState => {
 		state.window.correct,
 		state.gatesCleared
 	);
-	const perfectBonusKb = perfectBonusOnClear(
+	const bandBonusKb = bandBonusOnClear(
 		state.build.configs,
 		closingBand,
 		clearKb
@@ -268,7 +268,7 @@ export const settleGate = (state: RunState, nextIndex: number): RunState => {
 		INCIDENT_SURVIVAL_KB * incidentsAt(state, gateNumber).length;
 	const reward =
 		clearKb +
-		perfectBonusKb +
+		bandBonusKb +
 		interest +
 		extraPickKb +
 		overflowKb +
@@ -306,7 +306,7 @@ export const settleGate = (state: RunState, nextIndex: number): RunState => {
 		upkeepPaidKb: (state.upkeepPaidKb ?? 0) + bill.paidKb,
 		gateRewardKb: reward,
 		clearThisGateKb: clearKb,
-		perfectBonusThisGateKb: perfectBonusKb,
+		bandBonusThisGateKb: bandBonusKb,
 		overflowThisGateKb: overflowKb,
 		storageBeforeClearKb: state.storage,
 		interestThisGateKb: interest,

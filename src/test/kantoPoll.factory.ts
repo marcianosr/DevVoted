@@ -922,15 +922,13 @@ import {
 	failPeelQuotaFor,
 } from "~/modules/run/gate/domain/gate.model";
 import { perAnswerPreviewFor } from "~/modules/run/build/domain/answerPayout.model";
-import {
-	gateClearPayout,
-	occupiedSlots,
-} from "~/modules/run/build/domain/build.model";
+import { occupiedSlots } from "~/modules/run/build/domain/build.model";
 import type { AuditView } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	fundsOf,
 	PREP_POLLS_TITLE,
 	type PrepWindow,
+	prepPayoutFor,
 	prepPropsFor,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { OutageTargetView } from "~/modules/run/run/application/runView.viewmodel";
@@ -982,10 +980,6 @@ const prepLadderAt = (gate: number) => ({
 	ok: roundedPercentOf(okAt(gate)),
 	healthy: roundedPercentOf(healthyAt(gate)),
 });
-
-const prepPayoutAt =
-	(gate: number, configs: readonly Config[]) => (correct: number) =>
-		gateClearPayout(configs, correct, gate);
 
 const prepPeelKbAt = (
 	gate: number,
@@ -1073,7 +1067,7 @@ export const kantoPrepAt = ({
 			gate
 		),
 		peelKb: prepPeelKbAt(gate, configs, audits),
-		payout: prepPayoutAt(gate, configs),
+		payout: prepPayoutFor(configs, gate),
 	});
 
 export const newRunBuildNote = (): LeadLine => [

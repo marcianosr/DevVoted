@@ -68,7 +68,7 @@ const answered: AnsweredPoll = {
 	picked: ["at(-1)"],
 	correct: ["at(-1)"],
 	options: ["at(-1)", "pop()", "last()"],
-	coverageEarned: 12,
+	coverageEarned: 1,
 	explanation: "at(-1) reads from the end without copying the array.",
 };
 
@@ -385,19 +385,21 @@ describe("PollView once a linter has crossed an answer off", () => {
 });
 
 describe("PollView while a right answer's gain flies", () => {
+	const PALLET = 0;
 	const at = (coverageHeld: number) =>
 		createMockRunView({
 			...view,
 			gateStake: createMockGateStake({
 				...view.gateStake,
+				gateNumber: PALLET,
 				coverageHeld,
 			}),
 		});
 
-	const liveAt24 = { ...props, view: at(24) };
-	const landedAt36 = {
+	const liveAt20 = { ...props, view: at(20) };
+	const landedAt40 = {
 		...props,
-		view: createMockRunView({ ...at(36), answeredThisGate: [answered] }),
+		view: createMockRunView({ ...at(40), answeredThisGate: [answered] }),
 		answered,
 	};
 
@@ -417,28 +419,28 @@ describe("PollView while a right answer's gain flies", () => {
 			value: () => animation,
 			configurable: true,
 		});
-		const { container, rerender } = render(<PollView {...liveAt24} />);
+		const { container, rerender } = render(<PollView {...liveAt20} />);
 
-		rerender(<PollView {...landedAt36} />);
+		rerender(<PollView {...landedAt40} />);
 
-		expect(screen.getByText("+12%")).toBeInTheDocument();
-		expect(heldOf(container)).toBe("24");
-
-		act(() => animation.onfinish?.());
-
-		expect(heldOf(container)).toBe("36");
-		expect(screen.getByText("+12%")).toBeInTheDocument();
+		expect(screen.getByText("+20%")).toBeInTheDocument();
+		expect(heldOf(container)).toBe("20");
 
 		act(() => animation.onfinish?.());
 
-		expect(screen.queryByText("+12%")).toBeNull();
+		expect(heldOf(container)).toBe("40");
+		expect(screen.getByText("+20%")).toBeInTheDocument();
+
+		act(() => animation.onfinish?.());
+
+		expect(screen.queryByText("+20%")).toBeNull();
 	});
 
 	it("moves the bar at once where no chip can fly", () => {
-		const { container, rerender } = render(<PollView {...liveAt24} />);
+		const { container, rerender } = render(<PollView {...liveAt20} />);
 
-		rerender(<PollView {...landedAt36} />);
+		rerender(<PollView {...landedAt40} />);
 
-		expect(heldOf(container)).toBe("36");
+		expect(heldOf(container)).toBe("40");
 	});
 });

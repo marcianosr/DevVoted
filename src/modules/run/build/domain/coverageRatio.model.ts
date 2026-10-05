@@ -3,9 +3,6 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 export const BASE_UNIT = 1;
 export const SINGLE_CREDIT = 1;
 export const MULTIPLE_CREDIT = 2;
-export const KB_PER_PROVEN_SLOT = 32;
-export const PAYOUT_RATIO_CAP = 1.5;
-export const PERFECT_BONUS = 1.5;
 export const KB_PER_EXTRA_BAR = 16;
 
 const FLOAT_TOLERANCE = 1e-9;
@@ -156,12 +153,6 @@ export const bandOf = (id: CoverageBandId): CoverageBand => BAND[id];
 
 const isPerfect = (ratio: number): boolean => ratio + FLOAT_TOLERANCE >= 1;
 
-export const perfectBonusFor = (ratio: number): number =>
-	isPerfect(ratio) ? PERFECT_BONUS : 1;
-
-export const perfectBonusKbFor = (band: CoverageBand, clearKb: number): number =>
-	band.id === "perfect" ? Math.round(clearKb * (PERFECT_BONUS - 1)) : 0;
-
 export const bandFor = (ratio: number, gate: number): CoverageBand => {
 	if (isPerfect(ratio)) return BAND.perfect;
 	if (ratio + FLOAT_TOLERANCE >= healthyAt(gate)) return BAND.healthy;
@@ -183,6 +174,20 @@ export type CommittableBand = Extract<
 	"ok" | "healthy" | "perfect"
 >;
 
+export const BAND_BONUS: Readonly<Record<CommittableBand, number>> = {
+	ok: 1,
+	healthy: 1.25,
+	perfect: 1.5,
+};
+
+export const isCommittableBand = (band: string): band is CommittableBand =>
+	Object.hasOwn(BAND_BONUS, band);
+
+export const bandBonusKbFor = (band: CoverageBand, clearKb: number): number =>
+	isCommittableBand(band.id)
+		? Math.round(clearKb * (BAND_BONUS[band.id] - 1))
+		: 0;
+
 export const SLA_UPLIFT: Readonly<Record<CommittableBand, number>> = {
 	ok: 0.1,
 	healthy: 0.25,
@@ -198,19 +203,3 @@ export const atLeastBand = (
 	band: CoverageBand,
 	least: CoverageBandId
 ): CoverageBand => (meetsBand(band, least) ? band : BAND[least]);
-
-export const payoutRatioFor = (ratio: number, gate: number): number =>
-	Math.min(PAYOUT_RATIO_CAP, asRatio(ratio) / healthyAt(gate));
-
-export const gatePayoutKb = (
-	ratio: number,
-	gate: number,
-	weight: number
-): number =>
-	Math.round(
-		payoutRatioFor(ratio, gate) *
-			perfectBonusFor(ratio) *
-			weight *
-			KB_PER_PROVEN_SLOT
-	);
-

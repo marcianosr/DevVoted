@@ -115,7 +115,7 @@ export const createMockGatePayout = createMockDataFactory<GatePayout>({
 	spaceDroppedTo: null,
 	gateRewardPaidKb: 0,
 	clearThisGateKb: 0,
-	perfectBonusThisGateKb: 0,
+	bandBonusThisGateKb: 0,
 	overflowThisGateKb: 0,
 	storageBeforeClearKb: null,
 	faucetThisGateKb: 0,

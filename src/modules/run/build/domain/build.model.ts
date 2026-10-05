@@ -8,7 +8,7 @@ import {
 import { effectOf } from "~/modules/run/config/domain/effect.model";
 import {
 	type CoverageBand,
-	perfectBonusKbFor,
+	bandBonusKbFor,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import {
 	GATE_REWARD_KB,
@@ -99,11 +99,11 @@ export const gateClearPayout = (
 			(correct / SLICE_WINDOW)
 	) + storageOnClearFor(configs);
 
-export const perfectBonusOnClear = (
+export const bandBonusOnClear = (
 	configs: readonly Config[],
 	band: CoverageBand,
 	clearKb: number
-): number => perfectBonusKbFor(band, clearKb - storageOnClearFor(configs));
+): number => bandBonusKbFor(band, clearKb - storageOnClearFor(configs));
 
 export const wagererFor = (
 	configs: readonly Config[]

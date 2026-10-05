@@ -1,5 +1,9 @@
 import { rungFitting } from "~/modules/run/build/domain/buildSpace.model";
-import { occupiedSlots } from "~/modules/run/build/domain/build.model";
+import {
+	bandBonusOnClear,
+	gateClearPayout,
+	occupiedSlots,
+} from "~/modules/run/build/domain/build.model";
 import { clearsAt } from "~/modules/run/gate/domain/gate.model";
 import {
 	CONFIGS,
@@ -30,12 +34,11 @@ import {
 	totalCoverage,
 } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import {
-	PERFECT_BONUS,
 	bandFor,
+	bandOf,
 	floorAt,
 	percentOf,
 	ratioOf,
-	gatePayoutKb,
 	healthyAt,
 	okAt,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -114,12 +117,14 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 		: band === "danger" && fixture.heldBy === undefined
 			? "fatal"
 			: "held";
-	const payoutKb = clears
-		? gatePayoutKb(ratio, fixture.gate, occupiedSlots(fixture.configs))
-		: 0;
 	const correct = fixture.answers.filter(
 		(answer) => answer.outcome === "correct"
 	).length;
+	const clearKb = clears
+		? gateClearPayout(fixture.configs, correct, fixture.gate)
+		: 0;
+	const bonusKb = bandBonusOnClear(fixture.configs, bandOf(band), clearKb);
+	const payoutKb = clearKb + bonusKb;
 
 	return {
 		...frame,
@@ -127,7 +132,7 @@ const settle = (fixture: GateOutcomeFixture): GateOutcomeFrame => {
 		swatchGates: correct >= SLICE_WINDOW ? [fixture.gate] : [],
 		bar: { ...ladderBarFor(fixture), band },
 		payoutKb,
-		bonusKb: payoutKb - Math.round(payoutKb / PERFECT_BONUS),
+		bonusKb,
 		faucetKb: faucetKbPerCorrect(fixture.configs) * correct,
 		billKb: clears ? rungFitting(fixture.buildSpace ?? BASE_SLOTS).kb : 0,
 	};

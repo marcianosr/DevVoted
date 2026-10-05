@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: critical
 created_at: 2026-09-30T18:50:26Z
-updated_at: 2026-10-03T15:50:57Z
+updated_at: 2026-10-05T14:39:58Z
 parent: DVTD-u35m
 ---
 
@@ -16,7 +16,7 @@ parent: DVTD-u35m
 ## Done when
 - [x] Nobody can read or write a table with the public key alone (DVTD-5kak; live once merged)
 - [ ] A fresh database can be rebuilt from migrations, and the cutover is rehearsed on a copy of production
-- [ ] A spent day never ends in a raw error or a dead press
+- [x] A spent day never ends in a raw error or a dead press
 - [ ] A stranger can play today's run before signing up, and keep it by signing up
 - [ ] We can count unique players per day and read retention after one day and after seven
 

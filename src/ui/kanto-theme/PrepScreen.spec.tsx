@@ -342,13 +342,12 @@ describe("PrepScreen", () => {
 			).toBeInTheDocument();
 		});
 
-		it("never pays a lower landing more than a higher one", () => {
+		it("pays every step up the ladder more than the one below", () => {
 			const kbOf = (band: string) =>
 				Number(paysOf(props, band)?.match(/(\d+)/)?.[1]);
 
-			expect(kbOf("perfect")).toBeGreaterThanOrEqual(kbOf("healthy"));
-			expect(kbOf("healthy")).toBeGreaterThanOrEqual(kbOf("ok"));
-			expect(kbOf("perfect")).toBeGreaterThan(kbOf("ok"));
+			expect(kbOf("perfect")).toBeGreaterThan(kbOf("healthy"));
+			expect(kbOf("healthy")).toBeGreaterThan(kbOf("ok"));
 		});
 	});
 

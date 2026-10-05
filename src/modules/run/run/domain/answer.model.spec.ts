@@ -37,7 +37,7 @@ import {
 import {
 	ACCURACY_GAIN_PER_GATE,
 	BASE_UNIT,
-	PERFECT_BONUS,
+	BAND_BONUS,
 	MULTIPLE_CREDIT,
 	healthyAt,
 	percentOf,
@@ -194,8 +194,9 @@ describe("gates and rewards", () => {
 		state = answerWith(state, false);
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.status).toBe("rewarding");
-		expect(state.gateRewardKb).toBe(26);
-		expect(state.storage).toBe(26);
+		expect(state.clearThisGateKb).toBe(26);
+		expect(state.gateRewardKb).toBe(26 + 7);
+		expect(state.storage).toBe(26 + 7);
 	});
 
 	it("takes several rewards (upgrade + slot + draft) and stays until finish", () => {
@@ -1745,7 +1746,7 @@ describe("the clear's receipt", () => {
 			(state.interestThisGateKb ?? 0) +
 			(state.extraPickThisGateKb ?? 0) +
 			(state.escrowCommittedKb ?? 0) +
-			(state.perfectBonusThisGateKb ?? 0);
+			(state.bandBonusThisGateKb ?? 0);
 
 		expect(state.status).toBe("rewarding");
 		expect(parts).toBe(state.gateRewardKb);
@@ -1756,19 +1757,31 @@ describe("the clear's receipt", () => {
 		for (let i = 0; i < SLICE_WINDOW; i++) state = answerWith(state, true);
 
 		expect(state.lastClose?.band).toBe("perfect");
-		expect(state.perfectBonusThisGateKb).toBe(
-			Math.round((state.clearThisGateKb ?? 0) * (PERFECT_BONUS - 1))
+		expect(state.bandBonusThisGateKb).toBe(
+			Math.round((state.clearThisGateKb ?? 0) * (BAND_BONUS.perfect - 1))
 		);
-		expect(state.perfectBonusThisGateKb).toBeGreaterThan(0);
+		expect(state.bandBonusThisGateKb).toBeGreaterThan(0);
 	});
 
-	it("pays no bonus on a close short of PERFECT", () => {
-		let state = { ...started(["js"]), gatesCleared: 8 };
+	it("pays a HEALTHY close a quarter of its clear again", () => {
+		let state = started(["js"]);
 		for (let i = 0; i < SLICE_WINDOW; i++)
 			state = answerWith(state, i < SLICE_WINDOW - 1);
 
-		expect(state.lastClose?.band).not.toBe("perfect");
-		expect(state.perfectBonusThisGateKb ?? 0).toBe(0);
+		expect(state.lastClose?.band).toBe("healthy");
+		expect(state.bandBonusThisGateKb).toBe(
+			Math.round((state.clearThisGateKb ?? 0) * (BAND_BONUS.healthy - 1))
+		);
+		expect(state.bandBonusThisGateKb).toBeGreaterThan(0);
+	});
+
+	it("pays no bonus on an OK close", () => {
+		let state = started(["js"]);
+		for (let i = 0; i < SLICE_WINDOW; i++)
+			state = answerWith(state, i < SLICE_WINDOW - 2);
+
+		expect(state.lastClose?.band).toBe("ok");
+		expect(state.bandBonusThisGateKb ?? 0).toBe(0);
 	});
 });
 

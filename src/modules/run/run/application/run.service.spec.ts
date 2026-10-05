@@ -9,6 +9,7 @@ import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { PIN_START_KB_PER_GATE } from "~/modules/run/run/domain/rules.model";
+import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
 import {
 	abandonRunService,
 	dispatchRunActionService,
@@ -94,6 +95,13 @@ const kantoPoll = (index: number): RunPoll => {
 };
 
 const POLLS = [kantoPoll(0), kantoPoll(1)];
+const SEEDED_POOL_SIZE = 96;
+const SEEDED_POOL = Array.from({ length: SEEDED_POOL_SIZE }, (_, index) =>
+	kantoPoll(index)
+);
+const FIRST_WINDOW_IDS = new Set(
+	Array.from({ length: SEED_LENGTH }, (_, index) => index)
+);
 const USER = "red-from-pallet-town";
 const DATE = TEST_DATES.birthday;
 
@@ -393,6 +401,36 @@ describe("startRunService", () => {
 		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
 	});
 
+	it("deals one day's five when the date's sequence holds the whole pool", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 68,
+		});
+
+		await startRunService({ userId: USER, date: DATE });
+
+		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
+			USER,
+			DATE,
+			expect.objectContaining({ polls: SEEDED_POOL.slice(0, SEED_LENGTH) })
+		);
+	});
+
+	it("refuses a same-day rerun after five answers instead of dealing the next five from a longer sequence", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
+			FIRST_WINDOW_IDS
+		);
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
+
+		const result = await startRunService({ userId: USER, date: DATE });
+
+		expect(result).toEqual({ success: false, error: POLLS_SPENT });
+		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
+	});
+
 	it("refuses in plain words when today's polls are all answered, and creates no run", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
@@ -641,6 +679,17 @@ describe("getPollsLeftTodayService", () => {
 		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
 
 		expect(result).toEqual({ success: true, data: 1 });
+	});
+
+	it("counts at most one day's five when the date's sequence holds the whole pool", async () => {
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
+			new Set([0, 1])
+		);
+
+		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
+
+		expect(result).toEqual({ success: true, data: 3 });
 	});
 
 	it("reads zero once every one of today's polls is answered", async () => {

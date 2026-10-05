@@ -144,7 +144,7 @@ export type RunState = {
 	readonly escrowRolledBackKb?: number;
 	readonly gateRewardKb?: number;
 	readonly clearThisGateKb?: number;
-	readonly perfectBonusThisGateKb?: number;
+	readonly bandBonusThisGateKb?: number;
 	readonly overflowThisGateKb?: number;
 	readonly storageBeforeClearKb?: number;
 	readonly interestThisGateKb?: number;
