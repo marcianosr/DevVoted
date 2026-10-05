@@ -1,10 +1,11 @@
 ---
 # DVTD-n3oi
 title: Answer options render code, and letterAt has one home
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-09-28T13:47:29Z
-updated_at: 2026-10-05T12:10:00Z
+updated_at: 2026-10-05T10:31:29Z
 ---
 
 **What:** Backticks in an answer option render as code on the poll screen, and the run's two private copies of the option-letter helper give way to the shared one.
@@ -14,7 +15,7 @@ updated_at: 2026-10-05T12:10:00Z
 ## Done when
 
 - [x] An option written with backticks shows as code on the poll screen and in the form preview
-- [ ] The poll screen and the gate review letter their options with the shared helper, and their private copies are gone
+- [x] The poll screen and the gate review letter their options with the shared helper, and their private copies are gone
 
 ## Notes
 
@@ -23,3 +24,7 @@ Deferred from DVTD-lmxg because pollScreen.viewmodel.ts had another session's in
 The second checkbox means: pollScreen.viewmodel.ts and gateReview.viewmodel.ts import letterAt from letters.ts and their private copies are gone.
 
 2026-10-05: options render code. `CodeText` in Question.ui.tsx runs an option through splitCodeBlocks + CodeSpans; Question and PollResult (community board) use it, so the poll screen, review, poll page, form preview and community results all agree. ADR-137 decision 5. An option is authored in a one-line TextField, so a pasted fence loses its line breaks before it is saved; the form needs a multi-line answer field for a fenced option to keep its lines. letterAt is still open.
+
+## Summary of Changes
+
+Backticks in an answer option render as code on the poll screen and in the form preview. The poll screen and the gate review letter options with the shared letterAt; their private copies are gone.

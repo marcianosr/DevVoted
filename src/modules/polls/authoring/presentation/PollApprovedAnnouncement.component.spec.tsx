@@ -69,7 +69,7 @@ describe("PollApprovedAnnouncement", () => {
 		renderAnnouncement();
 
 		expect(
-			await screen.findByRole("dialog", { name: "Poll published" })
+			await screen.findByRole("dialog", { name: "Poll published!" })
 		).toBeInTheDocument();
 		await user.click(screen.getByRole("button", { name: "Close" }));
 

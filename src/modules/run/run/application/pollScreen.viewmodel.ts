@@ -81,12 +81,10 @@ import type {
 	PollScoreRow,
 	PollScoresProps,
 } from "~/ui/kanto-theme/PollScores.ui";
+import { letterAt } from "~/shared/lib/letters";
 
-const OPTION_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const OFFLINE_NOTE = "an audit has these offline this gate";
 const HIDDEN_CATEGORY = "?????";
-
-export const letterAt = (index: number): string => OPTION_LETTERS[index] ?? "?";
 
 export const categoryNameOf = (view: RunView, code: string): string =>
 	view.categoryHidden
