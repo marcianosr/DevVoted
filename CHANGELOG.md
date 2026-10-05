@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Changed
+- **A wiki for players.** **Wiki** in the navigation and the footer explains how a run plays, with each gate's swatch and coverage lines, an opening build on its track and the band colours you meet in play: gates and their bands, how an answer is scored, audits, your build and every config, storage and the shop, what outlives a run, the community board and a glossary. Every number on it is read from the game itself, so it never falls behind a balance change. Open it without signing in. Audits, special titles and ranks you have not met stay hidden, as in your Dex.
+- **A HEALTHY clear pays more than an OK one.** Closing a gate HEALTHY now multiplies its payout ×1.25, between OK (×1) and PERFECT (×1.5), so the At stake ladder on prep shows three different figures instead of two matching ones. The debrief lists the extra as **Band bonus**, and an OK close now says it earned no band bonus instead of claiming its payout was cut.
 - **Advertisements for the ways to grow outside a run.** The run hub, the new run screen, the community screen and profiles now carry a small advertisement, and the poll screen a one-line strip. It is either **Looking for poll editors** (approved polls earn 16 KB archived storage) with a **Suggest a poll** press, or one border you can still buy, named with its price in a badge and shown on your own face, with an **Open market** press that opens your borders tab. Which one you see is drawn fresh each time you open the screen. Press **×** to hide it on that screen for the rest of your visit.
 - **An advertisement banner on the other pages.** The home page, the polls list and the admin pages show the same advertisement as a banner along the bottom of the screen, above the tab bar on a phone. Press **×** to hide it for the rest of your visit.
 - **Your profile tabs have their own address.** A link can open your profile straight on the borders tab.
@@ -13,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Code in an answer reads as code.** Backticks in an option now show as code instead of literal backtick marks, and a fenced code answer shows as a code panel with its lines, on the poll, in review answers and on the community board.
+- **A right answer's gain states what that answer earned.** The gain that flies onto the coverage bar could read **+20.7%** for a right single worth **+20%**, because it also counted your accuracy multiplier rising on the answers already on the bar. It now shows the answer's own points. The bar still moves to your real coverage.
 
 ## 2.0.1 - 2026-10-05
 ### Changed

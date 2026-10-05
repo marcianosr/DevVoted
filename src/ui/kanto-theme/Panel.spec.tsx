@@ -302,6 +302,45 @@ describe("Panel", () => {
 			"/runs/7"
 		);
 	});
+
+	it("marks the link to the page you are on as current, without the press ring", () => {
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row href="/wiki/gates" picked>
+						Gates
+					</Panel.Row>
+					<Panel.Row href="/wiki/audits">Audits</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		const here = screen.getByRole("link", { name: "Gates" });
+
+		expect(here).toHaveAttribute("aria-current", "page");
+		expect(here).toHaveClass("bg-theme-raised");
+		expect(here).not.toHaveClass("ring-1");
+		expect(screen.getByRole("link", { name: "Audits" })).not.toHaveAttribute(
+			"aria-current"
+		);
+	});
+
+	it("hands a plain click on a link to onNavigate instead of reloading the page", async () => {
+		const onNavigate = vi.fn();
+		render(
+			<Panel>
+				<Panel.Rows>
+					<Panel.Row href="/wiki/gates" onNavigate={onNavigate}>
+						Gates
+					</Panel.Row>
+				</Panel.Rows>
+			</Panel>
+		);
+
+		await userEvent.click(screen.getByRole("link", { name: "Gates" }));
+
+		expect(onNavigate).toHaveBeenCalledWith("/wiki/gates");
+	});
 });
 
 describe("the Champion's panel edge", () => {

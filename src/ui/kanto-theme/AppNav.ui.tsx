@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import {
 	COMMUNITY,
@@ -14,6 +14,7 @@ import { Balance } from "./Balance.ui";
 import { Climber } from "./Climber.ui";
 import { Figures } from "./Figures.ui";
 import { Logo } from "./Logo.ui";
+import { opensHere } from "./opensHere";
 import { NavDisclosure, NavDivider } from "./NavDisclosure.ui";
 import { SwatchTrack } from "./SwatchTrack.ui";
 import { Typography } from "./Typography.ui";
@@ -26,6 +27,7 @@ export const COPY = {
 	community: COMMUNITY,
 	suggest: SUGGEST_A_POLL,
 	suggestFor: (reward: string) => `${SUGGEST_A_POLL} · ${reward}`,
+	wiki: "Wiki",
 	signIn: "Sign in",
 	signOut: "Sign out",
 	profile: "Profile & Dex",
@@ -63,6 +65,8 @@ const ITEM_ELSEWHERE =
 const SIGN_IN =
 	"inline-flex shrink-0 items-center rounded-md px-3 py-1.5 text-sm font-bold text-theme-faint ring-1 ring-inset ring-theme-soft transition-colors hover:bg-theme-raised";
 
+const SIGNED_OUT = "ml-auto flex shrink-0 items-center gap-1";
+
 const MENU = "flex w-64 flex-col";
 const MENU_HEAD = "flex items-start gap-3 px-4 py-3";
 const MENU_NAMING = "flex min-w-0 flex-col gap-1.5";
@@ -71,6 +75,7 @@ const STANDING = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
 const MENU_ROW_LOOK =
 	"px-4 py-2 text-sm text-theme-soft transition-colors hover:bg-theme-raised";
 const MENU_ROW = clsx("block", MENU_ROW_LOOK);
+const MENU_ROW_PHONE = clsx("block md:hidden", MENU_ROW_LOOK);
 const MENU_ROW_BADGED = clsx(
 	"flex items-center gap-2 md:hidden",
 	MENU_ROW_LOOK
@@ -81,13 +86,6 @@ const TAB_BAR =
 	"fixed inset-x-0 bottom-0 z-30 grid h-15 grid-cols-3 gap-1 border-t border-theme-faint bg-black px-2 py-1.5 md:hidden";
 const TAB =
 	"flex min-w-0 items-center justify-center gap-1.5 rounded-lg text-sm font-bold transition-colors";
-
-const opensHere = (event: MouseEvent<HTMLAnchorElement>): boolean =>
-	event.button === 0 &&
-	!event.metaKey &&
-	!event.ctrlKey &&
-	!event.shiftKey &&
-	!event.altKey;
 
 type NavAnchorProps = {
 	href: string;
@@ -154,6 +152,7 @@ export type AppNavProps = {
 	signInHref: string;
 	run: NavRun;
 	community: NavTarget;
+	wiki: NavTarget;
 	suggest: NavSuggest;
 	viewer?: NavViewer;
 	reading?: NavRunReading;
@@ -247,10 +246,16 @@ const Standing = ({ viewer }: { viewer: NavViewer }) => (
 type AccountMenuProps = {
 	viewer: NavViewer;
 	suggest: NavSuggest;
+	wiki: NavTarget;
 	onNavigate?: (href: string) => void;
 };
 
-const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
+const AccountMenu = ({
+	viewer,
+	suggest,
+	wiki,
+	onNavigate,
+}: AccountMenuProps) => (
 	<NavDisclosure
 		summary={
 			<>
@@ -296,6 +301,13 @@ const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
 			>
 				<SuggestLabel reward={suggest.reward} />
 			</NavAnchor>
+			<NavAnchor
+				href={wiki.href}
+				className={MENU_ROW_PHONE}
+				onNavigate={onNavigate}
+			>
+				{COPY.wiki}
+			</NavAnchor>
 
 			<NavDivider />
 
@@ -312,6 +324,7 @@ export const AppNav = ({
 	signInHref,
 	run,
 	community,
+	wiki,
 	suggest,
 	viewer,
 	reading,
@@ -329,13 +342,16 @@ export const AppNav = ({
 			</NavAnchor>
 
 			{viewer === undefined ? (
-				<NavAnchor
-					href={signInHref}
-					className={clsx(SIGN_IN, "ml-auto")}
-					onNavigate={onNavigate}
-				>
-					{COPY.signIn}
-				</NavAnchor>
+				<span className={SIGNED_OUT}>
+					<NavItem {...wiki} label={COPY.wiki} onNavigate={onNavigate} />
+					<NavAnchor
+						href={signInHref}
+						className={SIGN_IN}
+						onNavigate={onNavigate}
+					>
+						{COPY.signIn}
+					</NavAnchor>
+				</span>
 			) : (
 				<nav className={GROUP}>
 					<NavItem
@@ -358,6 +374,7 @@ export const AppNav = ({
 					>
 						<SuggestLabel reward={suggest.reward} />
 					</NavAnchor>
+					<NavItem {...wiki} label={COPY.wiki} onNavigate={onNavigate} />
 				</nav>
 			)}
 			{viewer === undefined || reading === undefined ? null : (
@@ -383,6 +400,7 @@ export const AppNav = ({
 				<AccountMenu
 					viewer={viewer}
 					suggest={suggest}
+					wiki={wiki}
 					onNavigate={onNavigate}
 				/>
 				<TabBar

@@ -37,6 +37,8 @@ export const KNOWN_ROUTE_IDS = [
 	"/_authed/run/",
 	"/_authed/polls/$pollId/edit",
 	"/_authed/polls/$pollId/",
+	"/wiki/",
+	"/wiki/$articleId",
 ] as const;
 
 const ROUTE_IDS = new Set<string>(KNOWN_ROUTE_IDS);

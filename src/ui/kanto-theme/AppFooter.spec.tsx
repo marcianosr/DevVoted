@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { AppFooter, type AppFooterProps } from "./AppFooter.ui";
 
@@ -9,6 +10,7 @@ const PROPS: AppFooterProps = {
 	configCount: 46,
 	lastCommitDate: "26 Sep 2026",
 	lastCommitAuthor: "marciano",
+	wikiHref: "/wiki",
 };
 
 describe("AppFooter", () => {
@@ -106,5 +108,23 @@ describe("AppFooter", () => {
 			"data-screen-theme",
 			"pewter"
 		);
+	});
+
+	it("links to the wiki", () => {
+		render(<AppFooter {...PROPS} />);
+
+		expect(screen.getByRole("link", { name: /wiki/ })).toHaveAttribute(
+			"href",
+			"/wiki"
+		);
+	});
+
+	it("opens the wiki in place on a plain click", async () => {
+		const onNavigate = vi.fn();
+		render(<AppFooter {...PROPS} onNavigate={onNavigate} />);
+
+		await userEvent.click(screen.getByRole("link", { name: /wiki/ }));
+
+		expect(onNavigate).toHaveBeenCalledWith("/wiki");
 	});
 });

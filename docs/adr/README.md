@@ -61,7 +61,7 @@ it before proposing one again.**
 | [073](073-coverage-is-a-flat-gain-reset-every-gate.md) | **Coverage is a flat gain over every slot the run has opened** | Accepted — supersedes 013's decision 1; amended by 081 and 094 (D2); half built |
 | [074](074-weight-is-what-the-build-costs-to-run.md) | **Weight is what the build costs to run** | Accepted — built by 082, which amends decisions 2, 3 and 4 |
 | [075](075-a-full-bar-pays-a-bonus.md) | A gate closed at full coverage pays a bonus | Accepted — amended by 076 (the swatch is marked); context figures superseded by 094 |
-| [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; routed by `gateRulingFor`; amended by 094 (a hold names its reason) |
+| [076](076-the-closing-band-decides-what-it-costs.md) | **The band a gate closes in decides what it costs** | Accepted — supersedes 071; routed by `gateRulingFor`; amended by 094 (a hold names its reason); the cut was never built, 191 boosts instead |
 | [077](077-the-pin-rides-the-fill-it-names.md) | The pin rides the fill it names | Accepted — amends 070; the coverage bar states what it moved to |
 | [078](078-prep-reads-in-two-columns.md) | **Prep and New run read in two columns, and the band table drops its prose** | Accepted — supersedes 072; restores 032's shop link; D2 and D5 superseded by 149, D10 by 139 |
 | [079](079-a-partial-answer-pays-a-quarter-at-a-time.md) | **A partial answer pays a quarter at a time** | Accepted — amends 006 §11; the ladder 081 doubles |
@@ -80,7 +80,7 @@ it before proposing one again.**
 | [093](093-a-poll-states-how-the-room-did.md) | A poll states how the room did on it | Accepted |
 | [094](094-the-bands-are-cut-in-answers-and-widen-with-the-climb.md) | **The bands are cut in answers per gate and widen with the climb, and a gate asks two of its own five** | Accepted — amends 073 D2, 057, 076; wires `FLOOR_CORRECT`; the floor is yesterday's HEALTHY line |
 | [095](095-a-score-chip-carries-its-own-receipt.md) | **A score chip carries its own receipt, stated in units that sum** | Accepted — amends 084 D1 and D2; every paid chip opens its own breakdown, the column adds up |
-| [096](096-a-config-can-promise-a-band-or-catch-one.md) | **A config can promise a band, or catch one** | Accepted — SLA is the first band→KB slope; Try/Catch turns one DANGER close into a hold and is spent doing it |
+| [096](096-a-config-can-promise-a-band-or-catch-one.md) | **A config can promise a band, or catch one** | Accepted — SLA was the first band→KB slope (191 adds the band bonus); Try/Catch turns one DANGER close into a hold and is spent doing it |
 | [097](097-a-rolled-upgrade-climbs-on-a-coin-flip.md) | **A rolled upgrade climbs on a coin flip** | Accepted — amends 053 D4; one rung up then 1-in-2 per further rung to the cap; odds read as `1 in N rolls`; the registry offer sells through `draft` |
 | [098](098-build-space-scales-with-the-build.md) | **Build space scales with the build, and the install press states the bill** | Accepted — supersedes 082 D1, D2, D3 and D5 and restates its D4; the rung is derived from `billableSlotsOf`, never picked; crossing one arms the install press; ladder and prices unchanged |
 | [099](099-audits-are-fired-by-rivals.md) | Audits are fired by rivals, and the gate's count is its capacity | Accepted — **D1 and D3 superseded by 138** (the gate draws again, and an incident is bought rather than earned); D2, D4 and D5 stand as amended by 138; amended by 105 |
@@ -176,6 +176,8 @@ it before proposing one again.**
 | [187](187-the-polls-dex-is-a-box-and-a-poll-is-caught-when-answered-right.md) | **The polls Dex is a box, and a poll is caught when answered right** | Accepted — unseen / seen / caught; category strip with meters, seen list beside the entry, a numbered box of every poll; amends ADR-151 for polls |
 | [188](188-a-phone-navigates-from-a-bottom-tab-bar.md) | **A phone navigates from a bottom tab bar** | Accepted — Daily Run · Community · Profile fixed at the bottom below md; start presses stick just above it via --tab-bar |
 | [189](189-an-advertisement-states-a-true-offer.md) | **An advertisement states a true offer** | Accepted — poll editors or one border for sale, rolled after hydration, dismissed per screen per session; no admin poll ad; kinds are weighted entries; a bottom banner on pages without a card |
+| [190](190-the-player-wiki-reads-the-models.md) | **The player wiki reads the models** | Accepted — a public `/wiki` in a new `guide` context; shipped rules only, no rationale; every figure from a model; secrets the Dex redacts stay redacted |
+| [191](191-a-better-clearing-band-pays-more.md) | **A better clearing band pays more** | Accepted — the clear is multiplied ×1 OK, ×1.25 HEALTHY, ×1.5 PERFECT (`BAND_BONUS`); a boost, not ADR-076's cut; the dead `payoutRatioFor` slope is deleted |
 
 ## Retired
 

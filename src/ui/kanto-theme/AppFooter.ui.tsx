@@ -1,6 +1,7 @@
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
 import { Logo } from "./Logo.ui";
+import { opensHere } from "./opensHere";
 import { Typography } from "./Typography.ui";
 
 const COPY = {
@@ -10,10 +11,12 @@ const COPY = {
 	by: "by",
 	since: "since 2022",
 	report: "report a bug",
+	wiki: "wiki",
 } as const;
 
 const ISSUES = "https://github.com/marcianosr/DevVoted/issues";
 const BUG = "🐛";
+const BOOK = "📖";
 const SEPARATOR = "·";
 const THEME: KantoColor = "pewter";
 
@@ -33,6 +36,8 @@ export type AppFooterProps = {
 	configCount: number;
 	lastCommitDate: string;
 	lastCommitAuthor: string;
+	wikiHref: string;
+	onNavigate?: (href: string) => void;
 };
 
 export const AppFooter = ({
@@ -41,6 +46,8 @@ export const AppFooter = ({
 	configCount,
 	lastCommitDate,
 	lastCommitAuthor,
+	wikiHref,
+	onNavigate,
 }: AppFooterProps) => (
 	<footer className={FOOTER}>
 		<div data-screen-theme={THEME} className={CARD}>
@@ -69,6 +76,18 @@ export const AppFooter = ({
 					{` ${SEPARATOR} ${COPY.since}`}
 				</Typography>
 
+				<a
+					className={REPORT}
+					href={wikiHref}
+					onClick={(event) => {
+						if (onNavigate === undefined || !opensHere(event)) return;
+						event.preventDefault();
+						onNavigate(wikiHref);
+					}}
+				>
+					<span aria-hidden>{BOOK}</span>
+					{COPY.wiki}
+				</a>
 				<a className={REPORT} href={ISSUES} target="_blank" rel="noreferrer">
 					<span aria-hidden>{BUG}</span>
 					{COPY.report}

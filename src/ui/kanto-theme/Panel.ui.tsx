@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 
 import { Badge } from "./Badge.ui";
 import type { KantoColor } from "./colors";
+import { opensHere } from "./opensHere";
 import { Typography } from "./Typography.ui";
 
 export const PANEL_SURFACE =
@@ -25,6 +26,7 @@ const ROW =
 const ROW_LINK = "transition-colors hover:bg-theme-raised";
 const ROW_PRESS = `${ROW_LINK} cursor-pointer text-left`;
 const ROW_PICKED = "bg-theme-raised ring-1 ring-theme ring-inset";
+const ROW_HERE = "bg-theme-raised";
 const FOOTER =
 	"flex flex-wrap items-center gap-3 border-t border-theme-faint px-4 py-3";
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
@@ -118,6 +120,7 @@ export type PanelRowProps = {
 	className?: string;
 	href?: string;
 	onPress?: () => void;
+	onNavigate?: (href: string) => void;
 	picked?: boolean;
 };
 
@@ -128,6 +131,7 @@ const PanelRow = ({
 	className,
 	href,
 	onPress,
+	onNavigate,
 	picked,
 }: PanelRowProps) => {
 	const content = (
@@ -167,8 +171,14 @@ const PanelRow = ({
 	return (
 		<a
 			href={href}
+			aria-current={picked === true ? "page" : undefined}
 			data-screen-theme={theme}
-			className={clsx(ROW, ROW_LINK, className)}
+			className={clsx(ROW, ROW_LINK, picked === true && ROW_HERE, className)}
+			onClick={(event) => {
+				if (onNavigate === undefined || !opensHere(event)) return;
+				event.preventDefault();
+				onNavigate(href);
+			}}
 		>
 			{content}
 		</a>
