@@ -79,4 +79,25 @@ describe("AdvertisementCard", () => {
 			container.querySelector('img[src="/borders/rareware.svg"]')
 		).toBeInTheDocument();
 	});
+
+	it("draws the banner as a closable card over the page", async () => {
+		const onDismiss = vi.fn();
+		renderCard({ variant: "banner", onDismiss });
+
+		expect(
+			screen.getByRole("complementary", { name: COPY.legend })
+		).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: COPY.dismiss(TITLE) })
+		);
+
+		expect(onDismiss).toHaveBeenCalledOnce();
+	});
+
+	it("badges the price beside the title when the offer has one", () => {
+		renderCard({ title: "Pelican Town border", price: "8 MB" });
+
+		expect(screen.getByText("Pelican Town border")).toBeInTheDocument();
+		expect(screen.getByText("8 MB")).toBeInTheDocument();
+	});
 });

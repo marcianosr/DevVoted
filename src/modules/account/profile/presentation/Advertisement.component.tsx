@@ -1,17 +1,20 @@
+import { useRouterState } from "@tanstack/react-router";
+
 import type { AccountUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { useViewer } from "~/modules/account/auth/application/useViewer.hook";
 import {
 	advertisementFor,
 	advertisementPropsFor,
 	type AdvertisementPlacement,
+	isBannerPage,
+	isDismissibleVariant,
+	variantAt,
 } from "~/modules/account/profile/application/advertisement.viewmodel";
 import { useAdvertisementRoll } from "~/modules/account/profile/application/useAdvertisementRoll.hook";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import { AdvertisementCard } from "~/modules/account/profile/presentation/AdvertisementCard.ui";
 import { profilePathFor } from "~/shared/lib/profilePath";
 import { isAdminEmail } from "~/shared/utils/adminAuth";
-
-const STRIP_PLACEMENT: AdvertisementPlacement = "poll";
 
 export type AdvertisementProps = { placement: AdvertisementPlacement };
 
@@ -32,7 +35,7 @@ const ViewerAdvertisement = ({ placement, user }: ViewerAdvertisementProps) => {
 	);
 	if (!advertisement) return null;
 
-	const isStrip = placement === STRIP_PLACEMENT;
+	const variant = variantAt(placement);
 
 	return (
 		<AdvertisementCard
@@ -44,8 +47,8 @@ const ViewerAdvertisement = ({ placement, user }: ViewerAdvertisementProps) => {
 				},
 				profilePathFor(user.id)
 			)}
-			variant={isStrip ? "strip" : "card"}
-			onDismiss={isStrip ? undefined : dismiss}
+			variant={variant}
+			onDismiss={isDismissibleVariant(variant) ? dismiss : undefined}
 		/>
 	);
 };
@@ -56,4 +59,12 @@ export const Advertisement = ({ placement }: AdvertisementProps) => {
 	return user === null ? null : (
 		<ViewerAdvertisement placement={placement} user={user} />
 	);
+};
+
+export const AdvertisementBanner = () => {
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	});
+
+	return isBannerPage(pathname) ? <Advertisement placement="banner" /> : null;
 };

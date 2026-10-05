@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	ADVERTISEMENTS,
 	advertisementFor,
 	advertisementPropsFor,
 	bordersForSaleTo,
+	isBannerPage,
+	isDismissibleVariant,
+	variantAt,
 } from "~/modules/account/profile/application/advertisement.viewmodel";
 import {
 	borders,
@@ -77,6 +81,85 @@ describe("advertisementFor", () => {
 	});
 });
 
+describe("ADVERTISEMENTS", () => {
+	it("lists each kind of advertisement once", () => {
+		expect(ADVERTISEMENTS.map((entry) => entry.kind)).toEqual([
+			"suggest",
+			"border",
+		]);
+	});
+
+	it("weighs poll editors and borders the same", () => {
+		const [suggest, border] = ADVERTISEMENTS;
+
+		expect(suggest.weight).toBe(border.weight);
+	});
+});
+
+describe("advertisementFor by weight", () => {
+	it("advertises poll editors just below the halfway roll", () => {
+		expect(advertisementFor(PLAYER, { kind: 0.49, border: 0 })?.kind).toBe(
+			"suggest"
+		);
+	});
+
+	it("advertises a border just above the halfway roll", () => {
+		expect(advertisementFor(PLAYER, { kind: 0.51, border: 0 })?.kind).toBe(
+			"border"
+		);
+	});
+});
+
+describe("isBannerPage", () => {
+	it.each(["/", "/polls", "/polls/42", "/admin"])(
+		"runs the banner along %s, which carries no advertisement card",
+		(pathname) => {
+			expect(isBannerPage(pathname)).toBe(true);
+		}
+	);
+
+	it.each([
+		"/run",
+		"/run/poll",
+		"/run/new",
+		"/run/community",
+		"/profile/misty",
+	])("leaves the banner off %s, which carries its own card", (pathname) => {
+		expect(isBannerPage(pathname)).toBe(false);
+	});
+
+	it("leaves the banner off the suggest form, which is where it leads", () => {
+		expect(isBannerPage(SUGGEST_POLL_PATH)).toBe(false);
+	});
+
+	it.each(["/login", "/sign-up"])(
+		"leaves the banner off %s, before anyone is signed in",
+		(pathname) => {
+			expect(isBannerPage(pathname)).toBe(false);
+		}
+	);
+});
+
+describe("variantAt", () => {
+	it("draws the poll screen's advertisement as a strip nobody can close", () => {
+		expect(variantAt("poll")).toBe("strip");
+		expect(isDismissibleVariant("strip")).toBe(false);
+	});
+
+	it("draws the banner placement as a closable banner", () => {
+		expect(variantAt("banner")).toBe("banner");
+		expect(isDismissibleVariant("banner")).toBe(true);
+	});
+
+	it.each(["hub", "newRun", "profile", "community"] as const)(
+		"draws %s as a closable card",
+		(placement) => {
+			expect(variantAt(placement)).toBe("card");
+			expect(isDismissibleVariant("card")).toBe(true);
+		}
+	);
+});
+
 describe("advertisementPropsFor", () => {
 	it("asks for poll editors and states the archive reward", () => {
 		const props = advertisementPropsFor(
@@ -93,7 +176,7 @@ describe("advertisementPropsFor", () => {
 		});
 	});
 
-	it("titles a border by its name and price, and shows it on the player's own face", () => {
+	it("titles a border by its name, badges its price, and shows it on the player's own face", () => {
 		const react = findBorderById("border-react");
 		if (react === undefined) throw new Error("border-react is missing");
 
@@ -104,7 +187,8 @@ describe("advertisementPropsFor", () => {
 		);
 
 		expect(props).toEqual({
-			title: "React Initiate · 256 KB",
+			title: "React Initiate border",
+			price: "256 KB",
 			text: react.description,
 			icon: {
 				kind: "face",

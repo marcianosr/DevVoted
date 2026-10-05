@@ -28,7 +28,7 @@ const STAT = "flex items-center gap-1.5 text-theme-muted";
 
 const COLUMNS =
 	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]";
-const SIDE = "flex w-full min-w-0 flex-col gap-6";
+const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const ROW_LABEL = "flex min-w-0 flex-wrap items-center gap-x-2";
 const TALLY = "flex items-center gap-2";
 
@@ -340,13 +340,15 @@ export const CommunityScreen = ({
 		<CommunityHeading {...header} />
 		<WhereEveryoneIs {...map} />
 		<div className={COLUMNS}>
-			<FivePolls {...polls} />
-			<div className={SIDE}>
+			<div className={COLUMN}>
+				<FivePolls {...polls} />
+				{advertisement}
+			</div>
+			<div className={COLUMN}>
 				{hallOfFame === undefined ? null : <HallOfFame {...hallOfFame} />}
 				<Turnout {...turnout} />
 				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
 				<LeaderBoards boards={leaders} />
-				{advertisement}
 			</div>
 		</div>
 	</Screen>

@@ -1335,7 +1335,9 @@ polls pay nothing) or one border you do not own and can buy, titled with its nam
 price, drawn on your own face, opening the borders tab. Which one shows is rolled
 fresh each time a screen opens, half and half. A card's × hides that screen's card
 for the rest of the session; the poll strip has no ×. A player who owns every border
-only sees the poll editors card.
+only sees the poll editors card. Every other signed-in page (home, the
+poll list, admin) carries the same advertisement as a banner along the bottom of the
+screen, closable the same way.
 
 ### 6.6 Titles
 

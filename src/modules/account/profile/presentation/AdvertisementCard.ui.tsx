@@ -1,3 +1,8 @@
+import type { ReactElement } from "react";
+
+import { clsx } from "clsx";
+
+import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import { Climber } from "~/ui/kanto-theme/Climber.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
@@ -11,15 +16,22 @@ export const COPY = {
 } as const;
 
 const THEME: KantoColor = "viridian";
+const PRICE_COLOR: KantoColor = "saffron";
 const DISMISS_GLYPH = "×";
 
 const CARD =
-	"relative flex flex-wrap items-center gap-4 rounded-2xl sm:flex-nowrap border border-theme-faint bg-theme-faint px-4 pt-5 pb-4";
+	"relative flex flex-wrap items-center gap-4 rounded-2xl sm:flex-nowrap border border-theme-faint px-4 pt-5 pb-4";
+const CARD_SURFACE = "bg-theme-faint";
 const LEGEND =
 	"absolute -top-2 left-4 rounded-xs bg-theme-raised px-1.5 text-[10px] leading-4 font-bold tracking-widest text-theme-muted uppercase";
 const COOKIE = "flex size-9 shrink-0 items-center justify-center text-2xl";
+const TITLE_ROW = "flex flex-wrap items-center gap-2";
 const COPY_BLOCK = "flex min-w-0 flex-1 basis-48 flex-col gap-0.5";
 const ACTIONS = "ml-auto flex shrink-0 items-center gap-2";
+
+const BANNER_SEAT =
+	"fixed inset-x-4 bottom-[calc(var(--tab-bar,0px)+1rem)] z-20 mx-auto max-w-3xl";
+const BANNER_SURFACE = "bg-surface shadow-lg";
 
 const STRIP =
 	"flex min-w-0 items-center gap-2 rounded-md border border-theme-faint bg-theme-faint px-3 py-1.5 text-xs";
@@ -35,12 +47,15 @@ export type AdvertisementIcon =
 
 export type AdvertisementCta = { label: string; href: string };
 
+export type AdvertisementVariant = "card" | "strip" | "banner";
+
 export type AdvertisementCardProps = {
 	title: string;
+	price?: string;
 	text: string;
 	icon: AdvertisementIcon;
 	cta: AdvertisementCta;
-	variant?: "card" | "strip";
+	variant?: AdvertisementVariant;
 	onDismiss?: () => void;
 };
 
@@ -58,10 +73,14 @@ const Icon = ({ icon }: { icon: AdvertisementIcon }) =>
 		/>
 	);
 
-const Strip = ({ title, text, cta }: AdvertisementCardProps) => (
+const Price = ({ price }: Pick<AdvertisementCardProps, "price">) =>
+	price === undefined ? null : <Badge color={PRICE_COLOR}>{price}</Badge>;
+
+const Strip = ({ title, price, text, cta }: AdvertisementCardProps) => (
 	<aside aria-label={COPY.legend} data-screen-theme={THEME} className={STRIP}>
 		<span className={STRIP_LEGEND}>{COPY.legend}</span>
 		<span className={STRIP_TITLE}>{title}</span>
+		<Price price={price} />
 		<span className={STRIP_TEXT}>{text}</span>
 		<span className={STRIP_CTA}>
 			<Link href={cta.href}>{cta.label}</Link>
@@ -71,18 +90,27 @@ const Strip = ({ title, text, cta }: AdvertisementCardProps) => (
 
 const Card = ({
 	title,
+	price,
 	text,
 	icon,
 	cta,
+	variant,
 	onDismiss,
 }: AdvertisementCardProps) => (
-	<aside aria-label={COPY.legend} data-screen-theme={THEME} className={CARD}>
+	<aside
+		aria-label={COPY.legend}
+		data-screen-theme={THEME}
+		className={clsx(CARD, variant === "banner" ? BANNER_SURFACE : CARD_SURFACE)}
+	>
 		<span className={LEGEND}>{COPY.legend}</span>
 		<Icon icon={icon} />
 		<div className={COPY_BLOCK}>
-			<Typography variant="accent" as="p">
-				{title}
-			</Typography>
+			<span className={TITLE_ROW}>
+				<Typography variant="accent" as="p">
+					{title}
+				</Typography>
+				<Price price={price} />
+			</span>
 			<Typography variant="hint">{text}</Typography>
 		</div>
 		<div className={ACTIONS}>
@@ -99,5 +127,18 @@ const Card = ({
 	</aside>
 );
 
-export const AdvertisementCard = (props: AdvertisementCardProps) =>
-	props.variant === "strip" ? <Strip {...props} /> : <Card {...props} />;
+const Banner = (props: AdvertisementCardProps) => (
+	<div className={BANNER_SEAT}>
+		<Card {...props} />
+	</div>
+);
+
+const VARIANT = { card: Card, strip: Strip, banner: Banner } satisfies Record<
+	AdvertisementVariant,
+	(props: AdvertisementCardProps) => ReactElement
+>;
+
+export const AdvertisementCard = (props: AdvertisementCardProps) => {
+	const Variant = VARIANT[props.variant ?? "card"];
+	return <Variant {...props} />;
+};
