@@ -17,6 +17,7 @@ import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.h
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { useAnswerFeedback } from "~/modules/run/run/presentation/useAnswerFeedback.hook";
 import { PollScreen } from "~/ui/kanto-theme/PollScreen.ui";
+import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 
 export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
 	onAnswer: (optionIds: readonly string[]) => void;
@@ -78,5 +79,7 @@ export const PollView = ({
 		ui: { build, clockMs, buildOpen: !small },
 	});
 
-	return props === null ? null : <PollScreen {...props} />;
+	return props === null ? null : (
+		<PollScreen {...props} advertisement={<Advertisement placement="poll" />} />
+	);
 };

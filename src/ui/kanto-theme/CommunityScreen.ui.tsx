@@ -101,6 +101,7 @@ export type CommunityScreenProps = {
 	hallOfFame?: HallOfFameProps;
 	leaders: readonly CommunityLeaders[];
 	polls: CommunityPolls;
+	advertisement?: ReactNode;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
@@ -331,6 +332,7 @@ export const CommunityScreen = ({
 	hallOfFame,
 	leaders,
 	polls,
+	advertisement,
 	width = "wide",
 	ground = "bare",
 }: CommunityScreenProps) => (
@@ -344,6 +346,7 @@ export const CommunityScreen = ({
 				<Turnout {...turnout} />
 				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
 				<LeaderBoards boards={leaders} />
+				{advertisement}
 			</div>
 		</div>
 	</Screen>

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
@@ -97,6 +99,7 @@ export type TodayScreenProps = {
 	build: TodayBuildProps | null;
 	community: TodayCommunityProps | null;
 	refusal?: string;
+	advertisement?: ReactNode;
 };
 
 const Strip = ({ swatches, storage, ...readout }: HubStrip) => (
@@ -298,6 +301,7 @@ export const TodayScreen = ({
 	build,
 	community,
 	refusal,
+	advertisement,
 }: TodayScreenProps) => (
 	<Screen gate={swatch.theme} width="default" ground="bare">
 		<Panel>
@@ -340,5 +344,7 @@ export const TodayScreen = ({
 		)}
 
 		{community === null ? null : <CommunityStrip {...community} />}
+
+		{advertisement}
 	</Screen>
 );
