@@ -1,6 +1,6 @@
 {
+	"version": "2.0.1",
 	"name": "devvoted",
-	"version": "2.0.0",
 	"description": "DevVoted - A developer quiz game with roguelike mechanics",
 	"engines": {
 		"node": ">=24"
