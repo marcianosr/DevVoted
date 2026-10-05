@@ -9,6 +9,7 @@ import {
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
+import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import { Typography } from "./Typography.ui";
 
@@ -16,6 +17,9 @@ const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
 const PROSE = "whitespace-pre-line";
 const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
+const VOTES = "w-8 text-right text-xs tabular-nums text-theme-soft";
+const VOTER_FACES_SLOT = "flex w-24 justify-end";
+const VOTER_FACES = 3;
 
 const SEPARATOR = "·";
 
@@ -25,25 +29,35 @@ export const questionFactsOf = ({
 }: Pick<QuestionProps, "options" | "answerType">) =>
 	`${options.length} options ${SEPARATOR} ${ANSWER_TYPE_LABEL[answerType]}`;
 
+export type QuestionVoters = {
+	climbers: readonly ClimberProps[];
+	count: number;
+	overflow?: number;
+};
+
 export type QuestionOption = {
 	id: string;
 	letter: string;
 	label?: ReactNode;
+	voters?: QuestionVoters;
 	seal?: ChoiceSeal;
 	crossedOut?: boolean;
 	state?: ChoiceState;
 };
 
+export type QuestionStem = "full" | "code";
+
 export type QuestionProps = {
 	answerType: AnswerType;
 	question: string;
+	stem?: QuestionStem;
 	options: readonly QuestionOption[];
 	codeBlock?: string;
 	pickedIds?: readonly string[];
 	onPick?: (id: string) => void;
 };
 
-const CodeSpans = ({ text }: { text: string }) => (
+export const CodeSpans = ({ text }: { text: string }) => (
 	<span className={PROSE}>
 		{splitCodeSpans(text).map((span, index) =>
 			span.kind === "code" ? (
@@ -57,8 +71,16 @@ const CodeSpans = ({ text }: { text: string }) => (
 	</span>
 );
 
-const QuestionText = ({ question }: { question: string }) => {
-	const parts = splitCodeBlocks(question);
+const QuestionText = ({
+	question,
+	stem,
+}: {
+	question: string;
+	stem: QuestionStem;
+}) => {
+	const parts = splitCodeBlocks(question).filter(
+		(part) => stem === "full" || part.kind === "block"
+	);
 	const heading = parts.findIndex((part) => part.kind === "prose");
 	return (
 		<>
@@ -81,16 +103,30 @@ const QuestionText = ({ question }: { question: string }) => {
 	);
 };
 
+const Voters = ({ climbers, count, overflow }: QuestionVoters) => (
+	<>
+		<span className={VOTER_FACES_SLOT}>
+			<ClimberStack
+				climbers={climbers}
+				overflow={overflow}
+				shown={VOTER_FACES}
+			/>
+		</span>
+		<span className={VOTES}>{count.toLocaleString()}</span>
+	</>
+);
+
 export const Question = ({
 	answerType,
 	question,
+	stem = "full",
 	options,
 	codeBlock,
 	pickedIds = [],
 	onPick,
 }: QuestionProps) => (
 	<section className={BLOCK}>
-		<QuestionText question={question} />
+		<QuestionText question={question} stem={stem} />
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 
@@ -121,6 +157,11 @@ export const Question = ({
 						crossedOut={option.crossedOut}
 						state={option.state}
 						onPick={pick}
+						aside={
+							option.voters === undefined ? undefined : (
+								<Voters {...option.voters} />
+							)
+						}
 					>
 						{option.label}
 					</Choice>

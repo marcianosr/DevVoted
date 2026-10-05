@@ -295,21 +295,23 @@ describe(runSoFarFor, () => {
 
 describe(hubBuildFor, () => {
 	it("lists each installed config with its weight and version", () => {
-		const build = hubBuildFor(
-			createMockRunView({
-				installed: [
-					{
-						config: { ...CONFIGS.codeCoverage, level: 2 },
-						slots: 2,
-						canMinify: false,
-						minifySavingSlots: 0,
-					},
-				],
-				slotsUsed: 4,
-				slots: 6,
-				slotsFree: 2,
-			})
-		);
+		const view = createMockRunView({
+			installed: [
+				{
+					config: { ...CONFIGS.codeCoverage, level: 2 },
+					slots: 2,
+					canMinify: false,
+					minifySavingSlots: 0,
+				},
+			],
+			slotsUsed: 4,
+			slots: 6,
+			slotsFree: 2,
+		});
+		const build = hubBuildFor({
+			...view,
+			buildSpace: { ...view.buildSpace, freeWeight: 2 },
+		});
 
 		expect(build).toEqual({
 			rows: [
@@ -318,6 +320,16 @@ describe(hubBuildFor, () => {
 			weight: "4 / 6",
 			free: 2,
 		});
+	});
+
+	it("states the weight free under the current space, not the room up to the top rung", () => {
+		const view = createMockRunView({ slotsUsed: 3, slots: 4, slotsFree: 29 });
+		const build = hubBuildFor({
+			...view,
+			buildSpace: { ...view.buildSpace, space: 4, weight: 3, freeWeight: 1 },
+		});
+
+		expect(build?.free).toBe(1);
 	});
 
 	it("has no build before a run is open", () => {

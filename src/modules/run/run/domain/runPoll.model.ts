@@ -20,7 +20,8 @@ export type AnswerType = "single" | "multiple";
 
 export type PollAuthor = {
 	readonly userId?: string;
-	readonly handle: string;
+	readonly name: string;
+	readonly handle?: string;
 	readonly avatarUrl?: string;
 	readonly borderUrl?: string;
 	readonly role?: string;

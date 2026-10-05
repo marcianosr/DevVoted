@@ -1,9 +1,9 @@
-import { AnswerDiff, type AnswerDiffProps } from "./AnswerDiff.ui";
 import { Author, type AuthorProps } from "./Author.ui";
+import { Badge } from "./Badge.ui";
 import { Button } from "./Button.ui";
-import { CodeBlock } from "./CodeBlock.ui";
 import { Fold, type FoldBadge } from "./Fold.ui";
 import { Header, type HeaderProps } from "./Header.ui";
+import { CodeSpans, Question, type QuestionProps } from "./Question.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
 import { Typography } from "./Typography.ui";
@@ -13,6 +13,10 @@ const CONTROL_ROW = "flex w-full flex-wrap items-center gap-3";
 const EXPAND = "ml-auto shrink-0";
 const ROWS = "flex w-full flex-col gap-3";
 const PASSED = "opacity-70";
+const EXPLANATION =
+	"flex w-full flex-col gap-1.5 rounded-lg border border-theme-faint px-4 py-3";
+
+const COPY = { explanation: "Explanation" } as const;
 
 const EXPAND_SIZE = "md";
 
@@ -24,8 +28,8 @@ export type ReviewRow = {
 	coverage: string;
 	coverageColor?: FoldBadge["color"];
 	open?: boolean;
-	codeBlock?: string;
-	diff: AnswerDiffProps;
+	card: QuestionProps;
+	tally?: string;
 	explanation?: string;
 	note?: string;
 	author?: AuthorProps;
@@ -54,6 +58,7 @@ const Row = ({ row }: { row: ReviewRow }) => {
 			<Fold
 				lead={row.verdict}
 				leadShare={row.share}
+				leadWidth="fit"
 				heading="row"
 				title={row.question}
 				badges={[
@@ -62,14 +67,17 @@ const Row = ({ row }: { row: ReviewRow }) => {
 				]}
 				open={open}
 			>
-				{row.codeBlock === undefined ? null : (
-					<CodeBlock>{row.codeBlock}</CodeBlock>
-				)}
-				<AnswerDiff {...row.diff} />
+				<Question {...row.card} />
+				{row.tally === undefined ? null : <Badge>{row.tally}</Badge>}
 				{row.explanation === undefined ? null : (
-					<Typography variant="caption" as="p">
-						{row.explanation}
-					</Typography>
+					<div className={EXPLANATION}>
+						<Typography variant="label" as="span">
+							{COPY.explanation}
+						</Typography>
+						<Typography variant="caption" as="p">
+							<CodeSpans text={row.explanation} />
+						</Typography>
+					</div>
 				)}
 				{row.note === undefined ? null : (
 					<Typography variant="hint">{row.note}</Typography>

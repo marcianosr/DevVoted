@@ -31,6 +31,7 @@ import type {
 	HeroRecord,
 	ProfileHeroProps,
 } from "~/ui/kanto-theme/ProfileHero.ui";
+import type { PlayerHeaderSwatches } from "~/ui/kanto-theme/PlayerHeader.ui";
 import type { ProfileSeatsProps } from "~/ui/kanto-theme/ProfileSeats.ui";
 import {
 	contributionOf,
@@ -149,11 +150,12 @@ const heroRecordOf = (
 			color: ARCHIVE_COLOR,
 		},
 	],
-	swatches: {
-		label: HERO.swatches,
-		value: HERO.outOf(record.clearedGates.length, record.gatesTotal),
-		fills: swatchTrackFor(record.clearedGates),
-	},
+});
+
+const heroSwatchesOf = (record: ProfileRecord): PlayerHeaderSwatches => ({
+	label: HERO.swatches,
+	value: HERO.outOf(record.clearedGates.length, record.gatesTotal),
+	fills: swatchTrackFor(record.clearedGates),
 });
 
 export const profileHeroFor = (
@@ -163,6 +165,7 @@ export const profileHeroFor = (
 	archivedStorage: number
 ): ProfileHeroProps => ({
 	...profileCardFor(identity, you),
+	swatches: heroSwatchesOf(record),
 	...(you ? {} : { record: heroRecordOf(record, archivedStorage) }),
 });
 

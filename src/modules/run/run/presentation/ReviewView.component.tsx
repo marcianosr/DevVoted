@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { pollVotesOf } from "~/modules/run/community/application/communityScreen.viewmodel";
+import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { reviewPropsFor } from "~/modules/run/gate/application/gateReview.viewmodel";
 import { gateAnswersOf } from "~/modules/run/gate/application/gateOutcome.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -17,6 +19,7 @@ const gateOf = (view: RunView): number =>
 
 export const ReviewView = ({ view, back }: ReviewViewProps) => {
 	const [open, setOpen] = useState(false);
+	const community = useRunCommunity();
 
 	const gate = gateOf(view);
 	const props = reviewPropsFor({
@@ -25,6 +28,7 @@ export const ReviewView = ({ view, back }: ReviewViewProps) => {
 		open: open ? true : undefined,
 		swatchGates: view.swatchGates,
 		balanceKb: view.storage,
+		votes: pollVotesOf(community.view?.polls ?? []),
 	});
 
 	return (

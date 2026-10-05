@@ -50,15 +50,22 @@ const VERDICT_NAME = {
 	wrong: "wrong",
 } satisfies Record<ChoiceVerdict, string>;
 
-const VERDICT_MARK = "reveal-pop text-theme-soft";
+const VERDICT_MARK = "reveal-pop inline-block w-4 text-center text-theme-soft";
+const VERDICT_SLOT = "inline-block w-4";
 const ANSWERED = "answer-verdict bg-theme-dim";
 
-const VerdictMark = ({ verdict }: { verdict: ChoiceVerdict }) => (
-	<span className={TRAILING}>
+const VerdictGlyph = ({ verdict }: { verdict: ChoiceVerdict }) => (
+	<>
 		<span aria-hidden className={VERDICT_MARK}>
 			{VERDICT_GLYPH[verdict]}
 		</span>
 		<span className={READER_ONLY}>{VERDICT_NAME[verdict]}</span>
+	</>
+);
+
+const VerdictMark = ({ verdict }: { verdict: ChoiceVerdict }) => (
+	<span className={TRAILING}>
+		<VerdictGlyph verdict={verdict} />
 	</span>
 );
 
@@ -80,8 +87,13 @@ export type ChoiceProps = {
 	state?: ChoiceState;
 	onPick?: () => void;
 } & (
-	| { children: ReactNode; crossedOut?: boolean; seal?: never }
-	| { children?: never; crossedOut?: never; seal: ChoiceSeal }
+	| {
+			children: ReactNode;
+			crossedOut?: boolean;
+			aside?: ReactNode;
+			seal?: never;
+	  }
+	| { children?: never; crossedOut?: never; aside?: never; seal: ChoiceSeal }
 );
 
 export const Choice = ({
@@ -92,6 +104,7 @@ export const Choice = ({
 	onPick,
 	children,
 	crossedOut = false,
+	aside,
 	seal,
 }: ChoiceProps) => {
 	const answered = isAnswered(state);
@@ -123,7 +136,18 @@ export const Choice = ({
 				) : (
 					text
 				)}
-				{answered ? <VerdictMark verdict={state} /> : null}
+				{aside === undefined ? (
+					answered && <VerdictMark verdict={state} />
+				) : (
+					<span className={TRAILING}>
+						{aside}
+						{answered ? (
+							<VerdictGlyph verdict={state} />
+						) : (
+							<span aria-hidden className={VERDICT_SLOT} />
+						)}
+					</span>
+				)}
 			</>
 		);
 

@@ -7,7 +7,9 @@ import {
 	ALL,
 	EMPTY_FILTER,
 	PAGE_SIZE,
+	activeFiltersOf,
 	hasCode,
+	withoutFilter,
 	pollFactsOf,
 	pollListChoicesOf,
 	pollRowsOf,
@@ -51,6 +53,7 @@ const log = createMockPoll({
 	createdBy: BROCK,
 	codeBlock: "console.log(0.1 + 0.2)",
 	codeSandboxExample: null,
+	explanation: "Floating point.",
 });
 const sandbox = createMockPoll({
 	id: 4,
@@ -65,6 +68,11 @@ const sandbox = createMockPoll({
 });
 
 const POLLS = [flex, stacking, log, sandbox];
+
+const DEALS: ReadonlyMap<number, number> = new Map([
+	[1, 1],
+	[3, 4],
+]);
 
 const CREATORS: readonly PollCreator[] = [
 	{
@@ -125,6 +133,21 @@ describe("visiblePollsOf", () => {
 		expect(
 			idsOf(visiblePollsOf(POLLS, { ...EMPTY_FILTER, creator: MISTY }))
 		).toEqual([2, 4]);
+	});
+
+	it("keeps only polls that carry an explanation when asked for one", () => {
+		expect(
+			idsOf(visiblePollsOf(POLLS, { ...EMPTY_FILTER, withExplanation: true }))
+		).toEqual([3]);
+	});
+
+	it("narrows to polls never dealt, dealt once, or dealt again and again", () => {
+		const dealt = (times: "never" | "once" | "often") =>
+			idsOf(visiblePollsOf(POLLS, { ...EMPTY_FILTER, dealt: times }, DEALS));
+
+		expect(dealt("never")).toEqual([2, 4]);
+		expect(dealt("once")).toEqual([1]);
+		expect(dealt("often")).toEqual([3]);
 	});
 
 	it("applies every filter at once", () => {
@@ -198,6 +221,21 @@ describe("pollListChoicesOf", () => {
 		).toBe(2);
 	});
 
+	it("counts the explained polls under the other filters", () => {
+		expect(pollListChoicesOf(POLLS, EMPTY_FILTER).withExplanation).toBe(1);
+	});
+
+	it("counts how often the polls left were dealt", () => {
+		expect(
+			pollListChoicesOf(POLLS, EMPTY_FILTER, undefined, DEALS).dealt
+		).toEqual([
+			{ value: ALL, label: "any", count: 4 },
+			{ value: "never", label: "never", count: 2 },
+			{ value: "once", label: "once", count: 1 },
+			{ value: "often", label: "2+ times", count: 1 },
+		]);
+	});
+
 	it("offers no creator choices until creators are known", () => {
 		expect(pollListChoicesOf(POLLS, EMPTY_FILTER).creator).toBeUndefined();
 	});
@@ -208,6 +246,50 @@ describe("pollListChoicesOf", () => {
 			{ value: BROCK, label: "Brock" },
 			{ value: MISTY, label: "Misty" },
 		]);
+	});
+});
+
+describe("activeFiltersOf", () => {
+	it("names nothing under the empty filter", () => {
+		expect(
+			activeFiltersOf(EMPTY_FILTER, pollListChoicesOf(POLLS, EMPTY_FILTER))
+		).toEqual([]);
+	});
+
+	it("names each filter set, in the words its control uses", () => {
+		const filter = {
+			...EMPTY_FILTER,
+			search: "flex",
+			category: "css" as const,
+			withExplanation: true,
+			dealt: "never" as const,
+			creator: MISTY,
+		};
+
+		expect(
+			activeFiltersOf(filter, pollListChoicesOf(POLLS, filter, CREATORS))
+		).toEqual([
+			{ key: "search", label: "“flex”" },
+			{ key: "dealt", label: "dealt never" },
+			{ key: "withExplanation", label: "with explanation" },
+			{ key: "category", label: "CSS" },
+			{ key: "creator", label: "Misty" },
+		]);
+	});
+});
+
+describe("withoutFilter", () => {
+	it("clears only the filter it names", () => {
+		const filter = {
+			...EMPTY_FILTER,
+			category: "css" as const,
+			withCode: true,
+		};
+
+		expect(withoutFilter(filter, "category")).toEqual({
+			...EMPTY_FILTER,
+			withCode: true,
+		});
 	});
 });
 
@@ -254,6 +336,11 @@ describe("pollFactsOf", () => {
 
 	it("appends code when the poll carries an example", () => {
 		expect(pollFactsOf(log)).toBe("single answer · code");
+	});
+
+	it("appends how often the poll was dealt once it has been", () => {
+		expect(pollFactsOf(log, 4)).toBe("single answer · code · dealt 4×");
+		expect(pollFactsOf(flex, 0)).toBe("single answer");
 	});
 });
 

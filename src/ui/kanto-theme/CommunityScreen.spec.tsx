@@ -208,18 +208,6 @@ describe("CommunityScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("states how a seat moves under each board's seats", async () => {
-		render(<CommunityScreen {...props} />);
-
-		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
-			expect(
-				within(await boardOf(title)).getByText(
-					/A seat changes hands when somebody beats it/
-				)
-			).toBeInTheDocument();
-		}
-	});
-
 	it("counts how many of the revealed polls the viewer got right beside the heading", () => {
 		render(<CommunityScreen {...props} />);
 

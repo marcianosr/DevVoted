@@ -1,11 +1,14 @@
 import { Fragment } from "react";
 
 import type {
+	ActiveFilter,
+	FilterKey,
 	PollListChoices,
 	PollListFilter,
 	PollRow,
 	QuestionSegment,
 } from "~/modules/polls/authoring/application/pollList.viewmodel";
+import { pickedOf } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import type { PollStatus } from "~/modules/polls/poll/domain/poll.model";
 import { SUGGEST_A_POLL, YOUR_SUGGESTED_POLLS } from "~/shared/lib/copy";
 import { NOTHING_SHOWN } from "~/shared/lib/displayValue";
@@ -18,6 +21,7 @@ import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import { SearchField } from "~/ui/kanto-theme/SearchField.ui";
 import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
 import { Select } from "~/ui/kanto-theme/Select.ui";
+import { Switch } from "~/ui/kanto-theme/Switch.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 export const COPY = {
@@ -28,18 +32,22 @@ export const COPY = {
 		`Every poll we publish banks ${reward} in your archive.`,
 	search: "Search questions",
 	searchPlaceholder: "search questions…",
-	status: "Status",
-	answerType: "Answer type",
+	status: "status",
+	answerType: "answer",
+	dealt: "dealt",
 	withCode: "with code",
+	withExplanation: "with explanation",
 	category: "Category",
-	creator: "Creator",
+	creator: "creator",
+	clear: (label: string) => `Clear ${label}`,
+	clearAll: "clear all",
 	numberColumn: "#",
 	categoryColumn: "category",
 	questionColumn: "question",
 	byColumn: "by",
 	statusColumn: "status",
-	showing: (shown: number, matching: number) =>
-		`showing ${shown} of ${matching}`,
+	showingLead: "showing ",
+	showingTrail: (matching: number) => ` of ${matching}`,
 	loadMore: "load more",
 	empty: "No polls match these filters.",
 	loading: "Loading polls…",
@@ -59,6 +67,12 @@ const TITLE_ROW = "flex w-full flex-wrap items-center gap-x-3 gap-y-2";
 const COUNT = "text-theme-muted";
 const SUGGEST = "ml-auto";
 const TOOLBAR = "flex flex-wrap items-center gap-2";
+const TABS = "border-y border-theme-faint px-2";
+const SUMMARY = "flex flex-wrap items-center gap-2 px-4 py-3";
+const SHOWN = "font-bold text-theme-soft";
+const CHIP =
+	"badge-theme inline-flex h-7 cursor-pointer items-center gap-2 rounded-md px-2.5 text-xs font-bold";
+const CLEAR_ALL = "ml-auto";
 const SEARCH = "min-w-48 flex-1 basis-64";
 const CELLS = "flex w-full min-w-0 items-center gap-4";
 const NUMBER = "w-8 shrink-0 text-xs text-theme-muted";
@@ -152,6 +166,9 @@ export type PollListProps = {
 	rows: readonly PollRow[];
 	filter: PollListFilter;
 	choices: PollListChoices;
+	activeFilters: readonly ActiveFilter[];
+	onClearFilter: (key: FilterKey) => void;
+	onClearAll: () => void;
 	suggestHref: string;
 	reward?: string;
 	onFilterChange: (filter: PollListFilter) => void;
@@ -166,6 +183,9 @@ export const PollList = ({
 	rows,
 	filter,
 	choices,
+	activeFilters,
+	onClearFilter,
+	onClearAll,
 	suggestHref,
 	reward,
 	onFilterChange,
@@ -205,44 +225,104 @@ export const PollList = ({
 							onChange={(search) => onFilterChange({ ...filter, search })}
 						/>
 					</span>
-					<Segmented
+					<Select
+						look="inline"
 						label={COPY.status}
-						items={choices.status}
+						options={choices.status}
 						value={filter.status}
-						onSelect={(status) => onFilterChange({ ...filter, status })}
+						onChange={(status) =>
+							onFilterChange({
+								...filter,
+								status: pickedOf(choices.status, status, filter.status),
+							})
+						}
 					/>
-					<Segmented
+					<Select
+						look="inline"
 						label={COPY.answerType}
-						items={choices.answerType}
+						options={choices.answerType}
 						value={filter.answerType}
-						onSelect={(answerType) => onFilterChange({ ...filter, answerType })}
+						onChange={(answerType) =>
+							onFilterChange({
+								...filter,
+								answerType: pickedOf(
+									choices.answerType,
+									answerType,
+									filter.answerType
+								),
+							})
+						}
 					/>
-					<Button
-						label={COPY.withCode}
-						cap={choices.withCode}
-						capAt="trail"
-						pressed={filter.withCode}
-						onPress={() =>
-							onFilterChange({ ...filter, withCode: !filter.withCode })
+					<Select
+						look="inline"
+						label={COPY.dealt}
+						options={choices.dealt}
+						value={filter.dealt}
+						onChange={(dealt) =>
+							onFilterChange({
+								...filter,
+								dealt: pickedOf(choices.dealt, dealt, filter.dealt),
+							})
 						}
 					/>
 					{choices.creator === undefined ? null : (
 						<Select
+							look="inline"
 							label={COPY.creator}
 							options={choices.creator}
 							value={filter.creator}
 							onChange={(creator) => onFilterChange({ ...filter, creator })}
 						/>
 					)}
+					<Switch
+						label={COPY.withCode}
+						count={choices.withCode}
+						checked={filter.withCode}
+						onChange={(withCode) => onFilterChange({ ...filter, withCode })}
+					/>
+					<Switch
+						label={COPY.withExplanation}
+						count={choices.withExplanation}
+						checked={filter.withExplanation}
+						onChange={(withExplanation) =>
+							onFilterChange({ ...filter, withExplanation })
+						}
+					/>
 				</div>
+			</Panel.Body>
+			<div className={TABS}>
 				<Segmented
 					label={COPY.category}
 					items={choices.category}
 					value={filter.category}
-					look="loose"
+					look="tabs"
 					onSelect={(category) => onFilterChange({ ...filter, category })}
 				/>
-			</Panel.Body>
+			</div>
+			<div className={SUMMARY}>
+				<Typography variant="hint" as="span">
+					{COPY.showingLead}
+					<span className={SHOWN}>{shown}</span>
+					{COPY.showingTrail(matching)}
+				</Typography>
+				{activeFilters.map((active) => (
+					<button
+						key={active.key}
+						type="button"
+						aria-label={COPY.clear(active.label)}
+						onClick={() => onClearFilter(active.key)}
+						className={CHIP}
+					>
+						{active.label}
+						<span aria-hidden>×</span>
+					</button>
+				))}
+				{activeFilters.length === 0 ? null : (
+					<span className={CLEAR_ALL}>
+						<Button tone="ambient" label={COPY.clearAll} onPress={onClearAll} />
+					</span>
+				)}
+			</div>
 
 			<Panel.Columns columns={columnsOf(admin)} />
 			<Panel.Rows>
@@ -257,22 +337,20 @@ export const PollList = ({
 				)}
 			</Panel.Rows>
 
-			<Panel.Footer
-				trailing={
-					onLoadMore === undefined ? undefined : (
+			{onLoadMore === undefined ? null : (
+				<Panel.Footer
+					trailing={
 						<Button
 							label={COPY.loadMore}
 							icon="chevron"
 							iconAt="trail"
 							onPress={onLoadMore}
 						/>
-					)
-				}
-			>
-				<Typography variant="hint" as="span">
-					{COPY.showing(shown, matching)}
-				</Typography>
-			</Panel.Footer>
+					}
+				>
+					{null}
+				</Panel.Footer>
+			)}
 		</Panel>
 	</Screen>
 );

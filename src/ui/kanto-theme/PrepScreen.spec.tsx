@@ -215,7 +215,7 @@ describe("PrepScreen", () => {
 				const block = within(requiredBlock());
 
 				expect(block.getByText("OK")).toBeInTheDocument();
-				expect(block.getByText("advance to Celadon")).toBeInTheDocument();
+				expect(block.getByText("advance to the next gate")).toBeInTheDocument();
 				expect(block.queryByText("to clear the gate")).not.toBeInTheDocument();
 				expect(block.queryByText(/of the 5 right/)).not.toBeInTheDocument();
 			});

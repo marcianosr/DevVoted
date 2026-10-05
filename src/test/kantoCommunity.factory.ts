@@ -577,15 +577,11 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 			title: COMMUNITY_STREAK_TITLE,
 			summary: "All-time longest run streak",
 			seats: streakSeats(),
-			footer:
-				"A seat changes hands when somebody beats it. 3 seats still open.",
 		},
 		{
 			title: COMMUNITY_CORRECT_TITLE,
 			summary: "All-time longest run of correct answers",
 			seats: correctSeats(),
-			footer:
-				"A seat changes hands when somebody beats it. 3 seats still open.",
 		},
 	],
 	polls: {
@@ -622,8 +618,6 @@ export const kantoCommunityFirstClimb = (): CommunityScreenProps => {
 					category
 				)
 			),
-			footer:
-				"A seat changes hands when somebody beats it. 12 seats still open.",
 		})),
 	};
 };
@@ -633,7 +627,8 @@ export const kantoHallOfFame = (
 ): HallOfFameProps => ({
 	title: "Hall of Fame",
 	historyLabel: "Every champion",
-	empty: "No one has summited yet. The first win from Pallet takes this seat.",
+	empty:
+		"The one that wins the Champion gate will be remembered as a true Champion here — so far nobody yet.",
 	champion: {
 		card: kantoClimberCard({
 			name: "Red",

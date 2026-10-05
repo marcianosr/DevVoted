@@ -8,6 +8,7 @@ import { kbLabel } from "~/shared/lib/storage";
 
 import type {
 	ClimbFallen,
+	ClimbTodayView,
 	RunCommunityPoll,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
@@ -35,6 +36,11 @@ import type {
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
 import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
+import type { OpenedCardDetail } from "~/ui/kanto-theme/ClimbMap.ui";
+import {
+	type PlayerCardView,
+	playerCardFor,
+} from "~/modules/run/community/application/playerCard.viewmodel";
 
 const LETTERS = "ABCDEFGH";
 
@@ -46,6 +52,7 @@ const COPY = {
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
 	pollsTitle: "The day’s polls",
+	reviewAnswers: "Review answers",
 	notDealtYet: (index: number) => `Poll ${index + 1} · not dealt yet`,
 	countdownHint: "until the next five polls are dealt",
 	pollsOpen: "polls are open",
@@ -59,6 +66,32 @@ const climberOf = (voter: CommunityVoter): ClimberProps => ({
 	borderUrl: voter.borderUrl ?? undefined,
 	you: voter.you,
 });
+
+export type OptionVotes = {
+	label: string;
+	count: number;
+	climbers: readonly ClimberProps[];
+};
+
+export const pollVotesOf = (
+	polls: readonly RunCommunityPoll[]
+): ReadonlyMap<string, readonly OptionVotes[]> =>
+	new Map(
+		polls.flatMap((poll) =>
+			poll.detail === null
+				? []
+				: [
+						[
+							String(poll.pollId),
+							poll.detail.options.map((option) => ({
+								label: option.label,
+								count: option.count,
+								climbers: option.voters.map(climberOf),
+							})),
+						] as const,
+					]
+		)
+	);
 
 const OUTCOME_CAPTION = {
 	perfect: "finished at 100%",
@@ -175,11 +208,6 @@ export const turnoutFor = (
 const categoryNameOf = (category: CategoryCode | null): string =>
 	category === null ? "Poll" : getCategoryMetadata(category).name;
 
-export const defaultOpenIndex = (
-	polls: readonly RunCommunityPoll[]
-): number | undefined =>
-	polls.filter((poll) => poll.detail !== null).at(-1)?.index;
-
 export const pollTallyFor = (
 	polls: readonly RunCommunityPoll[]
 ): string | undefined => {
@@ -194,7 +222,6 @@ export const pollResultsFor = (
 	polls: readonly RunCommunityPoll[]
 ): PollResultProps[] => {
 	if (polls.length === 0) return [];
-	const openAt = defaultOpenIndex(polls);
 
 	return Array.from({ length: SLICE_WINDOW }, (_, index): PollResultProps => {
 		const poll = polls.find((entry) => entry.index === index);
@@ -214,7 +241,6 @@ export const pollResultsFor = (
 				answeredCount === 0
 					? 0
 					: Math.round((gotItRightCount / answeredCount) * 100),
-			open: index === openAt,
 			options: options.map((option, position) => ({
 				letter: LETTERS[position] ?? "?",
 				label: option.label,
@@ -239,11 +265,33 @@ const fallenPressFor =
 		return () => onInspect(String(run.runId));
 	};
 
+export const openedUserIdOf = (
+	climb: ClimbTodayView | null,
+	openId: string | undefined
+): string | undefined => {
+	if (climb === null || openId === undefined) return undefined;
+	const climber = climb.climbers.find((entry) => entry.id === openId);
+	if (climber !== undefined) return climber.id;
+	return climb.fallen.find((entry) => String(entry.runId) === openId)?.id;
+};
+
+export const openedDetailOf = (
+	card: PlayerCardView | null
+): OpenedCardDetail | undefined => {
+	if (card === null) return undefined;
+	const { contribution, swatches } = playerCardFor(card);
+	return {
+		...(contribution === undefined ? {} : { contribution }),
+		...(swatches === undefined ? {} : { swatches }),
+	};
+};
+
 export type CommunityScreenFrame = {
 	view: RunCommunityView;
 	swatch: GateSwatch;
 	rivals?: readonly string[];
 	openClimberId?: string;
+	openedDetail?: OpenedCardDetail;
 	onInspectClimber?: (id: string) => void;
 	countdown?: string;
 	note?: string;
@@ -252,6 +300,7 @@ export type CommunityScreenFrame = {
 		disabled?: boolean;
 		onBack: () => void;
 	};
+	onReview?: () => void;
 	incidents?: IncidentsPanelProps;
 	loot?: LootHand;
 	filing?: FileHand;
@@ -264,10 +313,12 @@ export const communityScreenPropsFor = ({
 	countdown,
 	note,
 	back,
+	onReview,
 	incidents,
 	filing,
 	rivals = [],
 	openClimberId,
+	openedDetail,
 	onInspectClimber,
 	loot,
 	hallOfFame,
@@ -313,6 +364,7 @@ export const communityScreenPropsFor = ({
 						track: {
 							gates: ladderFor(view.climb, rivals, loot, filing),
 							...(openClimberId === undefined ? {} : { openId: openClimberId }),
+							...(openedDetail === undefined ? {} : { openedDetail }),
 							...(onInspectClimber === undefined
 								? {}
 								: { onInspect: onInspectClimber }),
@@ -326,6 +378,9 @@ export const communityScreenPropsFor = ({
 			title: COPY.pollsTitle,
 			tally: pollTallyFor(view.polls),
 			polls: pollResultsFor(view.polls),
+			...(onReview === undefined
+				? {}
+				: { review: { label: COPY.reviewAnswers, onReview } }),
 		},
 	};
 };

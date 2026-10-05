@@ -55,6 +55,9 @@ const routesForStatus = (
 	}
 };
 
+export const canReview = (view: SyncView | null): boolean =>
+	routesForStatus(view).includes(RUN_ROUTES.review);
+
 export type RouteBack = {
 	readonly path: RunRoutePath;
 	readonly label: string;

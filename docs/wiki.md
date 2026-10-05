@@ -1451,7 +1451,7 @@ picked; pallet is worn when nothing else is.
 over a glow in their swatch colour, then their record as tiles, the same tiles
 the climb map's card draws: deepest gate, runs played, runs won, best streak (the
 longest run streak in any category), best category, archived storage, and a row
-of every swatch they hold. Your own figures are not
+of tiles. Your own figures are not
 stated beside theirs (ADR-186). Their collection stays private, as before: a
 visitor reading your unanswered polls would be reading ahead.
 
@@ -1461,14 +1461,15 @@ the climb map card. Hover or focus a face and the player's **card** shows first,
 a read-only tooltip (ADR-141). Nothing beside a face goes to GitHub any more; the
 GitHub handle is stated once, on the player's own page.
 
-Every player carries one more line under their titles, on both their page's hero and
-the hover card: the polls they have answered ("412 polls answered"). A player who has
-published a poll leads that line with their role when they hold one, the polls they
-have published and every answer those polls have drawn, from anyone, in any mode
-("Poll editor · 12 polls published · 412 polls answered"); a role alone
-does not earn that half. The hover card also draws the player's **swatch track**, all
-13 gates with the ones they have minted filled. The climb map card leaves both off,
-because it is drawn from the ladder rather than fetched per player.
+The hero and every card share one **player header** (`PlayerHeader.ui.tsx`): face and
+name, the role beneath it (**● Admin**) when they hold one, their titles, then a
+two-cell strip — **polls published** beside **polls answered** — and their
+**swatch track**, all 13 gates with the ones they have minted filled. A player who has
+published nothing shows the answered cell alone; a role alone does not earn the
+published cell. The hero labels the track with its count (**swatches 5 / 13**) on
+your own page and on a visitor's alike. The card the climb map opens is drawn from
+the ladder, so on open it fetches the same player card the hover reads and borrows
+its strip and swatches.
 
 ---
 
@@ -1510,7 +1511,7 @@ last player to win a run from Pallet, as the full player card, with a badge nami
 the date and time of the win (`Champion since 13 May 2026, 14:05`). Under it, **Every
 champion** lists each win newest first, one row per win, so a repeat champion appears
 once per summit, each with their face and the moment they won. Before anyone wins it
-reads "No one has summited yet". It does not change with the day, so it refetches only
+reads "so far nobody yet". It does not change with the day, so it refetches only
 after a run action or every five minutes.
 
 **Category leaders** ([7.3](#73-category-leaders)) is the board's own section: two
@@ -1581,9 +1582,8 @@ holder on each. Answers given outside a run do not count towards either.
 Each board has its own floor: **3 in a row** and **4 correct**, because a seat earned
 by two right answers devalues every one earned honestly. Below it the seat is
 **unranked** and says what claims it in that board's own figure ("unranked · 3 in a
-row claims it"). The footer states how a seat
-moves: _a seat changes hands when somebody beats it_. A seat cannot be lost by missing,
-because the figure is a best and not a live streak.
+row claims it"). A seat changes hands only when somebody beats it; it cannot be lost
+by missing, because the figure is a best and not a live streak.
 
 A record's streak breaks on a wrong answer and on nothing else: a **partial neither
 breaks nor extends** it, the same rule the run's own streak follows, and mirrored answers

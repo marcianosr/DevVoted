@@ -15,6 +15,7 @@ import * as pollRepository from "~/modules/polls/poll/infrastructure/poll.reposi
 vi.mock("~/modules/polls/poll/infrastructure/poll.repository", () => ({
 	fetchPollsIn: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
+	fetchDealCounts: vi.fn(async () => []),
 }));
 
 const BROCK = "11111111-1111-4111-8111-111111111111";
@@ -41,8 +42,22 @@ describe("listPollsFor", () => {
 		});
 		expect(result).toEqual({
 			success: true,
-			data: { polls, canAdminister: false },
+			data: { polls, canAdminister: false, deals: [] },
 		});
+	});
+
+	it("counts how often each listed poll was dealt, and only the listed ones", async () => {
+		const polls = createMockPollArray(2);
+		const deals = [{ pollId: polls[0]!.id, times: 3 }];
+		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue(polls);
+		vi.mocked(pollRepository.fetchDealCounts).mockResolvedValueOnce(deals);
+
+		const result = await listPollsFor(brock);
+
+		expect(pollRepository.fetchDealCounts).toHaveBeenCalledWith(
+			polls.map((poll) => poll.id)
+		);
+		expect(result.success && result.data.deals).toEqual(deals);
 	});
 
 	it("asks an admin's list for every poll and says they administer", async () => {
@@ -53,7 +68,7 @@ describe("listPollsFor", () => {
 		expect(pollRepository.fetchPollsIn).toHaveBeenCalledWith({ kind: "every" });
 		expect(result).toEqual({
 			success: true,
-			data: { polls: [], canAdminister: true },
+			data: { polls: [], canAdminister: true, deals: [] },
 		});
 	});
 });

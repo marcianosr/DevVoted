@@ -13,11 +13,12 @@ const RECORD: HeroRecord = {
 		{ label: "best category", value: "CSS" },
 		{ label: "archived", value: "8.2 MB", color: "saffron" },
 	],
-	swatches: {
-		label: "swatches",
-		value: "5 / 13",
-		fills: swatchTrackFor([0, 1, 2, 4, 6]),
-	},
+};
+
+const SWATCHES = {
+	label: "swatches",
+	value: "5 / 13",
+	fills: swatchTrackFor([0, 1, 2, 4, 6]),
 };
 
 const meta: Meta<typeof ProfileHero> = {
@@ -36,7 +37,8 @@ export const YourOwn: Story = {
 		handle: "marciano",
 		borderUrl: "/borders/border-ts-lavender.svg",
 		titles: ["Git Maintainer", "Summit"],
-		rank: "Senior",
+		contribution: { answered: 10, authored: { role: "Admin", published: 414 } },
+		swatches: SWATCHES,
 		you: true,
 		preview: "preview · not saved",
 	},
@@ -48,6 +50,8 @@ export const SeenByAVisitor: Story = {
 		handle: "misty",
 		photoUrl: "/editors/misty.png",
 		titles: ["Completer"],
+		contribution: { answered: 120 },
+		swatches: SWATCHES,
 		record: RECORD,
 	},
 };

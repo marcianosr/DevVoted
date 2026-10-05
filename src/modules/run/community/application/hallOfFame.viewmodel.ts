@@ -13,7 +13,8 @@ import type {
 export const COPY = {
 	title: "Hall of Fame",
 	history: "Every champion",
-	empty: "No one has summited yet. The first win from Pallet takes this seat.",
+	empty:
+		"The one that wins the Champion gate will be remembered as a true Champion here — so far nobody yet.",
 	since: (when: string) => `Champion since ${when}`,
 } as const;
 

@@ -1,50 +1,94 @@
 import { Resend } from "resend";
 
+import { format, subDays } from "date-fns";
+
 import {
-	type AdminPastPollRow,
-	type AdminPollRow,
+	type AdminDormantRow,
+	type AdminPollPoolRow,
 	type AdminResponseRow,
+	type AdminRouteHitsRow,
+	type AdminSignupRow,
 	type AdminUserRow,
+	type AdminVisitDayRow,
 	type AdminVisitRow,
+	type AdminVisitTops,
 	countActiveRuns,
-	fetchPastDailyPolls,
+	fetchDormantUsers,
+	fetchPollPool,
 	fetchRecentResponses,
 	fetchRecentVisits,
-	fetchTodaysDailyPolls,
+	fetchRouteHits,
+	fetchSignups,
 	fetchUsersWithActiveRun,
+	fetchVisitDays,
+	fetchVisitTops,
 } from "~/modules/ops/admin/infrastructure/admin.repository";
-import { getTodayDateString } from "~/shared/lib/dateUtils";
+import {
+	DORMANT_AFTER_DAYS,
+	RETENTION_WINDOW_DAYS,
+	VISIT_WINDOW_DAYS,
+} from "~/modules/ops/admin/domain/adminWindow.model";
+
+const DATE_FORMAT = "yyyy-MM-dd";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 
 export type AdminDashboard = {
-	readonly activePolls: readonly AdminPollRow[];
-	readonly pastPolls: readonly AdminPastPollRow[];
+	readonly today: string;
 	readonly recentResponses: readonly AdminResponseRow[];
 	readonly users: readonly AdminUserRow[];
 	readonly visits: readonly AdminVisitRow[];
 	readonly stats: { readonly totalUsers: number; readonly activeRuns: number };
+	readonly visitDays: readonly AdminVisitDayRow[];
+	readonly visitTops: AdminVisitTops;
+	readonly routeHits: readonly AdminRouteHitsRow[];
+	readonly signups: readonly AdminSignupRow[];
+	readonly pollPool: readonly AdminPollPoolRow[];
+	readonly dormant: readonly AdminDormantRow[];
 };
 
 export const getAdminDashboardService = () =>
 	handleApiOperation(async (): Promise<AdminDashboard> => {
-		const today = getTodayDateString();
-		const [activePolls, pastPolls, recentResponses, users, activeRuns, visits] =
-			await Promise.all([
-				fetchTodaysDailyPolls(today),
-				fetchPastDailyPolls(today),
-				fetchRecentResponses(),
-				fetchUsersWithActiveRun(),
-				countActiveRuns(),
-				fetchRecentVisits(),
-			]);
+		const now = new Date();
+		const visitsSince = format(
+			subDays(now, VISIT_WINDOW_DAYS - 1),
+			DATE_FORMAT
+		);
+		const [
+			recentResponses,
+			users,
+			activeRuns,
+			visits,
+			visitDays,
+			visitTops,
+			routeHits,
+			signups,
+			pollPool,
+			dormant,
+		] = await Promise.all([
+			fetchRecentResponses(),
+			fetchUsersWithActiveRun(),
+			countActiveRuns(),
+			fetchRecentVisits(),
+			fetchVisitDays(visitsSince),
+			fetchVisitTops(visitsSince),
+			fetchRouteHits(visitsSince),
+			fetchSignups(subDays(now, RETENTION_WINDOW_DAYS)),
+			fetchPollPool(),
+			fetchDormantUsers(subDays(now, DORMANT_AFTER_DAYS)),
+		]);
 
 		return {
-			activePolls,
-			pastPolls,
+			today: format(now, DATE_FORMAT),
 			recentResponses,
 			users,
 			visits,
 			stats: { totalUsers: users.length, activeRuns },
+			visitDays,
+			visitTops,
+			routeHits,
+			signups,
+			pollPool,
+			dormant,
 		};
 	}, "getAdminDashboard");
 

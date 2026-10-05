@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	APPROVED_POLL_REWARD,
 	EMPTY_FILTER,
+	activeFiltersOf,
 	PAGE_SIZE,
 	pollListChoicesOf,
 	pollRowsOf,
@@ -106,10 +107,12 @@ const propsFor = (
 	polls: readonly Poll[] = POLLS
 ): PollListProps => {
 	const creators = admin ? CREATORS : undefined;
+	const deals = new Map(polls.map((poll) => [poll.id, poll.id % 3]));
 	const page = windowOf(
-		pollRowsOf(visiblePollsOf(polls, filter), creators),
+		pollRowsOf(visiblePollsOf(polls, filter, deals), creators, deals),
 		PAGE_SIZE
 	);
+	const choices = pollListChoicesOf(polls, filter, creators, deals);
 	return {
 		admin,
 		total: polls.length,
@@ -117,7 +120,10 @@ const propsFor = (
 		shown: page.shown,
 		rows: page.rows,
 		filter,
-		choices: pollListChoicesOf(polls, filter, creators),
+		choices,
+		activeFilters: activeFiltersOf(filter, choices),
+		onClearFilter: noop,
+		onClearAll: noop,
 		suggestHref: "#",
 		reward: APPROVED_POLL_REWARD,
 		onFilterChange: noop,

@@ -104,6 +104,7 @@ const single = (
 	question,
 	answerType: "single",
 	author: {
+		name: "Matthijs Groen",
 		handle: "@matthijsgroen",
 		avatarUrl: "https://github.com/matthijsgroen.png",
 		borderUrl: "/borders/00b9a62e09a1e452d6840170849e8ac06f6d3ef5.png",
@@ -481,7 +482,6 @@ const simulateCommunityScreen = (
 						}
 					: { claim }),
 			})),
-			footer: `A seat changes hands when somebody beats it. ${CATEGORY_CODES.length - SEATED_CATEGORIES} seats still open.`,
 		})),
 		polls: {
 			title: "The day's polls",

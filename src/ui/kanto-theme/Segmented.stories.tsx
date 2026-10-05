@@ -55,3 +55,7 @@ export const JoinedWithoutCounts: Story = {
 export const Loose: Story = {
 	args: { label: "Category", items: CATEGORIES, value: "css", look: "loose" },
 };
+
+export const Tabs: Story = {
+	args: { label: "Category", items: CATEGORIES, value: "css", look: "tabs" },
+};
