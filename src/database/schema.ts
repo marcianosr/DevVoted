@@ -182,6 +182,9 @@ export const pollsTable = pgTable("polls", {
 		.references(() => pollCategoriesTable.code)
 		.notNull(),
 	author_paid_at: timestamp("author_paid_at", { withTimezone: true }),
+	author_announced_at: timestamp("author_announced_at", {
+		withTimezone: true,
+	}),
 }).enableRLS();
 
 export const dailyPollsTable = pgTable("daily_polls", {

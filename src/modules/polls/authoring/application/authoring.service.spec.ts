@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+	acknowledgeApprovals,
 	editPoll,
+	getApprovalNotice,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
 import * as authoringRepository from "~/modules/polls/authoring/infrastructure/authoring.repository";
@@ -13,6 +15,8 @@ vi.mock(
 	() => ({
 		createPollWithOptions: vi.fn(),
 		updatePollWithOptions: vi.fn(),
+		fetchUnannouncedPublishedPolls: vi.fn(),
+		markPollsAnnounced: vi.fn(),
 	})
 );
 
@@ -94,5 +98,42 @@ describe("editPoll", () => {
 			edit.options
 		);
 		expect(result).toEqual({ success: true, data: createMockPoll({ id: 74 }) });
+	});
+});
+
+describe("getApprovalNotice", () => {
+	const flex = { id: 74, question: "What does `flex: 1` expand to?" };
+
+	it("hands a player their published polls the dialog has not shown", async () => {
+		vi.mocked(
+			authoringRepository.fetchUnannouncedPublishedPolls
+		).mockResolvedValueOnce([flex]);
+
+		const result = await getApprovalNotice(brock);
+
+		expect(result).toEqual({ success: true, data: { polls: [flex] } });
+		expect(
+			authoringRepository.fetchUnannouncedPublishedPolls
+		).toHaveBeenCalledWith(BROCK);
+	});
+
+	it("hands an admin nothing, because an admin's own poll pays nothing", async () => {
+		const result = await getApprovalNotice(oak);
+
+		expect(result).toEqual({ success: true, data: { polls: [] } });
+		expect(
+			authoringRepository.fetchUnannouncedPublishedPolls
+		).not.toHaveBeenCalled();
+	});
+});
+
+describe("acknowledgeApprovals", () => {
+	it("stamps the named polls announced for their author", async () => {
+		await acknowledgeApprovals(BROCK, [74]);
+
+		expect(authoringRepository.markPollsAnnounced).toHaveBeenCalledWith(
+			BROCK,
+			[74]
+		);
 	});
 });

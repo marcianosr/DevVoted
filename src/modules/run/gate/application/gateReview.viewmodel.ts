@@ -1,3 +1,4 @@
+import { letterAt } from "~/shared/lib/letters";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import { fundsOf } from "~/modules/run/run/application/prepScreen.viewmodel";
@@ -24,8 +25,6 @@ import type {
 } from "~/ui/kanto-theme/ReviewScreen.ui";
 
 const noop = () => {};
-
-const OPTION_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export const REVIEW_EXPAND_LABEL = "open everything";
 export const REVIEW_HINT = "fumbles open, passes folded";
@@ -69,7 +68,7 @@ const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
 			const voters = votersOf(pollVotes, label);
 			return {
 				id: label,
-				letter: OPTION_LETTERS[index] ?? "?",
+				letter: letterAt(index),
 				label,
 				state: stateOf(answer, label),
 				...(voters === undefined ? {} : { voters }),

@@ -34,10 +34,18 @@ run had stopped using, so the preview lied.
 4. **The preview is the run's own component.** The form renders `Question` with
    the current answers, unpicked, so "see it the way players will" is literal.
 
+5. **Answer options follow the question's rule** (2026-10-05). An option's inline
+   backticks render as `<code>` and a fenced ```lang block as the same code
+   panel, with the fence and language tag gone and its lines kept. Every surface
+   that draws an option uses the question's renderer: the poll screen, the
+   review, the poll page, the form preview and the community board's results.
+
 ## Consequences
 
 - The question headline can hold several lines and code panels; only its first
   prose part is the page's heading.
 - The polls list counts a fenced question as "with code" and shows only its prose
   in the table.
-- Answer options do not render code yet; a follow-up bean covers it.
+- An option is authored in a one-line field, so a fence typed or pasted there
+  arrives without line breaks and reads as one inline code span. A fenced
+  option keeps its lines only once the form gives answers a multi-line field.

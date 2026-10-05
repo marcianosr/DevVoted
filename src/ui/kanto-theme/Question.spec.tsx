@@ -232,3 +232,40 @@ describe("Question with code in it", () => {
 		);
 	});
 });
+
+const VUE_SETUP =
+	"```ts\n<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);\n</script>\n```";
+
+describe("Question's options with code in them", () => {
+	it("marks an option's inline backticks as code, backticks dropped", () => {
+		render(
+			<Question
+				{...props}
+				options={[
+					{ id: "option-1", letter: "A", label: "`ref` works with primitives" },
+				]}
+			/>
+		);
+
+		expect(screen.getByText("ref").tagName).toBe("CODE");
+		expect(screen.queryByText(/`/)).not.toBeInTheDocument();
+	});
+
+	it("lifts an option's fenced block into a code panel, its fence and language tag gone and its lines kept", () => {
+		const { container } = render(
+			<Question
+				{...props}
+				options={[{ id: "option-1", letter: "A", label: VUE_SETUP }]}
+			/>
+		);
+
+		const code = container.querySelector("[data-choices] pre code");
+		expect(code?.textContent).toBe(
+			"<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);\n</script>\n"
+		);
+		expect(code?.className).toMatch(/language-ts/);
+		expect(container.querySelector("[data-choices]")).not.toHaveTextContent(
+			"```"
+		);
+	});
+});

@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "~/database/db";
 import { pollsTable, usersTable } from "~/database/schema";
-import { payAuthorOnFirstPublish } from "~/modules/polls/authoring/infrastructure/authoring.repository";
+import {
+	fetchUnannouncedPublishedPolls,
+	markPollsAnnounced,
+	payAuthorOnFirstPublish,
+} from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import {
 	type DrizzleMockState,
 	resetDrizzleMock,
@@ -58,5 +62,31 @@ describe("payAuthorOnFirstPublish", () => {
 
 		expect(paid).toBeNull();
 		expect(mock.updateTables).toEqual([pollsTable]);
+	});
+});
+
+describe("fetchUnannouncedPublishedPolls", () => {
+	it("returns the author's paid polls the dialog has not shown yet", async () => {
+		const flex = { id: POLL_ID, question: "What does `flex: 1` expand to?" };
+		mock.results.push([flex]);
+
+		expect(await fetchUnannouncedPublishedPolls(BROCK)).toEqual([flex]);
+	});
+});
+
+describe("markPollsAnnounced", () => {
+	it("stamps the polls announced", async () => {
+		mock.results.push([]);
+
+		await markPollsAnnounced(BROCK, [POLL_ID]);
+
+		expect(mock.updateTables).toEqual([pollsTable]);
+		expect(mock.setCalls[0]).toHaveProperty("author_announced_at");
+	});
+
+	it("writes nothing when no poll is named", async () => {
+		await markPollsAnnounced(BROCK, []);
+
+		expect(mock.updateTables).toEqual([]);
 	});
 });

@@ -68,7 +68,7 @@ describe("Choice", () => {
 			"border-theme",
 			"text-theme-soft"
 		);
-		expect(screen.getByText("at(-1)").parentElement).toHaveClass(
+		expect(screen.getByText("at(-1)").closest("[data-answer]")).toHaveClass(
 			"bg-theme-soft"
 		);
 	});
@@ -86,21 +86,21 @@ describe("Choice", () => {
 	it("pads itself on all four sides, so its rule reaches the frame's edges", () => {
 		render(<Choice letter="A">at(-1)</Choice>);
 
-		const row = screen.getByText("at(-1)").parentElement;
+		const row = screen.getByText("at(-1)").closest("[data-answer]");
 		expect(row).toHaveClass("py-2.5", "px-4");
 	});
 
 	it("rules against the row above it, and never above the first row", () => {
 		render(<Choice letter="A">at(-1)</Choice>);
 
-		const row = screen.getByText("at(-1)").parentElement;
+		const row = screen.getByText("at(-1)").closest("[data-answer]");
 		expect(row).toHaveClass("border-t", "first:border-t-0");
 	});
 
 	it("rounds only its end corners, so a fill stays inside the frame", () => {
 		render(<Choice letter="A">at(-1)</Choice>);
 
-		const row = screen.getByText("at(-1)").parentElement;
+		const row = screen.getByText("at(-1)").closest("[data-answer]");
 		expect(row).toHaveClass("first:rounded-t-lg", "last:rounded-b-lg");
 		expect(row?.className).not.toMatch(/(?<![-:])\brounded-lg\b/);
 	});
@@ -182,6 +182,15 @@ describe("Choice", () => {
 			expect(screen.getByText("A")).toHaveClass(shape);
 		}
 	);
+
+	it("lets the answer take the row's room, so a wide code panel scrolls instead of widening the row", () => {
+		render(<Choice letter="A">at(-1)</Choice>);
+
+		expect(screen.getByText("at(-1)").parentElement).toHaveClass(
+			"min-w-0",
+			"flex-1"
+		);
+	});
 
 	it("strikes a ruled-out answer through with a red line", () => {
 		render(

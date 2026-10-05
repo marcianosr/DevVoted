@@ -4,7 +4,10 @@ import type {
 } from "~/modules/polls/authoring/application/poll.validation";
 import {
 	createPollWithOptions,
+	fetchUnannouncedPublishedPolls,
+	markPollsAnnounced,
 	updatePollWithOptions,
+	type AnnouncedPoll,
 } from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import type { Poll } from "~/modules/polls/poll/domain/poll.model";
 import {
@@ -41,3 +44,27 @@ export const editPoll = async (
 				"editPoll"
 			)
 		: createErrorResponse(new Error(ADMIN_REQUIRED));
+
+export type ApprovalNotice = { readonly polls: readonly AnnouncedPoll[] };
+
+const NOTHING_APPROVED: ApprovalNotice = { polls: [] };
+
+export const getApprovalNotice = async (
+	viewer: PollViewer
+): Promise<ApiResponse<ApprovalNotice>> =>
+	handleApiOperation(
+		async () =>
+			viewer.isAdmin
+				? NOTHING_APPROVED
+				: { polls: await fetchUnannouncedPublishedPolls(viewer.userId) },
+		"getApprovalNotice"
+	);
+
+export const acknowledgeApprovals = async (
+	userId: string,
+	pollIds: readonly number[]
+) =>
+	handleApiOperation(async () => {
+		await markPollsAnnounced(userId, pollIds);
+		return { acknowledged: pollIds };
+	}, "acknowledgeApprovals");

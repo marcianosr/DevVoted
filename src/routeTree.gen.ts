@@ -9,55 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LogoutRouteImport } from './routes/logout'
-import { Route as PresentationRouteImport } from './routes/presentation'
-import { Route as ProtoRunRouteImport } from './routes/proto-run'
 import { Route as SignUpRouteImport } from './routes/sign-up'
-import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
-import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
-import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
+import { Route as ProtoRunRouteImport } from './routes/proto-run'
+import { Route as PresentationRouteImport } from './routes/presentation'
+import { Route as LogoutRouteImport } from './routes/logout'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
-import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
-import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
-import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
+import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
+import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
+import { Route as AuthedRunRouteRouteImport } from './routes/_authed/run/route'
 import { Route as AuthedRunIndexRouteImport } from './routes/_authed/run/index'
-import { Route as AuthedRunGateRouteImport } from './routes/_authed/run/gate'
-import { Route as AuthedRunNewRouteImport } from './routes/_authed/run/new'
-import { Route as AuthedRunOverRouteImport } from './routes/_authed/run/over'
-import { Route as AuthedRunPollRouteImport } from './routes/_authed/run/poll'
-import { Route as AuthedRunPrepRouteImport } from './routes/_authed/run/prep'
-import { Route as AuthedRunReviewRouteImport } from './routes/_authed/run/review'
-import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
-import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
+import { Route as AuthedPollsIndexRouteImport } from './routes/_authed/polls/index'
 import { Route as AuthedRunsRunIdRouteImport } from './routes/_authed/runs.$runId'
+import { Route as AuthedRunCommunityRouteImport } from './routes/_authed/run_.community'
+import { Route as AuthedRunShopRouteImport } from './routes/_authed/run/shop'
+import { Route as AuthedRunReviewRouteImport } from './routes/_authed/run/review'
+import { Route as AuthedRunPrepRouteImport } from './routes/_authed/run/prep'
+import { Route as AuthedRunPollRouteImport } from './routes/_authed/run/poll'
+import { Route as AuthedRunOverRouteImport } from './routes/_authed/run/over'
+import { Route as AuthedRunNewRouteImport } from './routes/_authed/run/new'
+import { Route as AuthedRunGateRouteImport } from './routes/_authed/run/gate'
+import { Route as AuthedProfileUserIdRouteImport } from './routes/_authed/profile.$userId'
+import { Route as AuthedPollsNewRouteImport } from './routes/_authed/polls/new'
 import { Route as AuthedPollsPollIdIndexRouteImport } from './routes/_authed/polls/$pollId/index'
 import { Route as AuthedPollsPollIdEditRouteImport } from './routes/_authed/polls/$pollId/edit'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LogoutRoute = LogoutRouteImport.update({
-  id: '/logout',
-  path: '/logout',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PresentationRoute = PresentationRouteImport.update({
-  id: '/presentation',
-  path: '/presentation',
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProtoRunRoute = ProtoRunRouteImport.update({
@@ -65,19 +46,43 @@ const ProtoRunRoute = ProtoRunRouteImport.update({
   path: '/proto-run',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+const PresentationRoute = PresentationRouteImport.update({
+  id: '/presentation',
+  path: '/presentation',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedAdminRoute = AuthedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthedRoute,
+const LogoutRoute = LogoutRouteImport.update({
+  id: '/logout',
+  path: '/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedDexRoute = AuthedDexRouteImport.update({
   id: '/dex',
   path: '/dex',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAdminRoute = AuthedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedRunRouteRoute = AuthedRunRouteRouteImport.update({
@@ -85,54 +90,29 @@ const AuthedRunRouteRoute = AuthedRunRouteRouteImport.update({
   path: '/run',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
+const AuthedRunIndexRoute = AuthedRunIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedRunRouteRoute,
 } as any)
 const AuthedPollsIndexRoute = AuthedPollsIndexRouteImport.update({
   id: '/polls/',
   path: '/polls/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedPollsNewRoute = AuthedPollsNewRouteImport.update({
-  id: '/polls/new',
-  path: '/polls/new',
+const AuthedRunsRunIdRoute = AuthedRunsRunIdRouteImport.update({
+  id: '/runs/$runId',
+  path: '/runs/$runId',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedProfileUserIdRoute = AuthedProfileUserIdRouteImport.update({
-  id: '/profile/$userId',
-  path: '/profile/$userId',
+const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
+  id: '/run_/community',
+  path: '/run/community',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedRunIndexRoute = AuthedRunIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunGateRoute = AuthedRunGateRouteImport.update({
-  id: '/gate',
-  path: '/gate',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunNewRoute = AuthedRunNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunOverRoute = AuthedRunOverRouteImport.update({
-  id: '/over',
-  path: '/over',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunPollRoute = AuthedRunPollRouteImport.update({
-  id: '/poll',
-  path: '/poll',
-  getParentRoute: () => AuthedRunRouteRoute,
-} as any)
-const AuthedRunPrepRoute = AuthedRunPrepRouteImport.update({
-  id: '/prep',
-  path: '/prep',
+const AuthedRunShopRoute = AuthedRunShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
 const AuthedRunReviewRoute = AuthedRunReviewRouteImport.update({
@@ -140,19 +120,39 @@ const AuthedRunReviewRoute = AuthedRunReviewRouteImport.update({
   path: '/review',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
-const AuthedRunShopRoute = AuthedRunShopRouteImport.update({
-  id: '/shop',
-  path: '/shop',
+const AuthedRunPrepRoute = AuthedRunPrepRouteImport.update({
+  id: '/prep',
+  path: '/prep',
   getParentRoute: () => AuthedRunRouteRoute,
 } as any)
-const AuthedRunCommunityRoute = AuthedRunCommunityRouteImport.update({
-  id: '/run_/community',
-  path: '/run/community',
+const AuthedRunPollRoute = AuthedRunPollRouteImport.update({
+  id: '/poll',
+  path: '/poll',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunOverRoute = AuthedRunOverRouteImport.update({
+  id: '/over',
+  path: '/over',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunNewRoute = AuthedRunNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedRunGateRoute = AuthedRunGateRouteImport.update({
+  id: '/gate',
+  path: '/gate',
+  getParentRoute: () => AuthedRunRouteRoute,
+} as any)
+const AuthedProfileUserIdRoute = AuthedProfileUserIdRouteImport.update({
+  id: '/profile/$userId',
+  path: '/profile/$userId',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedRunsRunIdRoute = AuthedRunsRunIdRouteImport.update({
-  id: '/runs/$runId',
-  path: '/runs/$runId',
+const AuthedPollsNewRoute = AuthedPollsNewRouteImport.update({
+  id: '/polls/new',
+  path: '/polls/new',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedPollsPollIdIndexRoute = AuthedPollsPollIdIndexRouteImport.update({
@@ -345,39 +345,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/logout': {
-      id: '/logout'
-      path: '/logout'
-      fullPath: '/logout'
-      preLoaderRoute: typeof LogoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/presentation': {
-      id: '/presentation'
-      path: '/presentation'
-      fullPath: '/presentation'
-      preLoaderRoute: typeof PresentationRouteImport
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/proto-run': {
@@ -387,25 +359,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtoRunRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign-up': {
-      id: '/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
-      preLoaderRoute: typeof SignUpRouteImport
+    '/presentation': {
+      id: '/presentation'
+      path: '/presentation'
+      fullPath: '/presentation'
+      preLoaderRoute: typeof PresentationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/admin': {
-      id: '/_authed/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthedAdminRouteImport
-      parentRoute: typeof AuthedRoute
+    '/logout': {
+      id: '/logout'
+      path: '/logout'
+      fullPath: '/logout'
+      preLoaderRoute: typeof LogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/dex': {
       id: '/_authed/dex'
       path: '/dex'
       fullPath: '/dex'
       preLoaderRoute: typeof AuthedDexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/run': {
@@ -415,12 +422,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunRouteRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/run/': {
+      id: '/_authed/run/'
+      path: '/'
+      fullPath: '/run/'
+      preLoaderRoute: typeof AuthedRunIndexRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
     }
     '/_authed/polls/': {
       id: '/_authed/polls/'
@@ -429,60 +436,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPollsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/polls/new': {
-      id: '/_authed/polls/new'
-      path: '/polls/new'
-      fullPath: '/polls/new'
-      preLoaderRoute: typeof AuthedPollsNewRouteImport
+    '/_authed/runs/$runId': {
+      id: '/_authed/runs/$runId'
+      path: '/runs/$runId'
+      fullPath: '/runs/$runId'
+      preLoaderRoute: typeof AuthedRunsRunIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/profile/$userId': {
-      id: '/_authed/profile/$userId'
-      path: '/profile/$userId'
-      fullPath: '/profile/$userId'
-      preLoaderRoute: typeof AuthedProfileUserIdRouteImport
+    '/_authed/run_/community': {
+      id: '/_authed/run_/community'
+      path: '/run/community'
+      fullPath: '/run/community'
+      preLoaderRoute: typeof AuthedRunCommunityRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/run/': {
-      id: '/_authed/run/'
-      path: '/'
-      fullPath: '/run/'
-      preLoaderRoute: typeof AuthedRunIndexRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/gate': {
-      id: '/_authed/run/gate'
-      path: '/gate'
-      fullPath: '/run/gate'
-      preLoaderRoute: typeof AuthedRunGateRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/new': {
-      id: '/_authed/run/new'
-      path: '/new'
-      fullPath: '/run/new'
-      preLoaderRoute: typeof AuthedRunNewRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/over': {
-      id: '/_authed/run/over'
-      path: '/over'
-      fullPath: '/run/over'
-      preLoaderRoute: typeof AuthedRunOverRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/poll': {
-      id: '/_authed/run/poll'
-      path: '/poll'
-      fullPath: '/run/poll'
-      preLoaderRoute: typeof AuthedRunPollRouteImport
-      parentRoute: typeof AuthedRunRouteRoute
-    }
-    '/_authed/run/prep': {
-      id: '/_authed/run/prep'
-      path: '/prep'
-      fullPath: '/run/prep'
-      preLoaderRoute: typeof AuthedRunPrepRouteImport
+    '/_authed/run/shop': {
+      id: '/_authed/run/shop'
+      path: '/shop'
+      fullPath: '/run/shop'
+      preLoaderRoute: typeof AuthedRunShopRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
     '/_authed/run/review': {
@@ -492,25 +464,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRunReviewRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
-    '/_authed/run/shop': {
-      id: '/_authed/run/shop'
-      path: '/shop'
-      fullPath: '/run/shop'
-      preLoaderRoute: typeof AuthedRunShopRouteImport
+    '/_authed/run/prep': {
+      id: '/_authed/run/prep'
+      path: '/prep'
+      fullPath: '/run/prep'
+      preLoaderRoute: typeof AuthedRunPrepRouteImport
       parentRoute: typeof AuthedRunRouteRoute
     }
-    '/_authed/run_/community': {
-      id: '/_authed/run_/community'
-      path: '/run/community'
-      fullPath: '/run/community'
-      preLoaderRoute: typeof AuthedRunCommunityRouteImport
+    '/_authed/run/poll': {
+      id: '/_authed/run/poll'
+      path: '/poll'
+      fullPath: '/run/poll'
+      preLoaderRoute: typeof AuthedRunPollRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/over': {
+      id: '/_authed/run/over'
+      path: '/over'
+      fullPath: '/run/over'
+      preLoaderRoute: typeof AuthedRunOverRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/new': {
+      id: '/_authed/run/new'
+      path: '/new'
+      fullPath: '/run/new'
+      preLoaderRoute: typeof AuthedRunNewRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/run/gate': {
+      id: '/_authed/run/gate'
+      path: '/gate'
+      fullPath: '/run/gate'
+      preLoaderRoute: typeof AuthedRunGateRouteImport
+      parentRoute: typeof AuthedRunRouteRoute
+    }
+    '/_authed/profile/$userId': {
+      id: '/_authed/profile/$userId'
+      path: '/profile/$userId'
+      fullPath: '/profile/$userId'
+      preLoaderRoute: typeof AuthedProfileUserIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/runs/$runId': {
-      id: '/_authed/runs/$runId'
-      path: '/runs/$runId'
-      fullPath: '/runs/$runId'
-      preLoaderRoute: typeof AuthedRunsRunIdRouteImport
+    '/_authed/polls/new': {
+      id: '/_authed/polls/new'
+      path: '/polls/new'
+      fullPath: '/polls/new'
+      preLoaderRoute: typeof AuthedPollsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/polls/$pollId/': {
