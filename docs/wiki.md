@@ -1328,6 +1328,18 @@ border unlocks via meta-progression are planned. Runs and
 leaderboards live inside **seasons** (upcoming, active, finished, archived), the
 temporal container for competitive resets.
 
+**Advertisements** point at the two ways to grow outside a run (ADR-189). The run
+hub, the new run screen, the community screen and every profile carry one card, and
+the poll screen carries a one-line strip. A card is either **Looking for poll
+editors** (approved polls earn 16 KB archived storage, never shown to an admin, whose
+polls pay nothing) or one border you do not own and can buy, titled with its name and
+price, drawn on your own face, opening the borders tab. Which one shows is rolled
+fresh each time a screen opens, half and half. A card's × hides that screen's card
+for the rest of the session; the poll strip has no ×. A player who owns every border
+only sees the poll editors card. Every other signed-in page (home, the
+poll list, admin) carries the same advertisement as a banner along the bottom of the
+screen, closable the same way.
+
 ### 6.6 Titles
 
 A **title** is earned identity. Where a border is bought and a role is assigned, a

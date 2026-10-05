@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 import {
 	lookedIdentityOf,
 	previewLabelFor,
@@ -15,6 +13,7 @@ import { useArchiveState } from "~/modules/account/profile/application/useArchiv
 import { useLookDraft } from "~/modules/account/profile/application/useLookDraft.hook";
 import { usePublicProfile } from "~/modules/account/profile/application/usePublicProfile.hook";
 import { profileThemeFor } from "~/modules/account/profile/domain/profileTheme.model";
+import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 import { Appearance } from "~/modules/account/profile/presentation/Appearance.component";
 import { BorderShop } from "~/modules/account/profile/presentation/BorderShop.component";
 import { LookSaveBar } from "~/modules/account/profile/presentation/LookSaveBar.ui";
@@ -33,17 +32,30 @@ type Viewer = { id: string };
 type ProfilePageProps = {
 	userId: string;
 	viewer: Viewer | null;
+	tab?: string;
+	onSelectTab: (id: ProfileTabId) => void;
 };
 
-const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
-	const [activeId, setActiveId] = useState<ProfileTabId>(APPEARANCE_TAB);
+type OwnProfileProps = {
+	viewer: Viewer;
+	tab?: string;
+	onSelectTab: (id: ProfileTabId) => void;
+};
+
+const activeTabOf = (tab: string | undefined): ProfileTabId =>
+	tab !== undefined && isProfileTabId(tab) ? tab : APPEARANCE_TAB;
+
+const ADVERTISEMENT = <Advertisement placement="profile" />;
+
+const OwnProfile = ({ viewer, tab, onSelectTab }: OwnProfileProps) => {
+	const activeId = activeTabOf(tab);
 
 	const { view: profile } = usePublicProfile(viewer.id);
 	const { view: archive } = useArchiveState(viewer.id);
 	const draft = useLookDraft(viewer.id);
 
 	const selectTab = (id: string) => {
-		if (isProfileTabId(id)) setActiveId(id);
+		if (isProfileTabId(id)) onSelectTab(id);
 	};
 
 	if (!profile) return null;
@@ -83,6 +95,7 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 				archive?.ownedSwatchIds ?? []
 			)}
 			archive={archiveLabel(archive?.archivedStorage ?? 0)}
+			sections={ADVERTISEMENT}
 			footer={saveBar}
 		>
 			{isOwnerTabId(activeId) ? null : (
@@ -92,8 +105,8 @@ const OwnProfile = ({ viewer }: { viewer: Viewer }) => {
 				<Appearance
 					userId={viewer.id}
 					draft={draft}
-					onOpenBorders={() => setActiveId(BORDERS_TAB)}
-					onOpenTitles={() => setActiveId(TITLES_TAB)}
+					onOpenBorders={() => onSelectTab(BORDERS_TAB)}
+					onOpenTitles={() => onSelectTab(TITLES_TAB)}
 				/>
 			) : null}
 			{activeId === BORDERS_TAB ? (
@@ -122,13 +135,19 @@ const VisitedProfile = ({ userId }: { userId: string }) => {
 				/>
 			}
 			theme={profile.theme}
+			sections={ADVERTISEMENT}
 		/>
 	);
 };
 
-export const ProfilePage = ({ userId, viewer }: ProfilePageProps) =>
+export const ProfilePage = ({
+	userId,
+	viewer,
+	tab,
+	onSelectTab,
+}: ProfilePageProps) =>
 	viewer?.id === userId ? (
-		<OwnProfile viewer={viewer} />
+		<OwnProfile viewer={viewer} tab={tab} onSelectTab={onSelectTab} />
 	) : (
 		<VisitedProfile userId={userId} />
 	);

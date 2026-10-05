@@ -1,4 +1,10 @@
-import { type RefObject, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	type RefObject,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { clsx } from "clsx";
@@ -129,6 +135,7 @@ export type PollScreenProps = {
 	step?: number;
 	categoryLeader?: CategoryLeaderProps;
 	footer?: ScreenFooterProps;
+	advertisement?: ReactNode;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 	shake?: string;
@@ -458,6 +465,7 @@ export const PollScreen = ({
 	buildFooter,
 	audits = [],
 	step,
+	advertisement,
 	width = "wide",
 	ground = "bare",
 	shake,
@@ -524,6 +532,8 @@ export const PollScreen = ({
 				</div>
 				<CoveragePanel coverage={coverage} gauge={gauge} />
 			</div>
+
+			{advertisement}
 
 			{flight === undefined ? null : (
 				<GainFlight

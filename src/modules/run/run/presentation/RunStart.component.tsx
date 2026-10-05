@@ -1,3 +1,4 @@
+import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 import { useRunCommunity } from "~/modules/run/community/application/useRunCommunity.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
@@ -82,6 +83,7 @@ export const RunStart = () => {
 			}
 			community={room === null ? null : { ...room, href: COMMUNITY_ROUTE }}
 			refusal={start.errorMessage ?? undefined}
+			advertisement={<Advertisement placement="hub" />}
 		/>
 	);
 };

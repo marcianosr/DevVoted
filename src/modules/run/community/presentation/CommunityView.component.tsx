@@ -8,8 +8,11 @@ import {
 } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { usePlayerCard } from "~/modules/run/community/application/usePlayerCard.hook";
 import { CommunityScreen } from "~/ui/kanto-theme/CommunityScreen.ui";
+import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 
 export type CommunityViewProps = CommunityScreenFrame;
+
+const ADVERTISEMENT = <Advertisement placement="community" />;
 
 const WithOpenedCard = ({
 	userId,
@@ -24,6 +27,7 @@ const WithOpenedCard = ({
 				...frame,
 				...(openedDetail === undefined ? {} : { openedDetail }),
 			})}
+			advertisement={ADVERTISEMENT}
 		/>
 	);
 };
@@ -39,7 +43,12 @@ export const CommunityView = (props: CommunityViewProps) => {
 	const openedUserId = openedUserIdOf(props.view.climb, openClimberId);
 
 	if (openedUserId === undefined)
-		return <CommunityScreen {...communityScreenPropsFor(frame)} />;
+		return (
+			<CommunityScreen
+				{...communityScreenPropsFor(frame)}
+				advertisement={ADVERTISEMENT}
+			/>
+		);
 
 	return <WithOpenedCard key={openedUserId} userId={openedUserId} {...frame} />;
 };

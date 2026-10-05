@@ -6,6 +6,7 @@ import {
 	OFFERED_CARDS_OPEN,
 } from "~/shared/lib/disclosure";
 
+import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 import {
 	EMPTY_WARM_BOOT_DRAFT,
 	type NewRunScreenHandlers,
@@ -54,6 +55,7 @@ export const StartView = ({
 					onDraft: setDraft,
 				},
 			})}
+			advertisement={<Advertisement placement="newRun" />}
 		/>
 	);
 };

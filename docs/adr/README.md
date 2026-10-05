@@ -175,6 +175,7 @@ it before proposing one again.**
 | [186](186-the-hero-is-the-preview-and-the-save-bar-floats.md) | **The hero is the preview, and the save bar floats** | Accepted — the hero rings saffron and reads preview · not saved; a floating Unsaved look · discard · Save look bar on every tab; Appearance is one picker panel; no trophies on your own hero |
 | [187](187-the-polls-dex-is-a-box-and-a-poll-is-caught-when-answered-right.md) | **The polls Dex is a box, and a poll is caught when answered right** | Accepted — unseen / seen / caught; category strip with meters, seen list beside the entry, a numbered box of every poll; amends ADR-151 for polls |
 | [188](188-a-phone-navigates-from-a-bottom-tab-bar.md) | **A phone navigates from a bottom tab bar** | Accepted — Daily Run · Community · Profile fixed at the bottom below md; start presses stick just above it via --tab-bar |
+| [189](189-an-advertisement-states-a-true-offer.md) | **An advertisement states a true offer** | Accepted — poll editors or one border for sale, rolled after hydration, dismissed per screen per session; no admin poll ad; kinds are weighted entries; a bottom banner on pages without a card |
 
 ## Retired
 
