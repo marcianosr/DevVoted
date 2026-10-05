@@ -11,29 +11,25 @@ import {
 	GATE_RUNGS,
 	HEAD_START_SHARE,
 	KB_PER_EXTRA_BAR,
-	KB_PER_PROVEN_SLOT,
 	MULTIPLE_CREDIT,
-	PAYOUT_RATIO_CAP,
-	PERFECT_BONUS,
+	BAND_BONUS,
 	SINGLE_CREDIT,
 	ACCURACY_GAIN_PER_GATE,
 	ACCURACY_LOSS_PER_GATE,
 	accuracyBonusAfter,
 	accuracyMultiplierFor,
 	atLeastBand,
+	bandBonusKbFor,
 	bandFor,
 	coverageGainPercentFor,
 	floorAt,
 	gateOutputOf,
-	gatePayoutKb,
 	headStartFor,
 	healthyAt,
 	healthyUnitsAt,
 	okAt,
-	payoutRatioFor,
 	meetsBand,
 	bandOf,
-	perfectBonusFor,
 	runCoverageOf,
 	runShareOf,
 	scoringSlotsAt,
@@ -392,20 +388,29 @@ describe("the bands a run lands in", () => {
 	});
 });
 
-describe("what the gate pays", () => {
-	it("pays the proven slots at the going rate", () => {
-		expect(gatePayoutKb(healthyAt(4), 4, 12)).toBe(
-			Math.round(12 * KB_PER_PROVEN_SLOT)
-		);
+describe("what the closing band adds to the clear", () => {
+	const CLEAR_KB = 58;
+
+	it("adds nothing on an OK close", () => {
+		expect(bandBonusKbFor(bandOf("ok"), CLEAR_KB)).toBe(0);
 	});
 
-	it("caps the overshoot so the opening gates cannot print", () => {
-		expect(payoutRatioFor(1, 0)).toBe(PAYOUT_RATIO_CAP);
+	it("adds a quarter on a HEALTHY close", () => {
+		expect(bandBonusKbFor(bandOf("healthy"), CLEAR_KB)).toBe(15);
 	});
 
-	it("pays a full bar a bonus on top of the cap", () => {
-		expect(perfectBonusFor(1)).toBe(PERFECT_BONUS);
-		expect(perfectBonusFor(0.99)).toBe(1);
+	it("adds a half on a PERFECT close", () => {
+		expect(bandBonusKbFor(bandOf("perfect"), CLEAR_KB)).toBe(29);
+	});
+
+	it("adds nothing on a band that does not clear", () => {
+		expect(bandBonusKbFor(bandOf("shaky"), CLEAR_KB)).toBe(0);
+		expect(bandBonusKbFor(bandOf("danger"), CLEAR_KB)).toBe(0);
+	});
+
+	it("ranks the multipliers so every step up the ladder pays more", () => {
+		expect(BAND_BONUS.ok).toBeLessThan(BAND_BONUS.healthy);
+		expect(BAND_BONUS.healthy).toBeLessThan(BAND_BONUS.perfect);
 	});
 });
 

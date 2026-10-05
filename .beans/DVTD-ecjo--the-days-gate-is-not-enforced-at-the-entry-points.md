@@ -1,11 +1,11 @@
 ---
 # DVTD-ecjo
 title: A spent day still offers Start, then fails with a raw error
-status: in-progress
+status: completed
 type: bug
 priority: critical
 created_at: 2026-09-19T18:52:15Z
-updated_at: 2026-10-03T15:47:02Z
+updated_at: 2026-10-05T14:39:58Z
 parent: DVTD-0x5c
 blocking:
     - DVTD-6vw2
@@ -18,7 +18,7 @@ blocking:
 ## Done when
 - [x] The hub says how many of today's polls are actually left
 - [x] Start is refused in plain words when the day is spent, never with a raw error
-- [ ] A retry cannot spend a second day's polls on the same date
+- [x] A retry cannot spend a second day's polls on the same date
 - [x] Specs cover: no run with the day spent, and a finished run with the day part spent
 
 ## Notes
@@ -110,3 +110,7 @@ point read that.
 The server now counts the day once: `getPollsLeftTodayService` (today's seed minus every poll the player answered today, any run), served by `getPollsLeftToday` and `usePollsLeftToday`, staled by `useRunCommit` after every run action. `todayPressFor` and `pollsBadgeFor` take that count: with no live run, a spent day turns the press into a locked **New polls in Xh Ym** and drops the nav badge; a live run still reads its own `pollsExhausted`, which is right in production because `rollSegmentForward` trims a run to today's segment. `startRunService` returns `POLLS_SPENT` as a plain refusal instead of throwing, so it no longer reports to Sentry.
 
 Still open: the retry item. Same-day retries are safe by construction (`rollSegmentForward` only appends polls when the last segment is from an earlier date), but no spec pins it.
+
+## Summary of Changes
+
+The hub, prep and run-over read the player's day from `fetchAnsweredPollIdsForDay`; Start refuses with `POLLS_SPENT`. The retry box needed no code: every deal goes through `rollSegmentForward`, which returns once today has a segment, and a held gate parks behind tomorrow. Pinned by `runPolls.repository.spec.ts` (leaves the day alone once it has already been dealt) and `runAction.model.spec.ts` (locks the retry behind tomorrow). The one same-date leak was a fresh start over a sequence longer than five; DVTD-p0db closes it.

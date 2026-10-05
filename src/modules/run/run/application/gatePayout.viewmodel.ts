@@ -4,7 +4,7 @@ import type { RunState } from "~/modules/run/run/domain/run.model";
 export type GatePayout = {
 	readonly gateRewardPaidKb: number;
 	readonly clearThisGateKb: number;
-	readonly perfectBonusThisGateKb: number;
+	readonly bandBonusThisGateKb: number;
 	readonly overflowThisGateKb: number;
 	readonly storageBeforeClearKb: number | null;
 	readonly interestThisGateKb: number;
@@ -29,7 +29,7 @@ export type GatePayout = {
 export const gatePayoutFor = (state: RunState): GatePayout => ({
 	gateRewardPaidKb: state.gateRewardKb ?? 0,
 	clearThisGateKb: state.clearThisGateKb ?? 0,
-	perfectBonusThisGateKb: state.perfectBonusThisGateKb ?? 0,
+	bandBonusThisGateKb: state.bandBonusThisGateKb ?? 0,
 	overflowThisGateKb: state.overflowThisGateKb ?? 0,
 	storageBeforeClearKb: state.storageBeforeClearKb ?? null,
 	interestThisGateKb: state.interestThisGateKb ?? 0,

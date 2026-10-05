@@ -146,6 +146,16 @@ taken by configs in the roster.
 | Admin panel | `admin/application` + `admin/infrastructure` + `admin/presentation` | `getAdminDashboardService`, `sendReminderEmailService`, `AdminDashboard` (`admin.service.ts`), `getAdminDashboard`, `sendReminderEmail` (`admin.serverfn.ts`, both behind `withAdminUser`), `adminPanelDataFor` (`adminPanel.viewmodel.ts`), the reads in `admin.repository.ts`, `AdminPanel.component` + `AdminPanel.ui`. The route `/_authed/admin` mounts the component and nothing else |
 | Visit write path | `pulse/application` + `pulse/infrastructure` | `recordVisit` / `recordScreen` (`visit.serverfn.ts`), `recordVisitService` (`visit.service.ts`), `upsertVisit` (`visit.repository.ts`) |
 
+### Context `guide`
+
+Explaining the game to the people playing it. It reads `run`, `collection` and
+`account` and owns no rule of its own, so it belongs to none of them
+([ADR-190](docs/adr/190-the-player-wiki-reads-the-models.md)).
+
+| Concept | Lives in | Key symbols |
+|---|---|---|
+| Player wiki | `wiki/application` + `wiki/presentation` | `WIKI_ARTICLES`, `wikiArticleFor`, `wikiScreenFor` (`wikiArticles.viewmodel.ts`); the articles, every figure read from a model. `GATE_FACTS`, `CONFIG_SIZE_FACTS`, `CONFIG_COUNTS`, `CONFIG_GROUP_FACTS`, `STARTER_LABELS` (`wikiFacts.viewmodel.ts`); the projections `scripts/wiki-sync.ts` also renders into `docs/wiki.md`. `GLOSSARY_TERMS` (`wikiGlossary.viewmodel.ts`). `Wiki.component` + `WikiScreen.ui`, mounted by `/wiki` and `/wiki/$articleId` |
+
 ### `src/domains/` is gone
 
 Retired 2026-09-23 (DVTD-wj1t). The last two slices landed as

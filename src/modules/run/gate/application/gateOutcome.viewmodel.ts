@@ -55,7 +55,8 @@ import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 import {
 	AS_PERCENT,
 	coverageGainPercentFor,
-	PERFECT_BONUS,
+	BAND_BONUS,
+	isCommittableBand,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
 import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
@@ -110,7 +111,7 @@ const STORAGE_TITLE = "Payout";
 const CHANGES_TITLE = "Build changes";
 const ANSWERS_TITLE = "The five answers";
 
-const BONUS_TITLE = "Perfect bonus";
+const BONUS_TITLE = "Band bonus";
 const ENDING_TITLE = "The run ends here";
 const SUMMIT_TITLE = "The climb is done";
 const DROP_TITLE = "Or drop configs";
@@ -134,7 +135,7 @@ const RUN_OVER_TITLE = "Run over";
 const BALANCE = STORAGE_BALANCE;
 const BALANCE_WORD = STORAGE_BALANCE;
 const CLEARED_ROW = "Gate cleared";
-const BONUS_ROW = "Perfect bonus";
+const BONUS_ROW = "Band bonus";
 const PLAN_ROW = "Storage plan";
 const CORRECT_ROW = "Correct answers";
 const PEEL_ROW = "Peel refund";
@@ -167,7 +168,7 @@ const NOT_PAID = "not paid";
 const ROLLED_BACK = "nothing paid";
 const NOTHING_PAID = "nothing paid";
 
-const PAYOUT_CUT = "the payout is cut";
+const NO_BAND_BONUS = "no band bonus";
 const METER_SHORT = "the meter fell short";
 const WINDOW_SHORT = "the window came up short";
 const CAUGHT_REASON = "the meter never reached the floor — caught";
@@ -351,7 +352,6 @@ const OUTCOME_SUFFIX = {
 } satisfies Record<CoverageBandId, string>;
 
 const RUN_OVER_BAND: CoverageBandId = "danger";
-const PERFECT_BAND: CoverageBandId = "perfect";
 const SHAKY_BAND: CoverageBandId = "shaky";
 
 const titleOf = (band: CoverageBandId, gateName: string) =>
@@ -367,7 +367,7 @@ const holdReasonOf = (frame: GateOutcomeFrame): string => {
 
 const noteOf = (frame: GateOutcomeFrame, band: CoverageBandId) => {
 	if (SWATCH_BANDS[band]) return undefined;
-	if (band === "ok") return `cleared on the OK band · ${PAYOUT_CUT}`;
+	if (band === "ok") return `cleared on the OK band · ${NO_BAND_BONUS}`;
 	if (band === "shaky")
 		return frame.nextPollsIn === undefined
 			? `${holdReasonOf(frame)} · ${FRESH_POLLS} on the retry`
@@ -563,12 +563,17 @@ const balanceRow = (frame: GateOutcomeFrame): LedgerRow => {
 	};
 };
 
+const bonusNoteOf = (band: CoverageBandId): string =>
+	isCommittableBand(band)
+		? `×${BAND_BONUS[band]} on a ${COVERAGE_BAND_WORD[band]} close`
+		: "";
+
 const clearedStorageRows = (
 	frame: GateOutcomeFrame,
 	band: CoverageBandId
 ): readonly LedgerRow[] => {
 	const payout = payoutOf(frame);
-	const bonus = band === PERFECT_BAND ? frame.bonusKb : 0;
+	const bonus = frame.bonusKb;
 	const committed = frame.escrowCommittedKb ?? 0;
 	const uplift = frame.slaUpliftKb ?? 0;
 	const survival = frame.incidentSurvivalKb ?? 0;
@@ -600,7 +605,7 @@ const clearedStorageRows = (
 			: [
 					{
 						label: BONUS_ROW,
-						notes: [`×${PERFECT_BONUS} on a full bar`],
+						notes: [bonusNoteOf(band)],
 						figures: [{ label: signedKbLabel(bonus), color: GAIN_COLOR }],
 					},
 				]),
@@ -1420,9 +1425,7 @@ export const gateOutcomePropsFor = (
 			? {}
 			: { accuracy: landedAccuracyTrackFor(frame.accuracyMultiplier) }),
 		audits: auditsOf(frame),
-		...(band === PERFECT_BAND && frame.bonusKb > 0
-			? { bonus: bonusPanelOf(frame) }
-			: {}),
+		...(frame.bonusKb > 0 ? { bonus: bonusPanelOf(frame) } : {}),
 		...(earned === undefined ? {} : { earned }),
 		coverage: {
 			title: COVERAGE_TITLE,
@@ -1571,7 +1574,7 @@ export const gateOutcomeFrameOf = (
 		overflowKb: cleared ? view.gatePayout.overflowThisGateKb : 0,
 		interestKb: cleared ? view.gatePayout.interestThisGateKb : 0,
 		extraPickKb: cleared ? view.gatePayout.extraPickThisGateKb : 0,
-		bonusKb: cleared ? view.gatePayout.perfectBonusThisGateKb : 0,
+		bonusKb: cleared ? view.gatePayout.bandBonusThisGateKb : 0,
 		faucetKb: view.gatePayout.faucetThisGateKb,
 		escrowCommittedKb: cleared ? view.gatePayout.escrowCommittedKb : 0,
 		escrowRolledBackKb: cleared ? 0 : view.gatePayout.escrowRolledBackKb,

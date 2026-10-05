@@ -7,6 +7,7 @@ import {
 import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
+import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import { poolFor, startingHand } from "~/modules/run/config/domain/hand.model";
 import {
@@ -137,7 +138,9 @@ const unansweredPollsToday = async (userId: string, date: string) => {
 		fetchAnsweredPollIdsForDay(userId, date),
 		fetchRunPollsForDate(date),
 	]);
-	return polls.filter((poll) => !answeredToday.has(Number(poll.id)));
+	return polls
+		.slice(0, SEED_LENGTH)
+		.filter((poll) => !answeredToday.has(Number(poll.id)));
 };
 
 export const getPollsLeftTodayService = async ({

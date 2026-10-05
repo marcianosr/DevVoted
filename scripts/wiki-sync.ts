@@ -21,36 +21,19 @@ import { format, resolveConfig } from "prettier";
 
 import { AUDIT_TIERS } from "~/modules/run/gate/domain/auditSchedule.model";
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
+import { BUILD_SPACE_RUNGS } from "~/modules/run/run/domain/rules.model";
 import {
-	BUILD_SPACE_RUNGS,
-	GATE_COUNT,
-	GATE_REWARD_KB,
-	VICTORY_GATE,
-	failPeelShareFor,
-	gateRewardMultiplier,
-} from "~/modules/run/run/domain/rules.model";
-import {
-	healthyAt,
-	healthyUnitsAt,
-} from "~/modules/run/build/domain/coverageRatio.model";
-import {
-	CONFIG_SIZES,
-	DRAFT_COST_PER_SLOT_KB,
-} from "~/modules/run/config/domain/config.model";
-import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
-import {
-	CONFIG_GROUP_ORDER,
-	configGroupOf,
-} from "~/modules/run/config/domain/configGroup.model";
-import { CONFIG_GROUP_LABELS } from "~/modules/run/build/application/newRunScreen.viewmodel";
-import { FREE_CONFIG_IDS } from "~/modules/run/config/domain/configUnlock.model";
-import { STARTER_POOL } from "~/modules/run/config/domain/hand.model";
-import { GATE_SWATCHES } from "~/modules/run/gate/domain/swatch.model";
-import { EXTEND_FROM_GATE } from "~/modules/run/shop/domain/draft.model";
+	CONFIG_COUNTS,
+	CONFIG_GROUP_FACTS,
+	CONFIG_SIZE_FACTS,
+	GATE_FACTS,
+	POOL_LETTERS,
+	STARTER_LABELS,
+	percentLabel,
+	trimmed,
+} from "~/modules/guide/wiki/application/wikiFacts.viewmodel";
 
 const WIKI = "docs/wiki.md";
-
-const GATES = Array.from({ length: GATE_COUNT }, (_, gate) => gate);
 
 type Cell = string | number;
 
@@ -63,50 +46,6 @@ const table = (
 ) => [row(header), rule(header.length), ...rows.map(row)].join("\n");
 
 const kb = (amount: number) => `${amount} KB`;
-
-/** One decimal, but only where the number actually has one. */
-const trim = (value: number) =>
-	Number.isInteger(value) ? `${value}` : value.toFixed(1);
-
-const percent = (ratio: number) => `${trim(ratio * 100)}%`;
-
-// `.name` is the badge ("Pallet Swatch"); the column wants the gate.
-const swatchOf = (gate: number) => GATE_SWATCHES[gate].gateName;
-
-/**
- * What a flawless window pays a bare build, which is the headline the payout
- * column has always quoted: no reward multipliers, no streak, `correct / 5` of 1.
- */
-const clearPayoutFor = (gate: number) =>
-	GATE_REWARD_KB * gateRewardMultiplier(gate);
-
-/**
- * The one authored cell in an otherwise derived table. Extend and the win are
- * read off their own constants below; gate 0 opening the shop is a fact about
- * the opening sequence that no constant states.
- */
-const GATE_0_UNLOCKS = "Shop, **Rebuild**";
-
-const unlocksAt = (gate: number) => {
-	const notes = [
-		gate === 0 ? GATE_0_UNLOCKS : undefined,
-		gate === EXTEND_FROM_GATE ? "**Extend**" : undefined,
-		gate === VICTORY_GATE ? "Clearing it on HEALTHY or better wins the run" : undefined,
-	].filter((note) => note !== undefined);
-
-	return notes.length === 0 ? "—" : notes.join(", ");
-};
-
-const capacityAt = (gate: number) => {
-	const tier = AUDIT_TIERS.find((candidate) => candidate.gates.includes(gate));
-	if (tier === undefined) return "none";
-
-	const pool = POOL_LETTERS[AUDIT_TIERS.indexOf(tier)];
-
-	return `${tier.capacity} from pool ${pool}`;
-};
-
-const POOL_LETTERS = ["A", "B", "C"] as const;
 
 const auditCode = (id: (typeof AUDIT_TIERS)[number]["pool"][number]) =>
 	`${auditAt(id, 0).code}`;
@@ -122,16 +61,18 @@ const gateLadder = () =>
 			"Audits it carries",
 			"Also unlocks",
 		],
-		GATES.map((gate) => [
-			gate,
-			swatchOf(gate),
-			`${percent(healthyAt(gate))} (${trim(healthyUnitsAt(gate))})`,
-			kb(clearPayoutFor(gate)),
-			failPeelShareFor(gate) === 0
+		GATE_FACTS.map((facts) => [
+			facts.gate,
+			facts.place,
+			`${percentLabel(facts.healthyShare)} (${trimmed(facts.healthyUnits)})`,
+			kb(facts.clearPaysKb),
+			facts.missPeelShare === 0
 				? "**nothing**"
-				: percent(failPeelShareFor(gate)),
-			capacityAt(gate),
-			unlocksAt(gate),
+				: percentLabel(facts.missPeelShare),
+			facts.auditPool === undefined
+				? "none"
+				: `${facts.auditCount} from pool ${facts.auditPool}`,
+			facts.unlocks.length === 0 ? "—" : facts.unlocks.join(", "),
 		])
 	);
 
@@ -151,7 +92,7 @@ const buildSpace = () =>
 const configSizes = () =>
 	table(
 		["Slots", "Price"],
-		CONFIG_SIZES.map((slots) => [slots, kb(DRAFT_COST_PER_SLOT_KB * slots)])
+		CONFIG_SIZE_FACTS.map(({ slots, priceKb }) => [slots, kb(priceKb)])
 	);
 
 const auditPools = () =>
@@ -171,26 +112,20 @@ const auditPools = () =>
  * Stated as a sentence rather than a table: this is the fact the wiki got wrong
  * in two places at once, and it reads in prose everywhere it appears.
  */
-const configCounts = () => {
-	const earned = CONFIG_LIST.length - FREE_CONFIG_IDS.length;
-
-	return `**${CONFIG_LIST.length} configs** ship. **${FREE_CONFIG_IDS.length}** are granted at signup and the other **${earned}** unlock individually.`;
-};
+const configCounts = () =>
+	`**${CONFIG_COUNTS.total} configs** ship. **${CONFIG_COUNTS.free}** are granted at signup and the other **${CONFIG_COUNTS.earned}** unlock individually.`;
 
 const configGroups = () =>
 	table(
 		["Group", "Configs"],
-		CONFIG_GROUP_ORDER.map((group) => [
-			CONFIG_GROUP_LABELS[group],
-			CONFIG_LIST.filter((config) => configGroupOf(config) === group).length,
-		])
+		CONFIG_GROUP_FACTS.map(({ label, count }) => [label, count])
 	);
 
 const isFileShaped = (label: string) => label.startsWith(".");
 
 const starterPool = () =>
-	STARTER_POOL.map((config) =>
-		isFileShaped(config.label) ? `\`${config.label}\`` : config.label
+	STARTER_LABELS.map((label) =>
+		isFileShaped(label) ? `\`${label}\`` : label
 	).join(", ");
 
 const BLOCKS: Readonly<Record<string, () => string>> = {

@@ -16,6 +16,8 @@ import { Route as LogoutRouteImport } from './routes/logout'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WikiIndexRouteImport } from './routes/wiki.index'
+import { Route as WikiArticleIdRouteImport } from './routes/wiki.$articleId'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AuthedDexRouteImport } from './routes/_authed/dex'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
@@ -68,6 +70,16 @@ const AuthedRoute = AuthedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WikiIndexRoute = WikiIndexRouteImport.update({
+  id: '/wiki/',
+  path: '/wiki/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WikiArticleIdRoute = WikiArticleIdRouteImport.update({
+  id: '/wiki/$articleId',
+  path: '/wiki/$articleId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -177,6 +189,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/wiki/$articleId': typeof WikiArticleIdRoute
+  '/wiki/': typeof WikiIndexRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
   '/run/gate': typeof AuthedRunGateRoute
@@ -203,6 +217,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthedAdminRoute
   '/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/wiki/$articleId': typeof WikiArticleIdRoute
+  '/wiki': typeof WikiIndexRoute
   '/polls/new': typeof AuthedPollsNewRoute
   '/profile/$userId': typeof AuthedProfileUserIdRoute
   '/run/gate': typeof AuthedRunGateRoute
@@ -232,6 +248,8 @@ export interface FileRoutesById {
   '/_authed/admin': typeof AuthedAdminRoute
   '/_authed/dex': typeof AuthedDexRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/wiki/$articleId': typeof WikiArticleIdRoute
+  '/wiki/': typeof WikiIndexRoute
   '/_authed/polls/new': typeof AuthedPollsNewRoute
   '/_authed/profile/$userId': typeof AuthedProfileUserIdRoute
   '/_authed/run/gate': typeof AuthedRunGateRoute
@@ -261,6 +279,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dex'
     | '/auth/callback'
+    | '/wiki/$articleId'
+    | '/wiki/'
     | '/polls/new'
     | '/profile/$userId'
     | '/run/gate'
@@ -287,6 +307,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dex'
     | '/auth/callback'
+    | '/wiki/$articleId'
+    | '/wiki'
     | '/polls/new'
     | '/profile/$userId'
     | '/run/gate'
@@ -315,6 +337,8 @@ export interface FileRouteTypes {
     | '/_authed/admin'
     | '/_authed/dex'
     | '/auth/callback'
+    | '/wiki/$articleId'
+    | '/wiki/'
     | '/_authed/polls/new'
     | '/_authed/profile/$userId'
     | '/_authed/run/gate'
@@ -341,6 +365,8 @@ export interface RootRouteChildren {
   ProtoRunRoute: typeof ProtoRunRoute
   SignUpRoute: typeof SignUpRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  WikiArticleIdRoute: typeof WikiArticleIdRoute
+  WikiIndexRoute: typeof WikiIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -392,6 +418,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wiki/': {
+      id: '/wiki/'
+      path: '/wiki'
+      fullPath: '/wiki/'
+      preLoaderRoute: typeof WikiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wiki/$articleId': {
+      id: '/wiki/$articleId'
+      path: '/wiki/$articleId'
+      fullPath: '/wiki/$articleId'
+      preLoaderRoute: typeof WikiArticleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -594,6 +634,8 @@ const rootRouteChildren: RootRouteChildren = {
   ProtoRunRoute: ProtoRunRoute,
   SignUpRoute: SignUpRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  WikiArticleIdRoute: WikiArticleIdRoute,
+  WikiIndexRoute: WikiIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

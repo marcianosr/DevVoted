@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **A wiki for players.** **Wiki** in the navigation and the footer explains how a run plays, with each gate's swatch and coverage lines, an opening build on its track and the band colours you meet in play: gates and their bands, how an answer is scored, audits, your build and every config, storage and the shop, what outlives a run, the community board and a glossary. Every number on it is read from the game itself, so it never falls behind a balance change. Open it without signing in. Audits, special titles and ranks you have not met stay hidden, as in your Dex.
+- **A HEALTHY clear pays more than an OK one.** Closing a gate HEALTHY now multiplies its payout ×1.25, between OK (×1) and PERFECT (×1.5), so the At stake ladder on prep shows three different figures instead of two matching ones. The debrief lists the extra as **Band bonus**, and an OK close now says it earned no band bonus instead of claiming its payout was cut.
+
+### Fixed
+- **A right answer's gain states what that answer earned.** The gain that flies onto the coverage bar could read **+20.7%** for a right single worth **+20%**, because it also counted your accuracy multiplier rising on the answers already on the bar. It now shows the answer's own points. The bar still moves to your real coverage.
 
 ## 2.0.2 - 2026-10-05
 ### Changed

@@ -1,11 +1,11 @@
 ---
 # DVTD-tjc7
 title: 'The band decides nothing about the payout: the whole slope is unwired'
-status: todo
+status: completed
 type: bug
 priority: high
 created_at: 2026-09-22T06:43:06Z
-updated_at: 2026-09-22T06:43:06Z
+updated_at: 2026-10-05T17:34:35Z
 ---
 
 ADR-076's title is "The band a gate closes in decides what it costs". Two of its five
@@ -49,6 +49,10 @@ corrected in that pass; the wiring is this bean.
 
 ## Todo
 
-- [ ] Decide: wire `payoutRatioFor` into `closeWindow`, or delete it and let SLA own the slope
-- [ ] Same for `perfectBonusFor` — and give `frame.bonusKb` a producer or drop the row
-- [ ] Re-balance check: OK currently pays full, so wiring the cut is a nerf to every thin clear
+- [x] Decide: wire `payoutRatioFor` into `closeWindow`, or delete it and let SLA own the slope
+- [x] Same for `perfectBonusFor` — and give `frame.bonusKb` a producer or drop the row
+- [x] Re-balance check: OK currently pays full, so wiring the cut is a nerf to every thin clear
+
+## Summary of Changes
+
+Decided 2026-10-05: a boost, not a cut (ADR-191). The clear is multiplied x1 at OK, x1.25 at HEALTHY and x1.5 at PERFECT through `BAND_BONUS` / `bandBonusKbFor`, which generalise the old PERFECT-only bonus. The persisted field became `bandBonusThisGateKb`. The dead `payoutRatioFor`, `gatePayoutKb`, `perfectBonusFor`, `PAYOUT_RATIO_CAP` and `KB_PER_PROVEN_SLOT` are deleted. The prep ladder (via the shared `prepPayoutFor`) now quotes three different figures. The debrief shows **Band bonus** on HEALTHY too, and the OK note no longer claims a cut. The ADR-161 balance specs still pass. Wiki 2.6 and the SLA row are updated.

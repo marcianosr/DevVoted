@@ -419,15 +419,15 @@ describe("accuracyTrackFor", () => {
 });
 
 describe("gainFigureOf", () => {
-	it("signs what an answer added to the bar, to the tenth", () => {
-		expect(gainFigureOf(24, 36.04)).toBe("+12%");
-		expect(gainFigureOf(10, 21.16)).toBe("+11.2%");
+	it("signs an answer's own points, to the tenth", () => {
+		expect(gainFigureOf(20)).toBe("+20%");
+		expect(gainFigureOf(11.16)).toBe("+11.2%");
 	});
 
-	it("names no gain when the bar did not rise", () => {
-		expect(gainFigureOf(36, 36)).toBeUndefined();
-		expect(gainFigureOf(36, 30)).toBeUndefined();
-		expect(gainFigureOf(36, 36.02)).toBeUndefined();
+	it("names no gain for an answer that earned nothing", () => {
+		expect(gainFigureOf(0)).toBeUndefined();
+		expect(gainFigureOf(-5)).toBeUndefined();
+		expect(gainFigureOf(0.02)).toBeUndefined();
 	});
 });
 
@@ -441,14 +441,27 @@ describe("pollFlightFor", () => {
 		const flight = pollFlightFor(toRunView(before), view, lastAnswerOf(right));
 
 		expect(flight).toEqual({
-			figure: gainFigureOf(
-				toRunView(before).gateStake.coverageHeld,
-				view.gateStake.coverageHeld
-			),
+			figure: "+20%",
 			id: lastAnswerOf(right).id,
 			fromHeld: toRunView(before).gateStake.coverageHeld,
 			toHeld: view.gateStake.coverageHeld,
 		});
+	});
+
+	it("credits a third right single with its own +20%, not the multiplier's lift on the answers before it", () => {
+		const twoRight = playing(JS_GATE, [true, true]);
+		const threeRight = playing(JS_GATE, [true, true, true]);
+		const view = toRunView(threeRight);
+
+		const flight = pollFlightFor(
+			toRunView(twoRight),
+			view,
+			lastAnswerOf(threeRight)
+		);
+
+		expect(view.gateStake.coverageHeld).toBe(60.7);
+		expect(flight?.figure).toBe("+20%");
+		expect(flight?.toHeld).toBe(60.7);
 	});
 
 	it("sends nothing after a wrong answer", () => {

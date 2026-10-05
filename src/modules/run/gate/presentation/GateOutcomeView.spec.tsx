@@ -232,8 +232,8 @@ describe("GateOutcomeView", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("never shows a perfect bonus the engine did not pay", () => {
-		render(
+	it("never shows a band bonus the engine did not pay", () => {
+		const { container } = render(
 			<GateOutcomeView
 				view={viewAt("cleared", {
 					lastClose: closeAt("cleared", {
@@ -247,9 +247,9 @@ describe("GateOutcomeView", () => {
 			/>
 		);
 
-		expect(
-			screen.queryByRole("heading", { name: "Perfect bonus" })
-		).not.toBeInTheDocument();
+		expect(container.querySelector("details")).not.toHaveTextContent(
+			"See an overview of your results."
+		);
 	});
 
 	it("reads a cleared gate off the settled run coverage, not a sum of units", () => {

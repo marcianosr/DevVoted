@@ -15,7 +15,7 @@ import {
 	crowdSubmitterFor,
 	catcherFor,
 	gateClearPayout,
-	perfectBonusOnClear,
+	bandBonusOnClear,
 	prefetcherFor,
 } from "~/modules/run/build/domain/build.model";
 import {
@@ -593,6 +593,13 @@ const startRefusalFor = (
 	return commitmentRemedy(view);
 };
 
+export const prepPayoutFor =
+	(configs: readonly Config[], gate: number) =>
+	(correct: number, band: CoverageBandId): number => {
+		const clearKb = gateClearPayout(configs, correct, gate);
+		return clearKb + bandBonusOnClear(configs, bandOf(band), clearKb);
+	};
+
 export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
 	const { view, on } = frame;
 	const { gateStake } = view;
@@ -612,14 +619,7 @@ export const prepScreenPropsFor = (frame: PrepScreenFrame): PrepScreenProps => {
 		),
 		accuracyBonus: gateStake.accuracy.carried,
 		peelKb: gateStake.peelSlotsOnFailure * PEEL_KB_PER_SLOT,
-		payout: (correct, band) => {
-			const clearKb = gateClearPayout(
-				view.configs,
-				correct,
-				gateStake.gateNumber
-			);
-			return clearKb + perfectBonusOnClear(view.configs, bandOf(band), clearKb);
-		},
+		payout: prepPayoutFor(view.configs, gateStake.gateNumber),
 		estimate: view.estimate,
 		estimatedCorrect: view.estimatedCorrect,
 		sla: view.sla,

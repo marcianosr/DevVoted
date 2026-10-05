@@ -11,6 +11,7 @@ const HOME = "/";
 const SIGN_IN = "/login";
 const RUN = "/run";
 const COMMUNITY = "/run/community";
+const WIKI = "/wiki";
 const SUGGEST = "/polls/new";
 const BORDER = "/borders/border-ts-lavender.svg";
 
@@ -33,6 +34,7 @@ const meta: Meta<typeof AppNav> = {
 		signInHref: SIGN_IN,
 		run: { href: RUN, pollsLeft: 5, active: false },
 		community: { href: COMMUNITY, active: false },
+		wiki: { href: WIKI, active: false },
 		suggest: { href: SUGGEST, active: false, reward: "+16 KB" },
 	},
 };
@@ -71,6 +73,7 @@ export const OnTheCommunity: Story = {
 	args: {
 		viewer: VIEWER,
 		community: { href: COMMUNITY, active: true },
+		wiki: { href: WIKI, active: false },
 	},
 };
 
@@ -115,6 +118,7 @@ const SWEPT: AppNavProps = {
 	signInHref: SIGN_IN,
 	run: { href: RUN, pollsLeft: 3, active: true },
 	community: { href: COMMUNITY, active: false },
+	wiki: { href: WIKI, active: false },
 	suggest: { href: SUGGEST, active: false },
 	viewer: VIEWER,
 };

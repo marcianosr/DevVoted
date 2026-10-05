@@ -23,6 +23,7 @@ import {
 } from "~/modules/account/profile/domain/title.model";
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
+import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
 import { getCategories } from "~/shared/lib/categories";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 
@@ -200,13 +201,16 @@ const seedTodaysSequence = async (
 	today: string,
 	pollIds: readonly number[]
 ): Promise<number> => {
+	const todaysPollIds = pollIds.slice(0, SEED_LENGTH);
 	await db.insert(dailyRunSeedsTable).values({ date: today, seed: today });
-	await db
-		.insert(dailyRunPollsTable)
-		.values(
-			pollIds.map((poll_id, position) => ({ date: today, position, poll_id }))
-		);
-	return pollIds.length;
+	await db.insert(dailyRunPollsTable).values(
+		todaysPollIds.map((poll_id, position) => ({
+			date: today,
+			position,
+			poll_id,
+		}))
+	);
+	return todaysPollIds.length;
 };
 
 const COMMUNITY_POLL_COUNT = SLICE_WINDOW * 3;
