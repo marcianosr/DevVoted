@@ -79,4 +79,18 @@ describe("AdvertisementCard", () => {
 			container.querySelector('img[src="/borders/rareware.svg"]')
 		).toBeInTheDocument();
 	});
+
+	it("draws the banner as a closable card over the page", async () => {
+		const onDismiss = vi.fn();
+		renderCard({ variant: "banner", onDismiss });
+
+		expect(
+			screen.getByRole("complementary", { name: COPY.legend })
+		).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: COPY.dismiss(TITLE) })
+		);
+
+		expect(onDismiss).toHaveBeenCalledOnce();
+	});
 });

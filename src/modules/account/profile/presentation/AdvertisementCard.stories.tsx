@@ -46,3 +46,7 @@ export const Border: Story = {
 export const PollStrip: Story = {
 	args: { variant: "strip", onDismiss: undefined },
 };
+
+export const Banner: Story = {
+	args: { variant: "banner" },
+};

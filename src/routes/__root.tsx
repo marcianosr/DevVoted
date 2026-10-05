@@ -16,6 +16,7 @@ import { Footer } from "~/components/Footer.component";
 import { Nav } from "~/components/Nav.component";
 import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { ViewerContext } from "~/modules/account/auth/application/useViewer.hook";
+import { AdvertisementBanner } from "~/modules/account/profile/presentation/Advertisement.component";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
 import { PlayerHover } from "~/modules/run/community/presentation/PlayerHover.component";
 import {
@@ -107,6 +108,7 @@ function RootComponent() {
 							>
 								<Outlet />
 								<Footer />
+								<AdvertisementBanner />
 							</main>
 						</NavRunContext.Provider>
 					</PlayerHover>

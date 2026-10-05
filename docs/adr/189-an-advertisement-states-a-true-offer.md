@@ -43,3 +43,20 @@ key press or the focus away from a timed poll.
 Root provides the signed-in user through `ViewerContext`. A screen rendered without
 it (every screen spec) draws no advertisement instead of needing a router or a
 query client.
+
+## Decision 6: each kind is one entry with a weight
+
+The kinds of advertisement are a list. Each entry says when a viewer is eligible
+and how heavily it weighs; the roll picks among the eligible entries by weight.
+Poll editors and borders weigh the same, so the pick stays half and half. A new
+kind, such as a marketplace listing, is one new entry and no new branching.
+(Amended 2026-10-05, DVTD-n1kl.)
+
+## Decision 7: a banner runs along the pages without a card
+
+The pages that carry no advertisement card show it as a banner fixed to the bottom
+of the screen, above the phone tab bar, over an opaque surface. The run, the
+profile and the suggest form carry their own card or are where the card leads, and
+the pages before sign-in have no viewer, so none of them draw the banner. Its ×
+hides it for the session like a card's. (Amended 2026-10-05, DVTD-n1kl.)
+

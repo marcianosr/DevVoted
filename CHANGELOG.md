@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 2.0.2 - 2026-10-05
 ### Added
 - **Advertisements for the ways to grow outside a run.** The run hub, the new run screen, the community screen and profiles now carry a small advertisement, and the poll screen a one-line strip. It is either **Looking for poll editors** (approved polls earn 16 KB archived storage) with a **Suggest a poll** press, or one border you can still buy, titled with its name and price and shown on your own face, with an **Open market** press that opens your borders tab. Which one you see is drawn fresh each time you open the screen. Press **×** to hide it on that screen for the rest of your visit.
+- **An advertisement banner on the other pages.** The home page, the polls list and the admin pages show the same advertisement as a banner along the bottom of the screen, above the tab bar on a phone. Press **×** to hide it for the rest of your visit.
 - **Your profile tabs have their own address.** A link can open your profile straight on the borders tab.
 
 ## 2.0.1 - 2026-10-05
