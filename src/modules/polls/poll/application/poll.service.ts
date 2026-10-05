@@ -8,8 +8,10 @@ import {
 } from "~/modules/polls/poll/domain/pollAccess.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import {
+	fetchDealCounts,
 	fetchPollByIdWithOptions,
 	fetchPollsIn,
+	type PollDeal,
 } from "~/modules/polls/poll/infrastructure/poll.repository";
 import {
 	createErrorResponse,
@@ -21,6 +23,7 @@ import {
 export type PollListData = {
 	readonly polls: Poll[];
 	readonly canAdminister: boolean;
+	readonly deals: readonly PollDeal[];
 };
 
 export type PollDetailData = {
@@ -32,13 +35,14 @@ export type PollDetailData = {
 export const listPollsFor = async (
 	viewer: PollViewer
 ): Promise<ApiResponse<PollListData>> =>
-	handleApiOperation(
-		async () => ({
-			polls: await fetchPollsIn(pollScopeOf(viewer)),
+	handleApiOperation(async () => {
+		const polls = await fetchPollsIn(pollScopeOf(viewer));
+		return {
+			polls,
 			canAdminister: canAdministerPolls(viewer),
-		}),
-		"listPollsFor"
-	);
+			deals: await fetchDealCounts(polls.map((poll) => poll.id)),
+		};
+	}, "listPollsFor");
 
 export const pollDetailFor = async (
 	viewer: PollViewer,

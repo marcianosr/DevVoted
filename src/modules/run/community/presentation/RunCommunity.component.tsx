@@ -7,7 +7,11 @@ import {
 	incidentsPanelFor,
 } from "~/modules/run/incident/application/incident.viewmodel";
 import { useIncidentsFeed } from "~/modules/run/incident/application/useIncidentsFeed.hook";
-import { returnFromCommunity } from "~/modules/run/run/application/runRoutes.viewmodel";
+import {
+	canReview,
+	RUN_ROUTES,
+	returnFromCommunity,
+} from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
@@ -84,6 +88,9 @@ export const RunCommunity = () => {
 		swatch,
 		countdown: timer,
 		back,
+		...(canReview(run ?? null)
+			? { onReview: () => goTo(RUN_ROUTES.review) }
+			: {}),
 		incidents,
 		rivals: feed.view?.rivals ?? [],
 		loot: {

@@ -1,9 +1,18 @@
+import { useState } from "react";
+
+import {
+	type PollDetailView,
+	pollDetailViewOf,
+} from "~/modules/polls/authoring/application/pollDetail.viewmodel";
 import {
 	PollDetail as PollDetailUI,
 	PollDetailError,
 	PollDetailLoading,
 } from "~/modules/polls/authoring/presentation/PollDetail.ui";
+import { getPollCreators } from "~/modules/polls/poll/application/poll.serverfn";
 import { usePollDetail } from "~/modules/polls/poll/application/usePollDetail.hook";
+import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
+import { pollQueryKeys } from "~/shared/queryKeys";
 
 type PollDetailProps = {
 	pollId: number;
@@ -11,6 +20,11 @@ type PollDetailProps = {
 
 export const PollDetail = ({ pollId }: PollDetailProps) => {
 	const { view, isPending, errorMessage } = usePollDetail(pollId);
+	const creators = useApiQuery({
+		queryKey: pollQueryKeys.creators(),
+		queryFn: () => getPollCreators(),
+	});
+	const [shown, setShown] = useState<PollDetailView>("player");
 
 	if (isPending) return <PollDetailLoading />;
 	if (!view) {
@@ -19,16 +33,15 @@ export const PollDetail = ({ pollId }: PollDetailProps) => {
 
 	return (
 		<PollDetailUI
-			id={view.poll.id}
-			question={view.poll.question}
-			status={view.poll.status}
-			categoryCode={view.poll.categoryCode}
-			createdAt={new Date(view.poll.createdAt)}
-			createdBy={view.poll.createdBy}
-			codeBlock={view.poll.codeBlock}
-			codeSandboxExample={view.poll.codeSandboxExample}
-			options={view.options}
-			isAdmin={view.canAdminister}
+			{...pollDetailViewOf(
+				{ ...view.poll, createdAt: new Date(view.poll.createdAt) },
+				view.options,
+				creators.view ?? undefined,
+				shown
+			)}
+			canEdit={view.canAdminister}
+			view={shown}
+			onView={setShown}
 		/>
 	);
 };

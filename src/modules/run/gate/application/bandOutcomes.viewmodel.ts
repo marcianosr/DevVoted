@@ -41,7 +41,7 @@ const CLEAR_TRAIL = " or better";
 const EARNS = "earns ";
 const EARNS_THE = "earns the ";
 const AND = " and ";
-const ADVANCE_LEAD = "advance to ";
+const ADVANCE = "advance to the next gate";
 const OR_MORE = " or more";
 const CLEAR_LINE_OPEN = " (";
 const CLEAR_LINE_CLOSE = ")";
@@ -174,10 +174,8 @@ const paysOf = (rung: CoverageRung, frame: BandOutcomesFrame) => {
 };
 
 const advancePartsFor = (gate: number): readonly LeadPart[] => {
-	const next = swatchForGate(gate + 1);
-
-	if (next === undefined) return [EARNS];
-	return [EARNS_THE, { figure: `${ADVANCE_LEAD}${next.gateName}` }, AND];
+	if (swatchForGate(gate + 1) === undefined) return [EARNS];
+	return [EARNS_THE, { figure: ADVANCE }, AND];
 };
 
 const clearObjectiveFor = (

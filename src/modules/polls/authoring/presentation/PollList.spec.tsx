@@ -55,6 +55,13 @@ const choices: PollListChoices = {
 		{ value: "css", label: "CSS", count: 8 },
 	],
 	withCode: 12,
+	withExplanation: 30,
+	dealt: [
+		{ value: "all", label: "any", count: 96 },
+		{ value: "never", label: "never", count: 40 },
+		{ value: "once", label: "once", count: 50 },
+		{ value: "often", label: "2+ times", count: 6 },
+	],
 };
 
 const defaults: PollListProps = {
@@ -66,9 +73,16 @@ const defaults: PollListProps = {
 	filter: EMPTY_FILTER,
 	choices,
 	suggestHref: "/polls/new",
+	activeFilters: [],
+	onClearFilter: vi.fn(),
+	onClearAll: vi.fn(),
 	onFilterChange: vi.fn(),
 	onLoadMore: vi.fn(),
 };
+
+const showing = (whole: string) => (_: string, element: Element | null) =>
+	element?.textContent === whole &&
+	!Array.from(element.children).some((child) => child.textContent === whole);
 
 const renderList = (props: Partial<PollListProps> = {}) =>
 	render(<PollList {...defaults} {...props} />);
@@ -120,31 +134,35 @@ describe("PollList", () => {
 		});
 	});
 
-	it("offers status, answer type and category as counted radio groups", async () => {
+	it("offers status, answer and dealt as selects, and category as counted tabs", async () => {
 		const onFilterChange = vi.fn();
 		renderList({ onFilterChange });
 
-		const status = screen.getByRole("radiogroup", { name: "Status" });
-		expect(
-			within(status).getByRole("radio", { checked: true })
-		).toHaveAccessibleName("all · 96");
-		await userEvent.click(
-			within(status).getByRole("radio", { name: "draft · 3" })
+		await userEvent.selectOptions(
+			screen.getByRole("combobox", { name: "status" }),
+			"draft"
 		);
 		expect(onFilterChange).toHaveBeenLastCalledWith({
 			...EMPTY_FILTER,
 			status: "draft",
 		});
 
-		await userEvent.click(
-			within(screen.getByRole("radiogroup", { name: "Answer type" })).getByRole(
-				"radio",
-				{ name: "multiple · 16" }
-			)
+		await userEvent.selectOptions(
+			screen.getByRole("combobox", { name: "answer" }),
+			"multiple"
 		);
 		expect(onFilterChange).toHaveBeenLastCalledWith({
 			...EMPTY_FILTER,
 			answerType: "multiple",
+		});
+
+		await userEvent.selectOptions(
+			screen.getByRole("combobox", { name: "dealt" }),
+			"never"
+		);
+		expect(onFilterChange).toHaveBeenLastCalledWith({
+			...EMPTY_FILTER,
+			dealt: "never",
 		});
 
 		await userEvent.click(
@@ -159,25 +177,32 @@ describe("PollList", () => {
 		});
 	});
 
-	it("toggles the code filter with its count beside it", async () => {
+	it("switches the code and explanation filters, each with its count", async () => {
 		const onFilterChange = vi.fn();
 		renderList({ onFilterChange });
 
-		const withCode = screen.getByRole("button", { name: "with code" });
-		expect(withCode).toHaveAttribute("aria-pressed", "false");
-		expect(withCode).toHaveTextContent("12");
-
+		const withCode = screen.getByRole("switch", { name: "with code 12" });
+		expect(withCode).toHaveAttribute("aria-checked", "false");
 		await userEvent.click(withCode);
-
-		expect(onFilterChange).toHaveBeenCalledWith({
+		expect(onFilterChange).toHaveBeenLastCalledWith({
 			...EMPTY_FILTER,
 			withCode: true,
+		});
+
+		await userEvent.click(
+			screen.getByRole("switch", { name: "with explanation 30" })
+		);
+		expect(onFilterChange).toHaveBeenLastCalledWith({
+			...EMPTY_FILTER,
+			withExplanation: true,
 		});
 	});
 
 	it("offers the creators only once they are known", () => {
 		const { rerender } = renderList();
-		expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("combobox", { name: "creator" })
+		).not.toBeInTheDocument();
 
 		rerender(
 			<PollList
@@ -192,9 +217,33 @@ describe("PollList", () => {
 			/>
 		);
 
-		expect(screen.getByRole("combobox", { name: "Creator" })).toHaveValue(
+		expect(screen.getByRole("combobox", { name: "creator" })).toHaveValue(
 			"all"
 		);
+	});
+
+	it("lists each active filter as a chip that clears it, then a way to clear them all", async () => {
+		const onClearFilter = vi.fn();
+		const onClearAll = vi.fn();
+		renderList({
+			activeFilters: [{ key: "category", label: "React" }],
+			onClearFilter,
+			onClearAll,
+		});
+
+		await userEvent.click(screen.getByRole("button", { name: "Clear React" }));
+		expect(onClearFilter).toHaveBeenCalledWith("category");
+
+		await userEvent.click(screen.getByRole("button", { name: "clear all" }));
+		expect(onClearAll).toHaveBeenCalledOnce();
+	});
+
+	it("offers no clear all while no filter is set", () => {
+		renderList();
+
+		expect(
+			screen.queryByRole("button", { name: "clear all" })
+		).not.toBeInTheDocument();
 	});
 
 	it("links every row to its poll and marks code in the question", () => {
@@ -229,7 +278,7 @@ describe("PollList", () => {
 		const onLoadMore = vi.fn();
 		const { rerender } = renderList({ onLoadMore });
 
-		expect(screen.getByText("showing 2 of 96")).toBeInTheDocument();
+		expect(screen.getByText(showing("showing 2 of 96"))).toBeInTheDocument();
 		await userEvent.click(screen.getByRole("button", { name: "load more" }));
 		expect(onLoadMore).toHaveBeenCalledOnce();
 
@@ -245,6 +294,6 @@ describe("PollList", () => {
 		expect(
 			screen.getByText("No polls match these filters.")
 		).toBeInTheDocument();
-		expect(screen.getByText("showing 0 of 0")).toBeInTheDocument();
+		expect(screen.getByText(showing("showing 0 of 0"))).toBeInTheDocument();
 	});
 });

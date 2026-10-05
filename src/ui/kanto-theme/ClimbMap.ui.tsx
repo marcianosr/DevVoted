@@ -8,7 +8,7 @@ import type {
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 
 import { Climber } from "./Climber.ui";
-import { ClimberCard } from "./ClimberCard.ui";
+import { ClimberCard, type ClimberCardProps } from "./ClimberCard.ui";
 import { Typography } from "./Typography.ui";
 
 export const COPY = {
@@ -53,9 +53,15 @@ const LEGEND = "flex w-full flex-wrap items-center gap-x-4 gap-y-1 pt-1";
 const LEGEND_ITEM = "flex items-center gap-1.5 text-xs text-theme-muted";
 const DOT = "size-2 shrink-0 rounded-full";
 
+export type OpenedCardDetail = Pick<
+	ClimberCardProps,
+	"contribution" | "swatches"
+>;
+
 export type ClimbMapProps = {
 	gates: readonly LadderGate[];
 	openId?: string;
+	openedDetail?: OpenedCardDetail;
 	onInspect?: (id: string) => void;
 };
 
@@ -139,7 +145,12 @@ const Legend = () => (
 	</div>
 );
 
-export const ClimbMap = ({ gates, openId, onInspect }: ClimbMapProps) => {
+export const ClimbMap = ({
+	gates,
+	openId,
+	openedDetail,
+	onInspect,
+}: ClimbMapProps) => {
 	const scroller = useRef<HTMLUListElement>(null);
 	const currentColumn = useRef<HTMLLIElement>(null);
 	const currentGate = gates.find((gate) => gate.current)?.gate;
@@ -244,6 +255,7 @@ export const ClimbMap = ({ gates, openId, onInspect }: ClimbMapProps) => {
 					>
 						<ClimberCard
 							{...opened.climber.card}
+							{...openedDetail}
 							{...(onInspect === undefined
 								? {}
 								: { onClose: () => onInspect(openId ?? "") })}

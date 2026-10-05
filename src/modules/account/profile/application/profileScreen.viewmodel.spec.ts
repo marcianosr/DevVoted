@@ -243,9 +243,8 @@ describe("profileHeroFor", () => {
 		);
 	});
 
-	it("counts the swatches held and draws every gate's swatch", () => {
-		const swatches = profileHeroFor(IDENTITY, RECORD, false, ARCHIVED).record
-			?.swatches;
+	it("counts the swatches held and draws every gate's swatch, on your own page too", () => {
+		const swatches = profileHeroFor(IDENTITY, RECORD, true, ARCHIVED).swatches;
 
 		expect(swatches?.value).toBe("5 / 13");
 		expect(

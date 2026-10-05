@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
@@ -10,12 +10,17 @@ import type {
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
 import {
-	defaultOpenIndex,
 	pollResultsFor,
 	pollTallyFor,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { getPlayerCard } from "~/modules/run/community/application/playerCard.serverfn";
+import { withQueryClient } from "~/test/queryClient.harness";
+
+vi.mock("~/modules/run/community/application/playerCard.serverfn", () => ({
+	getPlayerCard: vi.fn(),
+}));
 
 const answered = (
 	pollId: number,
@@ -138,31 +143,33 @@ describe("pollResultsFor", () => {
 		expect(row?.question).toBe("Question 10?");
 	});
 
-	it("opens the last poll that still has something to show", () => {
+	it("folds every poll, the last one included", () => {
 		const rows = pollResultsFor([
 			answered(10, 0),
 			answered(11, 1),
 			sealed(12, 2),
 		]);
 
-		expect(revealed(rows[0])?.open).toBe(false);
-		expect(revealed(rows[1])?.open).toBe(true);
-	});
-});
-
-describe("defaultOpenIndex", () => {
-	it("opens on the last poll that still has something to show", () => {
-		expect(
-			defaultOpenIndex([answered(10, 0), answered(11, 1), sealed(12, 2)])
-		).toBe(1);
-	});
-
-	it("opens on nothing when every consumed poll is sealed", () => {
-		expect(defaultOpenIndex([sealed(12, 0)])).toBeUndefined();
+		expect(revealed(rows[0])?.open).toBeUndefined();
+		expect(revealed(rows[1])?.open).toBeUndefined();
 	});
 });
 
 describe("CommunityView", () => {
+	beforeEach(() => {
+		vi.mocked(getPlayerCard).mockResolvedValue({
+			success: true,
+			data: {
+				userId: "red",
+				displayName: "red",
+				titles: [],
+				theme: "gate-pallet",
+				pollsAnswered: 10,
+				swatchGates: [0],
+			},
+		});
+	});
+
 	const view: RunCommunityView = {
 		date: "2026-05-13",
 		totalPlayers: 3,
@@ -193,23 +200,21 @@ describe("CommunityView", () => {
 		},
 	};
 
-	const board = (over: Partial<RunCommunityView> = {}) => (
-		<CommunityView
-			view={{ ...view, ...over }}
-			swatch={gateSwatchAt(1)}
-			back={{ label: "Back", onBack: () => {} }}
-		/>
-	);
+	const board = (over: Partial<RunCommunityView> = {}) =>
+		withQueryClient(
+			<CommunityView
+				view={{ ...view, ...over }}
+				swatch={gateSwatchAt(1)}
+				back={{ label: "Back", onBack: () => {} }}
+			/>
+		);
 
-	it("renders every poll of the window and opens only the latest", () => {
+	it("renders every poll of the window, each one folded", () => {
 		render(board());
 
 		expect(screen.getByText("Question 10?")).toBeInTheDocument();
 		expect(screen.getByText("Question 11?")).toBeInTheDocument();
-
-		const open = document.querySelectorAll("details[open]");
-		expect(open).toHaveLength(1);
-		expect(open[0]).toHaveTextContent("Question 11?");
+		expect(document.querySelectorAll("details[open]")).toHaveLength(0);
 	});
 
 	it("shows the whole board: the seats and the day's count", () => {
@@ -280,6 +285,7 @@ describe("CommunityView", () => {
 		await user.click(screen.getByRole("button", { name: "red" }));
 
 		expect(screen.getByText(".ts")).toBeInTheDocument();
+		expect(await screen.findByText("polls answered")).toBeInTheDocument();
 		expect(screen.getByRole("img", { name: /^40% of / })).toBeInTheDocument();
 		expect(screen.getByText("1 / 4")).toBeInTheDocument();
 	});

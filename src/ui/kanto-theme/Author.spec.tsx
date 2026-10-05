@@ -27,6 +27,14 @@ describe("Author", () => {
 		).toBeInTheDocument();
 	});
 
+	it("credits the display name without an at sign when the author has no handle", () => {
+		render(<Author name="Marciano Schildmeijer" />);
+
+		expect(
+			screen.getByText(creditIs("Created by Marciano Schildmeijer"))
+		).toBeInTheDocument();
+	});
+
 	it("appends the author's role after a separator", () => {
 		render(<Author handle="matthijsgroen" role="Poll editor" />);
 

@@ -116,6 +116,7 @@ const ENGINE_POLL_COLUMNS = {
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
 	authorId: usersTable.id,
+	authorName: usersTable.display_name,
 	authorHandle: usersTable.github_username,
 	authorPhotoUrl: usersTable.photo_url,
 	authorBorderId: usersTable.equipped_border_id,
@@ -132,6 +133,7 @@ type EnginePollRow = {
 	categoryCode: string;
 	explanation: string | null;
 	authorId: string | null;
+	authorName: string | null;
 	authorHandle: string | null;
 	authorPhotoUrl: string | null;
 	authorBorderId: string | null;
@@ -140,14 +142,15 @@ type EnginePollRow = {
 };
 
 const authorOf = (row: EnginePollRow): PollAuthor | undefined => {
-	if (row.authorHandle === null) return undefined;
+	if (row.authorName === null) return undefined;
 
 	const borderUrl = borderUrlOf(row.authorBorderId);
 	const role = roleLabelFor(row.authorRole);
 	const title = primaryTitleName(row.authorTitleIds ?? []);
 
 	return {
-		handle: `@${row.authorHandle}`,
+		name: row.authorName,
+		...(row.authorHandle === null ? {} : { handle: `@${row.authorHandle}` }),
 		...(row.authorId === null ? {} : { userId: row.authorId }),
 		...(row.authorPhotoUrl === null ? {} : { avatarUrl: row.authorPhotoUrl }),
 		...(borderUrl === null ? {} : { borderUrl }),

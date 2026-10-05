@@ -4,6 +4,8 @@ import {
 	APPROVED_POLL_REWARD,
 	EMPTY_FILTER,
 	PAGE_SIZE,
+	activeFiltersOf,
+	withoutFilter,
 	pollListChoicesOf,
 	pollRowsOf,
 	visiblePollsOf,
@@ -45,8 +47,15 @@ export const PollList = () => {
 	}
 
 	const all = list.view.polls;
+	const deals = new Map(
+		list.view.deals.map((deal) => [deal.pollId, deal.times])
+	);
 	const known = canAdminister ? (creators.view ?? undefined) : undefined;
-	const page = windowOf(pollRowsOf(visiblePollsOf(all, filter), known), shown);
+	const page = windowOf(
+		pollRowsOf(visiblePollsOf(all, filter, deals), known, deals),
+		shown
+	);
+	const choices = pollListChoicesOf(all, filter, known, deals);
 
 	const changeFilter = (next: PollListFilter) => {
 		setFilter(next);
@@ -62,7 +71,10 @@ export const PollList = () => {
 			shown={page.shown}
 			rows={page.rows}
 			filter={filter}
-			choices={pollListChoicesOf(all, filter, known)}
+			choices={choices}
+			activeFilters={activeFiltersOf(filter, choices)}
+			onClearFilter={(key) => changeFilter(withoutFilter(filter, key))}
+			onClearAll={() => changeFilter(EMPTY_FILTER)}
 			suggestHref={SUGGEST_POLL_PATH}
 			onFilterChange={changeFilter}
 			onLoadMore={page.more ? () => setShown(shown + PAGE_SIZE) : undefined}

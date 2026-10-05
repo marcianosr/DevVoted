@@ -7,7 +7,7 @@ import type { KantoColor } from "./colors";
 import { Lead, type LeadLine } from "./Lead.ui";
 import { PANEL_SURFACE } from "./Panel.ui";
 import { Typography, type TypographyVariant } from "./Typography.ui";
-import { Verdict, type VerdictOutcome } from "./Verdict.ui";
+import { Verdict, type VerdictOutcome, type VerdictWidth } from "./Verdict.ui";
 
 const FOLD = "group/fold w-full";
 const SUMMARY =
@@ -36,6 +36,7 @@ export type FoldProps = {
 	title: string;
 	lead?: VerdictOutcome;
 	leadShare?: number;
+	leadWidth?: VerdictWidth;
 	heading?: FoldHeading;
 	summary?: string;
 	badges?: readonly FoldBadge[];
@@ -52,6 +53,7 @@ export const Fold = ({
 	title,
 	lead,
 	leadShare,
+	leadWidth,
 	heading = "section",
 	summary,
 	badges = [],
@@ -68,7 +70,9 @@ export const Fold = ({
 			>
 				{CARET_GLYPH}
 			</span>
-			{lead === undefined ? null : <Verdict outcome={lead} share={leadShare} />}
+			{lead === undefined ? null : (
+				<Verdict outcome={lead} share={leadShare} width={leadWidth} />
+			)}
 			<span className={NAMING}>
 				<Typography variant={HEADING[heading]} as="h3">
 					{title}

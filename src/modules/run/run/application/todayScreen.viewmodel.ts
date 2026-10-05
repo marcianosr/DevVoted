@@ -253,7 +253,7 @@ export const hubBuildFor = (view: RunView | null): HubBuild | null =>
 					version: config.level ?? FIRST_VERSION,
 				})),
 				weight: `${view.slotsUsed} / ${view.slots}`,
-				free: view.slotsFree,
+				free: view.buildSpace.freeWeight,
 			};
 
 export type HubIncident = {

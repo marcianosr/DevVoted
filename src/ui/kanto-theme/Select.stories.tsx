@@ -36,3 +36,7 @@ export const Chosen: Story = { args: { value: "misty" } };
 export const Captioned: Story = {
 	args: { label: "category", note: "optional", caption: "shown" },
 };
+
+export const Inline: Story = {
+	args: { label: "creator", look: "inline" },
+};

@@ -84,13 +84,13 @@ export type CommunityLeaders = {
 	title: string;
 	summary?: string;
 	seats: readonly CategoryLeaderProps[];
-	footer?: string;
 };
 
 export type CommunityPolls = {
 	title: string;
 	tally?: string;
 	polls: readonly PollResultProps[];
+	review?: { label: string; onReview: () => void };
 };
 
 export type CommunityScreenProps = {
@@ -288,18 +288,11 @@ const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
 					))}
 				</Panel.Rows>
 			)}
-			{board.footer === undefined ? null : (
-				<Panel.Footer>
-					<Typography variant="hint" as="span">
-						{board.footer}
-					</Typography>
-				</Panel.Footer>
-			)}
 		</Panel>
 	);
 };
 
-const FivePolls = ({ title, tally, polls }: CommunityPolls) => (
+const FivePolls = ({ title, tally, polls, review }: CommunityPolls) => (
 	<Panel>
 		<Panel.Header
 			label={title}
@@ -317,6 +310,16 @@ const FivePolls = ({ title, tally, polls }: CommunityPolls) => (
 				<PollResult key={poll.index} {...poll} />
 			))}
 		</Panel.Rows>
+		{review === undefined ? null : (
+			<Panel.Footer>
+				<Button
+					tone="action"
+					width="full"
+					label={review.label}
+					onPress={review.onReview}
+				/>
+			</Panel.Footer>
+		)}
 	</Panel>
 );
 

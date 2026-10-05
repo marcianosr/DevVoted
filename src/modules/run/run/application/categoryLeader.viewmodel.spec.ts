@@ -7,7 +7,6 @@ import {
 import {
 	categoryBoardFor,
 	categoryLeaderRowFor,
-	seatsFooterFor,
 } from "~/modules/run/run/application/categoryLeader.viewmodel";
 
 const GIT_SEAT: CategorySeat = {
@@ -72,26 +71,6 @@ describe("categoryLeaderRowFor", () => {
 
 		expect(categoryLeaderRowFor("correct", { category: "vue" }).claim).toBe(
 			`${categoryLeaderRowFor("correct", atTheFloor).leader?.figure} claims it`
-		);
-	});
-});
-
-describe("seatsFooterFor", () => {
-	it("states how a seat moves, never that missing loses it", () => {
-		expect(seatsFooterFor([{ category: "vue" }])).toBe(
-			"A seat changes hands when somebody beats it. 1 seat still open."
-		);
-	});
-
-	it("counts the open seats in the plural", () => {
-		expect(
-			seatsFooterFor([{ category: "vue" }, { category: "ruby" }])
-		).toContain("2 seats still open");
-	});
-
-	it("says nothing about open seats when every one is taken", () => {
-		expect(seatsFooterFor([GIT_SEAT])).toBe(
-			"A seat changes hands when somebody beats it."
 		);
 	});
 });

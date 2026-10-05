@@ -1,6 +1,5 @@
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { IN_A_ROW, MOST_CORRECT } from "~/shared/lib/copy";
-import { plural } from "~/shared/lib/displayValue";
 
 import {
 	type CategoryBoard,
@@ -32,8 +31,6 @@ const HEADING = {
 	},
 } satisfies Record<CategoryMeasure, { title: string; summary: string }>;
 
-const SEATS_CHANGE_HANDS = "A seat changes hands when somebody beats it.";
-
 const CLAIMS_IT = (measure: CategoryMeasure) =>
 	`${FIGURE[measure](MIN_LEADER[measure])} claims it`;
 
@@ -59,13 +56,6 @@ export const categoryLeaderRowFor = (
 		: { leader: leaderRowOf(measure, seat.leader) }),
 });
 
-export const seatsFooterFor = (seats: readonly CategorySeat[]): string => {
-	const open = seats.filter(({ leader }) => leader === undefined).length;
-	if (open === 0) return SEATS_CHANGE_HANDS;
-
-	return `${SEATS_CHANGE_HANDS} ${plural(open, "seat")} still open.`;
-};
-
 export const categoryBoardFor = ({
 	measure,
 	seats,
@@ -73,5 +63,4 @@ export const categoryBoardFor = ({
 	title: HEADING[measure].title,
 	summary: HEADING[measure].summary,
 	seats: seats.map((seat) => categoryLeaderRowFor(measure, seat)),
-	footer: seatsFooterFor(seats),
 });

@@ -122,14 +122,19 @@ describe("ReviewScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("folds the options nobody reached for", () => {
+	it("marks the right answer and the wrong pick on the poll's own options", () => {
 		render(<ReviewScreen {...props} />);
 
+		const miss = rowOf(
+			"Which property centres a flex child along the main axis?"
+		)!;
+
 		expect(
-			within(
-				rowOf("Which property centres a flex child along the main axis?")!
-			).getByRole("heading", { name: "2 other options" })
-		).toBeInTheDocument();
+			within(miss).getByText("justify-content").closest("[data-answer]")
+		).toHaveAttribute("data-answer", "right");
+		expect(
+			within(miss).getByText("align-items").closest("[data-answer]")
+		).toHaveAttribute("data-answer", "wrong");
 	});
 
 	it("sits the snippet and the explanation with the diff", () => {

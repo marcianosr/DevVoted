@@ -21,6 +21,7 @@ import { runPaidFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import type {
 	AnsweredPoll,
+	PollAuthor,
 	AnswerType,
 } from "~/modules/run/run/domain/runPoll.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
@@ -197,6 +198,7 @@ const DROP_COLOR = "cerulean" as const;
 const OVER_COLOR = "vermillion" as const;
 
 export type GateAnswer = {
+	pollId?: string;
 	category: CategoryCode;
 	question: string;
 	outcome: VerdictOutcome;
@@ -210,6 +212,7 @@ export type GateAnswer = {
 	explanation?: string;
 	codeBlock?: string;
 	note?: string;
+	author?: PollAuthor;
 };
 
 export type GateOutcomeFrame = {
@@ -1465,6 +1468,7 @@ export const gateAnswersOf = (
 	gate: number
 ): readonly GateAnswer[] =>
 	answered.map((answer) => ({
+		pollId: answer.id,
 		category: answer.category,
 		question: answer.question,
 		outcome: answer.outcome,
@@ -1477,6 +1481,7 @@ export const gateAnswersOf = (
 		correct: answer.correct ?? [],
 		explanation: answer.explanation,
 		codeBlock: answer.codeBlock,
+		...(answer.author === undefined ? {} : { author: answer.author }),
 	}));
 
 const DELETED_DETAIL = "its deprecation ran out";

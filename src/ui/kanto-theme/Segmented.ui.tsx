@@ -28,9 +28,15 @@ const JOINED_ITEM = "border-l border-theme-faint first:border-l-0";
 const LOOSE = "flex flex-wrap gap-2";
 const LOOSE_ITEM = "rounded-md ring-1 ring-inset ring-theme-faint";
 
+const TABS = "flex w-full flex-wrap";
+const TAB = `inline-flex shrink-0 cursor-pointer items-baseline gap-2 border-b-2 px-4 py-3 text-sm font-bold whitespace-nowrap transition-colors ${FOCUS}`;
+const TAB_CHECKED = "border-theme text-theme-soft";
+const TAB_IDLE = "border-transparent text-theme-faint hover:text-theme-soft";
+const TAB_COUNT = "text-xs font-normal tabular-nums text-theme-muted";
+
 const SEPARATOR = " · ";
 
-export type SegmentedLook = "joined" | "loose" | "strip";
+export type SegmentedLook = "joined" | "loose" | "strip" | "tabs";
 
 export type SegmentedItem<Value extends string> = {
 	value: Value;
@@ -111,11 +117,42 @@ const Strip = <Value extends string>({
 	</div>
 );
 
+const TabRow = <Value extends string>({
+	label,
+	items,
+	value,
+	onSelect,
+}: Omit<SegmentedProps<Value>, "look">) => (
+	<div role="radiogroup" aria-label={label} className={TABS}>
+		{items.map((item) => (
+			<button
+				key={item.value}
+				type="button"
+				role="radio"
+				aria-checked={item.value === value}
+				aria-label={nameOf(item)}
+				onClick={() => onSelect(item.value)}
+				className={clsx(TAB, item.value === value ? TAB_CHECKED : TAB_IDLE)}
+			>
+				{item.label}
+				{item.count === undefined ? null : (
+					<span aria-hidden className={TAB_COUNT}>
+						{item.count}
+					</span>
+				)}
+			</button>
+		))}
+	</div>
+);
+
 export const Segmented = <Value extends string>({
 	look = "joined",
 	...props
-}: SegmentedProps<Value>) =>
-	look === "strip" ? <Strip {...props} /> : <Pills look={look} {...props} />;
+}: SegmentedProps<Value>) => {
+	if (look === "strip") return <Strip {...props} />;
+	if (look === "tabs") return <TabRow {...props} />;
+	return <Pills look={look} {...props} />;
+};
 
 const Pills = <Value extends string>({
 	label,

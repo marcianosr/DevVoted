@@ -1,8 +1,13 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, inArray } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
 import { db } from "~/database/db";
-import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
+import {
+	dailyRunPollsTable,
+	pollOptionsTable,
+	pollsTable,
+	usersTable,
+} from "~/database/schema";
 import type { Poll, PollCreator } from "~/modules/polls/poll/domain/poll.model";
 import type { PollScope } from "~/modules/polls/poll/domain/pollAccess.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
@@ -75,6 +80,22 @@ export const fetchPollsIn = async (scope: PollScope): Promise<Poll[]> => {
 
 	return records.map(toPoll);
 };
+
+export type PollDeal = { readonly pollId: number; readonly times: number };
+
+export const fetchDealCounts = async (
+	pollIds: readonly number[]
+): Promise<PollDeal[]> =>
+	pollIds.length === 0
+		? []
+		: db
+				.select({
+					pollId: dailyRunPollsTable.poll_id,
+					times: count(),
+				})
+				.from(dailyRunPollsTable)
+				.where(inArray(dailyRunPollsTable.poll_id, [...pollIds]))
+				.groupBy(dailyRunPollsTable.poll_id);
 
 export const countPublishedPolls = async (): Promise<number> => {
 	const [result] = await db

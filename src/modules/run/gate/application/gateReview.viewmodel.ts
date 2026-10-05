@@ -12,10 +12,12 @@ import {
 	totalCoverage,
 } from "./gateOutcome.viewmodel";
 
+import type { OptionVotes } from "~/modules/run/community/application/communityScreen.viewmodel";
+import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
 import type {
-	AnswerDiffProps,
-	DiffOption,
-} from "~/ui/kanto-theme/AnswerDiff.ui";
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
 import type {
 	ReviewRow,
 	ReviewScreenProps,
@@ -33,33 +35,76 @@ const REVIEW_LEAD = "Review";
 const REVIEW_SEPARATOR = "·";
 const CAUGHT = "caught";
 
-const optionAt = (answer: GateAnswer, label: string): DiffOption => ({
-	letter: OPTION_LETTERS[answer.options.indexOf(label)] ?? "?",
-	label,
-});
+export type PollVotes = ReadonlyMap<string, readonly OptionVotes[]>;
+const NO_VOTES: PollVotes = new Map();
 
-const diffFor = (answer: GateAnswer): AnswerDiffProps => {
-	const picked = new Set(answer.picked);
-	const named = new Set([...answer.correct, ...answer.picked]);
-	const others = answer.options.filter((label) => !named.has(label));
-	const hits = answer.correct.filter((label) => picked.has(label)).length;
+const stateOf = (
+	answer: GateAnswer,
+	label: string
+): QuestionOption["state"] => {
+	if (answer.correct.includes(label)) return "right";
+	return answer.picked.includes(label) ? "wrong" : "idle";
+};
 
+const votersOf = (
+	votes: readonly OptionVotes[] | undefined,
+	label: string
+): QuestionOption["voters"] => {
+	const vote = votes?.find((entry) => entry.label === label);
+	return vote === undefined
+		? undefined
+		: { climbers: vote.climbers, count: vote.count };
+};
+
+const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
+	const pollVotes =
+		answer.pollId === undefined ? undefined : votes.get(answer.pollId);
 	return {
-		outcome: answer.outcome,
 		answerType: answer.answerType,
-		expected: answer.correct.map((label) => optionAt(answer, label)),
-		received: answer.picked.map((label) => optionAt(answer, label)),
-		others: others.map((label) => optionAt(answer, label)),
-		tally:
-			answer.answerType === "multiple"
-				? `${hits} of ${answer.correct.length} ${CAUGHT}`
-				: undefined,
-		othersLabel:
-			others.length === 0 ? undefined : plural(others.length, "other option"),
+		question: answer.question,
+		stem: "code",
+		...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
+		pickedIds: answer.picked,
+		options: answer.options.map((label, index) => {
+			const voters = votersOf(pollVotes, label);
+			return {
+				id: label,
+				letter: OPTION_LETTERS[index] ?? "?",
+				label,
+				state: stateOf(answer, label),
+				...(voters === undefined ? {} : { voters }),
+			};
+		}),
 	};
 };
 
-const reviewRowFor = (answer: GateAnswer, open?: boolean): ReviewRow => ({
+const tallyOf = (answer: GateAnswer): string | undefined => {
+	if (answer.answerType !== "multiple") return undefined;
+	const hits = answer.correct.filter((label) =>
+		answer.picked.includes(label)
+	).length;
+	return `${hits} of ${answer.correct.length} ${CAUGHT}`;
+};
+
+const authorOf = (answer: GateAnswer): AuthorProps | undefined => {
+	if (answer.author === undefined) return undefined;
+	const { name, handle, userId, avatarUrl, borderUrl, role, title } =
+		answer.author;
+	return {
+		...(handle === undefined ? { name } : { handle }),
+		...(userId === undefined ? {} : { userId }),
+		...(avatarUrl === undefined ? {} : { photoUrl: avatarUrl }),
+		...(borderUrl === undefined ? {} : { borderUrl }),
+		...(role === undefined ? {} : { role }),
+		...(title === undefined ? {} : { title }),
+	};
+};
+
+const reviewRowFor = (
+	answer: GateAnswer,
+	votes: PollVotes,
+	open?: boolean
+): ReviewRow => ({
 	verdict: answer.outcome,
 	share: answer.share,
 	question: answer.question,
@@ -67,10 +112,11 @@ const reviewRowFor = (answer: GateAnswer, open?: boolean): ReviewRow => ({
 	coverage: signedPercent(answer.coverage),
 	coverageColor: coverageColor(answer.coverage),
 	open,
-	codeBlock: answer.codeBlock,
-	diff: diffFor(answer),
+	card: cardFor(answer, votes),
+	tally: tallyOf(answer),
 	explanation: answer.explanation,
 	note: answer.note,
+	author: authorOf(answer),
 });
 
 export type ReviewFrame = {
@@ -79,6 +125,7 @@ export type ReviewFrame = {
 	open?: boolean;
 	swatchGates?: readonly number[];
 	balanceKb?: number;
+	votes?: PollVotes;
 };
 
 export const reviewPropsFor = ({
@@ -87,6 +134,7 @@ export const reviewPropsFor = ({
 	open,
 	swatchGates = [],
 	balanceKb,
+	votes = NO_VOTES,
 }: ReviewFrame): ReviewScreenProps => {
 	const swatch = gateSwatchAt(gate);
 
@@ -110,7 +158,7 @@ export const reviewPropsFor = ({
 		},
 		hint: REVIEW_HINT,
 		expand: { label: REVIEW_EXPAND_LABEL, onPress: noop },
-		rows: answers.map((answer) => reviewRowFor(answer, open)),
+		rows: answers.map((answer) => reviewRowFor(answer, votes, open)),
 		footer: {
 			note: REVIEW_DEX_NOTE,
 			action: { label: GATE_SHOP_LABEL, icon: "shop", onPress: noop },

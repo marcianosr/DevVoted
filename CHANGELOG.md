@@ -5,12 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **A poll's page shows it the way a player will meet it.** Opening a poll from the list draws the run's question card: the number, category and status, the question with its code, the lettered options and the author's credit. Switch to **with the answer** to mark the right options and read the explanation.
+- **Review answers draws each poll as its card, with who picked what.** Every reviewed poll shows its own lettered options, the right one marked ✓ and a wrong pick ✗, the faces and count of who picked each option today, its code example, and the explanation with its code. The verdict now sits right beside the question.
+- **The polls list filters by explanation and by how often a poll was dealt.** A **with explanation** switch keeps the polls that carry one, and a **dealt** filter picks polls never dealt, dealt once, or dealt 2+ times. Each row now says how often it was dealt (*dealt 4×*).
+
 ### Changed
+- **One player header everywhere.** Your profile, the card that opens when you press a player, and the card that shows on hover share one header: face and name, the role beneath (**● Admin**), your titles, then **polls published** and **polls answered** side by side, then your swatches. It holds together on a phone.
+- **Pressing a player shows as much as hovering one.** The card that opens from the ladder or a fallen face now carries the polls published, polls answered and swatches the hover card already showed.
+- **Your own profile shows your swatches.** Until now only visitors saw them.
+- **The day's polls on the community board start folded.** The last poll no longer opens by itself. Answers wrap onto several lines in a smaller size instead of being cut off, and a **Review answers** press under the polls takes you to the review while your run allows it.
+- **A poll you wrote credits you even without a GitHub handle.** The poll screen falls back to your display name.
+- **Prep says the next gate, not its name.** A clear now *earns the advance to the next gate* and its KB.
+- **The Hall of Fame waits for its first Champion.** Before anyone wins it reads *The one that wins the Champion gate will be remembered as a true Champion here — so far nobody yet.*
+- **The streak and correct boards no longer explain how a seat changes hands.**
+- **The polls list filters sit in one row.** Status, answer, dealt and creator are dropdowns, with code is a switch, every category shows as a tab (Python, Ruby and General Backend included), and the active filters line up under them as chips you can clear one by one or all at once.
 - **A player card closes from a clear X.** The card that opens when you press a player shows a proper close X at its side, and a long name now shortens before it instead of running underneath.
 - **The reward for suggesting a poll wears a badge.** The **Suggest a poll** link in the nav shows **+16 KB** as a green badge instead of trailing text.
 - **The new run screen states the build's weight limit at the top.** *Install configs up to 4 weight units* now sits under the Build header, before the configs, instead of at the bottom of the panel.
 
 ### Fixed
+- **The hub states the right free weight.** The Build panel read *29 weight free* on a 3 / 4 build; it now reads the room left in your current build space.
 - **The hub no longer reads a gate you just cleared as the next one started.** Between clearing a gate and visiting the shop, **Run so far** showed the next gate at *DANGER 0%*. It now reads *not started* until you answer its first poll.
 - **Wear the title works again for every player.** On some accounts, pressing **Wear the title** in the *Thank you for playing* window did nothing and showed *Cannot wear a border you don't own*, because the border they already had on was checked as if they were buying it. Keeping the border you wear no longer blocks putting on a title.
 

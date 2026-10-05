@@ -171,11 +171,6 @@ const BoardPanel = ({
 				<CategoryLeader category={openCategory} claim={claim} />
 			</Panel.Row>
 		</Panel.Rows>
-		<Panel.Footer>
-			<Typography variant="hint" as="span">
-				A seat changes hands when somebody beats it.
-			</Typography>
-		</Panel.Footer>
 	</Panel>
 );
 

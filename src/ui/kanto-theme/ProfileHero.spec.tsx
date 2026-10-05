@@ -13,11 +13,11 @@ const HERO: ProfileHeroProps = {
 			{ label: "runs played", value: "24" },
 			{ label: "archived", value: "8 MB", color: "saffron" },
 		],
-		swatches: {
-			label: "swatches",
-			value: "5 / 13",
-			fills: [{ state: "undiscovered" }],
-		},
+	},
+	swatches: {
+		label: "swatches",
+		value: "5 / 13",
+		fills: [{ state: "undiscovered" }],
 	},
 };
 

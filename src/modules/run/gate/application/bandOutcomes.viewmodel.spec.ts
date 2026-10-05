@@ -180,9 +180,9 @@ describe("the objective that clears the gate", () => {
 		});
 	});
 
-	it("names the gate that clearing opens, then the KB beside it", () => {
+	it("promises the next gate that clearing opens, then the KB beside it", () => {
 		expect(leadTextOf(clearOf(frameFor()).earns)).toMatch(
-			/^earns the advance to Celadon and \+.+ KB or more$/
+			/^earns the advance to the next gate and \+.+ KB or more$/
 		);
 	});
 

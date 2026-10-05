@@ -26,24 +26,32 @@ const ROLE_SEPARATOR = "·";
 
 const handleOf = (handle: string) => handle.replace(/^@/, "");
 
-const initialOf = (handle: string) =>
-	(handleOf(handle)[0] ?? "?").toUpperCase();
+type Credited =
+	{ handle: string; name?: never } | { name: string; handle?: never };
+
+const creditOf = (credited: Credited) =>
+	credited.handle === undefined
+		? credited.name
+		: `@${handleOf(credited.handle)}`;
+
+const initialOf = (credit: string) =>
+	(handleOf(credit)[0] ?? "?").toUpperCase();
 
 export type AuthorSize = keyof typeof AVATAR_SIZE;
 
 type FaceProps = {
-	handle: string;
+	credit: string;
 	photoUrl?: string;
 	borderUrl?: string;
 	userId?: string;
 	size: AuthorSize;
 };
 
-const Face = ({ handle, photoUrl, borderUrl, userId, size }: FaceProps) => {
+const Face = ({ credit, photoUrl, borderUrl, userId, size }: FaceProps) => {
 	const drawn = (
 		<>
 			<span aria-hidden className={FACE}>
-				{initialOf(handle)}
+				{initialOf(credit)}
 				{photoUrl === undefined ? null : (
 					<img src={photoUrl} alt="" className={PHOTO} />
 				)}
@@ -60,7 +68,7 @@ const Face = ({ handle, photoUrl, borderUrl, userId, size }: FaceProps) => {
 	return (
 		<PlayerFaceLink
 			userId={userId}
-			name={`@${handleOf(handle)}`}
+			name={credit}
 			className={clsx(AVATAR, AVATAR_SIZE[size])}
 		>
 			{drawn}
@@ -68,15 +76,14 @@ const Face = ({ handle, photoUrl, borderUrl, userId, size }: FaceProps) => {
 	);
 };
 
-const Credit = ({ handle, userId }: Pick<AuthorProps, "handle" | "userId">) =>
+const Credit = ({ credit, userId }: { credit: string; userId?: string }) =>
 	userId === undefined ? (
-		<>{`@${handleOf(handle)}`}</>
+		<>{credit}</>
 	) : (
-		<Link href={profilePathFor(userId)}>{`@${handleOf(handle)}`}</Link>
+		<Link href={profilePathFor(userId)}>{credit}</Link>
 	);
 
-export type AuthorProps = {
-	handle: string;
+export type AuthorProps = Credited & {
 	role?: string;
 	title?: string;
 	photoUrl?: string;
@@ -87,7 +94,6 @@ export type AuthorProps = {
 };
 
 export const Author = ({
-	handle,
 	role,
 	title,
 	photoUrl,
@@ -95,10 +101,11 @@ export const Author = ({
 	userId,
 	size = "md",
 	rule = true,
+	...credited
 }: AuthorProps) => (
 	<div className={clsx(AUTHOR, rule && RULED)}>
 		<Face
-			handle={handle}
+			credit={creditOf(credited)}
 			photoUrl={photoUrl}
 			borderUrl={borderUrl}
 			userId={userId}
@@ -107,7 +114,7 @@ export const Author = ({
 		<span className={CREDIT}>
 			<Typography variant="hint" as="span">
 				{`${CREATED_BY} `}
-				<Credit handle={handle} userId={userId} />
+				<Credit credit={creditOf(credited)} userId={userId} />
 				{role === undefined ? null : ` ${ROLE_SEPARATOR} ${role}`}
 			</Typography>
 			{title === undefined ? null : (

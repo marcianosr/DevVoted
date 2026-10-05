@@ -7,11 +7,15 @@ import { Icon } from "./Icon.ui";
 
 const BOX = "relative flex h-7 w-full min-w-0 items-center";
 const SELECT =
-	"h-full w-full cursor-pointer appearance-none bg-transparent pr-7 pl-2 text-xs font-bold outline-none scheme-dark";
+	"h-full w-full cursor-pointer appearance-none bg-transparent pr-7 text-xs font-bold outline-none scheme-dark";
+const SELECT_PAD = { stacked: "pl-2", inline: "pl-1.5" } as const;
+const INLINE_LABEL = "shrink-0 pl-2 text-xs text-theme-muted";
 const CHEVRON =
 	"pointer-events-none absolute right-2 size-3.5 rotate-90 text-theme-muted";
 
 export type SelectOption = { value: string; label: string };
+
+export type SelectLook = keyof typeof SELECT_PAD;
 
 export type SelectProps = {
 	label: string;
@@ -20,6 +24,7 @@ export type SelectProps = {
 	onChange: (value: string) => void;
 	note?: string;
 	caption?: FieldCaption;
+	look?: SelectLook;
 };
 
 export const Select = ({
@@ -29,18 +34,24 @@ export const Select = ({
 	onChange,
 	note,
 	caption = "hidden",
+	look = "stacked",
 }: SelectProps) => {
 	const id = useId();
 	const noteId = `${id}-note`;
 	return (
 		<Field id={id} label={label} note={note} noteId={noteId} caption={caption}>
 			<span className={clsx(FIELD_RING, BOX)}>
+				{look === "inline" ? (
+					<span aria-hidden className={INLINE_LABEL}>
+						{label}
+					</span>
+				) : null}
 				<select
 					id={id}
 					value={value}
 					aria-describedby={note === undefined ? undefined : noteId}
 					onChange={(event) => onChange(event.target.value)}
-					className={SELECT}
+					className={clsx(SELECT, SELECT_PAD[look])}
 				>
 					{options.map((option) => (
 						<option key={option.value} value={option.value}>

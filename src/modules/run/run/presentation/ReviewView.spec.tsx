@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render as renderBare, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -8,7 +9,24 @@ import {
 	createMockRunView,
 } from "~/test/runView.factory";
 
+import { getRunCommunity } from "~/modules/run/community/application/community.serverfn";
+import { withQueryClient } from "~/test/queryClient.harness";
+
 import { ReviewView } from "./ReviewView.component";
+
+vi.mock("~/modules/run/community/application/community.serverfn", () => ({
+	getRunCommunity: vi.fn(),
+}));
+
+const render = (ui: ReactElement) => renderBare(withQueryClient(ui));
+
+const MISTY_VOTE = {
+	id: "misty-id",
+	displayName: "Misty",
+	photoUrl: null,
+	borderUrl: null,
+	you: false,
+};
 
 const answered: readonly AnsweredPoll[] = [
 	{
@@ -22,7 +40,7 @@ const answered: readonly AnsweredPoll[] = [
 		coverageEarned: 1,
 	},
 	{
-		id: "b",
+		id: "7",
 		category: "ts",
 		question: "Which type makes every property optional?",
 		outcome: "wrong",
@@ -42,6 +60,52 @@ const view = createMockRunView({
 const back = { label: "Back to the gate", onUse: () => {} };
 
 describe("ReviewView", () => {
+	beforeEach(() => {
+		vi.mocked(getRunCommunity).mockResolvedValue({
+			success: true,
+			data: {
+				date: "2026-05-13",
+				totalPlayers: 1,
+				players: [],
+				leaders: [],
+				climb: null,
+				polls: [
+					{
+						pollId: 7,
+						index: 0,
+						question: "Which type makes every property optional?",
+						category: "ts",
+						outcome: "wrong",
+						detail: {
+							answerType: "single",
+							answeredCount: 1,
+							gotItRightCount: 1,
+							youGotItRight: false,
+							options: [
+								{
+									label: "Partial<T>",
+									isRight: true,
+									count: 1,
+									percent: 100,
+									yours: false,
+									voters: [MISTY_VOTE],
+								},
+							],
+						},
+					},
+				],
+			},
+		});
+	});
+
+	it("shows who picked each option of the poll", async () => {
+		render(<ReviewView view={view} back={back} />);
+
+		expect(
+			await screen.findByRole("link", { name: "Misty's profile" })
+		).toBeInTheDocument();
+	});
+
 	it("lists every answer of the gate with its question", () => {
 		render(<ReviewView view={view} back={back} />);
 

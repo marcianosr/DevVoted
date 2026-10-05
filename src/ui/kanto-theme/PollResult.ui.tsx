@@ -29,8 +29,8 @@ const CAP =
 const CAP_RIGHT = "border-theme bg-theme-soft text-theme-soft";
 const CAP_IDLE = "border-edge-strong bg-theme-raised text-pewter";
 const OPTION = "flex min-w-0 flex-1 flex-col gap-1.5";
-const OPTION_HEAD = "flex items-center gap-2";
-const OPTION_LABEL = "min-w-0 flex-1 truncate";
+const OPTION_HEAD = "flex flex-wrap items-center gap-x-2 gap-y-1";
+const OPTION_LABEL = "min-w-0 flex-1 basis-48 break-words";
 const TALLY = "flex shrink-0 items-center gap-6";
 const VOTES = "flex w-20 items-center justify-end tabular-nums text-theme-soft";
 const YOU_LABEL = "You";
@@ -93,7 +93,7 @@ const OptionRow = ({ option }: { option: PollResultOption }) => (
 		<span className={OPTION}>
 			<span className={OPTION_HEAD}>
 				<span className={OPTION_LABEL}>
-					<Typography variant="paragraph" as="span">
+					<Typography variant="caption" as="span">
 						{option.label}
 					</Typography>
 				</span>
