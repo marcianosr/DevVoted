@@ -1,5 +1,5 @@
 {
-	"version": "2.0.2",
+	"version": "2.0.1",
 	"name": "devvoted",
 	"description": "DevVoted - A developer quiz game with roguelike mechanics",
 	"engines": {
