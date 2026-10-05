@@ -2,13 +2,19 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { Login } from "~/modules/account/auth/presentation/Login.component";
 import { TitleAnnouncement } from "~/modules/account/profile/presentation/TitleAnnouncement.component";
+import { PollApprovedAnnouncement } from "~/modules/polls/authoring/presentation/PollApprovedAnnouncement.component";
 
 const AuthedLayout = () => {
 	const { user } = Route.useRouteContext();
 
 	return (
 		<>
-			{user ? <TitleAnnouncement userId={user.id} /> : null}
+			{user ? (
+				<>
+					<TitleAnnouncement userId={user.id} />
+					<PollApprovedAnnouncement userId={user.id} />
+				</>
+			) : null}
 			<Outlet />
 		</>
 	);

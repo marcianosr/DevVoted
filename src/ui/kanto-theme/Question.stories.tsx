@@ -157,3 +157,24 @@ export const Rhyme: Story = {
 		options: SHORT_ANSWERS,
 	},
 };
+
+export const CodeInAnswers: Story = {
+	args: {
+		answerType: "single",
+		question: "Which `<script setup>` makes `count` reactive?",
+		options: [
+			{
+				id: "option-1",
+				letter: "A",
+				label:
+					"```ts\n<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);\n</script>\n```",
+			},
+			{
+				id: "option-2",
+				letter: "B",
+				label: "```ts\n<script setup>\nlet count = 0;\n</script>\n```",
+			},
+			{ id: "option-3", letter: "C", label: "`reactive(0)` in `data()`" },
+		],
+	},
+};

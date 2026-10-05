@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
 
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -17,6 +17,7 @@ const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
 const PROSE = "whitespace-pre-line";
 const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
+const CODE_TEXT = "flex min-w-0 flex-col gap-2";
 const VOTES = "w-8 text-right text-xs tabular-nums text-theme-soft";
 const VOTER_FACES_SLOT = "flex w-24 justify-end";
 const VOTER_FACES = 3;
@@ -38,7 +39,7 @@ export type QuestionVoters = {
 export type QuestionOption = {
 	id: string;
 	letter: string;
-	label?: ReactNode;
+	label?: string;
 	voters?: QuestionVoters;
 	seal?: ChoiceSeal;
 	crossedOut?: boolean;
@@ -66,6 +67,20 @@ export const CodeSpans = ({ text }: { text: string }) => (
 				</code>
 			) : (
 				<Fragment key={`${index}-${span.text}`}>{span.text}</Fragment>
+			)
+		)}
+	</span>
+);
+
+export const CodeText = ({ text }: { text: string }) => (
+	<span className={CODE_TEXT}>
+		{splitCodeBlocks(text).map((part, index) =>
+			part.kind === "block" ? (
+				<CodeBlock key={`${part.kind}-${index}`} lang={part.lang}>
+					{part.code}
+				</CodeBlock>
+			) : (
+				<CodeSpans key={`${part.kind}-${index}`} text={part.text} />
 			)
 		)}
 	</span>
@@ -163,7 +178,7 @@ export const Question = ({
 							)
 						}
 					>
-						{option.label}
+						<CodeText text={option.label ?? ""} />
 					</Choice>
 				);
 			})}

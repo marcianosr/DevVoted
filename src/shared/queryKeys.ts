@@ -41,6 +41,8 @@ export const pollQueryKeys = {
 	publishedCount: () => [...pollQueryKeys.all, "publishedCount"] as const,
 	authored: () => [...pollQueryKeys.all, "authored"] as const,
 	creators: () => [...pollQueryKeys.all, "creators"] as const,
+	approvalNotice: (userId: string | undefined) =>
+		[...pollQueryKeys.all, "approvalNotice", userId] as const,
 };
 
 const USERS = ["users"] as const;

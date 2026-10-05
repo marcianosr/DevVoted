@@ -192,3 +192,38 @@ export const payAuthorOnFirstPublish = async (
 
 	return credited?.id ?? null;
 };
+
+export type AnnouncedPoll = { id: number; question: string };
+
+export const fetchUnannouncedPublishedPolls = async (
+	userId: string
+): Promise<readonly AnnouncedPoll[]> =>
+	db
+		.select({ id: pollsTable.id, question: pollsTable.question })
+		.from(pollsTable)
+		.where(
+			and(
+				eq(pollsTable.created_by, userId),
+				not(isNull(pollsTable.author_paid_at)),
+				isNull(pollsTable.author_announced_at)
+			)
+		)
+		.orderBy(pollsTable.author_paid_at);
+
+export const markPollsAnnounced = async (
+	userId: string,
+	pollIds: readonly number[]
+): Promise<void> => {
+	if (pollIds.length === 0) return;
+
+	await db
+		.update(pollsTable)
+		.set({ author_announced_at: new Date() })
+		.where(
+			and(
+				eq(pollsTable.created_by, userId),
+				inArray(pollsTable.id, [...pollIds]),
+				isNull(pollsTable.author_announced_at)
+			)
+		);
+};

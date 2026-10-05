@@ -1,7 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 import {
+	acknowledgeApprovals,
 	editPoll,
+	getApprovalNotice,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
 import {
@@ -20,4 +23,16 @@ export const updatePoll = createServerFn({ method: "POST" })
 	.validator(updatePollSchema)
 	.handler(({ data }) =>
 		withAuthenticatedUser((session) => editPoll(session, data))
+	);
+
+export const getPollApprovalNotice = createServerFn({ method: "GET" }).handler(
+	() => withAuthenticatedUser((session) => getApprovalNotice(session))
+);
+
+export const acknowledgePollApprovals = createServerFn({ method: "POST" })
+	.validator(z.object({ pollIds: z.array(z.number().int().positive()) }))
+	.handler(({ data }) =>
+		withAuthenticatedUser(({ userId }) =>
+			acknowledgeApprovals(userId, data.pollIds)
+		)
 	);

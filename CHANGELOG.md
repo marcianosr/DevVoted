@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Your poll going live is announced.** The first time a poll you suggested is published, your next visit opens **Your poll is live**: the poll, the **+16 KB** it earned, and your archived storage counting up to its new total.
+
+### Fixed
+- **Code in an answer reads as code.** Backticks in an option now show as code instead of literal backtick marks, and a fenced code answer shows as a code panel with its lines, on the poll, in review answers and on the community board.
 
 ## 2.0.1 - 2026-10-05
 ### Changed

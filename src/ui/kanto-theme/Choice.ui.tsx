@@ -21,6 +21,7 @@ const SEAL_BAR = "block h-5 rounded-md bg-theme-raised";
 const UNSEAL =
 	"cursor-pointer rounded-full border border-theme-faint px-2 py-1 text-xs text-theme-soft enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 
+const TEXT = "min-w-0 flex-1";
 const CROSSED_OUT = "line-through decoration-cinnabar decoration-2";
 const READER_ONLY = "sr-only";
 
@@ -128,14 +129,10 @@ export const Choice = ({
 		const body = (
 			<>
 				{cap}
-				{crossedOut ? (
-					<span className={CROSSED_OUT}>
-						{text}
-						<span className={READER_ONLY}>{RULED_OUT_NAME}</span>
-					</span>
-				) : (
-					text
-				)}
+				<span className={clsx(TEXT, crossedOut && CROSSED_OUT)}>
+					{text}
+					{crossedOut && <span className={READER_ONLY}>{RULED_OUT_NAME}</span>}
+				</span>
 				{aside === undefined ? (
 					answered && <VerdictMark verdict={state} />
 				) : (

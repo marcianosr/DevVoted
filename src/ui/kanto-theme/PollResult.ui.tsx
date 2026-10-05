@@ -5,6 +5,7 @@ import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import type { KantoColor } from "./colors";
 import { Icon } from "./Icon.ui";
 import { Meter } from "./Meter.ui";
+import { CodeText } from "./Question.ui";
 import { Typography } from "./Typography.ui";
 import { Verdict, type VerdictOutcome } from "./Verdict.ui";
 
@@ -94,7 +95,7 @@ const OptionRow = ({ option }: { option: PollResultOption }) => (
 			<span className={OPTION_HEAD}>
 				<span className={OPTION_LABEL}>
 					<Typography variant="caption" as="span">
-						{option.label}
+						<CodeText text={option.label} />
 					</Typography>
 				</span>
 				{option.yours === true ? (

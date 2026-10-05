@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Choice } from "./Choice.ui";
+import { CodeText } from "./Question.ui";
 import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 
@@ -161,5 +162,25 @@ export const ProseWithCode: Story = {
 			]}
 			picked={0}
 		/>
+	),
+};
+
+export const FencedCode: Story = {
+	parameters: { controls: { disable: true } },
+	render: () => (
+		<Screen theme="viridian" width="narrow">
+			<div className="flex flex-col">
+				<Choice letter="A" picked>
+					<CodeText
+						text={
+							"```ts\n<script setup>\nimport { ref } from 'vue';\nconst count = ref(0);\n</script>\n```"
+						}
+					/>
+				</Choice>
+				<Choice letter="B">
+					<CodeText text="`reactive(0)` inside `data()`" />
+				</Choice>
+			</div>
+		</Screen>
 	),
 };

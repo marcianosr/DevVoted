@@ -49,3 +49,20 @@ one account that would never act on it.
 - The admin's nav states **Suggest a poll** with no reward. *Your suggested polls*
   already hid the reward line from admins.
 - Everyone else sees the reward as a green badge beside **Suggest a poll**.
+
+## Decision 6: the payout is announced once (amended 2026-10-05)
+
+A payout the author never sees lures no one into suggesting another poll. The author's
+next visit after a first publish opens **Your poll is live**: the published question(s),
+the reward as a green badge, and archived storage counting up to the balance it holds
+now.
+
+- `polls.author_announced_at` is stamped when the author closes the dialog. A paid poll
+  without it raises the dialog; the migration stamps every poll already paid, so polls
+  paid before this shipped stay quiet.
+- The starting figure is derived, not stored: the current balance minus the reward,
+  floored at zero. A snapshot taken at payout would read stale if the player spent in
+  between, and the dialog would disagree with the nav.
+- Several polls published since the last visit share one dialog with the summed reward.
+- Admins see none, matching Decision 5. A title grant shows first; the poll dialog waits
+  until it is closed.

@@ -138,3 +138,47 @@ describe("PollResult, sealed", () => {
 		expect(container.querySelector("img")).toBeNull();
 	});
 });
+
+describe("PollResult's options with code in them", () => {
+	it("marks an option's inline backticks as code, backticks dropped", () => {
+		render(
+			<PollResult
+				{...REVEALED}
+				options={[
+					{
+						letter: "A",
+						label: "`v-if` removes the element",
+						percent: 50,
+						votes: 2,
+						isRight: true,
+					},
+				]}
+			/>
+		);
+
+		expect(screen.getByText("v-if").tagName).toBe("CODE");
+	});
+
+	it("lifts an option's fenced block into a code panel and keeps its lines", () => {
+		const { container } = render(
+			<PollResult
+				{...REVEALED}
+				options={[
+					{
+						letter: "A",
+						label: "```ts\nconst count = ref(0);\ncount.value++;\n```",
+						percent: 50,
+						votes: 2,
+						isRight: true,
+					},
+				]}
+			/>
+		);
+
+		const code = container.querySelector("[data-option] pre code");
+		expect(code?.textContent).toBe("const count = ref(0);\ncount.value++;\n");
+		expect(container.querySelector("[data-option]")).not.toHaveTextContent(
+			"```"
+		);
+	});
+});
