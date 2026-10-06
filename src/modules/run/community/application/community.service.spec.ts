@@ -20,7 +20,7 @@ vi.mock("~/modules/run/community/infrastructure/community.repository", () => ({
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	findActiveSessionRun: vi.fn(),
-	findSessionRunByDate: vi.fn(),
+	findTodaysSessionRun: vi.fn(),
 }));
 
 vi.mock("~/modules/run/community/infrastructure/climbers.repository", () => ({
@@ -324,7 +324,7 @@ describe("getRunCommunityService", () => {
 
 	it("returns an empty view when the viewer has no run at all", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(null);
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 
@@ -899,7 +899,7 @@ describe("getRunCommunityService climb map", () => {
 
 	it("leaves the map off when the viewer has no run to stand on", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(null);
 
 		const result = await getRunCommunityService({ userId: RED, date: DATE });
 

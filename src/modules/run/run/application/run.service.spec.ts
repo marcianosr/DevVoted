@@ -39,7 +39,7 @@ vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
 	loadRunState: vi.fn(),
 	fetchRunSnapshot: vi.fn(),
 	findActiveSessionRun: vi.fn(),
-	findSessionRunByDate: vi.fn(),
+	findTodaysSessionRun: vi.fn(),
 	findSessionRunById: vi.fn(),
 }));
 
@@ -180,7 +180,7 @@ describe("getTodaysRunService", () => {
 
 	it("returns null when the user has no active run and none started today", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(null);
 
 		const result = await getTodaysRunService({ userId: USER, date: DATE });
 
@@ -207,7 +207,7 @@ describe("getTodaysRunService", () => {
 
 	it("surfaces a finished run started today without rolling it over", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(
 			sessionRunRecord({
 				seed_date: DATE,
 				status: "finished",
@@ -229,9 +229,34 @@ describe("getTodaysRunService", () => {
 		expect(queries.ensureTodaysSegment).not.toHaveBeenCalled();
 	});
 
+	it("surfaces a run that fell today though it started on an earlier day", async () => {
+		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(
+			sessionRunRecord({
+				seed_date: TEST_DATES.christmas,
+				status: "finished",
+				completion_reason: "dead",
+				finished_at: new Date(`${DATE}T09:00:00`),
+			})
+		);
+		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(
+			toRunSnapshot({ ...configuringState(), status: "dead" })
+		);
+		vi.mocked(queries.loadRunState).mockResolvedValue({
+			...configuringState(),
+			status: "dead",
+		});
+
+		const result = await getTodaysRunService({ userId: USER, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data?.status).toBe("dead");
+		expect(queries.findTodaysSessionRun).toHaveBeenCalledWith(USER, DATE);
+	});
+
 	it("shows the start screen (null) when today's latest run was abandoned", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(
 			sessionRunRecord({
 				seed_date: DATE,
 				status: "finished",
@@ -250,7 +275,7 @@ describe("getTodaysRunService", () => {
 			sessionRunRecord()
 		);
 		vi.mocked(queries.fetchRunSnapshot).mockResolvedValue(null);
-		vi.mocked(queries.findSessionRunByDate).mockResolvedValue(null);
+		vi.mocked(queries.findTodaysSessionRun).mockResolvedValue(null);
 
 		const result = await getTodaysRunService({ userId: USER, date: DATE });
 
