@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.0.6 - 2026-10-06
 ### Changed
 - **A finished run can review its answers.** When your run falls or wins, **Review answers** on the community board opens the answers of your last gate, and **Back to the result** returns you to how the run ended.
 - **Poll results read cleanly on a phone.** On the community board, the PASS/FAIL verdict and the room's share sit above the question so it gets the full width, the faces of who picked an option sit under its bar, and the vote count column is left to wider screens.
