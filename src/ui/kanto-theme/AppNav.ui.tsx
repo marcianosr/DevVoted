@@ -27,7 +27,6 @@ export const COPY = {
 	community: COMMUNITY,
 	suggest: SUGGEST_A_POLL,
 	suggestFor: (reward: string) => `${SUGGEST_A_POLL} · ${reward}`,
-	wiki: "Wiki",
 	signIn: "Sign in",
 	signOut: "Sign out",
 	profile: "Profile & Dex",
@@ -75,7 +74,6 @@ const STANDING = "flex flex-wrap items-center gap-x-2 gap-y-1.5";
 const MENU_ROW_LOOK =
 	"px-4 py-2 text-sm text-theme-soft transition-colors hover:bg-theme-raised";
 const MENU_ROW = clsx("block", MENU_ROW_LOOK);
-const MENU_ROW_PHONE = clsx("block md:hidden", MENU_ROW_LOOK);
 const MENU_ROW_BADGED = clsx(
 	"flex items-center gap-2 md:hidden",
 	MENU_ROW_LOOK
@@ -152,7 +150,6 @@ export type AppNavProps = {
 	signInHref: string;
 	run: NavRun;
 	community: NavTarget;
-	wiki: NavTarget;
 	suggest: NavSuggest;
 	viewer?: NavViewer;
 	reading?: NavRunReading;
@@ -246,16 +243,10 @@ const Standing = ({ viewer }: { viewer: NavViewer }) => (
 type AccountMenuProps = {
 	viewer: NavViewer;
 	suggest: NavSuggest;
-	wiki: NavTarget;
 	onNavigate?: (href: string) => void;
 };
 
-const AccountMenu = ({
-	viewer,
-	suggest,
-	wiki,
-	onNavigate,
-}: AccountMenuProps) => (
+const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
 	<NavDisclosure
 		summary={
 			<>
@@ -301,13 +292,6 @@ const AccountMenu = ({
 			>
 				<SuggestLabel reward={suggest.reward} />
 			</NavAnchor>
-			<NavAnchor
-				href={wiki.href}
-				className={MENU_ROW_PHONE}
-				onNavigate={onNavigate}
-			>
-				{COPY.wiki}
-			</NavAnchor>
 
 			<NavDivider />
 
@@ -324,7 +308,6 @@ export const AppNav = ({
 	signInHref,
 	run,
 	community,
-	wiki,
 	suggest,
 	viewer,
 	reading,
@@ -343,7 +326,6 @@ export const AppNav = ({
 
 			{viewer === undefined ? (
 				<span className={SIGNED_OUT}>
-					<NavItem {...wiki} label={COPY.wiki} onNavigate={onNavigate} />
 					<NavAnchor
 						href={signInHref}
 						className={SIGN_IN}
@@ -374,7 +356,6 @@ export const AppNav = ({
 					>
 						<SuggestLabel reward={suggest.reward} />
 					</NavAnchor>
-					<NavItem {...wiki} label={COPY.wiki} onNavigate={onNavigate} />
 				</nav>
 			)}
 			{viewer === undefined || reading === undefined ? null : (
@@ -400,7 +381,6 @@ export const AppNav = ({
 				<AccountMenu
 					viewer={viewer}
 					suggest={suggest}
-					wiki={wiki}
 					onNavigate={onNavigate}
 				/>
 				<TabBar

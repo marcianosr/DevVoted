@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **A finished run can review its answers.** When your run falls or wins, **Review answers** on the community board opens the answers of your last gate, and **Back to the result** returns you to how the run ended.
+- **Poll results read cleanly on a phone.** On the community board, the PASS/FAIL verdict and the room's share sit above the question so it gets the full width, the faces of who picked an option sit under its bar, and the vote count column is left to wider screens.
+- **The wiki moved to the footer and wears Pallet.** **Wiki** is no longer in the navigation bar or the account menu; the footer link opens it on every page. The wiki now wears Pallet's colours, and its articles sit tighter, with less space between sections and table rows.
+- **Less repeated on the community board.** A poll's category is a badge under its question, and the room's share is stated once, as the badge beside it. The **You** badge on your pick is gone, since your own face already marks it, and the climb map marks your best gate with a star alone.
 
 ## 2.0.5 - 2026-10-06
 ### Fixed

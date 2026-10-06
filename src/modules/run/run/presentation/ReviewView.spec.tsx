@@ -87,7 +87,6 @@ describe("ReviewView", () => {
 									isRight: true,
 									count: 1,
 									percent: 100,
-									yours: false,
 									voters: [MISTY_VOTE],
 								},
 							],
@@ -122,6 +121,18 @@ describe("ReviewView", () => {
 
 		expect(
 			screen.getByRole("heading", { name: /^Review · / })
+		).toBeInTheDocument();
+	});
+
+	it("lists the answers of the gate a dead run fell at", () => {
+		const fallen = createMockRunView({
+			answeredThisGate: answered,
+			status: "dead",
+		});
+		render(<ReviewView view={fallen} back={back} />);
+
+		expect(
+			screen.getByText("Which type makes every property optional?")
 		).toBeInTheDocument();
 	});
 

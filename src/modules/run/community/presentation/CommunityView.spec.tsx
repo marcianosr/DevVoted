@@ -43,7 +43,6 @@ const answered = (
 				isRight: true,
 				count: 1,
 				percent: 33,
-				yours: false,
 				voters: [],
 			},
 			{
@@ -51,7 +50,6 @@ const answered = (
 				isRight: false,
 				count: 2,
 				percent: 67,
-				yours: true,
 				voters: [],
 			},
 		],

@@ -26,7 +26,6 @@ const REVEALED: PollResultProps = {
 			percent: 58,
 			votes: 698,
 			isRight: false,
-			yours: true,
 			voters: [{ name: "Erika" }],
 			voterOverflow: 696,
 		},
@@ -61,10 +60,17 @@ describe("PollResult, revealed", () => {
 		);
 	});
 
-	it("states the category and the room's share under the question", () => {
+	it("badges the category under the question", () => {
 		render(<PollResult {...REVEALED} />);
 
-		expect(within(summary()).getByText("CSS · 22% right")).toBeInTheDocument();
+		expect(within(summary()).getByText("CSS")).toHaveClass("badge-theme");
+	});
+
+	it("states the room's share once, as the badge", () => {
+		render(<PollResult {...REVEALED} />);
+
+		expect(within(summary()).queryByText(/right$/)).toBeNull();
+		expect(within(summary()).getAllByText(/22%/)).toHaveLength(1);
 	});
 
 	it("marks the right option as the answer rather than toning its share", () => {
@@ -75,12 +81,6 @@ describe("PollResult, revealed", () => {
 
 		expect(within(right).getByText("answer")).toBeInTheDocument();
 		expect(screen.getAllByText("answer")).toHaveLength(1);
-	});
-
-	it("marks the option the viewer picked", () => {
-		render(<PollResult {...REVEALED} />);
-
-		expect(screen.getByText("You")).toBeInTheDocument();
 	});
 
 	it("counts the voters it could not draw", () => {

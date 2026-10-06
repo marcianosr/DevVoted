@@ -353,7 +353,6 @@ describe("getRunCommunityService", () => {
 				isRight: true,
 				count: 2,
 				percent: 67,
-				yours: true,
 				voters: [
 					{
 						id: RED,
@@ -376,7 +375,6 @@ describe("getRunCommunityService", () => {
 				isRight: false,
 				count: 1,
 				percent: 33,
-				yours: false,
 				voters: [
 					{
 						id: BLUE,
@@ -392,7 +390,6 @@ describe("getRunCommunityService", () => {
 				isRight: false,
 				count: 0,
 				percent: 0,
-				yours: false,
 				voters: [],
 			},
 		]);

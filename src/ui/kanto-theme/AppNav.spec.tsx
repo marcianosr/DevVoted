@@ -12,7 +12,6 @@ const SIGN_IN = "/login";
 const RUN = "/run";
 const COMMUNITY = "/run/community";
 const SUGGEST = "/polls/new";
-const WIKI = "/wiki";
 const PROFILE = "/profile/marciano";
 const SUGGESTED = "/polls";
 const SIGN_OUT = "/logout";
@@ -34,7 +33,6 @@ const BAR: AppNavProps = {
 	signInHref: SIGN_IN,
 	run: { href: RUN, pollsLeft: 5, active: false },
 	community: { href: COMMUNITY, active: false },
-	wiki: { href: WIKI, active: false },
 	suggest: { href: SUGGEST, active: false },
 };
 
@@ -69,13 +67,10 @@ describe("AppNav", () => {
 			expect(screen.queryByText(COPY.suggest)).not.toBeInTheDocument();
 		});
 
-		it("offers the wiki, which is open to anyone", () => {
+		it("leaves the wiki to the footer", () => {
 			drawBar();
 
-			expect(screen.getByRole("link", { name: COPY.wiki })).toHaveAttribute(
-				"href",
-				WIKI
-			);
+			expect(screen.queryByRole("link", { name: /wiki/i })).toBeNull();
 		});
 
 		it("keeps the way home, which is open to anyone", () => {
@@ -138,16 +133,10 @@ describe("AppNav", () => {
 			).toHaveAttribute("href", SUGGEST);
 		});
 
-		it("offers the wiki in the bar and, on a phone, in the account menu", () => {
+		it("leaves the wiki to the footer, in the bar and the account menu", () => {
 			drawBar({ viewer: VIEWER });
 
-			const links = screen.getAllByRole("link", { name: COPY.wiki });
-
-			expect(links.map((link) => link.getAttribute("href"))).toEqual([
-				WIKI,
-				WIKI,
-			]);
-			expect(links[1]).toHaveClass("md:hidden");
+			expect(screen.queryByRole("link", { name: /wiki/i })).toBeNull();
 		});
 
 		it("states what an approved poll pays on every suggest link", () => {
