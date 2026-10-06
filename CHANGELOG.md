@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.0.7 - 2026-10-06
 ### Changed
 - **The poll list remembers its filters.** Search, status, category and the other filters now live in the page address, so opening a poll and going back, reloading, or sharing the link keeps the list as you left it. The list also holds a steady order instead of shuffling polls added at the same moment.
 - **Step through polls one after another.** A poll's page and its edit form show where it sits in your filtered list (**3 of 98**) with links to the poll before and after it. Admins get **Save & next**, which saves the poll, marks it reviewed and opens the next one, plus a **reviewed** filter and badge on the list.
