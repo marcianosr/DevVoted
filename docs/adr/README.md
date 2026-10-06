@@ -178,6 +178,7 @@ it before proposing one again.**
 | [189](189-an-advertisement-states-a-true-offer.md) | **An advertisement states a true offer** | Accepted — poll editors or one border for sale, rolled after hydration, dismissed per screen per session; no admin poll ad; kinds are weighted entries; a bottom banner on pages without a card |
 | [190](190-the-player-wiki-reads-the-models.md) | **The player wiki reads the models** | Accepted — a public `/wiki` in a new `guide` context; shipped rules only, no rationale; every figure from a model; secrets the Dex redacts stay redacted |
 | [191](191-a-better-clearing-band-pays-more.md) | **A better clearing band pays more** | Accepted — the clear is multiplied ×1 OK, ×1.25 HEALTHY, ×1.5 PERFECT (`BAND_BONUS`); a boost, not ADR-076's cut; the dead `payoutRatioFor` slope is deleted |
+| [192](192-a-dependency-grid-pays-for-the-groups-it-locks-in.md) | **A dependency grid pays for the groups it locks in** | Accepted — a third answer type: twelve tiles, three hidden groups of four; a wrong lock-in ends it, two solved lock the last in; share = solved ÷ 3 at ×2 credit; the client never sees the groups; type-namers name them |
 
 ## Retired
 

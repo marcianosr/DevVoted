@@ -27,8 +27,8 @@ const POLL = createMockPoll({
 });
 
 const OPTIONS = [
-	{ id: 1, pollId: 7, option: "absolute", correct: true },
-	{ id: 2, pollId: 7, option: "relative", correct: false },
+	{ id: 1, pollId: 7, option: "absolute", correct: true, group: null },
+	{ id: 2, pollId: 7, option: "relative", correct: false, group: null },
 ];
 
 describe("pollDetailViewOf", () => {

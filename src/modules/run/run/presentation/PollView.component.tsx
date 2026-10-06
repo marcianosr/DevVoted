@@ -11,6 +11,7 @@ import {
 	pollFlightFor,
 	pollKeysFor,
 	pollScreenPropsFor,
+	readyToSubmit,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
@@ -25,6 +26,7 @@ export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
 	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
 	clockMs?: number;
+	gridShuffles?: number;
 };
 
 export const PollView = ({
@@ -32,6 +34,7 @@ export const PollView = ({
 	answered,
 	selectedOptionIds,
 	clockMs = 0,
+	gridShuffles = 0,
 	onAnswer,
 	...handlers
 }: PollViewProps) => {
@@ -52,9 +55,9 @@ export const PollView = ({
 	const on = {
 		...handlers,
 		onSelect:
-			view.poll?.answerType === "multiple"
-				? handlers.onSelect
-				: (optionId: string) => onAnswer([optionId]),
+			view.poll?.answerType === "single"
+				? (optionId: string) => onAnswer([optionId])
+				: handlers.onSelect,
 		onSubmit: () => onAnswer(selectedOptionIds),
 	};
 
@@ -63,7 +66,7 @@ export const PollView = ({
 		onPick: revealing ? undefined : on.onSelect,
 		onEnter: enterActionFor(
 			revealing,
-			selectedOptionIds.length > 0,
+			readyToSubmit(view.poll?.answerType, selectedOptionIds.length),
 			on.onSubmit
 		),
 	});
@@ -76,7 +79,7 @@ export const PollView = ({
 		leaving: feedback.leaving,
 		selectedOptionIds,
 		on: { ...on, onLanded: feedback.land, onSettled: feedback.settle },
-		ui: { build, clockMs, buildOpen: !small },
+		ui: { build, clockMs, buildOpen: !small, gridShuffles },
 	});
 
 	return props === null ? null : (

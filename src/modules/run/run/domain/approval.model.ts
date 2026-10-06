@@ -35,12 +35,14 @@ export const approvalRefusalOf = (
 export const canApprove = (state: RunState): boolean =>
 	isPrepPhase(state) && approvalRefusalOf(state) === undefined;
 
-const standsInThisGate = (state: RunState, pollId: string): boolean =>
-	gateSliceOf(state).some((poll) => poll.id === pollId);
+const isApprovableInThisGate = (state: RunState, pollId: string): boolean =>
+	gateSliceOf(state).some(
+		(poll) => poll.id === pollId && poll.answerType !== "grid"
+	);
 
 export const approve = (state: RunState, pollId: string): RunState => {
 	if (!canApprove(state)) return state;
-	if (!standsInThisGate(state, pollId)) return state;
+	if (!isApprovableInThisGate(state, pollId)) return state;
 	return { ...state, approvedPollId: pollId };
 };
 

@@ -6,11 +6,13 @@ import {
 	splitCodeSpans,
 	stripCodeFence,
 } from "~/shared/lib/codeSpans";
+import { GRID_TILES } from "~/shared/lib/answerTypes";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
+import { DependencyGrid, type DependencyGridProps } from "./DependencyGrid.ui";
 import { Typography } from "./Typography.ui";
 
 const BLOCK = "flex w-full flex-col gap-3";
@@ -24,11 +26,16 @@ const VOTER_FACES = 3;
 
 const SEPARATOR = "·";
 
-export const questionFactsOf = ({
+const choiceCountOf = ({
 	options,
 	answerType,
 }: Pick<QuestionProps, "options" | "answerType">) =>
-	`${options.length} options ${SEPARATOR} ${ANSWER_TYPE_LABEL[answerType]}`;
+	answerType === "grid" ? `${GRID_TILES} tiles` : `${options.length} options`;
+
+export const questionFactsOf = (
+	question: Pick<QuestionProps, "options" | "answerType">
+) =>
+	`${choiceCountOf(question)} ${SEPARATOR} ${ANSWER_TYPE_LABEL[question.answerType]}`;
 
 export type QuestionVoters = {
 	climbers: readonly ClimberProps[];
@@ -56,7 +63,13 @@ export type QuestionProps = {
 	codeBlock?: string;
 	pickedIds?: readonly string[];
 	onPick?: (id: string) => void;
+	grid?: QuestionGrid;
 };
+
+export type QuestionGrid = Pick<
+	DependencyGridProps,
+	"groups" | "hints" | "onShuffle"
+>;
 
 export const CodeSpans = ({ text }: { text: string }) => (
 	<span className={PROSE}>
@@ -139,49 +152,77 @@ export const Question = ({
 	codeBlock,
 	pickedIds = [],
 	onPick,
+	grid,
 }: QuestionProps) => (
 	<section className={BLOCK}>
 		<QuestionText question={question} stem={stem} />
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 
-		<div data-choices className={CHOICES}>
-			{options.map((option) => {
-				const picked = pickedIds.includes(option.id);
-				const pick = onPick === undefined ? undefined : () => onPick(option.id);
+		{grid === undefined ? (
+			<Choices
+				answerType={answerType}
+				options={options}
+				pickedIds={pickedIds}
+				onPick={onPick}
+			/>
+		) : (
+			<DependencyGrid
+				{...grid}
+				tiles={options.map((option) => ({
+					id: option.id,
+					label: option.label ?? "",
+				}))}
+				pickedIds={pickedIds}
+				onPick={onPick}
+			/>
+		)}
+	</section>
+);
 
-				if (option.seal !== undefined) {
-					return (
-						<Choice
-							key={option.id}
-							letter={option.letter}
-							answerType={answerType}
-							picked={picked}
-							onPick={pick}
-							seal={option.seal}
-						/>
-					);
-				}
+const Choices = ({
+	answerType,
+	options,
+	pickedIds,
+	onPick,
+}: Required<Pick<QuestionProps, "answerType" | "options" | "pickedIds">> &
+	Pick<QuestionProps, "onPick">) => (
+	<div data-choices className={CHOICES}>
+		{options.map((option) => {
+			const picked = pickedIds.includes(option.id);
+			const pick = onPick === undefined ? undefined : () => onPick(option.id);
 
+			if (option.seal !== undefined) {
 				return (
 					<Choice
 						key={option.id}
 						letter={option.letter}
 						answerType={answerType}
 						picked={picked}
-						crossedOut={option.crossedOut}
-						state={option.state}
 						onPick={pick}
-						aside={
-							option.voters === undefined ? undefined : (
-								<Voters {...option.voters} />
-							)
-						}
-					>
-						<CodeText text={option.label ?? ""} />
-					</Choice>
+						seal={option.seal}
+					/>
 				);
-			})}
-		</div>
-	</section>
+			}
+
+			return (
+				<Choice
+					key={option.id}
+					letter={option.letter}
+					answerType={answerType}
+					picked={picked}
+					crossedOut={option.crossedOut}
+					state={option.state}
+					onPick={pick}
+					aside={
+						option.voters === undefined ? undefined : (
+							<Voters {...option.voters} />
+						)
+					}
+				>
+					<CodeText text={option.label ?? ""} />
+				</Choice>
+			);
+		})}
+	</div>
 );

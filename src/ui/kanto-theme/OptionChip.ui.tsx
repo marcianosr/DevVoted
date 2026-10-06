@@ -14,6 +14,7 @@ const CAP =
 const CAP_SHAPE = {
 	single: "rounded-full",
 	multiple: "rounded-md",
+	grid: "rounded-md",
 } satisfies Record<AnswerType, string>;
 const CAP_OUTLINE = "border-theme text-theme";
 const CAP_FILLED = "border-theme-soft text-theme-soft";

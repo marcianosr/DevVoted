@@ -18,6 +18,7 @@ import {
 	stripCodeFence,
 	type CodeSpan,
 } from "~/shared/lib/codeSpans";
+import { ANSWER_TYPES } from "~/shared/lib/answerTypes";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 import { pollPathFor } from "~/shared/lib/pollPath";
 import { signedKbLabel } from "~/shared/lib/storage";
@@ -50,11 +51,6 @@ type All = typeof ALL;
 export const PAGE_SIZE = 10;
 
 export const APPROVED_POLL_REWARD = signedKbLabel(APPROVED_POLL_ARCHIVE_KB);
-
-const ANSWER_TYPES = [
-	"single",
-	"multiple",
-] as const satisfies readonly AnswerType[];
 
 export type StatusFilter = PollStatus | All;
 export type AnswerTypeFilter = AnswerType | All;

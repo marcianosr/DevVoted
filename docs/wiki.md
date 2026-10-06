@@ -261,10 +261,18 @@ in `auditSchedule.model.ts`, reasoning in ADR-035/038/056.
 A poll has a question, 3 to 20 options, and an explanation shown after answering.
 Code lives in the question: backticks render inline code and a fenced ```js block
 renders a highlighted panel; the older separate code block is a legacy column that
-still renders where a poll carries one (ADR-137). Answer types are **single** (pick exactly one) and **multiple**
-("select all that apply"). Harder polls pay more coverage
+still renders where a poll carries one (ADR-137). Answer types are **single** (pick exactly one), **multiple**
+("select all that apply") and **grid** (a dependency grid, below). Harder polls pay more coverage
 ([2.5](#25-coverage-scoring)). The bank holds ~475 published polls, so a poll you have
 seen can reappear in a later seed.
+
+A **dependency grid** shows twelve tiles that hide three groups of four (ADR-192). Pick
+four and lock them in: if they share a group, that group is solved and named, and you
+pick again; if they do not, the grid ends like a wrong answer and breaks the streak.
+Once two groups are solved the last one locks itself in. The group names read `???`
+unless your build names answer types (`git rebase -i` v2 or Prefetch v2). Shuffle
+reorders the tiles and costs nothing. 207, 451 and the Mirror leave a grid alone, the
+linter and peek have nothing to act on, and LGTM cannot approve one.
 
 Polls **rhyme**. Questions are short verses in the spirit of Furnace Fun: _"Don't ask
 me why these polls all rhyme, getting the last 2 items of this array, how do you
@@ -301,7 +309,7 @@ A correct answer earns `base × share × credit × mults × pool + adds`:
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `base`   | **One unit**. Flat: the gate number and the option count do not touch it (ADR-073). What a unit is worth as a percentage depends on the gate; the arithmetic is in `coverageRatio.model.ts`.                                         |
 | `share`  | The fraction of the answer key that landed. 1 for a single-answer poll answered correctly, and one of three rungs for a partial (ADR-079).                                                                                           |
-| `credit` | **×2 on a multiple-choice poll**, ×1 on a single (ADR-081). The one term the poll type sets.                                                                                                                                         |
+| `credit` | **×2 on a multiple-choice poll or a grid**, ×1 on a single (ADR-081, ADR-192). The one term the poll type sets.                                                                                                                      |
 | `adds`   | **Flat units**, added after the build's multipliers and never amplified by them (ADR-083); the gate's accuracy multiplier still scales them (ADR-172 §4). Code Coverage +0.1 a correct answer per version; Cache +0.25 a cached hit. |
 | `mults`  | Product of the multipliers that compound: Focus ×1.25 at v1, the opener and throttle terms, Regression Test, Vite (ADR-172).                                                                                                         |
 | `pool`   | **The all-coverage bonuses add, then multiply once**: 1 + Σ(N − 1). AGENTS.md ×2 with Intellisense ×1.5 pays ×2.5, not ×3 (ADR-172). Never below 0.                                                                                  |
@@ -320,6 +328,8 @@ so four right and a skip move the carried bonus like a perfect window (ADR-181).
 Cache's run and Dependabot's count, writes no poll response,
 and still spends one of the day's five polls. A poll approved for LGTM cannot be
 skipped.
+
+**Grid share** is the groups solved ÷ 3: 0, ⅓ or 1 (ADR-192). It skips the rungs below.
 
 **Multi-answer share** lands on one of three rungs: **1/4, 1/2 or 3/4** (ADR-079).
 It starts as `(correct picks − wrong picks) ÷ total correct`, then rounds to the
@@ -2000,7 +2010,7 @@ applies. `rules.model.ts` holds most of it.
 | Constant                                            | Value                                                                                                                                                          |
 | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BASE_UNIT`                                         | 1 unit a correct answer, flat at every gate (ADR-073)                                                                                                          |
-| `SINGLE_CREDIT` / `MULTIPLE_CREDIT`                 | ×1 / ×2 by poll type, on coverage only (ADR-081)                                                                                                               |
+| `SINGLE_CREDIT` / `MULTIPLE_CREDIT`                 | ×1 / ×2 by poll type (a grid takes ×2), ADR-081/192                                                                                                            |
 | `scoringSlotsAt`                                    | The gate's codebase from `GATE_RUNGS`, the denominator for that gate only: 5 at Pallet to 10 at the Champion                                                   |
 | `ACCURACY_GAIN_PER_GATE` / `ACCURACY_LOSS_PER_GATE` | 0.08 / 0.04: a cleared window moves the carried bonus by `0.08 × share − 0.04 × (1 − share)`, share = credit earned ÷ credit offered, floored at 0 (ADR-181)   |
 | `coverageAddOf` / `cacheUnitsFor`                   | Code Coverage +0.1 units a correct answer × version · Cache +0.25 units a cached hit, capped at 4 hits (one unit). Flat, added after the multipliers (ADR-083) |

@@ -21,6 +21,7 @@ export const toPoll = (record: PollRecord): Poll => ({
 	question: record.question,
 	status: record.status,
 	answerType: record.answer_type,
+	groupLabels: record.group_labels,
 	openingTime: record.opening_time,
 	closingTime: record.closing_time,
 	createdBy: record.created_by,
@@ -38,6 +39,7 @@ const toPollOption = (record: PollOptionRecord): PollOption => ({
 	pollId: record.poll_id,
 	option: record.option,
 	correct: record.correct,
+	group: record.group_index,
 });
 
 export const fetchPollById = async (id: number): Promise<Poll> => {

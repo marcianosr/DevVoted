@@ -13,6 +13,8 @@ import {
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
+	changeGroupLabel,
+	gridGroupRowsOf,
 	markRight,
 	pollFormStateOf,
 	previewOf,
@@ -243,5 +245,104 @@ describe("toPollFormData", () => {
 
 	it("leaves an id off a new option", () => {
 		expect(toPollFormData(filled).options[0]).not.toHaveProperty("id");
+	});
+});
+
+describe("authoring a dependency grid", () => {
+	const GROUPS = [
+		["filter", "reduce", "find", "map"],
+		["margin", "padding", "content", "border"],
+		["commit", "rebase", "merge", "cherry-pick"],
+	];
+	const LABELS = ["Array methods", "Box model", "Git actions"];
+
+	const gridOf = (state: PollFormState): PollFormState =>
+		withAnswerType(state, "grid");
+
+	const writtenGrid = (): PollFormState => {
+		const grid = gridOf(filled);
+		return {
+			...grid,
+			groupLabels: LABELS,
+			answers: grid.answers.map((answer, index) => ({
+				...answer,
+				text: GROUPS.flat()[index],
+			})),
+		};
+	};
+
+	it("deals twelve tiles into three groups of four when the grid is picked", () => {
+		const grid = gridOf(filled);
+
+		expect(grid.answers).toHaveLength(12);
+		expect(gridGroupRowsOf(grid).map((group) => group.tiles.length)).toEqual([
+			4, 4, 4,
+		]);
+	});
+
+	it("keeps the answers already written as the first tiles", () => {
+		expect(gridOf(filled).answers[0].text).toBe(quiz.options[0]);
+	});
+
+	it("neither adds nor removes a tile on a grid", () => {
+		expect(canAddAnswer(gridOf(filled))).toBe(false);
+		expect(canRemoveAnswer(gridOf(filled))).toBe(false);
+	});
+
+	it("names a group", () => {
+		const named = changeGroupLabel(gridOf(filled), 1, "Box model");
+
+		expect(gridGroupRowsOf(named)[1].label).toBe("Box model");
+	});
+
+	it("asks for every group's name before anything else on the grid", () => {
+		expect(refusalOf({ ...writtenGrid(), groupLabels: ["", "", ""] })).toBe(
+			"every group needs a name"
+		);
+	});
+
+	it("asks for every tile's text", () => {
+		const blank = changeAnswer(writtenGrid(), writtenGrid().answers[5].key, "");
+
+		expect(refusalOf(blank)).toBe("every tile needs text");
+	});
+
+	it("refuses the same tile twice, whatever its case", () => {
+		const twice = changeAnswer(
+			writtenGrid(),
+			writtenGrid().answers[11].key,
+			"FILTER"
+		);
+
+		expect(refusalOf(twice)).toBe("each tile appears once");
+	});
+
+	it("accepts a written grid", () => {
+		expect(refusalOf(writtenGrid())).toBeUndefined();
+	});
+
+	it("sends every tile right with its group, and the group names", () => {
+		const data = toPollFormData(writtenGrid());
+
+		expect(data.poll.groupLabels).toEqual(LABELS);
+		expect(data.options[4]).toEqual({
+			option: "margin",
+			correct: true,
+			group: 1,
+		});
+	});
+
+	it("drops the groups when the author leaves the grid", () => {
+		const single = withAnswerType(writtenGrid(), "single");
+
+		expect(toPollFormData(single).poll.groupLabels).toBeNull();
+		expect(single.answers.every((answer) => answer.group === undefined)).toBe(
+			true
+		);
+		expect(single.answers.some((answer) => answer.right)).toBe(false);
+	});
+
+	it("previews the grid with its group names showing", () => {
+		expect(previewOf(writtenGrid()).grid?.hints).toEqual(LABELS);
 	});
 });

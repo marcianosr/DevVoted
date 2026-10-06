@@ -5,10 +5,12 @@ import {
 	EMPTY_POLL_FORM,
 	addAnswer,
 	answerRowsOf,
-	answersCountOf,
+	answersCaptionOf,
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
+	changeGroupLabel,
+	gridGroupRowsOf,
 	markRight,
 	previewOf,
 	questionCountOf,
@@ -56,8 +58,9 @@ export const PollForm = ({
 			state={state}
 			view={view}
 			rows={answerRowsOf(state)}
+			groups={state.answerType === "grid" ? gridGroupRowsOf(state) : undefined}
 			questionCount={questionCountOf(state.question)}
-			answersCount={answersCountOf(state.answers)}
+			answersCount={answersCaptionOf(state)}
 			preview={previewOf(state)}
 			categories={CATEGORY_CHOICES}
 			statuses={statuses}
@@ -73,6 +76,9 @@ export const PollForm = ({
 			}
 			onAnswerChange={(key, text) =>
 				setState((current) => changeAnswer(current, key, text))
+			}
+			onGroupLabel={(group, label) =>
+				setState((current) => changeGroupLabel(current, group, label))
 			}
 			onMarkRight={(key) => setState((current) => markRight(current, key))}
 			onAddAnswer={canAddAnswer(state) ? () => setState(addAnswer) : undefined}

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 import {
+	ANSWER_TYPES,
+	type AnswerType,
+	GRID_GROUP_SIZE,
+	GRID_GROUPS,
+	GRID_TILES,
+} from "~/shared/lib/answerTypes";
+import {
 	POLL_LIMITS,
 	POLL_STATUSES,
 } from "~/modules/polls/poll/domain/poll.model";
@@ -16,6 +23,13 @@ const newPollOptionSchema = z.object({
 			`Option cannot exceed ${POLL_LIMITS.answer.max} characters`
 		),
 	correct: z.boolean().default(false),
+	group: z
+		.number()
+		.int()
+		.min(0)
+		.max(GRID_GROUPS - 1)
+		.nullable()
+		.optional(),
 });
 
 const updatePollOptionSchema = newPollOptionSchema.extend({
@@ -34,9 +48,13 @@ const basePollDataSchema = z.object({
 			`Question cannot exceed ${POLL_LIMITS.question.max} characters`
 		),
 	status: z.enum(POLL_STATUSES),
-	answerType: z.enum(["single", "multiple"]),
+	answerType: z.enum(ANSWER_TYPES),
 	categoryCode: z.string().min(1, "Category is required"),
 	codeBlock: z.string().nullable().optional(),
+	groupLabels: z
+		.array(z.string().max(POLL_LIMITS.answer.max))
+		.nullable()
+		.optional(),
 	codeSandboxExample: CODE_SANDBOX_URL.nullable().optional(),
 	explanation: z
 		.string()
@@ -67,6 +85,30 @@ const hasACorrectOption = {
 	path: ["options"] as const,
 };
 
+type GridShape = {
+	poll: { answerType?: AnswerType; groupLabels?: string[] | null };
+	options: { group?: number | null }[];
+};
+
+const tilesInGroup = (options: GridShape["options"], group: number): number =>
+	options.filter((option) => option.group === group).length;
+
+const hasNamedGroups = (labels: string[] | null | undefined): boolean =>
+	labels?.length === GRID_GROUPS &&
+	labels.every((label) => label.trim() !== "");
+
+const isWellFormedGrid = {
+	check: ({ poll, options }: GridShape) =>
+		poll.answerType !== "grid" ||
+		(hasNamedGroups(poll.groupLabels) &&
+			options.length === GRID_TILES &&
+			Array.from({ length: GRID_GROUPS }, (_, group) => group).every(
+				(group) => tilesInGroup(options, group) === GRID_GROUP_SIZE
+			)),
+	message: "A grid needs three named groups of four tiles",
+	path: ["options"] as const,
+};
+
 export const createPollWithOptionsSchema = z
 	.object({
 		poll: basePollDataSchema,
@@ -75,6 +117,10 @@ export const createPollWithOptionsSchema = z
 	.refine(hasACorrectOption.check, {
 		message: hasACorrectOption.message,
 		path: [...hasACorrectOption.path],
+	})
+	.refine(isWellFormedGrid.check, {
+		message: isWellFormedGrid.message,
+		path: [...isWellFormedGrid.path],
 	});
 
 export const updatePollSchema = z
@@ -86,6 +132,10 @@ export const updatePollSchema = z
 	.refine(hasACorrectOption.check, {
 		message: hasACorrectOption.message,
 		path: [...hasACorrectOption.path],
+	})
+	.refine(isWellFormedGrid.check, {
+		message: isWellFormedGrid.message,
+		path: [...isWellFormedGrid.path],
 	});
 
 export type CreatePollWithOptionsInput = z.infer<

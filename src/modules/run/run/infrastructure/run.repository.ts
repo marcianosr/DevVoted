@@ -13,6 +13,7 @@ import { CHAMPION_BORDER_ID } from "~/modules/account/profile/domain/border.mode
 
 import { accountGrantsOf } from "~/modules/run/run/domain/accountGrant.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
+import { gridLockOf } from "~/modules/run/run/domain/answer.model";
 import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
 import { recordGains } from "~/modules/run/run/domain/closeGains.model";
 import {
@@ -193,6 +194,23 @@ const toSelectedOptionRecordIds = (
 	poll.options
 		.filter((option) => optionIds.includes(option.id))
 		.map((option) => Number(option.id));
+
+type AnsweredPicks = {
+	readonly optionIds: readonly string[];
+	readonly elapsedMs?: number;
+};
+
+const answeredPicksOf = (
+	state: RunState,
+	action: RunAction
+): AnsweredPicks | undefined => {
+	if (action.type === "answer") return action;
+	if (action.type !== "lock-group") return undefined;
+	const lock = gridLockOf(state, action.optionIds);
+	return lock.kind === "finished"
+		? { optionIds: lock.picks, elapsedMs: action.elapsedMs }
+		: undefined;
+};
 
 const recordSessionAnswer = async (
 	tx: Tx,
@@ -414,13 +432,14 @@ export const applyActionToRun = async (args: {
 				gateSliceOf(next)
 			);
 
-		if (args.action.type === "answer") {
+		const answeredPicks = answeredPicksOf(state, args.action);
+		if (answeredPicks !== undefined) {
 			await recordSessionAnswer(
 				tx,
 				args,
 				state.polls[state.currentIndex],
-				args.action.optionIds,
-				args.action.elapsedMs,
+				answeredPicks.optionIds,
+				answeredPicks.elapsedMs,
 				mirrorsPolls(
 					liveAuditsFor(
 						state.build.configs,

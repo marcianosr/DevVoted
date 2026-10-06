@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { GRID_GROUP_SIZE } from "~/shared/lib/answerTypes";
 import {
 	BOOT_CACHE_RUNGS,
 	SLICE_WINDOW,
@@ -64,6 +65,13 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.object({
 			type: z.literal("answer"),
 			optionIds: z.array(z.string().min(1)).min(1).readonly(),
+			elapsedMs: z.number().int().min(0).max(600_000).optional(),
+		})
+		.strict(),
+	z
+		.object({
+			type: z.literal("lock-group"),
+			optionIds: z.array(z.string().min(1)).length(GRID_GROUP_SIZE).readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),

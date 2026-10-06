@@ -461,6 +461,7 @@ export const redactedOptionIdsFor = (
 	audits: readonly Audit[],
 	answeredBefore: number
 ): readonly string[] => {
+	if (poll.answerType === "grid") return [];
 	const perPoll = auditRedactionPerPoll(audits, answeredBefore);
 	const hideable = Math.min(perPoll, poll.options.length - READABLE_FLOOR);
 	if (hideable <= 0) return [];

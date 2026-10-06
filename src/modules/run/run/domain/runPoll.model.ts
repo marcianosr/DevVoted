@@ -2,7 +2,12 @@ import type {
 	CoverageBreakdown,
 	CoverageFactors,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import type { AnswerType } from "~/shared/lib/answerTypes";
 import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	type GridGroup,
+	gridShareOf,
+} from "~/modules/run/run/domain/gridPoll.model";
 import {
 	partialShareFor,
 	SLICE_WINDOW,
@@ -15,8 +20,9 @@ export type RunOption = {
 	readonly id: string;
 	readonly label: string;
 	readonly correct: boolean;
+	readonly group?: number;
 };
-export type AnswerType = "single" | "multiple";
+export type { AnswerType };
 
 export type PollAuthor = {
 	readonly userId?: string;
@@ -36,6 +42,7 @@ export type RunPoll = {
 	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
+	readonly groupLabels?: readonly string[];
 	readonly explanation?: string;
 	readonly author?: PollAuthor;
 	readonly missedBefore?: boolean;
@@ -43,7 +50,11 @@ export type RunPoll = {
 
 type GradedPoll<Id> = {
 	readonly answerType: AnswerType;
-	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
+	readonly options: readonly {
+		readonly id: Id;
+		readonly correct: boolean;
+		readonly group?: number;
+	}[];
 };
 
 type PollGrade = {
@@ -76,10 +87,20 @@ export type GradedOutcome = "correct" | "partial" | "wrong";
 
 export type AnswerOutcome = GradedOutcome | "skipped";
 
+const gridOutcomeOf = <Id>(
+	poll: GradedPoll<Id>,
+	optionIds: Iterable<Id>
+): GradedOutcome => {
+	const share = gridShareOf(poll, optionIds);
+	if (share === FULL_SHARE) return "correct";
+	return share > NO_SHARE ? "partial" : "wrong";
+};
+
 export const coverageShare = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): number => {
+	if (poll.answerType === "grid") return gridShareOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return FULL_SHARE;
 	if (poll.answerType === "single" || grade.keySize === 0) return NO_SHARE;
@@ -92,6 +113,7 @@ export const answerOutcome = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): GradedOutcome => {
+	if (poll.answerType === "grid") return gridOutcomeOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return "correct";
 	if (poll.answerType === "single") return "wrong";
@@ -145,6 +167,7 @@ export type AnsweredPoll = {
 	readonly author?: PollAuthor;
 	readonly options?: readonly string[];
 	readonly answerType?: AnswerType;
+	readonly groups?: readonly GridGroup[];
 	readonly gate?: number;
 	readonly coverageEarned?: number;
 	readonly coverageLost?: number;

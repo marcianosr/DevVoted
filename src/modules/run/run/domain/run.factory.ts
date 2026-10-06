@@ -32,6 +32,31 @@ export const poll = (
 	],
 });
 
+export const GRID_GROUP_TILES = [
+	["filter", "reduce", "find", "map"],
+	["margin", "padding", "content", "border"],
+	["commit", "rebase", "merge", "cherry-pick"],
+] as const;
+
+export const gridPoll = (id: string): RunPoll => ({
+	id,
+	category: "general-frontend",
+	question: "Find the three dependencies",
+	answerType: "grid",
+	groupLabels: ["Array methods", "Box model", "Git actions"],
+	options: GRID_GROUP_TILES.flatMap((tiles, group) =>
+		tiles.map((tile) => ({
+			id: `${id}-${tile}`,
+			label: tile,
+			correct: true,
+			group,
+		}))
+	),
+});
+
+export const gridTiles = (id: string, group: number): string[] =>
+	GRID_GROUP_TILES[group].map((tile) => `${id}-${tile}`);
+
 export const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));
 

@@ -153,8 +153,11 @@ export const commitmentRemedy = (
 
 	return clauses.length === 0 ? undefined : clauses.join(READING_JOIN);
 };
-const MULTIPLE_LABEL = "two answers";
-const SINGLE_LABEL = "one answer";
+const ANSWER_COUNT_LABEL = {
+	single: "one answer",
+	multiple: "two answers",
+	grid: "three groups",
+} satisfies Record<AnswerType, string>;
 
 const slaPickerFor = (
 	sla: SlaControl | null,
@@ -195,11 +198,9 @@ const estimatePickerFor = (
 };
 
 const answerTypeLabel = (
-	answerType: string | undefined
-): string | undefined => {
-	if (answerType === undefined) return undefined;
-	return answerType === "multiple" ? MULTIPLE_LABEL : SINGLE_LABEL;
-};
+	answerType: AnswerType | undefined
+): string | undefined =>
+	answerType === undefined ? undefined : ANSWER_COUNT_LABEL[answerType];
 
 const rebaseListFor = (
 	configs: readonly Config[],

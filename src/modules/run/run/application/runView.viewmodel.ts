@@ -68,6 +68,7 @@ import {
 	configStatusFor,
 } from "~/modules/run/config/domain/configStatus.model";
 import {
+	namesAnswerTypes,
 	type PollSlot,
 	upcomingSlotsOf,
 } from "~/modules/run/run/domain/rebase.model";
@@ -581,7 +582,11 @@ export const toRunView = (
 				? redactPoll(
 						mirrored ? mirrorPoll(current) : current,
 						hidden,
-						answerTypeHidden
+						answerTypeHidden,
+						{
+							locked: state.gridLocked ?? [],
+							namesShown: namesAnswerTypes(liveConfigs),
+						}
 					)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),

@@ -1,12 +1,35 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
+export type SeedGroup = {
+	readonly label: string;
+	readonly tiles: readonly string[];
+};
+
 export type SeedQuestion = {
 	readonly category: CategoryCode;
 	readonly question: string;
 	readonly options: readonly string[];
 	readonly correct: readonly number[];
+	readonly groups?: readonly SeedGroup[];
 	readonly codeBlock?: string;
 	readonly explanation?: string;
+};
+
+const gridQuestion = (
+	category: CategoryCode,
+	question: string,
+	groups: readonly SeedGroup[],
+	explanation: string
+): SeedQuestion => {
+	const options = groups.flatMap((group) => group.tiles);
+	return {
+		category,
+		question,
+		options,
+		correct: options.map((_, index) => index),
+		groups,
+		explanation,
+	};
 };
 
 const CSS_QUESTIONS: readonly SeedQuestion[] = [
@@ -1068,6 +1091,41 @@ const VUE_QUESTIONS: readonly SeedQuestion[] = [
 	},
 ];
 
+const GRID_QUESTIONS: readonly SeedQuestion[] = [
+	gridQuestion(
+		"general-frontend",
+		"Twelve tiles, three sets of four — find the dependencies before you install some more!",
+		[
+			{ label: "Array methods", tiles: ["filter", "reduce", "find", "map"] },
+			{
+				label: "Box model",
+				tiles: ["margin", "padding", "content", "border"],
+			},
+			{
+				label: "Git actions",
+				tiles: ["commit", "rebase", "merge", "cherry-pick"],
+			},
+		],
+		"`filter`, `reduce`, `find` and `map` live on `Array.prototype`; margin, border, padding and content are the four boxes of the CSS box model; the rest are things you do to a Git history."
+	),
+	gridQuestion(
+		"js",
+		"Some are falsy, some resolve, some are hooks you call — sort these twelve before the bundle starts to sprawl!",
+		[
+			{ label: "Falsy values", tiles: ["0", "NaN", "null", "''"] },
+			{
+				label: "Promise statics",
+				tiles: ["all", "race", "any", "allSettled"],
+			},
+			{
+				label: "React hooks",
+				tiles: ["useState", "useMemo", "useRef", "useId"],
+			},
+		],
+		"Four values coerce to `false`; four statics hang off `Promise`; four start with `use` because React calls them hooks."
+	),
+];
+
 export const SEED_QUESTIONS: readonly SeedQuestion[] = [
 	...CSS_QUESTIONS,
 	...JS_QUESTIONS,
@@ -1081,4 +1139,5 @@ export const SEED_QUESTIONS: readonly SeedQuestion[] = [
 	...RUBY_QUESTIONS,
 	...GENERAL_BACKEND_QUESTIONS,
 	...VUE_QUESTIONS,
+	...GRID_QUESTIONS,
 ];
