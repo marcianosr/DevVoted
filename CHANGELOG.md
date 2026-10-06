@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.0.5 - 2026-10-06
 ### Fixed
 - **A run that ends shows its result, whatever day it started.** A run that fell or won on a later day than it began left the Daily Run page empty, with no game-over screen and nobody on today's community board. It now shows how your run ended and who else played today.
 
