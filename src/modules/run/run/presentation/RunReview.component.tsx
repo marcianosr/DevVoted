@@ -1,5 +1,5 @@
 import { ReviewView } from "~/modules/run/run/presentation/ReviewView.component";
-import { REVIEW_BACK } from "~/modules/run/run/application/runRoutes.viewmodel";
+import { reviewBackOf } from "~/modules/run/run/application/runRoutes.viewmodel";
 import { useRunNavigation } from "~/modules/run/run/application/useRunNavigation.hook";
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 
@@ -9,12 +9,14 @@ export const RunReview = () => {
 
 	if (!view) return null;
 
+	const back = reviewBackOf(view);
+
 	return (
 		<ReviewView
 			view={view}
 			back={{
-				label: REVIEW_BACK.label,
-				onUse: () => goTo(REVIEW_BACK.path),
+				label: back.label,
+				onUse: () => goTo(back.path),
 			}}
 		/>
 	);

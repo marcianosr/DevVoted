@@ -1561,11 +1561,13 @@ have no chip to press.
 
 **The day's polls** is one panel of five rows, one per slot in the day's seed. Its
 head counts how many of the revealed polls you got right (`you 2 of 4`). A revealed
-row states your verdict, the question, the category and the share who got it right
-(`CSS · 22% right`), and the share again as a toned badge; the latest revealed poll
-stands open, and any row opens to one line per option: letter, label, a distribution
-bar, an **answer** badge on the right option, a **You** badge on your pick, the faces
-who picked it and the vote count. A mirrored answer counts as right when it named
+row states your verdict, the question, the category as a badge and the share who got
+it right as a toned badge; on a phone the verdict and share sit above the question. The
+latest revealed poll stands open, and any row opens to one line per option: letter,
+label, a distribution bar, an **answer** badge on the right option, the faces who picked
+it (your own face marks your pick; on a phone they sit under the bar) and, on wider
+screens, the vote count. Once a run has ended, won or dead, **Review answers** opens its
+last gate's answers and returns to the run's result. A mirrored answer counts as right when it named
 every wrong option, since it proves the same knowledge. **Redaction keeps it fair**:
 a poll you have reached but not answered shows only its question, and a slot not yet
 dealt reads `Poll 5 · not dealt yet`; neither names its category.

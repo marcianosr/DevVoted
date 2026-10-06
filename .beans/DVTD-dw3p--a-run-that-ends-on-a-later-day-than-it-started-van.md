@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: critical
 created_at: 2026-10-06T08:40:14Z
-updated_at: 2026-10-06T08:43:28Z
+updated_at: 2026-10-06T08:52:27Z
 ---
 
 **What:** When a run falls or wins on a later day than it started, the hub shows no run and the community board shows nobody.
@@ -13,9 +13,12 @@ updated_at: 2026-10-06T08:43:28Z
 **Why:** Most runs span several days, so most players never see their game-over screen or today's board after their run ends.
 
 ## Done when
-- [ ] A run that ended today shows its over screen on the hub, whatever day it started
+- [x] A run that ended today shows its over screen on the hub, whatever day it started
 - [ ] The community board counts today's players for a player whose run ended today
 - [x] The changelog states the fix
 
 ## Notes
 Today's run was looked up by seed_date, which is only written when the run is created. A finished run is now also found by finished_at falling inside today. Found while chasing DVTD-25es: the owner's run died at gate 2 on 2026-10-06 after starting on an earlier day.
+
+## Summary of Changes
+findSessionRunByDate became findTodaysSessionRun: seed_date is today OR finished_at falls inside today. Both getTodaysRun and the community board use it. Shipped in v2.0.5 (PR #118); confirmed on the owner's prod hub on 2026-10-06.

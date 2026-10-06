@@ -12,7 +12,6 @@ import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftTod
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { POLLS_PATH, SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
-import { WIKI_PATH } from "~/shared/lib/wikiPath";
 import { isAdminEmail } from "~/shared/utils/adminAuth";
 import { AppNav, type NavViewer } from "~/ui/kanto-theme/AppNav.ui";
 import type { NavRunReading } from "~/ui/kanto-theme/useNavRun.hook";
@@ -72,7 +71,6 @@ export const Nav = ({ user, published }: NavProps) => {
 				active: isInTheRun(pathname),
 			}}
 			community={{ href: COMMUNITY, active: pathname === COMMUNITY }}
-			wiki={{ href: WIKI_PATH, active: pathname.startsWith(WIKI_PATH) }}
 			suggest={{
 				href: SUGGEST_POLL_PATH,
 				active: pathname === SUGGEST_POLL_PATH,

@@ -373,7 +373,6 @@ const simulateCommunityScreen = (
 				percent: Math.round((votes / climbers) * 100),
 				votes,
 				isRight: option.correct,
-				yours,
 				voters: [...(yours ? [YOU] : []), ...pickers.map(climberOf)],
 			};
 		});

@@ -80,7 +80,6 @@ export type CommunityOptionResult = {
 	isRight: boolean;
 	count: number;
 	percent: number;
-	yours: boolean;
 	voters: CommunityVoter[];
 };
 
@@ -226,7 +225,6 @@ const buildPollDetail = (
 				isRight: option.correct,
 				count: pickers.length,
 				percent: toPercent(pickers.length, pollAnswers.length),
-				yours: viewerAnswer.optionIds.has(option.id),
 				voters: viewerFirst(
 					pickers.map((answer) => ({
 						...answer.user,

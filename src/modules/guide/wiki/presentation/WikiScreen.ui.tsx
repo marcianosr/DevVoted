@@ -27,25 +27,24 @@ export const COPY = {
 	contents: "contents",
 } as const;
 
-const THEME = "cerulean";
+const THEME = "pallet";
 
 const LAYOUT =
 	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]";
 const CONTENTS = "lg:sticky lg:top-4";
 const ENTRY = "flex min-w-0 flex-col gap-0.5";
-const SECTION = "flex flex-col gap-3";
+const SECTION = "flex flex-col gap-2";
 const TABLE_SCROLL =
 	"w-full overflow-x-auto rounded-lg border border-theme-faint";
 const TABLE = "w-full border-collapse text-left text-sm";
 const HEAD_CELL =
-	"bg-theme-raised px-3 py-2 text-xs font-normal whitespace-nowrap text-theme-muted";
-const CELL = "border-t border-theme-faint px-3 py-2 align-top";
+	"bg-theme-raised px-3 py-1.5 text-xs font-normal whitespace-nowrap text-theme-muted";
+const CELL = "border-t border-theme-faint px-3 py-1.5 align-top";
 const TERMS =
 	"grid gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,10rem)_minmax(0,1fr)]";
 const TERM_ROW = "contents";
 const TERM = "font-bold";
-const FIGURE =
-	"flex flex-col gap-2 rounded-lg border border-theme-faint px-4 py-3";
+const FIGURE = "flex flex-col gap-1.5 py-1";
 const SWATCHES = "flex w-full justify-center overflow-x-auto py-1";
 
 export type WikiScreenProps = {

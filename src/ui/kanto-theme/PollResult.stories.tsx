@@ -46,7 +46,6 @@ const REVEALED: PollResultProps = {
 			percent: 58,
 			votes: 698,
 			isRight: false,
-			yours: true,
 			voters: [
 				{ name: "Marciano", you: true },
 				{ name: "Lt. Surge", borderUrl: "/borders/border-css-cerulean.svg" },
