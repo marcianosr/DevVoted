@@ -5,6 +5,7 @@ import type {
 import {
 	createPollWithOptions,
 	fetchUnannouncedPublishedPolls,
+	markPollReviewed,
 	markPollsAnnounced,
 	updatePollWithOptions,
 	type AnnouncedPoll,
@@ -34,14 +35,32 @@ export const suggestPoll = async (
 		"suggestPoll"
 	);
 
+const editAndReview = async ({
+	id,
+	poll,
+	options,
+	reviewed = false,
+}: UpdatePollInput): Promise<Poll> => {
+	const edited = await updatePollWithOptions(id, poll, options);
+	return reviewed ? markPollReviewed(id, new Date()) : edited;
+};
+
 export const editPoll = async (
 	viewer: PollViewer,
-	{ id, poll, options }: UpdatePollInput
+	edit: UpdatePollInput
+): Promise<ApiResponse<Poll>> =>
+	canAdministerPolls(viewer)
+		? handleApiOperation(() => editAndReview(edit), "editPoll")
+		: createErrorResponse(new Error(ADMIN_REQUIRED));
+
+export const reviewPoll = async (
+	viewer: PollViewer,
+	pollId: number
 ): Promise<ApiResponse<Poll>> =>
 	canAdministerPolls(viewer)
 		? handleApiOperation(
-				() => updatePollWithOptions(id, poll, options),
-				"editPoll"
+				() => markPollReviewed(pollId, new Date()),
+				"reviewPoll"
 			)
 		: createErrorResponse(new Error(ADMIN_REQUIRED));
 

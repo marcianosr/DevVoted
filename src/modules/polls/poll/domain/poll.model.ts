@@ -20,6 +20,7 @@ export type Poll = {
 	codeBlock: string | null;
 	explanation: string | null;
 	pollNumber: number | null;
+	reviewedAt: Date | null;
 };
 
 export type PollCreator = {

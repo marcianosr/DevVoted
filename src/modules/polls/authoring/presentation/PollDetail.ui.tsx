@@ -4,14 +4,14 @@ import type {
 	PollDetailData,
 	PollDetailView,
 } from "~/modules/polls/authoring/application/pollDetail.viewmodel";
+import type { PollStep } from "~/modules/polls/authoring/application/pollList.viewmodel";
+import { PollStepper } from "~/modules/polls/authoring/presentation/PollStepper.ui";
 import type { PollStatus } from "~/modules/polls/poll/domain/poll.model";
 import { PollCodeSandboxEmbed } from "~/modules/polls/poll/presentation/PollCodeSandboxEmbed.ui";
-import { POLLS_PATH, pollPathFor } from "~/shared/lib/pollPath";
 import { Author } from "~/ui/kanto-theme/Author.ui";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import { Link } from "~/ui/kanto-theme/Link.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import {
 	CodeSpans,
@@ -23,8 +23,9 @@ import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 export const COPY = {
-	back: "← Polls",
 	edit: "Edit poll",
+	review: "Mark reviewed",
+	reviewed: "reviewed",
 	view: "Show the poll",
 	player: "as a player",
 	answer: "with the answer",
@@ -46,7 +47,8 @@ const STATUS_COLOR = {
 } satisfies Record<PollStatus, KantoColor>;
 
 const TOP_ROW = "flex w-full flex-wrap items-center gap-3";
-const EDIT = "ml-auto";
+const EDIT = "ml-auto flex items-center gap-2";
+const REVIEWED_COLOR: KantoColor = "celadon";
 const META_REGION =
 	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3";
 const META_TRAILING = "flex flex-wrap items-center gap-2 sm:ml-auto";
@@ -79,6 +81,11 @@ export const PollDetailError = ({ message }: { message: string }) => {
 
 export type PollDetailProps = PollDetailData & {
 	canEdit: boolean;
+	editHref: string;
+	listHref: string;
+	step?: PollStep;
+	reviewed?: boolean;
+	onReview?: () => void;
 	view: PollDetailView;
 	onView: (view: PollDetailView) => void;
 };
@@ -106,8 +113,18 @@ const Credit = ({
 	</Panel.Footer>
 );
 
+const Review = ({
+	reviewed,
+	onReview,
+}: Pick<PollDetailProps, "reviewed" | "onReview">): ReactNode => {
+	if (reviewed) return <Badge color={REVIEWED_COLOR}>{COPY.reviewed}</Badge>;
+	if (onReview === undefined) return null;
+	return (
+		<Button label={COPY.review} tone="ambient" size="md" onPress={onReview} />
+	);
+};
+
 export const PollDetail = ({
-	id,
 	number,
 	category,
 	status,
@@ -117,20 +134,21 @@ export const PollDetail = ({
 	author,
 	explanation,
 	canEdit,
+	editHref,
+	listHref,
+	step,
+	reviewed = false,
+	onReview,
 	view,
 	onView,
 }: PollDetailProps) => (
 	<Screen theme={THEME} width="default" ground="bare">
 		<div className={TOP_ROW}>
-			<Link href={POLLS_PATH}>{COPY.back}</Link>
+			<PollStepper listHref={listHref} step={step} />
 			{canEdit ? (
 				<span className={EDIT}>
-					<Button
-						label={COPY.edit}
-						tone="action"
-						size="md"
-						href={`${pollPathFor(id)}/edit`}
-					/>
+					<Review reviewed={reviewed} onReview={onReview} />
+					<Button label={COPY.edit} tone="action" size="md" href={editHref} />
 				</span>
 			) : null}
 		</div>

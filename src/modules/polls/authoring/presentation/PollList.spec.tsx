@@ -26,6 +26,7 @@ const flex: PollRow = {
 	facts: "single answer",
 	author: { name: "Misty" },
 	status: "published",
+	reviewed: true,
 };
 
 const log: PollRow = {
@@ -36,6 +37,7 @@ const log: PollRow = {
 	question: [{ kind: "text", text: "What does this log?" }],
 	facts: "single answer · code",
 	status: "draft",
+	reviewed: false,
 };
 
 const choices: PollListChoices = {
@@ -61,6 +63,11 @@ const choices: PollListChoices = {
 		{ value: "never", label: "never", count: 40 },
 		{ value: "once", label: "once", count: 50 },
 		{ value: "often", label: "2+ times", count: 6 },
+	],
+	reviewed: [
+		{ value: "all", label: "any", count: 96 },
+		{ value: "yes", label: "yes", count: 30 },
+		{ value: "no", label: "no", count: 66 },
 	],
 };
 
@@ -295,5 +302,35 @@ describe("PollList", () => {
 			screen.getByText("No polls match these filters.")
 		).toBeInTheDocument();
 		expect(screen.getByText(showing("showing 0 of 0"))).toBeInTheDocument();
+	});
+
+	it("filters on reviewed and marks a reviewed row, for an admin", async () => {
+		const onFilterChange = vi.fn();
+		renderList({ onFilterChange });
+
+		await userEvent.selectOptions(
+			screen.getByRole("combobox", { name: "reviewed" }),
+			"no"
+		);
+
+		expect(onFilterChange).toHaveBeenCalledWith(
+			expect.objectContaining({ reviewed: "no" })
+		);
+		expect(
+			within(screen.getByRole("link", { name: /flex: 1/ })).getByText(
+				"reviewed"
+			)
+		).toBeInTheDocument();
+		expect(
+			within(screen.getByRole("link", { name: /this log/ })).queryByText(
+				"reviewed"
+			)
+		).toBeNull();
+	});
+
+	it("keeps the reviewed filter off a player's own list", () => {
+		renderList({ admin: false });
+
+		expect(screen.queryByRole("combobox", { name: "reviewed" })).toBeNull();
 	});
 });

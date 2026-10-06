@@ -26,6 +26,8 @@ const meta: Meta<typeof PollDetail> = {
 		explanation:
 			"`absolute` takes the box out of flow and places it against the nearest ancestor that is not `static`.",
 		canEdit: true,
+		editHref: "/polls/1/edit",
+		listHref: "/polls",
 		view: "player",
 		onView: () => {},
 	},

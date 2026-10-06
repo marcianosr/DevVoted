@@ -4,6 +4,8 @@ import type {
 	PollFormState,
 	PollFormView,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
+import type { PollStep } from "~/modules/polls/authoring/application/pollList.viewmodel";
+import { PollStepper } from "~/modules/polls/authoring/presentation/PollStepper.ui";
 import {
 	POLL_LIMITS,
 	type AnswerType,
@@ -15,7 +17,10 @@ import { Keycap } from "~/ui/kanto-theme/Keycap.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Question, type QuestionProps } from "~/ui/kanto-theme/Question.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
-import { ScreenActions } from "~/ui/kanto-theme/ScreenFooter.ui";
+import {
+	ScreenActions,
+	type FooterAction,
+} from "~/ui/kanto-theme/ScreenFooter.ui";
 import { Segmented, type SegmentedItem } from "~/ui/kanto-theme/Segmented.ui";
 import { Select, type SelectOption } from "~/ui/kanto-theme/Select.ui";
 import { TextArea } from "~/ui/kanto-theme/TextArea.ui";
@@ -55,6 +60,8 @@ const COPY = {
 	explanationPlaceholder: "Why is the right answer right?",
 	suggest: SUGGEST_A_POLL,
 	save: "Save poll",
+	saveAndNext: "Save & next",
+	saveAndFinish: "Save & back to list",
 	saving: "Saving…",
 } as const;
 
@@ -87,6 +94,33 @@ const titleOf = (mode: PollFormMode, pollNumber: number | undefined) =>
 
 const submitLabelOf = (mode: PollFormMode) =>
 	mode === "edit" ? COPY.save : COPY.suggest;
+
+const pressOf = (saving: boolean, onPress: (() => void) | undefined) =>
+	saving ? undefined : onPress;
+
+const actionsOf = (
+	mode: PollFormMode,
+	saving: boolean,
+	nextAhead: boolean,
+	onSubmit: (() => void) | undefined,
+	onSubmitAndNext: (() => void) | undefined
+): { action: FooterAction; asides?: readonly FooterAction[] } => {
+	const save = {
+		label: submitLabelOf(mode),
+		onPress: pressOf(saving, onSubmit),
+	};
+	if (onSubmitAndNext === undefined) return { action: save };
+	return {
+		action: {
+			label: nextAhead ? COPY.saveAndNext : COPY.saveAndFinish,
+			onPress: pressOf(
+				saving,
+				onSubmit === undefined ? undefined : onSubmitAndNext
+			),
+		},
+		asides: [save],
+	};
+};
 
 type AnswerProps = {
 	row: AnswerRow;
@@ -147,6 +181,9 @@ export type PollFormProps = {
 	refusal?: string;
 	error?: string;
 	saving: boolean;
+	listHref?: string;
+	step?: PollStep;
+	nextAhead?: boolean;
 	onQuestion: (question: string) => void;
 	onView: (view: PollFormView) => void;
 	onAnswerType: (answerType: AnswerType) => void;
@@ -159,6 +196,7 @@ export type PollFormProps = {
 	onSandbox: (value: string) => void;
 	onExplanation: (value: string) => void;
 	onSubmit?: () => void;
+	onSubmitAndNext?: () => void;
 };
 
 export const PollForm = ({
@@ -175,6 +213,9 @@ export const PollForm = ({
 	refusal,
 	error,
 	saving,
+	listHref,
+	step,
+	nextAhead = false,
 	onQuestion,
 	onView,
 	onAnswerType,
@@ -187,8 +228,12 @@ export const PollForm = ({
 	onSandbox,
 	onExplanation,
 	onSubmit,
+	onSubmitAndNext,
 }: PollFormProps) => (
 	<Screen theme={THEME} ground="bare">
+		{listHref === undefined ? null : (
+			<PollStepper listHref={listHref} step={step} />
+		)}
 		<div className={HEAD}>
 			<div className={TITLE_ROW}>
 				<span aria-hidden className={MARK} />
@@ -333,10 +378,7 @@ export const PollForm = ({
 		)}
 
 		<ScreenActions
-			action={{
-				label: submitLabelOf(mode),
-				onPress: saving ? undefined : onSubmit,
-			}}
+			{...actionsOf(mode, saving, nextAhead, onSubmit, onSubmitAndNext)}
 			refusal={refusal}
 			note={saving ? COPY.saving : undefined}
 		/>

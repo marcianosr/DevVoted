@@ -1664,7 +1664,11 @@ queue if it is ever wanted.
 
 ✅ **Custom poll creation**: any player suggests a poll, an admin publishes it, and the
 first publish banks its author 16 KB of archived storage (ADR-185). Pay per answer
-(DVTD-ofah) is still open.
+(DVTD-ofah) is still open. An admin reviews the catalogue as a queue (DVTD-l6yi): the
+poll list's filters live in the URL, a poll's page and form step to the poll before and
+after it in that filtered list, and **Save & next** saves, marks the poll reviewed
+(`polls.reviewed_at`, separate from `updated_at`, which status changes and payouts also
+touch) and opens the next poll's form. Filtering on `reviewed no` empties as you go.
 
 **Loot and fallen runs** (ADR-135): a run that died today carries whatever storage
 the archive credit left behind — `held − round(held × gates / 13)`, the same figure

@@ -5,6 +5,7 @@ import {
 	acknowledgeApprovals,
 	editPoll,
 	getApprovalNotice,
+	reviewPoll,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
 import {
@@ -23,6 +24,12 @@ export const updatePoll = createServerFn({ method: "POST" })
 	.validator(updatePollSchema)
 	.handler(({ data }) =>
 		withAuthenticatedUser((session) => editPoll(session, data))
+	);
+
+export const markPollReviewed = createServerFn({ method: "POST" })
+	.validator(z.object({ id: z.number().int().positive() }))
+	.handler(({ data }) =>
+		withAuthenticatedUser((session) => reviewPoll(session, data.id))
 	);
 
 export const getPollApprovalNotice = createServerFn({ method: "GET" }).handler(

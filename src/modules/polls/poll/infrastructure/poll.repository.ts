@@ -31,6 +31,7 @@ export const toPoll = (record: PollRecord): Poll => ({
 	codeBlock: record.code_block,
 	explanation: record.explanation,
 	pollNumber: record.poll_number,
+	reviewedAt: record.reviewed_at,
 });
 
 const toPollOption = (record: PollOptionRecord): PollOption => ({
@@ -76,7 +77,7 @@ export const fetchPollsIn = async (scope: PollScope): Promise<Poll[]> => {
 		.select()
 		.from(pollsTable)
 		.where(scopeFilterOf(scope))
-		.orderBy(pollsTable.created_at);
+		.orderBy(pollsTable.created_at, pollsTable.id);
 
 	return records.map(toPoll);
 };

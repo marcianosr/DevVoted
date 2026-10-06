@@ -96,6 +96,23 @@ export const createPollWithOptions = async (
 		return toPoll(record);
 	});
 
+export const markPollReviewed = async (
+	pollId: number,
+	reviewedAt: Date
+): Promise<Poll> => {
+	const [record] = await db
+		.update(pollsTable)
+		.set({ reviewed_at: reviewedAt })
+		.where(eq(pollsTable.id, pollId))
+		.returning();
+
+	if (!record) {
+		throw new Error("Poll not found");
+	}
+
+	return toPoll(record);
+};
+
 type ExistingOption = NewPollOption & { id: number };
 
 const isExistingOption = (option: UpdatePollOption): option is ExistingOption =>
