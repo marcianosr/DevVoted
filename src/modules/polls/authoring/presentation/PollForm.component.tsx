@@ -23,6 +23,7 @@ import {
 	type PollFormState,
 	type PollFormView,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
+import type { PollStep } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import { PollForm as PollFormUI } from "~/modules/polls/authoring/presentation/PollForm.ui";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
@@ -33,7 +34,10 @@ export type PollFormProps = {
 	statuses?: readonly SelectOption[];
 	error?: string;
 	submitting: boolean;
+	listHref?: string;
+	step?: PollStep;
 	onSubmit: (data: PollFormData) => void;
+	onSubmitAndNext?: (data: PollFormData) => void;
 };
 
 export const PollForm = ({
@@ -43,11 +47,15 @@ export const PollForm = ({
 	statuses,
 	error,
 	submitting,
+	listHref,
+	step,
 	onSubmit,
+	onSubmitAndNext,
 }: PollFormProps) => {
 	const [state, setState] = useState<PollFormState>(initial ?? EMPTY_POLL_FORM);
 	const [view, setView] = useState<PollFormView>("write");
 	const refusal = refusalOf(state);
+	const ready = refusal === undefined && !submitting;
 
 	return (
 		<PollFormUI
@@ -91,10 +99,14 @@ export const PollForm = ({
 			onExplanation={(explanation) =>
 				setState((current) => ({ ...current, explanation }))
 			}
-			onSubmit={
-				refusal === undefined && !submitting
-					? () => onSubmit(toPollFormData(state))
-					: undefined
+			listHref={listHref}
+			step={step}
+			nextAhead={step?.nextHref !== undefined}
+			onSubmit={ready ? () => onSubmit(toPollFormData(state)) : undefined}
+			onSubmitAndNext={
+				onSubmitAndNext === undefined
+					? undefined
+					: () => onSubmitAndNext(toPollFormData(state))
 			}
 		/>
 	);

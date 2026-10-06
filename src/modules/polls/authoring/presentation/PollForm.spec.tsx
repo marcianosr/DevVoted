@@ -231,3 +231,43 @@ describe("PollForm", () => {
 		).toHaveAttribute("data-screen-theme", "cinnabar");
 	});
 });
+
+describe("PollForm walking a filtered list", () => {
+	it("leads with save and next, keeping a plain save beside it", async () => {
+		const onSubmit = vi.fn();
+		const onSubmitAndNext = vi.fn();
+		renderForm({ mode: "edit", onSubmit, onSubmitAndNext, nextAhead: true });
+
+		await userEvent.click(screen.getByRole("button", { name: /Save & next/ }));
+		await userEvent.click(screen.getByRole("button", { name: /Save poll/ }));
+
+		expect(onSubmitAndNext).toHaveBeenCalledOnce();
+		expect(onSubmit).toHaveBeenCalledOnce();
+	});
+
+	it("names the last poll's review as the end of the list", () => {
+		renderForm({
+			mode: "edit",
+			onSubmitAndNext: vi.fn(),
+			nextAhead: false,
+		});
+
+		expect(
+			screen.getByRole("button", { name: /Save & back to list/ })
+		).toBeInTheDocument();
+	});
+
+	it("steps to the polls either side of this one in the list", () => {
+		renderForm({
+			mode: "edit",
+			listHref: "/polls?category=css",
+			step: { position: 3, total: 9, nextHref: "/polls/12/edit?category=css" },
+		});
+
+		expect(screen.getByRole("link", { name: "next ›" })).toHaveAttribute(
+			"href",
+			"/polls/12/edit?category=css"
+		);
+		expect(screen.getByText("3 of 9")).toBeInTheDocument();
+	});
+});

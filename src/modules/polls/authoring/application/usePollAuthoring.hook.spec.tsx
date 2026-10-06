@@ -40,13 +40,15 @@ const FORM: PollFormData = {
 	],
 };
 
-const setup = (pollId?: number) => {
+const setup = (pollId?: number, afterReview?: string) => {
 	const queryClient = createTestQueryClient();
 	queryClient.setQueryData(pollQueryKeys.authored(), { success: true });
 	const wrapper = ({ children }: { children: ReactNode }) => (
 		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 	);
-	const { result } = renderHook(() => usePollAuthoring(pollId), { wrapper });
+	const { result } = renderHook(() => usePollAuthoring(pollId, afterReview), {
+		wrapper,
+	});
 	return { queryClient, result };
 };
 
@@ -92,8 +94,35 @@ describe("usePollAuthoring", () => {
 				params: { pollId: "74" },
 			})
 		);
-		expect(updatePoll).toHaveBeenCalledWith({ data: { id: 74, ...FORM } });
+		expect(updatePoll).toHaveBeenCalledWith({
+			data: { id: 74, ...FORM, reviewed: false },
+		});
 		expect(createPoll).not.toHaveBeenCalled();
+	});
+
+	it("saves the edit as reviewed and opens the next poll's form", async () => {
+		vi.mocked(updatePoll).mockResolvedValue({
+			success: true,
+			data: createMockPoll({ id: 74 }),
+		});
+		const { result } = setup(74, "/polls/75/edit?category=css");
+
+		act(() => result.current.submitAndNext?.(FORM));
+
+		await waitFor(() =>
+			expect(navigate).toHaveBeenCalledWith({
+				href: "/polls/75/edit?category=css",
+			})
+		);
+		expect(updatePoll).toHaveBeenCalledWith({
+			data: { id: 74, ...FORM, reviewed: true },
+		});
+	});
+
+	it("offers no save and next without a poll to go to", () => {
+		const { result } = setup(74);
+
+		expect(result.current.submitAndNext).toBeUndefined();
 	});
 
 	it("states a refused save and stays on the form", async () => {

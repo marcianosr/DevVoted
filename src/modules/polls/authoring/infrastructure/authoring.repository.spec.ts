@@ -4,6 +4,7 @@ import { db } from "~/database/db";
 import { pollsTable, usersTable } from "~/database/schema";
 import {
 	fetchUnannouncedPublishedPolls,
+	markPollReviewed,
 	markPollsAnnounced,
 	payAuthorOnFirstPublish,
 } from "~/modules/polls/authoring/infrastructure/authoring.repository";
@@ -88,5 +89,27 @@ describe("markPollsAnnounced", () => {
 		await markPollsAnnounced(BROCK, []);
 
 		expect(mock.updateTables).toEqual([]);
+	});
+});
+
+describe("markPollReviewed", () => {
+	const REVIEWED_AT = new Date("2026-12-25T09:00:00Z");
+
+	it("stamps the poll reviewed at the time it was given", async () => {
+		mock.results.push([{ id: POLL_ID, reviewed_at: REVIEWED_AT }]);
+
+		const poll = await markPollReviewed(POLL_ID, REVIEWED_AT);
+
+		expect(mock.updateTables).toEqual([pollsTable]);
+		expect(mock.setCalls[0]).toEqual({ reviewed_at: REVIEWED_AT });
+		expect(poll.reviewedAt).toEqual(REVIEWED_AT);
+	});
+
+	it("refuses a poll that does not exist", async () => {
+		mock.results.push([]);
+
+		await expect(markPollReviewed(POLL_ID, REVIEWED_AT)).rejects.toThrow(
+			"Poll not found"
+		);
 	});
 });

@@ -35,6 +35,7 @@ export const COPY = {
 	status: "status",
 	answerType: "answer",
 	dealt: "dealt",
+	reviewed: "reviewed",
 	withCode: "with code",
 	withExplanation: "with explanation",
 	category: "Category",
@@ -56,6 +57,8 @@ export const COPY = {
 
 const THEME: KantoColor = "cerulean";
 const ERROR_THEME: KantoColor = "cinnabar";
+
+const REVIEWED_COLOR: KantoColor = "celadon";
 
 const STATUS_COLOR = {
 	published: "viridian",
@@ -82,7 +85,7 @@ const QUESTION_TEXT = "truncate text-sm font-bold text-theme-faint";
 const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
 const BY = "flex w-28 shrink-0 items-center gap-2";
 const AUTHOR_NAME = "truncate text-xs text-theme-soft";
-const STATUS = "flex w-24 shrink-0 justify-end";
+const STATUS = "flex w-44 shrink-0 flex-wrap justify-end gap-1";
 
 const columnsOf = (admin: boolean): readonly PanelColumn[] => [
 	{ label: COPY.numberColumn, width: NUMBER },
@@ -140,6 +143,9 @@ const Row = ({ row, admin }: { row: PollRow; admin: boolean }) => (
 			<Question segments={row.question} facts={row.facts} />
 			{admin ? <Author author={row.author} /> : null}
 			<span className={STATUS}>
+				{admin && row.reviewed ? (
+					<Badge color={REVIEWED_COLOR}>{COPY.reviewed}</Badge>
+				) : null}
 				<Badge color={STATUS_COLOR[row.status]}>{row.status}</Badge>
 			</span>
 		</span>
@@ -265,6 +271,24 @@ export const PollList = ({
 							})
 						}
 					/>
+					{admin ? (
+						<Select
+							look="inline"
+							label={COPY.reviewed}
+							options={choices.reviewed}
+							value={filter.reviewed}
+							onChange={(reviewed) =>
+								onFilterChange({
+									...filter,
+									reviewed: pickedOf(
+										choices.reviewed,
+										reviewed,
+										filter.reviewed
+									),
+								})
+							}
+						/>
+					) : null}
 					{choices.creator === undefined ? null : (
 						<Select
 							look="inline"

@@ -185,6 +185,7 @@ export const pollsTable = pgTable("polls", {
 	author_announced_at: timestamp("author_announced_at", {
 		withTimezone: true,
 	}),
+	reviewed_at: timestamp("reviewed_at", { withTimezone: true }),
 }).enableRLS();
 
 export const dailyPollsTable = pgTable("daily_polls", {

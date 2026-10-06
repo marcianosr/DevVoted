@@ -5,6 +5,15 @@ import {
 	pollDetailViewOf,
 } from "~/modules/polls/authoring/application/pollDetail.viewmodel";
 import {
+	pollListHrefOf,
+	pollListFilterOf,
+	pollListQueryOf,
+	pollListSearchOf,
+	pollScreenHrefOf,
+} from "~/modules/polls/authoring/application/pollList.viewmodel";
+import { usePollReview } from "~/modules/polls/authoring/application/usePollReview.hook";
+import { usePollStep } from "~/modules/polls/authoring/application/usePollStep.hook";
+import {
 	PollDetail as PollDetailUI,
 	PollDetailError,
 	PollDetailLoading,
@@ -16,10 +25,15 @@ import { pollQueryKeys } from "~/shared/queryKeys";
 
 type PollDetailProps = {
 	pollId: number;
+	search: Record<string, unknown>;
 };
 
-export const PollDetail = ({ pollId }: PollDetailProps) => {
+export const PollDetail = ({ pollId, search }: PollDetailProps) => {
+	const filter = pollListFilterOf(pollListSearchOf(search));
 	const { view, isPending, errorMessage } = usePollDetail(pollId);
+	const step = usePollStep(pollId, filter, "detail");
+	const review = usePollReview(pollId);
+	const query = pollListQueryOf(filter);
 	const creators = useApiQuery({
 		queryKey: pollQueryKeys.creators(),
 		queryFn: () => getPollCreators(),
@@ -40,6 +54,13 @@ export const PollDetail = ({ pollId }: PollDetailProps) => {
 				shown
 			)}
 			canEdit={view.canAdminister}
+			editHref={pollScreenHrefOf(pollId, "edit", query)}
+			listHref={pollListHrefOf(query)}
+			step={step}
+			reviewed={view.poll.reviewedAt !== null}
+			onReview={
+				view.canAdminister && !review.reviewing ? review.review : undefined
+			}
 			view={shown}
 			onView={setShown}
 		/>

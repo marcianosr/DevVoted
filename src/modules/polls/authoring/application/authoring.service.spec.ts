@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	acknowledgeApprovals,
 	editPoll,
+	reviewPoll,
 	getApprovalNotice,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
@@ -17,11 +18,14 @@ vi.mock(
 		updatePollWithOptions: vi.fn(),
 		fetchUnannouncedPublishedPolls: vi.fn(),
 		markPollsAnnounced: vi.fn(),
+		markPollReviewed: vi.fn(),
 	})
 );
 
 const BROCK = "11111111-1111-4111-8111-111111111111";
 const OAK = "22222222-2222-4222-8222-222222222222";
+
+const REVIEWED_AT = new Date("2026-12-25T09:00:00Z");
 
 const brock = { userId: BROCK, isAdmin: false };
 const oak = { userId: OAK, isAdmin: true };
@@ -58,6 +62,9 @@ beforeEach(() => {
 	);
 	vi.mocked(authoringRepository.updatePollWithOptions).mockResolvedValue(
 		createMockPoll({ id: 74 })
+	);
+	vi.mocked(authoringRepository.markPollReviewed).mockResolvedValue(
+		createMockPoll({ id: 74, reviewedAt: REVIEWED_AT })
 	);
 });
 
@@ -98,6 +105,46 @@ describe("editPoll", () => {
 			edit.options
 		);
 		expect(result).toEqual({ success: true, data: createMockPoll({ id: 74 }) });
+		expect(authoringRepository.markPollReviewed).not.toHaveBeenCalled();
+	});
+
+	it("stamps the edit reviewed when the admin saved it as reviewed", async () => {
+		vi.useFakeTimers({ now: REVIEWED_AT });
+
+		const result = await editPoll(oak, { ...edit, reviewed: true });
+
+		expect(authoringRepository.updatePollWithOptions).toHaveBeenCalled();
+		expect(authoringRepository.markPollReviewed).toHaveBeenCalledWith(
+			74,
+			REVIEWED_AT
+		);
+		expect(result).toEqual({
+			success: true,
+			data: createMockPoll({ id: 74, reviewedAt: REVIEWED_AT }),
+		});
+		vi.useRealTimers();
+	});
+});
+
+describe("reviewPoll", () => {
+	it("refuses a player before the repository sees it", async () => {
+		const result = await reviewPoll(brock, 74);
+
+		expect(result).toEqual({ success: false, error: ADMIN_REQUIRED });
+		expect(authoringRepository.markPollReviewed).not.toHaveBeenCalled();
+	});
+
+	it("stamps the poll reviewed for an admin", async () => {
+		const result = await reviewPoll(oak, 74);
+
+		expect(authoringRepository.markPollReviewed).toHaveBeenCalledWith(
+			74,
+			expect.any(Date)
+		);
+		expect(result).toEqual({
+			success: true,
+			data: createMockPoll({ id: 74, reviewedAt: REVIEWED_AT }),
+		});
 	});
 });
 

@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import {
@@ -7,7 +8,11 @@ import {
 	activeFiltersOf,
 	withoutFilter,
 	pollListChoicesOf,
+	pollListFilterOf,
+	pollListQueryOf,
+	pollListSearchOf,
 	pollRowsOf,
+	searchOfFilter,
 	visiblePollsOf,
 	windowOf,
 	type PollListFilter,
@@ -25,8 +30,13 @@ import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
 import { pollQueryKeys } from "~/shared/queryKeys";
 
-export const PollList = () => {
-	const [filter, setFilter] = useState<PollListFilter>(EMPTY_FILTER);
+type PollListProps = {
+	search: Record<string, unknown>;
+};
+
+export const PollList = ({ search }: PollListProps) => {
+	const navigate = useNavigate();
+	const filter = pollListFilterOf(pollListSearchOf(search));
 	const [shown, setShown] = useState(PAGE_SIZE);
 
 	const list = useApiQuery({
@@ -52,13 +62,22 @@ export const PollList = () => {
 	);
 	const known = canAdminister ? (creators.view ?? undefined) : undefined;
 	const page = windowOf(
-		pollRowsOf(visiblePollsOf(all, filter, deals), known, deals),
+		pollRowsOf(
+			visiblePollsOf(all, filter, deals),
+			known,
+			deals,
+			pollListQueryOf(filter)
+		),
 		shown
 	);
 	const choices = pollListChoicesOf(all, filter, known, deals);
 
 	const changeFilter = (next: PollListFilter) => {
-		setFilter(next);
+		void navigate({
+			to: "/polls",
+			search: searchOfFilter(next),
+			replace: true,
+		});
 		setShown(PAGE_SIZE);
 	};
 
