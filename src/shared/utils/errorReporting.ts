@@ -21,6 +21,20 @@ export const reportHandledFailure = (
 	});
 };
 
+type RecoverableErrorInfo = { componentStack?: string };
+
+export const reportRecoverableReactError = (
+	error: unknown,
+	errorInfo: RecoverableErrorInfo
+): void => {
+	console.error(error);
+	Sentry.captureException(error, {
+		level: "error",
+		tags: { operation: "react.recoverable" },
+		contexts: { react: { componentStack: errorInfo.componentStack } },
+	});
+};
+
 export const identifyUser = (userId: string): void => {
 	Sentry.setUser({ id: userId });
 };

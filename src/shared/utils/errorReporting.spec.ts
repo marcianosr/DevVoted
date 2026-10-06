@@ -5,6 +5,7 @@ import {
 	identifyUser,
 	reportApiFailure,
 	reportHandledFailure,
+	reportRecoverableReactError,
 } from "~/shared/utils/errorReporting";
 import { GYM_LEADERS } from "~/test/kanto";
 
@@ -96,6 +97,47 @@ describe("reportHandledFailure", () => {
 			expect.anything(),
 			expect.objectContaining({ extra: { requestedUserId: brock.name } })
 		);
+	});
+});
+
+describe("reportRecoverableReactError", () => {
+	const HYDRATION_MISMATCH = new Error("Minified React error #418");
+	const COMPONENT_STACK = "\n    at RunLayout\n    at Outlet";
+
+	it("hands React's component stack to Sentry, so a minified hydration mismatch names its component", () => {
+		reportRecoverableReactError(HYDRATION_MISMATCH, {
+			componentStack: COMPONENT_STACK,
+		});
+
+		expect(Sentry.captureException).toHaveBeenCalledWith(
+			HYDRATION_MISMATCH,
+			expect.objectContaining({
+				contexts: { react: { componentStack: COMPONENT_STACK } },
+			})
+		);
+	});
+
+	it("reports at error level under its own operation, so it alerts and searches apart from API failures", () => {
+		reportRecoverableReactError(HYDRATION_MISMATCH, {});
+
+		expect(Sentry.captureException).toHaveBeenCalledWith(
+			HYDRATION_MISMATCH,
+			expect.objectContaining({
+				level: "error",
+				tags: { operation: "react.recoverable" },
+			})
+		);
+	});
+
+	it("still prints to the console, so a developer with DevTools open sees what React recovered from", () => {
+		const consoleError = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+
+		reportRecoverableReactError(HYDRATION_MISMATCH, {});
+
+		expect(consoleError).toHaveBeenCalledWith(HYDRATION_MISMATCH);
+		consoleError.mockRestore();
 	});
 });
 
