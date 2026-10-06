@@ -29,7 +29,7 @@ import {
 	findSessionRunById,
 	countSessionRuns,
 	fetchOwnedSwatchIds,
-	findSessionRunByDate,
+	findTodaysSessionRun,
 	type SessionRunRecord,
 } from "~/modules/run/run/infrastructure/run.repository";
 import { fetchCategoryLeader } from "~/modules/run/run/infrastructure/categoryLeader.repository";
@@ -128,7 +128,7 @@ export const getTodaysRunService = async ({
 		const active = await findResumableRun(userId);
 		if (active) return continueActiveRun(active, date);
 
-		const startedToday = await findSessionRunByDate(userId, date);
+		const startedToday = await findTodaysSessionRun(userId, date);
 		if (!startedToday || !isFinishedRun(startedToday)) return null;
 		return viewOfRun(startedToday);
 	}, "getTodaysRun");

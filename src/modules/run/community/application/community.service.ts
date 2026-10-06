@@ -43,7 +43,7 @@ import {
 } from "~/modules/run/community/infrastructure/community.repository";
 import {
 	findActiveSessionRun,
-	findSessionRunByDate,
+	findTodaysSessionRun,
 } from "~/modules/run/run/infrastructure/run.repository";
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import {
@@ -430,7 +430,7 @@ export const getRunCommunityService = async ({
 	handleApiOperation(async () => {
 		const run =
 			(await findActiveSessionRun(userId)) ??
-			(await findSessionRunByDate(userId, date));
+			(await findTodaysSessionRun(userId, date));
 		if (!run) return EMPTY_VIEW(date, null);
 
 		const viewerAt = await fetchClimbMarker(run.id);
