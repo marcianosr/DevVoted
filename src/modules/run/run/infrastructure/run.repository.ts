@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, or, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import {
@@ -8,6 +8,7 @@ import {
 	runsTable,
 	usersTable,
 } from "~/database/schema";
+import { localDayRange } from "~/shared/lib/dateUtils";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { CHAMPION_BORDER_ID } from "~/modules/account/profile/domain/border.model";
 
@@ -74,10 +75,11 @@ export const findActiveSessionRun = async (
 	return run ?? null;
 };
 
-export const findSessionRunByDate = async (
+export const findTodaysSessionRun = async (
 	userId: string,
-	seedDate: string
+	date: string
 ): Promise<SessionRunRecord | null> => {
+	const today = localDayRange(date);
 	const [run] = await db
 		.select()
 		.from(runsTable)
@@ -85,7 +87,13 @@ export const findSessionRunByDate = async (
 			and(
 				eq(runsTable.user_id, userId),
 				eq(runsTable.mode, "session"),
-				eq(runsTable.seed_date, seedDate)
+				or(
+					eq(runsTable.seed_date, date),
+					and(
+						gte(runsTable.finished_at, today.start),
+						lt(runsTable.finished_at, today.end)
+					)
+				)
 			)
 		)
 		.orderBy(desc(runsTable.id))

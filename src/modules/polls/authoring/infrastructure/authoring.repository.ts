@@ -2,18 +2,16 @@ import { and, eq, inArray, isNull, not, notInArray, sql } from "drizzle-orm";
 
 import { db } from "~/database/db";
 import { pollOptionsTable, pollsTable, usersTable } from "~/database/schema";
-import {
-	APPROVED_POLL_ARCHIVE_KB,
-	type Poll,
-	type PollStatus,
-} from "~/modules/polls/poll/domain/poll.model";
+import type { Poll, PollStatus } from "~/modules/polls/poll/domain/poll.model";
+import type { PublishedCounts } from "~/modules/polls/poll/domain/pollBounty.model";
 import { toPoll } from "~/modules/polls/poll/infrastructure/poll.repository";
+import { isCategoryCode } from "~/shared/lib/categories";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 import { ADMIN_EMAILS } from "~/shared/utils/adminAuth";
 
 type Updater = Pick<typeof db, "update">;
 
-const APPROVED_POLL_ARCHIVE_BYTES = APPROVED_POLL_ARCHIVE_KB * STORAGE_UNITS.KB;
+const UNEDITED = { updated_at: sql`${pollsTable.updated_at}` };
 
 type NewPollOption = {
 	option: string;
@@ -36,7 +34,7 @@ type PollContent = {
 	explanation?: string | null;
 };
 
-type NewPoll = PollContent & { createdBy: string };
+type NewPoll = PollContent & { createdBy: string; authorRewardKb: number };
 
 type PollColumns<Content extends Partial<PollContent>> = {
 	question: Content["question"];
@@ -77,6 +75,7 @@ export const createPollWithOptions = async (
 			.values({
 				...pollColumnsOf(poll),
 				created_by: poll.createdBy,
+				author_reward_kb: poll.authorRewardKb,
 				opening_time: new Date(),
 				closing_time: new Date(),
 				poll_number: nextPollNumber,
@@ -100,6 +99,23 @@ export const createPollWithOptions = async (
 
 		return toPoll(record);
 	});
+
+export const markPollReviewed = async (
+	pollId: number,
+	reviewedAt: Date
+): Promise<Poll> => {
+	const [record] = await db
+		.update(pollsTable)
+		.set({ reviewed_at: reviewedAt, ...UNEDITED })
+		.where(eq(pollsTable.id, pollId))
+		.returning();
+
+	if (!record) {
+		throw new Error("Poll not found");
+	}
+
+	return toPoll(record);
+};
 
 type ExistingOption = NewPollOption & { id: number };
 
@@ -175,7 +191,7 @@ export const payAuthorOnFirstPublish = async (
 ): Promise<string | null> => {
 	const [paid] = await tx
 		.update(pollsTable)
-		.set({ author_paid_at: new Date() })
+		.set({ author_paid_at: new Date(), ...UNEDITED })
 		.where(
 			and(
 				eq(pollsTable.id, pollId),
@@ -183,14 +199,17 @@ export const payAuthorOnFirstPublish = async (
 				isNull(pollsTable.author_paid_at)
 			)
 		)
-		.returning({ author: pollsTable.created_by });
+		.returning({
+			author: pollsTable.created_by,
+			rewardKb: pollsTable.author_reward_kb,
+		});
 
 	if (!paid) return null;
 
 	const [credited] = await tx
 		.update(usersTable)
 		.set({
-			archived_storage: sql`${usersTable.archived_storage} + ${APPROVED_POLL_ARCHIVE_BYTES}`,
+			archived_storage: sql`${usersTable.archived_storage} + ${paid.rewardKb * STORAGE_UNITS.KB}`,
 		})
 		.where(
 			and(
@@ -203,13 +222,17 @@ export const payAuthorOnFirstPublish = async (
 	return credited?.id ?? null;
 };
 
-export type AnnouncedPoll = { id: number; question: string };
+export type AnnouncedPoll = { id: number; question: string; rewardKb: number };
 
 export const fetchUnannouncedPublishedPolls = async (
 	userId: string
 ): Promise<readonly AnnouncedPoll[]> =>
 	db
-		.select({ id: pollsTable.id, question: pollsTable.question })
+		.select({
+			id: pollsTable.id,
+			question: pollsTable.question,
+			rewardKb: pollsTable.author_reward_kb,
+		})
 		.from(pollsTable)
 		.where(
 			and(
@@ -228,7 +251,7 @@ export const markPollsAnnounced = async (
 
 	await db
 		.update(pollsTable)
-		.set({ author_announced_at: new Date() })
+		.set({ author_announced_at: new Date(), ...UNEDITED })
 		.where(
 			and(
 				eq(pollsTable.created_by, userId),
@@ -236,4 +259,37 @@ export const markPollsAnnounced = async (
 				isNull(pollsTable.author_announced_at)
 			)
 		);
+};
+
+export const fetchPublishedCounts = async (): Promise<PublishedCounts> => {
+	const rows = await db
+		.select({
+			code: pollsTable.category_code,
+			published: sql<number>`count(*)::int`,
+		})
+		.from(pollsTable)
+		.where(eq(pollsTable.status, "published"))
+		.groupBy(pollsTable.category_code);
+
+	return Object.fromEntries(
+		rows.flatMap(({ code, published }) =>
+			isCategoryCode(code) ? [[code, published]] : []
+		)
+	);
+};
+
+export const fetchPublishedCountIn = async (
+	categoryCode: string
+): Promise<number> => {
+	const [row] = await db
+		.select({ published: sql<number>`count(*)::int` })
+		.from(pollsTable)
+		.where(
+			and(
+				eq(pollsTable.status, "published"),
+				eq(pollsTable.category_code, categoryCode)
+			)
+		);
+
+	return row?.published ?? 0;
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createMockPoll } from "~/modules/polls/poll/domain/poll.factory";
 import type { PollCreator } from "~/modules/polls/poll/domain/poll.model";
+import { TEST_DATES } from "~/test/kanto";
 
 import {
 	ALL,
@@ -9,6 +10,12 @@ import {
 	PAGE_SIZE,
 	activeFiltersOf,
 	hasCode,
+	neighboursOf,
+	pollStepOf,
+	pollListFilterOf,
+	pollListQueryOf,
+	pollListSearchOf,
+	searchOfFilter,
 	withoutFilter,
 	pollFactsOf,
 	pollListChoicesOf,
@@ -16,6 +23,7 @@ import {
 	questionSegmentsOf,
 	visiblePollsOf,
 	windowOf,
+	type ReviewedFilter,
 } from "./pollList.viewmodel";
 
 const BROCK = "brock-id";
@@ -410,5 +418,235 @@ describe("windowOf", () => {
 			total: 0,
 			more: false,
 		});
+	});
+});
+
+describe("pollListSearchOf", () => {
+	it("keeps every filter the URL states with a value it allows", () => {
+		expect(
+			pollListSearchOf({
+				search: "flex",
+				status: "draft",
+				answerType: "multiple",
+				withCode: true,
+				withExplanation: "true",
+				dealt: "often",
+				category: "css",
+				creator: BROCK,
+			})
+		).toEqual({
+			search: "flex",
+			status: "draft",
+			answerType: "multiple",
+			withCode: true,
+			withExplanation: true,
+			dealt: "often",
+			category: "css",
+			creator: BROCK,
+		});
+	});
+
+	it("drops a value the filter does not allow instead of filtering on it", () => {
+		expect(
+			pollListSearchOf({
+				status: "deleted",
+				answerType: 3,
+				dealt: "twice",
+				category: "cobol",
+				withCode: "yes",
+			})
+		).toEqual({});
+	});
+
+	it("reads a search the router parsed as a number back as text", () => {
+		expect(pollListSearchOf({ search: 151 })).toEqual({ search: "151" });
+	});
+});
+
+describe("pollListFilterOf", () => {
+	it("fills every filter the search leaves out with its default", () => {
+		expect(pollListFilterOf({ status: "draft" })).toEqual({
+			...EMPTY_FILTER,
+			status: "draft",
+		});
+	});
+});
+
+describe("searchOfFilter", () => {
+	it("states only the filters that differ from the default", () => {
+		expect(
+			searchOfFilter({ ...EMPTY_FILTER, category: "css", withCode: true })
+		).toEqual({ category: "css", withCode: true });
+	});
+
+	it("leaves out a search that is only whitespace", () => {
+		expect(searchOfFilter({ ...EMPTY_FILTER, search: "  " })).toEqual({});
+	});
+
+	it("round-trips through the URL parser unchanged", () => {
+		const filter = {
+			...EMPTY_FILTER,
+			search: "flex",
+			status: "published",
+			withExplanation: true,
+		} satisfies typeof EMPTY_FILTER;
+
+		expect(pollListFilterOf(pollListSearchOf(searchOfFilter(filter)))).toEqual(
+			filter
+		);
+	});
+});
+
+describe("pollListQueryOf", () => {
+	it("is empty under the empty filter", () => {
+		expect(pollListQueryOf(EMPTY_FILTER)).toBe("");
+	});
+
+	it("states each set filter as a query parameter", () => {
+		expect(
+			pollListQueryOf({ ...EMPTY_FILTER, status: "draft", withCode: true })
+		).toBe("?status=draft&withCode=true");
+	});
+});
+
+describe("pollRowsOf with a query", () => {
+	it("carries the list's query onto every row's link", () => {
+		const [row] = pollRowsOf([flex], undefined, undefined, "?status=draft");
+
+		expect(row?.href).toBe("/polls/1?status=draft");
+	});
+});
+
+describe("neighboursOf", () => {
+	it("places a poll in the middle between the one before and after it", () => {
+		expect(neighboursOf(POLLS, 2)).toEqual({
+			position: 2,
+			total: 4,
+			previous: 1,
+			next: 3,
+		});
+	});
+
+	it("gives the first poll no previous and the last no next", () => {
+		expect(neighboursOf(POLLS, 1)).toEqual({ position: 1, total: 4, next: 2 });
+		expect(neighboursOf(POLLS, 4)).toEqual({
+			position: 4,
+			total: 4,
+			previous: 3,
+		});
+	});
+
+	it("has no neighbours for a poll the filter hides", () => {
+		expect(neighboursOf([flex, log], 2)).toBeUndefined();
+	});
+
+	it("has no neighbours in an empty list", () => {
+		expect(neighboursOf([], 1)).toBeUndefined();
+	});
+});
+
+describe("pollStepOf", () => {
+	it("links the neighbours on the same screen, keeping the list's query", () => {
+		expect(
+			pollStepOf(
+				{ position: 2, total: 4, previous: 1, next: 3 },
+				"?category=css",
+				"edit"
+			)
+		).toEqual({
+			position: 2,
+			total: 4,
+			previousHref: "/polls/1/edit?category=css",
+			nextHref: "/polls/3/edit?category=css",
+		});
+	});
+
+	it("leaves out the link a poll at the end of the list has no neighbour for", () => {
+		expect(pollStepOf({ position: 1, total: 1 }, "", "detail")).toEqual({
+			position: 1,
+			total: 1,
+		});
+	});
+});
+
+describe("the reviewed filter", () => {
+	const REVIEWED_AT = new Date(`${TEST_DATES.christmas}T09:00:00Z`);
+	const EDITED_AT = new Date(`${TEST_DATES.christmasEve}T09:00:00Z`);
+	const LATER_EDIT = new Date("2026-05-13T10:00:00Z");
+
+	const reviewed = createMockPoll({
+		id: 5,
+		pollNumber: 5,
+		updatedAt: EDITED_AT,
+		reviewedAt: REVIEWED_AT,
+	});
+	const changed = createMockPoll({
+		id: 6,
+		pollNumber: 6,
+		updatedAt: LATER_EDIT,
+		reviewedAt: REVIEWED_AT,
+	});
+	const WITH_REVIEWED = [...POLLS, reviewed, changed];
+
+	it("splits the polls into never reviewed, changed since review and up to date", () => {
+		const idsReviewed = (state: ReviewedFilter) =>
+			idsOf(
+				visiblePollsOf(WITH_REVIEWED, { ...EMPTY_FILTER, reviewed: state })
+			);
+
+		expect(idsReviewed("never")).toEqual([1, 2, 3, 4]);
+		expect(idsReviewed("changed")).toEqual([6]);
+		expect(idsReviewed("current")).toEqual([5]);
+	});
+
+	it("counts the polls in each review state", () => {
+		expect(pollListChoicesOf(WITH_REVIEWED, EMPTY_FILTER).reviewed).toEqual([
+			{ value: ALL, label: "any", count: 6 },
+			{ value: "never", label: "never reviewed", count: 4 },
+			{ value: "changed", label: "changed since review", count: 1 },
+			{ value: "current", label: "up to date", count: 1 },
+		]);
+	});
+
+	it("names a set review filter as a chip", () => {
+		const filter = {
+			...EMPTY_FILTER,
+			reviewed: "changed",
+		} satisfies typeof EMPTY_FILTER;
+
+		expect(
+			activeFiltersOf(filter, pollListChoicesOf(WITH_REVIEWED, filter))
+		).toEqual([{ key: "reviewed", label: "changed since review" }]);
+	});
+
+	it("reads the review filter from the URL and drops a state it does not know", () => {
+		expect(pollListSearchOf({ reviewed: "changed" })).toEqual({
+			reviewed: "changed",
+		});
+		expect(pollListSearchOf({ reviewed: "yes" })).toEqual({});
+	});
+
+	it("states each row's review state", () => {
+		const rows = pollRowsOf([flex, reviewed, changed]);
+
+		expect(rows.map((row) => row.review)).toEqual([
+			"never",
+			"current",
+			"changed",
+		]);
+	});
+
+	it("dates a reviewed row's review and last edit", () => {
+		const [row] = pollRowsOf([changed]);
+
+		expect(row?.reviewedOn).toBe("25 Dec 2025");
+		expect(row?.updatedOn).toBe("13 May 2026");
+	});
+
+	it("dates only the last edit of a poll nobody reviewed", () => {
+		const [row] = pollRowsOf([createMockPoll({ updatedAt: LATER_EDIT })]);
+
+		expect(row?.reviewedOn).toBeUndefined();
+		expect(row?.updatedOn).toBe("13 May 2026");
 	});
 });

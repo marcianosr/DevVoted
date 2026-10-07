@@ -16,6 +16,7 @@ export const createMockPoll = (overrides: Partial<Poll> = {}): Poll => ({
 	codeSandboxExample: null,
 	pollNumber: null,
 	explanation: null,
+	reviewedAt: null,
 	...overrides,
 });
 

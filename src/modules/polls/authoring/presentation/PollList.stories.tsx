@@ -53,6 +53,7 @@ const QUESTIONS: readonly Partial<Poll>[] = [
 	{
 		question: "Which unit is relative to the root element's font size?",
 		categoryCode: "css",
+		reviewedAt: new Date("2026-05-13T10:00:00Z"),
 	},
 	{
 		question:

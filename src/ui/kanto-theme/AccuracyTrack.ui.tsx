@@ -13,7 +13,7 @@ const FILL = "absolute inset-y-0 left-0 transition-[width] duration-300";
 const BEST_FILL = "bg-theme opacity-40";
 const SURE_FILL = "bg-theme-lit";
 const PULSE = "accuracy-pulse";
-const CEILING = "text-[0.625rem] leading-none font-bold text-theme-muted";
+const CEILING = "text-xxs leading-none font-bold text-theme-muted";
 
 const PERCENT = "%";
 const FILL_COLOR: KantoColor = "viridian";

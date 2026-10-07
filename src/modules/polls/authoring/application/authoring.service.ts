@@ -4,12 +4,20 @@ import type {
 } from "~/modules/polls/authoring/application/poll.validation";
 import {
 	createPollWithOptions,
+	fetchPublishedCountIn,
+	fetchPublishedCounts,
 	fetchUnannouncedPublishedPolls,
+	markPollReviewed,
 	markPollsAnnounced,
 	updatePollWithOptions,
 	type AnnouncedPoll,
 } from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import type { Poll } from "~/modules/polls/poll/domain/poll.model";
+import {
+	bountyKbFor,
+	categoryBountiesOf,
+	type CategoryBounty,
+} from "~/modules/polls/poll/domain/pollBounty.model";
 import {
 	canAdministerPolls,
 	type PollViewer,
@@ -25,23 +33,53 @@ export const suggestPoll = async (
 	author: PollViewer,
 	{ poll, options }: CreatePollWithOptionsInput
 ): Promise<ApiResponse<Poll>> =>
+	handleApiOperation(async () => {
+		const published = await fetchPublishedCountIn(poll.categoryCode);
+		return createPollWithOptions(
+			{
+				...poll,
+				status: "draft",
+				createdBy: author.userId,
+				authorRewardKb: bountyKbFor(published),
+			},
+			options
+		);
+	}, "suggestPoll");
+
+export const getCategoryBounties = async (): Promise<
+	ApiResponse<CategoryBounty[]>
+> =>
 	handleApiOperation(
-		() =>
-			createPollWithOptions(
-				{ ...poll, status: "draft", createdBy: author.userId },
-				options
-			),
-		"suggestPoll"
+		async () => categoryBountiesOf(await fetchPublishedCounts()),
+		"getCategoryBounties"
 	);
+
+const editAndReview = async ({
+	id,
+	poll,
+	options,
+	reviewed = false,
+}: UpdatePollInput): Promise<Poll> => {
+	const edited = await updatePollWithOptions(id, poll, options);
+	return reviewed ? markPollReviewed(id, new Date()) : edited;
+};
 
 export const editPoll = async (
 	viewer: PollViewer,
-	{ id, poll, options }: UpdatePollInput
+	edit: UpdatePollInput
+): Promise<ApiResponse<Poll>> =>
+	canAdministerPolls(viewer)
+		? handleApiOperation(() => editAndReview(edit), "editPoll")
+		: createErrorResponse(new Error(ADMIN_REQUIRED));
+
+export const reviewPoll = async (
+	viewer: PollViewer,
+	pollId: number
 ): Promise<ApiResponse<Poll>> =>
 	canAdministerPolls(viewer)
 		? handleApiOperation(
-				() => updatePollWithOptions(id, poll, options),
-				"editPoll"
+				() => markPollReviewed(pollId, new Date()),
+				"reviewPoll"
 			)
 		: createErrorResponse(new Error(ADMIN_REQUIRED));
 

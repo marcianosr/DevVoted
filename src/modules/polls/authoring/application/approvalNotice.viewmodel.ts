@@ -3,7 +3,6 @@ import {
 	questionSegmentsOf,
 	type QuestionSegment,
 } from "~/modules/polls/authoring/application/pollList.viewmodel";
-import { APPROVED_POLL_ARCHIVE_KB } from "~/modules/polls/poll/domain/poll.model";
 import { signedKbLabel, STORAGE_UNITS } from "~/shared/lib/storage";
 
 const COPY = {
@@ -30,7 +29,7 @@ export const approvalNoticeViewFor = (
 ): ApprovalNoticeView | null => {
 	if (polls.length === 0) return null;
 
-	const rewardKb = APPROVED_POLL_ARCHIVE_KB * polls.length;
+	const rewardKb = polls.reduce((total, poll) => total + poll.rewardKb, 0);
 	const toKb = archivedBytes / STORAGE_UNITS.KB;
 
 	return {

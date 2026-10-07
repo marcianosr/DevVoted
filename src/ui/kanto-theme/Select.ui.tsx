@@ -25,6 +25,7 @@ export type SelectProps = {
 	note?: string;
 	caption?: FieldCaption;
 	look?: SelectLook;
+	placeholder?: string;
 };
 
 export const Select = ({
@@ -35,6 +36,7 @@ export const Select = ({
 	note,
 	caption = "hidden",
 	look = "stacked",
+	placeholder,
 }: SelectProps) => {
 	const id = useId();
 	const noteId = `${id}-note`;
@@ -53,6 +55,11 @@ export const Select = ({
 					onChange={(event) => onChange(event.target.value)}
 					className={clsx(SELECT, SELECT_PAD[look])}
 				>
+					{placeholder === undefined ? null : (
+						<option value="" disabled>
+							{placeholder}
+						</option>
+					)}
 					{options.map((option) => (
 						<option key={option.value} value={option.value}>
 							{option.label}

@@ -5,6 +5,8 @@ import {
 	acknowledgeApprovals,
 	editPoll,
 	getApprovalNotice,
+	getCategoryBounties,
+	reviewPoll,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
 import {
@@ -24,6 +26,16 @@ export const updatePoll = createServerFn({ method: "POST" })
 	.handler(({ data }) =>
 		withAuthenticatedUser((session) => editPoll(session, data))
 	);
+
+export const markPollReviewed = createServerFn({ method: "POST" })
+	.validator(z.object({ id: z.number().int().positive() }))
+	.handler(({ data }) =>
+		withAuthenticatedUser((session) => reviewPoll(session, data.id))
+	);
+
+export const getPollBounties = createServerFn({ method: "GET" }).handler(() =>
+	withAuthenticatedUser(() => getCategoryBounties())
+);
 
 export const getPollApprovalNotice = createServerFn({ method: "GET" }).handler(
 	() => withAuthenticatedUser((session) => getApprovalNotice(session))

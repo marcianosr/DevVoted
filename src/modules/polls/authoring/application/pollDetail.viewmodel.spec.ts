@@ -80,4 +80,30 @@ describe("pollDetailViewOf", () => {
 			pollDetailViewOf({ ...POLL, explanation: "  " }, OPTIONS, [], "player")
 		).not.toHaveProperty("explanation");
 	});
+
+	it("states the review and dates it beside the last edit", () => {
+		const view = pollDetailViewOf(
+			{
+				...POLL,
+				updatedAt: new Date(`${TEST_DATES.birthday}T12:00:00`),
+				reviewedAt: new Date(`${TEST_DATES.christmas}T09:00:00`),
+			},
+			OPTIONS,
+			[],
+			"player"
+		);
+
+		expect(view).toMatchObject({
+			review: "changed",
+			reviewedOn: "25 Dec 2025",
+			updatedOn: "13 May 2026",
+		});
+	});
+
+	it("dates no review for a poll nobody reviewed", () => {
+		const view = pollDetailViewOf(POLL, OPTIONS, [], "player");
+
+		expect(view.review).toBe("never");
+		expect(view).not.toHaveProperty("reviewedOn");
+	});
 });

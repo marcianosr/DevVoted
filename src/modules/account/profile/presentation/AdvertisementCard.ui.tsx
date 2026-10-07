@@ -23,7 +23,7 @@ const CARD =
 	"relative flex flex-wrap items-center gap-4 rounded-2xl sm:flex-nowrap border border-theme-faint px-4 pt-5 pb-4";
 const CARD_SURFACE = "bg-theme-faint";
 const LEGEND =
-	"absolute -top-2 left-4 rounded-xs bg-theme-raised px-1.5 text-[10px] leading-4 font-bold tracking-widest text-theme-muted uppercase";
+	"absolute -top-2 left-4 rounded-xs bg-theme-raised px-1.5 text-xxs leading-4 font-bold tracking-widest text-theme-muted uppercase";
 const COOKIE = "flex size-9 shrink-0 items-center justify-center text-2xl";
 const TITLE_ROW = "flex flex-wrap items-center gap-2";
 const COPY_BLOCK = "flex min-w-0 flex-1 basis-48 flex-col gap-0.5";
@@ -36,7 +36,7 @@ const BANNER_SURFACE = "bg-surface shadow-lg";
 const STRIP =
 	"flex min-w-0 items-center gap-2 rounded-md border border-theme-faint bg-theme-faint px-3 py-1.5 text-xs";
 const STRIP_LEGEND =
-	"shrink-0 rounded-xs bg-theme-raised px-1 text-[10px] font-bold tracking-widest text-theme-muted uppercase";
+	"shrink-0 rounded-xs bg-theme-raised px-1 text-xxs font-bold tracking-widest text-theme-muted uppercase";
 const STRIP_TITLE = "shrink-0 font-bold text-theme-soft";
 const STRIP_TEXT = "min-w-0 truncate text-theme-muted";
 const STRIP_CTA = "ml-auto shrink-0";

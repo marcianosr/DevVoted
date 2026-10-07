@@ -247,7 +247,6 @@ export const pollResultsFor = (
 				percent: option.percent,
 				votes: option.count,
 				isRight: option.isRight,
-				yours: option.yours,
 				voters: option.voters.map(climberOf),
 			})),
 		};

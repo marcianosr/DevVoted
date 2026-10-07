@@ -181,10 +181,12 @@ export const pollsTable = pgTable("polls", {
 	category_code: varchar("category_code", { length: 50 })
 		.references(() => pollCategoriesTable.code)
 		.notNull(),
+	author_reward_kb: integer("author_reward_kb").notNull().default(16),
 	author_paid_at: timestamp("author_paid_at", { withTimezone: true }),
 	author_announced_at: timestamp("author_announced_at", {
 		withTimezone: true,
 	}),
+	reviewed_at: timestamp("reviewed_at", { withTimezone: true }),
 }).enableRLS();
 
 export const dailyPollsTable = pgTable("daily_polls", {

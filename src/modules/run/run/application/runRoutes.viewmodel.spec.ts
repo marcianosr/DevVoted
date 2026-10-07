@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
 	nextFrom,
 	prepBackOf,
+	canReview,
 	prepDepartureOf,
-	REVIEW_BACK,
 	returnFromCommunity,
+	reviewBackOf,
 	syncTarget,
 } from "~/modules/run/run/application/runRoutes.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -264,6 +265,23 @@ describe("syncTarget", () => {
 		).toBe("/run/over");
 	});
 
+	it("lets a finished run open the review of its last gate, won or dead", () => {
+		expect(
+			syncTarget(
+				"/run/review",
+				climbing({ status: "won", gatesCleared: 12 }),
+				false
+			)
+		).toBeNull();
+		expect(
+			syncTarget(
+				"/run/review",
+				climbing({ status: "dead", gatesCleared: 3 }),
+				false
+			)
+		).toBeNull();
+	});
+
 	it("sends a day without a run back to the hub", () => {
 		expect(syncTarget("/run/new", null, false)).toBe("/run");
 	});
@@ -465,13 +483,6 @@ describe("prepBackOf", () => {
 		).toBeNull();
 	});
 
-	it("returns the review to the gate it reviews", () => {
-		expect(REVIEW_BACK).toEqual({
-			path: "/run/gate",
-			label: "Back to the gate",
-		});
-	});
-
 	it("lands every back press from prep where the sync leaves it alone", () => {
 		const views = [
 			climbing({ status: "configuring", gatesCleared: 0 }),
@@ -481,6 +492,52 @@ describe("prepBackOf", () => {
 
 		views.forEach((view) => {
 			expect(syncTarget(prepBackOf(view)?.path ?? "", view, false)).toBeNull();
+		});
+	});
+});
+
+describe("canReview", () => {
+	it("offers the review once a run has ended, won or dead", () => {
+		expect(canReview(climbing({ status: "won", gatesCleared: 13 }))).toBe(true);
+		expect(canReview(climbing({ status: "dead", gatesCleared: 4 }))).toBe(true);
+	});
+
+	it("withholds the review mid-gate and on a day without a run", () => {
+		expect(canReview(climbing({ status: "answering", gatesCleared: 2 }))).toBe(
+			false
+		);
+		expect(canReview(null)).toBe(false);
+	});
+});
+
+describe("reviewBackOf", () => {
+	it("returns the review to the gate it reviews while the run goes on", () => {
+		expect(
+			reviewBackOf(climbing({ status: "rewarding", gatesCleared: 1 }))
+		).toEqual({ path: "/run/gate", label: "Back to the gate" });
+	});
+
+	it("returns a finished run's review to its result, won or dead", () => {
+		const back = { path: "/run/over", label: "Back to the result" };
+
+		expect(reviewBackOf(climbing({ status: "won", gatesCleared: 13 }))).toEqual(
+			back
+		);
+		expect(reviewBackOf(climbing({ status: "dead", gatesCleared: 4 }))).toEqual(
+			back
+		);
+	});
+
+	it("lands every back press from the review where the sync leaves it alone", () => {
+		const views = [
+			climbing({ status: "rewarding", gatesCleared: 1 }),
+			climbing({ status: "awaiting-strip", gatesCleared: 2 }),
+			climbing({ status: "won", gatesCleared: 13 }),
+			climbing({ status: "dead", gatesCleared: 4 }),
+		];
+
+		views.forEach((view) => {
+			expect(syncTarget(reviewBackOf(view).path, view, false)).toBeNull();
 		});
 	});
 });

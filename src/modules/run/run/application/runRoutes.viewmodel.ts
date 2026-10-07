@@ -51,7 +51,7 @@ const routesForStatus = (
 				: [RUN_ROUTES.gate, RUN_ROUTES.review];
 		case "won":
 		case "dead":
-			return [RUN_ROUTES.over];
+			return [RUN_ROUTES.over, RUN_ROUTES.review];
 	}
 };
 
@@ -101,10 +101,20 @@ const BACK_TO_SHOP: RouteBack = {
 	path: RUN_ROUTES.shop,
 	label: "Back to the shop",
 };
-export const REVIEW_BACK: RouteBack = {
+const BACK_TO_GATE: RouteBack = {
 	path: RUN_ROUTES.gate,
 	label: "Back to the gate",
 };
+const BACK_TO_RESULT: RouteBack = {
+	path: RUN_ROUTES.over,
+	label: "Back to the result",
+};
+
+const isFinished = (view: SyncView): boolean =>
+	view.status === "won" || view.status === "dead";
+
+export const reviewBackOf = (view: SyncView): RouteBack =>
+	isFinished(view) ? BACK_TO_RESULT : BACK_TO_GATE;
 
 export const prepBackOf = (view: SyncView): RouteBack | null => {
 	if (view.status === "configuring") return BACK_TO_BUILD;

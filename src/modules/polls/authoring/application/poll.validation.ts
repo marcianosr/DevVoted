@@ -128,6 +128,7 @@ export const updatePollSchema = z
 		id: z.number().int().positive(),
 		poll: basePollDataSchema.partial(),
 		options: optionsOf(updatePollOptionSchema),
+		reviewed: z.boolean().optional(),
 	})
 	.refine(hasACorrectOption.check, {
 		message: hasACorrectOption.message,

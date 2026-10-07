@@ -11,24 +11,34 @@ import { pollQueryKeys } from "~/shared/queryKeys";
 
 export type PollAuthoring = {
 	readonly submit: (data: PollFormData) => void;
+	readonly submitAndNext?: (data: PollFormData) => void;
 	readonly submitting: boolean;
 	readonly error: string | undefined;
 };
 
-const savePoll = (pollId: number | undefined, data: PollFormData) =>
+type PollSave = { data: PollFormData; reviewed: boolean };
+
+const savePoll = (pollId: number | undefined, { data, reviewed }: PollSave) =>
 	pollId === undefined
 		? createPoll({ data })
-		: updatePoll({ data: { id: pollId, ...data } });
+		: updatePoll({ data: { id: pollId, ...data, reviewed } });
 
-export const usePollAuthoring = (pollId?: number): PollAuthoring => {
+export const usePollAuthoring = (
+	pollId?: number,
+	afterReview?: string
+): PollAuthoring => {
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 
 	const save = useApiMutation({
-		mutationFn: (data: PollFormData) => savePoll(pollId, data),
-		onSuccess: async (result) => {
+		mutationFn: (request: PollSave) => savePoll(pollId, request),
+		onSuccess: async (result, { reviewed }) => {
 			if (!result.success) return;
 			await queryClient.invalidateQueries({ queryKey: pollQueryKeys.all });
+			if (reviewed && afterReview !== undefined) {
+				await navigate({ href: afterReview });
+				return;
+			}
 			await navigate({
 				to: "/polls/$pollId",
 				params: { pollId: String(result.data.id) },
@@ -37,7 +47,10 @@ export const usePollAuthoring = (pollId?: number): PollAuthoring => {
 	});
 
 	return {
-		submit: save.mutate,
+		submit: (data) => save.mutate({ data, reviewed: false }),
+		...(afterReview === undefined
+			? {}
+			: { submitAndNext: (data) => save.mutate({ data, reviewed: true }) }),
 		submitting: save.isPending,
 		error: save.errorMessage ?? undefined,
 	};

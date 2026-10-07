@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 
 const BOX =
-	"inline-flex size-5 shrink-0 items-center justify-center text-[0.625rem] leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+	"inline-flex size-5 shrink-0 items-center justify-center text-xxs leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const SQUARE = "rounded-md";
 const ROUND = "rounded-full";
 const RESTING =

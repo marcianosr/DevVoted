@@ -20,6 +20,7 @@ export const COPY = {
 } as const;
 
 const STAR = "★";
+const READER_ONLY = "sr-only";
 const STACK_MAX = 4;
 
 const SCROLLER = "no-scrollbar flex w-full gap-1.5 overflow-x-auto pb-2";
@@ -185,8 +186,10 @@ export const ClimbMap = ({
 							<span className={PB}>
 								{gate.best ? (
 									<>
-										<span aria-hidden>{STAR}</span>
-										<span title={COPY.best}>pb</span>
+										<span aria-hidden title={COPY.best}>
+											{STAR}
+										</span>
+										<span className={READER_ONLY}>{COPY.best}</span>
 									</>
 								) : null}
 							</span>

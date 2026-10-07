@@ -1092,8 +1092,10 @@ unmet coverage are different problems and read differently.
 
 Leftover run storage converts into persistent **archived storage** at the outcome rate
 (100% victory, proportional on death, 0% on abandon). A suggested poll pays into it too:
-the first time an admin publishes it, its author banks a flat **16 KB**, once per poll,
-unless the author is an admin (ADR-185 D5). The author's next visit announces it once
+the first time an admin publishes it, its author banks a **bounty**, once per poll,
+unless the author is an admin (ADR-185 D5). The bounty is at least **16 KB** and grows
+the fewer published polls its category holds (`bountyKbFor`), and it is fixed when the
+poll is suggested, so a category that fills meanwhile does not lower it (ADR-193). The author's next visit announces it once
 with a dialog that counts the archive up by the reward (ADR-185 D6). It is the account's one persistent wallet, and it buys two things
 (ADR-112, ADR-153):
 
@@ -1343,13 +1345,16 @@ temporal container for competitive resets.
 
 **Advertisements** point at the two ways to grow outside a run (ADR-189). The run
 hub, the new run screen, the community screen and every profile carry one card, and
-the poll screen carries a one-line strip. A card is either **Looking for poll
-editors** (approved polls earn 16 KB archived storage, never shown to an admin, whose
-polls pay nothing) or one border you do not own and can buy, titled with its name and
-price, drawn on your own face, opening the borders tab. Which one shows is rolled
+the poll screen carries a one-line strip. A card is either a call for polls or one
+border you do not own and can buy, titled with its name and price, drawn on your own
+face, opening the borders tab. The call for polls names one thin category, one whose
+bounty beats 16 KB (**Looking for Vue polls**, how many it holds, its bounty as the
+price), and opens the suggest form on that category; with no thin category it reads
+**Looking for poll editors** (approved polls earn 16 KB). An admin sees it without a
+price or reward, since an admin's poll pays nothing (ADR-193). Which one shows is rolled
 fresh each time a screen opens, half and half. A card's × hides that screen's card
 for the rest of the session; the poll strip has no ×. A player who owns every border
-only sees the poll editors card. Every other signed-in page (home, the
+only sees the call for polls. Every other signed-in page (home, the
 poll list, admin) carries the same advertisement as a banner along the bottom of the
 screen, closable the same way.
 
@@ -1571,11 +1576,13 @@ have no chip to press.
 
 **The day's polls** is one panel of five rows, one per slot in the day's seed. Its
 head counts how many of the revealed polls you got right (`you 2 of 4`). A revealed
-row states your verdict, the question, the category and the share who got it right
-(`CSS · 22% right`), and the share again as a toned badge; the latest revealed poll
-stands open, and any row opens to one line per option: letter, label, a distribution
-bar, an **answer** badge on the right option, a **You** badge on your pick, the faces
-who picked it and the vote count. A mirrored answer counts as right when it named
+row states your verdict, the question, the category as a badge and the share who got
+it right as a toned badge; on a phone the verdict and share sit above the question. The
+latest revealed poll stands open, and any row opens to one line per option: letter,
+label, a distribution bar, an **answer** badge on the right option, the faces who picked
+it (your own face marks your pick; on a phone they sit under the bar) and, on wider
+screens, the vote count. Once a run has ended, won or dead, **Review answers** opens its
+last gate's answers and returns to the run's result. A mirrored answer counts as right when it named
 every wrong option, since it proves the same knowledge. **Redaction keeps it fair**:
 a poll you have reached but not answered shows only its question, and a slot not yet
 dealt reads `Poll 5 · not dealt yet`; neither names its category.
@@ -1672,7 +1679,16 @@ queue if it is ever wanted.
 
 ✅ **Custom poll creation**: any player suggests a poll, an admin publishes it, and the
 first publish banks its author 16 KB of archived storage (ADR-185). Pay per answer
-(DVTD-ofah) is still open.
+(DVTD-ofah) is still open. An admin reviews the catalogue as a queue (DVTD-l6yi): the
+poll list's filters live in the URL, a poll's page and form step to the poll before and
+after it in that filtered list, and **Save & next** saves, marks the poll reviewed
+(`polls.reviewed_at`) and opens the next poll's form. `polls.updated_at` moves only when
+the poll is saved: reviewing, paying the author and announcing the payout leave it
+alone (DVTD-i16m). A poll is **never reviewed**, **changed since review** (saved after
+its last review) or **up to date**; the list filters and badges on that, a row and the
+poll's page date the last review and the last edit, and a changed poll offers **Mark
+reviewed** again. Filtering on `never reviewed` or `changed since review` empties as you go.
+The account menu links an admin to `/admin`.
 
 **Loot and fallen runs** (ADR-135): a run that died today carries whatever storage
 the archive credit left behind — `held − round(held × gates / 13)`, the same figure

@@ -10,7 +10,7 @@ const OUTLINE = "border-theme text-theme-faint";
 const FILLED = "badge-theme border-transparent";
 
 const CAP =
-	"flex size-5 shrink-0 items-center justify-center border text-[10px] font-bold";
+	"flex size-5 shrink-0 items-center justify-center border text-xxs font-bold";
 const CAP_SHAPE = {
 	single: "rounded-full",
 	multiple: "rounded-md",

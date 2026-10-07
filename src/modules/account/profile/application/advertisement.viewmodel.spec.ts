@@ -15,13 +15,23 @@ import {
 	findBorderById,
 } from "~/modules/account/profile/domain/border.model";
 import { APPROVED_POLL_ARCHIVE_KB } from "~/modules/polls/poll/domain/poll.model";
+import type { CategoryBounty } from "~/modules/polls/poll/domain/pollBounty.model";
 import { SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
 import { kbLabel } from "~/shared/lib/storage";
 
-const PLAYER = { isAdmin: false, ownedBorderIds: [] };
-const ADMIN = { isAdmin: true, ownedBorderIds: [] };
-const ROLL_SUGGEST = { kind: 0.1, border: 0 };
-const ROLL_BORDER = { kind: 0.9, border: 0 };
+const VUE: CategoryBounty = { code: "vue", published: 3, bountyKb: 48 };
+const RUBY: CategoryBounty = { code: "ruby", published: 1, bountyKb: 32 };
+const CSS: CategoryBounty = {
+	code: "css",
+	published: 400,
+	bountyKb: APPROVED_POLL_ARCHIVE_KB,
+};
+
+const PLAYER = { isAdmin: false, ownedBorderIds: [], bounties: [CSS] };
+const ADMIN = { isAdmin: true, ownedBorderIds: [], bounties: [CSS] };
+const THIN_BANK = [CSS, VUE, RUBY];
+const ROLL_SUGGEST = { kind: 0.1, item: 0 };
+const ROLL_BORDER = { kind: 0.9, item: 0 };
 const ALL_BORDER_IDS = borders.map((border) => border.id);
 const MISTY = { name: "Misty", photoUrl: "/faces/misty.png" };
 const MISTY_PROFILE = "/profile/misty";
@@ -48,6 +58,27 @@ describe("advertisementFor", () => {
 	it("advertises suggesting a poll when the roll lands low", () => {
 		expect(advertisementFor(PLAYER, ROLL_SUGGEST)).toEqual({
 			kind: "suggest",
+			wanted: undefined,
+			paysReward: true,
+		});
+	});
+
+	it("names a thin category, picked by its roll, when the bank has one", () => {
+		const viewer = { ...PLAYER, bounties: THIN_BANK };
+
+		expect(advertisementFor(viewer, { kind: 0.1, item: 0 })).toMatchObject({
+			wanted: VUE,
+		});
+		expect(advertisementFor(viewer, { kind: 0.1, item: 0.9999 })).toMatchObject(
+			{
+				wanted: RUBY,
+			}
+		);
+	});
+
+	it("names no category when every category pays the base reward", () => {
+		expect(advertisementFor(PLAYER, ROLL_SUGGEST)).toMatchObject({
+			wanted: undefined,
 		});
 	});
 
@@ -57,27 +88,22 @@ describe("advertisementFor", () => {
 
 	it("picks the border by its roll across the borders for sale", () => {
 		const forSale = bordersForSaleTo([]);
-		const last = advertisementFor(PLAYER, { kind: 0.9, border: 0.9999 });
+		const last = advertisementFor(PLAYER, { kind: 0.9, item: 0.9999 });
 
 		expect(last).toEqual({ kind: "border", border: forSale.at(-1) });
 	});
 
-	it("never advertises suggesting a poll to an admin, whose polls pay nothing", () => {
-		expect(advertisementFor(ADMIN, ROLL_SUGGEST)?.kind).toBe("border");
-	});
-
-	it("advertises suggesting a poll once every border is owned", () => {
-		const collector = { isAdmin: false, ownedBorderIds: ALL_BORDER_IDS };
-
-		expect(advertisementFor(collector, ROLL_BORDER)).toEqual({
+	it("advertises suggesting a poll to an admin without a reward, since their polls pay nothing", () => {
+		expect(advertisementFor(ADMIN, ROLL_SUGGEST)).toMatchObject({
 			kind: "suggest",
+			paysReward: false,
 		});
 	});
 
-	it("advertises nothing to an admin who owns every border", () => {
-		const collector = { isAdmin: true, ownedBorderIds: ALL_BORDER_IDS };
+	it("advertises suggesting a poll once every border is owned", () => {
+		const collector = { ...PLAYER, ownedBorderIds: ALL_BORDER_IDS };
 
-		expect(advertisementFor(collector, ROLL_BORDER)).toBeUndefined();
+		expect(advertisementFor(collector, ROLL_BORDER)?.kind).toBe("suggest");
 	});
 });
 
@@ -98,13 +124,13 @@ describe("ADVERTISEMENTS", () => {
 
 describe("advertisementFor by weight", () => {
 	it("advertises poll editors just below the halfway roll", () => {
-		expect(advertisementFor(PLAYER, { kind: 0.49, border: 0 })?.kind).toBe(
+		expect(advertisementFor(PLAYER, { kind: 0.49, item: 0 })?.kind).toBe(
 			"suggest"
 		);
 	});
 
 	it("advertises a border just above the halfway roll", () => {
-		expect(advertisementFor(PLAYER, { kind: 0.51, border: 0 })?.kind).toBe(
+		expect(advertisementFor(PLAYER, { kind: 0.51, item: 0 })?.kind).toBe(
 			"border"
 		);
 	});
@@ -163,7 +189,7 @@ describe("variantAt", () => {
 describe("advertisementPropsFor", () => {
 	it("asks for poll editors and states the archive reward", () => {
 		const props = advertisementPropsFor(
-			{ kind: "suggest" },
+			{ kind: "suggest", paysReward: true },
 			MISTY,
 			MISTY_PROFILE
 		);
@@ -174,6 +200,47 @@ describe("advertisementPropsFor", () => {
 			icon: { kind: "cookie" },
 			cta: { label: "Suggest a poll", href: SUGGEST_POLL_PATH },
 		});
+	});
+
+	it("asks an admin for polls without stating a reward", () => {
+		const props = advertisementPropsFor(
+			{ kind: "suggest", paysReward: false },
+			MISTY,
+			MISTY_PROFILE
+		);
+
+		expect(props.text).toBe("Every published poll widens the daily deal.");
+		expect(props.price).toBeUndefined();
+	});
+
+	it("names the thin category, its count and its bounty, and opens the form on it", () => {
+		const props = advertisementPropsFor(
+			{ kind: "suggest", wanted: VUE, paysReward: true },
+			MISTY,
+			MISTY_PROFILE
+		);
+
+		expect(props).toEqual({
+			title: "Looking for Vue polls",
+			price: "48 KB",
+			text: "Vue holds only 3 polls. An approved one earns 48 KB archived storage!",
+			icon: { kind: "cookie" },
+			cta: {
+				label: "Suggest a poll",
+				href: `${SUGGEST_POLL_PATH}?category=vue`,
+			},
+		});
+	});
+
+	it("names the thin category to an admin with no bounty and counts a single poll", () => {
+		const props = advertisementPropsFor(
+			{ kind: "suggest", wanted: RUBY, paysReward: false },
+			MISTY,
+			MISTY_PROFILE
+		);
+
+		expect(props.price).toBeUndefined();
+		expect(props.text).toBe("Ruby holds only 1 poll.");
 	});
 
 	it("titles a border by its name, badges its price, and shows it on the player's own face", () => {

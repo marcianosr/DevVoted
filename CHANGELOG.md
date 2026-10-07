@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Dependency grids, a new kind of poll.** Twelve tiles hide three groups of four. Pick four tiles and press **Lock in**: if they belong together, the group is named and set aside, and you pick again. Four that don't belong together end the poll like a wrong answer. Solve two groups and the last one locks itself in. Each group you solve pays a third of the poll, and a full grid pays double, like a select-all. The group names stay hidden as **???** unless your build already names answer types. **Shuffle** reorders the tiles whenever you like. Poll authors can pick **grid** when suggesting a poll and write three named groups of four tiles.
 
+## 2.1.0 - 2026-10-07
+### Added
+- **Thin categories pay a bounty for new polls.** A poll you suggest in a category that holds few polls earns more archived storage once it is approved, and never less than 16 KB. The figure is fixed the moment you suggest the poll. The advertisement now calls for polls in one of those categories, says how many polls it holds and what an approved one pays, and opens the suggest form with that category picked. The form's reward badge follows the category you pick, and the approval dialog counts up by what each poll actually paid.
+
+### Changed
+- **Suggesting a poll walks four steps.** The suggest form wears Pallet and reads as four numbered steps (question, answers, category, explanation) that light up green once done, with the **+16 KB when approved** reward up top. Tap an answer's letter to mark it right, pick the category from chips (none is picked for you), and add inline code or a js block with one tap. **Preview**, beside the submit, swaps the form for your poll as players meet it: pick an answer to see it marked right or wrong, with your explanation and CodeSandbox link after. The submit stays disabled and names what is still missing until the poll is ready.
+
+## 2.0.7 - 2026-10-06
+### Changed
+- **The poll list remembers its filters.** Search, status, category and the other filters now live in the page address, so opening a poll and going back, reloading, or sharing the link keeps the list as you left it. The list also holds a steady order instead of shuffling polls added at the same moment.
+- **Step through polls one after another.** A poll's page and its edit form show where it sits in your filtered list (**3 of 98**) with links to the poll before and after it. Admins get **Save & next**, which saves the poll, marks it reviewed and opens the next one, plus a **reviewed** filter and badge on the list.
+
+## 2.0.6 - 2026-10-06
+### Changed
+- **A finished run can review its answers.** When your run falls or wins, **Review answers** on the community board opens the answers of your last gate, and **Back to the result** returns you to how the run ended.
+- **Poll results read cleanly on a phone.** On the community board, the PASS/FAIL verdict and the room's share sit above the question so it gets the full width, the faces of who picked an option sit under its bar, and the vote count column is left to wider screens.
+- **The wiki moved to the footer and wears Pallet.** **Wiki** is no longer in the navigation bar or the account menu; the footer link opens it on every page. The wiki now wears Pallet's colours, and its articles sit tighter, with less space between sections and table rows.
+- **Less repeated on the community board.** A poll's category is a badge under its question, and the room's share is stated once, as the badge beside it. The **You** badge on your pick is gone, since your own face already marks it, and the climb map marks your best gate with a star alone.
+
+## 2.0.5 - 2026-10-06
+### Fixed
+- **A run that ends shows its result, whatever day it started.** A run that fell or won on a later day than it began left the Daily Run page empty, with no game-over screen and nobody on today's community board. It now shows how your run ended and who else played today.
+
+## 2.0.4 - 2026-10-06
+### Changed
+- **A page that fails to load cleanly is reported to us.** When a screen has to redraw itself while it opens, as the run hub did for some players after their last poll of the day, we now receive a report naming the part that went wrong, so it can be fixed.
+
 ## 2.0.3 - 2026-10-05
 ### Changed
 - **A wiki for players.** **Wiki** in the navigation and the footer explains how a run plays, with each gate's swatch and coverage lines, an opening build on its track and the band colours you meet in play: gates and their bands, how an answer is scored, audits, your build and every config, storage and the shop, what outlives a run, the community board and a glossary. Every number on it is read from the game itself, so it never falls behind a balance change. Open it without signing in. Audits, special titles and ranks you have not met stay hidden, as in your Dex.

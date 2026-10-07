@@ -10,6 +10,7 @@ const PROPS: PollDetailProps = {
 	category: "CSS",
 	status: "draft",
 	created: "4 Oct 2026",
+	review: "never",
 	question: {
 		answerType: "single",
 		question: "Which value of `position` removes an element from flow?",
@@ -20,6 +21,8 @@ const PROPS: PollDetailProps = {
 	},
 	explanation: "Absolute leaves the flow.",
 	canEdit: false,
+	editHref: "/polls/1/edit",
+	listHref: "/polls",
 	view: "player",
 	onView: vi.fn(),
 };
@@ -70,5 +73,105 @@ describe("PollDetail", () => {
 			"href",
 			"/polls/1/edit"
 		);
+	});
+});
+
+describe("PollDetail stepping through a filtered list", () => {
+	it("links back to the list it came from and to the polls either side", () => {
+		render(
+			<PollDetail
+				{...PROPS}
+				listHref="/polls?category=css"
+				step={{
+					position: 2,
+					total: 9,
+					previousHref: "/polls/7?category=css",
+					nextHref: "/polls/12?category=css",
+				}}
+			/>
+		);
+
+		expect(screen.getByRole("link", { name: "← Polls" })).toHaveAttribute(
+			"href",
+			"/polls?category=css"
+		);
+		expect(screen.getByRole("link", { name: "‹ previous" })).toHaveAttribute(
+			"href",
+			"/polls/7?category=css"
+		);
+		expect(screen.getByRole("link", { name: "next ›" })).toHaveAttribute(
+			"href",
+			"/polls/12?category=css"
+		);
+		expect(screen.getByText("2 of 9")).toBeInTheDocument();
+	});
+
+	it("offers only the way back when the poll is not in the list", () => {
+		render(<PollDetail {...PROPS} />);
+
+		expect(screen.queryByRole("link", { name: "next ›" })).toBeNull();
+		expect(screen.getByRole("link", { name: "← Polls" })).toBeInTheDocument();
+	});
+});
+
+describe("PollDetail review", () => {
+	it("lets an admin mark an unreviewed poll reviewed", async () => {
+		const onReview = vi.fn();
+		render(<PollDetail {...PROPS} canEdit onReview={onReview} />);
+
+		await userEvent.click(
+			screen.getByRole("button", { name: "Mark reviewed" })
+		);
+
+		expect(onReview).toHaveBeenCalledOnce();
+	});
+
+	it("states an up-to-date poll reviewed instead of offering the press", () => {
+		render(
+			<PollDetail {...PROPS} canEdit review="current" onReview={vi.fn()} />
+		);
+
+		expect(screen.getByText("reviewed")).toBeInTheDocument();
+		expect(screen.queryByRole("button", { name: "Mark reviewed" })).toBeNull();
+	});
+
+	it("offers a poll edited since its review for review again", async () => {
+		const onReview = vi.fn();
+		render(
+			<PollDetail {...PROPS} canEdit review="changed" onReview={onReview} />
+		);
+
+		expect(screen.getByText("changed since review")).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: "Mark reviewed" })
+		);
+
+		expect(onReview).toHaveBeenCalledOnce();
+	});
+
+	it("dates the last review and the last edit for an admin", () => {
+		render(
+			<PollDetail
+				{...PROPS}
+				canEdit
+				review="changed"
+				reviewedOn="25 Dec 2025"
+				updatedOn="13 May 2026"
+			/>
+		);
+
+		expect(
+			screen.getByText(
+				"created 4 Oct 2026 · reviewed 25 Dec 2025 · updated 13 May 2026"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("keeps the review dates from a player looking at their own poll", () => {
+		render(
+			<PollDetail {...PROPS} reviewedOn="25 Dec 2025" updatedOn="13 May 2026" />
+		);
+
+		expect(screen.getByText("created 4 Oct 2026")).toBeInTheDocument();
 	});
 });

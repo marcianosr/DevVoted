@@ -35,6 +35,10 @@ export const COPY = {
 	status: "status",
 	answerType: "answer",
 	dealt: "dealt",
+	reviewed: "reviewed",
+	changed: "changed",
+	reviewedOn: (date: string) => `reviewed ${date}`,
+	updatedOn: (date: string) => `updated ${date}`,
 	withCode: "with code",
 	withExplanation: "with explanation",
 	category: "Category",
@@ -56,6 +60,10 @@ export const COPY = {
 
 const THEME: KantoColor = "cerulean";
 const ERROR_THEME: KantoColor = "cinnabar";
+
+const REVIEWED_COLOR: KantoColor = "celadon";
+const CHANGED_COLOR: KantoColor = "vermillion";
+const SEPARATOR = " · ";
 
 const STATUS_COLOR = {
 	published: "viridian",
@@ -82,7 +90,7 @@ const QUESTION_TEXT = "truncate text-sm font-bold text-theme-faint";
 const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
 const BY = "flex w-28 shrink-0 items-center gap-2";
 const AUTHOR_NAME = "truncate text-xs text-theme-soft";
-const STATUS = "flex w-24 shrink-0 justify-end";
+const STATUS = "flex w-44 shrink-0 flex-wrap justify-end gap-1";
 
 const columnsOf = (admin: boolean): readonly PanelColumn[] => [
 	{ label: COPY.numberColumn, width: NUMBER },
@@ -95,9 +103,11 @@ const columnsOf = (admin: boolean): readonly PanelColumn[] => [
 const Question = ({
 	segments,
 	facts,
+	stamps,
 }: {
 	segments: readonly QuestionSegment[];
 	facts: string;
+	stamps: string;
 }) => (
 	<span className={QUESTION}>
 		<span className={QUESTION_TEXT}>
@@ -114,6 +124,11 @@ const Question = ({
 		<Typography variant="hint" as="span">
 			{facts}
 		</Typography>
+		{stamps === "" ? null : (
+			<Typography variant="hint" as="span">
+				{stamps}
+			</Typography>
+		)}
 	</span>
 );
 
@@ -130,6 +145,25 @@ const Author = ({ author }: Pick<PollRow, "author">) => (
 	</span>
 );
 
+const ReviewBadge = ({ review }: Pick<PollRow, "review">) => {
+	if (review === "current") {
+		return <Badge color={REVIEWED_COLOR}>{COPY.reviewed}</Badge>;
+	}
+	if (review === "changed") {
+		return <Badge color={CHANGED_COLOR}>{COPY.changed}</Badge>;
+	}
+	return null;
+};
+
+const stampsOf = ({
+	reviewedOn,
+	updatedOn,
+}: Pick<PollRow, "reviewedOn" | "updatedOn">): string =>
+	[
+		...(reviewedOn === undefined ? [] : [COPY.reviewedOn(reviewedOn)]),
+		...(updatedOn === undefined ? [] : [COPY.updatedOn(updatedOn)]),
+	].join(SEPARATOR);
+
 const Row = ({ row, admin }: { row: PollRow; admin: boolean }) => (
 	<Panel.Row href={row.href}>
 		<span className={CELLS}>
@@ -137,9 +171,14 @@ const Row = ({ row, admin }: { row: PollRow; admin: boolean }) => (
 			<span className={CATEGORY}>
 				<Badge>{row.category}</Badge>
 			</span>
-			<Question segments={row.question} facts={row.facts} />
+			<Question
+				segments={row.question}
+				facts={row.facts}
+				stamps={admin ? stampsOf(row) : ""}
+			/>
 			{admin ? <Author author={row.author} /> : null}
 			<span className={STATUS}>
+				{admin ? <ReviewBadge review={row.review} /> : null}
 				<Badge color={STATUS_COLOR[row.status]}>{row.status}</Badge>
 			</span>
 		</span>
@@ -265,6 +304,24 @@ export const PollList = ({
 							})
 						}
 					/>
+					{admin ? (
+						<Select
+							look="inline"
+							label={COPY.reviewed}
+							options={choices.reviewed}
+							value={filter.reviewed}
+							onChange={(reviewed) =>
+								onFilterChange({
+									...filter,
+									reviewed: pickedOf(
+										choices.reviewed,
+										reviewed,
+										filter.reviewed
+									),
+								})
+							}
+						/>
+					) : null}
 					{choices.creator === undefined ? null : (
 						<Select
 							look="inline"

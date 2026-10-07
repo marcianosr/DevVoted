@@ -13,6 +13,11 @@ export const PANEL_SURFACE =
 const HEADER =
 	"flex flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 bg-theme/5 first:rounded-t-2xl";
 const GLYPH = "panel-glyph size-2.5 shrink-0 rounded-xs bg-theme-muted";
+const STEP =
+	"flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums";
+const STEP_TODO = "badge-theme";
+const STEP_DONE = "bg-theme-lit text-zinc-950";
+const STEP_DONE_COLOR: KantoColor = "viridian";
 const HEADER_END = "ml-auto flex flex-wrap items-center justify-end gap-2";
 const META =
 	"flex flex-wrap items-center justify-end gap-2 text-xs text-theme-muted";
@@ -45,23 +50,40 @@ export const headingOf = (label: string): string =>
 
 export type PanelBadge = { label: string; color?: KantoColor };
 
+export type PanelStep = { number: number; done: boolean };
+
 export type PanelHeaderProps = {
 	label: string;
+	step?: PanelStep;
 	badge?: PanelBadge;
 	summary?: ReactNode;
 	meta?: ReactNode;
 	trailing?: ReactNode;
 };
 
+const StepMark = ({ step }: { step: PanelStep }) => (
+	<span
+		data-screen-theme={step.done ? STEP_DONE_COLOR : undefined}
+		className={clsx(STEP, step.done ? STEP_DONE : STEP_TODO)}
+	>
+		{step.number}
+	</span>
+);
+
 const PanelHeader = ({
 	label,
+	step,
 	badge,
 	summary,
 	meta,
 	trailing,
 }: PanelHeaderProps) => (
 	<header className={HEADER}>
-		<span aria-hidden className={GLYPH} />
+		{step === undefined ? (
+			<span aria-hidden className={GLYPH} />
+		) : (
+			<StepMark step={step} />
+		)}
 		<Typography variant="title" as="h3">
 			{headingOf(label)}
 		</Typography>

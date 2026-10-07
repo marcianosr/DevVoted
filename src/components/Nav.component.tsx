@@ -12,7 +12,6 @@ import { usePollsLeftToday } from "~/modules/run/run/application/usePollsLeftTod
 import { useTodaysRun } from "~/modules/run/run/application/useTodaysRun.hook";
 import { useNextPollsCountdown } from "~/shared/hooks/useNextPollsCountdown.hook";
 import { POLLS_PATH, SUGGEST_POLL_PATH } from "~/shared/lib/pollPath";
-import { WIKI_PATH } from "~/shared/lib/wikiPath";
 import { isAdminEmail } from "~/shared/utils/adminAuth";
 import { AppNav, type NavViewer } from "~/ui/kanto-theme/AppNav.ui";
 import type { NavRunReading } from "~/ui/kanto-theme/useNavRun.hook";
@@ -23,6 +22,7 @@ const SIGN_OUT = "/logout";
 const RUN = "/run";
 const COMMUNITY = "/run/community";
 const PROFILE = "/profile";
+const ADMIN = "/admin";
 
 const profileHrefOf = (userId: string): string => `${PROFILE}/${userId}`;
 
@@ -58,6 +58,7 @@ export const Nav = ({ user, published }: NavProps) => {
 					archivedStorage: archive.view?.archivedStorage ?? 0,
 					profileHref: profileHrefOf(user.id),
 					suggestedHref: POLLS_PATH,
+					...(isAdminEmail(user.email) ? { adminHref: ADMIN } : {}),
 					signOutHref: SIGN_OUT,
 				};
 
@@ -72,7 +73,6 @@ export const Nav = ({ user, published }: NavProps) => {
 				active: isInTheRun(pathname),
 			}}
 			community={{ href: COMMUNITY, active: pathname === COMMUNITY }}
-			wiki={{ href: WIKI_PATH, active: pathname.startsWith(WIKI_PATH) }}
 			suggest={{
 				href: SUGGEST_POLL_PATH,
 				active: pathname === SUGGEST_POLL_PATH,

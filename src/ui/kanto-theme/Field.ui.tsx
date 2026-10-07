@@ -7,7 +7,7 @@ import { Typography } from "./Typography.ui";
 export const FIELD_RING =
 	"rounded-md text-theme-faint ring-1 ring-inset ring-theme-faint transition-colors focus-within:ring-theme-soft";
 export const FIELD_CONTROL =
-	"min-w-0 flex-1 bg-transparent text-xs font-bold outline-none placeholder:font-normal placeholder:text-theme-muted";
+	"min-w-0 flex-1 bg-transparent font-bold outline-none placeholder:font-normal placeholder:text-theme-muted";
 
 const STACK = "flex min-w-0 flex-col gap-1.5";
 const CAPTION = "flex flex-wrap items-baseline gap-x-2";

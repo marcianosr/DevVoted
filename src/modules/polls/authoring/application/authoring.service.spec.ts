@@ -3,25 +3,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	acknowledgeApprovals,
 	editPoll,
+	getCategoryBounties,
+	reviewPoll,
 	getApprovalNotice,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
 import * as authoringRepository from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import { createMockPoll } from "~/modules/polls/poll/domain/poll.factory";
+import { bountyKbFor } from "~/modules/polls/poll/domain/pollBounty.model";
 import { ADMIN_REQUIRED } from "~/shared/utils/authorization";
 
 vi.mock(
 	"~/modules/polls/authoring/infrastructure/authoring.repository",
 	() => ({
 		createPollWithOptions: vi.fn(),
+		fetchPublishedCountIn: vi.fn(),
+		fetchPublishedCounts: vi.fn(),
 		updatePollWithOptions: vi.fn(),
 		fetchUnannouncedPublishedPolls: vi.fn(),
 		markPollsAnnounced: vi.fn(),
+		markPollReviewed: vi.fn(),
 	})
 );
 
 const BROCK = "11111111-1111-4111-8111-111111111111";
 const OAK = "22222222-2222-4222-8222-222222222222";
+
+const REVIEWED_AT = new Date("2026-12-25T09:00:00Z");
 
 const brock = { userId: BROCK, isAdmin: false };
 const oak = { userId: OAK, isAdmin: true };
@@ -56,8 +64,12 @@ beforeEach(() => {
 	vi.mocked(authoringRepository.createPollWithOptions).mockResolvedValue(
 		createMockPoll()
 	);
+	vi.mocked(authoringRepository.fetchPublishedCountIn).mockResolvedValue(40);
 	vi.mocked(authoringRepository.updatePollWithOptions).mockResolvedValue(
 		createMockPoll({ id: 74 })
+	);
+	vi.mocked(authoringRepository.markPollReviewed).mockResolvedValue(
+		createMockPoll({ id: 74, reviewedAt: REVIEWED_AT })
 	);
 });
 
@@ -66,7 +78,28 @@ describe("suggestPoll", () => {
 		await suggestPoll(brock, suggestion);
 
 		expect(authoringRepository.createPollWithOptions).toHaveBeenCalledWith(
-			{ ...suggestion.poll, status: "draft", createdBy: BROCK },
+			{
+				...suggestion.poll,
+				status: "draft",
+				createdBy: BROCK,
+				authorRewardKb: bountyKbFor(40),
+			},
+			suggestion.options
+		);
+	});
+
+	it("fixes the reward at the bounty its category pays when it is suggested", async () => {
+		vi.mocked(authoringRepository.fetchPublishedCountIn).mockResolvedValueOnce(
+			2
+		);
+
+		await suggestPoll(brock, suggestion);
+
+		expect(authoringRepository.fetchPublishedCountIn).toHaveBeenCalledWith(
+			"css"
+		);
+		expect(authoringRepository.createPollWithOptions).toHaveBeenCalledWith(
+			expect.objectContaining({ authorRewardKb: bountyKbFor(2) }),
 			suggestion.options
 		);
 	});
@@ -78,6 +111,22 @@ describe("suggestPoll", () => {
 			expect.objectContaining({ explanation: "`flex: 1` is `1 1 0%`." }),
 			suggestion.options
 		);
+	});
+});
+
+describe("getCategoryBounties", () => {
+	it("prices every category by its published count", async () => {
+		vi.mocked(authoringRepository.fetchPublishedCounts).mockResolvedValueOnce({
+			vue: 3,
+		});
+
+		const result = await getCategoryBounties();
+
+		expect(result.success && result.data).toContainEqual({
+			code: "vue",
+			published: 3,
+			bountyKb: bountyKbFor(3),
+		});
 	});
 });
 
@@ -98,11 +147,55 @@ describe("editPoll", () => {
 			edit.options
 		);
 		expect(result).toEqual({ success: true, data: createMockPoll({ id: 74 }) });
+		expect(authoringRepository.markPollReviewed).not.toHaveBeenCalled();
+	});
+
+	it("stamps the edit reviewed when the admin saved it as reviewed", async () => {
+		vi.useFakeTimers({ now: REVIEWED_AT });
+
+		const result = await editPoll(oak, { ...edit, reviewed: true });
+
+		expect(authoringRepository.updatePollWithOptions).toHaveBeenCalled();
+		expect(authoringRepository.markPollReviewed).toHaveBeenCalledWith(
+			74,
+			REVIEWED_AT
+		);
+		expect(result).toEqual({
+			success: true,
+			data: createMockPoll({ id: 74, reviewedAt: REVIEWED_AT }),
+		});
+		vi.useRealTimers();
+	});
+});
+
+describe("reviewPoll", () => {
+	it("refuses a player before the repository sees it", async () => {
+		const result = await reviewPoll(brock, 74);
+
+		expect(result).toEqual({ success: false, error: ADMIN_REQUIRED });
+		expect(authoringRepository.markPollReviewed).not.toHaveBeenCalled();
+	});
+
+	it("stamps the poll reviewed for an admin", async () => {
+		const result = await reviewPoll(oak, 74);
+
+		expect(authoringRepository.markPollReviewed).toHaveBeenCalledWith(
+			74,
+			expect.any(Date)
+		);
+		expect(result).toEqual({
+			success: true,
+			data: createMockPoll({ id: 74, reviewedAt: REVIEWED_AT }),
+		});
 	});
 });
 
 describe("getApprovalNotice", () => {
-	const flex = { id: 74, question: "What does `flex: 1` expand to?" };
+	const flex = {
+		id: 74,
+		question: "What does `flex: 1` expand to?",
+		rewardKb: 16,
+	};
 
 	it("hands a player their published polls the dialog has not shown", async () => {
 		vi.mocked(

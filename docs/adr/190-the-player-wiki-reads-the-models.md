@@ -16,8 +16,9 @@ balance, which is why `scripts/wiki-sync.ts` exists.
 
 The wiki lives at `/wiki`, one page per article at `/wiki/$articleId`, outside
 the sign-in wall: a visitor can learn the rules before making an account. The
-nav carries it for everyone; on a phone it sits in the account menu, so the tab
-bar stays at three (ADR-188).
+footer carries it for everyone. *Amended 2026-10-06:* it left the nav bar and the
+account menu so the bar holds only the game's own places; the tab bar stays at
+three (ADR-188). The wiki wears Pallet.
 
 ## Decision 2: shipped rules only, in a player's voice
 
