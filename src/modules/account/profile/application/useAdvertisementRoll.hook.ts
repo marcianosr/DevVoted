@@ -36,7 +36,7 @@ export const useAdvertisementRoll = (
 
 	useEffect(() => {
 		if (isDismissed(placement)) return;
-		setRoll({ kind: Math.random(), border: Math.random() });
+		setRoll({ kind: Math.random(), item: Math.random() });
 	}, [placement]);
 
 	const dismiss = useCallback(() => {

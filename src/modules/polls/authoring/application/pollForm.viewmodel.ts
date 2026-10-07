@@ -1,5 +1,6 @@
 import { CODE_SANDBOX_URL } from "~/modules/polls/authoring/application/poll.validation";
 import {
+	APPROVED_POLL_ARCHIVE_KB,
 	POLL_LIMITS,
 	POLL_STATUSES,
 	isPollStatus,
@@ -7,32 +8,34 @@ import {
 	type Poll,
 	type PollStatus,
 } from "~/modules/polls/poll/domain/poll.model";
+import type { CategoryBounty } from "~/modules/polls/poll/domain/pollBounty.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import {
 	getCategories,
+	getCategoryMetadata,
 	isCategoryCode,
 	type CategoryCode,
 } from "~/shared/lib/categories";
-import { OF } from "~/shared/lib/copy";
 import { letterAt } from "~/shared/lib/letters";
+import { signedKbLabel } from "~/shared/lib/storage";
+import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
 import type { QuestionProps } from "~/ui/kanto-theme/Question.ui";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
-const SEPARATOR = " · ";
-
 const COPY = {
-	questionCount: (length: number, max: number, min: number) =>
-		`${length} / ${max}${SEPARATOR}min ${min}`,
-	answersCount: (count: number, max: number, min: number) =>
-		`${count} ${OF} ${max} answers${SEPARATOR}at least ${min}`,
+	questionCount: (length: number, max: number) => `${length} / ${max}`,
 	answerPlaceholder: (index: number) => `answer ${index + 1}`,
-	needsQuestion: (min: number) => `question needs ${min} characters`,
-	needsAnswerText: "every answer needs text",
-	needsAnswers: (min: number) => `needs ${min} answers`,
-	needsOneRight: "mark one answer right",
-	needsARight: "mark at least one answer right",
-	needsUrl: "CodeSandbox needs a full URL",
+	needsQuestion: "Write the question",
+	needsAnswerText: "Fill every answer",
+	needsAnswers: (min: number) => `Add ${min} answers`,
+	needsOneRight: "Mark the right answer",
+	needsARight: "Mark the right answers",
+	needsCategory: "Pick a category",
+	needsUrl: "Fix the CodeSandbox link",
 } as const;
+
+const INLINE_CODE = "`code`";
+const CODE_BLOCK = "```js\n\n```";
 
 export type PollFormMode = "suggest" | "edit";
 export type PollFormView = "write" | "preview";
@@ -47,7 +50,7 @@ export type PollFormAnswer = {
 export type PollFormState = {
 	question: string;
 	answerType: AnswerType;
-	categoryCode: CategoryCode;
+	categoryCode: CategoryCode | undefined;
 	status: PollStatus;
 	codeSandboxExample: string;
 	explanation: string;
@@ -63,7 +66,7 @@ const blankAnswer = (key: number): PollFormAnswer => ({
 export const EMPTY_POLL_FORM: PollFormState = {
 	question: "",
 	answerType: "single",
-	categoryCode: "js",
+	categoryCode: undefined,
 	status: "draft",
 	codeSandboxExample: "",
 	explanation: "",
@@ -167,6 +170,19 @@ export const withAnswerType = (
 	};
 };
 
+export const suggestFormFor = (
+	category: CategoryCode | undefined
+): PollFormState => ({ ...EMPTY_POLL_FORM, categoryCode: category });
+
+export const rewardOf = (
+	{ categoryCode }: Pick<PollFormState, "categoryCode">,
+	bounties: readonly CategoryBounty[]
+): string =>
+	signedKbLabel(
+		bounties.find(({ code }) => code === categoryCode)?.bountyKb ??
+			APPROVED_POLL_ARCHIVE_KB
+	);
+
 export const withCategory = (
 	state: PollFormState,
 	value: string
@@ -194,47 +210,123 @@ export const answerRowsOf = (state: PollFormState): readonly AnswerRow[] =>
 	}));
 
 export const questionCountOf = (question: string): string =>
-	COPY.questionCount(
-		question.length,
-		POLL_LIMITS.question.max,
-		POLL_LIMITS.question.min
-	);
+	COPY.questionCount(question.length, POLL_LIMITS.question.max);
 
-export const answersCountOf = (answers: readonly PollFormAnswer[]): string =>
-	COPY.answersCount(
-		answers.length,
-		POLL_LIMITS.answers.max,
-		POLL_LIMITS.answers.min
-	);
+const withSnippet = (
+	state: PollFormState,
+	snippet: string,
+	separator: string
+): PollFormState => ({
+	...state,
+	question:
+		state.question === "" ? snippet : `${state.question}${separator}${snippet}`,
+});
+
+export const withInlineCode = (state: PollFormState): PollFormState =>
+	withSnippet(state, INLINE_CODE, " ");
+
+export const withCodeBlock = (state: PollFormState): PollFormState =>
+	withSnippet(state, CODE_BLOCK, "\n");
 
 const hasText = (answer: PollFormAnswer): boolean => answer.text.trim() !== "";
+
+const isQuestionLongEnough = (state: PollFormState): boolean =>
+	state.question.length >= POLL_LIMITS.question.min;
+
+const areAnswersWritten = (state: PollFormState): boolean =>
+	state.answers.every(hasText) &&
+	state.answers.length >= POLL_LIMITS.answers.min;
+
+const hasARightAnswer = (state: PollFormState): boolean =>
+	state.answers.some((answer) => answer.right);
+
+export type PollFormSteps = {
+	question: boolean;
+	answers: boolean;
+	category: boolean;
+	explanation: boolean;
+};
+
+export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
+	question: isQuestionLongEnough(state),
+	answers: areAnswersWritten(state) && hasARightAnswer(state),
+	category: state.categoryCode !== undefined,
+	explanation: state.explanation.trim() !== "",
+});
 
 const isSandboxUrl = (value: string): boolean =>
 	value === "" || CODE_SANDBOX_URL.safeParse(value).success;
 
 export const refusalOf = (state: PollFormState): string | undefined => {
-	if (state.question.length < POLL_LIMITS.question.min)
-		return COPY.needsQuestion(POLL_LIMITS.question.min);
+	if (!isQuestionLongEnough(state)) return COPY.needsQuestion;
 	if (!state.answers.every(hasText)) return COPY.needsAnswerText;
 	if (state.answers.length < POLL_LIMITS.answers.min)
 		return COPY.needsAnswers(POLL_LIMITS.answers.min);
-	if (!state.answers.some((answer) => answer.right))
+	if (!hasARightAnswer(state))
 		return state.answerType === "single"
 			? COPY.needsOneRight
 			: COPY.needsARight;
+	if (state.categoryCode === undefined) return COPY.needsCategory;
 	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
 	return undefined;
 };
 
-export const previewOf = (state: PollFormState): QuestionProps => ({
+export type PreviewPlay = {
+	pickedIds: readonly string[];
+	revealed: boolean;
+};
+
+export const UNPLAYED: PreviewPlay = { pickedIds: [], revealed: false };
+
+const toggled = (ids: readonly string[], id: string): readonly string[] =>
+	ids.includes(id) ? ids.filter((picked) => picked !== id) : [...ids, id];
+
+export const pickInPreview = (
+	play: PreviewPlay,
+	state: PollFormState,
+	id: string
+): PreviewPlay => {
+	if (play.revealed) return play;
+	if (state.answerType === "single") return { pickedIds: [id], revealed: true };
+	return { ...play, pickedIds: toggled(play.pickedIds, id) };
+};
+
+export const canLockIn = (state: PollFormState, play: PreviewPlay): boolean =>
+	state.answerType === "multiple" &&
+	!play.revealed &&
+	play.pickedIds.length > 0;
+
+export const lockInPreview = (play: PreviewPlay): PreviewPlay =>
+	play.pickedIds.length === 0 ? play : { ...play, revealed: true };
+
+const revealedStateOf = (
+	answer: PollFormAnswer,
+	play: PreviewPlay
+): ChoiceState => {
+	if (!play.revealed) return "idle";
+	if (answer.right) return "right";
+	return play.pickedIds.includes(String(answer.key)) ? "wrong" : "idle";
+};
+
+export const previewOf = (
+	state: PollFormState,
+	play: PreviewPlay = UNPLAYED
+): QuestionProps => ({
 	answerType: state.answerType,
 	question: state.question,
+	pickedIds: play.pickedIds,
 	options: state.answers.map((answer, index) => ({
 		id: String(answer.key),
 		letter: letterAt(index),
 		label: answer.text === "" ? COPY.answerPlaceholder(index) : answer.text,
+		state: revealedStateOf(answer, play),
 	})),
 });
+
+export const previewCategoryOf = (state: PollFormState): string | undefined =>
+	state.categoryCode === undefined
+		? undefined
+		: getCategoryMetadata(state.categoryCode).name;
 
 export const CATEGORY_CHOICES: readonly SelectOption[] = getCategories().map(
 	(category) => ({ value: category.code, label: category.name })
@@ -259,12 +351,23 @@ export type PollFormData = {
 const orNull = (value: string): string | null =>
 	value.trim() === "" ? null : value;
 
-export const toPollFormData = (state: PollFormState): PollFormData => ({
+export const submissionOf = (
+	state: PollFormState
+): PollFormData | undefined => {
+	if (refusalOf(state) !== undefined || state.categoryCode === undefined)
+		return undefined;
+	return toPollFormData(state, state.categoryCode);
+};
+
+const toPollFormData = (
+	state: PollFormState,
+	categoryCode: CategoryCode
+): PollFormData => ({
 	poll: {
 		question: state.question,
 		status: state.status,
 		answerType: state.answerType,
-		categoryCode: state.categoryCode,
+		categoryCode,
 		codeSandboxExample: orNull(state.codeSandboxExample),
 		explanation: orNull(state.explanation),
 	},

@@ -1,14 +1,8 @@
 @import "tailwindcss";
 @import "highlight.js/styles/github-dark.css";
 @import "@fontsource/jetbrains-mono/400.css";
-@import "@fontsource/jetbrains-mono/500.css";
 @import "@fontsource/jetbrains-mono/700.css";
 @import "@fontsource/jetbrains-mono/800.css";
-/* Candidate typeface, under evaluation against JetBrains Mono. Self-hosted like
-   the rest — no Google Fonts request. Toggled from Storybook's toolbar; nothing
-   in the app opts into it yet. */
-@import "@fontsource/space-mono/400.css";
-@import "@fontsource/space-mono/700.css";
 
 /* Dark-only (Marciano, 2026-08-13). The light halves that used to sit in here
    were unreachable — `__root.tsx`'s `<body class="bg-black text-white">` is a
@@ -66,7 +60,7 @@
 	}
 
 	.markdown h3 {
-		@apply text-lg font-semibold mb-2 mt-4;
+		@apply text-lg font-bold mb-2 mt-4;
 	}
 
 	.markdown ul {
@@ -173,7 +167,6 @@
 	--text-display--line-height: 1.35;
 
 	--font-display: "Pixter Display", sans-serif;
-	--font-granular: "Pixter Granular", sans-serif;
 }
 
 /* Specific color utilities - no longer needed with Tailwind 4's --color-* prefix */
@@ -715,52 +708,11 @@ body[data-screen-theme] {
 	font-style: normal;
 }
 
-@font-face {
-	font-family: "Pixter Granular";
-	src: url("/fonts/PixterGranular.ttf") format("truetype");
-	font-weight: normal;
-	font-style: normal;
-}
-
-@font-face {
-	font-family: "Pixter Granular";
-	src: url("/fonts/PixterGranularBold.ttf") format("truetype");
-	font-weight: bold;
-	font-style: normal;
-}
-
 body {
 	font-family: "JetBrains Mono", ui-monospace, monospace;
 	/* Pin bold to preserve the app's look now that a real 400 face is registered —
 	   without this the default weight would silently flip to regular everywhere. */
 	font-weight: bold;
-}
-
-/* Attribute rather than a class so it can sit on any wrapper and beat the body
-   rule by specificity. Storybook's Font toolbar is the only thing that sets it. */
-[data-font="space-mono"] {
-	font-family: "Space Mono", ui-monospace, monospace;
-}
-[data-font="jetbrains-mono"] {
-	font-family: "JetBrains Mono", ui-monospace, monospace;
-}
-
-/* Tracking under evaluation against the base rule's 0.01em, which was set for a
-   narrower face than Space Mono. The em values are Tailwind's own tracking-tight
-   and tracking-tighter, so whichever wins is a utility and not a magic number;
-   the px value is the one asked for, kept separate because it does not scale
-   with the size — at text-xxs it bites twice as hard as it does at text-ask. */
-[data-tracking="tight"] {
-	letter-spacing: -0.025em;
-}
-[data-tracking="tighter"] {
-	letter-spacing: -0.05em;
-}
-[data-tracking="half-pixel"] {
-	letter-spacing: -0.5px;
-}
-[data-tracking="loose"] {
-	letter-spacing: 0.01em;
 }
 
 meter {

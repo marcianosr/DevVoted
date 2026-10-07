@@ -33,6 +33,7 @@ export const COPY = {
 	profileTab: "Profile",
 	tabs: "Main",
 	suggested: YOUR_SUGGESTED_POLLS,
+	admin: "Admin",
 	account: "Your account",
 	runStorage: "run",
 	pollsLeft: (count: number) => `${plural(count, "poll")} left`,
@@ -122,6 +123,7 @@ export type NavViewer = {
 	archivedStorage: number;
 	profileHref: string;
 	suggestedHref: string;
+	adminHref?: string;
 	signOutHref: string;
 };
 
@@ -292,6 +294,15 @@ const AccountMenu = ({ viewer, suggest, onNavigate }: AccountMenuProps) => (
 			>
 				<SuggestLabel reward={suggest.reward} />
 			</NavAnchor>
+			{viewer.adminHref === undefined ? null : (
+				<NavAnchor
+					href={viewer.adminHref}
+					className={MENU_ROW}
+					onNavigate={onNavigate}
+				>
+					{COPY.admin}
+				</NavAnchor>
+			)}
 
 			<NavDivider />
 

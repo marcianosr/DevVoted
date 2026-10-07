@@ -28,7 +28,11 @@ vi.mock("~/modules/polls/authoring/application/authoring.serverfn", () => ({
 }));
 
 const BROCK = "brock-pewter-city";
-const flex = { id: 74, question: "What does `flex: 1` expand to?" };
+const flex = {
+	id: 74,
+	question: "What does `flex: 1` expand to?",
+	rewardKb: 16,
+};
 
 const ok = <T,>(data: T): { success: true; data: T } => ({
 	success: true,

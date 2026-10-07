@@ -22,6 +22,7 @@ const SIGN_OUT = "/logout";
 const RUN = "/run";
 const COMMUNITY = "/run/community";
 const PROFILE = "/profile";
+const ADMIN = "/admin";
 
 const profileHrefOf = (userId: string): string => `${PROFILE}/${userId}`;
 
@@ -57,6 +58,7 @@ export const Nav = ({ user, published }: NavProps) => {
 					archivedStorage: archive.view?.archivedStorage ?? 0,
 					profileHref: profileHrefOf(user.id),
 					suggestedHref: POLLS_PATH,
+					...(isAdminEmail(user.email) ? { adminHref: ADMIN } : {}),
 					signOutHref: SIGN_OUT,
 				};
 

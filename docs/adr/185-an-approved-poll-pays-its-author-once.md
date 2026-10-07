@@ -3,7 +3,8 @@
 ## Status
 
 Accepted — 2026-10-04 (Marciano, DVTD-60nr). Gives archived storage its second
-source; per-answer pay (DVTD-ofah) stays open.
+source; per-answer pay (DVTD-ofah) stays open. The flat 16 KB is amended by ADR-193:
+it is now the floor of a bounty that grows in a thin category.
 
 ## Context
 

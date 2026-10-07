@@ -32,6 +32,26 @@ describe("Panel", () => {
 		);
 	});
 
+	it("numbers a step in place of the glyph, dark until done", () => {
+		const { container } = render(
+			<Panel.Header label="Question" step={{ number: 1, done: false }} />
+		);
+
+		expect(screen.getByText("1")).toHaveClass("badge-theme");
+		expect(screen.getByText("1")).not.toHaveAttribute("data-screen-theme");
+		expect(container.querySelector(".panel-glyph")).not.toBeInTheDocument();
+	});
+
+	it("lights a done step green", () => {
+		render(<Panel.Header label="Category" step={{ number: 3, done: true }} />);
+
+		expect(screen.getByText("3")).toHaveAttribute(
+			"data-screen-theme",
+			"viridian"
+		);
+		expect(screen.getByText("3")).toHaveClass("bg-theme-lit");
+	});
+
 	it("renders the header label beside its meta", () => {
 		render(<Full />);
 

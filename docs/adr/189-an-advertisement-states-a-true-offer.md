@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — 2026-10-05 (Marciano, DVTD-sopp).
+Accepted — 2026-10-05 (Marciano, DVTD-sopp). D1 amended by ADR-193: the poll
+editors card names a thin category and its bounty, and an admin sees it without a
+reward.
 
 ## Context
 

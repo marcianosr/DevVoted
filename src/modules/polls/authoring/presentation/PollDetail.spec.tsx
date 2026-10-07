@@ -10,6 +10,7 @@ const PROPS: PollDetailProps = {
 	category: "CSS",
 	status: "draft",
 	created: "4 Oct 2026",
+	review: "never",
 	question: {
 		answerType: "single",
 		question: "Which value of `position` removes an element from flow?",
@@ -125,10 +126,52 @@ describe("PollDetail review", () => {
 		expect(onReview).toHaveBeenCalledOnce();
 	});
 
-	it("states a reviewed poll instead of offering the press", () => {
-		render(<PollDetail {...PROPS} canEdit reviewed />);
+	it("states an up-to-date poll reviewed instead of offering the press", () => {
+		render(
+			<PollDetail {...PROPS} canEdit review="current" onReview={vi.fn()} />
+		);
 
 		expect(screen.getByText("reviewed")).toBeInTheDocument();
 		expect(screen.queryByRole("button", { name: "Mark reviewed" })).toBeNull();
+	});
+
+	it("offers a poll edited since its review for review again", async () => {
+		const onReview = vi.fn();
+		render(
+			<PollDetail {...PROPS} canEdit review="changed" onReview={onReview} />
+		);
+
+		expect(screen.getByText("changed since review")).toBeInTheDocument();
+		await userEvent.click(
+			screen.getByRole("button", { name: "Mark reviewed" })
+		);
+
+		expect(onReview).toHaveBeenCalledOnce();
+	});
+
+	it("dates the last review and the last edit for an admin", () => {
+		render(
+			<PollDetail
+				{...PROPS}
+				canEdit
+				review="changed"
+				reviewedOn="25 Dec 2025"
+				updatedOn="13 May 2026"
+			/>
+		);
+
+		expect(
+			screen.getByText(
+				"created 4 Oct 2026 · reviewed 25 Dec 2025 · updated 13 May 2026"
+			)
+		).toBeInTheDocument();
+	});
+
+	it("keeps the review dates from a player looking at their own poll", () => {
+		render(
+			<PollDetail {...PROPS} reviewedOn="25 Dec 2025" updatedOn="13 May 2026" />
+		);
+
+		expect(screen.getByText("created 4 Oct 2026")).toBeInTheDocument();
 	});
 });

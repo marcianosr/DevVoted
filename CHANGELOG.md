@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Thin categories pay a bounty for new polls.** A poll you suggest in a category that holds few polls earns more archived storage once it is approved, and never less than 16 KB. The figure is fixed the moment you suggest the poll. The advertisement now calls for polls in one of those categories, says how many polls it holds and what an approved one pays, and opens the suggest form with that category picked. The form's reward badge follows the category you pick, and the approval dialog counts up by what each poll actually paid.
+
+### Changed
+- **Suggesting a poll walks four steps.** The suggest form wears Pallet and reads as four numbered steps (question, answers, category, explanation) that light up green once done, with the **+16 KB when approved** reward up top. Tap an answer's letter to mark it right, pick the category from chips (none is picked for you), and add inline code or a js block with one tap. **Preview**, beside the submit, swaps the form for your poll as players meet it: pick an answer to see it marked right or wrong, with your explanation and CodeSandbox link after. The submit stays disabled and names what is still missing until the poll is ready.
 
 ## 2.0.7 - 2026-10-06
 ### Changed

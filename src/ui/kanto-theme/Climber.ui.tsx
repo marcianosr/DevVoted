@@ -28,7 +28,7 @@ const SIZE = {
 const FACE =
 	"absolute inset-0 flex items-center justify-center overflow-hidden rounded-md border border-b-4 border-edge-strong bg-theme-raised font-bold text-theme-soft";
 const FACE_TEXT = {
-	sm: "text-[10px]",
+	sm: "text-xxs",
 	md: "text-xs",
 	lg: "text-xl",
 	xl: "text-3xl",

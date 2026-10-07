@@ -61,4 +61,22 @@ describe("Select with a caption", () => {
 		expect(select).toHaveAccessibleDescription("pick one");
 		expect(screen.getByText("category").closest("span.sr-only")).toBeNull();
 	});
+
+	it("shows a placeholder that cannot be chosen back while nothing is picked", () => {
+		render(
+			<Select
+				label="Creator"
+				placeholder="pick a creator"
+				options={CREATORS}
+				value=""
+				onChange={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByRole("combobox", { name: "Creator" })).toHaveValue("");
+		expect(
+			screen.getByRole("option", { name: "pick a creator" })
+		).toBeDisabled();
+		expect(screen.getAllByRole("option")).toHaveLength(4);
+	});
 });

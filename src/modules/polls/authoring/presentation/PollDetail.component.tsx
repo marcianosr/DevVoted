@@ -57,7 +57,6 @@ export const PollDetail = ({ pollId, search }: PollDetailProps) => {
 			editHref={pollScreenHrefOf(pollId, "edit", query)}
 			listHref={pollListHrefOf(query)}
 			step={step}
-			reviewed={view.poll.reviewedAt !== null}
 			onReview={
 				view.canAdminister && !review.reviewing ? review.review : undefined
 			}
