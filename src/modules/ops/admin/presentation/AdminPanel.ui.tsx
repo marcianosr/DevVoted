@@ -66,16 +66,15 @@ const COPY = {
 
 const PAGE = "container mx-auto px-4 py-8";
 const CARD = " rounded-lg shadow-md p-6";
-const CARD_TITLE = "text-xl font-semibold mb-4 text-white";
+const CARD_TITLE = "text-xl font-bold mb-4 text-white";
 const GRID = "grid grid-cols-1 lg:grid-cols-2 gap-8";
-const TH = "text-left py-2 px-3 font-medium text-white";
+const TH = "text-left py-2 px-3 font-bold text-white";
 const TD = "py-2 px-3 text-white text-xs whitespace-nowrap";
 const SUBGRID = "grid grid-cols-1 gap-6 md:grid-cols-3";
-const SUBTITLE =
-	"text-sm font-semibold uppercase tracking-wide text-white mb-3";
+const SUBTITLE = "text-sm font-bold uppercase tracking-wide text-white mb-3";
 const ROW = "border-b border-gray-700 hover:bg-gray-800";
 const FIGURE_TD = "py-2 px-3 text-white text-xs tabular-nums text-right";
-const FIGURE_TH = "text-right py-2 px-3 font-medium text-white";
+const FIGURE_TH = "text-right py-2 px-3 font-bold text-white";
 const FIGURE_ROW = "flex justify-between items-center";
 const AVATAR = "size-8 shrink-0 rounded-full bg-gray-700 object-cover";
 const ERROR_BOX = "mb-6 p-4 bg-red-50 border border-red-200 rounded-lg";
@@ -137,7 +136,7 @@ const UserGroup = ({
 	onSendReminder,
 }: UserGroupProps) => (
 	<div>
-		<h3 className="text-sm font-semibold uppercase tracking-wide text-white mb-3">
+		<h3 className="text-sm font-bold uppercase tracking-wide text-white mb-3">
 			{title} ({users.length})
 		</h3>
 		{users.length === 0 ? (
@@ -150,7 +149,7 @@ const UserGroup = ({
 						className="flex items-center justify-between gap-3 p-3 bg-gray-800 rounded-lg"
 					>
 						<div className="min-w-0">
-							<p className="text-sm font-medium text-white truncate">
+							<p className="text-sm font-bold text-white truncate">
 								{user.displayName}
 							</p>
 							<p className="text-xs text-white truncate">{user.email}</p>
@@ -289,11 +288,11 @@ const Signups = ({ signups }: Pick<AdminPanelData, "signups">) => (
 		<div className="space-y-3 mb-6">
 			<div className={FIGURE_ROW}>
 				<span className="text-white">{COPY.nextDay}</span>
-				<span className="text-white font-medium">{signups.nextDay}</span>
+				<span className="text-white font-bold">{signups.nextDay}</span>
 			</div>
 			<div className={FIGURE_ROW}>
 				<span className="text-white">{COPY.firstWeek}</span>
-				<span className="text-white font-medium">{signups.firstWeek}</span>
+				<span className="text-white font-bold">{signups.firstWeek}</span>
 			</div>
 		</div>
 		<Table
@@ -374,7 +373,7 @@ const VisitorCell = ({ visit }: { visit: AdminVisit }) => (
 			<img src={visit.avatarUrl} alt="" className={AVATAR} />
 		)}
 		<div className="min-w-0">
-			<p className="text-sm font-medium text-white truncate">{visit.name}</p>
+			<p className="text-sm font-bold text-white truncate">{visit.name}</p>
 			<p className="text-xs text-gray-400 font-mono">{visit.visitor}</p>
 		</div>
 	</div>
@@ -459,11 +458,11 @@ export const AdminPanel = ({
 					</div>
 					<div className="flex justify-between items-center">
 						<span className="text-white">{COPY.activeRuns}</span>
-						<span className="text-white font-medium">{stats.activeRuns}</span>
+						<span className="text-white font-bold">{stats.activeRuns}</span>
 					</div>
 					<div className="flex justify-between items-center">
 						<span className="text-white">{COPY.totalUsers}</span>
-						<span className="text-white font-medium">{stats.totalUsers}</span>
+						<span className="text-white font-bold">{stats.totalUsers}</span>
 					</div>
 				</div>
 			</div>
@@ -475,7 +474,7 @@ export const AdminPanel = ({
 						{recentResponses.map((response) => (
 							<div key={response.id} className="p-3 bg-gray-800 rounded-lg">
 								<div className="flex justify-between items-start mb-1">
-									<span className="font-medium text-sm text-white">
+									<span className="font-bold text-sm text-white">
 										{response.name}
 									</span>
 									<span className="text-xs text-white">{response.at}</span>
@@ -519,7 +518,7 @@ export const AdminPanel = ({
 		/>
 
 		<div className={`mt-8${CARD}`}>
-			<h2 className="text-xl font-semibold mb-6 text-white">
+			<h2 className="text-xl font-bold mb-6 text-white">
 				{COPY.users(users.inRun.length + users.idle.length)}
 			</h2>
 			<div className={GRID}>

@@ -42,3 +42,14 @@ export const APPROVED_POLL_ARCHIVE_KB = 16;
 
 export const isPollStatus = (value: string): value is PollStatus =>
 	(POLL_STATUSES as readonly string[]).includes(value);
+
+export const REVIEW_STATES = ["never", "changed", "current"] as const;
+export type ReviewState = (typeof REVIEW_STATES)[number];
+
+const isEditedSince = (updatedAt: Date | null, reviewedAt: Date): boolean =>
+	updatedAt !== null && updatedAt.getTime() > reviewedAt.getTime();
+
+export const reviewStateOf = ({ reviewedAt, updatedAt }: Poll): ReviewState => {
+	if (reviewedAt === null) return "never";
+	return isEditedSince(updatedAt, reviewedAt) ? "changed" : "current";
+};

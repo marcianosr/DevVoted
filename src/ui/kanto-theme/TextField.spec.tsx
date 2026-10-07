@@ -71,4 +71,14 @@ describe("TextField", () => {
 		expect(screen.getByRole("textbox")).toHaveAttribute("type", "url");
 		expect(screen.getByRole("textbox")).toHaveAttribute("maxlength", "500");
 	});
+
+	it("grows to a roomier box and type size when asked for large", () => {
+		render(
+			<TextField label="answer 1" value="" size="lg" onChange={vi.fn()} />
+		);
+
+		const input = screen.getByRole("textbox", { name: "answer 1" });
+		expect(input).toHaveClass("text-sm");
+		expect(input.parentElement).toHaveClass("h-11");
+	});
 });

@@ -9,19 +9,28 @@ import {
 	STATUS_CHOICES,
 	addAnswer,
 	answerRowsOf,
-	answersCountOf,
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
 	markRight,
 	pollFormStateOf,
+	UNPLAYED,
+	canLockIn,
+	lockInPreview,
+	pickInPreview,
+	previewCategoryOf,
 	previewOf,
 	questionCountOf,
 	refusalOf,
 	removeAnswer,
-	toPollFormData,
+	rewardOf,
+	stepsDoneOf,
+	suggestFormFor,
+	submissionOf,
 	withAnswerType,
 	withCategory,
+	withCodeBlock,
+	withInlineCode,
 	withStatus,
 	type PollFormState,
 } from "./pollForm.viewmodel";
@@ -45,8 +54,9 @@ const rightsOf = (state: PollFormState) =>
 	state.answers.filter((answer) => answer.right).map((answer) => answer.key);
 
 describe("EMPTY_POLL_FORM", () => {
-	it("starts with the minimum of blank answers, none right, one right expected", () => {
+	it("starts with the minimum of blank answers, none right, one right expected, no category", () => {
 		expect(EMPTY_POLL_FORM.answers).toHaveLength(3);
+		expect(EMPTY_POLL_FORM.categoryCode).toBeUndefined();
 		expect(rightsOf(EMPTY_POLL_FORM)).toEqual([]);
 		expect(EMPTY_POLL_FORM.answerType).toBe("single");
 		expect(EMPTY_POLL_FORM.status).toBe("draft");
@@ -148,29 +158,77 @@ describe("withCategory and withStatus", () => {
 	});
 });
 
-describe("counters", () => {
-	it("states the question's length against its limits", () => {
-		expect(questionCountOf("")).toBe("0 / 2000 · min 10");
+describe("questionCountOf", () => {
+	it("states the question's length against its maximum", () => {
+		expect(questionCountOf("")).toBe("0 / 2000");
 		expect(questionCountOf(quiz.question)).toBe(
-			`${quiz.question.length} / 2000 · min 10`
+			`${quiz.question.length} / 2000`
 		);
 	});
+});
 
-	it("states how many answers there are against both limits", () => {
-		expect(answersCountOf(EMPTY_POLL_FORM.answers)).toBe(
-			"3 of 20 answers · at least 3"
-		);
+describe("code snippets", () => {
+	it("appends inline code to the question", () => {
+		expect(
+			withInlineCode({ ...EMPTY_POLL_FORM, question: "Is" }).question
+		).toBe("Is `code`");
+	});
+
+	it("appends a js block on its own lines", () => {
+		expect(
+			withCodeBlock({ ...EMPTY_POLL_FORM, question: "What logs?" }).question
+		).toBe("What logs?\n```js\n\n```");
+	});
+
+	it("starts an empty question with the snippet itself", () => {
+		expect(withInlineCode(EMPTY_POLL_FORM).question).toBe("`code`");
+		expect(withCodeBlock(EMPTY_POLL_FORM).question).toBe("```js\n\n```");
+	});
+});
+
+describe("stepsDoneOf", () => {
+	it("lights nothing on an empty form", () => {
+		expect(stepsDoneOf(EMPTY_POLL_FORM)).toEqual({
+			question: false,
+			answers: false,
+			category: false,
+			explanation: false,
+		});
+	});
+
+	it("lights the question, answers and category of a finished poll", () => {
+		expect(stepsDoneOf(filled)).toEqual({
+			question: true,
+			answers: true,
+			category: true,
+			explanation: false,
+		});
+	});
+
+	it("keeps the answers dark until one is marked right", () => {
+		const unmarked = {
+			...filled,
+			answers: filled.answers.map((answer) => ({ ...answer, right: false })),
+		};
+
+		expect(stepsDoneOf(unmarked).answers).toBe(false);
+	});
+
+	it("lights the explanation once it has text", () => {
+		expect(
+			stepsDoneOf({ ...filled, explanation: "Because hoisting." }).explanation
+		).toBe(true);
 	});
 });
 
 describe("refusalOf", () => {
 	it("asks for the question first", () => {
-		expect(refusalOf(EMPTY_POLL_FORM)).toBe("question needs 10 characters");
+		expect(refusalOf(EMPTY_POLL_FORM)).toBe("Write the question");
 	});
 
 	it("then for text in every answer", () => {
 		expect(refusalOf({ ...EMPTY_POLL_FORM, question: quiz.question })).toBe(
-			"every answer needs text"
+			"Fill every answer"
 		);
 	});
 
@@ -180,15 +238,21 @@ describe("refusalOf", () => {
 			answers: filled.answers.map((answer) => ({ ...answer, right: false })),
 		};
 
-		expect(refusalOf(unmarked)).toBe("mark one answer right");
+		expect(refusalOf(unmarked)).toBe("Mark the right answer");
 		expect(refusalOf(withAnswerType(unmarked, "multiple"))).toBe(
-			"mark at least one answer right"
+			"Mark the right answers"
+		);
+	});
+
+	it("then for a category", () => {
+		expect(refusalOf({ ...filled, categoryCode: undefined })).toBe(
+			"Pick a category"
 		);
 	});
 
 	it("then for a real sandbox URL, if one is given at all", () => {
 		expect(refusalOf({ ...filled, codeSandboxExample: "codesandbox" })).toBe(
-			"CodeSandbox needs a full URL"
+			"Fix the CodeSandbox link"
 		);
 		expect(
 			refusalOf({ ...filled, codeSandboxExample: "https://codesandbox.io/s/x" })
@@ -218,9 +282,91 @@ describe("previewOf", () => {
 	it("names a blank answer by its number so the row still shows", () => {
 		expect(previewOf(EMPTY_POLL_FORM).options[1]?.label).toBe("answer 2");
 	});
+
+	it("marks the picks but reveals nothing before the answer is in", () => {
+		const multiple = withAnswerType(filled, "multiple");
+		const play = pickInPreview(UNPLAYED, multiple, "1");
+		const preview = previewOf(multiple, play);
+
+		expect(preview.pickedIds).toEqual(["1"]);
+		expect(preview.options.every((option) => option.state === "idle")).toBe(
+			true
+		);
+	});
+
+	it("reveals the right answers and the wrong pick once revealed", () => {
+		const rightId = String(rightsOf(filled)[0]);
+		const wrongId = rightId === "0" ? "1" : "0";
+		const preview = previewOf(filled, pickInPreview(UNPLAYED, filled, wrongId));
+
+		expect(preview.options.find((option) => option.id === rightId)?.state).toBe(
+			"right"
+		);
+		expect(preview.options.find((option) => option.id === wrongId)?.state).toBe(
+			"wrong"
+		);
+		expect(
+			preview.options.filter((option) => option.state === "idle")
+		).toHaveLength(2);
+	});
 });
 
-describe("toPollFormData", () => {
+describe("playing the preview", () => {
+	it("reveals a single-answer poll on its one tap", () => {
+		expect(pickInPreview(UNPLAYED, filled, "2")).toEqual({
+			pickedIds: ["2"],
+			revealed: true,
+		});
+	});
+
+	it("toggles picks on a multi-answer poll until it is locked in", () => {
+		const multiple = withAnswerType(filled, "multiple");
+		const play = pickInPreview(
+			pickInPreview(pickInPreview(UNPLAYED, multiple, "0"), multiple, "2"),
+			multiple,
+			"0"
+		);
+
+		expect(play).toEqual({ pickedIds: ["2"], revealed: false });
+		expect(lockInPreview(play)).toEqual({ pickedIds: ["2"], revealed: true });
+	});
+
+	it("offers a lock-in only on a picked, unrevealed multi-answer poll", () => {
+		const multiple = withAnswerType(filled, "multiple");
+		const picked = pickInPreview(UNPLAYED, multiple, "1");
+
+		expect(canLockIn(multiple, UNPLAYED)).toBe(false);
+		expect(canLockIn(multiple, picked)).toBe(true);
+		expect(canLockIn(multiple, lockInPreview(picked))).toBe(false);
+		expect(canLockIn(filled, picked)).toBe(false);
+	});
+
+	it("locks in nothing without a pick", () => {
+		expect(lockInPreview(UNPLAYED)).toBe(UNPLAYED);
+	});
+
+	it("ignores a pick once revealed", () => {
+		const revealed = pickInPreview(UNPLAYED, filled, "2");
+
+		expect(pickInPreview(revealed, filled, "0")).toBe(revealed);
+	});
+});
+
+describe("previewCategoryOf", () => {
+	it("names the picked category, and nothing before one is picked", () => {
+		expect(previewCategoryOf(filled)).toBe("CSS");
+		expect(previewCategoryOf(EMPTY_POLL_FORM)).toBeUndefined();
+	});
+});
+
+describe("submissionOf", () => {
+	it("has nothing to send while a rule is unmet", () => {
+		expect(submissionOf(EMPTY_POLL_FORM)).toBeUndefined();
+		expect(
+			submissionOf({ ...filled, categoryCode: undefined })
+		).toBeUndefined();
+	});
+
 	it("sends blanks as null, keeps option ids, and never mentions a code block", () => {
 		const state: PollFormState = {
 			...filled,
@@ -229,12 +375,13 @@ describe("toPollFormData", () => {
 				id: answer.key + 10,
 			})),
 		};
-		const data = toPollFormData(state);
+		const data = submissionOf(state);
 
-		expect(data.poll.codeSandboxExample).toBeNull();
-		expect(data.poll.explanation).toBeNull();
-		expect(data.poll).not.toHaveProperty("codeBlock");
-		expect(data.options[0]).toEqual({
+		expect(data?.poll.categoryCode).toBe("css");
+		expect(data?.poll.codeSandboxExample).toBeNull();
+		expect(data?.poll.explanation).toBeNull();
+		expect(data?.poll).not.toHaveProperty("codeBlock");
+		expect(data?.options[0]).toEqual({
 			id: 10,
 			option: quiz.options[0],
 			correct: quiz.options[0] === quiz.correctAnswer,
@@ -242,6 +389,38 @@ describe("toPollFormData", () => {
 	});
 
 	it("leaves an id off a new option", () => {
-		expect(toPollFormData(filled).options[0]).not.toHaveProperty("id");
+		expect(submissionOf(filled)?.options[0]).not.toHaveProperty("id");
+	});
+});
+
+describe("suggestFormFor", () => {
+	it("opens an empty form on the category the advertisement named", () => {
+		expect(suggestFormFor("vue")).toEqual({
+			...EMPTY_POLL_FORM,
+			categoryCode: "vue",
+		});
+	});
+
+	it("opens with no category picked when none was named", () => {
+		expect(suggestFormFor(undefined)).toEqual(EMPTY_POLL_FORM);
+	});
+});
+
+describe("rewardOf", () => {
+	const bounties = [
+		{ code: "vue", published: 3, bountyKb: 48 },
+		{ code: "css", published: 400, bountyKb: 16 },
+	] as const;
+
+	it("states the bounty the picked category pays", () => {
+		expect(rewardOf({ categoryCode: "vue" }, bounties)).toBe("+48 KB");
+	});
+
+	it("states the base reward before a category is picked", () => {
+		expect(rewardOf({ categoryCode: undefined }, bounties)).toBe("+16 KB");
+	});
+
+	it("states the base reward while the bounties are still loading", () => {
+		expect(rewardOf({ categoryCode: "vue" }, [])).toBe("+16 KB");
 	});
 });

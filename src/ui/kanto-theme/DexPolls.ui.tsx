@@ -21,7 +21,7 @@ const ROSTER_HEAD = "flex items-center justify-between gap-2";
 const ROSTER_LABEL = "text-sm text-theme-muted";
 const GRID = "grid grid-cols-8 gap-1.5 sm:grid-cols-16";
 const TILE =
-	"flex h-7 cursor-pointer items-center justify-center rounded-md text-[0.625rem] font-bold tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-theme";
+	"flex h-7 cursor-pointer items-center justify-center rounded-md text-xxs font-bold tabular-nums transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-theme";
 const TILE_MET = "badge-theme";
 const TILE_UNSEEN = "bg-theme-raised text-theme-muted opacity-60";
 const TILE_PICKED = "outline-2 outline-offset-1 outline-theme";

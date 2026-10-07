@@ -10,7 +10,7 @@ import {
 } from "./Field.ui";
 
 const BOX = "flex w-full min-w-0 px-2 py-1.5";
-const AREA = "min-h-32 w-full resize-y leading-relaxed";
+const AREA = "text-xs min-h-32 w-full resize-y leading-relaxed";
 const DEFAULT_ROWS = 4;
 
 export type TextAreaProps = {

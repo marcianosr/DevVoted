@@ -3,9 +3,18 @@ import { describe, expect, it } from "vitest";
 import { approvalNoticeViewFor } from "~/modules/polls/authoring/application/approvalNotice.viewmodel";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
-const flex = { id: 74, question: "What does `flex: 1` expand to?" };
-const grid = { id: 75, question: "What does `fr` stand for in grid?" };
-const hoist = { id: 76, question: "Is a `const` hoisted?" };
+const flex = {
+	id: 74,
+	question: "What does `flex: 1` expand to?",
+	rewardKb: 16,
+};
+const grid = {
+	id: 75,
+	question: "What does `fr` stand for in grid?",
+	rewardKb: 16,
+};
+const hoist = { id: 76, question: "Is a `const` hoisted?", rewardKb: 16 };
+const vueRef = { id: 77, question: "What does `ref()` return?", rewardKb: 48 };
 
 const kb = (amount: number) => amount * STORAGE_UNITS.KB;
 
@@ -34,6 +43,12 @@ describe("approvalNoticeViewFor", () => {
 			fromKb: 464,
 			toKb: 512,
 		});
+	});
+
+	it("sums the reward each poll was promised, a thin category's bounty included", () => {
+		const view = approvalNoticeViewFor([flex, vueRef], kb(512));
+
+		expect(view).toMatchObject({ reward: "+64 KB", fromKb: 448, toKb: 512 });
 	});
 
 	it("starts the count at zero when the archive was spent below the reward since", () => {

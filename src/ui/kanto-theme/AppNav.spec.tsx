@@ -15,6 +15,7 @@ const SUGGEST = "/polls/new";
 const PROFILE = "/profile/marciano";
 const SUGGESTED = "/polls";
 const SIGN_OUT = "/logout";
+const ADMIN = "/admin";
 const BORDER = "/borders/border-ts-lavender.svg";
 
 const NAME = "marciano_schildmeijer";
@@ -367,6 +368,23 @@ describe("AppNav", () => {
 				"href",
 				SIGN_OUT
 			);
+		});
+
+		it("links an admin to the admin page", () => {
+			drawBar({ viewer: { ...VIEWER, adminHref: ADMIN } });
+
+			expect(screen.getByRole("link", { name: COPY.admin })).toHaveAttribute(
+				"href",
+				ADMIN
+			);
+		});
+
+		it("offers a player no admin page", () => {
+			drawBar({ viewer: VIEWER });
+
+			expect(
+				screen.queryByRole("link", { name: COPY.admin })
+			).not.toBeInTheDocument();
 		});
 
 		it("leaves signing out to a real page load, so nothing can prefetch it", () => {

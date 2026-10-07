@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { createMockPoll } from "~/modules/polls/poll/domain/poll.factory";
 import type { PollCreator } from "~/modules/polls/poll/domain/poll.model";
+import { TEST_DATES } from "~/test/kanto";
 
 import {
 	ALL,
@@ -22,6 +23,7 @@ import {
 	questionSegmentsOf,
 	visiblePollsOf,
 	windowOf,
+	type ReviewedFilter,
 } from "./pollList.viewmodel";
 
 const BROCK = "brock-id";
@@ -568,50 +570,83 @@ describe("pollStepOf", () => {
 });
 
 describe("the reviewed filter", () => {
+	const REVIEWED_AT = new Date(`${TEST_DATES.christmas}T09:00:00Z`);
+	const EDITED_AT = new Date(`${TEST_DATES.christmasEve}T09:00:00Z`);
+	const LATER_EDIT = new Date("2026-05-13T10:00:00Z");
+
 	const reviewed = createMockPoll({
 		id: 5,
 		pollNumber: 5,
-		reviewedAt: new Date("2026-05-13T10:00:00Z"),
+		updatedAt: EDITED_AT,
+		reviewedAt: REVIEWED_AT,
 	});
-	const WITH_REVIEWED = [...POLLS, reviewed];
+	const changed = createMockPoll({
+		id: 6,
+		pollNumber: 6,
+		updatedAt: LATER_EDIT,
+		reviewedAt: REVIEWED_AT,
+	});
+	const WITH_REVIEWED = [...POLLS, reviewed, changed];
 
-	it("shows only the polls an admin has reviewed, or only the rest", () => {
-		expect(
-			idsOf(visiblePollsOf(WITH_REVIEWED, { ...EMPTY_FILTER, reviewed: "yes" }))
-		).toEqual([5]);
-		expect(
-			idsOf(visiblePollsOf(WITH_REVIEWED, { ...EMPTY_FILTER, reviewed: "no" }))
-		).toEqual([1, 2, 3, 4]);
+	it("splits the polls into never reviewed, changed since review and up to date", () => {
+		const idsReviewed = (state: ReviewedFilter) =>
+			idsOf(
+				visiblePollsOf(WITH_REVIEWED, { ...EMPTY_FILTER, reviewed: state })
+			);
+
+		expect(idsReviewed("never")).toEqual([1, 2, 3, 4]);
+		expect(idsReviewed("changed")).toEqual([6]);
+		expect(idsReviewed("current")).toEqual([5]);
 	});
 
-	it("counts reviewed and unreviewed polls", () => {
+	it("counts the polls in each review state", () => {
 		expect(pollListChoicesOf(WITH_REVIEWED, EMPTY_FILTER).reviewed).toEqual([
-			{ value: ALL, label: "any", count: 5 },
-			{ value: "yes", label: "yes", count: 1 },
-			{ value: "no", label: "no", count: 4 },
+			{ value: ALL, label: "any", count: 6 },
+			{ value: "never", label: "never reviewed", count: 4 },
+			{ value: "changed", label: "changed since review", count: 1 },
+			{ value: "current", label: "up to date", count: 1 },
 		]);
 	});
 
-	it("names a set reviewed filter as a chip", () => {
+	it("names a set review filter as a chip", () => {
 		const filter = {
 			...EMPTY_FILTER,
-			reviewed: "no",
+			reviewed: "changed",
 		} satisfies typeof EMPTY_FILTER;
 
 		expect(
 			activeFiltersOf(filter, pollListChoicesOf(WITH_REVIEWED, filter))
-		).toEqual([{ key: "reviewed", label: "reviewed no" }]);
+		).toEqual([{ key: "reviewed", label: "changed since review" }]);
 	});
 
-	it("reads the reviewed filter from the URL", () => {
-		expect(pollListSearchOf({ reviewed: "no" })).toEqual({ reviewed: "no" });
-		expect(pollListSearchOf({ reviewed: "maybe" })).toEqual({});
+	it("reads the review filter from the URL and drops a state it does not know", () => {
+		expect(pollListSearchOf({ reviewed: "changed" })).toEqual({
+			reviewed: "changed",
+		});
+		expect(pollListSearchOf({ reviewed: "yes" })).toEqual({});
 	});
 
-	it("marks a reviewed poll's row", () => {
-		const [unseen, seen] = pollRowsOf([flex, reviewed]);
+	it("states each row's review state", () => {
+		const rows = pollRowsOf([flex, reviewed, changed]);
 
-		expect(unseen?.reviewed).toBe(false);
-		expect(seen?.reviewed).toBe(true);
+		expect(rows.map((row) => row.review)).toEqual([
+			"never",
+			"current",
+			"changed",
+		]);
+	});
+
+	it("dates a reviewed row's review and last edit", () => {
+		const [row] = pollRowsOf([changed]);
+
+		expect(row?.reviewedOn).toBe("25 Dec 2025");
+		expect(row?.updatedOn).toBe("13 May 2026");
+	});
+
+	it("dates only the last edit of a poll nobody reviewed", () => {
+		const [row] = pollRowsOf([createMockPoll({ updatedAt: LATER_EDIT })]);
+
+		expect(row?.reviewedOn).toBeUndefined();
+		expect(row?.updatedOn).toBe("13 May 2026");
 	});
 });

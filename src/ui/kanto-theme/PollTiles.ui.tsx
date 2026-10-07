@@ -20,7 +20,7 @@ const CATEGORY =
 const READER_ONLY = "sr-only";
 const RULED = "border-t border-theme-faint";
 const SHAPE =
-	"w-full text-[0.625rem] leading-tight hyphens-auto wrap-anywhere text-theme-muted";
+	"w-full text-xxs leading-tight hyphens-auto wrap-anywhere text-theme-muted";
 
 export type PollTile = Redactable<{ category: string; shape?: string }>;
 

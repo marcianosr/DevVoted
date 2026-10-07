@@ -12,7 +12,7 @@ const MISTY_PROFILE = "/profile/misty";
 const RAREWARE = findBorderById("border-rareware");
 
 const SUGGEST = advertisementPropsFor(
-	{ kind: "suggest" },
+	{ kind: "suggest", paysReward: true },
 	MISTY,
 	MISTY_PROFILE
 );
@@ -41,6 +41,18 @@ export const Border: Story = {
 				MISTY_PROFILE
 			)
 		: SUGGEST,
+};
+
+export const WantedCategory: Story = {
+	args: advertisementPropsFor(
+		{
+			kind: "suggest",
+			wanted: { code: "vue", published: 3, bountyKb: 48 },
+			paysReward: true,
+		},
+		MISTY,
+		MISTY_PROFILE
+	),
 };
 
 export const PollStrip: Story = {

@@ -26,7 +26,9 @@ const flex: PollRow = {
 	facts: "single answer",
 	author: { name: "Misty" },
 	status: "published",
-	reviewed: true,
+	review: "current",
+	reviewedOn: "25 Dec 2025",
+	updatedOn: "24 Dec 2025",
 };
 
 const log: PollRow = {
@@ -37,7 +39,8 @@ const log: PollRow = {
 	question: [{ kind: "text", text: "What does this log?" }],
 	facts: "single answer · code",
 	status: "draft",
-	reviewed: false,
+	review: "never",
+	updatedOn: "13 May 2026",
 };
 
 const choices: PollListChoices = {
@@ -66,8 +69,9 @@ const choices: PollListChoices = {
 	],
 	reviewed: [
 		{ value: "all", label: "any", count: 96 },
-		{ value: "yes", label: "yes", count: 30 },
-		{ value: "no", label: "no", count: 66 },
+		{ value: "never", label: "never reviewed", count: 60 },
+		{ value: "changed", label: "changed since review", count: 6 },
+		{ value: "current", label: "up to date", count: 30 },
 	],
 };
 
@@ -93,6 +97,8 @@ const showing = (whole: string) => (_: string, element: Element | null) =>
 
 const renderList = (props: Partial<PollListProps> = {}) =>
 	render(<PollList {...defaults} {...props} />);
+
+const rowOf = (name: RegExp) => within(screen.getByRole("link", { name }));
 
 describe("PollList", () => {
 	it("heads the page with the count and a link to suggest a poll", () => {
@@ -304,28 +310,50 @@ describe("PollList", () => {
 		expect(screen.getByText(showing("showing 0 of 0"))).toBeInTheDocument();
 	});
 
-	it("filters on reviewed and marks a reviewed row, for an admin", async () => {
+	it("filters on a review state, for an admin", async () => {
 		const onFilterChange = vi.fn();
 		renderList({ onFilterChange });
 
 		await userEvent.selectOptions(
 			screen.getByRole("combobox", { name: "reviewed" }),
-			"no"
+			"changed"
 		);
 
 		expect(onFilterChange).toHaveBeenCalledWith(
-			expect.objectContaining({ reviewed: "no" })
+			expect.objectContaining({ reviewed: "changed" })
 		);
+	});
+
+	it("badges an up-to-date row reviewed and leaves a never-reviewed row bare", () => {
+		renderList();
+
+		expect(rowOf(/flex: 1/).getByText("reviewed")).toBeInTheDocument();
+		expect(rowOf(/this log/).queryByText("reviewed")).toBeNull();
+		expect(rowOf(/this log/).queryByText("changed")).toBeNull();
+	});
+
+	it("badges a row edited since its review as changed", () => {
+		renderList({ rows: [{ ...flex, review: "changed" }] });
+
+		expect(rowOf(/flex: 1/).getByText("changed")).toBeInTheDocument();
+		expect(rowOf(/flex: 1/).queryByText("reviewed")).toBeNull();
+	});
+
+	it("dates a row's last review and last edit, for an admin", () => {
+		renderList();
+
 		expect(
-			within(screen.getByRole("link", { name: /flex: 1/ })).getByText(
-				"reviewed"
-			)
+			rowOf(/flex: 1/).getByText("reviewed 25 Dec 2025 · updated 24 Dec 2025")
 		).toBeInTheDocument();
 		expect(
-			within(screen.getByRole("link", { name: /this log/ })).queryByText(
-				"reviewed"
-			)
-		).toBeNull();
+			rowOf(/this log/).getByText("updated 13 May 2026")
+		).toBeInTheDocument();
+	});
+
+	it("keeps the review dates off a player's own list", () => {
+		renderList({ admin: false });
+
+		expect(screen.queryByText(/updated 13 May 2026/)).toBeNull();
 	});
 
 	it("keeps the reviewed filter off a player's own list", () => {

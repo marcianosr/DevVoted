@@ -3,34 +3,45 @@ import { useState } from "react";
 import {
 	CATEGORY_CHOICES,
 	EMPTY_POLL_FORM,
+	UNPLAYED,
 	addAnswer,
 	answerRowsOf,
-	answersCountOf,
 	canAddAnswer,
+	canLockIn,
 	canRemoveAnswer,
 	changeAnswer,
+	lockInPreview,
 	markRight,
+	pickInPreview,
+	previewCategoryOf,
 	previewOf,
 	questionCountOf,
 	refusalOf,
 	removeAnswer,
-	toPollFormData,
+	rewardOf,
+	stepsDoneOf,
+	submissionOf,
 	withAnswerType,
 	withCategory,
+	withCodeBlock,
+	withInlineCode,
 	withStatus,
 	type PollFormData,
 	type PollFormMode,
 	type PollFormState,
 	type PollFormView,
+	type PreviewPlay,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
 import type { PollStep } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import { PollForm as PollFormUI } from "~/modules/polls/authoring/presentation/PollForm.ui";
+import type { CategoryBounty } from "~/modules/polls/poll/domain/pollBounty.model";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
 export type PollFormProps = {
 	mode: PollFormMode;
 	pollNumber?: number;
 	initial?: PollFormState;
+	bounties?: readonly CategoryBounty[];
 	statuses?: readonly SelectOption[];
 	error?: string;
 	submitting: boolean;
@@ -44,6 +55,7 @@ export const PollForm = ({
 	mode,
 	pollNumber,
 	initial,
+	bounties = [],
 	statuses,
 	error,
 	submitting,
@@ -54,8 +66,8 @@ export const PollForm = ({
 }: PollFormProps) => {
 	const [state, setState] = useState<PollFormState>(initial ?? EMPTY_POLL_FORM);
 	const [view, setView] = useState<PollFormView>("write");
-	const refusal = refusalOf(state);
-	const ready = refusal === undefined && !submitting;
+	const [play, setPlay] = useState<PreviewPlay>(UNPLAYED);
+	const submission = submitting ? undefined : submissionOf(state);
 
 	return (
 		<PollFormUI
@@ -65,17 +77,31 @@ export const PollForm = ({
 			view={view}
 			rows={answerRowsOf(state)}
 			questionCount={questionCountOf(state.question)}
-			answersCount={answersCountOf(state.answers)}
-			preview={previewOf(state)}
+			steps={stepsDoneOf(state)}
+			preview={previewOf(state, play)}
+			previewCategory={previewCategoryOf(state)}
+			revealed={play.revealed}
+			onPreviewPick={(id) =>
+				setPlay((current) => pickInPreview(current, state, id))
+			}
+			onLockIn={
+				canLockIn(state, play) ? () => setPlay(lockInPreview) : undefined
+			}
 			categories={CATEGORY_CHOICES}
 			statuses={statuses}
-			refusal={refusal}
+			reward={mode === "suggest" ? rewardOf(state, bounties) : undefined}
+			refusal={refusalOf(state)}
 			error={error}
 			saving={submitting}
 			onQuestion={(question) =>
 				setState((current) => ({ ...current, question }))
 			}
-			onView={setView}
+			onInlineCode={() => setState(withInlineCode)}
+			onCodeBlock={() => setState(withCodeBlock)}
+			onView={(next) => {
+				setPlay(UNPLAYED);
+				setView(next);
+			}}
 			onAnswerType={(answerType) =>
 				setState((current) => withAnswerType(current, answerType))
 			}
@@ -102,11 +128,13 @@ export const PollForm = ({
 			listHref={listHref}
 			step={step}
 			nextAhead={step?.nextHref !== undefined}
-			onSubmit={ready ? () => onSubmit(toPollFormData(state)) : undefined}
+			onSubmit={
+				submission === undefined ? undefined : () => onSubmit(submission)
+			}
 			onSubmitAndNext={
-				onSubmitAndNext === undefined
+				onSubmitAndNext === undefined || submission === undefined
 					? undefined
-					: () => onSubmitAndNext(toPollFormData(state))
+					: () => onSubmitAndNext(submission)
 			}
 		/>
 	);

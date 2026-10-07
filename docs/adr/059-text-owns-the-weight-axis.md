@@ -6,6 +6,10 @@ Accepted (2026-09-05, Marciano, DVTD-ak6k).
 Applies [ADR-010](010-ui-layer-separation.md)'s Tier-1 rule to the glyphs that were
 bypassing it.
 
+Amended 2026-10-07 (DVTD-1rqu): the 500 face is no longer imported, only 400, 700 and
+800, and Space Mono is gone. Decision 1 holds; a `font-medium` would now resolve down to
+400.
+
 ## Context
 
 The terminal theme thinned text by hanging a font-weight class off `Text`'s `className`,

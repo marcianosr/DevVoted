@@ -5,16 +5,20 @@ import {
 	EMPTY_POLL_FORM,
 	STATUS_CHOICES,
 	answerRowsOf,
-	answersCountOf,
 	canAddAnswer,
 	canRemoveAnswer,
+	UNPLAYED,
+	pickInPreview,
+	previewCategoryOf,
 	previewOf,
 	questionCountOf,
 	refusalOf,
+	stepsDoneOf,
 	withAnswerType,
 	type PollFormState,
 	type PollFormView,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
+import { APPROVED_POLL_REWARD } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import {
 	PollForm,
 	type PollFormProps,
@@ -56,13 +60,19 @@ const propsFor = (
 	view: "write",
 	rows: answerRowsOf(state),
 	questionCount: questionCountOf(state.question),
-	answersCount: answersCountOf(state.answers),
+	steps: stepsDoneOf(state),
 	preview: previewOf(state),
+	previewCategory: previewCategoryOf(state),
 	categories: CATEGORY_CHOICES,
+	reward: APPROVED_POLL_REWARD,
 	refusal: refusalOf(state),
 	saving: false,
 	onQuestion: noop,
+	onInlineCode: noop,
+	onCodeBlock: noop,
 	onView: noop,
+	revealed: false,
+	onPreviewPick: noop,
 	onAnswerType: noop,
 	onAnswerChange: noop,
 	onMarkRight: noop,
@@ -93,6 +103,17 @@ export const Preview: Story = {
 	args: propsFor(FILLED, { view: "preview" satisfies PollFormView }),
 };
 
+export const PreviewRevealed: Story = {
+	args: propsFor(
+		{ ...FILLED, codeSandboxExample: "https://codesandbox.io/s/float" },
+		{
+			view: "preview" satisfies PollFormView,
+			revealed: true,
+			preview: previewOf(FILLED, pickInPreview(UNPLAYED, FILLED, "0")),
+		}
+	),
+};
+
 export const SeveralRight: Story = { args: propsFor(SEVERAL) };
 
 export const Editing: Story = {
@@ -100,6 +121,7 @@ export const Editing: Story = {
 		mode: "edit",
 		pollNumber: 9,
 		statuses: STATUS_CHOICES,
+		reward: undefined,
 	}),
 };
 

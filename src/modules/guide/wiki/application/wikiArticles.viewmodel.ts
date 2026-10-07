@@ -649,7 +649,7 @@ const PROGRESSION: WikiArticle = {
 		section(
 			"Archived storage",
 			prose(
-				`The storage a run banks becomes archived storage, the one wallet that lasts. A poll you suggest that gets published pays ${kbLabel(APPROVED_POLL_ARCHIVE_KB)} into it too.`
+				`The storage a run banks becomes archived storage, the one wallet that lasts. A poll you suggest that gets published pays at least ${kbLabel(APPROVED_POLL_ARCHIVE_KB)} into it too, more in a category that holds few polls.`
 			),
 			prose(
 				`It buys profile borders, from ${kbOfBytes(Math.min(...BUYABLE_BORDER_COSTS))} to ${kbOfBytes(Math.max(...BUYABLE_BORDER_COSTS))}, and a warm start for your next run: Boot Cache turns ${kbOfBytes(BOOT_CACHE_RUNGS[0].archiveBytes)} of archive into ${kbLabel(BOOT_CACHE_RUNGS[0].storageKb)} of run storage, and Extend and the git tag are carried in for ${kbOfBytes(EXTEND_CARRY_BYTES)} and ${kbOfBytes(PIN_CARRY_BYTES)}.`
@@ -715,7 +715,7 @@ const COMMUNITY: WikiArticle = {
 		section(
 			"Suggest a poll",
 			prose(
-				`Write a poll of your own. If it is published, you bank ${kbLabel(APPROVED_POLL_ARCHIVE_KB)} of archived storage.`
+				`Write a poll of your own. If it is published, you bank at least ${kbLabel(APPROVED_POLL_ARCHIVE_KB)} of archived storage, more in a category that holds few polls.`
 			)
 		),
 	],

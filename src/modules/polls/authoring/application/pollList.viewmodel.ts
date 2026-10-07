@@ -1,10 +1,15 @@
+import { format } from "date-fns";
+
 import {
 	APPROVED_POLL_ARCHIVE_KB,
 	POLL_STATUSES,
+	REVIEW_STATES,
+	reviewStateOf,
 	type AnswerType,
 	type Poll,
 	type PollCreator,
 	type PollStatus,
+	type ReviewState,
 } from "~/modules/polls/poll/domain/poll.model";
 import {
 	getCategories,
@@ -32,7 +37,6 @@ const COPY = {
 	dealtTimes: (times: number) => `dealt ${times}×`,
 	dealtFilter: (label: string) => `dealt ${label}`,
 	anyReview: "any",
-	reviewedFilter: (label: string) => `reviewed ${label}`,
 	searched: (search: string) => `“${search}”`,
 	withCode: "with code",
 	withExplanation: "with explanation",
@@ -44,7 +48,14 @@ const DEAL_LABEL = {
 	often: "2+ times",
 } as const;
 
+const REVIEW_LABEL = {
+	never: "never reviewed",
+	changed: "changed since review",
+	current: "up to date",
+} as const satisfies Record<ReviewState, string>;
+
 const SEPARATOR = " · ";
+const STAMP_FORMAT = "d MMM yyyy";
 
 export const ALL = "all";
 type All = typeof ALL;
@@ -70,8 +81,6 @@ const DEALT_TIMES = [
 	"often",
 ] as const satisfies readonly DealtTimes[];
 
-const REVIEW_STATES = ["yes", "no"] as const;
-export type ReviewState = (typeof REVIEW_STATES)[number];
 export type ReviewedFilter = ReviewState | All;
 
 export type PollDeals = ReadonlyMap<number, number>;
@@ -262,9 +271,6 @@ export const hasCode = (poll: Poll): boolean =>
 export const hasExplanation = (poll: Poll): boolean =>
 	(poll.explanation ?? "").trim() !== "";
 
-const reviewStateOf = (poll: Poll): ReviewState =>
-	poll.reviewedAt === null ? "no" : "yes";
-
 const timesDealtOf = (poll: Poll, deals: PollDeals): number =>
 	deals.get(poll.id) ?? 0;
 
@@ -371,7 +377,7 @@ export const pollListChoicesOf = (
 		visiblePollsOf(polls, { ...filter, reviewed: ALL }, deals),
 		COPY.anyReview,
 		REVIEW_STATES,
-		(state) => state,
+		(state) => REVIEW_LABEL[state],
 		reviewStateOf
 	),
 	...(creators === undefined ? {} : { creator: creatorChoicesOf(creators) }),
@@ -443,9 +449,7 @@ export const activeFiltersOf = (
 		},
 		filter.reviewed !== ALL && {
 			key: "reviewed",
-			label: COPY.reviewedFilter(
-				labelOfChoice(choices.reviewed, filter.reviewed)
-			),
+			label: labelOfChoice(choices.reviewed, filter.reviewed),
 		},
 	];
 	return candidates.filter((candidate) => candidate !== false);
@@ -467,7 +471,9 @@ export type PollRow = {
 	facts: string;
 	author?: PollAuthor;
 	status: PollStatus;
-	reviewed: boolean;
+	review: ReviewState;
+	reviewedOn?: string;
+	updatedOn?: string;
 };
 
 const authorOf = (creator: PollCreator | undefined): PollAuthor | undefined =>
@@ -477,6 +483,21 @@ const authorOf = (creator: PollCreator | undefined): PollAuthor | undefined =>
 				name: creator.displayName,
 				...(creator.photoUrl === null ? {} : { photoUrl: creator.photoUrl }),
 			};
+
+const stampOf = (date: Date | null): string | undefined =>
+	date === null ? undefined : format(date, STAMP_FORMAT);
+
+export const stampsOf = ({
+	reviewedAt,
+	updatedAt,
+}: Poll): Pick<PollRow, "reviewedOn" | "updatedOn"> => {
+	const reviewedOn = stampOf(reviewedAt);
+	const updatedOn = stampOf(updatedAt);
+	return {
+		...(reviewedOn === undefined ? {} : { reviewedOn }),
+		...(updatedOn === undefined ? {} : { updatedOn }),
+	};
+};
 
 export const pollRowsOf = (
 	polls: readonly Poll[],
@@ -498,7 +519,8 @@ export const pollRowsOf = (
 			facts: pollFactsOf(poll, timesDealtOf(poll, deals)),
 			...(author === undefined ? {} : { author }),
 			status: poll.status,
-			reviewed: poll.reviewedAt !== null,
+			review: reviewStateOf(poll),
+			...stampsOf(poll),
 		};
 	});
 };

@@ -1,9 +1,12 @@
 import { format } from "date-fns";
 
-import type {
-	Poll,
-	PollCreator,
-	PollStatus,
+import { stampsOf } from "~/modules/polls/authoring/application/pollList.viewmodel";
+import {
+	reviewStateOf,
+	type Poll,
+	type PollCreator,
+	type PollStatus,
+	type ReviewState,
 } from "~/modules/polls/poll/domain/poll.model";
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import { getCategoryMetadata } from "~/shared/lib/categories";
@@ -27,6 +30,9 @@ export type PollDetailData = {
 	category: string;
 	status: PollStatus;
 	created: string;
+	review: ReviewState;
+	reviewedOn?: string;
+	updatedOn?: string;
 	question: QuestionProps;
 	codeSandboxExample?: string;
 	author?: PollDetailAuthor;
@@ -60,6 +66,8 @@ export const pollDetailViewOf = (
 		category: getCategoryMetadata(poll.categoryCode).name,
 		status: poll.status,
 		created: format(poll.createdAt, CREATED_FORMAT),
+		review: reviewStateOf(poll),
+		...stampsOf(poll),
 		question: {
 			answerType: poll.answerType,
 			question: poll.question,
