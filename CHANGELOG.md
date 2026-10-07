@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.1.0 - 2026-10-07
 ### Added
 - **Thin categories pay a bounty for new polls.** A poll you suggest in a category that holds few polls earns more archived storage once it is approved, and never less than 16 KB. The figure is fixed the moment you suggest the poll. The advertisement now calls for polls in one of those categories, says how many polls it holds and what an approved one pays, and opens the suggest form with that category picked. The form's reward badge follows the category you pick, and the approval dialog counts up by what each poll actually paid.
 
