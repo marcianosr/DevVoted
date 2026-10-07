@@ -60,6 +60,8 @@ import {
 	audited,
 	clearGate,
 	failGate,
+	gridPoll,
+	gridTiles,
 	handed,
 	payPeel,
 	poll,
@@ -2341,5 +2343,99 @@ describe("what a mirrored poll is credited", () => {
 		expect(answered.window.accuracyAvailable).toBe(
 			mirrored.window.accuracyAvailable + credit
 		);
+	});
+});
+
+describe("a dependency grid locks in one group at a time", () => {
+	const GRID = "jigsaw";
+	const onGrid = (): RunState => {
+		const state = started([]);
+		return {
+			...state,
+			polls: state.polls.map((candidate, index) =>
+				index === state.currentIndex ? gridPoll(GRID) : candidate
+			),
+		};
+	};
+	const lock = (state: RunState, optionIds: readonly string[]): RunState =>
+		runReducer(state, { type: "lock-group", optionIds });
+	const wrongFour = [...gridTiles(GRID, 0).slice(0, 3), gridTiles(GRID, 1)[0]];
+
+	it("stays on the grid after the first solved group", () => {
+		const state = onGrid();
+		const next = lock(state, gridTiles(GRID, 1));
+
+		expect(next.currentIndex).toBe(state.currentIndex);
+		expect(next.gridLocked).toEqual(gridTiles(GRID, 1));
+		expect(next.window.answered).toBe(0);
+	});
+
+	it("locks the last group in by itself once two are solved, paying the full share", () => {
+		const next = lock(lock(onGrid(), gridTiles(GRID, 0)), gridTiles(GRID, 2));
+		const answered = next.answeredThisGate.at(-1);
+
+		expect(answered?.outcome).toBe("correct");
+		expect(next.gridLocked).toBeUndefined();
+		expect(next.streak).toBe(1);
+	});
+
+	it("ends the grid on a wrong lock-in as a partial when a group was already solved", () => {
+		const next = lock(lock(onGrid(), gridTiles(GRID, 2)), wrongFour);
+
+		expect(next.answeredThisGate.at(-1)?.outcome).toBe("partial");
+		expect(next.gridLocked).toBeUndefined();
+	});
+
+	it("ends the grid as wrong when the first lock-in misses, breaking the streak", () => {
+		const state = { ...onGrid(), streak: 3 };
+		const next = lock(state, wrongFour);
+
+		expect(next.answeredThisGate.at(-1)?.outcome).toBe("wrong");
+		expect(next.streak).toBe(0);
+	});
+
+	it("pays a solved group a third of a full grid", () => {
+		const full = lock(lock(onGrid(), gridTiles(GRID, 0)), gridTiles(GRID, 2));
+		const third = lock(lock(onGrid(), gridTiles(GRID, 2)), wrongFour);
+
+		expect(third.answeredThisGate.at(-1)?.coverageEarned).toBeCloseTo(
+			(full.answeredThisGate.at(-1)?.coverageEarned ?? 0) / 3
+		);
+	});
+
+	it("refuses a plain answer on a grid, so twelve ids cannot buy a full share", () => {
+		const state = onGrid();
+		const allTiles = [0, 1, 2].flatMap((group) => gridTiles(GRID, group));
+
+		expect(runReducer(state, { type: "answer", optionIds: allTiles })).toBe(
+			state
+		);
+	});
+
+	it("keeps a grid's double credit under 207, which cannot disguise a grid", () => {
+		const disguised = audited(onGrid(), 4, "multi-status");
+
+		expect(
+			pollCreditFor(disguised, disguised.polls[disguised.currentIndex])
+		).toBe(MULTIPLE_CREDIT);
+	});
+
+	it("leaves a grid unmirrored, since every tile belongs to a group", () => {
+		const mirrored = audited(onGrid(), 4, "mirrored");
+		const next = lock(lock(mirrored, gridTiles(GRID, 0)), gridTiles(GRID, 1));
+
+		expect(next.answeredThisGate.at(-1)?.outcome).toBe("correct");
+	});
+
+	it("refuses a lock-in on a poll that is not a grid", () => {
+		const state = started([]);
+		const current = state.polls[state.currentIndex];
+
+		expect(
+			lock(
+				state,
+				current.options.map((option) => option.id)
+			)
+		).toBe(state);
 	});
 });

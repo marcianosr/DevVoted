@@ -180,3 +180,82 @@ describe("RunPoll", () => {
 		);
 	});
 });
+
+describe("RunPoll on a dependency grid", () => {
+	const TILES = ["filter", "commit", "find", "margin", "reduce", "map"];
+
+	const renderGrid = () => {
+		const view = createMockRunView({
+			poll: createMockPollView({
+				answerType: "grid",
+				options: TILES.map((label) => ({ id: label, label })),
+				grid: { solved: [], hints: [null, null, null] },
+			}),
+		});
+		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
+		vi.mocked(dispatchRunAction).mockResolvedValue({
+			success: true,
+			data: view,
+		});
+		render(
+			<QueryClientProvider client={createTestQueryClient()}>
+				<RunPoll />
+			</QueryClientProvider>
+		);
+	};
+
+	const pick = async (
+		user: ReturnType<typeof userEvent.setup>,
+		labels: readonly string[]
+	) => {
+		for (const label of labels)
+			await user.click(await screen.findByRole("button", { name: label }));
+	};
+
+	it("locks in the four picked tiles as one group", async () => {
+		const user = userEvent.setup();
+		renderGrid();
+
+		await pick(user, ["filter", "find", "reduce", "map"]);
+		await user.click(screen.getByRole("button", { name: /^Lock in/ }));
+
+		await waitFor(() =>
+			expect(
+				vi.mocked(dispatchRunAction).mock.calls.at(0)?.[0]?.data.action
+			).toEqual(
+				expect.objectContaining({
+					type: "lock-group",
+					optionIds: ["filter", "find", "reduce", "map"],
+				})
+			)
+		);
+	});
+
+	it("takes no fifth tile", async () => {
+		const user = userEvent.setup();
+		renderGrid();
+
+		await pick(user, ["filter", "find", "reduce", "map", "commit"]);
+
+		expect(screen.getByRole("button", { name: "commit" })).toHaveAttribute(
+			"aria-pressed",
+			"false"
+		);
+	});
+
+	it("clears the picks and stays on the grid after a group locks in", async () => {
+		const user = userEvent.setup();
+		renderGrid();
+
+		await pick(user, ["filter", "find", "reduce", "map"]);
+		await user.click(screen.getByRole("button", { name: /^Lock in/ }));
+
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: "filter" })).toHaveAttribute(
+				"aria-pressed",
+				"false"
+			)
+		);
+		expect(screen.getByRole("button", { name: "shuffle" })).toBeInTheDocument();
+	});
+});

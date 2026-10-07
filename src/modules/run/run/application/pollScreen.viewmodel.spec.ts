@@ -9,6 +9,10 @@ import {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
+	answeredGridFor,
+	canPickTile,
+	dealtTilesFor,
+	readyToSubmit,
 	buildCountsOf,
 	coverageLeadFor,
 	pollBarFor,
@@ -1083,5 +1087,60 @@ describe("the poll clock states what the time is worth (ADR-169)", () => {
 
 	it("shows no clock where nothing is timed", () => {
 		expect(pollClockFor(createMockRunView(), 1_000)).toBeUndefined();
+	});
+});
+
+describe("a dependency grid on the poll screen", () => {
+	const submit = () => undefined;
+
+	it("holds the lock until four tiles are picked, and says how many are", () => {
+		expect(pollCommitFor("grid", 3, submit).lock).toEqual({
+			label: "Lock in",
+			note: "3 of 4 picked",
+		});
+		expect(pollCommitFor("grid", 4, submit).lock?.onPress).toBe(submit);
+	});
+
+	it("refuses a fifth tile but lets a picked one be dropped", () => {
+		const four = ["a", "b", "c", "d"];
+
+		expect(canPickTile("grid", four, "e")).toBe(false);
+		expect(canPickTile("grid", four, "a")).toBe(true);
+		expect(canPickTile("multiple", four, "e")).toBe(true);
+	});
+
+	it("lets Enter lock in only a full group of four", () => {
+		expect(readyToSubmit("grid", 3)).toBe(false);
+		expect(readyToSubmit("grid", 4)).toBe(true);
+		expect(readyToSubmit("multiple", 1)).toBe(true);
+	});
+
+	it("deals the server's order until the first shuffle, then a new one each press", () => {
+		const tiles = ["filter", "commit", "find", "margin", "reduce", "padding"];
+		const first = dealtTilesFor("jigsaw", tiles, 1);
+
+		expect(dealtTilesFor("jigsaw", tiles, 0)).toEqual(tiles);
+		expect([...first].sort()).toEqual([...tiles].sort());
+		expect(dealtTilesFor("jigsaw", tiles, 2)).not.toEqual(first);
+	});
+
+	it("reveals every group after the grid, marking the ones never locked in", () => {
+		const grid = answeredGridFor([
+			{
+				label: "Box model",
+				tiles: [{ id: "1", label: "margin" }],
+				solved: true,
+			},
+			{
+				label: "Git actions",
+				tiles: [{ id: "2", label: "rebase" }],
+				solved: false,
+			},
+		]);
+
+		expect(grid.groups).toEqual([
+			{ label: "Box model", tiles: ["margin"], verdict: "right" },
+			{ label: "Git actions", tiles: ["rebase"], verdict: "wrong" },
+		]);
 	});
 });

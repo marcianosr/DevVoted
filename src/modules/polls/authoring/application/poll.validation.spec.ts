@@ -124,3 +124,50 @@ describe("updatePollSchema", () => {
 		).toThrow("At least one option must be marked as correct");
 	});
 });
+
+describe("a dependency grid poll", () => {
+	const GROUPS = [
+		["filter", "reduce", "find", "map"],
+		["margin", "padding", "content", "border"],
+		["commit", "rebase", "merge", "cherry-pick"],
+	];
+	const gridOptions = GROUPS.flatMap((tiles, group) =>
+		tiles.map((option) => ({ option, correct: true, group }))
+	);
+	const gridPoll = {
+		...validPoll,
+		answerType: "grid" as const,
+		groupLabels: ["Array methods", "Box model", "Git actions"],
+	};
+
+	it("accepts three named groups of four tiles", () => {
+		const result = createPollWithOptionsSchema.parse({
+			poll: gridPoll,
+			options: gridOptions,
+		});
+
+		expect(result.poll.groupLabels).toHaveLength(3);
+		expect(result.options.map((option) => option.group)).toContain(2);
+	});
+
+	it("rejects a group with five tiles and another with three", () => {
+		expect(() =>
+			createPollWithOptionsSchema.parse({
+				poll: gridPoll,
+				options: gridOptions.map((option, index) =>
+					index === 0 ? { ...option, group: 1 } : option
+				),
+			})
+		).toThrow("A grid needs three named groups of four tiles");
+	});
+
+	it("rejects a grid whose group has no name", () => {
+		expect(() =>
+			updatePollSchema.parse({
+				id: 1,
+				poll: { ...gridPoll, groupLabels: ["Array methods", " ", "Git"] },
+				options: gridOptions,
+			})
+		).toThrow("A grid needs three named groups of four tiles");
+	});
+});

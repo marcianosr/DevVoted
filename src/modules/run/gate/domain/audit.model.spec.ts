@@ -31,6 +31,7 @@ import {
 	outageTargetsFor,
 } from "~/modules/run/gate/domain/audit.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import { gridPoll } from "~/modules/run/run/domain/run.factory";
 import { AUDIT_RANK } from "~/modules/run/gate/domain/auditSchedule.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
 
@@ -200,6 +201,10 @@ describe("451 Unavailable For Legal Reasons", () => {
 		expect(redactedOptionIdsFor(optioned(4), held, 0)).toHaveLength(2);
 		expect(redactedOptionIdsFor(optioned(4), held, 2)).toHaveLength(2);
 		expect(redactedOptionIdsFor(optioned(4), held, 3)).toEqual([]);
+	});
+
+	it("seals no tile on a dependency grid, since a hidden tile makes its group unsolvable", () => {
+		expect(redactedOptionIdsFor(gridPoll("q1"), held, 0)).toEqual([]);
 	});
 
 	it("never seals an option because it is wrong", () => {

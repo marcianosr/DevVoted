@@ -16,6 +16,7 @@ const UNEDITED = { updated_at: sql`${pollsTable.updated_at}` };
 type NewPollOption = {
 	option: string;
 	correct: boolean;
+	group?: number | null;
 };
 
 type UpdatePollOption = NewPollOption & {
@@ -28,6 +29,7 @@ type PollContent = {
 	answerType: Poll["answerType"];
 	categoryCode: string;
 	codeBlock?: string | null;
+	groupLabels?: string[] | null;
 	codeSandboxExample?: string | null;
 	explanation?: string | null;
 };
@@ -40,6 +42,7 @@ type PollColumns<Content extends Partial<PollContent>> = {
 	answer_type: Content["answerType"];
 	category_code: Content["categoryCode"];
 	code_block: Content["codeBlock"];
+	group_labels: Content["groupLabels"];
 	code_sandbox_example: Content["codeSandboxExample"];
 	explanation: Content["explanation"];
 };
@@ -52,6 +55,7 @@ const pollColumnsOf = <Content extends Partial<PollContent>>(
 	answer_type: content.answerType,
 	category_code: content.categoryCode,
 	code_block: content.codeBlock,
+	group_labels: content.groupLabels,
 	code_sandbox_example: content.codeSandboxExample,
 	explanation: content.explanation,
 });
@@ -88,6 +92,7 @@ export const createPollWithOptions = async (
 					poll_id: record.id,
 					option: option.option,
 					correct: option.correct,
+					group_index: option.group ?? null,
 				}))
 			);
 		}
@@ -151,7 +156,11 @@ export const updatePollWithOptions = async (
 		for (const option of existingOptions) {
 			await tx
 				.update(pollOptionsTable)
-				.set({ option: option.option, correct: option.correct })
+				.set({
+					option: option.option,
+					correct: option.correct,
+					group_index: option.group ?? null,
+				})
 				.where(
 					and(
 						eq(pollOptionsTable.id, option.id),
@@ -166,6 +175,7 @@ export const updatePollWithOptions = async (
 					poll_id: pollId,
 					option: option.option,
 					correct: option.correct,
+					group_index: option.group ?? null,
 				}))
 			);
 		}

@@ -1,8 +1,10 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
+import { prefetcherFor } from "~/modules/run/build/domain/build.model";
 import {
 	type Config,
 	showsAnswerTypes,
+	showsPollShape,
 } from "~/modules/run/config/domain/config.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { RunState } from "~/modules/run/run/domain/run.model";
@@ -19,6 +21,15 @@ export type PollSlot = {
 
 export const rebaserFor = (configs: readonly Config[]): Config | undefined =>
 	configs.find((config) => config.reordersGatePolls === true);
+
+export const namesAnswerTypes = (configs: readonly Config[]): boolean => {
+	const rebaser = rebaserFor(configs);
+	const prefetcher = prefetcherFor(configs);
+	return (
+		(rebaser !== undefined && showsAnswerTypes(rebaser)) ||
+		(prefetcher !== undefined && showsPollShape(prefetcher))
+	);
+};
 
 export const canRebase = (state: Pick<RunState, "status">): boolean =>
 	state.status === "configuring" || state.status === "rewarding";

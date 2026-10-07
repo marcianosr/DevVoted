@@ -11,6 +11,7 @@ import {
 	primaryKey,
 	real,
 	serial,
+	smallint,
 	text,
 	timestamp,
 	unique,
@@ -19,6 +20,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 
+import { ANSWER_TYPES } from "~/shared/lib/answerTypes";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
 export const userRoles = pgEnum("roles", [
@@ -38,10 +40,7 @@ export const seasonStatus = pgEnum("season_status", [
 	"archived",
 ] as const);
 
-export const pollAnswerType = pgEnum("answer_type", [
-	"single",
-	"multiple",
-] as const);
+export const pollAnswerType = pgEnum("answer_type", ANSWER_TYPES);
 
 export const pollAnswerOutcome = pgEnum("answer_outcome", [
 	"correct",
@@ -169,6 +168,7 @@ export const pollsTable = pgTable("polls", {
 	explanation: text("explanation"),
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
+	group_labels: text("group_labels").array(),
 	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),
 	closing_time: timestamp("closing_time", { withTimezone: true }).notNull(),
 	created_by: uuid("created_by")
@@ -236,6 +236,7 @@ export const pollOptionsTable = pgTable("polls_options", {
 		.notNull(),
 	option: text("option").notNull(),
 	correct: boolean("correct").notNull().default(false),
+	group_index: smallint("group_index"),
 }).enableRLS();
 
 export const pollCategoriesTable = pgTable("polls_categories", {

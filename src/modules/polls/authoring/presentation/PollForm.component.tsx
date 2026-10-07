@@ -10,6 +10,8 @@ import {
 	canLockIn,
 	canRemoveAnswer,
 	changeAnswer,
+	changeGroupLabel,
+	gridGroupRowsOf,
 	lockInPreview,
 	markRight,
 	pickInPreview,
@@ -76,6 +78,7 @@ export const PollForm = ({
 			state={state}
 			view={view}
 			rows={answerRowsOf(state)}
+			groups={state.answerType === "grid" ? gridGroupRowsOf(state) : undefined}
 			questionCount={questionCountOf(state.question)}
 			steps={stepsDoneOf(state)}
 			preview={previewOf(state, play)}
@@ -107,6 +110,9 @@ export const PollForm = ({
 			}
 			onAnswerChange={(key, text) =>
 				setState((current) => changeAnswer(current, key, text))
+			}
+			onGroupLabel={(group, label) =>
+				setState((current) => changeGroupLabel(current, group, label))
 			}
 			onMarkRight={(key) => setState((current) => markRight(current, key))}
 			onAddAnswer={canAddAnswer(state) ? () => setState(addAnswer) : undefined}

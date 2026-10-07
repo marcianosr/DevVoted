@@ -19,7 +19,13 @@ import {
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type {
+	GridView,
+	PollView,
+} from "~/modules/run/run/application/pollView.viewmodel";
+import type { GridGroup } from "~/modules/run/run/domain/gridPoll.model";
+import { GRID_GROUP_SIZE } from "~/shared/lib/answerTypes";
+import { shuffleSeeded } from "~/shared/lib/seededRandom";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
@@ -72,6 +78,7 @@ import type {
 import type {
 	QuestionOption,
 	QuestionProps,
+	QuestionGrid,
 } from "~/ui/kanto-theme/Question.ui";
 import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
 import type {
@@ -277,20 +284,90 @@ export const PICK_EVERY = "pick every answer that fits";
 export const SINGLE_KEYS = "press a letter to answer";
 export const MULTIPLE_KEYS = "press letters, then Enter";
 
+export const GRID_KEYS = "pick four, then Enter";
+
+const KEYS_HINT = {
+	single: SINGLE_KEYS,
+	multiple: MULTIPLE_KEYS,
+	grid: GRID_KEYS,
+} satisfies Record<AnswerType, string>;
+
 export const pollKeysHintFor = (answerType: AnswerType): string =>
-	answerType === "multiple" ? MULTIPLE_KEYS : SINGLE_KEYS;
+	KEYS_HINT[answerType];
 
 const lockInFor = (picked: number, onSubmit: () => void): PollLock =>
 	picked === 0
 		? { label: LOCK_IN, note: PICK_EVERY }
 		: { label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`, onPress: onSubmit };
 
+const gridLockFor = (picked: number, onSubmit: () => void): PollLock => ({
+	label: LOCK_IN,
+	note: `${picked} of ${GRID_GROUP_SIZE} picked`,
+	...(picked === GRID_GROUP_SIZE ? { onPress: onSubmit } : {}),
+});
+
+const COMMIT_FOR = {
+	single: () => ({}),
+	multiple: (picked, onSubmit) => ({ lock: lockInFor(picked, onSubmit) }),
+	grid: (picked, onSubmit) => ({ lock: gridLockFor(picked, onSubmit) }),
+} satisfies Record<
+	AnswerType,
+	(picked: number, onSubmit: () => void) => PollCommit
+>;
+
 export const pollCommitFor = (
 	answerType: AnswerType,
 	picked: number,
 	onSubmit: () => void
-): PollCommit =>
-	answerType === "multiple" ? { lock: lockInFor(picked, onSubmit) } : {};
+): PollCommit => COMMIT_FOR[answerType](picked, onSubmit);
+
+export const readyToSubmit = (
+	answerType: AnswerType | undefined,
+	picked: number
+): boolean => (answerType === "grid" ? picked === GRID_GROUP_SIZE : picked > 0);
+
+export const answeredAPoll = (before: RunView, after: RunView): boolean =>
+	after.answeredThisGate.length !== before.answeredThisGate.length;
+
+export const canPickTile = (
+	answerType: AnswerType | undefined,
+	picked: readonly string[],
+	optionId: string
+): boolean =>
+	answerType !== "grid" ||
+	picked.includes(optionId) ||
+	picked.length < GRID_GROUP_SIZE;
+
+const SHUFFLE_SEED = "shuffle";
+
+export const dealtTilesFor = <Tile>(
+	pollId: string,
+	tiles: readonly Tile[],
+	shuffles: number
+): readonly Tile[] =>
+	shuffles === 0
+		? tiles
+		: shuffleSeeded(tiles, `${pollId}-${SHUFFLE_SEED}-${shuffles}`);
+
+export const gridQuestionFor = (
+	grid: GridView,
+	onShuffle?: () => void
+): QuestionGrid => ({
+	groups: grid.solved.map((group) => ({ ...group, verdict: "right" })),
+	hints: grid.hints,
+	...(onShuffle === undefined ? {} : { onShuffle }),
+});
+
+export const answeredGridFor = (
+	groups: readonly GridGroup[]
+): QuestionGrid => ({
+	groups: groups.map((group) => ({
+		label: group.label,
+		tiles: group.tiles.map((tile) => tile.label),
+		verdict: group.solved ? "right" : "wrong",
+	})),
+	hints: [],
+});
 
 const APPROVE_LABEL = "LGTM";
 const APPROVE_NOTE = "the room answers this one for you";
@@ -339,9 +416,11 @@ export const answeredOptionsFor = (
 };
 
 export const pollKeysFor = (view: RunView): readonly PollKey[] =>
-	(view.poll?.options ?? [])
-		.map((option, index) => ({ letter: letterAt(index), id: option.id }))
-		.filter((key) => !view.disabledOptionIds.includes(key.id));
+	view.poll?.answerType === "grid"
+		? []
+		: (view.poll?.options ?? [])
+				.map((option, index) => ({ letter: letterAt(index), id: option.id }))
+				.filter((key) => !view.disabledOptionIds.includes(key.id));
 
 export const coverageLeadFor = (view: RunView): LeadLine =>
 	scoredLeadFor({
@@ -812,27 +891,55 @@ const optionsOf = (
 				}
 	);
 
+const liveGridQuestionFor = (
+	poll: LivePoll,
+	grid: GridView,
+	selectedOptionIds: readonly string[],
+	on: PollScreenHandlers,
+	shuffles: number
+): QuestionProps => ({
+	answerType: poll.answerType,
+	question: poll.question,
+	options: dealtTilesFor(poll.id, poll.options, shuffles).map(
+		(option, index) => ({
+			id: option.id,
+			letter: letterAt(index),
+			label: option.label,
+		})
+	),
+	codeBlock: poll.codeBlock,
+	pickedIds: selectedOptionIds,
+	onPick: on.onSelect,
+	grid: gridQuestionFor(grid, on.onShuffle),
+});
+
 const liveQuestionFor = (
 	view: RunView,
 	poll: LivePoll,
 	selectedOptionIds: readonly string[],
-	onSelect: (optionId: string) => void,
-	onUnseal: ((optionId: string) => void) | undefined
-): QuestionProps => ({
-	answerType: poll.answerType,
-	question: poll.question,
-	options: optionsOf(poll, view, onUnseal),
-	codeBlock: poll.codeBlock,
-	pickedIds: selectedOptionIds,
-	onPick: onSelect,
-});
+	on: PollScreenHandlers,
+	shuffles: number
+): QuestionProps =>
+	poll.grid === undefined
+		? {
+				answerType: poll.answerType,
+				question: poll.question,
+				options: optionsOf(poll, view, on.onUnseal),
+				codeBlock: poll.codeBlock,
+				pickedIds: selectedOptionIds,
+				onPick: on.onSelect,
+			}
+		: liveGridQuestionFor(poll, poll.grid, selectedOptionIds, on, shuffles);
 
 const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
 	answerType: answered.answerType ?? "single",
 	question: answered.question,
-	options: answeredOptionsFor(answered),
+	options: answered.groups === undefined ? answeredOptionsFor(answered) : [],
 	codeBlock: answered.codeBlock,
 	pickedIds: answered.picked,
+	...(answered.groups === undefined
+		? {}
+		: { grid: answeredGridFor(answered.groups) }),
 });
 
 const authorOf = (poll: LivePoll): AuthorProps | undefined =>
@@ -905,6 +1012,7 @@ export type PollScreenHandlers = {
 	onPress?: (action: PressAction, configId: string) => void;
 	onUnseal?: (optionId: string) => void;
 	onApprove?: () => void;
+	onShuffle?: () => void;
 	approveRefusal?: string;
 };
 
@@ -912,7 +1020,8 @@ const liveMoodFor = (
 	view: RunView,
 	poll: LivePoll,
 	selectedOptionIds: readonly string[],
-	on: PollScreenHandlers
+	on: PollScreenHandlers,
+	shuffles: number
 ): PollMood => {
 	const shared = {
 		category: categoryNameOf(view, poll.category),
@@ -930,13 +1039,7 @@ const liveMoodFor = (
 
 	return {
 		...shared,
-		question: liveQuestionFor(
-			view,
-			poll,
-			selectedOptionIds,
-			on.onSelect,
-			on.onUnseal
-		),
+		question: liveQuestionFor(view, poll, selectedOptionIds, on, shuffles),
 		keysHint: pollKeysHintFor(poll.answerType),
 		commit: pollCommitFor(
 			poll.answerType,
@@ -954,7 +1057,12 @@ export type PollScreenFrame = {
 	leaving?: boolean;
 	selectedOptionIds: readonly string[];
 	on: PollScreenHandlers;
-	ui: { build: Disclosure; clockMs?: number; buildOpen?: boolean };
+	ui: {
+		build: Disclosure;
+		clockMs?: number;
+		buildOpen?: boolean;
+		gridShuffles?: number;
+	};
 };
 
 export const pollScreenPropsFor = ({
@@ -974,7 +1082,7 @@ export const pollScreenPropsFor = ({
 			? answeredMoodFor(view, answered)
 			: live === undefined
 				? undefined
-				: liveMoodFor(view, live, selectedOptionIds, on);
+				: liveMoodFor(view, live, selectedOptionIds, on, ui.gridShuffles ?? 0);
 	if (mood === undefined) return null;
 
 	return {

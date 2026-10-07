@@ -7,10 +7,12 @@ import {
 	EMPTY_POLL_FORM,
 	STATUS_CHOICES,
 	answerRowsOf,
+	gridGroupRowsOf,
 	previewCategoryOf,
 	previewOf,
 	questionCountOf,
 	stepsDoneOf,
+	withAnswerType,
 	type PollFormState,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
 import {
@@ -48,6 +50,7 @@ const propsFor = (state: PollFormState): PollFormProps => ({
 	onPreviewPick: vi.fn(),
 	onAnswerType: vi.fn(),
 	onAnswerChange: vi.fn(),
+	onGroupLabel: vi.fn(),
 	onMarkRight: vi.fn(),
 	onAddAnswer: vi.fn(),
 	onCategory: vi.fn(),
@@ -354,6 +357,40 @@ describe("PollForm", () => {
 		expect(
 			screen.getByText("The database is asleep.").closest("[data-screen-theme]")
 		).toHaveAttribute("data-screen-theme", "cinnabar");
+	});
+});
+
+describe("PollForm on a dependency grid", () => {
+	const grid = withAnswerType(FILLED, "grid");
+	const renderGrid = () =>
+		renderForm({
+			...propsFor(grid),
+			groups: gridGroupRowsOf(grid),
+		});
+
+	it("asks for three group names and twelve tiles instead of answers to mark", () => {
+		renderGrid();
+
+		expect(
+			screen.getAllByRole("textbox", { name: /^group \d name$/ })
+		).toHaveLength(3);
+		expect(
+			screen.getAllByRole("textbox", { name: /^tile [A-L]$/ })
+		).toHaveLength(12);
+		expect(
+			screen.queryByRole("button", { name: /mark A right/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("names a group as the author types", async () => {
+		const { props } = renderGrid();
+
+		await userEvent.type(
+			screen.getByRole("textbox", { name: "group 2 name" }),
+			"B"
+		);
+
+		expect(props.onGroupLabel).toHaveBeenCalledWith(1, "B");
 	});
 });
 

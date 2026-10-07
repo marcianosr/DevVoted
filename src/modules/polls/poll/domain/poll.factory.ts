@@ -5,6 +5,7 @@ export const createMockPoll = (overrides: Partial<Poll> = {}): Poll => ({
 	question: "What is your favorite programming language?",
 	status: "published",
 	answerType: "single",
+	groupLabels: null,
 	openingTime: new Date("2025-01-01T00:00:00Z"),
 	closingTime: new Date("2025-01-31T23:59:59Z"),
 	createdBy: "123e4567-e89b-12d3-a456-426614174000",

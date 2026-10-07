@@ -16,6 +16,11 @@ import {
 	isCategoryCode,
 	type CategoryCode,
 } from "~/shared/lib/categories";
+import {
+	GRID_GROUP_SIZE,
+	GRID_GROUPS,
+	GRID_TILES,
+} from "~/shared/lib/answerTypes";
 import { letterAt } from "~/shared/lib/letters";
 import { signedKbLabel } from "~/shared/lib/storage";
 import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
@@ -32,6 +37,11 @@ const COPY = {
 	needsARight: "Mark the right answers",
 	needsCategory: "Pick a category",
 	needsUrl: "Fix the CodeSandbox link",
+	needsGroupNames: "Name every group",
+	needsTileText: "Fill every tile",
+	needsUniqueTiles: "Use each tile once",
+	groupPlaceholder: (group: number) => `group ${group + 1}`,
+	tilePlaceholder: (index: number) => `tile ${index + 1}`,
 } as const;
 
 const INLINE_CODE = "`code`";
@@ -45,6 +55,7 @@ export type PollFormAnswer = {
 	id?: number;
 	text: string;
 	right: boolean;
+	group?: number;
 };
 
 export type PollFormState = {
@@ -55,6 +66,7 @@ export type PollFormState = {
 	codeSandboxExample: string;
 	explanation: string;
 	answers: readonly PollFormAnswer[];
+	groupLabels: readonly string[];
 };
 
 const blankAnswer = (key: number): PollFormAnswer => ({
@@ -73,6 +85,7 @@ export const EMPTY_POLL_FORM: PollFormState = {
 	answers: Array.from({ length: POLL_LIMITS.answers.min }, (_, key) =>
 		blankAnswer(key)
 	),
+	groupLabels: [],
 };
 
 export const pollFormStateOf = (
@@ -90,14 +103,18 @@ export const pollFormStateOf = (
 		id: option.id,
 		text: option.option,
 		right: option.correct,
+		...(option.group === null ? {} : { group: option.group }),
 	})),
+	groupLabels: poll.groupLabels ?? [],
 });
 
+const isGrid = (state: PollFormState): boolean => state.answerType === "grid";
+
 export const canAddAnswer = (state: PollFormState): boolean =>
-	state.answers.length < POLL_LIMITS.answers.max;
+	!isGrid(state) && state.answers.length < POLL_LIMITS.answers.max;
 
 export const canRemoveAnswer = (state: PollFormState): boolean =>
-	state.answers.length > POLL_LIMITS.answers.min;
+	!isGrid(state) && state.answers.length > POLL_LIMITS.answers.min;
 
 const nextKeyOf = (answers: readonly PollFormAnswer[]): number =>
 	Math.max(-1, ...answers.map((answer) => answer.key)) + 1;
@@ -155,20 +172,96 @@ export const markRight = (
 	),
 });
 
+const asGridTiles = (
+	answers: readonly PollFormAnswer[]
+): readonly PollFormAnswer[] => {
+	const kept = answers.slice(0, GRID_TILES);
+	const padded = [
+		...kept,
+		...Array.from({ length: GRID_TILES - kept.length }, (_, index) =>
+			blankAnswer(nextKeyOf(kept) + index)
+		),
+	];
+	return padded.map((answer, index) => ({
+		...answer,
+		right: true,
+		group: Math.floor(index / GRID_GROUP_SIZE),
+	}));
+};
+
+const withoutGroup = ({
+	group: _,
+	...answer
+}: PollFormAnswer): PollFormAnswer => answer;
+
+const toGrid = (state: PollFormState): PollFormState => ({
+	...state,
+	answerType: "grid",
+	answers: asGridTiles(state.answers),
+	groupLabels: Array.from(
+		{ length: GRID_GROUPS },
+		(_, group) => state.groupLabels[group] ?? ""
+	),
+});
+
+const leftGrid = (state: PollFormState): PollFormState =>
+	isGrid(state)
+		? {
+				...state,
+				groupLabels: [],
+				answers: state.answers.map((answer) => ({
+					...withoutGroup(answer),
+					right: false,
+				})),
+			}
+		: state;
+
 export const withAnswerType = (
 	state: PollFormState,
 	answerType: AnswerType
 ): PollFormState => {
-	if (answerType === "multiple") return { ...state, answerType };
-	const first = state.answers.find((answer) => answer.right);
+	if (answerType === "grid") return toGrid(state);
+	const ungrouped = leftGrid(state);
+	if (answerType === "multiple") return { ...ungrouped, answerType };
+	const first = ungrouped.answers.find((answer) => answer.right);
 	return {
-		...state,
+		...ungrouped,
 		answerType,
-		answers: state.answers.map((answer) =>
+		answers: ungrouped.answers.map((answer) =>
 			asTheOneRight(answer, first?.key ?? -1)
 		),
 	};
 };
+
+export const changeGroupLabel = (
+	state: PollFormState,
+	group: number,
+	label: string
+): PollFormState => ({
+	...state,
+	groupLabels: state.groupLabels.map((current, index) =>
+		index === group ? label : current
+	),
+});
+
+export type GridGroupRow = {
+	group: number;
+	label: string;
+	placeholder: string;
+	tiles: readonly AnswerRow[];
+};
+
+export const gridGroupRowsOf = (
+	state: PollFormState
+): readonly GridGroupRow[] =>
+	state.groupLabels.map((label, group) => ({
+		group,
+		label,
+		placeholder: COPY.groupPlaceholder(group),
+		tiles: answerRowsOf(state).filter(
+			(_, index) => state.answers[index]?.group === group
+		),
+	}));
 
 export const suggestFormFor = (
 	category: CategoryCode | undefined
@@ -247,9 +340,19 @@ export type PollFormSteps = {
 	explanation: boolean;
 };
 
+const areGroupsWritten = (state: PollFormState): boolean =>
+	state.groupLabels.every((label) => label.trim() !== "") &&
+	state.answers.every(hasText) &&
+	!hasDuplicateTiles(state.answers);
+
+const areAnswersDone = (state: PollFormState): boolean =>
+	isGrid(state)
+		? areGroupsWritten(state)
+		: areAnswersWritten(state) && hasARightAnswer(state);
+
 export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
 	question: isQuestionLongEnough(state),
-	answers: areAnswersWritten(state) && hasARightAnswer(state),
+	answers: areAnswersDone(state),
 	category: state.categoryCode !== undefined,
 	explanation: state.explanation.trim() !== "",
 });
@@ -257,8 +360,24 @@ export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
 const isSandboxUrl = (value: string): boolean =>
 	value === "" || CODE_SANDBOX_URL.safeParse(value).success;
 
+const hasDuplicateTiles = (answers: readonly PollFormAnswer[]): boolean => {
+	const tiles = answers.map((answer) => answer.text.trim().toLowerCase());
+	return new Set(tiles).size !== tiles.length;
+};
+
+const gridRefusalOf = (state: PollFormState): string | undefined => {
+	if (!state.groupLabels.every((label) => label.trim() !== ""))
+		return COPY.needsGroupNames;
+	if (!state.answers.every(hasText)) return COPY.needsTileText;
+	if (hasDuplicateTiles(state.answers)) return COPY.needsUniqueTiles;
+	if (state.categoryCode === undefined) return COPY.needsCategory;
+	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
+	return undefined;
+};
+
 export const refusalOf = (state: PollFormState): string | undefined => {
 	if (!isQuestionLongEnough(state)) return COPY.needsQuestion;
+	if (isGrid(state)) return gridRefusalOf(state);
 	if (!state.answers.every(hasText)) return COPY.needsAnswerText;
 	if (state.answers.length < POLL_LIMITS.answers.min)
 		return COPY.needsAnswers(POLL_LIMITS.answers.min);
@@ -270,6 +389,9 @@ export const refusalOf = (state: PollFormState): string | undefined => {
 	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
 	return undefined;
 };
+
+const placeholderFor = (state: PollFormState, index: number): string =>
+	isGrid(state) ? COPY.tilePlaceholder(index) : COPY.answerPlaceholder(index);
 
 export type PreviewPlay = {
 	pickedIds: readonly string[];
@@ -318,9 +440,19 @@ export const previewOf = (
 	options: state.answers.map((answer, index) => ({
 		id: String(answer.key),
 		letter: letterAt(index),
-		label: answer.text === "" ? COPY.answerPlaceholder(index) : answer.text,
+		label: answer.text === "" ? placeholderFor(state, index) : answer.text,
 		state: revealedStateOf(answer, play),
 	})),
+	...(isGrid(state)
+		? {
+				grid: {
+					groups: [],
+					hints: state.groupLabels.map((label, group) =>
+						label === "" ? COPY.groupPlaceholder(group) : label
+					),
+				},
+			}
+		: {}),
 });
 
 export const previewCategoryOf = (state: PollFormState): string | undefined =>
@@ -344,8 +476,14 @@ export type PollFormData = {
 		categoryCode: CategoryCode;
 		codeSandboxExample: string | null;
 		explanation: string | null;
+		groupLabels: string[] | null;
 	};
-	options: { id?: number; option: string; correct: boolean }[];
+	options: {
+		id?: number;
+		option: string;
+		correct: boolean;
+		group?: number;
+	}[];
 };
 
 const orNull = (value: string): string | null =>
@@ -370,10 +508,12 @@ const toPollFormData = (
 		categoryCode,
 		codeSandboxExample: orNull(state.codeSandboxExample),
 		explanation: orNull(state.explanation),
+		groupLabels: isGrid(state) ? [...state.groupLabels] : null,
 	},
 	options: state.answers.map((answer) => ({
 		...(answer.id === undefined ? {} : { id: answer.id }),
 		option: answer.text,
 		correct: answer.right,
+		...(answer.group === undefined ? {} : { group: answer.group }),
 	})),
 });

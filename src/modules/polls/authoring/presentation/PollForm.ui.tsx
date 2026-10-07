@@ -1,5 +1,6 @@
 import type {
 	AnswerRow,
+	GridGroupRow,
 	PollFormMode,
 	PollFormState,
 	PollFormSteps,
@@ -49,6 +50,9 @@ const COPY = {
 	answerType: "Answer type",
 	oneRight: "one right",
 	severalRight: "several right",
+	grid: "grid",
+	groupName: (group: number) => `group ${group + 1} name`,
+	tile: (letter: string) => `tile ${letter}`,
 	answer: (index: number) => `answer ${index + 1}`,
 	markRightHint: (letter: string) => `mark ${letter} right`,
 	remove: (letter: string) => `remove ${letter}`,
@@ -92,6 +96,10 @@ const ROWS = "flex w-full flex-col gap-2";
 const ROW = "flex w-full items-center gap-3";
 const LETTER = "cursor-pointer rounded-full";
 const ANSWER_TEXT = "min-w-0 flex-1";
+const GROUP =
+	"flex w-full flex-col gap-2 rounded-lg p-3 ring-1 ring-inset ring-theme-faint";
+const TILES = "grid gap-2 sm:grid-cols-2";
+const TILE = "flex items-center gap-3";
 const SNIPPETS = "flex flex-wrap gap-2";
 const FIELDS = "flex flex-col gap-4";
 const PREVIEW_META =
@@ -102,6 +110,7 @@ const EXPLANATION =
 const ANSWER_TYPES: readonly SegmentedItem<AnswerType>[] = [
 	{ value: "single", label: COPY.oneRight },
 	{ value: "multiple", label: COPY.severalRight },
+	{ value: "grid", label: COPY.grid },
 ];
 
 const titleOf = (mode: PollFormMode, pollNumber: number | undefined) =>
@@ -262,12 +271,90 @@ const PollPreview = ({
 	</Panel>
 );
 
+type GridGroupProps = {
+	group: GridGroupRow;
+	onLabel: (group: number, label: string) => void;
+	onTile: (key: number, text: string) => void;
+};
+
+const GridGroup = ({ group, onLabel, onTile }: GridGroupProps) => (
+	<div className={GROUP}>
+		<TextField
+			label={COPY.groupName(group.group)}
+			placeholder={group.placeholder}
+			value={group.label}
+			maxLength={POLL_LIMITS.answer.max}
+			onChange={(label) => onLabel(group.group, label)}
+		/>
+		<div className={TILES}>
+			{group.tiles.map((tile) => (
+				<span key={tile.key} className={TILE}>
+					<Keycap letter={tile.letter} answerType="grid" />
+					<span className={ANSWER_TEXT}>
+						<TextField
+							label={COPY.tile(tile.letter)}
+							placeholder={COPY.tile(tile.letter)}
+							value={tile.text}
+							maxLength={POLL_LIMITS.answer.max}
+							onChange={(text) => onTile(tile.key, text)}
+						/>
+					</span>
+				</span>
+			))}
+		</div>
+	</div>
+);
+
+type AnswerListProps = Pick<
+	PollFormProps,
+	| "state"
+	| "rows"
+	| "onAnswerChange"
+	| "onMarkRight"
+	| "onAddAnswer"
+	| "onRemoveAnswer"
+>;
+
+const AnswerList = ({
+	state,
+	rows,
+	onAnswerChange,
+	onMarkRight,
+	onAddAnswer,
+	onRemoveAnswer,
+}: AnswerListProps) => (
+	<>
+		<div className={ROWS}>
+			{rows.map((row, index) => (
+				<Answer
+					key={row.key}
+					row={row}
+					index={index}
+					answerType={state.answerType}
+					onChange={onAnswerChange}
+					onMarkRight={onMarkRight}
+					onRemove={onRemoveAnswer}
+				/>
+			))}
+		</div>
+		<Button
+			label={COPY.addAnswer}
+			tone="slot"
+			icon="plus"
+			iconAt="lead"
+			disabled={onAddAnswer === undefined}
+			onPress={onAddAnswer}
+		/>
+	</>
+);
+
 export type PollFormProps = {
 	mode: PollFormMode;
 	pollNumber?: number;
 	state: PollFormState;
 	view: PollFormView;
 	rows: readonly AnswerRow[];
+	groups?: readonly GridGroupRow[];
 	questionCount: string;
 	steps: PollFormSteps;
 	preview: QuestionProps;
@@ -290,6 +377,7 @@ export type PollFormProps = {
 	onLockIn?: () => void;
 	onAnswerType: (answerType: AnswerType) => void;
 	onAnswerChange: (key: number, text: string) => void;
+	onGroupLabel: (group: number, label: string) => void;
 	onMarkRight: (key: number) => void;
 	onAddAnswer?: () => void;
 	onRemoveAnswer?: (key: number) => void;
@@ -307,6 +395,7 @@ export const PollForm = ({
 	state,
 	view,
 	rows,
+	groups,
 	questionCount,
 	steps,
 	preview,
@@ -329,6 +418,7 @@ export const PollForm = ({
 	onLockIn,
 	onAnswerType,
 	onAnswerChange,
+	onGroupLabel,
 	onMarkRight,
 	onAddAnswer,
 	onRemoveAnswer,
@@ -402,27 +492,27 @@ export const PollForm = ({
 						}
 					/>
 					<Panel.Body>
-						<div className={ROWS}>
-							{rows.map((row, index) => (
-								<Answer
-									key={row.key}
-									row={row}
-									index={index}
-									answerType={state.answerType}
-									onChange={onAnswerChange}
-									onMarkRight={onMarkRight}
-									onRemove={onRemoveAnswer}
-								/>
-							))}
-						</div>
-						<Button
-							label={COPY.addAnswer}
-							tone="slot"
-							icon="plus"
-							iconAt="lead"
-							disabled={onAddAnswer === undefined}
-							onPress={onAddAnswer}
-						/>
+						{groups === undefined ? (
+							<AnswerList
+								state={state}
+								rows={rows}
+								onAnswerChange={onAnswerChange}
+								onMarkRight={onMarkRight}
+								onAddAnswer={onAddAnswer}
+								onRemoveAnswer={onRemoveAnswer}
+							/>
+						) : (
+							<div className={ROWS}>
+								{groups.map((group) => (
+									<GridGroup
+										key={group.group}
+										group={group}
+										onLabel={onGroupLabel}
+										onTile={onAnswerChange}
+									/>
+								))}
+							</div>
+						)}
 					</Panel.Body>
 				</Panel>
 

@@ -127,6 +127,7 @@ export type RunState = {
 	readonly lintsThisRun?: number;
 	readonly approvedPollId?: string;
 	readonly boughtBackOptionIds?: readonly string[];
+	readonly gridLocked?: readonly string[];
 	readonly gatesCleared: number;
 	readonly streak: number;
 	readonly headStartUnits: number;

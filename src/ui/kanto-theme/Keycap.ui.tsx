@@ -7,6 +7,7 @@ const CAP =
 const CAP_SHAPE = {
 	single: "rounded-full",
 	multiple: "rounded-md",
+	grid: "rounded-md",
 } satisfies Record<AnswerType, string>;
 const IDLE = "border-edge-strong bg-theme-raised text-pewter";
 const LIT = "border-theme bg-theme-soft text-theme-soft";

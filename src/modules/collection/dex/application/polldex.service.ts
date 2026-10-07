@@ -26,6 +26,7 @@ type GradedResponse = {
 	readonly options: readonly {
 		readonly id: number;
 		readonly correct: boolean;
+		readonly group?: number;
 	}[];
 	readonly picked: readonly number[];
 };
@@ -50,7 +51,11 @@ const responsesOf = (
 			...current,
 			options: [
 				...current.options,
-				{ id: row.optionId, correct: row.optionCorrect },
+				{
+					id: row.optionId,
+					correct: row.optionCorrect,
+					...(row.optionGroup === null ? {} : { group: row.optionGroup }),
+				},
 			],
 			picked:
 				row.optionSelected === null

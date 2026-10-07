@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { ChoiceState } from "./Choice.ui";
-import { Question, type QuestionOption } from "./Question.ui";
+import { Question, questionFactsOf, type QuestionOption } from "./Question.ui";
 
 const OPTIONS = [
 	{ id: "option-1", letter: "A", label: "Partial<T>" },
@@ -267,5 +267,16 @@ describe("Question's options with code in them", () => {
 		expect(container.querySelector("[data-choices]")).not.toHaveTextContent(
 			"```"
 		);
+	});
+});
+
+describe("questionFactsOf on a dependency grid", () => {
+	it("counts all twelve tiles, however many are still on the grid", () => {
+		expect(
+			questionFactsOf({
+				answerType: "grid",
+				options: [{ id: "map", letter: "A", label: "map" }],
+			})
+		).toBe("12 tiles · dependency grid");
 	});
 });

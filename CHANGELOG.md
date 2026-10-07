@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Dependency grids, a new kind of poll.** Twelve tiles hide three groups of four. Pick four tiles and press **Lock in**: if they belong together, the group is named and set aside, and you pick again. Four that don't belong together end the poll like a wrong answer. Solve two groups and the last one locks itself in. Each group you solve pays a third of the poll, and a full grid pays double, like a select-all. The group names stay hidden as **???** unless your build already names answer types. **Shuffle** reorders the tiles whenever you like. Poll authors can pick **grid** when suggesting a poll and write three named groups of four tiles.
 
 ## 2.1.0 - 2026-10-07
 ### Added

@@ -7,8 +7,14 @@ export const KB_PER_EXTRA_BAR = 16;
 
 const FLOAT_TOLERANCE = 1e-9;
 
+const CREDIT_BY_ANSWER_TYPE: Readonly<Record<AnswerType, number>> = {
+	single: SINGLE_CREDIT,
+	multiple: MULTIPLE_CREDIT,
+	grid: MULTIPLE_CREDIT,
+};
+
 export const creditFor = (answerType: AnswerType): number =>
-	answerType === "multiple" ? MULTIPLE_CREDIT : SINGLE_CREDIT;
+	CREDIT_BY_ANSWER_TYPE[answerType];
 
 export const AS_PERCENT = 100;
 

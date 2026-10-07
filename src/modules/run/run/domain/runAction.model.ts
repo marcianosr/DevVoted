@@ -16,7 +16,12 @@ import {
 	withBuild,
 	withPeakStorage,
 } from "~/modules/run/run/domain/run.model";
-import { answer, closeGate, skip } from "~/modules/run/run/domain/answer.model";
+import {
+	answer,
+	closeGate,
+	lockGroup,
+	skip,
+} from "~/modules/run/run/domain/answer.model";
 import {
 	commitEstimate,
 	estimateOwed,
@@ -71,6 +76,11 @@ export type RunAction =
 	| { readonly type: "refresh-incident" }
 	| {
 			readonly type: "answer";
+			readonly optionIds: readonly string[];
+			readonly elapsedMs?: number;
+	  }
+	| {
+			readonly type: "lock-group";
 			readonly optionIds: readonly string[];
 			readonly elapsedMs?: number;
 	  }
@@ -273,6 +283,12 @@ const RULES: readonly ActionRule[] = [
 		type: "answer",
 		when: inStatus("answering"),
 		run: (state, action) => answer(state, action.optionIds, action.elapsedMs),
+	}),
+	on({
+		type: "lock-group",
+		when: inStatus("answering"),
+		run: (state, action) =>
+			lockGroup(state, action.optionIds, action.elapsedMs),
 	}),
 	on({
 		type: "skip",

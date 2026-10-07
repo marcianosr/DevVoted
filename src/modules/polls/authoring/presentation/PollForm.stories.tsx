@@ -75,6 +75,7 @@ const propsFor = (
 	onPreviewPick: noop,
 	onAnswerType: noop,
 	onAnswerChange: noop,
+	onGroupLabel: noop,
 	onMarkRight: noop,
 	onAddAnswer: canAddAnswer(state) ? noop : undefined,
 	onRemoveAnswer: canRemoveAnswer(state) ? noop : undefined,
