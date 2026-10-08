@@ -1,6 +1,10 @@
+import type { ReactNode } from "react";
+
 import { clsx } from "clsx";
 
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
+
+import { Icon, type IconName } from "./Icon.ui";
 
 export type SwatchSize = "small" | "large" | "hero";
 
@@ -11,7 +15,10 @@ export type SwatchFill =
 
 export type SwatchState = SwatchFill["state"];
 
-export type SwatchMark = SwatchFill & { count?: number };
+export type SwatchContent =
+	{ count?: number; icon?: never } | { icon?: IconName; count?: never };
+
+export type SwatchMark = SwatchFill & SwatchContent;
 
 export type SwatchGround = "dark" | "bright";
 
@@ -36,6 +43,7 @@ const ON_BRIGHT = {
 } satisfies Record<SwatchState, string>;
 
 const COUNTED = "inline-flex items-center justify-center text-xs leading-none";
+const ICON = "size-1/2";
 
 const PLATE = "ring-1 ring-pewter";
 const MARK = "legendary-ring";
@@ -44,10 +52,15 @@ const PRISMATIC = {
 	current: "legendary-ring",
 } as const;
 
-export type SwatchProps = SwatchFill & {
-	size?: SwatchSize;
-	ground?: SwatchGround;
-	count?: number;
+export type SwatchProps = SwatchFill &
+	SwatchContent & {
+		size?: SwatchSize;
+		ground?: SwatchGround;
+	};
+
+const contentOf = ({ count, icon }: SwatchContent): ReactNode => {
+	if (icon !== undefined) return <Icon name={icon} className={ICON} />;
+	return count;
 };
 
 export const swatchFillsFor = (
@@ -64,12 +77,13 @@ export const swatchFillsFor = (
 export const Swatch = (props: SwatchProps) => {
 	const size = SIZE[props.size ?? "large"];
 	const fill = props.ground === "bright" ? ON_BRIGHT : FILL;
-	const counted = props.count === undefined ? undefined : COUNTED;
+	const content = contentOf(props);
+	const counted = content === undefined ? undefined : COUNTED;
 
 	if (props.state === "undiscovered") {
 		return (
 			<span className={clsx(BASE, size, fill.undiscovered, counted)}>
-				{props.count}
+				{content}
 			</span>
 		);
 	}
@@ -77,7 +91,7 @@ export const Swatch = (props: SwatchProps) => {
 	if (props.swatch.finish === "fill") {
 		return (
 			<span className={clsx(BASE, size, PRISMATIC[props.state], counted)}>
-				{props.count}
+				{content}
 			</span>
 		);
 	}
@@ -94,7 +108,7 @@ export const Swatch = (props: SwatchProps) => {
 				counted
 			)}
 		>
-			{props.count}
+			{content}
 		</span>
 	);
 };

@@ -5,12 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "~/database/db";
 import { pollsTable, usersTable } from "~/database/schema";
 import {
+	createPollWithOptions,
 	fetchPublishedCountIn,
 	fetchPublishedCounts,
 	fetchUnannouncedPublishedPolls,
 	markPollReviewed,
 	markPollsAnnounced,
 	payAuthorOnFirstPublish,
+	updatePollWithOptions,
 } from "~/modules/polls/authoring/infrastructure/authoring.repository";
 import {
 	type DrizzleMockState,
@@ -181,5 +183,90 @@ describe("fetchPublishedCountIn", () => {
 		mock.results.push([]);
 
 		expect(await fetchPublishedCountIn("vue")).toBe(0);
+	});
+});
+
+const POLL_RECORD = {
+	id: POLL_ID,
+	question: "Which method returns the last element of an array?",
+	status: "draft",
+	answer_type: "single",
+	opening_time: new Date(),
+	closing_time: new Date(),
+	created_by: BROCK,
+	created_at: new Date(),
+	updated_at: new Date(),
+	category_code: "js",
+	code_sandbox_example: null,
+	code_block: null,
+	explanation: null,
+	poll_number: 1,
+	reviewed_at: null,
+};
+
+const READS_IN_PLACE = "Reads the last element without touching the array.";
+
+describe("createPollWithOptions", () => {
+	it("writes each option's explanation beside its text", async () => {
+		mock.results.push([{ maxNum: 3 }], [POLL_RECORD]);
+
+		await createPollWithOptions(
+			{
+				question: POLL_RECORD.question,
+				status: "draft",
+				answerType: "single",
+				categoryCode: "js",
+				createdBy: BROCK,
+				authorRewardKb: 16,
+			},
+			[
+				{ option: "at(-1)", correct: true, explanation: READS_IN_PLACE },
+				{ option: "pop()", correct: false, explanation: null },
+			]
+		);
+
+		expect(mock.valuesCalls[1]).toEqual([
+			{
+				poll_id: POLL_ID,
+				option: "at(-1)",
+				correct: true,
+				explanation: READS_IN_PLACE,
+			},
+			{ poll_id: POLL_ID, option: "pop()", correct: false, explanation: null },
+		]);
+	});
+});
+
+describe("updatePollWithOptions", () => {
+	it("rewrites a kept option's explanation and clears one sent as null", async () => {
+		mock.results.push([POLL_RECORD]);
+
+		await updatePollWithOptions(POLL_ID, {}, [
+			{ id: 1, option: "at(-1)", correct: true, explanation: READS_IN_PLACE },
+			{ id: 2, option: "pop()", correct: false, explanation: null },
+		]);
+
+		expect(mock.setCalls.slice(1, 3)).toEqual([
+			{ option: "at(-1)", correct: true, explanation: READS_IN_PLACE },
+			{ option: "pop()", correct: false, explanation: null },
+		]);
+	});
+
+	it("inserts a new option with its explanation", async () => {
+		mock.results.push([POLL_RECORD]);
+
+		await updatePollWithOptions(POLL_ID, {}, [
+			{ id: 1, option: "at(-1)", correct: true, explanation: null },
+			{ option: "slice(-1)", correct: false, explanation: "Returns an array." },
+		]);
+
+		expect(mock.valuesCalls[0]).toEqual([
+			{
+				poll_id: POLL_ID,
+				option: "slice(-1)",
+				correct: false,
+				explanation: "Returns an array.",
+			},
+		]);
 	});
 });

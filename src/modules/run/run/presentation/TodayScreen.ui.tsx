@@ -1,88 +1,90 @@
 import type { ReactNode } from "react";
 
-import { clsx } from "clsx";
-
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import type {
 	HubBuild,
+	HubHeadline,
 	HubIncident,
-	HubStrip,
+	HubMark,
+	HubPress,
 	RunSoFar,
+	RunSoFarNext,
+	RunSoFarQuote,
 	RunSoFarRow,
 	TodayCommunity,
+	TodayShop,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
 import { Action } from "~/ui/kanto-theme/Action.ui";
 import { Audit } from "~/ui/kanto-theme/Audit.ui";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
-import { Balance } from "~/ui/kanto-theme/Balance.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
+import { ClimberStack } from "~/ui/kanto-theme/Climber.ui";
+import { ConfigChip } from "~/ui/kanto-theme/ConfigChip.ui";
 import { COVERAGE_BAND_COLOR } from "~/ui/kanto-theme/CoverageBar.ui";
+import { Fold } from "~/ui/kanto-theme/Fold.ui";
 import { Icon } from "~/ui/kanto-theme/Icon.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { RunReadout } from "~/ui/kanto-theme/RunReadout.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import { Swatch } from "~/ui/kanto-theme/Swatch.ui";
-import { SwatchTrack } from "~/ui/kanto-theme/SwatchTrack.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
-import { Version } from "~/ui/kanto-theme/Version.ui";
 import { Weight } from "~/ui/kanto-theme/Weight.ui";
+import { WeightTrack } from "~/ui/kanto-theme/WeightTrack.ui";
 
 export const COPY = {
-	storage: "Storage",
 	runSoFar: "Run so far",
-	earned: "earned",
-	next: "next",
 	notStarted: "not started",
 	build: "Build",
-	weight: "weight",
 	weightFree: "weight free",
 	changeInShop: "change in shop",
 	community: "Community",
-	divider: "·",
 } as const;
 
-const STRIP =
-	"flex flex-wrap items-center justify-between gap-3 border-b border-theme-faint px-4 py-3";
-const STRIP_META = "flex flex-wrap items-center gap-2 text-xs text-theme-muted";
-const PRESS_ROW = "flex w-full flex-col gap-3 sm:flex-row";
-const PRESS_SEAT = "flex w-full sm:min-w-0 sm:flex-1";
-const ASIDE_SEAT = "flex w-full sm:w-auto sm:shrink-0";
+const PAGE = "screen-rise grid w-full gap-6 md:grid-cols-2 md:items-start";
+const FULL = "md:col-span-2";
+const HEADLINE = "flex min-w-0 items-center gap-5 md:self-stretch";
+const HEADLINE_LINES = "flex min-w-0 flex-col gap-1.5";
+const TITLE = "text-2xl leading-tight font-extrabold md:text-3xl";
+const CLOCK = "block text-theme tabular-nums";
+const CLOCK_SECONDS = "ml-2 text-lg font-medium text-theme-muted";
+const SUBTEXT = "text-theme-soft";
+const LOCK_SEAT = "hub-breathe inline-flex rounded-lg";
 const INCIDENTS =
 	"flex flex-col gap-2 rounded-lg border border-theme-faint px-3 py-2";
-const PANELS = "grid w-full gap-4";
-const PANELS_PAIR = "md:grid-cols-2";
-const ROW_NAME = "min-w-0 truncate text-sm font-bold";
-const ROW_NAME_NEXT = "min-w-0 truncate text-sm text-theme-muted";
-const HEADER_META = "flex items-center gap-2";
+const FACES_LINE = "flex min-w-0 flex-wrap items-center gap-3 text-theme-muted";
+const ROOM_COUNT = "inline-flex items-center gap-2 whitespace-nowrap";
+const LEADS_ON = "size-4";
+const ROW_NAME = "min-w-0 truncate text-lg font-bold";
+const ROW_LINES = "flex min-w-0 flex-col";
+const ROW_NAME_NEXT = "min-w-0 truncate text-lg text-theme-muted";
+const ROW_NOTE = "text-sm text-theme-soft";
 const FIGURES = "flex flex-wrap items-center gap-1.5";
+const CHIPS = "flex flex-col gap-3";
+const BUILD_FOOT = "flex flex-wrap items-center justify-between gap-3";
 const FIGURE_LINE =
 	"flex flex-wrap items-center gap-2 text-sm text-theme-muted";
-const LEADS_ON = "size-4";
 
-const TRACK_SIZE = "small";
-const ROW_SWATCH_SIZE = "small";
+const MARK_SIZE = "hero";
+const ROW_SWATCH_SIZE = "large";
+const FACE_SIZE = "sm";
 const ASIDE_SIZE = "lg";
 const SHOP_ICON = "shop";
+const LOCK_ICON = "lock";
 const LEADS_ON_ICON = "forward";
+const EARNED_COLOR = "viridian";
 
-export type TodayPressProps = {
-	label: string;
-	note: string;
-	pollsLeft: number;
+export type TodayPressProps = HubPress & {
 	onPress?: () => void;
 };
 
-export type TodayShopProps = {
-	label: string;
-	open: boolean;
-	detail?: string;
-	highlighted: boolean;
-	hint?: string;
+export type TodayShopProps = TodayShop & {
 	onPress: () => void;
 };
 
 export type TodayBuildProps = HubBuild & {
 	shopHref?: string;
+	openInfo: ReadonlySet<string>;
+	onToggleInfo: (id: string) => void;
 };
 
 export type TodayCommunityProps = TodayCommunity & {
@@ -91,39 +93,92 @@ export type TodayCommunityProps = TodayCommunity & {
 
 export type TodayScreenProps = {
 	swatch: GateSwatch;
-	strip: HubStrip | null;
+	headline: HubHeadline;
 	press: TodayPressProps;
-	shop: TodayShopProps;
+	shop: TodayShopProps | null;
 	incidents: readonly HubIncident[];
+	community: TodayCommunityProps | null;
 	runSoFar: RunSoFar | null;
 	build: TodayBuildProps | null;
-	community: TodayCommunityProps | null;
 	refusal?: string;
 	advertisement?: ReactNode;
 };
 
-const Strip = ({ swatches, storage, ...readout }: HubStrip) => (
-	<div className={STRIP}>
-		<SwatchTrack swatches={swatches} size={TRACK_SIZE} />
-		<span className={STRIP_META}>
-			<RunReadout {...readout} />
-			<Balance label={COPY.storage} kb={storage} layout="inline" />
+const HeadlineMark = ({
+	mark,
+	swatch,
+}: {
+	mark: HubMark;
+	swatch: GateSwatch;
+}) =>
+	mark.kind === "lock" ? (
+		<span className={LOCK_SEAT}>
+			<Swatch
+				state="current"
+				swatch={swatch}
+				size={MARK_SIZE}
+				icon={LOCK_ICON}
+			/>
 		</span>
-	</div>
+	) : (
+		<Swatch
+			state="current"
+			swatch={swatch}
+			size={MARK_SIZE}
+			count={mark.count}
+		/>
+	);
+
+const Headline = ({
+	readout,
+	title,
+	clock,
+	subtext,
+	mark,
+	swatch,
+}: HubHeadline & { swatch: GateSwatch }) => (
+	<header className={HEADLINE}>
+		<HeadlineMark mark={mark} swatch={swatch} />
+		<div className={HEADLINE_LINES}>
+			{readout === null ? null : <RunReadout {...readout} />}
+			<h1 className={TITLE}>
+				{title}
+				{clock === null ? null : (
+					<span className={CLOCK}>
+						{clock.main}
+						<span className={CLOCK_SECONDS}>{clock.seconds}</span>
+					</span>
+				)}
+			</h1>
+			<p className={SUBTEXT}>{subtext}</p>
+		</div>
+	</header>
 );
 
-const ShopAside = ({
+const Press = ({
 	label,
-	open,
-	detail,
-	highlighted,
-	hint,
+	note,
+	mark,
+	pollsLeft,
 	onPress,
-}: TodayShopProps) => (
+	swatch,
+}: TodayPressProps & { swatch: GateSwatch }) =>
+	mark === "shop" ? (
+		<Action label={label} note={note} icon={SHOP_ICON} onPress={onPress} />
+	) : (
+		<Action
+			label={label}
+			note={note}
+			swatch={{ state: "current", swatch, count: pollsLeft }}
+			onPress={onPress}
+		/>
+	);
+
+const ShopAside = ({ label, open, detail, hint, onPress }: TodayShopProps) => (
 	<Button
 		size={ASIDE_SIZE}
 		width="fill"
-		tone={highlighted ? "action" : "ambient"}
+		tone="ambient"
 		icon={SHOP_ICON}
 		label={label}
 		detail={detail}
@@ -149,36 +204,102 @@ const Incidents = ({ incidents }: { incidents: readonly HubIncident[] }) => (
 	</div>
 );
 
-const RunSoFarRowFigures = ({
-	band,
-	kb,
-	share,
-}: Pick<RunSoFarRow, "band" | "kb"> & { share?: string }) => (
+const CommunityRow = ({
+	count,
+	detail,
+	faces,
+	overflow,
+	href,
+}: TodayCommunityProps) => (
+	<Panel.Rows>
+		<Panel.Row
+			href={href}
+			trailing={
+				<Typography variant="subtitle" as="span">
+					{COPY.community}
+					<Icon name={LEADS_ON_ICON} className={LEADS_ON} />
+				</Typography>
+			}
+		>
+			<span className={FACES_LINE}>
+				<ClimberStack climbers={faces} overflow={overflow} size={FACE_SIZE} />
+				<span className={ROOM_COUNT}>
+					<Badge>{count}</Badge>
+					<span>{detail}</span>
+				</span>
+			</span>
+		</Panel.Row>
+	</Panel.Rows>
+);
+
+const ActionGroup = ({
+	swatch,
+	press,
+	shop,
+	incidents,
+	community,
+	refusal,
+}: Pick<
+	TodayScreenProps,
+	"swatch" | "press" | "shop" | "incidents" | "community" | "refusal"
+>) => (
+	<Panel>
+		<Panel.Body>
+			<Press {...press} swatch={swatch} />
+			{shop === null ? null : <ShopAside {...shop} />}
+			{incidents.length === 0 ? null : <Incidents incidents={incidents} />}
+			{refusal === undefined ? null : (
+				<Typography variant="hint" as="span">
+					{refusal}
+				</Typography>
+			)}
+		</Panel.Body>
+		{community === null ? null : <CommunityRow {...community} />}
+	</Panel>
+);
+
+const RowFigures = ({ band, kb }: Pick<RunSoFarRow, "band" | "kb">) => (
 	<span className={FIGURES}>
-		<Badge color={COVERAGE_BAND_COLOR[band.id]}>
-			{share === undefined ? band.label : `${band.label} ${share}`}
-		</Badge>
+		<Badge color={COVERAGE_BAND_COLOR[band.id]}>{band.label}</Badge>
 		<Badge>{kb}</Badge>
 	</span>
 );
 
+const QuoteFigures = ({ band, kb, started, share }: RunSoFarQuote) => (
+	<span className={FIGURES}>
+		{started ? (
+			<Badge color={COVERAGE_BAND_COLOR[band.id]}>
+				{`${band.label} ${share}`}
+			</Badge>
+		) : (
+			<Badge>{COPY.notStarted}</Badge>
+		)}
+		<Badge>{kb}</Badge>
+	</span>
+);
+
+const NextRow = ({ swatch, note, quote }: RunSoFarNext) => (
+	<Panel.Row
+		trailing={quote === null ? undefined : <QuoteFigures {...quote} />}
+	>
+		<Swatch state="current" swatch={swatch} size={ROW_SWATCH_SIZE} />
+		<span className={ROW_LINES}>
+			<span className={ROW_NAME_NEXT}>{swatch.gateName}</span>
+			<span className={ROW_NOTE}>{note}</span>
+		</span>
+	</Panel.Row>
+);
+
 const RunSoFarPanel = ({ earned, rows, next }: RunSoFar) => (
-	<Panel>
-		<Panel.Header
-			label={COPY.runSoFar}
-			meta={
-				<span className={HEADER_META}>
-					<Badge>{earned}</Badge>
-					<span>{COPY.earned}</span>
-				</span>
-			}
-		/>
+	<Fold
+		title={COPY.runSoFar}
+		badges={[{ label: earned, color: EARNED_COLOR }]}
+		open
+		flush
+	>
 		<Panel.Rows>
 			{rows.map((row) => (
-				<Panel.Row
-					key={row.gate}
-					trailing={<RunSoFarRowFigures band={row.band} kb={row.kb} />}
-				>
+				<Panel.Row key={row.gate} trailing={<RowFigures {...row} />}>
 					<Swatch
 						state="discovered"
 						swatch={row.swatch}
@@ -187,164 +308,85 @@ const RunSoFarPanel = ({ earned, rows, next }: RunSoFar) => (
 					<span className={ROW_NAME}>{row.swatch.gateName}</span>
 				</Panel.Row>
 			))}
-			{next === null ? null : (
-				<Panel.Row
-					trailing={
-						next.started ? (
-							<RunSoFarRowFigures
-								band={next.band}
-								kb={next.kb}
-								share={next.share}
-							/>
-						) : (
-							<span className={FIGURES}>
-								<Badge>{COPY.notStarted}</Badge>
-								<Badge>{next.kb}</Badge>
-							</span>
-						)
-					}
-				>
-					<Swatch
-						state="discovered"
-						swatch={next.swatch}
-						size={ROW_SWATCH_SIZE}
-					/>
-					<span className={ROW_NAME_NEXT}>
-						{`${next.swatch.gateName} ${COPY.divider} ${COPY.next}`}
-					</span>
-				</Panel.Row>
-			)}
+			{next === null ? null : <NextRow {...next} />}
 		</Panel.Rows>
-	</Panel>
+	</Fold>
 );
 
-const BuildPanel = ({ rows, weight, free, shopHref }: TodayBuildProps) => (
-	<Panel>
-		<Panel.Header
-			label={COPY.build}
-			meta={
-				<span className={HEADER_META}>
-					<Badge>{weight}</Badge>
-					<span>{COPY.weight}</span>
-				</span>
-			}
-		/>
-		<Panel.Rows>
+const BuildPanel = ({
+	rows,
+	weight,
+	held,
+	free,
+	shopHref,
+	openInfo,
+	onToggleInfo,
+}: TodayBuildProps) => (
+	<Fold title={COPY.build} badges={[{ label: weight }]} open>
+		<WeightTrack fills={rows} held={held} caption={false} />
+		<div className={CHIPS}>
 			{rows.map((row) => (
-				<Panel.Row key={row.id} trailing={<Version version={row.version} />}>
-					<Weight slots={row.slots} />
-					<span className={ROW_NAME}>{row.name}</span>
-				</Panel.Row>
+				<ConfigChip
+					key={row.id}
+					name={row.name}
+					badges={[]}
+					slots={row.slots}
+					version={row.version}
+					info={{
+						description: row.description,
+						slots: row.slots,
+						version: row.version,
+					}}
+					infoOpen={openInfo.has(row.id)}
+					onToggleInfo={() => onToggleInfo(row.id)}
+				/>
 			))}
-		</Panel.Rows>
-		<Panel.Footer
-			trailing={
-				shopHref === undefined ? undefined : (
-					<Button
-						tone="bare"
-						href={shopHref}
-						label={COPY.changeInShop}
-						icon={LEADS_ON_ICON}
-					/>
-				)
-			}
-		>
+		</div>
+		<div className={BUILD_FOOT}>
 			<span className={FIGURE_LINE}>
 				<Weight slots={free} />
 				<span>{COPY.weightFree}</span>
 			</span>
-		</Panel.Footer>
-	</Panel>
-);
-
-const CommunityStrip = ({
-	count,
-	detail,
-	ahead,
-	aheadDetail,
-	href,
-}: TodayCommunityProps) => (
-	<Panel>
-		<Panel.Rows>
-			<Panel.Row
-				href={href}
-				trailing={
-					<Typography variant="subtitle" as="span">
-						{COPY.community}
-						<Icon name={LEADS_ON_ICON} className={LEADS_ON} />
-					</Typography>
-				}
-			>
-				<span className={FIGURE_LINE}>
-					<Badge>{count}</Badge>
-					<span>{detail}</span>
-					{ahead === null ? null : (
-						<>
-							<span aria-hidden>{COPY.divider}</span>
-							<Badge>{ahead}</Badge>
-							<span>{aheadDetail}</span>
-						</>
-					)}
-				</span>
-			</Panel.Row>
-		</Panel.Rows>
-	</Panel>
+			{shopHref === undefined ? null : (
+				<Button
+					tone="bare"
+					href={shopHref}
+					label={COPY.changeInShop}
+					icon={LEADS_ON_ICON}
+				/>
+			)}
+		</div>
+	</Fold>
 );
 
 export const TodayScreen = ({
 	swatch,
-	strip,
+	headline,
 	press,
 	shop,
 	incidents,
+	community,
 	runSoFar,
 	build,
-	community,
 	refusal,
 	advertisement,
 }: TodayScreenProps) => (
-	<Screen gate={swatch.theme} width="default" ground="bare">
-		<Panel>
-			{strip === null ? null : <Strip {...strip} />}
-			<Panel.Body>
-				<div className={PRESS_ROW}>
-					<div className={PRESS_SEAT}>
-						<Action
-							label={press.label}
-							note={press.note}
-							swatch={{ state: "current", swatch, count: press.pollsLeft }}
-							onPress={press.onPress}
-						/>
-					</div>
-					<div className={ASIDE_SEAT}>
-						<ShopAside {...shop} />
-					</div>
-				</div>
-
-				{incidents.length === 0 ? null : <Incidents incidents={incidents} />}
-
-				{refusal === undefined ? null : (
-					<Typography variant="hint" as="span">
-						{refusal}
-					</Typography>
-				)}
-			</Panel.Body>
-		</Panel>
-
-		{runSoFar === null && build === null ? null : (
-			<div
-				className={clsx(
-					PANELS,
-					runSoFar !== null && build !== null && PANELS_PAIR
-				)}
-			>
-				{runSoFar === null ? null : <RunSoFarPanel {...runSoFar} />}
-				{build === null ? null : <BuildPanel {...build} />}
-			</div>
-		)}
-
-		{community === null ? null : <CommunityStrip {...community} />}
-
-		{advertisement}
+	<Screen gate={swatch.theme} width="wide" ground="bare">
+		<div className={PAGE}>
+			<Headline {...headline} swatch={swatch} />
+			<ActionGroup
+				swatch={swatch}
+				press={press}
+				shop={shop}
+				incidents={incidents}
+				community={community}
+				refusal={refusal}
+			/>
+			{runSoFar === null ? null : <RunSoFarPanel {...runSoFar} />}
+			{build === null ? null : <BuildPanel {...build} />}
+			{advertisement === undefined ? null : (
+				<div className={FULL}>{advertisement}</div>
+			)}
+		</div>
 	</Screen>
 );

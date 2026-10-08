@@ -332,3 +332,38 @@ describe("Choice once the poll is answered", () => {
 		).toBeNull();
 	});
 });
+
+describe("a note under the answer", () => {
+	it("seats a note under the answer, inside the row, indented past the keycap", () => {
+		render(
+			<Choice letter="A" note={<span>Same origin.</span>}>
+				at(-1)
+			</Choice>
+		);
+
+		const seat = screen.getByText("Same origin.").closest("[data-note]");
+		expect(seat).toHaveClass("basis-full", "pl-13");
+		expect(seat?.closest("[data-answer]")).toHaveClass("flex-wrap");
+	});
+
+	it("adds no seat and no wrap to a row without a note", () => {
+		const { container } = render(<Choice letter="A">at(-1)</Choice>);
+
+		expect(container.querySelector("[data-note]")).toBeNull();
+		expect(screen.getByText("at(-1)").closest("[data-answer]")).not.toHaveClass(
+			"flex-wrap"
+		);
+	});
+
+	it("keeps the note inside the themed row, so the verdict tint wraps it", () => {
+		render(
+			<Choice letter="A" state="right" note={<span>Same origin.</span>}>
+				at(-1)
+			</Choice>
+		);
+
+		expect(
+			screen.getByText("Same origin.").closest('[data-answer="right"]')
+		).not.toBeNull();
+	});
+});

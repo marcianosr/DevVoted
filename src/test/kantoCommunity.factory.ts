@@ -223,7 +223,7 @@ export const kantoStanding = (
 
 const bands = (): TurnoutBand[] => [
 	{
-		label: "answered today",
+		label: "Answered today",
 		count: "1,214",
 		color: "cerulean",
 		shown: 10,
@@ -286,28 +286,28 @@ const bands = (): TurnoutBand[] => [
 ];
 
 const records = (): TurnoutBand[] => [
-	{ label: "biggest build", count: "14 slots", climbers: [giovanni] },
-	{ label: "lightest build", count: "2 slots", climbers: [misty] },
+	{ label: "Biggest build", count: "14 slots", climbers: [giovanni] },
+	{ label: "Lightest build", count: "2 slots", climbers: [misty] },
 	{
-		label: "comeback",
+		label: "Comeback",
 		caption: "held at this gate before, cleared it today",
 		count: "3",
 		climbers: [brock, erika, koga],
 	},
 	{
-		label: "most audits",
-		caption: "in one run",
+		label: "Most audits",
+		caption: "across the whole run",
 		count: "6",
 		climbers: [blaine],
 	},
 	{
-		label: "most installed",
-		caption: ".ts",
+		label: "Most installed",
+		config: { name: ".ts", slots: 1, badges: [] },
 		count: "812 players",
 		climbers: [you, surge, sabrina, erika, koga, misty],
 		overflow: 806,
 	},
-	{ label: "most expensive build", count: "1.4 MB", climbers: [giovanni] },
+	{ label: "Most expensive build", count: "1.4 MB", climbers: [giovanni] },
 	{
 		label: "KB generated today",
 		caption: "top earner",
@@ -643,8 +643,10 @@ export const kantoHallOfFame = (
 ): HallOfFameProps => ({
 	title: "Hall of Fame",
 	historyLabel: "Every champion",
-	empty:
-		"The one that wins the Champion gate will be remembered as a true Champion here — so far nobody yet.",
+	empty: {
+		title: "Champion · still open",
+		caption: "First to clear the Champion gate gets this spot.",
+	},
 	champion: {
 		card: kantoClimberCard({
 			name: "Red",

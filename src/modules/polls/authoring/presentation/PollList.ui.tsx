@@ -59,7 +59,7 @@ export const COPY = {
 	yesterdayHeading: "Dealt yesterday",
 } as const;
 
-const THEME: KantoColor = "cerulean";
+const THEME: KantoColor = "pallet";
 const ERROR_THEME: KantoColor = "cinnabar";
 
 const REVIEWED_COLOR: KantoColor = "celadon";

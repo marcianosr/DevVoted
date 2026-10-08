@@ -26,9 +26,26 @@ const POLL = createMockPoll({
 	explanation: "Absolute takes the box out of flow.",
 });
 
+const OUT_OF_FLOW =
+	"Taken out of flow and placed against the nearest positioned ancestor.";
+const STAYS_IN_FLOW = "Sticky stays in flow until it reaches its threshold.";
+
 const OPTIONS = [
-	{ id: 1, pollId: 7, option: "absolute", correct: true },
-	{ id: 2, pollId: 7, option: "relative", correct: false },
+	{
+		id: 1,
+		pollId: 7,
+		option: "absolute",
+		correct: true,
+		explanation: OUT_OF_FLOW,
+	},
+	{ id: 2, pollId: 7, option: "relative", correct: false, explanation: null },
+	{
+		id: 3,
+		pollId: 7,
+		option: "sticky",
+		correct: false,
+		explanation: STAYS_IN_FLOW,
+	},
 ];
 
 describe("pollDetailViewOf", () => {
@@ -38,6 +55,7 @@ describe("pollDetailViewOf", () => {
 		expect(view.question.options).toEqual([
 			{ id: "1", letter: "A", label: "absolute" },
 			{ id: "2", letter: "B", label: "relative" },
+			{ id: "3", letter: "C", label: "sticky" },
 		]);
 	});
 
@@ -47,7 +65,35 @@ describe("pollDetailViewOf", () => {
 		expect(view.question.options.map((option) => option.state)).toEqual([
 			"right",
 			"idle",
+			"idle",
 		]);
+	});
+
+	it("explains each option by its own correctness once the answer is shown", () => {
+		const view = pollDetailViewOf(POLL, OPTIONS, [MISTY], "answer");
+
+		expect(view.question.options[0]?.explanation).toEqual({
+			text: OUT_OF_FLOW,
+			right: true,
+		});
+		expect(view.question.options[2]?.explanation).toEqual({
+			text: STAYS_IN_FLOW,
+			right: false,
+		});
+	});
+
+	it("leaves an option with no explanation bare in the answer view", () => {
+		const view = pollDetailViewOf(POLL, OPTIONS, [MISTY], "answer");
+
+		expect(view.question.options[1]).not.toHaveProperty("explanation");
+	});
+
+	it("holds every option's explanation back from a player", () => {
+		const view = pollDetailViewOf(POLL, OPTIONS, [MISTY], "player");
+
+		expect(
+			view.question.options.some((option) => "explanation" in option)
+		).toBe(false);
 	});
 
 	it("names the poll by its number and category, and states its status", () => {

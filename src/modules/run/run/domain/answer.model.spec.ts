@@ -2343,3 +2343,63 @@ describe("what a mirrored poll is credited", () => {
 		);
 	});
 });
+
+describe("an answer remembers why each option is right or wrong", () => {
+	const SAME_ORIGIN = "Same scheme, host and port: same origin.";
+	const NO_CORS =
+		"A relative path keeps the same origin, so CORS never kicks in.";
+	const explained: RunPoll = {
+		...poll("cors", true),
+		options: [
+			{ id: "cors-a", label: "Yes", correct: true, explanation: SAME_ORIGIN },
+			{ id: "cors-b", label: "No", correct: false, explanation: NO_CORS },
+		],
+	};
+	const opening = started([]);
+	const dealt: RunState = {
+		...opening,
+		polls: [explained, ...opening.polls.slice(1)],
+	};
+	const lastAnswered = (state: RunState) => state.answeredThisGate.at(-1);
+
+	it("snapshots each option's explanation under its label when the poll carries them", () => {
+		const answered = runReducer(dealt, {
+			type: "answer",
+			optionIds: ["cors-a"],
+		});
+
+		expect(lastAnswered(answered)?.optionExplanations).toEqual({
+			Yes: SAME_ORIGIN,
+			No: NO_CORS,
+		});
+	});
+
+	it("records no explanation map when no option explains itself", () => {
+		const answered = runReducer(opening, {
+			type: "answer",
+			optionIds: ["kazooie-0-a"],
+		});
+
+		expect(lastAnswered(answered)?.optionExplanations).toBeUndefined();
+	});
+
+	it("keeps the options' explanations on a skipped poll too", () => {
+		const skipped = runReducer(dealt, { type: "skip" });
+
+		expect(lastAnswered(skipped)?.optionExplanations).toEqual({
+			Yes: SAME_ORIGIN,
+			No: NO_CORS,
+		});
+	});
+
+	it("carries no option explanations once the mirror has flipped the key", () => {
+		const mirrored = audited(dealt, 4, "mirrored");
+		const answered = runReducer(mirrored, {
+			type: "answer",
+			optionIds: ["cors-b"],
+		});
+
+		expect(lastAnswered(answered)?.outcome).toBe("correct");
+		expect(lastAnswered(answered)?.optionExplanations).toBeUndefined();
+	});
+});

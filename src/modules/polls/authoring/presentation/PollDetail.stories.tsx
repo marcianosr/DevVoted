@@ -46,9 +46,27 @@ export const WithTheAnswer: Story = {
 			question:
 				"Which value of `position` removes an element from normal flow and anchors it to the nearest positioned ancestor?",
 			options: [
-				{ id: "1", letter: "A", label: "absolute", state: "right" },
+				{
+					id: "1",
+					letter: "A",
+					label: "absolute",
+					state: "right",
+					explanation: {
+						text: "`absolute` leaves the flow and is placed against the nearest ancestor whose `position` is not `static`.",
+						right: true,
+					},
+				},
 				{ id: "2", letter: "B", label: "relative", state: "idle" },
-				{ id: "3", letter: "C", label: "sticky", state: "idle" },
+				{
+					id: "3",
+					letter: "C",
+					label: "sticky",
+					state: "idle",
+					explanation: {
+						text: "`sticky` stays in flow and only pins once it reaches its threshold while scrolling.",
+						right: false,
+					},
+				},
 				{ id: "4", letter: "D", label: "static", state: "idle" },
 			],
 		},

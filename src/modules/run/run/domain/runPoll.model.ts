@@ -15,6 +15,7 @@ export type RunOption = {
 	readonly id: string;
 	readonly label: string;
 	readonly correct: boolean;
+	readonly explanation?: string;
 };
 export type AnswerType = "single" | "multiple";
 
@@ -144,6 +145,7 @@ export type AnsweredPoll = {
 	readonly explanation?: string;
 	readonly author?: PollAuthor;
 	readonly options?: readonly string[];
+	readonly optionExplanations?: Readonly<Record<string, string>>;
 	readonly answerType?: AnswerType;
 	readonly gate?: number;
 	readonly coverageEarned?: number;

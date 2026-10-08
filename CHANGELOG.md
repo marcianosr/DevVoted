@@ -5,6 +5,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Every answer can say why.** A poll's author can write, under each answer, why it is right or why it is wrong. The gate review shows that note under each answer that has one, **Why it’s right** under the right answer and **Why it’s wrong** under the others, whether or not you picked them, and the poll page shows the same once you flip to **with the answer**. The poll's own explanation stays beneath.
+
+### Changed
+- **The run hub is a headline beside its press.** `/run` now opens on what matters: the gate ahead (or, once today's polls are done, **<gate> opens in** over a clock that ticks the seconds) with one big press beside it — **Continue to <gate>** while polls are ready, **To shop** while the day waits — and the faces of who answered today. **Run so far** and **Build** fold under their own headings; the build draws its weight bar, and each config opens on what it does. The run's track and balance live in the nav only.
+- **A record row's note sits under its title.** On the community board, the small note beside a row (**Comeback**, **Most audits**, **KB generated today**…) now sits on its own line under the title, every title starts with a capital, **Answered today** reads in the same plain title as the records instead of a badge, **Most installed** shows the config as its real chip, and **Most audits** says its count is **across the whole run**, not the day.
+- **The poll pages wear pallet.** The poll list, a poll's page and the edit form now wear the same white the suggest form already did, instead of Cerulean's blue; cerulean is a gate's colour and these pages are not a gate.
+- **An answer's verdict stays a second longer.** After you answer, the green or red reading holds for 1.65s on a right answer and 1.9s on a wrong one before the next poll slides in, so the right option can actually be read.
+- **Every run screen rises into place.** Each block of a run screen (the poll, prep, the gate's outcome, the shop, the community board, and the rest) now fades up in reading order as the screen opens, the way the hub does. Off under reduced motion.
+- **The Hall of Fame holds a seat open.** Before anyone has won a run, the Hall of Fame draws a dashed trophy beside **Champion · still open** and says the first to clear the Champion gate gets the spot, instead of a sentence saying nobody has yet. **Back to your run** on the community board drops its flag, and the board's header no longer names your gate.
+- **A fallen face says what it holds.** On the climb map, hovering a fallen run you can still loot reads **67 KB to loot** instead of only the player's name.
 
 ## 2.2.0 - 2026-10-08
 ### Added

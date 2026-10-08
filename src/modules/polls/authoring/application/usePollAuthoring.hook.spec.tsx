@@ -34,9 +34,9 @@ const FORM: PollFormData = {
 		explanation: null,
 	},
 	options: [
-		{ option: "Pewter City", correct: true },
-		{ option: "Cerulean City", correct: false },
-		{ option: "Vermilion City", correct: false },
+		{ option: "Pewter City", correct: true, explanation: null },
+		{ option: "Cerulean City", correct: false, explanation: null },
+		{ option: "Vermilion City", correct: false, explanation: null },
 	],
 };
 

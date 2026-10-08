@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	dayBefore,
+	formatClock,
 	formatCompactDuration,
 	formatDurationMs,
 	localDayRange,
@@ -47,6 +48,26 @@ describe("formatCompactDuration", () => {
 	it("floors everything under a minute to <1m, including zero", () => {
 		expect(formatCompactDuration(30_000)).toBe("<1m");
 		expect(formatCompactDuration(0)).toBe("<1m");
+	});
+});
+
+describe("formatClock", () => {
+	it("splits the clock into a padded hours-and-minutes line and the seconds", () => {
+		expect(formatClock(12 * 3_600_000 + 9 * 60_000 + 59_000)).toEqual({
+			main: "12h 09m",
+			seconds: "59s",
+		});
+	});
+
+	it("keeps the hours even when none are left, so the line never jumps width", () => {
+		expect(formatClock(5 * 60_000 + 3_000)).toEqual({
+			main: "0h 05m",
+			seconds: "03s",
+		});
+	});
+
+	it("floors a passed deadline to zero rather than counting negative", () => {
+		expect(formatClock(-4_000)).toEqual({ main: "0h 00m", seconds: "00s" });
 	});
 });
 

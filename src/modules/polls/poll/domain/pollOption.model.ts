@@ -3,4 +3,5 @@ export type PollOption = {
 	pollId: number;
 	option: string;
 	correct: boolean;
+	explanation: string | null;
 };

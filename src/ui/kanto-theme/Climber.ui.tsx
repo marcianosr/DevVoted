@@ -89,6 +89,7 @@ export type ClimberProps = {
 	rescued?: boolean;
 	dimmed?: boolean;
 	size?: ClimberSize;
+	tooltip?: string;
 	userId?: string;
 	onPress?: () => void;
 };
@@ -146,10 +147,11 @@ const Face = ({
 	rescued = false,
 	dimmed = false,
 	size = "sm",
+	tooltip,
 	titled,
 }: FaceProps) => (
 	<span
-		title={titled ? titleOf(name, you) : undefined}
+		title={titled ? (tooltip ?? titleOf(name, you)) : undefined}
 		className={clsx(CHIP, SIZE[size], dimmed && DIMMED, shaky && SHAKY)}
 	>
 		<span

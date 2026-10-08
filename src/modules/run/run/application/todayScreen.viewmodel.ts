@@ -2,12 +2,10 @@ import {
 	bandOf,
 	type CoverageBandId,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
-import {
-	gateSwatchAt,
-	swatchTrackFor,
-} from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { pollLabelFor } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { runReadoutFor } from "~/modules/run/run/application/runReadout.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
@@ -20,9 +18,10 @@ import {
 	SLICE_WINDOW,
 } from "~/modules/run/run/domain/rules.model";
 import { NEW_POLLS_IN } from "~/shared/lib/copy";
+import { type ClockParts, formatClock } from "~/shared/lib/dateUtils";
 import { plural } from "~/shared/lib/displayValue";
+import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { RunReadoutProps } from "~/ui/kanto-theme/RunReadout.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
 
 const DIVIDER = " · ";
 const PERCENT = "%";
@@ -32,22 +31,18 @@ const kbGained = (kb: number): string => `+${kb} ${KB}`;
 
 const START = "Start today’s climb";
 const CONTINUE = "Continue to";
+const OPENS_IN = "opens in";
+const NEW_POLLS = "New polls in";
+const DAY_DONE = "Today’s polls are done. Back tomorrow!";
+const READY = "ready";
 
 export type TodayClock = {
 	readonly isOpen: boolean;
 	readonly remaining: string;
+	readonly remainingMs: number;
 };
 
 const clockLabel = (clock: TodayClock): string => NEW_POLLS_IN(clock.remaining);
-
-export type TodayPressKind = "start" | "resume" | "locked";
-
-export type TodayPress = {
-	readonly kind: TodayPressKind;
-	readonly label: string;
-	readonly note: string;
-	readonly pollsLeft: number;
-};
 
 const pollsLeftInGate = (view: RunView): number =>
 	Math.max(0, view.pollsPerGate - view.answeredThisGate.length);
@@ -71,6 +66,9 @@ const isDaySpent = (
 	return isLiveRun(view) ? view.pollsExhausted : pollsLeftToday === 0;
 };
 
+const isWaiting = (view: RunView, clock: TodayClock): boolean =>
+	view.pollsExhausted && !clock.isOpen;
+
 export const startRefusalFor = (
 	view: RunView | null,
 	clock: TodayClock,
@@ -90,12 +88,18 @@ export const pollsBadgeFor = (
 	return left > 0 ? left : undefined;
 };
 
-const gateNameOf = (view: RunView): string =>
-	gateSwatchAt(view.gatesCleared).gateName;
+const FIRST_GATE = 0;
+
+const standingGateOf = (view: RunView | null): number =>
+	isLiveRun(view) ? view.gatesCleared : FIRST_GATE;
+
+export const hubSwatchFor = (view: RunView | null): GateSwatch =>
+	gateSwatchAt(standingGateOf(view));
+
+const gateNameOf = (view: RunView | null): string =>
+	hubSwatchFor(view).gateName;
 
 const PREP_FIRST = "prep first";
-const DAY_DONE = "today’s polls are done · come back tomorrow";
-
 const LEFT_TRAIL = "left · they do not carry to tomorrow";
 
 const isPartAnsweredDay = (view: RunView): boolean =>
@@ -103,61 +107,115 @@ const isPartAnsweredDay = (view: RunView): boolean =>
 
 const readyNoteFor = (view: RunView, pollsLeft: number): string => {
 	if (isPrepPhase(view))
-		return `${plural(pollsLeft, "poll")} ready${DIVIDER}${PREP_FIRST}`;
+		return `${plural(pollsLeft, "poll")} ${READY}${DIVIDER}${PREP_FIRST}`;
 	if (isPartAnsweredDay(view))
 		return `${pollLabelFor(view)}${DIVIDER}${view.pollsLeftToday} of today’s ${view.pollsPerGate} ${LEFT_TRAIL}`;
 
 	return pollLabelFor(view);
 };
 
-const isWaiting = (view: RunView, clock: TodayClock): boolean =>
-	view.pollsExhausted && !clock.isOpen;
+const freshNoteFor = (clock: TodayClock, pollsLeft: number): string =>
+	`${plural(pollsLeft, "poll")} ${READY}${DIVIDER}${clockLabel(clock)}`;
 
-export const todayPressFor = (
+export type HubMark =
+	| { readonly kind: "lock" }
+	| { readonly kind: "polls"; readonly count: number };
+
+export type HubHeadline = {
+	readonly readout: RunReadoutProps | null;
+	readonly title: string;
+	readonly clock: ClockParts | null;
+	readonly subtext: string;
+	readonly mark: HubMark;
+};
+
+export const hubHeadlineFor = (
 	view: RunView | null,
 	clock: TodayClock,
-	pollsLeftToday: number | null
-): TodayPress => {
+	pollsLeftToday: number | null,
+	runNumber: number | null
+): HubHeadline => {
+	const readout = isLiveRun(view) ? runReadoutFor(view, runNumber) : null;
 	const pollsLeft = pollsLeftFor(view, pollsLeftToday);
-	const spent = isDaySpent(view, clock, pollsLeftToday);
 
-	if (!isLiveRun(view))
-		return spent
-			? { kind: "locked", label: clockLabel(clock), note: DAY_DONE, pollsLeft }
-			: { kind: "start", label: START, note: clockLabel(clock), pollsLeft };
-
-	if (spent)
+	if (isDaySpent(view, clock, pollsLeftToday))
 		return {
-			kind: "locked",
-			label: `${gateNameOf(view)} opens in ${clock.remaining}`,
-			note: DAY_DONE,
-			pollsLeft,
+			readout,
+			title: isLiveRun(view) ? `${gateNameOf(view)} ${OPENS_IN}` : NEW_POLLS,
+			clock: formatClock(clock.remainingMs),
+			subtext: DAY_DONE,
+			mark: { kind: "lock" },
 		};
 
 	return {
-		kind: "resume",
-		label: `${CONTINUE} ${gateNameOf(view)}`,
-		note: readyNoteFor(view, pollsLeft),
-		pollsLeft,
+		readout,
+		title: gateNameOf(view),
+		clock: null,
+		subtext: isLiveRun(view)
+			? readyNoteFor(view, pollsLeft)
+			: freshNoteFor(clock, pollsLeft),
+		mark: { kind: "polls", count: pollsLeft },
 	};
 };
 
-export type HubStrip = RunReadoutProps & {
-	readonly swatches: readonly SwatchFill[];
-	readonly storage: number;
+const TO_SHOP = "To shop";
+const SHOP_SKIPPED = "skipped";
+
+export type HubPressKind = "start" | "resume" | "shop" | "locked";
+export type HubPressMark = "shop" | "polls";
+
+export type HubPress = {
+	readonly kind: HubPressKind;
+	readonly label: string;
+	readonly note?: string;
+	readonly mark: HubPressMark;
+	readonly pollsLeft?: number;
 };
 
-export const hubStripFor = (
+const isShopPaying = (view: RunView | null): view is RunView =>
+	isLiveRun(view) && view.status === "rewarding";
+
+const shopLeadsFor = (
 	view: RunView | null,
-	runNumber: number | null
-): HubStrip | null =>
-	view === null
-		? null
-		: {
-				...runReadoutFor(view, runNumber),
-				swatches: swatchTrackFor(view.swatchGates, view.gatesCleared),
-				storage: view.storage,
-			};
+	clock: TodayClock,
+	pollsLeftToday: number | null
+): boolean => isShopPaying(view) && isDaySpent(view, clock, pollsLeftToday);
+
+const shopPressOf = (view: RunView): HubPress => ({
+	kind: "shop",
+	label: TO_SHOP,
+	note: view.shopControls.shopSkipped
+		? SHOP_SKIPPED
+		: `spend ${view.storage} ${KB}`,
+	mark: "shop",
+});
+
+const climbLabelOf = (view: RunView | null): string =>
+	isLiveRun(view) ? `${CONTINUE} ${gateNameOf(view)}` : START;
+
+const countOrNothing = (count: number): number | undefined =>
+	count > 0 ? count : undefined;
+
+export const hubPressFor = (
+	view: RunView | null,
+	clock: TodayClock,
+	pollsLeftToday: number | null
+): HubPress => {
+	if (isShopPaying(view) && isDaySpent(view, clock, pollsLeftToday))
+		return shopPressOf(view);
+
+	const pollsLeft = countOrNothing(pollsLeftFor(view, pollsLeftToday));
+
+	if (isDaySpent(view, clock, pollsLeftToday))
+		return { kind: "locked", label: climbLabelOf(view), mark: "polls" };
+
+	return {
+		kind: isLiveRun(view) ? "resume" : "start",
+		label: climbLabelOf(view),
+		mark: "polls",
+		pollsLeft,
+	};
+};
 
 export type HubBand = {
 	readonly id: CoverageBandId;
@@ -171,9 +229,18 @@ export type RunSoFarRow = {
 	readonly kb: string;
 };
 
-export type RunSoFarNext = RunSoFarRow & {
+export type RunSoFarQuote = {
+	readonly band: HubBand;
+	readonly kb: string;
 	readonly started: boolean;
 	readonly share: string;
+};
+
+export type RunSoFarNext = {
+	readonly gate: number;
+	readonly swatch: GateSwatch;
+	readonly note: string;
+	readonly quote: RunSoFarQuote | null;
 };
 
 export type RunSoFar = {
@@ -181,6 +248,9 @@ export type RunSoFar = {
 	readonly rows: readonly RunSoFarRow[];
 	readonly next: RunSoFarNext | null;
 };
+
+const NEXT = "next";
+const OPENS_TOMORROW = "opens tomorrow";
 
 const hubBandOf = (id: CoverageBandId): HubBand => ({
 	id,
@@ -202,20 +272,32 @@ const closedRowOf = (close: RecordedClose): RunSoFarRow => ({
 	kb: kbGained(close.kb),
 });
 
-const nextRowOf = (view: RunView): RunSoFarNext => {
+const nextQuoteOf = (view: RunView): RunSoFarQuote => {
 	const held = view.gateStake.coverageHeld;
+
+	return {
+		band: hubBandOf(bandAtLadder(held, view.gateStake.coverageLadder).id),
+		kb: kbGained(view.fullClearKb),
+		started: view.pollsAnswered > 0,
+		share: `${roundToOneDecimal(held)}${PERCENT}`,
+	};
+};
+
+const nextRowOf = (view: RunView, clock: TodayClock): RunSoFarNext => {
+	const waiting = isWaiting(view, clock);
 
 	return {
 		gate: view.gatesCleared,
 		swatch: gateSwatchAt(view.gatesCleared),
-		band: hubBandOf(bandAtLadder(held, view.gateStake.coverageLadder).id),
-		started: view.pollsAnswered > 0,
-		share: `${roundToOneDecimal(held)}${PERCENT}`,
-		kb: kbGained(view.fullClearKb),
+		note: waiting ? OPENS_TOMORROW : NEXT,
+		quote: waiting ? null : nextQuoteOf(view),
 	};
 };
 
-export const runSoFarFor = (view: RunView | null): RunSoFar | null => {
+export const runSoFarFor = (
+	view: RunView | null,
+	clock: TodayClock
+): RunSoFar | null => {
 	if (view === null) return null;
 
 	const closes = lastClosePerGate(view.closes);
@@ -223,13 +305,14 @@ export const runSoFarFor = (view: RunView | null): RunSoFar | null => {
 	return {
 		earned: kbGained(closes.reduce((total, close) => total + close.kb, 0)),
 		rows: closes.map(closedRowOf),
-		next: view.isOver ? null : nextRowOf(view),
+		next: view.isOver ? null : nextRowOf(view, clock),
 	};
 };
 
 export type HubBuildRow = {
 	readonly id: string;
 	readonly name: string;
+	readonly description: string;
 	readonly slots: number;
 	readonly version: number;
 };
@@ -237,6 +320,7 @@ export type HubBuildRow = {
 export type HubBuild = {
 	readonly rows: readonly HubBuildRow[];
 	readonly weight: string;
+	readonly held: number;
 	readonly free: number;
 };
 
@@ -249,10 +333,12 @@ export const hubBuildFor = (view: RunView | null): HubBuild | null =>
 				rows: view.installed.map(({ config, slots }) => ({
 					id: config.id,
 					name: config.label,
+					description: config.description,
 					slots,
 					version: config.level ?? FIRST_VERSION,
 				})),
 				weight: `${view.slotsUsed} / ${view.slots}`,
+				held: view.slots,
 				free: view.buildSpace.freeWeight,
 			};
 
@@ -288,90 +374,65 @@ export const incomingIncidentsFor = (
 	);
 };
 
-const PLAYER = "player";
-const PLAYERS = "players";
-const ANSWERED_TODAY = "answered today";
+const TODAY = "today";
+const FACES_SHOWN = 10;
 
 export type TodayCommunity = {
 	readonly count: number;
 	readonly detail: string;
-	readonly ahead: number | null;
-	readonly aheadDetail: string | null;
+	readonly faces: readonly ClimberProps[];
+	readonly overflow: number;
 };
 
-export type ClimberAt = {
-	readonly gate: number;
-	readonly you: boolean;
-};
-
-export const climbersAtOrPast = (
-	climbers: readonly ClimberAt[],
-	gate: number
-): number =>
-	climbers.filter((climber) => !climber.you && climber.gate >= gate).length;
+const faceOf = (voter: CommunityVoter): ClimberProps => ({
+	name: voter.displayName,
+	photoUrl: voter.photoUrl ?? undefined,
+	borderUrl: voter.borderUrl ?? undefined,
+	you: voter.you,
+});
 
 export const communityLineFor = (
 	players: number | undefined,
-	ahead?: { readonly count: number; readonly gate: number }
+	voters: readonly CommunityVoter[] = []
 ): TodayCommunity | null => {
 	if (players === undefined) return null;
 
 	return {
 		count: players,
-		detail: `${players === 1 ? PLAYER : PLAYERS} ${ANSWERED_TODAY}`,
-		ahead: ahead?.count ?? null,
-		aheadDetail:
-			ahead === undefined
-				? null
-				: `at ${gateSwatchAt(ahead.gate).gateName} or ahead`,
+		detail: TODAY,
+		faces: voters.slice(0, FACES_SHOWN).map(faceOf),
+		overflow: Math.max(0, players - FACES_SHOWN),
 	};
 };
 
 const SHOP = "Shop";
 const SHOP_SHUT = "the shop opens when you clear a gate";
 const OPEN_UNTIL_START = "open until you start";
-const SHOP_SKIPPED = "skipped";
 
 export type TodayShop = {
 	readonly label: string;
 	readonly open: boolean;
 	readonly detail?: string;
-	readonly highlighted: boolean;
 	readonly hint?: string;
 };
 
 export const shopAsideFor = (
 	view: RunView | null,
-	clock: TodayClock
-): TodayShop => {
-	if (view?.status !== "rewarding")
+	clock: TodayClock,
+	pollsLeftToday: number | null
+): TodayShop | null => {
+	if (shopLeadsFor(view, clock, pollsLeftToday)) return null;
+
+	if (!isShopPaying(view))
 		return {
 			label: SHOP,
 			open: false,
-			highlighted: false,
 			hint: `${SHOP}${DIVIDER}${SHOP_SHUT}`,
-		};
-
-	if (view.shopControls.shopSkipped)
-		return {
-			label: SHOP,
-			open: true,
-			detail: SHOP_SKIPPED,
-			highlighted: false,
-		};
-
-	if (isWaiting(view, clock))
-		return {
-			label: SHOP,
-			open: true,
-			detail: `spend ${view.storage} ${KB}`,
-			highlighted: true,
 		};
 
 	return {
 		label: SHOP,
 		open: true,
-		detail: OPEN_UNTIL_START,
-		highlighted: false,
+		detail: view.shopControls.shopSkipped ? SHOP_SKIPPED : OPEN_UNTIL_START,
 	};
 };

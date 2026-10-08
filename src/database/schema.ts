@@ -226,6 +226,7 @@ export const pollOptionsTable = pgTable("polls_options", {
 		.notNull(),
 	option: text("option").notNull(),
 	correct: boolean("correct").notNull().default(false),
+	explanation: text("explanation"),
 }).enableRLS();
 
 export const pollCategoriesTable = pgTable("polls_categories", {

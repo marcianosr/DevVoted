@@ -2217,3 +2217,50 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
+
+/* A run screen's entry (DVTD-k5sd): `Screen enter="rise"` (or the class on
+   the hub's own grid) rises each block into place in reading order; the hub's
+   lock mark breathes in the gate's hue while the day
+   waits. Reduced motion lands everything at once.
+   `backwards`, never `both`: a filling opacity/transform animation keeps each
+   block a stacking context after it lands, which traps a child's fixed overlay
+   (the climb map's player card) under the blocks that follow it. */
+.screen-rise > * {
+	animation: rise-in 450ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.screen-rise > :nth-child(2) {
+	animation-delay: 50ms;
+}
+
+.screen-rise > :nth-child(3) {
+	animation-delay: 100ms;
+}
+
+.screen-rise > :nth-child(n + 4) {
+	animation-delay: 150ms;
+}
+
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+}
+
+.hub-breathe {
+	animation: hub-breathe 3s ease-in-out infinite;
+}
+
+@keyframes hub-breathe {
+	50% {
+		background-color: oklch(from var(--theme-color) l c h / 0.12);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.screen-rise > *,
+	.hub-breathe {
+		animation: none;
+	}
+}

@@ -171,6 +171,7 @@ const withOptions = async (
 			poll_id: pollOptionsTable.poll_id,
 			option: pollOptionsTable.option,
 			correct: pollOptionsTable.correct,
+			explanation: pollOptionsTable.explanation,
 		})
 		.from(pollOptionsTable)
 		.where(
@@ -195,6 +196,9 @@ const withOptions = async (
 				id: String(option.id),
 				label: option.option,
 				correct: option.correct,
+				...(option.explanation === null
+					? {}
+					: { explanation: option.explanation }),
 			})),
 	}));
 };

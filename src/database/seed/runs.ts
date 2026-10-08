@@ -9,28 +9,108 @@ import {
 } from "~/database/schema";
 import { findTitleById } from "~/modules/account/profile/domain/title.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
+import { startRunService } from "~/modules/run/run/application/run.service";
 import { createRun } from "~/modules/run/run/domain/run.model";
 import { SLICE_WINDOW, unbankedKb } from "~/modules/run/run/domain/rules.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { toRunSnapshot } from "~/modules/run/run/domain/runSnapshot.model";
 import { STORAGE_UNITS } from "~/shared/lib/storage";
 
-import type { SeedClimber } from "~/database/seed/cast";
+import type { SeedClimb, SeedClimber } from "~/database/seed/cast";
 import { SEED_CLIMBERS, SEED_PLAYERS } from "~/database/seed/cast";
 import { hashOf } from "~/database/seed/random";
 
-const historyFor = (climber: SeedClimber, count: number): AnsweredPoll[] =>
+type ShellRunner = Pick<SeedClimber, "id" | "displayName" | "accuracy"> & {
+	readonly climb: SeedClimb;
+};
+
+type RunSnapshot = ReturnType<typeof toRunSnapshot>;
+
+const historyFor = (runner: ShellRunner, count: number): AnsweredPoll[] =>
 	Array.from({ length: count }, (_, index) => ({
-		id: `seed-${climber.id}-${index}`,
+		id: `seed-${runner.id}-${index}`,
 		question: "",
 		category: "js" as const,
 		outcome:
-			hashOf(`${climber.displayName}:outcome:${index * 37}`) % 100 <
-			climber.accuracy * 100
+			hashOf(`${runner.displayName}:outcome:${index * 37}`) % 100 <
+			runner.accuracy * 100
 				? ("correct" as const)
 				: ("wrong" as const),
 		picked: [],
 	}));
+
+const insertShellRun = async (
+	runner: ShellRunner,
+	today: string,
+	blank: RunSnapshot
+): Promise<number> => {
+	const { gatesCleared, pollsIntoGate, fell = false } = runner.climb;
+	const { configs, coverageUnits, configsLost, startedAtGate } = runner.climb;
+	const { storageKb = 0, lootedBy, closingBand } = runner.climb;
+	const answeredCount = gatesCleared * SLICE_WINDOW + pollsIntoGate;
+	const spoils =
+		lootedBy === undefined
+			? {}
+			: {
+					looted_by_user_id: lootedBy,
+					looted_at: new Date(),
+					loot_amount: unbankedKb(
+						storageKb,
+						gatesCleared - (startedAtGate ?? 0),
+						false
+					),
+				};
+
+	const [run] = await db
+		.insert(runsTable)
+		.values({
+			user_id: runner.id,
+			mode: "session",
+			status: fell ? "finished" : "active",
+			seed_date: today,
+			completion_reason: fell ? "dead" : null,
+			finished_at: fell ? new Date() : null,
+			...spoils,
+		})
+		.returning({ id: runsTable.id });
+
+	await db.insert(runStatesTable).values({
+		run_id: run.id,
+		state: {
+			...blank,
+			status: fell ? "dead" : "answering",
+			gatesCleared,
+			storage: storageKb,
+			peakStorageKb: storageKb,
+			coverage: coverageUnits,
+			currentIndex: answeredCount,
+			allAnswered: historyFor(runner, answeredCount),
+			configsLost,
+			startedAtGate,
+			...(closingBand === undefined
+				? {}
+				: {
+						lastClose: {
+							gate: gatesCleared,
+							band: closingBand,
+							cleared: !fell,
+						},
+					}),
+			build: { ...blank.build, configs: CONFIG_LIST.slice(0, configs) },
+			window: {
+				...blank.window,
+				answered: pollsIntoGate,
+				correct: Math.round(pollsIntoGate * runner.accuracy),
+			},
+		},
+		engine_status: fell ? "dead" : "answering",
+		gates_cleared: gatesCleared,
+		coverage: coverageUnits,
+		polls_answered: answeredCount,
+	});
+
+	return run.id;
+};
 
 export const seedClimberRuns = async (
 	today: string
@@ -39,76 +119,39 @@ export const seedClimberRuns = async (
 	const runByClimber = new Map<string, number>();
 
 	for (const climber of SEED_CLIMBERS) {
-		const { gatesCleared, pollsIntoGate, fell = false } = climber.climb;
-		const { configs, coverageUnits, configsLost, startedAtGate } =
-			climber.climb;
-		const { storageKb = 0, lootedBy, closingBand } = climber.climb;
-		const answeredCount = gatesCleared * SLICE_WINDOW + pollsIntoGate;
-		const spoils =
-			lootedBy === undefined
-				? {}
-				: {
-						looted_by_user_id: lootedBy,
-						looted_at: new Date(),
-						loot_amount: unbankedKb(
-							storageKb,
-							gatesCleared - (startedAtGate ?? 0),
-							false
-						),
-					};
-
-		const [run] = await db
-			.insert(runsTable)
-			.values({
-				user_id: climber.id,
-				mode: "session",
-				status: fell ? "finished" : "active",
-				seed_date: today,
-				completion_reason: fell ? "dead" : null,
-				finished_at: fell ? new Date() : null,
-				...spoils,
-			})
-			.returning({ id: runsTable.id });
-
-		await db.insert(runStatesTable).values({
-			run_id: run.id,
-			state: {
-				...blank,
-				status: fell ? "dead" : "answering",
-				gatesCleared,
-				storage: storageKb,
-				peakStorageKb: storageKb,
-				coverage: coverageUnits,
-				currentIndex: answeredCount,
-				allAnswered: historyFor(climber, answeredCount),
-				configsLost,
-				startedAtGate,
-				...(closingBand === undefined
-					? {}
-					: {
-							lastClose: {
-								gate: gatesCleared,
-								band: closingBand,
-								cleared: !fell,
-							},
-						}),
-				build: { ...blank.build, configs: CONFIG_LIST.slice(0, configs) },
-				window: {
-					...blank.window,
-					answered: pollsIntoGate,
-					correct: Math.round(pollsIntoGate * climber.accuracy),
-				},
-			},
-			engine_status: fell ? "dead" : "answering",
-			gates_cleared: gatesCleared,
-			coverage: coverageUnits,
-			polls_answered: answeredCount,
-		});
-
-		runByClimber.set(climber.id, run.id);
+		runByClimber.set(climber.id, await insertShellRun(climber, today, blank));
 	}
 
 	return runByClimber;
+};
+
+export type PlayerRuns = {
+	readonly started: readonly string[];
+	readonly fallen: readonly string[];
+};
+
+export const seedPlayerRuns = async (today: string): Promise<PlayerRuns> => {
+	const blank = toRunSnapshot(createRun([], []));
+	const started: string[] = [];
+	const fallen: string[] = [];
+
+	for (const player of SEED_PLAYERS) {
+		const { todaysRun } = player;
+		if (todaysRun === undefined) continue;
+
+		if (todaysRun === "started") {
+			const run = await startRunService({ userId: player.id, date: today });
+			if (!run.success)
+				throw new Error(`${player.displayName} could not start: ${run.error}`);
+			started.push(player.displayName);
+			continue;
+		}
+
+		await insertShellRun({ ...player, climb: todaysRun }, today, blank);
+		fallen.push(player.displayName);
+	}
+
+	return { started, fallen };
 };
 
 export const seedArchivedRuns = async (
@@ -139,16 +182,18 @@ export const seedArchivedRuns = async (
 
 	for (const [index, entry] of archive.entries()) {
 		const answered = entry.gatesCleared * SLICE_WINDOW;
+		const seedDate = pastDate(today, index + 1);
+		const finishedAt = new Date(`${seedDate}T${ARCHIVED_FINISH_TIME}`);
 		const [run] = await db
 			.insert(runsTable)
 			.values({
 				user_id: userId,
 				mode: "session",
 				status: "finished",
-				seed_date: pastDate(today, index + 1),
+				seed_date: seedDate,
 				completion_reason: entry.reason,
-				finished_at: new Date(),
-				victory_achieved_at: entry.reason === "victory" ? new Date() : null,
+				finished_at: finishedAt,
+				victory_achieved_at: entry.reason === "victory" ? finishedAt : null,
 			})
 			.returning({ id: runsTable.id });
 
@@ -173,6 +218,8 @@ export const seedArchivedRuns = async (
 
 	return archive.length;
 };
+
+const ARCHIVED_FINISH_TIME = "20:00:00";
 
 const pastDate = (today: string, daysBack: number): string => {
 	const date = new Date(`${today}T00:00:00`);

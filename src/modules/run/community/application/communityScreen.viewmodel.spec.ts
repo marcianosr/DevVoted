@@ -8,7 +8,7 @@ import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.mod
 
 const BROCK = { id: "brock", displayName: "Brock", you: false };
 const MISTY = { id: "misty", displayName: "Misty", you: true };
-const SHOWED_UP = { label: "answered today", count: "2", climbers: [] };
+const SHOWED_UP = { label: "Answered today", count: "2", climbers: [] };
 
 const bandLabelled = <Band extends { label: string }>(
 	bands: readonly Band[] | undefined,
@@ -109,12 +109,12 @@ describe("turnoutFor", () => {
 			"0",
 		]);
 		expect(turnout.records?.map(({ label }) => label)).toEqual([
-			"biggest build",
-			"lightest build",
-			"comeback",
-			"most audits",
-			"most installed",
-			"most expensive build",
+			"Biggest build",
+			"Lightest build",
+			"Comeback",
+			"Most audits",
+			"Most installed",
+			"Most expensive build",
 			"KB generated today",
 			"KB spent today",
 		]);
@@ -135,6 +135,7 @@ describe("turnoutFor", () => {
 							id: "top-config",
 							configId: "ts",
 							configLabel: ".ts",
+							configSlots: 1,
 							figure: 2,
 							holderIds: ["brock", "misty"],
 						},
@@ -145,19 +146,20 @@ describe("turnoutFor", () => {
 			SHOWED_UP
 		);
 
-		expect(bandLabelled(turnout.records, "most installed")).toMatchObject({
-			caption: ".ts",
+		expect(bandLabelled(turnout.records, "Most installed")).toMatchObject({
+			config: { name: ".ts", slots: 1 },
 			count: "2 players",
 		});
 	});
 
-	it("leaves the caption off a most-installed row nobody holds, there being no config to name", () => {
-		expect(
-			bandLabelled(
-				turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).records,
-				"most installed"
-			)?.caption
-		).toBeUndefined();
+	it("draws no chip on a most-installed row nobody holds, there being no config to name", () => {
+		const row = bandLabelled(
+			turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).records,
+			"Most installed"
+		);
+
+		expect(row?.config).toBeUndefined();
+		expect(row?.caption).toBeUndefined();
 	});
 });
 

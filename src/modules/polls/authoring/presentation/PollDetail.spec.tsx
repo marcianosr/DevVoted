@@ -45,6 +45,32 @@ describe("PollDetail", () => {
 		).not.toBeInTheDocument();
 	});
 
+	it("draws each option’s own reason under it once the answer is shown", () => {
+		render(
+			<PollDetail
+				{...PROPS}
+				view="answer"
+				question={{
+					...PROPS.question,
+					options: [
+						{
+							id: "1",
+							letter: "A",
+							label: "absolute",
+							state: "right",
+							explanation: { text: "Out of flow.", right: true },
+						},
+						{ id: "2", letter: "B", label: "relative", state: "idle" },
+					],
+				}}
+			/>
+		);
+
+		expect(screen.getByText("Why it’s right")).toBeInTheDocument();
+		expect(screen.getByText("Out of flow.")).toBeInTheDocument();
+		expect(screen.queryByText("Why it’s wrong")).not.toBeInTheDocument();
+	});
+
 	it("states the explanation once the answer is shown", () => {
 		render(<PollDetail {...PROPS} view="answer" />);
 

@@ -6,7 +6,9 @@ import {
 	CATEGORY_CHOICES,
 	EMPTY_POLL_FORM,
 	STATUS_CHOICES,
+	UNPLAYED,
 	answerRowsOf,
+	pickInPreview,
 	previewCategoryOf,
 	previewOf,
 	questionCountOf,
@@ -23,10 +25,18 @@ const FILLED: PollFormState = {
 	question: "What does `flex: 1` expand to?",
 	categoryCode: "css",
 	answers: [
-		{ key: 0, text: "1 1 0%", right: true },
-		{ key: 1, text: "1 1 auto", right: false },
-		{ key: 2, text: "1 0 0%", right: false },
+		{ key: 0, text: "1 1 0%", right: true, explanation: "" },
+		{ key: 1, text: "1 1 auto", right: false, explanation: "" },
+		{ key: 2, text: "1 0 0%", right: false, explanation: "" },
 	],
+};
+
+const EXPLAINED: PollFormState = {
+	...FILLED,
+	answers: FILLED.answers.map((answer) => ({
+		...answer,
+		explanation: answer.right ? "The basis drops to 0%." : "",
+	})),
 };
 
 const propsFor = (state: PollFormState): PollFormProps => ({
@@ -48,6 +58,7 @@ const propsFor = (state: PollFormState): PollFormProps => ({
 	onPreviewPick: vi.fn(),
 	onAnswerType: vi.fn(),
 	onAnswerChange: vi.fn(),
+	onAnswerExplanationChange: vi.fn(),
 	onMarkRight: vi.fn(),
 	onAddAnswer: vi.fn(),
 	onCategory: vi.fn(),
@@ -76,7 +87,7 @@ describe("PollForm", () => {
 		).toBeInTheDocument();
 	});
 
-	it("wears pallet to suggest and cerulean to edit", () => {
+	it("wears pallet to suggest and to edit alike", () => {
 		const { container, rerender, props } = renderForm();
 
 		expect(container.firstElementChild).toHaveAttribute(
@@ -87,7 +98,7 @@ describe("PollForm", () => {
 		rerender(<PollForm {...props} mode="edit" />);
 		expect(container.firstElementChild).toHaveAttribute(
 			"data-screen-theme",
-			"cerulean"
+			"pallet"
 		);
 	});
 
@@ -298,6 +309,54 @@ describe("PollForm", () => {
 		expect(
 			screen.getByRole("option", { name: "pick a category" })
 		).toBeDisabled();
+	});
+
+	it("offers under each answer a note on why it is right or wrong, worded by its mark", () => {
+		renderForm();
+
+		expect(
+			screen.getByRole("textbox", { name: "why A is right" })
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("textbox", { name: "why B is wrong" })
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("textbox", { name: "why A is wrong" })
+		).not.toBeInTheDocument();
+	});
+
+	it("reports an answer’s explanation by key", async () => {
+		const { props } = renderForm();
+
+		await userEvent.type(
+			screen.getByRole("textbox", { name: "why C is wrong" }),
+			"!"
+		);
+
+		expect(props.onAnswerExplanationChange).toHaveBeenLastCalledWith(2, "!");
+	});
+
+	it("shows each answer’s explanation in the preview only once revealed", () => {
+		const { props, rerender } = renderForm({
+			view: "preview",
+			state: EXPLAINED,
+			preview: previewOf(EXPLAINED),
+		});
+
+		expect(
+			screen.queryByText("The basis drops to 0%.")
+		).not.toBeInTheDocument();
+
+		rerender(
+			<PollForm
+				{...props}
+				revealed
+				preview={previewOf(EXPLAINED, pickInPreview(UNPLAYED, EXPLAINED, "1"))}
+			/>
+		);
+
+		expect(screen.getByText("Why it’s right")).toBeInTheDocument();
+		expect(screen.getByText("The basis drops to 0%.")).toBeInTheDocument();
 	});
 
 	it("gives each answer a large input", () => {

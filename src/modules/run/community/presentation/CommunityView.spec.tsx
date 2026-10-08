@@ -222,27 +222,37 @@ describe("CommunityView", () => {
 		expect(screen.getByText("3 players")).toBeInTheDocument();
 	});
 
+	it("heads the board with the day's count and no gate of the viewer's own", () => {
+		render(board());
+
+		expect(
+			screen.queryByText(/^gate \d+ · /, { selector: "span" })
+		).not.toBeInTheDocument();
+	});
+
 	it("places every climber under their gate, and rings today's rivals", () => {
 		const { container } = render(
-			<CommunityView
-				view={{
-					...view,
-					climb: {
-						climbers: [
-							climber("red", 1, 2, true),
-							climber("misty", 3, 1),
-							climber("brock", 3, 4),
-						],
-						fallen: [],
-						bestPosition: null,
-						viewer: { id: "red", hasLiveRun: true },
-						turnout: EMPTY_DAY_TURNOUT,
-					},
-				}}
-				swatch={gateSwatchAt(1)}
-				rivals={["misty"]}
-				back={{ label: "Back", onBack: () => {} }}
-			/>
+			withQueryClient(
+				<CommunityView
+					view={{
+						...view,
+						climb: {
+							climbers: [
+								climber("red", 1, 2, true),
+								climber("misty", 3, 1),
+								climber("brock", 3, 4),
+							],
+							fallen: [],
+							bestPosition: null,
+							viewer: { id: "red", hasLiveRun: true },
+							turnout: EMPTY_DAY_TURNOUT,
+						},
+					}}
+					swatch={gateSwatchAt(1)}
+					rivals={["misty"]}
+					back={{ label: "Back", onBack: () => {} }}
+				/>
+			)
 		);
 
 		expect(screen.getByTitle("you")).toBeInTheDocument();
@@ -335,11 +345,13 @@ describe("CommunityView", () => {
 		const user = userEvent.setup();
 		const onBack = vi.fn();
 		render(
-			<CommunityView
-				view={view}
-				swatch={gateSwatchAt(1)}
-				back={{ label: "Back", onBack, disabled: true }}
-			/>
+			withQueryClient(
+				<CommunityView
+					view={view}
+					swatch={gateSwatchAt(1)}
+					back={{ label: "Back", onBack, disabled: true }}
+				/>
+			)
 		);
 
 		const back = screen.getByRole("button", { name: "Back" });

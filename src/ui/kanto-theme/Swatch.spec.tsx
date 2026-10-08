@@ -62,6 +62,40 @@ describe("Swatch", () => {
 		expect(container.firstChild).not.toHaveClass("bg-theme");
 	});
 
+	describe("what the mark holds", () => {
+		it("prints a count centred inside the swatch", () => {
+			const { container } = render(
+				<Swatch state="current" swatch={PALLET} count={5} />
+			);
+
+			expect(container.firstChild).toHaveTextContent("5");
+			expect(container.firstChild).toHaveClass("inline-flex", "justify-center");
+		});
+
+		it("draws an icon in the count's seat, centred the same way", () => {
+			const { container } = render(
+				<Swatch state="current" swatch={PALLET} icon="lock" />
+			);
+
+			expect(container.querySelector("svg")).not.toBeNull();
+			expect(container.firstChild).toHaveClass("inline-flex", "justify-center");
+		});
+
+		it("draws the icon on the gradient swatch too, which has no theme to borrow", () => {
+			const { container } = render(
+				<Swatch state="current" swatch={CHAMPION} icon="lock" />
+			);
+
+			expect(container.querySelector("svg")).not.toBeNull();
+		});
+
+		it("leaves an empty swatch uncentred, since there is nothing to centre", () => {
+			const { container } = render(<Swatch state="current" swatch={PALLET} />);
+
+			expect(container.firstChild).not.toHaveClass("inline-flex");
+		});
+	});
+
 	it("rings the Indigo Elite plate so indigo reads against the page", () => {
 		const { container } = render(
 			<Swatch state="discovered" swatch={INDIGO_ELITE} />
