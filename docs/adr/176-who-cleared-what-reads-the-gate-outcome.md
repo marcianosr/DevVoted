@@ -85,6 +85,15 @@ day's hold. The build records read the current build of each run that closed a g
 today. Closes recorded before this carry no day and never count as today. A run that
 fell today stays in DANGER, as the first amendment says.
 
+## Amendment (2026-10-08): an empty row stays drawn
+
+Hiding a record nobody holds, and an outcome nobody reached, left a panel of one row
+on a morning when nobody had closed a gate yet, which read as the records being
+removed. Marciano disagreed: the rows are what the panel promises. Every outcome is
+drawn in ladder order, an unreached one at 0 with no faces, and every record is drawn
+in a fixed order, one nobody holds with a dash and no faces. Most installed names no
+config until somebody installs one.
+
 ## Rejected
 
 - **A KB ledger table.** Exact, but it needs a migration and a write at every KB

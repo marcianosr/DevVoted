@@ -1527,7 +1527,8 @@ spent. Only gates closed today count: a live run that has not closed one today i
 absent from the outcomes and records, and KB spent starts from what the run held after
 its last close before today. KB figures are derived from each run's closes and balance,
 not a ledger (ADR-176, amended). A row draws three faces; its `+N` is a press that opens the rest in a
-popover, each face linking to its player, and so does a poll option's voter stack.
+popover, each face linking to its player, and so does a poll option's voter stack. Every row is drawn even when empty: an outcome nobody reached reads 0, a record nobody
+holds a dash (ADR-176, amended).
 
 **Hall of Fame** (ADR-184) heads the right column. It draws the reigning champion, the
 last player to win a run from Pallet, as the full player card, with a badge naming
