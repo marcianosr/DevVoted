@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.1.1 - 2026-10-08
 ### Changed
 - **A ready upgrade wears a moving border.** A folded build card whose next version you can buy now rings its version tag with the upgrade press's flowing colours, instead of a glow.
 
