@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.4.0 - 2026-10-08
 ### Added
 - **The login screen shows the game before it asks for anything.** A visitor who is not signed in lands on **Five dev polls a day. How far can you run?**, a line on what a run is, three figures (**5 polls a day**, **12 gates**, **1 Champion**) and one full-width **Continue with GitHub** press wearing the GitHub mark, with **Read how this game works** under it opening the wiki. Beside it, a poll card answers itself: it picks an answer, holds the green verdict, grows its coverage bar and slides to the next poll, round and round. Under reduced motion the card sits answered and still. On a phone the card drops under the press. devvoted.dev itself opens on this screen for a visitor who is not signed in, instead of sending them to the login page first.
 
