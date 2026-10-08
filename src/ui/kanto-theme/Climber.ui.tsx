@@ -49,6 +49,7 @@ const TAG =
 const TAG_WORD = "tag";
 
 const STACK = "flex items-center -space-x-1.5";
+const WRAPPING_STACK = "flex-wrap justify-end gap-y-1";
 const OVERFLOW = "pl-3 text-xs text-theme-muted tabular-nums";
 const MORE =
 	"ml-1.5 cursor-pointer rounded-md px-1.5 py-0.5 text-xs text-theme-muted tabular-nums ring-1 ring-inset ring-theme-faint hover:text-theme-soft focus-visible:outline-2 focus-visible:outline-theme";
@@ -209,6 +210,7 @@ export type ClimberStackProps = {
 	overflow?: number;
 	shown?: number;
 	size?: ClimberSize;
+	wrap?: boolean;
 };
 
 const popoverAnchorOf = (id: string) => `--more-${id.replaceAll(":", "")}`;
@@ -262,11 +264,12 @@ export const ClimberStack = ({
 	overflow = 0,
 	shown = climbers.length,
 	size = "sm",
+	wrap = false,
 }: ClimberStackProps) => {
 	const hidden = climbers.slice(shown);
 
 	return (
-		<span className={STACK}>
+		<span className={clsx(STACK, wrap && WRAPPING_STACK)}>
 			{climbers.slice(0, shown).map((climber) => (
 				<Climber
 					key={climber.userId ?? climber.name}

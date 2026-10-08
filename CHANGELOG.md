@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **Who answered today fits a phone.** The **answered today** faces ran off the right edge on a narrow screen and let the page scroll sideways; they now wrap onto a second line.
+- **The poll list reads on a phone.** Each poll squeezed its question into a narrow column, one word per line; on a phone the question now takes the full width under its category and status.
 
 ## 2.1.3 - 2026-10-08
 ### Changed

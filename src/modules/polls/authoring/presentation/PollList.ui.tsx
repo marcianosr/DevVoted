@@ -82,15 +82,19 @@ const CHIP =
 	"badge-theme inline-flex h-7 cursor-pointer items-center gap-2 rounded-md px-2.5 text-xs font-bold";
 const CLEAR_ALL = "ml-auto";
 const SEARCH = "min-w-48 flex-1 basis-64";
-const CELLS = "flex w-full min-w-0 items-center gap-4";
-const NUMBER = "w-8 shrink-0 text-xs text-theme-muted";
-const CATEGORY = "w-28 shrink-0";
-const QUESTION = "flex min-w-0 flex-1 flex-col gap-0.5";
-const QUESTION_TEXT = "truncate text-sm font-bold text-theme-faint";
+const CELLS =
+	"flex w-full min-w-0 flex-wrap items-center gap-x-4 gap-y-2 md:flex-nowrap";
+const COLUMN_HEADER = "hidden md:block";
+const NUMBER = "shrink-0 text-xs text-theme-muted md:w-8";
+const CATEGORY = "shrink-0 md:w-28";
+const QUESTION =
+	"order-last flex min-w-0 basis-full flex-col gap-0.5 md:order-none md:flex-1 md:basis-auto";
+const QUESTION_TEXT = "text-sm wrap-break-word font-bold text-theme-faint";
 const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
-const BY = "flex w-28 shrink-0 items-center gap-2";
+const BY = "order-last flex shrink-0 items-center gap-2 md:order-none md:w-28";
 const AUTHOR_NAME = "truncate text-xs text-theme-soft";
-const STATUS = "flex w-44 shrink-0 flex-wrap justify-end gap-1";
+const STATUS =
+	"ml-auto flex shrink-0 flex-wrap justify-end gap-1 md:ml-0 md:w-44";
 
 const columnsOf = (admin: boolean): readonly PanelColumn[] => [
 	{ label: COPY.numberColumn, width: NUMBER },
@@ -381,7 +385,9 @@ export const PollList = ({
 				)}
 			</div>
 
-			<Panel.Columns columns={columnsOf(admin)} />
+			<div className={COLUMN_HEADER}>
+				<Panel.Columns columns={columnsOf(admin)} />
+			</div>
 			<Panel.Rows>
 				{rows.length === 0 ? (
 					<Panel.Row>
