@@ -1681,6 +1681,9 @@ alone (DVTD-i16m). A poll is **never reviewed**, **changed since review** (saved
 its last review) or **up to date**; the list filters and badges on that, a row and the
 poll's page date the last review and the last edit, and a changed poll offers **Mark
 reviewed** again. Filtering on `never reviewed` or `changed since review` empties as you go.
+Above the list, **Dealt yesterday** shows an admin the five polls the daily seed dealt
+the day before, in dealt order, so a poll players have already answered can be
+reviewed and edited without touching today's deal.
 The account menu links an admin to `/admin`.
 
 **Loot and fallen runs** (ADR-135): a run that died today carries whatever storage

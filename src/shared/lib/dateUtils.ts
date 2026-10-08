@@ -1,9 +1,12 @@
-import { addDays, format } from "date-fns";
+import { addDays, format, subDays } from "date-fns";
 
 export const getTodayDateString = () => format(new Date(), "yyyy-MM-dd");
 
 export const getTomorrowDateString = () =>
 	format(addDays(new Date(), 1), "yyyy-MM-dd");
+
+export const dayBefore = (date: string): string =>
+	format(subDays(new Date(`${date}T00:00:00`), 1), "yyyy-MM-dd");
 
 export const localDayRange = (date: string): { start: Date; end: Date } => {
 	const start = new Date(`${date}T00:00:00`);

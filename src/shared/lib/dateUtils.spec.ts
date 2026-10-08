@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	dayBefore,
 	formatCompactDuration,
 	formatDurationMs,
 	localDayRange,
@@ -80,5 +81,16 @@ describe("localDayRange", () => {
 		const { end } = localDayRange("2028-02-28");
 		expect(end.getMonth()).toBe(1);
 		expect(end.getDate()).toBe(29);
+	});
+});
+
+describe("dayBefore", () => {
+	it("names the calendar day before a date", () => {
+		expect(dayBefore(TEST_DATES.christmas)).toBe(TEST_DATES.christmasEve);
+	});
+
+	it("steps back across a month and a year", () => {
+		expect(dayBefore("2026-03-01")).toBe("2026-02-28");
+		expect(dayBefore("2026-01-01")).toBe("2025-12-31");
 	});
 });
