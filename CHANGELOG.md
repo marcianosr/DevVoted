@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Changed
 - **See more of who played today.** The **answered today** row on the community board shows up to ten faces before folding the rest behind **+N**.
+
+## 2.1.2 - 2026-10-08
 ### Fixed
 - **Today's records keep their rows.** Before anybody closes a gate, the community board now lists every outcome and record empty (0, or a dash) instead of showing only who answered today.
 
