@@ -46,6 +46,10 @@ import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView
 import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import {
+	answeredAPoll,
+	canPickTile,
+} from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
 import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
@@ -176,6 +180,61 @@ const BASE_POLLS: RunPoll[] = [
 	]),
 ];
 
+type GridSeed = { readonly label: string; readonly tiles: readonly string[] };
+
+const grid = (
+	id: string,
+	category: CategoryCode,
+	question: string,
+	groups: readonly GridSeed[]
+): RunPoll => ({
+	id,
+	category,
+	question,
+	answerType: "grid",
+	groupLabels: groups.map(({ label }) => label),
+	options: groups.flatMap(({ tiles }, group) =>
+		tiles.map((label, index) => ({
+			id: `${id}-${group}-${index}`,
+			label,
+			correct: true,
+			group,
+		}))
+	),
+});
+
+const GRID_POLLS: RunPoll[] = [
+	grid(
+		"grid1",
+		"general-frontend",
+		"Twelve tiles, three groups of four. Lock in a group.",
+		[
+			{ label: "Array methods", tiles: ["filter", "reduce", "find", "map"] },
+			{ label: "Box model", tiles: ["margin", "padding", "content", "border"] },
+			{
+				label: "Git commands",
+				tiles: ["commit", "rebase", "merge", "cherry-pick"],
+			},
+		]
+	),
+	grid("grid2", "js", "Which four belong together?", [
+		{ label: "Falsy values", tiles: ["0", '""', "null", "NaN"] },
+		{ label: "Promise statics", tiles: ["all", "race", "any", "allSettled"] },
+		{
+			label: "Typed arrays",
+			tiles: ["Int8Array", "Uint8Array", "Float32Array", "BigInt64Array"],
+		},
+	]),
+];
+
+const GRID_GATES = 3;
+
+const isGridSeat = (index: number): boolean =>
+	index % SLICE_WINDOW === 0 && index < GRID_GATES * SLICE_WINDOW;
+
+const gridAt = (index: number): RunPoll =>
+	GRID_POLLS[Math.floor(index / SLICE_WINDOW) % GRID_POLLS.length];
+
 type RigOutcome = "right" | "wrong";
 
 const rigOptionIds = (
@@ -193,9 +252,35 @@ const rigOptionIds = (
 
 const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
 const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
-	const base = BASE_POLLS[i % BASE_POLLS.length];
+	const base = isGridSeat(i) ? gridAt(i) : BASE_POLLS[i % BASE_POLLS.length];
 	return { ...base, id: `${base.id}-${i}` };
 });
+
+const tilesOfGroup = (poll: RunPoll, group: number): readonly string[] =>
+	poll.options
+		.filter((option) => option.group === group)
+		.map((option) => option.id);
+
+const mixedFourOf = (poll: RunPoll): readonly string[] => [
+	...tilesOfGroup(poll, 0).slice(0, 1),
+	...tilesOfGroup(poll, 1).slice(0, 3),
+];
+
+const SOLVED_BEFORE_THE_LAST = [0, 1] as const;
+
+const rigActions = (poll: RunPoll, outcome: RigOutcome): RunAction[] => {
+	if (poll.answerType !== "grid")
+		return [{ type: "answer", optionIds: rigOptionIds(poll, outcome) }];
+	if (outcome === "wrong")
+		return [{ type: "lock-group", optionIds: mixedFourOf(poll) }];
+	return SOLVED_BEFORE_THE_LAST.map((group) => ({
+		type: "lock-group",
+		optionIds: tilesOfGroup(poll, group),
+	}));
+};
+
+const reduceAll = (state: RunState, actions: readonly RunAction[]): RunState =>
+	actions.reduce(runReducer, state);
 
 const PROTO_START_KB = 256;
 const PROTO_GRANT_KB = 256;
@@ -597,8 +682,10 @@ const RunGame = ({
 	const dispatch = (action: RunAction) =>
 		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
+	const [shuffles, setShuffles] = useState(0);
 	useEffect(() => {
 		setSelected([]);
+		setShuffles(0);
 	}, [state.currentIndex]);
 	const [pinned, setPinned] = useState(false);
 	const [rewardStep, setRewardStep] = useState<RewardStep>("summary");
@@ -636,13 +723,26 @@ const RunGame = ({
 		settled ? null : (view.poll?.id ?? null),
 		view.pollTimeLimitMs ?? view.fastAnswer?.withinMs ?? null
 	);
+	const viewOf = (next: RunState): RunView =>
+		toRunView(next, [], [], [], unlockedServiceIds);
+	const settle = (next: RunState) => {
+		setState(next);
+		if (answeredAPoll(view, viewOf(next))) return setPinned(true);
+		setSelected([]);
+	};
 	const answer = (optionIds: readonly string[]) => {
-		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
-		setPinned(true);
+		const onGrid = view.poll?.answerType === "grid";
+		settle(
+			runReducer(state, {
+				type: onGrid ? "lock-group" : "answer",
+				optionIds,
+				elapsedMs: pollClock.elapsedMs(),
+			})
+		);
 	};
 	const answerCurrent = (outcome: RigOutcome) => {
 		const poll = state.polls[state.currentIndex];
-		if (poll) answer(rigOptionIds(poll, outcome));
+		if (poll) settle(reduceAll(state, rigActions(poll, outcome)));
 	};
 	const answerRestOfWindow = (outcome: RigOutcome) =>
 		setState((current) => {
@@ -650,19 +750,18 @@ const RunGame = ({
 			while (next.status === "answering") {
 				const poll = next.polls[next.currentIndex];
 				if (!poll) break;
-				next = runReducer(next, {
-					type: "answer",
-					optionIds: rigOptionIds(poll, outcome),
-				});
+				next = reduceAll(next, rigActions(poll, outcome));
 				next = runReducer(next, { type: "close-gate" });
 			}
 			return next;
 		});
 	const onSelect = (optionId: string) =>
 		setSelected((current) =>
-			current.includes(optionId)
-				? current.filter((id) => id !== optionId)
-				: [...current, optionId]
+			!canPickTile(view.poll?.answerType, current, optionId)
+				? current
+				: current.includes(optionId)
+					? current.filter((id) => id !== optionId)
+					: [...current, optionId]
 		);
 	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		setRewardStep("shop");
@@ -728,6 +827,8 @@ const RunGame = ({
 					onUnseal={(optionId) =>
 						dispatch({ type: "buy-back-option", optionId })
 					}
+					gridShuffles={shuffles}
+					onShuffle={() => setShuffles((count) => count + 1)}
 				/>
 			)}
 
