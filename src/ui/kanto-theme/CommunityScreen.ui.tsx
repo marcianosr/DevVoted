@@ -35,6 +35,7 @@ const TALLY = "flex items-center gap-2";
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
 const ROW_FACES = 3;
+const CROWDED_ROW = "flex-wrap";
 const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 const CONTROL_WIDTH = "full";
@@ -72,6 +73,7 @@ export type TurnoutBand = {
 	color?: KantoColor;
 	climbers: readonly ClimberProps[];
 	overflow?: number;
+	shown?: number;
 };
 
 export type CommunityTurnout = {
@@ -188,13 +190,14 @@ const TurnoutRow = ({
 	label: ReactNode;
 }) => (
 	<Panel.Row
+		className={band.shown === undefined ? undefined : CROWDED_ROW}
 		trailing={
 			<>
 				<Badge color={band.color}>{band.count}</Badge>
 				<ClimberStack
 					climbers={band.climbers}
 					overflow={band.overflow}
-					shown={ROW_FACES}
+					shown={band.shown ?? ROW_FACES}
 					size={CLIMBER_SIZE}
 				/>
 			</>

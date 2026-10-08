@@ -1526,7 +1526,7 @@ at), most audits, most installed config, most expensive build, KB generated and 
 spent. Only gates closed today count: a live run that has not closed one today is
 absent from the outcomes and records, and KB spent starts from what the run held after
 its last close before today. KB figures are derived from each run's closes and balance,
-not a ledger (ADR-176, amended). A row draws three faces; its `+N` is a press that opens the rest in a
+not a ledger (ADR-176, amended). A row draws three faces (**answered today** draws ten, wrapping under its label when the row runs out of room); its `+N` is a press that opens the rest in a
 popover, each face linking to its player, and so does a poll option's voter stack. Every row is drawn even when empty: an outcome nobody reached reads 0, a record nobody
 holds a dash (ADR-176, amended).
 
