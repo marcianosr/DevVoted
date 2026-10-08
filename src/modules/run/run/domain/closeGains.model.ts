@@ -14,6 +14,7 @@ const hasGains = ({ unlockedConfigIds, earnedTitleIds }: RunGains): boolean =>
 export const recordGains = (
 	before: RunState,
 	after: RunState,
+	today: string,
 	gains: RunGains
 ): RunState => {
 	const unlockedConfigIds = [
@@ -34,7 +35,13 @@ export const recordGains = (
 		unlockedSinceClose: [],
 		closes: [
 			...closes.slice(0, -1),
-			{ ...recorded, unlockedConfigIds, earnedTitleIds: gains.earnedTitleIds },
+			{
+				...recorded,
+				unlockedConfigIds,
+				earnedTitleIds: gains.earnedTitleIds,
+				closedOn: today,
+				storageKbAfter: after.storage,
+			},
 		],
 	};
 };

@@ -1838,19 +1838,21 @@ describe("ConfigChip's upgrade-ready pennant", () => {
 				{...props}
 			/>
 		);
-	const glowOf = (container: HTMLElement) =>
-		container.querySelector(".version-glow");
+	const readyBorderOf = (container: HTMLElement) =>
+		[...container.querySelectorAll(".press-prismatic")].find(
+			(element) => element.textContent === "v1"
+		) ?? null;
 
-	it("glows the folded row's pennant when an upgrade is on offer and payable", () => {
+	it("borders the folded row's pennant when an upgrade is on offer and payable", () => {
 		const { container } = foldedCard();
 
-		expect(glowOf(container)).toHaveTextContent("v1");
+		expect(readyBorderOf(container)).toHaveTextContent("v1");
 	});
 
-	it("stops glowing once the card is open, the press itself being in view", () => {
+	it("drops the border once the card is open, the press itself being in view", () => {
 		const { container } = foldedCard({ infoOpen: true });
 
-		expect(glowOf(container)).toBeNull();
+		expect(readyBorderOf(container)).toBeNull();
 	});
 
 	it("stays still for an upgrade the player cannot take", () => {
@@ -1863,18 +1865,18 @@ describe("ConfigChip's upgrade-ready pennant", () => {
 			},
 		});
 
-		expect(glowOf(container)).toBeNull();
+		expect(readyBorderOf(container)).toBeNull();
 	});
 
 	it("stays still once every version is held", () => {
 		const { container } = foldedCard({ upgrades: OWNED_OUT });
 
-		expect(glowOf(container)).toBeNull();
+		expect(readyBorderOf(container)).toBeNull();
 	});
 
 	it("stays still while the upgrade is armed, the card already asking", () => {
 		const { container } = foldedCard({ upgradesOpen: true });
 
-		expect(glowOf(container)).toBeNull();
+		expect(readyBorderOf(container)).toBeNull();
 	});
 });

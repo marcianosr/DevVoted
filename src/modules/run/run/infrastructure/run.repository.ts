@@ -446,7 +446,7 @@ export const applyActionToRun = async (args: {
 		const earnedTitleIds = grants.titlesDue
 			? await grantEarnedTitles(tx, args.userId)
 			: [];
-		const recorded = recordGains(state, settled, {
+		const recorded = recordGains(state, settled, args.today, {
 			unlockedConfigIds,
 			earnedTitleIds,
 		});

@@ -50,6 +50,7 @@ import {
 	type CommunityDayTurnout,
 	type DayRun,
 	dayRecordsOf,
+	dayRunOn,
 	outcomesOf,
 } from "~/modules/run/community/domain/dayRecords.model";
 import {
@@ -305,22 +306,26 @@ const fallenOf =
 	});
 
 const dayRunOf =
-	(fallen: boolean) =>
-	(row: ClimberRow): DayRun => ({
-		userId: row.userId,
-		fallen,
-		closes: row.closes,
-		build: row.build,
-		auditSchedule: row.auditSchedule,
-		startedAtGate: row.startedAtGate,
-		warmBootKb: row.warmBootKb,
-		storageKb: row.storageKb,
-	});
+	(date: string, fallen: boolean) =>
+	(row: ClimberRow): DayRun | null =>
+		dayRunOn(date)({
+			userId: row.userId,
+			fallen,
+			closes: row.closes,
+			build: row.build,
+			auditSchedule: row.auditSchedule,
+			startedAtGate: row.startedAtGate,
+			warmBootKb: row.warmBootKb,
+			storageKb: row.storageKb,
+		});
+
+const isDayRun = (run: DayRun | null): run is DayRun => run !== null;
 
 const turnoutOf = (
 	active: readonly ClimberRow[],
 	fallen: readonly ClimberRow[],
-	userId: string
+	userId: string,
+	date: string
 ): CommunityDayTurnout => {
 	const voters = new Map(
 		[...fallen, ...active].map((row): [string, CommunityVoter] => [
@@ -341,7 +346,10 @@ const turnoutOf = (
 				return voter === undefined ? [] : [voter];
 			})
 		);
-	const runs = [...active.map(dayRunOf(false)), ...fallen.map(dayRunOf(true))];
+	const runs = [
+		...active.map(dayRunOf(date, false)),
+		...fallen.map(dayRunOf(date, true)),
+	].filter(isDayRun);
 	const { perfect, healthy, ok, shaky, danger } = outcomesOf(runs);
 
 	return {
@@ -414,7 +422,7 @@ const buildClimbToday = async ({
 		fallen: fallen.map(fallenOf(bestCategories)),
 		bestPosition,
 		viewer: { id: userId, hasLiveRun: viewerRow !== undefined },
-		turnout: turnoutOf(active, fallen, userId),
+		turnout: turnoutOf(active, fallen, userId, date),
 	};
 };
 

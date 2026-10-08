@@ -1523,8 +1523,10 @@ card, the same one the climb map opens, so the corpse can be looted from here
 (ADR-176, amended). The row comes from the run's latest close: a clear on any band below healthy is OK, a
 hold is SHAKY whatever its band. The same list then names the day's record holders: biggest and lightest build, comeback (cleared a gate the same run was held
 at), most audits, most installed config, most expensive build, KB generated and KB
-spent. KB figures are derived from each run's closes and balance, not a ledger
-(ADR-176). A row draws three faces; its `+N` is a press that opens the rest in a
+spent. Only gates closed today count: a live run that has not closed one today is
+absent from the outcomes and records, and KB spent starts from what the run held after
+its last close before today. KB figures are derived from each run's closes and balance,
+not a ledger (ADR-176, amended). A row draws three faces; its `+N` is a press that opens the rest in a
 popover, each face linking to its player, and so does a poll option's voter stack.
 
 **Hall of Fame** (ADR-184) heads the right column. It draws the reigning champion, the

@@ -2217,29 +2217,3 @@ meter::-webkit-meter-optimum-value {
 	}
 }
 
-/* A folded build card's pennant when its upgrade is ready to buy: the upgrade
-   press's prismatic stops, as a drop-shadow on a wrapper because the
-   pennant's notch is a clip-path and would cut a box-shadow or ring off. */
-@keyframes version-glow {
-	0%,
-	100% {
-		filter: drop-shadow(0 0 3px oklch(from var(--color-saffron) 0.82 calc(c * 0.7) h));
-	}
-	33% {
-		filter: drop-shadow(0 0 4px oklch(from var(--color-fuchsia) 0.82 calc(c * 0.7) h));
-	}
-	66% {
-		filter: drop-shadow(0 0 4px oklch(from var(--color-cerulean) 0.82 calc(c * 0.7) h));
-	}
-}
-
-.version-glow {
-	animation: version-glow 3s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.version-glow {
-		animation: none;
-		filter: drop-shadow(0 0 3px oklch(from var(--color-lavender) 0.82 calc(c * 0.7) h));
-	}
-}

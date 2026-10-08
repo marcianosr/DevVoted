@@ -80,6 +80,8 @@ export type RecordedClose = LastClose & {
 	readonly kb: number;
 	readonly unlockedConfigIds?: readonly string[];
 	readonly earnedTitleIds?: readonly string[];
+	readonly closedOn?: string;
+	readonly storageKbAfter?: number;
 };
 
 export type IncidentSender = {
