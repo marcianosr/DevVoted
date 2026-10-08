@@ -56,6 +56,7 @@ export const COPY = {
 	empty: "No polls match these filters.",
 	loading: "Loading polls…",
 	loadError: (reason: string) => `Error loading polls: ${reason}`,
+	yesterdayHeading: "Dealt yesterday",
 } as const;
 
 const THEME: KantoColor = "cerulean";
@@ -207,6 +208,7 @@ export type PollListProps = {
 	matching: number;
 	shown: number;
 	rows: readonly PollRow[];
+	yesterday?: readonly PollRow[];
 	filter: PollListFilter;
 	choices: PollListChoices;
 	activeFilters: readonly ActiveFilter[];
@@ -224,6 +226,7 @@ export const PollList = ({
 	matching,
 	shown,
 	rows,
+	yesterday = [],
 	filter,
 	choices,
 	activeFilters,
@@ -255,6 +258,17 @@ export const PollList = ({
 			<Typography variant="hint" as="p">
 				{COPY.reward(reward)}
 			</Typography>
+		)}
+
+		{yesterday.length === 0 ? null : (
+			<Panel>
+				<Panel.Header label={COPY.yesterdayHeading} />
+				<Panel.Rows>
+					{yesterday.map((row) => (
+						<Row key={row.id} row={row} admin={admin} />
+					))}
+				</Panel.Rows>
+			</Panel>
 		)}
 
 		<Panel>

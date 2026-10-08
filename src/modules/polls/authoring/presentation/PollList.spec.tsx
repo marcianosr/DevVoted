@@ -95,6 +95,9 @@ const showing = (whole: string) => (_: string, element: Element | null) =>
 	element?.textContent === whole &&
 	!Array.from(element.children).some((child) => child.textContent === whole);
 
+const yesterdaySection = (): HTMLElement | null =>
+	screen.getByText(COPY.yesterdayHeading).closest("section");
+
 const renderList = (props: Partial<PollListProps> = {}) =>
 	render(<PollList {...defaults} {...props} />);
 
@@ -360,5 +363,25 @@ describe("PollList", () => {
 		renderList({ admin: false });
 
 		expect(screen.queryByRole("combobox", { name: "reviewed" })).toBeNull();
+	});
+
+	it("sets yesterday's polls apart in their own section above the list", () => {
+		renderList({ yesterday: [log] });
+
+		const section = yesterdaySection();
+		expect(section).not.toBeNull();
+		if (section === null) return;
+		expect(
+			within(section).getByText("What does this log?")
+		).toBeInTheDocument();
+		expect(
+			within(section).queryByText("expand to?", { exact: false })
+		).toBeNull();
+	});
+
+	it("draws no yesterday section when nothing was dealt", () => {
+		renderList({ yesterday: [] });
+
+		expect(screen.queryByText(COPY.yesterdayHeading)).toBeNull();
 	});
 });

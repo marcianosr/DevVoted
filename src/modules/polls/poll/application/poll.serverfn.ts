@@ -9,6 +9,7 @@ import {
 	countPublishedPolls,
 	fetchPollCreators,
 } from "~/modules/polls/poll/infrastructure/poll.repository";
+import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { withAuthenticatedUser } from "~/shared/utils/authorization";
 import { handleApiOperation } from "~/shared/utils/errorHandling";
 
@@ -19,7 +20,9 @@ export const getPollDetail = createServerFn({ method: "GET" })
 	);
 
 export const getPollList = createServerFn({ method: "GET" }).handler(() =>
-	withAuthenticatedUser((session) => listPollsFor(session))
+	withAuthenticatedUser((session) =>
+		listPollsFor(session, getTodayDateString())
+	)
 );
 
 export const getPublishedPollCount = createServerFn({ method: "GET" }).handler(

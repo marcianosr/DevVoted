@@ -525,6 +525,22 @@ export const pollRowsOf = (
 	});
 };
 
+const isPoll = (poll: Poll | undefined): poll is Poll => poll !== undefined;
+
+export const yesterdaysRowsOf = (
+	polls: readonly Poll[],
+	dealtYesterday: readonly number[],
+	creators?: readonly PollCreator[],
+	deals: PollDeals = NO_DEALS
+): PollRow[] => {
+	const pollById = new Map(polls.map((poll) => [poll.id, poll]));
+	return pollRowsOf(
+		dealtYesterday.map((pollId) => pollById.get(pollId)).filter(isPoll),
+		creators,
+		deals
+	);
+};
+
 export type PollWindow = {
 	rows: readonly PollRow[];
 	shown: number;
