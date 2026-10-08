@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
+import {
+	showedUpBand,
+	turnoutFor,
+} from "~/modules/run/community/application/communityScreen.viewmodel";
 import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 const BROCK = { id: "brock", displayName: "Brock", you: false };
@@ -155,5 +158,13 @@ describe("turnoutFor", () => {
 				"most installed"
 			)?.caption
 		).toBeUndefined();
+	});
+});
+
+describe("showedUpBand", () => {
+	it("draws ten faces of who answered today before folding the rest", () => {
+		expect(
+			showedUpBand({ totalPlayers: 2, players: [BROCK, MISTY] }).shown
+		).toBe(10);
 	});
 });

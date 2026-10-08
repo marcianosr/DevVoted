@@ -191,12 +191,15 @@ const facesOf = (
 	overflow: 0,
 });
 
+const SHOWED_UP_FACES = 10;
+
 export const showedUpBand = (
 	view: Pick<RunCommunityView, "totalPlayers" | "players">
 ): TurnoutBand => ({
 	label: COPY.answeredToday,
 	count: String(view.totalPlayers),
 	color: "cerulean",
+	shown: SHOWED_UP_FACES,
 	...facesOf(view.players),
 });
 

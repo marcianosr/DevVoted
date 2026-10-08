@@ -223,6 +223,27 @@ export const kantoStanding = (
 
 const bands = (): TurnoutBand[] => [
 	{
+		label: "answered today",
+		count: "1,214",
+		color: "cerulean",
+		shown: 10,
+		climbers: [
+			you,
+			brock,
+			misty,
+			surge,
+			erika,
+			koga,
+			sabrina,
+			blaine,
+			giovanni,
+			oak,
+			{ name: "Mr. Fuji" },
+			{ name: "Bill" },
+		],
+		overflow: 1202,
+	},
+	{
 		label: "PERFECT",
 		caption: "finished at 100%",
 		count: "212",
