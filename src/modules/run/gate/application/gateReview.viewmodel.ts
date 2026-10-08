@@ -45,6 +45,15 @@ const stateOf = (
 	return answer.picked.includes(label) ? "wrong" : "idle";
 };
 
+const explanationOf = (
+	answer: GateAnswer,
+	label: string
+): QuestionOption["explanation"] => {
+	const text = answer.optionExplanations?.[label];
+	if (text === undefined) return undefined;
+	return { text, right: answer.correct.includes(label) };
+};
+
 const votersOf = (
 	votes: readonly OptionVotes[] | undefined,
 	label: string
@@ -66,12 +75,14 @@ const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
 		pickedIds: answer.picked,
 		options: answer.options.map((label, index) => {
 			const voters = votersOf(pollVotes, label);
+			const explanation = explanationOf(answer, label);
 			return {
 				id: label,
 				letter: letterAt(index),
 				label,
 				state: stateOf(answer, label),
 				...(voters === undefined ? {} : { voters }),
+				...(explanation === undefined ? {} : { explanation }),
 			};
 		}),
 	};

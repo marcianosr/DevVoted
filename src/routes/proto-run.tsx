@@ -455,7 +455,7 @@ const simulateCommunityScreen = (
 			prep: { label: "On to prep", onPress: press.onPrep },
 		},
 		turnout: turnoutFor(simulatedTurnout, {
-			label: "answered today",
+			label: "Answered today",
 			count: String(climbers),
 			climbers: [YOU, ...TRAINERS.map(climberOf)],
 		}),

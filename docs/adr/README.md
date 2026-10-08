@@ -179,6 +179,7 @@ it before proposing one again.**
 | [190](190-the-player-wiki-reads-the-models.md) | **The player wiki reads the models** | Accepted — a public `/wiki` in a new `guide` context; shipped rules only, no rationale; every figure from a model; secrets the Dex redacts stay redacted |
 | [191](191-a-better-clearing-band-pays-more.md) | **A better clearing band pays more** | Accepted — the clear is multiplied ×1 OK, ×1.25 HEALTHY, ×1.5 PERFECT (`BAND_BONUS`); a boost, not ADR-076's cut; the dead `payoutRatioFor` slope is deleted |
 | [193](193-a-thin-category-pays-a-bounty.md) | **A thin category pays a bounty** | Accepted — an approved poll pays by its category's published count (`bountyKbFor`, 16 KB floor), fixed when suggested; the poll card names a thin category and opens the form on it; admins see it without a reward |
+| [195](195-an-option-explains-why-it-is-right-or-wrong.md) | **An option explains why it is right or wrong** | Accepted — `polls_options.explanation`, authored under each answer on the form; the review and the poll page show "Why it's right" or "Why it's wrong" under the option by its own correctness, never by the pick; the run snapshots reasons by label, a mirrored poll carries none; the poll note stays |
 
 ## Retired
 

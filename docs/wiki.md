@@ -77,13 +77,24 @@ Runs persist across days and never expire; a partly answered gate fills up acros
 the day boundary, and yesterday's unplayed polls are dropped rather than failed. The
 hub's press says so once a day is part-answered — "3 of today's 5 left · they do not
 carry to tomorrow" — because stopping early is a choice, not an accident, and the
-forfeit used to be silent. The hub (ADR-147) leads with a strip (run number, gate, balance);
-the other run screens leave the run number and gate to the hub and carry the swatch track and balance in the nav (ADR-183). The nav names that balance **run** beside its figure (`💾 run 462 KB`), because the profile menu and the border shop state the other wallet, **archived** storage, on the same pages. Under the hub strip sits the press: **Continue to <gate>** while polls are ready, **<gate> opens in Xh Ym**
-once the day is spent, when the shop becomes the live press. With no run open, a spent day reads **New polls in Xh Ym**
-instead of a start press: whether the day is spent is counted from every poll the player answered today, across all runs, never from one run's list. Under it, **Run so far**
-lists each closed gate's grade and earned KB and projects the next gate (**not started** until its first poll is answered), and **Build**
-lists the installed configs with the weight still free. A flawless summit takes 13 calendar days, and every gate held in SHAKY
-adds one, because the retry waits on tomorrow's polls.
+forfeit used to be silent. The hub (ADR-194) is a headline beside its press. The headline names
+the gate ahead over the run number and gate as an eyebrow (`run #2 · gate 2 of 12`); once the day is
+spent it reads **<gate> opens in** over a clock that ticks the seconds, with a lock in the gate's
+dashed mark. Every run screen, the hub included, carries the swatch track and balance in the nav
+(ADR-183). The nav names that balance **run** beside its figure (`💾 run 462 KB`), because the
+profile menu and the border shop state the other wallet, **archived** storage, on the same pages.
+Beside the headline sits one press: **Continue to <gate>** while polls are ready, with the shop a
+secondary press under it; **To shop · spend N KB** once the day is spent and the gate is paying out,
+when the shop is the only live press. A spent day with the shop shut refuses the climb press, never
+the shop. With no run open, a spent day reads **New polls in** over the clock and refuses **Start
+today's climb**: whether the day is spent is counted from every poll the player answered today,
+across all runs, never from one run's list. The faces of who answered today sit under the press and
+lead to the community board. Under it, **Run so far** lists each closed gate's grade and earned KB
+and projects the next gate (**not started** until its first poll is answered; **opens tomorrow** and
+no quote while the day waits), and **Build** draws the weight bar and lists the installed configs,
+each opening on what it does, with the weight still free. Both fold under their own headings. A
+flawless summit takes 13 calendar days, and every gate held in SHAKY adds one, because the retry
+waits on tomorrow's polls.
 
 Where a locked run parks depends on the phase (ADR-032): mid-gate it redirects to the
 [community board](#7-community); after a cleared gate it parks on the **prep page**,
@@ -259,6 +270,10 @@ in `auditSchedule.model.ts`, reasoning in ADR-035/038/056.
 ### 2.4 Polls and categories
 
 A poll has a question, 3 to 20 options, and an explanation shown after answering.
+Each option may carry its own explanation, shown under it on the gate review and on
+the poll page's **with the answer** view as **Why it’s right** or **Why it’s wrong**
+by the option's own correctness, never by what was picked; a mirrored poll shows none
+(ADR-195).
 Code lives in the question: backticks render inline code and a fenced ```js block
 renders a highlighted panel; the older separate code block is a legacy column that
 still renders where a poll carries one (ADR-137). Answer types are **single** (pick exactly one) and **multiple**
@@ -388,8 +403,8 @@ only.
 **accuracy bar** under the coverage bar, and flies its gain (`+20%` at Pallet) into the
 bar, which moves when it lands. A wrong answer turns its option cinnabar, marks the right
 one, and shakes the card. Each answered option rings and glows once in its verdict colour and
-its ✓ or ✗ pops in. The poll screen then moves on by itself: 650ms after a right
-answer, 900ms after a wrong one, but a right answer whose gain chip is flying waits
+its ✓ or ✗ pops in. The poll screen then moves on by itself: 1.65s after a right
+answer, 1.9s after a wrong one, but a right answer whose gain chip is flying waits
 for the chip to ride into the bar first (at most 3s): the card slides away left for
 the last 180ms of that hold, the next poll slides in from the right and deals its options in one by one, and
 two or more right answers in a row in the gate pop **2 in a row!** over the card
@@ -1513,7 +1528,7 @@ compare yet) reads as the subtitle under the board's title. Every avatar chip on
 page — leaders, climbers, fallen — wears the player's equipped border over a GitHub
 photo or a two-letter-initials fallback.
 
-**Today's records** is the turnout panel. It opens on **answered today**: every player who
+**Today's records** is the turnout panel. It opens on **Answered today**: every player who
 answered a poll today, with their face, whatever their gate did (ADR-176, amended). Each live run that closed a gate today sits in
 one row: **PERFECT** (finished at 100%), **HEALTHY** (comfortably cleared), **OK**
 (narrowly cleared) or **SHAKY** (the gate held them). **DANGER** (the run ended today)
@@ -1522,11 +1537,11 @@ sit in DANGER and in their live run's row. Pressing a face in DANGER opens that 
 card, the same one the climb map opens, so the corpse can be looted from here
 (ADR-176, amended). The row comes from the run's latest close: a clear on any band below healthy is OK, a
 hold is SHAKY whatever its band. The same list then names the day's record holders: biggest and lightest build, comeback (cleared a gate the same run was held
-at), most audits, most installed config, most expensive build, KB generated and KB
+at), most audits (counted across the whole run, not the day), most installed config, most expensive build, KB generated and KB
 spent. Only gates closed today count: a live run that has not closed one today is
 absent from the outcomes and records, and KB spent starts from what the run held after
 its last close before today. KB figures are derived from each run's closes and balance,
-not a ledger (ADR-176, amended). A row draws three faces (**answered today** draws ten, wrapping under its label when the row runs out of room); its `+N` is a press that opens the rest in a
+not a ledger (ADR-176, amended). A row draws three faces (**Answered today** draws ten, wrapping under its label when the row runs out of room); its `+N` is a press that opens the rest in a
 popover, each face linking to its player, and so does a poll option's voter stack. Every row is drawn even when empty: an outcome nobody reached reads 0, a record nobody
 holds a dash (ADR-176, amended).
 
@@ -1534,9 +1549,10 @@ holds a dash (ADR-176, amended).
 last player to win a run from Pallet, as the full player card, with a badge naming
 the date and time of the win (`Champion since 13 May 2026, 14:05`). Under it, **Every
 champion** lists each win newest first, one row per win, so a repeat champion appears
-once per summit, each with their face and the moment they won. Before anyone wins it
-reads "so far nobody yet". It does not change with the day, so it refetches only
-after a run action or every five minutes.
+once per summit, each with their face and the moment they won. Before anyone wins, the
+seat is held open: a dashed trophy beside **Champion · still open**, with "First to
+clear the Champion gate gets this spot." under it. It does not change with the day, so
+it refetches only after a run action or every five minutes.
 
 **Category leaders** ([7.3](#73-category-leaders)) is the board's own section: two
 boards of twelve rows, one row per category, one board showing at a time, picked with a
@@ -1692,7 +1708,8 @@ the debrief prints as `run balance, lost`. Its card on the climb map offers that
 take to anyone still climbing, and the first press wins it: the storage lands in the
 looter's run balance, spendable that gate, and the card then names who got there
 first. You cannot loot your own run, a run that banked everything has nothing to
-take, and a player whose own run is over has nowhere to put it. There is no cap on
+take, and a player whose own run is over has nowhere to put it. Hovering a fallen
+face you could loot reads `67 KB to loot`; any other face reads its name. There is no cap on
 how many corpses one run may take — the race against the other climbers is the only
 limit. The pool is the day's dead, identical for everyone.
 
@@ -1702,13 +1719,15 @@ limit. The pool is the day's dead, identical for everyone.
 
 The game leans hard into its CI metaphor.
 
-- **Run header** (ADR-183): every run screen but the hub opens on a headline
-  title (the gate, "Pallet Gate", or the page's name: Registry, New run) over one
-  line of subtext. The run itself rides the **top nav** on every signed-in page: a
+- **Run header** (ADR-183): every run screen opens on a headline title (the
+  gate, "Pallet Gate", or the page's name: Registry, New run) over one line of
+  subtext. The run itself rides the **top nav** on every signed-in page: a
   **swatch track** of all thirteen gates (the ones you have swept filled, the one
   underway marked, the rest undiscovered) and the balance. A run screen hands the
-  nav its own reading, so the shop's "after install" preview shows there. The hub
-  leads with its own strip ([2.1](#21-shape-of-a-run)). Storage reads
+  nav its own reading, so the shop's "after install" preview shows there. The hub's
+  headline wears the run number and gate as its eyebrow and stands beside its
+  press (ADR-194, [2.1](#21-shape-of-a-run)). Every run screen rises into place
+  block by block as it opens, and lands at once under reduced motion. Storage reads
   as a **balance**, "320 KB" over the word `balance`, and no bar. Nothing caps
   storage ([5.1](#51-storage-kb)), so there is no ceiling to draw against: a bar
   would need a full mark it does not have, and read as a tank emptying besides.
@@ -1915,13 +1934,13 @@ The game leans hard into its CI metaphor.
   chrome the reward report's panels do, its strip reading PASS / PART / FAIL badge, the
   question, the category and the coverage earned. Fumbles open on arrival and passes stay
   folded and dimmed, and the header carries an **open everything** press for reading the
-  lot. An open row is an assertion diff, **Expected** over **Received**, every option
-  carrying its letter on round chips for single-answer polls and square ones for
-  multi-answer — the same shapes the poll screen's keycaps wear, so the review mirrors
-  what you answered with. Expected always reads celadon and
-  Received wears the outcome, so the two sides share a colour only when you were right.
-  Multi-answer polls close with a tally of catches and misses; untouched options fold
-  behind "7 other options"; the snippet and explanation sit with the diff.
+  lot. An open row draws the poll's own question card: every option on its keycap,
+  round for single-answer polls and square for multi-answer, the right answer lit
+  green and your wrong pick red, with the community's faces beside an option once the
+  board knows who picked it. An option that carries its own reason shows it under its
+  text, **Why it’s right** or **Why it’s wrong** by the option's correctness, never by
+  the pick (ADR-195). Multi-answer polls close with a tally of catches; the snippet
+  sits above the options and the poll's own explanation under the card.
 - **Answering by keyboard**: each answer row carries a letter, and pressing that letter
   picks it. **Enter submits**, but only once something is picked, which is the same rule
   the submit press follows. The tip under the answers names Enter only while Enter will

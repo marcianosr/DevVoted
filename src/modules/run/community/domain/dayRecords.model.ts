@@ -51,6 +51,7 @@ export type DayRecord =
 			readonly id: "top-config";
 			readonly configId: string;
 			readonly configLabel: string;
+			readonly configSlots: number;
 			readonly figure: number;
 			readonly holderIds: readonly string[];
 	  };
@@ -202,12 +203,13 @@ const comebackOf = (runs: readonly DayRun[]): DayRecord | null => {
 const topConfigOf = (runs: readonly DayRun[]): DayRecord | null => {
 	const holdersByConfig = new Map<
 		string,
-		{ label: string; holders: Set<string> }
+		{ label: string; slots: number; holders: Set<string> }
 	>();
 	for (const run of runs)
 		for (const config of run.build.configs) {
 			const entry = holdersByConfig.get(config.id) ?? {
 				label: config.label,
+				slots: config.slots,
 				holders: new Set<string>(),
 			};
 			holdersByConfig.set(config.id, {
@@ -219,11 +221,12 @@ const topConfigOf = (runs: readonly DayRun[]): DayRecord | null => {
 		([, a], [, b]) => b.holders.size - a.holders.size
 	);
 	if (top === undefined) return null;
-	const [configId, { label, holders }] = top;
+	const [configId, { label, slots, holders }] = top;
 	return {
 		id: "top-config",
 		configId,
 		configLabel: label,
+		configSlots: slots,
 		figure: holders.size,
 		holderIds: [...holders],
 	};

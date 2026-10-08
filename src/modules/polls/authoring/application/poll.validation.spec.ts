@@ -124,3 +124,44 @@ describe("updatePollSchema", () => {
 		).toThrow("At least one option must be marked as correct");
 	});
 });
+
+describe("an option's own explanation", () => {
+	const explained = optionsFor(saffron).map((option, index) => ({
+		...option,
+		explanation: index === 0 ? "The one that fits." : null,
+	}));
+
+	it("accepts an option explanation and keeps it beside the option", () => {
+		const result = createPollWithOptionsSchema.parse({
+			poll: validPoll,
+			options: explained,
+		});
+
+		expect(result.options[0]?.explanation).toBe("The one that fits.");
+		expect(result.options[1]?.explanation).toBeNull();
+	});
+
+	it("rejects an option explanation over its limit", () => {
+		expect(() =>
+			createPollWithOptionsSchema.parse({
+				poll: validPoll,
+				options: [
+					{ ...explained[0], explanation: "x".repeat(501) },
+					...explained.slice(1),
+				],
+			})
+		).toThrow("Option explanation cannot exceed 500 characters");
+	});
+
+	it("accepts options that explain nothing", () => {
+		const result = updatePollSchema.parse({
+			id: 7,
+			poll: {},
+			options: optionsFor(saffron),
+		});
+
+		expect(result.options.every((option) => !("explanation" in option))).toBe(
+			true
+		);
+	});
+});

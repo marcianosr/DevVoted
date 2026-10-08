@@ -12,6 +12,7 @@ import {
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
+	changeAnswerExplanation,
 	markRight,
 	pollFormStateOf,
 	UNPLAYED,
@@ -45,8 +46,20 @@ const filled: PollFormState = {
 		key,
 		text: option,
 		right: option === quiz.correctAnswer,
+		explanation: "",
 	})),
 };
+
+const explanationsOf = (state: PollFormState) =>
+	state.answers.map((answer) => answer.explanation);
+
+const explainedAll = (state: PollFormState): PollFormState => ({
+	...state,
+	answers: state.answers.map((answer) => ({
+		...answer,
+		explanation: answer.right ? "It is the one." : "It is not.",
+	})),
+});
 
 const textsOf = (state: PollFormState) =>
 	state.answers.map((answer) => answer.text);
@@ -104,6 +117,13 @@ describe("answers", () => {
 		expect(removeAnswer(EMPTY_POLL_FORM, 0)).toBe(EMPTY_POLL_FORM);
 	});
 
+	it("changes one answer's explanation and leaves the rest", () => {
+		const changed = changeAnswerExplanation(filled, 1, "Not this one.");
+
+		expect(explanationsOf(changed)).toEqual(["", "Not this one.", "", ""]);
+		expect(textsOf(changed)).toEqual(textsOf(filled));
+	});
+
 	it("changes one answer's text and leaves the rest", () => {
 		expect(textsOf(changeAnswer(EMPTY_POLL_FORM, 1, "Silph Co."))).toEqual([
 			"",
@@ -130,6 +150,14 @@ describe("answers", () => {
 		const marked = markRight(markRight(multiple, 1), 2);
 
 		expect(rightsOf(withAnswerType(marked, "single"))).toEqual([1]);
+	});
+
+	it("carries each answer's explanation into its row", () => {
+		const rows = answerRowsOf(explainedAll(filled));
+
+		expect(rows.map((row) => row.explanation)).toEqual(
+			explanationsOf(explainedAll(filled))
+		);
 	});
 
 	it("letters the rows in order", () => {
@@ -219,6 +247,43 @@ describe("stepsDoneOf", () => {
 			stepsDoneOf({ ...filled, explanation: "Because hoisting." }).explanation
 		).toBe(true);
 	});
+
+	it("lights the explanation when every right answer has a reason and the note is blank", () => {
+		const rightOnly: PollFormState = {
+			...filled,
+			answers: filled.answers.map((answer) => ({
+				...answer,
+				explanation: answer.right ? "It is the one." : "",
+			})),
+		};
+
+		expect(stepsDoneOf(rightOnly).explanation).toBe(true);
+	});
+
+	it("keeps the explanation dark while a right answer lacks a reason and the note is blank", () => {
+		const wrongOnly: PollFormState = {
+			...filled,
+			answers: filled.answers.map((answer) => ({
+				...answer,
+				explanation: answer.right ? "" : "It is not.",
+			})),
+		};
+
+		expect(stepsDoneOf(wrongOnly).explanation).toBe(false);
+		expect(stepsDoneOf(filled).explanation).toBe(false);
+	});
+
+	it("keeps the explanation dark on reasons alone while no answer is right", () => {
+		const unmarked: PollFormState = {
+			...explainedAll(filled),
+			answers: explainedAll(filled).answers.map((answer) => ({
+				...answer,
+				right: false,
+			})),
+		};
+
+		expect(stepsDoneOf(unmarked).explanation).toBe(false);
+	});
 });
 
 describe("refusalOf", () => {
@@ -277,6 +342,31 @@ describe("previewOf", () => {
 		]);
 		expect(preview.onPick).toBeUndefined();
 		expect(preview.options[0]?.label).toBe(quiz.options[0]);
+	});
+
+	it("holds the reasons back until revealed, then hands each explained answer its reason by its mark", () => {
+		const all = explainedAll(filled);
+		const silent = all.answers.findIndex((answer) => !answer.right);
+		const explained: PollFormState = {
+			...all,
+			answers: all.answers.map((answer, index) =>
+				index === silent ? { ...answer, explanation: "" } : answer
+			),
+		};
+		const rightId = String(rightsOf(explained)[0]);
+		const picked = pickInPreview(UNPLAYED, explained, rightId);
+
+		expect(
+			previewOf(explained).options.some((option) => "explanation" in option)
+		).toBe(false);
+		const revealed = previewOf(explained, picked).options;
+		expect(
+			revealed.find((option) => option.id === rightId)?.explanation
+		).toEqual({ text: "It is the one.", right: true });
+		expect(revealed[silent]).not.toHaveProperty("explanation");
+		expect(
+			revealed.filter((option) => option.explanation?.right === false)
+		).toHaveLength(2);
 	});
 
 	it("names a blank answer by its number so the row still shows", () => {
@@ -385,7 +475,21 @@ describe("submissionOf", () => {
 			id: 10,
 			option: quiz.options[0],
 			correct: quiz.options[0] === quiz.correctAnswer,
+			explanation: null,
 		});
+	});
+
+	it("sends an answer's reason with its option, blank as null", () => {
+		const data = submissionOf(
+			changeAnswerExplanation(filled, 2, "Because the basis drops.")
+		);
+
+		expect(data?.options.map((option) => option.explanation)).toEqual([
+			null,
+			null,
+			"Because the basis drops.",
+			null,
+		]);
 	});
 
 	it("leaves an id off a new option", () => {

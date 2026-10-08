@@ -118,12 +118,29 @@ const PATHS = {
 			<path d="m10.5 3.5-7 7" />
 		</>
 	),
+	bulb: (
+		<>
+			<path d="M5.2 8.6a3.4 3.4 0 1 1 3.6 0" />
+			<path d="M5.2 8.6v1.2h3.6V8.6" />
+			<path d="M5.8 11.6h2.4" />
+		</>
+	),
 	star: (
 		<path
 			d="M7 1.8 8.3 5.7 12.2 7 8.3 8.3 7 12.2 5.7 8.3 1.8 7 5.7 5.7Z"
 			fill="currentColor"
 			stroke="none"
 		/>
+	),
+	trophy: (
+		<>
+			<path d="M4.4 2h5.2v3.4a2.6 2.6 0 0 1-5.2 0Z" />
+			<path d="M4.4 3.2H2.8v1a1.8 1.8 0 0 0 1.8 1.8" />
+			<path d="M9.6 3.2h1.6v1a1.8 1.8 0 0 1-1.8 1.8" />
+			<path d="M7 8v2.2" />
+			<path d="M5.6 10.2h2.8" />
+			<path d="M4.8 12h4.4" />
+		</>
 	),
 } satisfies Record<string, ReactNode>;
 

@@ -33,6 +33,24 @@ export const formatCompactDuration = (ms: number): string => {
 	return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 };
 
+export type ClockParts = {
+	readonly main: string;
+	readonly seconds: string;
+};
+
+const padTwo = (figure: number): string => String(figure).padStart(2, "0");
+
+export const formatClock = (ms: number): ClockParts => {
+	const totalSeconds = Math.floor(Math.max(0, ms) / 1000);
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	return {
+		main: `${hours}h ${padTwo(minutes)}m`,
+		seconds: `${padTwo(seconds)}s`,
+	};
+};
+
 export const formatDurationMs = (ms: number): string => {
 	const seconds = Math.max(1, Math.round(ms / 1000));
 	if (seconds < 60) return `${seconds}s`;

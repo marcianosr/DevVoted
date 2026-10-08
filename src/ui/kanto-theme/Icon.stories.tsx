@@ -20,6 +20,8 @@ const NAMES = [
 	"star",
 	"search",
 	"plus",
+	"trophy",
+	"bulb",
 ] as const;
 
 const meta: Meta<typeof Icon> = {

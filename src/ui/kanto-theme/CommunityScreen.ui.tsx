@@ -8,6 +8,7 @@ import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
 import type { KantoColor } from "./colors";
+import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
 import { Icon, type IconName } from "./Icon.ui";
 import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
@@ -29,7 +30,8 @@ const STAT = "flex items-center gap-1.5 text-theme-muted";
 const COLUMNS =
 	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
-const ROW_LABEL = "flex min-w-0 flex-wrap items-center gap-x-2";
+const ROW_LABEL = "flex min-w-0 flex-col gap-0.5";
+const ROW_CHIP = "flex pt-1";
 const TALLY = "flex items-center gap-2";
 
 const SWATCH_SIZE = "hero";
@@ -71,6 +73,7 @@ export type CommunityHeader = {
 export type TurnoutBand = {
 	label: string;
 	caption?: string;
+	config?: ConfigChipProps;
 	count: string;
 	color?: KantoColor;
 	climbers: readonly ClimberProps[];
@@ -175,7 +178,6 @@ const CommunityHeading = ({
 				size={CONTROL_SIZE}
 				width={CONTROL_WIDTH}
 				tone="action"
-				icon="gate"
 				label={prep.label}
 				disabled={prep.onPress === undefined}
 				onPress={prep.onPress}
@@ -217,6 +219,11 @@ const TurnoutLabel = ({
 				{band.caption}
 			</Typography>
 		)}
+		{band.config === undefined ? null : (
+			<span className={ROW_CHIP}>
+				<ConfigChip {...band.config} compact />
+			</span>
+		)}
 	</span>
 );
 
@@ -244,21 +251,18 @@ const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
 	<Panel>
 		<Panel.Header label={title} />
 		<Panel.Rows>
-			{bands.map((band) => (
+			{[...bands, ...records].map((band) => (
 				<TurnoutRow
 					key={band.label}
 					band={band}
-					label={<Badge color={band.color}>{band.label}</Badge>}
-				/>
-			))}
-			{records.map((record) => (
-				<TurnoutRow
-					key={record.label}
-					band={record}
 					label={
-						<Typography variant="subtitle" as="span">
-							{record.label}
-						</Typography>
+						band.color === undefined ? (
+							<Typography variant="subtitle" as="span">
+								{band.label}
+							</Typography>
+						) : (
+							<Badge color={band.color}>{band.label}</Badge>
+						)
 					}
 				/>
 			))}
@@ -365,7 +369,7 @@ export const CommunityScreen = ({
 	width = "wide",
 	ground = "bare",
 }: CommunityScreenProps) => (
-	<Screen gate={header.swatch.theme} width={width} ground={ground}>
+	<Screen gate={header.swatch.theme} width={width} ground={ground} enter="rise">
 		<CommunityHeading {...header} />
 		<WhereEveryoneIs {...map} />
 		<div className={COLUMNS}>

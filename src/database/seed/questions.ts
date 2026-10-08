@@ -7,6 +7,7 @@ export type SeedQuestion = {
 	readonly correct: readonly number[];
 	readonly codeBlock?: string;
 	readonly explanation?: string;
+	readonly optionExplanations?: Readonly<Record<number, string>>;
 };
 
 const CSS_QUESTIONS: readonly SeedQuestion[] = [
@@ -18,6 +19,12 @@ const CSS_QUESTIONS: readonly SeedQuestion[] = [
 		correct: [0],
 		explanation:
 			"`absolute` is taken out of flow and positioned against the nearest ancestor whose position is not `static`.",
+		optionExplanations: {
+			0: "`absolute` leaves the flow and is placed against the nearest ancestor whose `position` is not `static`.",
+			1: "`relative` keeps the box in flow and offsets it from where it would have been.",
+			2: "`sticky` stays in flow and only pins once it reaches its threshold while scrolling.",
+			3: "`static` is the default: in flow, and `top` or `left` do nothing.",
+		},
 	},
 	{
 		category: "css",
@@ -31,6 +38,11 @@ const CSS_QUESTIONS: readonly SeedQuestion[] = [
 		correct: [0],
 		explanation:
 			"The single-value shorthand sets grow to the value, shrink to 1 and basis to 0%.",
+		optionExplanations: {
+			0: "One unitless number sets `flex-grow`, and the shorthand resets `flex-basis` to `0%` so items share the space equally.",
+			2: "`flex-basis: auto` is what `flex: auto` gives you; `flex: 1` zeroes the basis instead.",
+			3: "The shorthand always sets all three; a lone `flex-grow: 1` would keep the basis at `auto`.",
+		},
 	},
 	{
 		category: "css",
@@ -122,6 +134,12 @@ const JS_QUESTIONS: readonly SeedQuestion[] = [
 		options: ["0", '""', "[]", "{}"],
 		correct: [0, 1],
 		explanation: "Every object, including empty arrays and objects, is truthy.",
+		optionExplanations: {
+			0: "`0` is one of the seven falsy values.",
+			1: "The empty string is falsy; any other string, even a lone space, is truthy.",
+			2: "An empty array is an object, and every object is truthy.",
+			3: "An empty object is still an object, so it is truthy.",
+		},
 	},
 	{
 		category: "js",

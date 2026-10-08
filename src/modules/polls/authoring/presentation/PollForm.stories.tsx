@@ -31,10 +31,21 @@ const FILLED: PollFormState = {
 	question: "What does this log?\n```js\nconsole.log(0.1 + 0.2 === 0.3)\n```",
 	categoryCode: "js",
 	answers: [
-		{ key: 0, text: "true", right: false },
-		{ key: 1, text: "false", right: true },
-		{ key: 2, text: "undefined", right: false },
-		{ key: 3, text: "a `TypeError`", right: false },
+		{
+			key: 0,
+			text: "true",
+			right: false,
+			explanation: "The sum is `0.30000000000000004`, a hair above `0.3`.",
+		},
+		{
+			key: 1,
+			text: "false",
+			right: true,
+			explanation:
+				"Binary floating point cannot hold `0.1` or `0.2` exactly, so the sum misses `0.3`.",
+		},
+		{ key: 2, text: "undefined", right: false, explanation: "" },
+		{ key: 3, text: "a `TypeError`", right: false, explanation: "" },
 	],
 	explanation:
 		"Binary floating point cannot hold 0.1 or 0.2 exactly, so the sum lands a hair above 0.3.",
@@ -44,10 +55,10 @@ const SEVERAL: PollFormState = {
 	...withAnswerType(FILLED, "multiple"),
 	question: "Which of these create a new stacking context?",
 	answers: [
-		{ key: 0, text: "`position: fixed`", right: true },
-		{ key: 1, text: "`opacity: 0.5`", right: true },
-		{ key: 2, text: "`display: block`", right: false },
-		{ key: 3, text: "`z-index: auto`", right: false },
+		{ key: 0, text: "`position: fixed`", right: true, explanation: "" },
+		{ key: 1, text: "`opacity: 0.5`", right: true, explanation: "" },
+		{ key: 2, text: "`display: block`", right: false, explanation: "" },
+		{ key: 3, text: "`z-index: auto`", right: false, explanation: "" },
 	],
 };
 
@@ -75,6 +86,7 @@ const propsFor = (
 	onPreviewPick: noop,
 	onAnswerType: noop,
 	onAnswerChange: noop,
+	onAnswerExplanationChange: noop,
 	onMarkRight: noop,
 	onAddAnswer: canAddAnswer(state) ? noop : undefined,
 	onRemoveAnswer: canRemoveAnswer(state) ? noop : undefined,

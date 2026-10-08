@@ -45,6 +45,7 @@ import { hashOf } from "~/database/seed/random";
 import {
 	seedArchivedRuns,
 	seedClimberRuns,
+	seedPlayerRuns,
 	seedLegacyEra,
 } from "~/database/seed/runs";
 
@@ -83,6 +84,7 @@ const seedPlayers = async (): Promise<number> => {
 			.update(usersTable)
 			.set({
 				github_username: player.githubUsername,
+				photo_url: player.photoUrl,
 				role: player.role,
 				pinned_gate: player.pinnedGate ?? null,
 				owned_swatch_ids: [...(player.ownedSwatchIds ?? [])],
@@ -190,6 +192,7 @@ const seedPolls = async (): Promise<number[]> => {
 				poll_id: rows[index].id,
 				option,
 				correct: question.correct.includes(optionIndex),
+				explanation: question.optionExplanations?.[optionIndex] ?? null,
 			}))
 		)
 	);
@@ -506,6 +509,11 @@ const seedDatabase = async (): Promise<void> => {
 
 	const answers = await seedCommunityAnswers(today, pollIds, climberRuns);
 	console.info(`💬 ${answers} community answers`);
+
+	const playerRuns = await seedPlayerRuns(today);
+	console.info(
+		`🎮 today's runs: ${playerRuns.started.join(", ")} climbing · ${playerRuns.fallen.join(", ")} fell`
+	);
 
 	await seedObjectiveProgress();
 	console.info("🎯 objective progress");

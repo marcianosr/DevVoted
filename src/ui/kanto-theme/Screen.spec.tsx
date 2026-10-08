@@ -65,6 +65,24 @@ describe("Screen", () => {
 		expect(container.firstChild?.firstChild).toHaveClass("p-4", "sm:p-8");
 	});
 
+	it("rises its blocks into place in reading order when asked to enter that way", () => {
+		const { container } = render(
+			<Screen theme="cinnabar" enter="rise">
+				body
+			</Screen>
+		);
+
+		expect(container.firstChild?.firstChild).toHaveClass("screen-rise");
+		expect(appCss).toContain(".screen-rise > * {");
+		expect(appCss).toContain(".screen-rise > :nth-child(2) {");
+	});
+
+	it("lands its blocks at once unless asked to rise", () => {
+		const { container } = render(<Screen theme="cinnabar">body</Screen>);
+
+		expect(container.firstChild?.firstChild).not.toHaveClass("screen-rise");
+	});
+
 	it("edges itself with the faintest theme rung app.css defines", () => {
 		const { container } = render(<Screen theme="cinnabar">body</Screen>);
 

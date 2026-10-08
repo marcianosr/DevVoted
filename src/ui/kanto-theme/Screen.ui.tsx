@@ -11,9 +11,11 @@ const SCREEN =
 	"flex min-h-[var(--screen-floor,80vh)] w-full flex-col items-center mx-auto";
 const FRAME = "bg-theme-faint rounded-3xl border-theme-faint border-1";
 const BODY = "flex w-full flex-1 flex-col gap-6 p-4 sm:p-8";
+const RISE = "screen-rise";
 
 export type ScreenWidth = "narrow" | "default" | "wide";
 export type ScreenGround = "framed" | "bare";
+export type ScreenEnter = "rise";
 
 const WIDTH = {
 	narrow: "max-w-2xl",
@@ -31,6 +33,7 @@ export type ScreenProps = {
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 	floor?: string;
+	enter?: ScreenEnter;
 } & (
 	{ theme: KantoColor; gate?: never } | { gate: SwatchTheme; theme?: never }
 );
@@ -39,6 +42,7 @@ export const Screen = ({
 	width = "default",
 	ground = "framed",
 	floor,
+	enter,
 	children,
 	...props
 }: ScreenProps) => {
@@ -51,7 +55,7 @@ export const Screen = ({
 			style={floorStyle(floor)}
 			className={clsx(SCREEN, WIDTH[width], ground === "framed" && FRAME)}
 		>
-			<div className={BODY}>{children}</div>
+			<div className={clsx(BODY, enter === "rise" && RISE)}>{children}</div>
 		</section>
 	);
 };

@@ -125,7 +125,7 @@ describe("CommunityScreen", () => {
 					...props.turnout,
 					bands: [
 						{
-							label: "answered today",
+							label: "Answered today",
 							count: "12",
 							shown: 10,
 							climbers: crowd,
@@ -155,7 +155,7 @@ describe("CommunityScreen", () => {
 					...props.turnout,
 					bands: [
 						{
-							label: "answered today",
+							label: "Answered today",
 							count: "12",
 							shown: 10,
 							climbers: crowd,
@@ -178,8 +178,9 @@ describe("CommunityScreen", () => {
 		const turnout = within(sectionOf(TURNOUT_TITLE));
 
 		expect(turnout.queryByText("today's records")).toBeNull();
-		expect(turnout.getByText("comeback")).toBeInTheDocument();
+		expect(turnout.getByText("Comeback")).toBeInTheDocument();
 		expect(turnout.getByText("14 slots")).toBeInTheDocument();
+		expect(turnout.getByText(".ts")).toBeInTheDocument();
 	});
 
 	it("puts the map before the polls, and the polls before the records", () => {

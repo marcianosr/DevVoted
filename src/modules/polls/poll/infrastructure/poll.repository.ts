@@ -39,6 +39,7 @@ const toPollOption = (record: PollOptionRecord): PollOption => ({
 	pollId: record.poll_id,
 	option: record.option,
 	correct: record.correct,
+	explanation: record.explanation,
 });
 
 export const fetchPollById = async (id: number): Promise<Poll> => {

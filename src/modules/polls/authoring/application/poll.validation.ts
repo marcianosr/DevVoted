@@ -16,6 +16,14 @@ const newPollOptionSchema = z.object({
 			`Option cannot exceed ${POLL_LIMITS.answer.max} characters`
 		),
 	correct: z.boolean().default(false),
+	explanation: z
+		.string()
+		.max(
+			POLL_LIMITS.answerExplanation.max,
+			`Option explanation cannot exceed ${POLL_LIMITS.answerExplanation.max} characters`
+		)
+		.nullable()
+		.optional(),
 });
 
 const updatePollOptionSchema = newPollOptionSchema.extend({

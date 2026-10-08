@@ -11,7 +11,10 @@ import {
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { letterAt } from "~/shared/lib/letters";
-import type { QuestionProps } from "~/ui/kanto-theme/Question.ui";
+import type {
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
 
 const CREATED_FORMAT = "d MMM yyyy";
 
@@ -52,6 +55,21 @@ const authorOf = (
 	};
 };
 
+const optionExplanationOf = (
+	option: PollOption
+): QuestionOption["explanation"] => {
+	const text = option.explanation?.trim() ?? "";
+	return text === "" ? undefined : { text, right: option.correct };
+};
+
+const answerOptionOf = (option: PollOption): Partial<QuestionOption> => {
+	const explanation = optionExplanationOf(option);
+	return {
+		state: option.correct ? "right" : "idle",
+		...(explanation === undefined ? {} : { explanation }),
+	};
+};
+
 export const pollDetailViewOf = (
 	poll: Poll,
 	options: readonly PollOption[],
@@ -76,9 +94,7 @@ export const pollDetailViewOf = (
 				id: String(option.id),
 				letter: letterAt(index),
 				label: option.option,
-				...(view === "answer"
-					? { state: option.correct ? "right" : "idle" }
-					: {}),
+				...(view === "answer" ? answerOptionOf(option) : {}),
 			})),
 		},
 		...(poll.codeSandboxExample === null

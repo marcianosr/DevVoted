@@ -269,3 +269,57 @@ describe("Question's options with code in them", () => {
 		);
 	});
 });
+
+describe("each option's own explanation", () => {
+	const EXPLAINED = [
+		{
+			...OPTIONS[0],
+			state: "right",
+			explanation: { text: "It maps every key to `?`.", right: true },
+		},
+		{
+			...OPTIONS[1],
+			state: "idle",
+			explanation: { text: "Not a built-in.", right: false },
+		},
+		OPTIONS[2],
+	] satisfies QuestionOption[];
+
+	const rowOf = (label: string) =>
+		screen.getByText(label).closest<HTMLElement>("[data-answer]")!;
+
+	it("explains a right option as why it’s right, under its own row", () => {
+		render(<Question {...props} options={EXPLAINED} />);
+
+		const row = rowOf("Partial<T>");
+		expect(within(row).getByText("Why it’s right")).toBeInTheDocument();
+		expect(
+			row.querySelector("[data-note] [data-screen-theme=viridian]")
+		).toHaveTextContent("✓");
+	});
+
+	it("explains a wrong option as why it’s wrong, picked or not", () => {
+		render(<Question {...props} options={EXPLAINED} />);
+
+		const row = rowOf("Optional<T>");
+		expect(row).toHaveAttribute("data-answer", "idle");
+		expect(within(row).getByText("Why it’s wrong")).toBeInTheDocument();
+		expect(within(row).getByText("Not a built-in.")).toBeInTheDocument();
+		expect(
+			row.querySelector("[data-note] [data-screen-theme=cinnabar]")
+		).toHaveTextContent("✗");
+	});
+
+	it("marks an explanation's inline backticks as code", () => {
+		render(<Question {...props} options={EXPLAINED} />);
+
+		expect(within(rowOf("Partial<T>")).getByText("?").tagName).toBe("CODE");
+	});
+
+	it("draws no explanation for an option that explains nothing", () => {
+		render(<Question {...props} options={EXPLAINED} />);
+
+		expect(rowOf("Maybe<T>").querySelector("[data-note]")).toBeNull();
+		expect(screen.getAllByText(/Why it’s/)).toHaveLength(2);
+	});
+});

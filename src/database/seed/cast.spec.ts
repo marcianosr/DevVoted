@@ -16,13 +16,13 @@ describe("the seeded poll editors", () => {
 	});
 
 	it("points every portrait it names at a file that ships in public/", () => {
-		const missing = SEED_CLIMBERS.filter(
-			(climber) =>
-				climber.photoUrl !== undefined &&
-				!existsSync(`${PUBLIC_DIR}${climber.photoUrl}`)
+		const missing = [...SEED_CLIMBERS, ...SEED_PLAYERS].filter(
+			(seeded) =>
+				seeded.photoUrl !== undefined &&
+				!existsSync(`${PUBLIC_DIR}${seeded.photoUrl}`)
 		);
 
-		expect(missing.map((climber) => climber.photoUrl)).toEqual([]);
+		expect(missing.map((seeded) => seeded.photoUrl)).toEqual([]);
 	});
 
 	it("hands every climber an id and a login of their own", () => {

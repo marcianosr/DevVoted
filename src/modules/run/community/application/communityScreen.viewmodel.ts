@@ -49,7 +49,7 @@ const COPY = {
 	title: "Community",
 	tagline: "What are other players doing?",
 	turnoutTitle: "Today’s records",
-	answeredToday: "answered today",
+	answeredToday: "Answered today",
 	unheldRecord: "—",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
@@ -114,23 +114,23 @@ type RecordRow = {
 };
 
 const RECORD_ROWS: Record<RecordKind, RecordRow> = {
-	"biggest-build": { label: "biggest build", figure: slotsLabel },
-	"lightest-build": { label: "lightest build", figure: slotsLabel },
+	"biggest-build": { label: "Biggest build", figure: slotsLabel },
+	"lightest-build": { label: "Lightest build", figure: slotsLabel },
 	comeback: {
-		label: "comeback",
+		label: "Comeback",
 		caption: "held at this gate before, cleared it today",
 		figure: String,
 	},
 	"most-audits": {
-		label: "most audits",
-		caption: "in one run",
+		label: "Most audits",
+		caption: "across the whole run",
 		figure: String,
 	},
 	"top-config": {
-		label: "most installed",
+		label: "Most installed",
 		figure: (players) => plural(players, "player"),
 	},
-	"priciest-build": { label: "most expensive build", figure: kbLabel },
+	"priciest-build": { label: "Most expensive build", figure: kbLabel },
 	"kb-generated": {
 		label: "KB generated today",
 		caption: "top earner",
@@ -165,12 +165,23 @@ const unheldRecordRow = (kind: RecordKind): TurnoutBand => {
 	};
 };
 
+const topConfigChipOf = (record: CommunityRecord["record"]) =>
+	record.id === "top-config"
+		? {
+				config: {
+					name: record.configLabel,
+					slots: record.configSlots,
+					badges: [],
+				},
+			}
+		: {};
+
 const heldRecordRow = ({ record, holders }: CommunityRecord): TurnoutBand => {
 	const { label, caption, figure } = RECORD_ROWS[record.id];
-	const named = record.id === "top-config" ? record.configLabel : caption;
 	return {
 		label,
-		...(named === undefined ? {} : { caption: named }),
+		...(caption === undefined ? {} : { caption }),
+		...topConfigChipOf(record),
 		count: figure(record.figure),
 		...facesOf(holders),
 	};
@@ -198,7 +209,6 @@ export const showedUpBand = (
 ): TurnoutBand => ({
 	label: COPY.answeredToday,
 	count: String(view.totalPlayers),
-	color: "cerulean",
 	shown: SHOWED_UP_FACES,
 	...facesOf(view.players),
 });

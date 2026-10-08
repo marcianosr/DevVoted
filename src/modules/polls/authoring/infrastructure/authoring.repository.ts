@@ -16,6 +16,7 @@ const UNEDITED = { updated_at: sql`${pollsTable.updated_at}` };
 type NewPollOption = {
 	option: string;
 	correct: boolean;
+	explanation?: string | null;
 };
 
 type UpdatePollOption = NewPollOption & {
@@ -88,6 +89,7 @@ export const createPollWithOptions = async (
 					poll_id: record.id,
 					option: option.option,
 					correct: option.correct,
+					explanation: option.explanation,
 				}))
 			);
 		}
@@ -151,7 +153,11 @@ export const updatePollWithOptions = async (
 		for (const option of existingOptions) {
 			await tx
 				.update(pollOptionsTable)
-				.set({ option: option.option, correct: option.correct })
+				.set({
+					option: option.option,
+					correct: option.correct,
+					explanation: option.explanation,
+				})
 				.where(
 					and(
 						eq(pollOptionsTable.id, option.id),
@@ -166,6 +172,7 @@ export const updatePollWithOptions = async (
 					poll_id: pollId,
 					option: option.option,
 					correct: option.correct,
+					explanation: option.explanation,
 				}))
 			);
 		}

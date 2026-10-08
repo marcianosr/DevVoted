@@ -10,6 +10,7 @@ import {
 	canLockIn,
 	canRemoveAnswer,
 	changeAnswer,
+	changeAnswerExplanation,
 	lockInPreview,
 	markRight,
 	pickInPreview,
@@ -107,6 +108,9 @@ export const PollForm = ({
 			}
 			onAnswerChange={(key, text) =>
 				setState((current) => changeAnswer(current, key, text))
+			}
+			onAnswerExplanationChange={(key, text) =>
+				setState((current) => changeAnswerExplanation(current, key, text))
 			}
 			onMarkRight={(key) => setState((current) => markRight(current, key))}
 			onAddAnswer={canAddAnswer(state) ? () => setState(addAnswer) : undefined}
