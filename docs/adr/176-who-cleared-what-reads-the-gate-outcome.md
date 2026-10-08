@@ -72,6 +72,19 @@ row is the one place that shows who played today, whatever their gate did, and i
 are what make the board recognisable. The row now always leads the panel, with every
 player who answered today wearing their border, and the outcome rows follow it.
 
+## Amendment (2026-10-08): today means gates closed today
+
+"A live run started yesterday counts in full" meant the records never reset: a run's
+KB, build and outcome from earlier days stayed on the board until the run ended.
+Marciano reported it as a bug. Every recorded close now carries the day it closed on
+and the storage the run held after it. A live run reaches the outcomes and records only
+through a close made today, and only those closes feed its outcome and KB generated.
+KB spent starts from the storage after the run's last close before today, or from the
+start (pin and warm boot) when the run has none. A comeback still sees an earlier
+day's hold. The build records read the current build of each run that closed a gate
+today. Closes recorded before this carry no day and never count as today. A run that
+fell today stays in DANGER, as the first amendment says.
+
 ## Rejected
 
 - **A KB ledger table.** Exact, but it needs a migration and a write at every KB

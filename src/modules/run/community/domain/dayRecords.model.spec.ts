@@ -4,6 +4,7 @@ import {
 	type DayRun,
 	buildCostOf,
 	dayRecordsOf,
+	dayRunOn,
 	isComeback,
 	kbGeneratedOf,
 	kbSpentOf,
@@ -13,6 +14,7 @@ import {
 import type { RecordedClose } from "~/modules/run/run/domain/run.model";
 import type { CoverageBandId } from "~/modules/run/build/domain/coverageRatio.model";
 import { PIN_START_KB_PER_GATE } from "~/modules/run/run/domain/rules.model";
+import { TEST_DATES } from "~/test/kanto";
 
 const cleared = (
 	gate: number,
@@ -34,6 +36,7 @@ const config = (id: string, slots: number) => ({ id, label: id, slots });
 const run = (overrides: Partial<DayRun> & { userId: string }): DayRun => ({
 	fallen: false,
 	closes: [],
+	closesBefore: [],
 	build: { configs: [] },
 	auditSchedule: {},
 	startedAtGate: 0,
@@ -120,6 +123,18 @@ describe("isComeback", () => {
 		).toBe(false);
 	});
 
+	it("is a comeback when the gate held on an earlier day and cleared today", () => {
+		expect(
+			isComeback(
+				run({
+					userId: "blaine",
+					closesBefore: [held(4)],
+					closes: [cleared(4, "ok")],
+				})
+			)
+		).toBe(true);
+	});
+
 	it("is no comeback while the gate still holds", () => {
 		expect(
 			isComeback(run({ userId: "blaine", closes: [held(4), held(4)] }))
@@ -151,6 +166,21 @@ describe("KB figures", () => {
 		);
 
 		expect(spent).toBe(PIN_START_KB_PER_GATE * 2 + 16 + 100 - 50);
+	});
+
+	it("spends from what the run held after its last close before today", () => {
+		const spent = kbSpentOf(
+			run({
+				userId: "lance",
+				startedAtGate: 2,
+				warmBootKb: 16,
+				closesBefore: [{ ...cleared(2, "ok", 100), storageKbAfter: 80 }],
+				closes: [cleared(3, "ok", 60)],
+				storageKb: 50,
+			})
+		);
+
+		expect(spent).toBe(80 + 60 - 50);
 	});
 
 	it("never spends a negative amount", () => {
@@ -228,5 +258,54 @@ describe("dayRecordsOf", () => {
 
 	it("draws no records on a day nobody played", () => {
 		expect(dayRecordsOf([])).toEqual([]);
+	});
+});
+
+describe("dayRunOn", () => {
+	const { christmasEve, christmas } = TEST_DATES;
+	const onDay = (close: RecordedClose, closedOn: string): RecordedClose => ({
+		...close,
+		closedOn,
+	});
+
+	it("keeps only the closes made that day and files the rest before it", () => {
+		const yesterday = onDay(cleared(1, "ok", 40), christmasEve);
+		const today = onDay(cleared(2, "ok", 60), christmas);
+
+		const day = dayRunOn(christmas)(
+			run({ userId: "misty", closes: [yesterday, today] })
+		);
+
+		expect(day?.closes).toEqual([today]);
+		expect(day?.closesBefore).toEqual([yesterday]);
+	});
+
+	it("leaves out a live run that closed no gate that day", () => {
+		expect(
+			dayRunOn(christmas)(
+				run({
+					userId: "misty",
+					closes: [onDay(cleared(1, "perfect"), christmasEve)],
+				})
+			)
+		).toBeNull();
+	});
+
+	it("keeps a run that fell that day even without a close on it", () => {
+		expect(
+			dayRunOn(christmas)(
+				run({
+					userId: "giovanni",
+					fallen: true,
+					closes: [onDay(cleared(1, "ok"), christmasEve)],
+				})
+			)?.fallen
+		).toBe(true);
+	});
+
+	it("treats a close without a day as made before it", () => {
+		expect(
+			dayRunOn(christmas)(run({ userId: "misty", closes: [cleared(1, "ok")] }))
+		).toBeNull();
 	});
 });

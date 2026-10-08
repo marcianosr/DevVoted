@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **A ready upgrade wears a moving border.** A folded build card whose next version you can buy now rings its version tag with the upgrade press's flowing colours, instead of a glow.
+
+### Fixed
+- **Today's records start fresh each day.** The community board's outcomes and records kept counting runs from earlier days, so yesterday's builds and KB stayed on the board. They now count only gates closed today, and a run joins them once it closes one.
 
 ## 2.1.0 - 2026-10-07
 ### Added

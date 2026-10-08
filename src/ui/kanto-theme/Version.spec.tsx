@@ -96,23 +96,23 @@ describe("Version", () => {
 		expect(screen.getByText("v2")).toHaveClass("h-5");
 	});
 
-	it("glows outside its notch when an upgrade is ready, the clip being what would cut a ring off", () => {
-		render(<Version version={1} glow />);
+	it("draws a flowing prismatic border inside its notch when an upgrade is ready", () => {
+		render(<Version version={1} upgradeReady />);
 
-		const glow = screen.getByText("v1").parentElement;
-		expect(glow).toHaveClass("version-glow");
-		expect(glow?.className).not.toContain("clip-path");
+		const border = screen.getByText("v1").parentElement;
+		expect(border).toHaveClass("press-prismatic", "p-[1.5px]");
+		expect(border?.className).toContain("clip-path");
 	});
 
-	it("draws no glow unless told an upgrade is ready", () => {
+	it("draws no border unless told an upgrade is ready", () => {
 		const { container } = render(<Version version={1} />);
 
-		expect(container.querySelector(".version-glow")).toBeNull();
+		expect(container.querySelector(".press-prismatic")).toBeNull();
 	});
 
-	it("stills the glow for a player who asked for less motion", () => {
+	it("stills the border for a player who asked for less motion", () => {
 		expect(
-			reducedMotionBlocks().some((block) => block.includes(".version-glow"))
+			reducedMotionBlocks().some((block) => block.includes(".press-prismatic"))
 		).toBe(true);
 	});
 });
