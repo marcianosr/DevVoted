@@ -189,16 +189,6 @@ export const pollsTable = pgTable("polls", {
 	reviewed_at: timestamp("reviewed_at", { withTimezone: true }),
 }).enableRLS();
 
-export const dailyPollsTable = pgTable("daily_polls", {
-	id: serial("id").primaryKey(),
-	date: varchar("date", { length: 10 }).notNull().unique(),
-	poll_id: integer("poll_id").references(() => pollsTable.id, {
-		onDelete: "cascade",
-	}),
-	category_weights: json("category_weights").$type<Record<string, number>>(),
-	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}).enableRLS();
-
 export const pollHistoryTable = pgTable(
 	"polls_history",
 	{
@@ -302,9 +292,7 @@ export const runsTable = pgTable("runs", {
 	user_id: uuid("user_id")
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
-	season_id: integer("season_id").references(() => seasonsTable.id, {
-		onDelete: "set null",
-	}),
+	season_id: integer("season_id"),
 	status: runStatus("status").notNull().default("active"),
 	mode: varchar("mode", { length: 16 })
 		.notNull()
@@ -476,95 +464,6 @@ export const runPollsTable = pgTable(
 		segment_date: varchar("segment_date", { length: 10 }).notNull(),
 	},
 	(table) => [unique().on(table.run_id, table.position)]
-).enableRLS();
-
-export const runCategoryCoverageTable = pgTable(
-	"run_category_coverage",
-	{
-		id: serial("id").primaryKey(),
-		run_id: integer("run_id")
-			.references(() => runsTable.id, { onDelete: "cascade" })
-			.notNull(),
-		category_code: varchar("category_code", { length: 50 })
-			.references(() => pollCategoriesTable.code)
-			.notNull(),
-		current_coverage: real("current_coverage").notNull().default(0),
-		current_streak: integer("current_streak").notNull().default(0),
-		best_streak: integer("best_streak").notNull().default(0),
-		polls_answered: integer("polls_answered").notNull().default(0),
-		correct_polls_answered: integer("correct_polls_answered")
-			.notNull()
-			.default(0),
-		final_coverage: real("final_coverage"),
-		final_streak: integer("final_streak"),
-		final_polls_answered: integer("final_polls_answered"),
-		final_correct_polls_answered: integer("final_correct_polls_answered"),
-		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-		updated_at: timestamp("updated_at", { withTimezone: true })
-			.defaultNow()
-			.$onUpdate(() => new Date()),
-	},
-	(table) => {
-		return {
-			runCategoryUnique: unique().on(table.run_id, table.category_code),
-		};
-	}
-).enableRLS();
-export const seasonsTable = pgTable("seasons", {
-	id: serial("id").primaryKey(),
-	name: varchar("name", { length: 256 }).notNull(),
-	description: text("description"),
-	status: seasonStatus("status").notNull().default("upcoming"),
-	start_date: timestamp("start_date", { withTimezone: true }).notNull(),
-	end_date: timestamp("end_date", { withTimezone: true }).notNull(),
-	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-	updated_at: timestamp("updated_at", { withTimezone: true })
-		.defaultNow()
-		.$onUpdate(() => new Date()),
-}).enableRLS();
-
-export const leaderboardTable = pgTable("leaderboard", {
-	id: serial("id").primaryKey(),
-	user_id: uuid("user_id")
-		.references(() => usersTable.id, { onDelete: "cascade" })
-		.notNull(),
-	run_id: integer("run_id")
-		.references(() => runsTable.id, { onDelete: "cascade" })
-		.notNull(),
-	season_id: integer("season_id").references(() => seasonsTable.id, {
-		onDelete: "set null",
-	}),
-	category_code: varchar("category_code", { length: 50 })
-		.references(() => pollCategoriesTable.code)
-		.notNull(),
-	category_coverage: real("category_coverage").notNull().default(0),
-	total_coverage: real("total_coverage").notNull().default(0),
-	best_streak: integer("best_streak").notNull().default(0),
-	polls_answered: integer("polls_answered").notNull().default(0),
-	completed_at: timestamp("completed_at", { withTimezone: true }).notNull(),
-	created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}).enableRLS();
-
-export const runShopOfferingsTable = pgTable(
-	"run_shop_offerings",
-	{
-		id: serial("id").primaryKey(),
-		run_id: integer("run_id")
-			.references(() => runsTable.id, { onDelete: "cascade" })
-			.notNull(),
-		date: varchar("date", { length: 10 }).notNull(),
-		reroll_number: integer("reroll_number").notNull().default(0),
-		config_ids: json("config_ids").$type<string[]>().notNull(),
-		is_locked: boolean("is_locked").notNull().default(false),
-		created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
-	},
-	(table) => ({
-		runDateRerollUnique: unique().on(
-			table.run_id,
-			table.date,
-			table.reroll_number
-		),
-	})
 ).enableRLS();
 
 export const dailyExposedDeckTable = pgTable("daily_exposed_deck", {

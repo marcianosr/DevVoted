@@ -40,7 +40,7 @@
 		"db:reset": "tsx src/database/reset.ts",
 		"db:titles": "tsx src/database/grantTitles.ts",
 		"db:push": "npx drizzle-kit push",
-		"db:refresh": "npm run db:reset && npm run db:push && npm run db:seed",
+		"db:refresh": "npx supabase db reset --local && npm run db:seed",
 		"export:firebase": "node scripts/export-polls.js",
 		"prepare": "husky",
 		"storybook": "storybook dev -p 6006",

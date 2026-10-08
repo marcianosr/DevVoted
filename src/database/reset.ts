@@ -7,8 +7,8 @@ async function resetDatabase() {
 
 	try {
 		await db.execute(sql`
-            DROP TABLE IF EXISTS run_shop_offerings CASCADE;
-            DROP TABLE IF EXISTS run_category_coverage CASCADE;
+            DROP TABLE IF EXISTS legacy_run_shop_offerings CASCADE;
+            DROP TABLE IF EXISTS legacy_run_category_coverage CASCADE;
             DROP TABLE IF EXISTS run_polls CASCADE;
             DROP TABLE IF EXISTS daily_run_polls CASCADE;
             DROP TABLE IF EXISTS daily_run_seeds CASCADE;
@@ -20,10 +20,10 @@ async function resetDatabase() {
             DROP TABLE IF EXISTS polls_categories CASCADE;
             DROP TABLE IF EXISTS polls_options CASCADE;
             DROP TABLE IF EXISTS polls CASCADE;
-            DROP TABLE IF EXISTS seasons CASCADE;
-            DROP TABLE IF EXISTS leaderboard CASCADE;
+            DROP TABLE IF EXISTS legacy_seasons CASCADE;
+            DROP TABLE IF EXISTS legacy_leaderboard CASCADE;
             DROP TABLE IF EXISTS daily_exposed_deck CASCADE;
-            DROP TABLE IF EXISTS daily_polls CASCADE;
+            DROP TABLE IF EXISTS legacy_daily_polls CASCADE;
             DROP TABLE IF EXISTS user_config_unlocks CASCADE;
             DROP TABLE IF EXISTS user_service_unlocks CASCADE;
             DROP TABLE IF EXISTS user_objective_progress CASCADE;
