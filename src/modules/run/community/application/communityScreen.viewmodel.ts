@@ -58,7 +58,6 @@ const COPY = {
 	notDealtYet: (index: number) => `Poll ${index + 1} · not dealt yet`,
 	countdownHint: "until the next five polls are dealt",
 	pollsOpen: "polls are open",
-	whereYouStand: "where your run stands",
 } as const;
 
 const climberOf = (voter: CommunityVoter): ClimberProps => ({
@@ -384,11 +383,6 @@ export const communityScreenPropsFor = ({
 					icon: "community",
 					label: plural(view.totalPlayers, "player"),
 					hint: COPY.answeredToday,
-				},
-				{
-					icon: "gate",
-					label: `gate ${swatch.gate} · ${swatch.gateName}`,
-					hint: COPY.whereYouStand,
 				},
 			],
 			prep: {

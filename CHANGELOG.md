@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The poll pages wear pallet.** The poll list, a poll's page and the edit form now wear the same white the suggest form already did, instead of Cerulean's blue; cerulean is a gate's colour and these pages are not a gate.
 - **An answer's verdict stays a second longer.** After you answer, the green or red reading holds for 1.65s on a right answer and 1.9s on a wrong one before the next poll slides in, so the right option can actually be read.
 - **Every run screen rises into place.** Each block of a run screen (the poll, prep, the gate's outcome, the shop, the community board, and the rest) now fades up in reading order as the screen opens, the way the hub does. Off under reduced motion.
-- **The Hall of Fame holds a seat open.** Before anyone has won a run, the Hall of Fame draws a dashed trophy beside **Champion · still open** and says the first to clear the Champion gate gets the spot, instead of a sentence saying nobody has yet. **Back to your run** on the community board drops its flag.
+- **The Hall of Fame holds a seat open.** Before anyone has won a run, the Hall of Fame draws a dashed trophy beside **Champion · still open** and says the first to clear the Champion gate gets the spot, instead of a sentence saying nobody has yet. **Back to your run** on the community board drops its flag, and the board's header no longer names your gate.
 - **A fallen face says what it holds.** On the climb map, hovering a fallen run you can still loot reads **67 KB to loot** instead of only the player's name.
 
 ## 2.2.0 - 2026-10-08

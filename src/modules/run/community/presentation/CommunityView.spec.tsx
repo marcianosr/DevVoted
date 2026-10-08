@@ -222,6 +222,14 @@ describe("CommunityView", () => {
 		expect(screen.getByText("3 players")).toBeInTheDocument();
 	});
 
+	it("heads the board with the day's count and no gate of the viewer's own", () => {
+		render(board());
+
+		expect(
+			screen.queryByText(/^gate \d+ · /, { selector: "span" })
+		).not.toBeInTheDocument();
+	});
+
 	it("places every climber under their gate, and rings today's rivals", () => {
 		const { container } = render(
 			withQueryClient(
