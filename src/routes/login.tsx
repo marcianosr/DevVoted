@@ -1,11 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Login } from "~/modules/account/auth/presentation/Login.component";
+import {
+	Login,
+	loginLoader,
+} from "~/modules/account/auth/presentation/Login.component";
+
+const LoginPage = () => {
+	const { theme } = Route.useLoaderData();
+	return <Login theme={theme} />;
+};
 
 export const Route = createFileRoute("/login")({
-	component: LoginComp,
+	loader: loginLoader,
+	component: LoginPage,
 });
-
-function LoginComp() {
-	return <Login />;
-}

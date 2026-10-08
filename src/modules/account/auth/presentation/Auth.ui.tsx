@@ -10,11 +10,12 @@ const COPY = {
 	pending: "…",
 	github: "Continue with GitHub",
 	githubPending: "Redirecting…",
+	githubHint: "Sign up or sign in with your GitHub account",
 } as const;
 
 const isDevelopment = process.env.NODE_ENV === "development";
 
-const PAGE = "flex items-start justify-center p-8";
+const PAGE = "flex w-full items-start justify-center";
 const FORM = "flex flex-col gap-4";
 const FIELD = "flex flex-col gap-1";
 const INPUT = "rounded border border-edge bg-surface-raised px-2 py-1";
@@ -35,7 +36,6 @@ const credentialsFrom = (form: HTMLFormElement): AuthCredentials => {
 
 export type AuthProps = {
 	actionText: string;
-	subTitle?: string;
 	status: "pending" | "idle" | "success" | "error";
 	onSubmit: (credentials: AuthCredentials) => void;
 	message?: string;
@@ -45,7 +45,6 @@ export type AuthProps = {
 
 export const Auth = ({
 	actionText,
-	subTitle,
 	status,
 	onSubmit,
 	message,
@@ -67,7 +66,10 @@ export const Auth = ({
 	return (
 		<div className={PAGE}>
 			<Panel>
-				<Panel.Header label={actionText} meta={subTitle} />
+				<Panel.Header
+					label={actionText}
+					meta={github === undefined ? undefined : COPY.githubHint}
+				/>
 				<Panel.Body>
 					<form ref={form} onSubmit={submit} className={FORM}>
 						{isDevelopment && (
@@ -104,13 +106,15 @@ export const Auth = ({
 						)}
 
 						<div className={PRESSES}>
-							{isDevelopment && (
+							{github !== undefined && (
 								<Button
 									size="md"
-									tone="action"
-									label={status === "pending" ? COPY.pending : actionText}
-									disabled={status === "pending"}
-									onPress={() => form.current?.requestSubmit()}
+									tone="primary"
+									icon="github"
+									iconAt="lead"
+									label={github.pending ? COPY.githubPending : COPY.github}
+									disabled={github.pending}
+									onPress={github.onPress}
 								/>
 							)}
 
@@ -118,12 +122,12 @@ export const Auth = ({
 								<Button size="sm" label={retry.label} onPress={askAgain} />
 							)}
 
-							{github !== undefined && (
+							{isDevelopment && (
 								<Button
 									size="md"
-									label={github.pending ? COPY.githubPending : COPY.github}
-									disabled={github.pending}
-									onPress={github.onPress}
+									label={status === "pending" ? COPY.pending : actionText}
+									disabled={status === "pending"}
+									onPress={() => form.current?.requestSubmit()}
 								/>
 							)}
 						</div>

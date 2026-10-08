@@ -164,3 +164,21 @@ describe("visuals", () => {
 		);
 	});
 });
+
+describe("spoiler sections", () => {
+	it("marks exactly the sections that list every gate, swatch, config and shop action", () => {
+		const spoilers = WIKI_ARTICLES.flatMap((article) =>
+			article.sections
+				.filter((section) => section.spoiler !== undefined)
+				.map((section) => `${article.id}: ${section.heading}`)
+		);
+
+		expect(spoilers).toEqual([
+			"how-to-play: Every swatch",
+			"gates: Every gate",
+			"build-and-configs: Every config",
+			"storage-and-shop: The shop",
+			"progression: Swatches",
+		]);
+	});
+});

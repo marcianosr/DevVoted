@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: critical
 created_at: 2026-09-30T18:50:26Z
-updated_at: 2026-10-08T08:36:02Z
+updated_at: 2026-10-08T13:19:05Z
 parent: DVTD-u35m
 ---
 
@@ -62,3 +62,7 @@ P0, then merge, then soft launch, then P1 funnel, then the HN/Reddit spike, then
 Checked against the code: P0 #2, #3, #4 and #6 are still open; #1 is done. #5 (legal) and #7 (Firebase key) are skipped at Marciano's call. Risk accepted: GDPR deletion requests become manual SQL, and the Firebase key stays in git history unless it is revoked in GCP.
 
 P0 #2 done in DVTD-zvyz (2026-10-08): a fresh database rebuilds from migrations alone. The cutover rehearsal (P0 #3) is still open.
+
+### Status 2026-10-08, afternoon
+
+2.0 has been live since 2026-10-05 and is at v2.3.0. Decided today with Marciano: no automated reminders and no reactivation mail, so the reminder half of item 13 is dropped and growth is organic; no warm intros, Codam or HvA. The channels, posting rules and per-push log live in docs/growth.md, tracked by the weekly posting bean DVTD-3ahx. The login screen gets a pitch and the two shared-link leaks are fixed on feat/login-pitch. The tip jar (DVTD-ckbl) is unfrozen for after the front door. The share loop (DVTD-ixjg) stays agreed and later.
