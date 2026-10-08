@@ -36,6 +36,8 @@ const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
 const ROW_FACES = 3;
 const CROWDED_ROW = "flex-wrap";
+const CROWD =
+	"flex min-w-0 basis-full items-center justify-end gap-2 sm:ml-auto sm:basis-auto";
 const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 const CONTROL_WIDTH = "full";
@@ -182,37 +184,61 @@ const CommunityHeading = ({
 	</header>
 );
 
-const TurnoutRow = ({
+const TurnoutFigures = ({
+	band,
+	wrap = false,
+}: {
+	band: TurnoutBand;
+	wrap?: boolean;
+}) => (
+	<>
+		<Badge color={band.color}>{band.count}</Badge>
+		<ClimberStack
+			climbers={band.climbers}
+			overflow={band.overflow}
+			shown={band.shown ?? ROW_FACES}
+			size={CLIMBER_SIZE}
+			wrap={wrap}
+		/>
+	</>
+);
+
+const TurnoutLabel = ({
 	band,
 	label,
 }: {
 	band: TurnoutBand;
 	label: ReactNode;
 }) => (
-	<Panel.Row
-		className={band.shown === undefined ? undefined : CROWDED_ROW}
-		trailing={
-			<>
-				<Badge color={band.color}>{band.count}</Badge>
-				<ClimberStack
-					climbers={band.climbers}
-					overflow={band.overflow}
-					shown={band.shown ?? ROW_FACES}
-					size={CLIMBER_SIZE}
-				/>
-			</>
-		}
-	>
-		<span className={ROW_LABEL}>
-			{label}
-			{band.caption === undefined ? null : (
-				<Typography variant="hint" as="span">
-					{band.caption}
-				</Typography>
-			)}
-		</span>
-	</Panel.Row>
+	<span className={ROW_LABEL}>
+		{label}
+		{band.caption === undefined ? null : (
+			<Typography variant="hint" as="span">
+				{band.caption}
+			</Typography>
+		)}
+	</span>
 );
+
+const TurnoutRow = ({
+	band,
+	label,
+}: {
+	band: TurnoutBand;
+	label: ReactNode;
+}) =>
+	band.shown === undefined ? (
+		<Panel.Row trailing={<TurnoutFigures band={band} />}>
+			<TurnoutLabel band={band} label={label} />
+		</Panel.Row>
+	) : (
+		<Panel.Row className={CROWDED_ROW}>
+			<TurnoutLabel band={band} label={label} />
+			<span className={CROWD}>
+				<TurnoutFigures band={band} wrap />
+			</span>
+		</Panel.Row>
+	);
 
 const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
 	<Panel>
