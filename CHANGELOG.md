@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.3.0 - 2026-10-08
 ### Added
 - **Every answer can say why.** A poll's author can write, under each answer, why it is right or why it is wrong. The gate review shows that note under each answer that has one, **Why it’s right** under the right answer and **Why it’s wrong** under the others, whether or not you picked them, and the poll page shows the same once you flip to **with the answer**. The poll's own explanation stays beneath.
 
