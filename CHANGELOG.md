@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.4.1 - 2026-10-08
 ### Fixed
 - **You stay signed in on your phone.** Your sign-in used to last only until the browser closed, and a phone closes its browser in the background most days, so you had to sign in again almost daily. It now lasts until you sign out.
 
