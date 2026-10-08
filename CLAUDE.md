@@ -32,7 +32,7 @@ Older but still useful documentation can be found here:
 - `npm run db:push` - Push schema changes to the local database (prototyping only — see ADR-012)
 - `npm run db:seed` - Seed database with initial data
 - `npm run db:reset` - Reset database (drops all data)
-- `npm run db:refresh` - Complete database refresh (reset + push + seed)
+- `npm run db:refresh` - Rebuild the local database from `supabase/migrations` alone, then seed
 
 
 

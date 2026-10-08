@@ -24,4 +24,16 @@ On top of that, the `runs` table carried four orphan columns from an abandoned s
 - One mental model: write a guarded SQL file, apply locally, merge — CI does PRD. No journal to keep honest.
 - `db:push` no longer hits rename prompts (schema.ts and the DB agree again).
 - Cost: no auto-generated diffs; migration files are written by hand. Acceptable — the guarded style has been the de-facto convention for every migration since the run rebuild, and hand-written files are reviewable.
-- `db:refresh` re-scripted to `reset → push → seed` (no generate step).
+- `db:refresh` re-scripted to `reset → push → seed` (no generate step). Superseded by the amendment below.
+
+## Amendment 2026-10-08: a baseline, and legacy tables keep their data (DVTD-zvyz)
+
+No migration created the base tables; they existed only because `db:push` built them. On an empty database every migration skipped itself, and on a push-built one the replay died on the retired `'open'` status value. Decision 1 promised a pipeline that could not build a database.
+
+1. **`20251106000000_baseline.sql` is production's public schema** from `supabase db dump --linked --schema public`, dated before every other migration. It carries the current shape, so every later migration must be a no-op on top of it, and all of them are. Its guard is the usual one inverted: it skips itself when `public.polls` exists, so production and push-built databases are untouched. Production's history records it as applied (done 2026-10-08), because `supabase db push` refuses a migration older than the newest applied one.
+2. **`db:refresh` rebuilds from migrations**: `supabase db reset --local`, then seed. The local database is built the way production changes. `db:push` stays for prototyping.
+3. **Dead objects are dropped** (`active_tech_debts`, `runs.discounted_config_ids`, `runs.challenge_mode_id`): no code reads them and nothing in them is worth keeping.
+4. **Retired tables that hold old players' data are renamed `legacy_*`, not dropped**: `daily_polls`, `leaderboard`, `seasons`, `run_category_coverage`, `run_shop_offerings`. They leave `schema.ts`, so the game cannot read them. `drizzle.config.ts` filters out `legacy_*`, so `db:push` never offers to drop them. Renaming keeps rows, foreign keys and RLS, and their cascade from `users` still deletes an account's legacy rows.
+5. **Migration specs live in `supabase/tests/`**: they read SQL off disk, and the CLI tripped over them in `supabase/migrations/`.
+
+Consequence: a schema diff against a rebuilt database shows exactly the `legacy_*` tables as database-only. That is expected, not drift.

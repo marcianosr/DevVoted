@@ -5,7 +5,7 @@ status: todo
 type: epic
 priority: critical
 created_at: 2026-09-30T18:50:26Z
-updated_at: 2026-10-05T14:39:58Z
+updated_at: 2026-10-08T08:36:02Z
 parent: DVTD-u35m
 ---
 
@@ -60,3 +60,5 @@ P0, then merge, then soft launch, then P1 funnel, then the HN/Reddit spike, then
 
 ### Status 2026-10-03
 Checked against the code: P0 #2, #3, #4 and #6 are still open; #1 is done. #5 (legal) and #7 (Firebase key) are skipped at Marciano's call. Risk accepted: GDPR deletion requests become manual SQL, and the Firebase key stays in git history unless it is revoked in GCP.
+
+P0 #2 done in DVTD-zvyz (2026-10-08): a fresh database rebuilds from migrations alone. The cutover rehearsal (P0 #3) is still open.
