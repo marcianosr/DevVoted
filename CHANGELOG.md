@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.2.0 - 2026-10-08
 ### Added
 - **Admins see yesterday's polls apart.** The poll list opens with **Dealt yesterday**: the five polls everyone was dealt the day before, ready to review and edit now that players have answered them.
 
