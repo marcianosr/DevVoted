@@ -5,7 +5,7 @@ import type { KantoColor } from "./colors";
 import { Icon, type IconName } from "./Icon.ui";
 
 const BUTTON =
-	"group/press items-center justify-center text-xs leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+	"group/press items-center justify-center leading-none ring-1 ring-inset transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
 const FIGURES = "font-bold tabular-nums whitespace-nowrap";
 
@@ -19,26 +19,34 @@ const RADIUS = {
 	sm: "rounded-md",
 	md: "rounded-md",
 	lg: "rounded-2xl",
+	xl: "rounded-2xl",
 } satisfies Record<ButtonSize, string>;
 
-const GLYPH_SHAPE = { sm: "size-7", md: "size-8", lg: "size-14" };
+const GLYPH_SHAPE = {
+	sm: "size-7 text-xs",
+	md: "size-8 text-xs",
+	lg: "size-14 text-xs",
+	xl: "size-16 text-xl",
+};
 const LABEL_SHAPE = {
-	sm: `h-7 px-2 ${FIGURES}`,
-	md: `h-8 px-4 text-sm ${FIGURES}`,
-	lg: `min-h-14 px-5 text-sm ${FIGURES}`,
+	sm: `h-7 px-2 text-xs ${FIGURES}`,
+	md: `h-8 px-4 text-xs ${FIGURES}`,
+	lg: `min-h-14 px-5 text-xs ${FIGURES}`,
+	xl: `min-h-16 px-6 text-xl ${FIGURES}`,
 };
 const CAPPED_SHAPE = {
-	sm: `h-7 gap-2 p-0.5 ${FIGURES}`,
-	md: `h-9 gap-2 p-1 text-sm ${FIGURES}`,
-	lg: `min-h-14 gap-2 p-2 text-sm ${FIGURES}`,
+	sm: `h-7 gap-2 p-0.5 text-xs ${FIGURES}`,
+	md: `h-9 gap-2 p-1 text-xs ${FIGURES}`,
+	lg: `min-h-14 gap-2 p-2 text-xs ${FIGURES}`,
+	xl: `min-h-16 gap-3 p-2 text-xl ${FIGURES}`,
 };
 const CAPPED_PAD = {
-	lead: { sm: "pr-2.5", md: "pr-3", lg: "pr-4" },
-	trail: { sm: "pl-2.5", md: "pl-3", lg: "pl-4" },
+	lead: { sm: "pr-2.5", md: "pr-3", lg: "pr-4", xl: "pr-5" },
+	trail: { sm: "pl-2.5", md: "pl-3", lg: "pl-4", xl: "pl-5" },
 } satisfies Record<IconPlacement, Record<ButtonSize, string>>;
 const CAP = "badge-theme flex h-full items-center gap-1 rounded px-1.5";
 const WITH_ICON = "gap-1.5";
-const ICON_SIZE = { sm: "size-3.5", md: "size-4", lg: "size-4" };
+const ICON_SIZE = { sm: "size-3.5", md: "size-4", lg: "size-4", xl: "size-6" };
 const DETAIL_ON_HOVER = "hidden group-hover/press:inline";
 
 export type DetailReveal = "hover" | "always";
@@ -80,7 +88,7 @@ export type ButtonTone =
 	| "primary"
 	| "destructive"
 	| "prismatic";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "xl";
 export type ButtonWidth = "auto" | "full" | "fill";
 
 const TONE = {

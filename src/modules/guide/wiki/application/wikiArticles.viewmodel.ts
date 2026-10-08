@@ -129,6 +129,7 @@ export const isWeightCell = (cell: WikiCell): cell is WikiWeightCell =>
 
 export type WikiSection = {
 	readonly heading: string;
+	readonly spoiler?: string;
 	readonly blocks: readonly WikiBlock[];
 };
 
@@ -221,6 +222,12 @@ const section = (heading: string, ...blocks: WikiBlock[]): WikiSection => ({
 	blocks,
 });
 
+const spoiler = (
+	heading: string,
+	note: string,
+	...blocks: WikiBlock[]
+): WikiSection => ({ heading, spoiler: note, blocks });
+
 const FIRST_GATE = GATE_FACTS[0];
 const SUMMIT = GATE_FACTS[VICTORY_GATE];
 const EXAMPLE_DEATH_GATES = 6;
@@ -264,11 +271,14 @@ const HOW_TO_PLAY: WikiArticle = {
 			prose(
 				`Every day hands every player the same ${SLICE_WINDOW} polls. Those ${SLICE_WINDOW} polls are one gate: one gate a day. A run opens at gate 0, ${FIRST_GATE.place}, and summits at gate ${VICTORY_GATE}, the ${SUMMIT.place}.`
 			),
-			{ kind: "swatches", swatches: ALL_SWATCHES },
 			prose(
 				"A run never expires. Polls you leave unanswered when the day ends are dropped, not failed, but they do not carry over to tomorrow either."
 			)
 		),
+		spoiler("Every swatch", "The thirteen gate colours, in order.", {
+			kind: "swatches",
+			swatches: ALL_SWATCHES,
+		}),
 		section(
 			"Your first run",
 			prose(
@@ -334,8 +344,9 @@ const GATES: WikiArticle = {
 				`Answering all ${SLICE_WINDOW} polls right never ends a run: at worst the gate holds you in SHAKY.`
 			)
 		),
-		section(
+		spoiler(
 			"Every gate",
+			"Each gate's place, its demands, what a clear pays and its audits.",
 			table(
 				[
 					"Gate",
@@ -536,8 +547,9 @@ const BUILD_AND_CONFIGS: WikiArticle = {
 				`Linter lets you gray out one wrong option, at ${kbLadder(LINT_LADDER)}. Telemetry lets you peek at how the community voted, at ${kbLadder(PEEK_LADDER)}, resetting every gate.`
 			)
 		),
-		section(
+		spoiler(
 			"Every config",
+			`All ${CONFIG_COUNTS.total} configs, including the ones you have not met.`,
 			prose(
 				`${CONFIG_COUNTS.total} configs ship. ${CONFIG_COUNTS.free} are yours from the start; the other ${CONFIG_COUNTS.earned} unlock as you play.`
 			),
@@ -571,8 +583,9 @@ const STORAGE_AND_SHOP: WikiArticle = {
 				"You spend it on configs, upgrades, the build's rent, paid actions and the shop's services."
 			)
 		),
-		section(
+		spoiler(
 			"The shop",
+			"Every action and its price, including ones that open at later gates.",
 			prose(
 				"Every cleared gate opens a shop. Take as many actions as you can afford, in any order. Pointing at a price shows the balance it would leave you."
 			),
@@ -661,8 +674,9 @@ const PROGRESSION: WikiArticle = {
 				`Every account starts with ${listed(STARTER_LABELS)}. Every other config unlocks on its own, through an objective that teaches what it does or after enough polls answered. Nothing buys an unlock.`
 			)
 		),
-		section(
+		spoiler(
 			"Swatches",
+			"Every gate's swatch, named in order.",
 			prose(
 				`Every gate has a swatch: ${listed(SWATCH_PLACES)}. Close a gate on a full bar and its swatch is yours for good. The swatch of the gate you are playing colours the whole game.`
 			),

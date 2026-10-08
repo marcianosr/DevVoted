@@ -56,3 +56,26 @@ describe("WikiScreen", () => {
 		expect(screen.getByText("Gate").tagName).toBe("DT");
 	});
 });
+
+describe("WikiScreen spoilers", () => {
+	it("folds the all-gates table closed behind its note and a spoiler badge", () => {
+		render(<WikiScreen {...wikiScreenFor("gates")} />);
+
+		const note = screen.getByText(
+			"Each gate's place, its demands, what a clear pays and its audits."
+		);
+		const fold = note.closest("details");
+
+		expect(fold).not.toBeNull();
+		expect(fold).not.toHaveAttribute("open");
+		expect(screen.getByText("spoiler")).toBeInTheDocument();
+	});
+
+	it("leaves a section without a spoiler open as a plain section", () => {
+		render(<WikiScreen {...wikiScreenFor("gates")} />);
+
+		expect(
+			screen.getByRole("heading", { name: "The bands" }).closest("details")
+		).toBeNull();
+	});
+});

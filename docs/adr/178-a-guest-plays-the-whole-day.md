@@ -37,8 +37,11 @@ Withheld from a guest:
 - full profiles and open builds
 
 A guest is absent from the community board, leaderboards, turnout and hover cards.
-Sign-in is offered and never forced: at the first gate close, at the debrief, and
-beside the daily reminder opt-in.
+Sign-in is offered and never forced: at the first gate close and at the debrief.
+
+Amended 2026-10-08: the community header counts guests apart from account
+holders, as **2 players · 45 guest players**, and omits the guest figure when it is
+zero. Faces, records, turnout rows and hover cards stay account-only.
 
 ## Decision 4: the guest run lives on the server
 

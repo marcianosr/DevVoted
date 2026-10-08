@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **The login screen shows the game before it asks for anything.** A visitor who is not signed in lands on **Five dev polls a day. How far can you run?**, a line on what a run is, three figures (**5 polls a day**, **12 gates**, **1 Champion**) and one full-width **Continue with GitHub** press wearing the GitHub mark, with **Read how this game works** under it opening the wiki. Beside it, a poll card answers itself: it picks an answer, holds the green verdict, grows its coverage bar and slides to the next poll, round and round. Under reduced motion the card sits answered and still. On a phone the card drops under the press. devvoted.dev itself opens on this screen for a visitor who is not signed in, instead of sending them to the login page first.
+
+### Changed
+- **A pasted link previews the game.** A devvoted.dev link pasted into Slack, on X or on Bluesky now shows a DevVoted card: the dashed mark on its dark ground, the title **Five developer polls a day** and a description written for a player. It no longer names the author of the template the site was started from.
+- **The wiki folds its spoilers.** The sections that list every gate, every swatch, every config and the whole shop now sit closed behind a fold marked **spoiler**, with a line saying what it hides, so a new player can read how a run works without seeing what is ahead. Press the heading to open one.
+
+### Fixed
+- **The reminder email opens your run.** The email an admin can send pointed at a page that no longer exists. It now opens the Daily Run page and says today's five are up.
 
 ## 2.3.0 - 2026-10-08
 ### Added
