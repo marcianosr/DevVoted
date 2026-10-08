@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **Today's records keep their rows.** Before anybody closes a gate, the community board now lists every outcome and record empty (0, or a dash) instead of showing only who answered today.
 
 ## 2.1.1 - 2026-10-08
 ### Changed
