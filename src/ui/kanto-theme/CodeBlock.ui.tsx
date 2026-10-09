@@ -3,10 +3,7 @@ import rehypeHighlight from "rehype-highlight";
 
 import { highlightOptions } from "~/shared/lib/syntaxHighlight";
 
-import { Panel } from "./Panel.ui";
-
-const CODE =
-	"w-full overflow-x-auto text-sm [&_code]:bg-transparent [&_pre]:bg-transparent [&_pre]:m-0 [&_pre]:p-0";
+const CODE = "w-full overflow-x-auto text-sm [&_pre]:m-0";
 
 const FENCE = "```";
 
@@ -16,11 +13,9 @@ export type CodeBlockProps = {
 };
 
 export const CodeBlock = ({ children, lang = "" }: CodeBlockProps) => (
-	<Panel className={CODE}>
-		<Panel.Body>
-			<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
-				{`${FENCE}${lang}\n${children}\n${FENCE}`}
-			</ReactMarkdown>
-		</Panel.Body>
-	</Panel>
+	<div className={CODE}>
+		<ReactMarkdown rehypePlugins={[[rehypeHighlight, highlightOptions]]}>
+			{`${FENCE}${lang}\n${children}\n${FENCE}`}
+		</ReactMarkdown>
+	</div>
 );

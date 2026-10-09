@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **Code in a question reads as code.** A line of a question that is only code in backticks now shows as a highlighted code block on the dark code ground, like a fenced block, instead of a bold chip in the headline. Code blocks lose their rounded frame. Code inside a sentence and in an answer stays inline.
 
 ## 2.4.1 - 2026-10-08
 ### Fixed
