@@ -4,6 +4,7 @@ import {
 	hasCodeBlock,
 	splitCodeBlocks,
 	splitCodeSpans,
+	splitQuestionBlocks,
 	stripCodeFence,
 } from "./codeSpans";
 
@@ -104,6 +105,32 @@ describe("splitCodeBlocks", () => {
 	it("keeps a multi-line block whole", () => {
 		expect(splitCodeBlocks("```css\n.a {\n  color: red;\n}\n```")).toEqual([
 			{ kind: "block", code: ".a {\n  color: red;\n}", lang: "css" },
+		]);
+	});
+});
+
+describe("splitQuestionBlocks", () => {
+	it("lifts a line that is only inline code into a block", () => {
+		expect(
+			splitQuestionBlocks(
+				"Which utility type is shown?\n\n`type ??? = T extends U ? never : T;`"
+			)
+		).toEqual([
+			{ kind: "prose", text: "Which utility type is shown?" },
+			{ kind: "block", code: "type ??? = T extends U ? never : T;" },
+		]);
+	});
+
+	it("leaves inline code inside a sentence in the prose", () => {
+		expect(splitQuestionBlocks("What does `flex: 1` expand to?")).toEqual([
+			{ kind: "prose", text: "What does `flex: 1` expand to?" },
+		]);
+	});
+
+	it("still splits a fenced block with its language", () => {
+		expect(splitQuestionBlocks("Log?\n```js\n1\n```")).toEqual([
+			{ kind: "prose", text: "Log?" },
+			{ kind: "block", code: "1", lang: "js" },
 		]);
 	});
 });

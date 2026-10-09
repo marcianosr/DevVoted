@@ -200,6 +200,24 @@ describe("Question with code in it", () => {
 		);
 	});
 
+	it("lifts a line of only inline code out of the heading into a code panel", () => {
+		const { container } = render(
+			<Question
+				{...props}
+				question={
+					"Which utility type is shown?\n\n`type X = T extends U ? never : T;`"
+				}
+			/>
+		);
+
+		expect(
+			screen.getByRole("heading", { name: "Which utility type is shown?" })
+		).toBeInTheDocument();
+		expect(container.querySelector("pre code")).toHaveTextContent(
+			"type X = T extends U ? never : T;"
+		);
+	});
+
 	it("keeps prose after a block as a second line, never a second heading", () => {
 		render(
 			<Question
@@ -249,6 +267,18 @@ describe("Question's options with code in them", () => {
 
 		expect(screen.getByText("ref").tagName).toBe("CODE");
 		expect(screen.queryByText(/`/)).not.toBeInTheDocument();
+	});
+
+	it("keeps an option that is only inline code inline", () => {
+		const { container } = render(
+			<Question
+				{...props}
+				options={[{ id: "option-1", letter: "A", label: "`Exclude<T, U>`" }]}
+			/>
+		);
+
+		expect(screen.getByText("Exclude<T, U>").tagName).toBe("CODE");
+		expect(container.querySelector("[data-choices] pre")).toBeNull();
 	});
 
 	it("lifts an option's fenced block into a code panel, its fence and language tag gone and its lines kept", () => {
