@@ -73,7 +73,7 @@ export type LoginScreenProps = {
 	hero: LoginHero;
 	card: LoginDemoCard;
 	github: GithubPressProps;
-	wikiHref: string;
+	wikiHref?: string;
 	devSignIn?: DevSignIn;
 };
 
@@ -135,11 +135,13 @@ const Hero = ({
 		</div>
 		<div className={PRESS}>
 			<SignIn github={github} devSignIn={devSignIn} />
-			<div className={UNDER_PRESS}>
-				<Typography variant="caption">
-					<Link href={wikiHref}>{COPY.wiki}</Link>
-				</Typography>
-			</div>
+			{wikiHref === undefined ? null : (
+				<div className={UNDER_PRESS}>
+					<Typography variant="caption">
+						<Link href={wikiHref}>{COPY.wiki}</Link>
+					</Typography>
+				</div>
+			)}
 		</div>
 	</div>
 );

@@ -36,7 +36,7 @@ export type AppFooterProps = {
 	configCount: number;
 	lastCommitDate: string;
 	lastCommitAuthor: string;
-	wikiHref: string;
+	wikiHref?: string;
 	onNavigate?: (href: string) => void;
 };
 
@@ -76,18 +76,20 @@ export const AppFooter = ({
 					{` ${SEPARATOR} ${COPY.since}`}
 				</Typography>
 
-				<a
-					className={REPORT}
-					href={wikiHref}
-					onClick={(event) => {
-						if (onNavigate === undefined || !opensHere(event)) return;
-						event.preventDefault();
-						onNavigate(wikiHref);
-					}}
-				>
-					<span aria-hidden>{BOOK}</span>
-					{COPY.wiki}
-				</a>
+				{wikiHref === undefined ? null : (
+					<a
+						className={REPORT}
+						href={wikiHref}
+						onClick={(event) => {
+							if (onNavigate === undefined || !opensHere(event)) return;
+							event.preventDefault();
+							onNavigate(wikiHref);
+						}}
+					>
+						<span aria-hidden>{BOOK}</span>
+						{COPY.wiki}
+					</a>
+				)}
 				<a className={REPORT} href={ISSUES} target="_blank" rel="noreferrer">
 					<span aria-hidden>{BUG}</span>
 					{COPY.report}

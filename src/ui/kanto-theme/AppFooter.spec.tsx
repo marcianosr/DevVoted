@@ -110,6 +110,12 @@ describe("AppFooter", () => {
 		);
 	});
 
+	it("hides the wiki link without a wiki address", () => {
+		render(<AppFooter {...PROPS} wikiHref={undefined} />);
+
+		expect(screen.queryByText("wiki")).not.toBeInTheDocument();
+	});
+
 	it("links to the wiki", () => {
 		render(<AppFooter {...PROPS} />);
 
