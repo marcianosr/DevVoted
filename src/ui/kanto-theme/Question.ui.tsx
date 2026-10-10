@@ -34,7 +34,7 @@ const EXPLANATION =
 const EXPLANATION_HEAD = "flex items-center gap-2";
 const EXPLANATION_MARK =
 	"badge-theme inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none";
-const EXPLANATION_BULB = "text-saffron";
+const EXPLANATION_BULB = "size-3.5 text-saffron";
 
 type ExplanationVerdict = "right" | "wrong";
 
