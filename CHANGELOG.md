@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.4.2 - 2026-10-10
 ### Fixed
 - **An answer's explanation is readable again.** The bulb beside **Why it's right** and **Why it's wrong** grew to fill the whole explanation and pushed the heading to the edge. It is a small mark beside the heading again.
 
