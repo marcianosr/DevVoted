@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.6.1 - 2026-10-11
 ### Fixed
 - **Prefetch names tomorrow's polls again.** After you cleared the day's gate, Prefetch's panel on the prep screen was empty, and the next gate's row stayed blank while today's gate was open. It now names tomorrow's five polls, and v2 their shapes, matching what you will be dealt.
 
