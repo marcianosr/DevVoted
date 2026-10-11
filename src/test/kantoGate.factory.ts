@@ -179,6 +179,12 @@ const LAVENDER_ANSWERS: readonly GateAnswer[] = [
 		options: ["justify-content", "align-items", "text-align", "place-items"],
 		picked: ["align-items"],
 		correct: ["justify-content"],
+		optionExplanations: {
+			"justify-content":
+				"Distributes the children along the main axis, which is horizontal in a row.",
+			"text-align":
+				"Aligns inline content inside a box; it never moves a flex child.",
+		},
 		codeBlock:
 			".row {\n  display: flex;\n  /* centre the child horizontally */\n}",
 		explanation:

@@ -21,6 +21,7 @@ export type RunOption = {
 	readonly label: string;
 	readonly correct: boolean;
 	readonly group?: number;
+	readonly explanation?: string;
 };
 export type { AnswerType };
 
@@ -166,6 +167,7 @@ export type AnsweredPoll = {
 	readonly explanation?: string;
 	readonly author?: PollAuthor;
 	readonly options?: readonly string[];
+	readonly optionExplanations?: Readonly<Record<string, string>>;
 	readonly answerType?: AnswerType;
 	readonly groups?: readonly GridGroup[];
 	readonly gate?: number;

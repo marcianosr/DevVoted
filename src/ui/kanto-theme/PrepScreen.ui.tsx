@@ -46,7 +46,7 @@ export const PrepScreen = ({
 	width,
 	ground = "bare",
 }: PrepScreenProps) => (
-	<Screen gate={header.swatch.theme} width={width} ground={ground}>
+	<Screen gate={header.swatch.theme} width={width} ground={ground} enter="rise">
 		<Header {...header} />
 
 		<div className={COLUMNS}>

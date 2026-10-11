@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	dayBefore,
+	formatClock,
 	formatCompactDuration,
 	formatDurationMs,
 	localDayRange,
@@ -49,6 +51,26 @@ describe("formatCompactDuration", () => {
 	});
 });
 
+describe("formatClock", () => {
+	it("splits the clock into a padded hours-and-minutes line and the seconds", () => {
+		expect(formatClock(12 * 3_600_000 + 9 * 60_000 + 59_000)).toEqual({
+			main: "12h 09m",
+			seconds: "59s",
+		});
+	});
+
+	it("keeps the hours even when none are left, so the line never jumps width", () => {
+		expect(formatClock(5 * 60_000 + 3_000)).toEqual({
+			main: "0h 05m",
+			seconds: "03s",
+		});
+	});
+
+	it("floors a passed deadline to zero rather than counting negative", () => {
+		expect(formatClock(-4_000)).toEqual({ main: "0h 00m", seconds: "00s" });
+	});
+});
+
 describe("localDayRange", () => {
 	it("spans midnight to midnight of the day named", () => {
 		const { start, end } = localDayRange(TEST_DATES.birthday);
@@ -80,5 +102,16 @@ describe("localDayRange", () => {
 		const { end } = localDayRange("2028-02-28");
 		expect(end.getMonth()).toBe(1);
 		expect(end.getDate()).toBe(29);
+	});
+});
+
+describe("dayBefore", () => {
+	it("names the calendar day before a date", () => {
+		expect(dayBefore(TEST_DATES.christmas)).toBe(TEST_DATES.christmasEve);
+	});
+
+	it("steps back across a month and a year", () => {
+		expect(dayBefore("2026-03-01")).toBe("2026-02-28");
+		expect(dayBefore("2026-01-01")).toBe("2025-12-31");
 	});
 });

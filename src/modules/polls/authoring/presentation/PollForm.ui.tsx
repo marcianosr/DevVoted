@@ -55,6 +55,9 @@ const COPY = {
 	tile: (letter: string) => `tile ${letter}`,
 	answer: (index: number) => `answer ${index + 1}`,
 	markRightHint: (letter: string) => `mark ${letter} right`,
+	whyRight: (letter: string) => `why ${letter} is right`,
+	whyWrong: (letter: string) => `why ${letter} is wrong`,
+	whyPlaceholder: "optional, shown under the answer on review",
 	remove: (letter: string) => `remove ${letter}`,
 	removeGlyph: "×",
 	addAnswer: "add answer",
@@ -81,10 +84,7 @@ const COPY = {
 	sandboxLink: "Open in CodeSandbox",
 } as const;
 
-const THEME = {
-	suggest: "pallet",
-	edit: "cerulean",
-} satisfies Record<PollFormMode, KantoColor>;
+const THEME: KantoColor = "pallet";
 const ERROR_THEME: KantoColor = "cinnabar";
 const REWARD_COLOR: KantoColor = "viridian";
 const QUESTION_ROWS = 6;
@@ -93,9 +93,9 @@ const EXPLANATION_ROWS = 3;
 const HEAD = "flex w-full flex-wrap items-start justify-between gap-3";
 const HEAD_TEXT = "flex flex-col gap-1";
 const ROWS = "flex w-full flex-col gap-2";
-const ROW = "flex w-full items-center gap-3";
+const ROW = "flex w-full items-start gap-3";
 const LETTER = "cursor-pointer rounded-full";
-const ANSWER_TEXT = "min-w-0 flex-1";
+const ANSWER_TEXT = "flex min-w-0 flex-1 flex-col gap-2";
 const GROUP =
 	"flex w-full flex-col gap-2 rounded-lg p-3 ring-1 ring-inset ring-theme-faint";
 const TILES = "grid gap-2 sm:grid-cols-2";
@@ -170,15 +170,20 @@ type AnswerProps = {
 	index: number;
 	answerType: AnswerType;
 	onChange: (key: number, text: string) => void;
+	onExplanationChange: (key: number, text: string) => void;
 	onMarkRight: (key: number) => void;
 	onRemove?: (key: number) => void;
 };
+
+const whyLabelOf = (row: AnswerRow): string =>
+	row.right ? COPY.whyRight(row.letter) : COPY.whyWrong(row.letter);
 
 const Answer = ({
 	row,
 	index,
 	answerType,
 	onChange,
+	onExplanationChange,
 	onMarkRight,
 	onRemove,
 }: AnswerProps) => (
@@ -200,6 +205,14 @@ const Answer = ({
 				maxLength={POLL_LIMITS.answer.max}
 				size="lg"
 				onChange={(text) => onChange(row.key, text)}
+			/>
+			<TextField
+				label={whyLabelOf(row)}
+				caption="shown"
+				placeholder={COPY.whyPlaceholder}
+				value={row.explanation}
+				maxLength={POLL_LIMITS.answerExplanation.max}
+				onChange={(text) => onExplanationChange(row.key, text)}
 			/>
 		</span>
 		<Button
@@ -310,6 +323,7 @@ type AnswerListProps = Pick<
 	| "state"
 	| "rows"
 	| "onAnswerChange"
+	| "onAnswerExplanationChange"
 	| "onMarkRight"
 	| "onAddAnswer"
 	| "onRemoveAnswer"
@@ -319,6 +333,7 @@ const AnswerList = ({
 	state,
 	rows,
 	onAnswerChange,
+	onAnswerExplanationChange,
 	onMarkRight,
 	onAddAnswer,
 	onRemoveAnswer,
@@ -332,6 +347,7 @@ const AnswerList = ({
 					index={index}
 					answerType={state.answerType}
 					onChange={onAnswerChange}
+					onExplanationChange={onAnswerExplanationChange}
 					onMarkRight={onMarkRight}
 					onRemove={onRemoveAnswer}
 				/>
@@ -378,6 +394,7 @@ export type PollFormProps = {
 	onAnswerType: (answerType: AnswerType) => void;
 	onAnswerChange: (key: number, text: string) => void;
 	onGroupLabel: (group: number, label: string) => void;
+	onAnswerExplanationChange: (key: number, text: string) => void;
 	onMarkRight: (key: number) => void;
 	onAddAnswer?: () => void;
 	onRemoveAnswer?: (key: number) => void;
@@ -419,6 +436,7 @@ export const PollForm = ({
 	onAnswerType,
 	onAnswerChange,
 	onGroupLabel,
+	onAnswerExplanationChange,
 	onMarkRight,
 	onAddAnswer,
 	onRemoveAnswer,
@@ -429,7 +447,7 @@ export const PollForm = ({
 	onSubmit,
 	onSubmitAndNext,
 }: PollFormProps) => (
-	<Screen theme={THEME[mode]} ground="bare">
+	<Screen theme={THEME} ground="bare">
 		{listHref === undefined ? null : (
 			<PollStepper listHref={listHref} step={step} />
 		)}
@@ -497,6 +515,7 @@ export const PollForm = ({
 								state={state}
 								rows={rows}
 								onAnswerChange={onAnswerChange}
+								onAnswerExplanationChange={onAnswerExplanationChange}
 								onMarkRight={onMarkRight}
 								onAddAnswer={onAddAnswer}
 								onRemoveAnswer={onRemoveAnswer}

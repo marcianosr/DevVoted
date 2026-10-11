@@ -151,7 +151,12 @@ export const ShopScreen = ({
 	const [shown, setShown] = useState<ShopTab>(FIRST_TAB);
 
 	return (
-		<Screen gate={header.swatch.theme} width={width} ground={ground}>
+		<Screen
+			gate={header.swatch.theme}
+			width={width}
+			ground={ground}
+			enter="rise"
+		>
 			<div className={TOP}>
 				<div className={TOP_TITLE}>
 					<Header {...header} />

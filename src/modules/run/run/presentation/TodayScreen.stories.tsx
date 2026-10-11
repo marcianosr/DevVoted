@@ -1,15 +1,41 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-	gateSwatchAt,
-	swatchTrackFor,
-} from "~/modules/run/gate/application/swatchTrack.viewmodel";
+import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import {
 	TodayScreen,
 	type TodayScreenProps,
 } from "~/modules/run/run/presentation/TodayScreen.ui";
 
 const noop = () => {};
+
+const READOUT = { runNumber: 14, gate: 3, gates: 12 };
+
+const faces = (names: readonly string[]) => names.map((name) => ({ name }));
+
+const ROOM = [
+	"Giovanni",
+	"Marciano",
+	"Sam",
+	"Lotte",
+	"Pieter",
+	"Aisha",
+	"Kenji",
+	"Noor",
+	"Femke",
+	"Ravi",
+	"Bram",
+	"Elif",
+	"Tom",
+	"Yara",
+] as const;
+
+const COMMUNITY = {
+	count: 5,
+	detail: "today",
+	faces: faces(ROOM.slice(0, 5)),
+	overflow: 0,
+	href: "/run/community",
+} satisfies TodayScreenProps["community"];
 
 const RUN_SO_FAR = {
 	earned: "+64 KB",
@@ -36,36 +62,68 @@ const RUN_SO_FAR = {
 	next: {
 		gate: 3,
 		swatch: gateSwatchAt(3),
-		band: { id: "ok", label: "OK" },
-		started: true,
-		share: "40%",
-		kb: "+40 KB",
+		note: "next",
+		quote: {
+			band: { id: "ok", label: "OK" },
+			kb: "+40 KB",
+			started: true,
+			share: "40%",
+		},
 	},
 } satisfies TodayScreenProps["runSoFar"];
 
 const BUILD = {
 	rows: [
-		{ id: "code-coverage", name: "Code Coverage", slots: 2, version: 2 },
-		{ id: "ts", name: ".ts", slots: 1, version: 1 },
-		{ id: "build-artifacts", name: "Build Artifacts", slots: 1, version: 1 },
+		{
+			id: "code-coverage",
+			name: "Code Coverage",
+			description: "Every correct answer adds coverage.",
+			slots: 2,
+			version: 2,
+		},
+		{
+			id: "ts",
+			name: ".ts",
+			description: "TypeScript polls earn extra.",
+			slots: 1,
+			version: 1,
+		},
+		{
+			id: "build-artifacts",
+			name: "Build Artifacts",
+			description: "A cleared gate banks a little more.",
+			slots: 1,
+			version: 1,
+		},
 	],
 	weight: "4 / 6",
+	held: 6,
 	free: 2,
 	shopHref: "/run/shop",
+	openInfo: new Set<string>(),
+	onToggleInfo: noop,
 } satisfies TodayScreenProps["build"];
+
+const SHUT_SHOP = {
+	label: "Shop",
+	hint: "Shop · the shop opens when you clear a gate",
+	open: false,
+	onPress: noop,
+} satisfies TodayScreenProps["shop"];
 
 const base: TodayScreenProps = {
 	swatch: gateSwatchAt(3),
-	strip: {
-		swatches: swatchTrackFor([0, 1, 2], 3),
-		runNumber: 14,
-		gate: 3,
-		gates: 12,
-		storage: 106,
+	headline: {
+		readout: READOUT,
+		title: "Vermilion",
+		clock: null,
+		subtext: "5 polls ready · prep first",
+		mark: { kind: "polls", count: 5 },
 	},
 	press: {
+		kind: "resume",
 		label: "Continue to Vermilion",
-		note: "5 polls ready · prep first",
+		mark: "polls",
 		pollsLeft: 5,
 		onPress: noop,
 	},
@@ -73,19 +131,12 @@ const base: TodayScreenProps = {
 		label: "Shop",
 		open: true,
 		detail: "open until you start",
-		highlighted: false,
 		onPress: noop,
 	},
 	incidents: [],
+	community: COMMUNITY,
 	runSoFar: RUN_SO_FAR,
 	build: BUILD,
-	community: {
-		count: 38,
-		detail: "players answered today",
-		ahead: 4,
-		aheadDetail: "at Vermilion or ahead",
-		href: "/run/community",
-	},
 };
 
 const INCIDENT = {
@@ -113,12 +164,68 @@ export const Waiting: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
-			press={{
-				label: "Vermilion opens in 11h 16m",
-				note: "today’s polls are done · come back tomorrow",
-				pollsLeft: 5,
+			swatch={gateSwatchAt(2)}
+			headline={{
+				readout: { runNumber: 2, gate: 2, gates: 12 },
+				title: "Cerulean opens in",
+				clock: { main: "12h 09m", seconds: "59s" },
+				subtext: "Today’s polls are done. Back tomorrow!",
+				mark: { kind: "lock" },
 			}}
-			shop={{ ...base.shop, detail: "spend 106 KB", highlighted: true }}
+			press={{
+				kind: "shop",
+				label: "To shop",
+				note: "spend 35 KB",
+				mark: "shop",
+				onPress: noop,
+			}}
+			shop={null}
+			runSoFar={{
+				earned: "+83 KB",
+				rows: [
+					{
+						gate: 0,
+						swatch: gateSwatchAt(0),
+						band: { id: "healthy", label: "HEALTHY" },
+						kb: "+24 KB",
+					},
+					{
+						gate: 1,
+						swatch: gateSwatchAt(1),
+						band: { id: "perfect", label: "PERFECT" },
+						kb: "+59 KB",
+					},
+				],
+				next: {
+					gate: 2,
+					swatch: gateSwatchAt(2),
+					note: "opens tomorrow",
+					quote: null,
+				},
+			}}
+			build={{
+				...BUILD,
+				rows: [
+					BUILD.rows[0],
+					{
+						id: "js",
+						name: ".js",
+						description: "JavaScript polls earn extra.",
+						slots: 1,
+						version: 1,
+					},
+					{
+						id: "css",
+						name: ".css",
+						description: "CSS polls earn extra.",
+						slots: 1,
+						version: 1,
+					},
+				],
+				weight: "4 / 4",
+				held: 4,
+				free: 0,
+			}}
 		/>
 	),
 };
@@ -131,19 +238,13 @@ export const MidGate: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
-			press={{
-				label: "Continue to Vermilion",
-				note: "Poll 3 out of 5",
-				pollsLeft: 3,
-				onPress: noop,
+			headline={{
+				...base.headline,
+				subtext: "Poll 3 out of 5",
+				mark: { kind: "polls", count: 3 },
 			}}
-			shop={{
-				label: "Shop",
-				hint: "Shop · the shop opens when you clear a gate",
-				open: false,
-				highlighted: false,
-				onPress: noop,
-			}}
+			press={{ ...base.press, pollsLeft: 3 }}
+			shop={SHUT_SHOP}
 			build={{ ...BUILD, shopHref: undefined }}
 		/>
 	),
@@ -154,28 +255,27 @@ export const FreshPlayer: Story = {
 		<TodayScreen
 			{...base}
 			swatch={gateSwatchAt(0)}
-			strip={null}
+			headline={{
+				readout: null,
+				title: "Pallet",
+				clock: null,
+				subtext: "5 polls ready · New polls in 7h 23m",
+				mark: { kind: "polls", count: 5 },
+			}}
 			press={{
+				kind: "start",
 				label: "Start today’s climb",
-				note: "New polls in 7h 23m",
+				mark: "polls",
 				pollsLeft: 5,
 				onPress: noop,
 			}}
-			shop={{
-				label: "Shop",
-				hint: "Shop · the shop opens when you clear a gate",
-				open: false,
-				highlighted: false,
-				onPress: noop,
-			}}
+			shop={SHUT_SHOP}
 			runSoFar={null}
 			build={null}
 			community={{
+				...COMMUNITY,
 				count: 1,
-				detail: "player answered today",
-				ahead: null,
-				aheadDetail: null,
-				href: "/run/community",
+				faces: faces(ROOM.slice(1, 2)),
 			}}
 		/>
 	),
@@ -185,21 +285,38 @@ export const RunOver: Story = {
 	render: () => (
 		<TodayScreen
 			{...base}
+			swatch={gateSwatchAt(0)}
+			headline={{
+				readout: null,
+				title: "Pallet",
+				clock: null,
+				subtext: "5 polls ready · New polls in 7h 23m",
+				mark: { kind: "polls", count: 5 },
+			}}
 			press={{
+				kind: "start",
 				label: "Start today’s climb",
-				note: "New polls in 7h 23m",
+				mark: "polls",
 				pollsLeft: 5,
 				onPress: noop,
 			}}
-			shop={{
-				label: "Shop",
-				hint: "Shop · the shop opens when you clear a gate",
-				open: false,
-				highlighted: false,
-				onPress: noop,
-			}}
+			shop={SHUT_SHOP}
 			runSoFar={{ ...RUN_SO_FAR, next: null }}
 			build={null}
+		/>
+	),
+};
+
+export const ManyPlayers: Story = {
+	render: () => (
+		<TodayScreen
+			{...base}
+			community={{
+				...COMMUNITY,
+				count: ROOM.length,
+				faces: faces(ROOM.slice(0, 10)),
+				overflow: ROOM.length - 10,
+			}}
 		/>
 	),
 };

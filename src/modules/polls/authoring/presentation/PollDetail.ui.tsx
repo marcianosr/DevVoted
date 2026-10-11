@@ -40,7 +40,7 @@ export const COPY = {
 	loadError: "Error loading poll",
 } as const;
 
-const THEME: KantoColor = "cerulean";
+const THEME: KantoColor = "pallet";
 const ERROR_THEME: KantoColor = "cinnabar";
 
 const STATUS_COLOR = {

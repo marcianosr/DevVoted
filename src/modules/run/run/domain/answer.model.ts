@@ -40,6 +40,7 @@ import {
 	type AnsweredPoll,
 	type AnswerOutcome,
 	type AnswerType,
+	type RunOption,
 	type RunPoll,
 	answerOutcome,
 	cachedHitsFor,
@@ -180,6 +181,27 @@ const scoreAnswer = (state: RunState, grade: AnswerGrade): AnswerLedger => {
 	};
 };
 
+type ExplainedOption = RunOption & { readonly explanation: string };
+
+const isExplained = (option: RunOption): option is ExplainedOption =>
+	option.explanation !== undefined;
+
+const optionExplanationsOf = (
+	options: readonly RunOption[]
+): Readonly<Record<string, string>> | undefined => {
+	const explained = options.filter(isExplained);
+	if (explained.length === 0) return undefined;
+	return Object.fromEntries(
+		explained.map((option) => [option.label, option.explanation])
+	);
+};
+
+const optionExplanationsUnless = (
+	poll: RunPoll,
+	graded: RunPoll
+): Readonly<Record<string, string>> | undefined =>
+	graded === poll ? optionExplanationsOf(poll.options) : undefined;
+
 const answeredPollFrom = (
 	poll: RunPoll,
 	optionIds: readonly string[],
@@ -202,6 +224,7 @@ const answeredPollFrom = (
 	explanation: poll.explanation,
 	author: poll.author,
 	options: poll.options.map((option) => option.label),
+	optionExplanations: optionExplanationsUnless(poll, grade.graded),
 	answerType: grade.graded.answerType,
 	...(poll.answerType === "grid"
 		? { groups: gridGroupsOf(poll, optionIds) }
@@ -407,6 +430,7 @@ const skippedPollFrom = (
 	explanation: poll.explanation,
 	author: poll.author,
 	options: poll.options.map((option) => option.label),
+	optionExplanations: optionExplanationsUnless(poll, graded),
 	answerType: graded.answerType,
 	gate,
 	coverageEarned: 0,

@@ -24,7 +24,10 @@ import {
 import { letterAt } from "~/shared/lib/letters";
 import { signedKbLabel } from "~/shared/lib/storage";
 import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
-import type { QuestionProps } from "~/ui/kanto-theme/Question.ui";
+import type {
+	QuestionOption,
+	QuestionProps,
+} from "~/ui/kanto-theme/Question.ui";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
 const COPY = {
@@ -56,6 +59,7 @@ export type PollFormAnswer = {
 	text: string;
 	right: boolean;
 	group?: number;
+	explanation: string;
 };
 
 export type PollFormState = {
@@ -73,6 +77,7 @@ const blankAnswer = (key: number): PollFormAnswer => ({
 	key,
 	text: "",
 	right: false,
+	explanation: "",
 });
 
 export const EMPTY_POLL_FORM: PollFormState = {
@@ -104,6 +109,7 @@ export const pollFormStateOf = (
 		text: option.option,
 		right: option.correct,
 		...(option.group === null ? {} : { group: option.group }),
+		explanation: option.explanation ?? "",
 	})),
 	groupLabels: poll.groupLabels ?? [],
 });
@@ -146,6 +152,17 @@ export const changeAnswer = (
 	...state,
 	answers: state.answers.map((answer) =>
 		answer.key === key ? { ...answer, text } : answer
+	),
+});
+
+export const changeAnswerExplanation = (
+	state: PollFormState,
+	key: number,
+	explanation: string
+): PollFormState => ({
+	...state,
+	answers: state.answers.map((answer) =>
+		answer.key === key ? { ...answer, explanation } : answer
 	),
 });
 
@@ -292,6 +309,7 @@ export type AnswerRow = {
 	letter: string;
 	text: string;
 	right: boolean;
+	explanation: string;
 };
 
 export const answerRowsOf = (state: PollFormState): readonly AnswerRow[] =>
@@ -300,6 +318,7 @@ export const answerRowsOf = (state: PollFormState): readonly AnswerRow[] =>
 		letter: letterAt(index),
 		text: answer.text,
 		right: answer.right,
+		explanation: answer.explanation,
 	}));
 
 export const questionCountOf = (question: string): string =>
@@ -333,6 +352,16 @@ const areAnswersWritten = (state: PollFormState): boolean =>
 const hasARightAnswer = (state: PollFormState): boolean =>
 	state.answers.some((answer) => answer.right);
 
+const hasExplanation = (answer: PollFormAnswer): boolean =>
+	answer.explanation.trim() !== "";
+
+const everyRightAnswerExplained = (state: PollFormState): boolean =>
+	hasARightAnswer(state) &&
+	state.answers.filter((answer) => answer.right).every(hasExplanation);
+
+const isExplained = (state: PollFormState): boolean =>
+	state.explanation.trim() !== "" || everyRightAnswerExplained(state);
+
 export type PollFormSteps = {
 	question: boolean;
 	answers: boolean;
@@ -354,7 +383,7 @@ export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
 	question: isQuestionLongEnough(state),
 	answers: areAnswersDone(state),
 	category: state.categoryCode !== undefined,
-	explanation: state.explanation.trim() !== "",
+	explanation: isExplained(state),
 });
 
 const isSandboxUrl = (value: string): boolean =>
@@ -430,6 +459,30 @@ const revealedStateOf = (
 	return play.pickedIds.includes(String(answer.key)) ? "wrong" : "idle";
 };
 
+const revealedExplanationOf = (
+	answer: PollFormAnswer,
+	play: PreviewPlay
+): QuestionOption["explanation"] =>
+	play.revealed && hasExplanation(answer)
+		? { text: answer.explanation, right: answer.right }
+		: undefined;
+
+const previewOptionOf = (
+	state: PollFormState,
+	answer: PollFormAnswer,
+	index: number,
+	play: PreviewPlay
+): QuestionOption => {
+	const explanation = revealedExplanationOf(answer, play);
+	return {
+		id: String(answer.key),
+		letter: letterAt(index),
+		label: answer.text === "" ? placeholderFor(state, index) : answer.text,
+		state: revealedStateOf(answer, play),
+		...(explanation === undefined ? {} : { explanation }),
+	};
+};
+
 export const previewOf = (
 	state: PollFormState,
 	play: PreviewPlay = UNPLAYED
@@ -437,12 +490,9 @@ export const previewOf = (
 	answerType: state.answerType,
 	question: state.question,
 	pickedIds: play.pickedIds,
-	options: state.answers.map((answer, index) => ({
-		id: String(answer.key),
-		letter: letterAt(index),
-		label: answer.text === "" ? placeholderFor(state, index) : answer.text,
-		state: revealedStateOf(answer, play),
-	})),
+	options: state.answers.map((answer, index) =>
+		previewOptionOf(state, answer, index, play)
+	),
 	...(isGrid(state)
 		? {
 				grid: {
@@ -483,6 +533,7 @@ export type PollFormData = {
 		option: string;
 		correct: boolean;
 		group?: number;
+		explanation: string | null;
 	}[];
 };
 
@@ -515,5 +566,6 @@ const toPollFormData = (
 		option: answer.text,
 		correct: answer.right,
 		...(answer.group === undefined ? {} : { group: answer.group }),
+		explanation: orNull(answer.explanation),
 	})),
 });

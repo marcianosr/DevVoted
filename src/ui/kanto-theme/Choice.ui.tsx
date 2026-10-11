@@ -16,6 +16,9 @@ const PICKED = "bg-theme-soft";
 const RULED_OUT = "cursor-not-allowed opacity-50";
 const PICK_AREA = "flex min-w-0 flex-1 items-center gap-5 self-stretch";
 
+const WRAPPED = "flex-wrap gap-y-2";
+const NOTE_SEAT = "basis-full pl-13";
+
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const SEAL_BAR = "block h-5 rounded-md bg-theme-raised";
 const UNSEAL =
@@ -92,9 +95,16 @@ export type ChoiceProps = {
 			children: ReactNode;
 			crossedOut?: boolean;
 			aside?: ReactNode;
+			note?: ReactNode;
 			seal?: never;
 	  }
-	| { children?: never; crossedOut?: never; aside?: never; seal: ChoiceSeal }
+	| {
+			children?: never;
+			crossedOut?: never;
+			aside?: never;
+			note?: never;
+			seal: ChoiceSeal;
+	  }
 );
 
 export const Choice = ({
@@ -106,6 +116,7 @@ export const Choice = ({
 	children,
 	crossedOut = false,
 	aside,
+	note,
 	seal,
 }: ChoiceProps) => {
 	const answered = isAnswered(state);
@@ -145,6 +156,11 @@ export const Choice = ({
 						)}
 					</span>
 				)}
+				{note === undefined ? null : (
+					<span data-note className={NOTE_SEAT}>
+						{note}
+					</span>
+				)}
 			</>
 		);
 
@@ -156,6 +172,7 @@ export const Choice = ({
 					data-picked={picked}
 					className={clsx(
 						ROW,
+						note !== undefined && WRAPPED,
 						answered ? ANSWERED : picked && PICKED,
 						crossedOut && RULED_OUT
 					)}
@@ -174,6 +191,7 @@ export const Choice = ({
 				onClick={onPick}
 				className={clsx(
 					ROW,
+					note !== undefined && WRAPPED,
 					picked && PICKED,
 					crossedOut ? RULED_OUT : PICKABLE
 				)}

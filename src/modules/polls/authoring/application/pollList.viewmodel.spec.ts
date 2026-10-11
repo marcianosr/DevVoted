@@ -21,6 +21,7 @@ import {
 	pollListChoicesOf,
 	pollRowsOf,
 	questionSegmentsOf,
+	yesterdaysRowsOf,
 	visiblePollsOf,
 	windowOf,
 	type ReviewedFilter,
@@ -648,5 +649,21 @@ describe("the reviewed filter", () => {
 
 		expect(row?.reviewedOn).toBeUndefined();
 		expect(row?.updatedOn).toBe("13 May 2026");
+	});
+});
+
+describe("yesterdaysRowsOf", () => {
+	it("lists yesterday's polls in the order they were dealt", () => {
+		const rows = yesterdaysRowsOf([flex, stacking, log], [log.id, flex.id]);
+
+		expect(rows.map((row) => row.id)).toEqual([log.id, flex.id]);
+	});
+
+	it("skips a dealt poll the list does not hold", () => {
+		expect(yesterdaysRowsOf([flex], [flex.id, 999])).toHaveLength(1);
+	});
+
+	it("lists nothing when nothing was dealt yesterday", () => {
+		expect(yesterdaysRowsOf([flex, log], [])).toEqual([]);
 	});
 });

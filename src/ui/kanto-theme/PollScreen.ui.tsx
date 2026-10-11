@@ -488,6 +488,7 @@ export const PollScreen = ({
 			width={width}
 			ground={ground}
 			floor={POLL_FLOOR}
+			enter="rise"
 		>
 			<Header {...header} />
 

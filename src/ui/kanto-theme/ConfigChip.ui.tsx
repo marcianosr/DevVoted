@@ -768,7 +768,7 @@ export const ConfigChip = (props: ConfigChipProps) => {
 						{headVersion === undefined ? null : (
 							<Version
 								version={headVersion}
-								glow={
+								upgradeReady={
 									!stated &&
 									armedInset === null &&
 									isUpgradeReady(offered, onToggleUpgrades)

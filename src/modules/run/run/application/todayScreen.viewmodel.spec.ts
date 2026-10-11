@@ -6,17 +6,18 @@ import {
 	createMockShopControls,
 } from "~/test/runView.factory";
 import {
-	climbersAtOrPast,
 	communityLineFor,
 	hubBuildFor,
-	hubStripFor,
+	hubHeadlineFor,
+	hubPressFor,
+	hubSwatchFor,
 	incomingIncidentsFor,
 	pollsBadgeFor,
 	runSoFarFor,
 	shopAsideFor,
 	startRefusalFor,
-	todayPressFor,
 } from "~/modules/run/run/application/todayScreen.viewmodel";
+import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -30,42 +31,216 @@ const answered = (index: number): AnsweredPoll => ({
 	picked: ["Pallet Town"],
 });
 
-const OPEN = { isOpen: true, remaining: "0m" };
-const SHUT = { isOpen: false, remaining: "7h 23m" };
+const OPEN = { isOpen: true, remaining: "0m", remainingMs: 0 };
+const SHUT = {
+	isOpen: false,
+	remaining: "7h 23m",
+	remainingMs: 7 * 3_600_000 + 23 * 60_000 + 59_000,
+};
 const UNKNOWN = null;
 const DAY_SPENT = 0;
+const RUN_NUMBER = 14;
 
-describe(todayPressFor, () => {
-	it("offers a fresh start when no run is open", () => {
-		const press = todayPressFor(null, SHUT, UNKNOWN);
-
-		expect(press.kind).toBe("start");
-		expect(press.label).toBe("Start today’s climb");
-		expect(press.pollsLeft).toBe(SLICE_WINDOW);
+const waitingView = (gatesCleared = 3) =>
+	createMockRunView({
+		gatesCleared,
+		status: "rewarding",
+		pollsExhausted: true,
+		pollsLeftToday: 0,
 	});
 
-	it("offers a fresh start once the last run is over", () => {
-		const press = todayPressFor(
+describe(hubHeadlineFor, () => {
+	it("names the gate ahead and counts its polls while they are ready", () => {
+		const headline = hubHeadlineFor(
+			createMockRunView({
+				gatesCleared: 3,
+				status: "rewarding",
+				answeredThisGate: [],
+			}),
+			SHUT,
+			UNKNOWN,
+			RUN_NUMBER
+		);
+
+		expect(headline).toMatchObject({
+			title: "Vermilion",
+			clock: null,
+			subtext: "5 polls ready · prep first",
+			mark: { kind: "polls", count: 5 },
+		});
+	});
+
+	it("carries the run readout as its eyebrow while a run is live", () => {
+		const headline = hubHeadlineFor(
+			createMockRunView({ gatesCleared: 3 }),
+			SHUT,
+			UNKNOWN,
+			RUN_NUMBER
+		);
+
+		expect(headline.readout).toEqual({ runNumber: 14, gate: 3, gates: 12 });
+	});
+
+	it("reads the poll's position once the gate is being answered", () => {
+		const headline = hubHeadlineFor(
+			createMockRunView({ status: "answering", answeredThisGate: [] }),
+			SHUT,
+			UNKNOWN,
+			RUN_NUMBER
+		);
+
+		expect(headline.subtext).toBe("Poll 1 out of 5");
+	});
+
+	it("warns that a part-answered day's leftovers do not carry to tomorrow", () => {
+		const headline = hubHeadlineFor(
+			createMockRunView({
+				status: "answering",
+				answeredThisGate: [answered(0), answered(1)],
+				pollsLeftToday: 3,
+			}),
+			SHUT,
+			UNKNOWN,
+			RUN_NUMBER
+		);
+
+		expect(headline.subtext).toBe(
+			"Poll 3 out of 5 · 3 of today’s 5 left · they do not carry to tomorrow"
+		);
+		expect(headline.mark).toEqual({ kind: "polls", count: 3 });
+	});
+
+	it("states when the gate opens over a ticking clock once the day is spent", () => {
+		const headline = hubHeadlineFor(waitingView(), SHUT, UNKNOWN, RUN_NUMBER);
+
+		expect(headline).toMatchObject({
+			title: "Vermilion opens in",
+			clock: { main: "7h 23m", seconds: "59s" },
+			subtext: "Today’s polls are done. Back tomorrow!",
+			mark: { kind: "lock" },
+		});
+	});
+
+	it("says when new polls come once the day is spent with no run open", () => {
+		const headline = hubHeadlineFor(null, SHUT, DAY_SPENT, RUN_NUMBER);
+
+		expect(headline).toMatchObject({
+			readout: null,
+			title: "New polls in",
+			clock: { main: "7h 23m", seconds: "59s" },
+			mark: { kind: "lock" },
+		});
+	});
+
+	it("titles the first gate for a fresh start and says how long the day has", () => {
+		const headline = hubHeadlineFor(null, SHUT, UNKNOWN, RUN_NUMBER);
+
+		expect(headline).toMatchObject({
+			readout: null,
+			title: "Pallet",
+			clock: null,
+			subtext: "5 polls ready · New polls in 7h 23m",
+			mark: { kind: "polls", count: SLICE_WINDOW },
+		});
+	});
+
+	it("titles the first gate again once the last run is over, readout gone", () => {
+		const headline = hubHeadlineFor(
+			createMockRunView({ isOver: true, gatesCleared: 3 }),
+			SHUT,
+			UNKNOWN,
+			RUN_NUMBER
+		);
+
+		expect(headline.title).toBe("Pallet");
+		expect(headline.readout).toBeNull();
+	});
+
+	it("counts what the day has left on a fresh start after a part-spent day", () => {
+		const headline = hubHeadlineFor(
 			createMockRunView({ isOver: true }),
+			SHUT,
+			2,
+			RUN_NUMBER
+		);
+
+		expect(headline.subtext).toBe("2 polls ready · New polls in 7h 23m");
+		expect(headline.mark).toEqual({ kind: "polls", count: 2 });
+	});
+
+	it("unlocks the moment the clock runs out, without a reload", () => {
+		const headline = hubHeadlineFor(waitingView(), OPEN, UNKNOWN, RUN_NUMBER);
+
+		expect(headline.mark.kind).toBe("polls");
+		expect(headline.clock).toBeNull();
+	});
+});
+
+describe(hubPressFor, () => {
+	it("leads to the shop with the balance to spend while the day waits", () => {
+		const press = hubPressFor(
+			createMockRunView({
+				status: "rewarding",
+				pollsExhausted: true,
+				storage: 106,
+			}),
 			SHUT,
 			UNKNOWN
 		);
 
-		expect(press.kind).toBe("start");
-		expect(press.label).toBe("Start today’s climb");
+		expect(press).toEqual({
+			kind: "shop",
+			label: "To shop",
+			note: "spend 106 KB",
+			mark: "shop",
+		});
 	});
 
-	it("refuses a fresh start and says when polls return once the day is spent with no run open", () => {
-		const press = todayPressFor(null, SHUT, DAY_SPENT);
+	it("still enters a skipped shop, and says it was skipped", () => {
+		const press = hubPressFor(
+			createMockRunView({
+				status: "rewarding",
+				pollsExhausted: true,
+				shopControls: createMockShopControls({ shopSkipped: true }),
+			}),
+			SHUT,
+			UNKNOWN
+		);
 
-		expect(press.kind).toBe("locked");
-		expect(press.label).toBe("New polls in 7h 23m");
-		expect(press.note).toBe("today’s polls are done · come back tomorrow");
-		expect(press.pollsLeft).toBe(0);
+		expect(press.kind).toBe("shop");
+		expect(press.note).toBe("skipped");
+	});
+
+	it("refuses the climb, never the shop, when the shop is shut on a spent day", () => {
+		const press = hubPressFor(
+			createMockRunView({
+				gatesCleared: 3,
+				status: "answering",
+				pollsExhausted: true,
+			}),
+			SHUT,
+			UNKNOWN
+		);
+
+		expect(press).toEqual({
+			kind: "locked",
+			label: "Continue to Vermilion",
+			mark: "polls",
+		});
+	});
+
+	it("refuses a fresh start once the day is spent with no run open", () => {
+		const press = hubPressFor(null, SHUT, DAY_SPENT);
+
+		expect(press).toEqual({
+			kind: "locked",
+			label: "Start today’s climb",
+			mark: "polls",
+		});
 	});
 
 	it("refuses a fresh start once a finished run spent the day", () => {
-		const press = todayPressFor(
+		const press = hubPressFor(
 			createMockRunView({ isOver: true, pollsExhausted: false }),
 			SHUT,
 			DAY_SPENT
@@ -74,69 +249,41 @@ describe(todayPressFor, () => {
 		expect(press.kind).toBe("locked");
 	});
 
-	it("counts what the day has left on a fresh start after a part-spent day", () => {
-		const press = todayPressFor(createMockRunView({ isOver: true }), SHUT, 2);
+	it("offers a fresh start when no run is open", () => {
+		const press = hubPressFor(null, SHUT, UNKNOWN);
+
+		expect(press).toEqual({
+			kind: "start",
+			label: "Start today’s climb",
+			mark: "polls",
+			pollsLeft: SLICE_WINDOW,
+		});
+	});
+
+	it("offers a fresh start once the last run is over", () => {
+		const press = hubPressFor(
+			createMockRunView({ isOver: true }),
+			SHUT,
+			UNKNOWN
+		);
 
 		expect(press.kind).toBe("start");
+	});
+
+	it("counts what the day has left on a fresh start after a part-spent day", () => {
+		const press = hubPressFor(createMockRunView({ isOver: true }), SHUT, 2);
+
 		expect(press.pollsLeft).toBe(2);
 	});
 
 	it("offers a fresh start on a spent day once the clock rolls over", () => {
-		const press = todayPressFor(null, OPEN, DAY_SPENT);
-
-		expect(press.kind).toBe("start");
+		expect(hubPressFor(null, OPEN, DAY_SPENT).kind).toBe("start");
 	});
 
-	it("names the gate it continues to", () => {
-		const press = todayPressFor(
-			createMockRunView({ gatesCleared: 3 }),
-			SHUT,
-			UNKNOWN
-		);
-
-		expect(press.kind).toBe("resume");
-		expect(press.label).toBe("Continue to Vermilion");
-	});
-
-	it("sends the player to prep first while the gate has not started", () => {
-		const press = todayPressFor(
-			createMockRunView({ status: "rewarding", answeredThisGate: [] }),
-			SHUT,
-			UNKNOWN
-		);
-
-		expect(press.note).toBe("5 polls ready · prep first");
-	});
-
-	it("reads the poll's position once the gate is being answered", () => {
-		const press = todayPressFor(
-			createMockRunView({ status: "answering", answeredThisGate: [] }),
-			SHUT,
-			UNKNOWN
-		);
-
-		expect(press.note).toBe("Poll 1 out of 5");
-	});
-
-	it("warns that a part-answered day's leftovers do not carry to tomorrow", () => {
-		const press = todayPressFor(
+	it("continues to the gate ahead with the polls it has left", () => {
+		const press = hubPressFor(
 			createMockRunView({
-				status: "answering",
-				answeredThisGate: [answered(0), answered(1)],
-				pollsLeftToday: 3,
-			}),
-			SHUT,
-			UNKNOWN
-		);
-
-		expect(press.note).toBe(
-			"Poll 3 out of 5 · 3 of today’s 5 left · they do not carry to tomorrow"
-		);
-	});
-
-	it("counts the gate's remaining polls onto the mark, not the run's whole pool", () => {
-		const press = todayPressFor(
-			createMockRunView({
+				gatesCleared: 3,
 				pollsPerGate: 5,
 				answeredThisGate: [answered(0), answered(1)],
 				pollsLeftToday: 96,
@@ -145,23 +292,26 @@ describe(todayPressFor, () => {
 			UNKNOWN
 		);
 
-		expect(press.pollsLeft).toBe(3);
-	});
-
-	it("keeps the mark and the poll label telling the same story", () => {
-		const view = createMockRunView({
-			status: "answering",
-			pollsPerGate: 5,
-			answeredThisGate: [answered(0), answered(1)],
+		expect(press).toEqual({
+			kind: "resume",
+			label: "Continue to Vermilion",
+			mark: "polls",
+			pollsLeft: 3,
 		});
-		const press = todayPressFor(view, SHUT, UNKNOWN);
-
-		expect(press.note).toContain("Poll 3 out of 5");
-		expect(press.pollsLeft).toBe(3);
 	});
 
-	it("never counts past the gate once every poll in it is answered", () => {
-		const press = todayPressFor(
+	it("keeps the shop a secondary press while polls are ready, even as the gate pays out", () => {
+		const press = hubPressFor(
+			createMockRunView({ status: "rewarding", pollsExhausted: false }),
+			SHUT,
+			UNKNOWN
+		);
+
+		expect(press.kind).toBe("resume");
+	});
+
+	it("states no count rather than a nought once the gate is answered out", () => {
+		const press = hubPressFor(
 			createMockRunView({
 				pollsPerGate: 5,
 				answeredThisGate: Array.from({ length: 6 }, answered),
@@ -170,27 +320,11 @@ describe(todayPressFor, () => {
 			UNKNOWN
 		);
 
-		expect(press.pollsLeft).toBe(0);
-	});
-
-	it("shuts and names when the gate opens once the day is spent", () => {
-		const press = todayPressFor(
-			createMockRunView({
-				gatesCleared: 3,
-				pollsExhausted: true,
-				pollsLeftToday: 0,
-			}),
-			SHUT,
-			UNKNOWN
-		);
-
-		expect(press.kind).toBe("locked");
-		expect(press.label).toBe("Vermilion opens in 7h 23m");
-		expect(press.note).toBe("today’s polls are done · come back tomorrow");
+		expect(press.pollsLeft).toBeUndefined();
 	});
 
 	it("reopens the moment the clock runs out, without a reload", () => {
-		const press = todayPressFor(
+		const press = hubPressFor(
 			createMockRunView({ pollsExhausted: true, pollsLeftToday: 0 }),
 			OPEN,
 			UNKNOWN
@@ -200,15 +334,22 @@ describe(todayPressFor, () => {
 	});
 });
 
-describe(hubStripFor, () => {
-	it("states the run, the gate reached and the balance", () => {
-		expect(
-			hubStripFor(createMockRunView({ gatesCleared: 3, storage: 106 }), 14)
-		).toMatchObject({ runNumber: 14, gate: 3, gates: 12, storage: 106 });
+describe(hubSwatchFor, () => {
+	it("wears the gate the live run stands before", () => {
+		expect(hubSwatchFor(createMockRunView({ gatesCleared: 3 })).gateName).toBe(
+			"Vermilion"
+		);
 	});
 
-	it("has no strip before a run is open", () => {
-		expect(hubStripFor(null, 14)).toBeNull();
+	it("wears the first gate before a run is open", () => {
+		expect(hubSwatchFor(null).gateName).toBe("Pallet");
+	});
+
+	it("wears the first gate once the last run is over, not where it died", () => {
+		expect(
+			hubSwatchFor(createMockRunView({ isOver: true, gatesCleared: 3 }))
+				.gateName
+		).toBe("Pallet");
 	});
 });
 
@@ -220,7 +361,10 @@ describe(runSoFarFor, () => {
 	] as const;
 
 	it("lists every closed gate with its grade and what it earned", () => {
-		const soFar = runSoFarFor(createMockRunView({ gatesCleared: 3, closes }));
+		const soFar = runSoFarFor(
+			createMockRunView({ gatesCleared: 3, closes }),
+			SHUT
+		);
 
 		expect(
 			soFar?.rows.map((row) => [row.swatch.gateName, row.band.label, row.kb])
@@ -240,27 +384,28 @@ describe(runSoFarFor, () => {
 					{ gate: 0, band: "shaky", cleared: false, kb: 0 },
 					{ gate: 0, band: "ok", cleared: true, kb: 12 },
 				],
-			})
+			}),
+			SHUT
 		);
 
 		expect(soFar?.rows).toHaveLength(1);
 		expect(soFar?.rows[0]?.band.label).toBe("OK");
 	});
 
-	it("projects the next gate from the coverage held and a clean clear", () => {
+	it("quotes the next gate from the coverage held and a clean clear while polls are open", () => {
 		const soFar = runSoFarFor(
 			createMockRunView({
 				gatesCleared: 3,
 				pollsAnswered: 1,
 				fullClearKb: 40,
 				gateStake: createMockGateStake({ coverageHeld: 40 }),
-			})
+			}),
+			SHUT
 		);
 
 		expect(soFar?.next).toMatchObject({
-			started: true,
-			share: "40%",
-			kb: "+40 KB",
+			note: "next",
+			quote: { started: true, share: "40%", kb: "+40 KB" },
 		});
 		expect(soFar?.next?.swatch.gateName).toBe("Vermilion");
 	});
@@ -270,10 +415,11 @@ describe(runSoFarFor, () => {
 			createMockRunView({
 				pollsAnswered: 0,
 				gateStake: createMockGateStake({ coverageHeld: 0.9 }),
-			})
+			}),
+			SHUT
 		);
 
-		expect(soFar?.next?.started).toBe(false);
+		expect(soFar?.next?.quote?.started).toBe(false);
 	});
 
 	it("reads the next gate as not started while the cleared gate's answers wait for the shop", () => {
@@ -282,19 +428,34 @@ describe(runSoFarFor, () => {
 				gatesCleared: 1,
 				answeredThisGate: [0, 1, 2, 3, 4].map(answered),
 				pollsAnswered: 0,
-			})
+			}),
+			SHUT
 		);
 
-		expect(soFar?.next?.started).toBe(false);
+		expect(soFar?.next?.quote?.started).toBe(false);
+	});
+
+	it("says the next gate opens tomorrow and quotes nothing while the day waits", () => {
+		const soFar = runSoFarFor(waitingView(), SHUT);
+
+		expect(soFar?.next).toMatchObject({ note: "opens tomorrow", quote: null });
+	});
+
+	it("quotes the next gate again the moment the clock runs out", () => {
+		const soFar = runSoFarFor(waitingView(), OPEN);
+
+		expect(soFar?.next?.quote).not.toBeNull();
 	});
 
 	it("drops the next gate once the run is over", () => {
-		expect(runSoFarFor(createMockRunView({ isOver: true }))?.next).toBeNull();
+		expect(
+			runSoFarFor(createMockRunView({ isOver: true }), SHUT)?.next
+		).toBeNull();
 	});
 });
 
 describe(hubBuildFor, () => {
-	it("lists each installed config with its weight and version", () => {
+	it("lists each installed config with its weight, version and what it does", () => {
 		const view = createMockRunView({
 			installed: [
 				{
@@ -315,9 +476,16 @@ describe(hubBuildFor, () => {
 
 		expect(build).toEqual({
 			rows: [
-				{ id: "code-coverage", name: "Code Coverage", slots: 2, version: 2 },
+				{
+					id: "code-coverage",
+					name: "Code Coverage",
+					description: CONFIGS.codeCoverage.description,
+					slots: 2,
+					version: 2,
+				},
 			],
 			weight: "4 / 6",
+			held: 6,
 			free: 2,
 		});
 	});
@@ -381,42 +549,47 @@ describe(incomingIncidentsFor, () => {
 	});
 });
 
-describe(climbersAtOrPast, () => {
-	it("counts other climbers at the gate or past it, never you", () => {
-		expect(
-			climbersAtOrPast(
-				[
-					{ gate: 2, you: false },
-					{ gate: 3, you: false },
-					{ gate: 5, you: false },
-					{ gate: 3, you: true },
-				],
-				3
-			)
-		).toBe(2);
-	});
+const voter = (index: number): CommunityVoter => ({
+	id: `player-${index}`,
+	displayName: `Player ${index}`,
+	photoUrl: index === 0 ? "https://example.test/giovanni.png" : null,
+	borderUrl: null,
+	you: index === 1,
 });
 
 describe(communityLineFor, () => {
-	it("keeps the count apart from its wording so the figure can be badged", () => {
-		expect(communityLineFor(8)).toMatchObject({
-			count: 8,
-			detail: "players answered today",
-		});
+	it("counts the room and shows its faces", () => {
+		const room = communityLineFor(3, [0, 1, 2].map(voter));
+
+		expect(room).toMatchObject({ count: 3, detail: "today", overflow: 0 });
+		expect(room?.faces.map((face) => face.name)).toEqual([
+			"Player 0",
+			"Player 1",
+			"Player 2",
+		]);
 	});
 
-	it("drops the plural for a room of one", () => {
-		expect(communityLineFor(1)).toMatchObject({
-			count: 1,
-			detail: "player answered today",
+	it("carries a face's photo and marks yours, but gives it no link", () => {
+		const room = communityLineFor(2, [0, 1].map(voter));
+
+		expect(room?.faces[0]).toEqual({
+			name: "Player 0",
+			photoUrl: "https://example.test/giovanni.png",
+			borderUrl: undefined,
+			you: false,
 		});
+		expect(room?.faces[1]?.you).toBe(true);
+		expect(room?.faces[0]?.userId).toBeUndefined();
 	});
 
-	it("names how many are at the next gate or ahead", () => {
-		expect(communityLineFor(38, { count: 4, gate: 3 })).toMatchObject({
-			ahead: 4,
-			aheadDetail: "at Vermilion or ahead",
-		});
+	it("shows ten faces and folds the rest of the room into a count", () => {
+		const room = communityLineFor(
+			14,
+			Array.from({ length: 14 }, (_, index) => voter(index))
+		);
+
+		expect(room?.faces).toHaveLength(10);
+		expect(room?.overflow).toBe(4);
 	});
 
 	it("states nothing until the room has been counted", () => {
@@ -425,56 +598,54 @@ describe(communityLineFor, () => {
 });
 
 describe(shopAsideFor, () => {
-	it("opens the shop only while the gate is paying out", () => {
-		expect(
-			shopAsideFor(createMockRunView({ status: "rewarding" }), SHUT).open
-		).toBe(true);
+	it("steps aside while the shop is the press", () => {
+		expect(shopAsideFor(waitingView(), SHUT, UNKNOWN)).toBeNull();
 	});
 
-	it("says the shop stays open until the gate starts", () => {
-		const shop = shopAsideFor(createMockRunView({ status: "rewarding" }), SHUT);
+	it("stays open beside the press until the gate starts", () => {
+		const shop = shopAsideFor(
+			createMockRunView({ status: "rewarding" }),
+			SHUT,
+			UNKNOWN
+		);
 
-		expect(shop.detail).toBe("open until you start");
-		expect(shop.highlighted).toBe(false);
+		expect(shop).toEqual({
+			label: "Shop",
+			open: true,
+			detail: "open until you start",
+		});
 	});
 
-	it("stops putting a skipped shop forward, since its registry is shut", () => {
+	it("says a skipped shop was skipped, and still opens it", () => {
 		const shop = shopAsideFor(
 			createMockRunView({
 				status: "rewarding",
-				pollsExhausted: true,
 				shopControls: createMockShopControls({ shopSkipped: true }),
 			}),
-			SHUT
+			SHUT,
+			UNKNOWN
 		);
 
-		expect(shop.detail).toBe("skipped");
-		expect(shop.highlighted).toBe(false);
-	});
-
-	it("puts the shop forward with the balance to spend while the day waits", () => {
-		const shop = shopAsideFor(
-			createMockRunView({
-				status: "rewarding",
-				pollsExhausted: true,
-				storage: 106,
-			}),
-			SHUT
-		);
-
-		expect(shop.detail).toBe("spend 106 KB");
-		expect(shop.highlighted).toBe(true);
+		expect(shop).toMatchObject({ open: true, detail: "skipped" });
 	});
 
 	it("shuts the shop mid-gate and names itself plus the reason, for the label", () => {
-		const shop = shopAsideFor(createMockRunView({ status: "answering" }), SHUT);
+		const shop = shopAsideFor(
+			createMockRunView({ status: "answering" }),
+			SHUT,
+			UNKNOWN
+		);
 
-		expect(shop.open).toBe(false);
-		expect(shop.hint).toBe("Shop · the shop opens when you clear a gate");
+		expect(shop?.open).toBe(false);
+		expect(shop?.hint).toBe("Shop · the shop opens when you clear a gate");
 	});
 
 	it("shuts the shop before a run is open", () => {
-		expect(shopAsideFor(null, SHUT).open).toBe(false);
+		expect(shopAsideFor(null, SHUT, UNKNOWN)?.open).toBe(false);
+	});
+
+	it("steps back in as the secondary press the moment the clock runs out", () => {
+		expect(shopAsideFor(waitingView(), OPEN, UNKNOWN)?.open).toBe(true);
 	});
 });
 

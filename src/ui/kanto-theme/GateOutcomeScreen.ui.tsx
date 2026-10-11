@@ -368,14 +368,14 @@ export const GateOutcomeScreen = ({
 
 	if (outcome === RUN_OVER_BAND) {
 		return (
-			<Screen theme={RUN_OVER_COLOR} width={width} ground="bare">
+			<Screen theme={RUN_OVER_COLOR} width={width} ground="bare" enter="rise">
 				{body}
 			</Screen>
 		);
 	}
 
 	return (
-		<Screen gate={header.swatch.theme} width={width} ground="bare">
+		<Screen gate={header.swatch.theme} width={width} ground="bare" enter="rise">
 			{body}
 		</Screen>
 	);

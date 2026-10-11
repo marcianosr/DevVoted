@@ -9,7 +9,7 @@ const COPY = {
 	loading: "Loading poll…",
 } as const;
 
-const THEME: KantoColor = "cerulean";
+const THEME: KantoColor = "pallet";
 const ERROR_THEME: KantoColor = "cinnabar";
 
 export const PollEditLoading = () => (

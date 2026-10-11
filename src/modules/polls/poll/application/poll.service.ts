@@ -9,10 +9,12 @@ import {
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import {
 	fetchDealCounts,
+	fetchDealtPollIdsOn,
 	fetchPollByIdWithOptions,
 	fetchPollsIn,
 	type PollDeal,
 } from "~/modules/polls/poll/infrastructure/poll.repository";
+import { dayBefore } from "~/shared/lib/dateUtils";
 import {
 	createErrorResponse,
 	createSuccessResponse,
@@ -24,6 +26,7 @@ export type PollListData = {
 	readonly polls: Poll[];
 	readonly canAdminister: boolean;
 	readonly deals: readonly PollDeal[];
+	readonly yesterday: readonly number[];
 };
 
 export type PollDetailData = {
@@ -33,14 +36,19 @@ export type PollDetailData = {
 };
 
 export const listPollsFor = async (
-	viewer: PollViewer
+	viewer: PollViewer,
+	today: string
 ): Promise<ApiResponse<PollListData>> =>
 	handleApiOperation(async () => {
 		const polls = await fetchPollsIn(pollScopeOf(viewer));
+		const canAdminister = canAdministerPolls(viewer);
 		return {
 			polls,
-			canAdminister: canAdministerPolls(viewer),
+			canAdminister,
 			deals: await fetchDealCounts(polls.map((poll) => poll.id)),
+			yesterday: canAdminister
+				? await fetchDealtPollIdsOn(dayBefore(today))
+				: [],
 		};
 	}, "listPollsFor");
 

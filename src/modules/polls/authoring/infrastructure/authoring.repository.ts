@@ -17,6 +17,7 @@ type NewPollOption = {
 	option: string;
 	correct: boolean;
 	group?: number | null;
+	explanation?: string | null;
 };
 
 type UpdatePollOption = NewPollOption & {
@@ -93,6 +94,7 @@ export const createPollWithOptions = async (
 					option: option.option,
 					correct: option.correct,
 					group_index: option.group ?? null,
+					explanation: option.explanation,
 				}))
 			);
 		}
@@ -160,6 +162,7 @@ export const updatePollWithOptions = async (
 					option: option.option,
 					correct: option.correct,
 					group_index: option.group ?? null,
+					explanation: option.explanation,
 				})
 				.where(
 					and(
@@ -176,6 +179,7 @@ export const updatePollWithOptions = async (
 					option: option.option,
 					correct: option.correct,
 					group_index: option.group ?? null,
+					explanation: option.explanation,
 				}))
 			);
 		}

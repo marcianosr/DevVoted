@@ -94,12 +94,12 @@ export const getAdminDashboardService = () =>
 
 const REMINDER = {
 	from: "DevVoted <noreply@devvoted.dev>",
-	subject: "Reminder: Don't forget to vote today!",
+	subject: "Today's five are up",
 	body: (displayName: string) => `
-		<p>Hey ${displayName}!,</p>
-		<p>Just a small reminder for you to vote on the poll of today!</p>
+		<p>Hey ${displayName},</p>
+		<p>Today's five polls are up and your run is waiting at the next gate.</p>
 		<br />
-		<a href='https://www.devvoted.dev/daily-poll'>Cast your vote!</a>
+		<a href='https://www.devvoted.dev/run'>Continue your run</a>
 		<p>Team DevVoted</p>
 	`,
 } as const;

@@ -14,6 +14,7 @@ export type DayRun = {
 	readonly userId: string;
 	readonly fallen: boolean;
 	readonly closes: readonly RecordedClose[];
+	readonly closesBefore: readonly RecordedClose[];
 	readonly build: PublicBuild;
 	readonly auditSchedule: AuditSchedule;
 	readonly startedAtGate: number;
@@ -50,6 +51,7 @@ export type DayRecord =
 			readonly id: "top-config";
 			readonly configId: string;
 			readonly configLabel: string;
+			readonly configSlots: number;
 			readonly figure: number;
 			readonly holderIds: readonly string[];
 	  };
@@ -118,14 +120,32 @@ export const kbGeneratedOf = (run: DayRun): number =>
 const startKbOf = (run: DayRun): number =>
 	PIN_START_KB_PER_GATE * run.startedAtGate + run.warmBootKb;
 
+const dayStartKbOf = (run: DayRun): number =>
+	run.closesBefore.at(-1)?.storageKbAfter ?? startKbOf(run);
+
 export const kbSpentOf = (run: DayRun): number =>
-	Math.max(0, startKbOf(run) + kbGeneratedOf(run) - run.storageKb);
+	Math.max(0, dayStartKbOf(run) + kbGeneratedOf(run) - run.storageKb);
 
 export const isComeback = (run: DayRun): boolean => {
 	const last = lastCloseOf(run);
 	if (last === undefined || !last.cleared) return false;
-	return run.closes.some((close) => close.gate === last.gate && !close.cleared);
+	return [...run.closesBefore, ...run.closes].some(
+		(close) => close.gate === last.gate && !close.cleared
+	);
 };
+
+export const dayRunOn =
+	(date: string) =>
+	(run: Omit<DayRun, "closesBefore">): DayRun | null => {
+		const closedThatDay = (close: RecordedClose) => close.closedOn === date;
+		const closes = run.closes.filter(closedThatDay);
+		if (!run.fallen && closes.length === 0) return null;
+		return {
+			...run,
+			closes,
+			closesBefore: run.closes.filter((close) => !closedThatDay(close)),
+		};
+	};
 
 const distinct = (ids: readonly string[]): readonly string[] => [
 	...new Set(ids),
@@ -183,12 +203,13 @@ const comebackOf = (runs: readonly DayRun[]): DayRecord | null => {
 const topConfigOf = (runs: readonly DayRun[]): DayRecord | null => {
 	const holdersByConfig = new Map<
 		string,
-		{ label: string; holders: Set<string> }
+		{ label: string; slots: number; holders: Set<string> }
 	>();
 	for (const run of runs)
 		for (const config of run.build.configs) {
 			const entry = holdersByConfig.get(config.id) ?? {
 				label: config.label,
+				slots: config.slots,
 				holders: new Set<string>(),
 			};
 			holdersByConfig.set(config.id, {
@@ -200,11 +221,12 @@ const topConfigOf = (runs: readonly DayRun[]): DayRecord | null => {
 		([, a], [, b]) => b.holders.size - a.holders.size
 	);
 	if (top === undefined) return null;
-	const [configId, { label, holders }] = top;
+	const [configId, { label, slots, holders }] = top;
 	return {
 		id: "top-config",
 		configId,
 		configLabel: label,
+		configSlots: slots,
 		figure: holders.size,
 		holderIds: [...holders],
 	};

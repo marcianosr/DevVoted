@@ -61,7 +61,12 @@ export const NewRunScreen = ({
 	};
 
 	return (
-		<Screen gate={header.swatch.theme} width={width} ground={ground}>
+		<Screen
+			gate={header.swatch.theme}
+			width={width}
+			ground={ground}
+			enter="rise"
+		>
 			<div className={LAYOUT}>
 				<div className={TOP_LEFT}>
 					<Header {...header} />

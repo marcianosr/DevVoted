@@ -9,6 +9,7 @@ import {
 	createMockPollArray,
 } from "~/modules/polls/poll/domain/poll.factory";
 import { ACCESS_DENIED } from "~/modules/polls/poll/domain/pollAccess.model";
+import { TEST_DATES } from "~/test/kanto";
 import { createMockPollOptionArray } from "~/modules/polls/poll/domain/pollOption.factory";
 import * as pollRepository from "~/modules/polls/poll/infrastructure/poll.repository";
 
@@ -16,6 +17,7 @@ vi.mock("~/modules/polls/poll/infrastructure/poll.repository", () => ({
 	fetchPollsIn: vi.fn(),
 	fetchPollByIdWithOptions: vi.fn(),
 	fetchDealCounts: vi.fn(async () => []),
+	fetchDealtPollIdsOn: vi.fn(async () => []),
 }));
 
 const BROCK = "11111111-1111-4111-8111-111111111111";
@@ -34,7 +36,7 @@ describe("listPollsFor", () => {
 		const polls = createMockPollArray(2);
 		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue(polls);
 
-		const result = await listPollsFor(brock);
+		const result = await listPollsFor(brock, TEST_DATES.christmas);
 
 		expect(pollRepository.fetchPollsIn).toHaveBeenCalledWith({
 			kind: "authoredBy",
@@ -42,7 +44,7 @@ describe("listPollsFor", () => {
 		});
 		expect(result).toEqual({
 			success: true,
-			data: { polls, canAdminister: false, deals: [] },
+			data: { polls, canAdminister: false, deals: [], yesterday: [] },
 		});
 	});
 
@@ -52,7 +54,7 @@ describe("listPollsFor", () => {
 		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue(polls);
 		vi.mocked(pollRepository.fetchDealCounts).mockResolvedValueOnce(deals);
 
-		const result = await listPollsFor(brock);
+		const result = await listPollsFor(brock, TEST_DATES.christmas);
 
 		expect(pollRepository.fetchDealCounts).toHaveBeenCalledWith(
 			polls.map((poll) => poll.id)
@@ -63,13 +65,35 @@ describe("listPollsFor", () => {
 	it("asks an admin's list for every poll and says they administer", async () => {
 		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue([]);
 
-		const result = await listPollsFor(oak);
+		const result = await listPollsFor(oak, TEST_DATES.christmas);
 
 		expect(pollRepository.fetchPollsIn).toHaveBeenCalledWith({ kind: "every" });
 		expect(result).toEqual({
 			success: true,
-			data: { polls: [], canAdminister: true, deals: [] },
+			data: { polls: [], canAdminister: true, deals: [], yesterday: [] },
 		});
+	});
+
+	it("hands an admin the five polls dealt the day before, in dealt order", async () => {
+		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue([]);
+		vi.mocked(pollRepository.fetchDealtPollIdsOn).mockResolvedValueOnce([
+			151, 25, 1, 4, 7,
+		]);
+
+		const result = await listPollsFor(oak, TEST_DATES.christmas);
+
+		expect(pollRepository.fetchDealtPollIdsOn).toHaveBeenCalledWith(
+			TEST_DATES.christmasEve
+		);
+		expect(result.success && result.data.yesterday).toEqual([151, 25, 1, 4, 7]);
+	});
+
+	it("never reads yesterday's deal for a player", async () => {
+		vi.mocked(pollRepository.fetchPollsIn).mockResolvedValue([]);
+
+		await listPollsFor(brock, TEST_DATES.christmas);
+
+		expect(pollRepository.fetchDealtPollIdsOn).not.toHaveBeenCalled();
 	});
 });
 

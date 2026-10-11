@@ -30,6 +30,14 @@ const newPollOptionSchema = z.object({
 		.max(GRID_GROUPS - 1)
 		.nullable()
 		.optional(),
+	explanation: z
+		.string()
+		.max(
+			POLL_LIMITS.answerExplanation.max,
+			`Option explanation cannot exceed ${POLL_LIMITS.answerExplanation.max} characters`
+		)
+		.nullable()
+		.optional(),
 });
 
 const updatePollOptionSchema = newPollOptionSchema.extend({

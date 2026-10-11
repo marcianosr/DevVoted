@@ -11,6 +11,7 @@ import {
 } from "~/modules/guide/wiki/application/wikiArticles.viewmodel";
 import type { WikiTerm } from "~/modules/guide/wiki/application/wikiGlossary.viewmodel";
 import { CoverageBar } from "~/ui/kanto-theme/CoverageBar.ui";
+import { Fold, type FoldBadge } from "~/ui/kanto-theme/Fold.ui";
 import { Lead } from "~/ui/kanto-theme/Lead.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Prose } from "~/ui/kanto-theme/Prose.ui";
@@ -25,7 +26,12 @@ export const COPY = {
 	title: "Wiki",
 	lead: "How DevVoted plays, with every number read from the live game.",
 	contents: "contents",
+	spoiler: "spoiler",
 } as const;
+
+const SPOILER_BADGES = [
+	{ label: COPY.spoiler, color: "saffron" },
+] satisfies readonly FoldBadge[];
 
 const THEME = "pallet";
 
@@ -146,16 +152,31 @@ const Block = ({ block }: { block: WikiBlock }) => {
 	return <Terms terms={block.terms} />;
 };
 
-const Section = ({ section }: { section: WikiSection }) => (
-	<section className={SECTION}>
-		<Typography variant="subtitle" as="h3">
-			{section.heading}
-		</Typography>
-		{section.blocks.map((block, index) => (
+const Blocks = ({ blocks }: Pick<WikiSection, "blocks">) => (
+	<>
+		{blocks.map((block, index) => (
 			<Block key={`${block.kind}-${index}`} block={block} />
 		))}
-	</section>
+	</>
 );
+
+const Section = ({ section }: { section: WikiSection }) =>
+	section.spoiler === undefined ? (
+		<section className={SECTION}>
+			<Typography variant="subtitle" as="h3">
+				{section.heading}
+			</Typography>
+			<Blocks blocks={section.blocks} />
+		</section>
+	) : (
+		<Fold
+			title={section.heading}
+			summary={section.spoiler}
+			badges={SPOILER_BADGES}
+		>
+			<Blocks blocks={section.blocks} />
+		</Fold>
+	);
 
 export const WikiScreen = ({
 	contents,

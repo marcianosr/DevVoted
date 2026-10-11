@@ -7,6 +7,7 @@ export default defineConfig({
 	out: "./drizzle",
 	schema: "./src/database/schema.ts",
 	dialect: "postgresql",
+	tablesFilter: ["!legacy_*"],
 	dbCredentials: {
 		url: DATABASE_URL,
 	},

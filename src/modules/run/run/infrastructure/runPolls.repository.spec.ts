@@ -8,6 +8,7 @@ import {
 } from "~/test/drizzleMock.factory";
 
 import {
+	fetchRunPollsForDate,
 	getOrCreateDailyRunSeed,
 	rollSegmentForward,
 } from "~/modules/run/run/infrastructure/runPolls.repository";
@@ -161,5 +162,56 @@ describe("rollSegmentForward", () => {
 
 		expect(db.delete).not.toHaveBeenCalled();
 		expect(db.insert).not.toHaveBeenCalled();
+	});
+});
+
+describe("fetchRunPollsForDate", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	const POLL_ROW = {
+		id: 7,
+		question: "Which method returns the last element of an array?",
+		codeBlock: null,
+		codeSandboxUrl: null,
+		answerType: "single",
+		categoryCode: "js",
+		explanation: null,
+		authorId: null,
+		authorName: null,
+		authorHandle: null,
+		authorPhotoUrl: null,
+		authorBorderId: null,
+		authorRole: null,
+		authorTitleIds: null,
+	};
+
+	it("reads each option's explanation into the run poll, and none where the column is empty", async () => {
+		mock.results.push([{ poll_id: 7 }]);
+		mock.results.push([POLL_ROW]);
+		mock.results.push([
+			{
+				id: 1,
+				poll_id: 7,
+				option: "at(-1)",
+				correct: true,
+				explanation: "Reads the last element without touching the array.",
+			},
+			{ id: 2, poll_id: 7, option: "pop()", correct: false, explanation: null },
+		]);
+
+		const [poll] = await fetchRunPollsForDate(TEST_DATES.birthday);
+
+		expect(poll?.options).toEqual([
+			{
+				id: "1",
+				label: "at(-1)",
+				correct: true,
+				explanation: "Reads the last element without touching the array.",
+			},
+			{ id: "2", label: "pop()", correct: false },
+		]);
 	});
 });

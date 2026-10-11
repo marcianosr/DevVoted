@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
+import {
+	showedUpBand,
+	turnoutFor,
+} from "~/modules/run/community/application/communityScreen.viewmodel";
 import { EMPTY_DAY_TURNOUT } from "~/modules/run/community/domain/dayRecords.model";
 
 const BROCK = { id: "brock", displayName: "Brock", you: false };
 const MISTY = { id: "misty", displayName: "Misty", you: true };
-const SHOWED_UP = { label: "answered today", count: "2", climbers: [] };
+const SHOWED_UP = { label: "Answered today", count: "2", climbers: [] };
+
+const bandLabelled = <Band extends { label: string }>(
+	bands: readonly Band[] | undefined,
+	label: string
+): Band | undefined => bands?.find((band) => band.label === label);
 
 describe("turnoutFor", () => {
 	it("titles the panel as the day's records, since outcomes and records share one list", () => {
@@ -14,7 +22,7 @@ describe("turnoutFor", () => {
 		);
 	});
 
-	it("draws who showed up first, then one row per outcome somebody reached, in ladder order", () => {
+	it("draws who showed up first, then every outcome in ladder order, an unreached one at zero", () => {
 		const turnout = turnoutFor(
 			{
 				...EMPTY_DAY_TURNOUT,
@@ -35,12 +43,15 @@ describe("turnoutFor", () => {
 				count: "1",
 				color: "cerulean",
 			},
+			{ label: "HEALTHY", count: "0", climbers: [] },
+			{ label: "OK", count: "0", climbers: [] },
 			{
 				label: "SHAKY",
 				caption: "gate held them",
 				count: "1",
 				color: "vermillion",
 			},
+			{ label: "DANGER", count: "0", climbers: [] },
 		]);
 	});
 
@@ -49,13 +60,16 @@ describe("turnoutFor", () => {
 			...BROCK,
 			id: `brock-${index}`,
 		}));
-		const [, band] = turnoutFor(
-			{
-				...EMPTY_DAY_TURNOUT,
-				outcomes: { ...EMPTY_DAY_TURNOUT.outcomes, healthy: crowd },
-			},
-			SHOWED_UP
-		).bands;
+		const band = bandLabelled(
+			turnoutFor(
+				{
+					...EMPTY_DAY_TURNOUT,
+					outcomes: { ...EMPTY_DAY_TURNOUT.outcomes, healthy: crowd },
+				},
+				SHOWED_UP
+			).bands,
+			"HEALTHY"
+		);
 
 		expect(band?.climbers).toHaveLength(5);
 		expect(band?.overflow).toBe(0);
@@ -75,15 +89,40 @@ describe("turnoutFor", () => {
 			SHOWED_UP,
 			(userId) => () => pressed.push(userId)
 		);
-		const [, healthy, danger] = bands;
 
-		expect(healthy?.climbers[0]?.onPress).toBeUndefined();
-		danger?.climbers[0]?.onPress?.();
+		expect(
+			bandLabelled(bands, "HEALTHY")?.climbers[0]?.onPress
+		).toBeUndefined();
+		bandLabelled(bands, "DANGER")?.climbers[0]?.onPress?.();
 		expect(pressed).toEqual(["brock"]);
 	});
 
-	it("draws only who showed up before anybody closed a gate", () => {
-		expect(turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).bands).toEqual([SHOWED_UP]);
+	it("draws every outcome and record empty before anybody closed a gate", () => {
+		const turnout = turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP);
+
+		expect(turnout.bands.map(({ count }) => count)).toEqual([
+			"2",
+			"0",
+			"0",
+			"0",
+			"0",
+			"0",
+		]);
+		expect(turnout.records?.map(({ label }) => label)).toEqual([
+			"Biggest build",
+			"Lightest build",
+			"Comeback",
+			"Most audits",
+			"Most installed",
+			"Most expensive build",
+			"KB generated today",
+			"KB spent today",
+		]);
+		expect(
+			turnout.records?.every(
+				({ count, climbers }) => count === "—" && climbers.length === 0
+			)
+		).toBe(true);
 	});
 
 	it("names the most installed config and how many players run it", () => {
@@ -96,6 +135,7 @@ describe("turnoutFor", () => {
 							id: "top-config",
 							configId: "ts",
 							configLabel: ".ts",
+							configSlots: 1,
 							figure: 2,
 							holderIds: ["brock", "misty"],
 						},
@@ -106,8 +146,27 @@ describe("turnoutFor", () => {
 			SHOWED_UP
 		);
 
-		expect(turnout.records).toMatchObject([
-			{ label: "most installed", caption: ".ts", count: "2 players" },
-		]);
+		expect(bandLabelled(turnout.records, "Most installed")).toMatchObject({
+			config: { name: ".ts", slots: 1 },
+			count: "2 players",
+		});
+	});
+
+	it("draws no chip on a most-installed row nobody holds, there being no config to name", () => {
+		const row = bandLabelled(
+			turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).records,
+			"Most installed"
+		);
+
+		expect(row?.config).toBeUndefined();
+		expect(row?.caption).toBeUndefined();
+	});
+});
+
+describe("showedUpBand", () => {
+	it("draws ten faces of who answered today before folding the rest", () => {
+		expect(
+			showedUpBand({ totalPlayers: 2, players: [BROCK, MISTY] }).shown
+		).toBe(10);
 	});
 });

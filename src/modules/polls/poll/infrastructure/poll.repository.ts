@@ -1,4 +1,4 @@
-import { count, eq, inArray } from "drizzle-orm";
+import { asc, count, eq, inArray } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
 
 import { db } from "~/database/db";
@@ -41,6 +41,7 @@ const toPollOption = (record: PollOptionRecord): PollOption => ({
 	option: record.option,
 	correct: record.correct,
 	group: record.group_index,
+	explanation: record.explanation,
 });
 
 export const fetchPollById = async (id: number): Promise<Poll> => {
@@ -99,6 +100,15 @@ export const fetchDealCounts = async (
 				.from(dailyRunPollsTable)
 				.where(inArray(dailyRunPollsTable.poll_id, [...pollIds]))
 				.groupBy(dailyRunPollsTable.poll_id);
+
+export const fetchDealtPollIdsOn = async (date: string): Promise<number[]> => {
+	const rows = await db
+		.select({ pollId: dailyRunPollsTable.poll_id })
+		.from(dailyRunPollsTable)
+		.where(eq(dailyRunPollsTable.date, date))
+		.orderBy(asc(dailyRunPollsTable.position));
+	return rows.map((row) => row.pollId);
+};
 
 export const countPublishedPolls = async (): Promise<number> => {
 	const [result] = await db

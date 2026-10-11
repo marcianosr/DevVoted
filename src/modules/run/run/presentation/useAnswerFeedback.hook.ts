@@ -5,7 +5,7 @@ import type {
 	AnswerOutcome,
 } from "~/modules/run/run/domain/runPoll.model";
 
-export const ANSWER_HOLD_MS = { right: 650, wrong: 900 } as const;
+export const ANSWER_HOLD_MS = { right: 1650, wrong: 1900 } as const;
 
 export const CARD_LEAVE_MS = 180;
 

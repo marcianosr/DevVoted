@@ -8,7 +8,7 @@ const TAG =
 	"badge-theme inline-flex h-5 w-fit shrink-0 items-center gap-1.5 pr-2 pl-3.5 text-xs font-bold tabular-nums";
 const DOT = "size-1 shrink-0 rounded-full bg-theme-faint";
 const DIMMED = "opacity-60";
-const GLOW = "version-glow inline-flex shrink-0";
+const READY_BORDER = "press-prismatic inline-flex shrink-0 p-[1.5px]";
 
 export type VersionState = "owned" | "offered" | "unaffordable" | "future";
 
@@ -24,13 +24,13 @@ export const versionAccentOf = (state: VersionState) => ACCENT[state];
 export type VersionProps = {
 	version: number;
 	state?: VersionState;
-	glow?: boolean;
+	upgradeReady?: boolean;
 };
 
 export const Version = ({
 	version,
 	state = "owned",
-	glow = false,
+	upgradeReady = false,
 }: VersionProps) => {
 	const tag = (
 		<span
@@ -41,5 +41,9 @@ export const Version = ({
 		</span>
 	);
 
-	return glow ? <span className={GLOW}>{tag}</span> : tag;
+	return upgradeReady ? (
+		<span className={clsx(READY_BORDER, NOTCH)}>{tag}</span>
+	) : (
+		tag
+	);
 };

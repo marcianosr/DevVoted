@@ -107,6 +107,7 @@ const Chip = ({
 			rescued={climber.rescued}
 			dimmed={dimmed}
 			size="md"
+			tooltip={climber.tooltip}
 		/>
 	);
 

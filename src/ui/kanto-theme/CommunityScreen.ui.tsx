@@ -8,6 +8,7 @@ import { CategoryLeader, type CategoryLeaderProps } from "./CategoryLeader.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { ClimbMap, type ClimbMapProps } from "./ClimbMap.ui";
 import type { KantoColor } from "./colors";
+import { ConfigChip, type ConfigChipProps } from "./ConfigChip.ui";
 import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
 import { Icon, type IconName } from "./Icon.ui";
 import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
@@ -29,12 +30,16 @@ const STAT = "flex items-center gap-1.5 text-theme-muted";
 const COLUMNS =
 	"grid w-full grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,3fr)]";
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
-const ROW_LABEL = "flex min-w-0 flex-wrap items-center gap-x-2";
+const ROW_LABEL = "flex min-w-0 flex-col gap-0.5";
+const ROW_CHIP = "flex pt-1";
 const TALLY = "flex items-center gap-2";
 
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
 const ROW_FACES = 3;
+const CROWDED_ROW = "flex-wrap";
+const CROWD =
+	"flex min-w-0 basis-full items-center justify-end gap-2 sm:ml-auto sm:basis-auto";
 const YOUR_SEAT_COLOR: KantoColor = "viridian";
 const CONTROL_SIZE = "md";
 const CONTROL_WIDTH = "full";
@@ -68,10 +73,12 @@ export type CommunityHeader = {
 export type TurnoutBand = {
 	label: string;
 	caption?: string;
+	config?: ConfigChipProps;
 	count: string;
 	color?: KantoColor;
 	climbers: readonly ClimberProps[];
 	overflow?: number;
+	shown?: number;
 };
 
 export type CommunityTurnout = {
@@ -171,7 +178,6 @@ const CommunityHeading = ({
 				size={CONTROL_SIZE}
 				width={CONTROL_WIDTH}
 				tone="action"
-				icon="gate"
 				label={prep.label}
 				disabled={prep.onPress === undefined}
 				onPress={prep.onPress}
@@ -180,56 +186,83 @@ const CommunityHeading = ({
 	</header>
 );
 
-const TurnoutRow = ({
+const TurnoutFigures = ({
+	band,
+	wrap = false,
+}: {
+	band: TurnoutBand;
+	wrap?: boolean;
+}) => (
+	<>
+		<Badge color={band.color}>{band.count}</Badge>
+		<ClimberStack
+			climbers={band.climbers}
+			overflow={band.overflow}
+			shown={band.shown ?? ROW_FACES}
+			size={CLIMBER_SIZE}
+			wrap={wrap}
+		/>
+	</>
+);
+
+const TurnoutLabel = ({
 	band,
 	label,
 }: {
 	band: TurnoutBand;
 	label: ReactNode;
 }) => (
-	<Panel.Row
-		trailing={
-			<>
-				<Badge color={band.color}>{band.count}</Badge>
-				<ClimberStack
-					climbers={band.climbers}
-					overflow={band.overflow}
-					shown={ROW_FACES}
-					size={CLIMBER_SIZE}
-				/>
-			</>
-		}
-	>
-		<span className={ROW_LABEL}>
-			{label}
-			{band.caption === undefined ? null : (
-				<Typography variant="hint" as="span">
-					{band.caption}
-				</Typography>
-			)}
-		</span>
-	</Panel.Row>
+	<span className={ROW_LABEL}>
+		{label}
+		{band.caption === undefined ? null : (
+			<Typography variant="hint" as="span">
+				{band.caption}
+			</Typography>
+		)}
+		{band.config === undefined ? null : (
+			<span className={ROW_CHIP}>
+				<ConfigChip {...band.config} compact />
+			</span>
+		)}
+	</span>
 );
+
+const TurnoutRow = ({
+	band,
+	label,
+}: {
+	band: TurnoutBand;
+	label: ReactNode;
+}) =>
+	band.shown === undefined ? (
+		<Panel.Row trailing={<TurnoutFigures band={band} />}>
+			<TurnoutLabel band={band} label={label} />
+		</Panel.Row>
+	) : (
+		<Panel.Row className={CROWDED_ROW}>
+			<TurnoutLabel band={band} label={label} />
+			<span className={CROWD}>
+				<TurnoutFigures band={band} wrap />
+			</span>
+		</Panel.Row>
+	);
 
 const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
 	<Panel>
 		<Panel.Header label={title} />
 		<Panel.Rows>
-			{bands.map((band) => (
+			{[...bands, ...records].map((band) => (
 				<TurnoutRow
 					key={band.label}
 					band={band}
-					label={<Badge color={band.color}>{band.label}</Badge>}
-				/>
-			))}
-			{records.map((record) => (
-				<TurnoutRow
-					key={record.label}
-					band={record}
 					label={
-						<Typography variant="subtitle" as="span">
-							{record.label}
-						</Typography>
+						band.color === undefined ? (
+							<Typography variant="subtitle" as="span">
+								{band.label}
+							</Typography>
+						) : (
+							<Badge color={band.color}>{band.label}</Badge>
+						)
 					}
 				/>
 			))}
@@ -336,7 +369,7 @@ export const CommunityScreen = ({
 	width = "wide",
 	ground = "bare",
 }: CommunityScreenProps) => (
-	<Screen gate={header.swatch.theme} width={width} ground={ground}>
+	<Screen gate={header.swatch.theme} width={width} ground={ground} enter="rise">
 		<CommunityHeading {...header} />
 		<WhereEveryoneIs {...map} />
 		<div className={COLUMNS}>

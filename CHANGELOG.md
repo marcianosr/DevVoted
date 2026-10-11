@@ -8,6 +8,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Dependency grids, a new kind of poll.** Twelve tiles hide three groups of four. Pick four tiles and press **Lock in**: if they belong together, the group is named and set aside, and you pick again. Four that don't belong together end the poll like a wrong answer. Solve two groups and the last one locks itself in. Each group you solve pays a third of the poll, and a full grid pays double, like a select-all. The group names stay hidden as **???** unless your build already names answer types. **Shuffle** reorders the tiles whenever you like. Poll authors can pick **grid** when suggesting a poll and write three named groups of four tiles.
 
+## 2.4.2 - 2026-10-10
+### Fixed
+- **An answer's explanation is readable again.** The bulb beside **Why it's right** and **Why it's wrong** grew to fill the whole explanation and pushed the heading to the edge. It is a small mark beside the heading again.
+
+## 2.4.1 - 2026-10-08
+### Fixed
+- **You stay signed in on your phone.** Your sign-in used to last only until the browser closed, and a phone closes its browser in the background most days, so you had to sign in again almost daily. It now lasts until you sign out.
+
+## 2.4.0 - 2026-10-08
+### Added
+- **The login screen shows the game before it asks for anything.** A visitor who is not signed in lands on **Five dev polls a day. How far can you run?**, a line on what a run is, three figures (**5 polls a day**, **12 gates**, **1 Champion**) and one full-width **Continue with GitHub** press wearing the GitHub mark, with **Read how this game works** under it opening the wiki. Beside it, a poll card answers itself: it picks an answer, holds the green verdict, grows its coverage bar and slides to the next poll, round and round. Under reduced motion the card sits answered and still. On a phone the card drops under the press. devvoted.dev itself opens on this screen for a visitor who is not signed in, instead of sending them to the login page first.
+
+### Changed
+- **A pasted link previews the game.** A devvoted.dev link pasted into Slack, on X or on Bluesky now shows a DevVoted card: the dashed mark on its dark ground, the title **Five developer polls a day** and a description written for a player. It no longer names the author of the template the site was started from.
+- **The wiki folds its spoilers.** The sections that list every gate, every swatch, every config and the whole shop now sit closed behind a fold marked **spoiler**, with a line saying what it hides, so a new player can read how a run works without seeing what is ahead. Press the heading to open one.
+
+### Fixed
+- **The reminder email opens your run.** The email an admin can send pointed at a page that no longer exists. It now opens the Daily Run page and says today's five are up.
+
+## 2.3.0 - 2026-10-08
+### Added
+- **Every answer can say why.** A poll's author can write, under each answer, why it is right or why it is wrong. The gate review shows that note under each answer that has one, **Why it’s right** under the right answer and **Why it’s wrong** under the others, whether or not you picked them, and the poll page shows the same once you flip to **with the answer**. The poll's own explanation stays beneath.
+
+### Changed
+- **The run hub is a headline beside its press.** `/run` now opens on what matters: the gate ahead (or, once today's polls are done, **<gate> opens in** over a clock that ticks the seconds) with one big press beside it — **Continue to <gate>** while polls are ready, **To shop** while the day waits — and the faces of who answered today. **Run so far** and **Build** fold under their own headings; the build draws its weight bar, and each config opens on what it does. The run's track and balance live in the nav only.
+- **A record row's note sits under its title.** On the community board, the small note beside a row (**Comeback**, **Most audits**, **KB generated today**…) now sits on its own line under the title, every title starts with a capital, **Answered today** reads in the same plain title as the records instead of a badge, **Most installed** shows the config as its real chip, and **Most audits** says its count is **across the whole run**, not the day.
+- **The poll pages wear pallet.** The poll list, a poll's page and the edit form now wear the same white the suggest form already did, instead of Cerulean's blue; cerulean is a gate's colour and these pages are not a gate.
+- **An answer's verdict stays a second longer.** After you answer, the green or red reading holds for 1.65s on a right answer and 1.9s on a wrong one before the next poll slides in, so the right option can actually be read.
+- **Every run screen rises into place.** Each block of a run screen (the poll, prep, the gate's outcome, the shop, the community board, and the rest) now fades up in reading order as the screen opens, the way the hub does. Off under reduced motion.
+- **The Hall of Fame holds a seat open.** Before anyone has won a run, the Hall of Fame draws a dashed trophy beside **Champion · still open** and says the first to clear the Champion gate gets the spot, instead of a sentence saying nobody has yet. **Back to your run** on the community board drops its flag, and the board's header no longer names your gate.
+- **A fallen face says what it holds.** On the climb map, hovering a fallen run you can still loot reads **67 KB to loot** instead of only the player's name.
+
+## 2.2.0 - 2026-10-08
+### Added
+- **Admins see yesterday's polls apart.** The poll list opens with **Dealt yesterday**: the five polls everyone was dealt the day before, ready to review and edit now that players have answered them.
+
+## 2.1.4 - 2026-10-08
+### Fixed
+- **Who answered today fits a phone.** The **answered today** faces ran off the right edge on a narrow screen and let the page scroll sideways; they now wrap onto a second line.
+- **The poll list reads on a phone.** Each poll squeezed its question into a narrow column, one word per line; on a phone the question now takes the full width under its category and status.
+
+## 2.1.3 - 2026-10-08
+### Changed
+- **See more of who played today.** The **answered today** row on the community board shows up to ten faces before folding the rest behind **+N**.
+
+## 2.1.2 - 2026-10-08
+### Fixed
+- **Today's records keep their rows.** Before anybody closes a gate, the community board now lists every outcome and record empty (0, or a dash) instead of showing only who answered today.
+
+## 2.1.1 - 2026-10-08
+### Changed
+- **A ready upgrade wears a moving border.** A folded build card whose next version you can buy now rings its version tag with the upgrade press's flowing colours, instead of a glow.
+
+### Fixed
+- **Today's records start fresh each day.** The community board's outcomes and records kept counting runs from earlier days, so yesterday's builds and KB stayed on the board. They now count only gates closed today, and a run joins them once it closes one.
+
 ## 2.1.0 - 2026-10-07
 ### Added
 - **Thin categories pay a bounty for new polls.** A poll you suggest in a category that holds few polls earns more archived storage once it is approved, and never less than 16 KB. The figure is fixed the moment you suggest the poll. The advertisement now calls for polls in one of those categories, says how many polls it holds and what an approved one pays, and opens the suggest form with that category picked. The form's reward badge follows the category you pick, and the approval dialog counts up by what each poll actually paid.

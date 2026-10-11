@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 
 import { clsx } from "clsx";
 
-const ICON = "inline-block size-3.5 shrink-0";
+const ICON = "inline-block shrink-0";
+const DEFAULT_SIZE = "size-3.5";
 
 const PATHS = {
 	shop: (
@@ -118,12 +119,34 @@ const PATHS = {
 			<path d="m10.5 3.5-7 7" />
 		</>
 	),
+	bulb: (
+		<>
+			<path d="M5.2 8.6a3.4 3.4 0 1 1 3.6 0" />
+			<path d="M5.2 8.6v1.2h3.6V8.6" />
+			<path d="M5.8 11.6h2.4" />
+		</>
+	),
 	star: (
 		<path
 			d="M7 1.8 8.3 5.7 12.2 7 8.3 8.3 7 12.2 5.7 8.3 1.8 7 5.7 5.7Z"
 			fill="currentColor"
 			stroke="none"
 		/>
+	),
+	trophy: (
+		<>
+			<path d="M4.4 2h5.2v3.4a2.6 2.6 0 0 1-5.2 0Z" />
+			<path d="M4.4 3.2H2.8v1a1.8 1.8 0 0 0 1.8 1.8" />
+			<path d="M9.6 3.2h1.6v1a1.8 1.8 0 0 1-1.8 1.8" />
+			<path d="M7 8v2.2" />
+			<path d="M5.6 10.2h2.8" />
+			<path d="M4.8 12h4.4" />
+		</>
+	),
+	github: (
+		<g transform="scale(0.875)" fill="currentColor" stroke="none">
+			<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+		</g>
 	),
 } satisfies Record<string, ReactNode>;
 
@@ -140,7 +163,7 @@ export const Icon = ({ name, className }: IconProps) => (
 		strokeWidth="1.2"
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		className={clsx(ICON, className)}
+		className={clsx(ICON, className ?? DEFAULT_SIZE)}
 	>
 		{PATHS[name]}
 	</svg>

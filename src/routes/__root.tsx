@@ -44,8 +44,16 @@ export const Route = createRootRouteWithContext<{
 				content: "width=device-width, initial-scale=1",
 			},
 			...seo({
-				title: "DevVoted | Daily Polls with a competitive roguelite twist!",
-				description: `DevVoted is a platform for daily polls with a competitive roguelite twist!`,
+				title: "DevVoted | Five developer polls a day",
+				description:
+					"Five developer polls a day, the same five for everyone. Right answers clear the gate; thirteen gates make a run.",
+				keywords:
+					"developer quiz, daily polls, roguelite, JavaScript, TypeScript, CSS, React, Git",
+				url: "https://www.devvoted.dev",
+				siteName: "DevVoted",
+				author: "Marciano Schildmeijer",
+				image: "https://www.devvoted.dev/brand/og.png",
+				imageAlt: "The DevVoted mark: a dashed empty slot on a dark ground",
 			}),
 		],
 		links: [
@@ -123,7 +131,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 	return (
 		<PageThemeContext.Provider value={setPage}>
-			<html className="dark">
+			<html lang="en" className="dark">
 				<head>
 					<HeadContent />
 				</head>

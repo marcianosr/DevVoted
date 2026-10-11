@@ -5,7 +5,7 @@ status: todo
 type: feature
 priority: high
 created_at: 2026-10-02T15:41:06Z
-updated_at: 2026-10-02T15:41:24Z
+updated_at: 2026-10-08T13:13:40Z
 parent: DVTD-erjz
 ---
 
@@ -27,3 +27,7 @@ parent: DVTD-erjz
 - Scheduled cleanup of stale anonymous users; rate-limit anonymous sign-in or add a captcha.
 - RLS (DVTD-5kak) is done, which this needed: anonymous users hold the `authenticated` role.
 - Pairs with the logged-out landing page (DVTD-erjz #11).
+
+## Decided 2026-10-08
+
+Guests stay off the board (no faces, no records, no turnout rows, no hover cards), but the community header's meta line counts them apart from account holders: **2 players · 45 guest players**, omitted when zero. The count sits beside totalPlayers on the community view, the figure is composed in the community screen viewmodel next to the existing player figure, and the community screen renders one more meta badge. ADR-178 Decision 3 carries the amendment. Scope otherwise confirmed as the ADR states it: today's five with a real run, all gates, one run, nothing kept.

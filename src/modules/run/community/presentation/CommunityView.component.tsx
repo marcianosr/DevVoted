@@ -14,41 +14,22 @@ export type CommunityViewProps = CommunityScreenFrame;
 
 const ADVERTISEMENT = <Advertisement placement="community" />;
 
-const WithOpenedCard = ({
-	userId,
-	...frame
-}: CommunityScreenFrame & { userId: string }) => {
-	const card = usePlayerCard(userId);
+export const CommunityView = (props: CommunityViewProps) => {
+	const [openClimberId, setOpenClimberId] = useState<string>();
+	const openedUserId = openedUserIdOf(props.view.climb, openClimberId);
+	const card = usePlayerCard(openedUserId);
 	const openedDetail = openedDetailOf(card.view);
 
 	return (
 		<CommunityScreen
 			{...communityScreenPropsFor({
-				...frame,
+				...props,
+				openClimberId,
+				onInspectClimber: (id: string) =>
+					setOpenClimberId((current) => (current === id ? undefined : id)),
 				...(openedDetail === undefined ? {} : { openedDetail }),
 			})}
 			advertisement={ADVERTISEMENT}
 		/>
 	);
-};
-
-export const CommunityView = (props: CommunityViewProps) => {
-	const [openClimberId, setOpenClimberId] = useState<string>();
-	const frame = {
-		...props,
-		openClimberId,
-		onInspectClimber: (id: string) =>
-			setOpenClimberId((current) => (current === id ? undefined : id)),
-	};
-	const openedUserId = openedUserIdOf(props.view.climb, openClimberId);
-
-	if (openedUserId === undefined)
-		return (
-			<CommunityScreen
-				{...communityScreenPropsFor(frame)}
-				advertisement={ADVERTISEMENT}
-			/>
-		);
-
-	return <WithOpenedCard key={openedUserId} userId={openedUserId} {...frame} />;
 };

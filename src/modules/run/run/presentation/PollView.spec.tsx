@@ -11,6 +11,7 @@ import {
 } from "~/test/runView.factory";
 
 import { PollView } from "./PollView.component";
+import { ANSWER_HOLD_MS } from "./useAnswerFeedback.hook";
 
 type FakeAnimation = { onfinish: (() => void) | null; cancel: () => void };
 
@@ -261,22 +262,22 @@ describe("PollView once the answer has landed", () => {
 			picked: ["pop()"],
 		};
 
-		it("moves on by itself 650ms after a right answer", () => {
+		it("moves on by itself once a right answer's hold ends", () => {
 			const onNext = vi.fn();
 			render(<PollView {...settled} onNext={onNext} />);
 
-			act(() => vi.advanceTimersByTime(649));
+			act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.right - 1));
 			expect(onNext).not.toHaveBeenCalled();
 
 			act(() => vi.advanceTimersByTime(1));
 			expect(onNext).toHaveBeenCalledTimes(1);
 		});
 
-		it("holds a wrong answer longer, 900ms, so the right one can be read", () => {
+		it("holds a wrong answer longer, so the right one can be read", () => {
 			const onNext = vi.fn();
 			render(<PollView {...settled} answered={missed} onNext={onNext} />);
 
-			act(() => vi.advanceTimersByTime(899));
+			act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.wrong - 1));
 			expect(onNext).not.toHaveBeenCalled();
 
 			act(() => vi.advanceTimersByTime(1));

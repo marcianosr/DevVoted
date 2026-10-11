@@ -43,3 +43,15 @@ file from `supabase/migrations/` by hand (ADR-012):
 psql "postgresql://postgres.smrkmigjsnhrhwrxobjc:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres" \
   -f supabase/migrations/YYYYMMDDHHMMSS_description.sql
 ```
+
+A file applied by hand is missing from production's migration history, so the next
+`supabase db push` runs it again. Record it, always with an explicit `--linked`
+(without it, `repair` has hit the wrong database before):
+
+```bash
+npx supabase migration repair --linked --status applied YYYYMMDDHHMMSS
+```
+
+The same applies to a migration dated before the newest one production has
+applied: `supabase db push` refuses it. The baseline (`20251106000000`) was
+recorded this way on 2026-10-08.

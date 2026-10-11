@@ -839,7 +839,9 @@ describe("getRunCommunityService climb map", () => {
 		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValueOnce([
 			{
 				...CLIMBERS[0],
-				closes: [{ gate: 5, band: "perfect", cleared: true, kb: 120 }],
+				closes: [
+					{ gate: 5, band: "perfect", cleared: true, kb: 120, closedOn: DATE },
+				],
 			},
 			...CLIMBERS.slice(1),
 		]);
@@ -863,7 +865,9 @@ describe("getRunCommunityService climb map", () => {
 		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValueOnce([
 			{
 				...CLIMBERS[0],
-				closes: [{ gate: 5, band: "ok", cleared: true, kb: 120 }],
+				closes: [
+					{ gate: 5, band: "ok", cleared: true, kb: 120, closedOn: DATE },
+				],
 			},
 			...CLIMBERS.slice(1),
 		]);
@@ -880,6 +884,35 @@ describe("getRunCommunityService climb map", () => {
 			record: { figure: 120 },
 			holders: [{ id: RED, displayName: "Red" }],
 		});
+	});
+
+	it("leaves a live run out of the day's outcomes and records until it closes a gate that day", async () => {
+		arrange();
+		vi.mocked(climbQueries.fetchActiveClimbers).mockResolvedValueOnce([
+			{
+				...CLIMBERS[0],
+				closes: [
+					{
+						gate: 5,
+						band: "perfect",
+						cleared: true,
+						kb: 120,
+						closedOn: TEST_DATES.christmas,
+					},
+				],
+			},
+			...CLIMBERS.slice(1),
+		]);
+
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+
+		expect(result.success).toBe(true);
+		if (!result.success) return;
+		const turnout = result.data.climb?.turnout;
+		expect(turnout?.outcomes.perfect).toEqual([]);
+		expect(
+			turnout?.records.flatMap(({ holders }) => holders.map(({ id }) => id))
+		).not.toContain(RED);
 	});
 
 	it("builds the map on a day with nothing answered yet", async () => {

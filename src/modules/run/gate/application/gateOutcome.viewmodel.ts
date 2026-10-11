@@ -211,6 +211,7 @@ export type GateAnswer = {
 	picked: readonly string[];
 	correct: readonly string[];
 	explanation?: string;
+	optionExplanations?: Readonly<Record<string, string>>;
 	codeBlock?: string;
 	note?: string;
 	author?: PollAuthor;
@@ -1483,6 +1484,9 @@ export const gateAnswersOf = (
 		picked: answer.picked,
 		correct: answer.correct ?? [],
 		explanation: answer.explanation,
+		...(answer.optionExplanations === undefined
+			? {}
+			: { optionExplanations: answer.optionExplanations }),
 		codeBlock: answer.codeBlock,
 		...(answer.author === undefined ? {} : { author: answer.author }),
 	}));

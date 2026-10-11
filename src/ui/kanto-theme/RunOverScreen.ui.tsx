@@ -312,14 +312,19 @@ export const RunOverScreen = ({
 
 	if (won) {
 		return (
-			<Screen gate={header.swatch.theme} width={width} ground="bare">
+			<Screen
+				gate={header.swatch.theme}
+				width={width}
+				ground="bare"
+				enter="rise"
+			>
 				{body}
 			</Screen>
 		);
 	}
 
 	return (
-		<Screen theme={RUN_OVER_COLOR} width={width} ground="bare">
+		<Screen theme={RUN_OVER_COLOR} width={width} ground="bare" enter="rise">
 			{body}
 		</Screen>
 	);

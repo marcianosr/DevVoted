@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	type GateAnswer,
 	type GateOutcomeFrame,
+	gateAnswersOf,
 	gateOutcomePropsFor,
 	outcomeRevealFor,
 	outcomeRevealOf,
@@ -13,6 +14,7 @@ import { slotsOf } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import { bandAtLadder, clearsAt } from "~/modules/run/gate/domain/gate.model";
 import { VICTORY_GATE } from "~/modules/run/run/domain/rules.model";
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { STORAGE_BALANCE } from "~/shared/lib/copy";
 import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
 import { createMockGateClose, createMockRunView } from "~/test/runView.factory";
@@ -794,5 +796,38 @@ describe("outcomeRevealOf", () => {
 			"64 KB unspent",
 			"Swatches you earned stay on your profile.",
 		]);
+	});
+});
+
+describe("gateAnswersOf", () => {
+	const answered: AnsweredPoll = {
+		id: "7",
+		question: "Which method returns the last element of an array?",
+		category: "js",
+		outcome: "wrong",
+		picked: ["pop()"],
+		correct: ["at(-1)"],
+		options: ["at(-1)", "pop()"],
+		answerType: "single",
+		coverageEarned: 0,
+	};
+	const reasons = {
+		"at(-1)": "Reads the last element without touching the array.",
+		"pop()": "Removes the element it returns.",
+	};
+
+	it("carries each option's explanation from the answer into the gate's answer", () => {
+		const [answer] = gateAnswersOf(
+			[{ ...answered, optionExplanations: reasons }],
+			GATE
+		);
+
+		expect(answer?.optionExplanations).toEqual(reasons);
+	});
+
+	it("carries none for an answer recorded before options could explain themselves", () => {
+		const [answer] = gateAnswersOf([answered], GATE);
+
+		expect(answer).not.toHaveProperty("optionExplanations");
 	});
 });

@@ -12,6 +12,7 @@ import {
 	changeAnswer,
 	changeGroupLabel,
 	gridGroupRowsOf,
+	changeAnswerExplanation,
 	lockInPreview,
 	markRight,
 	pickInPreview,
@@ -113,6 +114,9 @@ export const PollForm = ({
 			}
 			onGroupLabel={(group, label) =>
 				setState((current) => changeGroupLabel(current, group, label))
+			}
+			onAnswerExplanationChange={(key, text) =>
+				setState((current) => changeAnswerExplanation(current, key, text))
 			}
 			onMarkRight={(key) => setState((current) => markRight(current, key))}
 			onAddAnswer={canAddAnswer(state) ? () => setState(addAnswer) : undefined}

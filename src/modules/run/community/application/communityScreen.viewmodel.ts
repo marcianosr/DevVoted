@@ -15,6 +15,7 @@ import type {
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
 import {
 	type CommunityDayTurnout,
+	type CommunityRecord,
 	type DayOutcome,
 	type DayRecord,
 	DAY_OUTCOMES,
@@ -48,7 +49,8 @@ const COPY = {
 	title: "Community",
 	tagline: "What are other players doing?",
 	turnoutTitle: "Today’s records",
-	answeredToday: "answered today",
+	answeredToday: "Answered today",
+	unheldRecord: "—",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
 	pollsTitle: "The day’s polls",
@@ -56,7 +58,6 @@ const COPY = {
 	notDealtYet: (index: number) => `Poll ${index + 1} · not dealt yet`,
 	countdownHint: "until the next five polls are dealt",
 	pollsOpen: "polls are open",
-	whereYouStand: "where your run stands",
 } as const;
 
 const climberOf = (voter: CommunityVoter): ClimberProps => ({
@@ -103,48 +104,95 @@ const OUTCOME_CAPTION = {
 
 const slotsLabel = (slots: number): string => plural(slots, "slot");
 
-const recordRowOf = (
-	record: DayRecord
-): Pick<TurnoutBand, "label" | "caption" | "count"> => {
-	switch (record.id) {
-		case "biggest-build":
-			return { label: "biggest build", count: slotsLabel(record.figure) };
-		case "lightest-build":
-			return { label: "lightest build", count: slotsLabel(record.figure) };
-		case "comeback":
-			return {
-				label: "comeback",
-				caption: "held at this gate before, cleared it today",
-				count: String(record.figure),
-			};
-		case "most-audits":
-			return {
-				label: "most audits",
-				caption: "in one run",
-				count: String(record.figure),
-			};
-		case "top-config":
-			return {
-				label: "most installed",
-				caption: record.configLabel,
-				count: plural(record.figure, "player"),
-			};
-		case "priciest-build":
-			return { label: "most expensive build", count: kbLabel(record.figure) };
-		case "kb-generated":
-			return {
-				label: "KB generated today",
-				caption: "top earner",
-				count: kbLabel(record.figure),
-			};
-		case "kb-spent":
-			return {
-				label: "KB spent today",
-				caption: "biggest spender",
-				count: kbLabel(record.figure),
-			};
-	}
+type RecordKind = DayRecord["id"];
+
+type RecordRow = {
+	label: string;
+	caption?: string;
+	figure: (value: number) => string;
 };
+
+const RECORD_ROWS: Record<RecordKind, RecordRow> = {
+	"biggest-build": { label: "Biggest build", figure: slotsLabel },
+	"lightest-build": { label: "Lightest build", figure: slotsLabel },
+	comeback: {
+		label: "Comeback",
+		caption: "held at this gate before, cleared it today",
+		figure: String,
+	},
+	"most-audits": {
+		label: "Most audits",
+		caption: "across the whole run",
+		figure: String,
+	},
+	"top-config": {
+		label: "Most installed",
+		figure: (players) => plural(players, "player"),
+	},
+	"priciest-build": { label: "Most expensive build", figure: kbLabel },
+	"kb-generated": {
+		label: "KB generated today",
+		caption: "top earner",
+		figure: kbLabel,
+	},
+	"kb-spent": {
+		label: "KB spent today",
+		caption: "biggest spender",
+		figure: kbLabel,
+	},
+};
+
+const RECORD_ORDER = [
+	"biggest-build",
+	"lightest-build",
+	"comeback",
+	"most-audits",
+	"top-config",
+	"priciest-build",
+	"kb-generated",
+	"kb-spent",
+] as const satisfies readonly RecordKind[];
+
+const unheldRecordRow = (kind: RecordKind): TurnoutBand => {
+	const { label, caption } = RECORD_ROWS[kind];
+	return {
+		label,
+		...(caption === undefined ? {} : { caption }),
+		count: COPY.unheldRecord,
+		climbers: [],
+		overflow: 0,
+	};
+};
+
+const topConfigChipOf = (record: CommunityRecord["record"]) =>
+	record.id === "top-config"
+		? {
+				config: {
+					name: record.configLabel,
+					slots: record.configSlots,
+					badges: [],
+				},
+			}
+		: {};
+
+const heldRecordRow = ({ record, holders }: CommunityRecord): TurnoutBand => {
+	const { label, caption, figure } = RECORD_ROWS[record.id];
+	return {
+		label,
+		...(caption === undefined ? {} : { caption }),
+		...topConfigChipOf(record),
+		count: figure(record.figure),
+		...facesOf(holders),
+	};
+};
+
+const recordRowsOf = (
+	records: readonly CommunityRecord[]
+): readonly TurnoutBand[] =>
+	RECORD_ORDER.map((kind) => {
+		const held = records.find(({ record }) => record.id === kind);
+		return held === undefined ? unheldRecordRow(kind) : heldRecordRow(held);
+	});
 
 const facesOf = (
 	voters: readonly CommunityVoter[]
@@ -153,12 +201,14 @@ const facesOf = (
 	overflow: 0,
 });
 
+const SHOWED_UP_FACES = 10;
+
 export const showedUpBand = (
 	view: Pick<RunCommunityView, "totalPlayers" | "players">
 ): TurnoutBand => ({
 	label: COPY.answeredToday,
 	count: String(view.totalPlayers),
-	color: "cerulean",
+	shown: SHOWED_UP_FACES,
 	...facesOf(view.players),
 });
 
@@ -177,9 +227,7 @@ export const turnoutFor = (
 	showedUp: TurnoutBand,
 	pressFallen: FallenPress = () => undefined
 ): CommunityTurnout => {
-	const outcomes = DAY_OUTCOMES.filter(
-		(outcome) => (turnout?.outcomes[outcome].length ?? 0) > 0
-	).map((outcome): TurnoutBand => {
+	const outcomes = DAY_OUTCOMES.map((outcome): TurnoutBand => {
 		const voters = turnout?.outcomes[outcome] ?? [];
 		const band = bandOf(outcome);
 		const faces = facesOf(voters);
@@ -198,10 +246,7 @@ export const turnoutFor = (
 	return {
 		title: COPY.turnoutTitle,
 		bands: [showedUp, ...outcomes],
-		records: (turnout?.records ?? []).map(({ record, holders }) => ({
-			...recordRowOf(record),
-			...facesOf(holders),
-		})),
+		records: recordRowsOf(turnout?.records ?? []),
 	};
 };
 
@@ -338,11 +383,6 @@ export const communityScreenPropsFor = ({
 					icon: "community",
 					label: plural(view.totalPlayers, "player"),
 					hint: COPY.answeredToday,
-				},
-				{
-					icon: "gate",
-					label: `gate ${swatch.gate} · ${swatch.gateName}`,
-					hint: COPY.whereYouStand,
 				},
 			],
 			prep: {

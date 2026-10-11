@@ -174,6 +174,7 @@ const withOptions = async (
 			option: pollOptionsTable.option,
 			correct: pollOptionsTable.correct,
 			groupIndex: pollOptionsTable.group_index,
+			explanation: pollOptionsTable.explanation,
 		})
 		.from(pollOptionsTable)
 		.where(
@@ -200,6 +201,9 @@ const withOptions = async (
 				label: option.option,
 				correct: option.correct,
 				...(option.groupIndex === null ? {} : { group: option.groupIndex }),
+				...(option.explanation === null
+					? {}
+					: { explanation: option.explanation }),
 			})),
 	}));
 };

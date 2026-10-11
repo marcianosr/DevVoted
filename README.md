@@ -26,7 +26,10 @@ build:
 | `bruno@kanto.dev` | 12 | storage, interest, subscriptions |
 | `blue@kanto.dev` | 8 | the free starter set — a fresh account |
 
-The eight Kanto gym leaders author the polls and populate the community board.
+The Kanto and Johto gym leaders, Red, Gold, Silver and a few townsfolk author the polls
+and populate the community board.
+Lance, Lorelei and Bruno start the day mid-run and Agatha has already fallen, so the
+board is populated the moment you log in; Blue starts with no run.
 They have no login: they exist to give every poll a byline and a face.
 
 The seed also writes the whole 96-poll bank into today's sequence, so a full

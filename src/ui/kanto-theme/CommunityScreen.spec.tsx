@@ -113,13 +113,74 @@ describe("CommunityScreen", () => {
 		).toBeInTheDocument();
 	});
 
+	it("draws as many faces as a row asks for before folding the rest behind its plus", () => {
+		const crowd = Array.from({ length: 12 }, (_, index) => ({
+			name: `Trainer ${index}`,
+			userId: `trainer-${index}`,
+		}));
+		render(
+			<CommunityScreen
+				{...props}
+				turnout={{
+					...props.turnout,
+					bands: [
+						{
+							label: "Answered today",
+							count: "12",
+							shown: 10,
+							climbers: crowd,
+						},
+					],
+					records: [],
+				}}
+			/>
+		);
+
+		expect(
+			within(sectionOf(TURNOUT_TITLE)).getByRole("button", {
+				name: "show 2 more players",
+			})
+		).toHaveTextContent("+2");
+	});
+
+	it("lets a crowded row's faces wrap across the row's width instead of running off a narrow screen", () => {
+		const crowd = Array.from({ length: 12 }, (_, index) => ({
+			name: `Trainer ${index}`,
+			userId: `trainer-${index}`,
+		}));
+		render(
+			<CommunityScreen
+				{...props}
+				turnout={{
+					...props.turnout,
+					bands: [
+						{
+							label: "Answered today",
+							count: "12",
+							shown: 10,
+							climbers: crowd,
+						},
+					],
+					records: [],
+				}}
+			/>
+		);
+
+		const stack = within(sectionOf(TURNOUT_TITLE)).getByRole("button", {
+			name: "show 2 more players",
+		}).parentElement;
+		expect(stack).toHaveClass("flex-wrap");
+		expect(stack?.parentElement).toHaveClass("basis-full");
+	});
+
 	it("lists the day's records in the same rows as the outcomes, each with its figure", () => {
 		render(<CommunityScreen {...props} />);
 		const turnout = within(sectionOf(TURNOUT_TITLE));
 
 		expect(turnout.queryByText("today's records")).toBeNull();
-		expect(turnout.getByText("comeback")).toBeInTheDocument();
+		expect(turnout.getByText("Comeback")).toBeInTheDocument();
 		expect(turnout.getByText("14 slots")).toBeInTheDocument();
+		expect(turnout.getByText(".ts")).toBeInTheDocument();
 	});
 
 	it("puts the map before the polls, and the polls before the records", () => {

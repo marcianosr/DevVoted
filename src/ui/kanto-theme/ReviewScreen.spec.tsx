@@ -137,6 +137,27 @@ describe("ReviewScreen", () => {
 		).toHaveAttribute("data-answer", "wrong");
 	});
 
+	it("explains each option under its own row, worded by the option and not the pick", () => {
+		render(<ReviewScreen {...props} />);
+
+		const miss = rowOf(
+			"Which property centres a flex child along the main axis?"
+		)!;
+		const right = within(miss)
+			.getByText("justify-content")
+			.closest<HTMLElement>("[data-answer]")!;
+		const unpicked = within(miss)
+			.getByText("text-align")
+			.closest<HTMLElement>("[data-answer]")!;
+
+		expect(within(right).getByText("Why it’s right")).toBeInTheDocument();
+		expect(unpicked).toHaveAttribute("data-answer", "idle");
+		expect(within(unpicked).getByText("Why it’s wrong")).toBeInTheDocument();
+		expect(
+			within(miss).getByText("align-items").closest("[data-answer]")
+		).not.toContainElement(within(miss).queryByText("Why it’s wrong"));
+	});
+
 	it("sits the snippet and the explanation with the diff", () => {
 		render(<ReviewScreen {...props} />);
 

@@ -18,8 +18,8 @@ by itself.
 
 ## Decision
 
-1. **The poll screen advances on its own.** After a right answer it holds 650ms, after
-   a wrong one 900ms, so the right option can be read. Then it commits and shows the
+1. **The poll screen advances on its own.** After a right answer it holds 1.65s, after
+   a wrong one 1.9s (650ms and 900ms until 2026-10-08), so the right option can be read. Then it commits and shows the
    next poll, or closes the gate on the fifth. There is no Next press, and input is
    locked while the feedback plays.
 2. **Options have three states: idle, right, wrong.** The correct option is marked
@@ -71,3 +71,10 @@ poll cut it off before it landed. A right answer whose chip flies now leaves onl
 once the chip has ridden into the bar, and never before the 650ms hold; a 3s
 fallback moves on if the chip never settles. Wrong answers, zero-gain answers and
 reduced motion keep the fixed holds.
+
+## Amendment 2026-10-08: the verdict stays a second longer
+
+The holds grow by one second, to 1.65s after a right answer and 1.9s after a wrong
+one (DVTD-fxcc). Playing it, the verdict left before it had been read. A right
+answer whose chip flies was already held about 1.8s by the chip, so it barely
+moves; wrong answers and chip-less right answers get the whole second.

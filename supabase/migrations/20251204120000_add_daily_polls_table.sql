@@ -26,7 +26,7 @@ BEGIN
     to_char(CURRENT_DATE, 'YYYY-MM-DD'),
     "id"
   FROM "polls"
-  WHERE "status" = 'open'
+  WHERE "status"::text = 'open'
   LIMIT 1
   ON CONFLICT ("date") DO NOTHING;
 END $$;

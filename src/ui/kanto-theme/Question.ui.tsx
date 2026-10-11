@@ -12,8 +12,15 @@ import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
+import type { KantoColor } from "./colors";
 import { DependencyGrid, type DependencyGridProps } from "./DependencyGrid.ui";
+import { Icon } from "./Icon.ui";
 import { Typography } from "./Typography.ui";
+
+const COPY = {
+	whyRight: "Why it’s right",
+	whyWrong: "Why it’s wrong",
+} as const;
 
 const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
@@ -23,6 +30,33 @@ const CODE_TEXT = "flex min-w-0 flex-col gap-2";
 const VOTES = "w-8 text-right text-xs tabular-nums text-theme-soft";
 const VOTER_FACES_SLOT = "flex w-24 justify-end";
 const VOTER_FACES = 3;
+
+const EXPLANATION =
+	"flex w-full flex-col gap-1 rounded-lg border border-theme-faint px-3 py-2";
+const EXPLANATION_HEAD = "flex items-center gap-2";
+const EXPLANATION_MARK =
+	"badge-theme inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none";
+const EXPLANATION_BULB = "size-3.5 text-saffron";
+
+type ExplanationVerdict = "right" | "wrong";
+
+const MARK_COLOR = {
+	right: "viridian",
+	wrong: "cinnabar",
+} satisfies Record<ExplanationVerdict, KantoColor>;
+
+const MARK_GLYPH = {
+	right: "✓",
+	wrong: "✗",
+} satisfies Record<ExplanationVerdict, string>;
+
+const WHY = {
+	right: COPY.whyRight,
+	wrong: COPY.whyWrong,
+} satisfies Record<ExplanationVerdict, string>;
+
+const verdictOf = (right: boolean): ExplanationVerdict =>
+	right ? "right" : "wrong";
 
 const SEPARATOR = "·";
 
@@ -43,6 +77,8 @@ export type QuestionVoters = {
 	overflow?: number;
 };
 
+export type OptionExplanation = { text: string; right: boolean };
+
 export type QuestionOption = {
 	id: string;
 	letter: string;
@@ -51,6 +87,7 @@ export type QuestionOption = {
 	seal?: ChoiceSeal;
 	crossedOut?: boolean;
 	state?: ChoiceState;
+	explanation?: OptionExplanation;
 };
 
 export type QuestionStem = "full" | "code";
@@ -128,6 +165,30 @@ const QuestionText = ({
 				)
 			)}
 		</>
+	);
+};
+
+const Explanation = ({ text, right }: OptionExplanation) => {
+	const verdict = verdictOf(right);
+	return (
+		<span className={EXPLANATION}>
+			<span className={EXPLANATION_HEAD}>
+				<span
+					aria-hidden
+					data-screen-theme={MARK_COLOR[verdict]}
+					className={EXPLANATION_MARK}
+				>
+					{MARK_GLYPH[verdict]}
+				</span>
+				<Icon name="bulb" className={EXPLANATION_BULB} />
+				<Typography variant="label" as="span">
+					{WHY[verdict]}
+				</Typography>
+			</span>
+			<Typography variant="caption" as="span">
+				<CodeSpans text={text} />
+			</Typography>
+		</span>
 	);
 };
 
@@ -217,6 +278,11 @@ const Choices = ({
 					aside={
 						option.voters === undefined ? undefined : (
 							<Voters {...option.voters} />
+						)
+					}
+					note={
+						option.explanation === undefined ? undefined : (
+							<Explanation {...option.explanation} />
 						)
 					}
 				>

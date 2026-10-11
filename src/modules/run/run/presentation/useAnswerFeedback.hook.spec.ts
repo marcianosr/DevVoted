@@ -64,7 +64,7 @@ describe("useAnswerFeedback", () => {
 			useAnswerFeedback(answeredWith("correct"), onDone, true)
 		);
 
-		act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.right * 2));
+		act(() => vi.advanceTimersByTime(FLIGHT_FALLBACK_MS - CARD_LEAVE_MS - 1));
 		expect(result.current.leaving).toBe(false);
 
 		act(() => result.current.settle());

@@ -245,6 +245,21 @@ describe("ladderFor", () => {
 
 	describe("the loot a fallen run carries", () => {
 		const hand: LootHand = { onLoot: () => undefined };
+		const fallenFaceOn = (view: ClimbTodayView) =>
+			ladderFor(view, [], hand).flatMap((gate) => gate.fallen)[0];
+
+		it("tells the hovering reader how much a lootable run still holds", () => {
+			expect(fallenFaceOn(koga()).tooltip).toBe(LOOT_COPY.toLoot("67 KB"));
+		});
+
+		it("names the face plainly once the run is spent or is the reader's own", () => {
+			expect(fallenFaceOn(koga({ lootedById: "blue" }))).not.toHaveProperty(
+				"tooltip"
+			);
+			expect(
+				fallenFaceOn({ ...koga(), viewer: { id: "koga", hasLiveRun: true } })
+			).not.toHaveProperty("tooltip");
+		});
 
 		it("offers the take, naming the figure on the press", () => {
 			expect(lootPressOn(koga(), hand)).toMatchObject({

@@ -27,6 +27,29 @@ describe("useNextPollsCountdown", () => {
 		expect(result.current.remaining).toBe("6h 59m");
 	});
 
+	it("hands the raw milliseconds over so a surface can draw its own clock", () => {
+		const { result } = renderHook(() => useNextPollsCountdown());
+		expect(result.current.remainingMs).toBe(7 * 3_600_000 + 30 * 60_000);
+	});
+
+	it("ticks every ten seconds by default, too coarse to show seconds", () => {
+		const { result } = renderHook(() => useNextPollsCountdown());
+		act(() => {
+			vi.advanceTimersByTime(5_000);
+		});
+		expect(result.current.remainingMs).toBe(7 * 3_600_000 + 30 * 60_000);
+	});
+
+	it("ticks every second when asked for a second hand", () => {
+		const { result } = renderHook(() => useNextPollsCountdown("second"));
+		act(() => {
+			vi.advanceTimersByTime(5_000);
+		});
+		expect(result.current.remainingMs).toBe(
+			7 * 3_600_000 + 30 * 60_000 - 5_000
+		);
+	});
+
 	it("states the bare duration, leaving each surface to phrase it", () => {
 		const { result } = renderHook(() => useNextPollsCountdown());
 		expect(result.current.remaining).not.toContain("New polls");

@@ -32,6 +32,7 @@ import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 
 export const LOOT_COPY = {
 	take: (figure: string) => `Loot ${figure}`,
+	toLoot: (figure: string) => `${figure} to loot`,
 	unbanked: (figure: string) => `${figure} unbanked`,
 	takenBy: (name: string, figure: string) => `looted by ${name} · ${figure}`,
 	takenByYou: (figure: string) => `looted by you · ${figure}`,
@@ -68,6 +69,7 @@ export type LadderClimber = {
 	rival: boolean;
 	rescued: boolean;
 	mark?: ClimberMark;
+	tooltip?: string;
 	card?: ClimberCardProps;
 };
 
@@ -140,6 +142,21 @@ export const lootOf = (
 		pending: hand.pendingRunId === fallen.runId,
 	};
 };
+
+const lootTooltipOf = (
+	fallen: ClimbFallen,
+	viewer: ClimbViewer
+): { tooltip?: string } =>
+	lootRefusalOf(
+		{
+			ownerId: fallen.id,
+			lootedById: fallen.lootedById,
+			lootKb: fallen.lootKb,
+		},
+		viewer
+	) === null
+		? { tooltip: LOOT_COPY.toLoot(kbLabel(fallen.lootKb)) }
+		: {};
 
 export const fileOf = (
 	userId: string,
@@ -270,6 +287,7 @@ export const ladderFor = (
 			.sort(byDepthThenId)
 			.map((fallen) => ({
 				...chipOf(fallen, rivalIds, false, lootOf(fallen, climb.viewer, hand)),
+				...lootTooltipOf(fallen, climb.viewer),
 				runKey: String(fallen.runId),
 			})),
 	}));

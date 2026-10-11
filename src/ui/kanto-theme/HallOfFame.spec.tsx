@@ -22,11 +22,12 @@ describe("HallOfFame", () => {
 		expect(screen.getAllByText("13 May 2026, 14:05")).toHaveLength(1);
 	});
 
-	it("states that the seat is empty before anyone summits", () => {
+	it("holds the seat open with a title over its caption before anyone summits", () => {
 		const hall = kantoHallOfFame({ champion: undefined, history: [] });
 		render(<HallOfFame {...hall} />);
 
-		expect(screen.getByText(hall.empty)).toBeInTheDocument();
+		expect(screen.getByText(hall.empty.title)).toBeInTheDocument();
+		expect(screen.getByText(hall.empty.caption)).toBeInTheDocument();
 		expect(screen.queryByText(hall.historyLabel)).not.toBeInTheDocument();
 	});
 });

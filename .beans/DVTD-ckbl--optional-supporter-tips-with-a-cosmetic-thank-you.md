@@ -3,9 +3,9 @@
 title: Optional supporter tips with a cosmetic thank-you and a public costs page
 status: draft
 type: feature
-priority: deferred
+priority: normal
 created_at: 2026-10-04T12:25:26Z
-updated_at: 2026-10-04T12:25:26Z
+updated_at: 2026-10-08T13:13:40Z
 ---
 
 **What:** Players who want to can support DevVoted with a tip and get a cosmetic thank-you, and a public page shows what the game costs and what came in.
@@ -31,3 +31,7 @@ Rejected:
 - Paid revive (DVTD-uret): pay-to-win in a shared-seed game with leaderboards (ADR-131).
 - Ads: hurt the feel and pay pennies at this scale.
 - Paid cosmetics shop or loot boxes: more code and legal surface, and it pushes the design toward FOMO.
+
+## Decided 2026-10-08
+
+Unfrozen. Ships after the landing page and guest play (DVTD-nr8f) so a stranger can see it, and before the first stranger-facing post. Still an external link with no payment code. Money order agreed the same day: tip jar, then the pack-ownership schema (sell nothing yet), then a company league if money before scale is wanted, then a sponsored category pack once there is traffic.

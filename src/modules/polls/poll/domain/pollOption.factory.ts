@@ -8,6 +8,7 @@ export const createMockPollOption = (
 	option: "JavaScript",
 	correct: true,
 	group: null,
+	explanation: null,
 	...overrides,
 });
 

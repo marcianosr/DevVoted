@@ -15,6 +15,7 @@ import {
 	searchOfFilter,
 	visiblePollsOf,
 	windowOf,
+	yesterdaysRowsOf,
 	type PollListFilter,
 } from "~/modules/polls/authoring/application/pollList.viewmodel";
 import {
@@ -89,6 +90,7 @@ export const PollList = ({ search }: PollListProps) => {
 			matching={page.total}
 			shown={page.shown}
 			rows={page.rows}
+			yesterday={yesterdaysRowsOf(all, list.view.yesterday, known, deals)}
 			filter={filter}
 			choices={choices}
 			activeFilters={activeFiltersOf(filter, choices)}
