@@ -1,11 +1,19 @@
 import { POLLS_SPENT } from "~/shared/lib/copy";
+import { dayAfter } from "~/shared/lib/dateUtils";
 import {
 	type ApiResponse,
 	handleApiOperation,
 } from "~/shared/utils/errorHandling";
 
 import { gateAuditsFor } from "~/modules/run/gate/domain/auditSchedule.model";
-import { createRun } from "~/modules/run/run/domain/run.model";
+import {
+	createRun,
+	isRunOver,
+	liveConfigsOf,
+	type RunState,
+} from "~/modules/run/run/domain/run.model";
+import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
+import { prefetcherFor } from "~/modules/run/build/domain/build.model";
 import { BASE_SLOTS } from "~/modules/run/run/domain/rules.model";
 import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
@@ -36,7 +44,10 @@ import { fetchCategoryLeader } from "~/modules/run/run/infrastructure/categoryLe
 import { fetchPollStats } from "~/modules/run/run/infrastructure/pollStats.repository";
 import { settleIncidents } from "~/modules/run/incident/application/incidentSettlement.service";
 import { endIncidentsForRun } from "~/modules/run/incident/infrastructure/incident.repository";
-import { fetchRunPollsForDate } from "~/modules/run/run/infrastructure/runPolls.repository";
+import {
+	fetchDealForRun,
+	fetchRunPollsForDate,
+} from "~/modules/run/run/infrastructure/runPolls.repository";
 import {
 	fetchUnlockedConfigIds,
 	fetchUnlocksSince,
@@ -76,7 +87,20 @@ const withPollReads = async (
 	return { ...view, poll: { ...view.poll, stats, categorySeat } };
 };
 
-const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
+const readsTomorrowsDeal = (state: RunState): boolean =>
+	!isRunOver(state.status) && prefetcherFor(liveConfigsOf(state)) !== undefined;
+
+const dealtTomorrowFor = async (
+	runId: number,
+	state: RunState,
+	today: string
+): Promise<readonly RunPoll[]> =>
+	readsTomorrowsDeal(state) ? fetchDealForRun(runId, dayAfter(today)) : [];
+
+const viewOfRun = async (
+	run: SessionRunRecord,
+	today?: string
+): Promise<RunView> => {
 	const [state, unlockedThisRun, accountReads, unlockedServiceIds] =
 		await Promise.all([
 			loadRunState(run.id),
@@ -84,9 +108,18 @@ const viewOfRun = async (run: SessionRunRecord): Promise<RunView> => {
 			accountReadsFor(run),
 			fetchUnlockedServiceIds(run.user_id),
 		]);
+	const dealtTomorrow =
+		today === undefined ? [] : await dealtTomorrowFor(run.id, state, today);
 	return withPollReads(
 		{
-			...toRunView(state, [], unlockedThisRun, [], unlockedServiceIds),
+			...toRunView(
+				state,
+				[],
+				unlockedThisRun,
+				[],
+				unlockedServiceIds,
+				dealtTomorrow
+			),
 			...accountReads,
 		},
 		run.user_id
@@ -98,7 +131,7 @@ const continueActiveRun = async (
 	date: string
 ): Promise<RunView> => {
 	await ensureTodaysSegment(run.id, date);
-	return viewOfRun(run);
+	return viewOfRun(run, date);
 };
 
 const findResumableRun = async (
@@ -258,11 +291,12 @@ export const dispatchRunActionService = async ({
 			action,
 			settle: settle?.(run.id) ?? settleIncidents(run.id, date),
 		});
-		const [unlockedThisRun, accountReads, unlockedServiceIds] =
+		const [unlockedThisRun, accountReads, unlockedServiceIds, dealtTomorrow] =
 			await Promise.all([
 				unlocksDuring(run),
 				accountReadsFor(run),
 				fetchUnlockedServiceIds(userId),
+				dealtTomorrowFor(run.id, next, date),
 			]);
 		return withPollReads(
 			{
@@ -271,7 +305,8 @@ export const dispatchRunActionService = async ({
 					unlockedConfigIds,
 					unlockedThisRun,
 					earnedTitleIds,
-					unlockedServiceIds
+					unlockedServiceIds,
+					dealtTomorrow
 				),
 				...accountReads,
 			},

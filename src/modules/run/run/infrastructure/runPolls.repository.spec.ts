@@ -8,6 +8,7 @@ import {
 } from "~/test/drizzleMock.factory";
 
 import {
+	fetchDealForRun,
 	fetchRunPollsForDate,
 	getOrCreateDailyRunSeed,
 	rollSegmentForward,
@@ -213,5 +214,46 @@ describe("fetchRunPollsForDate", () => {
 			},
 			{ id: "2", label: "pop()", correct: false },
 		]);
+	});
+});
+
+describe("fetchDealForRun", () => {
+	const TOMORROW = TEST_DATES.christmas;
+	const SEED = [77, 85, 91, 30, 75];
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetDrizzleMock(mock);
+	});
+
+	const pollRow = (id: number) => ({
+		id,
+		question: `Poll ${id}?`,
+		codeBlock: null,
+		codeSandboxUrl: null,
+		answerType: "single",
+		categoryCode: "js",
+		explanation: null,
+		authorId: null,
+		authorName: null,
+		authorHandle: null,
+		authorPhotoUrl: null,
+		authorBorderId: null,
+		authorRole: null,
+		authorTitleIds: null,
+	});
+
+	it("previews the run's own deal in play order, swapping out a seeded poll the run already answered", async () => {
+		mock.results.push(SEED.map((poll_id) => ({ poll_id })));
+		mock.results.push([{ poll_id: 77 }]);
+		mock.results.push(SEED.map((poll_id) => ({ poll_id })));
+		mock.results.push([1, 77, 85].map((id) => ({ id })));
+		mock.results.push([85, 1, 75, 30, 91].map(pollRow));
+		mock.results.push([]);
+
+		const deal = await fetchDealForRun(122, TOMORROW);
+
+		expect(deal.map((poll) => poll.id)).toEqual(["85", "91", "30", "75", "1"]);
+		expect(db.insert).not.toHaveBeenCalled();
 	});
 });

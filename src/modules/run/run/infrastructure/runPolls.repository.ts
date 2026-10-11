@@ -227,19 +227,6 @@ export const fetchRunPollsForDate = async (
 	return fetchRunPollsWith(db, date);
 };
 
-export const fetchSeedCategoriesForDate = async (
-	date: string
-): Promise<CategoryCode[]> => {
-	await getOrCreateDailyRunSeed(date);
-	const rows = await db
-		.select({ categoryCode: pollsTable.category_code })
-		.from(dailyRunPollsTable)
-		.innerJoin(pollsTable, eq(dailyRunPollsTable.poll_id, pollsTable.id))
-		.where(eq(dailyRunPollsTable.date, date))
-		.orderBy(asc(dailyRunPollsTable.position));
-	return rows.map((row) => toCategory(row.categoryCode));
-};
-
 const fetchMissedPollIds = async (
 	runId: number,
 	pollIds: readonly number[],
@@ -341,6 +328,59 @@ export const rewriteRunPollOrder = async (
 	}
 };
 
+const fetchAnsweredPollIds = async (
+	reader: DbReader,
+	runId: number
+): Promise<ReadonlySet<number>> => {
+	const rows = await reader
+		.select({ poll_id: pollResponsesTable.poll_id })
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.run_id, runId),
+				eq(pollResponsesTable.mode, "session")
+			)
+		);
+	return new Set(rows.map((row) => row.poll_id));
+};
+
+const dealPollIdsFor = async (
+	reader: DbReader,
+	date: string,
+	answered: ReadonlySet<number>
+): Promise<number[]> => {
+	const seed = await fetchSeedPollIds(reader, date);
+	const reserve = isDayShortOfFreshPolls(seed, answered)
+		? rollDailyReserve(date, await fetchDealablePollIds(reader))
+		: [];
+	return dealDay(seed, reserve, answered);
+};
+
+const fetchPollsInOrder = async (
+	reader: DbReader,
+	pollIds: readonly number[]
+): Promise<RunPoll[]> => {
+	if (pollIds.length === 0) return [];
+
+	const rows = await reader
+		.select(ENGINE_POLL_COLUMNS)
+		.from(pollsTable)
+		.leftJoin(usersTable, eq(pollsTable.created_by, usersTable.id))
+		.where(inArray(pollsTable.id, [...pollIds]));
+	const byId = new Map(rows.map((row) => [row.id, row]));
+	const ordered = pollIds.flatMap((pollId) => byId.get(pollId) ?? []);
+	return withOptions(reader, ordered);
+};
+
+export const fetchDealForRun = async (
+	runId: number,
+	date: string
+): Promise<RunPoll[]> => {
+	await getOrCreateDailyRunSeed(date);
+	const answered = await fetchAnsweredPollIds(db, runId);
+	return fetchPollsInOrder(db, await dealPollIdsFor(db, date, answered));
+};
+
 export const rollSegmentForward = async (
 	tx: RunPollsWriter,
 	runId: number,
@@ -355,16 +395,7 @@ export const rollSegmentForward = async (
 		.limit(1);
 	if (!latest || latest.segment_date >= today) return;
 
-	const answeredRows = await tx
-		.select({ poll_id: pollResponsesTable.poll_id })
-		.from(pollResponsesTable)
-		.where(
-			and(
-				eq(pollResponsesTable.run_id, runId),
-				eq(pollResponsesTable.mode, "session")
-			)
-		);
-	const answered = new Set(answeredRows.map((row) => row.poll_id));
+	const answered = await fetchAnsweredPollIds(tx, runId);
 
 	const positions = await fetchRunPollPositions(tx, runId);
 	const firstDropped = positions[currentIndex];
@@ -379,11 +410,7 @@ export const rollSegmentForward = async (
 			);
 	const nextPosition = (positions[currentIndex - 1] ?? -1) + 1;
 
-	const seed = await fetchSeedPollIds(tx, today);
-	const reserve = isDayShortOfFreshPolls(seed, answered)
-		? rollDailyReserve(today, await fetchDealablePollIds(tx))
-		: [];
-	const fresh = dealDay(seed, reserve, answered);
+	const fresh = await dealPollIdsFor(tx, today, answered);
 	if (fresh.length === 0) return;
 
 	await tx.insert(runPollsTable).values(

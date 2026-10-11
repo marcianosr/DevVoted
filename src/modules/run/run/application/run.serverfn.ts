@@ -4,7 +4,6 @@ import { z } from "zod";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { withAuthenticatedUser } from "~/shared/utils/authorization";
 
-import { getUpcomingCategoriesService } from "~/modules/run/run/application/prefetch.service";
 import {
 	runActionSchema,
 	warmBootPickSchema,
@@ -72,13 +71,6 @@ export const getRunRecap = createServerFn({ method: "GET" })
 			getRunRecapService({ userId, runId: data.runId })
 		)
 	);
-
-export const getUpcomingCategories = createServerFn({ method: "GET" }).handler(
-	async () =>
-		withAuthenticatedUser(({ userId }) =>
-			getUpcomingCategoriesService({ userId })
-		)
-);
 
 export const getOwnedSwatches = createServerFn({ method: "GET" }).handler(
 	async () =>

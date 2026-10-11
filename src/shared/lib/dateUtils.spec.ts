@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	dayAfter,
 	dayBefore,
 	formatClock,
 	formatCompactDuration,
@@ -102,6 +103,17 @@ describe("localDayRange", () => {
 		const { end } = localDayRange("2028-02-28");
 		expect(end.getMonth()).toBe(1);
 		expect(end.getDate()).toBe(29);
+	});
+});
+
+describe("dayAfter", () => {
+	it("names the calendar day after a date", () => {
+		expect(dayAfter(TEST_DATES.christmasEve)).toBe(TEST_DATES.christmas);
+	});
+
+	it("steps forward across a month and a year", () => {
+		expect(dayAfter("2026-02-28")).toBe("2026-03-01");
+		expect(dayAfter("2025-12-31")).toBe("2026-01-01");
 	});
 });
 
