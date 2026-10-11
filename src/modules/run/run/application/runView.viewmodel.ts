@@ -503,12 +503,53 @@ const configStatusesFor = (
 	);
 };
 
+type PrefetchReads = Pick<
+	RunView,
+	| "upcomingCategories"
+	| "nextGateCategories"
+	| "answerTypesThisGate"
+	| "optionCountsThisGate"
+>;
+
+const NO_PREFETCH_READS: PrefetchReads = {
+	upcomingCategories: null,
+	nextGateCategories: null,
+	answerTypesThisGate: null,
+	optionCountsThisGate: null,
+};
+
+const prefetchReadsFor = (
+	state: RunState,
+	prefetcher: Config | undefined,
+	dealtTomorrow: readonly RunPoll[]
+): PrefetchReads => {
+	if (prefetcher === undefined) return NO_PREFETCH_READS;
+
+	const ahead = [...state.polls, ...dealtTomorrow];
+	const windowEnd = state.currentIndex - state.window.answered + SLICE_WINDOW;
+	const thisWindow = ahead.slice(state.currentIndex, windowEnd);
+	const nextWindow = ahead.slice(windowEnd, windowEnd + SLICE_WINDOW);
+	const shapes = showsPollShape(prefetcher);
+
+	return {
+		upcomingCategories: thisWindow.map((poll) => poll.category),
+		nextGateCategories: nextWindow.map((poll) => poll.category),
+		answerTypesThisGate: shapes
+			? thisWindow.map((poll) => poll.answerType)
+			: null,
+		optionCountsThisGate: shapes
+			? thisWindow.map((poll) => poll.options.length)
+			: null,
+	};
+};
+
 export const toRunView = (
 	state: RunState,
 	unlockedConfigIds: readonly string[] = [],
 	unlockedThisRun: readonly RunUnlock[] = [],
 	earnedTitleIds: readonly string[] = [],
-	unlockedServiceIds: readonly string[] = []
+	unlockedServiceIds: readonly string[] = [],
+	dealtTomorrow: readonly RunPoll[] = []
 ): RunView => {
 	const current = state.polls[state.currentIndex];
 	const leftToday = Math.max(0, state.polls.length - state.currentIndex);
@@ -613,42 +654,7 @@ export const toRunView = (
 		sla: slaControlFor(state),
 		slaBand: state.slaBand ?? null,
 		correctThisGate: state.window.correct,
-		upcomingCategories:
-			prefetcher === undefined
-				? null
-				: state.polls
-						.slice(
-							state.currentIndex,
-							state.currentIndex - state.window.answered + SLICE_WINDOW
-						)
-						.map((poll) => poll.category),
-		nextGateCategories:
-			prefetcher === undefined
-				? null
-				: state.polls
-						.slice(
-							state.currentIndex - state.window.answered + SLICE_WINDOW,
-							state.currentIndex - state.window.answered + 2 * SLICE_WINDOW
-						)
-						.map((poll) => poll.category),
-		answerTypesThisGate:
-			prefetcher === undefined || !showsPollShape(prefetcher)
-				? null
-				: state.polls
-						.slice(
-							state.currentIndex,
-							state.currentIndex - state.window.answered + SLICE_WINDOW
-						)
-						.map((poll) => poll.answerType),
-		optionCountsThisGate:
-			prefetcher === undefined || !showsPollShape(prefetcher)
-				? null
-				: state.polls
-						.slice(
-							state.currentIndex,
-							state.currentIndex - state.window.answered + SLICE_WINDOW
-						)
-						.map((poll) => poll.options.length),
+		...prefetchReadsFor(state, prefetcher, dealtTomorrow),
 		outageTargets:
 			auditorFor(state.build.configs) === undefined
 				? null

@@ -27,8 +27,6 @@ export const sessionRunQueryKeys = {
 		sessionRunQueryKeys.approvalSlots(getTodayDateString()),
 	recap: (runId: number) =>
 		[...sessionRunQueryKeys.all, "recap", runId] as const,
-	upcomingCategories: (date: string) =>
-		[...sessionRunQueryKeys.all, "upcoming", date] as const,
 	runNumber: () => [...sessionRunQueryKeys.all, "run-number"] as const,
 };
 

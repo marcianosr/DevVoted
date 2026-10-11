@@ -145,6 +145,64 @@ describe("toRunView", () => {
 		expect(view.nextGateCategories).toHaveLength(5);
 	});
 
+	describe("Prefetch reading tomorrow's deal", () => {
+		const today = Array.from({ length: SLICE_WINDOW }, (_, index) =>
+			poll(`today${index}`)
+		);
+		const tomorrow = Array.from(
+			{ length: SLICE_WINDOW },
+			(_, index): RunPoll => ({
+				...poll(`tomorrow${index}`),
+				category: "css",
+				answerType: "multiple",
+			})
+		);
+		const viewWithTomorrow = (state: RunState) =>
+			toRunView(state, [], [], [], [], tomorrow);
+
+		it("names tomorrow's polls once today's are all answered", () => {
+			const cleared = {
+				...answeringWith([CONFIGS.prefetch], today),
+				currentIndex: today.length,
+			};
+
+			const view = viewWithTomorrow(cleared);
+
+			expect(view.upcomingCategories).toEqual(Array(SLICE_WINDOW).fill("css"));
+			expect(view.nextGateCategories).toEqual([]);
+		});
+
+		it("names tomorrow's polls as the next gate while today's gate is open", () => {
+			const view = viewWithTomorrow(answeringWith([CONFIGS.prefetch], today));
+
+			expect(view.upcomingCategories).toEqual(
+				Array(SLICE_WINDOW).fill("react")
+			);
+			expect(view.nextGateCategories).toEqual(Array(SLICE_WINDOW).fill("css"));
+		});
+
+		it("shows tomorrow's answer types and option counts to a v2 Prefetch", () => {
+			const cleared = {
+				...answeringWith([{ ...CONFIGS.prefetch, level: 2 }], today),
+				currentIndex: today.length,
+			};
+
+			const view = viewWithTomorrow(cleared);
+
+			expect(view.answerTypesThisGate).toEqual(
+				Array(SLICE_WINDOW).fill("multiple")
+			);
+			expect(view.optionCountsThisGate).toEqual(Array(SLICE_WINDOW).fill(2));
+		});
+
+		it("keeps tomorrow's deal from a build without Prefetch", () => {
+			const view = viewWithTomorrow(answeringWith([CONFIGS.js], today));
+
+			expect(view.upcomingCategories).toBeNull();
+			expect(view.nextGateCategories).toBeNull();
+		});
+	});
+
 	it("hides the poll when not answering", () => {
 		const view = toRunView(createRun([poll("q0")], [CONFIGS.js]));
 		expect(view.status).toBe("configuring");
