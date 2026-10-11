@@ -27,23 +27,11 @@ describe("CodeBlock", () => {
 		expect(container.querySelector("code")).toHaveClass("hljs");
 	});
 
-	it("wears the kit's panel surface rather than the old zinc panel", () => {
+	it("sits on highlight.js's own ground, without a panel border", () => {
 		const { container } = render(<CodeBlock>{SOURCE}</CodeBlock>);
 
-		expect(container.firstChild).toHaveClass(
-			"bg-theme-faint",
-			"border-theme-faint"
-		);
-		expect(container.firstChild).not.toHaveClass("markdown");
-	});
-
-	it("clears the ground highlight.js paints, so the theme shows through", () => {
-		const { container } = render(<CodeBlock>{SOURCE}</CodeBlock>);
-
-		expect(container.firstChild).toHaveClass(
-			"[&_code]:bg-transparent",
-			"[&_pre]:bg-transparent"
-		);
+		expect(container.firstChild).not.toHaveClass("panel-surface", "border");
+		expect(container.firstChild).not.toHaveClass("[&_code]:bg-transparent");
 	});
 
 	it("scrolls a long line inside itself instead of widening the screen", () => {

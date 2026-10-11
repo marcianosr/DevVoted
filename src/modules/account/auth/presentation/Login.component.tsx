@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 
-import { WIKI_PATH } from "~/shared/lib/wikiPath";
 import { getSupabaseBrowserClient } from "~/shared/utils/supabaseBrowser";
 
 import {
@@ -104,7 +103,6 @@ export const Login = ({ theme = DEFAULT_THEME }: LoginProps) => {
 			hero={heroFor()}
 			card={demoCardFor(step)}
 			github={{ pending: githubPending, onPress: handleGithubLogin }}
-			wikiHref={WIKI_PATH}
 			devSignIn={
 				isDevelopment
 					? { method, onMethod: setMethod, email: emailSignIn }

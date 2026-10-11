@@ -4,6 +4,7 @@ import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
 import {
 	splitCodeBlocks,
 	splitCodeSpans,
+	splitQuestionBlocks,
 	stripCodeFence,
 } from "~/shared/lib/codeSpans";
 import { PAIRS } from "~/shared/lib/answerTypes";
@@ -140,7 +141,7 @@ const QuestionText = ({
 	question: string;
 	stem: QuestionStem;
 }) => {
-	const parts = splitCodeBlocks(question).filter(
+	const parts = splitQuestionBlocks(question).filter(
 		(part) => stem === "full" || part.kind === "block"
 	);
 	const heading = parts.findIndex((part) => part.kind === "prose");

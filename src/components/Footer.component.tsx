@@ -5,7 +5,6 @@ import { getPublishedPollCount } from "~/modules/polls/poll/application/poll.ser
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
 import { useApiQuery } from "~/shared/hooks/useApiQuery.hook";
 import { getCategories } from "~/shared/lib/categories";
-import { WIKI_PATH } from "~/shared/lib/wikiPath";
 import { pollQueryKeys } from "~/shared/queryKeys";
 import { AppFooter } from "~/ui/kanto-theme/AppFooter.ui";
 
@@ -27,7 +26,6 @@ export const Footer = () => {
 			configCount={CONFIG_LIST.length}
 			lastCommitDate={format(new Date(__LAST_COMMIT_DATE__), "d MMM yyyy")}
 			lastCommitAuthor={__LAST_COMMIT_AUTHOR__}
-			wikiHref={WIKI_PATH}
 			onNavigate={(href) => navigate({ href })}
 		/>
 	);

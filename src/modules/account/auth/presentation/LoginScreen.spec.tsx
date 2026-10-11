@@ -51,6 +51,14 @@ describe("LoginScreen", () => {
 		).toHaveAttribute("href", "/wiki");
 	});
 
+	it("hides the wiki link without a wiki address", () => {
+		render(<LoginScreen {...BASE} wikiHref={undefined} />);
+
+		expect(
+			screen.queryByText("Read how this game works")
+		).not.toBeInTheDocument();
+	});
+
 	it("disables the press and reads Redirecting while the redirect is pending", () => {
 		render(
 			<LoginScreen {...BASE} github={{ pending: true, onPress: vi.fn() }} />

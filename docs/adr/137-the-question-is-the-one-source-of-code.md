@@ -21,6 +21,12 @@ run had stopped using, so the preview lied.
    the run's poll screen and in the form's preview. The form no longer offers a
    code block field.
 
+   Since 2026-10-09 (DVTD-lb3o) a question line that is nothing but one inline
+   span renders as a code block too, because authors write a whole line of code
+   in single backticks. Options keep such a line inline: an answer that is only
+   `Exclude<T, U>` is a name, not a listing. The code block sits on
+   highlight.js's own dark ground with no panel frame.
+
 2. **Only backticks are interpreted.** The question is split on fences and code
    spans by a pure splitter; nothing else is markdown. A markdown pass would
    strip raw HTML out of a CSS question, turn `> ` into a blockquote and `1.`
