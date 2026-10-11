@@ -5,15 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.6.0 - 2026-10-11
 ### Added
 - **A pairs poll holds four to six pairs.** Authors add pairs up to six, and each tile stops at 30 characters, with a counter as you type. The last link is always forced, so a pair pays its share of one fewer: on six pairs, each right link pays a fifth.
 - **The ads announce matching pairs.** A new advertisement, shown about half the time, says pairs polls are new, how many are in the deck, and opens the run.
+
 ### Changed
 - **Matching pairs: link every pair, then Check.** Tap a tile, then one in the other column, and a coloured line joins them: the left tiles are numbered 1 to 4, and a linked tile on the right takes its partner's number. Tap a linked tile to redraw it, or **clear** to start over. **Check pairs**, beside **clear**, opens once all four pairs are linked and marks every link at once, green or red. Payment is unchanged: four right pays the full poll, two pay two thirds, one pays a third.
 - **Every poll waits for Next.** After you answer, the poll stays up so you can read the verdict, and moves on when you press **Next** (or Enter). The poll's explanation, when it has one, now sits under the answer instead of in a small tag. On a pairs poll you see your board as you played it, each link in its own colour and marked ✓ or ✗, a wrong one dashed.
 - **Switches look alike.** Every switch that picks one of a few options, like the answer type on a poll and the categories on the polls list, is now one dark track with the chosen option raised.
 - **The accuracy bar reads like a score.** A right answer raises your bonus, a wrong one lowers how high it can still go this gate, and the bonus never passes that cap. The bar is ticked every ×0.05, filled to your bonus and hatched up to the cap. What a gate pays is unchanged.
 - **The polls list has no search.** Filter by status, answer type, category and the rest instead.
+
 ### Fixed
 - **The review and the community board read a pairs poll as pairs.** The review after a gate shows your board as you played it, each link marked ✓ or ✗, and counts how many pairs you matched. The community board shows one row per pair, with how many players matched it, instead of eight separate tiles.
 - **Code in a pairs tile reads as code.** A tile like `div + p` showed its backticks as plain characters. The code inside a matching pairs tile is now set as code, like it is in a poll's options.
