@@ -16,11 +16,11 @@ import { SUGGEST_A_POLL } from "~/shared/lib/copy";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { CodeSpans } from "~/ui/kanto-theme/CodeText.ui";
 import { Keycap } from "~/ui/kanto-theme/Keycap.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Link } from "~/ui/kanto-theme/Link.ui";
 import {
-	CodeSpans,
 	Question,
 	questionFactsOf,
 	type QuestionProps,

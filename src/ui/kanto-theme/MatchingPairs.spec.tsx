@@ -65,7 +65,7 @@ describe("MatchingPairs", () => {
 	it("draws a matched pair green and no longer pressable", () => {
 		renderPairs();
 
-		const tile = screen.getByText("div > div");
+		const tile = screen.getByText("div > div").closest("[data-pair]");
 		expect(tile).toHaveAttribute("data-screen-theme", "viridian");
 		expect(screen.queryByRole("button", { name: "div > div" })).toBeNull();
 	});
@@ -76,10 +76,9 @@ describe("MatchingPairs", () => {
 			right: [{ ...open("any later sibling"), state: "missed" }],
 		});
 
-		expect(screen.getByText("any later sibling")).toHaveAttribute(
-			"data-screen-theme",
-			"cinnabar"
-		);
+		expect(
+			screen.getByText("any later sibling").closest("[data-pair]")
+		).toHaveAttribute("data-screen-theme", "cinnabar");
 		expect(screen.queryAllByRole("button")).toHaveLength(0);
 	});
 
@@ -88,5 +87,25 @@ describe("MatchingPairs", () => {
 
 		expect(screen.queryAllByRole("button")).toHaveLength(0);
 		expect(screen.getByText("div + div")).toBeInTheDocument();
+	});
+
+	it("draws a backticked part of a tile as code", () => {
+		renderPairs({ left: [open("`div + p`")], right: [open("the `p` after")] });
+
+		expect(screen.getByText("div + p").tagName).toBe("CODE");
+		expect(screen.getByText("p").tagName).toBe("CODE");
+	});
+
+	it("joins each left tile to the right tile beside it when the pairs are linked", () => {
+		renderPairs({ linked: true, onPick: undefined });
+
+		const rows = within(
+			screen.getByRole("list", { name: "pairs" })
+		).getAllByRole("listitem");
+		expect(rows).toHaveLength(2);
+		expect(within(rows[0]).getByText("div + div")).toBeInTheDocument();
+		expect(within(rows[0]).getByText("the next sibling")).toBeInTheDocument();
+		expect(within(rows[1]).getByText("div > div")).toBeInTheDocument();
+		expect(within(rows[1]).getByText("a direct child")).toBeInTheDocument();
 	});
 });

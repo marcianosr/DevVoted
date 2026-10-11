@@ -88,3 +88,11 @@ export const Answered: Story = {
 		onPick: undefined,
 	},
 };
+
+export const Linked: Story = {
+	args: {
+		left: LEFT.map((label) => tileOf(label, "matched")),
+		right: RIGHT.map((label) => tileOf(label, "matched")),
+		linked: true,
+	},
+};

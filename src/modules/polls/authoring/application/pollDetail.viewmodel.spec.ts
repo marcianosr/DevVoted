@@ -103,6 +103,7 @@ describe("pollDetailViewOf for a pairs poll", () => {
 		);
 		expect(labelsOf(pairs?.left)).toHaveLength(4);
 		expect(labelsOf(pairs?.right)).toHaveLength(4);
+		expect(pairs?.linked).toBe(false);
 		expect(
 			[...(pairs?.left ?? []), ...(pairs?.right ?? [])].every(
 				(tile) => tile.state === "open"
@@ -131,6 +132,7 @@ describe("pollDetailViewOf for a pairs poll", () => {
 			"A p anywhere inside a div",
 		]);
 		expect(pairs?.right.every((tile) => tile.state === "matched")).toBe(true);
+		expect(pairs?.linked).toBe(true);
 	});
 
 	it("draws no pair columns for a choice poll", () => {

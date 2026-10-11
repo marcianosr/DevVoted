@@ -1,14 +1,20 @@
 import { clsx } from "clsx";
 
+import { CodeSpans } from "./CodeText.ui";
 import type { KantoColor } from "./colors";
 
 const COPY = {
 	left: "left tiles",
 	right: "right tiles",
+	pairs: "pairs",
+	link: "⟷",
 } as const;
 
 const COLUMNS = "grid w-full grid-cols-2 gap-2";
 const COLUMN = "flex min-w-0 flex-col gap-2";
+const ROWS = "flex w-full flex-col gap-2";
+const ROW = "grid w-full grid-cols-[1fr_auto_1fr] items-stretch gap-2";
+const LINK = "self-center text-theme-soft";
 const TILE =
 	"flex min-h-14 min-w-0 items-center justify-center rounded-lg border px-2 py-3 text-center text-sm font-bold wrap-anywhere transition-colors";
 const TILE_OPEN = "border-theme-faint bg-theme-dim";
@@ -29,6 +35,7 @@ export type MatchingPairsProps = {
 	right: readonly PairTile[];
 	pickedIds?: readonly string[];
 	onPick?: (id: string) => void;
+	linked?: boolean;
 };
 
 const ResolvedTile = ({
@@ -43,7 +50,7 @@ const ResolvedTile = ({
 		data-pair={state}
 		className={clsx(TILE, TILE_TONED)}
 	>
-		{tile.label}
+		<CodeSpans text={tile.label} />
 	</span>
 );
 
@@ -59,7 +66,11 @@ const Tile = ({
 	if (tile.state !== "open")
 		return <ResolvedTile tile={tile} state={tile.state} />;
 	if (onPick === undefined)
-		return <span className={clsx(TILE, TILE_OPEN)}>{tile.label}</span>;
+		return (
+			<span className={clsx(TILE, TILE_OPEN)}>
+				<CodeSpans text={tile.label} />
+			</span>
+		);
 	return (
 		<button
 			type="button"
@@ -67,7 +78,7 @@ const Tile = ({
 			onClick={() => onPick(tile.id)}
 			className={clsx(TILE, TILE_PICKABLE, picked ? TILE_TONED : TILE_OPEN)}
 		>
-			{tile.label}
+			<CodeSpans text={tile.label} />
 		</button>
 	);
 };
@@ -95,24 +106,50 @@ const Column = ({
 	</div>
 );
 
+const LinkedPairs = ({
+	left,
+	right,
+}: Pick<MatchingPairsProps, "left" | "right">) => (
+	<ul aria-label={COPY.pairs} className={ROWS}>
+		{left.map((tile, index) => {
+			const partner = right[index];
+			return (
+				<li key={tile.id} className={ROW}>
+					<Tile tile={tile} picked={false} />
+					<span aria-hidden className={LINK}>
+						{COPY.link}
+					</span>
+					{partner === undefined ? null : (
+						<Tile tile={partner} picked={false} />
+					)}
+				</li>
+			);
+		})}
+	</ul>
+);
+
 export const MatchingPairs = ({
 	left,
 	right,
 	pickedIds = [],
 	onPick,
-}: MatchingPairsProps) => (
-	<div className={COLUMNS}>
-		<Column
-			label={COPY.left}
-			tiles={left}
-			pickedIds={pickedIds}
-			onPick={onPick}
-		/>
-		<Column
-			label={COPY.right}
-			tiles={right}
-			pickedIds={pickedIds}
-			onPick={onPick}
-		/>
-	</div>
-);
+	linked = false,
+}: MatchingPairsProps) =>
+	linked ? (
+		<LinkedPairs left={left} right={right} />
+	) : (
+		<div className={COLUMNS}>
+			<Column
+				label={COPY.left}
+				tiles={left}
+				pickedIds={pickedIds}
+				onPick={onPick}
+			/>
+			<Column
+				label={COPY.right}
+				tiles={right}
+				pickedIds={pickedIds}
+				onPick={onPick}
+			/>
+		</div>
+	);

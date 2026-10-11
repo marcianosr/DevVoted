@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- **Code in a pairs tile reads as code.** A tile like `div + p` showed its backticks as plain characters. The code inside a matching pairs tile is now set as code, like it is in a poll's options.
+- **A pairs poll's answer shows which tile goes with which.** On a poll's own page, **with the answer** puts each pair on one row, joined by ⟷, instead of two loose columns.
 
 ## 2.5.1 - 2026-10-11
 ### Fixed

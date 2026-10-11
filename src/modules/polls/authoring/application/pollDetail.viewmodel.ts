@@ -72,7 +72,7 @@ const answerOptionOf = (option: PollOption): Partial<QuestionOption> => {
 	};
 };
 
-type PairColumn = keyof QuestionPairs;
+type PairColumn = "left" | "right";
 
 const pairTilesOf = (
 	options: readonly PollOption[],
@@ -90,7 +90,7 @@ const pairColumnOf = (
 	options: readonly PollOption[],
 	column: PairColumn,
 	view: PollDetailView
-): QuestionPairs[PairColumn] => {
+): QuestionPairs["left"] => {
 	const tiles = pairTilesOf(options, column);
 	const ordered =
 		view === "answer"
@@ -113,6 +113,7 @@ const pairsOf = (
 				pairs: {
 					left: pairColumnOf(poll, options, "left", view),
 					right: pairColumnOf(poll, options, "right", view),
+					linked: view === "answer",
 				},
 			}
 		: {};
