@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.5.1 - 2026-10-11
 ### Fixed
 - **A pairs poll reads as pairs on its own page.** Opening a matching pairs poll from the polls list showed its eight tiles as a lettered list of options. It now shows the two columns a player meets, shuffled, and **with the answer** lines each pair up side by side in green.
 
