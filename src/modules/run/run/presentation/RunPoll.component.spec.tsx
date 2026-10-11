@@ -180,3 +180,91 @@ describe("RunPoll", () => {
 		);
 	});
 });
+
+describe("RunPoll on a matching pairs poll", () => {
+	const tileOf = (label: string) => ({
+		id: label,
+		label,
+		state: "open" as const,
+	});
+	const LEFT = ["div + div", "div > div"];
+	const RIGHT = ["the next sibling", "a direct child"];
+
+	const renderPairs = () => {
+		const view = createMockRunView({
+			poll: createMockPollView({
+				answerType: "pairs",
+				options: [...LEFT, ...RIGHT].map((label) => ({ id: label, label })),
+				pairs: { left: LEFT.map(tileOf), right: RIGHT.map(tileOf) },
+			}),
+		});
+		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
+		vi.mocked(dispatchRunAction).mockResolvedValue({
+			success: true,
+			data: view,
+		});
+		render(
+			<QueryClientProvider client={createTestQueryClient()}>
+				<RunPoll />
+			</QueryClientProvider>
+		);
+	};
+
+	const pick = async (
+		user: ReturnType<typeof userEvent.setup>,
+		labels: readonly string[]
+	) => {
+		for (const label of labels)
+			await user.click(await screen.findByRole("button", { name: label }));
+	};
+
+	it("matches a tile on each side the moment the second is tapped", async () => {
+		const user = userEvent.setup();
+		renderPairs();
+
+		await pick(user, ["a direct child", "div > div"]);
+
+		await waitFor(() =>
+			expect(
+				vi.mocked(dispatchRunAction).mock.calls.at(0)?.[0]?.data.action
+			).toEqual(
+				expect.objectContaining({
+					type: "match-pair",
+					optionIds: ["a direct child", "div > div"],
+				})
+			)
+		);
+	});
+
+	it("swaps the pick when a second tile on the same side is tapped", async () => {
+		const user = userEvent.setup();
+		renderPairs();
+
+		await pick(user, ["div + div", "div > div"]);
+
+		expect(screen.getByRole("button", { name: "div > div" })).toHaveAttribute(
+			"aria-pressed",
+			"true"
+		);
+		expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
+			"aria-pressed",
+			"false"
+		);
+		expect(dispatchRunAction).not.toHaveBeenCalled();
+	});
+
+	it("clears the picks and stays on the poll after a pair resolves", async () => {
+		const user = userEvent.setup();
+		renderPairs();
+
+		await pick(user, ["div + div", "the next sibling"]);
+
+		await waitFor(() => expect(dispatchRunAction).toHaveBeenCalled());
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
+				"aria-pressed",
+				"false"
+			)
+		);
+	});
+});

@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import type { ChoiceState } from "./Choice.ui";
-import { Question, type QuestionOption } from "./Question.ui";
+import { Question, questionFactsOf, type QuestionOption } from "./Question.ui";
 
 const OPTIONS = [
 	{ id: "option-1", letter: "A", label: "Partial<T>" },
@@ -267,6 +267,17 @@ describe("Question's options with code in them", () => {
 		expect(container.querySelector("[data-choices]")).not.toHaveTextContent(
 			"```"
 		);
+	});
+});
+
+describe("questionFactsOf on a matching pairs poll", () => {
+	it("counts the four pairs, however many tiles are still open", () => {
+		expect(
+			questionFactsOf({
+				answerType: "pairs",
+				options: [{ id: "map", letter: "A", label: "map" }],
+			})
+		).toBe("4 pairs · matching pairs");
 	});
 });
 

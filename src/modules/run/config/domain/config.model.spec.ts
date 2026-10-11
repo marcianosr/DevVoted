@@ -335,18 +335,18 @@ describe("describeConfig", () => {
 		);
 	});
 
-	it("says any poll for a linter covering every category, never twelve names", () => {
+	it("says any poll but a pairs poll for a linter covering every category, never twelve names", () => {
 		expect(describeConfig(CONFIGS.linter)).toBe(
-			"Cross out a wrong answer on any poll for a fee that doubles each use and never resets."
+			"Cross out a wrong answer on any poll but a pairs poll for a fee that doubles each use and never resets."
 		);
 	});
 
 	it("states Linter's reset at v2 and its half price at v3", () => {
 		expect(describeConfig({ ...CONFIGS.linter, level: 2 })).toBe(
-			"Cross out a wrong answer on any poll for a fee that doubles each use and resets each gate."
+			"Cross out a wrong answer on any poll but a pairs poll for a fee that doubles each use and resets each gate."
 		);
 		expect(describeConfig({ ...CONFIGS.linter, level: 3 })).toBe(
-			"Cross out a wrong answer on any poll for half the fee, doubling each use and resetting each gate."
+			"Cross out a wrong answer on any poll but a pairs poll for half the fee, doubling each use and resetting each gate."
 		);
 	});
 
@@ -422,9 +422,9 @@ describe("givesOf", () => {
 		);
 	});
 
-	it("says any poll for the roster's Linter", () => {
+	it("says any poll but a pairs poll for the roster's Linter", () => {
 		expect(givesOf(CONFIGS.linter)).toBe(
-			"Cross out a wrong answer on any poll"
+			"Cross out a wrong answer on any poll but a pairs poll"
 		);
 	});
 

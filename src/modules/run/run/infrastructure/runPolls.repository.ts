@@ -171,6 +171,7 @@ const withOptions = async (
 			poll_id: pollOptionsTable.poll_id,
 			option: pollOptionsTable.option,
 			correct: pollOptionsTable.correct,
+			groupIndex: pollOptionsTable.group_index,
 			explanation: pollOptionsTable.explanation,
 		})
 		.from(pollOptionsTable)
@@ -179,7 +180,8 @@ const withOptions = async (
 				pollOptionsTable.poll_id,
 				pollRows.map((row) => row.id)
 			)
-		);
+		)
+		.orderBy(asc(pollOptionsTable.id));
 
 	return pollRows.map((poll) => ({
 		id: String(poll.id),
@@ -196,6 +198,7 @@ const withOptions = async (
 				id: String(option.id),
 				label: option.option,
 				correct: option.correct,
+				...(option.groupIndex === null ? {} : { group: option.groupIndex }),
 				...(option.explanation === null
 					? {}
 					: { explanation: option.explanation }),

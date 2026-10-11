@@ -46,6 +46,10 @@ import { GateOutcomeView } from "~/modules/run/gate/presentation/GateOutcomeView
 import { RunOverView } from "~/modules/run/run/presentation/RunOverView.component";
 import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
+import {
+	answeredAPoll,
+	pickedAfter,
+} from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
 import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
@@ -176,6 +180,51 @@ const BASE_POLLS: RunPoll[] = [
 	]),
 ];
 
+type PairSeed = readonly [left: string, right: string];
+
+const pairs = (
+	id: string,
+	category: CategoryCode,
+	question: string,
+	seeds: readonly PairSeed[]
+): RunPoll => ({
+	id,
+	category,
+	question,
+	answerType: "pairs",
+	options: seeds.flatMap((seed, pair) =>
+		seed.map((label, side) => ({
+			id: `${id}-${pair}-${side}`,
+			label,
+			correct: true,
+			group: pair,
+		}))
+	),
+});
+
+const PAIRS_POLLS: RunPoll[] = [
+	pairs("pairs1", "css", "Match each selector to what it selects.", [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
+	]),
+	pairs("pairs2", "general-backend", "Match each status code to its meaning.", [
+		["201", "Created"],
+		["204", "No Content"],
+		["409", "Conflict"],
+		["429", "Too Many Requests"],
+	]),
+];
+
+const PAIRS_GATES = 3;
+
+const isPairsSeat = (index: number): boolean =>
+	index % SLICE_WINDOW === 0 && index < PAIRS_GATES * SLICE_WINDOW;
+
+const pairsAt = (index: number): RunPoll =>
+	PAIRS_POLLS[Math.floor(index / SLICE_WINDOW) % PAIRS_POLLS.length];
+
 type RigOutcome = "right" | "wrong";
 
 const rigOptionIds = (
@@ -193,9 +242,36 @@ const rigOptionIds = (
 
 const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
 const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
-	const base = BASE_POLLS[i % BASE_POLLS.length];
+	const base = isPairsSeat(i) ? pairsAt(i) : BASE_POLLS[i % BASE_POLLS.length];
 	return { ...base, id: `${base.id}-${i}` };
 });
+
+const tilesOfPair = (poll: RunPoll, pair: number): readonly string[] =>
+	poll.options
+		.filter((option) => option.group === pair)
+		.map((option) => option.id);
+
+const RESOLVED_PAIRS = [0, 1, 2] as const;
+
+const rigPairOf = (
+	poll: RunPoll,
+	pair: number,
+	outcome: RigOutcome
+): readonly string[] =>
+	outcome === "right"
+		? tilesOfPair(poll, pair)
+		: [tilesOfPair(poll, pair)[0], tilesOfPair(poll, pair + 1)[1]];
+
+const rigActions = (poll: RunPoll, outcome: RigOutcome): RunAction[] =>
+	poll.answerType === "pairs"
+		? RESOLVED_PAIRS.map((pair) => ({
+				type: "match-pair",
+				optionIds: rigPairOf(poll, pair, outcome),
+			}))
+		: [{ type: "answer", optionIds: rigOptionIds(poll, outcome) }];
+
+const reduceAll = (state: RunState, actions: readonly RunAction[]): RunState =>
+	actions.reduce(runReducer, state);
 
 const PROTO_START_KB = 256;
 const PROTO_GRANT_KB = 256;
@@ -636,13 +712,26 @@ const RunGame = ({
 		settled ? null : (view.poll?.id ?? null),
 		view.pollTimeLimitMs ?? view.fastAnswer?.withinMs ?? null
 	);
+	const viewOf = (next: RunState): RunView =>
+		toRunView(next, [], [], [], unlockedServiceIds);
+	const settle = (next: RunState) => {
+		setState(next);
+		if (answeredAPoll(view, viewOf(next))) return setPinned(true);
+		setSelected([]);
+	};
 	const answer = (optionIds: readonly string[]) => {
-		dispatch({ type: "answer", optionIds, elapsedMs: pollClock.elapsedMs() });
-		setPinned(true);
+		const onPairs = view.poll?.answerType === "pairs";
+		settle(
+			runReducer(state, {
+				type: onPairs ? "match-pair" : "answer",
+				optionIds,
+				elapsedMs: pollClock.elapsedMs(),
+			})
+		);
 	};
 	const answerCurrent = (outcome: RigOutcome) => {
 		const poll = state.polls[state.currentIndex];
-		if (poll) answer(rigOptionIds(poll, outcome));
+		if (poll) settle(reduceAll(state, rigActions(poll, outcome)));
 	};
 	const answerRestOfWindow = (outcome: RigOutcome) =>
 		setState((current) => {
@@ -650,19 +739,14 @@ const RunGame = ({
 			while (next.status === "answering") {
 				const poll = next.polls[next.currentIndex];
 				if (!poll) break;
-				next = runReducer(next, {
-					type: "answer",
-					optionIds: rigOptionIds(poll, outcome),
-				});
+				next = reduceAll(next, rigActions(poll, outcome));
 				next = runReducer(next, { type: "close-gate" });
 			}
 			return next;
 		});
 	const onSelect = (optionId: string) =>
 		setSelected((current) =>
-			current.includes(optionId)
-				? current.filter((id) => id !== optionId)
-				: [...current, optionId]
+			pickedAfter(view.poll ?? undefined, current, optionId)
 		);
 	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		setRewardStep("shop");

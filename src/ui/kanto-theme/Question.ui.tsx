@@ -6,12 +6,14 @@ import {
 	splitCodeSpans,
 	stripCodeFence,
 } from "~/shared/lib/codeSpans";
+import { PAIRS } from "~/shared/lib/answerTypes";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import type { KantoColor } from "./colors";
+import { MatchingPairs, type MatchingPairsProps } from "./MatchingPairs.ui";
 import { Icon } from "./Icon.ui";
 import { Typography } from "./Typography.ui";
 
@@ -58,11 +60,16 @@ const verdictOf = (right: boolean): ExplanationVerdict =>
 
 const SEPARATOR = "·";
 
-export const questionFactsOf = ({
+const choiceCountOf = ({
 	options,
 	answerType,
 }: Pick<QuestionProps, "options" | "answerType">) =>
-	`${options.length} options ${SEPARATOR} ${ANSWER_TYPE_LABEL[answerType]}`;
+	answerType === "pairs" ? `${PAIRS} pairs` : `${options.length} options`;
+
+export const questionFactsOf = (
+	question: Pick<QuestionProps, "options" | "answerType">
+) =>
+	`${choiceCountOf(question)} ${SEPARATOR} ${ANSWER_TYPE_LABEL[question.answerType]}`;
 
 export type QuestionVoters = {
 	climbers: readonly ClimberProps[];
@@ -93,7 +100,10 @@ export type QuestionProps = {
 	codeBlock?: string;
 	pickedIds?: readonly string[];
 	onPick?: (id: string) => void;
+	pairs?: QuestionPairs;
 };
+
+export type QuestionPairs = Pick<MatchingPairsProps, "left" | "right">;
 
 export const CodeSpans = ({ text }: { text: string }) => (
 	<span className={PROSE}>
@@ -200,54 +210,74 @@ export const Question = ({
 	codeBlock,
 	pickedIds = [],
 	onPick,
+	pairs,
 }: QuestionProps) => (
 	<section className={BLOCK}>
 		<QuestionText question={question} stem={stem} />
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 
-		<div data-choices className={CHOICES}>
-			{options.map((option) => {
-				const picked = pickedIds.includes(option.id);
-				const pick = onPick === undefined ? undefined : () => onPick(option.id);
+		{pairs === undefined ? (
+			<Choices
+				answerType={answerType}
+				options={options}
+				pickedIds={pickedIds}
+				onPick={onPick}
+			/>
+		) : (
+			<MatchingPairs {...pairs} pickedIds={pickedIds} onPick={onPick} />
+		)}
+	</section>
+);
 
-				if (option.seal !== undefined) {
-					return (
-						<Choice
-							key={option.id}
-							letter={option.letter}
-							answerType={answerType}
-							picked={picked}
-							onPick={pick}
-							seal={option.seal}
-						/>
-					);
-				}
+const Choices = ({
+	answerType,
+	options,
+	pickedIds,
+	onPick,
+}: Required<Pick<QuestionProps, "answerType" | "options" | "pickedIds">> &
+	Pick<QuestionProps, "onPick">) => (
+	<div data-choices className={CHOICES}>
+		{options.map((option) => {
+			const picked = pickedIds.includes(option.id);
+			const pick = onPick === undefined ? undefined : () => onPick(option.id);
 
+			if (option.seal !== undefined) {
 				return (
 					<Choice
 						key={option.id}
 						letter={option.letter}
 						answerType={answerType}
 						picked={picked}
-						crossedOut={option.crossedOut}
-						state={option.state}
 						onPick={pick}
-						aside={
-							option.voters === undefined ? undefined : (
-								<Voters {...option.voters} />
-							)
-						}
-						note={
-							option.explanation === undefined ? undefined : (
-								<Explanation {...option.explanation} />
-							)
-						}
-					>
-						<CodeText text={option.label ?? ""} />
-					</Choice>
+						seal={option.seal}
+					/>
 				);
-			})}
-		</div>
-	</section>
+			}
+
+			return (
+				<Choice
+					key={option.id}
+					letter={option.letter}
+					answerType={answerType}
+					picked={picked}
+					crossedOut={option.crossedOut}
+					state={option.state}
+					onPick={pick}
+					aside={
+						option.voters === undefined ? undefined : (
+							<Voters {...option.voters} />
+						)
+					}
+					note={
+						option.explanation === undefined ? undefined : (
+							<Explanation {...option.explanation} />
+						)
+					}
+				>
+					<CodeText text={option.label ?? ""} />
+				</Choice>
+			);
+		})}
+	</div>
 );

@@ -2,7 +2,12 @@ import type {
 	CoverageBreakdown,
 	CoverageFactors,
 } from "~/modules/run/build/domain/coverageRatio.model";
+import type { AnswerType } from "~/shared/lib/answerTypes";
 import type { CategoryCode } from "~/shared/lib/categories";
+import {
+	type AnsweredPair,
+	pairShareOf,
+} from "~/modules/run/run/domain/pairPoll.model";
 import {
 	partialShareFor,
 	SLICE_WINDOW,
@@ -15,9 +20,10 @@ export type RunOption = {
 	readonly id: string;
 	readonly label: string;
 	readonly correct: boolean;
+	readonly group?: number;
 	readonly explanation?: string;
 };
-export type AnswerType = "single" | "multiple";
+export type { AnswerType };
 
 export type PollAuthor = {
 	readonly userId?: string;
@@ -44,7 +50,11 @@ export type RunPoll = {
 
 type GradedPoll<Id> = {
 	readonly answerType: AnswerType;
-	readonly options: readonly { readonly id: Id; readonly correct: boolean }[];
+	readonly options: readonly {
+		readonly id: Id;
+		readonly correct: boolean;
+		readonly group?: number;
+	}[];
 };
 
 type PollGrade = {
@@ -77,10 +87,20 @@ export type GradedOutcome = "correct" | "partial" | "wrong";
 
 export type AnswerOutcome = GradedOutcome | "skipped";
 
+const pairsOutcomeOf = <Id>(
+	poll: GradedPoll<Id>,
+	optionIds: Iterable<Id>
+): GradedOutcome => {
+	const share = pairShareOf(poll, optionIds);
+	if (share === FULL_SHARE) return "correct";
+	return share > NO_SHARE ? "partial" : "wrong";
+};
+
 export const coverageShare = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): number => {
+	if (poll.answerType === "pairs") return pairShareOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return FULL_SHARE;
 	if (poll.answerType === "single" || grade.keySize === 0) return NO_SHARE;
@@ -93,6 +113,7 @@ export const answerOutcome = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): GradedOutcome => {
+	if (poll.answerType === "pairs") return pairsOutcomeOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return "correct";
 	if (poll.answerType === "single") return "wrong";
@@ -147,6 +168,7 @@ export type AnsweredPoll = {
 	readonly options?: readonly string[];
 	readonly optionExplanations?: Readonly<Record<string, string>>;
 	readonly answerType?: AnswerType;
+	readonly pairs?: readonly AnsweredPair[];
 	readonly gate?: number;
 	readonly coverageEarned?: number;
 	readonly coverageLost?: number;

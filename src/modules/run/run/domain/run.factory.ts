@@ -32,6 +32,31 @@ export const poll = (
 	],
 });
 
+export const PAIR_TILES = [
+	["div + div", "the next sibling"],
+	["div > div", "a direct child"],
+	["div ~ div", "any later sibling"],
+	["div div", "any descendant"],
+] as const;
+
+export const pairsPoll = (id: string): RunPoll => ({
+	id,
+	category: "css",
+	question: "Match each selector to what it selects",
+	answerType: "pairs",
+	options: PAIR_TILES.flatMap((tiles, group) =>
+		tiles.map((tile) => ({
+			id: `${id}-${tile}`,
+			label: tile,
+			correct: true,
+			group,
+		}))
+	),
+});
+
+export const pairTiles = (id: string, pair: number): string[] =>
+	PAIR_TILES[pair].map((tile) => `${id}-${tile}`);
+
 export const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));
 

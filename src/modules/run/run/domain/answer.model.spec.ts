@@ -60,6 +60,8 @@ import {
 	audited,
 	clearGate,
 	failGate,
+	pairsPoll,
+	pairTiles,
 	handed,
 	payPeel,
 	poll,
@@ -2341,6 +2343,122 @@ describe("what a mirrored poll is credited", () => {
 		expect(answered.window.accuracyAvailable).toBe(
 			mirrored.window.accuracyAvailable + credit
 		);
+	});
+});
+
+describe("a matching pairs poll resolves one pair at a time", () => {
+	const PAIRS_ID = "selectors";
+	const onPairs = (): RunState => {
+		const state = started([]);
+		return {
+			...state,
+			polls: state.polls.map((candidate, index) =>
+				index === state.currentIndex ? pairsPoll(PAIRS_ID) : candidate
+			),
+		};
+	};
+	const match = (state: RunState, optionIds: readonly string[]): RunState =>
+		runReducer(state, { type: "match-pair", optionIds });
+	const right = (pair: number) => pairTiles(PAIRS_ID, pair);
+	const miss = (pair: number) => [
+		pairTiles(PAIRS_ID, pair)[0],
+		pairTiles(PAIRS_ID, (pair + 1) % 4)[1],
+	];
+	const lastAnswered = (state: RunState) => state.answeredThisGate.at(-1);
+
+	it("stays on the poll after the first matched pair", () => {
+		const state = onPairs();
+		const next = match(state, right(1));
+
+		expect(next.currentIndex).toBe(state.currentIndex);
+		expect(next.pairsResolved).toEqual({ matched: right(1), missed: [] });
+		expect(next.window.answered).toBe(0);
+	});
+
+	it("burns the pair the player started from on a miss and keeps going", () => {
+		const next = match(onPairs(), miss(0));
+
+		expect(next.pairsResolved).toEqual({ matched: [], missed: [0] });
+		expect(next.answeredThisGate).toHaveLength(0);
+	});
+
+	it("finishes on the third resolved pair and pays the full share for three matches", () => {
+		const next = match(match(match(onPairs(), right(0)), right(1)), right(2));
+
+		expect(lastAnswered(next)?.outcome).toBe("correct");
+		expect(next.pairsResolved).toBeUndefined();
+		expect(next.streak).toBe(1);
+	});
+
+	it("pays a matched pair a third of the full share", () => {
+		const full = match(match(match(onPairs(), right(0)), right(1)), right(2));
+		const third = match(match(match(onPairs(), right(0)), miss(1)), miss(2));
+
+		expect(lastAnswered(third)?.outcome).toBe("partial");
+		expect(lastAnswered(third)?.coverageEarned).toBeCloseTo(
+			(lastAnswered(full)?.coverageEarned ?? 0) / 3
+		);
+	});
+
+	it("ends as wrong after three misses, breaking the streak", () => {
+		const state = { ...onPairs(), streak: 3 };
+		const next = match(match(match(state, miss(0)), miss(1)), miss(2));
+
+		expect(lastAnswered(next)?.outcome).toBe("wrong");
+		expect(next.streak).toBe(0);
+	});
+
+	it("records every pair for the debrief, matched only where the player matched it", () => {
+		const next = match(match(match(onPairs(), right(0)), miss(1)), right(2));
+
+		expect(lastAnswered(next)?.pairs?.map((pair) => pair.matched)).toEqual([
+			true,
+			false,
+			true,
+			false,
+		]);
+	});
+
+	it("refuses a plain answer on a pairs poll, so eight ids cannot buy a full share", () => {
+		const state = onPairs();
+		const allTiles = [0, 1, 2, 3].flatMap(right);
+
+		expect(runReducer(state, { type: "answer", optionIds: allTiles })).toBe(
+			state
+		);
+	});
+
+	it("refuses two tiles from the same side", () => {
+		const state = onPairs();
+
+		expect(match(state, [right(0)[0], right(1)[0]])).toBe(state);
+	});
+
+	it("keeps a pairs poll's double credit under 207, which cannot disguise it", () => {
+		const disguised = audited(onPairs(), 4, "multi-status");
+
+		expect(
+			pollCreditFor(disguised, disguised.polls[disguised.currentIndex])
+		).toBe(MULTIPLE_CREDIT);
+	});
+
+	it("leaves a pairs poll unmirrored, since every tile belongs to a pair", () => {
+		const mirrored = audited(onPairs(), 4, "mirrored");
+		const next = match(match(match(mirrored, right(0)), right(1)), right(3));
+
+		expect(lastAnswered(next)?.outcome).toBe("correct");
+	});
+
+	it("refuses a match on a poll that is not a pairs poll", () => {
+		const state = started([]);
+		const current = state.polls[state.currentIndex];
+
+		expect(
+			match(
+				state,
+				current.options.map((option) => option.id)
+			)
+		).toBe(state);
 	});
 });
 

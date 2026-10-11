@@ -1,5 +1,7 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
+import type { AnswerType } from "~/shared/lib/answerTypes";
+
 import { db } from "~/database/db";
 import {
 	pollOptionsTable,
@@ -53,8 +55,8 @@ export type CommunityPollRecord = {
 	id: number;
 	question: string;
 	categoryCode: string;
-	answerType: "single" | "multiple";
-	options: { id: number; label: string; correct: boolean }[];
+	answerType: AnswerType;
+	options: { id: number; label: string; correct: boolean; group?: number }[];
 };
 
 export const fetchPollsWithOptions = async (
@@ -78,6 +80,7 @@ export const fetchPollsWithOptions = async (
 			poll_id: pollOptionsTable.poll_id,
 			option: pollOptionsTable.option,
 			correct: pollOptionsTable.correct,
+			groupIndex: pollOptionsTable.group_index,
 		})
 		.from(pollOptionsTable)
 		.where(inArray(pollOptionsTable.poll_id, pollIds));
@@ -93,6 +96,7 @@ export const fetchPollsWithOptions = async (
 				id: option.id,
 				label: option.option,
 				correct: option.correct,
+				...(option.groupIndex === null ? {} : { group: option.groupIndex }),
 			})),
 	}));
 };

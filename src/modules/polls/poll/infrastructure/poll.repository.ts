@@ -39,6 +39,7 @@ const toPollOption = (record: PollOptionRecord): PollOption => ({
 	pollId: record.poll_id,
 	option: record.option,
 	correct: record.correct,
+	group: record.group_index,
 	explanation: record.explanation,
 });
 
@@ -63,7 +64,8 @@ export const fetchPollByIdWithOptions = async (
 	const records = await db
 		.select()
 		.from(pollOptionsTable)
-		.where(eq(pollOptionsTable.poll_id, id));
+		.where(eq(pollOptionsTable.poll_id, id))
+		.orderBy(asc(pollOptionsTable.id));
 
 	return { poll, options: records.map(toPollOption) };
 };

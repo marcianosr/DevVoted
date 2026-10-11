@@ -37,14 +37,23 @@ const OPTIONS = [
 		option: "absolute",
 		correct: true,
 		explanation: OUT_OF_FLOW,
+		group: null,
 	},
-	{ id: 2, pollId: 7, option: "relative", correct: false, explanation: null },
+	{
+		id: 2,
+		pollId: 7,
+		option: "relative",
+		correct: false,
+		explanation: null,
+		group: null,
+	},
 	{
 		id: 3,
 		pollId: 7,
 		option: "sticky",
 		correct: false,
 		explanation: STAYS_IN_FLOW,
+		group: null,
 	},
 ];
 

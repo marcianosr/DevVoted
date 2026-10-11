@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
-import type { PressAction } from "~/modules/run/run/application/pollScreen.viewmodel";
+import {
+	answeredAPoll,
+	pickedAfter,
+	type PressAction,
+} from "~/modules/run/run/application/pollScreen.viewmodel";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
 import { usePollClock } from "~/modules/run/run/presentation/usePollClock.hook";
 import {
@@ -51,16 +55,21 @@ export const RunPoll = () => {
 
 	if (!view?.poll) return null;
 
+	const onPairs = view.poll.answerType === "pairs";
+
 	const submit = (optionIds: readonly string[]) => {
 		if (busy || reveal || optionIds.length === 0) return;
 		sendWith(
 			{
-				type: "answer",
+				type: onPairs ? "match-pair" : "answer",
 				optionIds: [...optionIds],
 				elapsedMs: Math.min(clock.elapsedMs(), MAX_ELAPSED_MS),
 			},
 			(result) => {
-				if (result.success) stage(result);
+				if (!result.success) return;
+				if (!onPairs || answeredAPoll(view, result.data)) return stage(result);
+				commit(result);
+				setSelected([]);
 			}
 		);
 	};
@@ -85,9 +94,7 @@ export const RunPoll = () => {
 		if (reveal) return;
 
 		setSelected((current) =>
-			current.includes(optionId)
-				? current.filter((id) => id !== optionId)
-				: [...current, optionId]
+			pickedAfter(view.poll ?? undefined, current, optionId)
 		);
 	};
 

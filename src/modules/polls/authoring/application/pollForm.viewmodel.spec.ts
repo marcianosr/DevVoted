@@ -12,6 +12,7 @@ import {
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
+	pairRowsOf,
 	changeAnswerExplanation,
 	markRight,
 	pollFormStateOf,
@@ -526,5 +527,109 @@ describe("rewardOf", () => {
 
 	it("states the base reward while the bounties are still loading", () => {
 		expect(rewardOf({ categoryCode: "vue" }, [])).toBe("+16 KB");
+	});
+});
+
+describe("authoring a matching pairs poll", () => {
+	const PAIRS = [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
+	];
+
+	const pairsOf = (state: PollFormState): PollFormState =>
+		withAnswerType(state, "pairs");
+
+	const writtenPairs = (): PollFormState => {
+		const pairs = pairsOf(filled);
+		return {
+			...pairs,
+			answers: pairs.answers.map((answer, index) => ({
+				...answer,
+				text: PAIRS.flat()[index],
+			})),
+		};
+	};
+
+	it("deals eight tiles into four pairs when pairs is picked", () => {
+		const pairs = pairsOf(filled);
+
+		expect(pairs.answers).toHaveLength(8);
+		expect(pairRowsOf(pairs)).toHaveLength(4);
+	});
+
+	it("keeps the answers already written as the first tiles", () => {
+		expect(pairsOf(filled).answers[0].text).toBe(quiz.options[0]);
+	});
+
+	it("neither adds nor removes a tile on a pairs poll", () => {
+		expect(canAddAnswer(pairsOf(filled))).toBe(false);
+		expect(canRemoveAnswer(pairsOf(filled))).toBe(false);
+	});
+
+	it("puts each pair's first tile on the left and its second on the right", () => {
+		const row = pairRowsOf(writtenPairs())[1];
+
+		expect(row.left.text).toBe("div > div");
+		expect(row.right.text).toBe("a direct child");
+	});
+
+	it("asks for every tile's text", () => {
+		const blank = changeAnswer(
+			writtenPairs(),
+			writtenPairs().answers[5].key,
+			""
+		);
+
+		expect(refusalOf(blank)).toBe("Fill every tile");
+	});
+
+	it("refuses the same tile twice, whatever its case", () => {
+		const twice = changeAnswer(
+			writtenPairs(),
+			writtenPairs().answers[7].key,
+			"DIV + DIV"
+		);
+
+		expect(refusalOf(twice)).toBe("Use each tile once");
+	});
+
+	it("marks the answers step done once every tile is written", () => {
+		expect(stepsDoneOf(pairsOf(EMPTY_POLL_FORM)).answers).toBe(false);
+		expect(stepsDoneOf(writtenPairs()).answers).toBe(true);
+	});
+
+	it("accepts written pairs", () => {
+		expect(refusalOf(writtenPairs())).toBeUndefined();
+	});
+
+	it("sends every tile right with its pair", () => {
+		expect(submissionOf(writtenPairs())?.options[3]).toEqual({
+			option: "a direct child",
+			correct: true,
+			group: 1,
+			explanation: null,
+		});
+	});
+
+	it("drops the pairs when the author leaves them", () => {
+		const single = withAnswerType(writtenPairs(), "single");
+
+		expect(single.answers.every((answer) => answer.group === undefined)).toBe(
+			true
+		);
+		expect(single.answers.some((answer) => answer.right)).toBe(false);
+	});
+
+	it("previews the pairs as two columns", () => {
+		const preview = previewOf(writtenPairs()).pairs;
+
+		expect(preview?.left.map((tile) => tile.label)).toEqual(
+			PAIRS.map(([left]) => left)
+		);
+		expect(preview?.right.map((tile) => tile.label)).toEqual(
+			PAIRS.map(([, right]) => right)
+		);
 	});
 });

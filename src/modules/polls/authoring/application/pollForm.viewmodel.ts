@@ -16,13 +16,16 @@ import {
 	isCategoryCode,
 	type CategoryCode,
 } from "~/shared/lib/categories";
+import { PAIR_SIZE, PAIR_TILES } from "~/shared/lib/answerTypes";
 import { letterAt } from "~/shared/lib/letters";
 import { signedKbLabel } from "~/shared/lib/storage";
 import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
 import type {
 	QuestionOption,
+	QuestionPairs,
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
+import type { PairTile } from "~/ui/kanto-theme/MatchingPairs.ui";
 import type { SelectOption } from "~/ui/kanto-theme/Select.ui";
 
 const COPY = {
@@ -35,6 +38,9 @@ const COPY = {
 	needsARight: "Mark the right answers",
 	needsCategory: "Pick a category",
 	needsUrl: "Fix the CodeSandbox link",
+	needsTileText: "Fill every tile",
+	needsUniqueTiles: "Use each tile once",
+	tilePlaceholder: (index: number) => `tile ${index + 1}`,
 } as const;
 
 const INLINE_CODE = "`code`";
@@ -48,6 +54,7 @@ export type PollFormAnswer = {
 	id?: number;
 	text: string;
 	right: boolean;
+	group?: number;
 	explanation: string;
 };
 
@@ -95,15 +102,18 @@ export const pollFormStateOf = (
 		id: option.id,
 		text: option.option,
 		right: option.correct,
+		...(option.group === null ? {} : { group: option.group }),
 		explanation: option.explanation ?? "",
 	})),
 });
 
+const isPairs = (state: PollFormState): boolean => state.answerType === "pairs";
+
 export const canAddAnswer = (state: PollFormState): boolean =>
-	state.answers.length < POLL_LIMITS.answers.max;
+	!isPairs(state) && state.answers.length < POLL_LIMITS.answers.max;
 
 export const canRemoveAnswer = (state: PollFormState): boolean =>
-	state.answers.length > POLL_LIMITS.answers.min;
+	!isPairs(state) && state.answers.length > POLL_LIMITS.answers.min;
 
 const nextKeyOf = (answers: readonly PollFormAnswer[]): number =>
 	Math.max(-1, ...answers.map((answer) => answer.key)) + 1;
@@ -172,19 +182,85 @@ export const markRight = (
 	),
 });
 
+const asPairTiles = (
+	answers: readonly PollFormAnswer[]
+): readonly PollFormAnswer[] => {
+	const kept = answers.slice(0, PAIR_TILES);
+	const padded = [
+		...kept,
+		...Array.from({ length: PAIR_TILES - kept.length }, (_, index) =>
+			blankAnswer(nextKeyOf(kept) + index)
+		),
+	];
+	return padded.map((answer, index) => ({
+		...answer,
+		right: true,
+		group: Math.floor(index / PAIR_SIZE),
+	}));
+};
+
+const withoutGroup = ({
+	group: _,
+	...answer
+}: PollFormAnswer): PollFormAnswer => answer;
+
+const toPairs = (state: PollFormState): PollFormState => ({
+	...state,
+	answerType: "pairs",
+	answers: asPairTiles(state.answers),
+});
+
+const leftPairs = (state: PollFormState): PollFormState =>
+	isPairs(state)
+		? {
+				...state,
+				answers: state.answers.map((answer) => ({
+					...withoutGroup(answer),
+					right: false,
+				})),
+			}
+		: state;
+
 export const withAnswerType = (
 	state: PollFormState,
 	answerType: AnswerType
 ): PollFormState => {
-	if (answerType === "multiple") return { ...state, answerType };
-	const first = state.answers.find((answer) => answer.right);
+	if (answerType === "pairs") return toPairs(state);
+	const ungrouped = leftPairs(state);
+	if (answerType === "multiple") return { ...ungrouped, answerType };
+	const first = ungrouped.answers.find((answer) => answer.right);
 	return {
-		...state,
+		...ungrouped,
 		answerType,
-		answers: state.answers.map((answer) =>
+		answers: ungrouped.answers.map((answer) =>
 			asTheOneRight(answer, first?.key ?? -1)
 		),
 	};
+};
+
+export type PairRow = {
+	pair: number;
+	left: AnswerRow;
+	right: AnswerRow;
+};
+
+const pairRowOf = (
+	pair: number,
+	[left, right]: readonly AnswerRow[]
+): PairRow | readonly [] =>
+	left === undefined || right === undefined ? [] : { pair, left, right };
+
+export const pairRowsOf = (state: PollFormState): readonly PairRow[] => {
+	const rows = answerRowsOf(state);
+	const pairs = [
+		...new Set(state.answers.flatMap((answer) => answer.group ?? [])),
+	];
+	return pairs.flatMap((pair) =>
+		pairRowOf(
+			pair,
+			rows.filter((_, index) => state.answers[index]?.group === pair)
+		)
+	);
 };
 
 export const suggestFormFor = (
@@ -276,9 +352,17 @@ export type PollFormSteps = {
 	explanation: boolean;
 };
 
+const arePairsWritten = (state: PollFormState): boolean =>
+	state.answers.every(hasText) && !hasDuplicateTiles(state.answers);
+
+const areAnswersDone = (state: PollFormState): boolean =>
+	isPairs(state)
+		? arePairsWritten(state)
+		: areAnswersWritten(state) && hasARightAnswer(state);
+
 export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
 	question: isQuestionLongEnough(state),
-	answers: areAnswersWritten(state) && hasARightAnswer(state),
+	answers: areAnswersDone(state),
 	category: state.categoryCode !== undefined,
 	explanation: isExplained(state),
 });
@@ -286,8 +370,22 @@ export const stepsDoneOf = (state: PollFormState): PollFormSteps => ({
 const isSandboxUrl = (value: string): boolean =>
 	value === "" || CODE_SANDBOX_URL.safeParse(value).success;
 
+const hasDuplicateTiles = (answers: readonly PollFormAnswer[]): boolean => {
+	const tiles = answers.map((answer) => answer.text.trim().toLowerCase());
+	return new Set(tiles).size !== tiles.length;
+};
+
+const pairsRefusalOf = (state: PollFormState): string | undefined => {
+	if (!state.answers.every(hasText)) return COPY.needsTileText;
+	if (hasDuplicateTiles(state.answers)) return COPY.needsUniqueTiles;
+	if (state.categoryCode === undefined) return COPY.needsCategory;
+	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
+	return undefined;
+};
+
 export const refusalOf = (state: PollFormState): string | undefined => {
 	if (!isQuestionLongEnough(state)) return COPY.needsQuestion;
+	if (isPairs(state)) return pairsRefusalOf(state);
 	if (!state.answers.every(hasText)) return COPY.needsAnswerText;
 	if (state.answers.length < POLL_LIMITS.answers.min)
 		return COPY.needsAnswers(POLL_LIMITS.answers.min);
@@ -299,6 +397,9 @@ export const refusalOf = (state: PollFormState): string | undefined => {
 	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
 	return undefined;
 };
+
+const placeholderFor = (state: PollFormState, index: number): string =>
+	isPairs(state) ? COPY.tilePlaceholder(index) : COPY.answerPlaceholder(index);
 
 export type PreviewPlay = {
 	pickedIds: readonly string[];
@@ -346,6 +447,7 @@ const revealedExplanationOf = (
 		: undefined;
 
 const previewOptionOf = (
+	state: PollFormState,
 	answer: PollFormAnswer,
 	index: number,
 	play: PreviewPlay
@@ -354,9 +456,25 @@ const previewOptionOf = (
 	return {
 		id: String(answer.key),
 		letter: letterAt(index),
-		label: answer.text === "" ? COPY.answerPlaceholder(index) : answer.text,
+		label: answer.text === "" ? placeholderFor(state, index) : answer.text,
 		state: revealedStateOf(answer, play),
 		...(explanation === undefined ? {} : { explanation }),
+	};
+};
+
+const previewTileOf = (row: AnswerRow, index: number): PairTile => ({
+	id: String(row.key),
+	label: row.text === "" ? COPY.tilePlaceholder(index) : row.text,
+	state: "open",
+});
+
+const previewPairsOf = (state: PollFormState): QuestionPairs => {
+	const rows = pairRowsOf(state);
+	return {
+		left: rows.map((row, index) => previewTileOf(row.left, index * PAIR_SIZE)),
+		right: rows.map((row, index) =>
+			previewTileOf(row.right, index * PAIR_SIZE + 1)
+		),
 	};
 };
 
@@ -368,8 +486,9 @@ export const previewOf = (
 	question: state.question,
 	pickedIds: play.pickedIds,
 	options: state.answers.map((answer, index) =>
-		previewOptionOf(answer, index, play)
+		previewOptionOf(state, answer, index, play)
 	),
+	...(isPairs(state) ? { pairs: previewPairsOf(state) } : {}),
 });
 
 export const previewCategoryOf = (state: PollFormState): string | undefined =>
@@ -398,6 +517,7 @@ export type PollFormData = {
 		id?: number;
 		option: string;
 		correct: boolean;
+		group?: number;
 		explanation: string | null;
 	}[];
 };
@@ -429,6 +549,7 @@ const toPollFormData = (
 		...(answer.id === undefined ? {} : { id: answer.id }),
 		option: answer.text,
 		correct: answer.right,
+		...(answer.group === undefined ? {} : { group: answer.group }),
 		explanation: orNull(answer.explanation),
 	})),
 });

@@ -125,6 +125,49 @@ describe("updatePollSchema", () => {
 	});
 });
 
+describe("a matching pairs poll", () => {
+	const PAIRS = [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
+	];
+	const pairsOptions = PAIRS.flatMap((tiles, group) =>
+		tiles.map((option) => ({ option, correct: true, group }))
+	);
+	const pairsPoll = { ...validPoll, answerType: "pairs" as const };
+
+	it("accepts four pairs of two tiles", () => {
+		const result = createPollWithOptionsSchema.parse({
+			poll: pairsPoll,
+			options: pairsOptions,
+		});
+
+		expect(result.options.map((option) => option.group)).toContain(3);
+	});
+
+	it("rejects a pair with three tiles and another with one", () => {
+		expect(() =>
+			createPollWithOptionsSchema.parse({
+				poll: pairsPoll,
+				options: pairsOptions.map((option, index) =>
+					index === 0 ? { ...option, group: 1 } : option
+				),
+			})
+		).toThrow("A pairs poll needs four pairs of two tiles");
+	});
+
+	it("rejects a pairs poll short of a pair", () => {
+		expect(() =>
+			updatePollSchema.parse({
+				id: 1,
+				poll: pairsPoll,
+				options: pairsOptions.slice(0, 6),
+			})
+		).toThrow("A pairs poll needs four pairs of two tiles");
+	});
+});
+
 describe("an option's own explanation", () => {
 	const explained = optionsFor(saffron).map((option, index) => ({
 		...option,

@@ -1,9 +1,10 @@
+import type { AnswerType } from "~/shared/lib/answerTypes";
 import type { CategoryCode } from "~/shared/lib/categories";
 
 export const POLL_STATUSES = ["draft", "published", "archived"] as const;
 export type PollStatus = (typeof POLL_STATUSES)[number];
 
-export type AnswerType = "single" | "multiple";
+export type { AnswerType };
 
 export type Poll = {
 	id: number;

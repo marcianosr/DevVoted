@@ -25,6 +25,14 @@ import {
 	mirrorsPolls,
 } from "~/modules/run/gate/domain/audit.model";
 import { approvedPollOf } from "~/modules/run/run/domain/approval.model";
+import {
+	answeredPairsOf,
+	matchPair,
+	NO_PAIRS_RESOLVED,
+	type PairsProgress,
+	pairsFinished,
+	pairsProgressAfter,
+} from "~/modules/run/run/domain/pairPoll.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import {
 	faucetRemainingKb,
@@ -76,7 +84,9 @@ export const creditedAnswerTypeFor = (
 	state: RunState,
 	graded: Pick<RunPoll, "answerType">
 ): AnswerType =>
-	auditsHideAnswerType(auditsOf(state)) ? "single" : graded.answerType;
+	graded.answerType !== "pairs" && auditsHideAnswerType(auditsOf(state))
+		? "single"
+		: graded.answerType;
 
 export const pollCreditFor = (state: RunState, poll: RunPoll): number =>
 	creditFor(creditedAnswerTypeFor(state, gradedPollFor(state, poll)));
@@ -219,6 +229,9 @@ const answeredPollFrom = (
 	options: poll.options.map((option) => option.label),
 	optionExplanations: optionExplanationsUnless(poll, grade.graded),
 	answerType: grade.graded.answerType,
+	...(poll.answerType === "pairs"
+		? { pairs: answeredPairsOf(poll, optionIds) }
+		: {}),
 	gate,
 	coverageEarned: ledger.earnedCoverage,
 	coverageLost: ledger.coverageLoss > 0 ? ledger.coverageLoss : undefined,
@@ -335,8 +348,56 @@ export const answer = (
 	if (optionIds.length === 0) return state;
 	if (gateWindowComplete(state)) return state;
 	const poll = state.polls[state.currentIndex];
-	if (!poll) return state;
+	if (!poll || poll.answerType === "pairs") return state;
 
+	return answerPoll(state, poll, optionIds, elapsedMs);
+};
+
+type PairMatchResult =
+	| { readonly kind: "refused" }
+	| { readonly kind: "open"; readonly progress: PairsProgress }
+	| {
+			readonly kind: "finished";
+			readonly poll: RunPoll;
+			readonly picks: readonly string[];
+	  };
+
+export const pairMatchOf = (
+	state: RunState,
+	optionIds: readonly string[]
+): PairMatchResult => {
+	const poll = state.polls[state.currentIndex];
+	if (gateWindowComplete(state) || poll?.answerType !== "pairs")
+		return { kind: "refused" };
+
+	const progress = state.pairsResolved ?? NO_PAIRS_RESOLVED;
+	const match = matchPair(poll, progress, optionIds);
+	if (match === undefined) return { kind: "refused" };
+
+	const next = pairsProgressAfter(progress, match, optionIds);
+	return pairsFinished(next)
+		? { kind: "finished", poll, picks: next.matched }
+		: { kind: "open", progress: next };
+};
+
+export const matchTiles = (
+	state: RunState,
+	optionIds: readonly string[],
+	elapsedMs?: number
+): RunState => {
+	const result = pairMatchOf(state, optionIds);
+	if (result.kind === "refused") return state;
+	if (result.kind === "open")
+		return { ...state, pairsResolved: result.progress };
+	return answerPoll(state, result.poll, result.picks, elapsedMs);
+};
+
+const answerPoll = (
+	state: RunState,
+	poll: RunPoll,
+	optionIds: readonly string[],
+	elapsedMs?: number
+): RunState => {
 	const grade = gradeAnswer(state, poll, optionIds, elapsedMs);
 	const ledger = scoreAnswer(state, grade);
 	const answered = answeredPollFrom(
@@ -403,14 +464,16 @@ const applySkip = (
 	};
 };
 
-const advancedPast = (counted: RunState, before: RunState): RunState =>
-	gateWindowComplete(counted)
-		? counted
+const advancedPast = (counted: RunState, before: RunState): RunState => {
+	const unlocked: RunState = { ...counted, pairsResolved: undefined };
+	return gateWindowComplete(unlocked)
+		? unlocked
 		: {
-				...counted,
+				...unlocked,
 				currentIndex: before.currentIndex + 1,
 				status: "answering",
 			};
+};
 
 export const skip = (state: RunState): RunState => {
 	if (gateWindowComplete(state)) return state;

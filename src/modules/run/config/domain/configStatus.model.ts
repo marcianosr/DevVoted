@@ -179,9 +179,9 @@ const SKIP_REASONS: readonly ((
 			: undefined,
 	(config, context) =>
 		config.roundsPartialUnitsUp === true
-			? context.answerType === "multiple"
-				? { kind: "paysOnPartial" }
-				: { kind: "selectAllOnly" }
+			? context.answerType === "single"
+				? { kind: "selectAllOnly" }
+				: { kind: "paysOnPartial" }
 			: undefined,
 ];
 

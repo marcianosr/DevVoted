@@ -231,8 +231,15 @@ describe("createPollWithOptions", () => {
 				option: "at(-1)",
 				correct: true,
 				explanation: READS_IN_PLACE,
+				group_index: null,
 			},
-			{ poll_id: POLL_ID, option: "pop()", correct: false, explanation: null },
+			{
+				poll_id: POLL_ID,
+				option: "pop()",
+				correct: false,
+				explanation: null,
+				group_index: null,
+			},
 		]);
 	});
 });
@@ -247,8 +254,13 @@ describe("updatePollWithOptions", () => {
 		]);
 
 		expect(mock.setCalls.slice(1, 3)).toEqual([
-			{ option: "at(-1)", correct: true, explanation: READS_IN_PLACE },
-			{ option: "pop()", correct: false, explanation: null },
+			{
+				option: "at(-1)",
+				correct: true,
+				explanation: READS_IN_PLACE,
+				group_index: null,
+			},
+			{ option: "pop()", correct: false, explanation: null, group_index: null },
 		]);
 	});
 
@@ -266,6 +278,7 @@ describe("updatePollWithOptions", () => {
 				option: "slice(-1)",
 				correct: false,
 				explanation: "Returns an array.",
+				group_index: null,
 			},
 		]);
 	});

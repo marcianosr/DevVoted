@@ -6,11 +6,13 @@ import { useScrollToTopOnSmallScreen } from "~/shared/hooks/useScrollToTopOnSmal
 import { INSTALLED_CARDS_OPEN } from "~/shared/lib/disclosure";
 
 import {
+	answerOnPickOf,
 	enterActionFor,
 	type PollScreenHandlers,
 	pollFlightFor,
 	pollKeysFor,
 	pollScreenPropsFor,
+	readyToSubmit,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
@@ -51,10 +53,15 @@ export const PollView = ({
 	const small = useIsSmallScreen();
 	const on = {
 		...handlers,
-		onSelect:
-			view.poll?.answerType === "multiple"
-				? handlers.onSelect
-				: (optionId: string) => onAnswer([optionId]),
+		onSelect: (optionId: string) => {
+			const answer = answerOnPickOf(
+				view.poll ?? undefined,
+				selectedOptionIds,
+				optionId
+			);
+			if (answer === undefined) return handlers.onSelect(optionId);
+			onAnswer(answer);
+		},
 		onSubmit: () => onAnswer(selectedOptionIds),
 	};
 
@@ -63,7 +70,7 @@ export const PollView = ({
 		onPick: revealing ? undefined : on.onSelect,
 		onEnter: enterActionFor(
 			revealing,
-			selectedOptionIds.length > 0,
+			readyToSubmit(view.poll?.answerType, selectedOptionIds.length),
 			on.onSubmit
 		),
 	});

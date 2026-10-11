@@ -224,7 +224,7 @@ export const coverageAddOf = (config: Config): number | undefined =>
 const categoryNames = (codes: readonly CategoryCode[]): string =>
 	codes.map((code) => getCategoryMetadata(code).name).join(" / ");
 
-const ANY_POLL = "any poll";
+const ANY_POLL = "any poll but a pairs poll";
 
 const lintsEveryCategory = (codes: readonly CategoryCode[]): boolean =>
 	CATEGORY_CODES.every((code) => codes.includes(code));

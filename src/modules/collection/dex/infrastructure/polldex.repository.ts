@@ -53,6 +53,7 @@ export type PolldexCorrectnessRow = {
 	answerType: AnswerType;
 	optionId: number;
 	optionCorrect: boolean;
+	optionGroup: number | null;
 	optionSelected: number | null;
 };
 
@@ -67,6 +68,7 @@ export const fetchAnswerCorrectnessByUser = async (
 			answerType: pollsTable.answer_type,
 			optionId: pollOptionsTable.id,
 			optionCorrect: pollOptionsTable.correct,
+			optionGroup: pollOptionsTable.group_index,
 			optionSelected: pollResponseOptionsTable.option_id,
 		})
 		.from(pollResponsesTable)

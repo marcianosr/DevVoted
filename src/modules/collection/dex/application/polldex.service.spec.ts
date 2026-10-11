@@ -24,6 +24,7 @@ const response = (
 		answerType: "single",
 		optionId: 100,
 		optionCorrect: true,
+		optionGroup: null,
 		optionSelected: correct ? 100 : null,
 	},
 	{
@@ -33,6 +34,7 @@ const response = (
 		answerType: "single",
 		optionId: 200,
 		optionCorrect: false,
+		optionGroup: null,
 		optionSelected: correct ? null : 200,
 	},
 ];

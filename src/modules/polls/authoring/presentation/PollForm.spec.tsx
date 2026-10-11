@@ -8,11 +8,13 @@ import {
 	STATUS_CHOICES,
 	UNPLAYED,
 	answerRowsOf,
+	pairRowsOf,
 	pickInPreview,
 	previewCategoryOf,
 	previewOf,
 	questionCountOf,
 	stepsDoneOf,
+	withAnswerType,
 	type PollFormState,
 } from "~/modules/polls/authoring/application/pollForm.viewmodel";
 import {
@@ -413,6 +415,38 @@ describe("PollForm", () => {
 		expect(
 			screen.getByText("The database is asleep.").closest("[data-screen-theme]")
 		).toHaveAttribute("data-screen-theme", "cinnabar");
+	});
+});
+
+describe("PollForm on a matching pairs poll", () => {
+	const pairs = withAnswerType(FILLED, "pairs");
+	const renderPairs = () =>
+		renderForm({
+			...propsFor(pairs),
+			pairs: pairRowsOf(pairs),
+		});
+
+	it("asks for four pairs of two tiles instead of answers to mark", () => {
+		renderPairs();
+
+		expect(screen.getAllByRole("group", { name: /^pair \d$/ })).toHaveLength(4);
+		expect(
+			screen.getAllByRole("textbox", { name: /^tile [A-H]$/ })
+		).toHaveLength(8);
+		expect(
+			screen.queryByRole("button", { name: /mark A right/ })
+		).not.toBeInTheDocument();
+	});
+
+	it("writes a tile as the author types", async () => {
+		const { props } = renderPairs();
+
+		await userEvent.type(screen.getByRole("textbox", { name: "tile D" }), "B");
+
+		expect(props.onAnswerChange).toHaveBeenCalledWith(
+			pairs.answers[3].key,
+			expect.stringContaining("B")
+		);
 	});
 });
 

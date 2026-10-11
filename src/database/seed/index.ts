@@ -24,6 +24,7 @@ import {
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
+import { type AnswerType, PAIR_SIZE } from "~/shared/lib/answerTypes";
 import { getCategories } from "~/shared/lib/categories";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 
@@ -39,7 +40,7 @@ import {
 	SEED_PASSWORD,
 	SEED_PLAYERS,
 } from "~/database/seed/cast";
-import { SEED_QUESTIONS } from "~/database/seed/questions";
+import { SEED_QUESTIONS, type SeedQuestion } from "~/database/seed/questions";
 import { SEED_OWNER_HANDLE, seedOwner } from "~/database/seed/owner";
 import { hashOf } from "~/database/seed/random";
 import {
@@ -161,6 +162,11 @@ const seedCategories = async (): Promise<number> => {
 	return categories.length;
 };
 
+const seedAnswerTypeOf = (question: SeedQuestion): AnswerType => {
+	if (question.pairs !== undefined) return "pairs";
+	return question.correct.length > 1 ? "multiple" : "single";
+};
+
 const seedPolls = async (): Promise<number[]> => {
 	const openingTime = new Date("2020-01-01T00:00:00Z");
 	const closingTime = new Date("2099-12-31T23:59:59Z");
@@ -174,10 +180,7 @@ const seedPolls = async (): Promise<number[]> => {
 				code_block: question.codeBlock ?? null,
 				explanation: question.explanation ?? null,
 				status: "published" as const,
-				answer_type:
-					question.correct.length > 1
-						? ("multiple" as const)
-						: ("single" as const),
+				answer_type: seedAnswerTypeOf(question),
 				opening_time: openingTime,
 				closing_time: closingTime,
 				created_by: POLL_AUTHOR_IDS[index % POLL_AUTHOR_IDS.length],
@@ -192,6 +195,10 @@ const seedPolls = async (): Promise<number[]> => {
 				poll_id: rows[index].id,
 				option,
 				correct: question.correct.includes(optionIndex),
+				group_index:
+					question.pairs === undefined
+						? null
+						: Math.floor(optionIndex / PAIR_SIZE),
 				explanation: question.optionExplanations?.[optionIndex] ?? null,
 			}))
 		)

@@ -12,6 +12,8 @@ import {
 	canBuyPeek,
 	lintApplies,
 	lintFeeFor,
+	lintRefusalOf,
+	peekRefusalOf,
 } from "~/modules/run/run/domain/paidAction.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
@@ -21,6 +23,7 @@ import {
 	audited,
 	failGate,
 	handed,
+	pairsPoll,
 	started,
 } from "~/modules/run/run/domain/run.factory";
 
@@ -256,6 +259,38 @@ describe("Telemetry peeks", () => {
 		for (let i = 0; i < SLICE_WINDOW - 1; i++) state = answerWith(state, true);
 		expect(state.peekedPollIds).toContain(peekedId);
 		expect(state.peekedPollIds).toHaveLength(2);
+	});
+});
+
+describe("a pairs poll (ADR-192)", () => {
+	const onPairs = (): RunState => {
+		const state = started(["linter", "telemetry"]);
+		return {
+			...state,
+			polls: [pairsPoll("pewter"), ...state.polls.slice(1)],
+			storage: 200,
+		};
+	};
+
+	it("refuses the linter as having nothing to act on, not as one wrong left", () => {
+		expect(lintRefusalOf(onPairs())).toBe("pairsPoll");
+		expect(lintApplies(onPairs())).toBe(false);
+	});
+
+	it("charges nothing when the linter is pressed anyway", () => {
+		const state = onPairs();
+		expect(runReducer(state, { type: "lint-poll" })).toBe(state);
+	});
+
+	it("refuses a peek as having nothing to act on and charges nothing", () => {
+		const state = onPairs();
+		expect(peekRefusalOf(state)).toBe("pairsPoll");
+		expect(runReducer(state, { type: "peek-poll" })).toBe(state);
+	});
+
+	it("still says one wrong left on a pick poll down to its last wrong answer", () => {
+		const state = { ...started(["linter"]), storage: 200 };
+		expect(lintRefusalOf(state)).toBe("lastWrongStanding");
 	});
 });
 

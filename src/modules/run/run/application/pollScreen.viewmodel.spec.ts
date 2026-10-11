@@ -9,6 +9,10 @@ import {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
+	answeredPairsFor,
+	answerOnPickOf,
+	pickedAfter,
+	readyToSubmit,
 	buildCountsOf,
 	coverageLeadFor,
 	pollBarFor,
@@ -37,6 +41,7 @@ import {
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import { pairsPoll } from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type {
 	AnsweredPoll,
@@ -154,6 +159,18 @@ describe("pollPressesOf", () => {
 
 		expect(press.ready).toBe(false);
 		expect(press.refusal).toBe("one wrong left");
+	});
+
+	it("refuses the lint on a pairs poll as having nothing to act on", () => {
+		const state = runWith([CONFIGS.linter], JS_GATE);
+		const onPairs = {
+			...state,
+			polls: [pairsPoll("pewter"), ...state.polls.slice(1)],
+		};
+		const [press] = pollPressesOf(toRunView(onPairs));
+
+		expect(press.ready).toBe(false);
+		expect(press.refusal).toBe("nothing to act on");
 	});
 
 	it("prices the lint off the gate's own ladder", () => {
@@ -1083,5 +1100,69 @@ describe("the poll clock states what the time is worth (ADR-169)", () => {
 
 	it("shows no clock where nothing is timed", () => {
 		expect(pollClockFor(createMockRunView(), 1_000)).toBeUndefined();
+	});
+});
+
+describe("a matching pairs poll on the poll screen", () => {
+	const tileOf = (label: string) => ({
+		id: label,
+		label,
+		state: "open" as const,
+	});
+	const poll = {
+		answerType: "pairs" as const,
+		pairs: {
+			left: ["div + div", "div > div"].map(tileOf),
+			right: ["the next sibling", "a direct child"].map(tileOf),
+		},
+	};
+
+	it("shows no lock-in press, since the second tile answers", () => {
+		expect(pollCommitFor("pairs", 1, () => undefined)).toEqual({});
+	});
+
+	it("swaps a pick on the same side instead of adding a second one", () => {
+		expect(pickedAfter(poll, ["div + div"], "div > div")).toEqual([
+			"div > div",
+		]);
+	});
+
+	it("drops a picked tile tapped again", () => {
+		expect(pickedAfter(poll, ["div + div"], "div + div")).toEqual([]);
+	});
+
+	it("answers once a tile on each side is picked, in either order", () => {
+		expect(answerOnPickOf(poll, ["a direct child"], "div + div")).toEqual([
+			"a direct child",
+			"div + div",
+		]);
+		expect(answerOnPickOf(poll, [], "div + div")).toBeUndefined();
+	});
+
+	it("lets Enter answer only with a tile picked on each side", () => {
+		expect(readyToSubmit("pairs", 1)).toBe(false);
+		expect(readyToSubmit("pairs", 2)).toBe(true);
+	});
+
+	it("keeps toggling picks on a multiple answer poll", () => {
+		expect(pickedAfter(undefined, ["a"], "b")).toEqual(["a", "b"]);
+	});
+
+	it("lays every pair out row by row after the poll, matched or missed", () => {
+		expect(
+			answeredPairsFor([
+				{ left: "div + div", right: "the next sibling", matched: true },
+				{ left: "div ~ div", right: "any later sibling", matched: false },
+			])
+		).toEqual({
+			left: [
+				{ id: "left-0", label: "div + div", state: "matched" },
+				{ id: "left-1", label: "div ~ div", state: "missed" },
+			],
+			right: [
+				{ id: "right-0", label: "the next sibling", state: "matched" },
+				{ id: "right-1", label: "any later sibling", state: "missed" },
+			],
+		});
 	});
 });

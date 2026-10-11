@@ -19,7 +19,12 @@ import {
 	fundsOf,
 } from "~/modules/run/run/application/prepScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import type { PollView } from "~/modules/run/run/application/pollView.viewmodel";
+import type {
+	PairsView,
+	PollView,
+} from "~/modules/run/run/application/pollView.viewmodel";
+import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
+import { PAIR_SIZE } from "~/shared/lib/answerTypes";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
@@ -72,6 +77,7 @@ import type {
 import type {
 	QuestionOption,
 	QuestionProps,
+	QuestionPairs,
 } from "~/ui/kanto-theme/Question.ui";
 import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
 import type {
@@ -277,20 +283,94 @@ export const PICK_EVERY = "pick every answer that fits";
 export const SINGLE_KEYS = "press a letter to answer";
 export const MULTIPLE_KEYS = "press letters, then Enter";
 
+export const PAIRS_KEYS = "tap a tile, then its match";
+
+const KEYS_HINT = {
+	single: SINGLE_KEYS,
+	multiple: MULTIPLE_KEYS,
+	pairs: PAIRS_KEYS,
+} satisfies Record<AnswerType, string>;
+
 export const pollKeysHintFor = (answerType: AnswerType): string =>
-	answerType === "multiple" ? MULTIPLE_KEYS : SINGLE_KEYS;
+	KEYS_HINT[answerType];
 
 const lockInFor = (picked: number, onSubmit: () => void): PollLock =>
 	picked === 0
 		? { label: LOCK_IN, note: PICK_EVERY }
 		: { label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`, onPress: onSubmit };
 
+const COMMIT_FOR = {
+	single: () => ({}),
+	multiple: (picked, onSubmit) => ({ lock: lockInFor(picked, onSubmit) }),
+	pairs: () => ({}),
+} satisfies Record<
+	AnswerType,
+	(picked: number, onSubmit: () => void) => PollCommit
+>;
+
 export const pollCommitFor = (
 	answerType: AnswerType,
 	picked: number,
 	onSubmit: () => void
-): PollCommit =>
-	answerType === "multiple" ? { lock: lockInFor(picked, onSubmit) } : {};
+): PollCommit => COMMIT_FOR[answerType](picked, onSubmit);
+
+export const readyToSubmit = (
+	answerType: AnswerType | undefined,
+	picked: number
+): boolean => (answerType === "pairs" ? picked === PAIR_SIZE : picked > 0);
+
+export const answeredAPoll = (before: RunView, after: RunView): boolean =>
+	after.answeredThisGate.length !== before.answeredThisGate.length;
+
+const pairSideOf = (pairs: PairsView, optionId: string) =>
+	pairs.left.some((tile) => tile.id === optionId) ? "left" : "right";
+
+const pickedPairTilesAfter = (
+	pairs: PairsView,
+	picked: readonly string[],
+	optionId: string
+): readonly string[] => [
+	...picked.filter(
+		(id) => pairSideOf(pairs, id) !== pairSideOf(pairs, optionId)
+	),
+	optionId,
+];
+
+export const pickedAfter = (
+	poll: Pick<PollView, "pairs"> | undefined,
+	picked: readonly string[],
+	optionId: string
+): readonly string[] => {
+	if (picked.includes(optionId)) return picked.filter((id) => id !== optionId);
+	return poll?.pairs === undefined
+		? [...picked, optionId]
+		: pickedPairTilesAfter(poll.pairs, picked, optionId);
+};
+
+export const answerOnPickOf = (
+	poll: Pick<PollView, "answerType" | "pairs"> | undefined,
+	picked: readonly string[],
+	optionId: string
+): readonly string[] | undefined => {
+	if (poll?.answerType === "single") return [optionId];
+	if (poll?.answerType !== "pairs") return undefined;
+	const next = pickedAfter(poll, picked, optionId);
+	return next.length === PAIR_SIZE ? next : undefined;
+};
+
+const answeredTileOf =
+	(side: "left" | "right") => (pair: AnsweredPair, index: number) => ({
+		id: `${side}-${index}`,
+		label: pair[side],
+		state: pair.matched ? ("matched" as const) : ("missed" as const),
+	});
+
+export const answeredPairsFor = (
+	pairs: readonly AnsweredPair[]
+): QuestionPairs => ({
+	left: pairs.map(answeredTileOf("left")),
+	right: pairs.map(answeredTileOf("right")),
+});
 
 const APPROVE_LABEL = "LGTM";
 const APPROVE_NOTE = "the room answers this one for you";
@@ -339,9 +419,11 @@ export const answeredOptionsFor = (
 };
 
 export const pollKeysFor = (view: RunView): readonly PollKey[] =>
-	(view.poll?.options ?? [])
-		.map((option, index) => ({ letter: letterAt(index), id: option.id }))
-		.filter((key) => !view.disabledOptionIds.includes(key.id));
+	view.poll?.answerType === "pairs"
+		? []
+		: (view.poll?.options ?? [])
+				.map((option, index) => ({ letter: letterAt(index), id: option.id }))
+				.filter((key) => !view.disabledOptionIds.includes(key.id));
 
 export const coverageLeadFor = (view: RunView): LeadLine =>
 	scoredLeadFor({
@@ -513,6 +595,7 @@ const REFUSAL_COPY: Record<PaidRefusal, string> = {
 	frozen: "frozen",
 	rateLimited: "rate limited",
 	lastWrongStanding: "one wrong left",
+	pairsPoll: "nothing to act on",
 	alreadyPeeked: "already read",
 	cannotAfford: "cannot afford",
 };
@@ -812,27 +895,47 @@ const optionsOf = (
 				}
 	);
 
+const livePairsQuestionFor = (
+	poll: LivePoll,
+	pairs: PairsView,
+	selectedOptionIds: readonly string[],
+	on: PollScreenHandlers
+): QuestionProps => ({
+	answerType: poll.answerType,
+	question: poll.question,
+	options: [],
+	codeBlock: poll.codeBlock,
+	pickedIds: selectedOptionIds,
+	onPick: on.onSelect,
+	pairs,
+});
+
 const liveQuestionFor = (
 	view: RunView,
 	poll: LivePoll,
 	selectedOptionIds: readonly string[],
-	onSelect: (optionId: string) => void,
-	onUnseal: ((optionId: string) => void) | undefined
-): QuestionProps => ({
-	answerType: poll.answerType,
-	question: poll.question,
-	options: optionsOf(poll, view, onUnseal),
-	codeBlock: poll.codeBlock,
-	pickedIds: selectedOptionIds,
-	onPick: onSelect,
-});
+	on: PollScreenHandlers
+): QuestionProps =>
+	poll.pairs === undefined
+		? {
+				answerType: poll.answerType,
+				question: poll.question,
+				options: optionsOf(poll, view, on.onUnseal),
+				codeBlock: poll.codeBlock,
+				pickedIds: selectedOptionIds,
+				onPick: on.onSelect,
+			}
+		: livePairsQuestionFor(poll, poll.pairs, selectedOptionIds, on);
 
 const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
 	answerType: answered.answerType ?? "single",
 	question: answered.question,
-	options: answeredOptionsFor(answered),
+	options: answered.pairs === undefined ? answeredOptionsFor(answered) : [],
 	codeBlock: answered.codeBlock,
 	pickedIds: answered.picked,
+	...(answered.pairs === undefined
+		? {}
+		: { pairs: answeredPairsFor(answered.pairs) }),
 });
 
 const authorOf = (poll: LivePoll): AuthorProps | undefined =>
@@ -930,13 +1033,7 @@ const liveMoodFor = (
 
 	return {
 		...shared,
-		question: liveQuestionFor(
-			view,
-			poll,
-			selectedOptionIds,
-			on.onSelect,
-			on.onUnseal
-		),
+		question: liveQuestionFor(view, poll, selectedOptionIds, on),
 		keysHint: pollKeysHintFor(poll.answerType),
 		commit: pollCommitFor(
 			poll.answerType,
@@ -954,7 +1051,11 @@ export type PollScreenFrame = {
 	leaving?: boolean;
 	selectedOptionIds: readonly string[];
 	on: PollScreenHandlers;
-	ui: { build: Disclosure; clockMs?: number; buildOpen?: boolean };
+	ui: {
+		build: Disclosure;
+		clockMs?: number;
+		buildOpen?: boolean;
+	};
 };
 
 export const pollScreenPropsFor = ({

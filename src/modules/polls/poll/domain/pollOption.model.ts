@@ -3,5 +3,6 @@ export type PollOption = {
 	pollId: number;
 	option: string;
 	correct: boolean;
+	group: number | null;
 	explanation: string | null;
 };

@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- **Matching pairs, a new kind of poll.** Four pairs sit in two columns: tap a tile, then its match on the other side. A match turns green. A miss turns the tile you started from and its real partner red, and that pair pays nothing; the tile you tapped second stays in play. Once three pairs are settled the last one locks itself, unpaid, so each pair you match pays a third of the poll, and a full set pays double, like a select-all. The linter and a peek have nothing to work on here, so both say **nothing to act on** and charge nothing, and the Linter's card now says it works on **any poll but a pairs poll**. Poll authors can pick **pairs** when suggesting a poll and write four pairs of two tiles.
 
 ## 2.4.2 - 2026-10-10
 ### Fixed

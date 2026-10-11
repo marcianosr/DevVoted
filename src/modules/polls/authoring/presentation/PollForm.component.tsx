@@ -10,6 +10,7 @@ import {
 	canLockIn,
 	canRemoveAnswer,
 	changeAnswer,
+	pairRowsOf,
 	changeAnswerExplanation,
 	lockInPreview,
 	markRight,
@@ -77,6 +78,7 @@ export const PollForm = ({
 			state={state}
 			view={view}
 			rows={answerRowsOf(state)}
+			pairs={state.answerType === "pairs" ? pairRowsOf(state) : undefined}
 			questionCount={questionCountOf(state.question)}
 			steps={stepsDoneOf(state)}
 			preview={previewOf(state, play)}
