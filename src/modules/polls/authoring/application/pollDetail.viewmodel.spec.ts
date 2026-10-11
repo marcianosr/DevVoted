@@ -57,6 +57,89 @@ const OPTIONS = [
 	},
 ];
 
+const PAIRS_POLL = createMockPoll({
+	id: 8,
+	question: "Match each combinator to the elements it pulls in!",
+	answerType: "pairs",
+	categoryCode: "css",
+	createdBy: MISTY.id,
+	createdAt: new Date(`${TEST_DATES.christmas}T12:00:00`),
+});
+
+const pairTile = (id: number, option: string, group: number) => ({
+	id,
+	pollId: 8,
+	option,
+	correct: true,
+	explanation: null,
+	group,
+});
+
+const PAIR_OPTIONS = [
+	pairTile(11, "div + p", 0),
+	pairTile(12, "Only the p right after a div", 0),
+	pairTile(13, "div ~ p", 1),
+	pairTile(14, "Every p after a div", 1),
+	pairTile(15, "div > p", 2),
+	pairTile(16, "A p directly inside a div", 2),
+	pairTile(17, "div p", 3),
+	pairTile(18, "A p anywhere inside a div", 3),
+];
+
+const labelsOf = (tiles: readonly { label: string }[] | undefined) =>
+	tiles?.map((tile) => tile.label);
+
+describe("pollDetailViewOf for a pairs poll", () => {
+	it("splits the tiles into a left and right column of open tiles as a player meets them", () => {
+		const { pairs } = pollDetailViewOf(
+			PAIRS_POLL,
+			PAIR_OPTIONS,
+			[MISTY],
+			"player"
+		).question;
+
+		expect(labelsOf(pairs?.left)).toEqual(
+			expect.arrayContaining(["div + p", "div ~ p", "div > p", "div p"])
+		);
+		expect(labelsOf(pairs?.left)).toHaveLength(4);
+		expect(labelsOf(pairs?.right)).toHaveLength(4);
+		expect(
+			[...(pairs?.left ?? []), ...(pairs?.right ?? [])].every(
+				(tile) => tile.state === "open"
+			)
+		).toBe(true);
+	});
+
+	it("lines every pair up side by side as matched when the answer is shown", () => {
+		const { pairs } = pollDetailViewOf(
+			PAIRS_POLL,
+			PAIR_OPTIONS,
+			[MISTY],
+			"answer"
+		).question;
+
+		expect(labelsOf(pairs?.left)).toEqual([
+			"div + p",
+			"div ~ p",
+			"div > p",
+			"div p",
+		]);
+		expect(labelsOf(pairs?.right)).toEqual([
+			"Only the p right after a div",
+			"Every p after a div",
+			"A p directly inside a div",
+			"A p anywhere inside a div",
+		]);
+		expect(pairs?.right.every((tile) => tile.state === "matched")).toBe(true);
+	});
+
+	it("draws no pair columns for a choice poll", () => {
+		expect(
+			pollDetailViewOf(POLL, OPTIONS, [MISTY], "answer").question.pairs
+		).toBeUndefined();
+	});
+});
+
 describe("pollDetailViewOf", () => {
 	it("letters the options in order and leaves them unmarked as a player meets them", () => {
 		const view = pollDetailViewOf(POLL, OPTIONS, [MISTY], "player");

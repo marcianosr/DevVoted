@@ -11,8 +11,10 @@ import {
 import type { PollOption } from "~/modules/polls/poll/domain/pollOption.model";
 import { getCategoryMetadata } from "~/shared/lib/categories";
 import { letterAt } from "~/shared/lib/letters";
+import { shuffleSeeded } from "~/shared/lib/seededRandom";
 import type {
 	QuestionOption,
+	QuestionPairs,
 	QuestionProps,
 } from "~/ui/kanto-theme/Question.ui";
 
@@ -70,6 +72,51 @@ const answerOptionOf = (option: PollOption): Partial<QuestionOption> => {
 	};
 };
 
+type PairColumn = keyof QuestionPairs;
+
+const pairTilesOf = (
+	options: readonly PollOption[],
+	column: PairColumn
+): readonly PollOption[] => {
+	const groups = [...new Set(options.flatMap((option) => option.group ?? []))];
+	const index = column === "left" ? 0 : 1;
+	return groups.flatMap(
+		(group) => options.filter((option) => option.group === group)[index] ?? []
+	);
+};
+
+const pairColumnOf = (
+	poll: Poll,
+	options: readonly PollOption[],
+	column: PairColumn,
+	view: PollDetailView
+): QuestionPairs[PairColumn] => {
+	const tiles = pairTilesOf(options, column);
+	const ordered =
+		view === "answer"
+			? tiles
+			: shuffleSeeded(tiles, `pairs-${column}-${poll.id}`);
+	return ordered.map((option) => ({
+		id: String(option.id),
+		label: option.option,
+		state: view === "answer" ? "matched" : "open",
+	}));
+};
+
+const pairsOf = (
+	poll: Poll,
+	options: readonly PollOption[],
+	view: PollDetailView
+): Pick<QuestionProps, "pairs"> =>
+	poll.answerType === "pairs"
+		? {
+				pairs: {
+					left: pairColumnOf(poll, options, "left", view),
+					right: pairColumnOf(poll, options, "right", view),
+				},
+			}
+		: {};
+
 export const pollDetailViewOf = (
 	poll: Poll,
 	options: readonly PollOption[],
@@ -96,6 +143,7 @@ export const pollDetailViewOf = (
 				label: option.option,
 				...(view === "answer" ? answerOptionOf(option) : {}),
 			})),
+			...pairsOf(poll, options, view),
 		},
 		...(poll.codeSandboxExample === null
 			? {}
