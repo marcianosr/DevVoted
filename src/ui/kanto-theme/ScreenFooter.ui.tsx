@@ -171,6 +171,12 @@ const BAR =
 	"sticky bottom-[var(--tab-bar,0px)] z-20 -mx-4 flex flex-col px-4 py-3 sm:-mx-8 sm:px-8 md:static md:mx-0 md:px-4 md:py-4";
 const BAR_GROUND =
 	"border-t border-theme-faint bg-theme-faint md:rounded-2xl md:border";
+const BAR_WIDTH = {
+	full: undefined,
+	capped: "md:mx-auto md:w-full md:max-w-md",
+} as const;
+
+export type ScreenActionsWidth = keyof typeof BAR_WIDTH;
 
 const carriesMoreThanThePress = ({
 	stakes = [],
@@ -184,8 +190,17 @@ const carriesMoreThanThePress = ({
 	footerLinesOf(refusal, note, action.onPress !== undefined).above !==
 		undefined;
 
-export const ScreenActions = (footer: ScreenFooterProps) => (
-	<div className={clsx(BAR, carriesMoreThanThePress(footer) && BAR_GROUND)}>
+export const ScreenActions = ({
+	width = "full",
+	...footer
+}: ScreenFooterProps & { width?: ScreenActionsWidth }) => (
+	<div
+		className={clsx(
+			BAR,
+			BAR_WIDTH[width],
+			carriesMoreThanThePress(footer) && BAR_GROUND
+		)}
+	>
 		<ScreenFooter {...footer} rule={false} />
 	</div>
 );

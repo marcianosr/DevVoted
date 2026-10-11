@@ -4,31 +4,32 @@ import {
 	MatchingPairs,
 	type MatchingPairsProps,
 	type PairTile,
-	type PairTileState,
+	type PairVerdict,
 } from "./MatchingPairs.ui";
 import { Screen } from "./Screen.ui";
 
-const tileOf = (label: string, state: PairTileState = "open"): PairTile => ({
+const tileOf = (label: string, verdict?: PairVerdict): PairTile => ({
 	id: label,
 	label,
-	state,
+	...(verdict === undefined ? {} : { verdict }),
 });
 
-const LEFT = ["div ~ div", "div + div", "div div", "div > div"];
+const LEFT = ["`:has()`", "`:is()`", "`:not()`", "`:where()`"];
 const RIGHT = [
-	"a direct child",
-	"any descendant",
-	"the next sibling",
-	"any later sibling",
+	"Matches any in the list, takes the highest specificity",
+	"Picks an element by what it contains",
+	"Matches any in the list, adds zero specificity",
+	"Matches what the list doesn't",
 ];
+const PARTNERS = [RIGHT[1], RIGHT[0], RIGHT[3], RIGHT[2]];
 
 const noop = () => undefined;
 
 const fresh: MatchingPairsProps = {
 	left: LEFT.map((label) => tileOf(label)),
 	right: RIGHT.map((label) => tileOf(label)),
-	pickedIds: [],
 	onPick: noop,
+	onClear: noop,
 };
 
 const meta: Meta<typeof MatchingPairs> = {
@@ -48,43 +49,46 @@ type Story = StoryObj<typeof MatchingPairs>;
 
 export const Fresh: Story = {};
 
-export const OnePicked: Story = {
-	args: { ...fresh, pickedIds: ["div + div"] },
+export const OneWaiting: Story = {
+	args: { ...fresh, pendingId: LEFT[0] },
 };
 
-export const OneMatchedOneMissed: Story = {
+export const TwoLinked: Story = {
 	args: {
 		...fresh,
-		left: [
-			tileOf("div ~ div", "missed"),
-			tileOf("div + div"),
-			tileOf("div div"),
-			tileOf("div > div", "matched"),
-		],
-		right: [
-			tileOf("a direct child", "matched"),
-			tileOf("any descendant"),
-			tileOf("the next sibling"),
-			tileOf("any later sibling", "missed"),
+		links: [
+			{ left: LEFT[2], right: RIGHT[2] },
+			{ left: LEFT[3], right: RIGHT[1] },
 		],
 	},
 };
+
+export const AllLinked: Story = {
+	args: {
+		...fresh,
+		links: LEFT.map((left, row) => ({ left, right: RIGHT[row] })),
+	},
+};
+
+const answeredOf = (verdicts: readonly PairVerdict[]): MatchingPairsProps => ({
+	left: LEFT.map((label, row) => tileOf(label, verdicts[row])),
+	right: PARTNERS.map((label, row) => tileOf(label, verdicts[row])),
+	links: LEFT.map((left, row) => ({ left, right: PARTNERS[row] })),
+});
 
 export const Answered: Story = {
 	args: {
-		left: [
-			tileOf("div + div", "matched"),
-			tileOf("div > div", "matched"),
-			tileOf("div ~ div", "missed"),
-			tileOf("div div", "missed"),
+		left: LEFT.map((label) => tileOf(label)),
+		right: PARTNERS.map((label) => tileOf(label)),
+		links: [
+			{ left: LEFT[0], right: PARTNERS[0], verdict: "matched" },
+			{ left: LEFT[1], right: PARTNERS[1], verdict: "matched" },
+			{ left: LEFT[2], right: PARTNERS[3], verdict: "missed" },
+			{ left: LEFT[3], right: PARTNERS[2], verdict: "missed" },
 		],
-		right: [
-			tileOf("the next sibling", "matched"),
-			tileOf("a direct child", "matched"),
-			tileOf("any later sibling", "missed"),
-			tileOf("any descendant", "missed"),
-		],
-		pickedIds: [],
-		onPick: undefined,
 	},
+};
+
+export const AnswerKey: Story = {
+	args: answeredOf(["matched", "matched", "matched", "matched"]),
 };

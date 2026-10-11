@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PAIR_SIZE } from "~/shared/lib/answerTypes";
+import { MAX_PAIRS, MIN_PAIRS } from "~/shared/lib/answerTypes";
 import {
 	BOOT_CACHE_RUNGS,
 	SLICE_WINDOW,
@@ -70,8 +70,12 @@ export const runActionSchema = z.discriminatedUnion("type", [
 		.strict(),
 	z
 		.object({
-			type: z.literal("match-pair"),
-			optionIds: z.array(z.string().min(1)).length(PAIR_SIZE).readonly(),
+			type: z.literal("check-pairs"),
+			links: z
+				.array(z.tuple([z.string().min(1), z.string().min(1)]).readonly())
+				.min(MIN_PAIRS)
+				.max(MAX_PAIRS)
+				.readonly(),
 			elapsedMs: z.number().int().min(0).max(600_000).optional(),
 		})
 		.strict(),

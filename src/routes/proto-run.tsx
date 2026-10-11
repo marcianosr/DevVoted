@@ -22,6 +22,7 @@ import {
 	runReducer,
 	RunAction,
 } from "~/modules/run/run/domain/runAction.model";
+import type { PairLink } from "~/modules/run/run/domain/pairPoll.model";
 import {
 	type AnsweredPoll,
 	RunPoll,
@@ -48,6 +49,7 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	answeredAPoll,
+	pairLinksOf,
 	pickedAfter,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
@@ -251,23 +253,17 @@ const tilesOfPair = (poll: RunPoll, pair: number): readonly string[] =>
 		.filter((option) => option.group === pair)
 		.map((option) => option.id);
 
-const RESOLVED_PAIRS = [0, 1, 2] as const;
+const RIG_PAIRS = [0, 1, 2, 3] as const;
 
-const rigPairOf = (
-	poll: RunPoll,
-	pair: number,
-	outcome: RigOutcome
-): readonly string[] =>
-	outcome === "right"
-		? tilesOfPair(poll, pair)
-		: [tilesOfPair(poll, pair)[0], tilesOfPair(poll, pair + 1)[1]];
+const rigLinksOf = (poll: RunPoll, outcome: RigOutcome): readonly PairLink[] =>
+	RIG_PAIRS.map((pair) => {
+		const partner = outcome === "right" ? pair : (pair + 1) % RIG_PAIRS.length;
+		return [tilesOfPair(poll, pair)[0], tilesOfPair(poll, partner)[1]];
+	});
 
 const rigActions = (poll: RunPoll, outcome: RigOutcome): RunAction[] =>
 	poll.answerType === "pairs"
-		? RESOLVED_PAIRS.map((pair) => ({
-				type: "match-pair",
-				optionIds: rigPairOf(poll, pair, outcome),
-			}))
+		? [{ type: "check-pairs", links: rigLinksOf(poll, outcome) }]
 		: [{ type: "answer", optionIds: rigOptionIds(poll, outcome) }];
 
 const reduceAll = (state: RunState, actions: readonly RunAction[]): RunState =>
@@ -720,13 +716,14 @@ const RunGame = ({
 		setSelected([]);
 	};
 	const answer = (optionIds: readonly string[]) => {
-		const onPairs = view.poll?.answerType === "pairs";
+		const elapsedMs = pollClock.elapsedMs();
 		settle(
-			runReducer(state, {
-				type: onPairs ? "match-pair" : "answer",
-				optionIds,
-				elapsedMs: pollClock.elapsedMs(),
-			})
+			runReducer(
+				state,
+				view.poll?.answerType === "pairs"
+					? { type: "check-pairs", links: pairLinksOf(optionIds), elapsedMs }
+					: { type: "answer", optionIds, elapsedMs }
+			)
 		);
 	};
 	const answerCurrent = (outcome: RigOutcome) => {
@@ -797,6 +794,7 @@ const RunGame = ({
 					selectedOptionIds={selected}
 					clockMs={pollClock.shownMs}
 					onSelect={onSelect}
+					onClear={() => setSelected([])}
 					onAnswer={answer}
 					onNext={() => {
 						dispatch({ type: "close-gate" });

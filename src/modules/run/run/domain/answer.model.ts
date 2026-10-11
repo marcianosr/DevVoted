@@ -27,11 +27,8 @@ import {
 import { approvedPollOf } from "~/modules/run/run/domain/approval.model";
 import {
 	answeredPairsOf,
-	matchPair,
-	NO_PAIRS_RESOLVED,
-	type PairsProgress,
-	pairsFinished,
-	pairsProgressAfter,
+	checkedPairsOf,
+	type PairLink,
 } from "~/modules/run/run/domain/pairPoll.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import {
@@ -211,7 +208,8 @@ const answeredPollFrom = (
 	grade: AnswerGrade,
 	ledger: AnswerLedger,
 	gate: number,
-	elapsedMs?: number
+	elapsedMs?: number,
+	links: readonly PairLink[] = []
 ): AnsweredPoll => ({
 	id: poll.id,
 	question: poll.question,
@@ -230,7 +228,7 @@ const answeredPollFrom = (
 	optionExplanations: optionExplanationsUnless(poll, grade.graded),
 	answerType: grade.graded.answerType,
 	...(poll.answerType === "pairs"
-		? { pairs: answeredPairsOf(poll, optionIds) }
+		? { pairs: answeredPairsOf(poll, optionIds, links) }
 		: {}),
 	gate,
 	coverageEarned: ledger.earnedCoverage,
@@ -353,50 +351,33 @@ export const answer = (
 	return answerPoll(state, poll, optionIds, elapsedMs);
 };
 
-type PairMatchResult =
-	| { readonly kind: "refused" }
-	| { readonly kind: "open"; readonly progress: PairsProgress }
-	| {
-			readonly kind: "finished";
-			readonly poll: RunPoll;
-			readonly picks: readonly string[];
-	  };
-
-export const pairMatchOf = (
+export const checkedPairPicksOf = (
 	state: RunState,
-	optionIds: readonly string[]
-): PairMatchResult => {
+	links: readonly PairLink[]
+): readonly string[] | undefined => {
 	const poll = state.polls[state.currentIndex];
 	if (gateWindowComplete(state) || poll?.answerType !== "pairs")
-		return { kind: "refused" };
-
-	const progress = state.pairsResolved ?? NO_PAIRS_RESOLVED;
-	const match = matchPair(poll, progress, optionIds);
-	if (match === undefined) return { kind: "refused" };
-
-	const next = pairsProgressAfter(progress, match, optionIds);
-	return pairsFinished(next)
-		? { kind: "finished", poll, picks: next.matched }
-		: { kind: "open", progress: next };
+		return undefined;
+	return checkedPairsOf(poll, links);
 };
 
-export const matchTiles = (
+export const checkPairs = (
 	state: RunState,
-	optionIds: readonly string[],
+	links: readonly PairLink[],
 	elapsedMs?: number
 ): RunState => {
-	const result = pairMatchOf(state, optionIds);
-	if (result.kind === "refused") return state;
-	if (result.kind === "open")
-		return { ...state, pairsResolved: result.progress };
-	return answerPoll(state, result.poll, result.picks, elapsedMs);
+	const picks = checkedPairPicksOf(state, links);
+	const poll = state.polls[state.currentIndex];
+	if (picks === undefined || poll === undefined) return state;
+	return answerPoll(state, poll, picks, elapsedMs, links);
 };
 
 const answerPoll = (
 	state: RunState,
 	poll: RunPoll,
 	optionIds: readonly string[],
-	elapsedMs?: number
+	elapsedMs?: number,
+	links: readonly PairLink[] = []
 ): RunState => {
 	const grade = gradeAnswer(state, poll, optionIds, elapsedMs);
 	const ledger = scoreAnswer(state, grade);
@@ -406,7 +387,8 @@ const answerPoll = (
 		grade,
 		ledger,
 		state.gatesCleared,
-		elapsedMs
+		elapsedMs,
+		links
 	);
 	const applied = applyAnswer(state, poll, grade, ledger, answered);
 	return advancedPast(countAutoUpgrade(applied, state, grade.outcome), state);
@@ -465,11 +447,10 @@ const applySkip = (
 };
 
 const advancedPast = (counted: RunState, before: RunState): RunState => {
-	const unlocked: RunState = { ...counted, pairsResolved: undefined };
-	return gateWindowComplete(unlocked)
-		? unlocked
+	return gateWindowComplete(counted)
+		? counted
 		: {
-				...unlocked,
+				...counted,
 				currentIndex: before.currentIndex + 1,
 				status: "answering",
 			};

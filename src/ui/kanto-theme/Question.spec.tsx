@@ -271,13 +271,35 @@ describe("Question's options with code in them", () => {
 });
 
 describe("questionFactsOf on a matching pairs poll", () => {
-	it("counts the four pairs, however many tiles are still open", () => {
+	it("counts a pair for every two tiles", () => {
+		const tiles = (count: number) =>
+			Array.from({ length: count }, (_, index) => ({
+				id: String(index),
+				letter: "A",
+				label: String(index),
+			}));
+
+		expect(questionFactsOf({ answerType: "pairs", options: tiles(8) })).toBe(
+			"4 pairs · matching pairs"
+		);
+		expect(questionFactsOf({ answerType: "pairs", options: tiles(12) })).toBe(
+			"6 pairs · matching pairs"
+		);
+	});
+
+	it("counts the board's rows once the poll lists no tiles as options", () => {
+		const row = (id: string) => ({ id, label: id });
+
 		expect(
 			questionFactsOf({
 				answerType: "pairs",
-				options: [{ id: "map", letter: "A", label: "map" }],
+				options: [],
+				pairs: {
+					left: ["a", "b", "c", "d", "e"].map(row),
+					right: ["1", "2", "3", "4", "5"].map(row),
+				},
 			})
-		).toBe("4 pairs · matching pairs");
+		).toBe("5 pairs · matching pairs");
 	});
 });
 

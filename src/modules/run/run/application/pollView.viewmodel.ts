@@ -2,12 +2,7 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
 import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
-import {
-	NO_PAIRS_RESOLVED,
-	type PairSide,
-	type PairsProgress,
-	sideOf,
-} from "~/modules/run/run/domain/pairPoll.model";
+import { type PairSide, sideOf } from "~/modules/run/run/domain/pairPoll.model";
 import type { PollStats } from "~/modules/run/run/domain/pollStats.model";
 import type {
 	AnswerType,
@@ -17,13 +12,9 @@ import type {
 
 type PollOptionView = { readonly id: string; readonly label: string };
 
-export type PairTileState = "open" | "matched" | "missed";
-
-export type PairTileView = PollOptionView & { readonly state: PairTileState };
-
 export type PairsView = {
-	readonly left: readonly PairTileView[];
-	readonly right: readonly PairTileView[];
+	readonly left: readonly PollOptionView[];
+	readonly right: readonly PollOptionView[];
 };
 
 export type PollView = {
@@ -42,34 +33,16 @@ export type PollView = {
 
 export const REDACTED_LABEL = "?????";
 
-const tileStateOf = (
-	option: RunPoll["options"][number],
-	progress: PairsProgress
-): PairTileState => {
-	if (progress.matched.includes(option.id)) return "matched";
-	return option.group !== undefined && progress.missed.includes(option.group)
-		? "missed"
-		: "open";
-};
-
-const columnOf = (
-	poll: RunPoll,
-	side: PairSide,
-	progress: PairsProgress
-): readonly PairTileView[] =>
+const columnOf = (poll: RunPoll, side: PairSide): readonly PollOptionView[] =>
 	shuffleSeeded(
 		poll.options.filter((option) => sideOf(poll, option.id) === side),
 		`pairs-${side}-${poll.id}`
-	).map((option) => ({
-		id: option.id,
-		label: option.label,
-		state: tileStateOf(option, progress),
-	}));
+	).map((option) => ({ id: option.id, label: option.label }));
 
-const redactPairs = (poll: RunPoll, progress: PairsProgress): PollView => {
+const redactPairs = (poll: RunPoll): PollView => {
 	const pairs = {
-		left: columnOf(poll, "left", progress),
-		right: columnOf(poll, "right", progress),
+		left: columnOf(poll, "left"),
+		right: columnOf(poll, "right"),
 	};
 	return {
 		id: poll.id,
@@ -79,9 +52,7 @@ const redactPairs = (poll: RunPoll, progress: PairsProgress): PollView => {
 		codeSandboxUrl: poll.codeSandboxUrl,
 		answerType: poll.answerType,
 		author: poll.author,
-		options: [...pairs.left, ...pairs.right]
-			.filter((tile) => tile.state === "open")
-			.map(({ id, label }) => ({ id, label })),
+		options: [...pairs.left, ...pairs.right],
 		pairs,
 	};
 };
@@ -89,10 +60,9 @@ const redactPairs = (poll: RunPoll, progress: PairsProgress): PollView => {
 export const redactPoll = (
 	poll: RunPoll,
 	hiddenOptionIds: readonly string[] = [],
-	answerTypeHidden = false,
-	pairsResolved: PairsProgress = NO_PAIRS_RESOLVED
+	answerTypeHidden = false
 ): PollView => {
-	if (poll.answerType === "pairs") return redactPairs(poll, pairsResolved);
+	if (poll.answerType === "pairs") return redactPairs(poll);
 	return {
 		id: poll.id,
 		category: poll.category,

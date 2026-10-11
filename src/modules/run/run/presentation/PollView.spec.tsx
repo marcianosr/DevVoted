@@ -11,7 +11,7 @@ import {
 } from "~/test/runView.factory";
 
 import { PollView } from "./PollView.component";
-import { ANSWER_HOLD_MS } from "./useAnswerFeedback.hook";
+import { CARD_LEAVE_MS } from "./useAnswerFeedback.hook";
 
 type FakeAnimation = { onfinish: (() => void) | null; cancel: () => void };
 
@@ -262,25 +262,27 @@ describe("PollView once the answer has landed", () => {
 			picked: ["pop()"],
 		};
 
-		it("moves on by itself once a right answer's hold ends", () => {
+		it("stays on the answer until Next is pressed", async () => {
 			const onNext = vi.fn();
 			render(<PollView {...settled} onNext={onNext} />);
 
-			act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.right - 1));
+			act(() => vi.advanceTimersByTime(60_000));
 			expect(onNext).not.toHaveBeenCalled();
 
-			act(() => vi.advanceTimersByTime(1));
+			act(() => screen.getByRole("button", { name: "Next" }).click());
+			act(() => vi.advanceTimersByTime(CARD_LEAVE_MS));
 			expect(onNext).toHaveBeenCalledTimes(1);
 		});
 
-		it("holds a wrong answer longer, so the right one can be read", () => {
+		it("moves on from the answer with Enter", () => {
 			const onNext = vi.fn();
-			render(<PollView {...settled} answered={missed} onNext={onNext} />);
+			render(<PollView {...settled} onNext={onNext} />);
 
-			act(() => vi.advanceTimersByTime(ANSWER_HOLD_MS.wrong - 1));
-			expect(onNext).not.toHaveBeenCalled();
+			act(() => {
+				window.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+			});
+			act(() => vi.advanceTimersByTime(CARD_LEAVE_MS));
 
-			act(() => vi.advanceTimersByTime(1));
 			expect(onNext).toHaveBeenCalledTimes(1);
 		});
 
@@ -289,17 +291,10 @@ describe("PollView once the answer has landed", () => {
 			const { rerender } = render(<PollView {...settled} onNext={onNext} />);
 
 			rerender(<PollView {...settled} onNext={onNext} />);
+			act(() => screen.getByRole("button", { name: "Next" }).click());
 			act(() => vi.advanceTimersByTime(2000));
 
 			expect(onNext).toHaveBeenCalledTimes(1);
-		});
-
-		it("offers no press to skip the hold", () => {
-			render(<PollView {...settled} />);
-
-			expect(
-				screen.queryByRole("button", { name: /Next poll/ })
-			).not.toBeInTheDocument();
 		});
 
 		it("takes no answer while the feedback plays", () => {

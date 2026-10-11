@@ -13,6 +13,7 @@ import {
 import { useAdvertisementRoll } from "~/modules/account/profile/application/useAdvertisementRoll.hook";
 import { useArchiveState } from "~/modules/account/profile/application/useArchiveState.hook";
 import { AdvertisementCard } from "~/modules/account/profile/presentation/AdvertisementCard.ui";
+import { usePairsPublished } from "~/modules/polls/authoring/application/usePairsPublished.hook";
 import { usePollBounties } from "~/modules/polls/authoring/application/usePollBounties.hook";
 import { profilePathFor } from "~/shared/lib/profilePath";
 import { isAdminEmail } from "~/shared/utils/adminAuth";
@@ -24,6 +25,7 @@ type ViewerAdvertisementProps = AdvertisementProps & { user: AccountUser };
 const ViewerAdvertisement = ({ placement, user }: ViewerAdvertisementProps) => {
 	const { view: archive } = useArchiveState(user.id);
 	const { view: bounties } = usePollBounties();
+	const { view: pairsPublished } = usePairsPublished();
 	const { roll, dismiss } = useAdvertisementRoll(placement);
 
 	if (!archive || !bounties || !roll) return null;
@@ -33,6 +35,7 @@ const ViewerAdvertisement = ({ placement, user }: ViewerAdvertisementProps) => {
 			isAdmin: isAdminEmail(user.email),
 			ownedBorderIds: archive.ownedBorderIds,
 			bounties,
+			pairsPublished: pairsPublished ?? 0,
 		},
 		roll
 	);

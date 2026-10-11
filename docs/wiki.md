@@ -127,13 +127,12 @@ the Champion. There is no top. A skip moves nothing. The bonus is only kept when
 clears: a held gate's window, and its delta, are thrown away. Each gate's codebase is
 sized to the output a flawless bare player brings to it, `floor(5 × (1 + 0.08 × (gate +
 1)))`, so knowing every answer always fills the bar. No config touches the bonus, so a
-build amplifies what you know and never replaces it. The mix stays hidden: the
-multiplier is only stated once it is known (all five answered, or Prefetch v2 / `git
-rebase -i` v2), and the live bar reads the guaranteed floor: the multiplier as if every
-poll still ahead were a missed multiple, so it only rises and reads what the close pays
-on the fifth answer. The poll screen draws it as one **accuracy bar** from ×1 to the next
-whole multiplier above the best case: solid to the multiplier the window is sure of, faint
-to the best case still open ("×1.3 · up to ×1.34", ADR-170).
+build amplifies what you know and never replaces it. The poll screen draws one **accuracy bar** (ADR-198): a right answer raises your
+**bonus** by 0.016 a credit, a wrong one leaves it and lowers the gate's **cap**, and the
+bonus never passes the cap (a wrong answer at the cap lowers both). The cap is the best
+case still open, so on the fifth answer the bonus meets it and reads exactly what the
+close pays. The bar spans a ×0.25 window ticked every ×0.05 from the carried multiplier:
+filled to the bonus, hatched to the cap, the bonus figure over the fill.
 
 The bar caps at a full codebase. Overshoot pays `KB_PER_EXTRA_BAR` for every full bar
 past the demand, and a tenth of it (`HEAD_START_SHARE`) opens the next gate as a head
@@ -281,11 +280,15 @@ still renders where a poll carries one (ADR-137). Answer types are **single** (p
 ([2.5](#25-coverage-scoring)). The bank holds ~475 published polls, so a poll you have
 seen can reappear in a later seed.
 
-A **matching pairs** poll shows four pairs split over two columns (ADR-192). Tap a tile,
-then a tile in the other column. A match locks green. A miss locks the tile you started
-from and its true partner red, and that pair pays nothing; the tile you tapped second
-stays in play. Once three pairs are matched or missed, the last pair locks itself and
-pays nothing. 207, 451 and the Mirror leave a pairs poll alone, the linter and peek
+A **matching pairs** poll shows four to six pairs split over two columns (ADR-192, ADR-197); a tile holds at most 30 characters. The left
+tiles are numbered and the right tiles lettered. Tap a tile, then a tile
+in the other column, to draw a link: both tiles and the line between them take one
+colour, and the right tile takes the left tile's number. Tap a linked tile to redraw
+its link, or **clear** to start over. **Check pairs**, beside **clear**, opens once all four pairs are linked and
+marks every link at once: green where it joins a real pair, red where it does not
+(ADR-197). Three right links force the fourth, so a Check ends with 4, 2, 1 or 0 right.
+After Check and on the review, your board is dealt again as you played it, each link marked ✓ or ✗.
+207, 451 and the Mirror leave a pairs poll alone, the linter and peek
 have nothing to act on (both presses say so and charge nothing), and LGTM cannot approve one.
 
 Polls **rhyme**. Questions are short verses in the spirit of Furnace Fun: _"Don't ask
@@ -343,7 +346,8 @@ Cache's run and Dependabot's count, writes no poll response,
 and still spends one of the day's five polls. A poll approved for LGTM cannot be
 skipped.
 
-**Pairs share** is the pairs matched ÷ 3: 0, ⅓, ⅔ or 1 (ADR-192). It skips the rungs below.
+**Pairs share** is the right links ÷ (pairs − 1), capped at 1, since the last link is
+forced: on four pairs, four right pays 1, two ⅔, one ⅓, none 0 (ADR-192, ADR-197). It skips the rungs below.
 
 **Multi-answer share** lands on one of three rungs: **1/4, 1/2 or 3/4** (ADR-079).
 It starts as `(correct picks − wrong picks) ÷ total correct`, then rounds to the
@@ -412,10 +416,9 @@ only.
 **accuracy bar** under the coverage bar, and flies its gain (`+20%` at Pallet) into the
 bar, which moves when it lands. A wrong answer turns its option cinnabar, marks the right
 one, and shakes the card. Each answered option rings and glows once in its verdict colour and
-its ✓ or ✗ pops in. The poll screen then moves on by itself: 1.65s after a right
-answer, 1.9s after a wrong one, but a right answer whose gain chip is flying waits
-for the chip to ride into the bar first (at most 3s): the card slides away left for
-the last 180ms of that hold, the next poll slides in from the right and deals its options in one by one, and
+its ✓ or ✗ pops in. The poll then waits for **Next** (or Enter; ADR-197). On
+Next, once any flying gain chip has ridden into the bar (at most 3s), the card slides
+away left in 180ms, the next poll slides in from the right and deals its options in one by one, and
 two or more right answers in a row in the gate pop **2 in a row!** over the card
 (DVTD-yp24). With reduced motion none of it moves. The bar is a dim band ladder with a lit copy clipped to
 the reading. The accuracy bar states the multiplier as a range, sure to best, both read

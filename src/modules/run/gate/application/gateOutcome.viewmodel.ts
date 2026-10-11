@@ -24,6 +24,7 @@ import type {
 	PollAuthor,
 	AnswerType,
 } from "~/modules/run/run/domain/runPoll.model";
+import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
 import { settledFactsFor } from "~/modules/run/config/application/configChip.viewmodel";
 import { auditAt } from "~/modules/run/gate/domain/audit.model";
 import type {
@@ -212,6 +213,7 @@ export type GateAnswer = {
 	correct: readonly string[];
 	explanation?: string;
 	optionExplanations?: Readonly<Record<string, string>>;
+	pairs?: readonly AnsweredPair[];
 	codeBlock?: string;
 	note?: string;
 	author?: PollAuthor;
@@ -1487,6 +1489,7 @@ export const gateAnswersOf = (
 		...(answer.optionExplanations === undefined
 			? {}
 			: { optionExplanations: answer.optionExplanations }),
+		...(answer.pairs === undefined ? {} : { pairs: answer.pairs }),
 		codeBlock: answer.codeBlock,
 		...(answer.author === undefined ? {} : { author: answer.author }),
 	}));

@@ -27,6 +27,7 @@ import {
 } from "~/modules/run/run/domain/run.model";
 import {
 	accuracyMultiplierFor,
+	ACCURACY_GAIN_PER_GATE,
 	creditFor,
 	MULTIPLE_CREDIT,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -84,6 +85,7 @@ export type AccuracyView = {
 	readonly available: number | null;
 	readonly guaranteed: number;
 	readonly best: number;
+	readonly live: number;
 	readonly carried: number;
 };
 
@@ -150,6 +152,14 @@ export const bestMultiplierOf = (state: RunState): number =>
 		available: windowAvailableOf(state),
 	});
 
+const GAIN_PER_CREDIT = ACCURACY_GAIN_PER_GATE / SLICE_WINDOW;
+
+export const liveMultiplierOf = (state: RunState): number =>
+	Math.min(
+		1 + state.accuracyBonus + GAIN_PER_CREDIT * state.window.accuracyEarned,
+		bestMultiplierOf(state)
+	);
+
 export const guaranteedWindowOutputOf = (state: RunState): number =>
 	state.window.unitsEarned * guaranteedMultiplierOf(state);
 
@@ -161,6 +171,7 @@ export const accuracyViewFor = (state: RunState): AccuracyView => ({
 	available: knownAvailableOf(state),
 	guaranteed: guaranteedMultiplierOf(state),
 	best: bestMultiplierOf(state),
+	live: liveMultiplierOf(state),
 	carried: state.accuracyBonus,
 });
 

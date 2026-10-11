@@ -103,14 +103,15 @@ describe("pollDetailViewOf for a pairs poll", () => {
 		);
 		expect(labelsOf(pairs?.left)).toHaveLength(4);
 		expect(labelsOf(pairs?.right)).toHaveLength(4);
+		expect(pairs?.links).toBeUndefined();
 		expect(
 			[...(pairs?.left ?? []), ...(pairs?.right ?? [])].every(
-				(tile) => tile.state === "open"
+				(tile) => tile.verdict === undefined
 			)
 		).toBe(true);
 	});
 
-	it("lines every pair up side by side as matched when the answer is shown", () => {
+	it("lines every pair up side by side, joined and matched, when the answer is shown", () => {
 		const { pairs } = pollDetailViewOf(
 			PAIRS_POLL,
 			PAIR_OPTIONS,
@@ -130,7 +131,13 @@ describe("pollDetailViewOf for a pairs poll", () => {
 			"A p directly inside a div",
 			"A p anywhere inside a div",
 		]);
-		expect(pairs?.right.every((tile) => tile.state === "matched")).toBe(true);
+		expect(pairs?.right.every((tile) => tile.verdict === "matched")).toBe(true);
+		expect(pairs?.links).toEqual([
+			{ left: "11", right: "12" },
+			{ left: "13", right: "14" },
+			{ left: "15", right: "16" },
+			{ left: "17", right: "18" },
+		]);
 	});
 
 	it("draws no pair columns for a choice poll", () => {

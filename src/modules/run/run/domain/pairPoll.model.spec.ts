@@ -2,11 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
 	answeredPairsOf,
-	matchPair,
-	NO_PAIRS_RESOLVED,
+	checkedPairsOf,
 	pairShareOf,
-	pairsFinished,
-	pairsProgressAfter,
 	sideOf,
 } from "~/modules/run/run/domain/pairPoll.model";
 
@@ -40,67 +37,63 @@ describe("sideOf", () => {
 	});
 });
 
-describe("matchPair", () => {
-	it("matches two tiles of one pair, from either side", () => {
-		expect(
-			matchPair(pairs, NO_PAIRS_RESOLVED, ["a direct child", "div > div"])
-		).toEqual({ kind: "matched", pair: 1 });
+const linkedAsAuthored = SELECTORS.map(
+	([left, right]) => [left, right] as const
+);
+
+const swapped = (
+	links: readonly (readonly [string, string])[],
+	first: number,
+	second: number
+) =>
+	links.map(([left], index) => {
+		if (index === first) return [left, links[second][1]] as const;
+		if (index === second) return [left, links[first][1]] as const;
+		return links[index];
 	});
 
-	it("misses the pair the player started from when the partner belongs elsewhere", () => {
-		expect(
-			matchPair(pairs, NO_PAIRS_RESOLVED, ["div + div", "any descendant"])
-		).toEqual({ kind: "missed", pair: 0 });
+describe("checkedPairsOf", () => {
+	it("keeps every tile of a fully right set of links", () => {
+		expect(checkedPairsOf(pairs, linkedAsAuthored)).toEqual(SELECTORS.flat());
 	});
 
-	it("refuses two tiles from the same side", () => {
-		expect(
-			matchPair(pairs, NO_PAIRS_RESOLVED, ["div + div", "div > div"])
-		).toBeUndefined();
+	it("keeps only the pairs whose two tiles were linked to each other", () => {
+		expect(checkedPairsOf(pairs, swapped(linkedAsAuthored, 0, 1))).toEqual([
+			...SELECTORS[2],
+			...SELECTORS[3],
+		]);
 	});
 
-	it("refuses a tile whose pair is already matched", () => {
-		expect(
-			matchPair(pairs, matched(0), ["div + div", "any later sibling"])
-		).toBeUndefined();
+	it("keeps nothing when no link joins a real pair", () => {
+		const shifted = SELECTORS.map(
+			([left], index) => [left, SELECTORS[(index + 1) % 4][1]] as const
+		);
+		expect(checkedPairsOf(pairs, shifted)).toEqual([]);
 	});
 
-	it("refuses a tile whose pair was already missed", () => {
-		expect(
-			matchPair(pairs, { matched: [], missed: [3] }, [
-				"div ~ div",
-				"any descendant",
-			])
-		).toBeUndefined();
+	it("refuses fewer than four links", () => {
+		expect(checkedPairsOf(pairs, linkedAsAuthored.slice(0, 3))).toBeUndefined();
 	});
 
-	it("keeps a wrongly picked partner in play after the miss", () => {
-		const missed = pairsProgressAfter(NO_PAIRS_RESOLVED, {
-			kind: "missed",
-			pair: 0,
-		});
-
-		expect(matchPair(pairs, missed, ["div div", "any descendant"])).toEqual({
-			kind: "matched",
-			pair: 3,
-		});
+	it("refuses a tile linked twice", () => {
+		const twice = linkedAsAuthored.map(([left], index) =>
+			index === 1 ? ([left, SELECTORS[0][1]] as const) : linkedAsAuthored[index]
+		);
+		expect(checkedPairsOf(pairs, twice)).toBeUndefined();
 	});
 
-	it("refuses anything but two known tiles", () => {
-		expect(matchPair(pairs, NO_PAIRS_RESOLVED, ["div + div"])).toBeUndefined();
-		expect(
-			matchPair(pairs, NO_PAIRS_RESOLVED, ["div + div", "div * div"])
-		).toBeUndefined();
-	});
-});
-
-describe("pairsFinished", () => {
-	it("stays open while two pairs are still unresolved", () => {
-		expect(pairsFinished({ ...matched(0), missed: [1] })).toBe(false);
+	it("refuses a link that does not run from a left tile to a right tile", () => {
+		const reversed = linkedAsAuthored.map(([left, right], index) =>
+			index === 0 ? ([right, left] as const) : ([left, right] as const)
+		);
+		expect(checkedPairsOf(pairs, reversed)).toBeUndefined();
 	});
 
-	it("finishes once three pairs are resolved, since the last is forced", () => {
-		expect(pairsFinished({ ...matched(0), missed: [1, 2] })).toBe(true);
+	it("refuses a tile outside the poll", () => {
+		const stranger = linkedAsAuthored.map(([left, right], index) =>
+			index === 0 ? (["div * div", right] as const) : ([left, right] as const)
+		);
+		expect(checkedPairsOf(pairs, stranger)).toBeUndefined();
 	});
 });
 
@@ -130,5 +123,47 @@ describe("answeredPairsOf", () => {
 			{ left: "div ~ div", right: "any later sibling", matched: false },
 			{ left: "div div", right: "any descendant", matched: false },
 		]);
+	});
+
+	it("records the right tile the player linked to each pair's left tile", () => {
+		const links = swapped(linkedAsAuthored, 0, 1);
+
+		expect(
+			answeredPairsOf(pairs, checkedPairsOf(pairs, links) ?? [], links).map(
+				(pair) => pair.linked
+			)
+		).toEqual([
+			"a direct child",
+			"the next sibling",
+			"any later sibling",
+			"any descendant",
+		]);
+	});
+});
+
+describe("a pairs poll of six pairs", () => {
+	const SIX = [
+		...SELECTORS,
+		["div:has(p)", "a div holding a p"],
+		["div:not(p)", "any div at all"],
+	];
+	const six = {
+		options: SIX.flatMap((tiles, group) =>
+			tiles.map((label) => ({ id: label, label, correct: true, group }))
+		),
+	};
+	const asAuthored = SIX.map(([left, right]) => [left, right] as const);
+
+	it("takes six links as a full check", () => {
+		expect(checkedPairsOf(six, asAuthored)).toEqual(SIX.flat());
+	});
+
+	it("refuses four links, leaving two pairs unlinked", () => {
+		expect(checkedPairsOf(six, asAuthored.slice(0, 4))).toBeUndefined();
+	});
+
+	it("pays a fifth per right link, since the sixth is forced", () => {
+		expect(pairShareOf(six, SIX.slice(0, 4).flat())).toBeCloseTo(4 / 5);
+		expect(pairShareOf(six, SIX.flat())).toBe(1);
 	});
 });

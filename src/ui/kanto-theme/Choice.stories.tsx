@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { Choice } from "./Choice.ui";
-import { CodeText } from "./Question.ui";
+import { CodeText } from "./CodeText.ui";
 import { Screen } from "./Screen.ui";
 import { Typography } from "./Typography.ui";
 

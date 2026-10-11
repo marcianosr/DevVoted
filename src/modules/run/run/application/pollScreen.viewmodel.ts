@@ -23,8 +23,12 @@ import type {
 	PairsView,
 	PollView,
 } from "~/modules/run/run/application/pollView.viewmodel";
-import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
+import type {
+	AnsweredPair,
+	PairLink,
+} from "~/modules/run/run/domain/pairPoll.model";
 import { PAIR_SIZE } from "~/shared/lib/answerTypes";
+import { shuffleSeeded } from "~/shared/lib/seededRandom";
 import type { PollKey } from "~/modules/run/run/application/usePollKeyboard.hook";
 import { categoryLeaderRowFor } from "~/modules/run/run/application/categoryLeader.viewmodel";
 import type { Disclosure } from "~/shared/hooks/useDisclosure.hook";
@@ -79,6 +83,7 @@ import type {
 	QuestionProps,
 	QuestionPairs,
 } from "~/ui/kanto-theme/Question.ui";
+import type { PairTile, PairVerdict } from "~/ui/kanto-theme/MatchingPairs.ui";
 import type { SwatchMark } from "~/ui/kanto-theme/Swatch.ui";
 import type {
 	FigureTone,
@@ -299,6 +304,16 @@ const lockInFor = (picked: number, onSubmit: () => void): PollLock =>
 		? { label: LOCK_IN, note: PICK_EVERY }
 		: { label: `${LOCK_IN} ${plural(picked, ANSWER_WORD)}`, onPress: onSubmit };
 
+const everyPairLinked = (pairs: PairsView, picked: number): boolean =>
+	picked === pairs.left.length * PAIR_SIZE;
+
+export const pairsCheckOf = (
+	pairs: PairsView,
+	picked: readonly string[],
+	onSubmit: () => void
+): (() => void) | undefined =>
+	everyPairLinked(pairs, picked.length) ? onSubmit : undefined;
+
 const COMMIT_FOR = {
 	single: () => ({}),
 	multiple: (picked, onSubmit) => ({ lock: lockInFor(picked, onSubmit) }),
@@ -315,9 +330,10 @@ export const pollCommitFor = (
 ): PollCommit => COMMIT_FOR[answerType](picked, onSubmit);
 
 export const readyToSubmit = (
-	answerType: AnswerType | undefined,
+	poll: Pick<PollView, "pairs"> | undefined,
 	picked: number
-): boolean => (answerType === "pairs" ? picked === PAIR_SIZE : picked > 0);
+): boolean =>
+	poll?.pairs === undefined ? picked > 0 : everyPairLinked(poll.pairs, picked);
 
 export const answeredAPoll = (before: RunView, after: RunView): boolean =>
 	after.answeredThisGate.length !== before.answeredThisGate.length;
@@ -325,52 +341,152 @@ export const answeredAPoll = (before: RunView, after: RunView): boolean =>
 const pairSideOf = (pairs: PairsView, optionId: string) =>
 	pairs.left.some((tile) => tile.id === optionId) ? "left" : "right";
 
-const pickedPairTilesAfter = (
+const completeLinkTilesOf = (picked: readonly string[]): readonly string[] =>
+	picked.slice(0, picked.length - (picked.length % PAIR_SIZE));
+
+export const pairLinksOf = (picked: readonly string[]): readonly PairLink[] => {
+	const tiles = completeLinkTilesOf(picked);
+	return tiles.flatMap((left, index) =>
+		index % PAIR_SIZE === 0 ? [[left, tiles[index + 1]] as const] : []
+	);
+};
+
+export const pendingPairTileOf = (
+	picked: readonly string[]
+): string | undefined =>
+	picked.length % PAIR_SIZE === 0 ? undefined : picked.at(-1);
+
+const linkOf = (pairs: PairsView, first: string, second: string): PairLink =>
+	pairSideOf(pairs, first) === "left" ? [first, second] : [second, first];
+
+const linksWithout = (
+	links: readonly PairLink[],
+	optionIds: readonly string[]
+): readonly string[] =>
+	links.filter((link) => !link.some((id) => optionIds.includes(id))).flat();
+
+const linkedPairTilesAfter = (
 	pairs: PairsView,
 	picked: readonly string[],
 	optionId: string
-): readonly string[] => [
-	...picked.filter(
-		(id) => pairSideOf(pairs, id) !== pairSideOf(pairs, optionId)
-	),
-	optionId,
-];
+): readonly string[] => {
+	const links = pairLinksOf(picked);
+	const pending = pendingPairTileOf(picked);
+	if (pending === optionId) return links.flat();
+	if (
+		pending === undefined ||
+		pairSideOf(pairs, pending) === pairSideOf(pairs, optionId)
+	)
+		return [...linksWithout(links, [optionId]), optionId];
+	return [
+		...linksWithout(links, [pending, optionId]),
+		...linkOf(pairs, pending, optionId),
+	];
+};
 
 export const pickedAfter = (
 	poll: Pick<PollView, "pairs"> | undefined,
 	picked: readonly string[],
 	optionId: string
 ): readonly string[] => {
-	if (picked.includes(optionId)) return picked.filter((id) => id !== optionId);
-	return poll?.pairs === undefined
-		? [...picked, optionId]
-		: pickedPairTilesAfter(poll.pairs, picked, optionId);
+	if (poll?.pairs !== undefined)
+		return linkedPairTilesAfter(poll.pairs, picked, optionId);
+	return picked.includes(optionId)
+		? picked.filter((id) => id !== optionId)
+		: [...picked, optionId];
 };
 
 export const answerOnPickOf = (
-	poll: Pick<PollView, "answerType" | "pairs"> | undefined,
-	picked: readonly string[],
+	poll: Pick<PollView, "answerType"> | undefined,
 	optionId: string
-): readonly string[] | undefined => {
-	if (poll?.answerType === "single") return [optionId];
-	if (poll?.answerType !== "pairs") return undefined;
-	const next = pickedAfter(poll, picked, optionId);
-	return next.length === PAIR_SIZE ? next : undefined;
-};
+): readonly string[] | undefined =>
+	poll?.answerType === "single" ? [optionId] : undefined;
 
-const answeredTileOf =
-	(side: "left" | "right") => (pair: AnsweredPair, index: number) => ({
-		id: `${side}-${index}`,
+const PAIR_SIDES = ["left", "right"] as const;
+
+const tileIdOf = (side: (typeof PAIR_SIDES)[number], row: number) =>
+	`${side}-${row}`;
+
+const verdictOf = (matched: boolean): PairVerdict =>
+	matched ? "matched" : "missed";
+
+const tilesOf = (
+	pairs: readonly AnsweredPair[],
+	side: (typeof PAIR_SIDES)[number],
+	verdictAt: (row: number) => PairVerdict
+): PairTile[] =>
+	pairs.map((pair, row) => ({
+		id: tileIdOf(side, row),
 		label: pair[side],
-		state: pair.matched ? ("matched" as const) : ("missed" as const),
-	});
+		verdict: verdictAt(row),
+	}));
+
+const straightLinksOf = (pairs: readonly AnsweredPair[]) =>
+	pairs.map((_, row) => ({
+		left: tileIdOf("left", row),
+		right: tileIdOf("right", row),
+	}));
+
+const verdictAtRow =
+	(pairs: readonly AnsweredPair[]) =>
+	(row: number): PairVerdict =>
+		verdictOf(pairs[row]?.matched ?? false);
+
+const keyOf = (pairs: readonly AnsweredPair[]): QuestionPairs => ({
+	left: tilesOf(pairs, "left", verdictAtRow(pairs)),
+	right: tilesOf(pairs, "right", verdictAtRow(pairs)),
+	links: straightLinksOf(pairs),
+});
+
+const dealtAsPlayed = <Tile>(
+	tiles: readonly Tile[],
+	side: (typeof PAIR_SIDES)[number],
+	pollId: string | undefined
+): readonly Tile[] =>
+	pollId === undefined
+		? tiles
+		: shuffleSeeded(tiles, `pairs-${side}-${pollId}`);
+
+const unmarkedTilesOf = (
+	pairs: readonly AnsweredPair[],
+	side: (typeof PAIR_SIDES)[number],
+	pollId: string | undefined
+): readonly PairTile[] =>
+	dealtAsPlayed(
+		pairs.map((pair, row) => ({ id: tileIdOf(side, row), label: pair[side] })),
+		side,
+		pollId
+	);
+
+const playerLinksOf = (
+	pairs: readonly AnsweredPair[]
+): NonNullable<QuestionPairs["links"]> =>
+	pairs.map((pair, row) => ({
+		left: tileIdOf("left", row),
+		right: tileIdOf(
+			"right",
+			pairs.findIndex((candidate) => candidate.right === pair.linked)
+		),
+		verdict: verdictOf(pair.matched),
+	}));
+
+const playerBoardOf = (
+	pairs: readonly AnsweredPair[],
+	pollId: string | undefined
+): QuestionPairs => ({
+	left: unmarkedTilesOf(pairs, "left", pollId),
+	right: unmarkedTilesOf(pairs, "right", pollId),
+	links: playerLinksOf(pairs),
+});
+
+const everyLinkRecorded = (pairs: readonly AnsweredPair[]) =>
+	pairs.every((pair) => pair.linked !== undefined);
 
 export const answeredPairsFor = (
-	pairs: readonly AnsweredPair[]
-): QuestionPairs => ({
-	left: pairs.map(answeredTileOf("left")),
-	right: pairs.map(answeredTileOf("right")),
-});
+	pairs: readonly AnsweredPair[],
+	pollId?: string
+): QuestionPairs =>
+	everyLinkRecorded(pairs) ? playerBoardOf(pairs, pollId) : keyOf(pairs);
 
 const APPROVE_LABEL = "LGTM";
 const APPROVE_NOTE = "the room answers this one for you";
@@ -905,9 +1021,17 @@ const livePairsQuestionFor = (
 	question: poll.question,
 	options: [],
 	codeBlock: poll.codeBlock,
-	pickedIds: selectedOptionIds,
 	onPick: on.onSelect,
-	pairs,
+	pairs: {
+		...pairs,
+		links: pairLinksOf(selectedOptionIds).map(([left, right]) => ({
+			left,
+			right,
+		})),
+		pendingId: pendingPairTileOf(selectedOptionIds),
+		onClear: on.onClear,
+		onCheck: pairsCheckOf(pairs, selectedOptionIds, on.onSubmit),
+	},
 });
 
 const liveQuestionFor = (
@@ -935,7 +1059,7 @@ const answeredQuestionFor = (answered: AnsweredPoll): QuestionProps => ({
 	pickedIds: answered.picked,
 	...(answered.pairs === undefined
 		? {}
-		: { pairs: answeredPairsFor(answered.pairs) }),
+		: { pairs: answeredPairsFor(answered.pairs, answered.id) }),
 });
 
 const authorOf = (poll: LivePoll): AuthorProps | undefined =>
@@ -965,6 +1089,7 @@ type PollMood = Pick<
 	| "categoryColor"
 	| "wrongCost"
 	| "hint"
+	| "explanation"
 	| "author"
 	| "commit"
 	| "keysHint"
@@ -972,10 +1097,22 @@ type PollMood = Pick<
 	| "footer"
 >;
 
-const answeredMoodFor = (view: RunView, answered: AnsweredPoll): PollMood => ({
+const NEXT = "Next";
+
+export const answeredCommitFor = (
+	onAdvance: (() => void) | undefined
+): PollCommit =>
+	onAdvance === undefined ? {} : { lock: { label: NEXT, onPress: onAdvance } };
+
+const answeredMoodFor = (
+	view: RunView,
+	answered: AnsweredPoll,
+	on: PollScreenHandlers
+): PollMood => ({
 	question: answeredQuestionFor(answered),
 	category: categoryNameOf(view, answered.category),
-	hint: answered.explanation,
+	explanation: answered.explanation,
+	commit: answeredCommitFor(on.onAdvance),
 });
 
 const wasApprovedUnread = (view: RunView, poll: LivePoll): boolean =>
@@ -1001,6 +1138,8 @@ const withCombo = (combo: string | undefined) =>
 
 export type PollScreenHandlers = {
 	onSelect: (optionId: string) => void;
+	onClear?: () => void;
+	onAdvance?: () => void;
 	onSubmit: () => void;
 	onNext: () => void;
 	onLanded?: () => void;
@@ -1072,7 +1211,7 @@ export const pollScreenPropsFor = ({
 	const flight = pollFlightFor(before, view, answered);
 	const mood =
 		answered !== undefined
-			? answeredMoodFor(view, answered)
+			? answeredMoodFor(view, answered, on)
 			: live === undefined
 				? undefined
 				: liveMoodFor(view, live, selectedOptionIds, on);

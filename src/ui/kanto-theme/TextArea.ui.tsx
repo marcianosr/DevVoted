@@ -9,8 +9,16 @@ import {
 	type FieldCaption,
 } from "./Field.ui";
 
-const BOX = "flex w-full min-w-0 px-2 py-1.5";
-const AREA = "text-xs min-h-32 w-full resize-y leading-relaxed";
+const BOX = "flex w-full min-w-0 flex-col gap-1 px-2 py-1.5";
+const AREA = "w-full text-xs leading-relaxed";
+const AREA_SIZE = {
+	regular: "min-h-32 resize-y",
+	fit: "field-sizing-content min-h-0 resize-none",
+} as const;
+const COUNT = "self-end text-[10px] tabular-nums text-theme-faint";
+const COUNT_OVER = "text-saffron";
+
+export type TextAreaSize = keyof typeof AREA_SIZE;
 const DEFAULT_ROWS = 4;
 
 export type TextAreaProps = {
@@ -22,6 +30,8 @@ export type TextAreaProps = {
 	caption?: FieldCaption;
 	rows?: number;
 	maxLength?: number;
+	limit?: number;
+	size?: TextAreaSize;
 };
 
 export const TextArea = ({
@@ -33,6 +43,8 @@ export const TextArea = ({
 	caption = "hidden",
 	rows = DEFAULT_ROWS,
 	maxLength,
+	limit,
+	size = "regular",
 }: TextAreaProps) => {
 	const id = useId();
 	const noteId = `${id}-note`;
@@ -47,8 +59,16 @@ export const TextArea = ({
 					maxLength={maxLength}
 					aria-describedby={note === undefined ? undefined : noteId}
 					onChange={(event) => onChange(event.target.value)}
-					className={clsx(FIELD_CONTROL, AREA)}
+					className={clsx(FIELD_CONTROL, AREA, AREA_SIZE[size])}
 				/>
+				{limit === undefined ? null : (
+					<span
+						aria-hidden
+						className={clsx(COUNT, value.length > limit && COUNT_OVER)}
+					>
+						{value.length}/{limit}
+					</span>
+				)}
 			</span>
 		</Field>
 	);

@@ -69,6 +69,38 @@ describe("runActionSchema", () => {
 		expect(runActionSchema.safeParse({ type: "loot" }).success).toBe(false);
 	});
 
+	it("accepts a pairs check of four left-to-right links", () => {
+		const links = [
+			["1", "2"],
+			["3", "4"],
+			["5", "6"],
+			["7", "8"],
+		];
+
+		expect(
+			runActionSchema.safeParse({ type: "check-pairs", links }).success
+		).toBe(true);
+	});
+
+	it("rejects a pairs check with a pair left unlinked", () => {
+		const links = [
+			["1", "2"],
+			["3", "4"],
+			["5", "6"],
+		];
+
+		expect(
+			runActionSchema.safeParse({ type: "check-pairs", links }).success
+		).toBe(false);
+	});
+
+	it("rejects the retired one-pair-at-a-time match", () => {
+		expect(
+			runActionSchema.safeParse({ type: "match-pair", optionIds: ["1", "2"] })
+				.success
+		).toBe(false);
+	});
+
 	it("rejects an answer without options", () => {
 		const result = runActionSchema.safeParse({ type: "answer", optionIds: [] });
 		expect(result.success).toBe(false);

@@ -55,16 +55,12 @@ describe("ReviewScreen", () => {
 		expect(rowOf("What does a rebase rewrite?")).not.toHaveAttribute("open");
 	});
 
-	it("dims a row that needs no reading", () => {
+	it("draws a passed row at full strength", () => {
 		render(<ReviewScreen {...props} />);
 
-		expect(rowOf("What does a rebase rewrite?")?.parentElement).toHaveClass(
-			"opacity-70"
-		);
 		expect(
-			rowOf("Which property centres a flex child along the main axis?")
-				?.parentElement
-		).not.toHaveClass("opacity-70");
+			rowOf("What does a rebase rewrite?")?.closest(".opacity-70")
+		).toBeNull();
 	});
 
 	it("leads every row with its verdict as a word", () => {

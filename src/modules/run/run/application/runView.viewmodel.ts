@@ -581,8 +581,7 @@ export const toRunView = (
 				? redactPoll(
 						mirrored ? mirrorPoll(current) : current,
 						hidden,
-						answerTypeHidden,
-						state.pairsResolved
+						answerTypeHidden
 					)
 				: null,
 		awaitingTomorrow: isAwaitingTomorrow(state),

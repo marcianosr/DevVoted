@@ -154,7 +154,7 @@ describe("a matching pairs poll", () => {
 					index === 0 ? { ...option, group: 1 } : option
 				),
 			})
-		).toThrow("A pairs poll needs four pairs of two tiles");
+		).toThrow("A pairs poll needs four to six pairs of two tiles");
 	});
 
 	it("rejects a pairs poll short of a pair", () => {
@@ -164,7 +164,56 @@ describe("a matching pairs poll", () => {
 				poll: pairsPoll,
 				options: pairsOptions.slice(0, 6),
 			})
-		).toThrow("A pairs poll needs four pairs of two tiles");
+		).toThrow("A pairs poll needs four to six pairs of two tiles");
+	});
+
+	it("accepts six pairs", () => {
+		const six = [
+			...pairsOptions,
+			...["div:has(p)", "a div holding a p", "div:not(p)", "any div"].map(
+				(option, index) => ({
+					option,
+					correct: true,
+					group: 4 + Math.floor(index / 2),
+				})
+			),
+		];
+
+		expect(
+			createPollWithOptionsSchema.parse({ poll: pairsPoll, options: six })
+				.options
+		).toHaveLength(12);
+	});
+
+	it("rejects a seventh pair", () => {
+		const seven = [0, 1, 2, 3, 4, 5, 6].flatMap((group) =>
+			[0, 1].map((side) => ({
+				option: `tile ${group}-${side}`,
+				correct: true,
+				group,
+			}))
+		);
+
+		expect(() =>
+			createPollWithOptionsSchema.parse({ poll: pairsPoll, options: seven })
+		).toThrow();
+	});
+
+	it("rejects a tile over thirty characters", () => {
+		expect(() =>
+			createPollWithOptionsSchema.parse({
+				poll: pairsPoll,
+				options: pairsOptions.map((option, index) =>
+					index === 1
+						? {
+								...option,
+								option:
+									"Matches any selector in its list, takes the highest specificity",
+							}
+						: option
+				),
+			})
+		).toThrow("A tile cannot exceed 30 characters");
 	});
 });
 

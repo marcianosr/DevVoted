@@ -368,10 +368,18 @@ export const createKantoPollFactsProps = createMockDataFactory<
 });
 
 export const kantoAccuracyTrack = (): AccuracyTrackProps => ({
-	label: "Accuracy ×1.32, up to ×1.74",
-	figure: "×1.32 · up to ×1.74",
-	sure: 0.32,
-	best: 0.74,
+	label: "Accuracy ×1.32, this gate up to ×1.38",
+	figure: "×1.32",
+	bonus: 0.28,
+	cap: 0.52,
+	ticks: [
+		{ share: 0, label: "×1.25" },
+		{ share: 0.2, label: "×1.30" },
+		{ share: 0.4, label: "×1.35" },
+		{ share: 0.6, label: "×1.40" },
+		{ share: 0.8, label: "×1.45" },
+		{ share: 1 },
+	],
 });
 
 export const kantoPollReadout = (): PollReadout => ({

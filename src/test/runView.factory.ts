@@ -174,6 +174,7 @@ export const createMockGateStake = createMockDataFactory<GateStake>({
 		available: null,
 		guaranteed: 1,
 		best: 1.2,
+		live: 1,
 		carried: 0,
 	},
 	audits: [],

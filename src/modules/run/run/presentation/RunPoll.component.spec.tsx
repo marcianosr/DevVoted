@@ -182,19 +182,20 @@ describe("RunPoll", () => {
 });
 
 describe("RunPoll on a matching pairs poll", () => {
-	const tileOf = (label: string) => ({
-		id: label,
-		label,
-		state: "open" as const,
-	});
-	const LEFT = ["div + div", "div > div"];
-	const RIGHT = ["the next sibling", "a direct child"];
+	const tileOf = (label: string) => ({ id: label, label });
+	const LEFT = ["div + div", "div > div", "div ~ div", "div div"];
+	const RIGHT = [
+		"the next sibling",
+		"a direct child",
+		"any later sibling",
+		"any descendant",
+	];
 
 	const renderPairs = () => {
 		const view = createMockRunView({
 			poll: createMockPollView({
 				answerType: "pairs",
-				options: [...LEFT, ...RIGHT].map((label) => ({ id: label, label })),
+				options: [...LEFT, ...RIGHT].map(tileOf),
 				pairs: { left: LEFT.map(tileOf), right: RIGHT.map(tileOf) },
 			}),
 		});
@@ -218,53 +219,57 @@ describe("RunPoll on a matching pairs poll", () => {
 			await user.click(await screen.findByRole("button", { name: label }));
 	};
 
-	it("matches a tile on each side the moment the second is tapped", async () => {
+	const linkEveryPair = (user: ReturnType<typeof userEvent.setup>) =>
+		pick(
+			user,
+			LEFT.flatMap((left, row) => [RIGHT[row], left])
+		);
+
+	it("draws a link without sending anything when a tile on each side is tapped", async () => {
 		const user = userEvent.setup();
 		renderPairs();
 
 		await pick(user, ["a direct child", "div > div"]);
+
+		expect(screen.getByRole("button", { name: "clear" })).toBeInTheDocument();
+		expect(dispatchRunAction).not.toHaveBeenCalled();
+	});
+
+	it("sends all four links, left tile first, when Check is pressed", async () => {
+		const user = userEvent.setup();
+		renderPairs();
+
+		await linkEveryPair(user);
+		await user.click(screen.getByRole("button", { name: "Check pairs" }));
 
 		await waitFor(() =>
 			expect(
 				vi.mocked(dispatchRunAction).mock.calls.at(0)?.[0]?.data.action
 			).toEqual(
 				expect.objectContaining({
-					type: "match-pair",
-					optionIds: ["a direct child", "div > div"],
+					type: "check-pairs",
+					links: LEFT.map((left, row) => [left, RIGHT[row]]),
 				})
 			)
 		);
 	});
 
-	it("swaps the pick when a second tile on the same side is tapped", async () => {
-		const user = userEvent.setup();
-		renderPairs();
-
-		await pick(user, ["div + div", "div > div"]);
-
-		expect(screen.getByRole("button", { name: "div > div" })).toHaveAttribute(
-			"aria-pressed",
-			"true"
-		);
-		expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
-			"aria-pressed",
-			"false"
-		);
-		expect(dispatchRunAction).not.toHaveBeenCalled();
-	});
-
-	it("clears the picks and stays on the poll after a pair resolves", async () => {
+	it("keeps Check shut while a pair is still unlinked", async () => {
 		const user = userEvent.setup();
 		renderPairs();
 
 		await pick(user, ["div + div", "the next sibling"]);
 
-		await waitFor(() => expect(dispatchRunAction).toHaveBeenCalled());
-		await waitFor(() =>
-			expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
-				"aria-pressed",
-				"false"
-			)
-		);
+		expect(screen.getByRole("button", { name: "Check pairs" })).toBeDisabled();
+	});
+
+	it("removes every link from the clear press", async () => {
+		const user = userEvent.setup();
+		renderPairs();
+
+		await pick(user, ["div + div", "the next sibling"]);
+		await user.click(screen.getByRole("button", { name: "clear" }));
+
+		expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
 	});
 });

@@ -1,4 +1,3 @@
-import type { PairsProgress } from "~/modules/run/run/domain/pairPoll.model";
 import {
 	type AnsweredPoll,
 	type RunPoll,
@@ -130,7 +129,6 @@ export type RunState = {
 	readonly lintsThisRun?: number;
 	readonly approvedPollId?: string;
 	readonly boughtBackOptionIds?: readonly string[];
-	readonly pairsResolved?: PairsProgress;
 	readonly gatesCleared: number;
 	readonly streak: number;
 	readonly headStartUnits: number;

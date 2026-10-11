@@ -38,6 +38,7 @@ export const POLL_LIMITS = {
 	answers: { min: 3, max: 20 },
 	answer: { max: 500 },
 	answerExplanation: { max: 500 },
+	tile: { max: 30 },
 } as const;
 
 export const APPROVED_POLL_ARCHIVE_KB = 16;

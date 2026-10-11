@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
+import type { WireRunAction } from "~/modules/run/run/application/run.validation";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import {
-	answeredAPoll,
+	pairLinksOf,
 	pickedAfter,
 	type PressAction,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
@@ -55,23 +56,18 @@ export const RunPoll = () => {
 
 	if (!view?.poll) return null;
 
-	const onPairs = view.poll.answerType === "pairs";
+	const answerOf = (optionIds: readonly string[]): WireRunAction => {
+		const elapsedMs = Math.min(clock.elapsedMs(), MAX_ELAPSED_MS);
+		return view.poll?.answerType === "pairs"
+			? { type: "check-pairs", links: pairLinksOf(optionIds), elapsedMs }
+			: { type: "answer", optionIds: [...optionIds], elapsedMs };
+	};
 
 	const submit = (optionIds: readonly string[]) => {
 		if (busy || reveal || optionIds.length === 0) return;
-		sendWith(
-			{
-				type: onPairs ? "match-pair" : "answer",
-				optionIds: [...optionIds],
-				elapsedMs: Math.min(clock.elapsedMs(), MAX_ELAPSED_MS),
-			},
-			(result) => {
-				if (!result.success) return;
-				if (!onPairs || answeredAPoll(view, result.data)) return stage(result);
-				commit(result);
-				setSelected([]);
-			}
-		);
+		sendWith(answerOf(optionIds), (result) => {
+			if (result.success) stage(result);
+		});
 	};
 
 	const approveWithTheRoom = () => {
@@ -105,6 +101,7 @@ export const RunPoll = () => {
 			selectedOptionIds={selected}
 			clockMs={clock.shownMs}
 			onSelect={onSelect}
+			onClear={() => setSelected([])}
 			onAnswer={submit}
 			onNext={advanceFromReveal}
 			onPress={(action, configId) => send(PRESS_ACTIONS[action](configId))}

@@ -99,7 +99,7 @@ describe("Segmented", () => {
 		expect(onSelect).toHaveBeenCalledExactlyOnceWith("draft");
 	});
 
-	it("joins its items into one ringed box unless asked to stand loose", () => {
+	it("sits its items in one track with the chosen one raised, unless asked to stand loose", () => {
 		const { rerender } = render(
 			<Segmented
 				label="Status"
@@ -109,9 +109,12 @@ describe("Segmented", () => {
 			/>
 		);
 
-		expect(screen.getByRole("radiogroup")).toHaveClass("ring-1", "rounded-md");
+		expect(screen.getByRole("radiogroup")).toHaveClass("rounded-xl", "border");
+		expect(screen.getByRole("radio", { name: "all · 96" })).toHaveClass(
+			"press-raised"
+		);
 		expect(screen.getByRole("radio", { name: "draft · 3" })).not.toHaveClass(
-			"ring-1"
+			"press-raised"
 		);
 
 		rerender(

@@ -72,7 +72,7 @@ const answerOptionOf = (option: PollOption): Partial<QuestionOption> => {
 	};
 };
 
-type PairColumn = keyof QuestionPairs;
+type PairColumn = "left" | "right";
 
 const pairTilesOf = (
 	options: readonly PollOption[],
@@ -90,7 +90,7 @@ const pairColumnOf = (
 	options: readonly PollOption[],
 	column: PairColumn,
 	view: PollDetailView
-): QuestionPairs[PairColumn] => {
+): QuestionPairs["left"] => {
 	const tiles = pairTilesOf(options, column);
 	const ordered =
 		view === "answer"
@@ -99,8 +99,29 @@ const pairColumnOf = (
 	return ordered.map((option) => ({
 		id: String(option.id),
 		label: option.option,
-		state: view === "answer" ? "matched" : "open",
+		...(view === "answer" ? { verdict: "matched" } : {}),
 	}));
+};
+
+const authoredLinksOf = (
+	left: QuestionPairs["left"],
+	right: QuestionPairs["right"]
+): NonNullable<QuestionPairs["links"]> =>
+	left.flatMap((tile, row) => {
+		const partner = right[row];
+		return partner === undefined ? [] : [{ left: tile.id, right: partner.id }];
+	});
+
+const pairsFor = (
+	poll: Poll,
+	options: readonly PollOption[],
+	view: PollDetailView
+): QuestionPairs => {
+	const left = pairColumnOf(poll, options, "left", view);
+	const right = pairColumnOf(poll, options, "right", view);
+	return view === "answer"
+		? { left, right, links: authoredLinksOf(left, right) }
+		: { left, right };
 };
 
 const pairsOf = (
@@ -108,14 +129,7 @@ const pairsOf = (
 	options: readonly PollOption[],
 	view: PollDetailView
 ): Pick<QuestionProps, "pairs"> =>
-	poll.answerType === "pairs"
-		? {
-				pairs: {
-					left: pairColumnOf(poll, options, "left", view),
-					right: pairColumnOf(poll, options, "right", view),
-				},
-			}
-		: {};
+	poll.answerType === "pairs" ? { pairs: pairsFor(poll, options, view) } : {};
 
 export const pollDetailViewOf = (
 	poll: Poll,

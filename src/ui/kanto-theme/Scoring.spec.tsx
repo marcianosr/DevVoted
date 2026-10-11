@@ -55,16 +55,17 @@ describe("Scoring", () => {
 			<Scoring
 				{...props}
 				track={{
-					label: "Accuracy ×1, up to ×1.08",
-					figure: "×1 · up to ×1.08",
-					sure: 0,
-					best: 0.08,
+					label: "Accuracy ×1, this gate up to ×1.08",
+					figure: "×1",
+					bonus: 0,
+					cap: 0.32,
+					ticks: [],
 				}}
 			/>
 		);
 
 		expect(
-			screen.getByRole("img", { name: "Accuracy ×1, up to ×1.08" })
+			screen.getByRole("img", { name: "Accuracy ×1, this gate up to ×1.08" })
 		).toBeInTheDocument();
 	});
 

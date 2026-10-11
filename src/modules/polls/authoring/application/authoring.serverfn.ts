@@ -6,6 +6,7 @@ import {
 	editPoll,
 	getApprovalNotice,
 	getCategoryBounties,
+	getPublishedPairsCount,
 	reviewPoll,
 	suggestPoll,
 } from "~/modules/polls/authoring/application/authoring.service";
@@ -35,6 +36,10 @@ export const markPollReviewed = createServerFn({ method: "POST" })
 
 export const getPollBounties = createServerFn({ method: "GET" }).handler(() =>
 	withAuthenticatedUser(() => getCategoryBounties())
+);
+
+export const getPairsPublished = createServerFn({ method: "GET" }).handler(() =>
+	withAuthenticatedUser(() => getPublishedPairsCount())
 );
 
 export const getPollApprovalNotice = createServerFn({ method: "GET" }).handler(

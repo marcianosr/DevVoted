@@ -279,6 +279,20 @@ export const fetchPublishedCounts = async (): Promise<PublishedCounts> => {
 	);
 };
 
+export const fetchPublishedPairsCount = async (): Promise<number> => {
+	const [row] = await db
+		.select({ published: sql<number>`count(*)::int` })
+		.from(pollsTable)
+		.where(
+			and(
+				eq(pollsTable.status, "published"),
+				eq(pollsTable.answer_type, "pairs")
+			)
+		);
+
+	return row?.published ?? 0;
+};
+
 export const fetchPublishedCountIn = async (
 	categoryCode: string
 ): Promise<number> => {

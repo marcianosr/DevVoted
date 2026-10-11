@@ -563,9 +563,46 @@ describe("authoring a matching pairs poll", () => {
 		expect(pairsOf(filled).answers[0].text).toBe(quiz.options[0]);
 	});
 
-	it("neither adds nor removes a tile on a pairs poll", () => {
-		expect(canAddAnswer(pairsOf(filled))).toBe(false);
-		expect(canRemoveAnswer(pairsOf(filled))).toBe(false);
+	it("adds a pair of blank tiles, up to six pairs", () => {
+		const five = addAnswer(writtenPairs());
+		const six = addAnswer(five);
+
+		expect(pairRowsOf(five)).toHaveLength(5);
+		expect(pairRowsOf(five)[4].left.text).toBe("");
+		expect(canAddAnswer(six)).toBe(false);
+		expect(addAnswer(six)).toBe(six);
+	});
+
+	it("removes a whole pair by either of its tiles, never below four", () => {
+		const five = addAnswer(writtenPairs());
+		const removed = removeAnswer(five, five.answers[3].key);
+
+		expect(pairRowsOf(removed).map((row) => row.left.text)).toEqual([
+			"div + div",
+			"div ~ div",
+			"div div",
+			"",
+		]);
+		expect(canRemoveAnswer(writtenPairs())).toBe(false);
+	});
+
+	it("numbers the pairs again after one is removed", () => {
+		const five = addAnswer(writtenPairs());
+		const removed = removeAnswer(five, five.answers[0].key);
+
+		expect(removed.answers.map((answer) => answer.group)).toEqual([
+			0, 0, 1, 1, 2, 2, 3, 3,
+		]);
+	});
+
+	it("refuses a tile longer than thirty characters", () => {
+		const long = changeAnswer(
+			writtenPairs(),
+			writtenPairs().answers[1].key,
+			"Matches any selector in its list, takes the highest specificity"
+		);
+
+		expect(refusalOf(long)).toBe("Keep every tile to 30 characters");
 	});
 
 	it("puts each pair's first tile on the left and its second on the right", () => {

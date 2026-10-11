@@ -28,7 +28,15 @@ export const COPY = {
 	suggestCta: "Suggest a poll",
 	borderTitle: (name: string) => `${name} border`,
 	borderCta: "Open market",
+	newModeTitle: "New: matching pairs",
+	newModeCount: (pairs: number) => `${pairs} ${pairs === 1 ? "poll" : "polls"}`,
+	newModeText: (pairs: number) =>
+		`Link every pair, then Check pairs. ${pairs} pairs ${pairs === 1 ? "poll is" : "polls are"} in the deck.`,
+	newModeCta: "Play the run",
 } as const;
+
+const RUN_PATH = "/run";
+const NEW_CONTENT_WEIGHT = 2;
 
 export type AdvertisementPlacement =
 	"hub" | "newRun" | "profile" | "community" | "poll" | "banner";
@@ -40,12 +48,15 @@ export type SuggestAdvertisement = {
 };
 
 export type Advertisement =
-	SuggestAdvertisement | { kind: "border"; border: Border };
+	| SuggestAdvertisement
+	| { kind: "border"; border: Border }
+	| { kind: "newMode"; pairs: number };
 
 export type AdvertisementViewer = {
 	isAdmin: boolean;
 	ownedBorderIds: readonly string[];
 	bounties: readonly CategoryBounty[];
+	pairsPublished: number;
 };
 
 export type AdvertisementRoll = { kind: number; item: number };
@@ -97,6 +108,12 @@ export const ADVERTISEMENTS: readonly AdvertisementEntry[] = [
 			bordersForSaleTo(ownedBorderIds).length > 0,
 		pick: ({ ownedBorderIds }, roll) =>
 			borderAt(bordersForSaleTo(ownedBorderIds), roll),
+	},
+	{
+		kind: "newMode",
+		weight: NEW_CONTENT_WEIGHT,
+		isEligible: ({ pairsPublished }) => pairsPublished > 0,
+		pick: ({ pairsPublished }) => ({ kind: "newMode", pairs: pairsPublished }),
 	},
 ];
 
@@ -189,22 +206,38 @@ const suggestPropsFor = ({
 	cta: { label: COPY.suggestCta, href: suggestHrefFor(wanted) },
 });
 
+const newModePropsFor = (pairs: number): AdvertisementCardProps => ({
+	title: COPY.newModeTitle,
+	price: COPY.newModeCount(pairs),
+	text: COPY.newModeText(pairs),
+	icon: { kind: "cookie" },
+	cta: { label: COPY.newModeCta, href: RUN_PATH },
+});
+
+const borderPropsFor = (
+	border: Border,
+	face: AdvertisementFace,
+	profileHref: string
+): AdvertisementCardProps => ({
+	title: COPY.borderTitle(border.name),
+	price: formatStorage(border.cost),
+	text: border.description,
+	icon: {
+		kind: "face",
+		name: face.name,
+		photoUrl: face.photoUrl,
+		borderUrl: border.image,
+	},
+	cta: { label: COPY.borderCta, href: profileHref + BORDERS_TAB_SEARCH },
+});
+
 export const advertisementPropsFor = (
 	advertisement: Advertisement,
 	face: AdvertisementFace,
 	profileHref: string
-): AdvertisementCardProps =>
-	advertisement.kind === "suggest"
-		? suggestPropsFor(advertisement)
-		: {
-				title: COPY.borderTitle(advertisement.border.name),
-				price: formatStorage(advertisement.border.cost),
-				text: advertisement.border.description,
-				icon: {
-					kind: "face",
-					name: face.name,
-					photoUrl: face.photoUrl,
-					borderUrl: advertisement.border.image,
-				},
-				cta: { label: COPY.borderCta, href: profileHref + BORDERS_TAB_SEARCH },
-			};
+): AdvertisementCardProps => {
+	if (advertisement.kind === "suggest") return suggestPropsFor(advertisement);
+	if (advertisement.kind === "newMode")
+		return newModePropsFor(advertisement.pairs);
+	return borderPropsFor(advertisement.border, face, profileHref);
+};

@@ -19,10 +19,11 @@ type Story = StoryObj<typeof Accuracy>;
 export const Ahead: Story = {
 	args: {
 		track: {
-			label: "Accuracy ×1.09, up to ×1.83",
-			figure: "×1.09 · up to ×1.83",
-			sure: 0.09,
-			best: 0.83,
+			label: "Accuracy ×1.09, this gate up to ×1.13",
+			figure: "×1.09",
+			bonus: 0.36,
+			cap: 0.52,
+			ticks: [{ share: 0, label: "×1.00" }, { share: 1 }],
 		},
 	},
 };
@@ -30,6 +31,12 @@ export const Ahead: Story = {
 export const Landed: Story = {
 	args: {
 		landed: true,
-		track: { label: "Accuracy ×1.08", figure: "×1.08", sure: 0.08, best: 0.08 },
+		track: {
+			label: "Accuracy ×1.08",
+			figure: "×1.08",
+			bonus: 0.32,
+			cap: 0.32,
+			ticks: [{ share: 0, label: "×1.00" }, { share: 1 }],
+		},
 	},
 };

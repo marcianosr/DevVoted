@@ -52,4 +52,29 @@ describe("TextArea", () => {
 		expect(screen.getByRole("textbox")).toHaveAttribute("rows", "8");
 		expect(screen.getByRole("textbox")).toHaveClass("min-h-32", "resize-y");
 	});
+
+	it("counts the text against its limit, in saffron once over", () => {
+		const { rerender } = render(
+			<TextArea label="tile" value="div + div" limit={30} onChange={vi.fn()} />
+		);
+
+		expect(screen.getByText("9/30")).not.toHaveClass("text-saffron");
+
+		rerender(
+			<TextArea
+				label="tile"
+				value={"x".repeat(31)}
+				limit={30}
+				onChange={vi.fn()}
+			/>
+		);
+
+		expect(screen.getByText("31/30")).toHaveClass("text-saffron");
+	});
+
+	it("shows no count without a limit", () => {
+		render(<TextArea label="tile" value="div" onChange={vi.fn()} />);
+
+		expect(screen.queryByText("3/30")).toBeNull();
+	});
 });

@@ -6,6 +6,7 @@ import {
 	createPollWithOptions,
 	fetchPublishedCountIn,
 	fetchPublishedCounts,
+	fetchPublishedPairsCount,
 	fetchUnannouncedPublishedPolls,
 	markPollReviewed,
 	markPollsAnnounced,
@@ -53,6 +54,9 @@ export const getCategoryBounties = async (): Promise<
 		async () => categoryBountiesOf(await fetchPublishedCounts()),
 		"getCategoryBounties"
 	);
+
+export const getPublishedPairsCount = async (): Promise<ApiResponse<number>> =>
+	handleApiOperation(fetchPublishedPairsCount, "getPublishedPairsCount");
 
 const editAndReview = async ({
 	id,

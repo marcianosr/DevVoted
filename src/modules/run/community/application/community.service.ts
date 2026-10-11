@@ -197,6 +197,58 @@ const playersOf = (
 		)
 	);
 
+const PAIR_JOIN = " ⟷ ";
+
+type OptionRow = {
+	label: string;
+	isRight: boolean;
+	optionIds: readonly number[];
+};
+
+const choiceRowsOf = (poll: CommunityPollRecord): readonly OptionRow[] =>
+	poll.options.map((option) => ({
+		label: option.label,
+		isRight: option.correct,
+		optionIds: [option.id],
+	}));
+
+const pairRowsOf = (poll: CommunityPollRecord): readonly OptionRow[] =>
+	[...new Set(poll.options.flatMap((option) => option.group ?? []))].map(
+		(group) => {
+			const tiles = poll.options.filter((option) => option.group === group);
+			return {
+				label: tiles.map((tile) => tile.label).join(PAIR_JOIN),
+				isRight: true,
+				optionIds: tiles.map((tile) => tile.id),
+			};
+		}
+	);
+
+const optionRowsOf = (
+	poll: CommunityPollRecord,
+	viewerAnswer: CommunityAnswer,
+	pollAnswers: readonly CommunityAnswer[]
+): CommunityOptionResult[] =>
+	(poll.answerType === "pairs" ? pairRowsOf(poll) : choiceRowsOf(poll)).map(
+		(row) => {
+			const pickers = pollAnswers.filter((answer) =>
+				row.optionIds.every((id) => answer.optionIds.has(id))
+			);
+			return {
+				label: row.label,
+				isRight: row.isRight,
+				count: pickers.length,
+				percent: toPercent(pickers.length, pollAnswers.length),
+				voters: viewerFirst(
+					pickers.map((answer) => ({
+						...answer.user,
+						you: answer.user.id === viewerAnswer.user.id,
+					}))
+				),
+			};
+		}
+	);
+
 const buildPollDetail = (
 	poll: CommunityPollRecord,
 	viewerAnswer: CommunityAnswer,
@@ -217,23 +269,7 @@ const buildPollDetail = (
 		youGotItRight: gotItRight.some(
 			(answer) => answer.user.id === viewerAnswer.user.id
 		),
-		options: poll.options.map((option): CommunityOptionResult => {
-			const pickers = pollAnswers.filter((answer) =>
-				answer.optionIds.has(option.id)
-			);
-			return {
-				label: option.label,
-				isRight: option.correct,
-				count: pickers.length,
-				percent: toPercent(pickers.length, pollAnswers.length),
-				voters: viewerFirst(
-					pickers.map((answer) => ({
-						...answer.user,
-						you: answer.user.id === viewerAnswer.user.id,
-					}))
-				),
-			};
-		}),
+		options: optionRowsOf(poll, viewerAnswer, pollAnswers),
 	};
 };
 

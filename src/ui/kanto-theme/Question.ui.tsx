@@ -1,17 +1,12 @@
-import { Fragment } from "react";
-
 import type { AnswerType } from "~/modules/run/run/domain/runPoll.model";
-import {
-	splitCodeBlocks,
-	splitCodeSpans,
-	stripCodeFence,
-} from "~/shared/lib/codeSpans";
-import { PAIRS } from "~/shared/lib/answerTypes";
+import { splitCodeBlocks } from "~/shared/lib/codeSpans";
+import { PAIR_SIZE } from "~/shared/lib/answerTypes";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
+import { CodeSpans, CodeText } from "./CodeText.ui";
 import type { KantoColor } from "./colors";
 import { MatchingPairs, type MatchingPairsProps } from "./MatchingPairs.ui";
 import { Icon } from "./Icon.ui";
@@ -24,9 +19,6 @@ const COPY = {
 
 const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
-const PROSE = "whitespace-pre-line";
-const CODE = "rounded-xs bg-theme-raised px-1 text-theme";
-const CODE_TEXT = "flex min-w-0 flex-col gap-2";
 const VOTES = "w-8 text-right text-xs tabular-nums text-theme-soft";
 const VOTER_FACES_SLOT = "flex w-24 justify-end";
 const VOTER_FACES = 3;
@@ -60,14 +52,21 @@ const verdictOf = (right: boolean): ExplanationVerdict =>
 
 const SEPARATOR = "·";
 
-const choiceCountOf = ({
+const pairCountOf = ({
 	options,
-	answerType,
-}: Pick<QuestionProps, "options" | "answerType">) =>
-	answerType === "pairs" ? `${PAIRS} pairs` : `${options.length} options`;
+	pairs,
+}: Pick<QuestionProps, "options" | "pairs">): number =>
+	pairs === undefined ? options.length / PAIR_SIZE : pairs.left.length;
+
+const choiceCountOf = (
+	question: Pick<QuestionProps, "options" | "answerType" | "pairs">
+) =>
+	question.answerType === "pairs"
+		? `${pairCountOf(question)} pairs`
+		: `${question.options.length} options`;
 
 export const questionFactsOf = (
-	question: Pick<QuestionProps, "options" | "answerType">
+	question: Pick<QuestionProps, "options" | "answerType" | "pairs">
 ) =>
 	`${choiceCountOf(question)} ${SEPARATOR} ${ANSWER_TYPE_LABEL[question.answerType]}`;
 
@@ -103,35 +102,10 @@ export type QuestionProps = {
 	pairs?: QuestionPairs;
 };
 
-export type QuestionPairs = Pick<MatchingPairsProps, "left" | "right">;
-
-export const CodeSpans = ({ text }: { text: string }) => (
-	<span className={PROSE}>
-		{splitCodeSpans(text).map((span, index) =>
-			span.kind === "code" ? (
-				<code key={`${index}-${span.text}`} className={CODE}>
-					{stripCodeFence(span.text)}
-				</code>
-			) : (
-				<Fragment key={`${index}-${span.text}`}>{span.text}</Fragment>
-			)
-		)}
-	</span>
-);
-
-export const CodeText = ({ text }: { text: string }) => (
-	<span className={CODE_TEXT}>
-		{splitCodeBlocks(text).map((part, index) =>
-			part.kind === "block" ? (
-				<CodeBlock key={`${part.kind}-${index}`} lang={part.lang}>
-					{part.code}
-				</CodeBlock>
-			) : (
-				<CodeSpans key={`${part.kind}-${index}`} text={part.text} />
-			)
-		)}
-	</span>
-);
+export type QuestionPairs = Pick<
+	MatchingPairsProps,
+	"left" | "right" | "links" | "pendingId" | "onClear" | "onCheck"
+>;
 
 const QuestionText = ({
 	question,
@@ -225,7 +199,7 @@ export const Question = ({
 				onPick={onPick}
 			/>
 		) : (
-			<MatchingPairs {...pairs} pickedIds={pickedIds} onPick={onPick} />
+			<MatchingPairs {...pairs} onPick={onPick} />
 		)}
 	</section>
 );

@@ -16,30 +16,49 @@ export default meta;
 
 type Story = StoryObj<typeof AccuracyTrack>;
 
-export const Empty: Story = {
+const tickedFrom = (from: number) =>
+	[0, 1, 2, 3, 4, 5].map((step) => ({
+		share: step / 5,
+		...(step === 5 ? {} : { label: `×${(from + step * 0.05).toFixed(2)}` }),
+	}));
+
+export const FirstGate: Story = {
 	args: {
-		label: "Accuracy ×1, up to ×2",
-		figure: "×1 · up to ×2",
-		sure: 0,
-		best: 1,
+		label: "Accuracy ×1, this gate up to ×1.08",
+		figure: "×1",
+		bonus: 0,
+		cap: 0.32,
+		ticks: tickedFrom(1),
 	},
 };
 
-export const AfterAMiss: Story = {
+export const MidGate: Story = {
 	args: {
-		label: "Accuracy ×1.09, up to ×1.83",
-		figure: "×1.09 · up to ×1.83",
-		sure: 0.09,
-		best: 0.83,
+		label: "Accuracy ×1.13, this gate up to ×1.18",
+		figure: "×1.13",
+		bonus: 0.52,
+		cap: 0.72,
+		ticks: tickedFrom(1),
 	},
 };
 
-export const AllRight: Story = {
+export const AtTheCap: Story = {
 	args: {
-		label: "Accuracy ×2",
-		figure: "×2",
-		sure: 1,
-		best: 1,
+		label: "Accuracy ×1.15",
+		figure: "×1.15",
+		bonus: 0.6,
+		cap: 0.6,
+		ticks: tickedFrom(1),
 		pulse: { key: "last" },
+	},
+};
+
+export const LateRun: Story = {
+	args: {
+		label: "Accuracy ×1.9, this gate up to ×1.95",
+		figure: "×1.9",
+		bonus: 0.2,
+		cap: 0.4,
+		ticks: tickedFrom(1.85),
 	},
 };

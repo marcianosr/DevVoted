@@ -1,16 +1,19 @@
 import { bandAtLadder } from "~/modules/run/gate/domain/gate.model";
 import { describe, expect, it } from "vitest";
 
-import {
-	accuracyTrackFor,
-	landedAccuracyTrackFor,
-} from "~/modules/run/run/application/accuracyTrack.viewmodel";
+import { shuffleSeeded } from "~/shared/lib/seededRandom";
+
+import { accuracyTrackFor } from "~/modules/run/run/application/accuracyTrack.viewmodel";
 
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
 	answeredPairsFor,
 	answerOnPickOf,
+	answeredCommitFor,
+	pairLinksOf,
+	pairsCheckOf,
+	pendingPairTileOf,
 	pickedAfter,
 	readyToSubmit,
 	buildCountsOf,
@@ -48,7 +51,6 @@ import type {
 	RunPoll,
 } from "~/modules/run/run/domain/runPoll.model";
 import {
-	ACCURACY_GAIN_PER_GATE,
 	floorAt,
 	percentOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
@@ -348,67 +350,29 @@ const lastAnswerOf = (state: RunState): AnsweredPoll => {
 	return last;
 };
 
-describe("landedAccuracyTrackFor", () => {
-	it("states no ceiling once the multiplier has landed", () => {
-		expect(landedAccuracyTrackFor(1.08).ceiling).toBeUndefined();
-	});
-
-	it("reads one landed multiplier, sure and best alike", () => {
-		const track = landedAccuracyTrackFor(1.08);
-
-		expect(track).toMatchObject({
-			label: "Accuracy ×1.08",
-			figure: "×1.08",
-		});
-		expect(track.sure).toBeCloseTo(0.08);
-		expect(track.best).toBe(track.sure);
-	});
-
-	it("stretches the track to the next whole multiplier past ×2", () => {
-		expect(landedAccuracyTrackFor(2.5).sure).toBeCloseTo(1.5 / 2);
-	});
-});
-
 describe("accuracyTrackFor", () => {
-	it("opens a fresh run on ×1 sure, up to one plus the gain, on a track that reads to ×2", () => {
+	it("opens a fresh run on ×1, this gate up to one plus the gain", () => {
 		const track = accuracyTrackFor(toRunView(playing(JS_GATE, [])));
 
-		expect(track).toMatchObject({
-			figure: "×1",
-			ceiling: "up to ×1.08",
-			sure: 0,
-		});
-		expect(track.best).toBeCloseTo(ACCURACY_GAIN_PER_GATE);
+		expect(track.figure).toBe("×1");
+		expect(track.label).toBe("Accuracy ×1, this gate up to ×1.08");
+		expect(track.bonus).toBe(0);
 	});
 
-	it("reads the multiplier the window is sure of and the best still open", () => {
-		const track = accuracyTrackFor(toRunView(carrying([true, true])));
+	it("climbs on each right answer while the cap holds", () => {
+		const one = accuracyTrackFor(toRunView(carrying([true])));
+		const two = accuracyTrackFor(toRunView(carrying([true, true])));
 
-		expect(track.figure).toBe("×1.39");
-		expect(track.ceiling).toBe("up to ×1.48");
-		expect(track.sure).toBeCloseTo(0.39);
-		expect(track.best).toBeCloseTo(0.48);
+		expect(two.bonus).toBeGreaterThan(one.bonus);
+		expect(two.figure).toBe("×1.43");
 	});
 
-	it("lowers the best case on a miss and keeps what is sure", () => {
-		const track = accuracyTrackFor(toRunView(carrying([true, false])));
+	it("keeps the bonus on a miss and lowers the cap", () => {
+		const right = accuracyTrackFor(toRunView(carrying([true])));
+		const thenMissed = accuracyTrackFor(toRunView(carrying([true, false])));
 
-		expect(track.figure).toBe("×1.38");
-		expect(track.ceiling).toBe("up to ×1.47");
-	});
-
-	it("names the multiplier aloud for a reader", () => {
-		const track = accuracyTrackFor(toRunView(carrying([true, false])));
-
-		expect(track.label).toBe("Accuracy ×1.38, up to ×1.47");
-	});
-
-	it("stretches the track to the next whole multiplier once the best passes ×2", () => {
-		const track = accuracyTrackFor(toRunView(carrying([], 1)));
-
-		expect(track.figure).toBe("×1.96");
-		expect(track.ceiling).toBe("up to ×2.08");
-		expect(track.best).toBeCloseTo(1.08 / 2);
+		expect(thenMissed.bonus).toBeCloseTo(right.bonus);
+		expect(thenMissed.cap).toBeLessThan(right.cap);
 	});
 
 	it("draws no per-poll segment, so five boxes never read as five polls", () => {
@@ -1104,11 +1068,7 @@ describe("the poll clock states what the time is worth (ADR-169)", () => {
 });
 
 describe("a matching pairs poll on the poll screen", () => {
-	const tileOf = (label: string) => ({
-		id: label,
-		label,
-		state: "open" as const,
-	});
+	const tileOf = (label: string) => ({ id: label, label });
 	const poll = {
 		answerType: "pairs" as const,
 		pairs: {
@@ -1116,39 +1076,97 @@ describe("a matching pairs poll on the poll screen", () => {
 			right: ["the next sibling", "a direct child"].map(tileOf),
 		},
 	};
+	const linkAll = [
+		"div + div",
+		"the next sibling",
+		"div > div",
+		"a direct child",
+	];
 
-	it("shows no lock-in press, since the second tile answers", () => {
-		expect(pollCommitFor("pairs", 1, () => undefined)).toEqual({});
+	it("puts no press in the commit bar, since Check sits beside the pairs", () => {
+		expect(pollCommitFor("pairs", 8, () => undefined)).toEqual({});
 	});
 
-	it("swaps a pick on the same side instead of adding a second one", () => {
+	it("lets Enter check only once every pair is linked", () => {
+		expect(readyToSubmit(poll, linkAll.length)).toBe(true);
+		expect(readyToSubmit(poll, linkAll.length - 1)).toBe(false);
+	});
+
+	it("hands the pairs board its check only once every pair is linked", () => {
+		const onSubmit = () => undefined;
+
+		expect(pairsCheckOf(poll.pairs, linkAll, onSubmit)).toBe(onSubmit);
+		expect(
+			pairsCheckOf(poll.pairs, linkAll.slice(0, 2), onSubmit)
+		).toBeUndefined();
+	});
+
+	it("waits for every pair a six-pair poll holds before Check opens", () => {
+		const six = {
+			left: Array.from({ length: 6 }, (_, row) => tileOf(`left ${row}`)),
+			right: Array.from({ length: 6 }, (_, row) => tileOf(`right ${row}`)),
+		};
+
+		expect(readyToSubmit({ pairs: six }, 8)).toBe(false);
+		expect(readyToSubmit({ pairs: six }, 12)).toBe(true);
+	});
+
+	it("leaves a first tapped tile waiting for its partner", () => {
+		expect(pickedAfter(poll, [], "div + div")).toEqual(["div + div"]);
+	});
+
+	it("links the waiting tile to a tile on the other side, left tile first", () => {
+		expect(pickedAfter(poll, ["a direct child"], "div + div")).toEqual([
+			"div + div",
+			"a direct child",
+		]);
+	});
+
+	it("swaps the waiting tile for another on the same side", () => {
 		expect(pickedAfter(poll, ["div + div"], "div > div")).toEqual([
 			"div > div",
 		]);
 	});
 
-	it("drops a picked tile tapped again", () => {
+	it("lets go of the waiting tile when it is tapped again", () => {
 		expect(pickedAfter(poll, ["div + div"], "div + div")).toEqual([]);
 	});
 
-	it("answers once a tile on each side is picked, in either order", () => {
-		expect(answerOnPickOf(poll, ["a direct child"], "div + div")).toEqual([
-			"a direct child",
-			"div + div",
-		]);
-		expect(answerOnPickOf(poll, [], "div + div")).toBeUndefined();
+	it("unlinks a linked tile tapped with nothing waiting and leaves it waiting", () => {
+		expect(
+			pickedAfter(poll, ["div + div", "a direct child"], "a direct child")
+		).toEqual(["a direct child"]);
 	});
 
-	it("lets Enter answer only with a tile picked on each side", () => {
-		expect(readyToSubmit("pairs", 1)).toBe(false);
-		expect(readyToSubmit("pairs", 2)).toBe(true);
+	it("redraws a link when the waiting tile is joined to an already linked tile", () => {
+		expect(
+			pickedAfter(
+				poll,
+				["div + div", "a direct child", "div > div"],
+				"a direct child"
+			)
+		).toEqual(["div > div", "a direct child"]);
+	});
+
+	it("never answers on a tap, since Check sends the links", () => {
+		expect(answerOnPickOf(poll, "div + div")).toBeUndefined();
+	});
+
+	it("reads the links and the waiting tile out of the picks", () => {
+		expect(pairLinksOf(["div + div", "a direct child", "div > div"])).toEqual([
+			["div + div", "a direct child"],
+		]);
+		expect(
+			pendingPairTileOf(["div + div", "a direct child", "div > div"])
+		).toBe("div > div");
+		expect(pendingPairTileOf(["div + div", "a direct child"])).toBeUndefined();
 	});
 
 	it("keeps toggling picks on a multiple answer poll", () => {
 		expect(pickedAfter(undefined, ["a"], "b")).toEqual(["a", "b"]);
 	});
 
-	it("lays every pair out row by row after the poll, matched or missed", () => {
+	it("lays every pair out row by row, linked across and marked, for an answer recorded without links", () => {
 		expect(
 			answeredPairsFor([
 				{ left: "div + div", right: "the next sibling", matched: true },
@@ -1156,13 +1174,87 @@ describe("a matching pairs poll on the poll screen", () => {
 			])
 		).toEqual({
 			left: [
-				{ id: "left-0", label: "div + div", state: "matched" },
-				{ id: "left-1", label: "div ~ div", state: "missed" },
+				{ id: "left-0", label: "div + div", verdict: "matched" },
+				{ id: "left-1", label: "div ~ div", verdict: "missed" },
 			],
 			right: [
-				{ id: "right-0", label: "the next sibling", state: "matched" },
-				{ id: "right-1", label: "any later sibling", state: "missed" },
+				{ id: "right-0", label: "the next sibling", verdict: "matched" },
+				{ id: "right-1", label: "any later sibling", verdict: "missed" },
+			],
+			links: [
+				{ left: "left-0", right: "right-0" },
+				{ left: "left-1", right: "right-1" },
 			],
 		});
+	});
+
+	describe("after a check with the player's links recorded", () => {
+		const answered = answeredPairsFor([
+			{
+				left: "div + div",
+				right: "the next sibling",
+				matched: false,
+				linked: "any descendant",
+			},
+			{
+				left: "div > div",
+				right: "a direct child",
+				matched: true,
+				linked: "a direct child",
+			},
+			{
+				left: "div div",
+				right: "any descendant",
+				matched: false,
+				linked: "the next sibling",
+			},
+		]);
+
+		it("draws the links the player made, each marked right or wrong on the link", () => {
+			expect(answered.links).toEqual([
+				{ left: "left-0", right: "right-2", verdict: "missed" },
+				{ left: "left-1", right: "right-1", verdict: "matched" },
+				{ left: "left-2", right: "right-0", verdict: "missed" },
+			]);
+		});
+
+		it("leaves the tiles in their link colours, so each link stays readable", () => {
+			expect(answered.left.every((tile) => tile.verdict === undefined)).toBe(
+				true
+			);
+		});
+
+		it("deals the player's board again in the order the poll was played", () => {
+			const replayed = answeredPairsFor(
+				[
+					{ left: "a", right: "1", matched: true, linked: "1" },
+					{ left: "b", right: "2", matched: true, linked: "2" },
+					{ left: "c", right: "3", matched: true, linked: "3" },
+					{ left: "d", right: "4", matched: true, linked: "4" },
+				],
+				"selectors"
+			);
+
+			expect(replayed.left.map((tile) => tile.label)).toEqual(
+				shuffleSeeded(["a", "b", "c", "d"], "pairs-left-selectors")
+			);
+			expect(replayed.right.map((tile) => tile.label)).toEqual(
+				shuffleSeeded(["1", "2", "3", "4"], "pairs-right-selectors")
+			);
+		});
+	});
+});
+
+describe("after any poll is answered", () => {
+	it("offers a Next press, so the player moves on when ready", () => {
+		const onAdvance = () => undefined;
+
+		expect(answeredCommitFor(onAdvance)).toEqual({
+			lock: { label: "Next", onPress: onAdvance },
+		});
+	});
+
+	it("offers no press while nothing can advance the poll", () => {
+		expect(answeredCommitFor(undefined)).toEqual({});
 	});
 });
