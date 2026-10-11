@@ -16,6 +16,7 @@ import { Action } from "./Action.ui";
 import { Audit, auditsFiringOf, type AuditProps } from "./Audit.ui";
 import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
+import { CodeSpans } from "./CodeText.ui";
 import { BuildFooter, type BuildFooterProps } from "./BuildFooter.ui";
 import { useBarHeight } from "./useBarHeight.hook";
 import type { KantoColor } from "./colors";
@@ -38,7 +39,11 @@ const COPY = {
 	wrongCost: "wrong costs",
 	readingDown: "Coverage reading unavailable",
 	readingDownHint: "The meter is down. Answers still score.",
+	explanation: "Explanation",
 } as const;
+
+const EXPLANATION =
+	"flex w-full flex-col gap-1.5 rounded-lg border border-theme-faint px-4 py-3";
 
 const AUDITS_ROW = "flex w-full flex-wrap items-stretch gap-3";
 const META_ROW = "flex flex-wrap items-center gap-2";
@@ -129,6 +134,7 @@ export type PollScreenProps = {
 	facts?: Omit<PollFactsProps, "trailing">;
 	audits?: readonly AuditProps[];
 	hint?: string;
+	explanation?: string;
 	author?: AuthorProps;
 	commit?: PollCommit;
 	keysHint?: string;
@@ -388,6 +394,7 @@ type PollPanelProps = Pick<
 	| "clock"
 	| "facts"
 	| "hint"
+	| "explanation"
 	| "author"
 	| "keysHint"
 	| "categoryLeader"
@@ -403,6 +410,7 @@ const PollPanel = ({
 	clock,
 	facts,
 	hint,
+	explanation,
 	author,
 	keysHint,
 	categoryLeader,
@@ -448,6 +456,16 @@ const PollPanel = ({
 		{facts === undefined ? null : <PollFacts {...facts} />}
 		<Panel.Body className={facts === undefined ? undefined : PAID}>
 			<Question {...question} />
+			{explanation === undefined ? null : (
+				<div className={EXPLANATION}>
+					<Typography variant="label" as="span">
+						{COPY.explanation}
+					</Typography>
+					<Typography variant="caption" as="p">
+						<CodeSpans text={explanation} />
+					</Typography>
+				</div>
+			)}
 		</Panel.Body>
 		<PollSend commit={commit} footer={footer} measure={measure} />
 		<PollCredit hint={hint} author={author} />

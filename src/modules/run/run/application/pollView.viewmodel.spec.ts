@@ -5,11 +5,7 @@ import {
 	REDACTED_LABEL,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import {
-	PAIR_TILES,
-	pairsPoll,
-	pairTiles,
-} from "~/modules/run/run/domain/run.factory";
+import { PAIR_TILES, pairsPoll } from "~/modules/run/run/domain/run.factory";
 
 const poll: RunPoll = {
 	id: "q1",
@@ -89,21 +85,14 @@ describe("redactPoll on a matching pairs poll", () => {
 		expect(redactPoll(pairs).pairs).toEqual(redactPoll(pairs).pairs);
 	});
 
-	it("marks a matched pair matched and a missed pair missed, in place", () => {
-		const view = redactPoll(pairs, [], false, {
-			matched: pairTiles("selectors", 1),
-			missed: [2],
-		});
-		const stateOf = (label: string) =>
-			[...(view.pairs?.left ?? []), ...(view.pairs?.right ?? [])].find(
-				(tile) => tile.label === label
-			)?.state;
+	it("offers all eight tiles as options, with no state of their own", () => {
+		const view = redactPoll(pairs);
 
-		expect(stateOf("a direct child")).toBe("matched");
-		expect(stateOf("div ~ div")).toBe("missed");
-		expect(stateOf("any later sibling")).toBe("missed");
-		expect(stateOf("div + div")).toBe("open");
-		expect(view.options).toHaveLength(4);
+		expect(view.options).toHaveLength(8);
+		expect(view.pairs?.left[0]).toEqual({
+			id: expect.any(String),
+			label: expect.any(String),
+		});
 	});
 
 	it("keeps naming a pairs poll pairs under 207", () => {

@@ -53,6 +53,7 @@ import {
 	withGateAudits,
 } from "~/modules/run/run/domain/run.model";
 import { pollCreditFor } from "~/modules/run/run/domain/answer.model";
+import type { PairLink } from "~/modules/run/run/domain/pairPoll.model";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
 import {
@@ -2346,7 +2347,7 @@ describe("what a mirrored poll is credited", () => {
 	});
 });
 
-describe("a matching pairs poll resolves one pair at a time", () => {
+describe("a matching pairs poll is checked in one go", () => {
 	const PAIRS_ID = "selectors";
 	const onPairs = (): RunState => {
 		const state = started([]);
@@ -2357,81 +2358,79 @@ describe("a matching pairs poll resolves one pair at a time", () => {
 			),
 		};
 	};
-	const match = (state: RunState, optionIds: readonly string[]): RunState =>
-		runReducer(state, { type: "match-pair", optionIds });
-	const right = (pair: number) => pairTiles(PAIRS_ID, pair);
-	const miss = (pair: number) => [
-		pairTiles(PAIRS_ID, pair)[0],
-		pairTiles(PAIRS_ID, (pair + 1) % 4)[1],
-	];
+	const tile = (pair: number, side: 0 | 1) => pairTiles(PAIRS_ID, pair)[side];
+	const linkedTo = (...partners: readonly number[]): PairLink[] =>
+		partners.map((partner, pair) => [tile(pair, 0), tile(partner, 1)]);
+	const allRight = linkedTo(0, 1, 2, 3);
+	const twoRight = linkedTo(1, 0, 2, 3);
+	const oneRight = linkedTo(1, 2, 0, 3);
+	const noneRight = linkedTo(1, 2, 3, 0);
+	const check = (state: RunState, links: readonly PairLink[]): RunState =>
+		runReducer(state, { type: "check-pairs", links });
 	const lastAnswered = (state: RunState) => state.answeredThisGate.at(-1);
+	const earned = (links: readonly PairLink[]) =>
+		lastAnswered(check(onPairs(), links))?.coverageEarned ?? 0;
 
-	it("stays on the poll after the first matched pair", () => {
+	it("answers the poll and moves on once all four links are checked", () => {
 		const state = onPairs();
-		const next = match(state, right(1));
+		const next = check(state, allRight);
 
-		expect(next.currentIndex).toBe(state.currentIndex);
-		expect(next.pairsResolved).toEqual({ matched: right(1), missed: [] });
-		expect(next.window.answered).toBe(0);
+		expect(next.answeredThisGate).toHaveLength(1);
+		expect(next.currentIndex).toBe(state.currentIndex + 1);
 	});
 
-	it("burns the pair the player started from on a miss and keeps going", () => {
-		const next = match(onPairs(), miss(0));
-
-		expect(next.pairsResolved).toEqual({ matched: [], missed: [0] });
-		expect(next.answeredThisGate).toHaveLength(0);
-	});
-
-	it("finishes on the third resolved pair and pays the full share for three matches", () => {
-		const next = match(match(match(onPairs(), right(0)), right(1)), right(2));
+	it("counts four right links as correct, extending the streak", () => {
+		const next = check(onPairs(), allRight);
 
 		expect(lastAnswered(next)?.outcome).toBe("correct");
-		expect(next.pairsResolved).toBeUndefined();
 		expect(next.streak).toBe(1);
 	});
 
-	it("pays a matched pair a third of the full share", () => {
-		const full = match(match(match(onPairs(), right(0)), right(1)), right(2));
-		const third = match(match(match(onPairs(), right(0)), miss(1)), miss(2));
+	it("pays two right links two thirds and one right link a third of the full share", () => {
+		const full = earned(allRight);
 
-		expect(lastAnswered(third)?.outcome).toBe("partial");
-		expect(lastAnswered(third)?.coverageEarned).toBeCloseTo(
-			(lastAnswered(full)?.coverageEarned ?? 0) / 3
-		);
+		expect(lastAnswered(check(onPairs(), twoRight))?.outcome).toBe("partial");
+		expect(earned(twoRight)).toBeCloseTo((full * 2) / 3);
+		expect(earned(oneRight)).toBeCloseTo(full / 3);
 	});
 
-	it("ends as wrong after three misses, breaking the streak", () => {
-		const state = { ...onPairs(), streak: 3 };
-		const next = match(match(match(state, miss(0)), miss(1)), miss(2));
+	it("ends as wrong when no link joins a real pair, breaking the streak", () => {
+		const next = check({ ...onPairs(), streak: 3 }, noneRight);
 
 		expect(lastAnswered(next)?.outcome).toBe("wrong");
 		expect(next.streak).toBe(0);
 	});
 
-	it("records every pair for the debrief, matched only where the player matched it", () => {
-		const next = match(match(match(onPairs(), right(0)), miss(1)), right(2));
+	it("records every pair for the debrief, matched only where the player linked it", () => {
+		const next = check(onPairs(), twoRight);
 
 		expect(lastAnswered(next)?.pairs?.map((pair) => pair.matched)).toEqual([
-			true,
+			false,
 			false,
 			true,
-			false,
+			true,
 		]);
+		expect(lastAnswered(next)?.pairs?.map((pair) => pair.linked)).toEqual([
+			"a direct child",
+			"the next sibling",
+			"any later sibling",
+			"any descendant",
+		]);
+	});
+
+	it("refuses a check with a pair left unlinked", () => {
+		const state = onPairs();
+
+		expect(check(state, allRight.slice(0, 3))).toBe(state);
 	});
 
 	it("refuses a plain answer on a pairs poll, so eight ids cannot buy a full share", () => {
 		const state = onPairs();
-		const allTiles = [0, 1, 2, 3].flatMap(right);
+		const allTiles = [0, 1, 2, 3].flatMap((pair) => pairTiles(PAIRS_ID, pair));
 
 		expect(runReducer(state, { type: "answer", optionIds: allTiles })).toBe(
 			state
 		);
-	});
-
-	it("refuses two tiles from the same side", () => {
-		const state = onPairs();
-
-		expect(match(state, [right(0)[0], right(1)[0]])).toBe(state);
 	});
 
 	it("keeps a pairs poll's double credit under 207, which cannot disguise it", () => {
@@ -2444,21 +2443,14 @@ describe("a matching pairs poll resolves one pair at a time", () => {
 
 	it("leaves a pairs poll unmirrored, since every tile belongs to a pair", () => {
 		const mirrored = audited(onPairs(), 4, "mirrored");
-		const next = match(match(match(mirrored, right(0)), right(1)), right(3));
 
-		expect(lastAnswered(next)?.outcome).toBe("correct");
+		expect(lastAnswered(check(mirrored, allRight))?.outcome).toBe("correct");
 	});
 
-	it("refuses a match on a poll that is not a pairs poll", () => {
+	it("refuses a check on a poll that is not a pairs poll", () => {
 		const state = started([]);
-		const current = state.polls[state.currentIndex];
 
-		expect(
-			match(
-				state,
-				current.options.map((option) => option.id)
-			)
-		).toBe(state);
+		expect(check(state, allRight)).toBe(state);
 	});
 });
 

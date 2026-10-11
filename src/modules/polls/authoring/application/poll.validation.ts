@@ -3,9 +3,9 @@ import { z } from "zod";
 import {
 	ANSWER_TYPES,
 	type AnswerType,
+	MAX_PAIRS,
+	MIN_PAIRS,
 	PAIR_SIZE,
-	PAIR_TILES,
-	PAIRS,
 } from "~/shared/lib/answerTypes";
 import {
 	POLL_LIMITS,
@@ -27,7 +27,7 @@ const newPollOptionSchema = z.object({
 		.number()
 		.int()
 		.min(0)
-		.max(PAIRS - 1)
+		.max(MAX_PAIRS - 1)
 		.nullable()
 		.optional(),
 	explanation: z
@@ -91,20 +91,38 @@ const hasACorrectOption = {
 
 type PairsShape = {
 	poll: { answerType?: AnswerType };
-	options: { group?: number | null }[];
+	options: { option: string; group?: number | null }[];
 };
 
 const tilesInPair = (options: PairsShape["options"], pair: number): number =>
 	options.filter((option) => option.group === pair).length;
 
+const pairCountOf = (options: PairsShape["options"]): number =>
+	options.length / PAIR_SIZE;
+
+const holdsAPairCount = (options: PairsShape["options"]): boolean =>
+	Number.isInteger(pairCountOf(options)) &&
+	pairCountOf(options) >= MIN_PAIRS &&
+	pairCountOf(options) <= MAX_PAIRS;
+
 const isWellFormedPairs = {
 	check: ({ poll, options }: PairsShape) =>
 		poll.answerType !== "pairs" ||
-		(options.length === PAIR_TILES &&
-			Array.from({ length: PAIRS }, (_, pair) => pair).every(
+		(holdsAPairCount(options) &&
+			Array.from({ length: pairCountOf(options) }, (_, pair) => pair).every(
 				(pair) => tilesInPair(options, pair) === PAIR_SIZE
 			)),
-	message: "A pairs poll needs four pairs of two tiles",
+	message: "A pairs poll needs four to six pairs of two tiles",
+	path: ["options"] as const,
+};
+
+const fitsEveryTile = {
+	check: ({ poll, options }: PairsShape) =>
+		poll.answerType !== "pairs" ||
+		options.every(
+			(option) => option.option.trim().length <= POLL_LIMITS.tile.max
+		),
+	message: `A tile cannot exceed ${POLL_LIMITS.tile.max} characters`,
 	path: ["options"] as const,
 };
 
@@ -120,6 +138,10 @@ export const createPollWithOptionsSchema = z
 	.refine(isWellFormedPairs.check, {
 		message: isWellFormedPairs.message,
 		path: [...isWellFormedPairs.path],
+	})
+	.refine(fitsEveryTile.check, {
+		message: fitsEveryTile.message,
+		path: [...fitsEveryTile.path],
 	});
 
 export const updatePollSchema = z
@@ -136,6 +158,10 @@ export const updatePollSchema = z
 	.refine(isWellFormedPairs.check, {
 		message: isWellFormedPairs.message,
 		path: [...isWellFormedPairs.path],
+	})
+	.refine(fitsEveryTile.check, {
+		message: fitsEveryTile.message,
+		path: [...fitsEveryTile.path],
 	});
 
 export type CreatePollWithOptionsInput = z.infer<

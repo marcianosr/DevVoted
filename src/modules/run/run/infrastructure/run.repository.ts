@@ -14,7 +14,7 @@ import { CHAMPION_BORDER_ID } from "~/modules/account/profile/domain/border.mode
 
 import { accountGrantsOf } from "~/modules/run/run/domain/accountGrant.model";
 import { objectiveIncrementsFor } from "~/modules/run/run/domain/objectiveProgress.model";
-import { pairMatchOf } from "~/modules/run/run/domain/answer.model";
+import { checkedPairPicksOf } from "~/modules/run/run/domain/answer.model";
 import { gateSliceOf } from "~/modules/run/run/domain/rebase.model";
 import { recordGains } from "~/modules/run/run/domain/closeGains.model";
 import {
@@ -213,11 +213,11 @@ const answeredPicksOf = (
 	action: RunAction
 ): AnsweredPicks | undefined => {
 	if (action.type === "answer") return action;
-	if (action.type !== "match-pair") return undefined;
-	const match = pairMatchOf(state, action.optionIds);
-	return match.kind === "finished"
-		? { optionIds: match.picks, elapsedMs: action.elapsedMs }
-		: undefined;
+	if (action.type !== "check-pairs") return undefined;
+	const picks = checkedPairPicksOf(state, action.links);
+	return picks === undefined
+		? undefined
+		: { optionIds: picks, elapsedMs: action.elapsedMs };
 };
 
 const recordSessionAnswer = async (

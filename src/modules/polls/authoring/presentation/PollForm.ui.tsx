@@ -16,11 +16,11 @@ import { SUGGEST_A_POLL } from "~/shared/lib/copy";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
+import { CodeSpans } from "~/ui/kanto-theme/CodeText.ui";
 import { Keycap } from "~/ui/kanto-theme/Keycap.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Link } from "~/ui/kanto-theme/Link.ui";
 import {
-	CodeSpans,
 	Question,
 	questionFactsOf,
 	type QuestionProps,
@@ -61,6 +61,7 @@ const COPY = {
 	remove: (letter: string) => `remove ${letter}`,
 	removeGlyph: "×",
 	addAnswer: "add answer",
+	addPair: "add pair",
 	category: "Category",
 	pickOne: "pick one",
 	pickCategory: "pick a category",
@@ -296,11 +297,14 @@ const PairEditor = ({ row, onTile }: PairEditorProps) => (
 				<span key={tile.key} className={TILE}>
 					<Keycap letter={tile.letter} answerType="pairs" />
 					<span className={ANSWER_TEXT}>
-						<TextField
+						<TextArea
 							label={COPY.tile(tile.letter)}
 							placeholder={COPY.tile(tile.letter)}
 							value={tile.text}
-							maxLength={POLL_LIMITS.answer.max}
+							size="fit"
+							rows={1}
+							limit={POLL_LIMITS.tile.max}
+							maxLength={POLL_LIMITS.tile.max}
 							onChange={(text) => onTile(tile.key, text)}
 						/>
 					</span>
@@ -511,15 +515,25 @@ export const PollForm = ({
 								onRemoveAnswer={onRemoveAnswer}
 							/>
 						) : (
-							<div className={ROWS}>
-								{pairs.map((row) => (
-									<PairEditor
-										key={row.pair}
-										row={row}
-										onTile={onAnswerChange}
-									/>
-								))}
-							</div>
+							<>
+								<div className={ROWS}>
+									{pairs.map((row) => (
+										<PairEditor
+											key={row.pair}
+											row={row}
+											onTile={onAnswerChange}
+										/>
+									))}
+								</div>
+								<Button
+									label={COPY.addPair}
+									tone="slot"
+									icon="plus"
+									iconAt="lead"
+									disabled={onAddAnswer === undefined}
+									onPress={onAddAnswer}
+								/>
+							</>
 						)}
 					</Panel.Body>
 				</Panel>

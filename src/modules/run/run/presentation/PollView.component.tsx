@@ -54,11 +54,7 @@ export const PollView = ({
 	const on = {
 		...handlers,
 		onSelect: (optionId: string) => {
-			const answer = answerOnPickOf(
-				view.poll ?? undefined,
-				selectedOptionIds,
-				optionId
-			);
+			const answer = answerOnPickOf(view.poll ?? undefined, optionId);
 			if (answer === undefined) return handlers.onSelect(optionId);
 			onAnswer(answer);
 		},
@@ -68,11 +64,13 @@ export const PollView = ({
 	usePollKeyboard({
 		keys: revealing ? [] : pollKeysFor(view),
 		onPick: revealing ? undefined : on.onSelect,
-		onEnter: enterActionFor(
-			revealing,
-			readyToSubmit(view.poll?.answerType, selectedOptionIds.length),
-			on.onSubmit
-		),
+		onEnter: revealing
+			? feedback.next
+			: enterActionFor(
+					revealing,
+					readyToSubmit(view.poll ?? undefined, selectedOptionIds.length),
+					on.onSubmit
+				),
 	});
 
 	const props = pollScreenPropsFor({
@@ -82,7 +80,12 @@ export const PollView = ({
 		landed: feedback.landed,
 		leaving: feedback.leaving,
 		selectedOptionIds,
-		on: { ...on, onLanded: feedback.land, onSettled: feedback.settle },
+		on: {
+			...on,
+			onLanded: feedback.land,
+			onSettled: feedback.settle,
+			onAdvance: feedback.next,
+		},
 		ui: { build, clockMs, buildOpen: !small },
 	});
 

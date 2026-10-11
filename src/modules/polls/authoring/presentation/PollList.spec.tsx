@@ -135,22 +135,13 @@ describe("PollList", () => {
 		expect(screen.queryByText(COPY.reward("+16 KB"))).not.toBeInTheDocument();
 	});
 
-	it("reports a search as a filter change", async () => {
-		const onFilterChange = vi.fn();
-		renderList({ onFilterChange });
+	it("offers no search box", () => {
+		renderList();
 
-		await userEvent.type(
-			screen.getByRole("searchbox", { name: "Search questions" }),
-			"f"
-		);
-
-		expect(onFilterChange).toHaveBeenCalledWith({
-			...EMPTY_FILTER,
-			search: "f",
-		});
+		expect(screen.queryByRole("searchbox")).toBeNull();
 	});
 
-	it("offers status, answer and dealt as selects, and category as counted tabs", async () => {
+	it("offers status, answer and dealt as selects, and category as a counted switch", async () => {
 		const onFilterChange = vi.fn();
 		renderList({ onFilterChange });
 

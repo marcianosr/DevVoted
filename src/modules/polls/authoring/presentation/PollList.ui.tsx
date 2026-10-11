@@ -18,7 +18,6 @@ import { Climber } from "~/ui/kanto-theme/Climber.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { Panel, type PanelColumn } from "~/ui/kanto-theme/Panel.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
-import { SearchField } from "~/ui/kanto-theme/SearchField.ui";
 import { Segmented } from "~/ui/kanto-theme/Segmented.ui";
 import { Select } from "~/ui/kanto-theme/Select.ui";
 import { Switch } from "~/ui/kanto-theme/Switch.ui";
@@ -30,8 +29,6 @@ export const COPY = {
 	suggest: SUGGEST_A_POLL,
 	reward: (reward: string) =>
 		`Every poll we publish banks ${reward} in your archive.`,
-	search: "Search questions",
-	searchPlaceholder: "search questions…",
 	status: "status",
 	answerType: "answer",
 	dealt: "dealt",
@@ -76,13 +73,12 @@ const TITLE_ROW = "flex w-full flex-wrap items-center gap-x-3 gap-y-2";
 const COUNT = "text-theme-muted";
 const SUGGEST = "ml-auto";
 const TOOLBAR = "flex flex-wrap items-center gap-2";
-const TABS = "border-y border-theme-faint px-2";
+const CATEGORIES = "border-y border-theme-faint px-4 py-3";
 const SUMMARY = "flex flex-wrap items-center gap-2 px-4 py-3";
 const SHOWN = "font-bold text-theme-soft";
 const CHIP =
 	"badge-theme inline-flex h-7 cursor-pointer items-center gap-2 rounded-md px-2.5 text-xs font-bold";
 const CLEAR_ALL = "ml-auto";
-const SEARCH = "min-w-48 flex-1 basis-64";
 const CELLS =
 	"flex w-full min-w-0 flex-wrap items-center gap-x-4 gap-y-2 md:flex-nowrap";
 const COLUMN_HEADER = "hidden md:block";
@@ -274,14 +270,6 @@ export const PollList = ({
 		<Panel>
 			<Panel.Body>
 				<div className={TOOLBAR}>
-					<span className={SEARCH}>
-						<SearchField
-							label={COPY.search}
-							value={filter.search}
-							placeholder={COPY.searchPlaceholder}
-							onChange={(search) => onFilterChange({ ...filter, search })}
-						/>
-					</span>
 					<Select
 						look="inline"
 						label={COPY.status}
@@ -365,12 +353,11 @@ export const PollList = ({
 					/>
 				</div>
 			</Panel.Body>
-			<div className={TABS}>
+			<div className={CATEGORIES}>
 				<Segmented
 					label={COPY.category}
 					items={choices.category}
 					value={filter.category}
-					look="tabs"
 					onSelect={(category) => onFilterChange({ ...filter, category })}
 				/>
 			</div>

@@ -67,3 +67,41 @@ describe("each option's reason on the review", () => {
 		expect(options.some((option) => "explanation" in option)).toBe(false);
 	});
 });
+
+describe("a pairs poll on the review", () => {
+	const PAIRED: GateAnswer = {
+		category: "css",
+		question: "Match each selector to what it selects",
+		outcome: "partial",
+		coverage: 2.9,
+		units: 1.3,
+		answerType: "pairs",
+		options: [],
+		picked: ["div + div", "the next sibling"],
+		correct: [],
+		pairs: [
+			{ left: "div + div", right: "the next sibling", matched: true },
+			{ left: "div > div", right: "a direct child", matched: false },
+		],
+	};
+	const rowOf = (answer: GateAnswer) =>
+		reviewPropsFor({ gate: GATE, answers: [answer] }).rows[0];
+
+	it("draws every pair joined across, green where matched and red where missed", () => {
+		const pairs = rowOf(PAIRED)?.card.pairs;
+
+		expect(pairs?.left.map((tile) => tile.verdict)).toEqual([
+			"matched",
+			"missed",
+		]);
+		expect(pairs?.links).toHaveLength(2);
+	});
+
+	it("lists no options beside the pairs", () => {
+		expect(rowOf(PAIRED)?.card.options).toEqual([]);
+	});
+
+	it("tallies the pairs the player matched", () => {
+		expect(rowOf(PAIRED)?.tally).toBe("1 of 2 matched");
+	});
+});

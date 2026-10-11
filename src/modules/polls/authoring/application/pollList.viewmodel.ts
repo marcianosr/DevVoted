@@ -38,7 +38,6 @@ const COPY = {
 	dealtTimes: (times: number) => `dealt ${times}×`,
 	dealtFilter: (label: string) => `dealt ${label}`,
 	anyReview: "any",
-	searched: (search: string) => `“${search}”`,
 	withCode: "with code",
 	withExplanation: "with explanation",
 } as const;
@@ -83,7 +82,6 @@ export type PollDeals = ReadonlyMap<number, number>;
 const NO_DEALS: PollDeals = new Map();
 
 export type PollListFilter = {
-	search: string;
 	status: StatusFilter;
 	answerType: AnswerTypeFilter;
 	withCode: boolean;
@@ -95,7 +93,6 @@ export type PollListFilter = {
 };
 
 export const EMPTY_FILTER: PollListFilter = {
-	search: "",
 	status: ALL,
 	answerType: ALL,
 	withCode: false,
@@ -130,7 +127,6 @@ const flagOf = (raw: unknown): true | undefined =>
 export const pollListSearchOf = (
 	raw: Record<string, unknown>
 ): PollListSearch => ({
-	search: textOf(raw.search),
 	status: oneOf(POLL_STATUSES, raw.status),
 	answerType: oneOf(ANSWER_TYPES, raw.answerType),
 	withCode: flagOf(raw.withCode),
@@ -145,7 +141,6 @@ export const pollListSearchOf = (
 });
 
 export const pollListFilterOf = (search: PollListSearch): PollListFilter => ({
-	search: search.search ?? EMPTY_FILTER.search,
 	status: search.status ?? EMPTY_FILTER.status,
 	answerType: search.answerType ?? EMPTY_FILTER.answerType,
 	withCode: search.withCode ?? EMPTY_FILTER.withCode,
@@ -163,7 +158,6 @@ const changedOf = <Key extends keyof PollListFilter>(
 	filter[key] === EMPTY_FILTER[key] ? undefined : filter[key];
 
 export const searchOfFilter = (filter: PollListFilter): PollListSearch => ({
-	search: filter.search.trim() === "" ? undefined : filter.search,
 	status: changedOf(filter, "status"),
 	answerType: changedOf(filter, "answerType"),
 	withCode: changedOf(filter, "withCode"),
@@ -275,17 +269,11 @@ const dealtTimesOf = (times: number): DealtTimes => {
 	return times === 1 ? "once" : "often";
 };
 
-const matchesSearch = (poll: Poll, search: string): boolean => {
-	const needle = search.trim().toLowerCase();
-	return needle === "" || poll.question.toLowerCase().includes(needle);
-};
-
 const matches = (
 	poll: Poll,
 	filter: PollListFilter,
 	deals: PollDeals
 ): boolean =>
-	matchesSearch(poll, filter.search) &&
 	(!filter.withExplanation || hasExplanation(poll)) &&
 	(filter.dealt === ALL ||
 		dealtTimesOf(timesDealtOf(poll, deals)) === filter.dealt) &&
@@ -415,9 +403,7 @@ export const activeFiltersOf = (
 	filter: PollListFilter,
 	choices: PollListChoices
 ): readonly ActiveFilter[] => {
-	const search = filter.search.trim();
 	const candidates: readonly (ActiveFilter | false)[] = [
-		search !== "" && { key: "search", label: COPY.searched(search) },
 		filter.status !== ALL && {
 			key: "status",
 			label: labelOfChoice(choices.status, filter.status),

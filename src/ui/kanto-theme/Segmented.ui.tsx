@@ -1,5 +1,7 @@
 import { clsx } from "clsx";
 
+import type { KantoColor } from "./colors";
+import { Icon, type IconName } from "./Icon.ui";
 import { Meter, type MeterProps } from "./Meter.ui";
 
 const FOCUS =
@@ -22,9 +24,6 @@ const STRIP_MARK = "text-sm font-bold whitespace-nowrap text-theme-soft";
 const STRIP_LABEL = "text-xs tabular-nums text-theme-muted";
 const STRIP_EMPTY = "opacity-50";
 
-const JOINED =
-	"inline-flex w-fit overflow-hidden rounded-md ring-1 ring-inset ring-theme-faint";
-const JOINED_ITEM = "border-l border-theme-faint first:border-l-0";
 const LOOSE = "flex flex-wrap gap-2";
 const LOOSE_ITEM = "rounded-md ring-1 ring-inset ring-theme-faint";
 
@@ -34,9 +33,16 @@ const TAB_CHECKED = "border-theme text-theme-soft";
 const TAB_IDLE = "border-transparent text-theme-faint hover:text-theme-soft";
 const TAB_COUNT = "text-xs font-normal tabular-nums text-theme-muted";
 
+const SWITCH =
+	"inline-flex w-fit max-w-full flex-wrap items-center gap-1 rounded-xl border border-edge-strong bg-black/40 p-1";
+const SWITCH_ITEM = `inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold whitespace-nowrap transition ${FOCUS}`;
+const SWITCH_CHECKED = "segment-theme press-raised active:press-sunk";
+const SWITCH_IDLE = "text-pewter hover:text-pallet";
+const SWITCH_NOTE = "text-xs font-normal tabular-nums";
+
 const SEPARATOR = " · ";
 
-export type SegmentedLook = "joined" | "loose" | "strip" | "tabs";
+export type SegmentedLook = "joined" | "loose" | "strip" | "tabs" | "switch";
 
 export type SegmentedItem<Value extends string> = {
 	value: Value;
@@ -44,6 +50,8 @@ export type SegmentedItem<Value extends string> = {
 	mark?: string;
 	count?: number;
 	meter?: MeterProps;
+	icon?: IconName;
+	note?: string;
 };
 
 export type SegmentedProps<Value extends string> = {
@@ -52,10 +60,11 @@ export type SegmentedProps<Value extends string> = {
 	value: Value;
 	onSelect: (value: Value) => void;
 	look?: SegmentedLook;
+	color?: KantoColor;
 };
 
-const spokenPartsOf = ({ mark, label, count }: SegmentedItem<string>) =>
-	[mark, label, count?.toString()].filter(
+const spokenPartsOf = ({ mark, label, count, note }: SegmentedItem<string>) =>
+	[mark, label, count?.toString(), note].filter(
 		(part): part is string => part !== undefined
 	);
 
@@ -151,21 +160,51 @@ export const Segmented = <Value extends string>({
 }: SegmentedProps<Value>) => {
 	if (look === "strip") return <Strip {...props} />;
 	if (look === "tabs") return <TabRow {...props} />;
-	return <Pills look={look} {...props} />;
+	if (look === "loose") return <Pills {...props} />;
+	return <Switch {...props} />;
 };
+
+const Switch = <Value extends string>({
+	label,
+	items,
+	value,
+	onSelect,
+	color,
+}: Omit<SegmentedProps<Value>, "look">) => (
+	<div role="radiogroup" aria-label={label} className={SWITCH}>
+		{items.map((item) => (
+			<button
+				key={item.value}
+				type="button"
+				role="radio"
+				aria-checked={item.value === value}
+				aria-label={nameOf(item)}
+				data-screen-theme={item.value === value ? color : undefined}
+				onClick={() => onSelect(item.value)}
+				className={clsx(
+					SWITCH_ITEM,
+					item.value === value ? SWITCH_CHECKED : SWITCH_IDLE
+				)}
+			>
+				{item.icon === undefined ? null : <Icon name={item.icon} />}
+				<ItemFace item={item} />
+				{item.note === undefined ? null : (
+					<span aria-hidden className={SWITCH_NOTE}>
+						{item.note}
+					</span>
+				)}
+			</button>
+		))}
+	</div>
+);
 
 const Pills = <Value extends string>({
 	label,
 	items,
 	value,
 	onSelect,
-	look,
-}: SegmentedProps<Value> & { look: "joined" | "loose" }) => (
-	<div
-		role="radiogroup"
-		aria-label={label}
-		className={look === "joined" ? JOINED : LOOSE}
-	>
+}: Omit<SegmentedProps<Value>, "look">) => (
+	<div role="radiogroup" aria-label={label} className={LOOSE}>
 		{items.map((item) => (
 			<button
 				key={item.value}
@@ -179,7 +218,7 @@ const Pills = <Value extends string>({
 					ROW_ITEM,
 					item.count !== undefined && COUNTED_ITEM,
 					item.mark !== undefined && MARKED_ITEM,
-					look === "joined" ? JOINED_ITEM : LOOSE_ITEM,
+					LOOSE_ITEM,
 					item.value === value ? CHECKED : IDLE
 				)}
 			>

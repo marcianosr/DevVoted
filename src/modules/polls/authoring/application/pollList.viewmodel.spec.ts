@@ -108,12 +108,6 @@ describe("visiblePollsOf", () => {
 		expect(idsOf(visiblePollsOf(POLLS, EMPTY_FILTER))).toEqual([1, 2, 3, 4]);
 	});
 
-	it("searches the question without regard to case or surrounding space", () => {
-		expect(
-			idsOf(visiblePollsOf(POLLS, { ...EMPTY_FILTER, search: "  FLEX " }))
-		).toEqual([1]);
-	});
-
 	it("narrows to one status", () => {
 		expect(
 			idsOf(visiblePollsOf(POLLS, { ...EMPTY_FILTER, status: "published" }))
@@ -268,7 +262,6 @@ describe("activeFiltersOf", () => {
 	it("names each filter set, in the words its control uses", () => {
 		const filter = {
 			...EMPTY_FILTER,
-			search: "flex",
 			category: "css" as const,
 			withExplanation: true,
 			dealt: "never" as const,
@@ -278,7 +271,6 @@ describe("activeFiltersOf", () => {
 		expect(
 			activeFiltersOf(filter, pollListChoicesOf(POLLS, filter, CREATORS))
 		).toEqual([
-			{ key: "search", label: "“flex”" },
 			{ key: "dealt", label: "dealt never" },
 			{ key: "withExplanation", label: "with explanation" },
 			{ key: "category", label: "CSS" },
@@ -426,7 +418,6 @@ describe("pollListSearchOf", () => {
 	it("keeps every filter the URL states with a value it allows", () => {
 		expect(
 			pollListSearchOf({
-				search: "flex",
 				status: "draft",
 				answerType: "multiple",
 				withCode: true,
@@ -436,7 +427,6 @@ describe("pollListSearchOf", () => {
 				creator: BROCK,
 			})
 		).toEqual({
-			search: "flex",
 			status: "draft",
 			answerType: "multiple",
 			withCode: true,
@@ -459,8 +449,8 @@ describe("pollListSearchOf", () => {
 		).toEqual({});
 	});
 
-	it("reads a search the router parsed as a number back as text", () => {
-		expect(pollListSearchOf({ search: 151 })).toEqual({ search: "151" });
+	it("ignores a search left in an old link", () => {
+		expect(pollListSearchOf({ search: "flex" })).toEqual({});
 	});
 });
 
@@ -480,14 +470,9 @@ describe("searchOfFilter", () => {
 		).toEqual({ category: "css", withCode: true });
 	});
 
-	it("leaves out a search that is only whitespace", () => {
-		expect(searchOfFilter({ ...EMPTY_FILTER, search: "  " })).toEqual({});
-	});
-
 	it("round-trips through the URL parser unchanged", () => {
 		const filter = {
 			...EMPTY_FILTER,
-			search: "flex",
 			status: "published",
 			withExplanation: true,
 		} satisfies typeof EMPTY_FILTER;

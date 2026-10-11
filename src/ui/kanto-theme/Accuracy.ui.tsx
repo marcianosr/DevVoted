@@ -3,7 +3,6 @@ import { Typography } from "./Typography.ui";
 
 const COPY = {
 	title: "Accuracy",
-	ahead: "multiplies the bar when the gate closes",
 	landed: "Streak bonus",
 } as const;
 
@@ -21,9 +20,11 @@ export const Accuracy = ({ track, landed = false }: AccuracyProps) => (
 			<Typography variant="title" as="h3">
 				{COPY.title}
 			</Typography>
-			<Typography variant="hint" as="span">
-				{landed ? COPY.landed : COPY.ahead}
-			</Typography>
+			{landed ? (
+				<Typography variant="hint" as="span">
+					{COPY.landed}
+				</Typography>
+			) : null}
 		</div>
 		<AccuracyTrack {...track} />
 	</div>

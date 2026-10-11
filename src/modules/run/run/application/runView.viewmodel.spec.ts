@@ -542,6 +542,7 @@ describe("the gate stake travels as one object", () => {
 				available: null,
 				guaranteed: 1,
 				best: 1 + ACCURACY_GAIN_PER_GATE,
+				live: 1,
 				carried: 0,
 			},
 		});
@@ -952,6 +953,7 @@ describe("the window's accuracy", () => {
 			available: null,
 			guaranteed: 1,
 			best: 1 + ACCURACY_GAIN_PER_GATE,
+			live: 1,
 			carried: 0,
 		});
 	});

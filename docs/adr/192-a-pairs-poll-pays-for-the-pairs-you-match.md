@@ -22,16 +22,12 @@ tile is stored as correct, because every tile belongs to a pair.
 
 ## Decision 2: a miss burns the pair you started from
 
-Tap one tile, then a tile in the other column. A right match locks green. On a miss,
-the first tile and its true partner lock red and pay nothing; the wrong tile tapped
-second stays in play, since it still needs its own partner. Showing the missed pair
-only removes tiles the player would be eliminating anyway, and it costs them a share.
+Replaced by ADR-197: every pair is linked first, then checked at once.
 
 ## Decision 3: the last pair locks itself and pays nothing
 
-After three pairs are matched or missed, the last two tiles must be a pair. Paying for
-it would hand out points for nothing, so the poll ends there and the last pair is
-shown but not paid.
+Replaced by ADR-197: three right links force the fourth, and the share below
+already pays at most three.
 
 ## Decision 4: share is pairs matched ÷ 3, at double credit
 
@@ -43,8 +39,7 @@ share is partial, none is wrong.
 ## Decision 5: the client never learns an unresolved pair
 
 The poll screen gets the left and right columns, each shuffled with a seed taken from
-the poll id, and a state per tile: open, matched or missed. It never gets pair
-indexes. A plain `answer` action is refused on a pairs poll, so eight posted ids
+the poll id. It never gets pair indexes. A plain `answer` action is refused on a pairs poll, so eight posted ids
 cannot buy a full share.
 
 ## Decision 6: what each audit and config does to a pairs poll
@@ -62,4 +57,4 @@ cannot buy a full share.
 
 - A pairs poll is worth up to two units, the same as a perfect multiple-answer poll.
 - Session responses still write one row per poll, when the poll ends.
-- No lock-in press: the second tile answers. Letter keys do not apply to tiles.
+- Letter keys do not apply to tiles. The Check press is ADR-197.

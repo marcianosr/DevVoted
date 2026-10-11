@@ -378,16 +378,14 @@ describe("PollScreen", () => {
 
 		expect(screen.getByText("Accuracy")).toBeInTheDocument();
 		expect(
-			screen.getByRole("img", { name: "Accuracy ×1.32, up to ×1.74" })
+			screen.getByRole("img", { name: "Accuracy ×1.32, this gate up to ×1.38" })
 		).toBeInTheDocument();
 	});
 
-	it("says what accuracy does beside the multiplier it reads", () => {
+	it("heads the accuracy bar with no explaining line", () => {
 		render(<PollScreen {...props} />);
 
-		const note = screen.getByText("multiplies the bar when the gate closes");
-
-		expect(note.closest("section")).toHaveTextContent("×1.32 · up to ×1.74");
+		expect(screen.queryByText(/multiplies the bar/)).toBeNull();
 	});
 
 	it("leaves the track out when a call site has nothing to track", () => {
@@ -827,5 +825,23 @@ describe("PollScreen while an answer lands", () => {
 		expect(onFlightLanded).toHaveBeenCalledTimes(1);
 		expect(screen.queryByText("+12%")).toBeNull();
 		Reflect.deleteProperty(HTMLElement.prototype, "animate");
+	});
+
+	it("explains the poll under the question once it is answered", () => {
+		render(
+			<PollScreen
+				{...props}
+				explanation="Created is `201`; a `204` carries no body."
+			/>
+		);
+
+		expect(screen.getByText("Explanation")).toBeInTheDocument();
+		expect(screen.getByText("201").tagName).toBe("CODE");
+	});
+
+	it("draws no explanation block for a poll without one", () => {
+		render(<PollScreen {...props} explanation={undefined} />);
+
+		expect(screen.queryByText("Explanation")).toBeNull();
 	});
 });

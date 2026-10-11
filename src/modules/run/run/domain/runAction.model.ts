@@ -19,7 +19,7 @@ import {
 import {
 	answer,
 	closeGate,
-	matchTiles,
+	checkPairs,
 	skip,
 } from "~/modules/run/run/domain/answer.model";
 import {
@@ -32,6 +32,7 @@ import {
 	commitVendorLock,
 	isVendorLocked,
 } from "~/modules/run/build/domain/vendorLock.model";
+import type { PairLink } from "~/modules/run/run/domain/pairPoll.model";
 import { rebase } from "~/modules/run/run/domain/rebase.model";
 import { armStrict } from "~/modules/run/run/domain/strict.model";
 import {
@@ -80,8 +81,8 @@ export type RunAction =
 			readonly elapsedMs?: number;
 	  }
 	| {
-			readonly type: "match-pair";
-			readonly optionIds: readonly string[];
+			readonly type: "check-pairs";
+			readonly links: readonly PairLink[];
 			readonly elapsedMs?: number;
 	  }
 	| { readonly type: "close-gate" }
@@ -285,10 +286,9 @@ const RULES: readonly ActionRule[] = [
 		run: (state, action) => answer(state, action.optionIds, action.elapsedMs),
 	}),
 	on({
-		type: "match-pair",
+		type: "check-pairs",
 		when: inStatus("answering"),
-		run: (state, action) =>
-			matchTiles(state, action.optionIds, action.elapsedMs),
+		run: (state, action) => checkPairs(state, action.links, action.elapsedMs),
 	}),
 	on({
 		type: "skip",

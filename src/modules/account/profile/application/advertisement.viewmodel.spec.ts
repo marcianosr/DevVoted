@@ -27,8 +27,18 @@ const CSS: CategoryBounty = {
 	bountyKb: APPROVED_POLL_ARCHIVE_KB,
 };
 
-const PLAYER = { isAdmin: false, ownedBorderIds: [], bounties: [CSS] };
-const ADMIN = { isAdmin: true, ownedBorderIds: [], bounties: [CSS] };
+const PLAYER = {
+	isAdmin: false,
+	ownedBorderIds: [],
+	bounties: [CSS],
+	pairsPublished: 0,
+};
+const ADMIN = {
+	isAdmin: true,
+	ownedBorderIds: [],
+	bounties: [CSS],
+	pairsPublished: 0,
+};
 const THIN_BANK = [CSS, VUE, RUBY];
 const ROLL_SUGGEST = { kind: 0.1, item: 0 };
 const ROLL_BORDER = { kind: 0.9, item: 0 };
@@ -112,6 +122,7 @@ describe("ADVERTISEMENTS", () => {
 		expect(ADVERTISEMENTS.map((entry) => entry.kind)).toEqual([
 			"suggest",
 			"border",
+			"newMode",
 		]);
 	});
 
@@ -119,6 +130,50 @@ describe("ADVERTISEMENTS", () => {
 		const [suggest, border] = ADVERTISEMENTS;
 
 		expect(suggest.weight).toBe(border.weight);
+	});
+});
+
+describe("the matching pairs advertisement", () => {
+	const PAIRS_OUT = { ...PLAYER, pairsPublished: 12 };
+
+	it("stays off until a pairs poll is published", () => {
+		expect(
+			[0, 0.5, 0.99].map(
+				(kind) => advertisementFor(PLAYER, { kind, item: 0 })?.kind
+			)
+		).not.toContain("newMode");
+	});
+
+	it("weighs new content twice an ordinary advertisement, so it shows half the time", () => {
+		expect(advertisementFor(PAIRS_OUT, { kind: 0.49, item: 0 })?.kind).toBe(
+			"border"
+		);
+		expect(advertisementFor(PAIRS_OUT, { kind: 0.51, item: 0 })?.kind).toBe(
+			"newMode"
+		);
+	});
+
+	it("announces pairs as a new kind of poll, counts them and opens the run", () => {
+		const props = advertisementPropsFor(
+			{ kind: "newMode", pairs: 12 },
+			{ name: "Red" },
+			"/profile/red"
+		);
+
+		expect(props).toEqual({
+			title: "New: matching pairs",
+			price: "12 polls",
+			text: "Link every pair, then Check pairs. 12 pairs polls are in the deck.",
+			icon: { kind: "cookie" },
+			cta: { label: "Play the run", href: "/run" },
+		});
+	});
+
+	it("counts a single pairs poll in the singular", () => {
+		expect(
+			advertisementPropsFor({ kind: "newMode", pairs: 1 }, { name: "Red" }, "")
+				.text
+		).toBe("Link every pair, then Check pairs. 1 pairs poll is in the deck.");
 	});
 });
 

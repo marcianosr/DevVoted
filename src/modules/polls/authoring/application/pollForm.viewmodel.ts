@@ -16,7 +16,7 @@ import {
 	isCategoryCode,
 	type CategoryCode,
 } from "~/shared/lib/categories";
-import { PAIR_SIZE, PAIR_TILES } from "~/shared/lib/answerTypes";
+import { MAX_PAIRS, MIN_PAIRS, PAIR_SIZE } from "~/shared/lib/answerTypes";
 import { letterAt } from "~/shared/lib/letters";
 import { signedKbLabel } from "~/shared/lib/storage";
 import type { ChoiceState } from "~/ui/kanto-theme/Choice.ui";
@@ -40,6 +40,7 @@ const COPY = {
 	needsUrl: "Fix the CodeSandbox link",
 	needsTileText: "Fill every tile",
 	needsUniqueTiles: "Use each tile once",
+	needsShortTiles: `Keep every tile to ${POLL_LIMITS.tile.max} characters`,
 	tilePlaceholder: (index: number) => `tile ${index + 1}`,
 } as const;
 
@@ -109,32 +110,70 @@ export const pollFormStateOf = (
 
 const isPairs = (state: PollFormState): boolean => state.answerType === "pairs";
 
+const pairCountOf = (state: PollFormState): number =>
+	new Set(state.answers.flatMap((answer) => answer.group ?? [])).size;
+
 export const canAddAnswer = (state: PollFormState): boolean =>
-	!isPairs(state) && state.answers.length < POLL_LIMITS.answers.max;
+	isPairs(state)
+		? pairCountOf(state) < MAX_PAIRS
+		: state.answers.length < POLL_LIMITS.answers.max;
 
 export const canRemoveAnswer = (state: PollFormState): boolean =>
-	!isPairs(state) && state.answers.length > POLL_LIMITS.answers.min;
+	isPairs(state)
+		? pairCountOf(state) > MIN_PAIRS
+		: state.answers.length > POLL_LIMITS.answers.min;
 
 const nextKeyOf = (answers: readonly PollFormAnswer[]): number =>
 	Math.max(-1, ...answers.map((answer) => answer.key)) + 1;
 
+const blankPairOf = (state: PollFormState): readonly PollFormAnswer[] => {
+	const group = pairCountOf(state);
+	const key = nextKeyOf(state.answers);
+	return [key, key + 1].map((tileKey) => ({
+		...blankAnswer(tileKey),
+		right: true,
+		group,
+	}));
+};
+
+const addedAnswersOf = (state: PollFormState): readonly PollFormAnswer[] =>
+	isPairs(state)
+		? [...state.answers, ...blankPairOf(state)]
+		: [...state.answers, blankAnswer(nextKeyOf(state.answers))];
+
 export const addAnswer = (state: PollFormState): PollFormState =>
-	canAddAnswer(state)
-		? {
-				...state,
-				answers: [...state.answers, blankAnswer(nextKeyOf(state.answers))],
-			}
-		: state;
+	canAddAnswer(state) ? { ...state, answers: addedAnswersOf(state) } : state;
+
+const regrouped = (
+	answers: readonly PollFormAnswer[]
+): readonly PollFormAnswer[] =>
+	answers.map((answer, index) => ({
+		...answer,
+		group: Math.floor(index / PAIR_SIZE),
+	}));
+
+const withoutPairOf = (
+	answers: readonly PollFormAnswer[],
+	key: number
+): readonly PollFormAnswer[] => {
+	const group = answers.find((answer) => answer.key === key)?.group;
+	return regrouped(answers.filter((answer) => answer.group !== group));
+};
+
+const removedAnswersOf = (
+	state: PollFormState,
+	key: number
+): readonly PollFormAnswer[] =>
+	isPairs(state)
+		? withoutPairOf(state.answers, key)
+		: state.answers.filter((answer) => answer.key !== key);
 
 export const removeAnswer = (
 	state: PollFormState,
 	key: number
 ): PollFormState =>
 	canRemoveAnswer(state)
-		? {
-				...state,
-				answers: state.answers.filter((answer) => answer.key !== key),
-			}
+		? { ...state, answers: removedAnswersOf(state, key) }
 		: state;
 
 export const changeAnswer = (
@@ -182,21 +221,22 @@ export const markRight = (
 	),
 });
 
+const pairTileCountFor = (answers: number): number =>
+	Math.min(Math.max(Math.ceil(answers / PAIR_SIZE), MIN_PAIRS), MAX_PAIRS) *
+	PAIR_SIZE;
+
 const asPairTiles = (
 	answers: readonly PollFormAnswer[]
 ): readonly PollFormAnswer[] => {
-	const kept = answers.slice(0, PAIR_TILES);
+	const tiles = pairTileCountFor(answers.length);
+	const kept = answers.slice(0, tiles);
 	const padded = [
 		...kept,
-		...Array.from({ length: PAIR_TILES - kept.length }, (_, index) =>
+		...Array.from({ length: tiles - kept.length }, (_, index) =>
 			blankAnswer(nextKeyOf(kept) + index)
 		),
 	];
-	return padded.map((answer, index) => ({
-		...answer,
-		right: true,
-		group: Math.floor(index / PAIR_SIZE),
-	}));
+	return regrouped(padded).map((answer) => ({ ...answer, right: true }));
 };
 
 const withoutGroup = ({
@@ -375,9 +415,13 @@ const hasDuplicateTiles = (answers: readonly PollFormAnswer[]): boolean => {
 	return new Set(tiles).size !== tiles.length;
 };
 
+const fitsATile = (answer: PollFormAnswer): boolean =>
+	answer.text.trim().length <= POLL_LIMITS.tile.max;
+
 const pairsRefusalOf = (state: PollFormState): string | undefined => {
 	if (!state.answers.every(hasText)) return COPY.needsTileText;
 	if (hasDuplicateTiles(state.answers)) return COPY.needsUniqueTiles;
+	if (!state.answers.every(fitsATile)) return COPY.needsShortTiles;
 	if (state.categoryCode === undefined) return COPY.needsCategory;
 	if (!isSandboxUrl(state.codeSandboxExample)) return COPY.needsUrl;
 	return undefined;
@@ -465,7 +509,6 @@ const previewOptionOf = (
 const previewTileOf = (row: AnswerRow, index: number): PairTile => ({
 	id: String(row.key),
 	label: row.text === "" ? COPY.tilePlaceholder(index) : row.text,
-	state: "open",
 });
 
 const previewPairsOf = (state: PollFormState): QuestionPairs => {
@@ -475,6 +518,10 @@ const previewPairsOf = (state: PollFormState): QuestionPairs => {
 		right: rows.map((row, index) =>
 			previewTileOf(row.right, index * PAIR_SIZE + 1)
 		),
+		links: rows.map((row) => ({
+			left: String(row.left.key),
+			right: String(row.right.key),
+		})),
 	};
 };
 

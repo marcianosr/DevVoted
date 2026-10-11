@@ -554,7 +554,13 @@ describe("GateOutcomeScreen's payout history", () => {
 		renderWithNavRun(
 			<GateOutcomeScreen
 				{...kantoGatePerfect()}
-				accuracy={{ label: "Accuracy", figure: "×1.08", sure: 1, best: 1 }}
+				accuracy={{
+					label: "Accuracy",
+					figure: "×1.08",
+					bonus: 0.32,
+					cap: 0.32,
+					ticks: [],
+				}}
 			/>
 		);
 

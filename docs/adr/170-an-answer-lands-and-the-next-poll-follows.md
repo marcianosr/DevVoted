@@ -18,10 +18,8 @@ by itself.
 
 ## Decision
 
-1. **The poll screen advances on its own.** After a right answer it holds 1.65s, after
-   a wrong one 1.9s (650ms and 900ms until 2026-10-08), so the right option can be read. Then it commits and shows the
-   next poll, or closes the gate on the fifth. There is no Next press, and input is
-   locked while the feedback plays.
+1. **The poll screen advances on its own.** Replaced by ADR-197 Decision 5: every
+   answered poll waits for **Next**.
 2. **Options have three states: idle, right, wrong.** The correct option is marked
    right whether or not it was picked. The old `missed` tint is gone.
 3. **A wrong answer shakes the poll card** (220ms). Nothing flies.
@@ -40,11 +38,8 @@ by itself.
    result still draws them.
 
    Amended 2026-10-02 (Marciano): five segments read as five polls, so the track is
-   **one bar of the multiplier**, ×1 to ×2. A solid fill reaches the multiplier the
-   window is sure of (every poll still ahead a missed multiple), and a faint fill
-   reaches the best case (every one right), labelled "×1.32 · up to ×2". Both assume
-   the worst-case mix, so the bar still leaks nothing sealed. A right answer pulses
-   the bar.
+   **one bar of the multiplier**. What it reads is ADR-198: a live bonus under the
+   gate's cap. A right answer pulses the bar.
 7. **Reduced motion** plays no shake, pulse, settle or flight, and the bar jumps to
    its value.
 
@@ -74,7 +69,4 @@ reduced motion keep the fixed holds.
 
 ## Amendment 2026-10-08: the verdict stays a second longer
 
-The holds grow by one second, to 1.65s after a right answer and 1.9s after a wrong
-one (DVTD-fxcc). Playing it, the verdict left before it had been read. A right
-answer whose chip flies was already held about 1.8s by the chip, so it barely
-moves; wrong answers and chip-less right answers get the whole second.
+Moot since ADR-197 Decision 5: there is no hold, the player presses Next.

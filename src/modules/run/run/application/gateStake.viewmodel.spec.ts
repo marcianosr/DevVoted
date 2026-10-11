@@ -7,6 +7,7 @@ import {
 	bestMultiplierOf,
 	guaranteedMultiplierOf,
 	guaranteedWindowOutputOf,
+	liveMultiplierOf,
 } from "~/modules/run/run/application/gateStake.viewmodel";
 import {
 	accuracyOf,
@@ -168,5 +169,82 @@ describe("the accuracy reading", () => {
 			guaranteed: guaranteedMultiplierOf(twoRight),
 			best: bestMultiplierOf(twoRight),
 		});
+	});
+});
+
+describe("the live accuracy bonus under the gate's cap (ADR-198)", () => {
+	const after = (outcomes: readonly boolean[], from = carrying()) =>
+		outcomes.reduce(answerWith, from);
+	const mixKnown = () => audited(carrying(), 4, "multi-status");
+
+	it("starts the gate at the bonus the run carried", () => {
+		expect(liveMultiplierOf(carrying())).toBeCloseTo(1 + CARRIED_BONUS);
+	});
+
+	it("raises the bonus a fifth of the gate's gain on a right answer, under the cap", () => {
+		expect(liveMultiplierOf(after([true]))).toBeCloseTo(
+			1 + CARRIED_BONUS + ACCURACY_GAIN_PER_GATE / 5
+		);
+	});
+
+	it("leaves the bonus where it was on a wrong answer, and lowers the cap", () => {
+		const oneRight = after([true]);
+		const thenWrong = answerWith(oneRight, false);
+
+		expect(liveMultiplierOf(thenWrong)).toBeCloseTo(liveMultiplierOf(oneRight));
+		expect(bestMultiplierOf(thenWrong)).toBeLessThan(
+			bestMultiplierOf(oneRight)
+		);
+	});
+
+	it("never reads above the gate's cap", () => {
+		const outcomes = [false, false, true, true, true];
+		outcomes.forEach((_, index) => {
+			const state = after(outcomes.slice(0, index + 1));
+			expect(liveMultiplierOf(state)).toBeLessThanOrEqual(
+				bestMultiplierOf(state) + 1e-9
+			);
+		});
+	});
+
+	it("stops rising once it meets the cap", () => {
+		const atCap = after([false, false, true, true], mixKnown());
+		const another = answerWith(atCap, true);
+
+		expect(liveMultiplierOf(atCap)).toBeCloseTo(bestMultiplierOf(atCap));
+		expect(liveMultiplierOf(another)).toBeLessThanOrEqual(
+			liveMultiplierOf(atCap) + 1e-9
+		);
+	});
+
+	it("drops with the cap when a wrong answer comes at the cap", () => {
+		const atCap = after([false, false, true, true], mixKnown());
+		const thenWrong = answerWith(atCap, false);
+
+		expect(liveMultiplierOf(thenWrong)).toBeLessThan(liveMultiplierOf(atCap));
+		expect(liveMultiplierOf(thenWrong)).toBeCloseTo(
+			bestMultiplierOf(thenWrong)
+		);
+	});
+
+	it.each([
+		[[true, true, true, true]],
+		[[true, false, false, true]],
+		[[false, false, false, false]],
+		[[true, true, false, true]],
+	])("closes on the formula the gate pays: %j then a right fifth", (four) => {
+		const fifth = answeredRight(after(four));
+		const closes = accuracyMultiplierFor(
+			fifth.accuracyBonus,
+			accuracyOf(fifth.window)
+		);
+
+		expect(liveMultiplierOf(fifth)).toBeCloseTo(closes);
+	});
+
+	it("states the live bonus on the stake the poll screen reads", () => {
+		const twoRight = after([true, true]);
+
+		expect(accuracyViewFor(twoRight).live).toBe(liveMultiplierOf(twoRight));
 	});
 });

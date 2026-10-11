@@ -13,6 +13,8 @@ import {
 	totalCoverage,
 } from "./gateOutcome.viewmodel";
 
+import { answeredPairsFor } from "~/modules/run/run/application/pollScreen.viewmodel";
+import type { AnsweredPair } from "~/modules/run/run/domain/pairPoll.model";
 import type { OptionVotes } from "~/modules/run/community/application/communityScreen.viewmodel";
 import type { AuthorProps } from "~/ui/kanto-theme/Author.ui";
 import type {
@@ -33,6 +35,7 @@ export const REVIEW_DEX_NOTE = "every poll you saw is recorded in the Dex";
 const REVIEW_LEAD = "Review";
 const REVIEW_SEPARATOR = "·";
 const CAUGHT = "caught";
+const MATCHED = "matched";
 
 export type PollVotes = ReadonlyMap<string, readonly OptionVotes[]>;
 const NO_VOTES: PollVotes = new Map();
@@ -64,7 +67,20 @@ const votersOf = (
 		: { climbers: vote.climbers, count: vote.count };
 };
 
+const pairsCardFor = (
+	answer: GateAnswer,
+	pairs: readonly AnsweredPair[]
+): QuestionProps => ({
+	answerType: answer.answerType,
+	question: answer.question,
+	stem: "code",
+	...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
+	options: [],
+	pairs: answeredPairsFor(pairs, answer.pollId),
+});
+
 const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
+	if (answer.pairs !== undefined) return pairsCardFor(answer, answer.pairs);
 	const pollVotes =
 		answer.pollId === undefined ? undefined : votes.get(answer.pollId);
 	return {
@@ -88,7 +104,11 @@ const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
 	};
 };
 
+const pairsTallyOf = (pairs: readonly AnsweredPair[]): string =>
+	`${pairs.filter((pair) => pair.matched).length} of ${pairs.length} ${MATCHED}`;
+
 const tallyOf = (answer: GateAnswer): string | undefined => {
+	if (answer.pairs !== undefined) return pairsTallyOf(answer.pairs);
 	if (answer.answerType !== "multiple") return undefined;
 	const hits = answer.correct.filter((label) =>
 		answer.picked.includes(label)

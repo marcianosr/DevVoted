@@ -1,24 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type {
-	AnsweredPoll,
-	AnswerOutcome,
-} from "~/modules/run/run/domain/runPoll.model";
-
-export const ANSWER_HOLD_MS = { right: 1650, wrong: 1900 } as const;
+import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 
 export const CARD_LEAVE_MS = 180;
 
 export const FLIGHT_FALLBACK_MS = 3000;
-
-export const answerHoldFor = (outcome: AnswerOutcome): number =>
-	outcome === "wrong" ? ANSWER_HOLD_MS.wrong : ANSWER_HOLD_MS.right;
 
 export type AnswerFeedback = {
 	landed: boolean;
 	leaving: boolean;
 	land: () => void;
 	settle: () => void;
+	next: () => void;
 };
 
 type FlightGate = { held: boolean; settled: boolean; left: boolean };
@@ -56,13 +49,8 @@ export const useAnswerFeedback = (
 
 	useEffect(() => {
 		if (outcome === undefined) return;
-		const holdMs = answerHoldFor(outcome);
 		gate.current = { ...OPEN_GATE, settled: !flies };
 
-		const hold = setTimeout(
-			() => leaveOnceFree({ held: true }),
-			holdMs - CARD_LEAVE_MS
-		);
 		const fallback = flies
 			? setTimeout(
 					() => leaveOnceFree({ settled: true }),
@@ -71,7 +59,6 @@ export const useAnswerFeedback = (
 			: undefined;
 
 		return () => {
-			clearTimeout(hold);
 			clearTimeout(fallback);
 			clearTimeout(leaveTimer.current);
 		};
@@ -83,7 +70,13 @@ export const useAnswerFeedback = (
 		[leaveOnceFree]
 	);
 
+	const next = useCallback(
+		() => leaveOnceFree({ held: true }),
+		[leaveOnceFree]
+	);
+
 	return {
+		next,
 		landed: answeredId !== undefined && landedId === answeredId,
 		leaving: answeredId !== undefined && leavingId === answeredId,
 		land,

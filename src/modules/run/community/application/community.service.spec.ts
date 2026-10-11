@@ -990,3 +990,107 @@ describe("a board that mixes mirrored and plain answers", () => {
 		expect(rows.map((row) => row.isRight)).toEqual([true, false, false]);
 	});
 });
+
+describe("a pairs poll on the community board", () => {
+	const PAIRS = [
+		["div + div", "the next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
+	];
+	const tileIdOf = (pair: number, side: number) => 201 + pair * 2 + side;
+	const PAIRS_POLL = {
+		id: 10,
+		question: "Match each selector to what it selects",
+		categoryCode: "css",
+		answerType: "pairs" as const,
+		options: PAIRS.flatMap((tiles, group) =>
+			tiles.map((label, side) => ({
+				id: tileIdOf(group, side),
+				label,
+				correct: true,
+				group,
+			}))
+		),
+	};
+	const matchedRows = (
+		responseId: number,
+		userId: string,
+		displayName: string,
+		pairs: readonly number[]
+	) =>
+		pairs.length === 0
+			? [
+					answerRow({
+						responseId,
+						pollId: 10,
+						userId,
+						displayName,
+						optionId: null,
+					}),
+				]
+			: pairs.flatMap((pair) =>
+					[0, 1].map((side) =>
+						answerRow({
+							responseId,
+							pollId: 10,
+							userId,
+							displayName,
+							optionId: tileIdOf(pair, side),
+						})
+					)
+				);
+
+	const arrangePairs = () => {
+		arrange();
+		vi.mocked(communityQueries.fetchPollsWithOptions).mockResolvedValue([
+			PAIRS_POLL,
+			...POLLS.slice(1),
+		]);
+		vi.mocked(communityQueries.fetchSessionAnswersForDay).mockResolvedValue([
+			...matchedRows(1, RED, "Red", [0, 1]),
+			...matchedRows(2, BLUE, "Blue", []),
+			...matchedRows(3, GREEN, "Green", [0, 1, 2, 3]),
+			...answerRows.filter((row) => row.pollId !== 10),
+		]);
+	};
+
+	const pairRowsOf = async () => {
+		const result = await getRunCommunityService({ userId: RED, date: DATE });
+		if (!result.success) throw new Error(result.error);
+		return result.data.polls[0].detail;
+	};
+
+	it("shows one row per pair, its two tiles joined, instead of one per tile", async () => {
+		arrangePairs();
+
+		const detail = await pairRowsOf();
+
+		expect(detail?.options.map((row) => row.label)).toEqual([
+			"div + div ⟷ the next sibling",
+			"div > div ⟷ a direct child",
+			"div ~ div ⟷ any later sibling",
+			"div div ⟷ any descendant",
+		]);
+		expect(detail?.options.every((row) => row.isRight)).toBe(true);
+	});
+
+	it("counts who matched each pair, out of everyone who answered", async () => {
+		arrangePairs();
+
+		const detail = await pairRowsOf();
+
+		expect(detail?.options.map((row) => row.count)).toEqual([2, 2, 1, 1]);
+		expect(detail?.options.map((row) => row.percent)).toEqual([67, 67, 33, 33]);
+		expect(detail?.options[3].voters.map((voter) => voter.id)).toEqual([GREEN]);
+	});
+
+	it("counts only a full set as getting the poll right", async () => {
+		arrangePairs();
+
+		const detail = await pairRowsOf();
+
+		expect(detail?.answeredCount).toBe(3);
+		expect(detail?.gotItRightCount).toBe(1);
+	});
+});

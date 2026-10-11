@@ -7,89 +7,110 @@ import { AccuracyTrack, type AccuracyTrackProps } from "./AccuracyTrack.ui";
 
 const appCss = readFileSync("src/styles/app.css", "utf8");
 
-const TWO_RIGHT: AccuracyTrackProps = {
-	label: "Accuracy ×1.19, up to ×2",
-	figure: "×1.19",
-	ceiling: "up to ×2",
-	sure: 0.19,
-	best: 1,
+const MID_GATE: AccuracyTrackProps = {
+	label: "Accuracy ×1.13, this gate up to ×1.18",
+	figure: "×1.13",
+	bonus: 0.52,
+	cap: 0.72,
+	ticks: [
+		{ share: 0, label: "×1.00" },
+		{ share: 0.2, label: "×1.05" },
+		{ share: 0.4, label: "×1.10" },
+		{ share: 0.6, label: "×1.15" },
+		{ share: 0.8, label: "×1.20" },
+		{ share: 1 },
+	],
 };
 
-const fillOf = (container: HTMLElement, fill: string) =>
-	container.querySelector(`[data-fill="${fill}"]`);
+const partOf = (container: HTMLElement, part: string) =>
+	container.querySelector<HTMLElement>(`[data-part="${part}"]`);
 
 describe("AccuracyTrack", () => {
-	it("draws one bar, filled to the sure multiplier over the best case", () => {
-		const { container } = render(<AccuracyTrack {...TWO_RIGHT} />);
+	it("fills the bar to the live bonus", () => {
+		const { container } = render(<AccuracyTrack {...MID_GATE} />);
 
-		expect(fillOf(container, "sure")).toHaveStyle({ width: "19%" });
-		expect(fillOf(container, "best")).toHaveStyle({ width: "100%" });
+		expect(partOf(container, "bonus")).toHaveStyle({ width: "52%" });
 	});
 
-	it("draws no segment per poll", () => {
-		const { container } = render(<AccuracyTrack {...TWO_RIGHT} />);
+	it("hatches the stretch from the bonus up to the gate's cap", () => {
+		const { container } = render(<AccuracyTrack {...MID_GATE} />);
+		const cap = partOf(container, "cap");
 
-		expect(container.querySelectorAll("[data-segment]")).toHaveLength(0);
+		expect(cap).toHaveStyle({ left: "52%", width: "20%" });
 	});
 
-	it("keeps both fills inside the bar", () => {
+	it("marks the gate's cap with a line across the bar and dims the track past it", () => {
+		const { container } = render(<AccuracyTrack {...MID_GATE} />);
+
+		expect(partOf(container, "limit")).toHaveStyle({ left: "72%" });
+		expect(partOf(container, "beyond")).toHaveStyle({ left: "72%" });
+	});
+
+	it("still marks the cap once the bonus has met it", () => {
 		const { container } = render(
-			<AccuracyTrack {...TWO_RIGHT} sure={-0.2} best={1.4} />
+			<AccuracyTrack {...MID_GATE} bonus={0.72} cap={0.72} />
 		);
 
-		expect(fillOf(container, "sure")).toHaveStyle({ width: "0%" });
-		expect(fillOf(container, "best")).toHaveStyle({ width: "100%" });
+		expect(partOf(container, "limit")).toHaveStyle({ left: "72%" });
 	});
 
-	it("states the sure multiplier beside the bar", () => {
-		render(<AccuracyTrack {...TWO_RIGHT} />);
+	it("draws no hatch once the bonus has met the cap", () => {
+		const { container } = render(
+			<AccuracyTrack {...MID_GATE} bonus={0.72} cap={0.72} />
+		);
 
-		expect(screen.getByText("×1.19")).toHaveClass("badge-theme");
+		expect(partOf(container, "cap")).toBeNull();
 	});
 
-	it("writes the ceiling on its own line below the bar", () => {
-		const { container } = render(<AccuracyTrack {...TWO_RIGHT} />);
-		const bar = fillOf(container, "best")?.parentElement;
-		const ceiling = screen.getByText("up to ×2");
-		if (!bar) throw new Error("no accuracy bar");
+	it("keeps every part inside the bar", () => {
+		const { container } = render(
+			<AccuracyTrack {...MID_GATE} bonus={-0.2} cap={1.4} />
+		);
 
-		expect(bar.contains(ceiling)).toBe(false);
+		expect(partOf(container, "bonus")).toHaveStyle({ width: "0%" });
+		expect(partOf(container, "cap")).toHaveStyle({ width: "100%" });
+	});
+
+	it("labels the ticks under the bar", () => {
+		render(<AccuracyTrack {...MID_GATE} />);
+
+		["×1.00", "×1.05", "×1.10", "×1.15", "×1.20"].forEach((label) =>
+			expect(screen.getByText(label)).toBeInTheDocument()
+		);
+	});
+
+	it("pins the live figure above the end of the fill", () => {
+		const { container } = render(<AccuracyTrack {...MID_GATE} />);
+
+		expect(screen.getByText("×1.13")).toHaveClass("badge-theme");
+		expect(partOf(container, "marker")).toHaveStyle({ left: "52%" });
+	});
+
+	it("reads the bonus and the cap aloud through its label", () => {
+		render(<AccuracyTrack {...MID_GATE} />);
+
 		expect(
-			bar.compareDocumentPosition(ceiling) & Node.DOCUMENT_POSITION_FOLLOWING
-		).toBeTruthy();
-	});
-
-	it("writes no ceiling when the best is already sure", () => {
-		render(<AccuracyTrack {...TWO_RIGHT} ceiling={undefined} />);
-
-		expect(screen.queryByText(/up to/)).toBeNull();
-	});
-
-	it("reads the multiplier aloud through its label", () => {
-		render(<AccuracyTrack {...TWO_RIGHT} />);
-
-		expect(
-			screen.getByRole("img", { name: "Accuracy ×1.19, up to ×2" })
+			screen.getByRole("img", { name: "Accuracy ×1.13, this gate up to ×1.18" })
 		).toBeInTheDocument();
 	});
 
 	it("pulses the bar only when told to", () => {
-		const { container, rerender } = render(<AccuracyTrack {...TWO_RIGHT} />);
+		const { container, rerender } = render(<AccuracyTrack {...MID_GATE} />);
 
 		expect(container.querySelector(".accuracy-pulse")).toBeNull();
 
-		rerender(<AccuracyTrack {...TWO_RIGHT} pulse={{ key: "poll-2" }} />);
+		rerender(<AccuracyTrack {...MID_GATE} pulse={{ key: "poll-2" }} />);
 
 		expect(container.querySelector(".accuracy-pulse")).not.toBeNull();
 	});
 
 	it("replays the pulse for the next right answer", () => {
 		const { container, rerender } = render(
-			<AccuracyTrack {...TWO_RIGHT} pulse={{ key: "one" }} />
+			<AccuracyTrack {...MID_GATE} pulse={{ key: "one" }} />
 		);
 		const first = container.querySelector(".accuracy-pulse");
 
-		rerender(<AccuracyTrack {...TWO_RIGHT} pulse={{ key: "two" }} />);
+		rerender(<AccuracyTrack {...MID_GATE} pulse={{ key: "two" }} />);
 
 		expect(container.querySelector(".accuracy-pulse")).not.toBe(first);
 	});
