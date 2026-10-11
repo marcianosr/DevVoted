@@ -6,6 +6,7 @@ import { useScrollToTopOnSmallScreen } from "~/shared/hooks/useScrollToTopOnSmal
 import { INSTALLED_CARDS_OPEN } from "~/shared/lib/disclosure";
 
 import {
+	answerOnPickOf,
 	enterActionFor,
 	type PollScreenHandlers,
 	pollFlightFor,
@@ -26,7 +27,6 @@ export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {
 	answered?: AnsweredPoll;
 	selectedOptionIds: readonly string[];
 	clockMs?: number;
-	gridShuffles?: number;
 };
 
 export const PollView = ({
@@ -34,7 +34,6 @@ export const PollView = ({
 	answered,
 	selectedOptionIds,
 	clockMs = 0,
-	gridShuffles = 0,
 	onAnswer,
 	...handlers
 }: PollViewProps) => {
@@ -54,10 +53,15 @@ export const PollView = ({
 	const small = useIsSmallScreen();
 	const on = {
 		...handlers,
-		onSelect:
-			view.poll?.answerType === "single"
-				? (optionId: string) => onAnswer([optionId])
-				: handlers.onSelect,
+		onSelect: (optionId: string) => {
+			const answer = answerOnPickOf(
+				view.poll ?? undefined,
+				selectedOptionIds,
+				optionId
+			);
+			if (answer === undefined) return handlers.onSelect(optionId);
+			onAnswer(answer);
+		},
 		onSubmit: () => onAnswer(selectedOptionIds),
 	};
 
@@ -79,7 +83,7 @@ export const PollView = ({
 		leaving: feedback.leaving,
 		selectedOptionIds,
 		on: { ...on, onLanded: feedback.land, onSettled: feedback.settle },
-		ui: { build, clockMs, buildOpen: !small, gridShuffles },
+		ui: { build, clockMs, buildOpen: !small },
 	});
 
 	return props === null ? null : (

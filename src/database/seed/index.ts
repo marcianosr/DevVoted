@@ -24,7 +24,7 @@ import {
 import { insertUser } from "~/modules/account/auth/infrastructure/user.repository";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import { SEED_LENGTH } from "~/modules/run/run/domain/seed.model";
-import { type AnswerType, GRID_GROUP_SIZE } from "~/shared/lib/answerTypes";
+import { type AnswerType, PAIR_SIZE } from "~/shared/lib/answerTypes";
 import { getCategories } from "~/shared/lib/categories";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 
@@ -163,7 +163,7 @@ const seedCategories = async (): Promise<number> => {
 };
 
 const seedAnswerTypeOf = (question: SeedQuestion): AnswerType => {
-	if (question.groups !== undefined) return "grid";
+	if (question.pairs !== undefined) return "pairs";
 	return question.correct.length > 1 ? "multiple" : "single";
 };
 
@@ -181,7 +181,6 @@ const seedPolls = async (): Promise<number[]> => {
 				explanation: question.explanation ?? null,
 				status: "published" as const,
 				answer_type: seedAnswerTypeOf(question),
-				group_labels: question.groups?.map((group) => group.label) ?? null,
 				opening_time: openingTime,
 				closing_time: closingTime,
 				created_by: POLL_AUTHOR_IDS[index % POLL_AUTHOR_IDS.length],
@@ -197,9 +196,9 @@ const seedPolls = async (): Promise<number[]> => {
 				option,
 				correct: question.correct.includes(optionIndex),
 				group_index:
-					question.groups === undefined
+					question.pairs === undefined
 						? null
-						: Math.floor(optionIndex / GRID_GROUP_SIZE),
+						: Math.floor(optionIndex / PAIR_SIZE),
 				explanation: question.optionExplanations?.[optionIndex] ?? null,
 			}))
 		)

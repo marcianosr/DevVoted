@@ -30,7 +30,6 @@ type PollContent = {
 	answerType: Poll["answerType"];
 	categoryCode: string;
 	codeBlock?: string | null;
-	groupLabels?: string[] | null;
 	codeSandboxExample?: string | null;
 	explanation?: string | null;
 };
@@ -43,7 +42,6 @@ type PollColumns<Content extends Partial<PollContent>> = {
 	answer_type: Content["answerType"];
 	category_code: Content["categoryCode"];
 	code_block: Content["codeBlock"];
-	group_labels: Content["groupLabels"];
 	code_sandbox_example: Content["codeSandboxExample"];
 	explanation: Content["explanation"];
 };
@@ -56,7 +54,6 @@ const pollColumnsOf = <Content extends Partial<PollContent>>(
 	answer_type: content.answerType,
 	category_code: content.categoryCode,
 	code_block: content.codeBlock,
-	group_labels: content.groupLabels,
 	code_sandbox_example: content.codeSandboxExample,
 	explanation: content.explanation,
 });

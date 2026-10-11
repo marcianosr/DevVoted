@@ -5,7 +5,11 @@ import {
 	REDACTED_LABEL,
 } from "~/modules/run/run/application/pollView.viewmodel";
 import type { RunPoll } from "~/modules/run/run/domain/runPoll.model";
-import { gridPoll, gridTiles } from "~/modules/run/run/domain/run.factory";
+import {
+	PAIR_TILES,
+	pairsPoll,
+	pairTiles,
+} from "~/modules/run/run/domain/run.factory";
 
 const poll: RunPoll = {
 	id: "q1",
@@ -50,52 +54,59 @@ describe(redactPoll, () => {
 	});
 });
 
-describe("redactPoll on a dependency grid", () => {
-	const grid = gridPoll("jigsaw");
-	const authored = grid.options.map((option) => option.id);
+describe("redactPoll on a matching pairs poll", () => {
+	const pairs = pairsPoll("selectors");
+	const leftOf = (view: ReturnType<typeof redactPoll>) =>
+		view.pairs?.left.map((tile) => tile.label);
+	const rightOf = (view: ReturnType<typeof redactPoll>) =>
+		view.pairs?.right.map((tile) => tile.label);
 
-	it("never tells the client which group a tile belongs to", () => {
-		const view = redactPoll(grid);
-
-		expect(JSON.stringify(view)).not.toContain('group":');
-		expect(JSON.stringify(view)).not.toContain("Array methods");
+	it("never tells the client which pair a tile belongs to", () => {
+		expect(JSON.stringify(redactPoll(pairs))).not.toContain('group":');
 	});
 
-	it("deals the tiles out of authored order, which is group order", () => {
-		const dealt = redactPoll(grid).options.map((option) => option.id);
+	it("puts every pair's first tile on the left and its second on the right", () => {
+		const view = redactPoll(pairs);
 
-		expect(dealt).not.toEqual(authored);
-		expect([...dealt].sort()).toEqual([...authored].sort());
+		expect([...(leftOf(view) ?? [])].sort()).toEqual(
+			["div + div", "div > div", "div ~ div", "div div"].sort()
+		);
+		expect(rightOf(view)).toHaveLength(4);
 	});
 
-	it("deals the same order on every load of the same poll", () => {
-		expect(redactPoll(grid).options).toEqual(redactPoll(grid).options);
+	it("deals the columns so the rows do not line up with the pairs", () => {
+		const view = redactPoll(pairs);
+		const rows = (leftOf(view) ?? []).map(
+			(left, index) => `${left}|${rightOf(view)?.[index]}`
+		);
+
+		expect(rows).not.toEqual(
+			PAIR_TILES.map(([left, right]) => `${left}|${right}`)
+		);
 	});
 
-	it("moves a locked-in group out of the tiles and names it", () => {
-		const view = redactPoll(grid, [], false, {
-			locked: gridTiles("jigsaw", 1),
-			namesShown: false,
+	it("deals the same columns on every load of the same poll", () => {
+		expect(redactPoll(pairs).pairs).toEqual(redactPoll(pairs).pairs);
+	});
+
+	it("marks a matched pair matched and a missed pair missed, in place", () => {
+		const view = redactPoll(pairs, [], false, {
+			matched: pairTiles("selectors", 1),
+			missed: [2],
 		});
+		const stateOf = (label: string) =>
+			[...(view.pairs?.left ?? []), ...(view.pairs?.right ?? [])].find(
+				(tile) => tile.label === label
+			)?.state;
 
-		expect(view.options).toHaveLength(8);
-		expect(view.grid?.solved).toEqual([
-			{ label: "Box model", tiles: ["margin", "padding", "content", "border"] },
-		]);
-		expect(view.grid?.hints).toEqual([null, null]);
+		expect(stateOf("a direct child")).toBe("matched");
+		expect(stateOf("div ~ div")).toBe("missed");
+		expect(stateOf("any later sibling")).toBe("missed");
+		expect(stateOf("div + div")).toBe("open");
+		expect(view.options).toHaveLength(4);
 	});
 
-	it("names the unsolved groups when the build names answer types", () => {
-		const view = redactPoll(grid, [], false, { locked: [], namesShown: true });
-
-		expect(view.grid?.hints).toEqual([
-			"Array methods",
-			"Box model",
-			"Git actions",
-		]);
-	});
-
-	it("keeps naming a grid a grid under 207", () => {
-		expect(redactPoll(grid, [], true).answerType).toBe("grid");
+	it("keeps naming a pairs poll pairs under 207", () => {
+		expect(redactPoll(pairs, [], true).answerType).toBe("pairs");
 	});
 });

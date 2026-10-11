@@ -125,50 +125,46 @@ describe("updatePollSchema", () => {
 	});
 });
 
-describe("a dependency grid poll", () => {
-	const GROUPS = [
-		["filter", "reduce", "find", "map"],
-		["margin", "padding", "content", "border"],
-		["commit", "rebase", "merge", "cherry-pick"],
+describe("a matching pairs poll", () => {
+	const PAIRS = [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
 	];
-	const gridOptions = GROUPS.flatMap((tiles, group) =>
+	const pairsOptions = PAIRS.flatMap((tiles, group) =>
 		tiles.map((option) => ({ option, correct: true, group }))
 	);
-	const gridPoll = {
-		...validPoll,
-		answerType: "grid" as const,
-		groupLabels: ["Array methods", "Box model", "Git actions"],
-	};
+	const pairsPoll = { ...validPoll, answerType: "pairs" as const };
 
-	it("accepts three named groups of four tiles", () => {
+	it("accepts four pairs of two tiles", () => {
 		const result = createPollWithOptionsSchema.parse({
-			poll: gridPoll,
-			options: gridOptions,
+			poll: pairsPoll,
+			options: pairsOptions,
 		});
 
-		expect(result.poll.groupLabels).toHaveLength(3);
-		expect(result.options.map((option) => option.group)).toContain(2);
+		expect(result.options.map((option) => option.group)).toContain(3);
 	});
 
-	it("rejects a group with five tiles and another with three", () => {
+	it("rejects a pair with three tiles and another with one", () => {
 		expect(() =>
 			createPollWithOptionsSchema.parse({
-				poll: gridPoll,
-				options: gridOptions.map((option, index) =>
+				poll: pairsPoll,
+				options: pairsOptions.map((option, index) =>
 					index === 0 ? { ...option, group: 1 } : option
 				),
 			})
-		).toThrow("A grid needs three named groups of four tiles");
+		).toThrow("A pairs poll needs four pairs of two tiles");
 	});
 
-	it("rejects a grid whose group has no name", () => {
+	it("rejects a pairs poll short of a pair", () => {
 		expect(() =>
 			updatePollSchema.parse({
 				id: 1,
-				poll: { ...gridPoll, groupLabels: ["Array methods", " ", "Git"] },
-				options: gridOptions,
+				poll: pairsPoll,
+				options: pairsOptions.slice(0, 6),
 			})
-		).toThrow("A grid needs three named groups of four tiles");
+		).toThrow("A pairs poll needs four pairs of two tiles");
 	});
 });
 

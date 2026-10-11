@@ -26,10 +26,13 @@ import {
 } from "~/modules/run/gate/domain/audit.model";
 import { approvedPollOf } from "~/modules/run/run/domain/approval.model";
 import {
-	gridGroupsOf,
-	lockFinishesGrid,
-	lockInGroup,
-} from "~/modules/run/run/domain/gridPoll.model";
+	answeredPairsOf,
+	matchPair,
+	NO_PAIRS_RESOLVED,
+	type PairsProgress,
+	pairsFinished,
+	pairsProgressAfter,
+} from "~/modules/run/run/domain/pairPoll.model";
 import { strictSettlementFor } from "~/modules/run/run/domain/strict.model";
 import {
 	faucetRemainingKb,
@@ -81,7 +84,7 @@ export const creditedAnswerTypeFor = (
 	state: RunState,
 	graded: Pick<RunPoll, "answerType">
 ): AnswerType =>
-	graded.answerType !== "grid" && auditsHideAnswerType(auditsOf(state))
+	graded.answerType !== "pairs" && auditsHideAnswerType(auditsOf(state))
 		? "single"
 		: graded.answerType;
 
@@ -226,8 +229,8 @@ const answeredPollFrom = (
 	options: poll.options.map((option) => option.label),
 	optionExplanations: optionExplanationsUnless(poll, grade.graded),
 	answerType: grade.graded.answerType,
-	...(poll.answerType === "grid"
-		? { groups: gridGroupsOf(poll, optionIds) }
+	...(poll.answerType === "pairs"
+		? { pairs: answeredPairsOf(poll, optionIds) }
 		: {}),
 	gate,
 	coverageEarned: ledger.earnedCoverage,
@@ -345,51 +348,47 @@ export const answer = (
 	if (optionIds.length === 0) return state;
 	if (gateWindowComplete(state)) return state;
 	const poll = state.polls[state.currentIndex];
-	if (!poll || poll.answerType === "grid") return state;
+	if (!poll || poll.answerType === "pairs") return state;
 
 	return answerPoll(state, poll, optionIds, elapsedMs);
 };
 
-type GridLockResult =
+type PairMatchResult =
 	| { readonly kind: "refused" }
-	| { readonly kind: "open"; readonly locked: readonly string[] }
+	| { readonly kind: "open"; readonly progress: PairsProgress }
 	| {
 			readonly kind: "finished";
 			readonly poll: RunPoll;
 			readonly picks: readonly string[];
 	  };
 
-export const gridLockOf = (
+export const pairMatchOf = (
 	state: RunState,
 	optionIds: readonly string[]
-): GridLockResult => {
+): PairMatchResult => {
 	const poll = state.polls[state.currentIndex];
-	if (gateWindowComplete(state) || poll?.answerType !== "grid")
+	if (gateWindowComplete(state) || poll?.answerType !== "pairs")
 		return { kind: "refused" };
 
-	const locked = state.gridLocked ?? [];
-	const lock = lockInGroup(poll, locked, optionIds);
-	if (lock === undefined) return { kind: "refused" };
+	const progress = state.pairsResolved ?? NO_PAIRS_RESOLVED;
+	const match = matchPair(poll, progress, optionIds);
+	if (match === undefined) return { kind: "refused" };
 
-	const picks = [...locked, ...optionIds];
-	if (!lockFinishesGrid(locked, lock)) return { kind: "open", locked: picks };
-
-	return {
-		kind: "finished",
-		poll,
-		picks:
-			lock.kind === "solved" ? poll.options.map((option) => option.id) : picks,
-	};
+	const next = pairsProgressAfter(progress, match, optionIds);
+	return pairsFinished(next)
+		? { kind: "finished", poll, picks: next.matched }
+		: { kind: "open", progress: next };
 };
 
-export const lockGroup = (
+export const matchTiles = (
 	state: RunState,
 	optionIds: readonly string[],
 	elapsedMs?: number
 ): RunState => {
-	const result = gridLockOf(state, optionIds);
+	const result = pairMatchOf(state, optionIds);
 	if (result.kind === "refused") return state;
-	if (result.kind === "open") return { ...state, gridLocked: result.locked };
+	if (result.kind === "open")
+		return { ...state, pairsResolved: result.progress };
 	return answerPoll(state, result.poll, result.picks, elapsedMs);
 };
 
@@ -466,7 +465,7 @@ const applySkip = (
 };
 
 const advancedPast = (counted: RunState, before: RunState): RunState => {
-	const unlocked: RunState = { ...counted, gridLocked: undefined };
+	const unlocked: RunState = { ...counted, pairsResolved: undefined };
 	return gateWindowComplete(unlocked)
 		? unlocked
 		: {

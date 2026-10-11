@@ -9,9 +9,9 @@ import {
 import type { Config } from "~/modules/run/config/domain/config.model";
 import { CONFIGS } from "~/modules/run/config/domain/configRoster.model";
 import {
-	answeredGridFor,
-	canPickTile,
-	dealtTilesFor,
+	answeredPairsFor,
+	answerOnPickOf,
+	pickedAfter,
 	readyToSubmit,
 	buildCountsOf,
 	coverageLeadFor,
@@ -41,6 +41,7 @@ import {
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import { createRun, type RunState } from "~/modules/run/run/domain/run.model";
+import { pairsPoll } from "~/modules/run/run/domain/run.factory";
 import { runReducer } from "~/modules/run/run/domain/runAction.model";
 import type {
 	AnsweredPoll,
@@ -158,6 +159,18 @@ describe("pollPressesOf", () => {
 
 		expect(press.ready).toBe(false);
 		expect(press.refusal).toBe("one wrong left");
+	});
+
+	it("refuses the lint on a pairs poll as having nothing to act on", () => {
+		const state = runWith([CONFIGS.linter], JS_GATE);
+		const onPairs = {
+			...state,
+			polls: [pairsPoll("pewter"), ...state.polls.slice(1)],
+		};
+		const [press] = pollPressesOf(toRunView(onPairs));
+
+		expect(press.ready).toBe(false);
+		expect(press.refusal).toBe("nothing to act on");
 	});
 
 	it("prices the lint off the gate's own ladder", () => {
@@ -1090,57 +1103,66 @@ describe("the poll clock states what the time is worth (ADR-169)", () => {
 	});
 });
 
-describe("a dependency grid on the poll screen", () => {
-	const submit = () => undefined;
+describe("a matching pairs poll on the poll screen", () => {
+	const tileOf = (label: string) => ({
+		id: label,
+		label,
+		state: "open" as const,
+	});
+	const poll = {
+		answerType: "pairs" as const,
+		pairs: {
+			left: ["div + div", "div > div"].map(tileOf),
+			right: ["the next sibling", "a direct child"].map(tileOf),
+		},
+	};
 
-	it("holds the lock until four tiles are picked, and says how many are", () => {
-		expect(pollCommitFor("grid", 3, submit).lock).toEqual({
-			label: "Lock in",
-			note: "3 of 4 picked",
+	it("shows no lock-in press, since the second tile answers", () => {
+		expect(pollCommitFor("pairs", 1, () => undefined)).toEqual({});
+	});
+
+	it("swaps a pick on the same side instead of adding a second one", () => {
+		expect(pickedAfter(poll, ["div + div"], "div > div")).toEqual([
+			"div > div",
+		]);
+	});
+
+	it("drops a picked tile tapped again", () => {
+		expect(pickedAfter(poll, ["div + div"], "div + div")).toEqual([]);
+	});
+
+	it("answers once a tile on each side is picked, in either order", () => {
+		expect(answerOnPickOf(poll, ["a direct child"], "div + div")).toEqual([
+			"a direct child",
+			"div + div",
+		]);
+		expect(answerOnPickOf(poll, [], "div + div")).toBeUndefined();
+	});
+
+	it("lets Enter answer only with a tile picked on each side", () => {
+		expect(readyToSubmit("pairs", 1)).toBe(false);
+		expect(readyToSubmit("pairs", 2)).toBe(true);
+	});
+
+	it("keeps toggling picks on a multiple answer poll", () => {
+		expect(pickedAfter(undefined, ["a"], "b")).toEqual(["a", "b"]);
+	});
+
+	it("lays every pair out row by row after the poll, matched or missed", () => {
+		expect(
+			answeredPairsFor([
+				{ left: "div + div", right: "the next sibling", matched: true },
+				{ left: "div ~ div", right: "any later sibling", matched: false },
+			])
+		).toEqual({
+			left: [
+				{ id: "left-0", label: "div + div", state: "matched" },
+				{ id: "left-1", label: "div ~ div", state: "missed" },
+			],
+			right: [
+				{ id: "right-0", label: "the next sibling", state: "matched" },
+				{ id: "right-1", label: "any later sibling", state: "missed" },
+			],
 		});
-		expect(pollCommitFor("grid", 4, submit).lock?.onPress).toBe(submit);
-	});
-
-	it("refuses a fifth tile but lets a picked one be dropped", () => {
-		const four = ["a", "b", "c", "d"];
-
-		expect(canPickTile("grid", four, "e")).toBe(false);
-		expect(canPickTile("grid", four, "a")).toBe(true);
-		expect(canPickTile("multiple", four, "e")).toBe(true);
-	});
-
-	it("lets Enter lock in only a full group of four", () => {
-		expect(readyToSubmit("grid", 3)).toBe(false);
-		expect(readyToSubmit("grid", 4)).toBe(true);
-		expect(readyToSubmit("multiple", 1)).toBe(true);
-	});
-
-	it("deals the server's order until the first shuffle, then a new one each press", () => {
-		const tiles = ["filter", "commit", "find", "margin", "reduce", "padding"];
-		const first = dealtTilesFor("jigsaw", tiles, 1);
-
-		expect(dealtTilesFor("jigsaw", tiles, 0)).toEqual(tiles);
-		expect([...first].sort()).toEqual([...tiles].sort());
-		expect(dealtTilesFor("jigsaw", tiles, 2)).not.toEqual(first);
-	});
-
-	it("reveals every group after the grid, marking the ones never locked in", () => {
-		const grid = answeredGridFor([
-			{
-				label: "Box model",
-				tiles: [{ id: "1", label: "margin" }],
-				solved: true,
-			},
-			{
-				label: "Git actions",
-				tiles: [{ id: "2", label: "rebase" }],
-				solved: false,
-			},
-		]);
-
-		expect(grid.groups).toEqual([
-			{ label: "Box model", tiles: ["margin"], verdict: "right" },
-			{ label: "Git actions", tiles: ["rebase"], verdict: "wrong" },
-		]);
 	});
 });

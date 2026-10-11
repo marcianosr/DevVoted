@@ -32,7 +32,6 @@ const FORM: PollFormData = {
 		categoryCode: "js",
 		codeSandboxExample: null,
 		explanation: null,
-		groupLabels: null,
 	},
 	options: [
 		{ option: "Pewter City", correct: true, explanation: null },

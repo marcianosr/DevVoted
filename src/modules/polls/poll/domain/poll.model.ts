@@ -11,7 +11,6 @@ export type Poll = {
 	question: string;
 	status: PollStatus;
 	answerType: AnswerType;
-	groupLabels: string[] | null;
 	openingTime: Date;
 	closingTime: Date;
 	createdBy: string;

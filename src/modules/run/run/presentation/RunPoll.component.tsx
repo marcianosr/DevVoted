@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RunAction } from "~/modules/run/run/domain/runAction.model";
 import {
 	answeredAPoll,
-	canPickTile,
+	pickedAfter,
 	type PressAction,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { PollView } from "~/modules/run/run/presentation/PollView.component";
@@ -28,7 +28,6 @@ export const RunPoll = () => {
 	const { send, sendWith, sendCrowdPickWith, commit, busy } = useRunActions();
 
 	const [selected, setSelected] = useState<readonly string[]>([]);
-	const [shuffles, setShuffles] = useState(0);
 	const [reveal, setReveal] = useState<RunActionSuccess | null>(null);
 	const [approveRefusal, setApproveRefusal] = useState<string>();
 	const unread = useRef<RunActionSuccess | null>(null);
@@ -51,25 +50,24 @@ export const RunPoll = () => {
 	);
 	useEffect(() => {
 		setSelected([]);
-		setShuffles(0);
 		setApproveRefusal(undefined);
 	}, [view?.poll?.id]);
 
 	if (!view?.poll) return null;
 
-	const onGrid = view.poll.answerType === "grid";
+	const onPairs = view.poll.answerType === "pairs";
 
 	const submit = (optionIds: readonly string[]) => {
 		if (busy || reveal || optionIds.length === 0) return;
 		sendWith(
 			{
-				type: onGrid ? "lock-group" : "answer",
+				type: onPairs ? "match-pair" : "answer",
 				optionIds: [...optionIds],
 				elapsedMs: Math.min(clock.elapsedMs(), MAX_ELAPSED_MS),
 			},
 			(result) => {
 				if (!result.success) return;
-				if (!onGrid || answeredAPoll(view, result.data)) return stage(result);
+				if (!onPairs || answeredAPoll(view, result.data)) return stage(result);
 				commit(result);
 				setSelected([]);
 			}
@@ -95,13 +93,9 @@ export const RunPoll = () => {
 	const onSelect = (optionId: string) => {
 		if (reveal) return;
 
-		setSelected((current) => {
-			if (!canPickTile(view.poll?.answerType, current, optionId))
-				return current;
-			return current.includes(optionId)
-				? current.filter((id) => id !== optionId)
-				: [...current, optionId];
-		});
+		setSelected((current) =>
+			pickedAfter(view.poll ?? undefined, current, optionId)
+		);
 	};
 
 	return (
@@ -116,8 +110,6 @@ export const RunPoll = () => {
 			onPress={(action, configId) => send(PRESS_ACTIONS[action](configId))}
 			onUnseal={(optionId) => send({ type: "buy-back-option", optionId })}
 			onApprove={approveWithTheRoom}
-			gridShuffles={shuffles}
-			onShuffle={() => setShuffles((count) => count + 1)}
 			approveRefusal={approveRefusal}
 		/>
 	);

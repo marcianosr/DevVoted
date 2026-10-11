@@ -3,9 +3,9 @@ import { z } from "zod";
 import {
 	ANSWER_TYPES,
 	type AnswerType,
-	GRID_GROUP_SIZE,
-	GRID_GROUPS,
-	GRID_TILES,
+	PAIR_SIZE,
+	PAIR_TILES,
+	PAIRS,
 } from "~/shared/lib/answerTypes";
 import {
 	POLL_LIMITS,
@@ -27,7 +27,7 @@ const newPollOptionSchema = z.object({
 		.number()
 		.int()
 		.min(0)
-		.max(GRID_GROUPS - 1)
+		.max(PAIRS - 1)
 		.nullable()
 		.optional(),
 	explanation: z
@@ -59,10 +59,6 @@ const basePollDataSchema = z.object({
 	answerType: z.enum(ANSWER_TYPES),
 	categoryCode: z.string().min(1, "Category is required"),
 	codeBlock: z.string().nullable().optional(),
-	groupLabels: z
-		.array(z.string().max(POLL_LIMITS.answer.max))
-		.nullable()
-		.optional(),
 	codeSandboxExample: CODE_SANDBOX_URL.nullable().optional(),
 	explanation: z
 		.string()
@@ -93,27 +89,22 @@ const hasACorrectOption = {
 	path: ["options"] as const,
 };
 
-type GridShape = {
-	poll: { answerType?: AnswerType; groupLabels?: string[] | null };
+type PairsShape = {
+	poll: { answerType?: AnswerType };
 	options: { group?: number | null }[];
 };
 
-const tilesInGroup = (options: GridShape["options"], group: number): number =>
-	options.filter((option) => option.group === group).length;
+const tilesInPair = (options: PairsShape["options"], pair: number): number =>
+	options.filter((option) => option.group === pair).length;
 
-const hasNamedGroups = (labels: string[] | null | undefined): boolean =>
-	labels?.length === GRID_GROUPS &&
-	labels.every((label) => label.trim() !== "");
-
-const isWellFormedGrid = {
-	check: ({ poll, options }: GridShape) =>
-		poll.answerType !== "grid" ||
-		(hasNamedGroups(poll.groupLabels) &&
-			options.length === GRID_TILES &&
-			Array.from({ length: GRID_GROUPS }, (_, group) => group).every(
-				(group) => tilesInGroup(options, group) === GRID_GROUP_SIZE
+const isWellFormedPairs = {
+	check: ({ poll, options }: PairsShape) =>
+		poll.answerType !== "pairs" ||
+		(options.length === PAIR_TILES &&
+			Array.from({ length: PAIRS }, (_, pair) => pair).every(
+				(pair) => tilesInPair(options, pair) === PAIR_SIZE
 			)),
-	message: "A grid needs three named groups of four tiles",
+	message: "A pairs poll needs four pairs of two tiles",
 	path: ["options"] as const,
 };
 
@@ -126,9 +117,9 @@ export const createPollWithOptionsSchema = z
 		message: hasACorrectOption.message,
 		path: [...hasACorrectOption.path],
 	})
-	.refine(isWellFormedGrid.check, {
-		message: isWellFormedGrid.message,
-		path: [...isWellFormedGrid.path],
+	.refine(isWellFormedPairs.check, {
+		message: isWellFormedPairs.message,
+		path: [...isWellFormedPairs.path],
 	});
 
 export const updatePollSchema = z
@@ -142,9 +133,9 @@ export const updatePollSchema = z
 		message: hasACorrectOption.message,
 		path: [...hasACorrectOption.path],
 	})
-	.refine(isWellFormedGrid.check, {
-		message: isWellFormedGrid.message,
-		path: [...isWellFormedGrid.path],
+	.refine(isWellFormedPairs.check, {
+		message: isWellFormedPairs.message,
+		path: [...isWellFormedPairs.path],
 	});
 
 export type CreatePollWithOptionsInput = z.infer<

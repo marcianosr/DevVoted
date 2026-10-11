@@ -10,7 +10,7 @@ const FLOAT_TOLERANCE = 1e-9;
 const CREDIT_BY_ANSWER_TYPE: Readonly<Record<AnswerType, number>> = {
 	single: SINGLE_CREDIT,
 	multiple: MULTIPLE_CREDIT,
-	grid: MULTIPLE_CREDIT,
+	pairs: MULTIPLE_CREDIT,
 };
 
 export const creditFor = (answerType: AnswerType): number =>

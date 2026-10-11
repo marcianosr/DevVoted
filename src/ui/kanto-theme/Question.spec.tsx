@@ -270,14 +270,14 @@ describe("Question's options with code in them", () => {
 	});
 });
 
-describe("questionFactsOf on a dependency grid", () => {
-	it("counts all twelve tiles, however many are still on the grid", () => {
+describe("questionFactsOf on a matching pairs poll", () => {
+	it("counts the four pairs, however many tiles are still open", () => {
 		expect(
 			questionFactsOf({
-				answerType: "grid",
+				answerType: "pairs",
 				options: [{ id: "map", letter: "A", label: "map" }],
 			})
-		).toBe("12 tiles · dependency grid");
+		).toBe("4 pairs · matching pairs");
 	});
 });
 

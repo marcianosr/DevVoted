@@ -41,6 +41,9 @@ const wrongStillOn = (state: RunState) => {
 	);
 };
 
+const isPairsPoll = (state: RunState): boolean =>
+	state.polls[state.currentIndex]?.answerType === "pairs";
+
 const linterOnDeck = (state: RunState) => {
 	const poll = state.polls[state.currentIndex];
 	return poll === undefined
@@ -79,6 +82,7 @@ const rateLimited = (state: RunState): boolean => {
 export const lintApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !canLint(liveConfigsOf(state), poll.category)) return false;
+	if (isPairsPoll(state)) return false;
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	if (rateLimited(state)) return false;
 	return wrongStillOn(state).length > 1;
@@ -93,6 +97,7 @@ export type PaidRefusal =
 	| "frozen"
 	| "rateLimited"
 	| "lastWrongStanding"
+	| "pairsPoll"
 	| "alreadyPeeked"
 	| "cannotAfford";
 
@@ -101,6 +106,7 @@ export const lintRefusalOf = (state: RunState): PaidRefusal | undefined => {
 	if (!poll) return "otherCategory";
 	if (!canLint(state.build.configs, poll.category)) return "otherCategory";
 	if (!canLint(liveConfigsOf(state), poll.category)) return "offline";
+	if (isPairsPoll(state)) return "pairsPoll";
 	if (auditsFreezeManualEffects(auditsOf(state))) return "frozen";
 	if (rateLimited(state)) return "rateLimited";
 	if (wrongStillOn(state).length <= 1) return "lastWrongStanding";
@@ -112,6 +118,7 @@ export const peekRefusalOf = (state: RunState): PaidRefusal | undefined => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll) return "alreadyPeeked";
 	if (!peekerFor(liveConfigsOf(state))) return "offline";
+	if (isPairsPoll(state)) return "pairsPoll";
 	if (auditsFreezeManualEffects(auditsOf(state))) return "frozen";
 	if (rateLimited(state)) return "rateLimited";
 	if ((state.peekedPollIds ?? []).includes(poll.id)) return "alreadyPeeked";
@@ -135,6 +142,7 @@ export const spendLint = (state: RunState): RunState => {
 export const peekApplies = (state: RunState): boolean => {
 	const poll = state.polls[state.currentIndex];
 	if (!poll || !peekerFor(liveConfigsOf(state))) return false;
+	if (isPairsPoll(state)) return false;
 	if (auditsFreezeManualEffects(auditsOf(state))) return false;
 	if (rateLimited(state)) return false;
 	return !(state.peekedPollIds ?? []).includes(poll.id);

@@ -1,34 +1,31 @@
 import type { CategoryCode } from "~/shared/lib/categories";
 
-export type SeedGroup = {
-	readonly label: string;
-	readonly tiles: readonly string[];
-};
+export type SeedPair = readonly [left: string, right: string];
 
 export type SeedQuestion = {
 	readonly category: CategoryCode;
 	readonly question: string;
 	readonly options: readonly string[];
 	readonly correct: readonly number[];
-	readonly groups?: readonly SeedGroup[];
+	readonly pairs?: readonly SeedPair[];
 	readonly codeBlock?: string;
 	readonly explanation?: string;
 	readonly optionExplanations?: Readonly<Record<number, string>>;
 };
 
-const gridQuestion = (
+const pairsQuestion = (
 	category: CategoryCode,
 	question: string,
-	groups: readonly SeedGroup[],
+	pairs: readonly SeedPair[],
 	explanation: string
 ): SeedQuestion => {
-	const options = groups.flatMap((group) => group.tiles);
+	const options = pairs.flat();
 	return {
 		category,
 		question,
 		options,
 		correct: options.map((_, index) => index),
-		groups,
+		pairs,
 		explanation,
 	};
 };
@@ -1109,38 +1106,94 @@ const VUE_QUESTIONS: readonly SeedQuestion[] = [
 	},
 ];
 
-const GRID_QUESTIONS: readonly SeedQuestion[] = [
-	gridQuestion(
-		"general-frontend",
-		"Twelve tiles, three sets of four — find the dependencies before you install some more!",
+const PAIRS_QUESTIONS: readonly SeedQuestion[] = [
+	pairsQuestion(
+		"css",
+		"Plus, arrow, tilde or a space: match each selector to the elements it will chase!",
 		[
-			{ label: "Array methods", tiles: ["filter", "reduce", "find", "map"] },
-			{
-				label: "Box model",
-				tiles: ["margin", "padding", "content", "border"],
-			},
-			{
-				label: "Git actions",
-				tiles: ["commit", "rebase", "merge", "cherry-pick"],
-			},
+			["div + div", "the very next sibling"],
+			["div > div", "a direct child"],
+			["div ~ div", "any later sibling"],
+			["div div", "any descendant"],
 		],
-		"`filter`, `reduce`, `find` and `map` live on `Array.prototype`; margin, border, padding and content are the four boxes of the CSS box model; the rest are things you do to a Git history."
+		"`+` takes only the sibling right after, `~` takes every sibling after it, `>` stops at direct children and a space reaches any depth."
 	),
-	gridQuestion(
-		"js",
-		"Some are falsy, some resolve, some are hooks you call — sort these twelve before the bundle starts to sprawl!",
+	pairsQuestion(
+		"general-backend",
+		"Four status codes, four reasons why: match each one to the server's reply!",
 		[
-			{ label: "Falsy values", tiles: ["0", "NaN", "null", "''"] },
-			{
-				label: "Promise statics",
-				tiles: ["all", "race", "any", "allSettled"],
-			},
-			{
-				label: "React hooks",
-				tiles: ["useState", "useMemo", "useRef", "useId"],
-			},
+			["201", "Created"],
+			["204", "No Content"],
+			["409", "Conflict"],
+			["429", "Too Many Requests"],
 		],
-		"Four values coerce to `false`; four statics hang off `Promise`; four start with `use` because React calls them hooks."
+		"`201` answers a POST that made something, `204` succeeds with an empty body, `409` clashes with the current state and `429` asks you to slow down."
+	),
+	pairsQuestion(
+		"git",
+		"Four git commands, four jobs to do: match each one before your branch goes askew!",
+		[
+			["git stash", "shelve uncommitted changes"],
+			["git bisect", "binary-search for the bad commit"],
+			["git cherry-pick", "apply one commit from elsewhere"],
+			["git reflog", "list where HEAD has been"],
+		],
+		"`stash` parks your work in progress, `bisect` halves the history until it finds the culprit, `cherry-pick` copies a single commit onto your branch and `reflog` remembers every move of `HEAD`, even after a reset."
+	),
+	pairsQuestion(
+		"js",
+		"Four array methods, four things they return: match each one before your bundle starts to burn!",
+		[
+			["map", "a new array of the same length"],
+			["filter", "a new array, maybe shorter"],
+			["find", "the first match or undefined"],
+			["some", "a boolean"],
+		],
+		"`map` transforms every element, `filter` keeps the ones that pass, `find` stops at the first hit and `some` only answers whether any element passes."
+	),
+	pairsQuestion(
+		"react",
+		"Four hooks from React, four jobs they hook: match each one without a second look!",
+		[
+			["useState", "a value and its setter"],
+			["useRef", "a mutable box that survives renders"],
+			["useMemo", "a cached computed value"],
+			["useEffect", "a side effect after render"],
+		],
+		"`useState` re-renders when you set it, `useRef` changes without re-rendering, `useMemo` recomputes only when its dependencies change and `useEffect` runs after React commits the render."
+	),
+	pairsQuestion(
+		"ts",
+		"Four utility types to transform a T: match each one to what its shape will be!",
+		[
+			["Partial<T>", "every property optional"],
+			["Required<T>", "every property required"],
+			["Readonly<T>", "no property can be reassigned"],
+			["Pick<T, K>", "only the keys in K"],
+		],
+		"`Partial` adds `?` to every key, `Required` removes it, `Readonly` adds `readonly` and `Pick` keeps just the keys you name."
+	),
+	pairsQuestion(
+		"html",
+		"Four semantic tags, each with a role: match them all before your divs take control!",
+		[
+			["<nav>", "a block of navigation links"],
+			["<aside>", "content beside the main flow"],
+			["<figure>", "self-contained media with a caption"],
+			["<time>", "a machine-readable date"],
+		],
+		"`<nav>` marks the main links, `<aside>` holds tangential content, `<figure>` pairs media with a `<figcaption>` and `<time>` carries a `datetime` a machine can read."
+	),
+	pairsQuestion(
+		"python",
+		"Four Python collections, four shapes to hold: match each one before your code gets old!",
+		[
+			["list", "ordered and mutable"],
+			["tuple", "ordered and immutable"],
+			["set", "unordered, no duplicates"],
+			["dict", "keys mapped to values"],
+		],
+		"A `list` can change, a `tuple` cannot, a `set` drops duplicates and keeps no order, and a `dict` looks values up by key."
 	),
 ];
 
@@ -1157,5 +1210,5 @@ export const SEED_QUESTIONS: readonly SeedQuestion[] = [
 	...RUBY_QUESTIONS,
 	...GENERAL_BACKEND_QUESTIONS,
 	...VUE_QUESTIONS,
-	...GRID_QUESTIONS,
+	...PAIRS_QUESTIONS,
 ];

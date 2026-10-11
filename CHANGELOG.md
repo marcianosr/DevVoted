@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
-- **Dependency grids, a new kind of poll.** Twelve tiles hide three groups of four. Pick four tiles and press **Lock in**: if they belong together, the group is named and set aside, and you pick again. Four that don't belong together end the poll like a wrong answer. Solve two groups and the last one locks itself in. Each group you solve pays a third of the poll, and a full grid pays double, like a select-all. The group names stay hidden as **???** unless your build already names answer types. **Shuffle** reorders the tiles whenever you like. Poll authors can pick **grid** when suggesting a poll and write three named groups of four tiles.
+- **Matching pairs, a new kind of poll.** Four pairs sit in two columns: tap a tile, then its match on the other side. A match turns green. A miss turns the tile you started from and its real partner red, and that pair pays nothing; the tile you tapped second stays in play. Once three pairs are settled the last one locks itself, unpaid, so each pair you match pays a third of the poll, and a full set pays double, like a select-all. The linter and a peek have nothing to work on here, so both say **nothing to act on** and charge nothing, and the Linter's card now says it works on **any poll but a pairs poll**. Poll authors can pick **pairs** when suggesting a poll and write four pairs of two tiles.
 
 ## 2.4.2 - 2026-10-10
 ### Fixed

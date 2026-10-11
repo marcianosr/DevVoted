@@ -2,7 +2,12 @@ import type { CategoryCode } from "~/shared/lib/categories";
 import { shuffleSeeded } from "~/shared/lib/seededRandom";
 
 import type { CategorySeat } from "~/modules/run/run/domain/categoryLeader.model";
-import { gridGroupsOf } from "~/modules/run/run/domain/gridPoll.model";
+import {
+	NO_PAIRS_RESOLVED,
+	type PairSide,
+	type PairsProgress,
+	sideOf,
+} from "~/modules/run/run/domain/pairPoll.model";
 import type { PollStats } from "~/modules/run/run/domain/pollStats.model";
 import type {
 	AnswerType,
@@ -12,22 +17,14 @@ import type {
 
 type PollOptionView = { readonly id: string; readonly label: string };
 
-export type SolvedGroupView = {
-	readonly label: string;
-	readonly tiles: readonly string[];
-};
+export type PairTileState = "open" | "matched" | "missed";
 
-export type GridView = {
-	readonly solved: readonly SolvedGroupView[];
-	readonly hints: readonly (string | null)[];
-};
+export type PairTileView = PollOptionView & { readonly state: PairTileState };
 
-export type GridReveal = {
-	readonly locked: readonly string[];
-	readonly namesShown: boolean;
+export type PairsView = {
+	readonly left: readonly PairTileView[];
+	readonly right: readonly PairTileView[];
 };
-
-const NOTHING_LOCKED: GridReveal = { locked: [], namesShown: false };
 
 export type PollView = {
 	readonly id: string;
@@ -37,7 +34,7 @@ export type PollView = {
 	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly PollOptionView[];
-	readonly grid?: GridView;
+	readonly pairs?: PairsView;
 	readonly author?: PollAuthor;
 	readonly stats?: PollStats;
 	readonly categorySeat?: CategorySeat;
@@ -45,49 +42,57 @@ export type PollView = {
 
 export const REDACTED_LABEL = "?????";
 
-const gridViewOf = (poll: RunPoll, reveal: GridReveal): GridView => {
-	const groups = gridGroupsOf(poll, reveal.locked);
-	return {
-		solved: groups
-			.filter((group) => group.solved)
-			.map((group) => ({
-				label: group.label,
-				tiles: group.tiles.map((tile) => tile.label),
-			})),
-		hints: groups
-			.filter((group) => !group.solved)
-			.map((group) => (reveal.namesShown ? group.label : null)),
-	};
+const tileStateOf = (
+	option: RunPoll["options"][number],
+	progress: PairsProgress
+): PairTileState => {
+	if (progress.matched.includes(option.id)) return "matched";
+	return option.group !== undefined && progress.missed.includes(option.group)
+		? "missed"
+		: "open";
 };
 
-const dealtTilesOf = (
+const columnOf = (
 	poll: RunPoll,
-	locked: readonly string[]
-): readonly PollOptionView[] =>
+	side: PairSide,
+	progress: PairsProgress
+): readonly PairTileView[] =>
 	shuffleSeeded(
-		poll.options.filter((option) => !locked.includes(option.id)),
-		`grid-${poll.id}`
-	).map(({ id, label }) => ({ id, label }));
+		poll.options.filter((option) => sideOf(poll, option.id) === side),
+		`pairs-${side}-${poll.id}`
+	).map((option) => ({
+		id: option.id,
+		label: option.label,
+		state: tileStateOf(option, progress),
+	}));
 
-const redactGrid = (poll: RunPoll, reveal: GridReveal): PollView => ({
-	id: poll.id,
-	category: poll.category,
-	question: poll.question,
-	codeBlock: poll.codeBlock,
-	codeSandboxUrl: poll.codeSandboxUrl,
-	answerType: poll.answerType,
-	author: poll.author,
-	options: dealtTilesOf(poll, reveal.locked),
-	grid: gridViewOf(poll, reveal),
-});
+const redactPairs = (poll: RunPoll, progress: PairsProgress): PollView => {
+	const pairs = {
+		left: columnOf(poll, "left", progress),
+		right: columnOf(poll, "right", progress),
+	};
+	return {
+		id: poll.id,
+		category: poll.category,
+		question: poll.question,
+		codeBlock: poll.codeBlock,
+		codeSandboxUrl: poll.codeSandboxUrl,
+		answerType: poll.answerType,
+		author: poll.author,
+		options: [...pairs.left, ...pairs.right]
+			.filter((tile) => tile.state === "open")
+			.map(({ id, label }) => ({ id, label })),
+		pairs,
+	};
+};
 
 export const redactPoll = (
 	poll: RunPoll,
 	hiddenOptionIds: readonly string[] = [],
 	answerTypeHidden = false,
-	gridReveal: GridReveal = NOTHING_LOCKED
+	pairsResolved: PairsProgress = NO_PAIRS_RESOLVED
 ): PollView => {
-	if (poll.answerType === "grid") return redactGrid(poll, gridReveal);
+	if (poll.answerType === "pairs") return redactPairs(poll, pairsResolved);
 	return {
 		id: poll.id,
 		category: poll.category,

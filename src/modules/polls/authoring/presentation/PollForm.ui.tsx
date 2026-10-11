@@ -1,6 +1,6 @@
 import type {
 	AnswerRow,
-	GridGroupRow,
+	PairRow,
 	PollFormMode,
 	PollFormState,
 	PollFormSteps,
@@ -50,8 +50,8 @@ const COPY = {
 	answerType: "Answer type",
 	oneRight: "one right",
 	severalRight: "several right",
-	grid: "grid",
-	groupName: (group: number) => `group ${group + 1} name`,
+	pairs: "pairs",
+	pair: (pair: number) => `pair ${pair + 1}`,
 	tile: (letter: string) => `tile ${letter}`,
 	answer: (index: number) => `answer ${index + 1}`,
 	markRightHint: (letter: string) => `mark ${letter} right`,
@@ -110,7 +110,7 @@ const EXPLANATION =
 const ANSWER_TYPES: readonly SegmentedItem<AnswerType>[] = [
 	{ value: "single", label: COPY.oneRight },
 	{ value: "multiple", label: COPY.severalRight },
-	{ value: "grid", label: COPY.grid },
+	{ value: "pairs", label: COPY.pairs },
 ];
 
 const titleOf = (mode: PollFormMode, pollNumber: number | undefined) =>
@@ -284,25 +284,17 @@ const PollPreview = ({
 	</Panel>
 );
 
-type GridGroupProps = {
-	group: GridGroupRow;
-	onLabel: (group: number, label: string) => void;
+type PairEditorProps = {
+	row: PairRow;
 	onTile: (key: number, text: string) => void;
 };
 
-const GridGroup = ({ group, onLabel, onTile }: GridGroupProps) => (
-	<div className={GROUP}>
-		<TextField
-			label={COPY.groupName(group.group)}
-			placeholder={group.placeholder}
-			value={group.label}
-			maxLength={POLL_LIMITS.answer.max}
-			onChange={(label) => onLabel(group.group, label)}
-		/>
+const PairEditor = ({ row, onTile }: PairEditorProps) => (
+	<div role="group" aria-label={COPY.pair(row.pair)} className={GROUP}>
 		<div className={TILES}>
-			{group.tiles.map((tile) => (
+			{[row.left, row.right].map((tile) => (
 				<span key={tile.key} className={TILE}>
-					<Keycap letter={tile.letter} answerType="grid" />
+					<Keycap letter={tile.letter} answerType="pairs" />
 					<span className={ANSWER_TEXT}>
 						<TextField
 							label={COPY.tile(tile.letter)}
@@ -370,7 +362,7 @@ export type PollFormProps = {
 	state: PollFormState;
 	view: PollFormView;
 	rows: readonly AnswerRow[];
-	groups?: readonly GridGroupRow[];
+	pairs?: readonly PairRow[];
 	questionCount: string;
 	steps: PollFormSteps;
 	preview: QuestionProps;
@@ -393,7 +385,6 @@ export type PollFormProps = {
 	onLockIn?: () => void;
 	onAnswerType: (answerType: AnswerType) => void;
 	onAnswerChange: (key: number, text: string) => void;
-	onGroupLabel: (group: number, label: string) => void;
 	onAnswerExplanationChange: (key: number, text: string) => void;
 	onMarkRight: (key: number) => void;
 	onAddAnswer?: () => void;
@@ -412,7 +403,7 @@ export const PollForm = ({
 	state,
 	view,
 	rows,
-	groups,
+	pairs,
 	questionCount,
 	steps,
 	preview,
@@ -435,7 +426,6 @@ export const PollForm = ({
 	onLockIn,
 	onAnswerType,
 	onAnswerChange,
-	onGroupLabel,
 	onAnswerExplanationChange,
 	onMarkRight,
 	onAddAnswer,
@@ -510,7 +500,7 @@ export const PollForm = ({
 						}
 					/>
 					<Panel.Body>
-						{groups === undefined ? (
+						{pairs === undefined ? (
 							<AnswerList
 								state={state}
 								rows={rows}
@@ -522,11 +512,10 @@ export const PollForm = ({
 							/>
 						) : (
 							<div className={ROWS}>
-								{groups.map((group) => (
-									<GridGroup
-										key={group.group}
-										group={group}
-										onLabel={onGroupLabel}
+								{pairs.map((row) => (
+									<PairEditor
+										key={row.pair}
+										row={row}
 										onTile={onAnswerChange}
 									/>
 								))}

@@ -5,9 +5,9 @@ import type {
 import type { AnswerType } from "~/shared/lib/answerTypes";
 import type { CategoryCode } from "~/shared/lib/categories";
 import {
-	type GridGroup,
-	gridShareOf,
-} from "~/modules/run/run/domain/gridPoll.model";
+	type AnsweredPair,
+	pairShareOf,
+} from "~/modules/run/run/domain/pairPoll.model";
 import {
 	partialShareFor,
 	SLICE_WINDOW,
@@ -43,7 +43,6 @@ export type RunPoll = {
 	readonly codeSandboxUrl?: string;
 	readonly answerType: AnswerType;
 	readonly options: readonly RunOption[];
-	readonly groupLabels?: readonly string[];
 	readonly explanation?: string;
 	readonly author?: PollAuthor;
 	readonly missedBefore?: boolean;
@@ -88,11 +87,11 @@ export type GradedOutcome = "correct" | "partial" | "wrong";
 
 export type AnswerOutcome = GradedOutcome | "skipped";
 
-const gridOutcomeOf = <Id>(
+const pairsOutcomeOf = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): GradedOutcome => {
-	const share = gridShareOf(poll, optionIds);
+	const share = pairShareOf(poll, optionIds);
 	if (share === FULL_SHARE) return "correct";
 	return share > NO_SHARE ? "partial" : "wrong";
 };
@@ -101,7 +100,7 @@ export const coverageShare = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): number => {
-	if (poll.answerType === "grid") return gridShareOf(poll, optionIds);
+	if (poll.answerType === "pairs") return pairShareOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return FULL_SHARE;
 	if (poll.answerType === "single" || grade.keySize === 0) return NO_SHARE;
@@ -114,7 +113,7 @@ export const answerOutcome = <Id>(
 	poll: GradedPoll<Id>,
 	optionIds: Iterable<Id>
 ): GradedOutcome => {
-	if (poll.answerType === "grid") return gridOutcomeOf(poll, optionIds);
+	if (poll.answerType === "pairs") return pairsOutcomeOf(poll, optionIds);
 	const grade = gradeOf(poll, new Set(optionIds));
 	if (grade.exact) return "correct";
 	if (poll.answerType === "single") return "wrong";
@@ -169,7 +168,7 @@ export type AnsweredPoll = {
 	readonly options?: readonly string[];
 	readonly optionExplanations?: Readonly<Record<string, string>>;
 	readonly answerType?: AnswerType;
-	readonly groups?: readonly GridGroup[];
+	readonly pairs?: readonly AnsweredPair[];
 	readonly gate?: number;
 	readonly coverageEarned?: number;
 	readonly coverageLost?: number;

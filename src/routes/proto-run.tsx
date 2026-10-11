@@ -48,7 +48,7 @@ import { ShopView } from "~/modules/run/shop/presentation/ShopView.component";
 import { toRunView } from "~/modules/run/run/application/runView.viewmodel";
 import {
 	answeredAPoll,
-	canPickTile,
+	pickedAfter,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
@@ -180,60 +180,50 @@ const BASE_POLLS: RunPoll[] = [
 	]),
 ];
 
-type GridSeed = { readonly label: string; readonly tiles: readonly string[] };
+type PairSeed = readonly [left: string, right: string];
 
-const grid = (
+const pairs = (
 	id: string,
 	category: CategoryCode,
 	question: string,
-	groups: readonly GridSeed[]
+	seeds: readonly PairSeed[]
 ): RunPoll => ({
 	id,
 	category,
 	question,
-	answerType: "grid",
-	groupLabels: groups.map(({ label }) => label),
-	options: groups.flatMap(({ tiles }, group) =>
-		tiles.map((label, index) => ({
-			id: `${id}-${group}-${index}`,
+	answerType: "pairs",
+	options: seeds.flatMap((seed, pair) =>
+		seed.map((label, side) => ({
+			id: `${id}-${pair}-${side}`,
 			label,
 			correct: true,
-			group,
+			group: pair,
 		}))
 	),
 });
 
-const GRID_POLLS: RunPoll[] = [
-	grid(
-		"grid1",
-		"general-frontend",
-		"Twelve tiles, three groups of four. Lock in a group.",
-		[
-			{ label: "Array methods", tiles: ["filter", "reduce", "find", "map"] },
-			{ label: "Box model", tiles: ["margin", "padding", "content", "border"] },
-			{
-				label: "Git commands",
-				tiles: ["commit", "rebase", "merge", "cherry-pick"],
-			},
-		]
-	),
-	grid("grid2", "js", "Which four belong together?", [
-		{ label: "Falsy values", tiles: ["0", '""', "null", "NaN"] },
-		{ label: "Promise statics", tiles: ["all", "race", "any", "allSettled"] },
-		{
-			label: "Typed arrays",
-			tiles: ["Int8Array", "Uint8Array", "Float32Array", "BigInt64Array"],
-		},
+const PAIRS_POLLS: RunPoll[] = [
+	pairs("pairs1", "css", "Match each selector to what it selects.", [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
+	]),
+	pairs("pairs2", "general-backend", "Match each status code to its meaning.", [
+		["201", "Created"],
+		["204", "No Content"],
+		["409", "Conflict"],
+		["429", "Too Many Requests"],
 	]),
 ];
 
-const GRID_GATES = 3;
+const PAIRS_GATES = 3;
 
-const isGridSeat = (index: number): boolean =>
-	index % SLICE_WINDOW === 0 && index < GRID_GATES * SLICE_WINDOW;
+const isPairsSeat = (index: number): boolean =>
+	index % SLICE_WINDOW === 0 && index < PAIRS_GATES * SLICE_WINDOW;
 
-const gridAt = (index: number): RunPoll =>
-	GRID_POLLS[Math.floor(index / SLICE_WINDOW) % GRID_POLLS.length];
+const pairsAt = (index: number): RunPoll =>
+	PAIRS_POLLS[Math.floor(index / SLICE_WINDOW) % PAIRS_POLLS.length];
 
 type RigOutcome = "right" | "wrong";
 
@@ -252,32 +242,33 @@ const rigOptionIds = (
 
 const POOL_SIZE = VICTORY_GATE * SLICE_WINDOW + SLICE_WINDOW;
 const POOLS: RunPoll[] = Array.from({ length: POOL_SIZE }, (_, i) => {
-	const base = isGridSeat(i) ? gridAt(i) : BASE_POLLS[i % BASE_POLLS.length];
+	const base = isPairsSeat(i) ? pairsAt(i) : BASE_POLLS[i % BASE_POLLS.length];
 	return { ...base, id: `${base.id}-${i}` };
 });
 
-const tilesOfGroup = (poll: RunPoll, group: number): readonly string[] =>
+const tilesOfPair = (poll: RunPoll, pair: number): readonly string[] =>
 	poll.options
-		.filter((option) => option.group === group)
+		.filter((option) => option.group === pair)
 		.map((option) => option.id);
 
-const mixedFourOf = (poll: RunPoll): readonly string[] => [
-	...tilesOfGroup(poll, 0).slice(0, 1),
-	...tilesOfGroup(poll, 1).slice(0, 3),
-];
+const RESOLVED_PAIRS = [0, 1, 2] as const;
 
-const SOLVED_BEFORE_THE_LAST = [0, 1] as const;
+const rigPairOf = (
+	poll: RunPoll,
+	pair: number,
+	outcome: RigOutcome
+): readonly string[] =>
+	outcome === "right"
+		? tilesOfPair(poll, pair)
+		: [tilesOfPair(poll, pair)[0], tilesOfPair(poll, pair + 1)[1]];
 
-const rigActions = (poll: RunPoll, outcome: RigOutcome): RunAction[] => {
-	if (poll.answerType !== "grid")
-		return [{ type: "answer", optionIds: rigOptionIds(poll, outcome) }];
-	if (outcome === "wrong")
-		return [{ type: "lock-group", optionIds: mixedFourOf(poll) }];
-	return SOLVED_BEFORE_THE_LAST.map((group) => ({
-		type: "lock-group",
-		optionIds: tilesOfGroup(poll, group),
-	}));
-};
+const rigActions = (poll: RunPoll, outcome: RigOutcome): RunAction[] =>
+	poll.answerType === "pairs"
+		? RESOLVED_PAIRS.map((pair) => ({
+				type: "match-pair",
+				optionIds: rigPairOf(poll, pair, outcome),
+			}))
+		: [{ type: "answer", optionIds: rigOptionIds(poll, outcome) }];
 
 const reduceAll = (state: RunState, actions: readonly RunAction[]): RunState =>
 	actions.reduce(runReducer, state);
@@ -682,10 +673,8 @@ const RunGame = ({
 	const dispatch = (action: RunAction) =>
 		setState((current) => runReducer(current, action));
 	const [selected, setSelected] = useState<readonly string[]>([]);
-	const [shuffles, setShuffles] = useState(0);
 	useEffect(() => {
 		setSelected([]);
-		setShuffles(0);
 	}, [state.currentIndex]);
 	const [pinned, setPinned] = useState(false);
 	const [rewardStep, setRewardStep] = useState<RewardStep>("summary");
@@ -731,10 +720,10 @@ const RunGame = ({
 		setSelected([]);
 	};
 	const answer = (optionIds: readonly string[]) => {
-		const onGrid = view.poll?.answerType === "grid";
+		const onPairs = view.poll?.answerType === "pairs";
 		settle(
 			runReducer(state, {
-				type: onGrid ? "lock-group" : "answer",
+				type: onPairs ? "match-pair" : "answer",
 				optionIds,
 				elapsedMs: pollClock.elapsedMs(),
 			})
@@ -757,11 +746,7 @@ const RunGame = ({
 		});
 	const onSelect = (optionId: string) =>
 		setSelected((current) =>
-			!canPickTile(view.poll?.answerType, current, optionId)
-				? current
-				: current.includes(optionId)
-					? current.filter((id) => id !== optionId)
-					: [...current, optionId]
+			pickedAfter(view.poll ?? undefined, current, optionId)
 		);
 	const payPeel = (configIds: readonly string[], fromStorage: boolean) => {
 		setRewardStep("shop");
@@ -827,8 +812,6 @@ const RunGame = ({
 					onUnseal={(optionId) =>
 						dispatch({ type: "buy-back-option", optionId })
 					}
-					gridShuffles={shuffles}
-					onShuffle={() => setShuffles((count) => count + 1)}
 				/>
 			)}
 

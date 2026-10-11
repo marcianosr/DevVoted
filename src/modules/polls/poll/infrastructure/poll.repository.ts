@@ -21,7 +21,6 @@ export const toPoll = (record: PollRecord): Poll => ({
 	question: record.question,
 	status: record.status,
 	answerType: record.answer_type,
-	groupLabels: record.group_labels,
 	openingTime: record.opening_time,
 	closingTime: record.closing_time,
 	createdBy: record.created_by,
@@ -65,7 +64,8 @@ export const fetchPollByIdWithOptions = async (
 	const records = await db
 		.select()
 		.from(pollOptionsTable)
-		.where(eq(pollOptionsTable.poll_id, id));
+		.where(eq(pollOptionsTable.poll_id, id))
+		.orderBy(asc(pollOptionsTable.id));
 
 	return { poll, options: records.map(toPollOption) };
 };

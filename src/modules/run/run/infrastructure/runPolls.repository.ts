@@ -113,7 +113,6 @@ const ENGINE_POLL_COLUMNS = {
 	codeBlock: pollsTable.code_block,
 	codeSandboxUrl: pollsTable.code_sandbox_example,
 	answerType: pollsTable.answer_type,
-	groupLabels: pollsTable.group_labels,
 	categoryCode: pollsTable.category_code,
 	explanation: pollsTable.explanation,
 	authorId: usersTable.id,
@@ -131,7 +130,6 @@ type EnginePollRow = {
 	codeBlock: string | null;
 	codeSandboxUrl: string | null;
 	answerType: RunPoll["answerType"];
-	groupLabels: string[] | null;
 	categoryCode: string;
 	explanation: string | null;
 	authorId: string | null;
@@ -182,7 +180,8 @@ const withOptions = async (
 				pollOptionsTable.poll_id,
 				pollRows.map((row) => row.id)
 			)
-		);
+		)
+		.orderBy(asc(pollOptionsTable.id));
 
 	return pollRows.map((poll) => ({
 		id: String(poll.id),
@@ -191,7 +190,6 @@ const withOptions = async (
 		codeBlock: poll.codeBlock ?? undefined,
 		codeSandboxUrl: poll.codeSandboxUrl ?? undefined,
 		answerType: poll.answerType,
-		...(poll.groupLabels === null ? {} : { groupLabels: poll.groupLabels }),
 		explanation: poll.explanation ?? undefined,
 		author: authorOf(poll),
 		options: optionRows

@@ -32,19 +32,19 @@ export const poll = (
 	],
 });
 
-export const GRID_GROUP_TILES = [
-	["filter", "reduce", "find", "map"],
-	["margin", "padding", "content", "border"],
-	["commit", "rebase", "merge", "cherry-pick"],
+export const PAIR_TILES = [
+	["div + div", "the next sibling"],
+	["div > div", "a direct child"],
+	["div ~ div", "any later sibling"],
+	["div div", "any descendant"],
 ] as const;
 
-export const gridPoll = (id: string): RunPoll => ({
+export const pairsPoll = (id: string): RunPoll => ({
 	id,
-	category: "general-frontend",
-	question: "Find the three dependencies",
-	answerType: "grid",
-	groupLabels: ["Array methods", "Box model", "Git actions"],
-	options: GRID_GROUP_TILES.flatMap((tiles, group) =>
+	category: "css",
+	question: "Match each selector to what it selects",
+	answerType: "pairs",
+	options: PAIR_TILES.flatMap((tiles, group) =>
 		tiles.map((tile) => ({
 			id: `${id}-${tile}`,
 			label: tile,
@@ -54,8 +54,8 @@ export const gridPoll = (id: string): RunPoll => ({
 	),
 });
 
-export const gridTiles = (id: string, group: number): string[] =>
-	GRID_GROUP_TILES[group].map((tile) => `${id}-${tile}`);
+export const pairTiles = (id: string, pair: number): string[] =>
+	PAIR_TILES[pair].map((tile) => `${id}-${tile}`);
 
 export const pool = (size: number): RunPoll[] =>
 	Array.from({ length: size }, (_, index) => poll(`kazooie-${index}`, true));

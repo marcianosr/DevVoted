@@ -8,7 +8,7 @@ import {
 	STATUS_CHOICES,
 	UNPLAYED,
 	answerRowsOf,
-	gridGroupRowsOf,
+	pairRowsOf,
 	pickInPreview,
 	previewCategoryOf,
 	previewOf,
@@ -60,7 +60,6 @@ const propsFor = (state: PollFormState): PollFormProps => ({
 	onPreviewPick: vi.fn(),
 	onAnswerType: vi.fn(),
 	onAnswerChange: vi.fn(),
-	onGroupLabel: vi.fn(),
 	onAnswerExplanationChange: vi.fn(),
 	onMarkRight: vi.fn(),
 	onAddAnswer: vi.fn(),
@@ -419,37 +418,35 @@ describe("PollForm", () => {
 	});
 });
 
-describe("PollForm on a dependency grid", () => {
-	const grid = withAnswerType(FILLED, "grid");
-	const renderGrid = () =>
+describe("PollForm on a matching pairs poll", () => {
+	const pairs = withAnswerType(FILLED, "pairs");
+	const renderPairs = () =>
 		renderForm({
-			...propsFor(grid),
-			groups: gridGroupRowsOf(grid),
+			...propsFor(pairs),
+			pairs: pairRowsOf(pairs),
 		});
 
-	it("asks for three group names and twelve tiles instead of answers to mark", () => {
-		renderGrid();
+	it("asks for four pairs of two tiles instead of answers to mark", () => {
+		renderPairs();
 
+		expect(screen.getAllByRole("group", { name: /^pair \d$/ })).toHaveLength(4);
 		expect(
-			screen.getAllByRole("textbox", { name: /^group \d name$/ })
-		).toHaveLength(3);
-		expect(
-			screen.getAllByRole("textbox", { name: /^tile [A-L]$/ })
-		).toHaveLength(12);
+			screen.getAllByRole("textbox", { name: /^tile [A-H]$/ })
+		).toHaveLength(8);
 		expect(
 			screen.queryByRole("button", { name: /mark A right/ })
 		).not.toBeInTheDocument();
 	});
 
-	it("names a group as the author types", async () => {
-		const { props } = renderGrid();
+	it("writes a tile as the author types", async () => {
+		const { props } = renderPairs();
 
-		await userEvent.type(
-			screen.getByRole("textbox", { name: "group 2 name" }),
-			"B"
+		await userEvent.type(screen.getByRole("textbox", { name: "tile D" }), "B");
+
+		expect(props.onAnswerChange).toHaveBeenCalledWith(
+			pairs.answers[3].key,
+			expect.stringContaining("B")
 		);
-
-		expect(props.onGroupLabel).toHaveBeenCalledWith(1, "B");
 	});
 });
 

@@ -168,7 +168,6 @@ export const pollsTable = pgTable("polls", {
 	explanation: text("explanation"),
 	status: pollStatus("status").notNull().default("draft"),
 	answer_type: pollAnswerType("answer_type").notNull().default("single"),
-	group_labels: text("group_labels").array(),
 	opening_time: timestamp("opening_time", { withTimezone: true }).notNull(),
 	closing_time: timestamp("closing_time", { withTimezone: true }).notNull(),
 	created_by: uuid("created_by")

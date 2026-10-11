@@ -6,14 +6,14 @@ import {
 	splitCodeSpans,
 	stripCodeFence,
 } from "~/shared/lib/codeSpans";
-import { GRID_TILES } from "~/shared/lib/answerTypes";
+import { PAIRS } from "~/shared/lib/answerTypes";
 import { ANSWER_TYPE_LABEL } from "~/shared/lib/copy";
 
 import { Choice, type ChoiceSeal, type ChoiceState } from "./Choice.ui";
 import { ClimberStack, type ClimberProps } from "./Climber.ui";
 import { CodeBlock } from "./CodeBlock.ui";
 import type { KantoColor } from "./colors";
-import { DependencyGrid, type DependencyGridProps } from "./DependencyGrid.ui";
+import { MatchingPairs, type MatchingPairsProps } from "./MatchingPairs.ui";
 import { Icon } from "./Icon.ui";
 import { Typography } from "./Typography.ui";
 
@@ -64,7 +64,7 @@ const choiceCountOf = ({
 	options,
 	answerType,
 }: Pick<QuestionProps, "options" | "answerType">) =>
-	answerType === "grid" ? `${GRID_TILES} tiles` : `${options.length} options`;
+	answerType === "pairs" ? `${PAIRS} pairs` : `${options.length} options`;
 
 export const questionFactsOf = (
 	question: Pick<QuestionProps, "options" | "answerType">
@@ -100,13 +100,10 @@ export type QuestionProps = {
 	codeBlock?: string;
 	pickedIds?: readonly string[];
 	onPick?: (id: string) => void;
-	grid?: QuestionGrid;
+	pairs?: QuestionPairs;
 };
 
-export type QuestionGrid = Pick<
-	DependencyGridProps,
-	"groups" | "hints" | "onShuffle"
->;
+export type QuestionPairs = Pick<MatchingPairsProps, "left" | "right">;
 
 export const CodeSpans = ({ text }: { text: string }) => (
 	<span className={PROSE}>
@@ -213,14 +210,14 @@ export const Question = ({
 	codeBlock,
 	pickedIds = [],
 	onPick,
-	grid,
+	pairs,
 }: QuestionProps) => (
 	<section className={BLOCK}>
 		<QuestionText question={question} stem={stem} />
 
 		{codeBlock === undefined ? null : <CodeBlock>{codeBlock}</CodeBlock>}
 
-		{grid === undefined ? (
+		{pairs === undefined ? (
 			<Choices
 				answerType={answerType}
 				options={options}
@@ -228,15 +225,7 @@ export const Question = ({
 				onPick={onPick}
 			/>
 		) : (
-			<DependencyGrid
-				{...grid}
-				tiles={options.map((option) => ({
-					id: option.id,
-					label: option.label ?? "",
-				}))}
-				pickedIds={pickedIds}
-				onPick={onPick}
-			/>
+			<MatchingPairs {...pairs} pickedIds={pickedIds} onPick={onPick} />
 		)}
 	</section>
 );

@@ -37,7 +37,7 @@ export const canApprove = (state: RunState): boolean =>
 
 const isApprovableInThisGate = (state: RunState, pollId: string): boolean =>
 	gateSliceOf(state).some(
-		(poll) => poll.id === pollId && poll.answerType !== "grid"
+		(poll) => poll.id === pollId && poll.answerType !== "pairs"
 	);
 
 export const approve = (state: RunState, pollId: string): RunState => {

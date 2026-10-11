@@ -12,8 +12,7 @@ import {
 	canAddAnswer,
 	canRemoveAnswer,
 	changeAnswer,
-	changeGroupLabel,
-	gridGroupRowsOf,
+	pairRowsOf,
 	changeAnswerExplanation,
 	markRight,
 	pollFormStateOf,
@@ -531,115 +530,106 @@ describe("rewardOf", () => {
 	});
 });
 
-describe("authoring a dependency grid", () => {
-	const GROUPS = [
-		["filter", "reduce", "find", "map"],
-		["margin", "padding", "content", "border"],
-		["commit", "rebase", "merge", "cherry-pick"],
+describe("authoring a matching pairs poll", () => {
+	const PAIRS = [
+		["div + div", "the very next sibling"],
+		["div > div", "a direct child"],
+		["div ~ div", "any later sibling"],
+		["div div", "any descendant"],
 	];
-	const LABELS = ["Array methods", "Box model", "Git actions"];
 
-	const gridOf = (state: PollFormState): PollFormState =>
-		withAnswerType(state, "grid");
+	const pairsOf = (state: PollFormState): PollFormState =>
+		withAnswerType(state, "pairs");
 
-	const writtenGrid = (): PollFormState => {
-		const grid = gridOf(filled);
+	const writtenPairs = (): PollFormState => {
+		const pairs = pairsOf(filled);
 		return {
-			...grid,
-			groupLabels: LABELS,
-			answers: grid.answers.map((answer, index) => ({
+			...pairs,
+			answers: pairs.answers.map((answer, index) => ({
 				...answer,
-				text: GROUPS.flat()[index],
+				text: PAIRS.flat()[index],
 			})),
 		};
 	};
 
-	it("deals twelve tiles into three groups of four when the grid is picked", () => {
-		const grid = gridOf(filled);
+	it("deals eight tiles into four pairs when pairs is picked", () => {
+		const pairs = pairsOf(filled);
 
-		expect(grid.answers).toHaveLength(12);
-		expect(gridGroupRowsOf(grid).map((group) => group.tiles.length)).toEqual([
-			4, 4, 4,
-		]);
+		expect(pairs.answers).toHaveLength(8);
+		expect(pairRowsOf(pairs)).toHaveLength(4);
 	});
 
 	it("keeps the answers already written as the first tiles", () => {
-		expect(gridOf(filled).answers[0].text).toBe(quiz.options[0]);
+		expect(pairsOf(filled).answers[0].text).toBe(quiz.options[0]);
 	});
 
-	it("neither adds nor removes a tile on a grid", () => {
-		expect(canAddAnswer(gridOf(filled))).toBe(false);
-		expect(canRemoveAnswer(gridOf(filled))).toBe(false);
+	it("neither adds nor removes a tile on a pairs poll", () => {
+		expect(canAddAnswer(pairsOf(filled))).toBe(false);
+		expect(canRemoveAnswer(pairsOf(filled))).toBe(false);
 	});
 
-	it("names a group", () => {
-		const named = changeGroupLabel(gridOf(filled), 1, "Box model");
+	it("puts each pair's first tile on the left and its second on the right", () => {
+		const row = pairRowsOf(writtenPairs())[1];
 
-		expect(gridGroupRowsOf(named)[1].label).toBe("Box model");
-	});
-
-	it("asks for every group's name before anything else on the grid", () => {
-		expect(refusalOf({ ...writtenGrid(), groupLabels: ["", "", ""] })).toBe(
-			"Name every group"
-		);
+		expect(row.left.text).toBe("div > div");
+		expect(row.right.text).toBe("a direct child");
 	});
 
 	it("asks for every tile's text", () => {
-		const blank = changeAnswer(writtenGrid(), writtenGrid().answers[5].key, "");
+		const blank = changeAnswer(
+			writtenPairs(),
+			writtenPairs().answers[5].key,
+			""
+		);
 
 		expect(refusalOf(blank)).toBe("Fill every tile");
 	});
 
 	it("refuses the same tile twice, whatever its case", () => {
 		const twice = changeAnswer(
-			writtenGrid(),
-			writtenGrid().answers[11].key,
-			"FILTER"
+			writtenPairs(),
+			writtenPairs().answers[7].key,
+			"DIV + DIV"
 		);
 
 		expect(refusalOf(twice)).toBe("Use each tile once");
 	});
 
-	it("refuses a written grid until a category is picked", () => {
-		expect(refusalOf({ ...writtenGrid(), categoryCode: undefined })).toBe(
-			"Pick a category"
-		);
+	it("marks the answers step done once every tile is written", () => {
+		expect(stepsDoneOf(pairsOf(EMPTY_POLL_FORM)).answers).toBe(false);
+		expect(stepsDoneOf(writtenPairs()).answers).toBe(true);
 	});
 
-	it("marks the answers step done once every group and tile is written", () => {
-		expect(stepsDoneOf(gridOf(filled)).answers).toBe(false);
-		expect(stepsDoneOf(writtenGrid()).answers).toBe(true);
+	it("accepts written pairs", () => {
+		expect(refusalOf(writtenPairs())).toBeUndefined();
 	});
 
-	it("accepts a written grid", () => {
-		expect(refusalOf(writtenGrid())).toBeUndefined();
-	});
-
-	it("sends every tile right with its group, and the group names", () => {
-		const data = submissionOf(writtenGrid());
-
-		expect(data?.poll.groupLabels).toEqual(LABELS);
-		expect(data?.options[4]).toEqual({
-			option: "margin",
+	it("sends every tile right with its pair", () => {
+		expect(submissionOf(writtenPairs())?.options[3]).toEqual({
+			option: "a direct child",
 			correct: true,
 			group: 1,
 			explanation: null,
 		});
 	});
 
-	it("drops the groups when the author leaves the grid", () => {
-		const single = withAnswerType(writtenGrid(), "single");
+	it("drops the pairs when the author leaves them", () => {
+		const single = withAnswerType(writtenPairs(), "single");
 
-		const marked = markRight(single, single.answers[0].key);
-
-		expect(submissionOf(marked)?.poll.groupLabels).toBeNull();
 		expect(single.answers.every((answer) => answer.group === undefined)).toBe(
 			true
 		);
 		expect(single.answers.some((answer) => answer.right)).toBe(false);
 	});
 
-	it("previews the grid with its group names showing", () => {
-		expect(previewOf(writtenGrid()).grid?.hints).toEqual(LABELS);
+	it("previews the pairs as two columns", () => {
+		const preview = previewOf(writtenPairs()).pairs;
+
+		expect(preview?.left.map((tile) => tile.label)).toEqual(
+			PAIRS.map(([left]) => left)
+		);
+		expect(preview?.right.map((tile) => tile.label)).toEqual(
+			PAIRS.map(([, right]) => right)
+		);
 	});
 });

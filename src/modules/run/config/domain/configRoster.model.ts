@@ -394,8 +394,8 @@ export const CONFIGS = {
 		slots: 2,
 		maxLevel: 3,
 		description:
-			"Cross out a wrong answer on any poll for a fee that doubles each use and never resets.",
-		gives: "Cross out a wrong answer on any poll",
+			"Cross out a wrong answer on any poll but a pairs poll for a fee that doubles each use and never resets.",
+		gives: "Cross out a wrong answer on any poll but a pairs poll",
 		costs: "The fee doubles each use; v2 resets it each gate, v3 halves it",
 		eliminatesWrongOptionsFor: CATEGORY_CODES,
 	},

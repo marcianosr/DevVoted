@@ -19,7 +19,7 @@ import {
 import {
 	answer,
 	closeGate,
-	lockGroup,
+	matchTiles,
 	skip,
 } from "~/modules/run/run/domain/answer.model";
 import {
@@ -80,7 +80,7 @@ export type RunAction =
 			readonly elapsedMs?: number;
 	  }
 	| {
-			readonly type: "lock-group";
+			readonly type: "match-pair";
 			readonly optionIds: readonly string[];
 			readonly elapsedMs?: number;
 	  }
@@ -285,10 +285,10 @@ const RULES: readonly ActionRule[] = [
 		run: (state, action) => answer(state, action.optionIds, action.elapsedMs),
 	}),
 	on({
-		type: "lock-group",
+		type: "match-pair",
 		when: inStatus("answering"),
 		run: (state, action) =>
-			lockGroup(state, action.optionIds, action.elapsedMs),
+			matchTiles(state, action.optionIds, action.elapsedMs),
 	}),
 	on({
 		type: "skip",

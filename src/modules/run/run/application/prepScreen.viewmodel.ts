@@ -156,7 +156,7 @@ export const commitmentRemedy = (
 const ANSWER_COUNT_LABEL = {
 	single: "one answer",
 	multiple: "two answers",
-	grid: "three groups",
+	pairs: "four pairs",
 } satisfies Record<AnswerType, string>;
 
 const slaPickerFor = (

@@ -181,15 +181,21 @@ describe("RunPoll", () => {
 	});
 });
 
-describe("RunPoll on a dependency grid", () => {
-	const TILES = ["filter", "commit", "find", "margin", "reduce", "map"];
+describe("RunPoll on a matching pairs poll", () => {
+	const tileOf = (label: string) => ({
+		id: label,
+		label,
+		state: "open" as const,
+	});
+	const LEFT = ["div + div", "div > div"];
+	const RIGHT = ["the next sibling", "a direct child"];
 
-	const renderGrid = () => {
+	const renderPairs = () => {
 		const view = createMockRunView({
 			poll: createMockPollView({
-				answerType: "grid",
-				options: TILES.map((label) => ({ id: label, label })),
-				grid: { solved: [], hints: [null, null, null] },
+				answerType: "pairs",
+				options: [...LEFT, ...RIGHT].map((label) => ({ id: label, label })),
+				pairs: { left: LEFT.map(tileOf), right: RIGHT.map(tileOf) },
 			}),
 		});
 		vi.mocked(getTodaysRun).mockResolvedValue({ success: true, data: view });
@@ -212,50 +218,53 @@ describe("RunPoll on a dependency grid", () => {
 			await user.click(await screen.findByRole("button", { name: label }));
 	};
 
-	it("locks in the four picked tiles as one group", async () => {
+	it("matches a tile on each side the moment the second is tapped", async () => {
 		const user = userEvent.setup();
-		renderGrid();
+		renderPairs();
 
-		await pick(user, ["filter", "find", "reduce", "map"]);
-		await user.click(screen.getByRole("button", { name: /^Lock in/ }));
+		await pick(user, ["a direct child", "div > div"]);
 
 		await waitFor(() =>
 			expect(
 				vi.mocked(dispatchRunAction).mock.calls.at(0)?.[0]?.data.action
 			).toEqual(
 				expect.objectContaining({
-					type: "lock-group",
-					optionIds: ["filter", "find", "reduce", "map"],
+					type: "match-pair",
+					optionIds: ["a direct child", "div > div"],
 				})
 			)
 		);
 	});
 
-	it("takes no fifth tile", async () => {
+	it("swaps the pick when a second tile on the same side is tapped", async () => {
 		const user = userEvent.setup();
-		renderGrid();
+		renderPairs();
 
-		await pick(user, ["filter", "find", "reduce", "map", "commit"]);
+		await pick(user, ["div + div", "div > div"]);
 
-		expect(screen.getByRole("button", { name: "commit" })).toHaveAttribute(
+		expect(screen.getByRole("button", { name: "div > div" })).toHaveAttribute(
+			"aria-pressed",
+			"true"
+		);
+		expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
 			"aria-pressed",
 			"false"
 		);
+		expect(dispatchRunAction).not.toHaveBeenCalled();
 	});
 
-	it("clears the picks and stays on the grid after a group locks in", async () => {
+	it("clears the picks and stays on the poll after a pair resolves", async () => {
 		const user = userEvent.setup();
-		renderGrid();
+		renderPairs();
 
-		await pick(user, ["filter", "find", "reduce", "map"]);
-		await user.click(screen.getByRole("button", { name: /^Lock in/ }));
+		await pick(user, ["div + div", "the next sibling"]);
 
+		await waitFor(() => expect(dispatchRunAction).toHaveBeenCalled());
 		await waitFor(() =>
-			expect(screen.getByRole("button", { name: "filter" })).toHaveAttribute(
+			expect(screen.getByRole("button", { name: "div + div" })).toHaveAttribute(
 				"aria-pressed",
 				"false"
 			)
 		);
-		expect(screen.getByRole("button", { name: "shuffle" })).toBeInTheDocument();
 	});
 });

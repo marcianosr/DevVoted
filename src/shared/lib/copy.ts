@@ -32,7 +32,7 @@ export const YOUR_SUGGESTED_POLLS = "Your suggested polls";
 export const ANSWER_TYPE_LABEL = {
 	single: "single answer",
 	multiple: "multiple answers",
-	grid: "dependency grid",
+	pairs: "matching pairs",
 } as const;
 
 export const CHOICE_LABEL = {

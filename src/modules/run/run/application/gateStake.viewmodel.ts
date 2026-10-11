@@ -8,7 +8,11 @@ import {
 	suppressedAuditFor,
 	suppressorOf,
 } from "~/modules/run/gate/domain/audit.model";
-import type { Config } from "~/modules/run/config/domain/config.model";
+import {
+	type Config,
+	showsAnswerTypes,
+	showsPollShape,
+} from "~/modules/run/config/domain/config.model";
 import {
 	bandAtLadder,
 	type GateLadder,
@@ -26,7 +30,8 @@ import {
 	creditFor,
 	MULTIPLE_CREDIT,
 } from "~/modules/run/build/domain/coverageRatio.model";
-import { namesAnswerTypes } from "~/modules/run/run/domain/rebase.model";
+import { prefetcherFor } from "~/modules/run/build/domain/build.model";
+import { rebaserFor } from "~/modules/run/run/domain/rebase.model";
 import {
 	creditedAnswerTypeFor,
 	pollCreditFor,
@@ -92,10 +97,19 @@ const answeredAccuracyOf = (
 	return { credit, earned: (answer.coverageFactors?.correct ?? 0) * credit };
 };
 
+const mixRevealedBy = (configs: readonly Config[]): boolean => {
+	const rebaser = rebaserFor(configs);
+	const prefetcher = prefetcherFor(configs);
+	return (
+		(rebaser !== undefined && showsAnswerTypes(rebaser)) ||
+		(prefetcher !== undefined && showsPollShape(prefetcher))
+	);
+};
+
 const mixKnown = (state: RunState, pending: number): boolean =>
 	pending === 0 ||
 	auditsHideAnswerType(auditsOf(state)) ||
-	namesAnswerTypes(state.build.configs);
+	mixRevealedBy(state.build.configs);
 
 const pendingInWindowOf = (state: RunState): number =>
 	Math.max(0, SLICE_WINDOW - state.window.answered);
