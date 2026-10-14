@@ -1,4 +1,3 @@
-import { POLLS_SPENT } from "~/shared/lib/copy";
 import { dayAfter } from "~/shared/lib/dateUtils";
 import {
 	type ApiResponse,
@@ -166,14 +165,12 @@ export const getTodaysRunService = async ({
 		return viewOfRun(startedToday);
 	}, "getTodaysRun");
 
-const unansweredPollsToday = async (userId: string, date: string) => {
+const pollsLeftForNewRun = async (userId: string, date: string) => {
 	const [answeredToday, polls] = await Promise.all([
 		fetchAnsweredPollIdsForDay(userId, date),
 		fetchRunPollsForDate(date),
 	]);
-	return polls
-		.slice(0, SEED_LENGTH)
-		.filter((poll) => !answeredToday.has(Number(poll.id)));
+	return answeredToday.size > 0 ? [] : polls.slice(0, SEED_LENGTH);
 };
 
 export const getPollsLeftTodayService = async ({
@@ -184,19 +181,18 @@ export const getPollsLeftTodayService = async ({
 	date: string;
 }): Promise<ApiResponse<number>> =>
 	handleApiOperation(
-		async () => (await unansweredPollsToday(userId, date)).length,
+		async () => (await pollsLeftForNewRun(userId, date)).length,
 		"getPollsLeftToday"
 	);
 
 const openTodaysRun = async (
 	userId: string,
 	date: string
-): Promise<RunView | null> => {
+): Promise<RunView> => {
 	const active = await findResumableRun(userId);
 	if (active) return continueActiveRun(active, date);
 
-	const polls = await unansweredPollsToday(userId, date);
-	if (polls.length === 0) return null;
+	const polls = await pollsLeftForNewRun(userId, date);
 
 	const [pinnedGate, unlockedConfigIds, archiveAfterKb, unlockedServiceIds] =
 		await Promise.all([
@@ -227,15 +223,8 @@ export const startRunService = async ({
 }: {
 	userId: string;
 	date: string;
-}): Promise<ApiResponse<RunView>> => {
-	const started = await handleApiOperation(
-		() => openTodaysRun(userId, date),
-		"startRun"
-	);
-	if (!started.success) return started;
-	if (started.data === null) return { success: false, error: POLLS_SPENT };
-	return { success: true, data: started.data };
-};
+}): Promise<ApiResponse<RunView>> =>
+	handleApiOperation(() => openTodaysRun(userId, date), "startRun");
 
 export const getRunRecapService = async ({
 	userId,

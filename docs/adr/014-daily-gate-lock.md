@@ -4,7 +4,9 @@
 
 Accepted 2026-07-25 (DVTD-go7e). Supersedes the poll-exhaustion-is-a-win
 terminal and amends [ADR-011](011-persistent-runs-daily-segments.md) Decision 2.
-ADR-011's rollover machinery and its Decision 3 survive unchanged.
+ADR-011's rollover machinery and its Decision 3 survive unchanged. The
+accepted cost below amended 2026-10-14 (DVTD-s8we): a run that ended after
+answering today spends the day.
 
 **Dead:** Decision 3's death rule;
 [ADR-076](076-the-closing-band-decides-what-it-costs.md) owns failure now, and it
@@ -68,8 +70,11 @@ would be *new* punishment code.
   until tomorrow. Deliberately **no dedicated locked screen** — one was built and
   removed the same day, because the lock exists to stop progression, not to be a
   destination.
-- **Accepted cost:** a player who abandons mid-day restarts into a stub segment
-  (today's 5 minus already-answered), so their first gate completes tomorrow.
-  Answering all 5 then abandoning leaves nothing to restart on until tomorrow.
+- **Accepted cost:** a run that answered any of today's polls and then ended
+  (dead, won or abandoned) spends the day. A new run started after it can be
+  built and shopped, but it is dealt no polls until tomorrow's deal. Amended
+  2026-10-14 (DVTD-s8we): the new run used to get a stub segment, today's 5
+  minus the answered ones, which handed a dead player the polls their old
+  run's first gate had already shown.
 - **Dev friction:** multi-day flows cannot be played out in one sitting without
   manipulating the date or the DB.

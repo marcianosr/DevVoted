@@ -16,7 +16,7 @@ considered and dropped: a correct answer can be misspelled.
 
 ## Decision 1: pairs is a third answer type
 
-`pairs` joins `single` and `multiple`. A poll holds four pairs of two tiles. Each tile
+`pairs` joins `single` and `multiple`. A poll holds four to six pairs of two tiles. Each tile
 stores its pair index, and within a pair the lower option id is the left tile. Every
 tile is stored as correct, because every tile belongs to a pair.
 

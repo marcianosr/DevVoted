@@ -20,6 +20,7 @@ import { COPY, CommunityScreen } from "./CommunityScreen.ui";
 
 const props = kantoCommunity();
 const TURNOUT_TITLE = props.turnout.title;
+const RECORDS_TITLE = props.records.title;
 const POLLS_TITLE = props.polls.title;
 
 const SEATED_CATEGORIES = ["JavaScript", "CSS", "TypeScript", "Git"];
@@ -131,7 +132,6 @@ describe("CommunityScreen", () => {
 							climbers: crowd,
 						},
 					],
-					records: [],
 				}}
 			/>
 		);
@@ -161,7 +161,6 @@ describe("CommunityScreen", () => {
 							climbers: crowd,
 						},
 					],
-					records: [],
 				}}
 			/>
 		);
@@ -173,21 +172,24 @@ describe("CommunityScreen", () => {
 		expect(stack?.parentElement).toHaveClass("basis-full");
 	});
 
-	it("lists the day's records in the same rows as the outcomes, each with its figure", () => {
+	it("draws the day's records in their own panel, each with its figure, and none among the outcomes", () => {
 		render(<CommunityScreen {...props} />);
-		const turnout = within(sectionOf(TURNOUT_TITLE));
+		const records = within(sectionOf(RECORDS_TITLE));
 
-		expect(turnout.queryByText("today's records")).toBeNull();
-		expect(turnout.getByText("Comeback")).toBeInTheDocument();
-		expect(turnout.getByText("14 slots")).toBeInTheDocument();
-		expect(turnout.getByText(".ts")).toBeInTheDocument();
+		expect(records.getByText("Comeback")).toBeInTheDocument();
+		expect(records.getByText("14 slots")).toBeInTheDocument();
+		expect(records.getByText(".ts")).toBeInTheDocument();
+		expect(within(sectionOf(TURNOUT_TITLE)).queryByText("Comeback")).toBeNull();
 	});
 
-	it("puts the map before the polls, and the polls before the records", () => {
+	it("puts the map before the polls, the polls before the outcomes, and the outcomes before the records", () => {
 		render(<CommunityScreen {...props} />);
-		const order = [COMMUNITY_MAP_TITLE, POLLS_TITLE, TURNOUT_TITLE].map(
-			(title) => screen.getByRole("heading", { name: title })
-		);
+		const order = [
+			COMMUNITY_MAP_TITLE,
+			POLLS_TITLE,
+			TURNOUT_TITLE,
+			RECORDS_TITLE,
+		].map((title) => screen.getByRole("heading", { name: title }));
 
 		expect(
 			order[0].compareDocumentPosition(order[1]) &
@@ -195,6 +197,10 @@ describe("CommunityScreen", () => {
 		).toBeTruthy();
 		expect(
 			order[1].compareDocumentPosition(order[2]) &
+				Node.DOCUMENT_POSITION_FOLLOWING
+		).toBeTruthy();
+		expect(
+			order[2].compareDocumentPosition(order[3]) &
 				Node.DOCUMENT_POSITION_FOLLOWING
 		).toBeTruthy();
 	});

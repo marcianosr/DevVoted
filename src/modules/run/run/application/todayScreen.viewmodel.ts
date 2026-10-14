@@ -74,7 +74,9 @@ export const startRefusalFor = (
 	clock: TodayClock,
 	pollsLeftToday: number | null
 ): string | undefined =>
-	isDaySpent(view, clock, pollsLeftToday) ? clockLabel(clock) : undefined;
+	isLiveRun(view) && isDaySpent(view, clock, pollsLeftToday)
+		? clockLabel(clock)
+		: undefined;
 
 export const pollsBadgeFor = (
 	view: RunView | null,
@@ -207,7 +209,11 @@ export const hubPressFor = (
 	const pollsLeft = countOrNothing(pollsLeftFor(view, pollsLeftToday));
 
 	if (isDaySpent(view, clock, pollsLeftToday))
-		return { kind: "locked", label: climbLabelOf(view), mark: "polls" };
+		return {
+			kind: isLiveRun(view) ? "locked" : "start",
+			label: climbLabelOf(view),
+			mark: "polls",
+		};
 
 	return {
 		kind: isLiveRun(view) ? "resume" : "start",

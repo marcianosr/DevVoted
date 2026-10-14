@@ -85,21 +85,45 @@ describe("outcomeOf", () => {
 });
 
 describe("outcomesOf", () => {
-	it("files a player who fell and climbs again under danger and under the live run, so the corpse stays in reach", () => {
-		const outcomes = outcomesOf([
-			run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
-			run({ userId: "sabrina", closes: [cleared(1, "healthy")] }),
-		]);
+	it("files a player who fell and climbs again under the live run only, so they no longer read as in danger", () => {
+		const outcomes = outcomesOf(
+			[
+				run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
+				run({ userId: "sabrina", closes: [cleared(1, "healthy")] }),
+			],
+			new Set(["sabrina"])
+		);
 
 		expect(outcomes.healthy).toEqual(["sabrina"]);
+		expect(outcomes.danger).toEqual([]);
+	});
+
+	it("files a player who fell and started a run that has closed no gate yet under no outcome", () => {
+		const outcomes = outcomesOf(
+			[run({ userId: "sabrina", fallen: true, closes: [held(2)] })],
+			new Set(["sabrina"])
+		);
+
+		expect(Object.values(outcomes).flat()).toEqual([]);
+	});
+
+	it("files a player who fell and has not started again under danger", () => {
+		const outcomes = outcomesOf(
+			[run({ userId: "sabrina", fallen: true, closes: [held(2)] })],
+			new Set(["koga"])
+		);
+
 		expect(outcomes.danger).toEqual(["sabrina"]);
 	});
 
 	it("files a player who fell twice under danger once", () => {
-		const outcomes = outcomesOf([
-			run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
-			run({ userId: "sabrina", fallen: true, closes: [held(4)] }),
-		]);
+		const outcomes = outcomesOf(
+			[
+				run({ userId: "sabrina", fallen: true, closes: [held(2)] }),
+				run({ userId: "sabrina", fallen: true, closes: [held(4)] }),
+			],
+			new Set()
+		);
 
 		expect(outcomes.danger).toEqual(["sabrina"]);
 	});

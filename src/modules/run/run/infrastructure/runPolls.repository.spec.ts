@@ -164,6 +164,35 @@ describe("rollSegmentForward", () => {
 		expect(db.delete).not.toHaveBeenCalled();
 		expect(db.insert).not.toHaveBeenCalled();
 	});
+
+	it("leaves a run dealt no polls alone on the day it opened", async () => {
+		mock.results.push([]);
+		mock.results.push([{ seed_date: TODAY }]);
+
+		await rollSegmentForward(db, 122, TODAY, 0);
+
+		expect(db.insert).not.toHaveBeenCalled();
+	});
+
+	it("deals a run that opened with no polls its first five the day after", async () => {
+		mock.results.push([]);
+		mock.results.push([{ seed_date: YESTERDAY }]);
+		mock.results.push([]);
+		mock.results.push([]);
+		mock.results.push(SEED.map((poll_id) => ({ poll_id })));
+		mock.results.push(PUBLISHED.map((id) => ({ id })));
+		mock.results.push(undefined);
+
+		await rollSegmentForward(db, 122, TODAY, 0);
+
+		const dealt = mock.valuesCalls.at(-1) as {
+			position: number;
+			poll_id: number;
+		}[];
+		expect(db.delete).not.toHaveBeenCalled();
+		expect(dealt.map((row) => row.poll_id)).toEqual(SEED);
+		expect(dealt.map((row) => row.position)).toEqual([0, 1, 2, 3, 4]);
+	});
 });
 
 describe("fetchRunPollsForDate", () => {

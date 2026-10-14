@@ -357,6 +357,19 @@ describe("the ladder", () => {
 		expect(rungOf(frame, "perfect")?.pays).toBe("+240 KB");
 	});
 
+	it("prices a band at the right answers left from the coverage already held", () => {
+		const okFrom = clearingRungFor(MID, 4).from;
+		const oneAnswerShort = frameFor({ held: okFrom - 4 });
+
+		expect(rungOf(oneAnswerShort, "ok")?.pays).toBe("+32 KB");
+	});
+
+	it("prices a band the run already stands on at no right answers", () => {
+		const standing = frameFor({ held: clearingRungFor(MID, 4).from });
+
+		expect(rungOf(standing, "ok")?.pays).toBe("+0 B");
+	});
+
 	it("ends the run under the floor rather than quoting it a figure", () => {
 		expect(ladderFor(frameFor()).rungs[0].pays).toBe("the run ends");
 	});
