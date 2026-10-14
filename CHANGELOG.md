@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## 2.6.2 - 2026-10-14
 ### Changed
 - **The community board splits outcomes from records.** **Who cleared what** lists who answered today and how each gate went, from PERFECT to DANGER. The day's record holders, from biggest build to KB spent, sit in their own **Today's records** panel under it.
 
