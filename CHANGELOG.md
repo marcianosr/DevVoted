@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A new run after a death waits for tomorrow's polls.** Starting again after your run ended could hand you the polls it left over, often the ones its first gate had already shown. A new run started the same day can be built and shopped, and its first gate opens with tomorrow's polls.
 - **The board stops reading you as in danger once you start again.** A run that fell today leaves DANGER as soon as its player starts a new one.
 - **The At stake ladder quotes what a band really pays.** The KB beside each band was priced as if you started the gate at 0% coverage. It now counts the coverage you already hold, so a head start no longer pays less than the ladder promised.
+
+## 2.6.1 - 2026-10-11
+### Fixed
 - **Prefetch names tomorrow's polls again.** After you cleared the day's gate, Prefetch's panel on the prep screen was empty, and the next gate's row stayed blank while today's gate was open. It now names tomorrow's five polls, and v2 their shapes, matching what you will be dealt.
 
 ## 2.6.0 - 2026-10-11
