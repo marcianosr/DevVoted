@@ -13,6 +13,7 @@ argument-hint: <pasted poll | poll id | drafts>
 3. **Rhyme.** The question is a short Furnace Fun verse (wiki: "Polls rhyme"). Flag a missing rhyme, a forced word, or a verse that buries the actual question. See https://banjokazooie.fandom.com/wiki/List_of_Questions_From_Grunty%27s_Furnace_Fun as examples
 4. **Explanations.** Not every option needs one. If you include an explanation, each should say *why* that option is right or wrong, not a restatement of the option. The poll explanation agrees with the key.
 5. **House style.** Code is in backticks (ADR-137), no em dashes, the category fits.
+6. **Pairs.** 4 to 6 pairs, every tile at most 30 characters. The term or code goes first in each pair (left column) and its meaning or result second (right column), never mixed. Each tile matches exactly one other.
 
 ## Report
 

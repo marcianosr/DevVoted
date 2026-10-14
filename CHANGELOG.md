@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Changed
+- **The community board splits outcomes from records.** **Who cleared what** lists who answered today and how each gate went, from PERFECT to DANGER. The day's record holders, from biggest build to KB spent, sit in their own **Today's records** panel under it.
+
+### Fixed
+- **A new run after a death waits for tomorrow's polls.** Starting again after your run ended could hand you the polls it left over, often the ones its first gate had already shown. A new run started the same day can be built and shopped, and its first gate opens with tomorrow's polls.
+- **The board stops reading you as in danger once you start again.** A run that fell today leaves DANGER as soon as its player starts a new one.
+- **The At stake ladder quotes what a band really pays.** The KB beside each band was priced as if you started the gate at 0% coverage. It now counts the coverage you already hold, so a head start no longer pays less than the ladder promised.
 
 ## 2.6.1 - 2026-10-11
 ### Fixed

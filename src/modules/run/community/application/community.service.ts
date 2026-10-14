@@ -386,7 +386,10 @@ const turnoutOf = (
 		...active.map(dayRunOf(date, false)),
 		...fallen.map(dayRunOf(date, true)),
 	].filter(isDayRun);
-	const { perfect, healthy, ok, shaky, danger } = outcomesOf(runs);
+	const { perfect, healthy, ok, shaky, danger } = outcomesOf(
+		runs,
+		new Set(active.map((row) => row.userId))
+	);
 
 	return {
 		outcomes: {

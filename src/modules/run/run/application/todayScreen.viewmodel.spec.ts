@@ -229,24 +229,24 @@ describe(hubPressFor, () => {
 		});
 	});
 
-	it("refuses a fresh start once the day is spent with no run open", () => {
+	it("offers a fresh start with no polls count once the day is spent with no run open, so the build can be prepared", () => {
 		const press = hubPressFor(null, SHUT, DAY_SPENT);
 
 		expect(press).toEqual({
-			kind: "locked",
+			kind: "start",
 			label: "Start today’s climb",
 			mark: "polls",
 		});
 	});
 
-	it("refuses a fresh start once a finished run spent the day", () => {
+	it("offers a fresh start once a finished run spent the day", () => {
 		const press = hubPressFor(
 			createMockRunView({ isOver: true, pollsExhausted: false }),
 			SHUT,
 			DAY_SPENT
 		);
 
-		expect(press.kind).toBe("locked");
+		expect(press.kind).toBe("start");
 	});
 
 	it("offers a fresh start when no run is open", () => {
@@ -709,9 +709,15 @@ describe(pollsBadgeFor, () => {
 });
 
 describe(startRefusalFor, () => {
-	it("refuses a new run with when polls return once the day is spent", () => {
+	it("lets a new run start once the day is spent, since its polls wait for tomorrow", () => {
 		expect(
 			startRefusalFor(createMockRunView({ isOver: true }), SHUT, DAY_SPENT)
+		).toBeUndefined();
+	});
+
+	it("refuses with when polls return while a live run has spent the day", () => {
+		expect(
+			startRefusalFor(createMockRunView({ pollsExhausted: true }), SHUT, 0)
 		).toBe("New polls in 7h 23m");
 	});
 

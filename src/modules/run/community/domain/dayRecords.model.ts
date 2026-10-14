@@ -87,7 +87,8 @@ export const outcomeOf = (run: DayRun): DayOutcome | null => {
 };
 
 export const outcomesOf = (
-	runs: readonly DayRun[]
+	runs: readonly DayRun[],
+	livePlayerIds: ReadonlySet<string>
 ): Readonly<Record<DayOutcome, readonly string[]>> => {
 	const holdersOf = (outcome: DayOutcome) => [
 		...new Set(
@@ -99,7 +100,7 @@ export const outcomesOf = (
 		healthy: holdersOf("healthy"),
 		ok: holdersOf("ok"),
 		shaky: holdersOf("shaky"),
-		danger: holdersOf("danger"),
+		danger: holdersOf("danger").filter((userId) => !livePlayerIds.has(userId)),
 	};
 };
 

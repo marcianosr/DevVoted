@@ -84,7 +84,11 @@ export type TurnoutBand = {
 export type CommunityTurnout = {
 	title: string;
 	bands: readonly TurnoutBand[];
-	records?: readonly TurnoutBand[];
+};
+
+export type CommunityRecords = {
+	title: string;
+	rows: readonly TurnoutBand[];
 };
 
 export type CommunityLeaders = {
@@ -103,6 +107,7 @@ export type CommunityPolls = {
 export type CommunityScreenProps = {
 	header: CommunityHeader;
 	turnout: CommunityTurnout;
+	records: CommunityRecords;
 	map: CommunityMap;
 	incidents?: IncidentsPanelProps;
 	hallOfFame?: HallOfFameProps;
@@ -247,11 +252,17 @@ const TurnoutRow = ({
 		</Panel.Row>
 	);
 
-const Turnout = ({ title, bands, records = [] }: CommunityTurnout) => (
+const TurnoutPanel = ({
+	title,
+	rows,
+}: {
+	title: string;
+	rows: readonly TurnoutBand[];
+}) => (
 	<Panel>
 		<Panel.Header label={title} />
 		<Panel.Rows>
-			{[...bands, ...records].map((band) => (
+			{rows.map((band) => (
 				<TurnoutRow
 					key={band.label}
 					band={band}
@@ -360,6 +371,7 @@ const FivePolls = ({ title, tally, polls, review }: CommunityPolls) => (
 export const CommunityScreen = ({
 	header,
 	turnout,
+	records,
 	map,
 	incidents,
 	hallOfFame,
@@ -379,7 +391,8 @@ export const CommunityScreen = ({
 			</div>
 			<div className={COLUMN}>
 				{hallOfFame === undefined ? null : <HallOfFame {...hallOfFame} />}
-				<Turnout {...turnout} />
+				<TurnoutPanel title={turnout.title} rows={turnout.bands} />
+				<TurnoutPanel {...records} />
 				{incidents === undefined ? null : <IncidentsPanel {...incidents} />}
 				<LeaderBoards boards={leaders} />
 			</div>

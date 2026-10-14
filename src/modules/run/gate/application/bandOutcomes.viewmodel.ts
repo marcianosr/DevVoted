@@ -131,10 +131,11 @@ export const answersOwedFor = (
 
 const answersToLand = (
 	line: number,
+	held: number,
 	gainPercent: number,
 	accuracyBonus: number
 ): number =>
-	answersOwedFor(line, 0, gainPercent, accuracyBonus) ?? SLICE_WINDOW;
+	answersOwedFor(line, held, gainPercent, accuracyBonus) ?? SLICE_WINDOW;
 
 export type BandOutcomesFrame = {
 	swatch: GateSwatch;
@@ -165,6 +166,7 @@ const paysOf = (rung: CoverageRung, frame: BandOutcomesFrame) => {
 		frame.payout(
 			answersToLand(
 				rung.from,
+				frame.held,
 				frame.coverageGainPercent,
 				frame.accuracyBonus ?? 0
 			),

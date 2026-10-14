@@ -3,11 +3,12 @@
 ## Status
 
 Accepted — 2026-10-02 (Marciano, DVTD-06o0). Replaces the single "Who showed up"
-row of the community board's turnout panel. Amended 2026-10-03 (DVTD-ah7g): the
-panel is titled "Today's records", and outcomes and records share one list with no
-divider between them. Decision 1 amended 2026-10-03 (Marciano, DVTD-ah7g): a fallen
+row of the community board's turnout panel. Decision 2 amended 2026-10-12 (Marciano,
+DVTD-lndf): the outcomes panel is titled "Who cleared what" and the records get their
+own "Today's records" panel under it. Decision 1 amended 2026-10-03 (Marciano, DVTD-ah7g): a fallen
 run stays in DANGER after its player starts again, and "answered today" always
-leads the panel — see the amendments below.
+leads the panel — see the amendments below. That first half reversed 2026-10-14
+(Marciano, DVTD-jtva): a fallen run leaves DANGER once its player starts again.
 
 ## Context
 
@@ -34,9 +35,9 @@ a new run counts by the live run. A live run that has not closed a gate yet sits
 no row. The old "answered today" row leads the panel, above the outcomes (see the
 second amendment). `outcomeOf` in `dayRecords.model.ts` owns the mapping.
 
-## Decision 2: records sit under the outcomes in the same panel
+## Decision 2: records get their own panel under the outcomes
 
-Below a `today's records` strip: biggest and lightest build (weight, empty builds
+A "Today's records" panel, drawn directly under the outcomes: biggest and lightest build (weight, empty builds
 skipped), comeback (the latest close cleared a gate an earlier close in the same run
 held), most audits (every audit the run's schedule dealt), most installed config
 (players running it), most expensive build (sum of draft costs, upgrades left out),
@@ -94,9 +95,26 @@ drawn in ladder order, an unreached one at 0 with no faces, and every record is 
 in a fixed order, one nobody holds with a dash and no faces. Most installed names no
 config until somebody installs one.
 
+## Amendment (2026-10-12): records get their own panel
+
+The 2026-10-03 amendment merged outcomes and records into one list, because the records
+describe the same players. Marciano disagreed: at fifteen rows the panel read as a
+single list, and the two halves answer different questions. The outcomes say how the
+whole field did, and the records name who stood out. The outcomes panel is now "Who
+cleared what" and the records sit in their own "Today's records" panel under it.
+
+## Amendment (2026-10-14): the dead leave DANGER once they climb again
+
+The 2026-10-03 amendment kept a corpse in DANGER after its player started again.
+Marciano disagreed: a player who died and started over read as still being in
+danger. DANGER now lists a player only while they have no live run. A fallen run
+still feeds the day's records, and its corpse stays lootable from the climb map's
+fallen chips. A restarted player whose new run has closed no gate today sits in no
+outcome row, only in "answered today", as Decision 1 says.
+
 ## Rejected
 
 - **A KB ledger table.** Exact, but it needs a migration and a write at every KB
   change. Revisit if the derived figure starts to mislead.
-- **A separate records panel.** The records describe the same players as the
-  outcomes, so they share the panel.
+- **Builds and feats as two more panels.** Records could split again into build
+  records and player feats. Every record names a standout holder, so one panel is enough.

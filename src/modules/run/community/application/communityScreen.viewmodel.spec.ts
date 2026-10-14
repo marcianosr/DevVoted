@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	recordsFor,
 	showedUpBand,
 	turnoutFor,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
@@ -16,9 +17,9 @@ const bandLabelled = <Band extends { label: string }>(
 ): Band | undefined => bands?.find((band) => band.label === label);
 
 describe("turnoutFor", () => {
-	it("titles the panel as the day's records, since outcomes and records share one list", () => {
+	it("titles the outcomes panel by who cleared what", () => {
 		expect(turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).title).toBe(
-			"Today’s records"
+			"Who cleared what"
 		);
 	});
 
@@ -97,7 +98,7 @@ describe("turnoutFor", () => {
 		expect(pressed).toEqual(["brock"]);
 	});
 
-	it("draws every outcome and record empty before anybody closed a gate", () => {
+	it("draws every outcome at zero before anybody closed a gate", () => {
 		const turnout = turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP);
 
 		expect(turnout.bands.map(({ count }) => count)).toEqual([
@@ -108,7 +109,18 @@ describe("turnoutFor", () => {
 			"0",
 			"0",
 		]);
-		expect(turnout.records?.map(({ label }) => label)).toEqual([
+	});
+});
+
+describe("recordsFor", () => {
+	it("titles the records panel as the day's records", () => {
+		expect(recordsFor(EMPTY_DAY_TURNOUT).title).toBe("Today’s records");
+	});
+
+	it("draws every record with a dash and no faces before anybody closed a gate", () => {
+		const { rows } = recordsFor(EMPTY_DAY_TURNOUT);
+
+		expect(rows.map(({ label }) => label)).toEqual([
 			"Biggest build",
 			"Lightest build",
 			"Comeback",
@@ -119,34 +131,31 @@ describe("turnoutFor", () => {
 			"KB spent today",
 		]);
 		expect(
-			turnout.records?.every(
+			rows.every(
 				({ count, climbers }) => count === "—" && climbers.length === 0
 			)
 		).toBe(true);
 	});
 
 	it("names the most installed config and how many players run it", () => {
-		const turnout = turnoutFor(
-			{
-				...EMPTY_DAY_TURNOUT,
-				records: [
-					{
-						record: {
-							id: "top-config",
-							configId: "ts",
-							configLabel: ".ts",
-							configSlots: 1,
-							figure: 2,
-							holderIds: ["brock", "misty"],
-						},
-						holders: [MISTY, BROCK],
+		const { rows } = recordsFor({
+			...EMPTY_DAY_TURNOUT,
+			records: [
+				{
+					record: {
+						id: "top-config",
+						configId: "ts",
+						configLabel: ".ts",
+						configSlots: 1,
+						figure: 2,
+						holderIds: ["brock", "misty"],
 					},
-				],
-			},
-			SHOWED_UP
-		);
+					holders: [MISTY, BROCK],
+				},
+			],
+		});
 
-		expect(bandLabelled(turnout.records, "Most installed")).toMatchObject({
+		expect(bandLabelled(rows, "Most installed")).toMatchObject({
 			config: { name: ".ts", slots: 1 },
 			count: "2 players",
 		});
@@ -154,7 +163,7 @@ describe("turnoutFor", () => {
 
 	it("draws no chip on a most-installed row nobody holds, there being no config to name", () => {
 		const row = bandLabelled(
-			turnoutFor(EMPTY_DAY_TURNOUT, SHOWED_UP).records,
+			recordsFor(EMPTY_DAY_TURNOUT).rows,
 			"Most installed"
 		);
 

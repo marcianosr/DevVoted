@@ -298,7 +298,7 @@ describe("CommunityView", () => {
 		expect(screen.getByText("1 / 4")).toBeInTheDocument();
 	});
 
-	it("opens a fallen run's card from its face in today's records, so it can be looted there", async () => {
+	it("opens a fallen run's card from its face in who cleared what, so it can be looted there", async () => {
 		const user = userEvent.setup();
 		render(
 			board({
@@ -331,12 +331,12 @@ describe("CommunityView", () => {
 				},
 			})
 		);
-		const records = screen
-			.getByRole("heading", { name: "Today’s records" })
+		const outcomes = screen
+			.getByRole("heading", { name: "Who cleared what" })
 			.closest("section");
-		if (records === null) throw new Error("no records panel drawn");
+		if (outcomes === null) throw new Error("no outcomes panel drawn");
 
-		await user.click(within(records).getByRole("button", { name: "misty" }));
+		await user.click(within(outcomes).getByRole("button", { name: "misty" }));
 
 		expect(screen.getByRole("dialog", { name: "misty" })).toBeInTheDocument();
 	});

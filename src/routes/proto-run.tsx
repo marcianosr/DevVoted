@@ -54,7 +54,10 @@ import {
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
-import { turnoutFor } from "~/modules/run/community/application/communityScreen.viewmodel";
+import {
+	recordsFor,
+	turnoutFor,
+} from "~/modules/run/community/application/communityScreen.viewmodel";
 import {
 	type CommunityDayTurnout,
 	EMPTY_DAY_TURNOUT,
@@ -531,6 +534,7 @@ const simulateCommunityScreen = (
 			count: String(climbers),
 			climbers: [YOU, ...TRAINERS.map(climberOf)],
 		}),
+		records: recordsFor(simulatedTurnout),
 		map: {
 			title: CLIMB_MAP_TITLE,
 			track: {

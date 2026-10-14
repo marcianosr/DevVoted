@@ -10,35 +10,19 @@ For a thorough understanding of the game's vision, mechanics, and design decisio
 Older but still useful documentation can be found here:
 [Concept](https://www.notion.so/Concept-26407387629780e3b753e50c417a7901?source=copy_link) and [Brainstorming](docs/brainstorm)
 
-
 ## Common Commands
 
-### Development
-
-- `npm run dev` - Start development server on port 3005
+- `npm run dev` - Start development server on port 3005 (configured in vite.config.ts)
 - `npm run build` - Build for production and run TypeScript checks
 - `npm run start` - Start production server
 - `npm run lint` - oxlint + architecture boundaries (dependency-cruiser)
-
-### Testing
-
 - `npm test` - Run all tests once
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Run tests with coverage report
 - `npm test -- --run path/to/specific.spec.ts` - Run specific test file
+- Database commands: see `.claude/rules/database.md`
 
-### Database Operations
-
-- `npm run db:push` - Push schema changes to the local database (prototyping only — see ADR-012)
-- `npm run db:seed` - Seed database with initial data
-- `npm run db:reset` - Reset database (drops all data)
-- `npm run db:refresh` - Rebuild the local database from `supabase/migrations` alone, then seed
-
-
-
-## Architecture Overview
-
-### Technology Stack
+## Technology Stack
 
 - **Framework**: TanStack Start (React-based full-stack framework)
 - **Routing**: TanStack Router (file-based routing)
@@ -51,190 +35,33 @@ Older but still useful documentation can be found here:
 - **Error Monitoring**: Sentry
 - **Utilities**: date-fns, clsx
 
-### Module Architecture
+## Path Aliases
 
-New code lives under `src/modules/{context}/{aggregate}/{layer}`, where layer is one
-of `domain/`, `application/`, `infrastructure/`, `presentation/`. Contexts are `run`,
-`polls`, `collection`, `account`.
-
-**Before creating any file under `src/modules/`, walk the decision tree in
-[ADR-002 §5](docs/adr/002-domain-architecture.md#5-decision-tree-where-does-my-file-go).**
-It gives you `(folder, suffix)` and the suffix allowlist in §4.1 is closed: no bare
-filenames, no `.utils.ts`, no `.types.ts`, no `.queries.ts`, no `.handlers.ts`.
-
-ADR-002 owns structure, layering, naming, and the dependency rule (machine-enforced
-via `npm run lint` → `lint:arch`). [CONTEXT.md](CONTEXT.md) says which aggregate owns
-which domain term.
-
-The restructure is **done** (`DVTD-36ct`, `DVTD-wj1t`): `src/domains/` no longer
-exists and every module lives in the context/aggregate/layer shape, with no
-legacy carve-out in `.dependency-cruiser.cjs`. `src/ui/old-theme/` is deleted
-(`DVTD-6crx`): **kanto is the only theme**, and importing `~/ui/old-theme/*` is
-an oxlint error. `src/components/` holds three router-bound wrappers and is the
-last legacy surface.
-
-### UI Layer Architecture (CRITICAL)
-
-Strict two-tier separation, both tiers inside `presentation/`. See
-[ADR-010](docs/adr/010-ui-layer-separation.md) for the full decision:
-
-- **Tier 1** `{Name}.ui.tsx` owns **all** HTML and Tailwind in the codebase, accepts plain data props only, every component has a Story. Lives in `{aggregate}/presentation/` or `src/ui/` (global primitives).
-- **Tier 2** `{Name}.component.tsx` and `src/routes/` wire data and mutations to Tier 1: zero HTML, zero CSS.
-
-**Rules enforced on every new file:**
-- [ ] Renders HTML or uses Tailwind classes? → `{aggregate}/presentation/{Name}.ui.tsx`, plain props, has a Story.
-- [ ] Calls a hook or server function? → `{aggregate}/presentation/{Name}.component.tsx` or `src/routes/`, zero HTML/CSS.
-- [ ] Never mix both in the same file.
-- [ ] User-facing text? → a `COPY` object in the `.ui.tsx`, or `~/shared/lib/copy.ts` if a second surface states it. Run state picks the string → the viewmodel owns it ([ADR-102](docs/adr/102-copy-has-one-owner.md)).
-- [ ] `presentation/` may not import `infrastructure/` at all: go via an application hook or server function.
-
-### Database Tables
-
-`src/database/schema.ts` is the single source of truth for table shape. What the columns mean lives in [the wiki](./docs/wiki.md) and the ADRs. Do not maintain a table list in this file.
-
-### Path Aliases
 Standardize on `~/` (the only configured alias, mapping to `src/`). Every import starts from it: `~/shared/utils/errorHandling`, `~/test/kanto`. No deep relative imports.
 
-### Testing
+## Security
 
-- Co-located `.spec.ts(x)`; Vitest + Testing Library; jsdom
-- Mock at the boundary only: DB ops are mocked (chain `.values()`/`.returning()` on
-  Drizzle builders). Don't mock your own component functions — use the factory pattern
-  (`~/test/createMockDataFactory.ts`) for component data
-- `vi.clearAllMocks()` over `vi.resetAllMocks()` (preserves implementations)
-- Test names describe scenario + outcome; no "should"
-- Canonical data from `~/test/kanto.ts`; prefer birthday/Christmas dates via `TEST_DATES`. Source: [https://bulbapedia.bulbagarden.net/wiki/Kanto]
+Server functions never trust a client-provided `userId`: wrap them in `withAuthenticatedUser` or `withAdminUser`. Full rule and checklist: `.claude/rules/backend.md`.
 
+## Topic rules
 
-### Common Patterns
+These load automatically when you read a matching file (`paths:` frontmatter). Read one by hand if the task needs it before you've touched a matching file.
 
-- Function composition pattern. Immutability is important.
-- Prevent usage of "else" if needed in if conditions:
-
-```
-// ❌ Uses else
-if (user.isAdmin) {
-  return grantAccess();
-} else {
-  return denyAccess();
-}
-
-// ✅ No else — return early
-if (!user.isAdmin) {
-  return denyAccess();
-}
-return grantAccess();
-
-// ✅ Also fine — ternary when simple
-return user.isAdmin ? grantAccess() : denyAccess();
-```
-
-- Use arrow functions over regular functions
-
-#### Query Keys Pattern
-
-Centralized query keys in `~/shared/queryKeys.ts` for consistent TanStack Query cache management:
-
-```typescript
-export const pollQueryKeys = {
-  all: ["polls"] as const,
-  detail: (pollId: number) => [...pollQueryKeys.all, pollId] as const,
-  daily: (userId: string | undefined) =>
-    [...pollQueryKeys.all, "daily", userId] as const,
-};
-```
-
-#### Database Transactions
-
-```typescript
-await db.transaction(async (tx) => {
-	const [record] = await tx.insert(table).values(data).returning();
-	// Additional operations...
-});
-```
-
-#### DTO Conversion in Models
-
-`toDTO`/`fromDTO`/`toDTOs`/`fromDTOs` live in model files, never in `factories/`. Shape and naming: [ADR-002](docs/adr/002-domain-architecture.md).
-
-#### Error Handling in Handlers
-
-Use `handleApiOperation` wrapper from `src/shared/utils/errorHandling.ts`:
-
-```typescript
-import { handleApiOperation } from "~/shared/utils/errorHandling";
-
-export const getPollByIdHandler = async ({ data }: { data: { id: number } }) => {
-  return handleApiOperation(async () => {
-    const poll = await fetchPollById(data.id);
-    if (!poll) throw new Error("Poll not found");
-    return poll;
-  });
-};
-```
-
-This returns a typed `ApiResponse<T>`:
-
-```typescript
-type ApiResponse<T> =
-  | { success: true; data: T; message?: string }
-  | { success: false; error: string };
-```
-
-
-### Authorization (server functions) — security-critical
-
-Never trust a client-provided `userId`. Every server function that reads or
-writes a player's own data runs inside `withAuthenticatedUser`, which reads the
-Supabase session once and hands the operation a `Session = { userId, isAdmin }`.
-`withAdminUser` is the same wrapper that refuses a non-admin before the
-operation runs. Both live in `~/shared/utils/authorization.ts`, return the shared
-`ApiResponse<T>` envelope, and turn a signed-out call into
-`{ success: false, error: "Not authenticated" }` instead of a thrown 500.
-(WRONG: `.validator(z.object({ userId }))` then `fetchUserData(data.userId)` — auth bypass.
-RIGHT: `withAuthenticatedUser(({ userId }) => fetchUserData(userId))`.)
-
-Accept `userId` as a parameter ONLY for public read-only data (profiles, player
-cards, leaderboards), and always validate it exists. Never for writes. Anything
-a screen needs to know about the caller (`isAdmin`) travels INSIDE `data`, never
-beside the envelope. The pre-session functions (`loginFn`, `signupFn`,
-`fetchUser`) and the visit counter (`findAuthenticatedUserId`) are the only
-server functions outside the wrapper.
-
-Checklist for a new server function:
-- [ ] Modifies user data? → `withAuthenticatedUser`
-- [ ] Reads sensitive user data? → `withAuthenticatedUser`
-- [ ] Admin only? → `withAdminUser`
-- [ ] Public read-only? → `userId` param allowed, with validation
-- [ ] Returns `ApiResponse<T>`; the client unwraps with `useApiQuery` or checks `success`
-- [ ] Test the rule in `authorization.spec.ts`, not per function (`@tanstack/react-start` is not importable under vitest)
-
-
-### Database Migrations (ADR-012)
-
-`src/database/schema.ts` is the source of truth for shape. Changes are guarded:
-1. Edit `schema.ts`, `npm run db:push` (dev/prototyping only)
-2. Add a guarded SQL file: `supabase/migrations/YYYYMMDDHHMMSS_description.sql`
-3. CI applies migrations to production on merge
-
+- `.claude/rules/architecture.md`: module layout, ADR-002 decision tree, suffix allowlist, DTOs
+- `.claude/rules/react.md`: UI tiers (ADR-010), COPY, Stories, query keys, QueryClient
+- `.claude/rules/css.md`: Tailwind, kanto theme, `app.css`
+- `.claude/rules/typescript.md`: arrow functions, no `else`, composition, immutability
+- `.claude/rules/backend.md`: authorization, `handleApiOperation`
+- `.claude/rules/database.md`: schema, migrations (ADR-012), transactions, db commands
+- `.claude/rules/testing.md`: Vitest, mocking, test data
 
 ## Development Notes
 
-- The project uses TanStack Router with file-based routing in `src/routes/`
-- Authentication routes are protected under `_authed/` layout
-- Database schema is defined in `src/database/schema.ts` with comprehensive documentation
-- Test setup includes jsdom environment and jest-dom matchers
-- Development server runs on port 3005 (configured in vite.config.ts)
-- One `QueryClient`, created in `getRouter()` and handed to routes as `context.queryClient`; never `new QueryClient()` in a component. Sign-in, sign-up, the auth callback and logout call `queryClient.clear()` because most run keys carry a date, not an account. After a run action, `useRunCommit` is the one owner of what gets written and what gets staled
 - Architecture Decision Records are stored in `docs/adr/` (index + conventions: `docs/adr/README.md`)
 - Every bean you create or edit follows [ADR-107](docs/adr/107-a-bean-states-what-and-why-first.md): `**What:**` and `**Why:**` (one line each, blank line between), then `## Done when` with 2-6 outcome checkboxes, then everything else under `## Notes`. No code symbols, file paths or ADR numbers above Notes. Never delete detail to make a bean shorter.
 - If I disagree with something, please write this down in an ADR file
-- Docs boyscout rule: when this file or an ADR contradicts the code, fix the doc in the same session (or flag it explicitly). Never silently work around a stale doc. Prefer deleting doc content in favor of a pointer when the code already documents it.
+- Docs boyscout rule: when this file, a rule file or an ADR contradicts the code, fix the doc in the same session (or flag it explicitly). Never silently work around a stale doc. Prefer deleting doc content in favor of a pointer when the code already documents it.
 - When making player-visible changes, follow `docs/changelog-maintenance.md` to update `CHANGELOG.md`
-- Only create a Story when the component affects player-visible game behavior
-  or feel (not layout/admin/internal tooling). Before creating one, state the
-  one-sentence game-design reason in the PR/commit message. If you're not sure
-  it qualifies, ask rather than creating it.
 - Write NO comments. Not JSDoc, not a one-line why, not `{/* */}` in JSX. The
   code is self-documenting: names carry the meaning, and reasoning belongs in an
   ADR or the wiki, which is where the decisions already live. The only things

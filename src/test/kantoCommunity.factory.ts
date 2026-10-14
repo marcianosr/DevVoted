@@ -582,9 +582,12 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		prep: { label: COMMUNITY_PREP_LABEL, onPress: () => {} },
 	},
 	turnout: {
-		title: "Today’s records",
+		title: "Who cleared what",
 		bands: bands(),
-		records: records(),
+	},
+	records: {
+		title: "Today’s records",
+		rows: records(),
 	},
 	map: { title: COMMUNITY_MAP_TITLE, track: kantoClimbMap() },
 	incidents: kantoIncidents(),

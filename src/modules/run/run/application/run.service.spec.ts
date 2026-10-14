@@ -18,7 +18,6 @@ import {
 	getTodaysRunService,
 	startRunService,
 } from "~/modules/run/run/application/run.service";
-import { POLLS_SPENT } from "~/shared/lib/copy";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
 import * as pollQueries from "~/modules/run/run/infrastructure/runPolls.repository";
 import * as unlockQueries from "~/modules/run/config/infrastructure/configUnlock.repository";
@@ -350,7 +349,7 @@ describe("startRunService", () => {
 		expect(result.data.warmBoot).toBeNull();
 	});
 
-	it("starts a same-day rerun from today's seed minus already-answered polls", async () => {
+	it("deals a same-day rerun no polls once a run answered today and ended, so the leftovers wait for tomorrow", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			new Set([0])
@@ -363,10 +362,11 @@ describe("startRunService", () => {
 		const result = await startRunService({ userId: USER, date: DATE });
 
 		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.status).toBe("configuring");
 		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
 			USER,
 			DATE,
-			expect.objectContaining({ polls: [POLLS[1]] })
+			expect.objectContaining({ polls: [] })
 		);
 	});
 
@@ -413,19 +413,6 @@ describe("startRunService", () => {
 		);
 	});
 
-	it("errors when every poll of the day is already answered", async () => {
-		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
-			new Set([0, 1])
-		);
-		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
-
-		const result = await startRunService({ userId: USER, date: DATE });
-
-		expect(result.success).toBe(false);
-		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
-	});
-
 	it("deals one day's five when the date's sequence holds the whole pool", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
@@ -443,30 +430,25 @@ describe("startRunService", () => {
 		);
 	});
 
-	it("refuses a same-day rerun after five answers instead of dealing the next five from a longer sequence", async () => {
+	it("deals a same-day rerun after five answers no polls instead of the next five from a longer sequence", async () => {
 		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			FIRST_WINDOW_IDS
 		);
 		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
+		vi.mocked(queries.createSessionRunWithState).mockResolvedValue({
+			runId: 69,
+		});
 
 		const result = await startRunService({ userId: USER, date: DATE });
 
-		expect(result).toEqual({ success: false, error: POLLS_SPENT });
-		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
-	});
-
-	it("refuses in plain words when today's polls are all answered, and creates no run", async () => {
-		vi.mocked(queries.findActiveSessionRun).mockResolvedValue(null);
-		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
-			new Set([0, 1])
+		expect(result.success).toBe(true);
+		if (result.success) expect(result.data.pollsExhausted).toBe(true);
+		expect(queries.createSessionRunWithState).toHaveBeenCalledWith(
+			USER,
+			DATE,
+			expect.objectContaining({ polls: [] })
 		);
-		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
-
-		const result = await startRunService({ userId: USER, date: DATE });
-
-		expect(result).toEqual({ success: false, error: POLLS_SPENT });
-		expect(queries.createSessionRunWithState).not.toHaveBeenCalled();
 	});
 });
 
@@ -696,17 +678,16 @@ describe("getPollsLeftTodayService", () => {
 		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(POLLS);
 	});
 
-	it("counts today's polls the player has not answered in any run", async () => {
-		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
-			new Set([0])
-		);
+	it("counts one day's five before the player answered anything today", async () => {
+		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
+		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(new Set());
 
 		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
 
-		expect(result).toEqual({ success: true, data: 1 });
+		expect(result).toEqual({ success: true, data: SEED_LENGTH });
 	});
 
-	it("counts at most one day's five when the date's sequence holds the whole pool", async () => {
+	it("reads zero once a run answered part of today and ended, so a rerun cannot take the leftovers", async () => {
 		vi.mocked(pollQueries.fetchRunPollsForDate).mockResolvedValue(SEEDED_POOL);
 		vi.mocked(queries.fetchAnsweredPollIdsForDay).mockResolvedValue(
 			new Set([0, 1])
@@ -714,7 +695,7 @@ describe("getPollsLeftTodayService", () => {
 
 		const result = await getPollsLeftTodayService({ userId: USER, date: DATE });
 
-		expect(result).toEqual({ success: true, data: 3 });
+		expect(result).toEqual({ success: true, data: 0 });
 	});
 
 	it("reads zero once every one of today's polls is answered", async () => {

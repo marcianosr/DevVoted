@@ -31,6 +31,7 @@ import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type {
 	CommunityScreenProps,
+	CommunityRecords,
 	CommunityTurnout,
 	TurnoutBand,
 } from "~/ui/kanto-theme/CommunityScreen.ui";
@@ -48,7 +49,8 @@ const LETTERS = "ABCDEFGH";
 const COPY = {
 	title: "Community",
 	tagline: "What are other players doing?",
-	turnoutTitle: "Today’s records",
+	turnoutTitle: "Who cleared what",
+	recordsTitle: "Today’s records",
 	answeredToday: "Answered today",
 	unheldRecord: "—",
 	mapTitle: "Where everyone is",
@@ -246,9 +248,15 @@ export const turnoutFor = (
 	return {
 		title: COPY.turnoutTitle,
 		bands: [showedUp, ...outcomes],
-		records: recordRowsOf(turnout?.records ?? []),
 	};
 };
+
+export const recordsFor = (
+	turnout: CommunityDayTurnout | undefined
+): CommunityRecords => ({
+	title: COPY.recordsTitle,
+	rows: recordRowsOf(turnout?.records ?? []),
+});
 
 const categoryNameOf = (category: CategoryCode | null): string =>
 	category === null ? "Poll" : getCategoryMetadata(category).name;
@@ -395,6 +403,7 @@ export const communityScreenPropsFor = ({
 			showedUpBand(view),
 			fallenPressFor(view.climb?.fallen ?? [], onInspectClimber)
 		),
+		records: recordsFor(view.climb?.turnout),
 		map: {
 			title: COPY.mapTitle,
 			...(view.climb === null

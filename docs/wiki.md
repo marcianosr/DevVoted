@@ -86,9 +86,10 @@ profile menu and the border shop state the other wallet, **archived** storage, o
 Beside the headline sits one press: **Continue to <gate>** while polls are ready, with the shop a
 secondary press under it; **To shop · spend N KB** once the day is spent and the gate is paying out,
 when the shop is the only live press. A spent day with the shop shut refuses the climb press, never
-the shop. With no run open, a spent day reads **New polls in** over the clock and refuses **Start
-today's climb**: whether the day is spent is counted from every poll the player answered today,
-across all runs, never from one run's list. The faces of who answered today sit under the press and
+the shop. With no run open, a spent day reads **New polls in** over the clock and still offers **Start
+today's climb**, so the new run can be built and shopped; prep refuses its gate until tomorrow's
+deal. A day is spent for a new run once the player answered any poll today and that run ended: a
+rerun is never dealt the polls its dead run left over (ADR-014). The faces of who answered today sit under the press and
 lead to the community board. Under it, **Run so far** lists each closed gate's grade and earned KB
 and projects the next gate (**not started** until its first poll is answered; **opens tomorrow** and
 no quote while the day waits), and **Build** draws the weight bar and lists the installed configs,
@@ -284,7 +285,7 @@ A **matching pairs** poll shows four to six pairs split over two columns (ADR-19
 tiles are numbered and the right tiles lettered. Tap a tile, then a tile
 in the other column, to draw a link: both tiles and the line between them take one
 colour, and the right tile takes the left tile's number. Tap a linked tile to redraw
-its link, or **clear** to start over. **Check pairs**, beside **clear**, opens once all four pairs are linked and
+its link, or **clear** to start over. **Check pairs**, beside **clear**, opens once every pair is linked and
 marks every link at once: green where it joins a real pair, red where it does not
 (ADR-197). Three right links force the fourth, so a Check ends with 4, 2, 1 or 0 right.
 After Check and on the review, your board is dealt again as you played it, each link marked ✓ or ✗.
@@ -1540,15 +1541,15 @@ compare yet) reads as the subtitle under the board's title. Every avatar chip on
 page — leaders, climbers, fallen — wears the player's equipped border over a GitHub
 photo or a two-letter-initials fallback.
 
-**Today's records** is the turnout panel. It opens on **Answered today**: every player who
+**Who cleared what** is the turnout panel. It opens on **Answered today**: every player who
 answered a poll today, with their face, whatever their gate did (ADR-176, amended). Each live run that closed a gate today sits in
 one row: **PERFECT** (finished at 100%), **HEALTHY** (comfortably cleared), **OK**
 (narrowly cleared) or **SHAKY** (the gate held them). **DANGER** (the run ended today)
-lists every player whose run fell today, even one who started again, so a player can
-sit in DANGER and in their live run's row. Pressing a face in DANGER opens that run's
-card, the same one the climb map opens, so the corpse can be looted from here
-(ADR-176, amended). The row comes from the run's latest close: a clear on any band below healthy is OK, a
-hold is SHAKY whatever its band. The same list then names the day's record holders: biggest and lightest build, comeback (cleared a gate the same run was held
+lists every player whose run fell today and who has not started again; once they do,
+their corpse leaves DANGER and stays lootable from the climb map. Pressing a face in
+DANGER opens that run's card, the same one the climb map opens, so the corpse can be
+looted from here (ADR-176, amended). The row comes from the run's latest close: a clear on any band below healthy is OK, a
+hold is SHAKY whatever its band. **Today's records**, its own panel directly under it, names the day's record holders: biggest and lightest build, comeback (cleared a gate the same run was held
 at), most audits (counted across the whole run, not the day), most installed config, most expensive build, KB generated and KB
 spent. Only gates closed today count: a live run that has not closed one today is
 absent from the outcomes and records, and KB spent starts from what the run held after

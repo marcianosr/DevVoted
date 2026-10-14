@@ -284,6 +284,7 @@ export const insertRunPolls = async (
 	polls: readonly RunPoll[],
 	segmentDate: string
 ): Promise<void> => {
+	if (polls.length === 0) return;
 	await tx.insert(runPollsTable).values(
 		polls.map((poll, position) => ({
 			run_id: runId,
@@ -381,19 +382,34 @@ export const fetchDealForRun = async (
 	return fetchPollsInOrder(db, await dealPollIdsFor(db, date, answered));
 };
 
-export const rollSegmentForward = async (
+const lastDealtDateOf = async (
 	tx: RunPollsWriter,
-	runId: number,
-	today: string,
-	currentIndex: number
-): Promise<void> => {
+	runId: number
+): Promise<string | null> => {
 	const [latest] = await tx
 		.select({ segment_date: runPollsTable.segment_date })
 		.from(runPollsTable)
 		.where(eq(runPollsTable.run_id, runId))
 		.orderBy(desc(runPollsTable.segment_date))
 		.limit(1);
-	if (!latest || latest.segment_date >= today) return;
+	if (latest) return latest.segment_date;
+
+	const [run] = await tx
+		.select({ seed_date: runsTable.seed_date })
+		.from(runsTable)
+		.where(eq(runsTable.id, runId))
+		.limit(1);
+	return run?.seed_date ?? null;
+};
+
+export const rollSegmentForward = async (
+	tx: RunPollsWriter,
+	runId: number,
+	today: string,
+	currentIndex: number
+): Promise<void> => {
+	const lastDealt = await lastDealtDateOf(tx, runId);
+	if (lastDealt === null || lastDealt >= today) return;
 
 	const answered = await fetchAnsweredPollIds(tx, runId);
 
