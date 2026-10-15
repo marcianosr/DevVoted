@@ -31,13 +31,16 @@ export type CategoryLeaderProps = {
 	claim?: string;
 };
 
-const LeaderName = ({ userId, handle }: CategorySeatLeader) => (
+const LeaderName = ({
+	userId,
+	handle,
+}: Pick<CategorySeatLeader, "userId" | "handle">) => (
 	<Typography variant="hint" as="span">
 		<Link href={profilePathFor(userId)}>{handle}</Link>
 	</Typography>
 );
 
-const Face = (leader: CategorySeatLeader) => (
+const Face = (leader: Omit<CategorySeatLeader, "figure">) => (
 	<Climber
 		userId={leader.userId}
 		name={leader.handle}
