@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 
-import { PlayerHoverContext } from "~/shared/hooks/usePlayerHover.hook";
+import { PlayerCardSlotContext } from "~/shared/hooks/usePlayerCardSlot.hook";
 
 import { Climber, ClimberStack, initialsOf } from "./Climber.ui";
 
@@ -148,12 +147,12 @@ describe("ClimberStack", () => {
 		expect(more).toHaveTextContent("+2");
 		expect(
 			container.firstElementChild?.querySelectorAll(
-				":scope > [title], :scope > a"
+				":scope > [title], :scope > .player-card-hold"
 			)
 		).toHaveLength(3);
 	});
 
-	it("opens the folded faces as links to their players", () => {
+	it("opens the folded faces as ways into their players", () => {
 		render(<ClimberStack climbers={GYM} shown={3} />);
 		const more = screen.getByRole("button", { name: "show 2 more players" });
 		const panel = document.getElementById(
@@ -164,9 +163,9 @@ describe("ClimberStack", () => {
 		expect(panel).toHaveAttribute("popover", "auto");
 		expect(
 			within(panel)
-				.getAllByRole("link", { hidden: true })
-				.map((link) => link.getAttribute("href"))
-		).toEqual(["/profile/erika", "/profile/koga"]);
+				.getAllByRole("button", { hidden: true })
+				.map((face) => face.getAttribute("aria-label"))
+		).toEqual(["erika's card", "koga's card"]);
 	});
 
 	it("counts the players it has no face for in the press and in the panel", () => {
@@ -194,12 +193,13 @@ describe("Climber, as a way into a player", () => {
 		expect(screen.getByTitle("Misty")).toBeInTheDocument();
 	});
 
-	it("links a player's face to their in-game page", () => {
+	it("opens a player's full card from their face", () => {
 		render(<Climber name="Misty" userId="misty-id" />);
+		const face = screen.getByRole("button", { name: "Misty's card" });
 
 		expect(
-			screen.getByRole("link", { name: "Misty's profile" })
-		).toHaveAttribute("href", "/profile/misty-id");
+			document.getElementById(face.getAttribute("popovertarget") ?? "")
+		).toHaveAttribute("popover", "auto");
 	});
 
 	it("drops the browser's own tooltip, so it cannot cover the card", () => {
@@ -208,25 +208,14 @@ describe("Climber, as a way into a player", () => {
 		expect(screen.queryByTitle("Misty")).toBeNull();
 	});
 
-	it("reports hover and focus to the card, and leaving to put it away", async () => {
-		const show = vi.fn();
-		const hide = vi.fn();
-		const user = userEvent.setup();
+	it("leaves the cards empty until someone reaches for the face", () => {
 		render(
-			<PlayerHoverContext.Provider value={{ show, hide }}>
+			<PlayerCardSlotContext.Provider value={({ userId }) => userId}>
 				<Climber name="Misty" userId="misty-id" />
-			</PlayerHoverContext.Provider>
-		);
-		const face = screen.getByRole("link", { name: "Misty's profile" });
-
-		await user.hover(face);
-		expect(show).toHaveBeenCalledWith(
-			"misty-id",
-			expect.objectContaining({ top: expect.any(Number) })
+			</PlayerCardSlotContext.Provider>
 		);
 
-		await user.unhover(face);
-		expect(hide).toHaveBeenCalled();
+		expect(screen.queryByText("misty-id")).toBeNull();
 	});
 
 	it("keys a stack of faces by player, so two players sharing a name both draw", () => {
@@ -239,7 +228,7 @@ describe("Climber, as a way into a player", () => {
 			/>
 		);
 
-		expect(screen.getAllByRole("link", { name: "Red's profile" })).toHaveLength(
+		expect(screen.getAllByRole("button", { name: "Red's card" })).toHaveLength(
 			2
 		);
 	});

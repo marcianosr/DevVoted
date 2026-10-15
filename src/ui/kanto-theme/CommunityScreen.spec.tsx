@@ -24,7 +24,7 @@ const RECORDS_TITLE = props.records.title;
 const POLLS_TITLE = props.polls.title;
 
 const SEATED_CATEGORIES = ["JavaScript", "CSS", "TypeScript", "Git"];
-const LEADER_FACE = { name: /'s profile$/ };
+const LEADER_FACE = { name: /'s card$/ };
 
 const sectionOf = (title: string): HTMLElement => {
 	const section = screen
@@ -234,7 +234,7 @@ describe("CommunityScreen", () => {
 		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
 			const board = await boardOf(title);
 
-			expect(within(board).getAllByRole("link", LEADER_FACE)).toHaveLength(9);
+			expect(within(board).getAllByRole("button", LEADER_FACE)).toHaveLength(9);
 			expect(within(board).getAllByText("unranked")).toHaveLength(3);
 		}
 	});
@@ -333,7 +333,9 @@ describe("CommunityScreen, a first climb", () => {
 		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
 			const board = await boardOf(title);
 
-			expect(within(board).queryAllByRole("link", LEADER_FACE)).toHaveLength(0);
+			expect(within(board).queryAllByRole("button", LEADER_FACE)).toHaveLength(
+				0
+			);
 			expect(within(board).getAllByText("unranked")).toHaveLength(12);
 		}
 	});

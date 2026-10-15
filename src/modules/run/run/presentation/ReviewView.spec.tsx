@@ -101,7 +101,7 @@ describe("ReviewView", () => {
 		render(<ReviewView view={view} back={back} />);
 
 		expect(
-			await screen.findByRole("link", { name: "Misty's profile" })
+			await screen.findByRole("button", { name: "Misty's card" })
 		).toBeInTheDocument();
 	});
 

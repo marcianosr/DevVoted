@@ -18,7 +18,7 @@ import { fetchUser } from "~/modules/account/auth/application/auth.serverfn";
 import { ViewerContext } from "~/modules/account/auth/application/useViewer.hook";
 import { AdvertisementBanner } from "~/modules/account/profile/presentation/Advertisement.component";
 import { recordScreen } from "~/modules/ops/pulse/application/visit.serverfn";
-import { PlayerHover } from "~/modules/run/community/presentation/PlayerHover.component";
+import { PlayerCards } from "~/modules/run/community/presentation/PlayerCards.component";
 import {
 	PageThemeContext,
 	pageThemeAttributes,
@@ -104,7 +104,7 @@ function RootComponent() {
 		<RootDocument>
 			<QueryClientProvider client={queryClient}>
 				<ViewerContext.Provider value={user}>
-					<PlayerHover>
+					<PlayerCards>
 						<NavRunContext.Provider value={setNavRun}>
 							<Nav user={user} published={navRun} />
 							<main
@@ -119,7 +119,7 @@ function RootComponent() {
 								<AdvertisementBanner />
 							</main>
 						</NavRunContext.Provider>
-					</PlayerHover>
+					</PlayerCards>
 				</ViewerContext.Provider>
 			</QueryClientProvider>
 		</RootDocument>

@@ -1504,11 +1504,11 @@ of tiles. Your own figures are not
 stated beside theirs (ADR-186). Their collection stays private, as before: a
 visitor reading your unanswered polls would be reading ahead.
 
-You reach another player's page by pressing their **face** or the **name** beside
-it: on a poll byline, on a category seat, among a poll's voters, in the turnout, on
-the climb map card. Hover or focus a face and the player's **card** shows first, as
-a read-only tooltip (ADR-141). Nothing beside a face goes to GitHub any more; the
-GitHub handle is stated once, on the player's own page.
+Press a player's **face** anywhere (a poll byline, a category seat, a poll's voters,
+the turnout, the climb map) and their **card** opens as a dialog with a close button;
+the name in it leads to their page (ADR-199). With a mouse or keyboard focus, the
+card shows first as a read-only tooltip (ADR-141); a touch never shows the tooltip. Nothing beside a face
+goes to GitHub any more; the GitHub handle is stated once, on the player's own page.
 
 The hero and every card share one **player header** (`PlayerHeader.ui.tsx`): face and
 name, the role beneath it (**● Admin**) when they hold one, their titles, then a
@@ -1581,10 +1581,8 @@ that player's chip, dimmed and greyed, keyed by run rather than player so two lo
 one day both show (abandoning is not falling and draws nothing). The track scrolls
 horizontally on narrow screens and centres itself on your column. Gate/poll arithmetic
 lives in `climbMap.model.ts`, one unit: polls, counted `gate * 5 + pollsIntoGate`.
-Press any chip — climber or fallen — and their **card** opens: a foldout on a phone, a
-panel under the track on a wider screen. The map is the one place a press opens the
-card rather than the profile, because the card is where **Loot** and **File** live and a
-phone has no hover (ADR-141). The card is the same one a hover shows anywhere else: a
+Press any chip — climber or fallen — and their **card** opens as a dialog. On the map the card also carries
+**Loot** and **File** (ADR-141). The card is the same one a hover shows anywhere else: a
 head that fades from the swatch the player wears on their profile (pallet when none),
 with the face and name, both linking to their page, and every title they wear as a
 badge, the first in the swatch colour (ADR-150); then the gate row (the gate's swatch

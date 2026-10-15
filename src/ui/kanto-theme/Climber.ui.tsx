@@ -1,19 +1,14 @@
 import {
 	type CSSProperties,
-	type FocusEvent,
-	type MouseEvent,
 	type ReactNode,
 	useId,
+	useRef,
+	useState,
 } from "react";
 
 import { clsx } from "clsx";
 
-import {
-	PLAYER_CARD_TOOLTIP_ID,
-	type PlayerAnchor,
-	usePlayerHover,
-} from "~/shared/hooks/usePlayerHover.hook";
-import { profilePathFor } from "~/shared/lib/profilePath";
+import { usePlayerCardSlot } from "~/shared/hooks/usePlayerCardSlot.hook";
 
 export type ClimberSize = "sm" | "md" | "lg" | "xl";
 
@@ -58,11 +53,17 @@ const MORE_PANEL =
 const MORE_FACES = "flex max-h-64 max-w-xs flex-wrap gap-1 overflow-y-auto";
 const MORE_REST = "mt-2 block";
 
-const FACE_LINK =
-	"inline-flex shrink-0 rounded-md focus:outline-none focus-visible:ring-2";
+const FACE_PRESS =
+	"inline-flex shrink-0 cursor-pointer rounded-md focus:outline-none focus-visible:ring-2";
+
+const HOLD = "player-card-hold relative inline-flex shrink-0";
+const HOVER_CARD =
+	"player-hover-card w-112 max-w-[calc(100dvw-2rem)] overflow-hidden rounded-2xl";
+const FULL_CARD =
+	"m-auto w-112 max-w-[calc(100dvw-2rem)] border-0 bg-transparent p-0 text-[inherit] backdrop:bg-black/70";
 
 export const COPY = {
-	profileOf: (name: string) => `${name}'s profile`,
+	cardOf: (name: string) => `${name}'s card`,
 	showMore: (count: number) => `show ${count.toLocaleString()} more players`,
 	andMore: (count: number) => `and ${count.toLocaleString()} more`,
 } as const;
@@ -94,41 +95,85 @@ export type ClimberProps = {
 	onPress?: () => void;
 };
 
-const anchorOf = (element: Element): PlayerAnchor => {
-	const { top, bottom, left, right } = element.getBoundingClientRect();
-	return { top, bottom, left, right };
+const anchorNameOf = (id: string) => `--${id.replaceAll(":", "")}`;
+
+export type PlayerCardHoldProps = {
+	userId: string;
+	fullCardId?: string;
+	children: ReactNode;
 };
 
-export type PlayerFaceLinkProps = {
+export const PlayerCardHold = ({
+	userId,
+	fullCardId,
+	children,
+}: PlayerCardHoldProps) => {
+	const Card = usePlayerCardSlot();
+	const anchor = anchorNameOf(useId());
+	const fullCard = useRef<HTMLSpanElement>(null);
+	const [reached, setReached] = useState(false);
+	const reach = () => setReached(true);
+
+	return (
+		<span
+			className={HOLD}
+			style={{ anchorName: anchor }}
+			onPointerEnter={reach}
+			onFocus={reach}
+		>
+			{children}
+			<span
+				role="tooltip"
+				className={HOVER_CARD}
+				style={{ positionAnchor: anchor }}
+			>
+				{reached ? <Card userId={userId} /> : null}
+			</span>
+			{fullCardId === undefined ? null : (
+				<span
+					ref={fullCard}
+					id={fullCardId}
+					popover="auto"
+					className={FULL_CARD}
+				>
+					{reached ? (
+						<Card
+							userId={userId}
+							onClose={() => fullCard.current?.hidePopover()}
+						/>
+					) : null}
+				</span>
+			)}
+		</span>
+	);
+};
+
+export type PlayerFaceProps = {
 	userId: string;
 	name: string;
 	className?: string;
 	children: ReactNode;
 };
 
-export const PlayerFaceLink = ({
+export const PlayerFace = ({
 	userId,
 	name,
-	className = FACE_LINK,
+	className = FACE_PRESS,
 	children,
-}: PlayerFaceLinkProps) => {
-	const { show, hide } = usePlayerHover();
-	const reveal = (event: MouseEvent<Element> | FocusEvent<Element>) =>
-		show(userId, anchorOf(event.currentTarget));
+}: PlayerFaceProps) => {
+	const fullCardId = useId();
 
 	return (
-		<a
-			href={profilePathFor(userId)}
-			aria-label={COPY.profileOf(name)}
-			aria-describedby={PLAYER_CARD_TOOLTIP_ID}
-			className={className}
-			onMouseEnter={reveal}
-			onFocus={reveal}
-			onMouseLeave={hide}
-			onBlur={hide}
-		>
-			{children}
-		</a>
+		<PlayerCardHold userId={userId} fullCardId={fullCardId}>
+			<button
+				type="button"
+				popoverTarget={fullCardId}
+				aria-label={COPY.cardOf(name)}
+				className={className}
+			>
+				{children}
+			</button>
+		</PlayerCardHold>
 	);
 };
 
@@ -187,7 +232,7 @@ const PressableFace = ({
 	<button
 		type="button"
 		aria-label={face.name}
-		className={FACE_LINK}
+		className={FACE_PRESS}
 		onClick={onPress}
 	>
 		<Face {...face} titled />
@@ -201,9 +246,9 @@ export const Climber = ({ userId, onPress, ...face }: ClimberProps) => {
 	return userId === undefined ? (
 		<Face {...face} titled />
 	) : (
-		<PlayerFaceLink userId={userId} name={face.name}>
+		<PlayerFace userId={userId} name={face.name}>
 			<Face {...face} titled={false} />
-		</PlayerFaceLink>
+		</PlayerFace>
 	);
 };
 
@@ -215,8 +260,6 @@ export type ClimberStackProps = {
 	wrap?: boolean;
 };
 
-const popoverAnchorOf = (id: string) => `--more-${id.replaceAll(":", "")}`;
-
 const MorePlayers = ({
 	hidden,
 	overflow,
@@ -227,7 +270,7 @@ const MorePlayers = ({
 	size: ClimberSize;
 }) => {
 	const id = useId();
-	const anchor = popoverAnchorOf(id);
+	const anchor = anchorNameOf(id);
 	const count = hidden.length + overflow;
 	const trigger: CSSProperties = { anchorName: anchor };
 	const panel: CSSProperties = { positionAnchor: anchor };
