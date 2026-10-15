@@ -44,6 +44,22 @@ describe("standingFor", () => {
 		});
 	});
 
+	it("reads the last closed gate at the coverage and band its close reported", () => {
+		const ladder = { floor: 0, ok: 52, healthy: 64 };
+
+		expect(
+			standingFor({
+				...RUN,
+				lastClose: { gate: 2, band: "perfect", held: 130, ladder },
+			}).gate
+		).toMatchObject({
+			name: "Cerulean",
+			label: "gate 2",
+			swatch: { gate: 2 },
+			coverage: { ...ladder, held: 130, band: "perfect" },
+		});
+	});
+
 	it("counts the weight left free in the build", () => {
 		const standing = standingFor(RUN);
 
