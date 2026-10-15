@@ -53,8 +53,12 @@ import {
 	pickedAfter,
 } from "~/modules/run/run/application/pollScreen.viewmodel";
 import { ladderFor } from "~/modules/run/community/application/climbLadder.viewmodel";
-import type { ClimbTodayView } from "~/modules/run/community/application/community.service";
+import type {
+	ClimbTodayView,
+	RunCommunityPoll,
+} from "~/modules/run/community/application/community.service";
 import {
+	pollSpotlightFor,
 	recordsFor,
 	turnoutFor,
 } from "~/modules/run/community/application/communityScreen.viewmodel";
@@ -86,7 +90,6 @@ import {
 	type CommunityScreenProps,
 } from "~/ui/kanto-theme/CommunityScreen.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
-import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
 import {
 	CATEGORY_CODES,
 	type CategoryCode,
@@ -317,7 +320,6 @@ const sameLabelSet = (a: readonly string[], b: readonly string[]): boolean =>
 const climberOf = (trainer: SimTrainer): ClimberProps => ({
 	name: trainer.displayName,
 });
-
 const trainerLeader = (seed: string) => {
 	const login = TRAINERS[hashOf(seed) % TRAINERS.length].id;
 
@@ -431,11 +433,11 @@ const simulateCommunityScreen = (
 		);
 	};
 
-	const results = answered.flatMap((entry, index): PollResultProps[] => {
+	const results = answered.flatMap((entry, index): RunCommunityPoll[] => {
 		const poll = pollsById.get(entry.id);
 		if (poll === undefined) return [];
 
-		const options = poll.options.map((option, position) => {
+		const options = poll.options.map((option) => {
 			const yours = entry.picked.includes(option.label);
 			const pickers = TRAINERS.filter((trainer) =>
 				simulatedPickLabels(poll, trainer).includes(option.label)
@@ -443,29 +445,29 @@ const simulateCommunityScreen = (
 			const votes = pickers.length + (yours ? 1 : 0);
 
 			return {
-				letter: String.fromCharCode(65 + position),
 				label: option.label,
-				percent: Math.round((votes / climbers) * 100),
-				votes,
 				isRight: option.correct,
-				voters: [...(yours ? [YOU] : []), ...pickers.map(climberOf)],
+				count: votes,
+				percent: Math.round((votes / climbers) * 100),
+				voters: [...(yours ? [YOU_VOTER] : []), ...pickers.map(voterOf)],
 			};
 		});
+		const youGotItRight = entry.outcome === "correct";
 
 		return [
 			{
-				state: "revealed",
+				pollId: index + 1,
 				index: index + 1,
 				question: poll.question,
-				category: getCategoryMetadata(poll.category).name,
+				category: poll.category,
 				outcome: entry.outcome,
-				share: entry.coverageFactors?.correct,
-				rightShare: Math.round(
-					((rightsOn(poll).length + (entry.outcome === "correct" ? 1 : 0)) /
-						climbers) *
-						100
-				),
-				options,
+				detail: {
+					answerType: poll.answerType,
+					answeredCount: climbers,
+					gotItRightCount: rightsOn(poll).length + (youGotItRight ? 1 : 0),
+					youGotItRight,
+					options,
+				},
 			},
 		];
 	});
@@ -558,10 +560,7 @@ const simulateCommunityScreen = (
 					: { claim }),
 			})),
 		})),
-		polls: {
-			title: "The day's polls",
-			polls: results,
-		},
+		polls: pollSpotlightFor(results),
 	};
 };
 

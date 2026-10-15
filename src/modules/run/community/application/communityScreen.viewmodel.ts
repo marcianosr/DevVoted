@@ -1,8 +1,6 @@
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
 
-import type { CategoryCode } from "~/shared/lib/categories";
-import { getCategoryMetadata } from "~/shared/lib/categories";
 import { plural } from "~/shared/lib/displayValue";
 import { kbLabel } from "~/shared/lib/storage";
 
@@ -10,6 +8,7 @@ import type {
 	ClimbFallen,
 	ClimbTodayView,
 	RunCommunityPoll,
+	RunCommunityPollDetail,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
 import type { CommunityVoter } from "~/modules/run/community/domain/voter.model";
@@ -28,7 +27,6 @@ import {
 	type LootHand,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
-import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import type {
 	CommunityScreenProps,
 	CommunityRecords,
@@ -37,14 +35,15 @@ import type {
 } from "~/ui/kanto-theme/CommunityScreen.ui";
 import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
 import type { IncidentsPanelProps } from "~/ui/kanto-theme/IncidentsPanel.ui";
-import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
+import type {
+	PollSpotlightProps,
+	SpotlightPoll,
+} from "~/ui/kanto-theme/PollSpotlight.ui";
 import type { OpenedCardDetail } from "~/ui/kanto-theme/ClimbMap.ui";
 import {
 	type PlayerCardView,
 	playerCardFor,
 } from "~/modules/run/community/application/playerCard.viewmodel";
-
-const LETTERS = "ABCDEFGH";
 
 const COPY = {
 	title: "Community",
@@ -55,9 +54,9 @@ const COPY = {
 	unheldRecord: "—",
 	mapTitle: "Where everyone is",
 	noPlace: "start a run to place yourself",
-	pollsTitle: "The day’s polls",
-	reviewAnswers: "Review answers",
-	notDealtYet: (index: number) => `Poll ${index + 1} · not dealt yet`,
+	pollsTitle: "Today’s polls",
+	reviewAnswers: (count: number) =>
+		count === 1 ? "Review your answer" : `Review all ${count} answers`,
 	countdownHint: "until the next five polls are dealt",
 	pollsOpen: "polls are open",
 } as const;
@@ -258,52 +257,88 @@ export const recordsFor = (
 	rows: recordRowsOf(turnout?.records ?? []),
 });
 
-const categoryNameOf = (category: CategoryCode | null): string =>
-	category === null ? "Poll" : getCategoryMetadata(category).name;
-
-export const pollTallyFor = (
-	polls: readonly RunCommunityPoll[]
-): string | undefined => {
-	const revealed = polls.filter((poll) => poll.detail !== null);
-	if (revealed.length === 0) return undefined;
-
-	const right = revealed.filter((poll) => poll.outcome === "correct").length;
-	return `${right} of ${revealed.length}`;
+type RevealedPoll = {
+	question: string;
+	rightShare: number;
+	gotIt: readonly ClimberProps[];
 };
 
-export const pollResultsFor = (
-	polls: readonly RunCommunityPoll[]
-): PollResultProps[] => {
-	if (polls.length === 0) return [];
+const rightShareOf = ({
+	answeredCount,
+	gotItRightCount,
+}: RunCommunityPollDetail): number =>
+	answeredCount === 0 ? 0 : Math.round((gotItRightCount / answeredCount) * 100);
 
-	return Array.from({ length: SLICE_WINDOW }, (_, index): PollResultProps => {
-		const poll = polls.find((entry) => entry.index === index);
-		if (poll === undefined)
-			return { state: "sealed", index, question: COPY.notDealtYet(index) };
-		if (poll.detail === null)
-			return { state: "sealed", index, question: poll.question };
+const youFirst = (climbers: readonly ClimberProps[]): ClimberProps[] => [
+	...climbers.filter((climber) => climber.you === true),
+	...climbers.filter((climber) => climber.you !== true),
+];
 
-		const { answeredCount, gotItRightCount, options } = poll.detail;
+const gotItOf = ({
+	answerType,
+	options,
+}: RunCommunityPollDetail): readonly ClimberProps[] =>
+	answerType === "single"
+		? youFirst(
+				options
+					.filter((option) => option.isRight)
+					.flatMap((option) => option.voters.map(climberOf))
+			)
+		: [];
+
+const revealedPollsOf = (polls: readonly RunCommunityPoll[]): RevealedPoll[] =>
+	[...polls]
+		.sort((a, b) => a.index - b.index)
+		.flatMap((poll) =>
+			poll.detail === null
+				? []
+				: [
+						{
+							question: poll.question,
+							rightShare: rightShareOf(poll.detail),
+							gotIt: gotItOf(poll.detail),
+						},
+					]
+		);
+
+const spotlightsOf = (revealed: readonly RevealedPoll[]): SpotlightPoll[] => {
+	const hardest = revealed.reduce((low, poll) =>
+		poll.rightShare < low.rightShare ? poll : low
+	);
+	const easiest = revealed.reduce((high, poll) =>
+		poll.rightShare > high.rightShare ? poll : high
+	);
+	const hardestCard: SpotlightPoll = { kind: "hardest", ...hardest };
+
+	return easiest === hardest
+		? [hardestCard]
+		: [hardestCard, { kind: "easiest", ...easiest }];
+};
+
+export const pollSpotlightFor = (
+	polls: readonly RunCommunityPoll[],
+	onReview?: () => void
+): PollSpotlightProps => {
+	const revealed = revealedPollsOf(polls);
+	if (revealed.length === 0)
 		return {
-			state: "revealed",
-			index,
-			question: poll.question,
-			category: categoryNameOf(poll.category),
-			outcome: poll.outcome === "missed" ? "wrong" : poll.outcome,
-			rightShare:
-				answeredCount === 0
-					? 0
-					: Math.round((gotItRightCount / answeredCount) * 100),
-			options: options.map((option, position) => ({
-				letter: LETTERS[position] ?? "?",
-				label: option.label,
-				percent: option.percent,
-				votes: option.count,
-				isRight: option.isRight,
-				voters: option.voters.map(climberOf),
-			})),
+			title: COPY.pollsTitle,
+			spotlights: [],
+			empty: NOTHING_TO_COMPARE_YET,
 		};
-	});
+
+	return {
+		title: COPY.pollsTitle,
+		spotlights: spotlightsOf(revealed),
+		...(onReview === undefined
+			? {}
+			: {
+					review: {
+						label: COPY.reviewAnswers(revealed.length),
+						onReview,
+					},
+				}),
+	};
 };
 
 const fallenPressFor =
@@ -422,13 +457,6 @@ export const communityScreenPropsFor = ({
 		...(incidents === undefined ? {} : { incidents }),
 		...(hallOfFame === undefined ? {} : { hallOfFame }),
 		leaders: view.leaders.map(categoryBoardFor),
-		polls: {
-			title: COPY.pollsTitle,
-			tally: pollTallyFor(view.polls),
-			polls: pollResultsFor(view.polls),
-			...(onReview === undefined
-				? {}
-				: { review: { label: COPY.reviewAnswers, onReview } }),
-		},
+		polls: pollSpotlightFor(view.polls, onReview),
 	};
 };

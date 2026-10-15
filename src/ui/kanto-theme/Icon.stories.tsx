@@ -21,6 +21,8 @@ const NAMES = [
 	"search",
 	"plus",
 	"trophy",
+	"flame",
+	"target",
 	"bulb",
 ] as const;
 
