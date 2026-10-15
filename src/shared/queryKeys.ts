@@ -14,6 +14,8 @@ export const sessionRunQueryKeys = {
 	community: (date: string) =>
 		[...sessionRunQueryKeys.all, "community", date] as const,
 	todaysCommunity: () => sessionRunQueryKeys.community(getTodayDateString()),
+	reviewPolls: (pollIds: readonly number[]) =>
+		[...sessionRunQueryKeys.all, "review-polls", ...pollIds] as const,
 	attackTargets: (date: string) =>
 		[...sessionRunQueryKeys.all, "attack-targets", date] as const,
 	todaysAttackTargets: () =>

@@ -28,8 +28,6 @@ import type {
 
 const noop = () => {};
 
-export const REVIEW_EXPAND_LABEL = "open everything";
-export const REVIEW_HINT = "fumbles open, passes folded";
 export const REVIEW_DEX_NOTE = "every poll you saw is recorded in the Dex";
 
 const REVIEW_LEAD = "Review";
@@ -73,7 +71,6 @@ const pairsCardFor = (
 ): QuestionProps => ({
 	answerType: answer.answerType,
 	question: answer.question,
-	stem: "code",
 	...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
 	options: [],
 	pairs: answeredPairsFor(pairs, answer.pollId),
@@ -86,7 +83,6 @@ const cardFor = (answer: GateAnswer, votes: PollVotes): QuestionProps => {
 	return {
 		answerType: answer.answerType,
 		question: answer.question,
-		stem: "code",
 		...(answer.codeBlock === undefined ? {} : { codeBlock: answer.codeBlock }),
 		pickedIds: answer.picked,
 		options: answer.options.map((label, index) => {
@@ -130,18 +126,12 @@ const authorOf = (answer: GateAnswer): AuthorProps | undefined => {
 	};
 };
 
-const reviewRowFor = (
-	answer: GateAnswer,
-	votes: PollVotes,
-	open?: boolean
-): ReviewRow => ({
+const reviewRowFor = (answer: GateAnswer, votes: PollVotes): ReviewRow => ({
 	verdict: answer.outcome,
 	share: answer.share,
-	question: answer.question,
 	category: categoryName(answer.category),
 	coverage: signedPercent(answer.coverage),
 	coverageColor: coverageColor(answer.coverage),
-	open,
 	card: cardFor(answer, votes),
 	tally: tallyOf(answer),
 	explanation: answer.explanation,
@@ -152,7 +142,6 @@ const reviewRowFor = (
 export type ReviewFrame = {
 	gate: number;
 	answers: readonly GateAnswer[];
-	open?: boolean;
 	swatchGates?: readonly number[];
 	balanceKb?: number;
 	votes?: PollVotes;
@@ -161,7 +150,6 @@ export type ReviewFrame = {
 export const reviewPropsFor = ({
 	gate,
 	answers,
-	open,
 	swatchGates = [],
 	balanceKb,
 	votes = NO_VOTES,
@@ -186,9 +174,7 @@ export const reviewPropsFor = ({
 				},
 			],
 		},
-		hint: REVIEW_HINT,
-		expand: { label: REVIEW_EXPAND_LABEL, onPress: noop },
-		rows: answers.map((answer) => reviewRowFor(answer, votes, open)),
+		rows: answers.map((answer) => reviewRowFor(answer, votes)),
 		footer: {
 			note: REVIEW_DEX_NOTE,
 			action: { label: GATE_SHOP_LABEL, icon: "shop", onPress: noop },

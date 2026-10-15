@@ -6,7 +6,10 @@ import { TEST_DATES } from "~/test/kanto";
 import * as climbQueries from "~/modules/run/community/infrastructure/climbers.repository";
 import { GATE_COUNT } from "~/modules/run/run/domain/rules.model";
 import * as leaderQueries from "~/modules/run/run/infrastructure/categoryLeader.repository";
-import { getRunCommunityService } from "~/modules/run/community/application/community.service";
+import {
+	getReviewPollsService,
+	getRunCommunityService,
+} from "~/modules/run/community/application/community.service";
 import * as communityQueries from "~/modules/run/community/infrastructure/community.repository";
 import type { SessionAnswerRow } from "~/modules/run/community/infrastructure/community.repository";
 import * as queries from "~/modules/run/run/infrastructure/run.repository";
@@ -16,6 +19,7 @@ vi.mock("~/modules/run/community/infrastructure/community.repository", () => ({
 	fetchPollsWithOptions: vi.fn(),
 	fetchRunProgress: vi.fn(),
 	fetchSessionAnswersForDay: vi.fn(),
+	fetchSessionAnswersOnViewerDay: vi.fn(),
 }));
 
 vi.mock("~/modules/run/run/infrastructure/run.repository", () => ({
@@ -1092,5 +1096,37 @@ describe("a pairs poll on the community board", () => {
 
 		expect(detail?.answeredCount).toBe(3);
 		expect(detail?.gotItRightCount).toBe(1);
+	});
+});
+
+describe("getReviewPollsService", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.mocked(communityQueries.fetchPollsWithOptions).mockResolvedValue(POLLS);
+		vi.mocked(
+			communityQueries.fetchSessionAnswersOnViewerDay
+		).mockResolvedValue(answerRows);
+	});
+
+	it("reads the answers of the day the viewer answered, not today's", async () => {
+		await getReviewPollsService({ userId: RED, pollIds: [10] });
+
+		expect(
+			communityQueries.fetchSessionAnswersOnViewerDay
+		).toHaveBeenCalledWith(RED, [10]);
+		expect(communityQueries.fetchSessionAnswersForDay).not.toHaveBeenCalled();
+	});
+
+	it("names who picked each option of a poll the viewer answered", async () => {
+		const result = await getReviewPollsService({ userId: RED, pollIds: [10] });
+		if (!result.success) throw new Error(result.error);
+
+		const poll = result.data.find((entry) => entry.pollId === 10);
+		const voterNames = poll?.detail?.options.flatMap((option) =>
+			option.voters.map((voter) => voter.displayName)
+		);
+
+		expect(voterNames).toContain("Red");
+		expect(voterNames).toContain("Blue");
 	});
 });

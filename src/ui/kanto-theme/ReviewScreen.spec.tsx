@@ -3,9 +3,9 @@ import { render, screen, within } from "@testing-library/react";
 
 import {
 	REVIEW_DEX_NOTE,
-	REVIEW_EXPAND_LABEL,
+	kantoGateAnswers,
 	kantoReview,
-	kantoReviewAllOpen,
+	kantoReviewAt,
 	kantoReviewFlawless,
 } from "~/test/kantoGate.factory";
 
@@ -14,7 +14,9 @@ import { ReviewScreen } from "./ReviewScreen.ui";
 const props = kantoReview();
 
 const rowOf = (question: string) =>
-	screen.getByRole("heading", { name: question }).closest("details");
+	screen
+		.getByRole("heading", { name: question })
+		.closest<HTMLElement>(".panel-surface");
 
 describe("ReviewScreen", () => {
 	it("names the gate it is reviewing and how many polls it held", () => {
@@ -43,27 +45,7 @@ describe("ReviewScreen", () => {
 		);
 	});
 
-	it("opens the fumbles on arrival and leaves the passes folded", () => {
-		render(<ReviewScreen {...props} />);
-
-		expect(
-			rowOf("Which property centres a flex child along the main axis?")
-		).toHaveAttribute("open");
-		expect(rowOf("Which of these are built-in utility types?")).toHaveAttribute(
-			"open"
-		);
-		expect(rowOf("What does a rebase rewrite?")).not.toHaveAttribute("open");
-	});
-
-	it("draws a passed row at full strength", () => {
-		render(<ReviewScreen {...props} />);
-
-		expect(
-			rowOf("What does a rebase rewrite?")?.closest(".opacity-70")
-		).toBeNull();
-	});
-
-	it("leads every row with its verdict as a word", () => {
+	it("heads every card with its verdict as a word", () => {
 		render(<ReviewScreen {...props} />);
 
 		expect(screen.getAllByText("PASS")).toHaveLength(3);
@@ -71,7 +53,7 @@ describe("ReviewScreen", () => {
 		expect(screen.getByText("FAIL")).toBeInTheDocument();
 	});
 
-	it("closes each strip on its category and what the answer paid", () => {
+	it("heads each card with its category and what the answer paid", () => {
 		render(<ReviewScreen {...props} />);
 
 		const miss = rowOf(
@@ -167,25 +149,6 @@ describe("ReviewScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("offers to open everything, and says what is folded and why", () => {
-		render(<ReviewScreen {...props} />);
-
-		expect(
-			screen.getByRole("button", { name: REVIEW_EXPAND_LABEL })
-		).toBeInTheDocument();
-		expect(screen.getByText("fumbles open, passes folded")).toBeInTheDocument();
-	});
-
-	it("opens every row when the caller says so", () => {
-		const { container } = render(<ReviewScreen {...kantoReviewAllOpen()} />);
-
-		for (const row of container.querySelectorAll(
-			":scope > div > div > details"
-		)) {
-			expect(row).toHaveAttribute("open");
-		}
-	});
-
 	it("leaves for the shop, and says where the polls went", () => {
 		render(<ReviewScreen {...props} />);
 
@@ -195,7 +158,7 @@ describe("ReviewScreen", () => {
 		expect(screen.getByText(REVIEW_DEX_NOTE)).toBeInTheDocument();
 	});
 
-	it("stands its folds on the page, shedding the screen's own frame", () => {
+	it("stands its cards on the page, shedding the screen's own frame", () => {
 		const { container } = render(<ReviewScreen {...props} />);
 
 		expect(container.firstElementChild).not.toHaveClass("bg-theme-faint");
@@ -213,11 +176,54 @@ describe("ReviewScreen", () => {
 		expect(within(exit).getByText(REVIEW_DEX_NOTE)).toBeInTheDocument();
 	});
 
-	it("folds the whole screen away on a flawless gate", () => {
-		const { container } = render(<ReviewScreen {...kantoReviewFlawless()} />);
+	it("tallies a flawless gate as all passes", () => {
+		render(<ReviewScreen {...kantoReviewFlawless()} />);
 
 		expect(screen.getByText("5 passed")).toBeInTheDocument();
 		expect(screen.queryByText(/failed/)).not.toBeInTheDocument();
-		expect(container.querySelectorAll("details[open]")).toHaveLength(0);
+	});
+
+	it("shows every poll open as a card with its facts", () => {
+		const { container } = render(<ReviewScreen {...props} />);
+
+		expect(screen.getAllByText(/^\d+ (options|pairs) · /)).toHaveLength(5);
+		expect(container.querySelector("details")).toBeNull();
+		expect(
+			within(rowOf("What does a rebase rewrite?")!).getByText(/options ·/)
+		).toBeInTheDocument();
+	});
+
+	it("puts who picked an option under its label, beside the vote count", () => {
+		const answers = kantoGateAnswers.map((answer, index) => ({
+			...answer,
+			pollId: String(index),
+		}));
+		render(
+			<ReviewScreen
+				{...kantoReviewAt({
+					gate: 4,
+					answers,
+					votes: new Map(
+						answers.map((answer) => [
+							answer.pollId,
+							[
+								{
+									label: answer.options[0],
+									count: 7,
+									climbers: [{ name: "Misty" }],
+								},
+							],
+						])
+					),
+				})}
+			/>
+		);
+
+		const count = within(rowOf("What does a rebase rewrite?")!).getByText("7");
+
+		expect(count.closest("[data-note]")).toBeNull();
+		expect(count.closest("[data-answer]")).toContainElement(
+			within(rowOf("What does a rebase rewrite?")!).getByText("the commits")
+		);
 	});
 });

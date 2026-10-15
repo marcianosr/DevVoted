@@ -39,6 +39,7 @@ import {
 	fetchPollsWithOptions,
 	fetchRunProgress,
 	fetchSessionAnswersForDay,
+	fetchSessionAnswersOnViewerDay,
 	type SessionAnswerRow,
 } from "~/modules/run/community/infrastructure/community.repository";
 import {
@@ -465,6 +466,56 @@ const buildClimbToday = async ({
 	};
 };
 
+const communityPollOf = (
+	poll: CommunityPollRecord,
+	index: number,
+	answers: readonly CommunityAnswer[],
+	userId: string
+): RunCommunityPoll => {
+	const pollAnswers = answers.filter((answer) => answer.pollId === poll.id);
+	const viewerAnswer = pollAnswers.find((answer) => answer.user.id === userId);
+
+	if (!viewerAnswer) {
+		return {
+			pollId: poll.id,
+			index,
+			question: poll.question,
+			category: null,
+			outcome: "missed",
+			detail: null,
+		};
+	}
+
+	return {
+		pollId: poll.id,
+		index,
+		question: poll.question,
+		category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
+		outcome: answerOutcome(
+			viewerAnswer.mirrored ? mirrorGrading(poll) : poll,
+			viewerAnswer.optionIds
+		),
+		detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
+	};
+};
+
+export const getReviewPollsService = async ({
+	userId,
+	pollIds,
+}: {
+	userId: string;
+	pollIds: readonly number[];
+}): Promise<ApiResponse<RunCommunityPoll[]>> =>
+	handleApiOperation(async () => {
+		const answers = groupAnswers(
+			await fetchSessionAnswersOnViewerDay(userId, pollIds)
+		);
+		const polls = await fetchPollsWithOptions([...pollIds]);
+		return polls.map((poll, index) =>
+			communityPollOf(poll, index, answers, userId)
+		);
+	}, "getReviewPolls");
+
 export const getRunCommunityService = async ({
 	userId,
 	date,
@@ -498,40 +549,11 @@ export const getRunCommunityService = async ({
 		const players = playersOf(answers, userId);
 		if (consumed.length === 0) return EMPTY_VIEW(date, climb, leaders, players);
 
-		const views = consumed.map((entry, index): RunCommunityPoll => {
+		const views = consumed.map((entry, index) => {
 			const poll = pollsById.get(entry.poll_id);
 			if (!poll)
 				throw new Error(`Poll ${entry.poll_id} missing for community view`);
-
-			const pollAnswers = answers.filter(
-				(answer) => answer.pollId === entry.poll_id
-			);
-			const viewerAnswer = pollAnswers.find(
-				(answer) => answer.user.id === userId
-			);
-
-			if (!viewerAnswer) {
-				return {
-					pollId: poll.id,
-					index,
-					question: poll.question,
-					category: null,
-					outcome: "missed",
-					detail: null,
-				};
-			}
-
-			return {
-				pollId: poll.id,
-				index,
-				question: poll.question,
-				category: isCategoryCode(poll.categoryCode) ? poll.categoryCode : null,
-				outcome: answerOutcome(
-					viewerAnswer.mirrored ? mirrorGrading(poll) : poll,
-					viewerAnswer.optionIds
-				),
-				detail: buildPollDetail(poll, viewerAnswer, pollAnswers),
-			};
+			return communityPollOf(poll, index, answers, userId);
 		});
 
 		return {

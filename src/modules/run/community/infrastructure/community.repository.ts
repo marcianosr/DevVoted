@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, type SQL, sql } from "drizzle-orm";
 
 import type { AnswerType } from "~/shared/lib/answerTypes";
 
@@ -112,36 +112,86 @@ export type SessionAnswerRow = {
 	mirrored: boolean;
 };
 
-export const fetchSessionAnswersForDay = async (
-	date: string
-): Promise<SessionAnswerRow[]> => {
+const SESSION_ANSWER_COLUMNS = {
+	responseId: pollResponsesTable.response_id,
+	pollId: pollResponsesTable.poll_id,
+	userId: pollResponsesTable.user_id,
+	displayName: usersTable.display_name,
+	photoUrl: usersTable.photo_url,
+	equippedBorderId: usersTable.equipped_border_id,
+	optionId: pollResponseOptionsTable.option_id,
+	mirrored: pollResponsesTable.mirrored,
+	answerDate: pollResponsesTable.answer_date,
+};
+
+const fetchSessionAnswersWhere = async (
+	filter: SQL | undefined
+): Promise<(SessionAnswerRow & { answerDate: string })[]> => {
 	const rows = await db
-		.select({
-			responseId: pollResponsesTable.response_id,
-			pollId: pollResponsesTable.poll_id,
-			userId: pollResponsesTable.user_id,
-			displayName: usersTable.display_name,
-			photoUrl: usersTable.photo_url,
-			equippedBorderId: usersTable.equipped_border_id,
-			optionId: pollResponseOptionsTable.option_id,
-			mirrored: pollResponsesTable.mirrored,
-		})
+		.select(SESSION_ANSWER_COLUMNS)
 		.from(pollResponsesTable)
 		.leftJoin(usersTable, eq(pollResponsesTable.user_id, usersTable.id))
 		.leftJoin(
 			pollResponseOptionsTable,
 			eq(pollResponsesTable.response_id, pollResponseOptionsTable.response_id)
 		)
-		.where(
-			and(
-				eq(pollResponsesTable.mode, "session"),
-				eq(pollResponsesTable.answer_date, date)
-			)
-		);
+		.where(and(eq(pollResponsesTable.mode, "session"), filter));
 	return rows.map(({ equippedBorderId, ...row }) => ({
 		...row,
 		borderUrl: borderUrlOf(equippedBorderId),
 	}));
+};
+
+const withoutDate = ({
+	answerDate: _answerDate,
+	...row
+}: SessionAnswerRow & { answerDate: string }): SessionAnswerRow => row;
+
+export const fetchSessionAnswersForDay = async (
+	date: string
+): Promise<SessionAnswerRow[]> =>
+	(
+		await fetchSessionAnswersWhere(eq(pollResponsesTable.answer_date, date))
+	).map(withoutDate);
+
+const viewerAnswerDates = async (
+	userId: string,
+	pollIds: readonly number[]
+): Promise<ReadonlyMap<number, string>> => {
+	const rows = await db
+		.select({
+			pollId: pollResponsesTable.poll_id,
+			answerDate: pollResponsesTable.answer_date,
+		})
+		.from(pollResponsesTable)
+		.where(
+			and(
+				eq(pollResponsesTable.mode, "session"),
+				eq(pollResponsesTable.user_id, userId),
+				inArray(pollResponsesTable.poll_id, [...pollIds])
+			)
+		)
+		.orderBy(asc(pollResponsesTable.answer_date));
+	return new Map(rows.map((row) => [row.pollId, row.answerDate]));
+};
+
+export const fetchSessionAnswersOnViewerDay = async (
+	userId: string,
+	pollIds: readonly number[]
+): Promise<SessionAnswerRow[]> => {
+	if (pollIds.length === 0) return [];
+	const dates = await viewerAnswerDates(userId, pollIds);
+	if (dates.size === 0) return [];
+
+	const rows = await fetchSessionAnswersWhere(
+		and(
+			inArray(pollResponsesTable.poll_id, [...dates.keys()]),
+			inArray(pollResponsesTable.answer_date, [...new Set(dates.values())])
+		)
+	);
+	return rows
+		.filter((row) => dates.get(row.pollId) === row.answerDate)
+		.map(withoutDate);
 };
 
 export type PollSplitRecord = PollSplitTally;

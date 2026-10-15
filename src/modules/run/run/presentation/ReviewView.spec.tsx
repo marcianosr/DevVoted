@@ -9,13 +9,13 @@ import {
 	createMockRunView,
 } from "~/test/runView.factory";
 
-import { getRunCommunity } from "~/modules/run/community/application/community.serverfn";
+import { getReviewPolls } from "~/modules/run/community/application/community.serverfn";
 import { withQueryClient } from "~/test/queryClient.harness";
 
 import { ReviewView } from "./ReviewView.component";
 
 vi.mock("~/modules/run/community/application/community.serverfn", () => ({
-	getRunCommunity: vi.fn(),
+	getReviewPolls: vi.fn(),
 }));
 
 const render = (ui: ReactElement) => renderBare(withQueryClient(ui));
@@ -61,39 +61,32 @@ const back = { label: "Back to the gate", onUse: () => {} };
 
 describe("ReviewView", () => {
 	beforeEach(() => {
-		vi.mocked(getRunCommunity).mockResolvedValue({
+		vi.mocked(getReviewPolls).mockResolvedValue({
 			success: true,
-			data: {
-				date: "2026-05-13",
-				totalPlayers: 1,
-				players: [],
-				leaders: [],
-				climb: null,
-				polls: [
-					{
-						pollId: 7,
-						index: 0,
-						question: "Which type makes every property optional?",
-						category: "ts",
-						outcome: "wrong",
-						detail: {
-							answerType: "single",
-							answeredCount: 1,
-							gotItRightCount: 1,
-							youGotItRight: false,
-							options: [
-								{
-									label: "Partial<T>",
-									isRight: true,
-									count: 1,
-									percent: 100,
-									voters: [MISTY_VOTE],
-								},
-							],
-						},
+			data: [
+				{
+					pollId: 7,
+					index: 0,
+					question: "Which type makes every property optional?",
+					category: "ts",
+					outcome: "wrong",
+					detail: {
+						answerType: "single",
+						answeredCount: 1,
+						gotItRightCount: 1,
+						youGotItRight: false,
+						options: [
+							{
+								label: "Partial<T>",
+								isRight: true,
+								count: 1,
+								percent: 100,
+								voters: [MISTY_VOTE],
+							},
+						],
 					},
-				],
-			},
+				},
+			],
 		});
 	});
 
@@ -103,6 +96,12 @@ describe("ReviewView", () => {
 		expect(
 			await screen.findByRole("button", { name: "Misty's card" })
 		).toBeInTheDocument();
+	});
+
+	it("asks for the votes of the gate's own polls, whatever day they were dealt", () => {
+		render(<ReviewView view={view} back={back} />);
+
+		expect(getReviewPolls).toHaveBeenCalledWith({ data: { pollIds: [7] } });
 	});
 
 	it("lists every answer of the gate with its question", () => {
@@ -149,28 +148,20 @@ describe("ReviewView", () => {
 		expect(screen.queryByText("+1%")).not.toBeInTheDocument();
 	});
 
-	it("leaves a passed answer folded away until asked to open it", async () => {
+	it("shows a passed answer as openly as a missed one", () => {
 		const { container } = render(<ReviewView view={view} back={back} />);
 
-		const foldOf = (question: string) =>
-			[...container.querySelectorAll("details")].find((fold) =>
-				fold.querySelector("summary")?.textContent?.includes(question)
-			);
-
+		expect(container.querySelector("details")).toBeNull();
 		expect(
-			foldOf("Which method returns the last element?")
-		).not.toHaveAttribute("open");
-		expect(foldOf("Which type makes every property optional?")).toHaveAttribute(
-			"open"
-		);
-
-		await userEvent.click(
-			screen.getByRole("button", { name: /open everything/ })
-		);
-
-		expect(foldOf("Which method returns the last element?")).toHaveAttribute(
-			"open"
-		);
+			screen.getByRole("heading", {
+				name: "Which method returns the last element?",
+			})
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("heading", {
+				name: "Which type makes every property optional?",
+			})
+		).toBeInTheDocument();
 	});
 
 	it("goes back where it came from", async () => {
