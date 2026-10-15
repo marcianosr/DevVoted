@@ -3,7 +3,6 @@ import type { Meta, StoryObj } from "@storybook/react";
 import {
 	kantoGateAnswers,
 	kantoReview,
-	kantoReviewAllOpen,
 	kantoReviewAt,
 	kantoReviewFlawless,
 } from "~/test/kantoGate.factory";
@@ -21,10 +20,6 @@ type Story = StoryObj<typeof ReviewScreen>;
 
 export const Reviewed: Story = {
 	render: () => <ReviewScreen {...kantoReview()} />,
-};
-
-export const AllOpen: Story = {
-	render: () => <ReviewScreen {...kantoReviewAllOpen()} />,
 };
 
 export const Flawless: Story = {
@@ -52,7 +47,6 @@ export const WhoPickedWhat: Story = {
 			{...kantoReviewAt({
 				gate: 4,
 				answers: answersWithIds,
-				open: true,
 				votes: new Map(
 					answersWithIds.map((answer) => [
 						answer.pollId,

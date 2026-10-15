@@ -5,6 +5,7 @@ import {
 	runShareOf,
 } from "~/modules/run/build/domain/coverageRatio.model";
 import { standingOf } from "~/modules/run/community/domain/standing.model";
+import { baseGateLadderAt } from "~/modules/run/gate/domain/gate.model";
 
 const CLIMBER = {
 	gate: 6,
@@ -36,5 +37,36 @@ describe("standingOf", () => {
 
 	it("names no best category for a player without one", () => {
 		expect(standingOf(CLIMBER)).not.toHaveProperty("bestCategory");
+	});
+
+	it("reads no closed gate for a run that has closed none", () => {
+		expect(standingOf(CLIMBER)).not.toHaveProperty("lastClose");
+	});
+
+	it("reads the last closed gate at the coverage it reached, past a full bar", () => {
+		const ladder = { floor: 0, ok: 52, healthy: 64 };
+
+		expect(
+			standingOf({
+				...CLIMBER,
+				lastClose: {
+					gate: 0,
+					band: "perfect",
+					cleared: true,
+					held: 100,
+					reached: 130,
+					ladder,
+				},
+			}).lastClose
+		).toEqual({ gate: 0, band: "perfect", held: 130, ladder });
+	});
+
+	it("reads an old close without reach or ladder at its held coverage on the base ladder", () => {
+		expect(
+			standingOf({
+				...CLIMBER,
+				lastClose: { gate: 2, band: "ok", cleared: true, held: 60 },
+			}).lastClose
+		).toEqual({ gate: 2, band: "ok", held: 60, ladder: baseGateLadderAt(2) });
 	});
 });

@@ -2,7 +2,7 @@ import { clsx } from "clsx";
 
 import { profilePathFor } from "~/shared/lib/profilePath";
 
-import { PlayerFaceLink } from "./Climber.ui";
+import { PlayerFace } from "./Climber.ui";
 import { Link } from "./Link.ui";
 import { Typography } from "./Typography.ui";
 
@@ -66,13 +66,13 @@ const Face = ({ credit, photoUrl, borderUrl, userId, size }: FaceProps) => {
 		return <span className={clsx(AVATAR, AVATAR_SIZE[size])}>{drawn}</span>;
 
 	return (
-		<PlayerFaceLink
+		<PlayerFace
 			userId={userId}
 			name={credit}
 			className={clsx(AVATAR, AVATAR_SIZE[size])}
 		>
 			{drawn}
-		</PlayerFaceLink>
+		</PlayerFace>
 	);
 };
 

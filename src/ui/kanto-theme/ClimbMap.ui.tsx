@@ -7,7 +7,7 @@ import type {
 	LadderGate,
 } from "~/modules/run/community/application/climbLadder.viewmodel";
 
-import { Climber } from "./Climber.ui";
+import { Climber, PlayerCardHold } from "./Climber.ui";
 import { ClimberCard, type ClimberCardProps } from "./ClimberCard.ui";
 import { Typography } from "./Typography.ui";
 
@@ -111,18 +111,22 @@ const Chip = ({
 		/>
 	);
 
-	if (onInspect === undefined) return face;
-
 	return (
-		<button
-			type="button"
-			aria-label={climber.name}
-			aria-pressed={open}
-			className={CHIP_PRESS}
-			onClick={() => onInspect(pressKey)}
-		>
-			{face}
-		</button>
+		<PlayerCardHold userId={climber.id}>
+			{onInspect === undefined ? (
+				face
+			) : (
+				<button
+					type="button"
+					aria-label={climber.name}
+					aria-pressed={open}
+					className={CHIP_PRESS}
+					onClick={() => onInspect(pressKey)}
+				>
+					{face}
+				</button>
+			)}
+		</PlayerCardHold>
 	);
 };
 

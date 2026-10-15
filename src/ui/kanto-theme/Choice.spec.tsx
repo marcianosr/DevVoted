@@ -334,7 +334,7 @@ describe("Choice once the poll is answered", () => {
 });
 
 describe("a note under the answer", () => {
-	it("seats a note under the answer, inside the row, indented past the keycap", () => {
+	it("seats a note as its own full-width section under the answer, inside the row", () => {
 		render(
 			<Choice letter="A" note={<span>Same origin.</span>}>
 				at(-1)
@@ -342,8 +342,21 @@ describe("a note under the answer", () => {
 		);
 
 		const seat = screen.getByText("Same origin.").closest("[data-note]");
-		expect(seat).toHaveClass("basis-full", "pl-13");
+		expect(seat).toHaveClass("basis-full", "-mx-4", "border-t");
 		expect(seat?.closest("[data-answer]")).toHaveClass("flex-wrap");
+	});
+
+	it("stacks what sits under the label beneath the label itself, apart from the note", () => {
+		render(
+			<Choice letter="A" under={<span>3 picked</span>}>
+				at(-1)
+			</Choice>
+		);
+
+		expect(screen.getByText("3 picked").closest("[data-note]")).toBeNull();
+		expect(screen.getByText("3 picked").parentElement).toContainElement(
+			screen.getByText("at(-1)")
+		);
 	});
 
 	it("adds no seat and no wrap to a row without a note", () => {

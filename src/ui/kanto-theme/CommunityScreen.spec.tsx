@@ -7,7 +7,6 @@ import { kantoIncidentsQuiet } from "~/test/kantoIncidents.factory";
 import {
 	COMMUNITY_CORRECT_TITLE,
 	COMMUNITY_MAP_TITLE,
-	COMMUNITY_POLLS_TALLY,
 	COMMUNITY_STREAK_TITLE,
 	COMMUNITY_PREP_LABEL,
 	COMMUNITY_SHOP_LABEL,
@@ -24,7 +23,7 @@ const RECORDS_TITLE = props.records.title;
 const POLLS_TITLE = props.polls.title;
 
 const SEATED_CATEGORIES = ["JavaScript", "CSS", "TypeScript", "Git"];
-const LEADER_FACE = { name: /'s profile$/ };
+const LEADER_FACE = { name: /'s card$/ };
 
 const sectionOf = (title: string): HTMLElement => {
 	const section = screen
@@ -234,7 +233,7 @@ describe("CommunityScreen", () => {
 		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
 			const board = await boardOf(title);
 
-			expect(within(board).getAllByRole("link", LEADER_FACE)).toHaveLength(9);
+			expect(within(board).getAllByRole("button", LEADER_FACE)).toHaveLength(9);
 			expect(within(board).getAllByText("unranked")).toHaveLength(3);
 		}
 	});
@@ -275,46 +274,20 @@ describe("CommunityScreen", () => {
 		).toBeInTheDocument();
 	});
 
-	it("counts how many of the revealed polls the viewer got right beside the heading", () => {
+	it("spotlights only the hardest and the easiest poll", () => {
 		render(<CommunityScreen {...props} />);
 
-		expect(
-			within(sectionOf(POLLS_TITLE)).getByText(COMMUNITY_POLLS_TALLY)
-		).toBeInTheDocument();
-	});
-
-	it("draws all five polls", () => {
-		const { container } = render(<CommunityScreen {...props} />);
-
-		expect(container.querySelectorAll("details")).toHaveLength(5);
-	});
-
-	it("stands one poll open and the rest shut", () => {
-		const { container } = render(<CommunityScreen {...props} />);
-		const open = [...container.querySelectorAll("details")].filter((poll) =>
-			poll.hasAttribute("open")
+		expect(within(sectionOf(POLLS_TITLE)).getAllByRole("article")).toHaveLength(
+			2
 		);
-
-		expect(open).toHaveLength(1);
 	});
 });
 
 describe("CommunityScreen, before the day's polls", () => {
-	it("seals every poll", () => {
-		const { container } = render(
-			<CommunityScreen {...kantoCommunityBeforePolls()} />
-		);
-
-		expect(container.querySelectorAll("details")).toHaveLength(0);
-	});
-
-	it("withholds the categories, since the polls may be dealt again", () => {
+	it("spotlights no poll, since the polls may be dealt again", () => {
 		render(<CommunityScreen {...kantoCommunityBeforePolls()} />);
-		const polls = sectionOf(POLLS_TITLE);
 
-		expect(within(polls).queryByText("CSS")).toBeNull();
-		expect(within(polls).queryByText("TypeScript")).toBeNull();
-		expect(within(polls).queryByText("???")).toBeNull();
+		expect(within(sectionOf(POLLS_TITLE)).queryByRole("article")).toBeNull();
 	});
 
 	it("still shows the room, because turnout gives nothing away", () => {
@@ -333,7 +306,9 @@ describe("CommunityScreen, a first climb", () => {
 		for (const title of [COMMUNITY_STREAK_TITLE, COMMUNITY_CORRECT_TITLE]) {
 			const board = await boardOf(title);
 
-			expect(within(board).queryAllByRole("link", LEADER_FACE)).toHaveLength(0);
+			expect(within(board).queryAllByRole("button", LEADER_FACE)).toHaveLength(
+				0
+			);
 			expect(within(board).getAllByText("unranked")).toHaveLength(12);
 		}
 	});

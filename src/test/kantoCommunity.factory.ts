@@ -17,7 +17,8 @@ import {
 	bandAtLadder,
 	baseGateLadderAt,
 } from "~/modules/run/gate/domain/gate.model";
-import type { PollResultProps } from "~/ui/kanto-theme/PollResult.ui";
+import type { SpotlightPoll } from "~/ui/kanto-theme/PollSpotlight.ui";
+import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 
 import { kantoIncidents } from "./kantoIncidents.factory";
 import { gateSwatchAt } from "./swatchTrack.factory";
@@ -27,7 +28,6 @@ export const COMMUNITY_PREP_LABEL = "Prep for Celadon";
 export const COMMUNITY_MAP_TITLE = "Where everyone is";
 export const COMMUNITY_STREAK_TITLE = "streak";
 export const COMMUNITY_CORRECT_TITLE = "correct";
-export const COMMUNITY_POLLS_TALLY = "2 of 4";
 
 const CLEARED_GATE = 4;
 
@@ -395,174 +395,19 @@ const correctSeats = (): CategoryLeaderProps[] => [
 	open(CORRECT_CLAIM, "General Backend"),
 ];
 
-const polls = (): PollResultProps[] => [
+const spotlights = (): SpotlightPoll[] => [
 	{
-		state: "revealed",
-		index: 0,
+		kind: "hardest",
+		question:
+			"With dangerouslySetInnerHTML a risk you take, what risk is at stake?",
+		rightShare: 29,
+		gotIt: [misty],
+	},
+	{
+		kind: "easiest",
 		question: "Which method returns the last element of an array?",
-		category: "JavaScript",
-		outcome: "correct",
-		rightShare: 71,
-		options: [
-			{
-				letter: "A",
-				label: "at(-1)",
-				percent: 71,
-				votes: 854,
-				isRight: true,
-				voters: [you, misty],
-				voterOverflow: 852,
-			},
-			{
-				letter: "B",
-				label: "pop()",
-				percent: 18,
-				votes: 216,
-				isRight: false,
-				voters: [brock],
-				voterOverflow: 215,
-			},
-			{
-				letter: "C",
-				label: "slice(-1)",
-				percent: 11,
-				votes: 132,
-				isRight: false,
-				voters: [erika],
-				voterOverflow: 131,
-			},
-		],
-	},
-	{
-		state: "revealed",
-		index: 1,
-		question: "Which property centres a flex child along the main axis?",
-		category: "CSS",
-		outcome: "wrong",
-		rightShare: 22,
-		open: true,
-		options: [
-			{
-				letter: "A",
-				label: "justify-content",
-				percent: 22,
-				votes: 265,
-				isRight: true,
-				voters: [sabrina, koga],
-				voterOverflow: 263,
-			},
-			{
-				letter: "B",
-				label: "align-items",
-				percent: 58,
-				votes: 698,
-				isRight: false,
-				voters: [you, surge],
-				voterOverflow: 696,
-			},
-			{
-				letter: "C",
-				label: "place-self",
-				percent: 12,
-				votes: 144,
-				isRight: false,
-				voters: [blaine],
-				voterOverflow: 143,
-			},
-			{
-				letter: "D",
-				label: "text-align",
-				percent: 8,
-				votes: 96,
-				isRight: false,
-				voters: [erika],
-				voterOverflow: 95,
-			},
-		],
-	},
-	{
-		state: "revealed",
-		index: 2,
-		question: "What does a rebase rewrite?",
-		category: "Git",
-		outcome: "correct",
-		rightShare: 64,
-		options: [
-			{
-				letter: "A",
-				label: "The commits it replays",
-				percent: 64,
-				votes: 770,
-				isRight: true,
-				voters: [you, brock],
-				voterOverflow: 768,
-			},
-			{
-				letter: "B",
-				label: "The remote branch",
-				percent: 36,
-				votes: 433,
-				isRight: false,
-				voters: [misty],
-				voterOverflow: 432,
-			},
-		],
-	},
-	{
-		state: "revealed",
-		index: 3,
-		question: "Which utility type makes every property optional?",
-		category: "TypeScript",
-		outcome: "correct",
-		rightShare: 81,
-		options: [
-			{
-				letter: "A",
-				label: "Partial<T>",
-				percent: 81,
-				votes: 975,
-				isRight: true,
-				voters: [you, sabrina],
-				voterOverflow: 973,
-			},
-			{
-				letter: "B",
-				label: "Pick<T, K>",
-				percent: 19,
-				votes: 228,
-				isRight: false,
-				voters: [koga],
-				voterOverflow: 227,
-			},
-		],
-	},
-	{
-		state: "revealed",
-		index: 4,
-		question: "What does Promise.all reject with?",
-		category: "JavaScript",
-		outcome: "correct",
-		rightShare: 48,
-		options: [
-			{
-				letter: "A",
-				label: "The first rejection",
-				percent: 48,
-				votes: 578,
-				isRight: true,
-				voters: [you, giovanni],
-				voterOverflow: 576,
-			},
-			{
-				letter: "B",
-				label: "An array of rejections",
-				percent: 52,
-				votes: 625,
-				isRight: false,
-				voters: [blaine],
-				voterOverflow: 624,
-			},
-		],
+		rightShare: 86,
+		gotIt: [you, misty],
 	},
 ];
 
@@ -604,9 +449,9 @@ export const kantoCommunity = (): CommunityScreenProps => ({
 		},
 	],
 	polls: {
-		title: "The day’s polls",
-		tally: COMMUNITY_POLLS_TALLY,
-		polls: polls(),
+		title: "Today’s polls",
+		spotlights: spotlights(),
+		review: { label: "Review all 5 answers", onReview: () => {} },
 	},
 });
 
@@ -616,11 +461,8 @@ export const kantoCommunityBeforePolls = (): CommunityScreenProps => {
 		...base,
 		polls: {
 			title: base.polls.title,
-			polls: base.polls.polls.map((poll, index) => ({
-				state: "sealed",
-				index,
-				question: poll.question,
-			})),
+			spotlights: [],
+			empty: NOTHING_TO_COMPARE_YET,
 		},
 	};
 };

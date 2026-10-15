@@ -70,8 +70,6 @@ export {
 export {
 	type ReviewFrame,
 	REVIEW_DEX_NOTE,
-	REVIEW_EXPAND_LABEL,
-	REVIEW_HINT,
 } from "~/modules/run/gate/application/gateReview.viewmodel";
 import { KANTO_RUN_PAYOUTS } from "~/test/kantoPoll.factory";
 import { pollPayoutRows } from "~/test/swatchTrack.factory";
@@ -572,9 +570,6 @@ export { maxLevelOf };
 
 export const kantoReview = (): ReviewScreenProps =>
 	kantoReviewAt({ gate: 4, answers: LAVENDER_ANSWERS });
-
-export const kantoReviewAllOpen = (): ReviewScreenProps =>
-	kantoReviewAt({ gate: 4, answers: LAVENDER_ANSWERS, open: true });
 
 export const kantoReviewFlawless = (): ReviewScreenProps =>
 	kantoReviewAt({

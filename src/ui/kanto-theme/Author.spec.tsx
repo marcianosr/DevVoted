@@ -179,12 +179,12 @@ describe("Author", () => {
 });
 
 describe("Author, linking to the writer's page", () => {
-	it("sends the face and the handle to their in-game page, never to GitHub", () => {
+	it("opens the card from the face and sends the handle to their in-game page, never to GitHub", () => {
 		render(<Author handle="matthijsgroen" userId="matthijs-id" />);
 
 		expect(
-			screen.getByRole("link", { name: "@matthijsgroen's profile" })
-		).toHaveAttribute("href", "/profile/matthijs-id");
+			screen.getByRole("button", { name: "@matthijsgroen's card" })
+		).toHaveAttribute("popovertarget");
 		expect(
 			screen.getByRole("link", { name: "@matthijsgroen" })
 		).toHaveAttribute("href", "/profile/matthijs-id");

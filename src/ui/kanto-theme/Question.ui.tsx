@@ -19,12 +19,11 @@ const COPY = {
 
 const BLOCK = "flex w-full flex-col gap-3";
 const CHOICES = "flex w-full flex-col rounded-lg border border-theme-faint";
-const VOTES = "w-8 text-right text-xs tabular-nums text-theme-soft";
-const VOTER_FACES_SLOT = "flex w-24 justify-end";
+const VOTES = "text-xs tabular-nums text-theme-soft";
+const VOTER_LINE = "flex items-center gap-2";
 const VOTER_FACES = 3;
 
-const EXPLANATION =
-	"flex w-full flex-col gap-1 rounded-lg border border-theme-faint px-3 py-2";
+const EXPLANATION = "flex w-full flex-col gap-1";
 const EXPLANATION_HEAD = "flex items-center gap-2";
 const EXPLANATION_MARK =
 	"badge-theme inline-flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] leading-none";
@@ -164,16 +163,10 @@ const Explanation = ({ text, right }: OptionExplanation) => {
 };
 
 const Voters = ({ climbers, count, overflow }: QuestionVoters) => (
-	<>
-		<span className={VOTER_FACES_SLOT}>
-			<ClimberStack
-				climbers={climbers}
-				overflow={overflow}
-				shown={VOTER_FACES}
-			/>
-		</span>
+	<span className={VOTER_LINE}>
+		<ClimberStack climbers={climbers} overflow={overflow} shown={VOTER_FACES} />
 		<span className={VOTES}>{count.toLocaleString()}</span>
-	</>
+	</span>
 );
 
 export const Question = ({
@@ -238,7 +231,7 @@ const Choices = ({
 					crossedOut={option.crossedOut}
 					state={option.state}
 					onPick={pick}
-					aside={
+					under={
 						option.voters === undefined ? undefined : (
 							<Voters {...option.voters} />
 						)

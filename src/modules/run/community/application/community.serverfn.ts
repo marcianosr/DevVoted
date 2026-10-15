@@ -4,7 +4,11 @@ import { z } from "zod";
 import { getTodayDateString } from "~/shared/lib/dateUtils";
 import { withAuthenticatedUser } from "~/shared/utils/authorization";
 
-import { getRunCommunityService } from "~/modules/run/community/application/community.service";
+import {
+	getReviewPollsService,
+	getRunCommunityService,
+} from "~/modules/run/community/application/community.service";
+import { SLICE_WINDOW } from "~/modules/run/run/domain/rules.model";
 import {
 	getApprovalSlotsService,
 	submitCrowdPickService,
@@ -18,6 +22,20 @@ export const getRunCommunity = createServerFn({ method: "GET" }).handler(
 			getRunCommunityService({ userId, date: getTodayDateString() })
 		)
 );
+
+export const getReviewPolls = createServerFn({ method: "GET" })
+	.validator(
+		z
+			.object({
+				pollIds: z.array(z.number().int().positive()).max(SLICE_WINDOW),
+			})
+			.strict()
+	)
+	.handler(async ({ data }) =>
+		withAuthenticatedUser(({ userId }) =>
+			getReviewPollsService({ userId, pollIds: data.pollIds })
+		)
+	);
 
 export const getPollSplit = createServerFn({ method: "GET" })
 	.validator(z.object({ pollId: z.number().int().positive() }).strict())

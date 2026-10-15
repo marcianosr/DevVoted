@@ -42,15 +42,15 @@ describe("IncidentsPanel", () => {
 		);
 	});
 
-	it("draws both parties' faces, each a way into their profile", () => {
+	it("draws both parties' faces, each a way into their card", () => {
 		render(<IncidentsPanel {...kantoIncidents()} />);
 
 		expect(
-			screen.getByRole("link", { name: "Erika's profile" })
-		).toHaveAttribute("href", "/profile/erika");
-		expect(
-			screen.getByRole("link", { name: "Koga's profile" })
-		).toHaveAttribute("href", "/profile/koga");
+			screen.getByRole("button", { name: "Erika's card" })
+		).toHaveAttribute("popovertarget");
+		expect(screen.getByRole("button", { name: "Koga's card" })).toHaveAttribute(
+			"popovertarget"
+		);
 	});
 
 	it("states the day's count under the heading, left-aligned, not wrapped at the right", () => {

@@ -17,14 +17,15 @@ const RULED_OUT = "cursor-not-allowed opacity-50";
 const PICK_AREA = "flex min-w-0 flex-1 items-center gap-5 self-stretch";
 
 const WRAPPED = "flex-wrap gap-y-2";
-const NOTE_SEAT = "basis-full pl-13";
+const NOTE_SEAT =
+	"-mx-4 -mb-2.5 basis-full border-t border-theme-faint px-4 py-3";
 
 const TRAILING = "ml-auto flex shrink-0 items-center gap-2";
 const SEAL_BAR = "block h-5 rounded-md bg-theme-raised";
 const UNSEAL =
 	"cursor-pointer rounded-full border border-theme-faint px-2 py-1 text-xs text-theme-soft enabled:hover:bg-theme-soft disabled:cursor-not-allowed disabled:opacity-40";
 
-const TEXT = "min-w-0 flex-1";
+const TEXT = "flex min-w-0 flex-1 flex-col gap-1.5";
 const CROSSED_OUT = "line-through decoration-cinnabar decoration-2";
 const READER_ONLY = "sr-only";
 
@@ -95,6 +96,7 @@ export type ChoiceProps = {
 			children: ReactNode;
 			crossedOut?: boolean;
 			aside?: ReactNode;
+			under?: ReactNode;
 			note?: ReactNode;
 			seal?: never;
 	  }
@@ -102,6 +104,7 @@ export type ChoiceProps = {
 			children?: never;
 			crossedOut?: never;
 			aside?: never;
+			under?: never;
 			note?: never;
 			seal: ChoiceSeal;
 	  }
@@ -116,6 +119,7 @@ export const Choice = ({
 	children,
 	crossedOut = false,
 	aside,
+	under,
 	note,
 	seal,
 }: ChoiceProps) => {
@@ -143,6 +147,7 @@ export const Choice = ({
 				<span className={clsx(TEXT, crossedOut && CROSSED_OUT)}>
 					{text}
 					{crossedOut && <span className={READER_ONLY}>{RULED_OUT_NAME}</span>}
+					{under}
 				</span>
 				{aside === undefined ? (
 					answered && <VerdictMark verdict={state} />

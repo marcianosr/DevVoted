@@ -80,6 +80,7 @@ export type ClimberRow = {
 	pollsIntoGate: number;
 	build: PublicBuild;
 	closingBand: CoverageBandId | null;
+	lastClose?: LastClose;
 	startedAtGate: number;
 	handle: string | null;
 	titles: readonly string[];
@@ -116,7 +117,7 @@ const CLIMBER_COLUMNS = {
 
 type ClimberSelection = Omit<
 	ClimberRow,
-	"borderUrl" | "build" | "closingBand" | "titles" | "theme"
+	"borderUrl" | "build" | "closingBand" | "lastClose" | "titles" | "theme"
 > & {
 	equippedBorderId: string | null;
 	build: StoredPublicBuild;
@@ -139,6 +140,7 @@ const toClimberRow = ({
 	borderUrl: borderUrlOf(equippedBorderId),
 	build: publicBuildOf(build),
 	closingBand: lastClose?.band ?? null,
+	...(lastClose === null ? {} : { lastClose }),
 	titles: wornTitleNames(titleIds),
 	theme: profileThemeFor(equippedSwatchId, ownedSwatchIds),
 });

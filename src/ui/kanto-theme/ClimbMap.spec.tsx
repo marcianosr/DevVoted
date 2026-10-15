@@ -5,6 +5,8 @@ import userEvent from "@testing-library/user-event";
 import type { LadderGate } from "~/modules/run/community/application/climbLadder.viewmodel";
 import { kantoClimberCard, kantoStanding } from "~/test/kantoCommunity.factory";
 
+import { PlayerCardSlotContext } from "~/shared/hooks/usePlayerCardSlot.hook";
+
 import { ClimbMap, COPY } from "./ClimbMap.ui";
 import { COPY as CARD_COPY, type ClimberCardProps } from "./ClimberCard.ui";
 import type { StandingProps } from "./Standing.ui";
@@ -240,6 +242,21 @@ describe("ClimbMap", () => {
 		);
 
 		expect(screen.getByText(CARD_COPY.nothingInstalled)).toBeInTheDocument();
+	});
+
+	it("fills a chip's hover card with its player once the pointer reaches it", async () => {
+		const user = userEvent.setup();
+		render(
+			<PlayerCardSlotContext.Provider
+				value={({ userId }) => `card of ${userId}`}
+			>
+				<ClimbMap gates={GATES} onInspect={vi.fn()} />
+			</PlayerCardSlotContext.Provider>
+		);
+
+		await user.hover(screen.getByRole("button", { name: /Koga/ }));
+
+		expect(screen.getByText("card of koga")).toBeInTheDocument();
 	});
 
 	it("opens a fallen run's build by its own run, not by its player", async () => {

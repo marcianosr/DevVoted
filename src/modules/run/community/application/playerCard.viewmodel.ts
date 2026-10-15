@@ -4,7 +4,10 @@ import {
 	NO_AUTHORSHIP,
 } from "~/modules/account/profile/domain/authorship.model";
 import type { ProfileFace } from "~/modules/account/profile/domain/profile.model";
-import type { Standing } from "~/modules/run/community/domain/standing.model";
+import type {
+	ClosedGate,
+	Standing,
+} from "~/modules/run/community/domain/standing.model";
 import {
 	publicSpaceOf,
 	publicWeightOf,
@@ -68,23 +71,34 @@ const categoryNameOf = (code: string | undefined): string =>
 		? CARD_COPY.none
 		: getCategoryMetadata(code).name;
 
-export const standingFor = (run: Standing): ClimberCardStanding => {
-	const swatch = gateSwatchAt(run.gate);
+const currentGateOf = (run: Standing): ClosedGate => {
 	const ladder = baseGateLadderAt(run.gate);
+
+	return {
+		gate: run.gate,
+		band: bandAtLadder(run.coveragePercent, ladder).id,
+		held: run.coveragePercent,
+		ladder,
+	};
+};
+
+const gateReadingOf = ({ gate, band, held, ladder }: ClosedGate) => {
+	const swatch = gateSwatchAt(gate);
+
+	return {
+		name: swatch.gateName,
+		label: gateNumberLabelOf(gate),
+		swatch,
+		coverage: { ...ladder, held, band },
+	};
+};
+
+export const standingFor = (run: Standing): ClimberCardStanding => {
 	const weight = publicWeightOf(run.build);
 	const space = publicSpaceOf(run.build);
 
 	return {
-		gate: {
-			name: swatch.gateName,
-			label: gateNumberLabelOf(run.gate),
-			swatch,
-			coverage: {
-				...ladder,
-				held: run.coveragePercent,
-				band: bandAtLadder(run.coveragePercent, ladder).id,
-			},
-		},
+		gate: gateReadingOf(run.lastClose ?? currentGateOf(run)),
 		weight: `${weight} / ${space}`,
 		build: publicBuildChipsFor(run.build),
 		freeSlots: Math.max(0, space - weight),

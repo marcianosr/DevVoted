@@ -6,7 +6,8 @@ Accepted — 2026-09-29 (Marciano, DVTD-9rw9). Reverses DVTD-4nkm's "a tap never
 opens a popup", for hover only. Replaces the click-opens-a-dialog plan from
 2026-09-28. Replaces [ADR-125](125-a-player-has-one-page-and-one-card.md) D6.
 D1 and D5 amended by [ADR-150](150-the-player-card-wears-the-players-look.md): the
-card wears the player's look and the standing has one shape.
+card wears the player's look and the standing has one shape. D2 and D3 replaced by
+[ADR-199](199-a-pressed-face-opens-the-players-card.md).
 
 ## Context
 
@@ -24,11 +25,8 @@ scroller.
    It is the same card the climb map opens, without loot, file, close or links.
    It waits 300 ms for the pointer to settle before it asks for anything, and a
    player's card is fetched once per page.
-2. **The tooltip renders once, at the root, and is positioned `fixed`** from the
-   face's rect. It is never a child of the scroller, which answers DVTD-4nkm's
-   clipping reason instead of overruling it.
-3. **Clicking a face or the name beside it goes to the in-game profile.** Nothing
-   next to a face links to GitHub. The handle is stated once, on the profile page.
+2. Replaced by [ADR-199](199-a-pressed-face-opens-the-players-card.md): each face carries a CSS hover card.
+3. Replaced by [ADR-199](199-a-pressed-face-opens-the-players-card.md): a pressed face opens the full card.
 4. **The climb map keeps press-to-open.** The card there is the only place Loot and
    File live, and a phone has no hover. The face and name inside that card link
    to the profile.

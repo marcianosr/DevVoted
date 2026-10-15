@@ -1118,6 +1118,43 @@ meter::-webkit-meter-optimum-value {
 	max-inline-size: calc(100dvw - 1rem);
 }
 
+/* ─── Player hover card ────────────────────────────────────────────────────────
+   A face's read-only card, shown by CSS alone on hover or keyboard focus. Only a
+   pointer that can hover gets it (a tap opens the face's popover instead), and
+   only where anchor positioning exists; elsewhere the popover is the one way in.
+   The 300ms delay on the way in keeps a pointer crossing a stack of faces from
+   flashing every card. Hidden while the face's full card is open. */
+.player-hover-card {
+	display: none;
+}
+
+@media (hover: hover) {
+	@supports (anchor-name: --a) {
+		.player-hover-card {
+			display: block;
+			position: fixed;
+			z-index: 40;
+			pointer-events: none;
+			margin: 0.5rem 0;
+			position-area: block-end;
+			justify-self: anchor-center;
+			position-try-fallbacks: flip-block;
+			visibility: hidden;
+			opacity: 0;
+			transition:
+				opacity 150ms ease-out,
+				visibility 0s linear 150ms;
+		}
+
+		.player-card-hold:is(:hover, :has(:focus-visible)):not(:has(:popover-open))
+			> .player-hover-card {
+			visibility: visible;
+			opacity: 1;
+			transition-delay: 300ms;
+		}
+	}
+}
+
 /* ─── Screen mount-in transitions ──────────────────────────────────────────────
    Applied by the Screen primitive via data-screen-transition. @starting-style
    defines the pre-mount state; the browser animates to the settled state the

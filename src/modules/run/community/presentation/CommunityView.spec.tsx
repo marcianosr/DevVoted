@@ -9,10 +9,7 @@ import type {
 	RunCommunityPoll,
 	RunCommunityView,
 } from "~/modules/run/community/application/community.service";
-import {
-	pollResultsFor,
-	pollTallyFor,
-} from "~/modules/run/community/application/communityScreen.viewmodel";
+import { pollSpotlightFor } from "~/modules/run/community/application/communityScreen.viewmodel";
 import { CommunityView } from "~/modules/run/community/presentation/CommunityView.component";
 import { gateSwatchAt } from "~/modules/run/gate/application/swatchTrack.viewmodel";
 import { getPlayerCard } from "~/modules/run/community/application/playerCard.serverfn";
@@ -81,75 +78,91 @@ const climber = (
 	you,
 });
 
-const revealed = (poll: ReturnType<typeof pollResultsFor>[number]) =>
-	poll.state === "revealed" ? poll : undefined;
+const rightOf = (
+	pollId: number,
+	index: number,
+	gotItRightCount: number,
+	answerType: "single" | "multiple" = "single"
+): RunCommunityPoll => {
+	const poll = answered(pollId, index);
+	if (poll.detail === null) return poll;
 
-describe("pollTallyFor", () => {
-	it("counts the viewer's right answers among the polls already revealed", () => {
-		expect(
-			pollTallyFor([
-				answered(10, 0),
-				answered(11, 1, { outcome: "wrong" }),
-				answered(12, 2, { outcome: "partial" }),
-				sealed(13, 3),
-			])
-		).toBe("1 of 3");
-	});
+	return {
+		...poll,
+		detail: {
+			...poll.detail,
+			answerType,
+			answeredCount: 10,
+			gotItRightCount,
+			options: [
+				{
+					label: "string",
+					isRight: true,
+					count: gotItRightCount,
+					percent: gotItRightCount * 10,
+					voters: [
+						{ id: "misty", displayName: "Misty", you: false },
+						{ id: "red", displayName: "Red", you: true },
+					],
+				},
+			],
+		},
+	};
+};
 
-	it("states no tally before any poll is revealed", () => {
-		expect(pollTallyFor([sealed(10, 0)])).toBeUndefined();
-	});
-});
-
-describe("pollResultsFor", () => {
-	it("deals five rows: revealed, sealed and not yet dealt", () => {
-		const rows = pollResultsFor([answered(10, 0), sealed(11, 1)]);
-
-		expect(rows).toHaveLength(5);
-		expect(rows[0].state).toBe("revealed");
-		expect(rows[1]).toEqual({
-			state: "sealed",
-			index: 1,
-			question: "Question 11?",
-		});
-		expect(rows[2]).toEqual({
-			state: "sealed",
-			index: 2,
-			question: "Poll 3 · not dealt yet",
-		});
-	});
-
-	it("deals nothing at all before the day's first poll", () => {
-		expect(pollResultsFor([])).toEqual([]);
-	});
-
-	it("rounds the right-share to a whole percent", () => {
-		expect(revealed(pollResultsFor([answered(10, 0)])[0])?.rightShare).toBe(33);
-	});
-
-	it("letters the options in poll order and carries their votes", () => {
-		const row = revealed(pollResultsFor([answered(10, 0)])[0]);
-
-		expect(row?.options.map((option) => option.letter)).toEqual(["A", "B"]);
-		expect(row?.options.map((option) => option.votes)).toEqual([1, 2]);
-	});
-
-	it("names the category and keeps the question", () => {
-		const row = revealed(pollResultsFor([answered(10, 0)])[0]);
-
-		expect(row?.category).toBe("TypeScript");
-		expect(row?.question).toBe("Question 10?");
-	});
-
-	it("folds every poll, the last one included", () => {
-		const rows = pollResultsFor([
-			answered(10, 0),
-			answered(11, 1),
-			sealed(12, 2),
+describe("pollSpotlightFor", () => {
+	it("spotlights the poll the fewest got right, then the one the most did", () => {
+		const { spotlights } = pollSpotlightFor([
+			rightOf(10, 0, 5),
+			rightOf(11, 1, 2),
+			rightOf(12, 2, 9),
 		]);
 
-		expect(revealed(rows[0])?.open).toBeUndefined();
-		expect(revealed(rows[1])?.open).toBeUndefined();
+		expect(
+			spotlights.map(({ kind, question, rightShare }) => ({
+				kind,
+				question,
+				rightShare,
+			}))
+		).toEqual([
+			{ kind: "hardest", question: "Question 11?", rightShare: 20 },
+			{ kind: "easiest", question: "Question 12?", rightShare: 90 },
+		]);
+	});
+
+	it("spotlights only the hardest when a single poll is revealed", () => {
+		expect(
+			pollSpotlightFor([rightOf(10, 0, 4)]).spotlights.map(({ kind }) => kind)
+		).toEqual(["hardest"]);
+	});
+
+	it("states the hint and no review before any poll is revealed", () => {
+		expect(pollSpotlightFor([sealed(10, 0)], () => {})).toEqual({
+			title: "Today’s polls",
+			spotlights: [],
+			empty: NOTHING_TO_COMPARE_YET,
+		});
+	});
+
+	it("leads the faces of who got it with yours", () => {
+		const [hardest] = pollSpotlightFor([rightOf(10, 0, 4)]).spotlights;
+
+		expect(hardest.gotIt.map(({ name }) => name)).toEqual(["Red", "Misty"]);
+	});
+
+	it("names no faces on a multiple poll, where one right pick is not getting it", () => {
+		const [hardest] = pollSpotlightFor([
+			rightOf(10, 0, 4, "multiple"),
+		]).spotlights;
+
+		expect(hardest.gotIt).toEqual([]);
+	});
+
+	it("counts every revealed answer on the review button", () => {
+		expect(
+			pollSpotlightFor([rightOf(10, 0, 4), rightOf(11, 1, 6)], () => {}).review
+				?.label
+		).toBe("Review all 2 answers");
 	});
 });
 
@@ -207,12 +220,11 @@ describe("CommunityView", () => {
 			/>
 		);
 
-	it("renders every poll of the window, each one folded", () => {
-		render(board());
+	it("spotlights the hardest and the easiest revealed poll", () => {
+		render(board({ polls: [rightOf(10, 0, 2), rightOf(11, 1, 9)] }));
 
 		expect(screen.getByText("Question 10?")).toBeInTheDocument();
 		expect(screen.getByText("Question 11?")).toBeInTheDocument();
-		expect(document.querySelectorAll("details[open]")).toHaveLength(0);
 	});
 
 	it("shows the whole board: the seats and the day's count", () => {
@@ -379,6 +391,8 @@ describe("CommunityView", () => {
 	it("says there is nothing to compare before the day's first poll", () => {
 		render(board({ polls: [], leaders: [], climb: null }));
 
-		expect(screen.getByText(NOTHING_TO_COMPARE_YET)).toBeInTheDocument();
+		expect(screen.getAllByText(NOTHING_TO_COMPARE_YET).length).toBeGreaterThan(
+			0
+		);
 	});
 });

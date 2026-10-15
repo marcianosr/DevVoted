@@ -1504,11 +1504,11 @@ of tiles. Your own figures are not
 stated beside theirs (ADR-186). Their collection stays private, as before: a
 visitor reading your unanswered polls would be reading ahead.
 
-You reach another player's page by pressing their **face** or the **name** beside
-it: on a poll byline, on a category seat, among a poll's voters, in the turnout, on
-the climb map card. Hover or focus a face and the player's **card** shows first, as
-a read-only tooltip (ADR-141). Nothing beside a face goes to GitHub any more; the
-GitHub handle is stated once, on the player's own page.
+Press a player's **face** anywhere (a poll byline, a category seat, a poll's voters,
+the turnout, the climb map) and their **card** opens as a dialog with a close button;
+the name in it leads to their page (ADR-199). With a mouse or keyboard focus, the
+card shows first as a read-only tooltip (ADR-141); a touch never shows the tooltip. Nothing beside a face
+goes to GitHub any more; the GitHub handle is stated once, on the player's own page.
 
 The hero and every card share one **player header** (`PlayerHeader.ui.tsx`): face and
 name, the role beneath it (**● Admin**) when they hold one, their titles, then a
@@ -1581,10 +1581,8 @@ that player's chip, dimmed and greyed, keyed by run rather than player so two lo
 one day both show (abandoning is not falling and draws nothing). The track scrolls
 horizontally on narrow screens and centres itself on your column. Gate/poll arithmetic
 lives in `climbMap.model.ts`, one unit: polls, counted `gate * 5 + pollsIntoGate`.
-Press any chip — climber or fallen — and their **card** opens: a foldout on a phone, a
-panel under the track on a wider screen. The map is the one place a press opens the
-card rather than the profile, because the card is where **Loot** and **File** live and a
-phone has no hover (ADR-141). The card is the same one a hover shows anywhere else: a
+Press any chip — climber or fallen — and their **card** opens as a dialog. On the map the card also carries
+**Loot** and **File** (ADR-141). The card is the same one a hover shows anywhere else: a
 head that fades from the swatch the player wears on their profile (pallet when none),
 with the face and name, both linking to their page, and every title they wear as a
 badge, the first in the swatch colour (ADR-150); then the gate row (the gate's swatch
@@ -1596,18 +1594,17 @@ streak, and the category they have been right in most often, each badged. What a
 do not stays private (ADR-101 §2, narrowed 2026-09-26). 🟡 Climbers folded behind `+N`
 have no chip to press.
 
-**The day's polls** is one panel of five rows, one per slot in the day's seed. Its
-head counts how many of the revealed polls you got right (`you 2 of 4`). A revealed
-row states your verdict, the question, the category as a badge and the share who got
-it right as a toned badge; on a phone the verdict and share sit above the question. The
-latest revealed poll stands open, and any row opens to one line per option: letter,
-label, a distribution bar, an **answer** badge on the right option, the faces who picked
-it (your own face marks your pick; on a phone they sit under the bar) and, on wider
-screens, the vote count. Once a run has ended, won or dead, **Review answers** opens its
-last gate's answers and returns to the run's result. A mirrored answer counts as right when it named
-every wrong option, since it proves the same knowledge. **Redaction keeps it fair**:
-a poll you have reached but not answered shows only its question, and a slot not yet
-dealt reads `Poll 5 · not dealt yet`; neither names its category.
+**Today's polls** spotlights two of the day's revealed polls as a teaser: the one that
+**tripped up most players** (lowest share who got it right) and the one **almost everyone
+nailed** (highest). Each card shows the question, the share who got it, and for a
+single-answer poll the faces of who got it, yours first when you did; a multiple or pairs
+poll names no faces, since one right pick is not getting it. With one poll revealed only
+the hardest shows. The full breakdown lives on the review screen: once a run has ended,
+won or dead, the small primary **Review all N answers** button opens its last gate's
+answers and returns to the run's result. A mirrored answer counts as right when it named
+every wrong option, since it proves the same knowledge. **Redaction keeps it fair**: a
+poll you have not answered is never spotlighted, and before any poll is revealed the
+panel only states that there is nothing to compare yet.
 
 ### 7.2 Leaderboards
 
@@ -1943,17 +1940,18 @@ The game leans hard into its CI metaphor.
   take it ("no retry, bank 20 KB"), and Review answers sits under the recap. On a
   caught gate (ADR-177) the panel's first section is **Drop the catch first**, holding
   Try/Catch alone; the moves below it stay locked and unpicked until it is picked.
-- **Poll review**: a test-runner reporter. One **fold per poll**, wearing the same panel
-  chrome the reward report's panels do, its strip reading PASS / PART / FAIL badge, the
-  question, the category and the coverage earned. Fumbles open on arrival and passes stay
-  folded and dimmed, and the header carries an **open everything** press for reading the
-  lot. An open row draws the poll's own question card: every option on its keycap,
-  round for single-answer polls and square for multi-answer, the right answer lit
-  green and your wrong pick red, with the community's faces beside an option once the
-  board knows who picked it. An option that carries its own reason shows it under its
-  text, **Why it’s right** or **Why it’s wrong** by the option's correctness, never by
-  the pick (ADR-195). Multi-answer polls close with a tally of catches; the snippet
-  sits above the options and the poll's own explanation under the card.
+- **Poll review**: every answered poll stands open as the same card the poll screen
+  draws. Its head reads the poll's number, its category, its facts
+  (`3 options · single answer`), the PASS / PART / FAIL badge and the coverage earned;
+  the author's credit sits at its foot. The body is the poll's own question card: every
+  option on its keycap, round for single-answer polls and square for multi-answer, the
+  right answer lit green and your wrong pick red. The faces of who picked an option and
+  the vote count sit under its label, counted on the day the poll was dealt, so a gate
+  closed on an earlier day still shows them. An option that carries its own reason
+  shows it in its own section under the option, **Why it’s right** or **Why it’s
+  wrong** by the option's correctness, never by the pick (ADR-195). Multi-answer polls
+  close with a tally of catches; the snippet sits above the options and the poll's own
+  explanation under the card.
 - **Answering by keyboard**: each answer row carries a letter, and pressing that letter
   picks it. **Enter submits**, but only once something is picked, which is the same rule
   the submit press follows. The tip under the answers names Enter only while Enter will

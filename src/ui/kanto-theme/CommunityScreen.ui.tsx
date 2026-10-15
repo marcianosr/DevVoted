@@ -13,7 +13,7 @@ import { HallOfFame, type HallOfFameProps } from "./HallOfFame.ui";
 import { Icon, type IconName } from "./Icon.ui";
 import { IncidentsPanel, type IncidentsPanelProps } from "./IncidentsPanel.ui";
 import { Panel } from "./Panel.ui";
-import { PollResult, type PollResultProps } from "./PollResult.ui";
+import { PollSpotlight, type PollSpotlightProps } from "./PollSpotlight.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { Swatch } from "./Swatch.ui";
 import { Segmented } from "./Segmented.ui";
@@ -32,7 +32,6 @@ const COLUMNS =
 const COLUMN = "flex w-full min-w-0 flex-col gap-6";
 const ROW_LABEL = "flex min-w-0 flex-col gap-0.5";
 const ROW_CHIP = "flex pt-1";
-const TALLY = "flex items-center gap-2";
 
 const SWATCH_SIZE = "hero";
 const CLIMBER_SIZE = "md";
@@ -47,7 +46,6 @@ const CONTROL_WIDTH = "full";
 export const COPY = {
 	leaders: "Leaders",
 	boards: "which board",
-	you: "you",
 } as const;
 
 export type CommunityStat = { icon: IconName; label: string; hint: string };
@@ -97,12 +95,7 @@ export type CommunityLeaders = {
 	seats: readonly CategoryLeaderProps[];
 };
 
-export type CommunityPolls = {
-	title: string;
-	tally?: string;
-	polls: readonly PollResultProps[];
-	review?: { label: string; onReview: () => void };
-};
+export type CommunityPolls = PollSpotlightProps;
 
 export type CommunityScreenProps = {
 	header: CommunityHeader;
@@ -337,37 +330,6 @@ const LeaderBoards = ({ boards }: { boards: readonly CommunityLeaders[] }) => {
 	);
 };
 
-const FivePolls = ({ title, tally, polls, review }: CommunityPolls) => (
-	<Panel>
-		<Panel.Header
-			label={title}
-			meta={
-				tally === undefined ? undefined : (
-					<span className={TALLY}>
-						{COPY.you}
-						<Badge>{tally}</Badge>
-					</span>
-				)
-			}
-		/>
-		<Panel.Rows>
-			{polls.map((poll) => (
-				<PollResult key={poll.index} {...poll} />
-			))}
-		</Panel.Rows>
-		{review === undefined ? null : (
-			<Panel.Footer>
-				<Button
-					tone="action"
-					width="full"
-					label={review.label}
-					onPress={review.onReview}
-				/>
-			</Panel.Footer>
-		)}
-	</Panel>
-);
-
 export const CommunityScreen = ({
 	header,
 	turnout,
@@ -386,7 +348,7 @@ export const CommunityScreen = ({
 		<WhereEveryoneIs {...map} />
 		<div className={COLUMNS}>
 			<div className={COLUMN}>
-				<FivePolls {...polls} />
+				<PollSpotlight {...polls} />
 				{advertisement}
 			</div>
 			<div className={COLUMN}>

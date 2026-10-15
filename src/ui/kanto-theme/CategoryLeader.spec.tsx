@@ -35,7 +35,11 @@ describe("CategoryLeader", () => {
 	it("states the figure rather than offering it as a press", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
-		expect(screen.queryByRole("button")).toBeNull();
+		expect(
+			screen
+				.getAllByRole("button")
+				.map((press) => press.getAttribute("aria-label"))
+		).toEqual([`${SABRINA.handle}'s card`]);
 	});
 
 	it("links the handle to the leader's in-game page, never to GitHub", () => {
@@ -88,7 +92,7 @@ describe("CategoryLeader", () => {
 		);
 
 		expect(
-			screen.getByRole("link", { name: `${SABRINA.handle}'s profile` })
+			screen.getByRole("button", { name: `${SABRINA.handle}'s card` })
 				.firstElementChild?.firstElementChild
 		).toHaveClass("ring-viridian");
 		expect(screen.getByText("17 in a row")).toHaveAttribute(
@@ -128,11 +132,11 @@ describe("CategoryLeader", () => {
 });
 
 describe("CategoryLeader, linking to the seated player", () => {
-	it("sends the seat's face to their in-game page", () => {
+	it("opens the seated player's card from their face", () => {
 		render(<CategoryLeader category={CATEGORY} leader={SABRINA} />);
 
 		expect(
-			screen.getByRole("link", { name: `${SABRINA.handle}'s profile` })
-		).toHaveAttribute("href", "/profile/sabrina-id");
+			screen.getByRole("button", { name: `${SABRINA.handle}'s card` })
+		).toHaveAttribute("popovertarget");
 	});
 });

@@ -1,33 +1,33 @@
-import { Author, type AuthorProps } from "./Author.ui";
+import { Author, type AuthorProps, type AuthorSize } from "./Author.ui";
 import { Badge } from "./Badge.ui";
-import { Button } from "./Button.ui";
-import { Fold, type FoldBadge } from "./Fold.ui";
-import { Header, type HeaderProps } from "./Header.ui";
+import type { KantoColor } from "./colors";
 import { CodeSpans } from "./CodeText.ui";
-import { Question, type QuestionProps } from "./Question.ui";
+import { Header, type HeaderProps } from "./Header.ui";
+import { Panel } from "./Panel.ui";
+import { Question, type QuestionProps, questionFactsOf } from "./Question.ui";
 import { Screen, type ScreenGround, type ScreenWidth } from "./Screen.ui";
 import { ScreenActions, type ScreenFooterProps } from "./ScreenFooter.ui";
+import { Swatch } from "./Swatch.ui";
 import { Typography } from "./Typography.ui";
-import type { VerdictOutcome } from "./Verdict.ui";
+import { Verdict, type VerdictOutcome } from "./Verdict.ui";
 
-const CONTROL_ROW = "flex w-full flex-wrap items-center gap-3";
-const EXPAND = "ml-auto shrink-0";
-const ROWS = "flex w-full flex-col gap-3";
+const ROWS = "flex w-full flex-col gap-6";
+const META_REGION =
+	"flex w-full flex-wrap items-center gap-2 border-b border-theme-faint px-4 py-3 first:rounded-t-2xl";
+const META_TRAILING = "flex flex-wrap items-center gap-2 sm:ml-auto";
 const EXPLANATION =
 	"flex w-full flex-col gap-1.5 rounded-lg border border-theme-faint px-4 py-3";
 
 const COPY = { explanation: "Explanation" } as const;
 
-const EXPAND_SIZE = "md";
+const CREDIT_SIZE: AuthorSize = "sm";
 
 export type ReviewRow = {
 	verdict: VerdictOutcome;
 	share?: number;
-	question: string;
 	category: string;
 	coverage: string;
-	coverageColor?: FoldBadge["color"];
-	open?: boolean;
+	coverageColor?: KantoColor;
 	card: QuestionProps;
 	tally?: string;
 	explanation?: string;
@@ -35,42 +35,39 @@ export type ReviewRow = {
 	author?: AuthorProps;
 };
 
-export type ReviewExpand = { label: string; onPress?: () => void };
-
 export type ReviewScreenProps = {
 	header: HeaderProps;
-	hint: string;
-	expand: ReviewExpand;
 	rows: readonly ReviewRow[];
 	footer: ScreenFooterProps;
 	width?: ScreenWidth;
 	ground?: ScreenGround;
 };
 
-const opensOnArrival = (row: ReviewRow) =>
-	row.open ?? row.verdict !== "correct";
+type ReviewCardProps = {
+	row: ReviewRow;
+	number: number;
+	swatch: HeaderProps["swatch"];
+};
 
-const Row = ({ row }: { row: ReviewRow }) => {
-	const open = opensOnArrival(row);
-
-	return (
-		<Fold
-			lead={row.verdict}
-			leadShare={row.share}
-			leadWidth="fit"
-			heading="row"
-			title={row.question}
-			badges={[
-				{ label: row.category },
-				{ label: row.coverage, color: row.coverageColor },
-			]}
-			open={open}
-		>
+const ReviewCard = ({ row, number, swatch }: ReviewCardProps) => (
+	<Panel>
+		<div className={META_REGION}>
+			<Swatch state="current" swatch={swatch} count={number} />
+			<Badge>{row.category}</Badge>
+			<Typography variant="hint" as="span">
+				{questionFactsOf(row.card)}
+			</Typography>
+			<span className={META_TRAILING}>
+				<Verdict outcome={row.verdict} share={row.share} width="fit" />
+				<Badge color={row.coverageColor}>{row.coverage}</Badge>
+			</span>
+		</div>
+		<Panel.Body>
 			<Question {...row.card} />
 			{row.tally === undefined ? null : <Badge>{row.tally}</Badge>}
 			{row.explanation === undefined ? null : (
 				<div className={EXPLANATION}>
-					<Typography variant="label" as="span">
+					<Typography variant="subtitle" as="span">
 						{COPY.explanation}
 					</Typography>
 					<Typography variant="caption" as="p">
@@ -81,15 +78,17 @@ const Row = ({ row }: { row: ReviewRow }) => {
 			{row.note === undefined ? null : (
 				<Typography variant="hint">{row.note}</Typography>
 			)}
-			{row.author === undefined ? null : <Author {...row.author} />}
-		</Fold>
-	);
-};
+		</Panel.Body>
+		{row.author === undefined ? null : (
+			<Panel.Footer>
+				<Author {...row.author} size={CREDIT_SIZE} rule={false} />
+			</Panel.Footer>
+		)}
+	</Panel>
+);
 
 export const ReviewScreen = ({
 	header,
-	hint,
-	expand,
 	rows,
 	footer,
 	width = "default",
@@ -98,23 +97,14 @@ export const ReviewScreen = ({
 	<Screen gate={header.swatch.theme} width={width} ground={ground} enter="rise">
 		<Header {...header} />
 
-		<div className={CONTROL_ROW}>
-			<Typography variant="hint" as="span">
-				{hint}
-			</Typography>
-			<span className={EXPAND}>
-				<Button
-					size={EXPAND_SIZE}
-					label={expand.label}
-					disabled={expand.onPress === undefined}
-					onPress={expand.onPress}
-				/>
-			</span>
-		</div>
-
 		<div className={ROWS}>
 			{rows.map((row, index) => (
-				<Row key={index} row={row} />
+				<ReviewCard
+					key={index}
+					row={row}
+					number={index + 1}
+					swatch={header.swatch}
+				/>
 			))}
 		</div>
 
