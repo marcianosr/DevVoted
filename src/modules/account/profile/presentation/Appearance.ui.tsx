@@ -13,7 +13,7 @@ import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
 import { Redaction } from "~/ui/kanto-theme/Redaction.ui";
-import { Swatch } from "~/ui/kanto-theme/Swatch.ui";
+import { Swatch } from "~/modules/run/gate/presentation/Swatch.ui";
 
 const missingOf = ({ held, total }: Tally) => total - held;
 

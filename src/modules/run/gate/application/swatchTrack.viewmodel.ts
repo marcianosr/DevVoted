@@ -3,7 +3,7 @@ import {
 	ALL_SWATCHES,
 	GATE_SWATCHES,
 } from "~/modules/run/gate/domain/swatch.model";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 
 export const gateSwatchAt = (gate: number): GateSwatch => GATE_SWATCHES[gate];
 

@@ -2,16 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import { gateSwatchAt } from "~/test/swatchTrack.factory";
-
 import { Action } from "./Action.ui";
 
-const PALLET = gateSwatchAt(0);
 const LABEL = "Pallet gate prep";
 const READING = "2 configs · 3/4 weight";
 const REFUSAL = "install at least one config";
-
-const CURRENT = { state: "current", swatch: PALLET } as const;
 
 describe("Action", () => {
 	it("names itself by its label and the reading under it", () => {
@@ -52,22 +47,18 @@ describe("Action", () => {
 		expect(press).not.toHaveClass("segment-theme");
 	});
 
-	it("draws the gate's mark for the bright ground while it is live", () => {
-		const { container } = render(
-			<Action label={LABEL} swatch={CURRENT} onPress={() => undefined} />
+	it("draws the leading mark it is handed before its label", () => {
+		render(
+			<Action
+				label={LABEL}
+				leading={<span data-testid="mark" />}
+				onPress={() => undefined}
+			/>
 		);
 
-		expect(
-			container.querySelector("[data-swatch-theme='gate-pallet']")
-		).toHaveClass("border-current");
-	});
-
-	it("draws the gate's mark for the dark ground while it is refused", () => {
-		const { container } = render(<Action label={LABEL} swatch={CURRENT} />);
-
-		expect(
-			container.querySelector("[data-swatch-theme='gate-pallet']")
-		).toHaveClass("border-dashed", "border-theme");
+		expect(screen.getByRole("button").firstElementChild).toBe(
+			screen.getByTestId("mark")
+		);
 	});
 
 	it("carries no mark for a press that stands outside a run", () => {

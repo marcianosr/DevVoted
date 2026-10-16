@@ -1,13 +1,13 @@
 import type {
 	CommunityScreenProps,
 	TurnoutBand,
-} from "~/ui/kanto-theme/CommunityScreen.ui";
-import type { CategoryLeaderProps } from "~/ui/kanto-theme/CategoryLeader.ui";
-import type { ClimberProps } from "~/ui/kanto-theme/Climber.ui";
-import type { ClimbMapProps } from "~/ui/kanto-theme/ClimbMap.ui";
-import type { ClimberCardProps } from "~/ui/kanto-theme/ClimberCard.ui";
-import type { HallOfFameProps } from "~/ui/kanto-theme/HallOfFame.ui";
-import type { StandingProps } from "~/ui/kanto-theme/Standing.ui";
+} from "~/modules/run/community/presentation/CommunityScreen.ui";
+import type { CategoryLeaderProps } from "~/modules/run/community/presentation/CategoryLeader.ui";
+import type { ClimberProps } from "~/modules/run/community/presentation/Climber.ui";
+import type { ClimbMapProps } from "~/modules/run/community/presentation/ClimbMap.ui";
+import type { ClimberCardProps } from "~/modules/run/community/presentation/ClimberCard.ui";
+import type { HallOfFameProps } from "~/modules/run/community/presentation/HallOfFame.ui";
+import type { StandingProps } from "~/modules/account/profile/presentation/Standing.ui";
 import type {
 	LadderClimber,
 	LadderGate,
@@ -17,7 +17,7 @@ import {
 	bandAtLadder,
 	baseGateLadderAt,
 } from "~/modules/run/gate/domain/gate.model";
-import type { SpotlightPoll } from "~/ui/kanto-theme/PollSpotlight.ui";
+import type { SpotlightPoll } from "~/modules/run/community/presentation/PollSpotlight.ui";
 import { NOTHING_TO_COMPARE_YET } from "~/shared/lib/copy";
 
 import { kantoIncidents } from "./kantoIncidents.factory";

@@ -14,7 +14,7 @@ import {
 	type WarmBootDraft,
 } from "~/modules/run/build/application/newRunScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { NewRunScreen } from "~/ui/kanto-theme/NewRunScreen.ui";
+import { NewRunScreen } from "./NewRunScreen.ui";
 
 export type StartViewProps = NewRunScreenHandlers & {
 	view: RunView;

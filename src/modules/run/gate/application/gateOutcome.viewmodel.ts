@@ -60,18 +60,16 @@ import {
 	isCommittableBand,
 } from "~/modules/run/build/domain/coverageRatio.model";
 
-import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
-import {
-	COVERAGE_BAND_COLOR,
-	COVERAGE_BAND_WORD,
-	type CoverageBandId,
-	type CoverageBarProps,
-} from "~/ui/kanto-theme/CoverageBar.ui";
-import type { BalanceProps } from "~/ui/kanto-theme/Balance.ui";
+import type { AuditProps } from "~/modules/run/run/presentation/Audit.ui";
+import type {
+	CoverageBandId,
+	CoverageBarProps,
+} from "~/modules/run/build/presentation/CoverageBar.ui";
+import type { BalanceProps } from "~/modules/run/run/presentation/Balance.ui";
 import type {
 	ConfigChipBadge,
 	ConfigChipProps,
-} from "~/ui/kanto-theme/ConfigChip.ui";
+} from "~/modules/run/config/presentation/ConfigChip.ui";
 import type { FoldBadge } from "~/ui/kanto-theme/Fold.ui";
 import type {
 	GateChoiceProps,
@@ -81,23 +79,27 @@ import type {
 	GatePeelOption,
 	GatePeelRadio,
 	GatePeelSource,
-} from "~/ui/kanto-theme/GateChoice.ui";
-import type { PollScoresProps } from "~/ui/kanto-theme/PollScores.ui";
+} from "~/modules/run/gate/presentation/GateChoice.ui";
+import type { PollScoresProps } from "~/modules/run/run/presentation/PollScores.ui";
 import type {
 	GateOutcomeRow,
 	GateOutcomeRowsPanel,
 	GateOutcomeScreenProps,
 	GateOutcomeTail,
-} from "~/ui/kanto-theme/GateOutcomeScreen.ui";
+} from "~/modules/run/gate/presentation/GateOutcomeScreen.ui";
 import type { GateSwatch } from "~/modules/run/gate/domain/swatch.model";
 import { revealKindOf } from "~/modules/run/gate/domain/outcomeReveal.model";
 import type {
 	OutcomeRevealCatcher,
 	OutcomeRevealData,
 	OutcomeRevealNext,
-} from "~/ui/kanto-theme/OutcomeReveal.ui";
-import type { LedgerRow } from "~/ui/kanto-theme/LedgerRows.ui";
-import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
+} from "~/modules/run/gate/presentation/OutcomeReveal.ui";
+import type { LedgerRow } from "~/modules/run/run/presentation/LedgerRows.ui";
+import type { VerdictOutcome } from "~/modules/run/run/presentation/Verdict.ui";
+import {
+	COVERAGE_BAND_COLOR,
+	COVERAGE_BAND_WORD,
+} from "~/modules/run/build/application/coverageBand.viewmodel";
 
 export { PEEL_KB_PER_SLOT };
 

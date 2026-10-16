@@ -16,7 +16,7 @@ import type {
 	QuestionOption,
 	QuestionPairs,
 	QuestionProps,
-} from "~/ui/kanto-theme/Question.ui";
+} from "~/modules/run/run/presentation/Question.ui";
 
 const CREATED_FORMAT = "d MMM yyyy";
 

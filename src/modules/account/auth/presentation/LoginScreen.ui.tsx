@@ -11,10 +11,10 @@ import {
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import { CoverageBar } from "~/ui/kanto-theme/CoverageBar.ui";
+import { CoverageBar } from "~/modules/run/build/presentation/CoverageBar.ui";
 import { Link } from "~/ui/kanto-theme/Link.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { Question } from "~/ui/kanto-theme/Question.ui";
+import { Question } from "~/modules/run/run/presentation/Question.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
 import { Segmented, type SegmentedItem } from "~/ui/kanto-theme/Segmented.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";

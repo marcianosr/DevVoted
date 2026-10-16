@@ -10,12 +10,12 @@ import {
 	type DexTabId,
 } from "~/modules/collection/dex/application/dexScreen.viewmodel";
 import { useDex } from "~/modules/collection/dex/application/useDex.hook";
-import { DexAudits } from "~/ui/kanto-theme/DexAudits.ui";
-import { DexConfigs } from "~/ui/kanto-theme/DexConfigs.ui";
-import { DexControls } from "~/ui/kanto-theme/DexControls.ui";
-import { DexPolls } from "~/ui/kanto-theme/DexPolls.ui";
-import { DexRuns } from "~/ui/kanto-theme/DexRuns.ui";
-import { DexSwatches } from "~/ui/kanto-theme/DexSwatches.ui";
+import { DexAudits } from "./DexAudits.ui";
+import { DexConfigs } from "./DexConfigs.ui";
+import { DexControls } from "./DexControls.ui";
+import { DexPolls } from "./DexPolls.ui";
+import { DexRuns } from "./DexRuns.ui";
+import { DexSwatches } from "./DexSwatches.ui";
 
 type DexProps = {
 	viewerId: string;

@@ -10,17 +10,17 @@ import {
 	type WikiTable,
 } from "~/modules/guide/wiki/application/wikiArticles.viewmodel";
 import type { WikiTerm } from "~/modules/guide/wiki/application/wikiGlossary.viewmodel";
-import { CoverageBar } from "~/ui/kanto-theme/CoverageBar.ui";
+import { CoverageBar } from "~/modules/run/build/presentation/CoverageBar.ui";
 import { Fold, type FoldBadge } from "~/ui/kanto-theme/Fold.ui";
-import { Lead } from "~/ui/kanto-theme/Lead.ui";
+import { Lead } from "~/modules/run/gate/presentation/Lead.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { Prose } from "~/ui/kanto-theme/Prose.ui";
+import { Prose } from "~/modules/run/run/presentation/Prose.ui";
 import { Screen } from "~/ui/kanto-theme/Screen.ui";
-import { StatTiles } from "~/ui/kanto-theme/StatTiles.ui";
-import { SwatchTrack } from "~/ui/kanto-theme/SwatchTrack.ui";
+import { StatTiles } from "~/modules/account/profile/presentation/StatTiles.ui";
+import { SwatchTrack } from "~/modules/run/gate/presentation/SwatchTrack.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
-import { Weight } from "~/ui/kanto-theme/Weight.ui";
-import { WeightTrack } from "~/ui/kanto-theme/WeightTrack.ui";
+import { Weight } from "~/modules/run/build/presentation/Weight.ui";
+import { WeightTrack } from "~/modules/run/build/presentation/WeightTrack.ui";
 
 export const COPY = {
 	title: "Wiki",

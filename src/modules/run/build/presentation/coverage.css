@@ -1,0 +1,99 @@
+@keyframes gauge-settle {
+	30% {
+		transform: scaleY(1.18);
+	}
+	60% {
+		transform: scaleY(0.94);
+	}
+}
+
+.coverage-bar-settle {
+	animation: gauge-settle 500ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coverage-bar-settle,
+	.answer-shake,
+	.answer-verdict,
+	.reveal-pop,
+	.accuracy-pulse {
+		animation: none;
+	}
+}
+.coverage-ring {
+	--coverage-duration: 400ms;
+}
+.coverage-arc {
+	transition: stroke-dashoffset var(--coverage-duration) ease-out;
+}
+@property --coverage-count {
+	syntax: "<integer>";
+	initial-value: 0;
+	inherits: false;
+}
+
+.coverage-count {
+	transition: --coverage-count var(--coverage-duration) ease-out;
+	counter-reset: coverage var(--coverage-count);
+}
+
+.coverage-count::after {
+	content: counter(coverage);
+}
+@starting-style {
+	.coverage-arc {
+		stroke-dashoffset: 100;
+	}
+
+	.coverage-count {
+		--coverage-count: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coverage-arc,
+	.coverage-count,
+	.figure-count {
+		transition: none;
+	}
+}
+@property --coverage-shown {
+	syntax: "<percentage>";
+	inherits: true;
+	initial-value: 0%;
+}
+
+.coverage-bar {
+	--coverage-shown: var(--coverage-held, 0%);
+	transition: --coverage-shown 550ms cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+@starting-style {
+	.coverage-bar {
+		--coverage-shown: 0%;
+	}
+}
+.coverage-bar-lit {
+	clip-path: inset(0 calc(100% - var(--coverage-shown)) 0 0 round 8px);
+}
+
+.coverage-bar-marker,
+.coverage-bar-pin {
+	left: var(--coverage-shown);
+}
+
+.coverage-bar-ghost {
+	opacity: 0;
+	transition: opacity 300ms;
+}
+
+.coverage-bar-ghost[data-shown="true"] {
+	opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.coverage-bar,
+	.coverage-bar-ghost {
+		transition: none;
+	}
+}

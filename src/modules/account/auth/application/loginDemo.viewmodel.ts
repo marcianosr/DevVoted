@@ -9,8 +9,8 @@ import {
 } from "~/modules/run/run/domain/rules.model";
 import { CATEGORY_CODES } from "~/shared/lib/categories";
 import { KANTO_COLORS, type KantoColor } from "~/ui/kanto-theme/colors";
-import type { CoverageBarProps } from "~/ui/kanto-theme/CoverageBar.ui";
-import type { QuestionOption } from "~/ui/kanto-theme/Question.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
+import type { QuestionOption } from "~/modules/run/run/presentation/Question.ui";
 
 export type DemoPhase = "enter" | "picked" | "leaving";
 

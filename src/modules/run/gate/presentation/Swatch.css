@@ -1,0 +1,33 @@
+.legendary-ring {
+	position: relative;
+}
+.legendary-ring::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1px;
+	background: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+	pointer-events: none;
+}
+@utility bg-legendary {
+	background-image: linear-gradient(
+		90deg,
+		var(--color-saffron),
+		var(--color-fuchsia),
+		var(--color-lavender),
+		var(--color-cerulean),
+		var(--color-celadon)
+	);
+}

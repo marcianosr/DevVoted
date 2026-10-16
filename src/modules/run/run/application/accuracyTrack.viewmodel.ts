@@ -6,7 +6,7 @@ import { ACCURACY_GAIN_PER_GATE } from "~/modules/run/build/domain/coverageRatio
 import type {
 	AccuracyTick,
 	AccuracyTrackProps,
-} from "~/ui/kanto-theme/AccuracyTrack.ui";
+} from "~/modules/run/run/presentation/AccuracyTrack.ui";
 
 const CORRECT_OUTCOME = "correct";
 const ACCURACY_WORD = "Accuracy";

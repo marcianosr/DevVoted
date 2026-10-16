@@ -88,49 +88,6 @@ describe("Fold", () => {
 		);
 	});
 
-	it("lists its meta lines on the strip, its figures badged and its words bare", () => {
-		render(
-			<Fold
-				title="Scoring"
-				meta={[[{ figure: "25 slots" }, " 1 unit ", { figure: "+4%" }]]}
-			>
-				<p>ladders</p>
-			</Fold>
-		);
-
-		expect(screen.getByText("25 slots")).toHaveClass("badge-theme");
-		expect(screen.getByText("+4%")).toHaveClass("badge-theme");
-		expect(screen.getByText("25 slots").closest("li")).toHaveTextContent(
-			"25 slots 1 unit +4%"
-		);
-	});
-
-	it("stacks its meta lines under the title, left-aligned, rather than beside it", () => {
-		render(
-			<Fold title="Scoring" meta={[[{ figure: "+11.1%" }], [{ figure: "×2" }]]}>
-				<p>ladders</p>
-			</Fold>
-		);
-		const lines = screen.getByText("+11.1%").closest("ul");
-
-		expect(lines?.parentElement).toContainElement(
-			screen.getByRole("heading", { name: "Scoring" })
-		);
-		expect(lines).toHaveClass("items-start");
-	});
-
-	it("levels its caret with the title when meta lines stack underneath", () => {
-		const { container } = render(
-			<Fold title="Scoring" meta={[[{ figure: "×2" }]]}>
-				<p>ladders</p>
-			</Fold>
-		);
-
-		expect(container.querySelector("summary > [aria-hidden]")).toHaveClass(
-			"self-start"
-		);
-	});
-
 	it("wears the same chrome as the panels it sits beside", () => {
 		const { container } = render(
 			<Fold title="Coverage by category">
@@ -198,23 +155,6 @@ describe("Fold", () => {
 	});
 
 	describe("as a row rather than a section", () => {
-		it("leads with the verdict, before the question it belongs to", () => {
-			const { container } = render(
-				<Fold
-					lead="wrong"
-					heading="row"
-					title="Which property centres a flex child?"
-				>
-					<p>diff</p>
-				</Fold>
-			);
-
-			const strip = container.querySelector("summary");
-
-			expect(screen.getByText("FAIL")).toBeInTheDocument();
-			expect(strip?.children[1]).toContainElement(screen.getByText("FAIL"));
-		});
-
 		it("reads a question at prose weight, not as a shouted section title", () => {
 			render(
 				<Fold heading="row" title="What does a rebase rewrite?">

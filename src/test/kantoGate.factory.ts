@@ -24,7 +24,7 @@ import {
 	BASE_SLOTS,
 	roundToOneDecimal,
 } from "~/modules/run/run/domain/rules.model";
-import type { OutcomeRevealData } from "~/ui/kanto-theme/OutcomeReveal.ui";
+import type { OutcomeRevealData } from "~/modules/run/gate/presentation/OutcomeReveal.ui";
 import {
 	type GateAnswer,
 	type GateOutcomeFrame,
@@ -46,9 +46,9 @@ import { reviewPropsFor } from "~/modules/run/gate/application/gateReview.viewmo
 
 export const kantoReviewAt = reviewPropsFor;
 
-import type { GateOutcomeScreenProps } from "~/ui/kanto-theme/GateOutcomeScreen.ui";
-import type { ReviewScreenProps } from "~/ui/kanto-theme/ReviewScreen.ui";
-import type { VerdictOutcome } from "~/ui/kanto-theme/Verdict.ui";
+import type { GateOutcomeScreenProps } from "~/modules/run/gate/presentation/GateOutcomeScreen.ui";
+import type { ReviewScreenProps } from "~/modules/run/run/presentation/ReviewScreen.ui";
+import type { VerdictOutcome } from "~/modules/run/run/presentation/Verdict.ui";
 
 export {
 	answerTallyOf,

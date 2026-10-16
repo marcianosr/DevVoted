@@ -3,7 +3,7 @@ import {
 	runOverScreenPropsFor,
 } from "~/modules/run/run/application/runOverScreen.viewmodel";
 import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
-import { RunOverScreen } from "~/ui/kanto-theme/RunOverScreen.ui";
+import { RunOverScreen } from "./RunOverScreen.ui";
 
 export type RunOverViewProps = RunOverScreenHandlers & {
 	view: RunView;

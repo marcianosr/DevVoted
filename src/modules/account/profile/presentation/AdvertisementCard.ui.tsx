@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
 import { Button } from "~/ui/kanto-theme/Button.ui";
-import { Climber } from "~/ui/kanto-theme/Climber.ui";
+import { Climber } from "~/modules/run/community/presentation/Climber.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { Link } from "~/ui/kanto-theme/Link.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";

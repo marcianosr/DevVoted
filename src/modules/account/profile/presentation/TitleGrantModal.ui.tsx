@@ -3,7 +3,7 @@ import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { Icon, type IconName } from "~/ui/kanto-theme/Icon.ui";
 import { Modal } from "~/ui/kanto-theme/Modal.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { ScreenFooter } from "~/ui/kanto-theme/ScreenFooter.ui";
+import { ScreenFooter } from "~/modules/run/run/presentation/ScreenFooter.ui";
 import {
 	Typography,
 	type TypographyVariant,

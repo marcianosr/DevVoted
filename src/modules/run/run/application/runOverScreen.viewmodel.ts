@@ -30,22 +30,20 @@ import { CATEGORY_METADATA, type CategoryCode } from "~/shared/lib/categories";
 import { kbLabel, signedKbLabel } from "~/shared/lib/storage";
 
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
-import {
-	COVERAGE_BAND_COLOR,
-	type CoverageBarProps,
-} from "~/ui/kanto-theme/CoverageBar.ui";
+import type { ConfigChipProps } from "~/modules/run/config/presentation/ConfigChip.ui";
+import type { CoverageBarProps } from "~/modules/run/build/presentation/CoverageBar.ui";
 import type {
 	PollScoreRow,
 	PollScoresProps,
-} from "~/ui/kanto-theme/PollScores.ui";
-import type { SwatchFill } from "~/ui/kanto-theme/Swatch.ui";
+} from "~/modules/run/run/presentation/PollScores.ui";
+import type { SwatchFill } from "~/modules/run/gate/presentation/Swatch.ui";
 import type {
 	RunOverCategory,
 	RunOverScreenProps,
 	RunOverStorageRow,
 	RunOverUnlock,
-} from "~/ui/kanto-theme/RunOverScreen.ui";
+} from "~/modules/run/run/presentation/RunOverScreen.ui";
+import { COVERAGE_BAND_COLOR } from "~/modules/run/build/application/coverageBand.viewmodel";
 
 const noop = () => {};
 

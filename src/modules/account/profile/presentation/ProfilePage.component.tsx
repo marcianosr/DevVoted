@@ -20,8 +20,8 @@ import { LookSaveBar } from "~/modules/account/profile/presentation/LookSaveBar.
 import { TitleShelf } from "~/modules/account/profile/presentation/TitleShelf.component";
 import { Dex } from "~/modules/collection/dex/presentation/Dex.component";
 import { archiveLabel } from "~/shared/lib/storage";
-import { ProfileHero } from "~/ui/kanto-theme/ProfileHero.ui";
-import { ProfileScreen } from "~/ui/kanto-theme/ProfileScreen.ui";
+import { ProfileHero } from "./ProfileHero.ui";
+import { ProfileScreen } from "./ProfileScreen.ui";
 
 const APPEARANCE_TAB: ProfileTabId = "appearance";
 const BORDERS_TAB: ProfileTabId = "borders";

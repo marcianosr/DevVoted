@@ -57,17 +57,23 @@ A context is only a folder; it holds no files of its own.
 | Context | Aggregate | Owns |
 |---|---|---|
 | `run` | `run` | The run itself: `RunState`, `RunAction`, `runReducer`, status, snapshot, run-wide rules |
-| | `pipeline` | The build: slots, installed configs, coverage |
+| | `build` | The build: slots, installed configs, weight, coverage |
 | | `gate` | The checkpoint: requirement, pass/fail, reward, swatch, ladder, config role |
 | | `config` | The item: `Config`, `Effect`, `Check`, roster, starter stacks |
 | | `shop` | The offer: draft, rebuild, lock, extend |
 | | `community` | Today's other players: standouts, voters, climb map |
+| | `incident` | Audits one player fires at another: the desk, the queue, the feed |
+| | `poll` | The run's rendering of a poll's text: heading and markdown |
 | `polls` | `poll` | `Poll`, options, answer evaluation, categories, daily selection |
 | | `authoring` | Admin poll CRUD: the form, the list, the detail and edit screens |
 | `collection` | `dex` | Polldex, configdex, swatchdex |
 | | `unlockables` | Planned. The reason `collection` is a context and not an aggregate inside `polls` |
 | `account` | `auth` | Login, signup, session |
 | | `profile` | User, dev card, awards, plus the archive balance and the border catalogue — all three are columns on `users` |
+| `guide` | `wiki` | The in-game wiki, its articles, glossary and live figures |
+| `ops` | `admin` | The admin panel |
+| | `pulse` | First-party visit counting |
+| `app` | `shell` | The frame around every screen: the nav bar, the footer and the run reading the bar shows ([ADR-200](200-src-ui-is-a-portable-kit.md)) |
 
 A screen belongs to the aggregate whose concept it is about, not to a shared
 screens bucket: `ShopScreen` is shop's, `RewardScreen` and `StripScreen` are
@@ -167,6 +173,7 @@ One role per suffix. If a file does not match a suffix, it does not get one.
 | `.ui.tsx` | Tier 1 visual: owns all HTML and Tailwind, plain props, has a Story (ADR-010) | `presentation/` only |
 | `.component.tsx` | Tier 2 wiring: zero HTML, zero CSS (ADR-010) | `presentation/` only |
 | `.stories.tsx` | Storybook story | `presentation/` only |
+| `.css` | Styles for the component or concept it is named after, imported by `src/styles/app.css` | `presentation/` only |
 | `.factory.ts` | Test or seed data factory | any, colocated |
 | `.spec.ts` / `.spec.tsx` | Tests, colocated with their subject | any |
 

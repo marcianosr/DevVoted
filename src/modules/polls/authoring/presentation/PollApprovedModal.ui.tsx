@@ -5,12 +5,12 @@ import type {
 	ApprovedQuestion,
 } from "~/modules/polls/authoring/application/approvalNotice.viewmodel";
 import { Badge } from "~/ui/kanto-theme/Badge.ui";
-import { Balance } from "~/ui/kanto-theme/Balance.ui";
+import { Balance } from "~/modules/run/run/presentation/Balance.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import { Icon } from "~/ui/kanto-theme/Icon.ui";
 import { Modal } from "~/ui/kanto-theme/Modal.ui";
 import { Panel } from "~/ui/kanto-theme/Panel.ui";
-import { ScreenFooter } from "~/ui/kanto-theme/ScreenFooter.ui";
+import { ScreenFooter } from "~/modules/run/run/presentation/ScreenFooter.ui";
 import { Typography } from "~/ui/kanto-theme/Typography.ui";
 
 const COPY = {

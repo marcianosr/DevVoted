@@ -1,13 +1,12 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Badge } from "./Badge.ui";
 import { KANTO_COLORS } from "./colors";
+import { allStyles } from "~/test/styles.harness";
 
-const appCss = readFileSync("src/styles/app.css", "utf8");
+const appCss = allStyles();
 
 describe("Badge", () => {
 	it("renders its label", () => {
@@ -73,7 +72,7 @@ describe("Badge", () => {
 		);
 	});
 
-	it("resolves to a utility app.css declares with both halves of the pair", () => {
+	it("resolves to a utility the stylesheet declares with both halves of the pair", () => {
 		const utility = appCss.slice(appCss.indexOf("@utility badge-theme"));
 		const body = utility.slice(0, utility.indexOf("}"));
 

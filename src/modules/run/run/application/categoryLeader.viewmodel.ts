@@ -12,8 +12,8 @@ import {
 import type {
 	CategoryLeaderProps,
 	CategorySeatLeader,
-} from "~/ui/kanto-theme/CategoryLeader.ui";
-import type { CommunityLeaders } from "~/ui/kanto-theme/CommunityScreen.ui";
+} from "~/modules/run/community/presentation/CategoryLeader.ui";
+import type { CommunityLeaders } from "~/modules/run/community/presentation/CommunityScreen.ui";
 
 const FIGURE = {
 	streak: IN_A_ROW,

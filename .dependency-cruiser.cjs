@@ -113,13 +113,13 @@ module.exports = {
 			to: { path: "^src/routes/" },
 		},
 		{
-			name: "ui-stays-presentational",
-			comment: "src/ui takes types from modules, never runtime values",
+			name: "ui-is-a-portable-kit",
+			comment:
+				"src/ui names no game concept, so it imports nothing from modules, types included, and none of the game's copy or rules in src/shared/lib (ADR-200)",
 			severity: "error",
 			from: { path: "^src/ui/", pathNot: "\\.stories\\." },
 			to: {
-				path: "^src/modules/",
-				dependencyTypesNot: ["type-only"],
+				path: "^src/modules/|^src/shared/lib/(copy|storage|categories|profilePath|answerTypes)\\.",
 			},
 		},
 		{

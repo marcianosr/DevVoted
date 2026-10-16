@@ -8,8 +8,8 @@ import {
 	maxLevelOf,
 } from "~/modules/run/config/domain/config.model";
 import { CONFIG_LIST } from "~/modules/run/config/domain/configRoster.model";
-import type { ConfigFactsProps } from "~/ui/kanto-theme/ConfigFacts.ui";
-import type { ConfigChipProps } from "~/ui/kanto-theme/ConfigChip.ui";
+import type { ConfigFactsProps } from "~/modules/run/config/presentation/ConfigFacts.ui";
+import type { ConfigChipProps } from "~/modules/run/config/presentation/ConfigChip.ui";
 
 export const publicConfigChipFor = (
 	config: PublicConfig,

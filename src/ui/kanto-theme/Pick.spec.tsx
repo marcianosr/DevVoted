@@ -1,12 +1,11 @@
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Pick } from "./Pick.ui";
+import { allStyles } from "~/test/styles.harness";
 
-const appCss = readFileSync("src/styles/app.css", "utf8");
+const appCss = allStyles();
 
 const themedUtilitiesOf = (element: HTMLElement) =>
 	element.className
@@ -62,7 +61,7 @@ describe("Pick", () => {
 	});
 
 	it.each([true, false])(
-		"names only utilities app.css declares, picked %s",
+		"names only utilities the stylesheet declares, picked %s",
 		(checked) => {
 			renderPick({ checked });
 

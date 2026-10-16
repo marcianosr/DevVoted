@@ -17,22 +17,22 @@ import { getCategoryMetadata } from "~/shared/lib/categories";
 import { HELD_OF, IN_A_ROW } from "~/shared/lib/copy";
 import { plural } from "~/shared/lib/displayValue";
 import { archiveLabel, formatStorage } from "~/shared/lib/storage";
-import type { DexRunsProps } from "~/ui/kanto-theme/DexRuns.ui";
+import type { DexRunsProps } from "~/modules/collection/dex/presentation/DexRuns.ui";
 import {
 	findBorderById,
 	type Border,
 } from "~/modules/account/profile/domain/border.model";
-import type { ProfileCardProps } from "~/ui/kanto-theme/ProfileCard.ui";
-import type { ProfileClimbingProps } from "~/ui/kanto-theme/ProfileClimbing.ui";
-import type { ProfileCollectionProps } from "~/ui/kanto-theme/ProfileCollection.ui";
-import type { ProfileBestRunProps } from "~/ui/kanto-theme/ProfileBestRun.ui";
+import type { ProfileCardProps } from "~/modules/account/profile/presentation/ProfileCard.ui";
+import type { ProfileClimbingProps } from "~/modules/account/profile/presentation/ProfileClimbing.ui";
+import type { ProfileCollectionProps } from "~/modules/account/profile/presentation/ProfileCollection.ui";
+import type { ProfileBestRunProps } from "~/modules/account/profile/presentation/ProfileBestRun.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
 import type {
 	HeroRecord,
 	ProfileHeroProps,
-} from "~/ui/kanto-theme/ProfileHero.ui";
-import type { PlayerHeaderSwatches } from "~/ui/kanto-theme/PlayerHeader.ui";
-import type { ProfileSeatsProps } from "~/ui/kanto-theme/ProfileSeats.ui";
+} from "~/modules/account/profile/presentation/ProfileHero.ui";
+import type { PlayerHeaderSwatches } from "~/modules/account/profile/presentation/PlayerHeader.ui";
+import type { ProfileSeatsProps } from "~/modules/account/profile/presentation/ProfileSeats.ui";
 import {
 	contributionOf,
 	standingFor,

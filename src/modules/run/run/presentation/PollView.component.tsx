@@ -18,7 +18,7 @@ import type { RunView } from "~/modules/run/run/application/runView.viewmodel";
 import { usePollKeyboard } from "~/modules/run/run/application/usePollKeyboard.hook";
 import type { AnsweredPoll } from "~/modules/run/run/domain/runPoll.model";
 import { useAnswerFeedback } from "~/modules/run/run/presentation/useAnswerFeedback.hook";
-import { PollScreen } from "~/ui/kanto-theme/PollScreen.ui";
+import { PollScreen } from "./PollScreen.ui";
 import { Advertisement } from "~/modules/account/profile/presentation/Advertisement.component";
 
 export type PollViewProps = Omit<PollScreenHandlers, "onSubmit"> & {

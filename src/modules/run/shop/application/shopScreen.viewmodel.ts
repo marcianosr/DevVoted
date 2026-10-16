@@ -67,21 +67,18 @@ import type {
 	ChipQuote,
 	ConfigChipBadge,
 	ConfigChipProps,
-} from "~/ui/kanto-theme/ConfigChip.ui";
-import { RECURRING_GLYPH, upkeepLabelOf } from "~/ui/kanto-theme/upkeep";
+} from "~/modules/run/config/presentation/ConfigChip.ui";
 import type { KantoColor } from "~/ui/kanto-theme/colors";
-import type { BalancePreview } from "~/ui/kanto-theme/Balance.ui";
-import type { AuditProps } from "~/ui/kanto-theme/Audit.ui";
-import type { HeaderProps } from "~/ui/kanto-theme/Header.ui";
-import {
-	COPY as INCIDENT_DESK_COPY,
-	type IncidentDeskProps,
-} from "~/ui/kanto-theme/IncidentDesk.ui";
-import type { RegistryControlProps } from "~/ui/kanto-theme/RegistryControl.ui";
+import type { BalancePreview } from "~/modules/run/run/presentation/Balance.ui";
+import type { AuditProps } from "~/modules/run/run/presentation/Audit.ui";
+import type { HeaderProps } from "~/modules/run/gate/presentation/Header.ui";
+import type { IncidentDeskProps } from "~/modules/run/incident/presentation/IncidentDesk.ui";
+import type { RegistryControlProps } from "~/modules/run/build/presentation/RegistryControl.ui";
 import type {
 	ShopScreenProps,
 	ShopServiceRow,
-} from "~/ui/kanto-theme/ShopScreen.ui";
+} from "~/modules/run/shop/presentation/ShopScreen.ui";
+import { RECURRING_GLYPH, upkeepLabelOf } from "./upkeep.viewmodel";
 
 const REGISTRY_TITLE = "Registry";
 const REGISTRY_SUBTITLE = "Improve your build this run!";
@@ -299,6 +296,7 @@ export const shopHeaderFor = (
 
 const INCIDENT_COPY = {
 	buy: "Buy",
+	held: (audit: string) => `Your held ${audit} will be discarded.`,
 	replace: "Replace held",
 	rule: "hold 1 · targets your gate or ahead",
 	reach: (count: number) =>
@@ -374,9 +372,7 @@ export const incidentDeskFor = (deal: IncidentDeal): IncidentDeskProps => {
 		...(deal.heldAudit === null
 			? {}
 			: {
-					discards: INCIDENT_DESK_COPY.held(
-						auditLabelOf(deal.heldAudit, deal.gate)
-					),
+					discards: INCIDENT_COPY.held(auditLabelOf(deal.heldAudit, deal.gate)),
 				}),
 		rule: INCIDENT_COPY.rule,
 		reach:

@@ -7,7 +7,7 @@ import {
 	GATE_COUNT,
 	GATE_REWARD_KB,
 } from "~/modules/run/run/domain/rules.model";
-import { leadTextOf } from "~/ui/kanto-theme/Lead.ui";
+import { leadTextOf } from "~/modules/run/gate/presentation/Lead.ui";
 
 import {
 	WIKI_ARTICLES,
